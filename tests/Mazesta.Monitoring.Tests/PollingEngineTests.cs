@@ -1,5 +1,5 @@
 using Xunit;
-using Mazesta.Core.Hardware; using Mazesta.Hardware; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Microsoft.Extensions.Logging.Abstractions;
+using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Hardware; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Microsoft.Extensions.Logging.Abstractions;
 namespace Mazesta.Monitoring.Tests;
 public class PollingEngineTests
 {
@@ -84,12 +84,32 @@ public class PollingEngineTests
         Assert.Null(e.TickOnce()); Assert.Equal(EngineState.Failed, e.State);
         Assert.Contains(log.Snapshot(), x => x.Key == PollingEngine.KeyEngineFailed);
     }
-    [Fact] public void Pause_wakes_the_loop()
+    [Fact] public void Pause_stops_publishing_and_resume_continues()
     {
-        var (e, p, _, _) = Build(); var paused = new ManualResetEventSlim();
-        e.StateChanged += s => { if (s == EngineState.Paused) paused.Set(); };
-        e.Start(); e.Pause();
-        Assert.True(paused.Wait(TimeSpan.FromSeconds(2))); Assert.Equal(EngineState.Paused, e.State);
-        e.Stop();
+        var clock = new SystemClock(); var p = new FakeSensorProvider();
+        p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Cpu, "cpu/x", "temperature/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Storage, "storage/S1", "temperature/0"));
+        var log = new BoundedEventLog(clock, NullLogger.Instance);
+        var e = new PollingEngine(p, clock, new MonitoringOptions { FastInterval = TimeSpan.FromSeconds(1), StorageInterval = TimeSpan.FromMinutes(15) }, log);
+        int count = 0; var firstArrived = new ManualResetEventSlim();
+        e.SnapshotPublished += _ => { Interlocked.Increment(ref count); firstArrived.Set(); };
+        try
+        {
+            e.Start();
+            Assert.True(firstArrived.Wait(TimeSpan.FromSeconds(5)));
+
+            e.Pause();
+            Thread.Sleep(300);                 // let any in-flight tick finish
+            int countAtPause = count;
+            Thread.Sleep(2500);                // >= 2 intervals with nothing happening
+            Assert.Equal(countAtPause, count);
+            Assert.Equal(EngineState.Paused, e.State);
+
+            var resumed = new ManualResetEventSlim();
+            e.SnapshotPublished += _ => { if (count > countAtPause) resumed.Set(); };
+            e.Resume();
+            Assert.True(resumed.Wait(TimeSpan.FromSeconds(2)));
+            Assert.Equal(EngineState.Running, e.State);
+        }
+        finally { e.Stop(); e.Dispose(); }
     }
 }
