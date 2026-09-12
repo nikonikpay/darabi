@@ -4,7 +4,7 @@ internal static class WmiInventoryParser
 {
     private static string? S(IReadOnlyDictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) && v is not null ? Convert.ToString(v, CultureInfo.InvariantCulture)?.Trim() is { Length: > 0 } s ? s : null : null;
     private static long? L(IReadOnlyDictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) && v is not null ? Convert.ToInt64(v, CultureInfo.InvariantCulture) : null;
-    private static int? I(IReadOnlyDictionary<string, object?> r, string k) => L(r, k) is { } l ? checked((int)l) : null;
+    private static int? I(IReadOnlyDictionary<string, object?> r, string k) => L(r, k) is { } l && l >= int.MinValue && l <= int.MaxValue ? (int)l : null;
     private static bool? B(IReadOnlyDictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) && v is bool b ? b : null;
 
     public static CpuInfo? Cpu(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)

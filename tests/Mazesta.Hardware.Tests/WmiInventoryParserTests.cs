@@ -27,4 +27,8 @@ public class WmiInventoryParserTests
         var m = WmiInventoryParser.Memory([Row(("DeviceLocator", "DIMM_A1"))]);
         Assert.Null(m[0].CapacityBytes); Assert.Null(m[0].ConfiguredSpeedMts); Assert.Equal("DIMM_A1", m[0].Slot);
     }
+    [Fact] public void Out_of_range_integer_becomes_null()
+    {
+        Assert.Null(WmiInventoryParser.Cpu([Row(("MaxClockSpeed", 4294967295u))])!.MaxClockMhz);
+    }
 }
