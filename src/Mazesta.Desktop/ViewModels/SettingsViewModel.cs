@@ -24,9 +24,13 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (!TryValidate(out int fast, out int storage, out string error)) { Message = error; return; }
         bool langChanged = _config.Language != Language;
         _config.Language = Language; _config.FastIntervalSeconds = fast; _config.StorageIntervalSeconds = storage; _config.ShopName = ShopName.Trim().Length == 0 ? _config.ShopName : ShopName.Trim();
+        bool storageChanged = _options.StorageInterval != TimeSpan.FromSeconds(storage);
         _options.StorageInterval = TimeSpan.FromSeconds(storage); if (_engine.FastInterval != TimeSpan.FromSeconds(fast)) _engine.SetFastInterval(TimeSpan.FromSeconds(fast));
-        _store.Save(_config); _shell.RefreshInterval();
-        Message = Loc.Get("Settings_Saved") + (langChanged ? " " + Loc.Get("Settings_RestartNote") : "");
+        // The storage cadence can be up to 15 minutes, so without re-arming, a shortened interval
+        // would not take effect until the old one had elapsed.
+        if (storageChanged) _engine.RearmStorageNodes();
+        bool saved = _store.Save(_config); _shell.RefreshInterval();
+        Message = (saved ? Loc.Get("Settings_Saved") : Loc.Get("Settings_SaveFailed")) + (langChanged ? " " + Loc.Get("Settings_RestartNote") : "");
     }
     [RelayCommand] private void OpenFolder() => _openFolder(DataFolder);
 }

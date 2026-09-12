@@ -121,4 +121,39 @@ public class PollingEngineTests
         }
         finally { e.Stop(); e.Dispose(); }
     }
+    [Fact] public void Provider_start_throwing_on_real_thread_fails_engine_not_process()
+    {
+        // Provider.Start() runs on the polling thread. An exception there must land in the engine's
+        // own handler and flip State to Failed - an unhandled exception on a background thread
+        // takes the whole process down, and this app is the customer's diagnostic tool.
+        var clock = new SystemClock(); var p = new FakeSensorProvider { ThrowOnStart = new InvalidOperationException("driver refused") };
+        var log = new BoundedEventLog(clock, NullLogger.Instance);
+        var e = new PollingEngine(p, clock, new MonitoringOptions { FastInterval = TimeSpan.FromSeconds(1) }, log);
+        var failed = new ManualResetEventSlim();
+        e.StateChanged += st => { if (st == EngineState.Failed) failed.Set(); };
+        try
+        {
+            e.Start();
+            Assert.True(failed.Wait(TimeSpan.FromSeconds(5)), "engine did not report Failed within 5 s");
+            Assert.Equal(EngineState.Failed, e.State);
+            Assert.False(System.Diagnostics.Process.GetCurrentProcess().HasExited);
+            Assert.Contains(log.Snapshot(), ev => ev.Key == PollingEngine.KeyEngineFailed && ev.Detail.Contains("driver refused"));
+        }
+        finally { e.Stop(); e.Dispose(); }
+    }
+    [Fact] public void Rearm_storage_nodes_makes_storage_due_on_the_next_tick()
+    {
+        var clock = new FakeClock(new DateTimeOffset(2026, 9, 12, 0, 0, 0, TimeSpan.Zero)); var p = new FakeSensorProvider();
+        p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Cpu, "cpu/x", "temperature/0"));
+        p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Storage, "storage/S1", "temperature/0"));
+        var e = new PollingEngine(p, clock, new MonitoringOptions { FastInterval = TimeSpan.FromSeconds(1), StorageInterval = TimeSpan.FromMinutes(15) }, new BoundedEventLog(clock, NullLogger.Instance));
+        e.PrepareForManualTicks();
+        e.TickOnce();                                                     // first tick updates everything
+        clock.Advance(TimeSpan.FromSeconds(1)); e.TickOnce();
+        Assert.DoesNotContain(new HardwareId("storage/S1"), p.Requests[^1].NodesToUpdate);
+        e.RearmStorageNodes();
+        clock.Advance(TimeSpan.FromSeconds(1)); e.TickOnce();
+        Assert.Contains(new HardwareId("storage/S1"), p.Requests[^1].NodesToUpdate);
+        e.Dispose();
+    }
 }

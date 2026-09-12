@@ -5,6 +5,6 @@ public sealed partial class CardLine(string label, SensorId? id, Unit unit) : Ob
 public sealed partial class SensorCardViewModel(string titleKey, HardwareKind kind, string? subtitle = null) : ObservableObject
 {
     public string Title => Loc.Get(titleKey) + (subtitle is null ? "" : $" · {subtitle}"); public string HelpKey => titleKey; public HardwareKind Kind => kind;
-    public Brush Accent => (Brush)System.Windows.Application.Current.FindResource($"Brush.Series.{kind}");
+    public Brush Accent => SeriesBrushes.For(kind);
     public ObservableCollection<CardLine> Lines { get; } = []; public bool HasAnySensor => Lines.Any(l => l.Id is not null);
 }

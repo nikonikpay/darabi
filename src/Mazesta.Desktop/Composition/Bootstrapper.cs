@@ -33,11 +33,24 @@ public static class Bootstrapper
         s.AddSingleton<MonitoringFocus>();
         s.AddSingleton<IWmiQuery, WmiQuery>();
         s.AddSingleton<IInventoryProvider, WmiInventoryProvider>();
+        s.AddSingleton<InventoryCache>();
         s.AddSingleton<ViewModels.ShellViewModel>();
         s.AddSingleton<ViewModels.IChartWindowService, Services.ChartWindowService>();
-        s.AddTransient<ViewModels.MonitoringViewModel>(sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
-        s.AddTransient<ViewModels.DashboardViewModel>(sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IInventoryProvider>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
-        s.AddTransient<ViewModels.SettingsViewModel>(sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true })));
+        AddViewModelFactory(s, sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        AddViewModelFactory(s, sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<InventoryCache>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true })));
         return s.BuildServiceProvider();
     }
+
+    /// <summary>
+    /// Registers a page view model as a <c>Func&lt;T&gt;</c> factory rather than a transient service.
+    /// The page view models are IDisposable (they unsubscribe from the polling engine), and a
+    /// container tracks every IDisposable transient it creates until the container itself is
+    /// disposed - so with AddTransient, every navigation leaked one live view model, still rooted
+    /// by the root provider, for the life of the process. Objects the factory news up are never
+    /// handed to the container, so nothing but the caller holds them; ShellViewModel disposes the
+    /// outgoing page as it navigates.
+    /// </summary>
+    internal static void AddViewModelFactory<T>(IServiceCollection s, Func<IServiceProvider, T> create) where T : class
+        => s.AddSingleton<Func<T>>(sp => () => create(sp));
 }

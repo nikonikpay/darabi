@@ -28,8 +28,8 @@ public sealed partial class ShellViewModel : ObservableObject
         _sp = sp;
         Items = new(
         [
-            new("Nav_Dashboard", "", () => sp.GetRequiredService<DashboardViewModel>()),
-            new("Nav_Monitoring", "", () => sp.GetRequiredService<MonitoringViewModel>()),
+            new("Nav_Dashboard", "", () => sp.GetRequiredService<Func<DashboardViewModel>>()()),
+            new("Nav_Monitoring", "", () => sp.GetRequiredService<Func<MonitoringViewModel>>()()),
             new("Nav_Tests", "", () => new PlaceholderViewModel("Nav_Tests")),
             new("Nav_Benchmarks", "", () => new PlaceholderViewModel("Nav_Benchmarks")),
             new("Nav_Gpu", "", () => new PlaceholderViewModel("Nav_Gpu")),
@@ -39,7 +39,7 @@ public sealed partial class ShellViewModel : ObservableObject
             new("Nav_Gaming", "", () => new PlaceholderViewModel("Nav_Gaming")),
             new("Nav_WindowsTools", "", () => new PlaceholderViewModel("Nav_WindowsTools")),
             new("Nav_Reports", "", () => new PlaceholderViewModel("Nav_Reports")),
-            new("Nav_Settings", "", () => sp.GetRequiredService<SettingsViewModel>()),
+            new("Nav_Settings", "", () => sp.GetRequiredService<Func<SettingsViewModel>>()()),
         ]);
         engine.Provider.StatusChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() => ProviderStatusText = Describe(s));
         engine.StateChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
@@ -51,6 +51,11 @@ public sealed partial class ShellViewModel : ObservableObject
     }
 
     partial void OnSelectedChanged(NavItem? value) { if (value is not null) CurrentPage = value.PageFactory(); }
+
+    // The page view models subscribe to the polling engine; the outgoing page is disposed here so
+    // the subscription goes with it. Nothing else holds them - they are built by a Func<T> factory,
+    // not by the container (see Bootstrapper.AddViewModelFactory) - so this is their only owner.
+    partial void OnCurrentPageChanged(object? oldValue, object? newValue) { if (!ReferenceEquals(oldValue, newValue)) (oldValue as IDisposable)?.Dispose(); }
 
     [RelayCommand]
     private void TogglePause() { if (_engine.State == EngineState.Paused) _engine.Resume(); else _engine.Pause(); }

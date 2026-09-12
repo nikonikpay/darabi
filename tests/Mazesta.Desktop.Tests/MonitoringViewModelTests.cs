@@ -10,7 +10,7 @@ public class MonitoringViewModelTests
         p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Cpu, "cpu/intelcpu-0", "temperature/0", "clock/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Gpu, "gpu/nvidiagpu-0", "temperature/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Storage, "storage/S1", "temperature/0"));
         var e = new PollingEngine(p, c, new MonitoringOptions(), new BoundedEventLog(c, NullLogger.Instance)); e.PrepareForManualTicks();
         var cfg = new AppConfig { ExpandedGroups = ["gpu/nvidiagpu-0"] }; var charts = new NoCharts(); var focus = new MonitoringFocus();
-        return (new MonitoringViewModel(e, focus, cfg, charts, a => { a(); return null!; }), e, p, cfg, charts, focus);
+        return (new MonitoringViewModel(e, focus, cfg, charts, c, a => { a(); return null!; }), e, p, cfg, charts, focus);
     }
     [Fact] public void Groups_follow_hardware_and_expansion_comes_from_config()
     { var (vm, _, _, _, _, _) = Build(); Assert.Equal(3, vm.Groups.Count); Assert.False(vm.Groups[0].IsExpanded); Assert.True(vm.Groups[1].IsExpanded); }

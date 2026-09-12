@@ -16,16 +16,14 @@ public partial class App : Application
     public static bool IsFirstInstance;
     public static ServiceProvider Services { get; private set; } = null!;
     public static System.Diagnostics.Stopwatch StartupClock { get; } = System.Diagnostics.Stopwatch.StartNew();
-    // Note: LoggingSetup.CreateFactory(...) wraps a freshly-constructed RollingFileLoggerProvider
-    // inside an ILoggerFactory via ILoggingBuilder.AddProvider(instance). That registers the
-    // provider as an already-constructed DI instance, and neither the mini ServiceProvider built
-    // inside LoggerFactory.Create nor ILoggerFactory.Dispose() end up disposing an instance
-    // registered that way (the well-known ".NET DI never disposes instances it didn't create"
-    // rule) - confirmed empirically: after a full graceful OnExit, the log file was still 0 bytes
-    // because the provider's buffered StreamWriter was never flushed/closed. The provider itself
-    // is constructed directly here instead so it can be disposed explicitly in OnExit, which is
-    // exactly how Mazesta.Persistence.Tests exercises it too (via `using var p = new
-    // RollingFileLoggerProvider(...)`).
+    // Note: ILoggingBuilder.AddProvider(instance) registers the provider as an already-constructed
+    // DI instance, and neither the mini ServiceProvider built inside LoggerFactory.Create nor
+    // ILoggerFactory.Dispose() end up disposing an instance registered that way (the well-known
+    // ".NET DI never disposes instances it didn't create" rule) - confirmed empirically: after a
+    // full graceful OnExit, the log file was still 0 bytes because the provider's buffered
+    // StreamWriter was never flushed/closed. The provider is therefore constructed directly here
+    // so it can be disposed explicitly in OnExit, which is exactly how Mazesta.Persistence.Tests
+    // exercises it too (via `using var p = new RollingFileLoggerProvider(...)`).
     private static RollingFileLoggerProvider? _logProvider;
 
     static App()

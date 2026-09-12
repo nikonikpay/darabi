@@ -1,25 +1,22 @@
-using System.Collections.ObjectModel; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input; using Mazesta.Core.Hardware; using Mazesta.Monitoring; using Mazesta.Persistence;
+using System.Collections.ObjectModel; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Monitoring; using Mazesta.Persistence;
 namespace Mazesta.Desktop.ViewModels;
 public interface IChartWindowService { void Open(SensorDefinition sensor, HardwareNode node); }
 public sealed partial class MonitoringViewModel : ObservableObject, IDisposable
 {
-    private readonly PollingEngine _engine; private readonly MonitoringFocus _focus; private readonly AppConfig _config; private readonly IChartWindowService _charts; private readonly Func<Action, object> _dispatch;
+    private readonly PollingEngine _engine; private readonly MonitoringFocus _focus; private readonly AppConfig _config; private readonly IChartWindowService _charts; private readonly IClock _clock; private readonly Func<Action, object> _dispatch;
     private readonly Dictionary<SensorId, SensorRowViewModel> _rows = [];
-#pragma warning disable CS0649 // reserved for a future task that needs to mutate IsExpanded without persisting it
-    private bool _suppressConfig;
-#pragma warning restore CS0649
     public ObservableCollection<HardwareGroupViewModel> Groups { get; } = [];
     public int[] Intervals => MonitoringOptions.AllowedFastSeconds;
     [ObservableProperty] private string _filterText = ""; [ObservableProperty] private int _selectedIntervalSeconds; [ObservableProperty] private bool _isPaused;
-    public MonitoringViewModel(PollingEngine engine, MonitoringFocus focus, AppConfig config, IChartWindowService charts, Func<Action, object> dispatch)
+    public MonitoringViewModel(PollingEngine engine, MonitoringFocus focus, AppConfig config, IChartWindowService charts, IClock clock, Func<Action, object> dispatch)
     {
-        _engine = engine; _focus = focus; _config = config; _charts = charts; _dispatch = dispatch; _selectedIntervalSeconds = (int)engine.FastInterval.TotalSeconds; _isPaused = engine.State == EngineState.Paused;
+        _engine = engine; _focus = focus; _config = config; _charts = charts; _clock = clock; _dispatch = dispatch; _selectedIntervalSeconds = (int)engine.FastInterval.TotalSeconds; _isPaused = engine.State == EngineState.Paused;
         var byId = engine.Hardware.ToDictionary(n => n.Id);
         foreach (var node in engine.Hardware.Where(n => n.ParentId is null))
         {
             var g = new HardwareGroupViewModel(node) { IsExpanded = config.ExpandedGroups.Contains(node.Id.Value) };
             AddRows(g, node, ""); foreach (var sub in engine.Hardware.Where(n => n.ParentId == node.Id)) AddRows(g, sub, sub.Name);
-            g.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(HardwareGroupViewModel.IsExpanded) && !_suppressConfig) Persist(g); };
+            g.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(HardwareGroupViewModel.IsExpanded)) Persist(g); };
             Groups.Add(g);
         }
         engine.SnapshotPublished += OnSnapshot; engine.StateChanged += OnState; focus.FocusRequested += OnFocus;
@@ -41,7 +38,7 @@ public sealed partial class MonitoringViewModel : ObservableObject, IDisposable
         }
     }
     partial void OnSelectedIntervalSecondsChanged(int value) { _engine.SetFastInterval(TimeSpan.FromSeconds(value)); _config.FastIntervalSeconds = value; }
-    [RelayCommand] private void ResetStats() => _engine.Statistics.ResetAll(DateTimeOffset.UtcNow);
+    [RelayCommand] private void ResetStats() => _engine.Statistics.ResetAll(_clock.UtcNow);
     [RelayCommand] private void TogglePause() { if (_engine.State == EngineState.Paused) _engine.Resume(); else _engine.Pause(); }
     [RelayCommand] private void OpenChart(SensorRowViewModel? row) { if (row is null) return; var node = _engine.Hardware.First(n => n.Id == row.Definition.Hardware); _charts.Open(row.Definition, node); }
     public void Dispose() { _engine.SnapshotPublished -= OnSnapshot; _engine.StateChanged -= OnState; _focus.FocusRequested -= OnFocus; }

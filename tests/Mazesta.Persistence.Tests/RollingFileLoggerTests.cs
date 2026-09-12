@@ -12,6 +12,22 @@ public class RollingFileLoggerTests : IDisposable
         var text = File.ReadAllText(Path.Combine(_dir, "mazesta-test-20260912.log"));
         Assert.Contains("WRN", text); Assert.Contains("Mazesta.Test", text); Assert.Contains("hello world", text);
     }
+    [Fact] public void Writing_to_an_unwritable_directory_does_not_throw()
+    {
+        // A logger that throws turns an unwritable log folder into a crash on whichever thread
+        // logged - including the polling thread. The line is dropped instead.
+        string blocker = Path.Combine(Path.GetTempPath(), "mazesta-log-blocked-" + Guid.NewGuid().ToString("N"));
+        File.WriteAllText(blocker, "not a directory");                 // Directory.CreateDirectory(blocker) will fail
+        try
+        {
+            using var p = new RollingFileLoggerProvider(blocker, now: () => new DateTime(2026, 9, 12));
+            var log = p.CreateLogger("c");
+            Assert.Null(Record.Exception(() => log.LogInformation("first")));
+            Assert.Null(Record.Exception(() => log.LogError(new InvalidOperationException("boom"), "second")));
+            Assert.Null(Record.Exception(p.Flush));
+        }
+        finally { File.Delete(blocker); }
+    }
     [Fact] public void Keeps_only_newest_files()
     {
         Directory.CreateDirectory(_dir);

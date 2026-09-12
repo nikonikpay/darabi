@@ -187,6 +187,12 @@
   <data name="Dashboard_Ram" xml:space="preserve">
     <value>RAM</value>
   </data>
+  <data name="Dashboard_Ram_Total" xml:space="preserve">
+    <value>نصب‌شده</value>
+  </data>
+  <data name="Dashboard_Ram_Modules" xml:space="preserve">
+    <value>ماژول‌ها</value>
+  </data>
   <data name="Dashboard_Inventory" xml:space="preserve">
     <value>سیستم</value>
   </data>
@@ -243,6 +249,9 @@
   </data>
   <data name="Settings_Saved" xml:space="preserve">
     <value>ذخیره شد.</value>
+  </data>
+  <data name="Settings_SaveFailed" xml:space="preserve">
+    <value>ذخیره تنظیمات ممکن نشد. لاگ را ببینید.</value>
   </data>
   <data name="Crash_Title" xml:space="preserve">
     <value>خطای نامنتظره</value>

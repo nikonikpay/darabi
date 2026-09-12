@@ -32,12 +32,26 @@ public sealed class PollingEngine : IDisposable
     {
         if (_disposed) return;
         _stopRequested = true; _wake.Set();
-        if (_thread is { } t)
+        bool stopped = true;
+        lock (_lock)
         {
-            if (t.Join(TimeSpan.FromSeconds(10))) _thread = null;
-            else _events.Log(EventLevel.Error, KeyEngineFailed, "Polling thread did not stop within 10 s");
+            if (_thread is { } t)
+            {
+                if (t.Join(TimeSpan.FromSeconds(10))) _thread = null;
+                // The thread is still running and may still touch _wake and the provider. Keep the
+                // reference (Start() refuses while it is alive) and do NOT claim the engine stopped.
+                else { stopped = false; _events.Log(EventLevel.Error, KeyEngineFailed, "Polling thread did not stop within 10 s"); }
+            }
         }
-        if (State != EngineState.Failed) State = EngineState.Stopped;
+        if (stopped && State != EngineState.Failed) State = EngineState.Stopped;
+    }
+    /// <summary>Brings every storage node's next poll forward so a changed StoragePollInterval takes
+    /// effect on the next tick instead of after the old (up to 15 minute) interval has elapsed.</summary>
+    public void RearmStorageNodes()
+    {
+        if (_disposed) return;
+        lock (_lock) foreach (var n in Hardware.Where(n => n.Kind == HardwareKind.Storage)) _nextDue[n.Id] = _clock.UtcNow;
+        _wake.Set();
     }
     internal void PrepareForManualTicks()
     {
@@ -96,5 +110,16 @@ public sealed class PollingEngine : IDisposable
         catch (Exception ex) { _events.Log(EventLevel.Error, KeySubscriberFailed, ex.ToString()); }
         return snapshot;
     }
-    public void Dispose() { if (_disposed) return; Stop(); _disposed = true; Provider.Dispose(); _wake.Dispose(); }
+    public void Dispose()
+    {
+        if (_disposed) return;
+        Stop();
+        _disposed = true;
+        Provider.Dispose();
+        // A polling thread that outlived the 10 s join still waits on _wake; disposing it under the
+        // thread would throw ObjectDisposedException on a background thread and take the process
+        // down. Leak the handle instead - the process is exiting anyway.
+        bool threadStillAlive; lock (_lock) threadStillAlive = _thread is { IsAlive: true };
+        if (!threadStillAlive) _wake.Dispose();
+    }
 }

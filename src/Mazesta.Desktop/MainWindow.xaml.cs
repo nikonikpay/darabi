@@ -41,6 +41,8 @@ public partial class MainWindow : Window
         bool maximized = WindowState == WindowState.Maximized;
         var bounds = maximized ? RestoreBounds : new Rect(Left, Top, Width, Height);
         config.MainWindow = new WindowPlacement(bounds.Left, bounds.Top, bounds.Width, bounds.Height, maximized);
-        store.Save(config);
+        // Save never throws (it returns false and logs). Tell the user in the status banner rather
+        // than closing silently on a data folder that has become unwritable.
+        if (!store.Save(config) && DataContext is ShellViewModel shell) shell.ShowBanner(Localization.Loc.Get("Settings_SaveFailed"));
     }
 }

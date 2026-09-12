@@ -9,7 +9,7 @@ public sealed partial class ChartWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty] private int _windowMinutes = 10; [ObservableProperty] private RawSeries _raw; [ObservableProperty] private MinuteSeries _minutes; [ObservableProperty] private bool _useMinutes;
     [ObservableProperty] private string _currentText = Loc.Get("Value_NotAvailable"); [ObservableProperty] private string _minText = ""; [ObservableProperty] private string _maxText = ""; [ObservableProperty] private int _nowSeconds;
     [ObservableProperty] private int _maxGapSeconds = 6;
-    public Brush SeriesBrush => (Brush)System.Windows.Application.Current.FindResource($"Brush.Series.{Node.Kind}");
+    public Brush SeriesBrush => SeriesBrushes.For(Node.Kind);
     public ChartWindowViewModel(PollingEngine engine, SensorDefinition sensor, HardwareNode node, Func<Action, object> dispatch)
     { _engine = engine; Sensor = sensor; Node = node; _dispatch = dispatch; engine.SnapshotPublished += OnSnapshot; }
     private void OnSnapshot(SensorSnapshot s) => _dispatch(Refresh);

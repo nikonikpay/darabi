@@ -10,8 +10,13 @@ public static class PersianDigits
         var sb = new StringBuilder(input.Length);
         foreach (char c in input)
         {
+            // U+060C (،) is the Persian comma and U+066C (٬) the Arabic thousands separator: both
+            // group digits and carry no value, so they are dropped the way an ASCII thousands comma
+            // would be. Mapping them to '.' (as this did before) read "۱،۵۰۰" - 1500 - as 1.500.
+            if (c is '،' or '٬') continue;
             int p = Persian.IndexOf(c), a = ArabicIndic.IndexOf(c);
-            sb.Append(p >= 0 ? (char)('0' + p) : a >= 0 ? (char)('0' + a) : c is '٫' or '،' ? '.' : c);
+            // U+066B (٫) is the Persian DECIMAL separator.
+            sb.Append(p >= 0 ? (char)('0' + p) : a >= 0 ? (char)('0' + a) : c == '٫' ? '.' : c);
         }
         return sb.ToString();
     }

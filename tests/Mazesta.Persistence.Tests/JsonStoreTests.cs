@@ -33,6 +33,32 @@ public class JsonStoreTests : IDisposable
         string onDisk = File.ReadAllText(path);
         Assert.Contains("\"schemaVersion\": 1", onDisk); Assert.DoesNotContain("pollSeconds", onDisk);
     }
+    [Fact] public void Save_returns_false_when_the_file_cannot_be_written()
+    {
+        // The real failure is an unwritable data folder; holding the target file with FileShare.None
+        // reproduces it deterministically on Windows and in CI without touching ACLs.
+        string path = Path.Combine(_dir, "appconfig.json");
+        var s = Store(); Assert.True(s.Save(new AppConfig { Language = "fa" }));
+        using var handle = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        bool saved = true;
+        var ex = Record.Exception(() => saved = s.Save(new AppConfig { Language = "en" }));
+        Assert.Null(ex);            // never throws into MainWindow.Closing / the settings page
+        Assert.False(saved);
+    }
+    [Fact] public void Migration_with_failed_resave_is_still_Migrated()
+    {
+        // A migration that cannot be written back is NOT a corrupt file: the previous code re-saved
+        // inside the corrupt-classifying try, so an unwritable folder renamed the customer's config
+        // aside and reported Corrupt.
+        string path = Path.Combine(_dir, "appconfig.json");
+        File.WriteAllText(path, """{"pollSeconds": 5, "language": "fa"}""");
+        using var handle = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);   // readable, not writable
+        var r = Store().Load();
+        Assert.Equal(LoadOutcome.Migrated, r.Outcome);
+        Assert.Equal(5, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language);
+        Assert.Contains("could not write", r.Detail);
+        Assert.Empty(Directory.GetFiles(_dir, "appconfig.json.corrupt-*"));
+    }
     [Fact] public void Locked_file_is_treated_as_corrupt_not_a_crash()
     {
         string path = Path.Combine(_dir, "appconfig.json");

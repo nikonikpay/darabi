@@ -35,12 +35,33 @@ public class HistoryStoreTests
         for (int i = 0; i < 5; i++) h.Append(Snap(i, i * 60, i));
         Assert.Equal([3, 4], h.GetMinutes(A).Minute);
     }
-    [Fact] public void Byte_budget_for_200_sensors_is_under_13_MB()
+    private static SensorSnapshot WideSnap(int sensors, long seq, int seconds)
+        => new(seq, T0.AddSeconds(seconds), Enumerable.Range(0, sensors).Select(i => new SensorReading(new SensorId($"n#{i}"), 1, T0.AddSeconds(seconds), DataQuality.Ok, "t")).ToList(), new Dictionary<HardwareId, NodeStatus>());
+    [Fact] public void Byte_budget_for_609_sensors_on_the_first_tick_is_raw_only()
+    {
+        // 609 sensors is the dev box's real sensor count. On the first tick no sensor has crossed a
+        // minute boundary, so only the raw rings exist: 609 x 900 x 8 = 4,384,800 bytes (4.18 MB).
+        var h = new HistoryStore(T0);
+        h.Append(WideSnap(609, 0, 0));
+        Assert.Equal(609L * 900 * 8, h.EstimatedBytes);
+        Assert.InRange(h.EstimatedBytes, 1, 5L * 1024 * 1024);
+    }
+    [Fact] public void Minute_tier_is_allocated_only_after_the_first_rollover()
     {
         var h = new HistoryStore(T0);
-        var readings = Enumerable.Range(0, 200).Select(i => new SensorReading(new SensorId($"n#{i}"), 1, T0, DataQuality.Ok, "t")).ToList();
-        h.Append(new SensorSnapshot(0, T0, readings, new Dictionary<HardwareId, NodeStatus>()));
-        Assert.InRange(h.EstimatedBytes, 1, 13L * 1024 * 1024);
+        h.Append(WideSnap(609, 0, 0)); long rawOnly = h.EstimatedBytes;
+        h.Append(WideSnap(609, 1, 30)); Assert.Equal(rawOnly, h.EstimatedBytes);      // still inside minute 0
+        h.Append(WideSnap(609, 2, 61));                                                // rollover into minute 1
+        Assert.Equal(rawOnly + 609L * 2879 * 18, h.EstimatedBytes);
+    }
+    [Fact] public void Minute_values_survive_the_rollover_that_allocates_the_tier()
+    {
+        var h = new HistoryStore(T0);
+        h.Append(Snap(0, 10, 40)); h.Append(Snap(1, 20, 60));
+        Assert.Equal([0], h.GetMinutes(A).Minute);                                      // in-progress bucket, no arrays yet
+        h.Append(Snap(2, 70, 80));
+        var m = h.GetMinutes(A);
+        Assert.Equal([0, 1], m.Minute); Assert.Equal((40f, 60f, 50f), (m.Min[0], m.Max[0], m.Avg[0])); Assert.Equal(80f, m.Avg[1]);
     }
     [Fact] public void Unknown_sensor_returns_empty_series() => Assert.Empty(new HistoryStore(T0).GetRaw(A).Seconds);
 }
