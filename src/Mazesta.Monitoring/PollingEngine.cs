@@ -3,11 +3,11 @@ namespace Mazesta.Monitoring;
 public enum EngineState { Stopped, Running, Paused, Failed }
 public sealed class PollingEngine : IDisposable
 {
-    public const string KeyPollOverrun = "Engine.PollOverrun", KeyEngineFailed = "Engine.Failed";
+    public const string KeyPollOverrun = "Engine.PollOverrun", KeyEngineFailed = "Engine.Failed", KeySubscriberFailed = "Engine.SubscriberFailed";
     private readonly IClock _clock; private readonly MonitoringOptions _options; private readonly IEventLog _events;
     private readonly Dictionary<HardwareId, DateTimeOffset> _nextDue = []; private readonly object _lock = new();
     private readonly ManualResetEventSlim _wake = new(false); private Thread? _thread; private volatile bool _stopRequested; private bool _providerStarted;
-    private long _sequence; private DateTimeOffset _lastOverrunLog = DateTimeOffset.MinValue; private EngineState _state = EngineState.Stopped;
+    private long _sequence; private DateTimeOffset _lastOverrunLog = DateTimeOffset.MinValue; private volatile EngineState _state = EngineState.Stopped;
     public ISensorProvider Provider { get; } public HistoryStore History { get; } public SensorStatistics Statistics { get; }
     public TimeSpan FastInterval { get; private set; }
     public IReadOnlyList<HardwareNode> Hardware => Provider.Hardware;
@@ -19,13 +19,29 @@ public sealed class PollingEngine : IDisposable
 
     public void Start()
     {
-        if (_thread is not null) return;
-        _stopRequested = false; State = EngineState.Running;
-        _thread = new Thread(Loop) { Name = "Mazesta.Polling", IsBackground = true }; _thread.Start();
+        lock (_lock)
+        {
+            if (_thread is { IsAlive: true }) return;
+            _stopRequested = false; State = EngineState.Running;
+            _thread = new Thread(Loop) { Name = "Mazesta.Polling", IsBackground = true }; _thread.Start();
+        }
     }
-    public void Stop() { _stopRequested = true; _wake.Set(); _thread?.Join(TimeSpan.FromSeconds(10)); _thread = null; if (State != EngineState.Failed) State = EngineState.Stopped; }
-    internal void PrepareForManualTicks() { EnsureProviderStarted(); State = EngineState.Running; }
-    public void Pause() { if (State == EngineState.Running) State = EngineState.Paused; }
+    public void Stop()
+    {
+        _stopRequested = true; _wake.Set();
+        if (_thread is { } t)
+        {
+            if (t.Join(TimeSpan.FromSeconds(10))) _thread = null;
+            else _events.Log(EventLevel.Error, KeyEngineFailed, "Polling thread did not stop within 10 s");
+        }
+        if (State != EngineState.Failed) State = EngineState.Stopped;
+    }
+    internal void PrepareForManualTicks()
+    {
+        try { EnsureProviderStarted(); State = EngineState.Running; }
+        catch (Exception ex) { _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString()); State = EngineState.Failed; }
+    }
+    public void Pause() { if (State == EngineState.Running) { State = EngineState.Paused; _wake.Set(); } }
     public void Resume() { if (State == EngineState.Paused) { State = EngineState.Running; _wake.Set(); } }
     public void SetFastInterval(TimeSpan interval)
     {
@@ -36,7 +52,8 @@ public sealed class PollingEngine : IDisposable
     private void EnsureProviderStarted() { if (_providerStarted) return; _providerStarted = true; Provider.Start(); }
     private void Loop()
     {
-        EnsureProviderStarted();
+        try { EnsureProviderStarted(); }
+        catch (Exception ex) { _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString()); State = EngineState.Failed; return; }
         while (!_stopRequested)
         {
             TimeSpan wait;
@@ -48,9 +65,10 @@ public sealed class PollingEngine : IDisposable
     internal SensorSnapshot? TickOnce()
     {
         if (State != EngineState.Running) return null;
-        EnsureProviderStarted();
+        SensorSnapshot snapshot;
         try
         {
+            EnsureProviderStarted();
             var now = _clock.UtcNow; var due = new HashSet<HardwareId>();
             lock (_lock)
                 foreach (var n in Hardware)
@@ -67,11 +85,13 @@ public sealed class PollingEngine : IDisposable
                 var cadence = kinds.TryGetValue(r.Id.Hardware, out var k) ? _options.CadenceFor(k) : FastInterval;
                 readings.Add(r with { Quality = StaleDetector.Apply(r, st, cadence, after) });
             }
-            var snapshot = new SensorSnapshot(Interlocked.Increment(ref _sequence), after, readings, result.NodeStatus);
-            History.Append(snapshot); Statistics.Apply(snapshot); SnapshotPublished?.Invoke(snapshot);
-            return snapshot;
+            snapshot = new SensorSnapshot(Interlocked.Increment(ref _sequence), after, readings, result.NodeStatus);
+            History.Append(snapshot); Statistics.Apply(snapshot);
         }
         catch (Exception ex) { _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString()); State = EngineState.Failed; return null; }
+        try { SnapshotPublished?.Invoke(snapshot); }
+        catch (Exception ex) { _events.Log(EventLevel.Error, KeySubscriberFailed, ex.ToString()); }
+        return snapshot;
     }
     public void Dispose() { Stop(); Provider.Dispose(); _wake.Dispose(); }
 }

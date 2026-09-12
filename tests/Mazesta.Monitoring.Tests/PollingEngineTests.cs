@@ -68,4 +68,28 @@ public class PollingEngineTests
         e.Start(); Assert.True(published.Wait(TimeSpan.FromSeconds(5))); e.Stop(); e.Dispose();
         Assert.True(p.Started && p.Disposed); Assert.Equal(EngineState.Stopped, e.State);
     }
+    [Fact] public void Throwing_subscriber_does_not_fail_engine()
+    {
+        var (e, p, _, log) = Build(); e.PrepareForManualTicks();
+        e.SnapshotPublished += _ => throw new InvalidOperationException("ui bug");
+        var s = e.TickOnce();
+        Assert.NotNull(s); Assert.Equal(EngineState.Running, e.State);
+        Assert.Contains(log.Snapshot(), x => x.Key == PollingEngine.KeySubscriberFailed);
+        Assert.DoesNotContain(log.Snapshot(), x => x.Key == PollingEngine.KeyEngineFailed);
+    }
+    [Fact] public void Provider_start_failure_fails_engine_not_process()
+    {
+        var (e, p, _, log) = Build(); p.ThrowOnStart = new InvalidOperationException("boom");
+        e.PrepareForManualTicks();
+        Assert.Null(e.TickOnce()); Assert.Equal(EngineState.Failed, e.State);
+        Assert.Contains(log.Snapshot(), x => x.Key == PollingEngine.KeyEngineFailed);
+    }
+    [Fact] public void Pause_wakes_the_loop()
+    {
+        var (e, p, _, _) = Build(); var paused = new ManualResetEventSlim();
+        e.StateChanged += s => { if (s == EngineState.Paused) paused.Set(); };
+        e.Start(); e.Pause();
+        Assert.True(paused.Wait(TimeSpan.FromSeconds(2))); Assert.Equal(EngineState.Paused, e.State);
+        e.Stop();
+    }
 }

@@ -5,7 +5,8 @@ public sealed class FakeSensorProvider : ISensorProvider
     public string Name => "fake"; public ProviderStatus Status { get; set; } = ProviderStatus.NotStarted; public event Action<ProviderStatus>? StatusChanged;
     public List<HardwareNode> Nodes { get; } = []; public IReadOnlyList<HardwareNode> Hardware => Nodes;
     public List<PollRequest> Requests { get; } = []; public Func<PollRequest, PollResult>? OnPoll; public Action? OnPollSideEffect; public bool Started, Disposed;
-    public void Start() { Started = true; Status = ProviderStatus.Ready(Nodes.Sum(n => n.Sensors.Count)); StatusChanged?.Invoke(Status); }
+    public Exception? ThrowOnStart;
+    public void Start() { if (ThrowOnStart is not null) throw ThrowOnStart; Started = true; Status = ProviderStatus.Ready(Nodes.Sum(n => n.Sensors.Count)); StatusChanged?.Invoke(Status); }
     public PollResult Poll(PollRequest r)
     {
         Requests.Add(r); OnPollSideEffect?.Invoke();
