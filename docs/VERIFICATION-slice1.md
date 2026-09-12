@@ -7,6 +7,16 @@ Windows 11 Pro build 26200.
 **Build hash (base commit this verification was measured against):**
 `34e054458437e1fbaaf5c6a2db9d0e9e06698f3f` (`34e0544`) — HEAD of
 `slice-1/sensors-monitoring` immediately before this task's own commit(s).
+Note: `34e0544` ("fix(desktop): exit path tolerates failed startup;
+provider state logged honestly; null inventory fields") landed on this
+branch partway through this task's own session (it was not there when the
+branch was first inspected at the start of this task, which showed `97bd0c0`
+as HEAD). It touches only `src/Mazesta.Desktop` (`App.xaml.cs`,
+`DashboardViewModel.cs`) and one Desktop test, and was not authored by this
+task — it explains two things noted below: the startup log's
+`"Provider ready"` line changing to `"Provider {State}"`, and the
+`Mazesta.Desktop.Tests` count changing from 24 to 25 partway through this
+session (§2).
 
 All commands below were run from `/mnt/f/Projects/darabi` (WSL) via
 `"$DOTNET" = "/mnt/c/Program Files/dotnet/dotnet.exe"` and `powershell.exe`,
@@ -36,15 +46,17 @@ is on repo-wide.)
 | Mazesta.Monitoring.Tests | 31 | 0 | 0 | 31 |
 | **Total** | **211** | **0** | **0** | **211** |
 
-All 211 unit tests pass. (Earlier in this same session, before the final
-full run above, `build.ps1 -Test` reported Mazesta.Desktop.Tests at 24/24
-rather than 25/25 with everything else identical; re-running
-`dotnet test tests/Mazesta.Desktop.Tests -c Release --no-build` twice
-afterwards reproduced 25/25 consistently. No file under
+All 211 unit tests pass. (Earlier in this same session, before commit
+`34e0544` landed — see the note under "Build hash" above — `build.ps1 -Test`
+reported Mazesta.Desktop.Tests at 24/24 rather than 25/25 with everything
+else identical; re-running `dotnet test tests/Mazesta.Desktop.Tests -c
+Release --no-build` twice after that commit landed reproduced 25/25
+consistently. Cause identified: `34e0544` added one test to
+`DashboardViewModelTests.cs` (+12 lines) alongside its `DashboardViewModel`
+null-safety fix. Not a discovery artifact, and no file under
 `tests/Mazesta.Desktop.Tests` or `src/Mazesta.Desktop` was touched by this
-task, so this looks like a one-off VSTest discovery/count artifact from an
-earlier build in this same session, not a regression introduced here; the
-211 figure is the one reproduced twice and reported.)
+task — the 211 figure is measured against the branch as it stood after that
+unrelated, concurrently-landed commit.)
 
 ## 3. Hardware-category tests (elevated)
 
@@ -127,6 +139,13 @@ this box. Newest log line set at
 15:47:53.846 INF Startup Provider ready at 1226 ms
 15:47:54.278 INF Startup Inventory ready at 1658 ms
 ```
+
+(This launch was at 15:47, before commit `34e0544` landed at 15:55 — see
+the note under "Build hash" above. That commit changed the log line from
+the literal `"Provider ready"` to `"Provider {State}"` (e.g.
+`"Provider Degraded"`), so a run against the current HEAD logs a different
+second word; the *timing* values above are unaffected by that cosmetic
+change and are what the < 3 s targets are checked against.)
 
 | Metric | Target | Measured | Status |
 |---|---|---|---|
@@ -336,10 +355,9 @@ scope):
 - Per-tick array copies in the chart view model.
 - Minute-tier min/max band does not break across missing minutes.
 
-Additional gap found while writing this document:
-
-- **`Mazesta.Desktop.Tests` count varied (24 vs. 25) between two runs in
-  the same session** without any source change from this task — see §2.
-  Likely a VSTest discovery artifact from an earlier, possibly stale build
-  in this session; reproduced at 25/25 twice afterwards. Worth a second
-  look if it recurs on a clean checkout.
+Note on an oddity resolved while writing this document (not a gap): the
+`Mazesta.Desktop.Tests` count changing from 24 to 25 mid-session (§2) was
+initially unexplained; it turned out to be commit `34e0544` (unrelated to
+this task, see "Build hash" above) landing on the branch partway through
+this session and adding one Dashboard test alongside a null-safety fix. Not
+a defect and not this task's change.
