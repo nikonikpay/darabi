@@ -1,4 +1,4 @@
-using LibreHardwareMonitor.Hardware; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Tests.Fakes; using Microsoft.Extensions.Logging.Abstractions;
+using Mazesta.Core.Providers; using LibreHardwareMonitor.Hardware; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Tests.Fakes; using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 namespace Mazesta.Hardware.Tests;
 public class LibreHardwareMonitorProviderTests

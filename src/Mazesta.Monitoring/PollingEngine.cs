@@ -1,4 +1,4 @@
-using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Hardware;
+using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Core.Providers;
 namespace Mazesta.Monitoring;
 public enum EngineState { Stopped, Running, Paused, Failed }
 public sealed class PollingEngine : IDisposable

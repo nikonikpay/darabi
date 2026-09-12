@@ -1,4 +1,4 @@
-using System.Security.Principal; using LibreHardwareMonitor.Hardware; using LibreHardwareMonitor.Hardware.Storage; using LibreHardwareMonitor.PawnIo;
+using Mazesta.Core.Providers; using System.Security.Principal; using LibreHardwareMonitor.Hardware; using LibreHardwareMonitor.Hardware.Storage; using LibreHardwareMonitor.PawnIo;
 using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Microsoft.Extensions.Logging;
 namespace Mazesta.Hardware.Lhm;
 public sealed class LibreHardwareMonitorProvider : ISensorProvider

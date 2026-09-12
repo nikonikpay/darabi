@@ -1,4 +1,4 @@
-using Mazesta.Core.Hardware; using Mazesta.Hardware;
+using Mazesta.Core.Hardware; using Mazesta.Core.Providers;
 namespace Mazesta.Monitoring.Tests.Fakes;
 public sealed class FakeSensorProvider : ISensorProvider
 {

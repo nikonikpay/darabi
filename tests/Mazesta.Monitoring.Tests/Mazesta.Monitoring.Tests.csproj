@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><IsPackable>false</IsPackable><IsTestProject>true</IsTestProject><TargetFramework>net10.0-windows</TargetFramework></PropertyGroup>
+  <PropertyGroup><IsPackable>false</IsPackable><IsTestProject>true</IsTestProject><TargetFramework>net10.0</TargetFramework></PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />

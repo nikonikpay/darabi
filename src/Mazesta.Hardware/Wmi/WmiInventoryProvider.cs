@@ -1,4 +1,4 @@
-using Mazesta.Core.Inventory; using Microsoft.Extensions.Logging;
+using Mazesta.Core.Providers; using Mazesta.Core.Inventory; using Microsoft.Extensions.Logging;
 namespace Mazesta.Hardware.Wmi;
 public sealed class WmiInventoryProvider(IWmiQuery query, ILogger<WmiInventoryProvider> logger) : IInventoryProvider
 {

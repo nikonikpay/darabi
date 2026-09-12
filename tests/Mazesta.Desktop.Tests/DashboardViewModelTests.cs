@@ -1,4 +1,4 @@
-using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.ViewModels; using Mazesta.Hardware; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Mazesta.Persistence; using Microsoft.Extensions.Logging.Abstractions; using Xunit;
+using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.ViewModels; using Mazesta.Core.Providers; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Mazesta.Persistence; using Microsoft.Extensions.Logging.Abstractions; using Xunit;
 namespace Mazesta.Desktop.Tests;
 public class DashboardViewModelTests
 {

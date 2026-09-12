@@ -1,4 +1,4 @@
-using LibreHardwareMonitor.Hardware; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Hardware; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Wmi; using Microsoft.Extensions.Logging.Abstractions;
+using LibreHardwareMonitor.Hardware; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Core.Providers; using Mazesta.Hardware.Lhm; using Mazesta.Hardware.Wmi; using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 namespace Mazesta.Hardware.Tests;
 [Trait("Category", "Hardware")]

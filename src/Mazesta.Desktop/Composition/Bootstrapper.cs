@@ -1,5 +1,5 @@
 using Mazesta.Core.Time;
-using Mazesta.Hardware;
+using Mazesta.Core.Providers;
 using Mazesta.Hardware.Lhm;
 using Mazesta.Hardware.Wmi;
 using Mazesta.Monitoring;

@@ -1,5 +1,5 @@
 using Xunit;
-using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Hardware; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Microsoft.Extensions.Logging.Abstractions;
+using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Core.Providers; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Microsoft.Extensions.Logging.Abstractions;
 namespace Mazesta.Monitoring.Tests;
 public class PollingEngineTests
 {

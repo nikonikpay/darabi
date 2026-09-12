@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel; using System.Diagnostics; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Localization; using Mazesta.Hardware; using Mazesta.Monitoring; using Mazesta.Persistence;
+using System.Collections.ObjectModel; using System.Diagnostics; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Localization; using Mazesta.Core.Providers; using Mazesta.Monitoring; using Mazesta.Persistence;
 namespace Mazesta.Desktop.ViewModels;
 public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 {

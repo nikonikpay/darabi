@@ -8,31 +8,36 @@ enforced by the project graph, not just by convention.
 
 | Project | Purpose | Target framework | May reference |
 |---|---|---|---|
-| `Mazesta.Core` | Domain model: ids, units, roles, validation, `PersianDigits`, `IClock`. No Windows/WPF/LibreHardwareMonitor references. | net10.0 | — |
-| `Mazesta.Hardware` | `ISensorProvider`, `IInventoryProvider`, `LibreHardwareMonitorProvider`, `WmiInventoryProvider`, role-mapping table. | net10.0-windows | Core |
-| `Mazesta.Monitoring` | `PollingEngine`, `HistoryStore`, `SensorStatistics`, `StaleDetector`, `EventLog`, `MonitoringFocus`. | net10.0-windows | Core, Hardware |
+| `Mazesta.Core` | Domain model: ids, units, roles, validation, `PersianDigits`, `IClock`, and the provider contracts (`Mazesta.Core.Providers`: `ISensorProvider`, `PollRequest`, `PollResult`, `IInventoryProvider`). No Windows/WPF/LibreHardwareMonitor references. | net10.0 | — |
+| `Mazesta.Hardware` | `LibreHardwareMonitorProvider`, `WmiInventoryProvider`, role-mapping table — the implementations of the Core provider contracts. | net10.0-windows | Core |
+| `Mazesta.Monitoring` | `PollingEngine`, `HistoryStore`, `SensorStatistics`, `StaleDetector`, `EventLog`, `MonitoringFocus`. | net10.0 | Core |
 | `Mazesta.Persistence` | `AppPaths` (portable vs. LocalAppData), `JsonStore<T>` (atomic), `SchemaMigrator`, `AppConfig`, `RollingFileLogger`. | net10.0 | Core |
 | `Mazesta.Desktop` | WPF app "Mazesta Test". Views, ViewModels, Controls (`TimeSeriesChart`, `HelpTip`), Localization, Theme. | net10.0-windows | Monitoring, Hardware, Persistence, Core |
 
 ## Allowed references
 
-`Desktop → Monitoring, Hardware, Persistence, Core`; `Monitoring → Core, Hardware`;
+`Desktop → Monitoring, Hardware, Persistence, Core`; `Monitoring → Core`;
 `Hardware → Core`; `Persistence → Core`. Nothing references `Desktop`.
 
-**Current rule: `Monitoring` targets `net10.0-windows` and references
-`Hardware`.** This is a deliberate deviation from the slice 1 design
-document's original table (which listed `Monitoring → Core` only, on plain
-`net10.0`). The provider contracts that `PollingEngine` polls against
-(`ISensorProvider`, `PollRequest`, `PollResult`, `HardwareId`,
-`NodeStatus`) live in `Mazesta.Hardware`, not `Mazesta.Core` — `Mazesta.Core`
-holds only the vendor-neutral domain model (ids, units, roles), while the
-provider *interfaces* that the polling loop drives are part of the hardware
-layer's public surface. `Mazesta.Monitoring` therefore depends on
-`Mazesta.Hardware` directly and consequently targets `net10.0-windows` (the
-same target `Hardware` requires for its Windows-only WMI/LibreHardwareMonitor
-dependencies), rather than staying on the cross-platform `net10.0` TFM. This
-was already true of the code as of task 15 and is restated here as the
-current, intended shape — not a gap to fix.
+This is exactly the slice 1 design document's graph. The provider contracts
+`PollingEngine` polls against (`ISensorProvider`, `PollRequest`, `PollResult`,
+`IInventoryProvider`) live in `Mazesta.Core.Providers`, so `Mazesta.Monitoring`
+needs no hardware reference and stays on the cross-platform `net10.0` TFM.
+Between tasks 12 and the slice 1 final review those contracts sat in
+`Mazesta.Hardware`, which forced `Monitoring` onto `net10.0-windows`; the
+final fix wave moved them to `Core` and restored the designed graph.
+
+## Deferred to slice 2
+
+- **§5.3 inventory ↔ sensor-node join.** WMI inventory (`HardwareInventory`)
+  and the LHM sensor tree (`HardwareNode`) are both read and both shown, but
+  they are not joined into one object: the dashboard renders inventory
+  fields, the monitoring page renders sensor nodes, and no storage node
+  carries its WMI model/serial/firmware inline. Slice 1 ships the RAM card's
+  total and module list from the inventory only. The join needs a stable key
+  for NVMe devices, which this OS does not provide through WMI (see
+  `docs/HARDWARE-MATRIX.md`, NGUID vs vendor serial), so it is deferred
+  rather than guessed.
 
 ## Future projects (not yet created)
 
