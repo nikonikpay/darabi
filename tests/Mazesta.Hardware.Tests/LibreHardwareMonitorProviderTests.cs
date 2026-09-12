@@ -11,7 +11,7 @@ public class LibreHardwareMonitorProviderTests
         var p = new LibreHardwareMonitorProvider(c, () => pawn, () => elevated, _ => serial, clock, NullLogger<LibreHardwareMonitorProvider>.Instance);
         return (p, c, clock);
     }
-    private static FakeHardware Gpu(float? temp = 45) { var g = new FakeHardware(HardwareType.GpuNvidia, "/nvidiagpu/0", "RTX"); g.Add("GPU Core", SensorType.Temperature, 0, temp); return g; }
+    private static FakeHardware Gpu(float? temp = 45) { var g = new FakeHardware(HardwareType.GpuNvidia, "/gpu-nvidia/0", "RTX"); g.Add("GPU Core", SensorType.Temperature, 0, temp); return g; }
     private static FakeHardware Disk() { var d = new FakeHardware(HardwareType.Storage, "/nvme/0", "SSD"); d.Add("Temperature", SensorType.Temperature, 0, 38); return d; }
 
     [Fact] public void Start_ready_when_open_succeeds_and_driver_present()

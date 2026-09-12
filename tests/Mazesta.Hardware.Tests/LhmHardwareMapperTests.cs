@@ -3,19 +3,23 @@ using Xunit;
 namespace Mazesta.Hardware.Tests;
 public class LhmHardwareMapperTests
 {
+    // The identifier tokens below are the ones LibreHardwareMonitor 0.9.6 actually produced on the
+    // dev box ("/gpu-nvidia/0", "/gpu-intel/0", "/intelcpu/0", "/lpc/nct6687d/0", "/nvme/0", "/ram",
+    // "/vram"); they are recorded in docs/HARDWARE-MATRIX.md. Earlier fakes used invented spellings
+    // such as "/nvidiagpu/0", which no live tree ever emits.
     private static LhmHardwareMapper Mapper(string? serial = null) => new(_ => serial);
     [Fact] public void Nvidia_gpu_maps_kind_vendor_id_and_roles()
     {
-        var gpu = new FakeHardware(HardwareType.GpuNvidia, "/nvidiagpu/0", "NVIDIA GeForce RTX 4090");
+        var gpu = new FakeHardware(HardwareType.GpuNvidia, "/gpu-nvidia/0", "NVIDIA GeForce RTX 4090");
         gpu.Add("GPU Core", SensorType.Temperature, 0, 41); gpu.Add("GPU Hot Spot", SensorType.Temperature, 1, 52);
         var node = Assert.Single(Mapper().Map([gpu]));
-        Assert.Equal((HardwareKind.Gpu, HardwareVendor.Nvidia, "gpu/nvidiagpu-0", true), (node.Node.Kind, node.Node.Vendor, node.Node.Id.Value, node.Node.IdIsStable));
-        Assert.Contains(node.Sensors, s => s.Definition.Role == SensorRole.GpuHotSpotTemp && s.Definition.Id.Value == "gpu/nvidiagpu-0#temperature/1");
+        Assert.Equal((HardwareKind.Gpu, HardwareVendor.Nvidia, "gpu/gpu-nvidia-0", true), (node.Node.Kind, node.Node.Vendor, node.Node.Id.Value, node.Node.IdIsStable));
+        Assert.Contains(node.Sensors, s => s.Definition.Role == SensorRole.GpuHotSpotTemp && s.Definition.Id.Value == "gpu/gpu-nvidia-0#temperature/1");
         Assert.Equal(Unit.Celsius, node.Sensors[0].Definition.Unit);
     }
     [Fact] public void Gpu_without_hot_spot_yields_no_hot_spot_role()
     {
-        var gpu = new FakeHardware(HardwareType.GpuIntel, "/gpu-intel-integrated/0", "Intel(R) UHD Graphics 770");
+        var gpu = new FakeHardware(HardwareType.GpuIntel, "/gpu-intel/0", "Intel(R) UHD Graphics 770");
         gpu.Add("GPU Core", SensorType.Temperature, 0, 40);
         Assert.DoesNotContain(Mapper().Map([gpu])[0].Sensors, s => s.Definition.Role == SensorRole.GpuHotSpotTemp);
     }

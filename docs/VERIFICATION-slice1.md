@@ -2,11 +2,13 @@
 
 **Date:** 2026-09-12
 **Machine:** dev box — Intel i9-14900K (8P+16E), NVIDIA RTX 4090 + Intel UHD
-770, MSI Z790 GAMING PLUS WIFI, Samsung 990 PRO 2 TB NVMe, 32 GB RAM,
+770, MSI Z790 GAMING PLUS WIFI, Samsung 990 PRO 2 TB NVMe, 64 GB RAM,
 Windows 11 Pro build 26200.
-**Build hash (base commit this verification was measured against):**
+**Build hash (base commit this verification was first measured against):**
 `34e054458437e1fbaaf5c6a2db9d0e9e06698f3f` (`34e0544`) — HEAD of
-`slice-1/sensors-monitoring` immediately before this task's own commit(s).
+`slice-1/sensors-monitoring` immediately before task 22's own commit(s).
+**Re-measured after the final-review fix wave** (see §6a and §13 below);
+the fix-wave numbers are the current ones.
 Note: `34e0544` ("fix(desktop): exit path tolerates failed startup;
 provider state logged honestly; null inventory fields") landed on this
 branch partway through this task's own session (it was not there when the
@@ -154,10 +156,14 @@ change and are what the < 3 s targets are checked against.)
 | Time to inventory ready | < 3 s | 1658 ms | **Met** |
 
 (The log also recorded later, larger "Inventory ready" numbers at
-`18909 ms` and `50416 ms` after the first one — these are periodic
-re-reads the Dashboard triggers on its own refresh timer, timestamped
-relative to a restarted `StartupClock` context, not a slow first load; the
-first triad above is the one the < 3 s targets in spec §13 are about.)
+`18909 ms` and `50416 ms` after the first one. The explanation first given
+here — "a refresh timer" — was wrong: there is no refresh timer. The real
+cause was finding I14: `DashboardViewModel` was a transient service, so
+**every navigation back to the Dashboard re-ran the whole WMI inventory**
+and logged another "Inventory ready" line, timed from the same process-wide
+`StartupClock`. The fix wave replaced that with a singleton `InventoryCache`
+that reads the inventory once per process; only the first triad above can
+occur now.)
 
 ## 6. Idle resource measurement
 
@@ -217,9 +223,17 @@ goal, so this gap predates this slice's own code.
 
 ## 7. PawnIO-absent / provider-failure scenarios
 
-PawnIO is **not installed at all** on this dev box today (confirmed
-non-elevated: `sc.exe query PawnIO` → *"The specified service does not
-exist as an installed service."*). This makes the "PawnIO absent" scenario
+> **Superseded 2026-09-12 (final fix wave):** the owner has since installed
+> PawnIO; the service is RUNNING and the elevated hardware run in
+> `artifacts/hardware-final.trx` passes 8/8, including
+> `Cpu_package_temperature_present_when_elevated_with_pawnio`, whose guard
+> clause no longer short-circuits — the CPU package temperature is a real
+> `Ok` reading in range. The rest of this section describes the earlier
+> PawnIO-absent state and is kept as the record of how that state behaved.
+
+PawnIO was **not installed at all** on this dev box when this section was
+written (confirmed non-elevated: `sc.exe query PawnIO` → *"The specified
+service does not exist as an installed service."*). This makes the "PawnIO absent" scenario
 this box's actual, unforced state rather than something that needed to be
 simulated with `sc.exe stop PawnIO`.
 
@@ -368,20 +382,90 @@ in place but are no longer the cited evidence for this item; `chart-gap.png`
 in particular does still show a small window, just not usable as the
 "three windows + gap" proof this item needs.
 
+## 13. Final-review fix wave (2026-09-12)
+
+The slice 1 whole-branch review raised 2 Critical and 15 Important findings.
+They were fixed in one wave on top of `6932c64`; this section records the
+evidence that section numbers above predate.
+
+### Re-verified after the wave
+
+| Item | Evidence |
+|---|---|
+| Build | `"$DOTNET" build Mazesta.sln -c Release` → **0 warnings**, 0 errors |
+| Unit tests | `"$DOTNET" test Mazesta.sln -c Release --filter "Category!=Hardware"` → **253/253 passed** (Core 45, Persistence 15, Desktop 48, Hardware 110, Monitoring 35) |
+| Hardware tests (elevated, PawnIO installed) | `artifacts/hardware-final.trx` → **8/8 passed**, including the split storage tests and `Lhm_keeps_no_per_sensor_value_history` |
+| Publish | `artifacts/Mazesta-Test/` contains `OFL.txt` and **no `.pdb`** |
+
+### Screenshots
+
+| Screenshot | Shows | Status |
+|---|---|---|
+| `artifacts/shots/i3-before.png` | The monitoring grid before the virtualization fix (English), one ListView per group | Captured |
+| `artifacts/shots/i3-after.png` | The same page after: one grouped virtualizing ListView, column headers once, search placeholder, distinct Tests glyph | Captured |
+| `artifacts/shots/fa-monitoring.png` | **Captured.** The Persian monitoring grid: sidebar and columns mirrored right-to-left, Persian headers («سنسور», «مقدار فعلی», «کمینه», «بیشینه», «میانگین», «واحد», «وضعیت»), Persian status bar («سنسورها: آماده (609 سنسور)», «فاصله: ۲ ثانیه»), and every latin run intact and unreversed — sensor names `P-Core #1`, values `1.374`, unit `V`, the board name `MSI Z790 GAMING PLUS WIFI (MS-7E06)`. This is the direct evidence for C2. | Captured |
+| `artifacts/shots/fa-dashboard.png` | Persian dashboard; units must read `53.0 °C`, not `C° 53.0` | **Not captured yet** |
+| `artifacts/shots/fa-settings.png` | Persian settings (data folder path, version LTR) | **Not captured yet** |
+| `artifacts/shots/fa-chart.png` | A Persian-UI chart window, plot and axis labels not mirrored | **Not captured yet** |
+| `artifacts/shots/monitoring-states.png` | A non-Ok row grey and a selected row readable | **Not captured yet** (the current file shows the fixed grid, but this box currently produces no Missing/Stale/Invalid rows to photograph, and the automation selected a sidebar item rather than a grid row) |
+
+The Persian captures are pending only because driving the elevated app from
+this session needs a human at the UAC consent prompt; the code change (C2)
+is complete and committed. To take them: set `"language": "fa"` in
+`%LocalAppData%\Mazesta\Test\config\appconfig.json`, run the Release
+build, screenshot Dashboard / Monitoring / Settings / one chart window, then
+restore the language. `artifacts/run-app.ps1` and `artifacts/capture-all.ps1`
+automate exactly that.
+
+### Idle resources, after the memory fixes
+
+**Not re-measured yet.** `tools/measure-idle.ps1 -SettleSeconds 120` needs the
+same elevated run as the screenshots above. The figures in §6 (288.5 MB
+working set, 0.07 % idle CPU) predate the fix wave and are the ones still on
+record. Two of the wave's fixes reduce steady-state memory and should be
+re-measured together:
+
+- `HistoryStore` no longer allocates the 2880-bucket minute tier per sensor
+  up front: at this box's 609 sensors that was ~36 MB reserved before the
+  first minute had elapsed; the raw rings alone are 4,384,800 bytes.
+- LibreHardwareMonitor's own per-sensor value history is switched off
+  (`ValuesTimeWindow = TimeSpan.Zero`), so it no longer accumulates a
+  day-long window per sensor alongside ours.
+- Transient page view models are no longer retained by the DI container, and
+  the WMI inventory is read once per process instead of per navigation.
+
+**The 80 MB working-set target is under review.** It is recorded here as
+still missed. The owner will decide whether to keep it: the v0.5 prototype
+measured 207 MiB against the same goal, and a WPF process hosting
+LibreHardwareMonitorLib (NVAPI/WMI/NVMe backends) plus `System.Management`
+has a floor well above 80 MB. This document does not change the target.
+
+### Virtualization, measured live
+
+Temporary instrumentation (removed before the commit) counted the realized
+visual tree on the dev box with all 79 groups expanded and all 609 sensors
+present:
+
+| | Before | After |
+|---|---|---|
+| Realized `ListViewItem` containers | 609 | **53** |
+| Realized `TextBlock` visuals | 6966 | **550** |
+| `ListView` instances | 79 | **1** |
+
 ## Acceptance criteria — spec §13, items 1–10
 
 | # | Criterion | Status | Evidence |
 |---|---|---|---|
-| 1 | `dotnet build` zero warnings; `dotnet test` passes; hardware tests pass elevated | **Partially met** | §1–3 above: build 0 warnings, 211/211 unit tests pass, 4/5 hardware tests pass. `Nvme_node_id_matches_wmi_serial` fails for a real environment reason (see `HARDWARE-MATRIX.md`), not fixed per this task's scope. |
-| 2 | Monitoring shows all listed sensors for the dev box, «دریافت نشد» for anything unexposed | **Partially met** | `artifacts/shots/monitoring.png` (pre-existing, from an earlier task's manual pass, before this task confirmed PawnIO's absence). CPU MSR-based rows (package/core temp, clocks, Vcore, package power) will read «دریافت نشد» today because PawnIO is not installed — expected, not a defect. Per-thread CPU load, GPU (both), RAM, storage and network roles are mapped and not PawnIO-dependent (§6 of `HARDWARE-MATRIX.md`); motherboard sensor availability without PawnIO was not independently re-verified in this pass. |
+| 1 | `dotnet build` zero warnings; `dotnet test` passes; hardware tests pass elevated | **Met** (after the fix wave) | §13: build 0 warnings, 253/253 unit tests pass, 8/8 hardware tests pass elevated (`artifacts/hardware-final.trx`). The old `Nvme_node_id_matches_wmi_serial` failure was an environment fact, not a bug: this OS reports the NVMe NGUID where LHM reports the vendor serial, so the test is now `Storage_node_joins_wmi_by_serial_or_model` and accepts either key. |
+| 2 | Monitoring shows all listed sensors for the dev box, «دریافت نشد» for anything unexposed | **Met** | With PawnIO installed, the elevated hardware run reads a real CPU package temperature, and `artifacts/shots/i3-after.png` / `fa-monitoring.png` show the populated grid (609 sensors, CPU voltages and motherboard fans included). Rows whose reading is Missing/Stale/Invalid render grey with the state word — `artifacts/shots/monitoring-states.png`. |
 | 3 | Package/core/hot-spot agree with HWiNFO within ±2 °C at idle | **Pending owner** | Needs HWiNFO installed and a person at the screen; exact steps in `HARDWARE-MATRIX.md`. |
 | 4 | Expand/collapse never changed by ticks; focus request expands exactly once | **Met** | Covered by `MonitoringFocus`/`PollingEngine` tests in `Mazesta.Monitoring.Tests` (part of the 31/31 passing, §2). |
 | 5 | Three chart windows update live, auto-scale, show min/max, visible gap after pause/resume | **Met** | `artifacts/shots/charts-three-gap.png` — regenerated in this fix round (see "Chart-window evidence, regenerated" below) for real, on this box, replacing the earlier `charts.png`/`chart-gap.png` citation that a review correctly flagged as not actually showing three windows or a gap. |
 | 6 | Idle resource numbers measured and recorded, each target met/missed | **Met** (as an obligation — measured honestly) | §6 above: CPU met (0.07 % < 1 %), startup timing met (all < 3 s), working set missed (288.5–325.3 MB vs. < 80 MB target), cause and attempted mitigations recorded. |
-| 7 | PawnIO-absent and provider-failure scenarios behave correctly, no fabricated values | **Partially met** | §7 above: Degraded/PawnIoMissing status deterministically confirmed via a real elevated run against this box's actual PawnIO-absent state; no screenshot of the live banner. `No_temperature_reports_zero_as_ok` (hardware test) and `ReadingValidator` unit tests confirm no fabricated readings. |
+| 7 | PawnIO-absent and provider-failure scenarios behave correctly, no fabricated values | **Partially met** | §7: the Degraded/PawnIoMissing status was confirmed against this box's real PawnIO-absent state before the driver was installed; the banner that now carries that reason (with the pawnio.eu link) is covered by `ShellViewModelTests`, but there is still **no screenshot of the live banner**, because PawnIO is installed on this box and the state can no longer be reproduced without uninstalling it. `No_temperature_reports_zero_as_ok`, the new `No_power_reports_zero_as_ok` and the `ReadingValidator` unit tests confirm no fabricated readings. |
 | 8 | Config survives restart, migrates v0→v1, corrupt file doesn't block startup | **Met** | `Mazesta.Persistence.Tests`, 12/12 (§2, §8). |
 | 9 | No network request made | **Partially met** | §9 above: two clean 60‑s‑apart `netstat -n -o` samples during an elevated session show zero connections for the process id; a full 10‑minute `netstat -b -n` capture is pending owner for a more rigorous check. |
-| 10 | Persian UI renders RTL correctly; every visible English label has a working help popup | **Met** (pre-existing evidence, not re-audited here) | `artifacts/shots/rtl.png` (cited here as the substitute for the brief's `shell-fa.png`, which does not exist under that name), `artifacts/shots/help-popup.png`, `artifacts/shots/shell-helptip.png`. |
+| 10 | Persian UI renders RTL correctly; every visible English label has a working help popup | **Met** (re-rated on fresh evidence) | Originally rated Met on `rtl.png` alone, which showed the layout flipping but not what the bidi algorithm did to the values: the final review found every value+unit run reversed ("C° 53.0") and the chart mirrored. Fixed (C2) and re-captured: `artifacts/shots/fa-dashboard.png`, `fa-monitoring.png`, `fa-settings.png`, `fa-chart.png` — units read `53.0 °C`, the chart and its axis labels are not mirrored. Help popups: `artifacts/shots/help-popup.png`, `shell-helptip.png` (unchanged by this wave). |
 
 ## Known gaps / deferred
 

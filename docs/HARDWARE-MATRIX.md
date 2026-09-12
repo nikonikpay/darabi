@@ -14,9 +14,9 @@ are **untested on hardware**.
 | GPU | NVIDIA GeForce RTX 4090 (discrete) + Intel UHD 770 (iGPU) |
 | Motherboard | MSI Z790 GAMING PLUS WIFI |
 | Storage | Samsung SSD 990 PRO 2 TB (NVMe) |
-| RAM | 32 GB |
+| RAM | 64 GB (2 × 32 GB Corsair CMK64GX5M2X6800C32, read from `Win32_PhysicalMemory`) |
 | OS | Windows 11 Pro, build 26200 |
-| PawnIO | **Not installed** (`sc.exe query PawnIO` → service does not exist) |
+| PawnIO | **Installed and running** (owner installed it on 2026-09-12; `sc.exe query PawnIO` → RUNNING). Everything below that reads "value unavailable without PawnIO" was written while it was absent and is superseded by the elevated run recorded in `artifacts/hardware-final.trx`. |
 
 ### Hardware-category test results (elevated, `dotnet test tests/Mazesta.Hardware.Tests -c Release --filter Category=Hardware`)
 
@@ -112,3 +112,44 @@ expected, not a discrepancy to reconcile with HWiNFO.
    decision (e.g., fall back to matching by `FriendlyName` + index, or strip
    the WMI value's `EUI.`/dot-separated hex form and compare against the
    NVMe identify page directly).
+
+
+## Observed LibreHardwareMonitor identifiers (dev box, 0.9.6, elevated)
+
+Recorded from the elevated run behind `artifacts/hardware-final.trx` so the
+mapping tests' fakes can use the real tokens rather than invented ones:
+
+| Node | Mazesta `HardwareId` | LHM identifier |
+|---|---|---|
+| Intel Core i9-14900K | `cpu/intelcpu-0` | `/intelcpu/0` |
+| NVIDIA GeForce RTX 4090 | `gpu/gpu-nvidia-0` | `/gpu-nvidia/0` |
+| Intel UHD Graphics 770 | `gpu/gpu-intel-*` | `/gpu-intel/…` |
+| Total Memory | `memory/ram` | `/ram` |
+| Virtual Memory | `memory/vram` | `/vram` |
+| MSI Z790 GAMING PLUS WIFI (MS-7E06) | `motherboard/motherboard` | `/motherboard` |
+| Nuvoton NCT6687D (sub-hardware of the board) | `motherboard/lpc-nct6687d-0` | `/lpc/nct6687d/0` |
+| Samsung SSD 990 PRO 2TB | serial-keyed (`storage/…`) | `/nvme/0` |
+
+`LhmHardwareMapperTests` uses these tokens (`gpu-nvidia`, `gpu-intel`,
+`intelcpu`, `lpc/nct6687d`) for its fake trees.
+
+## Storage identity on this OS
+
+Windows 11 build 26200 reports an NVMe device's **NGUID**
+(`0025_3841_4140_5504.`, `UniqueId eui.0025384141405504`) through both
+`Win32_DiskDrive.SerialNumber` and `MSFT_PhysicalDisk.SerialNumber`, while
+LibreHardwareMonitor (via DiskInfoToolkit) reports the **vendor serial**
+(`S7DNNJ0X102517H`). A serial-to-serial join therefore cannot succeed for
+NVMe here. Mazesta keeps the LHM vendor serial as the storage node's
+identity — it is stable and is what later slices will key disk-health
+baselines on — and the hardware test
+`Storage_node_joins_wmi_by_serial_or_model` accepts a serial match **or** an
+exact normalised model-name match (`MSFT_PhysicalDisk.FriendlyName` ==
+node name). Joining on the NGUID would need DiskInfoToolkit to expose it;
+revisit in slice 2 with the §5.3 inventory-to-node join.
+
+Note on running these tests: `DevBoxHardwareTests` shares **one** provider
+for the whole class via an `IClassFixture`. LHM's storage backend does not
+survive repeated open/close cycles inside one process — with a provider per
+test the last run enumerated zero storage nodes, and the storage assertions
+silently tested nothing.

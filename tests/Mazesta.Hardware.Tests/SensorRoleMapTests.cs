@@ -97,5 +97,5 @@ public class SensorRoleMapTests
     [Fact] public void Virtual_memory_node_gets_no_ram_roles()
         => Assert.Equal(SensorRole.None, SensorRoleMap.Resolve(HardwareType.Memory, SensorType.Data, "Memory Used", "/vram"));
     [Fact] public void Gpu_without_hot_spot_has_no_hot_spot_role_from_core()
-        => Assert.NotEqual(SensorRole.GpuHotSpotTemp, SensorRoleMap.Resolve(HardwareType.GpuNvidia, SensorType.Temperature, "GPU Core", "/nvidiagpu/0"));
+        => Assert.NotEqual(SensorRole.GpuHotSpotTemp, SensorRoleMap.Resolve(HardwareType.GpuNvidia, SensorType.Temperature, "GPU Core", "/gpu-nvidia/0"));
 }

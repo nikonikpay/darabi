@@ -12,7 +12,7 @@ fabricated value (spec §3.1, §9).
 | Situation | Behaviour |
 |---|---|
 | LHM `Open()` throws | Provider `Failed`; monitoring shows a banner with the reason; dashboard still shows WMI inventory. |
-| PawnIO not installed / not loaded | Provider `Degraded`; CPU temps/clocks from MSR missing; banner explains and links to the installer; no estimates. |
+| PawnIO not installed / not loaded | Provider `Degraded`; CPU temps/clocks from MSR missing; the shell banner shows the localized reason **and a button that opens https://pawnio.eu/** (added in the slice 1 final fix wave, `ShellViewModel.ApplyProviderStatus`); the status bar keeps the same reason; no estimates. |
 | A hardware node throws on update | Only that node's sensors go Stale; others unaffected; retried next due tick. |
 | GPU has no Hot Spot / VRAM temp sensor | Role absent; dashboard Hot Spot card reads «دریافت نشد». |
 | WMI query fails | That inventory section is null and displayed as not available. |
@@ -31,6 +31,27 @@ is enumerated:
 | Elevated, but PawnIO driver not installed/loaded | `Degraded` | `Provider.PawnIoMissing` |
 | Elevated, PawnIO present, but zero sensors enumerated | `Degraded` | `Provider.NoHardware` |
 | Elevated, PawnIO present, sensors enumerated | `Ready` | — |
+
+**Dev box, 2026-09-12 (after the owner installed PawnIO):** elevated +
+PawnIO RUNNING → `Ready`, 609 sensors. The elevated hardware run
+(`artifacts/hardware-final.trx`, 8/8) reads a real CPU package temperature,
+so the `Provider.PawnIoMissing` path can no longer be reproduced on this box
+without uninstalling the driver; its banner and link are covered by
+`ShellViewModelTests` instead.
+
+**Zero is not a reading.** `ReadingValidator` treats `value <= 0` as
+`Invalid` for Power, Current and Energy: LibreHardwareMonitor returns `0f`
+(not `null`) when a RAPL/MSR energy counter cannot be read, and a confident
+`0.0 W` in front of a customer is worse than «نامعتبر». Fan, Throughput,
+Data and SmallData stay permissive at zero — a stopped fan and an idle link
+are real measurements.
+
+**LHM value history is off.** After `Computer.Open()` the provider sets
+`ISensor.ValuesTimeWindow = TimeSpan.Zero` on every sensor, and re-applies it
+per node after each `Update()` (the Nuvoton SuperIO only activates its
+sensors during the first update). LHM therefore keeps no per-sensor history;
+`Mazesta.Monitoring.HistoryStore` owns history. Verified against the real
+library by `Lhm_keeps_no_per_sensor_value_history`.
 
 Reason keys are localisation keys resolved through `Loc.Get`, e.g.
 `Strings.fa.resx` maps `Provider.PawnIoMissing` to:

@@ -7,9 +7,9 @@ public class MonitoringViewModelTests
     private static (MonitoringViewModel vm, PollingEngine e, FakeSensorProvider p, AppConfig cfg, NoCharts charts, MonitoringFocus focus) Build()
     {
         var c = new FakeClock(T0); var p = new FakeSensorProvider();
-        p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Cpu, "cpu/intelcpu-0", "temperature/0", "clock/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Gpu, "gpu/nvidiagpu-0", "temperature/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Storage, "storage/S1", "temperature/0"));
+        p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Cpu, "cpu/intelcpu-0", "temperature/0", "clock/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Gpu, "gpu/gpu-nvidia-0", "temperature/0")); p.Nodes.Add(FakeSensorProvider.Node(HardwareKind.Storage, "storage/S1", "temperature/0"));
         var e = new PollingEngine(p, c, new MonitoringOptions(), new BoundedEventLog(c, NullLogger.Instance)); e.PrepareForManualTicks();
-        var cfg = new AppConfig { ExpandedGroups = ["gpu/nvidiagpu-0"] }; var charts = new NoCharts(); var focus = new MonitoringFocus();
+        var cfg = new AppConfig { ExpandedGroups = ["gpu/gpu-nvidia-0"] }; var charts = new NoCharts(); var focus = new MonitoringFocus();
         return (new MonitoringViewModel(e, focus, cfg, charts, c, a => { a(); return null!; }), e, p, cfg, charts, focus);
     }
     [Fact] public void Groups_follow_hardware_and_expansion_comes_from_config()
@@ -31,7 +31,7 @@ public class MonitoringViewModelTests
     [Fact] public void Interval_change_goes_to_engine_and_config()
     { var (vm, e, _, cfg, _, _) = Build(); vm.SelectedIntervalSeconds = 5; Assert.Equal(TimeSpan.FromSeconds(5), e.FastInterval); Assert.Equal(5, cfg.FastIntervalSeconds); }
     [Fact] public void Expansion_change_is_written_to_config()
-    { var (vm, _, _, cfg, _, _) = Build(); vm.Groups[0].IsExpanded = true; Assert.Contains("cpu/intelcpu-0", cfg.ExpandedGroups); vm.Groups[1].IsExpanded = false; Assert.DoesNotContain("gpu/nvidiagpu-0", cfg.ExpandedGroups); }
+    { var (vm, _, _, cfg, _, _) = Build(); vm.Groups[0].IsExpanded = true; Assert.Contains("cpu/intelcpu-0", cfg.ExpandedGroups); vm.Groups[1].IsExpanded = false; Assert.DoesNotContain("gpu/gpu-nvidia-0", cfg.ExpandedGroups); }
     [Fact] public void Focus_request_expands_only_requested_kinds_once()
     {
         var (vm, e, _, _, _, focus) = Build(); vm.Groups[0].IsExpanded = true;

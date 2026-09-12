@@ -7,7 +7,7 @@ public class DashboardViewModelTests
     private static readonly DateTimeOffset T0 = new(2026, 9, 12, 0, 0, 0, TimeSpan.Zero);
     private static HardwareNode Gpu(bool hotSpot)
     {
-        var id = new HardwareId("gpu/nvidiagpu-0"); var sensors = new List<SensorDefinition> { new(SensorId.Create(id, "temperature/0"), id, "GPU Core", SensorKind.Temperature, Unit.Celsius, SensorRole.GpuCoreTemp, 0) };
+        var id = new HardwareId("gpu/gpu-nvidia-0"); var sensors = new List<SensorDefinition> { new(SensorId.Create(id, "temperature/0"), id, "GPU Core", SensorKind.Temperature, Unit.Celsius, SensorRole.GpuCoreTemp, 0) };
         if (hotSpot) sensors.Add(new(SensorId.Create(id, "temperature/1"), id, "GPU Hot Spot", SensorKind.Temperature, Unit.Celsius, SensorRole.GpuHotSpotTemp, 1));
         return new HardwareNode(id, HardwareKind.Gpu, HardwareVendor.Nvidia, "RTX 4090", null, true, sensors);
     }
