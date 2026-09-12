@@ -1,13 +1,7 @@
-﻿using System.Text;
+using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Mazesta.Persistence;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mazesta.Desktop;
 
@@ -19,5 +13,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Closing += OnClosing;
+    }
+
+    private void OnClosing(object? sender, CancelEventArgs e)
+    {
+        var config = App.Services.GetRequiredService<AppConfig>();
+        var store = App.Services.GetRequiredService<JsonStore<AppConfig>>();
+        bool maximized = WindowState == WindowState.Maximized;
+        var bounds = maximized ? RestoreBounds : new Rect(Left, Top, Width, Height);
+        config.MainWindow = new WindowPlacement(bounds.Left, bounds.Top, bounds.Width, bounds.Height, maximized);
+        store.Save(config);
     }
 }

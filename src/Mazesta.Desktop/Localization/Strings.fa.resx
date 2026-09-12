@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="App_Title" xml:space="preserve">
+    <value>Mazesta Test</value>
+  </data>
+  <data name="Nav_Dashboard" xml:space="preserve">
+    <value>داشبورد</value>
+  </data>
+  <data name="Nav_Monitoring" xml:space="preserve">
+    <value>مانیتورینگ</value>
+  </data>
+  <data name="Nav_Tests" xml:space="preserve">
+    <value>تست‌ها</value>
+  </data>
+  <data name="Nav_Benchmarks" xml:space="preserve">
+    <value>بنچمارک‌ها</value>
+  </data>
+  <data name="Nav_Gpu" xml:space="preserve">
+    <value>GPU</value>
+  </data>
+  <data name="Nav_Cpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Nav_Network" xml:space="preserve">
+    <value>شبکه</value>
+  </data>
+  <data name="Nav_Storage" xml:space="preserve">
+    <value>ذخیره‌سازی</value>
+  </data>
+  <data name="Nav_Gaming" xml:space="preserve">
+    <value>بازی</value>
+  </data>
+  <data name="Nav_WindowsTools" xml:space="preserve">
+    <value>ابزارهای ویندوز</value>
+  </data>
+  <data name="Nav_Reports" xml:space="preserve">
+    <value>گزارش‌ها</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>تنظیمات</value>
+  </data>
+  <data name="Placeholder_Body" xml:space="preserve">
+    <value>این بخش در مرحله بعدی ساخته می‌شود. هیچ‌چیز در اینجا شبیه‌سازی نشده است.</value>
+  </data>
+  <data name="Status_Provider_Ready" xml:space="preserve">
+    <value>سنسورها: آماده ({0} سنسور)</value>
+  </data>
+  <data name="Status_Provider_Starting" xml:space="preserve">
+    <value>سنسورها: در حال شروع…</value>
+  </data>
+  <data name="Status_Provider_Degraded" xml:space="preserve">
+    <value>سنسورها: ناقص — {0}</value>
+  </data>
+  <data name="Status_Provider_Failed" xml:space="preserve">
+    <value>سنسورها: خطا — {0}</value>
+  </data>
+  <data name="Provider.PawnIoMissing" xml:space="preserve">
+    <value>درایور PawnIO نصب نیست. دمای و فرکانس CPU در دسترس نیست. PawnIO را از صفحه رسمی آن نصب کنید و برنامه را دوباره اجرا کنید.</value>
+  </data>
+  <data name="Provider.NotElevated" xml:space="preserve">
+    <value>برنامه با دسترسی Administrator اجرا نشده است. سنسورهای CPU و مادربرد در دسترس نیستند.</value>
+  </data>
+  <data name="Provider.OpenFailed" xml:space="preserve">
+    <value>راه‌اندازی کتابخانه سنسور با خطا مواجه شد.</value>
+  </data>
+  <data name="Provider.NoHardware" xml:space="preserve">
+    <value>هیچ سنسوری یافت نشد.</value>
+  </data>
+  <data name="Status_Pause" xml:space="preserve">
+    <value>توقف</value>
+  </data>
+  <data name="Status_Resume" xml:space="preserve">
+    <value>ادامه</value>
+  </data>
+  <data name="Status_Interval" xml:space="preserve">
+    <value>فاصله: {0} ثانیه</value>
+  </data>
+  <data name="Value_NotAvailable" xml:space="preserve">
+    <value>دریافت نشد</value>
+  </data>
+  <data name="Value_Stale" xml:space="preserve">
+    <value>قدیمی</value>
+  </data>
+  <data name="Value_Invalid" xml:space="preserve">
+    <value>نامعتبر</value>
+  </data>
+  <data name="Column_Sensor" xml:space="preserve">
+    <value>سنسور</value>
+  </data>
+  <data name="Column_Current" xml:space="preserve">
+    <value>مقدار فعلی</value>
+  </data>
+  <data name="Column_Min" xml:space="preserve">
+    <value>کمینه</value>
+  </data>
+  <data name="Column_Max" xml:space="preserve">
+    <value>بیشینه</value>
+  </data>
+  <data name="Column_Avg" xml:space="preserve">
+    <value>میانگین</value>
+  </data>
+  <data name="Column_Unit" xml:space="preserve">
+    <value>واحد</value>
+  </data>
+  <data name="Column_State" xml:space="preserve">
+    <value>وضعیت</value>
+  </data>
+  <data name="Monitoring_Search" xml:space="preserve">
+    <value>جست‌وجو در قطعات یا سنسورها</value>
+  </data>
+  <data name="Monitoring_ResetStats" xml:space="preserve">
+    <value>بازنشانی آمار</value>
+  </data>
+  <data name="Monitoring_OpenChart" xml:space="preserve">
+    <value>نمایش نمودار</value>
+  </data>
+  <data name="Chart_Window" xml:space="preserve">
+    <value>بازه</value>
+  </data>
+  <data name="Dashboard_Cpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Dashboard_Gpu" xml:space="preserve">
+    <value>GPU</value>
+  </data>
+  <data name="Dashboard_HotSpot" xml:space="preserve">
+    <value>داغ‌ترین نقطه GPU</value>
+  </data>
+  <data name="Dashboard_Ram" xml:space="preserve">
+    <value>RAM</value>
+  </data>
+  <data name="Dashboard_Inventory" xml:space="preserve">
+    <value>سیستم</value>
+  </data>
+  <data name="Dashboard_Mazesta_Title" xml:space="preserve">
+    <value>خدمات مازستا</value>
+  </data>
+  <data name="Dashboard_Mazesta_L1" xml:space="preserve">
+    <value>خدمات سرویس، نگهداری و ارتقای سیستم</value>
+  </data>
+  <data name="Dashboard_Mazesta_L2" xml:space="preserve">
+    <value>مشاوره و خرید سیستم تخصصی با یک سال گارانتی طلایی</value>
+  </data>
+  <data name="Dashboard_Mazesta_Site" xml:space="preserve">
+    <value>وب‌سایت رسمی</value>
+  </data>
+  <data name="Dashboard_Mazesta_Contact" xml:space="preserve">
+    <value>صفحه تماس</value>
+  </data>
+  <data name="Dashboard_Product_View" xml:space="preserve">
+    <value>مشاهده محصول</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>زبان</value>
+  </data>
+  <data name="Settings_FastInterval" xml:space="preserve">
+    <value>فاصله خواندن سنسورها (ثانیه)</value>
+  </data>
+  <data name="Settings_StorageInterval" xml:space="preserve">
+    <value>فاصله خواندن SMART دیسک (ثانیه)</value>
+  </data>
+  <data name="Settings_ShopName" xml:space="preserve">
+    <value>نام فروشگاه</value>
+  </data>
+  <data name="Settings_DataFolder" xml:space="preserve">
+    <value>پوشه داده</value>
+  </data>
+  <data name="Settings_OpenFolder" xml:space="preserve">
+    <value>باز کردن پوشه</value>
+  </data>
+  <data name="Settings_Mode_Portable" xml:space="preserve">
+    <value>قابل‌حمل</value>
+  </data>
+  <data name="Settings_Mode_Installed" xml:space="preserve">
+    <value>نصب‌شده</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>ذخیره</value>
+  </data>
+  <data name="Settings_RestartNote" xml:space="preserve">
+    <value>برای اعمال زبان، برنامه را دوباره اجرا کنید.</value>
+  </data>
+  <data name="Settings_Invalid_Interval" xml:space="preserve">
+    <value>یک عدد صحیح بر حسب ثانیه وارد کنید (۶۰ یا بیشتر).</value>
+  </data>
+  <data name="Settings_Saved" xml:space="preserve">
+    <value>ذخیره شد.</value>
+  </data>
+  <data name="Crash_Title" xml:space="preserve">
+    <value>خطای نامنتظره</value>
+  </data>
+  <data name="Crash_Body" xml:space="preserve">
+    <value>خطای نامنتظره‌ای رخ داد و در لاگ ثبت شد. ادامه می‌دهید؟</value>
+  </data>
+  <data name="Config_Corrupt" xml:space="preserve">
+    <value>فایل تنظیمات خوانا نبود و بازنشانی شد. فایل قبلی کنار آن نگه داشته شده است.</value>
+  </data>
+</root>

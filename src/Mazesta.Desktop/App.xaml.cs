@@ -1,13 +1,62 @@
-﻿using System.Configuration;
-using System.Data;
 using System.Windows;
+using Mazesta.Desktop.Localization;
+using Mazesta.Persistence;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Mazesta.Desktop;
 
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
-}
+    // Note: a single field-initializer expression cannot share an `out var` local with a
+    // sibling field's initializer (each initializer is its own scope), so the mutex creation
+    // and the resulting flag are grouped into a static constructor instead of two field
+    // initializers as sketched in the brief. Behavior is identical.
+    private static readonly Mutex SingleInstance;
+    public static bool IsFirstInstance;
+    public static ServiceProvider Services { get; private set; } = null!;
+    public static System.Diagnostics.Stopwatch StartupClock { get; } = System.Diagnostics.Stopwatch.StartNew();
 
+    static App()
+    {
+        SingleInstance = new Mutex(true, @"Global\Mazesta.Test.SingleInstance", out var createdNew);
+        IsFirstInstance = createdNew;
+    }
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        if (!IsFirstInstance) { Shutdown(); return; }
+        var paths = AppPaths.Detect(); paths.EnsureDirectories();
+        var lf = LoggingSetup.CreateFactory(paths.LogsDir); var startupLog = lf.CreateLogger("Startup");
+        var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator([new Migration0To1()]), AppConfig.CurrentSchemaVersion, startupLog);
+        var load = store.Load(); var config = load.Value;
+        Loc.SetLanguage(config.Language);
+        Services = Composition.Bootstrapper.Build(paths, config, store);
+        var shell = Services.GetRequiredService<ViewModels.ShellViewModel>();
+        if (load.Outcome == LoadOutcome.Corrupt) shell.ShowBanner(Loc.Get("Config_Corrupt"));
+        // Note: FlowDirection is applied to the window's root content (RootGrid), not the Window
+        // itself. Setting FlowDirection on the Window element flips the underlying HWND
+        // (WS_EX_LAYOUTRTL), which mirrors the native title bar and, on this rendering path, the
+        // glyphs themselves (letters render as literal mirror images). Applying it to the content
+        // instead keeps RTL mirroring entirely inside WPF's own visual tree, which renders text
+        // correctly while still flipping sidebar/content layout for RTL languages.
+        var window = new MainWindow { DataContext = shell };
+        window.RootGrid.FlowDirection = Loc.IsRtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        MainWindow = window; window.Show(); shell.Selected = shell.Items[0];
+        startupLog.LogInformation("Window shown at {Ms} ms", StartupClock.ElapsedMilliseconds);
+        Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>().Start();
+        base.OnStartup(e);
+    }
+
+    public static void LogStartup(string what)
+    {
+        if (Services is null) return;
+        Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup").LogInformation("{What} at {Ms} ms", what, StartupClock.ElapsedMilliseconds);
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        if (IsFirstInstance) { Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>().Dispose(); Services.Dispose(); }
+        base.OnExit(e);
+    }
+}

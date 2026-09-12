@@ -4,9 +4,132 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Mazesta.Desktop"
+        xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
+        xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
+        xmlns:views="clr-namespace:Mazesta.Desktop.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="{loc:Loc App_Title}"
+        MinWidth="960" MinHeight="600"
+        Width="1200" Height="760"
+        Background="{StaticResource Brush.Background}">
+    <Window.Resources>
+        <Style x:Key="SidebarListBoxStyle" TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+            <Setter Property="BorderThickness" Value="0,0,1,0" />
+            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+            <Setter Property="Padding" Value="0,8,0,8" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+        </Style>
+        <Style x:Key="SidebarListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="6,1" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="PauseButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Content" Value="{loc:Loc Status_Pause}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsPaused}" Value="True">
+                    <Setter Property="Content" Value="{loc:Loc Status_Resume}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="BannerBorderStyle" TargetType="Border">
+            <Setter Property="Visibility" Value="Visible" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Banner}" Value="{x:Null}">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="28" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
+        <!-- Sidebar -->
+        <ListBox Grid.Row="0" Grid.Column="0"
+                  Style="{StaticResource SidebarListBoxStyle}"
+                  ItemContainerStyle="{StaticResource SidebarListBoxItemStyle}"
+                  ItemsSource="{Binding Items}"
+                  SelectedItem="{Binding Selected}">
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:NavItem}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" Width="24" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Label}" TextTrimming="None" TextWrapping="NoWrap" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Content area: banner + page -->
+        <Grid Grid.Row="0" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Style="{StaticResource BannerBorderStyle}"
+                    Background="{StaticResource Brush.SurfaceAlt}"
+                    BorderBrush="{StaticResource Brush.Border}"
+                    BorderThickness="0,0,0,1"
+                    Padding="12,8">
+                <TextBlock Text="{Binding Banner}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
+            </Border>
+
+            <ContentControl Grid.Row="1" Content="{Binding CurrentPage}">
+                <ContentControl.Resources>
+                    <!-- Task 15: only PlaceholderViewModel exists. Tasks 17-20 add DataTemplates
+                         for MonitoringViewModel/DashboardViewModel/SettingsViewModel here. -->
+                    <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
+                        <views:PlaceholderView />
+                    </DataTemplate>
+                </ContentControl.Resources>
+            </ContentControl>
+        </Grid>
+
+        <!-- Status bar -->
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                Background="{StaticResource Brush.Surface}"
+                BorderBrush="{StaticResource Brush.Border}"
+                BorderThickness="0,1,0,0">
+            <Grid Margin="10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding ProviderStatusText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding IntervalText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <Button Grid.Column="3" Command="{Binding TogglePauseCommand}" Style="{StaticResource PauseButtonStyle}" Padding="8,2" />
+            </Grid>
+        </Border>
     </Grid>
 </Window>

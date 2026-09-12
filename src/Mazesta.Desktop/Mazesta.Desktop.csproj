@@ -20,4 +20,9 @@
     <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
     <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Fonts\*.ttf" />
+    <Resource Include="Assets\*.jpg" />
+    <EmbeddedResource Update="Localization\*.resx" />
+  </ItemGroup>
 </Project>
