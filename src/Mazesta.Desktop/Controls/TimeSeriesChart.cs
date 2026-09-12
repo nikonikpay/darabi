@@ -11,14 +11,18 @@ public static class ChartScale
         double step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
         return (Math.Floor(dataMin / step) * step, Math.Ceiling(dataMax / step) * step, step);
     }
-    public static IReadOnlyList<ChartPoint> Project(RawSeries raw, int windowSeconds, int nowSeconds, double width, double height, double yMin, double yMax)
+    public static IReadOnlyList<ChartPoint> Project(RawSeries raw, int windowSeconds, int nowSeconds, int maxGapSeconds, double width, double height, double yMin, double yMax)
     {
         var pts = new List<ChartPoint>(); int start = nowSeconds - windowSeconds; double ySpan = Math.Max(yMax - yMin, 1e-9);
+        int? prevSec = null; double prevX = 0;
         for (int i = 0; i < raw.Seconds.Length; i++)
         {
             if (raw.Seconds[i] < start) continue;
-            double x = (raw.Seconds[i] - start) / (double)windowSeconds * width; bool gap = float.IsNaN(raw.Values[i]);
+            double x = (raw.Seconds[i] - start) / (double)windowSeconds * width;
+            if (prevSec is { } ps && raw.Seconds[i] - ps > maxGapSeconds) pts.Add(new ChartPoint(prevX, 0, true));
+            bool gap = float.IsNaN(raw.Values[i]);
             pts.Add(new ChartPoint(x, gap ? 0 : height - (raw.Values[i] - yMin) / ySpan * height, gap));
+            prevSec = raw.Seconds[i]; prevX = x;
         }
         return pts;
     }
@@ -26,8 +30,9 @@ public static class ChartScale
 public sealed class TimeSeriesChart : FrameworkElement
 {
     public static readonly DependencyProperty SeriesProperty = Register(nameof(Series), typeof(RawSeries)), MinutesProperty = Register(nameof(Minutes), typeof(MinuteSeries)), UseMinutesProperty = Register(nameof(UseMinutes), typeof(bool)),
-        WindowSecondsProperty = Register(nameof(WindowSeconds), typeof(int)), NowSecondsProperty = Register(nameof(NowSeconds), typeof(int)), SeriesBrushProperty = Register(nameof(SeriesBrush), typeof(Brush)), UnitSymbolProperty = Register(nameof(UnitSymbol), typeof(string));
-    private static DependencyProperty Register(string n, Type t) => DependencyProperty.Register(n, t, typeof(TimeSeriesChart), new FrameworkPropertyMetadata(t.IsValueType ? Activator.CreateInstance(t) : null, FrameworkPropertyMetadataOptions.AffectsRender));
+        WindowSecondsProperty = Register(nameof(WindowSeconds), typeof(int)), NowSecondsProperty = Register(nameof(NowSeconds), typeof(int)), SeriesBrushProperty = Register(nameof(SeriesBrush), typeof(Brush)), UnitSymbolProperty = Register(nameof(UnitSymbol), typeof(string)),
+        MaxGapSecondsProperty = Register(nameof(MaxGapSeconds), typeof(int), 6);
+    private static DependencyProperty Register(string n, Type t, object? defaultValue = null) => DependencyProperty.Register(n, t, typeof(TimeSeriesChart), new FrameworkPropertyMetadata(defaultValue ?? (t.IsValueType ? Activator.CreateInstance(t) : null), FrameworkPropertyMetadataOptions.AffectsRender));
     public RawSeries Series { get => (RawSeries)GetValue(SeriesProperty); set => SetValue(SeriesProperty, value); }
     public MinuteSeries Minutes { get => (MinuteSeries)GetValue(MinutesProperty); set => SetValue(MinutesProperty, value); }
     public bool UseMinutes { get => (bool)GetValue(UseMinutesProperty); set => SetValue(UseMinutesProperty, value); }
@@ -35,6 +40,7 @@ public sealed class TimeSeriesChart : FrameworkElement
     public int NowSeconds { get => (int)GetValue(NowSecondsProperty); set => SetValue(NowSecondsProperty, value); }
     public Brush SeriesBrush { get => (Brush)GetValue(SeriesBrushProperty); set => SetValue(SeriesBrushProperty, value); }
     public string UnitSymbol { get => (string)GetValue(UnitSymbolProperty) ?? ""; set => SetValue(UnitSymbolProperty, value); }
+    public int MaxGapSeconds { get => (int)GetValue(MaxGapSecondsProperty); set => SetValue(MaxGapSecondsProperty, value); }
     private const double LeftAxis = 56, Bottom = 24, Top = 8, Right = 8;
     protected override void OnRender(DrawingContext dc)
     {
@@ -44,6 +50,7 @@ public sealed class TimeSeriesChart : FrameworkElement
         // data range
         var minutes = Minutes.Minute is null ? new MinuteSeries([], [], [], []) : Minutes; var series = Series.Seconds is null ? new RawSeries([], []) : Series;
         RawSeries raw = UseMinutes ? new RawSeries(minutes.Minute.Select(m => m * 60 + 30).ToArray(), minutes.Avg) : series;
+        int gapSeconds = UseMinutes ? 90 : MaxGapSeconds;
         int start = NowSeconds - WindowSeconds; var visible = raw.Values.Where((v, i) => raw.Seconds[i] >= start && !float.IsNaN(v)).ToArray();
         var (yMin, yMax, step) = visible.Length == 0 ? (0, 1, 0.2) : ChartScale.Nice(visible.Min(), visible.Max());
         // grid + y labels
@@ -75,7 +82,7 @@ public sealed class TimeSeriesChart : FrameworkElement
             var bandBrush = SeriesBrush.Clone(); bandBrush.Opacity = 0.18; dc.DrawGeometry(bandBrush, null, band);
         }
         // line with gaps
-        var pts = ChartScale.Project(raw, WindowSeconds, NowSeconds, w, h, yMin, yMax); var pen = new Pen(SeriesBrush, 1.6) { LineJoin = PenLineJoin.Round };
+        var pts = ChartScale.Project(raw, WindowSeconds, NowSeconds, gapSeconds, w, h, yMin, yMax); var pen = new Pen(SeriesBrush, 1.6) { LineJoin = PenLineJoin.Round };
         var geo = new StreamGeometry(); using (var g = geo.Open()) { bool pendown = false; foreach (var p in pts) { if (p.Gap) { pendown = false; continue; } var pt = new Point(LeftAxis + p.X, Top + p.Y); if (!pendown) { g.BeginFigure(pt, false, false); pendown = true; } else g.LineTo(pt, true, false); } }
         dc.DrawGeometry(null, pen, geo);
         // gap markers: hatched vertical strip between neighbours of a gap

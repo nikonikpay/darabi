@@ -33,6 +33,7 @@
         <controls:TimeSeriesChart Grid.Row="1" Margin="8"
             Series="{Binding Raw}" Minutes="{Binding Minutes}" UseMinutes="{Binding UseMinutes}"
             WindowSeconds="{Binding WindowMinutes, Converter={StaticResource MinutesToSeconds}}"
-            NowSeconds="{Binding NowSeconds}" SeriesBrush="{Binding SeriesBrush}" UnitSymbol="{Binding UnitSymbol}" />
+            NowSeconds="{Binding NowSeconds}" SeriesBrush="{Binding SeriesBrush}" UnitSymbol="{Binding UnitSymbol}"
+            MaxGapSeconds="{Binding MaxGapSeconds}" />
     </Grid>
 </Window>
