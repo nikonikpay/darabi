@@ -77,6 +77,15 @@ public class PollingEngineTests
         Assert.Contains(log.Snapshot(), x => x.Key == PollingEngine.KeySubscriberFailed);
         Assert.DoesNotContain(log.Snapshot(), x => x.Key == PollingEngine.KeyEngineFailed);
     }
+    [Fact] public void Dispose_twice_is_safe_and_disposes_provider_once()
+    {
+        var (e, p, _, _) = Build(); e.PrepareForManualTicks();
+        e.Dispose();
+        var ex = Record.Exception(() => e.Dispose());
+        Assert.Null(ex);
+        Assert.True(p.Disposed);
+        Assert.Equal(1, p.DisposeCalls);
+    }
     [Fact] public void Provider_start_failure_fails_engine_not_process()
     {
         var (e, p, _, log) = Build(); p.ThrowOnStart = new InvalidOperationException("boom");

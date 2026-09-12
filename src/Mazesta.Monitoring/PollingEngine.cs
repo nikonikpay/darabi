@@ -7,6 +7,7 @@ public sealed class PollingEngine : IDisposable
     private readonly IClock _clock; private readonly MonitoringOptions _options; private readonly IEventLog _events;
     private readonly Dictionary<HardwareId, DateTimeOffset> _nextDue = []; private readonly object _lock = new();
     private readonly ManualResetEventSlim _wake = new(false); private Thread? _thread; private volatile bool _stopRequested; private bool _providerStarted;
+    private bool _disposed;
     private long _sequence; private DateTimeOffset _lastOverrunLog = DateTimeOffset.MinValue; private volatile EngineState _state = EngineState.Stopped;
     public ISensorProvider Provider { get; } public HistoryStore History { get; } public SensorStatistics Statistics { get; }
     public TimeSpan FastInterval { get; private set; }
@@ -19,6 +20,7 @@ public sealed class PollingEngine : IDisposable
 
     public void Start()
     {
+        if (_disposed) throw new ObjectDisposedException(nameof(PollingEngine));
         lock (_lock)
         {
             if (_thread is { IsAlive: true }) return;
@@ -28,6 +30,7 @@ public sealed class PollingEngine : IDisposable
     }
     public void Stop()
     {
+        if (_disposed) return;
         _stopRequested = true; _wake.Set();
         if (_thread is { } t)
         {
@@ -41,8 +44,8 @@ public sealed class PollingEngine : IDisposable
         try { EnsureProviderStarted(); State = EngineState.Running; }
         catch (Exception ex) { _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString()); State = EngineState.Failed; }
     }
-    public void Pause() { if (State == EngineState.Running) { State = EngineState.Paused; _wake.Set(); } }
-    public void Resume() { if (State == EngineState.Paused) { State = EngineState.Running; _wake.Set(); } }
+    public void Pause() { if (_disposed) throw new ObjectDisposedException(nameof(PollingEngine)); if (State == EngineState.Running) { State = EngineState.Paused; _wake.Set(); } }
+    public void Resume() { if (_disposed) throw new ObjectDisposedException(nameof(PollingEngine)); if (State == EngineState.Paused) { State = EngineState.Running; _wake.Set(); } }
     public void SetFastInterval(TimeSpan interval)
     {
         if (!MonitoringOptions.AllowedFastSeconds.Contains((int)interval.TotalSeconds) || interval.TotalSeconds != Math.Floor(interval.TotalSeconds)) throw new ArgumentOutOfRangeException(nameof(interval));
@@ -93,5 +96,5 @@ public sealed class PollingEngine : IDisposable
         catch (Exception ex) { _events.Log(EventLevel.Error, KeySubscriberFailed, ex.ToString()); }
         return snapshot;
     }
-    public void Dispose() { Stop(); Provider.Dispose(); _wake.Dispose(); }
+    public void Dispose() { if (_disposed) return; Stop(); _disposed = true; Provider.Dispose(); _wake.Dispose(); }
 }
