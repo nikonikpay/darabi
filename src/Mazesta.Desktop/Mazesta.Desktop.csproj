@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>MazestaTest</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.debug.manifest</ApplicationManifest>
+    <ApplicationIcon></ApplicationIcon>
+    <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
+    <ProjectReference Include="../Mazesta.Hardware/Mazesta.Hardware.csproj" />
+    <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
+    <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
+  </ItemGroup>
+</Project>

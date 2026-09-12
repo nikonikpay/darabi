@@ -1,0 +1,9 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+csharp_style_namespace_declarations = file_scoped:warning
+dotnet_diagnostic.CA1416.severity = error

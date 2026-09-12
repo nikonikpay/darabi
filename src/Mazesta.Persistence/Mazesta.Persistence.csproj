@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" /></ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="Mazesta.Persistence.Tests" /></ItemGroup>
+</Project>
