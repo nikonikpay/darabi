@@ -67,4 +67,10 @@ public class LibreHardwareMonitorProviderTests
         var (p, c, _) = Build(); c.Roots.Add(Gpu()); var seen = new List<ProviderState>(); p.StatusChanged += s => seen.Add(s.State); p.Start(); p.Dispose();
         Assert.Equal([ProviderState.Starting, ProviderState.Ready], seen); Assert.True(c.Closed && c.Disposed);
     }
+    [Fact] public void Dispose_never_throws_even_if_computer_dispose_throws()
+    {
+        var (p, c, _) = Build(); c.Roots.Add(Gpu()); p.Start(); c.ThrowOnDispose = new InvalidOperationException("x");
+        var ex = Record.Exception(() => p.Dispose());
+        Assert.Null(ex); Assert.True(c.Closed);
+    }
 }

@@ -67,5 +67,9 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
         }
         return new PollResult(readings, status);
     }
-    public void Dispose() { try { _computer.Close(); } catch (Exception ex) { _log.LogWarning(ex, "LHM close failed"); } _computer.Dispose(); }
+    public void Dispose()
+    {
+        try { _computer.Close(); } catch (Exception ex) { _log.LogWarning(ex, "LHM close failed"); }
+        try { _computer.Dispose(); } catch (Exception ex) { _log.LogWarning(ex, "LHM dispose failed"); }
+    }
 }
