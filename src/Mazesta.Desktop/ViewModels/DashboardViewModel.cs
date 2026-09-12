@@ -44,9 +44,9 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         {
             void Add(string label, string? value) => Inventory.Add((label, value ?? Loc.Get("Value_NotAvailable")));
             Add("CPU", inv.Cpu is { } c ? $"{c.Name} ({c.PhysicalCores}C/{c.LogicalProcessors}T)" : null);
-            foreach (var g in inv.Gpus) Add("GPU", $"{g.Name} · driver {g.DriverVersion}");
+            foreach (var g in inv.Gpus) Add("GPU", $"{g.Name} · driver {g.DriverVersion ?? Loc.Get("Value_NotAvailable")}");
             Add("RAM", inv.TotalPhysicalMemoryBytes is { } t ? $"{t / 1024.0 / 1024 / 1024:F0} GB · {inv.MemoryModules.Count} modules" : null);
-            Add("Motherboard", inv.Motherboard is { } m ? $"{m.Manufacturer} {m.Product}" : null); Add("BIOS", inv.Bios is { } b ? $"{b.Version} ({b.ReleaseDate:yyyy-MM-dd})" : null);
+            Add("Motherboard", inv.Motherboard is { } m ? $"{m.Manufacturer} {m.Product}" : null); Add("BIOS", inv.Bios is { } b ? $"{b.Version} ({(b.ReleaseDate is { } rd ? rd.ToString("yyyy-MM-dd") : Loc.Get("Value_NotAvailable"))})" : null);
             foreach (var d in inv.Storage) Add("Disk", $"{d.FriendlyName} · {d.BusType} · {d.SizeBytes / 1e9:F0} GB · {d.HealthStatus}");
             Add("OS", inv.Os is { } o ? $"{o.Caption} {o.Version}" : null);
             InventoryStatus = inv.Errors.Count == 0 ? "" : string.Join("; ", inv.Errors);

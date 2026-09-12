@@ -30,4 +30,16 @@ public class DashboardViewModelTests
     { var (vm, _, _) = Build(true); await vm.InventoryLoaded; Assert.Contains(vm.Inventory, i => i.Label == "CPU" && i.Value.Contains("i9")); Assert.Contains("bios", vm.InventoryStatus); }
     [Fact] public void Product_card_has_no_price_and_official_links()
     { var (vm, _, _) = Build(true); Assert.DoesNotContain("تومان", vm.ProductDescription); Assert.StartsWith("https://www.dfmrendering.com/", vm.ProductUrl); Assert.Equal("https://www.dfmrendering.com/contactus/", vm.ContactUrl); }
+    [Fact] public async Task Inventory_renders_not_available_for_null_driver_and_bios_date()
+    {
+        var c = new FakeClock(T0); var p = new FakeSensorProvider(); p.Nodes.Add(Gpu(true));
+        var e = new PollingEngine(p, c, new MonitoringOptions(), new BoundedEventLog(c, NullLogger.Instance)); e.PrepareForManualTicks();
+        var inv = HardwareInventory.Empty with { Gpus = [new GpuInfo("RTX 4090", null, null, null)], Bios = new BiosInfo("American Megatrends", "F.10", null, null) };
+        var vm = new DashboardViewModel(e, new Inv(inv), new AppConfig { ShopName = "X" }, a => { a(); return null!; });
+        await vm.InventoryLoaded;
+        var na = Mazesta.Desktop.Localization.Loc.Get("Value_NotAvailable");
+        var gpuLine = vm.Inventory.First(i => i.Label == "GPU"); var biosLine = vm.Inventory.First(i => i.Label == "BIOS");
+        Assert.Contains(na, gpuLine.Value); Assert.Contains(na, biosLine.Value);
+        Assert.False(gpuLine.Value.EndsWith("driver ")); Assert.DoesNotContain("()", biosLine.Value);
+    }
 }

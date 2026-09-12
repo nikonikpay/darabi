@@ -81,7 +81,7 @@ public partial class App : Application
             if (status.State is Mazesta.Core.Hardware.ProviderState.Ready or Mazesta.Core.Hardware.ProviderState.Degraded or Mazesta.Core.Hardware.ProviderState.Failed)
             {
                 engine.Provider.StatusChanged -= OnProviderStatus;
-                LogStartup("Provider ready");
+                LogStartup($"Provider {status.State}");
                 Dispatcher.BeginInvoke(() => { shell.Selected ??= shell.Items[0]; charts.RestoreFromConfig(); });
             }
         }
@@ -98,15 +98,23 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        if (IsFirstInstance)
+        // Services can still be null here: the exception handlers wired at the top of OnStartup
+        // run before Services is assigned, so a throw from pre-DI startup code (config load,
+        // logger setup, etc.) can reach Shutdown(1) with Services never having been built. Guard
+        // the whole block so that path doesn't turn into a NullReferenceException on the way out.
+        if (IsFirstInstance && Services is not null)
         {
+            // PollingEngine.Dispose() is idempotent, so it's safe even if something else already
+            // disposed it (e.g. a future shutdown path change).
             Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>().Dispose();
             Services.Dispose();
-            // Dispose the concrete provider directly (see the comment on _logProvider) so the
-            // rolling file logger's buffered StreamWriter is actually flushed and closed - do this
-            // last so it also captures whatever the disposals above happened to log.
-            _logProvider?.Dispose();
         }
+        // Dispose the concrete provider directly (see the comment on _logProvider) so the
+        // rolling file logger's buffered StreamWriter is actually flushed and closed - do this
+        // last so it also captures whatever the disposals above happened to log. Independent of
+        // the Services guard above since it's constructed before Services and may exist even when
+        // Services doesn't.
+        _logProvider?.Dispose();
         base.OnExit(e);
     }
 }
