@@ -18,10 +18,10 @@ public sealed class JsonStore<T>(string path, SchemaMigrator migrator, int curre
             if (steps > 0) { Save(value); return new(value, LoadOutcome.Migrated, $"{steps} migration step(s)"); }
             return new(value, LoadOutcome.Loaded, null);
         }
-        catch (Exception ex) when (ex is JsonException or InvalidOperationException or IOException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or IOException or UnauthorizedAccessException or NotSupportedException)
         {
             string aside = $"{path}.corrupt-{DateTime.UtcNow:yyyyMMddHHmmss}";
-            try { File.Move(path, aside, overwrite: true); } catch (IOException ioe) { logger.LogWarning(ioe, "Could not move corrupt config aside"); }
+            try { File.Move(path, aside, overwrite: true); } catch (Exception ioe) when (ioe is IOException or UnauthorizedAccessException) { logger.LogWarning(ioe, "Could not move corrupt config aside"); }
             logger.LogWarning(ex, "Config unreadable; defaults used, file moved to {Aside}", aside);
             return new(new T { SchemaVersion = currentVersion }, LoadOutcome.Corrupt, ex.Message);
         }

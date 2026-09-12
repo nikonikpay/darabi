@@ -24,4 +24,22 @@ public class JsonStoreTests : IDisposable
     {
         File.WriteAllText(Path.Combine(_dir, "appconfig.json"), """{"schemaVersion": 99}"""); Assert.Equal(LoadOutcome.Corrupt, Store().Load().Outcome);
     }
+    [Fact] public void V0_file_on_disk_loads_as_migrated_and_is_resaved()
+    {
+        string path = Path.Combine(_dir, "appconfig.json");
+        File.WriteAllText(path, """{"pollSeconds": 5, "language": "fa"}""");
+        var r = Store().Load();
+        Assert.Equal(LoadOutcome.Migrated, r.Outcome); Assert.Equal(5, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language);
+        string onDisk = File.ReadAllText(path);
+        Assert.Contains("\"schemaVersion\": 1", onDisk); Assert.DoesNotContain("pollSeconds", onDisk);
+    }
+    [Fact] public void Locked_file_is_treated_as_corrupt_not_a_crash()
+    {
+        string path = Path.Combine(_dir, "appconfig.json");
+        Store().Save(new AppConfig());
+        using var handle = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        LoadResult<AppConfig> result = default;
+        var ex = Record.Exception(() => result = Store().Load());
+        Assert.Null(ex); Assert.Equal(LoadOutcome.Corrupt, result.Outcome);
+    }
 }
