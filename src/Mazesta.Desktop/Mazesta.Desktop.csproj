@@ -25,4 +25,7 @@
     <Resource Include="Assets\*.jpg" />
     <EmbeddedResource Update="Localization\*.resx" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mazesta.Desktop.Tests" />
+  </ItemGroup>
 </Project>

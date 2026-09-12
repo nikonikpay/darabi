@@ -29,7 +29,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Items = new(
         [
             new("Nav_Dashboard", "", () => new PlaceholderViewModel("Nav_Dashboard")),     // Task 19 replaces with sp.GetRequiredService<DashboardViewModel>()
-            new("Nav_Monitoring", "", () => new PlaceholderViewModel("Nav_Monitoring")),   // Task 17 replaces with sp.GetRequiredService<MonitoringViewModel>()
+            new("Nav_Monitoring", "", () => sp.GetRequiredService<MonitoringViewModel>()),
             new("Nav_Tests", "", () => new PlaceholderViewModel("Nav_Tests")),
             new("Nav_Benchmarks", "", () => new PlaceholderViewModel("Nav_Benchmarks")),
             new("Nav_Gpu", "", () => new PlaceholderViewModel("Nav_Gpu")),

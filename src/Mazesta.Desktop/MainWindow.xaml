@@ -106,10 +106,12 @@
 
             <ContentControl Grid.Row="1" Content="{Binding CurrentPage}">
                 <ContentControl.Resources>
-                    <!-- Task 15: only PlaceholderViewModel exists. Tasks 17-20 add DataTemplates
-                         for MonitoringViewModel/DashboardViewModel/SettingsViewModel here. -->
+                    <!-- Tasks 19-20 add DataTemplates for DashboardViewModel/SettingsViewModel here. -->
                     <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
                         <views:PlaceholderView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:MonitoringViewModel}">
+                        <views:MonitoringView />
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>

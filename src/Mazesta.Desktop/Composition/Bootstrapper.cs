@@ -29,7 +29,9 @@ public static class Bootstrapper
         s.AddSingleton<IWmiQuery, WmiQuery>();
         s.AddSingleton<IInventoryProvider, WmiInventoryProvider>();
         s.AddSingleton<ViewModels.ShellViewModel>();
-        // Tasks 17-20 add: IChartWindowService/ChartWindowService, MonitoringViewModel, DashboardViewModel, SettingsViewModel
+        s.AddSingleton<ViewModels.IChartWindowService>(new Services.NoOpChartWindowService());
+        s.AddTransient<ViewModels.MonitoringViewModel>(sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        // Tasks 19-20 add: DashboardViewModel, SettingsViewModel
         return s.BuildServiceProvider();
     }
 }
