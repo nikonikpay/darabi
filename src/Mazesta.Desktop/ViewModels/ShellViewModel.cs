@@ -39,7 +39,7 @@ public sealed partial class ShellViewModel : ObservableObject
             new("Nav_Gaming", "", () => new PlaceholderViewModel("Nav_Gaming")),
             new("Nav_WindowsTools", "", () => new PlaceholderViewModel("Nav_WindowsTools")),
             new("Nav_Reports", "", () => new PlaceholderViewModel("Nav_Reports")),
-            new("Nav_Settings", "", () => new PlaceholderViewModel("Nav_Settings")),     // Task 20 replaces with sp.GetRequiredService<SettingsViewModel>()
+            new("Nav_Settings", "", () => sp.GetRequiredService<SettingsViewModel>()),
         ]);
         engine.Provider.StatusChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() => ProviderStatusText = Describe(s));
         engine.StateChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() => IsPaused = s == EngineState.Paused);

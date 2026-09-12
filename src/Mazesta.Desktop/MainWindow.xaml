@@ -115,7 +115,9 @@
                     <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
                         <views:DashboardView />
                     </DataTemplate>
-                    <!-- Task 20 adds the SettingsViewModel DataTemplate here. -->
+                    <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                        <views:SettingsView />
+                    </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
         </Grid>

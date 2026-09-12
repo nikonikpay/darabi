@@ -1,0 +1,87 @@
+<UserControl x:Class="Mazesta.Desktop.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
+             xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
+             mc:Ignorable="d"
+             Background="{StaticResource Brush.Background}">
+    <UserControl.Resources>
+        <Style x:Key="RowLabelStyle" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+        </Style>
+        <Style x:Key="RowControlStyle" TargetType="FrameworkElement">
+            <Setter Property="Margin" Value="0,0,0,14" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24" MaxWidth="440" HorizontalAlignment="Left">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
+                    <TextBlock Text="{loc:Loc Settings_Language}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Settings_Language" VerticalAlignment="Center" />
+                </StackPanel>
+                <!-- Explicitly re-selects the app's implicit dark ComboBox style (Themes/Dark.xaml,
+                     keyed only by TargetType) instead of the shared RowControlStyle above, whose
+                     TargetType="FrameworkElement" would otherwise fully replace it (an explicit
+                     Style always wins over an implicit TargetType lookup) and fall back to the
+                     stock white combo chrome. -->
+                <ComboBox Grid.Row="0" Grid.Column="1" Style="{StaticResource {x:Type ComboBox}}" Margin="0,0,0,14" VerticalAlignment="Center"
+                          ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" Width="120" HorizontalAlignment="Left" />
+
+                <StackPanel Grid.Row="1" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
+                    <TextBlock Text="{loc:Loc Settings_FastInterval}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Settings_FastInterval" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource RowControlStyle}"
+                         Text="{Binding FastIntervalText, UpdateSourceTrigger=PropertyChanged}" Width="100" HorizontalAlignment="Left" />
+
+                <StackPanel Grid.Row="2" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
+                    <TextBlock Text="{loc:Loc Settings_StorageInterval}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Settings_StorageInterval" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource RowControlStyle}"
+                         Text="{Binding StorageIntervalText, UpdateSourceTrigger=PropertyChanged}" Width="100" HorizontalAlignment="Left" />
+
+                <StackPanel Grid.Row="3" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
+                    <TextBlock Text="{loc:Loc Settings_ShopName}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Settings_ShopName" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource RowControlStyle}"
+                         Text="{Binding ShopName, UpdateSourceTrigger=PropertyChanged}" />
+
+                <StackPanel Grid.Row="4" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
+                    <TextBlock Text="{loc:Loc Settings_DataFolder}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Settings_DataFolder" VerticalAlignment="Center" />
+                </StackPanel>
+                <DockPanel Grid.Row="4" Grid.Column="1" Style="{StaticResource RowControlStyle}" LastChildFill="True">
+                    <Button DockPanel.Dock="Right" Content="{loc:Loc Settings_OpenFolder}" Command="{Binding OpenFolderCommand}" Margin="8,0,0,0" />
+                    <TextBox IsReadOnly="True" Text="{Binding DataFolder, Mode=OneWay}" />
+                </DockPanel>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,16">
+                <TextBlock Text="{Binding ModeText}" Foreground="{StaticResource Brush.TextMuted}" />
+                <TextBlock Text="{Binding Version, StringFormat=' · v{0}'}" Foreground="{StaticResource Brush.TextMuted}" />
+            </StackPanel>
+
+            <Button Content="{loc:Loc Settings_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Left" />
+            <TextBlock Text="{Binding Message}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,12,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
