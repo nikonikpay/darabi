@@ -1,0 +1,22 @@
+# .NET
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+.vs/
+TestResults/
+*.binlog
+# JetBrains
+.idea/workspace.xml
+.idea/*.iml
+.idea/modules.xml
+.idea/misc.xml
+.idea/shelf/
+.junie/
+# app data created by local runs
+Data/
+*.log
+# OS
+Thumbs.db
+.DS_Store
