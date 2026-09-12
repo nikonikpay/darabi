@@ -106,13 +106,16 @@
 
             <ContentControl Grid.Row="1" Content="{Binding CurrentPage}">
                 <ContentControl.Resources>
-                    <!-- Tasks 19-20 add DataTemplates for DashboardViewModel/SettingsViewModel here. -->
                     <DataTemplate DataType="{x:Type vm:PlaceholderViewModel}">
                         <views:PlaceholderView />
                     </DataTemplate>
                     <DataTemplate DataType="{x:Type vm:MonitoringViewModel}">
                         <views:MonitoringView />
                     </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                        <views:DashboardView />
+                    </DataTemplate>
+                    <!-- Task 20 adds the SettingsViewModel DataTemplate here. -->
                 </ContentControl.Resources>
             </ContentControl>
         </Grid>

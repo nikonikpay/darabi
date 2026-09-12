@@ -11,10 +11,15 @@ namespace Mazesta.Desktop.Composition;
 
 public static class Bootstrapper
 {
-    public static ServiceProvider Build(AppPaths paths, AppConfig config, JsonStore<AppConfig> store)
+    // Note: `lf` is accepted rather than created here so that the app's pre-DI startup logger
+    // (used to log config load and the "Window shown"/"Provider ready" timing lines) and the
+    // logger factory registered into DI are the SAME RollingFileLoggerProvider instance. Two
+    // independent instances writing to the same rolling log file from different threads (the
+    // startup thread and the polling engine's background thread) raced for the file handle and
+    // crashed the app with an IOException the first time both fired close together.
+    public static ServiceProvider Build(AppPaths paths, AppConfig config, JsonStore<AppConfig> store, ILoggerFactory lf)
     {
         var s = new ServiceCollection();
-        var lf = LoggingSetup.CreateFactory(paths.LogsDir);
         s.AddSingleton(lf);
         s.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
         s.AddSingleton(paths);
@@ -31,7 +36,8 @@ public static class Bootstrapper
         s.AddSingleton<ViewModels.ShellViewModel>();
         s.AddSingleton<ViewModels.IChartWindowService, Services.ChartWindowService>();
         s.AddTransient<ViewModels.MonitoringViewModel>(sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
-        // Tasks 19-20 add: DashboardViewModel, SettingsViewModel
+        s.AddTransient<ViewModels.DashboardViewModel>(sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IInventoryProvider>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        // Task 20 adds: SettingsViewModel
         return s.BuildServiceProvider();
     }
 }
