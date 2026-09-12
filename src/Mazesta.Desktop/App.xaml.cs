@@ -16,6 +16,17 @@ public partial class App : Application
     public static bool IsFirstInstance;
     public static ServiceProvider Services { get; private set; } = null!;
     public static System.Diagnostics.Stopwatch StartupClock { get; } = System.Diagnostics.Stopwatch.StartNew();
+    // Note: LoggingSetup.CreateFactory(...) wraps a freshly-constructed RollingFileLoggerProvider
+    // inside an ILoggerFactory via ILoggingBuilder.AddProvider(instance). That registers the
+    // provider as an already-constructed DI instance, and neither the mini ServiceProvider built
+    // inside LoggerFactory.Create nor ILoggerFactory.Dispose() end up disposing an instance
+    // registered that way (the well-known ".NET DI never disposes instances it didn't create"
+    // rule) - confirmed empirically: after a full graceful OnExit, the log file was still 0 bytes
+    // because the provider's buffered StreamWriter was never flushed/closed. The provider itself
+    // is constructed directly here instead so it can be disposed explicitly in OnExit, which is
+    // exactly how Mazesta.Persistence.Tests exercises it too (via `using var p = new
+    // RollingFileLoggerProvider(...)`).
+    private static RollingFileLoggerProvider? _logProvider;
 
     static App()
     {
@@ -25,9 +36,21 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        if (!IsFirstInstance) { Shutdown(); return; }
+        // App_Title is identical in both languages, so the English default culture (before any
+        // config is read) already yields the right window title to search for.
+        if (!IsFirstInstance) { Composition.SingleInstance.ActivateExisting(Loc.Get("App_Title")); Shutdown(); return; }
+        DispatcherUnhandledException += (_, e) =>
+        {
+            Services?.GetService<ILoggerFactory>()?.CreateLogger("Unhandled").LogError(e.Exception, "Dispatcher exception");
+            var r = MessageBox.Show(Loc.Get("Crash_Body"), Loc.Get("Crash_Title"), MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.Yes, Loc.IsRtl ? MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign : 0);
+            e.Handled = r == MessageBoxResult.Yes; if (!e.Handled) Shutdown(1);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => Services?.GetService<ILoggerFactory>()?.CreateLogger("Unhandled").LogCritical(e.ExceptionObject as Exception, "AppDomain exception");
+        TaskScheduler.UnobservedTaskException += (_, e) => { Services?.GetService<ILoggerFactory>()?.CreateLogger("Unhandled").LogError(e.Exception, "Unobserved task exception"); e.SetObserved(); };
         var paths = AppPaths.Detect(); paths.EnsureDirectories();
-        var lf = LoggingSetup.CreateFactory(paths.LogsDir); var startupLog = lf.CreateLogger("Startup");
+        _logProvider = new RollingFileLoggerProvider(paths.LogsDir);
+        var lf = LoggerFactory.Create(b => { b.SetMinimumLevel(LogLevel.Information); b.AddProvider(_logProvider); });
+        var startupLog = lf.CreateLogger("Startup");
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator([new Migration0To1()]), AppConfig.CurrentSchemaVersion, startupLog);
         var load = store.Load(); var config = load.Value;
         Loc.SetLanguage(config.Language);
@@ -58,6 +81,7 @@ public partial class App : Application
             if (status.State is Mazesta.Core.Hardware.ProviderState.Ready or Mazesta.Core.Hardware.ProviderState.Degraded or Mazesta.Core.Hardware.ProviderState.Failed)
             {
                 engine.Provider.StatusChanged -= OnProviderStatus;
+                LogStartup("Provider ready");
                 Dispatcher.BeginInvoke(() => { shell.Selected ??= shell.Items[0]; charts.RestoreFromConfig(); });
             }
         }
@@ -74,7 +98,15 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        if (IsFirstInstance) { Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>().Dispose(); Services.Dispose(); }
+        if (IsFirstInstance)
+        {
+            Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>().Dispose();
+            Services.Dispose();
+            // Dispose the concrete provider directly (see the comment on _logProvider) so the
+            // rolling file logger's buffered StreamWriter is actually flushed and closed - do this
+            // last so it also captures whatever the disposals above happened to log.
+            _logProvider?.Dispose();
+        }
         base.OnExit(e);
     }
 }

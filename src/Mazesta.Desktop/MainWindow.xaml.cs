@@ -1,5 +1,9 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
+using Mazesta.Core.Hardware;
+using Mazesta.Desktop.ViewModels;
+using Mazesta.Monitoring;
 using Mazesta.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +18,18 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Closing += OnClosing;
+        PreviewKeyDown += OnPreviewKeyDown;
+    }
+
+    // Developer shortcut (acceptance §15-7): Ctrl+Shift+F jumps to Monitoring and focuses CPU+GPU.
+    private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F || Keyboard.Modifiers != (ModifierKeys.Control | ModifierKeys.Shift)) return;
+        if (DataContext is not ShellViewModel shell) return;
+        var monitoring = shell.Items.FirstOrDefault(i => i.Key == "Nav_Monitoring");
+        if (monitoring is not null) shell.Selected = monitoring;
+        App.Services.GetRequiredService<MonitoringFocus>().RequestFocus(new HashSet<HardwareKind> { HardwareKind.Cpu, HardwareKind.Gpu }, "dev-shortcut");
+        e.Handled = true;
     }
 
     private void OnClosing(object? sender, CancelEventArgs e)

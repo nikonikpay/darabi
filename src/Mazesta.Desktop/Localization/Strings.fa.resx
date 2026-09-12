@@ -253,4 +253,7 @@
   <data name="Config_Corrupt" xml:space="preserve">
     <value>فایل تنظیمات خوانا نبود و بازنشانی شد. فایل قبلی کنار آن نگه داشته شده است.</value>
   </data>
+  <data name="Engine_Failed" xml:space="preserve">
+    <value>موتور سنسور پس از یک خطای داخلی متوقف شد. لاگ را ببینید.</value>
+  </data>
 </root>

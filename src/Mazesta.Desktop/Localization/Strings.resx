@@ -253,4 +253,7 @@
   <data name="Config_Corrupt" xml:space="preserve">
     <value>Settings file was unreadable and has been reset. The old file was kept beside it.</value>
   </data>
+  <data name="Engine_Failed" xml:space="preserve">
+    <value>Sensor engine stopped after an internal error. See the log.</value>
+  </data>
 </root>

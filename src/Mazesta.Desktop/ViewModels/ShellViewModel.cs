@@ -42,7 +42,11 @@ public sealed partial class ShellViewModel : ObservableObject
             new("Nav_Settings", "", () => sp.GetRequiredService<SettingsViewModel>()),
         ]);
         engine.Provider.StatusChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() => ProviderStatusText = Describe(s));
-        engine.StateChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() => IsPaused = s == EngineState.Paused);
+        engine.StateChanged += s => System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            IsPaused = s == EngineState.Paused;
+            if (s == EngineState.Failed) Banner = Loc.Get("Engine_Failed");
+        });
         IntervalText = Loc.Format("Status_Interval", engine.FastInterval.TotalSeconds);
     }
 
