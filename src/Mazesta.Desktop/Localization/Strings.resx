@@ -124,6 +124,18 @@
   <data name="Provider.NoHardware" xml:space="preserve">
     <value>No sensors were found.</value>
   </data>
+  <data name="Banner_ProviderDegraded" xml:space="preserve">
+    <value>Some sensors are unavailable: {0}</value>
+  </data>
+  <data name="Banner_ProviderFailed" xml:space="preserve">
+    <value>Sensor reading failed: {0}</value>
+  </data>
+  <data name="Banner_InstallPawnIo" xml:space="preserve">
+    <value>Open pawnio.eu</value>
+  </data>
+  <data name="Nav_Starting" xml:space="preserve">
+    <value>Starting sensors…</value>
+  </data>
   <data name="Status_Pause" xml:space="preserve">
     <value>Pause</value>
   </data>

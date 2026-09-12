@@ -17,20 +17,22 @@
 
         <!-- Header (title on its own line so the stats/controls row below never fights it for space) -->
         <StackPanel Grid.Row="0" Margin="12,10,12,6">
-            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" />
+            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" Style="{StaticResource Text.Value}" />
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{loc:Loc Column_Current}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <TextBlock Text="{Binding CurrentText}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <TextBlock Text="{Binding CurrentText}" VerticalAlignment="Center" Margin="0,0,14,0" Style="{StaticResource Text.Value}" />
                 <TextBlock Text="{loc:Loc Column_Min}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <TextBlock Text="{Binding MinText}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <TextBlock Text="{Binding MinText}" VerticalAlignment="Center" Margin="0,0,14,0" Style="{StaticResource Text.Value}" />
                 <TextBlock Text="{loc:Loc Column_Max}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <TextBlock Text="{Binding MaxText}" VerticalAlignment="Center" Margin="0,0,14,0" />
-                <ComboBox ItemsSource="{Binding WindowChoices}" SelectedItem="{Binding WindowMinutes}" Width="60" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding MaxText}" VerticalAlignment="Center" Margin="0,0,14,0" Style="{StaticResource Text.Value}" />
+                <ComboBox ItemsSource="{Binding WindowChoices}" SelectedItem="{Binding WindowMinutes}" Width="60" VerticalAlignment="Center" FlowDirection="LeftToRight" />
                 <controls:HelpTip HelpKey="Chart_Window" VerticalAlignment="Center" />
             </StackPanel>
         </StackPanel>
 
-        <controls:TimeSeriesChart Grid.Row="1" Margin="8"
+        <!-- The plot is drawn in device coordinates by OnRender; an inherited RightToLeft mirrors the
+         whole drawing (and its axis labels), so the chart is pinned to LTR. -->
+        <controls:TimeSeriesChart Grid.Row="1" Margin="8" FlowDirection="LeftToRight"
             Series="{Binding Raw}" Minutes="{Binding Minutes}" UseMinutes="{Binding UseMinutes}"
             WindowSeconds="{Binding WindowMinutes, Converter={StaticResource MinutesToSeconds}}"
             NowSeconds="{Binding NowSeconds}" SeriesBrush="{Binding SeriesBrush}" UnitSymbol="{Binding UnitSymbol}"

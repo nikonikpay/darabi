@@ -74,10 +74,14 @@
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
+        <!-- Disabled until the provider has settled: a click during the hardware scan would build a
+             page against an empty hardware list (spec: pages read engine.Hardware once at
+             construction) and that page would never pick up the real sensors. -->
         <ListBox Grid.Row="0" Grid.Column="0"
                   Style="{StaticResource SidebarListBoxStyle}"
                   ItemContainerStyle="{StaticResource SidebarListBoxItemStyle}"
                   ItemsSource="{Binding Items}"
+                  IsEnabled="{Binding IsNavigationEnabled}"
                   SelectedItem="{Binding Selected}">
             <ListBox.ItemTemplate>
                 <DataTemplate DataType="{x:Type vm:NavItem}">
@@ -101,8 +105,37 @@
                     BorderBrush="{StaticResource Brush.Border}"
                     BorderThickness="0,0,0,1"
                     Padding="12,8">
-                <TextBlock Text="{Binding Banner}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Banner}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" VerticalAlignment="Center" />
+                    <Button Content="{Binding BannerLinkText}" Command="{Binding OpenBannerLinkCommand}"
+                            Margin="12,0,0,0" Padding="8,2" VerticalAlignment="Center">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding BannerLinkUrl}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
             </Border>
+
+            <TextBlock Grid.Row="1" Text="{loc:Loc Nav_Starting}" Foreground="{StaticResource Brush.TextMuted}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsNavigationEnabled}" Value="False">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
             <ContentControl Grid.Row="1" Content="{Binding CurrentPage}">
                 <ContentControl.Resources>

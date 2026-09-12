@@ -56,6 +56,7 @@
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
     </Style>
 
+
     <Style TargetType="Button">
         <Setter Property="FontFamily" Value="{StaticResource App.Font}" />
         <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
@@ -110,6 +111,19 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Latin-only runs (a reading and its unit, a clock speed, "(24C/32T)", a phone number, a
+         path, a version). Under the Persian UI the page is RightToLeft, which also sets the bidi
+         PARAGRAPH direction of every TextBlock under it, and "53.0 °C" then displays as "C° 53.0"
+         because the space before the symbol is a neutral that takes the paragraph's direction.
+         These styles pin such strings to an LTR paragraph. Persian text is never given them.
+         See Localization/Rtl for the full explanation. -->
+    <Style x:Key="Text.Value" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FlowDirection" Value="LeftToRight" />
+    </Style>
+    <Style x:Key="TextBox.Value" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="FlowDirection" Value="LeftToRight" />
     </Style>
 
     <Style x:Key="ThemedComboBoxItemStyle" TargetType="ComboBoxItem">

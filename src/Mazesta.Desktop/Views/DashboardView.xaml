@@ -32,7 +32,7 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Background="{Binding Accent}" CornerRadius="8,8,0,0" />
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="12,10,12,4">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" Style="{StaticResource Text.Value}" />
                         <controls:HelpTip HelpKey="{Binding HelpKey}" VerticalAlignment="Center" />
                     </StackPanel>
                     <ItemsControl Grid.Row="2" ItemsSource="{Binding Lines}" Margin="12,0,12,10">
@@ -43,8 +43,8 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource Brush.TextMuted}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Value}" Margin="12,0,0,0" />
+                                    <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource Brush.TextMuted}" Style="{StaticResource Text.Value}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Value}" Margin="12,0,0,0" Style="{StaticResource Text.Value}" />
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -86,8 +86,8 @@
                                         <ColumnDefinition Width="90" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Converter={StaticResource InventoryField}}" Foreground="{StaticResource Brush.TextMuted}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Converter={StaticResource InventoryField}, ConverterParameter=Value}" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Column="0" Text="{Binding Converter={StaticResource InventoryField}}" Foreground="{StaticResource Brush.TextMuted}" Style="{StaticResource Text.Value}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Converter={StaticResource InventoryField}, ConverterParameter=Value}" TextWrapping="Wrap" Style="{StaticResource Text.Value}" />
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -117,13 +117,13 @@
                         <Button Content="{loc:Loc Dashboard_Mazesta_Site}" Command="{Binding OpenUrlCommand}" CommandParameter="{Binding SiteUrl}" />
                         <Button Content="{loc:Loc Dashboard_Mazesta_Contact}" Command="{Binding OpenUrlCommand}" CommandParameter="{Binding ContactUrl}" Margin="8,0,0,0" />
                     </StackPanel>
-                    <TextBlock Text="{Binding Phones}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,10" />
+                    <TextBlock Text="{Binding Phones}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,10" Style="{StaticResource Text.Value}" />
 
                     <Border Background="{StaticResource Brush.SurfaceAlt}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="10">
                         <StackPanel>
                             <Image Source="pack://application:,,,/Assets/am9.jpg" MaxHeight="120" Stretch="Uniform" HorizontalAlignment="Left" />
                             <TextBlock Text="{Binding ProductName}" FontWeight="SemiBold" Margin="0,8,0,0" TextWrapping="Wrap" />
-                            <TextBlock Text="{Binding ProductDescription}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,2,0,8" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding ProductDescription}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,2,0,8" TextWrapping="Wrap" Style="{StaticResource Text.Value}" />
                             <Button Content="{loc:Loc Dashboard_Product_View}" Command="{Binding OpenUrlCommand}" CommandParameter="{Binding ProductUrl}" HorizontalAlignment="Left" />
                         </StackPanel>
                     </Border>

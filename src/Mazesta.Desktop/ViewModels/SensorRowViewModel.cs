@@ -3,6 +3,10 @@ namespace Mazesta.Desktop.ViewModels;
 public sealed partial class SensorRowViewModel : ObservableObject
 {
     public SensorDefinition Definition { get; }
+    /// <summary>The group this row belongs to. The monitoring page is one virtualizing ListView
+    /// grouped by this property, so the group header and its expansion state stay user-owned while
+    /// only the visible rows are realized.</summary>
+    public HardwareGroupViewModel Group { get; }
     public string SubGroup { get; }
     public string Name => Definition.Name;
     public string Unit => Units.Symbol(Definition.Unit);
@@ -14,10 +18,11 @@ public sealed partial class SensorRowViewModel : ObservableObject
     [ObservableProperty] private DataQuality _quality = DataQuality.Missing;
     [ObservableProperty] private bool _isVisible = true;
 
-    public SensorRowViewModel(SensorDefinition definition, string subGroup)
+    public SensorRowViewModel(SensorDefinition definition, string subGroup, HardwareGroupViewModel group)
     {
         Definition = definition;
         SubGroup = subGroup;
+        Group = group;
     }
 
     public void Apply(SensorReading r, SensorStats s)

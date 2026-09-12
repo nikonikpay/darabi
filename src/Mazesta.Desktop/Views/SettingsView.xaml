@@ -41,7 +41,7 @@
                      TargetType="FrameworkElement" would otherwise fully replace it (an explicit
                      Style always wins over an implicit TargetType lookup) and fall back to the
                      stock white combo chrome. -->
-                <ComboBox Grid.Row="0" Grid.Column="1" Style="{StaticResource {x:Type ComboBox}}" Margin="0,0,0,14" VerticalAlignment="Center"
+                <ComboBox Grid.Row="0" Grid.Column="1" Style="{StaticResource {x:Type ComboBox}}" Margin="0,0,0,14" VerticalAlignment="Center" FlowDirection="LeftToRight"
                           ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" Width="120" HorizontalAlignment="Left" />
 
                 <StackPanel Grid.Row="1" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
@@ -71,13 +71,13 @@
                 </StackPanel>
                 <DockPanel Grid.Row="4" Grid.Column="1" Style="{StaticResource RowControlStyle}" LastChildFill="True">
                     <Button DockPanel.Dock="Right" Content="{loc:Loc Settings_OpenFolder}" Command="{Binding OpenFolderCommand}" Margin="8,0,0,0" />
-                    <TextBox IsReadOnly="True" Text="{Binding DataFolder, Mode=OneWay}" />
+                    <TextBox IsReadOnly="True" Text="{Binding DataFolder, Mode=OneWay}" Style="{StaticResource TextBox.Value}" />
                 </DockPanel>
             </Grid>
 
             <StackPanel Orientation="Horizontal" Margin="0,4,0,16">
                 <TextBlock Text="{Binding ModeText}" Foreground="{StaticResource Brush.TextMuted}" />
-                <TextBlock Text="{Binding Version, StringFormat=' · v{0}'}" Foreground="{StaticResource Brush.TextMuted}" />
+                <TextBlock Text="{Binding Version, StringFormat=' · v{0}'}" Foreground="{StaticResource Brush.TextMuted}" Style="{StaticResource Text.Value}" />
             </StackPanel>
 
             <Button Content="{loc:Loc Settings_Save}" Command="{Binding SaveCommand}" HorizontalAlignment="Left" />

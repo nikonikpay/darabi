@@ -10,14 +10,65 @@
              mc:Ignorable="d"
              Background="{StaticResource Brush.Background}">
     <UserControl.Resources>
-        <Style x:Key="RowContainerStyle" TargetType="ListViewItem">
-            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
-            <Setter Property="Visibility" Value="{Binding IsVisible, Converter={StaticResource BoolToVis}}" />
+        <!-- Cell text. The container's Foreground cannot grey a non-Ok row on its own: the theme's
+             implicit TextBlock style sets Foreground explicitly, and an explicit setter always beats
+             an inherited value, so every cell stayed white whatever the row state was. The quality
+             is therefore driven per cell here. All value cells are latin (a number, a unit symbol)
+             and carry an LTR flow direction so the Persian UI does not reorder "53.0 °C". -->
+        <Style x:Key="CellStyle" TargetType="TextBlock" BasedOn="{StaticResource Text.Value}">
+            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
             <Style.Triggers>
-                <DataTrigger Binding="{Binding Quality}" Value="{x:Static hw:DataQuality.Ok}">
-                    <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                <DataTrigger Binding="{Binding Quality}" Value="{x:Static hw:DataQuality.Missing}">
+                    <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Quality}" Value="{x:Static hw:DataQuality.Stale}">
+                    <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Quality}" Value="{x:Static hw:DataQuality.Invalid}">
+                    <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+                </DataTrigger>
+                <!-- Last, so it wins: dark text reads on the light accent used for selection. -->
+                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Background}" />
                 </DataTrigger>
             </Style.Triggers>
+        </Style>
+
+        <!-- The state word is Persian in the Persian UI, so - unlike the value cells - it must NOT
+             be pinned to LTR; it inherits the page direction. It is always muted, because a row
+             only carries a state when the reading is Missing, Stale or Invalid. -->
+        <Style x:Key="StateCellStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource Brush.Background}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="RowContainerStyle" TargetType="ListViewItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="2,3" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                                  Columns="{TemplateBinding GridView.ColumnCollection}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Accent}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
     <Grid>
@@ -29,8 +80,24 @@
         <!-- Toolbar -->
         <DockPanel Grid.Row="0" Margin="12,10,12,8" LastChildFill="False">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                <TextBox Width="220" VerticalAlignment="Center"
-                         Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                <Grid Width="220" VerticalAlignment="Center">
+                    <TextBox x:Name="SearchBox" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+                    <!-- Placeholder: WPF has no native one, so the prompt sits behind the (transparent
+                         when empty) text and disappears as soon as anything is typed. -->
+                    <TextBlock Text="{loc:Loc Monitoring_Search}" Foreground="{StaticResource Brush.TextMuted}"
+                               Margin="8,0,8,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
                 <controls:HelpTip HelpKey="Monitoring_Search" VerticalAlignment="Center" />
             </StackPanel>
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
@@ -50,133 +117,173 @@
                     </Button.Style>
                 </Button>
                 <controls:HelpTip HelpKey="Monitoring_Pause" VerticalAlignment="Center" />
-                <ComboBox Width="70" VerticalAlignment="Center" Margin="12,0,0,0"
+                <ComboBox Width="70" VerticalAlignment="Center" Margin="12,0,0,0" FlowDirection="LeftToRight"
                           ItemsSource="{Binding Intervals}" SelectedItem="{Binding SelectedIntervalSeconds}" />
                 <controls:HelpTip HelpKey="Monitoring_Interval" VerticalAlignment="Center" />
             </StackPanel>
         </DockPanel>
 
-        <!-- Grouped sensor grid -->
-        <ScrollViewer Grid.Row="1" Margin="12,0,12,12" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Groups}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:HardwareGroupViewModel}">
-                        <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}"
-                                  Visibility="{Binding IsVisible, Converter={StaticResource BoolToVis}}"
-                                  Margin="0,0,0,8">
-                            <Expander.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,8,0" VerticalAlignment="Center">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background" Value="{StaticResource Brush.TextMuted}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static hw:HardwareKind.Cpu}">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Cpu}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static hw:HardwareKind.Gpu}">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Gpu}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static hw:HardwareKind.Memory}">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Memory}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static hw:HardwareKind.Storage}">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Storage}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static hw:HardwareKind.Motherboard}">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Motherboard}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Kind}" Value="{x:Static hw:HardwareKind.Network}">
-                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Network}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                    </Border>
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <!-- Grouped sensor grid.
+             ONE virtualizing ListView, grouped by SensorRowViewModel.Group, rather than one
+             ListView per group inside a page-wide ScrollViewer: nested lists were measured with
+             infinite height, so their VirtualizingStackPanels realised every row of every group
+             (609 of 609 on the dev box). Here the panel virtualizes the group items too
+             (IsVirtualizingWhenGrouping), so only the rows actually on screen exist. Group
+             expansion stays bound two-way to HardwareGroupViewModel.IsExpanded, which is the
+             user's, persisted in config and never touched by a tick. -->
+        <ListView Grid.Row="1" Margin="12,0,12,12"
+                  ItemsSource="{Binding RowsView}"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingPanel.ScrollUnit="Pixel"
+                  ScrollViewer.CanContentScroll="True"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  ItemContainerStyle="{StaticResource RowContainerStyle}"
+                  MouseDoubleClick="Rows_MouseDoubleClick"
+                  KeyDown="Rows_KeyDown">
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.ContainerStyle>
+                        <Style TargetType="GroupItem">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="GroupItem">
+                                        <Expander IsExpanded="{Binding Name.IsExpanded, Mode=TwoWay}"
+                                                  Background="{StaticResource Brush.Surface}"
+                                                  BorderBrush="{StaticResource Brush.Border}"
+                                                  BorderThickness="1"
+                                                  Margin="0,0,0,8">
+                                            <Expander.Header>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="{StaticResource Brush.TextMuted}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Cpu}">
+                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Cpu}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Gpu}">
+                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Gpu}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Memory}">
+                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Memory}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Storage}">
+                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Storage}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Motherboard}">
+                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Motherboard}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Network}">
+                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Network}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                    </Border>
+                                                    <!-- Node names are hardware model names: always latin. -->
+                                                    <TextBlock Text="{Binding Name.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                               Style="{StaticResource Text.Value}" />
+                                                </StackPanel>
+                                            </Expander.Header>
+                                            <ItemsPresenter />
+                                        </Expander>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </GroupStyle.ContainerStyle>
+                </GroupStyle>
+            </ListView.GroupStyle>
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Width="220" Header="{loc:Loc Column_Sensor}">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
+                                <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
+                                    <TextBlock x:Name="SubGroupText" Text="{Binding SubGroup}" Style="{StaticResource CellStyle}" Foreground="{StaticResource Brush.TextMuted}" />
+                                    <TextBlock x:Name="Dot" Text=" · " Style="{StaticResource CellStyle}" Foreground="{StaticResource Brush.TextMuted}" />
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource CellStyle}" />
                                 </StackPanel>
-                            </Expander.Header>
-                            <ListView ItemsSource="{Binding Rows}"
-                                      VirtualizingPanel.IsVirtualizing="True"
-                                      ScrollViewer.CanContentScroll="True"
-                                      ItemContainerStyle="{StaticResource RowContainerStyle}"
-                                      MouseDoubleClick="Rows_MouseDoubleClick"
-                                      KeyDown="Rows_KeyDown">
-                                <ListView.View>
-                                    <GridView>
-                                        <GridViewColumn Width="220" Header="{loc:Loc Column_Sensor}">
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock x:Name="SubGroupText" Text="{Binding SubGroup}" Foreground="{StaticResource Brush.TextMuted}" />
-                                                        <TextBlock x:Name="Dot" Text=" · " Foreground="{StaticResource Brush.TextMuted}" />
-                                                        <TextBlock Text="{Binding Name}" />
-                                                    </StackPanel>
-                                                    <DataTemplate.Triggers>
-                                                        <DataTrigger Binding="{Binding SubGroup}" Value="">
-                                                            <Setter TargetName="SubGroupText" Property="Visibility" Value="Collapsed" />
-                                                            <Setter TargetName="Dot" Property="Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                    </DataTemplate.Triggers>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn Width="70" DisplayMemberBinding="{Binding Current}">
-                                            <GridViewColumn.HeaderTemplate>
-                                                <DataTemplate>
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{loc:Loc Column_Current}" />
-                                                        <controls:HelpTip HelpKey="Column_Current" />
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </GridViewColumn.HeaderTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn Width="70">
-                                            <GridViewColumn.HeaderTemplate>
-                                                <DataTemplate>
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{loc:Loc Column_Min}" />
-                                                        <controls:HelpTip HelpKey="Column_MinMaxAvg" />
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </GridViewColumn.HeaderTemplate>
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate><TextBlock Text="{Binding Min}" /></DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn Width="70" Header="{loc:Loc Column_Max}" DisplayMemberBinding="{Binding Max}" />
-                                        <GridViewColumn Width="70" Header="{loc:Loc Column_Avg}" DisplayMemberBinding="{Binding Avg}" />
-                                        <GridViewColumn Width="60" Header="{loc:Loc Column_Unit}" DisplayMemberBinding="{Binding Unit}" />
-                                        <GridViewColumn Width="140">
-                                            <GridViewColumn.HeaderTemplate>
-                                                <DataTemplate>
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{loc:Loc Column_State}" />
-                                                        <controls:HelpTip HelpKey="Column_State" />
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </GridViewColumn.HeaderTemplate>
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
-                                                    <StackPanel x:Name="StatePanel" Orientation="Horizontal">
-                                                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" Margin="0,0,4,0" Foreground="{StaticResource Brush.TextMuted}" />
-                                                        <TextBlock Text="{Binding State}" Foreground="{StaticResource Brush.TextMuted}" />
-                                                    </StackPanel>
-                                                    <DataTemplate.Triggers>
-                                                        <DataTrigger Binding="{Binding State}" Value="">
-                                                            <Setter TargetName="StatePanel" Property="Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                    </DataTemplate.Triggers>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
-                        </Expander>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding SubGroup}" Value="">
+                                        <Setter TargetName="SubGroupText" Property="Visibility" Value="Collapsed" />
+                                        <Setter TargetName="Dot" Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <!-- 130 px: "Not available" / «دریافت نشد» must not clip. -->
+                    <GridViewColumn Width="130">
+                        <GridViewColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{loc:Loc Column_Current}" />
+                                    <controls:HelpTip HelpKey="Column_Current" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.HeaderTemplate>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Current}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="70">
+                        <GridViewColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{loc:Loc Column_Min}" />
+                                    <controls:HelpTip HelpKey="Column_MinMaxAvg" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.HeaderTemplate>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Min}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="70" Header="{loc:Loc Column_Max}">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Max}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="70" Header="{loc:Loc Column_Avg}">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Avg}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="60" Header="{loc:Loc Column_Unit}">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Unit}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="140">
+                        <GridViewColumn.HeaderTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{loc:Loc Column_State}" />
+                                    <controls:HelpTip HelpKey="Column_State" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.HeaderTemplate>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
+                                <StackPanel x:Name="StatePanel" Orientation="Horizontal">
+                                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" Margin="0,0,4,0" Style="{StaticResource StateCellStyle}" />
+                                    <TextBlock Text="{Binding State}" Style="{StaticResource StateCellStyle}" />
+                                </StackPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding State}" Value="">
+                                        <Setter TargetName="StatePanel" Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
     </Grid>
 </UserControl>

@@ -55,14 +55,9 @@ public partial class App : Application
         Services = Composition.Bootstrapper.Build(paths, config, store, lf);
         var shell = Services.GetRequiredService<ViewModels.ShellViewModel>();
         if (load.Outcome == LoadOutcome.Corrupt) shell.ShowBanner(Loc.Get("Config_Corrupt"));
-        // Note: FlowDirection is applied to the window's root content (RootGrid), not the Window
-        // itself. Setting FlowDirection on the Window element flips the underlying HWND
-        // (WS_EX_LAYOUTRTL), which mirrors the native title bar and, on this rendering path, the
-        // glyphs themselves (letters render as literal mirror images). Applying it to the content
-        // instead keeps RTL mirroring entirely inside WPF's own visual tree, which renders text
-        // correctly while still flipping sidebar/content layout for RTL languages.
         var window = new MainWindow { DataContext = shell };
-        window.RootGrid.FlowDirection = Loc.IsRtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        Rtl.Apply(window.RootGrid);                       // see Localization/Rtl for why it is the content, not the Window
+        Composition.WindowPlacementRestore.Apply(window, config.MainWindow);
         MainWindow = window; window.Show();
         startupLog.LogInformation("Window shown at {Ms} ms", StartupClock.ElapsedMilliseconds);
         var engine = Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>();
