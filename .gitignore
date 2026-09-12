@@ -20,3 +20,5 @@ Data/
 # OS
 Thumbs.db
 .DS_Store
+# SDD scratch workspace
+.superpowers/
