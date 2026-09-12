@@ -1,0 +1,38 @@
+<Window x:Class="Mazesta.Desktop.Views.ChartWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
+        xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
+        mc:Ignorable="d"
+        Title="{Binding Title}"
+        Width="640" Height="360"
+        Background="{StaticResource Brush.Background}">
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header (title on its own line so the stats/controls row below never fights it for space) -->
+        <StackPanel Grid.Row="0" Margin="12,10,12,6">
+            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis" Margin="0,0,0,6" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{loc:Loc Column_Current}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Text="{Binding CurrentText}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <TextBlock Text="{loc:Loc Column_Min}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Text="{Binding MinText}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <TextBlock Text="{loc:Loc Column_Max}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <TextBlock Text="{Binding MaxText}" VerticalAlignment="Center" Margin="0,0,14,0" />
+                <ComboBox ItemsSource="{Binding WindowChoices}" SelectedItem="{Binding WindowMinutes}" Width="60" VerticalAlignment="Center" />
+                <controls:HelpTip HelpKey="Chart_Window" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
+        <controls:TimeSeriesChart Grid.Row="1" Margin="8"
+            Series="{Binding Raw}" Minutes="{Binding Minutes}" UseMinutes="{Binding UseMinutes}"
+            WindowSeconds="{Binding WindowMinutes, Converter={StaticResource MinutesToSeconds}}"
+            NowSeconds="{Binding NowSeconds}" SeriesBrush="{Binding SeriesBrush}" UnitSymbol="{Binding UnitSymbol}" />
+    </Grid>
+</Window>

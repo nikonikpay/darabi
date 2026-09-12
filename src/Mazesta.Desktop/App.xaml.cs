@@ -44,7 +44,18 @@ public partial class App : Application
         window.RootGrid.FlowDirection = Loc.IsRtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         MainWindow = window; window.Show(); shell.Selected = shell.Items[0];
         startupLog.LogInformation("Window shown at {Ms} ms", StartupClock.ElapsedMilliseconds);
-        Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>().Start();
+        var engine = Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>();
+        var charts = (Mazesta.Desktop.Services.ChartWindowService)Services.GetRequiredService<ViewModels.IChartWindowService>();
+        void OnProviderStatus(Mazesta.Core.Hardware.ProviderStatus status)
+        {
+            if (status.State is Mazesta.Core.Hardware.ProviderState.Ready or Mazesta.Core.Hardware.ProviderState.Degraded)
+            {
+                engine.Provider.StatusChanged -= OnProviderStatus;
+                Dispatcher.BeginInvoke(charts.RestoreFromConfig);
+            }
+        }
+        engine.Provider.StatusChanged += OnProviderStatus;
+        engine.Start();
         base.OnStartup(e);
     }
 

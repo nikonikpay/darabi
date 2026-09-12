@@ -41,6 +41,7 @@
 
     <!-- Converters -->
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    <Controls:MinutesToSecondsConverter x:Key="MinutesToSeconds" />
 
     <!-- Implicit control styles -->
     <Style TargetType="Window">
