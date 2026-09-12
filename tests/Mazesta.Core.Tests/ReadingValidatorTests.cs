@@ -16,6 +16,15 @@ public class ReadingValidatorTests
     [InlineData(SensorKind.Voltage, 21.0, DataQuality.Invalid)]
     [InlineData(SensorKind.Fan, 0.0, DataQuality.Ok)]
     [InlineData(SensorKind.Power, -1.0, DataQuality.Invalid)]
+    [InlineData(SensorKind.Power, 0.0, DataQuality.Invalid)]
+    [InlineData(SensorKind.Power, 65.5, DataQuality.Ok)]
+    [InlineData(SensorKind.Current, 0.0, DataQuality.Invalid)]
+    [InlineData(SensorKind.Current, 1.5, DataQuality.Ok)]
+    [InlineData(SensorKind.Energy, 0.0, DataQuality.Invalid)]
+    [InlineData(SensorKind.Energy, 1234.0, DataQuality.Ok)]
+    [InlineData(SensorKind.Throughput, 0.0, DataQuality.Ok)]
+    [InlineData(SensorKind.Data, 0.0, DataQuality.Ok)]
+    [InlineData(SensorKind.SmallData, 0.0, DataQuality.Ok)]
     [InlineData(SensorKind.Timing, -3.0, DataQuality.Ok)]
     public void Ranges(SensorKind kind, double value, DataQuality expected) => Assert.Equal(expected, ReadingValidator.Validate(kind, value));
     [Fact] public void Null_is_missing() => Assert.Equal(DataQuality.Missing, ReadingValidator.Validate(SensorKind.Temperature, null));

@@ -104,7 +104,8 @@ All types are immutable records unless stated. No provider type leaks past `Maze
 | Clock | `value <= 0` (§6.2 rule 2: zero clock readings are discarded) |
 | Load, Level, Control | `value < 0` or `value > 100` |
 | Voltage | `value < 0` or `value > 20` |
-| Power, Current, Fan, Data, SmallData, Throughput, Energy | `value < 0` (0 RPM is a valid "fan stopped") |
+| Power, Current, Energy | `value <= 0` (LHM returns `0f`, not `null`, when a RAPL/MSR energy counter is unreadable, so a zero would be shown to the customer as a real `0.0 W`) |
+| Fan, Data, SmallData, Throughput | `value < 0` (0 RPM is a valid "fan stopped"; 0 MB/s is a valid idle throughput) |
 | any | `NaN` or `±Infinity` |
 
 **Utilities:** `PersianDigits.Normalize(string)` maps Persian and Arabic-Indic digits to ASCII for numeric inputs (§4.1); `IClock` / `SystemClock` for testable time.
