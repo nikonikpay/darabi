@@ -241,7 +241,7 @@ Bounded in-memory ring (1000 entries) of `(timestamp, level, key, detail)` plus 
 ```powershell
 # from Windows PowerShell or via dotnet.exe from WSL
 dotnet build Mazesta.sln -c Release
-dotnet test Mazesta.sln -c Release                      # unit tests
+dotnet test Mazesta.sln -c Release --filter "Category!=Hardware"  # unit tests
 dotnet test Mazesta.sln -c Release --filter Category=Hardware   # elevated, dev box only
 dotnet publish src/Mazesta.Desktop -c Release -r win-x64 --self-contained false -p:PublishReadyToRun=true -o artifacts/Mazesta-Test
 ```
