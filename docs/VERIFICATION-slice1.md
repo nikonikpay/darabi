@@ -286,10 +286,87 @@ elevation).
 ## 10. Persian UI / RTL / help popups
 
 Not re-verified with new screenshots in this task. Existing evidence from
-earlier tasks in this branch: `artifacts/shots/rtl.png` (Persian RTL shell
-with Vazirmatn glyphs), `artifacts/shots/help-popup.png` and
+earlier tasks in this branch: `artifacts/shots/rtl.png` — this is the
+screenshot cited for this item; the brief names it `shell-fa.png`, but no
+file of that name exists in `artifacts/shots/`, and `rtl.png` is the
+Persian-language shell screenshot actually captured (Persian RTL shell with
+Vazirmatn glyphs) — `rtl.png` is used here as the substitute for the
+brief's `shell-fa.png` — plus `artifacts/shots/help-popup.png` and
 `artifacts/shots/shell-helptip.png` (the "?" popup mechanism). No visible
 English feature label was audited against a missing help key in this task.
+
+## 11. Chart-window evidence, regenerated (fix round 1)
+
+A review of this task's first pass correctly found that the screenshots
+originally cited for acceptance item 5 (`charts.png`, `chart-gap.png`) show
+exactly one chart window each, with a flat, gap-free line — they did not
+support "three chart windows" or "a visible pause gap." This section
+regenerates that evidence for real and replaces the citation.
+
+**Method.** `appconfig.json` was backed up, then edited to seed
+`chartWindows` with three real sensor ids read directly off this box's own
+running hardware (obtained by a throwaway elevated test that dumped every
+`SensorDefinition.Id` — not guessed): `gpu/gpu-nvidia-0#temperature/0`
+(GPU Core temperature), `gpu/gpu-nvidia-0#load/0` (GPU Core load) and
+`gpu/gpu-nvidia-0#clock/0` (GPU Core clock), each at distinct screen
+placements (`left` 50/560/1070, `top` 980, 480×360) and `windowMinutes: 5`.
+The published exe was launched, left to settle 20 s (chart windows restore
+from config automatically once the provider reports ready), then a UI
+Automation `InvokePattern` was used to click the real status-bar Pause
+button (Name `توقف`, `TogglePauseCommand` in `MainWindow.xaml`) — not a
+simulated pause — waited 12 s paused, invoked the real Resume button (Name
+`ادامه`), waited 6 s, then captured the full screen and cropped it to the
+Mazesta windows. (Two earlier attempts in this same fix round failed to
+invoke the buttons: the first because embedding literal Persian text
+directly in a `.ps1` file run by Windows PowerShell 5.1 without a UTF-8 BOM
+silently mangled the string so it could never match; the second because
+`AutomationElement.Current.Name` on a WPF `Button` whose `Content` is set
+via a `Style` `Setter`/`DataTrigger` (as `PauseButtonStyle` is) can return a
+stale/empty cached value — `GetCurrentPropertyValue(NameProperty)` returns
+the live value and was used for the final, successful run. Both are
+documented here as troubleshooting evidence, not claims.)
+
+**Result: `artifacts/shots/charts-three-gap.png`** (a crop of the full
+screen down to the Mazesta windows only, to avoid capturing unrelated
+desktop content — the original uncropped capture briefly showed other
+applications on this shared machine). It shows:
+- The Dashboard (main window) with live sensor values. Note: this
+  particular capture's CPU card shows real numbers (e.g. package temp,
+  clock, load, power), not «دریافت نشد» — PawnIO was not installed on this
+  box for most of this task's session (see the PawnIO-absent discussion
+  elsewhere in this document), but something on this shared machine
+  installed it concurrently with this fix round (evidence visible in the
+  same background terminal window this screenshot happened to also
+  capture, later cropped out). This is a separate, unrelated development on
+  the box during this session, not a claim this task verified or acted on;
+  the PawnIO-absent sections elsewhere in this document describe the state
+  as measured earlier in the session and are not retroactively changed by
+  this incidental observation.
+- **Three separate chart windows** side by side, titled "NVIDIA GeForce RTX
+  4090 — GPU Core (°C)", "(%) NVIDIA GeForce RTX 4090 — GPU Core", and
+  "NVIDIA GeForce RTX 4090 — GPU Core (MHz)", each showing a live,
+  independently-scaled, non-flat green line with real min/current/max
+  readouts (e.g. the load chart's current/min/max updated across the
+  capture — not a static value).
+- **A visible gap band** in all three charts: a light grey, semi-translucent
+  vertical rectangle (the `Brush.StateMissing`-coloured "hatched vertical
+  strip" drawn by `TimeSeriesChart.OnRender` for a break longer than
+  `MaxGapSeconds`) sitting near the left edge of each plot (the chart's time
+  axis is mirrored by the shell's RTL `FlowDirection`, so screen-left is
+  "now" and screen-right is "5 minutes ago" — confirmed by reading the axis
+  labels, which visually mirror to `-0:00`, `-1:15`, `-2:30`, `-3:45`,
+  `-5:00` left to right). The gap band sits between a very short recent
+  segment (the few samples recorded after Resume) and the longer, more
+  varied segment recorded before Pause — exactly where the 12 s pause
+  should appear given the automation's timing. This is consistent across
+  all three sensors, which rules out a coincidental rendering artifact in
+  just one chart.
+
+Acceptance item 5 is rated **Met** on this evidence. `charts.png` and
+`chart-gap.png` (the originals from an earlier task's manual pass) are left
+in place but are no longer the cited evidence for this item; `chart-gap.png`
+in particular does still show a small window, just not usable as the
+"three windows + gap" proof this item needs.
 
 ## Acceptance criteria — spec §13, items 1–10
 
@@ -299,12 +376,12 @@ English feature label was audited against a missing help key in this task.
 | 2 | Monitoring shows all listed sensors for the dev box, «دریافت نشد» for anything unexposed | **Partially met** | `artifacts/shots/monitoring.png` (pre-existing, from an earlier task's manual pass, before this task confirmed PawnIO's absence). CPU MSR-based rows (package/core temp, clocks, Vcore, package power) will read «دریافت نشد» today because PawnIO is not installed — expected, not a defect. Per-thread CPU load, GPU (both), RAM, storage and network roles are mapped and not PawnIO-dependent (§6 of `HARDWARE-MATRIX.md`); motherboard sensor availability without PawnIO was not independently re-verified in this pass. |
 | 3 | Package/core/hot-spot agree with HWiNFO within ±2 °C at idle | **Pending owner** | Needs HWiNFO installed and a person at the screen; exact steps in `HARDWARE-MATRIX.md`. |
 | 4 | Expand/collapse never changed by ticks; focus request expands exactly once | **Met** | Covered by `MonitoringFocus`/`PollingEngine` tests in `Mazesta.Monitoring.Tests` (part of the 31/31 passing, §2). |
-| 5 | Three chart windows update live, auto-scale, show min/max, visible gap after pause/resume | **Met** | `artifacts/shots/charts.png` (three windows), `artifacts/shots/chart-gap.png` (pause gap) — both pre-existing from an earlier task's manual pass. |
+| 5 | Three chart windows update live, auto-scale, show min/max, visible gap after pause/resume | **Met** | `artifacts/shots/charts-three-gap.png` — regenerated in this fix round (see "Chart-window evidence, regenerated" below) for real, on this box, replacing the earlier `charts.png`/`chart-gap.png` citation that a review correctly flagged as not actually showing three windows or a gap. |
 | 6 | Idle resource numbers measured and recorded, each target met/missed | **Met** (as an obligation — measured honestly) | §6 above: CPU met (0.07 % < 1 %), startup timing met (all < 3 s), working set missed (288.5–325.3 MB vs. < 80 MB target), cause and attempted mitigations recorded. |
 | 7 | PawnIO-absent and provider-failure scenarios behave correctly, no fabricated values | **Partially met** | §7 above: Degraded/PawnIoMissing status deterministically confirmed via a real elevated run against this box's actual PawnIO-absent state; no screenshot of the live banner. `No_temperature_reports_zero_as_ok` (hardware test) and `ReadingValidator` unit tests confirm no fabricated readings. |
 | 8 | Config survives restart, migrates v0→v1, corrupt file doesn't block startup | **Met** | `Mazesta.Persistence.Tests`, 12/12 (§2, §8). |
 | 9 | No network request made | **Partially met** | §9 above: two clean 60‑s‑apart `netstat -n -o` samples during an elevated session show zero connections for the process id; a full 10‑minute `netstat -b -n` capture is pending owner for a more rigorous check. |
-| 10 | Persian UI renders RTL correctly; every visible English label has a working help popup | **Met** (pre-existing evidence, not re-audited here) | `artifacts/shots/rtl.png`, `artifacts/shots/help-popup.png`, `artifacts/shots/shell-helptip.png`. |
+| 10 | Persian UI renders RTL correctly; every visible English label has a working help popup | **Met** (pre-existing evidence, not re-audited here) | `artifacts/shots/rtl.png` (cited here as the substitute for the brief's `shell-fa.png`, which does not exist under that name), `artifacts/shots/help-popup.png`, `artifacts/shots/shell-helptip.png`. |
 
 ## Known gaps / deferred
 
@@ -323,37 +400,99 @@ Sensor and provider limitations (this slice, this hardware):
   box's Samsung 990 PRO** — see `HARDWARE-MATRIX.md` "Concerns" and
   `PROVIDERS-AND-FALLBACKS.md`. A real hardware/Windows-version discrepancy
   discovered by this task's hardware test, not fixed (out of `src/` scope).
+  Controller ruling on this ledger (SDD progress log): on Windows 11 build
+  26200, both `Win32_DiskDrive.SerialNumber` and
+  `MSFT_PhysicalDisk.SerialNumber` return the NVMe NGUID form
+  (`0025_3841_4140_5504.`; `UniqueId eui.0025384141405504`), while
+  LHM/DiskInfoToolkit returns the vendor serial (`S7DNNJ0X102517H`) — a
+  serial join cannot work for NVMe on this OS at all, not just for this one
+  drive. Planned fallback (not yet applied — out of this task's `src/`
+  scope, to land in the final-review fix wave): storage identity stays the
+  LHM vendor serial (stable, used for future disk-health baselines); the
+  WMI-inventory-to-sensor-node join falls back to matching by model name
+  (`FriendlyName == node.Name`) instead of serial, and the hardware test is
+  relaxed to assert "serial OR model" instead of serial-only. Cost if this
+  fallback direction is wrong later: a switch to joining on the NGUID/eui
+  form via DiskInfoToolkit, if it turns out to expose that value too.
 - **Dev-box UAC auto-elevates silently** for the account used to run these
   verifications, so a genuinely non-elevated sample of the **Release**
   binary's behaviour could not be produced by launch flags alone — only the
   Debug build (`asInvoker`) demonstrates `NotElevated` without elevation.
   Environment fact, not a defect.
 
-Deferred minors (tracked, not fixed — out of this task's `src/`-touching
-scope):
+Deferred minors, reconciled line-by-line against the SDD progress ledger
+(`.superpowers/sdd/2026-09-12-mazesta-slice1-sensors-monitoring/progress.md`,
+every `minor (deferred)` line), grouped by task and not fixed here — out of
+this task's `src/`-touching scope:
 
-- `.editorconfig` style rule is IDE-only.
-- Stray path comments atop two Core test files.
-- Records hold `IReadOnlyList` without defensive copies.
-- `^D3D Compute` regex unanchored.
-- GPU/board Fan arms map any fan to one role.
-- Dead `_byId` field in the LHM provider.
-- Never-updated node readings stamped with request time.
-- `Task.Run` wraps sequential WMI queries.
+**Task 1:**
+- `.editorconfig` style rule is IDE-only (no `EnforceCodeStyleInBuild`).
+- Desktop csproj re-declares `SatelliteResourceLanguages`.
+
+**Tasks 2-4:**
+- Stray `// tests/...` path comments atop two Core test files.
+- Records hold `IReadOnlyList` without defensive copies (as specified).
+- "µS" symbol untested.
+
+**Tasks 5-6:**
+- `^D3D Compute` regex lacks a `$` anchor (suggested:
+  `^D3D Compute(_\d+)?$`).
+- GPU/board Fan arms map any fan name to one role.
+- `SensorKindOf` `TimeSpan`/`Unknown` branches and `Ordinal` values untested.
+
+**Task 7:**
+- Dead `_byId` dictionary in the LHM provider.
+- `_elevated()`/`_pawnIo()`/`Source.Value` calls unwrapped.
+- Never-updated node readings stamped with `request.Now` (quality already
+  Stale, so this is cosmetic).
+- No test for the `ReasonNoHardware` branch.
+
+**Task 8:**
+- `Task.Run` wraps 8 sequential blocking WMI queries (acceptable for now).
+
+**Tasks 9-11:**
 - `SensorStatistics.Get` double lookup.
-- `BoundedEventLog` capacity 0 throws.
+- `BoundedEventLog` capacity 0 throws on first `Log`.
+- Logged order vs. snapshot order under concurrent `Log`.
 - `AllowedFastSeconds` is a mutable array.
-- `SecondsSinceEpoch` unguarded cast.
-- `Stop()` stamps Stopped on join timeout and touches `_thread` without the lock.
+- `SecondsSinceEpoch` unguarded cast / negative truncation.
+
+**Task 12:**
+- `Stop()` stamps `State=Stopped` even when `Join` timed out.
+- `Stop()` touches `_thread` without `_lock`.
+- `Loop()`'s throwing-Start path is untested on the real thread.
+- (Resolved, listed for completeness: an earlier Task 12 ledger line also
+  flagged "ARCHITECTURE.md stale" and "`Start()` check-then-act" — the
+  former is resolved by this task's ARCHITECTURE.md refresh above, the
+  latter was folded into Task 12's own round-1 fix.)
+
+**Tasks 13-14:**
 - Unused usings in `AppPathsTests`.
-- Logger `Flush()` reopens the handle.
-- `Write()` after `Dispose()` resurrects the logger.
-- `FlowDirection`-on-root-grid pattern not centralised.
-- HelpTip popup could outlive an unloaded target.
+- `Flush()` reopens the handle — cost if flushed per write.
+- `Write()` after `Dispose()` resurrects the logger provider.
+
+**Tasks 15-16:**
+- `FlowDirection`-on-root-grid pattern not centralised (carried into Tasks
+  17-21 dispatches).
+- `HelpTip` popup could outlive an unloaded target.
 - Two `ILoggerFactory` instances at startup.
-- Dead `_suppressConfig` field (focus-driven expansion persists).
-- Per-tick array copies in the chart view model.
-- Minute-tier min/max band does not break across missing minutes.
+
+**Tasks 17-18:**
+- Dead `_suppressConfig` field so focus-driven expansion changes persist to
+  config (decide intentionally later).
+- Per-tick array copies in `ChartWindowViewModel.Refresh`.
+- The implementer's own report over-claimed the gap verification for this
+  task pair (lesson recorded on the ledger: visual claims need the
+  reviewer's own runtime check, not the implementer's screenshot alone).
+- Minute-tier min/max band does not break across a missing-minute span
+  (the line and gap strip do).
+
+**Tasks 19-21:**
+- `LoggingSetup` is dead code after the shared-factory fix.
+- `SettingsView` `ComboBox` light styling vs. theme.
+- Every Dashboard navigation re-reads WMI inventory (transient view model
+  per visit, not cached).
+- `[DllImport]` used instead of `LibraryImport` (pre-authorised deviation).
 
 Note on an oddity resolved while writing this document (not a gap): the
 `Mazesta.Desktop.Tests` count changing from 24 to 25 mid-session (§2) was

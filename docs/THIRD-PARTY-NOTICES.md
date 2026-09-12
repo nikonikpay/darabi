@@ -11,7 +11,7 @@ under which licence, and by which project in this repository.
 | LibreHardwareMonitorLib | 0.9.6 | Mozilla Public License 2.0 (MPL-2.0) | `Mazesta.Hardware` | Sensor enumeration and reading (CPU/GPU/RAM/motherboard/storage/network). Full licence text: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/blob/master/LICENSE |
 | DiskInfoToolkit | 1.1.2 | MPL-2.0 | `Mazesta.Hardware` (transitive, via LibreHardwareMonitorLib) | Storage SMART/identify data. |
 | RAMSPDToolkit-NDD | 1.4.2 | MPL-2.0 | `Mazesta.Hardware` (transitive, via LibreHardwareMonitorLib) | DIMM SPD data for memory module inventory. |
-| HidSharp | (as pinned by LibreHardwareMonitorLib) | Apache License 2.0 | `Mazesta.Hardware` (transitive, via LibreHardwareMonitorLib) | USB HID access for some fan/RGB controllers. |
+| HidSharp | 2.6.4 | Apache License 2.0 | `Mazesta.Hardware` (transitive, via LibreHardwareMonitorLib) | USB HID access for some fan/RGB controllers. Version confirmed from `artifacts/Mazesta-Test/MazestaTest.deps.json` (`"HidSharp/2.6.4"`). |
 | System.Management | 10.0.x | MIT | `Mazesta.Hardware` | WMI queries for hardware inventory (`WmiInventoryProvider`). |
 | Microsoft.Extensions.* (DependencyInjection, Logging, Logging.Abstractions, Options, Primitives) | 10.0.x | MIT | `Mazesta.Desktop`, `Mazesta.Hardware`, `Mazesta.Monitoring`, `Mazesta.Persistence` | Dependency injection and logging abstractions. |
 | CommunityToolkit.Mvvm | 8.4.2 | MIT | `Mazesta.Desktop` | Source-generated observable properties and commands for the WPF ViewModels. |
