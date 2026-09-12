@@ -7,6 +7,7 @@
         xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
         xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
         xmlns:views="clr-namespace:Mazesta.Desktop.Views"
+        xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
         mc:Ignorable="d"
         Title="{loc:Loc App_Title}"
         MinWidth="960" MinHeight="600"
@@ -126,7 +127,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding ProviderStatusText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="{Binding ProviderStatusText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Status_Provider" VerticalAlignment="Center" />
+                </StackPanel>
                 <TextBlock Grid.Column="1" Text="{Binding IntervalText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="16,0,0,0" />
                 <Button Grid.Column="3" Command="{Binding TogglePauseCommand}" Style="{StaticResource PauseButtonStyle}" Padding="8,2" />
             </Grid>

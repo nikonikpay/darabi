@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Monitoring_Search" xml:space="preserve">
+    <value>جست‌وجو بر اساس نام قطعه یا سنسور. فهرست به‌صورت زنده فیلتر می‌شود.</value>
+  </data>
+  <data name="Monitoring_Interval" xml:space="preserve">
+    <value>فاصله خواندن سنسورها. مقدار کمتر یعنی به‌روزرسانی سریع‌تر و مصرف CPU کمی بیشتر.</value>
+  </data>
+  <data name="Monitoring_ResetStats" xml:space="preserve">
+    <value>کمینه، بیشینه و میانگین همه سنسورها از این لحظه دوباره محاسبه می‌شوند.</value>
+  </data>
+  <data name="Monitoring_Pause" xml:space="preserve">
+    <value>خواندن سنسورها متوقف می‌شود. در نمودارها این بازه به‌صورت شکاف نمایش داده می‌شود.</value>
+  </data>
+  <data name="Column_Current" xml:space="preserve">
+    <value>آخرین مقدار خوانده‌شده. «دریافت نشد» یعنی سنسور مقداری نداده است؛ عدد تخمینی نمایش داده نمی‌شود.</value>
+  </data>
+  <data name="Column_MinMaxAvg" xml:space="preserve">
+    <value>کمینه، بیشینه و میانگین از زمان آخرین بازنشانی آمار.</value>
+  </data>
+  <data name="Column_State" xml:space="preserve">
+    <value>وضعیت داده: قدیمی یعنی قطعه در آخرین خواندن پاسخ نداده؛ نامعتبر یعنی مقدار خارج از محدوده فیزیکی است.</value>
+  </data>
+  <data name="Dashboard_Cpu" xml:space="preserve">
+    <value>دمای پکیج، فرکانس مؤثر، بار و توان CPU.</value>
+  </data>
+  <data name="Dashboard_Gpu" xml:space="preserve">
+    <value>دمای هسته، بار، فرکانس، توان و حافظه GPU. هر کارت گرافیک جداگانه نمایش داده می‌شود.</value>
+  </data>
+  <data name="Dashboard_HotSpot" xml:space="preserve">
+    <value>داغ‌ترین نقطه GPU که توسط درایور گزارش می‌شود. اگر کارت این سنسور را ندارد، «دریافت نشد» نمایش داده می‌شود و با دمای هسته جایگزین نمی‌شود.</value>
+  </data>
+  <data name="Dashboard_Ram" xml:space="preserve">
+    <value>حافظه استفاده‌شده، آزاد و کل به همراه ماژول‌های نصب‌شده.</value>
+  </data>
+  <data name="Dashboard_Inventory" xml:space="preserve">
+    <value>مشخصات سیستم از Windows (WMI) و کتابخانه سنسور.</value>
+  </data>
+  <data name="Chart_Window" xml:space="preserve">
+    <value>بازه زمانی نمایش نمودار. بازه‌های بلندتر از داده دقیقه‌ای (کمینه/بیشینه/میانگین) استفاده می‌کنند.</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>زبان رابط کاربری. نام قطعات همیشه انگلیسی می‌ماند.</value>
+  </data>
+  <data name="Settings_FastInterval" xml:space="preserve">
+    <value>فاصله خواندن دما، فرکانس و بار.</value>
+  </data>
+  <data name="Settings_StorageInterval" xml:space="preserve">
+    <value>فاصله خواندن SMART دیسک‌ها. خواندن مکرر SMART توصیه نمی‌شود؛ حداقل ۶۰ ثانیه.</value>
+  </data>
+  <data name="Settings_ShopName" xml:space="preserve">
+    <value>نام فروشگاه که در گزارش مشتری چاپ می‌شود. نام محصول قابل تغییر نیست.</value>
+  </data>
+  <data name="Settings_DataFolder" xml:space="preserve">
+    <value>محل ذخیره تنظیمات و لاگ. در حالت Portable کنار فایل اجرایی است.</value>
+  </data>
+  <data name="Status_Provider" xml:space="preserve">
+    <value>وضعیت کتابخانه سنسور. «ناقص» یعنی بخشی از سنسورها به دلیل نبود دسترسی Administrator یا درایور PawnIO در دسترس نیست.</value>
+  </data>
+</root>
