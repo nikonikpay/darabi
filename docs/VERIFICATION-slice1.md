@@ -588,3 +588,15 @@ initially unexplained; it turned out to be commit `34e0544` (unrelated to
 this task, see "Build hash" above) landing on the branch partway through
 this session and adding one Dashboard test alongside a null-safety fix. Not
 a defect and not this task's change.
+
+## 14. Post-fix idle re-measurement (2026-09-14)
+
+Re-run of `tools/measure-idle.ps1` logic from an elevated PowerShell against the published build at the fix-wave head (120 s settle on the Dashboard, 30 s CPU sample; raw output in `artifacts/idle-measure-after.log`):
+
+| Metric | Before fix wave | After | Target | Status |
+|---|---|---|---|---|
+| Working set | 288.5 MB | 271.9 MB | < 80 MB | Missed — target under review by the owner |
+| Private bytes | 260.6 MB | 206.1 MB | — | — |
+| Idle CPU | 0.07 % | 0.07 % | < 1 % | Met |
+
+`artifacts/shots/monitoring-states.png` was captured in the same session (unelevated Debug run): "Not available" rows render in grey next to healthy rows, which is the evidence for finding I6.
