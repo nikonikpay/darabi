@@ -19,6 +19,17 @@ public class LibreHardwareMonitorProviderTests
         var (p, c, _) = Build(); c.Roots.Add(Gpu()); p.Start();
         Assert.True(c.Opened); Assert.Equal(ProviderState.Ready, p.Status.State); Assert.Equal(1, p.Status.SensorCount); Assert.Single(p.Hardware);
     }
+    private static FakeHardware CpuWithTemp() { var c = new FakeHardware(HardwareType.Cpu, "/intelcpu/0", "Intel Core i9-14900K"); c.Add("CPU Package", SensorType.Temperature, 0, 41); c.Add("CPU Total", SensorType.Load, 0, 5); return c; }
+    [Fact] public void Start_ready_when_cpu_temperatures_exist_even_if_pawnio_registry_check_fails()
+    {
+        var (p, c, _) = Build(pawn: false); c.Roots.Add(CpuWithTemp()); c.Roots.Add(Gpu()); p.Start();
+        Assert.Equal(ProviderState.Ready, p.Status.State);
+    }
+    [Fact] public void Start_degraded_when_pawnio_missing_and_cpu_has_no_temperatures()
+    {
+        var (p, c, _) = Build(pawn: false); var cpu = new FakeHardware(HardwareType.Cpu, "/intelcpu/0", "i9"); cpu.Add("CPU Total", SensorType.Load, 0, 5); c.Roots.Add(cpu); p.Start();
+        Assert.Equal((ProviderState.Degraded, LibreHardwareMonitorProvider.ReasonPawnIoMissing), (p.Status.State, p.Status.ReasonKey));
+    }
     [Fact] public void Start_degraded_when_pawnio_missing()
     {
         var (p, c, _) = Build(pawn: false); c.Roots.Add(Gpu()); p.Start();

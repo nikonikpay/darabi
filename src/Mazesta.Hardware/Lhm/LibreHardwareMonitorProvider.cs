@@ -38,10 +38,18 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
         // PawnIO driver query) and can fail. A probe that cannot answer is answered pessimistically
         // so the customer is told sensors may be missing rather than being promised a clean run.
         if (!Probe(_elevated, "elevation")) Status = ProviderStatus.Degraded(ReasonNotElevated, "Process is not elevated; CPU and motherboard sensors are unavailable.", count);
-        else if (!Probe(_pawnIo, "PawnIO driver")) Status = ProviderStatus.Degraded(ReasonPawnIoMissing, "PawnIO driver is not installed; CPU MSR sensors are unavailable.", count);
+        else if (!Probe(_pawnIo, "PawnIO driver") && !HasCpuMsrEvidence()) Status = ProviderStatus.Degraded(ReasonPawnIoMissing, "PawnIO driver is not installed; CPU MSR sensors are unavailable.", count);
         else if (count == 0) Status = ProviderStatus.Degraded(ReasonNoHardware, "LHM returned no sensors.", 0);
         else Status = ProviderStatus.Ready(count);
     }
+
+    /// <summary>
+    /// LHM's <c>PawnIo.IsInstalled</c> only reads one Windows uninstall registry key, so it can
+    /// report "not installed" while the driver is loaded and serving MSR reads (observed with
+    /// PawnIO 2.x on the dev box). CPU temperature sensors only exist when MSR access works,
+    /// so their presence is direct evidence the driver is available.
+    /// </summary>
+    private bool HasCpuMsrEvidence() => Hardware.Any(n => n.Kind == HardwareKind.Cpu && n.Sensors.Any(s => s.Kind == SensorKind.Temperature));
 
     private bool Probe(Func<bool> probe, string what)
     {

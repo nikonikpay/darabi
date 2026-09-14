@@ -600,3 +600,12 @@ Re-run of `tools/measure-idle.ps1` logic from an elevated PowerShell against the
 | Idle CPU | 0.07 % | 0.07 % | < 1 % | Met |
 
 `artifacts/shots/monitoring-states.png` was captured in the same session (unelevated Debug run): "Not available" rows render in grey next to healthy rows, which is the evidence for finding I6.
+
+## 15. Live verification on `main` (2026-09-14, after merge)
+
+Published build launched elevated and driven by UI Automation; captures under `artifacts/shots/` (`final-dashboard.png`, `final-monitoring.png`, `final-settings.png`).
+
+- Dashboard: CPU package 37–45 °C, clock, load, power 24.8 W live (PawnIO loaded); RTX 4090 with Hot Spot 65 °C; UHD 770 with «Not available» where it has no sensor; RAM 64 GB installed with both modules; inventory; Mazesta card. Working set 228–246 MB.
+- Monitoring: grouped virtualized grid with live Current/Min/Max/Avg, search, interval, reset, pause. Settings page renders. Navigation works (the first automated click was dropped while the window was activating; the second landed — automation timing, not the app).
+- Log: `Window shown at 388 ms`, `Provider Ready at ~3.5 s`, `Inventory ready`, no errors.
+- Defect found and fixed in this pass: with PawnIO 2.x installed, LHM's `PawnIo.IsInstalled` (which only reads the `…\Uninstall\PawnIO` registry key) returned false, so the app showed a false "PawnIO driver is not installed" banner while CPU MSR sensors were live. The provider now treats CPU temperature sensors as evidence the driver works (`HasCpuMsrEvidence`), with two unit tests. Sidebar items also gained accessible names (`AutomationProperties.Name`).
