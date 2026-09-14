@@ -403,24 +403,28 @@ evidence that section numbers above predate.
 |---|---|---|
 | `artifacts/shots/i3-before.png` | The monitoring grid before the virtualization fix (English), one ListView per group | Captured |
 | `artifacts/shots/i3-after.png` | The same page after: one grouped virtualizing ListView, column headers once, search placeholder, distinct Tests glyph | Captured |
-| `artifacts/shots/fa-monitoring.png` | **Captured.** The Persian monitoring grid: sidebar and columns mirrored right-to-left, Persian headers («سنسور», «مقدار فعلی», «کمینه», «بیشینه», «میانگین», «واحد», «وضعیت»), Persian status bar («سنسورها: آماده (609 سنسور)», «فاصله: ۲ ثانیه»), and every latin run intact and unreversed — sensor names `P-Core #1`, values `1.374`, unit `V`, the board name `MSI Z790 GAMING PLUS WIFI (MS-7E06)`. This is the direct evidence for C2. | Captured |
-| `artifacts/shots/fa-dashboard.png` | Persian dashboard; units must read `53.0 °C`, not `C° 53.0` | **Not captured yet** |
-| `artifacts/shots/fa-settings.png` | Persian settings (data folder path, version LTR) | **Not captured yet** |
-| `artifacts/shots/fa-chart.png` | A Persian-UI chart window, plot and axis labels not mirrored | **Not captured yet** |
-| `artifacts/shots/monitoring-states.png` | A non-Ok row grey and a selected row readable | **Not captured yet** (the current file shows the fixed grid, but this box currently produces no Missing/Stale/Invalid rows to photograph, and the automation selected a sidebar item rather than a grid row) |
+| `artifacts/shots/fa-dashboard.png` | **Captured — the main C2 evidence.** Persian RTL dashboard (sidebar on the right, Persian card and nav labels, «دریافت نشد» where a sensor is absent) with every latin run intact and unreversed: `48.0 °C`, `797 MHz`, `77.0 W`, `58.5 °C`, `24564 MB`, `(24C/32T)`, `09197588700 · 09197588701`, `H.90 (2025-07-31)`. Also shows the I7 RAM card: «نصب‌شده» `64 GB` plus one line per module with its part number. | Captured |
+| `artifacts/shots/fa-chart.png` | **Captured** (full screen). A Persian-UI chart window: Persian header labels («مقدار فعلی» 1.456, «کمینه» 0.983, «بیشینه» 1.475) with the plot **not mirrored** — the value axis (`1.5 V` … `0.9 V`) is on the left and the time axis runs `-10:00` → `-0:00` left to right. Behind it, the Persian monitoring grid: mirrored layout and Persian headers with latin sensor names and values unreversed, **and a selected row** (`CPU Core`) drawn on the accent background with dark, readable text — the selection half of I6. | Captured |
+| `artifacts/shots/fa-settings.png` | **Captured.** Persian settings page; the data folder (`C:\Users\Niko\App…`) and the version (`v0.6.0`) render left to right inside the RTL page. | Captured |
+| `artifacts/shots/fa-monitoring.png` | A window-cropped Persian monitoring grid of its own | **Not captured** — the automation run that should have taken it screenshotted a PowerShell error window instead (the app had not started for that step). The same content is visible behind the chart window in `fa-chart.png`, so nothing is unevidenced; the standalone crop is still worth taking. |
+| `artifacts/shots/monitoring-states.png` | A **grey** non-Ok row alongside a selected row | **Not captured** — with PawnIO installed and the app elevated, every mapped sensor on this box reads `Ok`, so there is no Missing/Stale/Invalid row to photograph. Run the app **non-elevated** (CPU and motherboard sensors then go missing) or stop the PawnIO service to produce one. The selected-row half is evidenced by `fa-chart.png`; the grey styling is the `Quality` `DataTrigger` in `Views/MonitoringView.xaml`. |
 
-The Persian captures are pending only because driving the elevated app from
-this session needs a human at the UAC consent prompt; the code change (C2)
-is complete and committed. To take them: set `"language": "fa"` in
-`%LocalAppData%\Mazesta\Test\config\appconfig.json`, run the Release
-build, screenshot Dashboard / Monitoring / Settings / one chart window, then
-restore the language. `artifacts/run-app.ps1` and `artifacts/capture-all.ps1`
-automate exactly that.
+To take the two outstanding captures: set `"language": "fa"` in
+`%LocalAppData%\Mazesta\Test\config\appconfig.json`, run the Release build,
+screenshot what is listed above, then restore the language.
+`artifacts/run-app.ps1` and `artifacts/capture-all.ps1` automate it (each
+elevated launch needs a human at the UAC consent prompt on this box).
 
 ### Idle resources, after the memory fixes
 
-**Not re-measured yet.** `tools/measure-idle.ps1 -SettleSeconds 120` needs the
-same elevated run as the screenshots above. The figures in §6 (288.5 MB
+**Not re-measured.** `tools/measure-idle.ps1 -SettleSeconds 120` was run inside
+the elevated capture batch and returned
+`WorkingSetMB 0 / PrivateMB 0 / IdleCpuPercent 0 / Threads 0`
+(`artifacts/idle-measure-after.log`) — the script starts the exe with
+`-Verb RunAs` from a session that is already elevated and then lost the
+process handle, so it measured nothing. **Those zeros are not a measurement
+and must not be quoted as one.** Re-run it from an elevated PowerShell at the
+repo root as `& '.\tools\measure-idle.ps1' -SettleSeconds 120`. The figures in §6 (288.5 MB
 working set, 0.07 % idle CPU) predate the fix wave and are the ones still on
 record. Two of the wave's fixes reduce steady-state memory and should be
 re-measured together:
@@ -465,7 +469,7 @@ present:
 | 7 | PawnIO-absent and provider-failure scenarios behave correctly, no fabricated values | **Partially met** | §7: the Degraded/PawnIoMissing status was confirmed against this box's real PawnIO-absent state before the driver was installed; the banner that now carries that reason (with the pawnio.eu link) is covered by `ShellViewModelTests`, but there is still **no screenshot of the live banner**, because PawnIO is installed on this box and the state can no longer be reproduced without uninstalling it. `No_temperature_reports_zero_as_ok`, the new `No_power_reports_zero_as_ok` and the `ReadingValidator` unit tests confirm no fabricated readings. |
 | 8 | Config survives restart, migrates v0→v1, corrupt file doesn't block startup | **Met** | `Mazesta.Persistence.Tests`, 12/12 (§2, §8). |
 | 9 | No network request made | **Partially met** | §9 above: two clean 60‑s‑apart `netstat -n -o` samples during an elevated session show zero connections for the process id; a full 10‑minute `netstat -b -n` capture is pending owner for a more rigorous check. |
-| 10 | Persian UI renders RTL correctly; every visible English label has a working help popup | **Met** (re-rated on fresh evidence) | Originally rated Met on `rtl.png` alone, which showed the layout flipping but not what the bidi algorithm did to the values: the final review found every value+unit run reversed ("C° 53.0") and the chart mirrored. Fixed (C2) and re-captured: `artifacts/shots/fa-dashboard.png`, `fa-monitoring.png`, `fa-settings.png`, `fa-chart.png` — units read `53.0 °C`, the chart and its axis labels are not mirrored. Help popups: `artifacts/shots/help-popup.png`, `shell-helptip.png` (unchanged by this wave). |
+| 10 | Persian UI renders RTL correctly; every visible English label has a working help popup | **Met** (re-rated on fresh evidence) | Originally rated Met on `rtl.png` alone, which showed the layout flipping but not what the bidi algorithm did to the values: the final review found every value+unit run reversed ("C° 53.0") and the chart mirrored. Fixed (C2) and re-captured: `artifacts/shots/fa-dashboard.png` (units read `48.0 °C`, `797 MHz`, `(24C/32T)`, phone numbers — none reversed), `fa-chart.png` (chart and axis labels not mirrored, Persian monitoring grid behind it) and `fa-settings.png` (path and version left-to-right). §13 lists the two captures still outstanding. Help popups: `artifacts/shots/help-popup.png`, `shell-helptip.png` (unchanged by this wave). |
 
 ## Known gaps / deferred
 
