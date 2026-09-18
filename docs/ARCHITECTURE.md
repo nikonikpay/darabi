@@ -12,14 +12,28 @@ enforced by the project graph, not just by convention.
 | `Mazesta.Hardware` | `LibreHardwareMonitorProvider`, `WmiInventoryProvider`, role-mapping table — the implementations of the Core provider contracts. | net10.0-windows | Core |
 | `Mazesta.Monitoring` | `PollingEngine`, `HistoryStore`, `SensorStatistics`, `StaleDetector`, `EventLog`, `MonitoringFocus`. | net10.0 | Core |
 | `Mazesta.Persistence` | `AppPaths` (portable vs. LocalAppData), `JsonStore<T>` (atomic), `SchemaMigrator`, `AppConfig`, `RollingFileLogger`. | net10.0 | Core |
-| `Mazesta.Desktop` | WPF app "Mazesta Test". Views, ViewModels, Controls (`TimeSeriesChart`, `HelpTip`), Localization, Theme. | net10.0-windows | Monitoring, Hardware, Persistence, Core |
+| `Mazesta.Diagnostics` | Test engine: `TestEngine` (sequential queue, repeat modes, cancellation, crash checkpoint), `ITestExecutor`/`TestExecutionRequest`, one real executor so far (`Cpu.CpuMatrixStressExecutor`). | net10.0 | Core, Monitoring, Persistence |
+| `Mazesta.Desktop` | WPF app "Mazesta Test". Views, ViewModels, Controls (`TimeSeriesChart`, `HelpTip`), Localization, Theme. | net10.0-windows | Monitoring, Hardware, Persistence, Diagnostics, Core |
 
 ## Allowed references
 
-`Desktop → Monitoring, Hardware, Persistence, Core`; `Monitoring → Core`;
+`Desktop → Monitoring, Hardware, Persistence, Diagnostics, Core`;
+`Diagnostics → Core, Monitoring, Persistence`; `Monitoring → Core`;
 `Hardware → Core`; `Persistence → Core`. Nothing references `Desktop`.
 
-This is exactly the slice 1 design document's graph. The provider contracts
+`Diagnostics` does not reference `Hardware`: its one executor so far
+(`CpuMatrixStressExecutor`) only needs `PollingEngine`/`HistoryStore` to read
+already-published sensor readings, never a hardware provider directly. A
+future GPU/storage executor that needs to enumerate adapters or issue
+provider-specific calls may need to add that reference then - not assumed
+here. This also differs from the slice 1 design doc's original sketch
+(`Diagnostics → Core, Hardware, Monitoring`, no `Persistence`): `Persistence`
+was added because the crash-checkpoint requirement (spec §2.5/§8) belongs to
+the engine itself, not the Desktop layer, and `Hardware` was dropped because
+nothing in this slice's executor needs it.
+
+The slice 1 layers (`Core`/`Hardware`/`Monitoring`/`Persistence`/`Desktop`)
+match that slice's own design document exactly. The provider contracts
 `PollingEngine` polls against (`ISensorProvider`, `PollRequest`, `PollResult`,
 `IInventoryProvider`) live in `Mazesta.Core.Providers`, so `Mazesta.Monitoring`
 needs no hardware reference and stays on the cross-platform `net10.0` TFM.
@@ -41,10 +55,9 @@ final fix wave moved them to `Core` and restored the designed graph.
 
 ## Future projects (not yet created)
 
-Three more projects are part of the overall design but are created by their
+Two more projects are part of the overall design but are created by their
 own later slices, not this one:
 
-- `Mazesta.Diagnostics → Core, Hardware, Monitoring`
 - `Mazesta.Reporting → Core`
 - `Mazesta.Monitor` (tray edition) `→ Core, Hardware, Monitoring, Persistence`,
   and never `Desktop` or `Diagnostics`
@@ -53,8 +66,8 @@ own later slices, not this one:
 
 Each `src` project has a matching project under `tests/` (`Mazesta.Core.Tests`,
 `Mazesta.Hardware.Tests`, `Mazesta.Monitoring.Tests`,
-`Mazesta.Persistence.Tests`, `Mazesta.Desktop.Tests`), referencing the same
-dependencies as its production project plus xunit. Each production project
+`Mazesta.Persistence.Tests`, `Mazesta.Diagnostics.Tests`, `Mazesta.Desktop.Tests`),
+referencing the same dependencies as its production project plus xunit. Each production project
 grants
 `InternalsVisibleTo` to its own test project only. `Mazesta.Hardware.Tests`
 additionally carries tests marked `[Trait("Category","Hardware")]` that touch
