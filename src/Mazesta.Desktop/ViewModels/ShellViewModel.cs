@@ -43,7 +43,7 @@ public sealed partial class ShellViewModel : ObservableObject
         [
             new("Nav_Dashboard", "", () => sp.GetRequiredService<Func<DashboardViewModel>>()()),
             new("Nav_Monitoring", "", () => sp.GetRequiredService<Func<MonitoringViewModel>>()()),
-            new("Nav_Tests", "", () => new PlaceholderViewModel("Nav_Tests")),
+            new("Nav_Tests", "", () => sp.GetRequiredService<Func<TestCenterViewModel>>()()),
             new("Nav_Benchmarks", "", () => new PlaceholderViewModel("Nav_Benchmarks")),
             new("Nav_Gpu", "", () => new PlaceholderViewModel("Nav_Gpu")),
             new("Nav_Cpu", "", () => new PlaceholderViewModel("Nav_Cpu")),

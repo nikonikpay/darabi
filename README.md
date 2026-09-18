@@ -4,8 +4,12 @@ Mazesta Test is a Windows x64 hardware diagnostics, stress-test and reporting
 tool built for a PC service shop. It enumerates hardware and reads sensors
 independently of HWiNFO, OCCT and AIDA64, and presents live monitoring,
 diagnostics and reporting in a single WPF desktop application. This
-repository currently delivers Slice 1: the solution skeleton plus the
-sensors and monitoring layers.
+repository delivers Slice 1 (solution skeleton, sensors and monitoring) and
+the start of Slice 2 (test engine): a sequential test queue with cancellation,
+repeat modes and crash-checkpoint detection, plus one real executor so far -
+a CPU matrix-load stress test with its own correctness verification, wired
+into the Test Center page. Specialised GPU/memory/storage/network executors
+follow in later Slice 2/3 work.
 
 ## Prerequisites
 
@@ -61,6 +65,7 @@ memory, idle CPU % and thread count once settled. See
 - [docs/PROVIDERS-AND-FALLBACKS.md](docs/PROVIDERS-AND-FALLBACKS.md) — what each provider supplies, what happens when it is absent, the LHM sensor-role map
 - [docs/HARDWARE-MATRIX.md](docs/HARDWARE-MATRIX.md) — per-machine observed/missing sensors, HWiNFO cross-check
 - [docs/VERIFICATION-slice1.md](docs/VERIFICATION-slice1.md) — measured build/test/publish/idle numbers, acceptance status, known gaps
+- [docs/VERIFICATION-slice2-test-engine.md](docs/VERIFICATION-slice2-test-engine.md) — test engine + CPU matrix load: build/test numbers and what was not verified (no GUI session)
 - [docs/GUIDE-FA.md](docs/GUIDE-FA.md) — راهنمای فارسی برای کاربر نهایی
 - [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md) — dependency licences and attributions
 - `docs/superpowers/specs/` — slice design documents

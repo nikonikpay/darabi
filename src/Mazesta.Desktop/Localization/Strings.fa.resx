@@ -277,4 +277,64 @@
   <data name="Engine_Failed" xml:space="preserve">
     <value>موتور سنسور پس از یک خطای داخلی متوقف شد. لاگ را ببینید.</value>
   </data>
+  <data name="Test_Cpu_Matrix" xml:space="preserve">
+    <value>بار ماتریسی CPU</value>
+  </data>
+  <data name="Test_Status_Starting" xml:space="preserve">
+    <value>در حال شروع</value>
+  </data>
+  <data name="Test_Status_Running" xml:space="preserve">
+    <value>در حال اجرا</value>
+  </data>
+  <data name="Test_Repeat_Once" xml:space="preserve">
+    <value>یک‌بار</value>
+  </data>
+  <data name="Test_Repeat_Count" xml:space="preserve">
+    <value>تعداد مشخص</value>
+  </data>
+  <data name="Test_Repeat_Unlimited" xml:space="preserve">
+    <value>نامحدود</value>
+  </data>
+  <data name="Test_Seconds" xml:space="preserve">
+    <value>ثانیه</value>
+  </data>
+  <data name="Test_Start" xml:space="preserve">
+    <value>شروع</value>
+  </data>
+  <data name="Test_Cancel" xml:space="preserve">
+    <value>لغو</value>
+  </data>
+  <data name="Test_IncompleteSession_Message" xml:space="preserve">
+    <value>نشست قبلی به پایان نرسید (تست {0} از {1}). ممکن است به دلیل خرابی یا ریستارت متوقف شده باشد.</value>
+  </data>
+  <data name="Test_IncompleteSession_Dismiss" xml:space="preserve">
+    <value>رد کردن</value>
+  </data>
+  <data name="Test_Validation_InvalidDuration" xml:space="preserve">
+    <value>مدت را بزرگ‌تر از صفر وارد کنید.</value>
+  </data>
+  <data name="Test_Validation_InvalidRepeatCount" xml:space="preserve">
+    <value>تعداد تکرار را یک یا بیشتر وارد کنید.</value>
+  </data>
+  <data name="Test_Outcome_NotRun" xml:space="preserve">
+    <value>اجرا نشده</value>
+  </data>
+  <data name="Test_Outcome_Queued" xml:space="preserve">
+    <value>در صف</value>
+  </data>
+  <data name="Test_Outcome_Running" xml:space="preserve">
+    <value>در حال اجرا</value>
+  </data>
+  <data name="Test_Outcome_Passed" xml:space="preserve">
+    <value>موفق</value>
+  </data>
+  <data name="Test_Outcome_Failed" xml:space="preserve">
+    <value>ناموفق</value>
+  </data>
+  <data name="Test_Outcome_Cancelled" xml:space="preserve">
+    <value>لغوشده</value>
+  </data>
+  <data name="Test_Outcome_Unsupported" xml:space="preserve">
+    <value>پشتیبانی نشده</value>
+  </data>
 </root>

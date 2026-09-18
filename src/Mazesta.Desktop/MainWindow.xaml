@@ -146,6 +146,9 @@
                     <DataTemplate DataType="{x:Type vm:MonitoringViewModel}">
                         <views:MonitoringView />
                     </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:TestCenterViewModel}">
+                        <views:TestCenterView />
+                    </DataTemplate>
                     <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
                         <views:DashboardView />
                     </DataTemplate>

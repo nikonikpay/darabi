@@ -277,4 +277,64 @@
   <data name="Engine_Failed" xml:space="preserve">
     <value>Sensor engine stopped after an internal error. See the log.</value>
   </data>
+  <data name="Test_Cpu_Matrix" xml:space="preserve">
+    <value>CPU Matrix Load</value>
+  </data>
+  <data name="Test_Status_Starting" xml:space="preserve">
+    <value>Starting</value>
+  </data>
+  <data name="Test_Status_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Test_Repeat_Once" xml:space="preserve">
+    <value>Once</value>
+  </data>
+  <data name="Test_Repeat_Count" xml:space="preserve">
+    <value>Repeat count</value>
+  </data>
+  <data name="Test_Repeat_Unlimited" xml:space="preserve">
+    <value>Unlimited</value>
+  </data>
+  <data name="Test_Seconds" xml:space="preserve">
+    <value>s</value>
+  </data>
+  <data name="Test_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Test_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Test_IncompleteSession_Message" xml:space="preserve">
+    <value>The last session did not finish (test {0} of {1}). It may have stopped because of a crash or reboot.</value>
+  </data>
+  <data name="Test_IncompleteSession_Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="Test_Validation_InvalidDuration" xml:space="preserve">
+    <value>Enter a duration greater than zero.</value>
+  </data>
+  <data name="Test_Validation_InvalidRepeatCount" xml:space="preserve">
+    <value>Enter a repeat count of one or more.</value>
+  </data>
+  <data name="Test_Outcome_NotRun" xml:space="preserve">
+    <value>Not run</value>
+  </data>
+  <data name="Test_Outcome_Queued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="Test_Outcome_Running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="Test_Outcome_Passed" xml:space="preserve">
+    <value>Passed</value>
+  </data>
+  <data name="Test_Outcome_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="Test_Outcome_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Test_Outcome_Unsupported" xml:space="preserve">
+    <value>Unsupported</value>
+  </data>
 </root>
