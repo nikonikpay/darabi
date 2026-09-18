@@ -31,9 +31,12 @@ dotnet test Mazesta.sln -c Release --filter "Category!=Hardware"
 | Mazesta.Persistence.Tests | 15 | 0 | 0 | 15 |
 | Mazesta.Hardware.Tests (non-`Hardware` category) | 112 | 0 | 0 | 112 |
 | Mazesta.Desktop.Tests | 48 | 0 | 0 | 48 |
-| **Mazesta.Diagnostics.Tests (new this increment)** | **10** | **0** | **0** | **10** |
+| **Mazesta.Diagnostics.Tests (new this increment)** | **11** | **0** | **0** | **11** |
 | Mazesta.Monitoring.Tests | 35 | 0 | 0 | 35 |
-| **Total** | **265** | **0** | **0** | **265** |
+| **Total** | **266** | **0** | **0** | **266** |
+
+(11, not 10: one regression test was added after the live GUI run below found the `Detail`-on-`Passed`
+bug - `A_passed_result_still_carries_its_executor_s_detail_text`.)
 
 The 10 new tests: `TestEngineTests` (queue order, cancel-before-start leaves the not-yet-started
 executor uncalled, missing-executor is Unsupported not an exception, Count repeat runs exactly N times
@@ -68,22 +71,65 @@ Succeeded, producing `MazestaTest.exe` and the `Mazesta.Diagnostics.dll` alongsi
 DLLs. Not re-inspected file-by-file (slice 1's verification did a full file/size accounting; this
 increment only confirms the publish step itself still succeeds with the new project in the graph).
 
-## 5. What was **not** verified this session
+## 5. Live GUI run, on real hardware, after all the numbers above
 
-- **No GUI screenshot.** `TestCenterView.xaml` was not visually inspected running - no screenshot of the
-  queue row, the progress bar, the incomplete-session banner, or the RTL/Persian rendering of the new
-  strings. The published exe also carries `requireAdministrator`, and this session had no way to satisfy
-  a UAC prompt, so it was not launched at all.
-- **No live/elevated run of the CPU test against real hardware or real sensors.** `CpuMatrixStressExecutorTests`
-  exercises the executor for real (genuine parallel computation, genuine timing, genuine verification),
-  but always with `Engine: null` - the `DescribeMeasuredLoad` path that reads real `PollingEngine` history
-  for the "measured CPU load avg …%" detail string has unit coverage of its null/empty-sample branches
-  only (implicitly, via the `Engine: null` tests), not a run against a live provider.
-- **No manual test of navigating away from Test Center mid-run and back**, the scenario
-  `TestEngine.RequestCancel`'s ownership design and the design doc's §5 note are both about. The
-  `TestEngineTests` cover cancellation and checkpoint detection at the engine level with fakes; the
-  Desktop-layer VM-reconstruction behaviour itself was not clicked through.
+An interactive Windows session turned out to be reachable this session after all (the owner's machine
+auto-elevates UAC for this account, matching what slice 1's own verification recorded on its dev box).
+The published exe was launched, driven with `System.Windows.Automation` from an **elevated** PowerShell
+(UIPI blocks a non-elevated automator from an elevated target window - confirmed the hard way first:
+`FindAll` returned 0 elements non-elevated, 152 elevated against the same window), and the run was
+captured with real screenshots, not just log lines.
 
-These gaps are recorded here rather than implied away by the passing test count above. Closing them
-needs a person at a Windows session that can accept the UAC prompt and take screenshots - this session
-had neither.
+Machine: AMD Ryzen 9 3950X (16C/32T), NVIDIA RTX 3090, 64 GB RAM, Windows 11 Pro 10.0.26200 - a real,
+different box from slice 1's Intel/RTX 4090 dev machine. Dashboard showed live, real numbers (413
+sensors ready) before Tests was ever opened, so the sensor pipeline this increment builds on top of was
+already confirmed working here, not assumed.
+
+**Two real bugs were found this way and are fixed on top of the commit this document originally
+described** (see the follow-up commit on this branch for the full diff/rationale):
+
+1. **`TestEngine.RunQueuedAsync` dropped `Detail` on a `Passed` outcome.** The loop only copied
+   `TestRunResult.Detail` across when an iteration's outcome was *not* `Passed`, so a passing run's own
+   evidence (thread count, iteration count, measured CPU load) was silently discarded before it reached
+   the ViewModel. Invisible to `TestEngineTests` because none of them asserted `Detail` on a `Passed`
+   result - fixed alongside a new regression test that does.
+2. **Three `TestCenterView.xaml` TextBlocks (Detail, ValidationError, error count) could never become
+   visible.** Each one's style set the base `Visibility` to `Collapsed` and then had a `DataTrigger` that
+   *also* collapsed it on the empty/zero case - there was no path left that ever set it back to `Visible`.
+   Invisible to the unit suite because it is pure XAML trigger logic, not something a ViewModel test
+   exercises. Inverted to the same visible-by-default/collapse-on-empty pattern already used correctly
+   elsewhere in this same file (`BannerBorderStyle`).
+
+**After both fixes, confirmed live**, with the duration set to 3 s via `ValuePattern` and Start invoked
+via `InvokePattern` (both real UI Automation calls into the real running window, not a simulation): the
+row's progress bar filled, CPU usage in the OS-level indicator rose to 100% during the run and returned
+to idle after, the outcome read **Passed**, and the detail line under the row read
+`matrix load 64x64; threads=32; iterations=122130; measured CPU load avg 64.9% (n=1)` - a real thread
+count matching this box's 32 logical processors, a real iteration count, and a real load percentage read
+back from `PollingEngine` history for the run's own time window, not a placeholder.
+
+Screenshots are not committed to the repository (this session had no established `artifacts/shots/`
+convention to follow for this increment and did not want to guess one); they exist only as this
+session's own evidence. Re-capturing them for the repo, the way slice 1 committed
+`artifacts/shots/*.png`, is a reasonable follow-up if the owner wants them on record here too.
+
+## 6. What is still **not** verified
+
+- **RTL/Persian rendering of the new strings.** The live run above was in English (`AppConfig.Language`
+  default); the new Test Center strings' Persian rendering (`Strings.fa.resx`, `Help.fa.resx`) was not
+  screenshotted, the way slice 1 specifically captured `fa-dashboard.png`/`fa-chart.png` for its own new
+  strings.
+- **Hardware-category tests were still not run elevated this session** (`dotnet test
+  tests/Mazesta.Hardware.Tests -c Release --filter Category=Hardware`) - nothing in this increment
+  touches `Mazesta.Hardware`, so no regression is suspected, but it was not re-confirmed either.
+- **Navigating away from Test Center mid-run and back**, the scenario `TestEngine.RequestCancel`'s
+  ownership design exists for, was not clicked through by hand - only covered at the engine level with
+  fakes (`TestEngineTests`).
+- **Repeat modes (Count/Unlimited) and Cancel were not exercised live** - the live run above used
+  `Once`. `TestEngineTests` covers their logic with fakes; the live run only re-confirmed the `Once`
+  path end to end.
+- **The incomplete-session banner was not produced live** (would need killing the app mid-run and
+  relaunching, deliberately, to leave a real stale checkpoint) - covered at the engine level by
+  `FindIncompleteSession_reports_a_checkpoint_left_over_from_a_crash`.
+
+These remaining gaps are recorded rather than implied away by the passing counts above.

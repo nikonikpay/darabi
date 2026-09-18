@@ -87,9 +87,12 @@ the window - the same "دریافت نشد" discipline slice 1 applied to sensor
 
 ## 5. Deferred / known gaps
 
-- No GUI screenshot evidence this session - see `docs/VERIFICATION-slice2-test-engine.md`. Build and the
-  full non-hardware test suite (265/265, including 10 new `Mazesta.Diagnostics.Tests`) are verified;
-  visual rendering of `TestCenterView.xaml` and an elevated end-to-end run are not.
+- A live, elevated, real-hardware run (see `docs/VERIFICATION-slice2-test-engine.md` §5) found and fixed
+  two real bugs the unit suite could not see: `TestEngine` dropping `Detail` on a `Passed` outcome, and
+  three `TestCenterView.xaml` TextBlocks whose visibility triggers had no path that ever made them
+  visible. Both are fixed and re-verified live; see that document for the full account. Persian/RTL
+  rendering of this increment's new strings, and the repeat/cancel/incomplete-session paths, are still
+  only unit-tested, not clicked through - listed in that document's §6, not repeated here.
 - `TestCenterViewModel` does not re-subscribe to a row's live progress if it is torn down and rebuilt
   mid-run (navigate away, then back): the engine keeps running and `IsRunning`/`State` sync correctly on
   reconstruction, but the specific row's percent/status resets to blank until the next event fires. Noted
