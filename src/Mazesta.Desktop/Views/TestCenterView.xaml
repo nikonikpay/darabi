@@ -113,7 +113,7 @@
                                         <TextBlock Foreground="{StaticResource Brush.TextMuted}" FontSize="11" HorizontalAlignment="Right" FlowDirection="LeftToRight">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Setter Property="Visibility" Value="Visible" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding ErrorCount}" Value="0">
                                                             <Setter Property="Visibility" Value="Collapsed" />
@@ -131,7 +131,7 @@
                                 <TextBlock Text="{Binding ValidationError}" Foreground="{StaticResource Brush.Accent}" Margin="0,8,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Setter Property="Visibility" Value="Visible" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding ValidationError}" Value="{x:Null}">
                                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -145,7 +145,7 @@
                                            TextWrapping="Wrap" FlowDirection="LeftToRight" HorizontalAlignment="Left">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Setter Property="Visibility" Value="Visible" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Detail}" Value="{x:Null}">
                                                     <Setter Property="Visibility" Value="Collapsed" />

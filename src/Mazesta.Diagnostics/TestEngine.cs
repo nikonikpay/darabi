@@ -88,9 +88,15 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             try { single = await executor.RunAsync(request, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { single = TestRunResult.Cancelled(item.Definition.Id, started, clock.UtcNow); }
             totalErrors += single.ErrorCount;
+            // Detail is taken from every iteration, Passed included: it carries real measured
+            // evidence (thread count, iterations, measured load - CpuMatrixStressExecutor's own
+            // Detail), not just a failure reason, so a Passed result must not lose it. Only Outcome
+            // itself is conditional: a later Passed iteration must not downgrade an outcome an
+            // earlier iteration already reported.
+            detail = single.Detail;
             if (single.Outcome != TestOutcome.Passed)
             {
-                outcome = single.Outcome; detail = single.Detail;
+                outcome = single.Outcome;
                 if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported) break;
             }
         }

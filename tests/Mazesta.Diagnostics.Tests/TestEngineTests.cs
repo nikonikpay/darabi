@@ -12,7 +12,7 @@ public class TestEngineTests : IDisposable
     public void Dispose() => Directory.Delete(_dir, true);
 
     private JsonStore<TestSessionCheckpoint> Store() => new(Path.Combine(_dir, "checkpoint.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, NullLogger.Instance);
-    private static TestRunResult Passed(TestId id, TestExecutionRequest r, long errors = 0) => new(id, TestOutcome.Passed, r.Clock.UtcNow, r.Clock.UtcNow, errors, null);
+    private static TestRunResult Passed(TestId id, TestExecutionRequest r, long errors = 0, string? detail = null) => new(id, TestOutcome.Passed, r.Clock.UtcNow, r.Clock.UtcNow, errors, detail);
 
     [Fact] public async Task Queue_runs_every_item_in_order_and_marks_the_checkpoint_completed()
     {
@@ -84,6 +84,23 @@ public class TestEngineTests : IDisposable
 
         Assert.Equal(3, calls);
         Assert.Equal(TestOutcome.Cancelled, result!.Outcome);   // the 3rd call itself passed, but the loop noticed the cancel before a 4th
+    }
+
+    [Fact] public async Task A_passed_result_still_carries_its_executor_s_detail_text()
+    {
+        // Regression test: RunQueuedAsync used to only copy TestRunResult.Detail across when an
+        // iteration's outcome was NOT Passed, so a passing executor's own evidence (thread count,
+        // iterations, measured load - CpuMatrixStressExecutor's real payload) was silently dropped
+        // and the Test Center row showed nothing. Caught by actually running the published app, not
+        // by any test that existed before this one.
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(Passed(Def1.Id, r, detail: "threads=4; iterations=9001")));
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0));
+        TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
+
+        await engine.RunAsync([QueuedTest.Once(Def1, 5)], CancellationToken.None);
+
+        Assert.Equal(TestOutcome.Passed, result!.Outcome);
+        Assert.Equal("threads=4; iterations=9001", result.Detail);
     }
 
     [Fact] public void FindIncompleteSession_reports_a_checkpoint_left_over_from_a_crash()
