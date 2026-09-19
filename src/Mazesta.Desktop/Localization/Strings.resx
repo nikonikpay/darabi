@@ -319,9 +319,6 @@
   <data name="Test_Outcome_NotRun" xml:space="preserve">
     <value>Not run</value>
   </data>
-  <data name="Test_Outcome_Queued" xml:space="preserve">
-    <value>Queued</value>
-  </data>
   <data name="Test_Outcome_Running" xml:space="preserve">
     <value>Running</value>
   </data>
@@ -336,5 +333,8 @@
   </data>
   <data name="Test_Outcome_Unsupported" xml:space="preserve">
     <value>Unsupported</value>
+  </data>
+  <data name="Test_Errors_Format" xml:space="preserve">
+    <value>{0} errors</value>
   </data>
 </root>

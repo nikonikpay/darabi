@@ -31,12 +31,12 @@ dotnet test Mazesta.sln -c Release --filter "Category!=Hardware"
 | Mazesta.Persistence.Tests | 15 | 0 | 0 | 15 |
 | Mazesta.Hardware.Tests (non-`Hardware` category) | 112 | 0 | 0 | 112 |
 | Mazesta.Desktop.Tests | 48 | 0 | 0 | 48 |
-| **Mazesta.Diagnostics.Tests (new this increment)** | **11** | **0** | **0** | **11** |
+| **Mazesta.Diagnostics.Tests (new this increment)** | **13** | **0** | **0** | **13** |
 | Mazesta.Monitoring.Tests | 35 | 0 | 0 | 35 |
-| **Total** | **266** | **0** | **0** | **266** |
+| **Total** | **268** | **0** | **0** | **268** |
 
-(11, not 10: one regression test was added after the live GUI run below found the `Detail`-on-`Passed`
-bug - `A_passed_result_still_carries_its_executor_s_detail_text`.)
+(13, not 10: one regression test after the live GUI run below found the `Detail`-on-`Passed`
+bug - `A_passed_result_still_carries_its_executor_s_detail_text` - plus two after the /simplify review showed the same last-iteration-wins mechanism could hide a Failed loop: `TestRunResult.Combine` now folds repeat iterations by severity, covered by `A_failure_on_one_loop_is_not_hidden...` and `Cancelling_after_a_failed_loop_still_reports_Failed`.)
 
 The 10 new tests: `TestEngineTests` (queue order, cancel-before-start leaves the not-yet-started
 executor uncalled, missing-executor is Unsupported not an exception, Count repeat runs exactly N times

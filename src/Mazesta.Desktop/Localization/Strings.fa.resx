@@ -319,9 +319,6 @@
   <data name="Test_Outcome_NotRun" xml:space="preserve">
     <value>اجرا نشده</value>
   </data>
-  <data name="Test_Outcome_Queued" xml:space="preserve">
-    <value>در صف</value>
-  </data>
   <data name="Test_Outcome_Running" xml:space="preserve">
     <value>در حال اجرا</value>
   </data>
@@ -336,5 +333,8 @@
   </data>
   <data name="Test_Outcome_Unsupported" xml:space="preserve">
     <value>پشتیبانی نشده</value>
+  </data>
+  <data name="Test_Errors_Format" xml:space="preserve">
+    <value>{0} خطا</value>
   </data>
 </root>

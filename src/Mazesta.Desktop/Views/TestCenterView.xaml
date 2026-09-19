@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
              xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
-             xmlns:diag="clr-namespace:Mazesta.Diagnostics;assembly=Mazesta.Diagnostics"
              mc:Ignorable="d"
              Background="{StaticResource Brush.Background}">
     <UserControl.Resources>
@@ -27,26 +26,13 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{loc:Loc Nav_Tests}" FontSize="22" FontWeight="Bold"
-                   Foreground="{StaticResource Brush.Text}" Margin="0,0,0,12" />
+        <TextBlock Grid.Row="0" Text="{loc:Loc Nav_Tests}" FontSize="22" FontWeight="Bold" Margin="0,0,0,12" />
 
-        <!-- Spec §8/§2.5: a checkpoint left over from a crash is surfaced honestly, not resumed
-             silently and not hidden. -->
-        <Border Grid.Row="1">
-            <Border.Style>
-                <Style TargetType="Border" BasedOn="{StaticResource RowBorderStyle}">
-                    <Setter Property="Visibility" Value="Visible" />
-                    <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IncompleteSessionMessage}" Value="{x:Null}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
+        <!-- A checkpoint left over from a crash is surfaced honestly: not resumed silently, not hidden. -->
+        <Border Grid.Row="1" Style="{StaticResource RowBorderStyle}" BorderBrush="{StaticResource Brush.Accent}"
+                Visibility="{Binding HasIncompleteSession, Converter={StaticResource BoolToVis}}">
             <DockPanel LastChildFill="False">
-                <TextBlock DockPanel.Dock="Left" Text="{Binding IncompleteSessionMessage}" TextWrapping="Wrap"
-                           Foreground="{StaticResource Brush.Text}" VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Left" Text="{Binding IncompleteSessionMessage}" TextWrapping="Wrap" VerticalAlignment="Center" />
                 <Button DockPanel.Dock="Right" Content="{loc:Loc Test_IncompleteSession_Dismiss}"
                         Command="{Binding DismissIncompleteSessionCommand}" VerticalAlignment="Center" />
             </DockPanel>
@@ -71,16 +57,14 @@
 
                                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" />
 
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold"
-                                               Foreground="{StaticResource Brush.Text}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" FlowDirection="LeftToRight">
-                                        <TextBox Width="56" Text="{Binding DurationText, UpdateSourceTrigger=PropertyChanged}" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBox Width="56" Style="{StaticResource TextBox.Value}" Text="{Binding DurationText, UpdateSourceTrigger=PropertyChanged}" />
                                         <TextBlock Text="{loc:Loc Test_Seconds}" Margin="6,0,0,0" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" />
                                     </StackPanel>
 
                                     <ComboBox Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0"
-                                              Style="{StaticResource {x:Type ComboBox}}"
                                               ItemsSource="{Binding RepeatModes}" SelectedItem="{Binding Repeat}">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
@@ -89,19 +73,9 @@
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
 
-                                    <TextBox Grid.Column="4" VerticalAlignment="Center" FlowDirection="LeftToRight"
-                                             Text="{Binding RepeatCountText, UpdateSourceTrigger=PropertyChanged}">
-                                        <TextBox.Style>
-                                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                                <Setter Property="Visibility" Value="Collapsed" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Repeat}" Value="{x:Static diag:RepeatMode.Count}">
-                                                        <Setter Property="Visibility" Value="Visible" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBox.Style>
-                                    </TextBox>
+                                    <TextBox Grid.Column="4" VerticalAlignment="Center" Style="{StaticResource TextBox.Value}"
+                                             Text="{Binding RepeatCountText, UpdateSourceTrigger=PropertyChanged}"
+                                             Visibility="{Binding IsRepeatCount, Converter={StaticResource BoolToVis}}" />
 
                                     <StackPanel Grid.Column="5" VerticalAlignment="Center" Margin="10,0">
                                         <ProgressBar Minimum="0" Maximum="1" Value="{Binding PercentComplete, Mode=OneWay}" Height="6" FlowDirection="LeftToRight" />
@@ -109,51 +83,19 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="6" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding OutcomeText}" Foreground="{StaticResource Brush.Text}" HorizontalAlignment="Right" />
-                                        <TextBlock Foreground="{StaticResource Brush.TextMuted}" FontSize="11" HorizontalAlignment="Right" FlowDirection="LeftToRight">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                                    <Setter Property="Visibility" Value="Visible" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding ErrorCount}" Value="0">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                            <TextBlock.Text>
-                                                <Binding Path="ErrorCount" StringFormat="{}{0} errors" />
-                                            </TextBlock.Text>
-                                        </TextBlock>
+                                        <TextBlock Text="{Binding OutcomeText}" HorizontalAlignment="Right" />
+                                        <TextBlock Text="{Binding ErrorsText}" Style="{StaticResource Text.Value}" Foreground="{StaticResource Brush.TextMuted}"
+                                                   FontSize="11" HorizontalAlignment="Right"
+                                                   Visibility="{Binding HasErrors, Converter={StaticResource BoolToVis}}" />
                                     </StackPanel>
                                 </Grid>
 
-                                <TextBlock Text="{Binding ValidationError}" Foreground="{StaticResource Brush.Accent}" Margin="0,8,0,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding ValidationError}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <TextBlock Text="{Binding ValidationError}" Foreground="{StaticResource Brush.Accent}" Margin="0,8,0,0"
+                                           Visibility="{Binding HasValidationError, Converter={StaticResource BoolToVis}}" />
 
-                                <TextBlock Text="{Binding Detail}" Foreground="{StaticResource Brush.TextMuted}" FontSize="11" Margin="0,6,0,0"
-                                           TextWrapping="Wrap" FlowDirection="LeftToRight" HorizontalAlignment="Left">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Detail}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Collapsed" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Value}" Foreground="{StaticResource Brush.TextMuted}"
+                                           FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" HorizontalAlignment="Left"
+                                           Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}" />
                             </StackPanel>
                         </Border>
                     </DataTemplate>

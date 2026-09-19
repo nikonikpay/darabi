@@ -1,26 +1,33 @@
 namespace Mazesta.Diagnostics;
 
-public enum TestCategory { Cpu, Gpu, Memory, Storage, Network, Power }
-
 public readonly record struct TestId(string Value) { public override string ToString() => Value; }
 
-/// <summary>Static description of one runnable test. MinDurationSeconds replaces the old five-minute
-/// floor (spec §8): any positive duration is valid; unlimited vs. counted repeat is a separate choice
-/// on the queue entry (see <see cref="QueuedTest"/>), not part of the definition.</summary>
-public sealed record TestDefinition(TestId Id, TestCategory Category, string NameKey, int DefaultDurationSeconds, int MinDurationSeconds, bool SupportsRepeat);
+/// <summary>Static description of one runnable test. Any positive duration is valid (spec §8 dropped the
+/// old five-minute floor); the executor rejects zero/negative as Unsupported.</summary>
+public sealed record TestDefinition(TestId Id, string NameKey, int DefaultDurationSeconds);
 
-/// <summary>Spec §8: cancelled, never-run, unsupported and failed are distinct states - a missing or
-/// skipped test must never be reported to the customer as a pass.</summary>
-public enum TestOutcome { NotRun, Queued, Running, Passed, Failed, Cancelled, Unsupported }
+/// <summary>Spec §8: cancelled, never-run, unsupported and failed are distinct - a skipped test must
+/// never be reported as a pass. Running is a display state only; no executor returns it.</summary>
+public enum TestOutcome { NotRun, Running, Passed, Failed, Cancelled, Unsupported }
 
-public readonly record struct TestProgress(double PercentComplete, string StatusKey, TimeSpan Elapsed);
+public readonly record struct TestProgress(double PercentComplete, string StatusKey);
 
-/// <summary>Detail is a plain technical string (English, internal), the same split as
-/// <c>ProviderStatus.ReasonKey</c>/<c>Detail</c>: the Desktop layer maps Outcome (a closed enum) to a
-/// localised customer-facing line and keeps Detail for the technical log/JSON only (spec §12) - it is
-/// never shown to the customer verbatim.</summary>
+/// <summary>Detail is a technical English string for the log/JSON (spec §12); the UI localises Outcome and
+/// shows Detail as measured evidence, never as the customer-facing verdict.</summary>
 public sealed record TestRunResult(TestId Id, TestOutcome Outcome, DateTimeOffset StartedAt, DateTimeOffset? FinishedAt, long ErrorCount, string? Detail)
 {
     public static TestRunResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, TestOutcome.Unsupported, now, now, 0, detail);
     public static TestRunResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, TestOutcome.Cancelled, started, now, 0, null);
+
+    /// <summary>Folds the next repeat iteration into this one: errors add up, the span widens, and the
+    /// worse outcome wins together with its own Detail. Failed outranks everything so a fault caught
+    /// on loop 3 is never hidden by a later cancel or a later clean pass; on a tie the earlier result
+    /// (and its Detail) is kept.</summary>
+    public TestRunResult Combine(TestRunResult next)
+    {
+        var worse = Rank(next.Outcome) > Rank(Outcome) ? next : this;
+        return worse with { StartedAt = StartedAt, FinishedAt = next.FinishedAt, ErrorCount = ErrorCount + next.ErrorCount };
+    }
+
+    private static int Rank(TestOutcome o) => o switch { TestOutcome.Failed => 3, TestOutcome.Unsupported => 2, TestOutcome.Cancelled => 1, _ => 0 };
 }

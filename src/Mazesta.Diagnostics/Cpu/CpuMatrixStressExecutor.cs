@@ -8,7 +8,7 @@ namespace Mazesta.Diagnostics.Cpu;
 /// real Linpack-equivalent (LU factorisation + residual) is a separate, later executor.</summary>
 public sealed class CpuMatrixStressExecutor : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), TestCategory.Cpu, "Test_Cpu_Matrix", DefaultDurationSeconds: 60, MinDurationSeconds: 1, SupportsRepeat: true);
+    public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", DefaultDurationSeconds: 60);
     TestDefinition ITestExecutor.Definition => Definition;
 
     private const int MatrixSize = 64;
@@ -44,11 +44,11 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
         var allDone = Task.WhenAll(workers);
         while (!allDone.IsCompleted)
         {
-            request.Progress?.Invoke(new TestProgress(Math.Clamp(sw.Elapsed.TotalSeconds / duration.TotalSeconds, 0, 1), "Test_Status_Running", sw.Elapsed));
+            request.Progress?.Invoke(new TestProgress(Math.Clamp(sw.Elapsed.TotalSeconds / duration.TotalSeconds, 0, 1), "Test_Status_Running"));
             await Task.WhenAny(allDone, Task.Delay(250)).ConfigureAwait(false);
         }
         await allDone.ConfigureAwait(false);
-        request.Progress?.Invoke(new TestProgress(1.0, "Test_Status_Running", sw.Elapsed));
+        request.Progress?.Invoke(new TestProgress(1.0, "Test_Status_Running"));
 
         var finished = request.Clock.UtcNow;
         if (ct.IsCancellationRequested)

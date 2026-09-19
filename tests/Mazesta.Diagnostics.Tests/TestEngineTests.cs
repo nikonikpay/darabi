@@ -5,13 +5,14 @@ namespace Mazesta.Diagnostics.Tests;
 public class TestEngineTests : IDisposable
 {
     private static readonly DateTimeOffset T0 = new(2026, 9, 18, 0, 0, 0, TimeSpan.Zero);
-    private static readonly TestDefinition Def1 = new(new TestId("fake.a"), TestCategory.Cpu, "Test_Fake_A", 5, 1, true);
-    private static readonly TestDefinition Def2 = new(new TestId("fake.b"), TestCategory.Cpu, "Test_Fake_B", 5, 1, true);
+    private static readonly TestDefinition Def1 = new(new TestId("fake.a"), "Test_Fake_A", 5);
+    private static readonly TestDefinition Def2 = new(new TestId("fake.b"), "Test_Fake_B", 5);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "mazesta-diag-tests-" + Guid.NewGuid().ToString("N"));
     public TestEngineTests() => Directory.CreateDirectory(_dir);
     public void Dispose() => Directory.Delete(_dir, true);
 
     private JsonStore<TestSessionCheckpoint> Store() => new(Path.Combine(_dir, "checkpoint.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, NullLogger.Instance);
+    private static QueuedTest Once(TestDefinition d, int seconds) => new(d, seconds, RepeatMode.Once, 1);
     private static TestRunResult Passed(TestId id, TestExecutionRequest r, long errors = 0, string? detail = null) => new(id, TestOutcome.Passed, r.Clock.UtcNow, r.Clock.UtcNow, errors, detail);
 
     [Fact] public async Task Queue_runs_every_item_in_order_and_marks_the_checkpoint_completed()
@@ -24,7 +25,7 @@ public class TestEngineTests : IDisposable
         var completed = new List<TestOutcome>();
         engine.TestCompleted += (_, r) => completed.Add(r.Outcome);
 
-        await engine.RunAsync([QueuedTest.Once(Def1, 5), QueuedTest.Once(Def2, 5)], CancellationToken.None);
+        await engine.RunAsync([Once(Def1, 5), Once(Def2, 5)], CancellationToken.None);
 
         Assert.Equal(["a", "b"], order);
         Assert.Equal([TestOutcome.Passed, TestOutcome.Passed], completed);
@@ -41,7 +42,7 @@ public class TestEngineTests : IDisposable
         var results = new Dictionary<string, TestOutcome>();
         engine.TestCompleted += (id, r) => results[id.Value] = r.Outcome;
 
-        await engine.RunAsync([QueuedTest.Once(Def1, 5), QueuedTest.Once(Def2, 5)], cts.Token);
+        await engine.RunAsync([Once(Def1, 5), Once(Def2, 5)], cts.Token);
 
         Assert.Equal(TestOutcome.Passed, results["fake.a"]);
         Assert.Equal(TestOutcome.Cancelled, results["fake.b"]);
@@ -53,7 +54,7 @@ public class TestEngineTests : IDisposable
         var engine = new TestEngine([], Store(), new FakeClock(T0));
         TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
 
-        await engine.RunAsync([QueuedTest.Once(Def1, 5)], CancellationToken.None);
+        await engine.RunAsync([Once(Def1, 5)], CancellationToken.None);
 
         Assert.Equal(TestOutcome.Unsupported, result!.Outcome);
     }
@@ -97,10 +98,42 @@ public class TestEngineTests : IDisposable
         var engine = new TestEngine([e1], Store(), new FakeClock(T0));
         TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
 
-        await engine.RunAsync([QueuedTest.Once(Def1, 5)], CancellationToken.None);
+        await engine.RunAsync([Once(Def1, 5)], CancellationToken.None);
 
         Assert.Equal(TestOutcome.Passed, result!.Outcome);
         Assert.Equal("threads=4; iterations=9001", result.Detail);
+    }
+
+    [Fact] public async Task A_failure_on_one_loop_is_not_hidden_by_later_clean_loops()
+    {
+        // Same class of bug as the Detail one: last-iteration-wins would let loop 3's clean Passed
+        // overwrite loop 2's Failed outcome and its evidence.
+        int calls = 0;
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(++calls == 2
+            ? new TestRunResult(Def1.Id, TestOutcome.Failed, r.Clock.UtcNow, r.Clock.UtcNow, 1, "mismatch on loop 2")
+            : Passed(Def1.Id, r, detail: $"clean loop {calls}")));
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0));
+        TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
+
+        await engine.RunAsync([new QueuedTest(Def1, 5, RepeatMode.Count, 3)], CancellationToken.None);
+
+        Assert.Equal(3, calls);
+        Assert.Equal(TestOutcome.Failed, result!.Outcome);
+        Assert.Equal(1, result.ErrorCount);
+        Assert.Equal("mismatch on loop 2", result.Detail);
+    }
+
+    [Fact] public async Task Cancelling_after_a_failed_loop_still_reports_Failed()
+    {
+        var cts = new CancellationTokenSource();
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => { cts.Cancel(); return Task.FromResult(new TestRunResult(Def1.Id, TestOutcome.Failed, r.Clock.UtcNow, r.Clock.UtcNow, 2, "bad")); });
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0));
+        TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
+
+        await engine.RunAsync([new QueuedTest(Def1, 5, RepeatMode.Unlimited, 0)], cts.Token);
+
+        Assert.Equal(TestOutcome.Failed, result!.Outcome);
+        Assert.Equal(2, result.ErrorCount);
     }
 
     [Fact] public void FindIncompleteSession_reports_a_checkpoint_left_over_from_a_crash()
