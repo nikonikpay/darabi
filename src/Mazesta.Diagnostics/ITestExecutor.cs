@@ -5,7 +5,7 @@ namespace Mazesta.Diagnostics;
 /// measured evidence (spec §8: a speed score alone is not a health pass) reads Engine.History for its
 /// own time window. Progress is a plain callback fired on the caller's thread - marshalling to the UI
 /// is the subscriber's job, as with PollingEngine's events.</summary>
-public sealed record TestExecutionRequest(int DurationSeconds, IClock Clock, Action<TestProgress>? Progress, PollingEngine? Engine);
+public sealed record TestExecutionRequest(int DurationSeconds, IClock Clock, Action<TestProgress>? Progress, PollingEngine? Engine, TestOptions? Options = null);
 
 /// <summary>Runs exactly one pass of one test; repeat handling belongs to <see cref="TestEngine"/>.</summary>
 public interface ITestExecutor

@@ -30,6 +30,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
@@ -73,6 +74,13 @@
                     <Button DockPanel.Dock="Right" Content="{loc:Loc Settings_OpenFolder}" Command="{Binding OpenFolderCommand}" Margin="8,0,0,0" />
                     <TextBox IsReadOnly="True" Text="{Binding DataFolder, Mode=OneWay}" Style="{StaticResource TextBox.Value}" />
                 </DockPanel>
+
+                <StackPanel Grid.Row="5" Grid.Column="0" Style="{StaticResource RowLabelStyle}">
+                    <TextBlock Text="{loc:Loc Settings_RenderMode}" VerticalAlignment="Center" />
+                    <controls:HelpTip HelpKey="Settings_RenderMode" VerticalAlignment="Center" />
+                </StackPanel>
+                <ComboBox Grid.Row="5" Grid.Column="1" Style="{StaticResource {x:Type ComboBox}}" Margin="0,0,0,14" VerticalAlignment="Center" FlowDirection="LeftToRight"
+                          ItemsSource="{Binding RenderModes}" SelectedItem="{Binding RenderMode}" Width="120" HorizontalAlignment="Left" />
             </Grid>
 
             <StackPanel Orientation="Horizontal" Margin="0,4,0,16">

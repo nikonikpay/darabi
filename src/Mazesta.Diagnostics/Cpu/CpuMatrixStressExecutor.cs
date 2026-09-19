@@ -1,4 +1,4 @@
-using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Monitoring;
+using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Evidence;
 namespace Mazesta.Diagnostics.Cpu;
 
 /// <summary>Real integer-and-floating-point CPU+memory workload: repeated dense matrix multiplication
@@ -8,7 +8,7 @@ namespace Mazesta.Diagnostics.Cpu;
 /// real Linpack-equivalent (LU factorisation + residual) is a separate, later executor.</summary>
 public sealed class CpuMatrixStressExecutor : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", DefaultDurationSeconds: 60);
+    public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", 60);
     TestDefinition ITestExecutor.Definition => Definition;
 
     private const int MatrixSize = 64;
@@ -54,29 +54,10 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
         if (ct.IsCancellationRequested)
             return new TestRunResult(Definition.Id, TestOutcome.Cancelled, started, finished, totalErrors, $"threads={_threadCount}; iterations={totalIterations}");
 
-        string? load = DescribeMeasuredLoad(request.Engine, started, finished);
-        string detail = $"matrix load {MatrixSize}x{MatrixSize}; threads={_threadCount}; iterations={totalIterations}" + (load is null ? "" : $"; {load}");
+        string detail = SensorEvidence.Join($"matrix load {MatrixSize}x{MatrixSize}", $"threads={_threadCount}", $"iterations={totalIterations}",
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuTotalLoad, started, finished)?.Format("measured CPU load", "%"),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackageTemp, started, finished)?.Format("CPU package", "°C", includeMax: true));
         return new TestRunResult(Definition.Id, totalErrors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, finished, totalErrors, detail);
-    }
-
-    /// <summary>Spec §8: "نمره سرعت به‌تنهایی PASS سلامت نیست" - a pass must be backed by measured
-    /// evidence of real load, not the executor's own say-so. Reads the CPU total-load sensor's already
-    /// recorded history for exactly this run's time window; returns null (never a fabricated number)
-    /// when there is no engine, no such sensor, or no sample fell inside the window.</summary>
-    private static string? DescribeMeasuredLoad(PollingEngine? engine, DateTimeOffset started, DateTimeOffset finished)
-    {
-        if (engine is null) return null;
-        var loadSensors = engine.Hardware.Where(n => n.Kind == HardwareKind.Cpu).SelectMany(n => n.Sensors).Where(s => s.Role == SensorRole.CpuTotalLoad).ToList();
-        if (loadSensors.Count == 0) return null;
-        int startSec = engine.History.SecondsSinceEpoch(started), endSec = engine.History.SecondsSinceEpoch(finished);
-        var samples = new List<float>();
-        foreach (var s in loadSensors)
-        {
-            var raw = engine.History.GetRaw(s.Id);
-            for (int i = 0; i < raw.Seconds.Length; i++)
-                if (raw.Seconds[i] >= startSec && raw.Seconds[i] <= endSec && !float.IsNaN(raw.Values[i])) samples.Add(raw.Values[i]);
-        }
-        return samples.Count == 0 ? null : $"measured CPU load avg {samples.Average():F1}% (n={samples.Count})";
     }
 
     // internal, not private: CpuMatrixStressExecutorTests exercises VerifySpotChecks directly against a

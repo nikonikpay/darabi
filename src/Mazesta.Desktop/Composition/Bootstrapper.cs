@@ -2,7 +2,6 @@ using System.IO;
 using Mazesta.Core.Time;
 using Mazesta.Core.Providers;
 using Mazesta.Diagnostics;
-using Mazesta.Diagnostics.Cpu;
 using Mazesta.Hardware.Lhm;
 using Mazesta.Hardware.Wmi;
 using Mazesta.Monitoring;
@@ -39,11 +38,7 @@ public static class Bootstrapper
         s.AddSingleton<InventoryCache>();
         s.AddSingleton<ViewModels.ShellViewModel>();
         s.AddSingleton<ViewModels.IChartWindowService, Services.ChartWindowService>();
-        s.AddSingleton(sp => new JsonStore<TestSessionCheckpoint>(Path.Combine(paths.SessionsDir, "test-checkpoint.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, lf.CreateLogger("Diagnostics")));
-        s.AddSingleton<ITestExecutor, CpuMatrixStressExecutor>();
-        // Singleton, not per-page: a queue keeps running when the technician navigates away from Test
-        // Center and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.
-        s.AddSingleton(sp => new TestEngine(sp.GetRequiredService<IEnumerable<ITestExecutor>>(), sp.GetRequiredService<JsonStore<TestSessionCheckpoint>>(), sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>()));
+        s.AddDiagnostics(paths, lf);
         AddViewModelFactory(s, sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<InventoryCache>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));

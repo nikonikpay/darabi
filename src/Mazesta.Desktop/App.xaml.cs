@@ -52,6 +52,7 @@ public partial class App : Application
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, startupLog);
         var load = store.Load(); var config = load.Value;
         Loc.SetLanguage(config.Language);
+        if (config.RenderMode == "software") System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;   // before the first window exists
         Services = Composition.Bootstrapper.Build(paths, config, store, lf);
         var shell = Services.GetRequiredService<ViewModels.ShellViewModel>();
         if (load.Outcome == LoadOutcome.Corrupt) shell.ShowBanner(Loc.Get("Config_Corrupt"));

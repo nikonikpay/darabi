@@ -22,6 +22,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     {
         _engine = engine; _dispatch = dispatch;
         Rows = new(executors.Select(e => new TestQueueRowViewModel(e.Definition)));
+        foreach (var row in Rows) row.PropertyChanged += OnRowChanged;
         IsRunning = engine.State == TestEngineState.Running;
         engine.StateChanged += OnStateChanged;
         engine.TestStarted += OnTestStarted;
@@ -42,8 +43,9 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         if (r.Outcome is TestOutcome.Passed or TestOutcome.Failed) row.PercentComplete = 1.0;
     });
 
-    /// <summary>Start with nothing selected is a no-op rather than a disabled button: re-subscribing to every
-    /// row's PropertyChanged just to drive one button's enabled state is not worth it at this size.</summary>
+    private void OnRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    { if (e.PropertyName == nameof(TestQueueRowViewModel.IsSelected)) StartCommand.NotifyCanExecuteChanged(); }
+
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task Start()
     {
@@ -54,12 +56,14 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
             if (row.TryBuildQueuedTest() is not { } q) return;   // the row now shows its own validation error
             queue.Add(q);
         }
-        if (queue.Count == 0) return;
         IncompleteSessionMessage = null;
         IsRunning = true;   // immediately, so a double-click cannot start twice before StateChanged is dispatched
         await _engine.RunAsync(queue);
     }
-    private bool CanStart() => !IsRunning;
+    private bool CanStart() => !IsRunning && Rows.Any(r => r.IsSelected);
+
+    [RelayCommand] private void SelectAll() { foreach (var row in Rows) row.IsSelected = true; }
+    [RelayCommand] private void ClearSelection() { foreach (var row in Rows) row.IsSelected = false; }
 
     [RelayCommand(CanExecute = nameof(IsRunning))]
     private void Cancel() => _engine.RequestCancel();
@@ -68,6 +72,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        foreach (var row in Rows) row.PropertyChanged -= OnRowChanged;
         _engine.StateChanged -= OnStateChanged;
         _engine.TestStarted -= OnTestStarted;
         _engine.TestProgressChanged -= OnTestProgress;

@@ -45,7 +45,7 @@ public sealed class TimeSeriesChart : FrameworkElement
     protected override void OnRender(DrawingContext dc)
     {
         double w = Math.Max(ActualWidth - LeftAxis - Right, 10), h = Math.Max(ActualHeight - Top - Bottom, 10);
-        var axisPen = new Pen((Brush)FindResource("Brush.Border"), 1); var textBrush = (Brush)FindResource("Brush.TextMuted"); var font = new Typeface((FontFamily)FindResource("App.Font"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+        var axisPen = new Pen((Brush)FindResource("Brush.Border"), 1); var textBrush = (Brush)FindResource("Brush.TextMuted"); var font = new Typeface((FontFamily)FindResource("App.Font.Latin"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
         dc.DrawRectangle((Brush)FindResource("Brush.Surface"), null, new Rect(0, 0, ActualWidth, ActualHeight));
         // data range
         var minutes = Minutes.Minute is null ? new MinuteSeries([], [], [], []) : Minutes; var series = Series.Seconds is null ? new RawSeries([], []) : Series;

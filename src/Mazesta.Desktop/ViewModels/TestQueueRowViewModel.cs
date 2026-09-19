@@ -2,18 +2,27 @@ using CommunityToolkit.Mvvm.ComponentModel; using Mazesta.Core.Text; using Mazes
 namespace Mazesta.Desktop.ViewModels;
 
 /// <summary>One row in the Test Center queue: a registered <see cref="TestDefinition"/> plus the chosen
-/// duration/repeat and (while running) its live status. Duration and repeat count stay as text so
+/// duration/repeat/options and (while running) its live status. Duration and repeat count stay as text so
 /// Persian-digit input works (PersianDigits); they are parsed only when the row is queued.</summary>
 public sealed partial class TestQueueRowViewModel : ObservableObject
 {
     public static IReadOnlyList<RepeatMode> RepeatModes { get; } = Enum.GetValues<RepeatMode>();
 
-    public TestQueueRowViewModel(TestDefinition definition) { Definition = definition; _durationText = definition.DefaultDurationSeconds.ToString(); }
+    public TestQueueRowViewModel(TestDefinition definition)
+    {
+        Definition = definition;
+        _durationText = definition.DefaultDurationSeconds.ToString();
+        Options = [.. definition.Options.Select(o => new TestOptionViewModel(o))];
+    }
 
     public TestDefinition Definition { get; }
     public string Name => Loc.Get(Definition.NameKey);
+    public IReadOnlyList<TestOptionViewModel> Options { get; }
+    public bool HasOptions => Options.Count > 0;
 
-    [ObservableProperty] private bool _isSelected = true;
+    /// <summary>Nothing is selected until the technician chooses (spec: the user's unchecked defaults are kept) - a
+    /// RAM or VRAM test that starts by itself is not a harmless default.</summary>
+    [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private string _durationText;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(IsRepeatCount))] private RepeatMode _repeat = RepeatMode.Once;
     [ObservableProperty] private string _repeatCountText = "1";
@@ -42,7 +51,9 @@ public sealed partial class TestQueueRowViewModel : ObservableObject
         int repeatCount = 1;
         if (Repeat == RepeatMode.Count && (!PersianDigits.TryParseInt(RepeatCountText, out repeatCount) || repeatCount <= 0))
         { ValidationError = Loc.Get("Test_Validation_InvalidRepeatCount"); return null; }
-        return new QueuedTest(Definition, duration, Repeat, repeatCount);
+        if (Options.FirstOrDefault(o => !o.IsValid) is { } bad)
+        { ValidationError = Loc.Format("Test_Validation_InvalidOption", bad.Label); return null; }
+        return new QueuedTest(Definition, duration, Repeat, repeatCount, Options.ToDictionary(o => o.Option.Key, o => o.Value));
     }
 
     public void ResetRunState() { Outcome = TestOutcome.NotRun; PercentComplete = 0; StatusText = ""; ErrorCount = 0; Detail = null; }

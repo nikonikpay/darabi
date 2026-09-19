@@ -4,7 +4,10 @@ public readonly record struct TestId(string Value) { public override string ToSt
 
 /// <summary>Static description of one runnable test. Any positive duration is valid (spec §8 dropped the
 /// old five-minute floor); the executor rejects zero/negative as Unsupported.</summary>
-public sealed record TestDefinition(TestId Id, string NameKey, int DefaultDurationSeconds);
+public sealed record TestDefinition(TestId Id, string NameKey, int DefaultDurationSeconds, IReadOnlyList<TestOption> Options)
+{
+    public TestDefinition(TestId id, string nameKey, int defaultDurationSeconds) : this(id, nameKey, defaultDurationSeconds, []) { }
+}
 
 /// <summary>Spec §8: cancelled, never-run, unsupported and failed are distinct - a skipped test must
 /// never be reported as a pass. Running is a display state only; no executor returns it.</summary>

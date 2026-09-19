@@ -400,4 +400,73 @@
   <data name="SensorGroup_Format" xml:space="preserve">
     <value>{0} {1}</value>
   </data>
+  <data name="Test_Memory_Pattern" xml:space="preserve">
+    <value>RAM · Data Patterns &amp; Full Verify</value>
+  </data>
+  <data name="Test_Storage_Sequential" xml:space="preserve">
+    <value>Storage · Sequential Write/Read Verify</value>
+  </data>
+  <data name="Test_Storage_Random4k" xml:space="preserve">
+    <value>Storage · Random 4K (QD1)</value>
+  </data>
+  <data name="Test_Network_Latency" xml:space="preserve">
+    <value>Network · Latency, Loss &amp; Jitter</value>
+  </data>
+  <data name="Test_Gpu_Steady" xml:space="preserve">
+    <value>GPU · Steady Compute Load</value>
+  </data>
+  <data name="Test_Gpu_Variable" xml:space="preserve">
+    <value>GPU · Variable Load</value>
+  </data>
+  <data name="Test_Gpu_Pulse" xml:space="preserve">
+    <value>GPU · Load Pulses (Coil Whine)</value>
+  </data>
+  <data name="Test_Gpu_Vram" xml:space="preserve">
+    <value>GPU · VRAM Pattern &amp; Full Verify</value>
+  </data>
+  <data name="Test_Gpu_Render" xml:space="preserve">
+    <value>GPU · Ray-Traced Scene</value>
+  </data>
+  <data name="Test_Power_Combined" xml:space="preserve">
+    <value>Power · CPU + GPU Together</value>
+  </data>
+  <data name="Test_Option_MemoryMb" xml:space="preserve">
+    <value>Memory to test (MB, 0 = automatic)</value>
+  </data>
+  <data name="Test_Option_VramMb" xml:space="preserve">
+    <value>VRAM to test (MB, 0 = automatic)</value>
+  </data>
+  <data name="Test_Option_Drive" xml:space="preserve">
+    <value>Drive</value>
+  </data>
+  <data name="Test_Option_FileMb" xml:space="preserve">
+    <value>Test file size (MB)</value>
+  </data>
+  <data name="Test_Option_PingTarget" xml:space="preserve">
+    <value>Ping target</value>
+  </data>
+  <data name="Test_Option_Gpu" xml:space="preserve">
+    <value>Graphics card</value>
+  </data>
+  <data name="Test_Option_PulseMs" xml:space="preserve">
+    <value>Pulse length (ms)</value>
+  </data>
+  <data name="Test_Option_GapMs" xml:space="preserve">
+    <value>Gap (ms)</value>
+  </data>
+  <data name="Test_Status_Allocating" xml:space="preserve">
+    <value>Allocating memory</value>
+  </data>
+  <data name="Test_Validation_InvalidOption" xml:space="preserve">
+    <value>Enter a valid number for &quot;{0}&quot;.</value>
+  </data>
+  <data name="Test_SelectAll" xml:space="preserve">
+    <value>Select all</value>
+  </data>
+  <data name="Test_ClearSelection" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Settings_RenderMode" xml:space="preserve">
+    <value>Rendering</value>
+  </data>
 </root>

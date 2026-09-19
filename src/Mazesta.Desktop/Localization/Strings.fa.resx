@@ -400,4 +400,73 @@
   <data name="SensorGroup_Format" xml:space="preserve">
     <value>{1} {0}</value>
   </data>
+  <data name="Test_Memory_Pattern" xml:space="preserve">
+    <value>حافظه RAM · الگوهای داده و بررسی کامل</value>
+  </data>
+  <data name="Test_Storage_Sequential" xml:space="preserve">
+    <value>دیسک · نوشتن و خواندن ترتیبی با تطبیق داده</value>
+  </data>
+  <data name="Test_Storage_Random4k" xml:space="preserve">
+    <value>دیسک · تصادفی ۴K (صف ۱)</value>
+  </data>
+  <data name="Test_Network_Latency" xml:space="preserve">
+    <value>شبکه · تأخیر، اتلاف بسته و Jitter</value>
+  </data>
+  <data name="Test_Gpu_Steady" xml:space="preserve">
+    <value>GPU · بار محاسباتی ثابت</value>
+  </data>
+  <data name="Test_Gpu_Variable" xml:space="preserve">
+    <value>GPU · بار متغیر</value>
+  </data>
+  <data name="Test_Gpu_Pulse" xml:space="preserve">
+    <value>GPU · پالس و جهش بار (Coil Whine)</value>
+  </data>
+  <data name="Test_Gpu_Vram" xml:space="preserve">
+    <value>GPU · حافظه VRAM با بررسی کامل</value>
+  </data>
+  <data name="Test_Gpu_Render" xml:space="preserve">
+    <value>GPU · رندر صحنه Ray Tracing</value>
+  </data>
+  <data name="Test_Power_Combined" xml:space="preserve">
+    <value>توان · CPU و GPU هم‌زمان</value>
+  </data>
+  <data name="Test_Option_MemoryMb" xml:space="preserve">
+    <value>حافظه مورد آزمون (MB، ۰ = خودکار)</value>
+  </data>
+  <data name="Test_Option_VramMb" xml:space="preserve">
+    <value>VRAM مورد آزمون (MB، ۰ = خودکار)</value>
+  </data>
+  <data name="Test_Option_Drive" xml:space="preserve">
+    <value>درایو</value>
+  </data>
+  <data name="Test_Option_FileMb" xml:space="preserve">
+    <value>اندازه فایل تست (MB)</value>
+  </data>
+  <data name="Test_Option_PingTarget" xml:space="preserve">
+    <value>مقصد Ping</value>
+  </data>
+  <data name="Test_Option_Gpu" xml:space="preserve">
+    <value>کارت گرافیک</value>
+  </data>
+  <data name="Test_Option_PulseMs" xml:space="preserve">
+    <value>طول پالس (ms)</value>
+  </data>
+  <data name="Test_Option_GapMs" xml:space="preserve">
+    <value>فاصله بین پالس‌ها (ms)</value>
+  </data>
+  <data name="Test_Status_Allocating" xml:space="preserve">
+    <value>در حال تخصیص حافظه</value>
+  </data>
+  <data name="Test_Validation_InvalidOption" xml:space="preserve">
+    <value>برای «{0}» یک عدد معتبر وارد کنید.</value>
+  </data>
+  <data name="Test_SelectAll" xml:space="preserve">
+    <value>انتخاب همه</value>
+  </data>
+  <data name="Test_ClearSelection" xml:space="preserve">
+    <value>لغو انتخاب</value>
+  </data>
+  <data name="Settings_RenderMode" xml:space="preserve">
+    <value>روش رسم رابط</value>
+  </data>
 </root>

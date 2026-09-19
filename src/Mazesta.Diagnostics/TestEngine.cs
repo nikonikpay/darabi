@@ -1,4 +1,4 @@
-using Mazesta.Core.Time; using Mazesta.Monitoring; using Mazesta.Persistence;
+using Mazesta.Core.Time; using Mazesta.Diagnostics.Evidence; using Mazesta.Diagnostics.Whea; using Mazesta.Monitoring; using Mazesta.Persistence;
 namespace Mazesta.Diagnostics;
 
 public enum TestEngineState { Idle, Running, Stopped }
@@ -6,7 +6,7 @@ public enum TestEngineState { Idle, Running, Stopped }
 /// <summary>Sequential queue runner (spec §8). A plain async pipeline over <see cref="ITestExecutor"/>
 /// calls - no dedicated thread like PollingEngine, since there is no cadence to own; CPU-bound executors
 /// do their own Task.Run. Registered as a singleton so a run survives page navigation.</summary>
-public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null)
+public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null)
 {
     private readonly IReadOnlyDictionary<TestId, ITestExecutor> _executors = executors.ToDictionary(e => e.Definition.Id);
     private CancellationTokenSource? _cts;
@@ -68,7 +68,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             return TestRunResult.Unsupported(id, clock.UtcNow, $"No executor registered for '{id}'.");
 
         var started = clock.UtcNow;
-        var request = new TestExecutionRequest(item.DurationSeconds, clock, p => TestProgressChanged?.Invoke(id, p), liveEngine);
+        var request = new TestExecutionRequest(item.DurationSeconds, clock, p => TestProgressChanged?.Invoke(id, p), liveEngine, new TestOptions(item.Definition, item.Options));
         TestRunResult? total = null; int iteration = 0;
         do
         {
@@ -84,7 +84,25 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported) break;
         }
         while (item.Repeat switch { RepeatMode.Once => false, RepeatMode.Count => iteration < item.RepeatCount, RepeatMode.Unlimited => true, _ => false });
-        return total!;
+        return WithHardwareErrors(total!, started);
+    }
+
+    /// <summary>Windows hardware errors (WHEA) logged while the test ran turn it into a Failed one: the machine
+    /// itself reported a fault, whatever the test's own checksums said. An unreadable log is noted, never a failure.</summary>
+    private TestRunResult WithHardwareErrors(TestRunResult result, DateTimeOffset since)
+    {
+        if (hardwareErrors is null || result.Outcome == TestOutcome.Unsupported) return result;   // nothing ran, so nothing to blame
+        try
+        {
+            var events = hardwareErrors.Since(since);
+            if (events.Count == 0) return result;
+            string ids = string.Join(", ", events.Select(e => e.EventId).Distinct().Order());
+            return result.Combine(new(result.Id, TestOutcome.Failed, since, clock.UtcNow, events.Count, $"WHEA logged {events.Count} hardware error record(s) during this test (event ids {ids}): {events[0].Summary}"));
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return result with { Detail = SensorEvidence.Join(result.Detail, $"WHEA log could not be read ({ex.GetType().Name})") };
+        }
     }
 
     private void SetState(TestEngineState s) { if (State == s) return; State = s; StateChanged?.Invoke(s); }

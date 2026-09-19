@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
     <ProjectReference Include="../Mazesta.Diagnostics/Mazesta.Diagnostics.csproj" />
+    <ProjectReference Include="../Mazesta.Diagnostics.Gpu/Mazesta.Diagnostics.Gpu.csproj" />
     <ProjectReference Include="../Mazesta.Hardware/Mazesta.Hardware.csproj" />
     <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
     <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />

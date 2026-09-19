@@ -8,6 +8,8 @@ public sealed class AppConfig : IVersionedDocument
     public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2()];
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public string Language { get; set; } = "fa";
+    /// <summary>"auto" lets WPF use the GPU; "software" draws the whole UI on the CPU - for a machine whose graphics driver cannot be trusted (a repair shop meets those), where the window otherwise comes up blank.</summary>
+    public string RenderMode { get; set; } = "auto";
     public int FastIntervalSeconds { get; set; } = 2;
     public int StorageIntervalSeconds { get; set; } = 900;
     public string ShopName { get; set; } = "مازستا";

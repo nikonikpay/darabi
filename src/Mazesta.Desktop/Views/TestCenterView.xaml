@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
              xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
+             xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
              mc:Ignorable="d"
              Background="{StaticResource Brush.Background}">
     <UserControl.Resources>
@@ -90,6 +91,24 @@
                                     </StackPanel>
                                 </Grid>
 
+                                <ItemsControl ItemsSource="{Binding Options}" Margin="30,2,0,0"
+                                              Visibility="{Binding HasOptions, Converter={StaticResource BoolToVis}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:TestOptionViewModel}">
+                                            <StackPanel Orientation="Horizontal" Margin="0,6,18,0">
+                                                <TextBlock Text="{Binding Label}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                                <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedChoice}" DisplayMemberPath="Label" MinWidth="200" VerticalAlignment="Center"
+                                                          Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
+                                                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" MinWidth="110" Style="{StaticResource TextBox.Value}" VerticalAlignment="Center"
+                                                         Visibility="{Binding IsFreeText, Converter={StaticResource BoolToVis}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
                                 <TextBlock Text="{Binding ValidationError}" Foreground="{StaticResource Brush.Accent}" Margin="0,8,0,0"
                                            Visibility="{Binding HasValidationError, Converter={StaticResource BoolToVis}}" />
 
@@ -106,6 +125,8 @@
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,12,0,0">
             <Button Content="{loc:Loc Test_Start}" Command="{Binding StartCommand}" Padding="14,6" />
             <Button Content="{loc:Loc Test_Cancel}" Command="{Binding CancelCommand}" Padding="14,6" Margin="10,0,0,0" />
+            <Button Content="{loc:Loc Test_SelectAll}" Command="{Binding SelectAllCommand}" Padding="14,6" Margin="24,0,0,0" />
+            <Button Content="{loc:Loc Test_ClearSelection}" Command="{Binding ClearSelectionCommand}" Padding="14,6" Margin="10,0,0,0" />
             <controls:HelpTip HelpKey="Test_Center" VerticalAlignment="Center" Margin="8,0,0,0" />
         </StackPanel>
     </Grid>

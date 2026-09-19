@@ -1,5 +1,5 @@
 using Xunit;
-using Mazesta.Diagnostics.Tests.Fakes; using Mazesta.Persistence; using Microsoft.Extensions.Logging.Abstractions;
+using Mazesta.Diagnostics.Tests.Fakes; using Mazesta.Diagnostics.Whea; using Mazesta.Persistence; using Microsoft.Extensions.Logging.Abstractions;
 namespace Mazesta.Diagnostics.Tests;
 
 public class TestEngineTests : IDisposable

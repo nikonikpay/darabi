@@ -7,8 +7,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Mazesta.Core/Mazesta.Core.csproj" />
-    <ProjectReference Include="../../src/Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
-    <ProjectReference Include="../../src/Mazesta.Persistence/Mazesta.Persistence.csproj" />
     <ProjectReference Include="../../src/Mazesta.Diagnostics/Mazesta.Diagnostics.csproj" />
+    <ProjectReference Include="../../src/Mazesta.Diagnostics.Gpu/Mazesta.Diagnostics.Gpu.csproj" />
   </ItemGroup>
 </Project>
