@@ -169,12 +169,6 @@
   <data name="Column_Avg" xml:space="preserve">
     <value>Avg</value>
   </data>
-  <data name="Column_Unit" xml:space="preserve">
-    <value>Unit</value>
-  </data>
-  <data name="Column_State" xml:space="preserve">
-    <value>State</value>
-  </data>
   <data name="Monitoring_Search" xml:space="preserve">
     <value>Search hardware or sensor</value>
   </data>
@@ -336,5 +330,74 @@
   </data>
   <data name="Test_Errors_Format" xml:space="preserve">
     <value>{0} errors</value>
+  </data>
+  <data name="SensorKind_Temperature" xml:space="preserve">
+    <value>Temperatures</value>
+  </data>
+  <data name="SensorKind_Clock" xml:space="preserve">
+    <value>Clocks</value>
+  </data>
+  <data name="SensorKind_Load" xml:space="preserve">
+    <value>Loads</value>
+  </data>
+  <data name="SensorKind_Voltage" xml:space="preserve">
+    <value>Voltages</value>
+  </data>
+  <data name="SensorKind_Current" xml:space="preserve">
+    <value>Currents</value>
+  </data>
+  <data name="SensorKind_Power" xml:space="preserve">
+    <value>Powers</value>
+  </data>
+  <data name="SensorKind_Energy" xml:space="preserve">
+    <value>Energies</value>
+  </data>
+  <data name="SensorKind_Fan" xml:space="preserve">
+    <value>Fans</value>
+  </data>
+  <data name="SensorKind_Control" xml:space="preserve">
+    <value>Controls</value>
+  </data>
+  <data name="SensorKind_Level" xml:space="preserve">
+    <value>Levels</value>
+  </data>
+  <data name="SensorKind_Factor" xml:space="preserve">
+    <value>Factors</value>
+  </data>
+  <data name="SensorKind_Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="SensorKind_SmallData" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="SensorKind_Throughput" xml:space="preserve">
+    <value>Throughput</value>
+  </data>
+  <data name="SensorKind_Timespan" xml:space="preserve">
+    <value>Timespans</value>
+  </data>
+  <data name="SensorKind_Frequency" xml:space="preserve">
+    <value>Frequencies</value>
+  </data>
+  <data name="SensorKind_Timing" xml:space="preserve">
+    <value>Timings</value>
+  </data>
+  <data name="SensorKind_Noise" xml:space="preserve">
+    <value>Noise</value>
+  </data>
+  <data name="SensorKind_Humidity" xml:space="preserve">
+    <value>Humidity</value>
+  </data>
+  <data name="SensorKind_Flow" xml:space="preserve">
+    <value>Flow</value>
+  </data>
+  <data name="SensorKind_Conductivity" xml:space="preserve">
+    <value>Conductivity</value>
+  </data>
+  <data name="SensorKind_Unknown" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="SensorGroup_Format" xml:space="preserve">
+    <value>{0} {1}</value>
   </data>
 </root>

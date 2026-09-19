@@ -169,12 +169,6 @@
   <data name="Column_Avg" xml:space="preserve">
     <value>میانگین</value>
   </data>
-  <data name="Column_Unit" xml:space="preserve">
-    <value>واحد</value>
-  </data>
-  <data name="Column_State" xml:space="preserve">
-    <value>وضعیت</value>
-  </data>
   <data name="Monitoring_Search" xml:space="preserve">
     <value>جست‌وجو در قطعات یا سنسورها</value>
   </data>
@@ -336,5 +330,74 @@
   </data>
   <data name="Test_Errors_Format" xml:space="preserve">
     <value>{0} خطا</value>
+  </data>
+  <data name="SensorKind_Temperature" xml:space="preserve">
+    <value>دماها</value>
+  </data>
+  <data name="SensorKind_Clock" xml:space="preserve">
+    <value>کلاک‌ها</value>
+  </data>
+  <data name="SensorKind_Load" xml:space="preserve">
+    <value>بارها</value>
+  </data>
+  <data name="SensorKind_Voltage" xml:space="preserve">
+    <value>ولتاژها</value>
+  </data>
+  <data name="SensorKind_Current" xml:space="preserve">
+    <value>جریان‌ها</value>
+  </data>
+  <data name="SensorKind_Power" xml:space="preserve">
+    <value>توان‌ها</value>
+  </data>
+  <data name="SensorKind_Energy" xml:space="preserve">
+    <value>انرژی‌ها</value>
+  </data>
+  <data name="SensorKind_Fan" xml:space="preserve">
+    <value>فن‌ها</value>
+  </data>
+  <data name="SensorKind_Control" xml:space="preserve">
+    <value>کنترل‌ها</value>
+  </data>
+  <data name="SensorKind_Level" xml:space="preserve">
+    <value>سطح‌ها</value>
+  </data>
+  <data name="SensorKind_Factor" xml:space="preserve">
+    <value>ضریب‌ها</value>
+  </data>
+  <data name="SensorKind_Data" xml:space="preserve">
+    <value>داده‌ها</value>
+  </data>
+  <data name="SensorKind_SmallData" xml:space="preserve">
+    <value>داده‌ها</value>
+  </data>
+  <data name="SensorKind_Throughput" xml:space="preserve">
+    <value>نرخ انتقال</value>
+  </data>
+  <data name="SensorKind_Timespan" xml:space="preserve">
+    <value>زمان‌ها</value>
+  </data>
+  <data name="SensorKind_Frequency" xml:space="preserve">
+    <value>فرکانس‌ها</value>
+  </data>
+  <data name="SensorKind_Timing" xml:space="preserve">
+    <value>تأخیرها</value>
+  </data>
+  <data name="SensorKind_Noise" xml:space="preserve">
+    <value>نویز</value>
+  </data>
+  <data name="SensorKind_Humidity" xml:space="preserve">
+    <value>رطوبت</value>
+  </data>
+  <data name="SensorKind_Flow" xml:space="preserve">
+    <value>جریان مایع</value>
+  </data>
+  <data name="SensorKind_Conductivity" xml:space="preserve">
+    <value>رسانایی</value>
+  </data>
+  <data name="SensorKind_Unknown" xml:space="preserve">
+    <value>سایر</value>
+  </data>
+  <data name="SensorGroup_Format" xml:space="preserve">
+    <value>{1} {0}</value>
   </data>
 </root>

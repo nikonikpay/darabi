@@ -6,7 +6,7 @@ public class SettingsViewModelTests : IDisposable
     public void Dispose() { if (Directory.Exists(_dir)) Directory.Delete(_dir, true); }
     private (SettingsViewModel vm, AppConfig cfg, JsonStore<AppConfig> store, PollingEngine e) Build()
     {
-        var cfg = new AppConfig(); var store = new JsonStore<AppConfig>(Path.Combine(_dir, "appconfig.json"), new SchemaMigrator([new Migration0To1()]), AppConfig.CurrentSchemaVersion, NullLogger.Instance);
+        var cfg = new AppConfig(); var store = new JsonStore<AppConfig>(Path.Combine(_dir, "appconfig.json"), new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, NullLogger.Instance);
         var c = new FakeClock(DateTimeOffset.UnixEpoch); var opts = new MonitoringOptions(); var e = new PollingEngine(new FakeSensorProvider(), c, opts, new BoundedEventLog(c, NullLogger.Instance));
         var shell = new ShellViewModel(e, new Microsoft.Extensions.DependencyInjection.ServiceCollection().BuildServiceProvider());
         return (new SettingsViewModel(cfg, store, AppPaths.Create(_dir, _dir, true), e, opts, shell, _ => { }), cfg, store, e);
@@ -18,5 +18,5 @@ public class SettingsViewModelTests : IDisposable
     [Fact] public void Fast_interval_must_be_an_allowed_value()
     { var (vm, cfg, _, _) = Build(); vm.FastIntervalText = "3"; vm.SaveCommand.Execute(null); Assert.Equal(2, cfg.FastIntervalSeconds); }
     [Fact] public void Save_writes_file_and_language_change_shows_restart_note()
-    { var (vm, _, store, _) = Build(); vm.Language = "fa"; vm.ShopName = "فروشگاه"; vm.SaveCommand.Execute(null); var r = store.Load(); Assert.Equal(("fa", "فروشگاه"), (r.Value.Language, r.Value.ShopName)); Assert.Contains(Mazesta.Desktop.Localization.Loc.Get("Settings_RestartNote"), vm.Message); }
+    { var (vm, _, store, _) = Build(); vm.Language = "en"; vm.ShopName = "فروشگاه"; vm.SaveCommand.Execute(null); var r = store.Load(); Assert.Equal(("en", "فروشگاه"), (r.Value.Language, r.Value.ShopName)); Assert.Contains(Mazesta.Desktop.Localization.Loc.Get("Settings_RestartNote"), vm.Message); }
 }

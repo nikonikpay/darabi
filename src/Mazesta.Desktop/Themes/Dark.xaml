@@ -37,11 +37,15 @@
     <SolidColorBrush x:Key="Brush.Series.Network" Color="{StaticResource Color.Series.Network}" />
 
     <!-- Fonts -->
-    <FontFamily x:Key="App.Font">pack://application:,,,/Fonts/#Vazirmatn, Segoe UI</FontFamily>
+    <!-- IRANSansXFaNum renders every ASCII digit as a Persian digit: right for Persian prose, wrong for sensor values, which use App.Font.Latin. -->
+    <FontFamily x:Key="App.Font">pack://application:,,,/Fonts/#IRANSansXFaNum, Segoe UI</FontFamily>
+    <FontFamily x:Key="App.Font.Latin">Segoe UI Variable Text, Segoe UI</FontFamily>
 
     <!-- Converters -->
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
     <Controls:MinutesToSecondsConverter x:Key="MinutesToSeconds" />
+    <Controls:SensorKindToIconConverter x:Key="KindToIcon" />
+    <Controls:SensorKindToBrushConverter x:Key="KindToBrush" />
 
     <!-- Implicit control styles -->
     <Style TargetType="Window">
@@ -120,9 +124,11 @@
          These styles pin such strings to an LTR paragraph. Persian text is never given them.
          See Localization/Rtl for the full explanation. -->
     <Style x:Key="Text.Value" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily" Value="{StaticResource App.Font.Latin}" />
         <Setter Property="FlowDirection" Value="LeftToRight" />
     </Style>
     <Style x:Key="TextBox.Value" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="FontFamily" Value="{StaticResource App.Font.Latin}" />
         <Setter Property="FlowDirection" Value="LeftToRight" />
     </Style>
 

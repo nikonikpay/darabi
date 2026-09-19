@@ -10,11 +10,10 @@
              mc:Ignorable="d"
              Background="{StaticResource Brush.Background}">
     <UserControl.Resources>
-        <!-- Cell text. The container's Foreground cannot grey a non-Ok row on its own: the theme's
-             implicit TextBlock style sets Foreground explicitly, and an explicit setter always beats
-             an inherited value, so every cell stayed white whatever the row state was. The quality
-             is therefore driven per cell here. All value cells are latin (a number, a unit symbol)
-             and carry an LTR flow direction so the Persian UI does not reorder "53.0 °C". -->
+        <!-- Value cell: latin text (a number with its unit attached), right-aligned so a column of
+             readings lines up. The container's Foreground cannot grey a non-Ok row on its own - the
+             theme's implicit TextBlock style sets Foreground explicitly - so the quality is driven per
+             cell here. -->
         <Style x:Key="CellStyle" TargetType="TextBlock" BasedOn="{StaticResource Text.Value}">
             <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
@@ -34,23 +33,16 @@
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <!-- The state word is Persian in the Persian UI, so - unlike the value cells - it must NOT
-             be pinned to LTR; it inherits the page direction. It is always muted, because a row
-             only carries a state when the reading is Missing, Stale or Invalid. -->
-        <Style x:Key="StateCellStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-            <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True">
-                    <Setter Property="Foreground" Value="{StaticResource Brush.Background}" />
-                </DataTrigger>
-            </Style.Triggers>
+        <Style x:Key="NumberCellStyle" TargetType="TextBlock" BasedOn="{StaticResource CellStyle}">
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="Margin" Value="0,0,10,0" />
         </Style>
 
         <Style x:Key="RowContainerStyle" TargetType="ListViewItem">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="2,3" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="ToolTip" Value="{Binding State}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
@@ -69,6 +61,75 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- Level 1: one card per hardware node. -->
+        <ControlTemplate x:Key="NodeGroupTemplate" TargetType="GroupItem">
+            <Expander IsExpanded="{Binding Name.IsExpanded, Mode=TwoWay}"
+                      Background="{StaticResource Brush.Surface}"
+                      BorderBrush="{StaticResource Brush.Border}"
+                      BorderThickness="1"
+                      Margin="0,0,0,8">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,8,0" VerticalAlignment="Center">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{StaticResource Brush.TextMuted}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Cpu}">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Series.Cpu}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Gpu}">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Series.Gpu}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Memory}">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Series.Memory}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Storage}">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Series.Storage}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Motherboard}">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Series.Motherboard}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Network}">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Series.Network}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                        <!-- Node names are hardware model names: always latin. -->
+                        <TextBlock Text="{Binding Name.Title}" FontWeight="SemiBold" VerticalAlignment="Center" Style="{StaticResource Text.Value}" />
+                    </StackPanel>
+                </Expander.Header>
+                <ItemsPresenter />
+            </Expander>
+        </ControlTemplate>
+
+        <!-- Level 2: a titled, collapsible section ("Core Clocks") inside the node... -->
+        <ControlTemplate x:Key="SectionGroupTemplate" TargetType="GroupItem">
+            <Expander IsExpanded="{Binding Name.IsExpanded, Mode=TwoWay}" Margin="6,2,0,2" BorderThickness="0" Background="Transparent">
+                <Expander.Header>
+                    <TextBlock Text="{Binding Name.Title}" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource Brush.TextMuted}" />
+                </Expander.Header>
+                <ItemsPresenter />
+            </Expander>
+        </ControlTemplate>
+        <!-- ...or, for a sensor with nothing to be grouped with, no header at all. -->
+        <ControlTemplate x:Key="FlatSectionTemplate" TargetType="GroupItem">
+            <ItemsPresenter />
+        </ControlTemplate>
+        <Style x:Key="SectionContainerStyle" TargetType="GroupItem">
+            <Setter Property="Template" Value="{StaticResource SectionGroupTemplate}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Name.IsFlat}" Value="True">
+                    <Setter Property="Template" Value="{StaticResource FlatSectionTemplate}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="NodeContainerStyle" TargetType="GroupItem">
+            <Setter Property="Template" Value="{StaticResource NodeGroupTemplate}" />
         </Style>
     </UserControl.Resources>
     <Grid>
@@ -123,14 +184,13 @@
             </StackPanel>
         </DockPanel>
 
-        <!-- Grouped sensor grid.
-             ONE virtualizing ListView, grouped by SensorRowViewModel.Group, rather than one
-             ListView per group inside a page-wide ScrollViewer: nested lists were measured with
-             infinite height, so their VirtualizingStackPanels realised every row of every group
-             (609 of 609 on the dev box). Here the panel virtualizes the group items too
-             (IsVirtualizingWhenGrouping), so only the rows actually on screen exist. Group
-             expansion stays bound two-way to HardwareGroupViewModel.IsExpanded, which is the
-             user's, persisted in config and never touched by a tick. -->
+        <!-- The whole sensor tree: ONE virtualizing ListView, grouped by node and then by section,
+             rather than one ListView per group inside a page-wide ScrollViewer: nested lists were
+             measured with infinite height, so their VirtualizingStackPanels realised every row of every
+             group. Here the panel virtualizes the group items too (IsVirtualizingWhenGrouping), so only
+             the rows actually on screen exist. Node expansion is bound two-way to
+             HardwareGroupViewModel.IsExpanded, which is the user's, persisted in config and never
+             touched by a tick. -->
         <ListView Grid.Row="1" Margin="12,0,12,12"
                   ItemsSource="{Binding RowsView}"
                   VirtualizingPanel.IsVirtualizing="True"
@@ -143,81 +203,25 @@
                   MouseDoubleClick="Rows_MouseDoubleClick"
                   KeyDown="Rows_KeyDown">
             <ListView.GroupStyle>
-                <GroupStyle>
-                    <GroupStyle.ContainerStyle>
-                        <Style TargetType="GroupItem">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="GroupItem">
-                                        <Expander IsExpanded="{Binding Name.IsExpanded, Mode=TwoWay}"
-                                                  Background="{StaticResource Brush.Surface}"
-                                                  BorderBrush="{StaticResource Brush.Border}"
-                                                  BorderThickness="1"
-                                                  Margin="0,0,0,8">
-                                            <Expander.Header>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,8,0" VerticalAlignment="Center">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Background" Value="{StaticResource Brush.TextMuted}" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Cpu}">
-                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Cpu}" />
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Gpu}">
-                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Gpu}" />
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Memory}">
-                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Memory}" />
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Storage}">
-                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Storage}" />
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Motherboard}">
-                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Motherboard}" />
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Name.Kind}" Value="{x:Static hw:HardwareKind.Network}">
-                                                                        <Setter Property="Background" Value="{StaticResource Brush.Series.Network}" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                    </Border>
-                                                    <!-- Node names are hardware model names: always latin. -->
-                                                    <TextBlock Text="{Binding Name.Title}" FontWeight="SemiBold" VerticalAlignment="Center"
-                                                               Style="{StaticResource Text.Value}" />
-                                                </StackPanel>
-                                            </Expander.Header>
-                                            <ItemsPresenter />
-                                        </Expander>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </GroupStyle.ContainerStyle>
-                </GroupStyle>
+                <GroupStyle ContainerStyle="{StaticResource NodeContainerStyle}" />
+                <GroupStyle ContainerStyle="{StaticResource SectionContainerStyle}" />
             </ListView.GroupStyle>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Width="220" Header="{loc:Loc Column_Sensor}">
+                    <GridViewColumn Width="300" Header="{loc:Loc Column_Sensor}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
-                                <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
-                                    <TextBlock x:Name="SubGroupText" Text="{Binding SubGroup}" Style="{StaticResource CellStyle}" Foreground="{StaticResource Brush.TextMuted}" />
-                                    <TextBlock x:Name="Dot" Text=" · " Style="{StaticResource CellStyle}" Foreground="{StaticResource Brush.TextMuted}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="{Binding Kind, Converter={StaticResource KindToIcon}}"
+                                          Stroke="{Binding Kind, Converter={StaticResource KindToBrush}}"
+                                          StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                          Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding Name}" Style="{StaticResource CellStyle}" />
                                 </StackPanel>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding SubGroup}" Value="">
-                                        <Setter TargetName="SubGroupText" Property="Visibility" Value="Collapsed" />
-                                        <Setter TargetName="Dot" Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <!-- 130 px: "Not available" / «دریافت نشد» must not clip. -->
-                    <GridViewColumn Width="130">
+                    <GridViewColumn Width="140">
                         <GridViewColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -227,10 +231,10 @@
                             </DataTemplate>
                         </GridViewColumn.HeaderTemplate>
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Current}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Current}" Style="{StaticResource NumberCellStyle}" FontWeight="SemiBold" /></DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="70">
+                    <GridViewColumn Width="120">
                         <GridViewColumn.HeaderTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -240,50 +244,21 @@
                             </DataTemplate>
                         </GridViewColumn.HeaderTemplate>
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Min}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Min}" Style="{StaticResource NumberCellStyle}" /></DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="70" Header="{loc:Loc Column_Max}">
+                    <GridViewColumn Width="120" Header="{loc:Loc Column_Max}">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Max}" Style="{StaticResource CellStyle}" /></DataTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Max}" Style="{StaticResource NumberCellStyle}" /></DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="70" Header="{loc:Loc Column_Avg}">
+                    <GridViewColumn Width="120" Header="{loc:Loc Column_Avg}">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Avg}" Style="{StaticResource CellStyle}" /></DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Width="60" Header="{loc:Loc Column_Unit}">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate><TextBlock Text="{Binding Unit}" Style="{StaticResource CellStyle}" /></DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Width="140">
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{loc:Loc Column_State}" />
-                                    <controls:HelpTip HelpKey="Column_State" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate DataType="{x:Type vm:SensorRowViewModel}">
-                                <StackPanel x:Name="StatePanel" Orientation="Horizontal">
-                                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets" Margin="0,0,4,0" Style="{StaticResource StateCellStyle}" />
-                                    <TextBlock Text="{Binding State}" Style="{StaticResource StateCellStyle}" />
-                                </StackPanel>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding State}" Value="">
-                                        <Setter TargetName="StatePanel" Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Avg}" Style="{StaticResource NumberCellStyle}" /></DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
-
     </Grid>
 </UserControl>

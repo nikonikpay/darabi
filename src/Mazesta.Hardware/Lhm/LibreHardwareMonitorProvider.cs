@@ -28,6 +28,7 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
         catch (Exception ex) { _log.LogError(ex, "LHM open failed"); Status = ProviderStatus.Failed(ReasonOpenFailed, ex.Message); return; }
         try
         {
+            PrimeSensors(_computer.Hardware);
             DisableSensorHistoryTree(_computer.Hardware);
             foreach (var m in _mapper.Map(_computer.Hardware)) _nodes.Add(new NodeState(m));
             Hardware = _nodes.Select(n => n.Mapped.Node).ToList();
@@ -50,6 +51,21 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
     /// so their presence is direct evidence the driver is available.
     /// </summary>
     private bool HasCpuMsrEvidence() => Hardware.Any(n => n.Kind == HardwareKind.Cpu && n.Sensors.Any(s => s.Kind == SensorKind.Temperature));
+
+    /// <summary>
+    /// LHM activates some sensors only during the first Update() - the Nuvoton Super I/O's fans,
+    /// temperatures and voltages are absent from a tree walked before it, leaving only the duty-cycle
+    /// "Control" sensors. One update per node before mapping makes the exposed sensor set complete.
+    /// </summary>
+    private void PrimeSensors(IEnumerable<IHardware> roots)
+    {
+        foreach (var hw in roots)
+        {
+            try { hw.Update(); }
+            catch (Exception ex) { _log.LogWarning(ex, "Initial update of {Hardware} failed", hw.Identifier); }
+            PrimeSensors(hw.SubHardware);
+        }
+    }
 
     private bool Probe(Func<bool> probe, string what)
     {
@@ -91,10 +107,8 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
                 n.Failure = ex.Message; n.FailingSince ??= request.Now; n.ConsecutiveFailures++;
                 if (n.ConsecutiveFailures == 3) _log.LogWarning(ex, "Node {Node} failed 3 consecutive updates", n.Mapped.Node.Id);
             }
-            // Some LHM hardware (the Nuvoton SuperIO on this board) only activates its sensors
-            // during the first Update(), so those sensors are not present when Start() walks the
-            // tree and would keep the default one-day window. Re-applying here is a cheap
-            // already-zero check per sensor and catches every sensor LHM ever exposes.
+            // A sensor LHM activates after Start would keep the default one-day window. Re-applying
+            // here is a cheap already-zero check per sensor and catches every sensor LHM ever exposes.
             DisableSensorHistory(n.Mapped.Source);
         }
         var readings = new List<SensorReading>(_nodes.Sum(n => n.Mapped.Sensors.Count));

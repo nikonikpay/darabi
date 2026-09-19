@@ -49,7 +49,7 @@ public partial class App : Application
         _logProvider = new RollingFileLoggerProvider(paths.LogsDir);
         var lf = LoggerFactory.Create(b => { b.SetMinimumLevel(LogLevel.Information); b.AddProvider(_logProvider); });
         var startupLog = lf.CreateLogger("Startup");
-        var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator([new Migration0To1()]), AppConfig.CurrentSchemaVersion, startupLog);
+        var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, startupLog);
         var load = store.Load(); var config = load.Value;
         Loc.SetLanguage(config.Language);
         Services = Composition.Bootstrapper.Build(paths, config, store, lf);

@@ -32,6 +32,7 @@ public static class Units
             while (v >= 1000 && i < prefixes.Length - 1) { v /= 1000; i++; }
             return $"{v.ToString(i == 0 ? "F0" : "F1", System.Globalization.CultureInfo.InvariantCulture)} {prefixes[i]}";
         }
+        if (unit == Unit.MegaHertz && value >= 1000) return $"{(value / 1000).ToString("F2", System.Globalization.CultureInfo.InvariantCulture)} GHz";
         var s = Symbol(unit);
         return s.Length == 0 ? Format(value, unit) : $"{Format(value, unit)} {s}";
     }

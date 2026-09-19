@@ -19,7 +19,7 @@ under which licence, and by which project in this repository.
 | Microsoft.Extensions.* (DependencyInjection, Logging, Logging.Abstractions, Options, Primitives) | 10.0.x | MIT | `Mazesta.Desktop`, `Mazesta.Hardware`, `Mazesta.Monitoring`, `Mazesta.Persistence` | Dependency injection and logging abstractions. |
 | CommunityToolkit.Mvvm | 8.4.2 | MIT | `Mazesta.Desktop` | Source-generated observable properties and commands for the WPF ViewModels. |
 | xunit, xunit.runner.visualstudio, Microsoft.NET.Test.Sdk | 2.9.3 / 3.1.5 / 18.10.0 | Apache-2.0 / MIT | `tests/*` | Test framework and runner; not shipped in `artifacts/Mazesta-Test`. |
-| Vazirmatn (Regular, Bold) | embedded `.ttf`, `src/Mazesta.Desktop/Fonts/` | SIL Open Font License 1.1 | `Mazesta.Desktop` | Persian/Arabic glyph rendering for the RTL UI; falls back to Segoe UI. Licence text bundled alongside the fonts: `src/Mazesta.Desktop/Fonts/OFL.txt`. |
+| IRANSansXFaNum (Regular, Bold) | embedded `.ttf`, `src/Mazesta.Desktop/Fonts/` | Supplied by the product owner for this application; licence terms are the owner's to confirm before any redistribution outside the shop | `Mazesta.Desktop` | Persian text (its digits are Persian-form, so technical values use Segoe UI instead); falls back to Segoe UI. |
 | PawnIO | separate, user-installed driver (not bundled) | Licence per its own site — see https://pawnio.eu/ | Runtime prerequisite for `Mazesta.Hardware` CPU MSR sensors | Not distributed with Mazesta Test; the user installs it independently. Detected at runtime via `LibreHardwareMonitor.PawnIo.PawnIo.IsInstalled`. |
 
 No HWiNFO SDK, shared-memory interface, or any other third-party sensor
@@ -38,12 +38,6 @@ library is used. No telemetry, analytics or crash-reporting SDK is included.
   binary.
 - **MIT** (System.Management, Microsoft.Extensions.\*, CommunityToolkit.Mvvm):
   permissive, requires only notice/attribution, which this file provides.
-- **SIL OFL 1.1** (Vazirmatn): permits embedding in an application, and
-  requires the licence to travel with the font. The `.ttf` files are embedded
-  as WPF `<Resource>`s inside `MazestaTest.dll`; `OFL.txt` is **not** a
-  resource, so until the slice 1 final fix wave it was not shipped at all
-  (an earlier version of this file wrongly claimed it was). It is now copied
-  into the publish output by `build.ps1`, next to the executable.
 - **PawnIO**: not redistributed by this project. Users obtain and accept
   its licence directly from its own site before installing it.
 

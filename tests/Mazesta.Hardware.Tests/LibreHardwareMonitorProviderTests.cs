@@ -51,10 +51,10 @@ public class LibreHardwareMonitorProviderTests
         var (p, c, clock) = Build(); var gpu = Gpu(); var disk = Disk(); c.Roots.AddRange([gpu, disk]); p.Start();
         var all = p.Hardware.Select(h => h.Id).ToHashSet();
         var r1 = p.Poll(new PollRequest(clock.UtcNow, all));
-        Assert.Equal((1, 1), (gpu.UpdateCalls, disk.UpdateCalls)); Assert.Equal(2, r1.Readings.Count);
+        Assert.Equal((2, 2), (gpu.UpdateCalls, disk.UpdateCalls)); Assert.Equal(2, r1.Readings.Count);   // Start() primes every node once, then this poll
         clock.UtcNow = T0.AddSeconds(2);
         var r2 = p.Poll(new PollRequest(clock.UtcNow, new HashSet<HardwareId> { p.Hardware[0].Id }));
-        Assert.Equal((2, 1), (gpu.UpdateCalls, disk.UpdateCalls)); Assert.Equal(2, r2.Readings.Count);
+        Assert.Equal((3, 2), (gpu.UpdateCalls, disk.UpdateCalls)); Assert.Equal(2, r2.Readings.Count);
         var diskReading = r2.Readings.Single(x => x.Id.Hardware.Value == "storage/SER1");
         Assert.Equal(T0, diskReading.Timestamp);                       // timestamp of the last actual read
         Assert.Equal(T0, r2.NodeStatus[diskReading.Id.Hardware].LastSuccessfulUpdate);

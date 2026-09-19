@@ -3,13 +3,14 @@ namespace Mazesta.Desktop.ViewModels;
 public sealed partial class SensorRowViewModel : ObservableObject
 {
     public SensorDefinition Definition { get; }
-    /// <summary>The group this row belongs to. The monitoring page is one virtualizing ListView
-    /// grouped by this property, so the group header and its expansion state stay user-owned while
-    /// only the visible rows are realized.</summary>
+    /// <summary>The node this row belongs to. The monitoring page is one virtualizing ListView grouped by
+    /// node and then by <see cref="Section"/>, so group headers and expansion stay user-owned while only
+    /// the visible rows are realized.</summary>
     public HardwareGroupViewModel Group { get; }
-    public string SubGroup { get; }
+    public SensorSectionViewModel Section { get; }
     public string Name => Definition.Name;
-    public string Unit => Units.Symbol(Definition.Unit);
+    public SensorKind Kind => Definition.Kind;
+    /// <summary>Every reading is text with its unit attached ("4.33 GHz", "58.0 °C"); there is no separate unit column.</summary>
     [ObservableProperty] private string _current = Loc.Get("Value_NotAvailable");
     [ObservableProperty] private string _min = "";
     [ObservableProperty] private string _max = "";
@@ -18,19 +19,21 @@ public sealed partial class SensorRowViewModel : ObservableObject
     [ObservableProperty] private DataQuality _quality = DataQuality.Missing;
     [ObservableProperty] private bool _isVisible = true;
 
-    public SensorRowViewModel(SensorDefinition definition, string subGroup, HardwareGroupViewModel group)
+    public SensorRowViewModel(SensorDefinition definition, SensorSectionViewModel section, HardwareGroupViewModel group)
     {
         Definition = definition;
-        SubGroup = subGroup;
+        Section = section;
         Group = group;
     }
 
     public void Apply(SensorReading r, SensorStats s)
     {
         Quality = r.Quality;
-        Current = r.Quality == DataQuality.Ok && r.Value is { } v ? Units.Format(v, Definition.Unit)
-                : r.Quality == DataQuality.Stale && r.Value is { } sv ? Units.Format(sv, Definition.Unit) : Loc.Get("Value_NotAvailable");
+        bool hasValue = r.Quality is DataQuality.Ok or DataQuality.Stale && r.Value is not null;
+        Current = hasValue ? Show(r.Value!.Value) : Loc.Get(r.Quality == DataQuality.Invalid ? "Value_Invalid" : "Value_NotAvailable");
         State = r.Quality switch { DataQuality.Ok => "", DataQuality.Stale => Loc.Get("Value_Stale"), DataQuality.Invalid => Loc.Get("Value_Invalid"), _ => Loc.Get("Value_NotAvailable") };
-        Min = s.Min is { } mn ? Units.Format(mn, Definition.Unit) : ""; Max = s.Max is { } mx ? Units.Format(mx, Definition.Unit) : ""; Avg = s.Average is { } av ? Units.Format(av, Definition.Unit) : "";
+        Min = s.Min is { } mn ? Show(mn) : ""; Max = s.Max is { } mx ? Show(mx) : ""; Avg = s.Average is { } av ? Show(av) : "";
     }
+
+    private string Show(double value) => Units.FormatWithSymbol(value, Definition.Unit);
 }

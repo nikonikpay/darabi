@@ -12,6 +12,7 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
     }
     private void Visit(IHardware hw, HardwareId? parentId, List<MappedNode> into)
     {
+        if (hw.HardwareType == HardwareType.Network && NetworkAdapterFilter.IsVirtualBinding(hw.Name)) return;
         var kind = KindOf(hw.HardwareType);
         string path = hw.Identifier.ToString();
         string? serial = kind == HardwareKind.Storage ? Normalize(storageSerialResolver(hw)) : null;
@@ -22,8 +23,9 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
         {
             var sensorKind = SensorKindOf(s.SensorType);
             string sensorPath = s.Identifier.ToString()[path.Length..];   // "/temperature/1"
-            var def = new SensorDefinition(SensorId.Create(id, sensorPath), id, s.Name, sensorKind, Units.ForKind(sensorKind),
-                SensorRoleMap.Resolve(hw.HardwareType, s.SensorType, s.Name, path), ordinal++);
+            string name = SensorNameCatalog.Resolve(hw, s);
+            var def = new SensorDefinition(SensorId.Create(id, sensorPath), id, name, sensorKind, Units.ForKind(sensorKind),
+                SensorRoleMap.Resolve(hw.HardwareType, s.SensorType, name, path), ordinal++);
             sensors.Add(new MappedSensor(def, s));
         }
         var node = new HardwareNode(id, kind, VendorOf(hw.HardwareType, path), hw.Name, parentId, serial is not null || kind != HardwareKind.Storage, sensors.Select(m => m.Definition).ToList());

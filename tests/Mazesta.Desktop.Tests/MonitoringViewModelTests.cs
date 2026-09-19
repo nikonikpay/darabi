@@ -17,7 +17,7 @@ public class MonitoringViewModelTests
     [Fact] public void Snapshot_updates_rows_without_changing_expansion()
     {
         var (vm, e, _, _, _, _) = Build(); vm.Groups[0].IsExpanded = true; var s = e.TickOnce()!; vm.ApplySnapshot(s);
-        Assert.Equal("42.0", vm.Groups[0].Rows[0].Current); Assert.True(vm.Groups[0].IsExpanded); Assert.True(vm.Groups[1].IsExpanded);
+        Assert.Equal("42.0 °C", vm.Groups[0].Rows[0].Current); Assert.True(vm.Groups[0].IsExpanded); Assert.True(vm.Groups[1].IsExpanded);
     }
     [Fact] public void Missing_reading_shows_not_available_text_not_zero()
     {

@@ -6,9 +6,9 @@ public class JsonStoreTests : IDisposable
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "mazesta-tests-" + Guid.NewGuid().ToString("N"));
     public JsonStoreTests() => Directory.CreateDirectory(_dir);
     public void Dispose() => Directory.Delete(_dir, true);
-    private JsonStore<AppConfig> Store() => new(Path.Combine(_dir, "appconfig.json"), new SchemaMigrator([new Migration0To1()]), AppConfig.CurrentSchemaVersion, NullLogger.Instance);
+    private JsonStore<AppConfig> Store() => new(Path.Combine(_dir, "appconfig.json"), new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, NullLogger.Instance);
     [Fact] public void Missing_file_returns_defaults()
-    { var r = Store().Load(); Assert.Equal(LoadOutcome.Defaulted, r.Outcome); Assert.Equal(2, r.Value.FastIntervalSeconds); Assert.Equal("en", r.Value.Language); }
+    { var r = Store().Load(); Assert.Equal(LoadOutcome.Defaulted, r.Outcome); Assert.Equal(2, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language); }
     [Fact] public void Save_then_load_round_trips_and_leaves_no_temp_file()
     {
         var s = Store(); s.Save(new AppConfig { Language = "fa", ShopName = "فروشگاه", ExpandedGroups = ["cpu/intelcpu-0"] });
@@ -31,7 +31,7 @@ public class JsonStoreTests : IDisposable
         var r = Store().Load();
         Assert.Equal(LoadOutcome.Migrated, r.Outcome); Assert.Equal(5, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language);
         string onDisk = File.ReadAllText(path);
-        Assert.Contains("\"schemaVersion\": 1", onDisk); Assert.DoesNotContain("pollSeconds", onDisk);
+        Assert.Contains("\"schemaVersion\": 2", onDisk); Assert.DoesNotContain("pollSeconds", onDisk);
     }
     [Fact] public void Save_returns_false_when_the_file_cannot_be_written()
     {

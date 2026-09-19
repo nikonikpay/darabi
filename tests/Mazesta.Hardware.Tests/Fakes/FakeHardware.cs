@@ -10,10 +10,10 @@ public sealed class FakeHardware(HardwareType type, string identifier, string na
     public ISensor[] Sensors => _sensors.ToArray();
     public IHardware[] SubHardware { get; set; } = [];
     public IDictionary<string, string> Properties { get; } = new Dictionary<string, string>();
-    public int UpdateCalls; public Exception? ThrowOnUpdate;
+    public int UpdateCalls; public Exception? ThrowOnUpdate; public Action? OnUpdate;
     public event SensorEventHandler? SensorAdded; public event SensorEventHandler? SensorRemoved;
     public string GetReport() => "";
-    public void Update() { UpdateCalls++; if (ThrowOnUpdate is not null) throw ThrowOnUpdate; }
+    public void Update() { UpdateCalls++; OnUpdate?.Invoke(); if (ThrowOnUpdate is not null) throw ThrowOnUpdate; }
     public void Accept(IVisitor visitor) { } public void Traverse(IVisitor visitor) { }
     public FakeSensor Add(string name, SensorType type, int index, float? value, bool hidden = false)
     { var s = new FakeSensor(this, name, type, index, value, hidden); _sensors.Add(s); SensorAdded?.Invoke(s); return s; }
