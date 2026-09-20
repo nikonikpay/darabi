@@ -50,4 +50,12 @@ public class LhmHardwareMapperTests
         var mem = new FakeHardware(HardwareType.Memory, "/memory/dimm/0", "DIMM"); mem.Add("Thermal Sensor Low Limit", SensorType.Temperature, 2, 0, hidden: true); mem.Add("DIMM #1", SensorType.Temperature, 0, 38);
         Assert.Single(Mapper().Map([mem])[0].Sensors);
     }
+
+    // Regression: an NVIDIA driver reported two loads with the same identifier; the duplicate key crashed the whole Monitoring page.
+    [Fact] public void A_duplicated_sensor_identifier_is_mapped_once()
+    {
+        var gpu = new FakeHardware(HardwareType.GpuNvidia, "/gpu-nvidia/0", "NVIDIA GeForce RTX 3090"); gpu.Add("GPU Video Engine", SensorType.Load, 3, 1); gpu.Add("GPU Other Engine", SensorType.Load, 3, 2);
+        var sensors = Mapper().Map([gpu])[0].Sensors;
+        Assert.Single(sensors); Assert.Equal("GPU Video Engine", sensors[0].Definition.Name);
+    }
 }

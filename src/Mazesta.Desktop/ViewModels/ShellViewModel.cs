@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -63,7 +64,12 @@ public sealed partial class ShellViewModel : ObservableObject
         IntervalText = Loc.Format("Status_Interval", engine.FastInterval.TotalSeconds);
     }
 
-    partial void OnSelectedChanged(NavItem? value) { if (value is not null) CurrentPage = value.PageFactory(); }
+    partial void OnSelectedChanged(NavItem? value)
+    {
+        if (value is null) return;
+        try { CurrentPage = value.PageFactory(); }
+        catch (Exception e) { _sp.GetService<Microsoft.Extensions.Logging.ILoggerFactory>()?.CreateLogger("Navigation").LogError(e, "Opening page {Page} failed", value.Key); }
+    }
 
     // The page view models subscribe to the polling engine; the outgoing page is disposed here so
     // the subscription goes with it. Nothing else holds them - they are built by a Func<T> factory,

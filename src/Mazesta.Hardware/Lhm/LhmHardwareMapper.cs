@@ -18,13 +18,15 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
         string? serial = kind == HardwareKind.Storage ? Normalize(storageSerialResolver(hw)) : null;
         var id = serial is not null ? HardwareId.ForStorage(serial) : HardwareId.FromProviderPath(kind, path);
         var sensors = new List<MappedSensor>();
-        int ordinal = 0;
+        int ordinal = 0; var seen = new HashSet<SensorId>();
         foreach (var s in hw.Sensors.Where(s => !s.IsDefaultHidden).OrderBy(s => s.SensorType).ThenBy(s => s.Index))
         {
             var sensorKind = SensorKindOf(s.SensorType);
             string sensorPath = s.Identifier.ToString()[path.Length..];   // "/temperature/1"
             string name = SensorNameCatalog.Resolve(hw, s);
-            var def = new SensorDefinition(SensorId.Create(id, sensorPath), id, name, sensorKind, Units.ForKind(sensorKind),
+            var sensorId = SensorId.Create(id, sensorPath);
+            if (!seen.Add(sensorId)) continue;   // a driver can report the same identifier twice; ids key every dictionary downstream, so the first one wins
+            var def = new SensorDefinition(sensorId, id, name, sensorKind, Units.ForKind(sensorKind),
                 SensorRoleMap.Resolve(hw.HardwareType, s.SensorType, name, path), ordinal++);
             sensors.Add(new MappedSensor(def, s));
         }
