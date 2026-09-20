@@ -39,11 +39,15 @@ public static class Bootstrapper
         s.AddSingleton<ViewModels.ShellViewModel>();
         s.AddSingleton<ViewModels.IChartWindowService, Services.ChartWindowService>();
         s.AddDiagnostics(paths, lf);
+        s.AddSingleton<Services.ReportService>();
         AddViewModelFactory(s, sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<InventoryCache>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        AddViewModelFactory(s, sp => new ViewModels.ReportsViewModel(sp.GetRequiredService<Services.ReportService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }), text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Reports"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true })));
-        return s.BuildServiceProvider();
+        var provider = s.BuildServiceProvider();
+        provider.GetRequiredService<Services.ReportService>();   // constructed now so it is already listening when the first test run starts
+        return provider;
     }
 
     /// <summary>

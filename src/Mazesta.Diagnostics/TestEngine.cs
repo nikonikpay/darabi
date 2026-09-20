@@ -12,6 +12,8 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     private CancellationTokenSource? _cts;
     public TestEngineState State { get; private set; } = TestEngineState.Idle;
     public event Action<TestEngineState>? StateChanged;
+    /// <summary>Raised once when a queue starts, with the queue as it was asked for (definitions, durations, option values) - what a report needs to describe tests that never got to run.</summary>
+    public event Action<IReadOnlyList<QueuedTest>>? SessionStarted;
     public event Action<TestId>? TestStarted;
     public event Action<TestId, TestRunResult>? TestCompleted;
     public event Action<TestId, TestProgress>? TestProgressChanged;
@@ -37,7 +39,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         var checkpoint = new TestSessionCheckpoint { SessionId = Guid.NewGuid().ToString("N"), QueueTestIds = [.. queue.Select(q => q.Definition.Id.Value)], StartedAt = clock.UtcNow, LastUpdatedAt = clock.UtcNow };
         _cts = CancellationTokenSource.CreateLinkedTokenSource(external);   // before Running, so a Cancel that follows the state change always finds it
         var ct = _cts.Token;
-        SetState(TestEngineState.Running);
+        SetState(TestEngineState.Running); SessionStarted?.Invoke(queue);
         try
         {
             for (int i = 0; i < queue.Count; i++)

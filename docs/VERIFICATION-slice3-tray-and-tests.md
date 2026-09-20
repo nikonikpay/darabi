@@ -13,3 +13,14 @@
 ## Also in this slice
 - Themed ProgressBar and CheckBox, fade-in on view load (opacity only).
 - 81 Core tests (health rules and sampler added); all non-hardware suites pass.
+
+## Reports (`src/Mazesta.Reporting`, Reports page)
+- When a test queue finishes, `ReportService` writes `reports/<date>-<id>/report.json` and `report.html` (self-contained: no scripts,
+  no external requests, IRANSans embedded). The PDF is printed from that HTML with the system WebView2 (offline) on demand from the Reports page.
+- Content: verdict (Passed only if every requested test ran and passed; cancelled/unsupported/never-run → Incomplete), counts, per-test outcome,
+  duration, errors, options and measured evidence, key sensors (min/avg/max + chart with each test's span) from the monitor's recorded history
+  for the run window, and the machine inventory. A sensor with no samples is left out; nothing is invented.
+- **Verified live (2026-09-20):** all 11 tests, 3 s each, produced a 59 KB JSON, a 320 KB HTML (rendered correctly, RTL Persian) and a 265 KB PDF; the Reports
+  page lists it with a Jalali date and verdict.
+- Not yet: before/after comparison, benchmark section (no benchmarks exist yet), English wording, PDF page-level visual check (no PDF rasteriser on this box).
+- Also fixed: a duplicate LHM sensor identifier crashed the Monitoring page (`ced5a78`).

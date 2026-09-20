@@ -469,4 +469,18 @@
   <data name="Settings_RenderMode" xml:space="preserve">
     <value>روش رسم رابط</value>
   </data>
+  <data name="Reports_Empty" xml:space="preserve"><value>هنوز گزارشی ساخته نشده است. بعد از اجرای آزمون‌ها، گزارش به‌طور خودکار اینجا ذخیره می‌شود.</value></data>
+  <data name="Reports_Html" xml:space="preserve"><value>باز کردن گزارش (HTML)</value></data>
+  <data name="Reports_Pdf" xml:space="preserve"><value>ذخیره / باز کردن PDF</value></data>
+  <data name="Reports_Json" xml:space="preserve"><value>داده‌ی JSON</value></data>
+  <data name="Reports_Folder" xml:space="preserve"><value>پوشه</value></data>
+  <data name="Reports_Delete" xml:space="preserve"><value>حذف</value></data>
+  <data name="Reports_DeleteConfirm" xml:space="preserve"><value>این گزارش برای همیشه پاک شود؟</value></data>
+  <data name="Reports_PdfBusy" xml:space="preserve"><value>در حال ساخت PDF…</value></data>
+  <data name="Reports_PdfFailed" xml:space="preserve"><value>ساخت PDF ممکن نشد: {0}</value></data>
+  <data name="Reports_Created" xml:space="preserve"><value>گزارش آزمون ذخیره شد.</value></data>
+  <data name="Reports_Summary" xml:space="preserve"><value>{0} آزمون · {1} موفق · {2} ناموفق · {3} انجام‌نشده</value></data>
+  <data name="Reports_Verdict_Passed" xml:space="preserve"><value>موفق</value></data>
+  <data name="Reports_Verdict_Failed" xml:space="preserve"><value>نیازمند بررسی</value></data>
+  <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>ناقص</value></data>
 </root>

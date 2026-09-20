@@ -469,4 +469,18 @@
   <data name="Settings_RenderMode" xml:space="preserve">
     <value>Rendering</value>
   </data>
+  <data name="Reports_Empty" xml:space="preserve"><value>No report yet. After tests run, the report is saved here automatically.</value></data>
+  <data name="Reports_Html" xml:space="preserve"><value>Open report (HTML)</value></data>
+  <data name="Reports_Pdf" xml:space="preserve"><value>Save / open PDF</value></data>
+  <data name="Reports_Json" xml:space="preserve"><value>JSON data</value></data>
+  <data name="Reports_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Reports_Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Reports_DeleteConfirm" xml:space="preserve"><value>Delete this report permanently?</value></data>
+  <data name="Reports_PdfBusy" xml:space="preserve"><value>Creating PDF…</value></data>
+  <data name="Reports_PdfFailed" xml:space="preserve"><value>Could not create the PDF: {0}</value></data>
+  <data name="Reports_Created" xml:space="preserve"><value>Test report saved.</value></data>
+  <data name="Reports_Summary" xml:space="preserve"><value>{0} tests · {1} passed · {2} failed · {3} not completed</value></data>
+  <data name="Reports_Verdict_Passed" xml:space="preserve"><value>Passed</value></data>
+  <data name="Reports_Verdict_Failed" xml:space="preserve"><value>Needs attention</value></data>
+  <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>Incomplete</value></data>
 </root>

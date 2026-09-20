@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Turns a finished session into a report: the data model, the JSON and self-contained HTML writers and the
+       on-disk store. Pure and UI-free; the PDF is printed from the HTML by the desktop app (it needs a browser). -->
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
+    <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
+  </ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="Mazesta.Reporting.Tests" /></ItemGroup>
+</Project>

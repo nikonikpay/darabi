@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
@@ -21,6 +22,7 @@
     <ProjectReference Include="../Mazesta.Hardware/Mazesta.Hardware.csproj" />
     <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
     <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
+    <ProjectReference Include="../Mazesta.Reporting/Mazesta.Reporting.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Fonts\*.ttf" />
