@@ -8,7 +8,7 @@
              xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
              xmlns:hw="clr-namespace:Mazesta.Core.Hardware;assembly=Mazesta.Core"
              mc:Ignorable="d"
-             Background="{StaticResource Brush.Background}">
+             Background="{StaticResource Brush.Background}" Style="{StaticResource View.FadeIn}">
     <UserControl.Resources>
         <!-- Value cell: latin text (a number with its unit attached), right-aligned so a column of
              readings lines up. The container's Foreground cannot grey a non-Ok row on its own - the

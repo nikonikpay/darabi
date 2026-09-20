@@ -6,7 +6,7 @@
              xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
              xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
              mc:Ignorable="d"
-             Background="{StaticResource Brush.Background}">
+             Background="{StaticResource Brush.Background}" Style="{StaticResource View.FadeIn}">
     <UserControl.Resources>
         <Style x:Key="RowLabelStyle" TargetType="StackPanel">
             <Setter Property="Orientation" Value="Horizontal" />

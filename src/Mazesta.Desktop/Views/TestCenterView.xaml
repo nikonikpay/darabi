@@ -7,7 +7,7 @@
              xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
              xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
              mc:Ignorable="d"
-             Background="{StaticResource Brush.Background}">
+             Background="{StaticResource Brush.Background}" Style="{StaticResource View.FadeIn}">
     <UserControl.Resources>
         <controls:RepeatModeToLabelConverter x:Key="RepeatModeToLabelConverter" />
         <Style x:Key="RowBorderStyle" TargetType="Border">
