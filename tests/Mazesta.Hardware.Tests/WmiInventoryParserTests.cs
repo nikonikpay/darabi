@@ -31,4 +31,11 @@ public class WmiInventoryParserTests
     {
         Assert.Null(WmiInventoryParser.Cpu([Row(("MaxClockSpeed", 4294967295u))])!.MaxClockMhz);
     }
+    [Fact] public void Adapters_exclude_virtual_bindings()
+    {
+        var a = WmiInventoryParser.Adapters(
+            [Row(("Name", "Intel Wi-Fi")), Row(("Name", "Wi-Fi-QoS Packet Scheduler-0000")), Row(("Name", "Ethernet 5-WFP Native MAC Layer LightWeight Filter-0000"))],
+            []);
+        Assert.Single(a); Assert.Equal("Intel Wi-Fi", a[0].Name);
+    }
 }

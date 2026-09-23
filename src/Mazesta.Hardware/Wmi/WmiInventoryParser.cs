@@ -36,7 +36,8 @@ internal static class WmiInventoryParser
     public static IReadOnlyList<NetworkAdapterInfo> Adapters(IReadOnlyList<IReadOnlyDictionary<string, object?>> adapters, IReadOnlyList<IReadOnlyDictionary<string, object?>> configs)
     {
         var ips = configs.Where(c => L(c, "InterfaceIndex") is not null).ToDictionary(c => L(c, "InterfaceIndex")!.Value, c => c.TryGetValue("IPAddress", out var v) && v is string[] a ? a : []);
-        return adapters.Select(a => new NetworkAdapterInfo(S(a, "Name"), S(a, "MACAddress"), L(a, "InterfaceIndex") is { } ix && ips.TryGetValue(ix, out var list) ? list : [], L(a, "Speed"), B(a, "NetEnabled") == true)).ToList();
+        return adapters.Where(a => S(a, "Name") is not { } n || !NetworkAdapterFilter.IsVirtualBinding(n))
+            .Select(a => new NetworkAdapterInfo(S(a, "Name"), S(a, "MACAddress"), L(a, "InterfaceIndex") is { } ix && ips.TryGetValue(ix, out var list) ? list : [], L(a, "Speed"), B(a, "NetEnabled") == true)).ToList();
     }
     public static OsInfo? Os(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
         => rows.Count == 0 ? null : new OsInfo(S(rows[0], "Caption"), S(rows[0], "Version"), S(rows[0], "BuildNumber"), S(rows[0], "OSArchitecture"));
