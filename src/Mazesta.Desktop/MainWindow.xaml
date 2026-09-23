@@ -155,6 +155,9 @@
                     <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
                         <views:ReportsView />
                     </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:SystemInfoViewModel}">
+                        <views:SystemInfoView />
+                    </DataTemplate>
                     <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
                         <views:SettingsView />
                     </DataTemplate>

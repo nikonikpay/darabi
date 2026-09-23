@@ -483,4 +483,41 @@
   <data name="Reports_Verdict_Passed" xml:space="preserve"><value>موفق</value></data>
   <data name="Reports_Verdict_Failed" xml:space="preserve"><value>نیازمند بررسی</value></data>
   <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>ناقص</value></data>
+  <data name="Nav_SystemInfo" xml:space="preserve"><value>اطلاعات سیستم</value></data>
+  <data name="SystemInfo_Motherboard" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="SystemInfo_Bios" xml:space="preserve"><value>BIOS</value></data>
+  <data name="SystemInfo_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>
+  <data name="SystemInfo_Storage" xml:space="preserve"><value>حافظه ذخیره‌سازی</value></data>
+  <data name="SystemInfo_StorageN" xml:space="preserve"><value>حافظه ذخیره‌سازی {0}</value></data>
+  <data name="SystemInfo_Network" xml:space="preserve"><value>شبکه</value></data>
+  <data name="SystemInfo_NetworkN" xml:space="preserve"><value>شبکه {0}</value></data>
+  <data name="SystemInfo_GpuN" xml:space="preserve"><value>کارت گرافیک {0}</value></data>
+  <data name="SystemInfo_Name" xml:space="preserve"><value>نام</value></data>
+  <data name="SystemInfo_Vendor" xml:space="preserve"><value>سازنده</value></data>
+  <data name="SystemInfo_CoresPhysical" xml:space="preserve"><value>هسته‌های فیزیکی</value></data>
+  <data name="SystemInfo_CoresLogical" xml:space="preserve"><value>پردازنده‌های منطقی</value></data>
+  <data name="SystemInfo_MaxClock" xml:space="preserve"><value>حداکثر فرکانس</value></data>
+  <data name="SystemInfo_Socket" xml:space="preserve"><value>سوکت</value></data>
+  <data name="SystemInfo_Driver" xml:space="preserve"><value>نسخه‌ی درایور</value></data>
+  <data name="SystemInfo_Vram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="SystemInfo_DeviceId" xml:space="preserve"><value>شناسه دستگاه</value></data>
+  <data name="SystemInfo_Manufacturer" xml:space="preserve"><value>سازنده</value></data>
+  <data name="SystemInfo_Product" xml:space="preserve"><value>محصول</value></data>
+  <data name="SystemInfo_Version" xml:space="preserve"><value>نسخه</value></data>
+  <data name="SystemInfo_Serial" xml:space="preserve"><value>شماره سریال</value></data>
+  <data name="SystemInfo_ReleaseDate" xml:space="preserve"><value>تاریخ انتشار</value></data>
+  <data name="SystemInfo_Smbios" xml:space="preserve"><value>نسخه SMBIOS</value></data>
+  <data name="SystemInfo_Build" xml:space="preserve"><value>بیلد</value></data>
+  <data name="SystemInfo_Architecture" xml:space="preserve"><value>معماری</value></data>
+  <data name="SystemInfo_MediaType" xml:space="preserve"><value>نوع</value></data>
+  <data name="SystemInfo_BusType" xml:space="preserve"><value>گذرگاه</value></data>
+  <data name="SystemInfo_Size" xml:space="preserve"><value>حجم</value></data>
+  <data name="SystemInfo_Firmware" xml:space="preserve"><value>فریمور</value></data>
+  <data name="SystemInfo_Health" xml:space="preserve"><value>سلامت</value></data>
+  <data name="SystemInfo_Status" xml:space="preserve"><value>وضعیت</value></data>
+  <data name="SystemInfo_Mac" xml:space="preserve"><value>آدرس MAC</value></data>
+  <data name="SystemInfo_IpAddresses" xml:space="preserve"><value>آدرس‌های IP</value></data>
+  <data name="SystemInfo_LinkSpeed" xml:space="preserve"><value>سرعت اتصال</value></data>
+  <data name="Value_Connected" xml:space="preserve"><value>متصل</value></data>
+  <data name="Value_Disconnected" xml:space="preserve"><value>قطع</value></data>
 </root>

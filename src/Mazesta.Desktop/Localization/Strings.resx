@@ -483,4 +483,41 @@
   <data name="Reports_Verdict_Passed" xml:space="preserve"><value>Passed</value></data>
   <data name="Reports_Verdict_Failed" xml:space="preserve"><value>Needs attention</value></data>
   <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>Incomplete</value></data>
+  <data name="Nav_SystemInfo" xml:space="preserve"><value>System Information</value></data>
+  <data name="SystemInfo_Motherboard" xml:space="preserve"><value>Motherboard</value></data>
+  <data name="SystemInfo_Bios" xml:space="preserve"><value>BIOS</value></data>
+  <data name="SystemInfo_Os" xml:space="preserve"><value>Operating System</value></data>
+  <data name="SystemInfo_Storage" xml:space="preserve"><value>Storage</value></data>
+  <data name="SystemInfo_StorageN" xml:space="preserve"><value>Storage {0}</value></data>
+  <data name="SystemInfo_Network" xml:space="preserve"><value>Network</value></data>
+  <data name="SystemInfo_NetworkN" xml:space="preserve"><value>Network {0}</value></data>
+  <data name="SystemInfo_GpuN" xml:space="preserve"><value>GPU {0}</value></data>
+  <data name="SystemInfo_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="SystemInfo_Vendor" xml:space="preserve"><value>Vendor</value></data>
+  <data name="SystemInfo_CoresPhysical" xml:space="preserve"><value>Physical cores</value></data>
+  <data name="SystemInfo_CoresLogical" xml:space="preserve"><value>Logical processors</value></data>
+  <data name="SystemInfo_MaxClock" xml:space="preserve"><value>Max clock</value></data>
+  <data name="SystemInfo_Socket" xml:space="preserve"><value>Socket</value></data>
+  <data name="SystemInfo_Driver" xml:space="preserve"><value>Driver version</value></data>
+  <data name="SystemInfo_Vram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="SystemInfo_DeviceId" xml:space="preserve"><value>Device ID</value></data>
+  <data name="SystemInfo_Manufacturer" xml:space="preserve"><value>Manufacturer</value></data>
+  <data name="SystemInfo_Product" xml:space="preserve"><value>Product</value></data>
+  <data name="SystemInfo_Version" xml:space="preserve"><value>Version</value></data>
+  <data name="SystemInfo_Serial" xml:space="preserve"><value>Serial number</value></data>
+  <data name="SystemInfo_ReleaseDate" xml:space="preserve"><value>Release date</value></data>
+  <data name="SystemInfo_Smbios" xml:space="preserve"><value>SMBIOS version</value></data>
+  <data name="SystemInfo_Build" xml:space="preserve"><value>Build</value></data>
+  <data name="SystemInfo_Architecture" xml:space="preserve"><value>Architecture</value></data>
+  <data name="SystemInfo_MediaType" xml:space="preserve"><value>Type</value></data>
+  <data name="SystemInfo_BusType" xml:space="preserve"><value>Bus</value></data>
+  <data name="SystemInfo_Size" xml:space="preserve"><value>Size</value></data>
+  <data name="SystemInfo_Firmware" xml:space="preserve"><value>Firmware</value></data>
+  <data name="SystemInfo_Health" xml:space="preserve"><value>Health</value></data>
+  <data name="SystemInfo_Status" xml:space="preserve"><value>Status</value></data>
+  <data name="SystemInfo_Mac" xml:space="preserve"><value>MAC address</value></data>
+  <data name="SystemInfo_IpAddresses" xml:space="preserve"><value>IP addresses</value></data>
+  <data name="SystemInfo_LinkSpeed" xml:space="preserve"><value>Link speed</value></data>
+  <data name="Value_Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Value_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
 </root>
