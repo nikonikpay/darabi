@@ -520,4 +520,18 @@
   <data name="SystemInfo_LinkSpeed" xml:space="preserve"><value>Link speed</value></data>
   <data name="Value_Connected" xml:space="preserve"><value>Connected</value></data>
   <data name="Value_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
+  <data name="Settings_Tray_Section" xml:space="preserve"><value>Tray monitor</value></data>
+  <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>First check delay (seconds)</value></data>
+  <data name="Settings_Tray_Idle" xml:space="preserve"><value>Idle check interval (minutes)</value></data>
+  <data name="Settings_Tray_Watch" xml:space="preserve"><value>Watch check interval (seconds)</value></data>
+  <data name="Settings_Tray_StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="Settings_Tray_StartupOn" xml:space="preserve"><value>Registered: the tray starts automatically at sign-in.</value></data>
+  <data name="Settings_Tray_StartupOff" xml:space="preserve"><value>Not registered.</value></data>
+  <data name="Settings_Tray_StartupCheckFailed" xml:space="preserve"><value>Could not check Task Scheduler: {0}</value></data>
+  <data name="Settings_Tray_Enable" xml:space="preserve"><value>Enable</value></data>
+  <data name="Settings_Tray_Disable" xml:space="preserve"><value>Disable</value></data>
+  <data name="Settings_Tray_Registered" xml:space="preserve"><value>The tray will now start at sign-in.</value></data>
+  <data name="Settings_Tray_Unregistered" xml:space="preserve"><value>The tray will no longer start automatically.</value></data>
+  <data name="Settings_Tray_RegisterFailed" xml:space="preserve"><value>Could not change the startup task: {0}</value></data>
+  <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>MazestaTray.exe was not found next to this app.</value></data>
 </root>

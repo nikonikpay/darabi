@@ -15,5 +15,6 @@
   <ItemGroup>
     <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
     <ProjectReference Include="../Mazesta.Hardware/Mazesta.Hardware.csproj" />
+    <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 using Xunit;
-using System.Text.Json.Nodes; using Mazesta.Persistence;
+using System.Text.Json; using System.Text.Json.Nodes; using Mazesta.Persistence;
 namespace Mazesta.Persistence.Tests;
 public class AppConfigMigrationTests
 {
@@ -17,5 +17,13 @@ public class AppConfigMigrationTests
         var doc = JsonNode.Parse("""{"schemaVersion":1,"language":"en","fastIntervalSeconds":5,"shopName":"x"}""")!.AsObject();
         var migrated = new SchemaMigrator(AppConfig.Migrations).Migrate(doc, 2, out var steps);
         Assert.Equal(1, steps); Assert.Equal("fa", (string)migrated["language"]!); Assert.Equal(5, (int)migrated["fastIntervalSeconds"]!); Assert.Equal("x", (string)migrated["shopName"]!);
+    }
+    [Fact] public void V2_document_migrates_to_v3_and_keeps_everything_else()
+    {
+        var doc = JsonNode.Parse("""{"schemaVersion":2,"language":"fa","fastIntervalSeconds":5,"shopName":"x"}""")!.AsObject();
+        var migrated = new SchemaMigrator(AppConfig.Migrations).Migrate(doc, 3, out var steps);
+        Assert.Equal(1, steps); Assert.Equal(3, (int)migrated["schemaVersion"]!); Assert.Equal("x", (string)migrated["shopName"]!);
+        var config = migrated.Deserialize<AppConfig>(JsonStore<AppConfig>.Options)!;
+        Assert.Equal((20, 10, 30), (config.TrayFirstCheckSeconds, config.TrayIdleIntervalMinutes, config.TrayWatchIntervalSeconds));
     }
 }

@@ -31,7 +31,7 @@ public class JsonStoreTests : IDisposable
         var r = Store().Load();
         Assert.Equal(LoadOutcome.Migrated, r.Outcome); Assert.Equal(5, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language);
         string onDisk = File.ReadAllText(path);
-        Assert.Contains("\"schemaVersion\": 2", onDisk); Assert.DoesNotContain("pollSeconds", onDisk);
+        Assert.Contains($"\"schemaVersion\": {AppConfig.CurrentSchemaVersion}", onDisk); Assert.DoesNotContain("pollSeconds", onDisk);
     }
     [Fact] public void Save_returns_false_when_the_file_cannot_be_written()
     {

@@ -4,8 +4,8 @@ public sealed record WindowPlacement(double Left, double Top, double Width, doub
 public sealed record ChartWindowConfig(string SensorId, WindowPlacement? Placement, int WindowMinutes);
 public sealed class AppConfig : IVersionedDocument
 {
-    public const int CurrentSchemaVersion = 2;
-    public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2()];
+    public const int CurrentSchemaVersion = 3;
+    public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2(), new Migration2To3()];
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public string Language { get; set; } = "fa";
     /// <summary>"auto" lets WPF use the GPU; "software" draws the whole UI on the CPU - for a machine whose graphics driver cannot be trusted (a repair shop meets those), where the window otherwise comes up blank.</summary>
@@ -16,6 +16,12 @@ public sealed class AppConfig : IVersionedDocument
     public List<string> ExpandedGroups { get; set; } = [];
     public WindowPlacement? MainWindow { get; set; }
     public List<ChartWindowConfig> ChartWindows { get; set; } = [];
+    /// <summary>Delay before the tray's first health check after sign-in, so it never runs during it.</summary>
+    public int TrayFirstCheckSeconds { get; set; } = 20;
+    /// <summary>How often the tray checks while nothing is wrong.</summary>
+    public int TrayIdleIntervalMinutes { get; set; } = 10;
+    /// <summary>How often the tray checks while a health rule is building towards an alert (HealthAlerts.IsWatching).</summary>
+    public int TrayWatchIntervalSeconds { get; set; } = 30;
 }
 public sealed class Migration0To1 : IMigration
 {
@@ -36,4 +42,11 @@ public sealed class Migration1To2 : IMigration
 {
     public int From => 1;
     public JsonObject Apply(JsonObject d) { var o = (JsonObject)d.DeepClone(); o["language"] = "fa"; return o; }
+}
+/// <summary>Adds the tray's check-interval settings; a document written before they existed just
+/// keeps every other field and picks up the new ones' C# defaults on deserialize.</summary>
+public sealed class Migration2To3 : IMigration
+{
+    public int From => 2;
+    public JsonObject Apply(JsonObject d) => (JsonObject)d.DeepClone();
 }

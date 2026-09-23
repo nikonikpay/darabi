@@ -9,19 +9,20 @@ namespace Mazesta.Tray;
 /// </summary>
 internal sealed class TrayContext : ApplicationContext
 {
-    private static readonly TimeSpan Idle = TimeSpan.FromMinutes(10), Watch = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _idle, _watch;
     private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _timer = new(); private readonly HealthAlerts _rules = new();
     private readonly ToolStripMenuItem _status = new() { Enabled = false };
     private DateTimeOffset? _last; private string? _problem; private bool _checking;
 
-    public TrayContext()
+    public TrayContext(TimeSpan firstCheck, TimeSpan idle, TimeSpan watch)
     {
+        _idle = idle; _watch = watch;
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes };
         menu.Items.Add(_status); menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(TrayText.CheckNow, null, (_, _) => Check()); menu.Items.Add(TrayText.Exit, null, (_, _) => ExitThread());
         _icon = new NotifyIcon { Icon = SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
         _status.Text = TrayText.Status(null, null);
-        _timer.Tick += (_, _) => Check(); Schedule(TimeSpan.FromSeconds(20));   // first check shortly after sign-in, not during it
+        _timer.Tick += (_, _) => Check(); Schedule(firstCheck);   // first check shortly after sign-in, not during it
     }
 
     private void Schedule(TimeSpan after) { _timer.Interval = (int)after.TotalMilliseconds; _timer.Start(); }
@@ -37,7 +38,7 @@ internal sealed class TrayContext : ApplicationContext
             foreach (var alert in _rules.Evaluate(sample, _last.Value)) _icon.ShowBalloonTip(15000, TrayText.Title, TrayText.Alert(alert), ToolTipIcon.Warning);
         }
         catch (Exception e) { _problem = e.Message; }
-        finally { _status.Text = TrayText.Status(_last, _problem); _checking = false; Schedule(_rules.IsWatching ? Watch : Idle); Memory.Release(); }
+        finally { _status.Text = TrayText.Status(_last, _problem); _checking = false; Schedule(_rules.IsWatching ? _watch : _idle); Memory.Release(); }
     }
 
     /// <summary>Opens the provider, polls twice (load and clocks are deltas, so the first poll reads zero), and disposes it.</summary>

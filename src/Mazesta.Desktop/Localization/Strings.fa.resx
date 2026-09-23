@@ -520,4 +520,18 @@
   <data name="SystemInfo_LinkSpeed" xml:space="preserve"><value>سرعت اتصال</value></data>
   <data name="Value_Connected" xml:space="preserve"><value>متصل</value></data>
   <data name="Value_Disconnected" xml:space="preserve"><value>قطع</value></data>
+  <data name="Settings_Tray_Section" xml:space="preserve"><value>پایشگر Tray</value></data>
+  <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>تأخیر اولین بررسی (ثانیه)</value></data>
+  <data name="Settings_Tray_Idle" xml:space="preserve"><value>بازهٔ بررسی در حالت عادی (دقیقه)</value></data>
+  <data name="Settings_Tray_Watch" xml:space="preserve"><value>بازهٔ بررسی در حالت هشدار (ثانیه)</value></data>
+  <data name="Settings_Tray_StartWithWindows" xml:space="preserve"><value>اجرا با ورود به ویندوز</value></data>
+  <data name="Settings_Tray_StartupOn" xml:space="preserve"><value>ثبت‌شده: Tray هنگام ورود به‌طور خودکار اجرا می‌شود.</value></data>
+  <data name="Settings_Tray_StartupOff" xml:space="preserve"><value>ثبت نشده است.</value></data>
+  <data name="Settings_Tray_StartupCheckFailed" xml:space="preserve"><value>بررسی زمان‌بند ویندوز ممکن نشد: {0}</value></data>
+  <data name="Settings_Tray_Enable" xml:space="preserve"><value>فعال‌سازی</value></data>
+  <data name="Settings_Tray_Disable" xml:space="preserve"><value>غیرفعال‌سازی</value></data>
+  <data name="Settings_Tray_Registered" xml:space="preserve"><value>از این پس Tray هنگام ورود اجرا می‌شود.</value></data>
+  <data name="Settings_Tray_Unregistered" xml:space="preserve"><value>از این پس Tray به‌طور خودکار اجرا نمی‌شود.</value></data>
+  <data name="Settings_Tray_RegisterFailed" xml:space="preserve"><value>تغییر وظیفهٔ اجرای خودکار ممکن نشد: {0}</value></data>
+  <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>MazestaTray.exe در کنار این برنامه پیدا نشد.</value></data>
 </root>
