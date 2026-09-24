@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization;
+using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using static Mazesta.Desktop.ViewModels.DashboardViewModel;
 namespace Mazesta.Desktop.ViewModels;
 
 public sealed record InfoRow(string Label, string Value);
@@ -24,14 +24,6 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         });
     }
 
-    private static string Show(object? value, string? format = null) => value switch
-    {
-        null => Loc.Get("Value_NotAvailable"),
-        string s when s.Trim().Length == 0 => Loc.Get("Value_NotAvailable"),
-        IFormattable f when format is not null => f.ToString(format, CultureInfo.CurrentCulture),
-        _ => value.ToString() is { Length: > 0 } t ? t : Loc.Get("Value_NotAvailable")
-    };
-    private static string ShowBytes(long? bytes, double divisor, string unit) => bytes is { } b ? (b / divisor).ToString("F0", CultureInfo.InvariantCulture) + " " + unit : Loc.Get("Value_NotAvailable");
     private static string ShowSuffixed(object? value, string suffix) => value is null ? Loc.Get("Value_NotAvailable") : $"{value} {suffix}";
 
     internal static IEnumerable<InfoSection> Describe(HardwareInventory inv)
@@ -42,20 +34,21 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         yield return new(Loc.Get("Dashboard_Ram"), MemoryRows(inv));
         yield return new(Loc.Get("SystemInfo_Os"), OsRows(inv.Os));
 
-        if (inv.Gpus.Count == 0) yield return new(Loc.Get("Dashboard_Gpu"), [new(Loc.Get("SystemInfo_Name"), Loc.Get("Value_NotAvailable"))]);
-        for (int i = 0; i < inv.Gpus.Count; i++)
-            yield return new(inv.Gpus.Count == 1 ? Loc.Get("Dashboard_Gpu") : Loc.Format("SystemInfo_GpuN", i + 1), GpuRows(inv.Gpus[i]));
-
-        if (inv.Storage.Count == 0) yield return new(Loc.Get("SystemInfo_Storage"), [new(Loc.Get("SystemInfo_Name"), Loc.Get("Value_NotAvailable"))]);
-        for (int i = 0; i < inv.Storage.Count; i++)
-            yield return new(inv.Storage.Count == 1 ? Loc.Get("SystemInfo_Storage") : Loc.Format("SystemInfo_StorageN", i + 1), StorageRows(inv.Storage[i]));
-
-        if (inv.NetworkAdapters.Count == 0) yield return new(Loc.Get("SystemInfo_Network"), [new(Loc.Get("SystemInfo_Name"), Loc.Get("Value_NotAvailable"))]);
-        for (int i = 0; i < inv.NetworkAdapters.Count; i++)
-            yield return new(inv.NetworkAdapters.Count == 1 ? Loc.Get("SystemInfo_Network") : Loc.Format("SystemInfo_NetworkN", i + 1), NetworkRows(inv.NetworkAdapters[i]));
+        foreach (var section in Numbered(inv.Gpus, "Dashboard_Gpu", "SystemInfo_GpuN", GpuRows)) yield return section;
+        foreach (var section in Numbered(inv.Storage, "SystemInfo_Storage", "SystemInfo_StorageN", StorageRows)) yield return section;
+        foreach (var section in Numbered(inv.NetworkAdapters, "SystemInfo_Network", "SystemInfo_NetworkN", NetworkRows)) yield return section;
     }
 
-    private static IReadOnlyList<InfoRow> CpuRows(CpuInfo? c) => c is null ? [new(Loc.Get("SystemInfo_Name"), Loc.Get("Value_NotAvailable"))] :
+    /// <summary>One section per device, titled with just the category when there is one and numbered when there are several; a category with none is a single not-available row, never silently absent.</summary>
+    private static IEnumerable<InfoSection> Numbered<T>(IReadOnlyList<T> items, string titleKey, string numberedKey, Func<T, IReadOnlyList<InfoRow>> rows)
+    {
+        if (items.Count == 0) yield return new(Loc.Get(titleKey), NotAvailableRows());
+        for (int i = 0; i < items.Count; i++) yield return new(items.Count == 1 ? Loc.Get(titleKey) : Loc.Format(numberedKey, i + 1), rows(items[i]));
+    }
+
+    private static IReadOnlyList<InfoRow> NotAvailableRows(string labelKey = "SystemInfo_Name") => [new(Loc.Get(labelKey), Loc.Get("Value_NotAvailable"))];
+
+    private static IReadOnlyList<InfoRow> CpuRows(CpuInfo? c) => c is null ? NotAvailableRows() :
     [
         new(Loc.Get("SystemInfo_Name"), Show(c.Name)),
         new(Loc.Get("SystemInfo_Vendor"), c.Vendor == HardwareVendor.Unknown ? Loc.Get("Value_NotAvailable") : c.Vendor.ToString()),
@@ -69,11 +62,11 @@ public sealed partial class SystemInfoViewModel : ObservableObject
     [
         new(Loc.Get("SystemInfo_Name"), Show(g.Name)),
         new(Loc.Get("SystemInfo_Driver"), Show(g.DriverVersion)),
-        new(Loc.Get("SystemInfo_Vram"), ShowBytes(g.AdapterRamBytes, 1024.0 * 1024 * 1024, "GB")),
+        new(Loc.Get("SystemInfo_Vram"), ShowBytes(g.AdapterRamBytes, 1024.0 * 1024 * 1024)),
         new(Loc.Get("SystemInfo_DeviceId"), Show(g.PnpDeviceId)),
     ];
 
-    private static IReadOnlyList<InfoRow> BoardRows(MotherboardInfo? m) => m is null ? [new(Loc.Get("SystemInfo_Manufacturer"), Loc.Get("Value_NotAvailable"))] :
+    private static IReadOnlyList<InfoRow> BoardRows(MotherboardInfo? m) => m is null ? NotAvailableRows("SystemInfo_Manufacturer") :
     [
         new(Loc.Get("SystemInfo_Manufacturer"), Show(m.Manufacturer)),
         new(Loc.Get("SystemInfo_Product"), Show(m.Product)),
@@ -81,7 +74,7 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         new(Loc.Get("SystemInfo_Serial"), Show(m.SerialNumber)),
     ];
 
-    private static IReadOnlyList<InfoRow> BiosRows(BiosInfo? b) => b is null ? [new(Loc.Get("SystemInfo_Vendor"), Loc.Get("Value_NotAvailable"))] :
+    private static IReadOnlyList<InfoRow> BiosRows(BiosInfo? b) => b is null ? NotAvailableRows("SystemInfo_Vendor") :
     [
         new(Loc.Get("SystemInfo_Vendor"), Show(b.Vendor)),
         new(Loc.Get("SystemInfo_Version"), Show(b.Version)),
@@ -91,17 +84,17 @@ public sealed partial class SystemInfoViewModel : ObservableObject
 
     private static IReadOnlyList<InfoRow> MemoryRows(HardwareInventory inv)
     {
-        List<InfoRow> rows = [new(Loc.Get("Dashboard_Ram_Total"), ShowBytes(inv.TotalPhysicalMemoryBytes, 1024.0 * 1024 * 1024, "GB"))];
+        List<InfoRow> rows = [new(Loc.Get("Dashboard_Ram_Total"), ShowBytes(inv.TotalPhysicalMemoryBytes, 1024.0 * 1024 * 1024))];
         if (inv.MemoryModules.Count == 0) { rows.Add(new(Loc.Get("Dashboard_Ram_Modules"), Loc.Get("Value_NotAvailable"))); return rows; }
         foreach (var m in inv.MemoryModules)
         {
             var speed = m.ConfiguredSpeedMts ?? m.SpeedMts;
-            rows.Add(new(Show(m.Slot), $"{ShowBytes(m.CapacityBytes, 1024.0 * 1024 * 1024, "GB")} · {Show(m.Manufacturer)} · {Show(m.PartNumber)} · {ShowSuffixed(speed, "MT/s")}"));
+            rows.Add(new(Show(m.Slot), $"{ShowBytes(m.CapacityBytes, 1024.0 * 1024 * 1024)} · {Show(m.Manufacturer)} · {Show(m.PartNumber)} · {ShowSuffixed(speed, "MT/s")}"));
         }
         return rows;
     }
 
-    private static IReadOnlyList<InfoRow> OsRows(OsInfo? o) => o is null ? [new(Loc.Get("SystemInfo_Name"), Loc.Get("Value_NotAvailable"))] :
+    private static IReadOnlyList<InfoRow> OsRows(OsInfo? o) => o is null ? NotAvailableRows() :
     [
         new(Loc.Get("SystemInfo_Name"), Show(o.Caption)),
         new(Loc.Get("SystemInfo_Version"), Show(o.Version)),
@@ -114,7 +107,7 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         new(Loc.Get("SystemInfo_Name"), Show(d.FriendlyName)),
         new(Loc.Get("SystemInfo_MediaType"), Show(d.MediaType)),
         new(Loc.Get("SystemInfo_BusType"), Show(d.BusType)),
-        new(Loc.Get("SystemInfo_Size"), ShowBytes(d.SizeBytes, 1e9, "GB")),
+        new(Loc.Get("SystemInfo_Size"), ShowBytes(d.SizeBytes, 1e9)),
         new(Loc.Get("SystemInfo_Firmware"), Show(d.FirmwareVersion)),
         new(Loc.Get("SystemInfo_Serial"), Show(d.SerialNumber)),
         new(Loc.Get("SystemInfo_Health"), Show(d.HealthStatus)),

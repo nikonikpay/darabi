@@ -17,12 +17,12 @@ public sealed class CpuBenchmark : IBenchmark
         if (request.DurationSeconds <= 0) return BenchmarkResult.Unsupported(Spec.Id, started, "Duration must be positive.");
         var phase = TimeSpan.FromSeconds(request.DurationSeconds / 2.0); int threads = Environment.ProcessorCount;
         var overall = Stopwatch.StartNew();
-        void Progress() => request.Progress?.Invoke(new TestProgress(Math.Clamp(overall.Elapsed.TotalSeconds / request.DurationSeconds, 0, 1), "Test_Status_Running"));
+        void Progress() => request.Report(overall.Elapsed.TotalSeconds / request.DurationSeconds);
 
         double single = await MeasureAsync(1, phase, ct, Progress).ConfigureAwait(false);
         double multi = ct.IsCancellationRequested ? 0 : await MeasureAsync(threads, phase, ct, Progress).ConfigureAwait(false);
         var finished = request.Clock.UtcNow;
-        if (ct.IsCancellationRequested) return new(Spec.Id, BenchmarkStatus.Cancelled, started, finished, [], null);
+        if (ct.IsCancellationRequested) return BenchmarkResult.Cancelled(Spec.Id, started, finished);
 
         List<BenchmarkMetric> metrics = [new("Bench_Cpu_Single", single, "GFLOPS"), new("Bench_Cpu_Multi", multi, "GFLOPS"), new("Bench_Threads", threads, "")];
         if (SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuEffectiveClockAverage, started, finished) is { } clock) metrics.Add(new("Bench_Cpu_Clock", clock.Average, "MHz"));

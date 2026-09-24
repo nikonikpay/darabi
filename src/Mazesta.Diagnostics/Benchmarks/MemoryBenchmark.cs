@@ -30,7 +30,7 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
         {
             long passes = 0; var sw = Stopwatch.StartNew();
             do { ct.ThrowIfCancellationRequested(); pass(); passes++; } while (sw.Elapsed < phase);
-            request.Progress?.Invoke(new TestProgress(++done / 4.0, "Test_Status_Running"));
+            request.Report(++done / 4.0);
             return passes * (double)BufferBytes / sw.Elapsed.TotalSeconds / 1e9;
         }
         try
@@ -43,6 +43,6 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
                 [new("Bench_Mem_Write", write, "GB/s"), new("Bench_Mem_Read", read, "GB/s"), new("Bench_Mem_Copy", copy, "GB/s"), new("Bench_Mem_CopyAll", copyAll, "GB/s")],
                 $"two {BufferBytes >> 20} MiB buffers; write/read/copy on one thread, copy on {Environment.ProcessorCount} threads");
         }
-        catch (OperationCanceledException) { return new(Spec.Id, BenchmarkStatus.Cancelled, started, request.Clock.UtcNow, [], null); }
+        catch (OperationCanceledException) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
     }
 }

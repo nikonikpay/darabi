@@ -24,7 +24,7 @@
     <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
     <ProjectReference Include="../Mazesta.Reporting/Mazesta.Reporting.csproj" />
     <!-- Built first and shipped next to the app (see BundleTray): Settings starts, stops and registers it. Not referenced as code. -->
-    <ProjectReference Include="../Mazesta.Tray/Mazesta.Tray.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../Mazesta.Tray/Mazesta.Tray.csproj" ReferenceOutputAssembly="false" OutputItemType="TrayOutput" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Fonts\*.ttf" />
@@ -34,13 +34,16 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Desktop.Tests" />
   </ItemGroup>
-  <Target Name="BundleTray" AfterTargets="Build">
-    <PropertyGroup><TrayDir>$(MSBuildThisFileDirectory)../Mazesta.Tray/bin/$(Configuration)/$(TargetFramework)/</TrayDir></PropertyGroup>
-    <ItemGroup><TrayFile Include="$(TrayDir)MazestaTray.exe;$(TrayDir)MazestaTray.dll;$(TrayDir)MazestaTray.runtimeconfig.json;$(TrayDir)MazestaTray.deps.json" /></ItemGroup>
+  <!-- @(TrayOutput) is the tray's built dll, reported by the project reference itself; its apphost, deps and runtimeconfig sit beside it. -->
+  <Target Name="BundleTray" AfterTargets="Build" Condition="'@(TrayOutput)' != ''">
+    <ItemGroup>
+      <TrayFile Include="@(TrayOutput)" />
+      <TrayFile Include="@(TrayOutput->'%(RootDir)%(Directory)MazestaTray.exe');@(TrayOutput->'%(RootDir)%(Directory)MazestaTray.runtimeconfig.json');@(TrayOutput->'%(RootDir)%(Directory)MazestaTray.deps.json')" />
+    </ItemGroup>
     <Copy SourceFiles="@(TrayFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
   </Target>
   <!-- The SDK already publishes the tray's apphost, deps and runtimeconfig for a project reference; only its dll is missing. -->
-  <Target Name="PublishTrayDll" AfterTargets="ComputeResolvedFilesToPublishList" DependsOnTargets="BundleTray">
-    <ItemGroup><ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)../Mazesta.Tray/bin/$(Configuration)/$(TargetFramework)/MazestaTray.dll" RelativePath="MazestaTray.dll" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  <Target Name="PublishTrayDll" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup><ResolvedFileToPublish Include="@(TrayOutput)" RelativePath="%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
   </Target>
 </Project>

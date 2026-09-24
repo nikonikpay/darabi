@@ -18,7 +18,7 @@ public class BenchmarksViewModelTests
     {
         var (vm, results) = Build(new Fake(BenchmarkStatus.Completed, new("Bench_Cpu_Single", 12.3456, "GFLOPS"), new("Bench_Cpu_Multi", 250.4, "GFLOPS")));
         await vm.RunCommand.ExecuteAsync(vm.Rows[0]);
-        Assert.Equal(["12.35 GFLOPS", "250 GFLOPS"], vm.Rows[0].Metrics.Select(m => m.Value)); Assert.Single(results.Snapshot()); Assert.True(vm.IsIdle);
+        Assert.Equal(["12.35 GFLOPS", "250 GFLOPS"], vm.Rows[0].Metrics.Select(m => m.Value)); Assert.Single(results.Snapshot()); Assert.False(vm.IsRunning);
     }
     [Fact] public async Task An_unsupported_run_shows_no_numbers_and_is_not_kept()
     {

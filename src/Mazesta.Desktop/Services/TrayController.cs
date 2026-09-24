@@ -23,7 +23,7 @@ public sealed class TrayController : ITrayController
 
     public TrayState Query()
     {
-        try { return new(StartupTask.IsRegistered(RunSchtasks(StartupTask.QueryArguments()).Output), Process.GetProcessesByName(ProcessName).Length > 0); }
+        try { return new(IsRegistered(), IsRunning()); }
         catch (Exception e) { return new(false, false, e.Message); }
     }
 
@@ -43,7 +43,7 @@ public sealed class TrayController : ITrayController
     {
         try
         {
-            if (StartupTask.IsRegistered(RunSchtasks(StartupTask.QueryArguments()).Output))
+            if (IsRegistered())
             {
                 var (code, output) = RunSchtasks(StartupTask.DeleteArguments());
                 if (code != 0) return output.Trim();
@@ -59,6 +59,8 @@ public sealed class TrayController : ITrayController
         try { if (!IsRunning()) return null; Stop(); return Start(); }
         catch (Exception e) { return e.Message; }
     }
+
+    private static bool IsRegistered() => StartupTask.IsRegistered(RunSchtasks(StartupTask.QueryArguments()).Output);
 
     private static bool IsRunning() => Process.GetProcessesByName(ProcessName).Length > 0;
 

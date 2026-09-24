@@ -23,6 +23,9 @@ public static class Units
         Unit.Volt => 3, Unit.Celsius or Unit.Watt or Unit.Ampere or Unit.Gigabyte or Unit.Ratio or Unit.Nanoseconds => 1,
         _ => 0
     };
+    /// <summary>A measured number for display: whole above 100, otherwise <paramref name="lowDecimals"/> decimals, then the unit. Always invariant, so digits stay Latin.</summary>
+    public static string FormatMeasured(double value, string unit, int lowDecimals = 2)
+        => (Math.Abs(value) >= 100 ? value.ToString("F0", System.Globalization.CultureInfo.InvariantCulture) : value.ToString("F" + lowDecimals, System.Globalization.CultureInfo.InvariantCulture)) + (unit.Length == 0 ? "" : " " + unit);
     public static string Format(double value, Unit unit) => value.ToString("F" + Decimals(unit), System.Globalization.CultureInfo.InvariantCulture);
     public static string FormatWithSymbol(double value, Unit unit)
     {

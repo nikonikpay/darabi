@@ -27,16 +27,16 @@ public class SettingsViewModelTests : IDisposable
     { var (vm, cfg, _, _, _) = Build(); vm.FastIntervalText = "3"; vm.SaveCommand.Execute(null); Assert.Equal(2, cfg.FastIntervalSeconds); }
     [Fact] public void Save_writes_file_and_language_change_shows_restart_note()
     { var (vm, _, store, _, _) = Build(); vm.Language = "en"; vm.ShopName = "فروشگاه"; vm.SaveCommand.Execute(null); var r = store.Load(); Assert.Equal(("en", "فروشگاه"), (r.Value.Language, r.Value.ShopName)); Assert.Contains(Mazesta.Desktop.Localization.Loc.Get("Settings_RestartNote"), vm.Message); }
-    [Fact] public void Enable_and_disable_follow_what_the_system_reports_not_a_stored_flag()
+    [Fact] public async Task Enable_and_disable_follow_what_the_system_reports_not_a_stored_flag()
     {
-        var (vm, _, _, _, tray) = Build();
+        var (vm, _, _, _, tray) = Build(); await vm.TrayLoaded;
         Assert.True(vm.CanEnableTray); Assert.False(vm.CanDisableTray);
-        vm.EnableTrayCommand.Execute(null); Assert.False(vm.CanEnableTray); Assert.True(vm.CanDisableTray);
-        vm.DisableTrayCommand.Execute(null); Assert.True(vm.CanEnableTray); Assert.False(tray.State.Running);
+        await vm.EnableTrayCommand.ExecuteAsync(null); Assert.False(vm.CanEnableTray); Assert.True(vm.CanDisableTray);
+        await vm.DisableTrayCommand.ExecuteAsync(null); Assert.True(vm.CanEnableTray); Assert.False(tray.State.Running);
     }
-    [Fact] public void Changed_tray_intervals_restart_a_running_tray_and_unchanged_ones_do_not()
+    [Fact] public async Task Changed_tray_intervals_restart_a_running_tray_and_unchanged_ones_do_not()
     {
-        var (vm, _, _, _, tray) = Build(); tray.State = new(true, true); vm.EnableTrayCommand.Execute(null);
+        var (vm, _, _, _, tray) = Build(); tray.State = new(true, true); await vm.EnableTrayCommand.ExecuteAsync(null);
         vm.SaveCommand.Execute(null); Assert.Equal(0, tray.Restarts);
         vm.TrayIdleText = "15"; vm.SaveCommand.Execute(null); Assert.Equal(1, tray.Restarts);
     }

@@ -9,6 +9,12 @@ public enum BenchmarkStatus { Completed, Cancelled, Unsupported, Failed }
 public sealed record BenchmarkResult(TestId Id, BenchmarkStatus Status, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetric> Metrics, string? Detail)
 {
     public static BenchmarkResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Unsupported, now, now, [], detail);
+    public static BenchmarkResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, BenchmarkStatus.Cancelled, started, now, [], null);
+}
+
+internal static class BenchmarkRequestExtensions
+{
+    public static void Report(this TestExecutionRequest request, double fraction) => request.Progress?.Invoke(new TestProgress(Math.Clamp(fraction, 0, 1), "Test_Status_Running"));
 }
 
 /// <summary>A measurement run. It reuses <see cref="TestDefinition"/> (name key, default duration, options) and

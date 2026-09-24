@@ -1,4 +1,4 @@
-using System.Globalization; using System.Text; using Mazesta.Core.Inventory;
+using System.Globalization; using System.Text; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory;
 namespace Mazesta.Reporting;
 
 /// <summary>A font to embed so the file looks the same on any machine (regular and bold TTF bytes).</summary>
@@ -113,7 +113,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             for (int i = 0; i < bm.Metrics.Count; i++)
             {
                 var m = bm.Metrics[i]; if (i > 0) b.Append("<tr>");
-                b.Append("<td>").Append(E(m.Name)).Append("</td><td>").Append(Lt((Math.Abs(m.Value) >= 100 ? m.Value.ToString("F0", Inv) : m.Value.ToString("F2", Inv)) + (m.Unit.Length == 0 ? "" : " " + m.Unit))).Append("</td></tr>");
+                b.Append("<td>").Append(E(m.Name)).Append("</td><td>").Append(Lt(Units.FormatMeasured(m.Value, m.Unit))).Append("</td></tr>");
             }
         }
         b.Append("</tbody></table>");
@@ -153,7 +153,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         b.Append("</tbody></table>");
     }
 
-    private static string Value(double v, SensorSummary s) => (Math.Abs(v) >= 100 ? v.ToString("F0", Inv) : v.ToString("F1", Inv)) + (s.Unit.Length == 0 ? "" : " " + s.Unit);
+    private static string Value(double v, SensorSummary s) => Units.FormatMeasured(v, s.Unit, 1);
     private static string Stamp(DateTimeOffset t) => t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", Inv);
     private static string Duration(double seconds) => seconds >= 60 ? $"{(int)(seconds / 60)}m {seconds % 60:F0}s" : $"{seconds:F0}s";
 }

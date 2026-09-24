@@ -47,7 +47,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         IFormattable f when format is not null => f.ToString(format, System.Globalization.CultureInfo.CurrentCulture),
         _ => value.ToString() is { Length: > 0 } t ? t : Loc.Get("Value_NotAvailable")
     };
-    private static string ShowBytes(long? bytes, double divisor) => bytes is { } b ? (b / divisor).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " GB" : Loc.Get("Value_NotAvailable");
+    internal static string ShowBytes(long? bytes, double divisor) => bytes is { } b ? (b / divisor).ToString("F0", System.Globalization.CultureInfo.CurrentCulture) + " GB" : Loc.Get("Value_NotAvailable");
 
     internal static IEnumerable<(string Label, string Value)> DescribeInventory(HardwareInventory inv)
     {

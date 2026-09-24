@@ -8,7 +8,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _language; [ObservableProperty] private string _renderMode; [ObservableProperty] private string _fastIntervalText; [ObservableProperty] private string _storageIntervalText; [ObservableProperty] private string _shopName; [ObservableProperty] private string _message = "";
     [ObservableProperty] private string _trayFirstCheckText; [ObservableProperty] private string _trayIdleText; [ObservableProperty] private string _trayWatchText;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEnableTray), nameof(CanDisableTray))] private TrayState _trayState = new(false, false);
-    [ObservableProperty] private string _trayStatusText = "";
+    [ObservableProperty] private string _trayStatusText = Loc.Get("Settings_Tray_Checking");
+    /// <summary>Completes when the first tray query has finished (it runs schtasks, so it is off the UI thread).</summary>
+    public Task TrayLoaded { get; }
     public bool CanEnableTray => !(TrayState.Registered && TrayState.Running);
     public bool CanDisableTray => TrayState.Registered || TrayState.Running;
     public string DataFolder { get; } public string ModeText { get; } public string Version { get; } = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
@@ -18,7 +20,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _shopName = config.ShopName;
         _trayFirstCheckText = config.TrayFirstCheckSeconds.ToString(); _trayIdleText = config.TrayIdleIntervalMinutes.ToString(); _trayWatchText = config.TrayWatchIntervalSeconds.ToString();
         DataFolder = paths.DataRoot; ModeText = Loc.Get(paths.IsPortable ? "Settings_Mode_Portable" : "Settings_Mode_Installed");
-        RefreshTray();
+        TrayLoaded = RefreshTrayAsync();
     }
     internal bool TryValidate(out int fast, out int storage, out string error)
     {
@@ -27,13 +29,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (!PersianDigits.TryParseInt(StorageIntervalText, out storage) || storage < 60) { error = Loc.Get("Settings_Invalid_Interval"); return false; }
         return true;
     }
+    private static bool TryRange(string text, int min, int max, out int value) => PersianDigits.TryParseInt(text, out value) && value >= min && value <= max;
     internal bool TryValidateTray(out int firstCheck, out int idle, out int watch, out string error)
     {
-        error = ""; idle = 0; watch = 0;
-        if (!PersianDigits.TryParseInt(TrayFirstCheckText, out firstCheck) || firstCheck is < 5 or > 300) { error = Loc.Get("Settings_Invalid_Interval"); return false; }
-        if (!PersianDigits.TryParseInt(TrayIdleText, out idle) || idle is < 1 or > 120) { error = Loc.Get("Settings_Invalid_Interval"); return false; }
-        if (!PersianDigits.TryParseInt(TrayWatchText, out watch) || watch is < 5 or > 300) { error = Loc.Get("Settings_Invalid_Interval"); return false; }
-        return true;
+        idle = 0; watch = 0;
+        bool ok = TryRange(TrayFirstCheckText, 5, 300, out firstCheck) && TryRange(TrayIdleText, 1, 120, out idle) && TryRange(TrayWatchText, 5, 300, out watch);
+        error = ok ? "" : Loc.Get("Settings_Invalid_Interval"); return ok;
     }
     [RelayCommand] private void Save()
     {
@@ -51,18 +52,24 @@ public sealed partial class SettingsViewModel : ObservableObject
         bool saved = _store.Save(_config); _shell.RefreshInterval();
         Message = (saved ? Loc.Get("Settings_Saved") : Loc.Get("Settings_SaveFailed")) + (restartNeeded ? " " + Loc.Get("Settings_RestartNote") : "");
         // The tray reads its intervals once at start, so a running one is restarted to pick up the change.
-        if (saved && trayChanged && TrayState.Running) { Message += " " + (_tray.Restart() is { } failure ? Loc.Format("Settings_Tray_ChangeFailed", failure) : Loc.Get("Settings_Tray_Restarted")); RefreshTray(); }
+        if (saved && trayChanged && TrayState.Running) { Message += " " + (_tray.Restart() is { } failure ? Loc.Format("Settings_Tray_ChangeFailed", failure) : Loc.Get("Settings_Tray_Restarted")); }
     }
     [RelayCommand] private void OpenFolder() => _openFolder(DataFolder);
 
-    [RelayCommand] private void EnableTray() => ChangeTray(_tray.Enable(), "Settings_Tray_Enabled");
-    [RelayCommand] private void DisableTray() => ChangeTray(_tray.Disable(), "Settings_Tray_Disabled");
+    [RelayCommand] private Task EnableTray() => ChangeTrayAsync(_tray.Enable, "Settings_Tray_Enabled");
+    [RelayCommand] private Task DisableTray() => ChangeTrayAsync(_tray.Disable, "Settings_Tray_Disabled");
 
-    private void ChangeTray(string? failure, string successKey) { Message = failure is null ? Loc.Get(successKey) : Loc.Format("Settings_Tray_ChangeFailed", failure); RefreshTray(); }
-
-    private void RefreshTray()
+    // schtasks and killing a process take from tens of milliseconds to seconds, so none of it runs on the UI thread.
+    private async Task ChangeTrayAsync(Func<string?> change, string successKey)
     {
-        TrayState = _tray.Query();
+        string? failure = await Task.Run(change);
+        Message = failure is null ? Loc.Get(successKey) : Loc.Format("Settings_Tray_ChangeFailed", failure);
+        await RefreshTrayAsync();
+    }
+
+    private async Task RefreshTrayAsync()
+    {
+        TrayState = await Task.Run(_tray.Query);
         TrayStatusText = TrayState.Error is { } e ? Loc.Format("Settings_Tray_CheckFailed", e)
             : Loc.Format("Settings_Tray_State", Loc.Get(TrayState.Running ? "Settings_Tray_Running" : "Settings_Tray_Stopped"), Loc.Get(TrayState.Registered ? "Value_Yes" : "Value_No"));
     }

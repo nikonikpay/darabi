@@ -23,7 +23,7 @@ public sealed class StorageBenchmark : IBenchmark
                 using var file = StorageFile.Create(StorageFile.ResolveTarget(options.Get(StorageExecutor.DriveOption)), (long)fileMb << 20 & ~(long)(StorageFile.Block - 1));
                 return Measure(file, request, started, ct);
             }
-            catch (OperationCanceledException) { return new BenchmarkResult(Spec.Id, BenchmarkStatus.Cancelled, started, request.Clock.UtcNow, [], null); }
+            catch (OperationCanceledException) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
             catch (StorageUnavailableException ex) { return BenchmarkResult.Unsupported(Spec.Id, started, ex.Message); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return new BenchmarkResult(Spec.Id, BenchmarkStatus.Failed, started, request.Clock.UtcNow, [], $"I/O error: {ex.Message}"); }
         }, CancellationToken.None);
@@ -33,20 +33,19 @@ public sealed class StorageBenchmark : IBenchmark
     {
         using var buffer = new NativeBlock(StorageFile.Block);
         var overall = Stopwatch.StartNew();
-        void Progress(double p) => request.Progress?.Invoke(new TestProgress(Math.Clamp(p, 0, 1), "Test_Status_Running"));
         double writeSeconds = 0, readSeconds = 0;
         for (long offset = 0, index = 0; offset < file.Length; offset += StorageFile.Block, index++)
         {
             ct.ThrowIfCancellationRequested();
             MemoryPatterns.Fill(buffer.Span, MemoryPatterns.Count - 1, (int)index);
             long t = Stopwatch.GetTimestamp(); file.Write(buffer.Span, offset); writeSeconds += Stopwatch.GetElapsedTime(t).TotalSeconds;
-            Progress(offset / (double)file.Length / 3);
+            request.Report(offset / (double)file.Length / 3);
         }
         for (long offset = 0; offset < file.Length; offset += StorageFile.Block)
         {
             ct.ThrowIfCancellationRequested();
             long t = Stopwatch.GetTimestamp(); file.Read(buffer.Span, offset); readSeconds += Stopwatch.GetElapsedTime(t).TotalSeconds;
-            Progress(1 / 3.0 + offset / (double)file.Length / 3);
+            request.Report(1 / 3.0 + offset / (double)file.Length / 3);
         }
         var random = new Random(7421); long slots = file.Length / StorageFile.Sector, reads = 0; double randomSeconds = 0;
         var window = TimeSpan.FromSeconds(Math.Max(1, request.DurationSeconds - overall.Elapsed.TotalSeconds)); var phase = Stopwatch.StartNew();
@@ -55,9 +54,9 @@ public sealed class StorageBenchmark : IBenchmark
         {
             ct.ThrowIfCancellationRequested();
             long t = Stopwatch.GetTimestamp(); file.Read(small, random.NextInt64(slots) * StorageFile.Sector); randomSeconds += Stopwatch.GetElapsedTime(t).TotalSeconds; reads++;
-            if ((reads & 63) == 0) Progress(2 / 3.0 + phase.Elapsed / window / 3);
+            if ((reads & 63) == 0) request.Report(2 / 3.0 + phase.Elapsed / window / 3);
         }
-        Progress(1);
+        request.Report(1);
         BenchmarkMetric[] metrics =
         [
             new("Bench_Storage_SeqWrite", file.Length / Math.Max(1e-6, writeSeconds) / 1e6, "MB/s"), new("Bench_Storage_SeqRead", file.Length / Math.Max(1e-6, readSeconds) / 1e6, "MB/s"),

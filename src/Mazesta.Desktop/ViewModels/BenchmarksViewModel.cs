@@ -1,5 +1,5 @@
 using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input;
-using Mazesta.Core.Text; using Mazesta.Core.Time; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring;
+using Mazesta.Core.Hardware; using Mazesta.Core.Text; using Mazesta.Core.Time; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring;
 namespace Mazesta.Desktop.ViewModels;
 
 public sealed record MetricRow(string Name, string Value);
@@ -33,8 +33,8 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
 
     public ObservableCollection<BenchmarkRowViewModel> Rows { get; }
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsIdle)), NotifyCanExecuteChangedFor(nameof(RunCommand))] private bool _isRunning;
-    public bool IsIdle => !IsRunning;
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RunCommand))] private bool _isRunning;
+    private bool CanRun() => !IsRunning;
 
     public BenchmarksViewModel(IEnumerable<IBenchmark> benchmarks, PollingEngine engine, IClock clock, BenchmarkResults results, Func<Action, object> dispatch)
     {
@@ -42,10 +42,7 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
         Rows = [.. benchmarks.Select(b => new BenchmarkRowViewModel(b))];
     }
 
-    internal static string FormatValue(BenchmarkMetric m)
-        => (Math.Abs(m.Value) >= 100 ? m.Value.ToString("F0", CultureInfo.InvariantCulture) : m.Value.ToString("F2", CultureInfo.InvariantCulture)) + (m.Unit.Length == 0 ? "" : " " + m.Unit);
-
-    [RelayCommand(CanExecute = nameof(IsIdle))]
+    [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run(BenchmarkRowViewModel row)
     {
         if (!PersianDigits.TryParseInt(row.DurationText, out int seconds) || seconds is < MinSeconds or > MaxSeconds) { row.StatusText = Loc.Format("Bench_Invalid_Duration", MinSeconds, MaxSeconds); return; }
@@ -56,7 +53,7 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
         {
             var result = await row.Benchmark.RunAsync(request, _cts.Token).ConfigureAwait(true);
             _results.Record(row.Benchmark.Definition, result);
-            foreach (var m in result.Metrics) row.Metrics.Add(new(Loc.Get(m.Key), FormatValue(m)));
+            foreach (var m in result.Metrics) row.Metrics.Add(new(Loc.Get(m.Key), Units.FormatMeasured(m.Value, m.Unit)));
             row.Detail = result.Detail; row.StatusText = Loc.Get("Bench_Status_" + result.Status); row.PercentComplete = result.Status == BenchmarkStatus.Completed ? 100 : 0;
         }
         catch (Exception e) { row.StatusText = Loc.Get("Bench_Status_Failed"); row.Detail = e.Message; }

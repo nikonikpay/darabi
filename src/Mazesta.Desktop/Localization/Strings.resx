@@ -562,4 +562,5 @@
   <data name="Bench_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Bench_Status_Unsupported" xml:space="preserve"><value>Cannot run here</value></data>
   <data name="Bench_Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Settings_Tray_Checking" xml:space="preserve"><value>Checking the tray…</value></data>
 </root>
