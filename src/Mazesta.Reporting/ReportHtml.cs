@@ -17,9 +17,10 @@ public static class ReportHtml
         var b = new StringBuilder(32 * 1024);
         b.Append("<!DOCTYPE html><html lang=\"fa\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
-         .Append("<title>").Append(E(ReportText.TitleOf(r.Verdict))).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
+         .Append("<title>").Append(E(ReportText.TitleOf(r.Kind))).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
         Header(b, r); Summary(b, r);
-        if (r.Verdict == ReportVerdict.Benchmark) { Benchmarks(b, r); Sensors(b, r); } else { Tests(b, r); Sensors(b, r); Benchmarks(b, r); }
+        Tests(b, r);
+        if (r.Kind == ReportKind.Benchmark) { Benchmarks(b, r); Sensors(b, r); } else { Sensors(b, r); Benchmarks(b, r); }   // the report's subject first
         Machine(b, r.Machine);
         b.Append("<footer>").Append(E(ReportText.Footer)).Append("<br>").Append(Lt($"Mazesta Test {r.AppVersion} · {r.Id}")).Append("</footer></main></body></html>");
         return b.ToString();
@@ -61,16 +62,15 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 
     private static void Header(StringBuilder b, SessionReport r)
     {
-        b.Append("<header><h1>").Append(E(r.ShopName)).Append(" — ").Append(E(ReportText.TitleOf(r.Verdict))).Append("</h1><div class=\"meta\">")
+        b.Append("<header><h1>").Append(E(r.ShopName)).Append(" — ").Append(E(ReportText.TitleOf(r.Kind))).Append("</h1><div class=\"meta\">")
          .Append(ReportText.Started).Append(": ").Append(Lt(Stamp(r.StartedAt))).Append(" · ").Append(ReportText.Finished).Append(": ").Append(Lt(Stamp(r.FinishedAt)))
          .Append(" · ").Append(ReportText.Duration).Append(": ").Append(Lt(Duration(r.DurationSeconds))).Append("<br>").Append(ReportText.ReportId).Append(": ").Append(Lt(r.Id)).Append("</div></header>");
     }
 
     private static void Summary(StringBuilder b, SessionReport r)
     {
-        b.Append("<h2>").Append(ReportText.Verdict).Append("</h2><div class=\"verdict ").Append(r.Verdict).Append("\">").Append(E(ReportText.VerdictName(r.Verdict))).Append("</div>");
-        if (r.Verdict == ReportVerdict.Benchmark) return;   // measurements only: there are no tests to count
-        b.Append("<div class=\"cards\">");
+        if (r.Verdict is not { } verdict) { b.Append("<div class=\"verdict Benchmark\">").Append(E(ReportText.MeasurementsOnly)).Append("</div>"); return; }
+        b.Append("<h2>").Append(ReportText.Verdict).Append("</h2><div class=\"verdict ").Append(verdict).Append("\">").Append(E(ReportText.VerdictName(verdict))).Append("</div><div class=\"cards\">");
         void Card(string label, object value) => b.Append("<div class=\"card\"><b class=\"lt\">").Append(E(Convert.ToString(value, Inv))).Append("</b><span>").Append(E(label)).Append("</span></div>");
         var c = r.Counts;
         Card(ReportText.Total, c.Total); Card(ReportText.Passed, c.Passed); Card(ReportText.Failed, c.Failed); Card(ReportText.NotDone, c.Cancelled + c.Unsupported + c.NotRun); Card(ReportText.Errors, c.Errors);
@@ -79,6 +79,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 
     private static void Tests(StringBuilder b, SessionReport r)
     {
+        if (r.Tests.Count == 0) return;
         b.Append("<h2>").Append(ReportText.Results).Append("</h2><table><thead><tr><th>").Append(ReportText.Name).Append("</th><th>").Append(ReportText.Outcome).Append("</th><th>").Append(ReportText.Duration)
          .Append("</th><th>").Append(ReportText.Errors).Append("</th></tr></thead><tbody>");
         foreach (var t in r.Tests)
@@ -94,7 +95,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 
     private static void Sensors(StringBuilder b, SessionReport r)
     {
-        b.Append("<h2>").Append(r.Verdict == ReportVerdict.Benchmark ? ReportText.BenchmarkSensors : ReportText.Sensors).Append("</h2>");
+        b.Append("<h2>").Append(r.Kind == ReportKind.Benchmark ? ReportText.BenchmarkSensors : ReportText.Sensors).Append("</h2>");
         if (r.Sensors.Count == 0) { b.Append("<p>").Append(ReportText.NoSensors).Append("</p>"); return; }
         b.Append("<table><thead><tr><th>").Append(ReportText.Sensor).Append("</th><th>").Append(ReportText.Min).Append("</th><th>").Append(ReportText.Avg).Append("</th><th>").Append(ReportText.Max).Append("</th><th>")
          .Append(ReportText.Samples).Append("</th></tr></thead><tbody>");

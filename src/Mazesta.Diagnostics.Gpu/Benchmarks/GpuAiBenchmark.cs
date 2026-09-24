@@ -1,4 +1,4 @@
-using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D12; using Vortice.DirectML;
+using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D12; using Vortice.DirectML;
 namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 
 /// <summary>
@@ -16,15 +16,16 @@ public sealed class GpuAiBenchmark : IBenchmark
     private const uint Size = 4096;
     private const double OpsPerMultiply = 2.0 * Size * Size * Size;
 
-    private sealed record Level(TensorDataType Input, TensorDataType Output, string Key, string Unit, string Name);
-    private static readonly Level[] Levels =
-    [
-        new(TensorDataType.Float32, TensorDataType.Float32, "Bench_Gpu_Ai_Fp32", "TFLOPS", "FP32"),
-        new(TensorDataType.Float16, TensorDataType.Float16, "Bench_Gpu_Ai_Fp16", "TFLOPS", "FP16"),
-        new(TensorDataType.Int8, TensorDataType.Int32, "Bench_Gpu_Ai_Int8", "TOPS", "INT8")
-    ];
+    /// <summary>One precision level. INT8 multiplies integers into INT32 (TOPS); the float levels keep their type (TFLOPS).</summary>
+    private sealed record Level(TensorDataType Input, string Key, string Name)
+    {
+        public bool Integer => Input == TensorDataType.Int8;
+        public TensorDataType Output => Integer ? TensorDataType.Int32 : Input;
+        public string Unit => Integer ? "TOPS" : "TFLOPS";
+    }
+    private static readonly Level[] Levels = [new(TensorDataType.Float32, "Bench_Gpu_Ai_Fp32", "FP32"), new(TensorDataType.Float16, "Bench_Gpu_Ai_Fp16", "FP16"), new(TensorDataType.Int8, "Bench_Gpu_Ai_Int8", "INT8")];
 
-    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, ct, s => Run(s, request, ct));
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, s => Run(s, request, ct));
 
     private static (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
     {
@@ -38,11 +39,11 @@ public sealed class GpuAiBenchmark : IBenchmark
         {
             var level = Levels[i];
             string? missing = !dml.CheckTensorDataTypeSupport(level.Input) ? $"{level.Name}: not supported by this GPU"
-                : level.Input == TensorDataType.Int8 && dml.CheckFeatureLevelsSupport([FeatureLevel.Level2_1]) < FeatureLevel.Level2_1 ? $"{level.Name}: needs DirectML feature level 2.1" : null;
+                : level.Integer && dml.CheckFeatureLevelsSupport([FeatureLevel.Level2_1]) < FeatureLevel.Level2_1 ? $"{level.Name}: needs DirectML feature level 2.1" : null;
             if (missing is not null) { skipped.Add(missing); continue; }
             int index = i;
-            double perSecond = Measure(s, dml, level, seconds, p => request.Report((index + p) / Levels.Length), ct);
-            metrics.Add(new(level.Key, perSecond * OpsPerMultiply / 1e12, level.Unit));
+            using (s.Scope())   // each level's matrices are freed before the next level allocates its own
+                metrics.Add(new(level.Key, Measure(s, dml, level, seconds, p => request.Report((index + p) / Levels.Length), ct) * OpsPerMultiply / 1e12, level.Unit));
         }
         if (metrics.Count == 0) throw new GpuUnsupportedException("DirectML cannot run a matrix multiply at any precision on this GPU: " + string.Join("; ", skipped));
         return (metrics, $"DirectML {Size}x{Size}x{Size} matrix multiply (GEMM for FP32/FP16, integer matmul for INT8), DirectML feature level {dml.HighestFeatureLevel}"
@@ -53,9 +54,8 @@ public sealed class GpuAiBenchmark : IBenchmark
     /// their multipliers and inflate the result); consecutive multiplies are separated by a barrier, as layers of a network are.</summary>
     private static double Measure(D3D12Session s, IDMLDevice dml, Level level, double seconds, Action<double> progress, CancellationToken ct)
     {
-        bool integer = level.Input == TensorDataType.Int8;
         var a = Tensor(level.Input, Size); var b = Tensor(level.Input, Size); var output = Tensor(level.Output, Size); var zeroPoint = Tensor(TensorDataType.Int8, 1);
-        IOperatorDescription description = integer
+        IOperatorDescription description = level.Integer
             ? new MatrixMultiplyIntegerOperatorDescription { ATensor = new(a), AZeroPointTensor = new TensorDescription(zeroPoint), BTensor = new(b), BZeroPointTensor = new TensorDescription(zeroPoint), OutputTensor = new(output) }
             : new GeneralMatrixMultiplyOperatorDescription { ATensor = new(a), BTensor = new(b), CTensor = new TensorDescription(output), OutputTensor = new(output), Alpha = 1, Beta = 0 };
         using var op = dml.CreateOperator(new OperatorDescription(description));
@@ -63,32 +63,35 @@ public sealed class GpuAiBenchmark : IBenchmark
         using var compiled = dml.CompileOperator(op, level.Input == TensorDataType.Float16 ? ExecutionFlags.AllowHalfPrecisionComputation : ExecutionFlags.None);
         using var initializer = dml.CreateOperatorInitializer([compiled]);
 
-        var bufferA = s.Upload<byte>(RandomBytes(a.TotalTensorSizeInBytes, level.Input, 1), ResourceStates.UnorderedAccess, ResourceFlags.AllowUnorderedAccess);
-        var bufferB = s.Upload<byte>(RandomBytes(b.TotalTensorSizeInBytes, level.Input, 2), ResourceStates.UnorderedAccess, ResourceFlags.AllowUnorderedAccess);
-        var bufferOut = s.Buffer(output.TotalTensorSizeInBytes, state: ResourceStates.UnorderedAccess, flags: ResourceFlags.AllowUnorderedAccess);
+        ID3D12Resource Random(BufferTensorDescription t, int seed)
+        {
+            var buffer = s.Buffer(t.TotalTensorSizeInBytes, HeapType.Default, ResourceStates.CopyDest, ResourceFlags.AllowUnorderedAccess);
+            s.Fill(buffer, destination => FillRandom(destination, level.Input, seed), ResourceStates.UnorderedAccess); return buffer;
+        }
+        var bufferA = Random(a, 1); var bufferB = Random(b, 2); var bufferOut = s.UavBuffer(output.TotalTensorSizeInBytes);
         // Optional inputs cannot be left unbound through Vortice, so they get zero buffers: GEMM's C (Alpha*A*B + Beta*C, with Beta = 0 - one
         // extra read per multiply, well under 1% of the work) and the INT8 zero points (0: plain symmetric int8, as quantised models use).
-        var zeros = s.Buffer(output.TotalTensorSizeInBytes, state: ResourceStates.UnorderedAccess, flags: ResourceFlags.AllowUnorderedAccess);
-        (BufferTensorDescription Tensor, ID3D12Resource Buffer)[] operands = integer ? [(a, bufferA), (zeroPoint, zeros), (b, bufferB), (zeroPoint, zeros)] : [(a, bufferA), (b, bufferB), (output, zeros)];
+        (BufferTensorDescription Tensor, ID3D12Resource Buffer)[] operands = level.Integer
+            ? [(a, bufferA), (zeroPoint, s.UavBuffer(zeroPoint.TotalTensorSizeInBytes)), (b, bufferB), (zeroPoint, s.UavBuffer(zeroPoint.TotalTensorSizeInBytes))]
+            : [(a, bufferA), (b, bufferB), (output, s.UavBuffer(output.TotalTensorSizeInBytes))];
 
         BindingProperties init = initializer.GetBindingProperties(), exec = compiled.GetBindingProperties();
-        using var heap = s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, Math.Max(1, Math.Max(init.RequiredDescriptorCount, exec.RequiredDescriptorCount)), DescriptorHeapFlags.ShaderVisible, 0));
-        ID3D12Resource? Scratch(ulong bytes) => bytes == 0 ? null : s.Buffer(bytes, state: ResourceStates.UnorderedAccess, flags: ResourceFlags.AllowUnorderedAccess);
-        BindingDescription? Bind(ID3D12Resource? r, ulong bytes) => r is null ? null : new BindingDescription(new BufferBinding { Buffer = r, SizeInBytes = bytes });
+        var heap = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, Math.Max(1, Math.Max(init.RequiredDescriptorCount, exec.RequiredDescriptorCount)), DescriptorHeapFlags.ShaderVisible, 0)));
+        BindingDescription Bind(ID3D12Resource r) => new(new BufferBinding { Buffer = r, SizeInBytes = r.Description.Width });
+        ID3D12Resource? Scratch(ulong bytes) => bytes == 0 ? null : s.UavBuffer(bytes);
         var persistent = Scratch(exec.PersistentResourceSize); var initTemp = Scratch(init.TemporaryResourceSize); var execTemp = Scratch(exec.TemporaryResourceSize);
 
         var tableDescription = new BindingTableDescription { Dispatchable = initializer, CPUDescriptorHandle = heap.GetCPUDescriptorHandleForHeapStart(), GPUDescriptorHandle = heap.GetGPUDescriptorHandleForHeapStart(), SizeInDescriptors = heap.Description.DescriptorCount };
         using var table = dml.CreateBindingTable(in tableDescription);
-        if (Bind(initTemp, init.TemporaryResourceSize) is { } it) table.BindTemporaryResource(it);
-        if (Bind(persistent, exec.PersistentResourceSize) is { } p) table.BindOutputs([p]);
+        if (initTemp is not null) table.BindTemporaryResource(Bind(initTemp));
+        if (persistent is not null) table.BindOutputs([Bind(persistent)]);
         using var recorder = dml.CreateCommandRecorder();
-        s.Record(l => { l.SetDescriptorHeaps(heap); recorder.RecordDispatch(l, initializer, table); });
-        s.Submit();
+        s.Run(l => { l.SetDescriptorHeaps(heap); recorder.RecordDispatch(l, initializer, table); });
 
         tableDescription.Dispatchable = compiled; table.Reset(tableDescription);
-        table.BindInputs([.. operands.Select(o => Bind(o.Buffer, o.Tensor.TotalTensorSizeInBytes)!.Value)]); table.BindOutputs([Bind(bufferOut, output.TotalTensorSizeInBytes)!.Value]);
-        if (Bind(execTemp, exec.TemporaryResourceSize) is { } et) table.BindTemporaryResource(et);
-        if (Bind(persistent, exec.PersistentResourceSize) is { } pe) table.BindPersistentResource(pe);
+        table.BindInputs([.. operands.Select(o => Bind(o.Buffer))]); table.BindOutputs([Bind(bufferOut)]);
+        if (execTemp is not null) table.BindTemporaryResource(Bind(execTemp));
+        if (persistent is not null) table.BindPersistentResource(Bind(persistent));
 
         return s.Measure((l, count) =>
         {
@@ -103,15 +106,14 @@ public sealed class GpuAiBenchmark : IBenchmark
         return new BufferTensorDescription { DataType = type, Sizes = sizes, TotalTensorSizeInBytes = (BufferTensorDescription.CalculateMinimumImpliedSize(type, sizes) + 3) & ~3UL };   // DirectML wants a multiple of 4
     }
 
-    private static byte[] RandomBytes(ulong length, TensorDataType type, int seed)
+    private static void FillRandom(Span<byte> bytes, TensorDataType type, int seed)
     {
-        var bytes = new byte[length]; var random = new Random(seed);
+        var random = new Random(seed);
         switch (type)
         {
-            case TensorDataType.Float32: { var v = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, float>(bytes.AsSpan()); for (int i = 0; i < v.Length; i++) v[i] = random.NextSingle() * 2 - 1; break; }
-            case TensorDataType.Float16: { var v = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(bytes.AsSpan()); for (int i = 0; i < v.Length; i++) v[i] = (Half)(random.NextSingle() * 2 - 1); break; }
+            case TensorDataType.Float32: foreach (ref float v in MemoryMarshal.Cast<byte, float>(bytes)) v = random.NextSingle() * 2 - 1; break;
+            case TensorDataType.Float16: foreach (ref Half v in MemoryMarshal.Cast<byte, Half>(bytes)) v = (Half)(random.NextSingle() * 2 - 1); break;
             default: random.NextBytes(bytes); break;
         }
-        return bytes;
     }
 }

@@ -36,6 +36,8 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark, GpuRasterBenchmark>();
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();
+        // Singleton for the same reason as the engine below: a benchmark keeps running, and its result stays, while the page is closed.
+        s.AddSingleton(sp => new BenchmarkRunner(sp.GetRequiredService<IEnumerable<IBenchmark>>(), sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>()));
 
         // Singleton, not per-page: a queue keeps running when the technician navigates away from Test Center
         // and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.

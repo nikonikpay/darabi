@@ -22,11 +22,15 @@ public sealed class CpuBenchmark(bool allThreads) : IBenchmark
         if (ct.IsCancellationRequested) return BenchmarkResult.Cancelled(Definition.Id, started, finished);
 
         List<BenchmarkMetric> metrics = [new("Bench_Cpu_Gflops", gflops, "GFLOPS")];
-        if (allThreads) metrics.AddRange([new("Bench_Cpu_PerThread", gflops / threads, "GFLOPS"), new("Bench_Threads", threads, "")]);
-        // One busy thread lifts one core: its peak clock is the single-thread number; all threads load every core evenly.
-        metrics.AddSensor(request, HardwareKind.Cpu, allThreads ? SensorRole.CpuEffectiveClockAverage : SensorRole.CpuEffectiveClock, started, finished, allThreads ? "Bench_Cpu_Clock" : "Bench_Cpu_ClockPeak", "MHz", peak: !allThreads);
-        metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished, "Bench_Cpu_Power", "W");
-        metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackageTemp, started, finished, "Bench_Cpu_TempMax", "°C", peak: true);
+        // One busy thread lifts one core, so its peak clock is the single-thread number; all threads load every core evenly.
+        if (allThreads)
+        {
+            metrics.AddRange([new("Bench_Cpu_PerThread", gflops / threads, "GFLOPS"), new("Bench_Threads", threads, "")]);
+            metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuEffectiveClockAverage, started, finished, "Bench_Cpu_Clock", Unit.MegaHertz);
+        }
+        else metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuEffectiveClock, started, finished, "Bench_Cpu_ClockPeak", Unit.MegaHertz, peak: true);
+        metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished, "Bench_Cpu_Power", Unit.Watt);
+        metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackageTemp, started, finished, "Bench_Cpu_TempMax", Unit.Celsius, peak: true);
         return new(Definition.Id, BenchmarkStatus.Completed, started, finished, metrics, $"matrix {N}x{N} double on {threads} thread(s) for {request.DurationSeconds} s");
     }
 

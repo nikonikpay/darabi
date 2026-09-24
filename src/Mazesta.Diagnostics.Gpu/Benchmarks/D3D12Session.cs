@@ -27,29 +27,48 @@ internal sealed unsafe class D3D12Session : IDisposable
         _fence = Device.CreateFence();
     }
 
-    /// <summary>Keeps a resource alive until the session ends.</summary>
+    /// <summary>Keeps a resource alive until the session ends, or until the innermost open <see cref="Scope"/> ends.</summary>
     public T Own<T>(T resource) where T : IDisposable { _owned.Add(resource); return resource; }
+
+    /// <summary>Releases what is owned from now on when disposed, so a benchmark that runs several workloads frees each one's memory before the next.</summary>
+    public IDisposable Scope() => new OwnedSince(this, _owned.Count);
+    private sealed class OwnedSince(D3D12Session session, int mark) : IDisposable
+    {
+        public void Dispose() { session.Wait(); for (int i = session._owned.Count - 1; i >= mark; i--) session._owned[i].Dispose(); session._owned.RemoveRange(mark, session._owned.Count - mark); }
+    }
 
     public ID3D12Resource Buffer(ulong bytes, HeapType heap = HeapType.Default, ResourceStates state = ResourceStates.Common, ResourceFlags flags = ResourceFlags.None)
         => Own(Device.CreateCommittedResource(heap, ResourceDescription.Buffer(bytes, flags), state));
 
+    /// <summary>A GPU-local buffer shaders and DirectML may write (unordered access).</summary>
+    public ID3D12Resource UavBuffer(ulong bytes) => Buffer(bytes, HeapType.Default, ResourceStates.UnorderedAccess, ResourceFlags.AllowUnorderedAccess);
+
     /// <summary>A GPU-local buffer holding <paramref name="data"/>, copied through a temporary upload buffer.</summary>
-    public ID3D12Resource Upload<T>(ReadOnlySpan<T> data, ResourceStates finalState, ResourceFlags flags = ResourceFlags.None) where T : unmanaged
+    public ID3D12Resource Upload<T>(T[] data, ResourceStates finalState, ResourceFlags flags = ResourceFlags.None) where T : unmanaged
     {
-        ulong bytes = (ulong)(data.Length * sizeof(T));
-        using var staging = Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(bytes), ResourceStates.GenericRead);
-        MemoryMarshal.AsBytes(data).CopyTo(staging.Map<byte>(0, (int)bytes)); staging.Unmap(0);
-        var target = Buffer(bytes, HeapType.Default, ResourceStates.CopyDest, flags);
-        Record(l => { l.CopyBufferRegion(target, 0, staging, 0, bytes); l.ResourceBarrierTransition(target, ResourceStates.CopyDest, finalState); });
-        Submit();
-        return target;
+        var target = Buffer((ulong)(data.Length * sizeof(T)), HeapType.Default, ResourceStates.CopyDest, flags);
+        Fill(target, destination => MemoryMarshal.AsBytes(data.AsSpan()).CopyTo(destination), finalState); return target;
     }
+
+    /// <summary>Fills a buffer (created in the copy-destination state) through a temporary upload buffer that <paramref name="write"/>
+    /// writes straight into, so large contents need no managed copy of their own.</summary>
+    public void Fill(ID3D12Resource target, SpanAction write, ResourceStates finalState)
+    {
+        ulong bytes = target.Description.Width;
+        using var staging = Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(bytes), ResourceStates.GenericRead);
+        write(staging.Map<byte>(0, (int)bytes)); staging.Unmap(0);
+        Run(l => { l.CopyBufferRegion(target, 0, staging, 0, bytes); l.ResourceBarrierTransition(target, ResourceStates.CopyDest, finalState); });
+    }
+    public delegate void SpanAction(Span<byte> destination);
 
     /// <summary>Records into the (reset) command list and closes it; <see cref="Submit"/> may then run it any number of times.</summary>
     public void Record(Action<ID3D12GraphicsCommandList4> record)
     {
         Wait(); _allocator.Reset(); List.Reset(_allocator); record(List); List.Close();
     }
+
+    /// <summary>Records once and runs it once.</summary>
+    public void Run(Action<ID3D12GraphicsCommandList4> record) { Record(record); Submit(); }
 
     /// <summary>Runs the recorded list and waits for the GPU to finish it. A device lost mid-run (driver reset, overheating) throws.</summary>
     public void Submit()
@@ -62,7 +81,7 @@ internal sealed unsafe class D3D12Session : IDisposable
     public uint[] Read(int count, Action<ID3D12GraphicsCommandList4, ID3D12Resource> copy)
     {
         using var readback = Device.CreateCommittedResource(HeapType.Readback, ResourceDescription.Buffer((ulong)count * 4), ResourceStates.CopyDest);
-        Record(l => copy(l, readback)); Submit();
+        Run(l => copy(l, readback));
         var values = readback.Map<uint>(0, count).ToArray(); readback.Unmap(0); return values;
     }
 
@@ -75,7 +94,7 @@ internal sealed unsafe class D3D12Session : IDisposable
     /// </summary>
     public double Measure(Action<ID3D12GraphicsCommandList4, int> record, double seconds, Action<double> progress, CancellationToken ct)
     {
-        Record(l => record(l, 1)); Submit();   // warm-up: first-use costs (shader compilation, residency) are not measured
+        Run(l => record(l, 1));   // warm-up: first-use costs (shader compilation, residency) are not measured
         var probe = Stopwatch.StartNew(); Submit(); double one = Math.Max(1e-5, probe.Elapsed.TotalSeconds);
         int units = (int)Math.Clamp(0.1 / one, 1, 4096);
         Record(l => record(l, units));

@@ -31,7 +31,7 @@ public sealed class GpuRayTracingBenchmark : IBenchmark
         }
     }
 
-    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, ct, s => Run(s, request, ct));
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, s => Run(s, request, ct));
 
     private static (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
     {
@@ -48,7 +48,7 @@ public sealed class GpuRayTracingBenchmark : IBenchmark
             float radius = 0.35f + 0.3f * (i * 0.618034f % 1);
             instances.Add(InstanceDesc.Create((uint)i + 1, sphere.GPUVirtualAddress, new((i % Grid - Grid / 2f) * 1.6f, radius, i / Grid * 1.6f), new(radius)));
         }
-        var instanceBuffer = s.Upload<InstanceDesc>(CollectionsMarshal.AsSpan(instances), ResourceStates.NonPixelShaderResource);
+        var instanceBuffer = s.Upload(instances.ToArray(), ResourceStates.NonPixelShaderResource);
         var tlas = Build(s, new BuildRaytracingAccelerationStructureInputs
         {
             Type = RaytracingAccelerationStructureType.TopLevel, Flags = RaytracingAccelerationStructureBuildFlags.PreferFastTrace, Layout = ElementsLayout.Array,
@@ -58,7 +58,7 @@ public sealed class GpuRayTracingBenchmark : IBenchmark
         byte[] shader = D3D12Session.Shader("RayQuery");
         var root = s.Own(s.Device.CreateRootSignature(shader));
         var pipeline = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = root, ComputeShader = shader }));
-        var pixels = s.Buffer((ulong)Width * Height * 4, state: ResourceStates.UnorderedAccess, flags: ResourceFlags.AllowUnorderedAccess);
+        var pixels = s.UavBuffer((ulong)Width * Height * 4);
         var counter = s.Upload<uint>([0u], ResourceStates.UnorderedAccess, ResourceFlags.AllowUnorderedAccess);
         void Trace(ID3D12GraphicsCommandList4 l, bool count)
         {
@@ -93,9 +93,11 @@ public sealed class GpuRayTracingBenchmark : IBenchmark
     {
         var sizes = s.Device.GetRaytracingAccelerationStructurePrebuildInfo(inputs);
         var result = s.Buffer(sizes.ResultDataMaxSizeInBytes, state: ResourceStates.RaytracingAccelerationStructure, flags: ResourceFlags.AllowUnorderedAccess);
-        using var scratch = s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Buffer(sizes.ScratchDataSizeInBytes, ResourceFlags.AllowUnorderedAccess), ResourceStates.UnorderedAccess);
-        s.Record(l => l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(result.GPUVirtualAddress, inputs, 0, scratch.GPUVirtualAddress)));
-        s.Submit();
+        using (s.Scope())   // the scratch memory is only needed while building
+        {
+            var scratch = s.UavBuffer(sizes.ScratchDataSizeInBytes);
+            s.Run(l => l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(result.GPUVirtualAddress, inputs, 0, scratch.GPUVirtualAddress)));
+        }
         return result;
     }
 }

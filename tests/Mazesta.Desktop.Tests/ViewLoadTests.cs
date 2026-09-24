@@ -49,7 +49,7 @@ public class ViewLoadTests
             var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch);
             var e = new Mazesta.Monitoring.PollingEngine(new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider(), c, new Mazesta.Monitoring.MonitoringOptions(), new Mazesta.Monitoring.BoundedEventLog(c, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
             IEnumerable<Mazesta.Diagnostics.Benchmarks.IBenchmark> all = [new Mazesta.Diagnostics.Benchmarks.CpuBenchmark(allThreads: false), new Mazesta.Diagnostics.Benchmarks.CpuBenchmark(allThreads: true), new Mazesta.Diagnostics.Benchmarks.MemoryBenchmark(probe), new Mazesta.Diagnostics.Benchmarks.StorageBenchmark()];
-            return new BenchmarksView { DataContext = new BenchmarksViewModel(all, e, c, new Mazesta.Desktop.Services.BenchmarkResults(), a => { a(); return null!; }) };
+            return new BenchmarksView { DataContext = new BenchmarksViewModel(new Mazesta.Diagnostics.Benchmarks.BenchmarkRunner(all, c, e), a => { a(); return null!; }) };
         });
 
     private sealed class FixedProbe : Mazesta.Diagnostics.Memory.IMemoryProbe { public Mazesta.Diagnostics.Memory.MemoryStatus Read() => new(16L << 30, 8L << 30); }

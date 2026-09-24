@@ -15,7 +15,7 @@ public sealed class GpuRasterBenchmark : IBenchmark
 
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Frame(float Time, uint Columns, float Aspect, uint Layers);
 
-    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, ct, s => Run(s, request, ct));
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, s => Run(s, request, ct));
 
     private static (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
     {
@@ -33,10 +33,10 @@ public sealed class GpuRasterBenchmark : IBenchmark
         var rtv = rtvHeap.GetCPUDescriptorHandleForHeapStart(); var dsv = dsvHeap.GetCPUDescriptorHandleForHeapStart();
         s.Device.CreateRenderTargetView(color, null, rtv); s.Device.CreateDepthStencilView(depth, null, dsv);
 
-        void Begin(ID3D12GraphicsCommandList4 l, ID3D12PipelineState pipeline, int frame, bool withDepth)
+        void Begin(ID3D12GraphicsCommandList4 l, ID3D12PipelineState pipeline, int frame)
         {
             l.ClearRenderTargetView(rtv, new Color4(0.02f, 0.02f, 0.03f, 1));
-            if (withDepth) { l.ClearDepthStencilView(dsv, ClearFlags.Depth, 1, 0); l.OMSetRenderTargets(rtv, dsv); } else l.OMSetRenderTargets(rtv);
+            if (pipeline == scene) { l.ClearDepthStencilView(dsv, ClearFlags.Depth, 1, 0); l.OMSetRenderTargets(rtv, dsv); } else l.OMSetRenderTargets(rtv);   // only the scene is depth-tested
             l.SetPipelineState(pipeline); l.SetGraphicsRootSignature(root);
             l.RSSetViewport(0, 0, Width, Height); l.RSSetScissorRect(Width, Height); l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             l.SetGraphicsRoot32BitConstants(0, new Frame(frame / 60f, Columns, Width / (float)Height, FillLayers), 0);
@@ -47,7 +47,7 @@ public sealed class GpuRasterBenchmark : IBenchmark
         {
             for (int f = 0; f < frames; f++)
             {
-                Begin(l, scene, f, withDepth: true);
+                Begin(l, scene, f);
                 l.SetGraphicsRootShaderResourceView(1, vertexBuffer.GPUVirtualAddress);
                 l.IASetIndexBuffer(indexBuffer.GPUVirtualAddress, (uint)(indices.Length * sizeof(uint)), Format.R32_UInt);
                 l.DrawIndexedInstanced((uint)indices.Length, Instances, 0, 0, 0);
@@ -64,7 +64,7 @@ public sealed class GpuRasterBenchmark : IBenchmark
         if (coverage < 0.1) throw new InvalidOperationException($"The rendered frame shows almost nothing ({coverage:P0} of the pixels); the scene did not render.");
         double fillFrames = s.Measure((l, frames) =>
         {
-            for (int f = 0; f < frames; f++) { Begin(l, fill, f, withDepth: false); l.DrawInstanced(3, FillLayers, 0, 0); }
+            for (int f = 0; f < frames; f++) { Begin(l, fill, f); l.DrawInstanced(3, FillLayers, 0, 0); }
         }, fillSeconds, p => request.Report(2 / 3.0 + p / 3), ct);
 
         long triangles = indices.Length / 3L * Instances;

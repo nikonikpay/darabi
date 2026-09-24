@@ -13,23 +13,29 @@ internal sealed class StorageFile : IDisposable
     public const int Block = 1 << 20, Sector = 4096;
     private const FileOptions NoBuffering = (FileOptions)0x20000000;
     private const long FreeSpaceMargin = 1L << 30;   // never fill a customer's disk to the brim
+    private const int MinMb = 16, MaxMb = 16384;
 
     private readonly SafeFileHandle _handle;
     public long Length { get; }
 
     private StorageFile(SafeFileHandle handle, long length) { _handle = handle; Length = length; }
 
-    /// <summary>Throws <see cref="IOException"/> when the drive cannot hold the file plus the safety margin. <paramref name="overlapped"/>
-    /// opens it for asynchronous I/O (several requests in flight) and without write-through, as disk benchmarks do: write-through
-    /// turns every write into a forced-unit-access flush, which measures the flush path rather than the drive's speed.</summary>
-    public static StorageFile Create(string directory, long length, bool overlapped = false)
+    /// <summary>Why a file-size option cannot be used, or null when it can.</summary>
+    public static string? CheckSizeMb(int mb) => mb is < MinMb or > MaxMb ? $"The test file must be between {MinMb} MiB and {MaxMb >> 10} GiB." : null;
+    /// <summary>The file length for a size option, rounded down to whole blocks.</summary>
+    public static long LengthOf(int mb) => (long)mb << 20 & ~(long)(Block - 1);
+
+    /// <summary>Throws <see cref="IOException"/> when the drive cannot hold the file plus the safety margin. <paramref name="asynchronous"/>
+    /// allows several requests in flight. Benchmarks turn <paramref name="writeThrough"/> off, as disk benchmarks do: it makes every write a
+    /// forced-unit-access flush, which measures the flush path rather than the drive's speed; the tests keep it, they verify the media.</summary>
+    public static StorageFile Create(string directory, long length, bool asynchronous = false, bool writeThrough = true)
     {
         string root = Path.GetFullPath(directory);
         if (!Directory.Exists(root)) throw new StorageUnavailableException($"Folder not found: {root}");
         long free = new DriveInfo(Path.GetPathRoot(root)!).AvailableFreeSpace;
         if (free < length + FreeSpaceMargin) throw new StorageUnavailableException($"{free >> 20} MiB free; the test file ({length >> 20} MiB) plus a 1 GiB margin does not fit.");
         string path = Path.Combine(root, $".mazesta-test-{Guid.NewGuid():N}.tmp");
-        var handle = File.OpenHandle(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, (overlapped ? FileOptions.Asynchronous : FileOptions.WriteThrough) | FileOptions.DeleteOnClose | NoBuffering, length);
+        var handle = File.OpenHandle(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, (asynchronous ? FileOptions.Asynchronous : 0) | (writeThrough ? FileOptions.WriteThrough : 0) | FileOptions.DeleteOnClose | NoBuffering, length);
         return new(handle, length);
     }
 

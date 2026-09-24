@@ -8,12 +8,12 @@ internal sealed class GpuUnsupportedException(string message) : Exception(messag
 /// Failed and a missing feature into Unsupported, and adding the GPU's own clock, power and temperature for the run.</summary>
 internal static class GpuBenchmark
 {
-    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, CancellationToken ct, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body)
+    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body)
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "Duration must be positive."));
-        var device = GpuDevices.Resolve((request.Options ?? TestOptions.None(spec)).Get(GpuDevices.OptionKey));
-        if (device is null) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "No DirectX 12 hardware GPU is available."));
+        var device = GpuDevices.Resolve(request, spec);
+        if (device is null) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, GpuDevices.NoGpu));
         return Task.Run(() =>
         {
             try
@@ -21,9 +21,9 @@ internal static class GpuBenchmark
                 using var session = new D3D12Session(device);
                 var (metrics, detail) = body(session);
                 var finished = request.Clock.UtcNow;
-                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_Clock", "MHz");
-                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", "W");
-                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempMax", "°C", peak: true);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_Clock", Unit.MegaHertz);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", Unit.Watt);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempMax", Unit.Celsius, peak: true);
                 return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}");
             }
             catch (OperationCanceledException) { return BenchmarkResult.Cancelled(spec.Id, started, request.Clock.UtcNow); }

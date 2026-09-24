@@ -39,15 +39,13 @@ public static class Bootstrapper
         s.AddSingleton<ViewModels.ShellViewModel>();
         s.AddSingleton<ViewModels.IChartWindowService, Services.ChartWindowService>();
         s.AddDiagnostics(paths, lf);
-        s.AddSingleton<Services.BenchmarkResults>();
         s.AddSingleton<Services.ITrayController, Services.TrayController>();
         s.AddSingleton<Services.ReportService>();
         AddViewModelFactory(s, sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<InventoryCache>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.ReportsViewModel(sp.GetRequiredService<Services.ReportService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }), text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Reports"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes));
-        // One for the session, not a page factory: a benchmark keeps running, and its numbers stay, while the technician is on another page.
-        s.AddSingleton(sp => new ViewModels.BenchmarksViewModel(sp.GetRequiredService<IEnumerable<Mazesta.Diagnostics.Benchmarks.IBenchmark>>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IClock>(), sp.GetRequiredService<Services.BenchmarkResults>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        AddViewModelFactory(s, sp => new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>()));
         var provider = s.BuildServiceProvider();

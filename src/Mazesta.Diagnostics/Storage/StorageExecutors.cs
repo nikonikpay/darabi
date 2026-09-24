@@ -9,7 +9,7 @@ namespace Mazesta.Diagnostics.Storage;
 public abstract class StorageExecutor : ITestExecutor
 {
     public const string DriveOption = "drive", FileMbOption = "fileMb";
-    protected static TestOption[] CommonOptions(string fileMbDefault) =>
+    internal static TestOption[] CommonOptions(string fileMbDefault) =>
     [
         new TestOption(DriveOption, "Test_Option_Drive", TestOptionKind.Choice, "", StorageFile.DriveChoices),
         new TestOption(FileMbOption, "Test_Option_FileMb", TestOptionKind.Integer, fileMbDefault)
@@ -23,13 +23,13 @@ public abstract class StorageExecutor : ITestExecutor
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
         var options = request.Options ?? TestOptions.None(Definition);
         int fileMb = options.GetInt(FileMbOption);
-        if (fileMb is < 16 or > 16384) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "The test file must be between 16 MiB and 16 GiB."));
+        if (StorageFile.CheckSizeMb(fileMb) is { } invalid) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, invalid));
         return Task.Run(() =>
         {
             long errors = 0; string detail = "";
             try
             {
-                using var file = StorageFile.Create(StorageFile.ResolveTarget(options.Get(DriveOption)), (long)fileMb << 20 & ~(long)(StorageFile.Block - 1));
+                using var file = StorageFile.Create(StorageFile.ResolveTarget(options.Get(DriveOption)), StorageFile.LengthOf(fileMb));
                 detail = Exercise(file, request, ct, ref errors);
             }
             catch (OperationCanceledException) { return new TestRunResult(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, detail); }

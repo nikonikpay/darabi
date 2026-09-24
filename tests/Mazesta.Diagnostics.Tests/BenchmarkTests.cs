@@ -29,6 +29,24 @@ public class BenchmarkTests : IDisposable
     [Fact] public async Task Zero_duration_is_Unsupported()
         => Assert.Equal(BenchmarkStatus.Unsupported, (await new CpuBenchmark(allThreads: false).RunAsync(Request(0), CancellationToken.None)).Status);
 
+    private sealed class Scripted(params BenchmarkResult?[] results) : IBenchmark   // null: throws
+    {
+        private int _next;
+        public TestDefinition Definition { get; } = new(new TestId("bench.x"), "Bench_Cpu_Single", 5);
+        public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => results[_next++] is { } r ? Task.FromResult(r) : throw new InvalidOperationException("boom");
+    }
+    private static BenchmarkResult Done(BenchmarkStatus status, double value) => new(new TestId("bench.x"), status, T0, T0, status == BenchmarkStatus.Completed ? [new("k", value, "")] : [], null);
+
+    [Fact] public async Task The_runner_keeps_the_latest_completed_run_and_a_run_that_measured_nothing_replaces_nothing()
+    {
+        var runner = new BenchmarkRunner([new Scripted(Done(BenchmarkStatus.Completed, 1), Done(BenchmarkStatus.Completed, 2), Done(BenchmarkStatus.Cancelled, 0), null)], new FakeClock(T0), null);
+        var finished = new List<RecordedBenchmark>(); runner.Finished += finished.Add;
+        for (int i = 0; i < 4; i++) await runner.RunAsync(runner.Benchmarks[0], 5, new Dictionary<string, string>());
+        Assert.Equal(2, runner.Completed().Single().Result.Metrics[0].Value);
+        Assert.Equal(BenchmarkStatus.Failed, runner.Last(new TestId("bench.x"))!.Status);   // the benchmark threw: reported, never lost
+        Assert.Equal(4, finished.Count); Assert.Null(runner.Running);
+    }
+
     [Fact] public async Task Memory_without_enough_free_ram_is_Unsupported_not_a_zero_result()
     {
         var r = await new MemoryBenchmark(new FixedProbe(8L << 30, 1L << 30)).RunAsync(Request(4), CancellationToken.None);

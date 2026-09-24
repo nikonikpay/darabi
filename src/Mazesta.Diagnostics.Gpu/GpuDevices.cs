@@ -13,6 +13,11 @@ public static class GpuDevices
     public static IReadOnlyList<OptionChoice> Choices()
         => Adapters.Value.OrderByDescending(d => d.DedicatedMemorySize).Select(d => new OptionChoice(KeyOf(d), $"{d.Name} ({d.DedicatedMemorySize >> 30} GB)")).ToList();
 
+    public const string NoGpu = "No DirectX 12 hardware GPU is available.";
+
+    /// <summary>The adapter a test or benchmark request chose through <see cref="Option"/>.</summary>
+    public static GraphicsDevice? Resolve(TestExecutionRequest request, TestDefinition definition) => Resolve((request.Options ?? TestOptions.None(definition)).Get(OptionKey));
+
     /// <summary>The chosen adapter; with no choice, the one with the most dedicated memory (the discrete GPU on a machine that also has an iGPU). Null when there is none.</summary>
     public static GraphicsDevice? Resolve(string key)
         => key.Length == 0 ? Adapters.Value.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault() : Adapters.Value.FirstOrDefault(d => KeyOf(d) == key);

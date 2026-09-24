@@ -42,8 +42,8 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
         var options = request.Options ?? TestOptions.None(Definition);
-        var device = GpuDevices.Resolve(options.Get(GpuDevices.OptionKey));
-        if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "No DirectX 12 hardware GPU is available."));
+        var device = GpuDevices.Resolve(request, Definition);
+        if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, GpuDevices.NoGpu));
         int pulse = profile == GpuStressProfile.Pulse ? options.GetInt(PulseMsOption) : 0, gap = profile == GpuStressProfile.Pulse ? options.GetInt(GapMsOption) : 0;
         if (profile == GpuStressProfile.Pulse && (pulse < 1 || gap < 1)) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Pulse and gap lengths must be positive."));
         return Task.Run(() => Run(request, device, pulse, gap, started, ct), CancellationToken.None);

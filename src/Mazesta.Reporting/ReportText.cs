@@ -14,10 +14,10 @@ internal static class ReportText
     {
         ReportOutcome.Passed => "موفق", ReportOutcome.Failed => "ناموفق", ReportOutcome.Cancelled => "لغو شد", ReportOutcome.Unsupported => "پشتیبانی نمی‌شود", _ => "اجرا نشده"
     };
-    public static string TitleOf(ReportVerdict v) => v == ReportVerdict.Benchmark ? "گزارش بنچمارک" : Title;
+    public const string MeasurementsOnly = "فقط اندازه‌گیری سرعت؛ بنچمارک قبول یا رد ندارد و آزمون سلامت نیست";
+    public static string TitleOf(ReportKind kind) => kind == ReportKind.Benchmark ? "گزارش بنچمارک" : Title;
     public static string VerdictName(ReportVerdict v) => v switch
     {
-        ReportVerdict.Benchmark => "فقط اندازه‌گیری سرعت؛ بنچمارک قبول یا رد ندارد و آزمون سلامت نیست",
         ReportVerdict.Passed => "همه‌ی آزمون‌های انجام‌شده موفق بودند",
         ReportVerdict.Failed => "دست‌کم یک آزمون ناموفق بود؛ سیستم نیاز به بررسی دارد",
         _ => "آزمون‌ها کامل انجام نشد؛ نتیجه‌ی قطعی نیست"

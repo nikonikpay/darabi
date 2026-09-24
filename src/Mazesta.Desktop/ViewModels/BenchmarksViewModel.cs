@@ -1,5 +1,5 @@
 using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input;
-using Mazesta.Core.Hardware; using Mazesta.Core.Text; using Mazesta.Core.Time; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring;
+using Mazesta.Core.Hardware; using Mazesta.Core.Text; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks;
 namespace Mazesta.Desktop.ViewModels;
 
 public sealed record MetricRow(string Name, string Value);
@@ -24,44 +24,52 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
 }
 
-/// <summary>Runs one benchmark at a time and lists what it measured. Numbers only: no score, no pass or fail. Every completed run
-/// is handed to <see cref="BenchmarkResults"/>, which saves it as a report and keeps it for the next test report. A single instance
-/// lives for the whole session (not a page factory, and deliberately not IDisposable - the shell disposes the page it leaves), so a
-/// run keeps going and its numbers stay on the page when the technician navigates away and back.</summary>
-public sealed partial class BenchmarksViewModel : ObservableObject
+/// <summary>The Benchmarks page: one row per benchmark, showing what <see cref="BenchmarkRunner"/> holds - the run in progress and the last
+/// result of each - so leaving the page neither stops a run nor loses its numbers. Numbers only: no score, no pass or fail.</summary>
+public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
 {
     public const int MinSeconds = 4, MaxSeconds = 3600;
-    private readonly PollingEngine _engine; private readonly IClock _clock; private readonly BenchmarkResults _results; private readonly Func<Action, object> _dispatch;
-    private CancellationTokenSource? _cts;
+    private readonly BenchmarkRunner _runner; private readonly Func<Action, object> _dispatch;
 
     public ObservableCollection<BenchmarkRowViewModel> Rows { get; }
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RunCommand))] private bool _isRunning;
     private bool CanRun() => !IsRunning;
 
-    public BenchmarksViewModel(IEnumerable<IBenchmark> benchmarks, PollingEngine engine, IClock clock, BenchmarkResults results, Func<Action, object> dispatch)
+    public BenchmarksViewModel(BenchmarkRunner runner, Func<Action, object> dispatch)
     {
-        _engine = engine; _clock = clock; _results = results; _dispatch = dispatch;
-        Rows = [.. benchmarks.Select(b => new BenchmarkRowViewModel(b))];
+        _runner = runner; _dispatch = dispatch;
+        Rows = [.. runner.Benchmarks.Select(b => new BenchmarkRowViewModel(b))];
+        foreach (var row in Rows)
+        {
+            if (runner.Last(row.Benchmark.Definition.Id) is { } last) Show(row, last);
+            if (runner.Running == row.Benchmark.Definition.Id) { row.StatusText = Loc.Get("Test_Status_Running"); IsRunning = true; }
+        }
+        runner.Progress += OnProgress; runner.Finished += OnFinished;
+    }
+
+    private BenchmarkRowViewModel Row(TestId id) => Rows.First(r => r.Benchmark.Definition.Id == id);
+    private void OnProgress(TestId id, double fraction) => _dispatch(() => Row(id).PercentComplete = fraction * 100);
+    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { Show(Row(run.Definition.Id), run.Result); IsRunning = false; });
+
+    private static void Show(BenchmarkRowViewModel row, BenchmarkResult result)
+    {
+        row.Metrics.Clear();
+        foreach (var m in result.Metrics) row.Metrics.Add(new(Loc.Get(m.Key), Units.FormatMeasured(m.Value, m.Unit)));
+        row.Detail = result.Detail;
+        if (result.Status == BenchmarkStatus.Completed) { row.StatusText = Loc.Format("Bench_Status_CompletedAt", result.FinishedAt.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture)); row.PercentComplete = 100; }
+        else { row.StatusText = Loc.Get("Bench_Status_" + result.Status); row.PercentComplete = 0; }
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run(BenchmarkRowViewModel row)
     {
         if (!PersianDigits.TryParseInt(row.DurationText, out int seconds) || seconds is < MinSeconds or > MaxSeconds) { row.StatusText = Loc.Format("Bench_Invalid_Duration", MinSeconds, MaxSeconds); return; }
-        var chosen = row.Options.ToDictionary(o => o.Option.Key, o => o.Value);
-        var request = new TestExecutionRequest(seconds, _clock, p => _dispatch(() => { row.PercentComplete = p.PercentComplete * 100; }), _engine, new TestOptions(row.Benchmark.Definition, chosen));
-        _cts = new CancellationTokenSource(); IsRunning = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running");
-        try
-        {
-            var result = await row.Benchmark.RunAsync(request, _cts.Token).ConfigureAwait(true);
-            _results.Record(row.Benchmark.Definition, result);
-            foreach (var m in result.Metrics) row.Metrics.Add(new(Loc.Get(m.Key), Units.FormatMeasured(m.Value, m.Unit)));
-            row.Detail = result.Detail;
-            row.StatusText = result.Status == BenchmarkStatus.Completed ? Loc.Format("Bench_Status_CompletedAt", result.FinishedAt.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture)) : Loc.Get("Bench_Status_" + result.Status); row.PercentComplete = result.Status == BenchmarkStatus.Completed ? 100 : 0;
-        }
-        catch (Exception e) { row.StatusText = Loc.Get("Bench_Status_Failed"); row.Detail = e.Message; }
-        finally { _cts.Dispose(); _cts = null; IsRunning = false; }
+        IsRunning = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running");
+        // The result arrives through Finished; null means another run was already going.
+        if (await _runner.RunAsync(row.Benchmark, seconds, row.Options.ToDictionary(o => o.Option.Key, o => o.Value)).ConfigureAwait(true) is null) IsRunning = _runner.Running is not null;
     }
 
-    [RelayCommand] private void Cancel() => _cts?.Cancel();
+    [RelayCommand] private void Cancel() => _runner.Cancel();
+
+    public void Dispose() { _runner.Progress -= OnProgress; _runner.Finished -= OnFinished; }
 }

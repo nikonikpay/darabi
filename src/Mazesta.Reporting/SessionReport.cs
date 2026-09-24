@@ -4,9 +4,12 @@ namespace Mazesta.Reporting;
 public enum ReportOutcome { Passed, Failed, Cancelled, Unsupported, NotRun }
 
 /// <summary>Passed only when every test that was asked for ran and passed. A cancelled, unsupported or never-run test makes the
-/// report Incomplete - a skipped test is never presented as a pass (spec §8). Benchmark is a report of benchmark runs alone:
-/// measurements with no verdict at all, since a speed number is neither a pass nor a fail.</summary>
-public enum ReportVerdict { Passed, Failed, Incomplete, Benchmark }
+/// report Incomplete - a skipped test is never presented as a pass (spec §8).</summary>
+public enum ReportVerdict { Passed, Failed, Incomplete }
+
+/// <summary>A test session (tests, with a verdict), or a benchmark run on its own: measurements with no verdict at all, since a speed
+/// number is neither a pass nor a fail.</summary>
+public enum ReportKind { TestSession, Benchmark }
 
 public sealed record TestEntry(string Id, string Name, ReportOutcome Outcome, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, double DurationSeconds,
     long ErrorCount, string? Detail, IReadOnlyDictionary<string, string> Options);
@@ -25,7 +28,8 @@ public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset Finis
 public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancelled, int Unsupported, int NotRun, long Errors);
 
 public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset CreatedAt, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, string ShopName, string AppVersion,
-    ReportVerdict Verdict, ReportCounts Counts, IReadOnlyList<TestEntry> Tests, IReadOnlyList<SensorSummary> Sensors, HardwareInventory Machine, IReadOnlyList<BenchmarkEntry>? Benchmarks = null)
+    ReportVerdict? Verdict, ReportCounts Counts, IReadOnlyList<TestEntry> Tests, IReadOnlyList<SensorSummary> Sensors, HardwareInventory Machine, IReadOnlyList<BenchmarkEntry>? Benchmarks = null,
+    ReportKind Kind = ReportKind.TestSession)   // Kind is absent (TestSession) in reports saved before benchmark reports existed
 {
     public const int CurrentSchemaVersion = 1;
     public double DurationSeconds => Math.Max(0, (FinishedAt - StartedAt).TotalSeconds);
@@ -34,10 +38,13 @@ public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset 
     {
         var counts = new ReportCounts(tests.Count, tests.Count(t => t.Outcome == ReportOutcome.Passed), tests.Count(t => t.Outcome == ReportOutcome.Failed), tests.Count(t => t.Outcome == ReportOutcome.Cancelled),
             tests.Count(t => t.Outcome == ReportOutcome.Unsupported), tests.Count(t => t.Outcome == ReportOutcome.NotRun), tests.Sum(t => t.ErrorCount));
-        bool benchmarkOnly = tests.Count == 0 && benchmarks is { Count: > 0 };
-        var verdict = benchmarkOnly ? ReportVerdict.Benchmark : counts.Failed > 0 ? ReportVerdict.Failed : counts.Total > 0 && counts.Passed == counts.Total ? ReportVerdict.Passed : ReportVerdict.Incomplete;
-        var (started, finished) = tests.Count > 0 ? (tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt))
-            : benchmarkOnly ? (benchmarks!.Min(b => b.StartedAt ?? b.FinishedAt), benchmarks!.Max(b => b.FinishedAt)) : (createdAt, createdAt);
+        var verdict = counts.Failed > 0 ? ReportVerdict.Failed : counts.Total > 0 && counts.Passed == counts.Total ? ReportVerdict.Passed : ReportVerdict.Incomplete;
+        var started = tests.Count > 0 ? tests.Min(t => t.StartedAt) : createdAt; var finished = tests.Count > 0 ? tests.Max(t => t.FinishedAt) : createdAt;
         return new(CurrentSchemaVersion, id ?? Guid.NewGuid().ToString("N"), createdAt, started, finished, shopName, appVersion, verdict, counts, tests, sensors, machine, benchmarks is { Count: > 0 } ? benchmarks : null);
     }
+
+    /// <summary>A report of one or more benchmark runs on their own, spanning the runs.</summary>
+    public static SessionReport CreateBenchmark(string shopName, string appVersion, DateTimeOffset createdAt, IReadOnlyList<BenchmarkEntry> benchmarks, IReadOnlyList<SensorSummary> sensors, HardwareInventory machine)
+        => new(CurrentSchemaVersion, Guid.NewGuid().ToString("N"), createdAt, benchmarks.Min(b => b.StartedAt ?? b.FinishedAt), benchmarks.Max(b => b.FinishedAt), shopName, appVersion,
+            null, new(0, 0, 0, 0, 0, 0, 0), [], sensors, machine, benchmarks, ReportKind.Benchmark);
 }

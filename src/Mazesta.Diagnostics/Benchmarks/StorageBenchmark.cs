@@ -13,12 +13,9 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// </summary>
 public sealed class StorageBenchmark : IBenchmark
 {
-    public static readonly TestDefinition Spec = new(new TestId("bench.storage"), "Bench_Storage", 20,
-        [new TestOption(StorageExecutor.DriveOption, "Test_Option_Drive", TestOptionKind.Choice, "", StorageFile.DriveChoices), new TestOption(StorageExecutor.FileMbOption, "Test_Option_FileMb", TestOptionKind.Integer, "1024")]);
+    public static readonly TestDefinition Spec = new(new TestId("bench.storage"), "Bench_Storage", 20, StorageExecutor.CommonOptions("1024"));
     public TestDefinition Definition => Spec;
     private const int SeqDepth = 8, RandomDepth = 32;
-    // Share of the duration per timed phase: sequential write, sequential read, random read Q32, random read Q1, random write Q32.
-    private static readonly double[] Shares = [0.25, 0.25, 0.2, 0.15, 0.15];
     private readonly TimeSpan _rest;
 
     public StorageBenchmark() : this(TimeSpan.FromSeconds(5)) { }
@@ -30,12 +27,12 @@ public sealed class StorageBenchmark : IBenchmark
         if (request.DurationSeconds <= 0) return Task.FromResult(BenchmarkResult.Unsupported(Spec.Id, started, "Duration must be positive."));
         var options = request.Options ?? TestOptions.None(Spec);
         int fileMb = options.GetInt(StorageExecutor.FileMbOption);
-        if (fileMb is < 16 or > 65536) return Task.FromResult(BenchmarkResult.Unsupported(Spec.Id, started, "The test file must be between 16 MiB and 64 GiB."));
+        if (StorageFile.CheckSizeMb(fileMb) is { } invalid) return Task.FromResult(BenchmarkResult.Unsupported(Spec.Id, started, invalid));
         return Task.Run(async () =>
         {
             try
             {
-                using var file = StorageFile.Create(StorageFile.ResolveTarget(options.Get(StorageExecutor.DriveOption)), (long)fileMb << 20 & ~(long)(StorageFile.Block - 1), overlapped: true);
+                using var file = StorageFile.Create(StorageFile.ResolveTarget(options.Get(StorageExecutor.DriveOption)), StorageFile.LengthOf(fileMb), asynchronous: true, writeThrough: false);
                 return await MeasureAsync(file, request, started, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
@@ -46,10 +43,10 @@ public sealed class StorageBenchmark : IBenchmark
 
     private async Task<BenchmarkResult> MeasureAsync(StorageFile file, TestExecutionRequest request, DateTimeOffset started, CancellationToken ct)
     {
-        using var buffers = new Buffers(SeqDepth, RandomDepth);
+        using var buffers = new Buffers();
         long blocks = file.Length / StorageFile.Block, sectors = file.Length / StorageFile.Sector;
         var total = TimeSpan.FromSeconds(request.DurationSeconds) + 2 * _rest; var overall = Stopwatch.StartNew();
-        TimeSpan Share(int phase) => TimeSpan.FromSeconds(request.DurationSeconds * Shares[phase]);
+        TimeSpan Share(double fraction) => TimeSpan.FromSeconds(request.DurationSeconds * fraction);
         void Progress() => request.Report(Math.Min(0.99, overall.Elapsed / total));
 
         long cursor = -1;   // the next sequential block; shared by the workers of one phase
@@ -57,61 +54,64 @@ public sealed class StorageBenchmark : IBenchmark
         long RandomSector(Random r) => r.NextInt64(sectors) * StorageFile.Sector;
 
         // Preparation (untimed): one full pass, so every later read hits written data; then the first rest.
-        for (long offset = 0; offset < file.Length; offset += StorageFile.Block) { ct.ThrowIfCancellationRequested(); await file.WriteAsync(buffers.Seq[0], offset, ct).ConfigureAwait(false); }
+        await Task.WhenAll(Enumerable.Range(0, SeqDepth).Select(async w =>
+        {
+            for (long b; (b = Interlocked.Increment(ref cursor)) < blocks;) await file.WriteAsync(buffers.Seq[w], b * StorageFile.Block, ct).ConfigureAwait(false);
+        })).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
 
-        cursor = -1; var seqWrite = await PhaseAsync(SeqDepth, Share(0), (w, _) => file.WriteAsync(buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqWrite = await PhaseAsync(SeqDepth, Share(0.25), (w, _) => file.WriteAsync(buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
-        cursor = -1; var seqRead = await PhaseAsync(SeqDepth, Share(1), async (w, _) => await file.ReadAsync(buffers.Seq[w], NextBlock(), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
-        var randQ32 = await PhaseAsync(RandomDepth, Share(2), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
-        var randQ1 = await PhaseAsync(1, Share(3), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
-        var randWrite = await PhaseAsync(RandomDepth, Share(4), (w, r) => file.WriteAsync(buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.25), async (w, _) => await file.ReadAsync(buffers.Seq[w], NextBlock(), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
+        double randQ32 = await PhaseAsync(RandomDepth, Share(0.2), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
+        double randQ1 = await PhaseAsync(1, Share(0.15), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
+        double randWrite = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => file.WriteAsync(buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
         request.Report(1);
 
         BenchmarkMetric[] metrics =
         [
-            new("Bench_Storage_SeqWrite", seqWrite.PerSecond * StorageFile.Block / 1e6, "MB/s"), new("Bench_Storage_SeqRead", seqRead.PerSecond * StorageFile.Block / 1e6, "MB/s"),
-            new("Bench_Storage_Rand4kQ32Read", randQ32.PerSecond, "IOPS"), new("Bench_Storage_Rand4kQ1Read", randQ1.PerSecond, "IOPS"),
-            new("Bench_Storage_Rand4kLatency", randQ1.Seconds / randQ1.Operations * 1e6, "µs"), new("Bench_Storage_Rand4kQ32Write", randWrite.PerSecond, "IOPS")
+            new("Bench_Storage_SeqWrite", seqWrite * StorageFile.Block / 1e6, "MB/s"), new("Bench_Storage_SeqRead", seqRead * StorageFile.Block / 1e6, "MB/s"),
+            new("Bench_Storage_Rand4kQ32Read", randQ32, "IOPS"), new("Bench_Storage_Rand4kQ1Read", randQ1, "IOPS"),
+            new("Bench_Storage_Rand4kLatency", 1e6 / randQ1, "µs"), new("Bench_Storage_Rand4kQ32Write", randWrite, "IOPS")   // one request in flight: latency is 1 / IOPS
         ];
         return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,
             $"unbuffered overlapped I/O; {file.Length >> 20} MiB file written once before timing and {_rest.TotalSeconds:0} s rest; SEQ1M Q{SeqDepth}T1 write, {_rest.TotalSeconds:0} s rest, SEQ1M Q{SeqDepth}T1 read, RND4K Q{RandomDepth}T1 read, RND4K Q1T1 read, RND4K Q{RandomDepth}T1 write");
     }
 
-    private readonly record struct PhaseResult(long Operations, double Seconds) { public double PerSecond => Operations / Math.Max(1e-6, Seconds); }
-
-    /// <summary>Keeps <paramref name="depth"/> requests in flight for <paramref name="length"/>; each worker has its own buffer
-    /// (index) and its own seeded random stream, so no two requests in flight share memory.</summary>
-    private static async Task<PhaseResult> PhaseAsync(int depth, TimeSpan length, Func<int, Random, ValueTask> io, Action progress, CancellationToken ct)
+    /// <summary>Keeps <paramref name="depth"/> requests in flight for <paramref name="length"/> and returns requests per second. Each worker
+    /// has its own buffer (index) and its own seeded random stream, so no two requests in flight share memory; workers count on their own
+    /// and progress is reported by time, so the timed loop does no shared or UI work per request.</summary>
+    private static async Task<double> PhaseAsync(int depth, TimeSpan length, Func<int, Random, ValueTask> io, Action progress, CancellationToken ct)
     {
         long operations = 0; var sw = Stopwatch.StartNew();
         async Task Worker(int w)
         {
-            var random = new Random(7421 + w);
-            for (long mine = 1; sw.Elapsed < length; mine++)
+            var random = new Random(7421 + w); long mine = 0; var nextReport = TimeSpan.Zero;
+            while (sw.Elapsed < length)
             {
-                await io(w, random).ConfigureAwait(false); Interlocked.Increment(ref operations);
-                if (w == 0 && (mine & 63) == 0) progress();
+                await io(w, random).ConfigureAwait(false); mine++;
+                if (w == 0 && sw.Elapsed >= nextReport) { progress(); nextReport = sw.Elapsed + TimeSpan.FromMilliseconds(250); }
             }
+            Interlocked.Add(ref operations, mine);
         }
         await Task.WhenAll(Enumerable.Range(0, depth).Select(Worker)).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
-        return new(operations, sw.Elapsed.TotalSeconds);
+        return operations / Math.Max(1e-6, sw.Elapsed.TotalSeconds);
     }
 
-    /// <summary>Sector-aligned buffers for unbuffered I/O, filled with incompressible data once up front (generating it per
-    /// request would make the CPU the limit at PCIe 5.0 speeds, and a drive that compresses would flatter a constant pattern).</summary>
+    /// <summary>Sector-aligned buffers for unbuffered I/O (one per request in flight), filled with the storage tests' seeded random
+    /// pattern once up front: generating data per request would make the CPU the limit at PCIe 5.0 speeds, and a drive that compresses
+    /// would flatter a constant pattern.</summary>
     private sealed class Buffers : IDisposable
     {
-        private readonly NativeBlock _seq, _small;
+        private readonly NativeBlock _seq = new(SeqDepth * StorageFile.Block), _small = new(RandomDepth * StorageFile.Sector);
         public Memory<byte>[] Seq { get; }
         public Memory<byte>[] Small { get; }
-        public Buffers(int seqCount, int smallCount)
+        public Buffers()
         {
-            _seq = new NativeBlock(seqCount * StorageFile.Block); _small = new NativeBlock(smallCount * StorageFile.Sector);
-            new Random(0x5EED).NextBytes(_seq.Span); new Random(0xFEED).NextBytes(_small.Span);
-            Seq = [.. Enumerable.Range(0, seqCount).Select(i => _seq.Memory.Slice(i * StorageFile.Block, StorageFile.Block))];
-            Small = [.. Enumerable.Range(0, smallCount).Select(i => _small.Memory.Slice(i * StorageFile.Sector, StorageFile.Sector))];
+            MemoryPatterns.Fill(_seq.Span, MemoryPatterns.Count - 1, 0); MemoryPatterns.Fill(_small.Span, MemoryPatterns.Count - 1, 1);
+            Seq = [.. Enumerable.Range(0, SeqDepth).Select(i => _seq.Memory.Slice(i * StorageFile.Block, StorageFile.Block))];
+            Small = [.. Enumerable.Range(0, RandomDepth).Select(i => _small.Memory.Slice(i * StorageFile.Sector, StorageFile.Sector))];
         }
         public void Dispose() { _seq.Dispose(); _small.Dispose(); }
     }

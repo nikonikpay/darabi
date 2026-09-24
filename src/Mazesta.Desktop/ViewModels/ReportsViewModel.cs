@@ -5,10 +5,11 @@ namespace Mazesta.Desktop.ViewModels;
 public sealed class ReportRowViewModel(StoredReport report)
 {
     public StoredReport Report { get; } = report;
-    public ReportVerdict Verdict => Report.Verdict;
-    public string VerdictText => Loc.Get("Reports_Verdict_" + Report.Verdict);
+    /// <summary>The verdict, or Benchmark for a benchmark report (which has none) - what the badge shows and is coloured by.</summary>
+    public string Badge => Report.Verdict?.ToString() ?? nameof(ReportKind.Benchmark);
+    public string VerdictText => Loc.Get("Reports_Verdict_" + Badge);
     public string Title => Stamp(Report.CreatedAt);
-    public string Summary { get; } = report.Verdict == ReportVerdict.Benchmark ? string.Join(" · ", report.Benchmarks)
+    public string Summary { get; } = report.Kind == ReportKind.Benchmark ? string.Join(" · ", report.Benchmarks)
         : Loc.Format("Reports_Summary", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
 
     /// <summary>Solar Hijri date with the local time when the app is Persian, ISO otherwise.</summary>
@@ -37,7 +38,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         Refresh(); service.ReportCreated += OnCreated;
     }
 
-    private void OnCreated(StoredReport _) => _dispatch(() => { Refresh(); Status = Loc.Get("Reports_Created"); });
+    private void OnCreated(StoredReport report) => _dispatch(() => { Items.Insert(0, new(report)); Status = Loc.Get("Reports_Created"); });   // newest first, without re-reading every report
     private void Refresh() { Items.Clear(); foreach (var r in _service.Store.List()) Items.Add(new(r)); }
 
     [RelayCommand] private void OpenHtml(ReportRowViewModel row) => _open(row.Report.HtmlPath);

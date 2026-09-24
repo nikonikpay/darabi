@@ -31,8 +31,8 @@ public sealed class GpuVramExecutor : ITestExecutor
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
         var options = request.Options ?? TestOptions.None(Definition);
-        var device = GpuDevices.Resolve(options.Get(GpuDevices.OptionKey));
-        if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "No DirectX 12 hardware GPU is available."));
+        var device = GpuDevices.Resolve(request, Definition);
+        if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, GpuDevices.NoGpu));
         long budget = Budget(SensorEvidence.Latest(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramFree), (long)device.DedicatedMemorySize, options.GetInt(SizeOption));
         if (budget < ChunkBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of VRAM can safely be tested; at least {ChunkBytes >> 20} MiB is needed."));
         return Task.Run(() => Run(request, device, budget, started, ct), CancellationToken.None);

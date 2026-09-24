@@ -1,9 +1,10 @@
 # Slice 6 — benchmark suite: verification
 
 ## What changed
-- **Results are kept.** Every completed benchmark run is saved as its own report (verdict `Benchmark`: numbers and the sensors over the
-  run, no pass/fail) and appears on the Reports page; the latest of each is still added to the next test report. The Benchmarks page
-  view model lives for the whole session, so a run keeps going and its numbers stay when you leave the page and come back.
+- **Results are kept.** Every completed benchmark run is saved as its own report (`ReportKind.Benchmark`: numbers and the sensors over
+  the run, no verdict at all) and appears on the Reports page; the latest of each is still added to the next test report. Runs belong
+  to `BenchmarkRunner`, a session singleton like `TestEngine`, so a run keeps going and its numbers stay when you leave the page and
+  come back (the page itself is built per visit and only shows the runner's state).
 - **CPU** is two benchmarks, single thread and all threads, 60 s each by default (memory and the GPU benchmarks too; storage stays 20 s).
 - **Storage** is measured the way CrystalDiskMark does: SEQ1M Q8T1 write and read, RND4K Q32T1 and Q1T1 read (+ latency), RND4K Q32T1
   write, with overlapped unbuffered I/O. The file is written once before timing; the drive rests 5 s after that and 5 s between the write

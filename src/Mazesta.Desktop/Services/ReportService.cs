@@ -1,5 +1,5 @@
 using System.IO; using System.Reflection; using System.Windows;
-using Mazesta.Core.Time; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics; using Mazesta.Monitoring; using Mazesta.Persistence; using Mazesta.Reporting;
+using Mazesta.Core.Time; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring; using Mazesta.Persistence; using Mazesta.Reporting;
 using Microsoft.Extensions.Logging;
 namespace Mazesta.Desktop.Services;
 
@@ -11,19 +11,19 @@ namespace Mazesta.Desktop.Services;
 /// </summary>
 public sealed class ReportService
 {
-    private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkResults _benchmarks; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
+    private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkRunner _benchmarks; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
     private DateTimeOffset _sessionStart;
     public ReportStore Store { get; }
     public event Action<StoredReport>? ReportCreated;
 
-    public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkResults benchmarks, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
+    public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkRunner benchmarks, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
     {
         _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir);
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
-        benchmarks.Recorded += b => _ = Task.Run(() => CreateBenchmarkReportAsync(b));
+        benchmarks.Finished += b => { if (b.Result.Status == BenchmarkStatus.Completed) _ = Task.Run(() => CreateBenchmarkReportAsync(b)); };   // a run that measured nothing has nothing to report
     }
 
     private async Task CreateReportAsync()
@@ -37,7 +37,7 @@ public sealed class ReportService
             var tests = queue.Select(q => ToEntry(q, results.GetValueOrDefault(q.Definition.Id), start)).ToList();
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt));
-            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Snapshot().Select(ToEntry).ToList()));
+            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Completed().Select(ToEntry).ToList()));
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
@@ -48,7 +48,7 @@ public sealed class ReportService
         {
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, benchmark.Result.StartedAt, benchmark.Result.FinishedAt);
-            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, [], sensors, machine, benchmarks: [ToEntry(benchmark)]));
+            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [ToEntry(benchmark)], sensors, machine));
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }
@@ -57,7 +57,7 @@ public sealed class ReportService
 
     private void Save(SessionReport report)
     {
-        var stored = Store.Save(report, ReportHtml.Write(report, LoadFont()));
+        var stored = Store.Save(report, ReportHtml.Write(report, Font.Value));
         _log.LogInformation("Report saved: {Folder} ({Verdict})", stored.Folder, report.Verdict);
         ReportCreated?.Invoke(stored);
     }
@@ -75,6 +75,8 @@ public sealed class ReportService
             r.StartedAt, finished, (finished - r.StartedAt).TotalSeconds, r.ErrorCount, r.Detail, options);
     }
 
+    // Read once: a report is now saved after every benchmark run, not only after a test session.
+    private static readonly Lazy<ReportFont?> Font = new(LoadFont);
     private static ReportFont? LoadFont()
     {
         try

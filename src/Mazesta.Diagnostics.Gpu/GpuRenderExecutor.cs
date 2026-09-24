@@ -18,8 +18,8 @@ public sealed class GpuRenderExecutor : ITestExecutor
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
-        var device = GpuDevices.Resolve((request.Options ?? TestOptions.None(Definition)).Get(GpuDevices.OptionKey));
-        if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "No DirectX 12 hardware GPU is available."));
+        var device = GpuDevices.Resolve(request, Definition);
+        if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, GpuDevices.NoGpu));
         return Task.Run(() => Run(request, device, started, ct), CancellationToken.None);
     }
 
