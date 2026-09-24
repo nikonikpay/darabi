@@ -7,18 +7,19 @@ public sealed record StoredReport(string Folder, string Id, DateTimeOffset Creat
     public string JsonPath => Path.Combine(Folder, ReportStore.JsonName);
     public string HtmlPath => Path.Combine(Folder, ReportStore.HtmlName);
     public string PdfPath => Path.Combine(Folder, ReportStore.PdfName);
+    public string TextPath => Path.Combine(Folder, ReportStore.TextName);
 }
 
-/// <summary>One folder per report under the reports directory: <c>report.json</c> (the source of truth), <c>report.html</c> and, once exported, <c>report.pdf</c>.</summary>
+/// <summary>One folder per report under the reports directory: <c>report.json</c> (the source of truth), <c>report.html</c>, <c>report.txt</c> and, once exported, <c>report.pdf</c>.</summary>
 public sealed class ReportStore(string directory)
 {
-    public const string JsonName = "report.json", HtmlName = "report.html", PdfName = "report.pdf";
+    public const string JsonName = "report.json", HtmlName = "report.html", TextName = "report.txt", PdfName = "report.pdf";
 
-    public StoredReport Save(SessionReport report, string html)
+    public StoredReport Save(SessionReport report, string html, string? text = null)
     {
         string folder = Path.Combine(directory, $"{report.CreatedAt.ToLocalTime():yyyyMMdd-HHmmss}-{report.Id[..8]}");
         Directory.CreateDirectory(folder);
-        WriteAtomic(Path.Combine(folder, JsonName), ReportJson.Write(report)); WriteAtomic(Path.Combine(folder, HtmlName), html);
+        WriteAtomic(Path.Combine(folder, JsonName), ReportJson.Write(report)); WriteAtomic(Path.Combine(folder, HtmlName), html); if (text is not null) WriteAtomic(Path.Combine(folder, TextName), text);
         return StoredReport.Of(folder, report);
     }
 
@@ -36,6 +37,12 @@ public sealed class ReportStore(string directory)
     }
 
     public SessionReport? Load(StoredReport stored) => ReportJson.Read(File.ReadAllText(stored.JsonPath));
+    /// <summary>The report's text file, written from its JSON first when it has none (reports saved before plain text existed).</summary>
+    public string EnsureText(StoredReport stored, ReportText wording)
+    {
+        if (!File.Exists(stored.TextPath) && Load(stored) is { } report) WriteAtomic(stored.TextPath, ReportPlainText.Write(report, wording));
+        return stored.TextPath;
+    }
     public void Delete(StoredReport stored) { if (Directory.Exists(stored.Folder)) Directory.Delete(stored.Folder, recursive: true); }
 
     private static void WriteAtomic(string path, string content) { string tmp = path + ".tmp"; File.WriteAllText(tmp, content, new System.Text.UTF8Encoding(false)); File.Move(tmp, path, overwrite: true); }

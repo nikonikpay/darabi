@@ -7,22 +7,23 @@ public sealed record ReportFont(string Family, byte[] Regular, byte[] Bold);
 /// <summary>The complete human report: one self-contained, offline HTML file (no scripts, no external requests) that is also what the PDF is printed from.</summary>
 public static class ReportHtml
 {
-    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    private static readonly CultureInfo Inv = ReportFormat.Inv;
     // Not WebUtility.HtmlEncode: it turns every non-ASCII character (all of the Persian text) into a numeric entity.
     private static string E(string? s) => (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&#39;");
     private static string Lt(string? s) => $"<bdi class=\"lt\">{E(s)}</bdi>";
 
-    public static string Write(SessionReport r, ReportFont? font = null)
+    public static string Write(SessionReport r, ReportFont? font = null, ReportText? wording = null)
     {
+        var w = wording ?? ReportText.Persian;
         var b = new StringBuilder(32 * 1024);
-        b.Append("<!DOCTYPE html><html lang=\"fa\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
+        b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
-         .Append("<title>").Append(E(ReportText.TitleOf(r.Kind))).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
-        Header(b, r); Summary(b, r);
-        Tests(b, r);
-        if (r.Kind == ReportKind.Benchmark) { Benchmarks(b, r); Sensors(b, r); } else { Sensors(b, r); Benchmarks(b, r); }   // the report's subject first
-        Machine(b, r.Machine);
-        b.Append("<footer>").Append(E(ReportText.Footer)).Append("<br>").Append(Lt($"Mazesta Test {r.AppVersion} · {r.Id}")).Append("</footer></main></body></html>");
+         .Append("<title>").Append(E(w.TitleOf(r.Kind))).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
+        Header(b, r, w); Summary(b, r, w);
+        Tests(b, r, w);
+        if (r.Kind == ReportKind.Benchmark) { Benchmarks(b, r, w); Sensors(b, r, w); } else { Sensors(b, r, w); Benchmarks(b, r, w); }   // the report's subject first
+        Machine(b, r.Machine, w);
+        b.Append("<footer>").Append(E(w.Footer)).Append("<br>").Append(Lt($"Mazesta Test {r.AppVersion} · {r.Id}")).Append("</footer></main></body></html>");
         return b.ToString();
     }
 
@@ -60,60 +61,60 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 @media(max-width:640px){{main{{padding:18px}} .charts{{grid-template-columns:1fr}}}}";
     }
 
-    private static void Header(StringBuilder b, SessionReport r)
+    private static void Header(StringBuilder b, SessionReport r, ReportText w)
     {
-        b.Append("<header><h1>").Append(E(r.ShopName)).Append(" — ").Append(E(ReportText.TitleOf(r.Kind))).Append("</h1><div class=\"meta\">")
-         .Append(ReportText.Started).Append(": ").Append(Lt(Stamp(r.StartedAt))).Append(" · ").Append(ReportText.Finished).Append(": ").Append(Lt(Stamp(r.FinishedAt)))
-         .Append(" · ").Append(ReportText.Duration).Append(": ").Append(Lt(Duration(r.DurationSeconds))).Append("<br>").Append(ReportText.ReportId).Append(": ").Append(Lt(r.Id)).Append("</div></header>");
+        b.Append("<header><h1>").Append(E(r.ShopName)).Append(" — ").Append(E(w.TitleOf(r.Kind))).Append("</h1><div class=\"meta\">")
+         .Append(w.Started).Append(": ").Append(Lt(ReportFormat.Stamp(r.StartedAt))).Append(" · ").Append(w.Finished).Append(": ").Append(Lt(ReportFormat.Stamp(r.FinishedAt)))
+         .Append(" · ").Append(w.Duration).Append(": ").Append(Lt(ReportFormat.Duration(r.DurationSeconds))).Append("<br>").Append(w.ReportId).Append(": ").Append(Lt(r.Id)).Append("</div></header>");
     }
 
-    private static void Summary(StringBuilder b, SessionReport r)
+    private static void Summary(StringBuilder b, SessionReport r, ReportText w)
     {
-        if (r.Verdict is not { } verdict) { b.Append("<div class=\"verdict Benchmark\">").Append(E(ReportText.MeasurementsOnly)).Append("</div>"); return; }
-        b.Append("<h2>").Append(ReportText.Verdict).Append("</h2><div class=\"verdict ").Append(verdict).Append("\">").Append(E(ReportText.VerdictName(verdict))).Append("</div><div class=\"cards\">");
+        if (r.Verdict is not { } verdict) { b.Append("<div class=\"verdict Benchmark\">").Append(E(w.MeasurementsOnly)).Append("</div>"); return; }
+        b.Append("<h2>").Append(w.Verdict).Append("</h2><div class=\"verdict ").Append(verdict).Append("\">").Append(E(w.VerdictName(verdict))).Append("</div><div class=\"cards\">");
         void Card(string label, object value) => b.Append("<div class=\"card\"><b class=\"lt\">").Append(E(Convert.ToString(value, Inv))).Append("</b><span>").Append(E(label)).Append("</span></div>");
         var c = r.Counts;
-        Card(ReportText.Total, c.Total); Card(ReportText.Passed, c.Passed); Card(ReportText.Failed, c.Failed); Card(ReportText.NotDone, c.Cancelled + c.Unsupported + c.NotRun); Card(ReportText.Errors, c.Errors);
+        Card(w.Total, c.Total); Card(w.Passed, c.Passed); Card(w.Failed, c.Failed); Card(w.NotDone, c.Cancelled + c.Unsupported + c.NotRun); Card(w.Errors, c.Errors);
         b.Append("</div>");
     }
 
-    private static void Tests(StringBuilder b, SessionReport r)
+    private static void Tests(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Tests.Count == 0) return;
-        b.Append("<h2>").Append(ReportText.Results).Append("</h2><table><thead><tr><th>").Append(ReportText.Name).Append("</th><th>").Append(ReportText.Outcome).Append("</th><th>").Append(ReportText.Duration)
-         .Append("</th><th>").Append(ReportText.Errors).Append("</th></tr></thead><tbody>");
+        b.Append("<h2>").Append(w.Results).Append("</h2><table><thead><tr><th>").Append(w.Name).Append("</th><th>").Append(w.Outcome).Append("</th><th>").Append(w.Duration)
+         .Append("</th><th>").Append(w.Errors).Append("</th></tr></thead><tbody>");
         foreach (var t in r.Tests)
         {
             b.Append("<tr class=\"test\"><td><b>").Append(E(t.Name)).Append("</b>");
-            if (t.Options.Count > 0) b.Append("<br><small>").Append(ReportText.Options).Append(": ").Append(string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}")))).Append("</small>");
-            if (!string.IsNullOrWhiteSpace(t.Detail)) b.Append("<br><small>").Append(ReportText.Detail).Append(":</small><pre>").Append(E(t.Detail)).Append("</pre>");
-            b.Append("</td><td><span class=\"badge ").Append(t.Outcome).Append("\">").Append(E(ReportText.OutcomeName(t.Outcome))).Append("</span></td><td>").Append(Lt(Duration(t.DurationSeconds)))
+            if (t.Options.Count > 0) b.Append("<br><small>").Append(w.Options).Append(": ").Append(string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}")))).Append("</small>");
+            if (!string.IsNullOrWhiteSpace(t.Detail)) b.Append("<br><small>").Append(w.Detail).Append(":</small><pre>").Append(E(t.Detail)).Append("</pre>");
+            b.Append("</td><td><span class=\"badge ").Append(t.Outcome).Append("\">").Append(E(w.OutcomeName(t.Outcome))).Append("</span></td><td>").Append(Lt(ReportFormat.Duration(t.DurationSeconds)))
              .Append("</td><td>").Append(Lt(t.ErrorCount.ToString(Inv))).Append("</td></tr>");
         }
         b.Append("</tbody></table>");
     }
 
-    private static void Sensors(StringBuilder b, SessionReport r)
+    private static void Sensors(StringBuilder b, SessionReport r, ReportText w)
     {
-        b.Append("<h2>").Append(r.Kind == ReportKind.Benchmark ? ReportText.BenchmarkSensors : ReportText.Sensors).Append("</h2>");
-        if (r.Sensors.Count == 0) { b.Append("<p>").Append(ReportText.NoSensors).Append("</p>"); return; }
-        b.Append("<table><thead><tr><th>").Append(ReportText.Sensor).Append("</th><th>").Append(ReportText.Min).Append("</th><th>").Append(ReportText.Avg).Append("</th><th>").Append(ReportText.Max).Append("</th><th>")
-         .Append(ReportText.Samples).Append("</th></tr></thead><tbody>");
+        b.Append("<h2>").Append(r.Kind == ReportKind.Benchmark ? w.BenchmarkSensors : w.Sensors).Append("</h2>");
+        if (r.Sensors.Count == 0) { b.Append("<p>").Append(w.NoSensors).Append("</p>"); return; }
+        b.Append("<table><thead><tr><th>").Append(w.Sensor).Append("</th><th>").Append(w.Min).Append("</th><th>").Append(w.Avg).Append("</th><th>").Append(w.Max).Append("</th><th>")
+         .Append(w.Samples).Append("</th></tr></thead><tbody>");
         foreach (var s in r.Sensors)
-            b.Append("<tr><td>").Append(Lt($"{s.Hardware} · {s.Name}")).Append("</td><td>").Append(Lt(Value(s.Min, s))).Append("</td><td>").Append(Lt(Value(s.Average, s))).Append("</td><td>").Append(Lt(Value(s.Max, s)))
+            b.Append("<tr><td>").Append(Lt($"{s.Hardware} · {s.Name}")).Append("</td><td>").Append(Lt(ReportFormat.Value(s.Min, s))).Append("</td><td>").Append(Lt(ReportFormat.Value(s.Average, s))).Append("</td><td>").Append(Lt(ReportFormat.Value(s.Max, s)))
              .Append("</td><td>").Append(Lt(s.Samples.ToString(Inv))).Append("</td></tr>");
         b.Append("</tbody></table><div class=\"charts\">");
         foreach (var s in r.Sensors.Where(s => s.Trace.Count > 1)) Chart(b, r, s);
         b.Append("</div>");
     }
 
-    private static void Benchmarks(StringBuilder b, SessionReport r)
+    private static void Benchmarks(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Benchmarks is not { Count: > 0 }) return;
-        b.Append("<h2>").Append(ReportText.Benchmarks).Append("</h2><table><thead><tr><th>").Append(ReportText.Name).Append("</th><th>").Append(ReportText.Metric).Append("</th><th>").Append(ReportText.Value).Append("</th></tr></thead><tbody>");
+        b.Append("<h2>").Append(w.Benchmarks).Append("</h2><table><thead><tr><th>").Append(w.Name).Append("</th><th>").Append(w.Metric).Append("</th><th>").Append(w.Value).Append("</th></tr></thead><tbody>");
         foreach (var bm in r.Benchmarks)
         {
-            b.Append("<tr class=\"test\"><td rowspan=\"").Append(Math.Max(1, bm.Metrics.Count)).Append("\"><b>").Append(E(bm.Name)).Append("</b><br><small>").Append(ReportText.MeasuredAt).Append(": ").Append(Lt(Stamp(bm.FinishedAt))).Append("</small>");
+            b.Append("<tr class=\"test\"><td rowspan=\"").Append(Math.Max(1, bm.Metrics.Count)).Append("\"><b>").Append(E(bm.Name)).Append("</b><br><small>").Append(w.MeasuredAt).Append(": ").Append(Lt(ReportFormat.Stamp(bm.FinishedAt))).Append("</small>");
             if (!string.IsNullOrWhiteSpace(bm.Detail)) b.Append("<pre>").Append(E(bm.Detail)).Append("</pre>");
             b.Append("</td>");
             for (int i = 0; i < bm.Metrics.Count; i++)
@@ -133,7 +134,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         double X(double sec) => Pad + Math.Clamp(sec / total, 0, 1) * (W - 2 * Pad);
         double Y(double v) => H - Pad - (v - lo) / span * (H - 2 * Pad);
         string F(double d) => d.ToString("F1", Inv);
-        b.Append("<div class=\"chart\"><h4>").Append(Lt($"{s.Hardware} · {s.Name}")).Append("</h4><small>").Append(Lt($"{Value(s.Min, s)} – {Value(s.Max, s)}")).Append("</small>")
+        b.Append("<div class=\"chart\"><h4>").Append(Lt($"{s.Hardware} · {s.Name}")).Append("</h4><small>").Append(Lt($"{ReportFormat.Value(s.Min, s)} – {ReportFormat.Value(s.Max, s)}")).Append("</small>")
          .Append($"<svg viewBox=\"0 0 {W} {H}\" role=\"img\" aria-label=\"{E(s.Name)}\">");
         foreach (var t in r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun))
         {
@@ -143,23 +144,11 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         b.Append("<polyline fill=\"none\" stroke=\"#2f6bff\" stroke-width=\"1.6\" stroke-linejoin=\"round\" points=\"").Append(string.Join(' ', s.Trace.Select(p => $"{F(X(p.Seconds))},{F(Y(p.Value))}"))).Append("\"/></svg></div>");
     }
 
-    private static void Machine(StringBuilder b, HardwareInventory m)
+    private static void Machine(StringBuilder b, HardwareInventory m, ReportText w)
     {
-        b.Append("<h2>").Append(ReportText.Machine).Append("</h2><table><tbody>");
-        void Row(string label, string? value) { if (!string.IsNullOrWhiteSpace(value)) b.Append("<tr><th style=\"width:26%\">").Append(E(label)).Append("</th><td>").Append(Lt(value)).Append("</td></tr>"); }
-        if (m.Cpu is { } c) Row(ReportText.Cpu, $"{c.Name} · {c.PhysicalCores}C/{c.LogicalProcessors}T" + (c.MaxClockMhz is { } mhz ? $" · {mhz / 1000.0:F2} GHz" : ""));
-        foreach (var g in m.Gpus) Row(ReportText.Gpu, $"{g.Name}" + (g.DriverVersion is { } d ? $" · driver {d}" : ""));
-        if (m.TotalPhysicalMemoryBytes is { } ram) Row(ReportText.Ram, $"{ram / 1073741824.0:F0} GB · {m.MemoryModules.Count} module(s)");
-        foreach (var d in m.MemoryModules) Row("", $"{d.Slot}: {(d.CapacityBytes ?? 0) / 1073741824} GB {d.Manufacturer} {d.PartNumber} {(d.ConfiguredSpeedMts ?? d.SpeedMts)} MT/s".Trim());
-        if (m.Motherboard is { } mb) Row(ReportText.Board, $"{mb.Manufacturer} {mb.Product}");
-        if (m.Bios is { } bios) Row(ReportText.Bios, $"{bios.Vendor} {bios.Version}" + (bios.ReleaseDate is { } rd ? $" ({rd:yyyy-MM-dd})" : ""));
-        foreach (var s in m.Storage) Row(ReportText.Storage, $"{s.FriendlyName} · {s.MediaType} {s.BusType} · {(s.SizeBytes ?? 0) / 1_000_000_000} GB · {s.HealthStatus}");
-        foreach (var n in m.NetworkAdapters.Where(n => n.IsUp)) Row(ReportText.Network, $"{n.Name}" + (n.LinkSpeedBps is { } bps ? $" · {bps / 1_000_000} Mbps" : ""));
-        if (m.Os is { } os) Row(ReportText.Os, $"{os.Caption} {os.Version} ({os.Architecture})");
+        b.Append("<h2>").Append(w.Machine).Append("</h2><table><tbody>");
+        foreach (var (label, value) in ReportFormat.MachineRows(m, w)) b.Append("<tr><th style=\"width:26%\">").Append(E(label)).Append("</th><td>").Append(Lt(value)).Append("</td></tr>");
         b.Append("</tbody></table>");
     }
 
-    private static string Value(double v, SensorSummary s) => Units.FormatMeasured(v, s.Unit, 1);
-    private static string Stamp(DateTimeOffset t) => t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", Inv);
-    private static string Duration(double seconds) => seconds >= 60 ? $"{(int)(seconds / 60)}m {seconds % 60:F0}s" : $"{seconds:F0}s";
 }

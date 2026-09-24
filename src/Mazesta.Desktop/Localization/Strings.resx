@@ -469,6 +469,7 @@
   <data name="Reports_Empty" xml:space="preserve"><value>No report yet. Reports of test runs and benchmarks are saved here automatically.</value></data>
   <data name="Reports_Html" xml:space="preserve"><value>Open report (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>Save / open PDF</value></data>
+  <data name="Reports_Text" xml:space="preserve"><value>Text</value></data>
   <data name="Reports_Json" xml:space="preserve"><value>JSON data</value></data>
   <data name="Reports_Folder" xml:space="preserve"><value>Folder</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>Delete</value></data>

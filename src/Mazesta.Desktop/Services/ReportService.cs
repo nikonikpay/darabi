@@ -59,7 +59,8 @@ public sealed class ReportService
 
     private void Save(SessionReport report)
     {
-        var stored = Store.Save(report, ReportHtml.Write(report, Font.Value));
+        var wording = ReportText.For(Loc.IsRtl ? "fa" : "en");   // the report follows the app's language
+        var stored = Store.Save(report, ReportHtml.Write(report, Font.Value, wording), ReportPlainText.Write(report, wording));
         _log.LogInformation("Report saved: {Folder} ({Verdict})", stored.Folder, report.Verdict);
         ReportCreated?.Invoke(stored);
     }

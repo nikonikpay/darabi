@@ -43,6 +43,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
 
     [RelayCommand] private void OpenHtml(ReportRowViewModel row) => _open(row.Report.HtmlPath);
     [RelayCommand] private void OpenJson(ReportRowViewModel row) => _open(row.Report.JsonPath);
+    [RelayCommand] private void OpenText(ReportRowViewModel row) => _open(_service.Store.EnsureText(row.Report, ReportText.For(Loc.IsRtl ? "fa" : "en")));
     [RelayCommand] private void OpenFolder(ReportRowViewModel row) => _open(row.Report.Folder);
 
     [RelayCommand]

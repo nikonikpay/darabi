@@ -44,7 +44,7 @@ public class ReportTests
         string html = ReportHtml.Write(r);
         Assert.Equal(ReportVerdict.Passed, r.Verdict); Assert.Contains("&lt;CPU&gt;", html); Assert.Contains("12.35 GFLOPS", html); Assert.Contains("250 GFLOPS", html);
         Assert.Equal("Multi", ReportJson.Read(ReportJson.Write(r))!.Benchmarks![0].Metrics[1].Name);
-        Assert.DoesNotContain("<h2>" + ReportText.Benchmarks, ReportHtml.Write(Report(Test("a", ReportOutcome.Passed))));
+        Assert.DoesNotContain("<h2>" + ReportText.Persian.Benchmarks, ReportHtml.Write(Report(Test("a", ReportOutcome.Passed))));
     }
 
     [Fact] public void A_report_of_benchmarks_alone_has_no_verdict_no_test_counts_and_spans_the_run()
@@ -55,7 +55,7 @@ public class ReportTests
         Assert.Equal(ReportKind.Benchmark, r.Kind); Assert.Null(r.Verdict); Assert.Equal(60, r.DurationSeconds);
         var read = ReportJson.Read(ReportJson.Write(r))!; Assert.Equal(ReportKind.Benchmark, read.Kind); Assert.Null(read.Verdict);
         Assert.Equal(ReportKind.TestSession, ReportJson.Read(ReportJson.Write(Report()).Replace("\"kind\"", "\"unused\""))!.Kind);   // reports saved before Kind existed
-        Assert.Contains("verdict Benchmark", html); Assert.Contains("107 TFLOPS", html); Assert.DoesNotContain("class=\"cards\"", html); Assert.DoesNotContain(ReportText.Results, html);
+        Assert.Contains("verdict Benchmark", html); Assert.Contains("107 TFLOPS", html); Assert.DoesNotContain("class=\"cards\"", html); Assert.DoesNotContain(ReportText.Persian.Results, html);
     }
 
     [Fact] public void Store_saves_lists_newest_first_and_skips_a_damaged_folder()

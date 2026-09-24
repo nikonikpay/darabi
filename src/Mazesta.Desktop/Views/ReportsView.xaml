@@ -50,6 +50,8 @@
                                             Command="{Binding DataContext.OpenHtmlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="{loc:Loc Reports_Pdf}" Padding="12,5" Margin="6,0,0,0"
                                             Command="{Binding DataContext.ExportPdfCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                    <Button Content="{loc:Loc Reports_Text}" Padding="12,5" Margin="6,0,0,0"
+                                            Command="{Binding DataContext.OpenTextCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="{loc:Loc Reports_Json}" Padding="12,5" Margin="6,0,0,0"
                                             Command="{Binding DataContext.OpenJsonCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="{loc:Loc Reports_Folder}" Padding="12,5" Margin="6,0,0,0"

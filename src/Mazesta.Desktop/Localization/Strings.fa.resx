@@ -469,6 +469,7 @@
   <data name="Reports_Empty" xml:space="preserve"><value>هنوز گزارشی ساخته نشده است. گزارش آزمون‌ها و بنچمارک‌ها به‌طور خودکار اینجا ذخیره می‌شود.</value></data>
   <data name="Reports_Html" xml:space="preserve"><value>باز کردن گزارش (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>ذخیره / باز کردن PDF</value></data>
+  <data name="Reports_Text" xml:space="preserve"><value>متن ساده</value></data>
   <data name="Reports_Json" xml:space="preserve"><value>داده‌ی JSON</value></data>
   <data name="Reports_Folder" xml:space="preserve"><value>پوشه</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>حذف</value></data>
