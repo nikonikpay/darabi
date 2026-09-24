@@ -239,10 +239,7 @@
     <value>Open folder</value>
   </data>
   <data name="Settings_Mode_Portable" xml:space="preserve">
-    <value>Portable</value>
-  </data>
-  <data name="Settings_Mode_Installed" xml:space="preserve">
-    <value>Installed</value>
+    <value>Portable: settings, logs and reports are all kept in the Data folder next to the program</value>
   </data>
   <data name="Settings_Save" xml:space="preserve">
     <value>Save</value>

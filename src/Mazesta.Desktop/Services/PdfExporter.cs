@@ -9,7 +9,7 @@ namespace Mazesta.Desktop.Services;
 /// </summary>
 public static class PdfExporter
 {
-    public static async Task ExportAsync(string htmlPath, string pdfPath, string busyText, Window? owner)
+    public static async Task ExportAsync(string htmlPath, string pdfPath, string busyText, Window? owner, string browserDataDir)
     {
         string html = await File.ReadAllTextAsync(htmlPath);
         using var browser = new WebView2();
@@ -18,8 +18,7 @@ public static class PdfExporter
         string temp = pdfPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            string userData = Path.Combine(Path.GetTempPath(), "MazestaReportBrowser");
-            var env = await CoreWebView2Environment.CreateAsync(userDataFolder: userData);
+            var env = await CoreWebView2Environment.CreateAsync(userDataFolder: browserDataDir);   // inside the app's Data folder: the app is portable
             await browser.EnsureCoreWebView2Async(env).WaitAsync(TimeSpan.FromSeconds(30));
             var core = browser.CoreWebView2; core.Settings.IsScriptEnabled = false;
             core.PermissionRequested += (_, a) => a.State = CoreWebView2PermissionState.Deny;

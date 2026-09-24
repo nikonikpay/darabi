@@ -15,11 +15,13 @@ public sealed class ReportService
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
     private DateTimeOffset _sessionStart;
     public ReportStore Store { get; }
+    /// <summary>Where the PDF printer (WebView2) keeps its profile - inside the portable Data folder.</summary>
+    public string BrowserDataDir { get; }
     public event Action<StoredReport>? ReportCreated;
 
     public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkRunner benchmarks, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
     {
-        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir);
+        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir); BrowserDataDir = Path.Combine(paths.CacheDir, "report-browser");
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };

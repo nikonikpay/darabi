@@ -1,4 +1,4 @@
-using System.Windows;
+using System.IO; using System.Windows;
 using Mazesta.Desktop.Localization;
 using Mazesta.Persistence;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,10 +45,15 @@ public partial class App : Application
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Services?.GetService<ILoggerFactory>()?.CreateLogger("Unhandled").LogCritical(e.ExceptionObject as Exception, "AppDomain exception");
         TaskScheduler.UnobservedTaskException += (_, e) => { Services?.GetService<ILoggerFactory>()?.CreateLogger("Unhandled").LogError(e.Exception, "Unobserved task exception"); e.SetObserved(); };
-        var paths = AppPaths.Detect(); paths.EnsureDirectories();
+        var paths = AppPaths.Detect();
+        Exception? adoptError = null; bool adopted = false;
+        try { adopted = paths.AdoptLegacyData(AppPaths.LegacyDataRoot()); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { adoptError = ex; }
+        paths.EnsureDirectories();
         _logProvider = new RollingFileLoggerProvider(paths.LogsDir);
         var lf = LoggerFactory.Create(b => { b.SetMinimumLevel(LogLevel.Information); b.AddProvider(_logProvider); });
         var startupLog = lf.CreateLogger("Startup");
+        if (adopted) startupLog.LogInformation("Copied the data of an earlier installed version into {Data}", paths.DataRoot);
+        if (adoptError is not null) startupLog.LogWarning(adoptError, "Copying the earlier version's data into {Data} stopped part-way", paths.DataRoot);
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, startupLog);
         var load = store.Load(); var config = load.Value;
         Loc.SetLanguage(config.Language);

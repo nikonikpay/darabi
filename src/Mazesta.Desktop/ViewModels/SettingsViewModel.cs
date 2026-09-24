@@ -19,7 +19,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _config = config; _store = store; _engine = engine; _options = options; _shell = shell; _openFolder = openFolder; _tray = tray;
         _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _shopName = config.ShopName;
         _trayFirstCheckText = config.TrayFirstCheckSeconds.ToString(); _trayIdleText = config.TrayIdleIntervalMinutes.ToString(); _trayWatchText = config.TrayWatchIntervalSeconds.ToString();
-        DataFolder = paths.DataRoot; ModeText = Loc.Get(paths.IsPortable ? "Settings_Mode_Portable" : "Settings_Mode_Installed");
+        DataFolder = paths.DataRoot; ModeText = Loc.Get("Settings_Mode_Portable");
         TrayLoaded = RefreshTrayAsync();
     }
     internal bool TryValidate(out int fast, out int storage, out string error)

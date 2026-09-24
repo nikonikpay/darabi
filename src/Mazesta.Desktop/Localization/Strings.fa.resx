@@ -239,10 +239,7 @@
     <value>باز کردن پوشه</value>
   </data>
   <data name="Settings_Mode_Portable" xml:space="preserve">
-    <value>قابل‌حمل</value>
-  </data>
-  <data name="Settings_Mode_Installed" xml:space="preserve">
-    <value>نصب‌شده</value>
+    <value>قابل‌حمل: تنظیمات، لاگ‌ها و گزارش‌ها همه در پوشه‌ی Data کنار برنامه ذخیره می‌شوند</value>
   </data>
   <data name="Settings_Save" xml:space="preserve">
     <value>ذخیره</value>

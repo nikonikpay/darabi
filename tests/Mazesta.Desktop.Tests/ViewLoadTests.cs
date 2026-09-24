@@ -39,7 +39,7 @@ public class ViewLoadTests
             var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch); var opts = new Mazesta.Monitoring.MonitoringOptions();
             var e = new Mazesta.Monitoring.PollingEngine(new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider(), c, opts, new Mazesta.Monitoring.BoundedEventLog(c, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
             var shell = new ShellViewModel(e, new Microsoft.Extensions.DependencyInjection.ServiceCollection().BuildServiceProvider());
-            return new SettingsView { DataContext = new SettingsViewModel(cfg, store, Mazesta.Persistence.AppPaths.Create(dir, dir, true), e, opts, shell, _ => { }, new StubTray()) };
+            return new SettingsView { DataContext = new SettingsViewModel(cfg, store, Mazesta.Persistence.AppPaths.Create(dir), e, opts, shell, _ => { }, new StubTray()) };
         });
 
     [Fact] public void BenchmarksView_loads_with_its_rows()

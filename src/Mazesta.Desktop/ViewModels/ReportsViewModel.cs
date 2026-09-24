@@ -50,7 +50,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     {
         try
         {
-            if (!File.Exists(row.Report.PdfPath)) { Status = Loc.Get("Reports_PdfBusy"); await PdfExporter.ExportAsync(row.Report.HtmlPath, row.Report.PdfPath, Loc.Get("Reports_PdfBusy"), Application.Current.MainWindow); }
+            if (!File.Exists(row.Report.PdfPath)) { Status = Loc.Get("Reports_PdfBusy"); await PdfExporter.ExportAsync(row.Report.HtmlPath, row.Report.PdfPath, Loc.Get("Reports_PdfBusy"), Application.Current.MainWindow, _service.BrowserDataDir); }
             Status = ""; _open(row.Report.PdfPath);
         }
         catch (Exception e) { Status = Loc.Format("Reports_PdfFailed", e.Message); }
