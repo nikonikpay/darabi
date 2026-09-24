@@ -470,6 +470,13 @@
   <data name="Reports_Html" xml:space="preserve"><value>Open report (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>Save / open PDF</value></data>
   <data name="Reports_Text" xml:space="preserve"><value>Text</value></data>
+  <data name="Reports_Compare" xml:space="preserve"><value>Compare before/after</value></data>
+  <data name="Reports_CompareHint" xml:space="preserve"><value>Tick two reports of the same machine</value></data>
+  <data name="Reports_NotComparable" xml:space="preserve"><value>These two reports cannot be compared: {0}</value></data>
+  <data name="Reports_CompareFailed" xml:space="preserve"><value>The comparison could not be made: {0}</value></data>
+  <data name="Reports_Mismatch_Cpu" xml:space="preserve"><value>the processor is different or unknown</value></data>
+  <data name="Reports_Mismatch_Motherboard" xml:space="preserve"><value>the motherboard is different or unknown</value></data>
+  <data name="Reports_Mismatch_Storage" xml:space="preserve"><value>the drives (serial numbers) are different</value></data>
   <data name="Reports_Json" xml:space="preserve"><value>JSON data</value></data>
   <data name="Reports_Folder" xml:space="preserve"><value>Folder</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>Delete</value></data>

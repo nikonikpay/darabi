@@ -2,8 +2,10 @@ using System.Collections.ObjectModel; using System.Globalization; using System.I
 using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Reporting;
 namespace Mazesta.Desktop.ViewModels;
 
-public sealed class ReportRowViewModel(StoredReport report)
+public sealed partial class ReportRowViewModel(StoredReport report) : ObservableObject
 {
+    /// <summary>Ticked for a before/after comparison.</summary>
+    [ObservableProperty] private bool _isSelected;
     public StoredReport Report { get; } = report;
     /// <summary>The verdict, or Benchmark for a benchmark report (which has none) - what the badge shows and is coloured by.</summary>
     public string Badge => Report.Verdict?.ToString() ?? nameof(ReportKind.Benchmark);
@@ -22,7 +24,7 @@ public sealed class ReportRowViewModel(StoredReport report)
     }
 }
 
-/// <summary>The saved reports of finished test runs, newest first, with the three formats one click away.</summary>
+/// <summary>The saved reports, newest first, with every format one click away, and a before/after comparison of two ticked reports.</summary>
 public sealed partial class ReportsViewModel : ObservableObject, IDisposable
 {
     private readonly ReportService _service; private readonly Func<Action, object> _dispatch; private readonly Action<string> _open; private readonly Func<string, bool> _confirm;
@@ -38,8 +40,28 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         Refresh(); service.ReportCreated += OnCreated;
     }
 
-    private void OnCreated(StoredReport report) => _dispatch(() => { Items.Insert(0, new(report)); Status = Loc.Get("Reports_Created"); });   // newest first, without re-reading every report
-    private void Refresh() { Items.Clear(); foreach (var r in _service.Store.List()) Items.Add(new(r)); }
+    private void OnCreated(StoredReport report) => _dispatch(() => { Items.Insert(0, Row(report)); Status = Loc.Get("Reports_Created"); });   // newest first, without re-reading every report
+    private void Refresh() { Items.Clear(); foreach (var r in _service.Store.List()) Items.Add(Row(r)); }
+    private ReportRowViewModel Row(StoredReport report)
+    {
+        var row = new ReportRowViewModel(report);
+        row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(ReportRowViewModel.IsSelected)) CompareCommand.NotifyCanExecuteChanged(); };
+        return row;
+    }
+
+    private bool CanCompare() => Items.Count(r => r.IsSelected) == 2;
+    /// <summary>The older of the two ticked reports is "before". Reports of two different machines are refused with the reason, never compared.</summary>
+    [RelayCommand(CanExecute = nameof(CanCompare))]
+    private void Compare()
+    {
+        var pair = Items.Where(r => r.IsSelected).Select(r => r.Report).OrderBy(r => r.CreatedAt).ToList();
+        try
+        {
+            var (path, refused) = _service.Compare(pair[0], pair[1]);
+            if (path is not null) { Status = ""; _open(path); } else Status = Loc.Format("Reports_NotComparable", Loc.Get("Reports_Mismatch_" + refused));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { Status = Loc.Format("Reports_CompareFailed", e.Message); }
+    }
 
     [RelayCommand] private void OpenHtml(ReportRowViewModel row) => _open(row.Report.HtmlPath);
     [RelayCommand] private void OpenJson(ReportRowViewModel row) => _open(row.Report.JsonPath);
@@ -61,7 +83,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     private void Delete(ReportRowViewModel row)
     {
         if (!_confirm(Loc.Get("Reports_DeleteConfirm"))) return;
-        _service.Store.Delete(row.Report); Items.Remove(row);
+        _service.Store.Delete(row.Report); Items.Remove(row); CompareCommand.NotifyCanExecuteChanged();
     }
 
     public void Dispose() => _service.ReportCreated -= OnCreated;

@@ -65,6 +65,18 @@ public sealed class ReportService
         ReportCreated?.Invoke(stored);
     }
 
+    /// <summary>Writes the before/after page of two saved reports into the later one's folder and returns its path, or the reason the two
+    /// cannot be compared (different machines).</summary>
+    public (string? Path, MachineMismatch? Refused) Compare(StoredReport before, StoredReport after)
+    {
+        SessionReport b = Store.Load(before) ?? throw new IOException("The earlier report could not be read."), a = Store.Load(after) ?? throw new IOException("The later report could not be read.");
+        var comparison = ReportComparison.Compare(b, a);
+        if (!comparison.IsComparable) return (null, comparison.Mismatch);
+        string path = Path.Combine(after.Folder, $"comparison-{b.Id[..8]}.html");
+        File.WriteAllText(path, ReportHtml.WriteComparison(b, a, comparison, Font.Value, ReportText.For(Loc.IsRtl ? "fa" : "en")), new System.Text.UTF8Encoding(false));
+        return (path, null);
+    }
+
     private static BenchmarkEntry ToEntry(RecordedBenchmark b)
         => new(b.Definition.Id.Value, Loc.Get(b.Definition.NameKey), b.Result.FinishedAt, [.. b.Result.Metrics.Select(m => new BenchmarkMetricEntry(Loc.Get(m.Key), m.Value, m.Unit))], b.Result.Detail, b.Result.StartedAt);
 

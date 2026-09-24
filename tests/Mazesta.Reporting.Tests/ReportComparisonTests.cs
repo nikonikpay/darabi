@@ -11,6 +11,24 @@ public class ReportComparisonTests
     private static SessionReport Report(HardwareInventory machine, params TestEntry[] tests) => SessionReport.Create("x", "1", T0, tests, [], machine);
     private static SessionReport ReportWithSensors(HardwareInventory machine, params SensorSummary[] sensors) => SessionReport.Create("x", "1", T0, [], sensors, machine);
 
+    private static SessionReport Bench(HardwareInventory machine, params (string Metric, double Value)[] metrics)
+        => SessionReport.CreateBenchmark("x", "1", T0, [new BenchmarkEntry("bench.storage", "Storage", T0, [.. metrics.Select(m => new BenchmarkMetricEntry(m.Metric, m.Value, "MB/s"))], null, T0)], [], machine);
+
+    [Fact] public void Benchmark_numbers_are_compared_by_benchmark_and_metric_and_a_missing_side_is_never_zero()
+    {
+        var cmp = ReportComparison.Compare(Bench(Machine(), ("Read", 2000), ("Write", 500)), Bench(Machine(), ("Read", 3400)));
+        var read = cmp.Benchmarks.Single(b => b.Metric == "Read"); var write = cmp.Benchmarks.Single(b => b.Metric == "Write");
+        Assert.Equal((2000, 3400, 1400), (read.Before, read.After, read.Delta));
+        Assert.Equal(500, write.Before); Assert.Null(write.After); Assert.Null(write.Delta);
+    }
+    [Fact] public void The_comparison_page_shows_both_sides_the_change_and_what_was_not_measured()
+    {
+        var before = Bench(Machine(), ("Read", 2000), ("Write", 500)); var after = Bench(Machine(), ("Read", 3400));
+        string html = ReportHtml.WriteComparison(before, after, ReportComparison.Compare(before, after), wording: ReportText.English);
+        Assert.Contains("Before and after service", html); Assert.Contains("+1400 MB/s", html); Assert.Contains("(+70.0%)", html); Assert.Contains("not measured", html);
+        Assert.DoesNotContain(">0 MB/s<", html);
+    }
+
     [Fact] public void Same_machine_is_comparable()
     {
         var cmp = ReportComparison.Compare(Report(Machine(), Test("cpu", ReportOutcome.Failed)), Report(Machine(), Test("cpu", ReportOutcome.Passed)));

@@ -11,7 +11,11 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{loc:Loc Nav_Reports}" FontSize="22" FontWeight="Bold" Margin="0,0,0,12" />
+        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
+            <TextBlock DockPanel.Dock="Left" Text="{loc:Loc Nav_Reports}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
+            <Button DockPanel.Dock="Right" Content="{loc:Loc Reports_Compare}" Command="{Binding CompareCommand}" Padding="12,5" VerticalAlignment="Center" />
+            <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Reports_CompareHint}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+        </DockPanel>
 
         <TextBlock Grid.Row="1" Text="{loc:Loc Reports_Empty}" Foreground="{StaticResource Brush.TextMuted}" TextWrapping="Wrap" VerticalAlignment="Top"
                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
@@ -28,6 +32,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal">
+                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="{loc:Loc Reports_CompareHint}" />
                                         <Border CornerRadius="10" Padding="10,1" VerticalAlignment="Center" Margin="0,0,10,0">
                                             <Border.Style>
                                                 <Style TargetType="Border">

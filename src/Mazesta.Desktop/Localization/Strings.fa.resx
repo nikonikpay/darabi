@@ -470,6 +470,13 @@
   <data name="Reports_Html" xml:space="preserve"><value>باز کردن گزارش (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>ذخیره / باز کردن PDF</value></data>
   <data name="Reports_Text" xml:space="preserve"><value>متن ساده</value></data>
+  <data name="Reports_Compare" xml:space="preserve"><value>مقایسه‌ی قبل/بعد</value></data>
+  <data name="Reports_CompareHint" xml:space="preserve"><value>دو گزارش از یک دستگاه را تیک بزنید</value></data>
+  <data name="Reports_NotComparable" xml:space="preserve"><value>این دو گزارش قابل مقایسه نیستند: {0}</value></data>
+  <data name="Reports_CompareFailed" xml:space="preserve"><value>مقایسه انجام نشد: {0}</value></data>
+  <data name="Reports_Mismatch_Cpu" xml:space="preserve"><value>پردازنده متفاوت یا نامشخص است</value></data>
+  <data name="Reports_Mismatch_Motherboard" xml:space="preserve"><value>مادربرد متفاوت یا نامشخص است</value></data>
+  <data name="Reports_Mismatch_Storage" xml:space="preserve"><value>درایوها (شماره‌سریال) متفاوت هستند</value></data>
   <data name="Reports_Json" xml:space="preserve"><value>داده‌ی JSON</value></data>
   <data name="Reports_Folder" xml:space="preserve"><value>پوشه</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>حذف</value></data>

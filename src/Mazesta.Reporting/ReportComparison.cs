@@ -13,9 +13,15 @@ public sealed record SensorDelta(string Id, string Name, string Unit,
     double? AverageBefore, double? AverageAfter, double? AverageDelta,
     double? MaxBefore, double? MaxAfter, double? MaxDelta);
 
-public sealed record ReportComparison(bool IsComparable, string? Reason, IReadOnlyList<TestOutcomeChange> Tests, IReadOnlyList<SensorDelta> Sensors)
+/// <summary>One benchmark number on each side (matched by benchmark and metric), null on a side that did not measure it.</summary>
+public sealed record BenchmarkDelta(string BenchmarkId, string Benchmark, string Metric, string Unit, double? Before, double? After, double? Delta);
+
+/// <summary>Which identity check two reports failed: the part that differs (or is unknown) between them.</summary>
+public enum MachineMismatch { Cpu, Motherboard, Storage }
+
+public sealed record ReportComparison(bool IsComparable, string? Reason, IReadOnlyList<TestOutcomeChange> Tests, IReadOnlyList<SensorDelta> Sensors, IReadOnlyList<BenchmarkDelta> Benchmarks, MachineMismatch? Mismatch = null)
 {
-    private static ReportComparison NotComparable(string reason) => new(false, reason, [], []);
+    private static ReportComparison NotComparable(string reason, MachineMismatch mismatch) => new(false, reason, [], [], [], mismatch);
 
     /// <summary>Matches tests and sensors by Id across the two reports. Refuses to compare (spec
     /// §identity) unless the CPU name, motherboard manufacturer+product and any storage serial
@@ -23,7 +29,7 @@ public sealed record ReportComparison(bool IsComparable, string? Reason, IReadOn
     /// shown as a before/after of the same one.</summary>
     public static ReportComparison Compare(SessionReport before, SessionReport after)
     {
-        if (!SameMachine(before.Machine, after.Machine, out string reason)) return NotComparable(reason);
+        if (!SameMachine(before.Machine, after.Machine, out string reason, out var mismatch)) return NotComparable(reason, mismatch);
 
         var beforeTests = before.Tests.ToDictionary(t => t.Id);
         var afterTests = after.Tests.ToDictionary(t => t.Id);
@@ -47,27 +53,37 @@ public sealed record ReportComparison(bool IsComparable, string? Reason, IReadOn
                 b?.Max, a?.Max, Delta(b?.Max, a?.Max));
         }).ToList();
 
-        return new(true, null, tests, sensors);
+        var beforeMetrics = Metrics(before); var afterMetrics = Metrics(after);
+        var benchmarks = beforeMetrics.Keys.Concat(afterMetrics.Keys.Where(k => !beforeMetrics.ContainsKey(k))).Select(k =>
+        {
+            beforeMetrics.TryGetValue(k, out var b); afterMetrics.TryGetValue(k, out var a); var any = (b ?? a)!;
+            return new BenchmarkDelta(k.Id, any.Benchmark, k.Metric, any.Unit, b?.Value, a?.Value, Delta(b?.Value, a?.Value));
+        }).ToList();
+        return new(true, null, tests, sensors, benchmarks);
     }
+
+    private sealed record Measured(string Benchmark, string Unit, double Value);
+    private static Dictionary<(string Id, string Metric), Measured> Metrics(SessionReport r)
+        => (r.Benchmarks ?? []).SelectMany(b => b.Metrics.Select(m => (Key: (b.Id, m.Name), Value: new Measured(b.Name, m.Unit, m.Value)))).GroupBy(x => x.Key).ToDictionary(g => g.Key, g => g.Last().Value);
 
     private static double? Delta(double? before, double? after) => before is { } b && after is { } a ? a - b : null;
 
-    private static bool SameMachine(HardwareInventory before, HardwareInventory after, out string reason)
+    private static bool SameMachine(HardwareInventory before, HardwareInventory after, out string reason, out MachineMismatch mismatch)
     {
         if (before.Cpu?.Name is not { } cpuBefore || after.Cpu?.Name is not { } cpuAfter || cpuBefore != cpuAfter)
-        { reason = "CPU is unknown or different on the two reports."; return false; }
+        { reason = "CPU is unknown or different on the two reports."; mismatch = MachineMismatch.Cpu; return false; }
 
         var mbBefore = before.Motherboard; var mbAfter = after.Motherboard;
         if (mbBefore?.Manufacturer is not { } mfBefore || mbBefore.Product is not { } prBefore ||
             mbAfter?.Manufacturer is not { } mfAfter || mbAfter.Product is not { } prAfter ||
             mfBefore != mfAfter || prBefore != prAfter)
-        { reason = "Motherboard is unknown or different on the two reports."; return false; }
+        { reason = "Motherboard is unknown or different on the two reports."; mismatch = MachineMismatch.Motherboard; return false; }
 
         var serialsBefore = before.Storage.Select(d => d.SerialNumber).Where(s => !string.IsNullOrWhiteSpace(s)).ToHashSet();
         var serialsAfter = after.Storage.Select(d => d.SerialNumber).Where(s => !string.IsNullOrWhiteSpace(s)).ToHashSet();
         if (serialsBefore.Count > 0 && serialsAfter.Count > 0 && !serialsBefore.SetEquals(serialsAfter))
-        { reason = "Storage serial numbers differ between the two reports."; return false; }
+        { reason = "Storage serial numbers differ between the two reports."; mismatch = MachineMismatch.Storage; return false; }
 
-        reason = ""; return true;
+        reason = ""; mismatch = default; return true;
     }
 }

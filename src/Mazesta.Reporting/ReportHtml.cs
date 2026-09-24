@@ -27,6 +27,53 @@ public static class ReportHtml
         return b.ToString();
     }
 
+    /// <summary>The before/after page (spec 4.4) for two reports of the same machine: each test's outcome on both sides, each sensor's average and
+    /// maximum with the change, and each benchmark number with the change. A value one side did not measure is written as such, never as 0,
+    /// and changes are shown with their sign only - whether higher is better depends on the metric, so nothing is coloured as good or bad.</summary>
+    public static string WriteComparison(SessionReport before, SessionReport after, ReportComparison c, ReportFont? font = null, ReportText? wording = null)
+    {
+        var w = wording ?? ReportText.Persian; var b = new StringBuilder(16 * 1024);
+        string N(double? v, string unit) => v is { } x ? Lt(Units.FormatMeasured(x, unit, 1)) : E(w.NotMeasured);
+        string D(double? v, string unit) => v is { } x ? Lt((x > 0 ? "+" : "") + Units.FormatMeasured(x, unit, 1)) : "";
+        string O(ReportOutcome? o) => o is { } x ? $"<span class=\"badge {x}\">{E(w.OutcomeName(x))}</span>" : E(w.NotMeasured);
+        void Head(params string[] columns) { b.Append("<table><thead><tr>"); foreach (var col in columns) b.Append("<th>").Append(E(col)).Append("</th>"); b.Append("</tr></thead><tbody>"); }
+
+        b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\">")
+         .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
+         .Append("<title>").Append(E(w.CompareTitle)).Append(" — ").Append(E(after.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>")
+         .Append("<header><h1>").Append(E(after.ShopName)).Append(" — ").Append(E(w.CompareTitle)).Append("</h1><div class=\"meta\">")
+         .Append(w.Before).Append(": ").Append(Lt(ReportFormat.Stamp(before.StartedAt) + " · " + before.Id)).Append("<br>")
+         .Append(w.After).Append(": ").Append(Lt(ReportFormat.Stamp(after.StartedAt) + " · " + after.Id)).Append("</div></header>");
+        if (c.Tests.Count > 0)
+        {
+            b.Append("<h2>").Append(w.Results).Append("</h2>"); Head(w.Name, w.Before, w.After);
+            foreach (var t in c.Tests) b.Append("<tr><td>").Append(E(t.Name)).Append("</td><td>").Append(O(t.Before)).Append("</td><td>").Append(O(t.After)).Append("</td></tr>");
+            b.Append("</tbody></table>");
+        }
+        if (c.Sensors.Count > 0)
+        {
+            b.Append("<h2>").Append(w.Sensors).Append("</h2>"); Head(w.Sensor, $"{w.Avg} · {w.Before}", $"{w.Avg} · {w.After}", w.Change, $"{w.Max} · {w.Before}", $"{w.Max} · {w.After}", w.Change);
+            foreach (var s in c.Sensors)
+                b.Append("<tr><td>").Append(Lt(s.Name)).Append("</td><td>").Append(N(s.AverageBefore, s.Unit)).Append("</td><td>").Append(N(s.AverageAfter, s.Unit)).Append("</td><td>").Append(D(s.AverageDelta, s.Unit))
+                 .Append("</td><td>").Append(N(s.MaxBefore, s.Unit)).Append("</td><td>").Append(N(s.MaxAfter, s.Unit)).Append("</td><td>").Append(D(s.MaxDelta, s.Unit)).Append("</td></tr>");
+            b.Append("</tbody></table>");
+        }
+        if (c.Benchmarks.Count > 0)
+        {
+            b.Append("<h2>").Append(w.Benchmarks).Append("</h2>"); Head(w.Benchmarks, w.Metric, w.Before, w.After, w.Change);
+            foreach (var m in c.Benchmarks)
+            {
+                string percent = m.Delta is { } d && m.Before is { } before0 && before0 != 0 ? $" ({(d > 0 ? "+" : "")}{(d / before0 * 100).ToString("F1", Inv)}%)" : "";
+                b.Append("<tr><td>").Append(E(m.Benchmark)).Append("</td><td>").Append(E(m.Metric)).Append("</td><td>").Append(N(m.Before, m.Unit)).Append("</td><td>").Append(N(m.After, m.Unit))
+                 .Append("</td><td>").Append(D(m.Delta, m.Unit)).Append(percent.Length > 0 ? Lt(percent) : "").Append("</td></tr>");
+            }
+            b.Append("</tbody></table>");
+        }
+        Machine(b, after.Machine, w);
+        b.Append("<footer>").Append(E(w.Footer)).Append("</footer></main></body></html>");
+        return b.ToString();
+    }
+
     private static string Css(ReportFont? f)
     {
         string face = f is null ? "" :
