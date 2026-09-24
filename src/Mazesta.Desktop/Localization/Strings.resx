@@ -524,14 +524,42 @@
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>First check delay (seconds)</value></data>
   <data name="Settings_Tray_Idle" xml:space="preserve"><value>Idle check interval (minutes)</value></data>
   <data name="Settings_Tray_Watch" xml:space="preserve"><value>Watch check interval (seconds)</value></data>
-  <data name="Settings_Tray_StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
-  <data name="Settings_Tray_StartupOn" xml:space="preserve"><value>Registered: the tray starts automatically at sign-in.</value></data>
-  <data name="Settings_Tray_StartupOff" xml:space="preserve"><value>Not registered.</value></data>
-  <data name="Settings_Tray_StartupCheckFailed" xml:space="preserve"><value>Could not check Task Scheduler: {0}</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>Enable</value></data>
   <data name="Settings_Tray_Disable" xml:space="preserve"><value>Disable</value></data>
-  <data name="Settings_Tray_Registered" xml:space="preserve"><value>The tray will now start at sign-in.</value></data>
-  <data name="Settings_Tray_Unregistered" xml:space="preserve"><value>The tray will no longer start automatically.</value></data>
-  <data name="Settings_Tray_RegisterFailed" xml:space="preserve"><value>Could not change the startup task: {0}</value></data>
   <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>MazestaTray.exe was not found next to this app.</value></data>
+  <data name="Settings_Tray_Running" xml:space="preserve"><value>Running</value></data>
+  <data name="Settings_Tray_Stopped" xml:space="preserve"><value>Not running</value></data>
+  <data name="Value_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Value_No" xml:space="preserve"><value>No</value></data>
+  <data name="Settings_Tray_State" xml:space="preserve"><value>Tray: {0} · Starts with Windows: {1}</value></data>
+  <data name="Settings_Tray_CheckFailed" xml:space="preserve"><value>Could not check the tray: {0}</value></data>
+  <data name="Settings_Tray_Enabled" xml:space="preserve"><value>Tray enabled: it is running and starts with Windows.</value></data>
+  <data name="Settings_Tray_Disabled" xml:space="preserve"><value>Tray disabled: it is stopped and no longer starts with Windows.</value></data>
+  <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>Could not change the tray: {0}</value></data>
+  <data name="Settings_Tray_Restarted" xml:space="preserve"><value>The tray was restarted to apply the new intervals.</value></data>
+  <data name="Bench_Cpu" xml:space="preserve"><value>CPU benchmark</value></data>
+  <data name="Bench_Memory" xml:space="preserve"><value>Memory bandwidth benchmark</value></data>
+  <data name="Bench_Storage" xml:space="preserve"><value>Storage benchmark</value></data>
+  <data name="Bench_Cpu_Single" xml:space="preserve"><value>Single thread</value></data>
+  <data name="Bench_Cpu_Multi" xml:space="preserve"><value>All threads</value></data>
+  <data name="Bench_Threads" xml:space="preserve"><value>Threads used</value></data>
+  <data name="Bench_Cpu_Clock" xml:space="preserve"><value>Average CPU clock during the run</value></data>
+  <data name="Bench_Cpu_TempMax" xml:space="preserve"><value>Highest CPU package temperature</value></data>
+  <data name="Bench_Mem_Write" xml:space="preserve"><value>Write (one thread)</value></data>
+  <data name="Bench_Mem_Read" xml:space="preserve"><value>Read (one thread)</value></data>
+  <data name="Bench_Mem_Copy" xml:space="preserve"><value>Copy (one thread)</value></data>
+  <data name="Bench_Mem_CopyAll" xml:space="preserve"><value>Copy (all threads)</value></data>
+  <data name="Bench_Storage_SeqWrite" xml:space="preserve"><value>Sequential write</value></data>
+  <data name="Bench_Storage_SeqRead" xml:space="preserve"><value>Sequential read</value></data>
+  <data name="Bench_Storage_Rand4kIops" xml:space="preserve"><value>Random 4K read (QD1)</value></data>
+  <data name="Bench_Storage_Rand4kLatency" xml:space="preserve"><value>Random 4K read latency</value></data>
+  <data name="Bench_Run" xml:space="preserve"><value>Run</value></data>
+  <data name="Bench_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Bench_Duration" xml:space="preserve"><value>Duration (seconds)</value></data>
+  <data name="Bench_Note" xml:space="preserve"><value>Benchmarks measure speed. They give numbers only - no score and no pass or fail - and are not a health test. Close other programs first. The most recent result of each is added to the next test report with the time it was measured.</value></data>
+  <data name="Bench_Invalid_Duration" xml:space="preserve"><value>Enter a whole number of seconds between {0} and {1}.</value></data>
+  <data name="Bench_Status_Completed" xml:space="preserve"><value>Finished</value></data>
+  <data name="Bench_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="Bench_Status_Unsupported" xml:space="preserve"><value>Cannot run here</value></data>
+  <data name="Bench_Status_Failed" xml:space="preserve"><value>Failed</value></data>
 </root>

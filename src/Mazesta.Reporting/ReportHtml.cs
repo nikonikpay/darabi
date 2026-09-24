@@ -18,7 +18,7 @@ public static class ReportHtml
         b.Append("<!DOCTYPE html><html lang=\"fa\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
          .Append("<title>").Append(E(ReportText.Title)).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
-        Header(b, r); Summary(b, r); Tests(b, r); Sensors(b, r); Machine(b, r.Machine);
+        Header(b, r); Summary(b, r); Tests(b, r); Sensors(b, r); Benchmarks(b, r); Machine(b, r.Machine);
         b.Append("<footer>").Append(E(ReportText.Footer)).Append("<br>").Append(Lt($"Mazesta Test {r.AppVersion} · {r.Id}")).Append("</footer></main></body></html>");
         return b.ToString();
     }
@@ -99,6 +99,24 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
         b.Append("</tbody></table><div class=\"charts\">");
         foreach (var s in r.Sensors.Where(s => s.Trace.Count > 1)) Chart(b, r, s);
         b.Append("</div>");
+    }
+
+    private static void Benchmarks(StringBuilder b, SessionReport r)
+    {
+        if (r.Benchmarks is not { Count: > 0 }) return;
+        b.Append("<h2>").Append(ReportText.Benchmarks).Append("</h2><table><thead><tr><th>").Append(ReportText.Name).Append("</th><th>").Append(ReportText.Metric).Append("</th><th>").Append(ReportText.Value).Append("</th></tr></thead><tbody>");
+        foreach (var bm in r.Benchmarks)
+        {
+            b.Append("<tr class=\"test\"><td rowspan=\"").Append(Math.Max(1, bm.Metrics.Count)).Append("\"><b>").Append(E(bm.Name)).Append("</b><br><small>").Append(ReportText.MeasuredAt).Append(": ").Append(Lt(Stamp(bm.FinishedAt))).Append("</small>");
+            if (!string.IsNullOrWhiteSpace(bm.Detail)) b.Append("<pre>").Append(E(bm.Detail)).Append("</pre>");
+            b.Append("</td>");
+            for (int i = 0; i < bm.Metrics.Count; i++)
+            {
+                var m = bm.Metrics[i]; if (i > 0) b.Append("<tr>");
+                b.Append("<td>").Append(E(m.Name)).Append("</td><td>").Append(Lt((Math.Abs(m.Value) >= 100 ? m.Value.ToString("F0", Inv) : m.Value.ToString("F2", Inv)) + (m.Unit.Length == 0 ? "" : " " + m.Unit))).Append("</td></tr>");
+            }
+        }
+        b.Append("</tbody></table>");
     }
 
     /// <summary>A small line chart of one sensor over the session, with the span of each test shaded behind it.</summary>

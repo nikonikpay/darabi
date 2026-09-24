@@ -15,20 +15,26 @@ public sealed record TracePoint(double Seconds, double Value);
 /// <summary>One measured sensor over the session window. Everything comes from the readings the monitor recorded; a sensor without samples is not listed.</summary>
 public sealed record SensorSummary(string Id, string Hardware, string Name, string Kind, string Unit, double Min, double Average, double Max, int Samples, IReadOnlyList<TracePoint> Trace);
 
+/// <summary>One measured benchmark number as it was shown to the technician (Name already localised, like a test name).</summary>
+public sealed record BenchmarkMetricEntry(string Name, double Value, string Unit);
+
+/// <summary>A finished benchmark run. Benchmarks measure, they do not pass or fail, so they never change the report verdict.</summary>
+public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetricEntry> Metrics, string? Detail);
+
 public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancelled, int Unsupported, int NotRun, long Errors);
 
 public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset CreatedAt, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, string ShopName, string AppVersion,
-    ReportVerdict Verdict, ReportCounts Counts, IReadOnlyList<TestEntry> Tests, IReadOnlyList<SensorSummary> Sensors, HardwareInventory Machine)
+    ReportVerdict Verdict, ReportCounts Counts, IReadOnlyList<TestEntry> Tests, IReadOnlyList<SensorSummary> Sensors, HardwareInventory Machine, IReadOnlyList<BenchmarkEntry>? Benchmarks = null)
 {
     public const int CurrentSchemaVersion = 1;
     public double DurationSeconds => Math.Max(0, (FinishedAt - StartedAt).TotalSeconds);
 
-    public static SessionReport Create(string shopName, string appVersion, DateTimeOffset createdAt, IReadOnlyList<TestEntry> tests, IReadOnlyList<SensorSummary> sensors, HardwareInventory machine, string? id = null)
+    public static SessionReport Create(string shopName, string appVersion, DateTimeOffset createdAt, IReadOnlyList<TestEntry> tests, IReadOnlyList<SensorSummary> sensors, HardwareInventory machine, string? id = null, IReadOnlyList<BenchmarkEntry>? benchmarks = null)
     {
         var counts = new ReportCounts(tests.Count, tests.Count(t => t.Outcome == ReportOutcome.Passed), tests.Count(t => t.Outcome == ReportOutcome.Failed), tests.Count(t => t.Outcome == ReportOutcome.Cancelled),
             tests.Count(t => t.Outcome == ReportOutcome.Unsupported), tests.Count(t => t.Outcome == ReportOutcome.NotRun), tests.Sum(t => t.ErrorCount));
         var verdict = counts.Failed > 0 ? ReportVerdict.Failed : counts.Total > 0 && counts.Passed == counts.Total ? ReportVerdict.Passed : ReportVerdict.Incomplete;
         var started = tests.Count > 0 ? tests.Min(t => t.StartedAt) : createdAt; var finished = tests.Count > 0 ? tests.Max(t => t.FinishedAt) : createdAt;
-        return new(CurrentSchemaVersion, id ?? Guid.NewGuid().ToString("N"), createdAt, started, finished, shopName, appVersion, verdict, counts, tests, sensors, machine);
+        return new(CurrentSchemaVersion, id ?? Guid.NewGuid().ToString("N"), createdAt, started, finished, shopName, appVersion, verdict, counts, tests, sensors, machine, benchmarks is { Count: > 0 } ? benchmarks : null);
     }
 }

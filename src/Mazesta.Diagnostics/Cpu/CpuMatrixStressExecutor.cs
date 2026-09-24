@@ -11,7 +11,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
     public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", 60);
     TestDefinition ITestExecutor.Definition => Definition;
 
-    private const int MatrixSize = 64;
+    internal const int MatrixSize = 64;
     private readonly int _threadCount;
 
     public CpuMatrixStressExecutor(int? threadCount = null) => _threadCount = threadCount is > 0 ? threadCount.Value : Environment.ProcessorCount;

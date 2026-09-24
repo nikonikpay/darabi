@@ -114,11 +114,10 @@
             </Grid>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                <TextBlock Text="{loc:Loc Settings_Tray_StartWithWindows}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <Button Content="{loc:Loc Settings_Tray_Enable}" Command="{Binding EnableStartupCommand}" Margin="0,0,6,0" IsEnabled="{Binding IsStartupRegistered, Converter={StaticResource InverseBool}}" />
-                <Button Content="{loc:Loc Settings_Tray_Disable}" Command="{Binding DisableStartupCommand}" IsEnabled="{Binding IsStartupRegistered}" />
+                <Button Content="{loc:Loc Settings_Tray_Enable}" Command="{Binding EnableTrayCommand}" IsEnabled="{Binding CanEnableTray}" Margin="0,0,6,0" />
+                <Button Content="{loc:Loc Settings_Tray_Disable}" Command="{Binding DisableTrayCommand}" IsEnabled="{Binding CanDisableTray}" />
             </StackPanel>
-            <TextBlock Text="{Binding StartupStatusText}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,0,16" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding TrayStatusText}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,0,16" TextWrapping="Wrap" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

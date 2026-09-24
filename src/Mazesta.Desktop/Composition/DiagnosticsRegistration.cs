@@ -28,6 +28,10 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
 
+        s.AddSingleton<Mazesta.Diagnostics.Benchmarks.IBenchmark, Mazesta.Diagnostics.Benchmarks.CpuBenchmark>();
+        s.AddSingleton<Mazesta.Diagnostics.Benchmarks.IBenchmark, Mazesta.Diagnostics.Benchmarks.MemoryBenchmark>();
+        s.AddSingleton<Mazesta.Diagnostics.Benchmarks.IBenchmark, Mazesta.Diagnostics.Benchmarks.StorageBenchmark>();
+
         // Singleton, not per-page: a queue keeps running when the technician navigates away from Test Center
         // and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.
         s.AddSingleton(sp => new TestEngine(sp.GetRequiredService<IEnumerable<ITestExecutor>>(), sp.GetRequiredService<JsonStore<TestSessionCheckpoint>>(),

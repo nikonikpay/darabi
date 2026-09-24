@@ -10,15 +10,15 @@ namespace Mazesta.Desktop.Services;
 /// </summary>
 public sealed class ReportService
 {
-    private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
+    private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkResults _benchmarks; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
     private DateTimeOffset _sessionStart;
     public ReportStore Store { get; }
     public event Action<StoredReport>? ReportCreated;
 
-    public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
+    public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkResults benchmarks, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
     {
-        _polling = polling; _inventory = inventory; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir);
+        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir);
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
@@ -35,13 +35,16 @@ public sealed class ReportService
             var tests = queue.Select(q => ToEntry(q, results.GetValueOrDefault(q.Definition.Id), start)).ToList();
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt));
-            var report = SessionReport.Create(_config.ShopName, Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "", _clock.UtcNow, tests, sensors, machine);
+            var report = SessionReport.Create(_config.ShopName, Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "", _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Snapshot().Select(ToEntry).ToList());
             var stored = Store.Save(report, ReportHtml.Write(report, LoadFont()));
             _log.LogInformation("Report saved: {Folder} ({Verdict})", stored.Folder, report.Verdict);
             ReportCreated?.Invoke(stored);
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
+
+    private static BenchmarkEntry ToEntry(RecordedBenchmark b)
+        => new(b.Definition.Id.Value, Loc.Get(b.Definition.NameKey), b.Result.FinishedAt, [.. b.Result.Metrics.Select(m => new BenchmarkMetricEntry(Loc.Get(m.Key), m.Value, m.Unit))], b.Result.Detail);
 
     private static TestEntry ToEntry(QueuedTest q, TestRunResult? r, DateTimeOffset sessionStart)
     {

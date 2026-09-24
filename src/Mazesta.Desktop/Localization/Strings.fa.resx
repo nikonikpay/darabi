@@ -524,14 +524,42 @@
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>تأخیر اولین بررسی (ثانیه)</value></data>
   <data name="Settings_Tray_Idle" xml:space="preserve"><value>بازهٔ بررسی در حالت عادی (دقیقه)</value></data>
   <data name="Settings_Tray_Watch" xml:space="preserve"><value>بازهٔ بررسی در حالت هشدار (ثانیه)</value></data>
-  <data name="Settings_Tray_StartWithWindows" xml:space="preserve"><value>اجرا با ورود به ویندوز</value></data>
-  <data name="Settings_Tray_StartupOn" xml:space="preserve"><value>ثبت‌شده: Tray هنگام ورود به‌طور خودکار اجرا می‌شود.</value></data>
-  <data name="Settings_Tray_StartupOff" xml:space="preserve"><value>ثبت نشده است.</value></data>
-  <data name="Settings_Tray_StartupCheckFailed" xml:space="preserve"><value>بررسی زمان‌بند ویندوز ممکن نشد: {0}</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>فعال‌سازی</value></data>
   <data name="Settings_Tray_Disable" xml:space="preserve"><value>غیرفعال‌سازی</value></data>
-  <data name="Settings_Tray_Registered" xml:space="preserve"><value>از این پس Tray هنگام ورود اجرا می‌شود.</value></data>
-  <data name="Settings_Tray_Unregistered" xml:space="preserve"><value>از این پس Tray به‌طور خودکار اجرا نمی‌شود.</value></data>
-  <data name="Settings_Tray_RegisterFailed" xml:space="preserve"><value>تغییر وظیفهٔ اجرای خودکار ممکن نشد: {0}</value></data>
   <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>MazestaTray.exe در کنار این برنامه پیدا نشد.</value></data>
+  <data name="Settings_Tray_Running" xml:space="preserve"><value>در حال اجرا</value></data>
+  <data name="Settings_Tray_Stopped" xml:space="preserve"><value>اجرا نمی‌شود</value></data>
+  <data name="Value_Yes" xml:space="preserve"><value>بله</value></data>
+  <data name="Value_No" xml:space="preserve"><value>خیر</value></data>
+  <data name="Settings_Tray_State" xml:space="preserve"><value>Tray: {0} · اجرا با ورود به ویندوز: {1}</value></data>
+  <data name="Settings_Tray_CheckFailed" xml:space="preserve"><value>بررسی وضعیت Tray ممکن نشد: {0}</value></data>
+  <data name="Settings_Tray_Enabled" xml:space="preserve"><value>Tray فعال شد: اجرا می‌شود و با ورود به ویندوز شروع می‌شود.</value></data>
+  <data name="Settings_Tray_Disabled" xml:space="preserve"><value>Tray غیرفعال شد: متوقف شد و دیگر با ورود به ویندوز شروع نمی‌شود.</value></data>
+  <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>تغییر Tray ممکن نشد: {0}</value></data>
+  <data name="Settings_Tray_Restarted" xml:space="preserve"><value>برای اعمال بازه‌های جدید، Tray دوباره راه‌اندازی شد.</value></data>
+  <data name="Bench_Cpu" xml:space="preserve"><value>بنچمارک پردازنده</value></data>
+  <data name="Bench_Memory" xml:space="preserve"><value>بنچمارک پهنای‌باند حافظه</value></data>
+  <data name="Bench_Storage" xml:space="preserve"><value>بنچمارک ذخیره‌سازی</value></data>
+  <data name="Bench_Cpu_Single" xml:space="preserve"><value>تک‌رشته</value></data>
+  <data name="Bench_Cpu_Multi" xml:space="preserve"><value>همه‌ی رشته‌ها</value></data>
+  <data name="Bench_Threads" xml:space="preserve"><value>تعداد رشته‌های استفاده‌شده</value></data>
+  <data name="Bench_Cpu_Clock" xml:space="preserve"><value>میانگین کلاک پردازنده حین اجرا</value></data>
+  <data name="Bench_Cpu_TempMax" xml:space="preserve"><value>بیشینه‌ی دمای پکیج پردازنده</value></data>
+  <data name="Bench_Mem_Write" xml:space="preserve"><value>نوشتن (تک‌رشته)</value></data>
+  <data name="Bench_Mem_Read" xml:space="preserve"><value>خواندن (تک‌رشته)</value></data>
+  <data name="Bench_Mem_Copy" xml:space="preserve"><value>کپی (تک‌رشته)</value></data>
+  <data name="Bench_Mem_CopyAll" xml:space="preserve"><value>کپی (همه‌ی رشته‌ها)</value></data>
+  <data name="Bench_Storage_SeqWrite" xml:space="preserve"><value>نوشتن پیوسته</value></data>
+  <data name="Bench_Storage_SeqRead" xml:space="preserve"><value>خواندن پیوسته</value></data>
+  <data name="Bench_Storage_Rand4kIops" xml:space="preserve"><value>خواندن تصادفی 4K (QD1)</value></data>
+  <data name="Bench_Storage_Rand4kLatency" xml:space="preserve"><value>تأخیر خواندن تصادفی 4K</value></data>
+  <data name="Bench_Run" xml:space="preserve"><value>اجرا</value></data>
+  <data name="Bench_Cancel" xml:space="preserve"><value>لغو</value></data>
+  <data name="Bench_Duration" xml:space="preserve"><value>مدت (ثانیه)</value></data>
+  <data name="Bench_Note" xml:space="preserve"><value>بنچمارک‌ها سرعت را اندازه می‌گیرند. فقط عدد می‌دهند، نه نمره و نه موفق/ناموفق، و آزمون سلامت نیستند. پیش از اجرا برنامه‌های دیگر را ببندید. آخرین نتیجه‌ی هر کدام همراه زمان اندازه‌گیری به گزارش آزمون بعدی اضافه می‌شود.</value></data>
+  <data name="Bench_Invalid_Duration" xml:space="preserve"><value>یک عدد صحیح بین {0} و {1} ثانیه وارد کنید.</value></data>
+  <data name="Bench_Status_Completed" xml:space="preserve"><value>انجام شد</value></data>
+  <data name="Bench_Status_Cancelled" xml:space="preserve"><value>لغو شد</value></data>
+  <data name="Bench_Status_Unsupported" xml:space="preserve"><value>در اینجا قابل اجرا نیست</value></data>
+  <data name="Bench_Status_Failed" xml:space="preserve"><value>ناموفق</value></data>
 </root>

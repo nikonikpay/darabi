@@ -39,8 +39,25 @@ public class ViewLoadTests
             var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch); var opts = new Mazesta.Monitoring.MonitoringOptions();
             var e = new Mazesta.Monitoring.PollingEngine(new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider(), c, opts, new Mazesta.Monitoring.BoundedEventLog(c, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
             var shell = new ShellViewModel(e, new Microsoft.Extensions.DependencyInjection.ServiceCollection().BuildServiceProvider());
-            return new SettingsView { DataContext = new SettingsViewModel(cfg, store, Mazesta.Persistence.AppPaths.Create(dir, dir, true), e, opts, shell, _ => { }) };
+            return new SettingsView { DataContext = new SettingsViewModel(cfg, store, Mazesta.Persistence.AppPaths.Create(dir, dir, true), e, opts, shell, _ => { }, new StubTray()) };
         });
+
+    [Fact] public void BenchmarksView_loads_with_its_rows()
+        => OnSta(() =>
+        {
+            var probe = new FixedProbe();
+            var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch);
+            var e = new Mazesta.Monitoring.PollingEngine(new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider(), c, new Mazesta.Monitoring.MonitoringOptions(), new Mazesta.Monitoring.BoundedEventLog(c, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
+            IEnumerable<Mazesta.Diagnostics.Benchmarks.IBenchmark> all = [new Mazesta.Diagnostics.Benchmarks.CpuBenchmark(), new Mazesta.Diagnostics.Benchmarks.MemoryBenchmark(probe), new Mazesta.Diagnostics.Benchmarks.StorageBenchmark()];
+            return new BenchmarksView { DataContext = new BenchmarksViewModel(all, e, c, new Mazesta.Desktop.Services.BenchmarkResults(), a => { a(); return null!; }) };
+        });
+
+    private sealed class FixedProbe : Mazesta.Diagnostics.Memory.IMemoryProbe { public Mazesta.Diagnostics.Memory.MemoryStatus Read() => new(16L << 30, 8L << 30); }
+
+    private sealed class StubTray : Mazesta.Desktop.Services.ITrayController
+    {
+        public Mazesta.Desktop.Services.TrayState Query() => new(false, false); public string? Enable() => null; public string? Disable() => null; public string? Restart() => null;
+    }
 
     private sealed class Inv : Mazesta.Core.Providers.IInventoryProvider
     {

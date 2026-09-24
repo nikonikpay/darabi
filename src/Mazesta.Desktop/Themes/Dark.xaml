@@ -43,7 +43,6 @@
 
     <!-- Converters -->
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
-    <Controls:InverseBoolConverter x:Key="InverseBool" />
     <Controls:MinutesToSecondsConverter x:Key="MinutesToSeconds" />
     <Controls:SensorKindToIconConverter x:Key="KindToIcon" />
     <Controls:SensorKindToBrushConverter x:Key="KindToBrush" />

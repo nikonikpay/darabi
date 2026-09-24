@@ -3,7 +3,7 @@ namespace Mazesta.Reporting;
 /// <summary>Persian wording of the report (the report follows the app's language; English is added with the app's second language).</summary>
 internal static class ReportText
 {
-    public const string Title = "گزارش آزمون و بررسی سیستم", Verdict = "نتیجه‌ی کلی", Results = "نتایج آزمون‌ها", Sensors = "اندازه‌گیری حین آزمون", Machine = "مشخصات سیستم",
+    public const string Title = "گزارش آزمون و بررسی سیستم", Verdict = "نتیجه‌ی کلی", Results = "نتایج آزمون‌ها", Sensors = "اندازه‌گیری حین آزمون", Benchmarks = "بنچمارک‌ها", Metric = "معیار", MeasuredAt = "زمان اندازه‌گیری", Value = "مقدار", Machine = "مشخصات سیستم",
         Name = "آزمون", Outcome = "وضعیت", Duration = "مدت", Errors = "خطاها", Detail = "شواهد اندازه‌گیری", Options = "تنظیمات",
         Sensor = "سنسور", Min = "کمینه", Avg = "میانگین", Max = "بیشینه", Samples = "نمونه", Total = "کل آزمون‌ها", Passed = "موفق", Failed = "ناموفق", NotDone = "انجام‌نشده",
         Started = "شروع", Finished = "پایان", ReportId = "شناسه‌ی گزارش", NoSensors = "در بازه‌ی آزمون هیچ سنسوری ثبت نشد.",

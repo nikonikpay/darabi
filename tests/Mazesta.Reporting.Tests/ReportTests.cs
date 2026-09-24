@@ -37,6 +37,16 @@ public class ReportTests
         string html = ReportHtml.Write(r); Assert.Contains("<polyline", html); Assert.Contains("70.0 °C", html);
     }
 
+    [Fact] public void Benchmarks_are_listed_with_their_time_and_never_change_the_verdict()
+    {
+        var bm = new BenchmarkEntry("bench.cpu", "<CPU>", T0, [new("Single", 12.3456, "GFLOPS"), new("Multi", 250.4, "GFLOPS")], "matrix");
+        var r = SessionReport.Create("x", "1", T0, [Test("a", ReportOutcome.Passed)], [], HardwareInventory.Empty, benchmarks: [bm]);
+        string html = ReportHtml.Write(r);
+        Assert.Equal(ReportVerdict.Passed, r.Verdict); Assert.Contains("&lt;CPU&gt;", html); Assert.Contains("12.35 GFLOPS", html); Assert.Contains("250 GFLOPS", html);
+        Assert.Equal("Multi", ReportJson.Read(ReportJson.Write(r))!.Benchmarks![0].Metrics[1].Name);
+        Assert.DoesNotContain("<h2>" + ReportText.Benchmarks, ReportHtml.Write(Report(Test("a", ReportOutcome.Passed))));
+    }
+
     [Fact] public void Store_saves_lists_newest_first_and_skips_a_damaged_folder()
     {
         string dir = Path.Combine(Path.GetTempPath(), "mazesta-rep-" + Guid.NewGuid().ToString("N")); var store = new ReportStore(dir);
