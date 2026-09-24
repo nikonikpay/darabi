@@ -9,7 +9,8 @@
   <ItemGroup>
     <PackageReference Include="ComputeSharp" />
     <PackageReference Include="Vortice.Direct3D12" />
-    <PackageReference Include="Vortice.DirectML" ExcludeAssets="native" />
+    <!-- build: the package's props copy its own 18 MB DirectML.dll next to the app; Windows' System32 copy is used instead. -->
+    <PackageReference Include="Vortice.DirectML" ExcludeAssets="build;buildMultitargeting;native" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
