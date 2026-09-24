@@ -8,7 +8,8 @@ public sealed class ReportRowViewModel(StoredReport report)
     public ReportVerdict Verdict => Report.Verdict;
     public string VerdictText => Loc.Get("Reports_Verdict_" + Report.Verdict);
     public string Title => Stamp(Report.CreatedAt);
-    public string Summary { get; } = Loc.Format("Reports_Summary", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
+    public string Summary { get; } = report.Verdict == ReportVerdict.Benchmark ? string.Join(" · ", report.Benchmarks)
+        : Loc.Format("Reports_Summary", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
 
     /// <summary>Solar Hijri date with the local time when the app is Persian, ISO otherwise.</summary>
     private static string Stamp(DateTimeOffset t)

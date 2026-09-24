@@ -39,4 +39,4 @@ Done when: page opens from the nav, shows only real values (missing = "unavailab
 - Anything in `Mazesta.Hardware` / sensors / naming vs HWiNFO.
 - GPU, memory, storage executors and their hardware tests; WHEA.
 - Animated dashboard, gauges, idle-resource measurements, tray runtime behaviour.
-- Benchmarks (not built yet) and how they enter the report.
+- Benchmarks and how they enter the report (slice 6: CPU, memory, storage, GPU Direct3D/ray tracing/AI; see `docs/VERIFICATION-slice6-benchmarks.md`).

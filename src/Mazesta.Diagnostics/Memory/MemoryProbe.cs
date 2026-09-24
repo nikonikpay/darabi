@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Buffers; using System.Runtime.InteropServices;
 namespace Mazesta.Diagnostics.Memory;
 
 public readonly record struct MemoryStatus(long TotalBytes, long AvailableBytes);
@@ -36,5 +36,15 @@ internal sealed unsafe class NativeBlock : IDisposable
         Length = length;
     }
     public Span<byte> Span => _pointer is null ? throw new ObjectDisposedException(nameof(NativeBlock)) : new(_pointer, Length);
+    /// <summary>The block as <see cref="Memory{T}"/>, for asynchronous (overlapped) I/O that must not move the buffer.</summary>
+    public Memory<byte> Memory => new Manager(this).Memory;
     public void Dispose() { if (_pointer is not null) { NativeMemory.AlignedFree(_pointer); _pointer = null; } }
+
+    private sealed class Manager(NativeBlock block) : MemoryManager<byte>
+    {
+        public override Span<byte> GetSpan() => block.Span;
+        public override MemoryHandle Pin(int elementIndex = 0) => new((byte*)block._pointer + elementIndex);   // native memory never moves
+        public override void Unpin() { }
+        protected override void Dispose(bool disposing) { }
+    }
 }

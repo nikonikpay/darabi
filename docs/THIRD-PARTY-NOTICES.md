@@ -18,6 +18,9 @@ under which licence, and by which project in this repository.
 | System.Management | 10.0.x | MIT | `Mazesta.Hardware` | WMI queries for hardware inventory (`WmiInventoryProvider`). |
 | Microsoft.Extensions.* (DependencyInjection, Logging, Logging.Abstractions, Options, Primitives) | 10.0.x | MIT | `Mazesta.Desktop`, `Mazesta.Hardware`, `Mazesta.Monitoring`, `Mazesta.Persistence` | Dependency injection and logging abstractions. |
 | CommunityToolkit.Mvvm | 8.4.2 | MIT | `Mazesta.Desktop` | Source-generated observable properties and commands for the WPF ViewModels. |
+| Vortice.Direct3D12, Vortice.DirectML (+ Vortice.DXGI, Vortice.DirectX, Vortice.Mathematics 2.1.0) | 3.8.3 | MIT | `Mazesta.Diagnostics.Gpu` | Raw Direct3D 12 and DirectML bindings for the GPU benchmarks ComputeSharp cannot express: rasterisation, DXR inline ray tracing and DirectML matrix multiplies. Copyright Amer Koleci. https://github.com/amerkoleci/Vortice.Windows . Referenced with `ExcludeAssets="native"`: the package's own DirectML.dll (~18 MB) is not shipped; the copy in Windows (System32) is used. |
+| SharpGen.Runtime, SharpGen.Runtime.COM | 2.4.2-beta | MIT | `Mazesta.Diagnostics.Gpu` (transitive, via Vortice) | COM interop runtime of the Vortice bindings. |
+| DirectML | part of Windows (System32), not bundled | Windows component | `Mazesta.Diagnostics.Gpu` (AI benchmark) | Loaded from the OS at run time; when it is missing the AI benchmark reports Unsupported. |
 | xunit, xunit.runner.visualstudio, Microsoft.NET.Test.Sdk | 2.9.3 / 3.1.5 / 18.10.0 | Apache-2.0 / MIT | `tests/*` | Test framework and runner; not shipped in `artifacts/Mazesta-Test`. |
 | IRANSansXFaNum (Regular, Bold) | embedded `.ttf`, `src/Mazesta.Desktop/Fonts/` | Supplied by the product owner for this application; licence terms are the owner's to confirm before any redistribution outside the shop | `Mazesta.Desktop` | Persian text (its digits are Persian-form, so technical values use Segoe UI instead); falls back to Segoe UI. |
 | PawnIO | separate, user-installed driver (not bundled) | Licence per its own site — see https://pawnio.eu/ | Runtime prerequisite for `Mazesta.Hardware` CPU MSR sensors | Not distributed with Mazesta Test; the user installs it independently. Detected at runtime via `LibreHardwareMonitor.PawnIo.PawnIo.IsInstalled`. |
@@ -36,7 +39,7 @@ library is used. No telemetry, analytics or crash-reporting SDK is included.
   notice/attribution, which this file provides.
 - **MPL-2.0** (BlackSharp.Core): as above - consumed as an unmodified NuGet
   binary.
-- **MIT** (System.Management, Microsoft.Extensions.\*, CommunityToolkit.Mvvm):
+- **MIT** (System.Management, Microsoft.Extensions.\*, CommunityToolkit.Mvvm, Vortice.\*, SharpGen.Runtime\*):
   permissive, requires only notice/attribution, which this file provides.
 - **PawnIO**: not redistributed by this project. Users obtain and accept
   its licence directly from its own site before installing it.

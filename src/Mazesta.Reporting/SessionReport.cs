@@ -4,8 +4,9 @@ namespace Mazesta.Reporting;
 public enum ReportOutcome { Passed, Failed, Cancelled, Unsupported, NotRun }
 
 /// <summary>Passed only when every test that was asked for ran and passed. A cancelled, unsupported or never-run test makes the
-/// report Incomplete - a skipped test is never presented as a pass (spec §8).</summary>
-public enum ReportVerdict { Passed, Failed, Incomplete }
+/// report Incomplete - a skipped test is never presented as a pass (spec §8). Benchmark is a report of benchmark runs alone:
+/// measurements with no verdict at all, since a speed number is neither a pass nor a fail.</summary>
+public enum ReportVerdict { Passed, Failed, Incomplete, Benchmark }
 
 public sealed record TestEntry(string Id, string Name, ReportOutcome Outcome, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, double DurationSeconds,
     long ErrorCount, string? Detail, IReadOnlyDictionary<string, string> Options);
@@ -19,7 +20,7 @@ public sealed record SensorSummary(string Id, string Hardware, string Name, stri
 public sealed record BenchmarkMetricEntry(string Name, double Value, string Unit);
 
 /// <summary>A finished benchmark run. Benchmarks measure, they do not pass or fail, so they never change the report verdict.</summary>
-public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetricEntry> Metrics, string? Detail);
+public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetricEntry> Metrics, string? Detail, DateTimeOffset? StartedAt = null);
 
 public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancelled, int Unsupported, int NotRun, long Errors);
 
@@ -33,8 +34,10 @@ public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset 
     {
         var counts = new ReportCounts(tests.Count, tests.Count(t => t.Outcome == ReportOutcome.Passed), tests.Count(t => t.Outcome == ReportOutcome.Failed), tests.Count(t => t.Outcome == ReportOutcome.Cancelled),
             tests.Count(t => t.Outcome == ReportOutcome.Unsupported), tests.Count(t => t.Outcome == ReportOutcome.NotRun), tests.Sum(t => t.ErrorCount));
-        var verdict = counts.Failed > 0 ? ReportVerdict.Failed : counts.Total > 0 && counts.Passed == counts.Total ? ReportVerdict.Passed : ReportVerdict.Incomplete;
-        var started = tests.Count > 0 ? tests.Min(t => t.StartedAt) : createdAt; var finished = tests.Count > 0 ? tests.Max(t => t.FinishedAt) : createdAt;
+        bool benchmarkOnly = tests.Count == 0 && benchmarks is { Count: > 0 };
+        var verdict = benchmarkOnly ? ReportVerdict.Benchmark : counts.Failed > 0 ? ReportVerdict.Failed : counts.Total > 0 && counts.Passed == counts.Total ? ReportVerdict.Passed : ReportVerdict.Incomplete;
+        var (started, finished) = tests.Count > 0 ? (tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt))
+            : benchmarkOnly ? (benchmarks!.Min(b => b.StartedAt ?? b.FinishedAt), benchmarks!.Max(b => b.FinishedAt)) : (createdAt, createdAt);
         return new(CurrentSchemaVersion, id ?? Guid.NewGuid().ToString("N"), createdAt, started, finished, shopName, appVersion, verdict, counts, tests, sensors, machine, benchmarks is { Count: > 0 } ? benchmarks : null);
     }
 }

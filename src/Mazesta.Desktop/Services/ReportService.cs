@@ -6,7 +6,8 @@ namespace Mazesta.Desktop.Services;
 /// <summary>
 /// Watches the (singleton) test engine and, when a queue finishes, writes its report: JSON (the data) and HTML (the
 /// human report) into the reports folder. It records only what the engine reports and what the monitor measured in the
-/// run's own time window; tests the queue asked for but that never ran are listed as not run.
+/// run's own time window; tests the queue asked for but that never ran are listed as not run. Every completed benchmark run is
+/// saved too, as a report of its own (numbers and the sensors over its run, no verdict), so the result outlives the page.
 /// </summary>
 public sealed class ReportService
 {
@@ -22,6 +23,7 @@ public sealed class ReportService
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
+        benchmarks.Recorded += b => _ = Task.Run(() => CreateBenchmarkReportAsync(b));
     }
 
     private async Task CreateReportAsync()
@@ -35,16 +37,33 @@ public sealed class ReportService
             var tests = queue.Select(q => ToEntry(q, results.GetValueOrDefault(q.Definition.Id), start)).ToList();
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt));
-            var report = SessionReport.Create(_config.ShopName, Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "", _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Snapshot().Select(ToEntry).ToList());
-            var stored = Store.Save(report, ReportHtml.Write(report, LoadFont()));
-            _log.LogInformation("Report saved: {Folder} ({Verdict})", stored.Folder, report.Verdict);
-            ReportCreated?.Invoke(stored);
+            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Snapshot().Select(ToEntry).ToList()));
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
 
+    private async Task CreateBenchmarkReportAsync(RecordedBenchmark benchmark)
+    {
+        try
+        {
+            var machine = await _inventory.GetAsync().ConfigureAwait(false);
+            var sensors = SensorSummarizer.Summarize(_polling, benchmark.Result.StartedAt, benchmark.Result.FinishedAt);
+            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, [], sensors, machine, benchmarks: [ToEntry(benchmark)]));
+        }
+        catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
+    }
+
+    private static string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
+
+    private void Save(SessionReport report)
+    {
+        var stored = Store.Save(report, ReportHtml.Write(report, LoadFont()));
+        _log.LogInformation("Report saved: {Folder} ({Verdict})", stored.Folder, report.Verdict);
+        ReportCreated?.Invoke(stored);
+    }
+
     private static BenchmarkEntry ToEntry(RecordedBenchmark b)
-        => new(b.Definition.Id.Value, Loc.Get(b.Definition.NameKey), b.Result.FinishedAt, [.. b.Result.Metrics.Select(m => new BenchmarkMetricEntry(Loc.Get(m.Key), m.Value, m.Unit))], b.Result.Detail);
+        => new(b.Definition.Id.Value, Loc.Get(b.Definition.NameKey), b.Result.FinishedAt, [.. b.Result.Metrics.Select(m => new BenchmarkMetricEntry(Loc.Get(m.Key), m.Value, m.Unit))], b.Result.Detail, b.Result.StartedAt);
 
     private static TestEntry ToEntry(QueuedTest q, TestRunResult? r, DateTimeOffset sessionStart)
     {

@@ -5,7 +5,7 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// a copy spread over every logical processor. Copy counts the bytes moved once, as memcpy benchmarks conventionally do.</summary>
 public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
 {
-    public static readonly TestDefinition Spec = new(new TestId("bench.memory"), "Bench_Memory", 20);
+    public static readonly TestDefinition Spec = new(new TestId("bench.memory"), "Bench_Memory", 60);
     public TestDefinition Definition => Spec;
     internal const int BufferBytes = 256 << 20;
     private const int Slice = 4 << 20;

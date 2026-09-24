@@ -19,20 +19,24 @@ internal sealed class StorageFile : IDisposable
 
     private StorageFile(SafeFileHandle handle, long length) { _handle = handle; Length = length; }
 
-    /// <summary>Throws <see cref="IOException"/> when the drive cannot hold the file plus the safety margin.</summary>
-    public static StorageFile Create(string directory, long length)
+    /// <summary>Throws <see cref="IOException"/> when the drive cannot hold the file plus the safety margin. <paramref name="overlapped"/>
+    /// opens it for asynchronous I/O (several requests in flight) and without write-through, as disk benchmarks do: write-through
+    /// turns every write into a forced-unit-access flush, which measures the flush path rather than the drive's speed.</summary>
+    public static StorageFile Create(string directory, long length, bool overlapped = false)
     {
         string root = Path.GetFullPath(directory);
         if (!Directory.Exists(root)) throw new StorageUnavailableException($"Folder not found: {root}");
         long free = new DriveInfo(Path.GetPathRoot(root)!).AvailableFreeSpace;
         if (free < length + FreeSpaceMargin) throw new StorageUnavailableException($"{free >> 20} MiB free; the test file ({length >> 20} MiB) plus a 1 GiB margin does not fit.");
         string path = Path.Combine(root, $".mazesta-test-{Guid.NewGuid():N}.tmp");
-        var handle = File.OpenHandle(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileOptions.WriteThrough | FileOptions.DeleteOnClose | NoBuffering, length);
+        var handle = File.OpenHandle(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, (overlapped ? FileOptions.Asynchronous : FileOptions.WriteThrough) | FileOptions.DeleteOnClose | NoBuffering, length);
         return new(handle, length);
     }
 
     public void Write(ReadOnlySpan<byte> data, long offset) => RandomAccess.Write(_handle, data, offset);
     public int Read(Span<byte> buffer, long offset) => RandomAccess.Read(_handle, buffer, offset);
+    public ValueTask WriteAsync(ReadOnlyMemory<byte> data, long offset, CancellationToken ct) => RandomAccess.WriteAsync(_handle, data, offset, ct);
+    public ValueTask<int> ReadAsync(Memory<byte> buffer, long offset, CancellationToken ct) => RandomAccess.ReadAsync(_handle, buffer, offset, ct);
     public void Dispose() => _handle.Dispose();
 
     /// <summary>The fixed, ready drives as choices for the drive option; the system drive first.</summary>

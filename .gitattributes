@@ -1,0 +1,2 @@
+# Compiled DXIL shaders: never touch line endings.
+*.cso binary

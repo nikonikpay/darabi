@@ -1,5 +1,5 @@
 using System.IO;
-using Mazesta.Core.Time; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Cpu; using Mazesta.Diagnostics.Gpu; using Mazesta.Diagnostics.Memory; using Mazesta.Diagnostics.Network; using Mazesta.Diagnostics.Storage; using Mazesta.Diagnostics.Whea;
+using Mazesta.Core.Time; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu.Benchmarks; using Mazesta.Diagnostics.Cpu; using Mazesta.Diagnostics.Gpu; using Mazesta.Diagnostics.Memory; using Mazesta.Diagnostics.Network; using Mazesta.Diagnostics.Storage; using Mazesta.Diagnostics.Whea;
 using Mazesta.Monitoring; using Mazesta.Persistence; using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
 namespace Mazesta.Desktop.Composition;
 
@@ -28,9 +28,14 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
 
-        s.AddSingleton<Mazesta.Diagnostics.Benchmarks.IBenchmark, Mazesta.Diagnostics.Benchmarks.CpuBenchmark>();
-        s.AddSingleton<Mazesta.Diagnostics.Benchmarks.IBenchmark, Mazesta.Diagnostics.Benchmarks.MemoryBenchmark>();
-        s.AddSingleton<Mazesta.Diagnostics.Benchmarks.IBenchmark, Mazesta.Diagnostics.Benchmarks.StorageBenchmark>();
+        // Benchmarks page order: CPU (single thread, then all threads), memory, storage, then the three GPU workloads.
+        s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: false));
+        s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: true));
+        s.AddSingleton<IBenchmark, MemoryBenchmark>();
+        s.AddSingleton<IBenchmark, StorageBenchmark>();
+        s.AddSingleton<IBenchmark, GpuRasterBenchmark>();
+        s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
+        s.AddSingleton<IBenchmark, GpuAiBenchmark>();
 
         // Singleton, not per-page: a queue keeps running when the technician navigates away from Test Center
         // and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.

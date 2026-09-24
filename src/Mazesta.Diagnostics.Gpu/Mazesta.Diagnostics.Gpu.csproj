@@ -8,11 +8,17 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ComputeSharp" />
+    <PackageReference Include="Vortice.Direct3D12" />
+    <PackageReference Include="Vortice.DirectML" ExcludeAssets="native" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" />
     <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
     <ProjectReference Include="../Mazesta.Diagnostics/Mazesta.Diagnostics.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Raw D3D12 shaders, precompiled to DXIL by tools/compile-gpu-shaders.ps1 (the build does not need the Windows SDK). -->
+    <EmbeddedResource Include="Shaders/*.cso" LogicalName="Mazesta.Diagnostics.Gpu.Shaders.%(Filename).cso" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Diagnostics.Gpu.Tests" />

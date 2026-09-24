@@ -35,6 +35,7 @@
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Verdict}" Value="Passed"><Setter Property="Background" Value="#334CAF50" /></DataTrigger>
                                                         <DataTrigger Binding="{Binding Verdict}" Value="Failed"><Setter Property="Background" Value="#33E5534B" /></DataTrigger>
+                                                        <DataTrigger Binding="{Binding Verdict}" Value="Benchmark"><Setter Property="Background" Value="#333D7BFF" /></DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </Border.Style>

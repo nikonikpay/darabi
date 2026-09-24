@@ -1,0 +1,34 @@
+using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Benchmarks;
+namespace Mazesta.Diagnostics.Gpu.Benchmarks;
+
+/// <summary>The GPU cannot run this workload at all (no DXR 1.1, no DirectML, no FP16...): the benchmark is Unsupported, not failed.</summary>
+internal sealed class GpuUnsupportedException(string message) : Exception(message);
+
+/// <summary>What the three GPU benchmarks share: picking the adapter, running on a worker thread, turning a lost device into
+/// Failed and a missing feature into Unsupported, and adding the GPU's own clock, power and temperature for the run.</summary>
+internal static class GpuBenchmark
+{
+    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, CancellationToken ct, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body)
+    {
+        var started = request.Clock.UtcNow;
+        if (request.DurationSeconds <= 0) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "Duration must be positive."));
+        var device = GpuDevices.Resolve((request.Options ?? TestOptions.None(spec)).Get(GpuDevices.OptionKey));
+        if (device is null) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "No DirectX 12 hardware GPU is available."));
+        return Task.Run(() =>
+        {
+            try
+            {
+                using var session = new D3D12Session(device);
+                var (metrics, detail) = body(session);
+                var finished = request.Clock.UtcNow;
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_Clock", "MHz");
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", "W");
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempMax", "°C", peak: true);
+                return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}");
+            }
+            catch (OperationCanceledException) { return BenchmarkResult.Cancelled(spec.Id, started, request.Clock.UtcNow); }
+            catch (GpuUnsupportedException e) { return BenchmarkResult.Unsupported(spec.Id, started, e.Message); }
+            catch (Exception e) { return BenchmarkResult.Failed(spec.Id, started, request.Clock.UtcNow, $"GPU error during the run: {e.GetType().Name}: {e.Message}"); }
+        }, CancellationToken.None);
+    }
+}

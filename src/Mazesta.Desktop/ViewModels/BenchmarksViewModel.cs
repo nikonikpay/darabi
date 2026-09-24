@@ -24,9 +24,11 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
 }
 
-/// <summary>Runs one benchmark at a time and lists what it measured. Numbers only: no score, no pass or fail. The most recent
-/// completed run of each is handed to <see cref="BenchmarkResults"/> so the next test report can include it.</summary>
-public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
+/// <summary>Runs one benchmark at a time and lists what it measured. Numbers only: no score, no pass or fail. Every completed run
+/// is handed to <see cref="BenchmarkResults"/>, which saves it as a report and keeps it for the next test report. A single instance
+/// lives for the whole session (not a page factory, and deliberately not IDisposable - the shell disposes the page it leaves), so a
+/// run keeps going and its numbers stay on the page when the technician navigates away and back.</summary>
+public sealed partial class BenchmarksViewModel : ObservableObject
 {
     public const int MinSeconds = 4, MaxSeconds = 3600;
     private readonly PollingEngine _engine; private readonly IClock _clock; private readonly BenchmarkResults _results; private readonly Func<Action, object> _dispatch;
@@ -54,13 +56,12 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
             var result = await row.Benchmark.RunAsync(request, _cts.Token).ConfigureAwait(true);
             _results.Record(row.Benchmark.Definition, result);
             foreach (var m in result.Metrics) row.Metrics.Add(new(Loc.Get(m.Key), Units.FormatMeasured(m.Value, m.Unit)));
-            row.Detail = result.Detail; row.StatusText = Loc.Get("Bench_Status_" + result.Status); row.PercentComplete = result.Status == BenchmarkStatus.Completed ? 100 : 0;
+            row.Detail = result.Detail;
+            row.StatusText = result.Status == BenchmarkStatus.Completed ? Loc.Format("Bench_Status_CompletedAt", result.FinishedAt.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture)) : Loc.Get("Bench_Status_" + result.Status); row.PercentComplete = result.Status == BenchmarkStatus.Completed ? 100 : 0;
         }
         catch (Exception e) { row.StatusText = Loc.Get("Bench_Status_Failed"); row.Detail = e.Message; }
         finally { _cts.Dispose(); _cts = null; IsRunning = false; }
     }
 
     [RelayCommand] private void Cancel() => _cts?.Cancel();
-
-    public void Dispose() => _cts?.Cancel();
 }

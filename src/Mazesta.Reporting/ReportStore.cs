@@ -1,7 +1,9 @@
 namespace Mazesta.Reporting;
 
-public sealed record StoredReport(string Folder, string Id, DateTimeOffset CreatedAt, ReportVerdict Verdict, ReportCounts Counts, string ShopName)
+/// <summary>A saved report as the list shows it. Benchmarks names the benchmark runs it holds (a benchmark report has no test counts to summarise).</summary>
+public sealed record StoredReport(string Folder, string Id, DateTimeOffset CreatedAt, ReportVerdict Verdict, ReportCounts Counts, string ShopName, IReadOnlyList<string> Benchmarks)
 {
+    internal static StoredReport Of(string folder, SessionReport r) => new(folder, r.Id, r.CreatedAt, r.Verdict, r.Counts, r.ShopName, [.. (r.Benchmarks ?? []).Select(b => b.Name)]);
     public string JsonPath => Path.Combine(Folder, ReportStore.JsonName);
     public string HtmlPath => Path.Combine(Folder, ReportStore.HtmlName);
     public string PdfPath => Path.Combine(Folder, ReportStore.PdfName);
@@ -17,7 +19,7 @@ public sealed class ReportStore(string directory)
         string folder = Path.Combine(directory, $"{report.CreatedAt.ToLocalTime():yyyyMMdd-HHmmss}-{report.Id[..8]}");
         Directory.CreateDirectory(folder);
         WriteAtomic(Path.Combine(folder, JsonName), ReportJson.Write(report)); WriteAtomic(Path.Combine(folder, HtmlName), html);
-        return new(folder, report.Id, report.CreatedAt, report.Verdict, report.Counts, report.ShopName);
+        return StoredReport.Of(folder, report);
     }
 
     /// <summary>Newest first; a folder whose JSON is missing or unreadable is skipped rather than failing the list.</summary>
@@ -27,7 +29,7 @@ public sealed class ReportStore(string directory)
         var list = new List<StoredReport>();
         foreach (var folder in Directory.EnumerateDirectories(directory))
         {
-            try { if (File.Exists(Path.Combine(folder, JsonName)) && ReportJson.Read(File.ReadAllText(Path.Combine(folder, JsonName))) is { } r) list.Add(new(folder, r.Id, r.CreatedAt, r.Verdict, r.Counts, r.ShopName)); }
+            try { if (File.Exists(Path.Combine(folder, JsonName)) && ReportJson.Read(File.ReadAllText(Path.Combine(folder, JsonName))) is { } r) list.Add(StoredReport.Of(folder, r)); }
             catch (Exception e) when (e is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
         }
         return [.. list.OrderByDescending(r => r.CreatedAt)];

@@ -1,3 +1,4 @@
+using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Evidence;
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>One measured number. Key is a localisation key for the metric's name; there is no score and no pass -
@@ -10,11 +11,18 @@ public sealed record BenchmarkResult(TestId Id, BenchmarkStatus Status, DateTime
 {
     public static BenchmarkResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Unsupported, now, now, [], detail);
     public static BenchmarkResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, BenchmarkStatus.Cancelled, started, now, [], null);
+    public static BenchmarkResult Failed(TestId id, DateTimeOffset started, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Failed, started, now, [], detail);
 }
 
-internal static class BenchmarkRequestExtensions
+public static class BenchmarkRequestExtensions
 {
     public static void Report(this TestExecutionRequest request, double fraction) => request.Progress?.Invoke(new TestProgress(Math.Clamp(fraction, 0, 1), "Test_Status_Running"));
+
+    /// <summary>Adds what the monitor measured for a role over the run (its average, or its peak), and nothing when it measured nothing.</summary>
+    public static void AddSensor(this List<BenchmarkMetric> metrics, TestExecutionRequest request, HardwareKind kind, SensorRole role, DateTimeOffset from, DateTimeOffset to, string key, string unit, bool peak = false)
+    {
+        if (SensorEvidence.Read(request.Engine, kind, role, from, to) is { } s) metrics.Add(new(key, peak ? s.Max : s.Average, unit));
+    }
 }
 
 /// <summary>A measurement run. It reuses <see cref="TestDefinition"/> (name key, default duration, options) and

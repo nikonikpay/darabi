@@ -47,6 +47,16 @@ public class ReportTests
         Assert.DoesNotContain("<h2>" + ReportText.Benchmarks, ReportHtml.Write(Report(Test("a", ReportOutcome.Passed))));
     }
 
+    [Fact] public void A_report_of_benchmarks_alone_has_no_verdict_no_test_counts_and_spans_the_run()
+    {
+        var bm = new BenchmarkEntry("bench.gpu.ai", "AI", T0.AddMinutes(1), [new("FP16", 107.3, "TFLOPS")], "DirectML", T0);
+        var r = SessionReport.Create("x", "1", T0.AddMinutes(2), [], [], HardwareInventory.Empty, benchmarks: [bm]);
+        string html = ReportHtml.Write(r);
+        Assert.Equal(ReportVerdict.Benchmark, r.Verdict); Assert.Equal(60, r.DurationSeconds);
+        Assert.Contains("verdict Benchmark", html); Assert.Contains("107 TFLOPS", html); Assert.DoesNotContain("class=\"cards\"", html); Assert.DoesNotContain(ReportText.Results, html);
+        Assert.Equal(ReportVerdict.Incomplete, Report().Verdict);   // no tests and no benchmarks is still an incomplete test report
+    }
+
     [Fact] public void Store_saves_lists_newest_first_and_skips_a_damaged_folder()
     {
         string dir = Path.Combine(Path.GetTempPath(), "mazesta-rep-" + Guid.NewGuid().ToString("N")); var store = new ReportStore(dir);
