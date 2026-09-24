@@ -26,6 +26,13 @@ public class MonitoringViewModelTests
         vm.ApplySnapshot(e.TickOnce()!); var row = vm.Groups[0].Rows[0];
         Assert.Equal(Mazesta.Desktop.Localization.Loc.Get("Value_NotAvailable"), row.Current); Assert.Equal(DataQuality.Missing, row.Quality); Assert.NotEqual("0", row.Current);
     }
+    [Fact] public void A_component_page_shows_only_its_kind_all_open_and_leaves_the_saved_layout_alone()
+    {
+        var (_, e, _, cfg, charts, focus) = Build();
+        var vm = new MonitoringViewModel(e, focus, cfg, charts, new FakeClock(T0), a => { a(); return null!; }, new HashSet<HardwareKind> { HardwareKind.Storage });
+        Assert.Equal("storage/S1", Assert.Single(vm.Groups).Id); Assert.True(vm.Groups[0].IsExpanded);
+        vm.Groups[0].IsExpanded = false; Assert.Equal(["gpu/gpu-nvidia-0"], cfg.ExpandedGroups);
+    }
     [Fact] public void Filter_hides_non_matching_rows_and_groups()
     { var (vm, _, _, _, _, _) = Build(); vm.FilterText = "clock"; Assert.True(vm.Groups[0].IsVisible); Assert.False(vm.Groups[0].Rows[0].IsVisible); Assert.True(vm.Groups[0].Rows[1].IsVisible); Assert.False(vm.Groups[1].IsVisible); vm.FilterText = "nvidia"; Assert.True(vm.Groups[1].IsVisible); }
     [Fact] public void Interval_change_goes_to_engine_and_config()

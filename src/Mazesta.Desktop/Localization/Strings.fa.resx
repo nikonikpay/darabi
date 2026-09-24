@@ -570,6 +570,18 @@
   <data name="Bench_Gpu_Clock" xml:space="preserve"><value>میانگین کلاک گرافیک</value></data>
   <data name="Bench_Gpu_Power" xml:space="preserve"><value>میانگین توان مصرفی گرافیک</value></data>
   <data name="Bench_Gpu_TempMax" xml:space="preserve"><value>بیشینه‌ی دمای گرافیک</value></data>
+  <data name="Bench_Net_Internet" xml:space="preserve"><value>شبکه — سرعت اینترنت (speed.cloudflare.com)</value></data>
+  <data name="Bench_Net_Download" xml:space="preserve"><value>دانلود</value></data>
+  <data name="Bench_Net_Upload" xml:space="preserve"><value>آپلود</value></data>
+  <data name="Bench_Net_Ping" xml:space="preserve"><value>تأخیر (پینگ به 1.1.1.1)</value></data>
+  <data name="Bench_Net_Jitter" xml:space="preserve"><value>نوسان تأخیر (Jitter)</value></data>
+  <data name="Bench_Net_Loss" xml:space="preserve"><value>از دست رفتن بسته</value></data>
+  <data name="Bench_Net_DataUsed" xml:space="preserve"><value>حجم داده‌ی مصرف‌شده در تست</value></data>
+  <data name="Component_Note_Cpu" xml:space="preserve"><value>پردازنده: مشخصات، سنسورهای زنده و بنچمارک تک‌رشته و چندرشته. تست‌های فشار در صفحه‌ی تست‌ها هستند؛ اورکلاک و اندرولت در مرحله‌ی دوم اضافه می‌شود.</value></data>
+  <data name="Component_Note_Gpu" xml:space="preserve"><value>کارت گرافیک: مشخصات، سنسورهای زنده و بنچمارک‌های Direct3D، ری‌تریسینگ و هوش مصنوعی. تست‌های فشار و VRAM در صفحه‌ی تست‌ها هستند؛ اورکلاک و اندرولت در مرحله‌ی دوم اضافه می‌شود.</value></data>
+  <data name="Component_Note_Storage" xml:space="preserve"><value>درایوها: آنچه ویندوز گزارش می‌کند (از جمله وضعیت سلامت)، سنسورهای زنده و مقادیر SMART همان‌طور که درایو گزارش می‌دهد، و بنچمارک سرعت. تست‌های خواندن/نوشتن که صحت داده را بررسی می‌کنند در صفحه‌ی تست‌ها هستند.</value></data>
+  <data name="Component_Note_Network" xml:space="preserve"><value>کارت‌های شبکه، ترافیک زنده و تست سرعت اینترنت. تست سرعت فقط وقتی «اجرا» را بزنید با speed.cloudflare.com داده رد و بدل می‌کند و حجم داده همراه نتیجه نمایش داده می‌شود.</value></data>
+  <data name="Component_NoSensors" xml:space="preserve"><value>سنسوری از این نوع روی این دستگاه پیدا نشد.</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>اجرا</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>لغو</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>مدت (ثانیه)</value></data>

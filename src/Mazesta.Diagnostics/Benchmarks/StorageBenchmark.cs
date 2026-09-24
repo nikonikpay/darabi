@@ -1,4 +1,4 @@
-using System.Diagnostics; using Mazesta.Diagnostics.Memory; using Mazesta.Diagnostics.Storage;
+using Mazesta.Core.Hardware; using System.Diagnostics; using Mazesta.Diagnostics.Memory; using Mazesta.Diagnostics.Storage;
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>
@@ -15,6 +15,7 @@ public sealed class StorageBenchmark : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.storage"), "Bench_Storage", 20, StorageExecutor.CommonOptions("1024"));
     public TestDefinition Definition => Spec;
+    public HardwareKind Component => HardwareKind.Storage;
     private const int SeqDepth = 8, RandomDepth = 32;
     private readonly TimeSpan _rest;
 

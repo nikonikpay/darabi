@@ -6,6 +6,7 @@ public class BenchmarksViewModelTests
     private sealed class Fake(BenchmarkStatus status, params BenchmarkMetric[] metrics) : IBenchmark
     {
         public TestDefinition Definition { get; } = new(new TestId("bench.fake"), "Bench_Cpu_Single", 5);
+        public Mazesta.Core.Hardware.HardwareKind Component => Mazesta.Core.Hardware.HardwareKind.Cpu;
         public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => Task.FromResult(new BenchmarkResult(Definition.Id, status, request.Clock.UtcNow, request.Clock.UtcNow, metrics, "d"));
     }
     private static (BenchmarksViewModel vm, BenchmarkRunner runner) Build(IBenchmark b)
@@ -31,6 +32,12 @@ public class BenchmarksViewModelTests
         var (vm, runner) = Build(new Fake(BenchmarkStatus.Completed, new BenchmarkMetric("Bench_Cpu_Gflops", 1, "GFLOPS")));
         vm.Rows[0].DurationText = "1"; await vm.RunCommand.ExecuteAsync(vm.Rows[0]);
         Assert.Empty(runner.Completed()); Assert.Contains("4", vm.Rows[0].StatusText);
+    }
+    [Fact] public void A_component_page_lists_only_that_parts_benchmarks()
+    {
+        var runner = new BenchmarkRunner([new Fake(BenchmarkStatus.Completed)], new FakeClock(DateTimeOffset.UnixEpoch), null);
+        Assert.Single(new BenchmarksViewModel(runner, a => { a(); return null!; }, Mazesta.Core.Hardware.HardwareKind.Cpu).Rows);
+        Assert.Empty(new BenchmarksViewModel(runner, a => { a(); return null!; }, Mazesta.Core.Hardware.HardwareKind.Gpu).Rows);
     }
     [Fact] public async Task A_page_opened_again_shows_the_last_result()
     {

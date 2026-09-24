@@ -1,4 +1,4 @@
-using System.Numerics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D12; using Vortice.DXGI;
+using Mazesta.Core.Hardware; using System.Numerics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D12; using Vortice.DXGI;
 namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 
 /// <summary>
@@ -12,6 +12,7 @@ public sealed class GpuRayTracingBenchmark : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.gpu.rt"), "Bench_Gpu_Rt", 60, [GpuDevices.Option]);
     public TestDefinition Definition => Spec;
+    public HardwareKind Component => HardwareKind.Gpu;
     private const int Width = 2560, Height = 1440, Grid = 48, Subdivisions = 4;
 
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Frame(uint Width, uint Height, uint Count, float Unused);

@@ -15,15 +15,17 @@ public sealed partial class MonitoringViewModel : ObservableObject, IDisposable
     public ICollectionView RowsView { get; }
     public int[] Intervals => MonitoringOptions.AllowedFastSeconds;
     [ObservableProperty] private string _filterText = ""; [ObservableProperty] private int _selectedIntervalSeconds; [ObservableProperty] private bool _isPaused;
-    public MonitoringViewModel(PollingEngine engine, MonitoringFocus focus, AppConfig config, IChartWindowService charts, IClock clock, Func<Action, object> dispatch)
+    /// <summary><paramref name="only"/> limits the tree to those kinds of hardware, all expanded (the component pages); the Monitoring page shows
+    /// everything and remembers which groups were open.</summary>
+    public MonitoringViewModel(PollingEngine engine, MonitoringFocus focus, AppConfig config, IChartWindowService charts, IClock clock, Func<Action, object> dispatch, IReadOnlySet<HardwareKind>? only = null)
     {
         _engine = engine; _focus = focus; _config = config; _charts = charts; _clock = clock; _dispatch = dispatch; _selectedIntervalSeconds = (int)engine.FastInterval.TotalSeconds; _isPaused = engine.State == EngineState.Paused;
         // Every node is its own top-level group, sub-hardware (a board's Super I/O chip) included, as in HWiNFO.
-        foreach (var node in engine.Hardware)
+        foreach (var node in engine.Hardware.Where(n => only is null || only.Contains(n.Kind)))
         {
-            var g = new HardwareGroupViewModel(node) { IsExpanded = config.ExpandedGroups.Contains(node.Id.Value) };
+            var g = new HardwareGroupViewModel(node) { IsExpanded = only is not null || config.ExpandedGroups.Contains(node.Id.Value) };
             AddRows(g, node);
-            g.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(HardwareGroupViewModel.IsExpanded)) Persist(g); };
+            if (only is null) g.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(HardwareGroupViewModel.IsExpanded)) Persist(g); };
             Groups.Add(g);
         }
         var view = new CollectionViewSource { Source = AllRows };

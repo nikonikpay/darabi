@@ -28,16 +28,23 @@ public sealed partial class SystemInfoViewModel : ObservableObject
 
     internal static IEnumerable<InfoSection> Describe(HardwareInventory inv)
     {
-        yield return new(Loc.Get("Dashboard_Cpu"), CpuRows(inv.Cpu));
+        foreach (var section in Component(inv, HardwareKind.Cpu)) yield return section;
         yield return new(Loc.Get("SystemInfo_Motherboard"), BoardRows(inv.Motherboard));
         yield return new(Loc.Get("SystemInfo_Bios"), BiosRows(inv.Bios));
         yield return new(Loc.Get("Dashboard_Ram"), MemoryRows(inv));
         yield return new(Loc.Get("SystemInfo_Os"), OsRows(inv.Os));
-
-        foreach (var section in Numbered(inv.Gpus, "Dashboard_Gpu", "SystemInfo_GpuN", GpuRows)) yield return section;
-        foreach (var section in Numbered(inv.Storage, "SystemInfo_Storage", "SystemInfo_StorageN", StorageRows)) yield return section;
-        foreach (var section in Numbered(inv.NetworkAdapters, "SystemInfo_Network", "SystemInfo_NetworkN", NetworkRows)) yield return section;
+        foreach (var kind in new[] { HardwareKind.Gpu, HardwareKind.Storage, HardwareKind.Network }) foreach (var section in Component(inv, kind)) yield return section;
     }
+
+    /// <summary>The inventory of one component, as the CPU, GPU, Storage and Network pages show it.</summary>
+    internal static IEnumerable<InfoSection> Component(HardwareInventory inv, HardwareKind kind) => kind switch
+    {
+        HardwareKind.Cpu => [new(Loc.Get("Dashboard_Cpu"), CpuRows(inv.Cpu))],
+        HardwareKind.Gpu => Numbered(inv.Gpus, "Dashboard_Gpu", "SystemInfo_GpuN", GpuRows),
+        HardwareKind.Storage => Numbered(inv.Storage, "SystemInfo_Storage", "SystemInfo_StorageN", StorageRows),
+        HardwareKind.Network => Numbered(inv.NetworkAdapters, "SystemInfo_Network", "SystemInfo_NetworkN", NetworkRows),
+        _ => []
+    };
 
     /// <summary>One section per device, titled with just the category when there is one and numbered when there are several; a category with none is a single not-available row, never silently absent.</summary>
     private static IEnumerable<InfoSection> Numbered<T>(IReadOnlyList<T> items, string titleKey, string numberedKey, Func<T, IReadOnlyList<InfoRow>> rows)

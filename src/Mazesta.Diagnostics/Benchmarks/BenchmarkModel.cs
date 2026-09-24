@@ -30,5 +30,7 @@ public static class BenchmarkRequestExtensions
 public interface IBenchmark
 {
     TestDefinition Definition { get; }
+    /// <summary>The part it measures: the component pages (CPU, GPU, Storage, Network) show their own benchmarks.</summary>
+    HardwareKind Component { get; }
     Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct);
 }

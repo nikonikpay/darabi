@@ -38,6 +38,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
     public ShellViewModel(PollingEngine engine, IServiceProvider sp)
     {
+        ComponentViewModel Component(HardwareKind kind) => sp.GetRequiredService<Func<HardwareKind, ComponentViewModel>>()(kind);
         _engine = engine;
         _sp = sp;
         Items = new(
@@ -47,10 +48,10 @@ public sealed partial class ShellViewModel : ObservableObject
             new("Nav_Tests", "", () => sp.GetRequiredService<Func<TestCenterViewModel>>()()),
             new("Nav_SystemInfo", "", () => sp.GetRequiredService<Func<SystemInfoViewModel>>()()),
             new("Nav_Benchmarks", "", () => sp.GetRequiredService<Func<BenchmarksViewModel>>()()),
-            new("Nav_Gpu", "", () => new PlaceholderViewModel("Nav_Gpu")),
-            new("Nav_Cpu", "", () => new PlaceholderViewModel("Nav_Cpu")),
-            new("Nav_Network", "", () => new PlaceholderViewModel("Nav_Network")),
-            new("Nav_Storage", "", () => new PlaceholderViewModel("Nav_Storage")),
+            new("Nav_Gpu", "", () => Component(HardwareKind.Gpu)),
+            new("Nav_Cpu", "", () => Component(HardwareKind.Cpu)),
+            new("Nav_Network", "", () => Component(HardwareKind.Network)),
+            new("Nav_Storage", "", () => Component(HardwareKind.Storage)),
             new("Nav_Gaming", "", () => new PlaceholderViewModel("Nav_Gaming")),
             new("Nav_WindowsTools", "", () => new PlaceholderViewModel("Nav_WindowsTools")),
             new("Nav_Reports", "", () => sp.GetRequiredService<Func<ReportsViewModel>>()()),

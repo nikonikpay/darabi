@@ -1,4 +1,4 @@
-using System.Numerics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vortice.Mathematics;
+using Mazesta.Core.Hardware; using System.Numerics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vortice.Mathematics;
 namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 
 /// <summary>
@@ -11,6 +11,7 @@ public sealed class GpuRasterBenchmark : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.gpu.d3d"), "Bench_Gpu_D3D", 60, [GpuDevices.Option]);
     public TestDefinition Definition => Spec;
+    public HardwareKind Component => HardwareKind.Gpu;
     private const int Width = 2560, Height = 1440, Columns = 64, Instances = Columns * Columns, FillLayers = 16, Subdivisions = 3;
 
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Frame(float Time, uint Columns, float Aspect, uint Layers);

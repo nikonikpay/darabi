@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D12; using Vortice.DirectML;
+using Mazesta.Core.Hardware; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Benchmarks; using Vortice.Direct3D12; using Vortice.DirectML;
 namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 
 /// <summary>
@@ -13,6 +13,7 @@ public sealed class GpuAiBenchmark : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.gpu.ai"), "Bench_Gpu_Ai", 60, [GpuDevices.Option]);
     public TestDefinition Definition => Spec;
+    public HardwareKind Component => HardwareKind.Gpu;
     private const uint Size = 4096;
     private const double OpsPerMultiply = 2.0 * Size * Size * Size;
 

@@ -46,6 +46,13 @@ public static class Bootstrapper
         AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.ReportsViewModel(sp.GetRequiredService<Services.ReportService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }), text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Reports"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes));
         AddViewModelFactory(s, sp => new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        // One factory for the four component pages (CPU, GPU, Storage, Network): same pieces, limited to one kind of hardware.
+        s.AddSingleton<Func<Mazesta.Core.Hardware.HardwareKind, ViewModels.ComponentViewModel>>(sp => kind =>
+        {
+            Func<Action, object> dispatch = a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a);
+            var sensors = new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), dispatch, new HashSet<Mazesta.Core.Hardware.HardwareKind> { kind });
+            return new ViewModels.ComponentViewModel(kind, sp.GetRequiredService<InventoryCache>(), sensors, new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), dispatch, kind), dispatch);
+        });
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>()));
         var provider = s.BuildServiceProvider();

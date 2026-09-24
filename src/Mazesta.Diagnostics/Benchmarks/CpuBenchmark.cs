@@ -9,6 +9,7 @@ public sealed class CpuBenchmark(bool allThreads) : IBenchmark
     public static readonly TestDefinition Single = new(new TestId("bench.cpu.single"), "Bench_Cpu_Single", 60);
     public static readonly TestDefinition Multi = new(new TestId("bench.cpu.multi"), "Bench_Cpu_Multi", 60);
     public TestDefinition Definition => allThreads ? Multi : Single;
+    public HardwareKind Component => HardwareKind.Cpu;
     private const int N = CpuMatrixStressExecutor.MatrixSize;
     private const double FlopsPerMultiply = 2.0 * N * N * N;
 

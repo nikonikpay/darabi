@@ -52,6 +52,22 @@ public class ViewLoadTests
             return new BenchmarksView { DataContext = new BenchmarksViewModel(new Mazesta.Diagnostics.Benchmarks.BenchmarkRunner(all, c, e), a => { a(); return null!; }) };
         });
 
+    [Fact] public void ComponentView_loads_with_inventory_sensors_and_benchmarks()
+        => OnSta(() =>
+        {
+            var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch); var p = new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider();
+            p.Nodes.Add(Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider.Node(Mazesta.Core.Hardware.HardwareKind.Cpu, "cpu/intelcpu-0", "temperature/0", "clock/0"));
+            var e = new Mazesta.Monitoring.PollingEngine(p, c, new Mazesta.Monitoring.MonitoringOptions(), new Mazesta.Monitoring.BoundedEventLog(c, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance)); e.PrepareForManualTicks();
+            Func<Action, object> now = a => { a(); return null!; }; var kind = Mazesta.Core.Hardware.HardwareKind.Cpu;
+            var sensors = new MonitoringViewModel(e, new Mazesta.Monitoring.MonitoringFocus(), new Mazesta.Persistence.AppConfig(), new NoCharts(), c, now, new HashSet<Mazesta.Core.Hardware.HardwareKind> { kind });
+            var runner = new Mazesta.Diagnostics.Benchmarks.BenchmarkRunner([new Mazesta.Diagnostics.Benchmarks.CpuBenchmark(allThreads: false)], c, e);
+            var vm = new ComponentViewModel(kind, new Mazesta.Desktop.Composition.InventoryCache(new Inv(), Microsoft.Extensions.Logging.Abstractions.NullLogger<Mazesta.Desktop.Composition.InventoryCache>.Instance), sensors, new BenchmarksViewModel(runner, now, kind), now);
+            vm.Loaded.Wait(); Assert.True(vm.HasSensors); Assert.True(vm.HasBenchmarks); Assert.NotEmpty(vm.Inventory);
+            return new ComponentView { DataContext = vm };
+        });
+
+    private sealed class NoCharts : IChartWindowService { public void Open(Mazesta.Core.Hardware.SensorDefinition s, Mazesta.Core.Hardware.HardwareNode n) { } }
+
     private sealed class FixedProbe : Mazesta.Diagnostics.Memory.IMemoryProbe { public Mazesta.Diagnostics.Memory.MemoryStatus Read() => new(16L << 30, 8L << 30); }
 
     private sealed class StubTray : Mazesta.Desktop.Services.ITrayController

@@ -33,6 +33,7 @@ public class BenchmarkTests : IDisposable
     {
         private int _next;
         public TestDefinition Definition { get; } = new(new TestId("bench.x"), "Bench_Cpu_Single", 5);
+        public Mazesta.Core.Hardware.HardwareKind Component => Mazesta.Core.Hardware.HardwareKind.Cpu;
         public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => results[_next++] is { } r ? Task.FromResult(r) : throw new InvalidOperationException("boom");
     }
     private static BenchmarkResult Done(BenchmarkStatus status, double value) => new(new TestId("bench.x"), status, T0, T0, status == BenchmarkStatus.Completed ? [new("k", value, "")] : [], null);

@@ -28,7 +28,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
 
-        // Benchmarks page order: CPU (single thread, then all threads), memory, storage, then the three GPU workloads.
+        // Benchmarks page order: CPU (single thread, then all threads), memory, storage, the three GPU workloads, then the internet link.
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: false));
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: true));
         s.AddSingleton<IBenchmark, MemoryBenchmark>();
@@ -36,6 +36,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark, GpuRasterBenchmark>();
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();
+        s.AddSingleton<IBenchmark>(new InternetSpeedBenchmark());
         // Singleton for the same reason as the engine below: a benchmark keeps running, and its result stays, while the page is closed.
         s.AddSingleton(sp => new BenchmarkRunner(sp.GetRequiredService<IEnumerable<IBenchmark>>(), sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>()));
 

@@ -56,7 +56,7 @@ public sealed class NetworkLatencyExecutor(Func<IPAddress, TimeSpan, Cancellatio
          + (rtts.Count > 0 ? $"latency min/avg/max {rtts.Min():F0}/{rtts.Average():F1}/{rtts.Max():F0} ms; jitter {Jitter(rtts):F1} ms; " : "no reply; ")
          + "links: " + string.Join(", ", links);
 
-    private static async Task<long?> SystemEcho(IPAddress target, TimeSpan timeout, CancellationToken ct)
+    internal static async Task<long?> SystemEcho(IPAddress target, TimeSpan timeout, CancellationToken ct)
     {
         using var ping = new Ping();
         try { var reply = await ping.SendPingAsync(target, timeout, cancellationToken: ct); return reply.Status == IPStatus.Success ? reply.RoundtripTime : null; }

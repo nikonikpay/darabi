@@ -1,4 +1,4 @@
-using System.Diagnostics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Memory;
+using Mazesta.Core.Hardware; using System.Diagnostics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Memory;
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>Memory bandwidth on two 256 MiB buffers (larger than any CPU cache): single-thread write, read and copy, and
@@ -7,6 +7,7 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.memory"), "Bench_Memory", 60);
     public TestDefinition Definition => Spec;
+    public HardwareKind Component => HardwareKind.Memory;
     internal const int BufferBytes = 256 << 20;
     private const int Slice = 4 << 20;
     private static ulong _sink;   // keeps the read loop from being optimised away

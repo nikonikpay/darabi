@@ -35,21 +35,23 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RunCommand))] private bool _isRunning;
     private bool CanRun() => !IsRunning;
 
-    public BenchmarksViewModel(BenchmarkRunner runner, Func<Action, object> dispatch)
+    /// <summary>All benchmarks, or with <paramref name="component"/> only that part's (the CPU, GPU, Storage and Network pages). Only one
+    /// benchmark runs at a time anywhere, so Run is disabled while any is running.</summary>
+    public BenchmarksViewModel(BenchmarkRunner runner, Func<Action, object> dispatch, HardwareKind? component = null)
     {
-        _runner = runner; _dispatch = dispatch;
-        Rows = [.. runner.Benchmarks.Select(b => new BenchmarkRowViewModel(b))];
+        _runner = runner; _dispatch = dispatch; IsRunning = runner.Running is not null;
+        Rows = [.. runner.Benchmarks.Where(b => component is null || b.Component == component).Select(b => new BenchmarkRowViewModel(b))];
         foreach (var row in Rows)
         {
             if (runner.Last(row.Benchmark.Definition.Id) is { } last) Show(row, last);
-            if (runner.Running == row.Benchmark.Definition.Id) { row.StatusText = Loc.Get("Test_Status_Running"); IsRunning = true; }
+            if (runner.Running == row.Benchmark.Definition.Id) row.StatusText = Loc.Get("Test_Status_Running");
         }
         runner.Progress += OnProgress; runner.Finished += OnFinished;
     }
 
-    private BenchmarkRowViewModel Row(TestId id) => Rows.First(r => r.Benchmark.Definition.Id == id);
-    private void OnProgress(TestId id, double fraction) => _dispatch(() => Row(id).PercentComplete = fraction * 100);
-    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { Show(Row(run.Definition.Id), run.Result); IsRunning = false; });
+    private BenchmarkRowViewModel? Row(TestId id) => Rows.FirstOrDefault(r => r.Benchmark.Definition.Id == id);   // null: another page's benchmark
+    private void OnProgress(TestId id, double fraction) => _dispatch(() => { if (Row(id) is { } row) row.PercentComplete = fraction * 100; });
+    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { if (Row(run.Definition.Id) is { } row) Show(row, run.Result); IsRunning = false; });
 
     private static void Show(BenchmarkRowViewModel row, BenchmarkResult result)
     {

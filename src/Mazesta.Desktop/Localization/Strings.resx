@@ -570,6 +570,18 @@
   <data name="Bench_Gpu_Clock" xml:space="preserve"><value>Average GPU clock</value></data>
   <data name="Bench_Gpu_Power" xml:space="preserve"><value>Average GPU power</value></data>
   <data name="Bench_Gpu_TempMax" xml:space="preserve"><value>Highest GPU temperature</value></data>
+  <data name="Bench_Net_Internet" xml:space="preserve"><value>Network — internet speed (speed.cloudflare.com)</value></data>
+  <data name="Bench_Net_Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Bench_Net_Upload" xml:space="preserve"><value>Upload</value></data>
+  <data name="Bench_Net_Ping" xml:space="preserve"><value>Latency (ping to 1.1.1.1)</value></data>
+  <data name="Bench_Net_Jitter" xml:space="preserve"><value>Jitter</value></data>
+  <data name="Bench_Net_Loss" xml:space="preserve"><value>Packet loss</value></data>
+  <data name="Bench_Net_DataUsed" xml:space="preserve"><value>Data used by the test</value></data>
+  <data name="Component_Note_Cpu" xml:space="preserve"><value>The processor: what it is, its live sensors, and its single-thread and all-thread benchmarks. Stress tests are on the Tests page; overclocking and undervolting come in phase 2.</value></data>
+  <data name="Component_Note_Gpu" xml:space="preserve"><value>The graphics card: what it is, its live sensors, and its Direct3D, ray-tracing and AI benchmarks. Stress and VRAM tests are on the Tests page; overclocking and undervolting come in phase 2.</value></data>
+  <data name="Component_Note_Storage" xml:space="preserve"><value>The drives: what Windows reports about them (including its health status), their live sensors and SMART values as the drive reports them, and the speed benchmark. Read/write tests that verify the data are on the Tests page.</value></data>
+  <data name="Component_Note_Network" xml:space="preserve"><value>The network adapters, their live traffic, and the internet speed test. The speed test exchanges data with speed.cloudflare.com only when you press Run; the amount of data is shown with the result.</value></data>
+  <data name="Component_NoSensors" xml:space="preserve"><value>No sensor of this kind was found on this machine.</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>Duration (seconds)</value></data>
