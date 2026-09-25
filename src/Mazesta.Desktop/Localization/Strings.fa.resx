@@ -565,10 +565,10 @@
   <data name="Bench_Mem_CopyAll" xml:space="preserve"><value>کپی (همه‌ی رشته‌ها)</value></data>
   <data name="Bench_Storage_SeqWrite" xml:space="preserve"><value>نوشتن پیوسته (SEQ1M Q8T1)</value></data>
   <data name="Bench_Storage_SeqRead" xml:space="preserve"><value>خواندن پیوسته (SEQ1M Q8T1)</value></data>
-  <data name="Bench_Storage_Rand4kQ32Read" xml:space="preserve"><value>خواندن تصادفی 4K (Q32T1)</value></data>
-  <data name="Bench_Storage_Rand4kQ1Read" xml:space="preserve"><value>خواندن تصادفی 4K (Q1T1)</value></data>
-  <data name="Bench_Storage_Rand4kLatency" xml:space="preserve"><value>تأخیر خواندن تصادفی 4K (Q1T1)</value></data>
-  <data name="Bench_Storage_Rand4kQ32Write" xml:space="preserve"><value>نوشتن تصادفی 4K (Q32T1)</value></data>
+  <data name="Bench_Storage_Rand4kQ32Read" xml:space="preserve"><value>خواندن تصادفی 4K (Q32T1)‎</value></data>
+  <data name="Bench_Storage_Rand4kQ1Read" xml:space="preserve"><value>خواندن تصادفی 4K (Q1T1)‎</value></data>
+  <data name="Bench_Storage_Rand4kLatency" xml:space="preserve"><value>تأخیر خواندن تصادفی 4K (Q1T1)‎</value></data>
+  <data name="Bench_Storage_Rand4kQ32Write" xml:space="preserve"><value>نوشتن تصادفی 4K (Q32T1)‎</value></data>
   <data name="Bench_Gpu_Fps" xml:space="preserve"><value>نرخ فریم صحنه (2560x1440)</value></data>
   <data name="Bench_Gpu_Triangles" xml:space="preserve"><value>توان پردازش مثلث</value></data>
   <data name="Bench_Gpu_Fill" xml:space="preserve"><value>نرخ پر کردن پیکسل (با ترکیب رنگ)</value></data>
@@ -598,6 +598,41 @@
   <data name="Toast_TestsIncomplete" xml:space="preserve"><value>تست‌ها پیش از پایان متوقف شد. گزارش به‌صورت ناقص ذخیره شد.</value></data>
   <data name="Toast_BenchmarkReport" xml:space="preserve"><value>بنچمارک تمام شد و ذخیره شد: {0}</value></data>
   <data name="Toast_BenchmarkNotCompleted" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Tools_Note" xml:space="preserve"><value>ابزارهای تعمیر خود ویندوز که فقط با زدن دکمه اجرا می‌شوند. SFC فایل‌های محافظت‌شده‌ی سیستم را بررسی و ترمیم می‌کند (۵ تا ۱۵ دقیقه)؛ بررسی DISM منبعی را که SFC از آن ترمیم می‌کند بررسی می‌کند؛ تعمیر DISM آن منبع را ترمیم می‌کند و ممکن است از Windows Update دانلود کند (نیمه‌کاره متوقف نمی‌شود). تنظیماتی که این صفحه خودش تغییر نمی‌دهد در پنجره‌های خود ویندوز باز می‌شوند.</value></data>
+  <data name="Tools_Repair" xml:space="preserve"><value>تعمیر و بررسی</value></data>
+  <data name="Tools_Sfc" xml:space="preserve"><value>بررسی فایل‌های سیستم (SFC)</value></data>
+  <data name="Tools_DismScan" xml:space="preserve"><value>بررسی منبع اجزای ویندوز (DISM)</value></data>
+  <data name="Tools_DismRestore" xml:space="preserve"><value>تعمیر منبع اجزای ویندوز (DISM)</value></data>
+  <data name="Tools_Windows" xml:space="preserve"><value>تنظیمات ویندوز</value></data>
+  <data name="Tools_DiskCleanup" xml:space="preserve"><value>باز کردن پاک‌سازی دیسک</value></data>
+  <data name="Tools_WindowsUpdate" xml:space="preserve"><value>باز کردن Windows Update</value></data>
+  <data name="Tools_PageFileSettings" xml:space="preserve"><value>باز کردن تنظیمات حافظه‌ی مجازی</value></data>
+  <data name="Tools_PageFile" xml:space="preserve"><value>فایل صفحه‌بندی (Page file)</value></data>
+  <data name="Tools_PageFile_Managed" xml:space="preserve"><value>اندازه توسط ویندوز مدیریت می‌شود</value></data>
+  <data name="Tools_PageFile_Used" xml:space="preserve"><value>در حال استفاده</value></data>
+  <data name="Tools_PageFile_Peak" xml:space="preserve"><value>بیشینه</value></data>
+  <data name="Tools_PageFile_None" xml:space="preserve"><value>هیچ فایل صفحه‌بندی تنظیم نشده است.</value></data>
+  <data name="Tools_Running" xml:space="preserve"><value>در حال اجرای {0}…</value></data>
+  <data name="Tools_CouldNotRun" xml:space="preserve"><value>{0} اجرا نشد: {1}</value></data>
+  <data name="Tools_Result_Healthy" xml:space="preserve"><value>تمام شد: مشکلی پیدا نشد.</value></data>
+  <data name="Tools_Result_Repaired" xml:space="preserve"><value>تمام شد: مشکلاتی پیدا و ترمیم شد.</value></data>
+  <data name="Tools_Result_Damaged" xml:space="preserve"><value>تمام شد: مشکلاتی پیدا شد که ترمیم نشد.</value></data>
+  <data name="Tools_Result_Unknown" xml:space="preserve"><value>تمام شد، اما نتیجه خوانده نشد؛ خروجی زیر را ببینید.</value></data>
+  <data name="Gaming_Note" xml:space="preserve"><value>پلن مصرف انرژی ویندوز (از همین‌جا قابل تغییر و برگشت‌پذیر) و وضعیت Game Mode و زمان‌بندی سخت‌افزاری GPU (تغییر در تنظیمات خود ویندوز). اورکلاک، اندرولت و نمایش FPS به ابزارهای سازنده‌ی کارت گرافیک و پردازنده نیاز دارند و ارائه نمی‌شوند.</value></data>
+  <data name="Gaming_PowerPlan" xml:space="preserve"><value>پلن مصرف انرژی</value></data>
+  <data name="Gaming_Active" xml:space="preserve"><value>فعال</value></data>
+  <data name="Gaming_Activate" xml:space="preserve"><value>فعال کن</value></data>
+  <data name="Gaming_GameMode" xml:space="preserve"><value>Game Mode</value></data>
+  <data name="Gaming_Hags" xml:space="preserve"><value>زمان‌بندی سخت‌افزاری GPU (HAGS)‎</value></data>
+  <data name="Gaming_OpenSettings" xml:space="preserve"><value>باز کردن در ویندوز</value></data>
+  <data name="Gaming_On" xml:space="preserve"><value>روشن</value></data>
+  <data name="Gaming_Off" xml:space="preserve"><value>خاموش</value></data>
+  <data name="Gaming_Default" xml:space="preserve"><value>تنظیم نشده (پیش‌فرض ویندوز)</value></data>
+  <data name="Gaming_NoPlans" xml:space="preserve"><value>هیچ پلن مصرفی گزارش نشد.</value></data>
+  <data name="Gaming_PlanActivated" xml:space="preserve"><value>پلن مصرف به {0} تغییر کرد.</value></data>
+  <data name="Test_Windows_Sfc" xml:space="preserve"><value>فایل‌های سیستمی ویندوز (SFC)</value></data>
+  <data name="Test_Windows_Dism" xml:space="preserve"><value>منبع اجزای ویندوز (بررسی DISM)</value></data>
+  <data name="Tools_PageFile_Size" xml:space="preserve"><value>اندازه</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>اجرا</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>لغو</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>مدت (ثانیه)</value></data>

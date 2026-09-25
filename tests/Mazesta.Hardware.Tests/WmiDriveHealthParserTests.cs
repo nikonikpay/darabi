@@ -30,3 +30,19 @@ public class WmiDriveHealthHardwareTests(Xunit.Abstractions.ITestOutputHelper ou
         Assert.NotEmpty(drives); Assert.All(drives, d => Assert.NotNull(d.Status));
     }
 }
+
+public class WmiPageFileTests
+{
+    private sealed class Fake : IWmiQuery
+    {
+        public IReadOnlyList<IReadOnlyDictionary<string, object?>> Query(string scope, string wql) => wql.Contains("Win32_ComputerSystem")
+            ? [new Dictionary<string, object?> { ["AutomaticManagedPagefile"] = true }]
+            : [new Dictionary<string, object?> { ["Name"] = @"C:\pagefile.sys", ["AllocatedBaseSize"] = 16384U, ["CurrentUsage"] = 120U, ["PeakUsage"] = 900U }];
+    }
+    [Fact] public void Page_file_setting_and_usage_are_read()
+    {
+        var p = WmiPageFile.Read(new Fake());
+        Assert.True(p.SystemManaged); Assert.Equal((@"C:\pagefile.sys", 16384L, 120L, 900L), (p.Files[0].Path, p.Files[0].AllocatedMb, p.Files[0].CurrentMb, p.Files[0].PeakMb));
+    }
+    [Fact] [Trait("Category", "Hardware")] public void This_machines_page_file_reads() => Assert.NotNull(WmiPageFile.Read(new WmiQuery()).SystemManaged);
+}

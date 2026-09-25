@@ -77,6 +77,17 @@ public class ViewLoadTests
             return (FrameworkElement)window.Content;   // the content only: the window itself is the host here
         });
 
+    [Fact] public void WindowsTools_and_Gaming_views_load()
+    {
+        OnSta(() => new WindowsToolsView { DataContext = new WindowsToolsViewModel(new NoRunner(), new NoWmi(), _ => { }, a => { a(); return null!; }) });
+        OnSta(() => new GamingView { DataContext = new GamingViewModel(new NoRunner(), _ => { }, new Mazesta.Diagnostics.Windows.GamingStatus(null, true)) });
+    }
+    private sealed class NoRunner : Mazesta.Diagnostics.Windows.ICommandRunner
+    {
+        public Task<Mazesta.Diagnostics.Windows.CommandResult> RunAsync(string file, string arguments, System.Text.Encoding encoding, Action<string>? line, CancellationToken ct) => Task.FromResult(new Mazesta.Diagnostics.Windows.CommandResult(0, ["Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced) *"]));
+    }
+    private sealed class NoWmi : Mazesta.Hardware.Wmi.IWmiQuery { public IReadOnlyList<IReadOnlyDictionary<string, object?>> Query(string scope, string wql) => []; }
+
     private sealed class NoCharts : IChartWindowService { public void Open(Mazesta.Core.Hardware.SensorDefinition s, Mazesta.Core.Hardware.HardwareNode n) { } }
 
     private sealed class FixedProbe : Mazesta.Diagnostics.Memory.IMemoryProbe { public Mazesta.Diagnostics.Memory.MemoryStatus Read() => new(16L << 30, 8L << 30); }

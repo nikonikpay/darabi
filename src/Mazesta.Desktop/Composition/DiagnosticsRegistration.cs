@@ -8,7 +8,7 @@ internal static class DiagnosticsRegistration
     /// <summary>
     /// Registers the test engine and every test. The order of the <see cref="ITestExecutor"/> registrations is
     /// the order of the Test Center list, so it runs component by component: CPU, RAM, storage, network, GPU,
-    /// then the combined power test that needs both processors, then the final SMART re-check.
+    /// then the combined power test that needs both processors, Windows health (sfc, DISM check), then the final SMART re-check.
     /// </summary>
     public static IServiceCollection AddDiagnostics(this IServiceCollection s, AppPaths paths, ILoggerFactory loggers)
     {
@@ -27,6 +27,9 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, GpuVramExecutor>();
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
+        s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
+        s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.SfcExecutor>();
+        s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.DismScanExecutor>();
         s.AddSingleton<Mazesta.Core.Providers.IDriveHealthProvider>(sp => new Mazesta.Hardware.Wmi.WmiDriveHealthProvider(sp.GetRequiredService<Mazesta.Hardware.Wmi.IWmiQuery>()));
         s.AddSingleton<ITestExecutor, SmartCheckExecutor>();   // last: the final SMART re-check sees what the tests did to the drives (spec 4.2, item 11)
 

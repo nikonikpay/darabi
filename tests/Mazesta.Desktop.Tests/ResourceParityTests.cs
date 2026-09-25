@@ -26,6 +26,9 @@ public class ResourceParityTests
         Assert.Empty(Read("Strings.resx").Where(p => string.IsNullOrWhiteSpace(p.Value)).Select(p => "en: " + p.Key));
     }
 
+    [Fact] public void No_Persian_value_is_double_encoded()   // UTF-8 read as Latin-1 turns Persian into "Ø§Ù..." - accented Latin never belongs in these strings
+        => Assert.Empty(Read("Strings.fa.resx").Where(p => p.Value.Any(c => c is >= 'À' and <= 'ÿ')).Select(p => "fa: " + p.Key));
+
     [Fact] public void Every_key_a_view_names_exists()
     {
         var keys = Read("Strings.resx").Keys.ToHashSet();

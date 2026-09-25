@@ -598,6 +598,41 @@
   <data name="Toast_TestsIncomplete" xml:space="preserve"><value>Tests stopped before all were done. The report is saved as incomplete.</value></data>
   <data name="Toast_BenchmarkReport" xml:space="preserve"><value>Benchmark finished and saved: {0}</value></data>
   <data name="Toast_BenchmarkNotCompleted" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Tools_Note" xml:space="preserve"><value>Windows' own repair tools, run only when you press a button. SFC checks and repairs the protected system files (5-15 minutes); the DISM check looks at the component store SFC repairs from; the DISM repair fixes that store and may download from Windows Update (it cannot be stopped half-way). Settings this page does not change itself open in Windows' own windows.</value></data>
+  <data name="Tools_Repair" xml:space="preserve"><value>Repair and checks</value></data>
+  <data name="Tools_Sfc" xml:space="preserve"><value>Check system files (SFC)</value></data>
+  <data name="Tools_DismScan" xml:space="preserve"><value>Check component store (DISM)</value></data>
+  <data name="Tools_DismRestore" xml:space="preserve"><value>Repair component store (DISM)</value></data>
+  <data name="Tools_Windows" xml:space="preserve"><value>Windows settings</value></data>
+  <data name="Tools_DiskCleanup" xml:space="preserve"><value>Open Disk Cleanup</value></data>
+  <data name="Tools_WindowsUpdate" xml:space="preserve"><value>Open Windows Update</value></data>
+  <data name="Tools_PageFileSettings" xml:space="preserve"><value>Open virtual memory settings</value></data>
+  <data name="Tools_PageFile" xml:space="preserve"><value>Page file</value></data>
+  <data name="Tools_PageFile_Managed" xml:space="preserve"><value>Size managed by Windows</value></data>
+  <data name="Tools_PageFile_Used" xml:space="preserve"><value>In use</value></data>
+  <data name="Tools_PageFile_Peak" xml:space="preserve"><value>Peak use</value></data>
+  <data name="Tools_PageFile_None" xml:space="preserve"><value>No page file is set.</value></data>
+  <data name="Tools_Running" xml:space="preserve"><value>Running {0}…</value></data>
+  <data name="Tools_CouldNotRun" xml:space="preserve"><value>{0} could not run: {1}</value></data>
+  <data name="Tools_Result_Healthy" xml:space="preserve"><value>Finished: no problem found.</value></data>
+  <data name="Tools_Result_Repaired" xml:space="preserve"><value>Finished: problems were found and repaired.</value></data>
+  <data name="Tools_Result_Damaged" xml:space="preserve"><value>Finished: problems were found that could not be repaired.</value></data>
+  <data name="Tools_Result_Unknown" xml:space="preserve"><value>Finished, but the result could not be read; see the output below.</value></data>
+  <data name="Gaming_Note" xml:space="preserve"><value>The Windows power plan, switched here and reversible, and the state of Game Mode and hardware-accelerated GPU scheduling, changed in Windows' own settings. Overclocking, undervolting and an FPS overlay need the GPU and CPU makers' own tools and are not offered.</value></data>
+  <data name="Gaming_PowerPlan" xml:space="preserve"><value>Power plan</value></data>
+  <data name="Gaming_Active" xml:space="preserve"><value>Active</value></data>
+  <data name="Gaming_Activate" xml:space="preserve"><value>Activate</value></data>
+  <data name="Gaming_GameMode" xml:space="preserve"><value>Game Mode</value></data>
+  <data name="Gaming_Hags" xml:space="preserve"><value>Hardware-accelerated GPU scheduling</value></data>
+  <data name="Gaming_OpenSettings" xml:space="preserve"><value>Open in Windows</value></data>
+  <data name="Gaming_On" xml:space="preserve"><value>On</value></data>
+  <data name="Gaming_Off" xml:space="preserve"><value>Off</value></data>
+  <data name="Gaming_Default" xml:space="preserve"><value>Not set (Windows default)</value></data>
+  <data name="Gaming_NoPlans" xml:space="preserve"><value>No power plan was reported.</value></data>
+  <data name="Gaming_PlanActivated" xml:space="preserve"><value>Power plan switched to {0}.</value></data>
+  <data name="Test_Windows_Sfc" xml:space="preserve"><value>Windows system files (SFC)</value></data>
+  <data name="Test_Windows_Dism" xml:space="preserve"><value>Windows component store (DISM check)</value></data>
+  <data name="Tools_PageFile_Size" xml:space="preserve"><value>Size</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>Duration (seconds)</value></data>
