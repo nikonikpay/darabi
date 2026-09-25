@@ -592,6 +592,7 @@
   <data name="Component_Note_Storage" xml:space="preserve"><value>درایوها: آنچه ویندوز گزارش می‌کند (از جمله وضعیت سلامت)، سنسورهای زنده و مقادیر SMART همان‌طور که درایو گزارش می‌دهد، و بنچمارک سرعت. تست‌های خواندن/نوشتن که صحت داده را بررسی می‌کنند در صفحه‌ی تست‌ها هستند.</value></data>
   <data name="Component_Note_Network" xml:space="preserve"><value>کارت‌های شبکه، ترافیک زنده و تست سرعت اینترنت. تست سرعت فقط وقتی «اجرا» را بزنید با speed.cloudflare.com داده رد و بدل می‌کند و حجم داده همراه نتیجه نمایش داده می‌شود.</value></data>
   <data name="Component_NoSensors" xml:space="preserve"><value>سنسوری از این نوع روی این دستگاه پیدا نشد.</value></data>
+  <data name="Test_Storage_Smart" xml:space="preserve"><value>بررسی نهایی SMART (همه‌ی درایوها)</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>اجرا</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>لغو</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>مدت (ثانیه)</value></data>
