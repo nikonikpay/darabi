@@ -18,7 +18,7 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource Brush.TextMuted}" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource Text.Value}" TextWrapping="Wrap" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource Text.Value}" TextWrapping="Wrap" HorizontalAlignment="Left" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

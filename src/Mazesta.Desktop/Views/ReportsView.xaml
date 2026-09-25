@@ -13,7 +13,7 @@
 
         <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
             <TextBlock DockPanel.Dock="Left" Text="{loc:Loc Nav_Reports}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
-            <Button DockPanel.Dock="Right" Content="{loc:Loc Reports_Compare}" Command="{Binding CompareCommand}" Padding="12,5" VerticalAlignment="Center" />
+            <Button Style="{StaticResource Button.Primary}" DockPanel.Dock="Right" Content="{loc:Loc Reports_Compare}" Command="{Binding CompareCommand}" Padding="12,5" VerticalAlignment="Center" />
             <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Reports_CompareHint}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0" />
         </DockPanel>
 
@@ -51,7 +51,7 @@
                                     <TextBlock Text="{Binding Summary}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,6,0,0" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="{loc:Loc Reports_Html}" Padding="12,5" Margin="6,0,0,0"
+                                    <Button Style="{StaticResource Button.Primary}" Content="{loc:Loc Reports_Html}" Padding="12,5" Margin="6,0,0,0"
                                             Command="{Binding DataContext.OpenHtmlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="{loc:Loc Reports_Pdf}" Padding="12,5" Margin="6,0,0,0"
                                             Command="{Binding DataContext.ExportPdfCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
@@ -61,7 +61,7 @@
                                             Command="{Binding DataContext.OpenJsonCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="{loc:Loc Reports_Folder}" Padding="12,5" Margin="6,0,0,0"
                                             Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    <Button Content="{loc:Loc Reports_Delete}" Padding="12,5" Margin="6,0,0,0"
+                                    <Button Style="{StaticResource Button.DangerOutline}" Content="{loc:Loc Reports_Delete}" Padding="12,5" Margin="6,0,0,0"
                                             Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                 </StackPanel>
                             </Grid>

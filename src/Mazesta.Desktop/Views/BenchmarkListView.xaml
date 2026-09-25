@@ -12,10 +12,10 @@
                     <StackPanel>
                         <DockPanel LastChildFill="False">
                             <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
-                            <Button DockPanel.Dock="Right" Content="{loc:Loc Bench_Cancel}" Padding="12,5" Margin="6,0,0,0"
+                            <Button Style="{StaticResource Button.Danger}" DockPanel.Dock="Right" Content="{loc:Loc Bench_Cancel}" Padding="12,5" Margin="6,0,0,0"
                                     Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     IsEnabled="{Binding DataContext.IsRunning, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                            <Button DockPanel.Dock="Right" Content="{loc:Loc Bench_Run}" Padding="12,5"
+                            <Button Style="{StaticResource Button.Success}" DockPanel.Dock="Right" Content="{loc:Loc Bench_Run}" Padding="12,5"
                                     Command="{Binding DataContext.RunCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding DurationText, UpdateSourceTrigger=PropertyChanged}" Width="60" Style="{StaticResource TextBox.Value}" Margin="8,0" VerticalAlignment="Center" />
                             <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Bench_Duration}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" />
@@ -41,17 +41,19 @@
                         <ProgressBar Value="{Binding PercentComplete}" Maximum="100" Height="6" Margin="0,10,0,0" />
                         <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" />
 
-                        <ItemsControl ItemsSource="{Binding Metrics}" Margin="0,8,0,0">
+                        <!-- One tile per number: the value large, what it measures small underneath, so a row of results reads at a glance. -->
+                        <ItemsControl ItemsSource="{Binding Metrics}" Margin="0,10,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type vm:MetricRow}">
-                                    <Grid Margin="0,0,0,3">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="220" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Name}" Foreground="{StaticResource Brush.TextMuted}" />
-                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource Text.Value}" FontWeight="SemiBold" />
-                                    </Grid>
+                                    <Border Background="{StaticResource Brush.SurfaceAlt}" CornerRadius="6" Padding="12,8" Margin="0,0,8,8" MinWidth="150">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Value}" Style="{StaticResource Text.Value}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Left" />
+                                            <TextBlock Text="{Binding Name}" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5" TextWrapping="Wrap" MaxWidth="210" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

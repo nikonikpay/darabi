@@ -123,8 +123,8 @@
         </ScrollViewer>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,12,0,0">
-            <Button Content="{loc:Loc Test_Start}" Command="{Binding StartCommand}" Padding="14,6" />
-            <Button Content="{loc:Loc Test_Cancel}" Command="{Binding CancelCommand}" Padding="14,6" Margin="10,0,0,0" />
+            <Button Style="{StaticResource Button.Success}" Content="{loc:Loc Test_Start}" Command="{Binding StartCommand}" Padding="14,6" />
+            <Button Style="{StaticResource Button.Danger}" Content="{loc:Loc Test_Cancel}" Command="{Binding CancelCommand}" Padding="14,6" Margin="10,0,0,0" />
             <Button Content="{loc:Loc Test_SelectAll}" Command="{Binding SelectAllCommand}" Padding="14,6" Margin="24,0,0,0" />
             <Button Content="{loc:Loc Test_ClearSelection}" Command="{Binding ClearSelectionCommand}" Padding="14,6" Margin="10,0,0,0" />
             <controls:HelpTip HelpKey="Test_Center" VerticalAlignment="Center" Margin="8,0,0,0" />
