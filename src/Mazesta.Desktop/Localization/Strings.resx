@@ -593,6 +593,11 @@
   <data name="Component_Note_Network" xml:space="preserve"><value>The network adapters, their live traffic, and the internet speed test. The speed test exchanges data with speed.cloudflare.com only when you press Run; the amount of data is shown with the result.</value></data>
   <data name="Component_NoSensors" xml:space="preserve"><value>No sensor of this kind was found on this machine.</value></data>
   <data name="Test_Storage_Smart" xml:space="preserve"><value>Final SMART re-check (all drives)</value></data>
+  <data name="Toast_TestsPassed" xml:space="preserve"><value>Tests finished: every test that ran passed. The report is saved.</value></data>
+  <data name="Toast_TestsFailed" xml:space="preserve"><value>Tests finished: at least one test failed. The report is saved.</value></data>
+  <data name="Toast_TestsIncomplete" xml:space="preserve"><value>Tests stopped before all were done. The report is saved as incomplete.</value></data>
+  <data name="Toast_BenchmarkReport" xml:space="preserve"><value>Benchmark finished and saved: {0}</value></data>
+  <data name="Toast_BenchmarkNotCompleted" xml:space="preserve"><value>{0}: {1}</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>Duration (seconds)</value></data>

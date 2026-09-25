@@ -64,6 +64,19 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
+    <!-- Spec 9.4: Ctrl+1 ... Ctrl+0 open the first ten pages. -->
+    <Window.InputBindings>
+        <KeyBinding Modifiers="Control" Key="D1" Command="{Binding NavigateCommand}" CommandParameter="0" />
+        <KeyBinding Modifiers="Control" Key="D2" Command="{Binding NavigateCommand}" CommandParameter="1" />
+        <KeyBinding Modifiers="Control" Key="D3" Command="{Binding NavigateCommand}" CommandParameter="2" />
+        <KeyBinding Modifiers="Control" Key="D4" Command="{Binding NavigateCommand}" CommandParameter="3" />
+        <KeyBinding Modifiers="Control" Key="D5" Command="{Binding NavigateCommand}" CommandParameter="4" />
+        <KeyBinding Modifiers="Control" Key="D6" Command="{Binding NavigateCommand}" CommandParameter="5" />
+        <KeyBinding Modifiers="Control" Key="D7" Command="{Binding NavigateCommand}" CommandParameter="6" />
+        <KeyBinding Modifiers="Control" Key="D8" Command="{Binding NavigateCommand}" CommandParameter="7" />
+        <KeyBinding Modifiers="Control" Key="D9" Command="{Binding NavigateCommand}" CommandParameter="8" />
+        <KeyBinding Modifiers="Control" Key="D0" Command="{Binding NavigateCommand}" CommandParameter="9" />
+    </Window.InputBindings>
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
@@ -179,6 +192,32 @@
                     </DataTemplate>
                 </ContentControl.Resources>
             </ContentControl>
+
+            <!-- Notices (spec 9.4): above the page, in the bottom corner; a click dismisses one. -->
+            <ItemsControl Grid.Row="1" ItemsSource="{Binding Toasts}" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="16" MaxWidth="380">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:ToastViewModel}">
+                        <Button Command="{Binding DataContext.DismissToastCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
+                                Margin="0,8,0,0" Padding="0" HorizontalContentAlignment="Stretch" Background="{StaticResource Brush.SurfaceAlt}" BorderBrush="{StaticResource Brush.Border}">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Left" Width="5" CornerRadius="5,0,0,5">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource Brush.Primary}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Success"><Setter Property="Background" Value="{StaticResource Brush.Success}" /></DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Danger"><Setter Property="Background" Value="{StaticResource Brush.Danger}" /></DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Warning"><Setter Property="Background" Value="#FFE0A030" /></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="12,10" />
+                            </DockPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </Grid>
 
         <!-- Status bar -->

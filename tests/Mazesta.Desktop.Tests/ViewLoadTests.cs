@@ -66,6 +66,17 @@ public class ViewLoadTests
             return new ComponentView { DataContext = vm };
         });
 
+    [Fact] public void MainWindow_loads_with_the_sidebar_logo_service_number_and_a_notice()
+        => OnSta(() =>
+        {
+            var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch);
+            var e = new Mazesta.Monitoring.PollingEngine(new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider(), c, new Mazesta.Monitoring.MonitoringOptions(), new Mazesta.Monitoring.BoundedEventLog(c, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance));
+            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection(); services.AddSingleton(new Mazesta.Persistence.AppConfig { ServiceNumber = "S-1" });
+            var shell = new ShellViewModel(e, services.BuildServiceProvider()); shell.Notify(new("done", ToastKind.Success));
+            var window = new MainWindow { DataContext = shell };
+            return (FrameworkElement)window.Content;   // the content only: the window itself is the host here
+        });
+
     private sealed class NoCharts : IChartWindowService { public void Open(Mazesta.Core.Hardware.SensorDefinition s, Mazesta.Core.Hardware.HardwareNode n) { } }
 
     private sealed class FixedProbe : Mazesta.Diagnostics.Memory.IMemoryProbe { public Mazesta.Diagnostics.Memory.MemoryStatus Read() => new(16L << 30, 8L << 30); }

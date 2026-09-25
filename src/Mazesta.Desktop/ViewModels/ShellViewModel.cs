@@ -35,6 +35,10 @@ public sealed partial class ShellViewModel : ObservableObject
     private bool _providerOwnsBanner;
 
     public ObservableCollection<NavItem> Items { get; }
+    /// <summary>Notices shown in the corner (newest last). Each goes away by itself after <see cref="ToastSeconds"/> or when clicked; nothing
+    /// runs while there is none.</summary>
+    public ObservableCollection<ToastViewModel> Toasts { get; } = [];
+    public const int ToastSeconds = 8;
 
     /// <summary>The service job being worked on (spec 7.1), shown under the sidebar and printed on every report while set. Persian digits become
     /// Latin so the number reads the same in every report; saved with the settings when the app closes.</summary>
@@ -72,7 +76,35 @@ public sealed partial class ShellViewModel : ObservableObject
             if (s == EngineState.Failed) ShowBanner(Loc.Get("Engine_Failed"));
         });
         IntervalText = Loc.Format("Status_Interval", engine.FastInterval.TotalSeconds);
+        if (sp.GetService<Services.ReportService>() is { } reports) reports.ReportCreated += r => Ui(() => Notify(ReportToast(r)));
+        if (sp.GetService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>() is { } runner)
+            runner.Finished += run => { if (run.Result.Status != Mazesta.Diagnostics.Benchmarks.BenchmarkStatus.Completed) Ui(() => Notify(new(Loc.Format("Toast_BenchmarkNotCompleted", Loc.Get(run.Definition.NameKey), Loc.Get("Bench_Status_" + run.Result.Status)), ToastKind.Warning))); };
     }
+
+    private static void Ui(Action a) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(a);
+
+    /// <summary>A completed benchmark shows through its report; a finished test session through its report's verdict.</summary>
+    internal static ToastViewModel ReportToast(Mazesta.Reporting.StoredReport r) => r.Verdict switch
+    {
+        null => new(Loc.Format("Toast_BenchmarkReport", string.Join(" · ", r.Benchmarks)), ToastKind.Info),
+        Mazesta.Reporting.ReportVerdict.Passed => new(Loc.Get("Toast_TestsPassed"), ToastKind.Success),
+        Mazesta.Reporting.ReportVerdict.Failed => new(Loc.Get("Toast_TestsFailed"), ToastKind.Danger),
+        _ => new(Loc.Get("Toast_TestsIncomplete"), ToastKind.Warning)
+    };
+
+    public void Notify(ToastViewModel toast)
+    {
+        Toasts.Add(toast);
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(ToastSeconds) };
+        timer.Tick += (_, _) => { timer.Stop(); Toasts.Remove(toast); };
+        timer.Start();
+    }
+
+    [RelayCommand] private void DismissToast(ToastViewModel toast) => Toasts.Remove(toast);
+
+    /// <summary>Ctrl+1 ... Ctrl+9 and Ctrl+0 open the first ten pages (spec 9.4: keyboard shortcuts for the main operations).</summary>
+    [RelayCommand]
+    private void Navigate(string index) { if (IsNavigationEnabled && int.TryParse(index, out int i) && i >= 0 && i < Items.Count) Selected = Items[i]; }
 
     partial void OnSelectedChanged(NavItem? value)
     {
