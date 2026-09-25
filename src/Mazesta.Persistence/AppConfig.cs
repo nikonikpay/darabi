@@ -13,6 +13,9 @@ public sealed class AppConfig : IVersionedDocument
     public int FastIntervalSeconds { get; set; } = 2;
     public int StorageIntervalSeconds { get; set; } = 900;
     public string ShopName { get; set; } = "مازستا";
+    /// <summary>The service job being worked on (spec 7.1): printed on every report while set. Saved with the settings so the job survives a
+    /// restart or a reboot during a test; empty when there is none.</summary>
+    public string ServiceNumber { get; set; } = "";
     public List<string> ExpandedGroups { get; set; } = [];
     public WindowPlacement? MainWindow { get; set; }
     public List<ChartWindowConfig> ChartWindows { get; set; } = [];

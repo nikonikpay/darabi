@@ -36,6 +36,14 @@ public sealed partial class ShellViewModel : ObservableObject
 
     public ObservableCollection<NavItem> Items { get; }
 
+    /// <summary>The service job being worked on (spec 7.1), shown under the sidebar and printed on every report while set. Persian digits become
+    /// Latin so the number reads the same in every report; saved with the settings when the app closes.</summary>
+    public string ServiceNumber
+    {
+        get => _sp.GetService<Mazesta.Persistence.AppConfig>()?.ServiceNumber ?? "";
+        set { if (_sp.GetService<Mazesta.Persistence.AppConfig>() is { } config) { config.ServiceNumber = Mazesta.Core.Text.PersianDigits.Normalize(value ?? "").Trim(); OnPropertyChanged(); } }
+    }
+
     public ShellViewModel(PollingEngine engine, IServiceProvider sp)
     {
         ComponentViewModel Component(HardwareKind kind) => sp.GetRequiredService<Func<HardwareKind, ComponentViewModel>>()(kind);

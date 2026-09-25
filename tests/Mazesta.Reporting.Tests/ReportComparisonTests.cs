@@ -29,6 +29,14 @@ public class ReportComparisonTests
         Assert.DoesNotContain(">0 MB/s<", html);
     }
 
+    [Fact] public void Two_service_numbers_are_two_jobs_and_are_not_compared_but_a_report_without_one_is()
+    {
+        SessionReport Job(string? number) => SessionReport.Create("x", "1", T0, [Test("cpu", ReportOutcome.Passed)], [], Machine(), serviceNumber: number);
+        var refused = ReportComparison.Compare(Job("S-1"), Job("S-2"));
+        Assert.False(refused.IsComparable); Assert.Equal(MachineMismatch.ServiceNumber, refused.Mismatch);
+        Assert.True(ReportComparison.Compare(Job("S-1"), Job("s-1")).IsComparable); Assert.True(ReportComparison.Compare(Job(null), Job("S-1")).IsComparable);
+    }
+
     [Fact] public void Same_machine_is_comparable()
     {
         var cmp = ReportComparison.Compare(Report(Machine(), Test("cpu", ReportOutcome.Failed)), Report(Machine(), Test("cpu", ReportOutcome.Passed)));

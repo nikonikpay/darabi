@@ -477,6 +477,8 @@
   <data name="Reports_Mismatch_Cpu" xml:space="preserve"><value>the processor is different or unknown</value></data>
   <data name="Reports_Mismatch_Motherboard" xml:space="preserve"><value>the motherboard is different or unknown</value></data>
   <data name="Reports_Mismatch_Storage" xml:space="preserve"><value>the drives (serial numbers) are different</value></data>
+  <data name="Reports_Mismatch_ServiceNumber" xml:space="preserve"><value>they belong to different service numbers</value></data>
+  <data name="Service_Number" xml:space="preserve"><value>Service number</value></data>
   <data name="Reports_Json" xml:space="preserve"><value>JSON data</value></data>
   <data name="Reports_Folder" xml:space="preserve"><value>Folder</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>Delete</value></data>

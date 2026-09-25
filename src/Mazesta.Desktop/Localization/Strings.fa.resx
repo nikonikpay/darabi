@@ -477,6 +477,8 @@
   <data name="Reports_Mismatch_Cpu" xml:space="preserve"><value>پردازنده متفاوت یا نامشخص است</value></data>
   <data name="Reports_Mismatch_Motherboard" xml:space="preserve"><value>مادربرد متفاوت یا نامشخص است</value></data>
   <data name="Reports_Mismatch_Storage" xml:space="preserve"><value>درایوها (شماره‌سریال) متفاوت هستند</value></data>
+  <data name="Reports_Mismatch_ServiceNumber" xml:space="preserve"><value>مربوط به دو شماره‌ی سرویس متفاوت هستند</value></data>
+  <data name="Service_Number" xml:space="preserve"><value>شماره‌ی سرویس</value></data>
   <data name="Reports_Json" xml:space="preserve"><value>داده‌ی JSON</value></data>
   <data name="Reports_Folder" xml:space="preserve"><value>پوشه</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>حذف</value></data>

@@ -33,6 +33,16 @@ public class ReportLanguageTests
         string text = ReportPlainText.Write(SessionReport.CreateBenchmark("Mazesta", "1.0", T0.AddMinutes(2), [bm], [], HardwareInventory.Empty), ReportText.English);
         Assert.Contains(ReportText.English.MeasurementsOnly, text); Assert.Contains("Sequential read: 3456 MB/s", text); Assert.DoesNotContain("Overall result", text);
     }
+    [Fact] public void The_service_number_and_the_logo_are_in_the_header_and_absent_numbers_leave_no_label()
+    {
+        var withJob = SessionReport.Create("Mazesta", "1.0", T0, [], [], HardwareInventory.Empty, serviceNumber: "  S-1405-0042 ");
+        Assert.Equal("S-1405-0042", withJob.ServiceNumber);
+        string html = ReportHtml.Write(withJob, wording: ReportText.English);
+        Assert.Contains("Service number: <bdi class=\"lt\">S-1405-0042</bdi>", html); Assert.Contains("class=\"logo\"", html);
+        Assert.Contains("Service number: S-1405-0042", ReportPlainText.Write(withJob, ReportText.English));
+        Assert.DoesNotContain("Service number", ReportHtml.Write(Report(), wording: ReportText.English));
+    }
+
     [Fact] public void The_store_saves_the_text_and_writes_it_for_older_reports_that_have_none()
     {
         string dir = Path.Combine(Path.GetTempPath(), "mazesta-txt-" + Guid.NewGuid().ToString("N"));

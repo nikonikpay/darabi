@@ -13,7 +13,7 @@ public sealed class ReportService
 {
     private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkRunner _benchmarks; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
-    private DateTimeOffset _sessionStart;
+    private DateTimeOffset _sessionStart; private string _serviceNumber = "";   // the job the session was started for, even if the field changes meanwhile
     public ReportStore Store { get; }
     /// <summary>Where the PDF printer (WebView2) keeps its profile - inside the portable Data folder.</summary>
     public string BrowserDataDir { get; }
@@ -22,7 +22,7 @@ public sealed class ReportService
     public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkRunner benchmarks, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
     {
         _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir); BrowserDataDir = Path.Combine(paths.CacheDir, "report-browser");
-        engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; } };
+        engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; _serviceNumber = _config.ServiceNumber; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
         benchmarks.Finished += b => { if (b.Result.Status == BenchmarkStatus.Completed) _ = Task.Run(() => CreateBenchmarkReportAsync(b)); };   // a run that measured nothing has nothing to report
@@ -32,14 +32,14 @@ public sealed class ReportService
     {
         try
         {
-            IReadOnlyList<QueuedTest> queue; Dictionary<TestId, TestRunResult> results; DateTimeOffset start;
-            lock (_lock) { queue = _queue; results = new(_results); start = _sessionStart; }
+            IReadOnlyList<QueuedTest> queue; Dictionary<TestId, TestRunResult> results; DateTimeOffset start; string service;
+            lock (_lock) { queue = _queue; results = new(_results); start = _sessionStart; service = _serviceNumber; }
             if (results.Count == 0) return;   // nothing ran (cancelled before the first test): there is nothing to report
 
             var tests = queue.Select(q => ToEntry(q, results.GetValueOrDefault(q.Definition.Id), start)).ToList();
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt));
-            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Completed().Select(ToEntry).ToList()));
+            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Completed().Select(ToEntry).ToList(), serviceNumber: service));
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
@@ -50,7 +50,7 @@ public sealed class ReportService
         {
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, benchmark.Result.StartedAt, benchmark.Result.FinishedAt);
-            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [ToEntry(benchmark)], sensors, machine));
+            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [ToEntry(benchmark)], sensors, machine, _config.ServiceNumber));
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }

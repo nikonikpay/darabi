@@ -10,7 +10,7 @@ public sealed class ReportText
         Name, Outcome, Duration, Errors, Detail, Options, Sensor, Min, Avg, Max, Samples, Total, Passed, Failed, NotDone,
         Started, Finished, ReportId, NoSensors, Cpu, Gpu, Ram, Board, Bios, Storage, Network, Os, Footer, MeasurementsOnly,
         VerdictPassed, VerdictFailed, VerdictIncomplete, OutcomePassed, OutcomeFailed, OutcomeCancelled, OutcomeUnsupported, OutcomeNotRun,
-        CompareTitle, Before, After, Change, NotMeasured;
+        CompareTitle, Before, After, Change, NotMeasured, ServiceNumber;
 
     public string TitleOf(ReportKind kind) => kind == ReportKind.Benchmark ? BenchmarkTitle : Title;
     public string VerdictName(ReportVerdict v) => v switch { ReportVerdict.Passed => VerdictPassed, ReportVerdict.Failed => VerdictFailed, _ => VerdictIncomplete };
@@ -33,7 +33,7 @@ public sealed class ReportText
         MeasurementsOnly = "فقط اندازه‌گیری سرعت؛ بنچمارک قبول یا رد ندارد و آزمون سلامت نیست",
         VerdictPassed = "همه‌ی آزمون‌های انجام‌شده موفق بودند", VerdictFailed = "دست‌کم یک آزمون ناموفق بود؛ سیستم نیاز به بررسی دارد", VerdictIncomplete = "آزمون‌ها کامل انجام نشد؛ نتیجه‌ی قطعی نیست",
         OutcomePassed = "موفق", OutcomeFailed = "ناموفق", OutcomeCancelled = "لغو شد", OutcomeUnsupported = "پشتیبانی نمی‌شود", OutcomeNotRun = "اجرا نشده",
-        CompareTitle = "مقایسه‌ی قبل و بعد از سرویس", Before = "قبل", After = "بعد", Change = "تغییر", NotMeasured = "اندازه‌گیری نشده"
+        CompareTitle = "مقایسه‌ی قبل و بعد از سرویس", Before = "قبل", After = "بعد", Change = "تغییر", NotMeasured = "اندازه‌گیری نشده", ServiceNumber = "شماره‌ی سرویس"
     };
 
     public static readonly ReportText English = new()
@@ -48,6 +48,6 @@ public sealed class ReportText
         MeasurementsOnly = "Speed measurements only: a benchmark has no pass or fail and is not a health test",
         VerdictPassed = "Every test that ran passed", VerdictFailed = "At least one test failed; the system needs attention", VerdictIncomplete = "The tests were not completed; there is no definite result",
         OutcomePassed = "Passed", OutcomeFailed = "Failed", OutcomeCancelled = "Cancelled", OutcomeUnsupported = "Not supported", OutcomeNotRun = "Not run",
-        CompareTitle = "Before and after service", Before = "Before", After = "After", Change = "Change", NotMeasured = "not measured"
+        CompareTitle = "Before and after service", Before = "Before", After = "After", Change = "Change", NotMeasured = "not measured", ServiceNumber = "Service number"
     };
 }

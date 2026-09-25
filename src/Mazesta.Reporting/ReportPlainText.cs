@@ -13,6 +13,7 @@ public static class ReportPlainText
         b.AppendLine($"{r.ShopName} — {w.TitleOf(r.Kind)}");
         b.AppendLine($"{w.Started}: {ReportFormat.Stamp(r.StartedAt)} · {w.Finished}: {ReportFormat.Stamp(r.FinishedAt)} · {w.Duration}: {ReportFormat.Duration(r.DurationSeconds)}");
         b.AppendLine($"{w.ReportId}: {r.Id}");
+        if (r.ServiceNumber is { } service) b.AppendLine($"{w.ServiceNumber}: {service}");
 
         if (r.Verdict is { } verdict)
         {

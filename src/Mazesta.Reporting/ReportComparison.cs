@@ -17,7 +17,7 @@ public sealed record SensorDelta(string Id, string Name, string Unit,
 public sealed record BenchmarkDelta(string BenchmarkId, string Benchmark, string Metric, string Unit, double? Before, double? After, double? Delta);
 
 /// <summary>Which identity check two reports failed: the part that differs (or is unknown) between them.</summary>
-public enum MachineMismatch { Cpu, Motherboard, Storage }
+public enum MachineMismatch { Cpu, Motherboard, Storage, ServiceNumber }
 
 public sealed record ReportComparison(bool IsComparable, string? Reason, IReadOnlyList<TestOutcomeChange> Tests, IReadOnlyList<SensorDelta> Sensors, IReadOnlyList<BenchmarkDelta> Benchmarks, MachineMismatch? Mismatch = null)
 {
@@ -30,6 +30,9 @@ public sealed record ReportComparison(bool IsComparable, string? Reason, IReadOn
     public static ReportComparison Compare(SessionReport before, SessionReport after)
     {
         if (!SameMachine(before.Machine, after.Machine, out string reason, out var mismatch)) return NotComparable(reason, mismatch);
+        // Spec 4.4: before and after belong to one service job. Two numbers that differ are two jobs; a report without one is not refused.
+        if (before.ServiceNumber is { } sb && after.ServiceNumber is { } sa && !string.Equals(sb, sa, StringComparison.OrdinalIgnoreCase))
+            return NotComparable("The two reports belong to different service numbers.", MachineMismatch.ServiceNumber);
 
         var beforeTests = before.Tests.ToDictionary(t => t.Id);
         var afterTests = after.Tests.ToDictionary(t => t.Id);

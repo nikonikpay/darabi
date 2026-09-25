@@ -41,7 +41,8 @@ public static class ReportHtml
         b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
          .Append("<title>").Append(E(w.CompareTitle)).Append(" — ").Append(E(after.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>")
-         .Append("<header><h1>").Append(E(after.ShopName)).Append(" — ").Append(E(w.CompareTitle)).Append("</h1><div class=\"meta\">")
+         .Append("<header>").Append(MazestaLogo.Svg("#201E1E", "logo")).Append("<h1>").Append(E(after.ShopName)).Append(" — ").Append(E(w.CompareTitle)).Append("</h1><div class=\"meta\">")
+         .Append(after.ServiceNumber is { } service ? $"<b>{w.ServiceNumber}: {Lt(service)}</b><br>" : "")
          .Append(w.Before).Append(": ").Append(Lt(ReportFormat.Stamp(before.StartedAt) + " · " + before.Id)).Append("<br>")
          .Append(w.After).Append(": ").Append(Lt(ReportFormat.Stamp(after.StartedAt) + " · " + after.Id)).Append("</div></header>");
         if (c.Tests.Count > 0)
@@ -87,6 +88,7 @@ body{{margin:0;background:#eef1f5;color:#1b2430;font:14px/1.75 {family}}}
 main{{max-width:900px;margin:0 auto;background:#fff;padding:32px 36px}}
 .lt{{font-family:'Segoe UI',Consolas,monospace;direction:ltr;unicode-bidi:isolate;font-size:.92em}}
 header{{border-bottom:3px solid #2f6bff;padding-bottom:14px;margin-bottom:18px}}
+.logo{{display:block;height:34px;width:auto;margin-bottom:10px}}
 h1{{margin:0;font-size:24px}} h2{{margin:26px 0 10px;font-size:18px;border-inline-start:4px solid #2f6bff;padding-inline-start:10px}}
 .meta{{color:#5b6675;font-size:12.5px;margin-top:4px}}
 .verdict{{border-radius:10px;padding:14px 18px;font-size:17px;font-weight:700;margin:6px 0 14px}}
@@ -110,8 +112,9 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
 
     private static void Header(StringBuilder b, SessionReport r, ReportText w)
     {
-        b.Append("<header><h1>").Append(E(r.ShopName)).Append(" — ").Append(E(w.TitleOf(r.Kind))).Append("</h1><div class=\"meta\">")
-         .Append(w.Started).Append(": ").Append(Lt(ReportFormat.Stamp(r.StartedAt))).Append(" · ").Append(w.Finished).Append(": ").Append(Lt(ReportFormat.Stamp(r.FinishedAt)))
+        b.Append("<header>").Append(MazestaLogo.Svg("#201E1E", "logo")).Append("<h1>").Append(E(r.ShopName)).Append(" — ").Append(E(w.TitleOf(r.Kind))).Append("</h1><div class=\"meta\">");
+        if (r.ServiceNumber is { } service) b.Append("<b>").Append(w.ServiceNumber).Append(": ").Append(Lt(service)).Append("</b><br>");
+        b.Append(w.Started).Append(": ").Append(Lt(ReportFormat.Stamp(r.StartedAt))).Append(" · ").Append(w.Finished).Append(": ").Append(Lt(ReportFormat.Stamp(r.FinishedAt)))
          .Append(" · ").Append(w.Duration).Append(": ").Append(Lt(ReportFormat.Duration(r.DurationSeconds))).Append("<br>").Append(w.ReportId).Append(": ").Append(Lt(r.Id)).Append("</div></header>");
     }
 

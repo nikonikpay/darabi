@@ -15,12 +15,12 @@
         Background="{StaticResource Brush.Background}">
     <Window.Resources>
         <Style x:Key="SidebarListBoxStyle" TargetType="ListBox">
-            <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
-            <Setter Property="BorderThickness" Value="0,0,1,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
             <Setter Property="Padding" Value="0,8,0,8" />
             <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         </Style>
         <Style x:Key="SidebarListBoxItemStyle" TargetType="ListBoxItem">
             <Setter Property="AutomationProperties.Name" Value="{Binding Label}" />
@@ -78,7 +78,15 @@
         <!-- Disabled until the provider has settled: a click during the hardware scan would build a
              page against an empty hardware list (spec: pages read engine.Hardware once at
              construction) and that page would never pick up the real sensors. -->
-        <ListBox Grid.Row="0" Grid.Column="0"
+        <Border Grid.Row="0" Grid.Column="0" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,1,0">
+        <DockPanel>
+            <controls:LogoMark DockPanel.Dock="Top" Height="22" Margin="18,16,18,6" HorizontalAlignment="Left" Foreground="{StaticResource Brush.Text}" />
+            <!-- The service job (spec 7.1): typed once, printed on every report made while it is set. -->
+            <StackPanel DockPanel.Dock="Bottom" Margin="12,6,12,12">
+                <TextBlock Text="{loc:Loc Service_Number}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,0,0,4" />
+                <TextBox Text="{Binding ServiceNumber, UpdateSourceTrigger=LostFocus}" Style="{StaticResource TextBox.Value}" MaxLength="40" />
+            </StackPanel>
+        <ListBox
                   Style="{StaticResource SidebarListBoxStyle}"
                   ItemContainerStyle="{StaticResource SidebarListBoxItemStyle}"
                   ItemsSource="{Binding Items}"
@@ -93,6 +101,8 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
+        </DockPanel>
+        </Border>
 
         <!-- Content area: banner + page -->
         <Grid Grid.Row="0" Grid.Column="1">
