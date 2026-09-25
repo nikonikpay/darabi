@@ -23,7 +23,7 @@ Done when: unit tests cover same machine, different machine, a test present on o
 Update `README.md`, `docs/ARCHITECTURE.md` and `docs/THIRD-PARTY-NOTICES.md` for what exists now: `Mazesta.Diagnostics.Gpu` (ComputeSharp), `Mazesta.Reporting`, `Mazesta.Tray`, WebView2 (PDF), the render-mode setting, the health rules in `Mazesta.Core.Health`. Only describe what the code does; read the code, do not guess.
 Done when: every project in `Mazesta.sln` appears in the architecture table and every third-party package in `Directory.Packages.props` has a notice entry.
 
-### T5 — Test gaps in existing code · `open` (partly covered: AppPaths, resx parity, report language/text/comparison, benchmarks, runner; migrations and TestOptions still open)
+### T5 — Test gaps in existing code · `done` (AppPaths, resx parity and encoding, TestOptions, service-number settings, report language/text/comparison, benchmarks, runner, SMART, Windows tools)
 Find public logic without tests (start with `Mazesta.Persistence` migrations, `TestQueueRowViewModel` validation, `SensorGrouping` edge cases, `TestOptions`) and add focused tests. Do not change production code except to fix a bug the tests expose — report such a bug instead of silently changing behaviour.
 Done when: each new test names the behaviour it protects; list what was covered and what was left.
 

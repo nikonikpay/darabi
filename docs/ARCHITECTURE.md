@@ -24,8 +24,10 @@ Nothing references `Desktop`. `Diagnostics` does not reference `Hardware`: execu
 
 ## Pages (Desktop)
 
-Dashboard, Monitoring, Tests, System Information, Benchmarks, CPU, GPU, Network, Storage, Reports, Settings, plus Gaming and
-Windows Tools as honest placeholders (phase 2 in the spec). The four component pages (`ComponentViewModel`) assemble existing
+Dashboard, Monitoring, Tests, System Information, Benchmarks, CPU, GPU, Network, Storage, Gaming, Windows Tools, Reports, Settings.
+Gaming and Windows Tools (spec 11) only run Windows' own tools on a button (powercfg, sfc, DISM) or open Windows' own settings;
+overclocking/undervolting and an FPS overlay are not offered. The sidebar carries the logo and the service number (spec 7.1), printed
+on every report; finished tests and benchmarks raise a notice, and Ctrl+1 ... Ctrl+0 open the first ten pages (spec 9.4). The four component pages (`ComponentViewModel`) assemble existing
 pieces for one kind of hardware: its System Information sections, the Monitoring tree limited to it, and its benchmark rows.
 
 Long-running work belongs to session singletons, not pages: `TestEngine` for tests and `BenchmarkRunner` for benchmarks, so a

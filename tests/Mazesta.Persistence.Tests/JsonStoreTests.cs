@@ -7,6 +7,13 @@ public class JsonStoreTests : IDisposable
     public JsonStoreTests() => Directory.CreateDirectory(_dir);
     public void Dispose() => Directory.Delete(_dir, true);
     private JsonStore<AppConfig> Store() => new(Path.Combine(_dir, "appconfig.json"), new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, NullLogger.Instance);
+    [Fact] public void The_service_number_is_saved_and_a_settings_file_from_before_it_existed_loads_with_none()
+    {
+        var store = Store(); var cfg = store.Load().Value; Assert.Equal("", cfg.ServiceNumber);
+        cfg.ServiceNumber = "S-1405-0042"; Assert.True(store.Save(cfg)); Assert.Equal("S-1405-0042", Store().Load().Value.ServiceNumber);
+        File.WriteAllText(Path.Combine(_dir, "appconfig.json"), "{\"schemaVersion\":3,\"language\":\"fa\",\"shopName\":\"x\"}");
+        Assert.Equal("", Store().Load().Value.ServiceNumber);
+    }
     [Fact] public void Missing_file_returns_defaults()
     { var r = Store().Load(); Assert.Equal(LoadOutcome.Defaulted, r.Outcome); Assert.Equal(2, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language); }
     [Fact] public void Save_then_load_round_trips_and_leaves_no_temp_file()
