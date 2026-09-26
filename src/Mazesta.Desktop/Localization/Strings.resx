@@ -455,7 +455,7 @@
     <value>Allocating memory</value>
   </data>
   <data name="Test_Validation_InvalidOption" xml:space="preserve">
-    <value>Enter a valid number for &quot;{0}&quot;.</value>
+    <value>Enter a valid number for "{0}".</value>
   </data>
   <data name="Test_SelectAll" xml:space="preserve">
     <value>Select all</value>
@@ -644,15 +644,14 @@
   <data name="Bench_Status_Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="Settings_Tray_Checking" xml:space="preserve"><value>Checking the tray…</value></data>
   <data name="Nav_Tuning" xml:space="preserve"><value>Overclock &amp; undervolt</value></data>
-  <data name="Tuning_Note" xml:space="preserve"><value>GPU overclock, undervolt, power limit and fan through NVIDIA's own management library (NVML). Every setting is volatile: a restart or a driver reset puts the card back to stock. Values outside the driver's ranges are refused. CPU and memory-profile tuning are explained below with what this machine allows.</value></data>
-  <data name="Tuning_Gpu" xml:space="preserve"><value>Graphics card</value></data>
+  <data name="Tuning_Note" xml:space="preserve"><value>GPU overclock, undervolt, power limit and fan through NVIDIA's own management library (NVML). Every setting is volatile: a restart or a driver reset puts the card back to stock. Values outside the driver's ranges are refused.</value></data>
   <data name="Tuning_Manual" xml:space="preserve"><value>Manual settings</value></data>
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>NVIDIA's public interface does not set a voltage directly. An undervolt is a positive core offset together with a clock cap: the offset lifts the voltage/frequency curve, the cap keeps the clock where it was, so the card reaches that clock at a lower voltage. An overclock is a higher cap (or no cap) with an offset.</value></data>
-  <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>Core clock offset (MHz)</value></data>
-  <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>Memory clock offset (MHz)</value></data>
-  <data name="Tuning_Label_MaxClock" xml:space="preserve"><value>Core clock cap (MHz)</value></data>
-  <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>Power limit (W)</value></data>
-  <data name="Tuning_Label_Fan" xml:space="preserve"><value>Fixed fan speed (%)</value></data>
+  <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>Core clock offset</value></data>
+  <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>Memory clock offset</value></data>
+  <data name="Tuning_Label_MaxClock" xml:space="preserve"><value>Core clock cap</value></data>
+  <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>Power limit</value></data>
+  <data name="Tuning_Label_Fan" xml:space="preserve"><value>Fixed fan speed</value></data>
   <data name="Tuning_Hint_CoreOffset" xml:space="preserve"><value>Shifts the whole voltage/frequency curve; + raises the clock at every voltage.</value></data>
   <data name="Tuning_Hint_MemoryOffset" xml:space="preserve"><value>In the unit NVML reports the memory clock in.</value></data>
   <data name="Tuning_Hint_MaxClock" xml:space="preserve"><value>Unchecked: no cap (the driver's own boost).</value></data>
@@ -670,7 +669,6 @@
   <data name="Tuning_Profiles" xml:space="preserve"><value>Profiles for this card</value></data>
   <data name="Tuning_Profiles_Note" xml:space="preserve"><value>A profile is only offered on the card it was made on. Applying it lasts until the next restart.</value></data>
   <data name="Tuning_Delete" xml:space="preserve"><value>Delete</value></data>
-  <data name="Tuning_Cpu" xml:space="preserve"><value>Processor (CPU)</value></data>
   <data name="Tuning_Memory" xml:space="preserve"><value>Memory profile (XMP / DOCP / EXPO)</value></data>
   <data name="Tuning_Memory_Note" xml:space="preserve"><value>XMP, DOCP and EXPO are picked by the BIOS while it trains the memory at power-on; Windows has no standard interface to switch them, and no board maker publishes one for desktop boards. It is changed in BIOS setup, which this button restarts straight into (UEFI machines).</value></data>
   <data name="Tuning_RestartToFirmware" xml:space="preserve"><value>Restart into BIOS setup</value></data>
@@ -687,8 +685,8 @@
   <data name="Tuning_Range_NoPower" xml:space="preserve"><value>no power limit control</value></data>
   <data name="Tuning_Range_Fan" xml:space="preserve"><value>{0} fans, {1}</value></data>
   <data name="Tuning_Range_NoFan" xml:space="preserve"><value>no fan control</value></data>
-  <data name="Tuning_Live_Memory" xml:space="preserve"><value>memory</value></data>
-  <data name="Tuning_Live_Fan" xml:space="preserve"><value>fan</value></data>
+  <data name="Tuning_Live_Memory" xml:space="preserve"><value>Memory clock</value></data>
+  <data name="Tuning_Live_Fan" xml:space="preserve"><value>Fan</value></data>
   <data name="Tuning_NotANumber" xml:space="preserve"><value>“{0}” must be a whole number.</value></data>
   <data name="Tuning_Applied" xml:space="preserve"><value>Applied. The driver accepted every setting.</value></data>
   <data name="Tuning_ResetDone" xml:space="preserve"><value>The card is back to stock.</value></data>
@@ -699,7 +697,6 @@
   <data name="Tuning_ConfirmDelete" xml:space="preserve"><value>Delete the profile “{0}”?</value></data>
   <data name="Tuning_Refused" xml:space="preserve"><value>{0}: the driver refused ({1}).</value></data>
   <data name="Tuning_ConfirmAuto" xml:space="preserve"><value>The automatic search loads the graphics card fully for about 10–25 minutes and deliberately pushes it until it becomes unstable. The screen may go black for a moment, and in rare cases the PC may freeze and need a restart (the card is then back at stock). Close games and save your work. Start?</value></data>
-  <data name="Tuning_Auto_Step" xml:space="preserve"><value>Step {0} · {1} · {2} · {3} load</value></data>
   <data name="Tuning_Step_Baseline" xml:space="preserve"><value>measuring</value></data>
   <data name="Tuning_Step_Probe" xml:space="preserve"><value>trying</value></data>
   <data name="Tuning_Step_Confirm" xml:space="preserve"><value>confirming</value></data>
@@ -716,9 +713,6 @@
   <data name="Tuning_Sum_Fan" xml:space="preserve"><value>fan {0}</value></data>
   <data name="Tuning_ConfirmFirmware" xml:space="preserve"><value>The PC restarts now, straight into BIOS setup. Save your work first. Continue?</value></data>
   <data name="Tuning_OtherGpus" xml:space="preserve"><value>Not tunable here yet: {0}. AMD cards need AMD's ADLX library and Intel Arc cards Intel's IGCL; neither is built in.</value></data>
-  <data name="Tuning_Cpu_Intel" xml:space="preserve"><value>Not changed from here. On Intel, undervolting goes through the overclocking mailbox (MSR 0x150); on 12th–14th gen desktop CPUs it is usually locked by the board's “Undervolt Protection” / CFG lock and then only BIOS can change it. Power limits (PL1/PL2) can be written through the PawnIO driver's IntelMSR module, which this app does not do yet. Use the BIOS or Intel XTU.</value></data>
-  <data name="Tuning_Cpu_Amd" xml:space="preserve"><value>Not changed from here. On Ryzen, undervolting is Curve Optimizer and overclocking is PBO limits and boost override, both set through the SMU mailbox (the method of ZenStates-Core, used by PBO2 Tuner); PawnIO has a RyzenSMU module for it. This app does not do it yet. Use the BIOS or AMD Ryzen Master.</value></data>
-  <data name="Tuning_Cpu_Other" xml:space="preserve"><value>CPU tuning is not offered for this processor.</value></data>
   <data name="Tuning_Memory_Speeds" xml:space="preserve"><value>configured {0} · module per SMBIOS {1}</value></data>
   <data name="Tuning_Recovered" xml:space="preserve"><value>An automatic GPU tuning run did not finish (it was trying {0}, started {1}) – the PC probably froze or restarted. The card has been put back to stock.</value></data>
   <data name="Tuning_RecoveredNoReset" xml:space="preserve"><value>An automatic GPU tuning run did not finish (it was trying {0}, started {1}). The card could not be reset from here; restart the PC to be sure it runs at stock.</value></data>
@@ -747,4 +741,38 @@
   <data name="Tuning_Out_ApplyRefused" xml:space="preserve"><value>The driver refused a setting the search needs</value></data>
   <data name="Tuning_Out_NoResult" xml:space="preserve"><value>The search ended without a result.</value></data>
   <data name="Tuning_Out_Cancelled" xml:space="preserve"><value>Stopped. The card is back to stock; nothing was saved.</value></data>
+  <data name="Tuning_Live_Core" xml:space="preserve"><value>Core clock</value></data>
+  <data name="Tuning_Live_Voltage" xml:space="preserve"><value>Core voltage</value></data>
+  <data name="Tuning_Live_Temperature" xml:space="preserve"><value>Temperature</value></data>
+  <data name="Tuning_Live_Power" xml:space="preserve"><value>Power</value></data>
+  <data name="Tuning_Curve_Title" xml:space="preserve"><value>Voltage / frequency curve</value></data>
+  <data name="Tuning_Curve_Scan" xml:space="preserve"><value>Measure the curve</value></data>
+  <data name="Tuning_Curve_Info" xml:space="preserve"><value>{0} measured points · {1} · up to {2} · measured {3}</value></data>
+  <data name="Tuning_Curve_None" xml:space="preserve"><value>This card's curve has not been measured yet. “Measure the curve” loads the card for about a minute and a half and records, at each clock, the voltage the card really chooses.</value></data>
+  <data name="Tuning_Curve_Empty" xml:space="preserve"><value>Measure the curve to edit it</value></data>
+  <data name="Tuning_Curve_LegendStock" xml:space="preserve"><value>Stock (measured)</value></data>
+  <data name="Tuning_Curve_LegendTuned" xml:space="preserve"><value>With the settings on the form</value></data>
+  <data name="Tuning_Curve_LegendLive" xml:space="preserve"><value>Where the card runs now</value></data>
+  <data name="Tuning_Curve_Hint" xml:space="preserve"><value>As in Afterburner: grab a yellow point and drag it up or down to put that voltage on that clock, flat above it (an undervolt). Drag the dotted cap line on its own; Ctrl+drag moves the whole curve. Changes stay on the form until you press Apply. NVIDIA's public interface cannot move single points on their own.</value></data>
+  <data name="Tuning_Curve_Estimate" xml:space="preserve"><value>Estimate from the measured points: at {0} about {1} (stock: {2})</value></data>
+  <data name="Tuning_Curve_EstimateAboveStock" xml:space="preserve"><value>Estimate from the measured points: at {0} about {1} (stock does not reach this clock)</value></data>
+  <data name="Tuning_Curve_OutOfRange" xml:space="preserve"><value>This setting is outside the measured curve; its voltage is not estimated.</value></data>
+  <data name="Tuning_Curve_Scanning" xml:space="preserve"><value>Measuring the curve…</value></data>
+  <data name="Tuning_Curve_Step" xml:space="preserve"><value>Measuring the curve: point {0} of {1} · cap {2}</value></data>
+  <data name="Tuning_Curve_Done" xml:space="preserve"><value>The curve was measured and saved. The card is back to stock.</value></data>
+  <data name="Tuning_ConfirmCurve" xml:space="preserve"><value>Measuring the curve loads the graphics card for about a minute and a half and caps its clock step by step. The card's current settings are removed, and at the end it is back at stock. Start?</value></data>
+  <data name="Tuning_Curve_ApplyRefused" xml:space="preserve"><value>The driver refused the clock cap; the curve cannot be measured</value></data>
+  <data name="Tuning_Curve_Lost" xml:space="preserve"><value>The driver reset during the scan. The card is back to stock.</value></data>
+  <data name="Tuning_Curve_NoVoltage" xml:space="preserve"><value>The card's core voltage sensor could not be read, so the curve cannot be measured.</value></data>
+  <data name="Tuning_Curve_TooFew" xml:space="preserve"><value>The card did not reach enough distinct clocks (most likely power or temperature limited); no curve was saved.</value></data>
+  <data name="Tuning_Auto_StepTitle" xml:space="preserve"><value>Step {0} · {1}</value></data>
+  <data name="Tuning_AutoUndervolt_Title" xml:space="preserve"><value>Cooler and more efficient</value></data>
+  <data name="Tuning_AutoUndervolt_Desc" xml:space="preserve"><value>Stock performance at a lower voltage; kept only when power or temperature measurably drops.</value></data>
+  <data name="Tuning_AutoOverclock_Title" xml:space="preserve"><value>Faster</value></data>
+  <data name="Tuning_AutoOverclock_Desc" xml:space="preserve"><value>Starts from the undervolt and raises the core and memory clocks; kept only when the measured score rises.</value></data>
+  <data name="Tuning_Log_Clean" xml:space="preserve"><value>correct</value></data>
+  <data name="Tuning_Profiles_Empty" xml:space="preserve"><value>No profile saved for this card yet.</value></data>
+  <data name="Tuning_LoadProfile" xml:space="preserve"><value>To the form</value></data>
+  <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>Puts the profile's settings on the form and the curve without applying them.</value></data>
+  <data name="Tuning_ProfileLoaded" xml:space="preserve"><value>The settings of “{0}” are on the form; press Apply to use them.</value></data>
 </root>

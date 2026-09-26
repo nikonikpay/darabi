@@ -4,121 +4,270 @@
              xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
              xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
              xmlns:local="clr-namespace:Mazesta.Desktop.Views"
+             xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
              Background="{StaticResource Brush.Background}" Style="{StaticResource View.FadeIn}"
              Loaded="OnLoaded" Unloaded="OnUnloaded">
     <UserControl.Resources>
-        <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
-            <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="14,12" />
-            <Setter Property="Margin" Value="0,0,0,10" />
+        <!-- A big live number: caption over the value. -->
+        <DataTemplate x:Key="Tile" DataType="{x:Type vm:LiveTile}">
+            <Border Style="{StaticResource Well}" Margin="0,0,10,10" MinWidth="118">
+                <StackPanel>
+                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Caption}" />
+                    <TextBlock Text="{Binding Value}" Style="{StaticResource Text.BigValue}" FontSize="21" HorizontalAlignment="Left" Margin="0,2,0,0" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+        <!-- A labelled control row of the manual card: name, exact value box, then the slider. -->
+        <Style x:Key="FieldBox" TargetType="TextBox" BasedOn="{StaticResource TextBox.Value}">
+            <Setter Property="Width" Value="78" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
-        <Style x:Key="CardTitle" TargetType="TextBlock">
+        <Style x:Key="FieldTitle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
-        <Style x:Key="Muted" TargetType="TextBlock">
+        <Style x:Key="Unit" TargetType="TextBlock" BasedOn="{StaticResource Text.Value}">
             <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
-            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="6,0,0,0" />
         </Style>
-        <!-- Persian words with Latin numbers: the sentence keeps the page's direction (Text.Value would force left-to-right and scramble the
-             Persian words), the numbers stay Latin through the font, and TuningViewModel.Ltr keeps each number with its sign and unit. -->
-        <Style x:Key="Mixed" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource App.Font.Latin}" />
-            <Setter Property="TextWrapping" Value="Wrap" />
+        <Style x:Key="Field" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,0,14" />
         </Style>
-        <Style x:Key="Field" TargetType="TextBox" BasedOn="{StaticResource TextBox.Value}">
-            <Setter Property="Width" Value="90" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-            <Setter Property="Margin" Value="0,0,0,8" />
-            <Setter Property="FlowDirection" Value="LeftToRight" />
+        <Style x:Key="Legend" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+        </Style>
+        <Style x:Key="CollapseWhenEmpty" TargetType="TextBlock" BasedOn="{StaticResource Text.Mixed}">
+            <Style.Triggers>
+                <Trigger Property="controls:MixedText.Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                <Trigger Property="controls:MixedText.Text" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="20" MaxWidth="900" HorizontalAlignment="Left">
-            <TextBlock Text="{loc:Loc Nav_Tuning}" FontSize="22" FontWeight="Bold" Margin="0,0,0,6" />
-            <TextBlock Text="{loc:Loc Tuning_Note}" Style="{StaticResource Muted}" Margin="0,0,0,12" />
 
-            <!-- GPU -->
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{loc:Loc Tuning_Gpu}" Style="{StaticResource CardTitle}" />
-                    <TextBlock Text="{Binding Unavailable}" Foreground="{StaticResource Brush.Danger}" TextWrapping="Wrap" Margin="0,0,0,6">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers><DataTrigger Binding="{Binding Unavailable}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <TextBlock Text="{Binding OtherGpus}" Style="{StaticResource Muted}" Margin="0,0,0,6" />
-                    <StackPanel Visibility="{Binding HasDevice, Converter={StaticResource BoolToVis}}">
-                        <ComboBox ItemsSource="{Binding Devices}" SelectedItem="{Binding Device}" DisplayMemberPath="Name" Width="320" HorizontalAlignment="Left" FlowDirection="LeftToRight" Margin="0,0,0,8" />
-                        <TextBlock Text="{Binding Live}" Style="{StaticResource Text.Value}" FlowDirection="LeftToRight" HorizontalAlignment="Left" Margin="0,0,0,4" />
-                        <TextBlock Text="{Binding Ranges}" Style="{StaticResource Mixed}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" />
-                    </StackPanel>
-                </StackPanel>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,20,24,24" MaxWidth="1180">
+            <TextBlock Text="{loc:Loc Nav_Tuning}" Style="{StaticResource Text.PageTitle}" />
+            <TextBlock Text="{loc:Loc Tuning_Note}" Style="{StaticResource Text.PageSubtitle}" />
+
+            <!-- No tunable card: the reason, and nothing else of the GPU parts. -->
+            <Border Style="{StaticResource Card}" BorderBrush="{StaticResource Brush.Danger}" Visibility="{Binding HasUnavailable, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding Unavailable}" Style="{StaticResource Text.Mixed}" Foreground="{StaticResource Brush.Danger}" />
             </Border>
 
-            <!-- Manual -->
+            <!-- The card: name, ranges and the live numbers. -->
             <Border Style="{StaticResource Card}" Visibility="{Binding HasDevice, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="{loc:Loc Tuning_Manual}" Style="{StaticResource CardTitle}" />
-                    <TextBlock Text="{loc:Loc Tuning_Manual_Note}" Style="{StaticResource Muted}" Margin="0,0,0,10" />
-                    <Grid>
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" MinWidth="230" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="{loc:Loc Tuning_Label_CoreOffset}" VerticalAlignment="Center" Margin="0,0,12,8" />
-                        <TextBox Grid.Row="0" Grid.Column="1" Style="{StaticResource Field}" Text="{Binding CoreOffset, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{loc:Loc Tuning_Hint_CoreOffset}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,8" />
-
-                        <TextBlock Grid.Row="1" Text="{loc:Loc Tuning_Label_MemoryOffset}" VerticalAlignment="Center" Margin="0,0,12,8" />
-                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource Field}" Text="{Binding MemoryOffset, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{loc:Loc Tuning_Hint_MemoryOffset}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,8" />
-
-                        <CheckBox Grid.Row="2" Content="{loc:Loc Tuning_Label_MaxClock}" IsChecked="{Binding LockClock}" VerticalAlignment="Center" Margin="0,0,12,8" />
-                        <TextBox Grid.Row="2" Grid.Column="1" Style="{StaticResource Field}" Text="{Binding MaxClock, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding LockClock}" />
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{loc:Loc Tuning_Hint_MaxClock}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,8" />
-
-                        <CheckBox Grid.Row="3" Content="{loc:Loc Tuning_Label_PowerLimit}" IsChecked="{Binding SetPower}" VerticalAlignment="Center" Margin="0,0,12,8" />
-                        <TextBox Grid.Row="3" Grid.Column="1" Style="{StaticResource Field}" Text="{Binding PowerLimit, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding SetPower}" />
-                        <TextBlock Grid.Row="3" Grid.Column="2" Text="{loc:Loc Tuning_Hint_PowerLimit}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,8" />
-
-                        <CheckBox Grid.Row="4" Content="{loc:Loc Tuning_Label_Fan}" IsChecked="{Binding ManualFan}" VerticalAlignment="Center" Margin="0,0,12,8" />
-                        <TextBox Grid.Row="4" Grid.Column="1" Style="{StaticResource Field}" Text="{Binding FanPercent, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding ManualFan}" />
-                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{loc:Loc Tuning_Hint_Fan}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="10,0,0,8" />
-                    </Grid>
-                    <WrapPanel Margin="0,6,0,0">
-                        <Button Content="{loc:Loc Tuning_Apply}" Command="{Binding ApplyCommand}" Style="{StaticResource Button.Primary}" Padding="14,5" Margin="0,0,8,6" />
-                        <Button Content="{loc:Loc Tuning_Reset}" Command="{Binding ResetCommand}" Style="{StaticResource Button.DangerOutline}" Padding="14,5" Margin="0,0,16,6" />
-                        <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,8,6" VerticalContentAlignment="Center" ToolTip="{loc:Loc Tuning_ProfileNameHint}" />
-                        <Button Content="{loc:Loc Tuning_SaveProfile}" Command="{Binding SaveProfileCommand}" Padding="14,5" Margin="0,0,0,6" />
+                    <DockPanel Margin="0,0,0,12">
+                        <Border DockPanel.Dock="Left" Style="{StaticResource Chip}" Margin="0,0,10,0">
+                            <TextBlock Text="NVIDIA · NVML" Style="{StaticResource Text.Value}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource Brush.Accent}" />
+                        </Border>
+                        <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding Devices}" SelectedItem="{Binding Device}" DisplayMemberPath="Name" Width="300" FlowDirection="LeftToRight"
+                                  Visibility="{Binding HasSeveralDevices, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding Device.Name}" Style="{StaticResource Text.Value}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <WrapPanel>
+                        <ContentPresenter Content="{Binding LiveCore}" ContentTemplate="{StaticResource Tile}" />
+                        <ContentPresenter Content="{Binding LiveMemory}" ContentTemplate="{StaticResource Tile}" />
+                        <ContentPresenter Content="{Binding LiveVoltage}" ContentTemplate="{StaticResource Tile}" />
+                        <ContentPresenter Content="{Binding LiveTemperature}" ContentTemplate="{StaticResource Tile}" />
+                        <ContentPresenter Content="{Binding LivePower}" ContentTemplate="{StaticResource Tile}" />
+                        <ContentPresenter Content="{Binding LiveFan}" ContentTemplate="{StaticResource Tile}" />
                     </WrapPanel>
-                    <TextBlock Text="{Binding Status}" Style="{StaticResource Mixed}" Margin="0,4,0,0" />
+                    <TextBlock controls:MixedText.Text="{Binding Ranges}" Style="{StaticResource Text.Mixed}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,2,0,0" />
+                    <TextBlock controls:MixedText.Text="{Binding OtherGpus}" Style="{StaticResource CollapseWhenEmpty}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,6,0,0" />
                 </StackPanel>
             </Border>
+
+            <!-- Curve (wide) and manual controls (side). -->
+            <controls:TwoColumns SideWidth="380" Breakpoint="980" Visibility="{Binding HasDevice, Converter={StaticResource BoolToVis}}">
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <Border DockPanel.Dock="Left" Style="{StaticResource Card.Mark}" />
+                            <Button DockPanel.Dock="Right" Content="{loc:Loc Tuning_Curve_Scan}" Command="{Binding ScanCurveCommand}" Style="{StaticResource Button.Outline}" />
+                            <TextBlock Text="{loc:Loc Tuning_Curve_Title}" Style="{StaticResource Text.CardTitle}" />
+                        </DockPanel>
+                        <TextBlock controls:MixedText.Text="{Binding CurveInfo}" Style="{StaticResource Text.Mixed}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,0,0,10" />
+                        <Border Style="{StaticResource Well}" Padding="4">
+                            <controls:VfCurveEditor Height="330" Stock="{Binding Curve}" OffsetMHz="{Binding CoreOffsetValue}" CapMHz="{Binding CapValue}"
+                                                    MinOffset="{Binding CoreMin}" MaxOffset="{Binding CoreMax}" MaxCap="{Binding ClockMax}"
+                                                    LiveClockMHz="{Binding LiveClockMHz}" LiveVoltageV="{Binding LiveVoltageV}" IsLocked="{Binding IsTuning}"
+                                                    EmptyText="{loc:Loc Tuning_Curve_Empty}" />
+                        </Border>
+                        <WrapPanel Margin="2,10,0,0">
+                            <StackPanel Style="{StaticResource Legend}">
+                                <Border Width="18" Height="2" Background="{StaticResource Brush.StateMissing}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBlock Text="{loc:Loc Tuning_Curve_LegendStock}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource Legend}">
+                                <Border Width="18" Height="3" Background="{StaticResource Brush.Accent}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBlock Text="{loc:Loc Tuning_Curve_LegendTuned}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource Legend}">
+                                <Ellipse Width="9" Height="9" Fill="{StaticResource Brush.Success}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBlock Text="{loc:Loc Tuning_Curve_LegendLive}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                        </WrapPanel>
+                        <TextBlock Text="{loc:Loc Tuning_Curve_Hint}" Style="{StaticResource Text.Muted}" FontSize="12" Margin="0,8,0,0" />
+                        <Border Style="{StaticResource Chip}" HorizontalAlignment="Left" Margin="0,10,0,0" Padding="12,5" CornerRadius="10"
+                                Visibility="{Binding HasCurve, Converter={StaticResource BoolToVis}}">
+                            <TextBlock controls:MixedText.Text="{Binding CurveEstimate}" Style="{StaticResource Text.Mixed}" Foreground="{StaticResource Brush.Accent}" />
+                        </Border>
+                        <TextBlock controls:MixedText.Text="{Binding CurveStatus}" Style="{StaticResource CollapseWhenEmpty}" Margin="0,10,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <Border DockPanel.Dock="Left" Style="{StaticResource Card.Mark}" />
+                            <TextBlock Text="{loc:Loc Tuning_Manual}" Style="{StaticResource Text.CardTitle}" />
+                        </DockPanel>
+                        <TextBlock Text="{loc:Loc Tuning_Manual_Note}" Style="{StaticResource Text.Muted}" FontSize="11.5" Margin="0,0,0,14" />
+
+                        <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasCore}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><TextBox Style="{StaticResource FieldBox}" Text="{Binding CoreOffset, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="MHz" Style="{StaticResource Unit}" /></StackPanel>
+                                <TextBlock Text="{loc:Loc Tuning_Label_CoreOffset}" Style="{StaticResource FieldTitle}" ToolTip="{loc:Loc Tuning_Hint_CoreOffset}" />
+                            </DockPanel>
+                            <Slider Minimum="{Binding CoreMin}" Maximum="{Binding CoreMax}" Value="{Binding CoreOffsetValue}" SmallChange="15" LargeChange="60" TickFrequency="15" IsSnapToTickEnabled="True" Margin="0,6,0,0" FlowDirection="LeftToRight" />
+                        </StackPanel>
+
+                        <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasMemory}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><TextBox Style="{StaticResource FieldBox}" Text="{Binding MemoryOffset, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="MHz" Style="{StaticResource Unit}" /></StackPanel>
+                                <TextBlock Text="{loc:Loc Tuning_Label_MemoryOffset}" Style="{StaticResource FieldTitle}" ToolTip="{loc:Loc Tuning_Hint_MemoryOffset}" />
+                            </DockPanel>
+                            <Slider Minimum="{Binding MemoryMin}" Maximum="{Binding MemoryMax}" Value="{Binding MemoryOffsetValue}" SmallChange="50" LargeChange="250" TickFrequency="50" IsSnapToTickEnabled="True" Margin="0,6,0,0" FlowDirection="LeftToRight" />
+                        </StackPanel>
+
+                        <StackPanel Style="{StaticResource Field}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" IsEnabled="{Binding LockClock}"><TextBox Style="{StaticResource FieldBox}" Text="{Binding MaxClock, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="MHz" Style="{StaticResource Unit}" /></StackPanel>
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding LockClock}" Content="{loc:Loc Tuning_Label_MaxClock}" FontWeight="SemiBold" ToolTip="{loc:Loc Tuning_Hint_MaxClock}" />
+                            </DockPanel>
+                            <Slider Minimum="300" Maximum="{Binding ClockMax}" Value="{Binding MaxClockValue}" SmallChange="15" LargeChange="60" TickFrequency="15" IsSnapToTickEnabled="True" Margin="0,6,0,0"
+                                    IsEnabled="{Binding LockClock}" FlowDirection="LeftToRight" />
+                        </StackPanel>
+
+                        <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasPower}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" IsEnabled="{Binding SetPower}"><TextBox Style="{StaticResource FieldBox}" Text="{Binding PowerLimit, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="W" Style="{StaticResource Unit}" /></StackPanel>
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SetPower}" Content="{loc:Loc Tuning_Label_PowerLimit}" FontWeight="SemiBold" ToolTip="{loc:Loc Tuning_Hint_PowerLimit}" />
+                            </DockPanel>
+                            <Slider Minimum="{Binding PowerMin}" Maximum="{Binding PowerMax}" Value="{Binding PowerLimitValue}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,6,0,0"
+                                    IsEnabled="{Binding SetPower}" FlowDirection="LeftToRight" />
+                        </StackPanel>
+
+                        <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasFan}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" IsEnabled="{Binding ManualFan}"><TextBox Style="{StaticResource FieldBox}" Text="{Binding FanPercent, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="%" Style="{StaticResource Unit}" /></StackPanel>
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ManualFan}" Content="{loc:Loc Tuning_Label_Fan}" FontWeight="SemiBold" ToolTip="{loc:Loc Tuning_Hint_Fan}" />
+                            </DockPanel>
+                            <Slider Minimum="{Binding FanMin}" Maximum="{Binding FanMax}" Value="{Binding FanValue}" SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,6,0,0"
+                                    IsEnabled="{Binding ManualFan}" FlowDirection="LeftToRight" />
+                        </StackPanel>
+
+                        <UniformGrid Columns="2" Margin="0,4,0,0">
+                            <Button Content="{loc:Loc Tuning_Apply}" Command="{Binding ApplyCommand}" Style="{StaticResource Button.Primary}" Padding="14,8" Margin="0,0,6,0" />
+                            <Button Content="{loc:Loc Tuning_Reset}" Command="{Binding ResetCommand}" Style="{StaticResource Button.DangerOutline}" Padding="14,8" Margin="6,0,0,0" />
+                        </UniformGrid>
+                        <TextBlock Text="{loc:Loc Tuning_ProfileNameHint}" Style="{StaticResource Text.Caption}" Margin="0,14,0,5" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="{loc:Loc Tuning_SaveProfile}" Command="{Binding SaveProfileCommand}" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding ProfileName, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" />
+                        </DockPanel>
+                        <TextBlock controls:MixedText.Text="{Binding Status}" Style="{StaticResource CollapseWhenEmpty}" Margin="0,10,0,0" />
+                    </StackPanel>
+                </Border>
+            </controls:TwoColumns>
 
             <!-- Automatic -->
             <Border Style="{StaticResource Card}" Visibility="{Binding HasDevice, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="{loc:Loc Tuning_Auto}" Style="{StaticResource CardTitle}" />
-                    <TextBlock Text="{loc:Loc Tuning_Auto_Note}" Style="{StaticResource Muted}" Margin="0,0,0,10" />
-                    <WrapPanel>
-                        <Button Content="{loc:Loc Tuning_AutoUndervolt}" Command="{Binding AutoUndervoltCommand}" Style="{StaticResource Button.Success}" Padding="14,5" Margin="0,0,8,6" />
-                        <Button Content="{loc:Loc Tuning_AutoOverclock}" Command="{Binding AutoOverclockCommand}" Style="{StaticResource Button.Primary}" Padding="14,5" Margin="0,0,8,6" />
-                        <Button Content="{loc:Loc Tuning_Cancel}" Command="{Binding CancelAutoCommand}" Style="{StaticResource Button.Danger}" Padding="14,5" Margin="0,0,8,6" />
-                    </WrapPanel>
-                    <StackPanel Visibility="{Binding IsTuning, Converter={StaticResource BoolToVis}}" Margin="0,4,0,0">
-                        <TextBlock Text="{Binding AutoStatus}" Style="{StaticResource Mixed}" Margin="0,0,0,4" />
-                        <ProgressBar Value="{Binding AutoPercent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,0,0,6" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding AutoResult}" Style="{StaticResource Mixed}" FontWeight="SemiBold" Margin="0,4,0,6" />
-                    <ListBox ItemsSource="{Binding AutoLog}" MaxHeight="220" Background="Transparent" BorderThickness="0" FlowDirection="LeftToRight"
-                             local:AutoScroll.ToEnd="True">
+                    <DockPanel Margin="0,0,0,6">
+                        <Border DockPanel.Dock="Left" Style="{StaticResource Card.Mark}" />
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc Tuning_Cancel}" Command="{Binding CancelAutoCommand}" Style="{StaticResource Button.Danger}"
+                                Visibility="{Binding IsTuning, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{loc:Loc Tuning_Auto}" Style="{StaticResource Text.CardTitle}" />
+                    </DockPanel>
+                    <TextBlock Text="{loc:Loc Tuning_Auto_Note}" Style="{StaticResource Text.Muted}" Margin="0,0,0,12" />
+                    <UniformGrid Columns="2">
+                        <Border Style="{StaticResource Well}" Margin="0,0,7,0" Padding="16,14">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Bottom" Content="{loc:Loc Tuning_AutoUndervolt}" Command="{Binding AutoUndervoltCommand}" Style="{StaticResource Button.Success}" Padding="14,8" Margin="0,12,0,0" />
+                                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Tuning_AutoUndervolt_Title}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource Brush.Success}" />
+                                <TextBlock Text="{loc:Loc Tuning_AutoUndervolt_Desc}" Style="{StaticResource Text.Muted}" FontSize="12" Margin="0,4,0,0" />
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Well}" Margin="7,0,0,0" Padding="16,14">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Bottom" Content="{loc:Loc Tuning_AutoOverclock}" Command="{Binding AutoOverclockCommand}" Style="{StaticResource Button.Primary}" Padding="14,8" Margin="0,12,0,0" />
+                                <TextBlock DockPanel.Dock="Top" Text="{loc:Loc Tuning_AutoOverclock_Title}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource Brush.Accent}" />
+                                <TextBlock Text="{loc:Loc Tuning_AutoOverclock_Desc}" Style="{StaticResource Text.Muted}" FontSize="12" Margin="0,4,0,0" />
+                            </DockPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- The step in progress: Persian title, the settings in their own left-to-right box, the load as a chip. -->
+                    <Border Style="{StaticResource Well}" Margin="0,14,0,0" Visibility="{Binding IsTuning, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <WrapPanel>
+                                <TextBlock Text="{Binding AutoStepTitle}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,4" />
+                                <Border Style="{StaticResource Chip}" Margin="0,0,10,4" Visibility="{Binding AutoStepLoad, Converter={x:Static controls:NonEmptyToVisibility.Instance}}">
+                                    <TextBlock Text="{Binding AutoStepLoad}" FontSize="11.5" Foreground="{StaticResource Brush.Accent}" />
+                                </Border>
+                                <TextBlock controls:MixedText.Text="{Binding AutoStepSettings}" Style="{StaticResource Text.Mixed}" VerticalAlignment="Center" Margin="0,0,0,4" />
+                            </WrapPanel>
+                            <TextBlock controls:MixedText.Text="{Binding CurveStatus}" Style="{StaticResource CollapseWhenEmpty}" Margin="0,0,0,4" />
+                            <ProgressBar Value="{Binding AutoPercent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Well}" Margin="0,12,0,0" Visibility="{Binding HasAutoResult, Converter={StaticResource BoolToVis}}">
+                        <TextBlock controls:MixedText.Text="{Binding AutoResult}" Style="{StaticResource Text.Mixed}" FontWeight="SemiBold" LineHeight="22" />
+                    </Border>
+
+                    <ListBox ItemsSource="{Binding AutoLog}" MaxHeight="260" Background="Transparent" BorderThickness="0" Margin="0,10,0,0" local:AutoScroll.ToEnd="True"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemTemplate>
-                            <DataTemplate><TextBlock Text="{Binding}" FontFamily="{StaticResource App.Font.Latin}" FontSize="12" Foreground="{StaticResource Brush.TextMuted}" TextWrapping="Wrap" /></DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:AutoLogRow}">
+                                <Border BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1" Padding="0,7">
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Left" Style="{StaticResource Chip}" MinWidth="30" Margin="0,0,10,0">
+                                            <TextBlock Text="{Binding Step}" Style="{StaticResource Text.Value}" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource Brush.Accent}" HorizontalAlignment="Center" />
+                                        </Border>
+                                        <Border DockPanel.Dock="Right" CornerRadius="99" Padding="9,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{StaticResource Brush.SuccessDim}" />
+                                                    <Style.Triggers><DataTrigger Binding="{Binding Clean}" Value="False"><Setter Property="Background" Value="{StaticResource Brush.DangerDim}" /></DataTrigger></Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock FontSize="11.5" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                        <Setter Property="Text" Value="{loc:Loc Tuning_Log_Clean}" />
+                                                        <Setter Property="Foreground" Value="{StaticResource Brush.Success}" />
+                                                        <Style.Triggers><DataTrigger Binding="{Binding Clean}" Value="False"><Setter Property="Text" Value="{Binding Problem}" /><Setter Property="Foreground" Value="{StaticResource Brush.Danger}" /></DataTrigger></Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+                                        <StackPanel>
+                                            <WrapPanel>
+                                                <TextBlock Text="{Binding Kind}" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                                <TextBlock controls:MixedText.Text="{Binding Settings}" Style="{StaticResource Text.Mixed}" Foreground="{StaticResource Brush.TextMuted}" />
+                                            </WrapPanel>
+                                            <TextBlock Text="{Binding Result}" Style="{StaticResource Text.Value}" FontSize="12" HorizontalAlignment="Left" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </StackPanel>
@@ -127,23 +276,45 @@
             <!-- Profiles -->
             <Border Style="{StaticResource Card}" Visibility="{Binding HasDevice, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="{loc:Loc Tuning_Profiles}" Style="{StaticResource CardTitle}" />
-                    <TextBlock Text="{loc:Loc Tuning_Profiles_Note}" Style="{StaticResource Muted}" Margin="0,0,0,8" />
+                    <DockPanel Margin="0,0,0,6">
+                        <Border DockPanel.Dock="Left" Style="{StaticResource Card.Mark}" />
+                        <TextBlock Text="{loc:Loc Tuning_Profiles}" Style="{StaticResource Text.CardTitle}" />
+                    </DockPanel>
+                    <TextBlock Text="{loc:Loc Tuning_Profiles_Note}" Style="{StaticResource Text.Muted}" Margin="0,0,0,10" />
+                    <TextBlock Text="{loc:Loc Tuning_Profiles_Empty}" Style="{StaticResource Text.Muted}" FontStyle="Italic"
+                               Visibility="{Binding HasProfiles, Converter={x:Static controls:NegatedBoolToVisibility.Instance}}" />
                     <ItemsControl ItemsSource="{Binding Profiles}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:GpuProfileRow}">
-                                <Border BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1" Padding="0,6">
-                                    <DockPanel LastChildFill="True">
+                                <Border Style="{StaticResource Well}" Margin="0,0,0,8">
+                                    <DockPanel>
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Button Content="{loc:Loc Tuning_Apply}" Style="{StaticResource Button.Primary}" Padding="12,4" Margin="8,0,0,0"
+                                            <Button Content="{loc:Loc Tuning_LoadProfile}" Style="{StaticResource Button.Outline}" Margin="8,0,0,0" ToolTip="{loc:Loc Tuning_LoadProfile_Hint}"
+                                                    Command="{Binding DataContext.LoadProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                            <Button Content="{loc:Loc Tuning_Apply}" Style="{StaticResource Button.Primary}" Margin="8,0,0,0"
                                                     Command="{Binding DataContext.ApplyProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                            <Button Content="{loc:Loc Tuning_Delete}" Style="{StaticResource Button.DangerOutline}" Padding="12,4" Margin="8,0,0,0"
+                                            <Button Content="{loc:Loc Tuning_Delete}" Style="{StaticResource Button.DangerOutline}" Margin="8,0,0,0"
                                                     Command="{Binding DataContext.DeleteProfileCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                         </StackPanel>
                                         <StackPanel>
-                                            <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  ·  " /><Run Text="{Binding Kind, Mode=OneWay}" Foreground="{StaticResource Brush.TextMuted}" /></TextBlock>
-                                            <TextBlock Text="{Binding Summary}" Style="{StaticResource Mixed}" FontSize="12" />
-                                            <TextBlock Text="{Binding Evidence}" Style="{StaticResource Mixed}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" />
+                                            <WrapPanel>
+                                                <Border Margin="0,0,10,0" CornerRadius="99" Padding="9,1" VerticalAlignment="Center">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="{StaticResource Brush.AccentDim}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding KindValue}" Value="Undervolt"><Setter Property="Background" Value="{StaticResource Brush.SuccessDim}" /></DataTrigger>
+                                                                <DataTrigger Binding="{Binding KindValue}" Value="Manual"><Setter Property="Background" Value="{StaticResource Brush.SurfaceAlt}" /></DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock Text="{Binding Kind}" FontSize="11.5" FontWeight="SemiBold" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                                <TextBlock Text="{Binding Created}" Style="{StaticResource Text.Value}" Foreground="{StaticResource Brush.TextMuted}" FontSize="11.5" VerticalAlignment="Center" />
+                                            </WrapPanel>
+                                            <TextBlock controls:MixedText.Text="{Binding Summary}" Style="{StaticResource Text.Mixed}" Margin="0,6,0,0" />
+                                            <TextBlock controls:MixedText.Text="{Binding Evidence}" Style="{StaticResource CollapseWhenEmpty}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,3,0,0" />
                                         </StackPanel>
                                     </DockPanel>
                                 </Border>
@@ -153,31 +324,25 @@
                 </StackPanel>
             </Border>
 
-            <!-- CPU -->
+            <!-- Memory profiles (XMP / EXPO): read only; they are switched on in the BIOS. -->
             <Border Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="{loc:Loc Tuning_Cpu}" Style="{StaticResource CardTitle}" />
-                    <TextBlock Text="{Binding CpuName}" Style="{StaticResource Text.Value}" Margin="0,0,0,6" />
-                    <TextBlock Text="{Binding CpuNote}" Style="{StaticResource Muted}" />
-                </StackPanel>
-            </Border>
-
-            <!-- Memory profiles -->
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="{loc:Loc Tuning_Memory}" Style="{StaticResource CardTitle}" />
-                    <ItemsControl ItemsSource="{Binding Memory}" Margin="0,0,0,6">
+                    <DockPanel Margin="0,0,0,10">
+                        <Border DockPanel.Dock="Left" Style="{StaticResource Card.Mark}" />
+                        <Button DockPanel.Dock="Right" Content="{loc:Loc Tuning_RestartToFirmware}" Command="{Binding RestartToFirmwareCommand}" Style="{StaticResource Button.DangerOutline}" />
+                        <TextBlock Text="{loc:Loc Tuning_Memory}" Style="{StaticResource Text.CardTitle}" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding Memory}" Margin="0,0,0,8">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type vm:InfoRow}">
-                                <DockPanel Margin="0,0,0,4">
+                                <DockPanel Margin="0,0,0,6">
                                     <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Value}" Foreground="{StaticResource Brush.TextMuted}" Width="300" Margin="0,0,16,0" />
-                                    <TextBlock Text="{Binding Value}" Style="{StaticResource Mixed}" />
+                                    <TextBlock controls:MixedText.Text="{Binding Value}" Style="{StaticResource Text.Mixed}" />
                                 </DockPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock Text="{loc:Loc Tuning_Memory_Note}" Style="{StaticResource Muted}" Margin="0,0,0,8" />
-                    <Button Content="{loc:Loc Tuning_RestartToFirmware}" Command="{Binding RestartToFirmwareCommand}" Style="{StaticResource Button.DangerOutline}" Padding="14,5" HorizontalAlignment="Left" />
+                    <TextBlock Text="{loc:Loc Tuning_Memory_Note}" Style="{StaticResource Text.Muted}" />
                 </StackPanel>
             </Border>
         </StackPanel>

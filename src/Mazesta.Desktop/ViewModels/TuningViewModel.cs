@@ -10,60 +10,138 @@ public sealed record GpuProfileRow(GpuProfile Profile)
 {
     public string Name => Profile.Name;
     public string Kind => Loc.Get("Tuning_Kind_" + Profile.Kind);
+    public GpuProfileKind KindValue => Profile.Kind;
+    public string Created => Profile.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
     public string Summary => TuningViewModel.Summarize(Profile.Settings);
     public string Evidence => Profile.Baseline is { } b && Profile.Tuned is { } t ? Loc.Format("Tuning_Evidence", TuningViewModel.Describe(b), TuningViewModel.Describe(t)) : "";
 }
 
+/// <summary>One finished step of an automatic search, in parts, so the page can lay it out right to left with each Latin part in its own box.</summary>
+public sealed record AutoLogRow(int Step, string Kind, string Settings, string Result, bool Clean, string? Problem);
+
+/// <summary>A big live number on the card's header: what it is, and the value with its unit or the not-available text.</summary>
+public sealed partial class LiveTile(string label) : ObservableObject
+{
+    public string Label { get; } = label;
+    [ObservableProperty] private string _value = "—";
+}
+
 /// <summary>
-/// Overclock and undervolt (GPU through NVIDIA's NVML; CPU and memory profiles explained, not changed). Manual settings are checked against the
-/// ranges the driver reports and refused, not clamped, when outside them. The automatic search runs the GPU under a verified load step by step and
-/// keeps a result only when its own measurements beat stock; it leaves the card at stock and saves a profile the technician applies by choice.
-/// One instance for the session, like Windows Tools: a quarter-hour search keeps running while the technician looks at other pages. The live
-/// readout ticks only while the page is on screen.
+/// Overclock and undervolt of an NVIDIA GPU through NVML. Manual settings are checked against the ranges the driver reports and refused, not
+/// clamped, when outside them. The curve editor shows the card's stock voltage/frequency curve as a scan measured it and lets the technician pin a
+/// voltage to a clock (offset + cap); the automatic search runs the GPU under a verified load step by step and keeps a result only when its own
+/// measurements beat stock, leaving the card at stock and saving a profile the technician applies by choice. One instance for the session, like
+/// Windows Tools: a quarter-hour search keeps running while the technician looks at other pages. The live readout ticks only while the page is
+/// on screen.
 /// </summary>
 public sealed partial class TuningViewModel : ObservableObject
 {
     private readonly IGpuTuningProvider _provider; private readonly JsonStore<GpuProfileDocument> _store; private readonly GpuProfileDocument _doc;
     private readonly Func<string, bool> _confirm; private readonly Action _restartToFirmware; private readonly Func<Action, object> _dispatch;
-    private readonly Func<IGpuTuningDevice, IGpuLoad> _load; private readonly System.Windows.Threading.DispatcherTimer? _timer;
-    private CancellationTokenSource? _cts;
+    private readonly Func<IGpuTuningDevice, IGpuLoad> _load; private readonly Func<string, Func<(DateTimeOffset At, double Volts)?>> _voltageFor;
+    private readonly System.Windows.Threading.DispatcherTimer? _timer;
+    private CancellationTokenSource? _cts; private Func<(DateTimeOffset At, double Volts)?> _voltage = () => null;
     private (string GpuId, GpuTuningSettings Settings, LoadMeasurement Baseline)? _lastUndervolt;
 
     public IReadOnlyList<IGpuTuningDevice> Devices => _provider.Devices;
     public bool HasDevice => Devices.Count > 0;
+    public bool HasSeveralDevices => Devices.Count > 1;
     public string Unavailable { get; }
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(Ranges))] private IGpuTuningDevice? _device;
-    [ObservableProperty] private string _live = "";
+    public bool HasUnavailable => Unavailable.Length > 0;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(Ranges), nameof(CoreMin), nameof(CoreMax), nameof(MemoryMin), nameof(MemoryMax), nameof(PowerMin), nameof(PowerMax),
+        nameof(FanMin), nameof(FanMax), nameof(ClockMax), nameof(HasPower), nameof(HasFan), nameof(HasCore), nameof(HasMemory))]
+    private IGpuTuningDevice? _device;
     [ObservableProperty] private string _status = "";
 
-    [ObservableProperty] private string _coreOffset = "0";
-    [ObservableProperty] private string _memoryOffset = "0";
-    [ObservableProperty] private bool _lockClock;
-    [ObservableProperty] private string _maxClock = "";
+    public LiveTile LiveCore { get; } = new(Loc.Get("Tuning_Live_Core"));
+    public LiveTile LiveMemory { get; } = new(Loc.Get("Tuning_Live_Memory"));
+    public LiveTile LiveVoltage { get; } = new(Loc.Get("Tuning_Live_Voltage"));
+    public LiveTile LiveTemperature { get; } = new(Loc.Get("Tuning_Live_Temperature"));
+    public LiveTile LivePower { get; } = new(Loc.Get("Tuning_Live_Power"));
+    public LiveTile LiveFan { get; } = new(Loc.Get("Tuning_Live_Fan"));
+    /// <summary>For the curve editor's live dot; NaN when not read.</summary>
+    [ObservableProperty] private double _liveClockMHz = double.NaN;
+    [ObservableProperty] private double _liveVoltageV = double.NaN;
+
+    // The form. Text fields hold exactly what was typed (Persian digits included); the sliders and the curve editor read and write them through
+    // the numeric properties below, so every way of setting a value ends in the same field and the same range check.
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CoreOffsetValue), nameof(CurveEstimate))] private string _coreOffset = "0";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(MemoryOffsetValue))] private string _memoryOffset = "0";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CapValue), nameof(CurveEstimate))] private bool _lockClock;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(CapValue), nameof(MaxClockValue), nameof(CurveEstimate))] private string _maxClock = "";
     [ObservableProperty] private bool _setPower;
-    [ObservableProperty] private string _powerLimit = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PowerLimitValue))] private string _powerLimit = "";
     [ObservableProperty] private bool _manualFan;
-    [ObservableProperty] private string _fanPercent = "60";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(FanValue))] private string _fanPercent = "60";
     [ObservableProperty] private string _profileName = "";
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(ResetCommand), nameof(AutoUndervoltCommand), nameof(AutoOverclockCommand), nameof(CancelAutoCommand), nameof(ApplyProfileCommand))]
+    public int CoreOffsetValue { get => Int(CoreOffset) ?? 0; set => CoreOffset = Num(value); }
+    public int MemoryOffsetValue { get => Int(MemoryOffset) ?? 0; set => MemoryOffset = Num(value); }
+    public int MaxClockValue { get => Int(MaxClock) ?? ClockMax; set => MaxClock = Num(value); }
+    public int PowerLimitValue { get => Int(PowerLimit) ?? PowerMax; set => PowerLimit = Num(value); }
+    public int FanValue { get => Int(FanPercent) ?? 60; set => FanPercent = Num(value); }
+    /// <summary>The cap as the curve editor sees it: 0 is none. Setting a cap from the curve turns the cap on.</summary>
+    public int CapValue
+    {
+        get => LockClock && Int(MaxClock) is { } c ? c : 0;
+        set { if (value > 0) { MaxClock = Num(value); LockClock = true; } else LockClock = false; }
+    }
+
+    private GpuTuningLimits? L => Device?.Limits;
+    public bool HasCore => L?.HasCoreOffset == true; public bool HasMemory => L?.HasMemoryOffset == true; public bool HasPower => L?.HasPowerLimit == true; public bool HasFan => L?.HasFanControl == true;
+    public int CoreMin => L?.CoreOffsetMin ?? 0; public int CoreMax => L?.CoreOffsetMax ?? 0;
+    public int MemoryMin => L?.MemoryOffsetMin ?? 0; public int MemoryMax => L?.MemoryOffsetMax ?? 0;
+    public int PowerMin => L?.PowerLimitMinW ?? 0; public int PowerMax => L?.PowerLimitMaxW ?? 0;
+    public int FanMin => L?.FanMinPercent ?? 0; public int FanMax => L?.FanMaxPercent ?? 100;
+    public int ClockMax => L?.MaxLockMHz ?? 3000;
+
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(ResetCommand), nameof(AutoUndervoltCommand), nameof(AutoOverclockCommand), nameof(CancelAutoCommand),
+        nameof(ApplyProfileCommand), nameof(ScanCurveCommand))]
     private bool _isTuning;
     [ObservableProperty] private double _autoPercent;
-    [ObservableProperty] private string _autoStatus = "";
-    [ObservableProperty] private string _autoResult = "";
-    public ObservableCollection<string> AutoLog { get; } = [];
+    // The step in progress, in parts: its title is Persian, its settings Latin; the page lays them out so neither scrambles the other.
+    [ObservableProperty] private string _autoStepTitle = "";
+    [ObservableProperty] private string _autoStepSettings = "";
+    [ObservableProperty] private string _autoStepLoad = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasAutoResult))] private string _autoResult = "";
+    public bool HasAutoResult => AutoResult.Length > 0;
+    public ObservableCollection<AutoLogRow> AutoLog { get; } = [];
     public ObservableCollection<GpuProfileRow> Profiles { get; } = [];
+    public bool HasProfiles => Profiles.Count > 0;
 
-    public string OtherGpus { get; private set; } = "";
-    public string CpuName { get; private set; } = "";
-    public string CpuNote { get; private set; } = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasCurve), nameof(CurveEstimate), nameof(CurveInfo))] private IReadOnlyList<VfPoint>? _curve;
+    [ObservableProperty] private string _curveStatus = "";
+    private DateTimeOffset? _curveMeasuredAt;
+    public bool HasCurve => Curve is { Count: >= 2 };
+    public string CurveInfo => Curve is { Count: >= 2 } c && _curveMeasuredAt is { } at
+        ? Loc.Format("Tuning_Curve_Info", c.Count, Ltr($"{c.Min(p => p.VoltageV):F3}–{c.Max(p => p.VoltageV):F3} V"), Ltr($"{c.Max(p => p.ClockMHz):F0} MHz"), Ltr(at.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)))
+        : Loc.Get("Tuning_Curve_None");
+
+    /// <summary>What the settings on the form do to the measured curve: the voltage the card should need at the cap (or at the top of the moved
+    /// curve), next to what stock needs there. An estimate from measured points, and worded as one; outside the measured curve there is none.</summary>
+    public string CurveEstimate
+    {
+        get
+        {
+            if (Curve is not { Count: >= 2 } c) return "";
+            double clock = CapValue > 0 ? CapValue : c.Max(p => p.ClockMHz) + CoreOffsetValue;
+            if (VfCurve.VoltageAt(c, clock, CoreOffsetValue) is not { } tuned) return Loc.Get("Tuning_Curve_OutOfRange");
+            return VfCurve.VoltageAt(c, clock, 0) is { } stock ? Loc.Format("Tuning_Curve_Estimate", Ltr($"{clock:F0} MHz"), Ltr($"{tuned:F3} V"), Ltr($"{stock:F3} V"))
+                : Loc.Format("Tuning_Curve_EstimateAboveStock", Ltr($"{clock:F0} MHz"), Ltr($"{tuned:F3} V"));
+        }
+    }
+
     public IReadOnlyList<InfoRow> Memory { get; private set; } = [];
+    /// <summary>The graphics cards NVML does not cover (AMD, Intel), named so the technician knows why they are not offered.</summary>
+    public string OtherGpus { get; private set; } = "";
 
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
-        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, bool withTimer = true)
+        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true)
     {
         _provider = provider; _store = store; _doc = store.Load().Value; _confirm = confirm; _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
+        _voltageFor = voltageFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
+        Profiles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasProfiles));
         Device = Devices.FirstOrDefault();
         if (recovered is not null) Status = recovered;
         if (withTimer) { _timer = new() { Interval = TimeSpan.FromSeconds(1) }; _timer.Tick += (_, _) => RefreshLive(); }
@@ -76,12 +154,15 @@ public sealed partial class TuningViewModel : ObservableObject
     partial void OnDeviceChanged(IGpuTuningDevice? value)
     {
         if (value is null) return;
+        _voltage = _voltageFor(value.Name);
         var now = value.ReadCurrent(); var l = value.Limits;
         CoreOffset = Num(now.CoreOffsetMHz); MemoryOffset = Num(now.MemoryOffsetMHz);
         LockClock = false; MaxClock = l.MaxClockMHz is { } m ? Num(m) : "";
         SetPower = now.PowerLimitW is not null; PowerLimit = Num(now.PowerLimitW ?? l.PowerLimitDefaultW ?? 0);
         ManualFan = now.FanPercent is not null; FanPercent = Num(now.FanPercent ?? 60);
         LoadProfiles();
+        var saved = _doc.Curves.FirstOrDefault(c => c.GpuId == value.Id);
+        _curveMeasuredAt = saved?.MeasuredAt; Curve = saved?.Points;
     }
 
     public string Ranges => Device?.Limits is not { } l ? "" : string.Join("   ·   ", new[]
@@ -92,26 +173,30 @@ public sealed partial class TuningViewModel : ObservableObject
         l.HasFanControl ? Loc.Format("Tuning_Range_Fan", l.FanCount, Ltr($"{l.FanMinPercent}..{l.FanMaxPercent} %")) : Loc.Get("Tuning_Range_NoFan"),
     });
 
-    private void RefreshLive()
+    internal void RefreshLive()
     {
         if (Device is null) return;
-        var t = Device.ReadTelemetry();
-        static string V(double? v, string unit) => v is { } x ? x.ToString("F0", CultureInfo.InvariantCulture) + unit : "—";
-        Live = $"{V(t.CoreClockMHz, " MHz")}   ·   {Loc.Get("Tuning_Live_Memory")} {V(t.MemoryClockMHz, " MHz")}   ·   {V(t.TemperatureC, " °C")}   ·   {V(t.PowerW, " W")}   ·   {Loc.Get("Tuning_Live_Fan")} {V(t.FanPercent, " %")}";
+        var t = Device.ReadTelemetry(); var volts = _voltage();
+        // A voltage older than a few seconds is not this moment's (the monitor paused, the sensor dropped out): it is not shown as current.
+        double? v = volts is { } x && DateTimeOffset.UtcNow - x.At < TimeSpan.FromSeconds(5) ? x.Volts : null;
+        static string V(double? value, string format, string unit) => value is { } x ? x.ToString(format, CultureInfo.InvariantCulture) + unit : Loc.Get("Value_NotAvailable");
+        LiveCore.Value = V(t.CoreClockMHz, "F0", " MHz"); LiveMemory.Value = V(t.MemoryClockMHz, "F0", " MHz"); LiveVoltage.Value = V(v, "F3", " V");
+        LiveTemperature.Value = V(t.TemperatureC, "F0", " °C"); LivePower.Value = V(t.PowerW, "F0", " W"); LiveFan.Value = V(t.FanPercent, "F0", " %");
+        LiveClockMHz = t.CoreClockMHz ?? double.NaN; LiveVoltageV = v ?? double.NaN;
     }
 
     private static string Num(int v) => v.ToString(CultureInfo.InvariantCulture);
+    private static int? Int(string? s) => int.TryParse(PersianDigits.Normalize(s ?? "").Trim(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int v) ? v : null;
 
     /// <summary>The form as settings, or the resource key of the first field that is not a whole number.</summary>
     internal static (GpuTuningSettings? Settings, string? ErrorKey) Parse(string core, string memory, bool lockClock, string maxClock, bool setPower, string power, bool manualFan, string fan)
     {
-        static int? I(string s) => int.TryParse(PersianDigits.Normalize(s ?? "").Trim(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int v) ? v : null;
-        if (I(core) is not { } c) return (null, "Tuning_Label_CoreOffset");
-        if (I(memory) is not { } m) return (null, "Tuning_Label_MemoryOffset");
+        if (Int(core) is not { } c) return (null, "Tuning_Label_CoreOffset");
+        if (Int(memory) is not { } m) return (null, "Tuning_Label_MemoryOffset");
         int? cap = null, watts = null, pct = null;
-        if (lockClock && (cap = I(maxClock)) is null) return (null, "Tuning_Label_MaxClock");
-        if (setPower && (watts = I(power)) is null) return (null, "Tuning_Label_PowerLimit");
-        if (manualFan && (pct = I(fan)) is null) return (null, "Tuning_Label_Fan");
+        if (lockClock && (cap = Int(maxClock)) is null) return (null, "Tuning_Label_MaxClock");
+        if (setPower && (watts = Int(power)) is null) return (null, "Tuning_Label_PowerLimit");
+        if (manualFan && (pct = Int(fan)) is null) return (null, "Tuning_Label_Fan");
         return (new(c, m, cap, watts, pct), null);
     }
 
@@ -144,6 +229,9 @@ public sealed partial class TuningViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanChange))]
     private void ApplyProfile(GpuProfileRow row) { Report(Device!.Apply(row.Profile.Settings), "Tuning_Applied"); Fill(row.Profile.Settings); }
 
+    /// <summary>Puts a profile's settings on the form (and so on the curve) without sending them to the card.</summary>
+    [RelayCommand] private void LoadProfile(GpuProfileRow row) { Fill(row.Profile.Settings); Status = Loc.Format("Tuning_ProfileLoaded", row.Name); }
+
     [RelayCommand]
     private void DeleteProfile(GpuProfileRow row)
     {
@@ -170,6 +258,34 @@ public sealed partial class TuningViewModel : ObservableObject
         foreach (var p in _doc.Profiles.Where(p => p.GpuId == Device?.Id).OrderByDescending(p => p.CreatedAt)) Profiles.Add(new(p));
     }
 
+    // The curve
+
+    /// <summary>Measures the stock curve (about a minute and a half under load, see <see cref="VfCurveScanner"/>) and keeps it for this card.</summary>
+    [RelayCommand(CanExecute = nameof(CanChange))]
+    private async Task ScanCurve()
+    {
+        if (!_confirm(Loc.Get("Tuning_ConfirmCurve"))) return;
+        var device = Device!;
+        IsTuning = true; AutoPercent = 0; CurveStatus = Loc.Get("Tuning_Curve_Scanning"); Status = "";
+        _cts = new CancellationTokenSource();
+        var scanner = new VfCurveScanner(device, _load(device), _voltage, Journal(device.Id));
+        scanner.Progress += p => _dispatch(() =>
+        {
+            AutoPercent = 100.0 * (p.Step - (p.Measured is null ? 1 : 0)) / p.Steps;
+            CurveStatus = Loc.Format("Tuning_Curve_Step", p.Step, p.Steps, Ltr($"{p.RequestedMHz} MHz"));
+        });
+        VfScanResult result;
+        try { result = await scanner.RunAsync(_cts.Token).ConfigureAwait(true); }
+        finally { IsTuning = false; AutoPercent = 0; }
+        if (!result.Ok) { CurveStatus = Loc.Get(result.ReasonKey!) + (result.Detail is { } d ? $" ({d})" : ""); return; }
+        var curve = new GpuCurve(device.Id, DateTimeOffset.Now, result.Points);
+        _doc.Curves.RemoveAll(c => c.GpuId == device.Id); _doc.Curves.Add(curve); _store.Save(_doc);
+        _curveMeasuredAt = curve.MeasuredAt; Curve = curve.Points; OnPropertyChanged(nameof(CurveInfo));
+        CurveStatus = Loc.Get("Tuning_Curve_Done");
+    }
+
+    // The automatic search
+
     [RelayCommand(CanExecute = nameof(CanChange))]
     private Task AutoUndervolt()
     {
@@ -177,17 +293,21 @@ public sealed partial class TuningViewModel : ObservableObject
         return RunAuto(new UndervoltSearch(Device!.Limits, new AutoTuneOptions()), GpuProfileKind.Undervolt);
     }
 
-    /// <summary>Builds on this session's undervolt, or on the newest saved undervolt profile of this card (its offset, clock and stock measurement)
-    /// measured with the current load; with neither, starts from stock and measures it first.</summary>
     [RelayCommand(CanExecute = nameof(CanChange))]
     private Task AutoOverclock()
     {
         if (!_confirm(Loc.Get("Tuning_ConfirmAuto"))) return Task.CompletedTask;
         var device = Device!;
-        (GpuTuningSettings? start, LoadMeasurement? baseline) = _lastUndervolt is { } uv && uv.GpuId == device.Id ? (uv.Settings, uv.Baseline)
-            : _doc.Profiles.Where(p => p.GpuId == device.Id && p.Kind == GpuProfileKind.Undervolt && p.Baseline is not null && p.LoadVersion == LoadMeasurement.CurrentLoadVersion).MaxBy(p => p.CreatedAt) is { } saved ? (saved.Settings, saved.Baseline) : (null, null);
+        var (start, baseline) = OverclockStart(_doc.Profiles, device.Id, _lastUndervolt);
         return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions(), start, baseline), GpuProfileKind.Overclock);
     }
+
+    /// <summary>Where an automatic overclock starts: this session's undervolt of the card, else its newest saved undervolt whose stock measurement
+    /// came from the current load (an older, lighter load's score would make any new run look faster), else stock - measured first.</summary>
+    internal static (GpuTuningSettings? Start, LoadMeasurement? Baseline) OverclockStart(IEnumerable<GpuProfile> profiles, string gpuId, (string GpuId, GpuTuningSettings Settings, LoadMeasurement Baseline)? session)
+        => session is { } uv && uv.GpuId == gpuId ? (uv.Settings, uv.Baseline)
+        : profiles.Where(p => p.GpuId == gpuId && p.Kind == GpuProfileKind.Undervolt && p.Baseline is not null && p.LoadVersion == LoadMeasurement.CurrentLoadVersion).MaxBy(p => p.CreatedAt) is { } saved
+            ? (saved.Settings, saved.Baseline) : (null, null);
 
     [RelayCommand(CanExecute = nameof(IsTuning))] private void CancelAuto() => _cts?.Cancel();
 
@@ -197,12 +317,17 @@ public sealed partial class TuningViewModel : ObservableObject
         IsTuning = true; AutoLog.Clear(); AutoResult = ""; AutoPercent = 0; Status = "";
         _cts = new CancellationTokenSource();
         var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id));
-        tuner.Progress += p => _dispatch(() => { AutoPercent = p.Fraction * 100; AutoStatus = Loc.Format("Tuning_Auto_Step", p.StepNumber, Loc.Get("Tuning_Step_" + p.Step.Kind), Summarize(p.Step.Settings), Loc.Get("Tuning_Load_" + p.Step.Load)); });
-        tuner.StepFinished += s => _dispatch(() => AutoLog.Add($"{s.StepNumber}. {Loc.Get("Tuning_Step_" + s.Step.Kind)} · {Summarize(s.Step.Settings)} → {Describe(s.Measurement, s.Step.Load)}"
-            + (s.Measurement.Clean ? "" : " · " + Loc.Get(s.Measurement.DeviceLost ? "Tuning_Lost" : "Tuning_Errors")) + (s.Error is { } e ? $" ({e})" : "")));
+        tuner.Progress += p => _dispatch(() =>
+        {
+            AutoPercent = p.Fraction * 100;
+            AutoStepTitle = Loc.Format("Tuning_Auto_StepTitle", p.StepNumber, Loc.Get("Tuning_Step_" + p.Step.Kind));
+            AutoStepSettings = Summarize(p.Step.Settings); AutoStepLoad = Loc.Get("Tuning_Load_" + p.Step.Load);
+        });
+        tuner.StepFinished += s => _dispatch(() => AutoLog.Add(new(s.StepNumber, Loc.Get("Tuning_Step_" + s.Step.Kind), Summarize(s.Step.Settings), Describe(s.Measurement, s.Step.Load),
+            s.Measurement.Clean, s.Measurement.Clean && s.Error is null ? null : Loc.Get(s.Measurement.DeviceLost ? "Tuning_Lost" : "Tuning_Errors") + (s.Error is { } e ? $" ({e})" : ""))));
         AutoTuneOutcome outcome;
         try { outcome = await tuner.RunAsync(search, _cts.Token).ConfigureAwait(true); }
-        finally { IsTuning = false; AutoPercent = 100; AutoStatus = ""; }
+        finally { IsTuning = false; AutoPercent = 100; AutoStepTitle = AutoStepSettings = AutoStepLoad = ""; }
         AutoResult = Loc.Get(outcome.ReasonKey) + (outcome.Detail is { } d ? $" ({d})" : "");
         if (outcome.Baseline is { } b && outcome.Tuned is { } t) AutoResult += "\n" + Loc.Format("Tuning_Evidence", Describe(b), Describe(t));
         if (outcome.MemoryBaseline is { } mb && outcome.MemoryTuned is { } mt) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Memory", Describe(mb, GpuLoadKind.Memory), Describe(mt, GpuLoadKind.Memory));
@@ -222,7 +347,7 @@ public sealed partial class TuningViewModel : ObservableObject
     /// <summary>Keeps a number with its sign and unit in reading order inside a Persian (right-to-left) sentence: without the embedding, "+135 MHz"
     /// comes out as "MHz 135+". Left-to-right marks on both sides make the whole chunk one left-to-right run (WPF's text layout did not keep
     /// the LRE/PDF embedding in the page's text blocks, so plain marks are used).</summary>
-    internal static string Ltr(string s) => "\u200E" + s + "\u200E";
+    internal static string Ltr(string s) => "‎" + s + "‎";
     private static string UnitOf(string key) => key switch { "Tuning_Bad_PowerLimit" => " W", "Tuning_Bad_Fan" => " %", _ => " MHz" };
 
     public static string Summarize(GpuTuningSettings s)
@@ -265,10 +390,8 @@ public sealed partial class TuningViewModel : ObservableObject
         try { inv = await inventory.GetAsync().ConfigureAwait(true); } catch (Exception e) when (e is System.Management.ManagementException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException) { return; }
         var others = inv.Gpus.Where(g => g.Name is { } n && !n.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase)).Select(g => g.Name!).ToList();
         OtherGpus = others.Count == 0 ? "" : Loc.Format("Tuning_OtherGpus", string.Join("، ", others));
-        CpuName = inv.Cpu?.Name?.Trim() ?? Loc.Get("Value_NotAvailable");
-        CpuNote = Loc.Get(inv.Cpu?.Vendor switch { Core.Hardware.HardwareVendor.Intel => "Tuning_Cpu_Intel", Core.Hardware.HardwareVendor.Amd => "Tuning_Cpu_Amd", _ => "Tuning_Cpu_Other" });
         Memory = MemoryRows(inv.MemoryModules);
-        OnPropertyChanged(nameof(OtherGpus)); OnPropertyChanged(nameof(CpuName)); OnPropertyChanged(nameof(CpuNote)); OnPropertyChanged(nameof(Memory));
+        OnPropertyChanged(nameof(Memory)); OnPropertyChanged(nameof(OtherGpus));
     }
 
     /// <summary>Each module's configured speed next to the speed its SMBIOS entry reports. Which of the two an XMP/EXPO kit reports as "Speed" varies

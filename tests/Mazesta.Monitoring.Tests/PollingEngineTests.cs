@@ -28,6 +28,17 @@ public class PollingEngineTests
         Assert.NotNull(got); Assert.Equal(2, got!.Readings.Count);
         Assert.Equal(42.0, e.Statistics.Get(p.Nodes[0].Sensors[0].Id).Max); Assert.NotEmpty(e.History.GetRaw(p.Nodes[0].Sensors[0].Id).Seconds);
     }
+    [Fact] public void Latest_reading_follows_one_sensor_and_drops_a_value_that_went_stale()
+    {
+        var (e, p, c, _) = Build(); e.PrepareForManualTicks();
+        using var latest = LatestReading.Find(e, HardwareKind.Cpu, "no such name", SensorRole.None)!;   // falls back to the first node of the kind
+        Assert.Null(latest.Value);
+        e.TickOnce(); Assert.Equal(42.0, latest.Value!.Value.Value);
+        p.OnPoll = r => new PollResult([new SensorReading(p.Nodes[0].Sensors[0].Id, 50, T0, DataQuality.Ok, "fake")], new Dictionary<HardwareId, NodeStatus> { [p.Nodes[0].Id] = NodeStatus.Healthy(T0) });
+        c.Advance(TimeSpan.FromSeconds(10)); e.TickOnce();
+        Assert.Null(latest.Value);
+        Assert.Null(LatestReading.Find(e, HardwareKind.Gpu, null, SensorRole.GpuVoltage));
+    }
     [Fact] public void Stale_detection_uses_node_cadence()
     {
         var (e, p, c, _) = Build(); e.PrepareForManualTicks();

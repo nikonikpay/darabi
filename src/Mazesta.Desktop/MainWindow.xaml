@@ -12,7 +12,7 @@
         Title="{loc:Loc App_Title}"
         MinWidth="960" MinHeight="600"
         Width="1280" Height="800"
-        Icon="pack://application:,,,/Assets/mazesta.ico"
+        Icon="pack://application:,,,/MazestaTest;component/Assets/mazesta.ico"
         Background="{StaticResource Brush.Background}">
     <Window.Resources>
         <Style x:Key="SidebarListBoxStyle" TargetType="ListBox">
@@ -104,7 +104,7 @@
         <DockPanel>
             <!-- The brand: the round logo and the wordmark, always left-to-right like the logo itself. -->
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="18,18,18,14" FlowDirection="LeftToRight" HorizontalAlignment="Center">
-                <Image Source="pack://application:,,,/Assets/mazesta-logo.png" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality" />
+                <Image Source="pack://application:,,,/MazestaTest;component/Assets/mazesta-logo.png" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality" />
                 <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                     <controls:LogoMark Height="15" HorizontalAlignment="Left" Foreground="{StaticResource Brush.Text}" />
                     <TextBlock Text="TEST SUITE" FontFamily="{StaticResource App.Font.Latin}" FontSize="9.5" FontWeight="SemiBold" Foreground="{StaticResource Brush.Accent}" Margin="1,4,0,0" />

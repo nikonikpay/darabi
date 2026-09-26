@@ -80,6 +80,37 @@ public sealed class TuningViewModelTests : IDisposable
         Assert.False(vm.HasDevice); Assert.Equal(Loc.Get("Tuning_Unavailable_NoNvidia"), vm.Unavailable);
     }
 
+    [Fact] public void The_curve_editor_and_sliders_write_the_same_fields_as_typing()
+    {
+        var vm = Vm(new Provider(new Card()));
+        vm.CapValue = 1905; Assert.True(vm.LockClock); Assert.Equal("1905", vm.MaxClock);
+        vm.CoreOffsetValue = 165; Assert.Equal("165", vm.CoreOffset);
+        vm.CapValue = 0; Assert.False(vm.LockClock); Assert.Equal(0, vm.CapValue);
+        vm.CoreOffset = "۱۲۰"; Assert.Equal(120, vm.CoreOffsetValue);   // typed Persian digits reach the slider
+    }
+
+    [Fact] public void A_saved_curve_is_shown_for_its_card_with_an_estimate_worded_as_one()
+    {
+        var store = Store(); var doc = new GpuProfileDocument();
+        doc.Curves.Add(new("GPU-A", DateTimeOffset.Now, [new(1500, 0.775), new(1800, 0.900), new(1950, 1.000)]));
+        doc.Curves.Add(new("GPU-B", DateTimeOffset.Now, [new(1000, 0.7), new(1100, 0.8)]));
+        store.Save(doc);
+        var vm = Vm(new Provider(new Card("GPU-A")), store);
+        Assert.Equal(3, vm.Curve!.Count);
+        vm.CoreOffset = "105"; vm.CapValue = 1905;   // 1905 - 105 = 1800 MHz on the stock curve: 0.900 V
+        Assert.Contains("0.900 V", vm.CurveEstimate); Assert.Contains(Loc.Get("Tuning_Curve_Estimate").Split(':')[0], vm.CurveEstimate);
+        vm.CapValue = 2400; Assert.Equal(Loc.Get("Tuning_Curve_OutOfRange"), vm.CurveEstimate);   // never extrapolated
+    }
+
+    [Fact] public void Auto_overclock_reuses_a_saved_stock_measurement_only_from_the_current_load()
+    {
+        LoadMeasurement m = new(1950, 348, 71, 73, 12174, 0, false);
+        GpuProfile Saved(int? version, int minutesAgo) => new("uv", GpuProfileKind.Undervolt, "GPU-A", "x", new(120, 0, 1905, null, null), DateTimeOffset.Now.AddMinutes(-minutesAgo), m, m, version);
+        Assert.Equal((null, null), TuningViewModel.OverclockStart([Saved(null, 1)], "GPU-A", null));                          // saved with the lighter version-1 load
+        Assert.Equal(1905, TuningViewModel.OverclockStart([Saved(null, 1), Saved(LoadMeasurement.CurrentLoadVersion, 60)], "GPU-A", null).Start!.MaxClockMHz);
+        Assert.Equal((null, null), TuningViewModel.OverclockStart([Saved(LoadMeasurement.CurrentLoadVersion, 1)], "GPU-B", null));   // another card's
+    }
+
     [Fact] public void Memory_rows_show_both_speeds_and_mark_a_missing_one_unavailable()
     {
         var rows = TuningViewModel.MemoryRows([new("DIMMA1", 32L << 30, "Corsair", "CMK64GX5M2X6800C32 ", 6800, null)]);
