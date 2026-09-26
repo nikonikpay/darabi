@@ -87,9 +87,9 @@ public static class ReportHtml
 body{{margin:0;background:#eef1f5;color:#1b2430;font:14px/1.75 {family}}}
 main{{max-width:900px;margin:0 auto;background:#fff;padding:32px 36px}}
 .lt{{font-family:'Segoe UI',Consolas,monospace;direction:ltr;unicode-bidi:isolate;font-size:.92em}}
-header{{border-bottom:3px solid #2f6bff;padding-bottom:14px;margin-bottom:18px}}
+header{{border-bottom:3px solid #FDD400;padding-bottom:14px;margin-bottom:18px}}
 .logo{{display:block;height:34px;width:auto;margin-bottom:10px}}
-h1{{margin:0;font-size:24px}} h2{{margin:26px 0 10px;font-size:18px;border-inline-start:4px solid #2f6bff;padding-inline-start:10px}}
+h1{{margin:0;font-size:24px}} h2{{margin:26px 0 10px;font-size:18px;border-inline-start:4px solid #FDD400;padding-inline-start:10px}}
 .meta{{color:#5b6675;font-size:12.5px;margin-top:4px}}
 .verdict{{border-radius:10px;padding:14px 18px;font-size:17px;font-weight:700;margin:6px 0 14px}}
 .verdict.Passed{{background:#e7f6ec;color:#146c2e;border:1px solid #9bd5ad}}

@@ -28,14 +28,17 @@ public sealed partial class ReportRowViewModel(StoredReport report) : Observable
 public sealed partial class ReportsViewModel : ObservableObject, IDisposable
 {
     private readonly ReportService _service; private readonly Func<Action, object> _dispatch; private readonly Action<string> _open; private readonly Func<string, bool> _confirm;
+    private readonly Func<Task<string>>? _createSummary;
 
     public ObservableCollection<ReportRowViewModel> Items { get; } = [];
     public bool IsEmpty => Items.Count == 0;
     [ObservableProperty] private string _status = "";
 
-    public ReportsViewModel(ReportService service, Func<Action, object> dispatch, Action<string> open, Func<string, bool> confirm)
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CreateSummaryCommand))] private bool _isMakingSummary;
+
+    public ReportsViewModel(ReportService service, Func<Action, object> dispatch, Action<string> open, Func<string, bool> confirm, Func<Task<string>>? createSummary = null)
     {
-        _service = service; _dispatch = dispatch; _open = open; _confirm = confirm;
+        _service = service; _dispatch = dispatch; _open = open; _confirm = confirm; _createSummary = createSummary;
         Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(IsEmpty));
         Refresh(); service.ReportCreated += OnCreated;
     }
@@ -77,6 +80,23 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
             Status = ""; _open(row.Report.PdfPath);
         }
         catch (Exception e) { Status = Loc.Format("Reports_PdfFailed", e.Message); }
+    }
+
+    private bool CanCreateSummary() => _createSummary is not null && !IsMakingSummary;
+
+    /// <summary>The one-page customer summary as of now (drive health, temperatures, BIOS, the last test), printed to an A5 PDF and opened.</summary>
+    [RelayCommand(CanExecute = nameof(CanCreateSummary))]
+    private async Task CreateSummary()
+    {
+        IsMakingSummary = true; Status = Loc.Get("Reports_SummaryBusy");
+        try
+        {
+            string html = await _createSummary!().ConfigureAwait(true), pdf = Path.ChangeExtension(html, ".pdf");
+            await PdfExporter.ExportAsync(html, pdf, Loc.Get("Reports_SummaryBusy"), Application.Current.MainWindow, _service.BrowserDataDir, a5: true);
+            Status = Loc.Get("Reports_SummaryDone"); _open(pdf);
+        }
+        catch (Exception e) { Status = Loc.Format("Reports_SummaryFailed", e.Message); }
+        finally { IsMakingSummary = false; }
     }
 
     [RelayCommand]

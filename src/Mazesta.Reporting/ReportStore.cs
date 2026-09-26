@@ -45,5 +45,15 @@ public sealed class ReportStore(string directory)
     }
     public void Delete(StoredReport stored) { if (Directory.Exists(stored.Folder)) Directory.Delete(stored.Folder, recursive: true); }
 
+    /// <summary>A customer summary goes into <c>summaries</c> under the reports folder (a folder without report.json, so the report list skips it)
+    /// and is named by the time it was made. Returns the HTML file's path; the PDF is printed next to it.</summary>
+    public string SaveSummary(DateTimeOffset createdAt, string html)
+    {
+        string folder = Path.Combine(directory, "summaries"); Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, $"summary-{createdAt.ToLocalTime():yyyyMMdd-HHmmss}.html");
+        WriteAtomic(path, html);
+        return path;
+    }
+
     private static void WriteAtomic(string path, string content) { string tmp = path + ".tmp"; File.WriteAllText(tmp, content, new System.Text.UTF8Encoding(false)); File.Move(tmp, path, overwrite: true); }
 }

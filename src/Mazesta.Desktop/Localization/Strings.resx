@@ -487,7 +487,7 @@
   <data name="Reports_PdfFailed" xml:space="preserve"><value>Could not create the PDF: {0}</value></data>
   <data name="Reports_Created" xml:space="preserve"><value>Report saved.</value></data>
   <data name="Reports_Verdict_Benchmark" xml:space="preserve"><value>Benchmark</value></data>
-  <data name="Reports_Summary" xml:space="preserve"><value>{0} tests · {1} passed · {2} failed · {3} not completed</value></data>
+  <data name="Reports_Summary" xml:space="preserve"><value>Customer summary (A5 PDF)</value></data>
   <data name="Reports_Verdict_Passed" xml:space="preserve"><value>Passed</value></data>
   <data name="Reports_Verdict_Failed" xml:space="preserve"><value>Needs attention</value></data>
   <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>Incomplete</value></data>
@@ -780,4 +780,10 @@
   <data name="Bench_Queue_Position" xml:space="preserve"><value>Benchmark {0} of {1}</value></data>
   <data name="Bench_Status_Queued" xml:space="preserve"><value>Waiting in the queue</value></data>
   <data name="Bench_Status_Skipped" xml:space="preserve"><value>Not run: the queue was cancelled</value></data>
+  <data name="Reports_Summary_Title" xml:space="preserve"><value>Summary for the customer</value></data>
+  <data name="Reports_Summary_Note" xml:space="preserve"><value>One boxed A5 sheet about this machine as it is now: hardware and BIOS version, the health of every HDD and SSD, CPU and GPU temperatures, and the last full test result. Only measured values.</value></data>
+  <data name="Reports_SummaryBusy" xml:space="preserve"><value>Preparing the customer summary…</value></data>
+  <data name="Reports_SummaryDone" xml:space="preserve"><value>The customer summary is ready; print it from the PDF viewer.</value></data>
+  <data name="Reports_SummaryFailed" xml:space="preserve"><value>The customer summary could not be made: {0}</value></data>
+  <data name="Reports_Saved" xml:space="preserve"><value>Saved reports</value></data>
 </root>

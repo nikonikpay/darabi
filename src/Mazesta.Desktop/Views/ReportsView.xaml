@@ -3,74 +3,105 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
              xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
+             xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
              Background="{StaticResource Brush.Background}" Style="{StaticResource View.FadeIn}">
-    <Grid Margin="20">
+    <Grid Margin="24,20,24,16">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <DockPanel Grid.Row="0" Margin="0,0,0,12" LastChildFill="False">
-            <TextBlock DockPanel.Dock="Left" Text="{loc:Loc Nav_Reports}" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" />
-            <Button Style="{StaticResource Button.Primary}" DockPanel.Dock="Right" Content="{loc:Loc Reports_Compare}" Command="{Binding CompareCommand}" Padding="12,5" VerticalAlignment="Center" />
-            <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Reports_CompareHint}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0" />
-        </DockPanel>
+        <TextBlock Grid.Row="0" Text="{loc:Loc Nav_Reports}" Style="{StaticResource Text.PageTitle}" Margin="0,0,0,14" />
 
-        <TextBlock Grid.Row="1" Text="{loc:Loc Reports_Empty}" Foreground="{StaticResource Brush.TextMuted}" TextWrapping="Wrap" VerticalAlignment="Top"
-                   Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+        <!-- The customer summary: one boxed A5 sheet about the machine now. -->
+        <Border Grid.Row="1" Style="{StaticResource Card}">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="{loc:Loc Reports_Summary}" Command="{Binding CreateSummaryCommand}" Style="{StaticResource Button.Primary}" Padding="18,9" VerticalAlignment="Center" />
+                <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="12" Background="{StaticResource Brush.AccentDim}" Margin="0,0,14,0" VerticalAlignment="Center">
+                    <TextBlock Text="&#xE749;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource Brush.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Loc Reports_Summary_Title}" Style="{StaticResource Text.CardTitle}" />
+                    <TextBlock Text="{loc:Loc Reports_Summary_Note}" Style="{StaticResource Text.Muted}" FontSize="12" Margin="0,3,12,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Items}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:ReportRowViewModel}">
-                        <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,10">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal">
-                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="{loc:Loc Reports_CompareHint}" />
-                                        <Border CornerRadius="10" Padding="10,1" VerticalAlignment="Center" Margin="0,0,10,0">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="#33E0A030" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Badge}" Value="Passed"><Setter Property="Background" Value="#334CAF50" /></DataTrigger>
-                                                        <DataTrigger Binding="{Binding Badge}" Value="Failed"><Setter Property="Background" Value="#33E5534B" /></DataTrigger>
-                                                        <DataTrigger Binding="{Binding Badge}" Value="Benchmark"><Setter Property="Background" Value="#333D7BFF" /></DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
-                                            <TextBlock Text="{Binding VerdictText}" FontWeight="SemiBold" FontSize="12" />
-                                        </Border>
-                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Value}" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <DockPanel Margin="0,4,0,10" LastChildFill="False">
+                <TextBlock DockPanel.Dock="Left" Text="{loc:Loc Reports_Saved}" Style="{StaticResource Text.CardTitle}" />
+                <Button Style="{StaticResource Button.Outline}" DockPanel.Dock="Right" Content="{loc:Loc Reports_Compare}" Command="{Binding CompareCommand}" VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Right" Text="{loc:Loc Reports_CompareHint}" Style="{StaticResource Text.Caption}" VerticalAlignment="Center" Margin="0,0,10,0" />
+            </DockPanel>
+
+            <TextBlock Grid.Row="1" Text="{loc:Loc Reports_Empty}" Style="{StaticResource Text.Muted}" VerticalAlignment="Top"
+                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Items}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ReportRowViewModel}">
+                            <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="12" Padding="14,12" Margin="0,0,0,10">
+                                <DockPanel>
+                                    <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" MaxWidth="520" HorizontalAlignment="Right">
+                                        <Button Style="{StaticResource Button.Primary}" Content="{loc:Loc Reports_Html}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.OpenHtmlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Content="{loc:Loc Reports_Pdf}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.ExportPdfCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Content="{loc:Loc Reports_Text}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.OpenTextCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Content="{loc:Loc Reports_Json}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.OpenJsonCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Content="{loc:Loc Reports_Folder}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Style="{StaticResource Button.DangerOutline}" Content="{loc:Loc Reports_Delete}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                    </WrapPanel>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal">
+                                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0" ToolTip="{loc:Loc Reports_CompareHint}" />
+                                            <Border CornerRadius="99" Padding="10,1" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource Brush.WarningDim}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Badge}" Value="Passed"><Setter Property="Background" Value="{StaticResource Brush.SuccessDim}" /></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Badge}" Value="Failed"><Setter Property="Background" Value="{StaticResource Brush.DangerDim}" /></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Badge}" Value="Benchmark"><Setter Property="Background" Value="{StaticResource Brush.AccentDim}" /></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontWeight="SemiBold" FontSize="12" Text="{Binding VerdictText}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                            <Setter Property="Foreground" Value="{StaticResource Brush.Warning}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Badge}" Value="Passed"><Setter Property="Foreground" Value="{StaticResource Brush.Success}" /></DataTrigger>
+                                                                <DataTrigger Binding="{Binding Badge}" Value="Failed"><Setter Property="Foreground" Value="{StaticResource Brush.Danger}" /></DataTrigger>
+                                                                <DataTrigger Binding="{Binding Badge}" Value="Benchmark"><Setter Property="Foreground" Value="{StaticResource Brush.Accent}" /></DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Value}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Caption}" FontSize="12" Margin="28,6,0,0" TextWrapping="Wrap" />
                                     </StackPanel>
-                                    <TextBlock Text="{Binding Summary}" Foreground="{StaticResource Brush.TextMuted}" FontSize="12" Margin="0,6,0,0" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Style="{StaticResource Button.Primary}" Content="{loc:Loc Reports_Html}" Padding="12,5" Margin="6,0,0,0"
-                                            Command="{Binding DataContext.OpenHtmlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    <Button Content="{loc:Loc Reports_Pdf}" Padding="12,5" Margin="6,0,0,0"
-                                            Command="{Binding DataContext.ExportPdfCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    <Button Content="{loc:Loc Reports_Text}" Padding="12,5" Margin="6,0,0,0"
-                                            Command="{Binding DataContext.OpenTextCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    <Button Content="{loc:Loc Reports_Json}" Padding="12,5" Margin="6,0,0,0"
-                                            Command="{Binding DataContext.OpenJsonCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    <Button Content="{loc:Loc Reports_Folder}" Padding="12,5" Margin="6,0,0,0"
-                                            Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                    <Button Style="{StaticResource Button.DangerOutline}" Content="{loc:Loc Reports_Delete}" Padding="12,5" Margin="6,0,0,0"
-                                            Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
 
-        <TextBlock Grid.Row="2" Text="{Binding Status}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,0" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="3" controls:MixedText.Text="{Binding Status}" Style="{StaticResource Text.Mixed}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,8,0,0" />
     </Grid>
 </UserControl>

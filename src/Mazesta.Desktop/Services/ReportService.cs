@@ -57,6 +57,19 @@ public sealed class ReportService
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }
 
+    /// <summary>Writes the customer summary (machine, drive health, temperatures, last test) as of now and returns its HTML path.</summary>
+    public async Task<string> CreateSummaryAsync(Mazesta.Core.Providers.IDriveHealthProvider drives)
+    {
+        var machine = await _inventory.GetAsync().ConfigureAwait(false);
+        var health = await Task.Run(drives.Read).ConfigureAwait(false);
+        var now = _clock.UtcNow;
+        var last = Store.List().FirstOrDefault(r => r.Kind == ReportKind.TestSession);
+        var summary = new CustomerSummary(now, _config.ShopName, string.IsNullOrWhiteSpace(_config.ServiceNumber) ? null : _config.ServiceNumber.Trim(), AppVersion, machine,
+            CustomerSummaryBuilder.Drives(health, machine.Storage), CustomerSummaryBuilder.Temperatures(_polling, now), last?.Verdict, last?.CreatedAt);
+        string lang = Loc.IsRtl ? "fa" : "en";
+        return Store.SaveSummary(now, SummaryHtml.Write(summary, Font.Value, SummaryText.For(lang), ReportText.For(lang)));
+    }
+
     private static string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
 
     private void Save(SessionReport report)

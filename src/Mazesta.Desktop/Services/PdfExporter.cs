@@ -9,7 +9,8 @@ namespace Mazesta.Desktop.Services;
 /// </summary>
 public static class PdfExporter
 {
-    public static async Task ExportAsync(string htmlPath, string pdfPath, string busyText, Window? owner, string browserDataDir)
+    /// <summary>A4 unless <paramref name="a5"/> (the customer summary, a half sheet).</summary>
+    public static async Task ExportAsync(string htmlPath, string pdfPath, string busyText, Window? owner, string browserDataDir, bool a5 = false)
     {
         string html = await File.ReadAllTextAsync(htmlPath);
         using var browser = new WebView2();
@@ -29,7 +30,7 @@ public static class PdfExporter
             core.NavigationCompleted += (_, a) => loaded.TrySetResult(a.IsSuccess);
             core.NavigateToString(html);
             if (!await loaded.Task.WaitAsync(TimeSpan.FromSeconds(30))) throw new IOException("The report page did not load.");
-            var settings = env.CreatePrintSettings(); settings.PageWidth = 8.2677; settings.PageHeight = 11.6929; settings.ShouldPrintBackgrounds = true; settings.ShouldPrintHeaderAndFooter = false;
+            var settings = env.CreatePrintSettings(); settings.PageWidth = a5 ? 5.8268 : 8.2677; settings.PageHeight = a5 ? 8.2677 : 11.6929; settings.ShouldPrintBackgrounds = true; settings.ShouldPrintHeaderAndFooter = false;
             if (!await core.PrintToPdfAsync(temp, settings).WaitAsync(TimeSpan.FromSeconds(60))) throw new IOException("Printing to PDF failed.");
             File.Move(temp, pdfPath, overwrite: true);
         }
