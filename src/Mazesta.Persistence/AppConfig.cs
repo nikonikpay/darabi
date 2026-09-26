@@ -25,6 +25,10 @@ public sealed class AppConfig : IVersionedDocument
     public int TrayIdleIntervalMinutes { get; set; } = 10;
     /// <summary>How often the tray checks while a health rule is building towards an alert (HealthAlerts.IsWatching).</summary>
     public int TrayWatchIntervalSeconds { get; set; } = 30;
+    /// <summary>The on-screen overlay was on when the app last closed: it comes back on at start. Absent in older files, so off.</summary>
+    public bool OverlayVisible { get; set; }
+    /// <summary>TopLeft, TopRight, BottomLeft or BottomRight of the primary screen.</summary>
+    public string OverlayCorner { get; set; } = "TopLeft";
 }
 public sealed class Migration0To1 : IMigration
 {

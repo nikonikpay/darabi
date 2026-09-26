@@ -786,4 +786,27 @@
   <data name="Reports_SummaryDone" xml:space="preserve"><value>گزارش خلاصه آماده شد؛ از نمایشگر PDF چاپش کنید.</value></data>
   <data name="Reports_SummaryFailed" xml:space="preserve"><value>گزارش خلاصه ساخته نشد: {0}</value></data>
   <data name="Reports_Saved" xml:space="preserve"><value>گزارش‌های ذخیره‌شده</value></data>
+  <data name="Overlay_Temp" xml:space="preserve"><value>دما</value></data>
+  <data name="Overlay_Load" xml:space="preserve"><value>بار</value></data>
+  <data name="Overlay_Clock" xml:space="preserve"><value>فرکانس</value></data>
+  <data name="Overlay_Power" xml:space="preserve"><value>توان</value></data>
+  <data name="Overlay_Voltage" xml:space="preserve"><value>ولتاژ</value></data>
+  <data name="Overlay_HotSpot" xml:space="preserve"><value>نقطه‌ی داغ</value></data>
+  <data name="Overlay_Fan" xml:space="preserve"><value>فن</value></data>
+  <data name="Overlay_FanRpm" xml:space="preserve"><value>دور فن</value></data>
+  <data name="Overlay_VramClock" xml:space="preserve"><value>فرکانس حافظه</value></data>
+  <data name="Overlay_VramTemp" xml:space="preserve"><value>دمای حافظه</value></data>
+  <data name="Overlay_Vram" xml:space="preserve"><value>حافظه‌ی مصرفی</value></data>
+  <data name="Overlay_Used" xml:space="preserve"><value>مصرفی</value></data>
+  <data name="Overlay_Down" xml:space="preserve"><value>دانلود</value></data>
+  <data name="Overlay_Up" xml:space="preserve"><value>آپلود</value></data>
+  <data name="Overlay_Toggle" xml:space="preserve"><value>اورلی</value></data>
+  <data name="Overlay_ToggleHint" xml:space="preserve"><value>نمایش یا پنهان کردن اورلی روی صفحه (Ctrl+Shift+O، داخل بازی هم کار می‌کند)</value></data>
+  <data name="Overlay_Title" xml:space="preserve"><value>اورلی روی صفحه</value></data>
+  <data name="Overlay_Note" xml:space="preserve"><value>یک پنل کوچک همیشه‌رو با دما، بار، فرکانس و توان GPU و CPU، رم و شبکه و نمودار یک‌دقیقه‌ای بار و دما. ماوس از رویش رد می‌شود. روی بازی در حالت Borderless یا پنجره‌ای دیده می‌شود، نه در تمام‌صفحه‌ی انحصاری (Exclusive). نرخ فریم (FPS) نشان داده نمی‌شود، چون برنامه آن را اندازه نمی‌گیرد.</value></data>
+  <data name="Overlay_Corner" xml:space="preserve"><value>گوشه‌ی صفحه</value></data>
+  <data name="Overlay_Corner_TopLeft" xml:space="preserve"><value>بالا چپ</value></data>
+  <data name="Overlay_Corner_TopRight" xml:space="preserve"><value>بالا راست</value></data>
+  <data name="Overlay_Corner_BottomLeft" xml:space="preserve"><value>پایین چپ</value></data>
+  <data name="Overlay_Corner_BottomRight" xml:space="preserve"><value>پایین راست</value></data>
 </root>

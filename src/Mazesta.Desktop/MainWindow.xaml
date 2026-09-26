@@ -267,7 +267,27 @@
                     <controls:HelpTip HelpKey="Status_Provider" VerticalAlignment="Center" />
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="{Binding IntervalText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" Margin="16,0,0,0" />
-                <Button Grid.Column="3" Command="{Binding TogglePauseCommand}" Style="{StaticResource PauseButtonStyle}" Padding="8,2" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal">
+                    <Button Command="{Binding ToggleOverlayCommand}" ToolTip="{loc:Loc Overlay_ToggleHint}" Margin="0,0,8,0" Cursor="Hand">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" CornerRadius="8" Padding="10,2" BorderThickness="1" BorderBrush="{StaticResource Brush.Border}" Background="{StaticResource Brush.SurfaceAlt}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse x:Name="Dot" Width="7" Height="7" Fill="{StaticResource Brush.StateMissing}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <TextBlock Text="{loc:Loc Overlay_Toggle}" VerticalAlignment="Center" FontSize="12" />
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsOverlayVisible}" Value="True">
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Brush.Accent}" />
+                                    </DataTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button Command="{Binding TogglePauseCommand}" Style="{StaticResource PauseButtonStyle}" Padding="8,2" />
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

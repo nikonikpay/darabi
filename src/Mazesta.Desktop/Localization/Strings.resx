@@ -786,4 +786,27 @@
   <data name="Reports_SummaryDone" xml:space="preserve"><value>The customer summary is ready; print it from the PDF viewer.</value></data>
   <data name="Reports_SummaryFailed" xml:space="preserve"><value>The customer summary could not be made: {0}</value></data>
   <data name="Reports_Saved" xml:space="preserve"><value>Saved reports</value></data>
+  <data name="Overlay_Temp" xml:space="preserve"><value>Temp</value></data>
+  <data name="Overlay_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Overlay_Clock" xml:space="preserve"><value>Clock</value></data>
+  <data name="Overlay_Power" xml:space="preserve"><value>Power</value></data>
+  <data name="Overlay_Voltage" xml:space="preserve"><value>Voltage</value></data>
+  <data name="Overlay_HotSpot" xml:space="preserve"><value>Hot spot</value></data>
+  <data name="Overlay_Fan" xml:space="preserve"><value>Fan</value></data>
+  <data name="Overlay_FanRpm" xml:space="preserve"><value>Fan speed</value></data>
+  <data name="Overlay_VramClock" xml:space="preserve"><value>VRAM clock</value></data>
+  <data name="Overlay_VramTemp" xml:space="preserve"><value>VRAM temp</value></data>
+  <data name="Overlay_Vram" xml:space="preserve"><value>VRAM used</value></data>
+  <data name="Overlay_Used" xml:space="preserve"><value>Used</value></data>
+  <data name="Overlay_Down" xml:space="preserve"><value>Download</value></data>
+  <data name="Overlay_Up" xml:space="preserve"><value>Upload</value></data>
+  <data name="Overlay_Toggle" xml:space="preserve"><value>Overlay</value></data>
+  <data name="Overlay_ToggleHint" xml:space="preserve"><value>Show or hide the on-screen overlay (Ctrl+Shift+O, also inside a game)</value></data>
+  <data name="Overlay_Title" xml:space="preserve"><value>On-screen overlay</value></data>
+  <data name="Overlay_Note" xml:space="preserve"><value>A small always-on-top panel with GPU and CPU temperatures, load, clocks and power, RAM and network, and a one-minute load and temperature trend. The mouse passes through it. It shows over games in borderless or windowed mode, not in exclusive full screen. Frame rate (FPS) is not shown: the app does not measure it.</value></data>
+  <data name="Overlay_Corner" xml:space="preserve"><value>Corner of the screen</value></data>
+  <data name="Overlay_Corner_TopLeft" xml:space="preserve"><value>Top left</value></data>
+  <data name="Overlay_Corner_TopRight" xml:space="preserve"><value>Top right</value></data>
+  <data name="Overlay_Corner_BottomLeft" xml:space="preserve"><value>Bottom left</value></data>
+  <data name="Overlay_Corner_BottomRight" xml:space="preserve"><value>Bottom right</value></data>
 </root>

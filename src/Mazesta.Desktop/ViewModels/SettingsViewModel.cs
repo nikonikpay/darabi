@@ -14,9 +14,23 @@ public sealed partial class SettingsViewModel : ObservableObject
     public bool CanEnableTray => !(TrayState.Registered && TrayState.Running);
     public bool CanDisableTray => TrayState.Registered || TrayState.Running;
     public string DataFolder { get; } public string ModeText { get; } public string Version { get; } = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
-    public SettingsViewModel(AppConfig config, JsonStore<AppConfig> store, AppPaths paths, PollingEngine engine, MonitoringOptions options, ShellViewModel shell, Action<string> openFolder, ITrayController tray)
+    /// <summary>A corner of the screen for the overlay, with its label in the app's language.</summary>
+    public sealed record OverlayCornerChoice(string Value, string Label);
+    private readonly Services.OverlayService? _overlay;
+    public IReadOnlyList<OverlayCornerChoice> OverlayCorners { get; } = [.. Services.OverlayService.Corners.Select(c => new OverlayCornerChoice(c, Loc.Get("Overlay_Corner_" + c)))];
+    public bool HasOverlay => _overlay is not null;
+    public string OverlayHotkey => Services.OverlayService.HotkeyText;
+    /// <summary>Applied at once, like the overlay's own shortcut; saved with the other settings when the app closes.</summary>
+    public OverlayCornerChoice? OverlayCorner
     {
-        _config = config; _store = store; _engine = engine; _options = options; _shell = shell; _openFolder = openFolder; _tray = tray;
+        get => OverlayCorners.FirstOrDefault(c => c.Value == _config.OverlayCorner) ?? OverlayCorners[0];
+        set { if (value is not null) { _overlay?.SetCorner(value.Value); OnPropertyChanged(); } }
+    }
+    public bool OverlayVisible { get => _overlay?.IsVisible == true; set { _overlay?.SetVisible(value); OnPropertyChanged(); } }
+
+    public SettingsViewModel(AppConfig config, JsonStore<AppConfig> store, AppPaths paths, PollingEngine engine, MonitoringOptions options, ShellViewModel shell, Action<string> openFolder, ITrayController tray, Services.OverlayService? overlay = null)
+    {
+        _config = config; _store = store; _engine = engine; _options = options; _shell = shell; _openFolder = openFolder; _tray = tray; _overlay = overlay;
         _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _shopName = config.ShopName;
         _trayFirstCheckText = config.TrayFirstCheckSeconds.ToString(); _trayIdleText = config.TrayIdleIntervalMinutes.ToString(); _trayWatchText = config.TrayWatchIntervalSeconds.ToString();
         DataFolder = paths.DataRoot; ModeText = Loc.Get("Settings_Mode_Portable");

@@ -118,6 +118,25 @@
                 <Button Content="{loc:Loc Settings_Tray_Disable}" Command="{Binding DisableTrayCommand}" IsEnabled="{Binding CanDisableTray}" />
             </StackPanel>
             <TextBlock Text="{Binding TrayStatusText}" Foreground="{StaticResource Brush.TextMuted}" Margin="0,0,0,16" TextWrapping="Wrap" />
+
+            <!-- The on-screen overlay -->
+            <Border Style="{StaticResource Card}" Visibility="{Binding HasOverlay, Converter={StaticResource BoolToVis}}" Margin="0,8,0,16">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <Border DockPanel.Dock="Left" Style="{StaticResource Card.Mark}" />
+                        <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding OverlayVisible}" VerticalAlignment="Center" />
+                        <TextBlock Text="{loc:Loc Overlay_Title}" Style="{StaticResource Text.CardTitle}" />
+                    </DockPanel>
+                    <TextBlock Text="{loc:Loc Overlay_Note}" Style="{StaticResource Text.Muted}" FontSize="12" Margin="0,0,0,10" />
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="{loc:Loc Overlay_Corner}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <Border DockPanel.Dock="Right" Style="{StaticResource Chip}">
+                            <TextBlock Text="{Binding OverlayHotkey}" Style="{StaticResource Text.Value}" FontWeight="Bold" Foreground="{StaticResource Brush.Accent}" FontSize="11.5" />
+                        </Border>
+                        <ComboBox ItemsSource="{Binding OverlayCorners}" SelectedItem="{Binding OverlayCorner}" DisplayMemberPath="Label" Width="160" HorizontalAlignment="Left" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

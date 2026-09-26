@@ -69,6 +69,8 @@ public partial class App : Application
         startupLog.LogInformation("Window shown at {Ms} ms", StartupClock.ElapsedMilliseconds);
         var engine = Services.GetRequiredService<Mazesta.Monitoring.PollingEngine>();
         var charts = (Mazesta.Desktop.Services.ChartWindowService)Services.GetRequiredService<ViewModels.IChartWindowService>();
+        var overlay = Services.GetRequiredService<Mazesta.Desktop.Services.OverlayService>();
+        if (!overlay.RegisterHotkey(window)) startupLog.LogWarning("The overlay shortcut {Keys} is held by another program; the overlay is still available from the status bar", Mazesta.Desktop.Services.OverlayService.HotkeyText);
         // Note: PollingEngine.Start() begins the hardware scan on its own background thread, so
         // engine.Hardware is still empty right after this call returns. Pages such as Dashboard
         // build their card layout once, synchronously, from engine.Hardware at construction time
@@ -82,7 +84,7 @@ public partial class App : Application
             {
                 engine.Provider.StatusChanged -= OnProviderStatus;
                 LogStartup($"Provider {status.State}");
-                Dispatcher.BeginInvoke(() => { shell.Selected ??= shell.Items[0]; charts.RestoreFromConfig(); });
+                Dispatcher.BeginInvoke(() => { shell.Selected ??= shell.Items[0]; charts.RestoreFromConfig(); if (config.OverlayVisible) overlay.SetVisible(true); });
             }
         }
         engine.Provider.StatusChanged += OnProviderStatus;

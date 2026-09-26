@@ -78,6 +78,7 @@ public sealed partial class ShellViewModel : ObservableObject
         });
         IntervalText = Loc.Format("Status_Interval", engine.FastInterval.TotalSeconds);
         if (sp.GetService<Services.ReportService>() is { } reports) reports.ReportCreated += r => Ui(() => Notify(ReportToast(r)));
+        if (sp.GetService<Services.OverlayService>() is { } overlay) overlay.VisibilityChanged += v => IsOverlayVisible = v;
         if (sp.GetService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>() is { } runner)
             runner.Finished += run => { if (run.Result.Status != Mazesta.Diagnostics.Benchmarks.BenchmarkStatus.Completed) Ui(() => Notify(new(Loc.Format("Toast_BenchmarkNotCompleted", Loc.Get(run.Definition.NameKey), Loc.Get("Bench_Status_" + run.Result.Status)), ToastKind.Warning))); };
     }
@@ -118,6 +119,10 @@ public sealed partial class ShellViewModel : ObservableObject
     // the subscription goes with it. Nothing else holds them - they are built by a Func<T> factory,
     // not by the container (see Bootstrapper.AddViewModelFactory) - so this is their only owner.
     partial void OnCurrentPageChanged(object? oldValue, object? newValue) { if (!ReferenceEquals(oldValue, newValue)) (oldValue as IDisposable)?.Dispose(); }
+
+    /// <summary>The on-screen overlay is up (the status bar's toggle shows it).</summary>
+    [ObservableProperty] private bool _isOverlayVisible;
+    [RelayCommand] private void ToggleOverlay() => _sp.GetService<Services.OverlayService>()?.Toggle();
 
     [RelayCommand]
     private void TogglePause() { if (_engine.State == EngineState.Paused) _engine.Resume(); else _engine.Pause(); }
