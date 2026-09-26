@@ -61,6 +61,7 @@ public partial class App : Application
         Services = Composition.Bootstrapper.Build(paths, config, store, lf);
         var shell = Services.GetRequiredService<ViewModels.ShellViewModel>();
         if (load.Outcome == LoadOutcome.Corrupt) shell.ShowBanner(Loc.Get("Config_Corrupt"));
+        if (Services.GetRequiredService<ViewModels.TuningRecovery>().Message is { } recovered) shell.ShowBanner(recovered);
         var window = new MainWindow { DataContext = shell };
         Rtl.Apply(window.RootGrid);                       // see Localization/Rtl for why it is the content, not the Window
         Composition.WindowPlacementRestore.Apply(window, config.MainWindow);

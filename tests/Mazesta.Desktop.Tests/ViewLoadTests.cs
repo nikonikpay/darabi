@@ -42,6 +42,17 @@ public class ViewLoadTests
             return new SettingsView { DataContext = new SettingsViewModel(cfg, store, Mazesta.Persistence.AppPaths.Create(dir), e, opts, shell, _ => { }, new StubTray()) };
         });
 
+    [Fact] public void TuningView_loads_with_a_card_and_its_profiles()
+        => OnSta(() =>
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "mazesta-view-" + Guid.NewGuid().ToString("N"));
+            var store = new Mazesta.Persistence.JsonStore<Mazesta.Persistence.GpuProfileDocument>(Path.Combine(dir, "g.json"), new Mazesta.Persistence.SchemaMigrator([]), 1, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+            var vm = new TuningViewModel(new TuningViewModelTests.Provider(new TuningViewModelTests.Card()), store, new Mazesta.Desktop.Composition.InventoryCache(new TuningViewModelTests.Inv(), Microsoft.Extensions.Logging.Abstractions.NullLogger<Mazesta.Desktop.Composition.InventoryCache>.Instance),
+                _ => false, () => { }, a => { a(); return null!; }, _ => new TuningViewModelTests.NoLoad(), null, withTimer: false);
+            vm.SaveProfileCommand.Execute(null);
+            return new TuningView { DataContext = vm };
+        });
+
     [Fact] public void BenchmarksView_loads_with_its_rows()
         => OnSta(() =>
         {

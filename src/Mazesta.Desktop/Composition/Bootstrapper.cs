@@ -57,6 +57,16 @@ public static class Bootstrapper
         // One for the session (see WindowsToolsViewModel): a running repair and its output survive leaving the page.
         s.AddSingleton(sp => new ViewModels.WindowsToolsViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), sp.GetRequiredService<IWmiQuery>(), open, a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.GamingViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), open, Mazesta.Diagnostics.Windows.GamingStatus.Read()));
+        // Opened before the container so a search that never came back (see TuningViewModel.Recover) is undone at start-up, not when the page is first visited.
+        var tuningStore = new JsonStore<GpuProfileDocument>(Path.Combine(paths.ConfigDir, "gpu-profiles.json"), new SchemaMigrator([]), GpuProfileDocument.CurrentSchemaVersion, lf.CreateLogger("Tuning"));
+        var tuning = new Mazesta.Hardware.Nvidia.NvmlTuningProvider(lf.CreateLogger("Tuning"));
+        string? recovered = ViewModels.TuningViewModel.Recover(tuningStore, tuning);
+        if (recovered is not null) lf.CreateLogger("Tuning").LogWarning("Interrupted automatic GPU tuning found at start-up: {Message}", recovered);
+        s.AddSingleton(new ViewModels.TuningRecovery(recovered));
+        s.AddSingleton(sp => new ViewModels.TuningViewModel(tuning, tuningStore, sp.GetRequiredService<InventoryCache>(),
+            text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Tuning"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) == System.Windows.MessageBoxResult.Yes,
+            () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("shutdown.exe", "/r /fw /t 0") { UseShellExecute = false, CreateNoWindow = true }),
+            a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), device => new Mazesta.Diagnostics.Gpu.Tuning.ComputeGpuLoad(device.Name), recovered));
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>()));
         var provider = s.BuildServiceProvider();

@@ -618,7 +618,7 @@
   <data name="Tools_Result_Repaired" xml:space="preserve"><value>تمام شد: مشکلاتی پیدا و ترمیم شد.</value></data>
   <data name="Tools_Result_Damaged" xml:space="preserve"><value>تمام شد: مشکلاتی پیدا شد که ترمیم نشد.</value></data>
   <data name="Tools_Result_Unknown" xml:space="preserve"><value>تمام شد، اما نتیجه خوانده نشد؛ خروجی زیر را ببینید.</value></data>
-  <data name="Gaming_Note" xml:space="preserve"><value>پلن مصرف انرژی ویندوز (از همین‌جا قابل تغییر و برگشت‌پذیر) و وضعیت Game Mode و زمان‌بندی سخت‌افزاری GPU (تغییر در تنظیمات خود ویندوز). اورکلاک، اندرولت و نمایش FPS به ابزارهای سازنده‌ی کارت گرافیک و پردازنده نیاز دارند و ارائه نمی‌شوند.</value></data>
+  <data name="Gaming_Note" xml:space="preserve"><value>پلن مصرف انرژی ویندوز (از همین‌جا قابل تغییر و برگشت‌پذیر) و وضعیت Game Mode و زمان‌بندی سخت‌افزاری GPU (تغییر در تنظیمات خود ویندوز). اورکلاک و آندرولت کارت گرافیک در صفحهٔ «اورکلاک و آندرولت» است؛ نمایش FPS ارائه نمی‌شود.</value></data>
   <data name="Gaming_PowerPlan" xml:space="preserve"><value>پلن مصرف انرژی</value></data>
   <data name="Gaming_Active" xml:space="preserve"><value>فعال</value></data>
   <data name="Gaming_Activate" xml:space="preserve"><value>فعال کن</value></data>
@@ -643,4 +643,108 @@
   <data name="Bench_Status_Unsupported" xml:space="preserve"><value>در اینجا قابل اجرا نیست</value></data>
   <data name="Bench_Status_Failed" xml:space="preserve"><value>ناموفق</value></data>
   <data name="Settings_Tray_Checking" xml:space="preserve"><value>در حال بررسی وضعیت Tray…</value></data>
+  <data name="Nav_Tuning" xml:space="preserve"><value>اورکلاک و آندرولت</value></data>
+  <data name="Tuning_Note" xml:space="preserve"><value>اورکلاک، آندرولت، محدودیت توان و فن کارت گرافیک از طریق کتابخانهٔ مدیریتی خود NVIDIA (NVML). همهٔ تنظیمات موقت‌اند: با ری‌استارت یا ری‌ست درایور، کارت به حالت کارخانه برمی‌گردد. مقادیر خارج از محدودهٔ درایور پذیرفته نمی‌شوند. وضعیت تنظیم CPU و پروفایل رم در پایین صفحه توضیح داده شده است.</value></data>
+  <data name="Tuning_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>
+  <data name="Tuning_Manual" xml:space="preserve"><value>تنظیمات دستی</value></data>
+  <data name="Tuning_Manual_Note" xml:space="preserve"><value>رابط عمومی NVIDIA ولتاژ را مستقیم تنظیم نمی‌کند. آندرولت یعنی آفست مثبت هسته به‌همراه سقف فرکانس: آفست منحنی ولتاژ/فرکانس را بالا می‌برد و سقف، فرکانس را همان‌جا نگه می‌دارد؛ پس کارت همان فرکانس را با ولتاژ کمتر می‌گیرد. اورکلاک یعنی سقف بالاتر (یا بدون سقف) همراه با آفست.</value></data>
+  <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>آفست فرکانس هسته (MHz)</value></data>
+  <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>آفست فرکانس حافظه (MHz)</value></data>
+  <data name="Tuning_Label_MaxClock" xml:space="preserve"><value>سقف فرکانس هسته (MHz)</value></data>
+  <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>محدودیت توان (W)</value></data>
+  <data name="Tuning_Label_Fan" xml:space="preserve"><value>سرعت ثابت فن (٪)</value></data>
+  <data name="Tuning_Hint_CoreOffset" xml:space="preserve"><value>کل منحنی ولتاژ/فرکانس را جابه‌جا می‌کند؛ مثبت یعنی فرکانس بیشتر در هر ولتاژ.</value></data>
+  <data name="Tuning_Hint_MemoryOffset" xml:space="preserve"><value>با همان واحدی که NVML فرکانس حافظه را گزارش می‌کند.</value></data>
+  <data name="Tuning_Hint_MaxClock" xml:space="preserve"><value>بدون تیک: بدون سقف (بوست خود درایور).</value></data>
+  <data name="Tuning_Hint_PowerLimit" xml:space="preserve"><value>بدون تیک: محدودیت پیش‌فرض کارت.</value></data>
+  <data name="Tuning_Hint_Fan" xml:space="preserve"><value>بدون تیک: فن خودکار. سرعت ثابت تا وقتی برنگردانید می‌ماند.</value></data>
+  <data name="Tuning_Apply" xml:space="preserve"><value>اعمال</value></data>
+  <data name="Tuning_Reset" xml:space="preserve"><value>بازگشت به حالت کارخانه</value></data>
+  <data name="Tuning_ProfileNameHint" xml:space="preserve"><value>نام پروفایل (اختیاری)</value></data>
+  <data name="Tuning_SaveProfile" xml:space="preserve"><value>ذخیره به‌عنوان پروفایل</value></data>
+  <data name="Tuning_Auto" xml:space="preserve"><value>تنظیم خودکار</value></data>
+  <data name="Tuning_Auto_Note" xml:space="preserve"><value>آندرولت خودکار ابتدا کارت را در حالت کارخانه زیر یک بار پردازشی با نتیجهٔ قابل‌بررسی اندازه می‌گیرد، سپس در همان فرکانس آفست را قدم‌به‌قدم بالا می‌برد تا جایی که محاسبهٔ غلط، ری‌ست درایور یا افت فرکانس رخ دهد؛ بعد یک حاشیهٔ اطمینان کم می‌کند و با یک اجرای طولانی تأیید می‌کند. اورکلاک خودکار از نتیجهٔ آندرولت شروع می‌کند و سقف فرکانس و بعد آفست حافظه را بالا می‌برد، تا وقتی که کارت درست محاسبه کند، سریع‌تر شود و توانش از حالت کارخانه بیشتر نشود. نتیجه فقط وقتی به‌عنوان پروفایل ذخیره می‌شود که اندازه‌گیری‌ها از حالت کارخانه بهتر باشند. حدود ۱۰ تا ۲۵ دقیقه طول می‌کشد؛ اگر درایور ری‌ست شود ممکن است صفحه لحظه‌ای سیاه شود. قبل از شروع بازی‌ها را ببندید و کارهایتان را ذخیره کنید.</value></data>
+  <data name="Tuning_AutoUndervolt" xml:space="preserve"><value>آندرولت خودکار</value></data>
+  <data name="Tuning_AutoOverclock" xml:space="preserve"><value>اورکلاک خودکار</value></data>
+  <data name="Tuning_Cancel" xml:space="preserve"><value>توقف</value></data>
+  <data name="Tuning_Profiles" xml:space="preserve"><value>پروفایل‌های این کارت</value></data>
+  <data name="Tuning_Profiles_Note" xml:space="preserve"><value>هر پروفایل فقط برای همان کارتی که روی آن ساخته شده نمایش داده می‌شود. اعمال آن تا ری‌استارت بعدی باقی می‌ماند.</value></data>
+  <data name="Tuning_Delete" xml:space="preserve"><value>حذف</value></data>
+  <data name="Tuning_Cpu" xml:space="preserve"><value>پردازنده (CPU)</value></data>
+  <data name="Tuning_Memory" xml:space="preserve"><value>پروفایل رم (XMP / DOCP / EXPO)</value></data>
+  <data name="Tuning_Memory_Note" xml:space="preserve"><value>XMP، DOCP و EXPO را بایوس هنگام روشن‌شدن و آموزش حافظه انتخاب می‌کند؛ ویندوز رابط استانداردی برای تغییر آن ندارد و سازندگان مادربرد دسکتاپ هم رابطی منتشر نکرده‌اند. تغییر آن در تنظیمات بایوس انجام می‌شود که این دکمه سیستم را مستقیم به آن ری‌استارت می‌کند (در سیستم‌های UEFI).</value></data>
+  <data name="Tuning_RestartToFirmware" xml:space="preserve"><value>ری‌استارت و ورود به بایوس</value></data>
+  <data name="Tuning_Kind_Manual" xml:space="preserve"><value>دستی</value></data>
+  <data name="Tuning_Kind_Undervolt" xml:space="preserve"><value>آندرولت</value></data>
+  <data name="Tuning_Kind_Overclock" xml:space="preserve"><value>اورکلاک</value></data>
+  <data name="Tuning_Evidence" xml:space="preserve"><value>کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Tuning_Evidence_Memory" xml:space="preserve"><value>حافظه در حالت کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Tuning_Range_Core" xml:space="preserve"><value>آفست هسته {0}</value></data>
+  <data name="Tuning_Range_NoCore" xml:space="preserve"><value>کنترل آفست هسته ندارد</value></data>
+  <data name="Tuning_Range_Memory" xml:space="preserve"><value>آفست حافظه {0}</value></data>
+  <data name="Tuning_Range_NoMemory" xml:space="preserve"><value>کنترل آفست حافظه ندارد</value></data>
+  <data name="Tuning_Range_Power" xml:space="preserve"><value>توان {0} (پیش‌فرض {1})</value></data>
+  <data name="Tuning_Range_NoPower" xml:space="preserve"><value>کنترل محدودیت توان ندارد</value></data>
+  <data name="Tuning_Range_Fan" xml:space="preserve"><value>{0} فن، {1}</value></data>
+  <data name="Tuning_Range_NoFan" xml:space="preserve"><value>کنترل فن ندارد</value></data>
+  <data name="Tuning_Live_Memory" xml:space="preserve"><value>حافظه</value></data>
+  <data name="Tuning_Live_Fan" xml:space="preserve"><value>فن</value></data>
+  <data name="Tuning_NotANumber" xml:space="preserve"><value>«{0}» باید عدد صحیح باشد.</value></data>
+  <data name="Tuning_Applied" xml:space="preserve"><value>اعمال شد. درایور همهٔ تنظیمات را پذیرفت.</value></data>
+  <data name="Tuning_ResetDone" xml:space="preserve"><value>کارت به حالت کارخانه برگشت.</value></data>
+  <data name="Tuning_DefaultName_Manual" xml:space="preserve"><value>دستی {0}</value></data>
+  <data name="Tuning_DefaultName_Undervolt" xml:space="preserve"><value>آندرولت {0}</value></data>
+  <data name="Tuning_DefaultName_Overclock" xml:space="preserve"><value>اورکلاک {0}</value></data>
+  <data name="Tuning_ProfileSaved" xml:space="preserve"><value>پروفایل «{0}» ذخیره شد.</value></data>
+  <data name="Tuning_ConfirmDelete" xml:space="preserve"><value>پروفایل «{0}» حذف شود؟</value></data>
+  <data name="Tuning_Refused" xml:space="preserve"><value>{0}: درایور نپذیرفت ({1}).</value></data>
+  <data name="Tuning_ConfirmAuto" xml:space="preserve"><value>جستجوی خودکار کارت گرافیک را حدود ۱۰ تا ۲۵ دقیقه با بار کامل اجرا می‌کند و عمداً آن را تا مرز ناپایداری می‌برد. ممکن است صفحه لحظه‌ای سیاه شود و در موارد نادر سیستم هنگ کند و نیاز به ری‌استارت داشته باشد (در این صورت کارت به حالت کارخانه برمی‌گردد). بازی‌ها را ببندید و کارهایتان را ذخیره کنید. شروع شود؟</value></data>
+  <data name="Tuning_Auto_Step" xml:space="preserve"><value>قدم {0} · {1} · {2} · بار {3}</value></data>
+  <data name="Tuning_Step_Baseline" xml:space="preserve"><value>اندازه‌گیری</value></data>
+  <data name="Tuning_Step_Probe" xml:space="preserve"><value>آزمایش</value></data>
+  <data name="Tuning_Step_Confirm" xml:space="preserve"><value>تأیید</value></data>
+  <data name="Tuning_Load_Compute" xml:space="preserve"><value>پردازشی</value></data>
+  <data name="Tuning_Load_Memory" xml:space="preserve"><value>حافظه</value></data>
+  <data name="Tuning_Lost" xml:space="preserve"><value>ری‌ست درایور</value></data>
+  <data name="Tuning_Errors" xml:space="preserve"><value>نتیجهٔ غلط</value></data>
+  <data name="Tuning_ConfirmApplyFound" xml:space="preserve"><value>پروفایل «{0}» ({1}) ذخیره شد. الان اعمال شود؟</value></data>
+  <data name="Tuning_Stock" xml:space="preserve"><value>حالت کارخانه</value></data>
+  <data name="Tuning_Sum_Core" xml:space="preserve"><value>هسته {0}</value></data>
+  <data name="Tuning_Sum_Cap" xml:space="preserve"><value>سقف {0}</value></data>
+  <data name="Tuning_Sum_Memory" xml:space="preserve"><value>حافظه {0}</value></data>
+  <data name="Tuning_Sum_Power" xml:space="preserve"><value>توان {0}</value></data>
+  <data name="Tuning_Sum_Fan" xml:space="preserve"><value>فن {0}</value></data>
+  <data name="Tuning_ConfirmFirmware" xml:space="preserve"><value>سیستم همین الان ری‌استارت می‌شود و مستقیم وارد تنظیمات بایوس می‌شود. اول کارهایتان را ذخیره کنید. ادامه می‌دهید؟</value></data>
+  <data name="Tuning_OtherGpus" xml:space="preserve"><value>فعلاً از این‌جا قابل تنظیم نیست: {0}. کارت‌های AMD به کتابخانهٔ ADLX شرکت AMD و کارت‌های Intel Arc به IGCL اینتل نیاز دارند که هنوز اضافه نشده‌اند.</value></data>
+  <data name="Tuning_Cpu_Intel" xml:space="preserve"><value>از این‌جا تغییر داده نمی‌شود. در اینتل، آندرولت از طریق OC Mailbox (MSR 0x150) انجام می‌شود که روی پردازنده‌های دسکتاپ نسل ۱۲ تا ۱۴ معمولاً با «Undervolt Protection» یا CFG Lock مادربرد قفل است و فقط از بایوس قابل تغییر است. محدودیت‌های توان (PL1/PL2) از طریق ماژول IntelMSR درایور PawnIO قابل نوشتن است که این برنامه هنوز انجام نمی‌دهد. از بایوس یا Intel XTU استفاده کنید.</value></data>
+  <data name="Tuning_Cpu_Amd" xml:space="preserve"><value>از این‌جا تغییر داده نمی‌شود. در رایزن، آندرولت همان Curve Optimizer و اورکلاک همان محدودیت‌های PBO و Boost Override است که هر دو از طریق SMU Mailbox تنظیم می‌شوند (روش ZenStates-Core که PBO2 Tuner هم استفاده می‌کند)؛ PawnIO ماژول RyzenSMU برای این کار دارد. این برنامه هنوز این کار را انجام نمی‌دهد. از بایوس یا AMD Ryzen Master استفاده کنید.</value></data>
+  <data name="Tuning_Cpu_Other" xml:space="preserve"><value>تنظیم CPU برای این پردازنده ارائه نمی‌شود.</value></data>
+  <data name="Tuning_Memory_Speeds" xml:space="preserve"><value>تنظیم‌شده {0} · ماژول طبق SMBIOS {1}</value></data>
+  <data name="Tuning_Recovered" xml:space="preserve"><value>یک اجرای تنظیم خودکار کارت گرافیک تمام نشد (در حال آزمایش {0}، شروع {1}) – احتمالاً سیستم هنگ کرده یا ری‌استارت شده است. کارت به حالت کارخانه برگردانده شد.</value></data>
+  <data name="Tuning_RecoveredNoReset" xml:space="preserve"><value>یک اجرای تنظیم خودکار کارت گرافیک تمام نشد (در حال آزمایش {0}، شروع {1}). کارت از این‌جا ری‌ست نشد؛ برای اطمینان از حالت کارخانه سیستم را ری‌استارت کنید.</value></data>
+  <data name="Tuning_Bad_CoreOffset" xml:space="preserve"><value>آفست هسته باید در بازهٔ {0} باشد.</value></data>
+  <data name="Tuning_Bad_MemoryOffset" xml:space="preserve"><value>آفست حافظه باید در بازهٔ {0} باشد.</value></data>
+  <data name="Tuning_Bad_MaxClock" xml:space="preserve"><value>سقف فرکانس باید در بازهٔ {0} باشد.</value></data>
+  <data name="Tuning_Bad_PowerLimit" xml:space="preserve"><value>محدودیت توان باید در بازهٔ {0} باشد.</value></data>
+  <data name="Tuning_Bad_Fan" xml:space="preserve"><value>سرعت فن باید در بازهٔ {0} باشد.</value></data>
+  <data name="Tuning_PowerLimit" xml:space="preserve"><value>محدودیت توان</value></data>
+  <data name="Tuning_MaxClock" xml:space="preserve"><value>سقف فرکانس</value></data>
+  <data name="Tuning_CoreOffset" xml:space="preserve"><value>آفست هسته</value></data>
+  <data name="Tuning_MemoryOffset" xml:space="preserve"><value>آفست حافظه</value></data>
+  <data name="Tuning_Fan" xml:space="preserve"><value>فن</value></data>
+  <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA با درایور آن پیدا نشد. تنظیم کارت گرافیک فعلاً فقط روی کارت‌های NVIDIA کار می‌کند.</value></data>
+  <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>کتابخانهٔ مدیریتی NVIDIA باز نشد</value></data>
+  <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>کارت در همان حالت کارخانه خطا داد. تنظیم انجام نشد – ابتدا تست‌های کارت گرافیک را اجرا کنید.</value></data>
+  <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>درایور فرکانس یا توان این کارت را گزارش نمی‌کند، پس نتیجه قابل اندازه‌گیری نبود.</value></data>
+  <data name="Tuning_Out_NoCoreOffset" xml:space="preserve"><value>این کارت یا درایور کنترل آفست هسته ندارد.</value></data>
+  <data name="Tuning_Out_ConfirmFailed" xml:space="preserve"><value>هیچ تنظیمی از اجرای طولانی تأیید سربلند بیرون نیامد. چیزی ذخیره نشد.</value></data>
+  <data name="Tuning_Out_SlowerThanStock" xml:space="preserve"><value>تنظیم پایدار از حالت کارخانه کندتر بود و نگه داشته نشد.</value></data>
+  <data name="Tuning_Out_UndervoltFound" xml:space="preserve"><value>آندرولت پیدا شد: همان فرکانس و کارایی حالت کارخانه با توان یا دمای کمتر.</value></data>
+  <data name="Tuning_Out_NoSaving" xml:space="preserve"><value>آفست پایدار پیدا شد اما توان یا دما را به‌طور قابل‌اندازه‌گیری کم نکرد و نگه داشته نشد.</value></data>
+  <data name="Tuning_Out_NoStableOffset" xml:space="preserve"><value>حتی اولین قدم آفست ناپایدار بود؛ این کارت در فرکانس کارخانه حاشیه‌ای برای آندرولت ندارد.</value></data>
+  <data name="Tuning_Out_OverclockFound" xml:space="preserve"><value>اورکلاک پیدا شد: به‌طور قابل‌اندازه‌گیری سریع‌تر از حالت کارخانه، بدون مصرف توان بیشتر.</value></data>
+  <data name="Tuning_Out_NoGain" xml:space="preserve"><value>تنظیم پایدار به‌طور قابل‌اندازه‌گیری سریع‌تر از حالت کارخانه نبود و نگه داشته نشد.</value></data>
+  <data name="Tuning_Out_ApplyRefused" xml:space="preserve"><value>درایور یکی از تنظیمات لازم برای جستجو را نپذیرفت</value></data>
+  <data name="Tuning_Out_NoResult" xml:space="preserve"><value>جستجو بدون نتیجه تمام شد.</value></data>
+  <data name="Tuning_Out_Cancelled" xml:space="preserve"><value>متوقف شد. کارت به حالت کارخانه برگشت؛ چیزی ذخیره نشد.</value></data>
 </root>

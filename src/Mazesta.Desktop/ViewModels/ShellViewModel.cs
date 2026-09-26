@@ -65,6 +65,7 @@ public sealed partial class ShellViewModel : ObservableObject
             new("Nav_Network", "", () => Component(HardwareKind.Network)),
             new("Nav_Storage", "", () => Component(HardwareKind.Storage)),
             new("Nav_Gaming", "", () => sp.GetRequiredService<Func<GamingViewModel>>()()),
+            new("Nav_Tuning", "", () => sp.GetRequiredService<TuningViewModel>()),
             new("Nav_WindowsTools", "", () => sp.GetRequiredService<WindowsToolsViewModel>()),
             new("Nav_Reports", "", () => sp.GetRequiredService<Func<ReportsViewModel>>()()),
             new("Nav_Settings", "", () => sp.GetRequiredService<Func<SettingsViewModel>>()()),

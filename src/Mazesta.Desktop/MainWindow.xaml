@@ -190,6 +190,9 @@
                     <DataTemplate DataType="{x:Type vm:GamingViewModel}">
                         <views:GamingView />
                     </DataTemplate>
+                    <DataTemplate DataType="{x:Type vm:TuningViewModel}">
+                        <views:TuningView />
+                    </DataTemplate>
                     <DataTemplate DataType="{x:Type vm:SystemInfoViewModel}">
                         <views:SystemInfoView />
                     </DataTemplate>

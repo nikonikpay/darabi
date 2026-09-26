@@ -7,7 +7,7 @@ public sealed record PowerPlanRow(PowerPlan Plan) { public string Name => Plan.N
 /// <summary>
 /// Gaming (spec 11.1): the Windows power plan - listed and switched with powercfg, which is reversible by switching back - and the state of
 /// Game Mode and hardware-accelerated GPU scheduling, read from the registry and changed only in Windows' own settings pages (opened from
-/// here). Overclocking, undervolting and an FPS overlay are not offered: they need the GPU and CPU vendors' own interfaces.
+/// here). GPU overclocking and undervolting live on their own page (TuningViewModel); an FPS overlay is not offered.
 /// </summary>
 public sealed partial class GamingViewModel : ObservableObject
 {
