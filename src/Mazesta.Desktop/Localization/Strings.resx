@@ -809,4 +809,20 @@
   <data name="Overlay_Corner_TopRight" xml:space="preserve"><value>Top right</value></data>
   <data name="Overlay_Corner_BottomLeft" xml:space="preserve"><value>Bottom left</value></data>
   <data name="Overlay_Corner_BottomRight" xml:space="preserve"><value>Bottom right</value></data>
+  <data name="Dashboard_Line_Package" xml:space="preserve"><value>Package</value></data>
+  <data name="Dashboard_Line_Clock" xml:space="preserve"><value>Clock</value></data>
+  <data name="Dashboard_Line_Load" xml:space="preserve"><value>Load</value></data>
+  <data name="Dashboard_Line_Power" xml:space="preserve"><value>Power</value></data>
+  <data name="Dashboard_Line_Core" xml:space="preserve"><value>Core</value></data>
+  <data name="Dashboard_Line_VramUsed" xml:space="preserve"><value>VRAM used</value></data>
+  <data name="Dashboard_Line_VramTotal" xml:space="preserve"><value>VRAM total</value></data>
+  <data name="Dashboard_Line_Used" xml:space="preserve"><value>Used</value></data>
+  <data name="Dashboard_Line_Free" xml:space="preserve"><value>Free</value></data>
+  <data name="Dashboard_Inv_Cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="Dashboard_Inv_Gpu" xml:space="preserve"><value>GPU</value></data>
+  <data name="Dashboard_Inv_Ram" xml:space="preserve"><value>RAM</value></data>
+  <data name="Dashboard_Inv_Board" xml:space="preserve"><value>Motherboard</value></data>
+  <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>BIOS</value></data>
+  <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>Disk</value></data>
+  <data name="Dashboard_Inv_Os" xml:space="preserve"><value>OS</value></data>
 </root>

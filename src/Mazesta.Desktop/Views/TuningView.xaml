@@ -134,7 +134,7 @@
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><TextBox Style="{StaticResource FieldBox}" Text="{Binding CoreOffset, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="MHz" Style="{StaticResource Unit}" /></StackPanel>
                                 <TextBlock Text="{loc:Loc Tuning_Label_CoreOffset}" Style="{StaticResource FieldTitle}" ToolTip="{loc:Loc Tuning_Hint_CoreOffset}" />
                             </DockPanel>
-                            <Slider Minimum="{Binding CoreMin}" Maximum="{Binding CoreMax}" Value="{Binding CoreOffsetValue}" SmallChange="15" LargeChange="60" TickFrequency="15" IsSnapToTickEnabled="True" Margin="0,6,0,0" FlowDirection="LeftToRight" />
+                            <Slider Minimum="{Binding CoreMin}" Maximum="{Binding CoreMax}" Value="{Binding CoreOffsetValue}" SmallChange="15" LargeChange="60" TickFrequency="15" IsSnapToTickEnabled="True" Margin="0,6,0,0" />
                         </StackPanel>
 
                         <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasMemory}">
@@ -142,7 +142,7 @@
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><TextBox Style="{StaticResource FieldBox}" Text="{Binding MemoryOffset, UpdateSourceTrigger=PropertyChanged}" /><TextBlock Text="MHz" Style="{StaticResource Unit}" /></StackPanel>
                                 <TextBlock Text="{loc:Loc Tuning_Label_MemoryOffset}" Style="{StaticResource FieldTitle}" ToolTip="{loc:Loc Tuning_Hint_MemoryOffset}" />
                             </DockPanel>
-                            <Slider Minimum="{Binding MemoryMin}" Maximum="{Binding MemoryMax}" Value="{Binding MemoryOffsetValue}" SmallChange="50" LargeChange="250" TickFrequency="50" IsSnapToTickEnabled="True" Margin="0,6,0,0" FlowDirection="LeftToRight" />
+                            <Slider Minimum="{Binding MemoryMin}" Maximum="{Binding MemoryMax}" Value="{Binding MemoryOffsetValue}" SmallChange="50" LargeChange="250" TickFrequency="50" IsSnapToTickEnabled="True" Margin="0,6,0,0" />
                         </StackPanel>
 
                         <StackPanel Style="{StaticResource Field}">
@@ -151,7 +151,7 @@
                                 <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding LockClock}" Content="{loc:Loc Tuning_Label_MaxClock}" FontWeight="SemiBold" ToolTip="{loc:Loc Tuning_Hint_MaxClock}" />
                             </DockPanel>
                             <Slider Minimum="300" Maximum="{Binding ClockMax}" Value="{Binding MaxClockValue}" SmallChange="15" LargeChange="60" TickFrequency="15" IsSnapToTickEnabled="True" Margin="0,6,0,0"
-                                    IsEnabled="{Binding LockClock}" FlowDirection="LeftToRight" />
+                                    IsEnabled="{Binding LockClock}" />
                         </StackPanel>
 
                         <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasPower}">
@@ -160,7 +160,7 @@
                                 <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SetPower}" Content="{loc:Loc Tuning_Label_PowerLimit}" FontWeight="SemiBold" ToolTip="{loc:Loc Tuning_Hint_PowerLimit}" />
                             </DockPanel>
                             <Slider Minimum="{Binding PowerMin}" Maximum="{Binding PowerMax}" Value="{Binding PowerLimitValue}" SmallChange="1" LargeChange="10" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,6,0,0"
-                                    IsEnabled="{Binding SetPower}" FlowDirection="LeftToRight" />
+                                    IsEnabled="{Binding SetPower}" />
                         </StackPanel>
 
                         <StackPanel Style="{StaticResource Field}" IsEnabled="{Binding HasFan}">
@@ -169,7 +169,7 @@
                                 <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ManualFan}" Content="{loc:Loc Tuning_Label_Fan}" FontWeight="SemiBold" ToolTip="{loc:Loc Tuning_Hint_Fan}" />
                             </DockPanel>
                             <Slider Minimum="{Binding FanMin}" Maximum="{Binding FanMax}" Value="{Binding FanValue}" SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,6,0,0"
-                                    IsEnabled="{Binding ManualFan}" FlowDirection="LeftToRight" />
+                                    IsEnabled="{Binding ManualFan}" />
                         </StackPanel>
 
                         <UniformGrid Columns="2" Margin="0,4,0,0">

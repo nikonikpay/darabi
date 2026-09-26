@@ -809,4 +809,20 @@
   <data name="Overlay_Corner_TopRight" xml:space="preserve"><value>بالا راست</value></data>
   <data name="Overlay_Corner_BottomLeft" xml:space="preserve"><value>پایین چپ</value></data>
   <data name="Overlay_Corner_BottomRight" xml:space="preserve"><value>پایین راست</value></data>
+  <data name="Dashboard_Line_Package" xml:space="preserve"><value>پکیج</value></data>
+  <data name="Dashboard_Line_Clock" xml:space="preserve"><value>فرکانس</value></data>
+  <data name="Dashboard_Line_Load" xml:space="preserve"><value>بار</value></data>
+  <data name="Dashboard_Line_Power" xml:space="preserve"><value>توان</value></data>
+  <data name="Dashboard_Line_Core" xml:space="preserve"><value>هسته</value></data>
+  <data name="Dashboard_Line_VramUsed" xml:space="preserve"><value>حافظه‌ی مصرفی</value></data>
+  <data name="Dashboard_Line_VramTotal" xml:space="preserve"><value>حافظه‌ی کل</value></data>
+  <data name="Dashboard_Line_Used" xml:space="preserve"><value>مصرفی</value></data>
+  <data name="Dashboard_Line_Free" xml:space="preserve"><value>آزاد</value></data>
+  <data name="Dashboard_Inv_Cpu" xml:space="preserve"><value>پردازنده</value></data>
+  <data name="Dashboard_Inv_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>
+  <data name="Dashboard_Inv_Ram" xml:space="preserve"><value>رم</value></data>
+  <data name="Dashboard_Inv_Board" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>بایوس</value></data>
+  <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>دیسک</value></data>
+  <data name="Dashboard_Inv_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>
 </root>

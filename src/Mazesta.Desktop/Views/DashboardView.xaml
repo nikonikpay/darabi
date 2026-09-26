@@ -11,7 +11,7 @@
     <UserControl.Resources>
         <controls:InventoryFieldConverter x:Key="InventoryField" />
         <Style x:Key="CardBorderStyle" TargetType="Border">
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
             <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -32,7 +32,7 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Background="{Binding Accent}" CornerRadius="8,8,0,0" />
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="12,10,12,4">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" Style="{StaticResource Text.Value}" />
+                        <TextBlock controls:MixedText.Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" Style="{StaticResource Text.Mixed}" />
                         <controls:HelpTip HelpKey="{Binding HelpKey}" VerticalAlignment="Center" />
                     </StackPanel>
                     <ItemsControl Grid.Row="2" ItemsSource="{Binding Lines}" Margin="12,0,12,10">
@@ -43,7 +43,7 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Label}" Foreground="{StaticResource Brush.TextMuted}" Style="{StaticResource Text.Value}" />
+                                    <TextBlock Grid.Column="0" controls:MixedText.Text="{Binding Label}" Foreground="{StaticResource Brush.TextMuted}" Style="{StaticResource Text.Mixed}" TextWrapping="NoWrap" />
                                     <TextBlock Grid.Column="1" Text="{Binding Value}" Margin="12,0,0,0" Style="{StaticResource Text.Value}" />
                                 </Grid>
                             </DataTemplate>
@@ -86,8 +86,8 @@
                                         <ColumnDefinition Width="90" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Converter={StaticResource InventoryField}}" Foreground="{StaticResource Brush.TextMuted}" Style="{StaticResource Text.Value}" />
-                                    <TextBlock Grid.Column="1" Text="{Binding Converter={StaticResource InventoryField}, ConverterParameter=Value}" TextWrapping="Wrap" Style="{StaticResource Text.Value}" />
+                                    <TextBlock Grid.Column="0" Text="{Binding Converter={StaticResource InventoryField}}" Foreground="{StaticResource Brush.TextMuted}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Converter={StaticResource InventoryField}, ConverterParameter=Value}" TextWrapping="Wrap" Style="{StaticResource Text.Value}" HorizontalAlignment="Left" />
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

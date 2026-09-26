@@ -15,12 +15,12 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         foreach (var node in engine.Hardware.Where(n => n.ParentId is null))
             switch (node.Kind)
             {
-                case HardwareKind.Cpu: Line(Cpu, "Package", node, SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie); Line(Cpu, "Clock", node, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage, SensorRole.CpuCoreClock); Line(Cpu, "Load", node, SensorRole.CpuTotalLoad); Line(Cpu, "Power", node, SensorRole.CpuPackagePower); break;
+                case HardwareKind.Cpu: Line(Cpu, Loc.Get("Dashboard_Line_Package"), node, SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie); Line(Cpu, Loc.Get("Dashboard_Line_Clock"), node, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage, SensorRole.CpuCoreClock); Line(Cpu, Loc.Get("Dashboard_Line_Load"), node, SensorRole.CpuTotalLoad); Line(Cpu, Loc.Get("Dashboard_Line_Power"), node, SensorRole.CpuPackagePower); break;
                 case HardwareKind.Gpu:
                     var card = new SensorCardViewModel("Dashboard_Gpu", HardwareKind.Gpu, node.Name); Gpus.Add(card);
-                    Line(card, "Core", node, SensorRole.GpuCoreTemp); Line(card, "Load", node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D); Line(card, "Clock", node, SensorRole.GpuCoreClock); Line(card, "Power", node, SensorRole.GpuPower); Line(card, "VRAM used", node, SensorRole.GpuVramUsed); Line(card, "VRAM total", node, SensorRole.GpuVramTotal);
+                    Line(card, Loc.Get("Dashboard_Line_Core"), node, SensorRole.GpuCoreTemp); Line(card, Loc.Get("Dashboard_Line_Load"), node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D); Line(card, Loc.Get("Dashboard_Line_Clock"), node, SensorRole.GpuCoreClock); Line(card, Loc.Get("Dashboard_Line_Power"), node, SensorRole.GpuPower); Line(card, Loc.Get("Dashboard_Line_VramUsed"), node, SensorRole.GpuVramUsed); Line(card, Loc.Get("Dashboard_Line_VramTotal"), node, SensorRole.GpuVramTotal);
                     Line(HotSpot, node.Name, node, SensorRole.GpuHotSpotTemp); break;
-                case HardwareKind.Memory when node.Id.Value == "memory/ram": Line(Ram, "Used", node, SensorRole.RamUsed); Line(Ram, "Free", node, SensorRole.RamFree); Line(Ram, "Load", node, SensorRole.RamLoad); break;
+                case HardwareKind.Memory when node.Id.Value == "memory/ram": Line(Ram, Loc.Get("Dashboard_Line_Used"), node, SensorRole.RamUsed); Line(Ram, Loc.Get("Dashboard_Line_Free"), node, SensorRole.RamFree); Line(Ram, Loc.Get("Dashboard_Line_Load"), node, SensorRole.RamLoad); break;
             }
         if (HotSpot.Lines.Count == 0) HotSpot.Lines.Add(new CardLine("GPU", null, Unit.Celsius));
         engine.SnapshotPublished += OnSnapshot;
@@ -51,15 +51,15 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     internal static IEnumerable<(string Label, string Value)> DescribeInventory(HardwareInventory inv)
     {
-        yield return ("CPU", inv.Cpu is { } c ? $"{Show(c.Name)} ({Show(c.PhysicalCores)}C/{Show(c.LogicalProcessors)}T)" : Loc.Get("Value_NotAvailable"));
-        if (inv.Gpus.Count == 0) yield return ("GPU", Loc.Get("Value_NotAvailable"));
-        foreach (var g in inv.Gpus) yield return ("GPU", $"{Show(g.Name)} · driver {Show(g.DriverVersion)}");
-        yield return ("RAM", $"{ShowBytes(inv.TotalPhysicalMemoryBytes, 1024.0 * 1024 * 1024)} · {inv.MemoryModules.Count} modules");
-        yield return ("Motherboard", inv.Motherboard is { } m ? $"{Show(m.Manufacturer)} {Show(m.Product)}" : Loc.Get("Value_NotAvailable"));
-        yield return ("BIOS", inv.Bios is { } b ? $"{Show(b.Version)} ({Show(b.ReleaseDate, "yyyy-MM-dd")})" : Loc.Get("Value_NotAvailable"));
-        if (inv.Storage.Count == 0) yield return ("Disk", Loc.Get("Value_NotAvailable"));
-        foreach (var d in inv.Storage) yield return ("Disk", $"{Show(d.FriendlyName)} · {Show(d.BusType)} · {ShowBytes(d.SizeBytes, 1e9)} · {Show(d.HealthStatus)}");
-        yield return ("OS", inv.Os is { } o ? $"{Show(o.Caption)} {Show(o.Version)}" : Loc.Get("Value_NotAvailable"));
+        yield return (Loc.Get("Dashboard_Inv_Cpu"), inv.Cpu is { } c ? $"{Show(c.Name)} ({Show(c.PhysicalCores)}C/{Show(c.LogicalProcessors)}T)" : Loc.Get("Value_NotAvailable"));
+        if (inv.Gpus.Count == 0) yield return (Loc.Get("Dashboard_Inv_Gpu"), Loc.Get("Value_NotAvailable"));
+        foreach (var g in inv.Gpus) yield return (Loc.Get("Dashboard_Inv_Gpu"), $"{Show(g.Name)} · driver {Show(g.DriverVersion)}");
+        yield return (Loc.Get("Dashboard_Inv_Ram"), $"{ShowBytes(inv.TotalPhysicalMemoryBytes, 1024.0 * 1024 * 1024)} · {inv.MemoryModules.Count} modules");
+        yield return (Loc.Get("Dashboard_Inv_Board"), inv.Motherboard is { } m ? $"{Show(m.Manufacturer)} {Show(m.Product)}" : Loc.Get("Value_NotAvailable"));
+        yield return (Loc.Get("Dashboard_Inv_Bios"), inv.Bios is { } b ? $"{Show(b.Version)} ({Show(b.ReleaseDate, "yyyy-MM-dd")})" : Loc.Get("Value_NotAvailable"));
+        if (inv.Storage.Count == 0) yield return (Loc.Get("Dashboard_Inv_Disk"), Loc.Get("Value_NotAvailable"));
+        foreach (var d in inv.Storage) yield return (Loc.Get("Dashboard_Inv_Disk"), $"{Show(d.FriendlyName)} · {Show(d.BusType)} · {ShowBytes(d.SizeBytes, 1e9)} · {Show(d.HealthStatus)}");
+        yield return (Loc.Get("Dashboard_Inv_Os"), inv.Os is { } o ? $"{Show(o.Caption)} {Show(o.Version)}" : Loc.Get("Value_NotAvailable"));
     }
 
     private async Task LoadInventoryAsync(InventoryCache cache)
