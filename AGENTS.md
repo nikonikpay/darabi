@@ -52,7 +52,7 @@ Put logic in the lowest layer that can hold it, so it is unit-testable without W
 - Git identity is repo-local (`saeed-darabi`); do not change it.
 - Do not touch files another open branch is changing; check `docs/CODEX-TASKS.md` for who owns what.
 - Before a PR: build, run the non-hardware tests, and say plainly in the PR what you did **not** verify.
-- Runnable build: `dotnet publish src/Mazesta.Desktop -c Release -o artifacts/Mazesta-Test` (delete the folder first). `artifacts/` is not committed.
+- Runnable build: `dotnet publish src/Mazesta.Desktop -c Release -o artifacts/Mazesta-Test`. First delete everything in that folder **except `Data`** (the portable app keeps the owner's settings, reports and history there), and only when no MazestaTest/MazestaTray is running from it. `artifacts/` is not committed.
 
 ## Where things are documented
 `docs/ARCHITECTURE.md`, `docs/VERIFICATION-*.md` (what was actually verified, on real hardware), `docs/GUIDE-FA.md`, `docs/CODEX-TASKS.md` (the task board).
