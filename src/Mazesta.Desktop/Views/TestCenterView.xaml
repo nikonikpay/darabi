@@ -79,7 +79,7 @@
                                              Visibility="{Binding IsRepeatCount, Converter={StaticResource BoolToVis}}" />
 
                                     <StackPanel Grid.Column="5" VerticalAlignment="Center" Margin="10,0">
-                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding PercentComplete, Mode=OneWay}" Height="6" FlowDirection="LeftToRight" />
+                                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding PercentComplete, Mode=OneWay}" Height="6" />
                                         <TextBlock Text="{Binding StatusText}" Foreground="{StaticResource Brush.TextMuted}" FontSize="11" Margin="0,4,0,0" />
                                     </StackPanel>
 

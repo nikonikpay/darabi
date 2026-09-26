@@ -4,18 +4,11 @@
              xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
              xmlns:local="clr-namespace:Mazesta.Desktop.Views"
              Background="{StaticResource Brush.Background}" Style="{StaticResource View.FadeIn}">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <TextBlock Grid.Row="0" Text="{loc:Loc Nav_Benchmarks}" FontSize="22" FontWeight="Bold" Margin="0,0,0,6" />
-        <TextBlock Grid.Row="1" Text="{loc:Loc Bench_Note}" Foreground="{StaticResource Brush.TextMuted}" TextWrapping="Wrap" Margin="0,0,0,12" />
-
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24,20,24,24" MaxWidth="1180">
+            <TextBlock Text="{loc:Loc Nav_Benchmarks}" Style="{StaticResource Text.PageTitle}" />
+            <TextBlock Text="{loc:Loc Bench_Note}" Style="{StaticResource Text.PageSubtitle}" />
             <local:BenchmarkListView />
-        </ScrollViewer>
-    </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

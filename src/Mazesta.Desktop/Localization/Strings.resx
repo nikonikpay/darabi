@@ -635,8 +635,8 @@
   <data name="Tools_PageFile_Size" xml:space="preserve"><value>Size</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Bench_Duration" xml:space="preserve"><value>Duration (seconds)</value></data>
-  <data name="Bench_Note" xml:space="preserve"><value>Benchmarks measure speed. They give numbers only - no score and no pass or fail - and are not a health test. Close other programs first. Every finished run is saved as a report (Reports page), and the latest of each is also added to the next test report.</value></data>
+  <data name="Bench_Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Bench_Note" xml:space="preserve"><value>Benchmarks measure speed. They give numbers only - no score, no pass or fail - and are not a health test. Close other programs first. Tick several and run them one after another, or run one on its own. A single run is saved as a report of its own and a queue as one report (Reports page); the latest result of each is also added to the next test report.</value></data>
   <data name="Bench_Invalid_Duration" xml:space="preserve"><value>Enter a whole number of seconds between {0} and {1}.</value></data>
   <data name="Bench_Status_CompletedAt" xml:space="preserve"><value>Finished at {0}</value></data>
   <data name="Bench_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
@@ -775,4 +775,9 @@
   <data name="Tuning_LoadProfile" xml:space="preserve"><value>To the form</value></data>
   <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>Puts the profile's settings on the form and the curve without applying them.</value></data>
   <data name="Tuning_ProfileLoaded" xml:space="preserve"><value>The settings of “{0}” are on the form; press Apply to use them.</value></data>
+  <data name="Bench_RunSelected" xml:space="preserve"><value>Run selected in order</value></data>
+  <data name="Bench_SelectHint" xml:space="preserve"><value>Tick to include in the queue</value></data>
+  <data name="Bench_Queue_Position" xml:space="preserve"><value>Benchmark {0} of {1}</value></data>
+  <data name="Bench_Status_Queued" xml:space="preserve"><value>Waiting in the queue</value></data>
+  <data name="Bench_Status_Skipped" xml:space="preserve"><value>Not run: the queue was cancelled</value></data>
 </root>

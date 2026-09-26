@@ -3,9 +3,13 @@ namespace Mazesta.Diagnostics.Benchmarks;
 
 public sealed record RecordedBenchmark(TestDefinition Definition, BenchmarkResult Result);
 
+/// <summary>One benchmark of a queue, with the length and options the technician chose for it.</summary>
+public sealed record BenchmarkJob(IBenchmark Benchmark, int Seconds, IReadOnlyDictionary<string, string> Options);
+
 /// <summary>
 /// Runs one benchmark at a time for the whole app session, as <see cref="TestEngine"/> does for tests: a run keeps going and its result
-/// stays available while no page is looking, and the Benchmarks page (built per visit) only shows this state. Events fire on the
+/// stays available while no page is looking, and the Benchmarks page (built per visit) only shows this state. A queue runs its benchmarks one
+/// after another, never side by side (two would measure each other); Cancel stops the running one and drops the rest. Events fire on the
 /// worker's thread; marshalling to the UI is the subscriber's job. A benchmark that throws is reported as Failed, never lost.
 /// </summary>
 public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock clock, PollingEngine? engine)
@@ -13,14 +17,22 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     private readonly object _lock = new();
     private readonly Dictionary<TestId, BenchmarkResult> _last = [];
     private readonly Dictionary<TestId, RecordedBenchmark> _completed = [];
-    private CancellationTokenSource? _cts;
+    private CancellationTokenSource? _cts; private bool _queueActive, _queueCancelled;
 
     public IReadOnlyList<IBenchmark> Benchmarks { get; } = [.. benchmarks];
     /// <summary>The benchmark running now, or null.</summary>
     public TestId? Running { get; private set; }
+    /// <summary>A queue is in progress: true from its start to its end, also between two of its benchmarks.</summary>
+    public bool InQueue { get { lock (_lock) return _queueActive; } }
+    /// <summary>Something is running or a queue is under way: nothing else may start.</summary>
+    public bool IsBusy { get { lock (_lock) return Running is not null || _queueActive; } }
     public event Action<TestId, double>? Progress;
     /// <summary>Every finished run, whatever its status. Completed ones are the ones worth saving (a report) and listing (the next test report).</summary>
     public event Action<RecordedBenchmark>? Finished;
+    /// <summary>A queue's benchmark is about to start: its position (from 0) and the queue's length.</summary>
+    public event Action<TestId, int, int>? QueueAdvanced;
+    /// <summary>A queue ended (all done, or cancelled), with every run it made, in order.</summary>
+    public event Action<IReadOnlyList<RecordedBenchmark>>? QueueFinished;
 
     /// <summary>The last result of a benchmark in this session, whatever its status, for the page to show.</summary>
     public BenchmarkResult? Last(TestId id) { lock (_lock) return _last.GetValueOrDefault(id); }
@@ -28,12 +40,38 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     /// <summary>The most recent completed run of each benchmark, oldest first - what the next test report lists, each with its own time.</summary>
     public IReadOnlyList<RecordedBenchmark> Completed() { lock (_lock) return [.. _completed.Values.OrderBy(r => r.Result.FinishedAt)]; }
 
-    /// <summary>Runs <paramref name="benchmark"/> unless one is already running (then null).</summary>
+    /// <summary>Runs <paramref name="benchmark"/> unless something is already running (then null).</summary>
     public async Task<BenchmarkResult?> RunAsync(IBenchmark benchmark, int seconds, IReadOnlyDictionary<string, string> options)
     {
-        var id = benchmark.Definition.Id; CancellationTokenSource cts;
-        lock (_lock) { if (Running is not null) return null; Running = id; _cts = cts = new CancellationTokenSource(); }
-        BenchmarkResult result;
+        CancellationTokenSource cts;
+        lock (_lock) { if (Running is not null || _queueActive) return null; Running = benchmark.Definition.Id; _cts = cts = new CancellationTokenSource(); }
+        return (await RunOneAsync(benchmark, seconds, options, cts).ConfigureAwait(false)).Result;
+    }
+
+    /// <summary>Runs the jobs one after another, in the given order, unless something is already running (then an empty list). A cancel stops the
+    /// running benchmark and skips the ones after it; the list holds what did run.</summary>
+    public async Task<IReadOnlyList<RecordedBenchmark>> RunQueueAsync(IReadOnlyList<BenchmarkJob> jobs)
+    {
+        lock (_lock) { if (Running is not null || _queueActive || jobs.Count == 0) return []; _queueActive = true; _queueCancelled = false; }
+        var runs = new List<RecordedBenchmark>();
+        try
+        {
+            for (int i = 0; i < jobs.Count; i++)
+            {
+                var job = jobs[i]; CancellationTokenSource cts;
+                lock (_lock) { if (_queueCancelled) break; Running = job.Benchmark.Definition.Id; _cts = cts = new CancellationTokenSource(); }
+                QueueAdvanced?.Invoke(job.Benchmark.Definition.Id, i, jobs.Count);
+                runs.Add(await RunOneAsync(job.Benchmark, job.Seconds, job.Options, cts).ConfigureAwait(false));
+            }
+        }
+        finally { lock (_lock) _queueActive = false; }
+        QueueFinished?.Invoke(runs);
+        return runs;
+    }
+
+    private async Task<RecordedBenchmark> RunOneAsync(IBenchmark benchmark, int seconds, IReadOnlyDictionary<string, string> options, CancellationTokenSource cts)
+    {
+        var id = benchmark.Definition.Id; BenchmarkResult result;
         try
         {
             var request = new TestExecutionRequest(seconds, clock, p => Progress?.Invoke(id, p.PercentComplete), engine, new TestOptions(benchmark.Definition, options));
@@ -47,9 +85,10 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
             Running = null; _cts = null;
         }
         cts.Dispose();
-        Finished?.Invoke(new(benchmark.Definition, result));
-        return result;
+        var run = new RecordedBenchmark(benchmark.Definition, result);
+        Finished?.Invoke(run);
+        return run;
     }
 
-    public void Cancel() { lock (_lock) _cts?.Cancel(); }
+    public void Cancel() { lock (_lock) { if (_queueActive) _queueCancelled = true; _cts?.Cancel(); } }
 }

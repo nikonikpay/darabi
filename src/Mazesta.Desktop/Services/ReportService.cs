@@ -25,7 +25,9 @@ public sealed class ReportService
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; _serviceNumber = _config.ServiceNumber; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
-        benchmarks.Finished += b => { if (b.Result.Status == BenchmarkStatus.Completed) _ = Task.Run(() => CreateBenchmarkReportAsync(b)); };   // a run that measured nothing has nothing to report
+        // A run on its own gets its report; a queue gets one report of all its completed runs when it ends. A run that measured nothing has nothing to report.
+        benchmarks.Finished += b => { if (b.Result.Status == BenchmarkStatus.Completed && !benchmarks.InQueue) _ = Task.Run(() => CreateBenchmarkReportAsync([b])); };
+        benchmarks.QueueFinished += runs => { var done = runs.Where(r => r.Result.Status == BenchmarkStatus.Completed).ToList(); if (done.Count > 0) _ = Task.Run(() => CreateBenchmarkReportAsync(done)); };
     }
 
     private async Task CreateReportAsync()
@@ -44,13 +46,13 @@ public sealed class ReportService
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
 
-    private async Task CreateBenchmarkReportAsync(RecordedBenchmark benchmark)
+    private async Task CreateBenchmarkReportAsync(IReadOnlyList<RecordedBenchmark> runs)
     {
         try
         {
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
-            var sensors = SensorSummarizer.Summarize(_polling, benchmark.Result.StartedAt, benchmark.Result.FinishedAt);
-            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [ToEntry(benchmark)], sensors, machine, _config.ServiceNumber));
+            var sensors = SensorSummarizer.Summarize(_polling, runs.Min(r => r.Result.StartedAt), runs.Max(r => r.Result.FinishedAt));
+            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber));
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }

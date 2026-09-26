@@ -17,41 +17,69 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
     public IReadOnlyList<TestOptionViewModel> Options { get; }
     public bool HasOptions => Options.Count > 0;
     public ObservableCollection<MetricRow> Metrics { get; } = [];
+    /// <summary>Ticked for the next queue.</summary>
+    [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private string _durationText;
     [ObservableProperty] private double _percentComplete;
     [ObservableProperty] private string _statusText = "";
+    /// <summary>Running now (the row is highlighted).</summary>
+    [ObservableProperty] private bool _isActive;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasDetail))] private string? _detail;
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
+
+    /// <summary>The chosen length in seconds, or null (with the row showing why) when it is not a whole number in range.</summary>
+    internal int? Seconds()
+    {
+        if (PersianDigits.TryParseInt(DurationText, out int seconds) && seconds is >= BenchmarksViewModel.MinSeconds and <= BenchmarksViewModel.MaxSeconds) return seconds;
+        StatusText = Loc.Format("Bench_Invalid_Duration", BenchmarksViewModel.MinSeconds, BenchmarksViewModel.MaxSeconds);
+        return null;
+    }
+    internal IReadOnlyDictionary<string, string> OptionValues() => Options.ToDictionary(o => o.Option.Key, o => o.Value);
 }
 
 /// <summary>The Benchmarks page: one row per benchmark, showing what <see cref="BenchmarkRunner"/> holds - the run in progress and the last
-/// result of each - so leaving the page neither stops a run nor loses its numbers. Numbers only: no score, no pass or fail.</summary>
+/// result of each - so leaving the page neither stops a run nor loses its numbers. Numbers only: no score, no pass or fail. Rows can be
+/// ticked and run as a queue, one after another, like the Test Center's tests.</summary>
 public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
 {
     public const int MinSeconds = 4, MaxSeconds = 3600;
     private readonly BenchmarkRunner _runner; private readonly Func<Action, object> _dispatch;
 
     public ObservableCollection<BenchmarkRowViewModel> Rows { get; }
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RunCommand))] private bool _isRunning;
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(RunCommand), nameof(RunSelectedCommand), nameof(CancelCommand))] private bool _isRunning;
+    /// <summary>"2 of 5" while a queue runs, empty otherwise.</summary>
+    [ObservableProperty] private string _queueText = "";
     private bool CanRun() => !IsRunning;
 
     /// <summary>All benchmarks, or with <paramref name="component"/> only that part's (the CPU, GPU, Storage and Network pages). Only one
     /// benchmark runs at a time anywhere, so Run is disabled while any is running.</summary>
     public BenchmarksViewModel(BenchmarkRunner runner, Func<Action, object> dispatch, HardwareKind? component = null)
     {
-        _runner = runner; _dispatch = dispatch; IsRunning = runner.Running is not null;
+        _runner = runner; _dispatch = dispatch; IsRunning = runner.IsBusy;
         Rows = [.. runner.Benchmarks.Where(b => component is null || b.Component == component).Select(b => new BenchmarkRowViewModel(b))];
         foreach (var row in Rows)
         {
             if (runner.Last(row.Benchmark.Definition.Id) is { } last) Show(row, last);
-            if (runner.Running == row.Benchmark.Definition.Id) row.StatusText = Loc.Get("Test_Status_Running");
+            if (runner.Running == row.Benchmark.Definition.Id) { row.StatusText = Loc.Get("Test_Status_Running"); row.IsActive = true; }
+            row.PropertyChanged += OnRowChanged;
         }
-        runner.Progress += OnProgress; runner.Finished += OnFinished;
+        runner.Progress += OnProgress; runner.Finished += OnFinished; runner.QueueAdvanced += OnQueueAdvanced; runner.QueueFinished += OnQueueFinished;
     }
 
     private BenchmarkRowViewModel? Row(TestId id) => Rows.FirstOrDefault(r => r.Benchmark.Definition.Id == id);   // null: another page's benchmark
+    private void OnRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) { if (e.PropertyName == nameof(BenchmarkRowViewModel.IsSelected)) RunSelectedCommand.NotifyCanExecuteChanged(); }
     private void OnProgress(TestId id, double fraction) => _dispatch(() => { if (Row(id) is { } row) row.PercentComplete = fraction * 100; });
-    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { if (Row(run.Definition.Id) is { } row) Show(row, run.Result); IsRunning = false; });
+    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { if (Row(run.Definition.Id) is { } row) { Show(row, run.Result); row.IsActive = false; } IsRunning = _runner.IsBusy; });
+    private void OnQueueAdvanced(TestId id, int index, int count) => _dispatch(() =>
+    {
+        QueueText = Loc.Format("Bench_Queue_Position", index + 1, count);
+        if (Row(id) is { } row) { row.IsActive = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running"); }
+    });
+    private void OnQueueFinished(IReadOnlyList<RecordedBenchmark> runs) => _dispatch(() =>
+    {
+        QueueText = ""; IsRunning = _runner.IsBusy;
+        foreach (var row in Rows.Where(r => r.StatusText == Loc.Get("Bench_Status_Queued"))) row.StatusText = Loc.Get("Bench_Status_Skipped");   // cancelled before its turn
+    });
 
     private static void Show(BenchmarkRowViewModel row, BenchmarkResult result)
     {
@@ -65,13 +93,37 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run(BenchmarkRowViewModel row)
     {
-        if (!PersianDigits.TryParseInt(row.DurationText, out int seconds) || seconds is < MinSeconds or > MaxSeconds) { row.StatusText = Loc.Format("Bench_Invalid_Duration", MinSeconds, MaxSeconds); return; }
-        IsRunning = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running");
+        if (row.Seconds() is not { } seconds) return;
+        IsRunning = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running"); row.IsActive = true;
         // The result arrives through Finished; null means another run was already going.
-        if (await _runner.RunAsync(row.Benchmark, seconds, row.Options.ToDictionary(o => o.Option.Key, o => o.Value)).ConfigureAwait(true) is null) IsRunning = _runner.Running is not null;
+        if (await _runner.RunAsync(row.Benchmark, seconds, row.OptionValues()).ConfigureAwait(true) is null) { IsRunning = _runner.IsBusy; row.IsActive = false; }
     }
 
-    [RelayCommand] private void Cancel() => _runner.Cancel();
+    private bool CanRunSelected() => !IsRunning && Rows.Any(r => r.IsSelected);
 
-    public void Dispose() { _runner.Progress -= OnProgress; _runner.Finished -= OnFinished; }
+    /// <summary>The ticked benchmarks, top to bottom, one after another. Every ticked row's length is checked first: one bad field starts nothing.</summary>
+    [RelayCommand(CanExecute = nameof(CanRunSelected))]
+    private async Task RunSelected()
+    {
+        var jobs = new List<BenchmarkJob>(); bool valid = true;
+        foreach (var row in Rows.Where(r => r.IsSelected))
+        {
+            if (row.Seconds() is { } seconds) jobs.Add(new(row.Benchmark, seconds, row.OptionValues())); else valid = false;
+        }
+        if (!valid || jobs.Count == 0) return;
+        IsRunning = true;
+        foreach (var row in Rows.Where(r => r.IsSelected)) { row.StatusText = Loc.Get("Bench_Status_Queued"); row.PercentComplete = 0; }
+        if ((await _runner.RunQueueAsync(jobs).ConfigureAwait(true)).Count == 0) IsRunning = _runner.IsBusy;   // refused: something else was running
+    }
+
+    [RelayCommand] private void SelectAll() { foreach (var row in Rows) row.IsSelected = true; }
+    [RelayCommand] private void ClearSelection() { foreach (var row in Rows) row.IsSelected = false; }
+
+    [RelayCommand(CanExecute = nameof(IsRunning))] private void Cancel() => _runner.Cancel();
+
+    public void Dispose()
+    {
+        foreach (var row in Rows) row.PropertyChanged -= OnRowChanged;
+        _runner.Progress -= OnProgress; _runner.Finished -= OnFinished; _runner.QueueAdvanced -= OnQueueAdvanced; _runner.QueueFinished -= OnQueueFinished;
+    }
 }

@@ -635,8 +635,8 @@
   <data name="Tools_PageFile_Size" xml:space="preserve"><value>اندازه</value></data>
   <data name="Bench_Run" xml:space="preserve"><value>اجرا</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>لغو</value></data>
-  <data name="Bench_Duration" xml:space="preserve"><value>مدت (ثانیه)</value></data>
-  <data name="Bench_Note" xml:space="preserve"><value>بنچمارک‌ها سرعت را اندازه می‌گیرند. فقط عدد می‌دهند، نه نمره و نه موفق/ناموفق، و آزمون سلامت نیستند. پیش از اجرا برنامه‌های دیگر را ببندید. هر اجرای کامل به‌صورت یک گزارش ذخیره می‌شود (صفحه‌ی گزارش‌ها) و آخرین نتیجه‌ی هر کدام به گزارش آزمون بعدی هم اضافه می‌شود.</value></data>
+  <data name="Bench_Duration" xml:space="preserve"><value>مدت</value></data>
+  <data name="Bench_Note" xml:space="preserve"><value>بنچمارک‌ها سرعت را اندازه می‌گیرند. فقط عدد می‌دهند، نه نمره و نه موفق/ناموفق، و آزمون سلامت نیستند. پیش از اجرا برنامه‌های دیگر را ببندید. می‌توانید چند بنچمارک را تیک بزنید تا یکی پس از دیگری اجرا شوند، یا هر کدام را جدا اجرا کنید. هر اجرای تکی یک گزارش و هر صف یک گزارش مشترک ذخیره می‌کند (صفحه‌ی گزارش‌ها) و آخرین نتیجه‌ی هر کدام به گزارش آزمون بعدی هم اضافه می‌شود.</value></data>
   <data name="Bench_Invalid_Duration" xml:space="preserve"><value>یک عدد صحیح بین {0} و {1} ثانیه وارد کنید.</value></data>
   <data name="Bench_Status_CompletedAt" xml:space="preserve"><value>انجام شد، ساعت {0}</value></data>
   <data name="Bench_Status_Cancelled" xml:space="preserve"><value>لغو شد</value></data>
@@ -775,4 +775,9 @@
   <data name="Tuning_LoadProfile" xml:space="preserve"><value>روی فرم</value></data>
   <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>تنظیمات پروفایل را روی فرم و منحنی می‌آورد، بدون اعمال روی کارت.</value></data>
   <data name="Tuning_ProfileLoaded" xml:space="preserve"><value>تنظیمات «{0}» روی فرم آمد؛ برای اعمال، «اعمال» را بزنید.</value></data>
+  <data name="Bench_RunSelected" xml:space="preserve"><value>اجرای انتخاب‌شده‌ها به ترتیب</value></data>
+  <data name="Bench_SelectHint" xml:space="preserve"><value>برای اضافه شدن به صف تیک بزنید</value></data>
+  <data name="Bench_Queue_Position" xml:space="preserve"><value>بنچمارک {0} از {1}</value></data>
+  <data name="Bench_Status_Queued" xml:space="preserve"><value>در صف انتظار</value></data>
+  <data name="Bench_Status_Skipped" xml:space="preserve"><value>اجرا نشد: صف لغو شد</value></data>
 </root>
