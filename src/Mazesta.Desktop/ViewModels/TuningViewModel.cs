@@ -177,15 +177,15 @@ public sealed partial class TuningViewModel : ObservableObject
         return RunAuto(new UndervoltSearch(Device!.Limits, new AutoTuneOptions()), GpuProfileKind.Undervolt);
     }
 
-    /// <summary>Builds on this session's undervolt, or on the newest saved undervolt profile of this card (its offset, clock and stock measurement);
-    /// with neither, starts from stock and measures it first.</summary>
+    /// <summary>Builds on this session's undervolt, or on the newest saved undervolt profile of this card (its offset, clock and stock measurement)
+    /// measured with the current load; with neither, starts from stock and measures it first.</summary>
     [RelayCommand(CanExecute = nameof(CanChange))]
     private Task AutoOverclock()
     {
         if (!_confirm(Loc.Get("Tuning_ConfirmAuto"))) return Task.CompletedTask;
         var device = Device!;
         (GpuTuningSettings? start, LoadMeasurement? baseline) = _lastUndervolt is { } uv && uv.GpuId == device.Id ? (uv.Settings, uv.Baseline)
-            : _doc.Profiles.Where(p => p.GpuId == device.Id && p.Kind == GpuProfileKind.Undervolt && p.Baseline is not null).MaxBy(p => p.CreatedAt) is { } saved ? (saved.Settings, saved.Baseline) : (null, null);
+            : _doc.Profiles.Where(p => p.GpuId == device.Id && p.Kind == GpuProfileKind.Undervolt && p.Baseline is not null && p.LoadVersion == LoadMeasurement.CurrentLoadVersion).MaxBy(p => p.CreatedAt) is { } saved ? (saved.Settings, saved.Baseline) : (null, null);
         return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions(), start, baseline), GpuProfileKind.Overclock);
     }
 
@@ -209,7 +209,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (outcome is not { Verdict: AutoTuneVerdict.Improved, Settings: { } found }) return;
         if (kind == GpuProfileKind.Undervolt) _lastUndervolt = (device.Id, found, outcome.Baseline!);
         string name = Loc.Format(kind == GpuProfileKind.Undervolt ? "Tuning_DefaultName_Undervolt" : "Tuning_DefaultName_Overclock", DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
-        AddProfile(new(name, kind, device.Id, device.Name, found, DateTimeOffset.Now, outcome.Baseline, outcome.Tuned));
+        AddProfile(new(name, kind, device.Id, device.Name, found, DateTimeOffset.Now, outcome.Baseline, outcome.Tuned, LoadMeasurement.CurrentLoadVersion));
         AutoResult += "\n" + Loc.Format("Tuning_ProfileSaved", name);
         if (_confirm(Loc.Format("Tuning_ConfirmApplyFound", name, Summarize(found)))) { Report(device.Apply(found), "Tuning_Applied"); Fill(found); }
     }

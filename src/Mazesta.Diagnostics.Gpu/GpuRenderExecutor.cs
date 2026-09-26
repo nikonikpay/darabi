@@ -33,14 +33,16 @@ public sealed class GpuRenderExecutor : ITestExecutor
             var reference = new float[Pixels]; buffer.CopyTo(reference);
             if (reference.Any(v => !float.IsFinite(v) || v < 0 || v > 2) || reference.Max() - reference.Min() < 0.05f)
                 return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, 1, "The first rendered frame is not a valid image (non-finite values or no contrast).");
-            var frame = new float[Pixels];
+            var frame = new float[Pixels]; var sizer = new BatchSizer(FramesPerBatch);
             do
             {
                 ct.ThrowIfCancellationRequested();
+                int count = sizer.Count; var batchStart = clock.Elapsed;
                 using (var context = device.CreateComputeContext())
-                    for (int f = 0; f < FramesPerBatch; f++) { context.For(Pixels, new RayTraceShader(buffer)); if (f + 1 < FramesPerBatch) context.Barrier(buffer); }
+                    for (int f = 0; f < count; f++) { context.For(Pixels, new RayTraceShader(buffer)); if (f + 1 < count) context.Barrier(buffer); }
                 buffer.CopyTo(frame);
-                frames += FramesPerBatch;
+                frames += count;
+                sizer.Record(clock.Elapsed - batchStart, TimeSpan.FromMilliseconds(250));
                 if (!frame.AsSpan().SequenceEqual(reference)) errors++;
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(clock.Elapsed.TotalSeconds / request.DurationSeconds, 0, 1), "Test_Status_Running"));
             }

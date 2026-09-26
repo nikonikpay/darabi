@@ -13,6 +13,11 @@ public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowe
 {
     public bool Clean => Errors == 0 && !DeviceLost;
 
+    /// <summary>The version of the scoring loads. A throughput is only comparable with one measured by the same load: version 2 keeps the GPU
+    /// fully busy (version 1 left it idle about 30 % of the time between submissions), so a version-1 stock score would make any version-2 run
+    /// look faster than it is.</summary>
+    public const int CurrentLoadVersion = 2;
+
     public static LoadMeasurement From(IReadOnlyList<GpuTelemetry> samples, double throughput, long errors, bool deviceLost)
     {
         static double? Median(IEnumerable<double?> values)

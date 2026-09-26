@@ -20,7 +20,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
 
     public TestDefinition Definition => profile switch { GpuStressProfile.Steady => Steady, GpuStressProfile.Variable => Variable, _ => Pulse };
 
-    private const int Threads = 1 << 21, Rounds = 512, DispatchesPerBatch = 16, FrameMs = 100, VariableStepSeconds = 5, SamplesPerBatch = 512;
+    private const int Threads = 1 << 21, Rounds = 512, FrameMs = 100, VariableStepSeconds = 5, SamplesPerBatch = 512;
     private static readonly double[] VariableLevels = [1, 0.3, 0, 0.6, 1, 0.15, 0.75, 0];
 
     /// <summary>How long the GPU is kept busy, and how long the frame lasts in all, starting at a moment of the run.
@@ -37,6 +37,11 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
         };
     }
 
+    /// <summary>Steady keeps one long submission after another (the readback between them is then a few percent); the shaped profiles keep a
+    /// submission within half of their busy window, so a 100 ms frame at 30 % or a 250 ms pulse keeps its shape.</summary>
+    internal static TimeSpan BatchTarget(GpuStressProfile profile, TimeSpan busy)
+        => profile == GpuStressProfile.Steady ? TimeSpan.FromMilliseconds(250) : TimeSpan.FromMilliseconds(Math.Max(5, busy.TotalMilliseconds / 2));
+
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
     {
         var started = request.Clock.UtcNow;
@@ -52,7 +57,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
     private TestRunResult Run(TestExecutionRequest request, GraphicsDevice device, int pulseMs, int gapMs, DateTimeOffset started, CancellationToken ct)
     {
         long errors = 0, dispatches = 0, batches = 0;
-        var clock = Stopwatch.StartNew(); var random = new Random(0x5EED);
+        var clock = Stopwatch.StartNew(); var random = new Random(0x5EED); var sizer = new BatchSizer();
         try
         {
             using var buffer = device.AllocateReadWriteBuffer<uint>(Threads);
@@ -64,12 +69,13 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
                 var frameStart = clock.Elapsed;
                 while (clock.Elapsed - frameStart < busy)
                 {
-                    uint seed = unchecked((uint)(++batches * 2654435761u));
+                    uint seed = unchecked((uint)(++batches * 2654435761u)); int count = sizer.Count; var batchStart = clock.Elapsed;
                     using (var context = device.CreateComputeContext())
-                        for (int d = 0; d < DispatchesPerBatch; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed)); if (d + 1 < DispatchesPerBatch) context.Barrier(buffer); }
+                        for (int d = 0; d < count; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed)); if (d + 1 < count) context.Barrier(buffer); }
                     buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
-                    dispatches += DispatchesPerBatch;
+                    dispatches += count;
                     for (int s = 0; s < SamplesPerBatch; s++) { int i = random.Next(Threads); if (host[i] != GpuHash.Reference((uint)i, Rounds, seed)) errors++; }
+                    sizer.Record(clock.Elapsed - batchStart, BatchTarget(profile, busy));
                 }
                 Report(request, clock);
                 if (clock.Elapsed - frameStart < frame) ct.WaitHandle.WaitOne(frame - (clock.Elapsed - frameStart));   // the idle part of the frame; wakes at once on cancel

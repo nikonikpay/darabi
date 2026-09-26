@@ -9,7 +9,10 @@ namespace Mazesta.Diagnostics.Gpu.Tuning;
 /// </summary>
 public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
 {
-    private const int Threads = 1 << 21, Rounds = 512, DispatchesPerBatch = 16, SamplesPerBatch = 512, MemoryChunks = 4;
+    private const int Threads = 1 << 21, Rounds = 512, SamplesPerBatch = 512, MemoryChunks = 4;
+    /// <summary>How long one submission should keep the GPU busy (see <see cref="BatchSizer"/>): long enough that the readback between
+    /// submissions is a few percent of the time, short enough that cancelling answers within a quarter second.</summary>
+    private static readonly TimeSpan BatchTarget = TimeSpan.FromMilliseconds(250);
 
     /// <summary>The DirectX adapter with the tuned card's name; the largest one when no name matches (a renamed card, a driver that words it differently).</summary>
     private GraphicsDevice? Device()
@@ -30,18 +33,19 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
 
     private static LoadRunResult Compute(GraphicsDevice device, TimeSpan duration, TimeSpan settle, CancellationToken ct)
     {
-        long errors = 0, counted = 0, batches = 0; var clock = Stopwatch.StartNew(); var random = new Random(0x5EED); TimeSpan countedFrom = default;
+        long errors = 0, counted = 0, batches = 0; var clock = Stopwatch.StartNew(); var random = new Random(0x5EED); TimeSpan countedFrom = default; var sizer = new BatchSizer();
         using var buffer = device.AllocateReadWriteBuffer<uint>(Threads);
         var host = new uint[Threads];
         while (clock.Elapsed < duration)
         {
             ct.ThrowIfCancellationRequested();
-            uint seed = unchecked((uint)(++batches * 2654435761u));
+            uint seed = unchecked((uint)(++batches * 2654435761u)); int dispatches = sizer.Count; var batchStart = clock.Elapsed;
             using (var context = device.CreateComputeContext())
-                for (int d = 0; d < DispatchesPerBatch; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed)); if (d + 1 < DispatchesPerBatch) context.Barrier(buffer); }
+                for (int d = 0; d < dispatches; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed)); if (d + 1 < dispatches) context.Barrier(buffer); }
             buffer.CopyTo(host);
             for (int s = 0; s < SamplesPerBatch; s++) { int i = random.Next(Threads); if (host[i] != GpuHash.Reference((uint)i, Rounds, seed)) errors++; }
-            if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else counted += DispatchesPerBatch; }   // counting starts after the first settled batch, so time and work cover the same span
+            sizer.Record(clock.Elapsed - batchStart, BatchTarget);
+            if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else counted += dispatches; }   // counting starts after the first settled batch, so time and work cover the same span
         }
         double seconds = Math.Max(0.001, (clock.Elapsed - countedFrom).TotalSeconds);
         return new(counted * (double)Threads * Rounds * 6 / seconds / 1e9, errors, false, null);
@@ -54,18 +58,23 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
         {
             using var counter = device.AllocateReadWriteBuffer<int>(1);
             for (int b = 0; b < MemoryChunks; b++) { buffers.Add(device.AllocateReadWriteBuffer<uint>(GpuVramExecutor.ChunkElements)); Write(device, buffers[b], counter, b, 0); }
+            // Several verify-and-rewrite passes per submission, the error count read back once: waiting after every chunk left the memory idle between them.
+            var sizer = new BatchSizer(initial: 1, max: 256); var bad = new int[1]; const int W = GpuVramExecutor.Width, H = GpuVramExecutor.ChunkElements / GpuVramExecutor.Width;
             while (clock.Elapsed < duration)
             {
-                for (int b = 0; b < buffers.Count; b++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    counter.CopyFrom([0]);
-                    device.For(GpuVramExecutor.Width, GpuVramExecutor.ChunkElements / GpuVramExecutor.Width, new VramPatternShader(buffers[b], counter, GpuVramExecutor.Width, pass, Base(b), 1));
-                    var bad = new int[1]; counter.CopyTo(bad); errors += bad[0];
-                    Write(device, buffers[b], counter, b, pass + 1);
-                }
-                pass++;
-                if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else bytes += 2L * buffers.Count * GpuVramExecutor.ChunkElements * 4; }
+                ct.ThrowIfCancellationRequested();
+                int passes = sizer.Count; var batchStart = clock.Elapsed;
+                counter.CopyFrom([0]);
+                using (var context = device.CreateComputeContext())
+                    for (int p = 0; p < passes; p++, pass++)
+                        for (int b = 0; b < buffers.Count; b++)
+                        {
+                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass, Base(b), 1)); context.Barrier(buffers[b]);
+                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass + 1, Base(b), 0)); context.Barrier(buffers[b]);
+                        }
+                counter.CopyTo(bad); errors += bad[0];
+                sizer.Record(clock.Elapsed - batchStart, BatchTarget);
+                if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else bytes += 2L * passes * buffers.Count * GpuVramExecutor.ChunkElements * 4; }
             }
         }
         finally { foreach (var b in buffers) b.Dispose(); }
