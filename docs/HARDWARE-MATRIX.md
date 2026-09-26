@@ -11,7 +11,7 @@ are **untested on hardware**.
 | Component | Detail |
 |---|---|
 | CPU | Intel Core i9-14900K (8 P-cores + 16 E-cores, 32 threads) |
-| GPU | NVIDIA GeForce RTX 4090 (discrete) + Intel UHD 770 (iGPU) |
+| GPU | NVIDIA GeForce RTX 4090 (discrete) + Intel UHD 770 (iGPU). **On 2026-09-26 the discrete card was an RTX 3090** (driver 610.62, read through NVML) - the rows below were recorded with the 4090. |
 | Motherboard | MSI Z790 GAMING PLUS WIFI |
 | Storage | Samsung SSD 990 PRO 2 TB (NVMe) |
 | RAM | 64 GB (2 × 32 GB Corsair CMK64GX5M2X6800C32, read from `Win32_PhysicalMemory`) |

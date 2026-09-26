@@ -8,12 +8,12 @@ that can hold it, so it is unit-testable without WPF.
 
 | Project | Purpose | Target framework | References |
 |---|---|---|---|
-| `Mazesta.Core` | Domain model: ids, units (`Units`), sensor roles and grouping, validation, `PersianDigits`, `IClock`, inventory models, health rules (`Health.HealthAlerts`), and the provider contracts (`Providers`: `ISensorProvider`, `IInventoryProvider`). No Windows, WPF or LibreHardwareMonitor. | net10.0 | — |
-| `Mazesta.Hardware` | `LibreHardwareMonitorProvider` (sensors, PawnIO driver), `WmiInventoryProvider` (inventory), the role-mapping table and `SensorNameCatalog`. | net10.0-windows | Core |
+| `Mazesta.Core` | Domain model: ids, units (`Units`), sensor roles and grouping, validation, `PersianDigits`, `IClock`, inventory models, health rules (`Health.HealthAlerts`), GPU tuning types and the automatic undervolt/overclock search (`Tuning`), and the provider contracts (`Providers`: `ISensorProvider`, `IInventoryProvider`). No Windows, WPF or LibreHardwareMonitor. | net10.0 | — |
+| `Mazesta.Hardware` | `LibreHardwareMonitorProvider` (sensors, PawnIO driver), `WmiInventoryProvider` (inventory), the role-mapping table and `SensorNameCatalog`; GPU tuning through NVIDIA's NVML (`Nvidia.NvmlTuningProvider`). | net10.0-windows | Core |
 | `Mazesta.Monitoring` | `PollingEngine`, `HistoryStore`, `SensorStatistics`, `StaleDetector`, `EventLog`, `MonitoringFocus`. | net10.0 | Core |
-| `Mazesta.Persistence` | `AppPaths` (portable only: everything in `Data\` next to the exe), `JsonStore<T>` (atomic, schema-migrated), `AppConfig`, `TrayIntervals` (read-only view for the tray), `RollingFileLogger`. | net10.0 | Core |
-| `Mazesta.Diagnostics` | `TestEngine` (sequential queue, repeat, cancellation, crash checkpoint, WHEA post-check), executors for CPU, memory, storage and network, `SensorEvidence`; benchmarks (`Benchmarks`: CPU single/all-thread, memory, CrystalDiskMark-style storage, internet speed) run by `BenchmarkRunner`. | net10.0-windows | Core, Monitoring, Persistence |
-| `Mazesta.Diagnostics.Gpu` | GPU tests on ComputeSharp (steady/variable/pulse stress, VRAM, render, power) and the GPU benchmarks on raw Direct3D 12 through Vortice (rasterisation, DXR 1.1 inline ray tracing, DirectML AI at FP32/FP16/INT8). HLSL in `Shaders/`, precompiled by `tools/compile-gpu-shaders.ps1`. | net10.0-windows | Core, Monitoring, Diagnostics |
+| `Mazesta.Persistence` | `AppPaths` (portable only: everything in `Data\` next to the exe), `JsonStore<T>` (atomic, schema-migrated), `AppConfig`, `GpuProfileDocument` (GPU profiles and the tuning crash journal), `TrayIntervals` (read-only view for the tray), `RollingFileLogger`. | net10.0 | Core |
+| `Mazesta.Diagnostics` | `TestEngine` (sequential queue, repeat, cancellation, crash checkpoint, WHEA post-check), executors for CPU, memory, storage and network, `SensorEvidence`; benchmarks (`Benchmarks`: CPU single/all-thread, memory, CrystalDiskMark-style storage, internet speed) run by `BenchmarkRunner`; `Tuning.GpuAutoTuner` runs a tuning search on a card. | net10.0-windows | Core, Monitoring, Persistence |
+| `Mazesta.Diagnostics.Gpu` | GPU tests on ComputeSharp (steady/variable/pulse stress, VRAM, render, power) and the GPU benchmarks on raw Direct3D 12 through Vortice (rasterisation, DXR 1.1 inline ray tracing, DirectML AI at FP32/FP16/INT8); the verified compute/memory load the GPU tuner judges settings by. HLSL in `Shaders/`, precompiled by `tools/compile-gpu-shaders.ps1`. | net10.0-windows | Core, Monitoring, Diagnostics |
 | `Mazesta.Reporting` | `SessionReport` (test sessions and benchmark-only reports, `ReportKind`), JSON/HTML/plain-text writers in Persian or English (`ReportText`), `ReportStore`, `SensorSummarizer`, `ReportComparison` and the before/after page. UI-free. | net10.0 | Core, Monitoring |
 | `Mazesta.Desktop` | The WPF app "Mazesta Test": MVVM (CommunityToolkit.Mvvm), DI, Views/ViewModels, localisation (fa/en, RTL), PDF through WebView2, tray control. | net10.0-windows | all of the above, and Tray (to ship its exe) |
 | `Mazesta.Tray` | "Mazesta Monitor": windowless tray process that opens the sensor provider only during a check (spec §8.2). | net10.0-windows | Core, Hardware, Persistence |
@@ -24,9 +24,11 @@ Nothing references `Desktop`. `Diagnostics` does not reference `Hardware`: execu
 
 ## Pages (Desktop)
 
-Dashboard, Monitoring, Tests, System Information, Benchmarks, CPU, GPU, Network, Storage, Gaming, Windows Tools, Reports, Settings.
+Dashboard, Monitoring, Tests, System Information, Benchmarks, CPU, GPU, Network, Storage, Gaming, Overclock & undervolt, Windows Tools, Reports, Settings.
 Gaming and Windows Tools (spec 11) only run Windows' own tools on a button (powercfg, sfc, DISM) or open Windows' own settings;
-overclocking/undervolting and an FPS overlay are not offered. The sidebar carries the logo and the service number (spec 7.1), printed
+an FPS overlay is not offered. Overclock & undervolt (slice 9) changes NVIDIA GPUs through NVML - manual settings and an automatic
+search whose results are kept only when measured better than stock - and explains CPU and memory-profile tuning without changing them
+(`docs/TUNING-RESEARCH.md`). The sidebar carries the logo and the service number (spec 7.1), printed
 on every report; finished tests and benchmarks raise a notice, and Ctrl+1 ... Ctrl+0 open the first ten pages (spec 9.4). The four component pages (`ComponentViewModel`) assemble existing
 pieces for one kind of hardware: its System Information sections, the Monitoring tree limited to it, and its benchmark rows.
 
