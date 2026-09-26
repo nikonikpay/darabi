@@ -6,7 +6,7 @@
     <AssemblyName>MazestaTest</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.debug.manifest</ApplicationManifest>
-    <ApplicationIcon></ApplicationIcon>
+    <ApplicationIcon>Assets\mazesta.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
@@ -28,7 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Fonts\*.ttf" />
-    <Resource Include="Assets\*.jpg" />
+    <Resource Include="Assets\*.jpg;Assets\*.png;Assets\*.ico" />
     <EmbeddedResource Update="Localization\*.resx" />
   </ItemGroup>
   <ItemGroup>

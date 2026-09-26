@@ -20,7 +20,7 @@ internal sealed class TrayContext : ApplicationContext
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes };
         menu.Items.Add(_status); menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(TrayText.CheckNow, null, (_, _) => Check()); menu.Items.Add(TrayText.Exit, null, (_, _) => ExitThread());
-        _icon = new NotifyIcon { Icon = SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
+        _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
         _status.Text = TrayText.Status(null, null);
         _timer.Tick += (_, _) => Check(); Schedule(firstCheck);   // first check shortly after sign-in, not during it
     }

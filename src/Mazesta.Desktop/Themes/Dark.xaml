@@ -2,15 +2,18 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:Controls="clr-namespace:Mazesta.Desktop.Controls">
 
-    <!-- Base palette -->
-    <Color x:Key="Color.Background">#FF14171C</Color>
-    <Color x:Key="Color.Surface">#FF1C2026</Color>
-    <Color x:Key="Color.SurfaceAlt">#FF232830</Color>
-    <Color x:Key="Color.Border">#FF303640</Color>
-    <Color x:Key="Color.Text">#FFE6E9EE</Color>
-    <Color x:Key="Color.TextMuted">#FF9AA3B2</Color>
-    <Color x:Key="Color.Accent">#FF4F8CFF</Color>
-    <Color x:Key="Color.StateMissing">#FF6B7380</Color>
+    <!-- Base palette: near-black neutrals in three steps (page, card, raised), hairline borders, and the Mazesta yellow from the logo as the
+         only accent. Text on yellow is always the page black (Brush.OnAccent): white on this yellow fails contrast. -->
+    <Color x:Key="Color.Background">#FF0B0B0D</Color>
+    <Color x:Key="Color.Surface">#FF141418</Color>
+    <Color x:Key="Color.SurfaceAlt">#FF1D1D23</Color>
+    <Color x:Key="Color.Border">#FF2B2B33</Color>
+    <Color x:Key="Color.Text">#FFF4F4F6</Color>
+    <Color x:Key="Color.TextMuted">#FFA3A3AE</Color>
+    <Color x:Key="Color.Accent">#FFFDD400</Color>
+    <Color x:Key="Color.AccentDim">#26FDD400</Color>
+    <Color x:Key="Color.OnAccent">#FF0B0B0D</Color>
+    <Color x:Key="Color.StateMissing">#FF6B6B76</Color>
 
     <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
     <SolidColorBrush x:Key="Brush.Surface" Color="{StaticResource Color.Surface}" />
@@ -19,24 +22,32 @@
     <SolidColorBrush x:Key="Brush.Text" Color="{StaticResource Color.Text}" />
     <SolidColorBrush x:Key="Brush.TextMuted" Color="{StaticResource Color.TextMuted}" />
     <SolidColorBrush x:Key="Brush.Accent" Color="{StaticResource Color.Accent}" />
+    <SolidColorBrush x:Key="Brush.AccentDim" Color="{StaticResource Color.AccentDim}" />
+    <SolidColorBrush x:Key="Brush.OnAccent" Color="{StaticResource Color.OnAccent}" />
     <SolidColorBrush x:Key="Brush.StateMissing" Color="{StaticResource Color.StateMissing}" />
+    <SolidColorBrush x:Key="Brush.Inset" Color="#FF09090B" />
 
-    <!-- Action colours: green starts something, red stops or removes it, blue is the page's main action. The text always says what
+    <!-- Action colours: green starts something, red stops or removes it, yellow is the page's main action. The text always says what
          the button does; the colour only helps the eye find it (spec 7.2: meaning never depends on colour alone). -->
-    <Color x:Key="Color.Success">#FF2E9E5B</Color>
-    <Color x:Key="Color.Danger">#FFD9534F</Color>
-    <Color x:Key="Color.Primary">#FF3F7BEF</Color>
+    <Color x:Key="Color.Success">#FF1FBF9C</Color>
+    <Color x:Key="Color.Danger">#FFE8453C</Color>
+    <Color x:Key="Color.Warning">#FFF0A020</Color>
+    <Color x:Key="Color.Primary">#FFFDD400</Color>
     <SolidColorBrush x:Key="Brush.Success" Color="{StaticResource Color.Success}" />
     <SolidColorBrush x:Key="Brush.Danger" Color="{StaticResource Color.Danger}" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="{StaticResource Color.Warning}" />
     <SolidColorBrush x:Key="Brush.Primary" Color="{StaticResource Color.Primary}" />
+    <SolidColorBrush x:Key="Brush.SuccessDim" Color="#241FBF9C" />
+    <SolidColorBrush x:Key="Brush.DangerDim" Color="#24E8453C" />
+    <SolidColorBrush x:Key="Brush.WarningDim" Color="#24F0A020" />
 
     <!-- Series colours -->
     <Color x:Key="Color.Series.Cpu">#FF4FC3F7</Color>
-    <Color x:Key="Color.Series.Gpu">#FF81C784</Color>
-    <Color x:Key="Color.Series.Memory">#FFBA68C8</Color>
+    <Color x:Key="Color.Series.Gpu">#FF1FBF9C</Color>
+    <Color x:Key="Color.Series.Memory">#FFB388FF</Color>
     <Color x:Key="Color.Series.Storage">#FF90A4AE</Color>
-    <Color x:Key="Color.Series.Motherboard">#FFA1887F</Color>
-    <Color x:Key="Color.Series.Network">#FF4DB6AC</Color>
+    <Color x:Key="Color.Series.Motherboard">#FFFFB74D</Color>
+    <Color x:Key="Color.Series.Network">#FF4DD0C4</Color>
 
     <SolidColorBrush x:Key="Brush.Series.Cpu" Color="{StaticResource Color.Series.Cpu}" />
     <SolidColorBrush x:Key="Brush.Series.Gpu" Color="{StaticResource Color.Series.Gpu}" />
@@ -49,6 +60,7 @@
     <!-- IRANSansXFaNum renders every ASCII digit as a Persian digit: right for Persian prose, wrong for sensor values, which use App.Font.Latin. -->
     <FontFamily x:Key="App.Font">pack://application:,,,/Fonts/#IRANSansXFaNum, Segoe UI</FontFamily>
     <FontFamily x:Key="App.Font.Latin">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="App.Font.Display">Segoe UI Variable Display, Segoe UI</FontFamily>
 
     <!-- Converters -->
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -69,14 +81,79 @@
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
     </Style>
 
+    <!-- Text roles. Every one is based on the implicit TextBlock style so it keeps the light foreground: a style without BasedOn drops it,
+         and inside a stock ListBoxItem the text then falls back to the system's black. -->
+    <Style x:Key="Text.PageTitle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+    <Style x:Key="Text.PageSubtitle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+    <Style x:Key="Text.CardTitle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style x:Key="Text.Muted" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- A small caption over a value ("CORE", "دما"). -->
+    <Style x:Key="Text.Caption" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="FontSize" Value="11.5" />
+    </Style>
+    <!-- Persian words with Latin numbers: the sentence keeps the page's direction (Text.Value would force left-to-right and scramble the
+         Persian words); callers keep each number with its unit through left-to-right marks. -->
+    <Style x:Key="Text.Mixed" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Surfaces -->
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Padding" Value="18,16" />
+        <Setter Property="Margin" Value="0,0,0,14" />
+    </Style>
+    <!-- A well inside a card: a darker inset for a group of numbers or a chart. -->
+    <Style x:Key="Well" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Brush.Inset}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="12,10" />
+    </Style>
+    <!-- A pill label: tinted background, coloured text. -->
+    <Style x:Key="Chip" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Brush.AccentDim}" />
+        <Setter Property="CornerRadius" Value="99" />
+        <Setter Property="Padding" Value="10,2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- The yellow square that marks a card's title. -->
+    <Style x:Key="Card.Mark" TargetType="Border">
+        <Setter Property="Width" Value="4" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Background" Value="{StaticResource Brush.Accent}" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
 
     <Style TargetType="Button">
         <Setter Property="FontFamily" Value="{StaticResource App.Font}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+        <Setter Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="Padding" Value="12,5" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
@@ -86,22 +163,22 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="6">
+                            CornerRadius="9">
                         <Grid>
-                            <Border x:Name="Hover" Background="White" Opacity="0" CornerRadius="5" />
+                            <Border x:Name="Hover" Background="White" Opacity="0" CornerRadius="8" />
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}" />
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Hover" Property="Opacity" Value="0.09" />
+                            <Setter TargetName="Hover" Property="Opacity" Value="0.1" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter Property="Opacity" Value="0.85" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.5" />
+                            <Setter Property="Opacity" Value="0.4" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -113,7 +190,7 @@
     <Style x:Key="Button.Success" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="{StaticResource Brush.Success}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Success}" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <!-- Stops something (Cancel, Stop): red. -->
@@ -123,11 +200,18 @@
         <Setter Property="Foreground" Value="White" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
-    <!-- The page's main action (Save, Compare, PDF): blue. -->
+    <!-- The page's main action (Save, Compare, PDF, Apply): the brand yellow with black text. -->
     <Style x:Key="Button.Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Background" Value="{StaticResource Brush.Primary}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Primary}" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <!-- A secondary action on the brand colour: outlined in yellow. -->
+    <Style x:Key="Button.Outline" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Accent}" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <!-- Removes something for good (Delete): red, but outlined so it does not shout next to the everyday buttons. -->
@@ -139,21 +223,26 @@
 
     <Style TargetType="TextBox">
         <Setter Property="FontFamily" Value="{StaticResource App.Font}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+        <Setter Property="Background" Value="{StaticResource Brush.Inset}" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
-        <Setter Property="CaretBrush" Value="{StaticResource Brush.Text}" />
+        <Setter Property="CaretBrush" Value="{StaticResource Brush.Accent}" />
+        <Setter Property="SelectionBrush" Value="{StaticResource Brush.Accent}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Padding" Value="8,5" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border Background="{TemplateBinding Background}"
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="6">
+                            CornerRadius="8">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.Accent}" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -169,27 +258,34 @@
         <Setter Property="FontFamily" Value="{StaticResource App.Font.Latin}" />
         <Setter Property="FlowDirection" Value="LeftToRight" />
     </Style>
+    <!-- A big measured number (a temperature, a clock) in a tile. -->
+    <Style x:Key="Text.BigValue" TargetType="TextBlock" BasedOn="{StaticResource Text.Value}">
+        <Setter Property="FontFamily" Value="{StaticResource App.Font.Display}" />
+        <Setter Property="FontSize" Value="26" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
     <Style x:Key="TextBox.Value" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
         <Setter Property="FontFamily" Value="{StaticResource App.Font.Latin}" />
         <Setter Property="FlowDirection" Value="LeftToRight" />
     </Style>
 
     <Style x:Key="ThemedComboBoxItemStyle" TargetType="ComboBoxItem">
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+        <Setter Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
-        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="Padding" Value="10,6" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
-                    <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="6" Margin="3,1">
                         <ContentPresenter />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Border}" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Accent}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -203,11 +299,11 @@
          dark background. -->
     <Style TargetType="ComboBox">
         <Setter Property="FontFamily" Value="{StaticResource App.Font}" />
-        <Setter Property="Background" Value="{StaticResource Brush.Surface}" />
+        <Setter Property="Background" Value="{StaticResource Brush.Inset}" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Padding" Value="8,5" />
         <Setter Property="ItemContainerStyle" Value="{StaticResource ThemedComboBoxItemStyle}" />
         <Setter Property="Template">
             <Setter.Value>
@@ -221,14 +317,14 @@
                                     <Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}"
                                             BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}"
                                             BorderThickness="{Binding BorderThickness, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                            CornerRadius="6">
+                                            CornerRadius="8">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="18" />
+                                                <ColumnDefinition Width="22" />
                                             </Grid.ColumnDefinitions>
-                                            <Path Grid.Column="1" Data="M0,0 L4,4 L8,0 Z" Fill="{StaticResource Brush.TextMuted}"
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,4,0" />
+                                            <Path Grid.Column="1" Data="M0,0 L4,4 L8,0" Stroke="{StaticResource Brush.Accent}" StrokeThickness="1.6"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,6,0" />
                                         </Grid>
                                     </Border>
                                 </ControlTemplate>
@@ -241,10 +337,10 @@
                                           Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="Left" VerticalAlignment="Center" />
                         <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
-                               AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
-                            <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
-                                    BorderThickness="1" CornerRadius="6" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                    MaxHeight="240" Margin="0,2,0,0">
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                            <Border Background="{StaticResource Brush.SurfaceAlt}" BorderBrush="{StaticResource Brush.Border}"
+                                    BorderThickness="1" CornerRadius="10" MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                    MaxHeight="260" Margin="0,4,0,0" Padding="0,3">
                                 <ScrollViewer SnapsToDevicePixels="True">
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
                                 </ScrollViewer>
@@ -264,6 +360,20 @@
         <Setter Property="BorderThickness" Value="1" />
     </Style>
 
+    <!-- A plain list: no system selection colours, and the text keeps the theme's colour (the stock ListBoxItem paints it black). -->
+    <Style TargetType="ListBoxItem">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter /></Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="Expander">
         <Setter Property="FontFamily" Value="{StaticResource App.Font}" />
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
@@ -279,6 +389,14 @@
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
         <Setter Property="BorderThickness" Value="0,0,1,1" />
         <Setter Property="Padding" Value="6,4" />
+    </Style>
+
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource Brush.SurfaceAlt}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="FontFamily" Value="{StaticResource App.Font}" />
+        <Setter Property="Padding" Value="8,5" />
     </Style>
 
     <!-- HelpTip: round "?" button that opens a Persian RTL help popup (Task 16) -->
@@ -304,13 +422,13 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Accent}" />
-                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{StaticResource Brush.Accent}" />
                             <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Brush.Text}" />
                             <Setter TargetName="Bd" Property="BorderThickness" Value="2" />
-                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.OnAccent}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -336,16 +454,17 @@
         </Setter>
     </Style>
 
-    <!-- Check box: a rounded square that fills with the accent and shows a tick when checked. -->
+    <!-- Check box: a rounded square that fills with the accent and shows a black tick when checked. -->
     <Style TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
-                        <Border x:Name="Box" Width="18" Height="18" CornerRadius="4" BorderThickness="1.5"
+                        <Border x:Name="Box" Width="18" Height="18" CornerRadius="5" BorderThickness="1.5"
                                 BorderBrush="{StaticResource Brush.TextMuted}" Background="Transparent" VerticalAlignment="Center">
-                            <Path x:Name="Tick" Data="M3,9 L7,13 L14,5" Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round"
+                            <Path x:Name="Tick" Data="M3,9 L7,13 L14,5" Stroke="{StaticResource Brush.OnAccent}" StrokeThickness="2.2" StrokeStartLineCap="Round"
                                   StrokeEndLineCap="Round" StrokeLineJoin="Round" Visibility="Collapsed" />
                         </Border>
                         <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" />
@@ -360,6 +479,80 @@
                             <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource Brush.Accent}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Switch: the same check box drawn as an on/off toggle, for settings that turn a control on (a clock cap, a manual fan). The knob moves by
+         alignment, not animation: nothing runs after the click. -->
+    <Style x:Key="Switch" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="Track" Width="36" Height="20" CornerRadius="10" Background="{StaticResource Brush.Border}" VerticalAlignment="Center">
+                            <Ellipse x:Name="Knob" Width="14" Height="14" Margin="3,0" Fill="{StaticResource Brush.TextMuted}" HorizontalAlignment="Left" />
+                        </Border>
+                        <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource Brush.Accent}" />
+                            <Setter TargetName="Knob" Property="Fill" Value="{StaticResource Brush.OnAccent}" />
+                            <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Slider: a thin track, the filled part in yellow, a round knob. Horizontal only (every slider in the app is). -->
+    <Style x:Key="Slider.Thumb" TargetType="Thumb">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid Width="18" Height="18" Background="Transparent">
+                        <Ellipse x:Name="Knob" Fill="{StaticResource Brush.Accent}" Stroke="{StaticResource Brush.Background}" StrokeThickness="3" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Knob" Property="StrokeThickness" Value="2" /></Trigger>
+                        <Trigger Property="IsDragging" Value="True"><Setter TargetName="Knob" Property="StrokeThickness" Value="1.5" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="Slider.Fill" TargetType="RepeatButton">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton"><Grid Background="Transparent"><Border Height="4" CornerRadius="2" Background="{TemplateBinding Background}" /></Grid></ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="Slider">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="IsMoveToPointEnabled" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid MinHeight="22" Background="Transparent">
+                        <Track x:Name="PART_Track">
+                            <Track.DecreaseRepeatButton><RepeatButton Style="{StaticResource Slider.Fill}" Background="{StaticResource Brush.Accent}" Command="Slider.DecreaseLarge" /></Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton><RepeatButton Style="{StaticResource Slider.Fill}" Background="{StaticResource Brush.Border}" Command="Slider.IncreaseLarge" /></Track.IncreaseRepeatButton>
+                            <Track.Thumb><Thumb Style="{StaticResource Slider.Thumb}" /></Track.Thumb>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -397,7 +590,7 @@
                     <Border x:Name="Bar" CornerRadius="4" Background="{StaticResource Brush.Border}" />
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bar" Property="Background" Value="{StaticResource Brush.TextMuted}" /></Trigger>
-                        <Trigger Property="IsDragging" Value="True"><Setter TargetName="Bar" Property="Background" Value="{StaticResource Brush.TextMuted}" /></Trigger>
+                        <Trigger Property="IsDragging" Value="True"><Setter TargetName="Bar" Property="Background" Value="{StaticResource Brush.Accent}" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
