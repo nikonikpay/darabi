@@ -1,0 +1,122 @@
+{
+  "title": "دنیای بصری نسخه‌ی وب مازستا — دست دوم",
+  "question": "قرعه‌ی دوم، دنیای «پوستر مدرنیست تهران» را انتخاب کرد. همین را نگه دارید، یک جایگزین بردارید، یا دوباره قرعه بکشید.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Tehran Modernist Grid",
+      "kicker": "THE ROLL",
+      "lineage": "Iranian modernist posters of the Momayez era and the Swiss typographic grid they shared",
+      "thesis": "The machine's state set as a poster on a strict grid: huge bold numerals, yellow and black planes, every rule and column meaning something.",
+      "palette": ["#FDD400", "#0C0C0C", "#F3F1EA", "#8A8A84", "#E8453C", "#1FBF9C"],
+      "materials": ["flat printed planes", "heavy grotesk and bold Persian type", "hairline column rules", "registration marks"],
+      "viewport": "Dashboard as one poster: a yellow plane holding the machine's verdict, CPU/GPU temperatures as giant numerals on the grid, parts in ruled columns, navigation as a numbered index on the right edge.",
+      "risk": "If the type is set timidly it becomes a plain dark dashboard; the numerals must be poster-scale.",
+      "raised": [
+        { "from": "challenger-orizuru", "raise": "The test queue is a numbered step column in the margin, each step carrying its state." },
+        { "from": "challenger-alphabet-storm", "raise": "Type alone carries hierarchy: no cards, no shadows, no icons doing the work of size and weight." },
+        { "from": "challenger-arcade", "raise": "State colours are laws: green only for passed, red only for failed, hatching only for not measured." },
+        { "from": "challenger-feed", "raise": "Component pages give one part the whole viewport, the next part one snap away." }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Datasheet",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "semiconductor datasheets: electrical-characteristics tables, pinouts, block diagrams",
+      "thesis": "Every page reads like the part's datasheet: numbered sections, min/typ/max tables, a block diagram of the machine.",
+      "palette": ["#F4F3EE", "#111111", "#FDD400", "#6B6B66"],
+      "materials": ["technical paper", "ruled tables", "block diagrams"],
+      "viewport": "Section 1 'Overview' with a block diagram of this PC, key figures in a characteristics table.",
+      "risk": "Familiar and sober: the look many technical tools already borrow."
+    },
+    {
+      "id": "challenger-consumer",
+      "label": "Warm Consumer Surface",
+      "verdict": "competitive",
+      "lineage": "friendly consumer apps",
+      "thesis": "Soft cards, plain labels, one saturated colour only on what can be pressed.",
+      "palette": ["#F6EFE3", "#FFFFFF", "#FDD400", "#222222"],
+      "materials": ["soft corners", "white cards"],
+      "viewport": "A single column of friendly cards with a bottom bar.",
+      "case": "Wins on clarity (yellow means 'press'); loses on audience, a workshop tool is not a lifestyle app.",
+      "risk": "Too soft for a stress-test bench."
+    },
+    {
+      "id": "challenger-terminal-green",
+      "label": "Phosphor Terminal",
+      "verdict": "competitive",
+      "lineage": "midnight machine-room terminals",
+      "thesis": "The app as one live transcript; states print themselves.",
+      "palette": ["#0A0F0A", "#FDD400", "#7A6A10"],
+      "materials": ["phosphor bloom", "80-column field"],
+      "viewport": "A scrolling log with the live readings as the current line.",
+      "case": "Technicians live in consoles (SFC, DISM), so it holds audience; loses clarity for charts and reports.",
+      "risk": "Everything that is not text feels foreign."
+    },
+    {
+      "id": "challenger-orizuru",
+      "label": "Orizuru Sequence",
+      "verdict": "declined",
+      "lineage": "origami fold sequences",
+      "thesis": "One sheet folded in numbered steps.",
+      "palette": ["#D8342A", "#F5EFE6", "#111111"],
+      "materials": ["washi", "crease lines"],
+      "viewport": "A crease pattern beside the folded form.",
+      "case": "Loses both: unrelated to the shop.",
+      "risk": "A metaphor to decode.",
+      "kept": "Numbered steps in a margin column."
+    },
+    {
+      "id": "challenger-alphabet-storm",
+      "label": "Alphabet Storm",
+      "verdict": "declined",
+      "lineage": "surreal typographic weather",
+      "thesis": "Letters behave as matter.",
+      "palette": ["#FFFFFF", "#111111", "#B8BCC2"],
+      "materials": ["monumental grotesk"],
+      "viewport": "Words breaking as weather fronts.",
+      "case": "Loses both: poetic, not operational.",
+      "risk": "Readings must never move.",
+      "kept": "Type alone carries hierarchy."
+    },
+    {
+      "id": "challenger-feed",
+      "label": "Vertical Feed",
+      "verdict": "declined",
+      "lineage": "full-bleed vertical video feeds",
+      "thesis": "One item owns the viewport.",
+      "palette": ["#000000", "#FFFFFF"],
+      "materials": ["full-bleed media", "right rail"],
+      "viewport": "One snap per item.",
+      "case": "Loses both: a desktop workbench tool.",
+      "risk": "Hides the overview.",
+      "kept": "One part per viewport on component pages."
+    },
+    {
+      "id": "challenger-arcade",
+      "label": "Arcade Cabinet",
+      "verdict": "declined",
+      "lineage": "CRT pixel arcades",
+      "thesis": "Fat pixels and palette laws.",
+      "palette": ["#000000", "#FDD400", "#FF3366", "#33CCFF"],
+      "materials": ["scanlines", "sprite palette"],
+      "viewport": "A tile-grid stage.",
+      "case": "Loses both: a toy costume on measurements.",
+      "risk": "Undermines trust.",
+      "kept": "State colours are laws."
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A dark hardware-monitor dashboard with cards, gauges and a sidebar, executed with care.",
+    "palette": ["#0B0B0D", "#141418", "#FDD400", "#F4F4F6"],
+    "materials": ["rounded dark cards", "line charts", "sidebar navigation"],
+    "viewport": "Sidebar on the right, a grid of part cards with sparklines, the brand yellow as accent.",
+    "risk": "Looks like every monitoring tool, including the WPF edition."
+  },
+  "steer": true
+}

@@ -1,0 +1,128 @@
+{
+  "title": "دنیای بصری نسخه‌ی وب مازستا",
+  "question": "قرعه، دنیای «برد مادر» را انتخاب کرد. همین را نگه دارید، یک جایگزین بردارید، یا دوباره قرعه بکشید.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Silkscreen — the board is the interface",
+      "kicker": "THE ROLL",
+      "lineage": "high-end matte-black motherboards: gold ENIG pads, white silkscreen, reference designators, test points",
+      "thesis": "Every page is a region of a black PCB; every reading sits on a gold test point with its reference designator.",
+      "palette": ["#0A0B0A", "#FDD400", "#C9A227", "#EDEDE6", "#1FBF9C", "#E8453C"],
+      "materials": ["matte black solder mask", "gold ENIG pads", "white silkscreen type", "copper traces that light up"],
+      "viewport": "Dashboard as the board top view: CPU socket, GPU slot, DIMM slots and M.2 as silkscreened footprints, live values on their test points, traces animating between them.",
+      "risk": "Fails if the board becomes decoration; every footprint has to be a real, clickable part of the machine.",
+      "raised": [
+        { "from": "challenger-quote-grammar", "raise": "A reading that was not measured is hatched with diagonal silkscreen stripes, never a 0." },
+        { "from": "challenger-datamatics", "raise": "Monitoring keeps true data density: tabular figures, one data face, no padding for looks." },
+        { "from": "challenger-command-center", "raise": "The one number that matters per part is set at monumental scale, like an instrument readout." },
+        { "from": "challenger-deep-dive", "raise": "Temperature has thresholds that re-tint the part's copper from cool to hot, so state reads without a legend." }
+      ]
+    },
+    {
+      "id": "model-pick",
+      "label": "Bench Meter",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "the yellow-holstered bench multimeter every technician owns",
+      "thesis": "The app as the meter on the bench: yellow holster, dark LCD, a rotary dial that selects what you measure.",
+      "palette": ["#FDD400", "#141414", "#9DB08A", "#F2F2EA"],
+      "materials": ["rubber holster yellow", "reflective segment LCD", "detented rotary dial"],
+      "viewport": "A dial of pages on the side, a big LCD readout pane with hold/min/max, probes as the test queue.",
+      "risk": "The most familiar reading of a yellow-and-black tool brand; close to what a hardware tool is expected to look like."
+    },
+    {
+      "id": "challenger-terminal",
+      "label": "Terminal Wayfinding",
+      "verdict": "competitive",
+      "lineage": "international airport yellow sign bands",
+      "thesis": "Navigation as yellow overhead bands: each page shows only the next decisions, with big numbers.",
+      "palette": ["#FDD400", "#111111", "#FFFFFF"],
+      "materials": ["enamel sign panels", "white pictograms on black insets"],
+      "viewport": "A yellow band across the top naming the page and the next actions; content below in black and white.",
+      "case": "Fuses cleanly with the brand yellow and wins on clarity; loses on audience, technicians do not live in airports.",
+      "risk": "Can read as signage wallpaper if every block becomes a yellow band.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-terminal-yellow-wayfinding-hero.webp"
+    },
+    {
+      "id": "challenger-oscilloscope",
+      "label": "Signal Bench",
+      "verdict": "competitive",
+      "lineage": "CRT oscilloscope with an etched graticule",
+      "thesis": "Every sensor is a trace on a ten-division graticule; you move by timebase, not by page.",
+      "palette": ["#0B0D0B", "#FDD400", "#6B6B60", "#E8453C"],
+      "materials": ["amber-yellow phosphor", "etched graticule", "detented knobs"],
+      "viewport": "A large graticule with CPU and GPU traces overlaid, readouts in instrument caps below.",
+      "case": "Technicians know the instrument, so it holds audience; loses on clarity for reports, settings and queues.",
+      "risk": "Everything that is not a waveform feels bolted on.",
+      "hero": "https://impeccable.style/worlds/cards/scientific-notation-oscilloscope-signal-bench-hero.webp"
+    },
+    {
+      "id": "challenger-quote-grammar",
+      "label": "Industrial Quote Grammar",
+      "verdict": "declined",
+      "lineage": "industrial streetwear labels and hazard stripes",
+      "thesis": "Every zone named in straight quotes, hazard stripes under what matters.",
+      "palette": ["#FFFFFF", "#111111", "#FF6A13"],
+      "materials": ["cotton and nylon", "zip-tie tags"],
+      "viewport": "Quoted zone labels over striped plates.",
+      "case": "Fuses poorly: a fashion joke, not a workshop instrument.",
+      "risk": "Irony undermines trust in measurements.",
+      "kept": "The diagonal hatch as the one state for unavailable.",
+      "hero": "https://impeccable.style/worlds/cards/textiles-weave-drape-fashion-industrial-quote-grammar-hero.webp"
+    },
+    {
+      "id": "challenger-datamatics",
+      "label": "Datamatics",
+      "verdict": "declined",
+      "lineage": "black-and-white data-sublime installations",
+      "thesis": "Pure black and white bar fields and sine lattices.",
+      "palette": ["#000000", "#FFFFFF"],
+      "materials": ["barcode bars", "hairline rules"],
+      "viewport": "A strobing data field with monospace columns.",
+      "case": "Loses both: no brand yellow, and art-strobe over readable state.",
+      "risk": "Strobing is hostile at a workbench.",
+      "kept": "Density courage in data tables.",
+      "hero": "https://impeccable.style/worlds/cards/ikeda-datamatics-hero.webp"
+    },
+    {
+      "id": "challenger-command-center",
+      "label": "Crisis Wall",
+      "verdict": "declined",
+      "lineage": "nineties anime command-center walls",
+      "thesis": "Orange phosphor, chevron bands, seven-segment countdowns.",
+      "palette": ["#000000", "#FF7A00", "#A8FF3C", "#E81E1E"],
+      "materials": ["phosphor glow", "hazard chevrons"],
+      "viewport": "A black wall of framed label blocks around a schematic.",
+      "case": "Loses both: costume over the brand, alarm energy everywhere.",
+      "risk": "Everything looks like an emergency.",
+      "kept": "Monumental scale for the one number that matters.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-anime-command-center-hero.webp"
+    },
+    {
+      "id": "challenger-deep-dive",
+      "label": "Mesophotic Dive",
+      "verdict": "declined",
+      "lineage": "technical dive computers and reef walls",
+      "thesis": "Descend by depth; light and colour change with the stage.",
+      "palette": ["#06142B", "#2FD4E0", "#F2F2F2"],
+      "materials": ["abyssal blue", "marine snow"],
+      "viewport": "A vertical dive profile with pinned observations.",
+      "case": "Loses both: unrelated to the shop and off-brand blue.",
+      "risk": "A metaphor the technician has to decode.",
+      "kept": "Threshold-driven state colour.",
+      "hero": "https://impeccable.style/worlds/cards/rivers-tides-ocean-depths-mesophotic-deep-dive-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": false },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A dark hardware-monitor dashboard with cards, gauges and a sidebar, executed with care.",
+    "palette": ["#0B0B0D", "#141418", "#FDD400", "#F4F4F6"],
+    "materials": ["rounded dark cards", "line charts", "sidebar navigation"],
+    "viewport": "Sidebar on the right, a grid of part cards with sparklines, the brand yellow as accent.",
+    "risk": "Looks like every monitoring tool, including the WPF edition."
+  },
+  "steer": true
+}

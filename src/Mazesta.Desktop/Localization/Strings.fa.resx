@@ -825,4 +825,42 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>بایوس</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>دیسک</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>
+  <data name="Web_AlreadyRunning" xml:space="preserve"><value>مازستا همین حالا باز است (نسخه‌ی وب یا نسخه‌ی کلاسیک). اول آن را ببندید.</value></data>
+  <data name="Web_NoRuntime" xml:space="preserve"><value>برای نمایش نسخه‌ی وب، WebView2 مایکروسافت اج لازم است. از نسخه‌ی کلاسیک (MazestaTest.exe) استفاده کنید یا WebView2 را از سایت مایکروسافت نصب کنید.</value></data>
+  <data name="Web_DemoData" xml:space="preserve"><value>پیش‌نمایش مرورگر: داده‌ی نمونه، نه این سیستم</value></data>
+  <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>این سیستم هنوز آزمون جامع نشده است</value></data>
+  <data name="Web_Dash_Verdict_Passed" xml:space="preserve"><value>آخرین آزمون جامع: همه‌ی آزمون‌ها موفق</value></data>
+  <data name="Web_Dash_Verdict_Failed" xml:space="preserve"><value>آخرین آزمون جامع: نیاز به بررسی</value></data>
+  <data name="Web_Dash_Verdict_Incomplete" xml:space="preserve"><value>آخرین آزمون جامع: ناقص ماند</value></data>
+  <data name="Web_Dash_CpuTemp" xml:space="preserve"><value>دمای پردازنده</value></data>
+  <data name="Web_Dash_GpuTemp" xml:space="preserve"><value>دمای کارت گرافیک</value></data>
+  <data name="Web_Dash_RunTests" xml:space="preserve"><value>اجرای آزمون‌ها</value></data>
+  <data name="Web_Dash_More" xml:space="preserve"><value>جزئیات</value></data>
+  <data name="Web_Dash_Temp" xml:space="preserve"><value>دما</value></data>
+  <data name="Web_Dash_UsedSpace" xml:space="preserve"><value>فضای پرشده</value></data>
+  <data name="Web_Col_Sensor" xml:space="preserve"><value>سنسور</value></data>
+  <data name="Web_Col_Current" xml:space="preserve"><value>اکنون</value></data>
+  <data name="Web_Col_Min" xml:space="preserve"><value>کمینه</value></data>
+  <data name="Web_Col_Avg" xml:space="preserve"><value>میانگین</value></data>
+  <data name="Web_Col_Max" xml:space="preserve"><value>بیشینه</value></data>
+  <data name="Web_Kind_Cpu" xml:space="preserve"><value>پردازنده</value></data>
+  <data name="Web_Kind_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>
+  <data name="Web_Kind_Memory" xml:space="preserve"><value>حافظه</value></data>
+  <data name="Web_Kind_Motherboard" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="Web_Kind_Storage" xml:space="preserve"><value>دیسک</value></data>
+  <data name="Web_Kind_Network" xml:space="preserve"><value>کارت شبکه</value></data>
+  <data name="Web_Kind_Psu" xml:space="preserve"><value>منبع تغذیه</value></data>
+  <data name="Web_Kind_Cooler" xml:space="preserve"><value>خنک‌کننده</value></data>
+  <data name="Web_Kind_Other" xml:space="preserve"><value>سایر</value></data>
+  <data name="Web_Minutes" xml:space="preserve"><value>{0} دقیقه</value></data>
+  <data name="Web_Monitoring_Lede" xml:space="preserve"><value>همه‌ی سنسورهایی که این سیستم گزارش می‌دهد، به تفکیک قطعه. کمینه، میانگین و بیشینه از زمان شروع پایش است. برای دیدن سابقه، روی یک ردیف بزنید.</value></data>
+  <data name="Web_Tests_Lede" xml:space="preserve"><value>آزمون‌ها را تیک بزنید، مدتشان را تعیین کنید و شروع کنید. به همین ترتیب یکی پس از دیگری اجرا می‌شوند؛ آزمونی که اجرا نشود هرگز موفق حساب نمی‌شود.</value></data>
+  <data name="Web_Loading" xml:space="preserve"><value>در حال خواندن…</value></data>
+  <data name="Web_System_Lede" xml:space="preserve"><value>آنچه این سیستم درباره‌ی خودش گزارش می‌دهد. فیلدی که گزارش نشود، همین را می‌گوید.</value></data>
+  <data name="Web_System_Errors" xml:space="preserve"><value>خوانده نشد</value></data>
+  <data name="Web_Read" xml:space="preserve"><value>خواندن</value></data>
+  <data name="Web_Write" xml:space="preserve"><value>نوشتن</value></data>
+  <data name="Web_Spec" xml:space="preserve"><value>مشخصات</value></data>
+  <data name="Web_Settings_General" xml:space="preserve"><value>عمومی</value></data>
+  <data name="Web_Shortcut" xml:space="preserve"><value>میان‌بر</value></data>
 </root>

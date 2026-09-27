@@ -825,4 +825,42 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>Disk</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>OS</value></data>
+  <data name="Web_AlreadyRunning" xml:space="preserve"><value>Mazesta is already running (the web or the classic edition). Close it before starting another.</value></data>
+  <data name="Web_NoRuntime" xml:space="preserve"><value>The Microsoft Edge WebView2 runtime is needed to show the web edition. Use the classic edition (MazestaTest.exe), or install WebView2 from Microsoft.</value></data>
+  <data name="Web_DemoData" xml:space="preserve"><value>Browser preview: demo data, not this machine</value></data>
+  <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>This machine has not had a full test yet</value></data>
+  <data name="Web_Dash_Verdict_Passed" xml:space="preserve"><value>Last full test: every test passed</value></data>
+  <data name="Web_Dash_Verdict_Failed" xml:space="preserve"><value>Last full test: needs attention</value></data>
+  <data name="Web_Dash_Verdict_Incomplete" xml:space="preserve"><value>Last full test: not completed</value></data>
+  <data name="Web_Dash_CpuTemp" xml:space="preserve"><value>Processor temperature</value></data>
+  <data name="Web_Dash_GpuTemp" xml:space="preserve"><value>Graphics card temperature</value></data>
+  <data name="Web_Dash_RunTests" xml:space="preserve"><value>Run the tests</value></data>
+  <data name="Web_Dash_More" xml:space="preserve"><value>Details</value></data>
+  <data name="Web_Dash_Temp" xml:space="preserve"><value>Temperature</value></data>
+  <data name="Web_Dash_UsedSpace" xml:space="preserve"><value>Space used</value></data>
+  <data name="Web_Col_Sensor" xml:space="preserve"><value>Sensor</value></data>
+  <data name="Web_Col_Current" xml:space="preserve"><value>Now</value></data>
+  <data name="Web_Col_Min" xml:space="preserve"><value>Min</value></data>
+  <data name="Web_Col_Avg" xml:space="preserve"><value>Avg</value></data>
+  <data name="Web_Col_Max" xml:space="preserve"><value>Max</value></data>
+  <data name="Web_Kind_Cpu" xml:space="preserve"><value>Processor</value></data>
+  <data name="Web_Kind_Gpu" xml:space="preserve"><value>Graphics card</value></data>
+  <data name="Web_Kind_Memory" xml:space="preserve"><value>Memory</value></data>
+  <data name="Web_Kind_Motherboard" xml:space="preserve"><value>Motherboard</value></data>
+  <data name="Web_Kind_Storage" xml:space="preserve"><value>Drive</value></data>
+  <data name="Web_Kind_Network" xml:space="preserve"><value>Network adapter</value></data>
+  <data name="Web_Kind_Psu" xml:space="preserve"><value>Power supply</value></data>
+  <data name="Web_Kind_Cooler" xml:space="preserve"><value>Cooler</value></data>
+  <data name="Web_Kind_Other" xml:space="preserve"><value>Other</value></data>
+  <data name="Web_Minutes" xml:space="preserve"><value>{0} min</value></data>
+  <data name="Web_Monitoring_Lede" xml:space="preserve"><value>Every sensor this machine reports, grouped by part. Min, average and max are since the monitor started. Select a row for its history.</value></data>
+  <data name="Web_Tests_Lede" xml:space="preserve"><value>Tick the tests to run, set their length, and start. They run in this order, one after another; a test that does not run is never counted as passed.</value></data>
+  <data name="Web_Loading" xml:space="preserve"><value>Reading…</value></data>
+  <data name="Web_System_Lede" xml:space="preserve"><value>What this machine reports about itself. A field it does not report says so.</value></data>
+  <data name="Web_System_Errors" xml:space="preserve"><value>Could not be read</value></data>
+  <data name="Web_Read" xml:space="preserve"><value>Read</value></data>
+  <data name="Web_Write" xml:space="preserve"><value>Write</value></data>
+  <data name="Web_Spec" xml:space="preserve"><value>Specification</value></data>
+  <data name="Web_Settings_General" xml:space="preserve"><value>General</value></data>
+  <data name="Web_Shortcut" xml:space="preserve"><value>Shortcut</value></data>
 </root>

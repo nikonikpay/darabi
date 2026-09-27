@@ -33,6 +33,8 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Desktop.Tests" />
+    <!-- The web edition hosts the same engines and view models. -->
+    <InternalsVisibleTo Include="MazestaWeb" />
   </ItemGroup>
   <!-- @(TrayOutput) is the tray's built dll, reported by the project reference itself; its apphost, deps and runtimeconfig sit beside it. -->
   <Target Name="BundleTray" AfterTargets="Build" Condition="'@(TrayOutput)' != ''">
