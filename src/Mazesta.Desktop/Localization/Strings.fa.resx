@@ -956,4 +956,12 @@
   <data name="Web_Diag_Exported" xml:space="preserve"><value>فایل عیب‌یابی آماده شد و پوشه‌اش باز شد.</value></data>
   <data name="Web_Diag_None" xml:space="preserve"><value>تا این لحظه چیزی روی این سیستم کم نیست.</value></data>
   <data name="Web_Diag_More" xml:space="preserve"><value>و {0} مورد دیگر در فایل</value></data>
+  <data name="Notify_Health_Title" xml:space="preserve"><value>مازستا: سلامت سیستم</value></data>
+  <data name="Notify_CpuOverheat" xml:space="preserve"><value>دمای پردازنده به {0} درجه رسید. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
+  <data name="Notify_GpuOverheat" xml:space="preserve"><value>دمای کارت گرافیک به {0} درجه رسید. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
+  <data name="Notify_CpuThrottle" xml:space="preserve"><value>فرکانس پردازنده در بار کامل به {0} مگاهرتز افت کرد. دما و محدودیت توان را بررسی کنید.</value></data>
+  <data name="Notify_Sensors_Title" xml:space="preserve"><value>مازستا: سنسورها</value></data>
+  <data name="Notify_ProviderFailed" xml:space="preserve"><value>سنسورها خوانده نمی‌شوند. تا رفع مشکل، مقادیر در دسترس نیست؛ پیام بالای برنامه را ببینید.</value></data>
+  <data name="Notify_Test_Title" xml:space="preserve"><value>مازستا: آزمون ناموفق</value></data>
+  <data name="Notify_TestFailed" xml:space="preserve"><value>آزمون «{0}» ناموفق بود. جزئیات در صفحهٔ آزمون‌ها است.</value></data>
 </root>

@@ -956,4 +956,12 @@
   <data name="Web_Diag_Exported" xml:space="preserve"><value>The diagnostic file is ready; its folder is open.</value></data>
   <data name="Web_Diag_None" xml:space="preserve"><value>Nothing missing so far on this machine.</value></data>
   <data name="Web_Diag_More" xml:space="preserve"><value>and {0} more in the file</value></data>
+  <data name="Notify_Health_Title" xml:space="preserve"><value>Mazesta: system health</value></data>
+  <data name="Notify_CpuOverheat" xml:space="preserve"><value>The CPU reached {0} °C. Check the cooling and airflow.</value></data>
+  <data name="Notify_GpuOverheat" xml:space="preserve"><value>The graphics card reached {0} °C. Check the cooling and airflow.</value></data>
+  <data name="Notify_CpuThrottle" xml:space="preserve"><value>Under full load the CPU clock fell to {0} MHz. Check its temperature and power limits.</value></data>
+  <data name="Notify_Sensors_Title" xml:space="preserve"><value>Mazesta: sensors</value></data>
+  <data name="Notify_ProviderFailed" xml:space="preserve"><value>The sensors cannot be read. Readings are not available until this is fixed; see the banner in the app.</value></data>
+  <data name="Notify_Test_Title" xml:space="preserve"><value>Mazesta: test failed</value></data>
+  <data name="Notify_TestFailed" xml:space="preserve"><value>{0} failed. The details are on the Tests page.</value></data>
 </root>

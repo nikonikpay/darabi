@@ -50,6 +50,9 @@ public sealed partial class WebBridge
         void OnState(EngineState s) => Push("engine", new { paused = s == EngineState.Paused, failed = s == EngineState.Failed });
         engine.Provider.StatusChanged += OnStatus; engine.StateChanged += OnState;
         _cleanup.Add(() => { engine.Provider.StatusChanged -= OnStatus; engine.StateChanged -= OnState; });
+        var notifier = new Notifier(_window, engine, _sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(),
+            (text, kind) => Push("toast", new { text, kind }), _log);
+        _cleanup.Add(notifier.Dispose);
         var overlay = _sp.GetRequiredService<Desktop.Services.OverlayService>();
         void OnOverlay(bool v) => Push("overlay", v);
         overlay.VisibilityChanged += OnOverlay; _cleanup.Add(() => overlay.VisibilityChanged -= OnOverlay);
