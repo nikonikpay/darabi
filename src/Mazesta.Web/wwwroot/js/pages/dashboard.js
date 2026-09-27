@@ -37,7 +37,7 @@ export function mount(el) {
   const line = (label, sensor) => { const v = h("dd", { class: "num" }); rows.push([sensor, v]); return [h("dt", {}, label), v]; };
   const col = (title, page, i, ...body) => h("div", { class: "col", style: { "--i": i } },
     h("div", { class: "col-head" }, h("span", { class: "h3" }, title), page ? h("a", { href: `#/${page}` }, t("Web_Dash_More")) : null), h("dl", { class: "kv" }, body));
-  const cols = h("div", { class: "cols" },
+  const cols = h("div", { class: "cols parts" },
     cpu && col(t("Nav_Cpu"), "cpu", 1,
       line(t("Dashboard_Line_Package"), cpuTemp), line(t("Dashboard_Line_Clock"), pick(cpu, "CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuCoreClock")),
       line(t("Dashboard_Line_Load"), pick(cpu, "CpuTotalLoad")), line(t("Dashboard_Line_Power"), pick(cpu, "CpuPackagePower"))),

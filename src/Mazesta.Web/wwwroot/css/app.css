@@ -162,7 +162,7 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .giants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gut); margin-top: clamp(12px, 2.4vh, 24px); }
 .giant { border-top: 1.5px solid var(--on-yellow); padding-top: 12px; }
 .giant .lbl { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; font-size: 14px; }
-.giant .val { font: 850 clamp(72px, min(12vw, 19vh), 206px)/0.86 var(--lat); font-stretch: 62%; letter-spacing: -0.02em; direction: ltr; text-align: left; margin-top: 10px; display: flex; align-items: flex-start; font-variant-numeric: tabular-nums; }
+.giant .val { font: 850 clamp(64px, min(11vw, 15.5vh), 196px)/0.86 var(--lat); font-stretch: 62%; letter-spacing: -0.02em; direction: ltr; text-align: left; margin-top: 10px; display: flex; align-items: flex-start; font-variant-numeric: tabular-nums; }
 .giant .val .unit { font-size: 0.26em; font-weight: 700; margin: 0.18em 0.12em 0; letter-spacing: 0; }
 .giant .rng { font: 600 12.5px/1.4 var(--fa); margin-top: 6px; color: var(--on-yellow-2); }
 /* The min/max drawn as a range: a bar from min to max on a 0-100 °C scale, a tick at the current reading. */
@@ -197,6 +197,10 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .kv dt.sub { grid-column: 1 / -1; font-size: 12px; color: var(--paper); font-weight: 700; padding: 12px 0 4px; border-bottom: 1px solid var(--rule-2); text-align: left; }
 .kv dt.sub:first-child { padding-top: 2px; }
 
+/* The dashboard's part columns share one row at every window width the app allows (1024 and up). */
+.cols.parts { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 0 18px; margin-top: 26px; }
+/* A specification keeps each label near its value: columns of a fixed measure, empty tracks kept, never one row stretched across the page. */
+.cols.spec { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .masonry { columns: 3 300px; column-gap: calc(var(--gut) * 1.5); }
 .masonry > .col { break-inside: avoid; margin-bottom: 34px; }
 

@@ -27,7 +27,7 @@ export function mount(el, kind) {
         cells.push([s, v]);
         return h("div", { class: "giant" }, h("div", { class: "lbl" }, h("span", {}, t(key)), nodes.length > 1 ? h("span", { class: "muted lat" }, n.name) : null), v);
       }))));
-  const specs = h("div", { class: "cols", style: { marginTop: "4px" } });
+  const specs = h("div", { class: "cols spec", style: { marginTop: "4px" } });
   const sensorBox = h("div", {});
   const bench = benchList(kind);
   el.append(band,
