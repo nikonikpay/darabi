@@ -26,7 +26,7 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives) : ITestExecu
         return Task.FromResult(new TestRunResult(Definition.Id, bad > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, bad, string.Join("; ", reported.Select(Describe))));
     }
 
-    internal static bool NeedsAttention(DriveHealth d) => d.Status is "Warning" or "Unhealthy" || d.ReadErrorsUncorrected > 0 || d.WriteErrorsUncorrected > 0;
+    internal static bool NeedsAttention(DriveHealth d) => Core.Health.DriveAttention.Needs(d);
 
     internal static string Describe(DriveHealth d)
     {

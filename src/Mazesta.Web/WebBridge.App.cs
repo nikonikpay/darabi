@@ -9,6 +9,18 @@ public sealed partial class WebBridge
     private static readonly Dictionary<string, string> Links = new()
     {
         ["site"] = "https://www.dfmrendering.com/", ["contact"] = "https://www.dfmrendering.com/contactus/", ["pawnio"] = ShellViewModel.PawnIoUrl,
+        ["shop"] = "https://www.dfmrendering.com/shop/",
+        ["sales-whatsapp"] = "https://wa.me/989197588700", ["support-whatsapp"] = "https://wa.me/989197588701",
+        ["support-telegram"] = "https://t.me/dfm_support", ["channel-telegram"] = "https://t.me/DFMRendering", ["instagram"] = "https://www.instagram.com/dfm.rendering/",
+        ["email"] = "mailto:info@dfmrendering.com",
+    };
+
+    /// <summary>The company's contact details as its own site publishes them (dfmrendering.com/contactus, read 2026-09-27). Numbers stay as the
+    /// site writes them; the page shows them and opens only the links above.</summary>
+    private static readonly object Contact = new
+    {
+        sales = "09197588700", support = "09197588701", office = "021-41139", fax = "88867214 - 88867207", email = "info@dfmrendering.com",
+        hours = "Contact_Hours", address = "Contact_Address", postcode = "1571837738",
     };
 
     private void RegisterApp()
@@ -22,7 +34,11 @@ public sealed partial class WebBridge
             provider = Provider(engine.Provider.Status),
             banner = _configCorrupt ? Loc.Get("Config_Corrupt") : _sp.GetRequiredService<TuningRecovery>().Message,
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
+            contact = Contact,
         });
+        var shop = new ShopFeed(_paths.CacheDir, _log);
+        MethodAsync("shop.product", async p => await shop.GetAsync(Bool(p, "another")).ConfigureAwait(true));
+        Method("shop.open", p => { var url = Str(p, "url"); if (ShopFeed.IsShopLink(url)) Open(url); return null; });
         Method("app.hardware", _ => Hardware(engine));
         Method("app.setServiceNumber", p => { shell.ServiceNumber = Str(p, "value"); return shell.ServiceNumber; });
         Method("app.togglePause", _ => { shell.TogglePauseCommand.Execute(null); return engine.State == EngineState.Paused; });

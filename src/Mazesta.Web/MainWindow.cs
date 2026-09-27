@@ -58,6 +58,13 @@ public sealed class MainWindow : Window
         }
     }
 
+    /// <summary>A second start or the tray asked for the window: restore it if minimised and put it in front.</summary>
+    public void BringForward()
+    {
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Show(); Activate(); Topmost = true; Topmost = false; Focus();
+    }
+
     private void OnClosing()
     {
         bool maximized = WindowState == WindowState.Maximized;
