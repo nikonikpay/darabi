@@ -1,5 +1,7 @@
-/* Mazesta web edition: the Tehran modernist grid. Yellow as whole planes, ink ground, paper type, hairline column rules.
-   State colours are laws: --pass only for passed, --fail only for failed, the hatch only for "not measured". */
+/* Mazesta web edition: the Tehran modernist grid, in colour. Yellow as whole planes, ink ground, paper type; every part of the machine has its
+   own hue (CPU blue, GPU violet, RAM cyan, storage orange, network pink, board and system yellow) and wears it wherever it appears: its panel,
+   its page's plane, its chart line, its test group, its overlay rows.
+   State colours are laws: --pass only for passed, --fail only for failed, the hatch only for "not measured". No part hue is green or red. */
 
 @font-face { font-family: "Vazirmatn"; src: url("../fonts/Vazirmatn-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: block; }
 @font-face { font-family: "Archivo"; src: url("../fonts/Archivo-Variable.ttf") format("truetype"); font-weight: 100 900; font-stretch: 62% 125%; font-display: block; }
@@ -20,6 +22,15 @@
   --pass: #2ec08e;
   --fail: #ee4b3d;
   --warn: #f2a122;
+  /* Part hues: light enough for 7:1 against ink as text, and ink text on them (the part planes) stays above 7:1 too. */
+  --c-cpu: #5ba8ff;
+  --c-gpu: #b38bff;
+  --c-ram: #35d0e0;
+  --c-storage: #ff9a4d;
+  --c-net: #ff78b9;
+  --c-board: #fdd400;
+  --r-panel: 14px;
+  --r-ctl: 8px;
   --fa: "Vazirmatn", "Segoe UI", sans-serif;
   --lat: "Archivo", "Segoe UI", sans-serif;
   --mono: "Cascadia Mono", Consolas, monospace;
@@ -90,11 +101,11 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .section-head .grow { flex: 1; }
 
 /* ———— Controls, in the poster's vocabulary ———— */
-.slab { display: inline-flex; align-items: center; gap: 10px; border: 0; background: var(--ink); color: var(--paper); font-weight: 800; font-size: 15px; padding: 13px 22px; cursor: pointer; transition: transform var(--fast) var(--ease), background var(--fast); }
+.slab { display: inline-flex; align-items: center; gap: 10px; border: 0; border-radius: var(--r-ctl); background: var(--ink); color: var(--paper); font-weight: 800; font-size: 15px; padding: 13px 22px; cursor: pointer; transition: transform var(--fast) var(--ease), background var(--fast); }
 .slab svg { width: 18px; height: 18px; stroke: currentColor; transition: transform var(--slow) var(--ease); }
 .slab:hover svg { transform: translateX(-5px); }
 .slab:active { transform: translateY(1px); }
-.btn { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--rule-2); color: var(--paper); padding: 8px 15px; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: border-color var(--fast), background var(--fast), color var(--fast); white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--rule-2); border-radius: var(--r-ctl); color: var(--paper); padding: 8px 15px; font-weight: 600; font-size: 13.5px; cursor: pointer; transition: border-color var(--fast), background var(--fast), color var(--fast); white-space: nowrap; }
 .btn:hover:not(:disabled) { border-color: var(--paper); }
 .btn.primary { background: var(--yellow); border-color: var(--yellow); color: var(--on-yellow); font-weight: 800; }
 .btn.primary:hover:not(:disabled) { background: var(--paper); border-color: var(--paper); }
@@ -116,13 +127,13 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 select.field { appearance: none; padding-inline-end: 22px; background: linear-gradient(45deg, transparent 50%, var(--yellow) 50%) no-repeat, linear-gradient(-45deg, transparent 50%, var(--yellow) 50%) no-repeat; background-size: 5px 5px; background-position: left 9px center, left 4px center; cursor: pointer; }
 select.field option { background: var(--ink-3); color: var(--paper); }
 
-.check { position: relative; width: 18px; height: 18px; flex: none; appearance: none; margin: 0; border: 1.5px solid var(--paper-2); cursor: pointer; transition: background var(--fast), border-color var(--fast); }
+.check { position: relative; width: 18px; height: 18px; flex: none; appearance: none; margin: 0; border: 1.5px solid var(--paper-2); border-radius: 5px; cursor: pointer; transition: background var(--fast), border-color var(--fast); }
 .check:checked { background: var(--yellow); border-color: var(--yellow); }
 .check:checked::after { content: ""; position: absolute; inset: 3px 5px 5px; border: solid var(--on-yellow); border-width: 0 2.4px 2.4px 0; transform: rotate(45deg); }
 .check:hover { border-color: var(--yellow); }
 
-.switch { appearance: none; width: 38px; height: 20px; margin: 0; border: 1.5px solid var(--paper-2); position: relative; cursor: pointer; flex: none; transition: background var(--fast), border-color var(--fast); }
-.switch::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 11px; height: 11px; background: var(--paper-2); transition: inset-inline-start var(--slow) var(--ease), background var(--fast); }
+.switch { appearance: none; width: 38px; height: 20px; margin: 0; border: 1.5px solid var(--paper-2); border-radius: 999px; position: relative; cursor: pointer; flex: none; transition: background var(--fast), border-color var(--fast); }
+.switch::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 11px; height: 11px; border-radius: 50%; background: var(--paper-2); transition: inset-inline-start var(--slow) var(--ease), background var(--fast); }
 .switch:checked { background: var(--yellow); border-color: var(--yellow); }
 .switch:checked::after { inset-inline-start: 21px; background: var(--on-yellow); }
 
@@ -134,7 +145,7 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .range:hover::-webkit-slider-thumb { transform: scale(1.25); }
 .range:disabled { opacity: 0.35; }
 
-.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 9px; border: 1px solid currentColor; white-space: nowrap; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 10px; border: 1px solid currentColor; border-radius: 999px; white-space: nowrap; }
 .pill.pass { color: var(--pass); }
 .pill.fail { color: var(--fail); }
 .pill.warn { color: var(--warn); }
@@ -145,11 +156,11 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .hatch { color: var(--paper-2); background: repeating-linear-gradient(135deg, rgb(243 241 234 / 0.22) 0 1px, transparent 1px 6px); padding: 0 6px; }
 .plane .hatch, .table tr.row.on .hatch { color: var(--on-yellow-2); background: repeating-linear-gradient(135deg, rgb(12 12 12 / 0.28) 0 1px, transparent 1px 6px); }
 
-.progress { height: 3px; background: var(--rule); position: relative; overflow: hidden; }
-.progress > i { position: absolute; inset-block: 0; inset-inline-start: 0; width: 100%; background: var(--yellow); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 500ms var(--ease); }
+.progress { height: 4px; background: var(--rule); position: relative; overflow: hidden; border-radius: 4px; }
+.progress > i { position: absolute; inset-block: 0; inset-inline-start: 0; width: 100%; background: var(--hue, var(--yellow)); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 500ms var(--ease); }
 
 /* ———— Poster plane (dashboard, component pages, summary) ———— */
-.plane { background: var(--yellow); color: var(--on-yellow); position: relative; padding: clamp(20px, 2.4vw, 36px) clamp(24px, 3vw, 44px); overflow: hidden; }
+.plane { background: var(--plane, var(--yellow)); color: var(--on-yellow); border-radius: 16px; position: relative; padding: clamp(20px, 2.4vw, 36px) clamp(24px, 3vw, 44px); overflow: hidden; }
 .plane .muted { color: var(--on-yellow-2); }
 .plane .slab { background: var(--ink); color: var(--paper); }
 .plane .slab:hover { background: #2a2a26; }
@@ -295,13 +306,13 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .report .acts { grid-row: 1 / 3; grid-column: 4; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 560px; }
 
 /* ———— Console (Windows tools): real command output, so a real monospace ———— */
-.console { background: var(--ink-2); border-top: 2px solid var(--paper); padding: 14px 16px; height: 360px; overflow: auto; font: 12.5px/1.55 var(--mono); direction: ltr; text-align: left; color: var(--paper-2); white-space: pre-wrap; }
+.console { background: var(--ink-2); border-radius: 10px; border: 1px solid var(--rule); padding: 14px 16px; height: 360px; overflow: auto; font: 12.5px/1.55 var(--mono); direction: ltr; text-align: left; color: var(--paper-2); white-space: pre-wrap; }
 
 /* ———— Banner and toasts ———— */
 .banner { display: flex; gap: 14px; align-items: center; background: var(--ink-3); border-bottom: 1px solid var(--yellow); padding: 10px var(--pad); font-size: 13.5px; }
 .banner .grow { flex: 1; }
 .toasts { position: fixed; inset-inline-start: calc(var(--index-w) + 24px); bottom: 54px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
-.toast { background: var(--paper); color: var(--ink); padding: 10px 16px; font-weight: 600; font-size: 13.5px; max-width: 420px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.45); animation: toast-in 420ms var(--ease) both; }
+.toast { background: var(--paper); color: var(--ink); border-radius: 10px; padding: 10px 16px; font-weight: 600; font-size: 13.5px; max-width: 420px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.45); animation: toast-in 420ms var(--ease) both; }
 .toast.fail { background: var(--fail); } .toast.pass { background: var(--pass); }
 
 /* ———— Motion: page change is the yellow plane wiping along the grid; rules draw in from the reading-start edge ———— */
@@ -326,3 +337,98 @@ select.field option { background: var(--ink-3); color: var(--paper); }
   .live { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .giants { grid-template-columns: 1fr 1fr; }
 }
+
+/* ———— Parts: every part carries its hue in --hue; panels are the boxes the dashboard, pages and groups are built from ———— */
+.p-cpu { --hue: var(--c-cpu); } .p-gpu { --hue: var(--c-gpu); } .p-ram { --hue: var(--c-ram); } .p-storage { --hue: var(--c-storage); }
+.p-net { --hue: var(--c-net); } .p-board { --hue: var(--c-board); } .p-sys { --hue: var(--c-board); } .p-win { --hue: var(--paper-2); }
+.hue { color: var(--hue); }
+
+.panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 22px; align-items: start; }
+.panel { --hue: var(--paper-2); position: relative; min-width: 0; border-radius: var(--r-panel); padding: 16px 18px 14px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--hue) 10%, var(--ink-2)) 0, var(--ink-2) 110px);
+  border: 1px solid color-mix(in oklab, var(--hue) 26%, transparent); box-shadow: 0 12px 28px -18px rgb(0 0 0 / 0.8);
+  animation: panel-in 620ms var(--ease) both; animation-delay: calc(var(--i, 0) * 50ms); }
+.panel::before { content: ""; position: absolute; inset-inline: 18px; top: -1px; height: 3px; border-radius: 0 0 3px 3px; background: var(--hue); }
+.panel.wide { grid-column: 1 / -1; }
+.panel-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.panel-head .ico { width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--hue); background: color-mix(in oklab, var(--hue) 16%, transparent); }
+.panel-head .ico svg { width: 19px; height: 19px; stroke: currentColor; }
+.panel-head .ttl { min-width: 0; flex: 1; }
+.panel-title { font: 800 16.5px/1.25 var(--fa); margin: 0; }
+.panel-title a { color: inherit; text-decoration: none; }
+.panel-title a:hover { color: var(--hue); }
+.panel-sub { font: 500 12px/1.4 var(--lat); color: var(--paper-3); direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[dir="ltr"] .panel-sub { text-align: left; }
+.panel-head .more { border: 0; background: transparent; color: var(--paper-3); width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; flex: none; transition: color var(--fast), background var(--fast); }
+.panel-head .more:hover { color: var(--hue); background: color-mix(in oklab, var(--hue) 12%, transparent); }
+.panel-head .more svg { width: 18px; height: 18px; stroke: currentColor; transition: transform var(--slow) var(--ease); }
+.panel.open .panel-head .more svg { transform: rotate(180deg); }
+
+/* The summary: the few readings that matter, big; a meter for the one that is a share of something. */
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin-top: 16px; }
+.stat .k { font-size: 12px; color: var(--paper-3); display: block; }
+.stat .v { font: 800 26px/1.1 var(--lat); font-stretch: 72%; font-variant-numeric: tabular-nums; direction: ltr; display: block; text-align: right; margin-top: 2px; }
+[dir="ltr"] .stat .v { text-align: left; }
+.stat .v small { font-size: 0.5em; font-weight: 700; color: var(--paper-2); margin-inline-start: 3px; }
+.stat .v .hatch { font: 600 13px/1.6 var(--fa); direction: rtl; }
+.meter { margin-top: 14px; }
+.meter .row { display: flex; justify-content: space-between; font-size: 12px; color: var(--paper-3); margin-bottom: 6px; }
+.meter .row .num { color: var(--paper-2); font-size: 12px; }
+.meter .bar { height: 6px; border-radius: 6px; background: color-mix(in oklab, var(--hue) 14%, var(--ink-3)); overflow: hidden; }
+.meter .bar i { display: block; height: 100%; width: 100%; border-radius: 6px; background: var(--hue); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 700ms var(--ease); }
+[dir="ltr"] .meter .bar i { --from: left; }
+
+/* A panel's details open under its summary (grid rows 0fr to 1fr, so the height animates without measuring). */
+.panel-more { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--slow) var(--ease); }
+.panel-more > div { overflow: hidden; min-height: 0; }
+.panel.open .panel-more { grid-template-rows: 1fr; }
+.panel-more .kv { margin-top: 14px; padding-top: 6px; border-top: 1px dashed color-mix(in oklab, var(--hue) 35%, transparent); }
+.panel .kv dd.num { font-size: 13.5px; }
+.panel .kv dt.sub { color: var(--hue); }
+.panel-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--paper-3); }
+.panel-foot a { color: var(--hue); text-decoration: none; font-weight: 700; display: inline-flex; gap: 6px; align-items: center; }
+.panel-foot a svg { width: 14px; height: 14px; stroke: currentColor; }
+[dir="rtl"] .panel-foot a svg { transform: none; }
+.panel-foot a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Several drives or adapters in one panel: a row each, name then readings. */
+.units { margin-top: 14px; display: grid; gap: 10px; }
+.unit-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: baseline; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+.unit-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.unit-row .nm { font: 600 13px/1.3 var(--lat); direction: ltr; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[dir="ltr"] .unit-row .nm { text-align: left; }
+.unit-row .vals { display: flex; gap: 14px; font: 700 14px var(--lat); font-stretch: 80%; direction: ltr; white-space: nowrap; }
+.unit-row .vals .hatch { font: 600 12px var(--fa); }
+.unit-row .meter { grid-column: 1 / -1; margin-top: 2px; }
+
+/* Shop and contact: the company's own product and people, next to the machine's panels. */
+.shop { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 16px; margin-top: 14px; align-items: start; }
+.shop .img { width: 124px; aspect-ratio: 4 / 5; border-radius: 10px; background: #fff; object-fit: contain; display: block; }
+.shop h4 { font: 800 14.5px/1.5 var(--fa); margin: 0 0 6px; }
+.shop p { font-size: 12.5px; line-height: 1.75; color: var(--paper-2); margin: 0 0 12px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.shop .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.skeleton { background: linear-gradient(90deg, var(--ink-3) 0, color-mix(in oklab, var(--paper) 8%, var(--ink-3)) 50%, var(--ink-3) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 8px; }
+.contact { display: grid; gap: 10px; margin-top: 14px; }
+.contact .line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }
+.contact .line:last-of-type { border-bottom: 0; }
+.contact .who { font-weight: 700; font-size: 13.5px; }
+.contact .no { font: 700 15px var(--lat); direction: ltr; letter-spacing: 0.02em; user-select: all; }
+.contact .links { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.contact .note { font-size: 12px; color: var(--paper-3); line-height: 1.8; margin: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid color-mix(in oklab, var(--hue, var(--paper-2)) 40%, transparent); color: var(--paper);
+  background: color-mix(in oklab, var(--hue, var(--paper-2)) 10%, transparent); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background var(--fast), border-color var(--fast); }
+.chip:hover { background: color-mix(in oklab, var(--hue, var(--paper-2)) 22%, transparent); border-color: var(--hue, var(--paper-2)); }
+.chip svg { width: 14px; height: 14px; stroke: currentColor; }
+
+/* Groups (tests, benchmarks, monitoring): a panel per part that folds. */
+.group { margin-top: 16px; padding-bottom: 6px; }
+.group > .panel-head { cursor: pointer; user-select: none; }
+.group-count { font: 600 12px var(--fa); color: var(--paper-3); white-space: nowrap; }
+.group .group-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--slow) var(--ease); }
+.group .group-body > div { overflow: hidden; min-height: 0; }
+.group.shut .group-body { grid-template-rows: 0fr; }
+.group.shut .panel-head .more svg { transform: rotate(90deg); }
+.group .q-row:last-child { border-bottom: 0; }
+
+@keyframes panel-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes shimmer { to { background-position: -200% 0; } }
