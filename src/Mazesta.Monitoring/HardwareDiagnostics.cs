@@ -42,6 +42,7 @@ public static class HardwareDiagnosticsReport
     internal static IEnumerable<string> Missing(HardwareNode node)
     {
         if (!Expected.TryGetValue(node.Kind, out var expected)) yield break;
+        if (node.Kind == HardwareKind.Memory && node.Name.Contains("Virtual", StringComparison.OrdinalIgnoreCase)) yield break;   // the page file, not RAM
         var roles = node.Sensors.Select(s => s.Role).ToHashSet();
         foreach (var (what, anyOf) in expected) if (!anyOf.Any(roles.Contains)) yield return what;
     }

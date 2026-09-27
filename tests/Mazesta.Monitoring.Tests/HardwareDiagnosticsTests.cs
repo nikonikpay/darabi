@@ -30,4 +30,6 @@ public class HardwareDiagnosticsTests
         var text = HardwareDiagnosticsReport.Build(DateTimeOffset.UnixEpoch, "test", "PC", new ProviderStatus(ProviderState.Ready, 1, null, null), [ram], new Dictionary<SensorId, SensorTally>());
         Assert.Contains("Findings (0)", text); Assert.Contains("none", text); Assert.Contains("[Memory] ram", text); Assert.Contains("not polled", text);
     }
+    [Fact] public void Virtual_memory_is_not_expected_to_have_ram_readings()
+        => Assert.Empty(HardwareDiagnosticsReport.Problems([Node(HardwareKind.Memory, "Virtual Memory")], new Dictionary<SensorId, SensorTally>()));
 }
