@@ -1,24 +1,29 @@
-// Windows' power plans (switchable, reversible) and the two gaming switches Windows keeps in its own settings.
+// Gaming: Windows' power plans (switchable, reversible) in the power hue, and the two switches Windows keeps in its own settings (Game Mode,
+// hardware-accelerated GPU scheduling) in the GPU's, shown as Windows has them and changed in Windows' own window.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
-import { h } from "../ui.js";
+import { h, icon } from "../ui.js";
+import { box } from "../groups.js";
 
 export function mount(el) {
-  const plans = h("div", { class: "queue" }), status = h("p", { class: "caption" });
-  const kv = h("dl", { class: "kv" });
+  const plans = h("div", { class: "plans" }), status = h("p", { class: "msg" });
+  const tiles = h("div", { class: "states" });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Gaming")), h("p", { class: "page-lede" }, t("Gaming_Note")))),
-    h("div", { class: "cols", style: { marginTop: 0 } },
-      h("div", { class: "col", style: { gridColumn: "span 2" } }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Gaming_PowerPlan"))), plans, status),
-      h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Gaming_GameMode"))), kv,
-        h("div", { style: { display: "flex", gap: "8px", marginTop: "14px", flexWrap: "wrap" } },
-          h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "gameMode" }) }, t("Gaming_OpenSettings"), " · ", t("Gaming_GameMode")),
-          h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "graphics" }) }, t("Gaming_OpenSettings"), " · HAGS")))));
+    h("div", { class: "panels two", style: { marginTop: 0 } },
+      box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i: 0, body: [plans, status] }),
+      box({ kind: "Gpu", ico: "gamepad", title: t("Gaming_GameMode"), sub: t("Gaming_Switches_Sub"), i: 1,
+        body: [tiles, h("p", { class: "note" }, t("Gaming_Switches_Note")),
+          h("div", { class: "btn-row" },
+            h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "gameMode" }) }, icon("popout"), t("Gaming_OpenSettings"), " · ", t("Gaming_GameMode")),
+            h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "graphics" }) }, icon("popout"), t("Gaming_OpenSettings"), " · HAGS"))] })));
+  // Game Mode and HAGS come as text from the host ("on", "off", or Windows' default when the registry does not say).
+  const tile = (key, v) => h("div", { class: `state-tile ${v === t("Gaming_On") ? "on" : v === t("Gaming_Off") ? "" : "unknown"}` }, h("span", { class: "k" }, t(key)), h("span", { class: "v" }, v));
   function update(s) {
     status.textContent = s.status || "";
-    kv.replaceChildren(h("dt", {}, t("Gaming_GameMode")), h("dd", {}, s.gameMode), h("dt", {}, t("Gaming_Hags")), h("dd", {}, s.gpuScheduling));
-    plans.replaceChildren(...(s.plans.length ? s.plans.map((p) => h("div", { class: "q-row", style: { gridTemplateColumns: "1fr auto", padding: "14px 0" } },
-      h("span", { class: "name lat", style: { textAlign: "right" } }, p.name),
-      p.active ? h("span", { class: "pill run" }, t("Gaming_Active")) : h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "activate", index: String(p.index) }) }, t("Gaming_Activate"))))
+    tiles.replaceChildren(tile("Gaming_GameMode", s.gameMode), tile("Gaming_Hags", s.gpuScheduling));
+    plans.replaceChildren(...(s.plans.length ? s.plans.map((p) => h("div", { class: `plan ${p.active ? "on" : ""}` },
+      h("span", { class: "name" }, p.name),
+      p.active ? h("span", { class: "pill run" }, icon("check"), " ", t("Gaming_Active")) : h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "activate", index: String(p.index) }) }, t("Gaming_Activate"))))
       : [h("p", { class: "caption" }, t("Gaming_NoPlans"))]));
   }
   call("gaming.state").then(update);

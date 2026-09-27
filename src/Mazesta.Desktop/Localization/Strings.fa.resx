@@ -964,4 +964,81 @@
   <data name="Notify_ProviderFailed" xml:space="preserve"><value>سنسورها خوانده نمی‌شوند. تا رفع مشکل، مقادیر در دسترس نیست؛ پیام بالای برنامه را ببینید.</value></data>
   <data name="Notify_Test_Title" xml:space="preserve"><value>مازستا: آزمون ناموفق</value></data>
   <data name="Notify_TestFailed" xml:space="preserve"><value>آزمون «{0}» ناموفق بود. جزئیات در صفحهٔ آزمون‌ها است.</value></data>
+  <data name="Tools_Repair_Sub" xml:space="preserve"><value>بررسی و تعمیر فایل‌های سیستمی با ابزارهای خود ویندوز، با خروجی واقعی آن‌ها</value></data>
+  <data name="Tools_Windows_Sub" xml:space="preserve"><value>در پنجره‌های خود ویندوز باز می‌شوند</value></data>
+  <data name="Tools_Working" xml:space="preserve"><value>در حال انجام…</value></data>
+  <data name="Tools_State_On" xml:space="preserve"><value>روشن</value></data>
+  <data name="Tools_State_Off" xml:space="preserve"><value>خاموش</value></data>
+  <data name="Tools_State_Default" xml:space="preserve"><value>پیش‌فرض ویندوز</value></data>
+  <data name="Tools_Hib_Title" xml:space="preserve"><value>هایبرنیت و Fast Startup</value></data>
+  <data name="Tools_Hib_Sub" xml:space="preserve"><value>powercfg /hibernate</value></data>
+  <data name="Tools_Hib_Hibernate" xml:space="preserve"><value>هایبرنیت</value></data>
+  <data name="Tools_Hib_FastStartup" xml:space="preserve"><value>Fast Startup</value></data>
+  <data name="Tools_Hib_Off" xml:space="preserve"><value>خاموش کردن هر دو</value></data>
+  <data name="Tools_Hib_On" xml:space="preserve"><value>روشن کردن هر دو</value></data>
+  <data name="Tools_Hib_Note" xml:space="preserve"><value>Fast Startup در واقع هایبرنیت بخشی از خود ویندوز است، پس فقط وقتی هایبرنیت روشن است کار می‌کند. خاموش کردن هایبرنیت (powercfg -h off) هر دو را خاموش می‌کند و فایل hiberfil.sys را پاک می‌کند که تقریباً به اندازه‌ی رم، فضای دیسک آزاد می‌شود. وقتی خاموش کردن سیستم سخت‌افزار را واقعاً ری‌استارت نمی‌کند (درایورها، دو سیستم‌عامل، دستگاهی که بعد از روشن شدن پیدا نمی‌شود) مفید است.</value></data>
+  <data name="Tools_Hib_DoneOff" xml:space="preserve"><value>هایبرنیت و Fast Startup خاموش شدند.</value></data>
+  <data name="Tools_Hib_DoneOn" xml:space="preserve"><value>هایبرنیت و Fast Startup روشن شدند.</value></data>
+  <data name="Tools_Hib_Failed" xml:space="preserve"><value>ویندوز تغییر را انجام نداد: {0}</value></data>
+  <data name="Tools_Vm_Title" xml:space="preserve"><value>حافظه‌ی مجازی</value></data>
+  <data name="Tools_Vm_Sub" xml:space="preserve"><value>فایل Page file، همان تنظیم Performance Options ویندوز</value></data>
+  <data name="Tools_Vm_Managed" xml:space="preserve"><value>مدیریت خودکار توسط ویندوز</value></data>
+  <data name="Tools_Vm_Managed_Note" xml:space="preserve"><value>ویندوز اندازه را روی همه‌ی درایوها تعیین می‌کند (پیشنهادی).</value></data>
+  <data name="Tools_Vm_Custom" xml:space="preserve"><value>روی یک درایو</value></data>
+  <data name="Tools_Vm_Custom_Note" xml:space="preserve"><value>فایل Page file روی درایوی که انتخاب می‌کنید، با اندازه‌ای که تعیین می‌کنید یا ویندوز تعیین می‌کند.</value></data>
+  <data name="Tools_Vm_None" xml:space="preserve"><value>بدون Page file</value></data>
+  <data name="Tools_Vm_None_Note" xml:space="preserve"><value>پیشنهاد نمی‌شود: با پر شدن رم برنامه‌ها ممکن است بسته شوند و ویندوز نمی‌تواند فایل خطای کرش را ذخیره کند.</value></data>
+  <data name="Tools_Vm_Drive" xml:space="preserve"><value>درایو</value></data>
+  <data name="Tools_Vm_Initial" xml:space="preserve"><value>اندازه‌ی اولیه (MB)</value></data>
+  <data name="Tools_Vm_Maximum" xml:space="preserve"><value>اندازه‌ی بیشینه (MB)</value></data>
+  <data name="Tools_Vm_Auto" xml:space="preserve"><value>اندازه با ویندوز</value></data>
+  <data name="Tools_Vm_Free" xml:space="preserve"><value>آزاد</value></data>
+  <data name="Tools_Vm_Apply" xml:space="preserve"><value>اعمال</value></data>
+  <data name="Tools_Vm_Windows" xml:space="preserve"><value>پنجره‌ی ویندوز</value></data>
+  <data name="Tools_Vm_Limit" xml:space="preserve"><value>رم نصب‌شده {0} مگابایت. بیشینه تا {1} مگابایت (سه برابر رم) مجاز است.</value></data>
+  <data name="Tools_Vm_Pending" xml:space="preserve"><value>روی {0} تنظیم شد: بعد از ری‌استارت اعمال می‌شود.</value></data>
+  <data name="Tools_Vm_Done" xml:space="preserve"><value>ذخیره شد. برای اعمال، کامپیوتر را ری‌استارت کنید.</value></data>
+  <data name="Tools_Vm_Failed" xml:space="preserve"><value>ویندوز تنظیم را ذخیره نکرد: {0}</value></data>
+  <data name="Tools_Vm_Error_Drive" xml:space="preserve"><value>یک درایو انتخاب کنید.</value></data>
+  <data name="Tools_Vm_Error_Initial" xml:space="preserve"><value>اندازه‌ی اولیه باید دست‌کم ۱۶ مگابایت باشد.</value></data>
+  <data name="Tools_Vm_Error_Order" xml:space="preserve"><value>اندازه‌ی بیشینه نمی‌تواند از اندازه‌ی اولیه کمتر باشد.</value></data>
+  <data name="Tools_Vm_Error_Max" xml:space="preserve"><value>اندازه‌ی بیشینه حداکثر {0} مگابایت می‌تواند باشد.</value></data>
+  <data name="Tools_Vm_Error_Space" xml:space="preserve"><value>درایو این مقدار فضای آزاد ندارد.</value></data>
+  <data name="Tools_Hosts_Title" xml:space="preserve"><value>فایل hosts</value></data>
+  <data name="Tools_Hosts_Sub" xml:space="preserve"><value>نام‌هایی که ویندوز قبل از DNS از این فایل می‌خواند</value></data>
+  <data name="Tools_Hosts_Save" xml:space="preserve"><value>ذخیره</value></data>
+  <data name="Tools_Hosts_SaveAnyway" xml:space="preserve"><value>با این حال ذخیره کن</value></data>
+  <data name="Tools_Hosts_Restore" xml:space="preserve"><value>نسخه‌ی قبلی</value></data>
+  <data name="Tools_Hosts_Reload" xml:space="preserve"><value>خواندن دوباره</value></data>
+  <data name="Tools_Hosts_Notepad" xml:space="preserve"><value>باز کردن در Notepad</value></data>
+  <data name="Tools_Hosts_Note" xml:space="preserve"><value>هر خط یک آدرس و یک یا چند نام است و # شروع توضیح است. قبل از هر ذخیره، فایل قبلی با نام hosts.mazesta-backup نگه داشته می‌شود و بعد از ذخیره، کش DNS پاک می‌شود. ممکن است آنتی‌ویروس درباره‌ی تغییر این فایل هشدار دهد یا آن را برگرداند.</value></data>
+  <data name="Tools_Hosts_BadAddress" xml:space="preserve"><value>خط {0}: آدرس IP معتبر نیست:</value></data>
+  <data name="Tools_Hosts_NoName" xml:space="preserve"><value>خط {0}: آدرس بدون نام:</value></data>
+  <data name="Tools_Hosts_HasProblems" xml:space="preserve"><value>ویندوز خط‌های بالا را نادیده می‌گیرد. اصلاحشان کنید یا با این حال ذخیره کنید.</value></data>
+  <data name="Tools_Hosts_Discard" xml:space="preserve"><value>تغییرات ویرایشگر کنار گذاشته شود؟</value></data>
+  <data name="Tools_Hosts_Entries" xml:space="preserve"><value>{0} مورد</value></data>
+  <data name="Tools_Hosts_ReadFailed" xml:space="preserve"><value>فایل hosts خوانده نشد: {0}</value></data>
+  <data name="Tools_Hosts_SaveFailed" xml:space="preserve"><value>فایل hosts ذخیره نشد: {0}</value></data>
+  <data name="Tools_Hosts_Saved" xml:space="preserve"><value>فایل hosts ذخیره شد و کش DNS پاک شد.</value></data>
+  <data name="Tools_Hosts_Restored" xml:space="preserve"><value>نسخه‌ی قبلی در ویرایشگر است. برای برگرداندن، ذخیره کنید.</value></data>
+  <data name="Gaming_PowerPlan_Sub" xml:space="preserve"><value>تغییر برگشت‌پذیر است و هر وقت بخواهید برمی‌گردد</value></data>
+  <data name="Gaming_Switches_Sub" xml:space="preserve"><value>همان‌طور که در ویندوز تنظیم شده</value></data>
+  <data name="Gaming_Switches_Note" xml:space="preserve"><value>این دو در تنظیمات خود ویندوز تغییر می‌کنند و دکمه‌ها همان صفحه را باز می‌کنند.</value></data>
+  <data name="Web_Settings_General_Sub" xml:space="preserve"><value>زبان و حالت رندر بعد از اجرای دوباره اعمال می‌شوند</value></data>
+  <data name="Web_Settings_Tray_Sub" xml:space="preserve"><value>پایشگر کنار ساعت ویندوز</value></data>
+  <data name="Web_Diag_Sub" xml:space="preserve"><value>آنچه گزارش سخت‌افزار این سیستم پیدا کرده</value></data>
+  <data name="Web_Diag_Waiting" xml:space="preserve"><value>خوانش‌های اول هنوز در حال بررسی است.</value></data>
+  <data name="Web_Diag_NotesTitle" xml:space="preserve"><value>سخت‌افزار اندازه نمی‌گیرد:</value></data>
+  <data name="Web_Diag_NotesNote" xml:space="preserve"><value>این‌ها مقداری ندارند چون خود دستگاه گزارششان نمی‌کند (ایراد برنامه نیست) و به‌صورت «دریافت نشد» نمایش داده می‌شوند.</value></data>
+  <data name="Tuning_Curve_Sub" xml:space="preserve"><value>منحنی اندازه‌گیری‌شده‌ی کارخانه و منحنی حاصل از تنظیمات شما</value></data>
+  <data name="Tuning_Auto_Sub" xml:space="preserve"><value>مرحله‌به‌مرحله، هر مرحله زیر بار بررسی می‌شود</value></data>
+  <data name="Tuning_Memory_Sub" xml:space="preserve"><value>تایمینگ‌ها و XMP/EXPO در بایوس تنظیم می‌شوند</value></data>
+  <data name="Overlay_Activity" xml:space="preserve"><value>فعالیت</value></data>
+  <data name="Web_Overlay_Layout" xml:space="preserve"><value>چیدمان</value></data>
+  <data name="Web_Overlay_Layout_List" xml:space="preserve"><value>یک ستون</value></data>
+  <data name="Web_Overlay_Layout_Columns" xml:space="preserve"><value>دو ستون</value></data>
+  <data name="Web_Overlay_Order" xml:space="preserve"><value>ترتیب نمایش</value></data>
+  <data name="Web_Overlay_OrderNote" xml:space="preserve"><value>هر بخش یا هر مورد را بکشید و جابه‌جا کنید، یا با فلش‌ها بالا و پایین ببرید. اورلی به همین ترتیب نمایش می‌دهد.</value></data>
+  <data name="Web_Overlay_MoveUp" xml:space="preserve"><value>بالاتر</value></data>
+  <data name="Web_Overlay_MoveDown" xml:space="preserve"><value>پایین‌تر</value></data>
 </root>

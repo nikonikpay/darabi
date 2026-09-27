@@ -964,4 +964,81 @@
   <data name="Notify_ProviderFailed" xml:space="preserve"><value>The sensors cannot be read. Readings are not available until this is fixed; see the banner in the app.</value></data>
   <data name="Notify_Test_Title" xml:space="preserve"><value>Mazesta: test failed</value></data>
   <data name="Notify_TestFailed" xml:space="preserve"><value>{0} failed. The details are on the Tests page.</value></data>
+  <data name="Tools_Repair_Sub" xml:space="preserve"><value>Windows' own file and component-store checks, with their real output</value></data>
+  <data name="Tools_Windows_Sub" xml:space="preserve"><value>Opened in Windows' own windows</value></data>
+  <data name="Tools_Working" xml:space="preserve"><value>Working…</value></data>
+  <data name="Tools_State_On" xml:space="preserve"><value>On</value></data>
+  <data name="Tools_State_Off" xml:space="preserve"><value>Off</value></data>
+  <data name="Tools_State_Default" xml:space="preserve"><value>Windows default</value></data>
+  <data name="Tools_Hib_Title" xml:space="preserve"><value>Hibernation and Fast Startup</value></data>
+  <data name="Tools_Hib_Sub" xml:space="preserve"><value>powercfg /hibernate</value></data>
+  <data name="Tools_Hib_Hibernate" xml:space="preserve"><value>Hibernation</value></data>
+  <data name="Tools_Hib_FastStartup" xml:space="preserve"><value>Fast Startup</value></data>
+  <data name="Tools_Hib_Off" xml:space="preserve"><value>Turn both off</value></data>
+  <data name="Tools_Hib_On" xml:space="preserve"><value>Turn both on</value></data>
+  <data name="Tools_Hib_Note" xml:space="preserve"><value>Fast Startup is a hibernation of Windows' own session, so it works only while hibernation is on. Turning hibernation off (powercfg -h off) turns both off and deletes hiberfil.sys, which frees disk space about the size of the installed memory. Useful when a shutdown does not really restart the hardware (drivers, dual boot, a device that is not found after power-on).</value></data>
+  <data name="Tools_Hib_DoneOff" xml:space="preserve"><value>Hibernation and Fast Startup are off.</value></data>
+  <data name="Tools_Hib_DoneOn" xml:space="preserve"><value>Hibernation and Fast Startup are on.</value></data>
+  <data name="Tools_Hib_Failed" xml:space="preserve"><value>Windows did not change it: {0}</value></data>
+  <data name="Tools_Vm_Title" xml:space="preserve"><value>Virtual memory</value></data>
+  <data name="Tools_Vm_Sub" xml:space="preserve"><value>The page file, as Windows' Performance Options set it</value></data>
+  <data name="Tools_Vm_Managed" xml:space="preserve"><value>Managed by Windows</value></data>
+  <data name="Tools_Vm_Managed_Note" xml:space="preserve"><value>Windows picks the size on every drive (recommended).</value></data>
+  <data name="Tools_Vm_Custom" xml:space="preserve"><value>On one drive</value></data>
+  <data name="Tools_Vm_Custom_Note" xml:space="preserve"><value>A page file on the drive you pick, of a size you set or that Windows picks.</value></data>
+  <data name="Tools_Vm_None" xml:space="preserve"><value>No page file</value></data>
+  <data name="Tools_Vm_None_Note" xml:space="preserve"><value>Not advised: programs can fail when memory runs out, and Windows cannot save a crash dump.</value></data>
+  <data name="Tools_Vm_Drive" xml:space="preserve"><value>Drive</value></data>
+  <data name="Tools_Vm_Initial" xml:space="preserve"><value>Initial size (MB)</value></data>
+  <data name="Tools_Vm_Maximum" xml:space="preserve"><value>Maximum size (MB)</value></data>
+  <data name="Tools_Vm_Auto" xml:space="preserve"><value>Size picked by Windows</value></data>
+  <data name="Tools_Vm_Free" xml:space="preserve"><value>free</value></data>
+  <data name="Tools_Vm_Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Tools_Vm_Windows" xml:space="preserve"><value>Windows' dialog</value></data>
+  <data name="Tools_Vm_Limit" xml:space="preserve"><value>Installed memory {0} MB. The maximum can be up to {1} MB (three times the memory).</value></data>
+  <data name="Tools_Vm_Pending" xml:space="preserve"><value>Set to {0}: takes effect after a restart.</value></data>
+  <data name="Tools_Vm_Done" xml:space="preserve"><value>Saved. Restart the computer for it to take effect.</value></data>
+  <data name="Tools_Vm_Failed" xml:space="preserve"><value>Windows did not save it: {0}</value></data>
+  <data name="Tools_Vm_Error_Drive" xml:space="preserve"><value>Pick a drive.</value></data>
+  <data name="Tools_Vm_Error_Initial" xml:space="preserve"><value>The initial size has to be at least 16 MB.</value></data>
+  <data name="Tools_Vm_Error_Order" xml:space="preserve"><value>The maximum size cannot be smaller than the initial size.</value></data>
+  <data name="Tools_Vm_Error_Max" xml:space="preserve"><value>The maximum size can be at most {0} MB.</value></data>
+  <data name="Tools_Vm_Error_Space" xml:space="preserve"><value>The drive does not have that much free space.</value></data>
+  <data name="Tools_Hosts_Title" xml:space="preserve"><value>Hosts file</value></data>
+  <data name="Tools_Hosts_Sub" xml:space="preserve"><value>Names Windows resolves before asking DNS</value></data>
+  <data name="Tools_Hosts_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Tools_Hosts_SaveAnyway" xml:space="preserve"><value>Save anyway</value></data>
+  <data name="Tools_Hosts_Restore" xml:space="preserve"><value>Previous version</value></data>
+  <data name="Tools_Hosts_Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="Tools_Hosts_Notepad" xml:space="preserve"><value>Open in Notepad</value></data>
+  <data name="Tools_Hosts_Note" xml:space="preserve"><value>Each line is an address and one or more names; # starts a comment. The file as it was is kept as hosts.mazesta-backup before every save, and the DNS cache is flushed after it. An antivirus may warn about or undo changes to this file.</value></data>
+  <data name="Tools_Hosts_BadAddress" xml:space="preserve"><value>Line {0}: not an IP address:</value></data>
+  <data name="Tools_Hosts_NoName" xml:space="preserve"><value>Line {0}: an address without a name:</value></data>
+  <data name="Tools_Hosts_HasProblems" xml:space="preserve"><value>Windows would ignore the lines above. Fix them, or save anyway.</value></data>
+  <data name="Tools_Hosts_Discard" xml:space="preserve"><value>Discard the changes in the editor?</value></data>
+  <data name="Tools_Hosts_Entries" xml:space="preserve"><value>{0} entries</value></data>
+  <data name="Tools_Hosts_ReadFailed" xml:space="preserve"><value>The hosts file could not be read: {0}</value></data>
+  <data name="Tools_Hosts_SaveFailed" xml:space="preserve"><value>The hosts file was not saved: {0}</value></data>
+  <data name="Tools_Hosts_Saved" xml:space="preserve"><value>Hosts file saved; the DNS cache was flushed.</value></data>
+  <data name="Tools_Hosts_Restored" xml:space="preserve"><value>The previous version is in the editor. Save to put it back.</value></data>
+  <data name="Gaming_PowerPlan_Sub" xml:space="preserve"><value>Switching is reversible: switch back at any time</value></data>
+  <data name="Gaming_Switches_Sub" xml:space="preserve"><value>As Windows has them</value></data>
+  <data name="Gaming_Switches_Note" xml:space="preserve"><value>These two are changed in Windows' own settings; the buttons open them.</value></data>
+  <data name="Web_Settings_General_Sub" xml:space="preserve"><value>Language and render mode apply after a restart</value></data>
+  <data name="Web_Settings_Tray_Sub" xml:space="preserve"><value>The monitor in the notification area</value></data>
+  <data name="Web_Diag_Sub" xml:space="preserve"><value>What this machine's hardware report found</value></data>
+  <data name="Web_Diag_Waiting" xml:space="preserve"><value>The first readings are still being checked.</value></data>
+  <data name="Web_Diag_NotesTitle" xml:space="preserve"><value>Not measured by the hardware:</value></data>
+  <data name="Web_Diag_NotesNote" xml:space="preserve"><value>these have no value because the device does not report them (not a fault of the app); they are shown as not available.</value></data>
+  <data name="Tuning_Curve_Sub" xml:space="preserve"><value>Measured stock curve and the curve your settings give</value></data>
+  <data name="Tuning_Auto_Sub" xml:space="preserve"><value>Step by step, each step checked under load</value></data>
+  <data name="Tuning_Memory_Sub" xml:space="preserve"><value>Timings and XMP/EXPO are set in the BIOS</value></data>
+  <data name="Overlay_Activity" xml:space="preserve"><value>Activity</value></data>
+  <data name="Web_Overlay_Layout" xml:space="preserve"><value>Layout</value></data>
+  <data name="Web_Overlay_Layout_List" xml:space="preserve"><value>One column</value></data>
+  <data name="Web_Overlay_Layout_Columns" xml:space="preserve"><value>Two columns</value></data>
+  <data name="Web_Overlay_Order" xml:space="preserve"><value>Order on screen</value></data>
+  <data name="Web_Overlay_OrderNote" xml:space="preserve"><value>Drag a block or an item into place, or move it with the arrows. The overlay draws them in this order.</value></data>
+  <data name="Web_Overlay_MoveUp" xml:space="preserve"><value>Move up</value></data>
+  <data name="Web_Overlay_MoveDown" xml:space="preserve"><value>Move down</value></data>
 </root>

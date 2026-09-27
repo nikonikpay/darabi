@@ -4,6 +4,7 @@ import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
 import { setField } from "./tests.js";
+import { box } from "../groups.js";
 
 export function mount(el) {
   const set = (field, value) => call("settings.set", { field, value });
@@ -11,9 +12,10 @@ export function mount(el) {
   const input = (field, cls = "field lat short") => (f[field] = h("input", { class: cls, oninput: (e) => set(field, e.target.value) }));
   const select = (field) => (f[field] = h("select", { class: "field", onchange: (e) => set(field, e.target.value) }));
   const row = (label, control) => [h("dt", {}, label), h("dd", { style: { textAlign: "left" } }, control)];
-  const message = h("p", { class: "h3", style: { minHeight: "1.4em", marginTop: "16px" } });
-  const trayStatus = h("p", { class: "caption" });
-  const findings = h("ul", { class: "findings" }), logs = h("span", { class: "lat caption" });
+  const message = h("p", { class: "msg" });
+  const trayStatus = h("span", {});
+  const findings = h("ul", { class: "findings" }), notes = h("ul", { class: "findings notes" }), notesHead = h("p", { class: "note", hidden: true }, h("b", {}, t("Web_Diag_NotesTitle")), " ", t("Web_Diag_NotesNote"));
+  const logs = h("span", { class: "lat caption" });
   const exportBtn = h("button", { class: "btn primary", onclick: async () => {
     exportBtn.disabled = true;
     try { await call("diag.export"); toast(t("Web_Diag_Exported")); } catch (e) { toast(String(e.message || e), "fail"); } finally { exportBtn.disabled = false; }
@@ -22,19 +24,18 @@ export function mount(el) {
   const disableTray = h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "disableTray" }) }, t("Settings_Tray_Disable"));
   const folder = h("span", { class: "lat caption" }), version = h("span", { class: "lat caption" });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Settings")))),
-    h("div", { class: "cols", style: { marginTop: 0 } },
-      h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Web_Settings_General"))),
-        h("dl", { class: "kv" }, row(t("Settings_Language"), select("language")), row(t("Settings_FastInterval"), input("interval")), row(t("Settings_StorageInterval"), input("storageInterval")),
+    h("div", { class: "panels flow", style: { marginTop: 0 } },
+      box({ kind: "Cpu", ico: "win", title: t("Web_Settings_General"), sub: t("Web_Settings_General_Sub"), i: 0,
+        body: [h("dl", { class: "kv" }, row(t("Settings_Language"), select("language")), row(t("Settings_FastInterval"), input("interval")), row(t("Settings_StorageInterval"), input("storageInterval")),
           row(t("Settings_ShopName"), input("shopName", "field")), row(t("Settings_RenderMode"), select("renderMode"))),
-        h("div", { class: "toolbar", style: { marginTop: "18px" } }, h("button", { class: "btn primary", onclick: () => call("settings.exec", { cmd: "save" }) }, t("Settings_Save"))), message),
-      h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Web_Diag_Title"))),
-        h("p", { class: "caption" }, t("Web_Diag_Note")), findings,
-        h("div", { class: "toolbar", style: { marginTop: "14px" } }, exportBtn), logs),
-      h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Settings_Tray_Section"))),
-        h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth"))),
-        h("div", { class: "toolbar", style: { marginTop: "14px" } }, enableTray, disableTray), trayStatus),
-      h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Settings_DataFolder"))), folder,
-        h("div", { class: "toolbar", style: { marginTop: "14px" } }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), version)));
+        h("div", { class: "btn-row" }, h("button", { class: "btn primary", onclick: () => call("settings.exec", { cmd: "save" }) }, t("Settings_Save"))), message] }),
+      box({ kind: "Storage", ico: "bug", title: t("Web_Diag_Title"), sub: t("Web_Diag_Sub"), i: 1,
+        body: [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs] }),
+      box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 2,
+        body: [h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth"))),
+        h("div", { class: "btn-row" }, enableTray, disableTray), h("p", { class: "note" }, trayStatus)] }),
+      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 3,
+        body: [folder, h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), h("p", { class: "note" }, version)] })));
   let built = false;
   function update(s) {
     if (!built) {
@@ -51,8 +52,10 @@ export function mount(el) {
   call("settings.state").then(update);
   call("diag.state").then((d) => {
     if (!d) return;
-    findings.replaceChildren(...(d.findings.length ? d.findings.slice(0, 12).map((x) => h("li", { class: "lat" }, x)) : [h("li", { class: "ok" }, t("Web_Diag_None"))]));
+    findings.replaceChildren(...(d.findings.length ? d.findings.slice(0, 12).map((x) => h("li", { class: "lat" }, x)) : [h("li", { class: "ok" }, t(d.polled ? "Web_Diag_None" : "Web_Diag_Waiting"))]));
     if (d.findings.length > 12) findings.append(h("li", { class: "caption" }, t("Web_Diag_More", d.findings.length - 12)));
+    notesHead.hidden = !d.notes?.length;
+    notes.replaceChildren(...(d.notes || []).map((x) => h("li", { class: "lat" }, x)));
     logs.textContent = d.logs;
   });
   return on("settings", update);

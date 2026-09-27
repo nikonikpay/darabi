@@ -50,6 +50,10 @@ function seed() {   // ten minutes of history so the chart has something to draw
   for (const n of HW) for (const x of n.sensors) { const arr = []; for (let i = 0; i < 300; i++) { arr.push([i * 2, reading(n, x, i - 300)]); } hist.set(x.id, arr); }
 }
 
+// Windows tools (browser preview only): a page file Windows manages on C:, a short hosts file.
+const demoVm = () => ({ ramMb: 65536, managed: true, pending: null, inUse: [{ path: "C:\\pagefile.sys", sizeMb: 9728, usedMb: 412, peakMb: 1880 }], settings: [],
+  drives: [{ name: "C:", label: "", freeMb: 312000, totalMb: 952000 }, { name: "D:", label: "Data", freeMb: 1210000, totalMb: 1907000 }] });
+const DEMO_HOSTS = "# Copyright (c) 1993-2009 Microsoft Corp.\n#\n# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.\n\n127.0.0.1       localhost\n::1             localhost\n";
 const TESTS = ["Test_Cpu_Matrix", "Test_Memory_Pattern", "Test_Storage_Sequential", "Test_Storage_Random4k", "Test_Network_Latency", "Test_Gpu_Steady", "Test_Gpu_Variable", "Test_Gpu_Pulse", "Test_Gpu_Vram", "Test_Gpu_Render", "Test_Power_Combined", "Test_Windows_Sfc", "Test_Windows_Dism", "Test_Storage_Smart"];
 const OUT = ["Passed", "Passed", "Running", "NotRun"];
 const tests = () => ({
@@ -112,7 +116,14 @@ export async function call(m, p, emit) {
       units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Ampere: "A", Watt: "W", WattHour: "Wh", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", Seconds: "s", Hertz: "Hz", None: "" } };
     case "app.hardware": return HW;
     case "app.navReady": return true;
-    case "diag.state": return { findings: ["Motherboard 'ASUS ROG STRIX X570-E GAMING': 1 sensor(s) without a role", "Storage 'WDC WD20PURZ-85GU6Y0': no used space sensor"], logs: "D:\\Mazesta-Test\\Data\\logs" };
+    case "diag.state": return { findings: ["Motherboard 'ASUS ROG STRIX X570-E GAMING': 1 sensor(s) without a role: 'Temperature #7'", "Storage 'WDC WD20PURZ-85GU6Y0': no used space sensor"],
+      notes: ["Storage 'Samsung Portable SSD T7': 'Composite Temperature' reads 0 all the time: the device does not report it (a drive behind a USB bridge gives no temperature)"], polled: true, logs: "D:\\Mazesta-Test\\Data\\logs" };
+    case "sys.state": return { power: { hibernate: true, fastStartup: true }, vm: demoVm(), hosts: { path: "C:\\Windows\\System32\\drivers\\etc\\hosts", backup: true } };
+    case "sys.hibernate": await new Promise((r) => setTimeout(r, 500)); return { power: { hibernate: p.on, fastStartup: p.on }, error: null };
+    case "sys.pagefile": await new Promise((r) => setTimeout(r, 500)); return p.mode === "custom" && +p.maximum > 196608 ? { error: strings.Tools_Vm_Error_Max.replace("{0}", "196608"), vm: demoVm() } : { vm: { ...demoVm(), pending: p.mode === "custom" ? `${p.drive} ${p.initial}–${p.maximum} MB` : strings.Tools_Vm_Managed } };
+    case "hosts.read": return { path: "C:\\Windows\\System32\\drivers\\etc\\hosts", text: DEMO_HOSTS, entries: 2, problems: [], backup: true };
+    case "hosts.save": await new Promise((r) => setTimeout(r, 300)); return /^[^#\s]+\s*$/m.test(p.text) && !p.force ? { saved: false, problems: [{ line: 3, text: "10.0.0.5", problem: "name" }] } : { saved: true, problems: [] };
+    case "hosts.backup": return { text: DEMO_HOSTS };
     case "chart.boot": { const n = HW.find((x) => x.sensors.some((y) => y.id === p.id)) || HW[0], x = n.sensors.find((y) => y.id === p.id) || n.sensors[0];
       return { language: "fa", rtl: true, strings, units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Watt: "W", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", None: "" },
         sensor: { ...x, node: n.name, part: n.kind } }; }

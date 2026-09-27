@@ -5,6 +5,7 @@ import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { setField } from "./tests.js";
+import { box } from "../groups.js";
 
 const SVG = "http://www.w3.org/2000/svg";
 const s = (tag, attrs = {}, ...kids) => { const e = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined) e.setAttribute(k, v); e.append(...kids); return e; };
@@ -105,7 +106,7 @@ export function mount(el) {
   const set = (field, value, extra = {}) => call("tuning.set", { field, value, ...extra });
   const exec = (cmd, extra = {}) => call("tuning.exec", { cmd, ...extra });
   const unavailable = h("div", { class: "banner", hidden: true });
-  const name = h("div", { class: "h2 lat" }), device = h("select", { class: "field", hidden: true, onchange: (e) => set("device", e.target.value) });
+  const name = h("span", { class: "lat" }), device = h("select", { class: "field", hidden: true, onchange: (e) => set("device", e.target.value) });
   const live = h("div", { class: "live" }), ranges = h("p", { class: "caption", style: { marginTop: "10px" } }), others = h("p", { class: "caption" });
   let sendTimer = 0;
   const editor = curveEditor((offset, cap, final) => {
@@ -114,7 +115,7 @@ export function mount(el) {
     if (final) send(); else sendTimer = setTimeout(send, 90);
   });
   const curveInfo = h("p", { class: "caption" }), estimate = h("div", { class: "estimate", hidden: true }), curveStatus = h("p", { class: "h3", style: { marginTop: "12px" } });
-  const scan = h("button", { class: "btn", onclick: () => exec("scanCurve") }, t("Tuning_Curve_Scan"));
+  const scan = h("button", { class: "btn primary", onclick: () => exec("scanCurve") }, t("Tuning_Curve_Scan"));
 
   // Manual controls: a slider and an exact field per setting, and a switch for the settings that are off unless turned on.
   const f = {};
@@ -128,7 +129,7 @@ export function mount(el) {
   }
   const fill = (r) => r.style.setProperty("--fill", `${((r.value - r.min) / Math.max(1, r.max - r.min)) * 100}%`);
   const manual = h("div", { class: "manual" },
-    h("div", { class: "section-head", style: { borderBottom: 0, paddingBottom: 0 } }, h("h2", { class: "h2" }, t("Tuning_Manual"))),
+    h("h3", { class: "h3", style: { fontSize: "17px", fontWeight: 900 } }, t("Tuning_Manual")),
     h("p", { class: "caption" }, t("Tuning_Manual_Note")),
     slider("core", "Tuning_Label_CoreOffset", "MHz", null, 15), slider("memory", "Tuning_Label_MemoryOffset", "MHz", null, 50),
     slider("maxClock", "Tuning_Label_MaxClock", "MHz", "lockClock", 15), slider("power", "Tuning_Label_PowerLimit", "W", "setPower"), slider("fan", "Tuning_Label_Fan", "%", "manualFan"),
@@ -148,28 +149,28 @@ export function mount(el) {
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tuning")), h("p", { class: "page-lede" }, t("Tuning_Note")))),
     unavailable,
-    h("div", { class: "has-device" },
-      h("div", { class: "toolbar" }, h("span", { class: "pill run lat" }, "NVIDIA · NVML"), name, device),
-      live, ranges, others,
-      h("div", { class: "tune" },
-        h("div", { class: "curve-wrap" },
-          h("div", { class: "section-head", style: { borderBottom: 0, paddingBottom: 0 } }, h("h2", { class: "h2" }, t("Tuning_Curve_Title")), h("span", { class: "grow" }), scan),
-          curveInfo, editor.el,
-          h("div", { class: "legend" }, h("span", {}, h("i", { style: { background: "var(--paper-3)" } }), t("Tuning_Curve_LegendStock")),
-            h("span", {}, h("i", { style: { background: "var(--yellow)", height: "3px" } }), t("Tuning_Curve_LegendTuned")),
-            h("span", {}, h("i", { style: { background: "var(--paper)", width: "9px", height: "9px" } }), t("Tuning_Curve_LegendLive"))),
-          h("p", { class: "caption", style: { marginTop: "8px", maxWidth: "80ch" } }, t("Tuning_Curve_Hint")), estimate, curveStatus),
-        manual),
-      h("div", { class: "section" },
-        h("div", { class: "section-head" }, h("h2", { class: "h2" }, t("Tuning_Auto")), h("span", { class: "grow" }), cancel),
-        h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Tuning_Auto_Note")),
-        h("div", { class: "auto-pair" },
-          h("div", {}, h("div", { class: "h3" }, t("Tuning_AutoUndervolt_Title")), h("p", { class: "caption" }, t("Tuning_AutoUndervolt_Desc")), autoU),
-          h("div", {}, h("div", { class: "h3", style: { color: "var(--yellow)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO)),
-        running, result, log),
-      h("div", { class: "section" }, h("div", { class: "section-head" }, h("h2", { class: "h2" }, t("Tuning_Profiles"))), h("p", { class: "caption" }, t("Tuning_Profiles_Note")), profiles)),
-    h("div", { class: "section" }, h("div", { class: "section-head" }, h("h2", { class: "h2" }, t("Tuning_Memory")), h("span", { class: "grow" }),
-      h("button", { class: "btn stop", onclick: () => exec("firmware") }, t("Tuning_RestartToFirmware"))), memory, h("p", { class: "caption", style: { marginTop: "10px" } }, t("Tuning_Memory_Note"))));
+    h("div", { class: "has-device panels", style: { gridTemplateColumns: "1fr", marginTop: 0 } },
+      box({ kind: "Gpu", title: name, sub: "NVIDIA · NVML", i: 0, actions: device, body: [live, ranges, others] }),
+      box({ kind: "Gpu", ico: "chart", title: t("Tuning_Curve_Title"), sub: t("Tuning_Curve_Sub"), i: 1, actions: scan,
+        body: h("div", { class: "tune", style: { marginTop: 0 } },
+          h("div", { class: "curve-wrap" },
+            curveInfo, editor.el,
+            h("div", { class: "legend" }, h("span", {}, h("i", { style: { background: "var(--paper-3)" } }), t("Tuning_Curve_LegendStock")),
+              h("span", {}, h("i", { style: { background: "var(--hue)", height: "3px" } }), t("Tuning_Curve_LegendTuned")),
+              h("span", {}, h("i", { style: { background: "var(--paper)", width: "9px", height: "9px" } }), t("Tuning_Curve_LegendLive"))),
+            h("p", { class: "caption", style: { marginTop: "8px", maxWidth: "80ch" } }, t("Tuning_Curve_Hint")), estimate, curveStatus),
+          manual) }),
+      box({ kind: "Power", ico: "bolt", title: t("Tuning_Auto"), sub: t("Tuning_Auto_Sub"), i: 2, actions: cancel,
+        body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Tuning_Auto_Note")),
+          h("div", { class: "auto-pair" },
+            h("div", {}, h("div", { class: "h3" }, t("Tuning_AutoUndervolt_Title")), h("p", { class: "caption" }, t("Tuning_AutoUndervolt_Desc")), autoU),
+            h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO)),
+          running, result, log] }),
+      box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, body: profiles })),
+    h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },
+      box({ kind: "Memory", title: t("Tuning_Memory"), sub: t("Tuning_Memory_Sub"), i: 4,
+        actions: h("button", { class: "btn stop", onclick: () => exec("firmware") }, t("Tuning_RestartToFirmware")),
+        body: [memory, h("p", { class: "note" }, t("Tuning_Memory_Note"))] })));
 
   let shownLog = -1, shownProfiles = "";
   function update(x) {

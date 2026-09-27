@@ -30,6 +30,7 @@
   --c-net: #ff78b9;
   --c-board: #d9ccb0;
   --c-power: #fdd400;
+  --c-tool: #9fb6cf;
   --r-panel: 14px;
   --r-ctl: 8px;
   --fa: "Vazirmatn", "Segoe UI", sans-serif;
@@ -597,3 +598,111 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .findings { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow: auto; }
 .findings li { font-size: 12px; color: var(--paper-2); padding: 5px 10px; border-radius: 6px; background: var(--ink-3); direction: ltr; text-align: left; }
 .findings li.ok, .findings li.caption { direction: inherit; text-align: start; background: transparent; padding-inline: 0; }
+
+/* ———— Boxed pages (tools, gaming, tuning, reports, settings): panels in the hue of what they are about; controls inside wear that hue ———— */
+.p-tool { --hue: var(--c-tool); } .p-host { --hue: var(--c-net); }
+.panel-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: none; }
+.panel-body { margin-top: 14px; min-width: 0; }
+.panel-body > .caption:first-child { margin-top: 0; }
+.panels.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); }
+.panels.flow { display: block; columns: 2 460px; column-gap: 16px; }
+.panels.flow > .panel { break-inside: avoid; margin-bottom: 16px; }
+.panel .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--ink); }
+.panel .btn.primary:hover:not(:disabled) { background: var(--paper); border-color: var(--paper); }
+.panel .btn:not(.primary):not(.quiet):hover:not(:disabled) { border-color: var(--hue); color: var(--paper); }
+.panel .switch:checked { background: var(--hue); border-color: var(--hue); }
+.panel .switch:checked::after { background: var(--ink); }
+.panel .field:focus { border-bottom-color: var(--hue); }
+.panel select.field { background-image: linear-gradient(45deg, transparent 50%, var(--hue) 50%), linear-gradient(-45deg, transparent 50%, var(--hue) 50%); }
+.panel .seg button[aria-pressed="true"] { background: var(--hue); color: var(--ink); }
+.panel .progress > i { background: var(--hue); }
+.panel .range { --yellow: var(--hue); }
+.panel .kv dt { color: var(--paper-2); }
+.panel .console { height: 300px; background: var(--ink); border-color: color-mix(in oklab, var(--hue) 22%, var(--rule)); }
+.panel .pill.run { color: var(--hue); }
+/* A state tile: what Windows has now, in words and a dot of the hue (on) or hollow (off); unknown says so. */
+.states { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.state-tile { border-radius: 10px; background: var(--ink-3); padding: 10px 14px; display: grid; gap: 2px; }
+.state-tile .k { font-size: 12px; color: var(--paper-3); }
+.state-tile .v { font-weight: 800; font-size: 15.5px; display: flex; align-items: center; gap: 8px; }
+.state-tile .v::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--paper-3); flex: none; }
+.state-tile.on .v::before { background: var(--hue); border-color: var(--hue); }
+.state-tile.unknown .v { color: var(--paper-2); font-weight: 600; }
+.panel .note { font-size: 12.5px; color: var(--paper-3); line-height: 1.8; margin: 10px 0 0; }
+.panel .note b { color: var(--paper-2); }
+.panel .msg { min-height: 1.5em; margin: 10px 0 0; font-weight: 700; font-size: 13.5px; }
+.panel .msg.fail { color: var(--fail); } .panel .msg.ok { color: var(--hue); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.btn-row .grow { flex: 1; }
+/* The hosts editor: the file as text, line numbers on the start edge, problems marked under it. */
+.hosts-ed { width: 100%; box-sizing: border-box; min-height: 300px; resize: vertical; background: var(--ink); color: var(--paper); border: 1px solid color-mix(in oklab, var(--hue) 28%, var(--rule)); border-radius: 10px;
+  padding: 12px 14px; font: 12.5px/1.6 var(--mono); direction: ltr; text-align: left; tab-size: 8; white-space: pre; }
+.hosts-ed:focus { outline: none; border-color: var(--hue); }
+.problems { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; font-size: 12.5px; }
+.problems li { color: var(--warn); }
+.problems code { font: 12px var(--mono); direction: ltr; unicode-bidi: isolate; color: var(--paper-2); }
+/* Virtual memory: a choice of three, then the drive and sizes when the choice is a custom size. */
+.choice { display: grid; gap: 8px; margin-top: 4px; }
+.choice label { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--rule); cursor: pointer; transition: border-color var(--fast), background var(--fast); }
+.choice label:has(input:checked) { border-color: var(--hue); background: color-mix(in oklab, var(--hue) 9%, transparent); }
+.choice input { accent-color: var(--hue); margin: 0; }
+.choice small { grid-column: 2; color: var(--paper-3); font-size: 12px; }
+.vm-custom { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; margin-top: 12px; }
+.vm-custom label { display: grid; gap: 4px; font-size: 12px; color: var(--paper-3); }
+.vm-custom .field { width: 110px; }
+.vm-custom select.field { width: auto; min-width: 150px; }
+.pending { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding: 8px 12px; border-radius: 10px; background: color-mix(in oklab, var(--hue) 14%, var(--ink-3)); font-size: 13px; font-weight: 700; }
+.pending svg { width: 16px; height: 16px; stroke: var(--hue); flex: none; }
+/* Power plans as a list of choices; the active one wears the hue. */
+.plans { display: grid; gap: 8px; }
+.plan { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--rule); }
+.plan.on { border-color: var(--hue); background: color-mix(in oklab, var(--hue) 10%, transparent); }
+.plan .name { font: 700 14px var(--lat); direction: ltr; text-align: right; }
+[dir="ltr"] .plan .name { text-align: left; }
+/* Reports as cards inside their panel. */
+.panel .report { padding: 14px 0; }
+.panel .report:last-child { border-bottom: 0; }
+.panel .findings li { font-size: 12.5px; }
+.findings.notes li { color: var(--paper-3); }
+/* Tuning inside panels: the curve and the sliders wear the GPU hue. */
+.p-gpu .curve .tuned { stroke: var(--hue); } .p-gpu .curve .pt { stroke: var(--hue); } .p-gpu .curve .pt:hover, .p-gpu .curve .pt.hot { fill: var(--hue); }
+.p-gpu .curve .cap { stroke: var(--hue); } .p-gpu .curve .cap-tag rect { fill: var(--hue); } .p-gpu .curve .cap-tag text { fill: var(--ink); }
+.panel .live { border-top: 0; }
+.panel .live > div:first-child { padding-inline-start: 0; }
+.panel .curve-wrap, .panel .manual { border-top: 0; padding-top: 0; }
+.panel .estimate { background: var(--hue); color: var(--ink); border-radius: 8px; }
+.panel .auto-pair > div { border-top-color: color-mix(in oklab, var(--hue) 35%, transparent); }
+.pill svg { width: 12px; height: 12px; stroke: currentColor; vertical-align: -1px; }
+
+/* Overlay: two columns in the preview, as on screen (each block one column); the panel doubles its width. */
+.ov-blocks { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: calc(14px * var(--ov-scale)); align-items: start; }
+.ov-preview.cols > * { width: calc(380px * var(--ov-scale)); }
+.ov-preview.cols .ov-blocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* A drive's own items, under its name, inside the storage panel. */
+.ov-drive { margin-top: 10px; padding-top: 8px; border-top: 1px dashed color-mix(in oklab, var(--hue) 35%, transparent); }
+.ov-drive-name { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 12.5px; color: var(--hue); direction: ltr; justify-content: flex-end; }
+[dir="ltr"] .ov-drive-name { justify-content: flex-start; }
+.ov-drive-name svg { width: 15px; height: 15px; stroke: currentColor; }
+/* The order: a card per block in its hue, its items as rows; each draggable, with arrows for the keyboard. */
+.ov-order { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px; margin-top: 12px; align-items: start; }
+.ov-oblock { border-radius: 12px; border: 1px solid color-mix(in oklab, var(--hue) 38%, transparent); background: color-mix(in oklab, var(--hue) 7%, var(--ink-2)); padding: 8px 10px; transition: opacity var(--fast), box-shadow var(--fast); }
+.ov-ohead { display: flex; align-items: center; gap: 10px; cursor: grab; }
+.ov-ohead .ico { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--hue); color: var(--ink); flex: none; }
+.ov-ohead .ico svg { width: 15px; height: 15px; stroke: currentColor; }
+.ov-ohead b { flex: 1; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-oitems { display: grid; gap: 2px; margin-top: 6px; padding-inline-start: 34px; }
+.ov-oitem { display: flex; align-items: center; gap: 10px; padding: 3px 8px; border-radius: 8px; cursor: grab; font-size: 13px; }
+.ov-oitem:hover { background: color-mix(in oklab, var(--hue) 12%, transparent); }
+.ov-oitem .nm { flex: 1; }
+.ov-tag svg { width: 14px; height: 14px; stroke: var(--hue); display: block; }
+.grip { color: var(--paper-3); font-size: 13px; letter-spacing: -3px; user-select: none; width: 12px; }
+.ov-arrows { display: inline-flex; gap: 0; }
+.ov-arrows .icon-btn { width: 26px; height: 26px; }
+.ov-arrows .icon-btn svg { width: 14px; height: 14px; }
+.ov-arrows .icon-btn.up svg { transform: rotate(180deg); }
+.dragging { opacity: 0.4; }
+.drop-before { box-shadow: 0 -3px 0 0 var(--hue); } .drop-after { box-shadow: 0 3px 0 0 var(--hue); }
+.ov-order .chart-empty { margin: 0; }
+/* Two columns need a wider preview column (380 px of overlay and the stand-in's padding). */
+.ov-split:has(.ov-preview.cols) { grid-template-columns: minmax(0, 1fr) minmax(300px, 460px); }
+.ov-preview.cols { padding: 18px; }
