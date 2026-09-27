@@ -12,7 +12,7 @@ export function mount(el) {
   const repair = [btn("sfc", "Tools_Sfc", "btn primary"), btn("dismScan", "Tools_DismScan"), btn("dismRestore", "Tools_DismRestore")];
   const cancel = h("button", { class: "btn stop", onclick: () => call("tools.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   const status = h("p", { class: "msg" }), bar = h("div", { class: "progress" }, h("i"));
-  const consoleEl = h("pre", { class: "console", "aria-live": "off" });
+  const consoleEl = h("pre", { class: "console", "aria-live": "off", "data-empty": t("Web_Tools_ConsoleEmpty") });
 
   // ——— Hibernation and Fast Startup ———
   const powerTiles = h("div", { class: "states" }), powerMsg = h("p", { class: "msg" });
@@ -43,10 +43,10 @@ export function mount(el) {
   const restoreBtn = h("button", { class: "btn quiet", onclick: restoreHosts }, t("Tools_Hosts_Restore"));
   let dirty = false;
 
-  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Tools_Note")))),
+  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
     h("div", { class: "panels two", style: { marginTop: 0 } },
       box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 0,
-        body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar), consoleEl] }),
+        body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Web_Tools_RepairNote")), h("div", { class: "btn-row" }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar), consoleEl] }),
       box({ kind: "Power", title: t("Tools_Hib_Title"), sub: t("Tools_Hib_Sub"), i: 1,
         body: [powerTiles, h("p", { class: "note" }, t("Tools_Hib_Note")), h("div", { class: "btn-row" }, hibOff, hibOn), powerMsg] }),
       box({ kind: "Memory", title: t("Tools_Vm_Title"), sub: t("Tools_Vm_Sub"), i: 2,

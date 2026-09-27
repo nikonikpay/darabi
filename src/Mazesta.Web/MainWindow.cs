@@ -35,7 +35,11 @@ public sealed class MainWindow : Window
     {
         try
         {
-            var options = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = _config.RenderMode == "software" ? "--disable-gpu --disable-gpu-compositing" : "" };
+            string args = _config.RenderMode == "software" ? "--disable-gpu --disable-gpu-compositing" : "";
+            // For checking the pages in the real app (elevated, real sensors): DevTools on a local port, only when the variable is set.
+            if (int.TryParse(Environment.GetEnvironmentVariable("MAZESTA_DEVTOOLS_PORT"), out int port) && port is > 1024 and < 65536)
+                args = $"{args} --remote-debugging-port={port} --remote-allow-origins=http://127.0.0.1:{port}".Trim();
+            var options = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = args };
             var env = await CoreWebView2Environment.CreateAsync(userDataFolder: Path.Combine(_paths.CacheDir, "web-browser"), options: options);
             WebEnvironment = env;
             await _view.EnsureCoreWebView2Async(env);

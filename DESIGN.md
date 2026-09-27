@@ -236,6 +236,8 @@ A three-material palette (ink, paper, yellow) with three narrowly-scoped state c
 ### Part hues
 Light enough to read as text on ink at 7:1, and dark enough that ink text on them (a part's own plane) also stays above 7:1.
 - **CPU Blue** (`part-cpu`), **GPU Violet** (`part-gpu`), **RAM Cyan** (`part-ram`), **Storage Orange** (`part-storage`), **Network Pink** (`part-net`), **Board Sand** (`part-board`, board, system and the power test group). The frame-rate (game) block of the overlay and the company panels (shop, contact) use the brand yellow.
+- **Tool Slate** (`c-tool`, #9FB6CF): Windows' own repair tools, which belong to no part.
+- Pages that are not about one part (tuning, gaming, Windows tools, reports, settings) are boxed too: each panel wears the hue of what it is about (virtual memory RAM cyan, the hosts file network pink, power plans and hibernation the power yellow, GPU tuning violet, drive tools orange). Controls inside a panel (primary button, switch, segment, select arrow, progress, focus rule) take the panel's hue.
 - A part's hue marks: its panel's top strip, icon tile, wash and border; its meters and progress bars; its chart line and wash; the section heads and spec rules of its own page; the charted rows of its monitoring box; its block title in the overlay.
 
 ### Named Rules
@@ -349,14 +351,18 @@ Canvas history chart: 1px `rule` grid, 11px Archivo axes in paper-faint, a 2px l
 - **Controls bar:** an ink-2 box with the show switch and hotkey, corner, a size segment (small/normal/large) and an opacity range.
 - **Preset cards:** icon tile, name, one-line description, item count; the one in use is outlined in yellow with a yellow tile and "in use"; "custom" appears once items were changed by hand.
 - **Item rows:** in part groups: switch, name (with "highest" or "total" for combined items), the live value in the hue, and a chart toggle. An item this machine has no sensor for says so and cannot be turned on.
-- **Preview:** the overlay drawn over a stand-in scene so its opacity can be judged, in the same order, hues and charts.
-- **The overlay itself (WPF):** 224px wide, scaled by the size setting; blocks GAME, GPU, CPU, RAM, DISK, NET, each a 3px hue bar and hue title; a charted item draws its minute of history right under its own label, with its top value written in the chart. Too small for the hatch, it shows a dash for a missing value.
+- **Preview:** the overlay drawn over a stand-in scene so its opacity can be judged, in the same order, hues, charts and layout.
+- **Layout segment:** one column, or two (blocks side by side, 176px each, the first overlay's denser look).
+- **Order panel:** a card per block in its hue (a drive's own block is named after the drive), its items as rows; blocks and items are dragged by a grip (a hue rule marks where they land) or moved with up/down arrow buttons, the keyboard alternative. Items move only within their block.
+- **The overlay itself (WPF):** 224px wide (two columns: 2 × 176px with 14px between), scaled by the size setting; blocks GAME, GPU, CPU, RAM, DISK (one per drive when drive items are chosen, its name as the subtitle), NET, in the order set on the page, each a 3px hue bar and hue title; a charted item draws its minute of history right under its own label, with its top value written in the chart. Too small for the hatch, it shows a dash for a missing value.
 
 ### Shop and contact (dashboard)
 Two yellow-hue panels under a section title: a random product from the shop's site (image on white, title, a four-line summary as plain text, "view in shop", "another product") with a shimmer skeleton while it loads; and the sales and support lines with WhatsApp, Telegram and email chips, hours and address with small hue icons.
 
 ### Console
-Real command output in Cascadia Mono 12.5px/1.55 on `ink-2`, 360px tall, under a 2px paper rule.
+Real command output in Cascadia Mono 12.5px/1.55 on `ink-2`, 360px tall, under a 2px paper rule. Inside a panel it is a short strip saying what will appear in it while idle, and grows with the output up to 320px.
+### State tiles and choices (boxed pages)
+A state Windows reports is a tile: the label small, the state in words with a dot in the hue (on) or hollow (off); a state Windows leaves to its default says so. A choice of modes (virtual memory) is a list of bordered options, the chosen one outlined and washed in the hue. A change waiting for a restart is a hue-washed strip with the refresh icon.
 
 ### Toasts and banner
 Toasts: paper ground, ink 600 text, the one shadow, rising 12px in over 420ms, removed after 7s; `pass`/`fail` kinds take the state colours. Banner: ink-hover strip with a 1px yellow bottom rule for provider degradation.

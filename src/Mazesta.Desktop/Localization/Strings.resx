@@ -1041,4 +1041,8 @@
   <data name="Web_Overlay_OrderNote" xml:space="preserve"><value>Drag a block or an item into place, or move it with the arrows. The overlay draws them in this order.</value></data>
   <data name="Web_Overlay_MoveUp" xml:space="preserve"><value>Move up</value></data>
   <data name="Web_Overlay_MoveDown" xml:space="preserve"><value>Move down</value></data>
+  <data name="Web_Tools_Note" xml:space="preserve"><value>Windows' own tools and settings. Nothing here runs on its own: each change has its own button, says what Windows answered, and is read back from Windows afterwards.</value></data>
+  <data name="Web_Tools_RepairNote" xml:space="preserve"><value>SFC checks and repairs the protected system files (5-15 minutes); the DISM check looks at the component store SFC repairs from; the DISM repair fixes that store and may download from Windows Update (it cannot be stopped half-way).</value></data>
+  <data name="Web_Tools_ConsoleEmpty" xml:space="preserve"><value>The tool's output appears here while it runs.</value></data>
+  <data name="Overlay_ChartMaxWord" xml:space="preserve"><value>max</value></data>
 </root>

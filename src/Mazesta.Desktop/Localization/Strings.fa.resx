@@ -1041,4 +1041,8 @@
   <data name="Web_Overlay_OrderNote" xml:space="preserve"><value>هر بخش یا هر مورد را بکشید و جابه‌جا کنید، یا با فلش‌ها بالا و پایین ببرید. اورلی به همین ترتیب نمایش می‌دهد.</value></data>
   <data name="Web_Overlay_MoveUp" xml:space="preserve"><value>بالاتر</value></data>
   <data name="Web_Overlay_MoveDown" xml:space="preserve"><value>پایین‌تر</value></data>
+  <data name="Web_Tools_Note" xml:space="preserve"><value>ابزارها و تنظیمات خود ویندوز. هیچ‌چیز خودکار اجرا نمی‌شود: هر تغییر دکمه‌ی خودش را دارد، پاسخ ویندوز را نشان می‌دهد و بعد از آن وضعیت دوباره از خود ویندوز خوانده می‌شود.</value></data>
+  <data name="Web_Tools_RepairNote" xml:space="preserve"><value>SFC فایل‌های محافظت‌شده‌ی سیستم را بررسی و ترمیم می‌کند (۵ تا ۱۵ دقیقه)؛ بررسی DISM منبعی را که SFC از آن ترمیم می‌کند بررسی می‌کند؛ تعمیر DISM آن منبع را ترمیم می‌کند و ممکن است از Windows Update دانلود کند (نیمه‌کاره متوقف نمی‌شود).</value></data>
+  <data name="Web_Tools_ConsoleEmpty" xml:space="preserve"><value>خروجی ابزار هنگام اجرا اینجا نمایش داده می‌شود.</value></data>
+  <data name="Overlay_ChartMaxWord" xml:space="preserve"><value>بیشینه</value></data>
 </root>

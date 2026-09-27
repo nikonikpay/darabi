@@ -5,6 +5,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Mazesta.Desktop.ViewModels"
         xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
+        xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
         Title="Mazesta Overlay" WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True"
         ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Focusable="False">
     <Border x:Name="Root" CornerRadius="12" BorderBrush="#33FFFFFF" BorderThickness="1" Padding="12,9,12,6">
@@ -39,8 +40,15 @@
                                             <Border Height="24" Margin="0,2,0,4" Background="#0EFFFFFF" CornerRadius="3" Visibility="{Binding HasChart, Converter={StaticResource BoolToVis}}">
                                                 <Grid>
                                                     <controls:Sparkline Values="{Binding Trend}" Maximum="{Binding TrendMax}" Capacity="{x:Static vm:OverlayViewModel.TrendLength}" Stroke="{Binding Hue}" />
-                                                    <TextBlock Text="{Binding TrendCaption}" FontFamily="{StaticResource App.Font.Latin}" FontSize="8.5" Foreground="#AAFFFFFF" Margin="4,1"
-                                                               HorizontalAlignment="Left" VerticalAlignment="Top" FlowDirection="LeftToRight" />
+                                                    <StackPanel Orientation="Horizontal" Margin="4,1" HorizontalAlignment="Left" VerticalAlignment="Top" TextElement.FontSize="8.5" TextElement.Foreground="#AAFFFFFF">
+                                                        <StackPanel.Style>
+                                                            <Style TargetType="StackPanel">
+                                                                <Style.Triggers><DataTrigger Binding="{Binding TrendMaxValue}" Value=""><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+                                                            </Style>
+                                                        </StackPanel.Style>
+                                                        <TextBlock Text="{loc:Loc Overlay_ChartMaxWord}" Margin="0,0,3,0" />
+                                                        <TextBlock Text="{Binding TrendMaxValue}" FontFamily="{StaticResource App.Font.Latin}" FlowDirection="LeftToRight" />
+                                                    </StackPanel>
                                                 </Grid>
                                             </Border>
                                         </StackPanel>

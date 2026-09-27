@@ -25,6 +25,9 @@ public sealed partial class OverlayRow : ObservableObject
     [ObservableProperty] private double _trendMax;
     /// <summary>The chart's top written out ("max 71 °C"), so its scale can be read.</summary>
     [ObservableProperty] private string _trendCaption = "";
+    /// <summary>The chart's top value alone ("71 °C"): the overlay draws it in its own left-to-right run next to the word, because WPF would
+    /// reorder "71 °C" inside a right-to-left caption.</summary>
+    [ObservableProperty] private string _trendMaxValue = "";
 }
 
 /// <summary>A block of the overlay (GAME, GPU, CPU, RAM, DISK, NET) in its part's colour. The game block names the program being measured; a
@@ -144,7 +147,8 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         double[] points = [.. row.History];
         if (row.Item.FixedMax is { } fixedMax) row.TrendMax = fixedMax;
         else { var seen = points.Where(double.IsFinite).DefaultIfEmpty(0).Max(); row.TrendMax = Math.Max(seen * 1.15, 1e-6); }
-        row.TrendCaption = points.Any(double.IsFinite) ? Loc.Format("Overlay_ChartMax", row.Item.IsFrameItem ? FormatFrame(row.Id, points.Where(double.IsFinite).Max()) : Format(points.Where(double.IsFinite).Max(), row.Unit)) : "";
+        row.TrendMaxValue = points.Any(double.IsFinite) ? row.Item.IsFrameItem ? FormatFrame(row.Id, points.Where(double.IsFinite).Max()) : Format(points.Where(double.IsFinite).Max(), row.Unit) : "";
+        row.TrendCaption = row.TrendMaxValue.Length > 0 ? Loc.Format("Overlay_ChartMax", row.TrendMaxValue) : "";
         row.Trend = points;
     }
 

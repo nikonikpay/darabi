@@ -706,3 +706,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 /* Two columns need a wider preview column (380 px of overlay and the stand-in's padding). */
 .ov-split:has(.ov-preview.cols) { grid-template-columns: minmax(0, 1fr) minmax(300px, 460px); }
 .ov-preview.cols { padding: 18px; }
+/* An idle console is a short strip that says what will appear in it; it grows with the output. */
+.panel .console { height: auto; min-height: 64px; max-height: 320px; }
+.panel .console:empty::before { content: attr(data-empty); color: var(--paper-3); font-family: var(--fa); direction: rtl; display: block; text-align: start; }
+[dir="ltr"] .panel .console:empty::before { direction: ltr; }
