@@ -42,7 +42,8 @@ next to the exe. Idle cost matters: nothing animates while hidden, no timers tha
   System Info, Benchmarks (single or queued), component pages (CPU, GPU, Storage, Network), Gaming, GPU tuning (manual, measured V/F curve,
   automatic undervolt/overclock, profiles), Windows Tools, Reports (HTML/PDF/TXT/JSON, compare, A5 customer summary), Settings, overlay.
 - Persian (RTL) by default, English available. ASCII numbers for values stay Latin.
-- GPU tuning is NVIDIA-only (NVML); CPU tuning is not offered. FPS is not measured.
+- GPU tuning is NVIDIA-only (NVML); CPU tuning is not offered. FPS, 1% low and frame time are measured for DirectX 9-12 programs through
+  Windows event tracing (the overlay only); Vulkan and OpenGL frame rates are not measured and show as missing.
 
 ## Brand Commitments
 
@@ -60,4 +61,5 @@ Real data comes from the machine at run time. There are no testimonials, custome
 2. The verdict follows the evidence, and the evidence is shown next to it.
 3. Right to left first, with Latin numbers kept intact.
 4. Cheap when idle: the tool must not disturb the measurements it takes.
-5. Portable and offline: nothing is fetched from the internet except what the technician explicitly runs.
+5. Portable and offline: nothing is fetched from the internet except what the technician explicitly runs, and one product card from the
+   shop's own site on the dashboard (cached, shown offline from the cache, never required). Benchmark records stay on the machine.

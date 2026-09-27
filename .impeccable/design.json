@@ -139,6 +139,36 @@
           "#f9d38f",
           "#fcebc9"
         ]
+      },
+      "part-cpu": {
+        "role": "part",
+        "displayName": "CPU Blue",
+        "canonical": "#5ba8ff"
+      },
+      "part-gpu": {
+        "role": "part",
+        "displayName": "GPU Violet",
+        "canonical": "#b38bff"
+      },
+      "part-ram": {
+        "role": "part",
+        "displayName": "RAM Cyan",
+        "canonical": "#35d0e0"
+      },
+      "part-storage": {
+        "role": "part",
+        "displayName": "Storage Orange",
+        "canonical": "#ff9a4d"
+      },
+      "part-net": {
+        "role": "part",
+        "displayName": "Network Pink",
+        "canonical": "#ff78b9"
+      },
+      "part-board": {
+        "role": "part",
+        "displayName": "Board Sand",
+        "canonical": "#d9ccb0"
       }
     },
     "typographyMeta": {
@@ -376,14 +406,20 @@
     "northStar": "The Tehran Modernist Poster",
     "overview": "The machine's state is set as an Iranian-modernist poster on a strict grid. Type, flat planes and hairline rules do all the work: brand yellow arrives as whole planes, never as an accent sprinkled on controls; the ground is ink black; type and rules are paper off-white. The category's rounded card dashboard with gauges and glow is refused. There are no corners, no cards, and almost no shadows. Hierarchy comes from weight and scale alone: a heavy Persian face for words, a condensed grotesk for numerals, and giant temperature figures that roll to their live values.\n\nThe page reads right to left first, with every Latin value isolated left to right and kept in Latin digits. Density is poster-like at the top (one yellow plane, two giant numerals) and dense beneath (ruled columns of tabular figures). Honesty is visible: a value that was not measured is drawn as a diagonal hatch with the words \"not available\", never as a zero.",
     "keyCharacteristics": [
-      "Yellow (#fdd400) as whole planes: the dashboard and component hero plane, the current index item, the selected table row.",
-      "Zero radius everywhere; structure is carried by 1px hairlines and 2px paper rules on column tops.",
-      "A numbered index (Persian two-digit numbers) on the reading-start edge as navigation; Ctrl+1 … Ctrl+0 open the first ten.",
-      "Registration crosses at the four corners of every yellow plane.",
+      "Yellow (#fdd400) as whole planes: the dashboard's hero plane, the current index item, primary buttons; a part's own page lays its plane in the part's hue.",
+      "One part, one hue, everywhere: CPU blue, GPU violet, RAM cyan, storage orange, network pink, board sand; no part hue is green or red.",
+      "Panels (14px radius) box every part: a hue strip, a hue wash, a short summary and details folded under a chevron.",
+      "A numbered index (Persian two-digit numbers) on the reading-start edge as navigation; Ctrl+1 to Ctrl+0 open the first ten.",
+      "Registration crosses at the four corners of every plane.",
       "State colour laws: green only for passed, red only for failed, the hatch only for not measured.",
-      "Motion is typographic: rolling numerals, a plane wipe between pages, rules drawing in. All of it switches off under reduced motion or `?still`."
+      "Motion is typographic: rolling numerals, a plane wipe between pages, panels rising in. All of it switches off under reduced motion or `?still`."
     ],
     "rules": [
+      {
+        "name": "The One Part, One Hue Rule",
+        "body": "A part never changes colour between pages, and no two parts share one. The hue is set once per container (.p-cpu sets --hue) and everything inside reads var(--hue); the canvas and the WPF overlay use the same values.",
+        "section": "colors"
+      },
       {
         "name": "The Whole Plane Rule",
         "body": "Yellow is laid down as a plane or a full-row fill. It is never a glow, a gradient border or a tinted card.",
@@ -415,8 +451,8 @@
         "section": "layout"
       },
       {
-        "name": "The Flat Poster Rule",
-        "body": "No surface casts a shadow at rest. A new surface earns separation with a rule or a plane, never with elevation.",
+        "name": "The Quiet Box Rule",
+        "body": "A panel is separated by its hue (strip, 38% border, 15% wash) and one soft under-shadow, never by glow, blur or a second shadow.",
         "section": "elevation"
       }
     ],

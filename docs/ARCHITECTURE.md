@@ -16,8 +16,8 @@ that can hold it, so it is unit-testable without WPF.
 | `Mazesta.Diagnostics.Gpu` | GPU tests on ComputeSharp (steady/variable/pulse stress, VRAM, render, power) and the GPU benchmarks on raw Direct3D 12 through Vortice (rasterisation, DXR 1.1 inline ray tracing, DirectML AI at FP32/FP16/INT8); the verified compute/memory load the GPU tuner judges settings by. HLSL in `Shaders/`, precompiled by `tools/compile-gpu-shaders.ps1`. | net10.0-windows | Core, Monitoring, Diagnostics |
 | `Mazesta.Reporting` | `SessionReport` (test sessions and benchmark-only reports, `ReportKind`), JSON/HTML/plain-text writers in Persian or English (`ReportText`), `ReportStore`, `SensorSummarizer`, `ReportComparison` and the before/after page. UI-free. | net10.0 | Core, Monitoring |
 | `Mazesta.Desktop` | The WPF app "Mazesta Test": MVVM (CommunityToolkit.Mvvm), DI, Views/ViewModels, localisation (fa/en, RTL), PDF through WebView2, tray control. | net10.0-windows | all of the above, and Tray (to ship its exe) |
-| `Mazesta.Web` | "Mazesta Web": the web edition. Composes the same services as `Mazesta.Desktop` (its `Bootstrapper`) and shows the interface in one WebView2 from `wwwroot` (plain HTML/CSS/JS modules, no build step, offline). `WebBridge` is the only way the page reaches the machine: a fixed list of named methods over JSON, mirroring the Desktop view models, and live sensor snapshots while the window is visible. Only one edition runs at a time (shared single-instance mutex). | net10.0-windows | Desktop (as a library) |
-| `Mazesta.Tray` | "Mazesta Monitor": windowless tray process that opens the sensor provider only during a check (spec §8.2). | net10.0-windows | Core, Hardware, Persistence |
+| `Mazesta.Web` | "Mazesta Web": the web edition. Composes the same services as `Mazesta.Desktop` (its `Bootstrapper`) and shows the interface in one WebView2 from `wwwroot` (plain HTML/CSS/JS modules, no build step, offline). `WebBridge` is the only way the page reaches the machine: a fixed list of named methods over JSON, mirroring the Desktop view models, and live sensor snapshots while the window is visible. Only one edition runs at a time (shared single-instance mutex); a second start brings the open window forward, and closing the main window ends the process. Also: `ChartWindow` (a sensor's chart popped out, its own tiny bridge), `ShopFeed` (one product from the shop's WordPress REST API, as plain text, cached), `Notifier` (Windows notifications for health alerts, failed tests and a failed sensor reader), benchmark records (`BenchmarkRecords`, best per system), the overlay page, and the diagnostic export. Ships the tray next to its exe. | net10.0-windows | Desktop (as a library), Tray (to ship it) |
+| `Mazesta.Tray` | "Mazesta Monitor": windowless tray process that opens the sensor provider only during a check (spec §8.2): temperatures every 10 minutes, drive health every 30, each check kept in `Data\tray\checks.json` and shown in its summary window (double-click the icon); a problem is a Windows notification. | net10.0-windows | Core, Hardware, Persistence |
 
 Nothing references `Desktop`. `Diagnostics` does not reference `Hardware`: executors read what `PollingEngine` already published
 (`SensorEvidence`), never a hardware provider directly. `Reporting` knows nothing of WPF; the Desktop `ReportService` feeds it.
@@ -41,7 +41,9 @@ factories and disposed by the shell when it leaves them.
 
 Everything the app writes lives in `Data\` next to `MazestaTest.exe`: `config\appconfig.json`, `logs\`, `sessions\` (test
 checkpoint), `history\`, `reports\<date>-<id>\` (`report.json`, `report.html`, `report.txt`, `report.pdf` when exported, and
-`comparison-*.html`), and `cache\` (the PDF printer's WebView2 profile). The first start of a copy without `Data\` copies an
+`comparison-*.html`), `cache\` (the PDF printer's and the web edition's WebView2 profiles, the shop product in `cache\shop`),
+`benchmarks\records.json` (the best result of each benchmark per system), `tray\checks.json` (the tray's recent checks), `logs\hardware-report.txt`
+(what the first polls could not read on this machine) and `diagnostics\` (the exported zip to bring back). The first start of a copy without `Data\` copies an
 earlier installed version's `%LocalAppData%\Mazesta\Test` in once, without changing it.
 
 ## Test projects
