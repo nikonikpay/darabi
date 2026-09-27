@@ -15,7 +15,7 @@ public sealed class WmiInventoryProvider(IWmiQuery query, ILogger<WmiInventoryPr
         }
         return new HardwareInventory(
             Section<CpuInfo?>("cpu", () => WmiInventoryParser.Cpu(query.Query(Cimv2, "SELECT Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors,MaxClockSpeed,SocketDesignation FROM Win32_Processor")), null),
-            Section<IReadOnlyList<GpuInfo>>("gpu", () => WmiInventoryParser.Gpus(query.Query(Cimv2, "SELECT Name,DriverVersion,AdapterRAM,PNPDeviceID FROM Win32_VideoController")), []),
+            Section<IReadOnlyList<GpuInfo>>("gpu", () => WmiInventoryParser.Gpus(query.Query(Cimv2, "SELECT Name,DriverVersion,AdapterRAM,PNPDeviceID FROM Win32_VideoController"), GpuDriverMemory.Read()), []),
             Section<IReadOnlyList<MemoryModuleInfo>>("memory", () => WmiInventoryParser.Memory(query.Query(Cimv2, "SELECT DeviceLocator,Capacity,Manufacturer,PartNumber,ConfiguredClockSpeed,Speed FROM Win32_PhysicalMemory")), []),
             Section<long?>("computer", () => WmiInventoryParser.TotalMemory(query.Query(Cimv2, "SELECT TotalPhysicalMemory FROM Win32_ComputerSystem")), null),
             Section<MotherboardInfo?>("board", () => WmiInventoryParser.Board(query.Query(Cimv2, "SELECT Manufacturer,Product,Version,SerialNumber FROM Win32_BaseBoard")), null),

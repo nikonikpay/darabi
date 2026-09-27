@@ -103,7 +103,7 @@ export function mount(el) {
     panels.append(panel({ kind: "Cpu", title: t("Nav_Cpu"), sub: cpu.name,
       body: [h("div", { class: "stats" }, stat(t("Web_Dash_Temp"), shown[0]), stat(t("Dashboard_Line_Clock"), shown[1]), stat(t("Dashboard_Line_Load"), shown[2]), stat(t("Dashboard_Line_Power"), shown[3])),
         meter(t("Dashboard_Line_Load"), percentOf(shown[2]))],
-      more: details(all, ["CpuVcore", "CpuCcdTemp", "CpuTctlTdie", "CpuPackageTemp", "CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuBusClock", "CpuFan"], shown) }));
+      more: details(all, ["CpuVcore", "CpuCcdTemp", "CpuTctlTdie", "CpuPackageTemp", "CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuSocVoltage", "CpuCcdMaxTemp", "CpuCoreMaxLoad", "CpuBusClock", "CpuFan"], shown) }));
   }
   gpus.forEach((g, i) => {
     const all = sensorsUnder(g), shown = [pick(g, "GpuCoreTemp"), pick(g, "GpuLoad3D", "GpuLoadD3D3D"), pick(g, "GpuCoreClock"), pick(g, "GpuPower")];
@@ -111,13 +111,13 @@ export function mount(el) {
     panels.append(panel({ kind: "Gpu", title: gpus.length > 1 ? `${t("Nav_Gpu")} ${fa(i + 1)}` : t("Nav_Gpu"), sub: g.name,
       body: [h("div", { class: "stats" }, stat(t("Web_Dash_Temp"), shown[0]), stat(t("Dashboard_Line_Load"), shown[1]), stat(t("Dashboard_Line_Clock"), shown[2]), stat(t("Dashboard_Line_Power"), shown[3])),
         meter(t("Dashboard_Line_VramUsed"), ratioOf(used, total))],
-      more: details(all, ["GpuHotSpotTemp", "GpuVramTemp", "GpuMemoryClock", "GpuVoltage", "GpuFanRpm", "GpuFanPercent", "GpuLoadVideo", "GpuLoadCompute", "GpuVramUsed", "GpuVramTotal"], shown) }));
+      more: details(all, ["GpuHotSpotTemp", "GpuVramTemp", "GpuMemoryClock", "GpuVoltage", "GpuFanRpm", "GpuFanPercent", "GpuLoadVideo", "GpuLoadCompute", "GpuVramUsed", "GpuVramTotal", "GpuPowerPercent", "GpuLoadBus", "GpuPcieRx", "GpuPcieTx"], shown) }));
   });
   if (ram) {
     const used = pick(ram, "RamUsed"), free = pick(ram, "RamFree"), load = pick(ram, "RamLoad");
     panels.append(panel({ kind: "Memory", title: t("Dashboard_Ram"), sub: null,
       body: [h("div", { class: "stats" }, stat(t("Dashboard_Line_Used"), used), stat(t("Dashboard_Line_Free"), free)), meter(t("Dashboard_Line_Load"), percentOf(load))],
-      more: details(topNodes("Memory").flatMap(sensorsUnder), ["RamTotal", "DimmTemp"]) }));
+      more: details(topNodes("Memory").flatMap(sensorsUnder), ["RamTotal", "DimmTemp", "VirtualMemoryUsed", "VirtualMemoryLoad"]) }));
   }
   if (drives.length) {
     const rows = drives.map((d) => {
@@ -128,7 +128,7 @@ export function mount(el) {
     });
     panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)),
       body: h("div", { class: "units" }, rows),
-      more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageRemainingLife", "StoragePowerOnHours"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
+      more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
   }
   if (nets.length) {
     const rows = nets.slice(0, 4).map((n) => {
@@ -137,7 +137,7 @@ export function mount(el) {
       return h("div", { class: "unit-row" }, h("span", { class: "nm", title: n.name }, n.name), h("span", { class: "vals" }, dv, uv));
     });
     panels.append(panel({ kind: "Network", title: t("Nav_Network"), sub: null, body: h("div", { class: "units" }, rows),
-      more: nets.slice(0, 4).map((n) => { const kv = details(n.sensors, ["NetUtilization"]); return kv.length ? [h("dt", { class: "sub lat" }, n.name), kv] : null; }) }));
+      more: nets.slice(0, 4).map((n) => { const kv = details(n.sensors, ["NetUtilization", "NetDataDownloaded", "NetDataUploaded"]); return kv.length ? [h("dt", { class: "sub lat" }, n.name), kv] : null; }) }));
   }
   // Board and system: what the machine is (from the inventory, filled in when it arrives) and the board's own sensors.
   const boardSensors = board ? sensorsUnder(board) : [];

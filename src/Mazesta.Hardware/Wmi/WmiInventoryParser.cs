@@ -13,8 +13,15 @@ internal static class WmiInventoryParser
         var vendor = S(r, "Manufacturer") switch { "GenuineIntel" => HardwareVendor.Intel, "AuthenticAMD" => HardwareVendor.Amd, _ => HardwareVendor.Unknown };
         return new CpuInfo(S(r, "Name"), vendor, I(r, "NumberOfCores"), I(r, "NumberOfLogicalProcessors"), I(r, "MaxClockSpeed"), S(r, "SocketDesignation"));
     }
-    public static IReadOnlyList<GpuInfo> Gpus(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
-        => rows.Select(r => new GpuInfo(S(r, "Name"), S(r, "DriverVersion"), L(r, "AdapterRAM"), S(r, "PNPDeviceID"))).ToList();
+    /// <summary>AdapterRAM is a 32-bit field: a card with 4 GB or more reads as about 4 GB. The driver's own 64-bit size (from the registry,
+    /// by PNP id) wins; a saturated AdapterRAM without it is unknown, never "4 GB".</summary>
+    public static IReadOnlyList<GpuInfo> Gpus(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows, Func<string?, long?>? driverMemory = null)
+        => rows.Select(r =>
+        {
+            long? ram = driverMemory?.Invoke(S(r, "PNPDeviceID")) ?? (L(r, "AdapterRAM") is { } a && a < SaturatedAdapterRam ? a : null);
+            return new GpuInfo(S(r, "Name"), S(r, "DriverVersion"), ram, S(r, "PNPDeviceID"));
+        }).ToList();
+    internal const long SaturatedAdapterRam = 0xFFF0_0000;
     public static IReadOnlyList<MemoryModuleInfo> Memory(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
         => rows.Select(r => new MemoryModuleInfo(S(r, "DeviceLocator"), L(r, "Capacity"), S(r, "Manufacturer"), S(r, "PartNumber"), I(r, "ConfiguredClockSpeed"), I(r, "Speed"))).ToList();
     public static long? TotalMemory(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows) => rows.Count == 0 ? null : L(rows[0], "TotalPhysicalMemory");
@@ -37,8 +44,10 @@ internal static class WmiInventoryParser
     {
         var ips = configs.Where(c => L(c, "InterfaceIndex") is not null).ToDictionary(c => L(c, "InterfaceIndex")!.Value, c => c.TryGetValue("IPAddress", out var v) && v is string[] a ? a : []);
         return adapters.Where(a => S(a, "Name") is not { } n || !NetworkAdapterFilter.IsVirtualBinding(n))
-            .Select(a => new NetworkAdapterInfo(S(a, "Name"), S(a, "MACAddress"), L(a, "InterfaceIndex") is { } ix && ips.TryGetValue(ix, out var list) ? list : [], L(a, "Speed"), B(a, "NetEnabled") == true)).ToList();
+            .Select(a => new NetworkAdapterInfo(S(a, "Name"), S(a, "MACAddress"), L(a, "InterfaceIndex") is { } ix && ips.TryGetValue(ix, out var list) ? list : [], LinkSpeed(L(a, "Speed")), B(a, "NetEnabled") == true)).ToList();
     }
+    /// <summary>A disconnected adapter reports long.MaxValue ("unknown"), which is no speed at all.</summary>
+    private static long? LinkSpeed(long? bps) => bps is > 0 and < long.MaxValue / 2 ? bps : null;
     public static OsInfo? Os(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
         => rows.Count == 0 ? null : new OsInfo(S(rows[0], "Caption"), S(rows[0], "Version"), S(rows[0], "BuildNumber"), S(rows[0], "OSArchitecture"));
 }

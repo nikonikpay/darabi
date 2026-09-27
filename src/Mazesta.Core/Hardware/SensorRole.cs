@@ -10,5 +10,16 @@ public enum SensorRole
     RamUsed, RamFree, RamTotal, RamLoad, DimmTemp,
     BoardTemp, ChipsetTemp, BoardFan, BoardVoltage,
     StorageTemp, StorageUsedSpace, StorageReadRate, StorageWriteRate, StorageRemainingLife, StoragePowerOnHours,
-    NetUpload, NetDownload, NetUtilization
+    NetUpload, NetDownload, NetUtilization,
+    // Readings the app shows in details and the overlay but does not judge by (appended, so names stored by earlier versions stay valid).
+    CpuCcdMaxTemp, CpuCcdAverageTemp, CpuCoreMaxLoad, CpuSocVoltage, CpuCoreVid, CpuPerCorePower, CpuCoreMultiplier,
+    GpuLoadBus, GpuPowerPercent, GpuLoadEngine, GpuD3DMemoryDedicated, GpuD3DMemoryShared, GpuPcieRx, GpuPcieTx,
+    VirtualMemoryLoad, VirtualMemoryUsed, VirtualMemoryFree,
+    /// <summary>A DIMM's specification (capacity, sensor resolution, and the thermal limits it was programmed with, 0 when not programmed),
+    /// not a live reading.</summary>
+    DimmSpec, DimmTiming,
+    BoardFanControl,
+    StorageTempLimit, StorageReadActivity, StorageWriteActivity, StorageTotalActivity, StorageSpare, StorageSpareThreshold, StorageWear, StoragePowerCycles,
+    StorageDataRead, StorageDataWritten, StorageFreeSpace, StorageTotalSpace,
+    NetDataUploaded, NetDataDownloaded
 }

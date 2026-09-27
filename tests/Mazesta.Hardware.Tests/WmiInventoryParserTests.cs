@@ -38,4 +38,14 @@ public class WmiInventoryParserTests
             []);
         Assert.Single(a); Assert.Equal("Intel Wi-Fi", a[0].Name);
     }
+    [Fact] public void A_saturated_adapter_ram_is_unknown_unless_the_driver_says_the_size()
+    {
+        var rows = new[] { Row(("Name", "NVIDIA GeForce RTX 3090"), ("AdapterRAM", 4293918720u), ("PNPDeviceID", @"PCI\VEN_10DE&DEV_2204&SUBSYS_136A196E&REV_A1\4&2AE1B128&0&0019")) };
+        Assert.Null(WmiInventoryParser.Gpus(rows)[0].AdapterRamBytes);
+        long? Driver(string? pnp) => GpuDriverMemory.Match([(@"pci\ven_10de&dev_2204", 24L << 30), (@"pci\ven_10de&dev_2204&subsys_136a196e", 25L << 30)], pnp);
+        Assert.Equal(25L << 30, WmiInventoryParser.Gpus(rows, Driver)[0].AdapterRamBytes);   // the most specific match
+        Assert.Equal(2L << 30, WmiInventoryParser.Gpus([Row(("AdapterRAM", 2147483648u))])[0].AdapterRamBytes);
+    }
+    [Fact] public void A_disconnected_adapter_has_no_link_speed()
+        => Assert.Null(WmiInventoryParser.Adapters([Row(("Name", "Realtek PCIe GbE"), ("Speed", 9223372036854775807ul), ("NetEnabled", false), ("InterfaceIndex", 3u))], [])[0].LinkSpeedBps);
 }

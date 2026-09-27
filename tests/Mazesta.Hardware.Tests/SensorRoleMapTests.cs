@@ -14,7 +14,11 @@ public class SensorRoleMapTests
     [InlineData(HardwareType.GpuNvidia, SensorType.Load, "GPU Video Engine", SensorRole.GpuLoadVideo)]
     [InlineData(HardwareType.GpuNvidia, SensorType.Load, "GPU Memory", SensorRole.None)]
     [InlineData(HardwareType.GpuNvidia, SensorType.SmallData, "GPU Memory Used", SensorRole.GpuVramUsed)]
-    [InlineData(HardwareType.GpuNvidia, SensorType.SmallData, "D3D Dedicated Memory Used", SensorRole.None)]
+    [InlineData(HardwareType.GpuNvidia, SensorType.SmallData, "D3D Dedicated Memory Used", SensorRole.GpuD3DMemoryDedicated)]
+    [InlineData(HardwareType.GpuNvidia, SensorType.Control, "GPU Fan 2", SensorRole.GpuFanPercent)]
+    [InlineData(HardwareType.GpuNvidia, SensorType.Load, "D3D Copy", SensorRole.GpuLoadEngine)]
+    [InlineData(HardwareType.GpuNvidia, SensorType.Load, "GPU Board Power", SensorRole.GpuPowerPercent)]
+    [InlineData(HardwareType.GpuNvidia, SensorType.Throughput, "GPU PCIe Rx", SensorRole.GpuPcieRx)]
     [InlineData(HardwareType.GpuNvidia, SensorType.Voltage, "GPU Core Voltage", SensorRole.GpuVoltage)]
     [InlineData(HardwareType.GpuAmd, SensorType.Voltage, "GPU Core", SensorRole.GpuVoltage)]
     [InlineData(HardwareType.GpuNvidia, SensorType.Fan, "GPU Fan", SensorRole.GpuFanRpm)]
@@ -26,7 +30,11 @@ public class SensorRoleMapTests
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "CPU Core #1 Distance to TjMax", SensorRole.None)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "Core (Tctl/Tdie)", SensorRole.CpuTctlTdie)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "CCD2 (Tdie)", SensorRole.CpuCcdTemp)]
-    [InlineData(HardwareType.Cpu, SensorType.Temperature, "CCDs Max (Tdie)", SensorRole.None)]
+    [InlineData(HardwareType.Cpu, SensorType.Temperature, "CCDs Max (Tdie)", SensorRole.CpuCcdMaxTemp)]
+    [InlineData(HardwareType.Cpu, SensorType.Voltage, "Core #3 VID", SensorRole.CpuCoreVid)]
+    [InlineData(HardwareType.Cpu, SensorType.Voltage, "SoC (SVI2 TFN)", SensorRole.CpuSocVoltage)]
+    [InlineData(HardwareType.Cpu, SensorType.Power, "Core #12 (SMU)", SensorRole.CpuPerCorePower)]
+    [InlineData(HardwareType.Cpu, SensorType.Factor, "Core #7", SensorRole.CpuCoreMultiplier)]
     [InlineData(HardwareType.Cpu, SensorType.Clock, "Core #4 (Effective)", SensorRole.CpuEffectiveClock)]
     [InlineData(HardwareType.Cpu, SensorType.Clock, "Cores (Average Effective)", SensorRole.CpuEffectiveClockAverage)]
     [InlineData(HardwareType.Cpu, SensorType.Clock, "E-Core #2", SensorRole.CpuCoreClock)]
@@ -39,7 +47,12 @@ public class SensorRoleMapTests
     [InlineData(HardwareType.Cpu, SensorType.Power, "CPU Cores", SensorRole.CpuCorePower)]
     [InlineData(HardwareType.Cpu, SensorType.Load, "CPU Total", SensorRole.CpuTotalLoad)]
     [InlineData(HardwareType.Cpu, SensorType.Load, "CPU Core #3 Thread #2", SensorRole.CpuThreadLoad)]
-    [InlineData(HardwareType.Cpu, SensorType.Load, "CPU Core Max", SensorRole.None)]
+    [InlineData(HardwareType.Cpu, SensorType.Load, "CPU Core Max", SensorRole.CpuCoreMaxLoad)]
+    [InlineData(HardwareType.Memory, SensorType.Temperature, "Thermal Sensor Critical Limit", SensorRole.DimmSpec)]
+    [InlineData(HardwareType.Memory, SensorType.Temperature, "Temperature Sensor Resolution", SensorRole.DimmSpec)]
+    [InlineData(HardwareType.Memory, SensorType.Timing, "tRCD (RAS to CAS Delay Time)", SensorRole.DimmTiming)]
+    [InlineData(HardwareType.SuperIO, SensorType.Voltage, "CMOS Battery", SensorRole.BoardVoltage)]
+    [InlineData(HardwareType.SuperIO, SensorType.Control, "CPU Fan Control", SensorRole.BoardFanControl)]
     [InlineData(HardwareType.Memory, SensorType.Load, "Memory", SensorRole.RamLoad)]
     [InlineData(HardwareType.Memory, SensorType.Data, "Memory Used", SensorRole.RamUsed)]
     [InlineData(HardwareType.Memory, SensorType.Data, "Memory Available", SensorRole.RamFree)]
@@ -54,7 +67,12 @@ public class SensorRoleMapTests
     [InlineData(HardwareType.SuperIO, SensorType.Voltage, "Voltage #7", SensorRole.None)]
     [InlineData(HardwareType.Storage, SensorType.Temperature, "Temperature", SensorRole.StorageTemp)]
     [InlineData(HardwareType.Storage, SensorType.Temperature, "Composite Temperature", SensorRole.StorageTemp)]
-    [InlineData(HardwareType.Storage, SensorType.Temperature, "Warning Temperature", SensorRole.None)]
+    [InlineData(HardwareType.Storage, SensorType.Temperature, "Warning Temperature", SensorRole.StorageTempLimit)]
+    [InlineData(HardwareType.Storage, SensorType.Level, "Percentage Used", SensorRole.StorageWear)]
+    [InlineData(HardwareType.Storage, SensorType.Load, "Total Activity", SensorRole.StorageTotalActivity)]
+    [InlineData(HardwareType.Storage, SensorType.Data, "Data Written", SensorRole.StorageDataWritten)]
+    [InlineData(HardwareType.Storage, SensorType.Factor, "Power On Count", SensorRole.StoragePowerCycles)]
+    [InlineData(HardwareType.Network, SensorType.Data, "Data Downloaded", SensorRole.NetDataDownloaded)]
     [InlineData(HardwareType.Storage, SensorType.Level, "Life", SensorRole.StorageRemainingLife)]
     [InlineData(HardwareType.Storage, SensorType.Factor, "Power On Hours", SensorRole.StoragePowerOnHours)]
     [InlineData(HardwareType.Storage, SensorType.Load, "Used Space", SensorRole.StorageUsedSpace)]
@@ -94,8 +112,11 @@ public class SensorRoleMapTests
     public void Maps_exact_lhm_names(HardwareType hw, SensorType st, string name, SensorRole expected)
         => Assert.Equal(expected, SensorRoleMap.Resolve(hw, st, name, "/x/0"));
 
-    [Fact] public void Virtual_memory_node_gets_no_ram_roles()
-        => Assert.Equal(SensorRole.None, SensorRoleMap.Resolve(HardwareType.Memory, SensorType.Data, "Memory Used", "/vram"));
+    [Fact] public void Virtual_memory_node_gets_its_own_roles_never_ram_ones()
+    {
+        Assert.Equal(SensorRole.VirtualMemoryUsed, SensorRoleMap.Resolve(HardwareType.Memory, SensorType.Data, "Memory Used", "/vram"));
+        Assert.Equal(SensorRole.VirtualMemoryLoad, SensorRoleMap.Resolve(HardwareType.Memory, SensorType.Load, "Memory", "/vram"));
+    }
     [Fact] public void Gpu_without_hot_spot_has_no_hot_spot_role_from_core()
         => Assert.NotEqual(SensorRole.GpuHotSpotTemp, SensorRoleMap.Resolve(HardwareType.GpuNvidia, SensorType.Temperature, "GPU Core", "/gpu-nvidia/0"));
 }

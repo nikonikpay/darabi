@@ -10,7 +10,11 @@ public sealed partial class WebBridge
         var engine = _sp.GetRequiredService<PollingEngine>(); var inventory = _sp.GetRequiredService<InventoryCache>();
 
         // What the first polls found missing or unreadable on this machine, for the Settings page.
-        Method("diag.state", _ => new { findings = HardwareDiagnosticsReport.Problems(engine.Hardware, new Dictionary<Core.Hardware.SensorId, SensorTally>()), logs = _paths.LogsDir });
+        Method("diag.state", _ =>
+        {
+            var (findings, notes) = App.Recorder?.Current() ?? (HardwareDiagnosticsReport.Problems(engine.Hardware, new Dictionary<Core.Hardware.SensorId, SensorTally>()), []);
+            return new { findings, notes, logs = _paths.LogsDir, polled = App.Recorder is not null };
+        });
 
         // One zip to bring back: the app's logs, the hardware report, the inventory as text, the settings and the tray's checks. Nothing is sent
         // anywhere; the folder opens with the file selected.
