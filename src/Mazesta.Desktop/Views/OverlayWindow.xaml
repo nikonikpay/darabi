@@ -9,16 +9,19 @@
         ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Focusable="False">
     <Border x:Name="Root" CornerRadius="12" BorderBrush="#33FFFFFF" BorderThickness="1" Padding="12,9,12,6">
         <Border.Background><SolidColorBrush Color="#0B0B0D" Opacity="{Binding Opacity}" /></Border.Background>
-        <StackPanel Width="224">
+        <StackPanel Width="{Binding PanelWidth}">
             <StackPanel.LayoutTransform><ScaleTransform ScaleX="{Binding Scale}" ScaleY="{Binding Scale}" /></StackPanel.LayoutTransform>
             <DockPanel Margin="0,0,0,4">
                 <Border DockPanel.Dock="Left" Width="8" Height="8" CornerRadius="4" Background="{StaticResource Brush.Accent}" Margin="0,0,7,0" VerticalAlignment="Center" />
                 <TextBlock Text="MAZESTA" FontFamily="{StaticResource App.Font.Latin}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Brush.Accent}" VerticalAlignment="Center" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
             </DockPanel>
             <ItemsControl ItemsSource="{Binding Sections}">
+                <!-- Blocks wrap at the panel's width: one per line in the list layout, two side by side in the columns layout. -->
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:OverlaySection}">
-                        <StackPanel Margin="0,4,0,4">
+                        <StackPanel Width="{Binding DataContext.SectionWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                            <StackPanel.Margin><Binding Path="DataContext.SectionMargin" RelativeSource="{RelativeSource AncestorType=ItemsControl}" /></StackPanel.Margin>
                             <DockPanel Margin="0,0,0,2">
                                 <Border DockPanel.Dock="Left" Width="3" Height="11" CornerRadius="1.5" Background="{Binding Hue}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                 <TextBlock DockPanel.Dock="Left" Text="{Binding Title}" FontFamily="{StaticResource App.Font.Latin}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding Hue}" VerticalAlignment="Center" />

@@ -58,3 +58,24 @@ public class OverlayTests
         Assert.Null(FrameTimeStats.Compute([1.0], 1.0, 1, null));
     }
 }
+
+public class OverlayPinnedTests
+{
+    private static HardwareNode Drive(string id, params (string Name, SensorRole Role)[] sensors)
+        => new(new HardwareId(id), HardwareKind.Storage, HardwareVendor.Unknown, id, null, true,
+            [.. sensors.Select((s, i) => new SensorDefinition(new SensorId($"{id}/{i}"), new HardwareId(id), s.Name, SensorKind.Throughput, Unit.BytesPerSecond, s.Role, i))]);
+
+    [Fact] public void A_pinned_item_reads_its_own_drive_only()
+    {
+        var a = Drive("storage/a", ("Read", SensorRole.StorageReadRate)); var b = Drive("storage/b", ("Read", SensorRole.StorageReadRate));
+        var item = OverlayCatalog.Find(OverlayCatalog.Pinned("storage.read", "storage/b"))!;
+        Assert.Equal("storage/b", item.Device); Assert.Equal("storage.read", item.BaseId); Assert.Equal(OverlayAggregate.First, item.Aggregate);
+        Assert.Equal("storage/b/0", Assert.Single(OverlayCatalog.Resolve(item, [a, b])).Id.Value);
+        Assert.Equal(2, OverlayCatalog.Resolve(OverlayCatalog.Find("storage.read")!, [a, b]).Count);
+    }
+    [Fact] public void Only_drive_items_can_be_pinned()
+    {
+        Assert.Null(OverlayCatalog.Find("cpu.temp@cpu/0")); Assert.Null(OverlayCatalog.Find("storage.read@")); Assert.Null(OverlayCatalog.Find("nothing@storage/a"));
+        Assert.Equal(OverlayCatalog.PerDrive.Count * 2, OverlayCatalog.ForDrives([Drive("storage/a"), Drive("storage/b")]).Count);
+    }
+}

@@ -82,3 +82,34 @@ public class OverlayViewModelTests
         Assert.Equal(0, frames.Starts);
     }
 }
+
+public class OverlayOrderTests
+{
+    private static HardwareNode Node(HardwareKind kind, string id, string name, params (string Path, SensorRole Role, Unit Unit)[] sensors)
+    {
+        var hid = new HardwareId(id);
+        return new(hid, kind, HardwareVendor.Unknown, name, null, true, [.. sensors.Select((s, i) => new SensorDefinition(SensorId.Create(hid, s.Path), hid, s.Path, SensorKind.Temperature, s.Unit, s.Role, i))]);
+    }
+    private static readonly HardwareNode[] Hw =
+    [
+        Node(HardwareKind.Cpu, "cpu/0", "CPU", ("t", SensorRole.CpuPackageTemp, Unit.Celsius), ("l", SensorRole.CpuTotalLoad, Unit.Percent)),
+        Node(HardwareKind.Gpu, "gpu/0", "GPU", ("t", SensorRole.GpuCoreTemp, Unit.Celsius)),
+        Node(HardwareKind.Storage, "storage/a", "Samsung SSD 980 PRO", ("r", SensorRole.StorageReadRate, Unit.BytesPerSecond), ("w", SensorRole.StorageWriteRate, Unit.BytesPerSecond)),
+        Node(HardwareKind.Storage, "storage/b", "WDC WD20", ("r", SensorRole.StorageReadRate, Unit.BytesPerSecond)),
+    ];
+
+    [Fact] public void Blocks_follow_the_order_their_first_item_was_put_and_items_their_own_order()
+    {
+        var sections = OverlayViewModel.Build(Hw, [new("cpu.load", false), new("gpu.temp", false), new("cpu.temp", true)]);
+        Assert.Equal(["CPU", "GPU"], sections.Select(s => s.Title));
+        Assert.Equal(["cpu.load", "cpu.temp"], sections[0].Rows.Select(r => r.Id));
+    }
+    [Fact] public void A_drive_item_gets_that_drive_block_named_after_it()
+    {
+        var sections = OverlayViewModel.Build(Hw, [new("storage.write@storage/a", false), new("storage.read", false), new("storage.read@storage/a", true), new("storage.read@storage/b", false)]);
+        Assert.Equal(3, sections.Count);
+        Assert.Equal("Samsung SSD 980 PRO", sections[0].Subtitle); Assert.Equal(["storage.write@storage/a", "storage.read@storage/a"], sections[0].Rows.Select(r => r.Id));
+        Assert.Null(sections[1].Device); Assert.Equal("WDC WD20", sections[2].Subtitle);
+    }
+    [Fact] public void A_drive_item_for_a_drive_that_is_gone_is_left_out() => Assert.Empty(OverlayViewModel.Build(Hw, [new("storage.read@storage/zz", false)]));
+}

@@ -11,6 +11,7 @@ const CATALOG = [
   ["cpu.fan", "Cpu", "Overlay_FanRpm", ["CpuFan"]],
   ["ram.used", "Memory", "Overlay_Used", ["RamUsed"]], ["ram.load", "Memory", "Overlay_Load", ["RamLoad"]], ["ram.temp", "Memory", "Overlay_Temp", ["DimmTemp"], "Max"],
   ["storage.temp", "Storage", "Overlay_HotDrive", ["StorageTemp"], "Max"], ["storage.read", "Storage", "Overlay_Read", ["StorageReadRate"], "Sum"], ["storage.write", "Storage", "Overlay_Write", ["StorageWriteRate"], "Sum"],
+  ["storage.activity", "Storage", "Overlay_Activity", ["StorageTotalActivity"], "Max"],
   ["net.down", "Network", "Overlay_Down", ["NetDownload"], "Sum"], ["net.up", "Network", "Overlay_Up", ["NetUpload"], "Sum"],
 ];
 const PRESETS = {
@@ -19,10 +20,15 @@ const PRESETS = {
   troubleshoot: "cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.temp:c gpu.hotspot gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp",
 };
 const parse = (spec) => spec.split(" ").map((s) => ({ id: s.replace(":c", ""), chart: s.endsWith(":c") }));
-let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1;
+let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1, layout = "list";
+const PER_DRIVE = ["storage.read", "storage.write", "storage.temp", "storage.activity"];
+// Each drive's own items, as OverlayCatalog.ForDrives makes them: "base@device", the base item read on that drive only.
+function drives(hw) {
+  return hw.filter((n) => !n.parent && n.kind === "Storage").flatMap((n) => PER_DRIVE.map((b) => { const c = CATALOG.find((x) => x[0] === b); return [`${b}@${n.id}`, c[1], c[2], c[3], "First", n]; }));
+}
 
-function resolve(hw, [, part, , roles, agg = "First"]) {
-  const nodes = hw.filter((n) => !n.parent && n.kind === part && !/^vEthernet/i.test(n.name));
+function resolve(hw, [, part, , roles, agg = "First", device]) {
+  const nodes = device ? [device] : hw.filter((n) => !n.parent && n.kind === part && !/^vEthernet/i.test(n.name));
   if (!roles.length) return [];
   if (agg === "First") { for (const n of nodes) for (const r of roles) { const s = n.sensors.find((x) => x.role === r); if (s) return [s.id]; } return []; }
   for (const r of roles) { const all = nodes.flatMap((n) => n.sensors.filter((x) => x.role === r)); if (all.length) return all.map((s) => s.id); }
@@ -30,18 +36,20 @@ function resolve(hw, [, part, , roles, agg = "First"]) {
 }
 
 export function overlay(m, p, hw, strings, emit) {
-  const state = () => ({ visible, corner, opacity, scale, preset, hotkey: "Ctrl+Shift+O", frameProblem: null,
+  const state = () => ({ visible, corner, opacity, scale, preset, layout, hotkey: "Ctrl+Shift+O", frameProblem: null,
     corners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })),
     presets: Object.entries(PRESETS).map(([id, spec]) => ({ id, count: parse(spec).length })), order: chosen.map((c) => c.id),
-    items: CATALOG.map((c) => { const sensors = resolve(hw, c), ch = chosen.find((x) => x.id === c[0]);
-      return { id: c[0], part: c[1], label: strings[c[2]] ?? c[2], frame: !c[3].length, available: !c[3].length || sensors.length > 0, on: !!ch, chart: ch?.chart ?? false, aggregate: c[4] || "First", sensors }; }) });
+    items: [...CATALOG, ...drives(hw)].map((c) => { const sensors = resolve(hw, c), ch = chosen.find((x) => x.id === c[0]);
+      return { id: c[0], part: c[1], label: strings[c[2]] ?? c[2], frame: !c[3].length, available: !c[3].length || sensors.length > 0, on: !!ch, chart: ch?.chart ?? false, aggregate: c[4] || "First", sensors,
+        device: c[5]?.id ?? null, deviceName: c[5]?.name ?? null }; }) });
   const changed = () => { setTimeout(() => emit("overlayState", state()), 30); return null; };
   switch (m) {
     case "overlay.state": return state();
     case "overlay.set":
-      if (p.field === "visible") visible = p.value; if (p.field === "corner") corner = p.value; if (p.field === "opacity") opacity = p.value; if (p.field === "scale") scale = p.value;
+      if (p.field === "visible") visible = p.value; if (p.field === "corner") corner = p.value; if (p.field === "opacity") opacity = p.value; if (p.field === "scale") scale = p.value; if (p.field === "layout") layout = p.value;
       return changed();
     case "overlay.preset": chosen = parse(PRESETS[p.id]); preset = p.id; return changed();
+    case "overlay.order": { const next = p.ids.map((id) => chosen.find((c) => c.id === id)).filter(Boolean); chosen = [...next, ...chosen.filter((c) => !next.includes(c))]; return changed(); }
     case "overlay.item": {
       const i = chosen.findIndex((c) => c.id === p.id);
       if (!p.on) { if (i >= 0) chosen.splice(i, 1); } else if (i >= 0) chosen[i] = { id: p.id, chart: p.chart }; else chosen.push({ id: p.id, chart: p.chart });

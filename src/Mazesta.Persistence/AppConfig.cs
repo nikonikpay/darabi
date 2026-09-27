@@ -39,6 +39,8 @@ public sealed class AppConfig : IVersionedDocument
     public double OverlayOpacity { get; set; } = 0.9;
     /// <summary>The overlay's size: 0.85 small, 1 normal, 1.2 large.</summary>
     public double OverlayScale { get; set; } = 1.0;
+    /// <summary>"list" (one column) or "columns" (two blocks side by side, the denser layout of the first overlay). Absent in older files: list.</summary>
+    public string OverlayLayout { get; set; } = "list";
 }
 public sealed class Migration0To1 : IMigration
 {

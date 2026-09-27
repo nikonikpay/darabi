@@ -37,9 +37,12 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         Rebuild();
     }
 
+    public static readonly string[] Layouts = ["list", "columns"];
+    public void SetLayout(string layout) { if (!Layouts.Contains(layout)) return; config.OverlayLayout = layout; Rebuild(); }
+
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a), Items, frames, config.OverlayOpacity, config.OverlayScale);
+        var vm = new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a), Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout == "columns");
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }

@@ -27,10 +27,12 @@ public sealed partial class OverlayRow : ObservableObject
     [ObservableProperty] private string _trendCaption = "";
 }
 
-/// <summary>A block of the overlay (GAME, GPU, CPU, RAM, DISK, NET) in its part's colour. The game block names the program being measured.</summary>
-public sealed partial class OverlaySection(OverlayPart part, string title, string hue) : ObservableObject
+/// <summary>A block of the overlay (GAME, GPU, CPU, RAM, DISK, NET) in its part's colour. The game block names the program being measured; a
+/// drive's own block names the drive.</summary>
+public sealed partial class OverlaySection(OverlayPart part, string title, string hue, string? device = null) : ObservableObject
 {
     public OverlayPart Part { get; } = part;
+    public string? Device { get; } = device;
     public string Title { get; } = title;
     public string Hue { get; } = hue;
     public ObservableCollection<OverlayRow> Rows { get; } = [];
@@ -61,15 +63,21 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public IReadOnlyList<OverlaySection> Sections { get; }
     public double Opacity { get; }
     public double Scale { get; }
+    /// <summary>One column, or two blocks side by side: the panel is as wide as its columns, and each block one column wide.</summary>
+    public bool TwoColumns { get; }
+    public double SectionWidth => TwoColumns ? 176 : 224;
+    public double PanelWidth => TwoColumns ? (SectionWidth + 14) * 2 : SectionWidth;
+    /// <summary>Side by side, each block keeps 7 px on either side: 14 px between the columns.</summary>
+    public System.Windows.Thickness SectionMargin => TwoColumns ? new(7, 4, 7, 4) : new(0, 4, 0, 4);
     public bool NeedsFrames { get; }
     /// <summary>The last frame reading while a frame item is shown (the web page's preview shows it too).</summary>
     public FrameRateReading? Frames { get; private set; }
     public event Action? Updated;
 
-    public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1)
+    public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, bool twoColumns = false)
     {
         _engine = engine; _dispatch = dispatch; _frames = frames;
-        Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5);
+        Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); TwoColumns = twoColumns;
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
         NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming);
         engine.SnapshotPublished += OnSnapshot;
@@ -84,23 +92,26 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         foreach (var r in Sections.SelectMany(s => s.Rows)) { r.History.Clear(); r.Trend = []; }
     }
 
-    /// <summary>The chosen items this machine can show, grouped by part in the overlay's fixed part order, each part in the order chosen.</summary>
+    /// <summary>The chosen items this machine can show, grouped into blocks (a part, or one drive's own block), the blocks in the order their first
+    /// item was put and the items in their chosen order: the technician's order is the overlay's order.</summary>
     internal static IReadOnlyList<OverlaySection> Build(IReadOnlyList<HardwareNode> hardware, IReadOnlyList<OverlayChoice> choices)
     {
         bool Include(HardwareNode n) => n.Kind != HardwareKind.Network || (!NetworkAdapterFilter.IsVirtualBinding(n.Name) && !n.Name.StartsWith("vEthernet", StringComparison.OrdinalIgnoreCase));
         var sections = new List<OverlaySection>();
-        foreach (var part in Enum.GetValues<OverlayPart>())
+        foreach (var choice in choices)
         {
-            var (title, hue) = Look[part];
-            var section = new OverlaySection(part, title, hue);
-            foreach (var choice in choices)
+            if (OverlayCatalog.Find(choice.Id) is not { } item || sections.Any(s => s.Rows.Any(r => r.Id == item.Id))) continue;
+            IReadOnlyList<SensorDefinition> sensors = item.IsFrameItem ? [] : OverlayCatalog.Resolve(item, hardware, Include);
+            if (!item.IsFrameItem && sensors.Count == 0) continue;
+            var section = sections.FirstOrDefault(s => s.Part == item.Part && s.Device == item.Device);
+            if (section is null)
             {
-                if (OverlayCatalog.Find(choice.Id) is not { } item || item.Part != part || section.Rows.Any(r => r.Id == item.Id)) continue;
-                if (item.IsFrameItem) { section.Rows.Add(new(item, Loc.Get(item.LabelKey), Unit.None, [], choice.Chart, hue)); continue; }
-                var sensors = OverlayCatalog.Resolve(item, hardware, Include);
-                if (sensors.Count > 0) section.Rows.Add(new(item, Loc.Get(item.LabelKey), sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, hue));
+                var (title, hue) = Look[item.Part];
+                section = new OverlaySection(item.Part, title, hue, item.Device);
+                if (item.Device is not null) section.Subtitle = hardware.FirstOrDefault(n => n.Id.Value == item.Device)?.Name ?? "";
+                sections.Add(section);
             }
-            if (section.Rows.Count > 0) sections.Add(section);
+            section.Rows.Add(new(item, Loc.Get(item.LabelKey), item.IsFrameItem ? Unit.None : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
         }
         return sections;
     }

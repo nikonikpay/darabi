@@ -18,11 +18,11 @@ public sealed partial class WebBridge
             return new
             {
                 visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
-                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText,
+                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout,
                 frameProblem = overlay.FrameSource?.Problem,
                 presets = OverlayCatalog.Presets.Select(p => new { id = p.Key, count = p.Value.Count }),
                 order = chosen.Select(c => c.Id),
-                items = OverlayCatalog.All.Select(i =>
+                items = OverlayCatalog.All.Concat(OverlayCatalog.ForDrives(engine.Hardware)).Select(i =>
                 {
                     var sensors = OverlayCatalog.Resolve(i, engine.Hardware, Include);
                     var choice = chosen.FirstOrDefault(c => c.Id == i.Id);
@@ -30,6 +30,7 @@ public sealed partial class WebBridge
                     {
                         id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), frame = i.IsFrameItem, available = i.IsFrameItem || sensors.Count > 0,
                         on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Aggregate.ToString(), sensors = sensors.Select(s => s.Id.Value),
+                        device = i.Device, deviceName = i.Device is null ? null : engine.Hardware.FirstOrDefault(n => n.Id.Value == i.Device)?.Name,
                     };
                 }),
             };
@@ -45,6 +46,7 @@ public sealed partial class WebBridge
                 case "corner": overlay.SetCorner(Str(p, "value")); break;
                 case "opacity": overlay.SetAppearance(Num(p, "value") ?? _config.OverlayOpacity, _config.OverlayScale); break;
                 case "scale": overlay.SetAppearance(_config.OverlayOpacity, Num(p, "value") ?? _config.OverlayScale); break;
+                case "layout": overlay.SetLayout(Str(p, "value")); break;
                 default: throw new ArgumentException("unknown field");
             }
             Save(); return null;
@@ -60,6 +62,17 @@ public sealed partial class WebBridge
             else if (at >= 0) list[at] = new(item.Id, chart);
             else list.Add(new(item.Id, chart));
             overlay.Configure(list, "custom");
+            Save(); return null;
+        });
+        // The order the technician dragged the shown items into (blocks follow their first item). Ids not shown now are ignored; shown ones
+        // missing from the list keep their place after the listed ones. Reordering keeps the preset: it is the same set.
+        Method("overlay.order", p =>
+        {
+            var ids = p.TryGetProperty("ids", out var a) && a.ValueKind == System.Text.Json.JsonValueKind.Array ? a.EnumerateArray().Select(e => e.GetString() ?? "").ToList() : [];
+            var current = overlay.Items;
+            var ordered = ids.Select(id => current.FirstOrDefault(c => c.Id == id)).OfType<OverlayChoice>().Distinct().ToList();
+            ordered.AddRange(current.Where(c => !ordered.Contains(c)));
+            overlay.Configure(ordered, _config.OverlayPreset);
             Save(); return null;
         });
         Method("overlay.preset", p =>

@@ -1,7 +1,8 @@
 using Mazesta.Core.Hardware;
 namespace Mazesta.Core.Overlay;
 
-/// <summary>The overlay's blocks, in the order they are drawn. Each is a part of the machine and wears that part's colour; Gaming is the frame rate.</summary>
+/// <summary>The overlay's blocks. Each is a part of the machine and wears that part's colour; Gaming is the frame rate. Blocks are drawn in the
+/// order the technician put their items in.</summary>
 public enum OverlayPart { Gaming, Gpu, Cpu, Memory, Storage, Network }
 
 /// <summary>How an item made of several sensors becomes one number: the first sensor found, the highest (hottest core, hottest drive), or the
@@ -14,6 +15,10 @@ public enum OverlayAggregate { First, Max, Sum }
 public sealed record OverlayItem(string Id, OverlayPart Part, string LabelKey, SensorRole[] Roles, OverlayAggregate Aggregate = OverlayAggregate.First, double? FixedMax = null)
 {
     public bool IsFrameItem => Roles.Length == 0;
+    /// <summary>The one device an item is pinned to (a drive's own read rate), by hardware id; null reads the whole part.</summary>
+    public string? Device { get; init; }
+    /// <summary>The catalog item a pinned item was made from ("storage.read" for "storage.read@storage/…").</summary>
+    public string BaseId => Device is null ? Id : Id[..Id.IndexOf('@', StringComparison.Ordinal)];
 }
 
 /// <summary>The item the overlay settings refer to by id, with its chart on or off.</summary>
@@ -60,12 +65,29 @@ public static class OverlayCatalog
         new("storage.temp", OverlayPart.Storage, "Overlay_HotDrive", [SensorRole.StorageTemp], OverlayAggregate.Max, Percent),
         new("storage.read", OverlayPart.Storage, "Overlay_Read", [SensorRole.StorageReadRate], OverlayAggregate.Sum),
         new("storage.write", OverlayPart.Storage, "Overlay_Write", [SensorRole.StorageWriteRate], OverlayAggregate.Sum),
+        new("storage.activity", OverlayPart.Storage, "Overlay_Activity", [SensorRole.StorageTotalActivity], OverlayAggregate.Max, Percent),
 
         new("net.down", OverlayPart.Network, "Overlay_Down", [SensorRole.NetDownload], OverlayAggregate.Sum),
         new("net.up", OverlayPart.Network, "Overlay_Up", [SensorRole.NetUpload], OverlayAggregate.Sum),
     ];
 
-    public static OverlayItem? Find(string id) => All.FirstOrDefault(i => i.Id == id);
+    /// <summary>The items that can also be pinned to one drive, so each drive can show its own traffic, temperature and activity.</summary>
+    public static readonly IReadOnlyList<string> PerDrive = ["storage.read", "storage.write", "storage.temp", "storage.activity"];
+
+    public static string Pinned(string baseId, string device) => $"{baseId}@{device}";
+
+    /// <summary>A catalog item by id; "base@device" is that item pinned to one device (read on that device only).</summary>
+    public static OverlayItem? Find(string id)
+    {
+        int at = id.IndexOf('@', StringComparison.Ordinal);
+        if (at < 0) return All.FirstOrDefault(i => i.Id == id);
+        var item = All.FirstOrDefault(i => i.Id == id[..at]);
+        return item is null || !PerDrive.Contains(item.Id) || at == id.Length - 1 ? null : item with { Id = id, Aggregate = OverlayAggregate.First, Device = id[(at + 1)..] };
+    }
+
+    /// <summary>Every per-drive item this machine has: for each drive, <see cref="PerDrive"/> pinned to it.</summary>
+    public static IReadOnlyList<OverlayItem> ForDrives(IReadOnlyList<HardwareNode> hardware)
+        => [.. hardware.Where(n => n.ParentId is null && n.Kind == HardwareKind.Storage).SelectMany(n => PerDrive.Select(b => Find(Pinned(b, n.Id.Value))!))];
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<OverlayChoice>> Presets = new Dictionary<string, IReadOnlyList<OverlayChoice>>
     {
@@ -87,7 +109,7 @@ public static class OverlayCatalog
     {
         if (item.IsFrameItem) return [];
         var kind = item.Part switch { OverlayPart.Gpu => HardwareKind.Gpu, OverlayPart.Cpu => HardwareKind.Cpu, OverlayPart.Memory => HardwareKind.Memory, OverlayPart.Storage => HardwareKind.Storage, _ => HardwareKind.Network };
-        var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (include?.Invoke(n) ?? true))
+        var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (item.Device is null ? include?.Invoke(n) ?? true : n.Id.Value == item.Device))
             .OrderByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuCoreTemp)).ToList();
         if (item.Aggregate == OverlayAggregate.First)
         {
