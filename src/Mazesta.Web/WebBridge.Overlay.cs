@@ -1,0 +1,87 @@
+using Mazesta.Core.Hardware; using Mazesta.Core.Overlay; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Monitoring;
+using Microsoft.Extensions.DependencyInjection;
+namespace Mazesta.Web;
+
+public sealed partial class WebBridge
+{
+    /// <summary>
+    /// The overlay page: what the overlay can show on this machine (the catalog, each item with the sensors it reads here, so the page can show a
+    /// live preview from the same snapshots), what it shows now, the presets, and its look. Changes are applied to the overlay at once and saved.
+    /// </summary>
+    private void RegisterOverlay()
+    {
+        var overlay = _sp.GetRequiredService<OverlayService>(); var engine = _sp.GetRequiredService<PollingEngine>();
+        bool Include(HardwareNode n) => n.Kind != HardwareKind.Network || (!NetworkAdapterFilter.IsVirtualBinding(n.Name) && !n.Name.StartsWith("vEthernet", StringComparison.OrdinalIgnoreCase));
+        object State()
+        {
+            var chosen = overlay.Items;
+            return new
+            {
+                visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
+                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText,
+                frameProblem = overlay.FrameSource?.Problem,
+                presets = OverlayCatalog.Presets.Select(p => new { id = p.Key, count = p.Value.Count }),
+                order = chosen.Select(c => c.Id),
+                items = OverlayCatalog.All.Select(i =>
+                {
+                    var sensors = OverlayCatalog.Resolve(i, engine.Hardware, Include);
+                    var choice = chosen.FirstOrDefault(c => c.Id == i.Id);
+                    return new
+                    {
+                        id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), frame = i.IsFrameItem, available = i.IsFrameItem || sensors.Count > 0,
+                        on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Aggregate.ToString(), sensors = sensors.Select(s => s.Id.Value),
+                    };
+                }),
+            };
+        }
+        void Save() { _store.Save(_config); PushSoon("overlayState", State); }
+
+        Method("overlay.state", _ => State());
+        Method("overlay.set", p =>
+        {
+            switch (Str(p, "field"))
+            {
+                case "visible": overlay.SetVisible(Bool(p, "value")); break;
+                case "corner": overlay.SetCorner(Str(p, "value")); break;
+                case "opacity": overlay.SetAppearance(Num(p, "value") ?? _config.OverlayOpacity, _config.OverlayScale); break;
+                case "scale": overlay.SetAppearance(_config.OverlayOpacity, Num(p, "value") ?? _config.OverlayScale); break;
+                default: throw new ArgumentException("unknown field");
+            }
+            Save(); return null;
+        });
+        // One item on or off, or its chart: the list keeps its order, a new item goes to the end of its part; the preset becomes "custom".
+        Method("overlay.item", p =>
+        {
+            var item = OverlayCatalog.Find(Str(p, "id")) ?? throw new ArgumentException("unknown item");
+            var list = overlay.Items.ToList();
+            int at = list.FindIndex(c => c.Id == item.Id);
+            bool on = Bool(p, "on"), chart = Bool(p, "chart");
+            if (!on) { if (at >= 0) list.RemoveAt(at); }
+            else if (at >= 0) list[at] = new(item.Id, chart);
+            else list.Add(new(item.Id, chart));
+            overlay.Configure(list, "custom");
+            Save(); return null;
+        });
+        Method("overlay.preset", p =>
+        {
+            string id = Str(p, "id");
+            if (!OverlayCatalog.Presets.TryGetValue(id, out var items)) throw new ArgumentException("unknown preset");
+            overlay.Configure(items, id);
+            Save(); return null;
+        });
+
+        // The frame rate the overlay measured at its last update, for the page's preview (sensor items the page reads from the snapshots itself).
+        void OnUpdated(Desktop.ViewModels.OverlayViewModel vm)
+        {
+            if (!vm.NeedsFrames) return;
+            var f = vm.Frames;
+            Push("overlayFrames", f is null ? null : new { fps = f.Fps, low1 = f.Low1Fps, frametime = f.FrameTimeMs, app = f.App });
+        }
+        overlay.Updated += OnUpdated; _cleanup.Add(() => overlay.Updated -= OnUpdated);
+        void OnVisible(bool _) => PushSoon("overlayState", State);
+        overlay.VisibilityChanged += OnVisible; _cleanup.Add(() => overlay.VisibilityChanged -= OnVisible);
+    }
+
+    private static double? Num(System.Text.Json.JsonElement p, string name)
+        => p.ValueKind == System.Text.Json.JsonValueKind.Object && p.TryGetProperty(name, out var v) && v.ValueKind == System.Text.Json.JsonValueKind.Number ? v.GetDouble() : null;
+}

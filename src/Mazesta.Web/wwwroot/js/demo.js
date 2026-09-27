@@ -98,10 +98,13 @@ const sections = () => [
   { title: "سیستم‌عامل", rows: [{ label: "OS", value: "Microsoft Windows 11 Pro 10.0.26200" }, { label: "Architecture", value: "64-bit" }] },
 ];
 
+import { overlay, frames } from "./demo-overlay.js";
+
 export async function call(m, p, emit) {
   emitRef = emit;
   strings ??= await (await fetch("js/demo-strings.json")).json();
-  if (!started) { started = true; seed(); setTimeout(snapshot, 50); setInterval(snapshot, 2000); }
+  if (!started) { started = true; seed(); setTimeout(snapshot, 50); setInterval(() => { snapshot(); frames(emit); }, 2000); }
+  if (m.startsWith("overlay.")) return overlay(m, p, HW, strings, emit);
   switch (m) {
     case "app.boot": return { language: "fa", rtl: true, strings, version: "demo", shopName: "مازستا", serviceNumber: "S-1405-0042", interval: 2, paused: false,
       contact: { sales: "09197588700", support: "09197588701", office: "021-41139", fax: "88867214 - 88867207", email: "info@dfmrendering.com", hours: "Contact_Hours", address: "Contact_Address", postcode: "1571837738" },
@@ -109,6 +112,7 @@ export async function call(m, p, emit) {
       units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Ampere: "A", Watt: "W", WattHour: "Wh", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", Seconds: "s", Hertz: "Hz", None: "" } };
     case "app.hardware": return HW;
     case "app.navReady": return true;
+    case "diag.state": return { findings: ["Motherboard 'ASUS ROG STRIX X570-E GAMING': 1 sensor(s) without a role", "Storage 'WDC WD20PURZ-85GU6Y0': no used space sensor"], logs: "D:\\Mazesta-Test\\Data\\logs" };
     case "chart.boot": { const n = HW.find((x) => x.sensors.some((y) => y.id === p.id)) || HW[0], x = n.sensors.find((y) => y.id === p.id) || n.sensors[0];
       return { language: "fa", rtl: true, strings, units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Watt: "W", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", None: "" },
         sensor: { ...x, node: n.name, part: n.kind } }; }
@@ -127,7 +131,7 @@ export async function call(m, p, emit) {
       pageFile: [{ label: strings.Tools_PageFile_Managed, value: "C:\\pagefile.sys" }, { label: strings.Tools_PageFile_Size, value: "16384 MB" }, { label: strings.Tools_PageFile_Used, value: "120 MB" }] };
     case "gaming.state": return { status: "", gameMode: strings.Gaming_On, gpuScheduling: strings.Gaming_On, plans: [{ index: 0, name: "Balanced", active: false }, { index: 1, name: "High performance", active: false }, { index: 2, name: "AMD Ryzen™ High Performance", active: true }] };
     case "settings.state": return { language: "fa", languages: ["en", "fa"], renderMode: "software", renderModes: ["auto", "software"], interval: "2", storageInterval: "900", shopName: "مازستا", message: "",
-      trayFirst: "20", trayIdle: "10", trayWatch: "30", trayStatus: "Tray: اجرا نمی‌شود · اجرا با ورود به ویندوز: خیر", canEnableTray: true, canDisableTray: false, dataFolder: "D:\\Mazesta-Test\\Data", mode: strings.Settings_Mode_Portable, version: "demo",
+      trayFirst: "20", trayIdle: "10", trayWatch: "30", trayHealth: "30", trayStatus: "Tray: اجرا نمی‌شود · اجرا با ورود به ویندوز: خیر", canEnableTray: true, canDisableTray: false, dataFolder: "D:\\Mazesta-Test\\Data", mode: strings.Settings_Mode_Portable, version: "demo",
       overlayVisible: false, overlayCorner: "TopLeft", overlayCorners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })), hotkey: "Ctrl+Shift+O" };
     default: return null;
   }

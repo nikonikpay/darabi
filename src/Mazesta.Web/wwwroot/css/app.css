@@ -385,7 +385,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 
 /* ———— Parts: every part carries its hue in --hue; panels are the boxes the dashboard, pages and groups are built from ———— */
 .p-cpu { --hue: var(--c-cpu); } .p-gpu { --hue: var(--c-gpu); } .p-ram { --hue: var(--c-ram); } .p-storage { --hue: var(--c-storage); }
-.p-net { --hue: var(--c-net); } .p-board { --hue: var(--c-board); } .p-sys { --hue: var(--c-board); } .p-power { --hue: var(--c-power); } .p-shop, .p-contact { --hue: var(--yellow); } .p-win { --hue: var(--paper-2); }
+.p-net { --hue: var(--c-net); } .p-board { --hue: var(--c-board); } .p-sys { --hue: var(--c-board); } .p-power { --hue: var(--c-power); } .p-shop, .p-contact, .p-game { --hue: var(--yellow); } .p-win { --hue: var(--paper-2); }
 .hue { color: var(--hue); }
 
 .panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 22px; align-items: start; }
@@ -531,3 +531,69 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rec-grid.up .rec-verdict { color: var(--ink); background: var(--hue); border-color: var(--hue); }
 .rec-none { margin: 6px 0 0; font-size: 12.5px; color: var(--paper-3); }
 @media (prefers-reduced-motion: reduce) { .group.running .panel-head .ico { animation: none; } }
+
+/* ———— Overlay page ———— */
+.ov-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; padding: 16px 20px; border-radius: var(--r-panel); background: var(--ink-2); border: 1px solid var(--rule-2); }
+.ov-show { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.ov-show b { display: block; font-size: 15px; }
+.ov-show small { color: var(--paper-3); font-size: 12px; }
+.kbd { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 5px; border: 1px solid var(--rule-2); background: var(--ink-3); color: var(--paper-2); }
+.ov-ctl { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--paper-3); }
+.ov-ctl.grow { flex: 1; min-width: 200px; }
+.seg { display: inline-flex; border: 1px solid var(--rule-2); border-radius: var(--r-ctl); overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--paper-2); padding: 6px 12px; font: 600 12.5px var(--fa); cursor: pointer; }
+.seg button + button { border-inline-start: 1px solid var(--rule-2); }
+.seg button[aria-pressed="true"] { background: var(--yellow); color: var(--on-yellow); }
+.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 12px; margin-top: 14px; }
+.preset { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; text-align: start; padding: 14px 16px; border-radius: var(--r-panel);
+  background: var(--ink-2); border: 1px solid var(--rule-2); color: var(--paper); cursor: pointer; font: inherit; transition: border-color var(--fast), background var(--fast), transform var(--fast) var(--ease); }
+.preset:hover { border-color: var(--paper-3); }
+.preset:active { transform: translateY(1px); }
+.preset .ico { grid-row: span 2; width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: var(--ink-3); color: var(--paper-2); }
+.preset .ico svg { width: 22px; height: 22px; stroke: currentColor; }
+.preset .txt b { display: block; font-size: 15px; }
+.preset .txt small { display: block; color: var(--paper-3); font-size: 12px; line-height: 1.6; margin-top: 2px; }
+.preset .cnt { grid-column: 2; font-size: 12px; color: var(--paper-3); display: inline-flex; gap: 6px; align-items: center; }
+.preset .cnt svg { width: 14px; height: 14px; stroke: currentColor; }
+.preset.on { border-color: var(--yellow); background: color-mix(in oklab, var(--yellow) 9%, var(--ink-2)); }
+.preset.on .ico { background: var(--yellow); color: var(--on-yellow); }
+.preset.on .cnt { color: var(--yellow); font-weight: 700; }
+.preset.custom { cursor: default; }
+.ov-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); gap: var(--gut); align-items: start; }
+@media (max-width: 1100px) { .ov-split { grid-template-columns: minmax(0, 1fr); } .ov-side { position: static; } }
+.ov-side { position: sticky; top: 0; }
+.ov-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
+.ov-groups .group { margin-top: 0; padding-bottom: 10px; }
+.ov-list { display: grid; margin-top: 8px; }
+.ov-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 36px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--rule); min-height: 40px; }
+.ov-row:last-child { border-bottom: 0; }
+.ov-name { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13.5px; min-width: 0; }
+.ov-name small { color: var(--paper-3); font-size: 11px; margin-inline-start: 6px; }
+.ov-row:not(.on) .ov-name > span { color: var(--paper-2); }
+.ov-val { font-size: 13px; color: var(--paper-2); white-space: nowrap; }
+.ov-row.on .ov-val { color: var(--hue); font-weight: 700; }
+.ov-na { font-size: 11.5px; color: var(--paper-3); }
+.ov-row.na .ov-name { cursor: default; color: var(--paper-3); }
+.icon-btn:disabled { opacity: 0.3; cursor: default; background: transparent; color: var(--paper-3); }
+/* The preview draws the overlay over a stand-in for a game, so its translucency can be judged. */
+.ov-preview { --ov-alpha: 0.9; --ov-scale: 1; margin-top: 14px; padding: 22px; border-radius: var(--r-panel); min-height: 200px;
+  background: radial-gradient(120% 90% at 80% 10%, #2d4f6e 0, transparent 60%), radial-gradient(90% 70% at 10% 90%, #5e3a1c 0, transparent 60%), linear-gradient(160deg, #1b2a38, #2a1f17);
+  display: grid; justify-items: start; align-content: start; font-size: calc(12px * var(--ov-scale)); }
+.ov-preview > * { width: calc(232px * var(--ov-scale)); background: rgb(11 11 13 / var(--ov-alpha)); padding-inline: calc(12px * var(--ov-scale)); box-sizing: border-box; }
+.ov-preview > :first-child { border-radius: 12px 12px 0 0; padding-top: 9px; }
+.ov-preview > :last-child { border-radius: 0 0 12px 12px; padding-bottom: 8px; }
+.ov-brand { display: flex; align-items: center; gap: 7px; font: 800 0.85em var(--lat); color: var(--yellow); letter-spacing: 0.04em; padding-bottom: 4px; direction: ltr; }
+.ov-brand i { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+.ov-block { padding-block: 4px; }
+.ov-title { display: flex; align-items: center; gap: 6px; font: 800 0.9em var(--lat); color: var(--hue); direction: ltr; }
+.ov-title i { width: 3px; height: 11px; border-radius: 2px; background: var(--hue); }
+.ov-title small { margin-inline-start: auto; color: var(--paper-3); font-weight: 500; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-lv { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.ov-lv span { color: #b9b9c2; font-size: 0.9em; }
+.ov-lv b { color: #fff; font-size: 1.05em; }
+.ov-spark { display: block; width: 100%; height: calc(24px * var(--ov-scale)); background: rgb(255 255 255 / 0.055); border-radius: 3px; margin: 2px 0 4px; }
+
+/* Settings: the diagnostic findings, one per line, Latin (they name sensors and devices as Windows does). */
+.findings { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; max-height: 220px; overflow: auto; }
+.findings li { font-size: 12px; color: var(--paper-2); padding: 5px 10px; border-radius: 6px; background: var(--ink-3); direction: ltr; text-align: left; }
+.findings li.ok, .findings li.caption { direction: inherit; text-align: start; background: transparent; padding-inline: 0; }

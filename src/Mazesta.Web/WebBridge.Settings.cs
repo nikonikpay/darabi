@@ -12,10 +12,8 @@ public sealed partial class WebBridge
         {
             language = settings.Language, languages = settings.Languages, renderMode = settings.RenderMode, renderModes = settings.RenderModes,
             interval = settings.FastIntervalText, storageInterval = settings.StorageIntervalText, shopName = settings.ShopName, message = settings.Message,
-            trayFirst = settings.TrayFirstCheckText, trayIdle = settings.TrayIdleText, trayWatch = settings.TrayWatchText, trayStatus = settings.TrayStatusText,
+            trayFirst = settings.TrayFirstCheckText, trayIdle = settings.TrayIdleText, trayWatch = settings.TrayWatchText, trayHealth = settings.TrayHealthText, trayStatus = settings.TrayStatusText,
             canEnableTray = settings.CanEnableTray, canDisableTray = settings.CanDisableTray, dataFolder = settings.DataFolder, mode = settings.ModeText, version = settings.Version,
-            overlayVisible = settings.OverlayVisible, overlayCorner = settings.OverlayCorner?.Value, overlayCorners = settings.OverlayCorners.Select(c => new { value = c.Value, label = c.Label }),
-            hotkey = settings.OverlayHotkey,
         };
         Mirror("settings", settings, State);
         Method("settings.state", _ => State());
@@ -32,8 +30,7 @@ public sealed partial class WebBridge
                 case "trayFirst": settings.TrayFirstCheckText = v; break;
                 case "trayIdle": settings.TrayIdleText = v; break;
                 case "trayWatch": settings.TrayWatchText = v; break;
-                case "overlayVisible": settings.OverlayVisible = Bool(p, "value"); break;
-                case "overlayCorner": settings.OverlayCorner = settings.OverlayCorners.FirstOrDefault(c => c.Value == v); break;
+                case "trayHealth": settings.TrayHealthText = v; break;
                 default: throw new ArgumentException("unknown field");
             }
             return null;

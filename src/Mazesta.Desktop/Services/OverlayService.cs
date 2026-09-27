@@ -1,13 +1,14 @@
 using System.Runtime.InteropServices; using System.Windows; using System.Windows.Interop;
-using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Desktop.Views; using Mazesta.Monitoring; using Mazesta.Persistence;
+using Mazesta.Core.Overlay; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Desktop.Views; using Mazesta.Monitoring; using Mazesta.Persistence;
 namespace Mazesta.Desktop.Services;
 
 /// <summary>
 /// Shows and hides the on-screen overlay and remembers it (and its corner) in the settings. Ctrl+Shift+O toggles it from anywhere, also while a
 /// game has the keyboard. The overlay window and its view model are made on first use and kept; hidden, the view model ignores the monitor's
 /// snapshots, so an unused overlay costs nothing. It is not owned by the main window, so it stays up while the app is minimised.
+/// What it shows (items, charts, preset), its opacity and size come from the settings; changing them rebuilds the view model in place.
 /// </summary>
-public sealed class OverlayService(PollingEngine engine, AppConfig config) : IDisposable
+public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null) : IDisposable
 {
     public const string HotkeyText = "Ctrl+Shift+O";
     public static readonly string[] Corners = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"];
@@ -16,6 +17,42 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config) : IDi
 
     public bool IsVisible => _window?.IsVisible == true;
     public event Action<bool>? VisibilityChanged;
+    /// <summary>Raised after each poll the overlay showed, with what it showed (the web page mirrors it in its preview).</summary>
+    public event Action<OverlayViewModel>? Updated;
+    public IFrameRateSource? FrameSource => frames;
+    public OverlayViewModel? Current => _vm;
+
+    public IReadOnlyList<OverlayChoice> Items => config.OverlayItems is { Count: > 0 } items ? items : OverlayCatalog.Presets[OverlayCatalog.DefaultPreset];
+
+    /// <summary>New items (from a preset or by hand): kept in the settings and shown at once if the overlay is up.</summary>
+    public void Configure(IReadOnlyList<OverlayChoice> items, string preset)
+    {
+        config.OverlayItems = [.. items]; config.OverlayPreset = preset;
+        Rebuild();
+    }
+
+    public void SetAppearance(double opacity, double scale)
+    {
+        config.OverlayOpacity = Math.Clamp(opacity, 0.5, 1); config.OverlayScale = Math.Clamp(scale, 0.7, 1.5);
+        Rebuild();
+    }
+
+    private OverlayViewModel Create()
+    {
+        var vm = new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a), Items, frames, config.OverlayOpacity, config.OverlayScale);
+        vm.Updated += () => Updated?.Invoke(vm);
+        return vm;
+    }
+
+    private void Rebuild()
+    {
+        if (_vm is null) return;
+        bool visible = IsVisible;
+        _vm.SetActive(false); _vm.Dispose();
+        _vm = Create();
+        if (_window is not null) _window.DataContext = _vm;
+        if (visible) _vm.SetActive(true);
+    }
 
     public void Toggle() => SetVisible(!IsVisible);
 
@@ -24,7 +61,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config) : IDi
         if (visible)
         {
             if (engine.Hardware.Count == 0) return;   // the hardware scan has not finished: there is nothing to show yet
-            _vm ??= new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a));
+            _vm ??= Create();
             if (_window is null) { _window = new OverlayWindow { DataContext = _vm }; Rtl.Apply(_window.Root); }
             _vm.SetActive(true); _window.Show(); _window.SetCorner(Corners.Contains(config.OverlayCorner) ? config.OverlayCorner : Corners[0]);
         }

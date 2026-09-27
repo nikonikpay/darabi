@@ -3,6 +3,7 @@
 import { hw } from "./store.js";
 
 export const PART = {
+  Gaming: { cls: "p-game", hue: "--yellow", icon: "gamepad", key: "Web_Overlay_Gaming", page: null },
   Cpu: { cls: "p-cpu", hue: "--c-cpu", icon: "cpu", key: "Nav_Cpu", page: "cpu" },
   Gpu: { cls: "p-gpu", hue: "--c-gpu", icon: "gpu", key: "Nav_Gpu", page: "gpu" },
   Memory: { cls: "p-ram", hue: "--c-ram", icon: "ram", key: "Dashboard_Ram", page: null },

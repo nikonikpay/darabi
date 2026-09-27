@@ -18,6 +18,7 @@ export const PAGES = [
   { id: "network", key: "Nav_Network", load: () => import("./pages/component.js"), arg: "Network" },
   { id: "storage", key: "Nav_Storage", load: () => import("./pages/component.js"), arg: "Storage" },
   { id: "gaming", key: "Nav_Gaming", load: () => import("./pages/gaming.js") },
+  { id: "overlay", key: "Nav_Overlay", load: () => import("./pages/overlay.js") },
   { id: "tuning", key: "Nav_Tuning", load: () => import("./pages/tuning.js") },
   { id: "tools", key: "Nav_WindowsTools", load: () => import("./pages/tools.js") },
   { id: "reports", key: "Nav_Reports", load: () => import("./pages/reports.js") },
@@ -130,5 +131,11 @@ window.addEventListener("keydown", (e) => {
   if (n >= 0 && PAGES[n]) { e.preventDefault(); go(PAGES[n].id); }
 });
 document.addEventListener("visibilitychange", () => { app.dataset.visible = String(!document.hidden); });
+
+// A page error is logged by the host (once per message), next to the host's own, so a log brought back from a machine shows it too.
+const reported = new Set();
+function report(message) { if (!live || reported.has(message) || reported.size > 50) return; reported.add(message); call("app.logError", { message }).catch(() => {}); }
+window.addEventListener("error", (e) => report(`${e.message} at ${e.filename}:${e.lineno}:${e.colno}`));
+window.addEventListener("unhandledrejection", (e) => report(String(e.reason && e.reason.stack || e.reason)));
 
 start().catch((err) => { stage.append(h("pre", { class: "console" }, String(err && err.stack || err))); });

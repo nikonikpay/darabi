@@ -54,6 +54,8 @@ const ICONS = {
   camera: "M4 4h16v16H4zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8M16.5 7.5h.01",
   bug: "M8 8a4 4 0 0 1 8 0v8a4 4 0 0 1-8 0zM8 12H3M21 12h-5M5 6l3 2M19 6l-3 2M5 19l3-3M19 19l-3-3",
   overlay: "M3 5h18v14H3zM6 8h6v4H6z",
+  gamepad: "M7 8h10a5 5 0 0 1 5 5v1.5a2.5 2.5 0 0 1-4.6 1.4L16 14H8l-1.4 1.9A2.5 2.5 0 0 1 2 14.5V13a5 5 0 0 1 5-5zM8 10.5v3M6.5 12h3M15.5 11h.01M17.5 13h.01",
+  check: "M5 12.5l4.5 4.5L19 7.5",
   trophy: "M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v2a4 4 0 0 0 4 4M16 6h4v2a4 4 0 0 1-4 4M12 13v4M8 21h8M10 17h4v4h-4z",
 };
 export function icon(name) {

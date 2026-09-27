@@ -41,6 +41,7 @@ public static class Bootstrapper
         s.AddDiagnostics(paths, lf);
         s.AddSingleton<Services.ITrayController, Services.TrayController>();
         s.AddSingleton<Services.ReportService>();
+        s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));
         s.AddSingleton<Services.OverlayService>();
         AddViewModelFactory(s, sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<InventoryCache>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));

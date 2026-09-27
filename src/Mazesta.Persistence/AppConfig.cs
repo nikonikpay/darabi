@@ -31,6 +31,14 @@ public sealed class AppConfig : IVersionedDocument
     public bool OverlayVisible { get; set; }
     /// <summary>TopLeft, TopRight, BottomLeft or BottomRight of the primary screen.</summary>
     public string OverlayCorner { get; set; } = "TopLeft";
+    /// <summary>What the overlay shows, in order, each with its chart on or off (ids from OverlayCatalog). Null in older files: the game preset.</summary>
+    public List<Mazesta.Core.Overlay.OverlayChoice>? OverlayItems { get; set; }
+    /// <summary>The preset the items came from ("game", "render", "troubleshoot"), or "custom" once they were changed by hand.</summary>
+    public string OverlayPreset { get; set; } = Mazesta.Core.Overlay.OverlayCatalog.DefaultPreset;
+    /// <summary>The overlay panel's opacity, 0.5 to 1.</summary>
+    public double OverlayOpacity { get; set; } = 0.9;
+    /// <summary>The overlay's size: 0.85 small, 1 normal, 1.2 large.</summary>
+    public double OverlayScale { get; set; } = 1.0;
 }
 public sealed class Migration0To1 : IMigration
 {

@@ -909,4 +909,51 @@
   <data name="Web_Bench_NewRecord" xml:space="preserve"><value>رکورد جدید؛ ذخیره شد</value></data>
   <data name="Web_Bench_Lower" xml:space="preserve"><value>پایین‌تر از بهترین نتیجه؛ ذخیره نشد</value></data>
   <data name="Web_Bench_Equal" xml:space="preserve"><value>برابر با بهترین نتیجه؛ نتیجهٔ قبلی نگه داشته شد</value></data>
+  <data name="Nav_Overlay" xml:space="preserve"><value>اورلی</value></data>
+  <data name="Overlay_Fps" xml:space="preserve"><value>FPS</value></data>
+  <data name="Overlay_Low1" xml:space="preserve"><value>1% low</value></data>
+  <data name="Overlay_FrameTime" xml:space="preserve"><value>زمان فریم</value></data>
+  <data name="Overlay_HotCore" xml:space="preserve"><value>داغ‌ترین هسته</value></data>
+  <data name="Overlay_MaxThread" xml:space="preserve"><value>پرکارترین رشته</value></data>
+  <data name="Overlay_MaxClock" xml:space="preserve"><value>بیشترین فرکانس هسته</value></data>
+  <data name="Overlay_HotDrive" xml:space="preserve"><value>داغ‌ترین دیسک</value></data>
+  <data name="Overlay_Read" xml:space="preserve"><value>خواندن</value></data>
+  <data name="Overlay_Write" xml:space="preserve"><value>نوشتن</value></data>
+  <data name="Overlay_ChartMax" xml:space="preserve"><value>بیشینه {0}</value></data>
+  <data name="Web_Overlay_Gaming" xml:space="preserve"><value>بازی (نرخ فریم)</value></data>
+  <data name="Web_Overlay_Lede" xml:space="preserve"><value>اورلی بالای بازی‌ها و برنامه‌ها در گوشهٔ صفحه می‌ماند و ماوس از آن رد می‌شود. از یک حالت آماده شروع کنید و بعد هر مورد و نمودارش را روشن یا خاموش کنید. هر نمودار زیر عنوان خودش نمایش داده می‌شود.</value></data>
+  <data name="Web_Overlay_Show" xml:space="preserve"><value>نمایش اورلی</value></data>
+  <data name="Web_Overlay_Hotkey" xml:space="preserve"><value>از هر جا:</value></data>
+  <data name="Web_Overlay_Opacity" xml:space="preserve"><value>شفافیت</value></data>
+  <data name="Web_Overlay_Size" xml:space="preserve"><value>اندازه</value></data>
+  <data name="Web_Overlay_Small" xml:space="preserve"><value>کوچک</value></data>
+  <data name="Web_Overlay_Normal" xml:space="preserve"><value>معمولی</value></data>
+  <data name="Web_Overlay_Large" xml:space="preserve"><value>بزرگ</value></data>
+  <data name="Web_Overlay_Presets" xml:space="preserve"><value>حالت‌های آماده</value></data>
+  <data name="Web_Overlay_Items" xml:space="preserve"><value>موارد نمایش</value></data>
+  <data name="Web_Overlay_Preview" xml:space="preserve"><value>پیش‌نمایش</value></data>
+  <data name="Web_Overlay_PreviewNote" xml:space="preserve"><value>مقادیر زنده از همین سیستم. نرخ فریم وقتی نمایش داده می‌شود که اورلی روشن باشد و یک بازی یا برنامهٔ DirectX جلوی صفحه باشد.</value></data>
+  <data name="Web_Overlay_Preset_game" xml:space="preserve"><value>بازی</value></data>
+  <data name="Web_Overlay_Preset_game_Note" xml:space="preserve"><value>FPS، 1% low و زمان فریم با نمودار، بعد دما، بار و فرکانس GPU و CPU.</value></data>
+  <data name="Web_Overlay_Preset_render" xml:space="preserve"><value>رندر</value></data>
+  <data name="Web_Overlay_Preset_render_Note" xml:space="preserve"><value>بار و دمای CPU و GPU در کار طولانی، حافظهٔ مصرفی و نوشتن روی دیسک.</value></data>
+  <data name="Web_Overlay_Preset_troubleshoot" xml:space="preserve"><value>عیب‌یابی</value></data>
+  <data name="Web_Overlay_Preset_troubleshoot_Note" xml:space="preserve"><value>همهٔ دماها، فرکانس‌ها، ولتاژها و فن‌ها برای پیدا کردن قطعه‌ای که افت می‌کند یا ایراد دارد.</value></data>
+  <data name="Web_Overlay_Preset_custom" xml:space="preserve"><value>سفارشی</value></data>
+  <data name="Web_Overlay_Preset_custom_Note" xml:space="preserve"><value>دستی تغییر داده شده است. برای شروع دوباره یک حالت آماده را انتخاب کنید.</value></data>
+  <data name="Web_Overlay_InUse" xml:space="preserve"><value>در حال استفاده</value></data>
+  <data name="Web_Overlay_ItemsCount" xml:space="preserve"><value>{0} مورد</value></data>
+  <data name="Web_Overlay_ChartToggle" xml:space="preserve"><value>نمودار</value></data>
+  <data name="Web_Overlay_NotHere" xml:space="preserve"><value>روی این سیستم سنسوری ندارد</value></data>
+  <data name="Web_Overlay_Agg_Max" xml:space="preserve"><value>بیشترین</value></data>
+  <data name="Web_Overlay_Agg_Sum" xml:space="preserve"><value>مجموع</value></data>
+  <data name="Web_Overlay_Empty" xml:space="preserve"><value>موردی انتخاب نشده است. یک حالت آماده انتخاب کنید یا موردها را روشن کنید.</value></data>
+  <data name="Web_Overlay_FrameProblem" xml:space="preserve"><value>نرخ فریم روی این سیستم اندازه‌گیری نمی‌شود: {0}</value></data>
+  <data name="Settings_Tray_Health" xml:space="preserve"><value>بررسی سلامت دیسک‌ها (دقیقه)</value></data>
+  <data name="Web_Diag_Title" xml:space="preserve"><value>لاگ عیب‌یابی</value></data>
+  <data name="Web_Diag_Note" xml:space="preserve"><value>آنچه برنامه روی این سیستم نتوانست بخواند: سنسورهای شناسایی‌نشده، مقادیر اصلی که یک قطعه ندارد و خطاها. همه را در یک فایل خروجی بگیرید و برگردانید تا برنامه برای این سیستم کامل شود.</value></data>
+  <data name="Web_Diag_Export" xml:space="preserve"><value>خروجی گرفتن از لاگ عیب‌یابی</value></data>
+  <data name="Web_Diag_Exported" xml:space="preserve"><value>فایل عیب‌یابی آماده شد و پوشه‌اش باز شد.</value></data>
+  <data name="Web_Diag_None" xml:space="preserve"><value>تا این لحظه چیزی روی این سیستم کم نیست.</value></data>
+  <data name="Web_Diag_More" xml:space="preserve"><value>و {0} مورد دیگر در فایل</value></data>
 </root>
