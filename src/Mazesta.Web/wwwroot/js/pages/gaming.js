@@ -18,7 +18,7 @@ export function mount(el) {
     kv.replaceChildren(h("dt", {}, t("Gaming_GameMode")), h("dd", {}, s.gameMode), h("dt", {}, t("Gaming_Hags")), h("dd", {}, s.gpuScheduling));
     plans.replaceChildren(...(s.plans.length ? s.plans.map((p) => h("div", { class: "q-row", style: { gridTemplateColumns: "1fr auto", padding: "14px 0" } },
       h("span", { class: "name lat", style: { textAlign: "right" } }, p.name),
-      p.active ? h("span", { class: "pill pass" }, t("Gaming_Active")) : h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "activate", index: String(p.index) }) }, t("Gaming_Activate"))))
+      p.active ? h("span", { class: "pill run" }, t("Gaming_Active")) : h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "activate", index: String(p.index) }) }, t("Gaming_Activate"))))
       : [h("p", { class: "caption" }, t("Gaming_NoPlans"))]));
   }
   call("gaming.state").then(update);

@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-27T17:31:22+00:00",
+  "title": "Design System: Mazesta Test (web edition)",
+  "extensions": {
+    "scope": "Governs the web edition (src/Mazesta.Web/wwwroot) only. The WPF edition (src/Mazesta.Desktop, Themes/Dark.xaml) is a separate earlier design in the same brand colours and is not governed by this file.",
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0c0c0c",
+        "tonalRamp": [
+          "#050505",
+          "#0c0c0c",
+          "#141412",
+          "#1c1c19",
+          "#2a2a26",
+          "#4a4944",
+          "#8f8c82",
+          "#c9c6bb"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink Raised",
+        "canonical": "#141412"
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink Hover",
+        "canonical": "#1c1c19"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f3f1ea",
+        "tonalRamp": [
+          "#262521",
+          "#46443e",
+          "#67655d",
+          "#8f8c82",
+          "#aeaba1",
+          "#c9c6bb",
+          "#e1ded5",
+          "#f3f1ea"
+        ]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "Paper Muted",
+        "canonical": "#c9c6bb"
+      },
+      "paper-3": {
+        "role": "neutral",
+        "displayName": "Paper Faint",
+        "canonical": "#8f8c82"
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "rgb(243 241 234 / 0.13)"
+      },
+      "rule-2": {
+        "role": "neutral",
+        "displayName": "Rule Strong",
+        "canonical": "rgb(243 241 234 / 0.3)"
+      },
+      "yellow": {
+        "role": "primary",
+        "displayName": "Brand Yellow",
+        "canonical": "#fdd400",
+        "tonalRamp": [
+          "#2b2400",
+          "#4d4000",
+          "#7a6500",
+          "#a88c00",
+          "#e2bd00",
+          "#fdd400",
+          "#ffe45c",
+          "#fff3b3"
+        ]
+      },
+      "yellow-deep": {
+        "role": "primary",
+        "displayName": "Deep Yellow",
+        "canonical": "#e2bd00"
+      },
+      "on-yellow": {
+        "role": "primary",
+        "displayName": "Plane Ink",
+        "canonical": "#0c0c0c"
+      },
+      "on-yellow-2": {
+        "role": "primary",
+        "displayName": "Plane Umber",
+        "canonical": "#4d4000"
+      },
+      "pass": {
+        "role": "state",
+        "displayName": "Pass Green",
+        "canonical": "#2ec08e",
+        "tonalRamp": [
+          "#0a2a1f",
+          "#114a36",
+          "#18694d",
+          "#208a65",
+          "#2ec08e",
+          "#5fd3aa",
+          "#9be5c9",
+          "#d4f5e8"
+        ]
+      },
+      "fail": {
+        "role": "state",
+        "displayName": "Fail Red",
+        "canonical": "#ee4b3d",
+        "tonalRamp": [
+          "#33100c",
+          "#5c1c16",
+          "#8a2a21",
+          "#bb392d",
+          "#ee4b3d",
+          "#f37a6f",
+          "#f8aaa3",
+          "#fcd9d6"
+        ]
+      },
+      "warn": {
+        "role": "state",
+        "displayName": "Caution Amber",
+        "canonical": "#f2a122",
+        "tonalRamp": [
+          "#332106",
+          "#5c3c0b",
+          "#8a5a10",
+          "#bb7b17",
+          "#f2a122",
+          "#f5b958",
+          "#f9d38f",
+          "#fcebc9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-numeral": {
+        "displayName": "Display Numeral",
+        "purpose": "Giant live temperatures on the poster plane; rolls digit by digit."
+      },
+      "headline-page": {
+        "displayName": "Headline Page",
+        "purpose": "One page title per page, over a 2px paper rule."
+      },
+      "headline-verdict": {
+        "displayName": "Headline Verdict",
+        "purpose": "The machine's standing on the dashboard plane."
+      },
+      "headline-plane": {
+        "displayName": "Headline Plane",
+        "purpose": "Component plane titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section titles."
+      },
+      "title-small": {
+        "displayName": "Title Small",
+        "purpose": "Column heads and sub-sections."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text and ledes (max 70ch)."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Captions, table headers, band text."
+      },
+      "value": {
+        "displayName": "Value",
+        "purpose": "Every sensor reading, unit, model name: Latin, tabular, isolated LTR."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "Benchmark metrics and the tuning live strip."
+      },
+      "index-number": {
+        "displayName": "Index Number",
+        "purpose": "Persian two-digit index and queue step numbers."
+      },
+      "console": {
+        "displayName": "Console",
+        "purpose": "Real command output only."
+      }
+    },
+    "fonts": [
+      {
+        "family": "Vazirmatn",
+        "source": "src/Mazesta.Web/wwwroot/fonts/Vazirmatn-Variable.woff2",
+        "license": "OFL",
+        "weights": "100 900",
+        "display": "block"
+      },
+      {
+        "family": "Archivo",
+        "source": "src/Mazesta.Web/wwwroot/fonts/Archivo-Variable.ttf",
+        "license": "OFL",
+        "weights": "100 900",
+        "stretch": "62% 125%",
+        "display": "block"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "toast-lift",
+        "value": "0 10px 30px rgb(0 0 0 / 0.45)",
+        "purpose": "Transient toasts only; the rest of the system is flat."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The single house easing for every transition and entrance."
+      },
+      {
+        "name": "fast",
+        "value": "160ms",
+        "purpose": "Colour, border and background changes."
+      },
+      {
+        "name": "slow",
+        "value": "620ms",
+        "purpose": "Index underline draw, switch knob, slab arrow."
+      },
+      {
+        "name": "roll",
+        "value": "900ms",
+        "purpose": "Rolling numerals: each changed digit column slides to its value."
+      },
+      {
+        "name": "view-transition-old",
+        "value": "240ms fade-out",
+        "purpose": "Outgoing page on navigation."
+      },
+      {
+        "name": "view-transition-new",
+        "value": "520ms clip-path wipe",
+        "purpose": "Incoming page wipes in along the grid (skipped when hidden, under reduced motion or with ?still)."
+      },
+      {
+        "name": "plane-in",
+        "value": "820ms clip-path wipe",
+        "purpose": "Yellow plane entrance."
+      },
+      {
+        "name": "rule-in",
+        "value": "700ms translateY(8px) + fade, 45ms stagger by --i",
+        "purpose": "Columns, page heads and section heads."
+      },
+      {
+        "name": "range-rule",
+        "value": "600ms",
+        "purpose": "Min/max span and current tick glide."
+      },
+      {
+        "name": "progress",
+        "value": "500ms scaleX",
+        "purpose": "Progress bars grow from the reading-start edge."
+      },
+      {
+        "name": "toast-in",
+        "value": "420ms translateY(12px) + fade",
+        "purpose": "Toast arrival."
+      },
+      {
+        "name": "motion-off",
+        "value": "prefers-reduced-motion: reduce | ?still (data-still)",
+        "purpose": "Removes all animations, transitions and view-transition animations."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "stack",
+        "value": "1180px",
+        "purpose": "Below: monitoring and tuning splits stack; tuning live strip goes from 6 to 3 columns."
+      },
+      {
+        "name": "min-window",
+        "value": "1024px",
+        "purpose": "Smallest window the app allows; dashboard part columns stay one row."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Slab Button",
+      "kind": "button",
+      "refersTo": "slab",
+      "description": "The primary action on a yellow plane: an ink slab with a sliding arrow.",
+      "html": "<div class=\"ds-plane-mini\" dir=\"rtl\"><button class=\"ds-slab\">اجرای آزمون‌ها <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke-width=\"2\" stroke-linecap=\"square\" aria-hidden=\"true\"><path d=\"M19 12H5m6-6-6 6 6 6\"/></svg></button></div>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-plane-mini{background:var(--yellow);padding:24px} .ds-slab{font-family:Vazirmatn,'Segoe UI',sans-serif;display:inline-flex;align-items:center;gap:10px;border:0;border-radius:0;background:var(--ink);color:var(--paper);font-weight:800;font-size:15px;padding:13px 22px;cursor:pointer;transition:transform var(--fast) var(--ease),background var(--fast)} .ds-slab svg{width:18px;height:18px;stroke:currentColor;transition:transform var(--slow) var(--ease)} .ds-slab:hover{background:#2a2a26} .ds-slab:hover svg{transform:translateX(-5px)} .ds-slab:active{transform:translateY(1px)} .ds-slab:focus-visible{outline:2px solid var(--ink);outline-offset:3px}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default secondary action: transparent with a strong-rule stroke.",
+      "html": "<button class=\"ds-btn\" dir=\"rtl\">گزارش‌ها</button>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-btn{font-family:Vazirmatn,'Segoe UI',sans-serif;display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--rule-2);border-radius:0;color:var(--paper);padding:8px 15px;font-weight:600;font-size:13.5px;cursor:pointer;transition:border-color var(--fast),background var(--fast),color var(--fast)} .ds-btn:hover{border-color:var(--paper)} .ds-btn:focus-visible{outline:2px solid var(--yellow);outline-offset:3px} .ds-btn:disabled{opacity:.35}"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Yellow fill; hover swaps to paper.",
+      "html": "<button class=\"ds-btn-primary\" dir=\"rtl\">ذخیره</button>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-btn-primary{font-family:Vazirmatn,'Segoe UI',sans-serif;background:var(--yellow);border:1px solid var(--yellow);border-radius:0;color:var(--on-yellow);padding:8px 15px;font-weight:800;font-size:13.5px;cursor:pointer;transition:background var(--fast),border-color var(--fast)} .ds-btn-primary:hover{background:var(--paper);border-color:var(--paper)} .ds-btn-primary:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}"
+    },
+    {
+      "name": "Go Button",
+      "kind": "button",
+      "refersTo": "button-go",
+      "description": "Starts a queue: paper fill, hover swaps to yellow.",
+      "html": "<button class=\"ds-btn-go\" dir=\"rtl\">شروع</button>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-btn-go{font-family:Vazirmatn,'Segoe UI',sans-serif;background:var(--paper);border:1px solid var(--paper);border-radius:0;color:var(--ink);padding:8px 15px;font-weight:800;font-size:13.5px;cursor:pointer;transition:background var(--fast),border-color var(--fast)} .ds-btn-go:hover{background:var(--yellow);border-color:var(--yellow)} .ds-btn-go:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}"
+    },
+    {
+      "name": "Underline Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Bottom-stroke-only field; yellow stroke on focus.",
+      "html": "<input class=\"ds-field\" dir=\"ltr\" value=\"S-1405-0042\" aria-label=\"Service number\">",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-field{font-family:Archivo,'Segoe UI',sans-serif;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;background:transparent;border:0;border-bottom:1px solid var(--rule-2);border-radius:0;padding:6px 2px;color:var(--paper);font-size:15px;caret-color:var(--yellow);transition:border-color var(--fast)} .ds-field:hover{border-bottom-color:var(--paper-2)} .ds-field:focus{outline:none;border-bottom-color:var(--yellow)}"
+    },
+    {
+      "name": "Numbered Index",
+      "kind": "nav",
+      "refersTo": "index-item",
+      "description": "Navigation on the reading-start edge: Persian numbers, current page as a yellow bar, hover draws a yellow underline.",
+      "html": "<ul class=\"ds-index\" dir=\"rtl\"><li><a href=\"#\" aria-current=\"page\"><span class=\"no\">۰۱</span><span>داشبورد</span></a></li><li><a href=\"#\"><span class=\"no\">۰۲</span><span>مانیتورینگ</span></a></li><li><a href=\"#\"><span class=\"no\">۰۳</span><span>تست‌ها</span></a></li></ul>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-index{font-family:Vazirmatn,'Segoe UI',sans-serif;list-style:none;margin:0;padding:0;width:232px} .ds-index a{display:grid;grid-template-columns:34px 1fr;align-items:baseline;gap:6px;padding:7px 24px;color:var(--paper-2);text-decoration:none;position:relative;font-weight:600;font-size:14.5px;transition:color var(--fast)} .ds-index .no{font:800 13px/1 Vazirmatn,sans-serif;color:var(--paper-3)} .ds-index a::after{content:'';position:absolute;inset-inline:24px;bottom:3px;height:2px;background:var(--yellow);transform:scaleX(0);transform-origin:right;transition:transform var(--slow) var(--ease)} .ds-index a:hover{color:var(--paper)} .ds-index a:hover::after{transform:scaleX(1)} .ds-index a[aria-current=page]{background:var(--yellow);color:var(--on-yellow)} .ds-index a[aria-current=page] .no{color:var(--on-yellow-2)} .ds-index a[aria-current=page]::after{display:none} .ds-index a:focus-visible{outline:2px solid var(--yellow);outline-offset:3px}"
+    },
+    {
+      "name": "State Pills",
+      "kind": "chip",
+      "refersTo": "pill-pass",
+      "description": "Outcome pills under the state law: pass green, fail red, warn amber, run yellow, none faint.",
+      "html": "<div class=\"ds-pills\" dir=\"rtl\"><span class=\"ds-pill pass\">موفق</span><span class=\"ds-pill fail\">ناموفق</span><span class=\"ds-pill warn\">لغو شد</span><span class=\"ds-pill run\">در حال اجرا</span><span class=\"ds-pill none\">اجرا نشد</span></div>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-pills{display:flex;gap:8px;flex-wrap:wrap} .ds-pill{font-family:Vazirmatn,'Segoe UI',sans-serif;display:inline-block;font-size:12px;font-weight:700;padding:1px 9px;border:1px solid currentColor;border-radius:0;white-space:nowrap} .ds-pill.pass{color:var(--pass)} .ds-pill.fail{color:var(--fail)} .ds-pill.warn{color:var(--warn)} .ds-pill.run{color:var(--yellow)} .ds-pill.none{color:var(--paper-3)}"
+    },
+    {
+      "name": "Not Measured Hatch",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "The only way to show a missing value: diagonal hatch plus the words.",
+      "html": "<div class=\"ds-kv\" dir=\"rtl\"><span class=\"k\">دمای هسته</span><span class=\"ds-hatch\">در دسترس نیست</span><span class=\"k\">فرکانس</span><span class=\"v\">1.84 GHz</span></div>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-kv{font-family:Vazirmatn,'Segoe UI',sans-serif;display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13.5px;width:260px;color:var(--paper)} .ds-kv .k{color:var(--paper-2);padding:5px 0;border-bottom:1px solid var(--rule)} .ds-kv .v{font-family:Archivo,'Segoe UI',sans-serif;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;font-stretch:78%;font-weight:600;padding:5px 0;border-bottom:1px solid var(--rule)} .ds-hatch{color:var(--paper-2);background:repeating-linear-gradient(135deg,rgb(243 241 234/.22) 0 1px,transparent 1px 6px);padding:0 6px;align-self:center}"
+    },
+    {
+      "name": "Poster Plane with Giant Numeral",
+      "kind": "card",
+      "refersTo": "plane",
+      "description": "The signature: a yellow plane with registration crosses, a label on an ink rule and a condensed giant numeral.",
+      "html": "<section class=\"ds-plane\" dir=\"rtl\"><svg class=\"reg tl\" viewBox=\"0 0 18 18\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"9\" r=\"4.5\" fill=\"none\"/><path d=\"M9 0v18M0 9h18\"/></svg><svg class=\"reg br\" viewBox=\"0 0 18 18\" aria-hidden=\"true\"><circle cx=\"9\" cy=\"9\" r=\"4.5\" fill=\"none\"/><path d=\"M9 0v18M0 9h18\"/></svg><div class=\"giant\"><div class=\"lbl\"><span>دمای پردازنده</span><span class=\"lat\">AMD Ryzen 9 3950X</span></div><div class=\"val\">50<span class=\"unit\">°C</span></div></div></section>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-plane{font-family:Vazirmatn,'Segoe UI',sans-serif;background:var(--yellow);color:var(--on-yellow);position:relative;padding:36px 44px;border-radius:0} .ds-plane .reg{position:absolute;width:18px;height:18px;stroke:var(--on-yellow);stroke-width:1;opacity:.55} .ds-plane .reg.tl{top:12px;left:12px} .ds-plane .reg.br{bottom:12px;right:12px} .ds-plane .giant{border-top:1.5px solid var(--on-yellow);padding-top:12px} .ds-plane .lbl{display:flex;justify-content:space-between;gap:12px;font-weight:700;font-size:14px} .ds-plane .lbl .lat{font-family:Archivo,sans-serif;direction:ltr;color:var(--on-yellow-2)} .ds-plane .val{font:850 120px/0.86 Archivo,sans-serif;font-stretch:62%;letter-spacing:-0.02em;direction:ltr;text-align:left;margin-top:10px;display:flex;align-items:flex-start;font-variant-numeric:tabular-nums} .ds-plane .unit{font-size:.26em;font-weight:700;margin:.18em .12em 0}"
+    },
+    {
+      "name": "Ruled Column",
+      "kind": "card",
+      "refersTo": "",
+      "description": "A part's column: 2px paper rule on top, key/value hairline rows, Latin values.",
+      "html": "<div class=\"ds-col\" dir=\"rtl\"><div class=\"head\"><span class=\"t\">GPU</span><a href=\"#\">جزئیات</a></div><dl><dt>هسته</dt><dd>53.2 °C</dd><dt>بار</dt><dd>12 %</dd><dt>توان</dt><dd>68.5 W</dd></dl></div>",
+      "css": ":root{--ink:#0c0c0c;--ink-2:#141412;--ink-3:#1c1c19;--paper:#f3f1ea;--paper-2:#c9c6bb;--paper-3:#8f8c82;--rule:rgb(243 241 234/.13);--rule-2:rgb(243 241 234/.3);--yellow:#fdd400;--on-yellow:#0c0c0c;--on-yellow-2:#4d4000;--pass:#2ec08e;--fail:#ee4b3d;--warn:#f2a122;--ease:cubic-bezier(0.16,1,0.3,1);--fast:160ms;--slow:620ms} .ds-col{font-family:Vazirmatn,'Segoe UI',sans-serif;border-top:2px solid var(--paper);padding-top:12px;width:220px;color:var(--paper)} .ds-col .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px} .ds-col .t{font-weight:900;font-size:17px} .ds-col a{color:var(--paper-3);font-size:12px;text-decoration:none} .ds-col a:hover{color:var(--yellow)} .ds-col dl{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13.5px;margin:0} .ds-col dt{color:var(--paper-2);padding:5px 0;border-bottom:1px solid var(--rule)} .ds-col dd{margin:0;padding:5px 0;border-bottom:1px solid var(--rule);font-family:Archivo,'Segoe UI',sans-serif;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;font-stretch:78%;font-weight:600;font-size:14.5px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tehran Modernist Poster",
+    "overview": "The machine's state is set as an Iranian-modernist poster on a strict grid. Type, flat planes and hairline rules do all the work: brand yellow arrives as whole planes, never as an accent sprinkled on controls; the ground is ink black; type and rules are paper off-white. The category's rounded card dashboard with gauges and glow is refused. There are no corners, no cards, and almost no shadows. Hierarchy comes from weight and scale alone: a heavy Persian face for words, a condensed grotesk for numerals, and giant temperature figures that roll to their live values.\n\nThe page reads right to left first, with every Latin value isolated left to right and kept in Latin digits. Density is poster-like at the top (one yellow plane, two giant numerals) and dense beneath (ruled columns of tabular figures). Honesty is visible: a value that was not measured is drawn as a diagonal hatch with the words \"not available\", never as a zero.",
+    "keyCharacteristics": [
+      "Yellow (#fdd400) as whole planes: the dashboard and component hero plane, the current index item, the selected table row.",
+      "Zero radius everywhere; structure is carried by 1px hairlines and 2px paper rules on column tops.",
+      "A numbered index (Persian two-digit numbers) on the reading-start edge as navigation; Ctrl+1 … Ctrl+0 open the first ten.",
+      "Registration crosses at the four corners of every yellow plane.",
+      "State colour laws: green only for passed, red only for failed, the hatch only for not measured.",
+      "Motion is typographic: rolling numerals, a plane wipe between pages, rules drawing in. All of it switches off under reduced motion or `?still`."
+    ],
+    "rules": [
+      {
+        "name": "The Whole Plane Rule",
+        "body": "Yellow is laid down as a plane or a full-row fill. It is never a glow, a gradient border or a tinted card.",
+        "section": "colors"
+      },
+      {
+        "name": "The State Law Rule",
+        "body": "Green means passed and nothing else; red means failed and nothing else; the diagonal hatch means not measured and always carries the words. A test that did not run gets `pill-none` or amber, never green.",
+        "section": "colors"
+      },
+      {
+        "name": "The Missing Is Drawn Rule",
+        "body": "An unavailable value renders as the hatch (135deg paper lines at 22% on ink, ink lines at 28% on yellow, 1px every 6px) with the localized \"not available\" text. Never 0, never a dash.",
+        "section": "colors"
+      },
+      {
+        "name": "The Latin Island Rule",
+        "body": "Every value, unit, model name, version or path is wrapped in the `lat` or `num` role: Archivo, `direction: ltr`, `unicode-bidi: isolate`, tabular figures. Persian digits are reserved for indices, dates and prose.",
+        "section": "typography"
+      },
+      {
+        "name": "The Weight Is Hierarchy Rule",
+        "body": "Headings differ by weight and size only. No colour, no underline accents, no uppercase eyebrows above headlines.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reading-Start Rule",
+        "body": "Layout uses logical properties (`inline-start`, `inline-end`) so the index, rules and fills follow `dir`. Latin values align left inside their isolated run.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Poster Rule",
+        "body": "No surface casts a shadow at rest. A new surface earns separation with a rule or a plane, never with elevation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do lay yellow (#fdd400) down as a whole plane or a full-width bar, with ink (#0c0c0c) type on it.",
+      "Do put every value in the Latin role (Archivo, tabular, isolated LTR) and every heading in Vazirmatn at 800–900.",
+      "Do draw a missing value as the hatch with the words \"not available\".",
+      "Do separate content with rules: 1px hairlines between rows, a 2px paper rule on top of a column or page head.",
+      "Do keep every corner at 0px.",
+      "Do use logical properties so the index, fills and underlines start at the reading-start edge in both RTL and LTR.",
+      "Do keep motion on opacity, transform and clip-path, and honour reduced motion and `?still`."
+    ],
+    "donts": [
+      "Don't use green for anything but a passed result, or red for anything but a failed one.",
+      "Don't show 0, a dash or a placeholder for an unmeasured value.",
+      "Don't build rounded cards, gauges, glows or drop shadows; the toast is the only lifted surface.",
+      "Don't set Latin figures in Vazirmatn or let them render as Persian digits.",
+      "Don't add uppercase letter-spaced eyebrows or kickers above headlines; the plane's shop and date sit in a colophon at its foot.",
+      "Don't animate while the window is hidden or add timers that wake without need."
+    ]
+  }
+}

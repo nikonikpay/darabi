@@ -211,7 +211,7 @@ export function mount(el) {
     if (pk !== shownProfiles) {
       shownProfiles = pk;
       profiles.replaceChildren(...(x.profiles.length ? x.profiles.map((p) => h("div", { class: "report", style: { gridTemplateColumns: "auto 1fr auto" } },
-        h("span", { class: `pill ${p.kind === "Undervolt" ? "pass" : p.kind === "Overclock" ? "run" : "none"}` }, p.kindText),
+        h("span", { class: `pill ${p.kind === "Manual" ? "none" : "run"}` }, p.kindText),
         h("span", {}, h("b", {}, p.name), "  ", h("span", { class: "caption lat" }, p.created)),
         h("div", { class: "acts", style: { gridColumn: 3, gridRow: "1 / 3" } },
           h("button", { class: "btn", title: t("Tuning_LoadProfile_Hint"), onclick: () => exec("loadProfile", { index: String(p.index) }) }, t("Tuning_LoadProfile")),
