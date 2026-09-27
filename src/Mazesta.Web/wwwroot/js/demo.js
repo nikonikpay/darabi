@@ -106,6 +106,9 @@ export async function call(m, p, emit) {
       units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Ampere: "A", Watt: "W", WattHour: "Wh", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", Seconds: "s", Hertz: "Hz", None: "" } };
     case "app.hardware": return HW;
     case "app.navReady": return true;
+    case "chart.boot": { const n = HW.find((x) => x.sensors.some((y) => y.id === p.id)) || HW[0], x = n.sensors.find((y) => y.id === p.id) || n.sensors[0];
+      return { language: "fa", rtl: true, strings, units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Watt: "W", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", None: "" },
+        sensor: { ...x, node: n.name, part: n.kind } }; }
     case "shop.product": await new Promise((r) => setTimeout(r, 700));
       return { id: 1, title: "نمونهٔ محصول فروشگاه (دادهٔ نمایشی)", summary: "در برنامه، یک محصول تصادفی از سایت dfmrendering.com اینجا نمایش داده می‌شود: نام، خلاصهٔ توضیحات به‌صورت متن ساده و تصویر محصول.", link: "https://www.dfmrendering.com/shop/", image: null };
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }

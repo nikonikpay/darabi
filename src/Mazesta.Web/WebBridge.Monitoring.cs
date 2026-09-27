@@ -27,6 +27,8 @@ public sealed partial class WebBridge
             return new { sec = raw.Seconds, val = raw.Values.Select(v => float.IsNaN(v) ? (float?)null : v), now = engine.History.SecondsSinceEpoch(DateTimeOffset.UtcNow) };
         });
 
+        Method("monitor.popout", p => { if (_window is MainWindow { WebEnvironment: { } env }) ChartWindow.Show(env, engine, Str(p, "id"), _log); return null; });
+
         MethodAsync("inventory.get", async _ =>
         {
             HardwareInventory inv = await inventory.GetAsync().ConfigureAwait(true);

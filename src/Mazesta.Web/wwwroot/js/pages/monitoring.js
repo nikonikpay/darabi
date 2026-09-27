@@ -1,48 +1,71 @@
-// Every sensor, grouped by hardware then by kind, at data density. A row selects its history on the right. Filtering hides rows, it never
-// hides that a sensor exists without a reading: those rows say "not available" in the hatch.
-import { call } from "../bridge.js";
-import { t } from "../i18n.js";
+// Every sensor, in a boxed panel per device that wears its part's hue and folds away, grouped by kind inside, at data density. Double-click a
+// row (or its chart button, or Enter) to add its chart to the stack beside the table; each chart can go to a window of its own. Filtering
+// hides rows, it never hides that a sensor exists without a reading: those rows say "not available" in the hatch.
+import { call, live } from "../bridge.js";
+import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
 import { hw, value, quality, stats, subscribe } from "../store.js";
-import { h, val, drawChart } from "../ui.js";
+import { h, icon, toast } from "../ui.js";
+import { part } from "../parts.js";
+import { chartCard, RANGES } from "../chartcard.js";
 
 const KIND_ORDER = ["Temperature", "Load", "Clock", "Power", "Voltage", "Current", "Fan", "Control", "Data", "SmallData", "Throughput", "Level", "Energy", "Timespan", "Factor", "Frequency", "Timing", "Noise", "Flow", "Humidity", "Conductivity"];
+const MAX_CHARTS = 10;
+// Which charts are open is a per-viewer convenience: kept in the browser profile, and the page works the same without it.
+const remember = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
+const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private profile: nothing is kept */ } };
 
 export function mount(el, _, focusKinds = null) {
+  const store = `mazesta.monitor.${focusKinds ? focusKinds.join("-") : "all"}`;
   const filter = h("input", { class: "field search", type: "search", placeholder: t("Monitoring_Search"), "aria-label": t("Monitoring_Search") });
-  const tbody = h("tbody");
-  const table = h("table", { class: "table" }, h("thead", {}, h("tr", {},
-    h("th", {}, t("Web_Col_Sensor")), h("th", { class: "n" }, t("Web_Col_Current")), h("th", { class: "n" }, t("Web_Col_Min")),
-    h("th", { class: "n" }, t("Web_Col_Avg")), h("th", { class: "n" }, t("Web_Col_Max")))), tbody);
-
-  const big = h("div", { class: "big" }), chartTitle = h("div", { class: "h3 sensor-name" }), chartSub = h("div", { class: "caption" });
-  const canvas = h("canvas", { class: "chart" });
-  let selected = null, windowSec = 600, series = null;
-  const ranges = h("div", { class: "chart-range" }, [60, 300, 600, 900].map((s) => h("button", { class: `btn ${s === windowSec ? "primary" : ""}`, onclick: (e) => {
-    windowSec = s; for (const b of ranges.children) b.classList.toggle("primary", b === e.currentTarget); redraw();
+  let windowSec = remember("mazesta.monitor.window", 600);
+  const cards = new Map();   // id -> card
+  const stack = h("div", { class: "chart-stack" });
+  const empty = h("p", { class: "chart-empty" }, icon("chart"), h("span", {}, t("Web_Chart_Hint")));
+  const ranges = h("div", { class: "chart-range", role: "group", "aria-label": t("Web_Chart_Window") }, RANGES.map((s) => h("button", { class: `btn ${s === windowSec ? "primary" : ""}`, type: "button", onclick: (e) => {
+    windowSec = s; keep("mazesta.monitor.window", s);
+    for (const b of ranges.children) b.classList.toggle("primary", b === e.currentTarget);
+    for (const c of cards.values()) c.redraw();
   } }, t("Web_Minutes", s / 60))));
-  const chart = h("aside", { class: "chart-card" }, chartTitle, chartSub, big, canvas, ranges);
+  const clearAll = h("button", { class: "btn quiet", type: "button", onclick: () => { for (const id of [...cards.keys()]) removeChart(id); } }, t("Web_Chart_ClearAll"));
+  const charts = h("aside", { class: "chart-col" }, h("div", { class: "chart-bar" }, ranges, h("span", { class: "grow" }), clearAll), empty, stack);
 
   if (!focusKinds) el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Monitoring")), h("p", { class: "page-lede" }, t("Web_Monitoring_Lede")))));
-  el.append(h("div", { class: "toolbar" }, filter, h("span", { class: "grow" })), h("div", { class: "split" }, h("div", {}, table), chart));
+  const groups = h("div", { class: "mon-groups" });
+  el.append(h("div", { class: "toolbar" }, filter, h("span", { class: "grow" }), focusKinds ? h("span", { class: "caption" }, t("Web_Chart_Hint")) : null), h("div", { class: "split" }, groups, charts));
 
-  const cells = [];   // [sensor, current, min, avg, max, row, searchText]
+  const cells = [];   // [sensor, current, min, avg, max, row, searchText, toggle, group]
+  const bySensor = new Map();
+  let i = 0;
   for (const node of hw.nodes) {
     if (focusKinds && !focusKinds.includes(node.kind)) continue;
     if (!node.sensors.length) continue;
-    const grp = h("tr", { class: "grp" }, h("td", { colspan: "5" }, h("span", { class: "gname" }, node.name), h("span", { class: "gkind" }, t(`Web_Kind_${node.kind}`))));
-    tbody.append(grp);
+    const p = part(node.kind), tbody = h("tbody");
+    const table = h("table", { class: "table" }, h("thead", {}, h("tr", {},
+      h("th", {}, t("Web_Col_Sensor")), h("th", { class: "n" }, t("Web_Col_Current")), h("th", { class: "n" }, t("Web_Col_Min")),
+      h("th", { class: "n" }, t("Web_Col_Avg")), h("th", { class: "n" }, t("Web_Col_Max")), h("th", { class: "c" }, h("span", { class: "sr" }, t("Web_Chart"))))), tbody);
+    const fold = h("button", { class: "more", type: "button", "aria-expanded": "true", "aria-label": node.name }, icon("chevron"));
+    const group = h("section", { class: `panel group ${p.cls}`, style: { "--i": i++ } },
+      h("header", { class: "panel-head", onclick: () => { const shut = group.classList.toggle("shut"); fold.setAttribute("aria-expanded", String(!shut)); } },
+        h("span", { class: "ico" }, icon(p.icon)),
+        h("div", { class: "ttl" }, h("h2", { class: "panel-title lat" }, node.name), h("div", { class: "panel-sub fa" }, t(`Web_Kind_${node.kind}`))),
+        h("span", { class: "group-count" }, t("Web_Sensors_Count", fa(node.sensors.length))), fold),
+      h("div", { class: "group-body" }, h("div", {}, table)));
+    groups.append(group);
     const byKind = new Map();
     for (const s of node.sensors) { if (!byKind.has(s.kind)) byKind.set(s.kind, []); byKind.get(s.kind).push({ ...s, node }); }
     const kinds = [...byKind.keys()].sort((a, b) => (KIND_ORDER.indexOf(a) + 99) % 99 - (KIND_ORDER.indexOf(b) + 99) % 99);
     for (const k of kinds) {
-      tbody.append(h("tr", { class: "sec", "data-node": node.id }, h("td", { colspan: "5" }, t(`SensorKind_${k}`))));
+      tbody.append(h("tr", { class: "sec" }, h("td", { colspan: "6" }, t(`SensorKind_${k}`))));
       for (const s of byKind.get(k)) {
         const c = [h("td", { class: "n" }), h("td", { class: "n" }), h("td", { class: "n" }), h("td", { class: "n" })];
-        const row = h("tr", { class: "row", tabindex: "0", onclick: () => select(s, row), onkeydown: (e) => { if (e.key === "Enter") select(s, row); } },
-          h("td", {}, h("span", { class: "sensor-name" }, s.name)), ...c);
+        const toggle = h("button", { class: "icon-btn", type: "button", title: t("Web_Chart_Add"), "aria-label": `${t("Web_Chart_Add")}: ${s.name}`, "aria-pressed": "false",
+          onclick: (e) => { e.stopPropagation(); flip(s); } }, icon("chart"));
+        const row = h("tr", { class: "row", tabindex: "0", ondblclick: () => flip(s), onkeydown: (e) => { if (e.key === "Enter") flip(s); } },
+          h("td", {}, h("span", { class: "sensor-name" }, s.name)), ...c, h("td", { class: "c" }, toggle));
         tbody.append(row);
-        cells.push([s, ...c, row, `${node.name} ${s.name}`.toLowerCase()]);
+        const cell = [s, ...c, row, `${node.name} ${s.name}`.toLowerCase(), toggle, group];
+        cells.push(cell); bySensor.set(s.id, cell);
       }
     }
   }
@@ -54,26 +77,44 @@ export function mount(el, _, focusKinds = null) {
       const st = stats.get(s.id);
       mn.textContent = st ? fmt(st[0], s.unit) : ""; av.textContent = st ? fmt(st[1], s.unit) : ""; mx.textContent = st ? fmt(st[2], s.unit) : "";
     }
-    if (selected) { big.replaceChildren(val(fmt(value(selected.id), selected.unit), "")); refresh(); }
+    for (const c of cards.values()) { c.update(); c.refresh(); }
   }
   filter.addEventListener("input", () => {
     const q = filter.value.trim().toLowerCase();
     for (const [, , , , , row, text] of cells) row.hidden = q && !text.includes(q);
+    for (const g of groups.children) g.hidden = q && ![...g.querySelectorAll("tr.row")].some((r) => !r.hidden);
   });
 
-  async function refresh() { if (!selected) return; series = await call("history.get", { id: selected.id }); redraw(); }
-  function redraw() { if (series && selected) drawChart(canvas, series, windowSec, selected.unit); }
-  function select(s, row) {
-    selected = s;
-    for (const [, , , , , r] of cells) r.classList.toggle("on", r === row);
-    chartTitle.textContent = s.name; chartSub.textContent = s.node.name;
-    big.replaceChildren(val(fmt(value(s.id), s.unit), ""));
-    refresh();
+  function mark(id, on) {
+    const cell = bySensor.get(id); if (!cell) return;
+    cell[5].classList.toggle("charted", on); cell[7].setAttribute("aria-pressed", String(on));
+    cell[7].title = t(on ? "Web_Chart_Remove" : "Web_Chart_Add");
   }
-  chart.hidden = false;
-  if (cells.length) select(cells[0][0], cells[0][5]);
+  function addChart(s, quiet = false) {
+    if (cards.has(s.id)) return;
+    if (cards.size >= MAX_CHARTS) { if (!quiet) toast(t("Web_Chart_Max", fa(MAX_CHARTS))); return; }
+    const card = chartCard(s, { kind: s.node.kind, nodeName: s.node.name, windowSec: () => windowSec,
+      onRemove: () => removeChart(s.id),
+      onPopout: () => live ? call("monitor.popout", { id: s.id }) : window.open(`chart.html?id=${encodeURIComponent(s.id)}`, "_blank", "width=720,height=440") });
+    cards.set(s.id, card); stack.prepend(card.el); mark(s.id, true);
+    card.refresh(); changed();
+    if (!quiet) card.el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function removeChart(id) { const c = cards.get(id); if (!c) return; c.el.remove(); cards.delete(id); mark(id, false); changed(); }
+  function flip(s) { cards.has(s.id) ? removeChart(s.id) : addChart(s); }
+  function changed() { empty.hidden = cards.size > 0; clearAll.hidden = cards.size < 2; keep(store, [...cards.keys()].reverse()); }
+
+  // The charts open last time, or the first sensor's so the column is never blank on a first visit.
+  const saved = remember(store, null);
+  const initial = (Array.isArray(saved) ? saved : [cells[0]?.[0].id]).map((id) => bySensor.get(id)?.[0]).filter(Boolean);
+  for (const s of initial) addChart(s, true);
+  changed();
+
   tick();
   const off = subscribe(tick);
-  const onResize = () => redraw(); window.addEventListener("resize", onResize);
-  return () => { off(); window.removeEventListener("resize", onResize); };
+  let raf = 0;
+  const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { for (const c of cards.values()) c.redraw(); }); };
+  window.addEventListener("resize", onResize);
+  const ro = new ResizeObserver(onResize); ro.observe(stack);
+  return () => { off(); window.removeEventListener("resize", onResize); ro.disconnect(); };
 }

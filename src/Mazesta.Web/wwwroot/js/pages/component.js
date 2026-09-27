@@ -1,10 +1,11 @@
-// One part of the machine per page: its yellow band with the numbers that matter for it, its specification, its sensors and its benchmarks.
+// One part of the machine per page, all in the part's own hue: its band with the numbers that matter for it, its specification, its sensors and its benchmarks.
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
 import { fmt } from "../format.js";
 import { topNodes, pick, value, subscribe } from "../store.js";
 import { h, val, regMarks } from "../ui.js";
 import { section } from "./system.js";
+import { part } from "../parts.js";
 import { benchList } from "./benchmarks.js";
 import { mount as sensors } from "./monitoring.js";
 
@@ -19,7 +20,8 @@ const NAV = { Cpu: "Nav_Cpu", Gpu: "Nav_Gpu", Storage: "Nav_Storage", Network: "
 export function mount(el, kind) {
   const nodes = topNodes(kind).filter((n) => kind !== "Network" || !/^vEthernet/i.test(n.name));
   const cells = [];
-  const band = h("section", { class: "plane enter", style: { paddingBlock: "28px 30px" } }, regMarks(),
+  el.classList.add(part(kind).cls, "part-page");
+  const band = h("section", { class: "plane part-plane enter", style: { paddingBlock: "28px 30px" } }, regMarks(),
     h("h2", { class: "plane-head lat" }, nodes.map((n) => n.name).join("  ·  ") || t(NAV[kind])),
     nodes.slice(0, 3).map((n) => h("div", { class: "giants", style: { gridTemplateColumns: `repeat(${FIGURES[kind].length}, minmax(0,1fr))`, marginTop: "20px" } },
       FIGURES[kind].map(([key, roles]) => {

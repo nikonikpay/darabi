@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!-- The web edition: the same core, engines and view models as Mazesta.Desktop (referenced as a library), with the whole interface drawn by
-       one WebView2 from the local wwwroot folder. Nothing is fetched from the internet; the WPF edition is not changed by it. -->
+       one WebView2 from the local wwwroot folder. The page loads nothing from the internet (the host fetches the shop product for it); the WPF
+       edition is not changed by it. -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>

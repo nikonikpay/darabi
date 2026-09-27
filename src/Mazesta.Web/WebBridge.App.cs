@@ -71,7 +71,7 @@ public sealed partial class WebBridge
 
     /// <summary>The whole string table in the app's language (English underneath, so a key missing in Persian still reads), shared with the
     /// WPF edition: one set of translations for both.</summary>
-    private static Dictionary<string, string> Strings()
+    internal static Dictionary<string, string> Strings()
     {
         var rm = new ResourceManager("Mazesta.Desktop.Localization.Strings", typeof(Loc).Assembly);
         var table = new Dictionary<string, string>();

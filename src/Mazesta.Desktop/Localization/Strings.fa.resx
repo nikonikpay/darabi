@@ -852,7 +852,7 @@
   <data name="Web_Kind_Cooler" xml:space="preserve"><value>خنک‌کننده</value></data>
   <data name="Web_Kind_Other" xml:space="preserve"><value>سایر</value></data>
   <data name="Web_Minutes" xml:space="preserve"><value>{0} دقیقه</value></data>
-  <data name="Web_Monitoring_Lede" xml:space="preserve"><value>همه‌ی سنسورهایی که این سیستم گزارش می‌دهد، به تفکیک قطعه. کمینه، میانگین و بیشینه از زمان شروع پایش است. برای دیدن سابقه، روی یک ردیف بزنید.</value></data>
+  <data name="Web_Monitoring_Lede" xml:space="preserve"><value>همهٔ سنسورهایی که این سیستم گزارش می‌دهد، در کادری جدا برای هر قطعه. کمینه، میانگین و بیشینه از زمان شروع پایش است. با دوبار کلیک روی هر سنسور نمودارش اضافه می‌شود و هر نمودار را می‌توان در پنجره‌ای جدا باز کرد.</value></data>
   <data name="Web_Tests_Lede" xml:space="preserve"><value>آزمون‌ها را تیک بزنید، مدتشان را تعیین کنید و شروع کنید. به همین ترتیب یکی پس از دیگری اجرا می‌شوند؛ آزمونی که اجرا نشود هرگز موفق حساب نمی‌شود.</value></data>
   <data name="Web_Loading" xml:space="preserve"><value>در حال خواندن…</value></data>
   <data name="Web_System_Lede" xml:space="preserve"><value>آنچه این سیستم درباره‌ی خودش گزارش می‌دهد. فیلدی که گزارش نشود، همین را می‌گوید.</value></data>
@@ -891,4 +891,13 @@
   <data name="Web_Contact_Postcode" xml:space="preserve"><value>کد پستی</value></data>
   <data name="Contact_Hours" xml:space="preserve"><value>شنبه تا چهارشنبه، ساعت ۹ تا ۱۸. پنجشنبه، جمعه و تعطیلات رسمی تعطیل است.</value></data>
   <data name="Contact_Address" xml:space="preserve"><value>تهران، خیابان انقلاب، خیابان بهار جنوبی، خیابان سمیه (به سمت غرب)، بن‌بست خوانساری، پلاک ۶ (ساختمان فراز)، طبقهٔ ۴، واحد ۱۵</value></data>
+  <data name="Web_Chart" xml:space="preserve"><value>نمودار</value></data>
+  <data name="Web_Chart_Add" xml:space="preserve"><value>نمایش نمودار</value></data>
+  <data name="Web_Chart_Remove" xml:space="preserve"><value>حذف نمودار</value></data>
+  <data name="Web_Chart_Popout" xml:space="preserve"><value>باز کردن در پنجرهٔ جدا</value></data>
+  <data name="Web_Chart_ClearAll" xml:space="preserve"><value>حذف همهٔ نمودارها</value></data>
+  <data name="Web_Chart_Window" xml:space="preserve"><value>بازهٔ زمانی</value></data>
+  <data name="Web_Chart_Hint" xml:space="preserve"><value>برای افزودن نمودار، روی هر سنسور دوبار کلیک کنید.</value></data>
+  <data name="Web_Chart_Max" xml:space="preserve"><value>حداکثر {0} نمودار باز می‌شود. اول یکی را حذف کنید.</value></data>
+  <data name="Web_Sensors_Count" xml:space="preserve"><value>{0} سنسور</value></data>
 </root>

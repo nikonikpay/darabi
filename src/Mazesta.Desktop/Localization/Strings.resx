@@ -852,7 +852,7 @@
   <data name="Web_Kind_Cooler" xml:space="preserve"><value>Cooler</value></data>
   <data name="Web_Kind_Other" xml:space="preserve"><value>Other</value></data>
   <data name="Web_Minutes" xml:space="preserve"><value>{0} min</value></data>
-  <data name="Web_Monitoring_Lede" xml:space="preserve"><value>Every sensor this machine reports, grouped by part. Min, average and max are since the monitor started. Select a row for its history.</value></data>
+  <data name="Web_Monitoring_Lede" xml:space="preserve"><value>Every sensor this machine reports, in a box per part. Min, average and max are since the monitor started. Double-click a sensor to add its chart; each chart can open in its own window.</value></data>
   <data name="Web_Tests_Lede" xml:space="preserve"><value>Tick the tests to run, set their length, and start. They run in this order, one after another; a test that does not run is never counted as passed.</value></data>
   <data name="Web_Loading" xml:space="preserve"><value>Reading…</value></data>
   <data name="Web_System_Lede" xml:space="preserve"><value>What this machine reports about itself. A field it does not report says so.</value></data>
@@ -891,4 +891,13 @@
   <data name="Web_Contact_Postcode" xml:space="preserve"><value>postcode</value></data>
   <data name="Contact_Hours" xml:space="preserve"><value>Saturday to Wednesday, 9:00 to 18:00. Closed on Thursdays, Fridays and public holidays.</value></data>
   <data name="Contact_Address" xml:space="preserve"><value>Unit 15, 4th floor, Faraz Building, No. 6, Khansari Dead End, Somayeh St. (west), South Bahar St., Enghelab St., Tehran</value></data>
+  <data name="Web_Chart" xml:space="preserve"><value>Chart</value></data>
+  <data name="Web_Chart_Add" xml:space="preserve"><value>Show chart</value></data>
+  <data name="Web_Chart_Remove" xml:space="preserve"><value>Remove chart</value></data>
+  <data name="Web_Chart_Popout" xml:space="preserve"><value>Open in its own window</value></data>
+  <data name="Web_Chart_ClearAll" xml:space="preserve"><value>Remove all charts</value></data>
+  <data name="Web_Chart_Window" xml:space="preserve"><value>Time range</value></data>
+  <data name="Web_Chart_Hint" xml:space="preserve"><value>Double-click a sensor to add its chart.</value></data>
+  <data name="Web_Chart_Max" xml:space="preserve"><value>At most {0} charts can be open. Remove one first.</value></data>
+  <data name="Web_Sensors_Count" xml:space="preserve"><value>{0} sensors</value></data>
 </root>

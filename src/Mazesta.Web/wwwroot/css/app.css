@@ -220,7 +220,8 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .toolbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
 .toolbar .grow { flex: 1; }
 .search { width: min(340px, 100%); }
-.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 34%); gap: calc(var(--gut) * 1.5); align-items: start; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 40%); gap: var(--gut); align-items: start; }
+@media (max-width: 1180px) { .split { grid-template-columns: minmax(0, 1fr); } .chart-col { position: static; max-height: none; } }
 .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .table th { text-align: right; font-weight: 600; font-size: 12px; color: var(--paper-3); padding: 7px 8px; border-bottom: 1px solid var(--rule-2); position: sticky; top: 0; background: var(--ink); z-index: 1; }
 .table th.n, .table td.n { text-align: left; }
@@ -237,10 +238,53 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .table tr.sec td { padding: 12px 8px 4px; font-size: 12px; color: var(--yellow); font-weight: 700; border-bottom: 1px solid var(--rule-2); }
 .sensor-name { font-family: var(--lat); direction: ltr; unicode-bidi: isolate; }
 
-.chart-card { position: sticky; top: 0; border-top: 2px solid var(--yellow); padding-top: 14px; }
-.chart-card .big { font: 850 64px/1 var(--lat); font-stretch: 62%; direction: ltr; text-align: left; margin: 10px 0 4px; }
-.chart { width: 100%; height: 240px; display: block; }
-.chart-range { display: flex; gap: 6px; margin-top: 10px; }
+/* The chart column: a range bar, then the charts stacked, newest on top; it stays in view while the table scrolls. */
+.chart-col { position: sticky; top: 0; max-height: calc(100vh - 150px); overflow-y: auto; overscroll-behavior: contain; padding-inline-end: 4px; scrollbar-gutter: stable; }
+.chart-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 2; background: var(--ink); padding-bottom: 10px; }
+.chart-bar .grow { flex: 1; }
+.chart-stack { display: grid; gap: 14px; }
+.chart-empty { display: flex; gap: 10px; align-items: center; color: var(--paper-3); font-size: 13.5px; border: 1px dashed var(--rule-2); border-radius: var(--r-panel); padding: 22px 18px; margin: 0; }
+.chart-empty svg { width: 22px; height: 22px; stroke: currentColor; flex: none; }
+.chart-card:where(:not([class*="p-"])) { --hue: var(--yellow); }
+.chart-card { position: relative; border-radius: var(--r-panel); padding: 14px 16px 12px; background: linear-gradient(180deg, color-mix(in oklab, var(--hue) 12%, var(--ink-2)) 0, var(--ink-2) 90px);
+  border: 1px solid color-mix(in oklab, var(--hue) 36%, transparent); animation: panel-in 420ms var(--ease) both; }
+.chart-card::before { content: ""; position: absolute; inset-block: 14px; inset-inline-start: -1px; width: 3px; border-radius: 3px; background: var(--hue); }
+.cc-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; }
+.cc-name { font: 800 15px/1.25 var(--lat); text-align: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[dir="rtl"] .cc-name { text-align: right; }
+.cc-sub { font-size: 12px; color: var(--paper-3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cc-now { font: 850 30px/1 var(--lat); font-stretch: 70%; color: var(--hue); white-space: nowrap; }
+.cc-now .hatch { font: 600 13px var(--fa); }
+.cc-acts { display: flex; gap: 2px; }
+.cc-mm { display: flex; gap: 18px; justify-content: flex-end; font-size: 12px; color: var(--paper-3); margin-top: 4px; direction: ltr; }
+[dir="rtl"] .cc-mm { direction: rtl; justify-content: flex-start; }
+.cc-mm b { font-weight: 600; margin-inline-end: 6px; }
+.cc-mm .num { color: var(--paper-2); }
+.chart { width: 100%; height: 170px; display: block; margin-top: 10px; }
+.chart-range { display: flex; gap: 6px; }
+.icon-btn { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--paper-3); cursor: pointer; transition: color var(--fast), background var(--fast); }
+.icon-btn:hover, .icon-btn:focus-visible { color: var(--hue, var(--yellow)); background: color-mix(in oklab, var(--hue, var(--yellow)) 14%, transparent); }
+.icon-btn svg { width: 17px; height: 17px; stroke: currentColor; }
+.icon-btn[aria-pressed="true"] { color: var(--ink); background: var(--hue, var(--yellow)); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* Monitoring groups: a panel per device; its table sits flat inside, the charted rows marked in the hue. */
+.mon-groups { display: grid; gap: 14px; min-width: 0; }
+.mon-groups .group { margin-top: 0; padding-bottom: 8px; }
+.mon-groups .panel-head { padding-bottom: 4px; }
+.panel .table { margin-top: 8px; }
+.panel .table th { position: static; background: transparent; }
+.panel .table tr.sec td { color: var(--hue); }
+.table th.c, .table td.c { width: 40px; text-align: center; padding-block: 1px; }
+.table tr.row.charted { background: color-mix(in oklab, var(--hue, var(--yellow)) 12%, transparent); }
+.table tr.row.charted td:first-child { box-shadow: inset -3px 0 0 var(--hue, var(--yellow)); }
+[dir="ltr"] .table tr.row.charted td:first-child { box-shadow: inset 3px 0 0 var(--hue, var(--yellow)); }
+
+/* The pop-out window: one card filling it. */
+body.popout { background: var(--ink); margin: 0; }
+body.popout main { height: 100vh; display: grid; grid-template-rows: 1fr auto; gap: 10px; padding: 12px; box-sizing: border-box; }
+body.popout .chart-card { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+body.popout .chart { height: 100%; min-height: 120px; }
 
 /* ———— Queues (tests, benchmarks) ———— */
 .queue { counter-reset: step; }
@@ -450,3 +494,12 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .contact > .links { padding-top: 4px; }
 .panel .btn.quiet svg { width: 15px; height: 15px; stroke: currentColor; }
 .panel .kv dt .kind { color: var(--paper-3); font-size: 11px; margin-inline-start: 8px; }
+
+/* A part's own page wears its hue: the band is a plane of that colour, section heads and spec columns carry it. Ink stays the text colour on
+   every part hue (all are light enough for it). */
+.plane.part-plane { --plane: var(--hue); --on-yellow-2: color-mix(in oklab, var(--ink) 70%, var(--hue)); }
+.part-page .section-head { border-bottom-color: color-mix(in oklab, var(--hue) 45%, transparent); }
+.part-page .section-head .h2 { display: flex; align-items: center; gap: 10px; }
+.part-page .section-head .h2::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--hue); flex: none; }
+.part-page .col { border-top-color: var(--hue); }
+.part-page .progress > i, .part-page .table tr.row.on { --yellow: var(--hue); }

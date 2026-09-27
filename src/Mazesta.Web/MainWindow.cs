@@ -15,6 +15,9 @@ public sealed class MainWindow : Window
     private readonly bool _configCorrupt; private readonly ILogger _log;
     private WebBridge? _bridge;
 
+    /// <summary>The browser environment, shared with the chart windows (one browser process for all of them).</summary>
+    public CoreWebView2Environment? WebEnvironment { get; private set; }
+
     public MainWindow(IServiceProvider services, AppPaths paths, AppConfig config, JsonStore<AppConfig> store, bool configCorrupt, ILogger log)
     {
         _services = services; _paths = paths; _config = config; _store = store; _configCorrupt = configCorrupt; _log = log;
@@ -34,6 +37,7 @@ public sealed class MainWindow : Window
         {
             var options = new CoreWebView2EnvironmentOptions { AdditionalBrowserArguments = _config.RenderMode == "software" ? "--disable-gpu --disable-gpu-compositing" : "" };
             var env = await CoreWebView2Environment.CreateAsync(userDataFolder: Path.Combine(_paths.CacheDir, "web-browser"), options: options);
+            WebEnvironment = env;
             await _view.EnsureCoreWebView2Async(env);
             var core = _view.CoreWebView2;
             var s = core.Settings;
