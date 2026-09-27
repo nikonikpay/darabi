@@ -22,6 +22,7 @@ dotnet test  Mazesta.sln -c Release --no-build --filter "Category!=Hardware"
 | `Mazesta.Diagnostics` (+ `.Gpu`) | Test engine and executors (CPU, RAM, storage, network, GPU/DX12). |
 | `Mazesta.Reporting` | Report model, JSON/HTML writers, on-disk store. UI-free. |
 | `Mazesta.Desktop` | WPF app (MVVM, CommunityToolkit.Mvvm, DI). Also prints PDF through WebView2. |
+| `Mazesta.Web` | The web edition: same services as Desktop, interface drawn by one WebView2 from `wwwroot` (plain HTML/CSS/JS, no build step) through a fixed JSON bridge (`WebBridge`). Design rules in `DESIGN.md`. |
 | `Mazesta.Tray` | Windowless tray monitor; opens the sensor provider only during a check. |
 
 Put logic in the lowest layer that can hold it, so it is unit-testable without WPF. View models stay thin.
@@ -52,7 +53,7 @@ Put logic in the lowest layer that can hold it, so it is unit-testable without W
 - Git identity is repo-local (`saeed-darabi`); do not change it.
 - Do not touch files another open branch is changing; check `docs/CODEX-TASKS.md` for who owns what.
 - Before a PR: build, run the non-hardware tests, and say plainly in the PR what you did **not** verify.
-- Runnable build: `pwsh tools/publish.ps1` (publishes to `artifacts/Mazesta-Test`). It refuses while the app runs, backs `Data` up to `../Mazesta-Data-Backups/<time>` (outside the repo, newest 20 kept), and deletes everything but `Data` before publishing. Never delete the folder by hand: the portable app keeps the owner's settings, reports and history in `Data`, which git does not hold. `artifacts/` is not committed.
+- Runnable build: `pwsh tools/publish.ps1` (publishes to `artifacts/Mazesta-Test`; `-Edition web` publishes the web edition to `artifacts/Mazesta-Web`). It refuses while the app runs, backs `Data` up to `../Mazesta-Data-Backups/<time>` (outside the repo, newest 20 kept), and deletes everything but `Data` before publishing. Never delete the folder by hand: the portable app keeps the owner's settings, reports and history in `Data`, which git does not hold. `artifacts/` is not committed.
 - Push every commit to GitHub on its branch right away (the owner's backup); never to `main`.
 
 ## Where things are documented

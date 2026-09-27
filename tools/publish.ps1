@@ -7,21 +7,26 @@
 #
 #   pwsh tools/publish.ps1                      # the usual run
 #   pwsh tools/publish.ps1 -Output artifacts/x  # somewhere else
+#   pwsh tools/publish.ps1 -Edition web         # the WebView2 edition, into artifacts/Mazesta-Web (its own Data)
 param(
-    [string]$Output = "artifacts/Mazesta-Test",
+    [ValidateSet("desktop", "web")] [string]$Edition = "desktop",
+    [string]$Output = "",
     [string]$BackupRoot = (Join-Path (Split-Path $PSScriptRoot -Parent) "../Mazesta-Data-Backups"),
     [int]$Keep = 20
 )
 $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
+if (-not $Output) { $Output = if ($Edition -eq "web") { "artifacts/Mazesta-Web" } else { "artifacts/Mazesta-Test" } }
+$project = if ($Edition -eq "web") { "src/Mazesta.Web" } else { "src/Mazesta.Desktop" }
+$exeName = if ($Edition -eq "web") { "MazestaWeb.exe" } else { "MazestaTest.exe" }
 Set-Location $repo
 $target = [IO.Path]::GetFullPath((Join-Path $repo $Output))
 $data = Join-Path $target "Data"
 $stamp = $null
 
 # An elevated app's path cannot be read from a normal shell (Path is empty): then it may be ours, so stop as well.
-$running = Get-Process MazestaTest, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($target, [StringComparison]::OrdinalIgnoreCase) }
-if ($running) { throw "Close Mazesta Test / Mazesta Monitor first (running: $($running.Name -join ', ')). Nothing was changed." }
+$running = Get-Process MazestaTest, MazestaWeb, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($target, [StringComparison]::OrdinalIgnoreCase) }
+if ($running) { throw "Close Mazesta Test / Mazesta Web / Mazesta Monitor first (running: $($running.Name -join ', ')). Nothing was changed." }
 
 if (Test-Path $data) {
     $backups = [IO.Path]::GetFullPath($BackupRoot)
@@ -33,7 +38,7 @@ if (Test-Path $data) {
 }
 
 if (Test-Path $target) { Get-ChildItem $target -Force | Where-Object Name -ne "Data" | Remove-Item -Recurse -Force -Confirm:$false }
-dotnet publish src/Mazesta.Desktop -c Release -o $target
+dotnet publish $project -c Release -o $target
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
 if ($stamp -and -not (Test-Path $data)) { throw "Data is missing after publishing - restore it from $stamp." }
-Write-Host "Ready: $(Join-Path $target 'MazestaTest.exe')"
+Write-Host "Ready: $(Join-Path $target $exeName)"

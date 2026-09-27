@@ -863,4 +863,5 @@
   <data name="Web_Spec" xml:space="preserve"><value>Specification</value></data>
   <data name="Web_Settings_General" xml:space="preserve"><value>General</value></data>
   <data name="Web_Shortcut" xml:space="preserve"><value>Shortcut</value></data>
+  <data name="Web_Dash_Range" xml:space="preserve"><value>Since start: min {0} · avg {1} · max {2}</value></data>
 </root>

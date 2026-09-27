@@ -8,7 +8,7 @@ const BADGE = { Passed: "pass", Failed: "fail", Incomplete: "warn", Benchmark: "
 export function mount(el) {
   const make = h("button", { class: "slab", onclick: () => call("reports.exec", { cmd: "summary" }) }, t("Reports_Summary"), icon("arrow"));
   const plane = h("section", { class: "plane enter" }, regMarks(),
-    h("div", { class: "plane-top" }, h("span", {}, t("Reports_Summary_Title")), h("span", { class: "lat" }, "A5 · PDF")),
+    h("h2", { class: "plane-head" }, t("Reports_Summary_Title")),
     h("p", { style: { maxWidth: "62ch", fontSize: "15px", fontWeight: "600", margin: "18px 0 22px" } }, t("Reports_Summary_Note")), make);
   const compare = h("button", { class: "btn primary", onclick: () => call("reports.exec", { cmd: "compare" }) }, t("Reports_Compare"));
   const list = h("div", {}), status = h("p", { class: "caption", style: { minHeight: "1.6em" } });

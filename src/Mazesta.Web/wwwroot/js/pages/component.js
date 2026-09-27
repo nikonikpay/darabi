@@ -20,14 +20,14 @@ export function mount(el, kind) {
   const nodes = topNodes(kind).filter((n) => kind !== "Network" || !/^vEthernet/i.test(n.name));
   const cells = [];
   const band = h("section", { class: "plane enter", style: { paddingBlock: "28px 30px" } }, regMarks(),
-    h("div", { class: "plane-top" }, h("span", {}, t(NAV[kind])), h("span", { class: "lat" }, nodes.map((n) => n.name).join("  ·  "))),
+    h("h2", { class: "plane-head lat" }, nodes.map((n) => n.name).join("  ·  ") || t(NAV[kind])),
     nodes.slice(0, 3).map((n) => h("div", { class: "giants", style: { gridTemplateColumns: `repeat(${FIGURES[kind].length}, minmax(0,1fr))`, marginTop: "20px" } },
       FIGURES[kind].map(([key, roles]) => {
         const s = pick(n, ...roles), v = h("div", { class: "val", style: { fontSize: "clamp(40px, 5.2vw, 88px)" } });
         cells.push([s, v]);
         return h("div", { class: "giant" }, h("div", { class: "lbl" }, h("span", {}, t(key)), nodes.length > 1 ? h("span", { class: "muted lat" }, n.name) : null), v);
       }))));
-  const specs = h("div", { class: "masonry" });
+  const specs = h("div", { class: "cols", style: { marginTop: "4px" } });
   const sensorBox = h("div", {});
   const bench = benchList(kind);
   el.append(band,

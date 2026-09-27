@@ -98,11 +98,13 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .btn:hover:not(:disabled) { border-color: var(--paper); }
 .btn.primary { background: var(--yellow); border-color: var(--yellow); color: var(--on-yellow); font-weight: 800; }
 .btn.primary:hover:not(:disabled) { background: var(--paper); border-color: var(--paper); }
-.btn.go { background: var(--pass); border-color: var(--pass); color: var(--ink); font-weight: 800; }
-.btn.stop { border-color: var(--fail); color: var(--fail); }
-.btn.stop:hover:not(:disabled) { background: var(--fail); color: var(--ink); }
+.btn.go { background: var(--paper); border-color: var(--paper); color: var(--ink); font-weight: 800; }
+.btn.go:hover:not(:disabled) { background: var(--yellow); border-color: var(--yellow); }
+.btn.stop { border-color: var(--paper-2); color: var(--paper); }
+.btn.stop:hover:not(:disabled) { background: var(--paper); color: var(--ink); }
 .btn.quiet { border-color: transparent; color: var(--paper-2); padding-inline: 8px; }
 .btn.quiet:hover:not(:disabled) { color: var(--paper); border-color: transparent; text-decoration: underline; text-underline-offset: 4px; }
+.btn.quiet.primary, .btn.quiet.primary:hover:not(:disabled) { color: var(--on-yellow); background: var(--yellow); text-decoration: none; }
 .btn:disabled, .slab:disabled { opacity: 0.35; cursor: default; }
 .btn svg { width: 15px; height: 15px; stroke: currentColor; }
 
@@ -140,29 +142,37 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .pill.none { color: var(--paper-3); }
 
 /* Not measured: the one hatch in the system, and it always says so in words too. */
-.hatch { color: var(--paper-3); background: repeating-linear-gradient(135deg, rgb(243 241 234 / 0.1) 0 1px, transparent 1px 6px); padding: 0 6px; }
+.hatch { color: var(--paper-2); background: repeating-linear-gradient(135deg, rgb(243 241 234 / 0.22) 0 1px, transparent 1px 6px); padding: 0 6px; }
+.plane .hatch, .table tr.row.on .hatch { color: var(--on-yellow-2); background: repeating-linear-gradient(135deg, rgb(12 12 12 / 0.28) 0 1px, transparent 1px 6px); }
 
 .progress { height: 3px; background: var(--rule); position: relative; overflow: hidden; }
 .progress > i { position: absolute; inset-block: 0; inset-inline-start: 0; width: 100%; background: var(--yellow); transform: scaleX(var(--p, 0)); transform-origin: var(--from, right); transition: transform 500ms var(--ease); }
 
 /* ———— Poster plane (dashboard, component pages, summary) ———— */
-.plane { background: var(--yellow); color: var(--on-yellow); position: relative; padding: clamp(24px, 3vw, 44px); overflow: hidden; }
+.plane { background: var(--yellow); color: var(--on-yellow); position: relative; padding: clamp(20px, 2.4vw, 36px) clamp(24px, 3vw, 44px); overflow: hidden; }
 .plane .muted { color: var(--on-yellow-2); }
 .plane .slab { background: var(--ink); color: var(--paper); }
 .plane .slab:hover { background: #2a2a26; }
 .reg { position: absolute; width: 18px; height: 18px; stroke: var(--on-yellow); stroke-width: 1; opacity: 0.55; }
 .reg.tl { top: 12px; left: 12px; } .reg.tr { top: 12px; right: 12px; } .reg.bl { bottom: 12px; left: 12px; } .reg.br { bottom: 12px; right: 12px; }
-.plane-top { display: flex; justify-content: space-between; gap: 20px; font-size: 13px; font-weight: 600; border-bottom: 1.5px solid var(--on-yellow); padding-bottom: 12px; }
-.verdict { font: 900 clamp(28px, 3.4vw, 54px)/1.12 var(--fa); letter-spacing: -0.015em; margin: 22px 0 8px; max-width: 24ch; text-wrap: balance; }
+.plane-head { font: 900 clamp(24px, 2.6vw, 40px)/1.15 var(--fa); margin: 0; padding-bottom: 12px; border-bottom: 1.5px solid var(--on-yellow); }
+.plane-head.lat { font-family: var(--lat); font-stretch: 80%; letter-spacing: -0.01em; direction: ltr; text-align: right; }
+.verdict { font: 900 clamp(26px, min(3.2vw, 5.6vh), 52px)/1.12 var(--fa); letter-spacing: -0.015em; margin: 0 0 6px; max-width: 26ch; text-wrap: balance; }
 .machine { font-size: 14.5px; font-weight: 600; }
-.giants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gut); margin-top: 26px; }
+.giants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gut); margin-top: clamp(12px, 2.4vh, 24px); }
 .giant { border-top: 1.5px solid var(--on-yellow); padding-top: 12px; }
 .giant .lbl { display: flex; justify-content: space-between; gap: 12px; font-weight: 700; font-size: 14px; }
-.giant .val { font: 850 clamp(96px, 12.5vw, 206px)/0.86 var(--lat); font-stretch: 62%; letter-spacing: -0.02em; direction: ltr; text-align: left; margin-top: 10px; display: flex; align-items: flex-start; font-variant-numeric: tabular-nums; }
+.giant .val { font: 850 clamp(72px, min(12vw, 19vh), 206px)/0.86 var(--lat); font-stretch: 62%; letter-spacing: -0.02em; direction: ltr; text-align: left; margin-top: 10px; display: flex; align-items: flex-start; font-variant-numeric: tabular-nums; }
 .giant .val .unit { font-size: 0.26em; font-weight: 700; margin: 0.18em 0.12em 0; letter-spacing: 0; }
-.giant .rng { direction: ltr; text-align: left; font: 600 13px/1.4 var(--lat); font-stretch: 85%; margin-top: 10px; color: var(--on-yellow-2); }
+.giant .rng { font: 600 12.5px/1.4 var(--fa); margin-top: 6px; color: var(--on-yellow-2); }
+/* The min/max drawn as a range: a bar from min to max on a 0-100 °C scale, a tick at the current reading. */
+.range-rule { position: relative; height: 12px; margin-top: 10px; direction: ltr; border-bottom: 1px solid rgb(12 12 12 / 0.25); }
+.range-rule .span { position: absolute; bottom: -1px; height: 3px; background: var(--on-yellow); transition: left 600ms var(--ease), width 600ms var(--ease); }
+.range-rule .now { position: absolute; bottom: -1px; width: 2px; height: 12px; background: var(--on-yellow); transform: translateX(-1px); transition: left 600ms var(--ease); }
 .giant .val.missing { font-size: clamp(40px, 5vw, 72px); font-family: var(--fa); font-weight: 800; direction: rtl; text-align: right; }
-.plane-actions { display: flex; gap: 14px; align-items: center; margin-top: 30px; flex-wrap: wrap; }
+.plane-actions { display: flex; gap: 14px; align-items: center; margin-top: clamp(14px, 2.6vh, 28px); flex-wrap: wrap; }
+/* The plane's colophon: shop and date at its foot on a rule, never a label above the headline. */
+.colophon { display: flex; justify-content: space-between; gap: 20px; font-size: 12.5px; font-weight: 600; border-top: 1.5px solid var(--on-yellow); padding-top: 10px; margin-top: clamp(14px, 2.4vh, 24px); }
 
 /* Rolling numerals: each digit is a column of 0-9 that slides to its value. */
 .roll { --dh: 1.14em; display: inline-flex; direction: ltr; overflow: hidden; line-height: var(--dh); }
@@ -183,7 +193,9 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .kv dt, .kv .k { color: var(--paper-2); padding: 5px 0; border-bottom: 1px solid var(--rule); }
 .kv dd, .kv .v { margin: 0; padding: 5px 0; border-bottom: 1px solid var(--rule); text-align: left; }
 .kv dd.num, .kv .v.num { font-size: 14.5px; }
-.kv .sub { grid-column: 1 / -1; font-size: 12px; color: var(--paper-3); padding: 2px 0 6px; border-bottom: 1px solid var(--rule); }
+/* A part's name inside a column is its own full-width row, above its own pairs. */
+.kv dt.sub { grid-column: 1 / -1; font-size: 12px; color: var(--paper); font-weight: 700; padding: 12px 0 4px; border-bottom: 1px solid var(--rule-2); text-align: left; }
+.kv dt.sub:first-child { padding-top: 2px; }
 
 .masonry { columns: 3 300px; column-gap: calc(var(--gut) * 1.5); }
 .masonry > .col { break-inside: avoid; margin-bottom: 34px; }
@@ -202,7 +214,7 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .table tr.row:hover { background: var(--ink-3); }
 .table tr.row.on { background: var(--yellow); color: var(--on-yellow); }
 .table tr.row.on td { border-bottom-color: transparent; }
-.table tr.row.on .hatch { color: var(--on-yellow-2); }
+
 .table tr.grp td { padding: 26px 8px 8px; border-bottom: 2px solid var(--paper); }
 .table tr.grp .gname { font: 900 17px/1.2 var(--lat); font-stretch: 90%; direction: ltr; unicode-bidi: isolate; }
 .table tr.grp .gkind { color: var(--paper-3); font-size: 12px; margin-inline-start: 10px; }
@@ -254,7 +266,7 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 .curve .cap { stroke: var(--yellow); stroke-width: 1; stroke-dasharray: 2 4; cursor: ns-resize; }
 .curve .cap-hit { stroke: transparent; stroke-width: 14; cursor: ns-resize; }
 .curve .cap-tag rect { fill: var(--yellow); } .curve .cap-tag text { fill: var(--on-yellow); font: 800 11px var(--lat); }
-.curve .livept { fill: var(--pass); } .curve .livering { fill: none; stroke: var(--pass); stroke-width: 1.5; }
+.curve .livept { fill: var(--paper); } .curve .livering { fill: none; stroke: var(--paper); stroke-width: 1.5; }
 .curve .tip rect { fill: var(--ink-3); stroke: var(--rule-2); } .curve .tip text { fill: var(--paper); font: 600 11.5px var(--lat); }
 .curve .empty { fill: var(--paper-3); font: 600 15px var(--fa); }
 .legend { display: flex; gap: 22px; flex-wrap: wrap; font-size: 12.5px; color: var(--paper-3); margin-top: 10px; }

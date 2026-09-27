@@ -16,8 +16,9 @@ export function mount(el) {
   const verdict = h("h2", { class: "verdict" }, t("Web_Dash_Verdict_None"));
   const machine = h("div", { class: "machine lat" }, [cpu?.name, gpu?.name].filter(Boolean).join("  ·  "));
   const giant = (labelKey, sensor) => {
-    const v = h("div", { class: "val" }), r = h("div", { class: "rng" });
-    return { sensor, v, r, el: h("div", { class: "giant" }, h("div", { class: "lbl" }, h("span", {}, t(labelKey)), h("span", { class: "muted lat" }, sensor ? sensor.node.name ?? "" : "")), v, r) };
+    const v = h("div", { class: "val" }), r = h("div", { class: "rng" }), span = h("i", { class: "span" }), now = h("i", { class: "now" });
+    return { sensor, v, r, span, now, el: h("div", { class: "giant" }, h("div", { class: "lbl" }, h("span", {}, t(labelKey)), h("span", { class: "muted lat" }, sensor ? sensor.node.name ?? "" : "")), v,
+      h("div", { class: "range-rule", "aria-hidden": "true" }, span, now), r) };
   };
   const g1 = giant("Web_Dash_CpuTemp", cpuTemp && { ...cpuTemp, node: cpu }), g2 = giant("Web_Dash_GpuTemp", gpuTemp && { ...gpuTemp, node: gpu });
   const date = new Intl.DateTimeFormat(boot.rtl ? "fa-IR-u-ca-persian" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
@@ -26,10 +27,10 @@ export function mount(el) {
     try { await call("reports.exec", { cmd: "summary" }); } finally { summaryBtn.disabled = false; }
   } }, icon("doc"), t("Reports_Summary"));
   const plane = h("section", { class: "plane enter" }, regMarks(),
-    h("div", { class: "plane-top" }, h("span", {}, boot.shopName), h("span", {}, date)),
     verdict, machine,
     h("div", { class: "giants" }, g1.el, g2.el),
-    h("div", { class: "plane-actions" }, h("button", { class: "slab", onclick: () => go("tests") }, t("Web_Dash_RunTests"), icon("arrow")), summaryBtn));
+    h("div", { class: "plane-actions" }, h("button", { class: "slab", onclick: () => go("tests") }, t("Web_Dash_RunTests"), icon("arrow")), summaryBtn),
+    h("div", { class: "colophon" }, h("span", {}, boot.shopName), h("span", {}, date)));
 
   // Ruled columns, one per part.
   const rows = [];   // [sensor, valueElement]
@@ -45,9 +46,9 @@ export function mount(el) {
       line(t("Dashboard_Line_Clock"), pick(g, "GpuCoreClock")), line(t("Dashboard_Line_Power"), pick(g, "GpuPower")), line(t("Dashboard_Line_VramUsed"), pick(g, "GpuVramUsed")))),
     ram && col(t("Dashboard_Ram"), null, 4, line(t("Dashboard_Line_Used"), pick(ram, "RamUsed")), line(t("Dashboard_Line_Free"), pick(ram, "RamFree")), line(t("Dashboard_Line_Load"), pick(ram, "RamLoad"))),
     drives.length && col(t("Nav_Storage"), "storage", 5, ...drives.map((d) => [
-      h("div", { class: "sub lat" }, d.name), line(t("Web_Dash_Temp"), pick(d, "StorageTemp")), line(t("Web_Dash_UsedSpace"), pick(d, "StorageUsedSpace"))])),
+      h("dt", { class: "sub lat" }, d.name), line(t("Web_Dash_Temp"), pick(d, "StorageTemp")), line(t("Web_Dash_UsedSpace"), pick(d, "StorageUsedSpace"))])),
     nets.length && col(t("Nav_Network"), "network", 6, ...nets.slice(0, 3).map((n) => [
-      h("div", { class: "sub lat" }, n.name), line(t("Overlay_Down"), pick(n, "NetDownload")), line(t("Overlay_Up"), pick(n, "NetUpload"))])));
+      h("dt", { class: "sub lat" }, n.name), line(t("Overlay_Down"), pick(n, "NetDownload")), line(t("Overlay_Up"), pick(n, "NetUpload"))])));
 
   const inv = h("dl", { class: "kv", style: { marginTop: "34px", gridTemplateColumns: "auto 1fr auto 1fr auto 1fr", columnGap: "18px" } });
   el.append(plane, cols, inv);
@@ -57,8 +58,11 @@ export function mount(el) {
       const s = g.sensor, v = s ? value(s.id) : null;
       roll(g.v, whole(v));
       if (v !== null && !g.v.querySelector(".unit")) g.v.append(h("span", { class: "unit" }, "°C"));
-      const st = s && stats.get(s.id);
-      g.r.textContent = st ? `min ${Math.round(st[0])}  ·  avg ${Math.round(st[1])}  ·  max ${Math.round(st[2])} °C` : "";
+      // The session range, drawn on a 0-100 °C scale and written out; figures stay Latin (passed as text, not numbers).
+      const st = s && stats.get(s.id), pct = (x) => `${Math.min(100, Math.max(0, x))}%`;
+      g.r.textContent = st ? t("Web_Dash_Range", String(Math.round(st[0])), String(Math.round(st[1])), `‎${Math.round(st[2])} °C‎`) : "";
+      g.span.style.left = st ? pct(st[0]) : "0"; g.span.style.width = st ? pct(st[2] - st[0]) : "0";
+      g.now.hidden = v === null; if (v !== null) g.now.style.left = pct(v);
     }
     for (const [s, dd] of rows) { const text = s ? fmt(value(s.id), s.unit) : null; dd.replaceChildren(val(text)); }
   }
