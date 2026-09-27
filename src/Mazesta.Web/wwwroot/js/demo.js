@@ -64,7 +64,10 @@ const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_
 const bench = () => ({ running: false, queue: "", canRunSelected: true,
   rows: BENCH.map(([k, c], i) => ({ id: k, name: strings[k], component: c, selected: i === 0 || i === 3, duration: "60", percent: i < 2 ? 100 : 0, status: i < 2 ? strings.Bench_Status_CompletedAt.replace("{0}", "01:40") : "", active: false, detail: null, options: [],
     metrics: i === 0 ? [{ name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS" }, { name: strings.Bench_Cpu_ClockPeak, value: "4650 MHz" }, { name: strings.Bench_Cpu_TempMax, value: "71.0 °C" }]
-      : i === 1 ? [{ name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS" }, { name: strings.Bench_Cpu_PerThread, value: "12.9 GFLOPS" }, { name: strings.Bench_Cpu_Power, value: "142 W" }] : [] })) });
+      : i === 1 ? [{ name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS" }, { name: strings.Bench_Cpu_PerThread, value: "12.9 GFLOPS" }, { name: strings.Bench_Cpu_Power, value: "142 W" }] : [],
+    best: i === 4 ? { name: strings.Bench_Gpu_Fps, value: "318 FPS", at: "1405/07/02 21:14" } : null,
+    compared: i === 0 ? { now: { name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS", at: "1405/07/06 14:20" }, previous: { name: strings.Bench_Cpu_Gflops, value: "20.70 GFLOPS", at: "1405/07/01 11:02" }, change: 3.38, saved: true }
+      : i === 1 ? { now: { name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS", at: "1405/07/06 14:22" }, previous: { name: strings.Bench_Cpu_Gflops, value: "421 GFLOPS", at: "1405/07/01 11:05" }, change: -2.14, saved: false } : null })) });
 const CURVE = [[1020, 0.725], [1080, 0.725], [1140, 0.731], [1200, 0.737], [1260, 0.75], [1320, 0.762], [1380, 0.775], [1440, 0.787], [1500, 0.8], [1560, 0.818], [1620, 0.837], [1680, 0.856], [1740, 0.875], [1800, 0.9], [1860, 0.931], [1920, 0.962], [1965, 0.993], [1995, 1.025]];
 const form = { core: "165", memory: "0", lockClock: true, maxClock: "1905", setPower: false, power: "350", manualFan: false, fan: "60", profileName: "", coreValue: 165, capValue: 1905 };
 const tuning = () => ({

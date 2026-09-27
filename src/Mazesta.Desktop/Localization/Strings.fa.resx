@@ -900,4 +900,13 @@
   <data name="Web_Chart_Hint" xml:space="preserve"><value>برای افزودن نمودار، روی هر سنسور دوبار کلیک کنید.</value></data>
   <data name="Web_Chart_Max" xml:space="preserve"><value>حداکثر {0} نمودار باز می‌شود. اول یکی را حذف کنید.</value></data>
   <data name="Web_Sensors_Count" xml:space="preserve"><value>{0} سنسور</value></data>
+  <data name="Web_Group_SelectAll" xml:space="preserve"><value>انتخاب همهٔ این گروه</value></data>
+  <data name="Web_Group_Count" xml:space="preserve"><value>{0} مورد · {1} انتخاب‌شده</value></data>
+  <data name="Web_Bench_Best" xml:space="preserve"><value>بهترین نتیجه روی این سیستم</value></data>
+  <data name="Web_Bench_ThisRun" xml:space="preserve"><value>این اجرا</value></data>
+  <data name="Web_Bench_NoRecord" xml:space="preserve"><value>هنوز نتیجه‌ای از این بنچمارک روی این سیستم ثبت نشده است.</value></data>
+  <data name="Web_Bench_FirstRecord" xml:space="preserve"><value>اولین نتیجه روی این سیستم؛ ذخیره شد</value></data>
+  <data name="Web_Bench_NewRecord" xml:space="preserve"><value>رکورد جدید؛ ذخیره شد</value></data>
+  <data name="Web_Bench_Lower" xml:space="preserve"><value>پایین‌تر از بهترین نتیجه؛ ذخیره نشد</value></data>
+  <data name="Web_Bench_Equal" xml:space="preserve"><value>برابر با بهترین نتیجه؛ نتیجهٔ قبلی نگه داشته شد</value></data>
 </root>

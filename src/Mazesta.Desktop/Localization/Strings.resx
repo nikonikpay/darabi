@@ -900,4 +900,13 @@
   <data name="Web_Chart_Hint" xml:space="preserve"><value>Double-click a sensor to add its chart.</value></data>
   <data name="Web_Chart_Max" xml:space="preserve"><value>At most {0} charts can be open. Remove one first.</value></data>
   <data name="Web_Sensors_Count" xml:space="preserve"><value>{0} sensors</value></data>
+  <data name="Web_Group_SelectAll" xml:space="preserve"><value>Select the whole group</value></data>
+  <data name="Web_Group_Count" xml:space="preserve"><value>{0} items · {1} selected</value></data>
+  <data name="Web_Bench_Best" xml:space="preserve"><value>Best on this system</value></data>
+  <data name="Web_Bench_ThisRun" xml:space="preserve"><value>This run</value></data>
+  <data name="Web_Bench_NoRecord" xml:space="preserve"><value>No result is kept for this benchmark on this system yet.</value></data>
+  <data name="Web_Bench_FirstRecord" xml:space="preserve"><value>First result on this system, saved</value></data>
+  <data name="Web_Bench_NewRecord" xml:space="preserve"><value>New best, saved</value></data>
+  <data name="Web_Bench_Lower" xml:space="preserve"><value>Below the best, not saved</value></data>
+  <data name="Web_Bench_Equal" xml:space="preserve"><value>Same as the best; the earlier result is kept</value></data>
 </root>
