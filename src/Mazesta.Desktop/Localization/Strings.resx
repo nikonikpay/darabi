@@ -825,7 +825,6 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>Disk</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>OS</value></data>
-  <data name="Web_AlreadyRunning" xml:space="preserve"><value>Mazesta is already running (the web or the classic edition). Close it before starting another.</value></data>
   <data name="Web_NoRuntime" xml:space="preserve"><value>The Microsoft Edge WebView2 runtime is needed to show the web edition. Use the classic edition (MazestaTest.exe), or install WebView2 from Microsoft.</value></data>
   <data name="Web_DemoData" xml:space="preserve"><value>Browser preview: demo data, not this machine</value></data>
   <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>This machine has not had a full test yet</value></data>
@@ -864,4 +863,32 @@
   <data name="Web_Settings_General" xml:space="preserve"><value>General</value></data>
   <data name="Web_Shortcut" xml:space="preserve"><value>Shortcut</value></data>
   <data name="Web_Dash_Range" xml:space="preserve"><value>Since start: min {0} · avg {1} · max {2}</value></data>
+  <data name="Web_Details" xml:space="preserve"><value>Details</value></data>
+  <data name="Web_Dash_System" xml:space="preserve"><value>Board and system</value></data>
+  <data name="Web_Dash_BoardTemp" xml:space="preserve"><value>Board</value></data>
+  <data name="Web_Dash_ChipsetTemp" xml:space="preserve"><value>Chipset</value></data>
+  <data name="Web_Dash_Drives" xml:space="preserve"><value>{0} drives</value></data>
+  <data name="Web_Group_System" xml:space="preserve"><value>System</value></data>
+  <data name="Web_Group_Windows" xml:space="preserve"><value>Windows</value></data>
+  <data name="Web_Group_Power" xml:space="preserve"><value>Whole system (power)</value></data>
+  <data name="Web_Company_Title" xml:space="preserve"><value>DFM Rendering</value></data>
+  <data name="Web_Shop_Title" xml:space="preserve"><value>From our shop</value></data>
+  <data name="Web_Shop_View" xml:space="preserve"><value>View in shop</value></data>
+  <data name="Web_Shop_Another" xml:space="preserve"><value>Another product</value></data>
+  <data name="Web_Shop_All" xml:space="preserve"><value>All products</value></data>
+  <data name="Web_Shop_Offline" xml:space="preserve"><value>The shop could not be reached. A product will show here once the internet is available.</value></data>
+  <data name="Web_Contact_Title" xml:space="preserve"><value>Sales and support</value></data>
+  <data name="Web_Contact_Sales" xml:space="preserve"><value>Sales</value></data>
+  <data name="Web_Contact_Support" xml:space="preserve"><value>Technical support</value></data>
+  <data name="Web_Contact_Office" xml:space="preserve"><value>Office</value></data>
+  <data name="Web_Contact_Fax" xml:space="preserve"><value>Fax</value></data>
+  <data name="Web_Contact_Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Web_Contact_SendMail" xml:space="preserve"><value>Send email</value></data>
+  <data name="Web_Contact_WhatsApp" xml:space="preserve"><value>WhatsApp</value></data>
+  <data name="Web_Contact_Telegram" xml:space="preserve"><value>Telegram</value></data>
+  <data name="Web_Contact_Channel" xml:space="preserve"><value>Telegram channel</value></data>
+  <data name="Web_Contact_Instagram" xml:space="preserve"><value>Instagram</value></data>
+  <data name="Web_Contact_Postcode" xml:space="preserve"><value>postcode</value></data>
+  <data name="Contact_Hours" xml:space="preserve"><value>Saturday to Wednesday, 9:00 to 18:00. Closed on Thursdays, Fridays and public holidays.</value></data>
+  <data name="Contact_Address" xml:space="preserve"><value>Unit 15, 4th floor, Faraz Building, No. 6, Khansari Dead End, Somayeh St. (west), South Bahar St., Enghelab St., Tehran</value></data>
 </root>

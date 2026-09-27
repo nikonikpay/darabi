@@ -28,7 +28,8 @@
   --c-ram: #35d0e0;
   --c-storage: #ff9a4d;
   --c-net: #ff78b9;
-  --c-board: #fdd400;
+  --c-board: #d9ccb0;
+  --c-power: #fdd400;
   --r-panel: 14px;
   --r-ctl: 8px;
   --fa: "Vazirmatn", "Segoe UI", sans-serif;
@@ -340,18 +341,19 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 
 /* ———— Parts: every part carries its hue in --hue; panels are the boxes the dashboard, pages and groups are built from ———— */
 .p-cpu { --hue: var(--c-cpu); } .p-gpu { --hue: var(--c-gpu); } .p-ram { --hue: var(--c-ram); } .p-storage { --hue: var(--c-storage); }
-.p-net { --hue: var(--c-net); } .p-board { --hue: var(--c-board); } .p-sys { --hue: var(--c-board); } .p-win { --hue: var(--paper-2); }
+.p-net { --hue: var(--c-net); } .p-board { --hue: var(--c-board); } .p-sys { --hue: var(--c-board); } .p-power { --hue: var(--c-power); } .p-shop, .p-contact { --hue: var(--yellow); } .p-win { --hue: var(--paper-2); }
 .hue { color: var(--hue); }
 
 .panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; margin-top: 22px; align-items: start; }
-.panel { --hue: var(--paper-2); position: relative; min-width: 0; border-radius: var(--r-panel); padding: 16px 18px 14px;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--hue) 10%, var(--ink-2)) 0, var(--ink-2) 110px);
-  border: 1px solid color-mix(in oklab, var(--hue) 26%, transparent); box-shadow: 0 12px 28px -18px rgb(0 0 0 / 0.8);
+.panel:where(:not([class*="p-"])) { --hue: var(--paper-2); }
+.panel { position: relative; min-width: 0; border-radius: var(--r-panel); padding: 16px 18px 14px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--hue) 15%, var(--ink-2)) 0, var(--ink-2) 140px);
+  border: 1px solid color-mix(in oklab, var(--hue) 38%, transparent); box-shadow: 0 12px 28px -18px rgb(0 0 0 / 0.8);
   animation: panel-in 620ms var(--ease) both; animation-delay: calc(var(--i, 0) * 50ms); }
-.panel::before { content: ""; position: absolute; inset-inline: 18px; top: -1px; height: 3px; border-radius: 0 0 3px 3px; background: var(--hue); }
+.panel::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: 4px; border-radius: var(--r-panel) var(--r-panel) 0 0; background: var(--hue); }
 .panel.wide { grid-column: 1 / -1; }
 .panel-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.panel-head .ico { width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--hue); background: color-mix(in oklab, var(--hue) 16%, transparent); }
+.panel-head .ico { width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--ink); background: var(--hue); }
 .panel-head .ico svg { width: 19px; height: 19px; stroke: currentColor; }
 .panel-head .ttl { min-width: 0; flex: 1; }
 .panel-title { font: 800 16.5px/1.25 var(--fa); margin: 0; }
@@ -432,3 +434,19 @@ select.field option { background: var(--ink-3); color: var(--paper); }
 
 @keyframes panel-in { from { opacity: 0; transform: translateY(10px); } }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Dashboard additions: the company row, a section title between the machine and the shop, buttons inside panels wear the panel's hue. */
+.section-title { font: 800 18px/1.3 var(--fa); margin: 40px 0 0; display: flex; align-items: center; gap: 14px; }
+.section-title::after { content: ""; flex: 1; height: 1px; background: var(--rule-2); }
+.panels.company { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); margin-top: 16px; }
+.panel-sub.fa { font-family: var(--fa); direction: inherit; text-align: start; white-space: normal; font-size: 12.5px; margin-top: 2px; }
+.panel .slab { background: var(--hue); color: var(--ink); }
+.panel .slab.small { font-size: 13.5px; padding: 9px 16px; }
+.panel .slab.small svg { width: 16px; height: 16px; }
+.shop .img.noimg { display: grid; place-items: center; color: var(--ink-3); }
+.shop .img.noimg svg { width: 40px; height: 40px; stroke: currentColor; }
+.contact .note { display: flex; gap: 8px; align-items: flex-start; }
+.contact .note svg { width: 15px; height: 15px; stroke: var(--hue); flex: none; margin-top: 4px; }
+.contact > .links { padding-top: 4px; }
+.panel .btn.quiet svg { width: 15px; height: 15px; stroke: currentColor; }
+.panel .kv dt .kind { color: var(--paper-3); font-size: 11px; margin-inline-start: 8px; }

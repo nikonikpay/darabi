@@ -825,7 +825,6 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>بایوس</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>دیسک</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>
-  <data name="Web_AlreadyRunning" xml:space="preserve"><value>مازستا همین حالا باز است (نسخه‌ی وب یا نسخه‌ی کلاسیک). اول آن را ببندید.</value></data>
   <data name="Web_NoRuntime" xml:space="preserve"><value>برای نمایش نسخه‌ی وب، WebView2 مایکروسافت اج لازم است. از نسخه‌ی کلاسیک (MazestaTest.exe) استفاده کنید یا WebView2 را از سایت مایکروسافت نصب کنید.</value></data>
   <data name="Web_DemoData" xml:space="preserve"><value>پیش‌نمایش مرورگر: داده‌ی نمونه، نه این سیستم</value></data>
   <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>این سیستم هنوز آزمون جامع نشده است</value></data>
@@ -864,4 +863,32 @@
   <data name="Web_Settings_General" xml:space="preserve"><value>عمومی</value></data>
   <data name="Web_Shortcut" xml:space="preserve"><value>میان‌بر</value></data>
   <data name="Web_Dash_Range" xml:space="preserve"><value>از شروع پایش: کمینه {0} · میانگین {1} · بیشینه {2}</value></data>
+  <data name="Web_Details" xml:space="preserve"><value>جزئیات بیشتر</value></data>
+  <data name="Web_Dash_System" xml:space="preserve"><value>مادربرد و سیستم</value></data>
+  <data name="Web_Dash_BoardTemp" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="Web_Dash_ChipsetTemp" xml:space="preserve"><value>چیپ‌ست</value></data>
+  <data name="Web_Dash_Drives" xml:space="preserve"><value>{0} دیسک</value></data>
+  <data name="Web_Group_System" xml:space="preserve"><value>سیستم</value></data>
+  <data name="Web_Group_Windows" xml:space="preserve"><value>ویندوز</value></data>
+  <data name="Web_Group_Power" xml:space="preserve"><value>کل سیستم (توان)</value></data>
+  <data name="Web_Company_Title" xml:space="preserve"><value>دی‌اف‌ام رندرینگ</value></data>
+  <data name="Web_Shop_Title" xml:space="preserve"><value>از فروشگاه ما</value></data>
+  <data name="Web_Shop_View" xml:space="preserve"><value>مشاهده در فروشگاه</value></data>
+  <data name="Web_Shop_Another" xml:space="preserve"><value>محصول دیگر</value></data>
+  <data name="Web_Shop_All" xml:space="preserve"><value>همهٔ محصولات</value></data>
+  <data name="Web_Shop_Offline" xml:space="preserve"><value>به فروشگاه دسترسی نشد. با وصل شدن اینترنت، محصولی اینجا نمایش داده می‌شود.</value></data>
+  <data name="Web_Contact_Title" xml:space="preserve"><value>فروش و پشتیبانی</value></data>
+  <data name="Web_Contact_Sales" xml:space="preserve"><value>واحد فروش</value></data>
+  <data name="Web_Contact_Support" xml:space="preserve"><value>پشتیبانی فنی</value></data>
+  <data name="Web_Contact_Office" xml:space="preserve"><value>دفتر</value></data>
+  <data name="Web_Contact_Fax" xml:space="preserve"><value>فکس</value></data>
+  <data name="Web_Contact_Email" xml:space="preserve"><value>ایمیل</value></data>
+  <data name="Web_Contact_SendMail" xml:space="preserve"><value>ارسال ایمیل</value></data>
+  <data name="Web_Contact_WhatsApp" xml:space="preserve"><value>واتس‌اپ</value></data>
+  <data name="Web_Contact_Telegram" xml:space="preserve"><value>تلگرام</value></data>
+  <data name="Web_Contact_Channel" xml:space="preserve"><value>کانال تلگرام</value></data>
+  <data name="Web_Contact_Instagram" xml:space="preserve"><value>اینستاگرام</value></data>
+  <data name="Web_Contact_Postcode" xml:space="preserve"><value>کد پستی</value></data>
+  <data name="Contact_Hours" xml:space="preserve"><value>شنبه تا چهارشنبه، ساعت ۹ تا ۱۸. پنجشنبه، جمعه و تعطیلات رسمی تعطیل است.</value></data>
+  <data name="Contact_Address" xml:space="preserve"><value>تهران، خیابان انقلاب، خیابان بهار جنوبی، خیابان سمیه (به سمت غرب)، بن‌بست خوانساری، پلاک ۶ (ساختمان فراز)، طبقهٔ ۴، واحد ۱۵</value></data>
 </root>
