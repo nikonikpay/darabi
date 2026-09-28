@@ -27,7 +27,8 @@ under which licence, and by which project in this repository.
 | xunit, xunit.runner.visualstudio, Microsoft.NET.Test.Sdk | 2.9.3 / 3.1.5 / 18.10.0 | Apache-2.0 / MIT | `tests/*` | Test framework and runner; not shipped in `artifacts/Mazesta-Test`. |
 | IRANSansXFaNum (Regular, Bold) | embedded `.ttf`, `src/Mazesta.Desktop/Fonts/` | Supplied by the product owner for this application; licence terms are the owner's to confirm before any redistribution outside the shop | `Mazesta.Desktop` | Persian text (its digits are Persian-form, so technical values use Segoe UI instead); falls back to Segoe UI. |
 | Vazirmatn (variable, woff2) | 33.003 | SIL Open Font License 1.1 (`src/Mazesta.Web/wwwroot/fonts/Vazirmatn-OFL.txt`) | `Mazesta.Web` | Persian text of the web edition. Copyright the Vazirmatn project authors (Saber Rastikerdar). https://github.com/rastikerdar/vazirmatn |
-| Archivo (variable, width and weight axes) | Google Fonts `ofl/archivo` | SIL Open Font License 1.1 (`src/Mazesta.Web/wwwroot/fonts/Archivo-OFL.txt`) | `Mazesta.Web` | Latin values and the condensed poster numerals of the web edition. Copyright the Archivo project authors (Omnibus-Type). https://github.com/Omnibus-Type/Archivo || PawnIO | separate, user-installed driver (not bundled) | Licence per its own site — see https://pawnio.eu/ | Runtime prerequisite for `Mazesta.Hardware` CPU MSR sensors | Not distributed with Mazesta Test; the user installs it independently. Detected at runtime via `LibreHardwareMonitor.PawnIo.PawnIo.IsInstalled`. |
+| Archivo (variable, width and weight axes) | Google Fonts `ofl/archivo` | SIL Open Font License 1.1 (`src/Mazesta.Web/wwwroot/fonts/Archivo-OFL.txt`) | `Mazesta.Web` | Latin values and the condensed poster numerals of the web edition. Copyright the Archivo project authors (Omnibus-Type). https://github.com/Omnibus-Type/Archivo |
+| PawnIO (official signed setup, `PawnIO_setup.exe`) | 2.2.0 | Licence per its own site — see https://pawnio.eu/ | `Mazesta.Hardware` (`Redist/`) | Kernel driver LibreHardwareMonitor 0.9.5+ needs for CPU MSR, Ryzen SMU, Super I/O and SMBus sensors. The build downloads the official setup and refuses it unless its SHA-256 matches; it ships unmodified in `Redist/` and the app runs it silently (`-install -silent`) only when elevated and the driver is missing (`PawnIoDriver`). |
 
 No HWiNFO SDK, shared-memory interface, or any other third-party sensor
 library is used. No telemetry, analytics or crash-reporting SDK is included.
@@ -45,8 +46,10 @@ library is used. No telemetry, analytics or crash-reporting SDK is included.
   binary.
 - **MIT** (System.Management, Microsoft.Extensions.\*, CommunityToolkit.Mvvm, Vortice.\*, SharpGen.Runtime\*):
   permissive, requires only notice/attribution, which this file provides.
-- **PawnIO**: not redistributed by this project. Users obtain and accept
-  its licence directly from its own site before installing it.
+- **PawnIO**: the official, signed, unmodified setup is redistributed in `Redist/`
+  and installed by the app when the driver is missing. Its redistribution terms
+  are the owner's to confirm against https://pawnio.eu/ before any release outside
+  the shop; until then treat this as internal use.
 
 ## Product image and contact information
 
