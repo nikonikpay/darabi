@@ -19,6 +19,8 @@ const PRESETS = {
   render: "cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write",
   troubleshoot: "cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.temp:c gpu.hotspot gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp",
 };
+// The items with a fixed 0-100 top (percentages and temperatures), as FixedMax in the catalog.
+const HUNDRED = new Set(["gpu.temp", "gpu.hotspot", "gpu.vramtemp", "gpu.load", "gpu.fan", "cpu.temp", "cpu.hotcore", "cpu.load", "cpu.maxthread", "ram.load", "ram.temp", "storage.temp", "storage.activity"]);
 const parse = (spec) => spec.split(" ").map((s) => ({ id: s.replace(":c", ""), chart: s.endsWith(":c") }));
 let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1, layout = "list";
 const PER_DRIVE = ["storage.read", "storage.write", "storage.temp", "storage.activity"];
@@ -40,7 +42,7 @@ export function overlay(m, p, hw, strings, emit) {
     corners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })),
     presets: Object.entries(PRESETS).map(([id, spec]) => ({ id, count: parse(spec).length })), order: chosen.map((c) => c.id),
     items: [...CATALOG, ...drives(hw)].map((c) => { const sensors = resolve(hw, c), ch = chosen.find((x) => x.id === c[0]);
-      return { id: c[0], part: c[1], label: strings[c[2]] ?? c[2], frame: !c[3].length, available: !c[3].length || sensors.length > 0, on: !!ch, chart: ch?.chart ?? false, aggregate: c[4] || "First", sensors,
+      return { id: c[0], part: c[1], label: strings[c[2]] ?? c[2], frame: !c[3].length, available: !c[3].length || sensors.length > 0, on: !!ch, chart: ch?.chart ?? false, aggregate: c[4] || "First", max: HUNDRED.has(c[0].split("@")[0]) ? 100 : null, sensors,
         device: c[5]?.id ?? null, deviceName: c[5]?.name ?? null }; }) });
   const changed = () => { setTimeout(() => emit("overlayState", state()), 30); return null; };
   switch (m) {

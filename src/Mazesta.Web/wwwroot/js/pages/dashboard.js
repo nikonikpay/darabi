@@ -3,9 +3,10 @@
 // a live reading or says it is not available.
 import { call } from "../bridge.js";
 import { t, fa } from "../i18n.js";
-import { fmt, whole } from "../format.js";
+import { fmt } from "../format.js";
 import { topNodes, pick, value, stats, subscribe } from "../store.js";
-import { h, val, roll, icon, regMarks, toast } from "../ui.js";
+import { h, val, icon } from "../ui.js";
+import { liveTile, percentOf, ratioOf } from "../tiles.js";
 import { go, boot } from "../app.js";
 import { part, sensorsUnder } from "../parts.js";
 
@@ -16,33 +17,31 @@ export function mount(el) {
   const cpuTemp = pick(cpu, "CpuPackageTemp", "CpuTctlTdie"), gpuTemp = pick(gpu, "GpuCoreTemp");
   const updates = [];   // closures run on every poll
 
-  // ——— The plane ———
+  // ——— The first row: the machine's standing and what to do next, beside a live tile per part ———
   const verdict = h("h2", { class: "verdict" }, t("Web_Dash_Verdict_None"));
   const machine = h("div", { class: "machine lat" }, [cpu?.name, gpu?.name].filter(Boolean).join("  ·  "));
-  const giant = (labelKey, sensor) => {
-    const v = h("div", { class: "val" }), r = h("div", { class: "rng" }), span = h("i", { class: "span" }), now = h("i", { class: "now" });
-    return { sensor, v, r, span, now, el: h("div", { class: "giant" }, h("div", { class: "lbl" }, h("span", {}, t(labelKey)), h("span", { class: "muted lat" }, sensor ? sensor.node.name ?? "" : "")), v,
-      h("div", { class: "range-rule", "aria-hidden": "true" }, span, now), r) };
-  };
-  const g1 = giant("Web_Dash_CpuTemp", cpuTemp && { ...cpuTemp, node: cpu }), g2 = giant("Web_Dash_GpuTemp", gpuTemp && { ...gpuTemp, node: gpu });
   const date = new Intl.DateTimeFormat(boot.rtl ? "fa-IR-u-ca-persian" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
-  const plane = h("section", { class: "plane enter" }, regMarks(),
-    verdict, machine,
-    h("div", { class: "giants" }, g1.el, g2.el),
-    h("div", { class: "plane-actions" }, h("button", { class: "slab", onclick: () => go("tests") }, t("Web_Dash_RunTests"), icon("arrow"))),
+  const action = (cls, ico, key, onclick) => h("button", { class: cls, type: "button", onclick }, h("span", { class: "ico" }, icon(ico)), t(key));
+  const status = h("section", { class: "plane status-card enter" },
+    h("span", { class: "status-kicker" }, t("Web_Dash_Live")), verdict, machine, h("div", { class: "grow" }),
+    h("div", { class: "quick" },
+      action("", "flask", "Web_Dash_RunTests", () => go("tests")), action("p-gpu", "trophy", "Nav_Benchmarks", () => go("benchmarks")),
+      action("p-game", "overlay", "Overlay_Toggle", () => call("app.toggleOverlay")), action("p-board", "doc", "Nav_Reports", () => go("reports"))),
     h("div", { class: "colophon" }, h("span", {}, boot.shopName), h("span", {}, date)));
-  updates.push(() => {
-    for (const g of [g1, g2]) {
-      const s = g.sensor, v = s ? value(s.id) : null;
-      roll(g.v, whole(v));
-      if (v !== null && !g.v.querySelector(".unit")) g.v.append(h("span", { class: "unit" }, "°C"));
-      // The session range, drawn on a 0-100 °C scale and written out; figures stay Latin (passed as text, not numbers).
-      const st = s && stats.get(s.id), pct = (x) => `${Math.min(100, Math.max(0, x))}%`;
-      g.r.textContent = st ? t("Web_Dash_Range", String(Math.round(st[0])), String(Math.round(st[1])), `‎${Math.round(st[2])} °C‎`) : "";
-      g.span.style.left = st ? pct(st[0]) : "0"; g.span.style.width = st ? pct(st[2] - st[0]) : "0";
-      g.now.hidden = v === null; if (v !== null) g.now.style.left = pct(v);
-    }
-  });
+  // Each temperature with its part's load beside it and as the bar, like the overlay; memory used, its load, and the total under it.
+  const net = nets.find((n) => pick(n, "NetDownload") && value(pick(n, "NetDownload").id)) || nets[0];
+  const ramUsed = ram && pick(ram, "RamUsed"), ramTotal = ram && pick(ram, "RamTotal"), ramLoad = ram && pick(ram, "RamLoad");
+  const cpuLoad = cpu && pick(cpu, "CpuTotalLoad"), gpuLoad = gpu && pick(gpu, "GpuLoad3D", "GpuLoadD3D3D");
+  const tiles = [
+    cpu && liveTile({ kind: "Cpu", label: t("Web_Dash_CpuTemp"), main: cpuTemp, side: cpuLoad, share: percentOf(cpuLoad), foot: cpu.name, page: "cpu", i: 0 }),
+    gpu && liveTile({ kind: "Gpu", label: t("Web_Dash_GpuTemp"), main: gpuTemp, side: gpuLoad, share: percentOf(gpuLoad), foot: gpu.name, page: "gpu", i: 1 }),
+    ram && liveTile({ kind: "Memory", label: t("Dashboard_Ram"), main: ramUsed, side: ramLoad, share: ramLoad ? percentOf(ramLoad) : ratioOf(ramUsed, ramTotal),
+      foot: ramTotal ? h("span", {}, t("Dashboard_Ram_Total"), " ", h("span", { class: "lat" }, fmt(value(ramTotal.id), ramTotal.unit) ?? "—")) : null, i: 2 }),
+    net && liveTile({ kind: "Network", label: t("Nav_Network"), main: pick(net, "NetDownload"), side: () => { const s = pick(net, "NetUpload"), v = s && fmt(value(s.id), s.unit); return v && `↑ ${v}`; },
+      share: percentOf(pick(net, "NetUtilization")), foot: net.name, page: "network", i: 3 }),
+  ].filter(Boolean);
+  for (const x of tiles) updates.push(x.update);
+  const plane = h("div", { class: "hero-row" }, status, h("div", { class: "tiles" }, tiles.map((x) => x.el)));
 
   // ——— Pieces a panel is made of; each registers its own update ———
   // A big reading: the number and its unit apart. A sensor that is missing, or has no reading now, is the hatch.
@@ -66,8 +65,6 @@ export function mount(el) {
     });
     return h("div", { class: "meter" }, h("div", { class: "row" }, h("span", {}, label), num), h("div", { class: "bar", role: "presentation" }, bar));
   };
-  const percentOf = (s) => () => { const v = s ? value(s.id) : null; return v === null ? null : v / 100; };
-  const ratioOf = (a, b) => () => { const x = a ? value(a.id) : null, y = b ? value(b.id) : null; return x === null || !y ? null : x / y; };
   // Details: the sensors of the listed roles that the summary does not show, by their own names, grouped under a heading when asked.
   const details = (sensors, roles, shown = []) => {
     const list = sensors.filter((s) => roles.includes(s.role) && !shown.includes(s));

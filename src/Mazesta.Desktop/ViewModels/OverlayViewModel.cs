@@ -20,6 +20,12 @@ public sealed partial class OverlayRow : ObservableObject
     public string Hue { get; }
     internal readonly Queue<double> History = new();
     [ObservableProperty] private string _value = OverlayViewModel.Missing;
+    /// <summary>The value split for drawing: the number big and white, its unit small in the part's colour.</summary>
+    [ObservableProperty] private string _number = OverlayViewModel.Missing;
+    [ObservableProperty] private string _unitText = "";
+    /// <summary>How full the row's bar is (value over its fixed top); a row without a fixed top, or charted, has no bar.</summary>
+    [ObservableProperty] private double _fraction;
+    public bool HasBar => Item.FixedMax is not null && !HasChart;
     [ObservableProperty] private double[] _trend = [];
     /// <summary>The chart's top: fixed for percentages and temperatures (0-100), otherwise a little above the highest point shown.</summary>
     [ObservableProperty] private double _trendMax;
@@ -64,14 +70,24 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     private bool _active;
 
     public IReadOnlyList<OverlaySection> Sections { get; }
+    /// <summary>The part cards under the frame-rate card: every block but the game's.</summary>
+    public IReadOnlyList<OverlaySection> Blocks { get; }
+    /// <summary>The frame-rate card: the frame rate big, the 1 % low and frame time beside it, the last minute as bars. Each is null when its item is
+    /// not chosen, and the card is not drawn when none is.</summary>
+    public OverlayRow? HeroFps { get; }
+    public OverlayRow? HeroLow { get; }
+    public OverlayRow? HeroFrameTime { get; }
+    public bool HasHero => HeroFps is not null || HeroLow is not null || HeroFrameTime is not null;
+    [ObservableProperty] private double[] _heroTrend = [];
+    [ObservableProperty] private string _heroApp = "";
+    private readonly Queue<double> _heroHistory = new();
     public double Opacity { get; }
     public double Scale { get; }
     /// <summary>One column, or two blocks side by side: the panel is as wide as its columns, and each block one column wide.</summary>
     public bool TwoColumns { get; }
-    public double SectionWidth => TwoColumns ? 176 : 224;
-    public double PanelWidth => TwoColumns ? (SectionWidth + 14) * 2 : SectionWidth;
-    /// <summary>Side by side, each block keeps 7 px on either side: 14 px between the columns.</summary>
-    public System.Windows.Thickness SectionMargin => TwoColumns ? new(7, 4, 7, 4) : new(0, 4, 0, 4);
+    public double SectionWidth => TwoColumns ? 186 : 244;
+    /// <summary>Each card keeps 4 px on every side and the list gives back 4 px at its edges: two cards and the 8 px between them fill the panel.</summary>
+    public double PanelWidth => TwoColumns ? SectionWidth * 2 + 8 : SectionWidth;
     public bool NeedsFrames { get; }
     /// <summary>The last frame reading while a frame item is shown (the web page's preview shows it too).</summary>
     public FrameRateReading? Frames { get; private set; }
@@ -83,6 +99,9 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); TwoColumns = twoColumns;
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
         NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming);
+        Blocks = [.. Sections.Where(s => s.Part != OverlayPart.Gaming)];
+        var game = Sections.FirstOrDefault(s => s.Part == OverlayPart.Gaming)?.Rows ?? [];
+        HeroFps = game.FirstOrDefault(r => r.Id == "fps"); HeroLow = game.FirstOrDefault(r => r.Id == "low1"); HeroFrameTime = game.FirstOrDefault(r => r.Id == "frametime");
         engine.SnapshotPublished += OnSnapshot;
     }
 
@@ -93,6 +112,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         if (NeedsFrames && _frames is not null) { if (active) _frames.Start(); else _frames.Stop(); }
         if (!active) return;
         foreach (var r in Sections.SelectMany(s => s.Rows)) { r.History.Clear(); r.Trend = []; }
+        _heroHistory.Clear(); HeroTrend = [];
     }
 
     /// <summary>The chosen items this machine can show, grouped into blocks (a part, or one drive's own block), the blocks in the order their first
@@ -127,12 +147,21 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         Frames = NeedsFrames ? _frames?.Read() : null;
         foreach (var section in Sections)
         {
-            if (section.Part == OverlayPart.Gaming) section.Subtitle = Frames?.App ?? "";
+            if (section.Part == OverlayPart.Gaming) { section.Subtitle = Frames?.App ?? ""; HeroApp = section.Subtitle; }
             foreach (var row in section.Rows)
             {
                 double? v = row.Item.IsFrameItem ? FrameValue(row.Id, Frames) : OverlayCatalog.Combine(row.Item.Aggregate, row.Sensors.Select(id => _latest.GetValueOrDefault(id)));
                 row.Value = v is { } x ? (row.Item.IsFrameItem ? FormatFrame(row.Id, x) : Format(x, row.Unit)) : Missing;
+                int cut = row.Value.LastIndexOf(' ');
+                (row.Number, row.UnitText) = cut > 0 ? (row.Value[..cut], row.Value[(cut + 1)..]) : (row.Value, "");
+                row.Fraction = v is { } f && row.Item.FixedMax is { } top ? Math.Clamp(f / top, 0, 1) : 0;
                 if (row.HasChart) Chart(row, v);
+                if (row == HeroFps)
+                {
+                    // The frame-rate card always draws its last minute, charted or not: it is what the card is for.
+                    _heroHistory.Enqueue(v ?? double.NaN); while (_heroHistory.Count > TrendLength) _heroHistory.Dequeue();
+                    HeroTrend = [.. _heroHistory];
+                }
             }
         }
         Updated?.Invoke();

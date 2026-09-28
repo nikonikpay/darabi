@@ -9,6 +9,14 @@ public sealed class NonEmptyToVisibility : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
 }
 
+/// <summary>Visible when there is something, collapsed for null: a piece shown only when its item was chosen.</summary>
+public sealed class NullToCollapsed : IValueConverter
+{
+    public static readonly NullToCollapsed Instance = new();
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is null ? Visibility.Collapsed : Visibility.Visible;
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+}
+
 /// <summary>Collapsed for true, visible for false: an empty-state line shown while a list has nothing in it.</summary>
 public sealed class NegatedBoolToVisibility : IValueConverter
 {

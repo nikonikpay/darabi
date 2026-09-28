@@ -74,6 +74,21 @@ public class OverlayViewModelTests
         vm.SetActive(false); Assert.Equal(1, frames.Stops);
     }
 
+    [Fact] public void The_frame_rate_card_takes_the_game_items_and_each_row_splits_its_number_unit_and_bar()
+    {
+        var frames = new FakeFrames(new FrameRateReading(143.6, 118.2, 6.96, 42, "game"));
+        var (vm, e, _, _) = Build([new("fps", false), new("low1", false), new("frametime", false), new("gpu.temp", false), new("gpu.load", true)], frames);
+        Assert.True(vm.HasHero); Assert.Equal(["GPU"], vm.Blocks.Select(s => s.Title));
+        vm.SetActive(true); e.TickOnce(); e.TickOnce();
+        Assert.Equal(("144", "FPS"), (vm.HeroFps!.Number, vm.HeroFps.UnitText)); Assert.Equal(("7.0", "ms"), (vm.HeroFrameTime!.Number, vm.HeroFrameTime.UnitText));
+        Assert.Equal(2, vm.HeroTrend.Length);   // the card's bars run with the frame rate's chart off
+        var temp = Row(vm, "GPU", "Overlay_Temp");
+        Assert.Equal(("42", "°C", 0.42), (temp.Number, temp.UnitText, temp.Fraction)); Assert.True(temp.HasBar);
+        Assert.False(Row(vm, "GPU", "Overlay_Load").HasBar);   // charted: its chart, not a bar
+    }
+
+    [Fact] public void Without_game_items_there_is_no_frame_rate_card() => Assert.False(Build().Vm.HasHero);
+
     [Fact] public void Without_frame_items_the_frame_source_is_never_started()
     {
         var frames = new FakeFrames(null);

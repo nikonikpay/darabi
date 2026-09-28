@@ -1130,4 +1130,10 @@
   <data name="Web_Boot_Sensors" xml:space="preserve"><value>Reading the hardware and its sensors. On an older machine this can take a minute; the app has not stopped.</value></data>
   <data name="Web_Boot_Elapsed" xml:space="preserve"><value>{0} s</value></data>
   <data name="Web_Boot_Window" xml:space="preserve"><value>Opening the window…</value></data>
+  <data name="Nav_Group_Tests" xml:space="preserve"><value>Tests &amp; benchmarks</value></data>
+  <data name="Nav_Group_Hardware" xml:space="preserve"><value>Hardware</value></data>
+  <data name="Nav_Group_Gaming" xml:space="preserve"><value>Gaming &amp; overlay</value></data>
+  <data name="Nav_Group_Optimize" xml:space="preserve"><value>Optimization</value></data>
+  <data name="Nav_Collapse" xml:space="preserve"><value>Narrow or widen the menu</value></data>
+  <data name="Web_Dash_Live" xml:space="preserve"><value>Live system status</value></data>
 </root>

@@ -25,6 +25,21 @@ export const PAGES = [
   { id: "settings", key: "Nav_Settings", load: () => import("./pages/settings.js") },
 ];
 
+// The side bar has one entry per family; a family of several pages shows them as tabs at the top of each. Ctrl+1 … Ctrl+8 open the families.
+export const FAMILIES = [
+  { key: "Nav_Dashboard", icon: "home", pages: ["dashboard"] },
+  { key: "Nav_Monitoring", icon: "pulse", pages: ["monitoring"] },
+  { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks"] },
+  { key: "Nav_Group_Hardware", icon: "cpu", pages: ["system", "cpu", "gpu", "storage", "network"] },
+  { key: "Nav_Group_Gaming", icon: "gamepad", pages: ["gaming", "overlay"] },
+  { key: "Nav_Group_Optimize", icon: "sliders", pages: ["tuning", "tools"] },
+  { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
+  { key: "Nav_Settings", icon: "gear", pages: ["settings"] },
+];
+const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", gaming: "gamepad", overlay: "overlay", tuning: "sliders", tools: "win" };
+const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
+const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
+
 export const boot = {};
 // ?still turns motion off, for screenshots taken while the page is not on screen (a hidden page runs its animations slowly).
 const still = new URLSearchParams(location.search).has("still");
@@ -38,12 +53,19 @@ async function show(id) {
   const page = PAGES.find((p) => p.id === id) || PAGES[0];
   if (!ready || page === current) return;
   current = page;
-  for (const a of index.querySelectorAll("a[data-id]")) a.removeAttribute("aria-current");
-  index.querySelector(`a[data-id="${page.id}"]`)?.setAttribute("aria-current", "page");
+  const family = familyOf(page.id); lastInFamily.set(family, page.id);
+  for (const a of index.querySelectorAll("a[data-family]")) {
+    if (+a.dataset.family === FAMILIES.indexOf(family)) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    a.href = `#/${lastInFamily.get(FAMILIES[+a.dataset.family]) || FAMILIES[+a.dataset.family].pages[0]}`;
+  }
   const mod = await page.load();
   const swap = () => {
     unmount?.(); unmount = null;
     clear(stage); stage.scrollTop = 0;
+    if (family.pages.length > 1) stage.append(h("nav", { class: "tabs", "aria-label": t(family.key) }, family.pages.map((id) => {
+      const p = PAGES.find((x) => x.id === id);
+      return h("a", { href: `#/${id}`, "aria-current": id === page.id ? "page" : null }, icon(TAB_ICON[id] || "doc"), t(p.key));
+    })));
     const el = h("div", { class: "page" }); stage.append(el);
     unmount = mod.mount(el, page.arg) || null;
     document.title = `${t(page.key)} — Mazesta`;
@@ -61,14 +83,21 @@ function logo() {
   return svg;
 }
 
+// The narrow bar (icons only) is a per-viewer convenience kept in the browser profile.
+function setNav(mini) { app.dataset.nav = mini ? "mini" : ""; try { localStorage.setItem("mazesta.nav", mini ? "mini" : ""); } catch { /* not kept */ } }
+
 function renderIndex(info) {
   clear(index);
+  let mini = false; try { mini = localStorage.getItem("mazesta.nav") === "mini"; } catch { /* default */ }
+  setNav(mini);
+  const toggle = h("button", { class: "icon-btn nav-toggle", type: "button", title: t("Nav_Collapse"), "aria-label": t("Nav_Collapse"), onclick: () => setNav(app.dataset.nav !== "mini") }, icon("menu"));
   index.append(
-    h("div", { class: "brand" }, h("img", { src: "img/logo.png", alt: "" }), h("div", {}, h("div", { class: "brand-word" }, logo()), h("div", { class: "brand-sub" }, "TEST SUITE"))),
-    h("ul", { class: "index-list" }, PAGES.map((p, i) => [
-      i === 5 || i === 9 ? h("li", { class: "sep", role: "presentation" }) : null,
-      h("li", {}, h("a", { href: `#/${p.id}`, "data-id": p.id, title: i < 10 ? `Ctrl+${(i + 1) % 10}` : null },
-        h("span", { class: "no" }, fa(String(i + 1).padStart(2, "0"))), h("span", { class: "nm" }, t(p.key)))),
+    h("div", { class: "brand" }, h("img", { src: "img/logo.png", alt: "" }), h("div", {}, h("div", { class: "brand-word" }, logo()), h("div", { class: "brand-sub" }, "TEST SUITE")), toggle),
+    h("ul", { class: "index-list" }, FAMILIES.map((f, i) => [
+      i === 2 || i === 6 ? h("li", { class: "sep", role: "presentation" }) : null,
+      h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`,
+        onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
+        icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no" }, `⌃${i + 1}`))),
     ])),
     h("div", { class: "index-foot" },
       h("label", { for: "svc" }, t("Service_Number")),
@@ -140,8 +169,8 @@ async function whenReady() {
 window.addEventListener("hashchange", () => show((location.hash.match(/^#\/(\w+)/) || [])[1]));
 window.addEventListener("keydown", (e) => {
   if (!e.ctrlKey || e.altKey || e.shiftKey) return;
-  const n = "1234567890".indexOf(e.key);
-  if (n >= 0 && PAGES[n]) { e.preventDefault(); go(PAGES[n].id); }
+  const n = "12345678".indexOf(e.key);
+  if (n >= 0 && FAMILIES[n]) { e.preventDefault(); go(lastInFamily.get(FAMILIES[n]) || FAMILIES[n].pages[0]); }
 });
 document.addEventListener("visibilitychange", () => { app.dataset.visible = String(!document.hidden); });
 

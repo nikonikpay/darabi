@@ -174,24 +174,48 @@ export function mount(el) {
       if (!it.available) continue;
       const c = current(it);
       val.replaceChildren(c ? c.text : h("span", { class: "hatch" }, t("Value_NotAvailable")));
-      if (it.on && it.chart) { const q = history.get(it.id) || []; q.push(c ? c.v : null); if (q.length > TREND) q.shift(); history.set(it.id, q); }
+      // The frame rate always keeps its minute: the frame-rate card draws it as bars, charted or not.
+      if (it.on && (it.chart || it.id === "fps")) { const q = history.get(it.id) || []; q.push(c ? c.v : null); if (q.length > TREND) q.shift(); history.set(it.id, q); }
     }
     renderPreview();
   }
 
-  // ——— The preview: the overlay as it will look, from the same blocks, in the same order, colours and layout ———
+  // ——— The preview: the overlay as it will look, from the same blocks, in the same order, colours and layout: the frame-rate card on top, then
+  // a card per part, each reading's number big with its unit small, a bar for a share of a fixed top or its chart ———
+  function split(c) { if (!c) return ["—", ""]; const i = c.text.lastIndexOf(" "); return i > 0 ? [c.text.slice(0, i), c.text.slice(i + 1)] : [c.text, ""]; }
   function renderPreview() {
-    const blocks = shownBlocks();
+    const blocks = shownBlocks(), game = blocks.find((b) => b.part === "Gaming"), cards = blocks.filter((b) => b.part !== "Gaming");
     preview.classList.toggle("cols", state.layout === "columns");
-    preview.replaceChildren(h("div", { class: "ov-brand" }, h("i"), "MAZESTA"), h("div", { class: "ov-blocks" }, blocks.map((b) =>
-      h("div", { class: `ov-block ${part(b.part).cls}` },
-        h("div", { class: "ov-title" }, h("i"), SHORT[b.part], b.part === "Gaming" && frames?.app ? h("small", {}, frames.app) : b.device ? h("small", {}, b.deviceName || "") : null),
-        b.items.map((it) => {
-          const c = current(it);
-          return h("div", { class: "ov-line" }, h("div", { class: "ov-lv" }, h("span", {}, it.label), h("b", { class: "num" }, c ? c.text : "—")),
-            it.chart ? spark(history.get(it.id) || [], hueOf(b.part)) : null);
-        })))));
+    const hero = game && (() => {
+      const get = (id) => game.items.find((x) => x.id === id), fps = get("fps"), low = get("low1"), ft = get("frametime");
+      const side = (it, tag) => it ? h("div", { class: "ov-side-v" }, h("b", { class: "num" }, split(current(it))[0]), h("small", {}, tag)) : null;
+      return h("div", { class: "ov-hero" },
+        h("div", { class: "ov-hero-top" },
+          fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : h("span"),
+          h("div", {}, side(low, "1% LOW"), side(ft, "MS"))),
+        fps ? bars(history.get("fps") || []) : null);
+    })();
+    preview.replaceChildren(
+      h("div", { class: "ov-brand" }, h("i"), "MAZESTA", frames?.app ? h("small", {}, frames.app) : null),
+      hero || "",
+      h("div", { class: "ov-cards" }, cards.map((b) =>
+        h("div", { class: `ov-card ${part(b.part).cls}` },
+          h("div", { class: "ov-title" }, SHORT[b.part], b.device ? h("small", {}, b.deviceName || "") : null),
+          b.items.map((it) => {
+            const c = current(it), [num, unit] = split(c);
+            return h("div", { class: "ov-line" }, h("div", { class: "ov-lv" }, h("span", {}, it.label), h("b", { class: "num" }, num, unit ? h("small", {}, unit) : null)),
+              it.chart ? spark(history.get(it.id) || [], hueOf(b.part))
+                : it.max && c ? h("div", { class: "ov-meter" }, h("i", { style: { "--p": Math.min(1, Math.max(0, c.v / it.max)) } })) : null);
+          })))));
     if (!blocks.length) preview.append(h("p", { class: "caption" }, t("Web_Overlay_Empty")));
+  }
+  // The frame rate's last minute as bars, the newest at full strength, scaled to the highest shown.
+  function bars(values) {
+    const n = 30, shown = values.slice(-n), max = Math.max(0, ...shown.filter((v) => v !== null));
+    return h("div", { class: "ov-bars", "aria-hidden": "true" }, Array.from({ length: n }, (_, i) => {
+      const v = shown[i - (n - shown.length)];
+      return h("i", { class: i === n - 1 ? "now" : "", style: { "--p": v === null || v === undefined || !max ? 0 : Math.max(0.06, v / max) } });
+    }));
   }
   function spark(values, color) {
     const c = h("canvas", { class: "ov-spark", width: 440, height: 48 });
