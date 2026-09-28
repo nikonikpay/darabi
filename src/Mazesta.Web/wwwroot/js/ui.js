@@ -131,14 +131,17 @@ export function drawChart(canvas, series, windowSeconds, unit, color) {
   const pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
   const L = 46, R = 8, T = 10, B = 20;
   const X = (s) => L + ((s - start) / windowSeconds) * (w - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (hgt - T - B);
-  g.strokeStyle = css.getPropertyValue("--rule"); g.lineWidth = 1; g.fillStyle = css.getPropertyValue("--paper-3"); g.font = "500 11px Archivo"; g.textAlign = "right";
+  // A scope's graticule: dotted divisions, ten across and four down, the value of each horizontal written at the start.
+  g.strokeStyle = css.getPropertyValue("--rule-2"); g.lineWidth = 1; g.setLineDash([1, 3]); g.fillStyle = css.getPropertyValue("--paper-3"); g.font = "500 11px Archivo"; g.textAlign = "right";
+  for (let i = 1; i < 10; i++) { const x = Math.round(L + ((w - L - R) * i) / 10) + 0.5; g.beginPath(); g.moveTo(x, T); g.lineTo(x, hgt - B); g.stroke(); }
   for (let i = 0; i <= 4; i++) {
-    const v = lo + ((hi - lo) * i) / 4, y = Y(v);
+    const v = lo + ((hi - lo) * i) / 4, y = Math.round(Y(v)) + 0.5;
     g.beginPath(); g.moveTo(L, y); g.lineTo(w - R, y); g.stroke();
     g.fillText(v.toFixed(Math.abs(hi - lo) < 10 ? 1 : 0), L - 8, y + 4);
   }
+  g.setLineDash([]);
   const line = (color || css.getPropertyValue("--yellow")).trim(), [r, gr, b] = rgb(line);
-  const grad = g.createLinearGradient(0, T, 0, hgt - B); grad.addColorStop(0, `rgba(${r},${gr},${b},0.24)`); grad.addColorStop(1, `rgba(${r},${gr},${b},0)`);
+  const grad = g.createLinearGradient(0, T, 0, hgt - B); grad.addColorStop(0, `rgba(${r},${gr},${b},0.16)`); grad.addColorStop(1, `rgba(${r},${gr},${b},0)`);
   let seg = [];
   const flush = () => {
     if (seg.length > 1) {
