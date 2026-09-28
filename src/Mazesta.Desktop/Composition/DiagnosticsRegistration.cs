@@ -29,6 +29,8 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Pulse));
         s.AddSingleton<ITestExecutor, GpuVramExecutor>();
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
+        s.AddSingleton<ITestExecutor>(new Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor(rayTraced: false));
+        s.AddSingleton<ITestExecutor>(new Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor(rayTraced: true));
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
         s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.SfcExecutor>();

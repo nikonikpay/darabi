@@ -1087,4 +1087,31 @@
   <data name="Test_Unavailable_NoVectorWidth" xml:space="preserve">
     <value>Not available: this CPU does not have the chosen instruction set.</value>
   </data>
+  <data name="Test_Gpu_Scene3D" xml:space="preserve">
+    <value>GPU 3-D scene in a window (Direct3D 12, FurMark-style)</value>
+  </data>
+  <data name="Test_Gpu_SceneRt" xml:space="preserve">
+    <value>GPU ray-traced 3-D scene in a window (DirectX Raytracing)</value>
+  </data>
+  <data name="Test_Option_Resolution" xml:space="preserve">
+    <value>Window</value>
+  </data>
+  <data name="Test_Resolution_FullScreen" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="Test_Option_GpuLoad" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="Test_GpuLoad_Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Test_GpuLoad_Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Test_GpuLoad_Heavy" xml:space="preserve">
+    <value>Heavy</value>
+  </data>
+  <data name="Test_GpuLoad_Extreme" xml:space="preserve">
+    <value>Extreme</value>
+  </data>
 </root>

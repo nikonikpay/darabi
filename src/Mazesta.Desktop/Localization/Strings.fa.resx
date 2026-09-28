@@ -1087,4 +1087,31 @@
   <data name="Test_Unavailable_NoVectorWidth" xml:space="preserve">
     <value>در دسترس نیست: این CPU مجموعه دستورالعمل انتخاب‌شده را ندارد.</value>
   </data>
+  <data name="Test_Gpu_Scene3D" xml:space="preserve">
+    <value>صحنه سه‌بعدی GPU در پنجره (Direct3D 12، مانند FurMark)</value>
+  </data>
+  <data name="Test_Gpu_SceneRt" xml:space="preserve">
+    <value>صحنه سه‌بعدی Ray Tracing در پنجره (DirectX Raytracing)</value>
+  </data>
+  <data name="Test_Option_Resolution" xml:space="preserve">
+    <value>پنجره</value>
+  </data>
+  <data name="Test_Resolution_FullScreen" xml:space="preserve">
+    <value>تمام‌صفحه</value>
+  </data>
+  <data name="Test_Option_GpuLoad" xml:space="preserve">
+    <value>شدت بار</value>
+  </data>
+  <data name="Test_GpuLoad_Light" xml:space="preserve">
+    <value>سبک</value>
+  </data>
+  <data name="Test_GpuLoad_Medium" xml:space="preserve">
+    <value>متوسط</value>
+  </data>
+  <data name="Test_GpuLoad_Heavy" xml:space="preserve">
+    <value>سنگین</value>
+  </data>
+  <data name="Test_GpuLoad_Extreme" xml:space="preserve">
+    <value>بسیار سنگین</value>
+  </data>
 </root>
