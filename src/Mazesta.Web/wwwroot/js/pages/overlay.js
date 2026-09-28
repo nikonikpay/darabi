@@ -180,8 +180,8 @@ export function mount(el) {
     renderPreview();
   }
 
-  // ——— The preview: the overlay as it will look, from the same blocks, in the same order, colours and layout: the frame-rate card on top, then
-  // a card per part, each reading's number big with its unit small, a bar for a share of a fixed top or its chart ———
+  // ——— The preview: the overlay as it will look, from the same blocks, in the same order, colours and layout: the frame-rate block on top, then
+  // a block per part under its channel key, each reading's number with its unit small, a scale for a share of a fixed top or its trace ———
   function split(c) { if (!c) return ["—", ""]; const i = c.text.lastIndexOf(" "); return i > 0 ? [c.text.slice(0, i), c.text.slice(i + 1)] : [c.text, ""]; }
   function renderPreview() {
     const blocks = shownBlocks(), game = blocks.find((b) => b.part === "Gaming"), cards = blocks.filter((b) => b.part !== "Gaming");
@@ -192,15 +192,15 @@ export function mount(el) {
       return h("div", { class: "ov-hero" },
         h("div", { class: "ov-hero-top" },
           fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : h("span"),
-          h("div", {}, side(low, "1% LOW"), side(ft, "MS"))),
-        fps ? bars(history.get("fps") || []) : null);
+          h("div", { class: "ov-hero-side" }, side(low, "1% LOW"), side(ft, "MS"))),
+        fps ? frameChart(history.get("fps") || [], low ? current(low)?.v ?? null : null) : null);
     })();
     preview.replaceChildren(
-      h("div", { class: "ov-brand" }, h("i"), "MAZESTA", frames?.app ? h("small", {}, frames.app) : null),
+      h("div", { class: "ov-brand" }, "MAZESTA", frames?.app ? h("small", {}, frames.app) : null),
       hero || "",
       h("div", { class: "ov-cards" }, cards.map((b) =>
         h("div", { class: `ov-card ${part(b.part).cls}` },
-          h("div", { class: "ov-title" }, SHORT[b.part], b.device ? h("small", {}, b.deviceName || "") : null),
+          h("div", { class: "ov-title" }, h("span", { class: "ov-key" }, SHORT[b.part]), b.device ? h("small", {}, b.deviceName || "") : null),
           b.items.map((it) => {
             const c = current(it), [num, unit] = split(c);
             return h("div", { class: "ov-line" }, h("div", { class: "ov-lv" }, h("span", {}, it.label), h("b", { class: "num" }, num, unit ? h("small", {}, unit) : null)),
@@ -209,13 +209,31 @@ export function mount(el) {
           })))));
     if (!blocks.length) preview.append(h("p", { class: "caption" }, t("Web_Overlay_Empty")));
   }
-  // The frame rate's last minute as bars, the newest at full strength, scaled to the highest shown.
-  function bars(values) {
-    const n = 30, shown = values.slice(-n), max = Math.max(0, ...shown.filter((v) => v !== null));
-    return h("div", { class: "ov-bars", "aria-hidden": "true" }, Array.from({ length: n }, (_, i) => {
-      const v = shown[i - (n - shown.length)];
-      return h("i", { class: i === n - 1 ? "now" : "", style: { "--p": v === null || v === undefined || !max ? 0 : Math.max(0.06, v / max) } });
-    }));
+  // The frame rate's last minute as a trace on a scope screen: dotted divisions, the area under the line faintly filled, the 1 % low as a
+  // dashed level, the newest point marked. Scaled from zero to a little above the highest shown, so a dip reads as a dip and not as a cliff.
+  // Drawn the same way as the overlay's FrameChart.
+  function frameChart(values, low) {
+    const W = 520, H = 144, c = h("canvas", { class: "ov-frames", width: W, height: H, "aria-hidden": "true" }), g = c.getContext("2d");
+    const yellow = getComputedStyle(document.documentElement).getPropertyValue("--yellow").trim() || "#fdd400";
+    g.strokeStyle = "rgba(255,255,255,0.13)"; g.lineWidth = 2; g.setLineDash([2, 6]);
+    for (let i = 1; i < 6; i++) { const x = Math.round((W * i) / 6); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    for (let i = 1; i < 3; i++) { const y = Math.round((H * i) / 3); g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+    g.setLineDash([]);
+    const fin = values.filter((v) => v !== null && v !== undefined);
+    if (fin.length < 2) return c;
+    const top = Math.max(...fin, low ?? 0) * 1.15 || 1, step = W / (TREND - 1), x0 = W - (values.length - 1) * step, Y = (v) => H - 4 - (v / top) * (H - 8);
+    const runs = []; let run = [];
+    values.forEach((v, i) => { if (v === null || v === undefined) { if (run.length) runs.push(run); run = []; } else run.push([x0 + i * step, Y(v)]); });
+    if (run.length) runs.push(run);
+    const grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, "rgba(253,212,0,0.28)"); grad.addColorStop(1, "rgba(253,212,0,0)");
+    for (const r of runs.filter((x) => x.length > 1)) {
+      g.beginPath(); r.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.lineTo(r[r.length - 1][0], H); g.lineTo(r[0][0], H); g.closePath(); g.fillStyle = grad; g.fill();
+      g.beginPath(); r.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.strokeStyle = yellow; g.lineWidth = 3.5; g.lineJoin = "round"; g.stroke();
+    }
+    if (low !== null && low !== undefined) { const y = Math.round(Y(low)); g.strokeStyle = "rgba(255,255,255,0.55)"; g.lineWidth = 2; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); g.setLineDash([]); }
+    const last = values[values.length - 1];
+    if (last !== null && last !== undefined) { g.fillStyle = "#fff"; g.beginPath(); g.arc(W - 5, Y(last), 5, 0, Math.PI * 2); g.fill(); }
+    return c;
   }
   function spark(values, color) {
     const c = h("canvas", { class: "ov-spark", width: 440, height: 48 });

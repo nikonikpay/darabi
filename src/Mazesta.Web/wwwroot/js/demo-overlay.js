@@ -64,6 +64,7 @@ export function overlay(m, p, hw, strings, emit) {
 // A game in front at about 140 FPS with the odd hitch, while the overlay is on.
 export function frames(emit) {
   if (!visible || !chosen.some((c) => ["fps", "low1", "frametime"].includes(c.id))) return;
-  const fps = 138 + Math.random() * 8;
+  // A scene that swings and now and then stutters, so the preview's trace has something to show.
+  const fps = 128 + 16 * Math.sin(Date.now() / 9000) + Math.random() * 8 - (Math.random() < 0.12 ? 40 : 0);
   emit("overlayFrames", { fps, low1: 96 + Math.random() * 6, frametime: 1000 / fps, app: "Cyberpunk2077" });
 }

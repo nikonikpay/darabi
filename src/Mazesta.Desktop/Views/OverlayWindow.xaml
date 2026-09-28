@@ -1,7 +1,8 @@
-<!-- The on-screen overlay: a small translucent panel in a corner of the screen, always on top, that the mouse passes through (see the code-behind).
-     On top, the frame-rate card: the rate big, 1 % low and frame time beside it, the last minute as bars. Under it a card per part in that part's
-     colour: each reading's number big and white with its unit small in the hue, and a thin bar for a share of a fixed top (load, temperature);
-     a charted item draws its last minute instead, with the chart's top written on it. -->
+<!-- The on-screen overlay: a small translucent plate in a corner of the screen, always on top, that the mouse passes through (see the code-behind).
+     On top, the frame-rate block: the rate big, 1 % low and frame time beside it, and the last minute as a trace on a scope screen with the 1 % low
+     as a dashed level. Under it a block per part, divided by hairlines, under its channel key (a solid tag in the part's colour, as a scope marks
+     its channels): each reading's number white with its unit small in the hue, and a thin scale for a share of a fixed top (load, temperature);
+     a charted item draws its last minute instead, with the chart's top written on it. Numbers are set in Bahnschrift, the DIN face Windows ships. -->
 <Window x:Class="Mazesta.Desktop.Views.OverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -11,70 +12,75 @@
         Title="Mazesta Overlay" WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True"
         ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Focusable="False">
     <Window.Resources>
-        <SolidColorBrush x:Key="Ov.Label" Color="#FFA9A9B6" />
-        <SolidColorBrush x:Key="Ov.Faint" Color="#FF6E6E7A" />
-        <SolidColorBrush x:Key="Ov.Card" Color="#0FFFFFFF" />
-        <SolidColorBrush x:Key="Ov.Line" Color="#1AFFFFFF" />
+        <FontFamily x:Key="Ov.Font">Bahnschrift SemiCondensed, Segoe UI Variable Text, Segoe UI</FontFamily>
+        <FontFamily x:Key="Ov.FontWide">Bahnschrift, Segoe UI Variable Text, Segoe UI</FontFamily>
+        <SolidColorBrush x:Key="Ov.Label" Color="#FFA4A8AD" />
+        <SolidColorBrush x:Key="Ov.Faint" Color="#FF737A82" />
+        <SolidColorBrush x:Key="Ov.Line" Color="#17FFFFFF" />
         <SolidColorBrush x:Key="Ov.Game" Color="#FFFDD400" />
         <Style x:Key="Ov.Num" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource App.Font.Latin}" />
+            <Setter Property="FontFamily" Value="{StaticResource Ov.Font}" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FlowDirection" Value="LeftToRight" />
         </Style>
+        <Style x:Key="Ov.Tag" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource Ov.FontWide}" />
+            <Setter Property="FontSize" Value="8.5" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="{StaticResource Ov.Faint}" />
+            <Setter Property="FlowDirection" Value="LeftToRight" />
+        </Style>
     </Window.Resources>
-    <Border x:Name="Root" CornerRadius="16" BorderBrush="#2EFFFFFF" BorderThickness="1" Padding="12,10,12,12">
-        <Border.Background><SolidColorBrush Color="#0C0C12" Opacity="{Binding Opacity}" /></Border.Background>
+    <Border x:Name="Root" CornerRadius="8" BorderBrush="#1FFFFFFF" BorderThickness="1" Padding="12,9,12,10">
+        <Border.Background><SolidColorBrush Color="#0E1012" Opacity="{Binding Opacity}" /></Border.Background>
         <StackPanel Width="{Binding PanelWidth}">
             <StackPanel.LayoutTransform><ScaleTransform ScaleX="{Binding Scale}" ScaleY="{Binding Scale}" /></StackPanel.LayoutTransform>
 
             <!-- The mark, and the program the frame rate is measured in. -->
-            <DockPanel Margin="2,0,2,8">
-                <Border DockPanel.Dock="Left" Width="7" Height="7" CornerRadius="3.5" Background="{StaticResource Ov.Game}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                <TextBlock DockPanel.Dock="Left" Text="MAZESTA" FontFamily="{StaticResource App.Font.Latin}" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource Ov.Game}"
-                           VerticalAlignment="Center" FlowDirection="LeftToRight" />
-                <TextBlock Text="{Binding HeroApp}" FontFamily="{StaticResource App.Font.Latin}" FontSize="9.5" Foreground="{StaticResource Ov.Faint}" HorizontalAlignment="Right"
+            <DockPanel Margin="0,0,0,8">
+                <Border DockPanel.Dock="Left" Width="3" Height="10" Background="{StaticResource Ov.Game}" Margin="0,0,7,0" VerticalAlignment="Center" />
+                <TextBlock DockPanel.Dock="Left" Text="MAZESTA" Style="{StaticResource Ov.Tag}" Foreground="#FF8A9097" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding HeroApp}" FontFamily="{StaticResource Ov.Font}" FontSize="10" Foreground="{StaticResource Ov.Faint}" HorizontalAlignment="Right"
                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="10,0,0,0" FlowDirection="LeftToRight" />
             </DockPanel>
 
-            <!-- The frame-rate card. -->
-            <Border CornerRadius="12" Background="{StaticResource Ov.Card}" BorderBrush="{StaticResource Ov.Line}" BorderThickness="1" Padding="12,8,12,10" Margin="0,0,0,8"
-                    Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}">
-                <StackPanel>
-                    <Grid FlowDirection="LeftToRight">
-                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" DataContext="{Binding HeroFps}"
-                                    Visibility="{Binding Converter={x:Static controls:NullToCollapsed.Instance}}">
-                            <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="40" FontWeight="Bold" LineHeight="40" LineStackingStrategy="BlockLineHeight" />
-                            <TextBlock Text="FPS" Style="{StaticResource Ov.Num}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource Ov.Game}" Margin="5,0,0,5" VerticalAlignment="Bottom" />
+            <!-- The frame-rate block. -->
+            <StackPanel Margin="0,0,0,10" Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}">
+                <Grid FlowDirection="LeftToRight">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" DataContext="{Binding HeroFps}"
+                                Visibility="{Binding Converter={x:Static controls:NullToCollapsed.Instance}}">
+                        <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="44" FontWeight="SemiBold" LineHeight="40" LineStackingStrategy="BlockLineHeight" />
+                        <TextBlock Text="FPS" Style="{StaticResource Ov.Tag}" FontSize="9.5" Foreground="{StaticResource Ov.Game}" Margin="6,0,0,4" VerticalAlignment="Bottom" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Margin="10,0,0,2">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DataContext="{Binding HeroLow}" Visibility="{Binding Converter={x:Static controls:NullToCollapsed.Instance}}">
+                            <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="1% LOW" Style="{StaticResource Ov.Tag}" Width="38" Margin="5,0,0,3" VerticalAlignment="Bottom" />
                         </StackPanel>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DataContext="{Binding HeroLow}" Visibility="{Binding Converter={x:Static controls:NullToCollapsed.Instance}}">
-                                <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="15" FontWeight="Bold" />
-                                <TextBlock Text="1% LOW" Style="{StaticResource Ov.Num}" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource Ov.Faint}" Margin="4,0,0,2" VerticalAlignment="Bottom" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DataContext="{Binding HeroFrameTime}" Visibility="{Binding Converter={x:Static controls:NullToCollapsed.Instance}}">
-                                <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="15" FontWeight="Bold" />
-                                <TextBlock Text="MS" Style="{StaticResource Ov.Num}" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource Ov.Faint}" Margin="4,0,0,2" VerticalAlignment="Bottom" />
-                            </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" DataContext="{Binding HeroFrameTime}" Visibility="{Binding Converter={x:Static controls:NullToCollapsed.Instance}}">
+                            <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="MS" Style="{StaticResource Ov.Tag}" Width="38" Margin="5,0,0,3" VerticalAlignment="Bottom" />
                         </StackPanel>
-                    </Grid>
-                    <controls:BarSpark Values="{Binding HeroTrend}" Fill="{StaticResource Ov.Game}" Capacity="30" Height="30" Margin="0,8,0,0"
-                                       Visibility="{Binding HeroFps, Converter={x:Static controls:NullToCollapsed.Instance}}" />
-                </StackPanel>
-            </Border>
+                    </StackPanel>
+                </Grid>
+                <controls:FrameChart Values="{Binding HeroTrend}" Level="{Binding HeroLowValue}" Stroke="{StaticResource Ov.Game}" Capacity="{x:Static vm:OverlayViewModel.TrendLength}"
+                                     Height="72" Margin="0,8,0,0" Visibility="{Binding HeroFps, Converter={x:Static controls:NullToCollapsed.Instance}}" />
+            </StackPanel>
 
-            <!-- A card per part; they wrap at the panel's width: one per line, or two side by side. -->
+            <!-- A block per part; they wrap at the panel's width: one per line, or two side by side. -->
             <ItemsControl ItemsSource="{Binding Blocks}" Margin="-4,0">
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:OverlaySection}">
-                        <Border Width="{Binding DataContext.SectionWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Margin="4" CornerRadius="12"
-                                Background="{StaticResource Ov.Card}" BorderBrush="{StaticResource Ov.Line}" BorderThickness="1" Padding="10,7,10,8">
+                        <Border Width="{Binding DataContext.SectionWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Margin="4,0"
+                                BorderBrush="{StaticResource Ov.Line}" BorderThickness="0,1,0,0" Padding="0,8,0,7">
                             <StackPanel>
-                                <DockPanel Margin="0,0,0,5">
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Title}" FontFamily="{StaticResource App.Font.Latin}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding Hue}"
-                                               VerticalAlignment="Center" FlowDirection="LeftToRight" />
-                                    <TextBlock Text="{Binding Subtitle}" FontFamily="{StaticResource App.Font.Latin}" FontSize="9" Foreground="{StaticResource Ov.Faint}" HorizontalAlignment="Right"
+                                <DockPanel Margin="0,0,0,4">
+                                    <Border DockPanel.Dock="Left" Background="{Binding Hue}" CornerRadius="2" Padding="5,2,5,1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Ov.Tag}" Foreground="#FF111111" />
+                                    </Border>
+                                    <TextBlock Text="{Binding Subtitle}" FontFamily="{StaticResource Ov.Font}" FontSize="9.5" Foreground="{StaticResource Ov.Faint}" HorizontalAlignment="Right"
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="8,0,0,0" FlowDirection="LeftToRight" />
                                 </DockPanel>
                                 <ItemsControl ItemsSource="{Binding Rows}">
@@ -84,18 +90,18 @@
                                                 <DockPanel>
                                                     <TextBlock DockPanel.Dock="Left" Text="{Binding Label}" FontSize="10.5" Foreground="{StaticResource Ov.Label}" VerticalAlignment="Center" />
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" FlowDirection="LeftToRight" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="14" FontWeight="Bold" />
+                                                        <TextBlock Text="{Binding Number}" Style="{StaticResource Ov.Num}" FontSize="15" FontWeight="SemiBold" />
                                                         <TextBlock Text="{Binding UnitText}" Style="{StaticResource Ov.Num}" FontSize="9" FontWeight="SemiBold" Foreground="{Binding Hue}" Margin="3,0,0,2" VerticalAlignment="Bottom" />
                                                     </StackPanel>
                                                 </DockPanel>
-                                                <!-- A share of a fixed top: a thin bar that fills from the start edge. -->
-                                                <Grid Height="3" Margin="0,4,0,0" FlowDirection="LeftToRight" Visibility="{Binding HasBar, Converter={StaticResource BoolToVis}}">
-                                                    <Border CornerRadius="1.5" Background="#1CFFFFFF" />
-                                                    <Border CornerRadius="1.5" Background="{Binding Hue}" RenderTransformOrigin="0,0.5">
+                                                <!-- A share of a fixed top: a thin scale that fills from the start edge. -->
+                                                <Grid Height="2" Margin="0,4,0,0" FlowDirection="LeftToRight" Visibility="{Binding HasBar, Converter={StaticResource BoolToVis}}">
+                                                    <Border Background="#1AFFFFFF" />
+                                                    <Border Background="{Binding Hue}" RenderTransformOrigin="0,0.5">
                                                         <Border.RenderTransform><ScaleTransform ScaleX="{Binding Fraction}" /></Border.RenderTransform>
                                                     </Border>
                                                 </Grid>
-                                                <Border Height="24" Margin="0,4,0,1" Background="#0AFFFFFF" CornerRadius="4" Visibility="{Binding HasChart, Converter={StaticResource BoolToVis}}">
+                                                <Border Height="26" Margin="0,4,0,1" Background="#4D000000" CornerRadius="2" Visibility="{Binding HasChart, Converter={StaticResource BoolToVis}}">
                                                     <Grid>
                                                         <controls:Sparkline Values="{Binding Trend}" Maximum="{Binding TrendMax}" Capacity="{x:Static vm:OverlayViewModel.TrendLength}" Stroke="{Binding Hue}" />
                                                         <StackPanel Orientation="Horizontal" Margin="4,1" HorizontalAlignment="Left" VerticalAlignment="Top" TextElement.FontSize="8" TextElement.Foreground="#AAFFFFFF">
@@ -105,7 +111,7 @@
                                                                 </Style>
                                                             </StackPanel.Style>
                                                             <TextBlock Text="{loc:Loc Overlay_ChartMaxWord}" Margin="0,0,3,0" />
-                                                            <TextBlock Text="{Binding TrendMaxValue}" FontFamily="{StaticResource App.Font.Latin}" FlowDirection="LeftToRight" />
+                                                            <TextBlock Text="{Binding TrendMaxValue}" FontFamily="{StaticResource Ov.Font}" FlowDirection="LeftToRight" />
                                                         </StackPanel>
                                                     </Grid>
                                                 </Border>

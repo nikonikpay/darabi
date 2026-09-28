@@ -71,6 +71,7 @@ public class OverlayViewModelTests
         Assert.Equal(1, frames.Starts);
         Assert.Equal("144 FPS", Row(vm, "GAME", "Overlay_Fps").Value); Assert.Equal(OverlayViewModel.Missing, Row(vm, "GAME", "Overlay_Low1").Value);
         Assert.Equal("7.0 ms", Row(vm, "GAME", "Overlay_FrameTime").Value); Assert.Equal("game", vm.Sections[0].Subtitle);
+        Assert.True(double.IsNaN(vm.HeroLowValue));   // no level is drawn for a low that was not measured
         vm.SetActive(false); Assert.Equal(1, frames.Stops);
     }
 
@@ -81,7 +82,8 @@ public class OverlayViewModelTests
         Assert.True(vm.HasHero); Assert.Equal(["GPU"], vm.Blocks.Select(s => s.Title));
         vm.SetActive(true); e.TickOnce(); e.TickOnce();
         Assert.Equal(("144", "FPS"), (vm.HeroFps!.Number, vm.HeroFps.UnitText)); Assert.Equal(("7.0", "ms"), (vm.HeroFrameTime!.Number, vm.HeroFrameTime.UnitText));
-        Assert.Equal(2, vm.HeroTrend.Length);   // the card's bars run with the frame rate's chart off
+        Assert.Equal(2, vm.HeroTrend.Length);   // the block's trace runs with the frame rate's chart off
+        Assert.Equal(118.2, vm.HeroLowValue);   // the 1 % low, drawn as a level across the trace
         var temp = Row(vm, "GPU", "Overlay_Temp");
         Assert.Equal(("42", "°C", 0.42), (temp.Number, temp.UnitText, temp.Fraction)); Assert.True(temp.HasBar);
         Assert.False(Row(vm, "GPU", "Overlay_Load").HasBar);   // charted: its chart, not a bar

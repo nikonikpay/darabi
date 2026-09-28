@@ -72,13 +72,15 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public IReadOnlyList<OverlaySection> Sections { get; }
     /// <summary>The part cards under the frame-rate card: every block but the game's.</summary>
     public IReadOnlyList<OverlaySection> Blocks { get; }
-    /// <summary>The frame-rate card: the frame rate big, the 1 % low and frame time beside it, the last minute as bars. Each is null when its item is
+    /// <summary>The frame-rate block: the frame rate big, the 1 % low and frame time beside it, the last minute as a trace. Each is null when its item is
     /// not chosen, and the card is not drawn when none is.</summary>
     public OverlayRow? HeroFps { get; }
     public OverlayRow? HeroLow { get; }
     public OverlayRow? HeroFrameTime { get; }
     public bool HasHero => HeroFps is not null || HeroLow is not null || HeroFrameTime is not null;
     [ObservableProperty] private double[] _heroTrend = [];
+    /// <summary>The 1 % low now, drawn as a level across the trace; NaN when it is not shown or not measured.</summary>
+    [ObservableProperty] private double _heroLowValue = double.NaN;
     [ObservableProperty] private string _heroApp = "";
     private readonly Queue<double> _heroHistory = new();
     public double Opacity { get; }
@@ -112,7 +114,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         if (NeedsFrames && _frames is not null) { if (active) _frames.Start(); else _frames.Stop(); }
         if (!active) return;
         foreach (var r in Sections.SelectMany(s => s.Rows)) { r.History.Clear(); r.Trend = []; }
-        _heroHistory.Clear(); HeroTrend = [];
+        _heroHistory.Clear(); HeroTrend = []; HeroLowValue = double.NaN;
     }
 
     /// <summary>The chosen items this machine can show, grouped into blocks (a part, or one drive's own block), the blocks in the order their first
@@ -158,10 +160,11 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
                 if (row.HasChart) Chart(row, v);
                 if (row == HeroFps)
                 {
-                    // The frame-rate card always draws its last minute, charted or not: it is what the card is for.
+                    // The frame-rate block always draws its last minute, charted or not: it is what the block is for.
                     _heroHistory.Enqueue(v ?? double.NaN); while (_heroHistory.Count > TrendLength) _heroHistory.Dequeue();
                     HeroTrend = [.. _heroHistory];
                 }
+                if (row == HeroLow) HeroLowValue = v ?? double.NaN;
             }
         }
         Updated?.Invoke();
