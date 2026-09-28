@@ -9,11 +9,12 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// what an AI application on this machine would get, not the chip's theoretical peak. A precision the GPU or the installed
 /// DirectML cannot run is left out and named in the detail. DirectML is the copy that ships with Windows (System32).
 /// </summary>
-public sealed class GpuAiBenchmark : IBenchmark
+public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.gpu.ai"), "Bench_Gpu_Ai", 60, [GpuDevices.Option]);
     public TestDefinition Definition => Spec;
     public HardwareKind Component => HardwareKind.Gpu;
+    public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
     private const uint Size = 4096;
     private const double OpsPerMultiply = 2.0 * Size * Size * Size;
 

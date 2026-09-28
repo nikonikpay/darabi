@@ -21,7 +21,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     public TestCenterViewModel(TestEngine engine, IEnumerable<ITestExecutor> executors, Func<Action, object> dispatch)
     {
         _engine = engine; _dispatch = dispatch;
-        Rows = new(executors.Select(e => new TestQueueRowViewModel(e.Definition)));
+        Rows = new(executors.Select(e => new TestQueueRowViewModel(e.Definition, e)));
         foreach (var row in Rows) row.PropertyChanged += OnRowChanged;
         IsRunning = engine.State == TestEngineState.Running;
         engine.StateChanged += OnStateChanged;
@@ -62,7 +62,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     }
     private bool CanStart() => !IsRunning && Rows.Any(r => r.IsSelected);
 
-    [RelayCommand] private void SelectAll() { foreach (var row in Rows) row.IsSelected = true; }
+    [RelayCommand] private void SelectAll() { foreach (var row in Rows.Where(r => r.IsAvailable)) row.IsSelected = true; }
     [RelayCommand] private void ClearSelection() { foreach (var row in Rows) row.IsSelected = false; }
 
     [RelayCommand(CanExecute = nameof(IsRunning))]

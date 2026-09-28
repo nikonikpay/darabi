@@ -8,11 +8,12 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// ray-tracing tier 1.1 (GeForce RTX, Radeon RX 6000 and later, Arc); others are Unsupported. The rays of one frame are
 /// counted on the GPU once, so rays per second is measured, not estimated. Mazesta's own scene, not a 3DMark score.
 /// </summary>
-public sealed class GpuRayTracingBenchmark : IBenchmark
+public sealed class GpuRayTracingBenchmark : IBenchmark, ITestAvailability
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.gpu.rt"), "Bench_Gpu_Rt", 60, [GpuDevices.Option]);
     public TestDefinition Definition => Spec;
     public HardwareKind Component => HardwareKind.Gpu;
+    public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.RayTracingAvailability(options);
     private const int Width = 2560, Height = 1440, Grid = 48, Subdivisions = 4;
 
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Frame(uint Width, uint Height, uint Count, float Unused);

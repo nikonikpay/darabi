@@ -11,7 +11,19 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
     {
         Benchmark = benchmark; _durationText = benchmark.Definition.DefaultDurationSeconds.ToString(CultureInfo.InvariantCulture);
         Options = [.. benchmark.Definition.Options.Select(o => new TestOptionViewModel(o))];
+        foreach (var o in Options) o.PropertyChanged += (_, _) => RefreshAvailability();
+        RefreshAvailability();
     }
+    /// <summary>Why this machine cannot run the benchmark (no hardware ray tracing...); null when it can.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsAvailable))] private string? _unavailableText;
+    public bool IsAvailable => UnavailableText is null;
+    public void RefreshAvailability()
+    {
+        var u = TestAvailability.Check(Benchmark, Benchmark.Definition, OptionValues());
+        UnavailableText = u is null ? null : Loc.Get(u.ReasonKey);
+        if (u is not null) IsSelected = false;
+    }
+    partial void OnIsSelectedChanged(bool value) { if (value && !IsAvailable) IsSelected = false; }
     public IBenchmark Benchmark { get; }
     public string Name => Loc.Get(Benchmark.Definition.NameKey);
     public IReadOnlyList<TestOptionViewModel> Options { get; }
@@ -93,7 +105,7 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task Run(BenchmarkRowViewModel row)
     {
-        if (row.Seconds() is not { } seconds) return;
+        if (!row.IsAvailable || row.Seconds() is not { } seconds) return;
         IsRunning = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running"); row.IsActive = true;
         // The result arrives through Finished; null means another run was already going.
         if (await _runner.RunAsync(row.Benchmark, seconds, row.OptionValues()).ConfigureAwait(true) is null) { IsRunning = _runner.IsBusy; row.IsActive = false; }
@@ -116,7 +128,7 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
         if ((await _runner.RunQueueAsync(jobs).ConfigureAwait(true)).Count == 0) IsRunning = _runner.IsBusy;   // refused: something else was running
     }
 
-    [RelayCommand] private void SelectAll() { foreach (var row in Rows) row.IsSelected = true; }
+    [RelayCommand] private void SelectAll() { foreach (var row in Rows.Where(r => r.IsAvailable)) row.IsSelected = true; }
     [RelayCommand] private void ClearSelection() { foreach (var row in Rows) row.IsSelected = false; }
 
     [RelayCommand(CanExecute = nameof(IsRunning))] private void Cancel() => _runner.Cancel();

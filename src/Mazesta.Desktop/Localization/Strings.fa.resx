@@ -1048,4 +1048,10 @@
   <data name="Web_Tools_RepairNote" xml:space="preserve"><value>SFC فایل‌های محافظت‌شده‌ی سیستم را بررسی و ترمیم می‌کند (۵ تا ۱۵ دقیقه)؛ بررسی DISM منبعی را که SFC از آن ترمیم می‌کند بررسی می‌کند؛ تعمیر DISM آن منبع را ترمیم می‌کند و ممکن است از Windows Update دانلود کند (نیمه‌کاره متوقف نمی‌شود).</value></data>
   <data name="Web_Tools_ConsoleEmpty" xml:space="preserve"><value>خروجی ابزار هنگام اجرا اینجا نمایش داده می‌شود.</value></data>
   <data name="Overlay_ChartMaxWord" xml:space="preserve"><value>بیشینه</value></data>
+  <data name="Test_Unavailable_NoGpu" xml:space="preserve">
+    <value>در دسترس نیست: کارت گرافیک DirectX 12 پیدا نشد.</value>
+  </data>
+  <data name="Test_Unavailable_NoRayTracing" xml:space="preserve">
+    <value>در دسترس نیست: این کارت گرافیک Ray Tracing سخت‌افزاری (DirectX Raytracing 1.1) ندارد.</value>
+  </data>
 </root>

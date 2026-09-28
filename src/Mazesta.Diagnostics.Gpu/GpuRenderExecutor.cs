@@ -8,10 +8,11 @@ namespace Mazesta.Diagnostics.Gpu;
 /// under load has produced a wrong result. Reports frames per second and megapixels per second; that is this
 /// application's own scene, not a commercial benchmark score, and is labelled so.
 /// </summary>
-public sealed class GpuRenderExecutor : ITestExecutor
+public sealed class GpuRenderExecutor : ITestExecutor, ITestAvailability
 {
     public static readonly TestDefinition Definition = new(new TestId("gpu.render"), "Test_Gpu_Render", 30, [GpuDevices.Option]);
     TestDefinition ITestExecutor.Definition => Definition;
+    public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
     private const int Pixels = 512 * 512, FramesPerBatch = 8;
 
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)

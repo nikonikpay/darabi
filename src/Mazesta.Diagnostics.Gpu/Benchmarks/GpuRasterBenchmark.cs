@@ -7,11 +7,12 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// lit spheres (5.2 million triangles a frame) for frames per second and triangle throughput; the rest blends 16
 /// full-screen layers a frame for pixel fill rate. Mazesta's own scene - not comparable with 3DMark or game scores.
 /// </summary>
-public sealed class GpuRasterBenchmark : IBenchmark
+public sealed class GpuRasterBenchmark : IBenchmark, ITestAvailability
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.gpu.d3d"), "Bench_Gpu_D3D", 60, [GpuDevices.Option]);
     public TestDefinition Definition => Spec;
     public HardwareKind Component => HardwareKind.Gpu;
+    public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
     private const int Width = 2560, Height = 1440, Columns = 64, Instances = Columns * Columns, FillLayers = 16, Subdivisions = 3;
 
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Frame(float Time, uint Columns, float Aspect, uint Layers);

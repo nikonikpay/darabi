@@ -40,14 +40,14 @@ export function benchList(component = null) {
       return { o, input, el: h("label", {}, o.label, input) };
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), metrics = h("div", { class: "metrics" }), detail = h("div", { class: "detail", hidden: true });
-    const rec = h("div", { class: "rec" });
+    const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
       h("div", { class: "ctrls" }, h("label", {}, t("Bench_Duration"), dur, t("Test_Seconds")), run),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, status), metrics, rec, detail);
+      h("div", { class: "state" }, bar, status), unavailable, metrics, rec, detail);
     into.append(row);
-    rows.set(r.id, { row, check, dur, run, opts, bar, status, metrics, rec, detail, last: "", lastRec: "" });
+    rows.set(r.id, { row, check, dur, run, opts, bar, status, metrics, rec, detail, unavailable, last: "", lastRec: "" });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -55,7 +55,8 @@ export function benchList(component = null) {
     queue.hidden = !s.queue; queue.textContent = s.queue || "";
     for (const r of s.rows) {
       const x = rows.get(r.id); if (!x) continue;
-      x.check.checked = r.selected; setField(x.dur, r.duration); x.run.disabled = s.running;
+      x.check.checked = r.selected; x.check.disabled = !!r.unavailable; setField(x.dur, r.duration); x.run.disabled = s.running || !!r.unavailable;
+      x.row.classList.toggle("off", !!r.unavailable); x.unavailable.hidden = !r.unavailable; x.unavailable.textContent = r.unavailable || "";
       for (const o of x.opts) { const cur = r.options.find((y) => y.key === o.o.key); if (cur) setField(o.input, cur.value); }
       x.bar.firstChild.style.setProperty("--p", r.percent / 100);
       x.status.textContent = r.status || "";

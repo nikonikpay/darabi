@@ -34,7 +34,7 @@ public sealed partial class WebBridge
             rows = bench.Rows.Select(r => new
             {
                 id = r.Benchmark.Definition.Id.Value, name = r.Name, component = r.Benchmark.Component.ToString(), selected = r.IsSelected, duration = r.DurationText,
-                percent = r.PercentComplete, status = r.StatusText, active = r.IsActive, detail = r.Detail,
+                percent = r.PercentComplete, status = r.StatusText, active = r.IsActive, detail = r.Detail, unavailable = r.UnavailableText,
                 options = r.Options.Select(Option), metrics = r.Metrics.Select(m => new { name = m.Name, value = m.Value }),
                 best = Best(r), compared = Compared(r),
             }),

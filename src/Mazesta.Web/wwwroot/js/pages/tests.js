@@ -48,13 +48,14 @@ export function mount(el) {
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), pill = h("span", { class: "pill none" });
     const error = h("div", { class: "error", hidden: true }), detail = h("div", { class: "detail", hidden: true }), errs = h("span", { class: "caption lat" });
+    const unavailable = h("div", { class: "unavailable", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
       h("div", { class: "ctrls" }, h("label", {}, dur, t("Test_Seconds")), rep, cnt),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), error, detail);
+      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail);
     into.append(row);
-    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs });
+    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs, unavailable });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -63,7 +64,9 @@ export function mount(el) {
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));
     for (const r of s.rows) {
       const x = rows.get(r.id); if (!x) continue;
-      x.check.checked = r.selected; setField(x.dur, r.duration); x.rep.value = r.repeat;
+      x.check.checked = r.selected; x.check.disabled = !!r.unavailable; setField(x.dur, r.duration); x.rep.value = r.repeat;
+      // A test this machine cannot run is shown with the reason, never offered: it could only end Unsupported.
+      x.row.classList.toggle("off", !!r.unavailable); x.unavailable.hidden = !r.unavailable; x.unavailable.textContent = r.unavailable || "";
       setField(x.cnt, r.count); x.cnt.hidden = r.repeat !== "Count";
       for (const o of x.opts) { const cur = r.options.find((y) => y.key === o.o.key); if (cur) setField(o.input, cur.value); }
       x.bar.firstChild.style.setProperty("--p", r.percent);

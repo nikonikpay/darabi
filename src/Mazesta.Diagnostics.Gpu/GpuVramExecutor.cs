@@ -9,12 +9,13 @@ namespace Mazesta.Diagnostics.Gpu;
 /// sensor when there is one: a buffer larger than free VRAM would silently spill into system RAM and the
 /// test would be checking the wrong memory.
 /// </summary>
-public sealed class GpuVramExecutor : ITestExecutor
+public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
 {
     public const string SizeOption = "sizeMb";
     public static readonly TestDefinition Definition = new(new TestId("gpu.vram"), "Test_Gpu_Vram", 60,
         [GpuDevices.Option, new TestOption(SizeOption, "Test_Option_VramMb", TestOptionKind.Integer, "0")]);   // 0 = automatic
     TestDefinition ITestExecutor.Definition => Definition;
+    public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
 
     internal const int Width = 4096, ChunkElements = 64 << 20;   // 256 MiB per buffer
     private const long ChunkBytes = ChunkElements * 4L;

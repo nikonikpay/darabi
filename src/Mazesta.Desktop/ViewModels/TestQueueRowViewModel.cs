@@ -8,12 +8,29 @@ public sealed partial class TestQueueRowViewModel : ObservableObject
 {
     public static IReadOnlyList<RepeatMode> RepeatModes { get; } = Enum.GetValues<RepeatMode>();
 
-    public TestQueueRowViewModel(TestDefinition definition)
+    private readonly object? _test;
+
+    /// <param name="test">The executor itself, asked (when it can say) whether this machine can run it with the chosen options.</param>
+    public TestQueueRowViewModel(TestDefinition definition, object? test = null)
     {
-        Definition = definition;
+        Definition = definition; _test = test;
         _durationText = definition.DefaultDurationSeconds.ToString();
         Options = [.. definition.Options.Select(o => new TestOptionViewModel(o))];
+        foreach (var o in Options) o.PropertyChanged += (_, _) => RefreshAvailability();
+        RefreshAvailability();
     }
+
+    /// <summary>Why this machine cannot run the test (no hardware ray tracing...), shown instead of offering it; null when it can.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsAvailable))] private string? _unavailableText;
+    public bool IsAvailable => UnavailableText is null;
+
+    public void RefreshAvailability()
+    {
+        var u = TestAvailability.Check(_test, Definition, Options.ToDictionary(o => o.Option.Key, o => o.Value));
+        UnavailableText = u is null ? null : Loc.Get(u.ReasonKey);
+        if (u is not null) IsSelected = false;
+    }
+    partial void OnIsSelectedChanged(bool value) { if (value && !IsAvailable) IsSelected = false; }
 
     public TestDefinition Definition { get; }
     public string Name => Loc.Get(Definition.NameKey);

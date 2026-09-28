@@ -1048,4 +1048,10 @@
   <data name="Web_Tools_RepairNote" xml:space="preserve"><value>SFC checks and repairs the protected system files (5-15 minutes); the DISM check looks at the component store SFC repairs from; the DISM repair fixes that store and may download from Windows Update (it cannot be stopped half-way).</value></data>
   <data name="Web_Tools_ConsoleEmpty" xml:space="preserve"><value>The tool's output appears here while it runs.</value></data>
   <data name="Overlay_ChartMaxWord" xml:space="preserve"><value>max</value></data>
+  <data name="Test_Unavailable_NoGpu" xml:space="preserve">
+    <value>Not available: no DirectX 12 graphics card was found.</value>
+  </data>
+  <data name="Test_Unavailable_NoRayTracing" xml:space="preserve">
+    <value>Not available: this graphics card has no hardware ray tracing (DirectX Raytracing 1.1).</value>
+  </data>
 </root>

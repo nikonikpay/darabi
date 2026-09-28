@@ -301,6 +301,10 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .q-row .state .progress { grid-column: 1 / -1; }
 .q-row .detail { grid-column: 3 / -1; font: 12px/1.5 var(--lat); direction: ltr; text-align: left; color: var(--paper-3); white-space: pre-wrap; }
 .q-row .error { grid-column: 3 / -1; color: var(--fail); font-size: 13px; }
+/* A test this machine cannot run: dimmed controls, the reason in full strength so it is read. */
+.q-row.off .name, .q-row.off .ctrls, .q-row.off .extra, .q-row.off .state, .q-row.off .step { opacity: .45; }
+.q-row .unavailable { grid-column: 3 / -1; font-size: 13px; color: var(--paper-2); display: flex; gap: 8px; align-items: baseline; }
+.q-row .unavailable::before { content: ""; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--warn); transform: translateY(-1px); }
 .q-row.active::before { content: ""; position: absolute; inset-inline-start: -14px; top: 0; bottom: -1px; width: 1px; background: var(--yellow); }
 .dock { position: sticky; bottom: 0; background: var(--ink); border-top: 2px solid var(--paper); padding: 14px 0; display: flex; gap: 12px; align-items: center; margin-top: 26px; z-index: 2; }
 .dock .grow { flex: 1; }

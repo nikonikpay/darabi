@@ -44,6 +44,25 @@ public class TestCenterViewModelTests
         vm.SelectAllCommand.Execute(null); Assert.True(vm.Rows.All(r => r.IsSelected));
     }
 
+    [Fact] public void A_test_the_machine_cannot_run_shows_why_cannot_be_ticked_and_follows_its_options()
+    {
+        var test = new PickyExecutor(WithOptions);   // runs only on drive D:
+        var row = new TestQueueRowViewModel(WithOptions, test);
+        Assert.False(row.IsAvailable); Assert.NotNull(row.UnavailableText);
+        row.IsSelected = true; Assert.False(row.IsSelected);
+        row.Options[1].SelectedChoice = row.Options[1].Choices[1];
+        Assert.True(row.IsAvailable); row.IsSelected = true; Assert.True(row.IsSelected);
+        row.Options[1].SelectedChoice = row.Options[1].Choices[0];
+        Assert.False(row.IsSelected);   // switching back to a choice it cannot run drops the tick
+    }
+
+    private sealed class PickyExecutor(TestDefinition definition) : ITestExecutor, ITestAvailability
+    {
+        public TestDefinition Definition => definition;
+        public Unavailability? CheckAvailability(TestOptions options) => options.Get("drive") == "D:\\" ? null : new("Test_Unavailable_NoGpu", "needs D:");
+        public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => throw new NotSupportedException();
+    }
+
     private sealed class NoopExecutor(TestDefinition definition) : ITestExecutor
     {
         public TestDefinition Definition => definition;

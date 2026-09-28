@@ -10,7 +10,7 @@ public enum GpuStressProfile { Steady, Variable, Pulse }
 /// transients. Every batch is read back and a sample of its results is recomputed on the CPU - a wrong
 /// result is a counted error - and the GPU's own load, temperature and power are measured for the run.
 /// </summary>
-public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
+public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor, ITestAvailability
 {
     public const string PulseMsOption = "pulseMs", GapMsOption = "gapMs";
     public static readonly TestDefinition Steady = new(new TestId("gpu.steady"), "Test_Gpu_Steady", 60, [GpuDevices.Option]);
@@ -19,6 +19,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor
         [GpuDevices.Option, new TestOption(PulseMsOption, "Test_Option_PulseMs", TestOptionKind.Integer, "250"), new TestOption(GapMsOption, "Test_Option_GapMs", TestOptionKind.Integer, "250")]);
 
     public TestDefinition Definition => profile switch { GpuStressProfile.Steady => Steady, GpuStressProfile.Variable => Variable, _ => Pulse };
+    public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
 
     private const int Threads = 1 << 21, Rounds = 512, FrameMs = 100, VariableStepSeconds = 5, SamplesPerBatch = 512;
     private static readonly double[] VariableLevels = [1, 0.3, 0, 0.6, 1, 0.15, 0.75, 0];
