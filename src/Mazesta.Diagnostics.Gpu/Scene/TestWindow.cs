@@ -24,6 +24,9 @@ internal sealed class TestWindow : IDisposable
 
     public TestWindow(string title, int width, int height, bool fullScreen)
     {
+        // Per-monitor DPI aware on this thread only: one pixel of the frame is one pixel of the screen (a DPI-unaware window is scaled up
+        // by Windows - a 1920 × 1080 test would spill off a 125 % Full HD screen and be drawn blurred).
+        SetThreadDpiAwarenessContext(-4 /* PER_MONITOR_AWARE_V2 */);
         _ = ClassAtom.Value;
         int screenW = GetSystemMetrics(0), screenH = GetSystemMetrics(1);
         uint style, exStyle = 0; int x = 0, y = 0, w = screenW, h = screenH;
@@ -31,7 +34,9 @@ internal sealed class TestWindow : IDisposable
         else
         {
             style = 0x00C00000 | 0x00080000 | 0x00020000 | 0x10000000;   // WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE
-            var r = new Rect { Right = Math.Min(width, screenW), Bottom = Math.Min(height, screenH) };
+            // A frame larger than the screen (4K on a Full HD monitor) is shown scaled down whole, keeping its shape, within the work area.
+            double fit = Math.Min(1, Math.Min(GetSystemMetrics(16 /* SM_CXFULLSCREEN */) * 0.95 / width, GetSystemMetrics(17 /* SM_CYFULLSCREEN */) * 0.95 / height));
+            var r = new Rect { Right = (int)(width * fit), Bottom = (int)(height * fit) };
             AdjustWindowRect(ref r, style, false);
             w = r.Right - r.Left; h = r.Bottom - r.Top; x = Math.Max(0, (screenW - w) / 2); y = Math.Max(0, (screenH - h) / 2);
         }
@@ -81,6 +86,7 @@ internal sealed class TestWindow : IDisposable
     [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out Rect rect);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool SetWindowText(IntPtr hwnd, string text);
     [DllImport("user32.dll")] private static extern bool PeekMessage(out Msg msg, IntPtr hwnd, uint min, uint max, uint remove);
     [DllImport("user32.dll")] private static extern bool TranslateMessage(ref Msg msg);

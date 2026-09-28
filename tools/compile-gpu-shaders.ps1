@@ -26,6 +26,12 @@ $jobs = @(
     @('SceneRaster.hlsl', 'ScenePS', 'ps_6_0', 'SceneRasterPS.cso'),
     @('SceneRaster.hlsl', 'BackgroundVS', 'vs_6_0', 'SceneBackgroundVS.cso'),
     @('SceneRaster.hlsl', 'BackgroundPS', 'ps_6_0', 'SceneBackgroundPS.cso'),
+    @('SceneRaster.hlsl', 'FurVS', 'vs_6_0', 'SceneFurVS.cso'),
+    @('SceneRaster.hlsl', 'FurPS', 'ps_6_0', 'SceneFurPS.cso'),
+    @('SceneRaster.hlsl', 'ParticleVS', 'vs_6_0', 'SceneParticleVS.cso'),
+    @('SceneRaster.hlsl', 'ParticlePS', 'ps_6_0', 'SceneParticlePS.cso'),
+    @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
+    @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
     @('SceneRay.hlsl', 'Main', 'cs_6_5', 'SceneRay.cso')
 )
 foreach ($j in $jobs) {

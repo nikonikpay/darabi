@@ -17,6 +17,21 @@ public sealed class SceneModel(string name, SceneVertex[] vertices)
     public SceneVertex[] Vertices { get; } = vertices;
     public int Triangles => Vertices.Length / 3;
 
+    /// <summary>The same triangles with every corner's normal averaged over all faces that meet at that point, weighted by area: the fur
+    /// layers are pushed out along these, so they stay closed over the model's sharp edges instead of splitting open along them.</summary>
+    public SceneVertex[] SmoothNormals()
+    {
+        static (int, int, int) Key(Vector3 p) => ((int)MathF.Round(p.X * 1e4f), (int)MathF.Round(p.Y * 1e4f), (int)MathF.Round(p.Z * 1e4f));
+        var sums = new Dictionary<(int, int, int), Vector3>();
+        for (int i = 0; i + 2 < Vertices.Length; i += 3)
+        {
+            var face = Vector3.Cross(Vertices[i + 1].Position - Vertices[i].Position, Vertices[i + 2].Position - Vertices[i].Position);   // length = 2 × area
+            if (Vector3.Dot(face, Vertices[i].Normal) < 0) face = -face;   // keep the model's own outward side
+            for (int k = 0; k < 3; k++) { var key = Key(Vertices[i + k].Position); sums[key] = sums.GetValueOrDefault(key) + face; }
+        }
+        return [.. Vertices.Select(v => sums[Key(v.Position)] is var n && n.LengthSquared() > 1e-12f ? v with { Normal = Vector3.Normalize(n) } : v)];
+    }
+
     /// <summary>Models\gpu-test.obj next to the app.</summary>
     public static string CustomPath => Path.Combine(AppContext.BaseDirectory, "Models", "gpu-test.obj");
 

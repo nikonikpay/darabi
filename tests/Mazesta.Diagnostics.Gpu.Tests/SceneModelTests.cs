@@ -29,6 +29,16 @@ public class SceneModelTests
         Assert.Throws<InvalidDataException>(() => SceneModel.FromObj("v 0 0 0\nf 1 2 3\n", "bad.obj"));
     }
 
+    [Fact] public void Fur_normals_are_shared_where_faces_meet_so_the_layers_stay_closed()
+    {
+        var m = SceneModel.Logo(); var smooth = m.SmoothNormals();
+        Assert.Equal(m.Vertices.Select(v => v.Position), smooth.Select(v => v.Position));
+        Assert.All(smooth, v => Assert.Equal(1, v.Normal.Length(), 3));
+        // Every copy of one point now has one normal, where the flat model has one per face.
+        Assert.All(smooth.GroupBy(v => v.Position), g => Assert.Single(g.Select(v => v.Normal).Distinct()));
+        Assert.Contains(m.Vertices.GroupBy(v => v.Position), g => g.Select(v => v.Normal).Distinct().Count() > 1);
+    }
+
     [Fact] public void The_ray_traced_placement_matches_the_shader_s_centre_model()
     {
         var m = GpuSceneExecutor.Placement(0, 0);   // at time 0 the centre model is unrotated, lifted 0.3
