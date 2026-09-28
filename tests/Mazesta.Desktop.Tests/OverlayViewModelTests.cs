@@ -89,6 +89,36 @@ public class OverlayViewModelTests
         Assert.False(Row(vm, "GPU", "Overlay_Load").HasBar);   // charted: its chart, not a bar
     }
 
+    private sealed class SequenceFrames(params FrameRateReading?[] readings) : IFrameRateSource
+    {
+        private int _next;
+        public bool Start() => true;
+        public void Stop() { }
+        public FrameRateReading? Read() => readings[Math.Min(_next++, readings.Length - 1)];
+        public string? Problem => null;
+    }
+
+    [Fact] public void The_session_average_lowest_and_highest_skip_gaps_and_restart_with_another_program()
+    {
+        var frames = new SequenceFrames(new(100, null, 10, 7, "game"), null, new(140, null, 7.1, 7, "game"), new(120, null, 8.3, 7, "game"), new(60, null, 16.7, 9, "other"));
+        var (vm, e, _, _) = Build([new("fps", false), new("fps.avg", false), new("fps.min", false), new("fps.max", false)], frames);
+        Assert.True(vm.HasSessionStats);
+        vm.SetActive(true);
+        for (int i = 0; i < 4; i++) e.TickOnce();
+        Assert.Equal(("120", "100", "140"), (vm.HeroAvg!.Number, vm.HeroMin!.Number, vm.HeroMax!.Number));   // the gap is not a zero
+        e.TickOnce();
+        Assert.Equal(("60", "60", "60"), (vm.HeroAvg.Number, vm.HeroMin.Number, vm.HeroMax.Number));
+    }
+
+    [Fact] public void The_line_layout_has_no_fixed_width_and_an_unknown_layout_is_the_list()
+    {
+        var (vm, e, _, _) = Build();
+        var line = new OverlayViewModel(e, a => { a(); return null!; }, [new("gpu.temp", false)], null, layout: "line");
+        Assert.True(line.IsLine); Assert.False(line.IsStacked); Assert.True(double.IsNaN(line.PanelWidth));
+        Assert.Equal("list", new OverlayViewModel(e, a => { a(); return null!; }, [new("gpu.temp", false)], null, layout: "sideways").Layout);
+        Assert.Equal("#59B38BFF", vm.Blocks[0].HueEdge);
+    }
+
     [Fact] public void Without_game_items_there_is_no_frame_rate_card() => Assert.False(Build().Vm.HasHero);
 
     [Fact] public void Without_frame_items_the_frame_source_is_never_started()

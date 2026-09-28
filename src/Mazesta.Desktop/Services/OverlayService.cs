@@ -22,7 +22,19 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     public IFrameRateSource? FrameSource => frames;
     public OverlayViewModel? Current => _vm;
 
-    public IReadOnlyList<OverlayChoice> Items => config.OverlayItems is { Count: > 0 } items ? items : OverlayCatalog.Presets[OverlayCatalog.DefaultPreset];
+    public IReadOnlyList<OverlayChoice> Items => config.OverlayItems is { Count: > 0 } items ? WithSessionStats(items) : OverlayCatalog.Presets[OverlayCatalog.DefaultPreset];
+
+    /// <summary>The game set gained the session's average, lowest and highest frame rate after it was first saved: a saved game set without them
+    /// gets them after the 1 % low, once, so the owner does not have to pick the preset again. A custom set is left as it was chosen.</summary>
+    private List<OverlayChoice> WithSessionStats(List<OverlayChoice> items)
+    {
+        string[] stats = ["fps.avg", "fps.min", "fps.max"];
+        int fps = items.FindIndex(c => c.Id == "fps");
+        if (config.OverlayPreset != "game" || fps < 0 || items.Any(c => stats.Contains(c.Id))) return items;
+        int low = items.FindIndex(c => c.Id == "low1");
+        items.InsertRange((low >= 0 ? low : fps) + 1, stats.Select(id => new OverlayChoice(id, false)));
+        return items;
+    }
 
     /// <summary>New items (from a preset or by hand): kept in the settings and shown at once if the overlay is up.</summary>
     public void Configure(IReadOnlyList<OverlayChoice> items, string preset)
@@ -37,12 +49,12 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         Rebuild();
     }
 
-    public static readonly string[] Layouts = ["list", "columns"];
+    public static readonly string[] Layouts = OverlayViewModel.Layouts;
     public void SetLayout(string layout) { if (!Layouts.Contains(layout)) return; config.OverlayLayout = layout; Rebuild(); }
 
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a), Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout == "columns");
+        var vm = new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a), Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout);
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }

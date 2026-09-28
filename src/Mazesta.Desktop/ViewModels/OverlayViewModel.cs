@@ -44,6 +44,9 @@ public sealed partial class OverlaySection(OverlayPart part, string title, strin
     public string? Device { get; } = device;
     public string Title { get; } = title;
     public string Hue { get; } = hue;
+    /// <summary>The block's own box: its edge in the part's colour at a third, its ground washed with a tenth of it.</summary>
+    public string HueEdge { get; } = "#59" + hue.TrimStart('#');
+    public string HueTint { get; } = "#1A" + hue.TrimStart('#');
     public ObservableCollection<OverlayRow> Rows { get; } = [];
     [ObservableProperty] private string _subtitle = "";
 }
@@ -77,7 +80,17 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public OverlayRow? HeroFps { get; }
     public OverlayRow? HeroLow { get; }
     public OverlayRow? HeroFrameTime { get; }
-    public bool HasHero => HeroFps is not null || HeroLow is not null || HeroFrameTime is not null;
+    /// <summary>The session's average, lowest and highest frame rate (<see cref="FrameRateSession"/>), each shown when chosen.</summary>
+    public OverlayRow? HeroAvg { get; }
+    public OverlayRow? HeroMin { get; }
+    public OverlayRow? HeroMax { get; }
+    public bool HasHero => HeroFps is not null || HeroLow is not null || HeroFrameTime is not null || HasSessionStats;
+    public bool HasSessionStats => HeroAvg is not null || HeroMin is not null || HeroMax is not null;
+    private readonly FrameRateSession _session = new();
+    /// <summary>The session's numbers for the web page's preview; null until the program in front has drawn.</summary>
+    public double? SessionAverage => _session.Average;
+    public double? SessionMin => _session.Min;
+    public double? SessionMax => _session.Max;
     [ObservableProperty] private double[] _heroTrend = [];
     /// <summary>The 1 % low now, drawn as a level across the trace; NaN when it is not shown or not measured.</summary>
     [ObservableProperty] private double _heroLowValue = double.NaN;
@@ -85,25 +98,31 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     private readonly Queue<double> _heroHistory = new();
     public double Opacity { get; }
     public double Scale { get; }
-    /// <summary>One column, or two blocks side by side: the panel is as wide as its columns, and each block one column wide.</summary>
-    public bool TwoColumns { get; }
+    public static readonly string[] Layouts = ["list", "columns", "line"];
+    /// <summary>"list": one column of boxes; "columns": two boxes side by side; "line": everything in one row along the screen's edge, as a strip.</summary>
+    public string Layout { get; }
+    public bool TwoColumns => Layout == "columns";
+    public bool IsLine => Layout == "line";
+    public bool IsStacked => !IsLine;
     public double SectionWidth => TwoColumns ? 186 : 244;
-    /// <summary>Each card keeps 4 px on every side and the list gives back 4 px at its edges: two cards and the 8 px between them fill the panel.</summary>
-    public double PanelWidth => TwoColumns ? SectionWidth * 2 + 8 : SectionWidth;
+    /// <summary>Each box keeps 4 px on every side and the list gives back 4 px at its edges: two boxes and the 8 px between them fill the panel.
+    /// The strip has no fixed width: it is as long as what it shows.</summary>
+    public double PanelWidth => IsLine ? double.NaN : TwoColumns ? SectionWidth * 2 + 8 : SectionWidth;
     public bool NeedsFrames { get; }
     /// <summary>The last frame reading while a frame item is shown (the web page's preview shows it too).</summary>
     public FrameRateReading? Frames { get; private set; }
     public event Action? Updated;
 
-    public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, bool twoColumns = false)
+    public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, string layout = "list")
     {
         _engine = engine; _dispatch = dispatch; _frames = frames;
-        Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); TwoColumns = twoColumns;
+        Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
         NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming);
         Blocks = [.. Sections.Where(s => s.Part != OverlayPart.Gaming)];
         var game = Sections.FirstOrDefault(s => s.Part == OverlayPart.Gaming)?.Rows ?? [];
         HeroFps = game.FirstOrDefault(r => r.Id == "fps"); HeroLow = game.FirstOrDefault(r => r.Id == "low1"); HeroFrameTime = game.FirstOrDefault(r => r.Id == "frametime");
+        HeroAvg = game.FirstOrDefault(r => r.Id == "fps.avg"); HeroMin = game.FirstOrDefault(r => r.Id == "fps.min"); HeroMax = game.FirstOrDefault(r => r.Id == "fps.max");
         engine.SnapshotPublished += OnSnapshot;
     }
 
@@ -114,7 +133,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         if (NeedsFrames && _frames is not null) { if (active) _frames.Start(); else _frames.Stop(); }
         if (!active) return;
         foreach (var r in Sections.SelectMany(s => s.Rows)) { r.History.Clear(); r.Trend = []; }
-        _heroHistory.Clear(); HeroTrend = []; HeroLowValue = double.NaN;
+        _heroHistory.Clear(); HeroTrend = []; HeroLowValue = double.NaN; _session.Reset();
     }
 
     /// <summary>The chosen items this machine can show, grouped into blocks (a part, or one drive's own block), the blocks in the order their first
@@ -147,6 +166,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     {
         foreach (var r in snapshot.Readings) _latest[r.Id] = r.Quality == DataQuality.Ok ? r.Value : null;
         Frames = NeedsFrames ? _frames?.Read() : null;
+        _session.Add(Frames);
         foreach (var section in Sections)
         {
             if (section.Part == OverlayPart.Gaming) { section.Subtitle = Frames?.App ?? ""; HeroApp = section.Subtitle; }
@@ -170,7 +190,12 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         Updated?.Invoke();
     }
 
-    private static double? FrameValue(string id, FrameRateReading? f) => f is null ? null : id switch { "fps" => f.Fps, "low1" => f.Low1Fps, "frametime" => f.FrameTimeMs, _ => null };
+    private double? FrameValue(string id, FrameRateReading? f) => id switch
+    {
+        // The session's numbers stay while the game is in front but has not drawn for a moment; the live ones do not.
+        "fps.avg" => _session.Average, "fps.min" => _session.Min, "fps.max" => _session.Max,
+        _ => f is null ? null : id switch { "fps" => f.Fps, "low1" => f.Low1Fps, "frametime" => f.FrameTimeMs, _ => null },
+    };
 
     private void Chart(OverlayRow row, double? value)
     {

@@ -1264,4 +1264,8 @@ The update services stopped and disabled</value></data>
   <data name="Updates_ConfirmDisable" xml:space="preserve"><value>No security updates will be installed while updates are off. Turn them off?</value></data>
   <data name="Gaming_Ultimate" xml:space="preserve"><value>Add the Ultimate Performance plan</value></data>
   <data name="Gaming_UltimateAdded" xml:space="preserve"><value>Ultimate Performance was added to the list; switch to it there. Not for laptops on battery.</value></data>
+  <data name="Overlay_FpsAvg" xml:space="preserve"><value>Average FPS</value></data>
+  <data name="Overlay_FpsMin" xml:space="preserve"><value>Lowest FPS</value></data>
+  <data name="Overlay_FpsMax" xml:space="preserve"><value>Highest FPS</value></data>
+  <data name="Web_Overlay_Layout_Line" xml:space="preserve"><value>Line</value></data>
 </root>

@@ -1264,4 +1264,8 @@
   <data name="Updates_ConfirmDisable" xml:space="preserve"><value>تا وقتی به‌روزرسانی خاموش است هیچ به‌روزرسانی امنیتی نصب نمی‌شود. خاموش شود؟</value></data>
   <data name="Gaming_Ultimate" xml:space="preserve"><value>افزودن طرح Ultimate Performance</value></data>
   <data name="Gaming_UltimateAdded" xml:space="preserve"><value>طرح Ultimate Performance به فهرست اضافه شد؛ از همان‌جا فعالش کنید. برای لپ‌تاپ روی باتری مناسب نیست.</value></data>
+  <data name="Overlay_FpsAvg" xml:space="preserve"><value>میانگین FPS</value></data>
+  <data name="Overlay_FpsMin" xml:space="preserve"><value>کمترین FPS</value></data>
+  <data name="Overlay_FpsMax" xml:space="preserve"><value>بیشترین FPS</value></data>
+  <data name="Web_Overlay_Layout_Line" xml:space="preserve"><value>خطی</value></data>
 </root>

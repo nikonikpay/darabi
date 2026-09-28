@@ -35,6 +35,7 @@ public static class OverlayCatalog
     public static readonly IReadOnlyList<OverlayItem> All =
     [
         new("fps", OverlayPart.Gaming, "Overlay_Fps", []), new("low1", OverlayPart.Gaming, "Overlay_Low1", []), new("frametime", OverlayPart.Gaming, "Overlay_FrameTime", []),
+        new("fps.avg", OverlayPart.Gaming, "Overlay_FpsAvg", []), new("fps.min", OverlayPart.Gaming, "Overlay_FpsMin", []), new("fps.max", OverlayPart.Gaming, "Overlay_FpsMax", []),
 
         new("gpu.temp", OverlayPart.Gpu, "Overlay_Temp", [SensorRole.GpuCoreTemp], FixedMax: Percent),
         new("gpu.hotspot", OverlayPart.Gpu, "Overlay_HotSpot", [SensorRole.GpuHotSpotTemp], FixedMax: Percent),
@@ -91,8 +92,8 @@ public static class OverlayCatalog
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<OverlayChoice>> Presets = new Dictionary<string, IReadOnlyList<OverlayChoice>>
     {
-        // Playing: the frame rate first and charted, then what limits it.
-        ["game"] = Choices("fps:c low1 frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used"),
+        // Playing: the frame rate first and charted with its session average, lowest and highest, then what limits it.
+        ["game"] = Choices("fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used"),
         // Rendering: how busy and how hot the processors stay over a long job, memory, and the drive being written.
         ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write"),
         // Troubleshooting: every temperature, clock, voltage and fan that tells a throttling or failing part.

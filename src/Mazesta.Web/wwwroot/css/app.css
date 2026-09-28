@@ -715,7 +715,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .ov-frames { display: block; width: 100%; height: calc(72px * var(--ov-scale)); margin-top: 8px; background: rgb(0 0 0 / 0.35); border-radius: 3px; }
 .ov-cards { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 16px; }
 .ov-preview.cols .ov-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.ov-card { padding: 8px 0 7px; border-top: 1px solid rgb(255 255 255 / 0.09); min-width: 0; }
+.ov-card { min-width: 0; }
 .ov-title { display: flex; align-items: center; gap: 8px; padding-bottom: 4px; }
 .ov-key { font: 800 0.72em/1 var(--lat); font-stretch: 118%; letter-spacing: 0.05em; color: #111; background: var(--hue); padding: 3px 5px 2px; border-radius: 2px; }
 .ov-title small { margin-inline-start: auto; color: #737a82; font: 500 0.8em var(--lat); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -878,3 +878,30 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .panel.upd .btn-row { margin-top: 16px; }
 .upd-foot { display: flex; gap: 10px; align-items: center; margin-top: 16px; padding: 10px 14px; border-radius: var(--r-panel); border: 1px solid var(--rule); color: var(--paper-2); font-size: 13px; }
 .upd-foot svg { width: 16px; height: 16px; stroke: var(--paper-3); flex: none; }
+
+/* The overlay preview's boxes, as the overlay draws them: each part in a box of its own (its edge a third of its colour, a faint wash), the title
+   bold on a solid tag; the frame-rate box on top with the session's average, lowest and highest; the line layout as one strip of boxes. */
+.ov-preview .p-game { --hue: var(--yellow); }
+.ov-cards { gap: 8px; padding-bottom: 2px; }
+.ov-preview.cols .ov-cards { column-gap: 8px; }
+.ov-card { padding: 7px 9px 7px; border: 1px solid color-mix(in srgb, var(--hue) 35%, transparent); background: color-mix(in srgb, var(--hue) 10%, transparent); border-radius: 6px; }
+.ov-hero { margin-bottom: 8px; padding-bottom: 9px; }
+.ov-key { font-weight: 900; font-size: 0.86em; padding: 3px 6px 2px; border-radius: 3px; }
+.ov-lv span { font-weight: 600; color: #c3c7cc; }
+.ov-stats { display: flex; gap: 14px; margin-top: 7px; }
+.ov-stat { display: grid; gap: 1px; }
+.ov-stat small { font: 700 0.68em var(--lat); font-stretch: 118%; letter-spacing: 0.04em; color: var(--yellow); }
+.ov-stat b { font: 700 1.38em/1.05 var(--lat); font-stretch: 76%; color: #fff; }
+.ov-preview.line { overflow-x: auto; }
+.ov-preview.line > * { width: max-content; padding: 7px 8px; }
+.ov-strip { display: flex; gap: 6px; align-items: stretch; }
+.ov-strip::before { content: ""; width: 3px; background: var(--yellow); margin-block: 4px; }
+.ov-strip .ov-card { display: flex; align-items: center; gap: 11px; padding: 5px 9px; }
+.ov-strip .ov-title { padding: 0; }
+.ov-strip .ov-fps b { font-size: 2.1em; }
+.ov-strip .ov-stat small { font-family: var(--fa); font-stretch: 100%; letter-spacing: 0; color: #8a9097; font-size: 0.78em; }
+.ov-strip .p-game .ov-stat small { font-family: var(--lat); font-stretch: 118%; color: var(--yellow); font-size: 0.68em; }
+.ov-strip .ov-stat b { font-size: 1.25em; }
+.ov-strip .ov-stat b i { font-style: normal; font-size: 0.58em; color: var(--hue); margin-inline-start: 2px; }
+/* A strip is long: in the line layout the preview takes the page's full width, above the lists. */
+.ov-split:has(.ov-preview.line) > .ov-side { grid-column: 1 / -1; grid-row: 1; position: static; }

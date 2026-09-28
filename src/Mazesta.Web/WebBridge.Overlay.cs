@@ -88,7 +88,7 @@ public sealed partial class WebBridge
         {
             if (!vm.NeedsFrames) return;
             var f = vm.Frames;
-            Push("overlayFrames", f is null ? null : new { fps = f.Fps, low1 = f.Low1Fps, frametime = f.FrameTimeMs, app = f.App });
+            Push("overlayFrames", new { fps = f?.Fps, low1 = f?.Low1Fps, frametime = f?.FrameTimeMs, app = f?.App, avg = vm.SessionAverage, min = vm.SessionMin, max = vm.SessionMax });
         }
         overlay.Updated += OnUpdated; _cleanup.Add(() => overlay.Updated -= OnUpdated);
         void OnVisible(bool _) => PushSoon("overlayState", State);

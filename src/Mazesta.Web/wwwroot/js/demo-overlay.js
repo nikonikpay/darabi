@@ -1,6 +1,7 @@
 // Browser preview only (not shipped): the overlay page's host answers, from the demo hardware. The catalog mirrors Core's OverlayCatalog.
 const CATALOG = [
   ["fps", "Gaming", "Overlay_Fps", []], ["low1", "Gaming", "Overlay_Low1", []], ["frametime", "Gaming", "Overlay_FrameTime", []],
+  ["fps.avg", "Gaming", "Overlay_FpsAvg", []], ["fps.min", "Gaming", "Overlay_FpsMin", []], ["fps.max", "Gaming", "Overlay_FpsMax", []],
   ["gpu.temp", "Gpu", "Overlay_Temp", ["GpuCoreTemp"]], ["gpu.hotspot", "Gpu", "Overlay_HotSpot", ["GpuHotSpotTemp"]], ["gpu.vramtemp", "Gpu", "Overlay_VramTemp", ["GpuVramTemp"]],
   ["gpu.load", "Gpu", "Overlay_Load", ["GpuLoad3D", "GpuLoadD3D3D"]], ["gpu.clock", "Gpu", "Overlay_Clock", ["GpuCoreClock"]], ["gpu.memclock", "Gpu", "Overlay_VramClock", ["GpuMemoryClock"]],
   ["gpu.power", "Gpu", "Overlay_Power", ["GpuPower"]], ["gpu.voltage", "Gpu", "Overlay_Voltage", ["GpuVoltage"]], ["gpu.fan", "Gpu", "Overlay_Fan", ["GpuFanPercent"]],
@@ -15,7 +16,7 @@ const CATALOG = [
   ["net.down", "Network", "Overlay_Down", ["NetDownload"], "Sum"], ["net.up", "Network", "Overlay_Up", ["NetUpload"], "Sum"],
 ];
 const PRESETS = {
-  game: "fps:c low1 frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used",
+  game: "fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used",
   render: "cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write",
   troubleshoot: "cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.temp:c gpu.hotspot gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp",
 };
@@ -61,10 +62,12 @@ export function overlay(m, p, hw, strings, emit) {
   return undefined;
 }
 
-// A game in front at about 140 FPS with the odd hitch, while the overlay is on.
+// A game in front at about 140 FPS with the odd hitch, while the overlay is on; the session's average, lowest and highest as the host keeps them.
+const session = { n: 0, sum: 0, min: Infinity, max: 0 };
 export function frames(emit) {
-  if (!visible || !chosen.some((c) => ["fps", "low1", "frametime"].includes(c.id))) return;
+  if (!visible || !chosen.some((c) => c.id.startsWith("fps") || ["low1", "frametime"].includes(c.id))) return;
   // A scene that swings and now and then stutters, so the preview's trace has something to show.
   const fps = 128 + 16 * Math.sin(Date.now() / 9000) + Math.random() * 8 - (Math.random() < 0.12 ? 40 : 0);
-  emit("overlayFrames", { fps, low1: 96 + Math.random() * 6, frametime: 1000 / fps, app: "Cyberpunk2077" });
+  session.n++; session.sum += fps; session.min = Math.min(session.min, fps); session.max = Math.max(session.max, fps);
+  emit("overlayFrames", { fps, low1: 96 + Math.random() * 6, frametime: 1000 / fps, app: "Cyberpunk2077", avg: session.sum / session.n, min: session.min, max: session.max });
 }

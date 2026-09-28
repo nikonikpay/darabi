@@ -38,7 +38,7 @@ export function mount(el) {
   const seg = (label, field, options) => h("div", { class: "seg", role: "group", "aria-label": label }, options.map(([v, k]) =>
     h("button", { type: "button", "data-v": v, onclick: () => call("overlay.set", { field, value: field === "scale" ? +v : v }) }, t(k))));
   const sizes = seg(t("Web_Overlay_Size"), "scale", [["0.85", "Web_Overlay_Small"], ["1", "Web_Overlay_Normal"], ["1.2", "Web_Overlay_Large"]]);
-  const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"]]);
+  const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"], ["line", "Web_Overlay_Layout_Line"]]);
   const hotkey = h("span", { class: "kbd lat" });
   const problem = h("p", { class: "banner", hidden: true });
 
@@ -160,7 +160,7 @@ export function mount(el) {
   // ——— Values: sensor items from the snapshots, frame items from what the overlay measured ———
   function current(it) {
     if (it.frame) {
-      const v = frames && (it.id === "fps" ? frames.fps : it.id === "low1" ? frames.low1 : frames.frametime);
+      const v = frames && { fps: frames.fps, low1: frames.low1, frametime: frames.frametime, "fps.avg": frames.avg, "fps.min": frames.min, "fps.max": frames.max }[it.id];
       return v === null || v === undefined ? null : { v, text: it.id === "frametime" ? `${v.toFixed(1)} ms` : `${Math.round(v)} FPS` };
     }
     const vals = it.sensors.map((id) => value(id)).filter((v) => v !== null);
@@ -180,27 +180,48 @@ export function mount(el) {
     renderPreview();
   }
 
-  // ——— The preview: the overlay as it will look, from the same blocks, in the same order, colours and layout: the frame-rate block on top, then
-  // a block per part under its channel key, each reading's number with its unit small, a scale for a share of a fixed top or its trace ———
+  // ——— The preview: the overlay as it will look, from the same blocks, in the same order, colours and layout. Stacked: the frame-rate box on
+  // top (the rate big, 1 % low and frame time beside it, the session's average, lowest and highest under it, its trace), then a box per part
+  // in the part's colour under its bold title, each reading's number with its unit small, a scale for a share of a fixed top or its trace.
+  // As a line: the same boxes in one strip, each reading a label over its number ———
   function split(c) { if (!c) return ["—", ""]; const i = c.text.lastIndexOf(" "); return i > 0 ? [c.text.slice(0, i), c.text.slice(i + 1)] : [c.text, ""]; }
   function renderPreview() {
     const blocks = shownBlocks(), game = blocks.find((b) => b.part === "Gaming"), cards = blocks.filter((b) => b.part !== "Gaming");
-    preview.classList.toggle("cols", state.layout === "columns");
+    const line = state.layout === "line";
+    preview.classList.toggle("cols", state.layout === "columns"); preview.classList.toggle("line", line);
+    const get = (id) => game?.items.find((x) => x.id === id);
+    const stat = (id, tag) => { const it = get(id); return it ? h("div", { class: "ov-stat" }, h("small", {}, tag), h("b", { class: "num" }, split(current(it))[0])) : null; };
+    const title = (b) => h("div", { class: "ov-title" }, h("span", { class: "ov-key" }, SHORT[b.part]), b.device && !line ? h("small", {}, b.deviceName || "") : null);
+    if (line) {
+      const fps = get("fps");
+      preview.replaceChildren(h("div", { class: "ov-strip" },
+        game ? h("div", { class: "ov-card p-game" },
+          fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : null,
+          stat("low1", "1% LOW"), stat("fps.avg", "AVG"), stat("fps.min", "MIN"), stat("fps.max", "MAX"), stat("frametime", "MS")) : null,
+        cards.map((b) => h("div", { class: `ov-card ${part(b.part).cls}` }, title(b), b.items.map((it) => {
+          const [num, unit] = split(current(it));
+          return h("div", { class: "ov-stat" }, h("small", {}, it.label), h("b", { class: "num" }, num, unit ? h("i", {}, unit) : null));
+        })))));
+      if (!blocks.length) preview.append(h("p", { class: "caption" }, t("Web_Overlay_Empty")));
+      return;
+    }
     const hero = game && (() => {
-      const get = (id) => game.items.find((x) => x.id === id), fps = get("fps"), low = get("low1"), ft = get("frametime");
+      const fps = get("fps"), low = get("low1"), ft = get("frametime");
       const side = (it, tag) => it ? h("div", { class: "ov-side-v" }, h("b", { class: "num" }, split(current(it))[0]), h("small", {}, tag)) : null;
-      return h("div", { class: "ov-hero" },
+      const stats = [stat("fps.avg", "AVG"), stat("fps.min", "MIN"), stat("fps.max", "MAX")].filter(Boolean);
+      return h("div", { class: "ov-card ov-hero p-game" },
+        h("div", { class: "ov-title" }, h("span", { class: "ov-key" }, "GAME")),
         h("div", { class: "ov-hero-top" },
           fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : h("span"),
           h("div", { class: "ov-hero-side" }, side(low, "1% LOW"), side(ft, "MS"))),
+        stats.length ? h("div", { class: "ov-stats" }, stats) : null,
         fps ? frameChart(history.get("fps") || [], low ? current(low)?.v ?? null : null) : null);
     })();
     preview.replaceChildren(
       h("div", { class: "ov-brand" }, "MAZESTA", frames?.app ? h("small", {}, frames.app) : null),
       hero || "",
       h("div", { class: "ov-cards" }, cards.map((b) =>
-        h("div", { class: `ov-card ${part(b.part).cls}` },
-          h("div", { class: "ov-title" }, h("span", { class: "ov-key" }, SHORT[b.part]), b.device ? h("small", {}, b.deviceName || "") : null),
+        h("div", { class: `ov-card ${part(b.part).cls}` }, title(b),
           b.items.map((it) => {
             const c = current(it), [num, unit] = split(c);
             return h("div", { class: "ov-line" }, h("div", { class: "ov-lv" }, h("span", {}, it.label), h("b", { class: "num" }, num, unit ? h("small", {}, unit) : null)),
