@@ -34,6 +34,19 @@ internal static class TrayText
 
     public const string HotSpot = "نقطه‌ی داغ";
 
+    public const string Overlay = "نمایش اورلی روی صفحه";
+    public const string GpuProfiles = "پروفایل کارت گرافیک";
+    public const string Reading = "در حال خواندن…";
+    public const string Stock = "حالت کارخانه (بدون تغییر)";
+    public const string NoNvidia = "کارت گرافیک NVIDIA پیدا نشد";
+    public const string NoProfiles = "هنوز پروفایلی ذخیره نشده (صفحه‌ی اورکلاک و آندرولت)";
+    public const string JournalFound = "یک تنظیم خودکار کارت گرافیک در برنامه نیمه‌کاره مانده است؛ پروفایل هنگام ورود اعمال نشد. برنامه‌ی مازستا را باز کنید.";
+    public static string Kind(GpuProfileKind k) => k switch { GpuProfileKind.Undervolt => "آندرولت", GpuProfileKind.Overclock => "اورکلاک", _ => "دستی" };
+    public static string ProfileApplied(string name, string gpu) => $"«{name}» روی {gpu} اعمال شد و هنگام ورود به ویندوز هم اعمال می‌شود.";
+    public static string ProfileFailed(string name, string why) => $"«{name}» اعمال نشد: {why}";
+    public static string ProfileNotKept(string why) => $"پروفایل اعمال شد ولی برای ورود بعدی ذخیره نشد: {why}";
+    public static string ProfileMissing(string name) => $"پروفایل «{name}» دیگر وجود ندارد؛ کارت در حالت کارخانه ماند.";
+
     public static string DriveProblem(TrayDrive d) => d.Status is "Warning" or "Unhealthy"
         ? $"دیسک {d.Name}: ویندوز از روی SMART آن را «{Status(d.Status)}» گزارش کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید."
         : $"دیسک {d.Name}: خطای اصلاح‌نشده‌ی خواندن یا نوشتن ثبت کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید.";

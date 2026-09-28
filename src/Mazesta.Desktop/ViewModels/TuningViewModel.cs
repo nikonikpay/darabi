@@ -132,12 +132,24 @@ public sealed partial class TuningViewModel : ObservableObject
     }
 
     public IReadOnlyList<InfoRow> Memory { get; private set; } = [];
+
+    /// <summary>The profile the tray puts this card in at every sign-in (GPU settings do not survive a reboot); empty: it starts at stock.
+    /// Applying a saved profile here makes it the start-up one, putting the card back to stock clears it (see <see cref="GpuStartup"/>).</summary>
+    [ObservableProperty] private string _startupProfile = "";
+    private readonly string? _startupFile;
+    private void SetStartup(string? name)
+    {
+        if (_startupFile is null || Device is null) return;
+        try { GpuStartup.Set(_startupFile, Device.Id, name); StartupProfile = name ?? ""; }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { Status += "  " + Loc.Format("Tuning_StartupNotSaved", e.Message); }
+    }
     /// <summary>The graphics cards NVML does not cover (AMD, Intel), named so the technician knows why they are not offered.</summary>
     public string OtherGpus { get; private set; } = "";
 
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
-        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true)
+        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null)
     {
+        _startupFile = startupFile;
         _provider = provider; _store = store; _doc = store.Load().Value; _confirm = confirm; _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
         _voltageFor = voltageFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
@@ -161,6 +173,7 @@ public sealed partial class TuningViewModel : ObservableObject
         SetPower = now.PowerLimitW is not null; PowerLimit = Num(now.PowerLimitW ?? l.PowerLimitDefaultW ?? 0);
         ManualFan = now.FanPercent is not null; FanPercent = Num(now.FanPercent ?? 60);
         LoadProfiles();
+        StartupProfile = _startupFile is null ? "" : GpuStartup.For(_startupFile, value.Id) ?? "";
         var saved = _doc.Curves.FirstOrDefault(c => c.GpuId == value.Id);
         _curveMeasuredAt = saved?.MeasuredAt; Curve = saved?.Points;
     }
@@ -215,7 +228,7 @@ public sealed partial class TuningViewModel : ObservableObject
     private void Apply() { if (FormSettings() is { } s) Report(Device!.Apply(s), "Tuning_Applied"); }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
-    private void Reset() { Report(Device!.Reset(), "Tuning_ResetDone"); OnDeviceChanged(Device); }
+    private void Reset() { if (Report(Device!.Reset(), "Tuning_ResetDone")) SetStartup(null); OnDeviceChanged(Device); }
 
     [RelayCommand]
     private void SaveProfile()
@@ -227,7 +240,7 @@ public sealed partial class TuningViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
-    private void ApplyProfile(GpuProfileRow row) { Report(Device!.Apply(row.Profile.Settings), "Tuning_Applied"); Fill(row.Profile.Settings); }
+    private void ApplyProfile(GpuProfileRow row) { if (Report(Device!.Apply(row.Profile.Settings), "Tuning_Applied")) SetStartup(row.Name); Fill(row.Profile.Settings); }
 
     /// <summary>Puts a profile's settings on the form (and so on the curve) without sending them to the card.</summary>
     [RelayCommand] private void LoadProfile(GpuProfileRow row) { Fill(row.Profile.Settings); Status = Loc.Format("Tuning_ProfileLoaded", row.Name); }
@@ -237,6 +250,7 @@ public sealed partial class TuningViewModel : ObservableObject
     {
         if (!_confirm(Loc.Format("Tuning_ConfirmDelete", row.Name))) return;
         _doc.Profiles.Remove(row.Profile); _store.Save(_doc); LoadProfiles();
+        if (row.Name == StartupProfile) SetStartup(null);
     }
 
     private void Fill(GpuTuningSettings s)
@@ -247,8 +261,11 @@ public sealed partial class TuningViewModel : ObservableObject
         ManualFan = s.FanPercent is not null; if (s.FanPercent is { } f) FanPercent = Num(f);
     }
 
-    private void Report(TuningApplyResult result, string okKey)
-        => Status = result.Ok ? Loc.Get(okKey) : string.Join("  ", result.Steps.Where(s => !s.Ok).Select(s => Loc.Format("Tuning_Refused", Loc.Get(s.SettingKey), s.Error ?? "")));
+    private bool Report(TuningApplyResult result, string okKey)
+    {
+        Status = result.Ok ? Loc.Get(okKey) : string.Join("  ", result.Steps.Where(s => !s.Ok).Select(s => Loc.Format("Tuning_Refused", Loc.Get(s.SettingKey), s.Error ?? "")));
+        return result.Ok;
+    }
 
     private void AddProfile(GpuProfile p) { _doc.Profiles.Add(p); _store.Save(_doc); LoadProfiles(); }
 
@@ -336,7 +353,7 @@ public sealed partial class TuningViewModel : ObservableObject
         string name = Loc.Format(kind == GpuProfileKind.Undervolt ? "Tuning_DefaultName_Undervolt" : "Tuning_DefaultName_Overclock", DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
         AddProfile(new(name, kind, device.Id, device.Name, found, DateTimeOffset.Now, outcome.Baseline, outcome.Tuned, LoadMeasurement.CurrentLoadVersion));
         AutoResult += "\n" + Loc.Format("Tuning_ProfileSaved", name);
-        if (_confirm(Loc.Format("Tuning_ConfirmApplyFound", name, Summarize(found)))) { Report(device.Apply(found), "Tuning_Applied"); Fill(found); }
+        if (_confirm(Loc.Format("Tuning_ConfirmApplyFound", name, Summarize(found)))) { if (Report(device.Apply(found), "Tuning_Applied")) SetStartup(name); Fill(found); }
     }
 
     private Action<GpuTuningSettings?> Journal(string gpuId) => settings =>

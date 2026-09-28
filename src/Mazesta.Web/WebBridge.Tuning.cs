@@ -29,7 +29,7 @@ public sealed partial class WebBridge
             curve = t.Curve?.Select(p => new { clock = p.ClockMHz, volt = p.VoltageV }), curveInfo = t.CurveInfo, curveEstimate = t.CurveEstimate, curveStatus = t.CurveStatus,
             busy = t.IsTuning, percent = t.AutoPercent, stepTitle = t.AutoStepTitle, stepSettings = t.AutoStepSettings, stepLoad = t.AutoStepLoad, result = t.AutoResult,
             log = t.AutoLog.Select(l => new { step = l.Step, kind = l.Kind, settings = l.Settings, result = l.Result, clean = l.Clean, problem = l.Problem }),
-            profiles = t.Profiles.Select((p, i) => new { index = i, name = p.Name, kind = p.KindValue.ToString(), kindText = p.Kind, created = p.Created, summary = p.Summary, evidence = p.Evidence }),
+            profiles = t.Profiles.Select((p, i) => new { index = i, name = p.Name, kind = p.KindValue.ToString(), kindText = p.Kind, created = p.Created, summary = p.Summary, evidence = p.Evidence, startup = p.Name == t.StartupProfile }),
             memory = t.Memory.Select(m => new { label = m.Label, value = m.Value }),
         };
         Mirror("tuning", t, State, t.AutoLog, t.Profiles);

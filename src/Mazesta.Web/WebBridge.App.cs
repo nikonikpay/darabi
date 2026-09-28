@@ -57,7 +57,6 @@ public sealed partial class WebBridge
         var overlay = _sp.GetRequiredService<Desktop.Services.OverlayService>();
         void OnOverlay(bool v) => Push("overlay", v);
         overlay.VisibilityChanged += OnOverlay; _cleanup.Add(() => overlay.VisibilityChanged -= OnOverlay);
-        _window.Dispatcher.BeginInvoke(() => overlay.RegisterHotkey(_window));
     }
 
     private static object Provider(ProviderStatus s) => new

@@ -14,6 +14,6 @@ internal static class Program
         var paths = AppPaths.Detect();
         var intervals = TrayIntervals.Read(paths.ConfigFile);
         ApplicationConfiguration.Initialize();
-        Application.Run(new TrayContext(intervals, TrayCheckLog.FileIn(paths)));
+        Application.Run(new TrayContext(intervals, TrayCheckLog.FileIn(paths), paths));
     }
 }

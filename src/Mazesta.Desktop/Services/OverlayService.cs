@@ -5,7 +5,8 @@ namespace Mazesta.Desktop.Services;
 /// <summary>
 /// Shows and hides the on-screen overlay and remembers it (and its corner) in the settings. Ctrl+Shift+O toggles it from anywhere, also while a
 /// game has the keyboard. The overlay window and its view model are made on first use and kept; hidden, the view model ignores the monitor's
-/// snapshots, so an unused overlay costs nothing. It is not owned by the main window, so it stays up while the app is minimised.
+/// snapshots, so an unused overlay costs nothing. It is not owned by the main window, so it stays up while the app is minimised - and, when the
+/// tray runs, after the main window is closed (the app then lives on for the overlay alone; see Mazesta.Web's App).
 /// What it shows (items, charts, preset), its opacity and size come from the settings; changing them rebuilds the view model in place.
 /// </summary>
 public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null) : IDisposable
@@ -87,14 +88,16 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     public void SetCorner(string corner) { if (!Corners.Contains(corner)) return; config.OverlayCorner = corner; _window?.SetCorner(corner); }
 
-    /// <summary>Registers the global shortcut on the main window. It can fail when another program already holds it; the overlay still works
-    /// from its button, so that is only logged by the caller.</summary>
-    public bool RegisterHotkey(Window owner)
+    /// <summary>Registers the global shortcut on a hidden message-only window of its own, so it works with or without the main window. It can
+    /// fail when another program already holds it; the overlay still works from its button and the tray, so that is only logged by the caller.</summary>
+    public bool RegisterHotkey()
     {
-        _hwnd = new WindowInteropHelper(owner).EnsureHandle();
-        _source = HwndSource.FromHwnd(_hwnd); _source?.AddHook(WndProc);
+        if (_source is not null) return true;
+        _source = new HwndSource(new HwndSourceParameters("Mazesta overlay hotkey") { ParentWindow = HwndMessage, WindowStyle = 0, Width = 0, Height = 0 });
+        _source.AddHook(WndProc); _hwnd = _source.Handle;
         return RegisterHotKey(_hwnd, HotkeyId, ModControl | ModShift | ModNoRepeat, VkO);
     }
+    private static readonly nint HwndMessage = -3;
 
     private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
     {
@@ -105,7 +108,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     public void Dispose()
     {
         if (_hwnd != 0) UnregisterHotKey(_hwnd, HotkeyId);
-        _source?.RemoveHook(WndProc);
+        _source?.RemoveHook(WndProc); _source?.Dispose();
         _window?.Close(); _vm?.Dispose();
     }
 
