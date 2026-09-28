@@ -6,7 +6,7 @@ public class SmartCheckTests
     private static readonly DateTimeOffset T0 = new(2026, 9, 25, 0, 0, 0, TimeSpan.Zero);
     private sealed class Drives(params DriveHealth[] drives) : IDriveHealthProvider { public IReadOnlyList<DriveHealth> Read() => drives; }
     private static Task<TestRunResult> Run(params DriveHealth[] drives) => new SmartCheckExecutor(new Drives(drives)).RunAsync(new TestExecutionRequest(5, new FakeClock(T0), null, null), CancellationToken.None);
-    private static DriveHealth Ssd(string status = "Healthy", long? readErrors = 0) => new("MSI M390 1TB", "S1", status, 3, 38, 61, readErrors, 0, 1234);
+    private static DriveHealth Ssd(string status = "Healthy", long? readErrors = 0) => new("MSI M390 1TB", "S1", status, 3, 38, 61, readErrors, 0, 1234, "NVMe");
 
     [Fact] public async Task Healthy_drives_pass_with_their_counters_as_evidence()
     {

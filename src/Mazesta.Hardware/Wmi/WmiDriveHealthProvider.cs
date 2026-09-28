@@ -20,7 +20,8 @@ public static class WmiDriveHealthParser
             N(d, "HealthStatus") switch { 0 => "Healthy", 1 => "Warning", 2 => "Unhealthy", null => null, _ => "Unknown" },
             hdd ? null : (int?)N(c, "Wear"),                            // an HDD has no wear counter; Windows reports 0 for it
             Positive(c, "Temperature"), Positive(c, "TemperatureMax"),  // 0 °C means "not reported", never a running drive's temperature
-            N(c, "ReadErrorsUncorrected"), N(c, "WriteErrorsUncorrected"), N(c, "PowerOnHours"));
+            N(c, "ReadErrorsUncorrected"), N(c, "WriteErrorsUncorrected"), N(c, "PowerOnHours"),
+            N(d, "BusType") switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 3 => "ATA", null => null, var b => $"Bus {b}" });
     })];
 
     private static string? S(IReadOnlyDictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) && v is string s && !string.IsNullOrWhiteSpace(s) ? s.Trim() : null;

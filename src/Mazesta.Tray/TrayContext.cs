@@ -54,7 +54,7 @@ internal sealed class TrayContext : ApplicationContext
             var sample = await Task.Run(TakeSample);
             var now = DateTimeOffset.UtcNow;
             var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
-            check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null);
+            check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
             foreach (var a in alerts) Notify(a);
         }
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "temps", null, null, [], [], e.Message); }

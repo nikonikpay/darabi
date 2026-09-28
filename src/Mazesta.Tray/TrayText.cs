@@ -32,12 +32,19 @@ internal static class TrayText
         _ => a.Kind.ToString()
     };
 
-    public static string DriveProblem(TrayDrive d) => $"دیسک {d.Name} نیاز به بررسی دارد (وضعیت ویندوز: {Status(d.Status)}).";
+    public const string HotSpot = "نقطه‌ی داغ";
+
+    public static string DriveProblem(TrayDrive d) => d.Status is "Warning" or "Unhealthy"
+        ? $"دیسک {d.Name}: ویندوز از روی SMART آن را «{Status(d.Status)}» گزارش کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید."
+        : $"دیسک {d.Name}: خطای اصلاح‌نشده‌ی خواندن یا نوشتن ثبت کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید.";
 
     public static string Status(string? status) => status switch
     {
         "Healthy" => "سالم", "Warning" => "هشدار", "Unhealthy" => "ناسالم", null => NotAvailable, _ => "نامشخص"
     };
+
+    /// <summary>The verdict with the life left in brackets when the drive has a wear counter: «سالم (98%)».</summary>
+    public static string DriveHealth(TrayDrive d) => Status(d.Status) + (DriveAttention.HealthPercent(d.WearPercent) is { } p ? $" ({p}%)" : "");
 
     public static string Tooltip(TrayCheck? temps)
     {

@@ -6,7 +6,8 @@ public sealed record TrayDrive(string Name, string? Status, int? WearPercent, do
 
 /// <summary>One tray check: <see cref="Kind"/> is "temps" (a sensor poll) or "health" (the drives). <see cref="Problems"/> are the alerts it raised,
 /// in words; <see cref="Error"/> is why the check itself failed. A value the check could not read is null.</summary>
-public sealed record TrayCheck(DateTimeOffset Time, string Kind, double? CpuTempC, double? GpuTempC, IReadOnlyList<TrayDrive> Drives, IReadOnlyList<string> Problems, string? Error)
+public sealed record TrayCheck(DateTimeOffset Time, string Kind, double? CpuTempC, double? GpuTempC, IReadOnlyList<TrayDrive> Drives, IReadOnlyList<string> Problems, string? Error,
+    double? GpuHotSpotC = null)   // absent in checks logged before the hot spot was read
 {
     [JsonIgnore] public bool IsProblem => Problems.Count > 0 || Error is not null;
 }

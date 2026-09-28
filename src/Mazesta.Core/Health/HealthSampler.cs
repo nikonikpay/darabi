@@ -13,6 +13,6 @@ public static class HealthSampler
         double? First(params SensorRole[] roles) { foreach (var role in roles) if (Values(role) is var v && v.Any()) return v.First(); return null; }
 
         return new(Max(SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp), Max(SensorRole.GpuCoreTemp),
-                   First(SensorRole.CpuTotalLoad), First(SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
+                   First(SensorRole.CpuTotalLoad), First(SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage), Max(SensorRole.GpuHotSpotTemp));
     }
 }
