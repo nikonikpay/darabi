@@ -56,7 +56,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
 
         string detail = SensorEvidence.Join($"matrix load {MatrixSize}x{MatrixSize}", $"threads={_threadCount}", $"iterations={totalIterations}",
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuTotalLoad, started, finished)?.Format("measured CPU load", "%"),
-            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackageTemp, started, finished)?.Format("CPU package", "°C", includeMax: true));
+            SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         return new TestRunResult(Definition.Id, totalErrors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, finished, totalErrors, detail);
     }
 

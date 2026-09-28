@@ -272,7 +272,7 @@
     <value>Sensor engine stopped after an internal error. See the log.</value>
   </data>
   <data name="Test_Cpu_Matrix" xml:space="preserve">
-    <value>CPU Matrix Load</value>
+    <value>CPU multi-core (matrix load, all threads)</value>
   </data>
   <data name="Test_Status_Starting" xml:space="preserve">
     <value>Starting</value>
@@ -1053,5 +1053,38 @@
   </data>
   <data name="Test_Unavailable_NoRayTracing" xml:space="preserve">
     <value>Not available: this graphics card has no hardware ray tracing (DirectX Raytracing 1.1).</value>
+  </data>
+  <data name="Test_Cpu_SingleCore" xml:space="preserve">
+    <value>CPU single-core, core by core (variable boost)</value>
+  </data>
+  <data name="Test_Cpu_Linpack" xml:space="preserve">
+    <value>CPU Linpack (LU solve, residual check)</value>
+  </data>
+  <data name="Test_Cpu_Vector" xml:space="preserve">
+    <value>CPU AVX/FMA maximum heat</value>
+  </data>
+  <data name="Test_Option_SecondsPerCore" xml:space="preserve">
+    <value>Seconds per core</value>
+  </data>
+  <data name="Test_Option_Load" xml:space="preserve">
+    <value>Load</value>
+  </data>
+  <data name="Test_Load_Variable" xml:space="preserve">
+    <value>Variable (enters and leaves boost)</value>
+  </data>
+  <data name="Test_Load_Steady" xml:space="preserve">
+    <value>Steady</value>
+  </data>
+  <data name="Test_Option_LinpackSize" xml:space="preserve">
+    <value>Matrix size (0 = automatic)</value>
+  </data>
+  <data name="Test_Option_VectorWidth" xml:space="preserve">
+    <value>Instructions</value>
+  </data>
+  <data name="Test_Vector_Auto" xml:space="preserve">
+    <value>Widest the CPU has</value>
+  </data>
+  <data name="Test_Unavailable_NoVectorWidth" xml:space="preserve">
+    <value>Not available: this CPU does not have the chosen instruction set.</value>
   </data>
 </root>

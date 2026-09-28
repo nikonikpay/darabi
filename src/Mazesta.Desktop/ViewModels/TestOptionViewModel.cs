@@ -17,7 +17,7 @@ public sealed partial class TestOptionViewModel : ObservableObject
     public TestOptionViewModel(TestOption option)
     {
         Option = option;
-        Choices = option.Choices?.Invoke() ?? [];
+        Choices = [.. (option.Choices?.Invoke() ?? []).Select(c => c.Localized ? c with { Label = Loc.Get(c.Label), Localized = false } : c)];
         _text = option.Default;
         _selectedChoice = Choices.FirstOrDefault(c => c.Value == option.Default) ?? Choices.FirstOrDefault();
     }

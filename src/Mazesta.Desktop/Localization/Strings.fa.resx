@@ -272,7 +272,7 @@
     <value>موتور سنسور پس از یک خطای داخلی متوقف شد. لاگ را ببینید.</value>
   </data>
   <data name="Test_Cpu_Matrix" xml:space="preserve">
-    <value>بار ماتریسی CPU</value>
+    <value>CPU چندهسته‌ای (بار ماتریسی، همه رشته‌ها)</value>
   </data>
   <data name="Test_Status_Starting" xml:space="preserve">
     <value>در حال شروع</value>
@@ -1053,5 +1053,38 @@
   </data>
   <data name="Test_Unavailable_NoRayTracing" xml:space="preserve">
     <value>در دسترس نیست: این کارت گرافیک Ray Tracing سخت‌افزاری (DirectX Raytracing 1.1) ندارد.</value>
+  </data>
+  <data name="Test_Cpu_SingleCore" xml:space="preserve">
+    <value>CPU تک‌هسته‌ای، هسته به هسته (بوست متغیر)</value>
+  </data>
+  <data name="Test_Cpu_Linpack" xml:space="preserve">
+    <value>CPU لین‌پک (حل LU با بررسی باقیمانده)</value>
+  </data>
+  <data name="Test_Cpu_Vector" xml:space="preserve">
+    <value>CPU حداکثر حرارت AVX/FMA</value>
+  </data>
+  <data name="Test_Option_SecondsPerCore" xml:space="preserve">
+    <value>ثانیه برای هر هسته</value>
+  </data>
+  <data name="Test_Option_Load" xml:space="preserve">
+    <value>نوع بار</value>
+  </data>
+  <data name="Test_Load_Variable" xml:space="preserve">
+    <value>متغیر (ورود و خروج از بوست)</value>
+  </data>
+  <data name="Test_Load_Steady" xml:space="preserve">
+    <value>ثابت</value>
+  </data>
+  <data name="Test_Option_LinpackSize" xml:space="preserve">
+    <value>اندازه ماتریس (۰ = خودکار)</value>
+  </data>
+  <data name="Test_Option_VectorWidth" xml:space="preserve">
+    <value>دستورالعمل‌ها</value>
+  </data>
+  <data name="Test_Vector_Auto" xml:space="preserve">
+    <value>پهن‌ترین موجود در CPU</value>
+  </data>
+  <data name="Test_Unavailable_NoVectorWidth" xml:space="preserve">
+    <value>در دسترس نیست: این CPU مجموعه دستورالعمل انتخاب‌شده را ندارد.</value>
   </data>
 </root>

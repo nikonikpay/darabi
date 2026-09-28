@@ -17,6 +17,9 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IHardwareErrorSource, WheaErrorSource>();
 
         s.AddSingleton<ITestExecutor, CpuMatrixStressExecutor>();
+        s.AddSingleton<ITestExecutor>(new CpuCoreCycleExecutor());
+        s.AddSingleton<ITestExecutor, LinpackExecutor>();
+        s.AddSingleton<ITestExecutor, CpuVectorStressExecutor>();
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();

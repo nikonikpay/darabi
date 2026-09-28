@@ -30,6 +30,17 @@ public static class SensorEvidence
         return samples.Count == 0 ? null : new(samples.Average(), samples.Max(), samples.Count);
     }
 
+    /// <summary>The first of <paramref name="roles"/> the machine measured over the window: the same quantity is a different sensor per vendor.</summary>
+    public static SensorStat? ReadFirst(PollingEngine? engine, HardwareKind kind, DateTimeOffset from, DateTimeOffset to, params SensorRole[] roles)
+    {
+        foreach (var role in roles) if (Read(engine, kind, role, from, to) is { } s) return s;
+        return null;
+    }
+
+    /// <summary>The CPU's own temperature: the package sensor on Intel, Tctl/Tdie on AMD (which has no "package" sensor).</summary>
+    public static SensorStat? CpuTemperature(PollingEngine? engine, DateTimeOffset from, DateTimeOffset to)
+        => ReadFirst(engine, HardwareKind.Cpu, from, to, SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp);
+
     /// <summary>The most recent valid reading of a role, or null. A test uses it to size itself from what the
     /// machine reports right now (how much VRAM is free) instead of assuming.</summary>
     public static double? Latest(PollingEngine? engine, HardwareKind kind, SensorRole role)

@@ -1,4 +1,4 @@
-using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Cpu;
+using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Cpu; using Mazesta.Diagnostics.Evidence;
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>Double-precision throughput of the same 64x64 matrix multiply the CPU load test uses, on one thread or on
@@ -31,7 +31,7 @@ public sealed class CpuBenchmark(bool allThreads) : IBenchmark
         }
         else metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuEffectiveClock, started, finished, "Bench_Cpu_ClockPeak", Unit.MegaHertz, peak: true);
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished, "Bench_Cpu_Power", Unit.Watt);
-        metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackageTemp, started, finished, "Bench_Cpu_TempMax", Unit.Celsius, peak: true);
+        if (SensorEvidence.CpuTemperature(request.Engine, started, finished) is { } temp) metrics.Add(new("Bench_Cpu_TempMax", temp.Max, Units.Symbol(Unit.Celsius)));
         return new(Definition.Id, BenchmarkStatus.Completed, started, finished, metrics, $"matrix {N}x{N} double on {threads} thread(s) for {request.DurationSeconds} s");
     }
 

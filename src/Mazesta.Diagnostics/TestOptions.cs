@@ -2,7 +2,8 @@ namespace Mazesta.Diagnostics;
 
 public enum TestOptionKind { Choice, Integer, Text }
 
-public sealed record OptionChoice(string Value, string Label);
+/// <param name="Localized">The label is a localisation key (a fixed choice such as a load pattern), not data such as a drive name.</param>
+public sealed record OptionChoice(string Value, string Label, bool Localized = false);
 
 /// <summary>One thing the technician may set for a test beyond duration and repeat (which drive, how many
 /// MB, which GPU). Declared by the test itself, so the Test Center renders any test's options without
