@@ -17,19 +17,23 @@ public interface IFrameRateSource
 /// <summary>
 /// Frame rates from Windows' own event tracing (ETW), with no driver and no injected code: a real-time trace session listens to the DXGI and
 /// Direct3D 9 providers' "present" events, which every Direct3D 10/11/12 and 9 program raises once per frame, and counts them per process.
-/// The overlay shows the program whose window is in front. Programs drawing with Vulkan or OpenGL raise no such events, so their frame rate
-/// is not measured (the overlay then says so rather than showing a number). The session needs administrator rights, which the app has.
-/// It runs only while the overlay shows a frame item: <see cref="Stop"/> closes the session and its thread.
+/// The graphics kernel's own Present event (DxgKrnl, "Present" keyword) is counted too, for programs that raise neither - Vulkan and OpenGL
+/// presents reach the kernel the same way; on the dev box it fired exactly once per DXGI present (471 = 471, 303 = 303 in five seconds), so it
+/// is used only for a process with no API-level presents and never adds to them. Which program is shown is <see cref="FrameTarget"/>'s choice.
+/// The session needs administrator rights, which the app has. It runs only while the overlay shows a frame item: <see cref="Stop"/> closes it.
 /// </summary>
 public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposable
 {
     private const string SessionName = "Mazesta-FrameRate";
-    private static readonly Guid DxgiProvider = new("CA11C036-0102-4A2D-A6AD-F03CFED5D3C9"), D3D9Provider = new("783ACA0A-790E-4D7F-8451-AA850511C6B9");
-    private const ushort DxgiPresentStart = 42, D3D9PresentStart = 1;
+    private static readonly Guid DxgiProvider = new("CA11C036-0102-4A2D-A6AD-F03CFED5D3C9"), D3D9Provider = new("783ACA0A-790E-4D7F-8451-AA850511C6B9"),
+        DxgKrnlProvider = new("802EC45A-1E99-4B83-9920-87C98277BA9D");
+    private const ushort DxgiPresentStart = 42, D3D9PresentStart = 1, DxgKrnlPresent = 184;
+    private const ulong DxgKrnlPresentKeyword = 0x8000000;
     private const int PropertiesSize = 120, NameBytes = 1024;
     private readonly object _lock = new();
-    private readonly Dictionary<int, Queue<double>> _presents = [];
+    private readonly Dictionary<int, Queue<double>> _presents = [], _kernelPresents = [];
     private readonly Dictionary<int, string?> _names = [];
+    private readonly HashSet<int> _excluded = [];
     private EventRecordCallback? _callback;   // kept alive while the session runs: native code calls it
     private ulong _session, _trace; private IntPtr _props; private Thread? _thread;
 
@@ -47,12 +51,14 @@ public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposabl
                 uint status = StartSession();
                 if (status == ErrorAlreadyExists) { ControlTraceW(0, SessionName, Properties(), ControlStop); status = StartSession(); }   // a session left by a crash
                 if (status != 0) return Fail($"StartTrace {status}{(status == ErrorAccessDenied ? " (needs administrator)" : "")}");
-                foreach (var provider in new[] { DxgiProvider, D3D9Provider })
+                foreach (var (provider, keywords) in new[] { (DxgiProvider, 0UL), (D3D9Provider, 0UL), (DxgKrnlProvider, DxgKrnlPresentKeyword) })
                 {
                     var g = provider;
-                    uint e = EnableTraceEx2(_session, ref g, EnableProvider, 4, 0, 0, 0, IntPtr.Zero);
+                    uint e = EnableTraceEx2(_session, ref g, EnableProvider, 4, keywords, 0, 0, IntPtr.Zero);
                     if (e != 0) log.LogWarning("Frame rate: provider {Provider} not enabled ({Status})", provider, e);
                 }
+                _excluded.Clear(); _excluded.Add(Environment.ProcessId);
+                foreach (var p in Process.GetProcessesByName("dwm")) using (p) _excluded.Add(p.Id);
                 _callback = OnEvent;
                 var logfile = new EventTraceLogfile { LoggerName = SessionName, ProcessTraceMode = ProcessTraceModeRealTime | ProcessTraceModeEventRecord, EventRecordCallback = Marshal.GetFunctionPointerForDelegate(_callback) };
                 _trace = OpenTraceW(ref logfile);
@@ -97,14 +103,18 @@ public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposabl
     {
         // EVENT_RECORD.EventHeader: ProcessId at 12, TimeStamp at 16, ProviderId at 24, EventDescriptor.Id at 40.
         ushort id = (ushort)Marshal.ReadInt16(record, 40);
-        if (id != DxgiPresentStart && id != D3D9PresentStart) return;
+        if (id != DxgiPresentStart && id != D3D9PresentStart && id != DxgKrnlPresent) return;
         var provider = Marshal.PtrToStructure<Guid>(record + 24);
-        if (!(id == DxgiPresentStart && provider == DxgiProvider) && !(id == D3D9PresentStart && provider == D3D9Provider)) return;
+        Dictionary<int, Queue<double>> into;
+        if ((id == DxgiPresentStart && provider == DxgiProvider) || (id == D3D9PresentStart && provider == D3D9Provider)) into = _presents;
+        else if (id == DxgKrnlPresent && provider == DxgKrnlProvider) into = _kernelPresents;
+        else return;
         int pid = Marshal.ReadInt32(record, 12);
+        if (pid is 0 or 4) return;   // the idle and system processes carry the kernel's own work, never a program's frames
         double t = Marshal.ReadInt64(record, 16) / 1e7;   // FILETIME: 100 ns units
         lock (_lock)
         {
-            if (!_presents.TryGetValue(pid, out var q)) _presents[pid] = q = new Queue<double>();
+            if (!into.TryGetValue(pid, out var q)) into[pid] = q = new Queue<double>();
             q.Enqueue(t);
             while (q.Count > 0 && t - q.Peek() > FrameTimeStats.LowWindowSeconds + 1) q.Dequeue();
         }
@@ -112,26 +122,57 @@ public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposabl
 
     public FrameRateReading? Read()
     {
-        int pid = ForegroundProcess();
-        if (pid == 0) return null;
-        double[] presents; string? name;
+        double now = DateTime.UtcNow.ToFileTimeUtc() / 1e7;
+        int foreground = ForegroundProcess(out var hwnd);
+        Dictionary<int, double[]> frames = [];
         lock (_lock)
         {
-            if (!_presents.TryGetValue(pid, out var q)) return null;
-            presents = [.. q];
-            if (!_names.TryGetValue(pid, out name)) _names[pid] = name = Name(pid);
+            // API-level presents where a process has them; the kernel count only for one that raises none (Vulkan, OpenGL).
+            foreach (var (pid, q) in _presents) if (q.Count > 0) frames[pid] = [.. q];
+            foreach (var (pid, q) in _kernelPresents) if (q.Count > 0 && !frames.ContainsKey(pid)) frames[pid] = [.. q];
         }
-        return FrameTimeStats.Compute(presents, DateTime.UtcNow.ToFileTimeUtc() / 1e7, pid, name);
+        var lastSecond = frames.ToDictionary(kv => kv.Key, kv => now - kv.Value[^1] > FrameTimeStats.StaleSeconds ? 0 : kv.Value.Count(t => kv.Value[^1] - t <= 1.0));
+        Dictionary<int, int>? parents = null;
+        int? ParentOf(int pid) { parents ??= ParentProcesses(); return parents.TryGetValue(pid, out var p) ? p : null; }
+        if (FrameTarget.Choose(foreground, lastSecond, ParentOf, foreground == 0 ? [] : ChildWindowOwners(hwnd), _excluded) is not { } target) return null;
+        // A child process drawing for the window in front (a browser's GPU process) is named after the program in front.
+        int named = target.Link == FrameLink.Descendant ? foreground : target.Pid;
+        string? name;
+        lock (_lock) if (!_names.TryGetValue(named, out name)) _names[named] = name = Name(named);
+        return FrameTimeStats.Compute(frames[target.Pid], now, target.Pid, name);
     }
 
     private static string? Name(int pid) { try { using var p = Process.GetProcessById(pid); return p.ProcessName; } catch (Exception e) when (e is ArgumentException or InvalidOperationException) { return null; } }
 
-    private static int ForegroundProcess()
+    private static int ForegroundProcess(out IntPtr hwnd)
     {
-        var hwnd = GetForegroundWindow();
+        hwnd = GetForegroundWindow();
         if (hwnd == IntPtr.Zero) return 0;
         _ = GetWindowThreadProcessId(hwnd, out uint pid);
         return (int)pid;
+    }
+
+    /// <summary>Processes owning a child window of <paramref name="hwnd"/>: a Store game's CoreWindow sits inside ApplicationFrameHost's frame.</summary>
+    private static List<int> ChildWindowOwners(IntPtr hwnd)
+    {
+        var owners = new List<int>();
+        EnumChildWindows(hwnd, (child, lParam) => { _ = GetWindowThreadProcessId(child, out uint pid); if (pid != 0 && !owners.Contains((int)pid)) owners.Add((int)pid); return true; }, IntPtr.Zero);
+        return owners;
+    }
+
+    /// <summary>Every process's parent, from one Toolhelp snapshot; taken only when the program in front does not present itself.</summary>
+    private static Dictionary<int, int> ParentProcesses()
+    {
+        var map = new Dictionary<int, int>();
+        IntPtr snap = CreateToolhelp32Snapshot(SnapProcess, 0);
+        if (snap == new IntPtr(-1)) return map;
+        try
+        {
+            var e = new ProcessEntry32 { Size = (uint)Marshal.SizeOf<ProcessEntry32>() };
+            for (bool ok = Process32FirstW(snap, ref e); ok; ok = Process32NextW(snap, ref e)) map[(int)e.ProcessId] = (int)e.ParentProcessId;
+        }
+        finally { CloseHandle(snap); }
+        return map;
     }
 
     /// <summary>Closes the session; the trace thread ends on its own once Windows stops delivering. It is joined outside the lock, because
@@ -149,7 +190,7 @@ public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposabl
         if (_trace != 0 && _trace != InvalidHandle) CloseTrace(_trace);
         _trace = 0;
         if (_props != IntPtr.Zero) { Marshal.FreeHGlobal(_props); _props = IntPtr.Zero; }
-        _presents.Clear(); _names.Clear();
+        _presents.Clear(); _kernelPresents.Clear(); _names.Clear();
         var thread = _thread; _thread = null;
         return thread;   // the callback stays referenced: the thread may still call it until it ends
     }
@@ -191,4 +232,16 @@ public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposabl
     [DllImport("advapi32.dll")] private static extern uint CloseTrace(ulong handle);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
+    private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
+    [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindowsProc callback, IntPtr lParam);
+    private const uint SnapProcess = 0x2;
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] private struct ProcessEntry32
+    {
+        public uint Size, Usage, ProcessId; public IntPtr DefaultHeapId; public uint ModuleId, Threads, ParentProcessId; public int PriorityClassBase; public uint Flags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string ExeFile;
+    }
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint processId);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool Process32FirstW(IntPtr snapshot, ref ProcessEntry32 entry);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool Process32NextW(IntPtr snapshot, ref ProcessEntry32 entry);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
 }

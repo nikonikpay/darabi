@@ -57,6 +57,22 @@ public class OverlayTests
         Assert.Null(FrameTimeStats.Compute(f, f[^1] + 3, 1, null));
         Assert.Null(FrameTimeStats.Compute([1.0], 1.0, 1, null));
     }
+
+    private static readonly IReadOnlySet<int> Dwm = new HashSet<int> { 90 };
+    private static (int, FrameLink)? Target(int fg, Dictionary<int, int> frames, Dictionary<int, int>? parents = null, int[]? children = null)
+        => FrameTarget.Choose(fg, frames, p => parents is not null && parents.TryGetValue(p, out var x) ? x : null, children ?? [], Dwm);
+
+    [Fact] public void The_program_in_front_wins_when_it_presents() => Assert.Equal((10, FrameLink.Foreground), Target(10, new() { [10] = 60, [20] = 144 }));
+    [Fact] public void A_store_game_draws_in_the_process_owning_the_child_window()
+        => Assert.Equal((30, FrameLink.ChildWindow), Target(10, new() { [30] = 90, [20] = 144 }, children: [30]));
+    [Fact] public void A_browser_draws_in_a_descendant_gpu_process()
+        => Assert.Equal((12, FrameLink.Descendant), Target(10, new() { [12] = 60, [20] = 144 }, new() { [11] = 10, [12] = 11 }));
+    [Fact] public void Nothing_linked_falls_back_to_the_busiest_program_but_never_the_compositor_or_a_trickle()
+    {
+        Assert.Equal((20, FrameLink.Busiest), Target(10, new() { [20] = 144, [90] = 240, [21] = 5 }));
+        Assert.Null(Target(10, new() { [90] = 240, [21] = FrameTarget.MinFallbackFrames - 1 }));
+    }
+    [Fact] public void A_parent_cycle_from_reused_ids_ends() => Assert.Equal((20, FrameLink.Busiest), Target(10, new() { [12] = 3, [20] = 60 }, new() { [12] = 13, [13] = 12 }));
 }
 
 public class OverlayPinnedTests
