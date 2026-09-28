@@ -1,4 +1,4 @@
-param([string]$Exe = "artifacts/Mazesta-Test/MazestaTest.exe", [int]$SettleSeconds = 300, [int]$SampleSeconds = 30)
+param([string]$Exe = "artifacts/Mazesta-Web/MazestaWeb.exe", [int]$SettleSeconds = 300, [int]$SampleSeconds = 30)
 $p = Start-Process -FilePath $Exe -PassThru -Verb RunAs
 Start-Sleep -Seconds $SettleSeconds
 $p.Refresh(); $cpu0 = $p.TotalProcessorTime; $t0 = Get-Date

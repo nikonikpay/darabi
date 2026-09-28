@@ -12,6 +12,7 @@
         Title="Mazesta Overlay" WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True"
         ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Focusable="False">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <FontFamily x:Key="Ov.Font">Bahnschrift SemiCondensed, Segoe UI Variable Text, Segoe UI</FontFamily>
         <FontFamily x:Key="Ov.FontWide">Bahnschrift, Segoe UI Variable Text, Segoe UI</FontFamily>
         <SolidColorBrush x:Key="Ov.Label" Color="#FFA4A8AD" />

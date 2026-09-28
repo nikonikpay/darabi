@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- The app layer under the web edition (Mazesta.Web): composition, the page view models the web bridge drives, the services (reports and
+       PDF printing, the overlay), the string tables, and the one WPF window still drawn natively, the on-screen overlay. It was the WPF
+       edition's own app until that edition was retired (tag wpf-edition-final); it is a library now. The assembly keeps its old name so the
+       overlay's pack URIs and the resource names stay as they were. The fonts and the icon here are linked into the web edition's exe. -->
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <AssemblyName>MazestaTest</AssemblyName>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.debug.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\mazesta.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
   </PropertyGroup>
   <ItemGroup>
@@ -23,29 +24,13 @@
     <ProjectReference Include="../Mazesta.Monitoring/Mazesta.Monitoring.csproj" />
     <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
     <ProjectReference Include="../Mazesta.Reporting/Mazesta.Reporting.csproj" />
-    <!-- Built first and shipped next to the app (see BundleTray): Settings starts, stops and registers it. Not referenced as code. -->
-    <ProjectReference Include="../Mazesta.Tray/Mazesta.Tray.csproj" ReferenceOutputAssembly="false" OutputItemType="TrayOutput" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Fonts\*.ttf" />
-    <Resource Include="Assets\*.jpg;Assets\*.png;Assets\*.ico" />
+    <None Include="Fonts\*.ttf;Assets\*" />
     <EmbeddedResource Update="Localization\*.resx" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Desktop.Tests" />
-    <!-- The web edition hosts the same engines and view models. -->
     <InternalsVisibleTo Include="MazestaWeb" />
   </ItemGroup>
-  <!-- @(TrayOutput) is the tray's built dll, reported by the project reference itself; its apphost, deps and runtimeconfig sit beside it. -->
-  <Target Name="BundleTray" AfterTargets="Build" Condition="'@(TrayOutput)' != ''">
-    <ItemGroup>
-      <TrayFile Include="@(TrayOutput)" />
-      <TrayFile Include="@(TrayOutput->'%(RootDir)%(Directory)MazestaTray.exe');@(TrayOutput->'%(RootDir)%(Directory)MazestaTray.runtimeconfig.json');@(TrayOutput->'%(RootDir)%(Directory)MazestaTray.deps.json')" />
-    </ItemGroup>
-    <Copy SourceFiles="@(TrayFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
-  </Target>
-  <!-- The SDK already publishes the tray's apphost, deps and runtimeconfig for a project reference; only its dll is missing. -->
-  <Target Name="PublishTrayDll" AfterTargets="ComputeResolvedFilesToPublishList">
-    <ItemGroup><ResolvedFileToPublish Include="@(TrayOutput)" RelativePath="%(Filename)%(Extension)" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
-  </Target>
 </Project>

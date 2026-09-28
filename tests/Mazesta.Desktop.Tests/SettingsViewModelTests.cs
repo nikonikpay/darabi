@@ -16,8 +16,7 @@ public class SettingsViewModelTests : IDisposable
     {
         var tray = new FakeTray(); var cfg = new AppConfig(); var store = new JsonStore<AppConfig>(Path.Combine(_dir, "appconfig.json"), new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, NullLogger.Instance);
         var c = new FakeClock(DateTimeOffset.UnixEpoch); var opts = new MonitoringOptions(); var e = new PollingEngine(new FakeSensorProvider(), c, opts, new BoundedEventLog(c, NullLogger.Instance));
-        var shell = new ShellViewModel(e, new Microsoft.Extensions.DependencyInjection.ServiceCollection().BuildServiceProvider());
-        return (new SettingsViewModel(cfg, store, AppPaths.Create(_dir), e, opts, shell, _ => { }, tray), cfg, store, e, tray);
+        return (new SettingsViewModel(cfg, store, AppPaths.Create(_dir), e, opts, _ => { }, tray), cfg, store, e, tray);
     }
     [Fact] public void Persian_digits_are_accepted_for_intervals()
     { var (vm, cfg, _, e, _) = Build(); vm.FastIntervalText = "۵"; vm.StorageIntervalText = "۱۲۰"; vm.SaveCommand.Execute(null); Assert.Equal((5, 120), (cfg.FastIntervalSeconds, cfg.StorageIntervalSeconds)); Assert.Equal(TimeSpan.FromSeconds(5), e.FastInterval); }

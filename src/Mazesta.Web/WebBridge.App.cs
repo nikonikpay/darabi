@@ -8,7 +8,7 @@ public sealed partial class WebBridge
     /// <summary>The shop links the page may open; the page names one, it never supplies an address.</summary>
     private static readonly Dictionary<string, string> Links = new()
     {
-        ["site"] = "https://www.dfmrendering.com/", ["contact"] = "https://www.dfmrendering.com/contactus/", ["pawnio"] = ShellViewModel.PawnIoUrl,
+        ["site"] = "https://www.dfmrendering.com/", ["contact"] = "https://www.dfmrendering.com/contactus/", ["pawnio"] = ProviderText.PawnIoUrl,
         ["shop"] = "https://www.dfmrendering.com/shop/",
         ["sales-whatsapp"] = "https://wa.me/989197588700", ["support-whatsapp"] = "https://wa.me/989197588701",
         ["support-telegram"] = "https://t.me/dfm_support", ["channel-telegram"] = "https://t.me/DFMRendering", ["instagram"] = "https://www.instagram.com/dfm.rendering/",
@@ -25,7 +25,7 @@ public sealed partial class WebBridge
 
     private void RegisterApp()
     {
-        var engine = _sp.GetRequiredService<PollingEngine>(); var shell = _sp.GetRequiredService<ShellViewModel>();
+        var engine = _sp.GetRequiredService<PollingEngine>();
         Method("app.boot", _ => new
         {
             language = _config.Language, rtl = Loc.IsRtl, strings = Strings(),
@@ -40,8 +40,9 @@ public sealed partial class WebBridge
         MethodAsync("shop.product", async p => await shop.GetAsync(Bool(p, "another")).ConfigureAwait(true));
         Method("shop.open", p => { var url = Str(p, "url"); if (ShopFeed.IsShopLink(url)) Open(url); return null; });
         Method("app.hardware", _ => Hardware(engine));
-        Method("app.setServiceNumber", p => { shell.ServiceNumber = Str(p, "value"); return shell.ServiceNumber; });
-        Method("app.togglePause", _ => { shell.TogglePauseCommand.Execute(null); return engine.State == EngineState.Paused; });
+        // The service job being worked on, printed on every report; Persian digits become Latin so the number reads the same everywhere.
+        Method("app.setServiceNumber", p => _config.ServiceNumber = Core.Text.PersianDigits.Normalize(Str(p, "value") ?? "").Trim());
+        Method("app.togglePause", _ => { if (engine.State == EngineState.Paused) engine.Resume(); else engine.Pause(); return engine.State == EngineState.Paused; });
         Method("app.openLink", p => { if (Links.TryGetValue(Str(p, "key"), out var url)) Open(url); return null; });
         Method("app.toggleOverlay", _ => { var o = _sp.GetRequiredService<Desktop.Services.OverlayService>(); o.Toggle(); return o.IsVisible; });
         Method("app.navReady", _ => engine.Provider.Status.State is ProviderState.Ready or ProviderState.Degraded or ProviderState.Failed);
@@ -61,8 +62,8 @@ public sealed partial class WebBridge
 
     private static object Provider(ProviderStatus s) => new
     {
-        state = s.State.ToString(), text = ShellViewModel.Describe(s), count = s.SensorCount,
-        pawnIo = s.ReasonKey == "Provider.PawnIoMissing", reason = s.ReasonKey is null ? null : Loc.Get(s.ReasonKey),
+        state = s.State.ToString(), text = ProviderText.Describe(s), count = s.SensorCount,
+        pawnIo = s.ReasonKey == ProviderText.PawnIoMissing, reason = s.ReasonKey is null ? null : Loc.Get(s.ReasonKey),
     };
 
     /// <summary>Every node and sensor, flat: the page groups, filters and formats them itself.</summary>
@@ -72,8 +73,8 @@ public sealed partial class WebBridge
         sensors = n.Sensors.OrderBy(s => s.Ordinal).Select(s => new { id = s.Id.Value, name = s.Name, kind = s.Kind.ToString(), unit = s.Unit.ToString(), role = s.Role.ToString() }),
     });
 
-    /// <summary>The whole string table in the app's language (English underneath, so a key missing in Persian still reads), shared with the
-    /// WPF edition: one set of translations for both.</summary>
+    /// <summary>The whole string table in the app's language (English underneath, so a key missing in Persian still reads), kept in the app layer
+    /// (Mazesta.Desktop/Localization).</summary>
     internal static Dictionary<string, string> Strings()
     {
         var rm = new ResourceManager("Mazesta.Desktop.Localization.Strings", typeof(Loc).Assembly);

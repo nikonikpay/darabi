@@ -114,10 +114,10 @@ internal sealed class TrayContext : ApplicationContext
         if (!_checking && (temps is null || DateTimeOffset.UtcNow - temps.Time > TimeSpan.FromMinutes(2))) _ = CheckTempsAsync();
     }
 
-    /// <summary>Starts the app next to the tray, the web edition first. A running app brings its window forward instead of starting twice.</summary>
+    /// <summary>Starts the app next to the tray. A running app brings its window forward instead of starting twice.</summary>
     public void OpenApp()
     {
-        var exe = new[] { "MazestaWeb.exe", "MazestaTest.exe" }.Select(n => Path.Combine(AppContext.BaseDirectory, n)).FirstOrDefault(File.Exists);
+        string? exe = Path.Combine(AppContext.BaseDirectory, "MazestaWeb.exe"); if (!File.Exists(exe)) exe = null;
         if (exe is null) { _icon.ShowBalloonTip(8000, TrayText.Title, TrayText.NoApp, ToolTipIcon.Error); return; }
         try { Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = AppContext.BaseDirectory })?.Dispose(); }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { _icon.ShowBalloonTip(8000, TrayText.Title, e.Message, ToolTipIcon.Error); }

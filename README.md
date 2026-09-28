@@ -1,7 +1,8 @@
 # Mazesta Test (سیستم تست مازستا)
 
 Mazesta Test is a Windows x64 hardware diagnostics, stress-test, benchmark and reporting tool built for a PC service shop. It reads
-sensors itself and, as one self-contained Persian-first (RTL) WPF application, offers:
+sensors itself and, as one self-contained Persian-first (RTL) Windows application whose interface is a local web page in WebView2,
+offers:
 
 - live monitoring (sensor tree, charts) and a dashboard;
 - a sequential test queue with repeat, cancellation and crash checkpoint: CPU, memory, storage, network and GPU tests, each
@@ -17,7 +18,7 @@ Gaming and Windows Tools are phase 2 in the spec and are placeholders. See `docs
 ## Portable
 
 The app is portable only: it is not installed and writes nothing to the user profile. Everything it creates (settings, logs,
-reports, history) lives in `Data\` next to `MazestaTest.exe`; copy the whole folder to move it, results included.
+reports, history) lives in `Data\` next to `MazestaWeb.exe`; copy the whole folder to move it, results included.
 
 ## Prerequisites
 
@@ -34,11 +35,11 @@ reports, history) lives in `Data\` next to `MazestaTest.exe`; copy the whole fol
 dotnet build Mazesta.sln -c Release
 dotnet test  Mazesta.sln -c Release --no-build --filter "Category!=Hardware"   # unit tests
 dotnet test  Mazesta.sln -c Release --no-build --filter "Category=Hardware"    # real machine, elevated
-dotnet publish src/Mazesta.Desktop -c Release -o artifacts/Mazesta-Test       # delete the folder first
+pwsh tools/publish.ps1                                                        # keeps the app's Data folder
 ```
 
-Run `artifacts\Mazesta-Test\MazestaTest.exe`. `build.ps1 -Test -Publish` wraps these and copies the Persian guide and the notices
-into the publish folder. After changing a shader in `src/Mazesta.Diagnostics.Gpu/Shaders`, run `tools/compile-gpu-shaders.ps1`
+Run `artifacts\Mazesta-Web\MazestaWeb.exe`. `build.ps1 -Test -Publish` wraps the build, tests and a publish, and copies the Persian
+guide and the notices into the publish folder. The WPF edition (`MazestaTest.exe`) was retired on 2026-09-28 (git tag `wpf-edition-final`). After changing a shader in `src/Mazesta.Diagnostics.Gpu/Shaders`, run `tools/compile-gpu-shaders.ps1`
 (needs the Windows SDK). `tools/measure-idle.ps1` measures idle memory and CPU of the published app.
 
 ## Documentation

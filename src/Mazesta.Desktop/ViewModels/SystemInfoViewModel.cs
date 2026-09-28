@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using static Mazesta.Desktop.ViewModels.DashboardViewModel;
+using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization;
 namespace Mazesta.Desktop.ViewModels;
 
 public sealed record InfoRow(string Label, string Value);
@@ -136,4 +136,14 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         new(Loc.Get("SystemInfo_IpAddresses"), n.IpAddresses.Count == 0 ? Loc.Get("Value_NotAvailable") : string.Join(", ", n.IpAddresses)),
         new(Loc.Get("SystemInfo_LinkSpeed"), n.LinkSpeedBps is { } bps ? (bps / 1_000_000.0).ToString("F0", CultureInfo.InvariantCulture) + " Mbps" : Loc.Get("Value_NotAvailable")),
     ];
+
+    /// <summary>A value as the page shows it: missing or blank is the words "not available", never an empty cell or a zero.</summary>
+    internal static string Show(object? value, string? format = null) => value switch
+    {
+        null => Loc.Get("Value_NotAvailable"),
+        string s when s.Trim().Length == 0 => Loc.Get("Value_NotAvailable"),
+        IFormattable f when format is not null => f.ToString(format, CultureInfo.CurrentCulture),
+        _ => value.ToString() is { Length: > 0 } t ? t : Loc.Get("Value_NotAvailable")
+    };
+    internal static string ShowBytes(long? bytes, double divisor) => bytes is { } b ? (b / divisor).ToString("F0", CultureInfo.CurrentCulture) + " GB" : Loc.Get("Value_NotAvailable");
 }

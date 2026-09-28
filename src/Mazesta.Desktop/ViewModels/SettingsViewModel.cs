@@ -2,7 +2,7 @@ using System.Reflection; using CommunityToolkit.Mvvm.ComponentModel; using Commu
 namespace Mazesta.Desktop.ViewModels;
 public sealed partial class SettingsViewModel : ObservableObject
 {
-    private readonly AppConfig _config; private readonly JsonStore<AppConfig> _store; private readonly PollingEngine _engine; private readonly MonitoringOptions _options; private readonly ShellViewModel _shell; private readonly Action<string> _openFolder; private readonly ITrayController _tray;
+    private readonly AppConfig _config; private readonly JsonStore<AppConfig> _store; private readonly PollingEngine _engine; private readonly MonitoringOptions _options; private readonly Action<string> _openFolder; private readonly ITrayController _tray;
     public string[] Languages => ["en", "fa"];
     public string[] RenderModes => ["auto", "software"];
     [ObservableProperty] private string _language; [ObservableProperty] private string _renderMode; [ObservableProperty] private string _fastIntervalText; [ObservableProperty] private string _storageIntervalText; [ObservableProperty] private string _shopName; [ObservableProperty] private string _message = "";
@@ -28,9 +28,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
     public bool OverlayVisible { get => _overlay?.IsVisible == true; set { _overlay?.SetVisible(value); OnPropertyChanged(); } }
 
-    public SettingsViewModel(AppConfig config, JsonStore<AppConfig> store, AppPaths paths, PollingEngine engine, MonitoringOptions options, ShellViewModel shell, Action<string> openFolder, ITrayController tray, Services.OverlayService? overlay = null)
+    public SettingsViewModel(AppConfig config, JsonStore<AppConfig> store, AppPaths paths, PollingEngine engine, MonitoringOptions options, Action<string> openFolder, ITrayController tray, Services.OverlayService? overlay = null)
     {
-        _config = config; _store = store; _engine = engine; _options = options; _shell = shell; _openFolder = openFolder; _tray = tray; _overlay = overlay;
+        _config = config; _store = store; _engine = engine; _options = options; _openFolder = openFolder; _tray = tray; _overlay = overlay;
         _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _shopName = config.ShopName;
         _trayFirstCheckText = config.TrayFirstCheckSeconds.ToString(); _trayIdleText = config.TrayIdleIntervalMinutes.ToString(); _trayWatchText = config.TrayWatchIntervalSeconds.ToString(); _trayHealthText = config.TrayHealthIntervalMinutes.ToString();
         DataFolder = paths.DataRoot; ModeText = Loc.Get("Settings_Mode_Portable");
@@ -65,7 +65,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         // The storage cadence can be up to 15 minutes, so without re-arming, a shortened interval
         // would not take effect until the old one had elapsed.
         if (storageChanged) _engine.RearmStorageNodes();
-        bool saved = _store.Save(_config); _shell.RefreshInterval();
+        bool saved = _store.Save(_config);
         Message = (saved ? Loc.Get("Settings_Saved") : Loc.Get("Settings_SaveFailed")) + (restartNeeded ? " " + Loc.Get("Settings_RestartNote") : "");
         // The tray reads its intervals once at start, so a running one is restarted to pick up the change.
         if (saved && trayChanged && TrayState.Running) { Message += " " + (_tray.Restart() is { } failure ? Loc.Format("Settings_Tray_ChangeFailed", failure) : Loc.Get("Settings_Tray_Restarted")); }

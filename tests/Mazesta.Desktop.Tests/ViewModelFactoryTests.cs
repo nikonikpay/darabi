@@ -28,7 +28,7 @@ public class ViewModelFactoryTests
         using var sp = s.BuildServiceProvider();
         var factory = sp.GetRequiredService<Func<Probe>>();
 
-        // Two navigations. Each page is dropped (ShellViewModel disposes the outgoing page) before
+        // Two navigations. Each page is dropped (its owner disposes it) before
         // the GC runs, so nothing may keep them alive.
         var refs = NavigateTwiceAndDrop(factory);
 

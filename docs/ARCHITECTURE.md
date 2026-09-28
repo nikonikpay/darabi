@@ -1,8 +1,11 @@
 # Architecture
 
-Mazesta Test is a single elevated WPF process built from layered class libraries, plus a separate low-footprint tray process.
-Each layer is its own project so the project graph, not convention, enforces the dependencies. Logic lives in the lowest layer
-that can hold it, so it is unit-testable without WPF.
+Mazesta is a single elevated process (`MazestaWeb.exe`) whose whole interface is a local web page in one WebView2, built from
+layered class libraries, plus a separate low-footprint tray process. Each layer is its own project so the project graph, not
+convention, enforces the dependencies. Logic lives in the lowest layer that can hold it, so it is unit-testable without a window.
+
+The earlier WPF edition (`MazestaTest.exe`, its own XAML pages) was retired on 2026-09-28; its last state is the git tag
+`wpf-edition-final` (branch `backup/wpf-edition-20260928`). What the web edition used of it stays in `Mazesta.Desktop` as the app layer.
 
 ## Projects and dependencies
 
@@ -15,31 +18,31 @@ that can hold it, so it is unit-testable without WPF.
 | `Mazesta.Diagnostics` | `TestEngine` (sequential queue, repeat, cancellation, crash checkpoint, WHEA post-check), executors for CPU, memory, storage and network, `SensorEvidence`; benchmarks (`Benchmarks`: CPU single/all-thread, memory, CrystalDiskMark-style storage, internet speed) run by `BenchmarkRunner`; `Tuning.GpuAutoTuner` runs a tuning search on a card. | net10.0-windows | Core, Monitoring, Persistence |
 | `Mazesta.Diagnostics.Gpu` | GPU tests on ComputeSharp (steady/variable/pulse stress, VRAM, render, power) and the GPU benchmarks on raw Direct3D 12 through Vortice (rasterisation, DXR 1.1 inline ray tracing, DirectML AI at FP32/FP16/INT8); the verified compute/memory load the GPU tuner judges settings by. HLSL in `Shaders/`, precompiled by `tools/compile-gpu-shaders.ps1`. | net10.0-windows | Core, Monitoring, Diagnostics |
 | `Mazesta.Reporting` | `SessionReport` (test sessions and benchmark-only reports, `ReportKind`), JSON/HTML/plain-text writers in Persian or English (`ReportText`), `ReportStore`, `SensorSummarizer`, `ReportComparison` and the before/after page. UI-free. | net10.0 | Core, Monitoring |
-| `Mazesta.Desktop` | The WPF app "Mazesta Test": MVVM (CommunityToolkit.Mvvm), DI, Views/ViewModels, localisation (fa/en, RTL), PDF through WebView2, tray control. | net10.0-windows | all of the above, and Tray (to ship its exe) |
-| `Mazesta.Web` | "Mazesta Web": the web edition. Composes the same services as `Mazesta.Desktop` (its `Bootstrapper`) and shows the interface in one WebView2 from `wwwroot` (plain HTML/CSS/JS modules, no build step, offline). `WebBridge` is the only way the page reaches the machine: a fixed list of named methods over JSON, mirroring the Desktop view models, and live sensor snapshots while the window is visible. Only one edition runs at a time (shared single-instance mutex); a second start brings the open window forward, and closing the main window ends the process. Also: `ChartWindow` (a sensor's chart popped out, its own tiny bridge), `ShopFeed` (one product from the shop's WordPress REST API, as plain text, cached), `Notifier` (Windows notifications for health alerts, failed tests and a failed sensor reader), benchmark records (`BenchmarkRecords`, best per system), the overlay page, and the diagnostic export. Ships the tray next to its exe. | net10.0-windows | Desktop (as a library), Tray (to ship it) |
+| `Mazesta.Desktop` | The app layer (a library; the assembly keeps its old name `MazestaTest`): composition (`Bootstrapper`, DI), the page view models the web bridge drives (tests, benchmarks, reports, settings, tuning, Windows tools, gaming, system information), `ReportService` and PDF through WebView2, tray control, the string tables (fa/en), and the one native window, the on-screen overlay (`OverlayWindow`, `OverlayViewModel`, `FrameChart`). | net10.0-windows | all of the above |
+| `Mazesta.Web` | "Mazesta": the app. Composes the services of `Mazesta.Desktop` (its `Bootstrapper`) and shows the interface in one WebView2 from `wwwroot` (plain HTML/CSS/JS modules, no build step, offline). `WebBridge` is the only way the page reaches the machine: a fixed list of named methods over JSON, mirroring the Desktop view models, and live sensor snapshots while the window is visible. Only one edition runs at a time (shared single-instance mutex); a second start brings the open window forward, and closing the main window ends the process. Also: `ChartWindow` (a sensor's chart popped out, its own tiny bridge), `ShopFeed` (one product from the shop's WordPress REST API, as plain text, cached), `Notifier` (Windows notifications for health alerts, failed tests and a failed sensor reader), benchmark records (`BenchmarkRecords`, best per system), the overlay page, and the diagnostic export. Ships the tray next to its exe. | net10.0-windows | Desktop (as a library), Tray (to ship it) |
 | `Mazesta.Tray` | "Mazesta Monitor": windowless tray process that opens the sensor provider only during a check (spec §8.2): temperatures every 10 minutes, drive health every 30, each check kept in `Data\tray\checks.json` and shown in its summary window (double-click the icon); a problem is a Windows notification. | net10.0-windows | Core, Hardware, Persistence |
 
-Nothing references `Desktop`. `Diagnostics` does not reference `Hardware`: executors read what `PollingEngine` already published
+Only `Web` references `Desktop`. `Diagnostics` does not reference `Hardware`: executors read what `PollingEngine` already published
 (`SensorEvidence`), never a hardware provider directly. `Reporting` knows nothing of WPF; the Desktop `ReportService` feeds it.
 `Tray` never references `Monitoring`, `Diagnostics` or `Desktop`, so it stays small and never loads the stress engine or the 3D code.
 
-## Pages (Desktop)
+## Pages
 
-Dashboard, Monitoring, Tests, System Information, Benchmarks, CPU, GPU, Network, Storage, Gaming, Overclock & undervolt, Windows Tools, Reports, Settings.
-Gaming and Windows Tools (spec 11) only run Windows' own tools on a button (powercfg, sfc, DISM) or open Windows' own settings;
-an FPS overlay is not offered. Overclock & undervolt (slice 9) changes NVIDIA GPUs through NVML - manual settings and an automatic
-search whose results are kept only when measured better than stock - and explains CPU and memory-profile tuning without changing them
-(`docs/TUNING-RESEARCH.md`). The sidebar carries the logo and the service number (spec 7.1), printed
-on every report; finished tests and benchmarks raise a notice, and Ctrl+1 ... Ctrl+0 open the first ten pages (spec 9.4). The four component pages (`ComponentViewModel`) assemble existing
-pieces for one kind of hardware: its System Information sections, the Monitoring tree limited to it, and its benchmark rows.
+The pages are the web page's modules (`src/Mazesta.Web/wwwroot/js/pages`), grouped in the side bar as families: Dashboard,
+Monitoring, Tests & benchmarks, Hardware (System, CPU, GPU, Storage, Network), Gaming & overlay, Optimization (Overclock &
+undervolt, Windows tools), Reports, Settings; Ctrl+1 ... Ctrl+8 open the families. Gaming and Windows Tools only run Windows' own
+tools on a button (powercfg, sfc, DISM) or open Windows' own settings. Overclock & undervolt (slice 9) changes NVIDIA GPUs through
+NVML - manual settings and an automatic search whose results are kept only when measured better than stock - and explains CPU and
+memory-profile tuning without changing them (`docs/TUNING-RESEARCH.md`). The side bar carries the service number (spec 7.1),
+printed on every report. The look is set by `DESIGN.md`.
 
 Long-running work belongs to session singletons, not pages: `TestEngine` for tests and `BenchmarkRunner` for benchmarks, so a
-run keeps going and its result stays when the technician leaves the page. Page view models are built per visit by `Func<T>`
-factories and disposed by the shell when it leaves them.
+run keeps going and its result stays when the technician leaves the page. Page view models are built by `Func<T>` factories; the
+web bridge builds the ones it drives when the window opens and disposes them when it closes.
 
 ## Data (portable)
 
-Everything the app writes lives in `Data\` next to `MazestaTest.exe`: `config\appconfig.json`, `logs\`, `sessions\` (test
+Everything the app writes lives in `Data\` next to `MazestaWeb.exe`: `config\appconfig.json`, `logs\`, `sessions\` (test
 checkpoint), `history\`, `reports\<date>-<id>\` (`report.json`, `report.html`, `report.txt`, `report.pdf` when exported, and
 `comparison-*.html`), `cache\` (the PDF printer's and the web edition's WebView2 profiles, the shop product in `cache\shop`),
 `benchmarks\records.json` (the best result of each benchmark per system), `tray\checks.json` (the tray's recent checks), `logs\hardware-report.txt`

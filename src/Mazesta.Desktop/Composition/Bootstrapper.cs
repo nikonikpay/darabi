@@ -36,25 +36,14 @@ public static class Bootstrapper
         s.AddSingleton<IWmiQuery, WmiQuery>();
         s.AddSingleton<IInventoryProvider, WmiInventoryProvider>();
         s.AddSingleton<InventoryCache>();
-        s.AddSingleton<ViewModels.ShellViewModel>();
-        s.AddSingleton<ViewModels.IChartWindowService, Services.ChartWindowService>();
         s.AddDiagnostics(paths, lf);
         s.AddSingleton<Services.ITrayController, Services.TrayController>();
         s.AddSingleton<Services.ReportService>();
         s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));
         s.AddSingleton<Services.OverlayService>();
-        AddViewModelFactory(s, sp => new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
-        AddViewModelFactory(s, sp => new ViewModels.DashboardViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<InventoryCache>(), sp.GetRequiredService<AppConfig>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.ReportsViewModel(sp.GetRequiredService<Services.ReportService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }), text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Reports"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes));
         AddViewModelFactory(s, sp => new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
-        // One factory for the four component pages (CPU, GPU, Storage, Network): same pieces, limited to one kind of hardware.
-        s.AddSingleton<Func<Mazesta.Core.Hardware.HardwareKind, ViewModels.ComponentViewModel>>(sp => kind =>
-        {
-            Func<Action, object> dispatch = a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a);
-            var sensors = new ViewModels.MonitoringViewModel(sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringFocus>(), sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<ViewModels.IChartWindowService>(), sp.GetRequiredService<IClock>(), dispatch, new HashSet<Mazesta.Core.Hardware.HardwareKind> { kind });
-            return new ViewModels.ComponentViewModel(kind, sp.GetRequiredService<InventoryCache>(), sensors, new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), dispatch, kind), dispatch);
-        });
         Action<string> open = target => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(target) { UseShellExecute = true });
         // One for the session (see WindowsToolsViewModel): a running repair and its output survive leaving the page.
         s.AddSingleton(sp => new ViewModels.WindowsToolsViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), sp.GetRequiredService<IWmiQuery>(), open, a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
@@ -72,7 +61,7 @@ public static class Bootstrapper
             // The core voltage comes from the sensor monitor (NVML has no voltage reading); the reading lives as long as the page's view model, i.e. the session.
             name => LatestReading.Find(sp.GetRequiredService<PollingEngine>(), Mazesta.Core.Hardware.HardwareKind.Gpu, name, Mazesta.Core.Hardware.SensorRole.GpuVoltage) is { } r ? () => r.Value : () => null));
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
-        AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), sp.GetRequiredService<ViewModels.ShellViewModel>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
+        AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
         var provider = s.BuildServiceProvider();
         provider.GetRequiredService<Services.ReportService>();   // constructed now so it is already listening when the first test run starts
         return provider;
@@ -84,7 +73,7 @@ public static class Bootstrapper
     /// container tracks every IDisposable transient it creates until the container itself is
     /// disposed - so with AddTransient, every navigation leaked one live view model, still rooted
     /// by the root provider, for the life of the process. Objects the factory news up are never
-    /// handed to the container, so nothing but the caller holds them; ShellViewModel disposes the
+    /// handed to the container, so nothing but the caller holds them; the page that asked for it disposes the
     /// outgoing page as it navigates.
     /// </summary>
     internal static void AddViewModelFactory<T>(IServiceCollection s, Func<IServiceProvider, T> create) where T : class

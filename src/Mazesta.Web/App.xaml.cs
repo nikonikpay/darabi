@@ -4,8 +4,8 @@ using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Loggi
 namespace Mazesta.Web;
 
 /// <summary>
-/// The web edition's start-up. It composes exactly the services the WPF edition does (Desktop's Bootstrapper) and only swaps the window: one
-/// WebView2 showing the local web interface. Only one edition runs at a time (same single-instance mutex): both drive the same hardware. A second
+/// The web edition's start-up. It composes the services from the app layer (Mazesta.Desktop's Bootstrapper) and shows one window:
+/// a WebView2 showing the local web interface. Only one copy runs at a time (a single-instance mutex): two would drive the same hardware. A second
 /// start (a double-click, or the tray's "open") brings the running window forward instead of complaining. Closing the window ends the process:
 /// the overlay and any other window the app made never keep it alive in the background, where it would block the next start.
 /// </summary>
@@ -27,7 +27,7 @@ public partial class App : Application
     {
         if (!IsFirstInstance)
         {
-            // The web edition is running: ask it to come forward. Otherwise it is the WPF edition, found by its title.
+            // The app is running: ask it to come forward. Otherwise it is an old copy of the retired WPF edition (same mutex), found by its title.
             if (EventWaitHandle.TryOpenExisting(ActivateEventName, out var running)) using (running) running.Set();
             else Desktop.Composition.SingleInstance.ActivateExisting(Loc.Get("App_Title"));
             Shutdown(); return;
