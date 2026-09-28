@@ -26,14 +26,10 @@ export function mount(el) {
   };
   const g1 = giant("Web_Dash_CpuTemp", cpuTemp && { ...cpuTemp, node: cpu }), g2 = giant("Web_Dash_GpuTemp", gpuTemp && { ...gpuTemp, node: gpu });
   const date = new Intl.DateTimeFormat(boot.rtl ? "fa-IR-u-ca-persian" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
-  const summaryBtn = h("button", { class: "btn", style: { borderColor: "var(--on-yellow)", color: "var(--on-yellow)" }, onclick: async () => {
-    summaryBtn.disabled = true; toast(t("Reports_SummaryBusy"));
-    try { await call("reports.exec", { cmd: "summary" }); } finally { summaryBtn.disabled = false; }
-  } }, icon("doc"), t("Reports_Summary"));
   const plane = h("section", { class: "plane enter" }, regMarks(),
     verdict, machine,
     h("div", { class: "giants" }, g1.el, g2.el),
-    h("div", { class: "plane-actions" }, h("button", { class: "slab", onclick: () => go("tests") }, t("Web_Dash_RunTests"), icon("arrow")), summaryBtn),
+    h("div", { class: "plane-actions" }, h("button", { class: "slab", onclick: () => go("tests") }, t("Web_Dash_RunTests"), icon("arrow"))),
     h("div", { class: "colophon" }, h("span", {}, boot.shopName), h("span", {}, date)));
   updates.push(() => {
     for (const g of [g1, g2]) {
@@ -119,11 +115,13 @@ export function mount(el) {
       body: [h("div", { class: "stats" }, stat(t("Dashboard_Line_Used"), used), stat(t("Dashboard_Line_Free"), free)), meter(t("Dashboard_Line_Load"), percentOf(load))],
       more: details(topNodes("Memory").flatMap(sensorsUnder), ["RamTotal", "DimmTemp", "VirtualMemoryUsed", "VirtualMemoryLoad"]) }));
   }
+  const driveHealth = new Map();   // drive name → its health line, filled in when the inventory arrives
   if (drives.length) {
     const rows = drives.map((d) => {
-      const temp = pick(d, "StorageTemp"), tv = h("span", {});
+      const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" });
+      driveHealth.set(d.name.trim().toLowerCase(), hv);
       updates.push(() => tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null)));
-      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, tv),
+      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
         meter(t("Web_Dash_UsedSpace"), percentOf(pick(d, "StorageUsedSpace"))));
     });
     panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)),
@@ -163,6 +161,10 @@ export function mount(el) {
   call("inventory.get").then((i) => {
     inv.board.replaceChildren(i.board || "");
     inv.bios.replaceChildren(val(i.bios, "lat")); inv.os.replaceChildren(val(i.os, "lat"));
+    for (const d of i.drives || []) {
+      const el = d.name && driveHealth.get(d.name.trim().toLowerCase());
+      if (el) { el.textContent = d.health; el.dataset.status = d.status || ""; }
+    }
   });
   return off;
 }

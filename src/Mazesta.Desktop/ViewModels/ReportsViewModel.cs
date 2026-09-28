@@ -12,7 +12,7 @@ public sealed partial class ReportRowViewModel(StoredReport report) : Observable
     public string VerdictText => Loc.Get("Reports_Verdict_" + Badge);
     public string Title => Stamp(Report.CreatedAt);
     public string Summary { get; } = report.Kind == ReportKind.Benchmark ? string.Join(" · ", report.Benchmarks)
-        : Loc.Format("Reports_Summary", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
+        : Loc.Format("Reports_RowCounts", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
 
     /// <summary>Solar Hijri date with the local time when the app is Persian, ISO otherwise.</summary>
     private static string Stamp(DateTimeOffset t)
@@ -28,17 +28,16 @@ public sealed partial class ReportRowViewModel(StoredReport report) : Observable
 public sealed partial class ReportsViewModel : ObservableObject, IDisposable
 {
     private readonly ReportService _service; private readonly Func<Action, object> _dispatch; private readonly Action<string> _open; private readonly Func<string, bool> _confirm;
-    private readonly Func<Task<string>>? _createSummary;
 
     public ObservableCollection<ReportRowViewModel> Items { get; } = [];
     public bool IsEmpty => Items.Count == 0;
     [ObservableProperty] private string _status = "";
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(CreateSummaryCommand))] private bool _isMakingSummary;
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(SummarizeCommand))] private bool _isMakingSummary;
 
-    public ReportsViewModel(ReportService service, Func<Action, object> dispatch, Action<string> open, Func<string, bool> confirm, Func<Task<string>>? createSummary = null)
+    public ReportsViewModel(ReportService service, Func<Action, object> dispatch, Action<string> open, Func<string, bool> confirm)
     {
-        _service = service; _dispatch = dispatch; _open = open; _confirm = confirm; _createSummary = createSummary;
+        _service = service; _dispatch = dispatch; _open = open; _confirm = confirm;
         Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(IsEmpty));
         Refresh(); service.ReportCreated += OnCreated;
     }
@@ -82,16 +81,17 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         catch (Exception e) { Status = Loc.Format("Reports_PdfFailed", e.Message); }
     }
 
-    private bool CanCreateSummary() => _createSummary is not null && !IsMakingSummary;
+    private bool CanSummarize(ReportRowViewModel? row) => !IsMakingSummary;
 
-    /// <summary>The one-page customer summary as of now (drive health, temperatures, BIOS, the last test), printed to an A5 PDF and opened.</summary>
-    [RelayCommand(CanExecute = nameof(CanCreateSummary))]
-    private async Task CreateSummary()
+    /// <summary>The one-page summary of this report (its verdict, each test's result and the highest temperatures while it ran), printed to an
+    /// A5 PDF next to the report and opened.</summary>
+    [RelayCommand(CanExecute = nameof(CanSummarize))]
+    private async Task Summarize(ReportRowViewModel row)
     {
         IsMakingSummary = true; Status = Loc.Get("Reports_SummaryBusy");
         try
         {
-            string html = await _createSummary!().ConfigureAwait(true), pdf = Path.ChangeExtension(html, ".pdf");
+            string html = _service.CreateSummary(row.Report), pdf = Path.ChangeExtension(html, ".pdf");
             await PdfExporter.ExportAsync(html, pdf, Loc.Get("Reports_SummaryBusy"), Application.Current.MainWindow, _service.BrowserDataDir, a5: true);
             Status = Loc.Get("Reports_SummaryDone"); _open(pdf);
         }

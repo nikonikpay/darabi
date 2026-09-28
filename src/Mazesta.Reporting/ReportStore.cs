@@ -8,12 +8,13 @@ public sealed record StoredReport(string Folder, string Id, DateTimeOffset Creat
     public string HtmlPath => Path.Combine(Folder, ReportStore.HtmlName);
     public string PdfPath => Path.Combine(Folder, ReportStore.PdfName);
     public string TextPath => Path.Combine(Folder, ReportStore.TextName);
+    public string SummaryPath => Path.Combine(Folder, ReportStore.SummaryName);
 }
 
 /// <summary>One folder per report under the reports directory: <c>report.json</c> (the source of truth), <c>report.html</c>, <c>report.txt</c> and, once exported, <c>report.pdf</c>.</summary>
 public sealed class ReportStore(string directory)
 {
-    public const string JsonName = "report.json", HtmlName = "report.html", TextName = "report.txt", PdfName = "report.pdf";
+    public const string JsonName = "report.json", HtmlName = "report.html", TextName = "report.txt", PdfName = "report.pdf", SummaryName = "summary.html";
 
     public StoredReport Save(SessionReport report, string html, string? text = null)
     {
@@ -45,13 +46,21 @@ public sealed class ReportStore(string directory)
     }
     public void Delete(StoredReport stored) { if (Directory.Exists(stored.Folder)) Directory.Delete(stored.Folder, recursive: true); }
 
-    /// <summary>A customer summary goes into <c>summaries</c> under the reports folder (a folder without report.json, so the report list skips it)
-    /// and is named by the time it was made. Returns the HTML file's path; the PDF is printed next to it.</summary>
-    public string SaveSummary(DateTimeOffset createdAt, string html)
+    /// <summary>A report's one-page summary lives in the report's own folder, rewritten each time (it is made from the report, which does not
+    /// change). Returns the HTML file's path; the PDF is printed next to it.</summary>
+    public string SaveSummary(StoredReport stored, string html)
     {
-        string folder = Path.Combine(directory, "summaries"); Directory.CreateDirectory(folder);
-        string path = Path.Combine(folder, $"summary-{createdAt.ToLocalTime():yyyyMMdd-HHmmss}.html");
-        WriteAtomic(path, html);
+        WriteAtomic(stored.SummaryPath, html);
+        return stored.SummaryPath;
+    }
+
+    /// <summary>The specifications of the machine, exported by hand: <c>specs/specs-{time}.html</c> and <c>.json</c> under the reports folder
+    /// (a folder without report.json, so the report list skips it). Returns the HTML path; the PDF is printed next to it.</summary>
+    public string SaveSpecs(DateTimeOffset createdAt, string html, string json)
+    {
+        string folder = Path.Combine(directory, "specs"); Directory.CreateDirectory(folder);
+        string path = Path.Combine(folder, $"specs-{createdAt.ToLocalTime():yyyyMMdd-HHmmss}.html");
+        WriteAtomic(path, html); WriteAtomic(Path.ChangeExtension(path, ".json"), json);
         return path;
     }
 

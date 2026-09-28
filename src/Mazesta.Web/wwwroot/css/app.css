@@ -450,6 +450,20 @@ body.popout .chart { height: 100%; min-height: 120px; }
 [dir="ltr"] .unit-row .nm { text-align: left; }
 .unit-row .vals { display: flex; gap: 14px; font: 700 14px var(--lat); font-stretch: 80%; direction: ltr; white-space: nowrap; }
 .unit-row .vals .hatch { font: 600 12px var(--fa); }
+
+/* Start-up: shown from the first paint until the sensor scan settles. Only transform animates. */
+.boot { min-height: 70vh; display: grid; place-content: center; justify-items: center; text-align: center; gap: 10px; }
+.boot-ring { width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--ink-3); border-top-color: var(--yellow); animation: boot-spin 0.9s linear infinite; margin-bottom: 10px; }
+@keyframes boot-spin { to { transform: rotate(360deg); } }
+.boot-title { margin: 0; font: 800 22px var(--fa); color: var(--paper); }
+.boot-text { margin: 0; max-width: 46ch; color: var(--paper-2); font: 500 14px/1.8 var(--fa); }
+.boot-prov { margin: 0; color: var(--paper-3); font: 500 12px var(--fa); min-height: 1.5em; }
+.boot-secs { color: var(--yellow); font: 700 13px var(--fa); }
+.page-head .export { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.unit-row .vals .health { font: 600 12px var(--fa); color: var(--paper-2); direction: rtl; }
+[dir="ltr"] .unit-row .vals .health { direction: ltr; }
+.unit-row .vals .health:empty { display: none; }
+.unit-row .vals .health[data-status="Warning"] { color: var(--warn); } .unit-row .vals .health[data-status="Unhealthy"] { color: var(--fail); }
 .unit-row .meter { grid-column: 1 / -1; margin-top: 2px; }
 
 /* Shop and contact: the company's own product and people, next to the machine's panels. */

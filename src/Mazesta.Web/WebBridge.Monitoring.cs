@@ -39,6 +39,7 @@ public sealed partial class WebBridge
                     .ToDictionary(k => k.ToString(), k => SystemInfoViewModel.Component(inv, k).Select(Section)),
                 cpu = inv.Cpu?.Name?.Trim(), gpus = inv.Gpus.Select(g => g.Name?.Trim()), board = inv.Motherboard is { } b ? $"{b.Manufacturer} {b.Product}".Trim() : null,
                 bios = inv.Bios?.Version, ramBytes = inv.TotalPhysicalMemoryBytes, os = inv.Os?.Caption, errors = inv.Errors,
+                drives = inv.Storage.Select(d => new { name = d.FriendlyName, health = SystemInfoViewModel.DriveHealth(d.HealthStatus, d.WearPercent), status = d.HealthStatus }),
             };
         });
     }

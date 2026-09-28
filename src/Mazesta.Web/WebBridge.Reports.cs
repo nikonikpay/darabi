@@ -1,12 +1,12 @@
-using Mazesta.Desktop.ViewModels;
-using Microsoft.Extensions.DependencyInjection;
+using System.IO; using Mazesta.Desktop.ViewModels;
+using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
 namespace Mazesta.Web;
 
 public sealed partial class WebBridge
 {
     private void RegisterReports()
     {
-        // The Reports view model does the opening, PDF printing (WebView2, offline), comparison, deletion and the customer summary; the page only
+        // The Reports view model does the opening, PDF printing (WebView2, offline), comparison, deletion and each report's summary; the page only
         // names a report by its id.
         var reports = _sp.GetRequiredService<Func<ReportsViewModel>>()();
         _cleanup.Add(reports.Dispose);
@@ -35,10 +35,30 @@ public sealed partial class WebBridge
                 case "folder": reports.OpenFolderCommand.Execute(Row(p)); break;
                 case "delete": reports.DeleteCommand.Execute(Row(p)); break;
                 case "compare": if (reports.CompareCommand.CanExecute(null)) reports.CompareCommand.Execute(null); break;
-                case "summary": if (reports.CreateSummaryCommand.CanExecute(null)) await reports.CreateSummaryCommand.ExecuteAsync(null); break;
+                case "summary": { var row = Row(p); if (reports.SummarizeCommand.CanExecute(row)) await reports.SummarizeCommand.ExecuteAsync(row); break; }
                 default: throw new ArgumentException("unknown command");
             }
             return null;
+        });
+
+        // The System page's export: HTML and JSON are written together; PDF is printed from the HTML (A4). The file opens in its own program.
+        var service = _sp.GetRequiredService<Desktop.Services.ReportService>();
+        MethodAsync("specs.export", async p =>
+        {
+            try
+            {
+                string html = await service.SaveSpecsAsync().ConfigureAwait(true);
+                string open = Str(p, "format") switch { "json" => Path.ChangeExtension(html, ".json"), "pdf" => Path.ChangeExtension(html, ".pdf"), _ => html };
+                if (open.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                    await Desktop.Services.PdfExporter.ExportAsync(html, open, Desktop.Localization.Loc.Get("System_Export_Busy"), _window, service.BrowserDataDir);
+                Open(open);
+                return new { path = open };
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or TimeoutException or InvalidOperationException or System.Runtime.InteropServices.COMException)
+            {
+                _log.LogWarning(e, "Specifications export failed");
+                return new { error = Desktop.Localization.Loc.Format("System_Export_Failed", e.Message) };
+            }
         });
     }
 }

@@ -17,7 +17,12 @@ public sealed record TestEntry(string Id, string Name, ReportOutcome Outcome, Da
 public sealed record TracePoint(double Seconds, double Value);
 
 /// <summary>One measured sensor over the session window. Everything comes from the readings the monitor recorded; a sensor without samples is not listed.</summary>
-public sealed record SensorSummary(string Id, string Hardware, string Name, string Kind, string Unit, double Min, double Average, double Max, int Samples, IReadOnlyList<TracePoint> Trace);
+public sealed record SensorSummary(string Id, string Hardware, string Name, string Kind, string Unit, double Min, double Average, double Max, int Samples, IReadOnlyList<TracePoint> Trace,
+    string? Role = null);   // the sensor's role (CpuPackageTemp, GpuHotSpotTemp…); absent in reports saved before it was recorded
+
+/// <summary>The highest reading of one sensor between <see cref="From"/> and <see cref="To"/> - one test's or benchmark's own run - from every
+/// recorded sample, not the down-sampled trace.</summary>
+public sealed record WindowPeak(DateTimeOffset From, DateTimeOffset To, string SensorId, double Max);
 
 /// <summary>One measured benchmark number as it was shown to the technician (Name already localised, like a test name).</summary>
 public sealed record BenchmarkMetricEntry(string Name, double Value, string Unit);
@@ -30,7 +35,8 @@ public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancell
 public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset CreatedAt, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, string ShopName, string AppVersion,
     ReportVerdict? Verdict, ReportCounts Counts, IReadOnlyList<TestEntry> Tests, IReadOnlyList<SensorSummary> Sensors, HardwareInventory Machine, IReadOnlyList<BenchmarkEntry>? Benchmarks = null,
     ReportKind Kind = ReportKind.TestSession,   // absent (TestSession) in reports saved before benchmark reports existed
-    string? ServiceNumber = null)               // the shop's job number the technician entered (spec 7.1); absent when none was
+    string? ServiceNumber = null,               // the shop's job number the technician entered (spec 7.1); absent when none was
+    IReadOnlyList<WindowPeak>? Peaks = null)    // each test's and benchmark's own peak readings; absent in older reports
 {
     public const int CurrentSchemaVersion = 1;
     public double DurationSeconds => Math.Max(0, (FinishedAt - StartedAt).TotalSeconds);

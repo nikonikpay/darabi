@@ -41,7 +41,9 @@ public sealed class ReportService
             var tests = queue.Select(q => ToEntry(q, results.GetValueOrDefault(q.Definition.Id), start)).ToList();
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt));
-            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: _benchmarks.Completed().Select(ToEntry).ToList(), serviceNumber: service));
+            var benchmarks = _benchmarks.Completed().Select(ToEntry).ToList();
+            var peaks = SensorSummarizer.Peaks(_polling, sensors, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.StartedAt, t.FinishedAt)));
+            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks });
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
@@ -52,22 +54,29 @@ public sealed class ReportService
         {
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, runs.Min(r => r.Result.StartedAt), runs.Max(r => r.Result.FinishedAt));
-            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber));
+            var peaks = SensorSummarizer.Peaks(_polling, sensors, runs.Select(r => (r.Result.StartedAt, r.Result.FinishedAt)));
+            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber) with { Peaks = peaks });
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }
 
-    /// <summary>Writes the customer summary (machine, drive health, temperatures, last test) as of now and returns its HTML path.</summary>
-    public async Task<string> CreateSummaryAsync(Mazesta.Core.Providers.IDriveHealthProvider drives)
+    /// <summary>Writes the one-page summary of a saved report (its verdict, each test's result and the highest temperatures measured while it
+    /// ran) into the report's folder and returns its HTML path. It is made from the report alone, never from the machine as it is now.</summary>
+    public string CreateSummary(StoredReport stored)
     {
-        var machine = await _inventory.GetAsync().ConfigureAwait(false);
-        var health = await Task.Run(drives.Read).ConfigureAwait(false);
-        var now = _clock.UtcNow;
-        var last = Store.List().FirstOrDefault(r => r.Kind == ReportKind.TestSession);
-        var summary = new CustomerSummary(now, _config.ShopName, string.IsNullOrWhiteSpace(_config.ServiceNumber) ? null : _config.ServiceNumber.Trim(), AppVersion, machine,
-            CustomerSummaryBuilder.Drives(health, machine.Storage), CustomerSummaryBuilder.Temperatures(_polling, now), last?.Verdict, last?.CreatedAt);
+        var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");
         string lang = Loc.IsRtl ? "fa" : "en";
-        return Store.SaveSummary(now, SummaryHtml.Write(summary, Font.Value, SummaryText.For(lang), ReportText.For(lang)));
+        return Store.SaveSummary(stored, SummaryHtml.Write(ReportSummary.Of(report), Font.Value, SummaryText.For(lang), ReportText.For(lang)));
+    }
+
+    /// <summary>Writes the machine's specifications as HTML and JSON (the whole inventory) and returns the HTML path; the JSON sits next to it.</summary>
+    public async Task<string> SaveSpecsAsync()
+    {
+        var inv = await _inventory.GetAsync().ConfigureAwait(false);
+        var now = _clock.UtcNow;
+        var sections = ViewModels.SystemInfoViewModel.Describe(inv).Select(s => new SpecSection(s.Title, [.. s.Rows.Select(r => new SpecRow(r.Label, r.Value))])).ToList();
+        string html = SpecSheet.WriteHtml(sections, inv.Errors, now, _config.ShopName, AppVersion, Loc.Get("System_Export_Title"), Loc.Get("System_Export_Footer"), Loc.IsRtl, Font.Value);
+        return Store.SaveSpecs(now, html, SpecSheet.WriteJson(inv, now, _config.ShopName, AppVersion));
     }
 
     private static string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";

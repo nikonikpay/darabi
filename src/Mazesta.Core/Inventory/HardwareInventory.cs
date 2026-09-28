@@ -6,7 +6,9 @@ public sealed record GpuInfo(string? Name, string? DriverVersion, long? AdapterR
 public sealed record MemoryModuleInfo(string? Slot, long? CapacityBytes, string? Manufacturer, string? PartNumber, int? ConfiguredSpeedMts, int? SpeedMts);
 public sealed record MotherboardInfo(string? Manufacturer, string? Product, string? Version, string? SerialNumber);
 public sealed record BiosInfo(string? Vendor, string? Version, DateTime? ReleaseDate, string? SmbiosVersion);
-public sealed record StorageDeviceInfo(string? FriendlyName, string? SerialNumber, string? MediaType, string? BusType, long? SizeBytes, string? FirmwareVersion, string? HealthStatus);
+/// <summary><see cref="WearPercent"/> is the drive's own wear counter (life used), null where it has none (an HDD).</summary>
+public sealed record StorageDeviceInfo(string? FriendlyName, string? SerialNumber, string? MediaType, string? BusType, long? SizeBytes, string? FirmwareVersion, string? HealthStatus,
+    int? WearPercent = null);
 public sealed record NetworkAdapterInfo(string? Name, string? MacAddress, IReadOnlyList<string> IpAddresses, long? LinkSpeedBps, bool IsUp);
 public sealed record OsInfo(string? Caption, string? Version, string? BuildNumber, string? Architecture);
 public sealed record HardwareInventory(

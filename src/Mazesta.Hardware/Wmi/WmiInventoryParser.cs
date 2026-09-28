@@ -1,4 +1,4 @@
-using System.Globalization; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory;
+using System.Globalization; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Core.Providers;
 namespace Mazesta.Hardware.Wmi;
 internal static class WmiInventoryParser
 {
@@ -40,6 +40,9 @@ internal static class WmiInventoryParser
         I(r, "BusType") switch { 1 => "SCSI", 3 => "ATA", 7 => "USB", 8 => "RAID", 10 => "SAS", 11 => "SATA", 17 => "NVMe", null => null, var b => $"Bus {b}" },
         L(r, "Size"), S(r, "FirmwareVersion"),
         I(r, "HealthStatus") switch { 0 => "Healthy", 1 => "Warning", 2 => "Unhealthy", null => null, _ => "Unknown" })).ToList();
+    /// <summary>Adds each drive's wear, matched by serial number, else by name.</summary>
+    public static IReadOnlyList<StorageDeviceInfo> WithWear(IReadOnlyList<StorageDeviceInfo> disks, IReadOnlyList<DriveHealth> health) => disks.Select(d =>
+        (health.FirstOrDefault(h => h.Serial is not null && h.Serial == d.SerialNumber) ?? health.FirstOrDefault(h => h.Name == d.FriendlyName)) is { WearPercent: { } wear } ? d with { WearPercent = wear } : d).ToList();
     public static IReadOnlyList<NetworkAdapterInfo> Adapters(IReadOnlyList<IReadOnlyDictionary<string, object?>> adapters, IReadOnlyList<IReadOnlyDictionary<string, object?>> configs)
     {
         var ips = configs.Where(c => L(c, "InterfaceIndex") is not null).ToDictionary(c => L(c, "InterfaceIndex")!.Value, c => c.TryGetValue("IPAddress", out var v) && v is string[] a ? a : []);

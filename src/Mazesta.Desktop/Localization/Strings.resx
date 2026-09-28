@@ -490,7 +490,7 @@
   <data name="Reports_PdfFailed" xml:space="preserve"><value>Could not create the PDF: {0}</value></data>
   <data name="Reports_Created" xml:space="preserve"><value>Report saved.</value></data>
   <data name="Reports_Verdict_Benchmark" xml:space="preserve"><value>Benchmark</value></data>
-  <data name="Reports_Summary" xml:space="preserve"><value>Customer summary (A5 PDF)</value></data>
+  <data name="Reports_Summary" xml:space="preserve"><value>Summary (A5 PDF)</value></data>
   <data name="Reports_Verdict_Passed" xml:space="preserve"><value>Passed</value></data>
   <data name="Reports_Verdict_Failed" xml:space="preserve"><value>Needs attention</value></data>
   <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>Incomplete</value></data>
@@ -783,11 +783,9 @@
   <data name="Bench_Queue_Position" xml:space="preserve"><value>Benchmark {0} of {1}</value></data>
   <data name="Bench_Status_Queued" xml:space="preserve"><value>Waiting in the queue</value></data>
   <data name="Bench_Status_Skipped" xml:space="preserve"><value>Not run: the queue was cancelled</value></data>
-  <data name="Reports_Summary_Title" xml:space="preserve"><value>Summary for the customer</value></data>
-  <data name="Reports_Summary_Note" xml:space="preserve"><value>One boxed A5 sheet about this machine as it is now: hardware and BIOS version, the health of every HDD and SSD, CPU and GPU temperatures, and the last full test result. Only measured values.</value></data>
-  <data name="Reports_SummaryBusy" xml:space="preserve"><value>Preparing the customer summary…</value></data>
-  <data name="Reports_SummaryDone" xml:space="preserve"><value>The customer summary is ready; print it from the PDF viewer.</value></data>
-  <data name="Reports_SummaryFailed" xml:space="preserve"><value>The customer summary could not be made: {0}</value></data>
+  <data name="Reports_SummaryBusy" xml:space="preserve"><value>Preparing the summary of this report…</value></data>
+  <data name="Reports_SummaryDone" xml:space="preserve"><value>The summary is ready; print it from the PDF viewer.</value></data>
+  <data name="Reports_SummaryFailed" xml:space="preserve"><value>The summary could not be made: {0}</value></data>
   <data name="Reports_Saved" xml:space="preserve"><value>Saved reports</value></data>
   <data name="Overlay_Temp" xml:space="preserve"><value>Temp</value></data>
   <data name="Overlay_Load" xml:space="preserve"><value>Load</value></data>
@@ -1114,4 +1112,22 @@
   <data name="Test_GpuLoad_Extreme" xml:space="preserve">
     <value>Extreme</value>
   </data>
+  <data name="Reports_RowCounts" xml:space="preserve"><value>{0} tests · {1} passed · {2} failed · {3} not run</value></data>
+  <data name="Drive_Health_Healthy" xml:space="preserve"><value>Healthy</value></data>
+  <data name="Drive_Health_Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Drive_Health_Unhealthy" xml:space="preserve"><value>Failing</value></data>
+  <data name="Drive_Health_Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Drive_Health_Percent" xml:space="preserve"><value>{0} ({1}%)</value></data>
+  <data name="System_Export" xml:space="preserve"><value>Save the specifications</value></data>
+  <data name="System_Export_Html" xml:space="preserve"><value>HTML</value></data>
+  <data name="System_Export_Pdf" xml:space="preserve"><value>PDF</value></data>
+  <data name="System_Export_Json" xml:space="preserve"><value>JSON</value></data>
+  <data name="System_Export_Busy" xml:space="preserve"><value>Writing the specifications…</value></data>
+  <data name="System_Export_Failed" xml:space="preserve"><value>The specifications could not be saved: {0}</value></data>
+  <data name="System_Export_Title" xml:space="preserve"><value>System specifications</value></data>
+  <data name="System_Export_Footer" xml:space="preserve"><value>Read from Windows on this machine when the file was made; a field Windows did not report reads &apos;not available&apos;.</value></data>
+  <data name="Web_Boot_Title" xml:space="preserve"><value>Starting Mazesta</value></data>
+  <data name="Web_Boot_Sensors" xml:space="preserve"><value>Reading the hardware and its sensors. On an older machine this can take a minute; the app has not stopped.</value></data>
+  <data name="Web_Boot_Elapsed" xml:space="preserve"><value>{0} s</value></data>
+  <data name="Web_Boot_Window" xml:space="preserve"><value>Opening the window…</value></data>
 </root>

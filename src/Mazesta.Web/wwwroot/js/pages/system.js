@@ -1,7 +1,8 @@
-// The machine's inventory as ruled columns: every field the system reported, and "not available" where it reported nothing.
+// The machine's inventory as ruled columns: every field the system reported, and "not available" where it reported nothing. The specifications
+// can be saved whole as HTML, PDF or JSON.
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
-import { h, val } from "../ui.js";
+import { h, val, toast } from "../ui.js";
 
 export function section(s, i) {
   return h("div", { class: "col", style: { "--i": i } }, h("div", { class: "col-head" }, h("span", { class: "h3" }, s.title)),
@@ -11,7 +12,16 @@ export function section(s, i) {
 
 export function mount(el) {
   const body = h("div", { class: "masonry" }, h("p", { class: "page-lede" }, t("Web_Loading")));
-  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_SystemInfo")), h("p", { class: "page-lede" }, t("Web_System_Lede")))), body);
+  const buttons = ["html", "pdf", "json"].map((format) => h("button", { class: format === "pdf" ? "btn primary" : "btn", type: "button", onclick: () => save(format) },
+    t(`System_Export_${format[0].toUpperCase()}${format.slice(1)}`)));
+  async function save(format) {
+    for (const b of buttons) b.disabled = true;
+    if (format === "pdf") toast(t("System_Export_Busy"));
+    try { const r = await call("specs.export", { format }); if (r?.error) toast(r.error, "fail"); }
+    finally { for (const b of buttons) b.disabled = false; }
+  }
+  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_SystemInfo")), h("p", { class: "page-lede" }, t("Web_System_Lede"))),
+    h("div", { class: "export", role: "group", "aria-label": t("System_Export") }, h("span", { class: "caption" }, t("System_Export")), buttons)), body);
   call("inventory.get").then((inv) => {
     body.replaceChildren(...inv.sections.map(section));
     if (inv.errors?.length) body.append(h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Web_System_Errors"))), h("p", { class: "caption lat" }, inv.errors.join("\n"))));

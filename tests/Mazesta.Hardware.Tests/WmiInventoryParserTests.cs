@@ -15,6 +15,13 @@ public class WmiInventoryParserTests
         var d = WmiInventoryParser.Disks([Row(("FriendlyName", "Samsung SSD 990 PRO 2TB"), ("SerialNumber", " S7KX "), ("MediaType", (ushort)4), ("BusType", (ushort)17), ("Size", 2000398934016ul), ("FirmwareVersion", "4B2QJXD7"), ("HealthStatus", (ushort)0))]);
         Assert.Equal(("S7KX", "SSD", "NVMe", "Healthy"), (d[0].SerialNumber, d[0].MediaType, d[0].BusType, d[0].HealthStatus));
     }
+    [Fact] public void Each_drive_gets_its_own_wear_by_serial_and_an_hdd_none()
+    {
+        Core.Inventory.StorageDeviceInfo Disk(string name, string serial) => new(name, serial, "SSD", "NVMe", null, null, "Healthy");
+        var d = WmiInventoryParser.WithWear([Disk("A", "S1"), Disk("B", "S2"), Disk("HDD", "S3")],
+            [new("B", "S2", "Healthy", 7, null, null, null, null, null), new("A", "S1", "Healthy", 2, null, null, null, null, null), new("HDD", "S3", "Healthy", null, null, null, null, null, null)]);
+        Assert.Equal([2, 7, null], d.Select(x => x.WearPercent));
+    }
     [Fact] public void Adapters_join_ip_configuration_by_index()
     {
         var a = WmiInventoryParser.Adapters(

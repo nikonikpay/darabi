@@ -43,6 +43,8 @@ public partial class App : Application
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, log);
         var load = store.Load(); var config = load.Value;
         Loc.SetLanguage(config.Language);
+        // The window's own loading panel is WPF: on a machine whose WPF hardware drawing is broken it would be white without this.
+        if (config.RenderMode == "software") System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         _services = Desktop.Composition.Bootstrapper.Build(paths, config, store, lf);
         string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
         log.LogInformation("Mazesta Web {Version} on {Os}, {Machine}", version, Environment.OSVersion.VersionString, Environment.MachineName);

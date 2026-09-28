@@ -117,8 +117,16 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         new(Loc.Get("SystemInfo_Size"), ShowBytes(d.SizeBytes, 1e9)),
         new(Loc.Get("SystemInfo_Firmware"), Show(d.FirmwareVersion)),
         new(Loc.Get("SystemInfo_Serial"), Show(d.SerialNumber)),
-        new(Loc.Get("SystemInfo_Health"), Show(d.HealthStatus)),
+        new(Loc.Get("SystemInfo_Health"), DriveHealth(d.HealthStatus, d.WearPercent)),
     ];
+
+    /// <summary>Windows' verdict in words, with the life left in brackets when the drive has a wear counter: «سالم (98%)».</summary>
+    public static string DriveHealth(string? status, int? wearPercent)
+    {
+        if (status is null) return Loc.Get("Value_NotAvailable");
+        string name = Loc.Get(status is "Healthy" or "Warning" or "Unhealthy" ? "Drive_Health_" + status : "Drive_Health_Unknown");
+        return Core.Health.DriveAttention.HealthPercent(wearPercent) is { } p ? Loc.Format("Drive_Health_Percent", name, p) : name;
+    }
 
     private static IReadOnlyList<InfoRow> NetworkRows(NetworkAdapterInfo n) =>
     [

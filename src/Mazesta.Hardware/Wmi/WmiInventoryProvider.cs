@@ -20,11 +20,19 @@ public sealed class WmiInventoryProvider(IWmiQuery query, ILogger<WmiInventoryPr
             Section<long?>("computer", () => WmiInventoryParser.TotalMemory(query.Query(Cimv2, "SELECT TotalPhysicalMemory FROM Win32_ComputerSystem")), null),
             Section<MotherboardInfo?>("board", () => WmiInventoryParser.Board(query.Query(Cimv2, "SELECT Manufacturer,Product,Version,SerialNumber FROM Win32_BaseBoard")), null),
             Section<BiosInfo?>("bios", () => WmiInventoryParser.Bios(query.Query(Cimv2, "SELECT Manufacturer,SMBIOSBIOSVersion,ReleaseDate,SMBIOSMajorVersion,SMBIOSMinorVersion FROM Win32_BIOS")), null),
-            Section<IReadOnlyList<StorageDeviceInfo>>("disks", () => WmiInventoryParser.Disks(query.Query(Storage, "SELECT FriendlyName,SerialNumber,MediaType,BusType,Size,FirmwareVersion,HealthStatus FROM MSFT_PhysicalDisk")), []),
+            Section<IReadOnlyList<StorageDeviceInfo>>("disks", () => Disks(errors), []),
             Section<IReadOnlyList<NetworkAdapterInfo>>("adapters", () => WmiInventoryParser.Adapters(
                 query.Query(Cimv2, "SELECT Name,MACAddress,Speed,NetEnabled,InterfaceIndex FROM Win32_NetworkAdapter WHERE PhysicalAdapter=TRUE"),
                 query.Query(Cimv2, "SELECT InterfaceIndex,IPAddress FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=TRUE")), []),
             Section<OsInfo?>("os", () => WmiInventoryParser.Os(query.Query(Cimv2, "SELECT Caption,Version,BuildNumber,OSArchitecture FROM Win32_OperatingSystem")), null),
             errors);
     }, ct);
+
+    /// <summary>The drives, each with its wear counter from the reliability counters when Windows has one; without them the drives still list.</summary>
+    private IReadOnlyList<StorageDeviceInfo> Disks(List<string> errors)
+    {
+        var disks = WmiInventoryParser.Disks(query.Query(Storage, "SELECT FriendlyName,SerialNumber,MediaType,BusType,Size,FirmwareVersion,HealthStatus FROM MSFT_PhysicalDisk"));
+        try { return WmiInventoryParser.WithWear(disks, new WmiDriveHealthProvider(query).Read()); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { logger.LogWarning(ex, "WMI drive wear failed"); errors.Add($"wear: {ex.Message}"); return disks; }
+    }
 }

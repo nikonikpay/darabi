@@ -114,12 +114,25 @@ async function start() {
   on("toast", (m) => toast(m.text, m.kind));
   // The pages read the hardware list once; they wait until the sensor scan has settled, as the WPF edition does.
   if (await call("app.navReady")) whenReady();
-  else { stage.append(h("div", { class: "page" }, h("p", { class: "page-lede" }, t("Nav_Starting")))); }
+  else bootCard(info.provider.text);
+}
+
+// The first sensor scan takes a minute on an older machine: the card says what is happening and counts the seconds, so it never looks hung.
+let bootTimer = 0;
+function bootCard(status) {
+  const card = document.getElementById("boot"); if (!card) return;
+  const secs = h("span", { class: "boot-secs lat" }), prov = h("p", { class: "boot-prov", id: "boot-prov" }, status || "");
+  card.append(h("h2", { class: "boot-title" }, t("Web_Boot_Title")), h("p", { class: "boot-text" }, t("Web_Boot_Sensors")), prov, secs);
+  const start = Date.now();
+  const tick = () => { secs.textContent = t("Web_Boot_Elapsed", fa(String(Math.floor((Date.now() - start) / 1000)))); };
+  tick(); bootTimer = setInterval(tick, 1000);
+  on("provider", (p) => { const el = document.getElementById("boot-prov"); if (el) el.textContent = p.text; });
 }
 
 async function whenReady() {
   if (ready) return;
   await loadHardware();
+  clearInterval(bootTimer);
   ready = true; app.dataset.state = "ready";
   show((location.hash.match(/^#\/(\w+)/) || [])[1] || "dashboard");
 }

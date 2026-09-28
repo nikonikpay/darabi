@@ -15,20 +15,6 @@
 
         <TextBlock Grid.Row="0" Text="{loc:Loc Nav_Reports}" Style="{StaticResource Text.PageTitle}" Margin="0,0,0,14" />
 
-        <!-- The customer summary: one boxed A5 sheet about the machine now. -->
-        <Border Grid.Row="1" Style="{StaticResource Card}">
-            <DockPanel>
-                <Button DockPanel.Dock="Right" Content="{loc:Loc Reports_Summary}" Command="{Binding CreateSummaryCommand}" Style="{StaticResource Button.Primary}" Padding="18,9" VerticalAlignment="Center" />
-                <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="12" Background="{StaticResource Brush.AccentDim}" Margin="0,0,14,0" VerticalAlignment="Center">
-                    <TextBlock Text="&#xE749;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="20" Foreground="{StaticResource Brush.Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="{loc:Loc Reports_Summary_Title}" Style="{StaticResource Text.CardTitle}" />
-                    <TextBlock Text="{loc:Loc Reports_Summary_Note}" Style="{StaticResource Text.Muted}" FontSize="12" Margin="0,3,12,0" />
-                </StackPanel>
-            </DockPanel>
-        </Border>
-
         <Grid Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -52,6 +38,8 @@
                                     <WrapPanel DockPanel.Dock="Right" VerticalAlignment="Center" MaxWidth="520" HorizontalAlignment="Right">
                                         <Button Style="{StaticResource Button.Primary}" Content="{loc:Loc Reports_Html}" Margin="6,3,0,3"
                                                 Command="{Binding DataContext.OpenHtmlCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        <Button Content="{loc:Loc Reports_Summary}" Margin="6,3,0,3"
+                                                Command="{Binding DataContext.SummarizeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                         <Button Content="{loc:Loc Reports_Pdf}" Margin="6,3,0,3"
                                                 Command="{Binding DataContext.ExportPdfCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                         <Button Content="{loc:Loc Reports_Text}" Margin="6,3,0,3"

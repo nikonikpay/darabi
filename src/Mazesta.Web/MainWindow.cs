@@ -13,7 +13,7 @@ public sealed class MainWindow : Window
     private readonly WebView2 _view = new() { DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x0C, 0x0C, 0x0C) };
     private readonly IServiceProvider _services; private readonly AppPaths _paths; private readonly AppConfig _config; private readonly JsonStore<AppConfig> _store;
     private readonly bool _configCorrupt; private readonly ILogger _log;
-    private WebBridge? _bridge;
+    private WebBridge? _bridge; private readonly UIElement _loading;
 
     /// <summary>The browser environment, shared with the chart windows (one browser process for all of them).</summary>
     public CoreWebView2Environment? WebEnvironment { get; private set; }
@@ -24,7 +24,11 @@ public sealed class MainWindow : Window
         Title = "Mazesta"; Width = 1360; Height = 860; MinWidth = 1024; MinHeight = 640;
         Background = new SolidColorBrush(Color.FromRgb(0x0C, 0x0C, 0x0C));
         Icon = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/MazestaWeb;component/Assets/mazesta.ico"));
-        Content = _view;
+        // Until the page has drawn, a native loading panel: starting the browser on an older machine takes seconds, and a blank window looks hung.
+        _view.Visibility = Visibility.Hidden;
+        var loading = Loading();
+        Content = new System.Windows.Controls.Grid { Children = { loading, _view } };
+        _loading = loading;
         SourceInitialized += (_, _) => DarkTitleBar();
         Loaded += async (_, _) => await StartAsync();
         StateChanged += (_, _) => _bridge?.SetVisible(WindowState != WindowState.Minimized);
@@ -55,6 +59,8 @@ public sealed class MainWindow : Window
             core.NewWindowRequested += (_, a) => a.Handled = true;
             core.DownloadStarting += (_, a) => a.Cancel = true;
             core.PermissionRequested += (_, a) => a.State = CoreWebView2PermissionState.Deny;
+            // The page shows its own loading card from its first paint, so the native one goes as soon as the page has drawn.
+            core.DOMContentLoaded += (_, _) => { _view.Visibility = Visibility.Visible; _loading.Visibility = Visibility.Collapsed; };
             _bridge = new WebBridge(core, _services, _paths, _config, _store, _configCorrupt, this, _log);
             core.Navigate($"https://{Host}/index.html");
         }
@@ -80,6 +86,29 @@ public sealed class MainWindow : Window
         _config.MainWindow = new WindowPlacement(b.Left, b.Top, b.Width, b.Height, maximized);
         _store.Save(_config);
         _bridge?.Dispose();
+    }
+
+    private static UIElement Loading()
+    {
+        var ink = new SolidColorBrush(Color.FromRgb(0x0C, 0x0C, 0x0C)); var yellow = new SolidColorBrush(Color.FromRgb(0xFD, 0xD4, 0x00));
+        var muted = new SolidColorBrush(Color.FromRgb(0x8F, 0x8C, 0x82));
+        var bar = new System.Windows.Controls.ProgressBar { IsIndeterminate = true, Height = 3, Width = 220, Margin = new Thickness(0, 18, 0, 0), Foreground = yellow,
+            Background = new SolidColorBrush(Color.FromRgb(0x1C, 0x1C, 0x19)), BorderThickness = new Thickness(0) };
+        return new System.Windows.Controls.Border
+        {
+            Background = ink,
+            Child = new System.Windows.Controls.StackPanel
+            {
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new System.Windows.Controls.TextBlock { Text = "MAZESTA", Foreground = yellow, FontSize = 28, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Center },
+                    new System.Windows.Controls.TextBlock { Text = Desktop.Localization.Loc.Get("Web_Boot_Window"), Foreground = muted, FontSize = 13, Margin = new Thickness(0, 8, 0, 0),
+                        HorizontalAlignment = HorizontalAlignment.Center, FlowDirection = Desktop.Localization.Loc.IsRtl ? FlowDirection.RightToLeft : FlowDirection.LeftToRight },
+                    bar,
+                },
+            },
+        };
     }
 
     private void DarkTitleBar()

@@ -24,6 +24,25 @@ public static class SensorSummarizer
         return result;
     }
 
+    /// <summary>Each temperature sensor's highest reading inside each window (a test's or a benchmark's own run), from every recorded sample.
+    /// A window in which a sensor recorded nothing has no peak for it.</summary>
+    public static IReadOnlyList<WindowPeak> Peaks(PollingEngine engine, IEnumerable<SensorSummary> sensors, IEnumerable<(DateTimeOffset From, DateTimeOffset To)> windows)
+    {
+        var temps = sensors.Where(s => s.Kind == nameof(SensorKind.Temperature)).Select(s => (s.Id, Raw: engine.History.GetRaw(new SensorId(s.Id)))).ToList();
+        var list = new List<WindowPeak>();
+        foreach (var (from, to) in windows.Distinct())
+        {
+            int a = engine.History.SecondsSinceEpoch(from), b = engine.History.SecondsSinceEpoch(to);
+            foreach (var (id, raw) in temps)
+            {
+                double max = double.NegativeInfinity;
+                for (int i = 0; i < raw.Seconds.Length; i++) if (raw.Seconds[i] >= a && raw.Seconds[i] <= b && !float.IsNaN(raw.Values[i])) max = Math.Max(max, raw.Values[i]);
+                if (!double.IsNegativeInfinity(max)) list.Add(new(from, to, id, max));
+            }
+        }
+        return list;
+    }
+
     /// <summary>Statistics and a down-sampled trace of the valid samples inside [startSec, endSec]; null when there are none.</summary>
     internal static SensorSummary? Summarize(SensorDefinition def, string hardwareName, RawSeries raw, int startSec, int endSec)
     {
@@ -33,6 +52,6 @@ public static class SensorSummarizer
         if (points.Count == 0) return null;
         int step = (int)Math.Ceiling(points.Count / (double)MaxTracePoints);
         var trace = points.Where((_, i) => i % step == 0).Select(p => new TracePoint(p.Sec - startSec, p.Value)).ToList();
-        return new(def.Id.Value, hardwareName, def.Name, def.Kind.ToString(), Units.Symbol(def.Unit), points.Min(p => p.Value), points.Average(p => p.Value), points.Max(p => p.Value), points.Count, trace);
+        return new(def.Id.Value, hardwareName, def.Name, def.Kind.ToString(), Units.Symbol(def.Unit), points.Min(p => p.Value), points.Average(p => p.Value), points.Max(p => p.Value), points.Count, trace, def.Role.ToString());
     }
 }
