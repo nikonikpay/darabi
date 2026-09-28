@@ -24,6 +24,7 @@ public sealed class BenchmarkRecords
         ["bench.cpu.single"] = new("Bench_Cpu_Gflops", true), ["bench.cpu.multi"] = new("Bench_Cpu_Gflops", true),
         ["bench.memory"] = new("Bench_Mem_Read", true), ["bench.storage"] = new("Bench_Storage_SeqRead", true),
         ["bench.gpu.d3d"] = new("Bench_Gpu_Fps", true), ["bench.gpu.rt"] = new("Bench_Gpu_Rt_Fps", true), ["bench.gpu.ai"] = new("Bench_Gpu_Ai_Fp32", true),
+        ["bench.gpu.scene.d3d"] = new("Bench_Gpu_Scene_Fps", true), ["bench.gpu.scene.rt"] = new("Bench_Gpu_Scene_Fps", true),
         ["bench.network.internet"] = new("Bench_Net_Download", true),
     };
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };

@@ -1,0 +1,52 @@
+using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu.Scene;
+namespace Mazesta.Diagnostics.Gpu.Benchmarks;
+
+/// <summary>
+/// The visual tests' Persian garden as a benchmark: the same scene and camera walk, drawn off screen at 2560x1440 with no window and no
+/// v-sync cap - by Direct3D 12 rasterisation at the "heavy" level (4096 shadow map, the pool's reflection at full size, 4x MSAA) or by
+/// DirectX Raytracing (a shadow ray to the moon and every lamp in reach, reflection and refraction, 4 bounces). Frame n always shows the
+/// walk at n/30 s, so every run draws the same frames whatever the card's speed. Reported: the average frame rate and the 1 % low (the
+/// frame rate of the slowest hundredth of frames). A frame drawn before the run and again after it at the same moment must be the same
+/// bits, or the run failed. Mazesta's own scene - not comparable with other programs' or games' scores.
+/// </summary>
+public sealed class GpuSceneBenchmark(bool rayTraced) : IBenchmark, ITestAvailability
+{
+    public static readonly TestDefinition Raster = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", 60, [GpuDevices.Option]);
+    public static readonly TestDefinition RayTraced = new(new TestId("bench.gpu.scene.rt"), "Bench_Gpu_SceneRt", 60, [GpuDevices.Option]);
+    public TestDefinition Definition => rayTraced ? RayTraced : Raster;
+    public HardwareKind Component => HardwareKind.Gpu;
+    public Unavailability? CheckAvailability(TestOptions options) => rayTraced ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
+    private const int Width = 2560, Height = 1440; private const uint Load = 3; private const float Step = 1 / 30f, CheckTime = 1.234f;
+
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Definition, request, s => Run(s, request, ct));
+
+    private (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
+    {
+        if (rayTraced && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve(request, Definition)!))
+            throw new GpuUnsupportedException($"{s.AdapterName} does not support DirectX Raytracing 1.1 (inline ray tracing).");
+        var garden = new GardenGpu(s, GardenScene.Embedded, rayTraced ? GardenScene.Mode.RayTraced : GardenScene.Mode.Raster);
+        using GardenRenderer renderer = rayTraced ? new GardenRay(s, garden, Width, Height, []) : new GardenRaster(s, garden, Width, Height, [], Load);
+        var before = renderer.Capture(CheckTime);
+        for (int i = 0; i < 3; i++) s.Run(l => renderer.Draw(l, i * Step, renderer.OwnTarget));   // warm-up: first-use costs are not measured
+
+        var times = new List<double>(); var total = Stopwatch.StartNew(); var frame = Stopwatch.StartNew(); int n = 0;
+        while (total.Elapsed.TotalSeconds < request.DurationSeconds)
+        {
+            ct.ThrowIfCancellationRequested();
+            frame.Restart();
+            float t = n++ * Step;
+            s.Run(l => renderer.Draw(l, t, renderer.OwnTarget));   // every submission is waited for: the time is the frame's own
+            times.Add(frame.Elapsed.TotalSeconds);
+            request.Report(total.Elapsed.TotalSeconds / request.DurationSeconds);
+        }
+        if (!renderer.Capture(CheckTime).AsSpan().SequenceEqual(before))
+            throw new InvalidOperationException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
+        double fps = n / total.Elapsed.TotalSeconds;
+        var slowest = times.OrderByDescending(x => x).Take(Math.Max(1, times.Count / 100)).Average();
+        string how = renderer is GardenRaster r
+            ? $"Direct3D 12, heavy level: shadow map {r.Level.ShadowSize}, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
+            : $"DXR 1.1 inline ray tracing: shadow rays to the moon and {garden.PointLights.Length} lamps, reflection and refraction, {((GardenRay)renderer).Bounces} bounces";
+        return ([new("Bench_Gpu_Scene_Fps", fps, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS")],
+            $"Persian garden off screen at {Width}x{Height}, {n} frames of the camera walk; {how}; {garden.Instances.Length} objects; check frame identical before and after");
+    }
+}

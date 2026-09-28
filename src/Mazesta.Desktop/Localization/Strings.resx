@@ -1271,4 +1271,8 @@ The update services stopped and disabled</value></data>
   <data name="Tuning_Startup" xml:space="preserve"><value>At sign-in</value></data>
   <data name="Tuning_Startup_Hint" xml:space="preserve"><value>The tray puts the card in this profile at every Windows sign-in (GPU settings are lost on a reboot). Put the card back to stock to stop it.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>It was not kept for the next sign-in: {0}</value></data>
+  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>Graphics — Persian garden (Direct3D 12)</value></data>
+  <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>Graphics — Persian garden, ray traced (DXR)</value></data>
+  <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden (2560x1440)</value></data>
+  <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>1% low (the slowest hundredth of frames)</value></data>
 </root>

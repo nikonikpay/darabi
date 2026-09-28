@@ -64,7 +64,7 @@ const tests = () => ({
     error: null, outcome: i < 3 ? OUT[i] : "NotRun", outcomeText: strings[`Test_Outcome_${i < 3 ? OUT[i] : "NotRun"}`], percent: i < 2 ? 1 : i === 2 ? 0.46 : 0,
     status: i === 2 ? strings.Test_Status_Running : "", errors: null, detail: i === 0 ? "matrix 256x256 FP64 on 32 threads; measured CPU load avg 99.6 % (min 98.1); package 142 W max; Tctl 81.4 °C max" : null })),
 });
-const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_Memory", "Memory"], ["Bench_Storage", "Storage"], ["Bench_Gpu_D3D", "Gpu"], ["Bench_Gpu_Rt", "Gpu"], ["Bench_Gpu_Ai", "Gpu"], ["Bench_Net_Internet", "Network"]];
+const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_Memory", "Memory"], ["Bench_Storage", "Storage"], ["Bench_Gpu_D3D", "Gpu"], ["Bench_Gpu_SceneD3D", "Gpu"], ["Bench_Gpu_Rt", "Gpu"], ["Bench_Gpu_SceneRt", "Gpu"], ["Bench_Gpu_Ai", "Gpu"], ["Bench_Net_Internet", "Network"]];
 const bench = () => ({ running: false, queue: "", canRunSelected: true,
   rows: BENCH.map(([k, c], i) => ({ id: k, name: strings[k], component: c, selected: i === 0 || i === 3, duration: "60", percent: i < 2 ? 100 : 0, status: i < 2 ? strings.Bench_Status_CompletedAt.replace("{0}", "01:40") : "", active: false, detail: null, options: [],
     metrics: i === 0 ? [{ name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS" }, { name: strings.Bench_Cpu_ClockPeak, value: "4650 MHz" }, { name: strings.Bench_Cpu_TempMax, value: "71.0 °C" }]

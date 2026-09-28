@@ -22,17 +22,17 @@ $jobs = @(
     @('Raster.hlsl', 'FillVS', 'vs_6_0', 'RasterFillVS.cso'),
     @('Raster.hlsl', 'FillPS', 'ps_6_0', 'RasterFillPS.cso'),
     @('RayQuery.hlsl', 'Main', 'cs_6_5', 'RayQuery.cso'),
-    @('SceneRaster.hlsl', 'SceneVS', 'vs_6_0', 'SceneRasterVS.cso'),
-    @('SceneRaster.hlsl', 'ScenePS', 'ps_6_0', 'SceneRasterPS.cso'),
-    @('SceneRaster.hlsl', 'BackgroundVS', 'vs_6_0', 'SceneBackgroundVS.cso'),
-    @('SceneRaster.hlsl', 'BackgroundPS', 'ps_6_0', 'SceneBackgroundPS.cso'),
-    @('SceneRaster.hlsl', 'FurVS', 'vs_6_0', 'SceneFurVS.cso'),
-    @('SceneRaster.hlsl', 'FurPS', 'ps_6_0', 'SceneFurPS.cso'),
-    @('SceneRaster.hlsl', 'ParticleVS', 'vs_6_0', 'SceneParticleVS.cso'),
-    @('SceneRaster.hlsl', 'ParticlePS', 'ps_6_0', 'SceneParticlePS.cso'),
+    @('GardenRaster.hlsl', 'MainVS', 'vs_6_0', 'GardenMainVS.cso'),
+    @('GardenRaster.hlsl', 'ShadowVS', 'vs_6_0', 'GardenShadowVS.cso'),
+    @('GardenRaster.hlsl', 'ShadowPS', 'ps_6_0', 'GardenShadowPS.cso'),
+    @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_0', 'GardenOpaquePS.cso'),
+    @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_0', 'GardenCutoutPS.cso'),
+    @('GardenRaster.hlsl', 'TransparentPS', 'ps_6_0', 'GardenTransparentPS.cso'),
+    @('GardenRaster.hlsl', 'SkyVS', 'vs_6_0', 'GardenSkyVS.cso'),
+    @('GardenRaster.hlsl', 'SkyPS', 'ps_6_0', 'GardenSkyPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
-    @('SceneRay.hlsl', 'Main', 'cs_6_5', 'SceneRay.cso')
+    @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso')
 )
 foreach ($j in $jobs) {
     & $dxc.FullName -nologo -O3 -Qstrip_debug -Qstrip_reflect -E $j[1] -T $j[2] -Fo (Join-Path $dir $j[3]) (Join-Path $dir $j[0])

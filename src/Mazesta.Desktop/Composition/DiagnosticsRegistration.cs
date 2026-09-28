@@ -43,7 +43,9 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: true));
         s.AddSingleton<IBenchmark, MemoryBenchmark>();
         s.AddSingleton<IBenchmark, GpuRasterBenchmark>();
+        s.AddSingleton<IBenchmark>(new GpuSceneBenchmark(rayTraced: false));
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
+        s.AddSingleton<IBenchmark>(new GpuSceneBenchmark(rayTraced: true));
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();
         s.AddSingleton<IBenchmark, StorageBenchmark>();
         s.AddSingleton<IBenchmark>(new InternetSpeedBenchmark());

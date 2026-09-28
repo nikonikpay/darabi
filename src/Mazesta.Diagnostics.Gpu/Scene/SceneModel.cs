@@ -5,10 +5,10 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 [StructLayout(LayoutKind.Sequential)] public readonly record struct SceneVertex(Vector3 Position, Vector3 Normal);
 
 /// <summary>
-/// The model the visual GPU tests draw: a plain triangle list (three vertices a triangle, no index buffer), centred on the origin and
-/// scaled to <see cref="Width"/> units across, so any model sits in the same place in the same scene. By default it is the Mazesta logo,
-/// extruded from the same SVG paths the app and the reports draw; a Wavefront .obj at <see cref="CustomPath"/> replaces it, so the owner
-/// can drop in his own 3-D models without a new build.
+/// A model as a plain triangle list (three vertices a triangle, no index buffer), centred on the origin and scaled to <see cref="Width"/>
+/// units across. The Mazesta logo, extruded from the same SVG paths the app and the reports draw; or a Wavefront .obj at
+/// <see cref="CustomPath"/>, which the visual GPU tests float over the garden's pool in the logo's place, so the owner can drop in their own
+/// 3-D models without a new build.
 /// </summary>
 public sealed class SceneModel(string name, SceneVertex[] vertices)
 {
@@ -17,34 +17,17 @@ public sealed class SceneModel(string name, SceneVertex[] vertices)
     public SceneVertex[] Vertices { get; } = vertices;
     public int Triangles => Vertices.Length / 3;
 
-    /// <summary>The same triangles with every corner's normal averaged over all faces that meet at that point, weighted by area: the fur
-    /// layers are pushed out along these, so they stay closed over the model's sharp edges instead of splitting open along them.</summary>
-    public SceneVertex[] SmoothNormals()
-    {
-        static (int, int, int) Key(Vector3 p) => ((int)MathF.Round(p.X * 1e4f), (int)MathF.Round(p.Y * 1e4f), (int)MathF.Round(p.Z * 1e4f));
-        var sums = new Dictionary<(int, int, int), Vector3>();
-        for (int i = 0; i + 2 < Vertices.Length; i += 3)
-        {
-            var face = Vector3.Cross(Vertices[i + 1].Position - Vertices[i].Position, Vertices[i + 2].Position - Vertices[i].Position);   // length = 2 × area
-            if (Vector3.Dot(face, Vertices[i].Normal) < 0) face = -face;   // keep the model's own outward side
-            for (int k = 0; k < 3; k++) { var key = Key(Vertices[i + k].Position); sums[key] = sums.GetValueOrDefault(key) + face; }
-        }
-        return [.. Vertices.Select(v => sums[Key(v.Position)] is var n && n.LengthSquared() > 1e-12f ? v with { Normal = Vector3.Normalize(n) } : v)];
-    }
-
     /// <summary>Models\gpu-test.obj next to the app.</summary>
     public static string CustomPath => Path.Combine(AppContext.BaseDirectory, "Models", "gpu-test.obj");
 
-    /// <summary>The custom model when there is a readable one, otherwise the logo; <paramref name="problem"/> says why a custom model was not used.</summary>
-    public static SceneModel Load(out string? problem)
+    /// <summary>The owner's model when there is a readable one (it takes the logo's place in the garden), otherwise null;
+    /// <paramref name="problem"/> says why a model that is there was not used.</summary>
+    public static SceneModel? LoadCustom(out string? problem)
     {
         problem = null;
-        if (File.Exists(CustomPath))
-        {
-            try { return FromObj(File.ReadAllText(CustomPath), Path.GetFileName(CustomPath)); }
-            catch (Exception e) when (e is FormatException or InvalidDataException or IOException) { problem = $"{CustomPath} was not used: {e.Message}"; }
-        }
-        return Logo();
+        if (!File.Exists(CustomPath)) return null;
+        try { return FromObj(File.ReadAllText(CustomPath), Path.GetFileName(CustomPath)); }
+        catch (Exception e) when (e is FormatException or InvalidDataException or IOException) { problem = $"{CustomPath} was not used: {e.Message}"; return null; }
     }
 
     /// <summary>The Mazesta logo, extruded to a quarter of its height.</summary>
