@@ -20,7 +20,7 @@ The earlier WPF edition (`MazestaTest.exe`, its own XAML pages) was retired on 2
 | `Mazesta.Reporting` | `SessionReport` (test sessions and benchmark-only reports, `ReportKind`), JSON/HTML/plain-text writers in Persian or English (`ReportText`), `ReportStore`, `SensorSummarizer`, `ReportComparison` and the before/after page. UI-free. | net10.0 | Core, Monitoring |
 | `Mazesta.Desktop` | The app layer (a library; the assembly keeps its old name `MazestaTest`): composition (`Bootstrapper`, DI), the page view models the web bridge drives (tests, benchmarks, reports, settings, tuning, Windows tools, gaming, system information), `ReportService` and PDF through WebView2, tray control, the string tables (fa/en), and the one native window, the on-screen overlay (`OverlayWindow`, `OverlayViewModel`, `FrameChart`). | net10.0-windows | all of the above |
 | `Mazesta.Web` | "Mazesta": the app. Composes the services of `Mazesta.Desktop` (its `Bootstrapper`) and shows the interface in one WebView2 from `wwwroot` (plain HTML/CSS/JS modules, no build step, offline). `WebBridge` is the only way the page reaches the machine: a fixed list of named methods over JSON, mirroring the Desktop view models, and live sensor snapshots while the window is visible. Only one edition runs at a time (shared single-instance mutex); a second start brings the open window forward, and closing the main window ends the process. Also: `ChartWindow` (a sensor's chart popped out, its own tiny bridge), `ShopFeed` (one product from the shop's WordPress REST API, as plain text, cached), `Notifier` (Windows notifications for health alerts, failed tests and a failed sensor reader), benchmark records (`BenchmarkRecords`, best per system), the overlay page, and the diagnostic export. Ships the tray next to its exe. | net10.0-windows | Desktop (as a library), Tray (to ship it) |
-| `Mazesta.Tray` | "Mazesta Monitor": windowless tray process that opens the sensor provider only during a check (spec §8.2): temperatures every 10 minutes, drive health every 30, each check kept in `Data\tray\checks.json` and shown in its summary window (double-click the icon); a problem is a Windows notification. | net10.0-windows | Core, Hardware, Persistence |
+| `Mazesta.Tray` | "Mazesta Monitor": windowless tray process that opens the sensor provider only during a check (spec §8.2): temperatures every 10 minutes, drive health every 30, each check kept in `Data\tray\checks.json` and shown in its summary window (double-click the icon); a problem is a Windows notification. Its menu shows and hides the app's overlay (`OverlaySignals`: the app then outlives its closed window for the overlay alone) and switches each NVIDIA card's GPU profile, which it puts back at every sign-in (`GpuStartup`, Data/config/gpu-startup.json). | net10.0-windows | Core, Hardware, Persistence |
 
 Only `Web` references `Desktop`. `Diagnostics` does not reference `Hardware`: executors read what `PollingEngine` already published
 (`SensorEvidence`), never a hardware provider directly. `Reporting` knows nothing of WPF; the Desktop `ReportService` feeds it.
@@ -29,9 +29,11 @@ Only `Web` references `Desktop`. `Diagnostics` does not reference `Hardware`: ex
 ## Pages
 
 The pages are the web page's modules (`src/Mazesta.Web/wwwroot/js/pages`), grouped in the side bar as families: Dashboard,
-Monitoring, Tests & benchmarks, Hardware (System, CPU, GPU, Storage, Network), Gaming & overlay, Optimization (Overclock &
-undervolt, Windows tools), Reports, Settings; Ctrl+1 ... Ctrl+8 open the families. Gaming and Windows Tools only run Windows' own
-tools on a button (powercfg, sfc, DISM) or open Windows' own settings. Overclock & undervolt (slice 9) changes NVIDIA GPUs through
+Monitoring, Tests & benchmarks, Hardware (System, CPU, GPU, Storage, Network), Overlay, Overclock & undervolt, Windows & games
+(Windows tools, Tweaks, Windows Update, Gaming), Reports, Settings; Ctrl+1 ... Ctrl+9 open the families. Windows tools and Gaming run
+Windows' own tools on a button (powercfg, sfc, DISM) or open Windows' own settings; Tweaks and Windows Update (WinUtil's list, trimmed to
+what can be undone: `Diagnostics.Windows.TweakCatalog`, `UpdateProfiles`, `DnsChoice`) change registry values and services on an explicit
+click and read the state back. Overclock & undervolt (slice 9) changes NVIDIA GPUs through
 NVML - manual settings and an automatic search whose results are kept only when measured better than stock - and explains CPU and
 memory-profile tuning without changing them (`docs/TUNING-RESEARCH.md`). The side bar carries the service number (spec 7.1),
 printed on every report. The look is set by `DESIGN.md`.

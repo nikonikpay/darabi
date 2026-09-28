@@ -112,7 +112,7 @@ Vazirmatn for words (800 for titles, 700–750 for panel titles, 400 for body); 
 ## Layout
 
 - **Shell:** a side bar on the reading-start edge (236px, or 76px icons-only, toggled and remembered per viewer), the scrolling stage, and a 32px status band under it with the provider's live dot.
-- **Families:** the side bar has eight entries: dashboard, monitoring, tests & benchmarks, hardware (system, CPU, GPU, storage, network), gaming & overlay, optimization (tuning, Windows tools), reports, settings. A family of several pages shows them as a sticky ruled tab strip across the page top (the open one underlined in yellow); its entry returns to the page last open in it. Ctrl+1 … Ctrl+8 open the families.
+- **Families:** the side bar has nine entries: dashboard, monitoring, tests & benchmarks, hardware (system, CPU, GPU, storage, network), overlay, overclock & undervolt, Windows & games (tools, tweaks, Windows Update, gaming), reports, settings. A family of several pages shows them as a sticky ruled tab strip across the page top (the open one underlined in yellow); its entry returns to the page last open in it. Ctrl+1 … Ctrl+9 open the families.
 - **Page:** a small header (title, a one-line lede in `paper-3`, actions at the other end), then panels in grids of 12–14px gaps.
 
 ## Components
@@ -130,7 +130,7 @@ Vazirmatn for words (800 for titles, 700–750 for panel titles, 400 for body); 
 
 ## The overlay
 
-One translucent plate (8px corners, a hairline edge), no cards inside it. On top, the **frame-rate block**: FPS big and white with "FPS" in yellow, the 1 % low and frame time beside it, and the last minute as a **trace on a scope screen** (`FrameChart` in the window, `frameChart` in the page's preview): a dark screen with dotted divisions, the yellow line over a faint fill, the 1 % low as a dashed white level, the newest point marked, scaled from zero so a stutter reads as a dip. It is drawn whether or not the FPS chart is on, since it is what the block is for. Under it, a **block per part**, divided by hairlines, under its channel key (the part's short name in ink on a solid tag of its hue): each reading as its label, its number white with the unit small in the hue, and a 2px scale for a share of a fixed top (load, temperature); a charted item draws its minute instead. One column or two. The page's preview draws the same thing.
+One translucent plate (9px corners, a hairline edge) holding boxes: every part in a box of its own (its edge a third of its colour, a faint wash of it), its title bold on a solid tag of its hue. On top the **frame-rate box**: FPS big and white with "FPS" in yellow, the 1 % low and frame time beside it, the session's average, lowest and highest under it (a gap is never counted as zero; a new program in front starts afresh), and the last minute as a **trace on a scope screen** (`FrameChart` in the window, `frameChart` in the page's preview), scaled from zero so a stutter reads as a dip. Each reading: its label semibold, its number bold and white with the unit small in the hue, and a 2px scale for a share of a fixed top; a charted item draws its minute instead. Three layouts: one column, two columns, or **line** - every box side by side in one strip along the screen's edge, each reading a small label over its number, no charts. The page's preview draws the same thing. With the tray running the overlay outlives the main window, and the tray's menu shows and hides it.
 
 ## Motion
 
