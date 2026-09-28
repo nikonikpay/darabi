@@ -113,13 +113,16 @@
     <value>سنسورها: خطا — {0}</value>
   </data>
   <data name="Provider.PawnIoMissing" xml:space="preserve">
-    <value>درایور PawnIO نصب نیست. دمای و فرکانس CPU در دسترس نیست. PawnIO را از صفحه رسمی آن نصب کنید و برنامه را دوباره اجرا کنید.</value>
+    <value>درایور PawnIO نصب نیست و نصب خودکار آن موفق نشد. دما و فرکانس CPU در دسترس نیست. PawnIO را از صفحه رسمی آن نصب کنید و برنامه را دوباره اجرا کنید.</value>
   </data>
   <data name="Provider.NotElevated" xml:space="preserve">
     <value>برنامه با دسترسی Administrator اجرا نشده است. سنسورهای CPU و مادربرد در دسترس نیستند.</value>
   </data>
   <data name="Provider.OpenFailed" xml:space="preserve">
     <value>راه‌اندازی کتابخانه سنسور با خطا مواجه شد.</value>
+  </data>
+  <data name="Provider.CpuSensorsUnread" xml:space="preserve">
+    <value>PawnIO نصب است ولی دمای CPU خوانده نمی‌شود. ممکن است درایور توسط امنیت ویندوز مسدود شده یا منتظر ری‌استارت باشد؛ ویندوز را ری‌استارت کنید و دوباره امتحان کنید.</value>
   </data>
   <data name="Provider.NoHardware" xml:space="preserve">
     <value>هیچ سنسوری یافت نشد.</value>

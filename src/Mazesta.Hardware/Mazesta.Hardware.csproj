@@ -7,4 +7,19 @@
   </ItemGroup>
   <ItemGroup><ProjectReference Include="../Mazesta.Core/Mazesta.Core.csproj" /></ItemGroup>
   <ItemGroup><InternalsVisibleTo Include="Mazesta.Hardware.Tests" /></ItemGroup>
+
+  <!-- The official, signed PawnIO setup ships in Redist\ next to every exe that reads sensors; PawnIoDriver installs it on a machine that
+       lacks the driver. It is fetched once from the official release (not kept in git) and must match the hash PawnIoDriver also checks. -->
+  <PropertyGroup>
+    <PawnIoVersion>2.2.0</PawnIoVersion>
+    <PawnIoSha256>1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032</PawnIoSha256>
+    <PawnIoCache>$(MSBuildThisFileDirectory)obj\redist\pawnio-$(PawnIoVersion)\</PawnIoCache>
+  </PropertyGroup>
+  <Target Name="FetchPawnIoSetup" BeforeTargets="AssignTargetPaths" Condition="!Exists('$(PawnIoCache)PawnIO_setup.exe')">
+    <DownloadFile SourceUrl="https://github.com/namazso/PawnIO.Setup/releases/download/$(PawnIoVersion)/PawnIO_setup.exe" DestinationFolder="$(PawnIoCache)" Retries="2" />
+    <VerifyFileHash File="$(PawnIoCache)PawnIO_setup.exe" Hash="$(PawnIoSha256)" Algorithm="SHA256" />
+  </Target>
+  <ItemGroup>
+    <Content Include="$(PawnIoCache)PawnIO_setup.exe" Link="Redist\PawnIO_setup.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
 </Project>

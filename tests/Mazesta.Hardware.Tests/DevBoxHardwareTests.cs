@@ -17,7 +17,7 @@ public sealed class DevBoxFixture : IDisposable
 
     public DevBoxFixture()
     {
-        Provider = new LibreHardwareMonitorProvider(_computer, () => LibreHardwareMonitor.PawnIo.PawnIo.IsInstalled, IsElevated,
+        Provider = new LibreHardwareMonitorProvider(_computer, PawnIoDriver.IsInstalled, IsElevated,
             hw => (hw as LibreHardwareMonitor.Hardware.Storage.StorageDevice)?.Storage?.SerialNumber, new SystemClock(),
             NullLogger<LibreHardwareMonitorProvider>.Instance);
         Provider.Start();
@@ -48,22 +48,33 @@ public class DevBoxHardwareTests(DevBoxFixture fx) : IClassFixture<DevBoxFixture
     {
         Assert.NotEqual(ProviderState.Failed, fx.Provider.Status.State);
         if (fx.Provider.Status.State == ProviderState.Degraded)
-            Assert.Contains(fx.Provider.Status.ReasonKey, new[] { LibreHardwareMonitorProvider.ReasonPawnIoMissing, LibreHardwareMonitorProvider.ReasonNotElevated });
+            Assert.Contains(fx.Provider.Status.ReasonKey, new[] { LibreHardwareMonitorProvider.ReasonPawnIoMissing, LibreHardwareMonitorProvider.ReasonNotElevated, LibreHardwareMonitorProvider.ReasonCpuSensorsUnread });
     }
 
-    [Fact] public void Cpu_package_temperature_present_when_elevated_with_pawnio()
+    /// <summary>Package on Intel, Tctl/Tdie on AMD: whichever the CPU has must read once PawnIO is in place.</summary>
+    [Fact] public void Cpu_temperature_reads_when_elevated_with_pawnio()
     {
-        if (!DevBoxFixture.IsElevated() || !LibreHardwareMonitor.PawnIo.PawnIo.IsInstalled) return;   // documented prerequisite; the status test covers the reason
-        var def = fx.Provider.Hardware.SelectMany(h => h.Sensors).First(s => s.Role == SensorRole.CpuPackageTemp);
+        if (!DevBoxFixture.IsElevated() || !PawnIoDriver.IsInstalled()) return;   // documented prerequisite; the status test covers the reason
+        var def = fx.Provider.Hardware.SelectMany(h => h.Sensors).First(s => s.Role is SensorRole.CpuPackageTemp or SensorRole.CpuTctlTdie);
         var reading = fx.Last.Readings.Single(x => x.Id == def.Id);
         Assert.Equal(DataQuality.Ok, reading.Quality); Assert.InRange(reading.Value!.Value, 15, 110);
     }
 
-    [Fact] public void Nvidia_gpu_exposes_hot_spot_and_igpu_is_separate_node()
+    /// <summary>
+    /// Written against whatever GPUs this machine has, not the first dev box's RTX + Intel iGPU pair: it failed on a GTX 950 + Ryzen
+    /// 3400G box (Maxwell has no hot-spot sensor, the Vega iGPU was disabled). Every GPU vendor Windows lists must get its own LHM node, so
+    /// an iGPU is never folded into the discrete card, and a hot-spot sensor, where the card has one, must read a real value.
+    /// </summary>
+    [Fact] public async Task Every_gpu_windows_lists_is_its_own_node_and_a_hot_spot_reads()
     {
+        var inv = await new WmiInventoryProvider(new WmiQuery(), NullLogger<WmiInventoryProvider>.Instance).ReadAsync(CancellationToken.None);
+        static HardwareVendor VendorOf(string? pnp) => pnp?.ToUpperInvariant() switch
+        { { } p when p.Contains("VEN_10DE") => HardwareVendor.Nvidia, { } p when p.Contains("VEN_1002") => HardwareVendor.Amd, { } p when p.Contains("VEN_8086") => HardwareVendor.Intel, _ => HardwareVendor.Unknown };
         var gpus = fx.Provider.Hardware.Where(h => h.Kind == HardwareKind.Gpu).ToList();
-        Assert.Contains(gpus, g => g.Vendor == HardwareVendor.Nvidia && g.Sensors.Any(s => s.Role == SensorRole.GpuHotSpotTemp));
-        Assert.Contains(gpus, g => g.Vendor == HardwareVendor.Intel);
+        foreach (var vendor in inv.Gpus.Select(g => VendorOf(g.PnpDeviceId)).Where(v => v != HardwareVendor.Unknown).Distinct())
+            Assert.Contains(gpus, g => g.Vendor == vendor);
+        var hotSpots = gpus.SelectMany(g => g.Sensors).Where(s => s.Role == SensorRole.GpuHotSpotTemp).Select(s => s.Id).ToHashSet();
+        Assert.All(fx.Last.Readings.Where(r => hotSpots.Contains(r.Id)), r => Assert.Equal(DataQuality.Ok, r.Quality));
     }
 
     [Fact] public void Storage_nodes_exist()

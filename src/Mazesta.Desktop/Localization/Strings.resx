@@ -113,13 +113,16 @@
     <value>Sensors: failed — {0}</value>
   </data>
   <data name="Provider.PawnIoMissing" xml:space="preserve">
-    <value>PawnIO driver is not installed. CPU temperatures and clocks are unavailable. Install PawnIO from its official page, then restart.</value>
+    <value>PawnIO driver is not installed and the automatic install did not succeed. CPU temperatures and clocks are unavailable. Install PawnIO from its official page, then restart.</value>
   </data>
   <data name="Provider.NotElevated" xml:space="preserve">
     <value>Not running as administrator. CPU and motherboard sensors are unavailable.</value>
   </data>
   <data name="Provider.OpenFailed" xml:space="preserve">
     <value>Sensor library failed to start.</value>
+  </data>
+  <data name="Provider.CpuSensorsUnread" xml:space="preserve">
+    <value>PawnIO is installed but the CPU temperature does not read. The driver may be blocked (Windows security) or waiting for a restart; restart Windows and try again.</value>
   </data>
   <data name="Provider.NoHardware" xml:space="preserve">
     <value>No sensors were found.</value>

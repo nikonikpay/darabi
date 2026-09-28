@@ -3,9 +3,10 @@ using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Microsoft.Extensions
 namespace Mazesta.Hardware.Lhm;
 public sealed class LibreHardwareMonitorProvider : ISensorProvider
 {
-    public const string ReasonPawnIoMissing = "Provider.PawnIoMissing", ReasonNotElevated = "Provider.NotElevated", ReasonOpenFailed = "Provider.OpenFailed", ReasonNoHardware = "Provider.NoHardware";
+    public const string ReasonPawnIoMissing = "Provider.PawnIoMissing", ReasonNotElevated = "Provider.NotElevated", ReasonOpenFailed = "Provider.OpenFailed", ReasonNoHardware = "Provider.NoHardware", ReasonCpuSensorsUnread = "Provider.CpuSensorsUnread";
     private sealed class NodeState(MappedNode mapped) { public MappedNode Mapped = mapped; public DateTimeOffset? LastOk; public string? Failure; public DateTimeOffset? FailingSince; public int ConsecutiveFailures; }
     private readonly ILhmComputer _computer; private readonly Func<bool> _pawnIo, _elevated; private readonly IClock _clock; private readonly ILogger _log;
+    private readonly Action? _beforeOpen;
     private readonly LhmHardwareMapper _mapper; private readonly List<NodeState> _nodes = [];
     private ProviderStatus _status = ProviderStatus.NotStarted; private bool _historyWarned;
     public string Name => "LibreHardwareMonitor";
@@ -13,17 +14,23 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
     public event Action<ProviderStatus>? StatusChanged;
     public IReadOnlyList<HardwareNode> Hardware { get; private set; } = [];
 
-    public LibreHardwareMonitorProvider(ILhmComputer computer, Func<bool> isPawnIoInstalled, Func<bool> isElevated, Func<IHardware, string?> storageSerialResolver, IClock clock, ILogger<LibreHardwareMonitorProvider> logger)
-    { _computer = computer; _pawnIo = isPawnIoInstalled; _elevated = isElevated; _clock = clock; _log = logger; _mapper = new LhmHardwareMapper(storageSerialResolver); }
+    public LibreHardwareMonitorProvider(ILhmComputer computer, Func<bool> isPawnIoInstalled, Func<bool> isElevated, Func<IHardware, string?> storageSerialResolver, IClock clock, ILogger<LibreHardwareMonitorProvider> logger, Action? beforeOpen = null)
+    { _computer = computer; _pawnIo = isPawnIoInstalled; _elevated = isElevated; _clock = clock; _log = logger; _beforeOpen = beforeOpen; _mapper = new LhmHardwareMapper(storageSerialResolver); }
 
-    public static LibreHardwareMonitorProvider CreateDefault(IClock clock, ILoggerFactory loggerFactory) => new(
-        new LhmComputerAdapter(), () => PawnIo.IsInstalled, IsProcessElevated,
-        hw => (hw as StorageDevice)?.Storage?.SerialNumber, clock, loggerFactory.CreateLogger<LibreHardwareMonitorProvider>());
+    public static LibreHardwareMonitorProvider CreateDefault(IClock clock, ILoggerFactory loggerFactory)
+    {
+        var log = loggerFactory.CreateLogger<LibreHardwareMonitorProvider>();
+        // LHM loads its PawnIO modules inside Open(), so the driver has to be in place before it.
+        return new(new LhmComputerAdapter(), PawnIoDriver.IsInstalled, IsProcessElevated,
+            hw => (hw as StorageDevice)?.Storage?.SerialNumber, clock, log, () => PawnIoDriver.EnsureInstalled(IsProcessElevated(), log));
+    }
     private static bool IsProcessElevated() { using var id = WindowsIdentity.GetCurrent(); return new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator); }
 
     public void Start()
     {
         Status = ProviderStatus.Starting;
+        try { _beforeOpen?.Invoke(); }
+        catch (Exception ex) { _log.LogWarning(ex, "Preparing the sensor driver failed; continuing without it"); }
         try { _computer.Open(); }
         catch (Exception ex) { _log.LogError(ex, "LHM open failed"); Status = ProviderStatus.Failed(ReasonOpenFailed, ex.Message); return; }
         try
@@ -39,18 +46,21 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
         // PawnIO driver query) and can fail. A probe that cannot answer is answered pessimistically
         // so the customer is told sensors may be missing rather than being promised a clean run.
         if (!Probe(_elevated, "elevation")) Status = ProviderStatus.Degraded(ReasonNotElevated, "Process is not elevated; CPU and motherboard sensors are unavailable.", count);
-        else if (!Probe(_pawnIo, "PawnIO driver") && !HasCpuMsrEvidence()) Status = ProviderStatus.Degraded(ReasonPawnIoMissing, "PawnIO driver is not installed; CPU MSR sensors are unavailable.", count);
+        else if (!HasCpuMsrEvidence() && !Probe(_pawnIo, "PawnIO driver")) Status = ProviderStatus.Degraded(ReasonPawnIoMissing, "PawnIO driver is not installed; CPU MSR sensors are unavailable.", count);
+        else if (!HasCpuMsrEvidence() && HasCpuTemperatureSensors()) Status = ProviderStatus.Degraded(ReasonCpuSensorsUnread, "PawnIO is installed but no CPU temperature reads (driver blocked or not started).", count);
         else if (count == 0) Status = ProviderStatus.Degraded(ReasonNoHardware, "LHM returned no sensors.", 0);
         else Status = ProviderStatus.Ready(count);
     }
 
     /// <summary>
-    /// LHM's <c>PawnIo.IsInstalled</c> only reads one Windows uninstall registry key, so it can
-    /// report "not installed" while the driver is loaded and serving MSR reads (observed with
-    /// PawnIO 2.x on the dev box). CPU temperature sensors only exist when MSR access works,
-    /// so their presence is direct evidence the driver is available.
+    /// The registry check can report "not installed" while the driver is loaded and serving MSR reads (observed with PawnIO 2.x on the dev
+    /// box), so a CPU temperature that actually reads is taken as proof the driver works. The sensor merely existing is not proof: LHM
+    /// creates the Intel core/package temperature sensors from CPUID alone and leaves them empty without the driver - three field reports
+    /// (i7-10750H, Ryzen 9 9900X, Ryzen 5 3400G) were marked Ready while every CPU temperature was empty.
     /// </summary>
-    private bool HasCpuMsrEvidence() => Hardware.Any(n => n.Kind == HardwareKind.Cpu && n.Sensors.Any(s => s.Kind == SensorKind.Temperature));
+    private bool HasCpuMsrEvidence() => _nodes.Any(n => n.Mapped.Node.Kind == HardwareKind.Cpu
+        && n.Mapped.Sensors.Any(s => s.Definition.Kind == SensorKind.Temperature && s.Source.Value is > 0));
+    private bool HasCpuTemperatureSensors() => _nodes.Any(n => n.Mapped.Node.Kind == HardwareKind.Cpu && n.Mapped.Sensors.Any(s => s.Definition.Kind == SensorKind.Temperature));
 
     /// <summary>
     /// LHM activates some sensors only during the first Update() - the Nuvoton Super I/O's fans,

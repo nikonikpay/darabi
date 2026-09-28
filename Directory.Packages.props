@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.7-pre744" />
     <PackageVersion Include="ComputeSharp" Version="3.2.0" />
     <PackageVersion Include="Vortice.Direct3D12" Version="3.8.3" />
     <PackageVersion Include="Vortice.DirectML" Version="3.8.3" />

@@ -30,6 +30,25 @@ public class LibreHardwareMonitorProviderTests
         var (p, c, _) = Build(pawn: false); var cpu = new FakeHardware(HardwareType.Cpu, "/intelcpu/0", "i9"); cpu.Add("CPU Total", SensorType.Load, 0, 5); c.Roots.Add(cpu); p.Start();
         Assert.Equal((ProviderState.Degraded, LibreHardwareMonitorProvider.ReasonPawnIoMissing), (p.Status.State, p.Status.ReasonKey));
     }
+    [Fact] public void Empty_cpu_temperature_sensors_are_not_evidence_of_the_driver()
+    {
+        // LHM builds the Intel temperature sensors from CPUID even without PawnIO and leaves them empty (field report: i7-10750H).
+        var (p, c, _) = Build(pawn: false); var cpu = new FakeHardware(HardwareType.Cpu, "/intelcpu/0", "i7-10750H"); cpu.Add("CPU Package", SensorType.Temperature, 0, null); c.Roots.Add(cpu); p.Start();
+        Assert.Equal((ProviderState.Degraded, LibreHardwareMonitorProvider.ReasonPawnIoMissing), (p.Status.State, p.Status.ReasonKey));
+    }
+    [Fact] public void Driver_installed_but_cpu_temperature_unread_is_degraded_not_ready()
+    {
+        var (p, c, _) = Build(pawn: true); var cpu = new FakeHardware(HardwareType.Cpu, "/amdcpu/0", "Ryzen 5 3400G"); cpu.Add("Core (Tctl/Tdie)", SensorType.Temperature, 0, 0); c.Roots.Add(cpu); p.Start();
+        Assert.Equal((ProviderState.Degraded, LibreHardwareMonitorProvider.ReasonCpuSensorsUnread), (p.Status.State, p.Status.ReasonKey));
+    }
+    [Fact] public void Driver_is_prepared_before_the_computer_opens_and_a_failure_does_not_stop_start()
+    {
+        var c = new FakeLhmComputer(); c.Roots.Add(Gpu()); bool openedFirst = true;
+        var p = new LibreHardwareMonitorProvider(c, () => true, () => true, _ => null, new FixedClock(T0), NullLogger<LibreHardwareMonitorProvider>.Instance,
+            () => { openedFirst = c.Opened; throw new InvalidOperationException("setup failed"); });
+        p.Start();
+        Assert.False(openedFirst); Assert.Equal(ProviderState.Ready, p.Status.State);
+    }
     [Fact] public void Start_degraded_when_pawnio_missing()
     {
         var (p, c, _) = Build(pawn: false); c.Roots.Add(Gpu()); p.Start();
