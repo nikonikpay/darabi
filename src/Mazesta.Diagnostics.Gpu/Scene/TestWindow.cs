@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The plain Win32 window the visual GPU tests draw into (the way FurMark shows its test): created, pumped and destroyed on the one thread
+/// The plain Win32 window the visual GPU tests draw into (a window of its own, not the app's): created, pumped and destroyed on the one thread
 /// that renders, so the test needs nothing from WPF or WebView2. Closing it (the X, Alt+F4 or Esc) ends the test as cancelled by the
 /// technician. It is fixed-size - a resize mid-test would change the work per frame - or covers the whole screen without a border.
 /// </summary>

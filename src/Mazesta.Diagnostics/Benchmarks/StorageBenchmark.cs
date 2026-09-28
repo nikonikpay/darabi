@@ -2,7 +2,7 @@ using Mazesta.Core.Hardware; using System.Diagnostics; using Mazesta.Diagnostics
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>
-/// Uncached drive speed measured the way CrystalDiskMark does, so the numbers are comparable with what technicians know:
+/// Uncached drive speed at the queue depths the industry quotes, so the numbers are comparable with a drive's data sheet:
 /// sequential 1 MiB at queue depth 8 (write, then read), random 4 KiB reads at queue depth 32 and 1, and random 4 KiB
 /// writes at queue depth 32. Requests are overlapped - one request at a time (queue depth 1) cannot keep an NVMe drive
 /// busy, and reads suffer most because a write is acknowledged from the drive's cache while a read has to wait for the

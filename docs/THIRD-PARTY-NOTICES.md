@@ -30,7 +30,7 @@ under which licence, and by which project in this repository.
 | Archivo (variable, width and weight axes) | Google Fonts `ofl/archivo` | SIL Open Font License 1.1 (`src/Mazesta.Web/wwwroot/fonts/Archivo-OFL.txt`) | `Mazesta.Web` | Latin values and the condensed poster numerals of the web edition. Copyright the Archivo project authors (Omnibus-Type). https://github.com/Omnibus-Type/Archivo |
 | PawnIO (official signed setup, `PawnIO_setup.exe`) | 2.2.0 | Licence per its own site — see https://pawnio.eu/ | `Mazesta.Hardware` (`Redist/`) | Kernel driver LibreHardwareMonitor 0.9.5+ needs for CPU MSR, Ryzen SMU, Super I/O and SMBus sensors. The build downloads the official setup and refuses it unless its SHA-256 matches; it ships unmodified in `Redist/` and the app runs it silently (`-install -silent`) only when elevated and the driver is missing (`PawnIoDriver`). |
 
-No HWiNFO SDK, shared-memory interface, or any other third-party sensor
+No other monitoring program's SDK, shared-memory interface, or any other third-party sensor
 library is used. No telemetry, analytics or crash-reporting SDK is included.
 
 ### Licence obligation notes

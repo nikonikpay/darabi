@@ -551,7 +551,7 @@
   <data name="Bench_Cpu_Single" xml:space="preserve"><value>پردازنده — تک‌رشته</value></data>
   <data name="Bench_Cpu_Multi" xml:space="preserve"><value>پردازنده — چندرشته (همه‌ی رشته‌ها)</value></data>
   <data name="Bench_Memory" xml:space="preserve"><value>پهنای‌باند حافظه</value></data>
-  <data name="Bench_Storage" xml:space="preserve"><value>ذخیره‌سازی (به روش CrystalDiskMark)</value></data>
+  <data name="Bench_Storage" xml:space="preserve"><value>ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)</value></data>
   <data name="Bench_Gpu_D3D" xml:space="preserve"><value>گرافیک — رندر Direct3D 12</value></data>
   <data name="Bench_Gpu_Rt" xml:space="preserve"><value>گرافیک — ری‌تریسینگ (DXR)</value></data>
   <data name="Bench_Gpu_Ai" xml:space="preserve"><value>گرافیک — هوش مصنوعی (DirectML: FP32، FP16، INT8)</value></data>
@@ -756,7 +756,7 @@
   <data name="Tuning_Curve_LegendStock" xml:space="preserve"><value>منحنی کارخانه (اندازه‌گیری‌شده)</value></data>
   <data name="Tuning_Curve_LegendTuned" xml:space="preserve"><value>با تنظیمات فعلی فرم</value></data>
   <data name="Tuning_Curve_LegendLive" xml:space="preserve"><value>نقطهٔ کاری فعلی کارت</value></data>
-  <data name="Tuning_Curve_Hint" xml:space="preserve"><value>مثل Afterburner: یک نقطهٔ زرد را بگیرید و بالا یا پایین بکشید تا همان ولتاژ به آن فرکانس برسد و بالاتر از آن صاف شود (آندرولت). خط‌چین سقف را جدا بکشید؛ با Ctrl کل منحنی جابه‌جا می‌شود. تغییرات تا زدن «اعمال» فقط روی فرم است. رابط عمومی NVIDIA جابه‌جایی تک‌نقطه‌ای را اجازه نمی‌دهد.</value></data>
+  <data name="Tuning_Curve_Hint" xml:space="preserve"><value>یک نقطهٔ زرد را بگیرید و بالا یا پایین بکشید تا همان ولتاژ به آن فرکانس برسد و بالاتر از آن صاف شود (آندرولت). خط‌چین سقف را جدا بکشید؛ با Ctrl کل منحنی جابه‌جا می‌شود. تغییرات تا زدن «اعمال» فقط روی فرم است. رابط عمومی NVIDIA جابه‌جایی تک‌نقطه‌ای را اجازه نمی‌دهد.</value></data>
   <data name="Tuning_Curve_Estimate" xml:space="preserve"><value>برآورد از نقاط اندازه‌گیری‌شده: در {0} حدود {1} (کارخانه: {2})</value></data>
   <data name="Tuning_Curve_EstimateAboveStock" xml:space="preserve"><value>برآورد از نقاط اندازه‌گیری‌شده: در {0} حدود {1} (کارخانه به این فرکانس نمی‌رسد)</value></data>
   <data name="Tuning_Curve_OutOfRange" xml:space="preserve"><value>این تنظیم بیرون از بازهٔ اندازه‌گیری‌شدهٔ منحنی است؛ ولتاژ آن برآورد نمی‌شود.</value></data>
@@ -1088,7 +1088,7 @@
     <value>در دسترس نیست: این CPU مجموعه دستورالعمل انتخاب‌شده را ندارد.</value>
   </data>
   <data name="Test_Gpu_Scene3D" xml:space="preserve">
-    <value>صحنه سه‌بعدی GPU در پنجره (Direct3D 12، مانند FurMark)</value>
+    <value>صحنه سه‌بعدی GPU در پنجره (Direct3D 12)</value>
   </data>
   <data name="Test_Gpu_SceneRt" xml:space="preserve">
     <value>صحنه سه‌بعدی Ray Tracing در پنجره (DirectX Raytracing)</value>

@@ -7,7 +7,7 @@ namespace Mazesta.Core.Hardware;
 public readonly record struct SensorSection(SensorKind Kind, string Family);
 
 /// <summary>
-/// Groups a node's sensors the way HWiNFO does: sensors that are numbered instances of one thing ("Core
+/// Groups a node's sensors: sensors that are numbered instances of one thing ("Core
 /// #1 … Core #16" clocks) become one section, related loose sensors of the same kind share the kind's
 /// bucket, and a sensor with nothing to be grouped with stays flat. Pure name/kind logic - the display
 /// text of a section (and its language) is the UI's job.

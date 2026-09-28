@@ -551,7 +551,7 @@
   <data name="Bench_Cpu_Single" xml:space="preserve"><value>CPU — single thread</value></data>
   <data name="Bench_Cpu_Multi" xml:space="preserve"><value>CPU — all threads</value></data>
   <data name="Bench_Memory" xml:space="preserve"><value>Memory bandwidth</value></data>
-  <data name="Bench_Storage" xml:space="preserve"><value>Storage (CrystalDiskMark-style)</value></data>
+  <data name="Bench_Storage" xml:space="preserve"><value>Storage (uncached sequential and random)</value></data>
   <data name="Bench_Gpu_D3D" xml:space="preserve"><value>Graphics — Direct3D 12 rendering</value></data>
   <data name="Bench_Gpu_Rt" xml:space="preserve"><value>Graphics — ray tracing (DXR)</value></data>
   <data name="Bench_Gpu_Ai" xml:space="preserve"><value>Graphics — AI (DirectML: FP32, FP16, INT8)</value></data>
@@ -756,7 +756,7 @@
   <data name="Tuning_Curve_LegendStock" xml:space="preserve"><value>Stock (measured)</value></data>
   <data name="Tuning_Curve_LegendTuned" xml:space="preserve"><value>With the settings on the form</value></data>
   <data name="Tuning_Curve_LegendLive" xml:space="preserve"><value>Where the card runs now</value></data>
-  <data name="Tuning_Curve_Hint" xml:space="preserve"><value>As in Afterburner: grab a yellow point and drag it up or down to put that voltage on that clock, flat above it (an undervolt). Drag the dotted cap line on its own; Ctrl+drag moves the whole curve. Changes stay on the form until you press Apply. NVIDIA's public interface cannot move single points on their own.</value></data>
+  <data name="Tuning_Curve_Hint" xml:space="preserve"><value>Grab a yellow point and drag it up or down to put that voltage on that clock, flat above it (an undervolt). Drag the dotted cap line on its own; Ctrl+drag moves the whole curve. Changes stay on the form until you press Apply. NVIDIA's public interface cannot move single points on their own.</value></data>
   <data name="Tuning_Curve_Estimate" xml:space="preserve"><value>Estimate from the measured points: at {0} about {1} (stock: {2})</value></data>
   <data name="Tuning_Curve_EstimateAboveStock" xml:space="preserve"><value>Estimate from the measured points: at {0} about {1} (stock does not reach this clock)</value></data>
   <data name="Tuning_Curve_OutOfRange" xml:space="preserve"><value>This setting is outside the measured curve; its voltage is not estimated.</value></data>
@@ -1088,7 +1088,7 @@
     <value>Not available: this CPU does not have the chosen instruction set.</value>
   </data>
   <data name="Test_Gpu_Scene3D" xml:space="preserve">
-    <value>GPU 3-D scene in a window (Direct3D 12, FurMark-style)</value>
+    <value>GPU 3-D scene in a window (Direct3D 12)</value>
   </data>
   <data name="Test_Gpu_SceneRt" xml:space="preserve">
     <value>GPU ray-traced 3-D scene in a window (DirectX Raytracing)</value>

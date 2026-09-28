@@ -6,7 +6,7 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// bounces - against a hardware acceleration structure of 2305 instances (2304 spheres of 5120 triangles and a ground
 /// plane), at 2560x1440 off screen. Uses DXR 1.1 inline ray tracing from a compute shader, so it runs on GPUs that report
 /// ray-tracing tier 1.1 (GeForce RTX, Radeon RX 6000 and later, Arc); others are Unsupported. The rays of one frame are
-/// counted on the GPU once, so rays per second is measured, not estimated. Mazesta's own scene, not a 3DMark score.
+/// counted on the GPU once, so rays per second is measured, not estimated. Mazesta's own scene, not comparable with other programs' scores.
 /// </summary>
 public sealed class GpuRayTracingBenchmark : IBenchmark, ITestAvailability
 {

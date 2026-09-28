@@ -60,7 +60,7 @@ public class BenchmarkTests : IDisposable
         foreach (var key in new[] { "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_CopyAll" }) Assert.True(Value(r, key) > 0, key);
     }
 
-    [Fact] public async Task Storage_reports_every_crystaldiskmark_style_speed_and_leaves_no_file_behind()
+    [Fact] public async Task Storage_reports_every_sequential_and_random_speed_and_leaves_no_file_behind()
     {
         var options = new TestOptions(StorageBenchmark.Spec, new Dictionary<string, string> { [StorageExecutor.DriveOption] = _dir, [StorageExecutor.FileMbOption] = "32" });
         var r = await new StorageBenchmark(TimeSpan.FromMilliseconds(50)).RunAsync(Request(2, options), CancellationToken.None);

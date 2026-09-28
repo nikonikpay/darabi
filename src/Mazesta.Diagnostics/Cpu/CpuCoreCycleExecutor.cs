@@ -2,7 +2,7 @@ using System.Diagnostics; using Mazesta.Core.Hardware; using Mazesta.Diagnostics
 namespace Mazesta.Diagnostics.Cpu;
 
 /// <summary>
-/// Single-core stability, one physical core at a time (what CoreCycler and OCCT's single-core mode do): one thread is pinned to a core's
+/// Single-core stability, one physical core at a time: one thread is pinned to a core's
 /// first logical processor, runs the verified matrix workload, then moves to the next core, round and round until the time is up. A lone
 /// busy thread lets a core reach its highest boost clock and lowest voltage - the state where an unstable boost / Curve Optimizer / undervolt
 /// setting fails, and which an all-core load never reaches. With the variable load the thread also pauses at random moments, so the core

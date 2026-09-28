@@ -5,7 +5,7 @@ public readonly record struct VfPoint(double ClockMHz, double VoltageV);
 
 /// <summary>
 /// A measured stock curve and what NVIDIA's public controls do to it. NVML moves the whole curve (a core offset adds the same MHz at every
-/// voltage) and caps the clock; that is enough for the curve undervolt of MSI Afterburner - pick a voltage, raise its point to a clock, flatten
+/// voltage) and caps the clock; that is enough for the usual curve undervolt - pick a voltage, raise its point to a clock, flatten
 /// everything above - but not for moving single points, which needs NVIDIA's unpublished interface and is not offered.
 /// Everything here is derived from measured points and never extrapolated past them.
 /// </summary>

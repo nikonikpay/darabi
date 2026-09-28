@@ -2,7 +2,7 @@ using System.Diagnostics; using System.Runtime.Intrinsics; using System.Runtime.
 namespace Mazesta.Diagnostics.Cpu;
 
 /// <summary>
-/// Maximum-heat vector load (what OCCT's AVX2/AVX-512 modes and Prime95's small FFTs are used for): every logical processor runs long
+/// Maximum-heat vector load: every logical processor runs long
 /// chains of fused multiply-adds on the widest vectors the CPU has - AVX-512, AVX2 or SSE2 - on data that never leaves the registers, so
 /// the execution units, not memory, set the pace and the CPU draws the most power it can. That is where a weak VRM, a poor cooler or an
 /// undervolt that survives ordinary loads gives out.

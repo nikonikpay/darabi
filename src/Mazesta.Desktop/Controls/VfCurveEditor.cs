@@ -3,7 +3,7 @@ using Mazesta.Core.Tuning;
 namespace Mazesta.Desktop.Controls;
 
 /// <summary>
-/// The voltage/frequency curve editor, in the manner of MSI Afterburner: voltage across, clock up. The grey line is the card's stock curve as the
+/// The voltage/frequency curve editor: voltage across, clock up. The grey line is the card's stock curve as the
 /// scan measured it; the yellow line is the curve the current settings give (every point raised by the core offset, flattened at the clock cap).
 /// Dragging a yellow point up or down pins that voltage to a clock (offset + cap, see <see cref="VfCurve.PinPoint"/>) - the usual curve undervolt;
 /// dragging the dashed cap line moves only the cap; Ctrl+drag moves the whole curve. NVML cannot move single points, so no drag does.

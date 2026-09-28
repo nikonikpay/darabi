@@ -10,8 +10,8 @@ public interface IHardwareErrorSource { IReadOnlyList<HardwareErrorEvent> Since(
 /// <summary>
 /// Reads <c>Microsoft-Windows-WHEA-Logger</c> events from the System log. WHEA (Windows Hardware Error
 /// Architecture) is where the CPU, memory controller and PCIe report corrected and uncorrected machine
-/// errors - the kind a stress test provokes and a passing checksum cannot see. HWiNFO shows the same count
-/// as "Windows Hardware Errors (WHEA)"; a nonzero value after a test is strong evidence against the machine.
+/// errors - the kind a stress test provokes and a passing checksum cannot see. Windows keeps the count
+/// in the WHEA-Logger event log; a nonzero value after a test is strong evidence against the machine.
 /// </summary>
 public sealed class WheaErrorSource : IHardwareErrorSource
 {

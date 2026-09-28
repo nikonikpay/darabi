@@ -1,11 +1,11 @@
 // Visual GPU test, Direct3D 12 rasterisation (GpuSceneExecutor): the test model (the Mazesta logo, or Models\gpu-test.obj) turning in the
-// middle of a window, a ring of smaller copies orbiting it, over a procedural nebula - the FurMark idea of a heavy, always-changing frame,
+// middle of a window, a ring of smaller copies orbiting it, over a procedural nebula - a heavy, always-changing frame,
 // with Mazesta's own scene. Compiled offline by tools/compile-gpu-shaders.ps1.
 //
 // The model is a triangle list pulled from a structured buffer (position, normal); instance 0 is the centre model, the others are the ring.
 // Every value depends only on Time and the instance, so a frame drawn twice at the same Time is the same image - the check frames rely on it.
 // Load (1..4) multiplies the per-pixel work of the background and the surface detail.
-// On top of the solid models: FurMark's own load - shell fur, Shells translucent layers of every model pushed out along its (smoothed)
+// On top of the solid models: shell fur, Shells translucent layers of every model pushed out along its (smoothed)
 // normals, each pixel of each layer lit strand by strand - and Particles glowing embers swirling round the scene, blended additively.
 // Both are pure overdraw: they keep the GPU's shader cores, blending and memory busy even at 4K.
 

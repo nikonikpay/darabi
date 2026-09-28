@@ -4,7 +4,7 @@ using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vort
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The visual GPU test (what FurMark is used for, with Mazesta's own scene): a window opens and the test model - the Mazesta logo, or the
+/// The visual GPU test: a window opens and the test model - the Mazesta logo, or the
 /// owner's Models\gpu-test.obj - turns in the middle with a ring of copies around it, drawn as fast as the GPU can with no v-sync cap, so the
 /// card runs at full load while the technician watches the picture for artefacts and the monitor records clocks, power and temperature.
 /// Two modes on the same scene: Direct3D 12 rasterisation, and DirectX Raytracing (DXR 1.1) with shadows and reflections, offered only on
@@ -258,7 +258,7 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
             s.Device.CreateDepthStencilView(_depth, null, _dsvHeap.GetCPUDescriptorHandleForHeapStart());
         }
 
-        /// <summary>Fur layers and embers per load level: FurMark-heavy from "heavy" up, enough to keep a current card busy at 4K.</summary>
+        /// <summary>Fur layers and embers per load level: heavy enough from "heavy" up to keep the shader cores full, enough to keep a current card busy at 4K.</summary>
         internal static uint FurShells(uint load) => load switch { 1 => 12, 2 => 24, 3 => 40, _ => 64 };
         internal static uint ParticleCount(uint load) => load switch { 1 => 16_384, 2 => 49_152, 3 => 98_304, _ => 196_608 };
         public long TrianglesPerFrame => (long)Model.Triangles * (Ring + 1) * (1 + Shells) + Particles * 2L + 1;

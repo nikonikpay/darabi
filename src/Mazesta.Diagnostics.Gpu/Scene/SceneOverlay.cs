@@ -3,7 +3,7 @@ using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vort
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The readout in the corner of the visual GPU test (FPS, the card, its sensors, time left), as FurMark shows one. The text is drawn by GDI
+/// The readout in the corner of the visual GPU test (FPS, the card, its sensors, time left). The text is drawn by GDI
 /// on the CPU into a small bitmap - only when it changes, twice a second - and laid over each frame by one tiny draw, so it costs the GPU
 /// nothing measurable. It is sized from the render height, so at 4K it reads the same once the frame is scaled down to the window.
 /// It is never part of the check frames: those draw the scene alone, and the readout changes every update.

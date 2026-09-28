@@ -12,7 +12,7 @@ internal static class SensorNameCatalog
     private readonly record struct Channel(string Board, string Chip, SensorType Type, int Index);
 
     /// <summary>ASUS PRIME B550M-A, Nuvoton NCT6798D. Evidence: fan RPM of channel #2 and #7 tracked
-    /// HWiNFO's "CPU" and "CPU_OPT" rows (≈900 vs ≈830 RPM and ≈1940 vs ≈1860 RPM, sampled together,
+    /// the board's "CPU" and "CPU_OPT" headers as an independent reader showed them (≈900 vs ≈830 RPM and ≈1940 vs ≈1860 RPM, sampled together,
     /// spread explained by the fans' own fluctuation); recorded in docs/HARDWARE-MATRIX.md.</summary>
     private static readonly Dictionary<Channel, string> Verified = new()
     {

@@ -20,7 +20,7 @@ public sealed partial class MonitoringViewModel : ObservableObject, IDisposable
     public MonitoringViewModel(PollingEngine engine, MonitoringFocus focus, AppConfig config, IChartWindowService charts, IClock clock, Func<Action, object> dispatch, IReadOnlySet<HardwareKind>? only = null)
     {
         _engine = engine; _focus = focus; _config = config; _charts = charts; _clock = clock; _dispatch = dispatch; _selectedIntervalSeconds = (int)engine.FastInterval.TotalSeconds; _isPaused = engine.State == EngineState.Paused;
-        // Every node is its own top-level group, sub-hardware (a board's Super I/O chip) included, as in HWiNFO.
+        // Every node is its own top-level group, sub-hardware (a board's Super I/O chip) included.
         foreach (var node in engine.Hardware.Where(n => only is null || only.Contains(n.Kind)))
         {
             var g = new HardwareGroupViewModel(node) { IsExpanded = only is not null || config.ExpandedGroups.Contains(node.Id.Value) };

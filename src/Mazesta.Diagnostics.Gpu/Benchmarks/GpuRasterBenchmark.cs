@@ -5,7 +5,7 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// Direct3D 12 rasterisation: the classic graphics pipeline (vertex and pixel shaders, depth test, blending) rendering off
 /// screen at 2560x1440, with no window, no presentation and no v-sync cap. Two thirds of the duration draw a scene of 4096
 /// lit spheres (5.2 million triangles a frame) for frames per second and triangle throughput; the rest blends 16
-/// full-screen layers a frame for pixel fill rate. Mazesta's own scene - not comparable with 3DMark or game scores.
+/// full-screen layers a frame for pixel fill rate. Mazesta's own scene - not comparable with other programs' or games' scores.
 /// </summary>
 public sealed class GpuRasterBenchmark : IBenchmark, ITestAvailability
 {

@@ -2,8 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel; using Mazesta.Core.Hardware; using M
 namespace Mazesta.Desktop.ViewModels;
 
 /// <summary>A collapsible group of related sensors inside one hardware node ("Core Clocks"). A flat
-/// section has no title and no header: its sensors just sit at the top of the node, as HWiNFO lists a
-/// sensor that has nothing to be grouped with. Expansion is the technician's and lives only as long as
+/// section has no title and no header: its sensors just sit at the top of the node, as a
+/// sensor that has nothing to be grouped with does. Expansion is the technician's and lives only as long as
 /// the page.</summary>
 public sealed partial class SensorSectionViewModel(SensorSection? section) : ObservableObject
 {

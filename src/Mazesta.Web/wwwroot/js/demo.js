@@ -92,7 +92,7 @@ const tuning = () => ({
 });
 const reports = () => ({ status: "", making: false, canCompare: false,
   items: [{ id: "a1", title: "1405/07/05  01:12", badge: "Passed", verdict: strings.Reports_Verdict_Passed, summary: "۶ آزمون · ۶ موفق · ۰ ناموفق · ۰ انجام‌نشده", selected: false, kind: "TestSession" },
-    { id: "b2", title: "1405/07/04  18:40", badge: "Benchmark", verdict: strings.Reports_Verdict_Benchmark, summary: "پردازنده — تک‌رشته · ذخیره‌سازی (به روش CrystalDiskMark)", selected: false, kind: "Benchmark" },
+    { id: "b2", title: "1405/07/04  18:40", badge: "Benchmark", verdict: strings.Reports_Verdict_Benchmark, summary: "پردازنده — تک‌رشته · ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)", selected: false, kind: "Benchmark" },
     { id: "c3", title: "1405/07/02  11:05", badge: "Failed", verdict: strings.Reports_Verdict_Failed, summary: "۱۴ آزمون · ۱۲ موفق · ۱ ناموفق · ۱ انجام‌نشده", selected: false, kind: "TestSession" }] });
 const sections = () => [
   { title: strings.Tuning_Cpu ?? "پردازنده", rows: [{ label: "Name", value: "AMD Ryzen 9 3950X 16-Core Processor" }, { label: "Cores / threads", value: "16 / 32" }, { label: "Socket", value: "AM4" }] },
