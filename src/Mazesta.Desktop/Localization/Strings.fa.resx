@@ -872,7 +872,7 @@
   <data name="Web_Group_System" xml:space="preserve"><value>سیستم</value></data>
   <data name="Web_Group_Windows" xml:space="preserve"><value>ویندوز</value></data>
   <data name="Web_Group_Power" xml:space="preserve"><value>کل سیستم (توان)</value></data>
-  <data name="Web_Company_Title" xml:space="preserve"><value>دی‌اف‌ام رندرینگ</value></data>
+  <data name="Web_Company_Title" xml:space="preserve"><value>مازستا</value></data>
   <data name="Web_Shop_Title" xml:space="preserve"><value>از فروشگاه ما</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>مشاهده در فروشگاه</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>محصول دیگر</value></data>
@@ -1136,4 +1136,132 @@
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>بهینه‌سازی</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>جمع یا باز کردن منو</value></data>
   <data name="Web_Dash_Live" xml:space="preserve"><value>وضعیت زنده‌ی سیستم</value></data>
+  <data name="Nav_Group_Windows" xml:space="preserve"><value>ویندوز و بازی</value></data>
+  <data name="Nav_Tweaks" xml:space="preserve"><value>ترفندهای ویندوز</value></data>
+  <data name="Nav_Updates" xml:space="preserve"><value>به‌روزرسانی ویندوز</value></data>
+  <data name="Tweaks_Lede" xml:space="preserve"><value>تغییرهای ویندوز، همان‌هایی که برنامه‌ی WinUtil دارد. موارد را تیک بزنید و اجرا کنید؛ هر ردیف وضعیت فعلی ویندوز را نشان می‌دهد که بعد از هر تغییر دوباره خوانده می‌شود.</value></data>
+  <data name="Tweaks_Presets" xml:space="preserve"><value>انتخاب‌های پیشنهادی</value></data>
+  <data name="Tweaks_Preset_Standard" xml:space="preserve"><value>استاندارد</value></data>
+  <data name="Tweaks_Preset_Minimal" xml:space="preserve"><value>حداقلی</value></data>
+  <data name="Tweaks_Preset_Applied" xml:space="preserve"><value>تیک موارد اعمال‌شده</value></data>
+  <data name="Tweaks_Preset_Clear" xml:space="preserve"><value>پاک کردن</value></data>
+  <data name="Tweaks_Essential" xml:space="preserve"><value>ترفندهای اصلی</value></data>
+  <data name="Tweaks_Essential_Sub" xml:space="preserve"><value>برای هر سیستمی بی‌خطر؛ هر کدام از همین‌جا برمی‌گردد</value></data>
+  <data name="Tweaks_Advanced" xml:space="preserve"><value>ترفندهای پیشرفته</value></data>
+  <data name="Tweaks_Advanced_Sub" xml:space="preserve"><value>هر کدام هزینه‌ای دارد: قبل از تیک زدن توضیحش را بخوانید</value></data>
+  <data name="Tweaks_Prefs" xml:space="preserve"><value>ترجیحات ویندوز</value></data>
+  <data name="Tweaks_Prefs_Sub" xml:space="preserve"><value>کلیدها: هر کدام با یک کلیک همان لحظه ویندوز را تغییر می‌دهد</value></data>
+  <data name="Tweaks_Run" xml:space="preserve"><value>اجرای ترفندها</value></data>
+  <data name="Tweaks_Undo" xml:space="preserve"><value>برگرداندن انتخاب‌شده‌ها</value></data>
+  <data name="Tweaks_Busy" xml:space="preserve"><value>ترفندها در حال اجرا هستند.</value></data>
+  <data name="Tweaks_Running" xml:space="preserve"><value>در حال اجرا: {0}…</value></data>
+  <data name="Tweaks_Selected" xml:space="preserve"><value>{0} مورد انتخاب شده</value></data>
+  <data name="Tweaks_NothingTicked" xml:space="preserve"><value>چیزی انتخاب نشده</value></data>
+  <data name="Tweaks_Done" xml:space="preserve"><value>اعمال شد</value></data>
+  <data name="Tweaks_Undone" xml:space="preserve"><value>برگردانده شد</value></data>
+  <data name="Tweaks_AllDone" xml:space="preserve"><value>ترفندها اعمال شد.</value></data>
+  <data name="Tweaks_AllUndone" xml:space="preserve"><value>ترفندها برگردانده شد.</value></data>
+  <data name="Tweaks_SomeFailed" xml:space="preserve"><value>{0} مورد انجام نشد؛ دلیلش در فهرست پایین آمده است.</value></data>
+  <data name="Tweaks_Failed" xml:space="preserve"><value>{0} انجام نشد: {1}</value></data>
+  <data name="Tweaks_State_Applied" xml:space="preserve"><value>اعمال‌شده</value></data>
+  <data name="Tweaks_State_NotApplied" xml:space="preserve"><value>اعمال‌نشده</value></data>
+  <data name="Tweaks_State_Partial" xml:space="preserve"><value>بخشی</value></data>
+  <data name="Tweaks_State_Unknown" xml:space="preserve"><value>قابل خواندن نیست</value></data>
+  <data name="Tweaks_Action" xml:space="preserve"><value>یک‌باره</value></data>
+  <data name="Tweaks_Restart" xml:space="preserve"><value>بعد از ری‌استارت یا خروج از حساب اعمال می‌شود</value></data>
+  <data name="Tweaks_ConfirmAdvanced" xml:space="preserve"><value>بعضی از موارد انتخاب‌شده پیشرفته هستند. اول توضیحشان را بخوانید. اجرا شوند؟</value></data>
+  <data name="Tweaks_Note" xml:space="preserve"><value>روی سیستم مشتری، اول «ساخت نقطه‌ی بازگشت» را تیک بزنید.</value></data>
+  <data name="Tweak_RestorePoint" xml:space="preserve"><value>ساخت نقطه‌ی بازگشت (Restore Point)</value></data>
+  <data name="Tweak_RestorePoint_Note" xml:space="preserve"><value>بازیابی سیستم را برای درایو ویندوز روشن می‌کند و یک نقطه‌ی بازگشت می‌سازد. اول از همه اجرا می‌شود.</value></data>
+  <data name="Tweak_TempFiles" xml:space="preserve"><value>حذف فایل‌های موقت</value></data>
+  <data name="Tweak_TempFiles_Note" xml:space="preserve"><value>پوشه‌های Temp کاربر و ویندوز را خالی می‌کند؛ فایل‌های در حال استفاده رد می‌شوند.</value></data>
+  <data name="Tweak_TempFiles_Done" xml:space="preserve"><value>{0} فایل حذف شد ({1} مگابایت)؛ {2} فایل در حال استفاده ماند</value></data>
+  <data name="Tweak_ActivityHistory" xml:space="preserve"><value>تاریخچه‌ی فعالیت: خاموش</value></data>
+  <data name="Tweak_ActivityHistory_Note" xml:space="preserve"><value>ویندوز دیگر برنامه‌ها و فایل‌های استفاده‌شده را ثبت نمی‌کند.</value></data>
+  <data name="Tweak_ConsumerFeatures" xml:space="preserve"><value>برنامه‌های پیشنهادی: خاموش</value></data>
+  <data name="Tweak_ConsumerFeatures_Note" xml:space="preserve"><value>ویندوز دیگر برنامه‌ها و بازی‌های تبلیغاتی را خودش نصب نمی‌کند.</value></data>
+  <data name="Tweak_Telemetry" xml:space="preserve"><value>ارسال اطلاعات و تبلیغ: حداقل</value></data>
+  <data name="Tweak_Telemetry_Note" xml:space="preserve"><value>داده‌های تشخیصی در کمترین سطحی که نسخه‌ی ویندوز اجازه می‌دهد، بدون شناسه‌ی تبلیغاتی و پیشنهادهای شخصی.</value></data>
+  <data name="Tweak_Location" xml:space="preserve"><value>موقعیت مکانی: خاموش</value></data>
+  <data name="Tweak_Location_Note" xml:space="preserve"><value>برنامه‌ها دیگر نمی‌توانند موقعیت مکانی را بخواهند.</value></data>
+  <data name="Tweak_DeliveryOptimization" xml:space="preserve"><value>اشتراک به‌روزرسانی: خاموش</value></data>
+  <data name="Tweak_DeliveryOptimization_Note" xml:space="preserve"><value>به‌روزرسانی فقط از مایکروسافت گرفته می‌شود و سیستم آن را برای کامپیوترهای دیگر آپلود نمی‌کند.</value></data>
+  <data name="Tweak_Widgets" xml:space="preserve"><value>ویجت‌ها: خاموش</value></data>
+  <data name="Tweak_Widgets_Note" xml:space="preserve"><value>پنل اخبار و آب‌وهوا را از نوار وظیفه برمی‌دارد.</value></data>
+  <data name="Tweak_GameDvr" xml:space="preserve"><value>ضبط بازی (Game DVR): خاموش</value></data>
+  <data name="Tweak_GameDvr_Note" xml:space="preserve"><value>ضبط پس‌زمینه‌ی Xbox Game Bar را که از فریم‌ریت کم می‌کند متوقف می‌کند.</value></data>
+  <data name="Tweak_EndTask" xml:space="preserve"><value>«پایان کار» در منوی نوار وظیفه</value></data>
+  <data name="Tweak_EndTask_Note" xml:space="preserve"><value>کلیک راست روی برنامه در نوار وظیفه گزینه‌ی End task را نشان می‌دهد (ویندوز ۱۱).</value></data>
+  <data name="Tweak_Wpbt" xml:space="preserve"><value>نصب نرم‌افزار از طریق BIOS: خاموش</value></data>
+  <data name="Tweak_Wpbt_Note" xml:space="preserve"><value>جلوی اجرای برنامه‌هایی که فرم‌ور مادربرد از ویندوز می‌خواهد نصب شوند (WPBT) را می‌گیرد.</value></data>
+  <data name="Tweak_BackgroundApps" xml:space="preserve"><value>برنامه‌های پس‌زمینه: خاموش</value></data>
+  <data name="Tweak_BackgroundApps_Note" xml:space="preserve"><value>برنامه‌های استور در پس‌زمینه اجرا نمی‌شوند؛ بعضی اعلان‌هایشان را از دست می‌دهند.</value></data>
+  <data name="Tweak_ClassicMenu" xml:space="preserve"><value>منوی کلیک راست کلاسیک</value></data>
+  <data name="Tweak_ClassicMenu_Note" xml:space="preserve"><value>ویندوز ۱۱ منوی کامل را بدون «Show more options» نشان می‌دهد. بعد از راه‌اندازی دوباره‌ی Explorer اعمال می‌شود.</value></data>
+  <data name="Tweak_Copilot" xml:space="preserve"><value>کوپایلت و Recall: خاموش</value></data>
+  <data name="Tweak_Copilot_Note" xml:space="preserve"><value>کوپایلت ویندوز و عکس‌برداری Recall از صفحه را با سیاست گروهی خاموش می‌کند.</value></data>
+  <data name="Tweak_StorageSense" xml:space="preserve"><value>Storage Sense: خاموش</value></data>
+  <data name="Tweak_StorageSense_Note" xml:space="preserve"><value>ویندوز دیگر خودش سطل بازیافت و پوشه‌ی دانلود را خالی نمی‌کند.</value></data>
+  <data name="Tweak_VisualFx" xml:space="preserve"><value>جلوه‌های تصویری: بهترین کارایی</value></data>
+  <data name="Tweak_VisualFx_Note" xml:space="preserve"><value>انیمیشن‌ها و سایه‌ها خاموش می‌شوند و ظاهر ساده‌تر می‌شود. بعد از خروج از حساب.</value></data>
+  <data name="Tweak_Ipv4First" xml:space="preserve"><value>اولویت IPv4 بر IPv6</value></data>
+  <data name="Tweak_Ipv4First_Note" xml:space="preserve"><value>IPv6 می‌ماند ولی اول IPv4 امتحان می‌شود؛ جایی که IPv6 خراب است کمک می‌کند. بعد از ری‌استارت.</value></data>
+  <data name="Tweak_Teredo" xml:space="preserve"><value>Teredo: خاموش</value></data>
+  <data name="Tweak_Teredo_Note" xml:space="preserve"><value>تونل IPv6 را که بعضی بازی‌ها و سرویس‌های Xbox استفاده می‌کنند خاموش می‌کند.</value></data>
+  <data name="Tweak_UtcClock" xml:space="preserve"><value>ساعت سخت‌افزار به وقت UTC</value></data>
+  <data name="Tweak_UtcClock_Note" xml:space="preserve"><value>فقط برای سیستم‌هایی که لینوکس هم دارند: جلوی جابه‌جا شدن ساعت بین دو سیستم‌عامل را می‌گیرد.</value></data>
+  <data name="Pref_DarkTheme" xml:space="preserve"><value>تم تیره‌ی ویندوز</value></data>
+  <data name="Pref_BingSearch" xml:space="preserve"><value>نتایج Bing در جست‌وجوی استارت</value></data>
+  <data name="Pref_FileExtensions" xml:space="preserve"><value>نمایش پسوند فایل‌ها</value></data>
+  <data name="Pref_HiddenFiles" xml:space="preserve"><value>نمایش فایل‌های مخفی</value></data>
+  <data name="Pref_MouseAcceleration" xml:space="preserve"><value>شتاب ماوس</value></data>
+  <data name="Pref_StickyKeys" xml:space="preserve"><value>میان‌بر Sticky Keys (پنج بار Shift)</value></data>
+  <data name="Pref_TaskbarCenter" xml:space="preserve"><value>آیکون‌های نوار وظیفه در وسط</value></data>
+  <data name="Pref_TaskbarSearch" xml:space="preserve"><value>آیکون جست‌وجو در نوار وظیفه</value></data>
+  <data name="Pref_TaskView" xml:space="preserve"><value>دکمه‌ی Task View</value></data>
+  <data name="Pref_Snapping" xml:space="preserve"><value>چسبیدن پنجره‌ها به لبه‌ها</value></data>
+  <data name="Pref_GameMode" xml:space="preserve"><value>حالت بازی (Game Mode)</value></data>
+  <data name="Pref_VerboseLogon" xml:space="preserve"><value>پیام‌های کامل هنگام ورود و خروج</value></data>
+  <data name="Pref_BsodDetails" xml:space="preserve"><value>جزئیات در صفحه‌ی آبی</value></data>
+  <data name="Pref_LongPaths" xml:space="preserve"><value>مسیرهای طولانی فایل</value></data>
+  <data name="Dns_Title" xml:space="preserve"><value>DNS</value></data>
+  <data name="Dns_Sub" xml:space="preserve"><value>برای همه‌ی کارت‌های شبکه‌ی متصل</value></data>
+  <data name="Dns_Auto" xml:space="preserve"><value>خودکار</value></data>
+  <data name="Dns_Auto_Sub" xml:space="preserve"><value>آنچه مودم می‌دهد (DHCP)</value></data>
+  <data name="Dns_cloudflare" xml:space="preserve"><value>Cloudflare</value></data>
+  <data name="Dns_google" xml:space="preserve"><value>Google</value></data>
+  <data name="Dns_quad9" xml:space="preserve"><value>Quad9</value></data>
+  <data name="Dns_shecan" xml:space="preserve"><value>شکن</value></data>
+  <data name="Dns_electro" xml:space="preserve"><value>الکترو</value></data>
+  <data name="Dns_403" xml:space="preserve"><value>۴۰۳</value></data>
+  <data name="Dns_Done" xml:space="preserve"><value>DNS تغییر کرد و حافظه‌ی آن پاک شد.</value></data>
+  <data name="Dns_NoAdapter" xml:space="preserve"><value>هیچ کارت شبکه‌ی متصلی نیست.</value></data>
+  <data name="Updates_Lede" xml:space="preserve"><value>ویندوز به‌روزرسانی‌ها را چطور بگیرد. هر پروفایل جای تنظیمات قبلی همین‌جا را می‌گیرد؛ «پیش‌فرض ویندوز» همه را برمی‌دارد.</value></data>
+  <data name="Updates_Recommended" xml:space="preserve"><value>پیشنهادی</value></data>
+  <data name="Updates_Recommended_Sub" xml:space="preserve"><value>امنیت همین حالا، تغییرهای بزرگ بعداً</value></data>
+  <data name="Updates_Recommended_Points" xml:space="preserve"><value>به‌روزرسانی‌های بزرگ ۳۶۵ روز عقب می‌افتند
+به‌روزرسانی‌های کیفی ۴ روز صبر می‌کنند
+درایورها از به‌روزرسانی‌های کیفی جدا می‌مانند
+وقتی کسی وارد شده، ری‌استارت خودکار نمی‌شود</value></data>
+  <data name="Updates_Recommended_Foot" xml:space="preserve"><value>عقب‌انداختن روی نسخه‌های Pro و Enterprise و Education کار می‌کند؛ نسخه‌ی Home آن را نادیده می‌گیرد.</value></data>
+  <data name="Updates_Recommended_Apply" xml:space="preserve"><value>اعمال پیشنهادی</value></data>
+  <data name="Updates_Default" xml:space="preserve"><value>پیش‌فرض ویندوز</value></data>
+  <data name="Updates_Default_Sub" xml:space="preserve"><value>تصمیم دوباره با خود ویندوز</value></data>
+  <data name="Updates_Default_Points" xml:space="preserve"><value>سیاست‌های به‌روزرسانی که اینجا تنظیم شده را حذف می‌کند
+سرویس‌های به‌روزرسانی را به حالت اصلی ویندوز برمی‌گرداند</value></data>
+  <data name="Updates_Default_Foot" xml:space="preserve"><value>برای برگرداندن هر کدام از دو پروفایل دیگر از این استفاده کنید.</value></data>
+  <data name="Updates_Default_Apply" xml:space="preserve"><value>بازگرداندن پیش‌فرض</value></data>
+  <data name="Updates_Disabled" xml:space="preserve"><value>خاموش کردن به‌روزرسانی</value></data>
+  <data name="Updates_Disabled_Sub" xml:space="preserve"><value>فقط برای کاربر حرفه‌ای</value></data>
+  <data name="Updates_Disabled_Points" xml:space="preserve"><value>به‌روزرسانی خودکار با سیاست گروهی خاموش
+سرویس‌های به‌روزرسانی متوقف و غیرفعال</value></data>
+  <data name="Updates_Disabled_Foot" xml:space="preserve"><value>تا وقتی این فعال است هیچ به‌روزرسانی امنیتی نمی‌رسد. سرویس ترمیم ویندوز ممکن است سرویس‌ها را دوباره روشن کند.</value></data>
+  <data name="Updates_Disabled_Apply" xml:space="preserve"><value>خاموش کردن به‌روزرسانی</value></data>
+  <data name="Updates_Current" xml:space="preserve"><value>فعال</value></data>
+  <data name="Updates_Custom" xml:space="preserve"><value>ویندوز سیاست‌های به‌روزرسانی‌ای دارد که با هیچ‌کدام از این پروفایل‌ها یکی نیست (دستی یا با ابزار دیگری تنظیم شده).</value></data>
+  <data name="Updates_Note" xml:space="preserve"><value>تغییرها روی کل سیستم اعمال می‌شود. بعد از عوض کردن پروفایل، ویندوز را ری‌استارت کنید.</value></data>
+  <data name="Updates_Done" xml:space="preserve"><value>به‌روزرسانی ویندوز الان: {0}</value></data>
+  <data name="Updates_ConfirmDisable" xml:space="preserve"><value>تا وقتی به‌روزرسانی خاموش است هیچ به‌روزرسانی امنیتی نصب نمی‌شود. خاموش شود؟</value></data>
+  <data name="Gaming_Ultimate" xml:space="preserve"><value>افزودن طرح Ultimate Performance</value></data>
+  <data name="Gaming_UltimateAdded" xml:space="preserve"><value>طرح Ultimate Performance به فهرست اضافه شد؛ از همان‌جا فعالش کنید. برای لپ‌تاپ روی باتری مناسب نیست.</value></data>
 </root>

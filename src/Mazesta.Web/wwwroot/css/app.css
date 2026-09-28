@@ -291,7 +291,9 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .col-head .h3::before { content: ""; width: 3px; height: 14px; background: var(--hue, var(--yellow)); }
 .col-head a { color: var(--paper-3); font-size: 12px; text-decoration: none; }
 .col-head a:hover { color: var(--yellow); }
-.kv { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; font-size: 13px; }
+.kv { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: 0 12px; font-size: 13px; }
+/* Hardware names and model strings are long and often unbroken ("WDC WD20PURZ-85GU6Y0"): they wrap inside their box, never run out of it. */
+.kv dt, .kv dd, .kv .k, .kv .v, .table td:not(.n), .panel-title, .q-row .name, .cc-name, .tile .dev { overflow-wrap: anywhere; min-width: 0; }
 .kv > div { display: contents; }
 .kv dt, .kv .k { color: var(--paper-3); padding: 6px 0; border-bottom: 1px solid var(--rule); }
 .kv dd, .kv .v { margin: 0; padding: 6px 0; border-bottom: 1px solid var(--rule); text-align: left; color: var(--paper); }
@@ -589,6 +591,13 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .group.shut .group-body { grid-template-rows: 0fr; }
 .group.shut .panel-head .more svg { transform: rotate(90deg); }
 .group .q-row:last-child { border-bottom: 0; }
+/* Tests and benchmarks: each part's group is framed in its colour, with a heavier edge on the reading-start side and a tinted head, so the
+   groups of a long queue read apart at a glance. */
+.groups > .group { border: 1px solid color-mix(in oklab, var(--hue) 55%, var(--rule)); border-inline-start: 4px solid var(--hue); padding-top: 0; }
+.groups > .group > .panel-head { margin: 0 -16px; padding: 12px 16px; border-radius: 4px 4px 0 0; background: color-mix(in oklab, var(--hue) 9%, transparent); border-bottom: 1px solid color-mix(in oklab, var(--hue) 30%, transparent); }
+.groups > .group.shut { padding-bottom: 0; }
+.groups > .group.shut > .panel-head { border-bottom-color: transparent; border-radius: 4px; }
+.groups > .group > .panel-head .panel-title { color: var(--hue); }
 
 @keyframes panel-in { from { opacity: 0; transform: translateY(10px); } }
 @keyframes shimmer { to { background-position: -200% 0; } }
@@ -823,3 +832,49 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .p-gpu .curve .cap { stroke: var(--hue); } .p-gpu .curve .cap-tag rect { fill: var(--hue); } .p-gpu .curve .cap-tag text { fill: var(--ink); }
 .panel .estimate { background: var(--hue); color: var(--ink); }
 .pill svg { width: 12px; height: 12px; stroke: currentColor; vertical-align: -1px; }
+
+/* ———— Windows tweaks (WinUtil's list): ticked rows in two panels, switches for preferences, the DNS choice ———— */
+.p-caution { --hue: var(--warn); }
+.tw-presets { flex: none; }
+.tw-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 1180px) { .tw-grid { grid-template-columns: minmax(0, 1fr); } }
+.tw-col { display: grid; gap: 14px; min-width: 0; }
+.tw-col > .panel { margin: 0; }
+.tw-list { display: grid; margin-top: 8px; }
+.tw-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.tw-row:last-child { border-bottom: 0; }
+.tw-row:hover .tw-name { color: var(--hue); }
+.tw-name { font-weight: 600; font-size: 13.5px; display: inline-flex; gap: 6px; align-items: center; overflow-wrap: anywhere; transition: color var(--fast); }
+.tw-restart svg { width: 13px; height: 13px; stroke: var(--paper-3); }
+.tw-note { grid-column: 2 / -1; font-size: 12px; color: var(--paper-3); line-height: 1.55; }
+.tw-prefs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 0 18px; margin-top: 8px; }
+.tw-pref { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: 13px; cursor: pointer; min-width: 0; }
+.tw-pref span { overflow-wrap: anywhere; }
+.tw-pref .switch:indeterminate { border-color: var(--warn); }
+.tw-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tw-log { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.tw-log:empty { display: none; }
+.tw-log li { display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; border-radius: var(--r-well); background: var(--ink-2); border-inline-start: 3px solid var(--pass); }
+.tw-log li.fail { border-inline-start-color: var(--fail); }
+.tw-log li svg { width: 14px; height: 14px; stroke: currentColor; flex: none; align-self: center; }
+.tw-log li.ok svg { color: var(--pass); } .tw-log li.fail svg { color: var(--fail); }
+.dns-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.dns-opt { display: grid; gap: 2px; text-align: start; padding: 8px 10px; border-radius: var(--r-ctl); border: 1px solid var(--rule-2); background: var(--ink-3); color: var(--paper); cursor: pointer; font: inherit; transition: border-color var(--fast), background var(--fast); }
+.dns-opt b { font-size: 13px; }
+.dns-opt span { font-size: 11px; color: var(--paper-3); }
+.dns-opt:hover { border-color: var(--hue); }
+.dns-opt.on { border-color: var(--hue); background: color-mix(in oklab, var(--hue) 14%, var(--ink-3)); box-shadow: inset 0 0 0 1px var(--hue); }
+
+/* ———— Windows Update profiles: three plates, the one in force framed in yellow ———— */
+.p-upd-rec { --hue: var(--yellow); } .p-upd-def { --hue: var(--paper-2); } .p-upd-off { --hue: var(--warn); }
+.upd-plates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; margin-top: 8px; align-items: stretch; }
+.panel.upd { display: flex; flex-direction: column; border-top: 3px solid var(--hue); }
+.panel.upd.current { border-color: var(--yellow); box-shadow: var(--shadow), 0 0 0 1px var(--yellow); }
+.upd-points { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 13px; color: var(--paper-2); }
+.upd-points li { display: flex; gap: 8px; }
+.upd-points li::before { content: ""; width: 6px; height: 6px; margin-top: 8px; flex: none; background: var(--hue); }
+.upd-small { font-size: 12px; color: var(--paper-3); margin: 14px 0 0; flex: 1; }
+.p-upd-off .upd-small { color: var(--warn); }
+.panel.upd .btn-row { margin-top: 16px; }
+.upd-foot { display: flex; gap: 10px; align-items: center; margin-top: 16px; padding: 10px 14px; border-radius: var(--r-panel); border: 1px solid var(--rule); color: var(--paper-2); font-size: 13px; }
+.upd-foot svg { width: 16px; height: 16px; stroke: var(--paper-3); flex: none; }

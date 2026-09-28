@@ -16,7 +16,7 @@ const remember = (key, fallback) => { try { const v = JSON.parse(localStorage.ge
 const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private profile: nothing is kept */ } };
 
 export function mount(el, _, focusKinds = null) {
-  const store = `mazesta.monitor.${focusKinds ? focusKinds.join("-") : "all"}`;
+  const store = `mazesta.monitor.v2.${focusKinds ? focusKinds.join("-") : "all"}`;   // v2: the first-visit charts changed
   const filter = h("input", { class: "field search", type: "search", placeholder: t("Monitoring_Search"), "aria-label": t("Monitoring_Search") });
   let windowSec = remember("mazesta.monitor.window", 600);
   const cards = new Map();   // id -> card
@@ -37,7 +37,11 @@ export function mount(el, _, focusKinds = null) {
   const cells = [];   // [sensor, current, min, avg, max, row, searchText, toggle, group]
   const bySensor = new Map();
   let i = 0;
-  for (const node of hw.nodes) {
+  // The processor first, then the graphics card, then the board (its Super I/O chips follow it); every other part after them, as found.
+  const RANK = { Cpu: 0, Gpu: 1, Motherboard: 2 };
+  const root = (n) => { while (n.parent) { const up = hw.nodes.find((x) => x.id === n.parent); if (!up) break; n = up; } return n; };
+  const nodes = hw.nodes.map((n, at) => ({ n, at, r: RANK[root(n).kind] ?? 3 })).sort((a, b) => a.r - b.r || a.at - b.at).map((x) => x.n);
+  for (const node of nodes) {
     if (focusKinds && !focusKinds.includes(node.kind)) continue;
     if (!node.sensors.length) continue;
     const p = part(node.kind), tbody = h("tbody");
@@ -104,9 +108,12 @@ export function mount(el, _, focusKinds = null) {
   function flip(s) { cards.has(s.id) ? removeChart(s.id) : addChart(s); }
   function changed() { empty.hidden = cards.size > 0; clearAll.hidden = cards.size < 2; keep(store, [...cards.keys()].reverse()); }
 
-  // The charts open last time, or the first sensor's so the column is never blank on a first visit.
+  // The charts open last time; on a first visit the processor's temperature and the graphics card's hot spot (its core temperature where the
+  // card reports no hot spot), or the first sensor, so the column is never blank.
   const saved = remember(store, null);
-  const initial = (Array.isArray(saved) ? saved : [cells[0]?.[0].id]).map((id) => bySensor.get(id)?.[0]).filter(Boolean);
+  const byRole = (kind, ...roles) => { for (const r of roles) { const c = cells.find(([s]) => s.node.kind === kind && s.role === r); if (c) return c[0].id; } return null; };
+  const first = [byRole("Cpu", "CpuPackageTemp", "CpuTctlTdie", "CpuCoreTemp"), byRole("Gpu", "GpuHotSpotTemp", "GpuCoreTemp")].filter(Boolean);
+  const initial = (Array.isArray(saved) ? saved : first.length ? first.reverse() : [cells[0]?.[0].id]).map((id) => bySensor.get(id)?.[0]).filter(Boolean);
   for (const s of initial) addChart(s, true);
   changed();
 

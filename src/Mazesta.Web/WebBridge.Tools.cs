@@ -43,7 +43,7 @@ public sealed partial class WebBridge
         object GamingState() => new
         {
             status = gaming!.Status, gameMode = gaming.GameMode, gpuScheduling = gaming.GpuScheduling,
-            plans = gaming.Plans.Select((p, i) => new { index = i, name = p.Name, active = p.IsActive }),
+            plans = gaming.Plans.Select((p, i) => new { index = i, name = p.Name, active = p.IsActive }), hasUltimate = gaming.HasUltimate,
         };
         MethodAsync("gaming.state", async _ => { var g = Gaming(); await g.Loaded.ConfigureAwait(true); return GamingState(); });
         Method("gaming.exec", p =>
@@ -54,6 +54,7 @@ public sealed partial class WebBridge
                 case "activate": if (int.TryParse(Str(p, "index"), out int i) && i >= 0 && i < g.Plans.Count) g.ActivateCommand.Execute(g.Plans[i]); break;
                 case "gameMode": g.OpenGameModeCommand.Execute(null); break;
                 case "graphics": g.OpenGraphicsCommand.Execute(null); break;
+                case "ultimate": g.AddUltimateCommand.Execute(null); break;
                 default: throw new ArgumentException("unknown command");
             }
             return null;

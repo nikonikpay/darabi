@@ -7,7 +7,7 @@ public sealed record PowerPlanRow(PowerPlan Plan) { public string Name => Plan.N
 /// <summary>
 /// Gaming (spec 11.1): the Windows power plan - listed and switched with powercfg, which is reversible by switching back - and the state of
 /// Game Mode and hardware-accelerated GPU scheduling, read from the registry and changed only in Windows' own settings pages (opened from
-/// here). GPU overclocking and undervolting live on their own page (TuningViewModel); an FPS overlay is not offered.
+/// here). GPU overclocking and undervolting live on their own page (TuningViewModel), the frame-rate overlay on its own (OverlayService).
 /// </summary>
 public sealed partial class GamingViewModel : ObservableObject
 {
@@ -45,6 +45,19 @@ public sealed partial class GamingViewModel : ObservableObject
         var result = await _runner.RunAsync("powercfg.exe", $"/setactive {row.Plan.Id}", WindowsTool.Oem, null, CancellationToken.None).ConfigureAwait(true);
         Status = result.ExitCode == 0 ? Loc.Format("Gaming_PlanActivated", row.Name) : Loc.Format("Tools_CouldNotRun", "powercfg", string.Join(" ", result.Output));
         await LoadAsync().ConfigureAwait(true);   // show what Windows now says is active, not what was asked for
+    }
+
+    /// <summary>Windows' hidden "Ultimate Performance" plan (WinUtil offers it too): powercfg copies it into the list, where it is switched to
+    /// like any other plan. The copy has a new id, so it is recognised by its name, which Windows gives in its own language.</summary>
+    public const string UltimateScheme = "e9a42b02-d5df-448d-aa00-03f14749eb61";
+    public bool HasUltimate => Plans.Any(p => p.Name.Contains("Ultimate", StringComparison.OrdinalIgnoreCase) || p.Name.Contains("نهایی", StringComparison.Ordinal));
+
+    [RelayCommand]
+    private async Task AddUltimate()
+    {
+        var result = await _runner.RunAsync("powercfg.exe", $"-duplicatescheme {UltimateScheme}", WindowsTool.Oem, null, CancellationToken.None).ConfigureAwait(true);
+        Status = result.ExitCode == 0 ? Loc.Get("Gaming_UltimateAdded") : Loc.Format("Tools_CouldNotRun", "powercfg", string.Join(" ", result.Output));
+        await LoadAsync().ConfigureAwait(true);
     }
 
     [RelayCommand] private void OpenGameMode() => _open("ms-settings:gaming-gamemode");

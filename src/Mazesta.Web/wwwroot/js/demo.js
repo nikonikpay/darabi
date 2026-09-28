@@ -102,6 +102,20 @@ const sections = () => [
   { title: "سیستم‌عامل", rows: [{ label: "OS", value: "Microsoft Windows 11 Pro 10.0.26200" }, { label: "Architecture", value: "64-bit" }] },
 ];
 
+// Tweaks as the host lists them (ids and groups from TweakCatalog), with a made-up registry state for the preview.
+const TWEAKS = [["restorePoint", "Essential", "RestorePoint", 1], ["tempFiles", "Essential", "TempFiles", 1], ["activityHistory", "Essential", "ActivityHistory"], ["consumerFeatures", "Essential", "ConsumerFeatures"],
+  ["telemetry", "Essential", "Telemetry"], ["location", "Essential", "Location"], ["deliveryOptimization", "Essential", "DeliveryOptimization"], ["widgets", "Essential", "Widgets"], ["gameDvr", "Essential", "GameDvr"],
+  ["endTask", "Essential", "EndTask"], ["wpbt", "Essential", "Wpbt"], ["backgroundApps", "Advanced", "BackgroundApps"], ["classicMenu", "Advanced", "ClassicMenu"], ["copilot", "Advanced", "Copilot"],
+  ["storageSense", "Advanced", "StorageSense"], ["visualFx", "Advanced", "VisualFx"], ["ipv4First", "Advanced", "Ipv4First"], ["teredo", "Advanced", "Teredo"], ["utcClock", "Advanced", "UtcClock"]];
+const PREFS = ["DarkTheme", "BingSearch", "FileExtensions", "HiddenFiles", "MouseAcceleration", "StickyKeys", "TaskbarCenter", "TaskbarSearch", "TaskView", "Snapping", "GameMode", "VerboseLogon", "BsodDetails", "LongPaths"];
+const tweakState = new Map([["telemetry", "Applied"], ["consumerFeatures", "Applied"], ["gameDvr", "Partial"], ["DarkTheme", "Applied"], ["FileExtensions", "Applied"], ["TaskbarCenter", "Applied"], ["Snapping", "Applied"], ["GameMode", "Applied"]]);
+let demoUpdate = "Default";
+const tweaks = () => ({ busy: false, update: demoUpdate, presets: { standard: ["restorePoint", "tempFiles", "activityHistory", "consumerFeatures", "telemetry", "location", "deliveryOptimization", "widgets", "gameDvr", "endTask", "wpbt"], minimal: ["restorePoint", "consumerFeatures", "telemetry", "wpbt"] },
+  tweaks: [...TWEAKS.map(([id, group, k, action]) => ({ id, group, name: strings[`Tweak_${k}`], note: strings[`Tweak_${k}_Note`], state: action ? "Unknown" : id === "teredo" ? "Unknown" : tweakState.get(id) || "NotApplied", action: !!action, canUndo: !action, restart: ["widgets", "wpbt", "classicMenu", "copilot", "visualFx", "ipv4First", "utcClock"].includes(id) })),
+    ...PREFS.map((k) => ({ id: k, group: "Preference", name: strings[`Pref_${k}`], note: "", state: tweakState.get(k) || "NotApplied", action: false, canUndo: true, restart: false }))],
+  dns: { providers: [["cloudflare", "1.1.1.1", "1.0.0.1"], ["google", "8.8.8.8", "8.8.4.4"], ["quad9", "9.9.9.9", "149.112.112.112"], ["shecan", "178.22.122.100", "185.51.200.2"], ["electro", "78.157.42.100", "78.157.42.101"], ["403", "10.202.10.202", "10.202.10.102"]].map(([id, ...servers]) => ({ id, servers })),
+    adapters: [{ name: "Ethernet", servers: ["192.168.1.1"], provider: "auto" }] } });
+
 import { overlay, frames } from "./demo-overlay.js";
 
 export async function call(m, p, emit) {
@@ -132,6 +146,13 @@ export async function call(m, p, emit) {
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
+    case "tweaks.state": return tweaks();
+    case "tweaks.pref": tweakState.set(p.id, p.on ? "Applied" : "NotApplied"); return { error: null, state: tweakState.get(p.id) };
+    case "tweaks.run": await new Promise((r) => setTimeout(r, 900));
+      return { results: p.ids.map((id) => { const x = TWEAKS.find((y) => y[0] === id); if (!x[3]) tweakState.set(id, p.undo ? "NotApplied" : "Applied");
+        return { id, name: strings[`Tweak_${x[2]}`], error: id === "teredo" ? "netsh.exe interface teredo set state disabled: exit code 1" : null, done: id === "tempFiles" ? strings.Tweak_TempFiles_Done.replace("{0}", "1284").replace("{1}", "912").replace("{2}", "37") : null, state: x[3] ? "Unknown" : tweakState.get(id) }; }) };
+    case "tweaks.update": await new Promise((r) => setTimeout(r, 600)); demoUpdate = p.profile; return { error: null, update: demoUpdate };
+    case "tweaks.dns": await new Promise((r) => setTimeout(r, 600)); { const d = tweaks().dns; d.adapters[0].provider = p.provider; d.adapters[0].servers = p.provider === "auto" ? ["192.168.1.1"] : d.providers.find((x) => x.id === p.provider).servers; return { error: null, dns: d }; }
     case "tests.state": return tests();
     case "bench.state": return bench();
     case "tuning.state": return tuning();

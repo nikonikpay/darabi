@@ -7,10 +7,11 @@ import { box } from "../groups.js";
 
 export function mount(el) {
   const plans = h("div", { class: "plans" }), status = h("p", { class: "msg" });
+  const ultimate = h("button", { class: "btn", hidden: true, onclick: () => call("gaming.exec", { cmd: "ultimate" }) }, icon("bolt"), t("Gaming_Ultimate"));
   const tiles = h("div", { class: "states" });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Gaming")), h("p", { class: "page-lede" }, t("Gaming_Note")))),
     h("div", { class: "panels two", style: { marginTop: 0 } },
-      box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i: 0, body: [plans, status] }),
+      box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i: 0, body: [plans, h("div", { class: "btn-row" }, ultimate), status] }),
       box({ kind: "Gpu", ico: "gamepad", title: t("Gaming_GameMode"), sub: t("Gaming_Switches_Sub"), i: 1,
         body: [tiles, h("p", { class: "note" }, t("Gaming_Switches_Note")),
           h("div", { class: "btn-row" },
@@ -19,7 +20,7 @@ export function mount(el) {
   // Game Mode and HAGS come as text from the host ("on", "off", or Windows' default when the registry does not say).
   const tile = (key, v) => h("div", { class: `state-tile ${v === t("Gaming_On") ? "on" : v === t("Gaming_Off") ? "" : "unknown"}` }, h("span", { class: "k" }, t(key)), h("span", { class: "v" }, v));
   function update(s) {
-    status.textContent = s.status || "";
+    status.textContent = s.status || ""; ultimate.hidden = !!s.hasUltimate;
     tiles.replaceChildren(tile("Gaming_GameMode", s.gameMode), tile("Gaming_Hags", s.gpuScheduling));
     plans.replaceChildren(...(s.plans.length ? s.plans.map((p) => h("div", { class: `plan ${p.active ? "on" : ""}` },
       h("span", { class: "name" }, p.name),

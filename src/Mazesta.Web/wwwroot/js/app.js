@@ -1,4 +1,4 @@
-// The shell: boot from the host, the numbered index (Ctrl+1 … Ctrl+0 open the first ten, so the numbers carry meaning), the stage where one
+// The shell: boot from the host, the numbered index (Ctrl+1 … Ctrl+9 open the families, so the numbers carry meaning), the stage where one
 // page lives at a time, and the status band. A page is a module exporting mount(el) that returns an unmount function.
 import { call, on, live } from "./bridge.js";
 import { setStrings, t, fa } from "./i18n.js";
@@ -21,22 +21,26 @@ export const PAGES = [
   { id: "overlay", key: "Nav_Overlay", load: () => import("./pages/overlay.js") },
   { id: "tuning", key: "Nav_Tuning", load: () => import("./pages/tuning.js") },
   { id: "tools", key: "Nav_WindowsTools", load: () => import("./pages/tools.js") },
+  { id: "tweaks", key: "Nav_Tweaks", load: () => import("./pages/tweaks.js") },
+  { id: "updates", key: "Nav_Updates", load: () => import("./pages/updates.js") },
   { id: "reports", key: "Nav_Reports", load: () => import("./pages/reports.js") },
   { id: "settings", key: "Nav_Settings", load: () => import("./pages/settings.js") },
 ];
 
-// The side bar has one entry per family; a family of several pages shows them as tabs at the top of each. Ctrl+1 … Ctrl+8 open the families.
+// The side bar has one entry per family; a family of several pages shows them as tabs at the top of each. Ctrl+1 … Ctrl+9 open the families.
+// The overlay and GPU tuning have entries of their own; Windows' tools, its tweaks, Windows Update and gaming share one.
 export const FAMILIES = [
   { key: "Nav_Dashboard", icon: "home", pages: ["dashboard"] },
   { key: "Nav_Monitoring", icon: "pulse", pages: ["monitoring"] },
   { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks"] },
   { key: "Nav_Group_Hardware", icon: "cpu", pages: ["system", "cpu", "gpu", "storage", "network"] },
-  { key: "Nav_Group_Gaming", icon: "gamepad", pages: ["gaming", "overlay"] },
-  { key: "Nav_Group_Optimize", icon: "sliders", pages: ["tuning", "tools"] },
+  { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
+  { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
+  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates", "gaming"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
   { key: "Nav_Settings", icon: "gear", pages: ["settings"] },
 ];
-const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", gaming: "gamepad", overlay: "overlay", tuning: "sliders", tools: "win" };
+const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", gaming: "gamepad", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 
@@ -94,7 +98,7 @@ function renderIndex(info) {
   index.append(
     h("div", { class: "brand" }, h("img", { src: "img/logo.png", alt: "" }), h("div", {}, h("div", { class: "brand-word" }, logo()), h("div", { class: "brand-sub" }, "TEST SUITE")), toggle),
     h("ul", { class: "index-list" }, FAMILIES.map((f, i) => [
-      i === 2 || i === 6 ? h("li", { class: "sep", role: "presentation" }) : null,
+      i === 2 || i === 7 ? h("li", { class: "sep", role: "presentation" }) : null,
       h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`,
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
         icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no" }, `⌃${i + 1}`))),
@@ -169,7 +173,7 @@ async function whenReady() {
 window.addEventListener("hashchange", () => show((location.hash.match(/^#\/(\w+)/) || [])[1]));
 window.addEventListener("keydown", (e) => {
   if (!e.ctrlKey || e.altKey || e.shiftKey) return;
-  const n = "12345678".indexOf(e.key);
+  const n = "123456789".indexOf(e.key);
   if (n >= 0 && FAMILIES[n]) { e.preventDefault(); go(lastInFamily.get(FAMILIES[n]) || FAMILIES[n].pages[0]); }
 });
 document.addEventListener("visibilitychange", () => { app.dataset.visible = String(!document.hidden); });

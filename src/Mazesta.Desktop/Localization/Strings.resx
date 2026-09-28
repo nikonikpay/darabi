@@ -872,7 +872,7 @@
   <data name="Web_Group_System" xml:space="preserve"><value>System</value></data>
   <data name="Web_Group_Windows" xml:space="preserve"><value>Windows</value></data>
   <data name="Web_Group_Power" xml:space="preserve"><value>Whole system (power)</value></data>
-  <data name="Web_Company_Title" xml:space="preserve"><value>DFM Rendering</value></data>
+  <data name="Web_Company_Title" xml:space="preserve"><value>Mazesta</value></data>
   <data name="Web_Shop_Title" xml:space="preserve"><value>From our shop</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>View in shop</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>Another product</value></data>
@@ -1136,4 +1136,132 @@
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>Optimization</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>Narrow or widen the menu</value></data>
   <data name="Web_Dash_Live" xml:space="preserve"><value>Live system status</value></data>
+  <data name="Nav_Group_Windows" xml:space="preserve"><value>Windows &amp; games</value></data>
+  <data name="Nav_Tweaks" xml:space="preserve"><value>Tweaks</value></data>
+  <data name="Nav_Updates" xml:space="preserve"><value>Windows Update</value></data>
+  <data name="Tweaks_Lede" xml:space="preserve"><value>Changes to Windows as WinUtil offers them. Tick what to change and run it; every row shows what Windows has now, read after each change.</value></data>
+  <data name="Tweaks_Presets" xml:space="preserve"><value>Recommended selections</value></data>
+  <data name="Tweaks_Preset_Standard" xml:space="preserve"><value>Standard</value></data>
+  <data name="Tweaks_Preset_Minimal" xml:space="preserve"><value>Minimal</value></data>
+  <data name="Tweaks_Preset_Applied" xml:space="preserve"><value>Tick what is applied</value></data>
+  <data name="Tweaks_Preset_Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="Tweaks_Essential" xml:space="preserve"><value>Essential tweaks</value></data>
+  <data name="Tweaks_Essential_Sub" xml:space="preserve"><value>Safe on any machine; each one can be undone here</value></data>
+  <data name="Tweaks_Advanced" xml:space="preserve"><value>Advanced tweaks</value></data>
+  <data name="Tweaks_Advanced_Sub" xml:space="preserve"><value>Each one has a cost: read its note before ticking it</value></data>
+  <data name="Tweaks_Prefs" xml:space="preserve"><value>Preferences</value></data>
+  <data name="Tweaks_Prefs_Sub" xml:space="preserve"><value>Switches: each one changes Windows as soon as it is clicked</value></data>
+  <data name="Tweaks_Run" xml:space="preserve"><value>Run tweaks</value></data>
+  <data name="Tweaks_Undo" xml:space="preserve"><value>Undo selected</value></data>
+  <data name="Tweaks_Busy" xml:space="preserve"><value>Tweaks are already running.</value></data>
+  <data name="Tweaks_Running" xml:space="preserve"><value>Running: {0}…</value></data>
+  <data name="Tweaks_Selected" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="Tweaks_NothingTicked" xml:space="preserve"><value>Nothing ticked</value></data>
+  <data name="Tweaks_Done" xml:space="preserve"><value>applied</value></data>
+  <data name="Tweaks_Undone" xml:space="preserve"><value>undone</value></data>
+  <data name="Tweaks_AllDone" xml:space="preserve"><value>The tweaks were applied.</value></data>
+  <data name="Tweaks_AllUndone" xml:space="preserve"><value>The tweaks were undone.</value></data>
+  <data name="Tweaks_SomeFailed" xml:space="preserve"><value>{0} did not go through; the list below says why.</value></data>
+  <data name="Tweaks_Failed" xml:space="preserve"><value>{0} did not go through: {1}</value></data>
+  <data name="Tweaks_State_Applied" xml:space="preserve"><value>Applied</value></data>
+  <data name="Tweaks_State_NotApplied" xml:space="preserve"><value>Not applied</value></data>
+  <data name="Tweaks_State_Partial" xml:space="preserve"><value>Partly</value></data>
+  <data name="Tweaks_State_Unknown" xml:space="preserve"><value>Not readable</value></data>
+  <data name="Tweaks_Action" xml:space="preserve"><value>One-off</value></data>
+  <data name="Tweaks_Restart" xml:space="preserve"><value>Takes effect after a restart or sign-out</value></data>
+  <data name="Tweaks_ConfirmAdvanced" xml:space="preserve"><value>Some ticked tweaks are advanced. Read their notes first. Run them?</value></data>
+  <data name="Tweaks_Note" xml:space="preserve"><value>Tick a restore point first on a customer's machine.</value></data>
+  <data name="Tweak_RestorePoint" xml:space="preserve"><value>Create a restore point</value></data>
+  <data name="Tweak_RestorePoint_Note" xml:space="preserve"><value>Turns System Restore on for the Windows drive and saves a point to go back to. Runs first.</value></data>
+  <data name="Tweak_TempFiles" xml:space="preserve"><value>Remove temporary files</value></data>
+  <data name="Tweak_TempFiles_Note" xml:space="preserve"><value>Empties the user's and Windows' Temp folders; files in use are skipped.</value></data>
+  <data name="Tweak_TempFiles_Done" xml:space="preserve"><value>{0} files removed ({1} MB); {2} in use were left</value></data>
+  <data name="Tweak_ActivityHistory" xml:space="preserve"><value>Activity history: off</value></data>
+  <data name="Tweak_ActivityHistory_Note" xml:space="preserve"><value>Windows stops recording which apps and files were used.</value></data>
+  <data name="Tweak_ConsumerFeatures" xml:space="preserve"><value>Suggested apps: off</value></data>
+  <data name="Tweak_ConsumerFeatures_Note" xml:space="preserve"><value>Windows stops installing promoted apps and games on its own.</value></data>
+  <data name="Tweak_Telemetry" xml:space="preserve"><value>Telemetry and ads: minimum</value></data>
+  <data name="Tweak_Telemetry_Note" xml:space="preserve"><value>Diagnostic data at the lowest level the edition allows, no advertising ID, no tailored experiences.</value></data>
+  <data name="Tweak_Location" xml:space="preserve"><value>Location: off</value></data>
+  <data name="Tweak_Location_Note" xml:space="preserve"><value>Apps can no longer ask for the location.</value></data>
+  <data name="Tweak_DeliveryOptimization" xml:space="preserve"><value>Update sharing: off</value></data>
+  <data name="Tweak_DeliveryOptimization_Note" xml:space="preserve"><value>Updates come only from Microsoft; the machine no longer uploads them to other PCs.</value></data>
+  <data name="Tweak_Widgets" xml:space="preserve"><value>Widgets: off</value></data>
+  <data name="Tweak_Widgets_Note" xml:space="preserve"><value>Removes the news and weather panel from the taskbar.</value></data>
+  <data name="Tweak_GameDvr" xml:space="preserve"><value>Game DVR: off</value></data>
+  <data name="Tweak_GameDvr_Note" xml:space="preserve"><value>Stops Xbox Game Bar recording in the background, which costs frame rate.</value></data>
+  <data name="Tweak_EndTask" xml:space="preserve"><value>End task on the taskbar</value></data>
+  <data name="Tweak_EndTask_Note" xml:space="preserve"><value>Right-clicking an app on the taskbar offers End task (Windows 11).</value></data>
+  <data name="Tweak_Wpbt" xml:space="preserve"><value>Firmware-installed software: off</value></data>
+  <data name="Tweak_Wpbt_Note" xml:space="preserve"><value>Stops Windows running programs the motherboard's firmware asks it to install (WPBT).</value></data>
+  <data name="Tweak_BackgroundApps" xml:space="preserve"><value>Background apps: off</value></data>
+  <data name="Tweak_BackgroundApps_Note" xml:space="preserve"><value>Store apps stop running in the background; some lose notifications.</value></data>
+  <data name="Tweak_ClassicMenu" xml:space="preserve"><value>Classic right-click menu</value></data>
+  <data name="Tweak_ClassicMenu_Note" xml:space="preserve"><value>Windows 11 shows the full menu without "Show more options". Takes effect after Explorer restarts.</value></data>
+  <data name="Tweak_Copilot" xml:space="preserve"><value>Copilot and Recall: off</value></data>
+  <data name="Tweak_Copilot_Note" xml:space="preserve"><value>Turns off Windows Copilot and Recall's screen snapshots by policy.</value></data>
+  <data name="Tweak_StorageSense" xml:space="preserve"><value>Storage Sense: off</value></data>
+  <data name="Tweak_StorageSense_Note" xml:space="preserve"><value>Windows stops emptying the Recycle Bin and Downloads on its own.</value></data>
+  <data name="Tweak_VisualFx" xml:space="preserve"><value>Visual effects: best performance</value></data>
+  <data name="Tweak_VisualFx_Note" xml:space="preserve"><value>Turns off animations and shadows; the desktop looks plainer. After sign-out.</value></data>
+  <data name="Tweak_Ipv4First" xml:space="preserve"><value>Prefer IPv4 over IPv6</value></data>
+  <data name="Tweak_Ipv4First_Note" xml:space="preserve"><value>Keeps IPv6 but tries IPv4 first; helps where IPv6 is broken. After a restart.</value></data>
+  <data name="Tweak_Teredo" xml:space="preserve"><value>Teredo: off</value></data>
+  <data name="Tweak_Teredo_Note" xml:space="preserve"><value>Turns off the IPv6 tunnel some games and Xbox services use.</value></data>
+  <data name="Tweak_UtcClock" xml:space="preserve"><value>Hardware clock in UTC</value></data>
+  <data name="Tweak_UtcClock_Note" xml:space="preserve"><value>Only for machines that also boot Linux: stops the clock jumping between the two.</value></data>
+  <data name="Pref_DarkTheme" xml:space="preserve"><value>Dark theme for Windows</value></data>
+  <data name="Pref_BingSearch" xml:space="preserve"><value>Bing results in Start search</value></data>
+  <data name="Pref_FileExtensions" xml:space="preserve"><value>Show file extensions</value></data>
+  <data name="Pref_HiddenFiles" xml:space="preserve"><value>Show hidden files</value></data>
+  <data name="Pref_MouseAcceleration" xml:space="preserve"><value>Mouse acceleration</value></data>
+  <data name="Pref_StickyKeys" xml:space="preserve"><value>Sticky Keys shortcut (Shift ×5)</value></data>
+  <data name="Pref_TaskbarCenter" xml:space="preserve"><value>Taskbar icons centred</value></data>
+  <data name="Pref_TaskbarSearch" xml:space="preserve"><value>Search icon on the taskbar</value></data>
+  <data name="Pref_TaskView" xml:space="preserve"><value>Task View button</value></data>
+  <data name="Pref_Snapping" xml:space="preserve"><value>Window snapping</value></data>
+  <data name="Pref_GameMode" xml:space="preserve"><value>Game Mode</value></data>
+  <data name="Pref_VerboseLogon" xml:space="preserve"><value>Detailed sign-in messages</value></data>
+  <data name="Pref_BsodDetails" xml:space="preserve"><value>Details on the blue screen</value></data>
+  <data name="Pref_LongPaths" xml:space="preserve"><value>Long file paths</value></data>
+  <data name="Dns_Title" xml:space="preserve"><value>DNS</value></data>
+  <data name="Dns_Sub" xml:space="preserve"><value>For every connected adapter</value></data>
+  <data name="Dns_Auto" xml:space="preserve"><value>Automatic</value></data>
+  <data name="Dns_Auto_Sub" xml:space="preserve"><value>What the router gives (DHCP)</value></data>
+  <data name="Dns_cloudflare" xml:space="preserve"><value>Cloudflare</value></data>
+  <data name="Dns_google" xml:space="preserve"><value>Google</value></data>
+  <data name="Dns_quad9" xml:space="preserve"><value>Quad9</value></data>
+  <data name="Dns_shecan" xml:space="preserve"><value>Shecan</value></data>
+  <data name="Dns_electro" xml:space="preserve"><value>Electro</value></data>
+  <data name="Dns_403" xml:space="preserve"><value>403</value></data>
+  <data name="Dns_Done" xml:space="preserve"><value>DNS changed and the cache flushed.</value></data>
+  <data name="Dns_NoAdapter" xml:space="preserve"><value>No connected adapter.</value></data>
+  <data name="Updates_Lede" xml:space="preserve"><value>How Windows gets its updates. Each profile replaces the update policies set here before; Default takes them all away.</value></data>
+  <data name="Updates_Recommended" xml:space="preserve"><value>Recommended</value></data>
+  <data name="Updates_Recommended_Sub" xml:space="preserve"><value>Security now, big changes later</value></data>
+  <data name="Updates_Recommended_Points" xml:space="preserve"><value>Feature updates wait 365 days
+Quality updates wait 4 days
+Drivers stay out of quality updates
+No automatic restart while someone is signed in</value></data>
+  <data name="Updates_Recommended_Foot" xml:space="preserve"><value>The waiting works on Pro, Enterprise and Education; Home ignores it.</value></data>
+  <data name="Updates_Recommended_Apply" xml:space="preserve"><value>Apply recommended</value></data>
+  <data name="Updates_Default" xml:space="preserve"><value>Windows default</value></data>
+  <data name="Updates_Default_Sub" xml:space="preserve"><value>Windows decides again</value></data>
+  <data name="Updates_Default_Points" xml:space="preserve"><value>Removes the update policies set here
+Puts the update services back as Windows ships them</value></data>
+  <data name="Updates_Default_Foot" xml:space="preserve"><value>Use this to undo either of the other two.</value></data>
+  <data name="Updates_Default_Apply" xml:space="preserve"><value>Restore defaults</value></data>
+  <data name="Updates_Disabled" xml:space="preserve"><value>Updates off</value></data>
+  <data name="Updates_Disabled_Sub" xml:space="preserve"><value>Advanced use only</value></data>
+  <data name="Updates_Disabled_Points" xml:space="preserve"><value>Automatic updates off by policy
+The update services stopped and disabled</value></data>
+  <data name="Updates_Disabled_Foot" xml:space="preserve"><value>No security updates arrive while this is on. Windows' repair service may turn the services back on.</value></data>
+  <data name="Updates_Disabled_Apply" xml:space="preserve"><value>Turn updates off</value></data>
+  <data name="Updates_Current" xml:space="preserve"><value>In force</value></data>
+  <data name="Updates_Custom" xml:space="preserve"><value>Windows has update policies that match none of these profiles (set by hand or by another tool).</value></data>
+  <data name="Updates_Note" xml:space="preserve"><value>Changes apply to the whole system. Restart Windows after switching profiles.</value></data>
+  <data name="Updates_Done" xml:space="preserve"><value>Windows Update is now: {0}</value></data>
+  <data name="Updates_ConfirmDisable" xml:space="preserve"><value>No security updates will be installed while updates are off. Turn them off?</value></data>
+  <data name="Gaming_Ultimate" xml:space="preserve"><value>Add the Ultimate Performance plan</value></data>
+  <data name="Gaming_UltimateAdded" xml:space="preserve"><value>Ultimate Performance was added to the list; switch to it there. Not for laptops on battery.</value></data>
 </root>
