@@ -18,6 +18,39 @@ public class ReportSummaryTests
          Sensor("load", "GTX 950", "GPU Core", null, 1, 2) with { Kind = "Load" }],
         HardwareInventory.Empty with { Storage = [Nvme, Hdd] }, serviceNumber: "S-1405-0042") with { Peaks = peaks };
 
+    /// <summary>A long service job: sixteen tests, two graphics cards, five drives and every part's temperature.</summary>
+    private static SessionReport Long()
+    {
+        var tests = Enumerable.Range(0, 16).Select(i => Test($"Test number {i} with a longer name", i % 5 == 4 ? ReportOutcome.Failed : ReportOutcome.Passed, i, i + 1)).ToArray();
+        var drives = Enumerable.Range(0, 5).Select(i => Nvme with { FriendlyName = $"Samsung SSD 990 PRO 2TB #{i}", SerialNumber = $"S{i}" }).ToList();
+        var machine = HardwareInventory.Empty with
+        {
+            Storage = drives, Cpu = new CpuInfo("AMD Ryzen 9 7950X3D 16-Core Processor", Mazesta.Core.Hardware.HardwareVendor.Amd, 16, 32, 4200, "AM5"),
+            Gpus = [new GpuInfo("NVIDIA GeForce RTX 4090", "32.0.15.6094", 24L << 30, null), new GpuInfo("AMD Radeon(TM) Graphics", "31.0.24002.92", 512L << 20, null)],
+        };
+        return SessionReport.Create("مازستا", "1.0.0", T0.AddMinutes(20), tests,
+            [Sensor("pkg", "Ryzen 9 7950X3D", "CPU Package", "CpuPackageTemp", 58, 68, 86), Sensor("gpu", "RTX 4090", "GPU Core", "GpuCoreTemp", 40, 71, 60),
+             Sensor("hot", "RTX 4090", "GPU Hot Spot", "GpuHotSpotTemp", 50, 82, 70), Sensor("mem", "RTX 4090", "GPU Memory", "GpuVramTemp", 50, 76, 70),
+             Sensor("ssd", "Samsung SSD 990 PRO 2TB", "Composite", "StorageTemp", 40, 52, 48), Sensor("mb", "X670E", "Motherboard", "BoardTemp", 30, 41, 38)],
+            machine, serviceNumber: "S-1405-0042");
+    }
+
+    [Fact] public void A_long_report_is_set_tighter_so_the_sheet_stays_one_page()
+    {
+        Assert.Equal("", SummaryHtml.Fit(ReportSummary.Of(Report())));
+        var s = ReportSummary.Of(Long());
+        Assert.Equal("tightest", SummaryHtml.Fit(s));
+        string html = SummaryHtml.Write(s);
+        Assert.Contains("<main class=\"tightest\">", html);
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir)
+        {
+            File.WriteAllText(Path.Combine(dir, "summary-long.html"), html);
+            File.WriteAllText(Path.Combine(dir, "summary-short.html"), SummaryHtml.Write(ReportSummary.Of(Report())));
+            var mid = Long() with { Tests = [.. Long().Tests.Take(9)], Machine = Long().Machine with { Storage = [.. Long().Machine.Storage.Take(3)] } };
+            File.WriteAllText(Path.Combine(dir, "summary-mid.html"), SummaryHtml.Write(ReportSummary.Of(mid)));
+        }
+    }
+
     [Fact] public void Each_test_shows_the_highest_temperature_reached_while_it_ran_from_the_trace_of_an_older_report()
     {
         var s = ReportSummary.Of(Report());

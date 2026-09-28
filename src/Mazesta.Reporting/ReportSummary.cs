@@ -109,7 +109,8 @@ public sealed class SummaryText
     };
 }
 
-/// <summary>The report summary as one self-contained offline HTML page (no scripts, no external requests), laid out for an A5 sheet.</summary>
+/// <summary>The report summary as one self-contained offline HTML page (no scripts, no external requests), laid out for one A5 sheet: a long report
+/// (many tests, cards and drives) is set tighter (<see cref="Fit"/>) rather than run onto a second page.</summary>
 public static class SummaryHtml
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -125,7 +126,7 @@ public static class SummaryHtml
         var b = new StringBuilder(24 * 1024);
         b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
-         .Append("<title>").Append(E(w.Title)).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
+         .Append("<title>").Append(E(w.Title)).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main class=\"").Append(Fit(s)).Append("\">");
 
         b.Append("<header><div class=\"brand\">").Append(MazestaLogo.Svg("#0B0B0D", "logo")).Append("<div><h1>").Append(E(w.Title)).Append("</h1><div class=\"shop\">").Append(E(r.ShopName)).Append("</div></div></div><div class=\"meta\">")
          .Append(E(w.Date)).Append(": ").Append(Lt(ReportFormat.Stamp(r.CreatedAt)));
@@ -211,6 +212,14 @@ public static class SummaryHtml
         return b.ToString();
     }
 
+    /// <summary>How tight the sheet is set: by the lines it will hold (a test, a drive and a graphics card each take one, the temperature row one).</summary>
+    internal static string Fit(ReportSummary s)
+    {
+        var m = s.Report.Machine;
+        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + (s.Peaks.Count > 0 ? 1 : 0);
+        return lines > 20 ? "tightest" : lines > 12 ? "tight" : "";
+    }
+
     private static string Css(ReportFont? f)
     {
         string face = f is null ? "" :
@@ -223,31 +232,39 @@ public static class SummaryHtml
 body{{margin:0;background:#eceae3;color:#16161a;font:10px/1.5 {family}}}
 main{{max-width:540px;margin:0 auto;background:#fff;padding:14px 16px}}
 .lt{{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate}}
-header{{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:3px solid #FDD400;padding-bottom:7px;margin-bottom:11px}}
+header{{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:3px solid #FDD400;padding-bottom:6px;margin-bottom:9px}}
 .brand{{display:flex;align-items:center;gap:9px}} .logo{{height:20px;width:auto}}
 h1{{margin:0;font-size:14px;line-height:1.3}} .shop{{color:#55555f;font-size:9.5px}} .meta{{font-size:9.5px;color:#44444c;text-align:end;line-height:1.55}}
-section{{border:1.3px solid #16161a;border-radius:7px;padding:9px 9px 6px;margin-bottom:10px;page-break-inside:avoid}}
-h2{{margin:-17px 0 3px;font-size:10.5px;display:inline-block;background:#fff;padding:0 5px;border-inline-start:3px solid #FDD400;line-height:1.4}}
-.spec{{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin:0}} .spec div{{display:flex;gap:6px;padding:2px 0;border-bottom:1px dotted #d0cfc8;min-width:0}}
+section{{border:1.3px solid #16161a;border-radius:7px;padding:8px 8px 5px;margin-bottom:9px;page-break-inside:avoid}}
+h2{{margin:-16px 0 3px;font-size:10.5px;display:inline-block;background:#fff;padding:0 5px;border-inline-start:3px solid #FDD400;line-height:1.4}}
+.spec{{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin:0}} .spec div{{display:flex;gap:6px;padding:1.5px 0;border-bottom:1px dotted #d0cfc8;min-width:0}}
 .spec div.wide{{grid-column:1/3}} dt{{color:#55555f;flex:0 0 auto}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-table{{width:100%;border-collapse:collapse}} th,td{{padding:2.5px 3px;border-bottom:1px dotted #d0cfc8;text-align:start;vertical-align:middle}}
+table{{width:100%;border-collapse:collapse}} th,td{{padding:2px 3px;border-bottom:1px dotted #d0cfc8;text-align:start;vertical-align:middle}}
 thead th{{font-weight:400;color:#55555f;font-size:9px;border-bottom:1px solid #16161a}} tbody tr:last-child td{{border-bottom:0}}
 .runs td b{{font-size:9.5px}} .runs td:nth-child(n+3),.runs th:nth-child(n+3){{text-align:center;white-space:nowrap}}
-.drives td small{{display:block;color:#66666e;font-size:8.5px;line-height:1.3}} .drives td b{{font-size:9.8px}} td.end{{text-align:end}}
+.drives td small{{color:#66666e;font-size:8.5px;margin-inline-start:6px}} .drives td b{{font-size:9.8px}} td.end{{text-align:end}}
 .badge{{display:inline-block;border-radius:99px;padding:0 7px;font-weight:700;font-size:9px;border:1px solid;white-space:nowrap}}
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
-.temps{{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}}
-.temp{{border:1px solid #d8d7d0;border-radius:5px;padding:3px 5px;text-align:center}}
-.temp .part{{font-weight:700;font-size:9.5px}} .temp .now{{font-size:17px;font-weight:700;line-height:1.25}}
-.temp .max{{font-size:8.5px;color:#33333a;border-top:1px dotted #d0cfc8;margin-top:2px;padding-top:1px;line-height:1.35}} .temp small{{color:#77777f;font-size:7.5px}}
-.note{{margin:3px 0 0;color:#77777f;font-size:8.5px}}
-.verdict{{border-radius:5px;padding:5px 9px;font-weight:700;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px}}
+.temps{{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:4px}}
+.temp{{border:1px solid #d8d7d0;border-radius:5px;padding:2px 4px;text-align:center;min-width:0}}
+.temp .part{{font-weight:700;font-size:8.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .temp .now{{font-size:13.5px;font-weight:700;line-height:1.2}}
+.temp .max{{font-size:7.5px;color:#33333a;border-top:1px dotted #d0cfc8;margin-top:1px;padding-top:1px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.temp small{{color:#77777f;font-size:7px}}
+.note{{margin:2px 0 0;color:#77777f;font-size:8px}}
+.verdict{{border-radius:5px;padding:4px 9px;font-weight:700;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:11px}}
 .verdict small{{font-weight:400;color:#44444c;font-size:10px}}
 .verdict.Passed{{background:#e6f6ee;color:#0f6b3c}} .verdict.Failed{{background:#fde8e7;color:#a0180f}} .verdict.Incomplete{{background:#fff4d6;color:#8a5a00}} .verdict.Benchmark{{background:#eef1f7;color:#2b3a55}}
 .na{{color:#77777f;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
-.sign{{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:6px 0 4px}} .sign div{{border-top:1px solid #16161a;padding-top:2px;font-size:9px;color:#44444c;text-align:center;margin-top:24px}}
-footer{{color:#77777f;font-size:8px;line-height:1.45;border-top:1px solid #d8d7d0;padding-top:4px}}
+.sign{{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:4px 0 4px}} .sign div{{border-top:1px solid #16161a;padding-top:2px;font-size:9px;color:#44444c;text-align:center;margin-top:20px}}
+footer{{color:#77777f;font-size:8px;line-height:1.45;border-top:1px solid #d8d7d0;padding-top:3px}}
+main.tight{{font-size:9.2px;line-height:1.4}} .tight section{{padding:7px 7px 4px;margin-bottom:8px}} .tight th,.tight td{{padding:1.2px 3px}}
+.tight .runs td b,.tight .drives td b{{font-size:9px}} .tight .badge{{font-size:8.5px;line-height:1.35}} .tight .temp .now{{font-size:12.5px}}
+.tight .spec div{{padding:1px 0}} .tight .sign div{{margin-top:16px}} .tight header{{margin-bottom:7px}} .tight .verdict{{margin-bottom:10px}}
+main.tightest{{font-size:8.6px;line-height:1.32}} .tightest section{{padding:6px 6px 3px;margin-bottom:7px}} .tightest th,.tightest td{{padding:0.6px 3px}}
+.tightest .runs td b,.tightest .drives td b{{font-size:8.5px}} .tightest thead th{{font-size:8px}} .tightest .badge{{font-size:8px;line-height:1.3;padding:0 5px}}
+.tightest .temp .now{{font-size:12px}} .tightest .temp .max{{display:none}} .tightest .note{{display:none}} .tightest .spec div{{padding:0.5px 0}}
+.tightest .sign div{{margin-top:12px}} .tightest header{{margin-bottom:6px;padding-bottom:4px}} .tightest .verdict{{margin-bottom:9px;padding:3px 9px}} .tightest footer{{font-size:7.5px}}
 @media print{{body{{background:#fff}} main{{padding:0;max-width:none}}}}";
     }
 }
