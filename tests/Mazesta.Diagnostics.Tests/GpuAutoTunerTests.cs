@@ -11,7 +11,9 @@ public class GpuAutoTunerTests
         public GpuTuningSettings Current { get; private set; } = GpuTuningSettings.Stock;
         public string Id => "GPU-1"; public string Name => "Fake";
         public GpuTuningLimits Limits { get; } = new(-1000, 1000, 0, 0, 2100, 100, 365, 350, 1, 30, 100);
-        public GpuTelemetry ReadTelemetry() => new(DateTimeOffset.UtcNow, Current.MaxClockMHz ?? 1905, 9751, 65, 340 - 0.2 * Current.CoreOffsetMHz, 40);
+        private int _reads; public int Reads => Volatile.Read(ref _reads);
+        public GpuTelemetry ReadTelemetry() { Interlocked.Increment(ref _reads); return Telemetry(); }
+        private GpuTelemetry Telemetry() => new(DateTimeOffset.UtcNow, Current.MaxClockMHz ?? 1905, 9751, 65, 340 - 0.2 * Current.CoreOffsetMHz, 40);
         public GpuTuningSettings ReadCurrent() => Current;
         public TuningApplyResult Apply(GpuTuningSettings s)
         {
@@ -22,12 +24,17 @@ public class GpuAutoTunerTests
         public TuningApplyResult Reset() { Resets++; Current = GpuTuningSettings.Stock; return new([]); }
     }
 
-    private sealed class FakeLoad(Func<GpuTuningSettings> current, int stableTo) : IGpuLoad
+    /// <summary>Ends a run once the tuner's sampler has read the card, not after a wall-clock sleep: a sleep of a few milliseconds raced the
+    /// sampler's thread, and on a busy thread pool a run could end unsampled and the search stop with no telemetry.</summary>
+    private sealed class FakeLoad(FakeCard card, int stableTo, Action<int>? onRun = null) : IGpuLoad
     {
+        private int _runs;
         public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct)
         {
-            Thread.Sleep(duration); ct.ThrowIfCancellationRequested();
-            return new(100, current().CoreOffsetMHz > stableTo ? 1 : 0, false, null);
+            int reads = card.Reads; onRun?.Invoke(++_runs);
+            SpinWait.SpinUntil(() => card.Reads > reads || ct.IsCancellationRequested, TimeSpan.FromSeconds(30));
+            ct.ThrowIfCancellationRequested();
+            return new(100, card.Current.CoreOffsetMHz > stableTo ? 1 : 0, false, null);
         }
     }
 
@@ -40,7 +47,7 @@ public class GpuAutoTunerTests
     [Fact] public async Task Finds_an_undervolt_journals_every_step_and_leaves_the_card_at_stock()
     {
         var card = new FakeCard(); var journal = new List<GpuTuningSettings?>();
-        var tuner = new GpuAutoTuner(card, new FakeLoad(() => card.Current, stableTo: 120), journal.Add, TimeSpan.FromMilliseconds(5));
+        var tuner = new GpuAutoTuner(card, new FakeLoad(card, stableTo: 120), journal.Add, TimeSpan.FromMilliseconds(5));
         var outcome = await tuner.RunAsync(new UndervoltSearch(card.Limits, Quick), CancellationToken.None);
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
         Assert.Equal(105, outcome.Settings!.CoreOffsetMHz);
@@ -52,16 +59,16 @@ public class GpuAutoTunerTests
     [Fact] public async Task A_driver_that_refuses_the_clock_cap_ends_the_search_as_unsupported()
     {
         var card = new FakeCard(refuseLock: true);
-        var outcome = await new GpuAutoTuner(card, new FakeLoad(() => card.Current, 120), _ => { }, TimeSpan.FromMilliseconds(5)).RunAsync(new UndervoltSearch(card.Limits, Quick), CancellationToken.None);
+        var outcome = await new GpuAutoTuner(card, new FakeLoad(card, 120), _ => { }, TimeSpan.FromMilliseconds(5)).RunAsync(new UndervoltSearch(card.Limits, Quick), CancellationToken.None);
         Assert.Equal(AutoTuneVerdict.Unsupported, outcome.Verdict); Assert.Equal("Tuning_Out_ApplyRefused", outcome.ReasonKey);
         Assert.Contains("Not Supported", outcome.Detail); Assert.True(card.Current.IsStock);
     }
 
     [Fact] public async Task Cancelling_puts_the_card_back_to_stock()
     {
-        var card = new FakeCard(); using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
-        var outcome = await new GpuAutoTuner(card, new FakeLoad(() => card.Current, 1000), _ => { }, TimeSpan.FromMilliseconds(5))
-            .RunAsync(new UndervoltSearch(card.Limits, Quick with { ProbeDuration = TimeSpan.FromMilliseconds(50) }), cts.Token);
-        Assert.Equal(AutoTuneVerdict.Cancelled, outcome.Verdict); Assert.True(card.Current.IsStock);
+        var card = new FakeCard(); using var cts = new CancellationTokenSource();
+        var load = new FakeLoad(card, 1000, run => { if (run == 2) cts.Cancel(); });   // cancelled during the first probe, with an offset applied
+        var outcome = await new GpuAutoTuner(card, load, _ => { }, TimeSpan.FromMilliseconds(5)).RunAsync(new UndervoltSearch(card.Limits, Quick), cts.Token);
+        Assert.Equal(AutoTuneVerdict.Cancelled, outcome.Verdict); Assert.Equal(30, card.Applied[^1].CoreOffsetMHz); Assert.True(card.Current.IsStock);
     }
 }
