@@ -58,4 +58,14 @@ public class LhmHardwareMapperTests
         var sensors = Mapper().Map([gpu])[0].Sensors;
         Assert.Single(sensors); Assert.Equal("GPU Video Engine", sensors[0].Definition.Name);
     }
+
+    // Regression: two drives with one serial gave two nodes one id; the duplicate sensor key emptied Monitoring and failed the tray check.
+    [Fact] public void Drives_sharing_a_serial_get_distinct_ids()
+    {
+        var a = new FakeHardware(HardwareType.Storage, "/hdd/1", "Samsung PSSD T7"); a.Add("Temperature", SensorType.Temperature, 0, 30);
+        var b = new FakeHardware(HardwareType.Storage, "/hdd/2", "Samsung PSSD T7"); b.Add("Temperature", SensorType.Temperature, 0, 31);
+        var nodes = Mapper("162267420834").Map([a, b]);
+        Assert.Equal(("storage/162267420834", "storage/hdd-2"), (nodes[0].Node.Id.Value, nodes[1].Node.Id.Value));
+        Assert.Equal(2, nodes.SelectMany(n => n.Sensors).Select(s => s.Definition.Id).Distinct().Count());
+    }
 }

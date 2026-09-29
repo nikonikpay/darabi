@@ -209,7 +209,7 @@
     <value>خدمات مازستا</value>
   </data>
   <data name="Dashboard_Mazesta_L1" xml:space="preserve">
-    <value>خدمات سرویس، نگهداری و ارتقای سیستم</value>
+    <value>فروش سیستم‌های حرفه‌ای و اختصاصی رندرینگ، سرویس، نگهداری و ارتقا</value>
   </data>
   <data name="Dashboard_Mazesta_L2" xml:space="preserve">
     <value>مشاوره و خرید سیستم تخصصی با یک سال گارانتی طلایی</value>
@@ -882,10 +882,10 @@
   <data name="Web_Contact_Sales" xml:space="preserve"><value>واحد فروش</value></data>
   <data name="Web_Contact_Support" xml:space="preserve"><value>پشتیبانی فنی</value></data>
   <data name="Web_Contact_Office" xml:space="preserve"><value>دفتر</value></data>
-  <data name="Web_Contact_Fax" xml:space="preserve"><value>فکس</value></data>
   <data name="Web_Contact_Email" xml:space="preserve"><value>ایمیل</value></data>
   <data name="Web_Contact_SendMail" xml:space="preserve"><value>ارسال ایمیل</value></data>
   <data name="Web_Contact_WhatsApp" xml:space="preserve"><value>واتس‌اپ</value></data>
+  <data name="Web_Contact_Bale" xml:space="preserve"><value>بله</value></data>
   <data name="Web_Contact_Telegram" xml:space="preserve"><value>تلگرام</value></data>
   <data name="Web_Contact_Channel" xml:space="preserve"><value>کانال تلگرام</value></data>
   <data name="Web_Contact_Instagram" xml:space="preserve"><value>اینستاگرام</value></data>

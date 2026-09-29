@@ -125,7 +125,7 @@ export async function call(m, p, emit) {
   if (m.startsWith("overlay.")) return overlay(m, p, HW, strings, emit);
   switch (m) {
     case "app.boot": return { language: "fa", rtl: true, strings, version: "demo", shopName: "مازستا", serviceNumber: "S-1405-0042", interval: 2, paused: false,
-      contact: { sales: "09197588700", support: "09197588701", office: "021-41139", fax: "88867214 - 88867207", email: "info@dfmrendering.com", hours: "Contact_Hours", address: "Contact_Address", postcode: "1571837738" },
+      contact: { sales: "09197588700", support: "09197588701", office: "021-41139", email: "info@dfmrendering.com", hours: "Contact_Hours", address: "Contact_Address", postcode: "1571837738" },
       provider: { state: "Ready", text: strings.Status_Provider_Ready.replace("{0}", "۴۱۲"), count: 412 }, banner: null,
       units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Ampere: "A", Watt: "W", WattHour: "Wh", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", Seconds: "s", Hertz: "Hz", None: "" } };
     case "app.hardware": return HW;

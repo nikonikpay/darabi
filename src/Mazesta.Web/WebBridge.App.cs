@@ -11,15 +11,15 @@ public sealed partial class WebBridge
         ["site"] = "https://www.dfmrendering.com/", ["contact"] = "https://www.dfmrendering.com/contactus/", ["pawnio"] = ProviderText.PawnIoUrl,
         ["shop"] = "https://www.dfmrendering.com/shop/",
         ["sales-whatsapp"] = "https://wa.me/989197588700", ["support-whatsapp"] = "https://wa.me/989197588701",
-        ["support-telegram"] = "https://t.me/dfm_support", ["channel-telegram"] = "https://t.me/DFMRendering", ["instagram"] = "https://www.instagram.com/dfm.rendering/",
+        ["sales-telegram"] = "https://t.me/DFMRendering", ["support-telegram"] = "https://t.me/dfm_support", ["bale"] = "https://ble.ir/join/DjEi5p9iS5", ["channel-telegram"] = "https://t.me/DFMRendering", ["instagram"] = "https://www.instagram.com/dfm.rendering/",
         ["email"] = "mailto:info@dfmrendering.com",
     };
 
-    /// <summary>The company's contact details as its own site publishes them (dfmrendering.com/contactus, read 2026-09-27). Numbers stay as the
+    /// <summary>The company's contact details as its own site publishes them (dfmrendering.com/contactus, read 2026-09-29; the site gives one Bale link for both desks). Numbers stay as the
     /// site writes them; the page shows them and opens only the links above.</summary>
     private static readonly object Contact = new
     {
-        sales = "09197588700", support = "09197588701", office = "021-41139", fax = "88867214 - 88867207", email = "info@dfmrendering.com",
+        sales = "09197588700", support = "09197588701", office = "021-41139", email = "info@dfmrendering.com",
         hours = "Contact_Hours", address = "Contact_Address", postcode = "1571837738",
     };
 

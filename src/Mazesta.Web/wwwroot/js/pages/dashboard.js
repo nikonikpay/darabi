@@ -197,14 +197,14 @@ function contactPanel() {
   const c = boot.contact || {};
   const chip = (key, ico, label) => h("button", { class: "chip", type: "button", onclick: () => call("app.openLink", { key }) }, icon(ico), label);
   const line = (who, number, ...chips) => h("div", { class: "line" }, h("span", { class: "who" }, who), h("span", { class: "no" }, number), chips.length ? h("div", { class: "links" }, chips) : null);
+  const messengers = (desk) => [chip(`${desk}-telegram`, "send", t("Web_Contact_Telegram")), chip(`${desk}-whatsapp`, "chat", t("Web_Contact_WhatsApp")), chip("bale", "chat", t("Web_Contact_Bale"))];
   return h("section", { class: "panel p-contact" },
     h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("phone")),
       h("div", { class: "ttl" }, h("h3", { class: "panel-title" }, t("Web_Contact_Title")), h("div", { class: "panel-sub fa" }, t("Dashboard_Mazesta_L1")))),
     h("div", { class: "contact" },
-      c.sales && line(t("Web_Contact_Sales"), c.sales, chip("sales-whatsapp", "chat", t("Web_Contact_WhatsApp"))),
-      c.support && line(t("Web_Contact_Support"), c.support, chip("support-whatsapp", "chat", t("Web_Contact_WhatsApp")), chip("support-telegram", "send", t("Web_Contact_Telegram"))),
       c.office && line(t("Web_Contact_Office"), c.office),
-      c.fax && line(t("Web_Contact_Fax"), c.fax),
+      c.sales && line(t("Web_Contact_Sales"), c.sales, ...messengers("sales")),
+      c.support && line(t("Web_Contact_Support"), c.support, ...messengers("support")),
       c.email && line(t("Web_Contact_Email"), c.email, chip("email", "mail", t("Web_Contact_SendMail"))),
       c.hours && h("p", { class: "note" }, icon("clock"), h("span", {}, t(c.hours))),
       c.address && h("p", { class: "note" }, icon("pin"), h("span", {}, t(c.address), c.postcode ? [` — ${t("Web_Contact_Postcode")} `, h("span", { class: "lat" }, c.postcode)] : null)),

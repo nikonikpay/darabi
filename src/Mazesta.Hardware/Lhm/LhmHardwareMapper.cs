@@ -6,17 +6,20 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
 {
     public IReadOnlyList<MappedNode> Map(IEnumerable<IHardware> roots)
     {
-        var result = new List<MappedNode>();
-        foreach (var root in roots) Visit(root, null, result);
+        var result = new List<MappedNode>(); var taken = new HashSet<HardwareId>();
+        foreach (var root in roots) Visit(root, null, result, taken);
         return result;
     }
-    private void Visit(IHardware hw, HardwareId? parentId, List<MappedNode> into)
+    private void Visit(IHardware hw, HardwareId? parentId, List<MappedNode> into, HashSet<HardwareId> taken)
     {
         if (hw.HardwareType == HardwareType.Network && NetworkAdapterFilter.IsVirtualBinding(hw.Name)) return;
         var kind = KindOf(hw.HardwareType);
         string path = hw.Identifier.ToString();
         string? serial = kind == HardwareKind.Storage ? Normalize(storageSerialResolver(hw)) : null;
-        var id = serial is not null ? HardwareId.ForStorage(serial) : HardwareId.FromProviderPath(kind, path);
+        // Two drives can report one serial (twin USB enclosures, a bridge that passes a fixed one); the second then keys by its provider path,
+        // since a node id prefixes every sensor id and a clash made the sensor list fail to build at all.
+        if (serial is not null && taken.Contains(HardwareId.ForStorage(serial))) serial = null;
+        var id = serial is not null ? HardwareId.ForStorage(serial) : HardwareId.FromProviderPath(kind, path); taken.Add(id);
         var sensors = new List<MappedSensor>();
         int ordinal = 0; var seen = new HashSet<SensorId>();
         foreach (var s in hw.Sensors.Where(s => !s.IsDefaultHidden).OrderBy(s => s.SensorType).ThenBy(s => s.Index))
@@ -32,7 +35,7 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
         }
         var node = new HardwareNode(id, kind, VendorOf(hw.HardwareType, path), hw.Name, parentId, serial is not null || kind != HardwareKind.Storage, sensors.Select(m => m.Definition).ToList());
         into.Add(new MappedNode(node, hw, sensors));
-        foreach (var sub in hw.SubHardware) Visit(sub, id, into);
+        foreach (var sub in hw.SubHardware) Visit(sub, id, into, taken);
     }
     private static string? Normalize(string? serial) => string.IsNullOrWhiteSpace(serial) ? null : serial.Trim();
     public static HardwareKind KindOf(HardwareType t) => t switch

@@ -209,7 +209,7 @@
     <value>Mazesta services</value>
   </data>
   <data name="Dashboard_Mazesta_L1" xml:space="preserve">
-    <value>System service, maintenance and upgrades</value>
+    <value>System sales, service, maintenance and upgrades - professional and custom rendering workstations</value>
   </data>
   <data name="Dashboard_Mazesta_L2" xml:space="preserve">
     <value>Consulting and purchase of specialised systems with one-year golden warranty</value>
@@ -882,10 +882,10 @@
   <data name="Web_Contact_Sales" xml:space="preserve"><value>Sales</value></data>
   <data name="Web_Contact_Support" xml:space="preserve"><value>Technical support</value></data>
   <data name="Web_Contact_Office" xml:space="preserve"><value>Office</value></data>
-  <data name="Web_Contact_Fax" xml:space="preserve"><value>Fax</value></data>
   <data name="Web_Contact_Email" xml:space="preserve"><value>Email</value></data>
   <data name="Web_Contact_SendMail" xml:space="preserve"><value>Send email</value></data>
   <data name="Web_Contact_WhatsApp" xml:space="preserve"><value>WhatsApp</value></data>
+  <data name="Web_Contact_Bale" xml:space="preserve"><value>Bale</value></data>
   <data name="Web_Contact_Telegram" xml:space="preserve"><value>Telegram</value></data>
   <data name="Web_Contact_Channel" xml:space="preserve"><value>Telegram channel</value></data>
   <data name="Web_Contact_Instagram" xml:space="preserve"><value>Instagram</value></data>
