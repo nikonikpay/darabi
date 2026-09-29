@@ -1061,3 +1061,26 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .note-field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; color: var(--paper-3); }
 .note-field .field { flex: 1; }
 @media (max-width: 720px) { .peer { grid-template-columns: 28px minmax(0, 1fr) auto; } .peer .ps { display: none; } .peer .pd { grid-column: 2 / -1; text-align: start; } }
+
+/* AI page: the machine and the reading guide side by side, then one plate per model. */
+.ai-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; margin-top: 8px; }
+.p-ai { --hue: var(--yellow); }
+.ai-help { --hue: var(--paper-2); }
+.ai-help .upd-points { margin-top: 6px; font-size: 12.5px; }
+.ai-runtime { margin-top: 12px; display: grid; gap: 8px; }
+.ai-rt-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ai-rt-line .grow { flex: 1; }
+.ai-models { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
+.panel.ai-model { --hue: var(--paper-2); border-top: 3px solid var(--rule-2); display: flex; flex-direction: column; }
+.panel.ai-model.rec { --hue: var(--yellow); border-top-color: var(--yellow); box-shadow: var(--shadow), 0 0 0 1px color-mix(in oklab, var(--yellow) 50%, transparent); }
+.ai-model .panel-head .ttl { flex: 1; min-width: 0; }
+.ai-model .pill svg { width: 11px; height: 11px; stroke: currentColor; }
+.ai-purpose { font-size: 13px; color: var(--paper-2); margin: 10px 0 10px; line-height: 1.7; }
+.ai-fit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.ai-prog { display: grid; gap: 4px; margin-top: 10px; }
+.ai-err { color: var(--fail); font-size: 12px; margin: 8px 0 0; overflow-wrap: anywhere; }
+.ai-result { margin-top: 12px; padding: 8px 10px; background: var(--well); border-radius: var(--r-ctl); }
+.ai-res-head { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--paper-3); }
+.ai-res-nums { display: flex; gap: 22px; align-items: flex-end; flex-wrap: wrap; }
+.ai-res-nums .metric .v { font-size: 24px; }
+.ai-res-nums .pill { margin-bottom: 6px; }

@@ -69,6 +69,22 @@ const tests = () => ({
 });
 // Specification cards as the host builds them (the owner's machine's values, for the design only).
 const R = (label, value, more = false) => ({ label, value, more });
+// The AI page as it read on the owner's machine (RTX 3090, 64 GB), with the 4B model measured there.
+function demoAi() {
+  const m = (id, name, params, size, tier, mode, need, extra = {}) => ({ id, name, params, quant: "Q4_K_M", size, license: "Apache-2.0", moe: params.includes("("), tier: strings[tier],
+    purpose: strings[`Ai_Purpose_${extra.p}`], context: 40960, fit: { mode, need, share: extra.share || 100, tight: !!extra.tight, ceiling: extra.ceiling || null, maxContext: extra.ctx || null },
+    cpuFits: true, downloaded: !!extra.gpu, partial: null, transfer: null, gpu: extra.gpu || null, cpu: extra.cpu || null });
+  const run = (gen, genRaw, prompt) => ({ gen, genRaw, prompt, at: "1405/07/08 03:36", detail: "Qwen3 4B Q4_K_M · llama.cpp b11265 Vulkan" });
+  return { machine: { gpu: "NVIDIA GeForce RTX 3090", vram: "24 GB", bandwidth: "936 GB/s", ram: "64 GB", ramFree: "41.2 GB" },
+    runtime: { ready: true, build: "b11265", size: "0.03 GB", transfer: null }, busy: false, downloading: null, error: null, running: null, recommended: "qwen3.8-27b",
+    models: [m("qwen3.5-0.8b", "Qwen3.5 0.8B", "0.8B", "0.78 GB", "Ai_Tier_Tiny", "Gpu", "1.3 GB", { p: "Qwen35_08", ceiling: "1138 tok/s", ctx: 262144 }),
+      m("qwen3-4b", "Qwen3 4B", "4B", "2.33 GB", "Ai_Tier_Small", "Gpu", "3.39 GB", { p: "Qwen3_4", ceiling: "376 tok/s", ctx: 40960, gpu: run("195 tok/s", 194.8, "6882 tok/s"), cpu: run("9.6 tok/s", 9.6, "156 tok/s") }),
+      m("qwen3-14b", "Qwen3 14B", "14B", "8.38 GB", "Ai_Tier_Medium", "Gpu", "9.5 GB", { p: "Qwen3_14", ceiling: "104 tok/s", ctx: 40960 }),
+      m("gpt-oss-20b", "gpt-oss 20B", "21B (3.6B)", "11.28 GB", "Ai_Tier_Moe", "Gpu", "11.9 GB", { p: "GptOss20", ceiling: "293 tok/s", ctx: 131072 }),
+      m("qwen3.8-27b", "Qwen3.8 27B", "27B", "17.67 GB", "Ai_Tier_Large", "Gpu", "18.4 GB", { p: "Qwen38_27", ceiling: "49 tok/s", ctx: 64000 }),
+      m("qwen3.6-35b-a3b", "Qwen3.6 35B-A3B", "35B (3B)", "19.02 GB", "Ai_Tier_Moe", "Gpu", "19.6 GB", { p: "Qwen36_35", ceiling: "327 tok/s", ctx: 158000, tight: true })] };
+}
+
 const DEMO_SPECS = {
   Cpu: [{ title: "پردازنده", rows: [R("نام", "AMD Ryzen 9 3950X 16-Core Processor"), R("سازنده", "Amd"), R("هسته / رشته", "16 / 32"), R("فرکانس پایه", "3501 MHz"), R("سوکت", "AM4"),
       R("خانواده / مدل / استپینگ", "Family 23 (17h) · Model 113 (71h) · Stepping 0", true), R("میکروکد", "0x8701030", true), R("فرکانس باس", "100 MHz", true)] },
@@ -201,6 +217,8 @@ export async function call(m, p, emit) {
     case "shop.product": await new Promise((r) => setTimeout(r, 700));
       return { id: 1, title: "نمونهٔ محصول فروشگاه (دادهٔ نمایشی)", summary: "در برنامه، یک محصول تصادفی از سایت dfmrendering.com اینجا نمایش داده می‌شود: نام، خلاصهٔ توضیحات به‌صورت متن ساده و تصویر محصول.", link: "https://www.dfmrendering.com/shop/", image: null };
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }
+    case "ai.state": return demoAi();
+    case "ai.exec": return null;
     case "specs.get": await new Promise((r) => setTimeout(r, 300)); return { errors: [], cards: DEMO_SPECS[p.kind || "Cpu"] || DEMO_SPECS.Cpu };
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };

@@ -2,7 +2,8 @@
 # reports, history, logs).
 #   1. refuses while the app or MazestaTray is running from the target (its files are locked, and deleting around a running app is how its
 #      data was lost on 2026-09-26);
-#   2. copies Data to a timestamped backup OUTSIDE the repository (next to it, in Mazesta-Data-Backups), keeping the newest $Keep copies;
+#   2. copies Data to a timestamped backup OUTSIDE the repository (next to it, in Mazesta-Data-Backups), keeping the newest $Keep copies
+#      (all but Data\ai, the AI models the app downloads again on request);
 #   3. deletes everything in the target except Data, publishes, and checks Data is still there.
 # The source code is backed up by git; this protects what the app itself writes, which git never sees (artifacts/ is ignored).
 # The WPF edition (MazestaTest.exe, artifacts\Mazesta-Test) was retired on 2026-09-28 (git tag wpf-edition-final); this script no longer
@@ -33,7 +34,9 @@ if (Test-Path $data) {
     $backups = [IO.Path]::GetFullPath($BackupRoot)
     $stamp = Join-Path $backups (Get-Date -Format "yyyyMMdd-HHmmss")
     New-Item -ItemType Directory -Force $stamp | Out-Null
-    Copy-Item -Recurse -Force $data $stamp
+    # Data\ai holds the AI benchmark's downloaded models (gigabytes each, fetched again at will): it stays in place but is not copied.
+    New-Item -ItemType Directory -Force (Join-Path $stamp "Data") | Out-Null
+    Get-ChildItem $data -Force | Where-Object Name -ne "ai" | Copy-Item -Recurse -Force -Destination (Join-Path $stamp "Data")
     Write-Host "Data backed up to $stamp"
     Get-ChildItem $backups -Directory | Sort-Object Name -Descending | Select-Object -Skip $Keep | Remove-Item -Recurse -Force -Confirm:$false
 }

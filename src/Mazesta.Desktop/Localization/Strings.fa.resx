@@ -1587,4 +1587,74 @@
   <data name="Advice_Inconclusive_Network" xml:space="preserve"><value>هیچ پاسخ اکویی برنگشت. ممکن است فایروال یا مقصد ICMP را مسدود کند؛ این خرابی کارت شبکه نیست. به روتر یا مقصد دیگری پینگ بگیرید؛ بنچمارک سرعت اینترنت اتصال را از راه دیگری بررسی می‌کند.</value></data>
   <data name="Advice_Error" xml:space="preserve"><value>خود آزمون با خطای برنامه متوقف شد؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست. دوباره اجرا کنید؛ اگر تکرار شد، گزارش برنامه (در تنظیمات) را برای فروشگاه بفرستید.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>بستن تا جلسهٔ بعدی</value></data>
+  <data name="Nav_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
+  <data name="Ai_Lede" xml:space="preserve"><value>این کامپیوتر کدام مدل‌های زبانی هوش مصنوعی را به‌صورت محلی اجرا می‌کند و با چه سرعتی. سازگاری هر مدل پیش از دانلود برآورد می‌شود؛ مدل‌های دلخواه را دانلود کنید و سرعت واقعی‌شان را روی کارت گرافیک یا پردازنده اندازه بگیرید.</value></data>
+  <data name="Ai_Machine" xml:space="preserve"><value>این سیستم برای هوش مصنوعی</value></data>
+  <data name="Ai_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>
+  <data name="Ai_NoGpu" xml:space="preserve"><value>کارتی با حافظهٔ اختصاصی نیست (مدل‌ها روی پردازنده اجرا می‌شوند)</value></data>
+  <data name="Ai_Vram" xml:space="preserve"><value>حافظهٔ کارت گرافیک</value></data>
+  <data name="Ai_Bandwidth" xml:space="preserve"><value>پهنای باند حافظهٔ کارت (حداکثر)</value></data>
+  <data name="Ai_Ram" xml:space="preserve"><value>حافظهٔ سیستم (RAM)</value></data>
+  <data name="Ai_Free" xml:space="preserve"><value>{0} آزاد</value></data>
+  <data name="Ai_Runtime_Ready" xml:space="preserve"><value>llama.cpp نسخهٔ {0} آماده است</value></data>
+  <data name="Ai_Runtime_Missing" xml:space="preserve"><value>llama.cpp دانلود نشده است</value></data>
+  <data name="Ai_Runtime_Note" xml:space="preserve"><value>مدل‌ها با llama.cpp اجرا می‌شوند (متن‌باز، مجوز MIT) که یک بار از انتشار رسمی آن در GitHub دانلود و با checksum آن بررسی می‌شود. نسخهٔ Vulkan آن روی کارت‌های NVIDIA، AMD و Intel و روی پردازنده اجرا می‌شود.</value></data>
+  <data name="Ai_NeedRuntime" xml:space="preserve"><value>برای اجرای این مدل، llama.cpp را از بالای صفحه دانلود کنید.</value></data>
+  <data name="Ai_OpenFolder" xml:space="preserve"><value>باز کردن پوشه</value></data>
+  <data name="Ai_HowTo_Title" xml:space="preserve"><value>راهنمای این صفحه</value></data>
+  <data name="Ai_HowTo" xml:space="preserve"><value>سازگاری، برآوردی پیش از دانلود است: وزن‌های مدل، حافظهٔ لازم برای ۴۰۹۶ توکن متن و حافظهٔ کاری برنامه، در مقایسه با حافظهٔ کارت گرافیک و RAM آزاد این سیستم (از هر کدام ۱ گیگابایت آزاد می‌ماند، مثل خود llama.cpp).
+سرعت اندازه‌گیری می‌شود، نه برآورد: بنچمارک خود llama.cpp یعنی llama-bench یک متن ۵۱۲ توکنی را می‌خواند و سپس ۱۲۸ توکن می‌نویسد؛ هر کدام سه بار.
+تولید متن یعنی سرعت نوشتن پاسخ. هر توکن تکه‌ای از یک کلمه است؛ با حدود ۱۰ توکن در ثانیه پاسخ هم‌زمان با خواندن شما ظاهر می‌شود.
+پردازش ورودی یعنی سرعت خواندن سؤال و متن‌هایی که به مدل می‌دهید؛ زمان انتظار تا اولین کلمه را تعیین می‌کند.
+تا دکمهٔ دانلود را نزنید چیزی دانلود نمی‌شود. مدل‌ها از Hugging Face (ggml-org، پروژهٔ llama.cpp) دریافت و با checksum منتشرشده‌شان بررسی می‌شوند.</value></data>
+  <data name="Ai_Download" xml:space="preserve"><value>دانلود ({0})</value></data>
+  <data name="Ai_Resume" xml:space="preserve"><value>ادامهٔ دانلود ({0} از {1})</value></data>
+  <data name="Ai_CancelDownload" xml:space="preserve"><value>توقف دانلود</value></data>
+  <data name="Ai_Delete" xml:space="preserve"><value>حذف</value></data>
+  <data name="Ai_ConfirmDelete" xml:space="preserve"><value>فایل دانلودشدهٔ {0} حذف شود؟ نتایج اندازه‌گیری‌شده‌اش باقی می‌ماند.</value></data>
+  <data name="Ai_RunGpu" xml:space="preserve"><value>سنجش روی کارت گرافیک</value></data>
+  <data name="Ai_RunCpu" xml:space="preserve"><value>سنجش روی پردازنده</value></data>
+  <data name="Ai_Cancel" xml:space="preserve"><value>توقف</value></data>
+  <data name="Ai_Running_Gpu" xml:space="preserve"><value>در حال سنجش روی کارت گرافیک…</value></data>
+  <data name="Ai_Running_Cpu" xml:space="preserve"><value>در حال سنجش روی پردازنده…</value></data>
+  <data name="Ai_Busy" xml:space="preserve"><value>بنچمارک یا تست دیگری در حال اجراست.</value></data>
+  <data name="Ai_Recommended" xml:space="preserve"><value>پیشنهاد برای این سیستم</value></data>
+  <data name="Ai_Fit_Gpu" xml:space="preserve"><value>کامل روی کارت گرافیک اجرا می‌شود</value></data>
+  <data name="Ai_Fit_Split" xml:space="preserve"><value>تقسیم بین کارت گرافیک و RAM</value></data>
+  <data name="Ai_Fit_SplitShare" xml:space="preserve"><value>تقسیم‌شده: حدود {0}٪ روی کارت گرافیک، بقیه در RAM (کندتر)</value></data>
+  <data name="Ai_Fit_Cpu" xml:space="preserve"><value>روی پردازنده و RAM اجرا می‌شود</value></data>
+  <data name="Ai_Fit_TooBig" xml:space="preserve"><value>برای این سیستم بزرگ است</value></data>
+  <data name="Ai_Fit_Tight" xml:space="preserve"><value>جای خالی کم است؛ برنامه‌های دیگر را ببندید</value></data>
+  <data name="Ai_Estimate" xml:space="preserve"><value>(برآورد)</value></data>
+  <data name="Ai_File" xml:space="preserve"><value>فایل</value></data>
+  <data name="Ai_Need" xml:space="preserve"><value>حافظهٔ لازم</value></data>
+  <data name="Ai_Ceiling" xml:space="preserve"><value>سقف سرعت</value></data>
+  <data name="Ai_Ceiling_Hint" xml:space="preserve"><value>سرعت تولید متن نمی‌تواند از سرعت رساندن وزن‌های لازم برای هر توکن توسط حافظهٔ کارت بیشتر شود (پهنای باند تقسیم بر وزن‌های فعال). اجرای واقعی به بخشی از آن می‌رسد؛ سنجش پایین مقدار واقعی را نشان می‌دهد.</value></data>
+  <data name="Ai_MaxContext" xml:space="preserve"><value>بیشترین طول متن روی کارت</value></data>
+  <data name="Ai_MaxContext_Hint" xml:space="preserve"><value>تعداد توکن‌های گفتگو و متنی که حافظهٔ موقتشان هنوز کنار مدل روی کارت گرافیک جا می‌شود.</value></data>
+  <data name="Ai_Moe" xml:space="preserve"><value>ترکیب متخصص‌ها (MoE)</value></data>
+  <data name="Ai_Measured_Gpu" xml:space="preserve"><value>اندازه‌گیری‌شده روی کارت گرافیک</value></data>
+  <data name="Ai_Measured_Cpu" xml:space="preserve"><value>اندازه‌گیری‌شده روی پردازنده</value></data>
+  <data name="Ai_Gen" xml:space="preserve"><value>تولید متن (نوشتن پاسخ)</value></data>
+  <data name="Ai_Prompt" xml:space="preserve"><value>پردازش ورودی (خواندن سؤال)</value></data>
+  <data name="Ai_Speed_Slow" xml:space="preserve"><value>برای گفتگو کند</value></data>
+  <data name="Ai_Speed_Usable" xml:space="preserve"><value>قابل استفاده</value></data>
+  <data name="Ai_Speed_Smooth" xml:space="preserve"><value>روان</value></data>
+  <data name="Ai_Speed_Fast" xml:space="preserve"><value>خیلی سریع</value></data>
+  <data name="Ai_Tier_Tiny" xml:space="preserve"><value>خیلی سبک و سریع</value></data>
+  <data name="Ai_Tier_Small" xml:space="preserve"><value>سبک و روزمره</value></data>
+  <data name="Ai_Tier_Medium" xml:space="preserve"><value>متوسط و قوی‌تر</value></data>
+  <data name="Ai_Tier_Moe" xml:space="preserve"><value>دانش زیاد، سرعت بالا</value></data>
+  <data name="Ai_Tier_Large" xml:space="preserve"><value>بزرگ و توانمندترین</value></data>
+  <data name="Ai_Purpose_Qwen35_08" xml:space="preserve"><value>کوچک‌ترین و سریع‌ترین. تقریباً روی هر کامپیوتری، حتی پردازندهٔ لپ‌تاپ، اجرا می‌شود. برای کارهای کوتاه و ساده: دسته‌بندی متن، خلاصه‌های کوتاه و پاسخ‌های سریع. در استدلال و پاسخ‌های طولانی ضعیف است.</value></data>
+  <data name="Ai_Purpose_Qwen3_4" xml:space="preserve"><value>دستیار سبک روزمره: گفتگو، نوشتن، خلاصه‌سازی و کد ساده، با حالت «فکر کردن» برای پاسخ‌های مرحله‌به‌مرحله. کامل روی کارت ۴ تا ۶ گیگابایتی اجرا می‌شود و روی پردازندهٔ قوی هم قابل استفاده است.</value></data>
+  <data name="Ai_Purpose_Qwen3_14" xml:space="preserve"><value>در استدلال، برنامه‌نویسی و پیروی از دستورها به‌وضوح بهتر از مدل‌های کوچک است. برای سرعت کامل کارت ۱۲ گیگابایت یا بیشتر لازم دارد؛ روی ۸ گیگابایت با RAM تقسیم می‌شود و کند می‌شود.</value></data>
+  <data name="Ai_Purpose_GptOss20" xml:space="preserve"><value>مدل باز OpenAI با معماری ترکیب متخصص‌ها: ۲۱ میلیارد پارامتر که فقط ۳.۶ میلیارد از آن‌ها برای هر توکن کار می‌کنند؛ پس تقریباً به سرعت یک مدل کوچک می‌نویسد ولی دانش بسیار بیشتری دارد. در استدلال و استفاده از ابزارها خوب است. ۱۶ گیگابایت حافظهٔ کارت گرافیک لازم دارد یا با RAM تقسیم می‌شود.</value></data>
+  <data name="Ai_Purpose_Qwen38_27" xml:space="preserve"><value>توانمندترین مدل این فهرست: برای سؤال‌های سخت، کدهای طولانی و نوشتن دقیق. هر توکن همهٔ ۱۹ گیگابایت وزن‌هایش را می‌خواند، پس کارت ۲۴ گیگابایتی لازم دارد و کندترین مدل این فهرست است.</value></data>
+  <data name="Ai_Purpose_Qwen36_35" xml:space="preserve"><value>دانش یک مدل بزرگ با سرعت یک مدل کوچک: ۳۵ میلیارد پارامتر که ۳ میلیارد از آن‌ها برای هر توکن فعال است. روی کارت ۲۴ گیگابایتی کامل اجرا می‌شود؛ با حافظهٔ کمتر بخشی از آن به RAM می‌رود و باز هم قابل استفاده می‌ماند، چون برای هر توکن وزن کمی خوانده می‌شود.</value></data>
+  <data name="Bench_Ai_Llm" xml:space="preserve"><value>مدل زبانی هوش مصنوعی (llama.cpp)</value></data>
+  <data name="Bench_Ai_Prompt" xml:space="preserve"><value>پردازش ورودی</value></data>
+  <data name="Bench_Ai_Gen" xml:space="preserve"><value>تولید متن</value></data>
+  <data name="Ai_Option_Model" xml:space="preserve"><value>مدل</value></data>
+  <data name="Ai_Option_Device" xml:space="preserve"><value>دستگاه</value></data>
 </root>
