@@ -110,7 +110,8 @@ public sealed class ReportService
         string name = Loc.Get(q.Definition.NameKey);
         if (r is null) return new(q.Definition.Id.Value, name, ReportOutcome.NotRun, sessionStart, sessionStart, 0, 0, null, options);
         var finished = r.FinishedAt ?? r.StartedAt;
-        return new(q.Definition.Id.Value, name, r.Outcome switch { TestOutcome.Passed => ReportOutcome.Passed, TestOutcome.Failed => ReportOutcome.Failed, TestOutcome.Cancelled => ReportOutcome.Cancelled, TestOutcome.Unsupported => ReportOutcome.Unsupported, _ => ReportOutcome.NotRun },
+        return new(q.Definition.Id.Value, name, r.Outcome switch { TestOutcome.Passed => ReportOutcome.Passed, TestOutcome.Failed => ReportOutcome.Failed, TestOutcome.Cancelled => ReportOutcome.Cancelled, TestOutcome.Unsupported => ReportOutcome.Unsupported,
+            TestOutcome.Error => ReportOutcome.Error, TestOutcome.Inconclusive => ReportOutcome.Inconclusive, _ => ReportOutcome.NotRun },
             r.StartedAt, finished, (finished - r.StartedAt).TotalSeconds, r.ErrorCount, r.Detail, options);
     }
 

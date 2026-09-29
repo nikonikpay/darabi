@@ -7,7 +7,7 @@ import { h, icon } from "../ui.js";
 import { partOfId } from "../parts.js";
 import { groupPanel, byPart } from "../groups.js";
 
-export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Running: "run", NotRun: "none" };
+export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
 // Keeps a field's value unless the technician is typing in it.
 export function setField(el, v) { if (document.activeElement !== el && el.value !== (v ?? "")) el.value = v ?? ""; }

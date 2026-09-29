@@ -148,4 +148,47 @@ public class TestEngineTests : IDisposable
         engine.DismissIncompleteSession();
         Assert.Null(engine.FindIncompleteSession());
     }
+
+    [Fact] public async Task An_executor_that_throws_is_an_Error_not_a_hardware_failure_and_the_queue_goes_on()
+    {
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => throw new OutOfMemoryException("no room"));
+        var e2 = new FakeTestExecutor(Def2, (r, ct) => Task.FromResult(Passed(Def2.Id, r)));
+        var engine = new TestEngine([e1, e2], Store(), new FakeClock(T0));
+        var results = new Dictionary<string, TestRunResult>(); engine.TestCompleted += (id, r) => results[id.Value] = r;
+
+        await engine.RunAsync([new QueuedTest(Def1, 5, RepeatMode.Count, 3), Once(Def2, 5)], CancellationToken.None);
+
+        Assert.Equal(TestOutcome.Error, results["fake.a"].Outcome);
+        Assert.Equal(0, results["fake.a"].ErrorCount);   // the app broke; nothing is counted against the part
+        Assert.Contains("OutOfMemoryException", results["fake.a"].Detail);
+        Assert.Equal(1, e1.CallCount);                    // an Error stops the repeats: the next loop would break the same way
+        Assert.Equal(TestOutcome.Passed, results["fake.b"].Outcome);
+        Assert.Null(engine.FindIncompleteSession());
+    }
+
+    [Fact] public async Task A_fault_that_escapes_the_queue_leaves_the_checkpoint_incomplete_at_the_item_it_was_on()
+    {
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(Passed(Def1.Id, r)));
+        var e2 = new FakeTestExecutor(Def2, (r, ct) => Task.FromResult(Passed(Def2.Id, r)));
+        var engine = new TestEngine([e1, e2], Store(), new FakeClock(T0));
+        engine.TestStarted += id => { if (id == Def2.Id) throw new InvalidOperationException("listener broke"); };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => engine.RunAsync([Once(Def1, 5), Once(Def2, 5)], CancellationToken.None));
+
+        var left = engine.FindIncompleteSession();
+        Assert.NotNull(left);
+        Assert.Equal(1, left!.CurrentIndex);   // not the end of the queue, not Completed
+        Assert.Equal(TestEngineState.Stopped, engine.State);
+    }
+
+    [Fact] public void Combine_ranks_Failed_over_Error_over_Unsupported_over_Cancelled_over_Inconclusive_over_Passed()
+    {
+        TestRunResult R(TestOutcome o) => new(Def1.Id, o, T0, T0, 0, o.ToString());
+        TestOutcome[] order = [TestOutcome.Passed, TestOutcome.Inconclusive, TestOutcome.Cancelled, TestOutcome.Unsupported, TestOutcome.Error, TestOutcome.Failed];
+        for (int i = 1; i < order.Length; i++)
+        {
+            Assert.Equal(order[i], R(order[i - 1]).Combine(R(order[i])).Outcome);
+            Assert.Equal(order[i], R(order[i]).Combine(R(order[i - 1])).Outcome);
+        }
+    }
 }

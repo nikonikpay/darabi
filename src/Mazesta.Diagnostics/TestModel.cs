@@ -10,8 +10,12 @@ public sealed record TestDefinition(TestId Id, string NameKey, int DefaultDurati
 }
 
 /// <summary>Spec §8: cancelled, never-run, unsupported and failed are distinct - a skipped test must
-/// never be reported as a pass. Running is a display state only; no executor returns it.</summary>
-public enum TestOutcome { NotRun, Running, Passed, Failed, Cancelled, Unsupported }
+/// never be reported as a pass. Running is a display state only; no executor returns it.
+/// <see cref="Error"/> is the test itself breaking (an exception in the app, an allocation it could not make): nothing was learnt about the
+/// part, so it is never labelled a hardware fault. <see cref="Inconclusive"/> ran without an observed error but could not cover what it was
+/// asked to (a core Windows would not pin to, a network that answers no echo at all): not a fault, and not a pass either.
+/// Both are appended so values saved as numbers keep their meaning.</summary>
+public enum TestOutcome { NotRun, Running, Passed, Failed, Cancelled, Unsupported, Error, Inconclusive }
 
 public readonly record struct TestProgress(double PercentComplete, string StatusKey);
 
@@ -21,6 +25,8 @@ public sealed record TestRunResult(TestId Id, TestOutcome Outcome, DateTimeOffse
 {
     public static TestRunResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, TestOutcome.Unsupported, now, now, 0, detail);
     public static TestRunResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, TestOutcome.Cancelled, started, now, 0, null);
+    /// <summary>The test broke, not the part: the exception's type and message are kept for the log, and no error is counted against the hardware.</summary>
+    public static TestRunResult Error(TestId id, DateTimeOffset started, DateTimeOffset now, Exception e) => new(id, TestOutcome.Error, started, now, 0, $"The test itself failed ({e.GetType().Name}: {e.Message}); nothing is known about the part from this run.");
 
     /// <summary>Folds the next repeat iteration into this one: errors add up, the span widens, and the
     /// worse outcome wins together with its own Detail. Failed outranks everything so a fault caught
@@ -32,5 +38,5 @@ public sealed record TestRunResult(TestId Id, TestOutcome Outcome, DateTimeOffse
         return worse with { StartedAt = StartedAt, FinishedAt = next.FinishedAt, ErrorCount = ErrorCount + next.ErrorCount };
     }
 
-    private static int Rank(TestOutcome o) => o switch { TestOutcome.Failed => 3, TestOutcome.Unsupported => 2, TestOutcome.Cancelled => 1, _ => 0 };
+    private static int Rank(TestOutcome o) => o switch { TestOutcome.Failed => 5, TestOutcome.Error => 4, TestOutcome.Unsupported => 3, TestOutcome.Cancelled => 2, TestOutcome.Inconclusive => 1, _ => 0 };
 }

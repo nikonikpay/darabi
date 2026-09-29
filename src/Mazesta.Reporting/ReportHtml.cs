@@ -101,7 +101,7 @@ h1{{margin:0;font-size:24px}} h2{{margin:26px 0 10px;font-size:18px;border-inlin
 table{{width:100%;border-collapse:collapse}} th,td{{padding:7px 9px;border-bottom:1px solid #e3e7ee;text-align:start;vertical-align:top}}
 th{{background:#f5f7fa;font-size:12.5px;color:#4a5566}}
 .badge{{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12.5px;font-weight:700}}
-.badge.Passed{{background:#e7f6ec;color:#146c2e}} .badge.Failed{{background:#fdecec;color:#a11a1a}} .badge.Cancelled,.badge.NotRun,.badge.Unsupported{{background:#fff4dc;color:#8a5a00}}
+.badge.Passed{{background:#e7f6ec;color:#146c2e}} .badge.Failed{{background:#fdecec;color:#a11a1a}} .badge.Cancelled,.badge.NotRun,.badge.Unsupported,.badge.Error,.badge.Inconclusive{{background:#fff4dc;color:#8a5a00}}
 pre{{margin:6px 0 0;white-space:pre-wrap;word-break:break-word;background:#f5f7fa;border:1px solid #e3e7ee;border-radius:6px;padding:7px 9px;direction:ltr;text-align:left;font:12px/1.5 Consolas,'Segoe UI',monospace}}
 .test{{page-break-inside:avoid}} .charts{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}} .chart{{border:1px solid #e3e7ee;border-radius:8px;padding:8px 10px;page-break-inside:avoid}}
 .chart h4{{margin:0 0 2px;font-size:13px}} .chart small{{color:#5b6675}} svg{{width:100%;height:auto;display:block;direction:ltr}}

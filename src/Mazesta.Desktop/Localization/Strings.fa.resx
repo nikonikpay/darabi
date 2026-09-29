@@ -1403,4 +1403,6 @@
   <data name="Bench_OverclockedHint" xml:space="preserve"><value>اجراهای بعدی با برچسب اورکلاک ثبت و جدا از نتایج عادی مقایسه می‌شوند. با بستن برنامه خاموش می‌شود.</value></data>
   <data name="Web_Quiet_Title" xml:space="preserve"><value>حالت بنچمارک</value></data>
   <data name="Web_Quiet_Text" xml:space="preserve"><value>تا پایان اجرا بخش‌های دیگر برنامه متوقف‌اند؛ فقط سنسورهای لازم برای اندازه‌گیری و اورلی کار می‌کنند.</value></data>
+  <data name="Test_Outcome_Error" xml:space="preserve"><value>خطای اجرای آزمون</value></data>
+  <data name="Test_Outcome_Inconclusive" xml:space="preserve"><value>نامعین</value></data>
 </root>

@@ -40,6 +40,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         _cts = CancellationTokenSource.CreateLinkedTokenSource(external);   // before Running, so a Cancel that follows the state change always finds it
         var ct = _cts.Token;
         SetState(TestEngineState.Running); SessionStarted?.Invoke(queue);
+        bool reachedEnd = false;
         try
         {
             for (int i = 0; i < queue.Count; i++)
@@ -50,10 +51,14 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
                 var result = await RunQueuedAsync(item, ct).ConfigureAwait(false);
                 TestCompleted?.Invoke(item.Definition.Id, result);
             }
+            reachedEnd = true;
         }
         finally
         {
-            checkpoint.CurrentIndex = queue.Count; checkpoint.Completed = true; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
+            // Only a queue that reached its end (every item has a result, cancelled ones included) is marked complete. A fault that escaped
+            // the loop leaves the checkpoint at the item it was on, so the next start says the session broke off there instead of hiding it.
+            if (reachedEnd) { checkpoint.CurrentIndex = queue.Count; checkpoint.Completed = true; }
+            checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
             _cts.Dispose(); _cts = null;
             SetState(TestEngineState.Stopped);
         }
@@ -81,9 +86,12 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             {
                 try { single = await executor.RunAsync(request, ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { single = TestRunResult.Cancelled(id, started, clock.UtcNow); }
+                // An exception out of an executor is the app's fault, never the part's: the test is Error (the report is then Incomplete),
+                // the queue goes on with the next test, and nothing is swallowed into a pass.
+                catch (Exception e) { single = TestRunResult.Error(id, started, clock.UtcNow, e); }
             }
             total = total?.Combine(single) ?? single;
-            if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported) break;
+            if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;
         }
         while (item.Repeat switch { RepeatMode.Once => false, RepeatMode.Count => iteration < item.RepeatCount, RepeatMode.Unlimited => true, _ => false });
         return WithHardwareErrors(total!, started);

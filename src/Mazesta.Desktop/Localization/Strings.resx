@@ -1403,4 +1403,6 @@ The update services stopped and disabled</value></data>
   <data name="Bench_OverclockedHint" xml:space="preserve"><value>The next runs are logged as overclocked and compared apart from usual results. Turns off when the app closes.</value></data>
   <data name="Web_Quiet_Title" xml:space="preserve"><value>Benchmark mode</value></data>
   <data name="Web_Quiet_Text" xml:space="preserve"><value>Until the run ends the rest of the app is paused; only the sensors the measurement needs and the overlay keep working.</value></data>
+  <data name="Test_Outcome_Error" xml:space="preserve"><value>Test error</value></data>
+  <data name="Test_Outcome_Inconclusive" xml:space="preserve"><value>Inconclusive</value></data>
 </root>

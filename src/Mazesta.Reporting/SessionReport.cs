@@ -1,7 +1,9 @@
 using Mazesta.Core.Inventory;
 namespace Mazesta.Reporting;
 
-public enum ReportOutcome { Passed, Failed, Cancelled, Unsupported, NotRun }
+/// <summary>Error: the test itself broke (never a hardware fault). Inconclusive: no error was seen but the test could not cover what it was
+/// asked to. Both make the report Incomplete; appended so older reports read the same.</summary>
+public enum ReportOutcome { Passed, Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive }
 
 /// <summary>Passed only when every test that was asked for ran and passed. A cancelled, unsupported or never-run test makes the
 /// report Incomplete - a skipped test is never presented as a pass (spec §8).</summary>
