@@ -4,7 +4,8 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// <summary>
 /// The visual tests' Persian garden as a benchmark: the same scene and camera walk, drawn off screen at 2560x1440 with no window and no
 /// v-sync cap - by Direct3D 12 rasterisation at the "heavy" level (4096 shadow map, the pool's reflection at full size, 4x MSAA) or by
-/// DirectX Raytracing (a shadow ray to the moon and every lamp in reach, reflection and refraction, 4 bounces). Frame n always shows the
+/// DirectX Raytracing (4 camera rays a pixel, each with a soft-shadow ray to the moon and every lamp in reach and a bounced-light ray,
+/// reflection and refraction, 4 bounces). Frame n always shows the
 /// walk at n/30 s, so every run draws the same frames whatever the card's speed. Reported: the average frame rate and the 1 % low (the
 /// frame rate of the slowest hundredth of frames). A frame drawn before the run and again after it at the same moment must be the same
 /// bits, or the run failed. Mazesta's own scene - not comparable with other programs' or games' scores.
@@ -45,7 +46,7 @@ public sealed class GpuSceneBenchmark(bool rayTraced) : IBenchmark, ITestAvailab
         var slowest = times.OrderByDescending(x => x).Take(Math.Max(1, times.Count / 100)).Average();
         string how = renderer is GardenRaster r
             ? $"Direct3D 12, heavy level: shadow map {r.Level.ShadowSize}, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
-            : $"DXR 1.1 inline ray tracing: shadow rays to the moon and {garden.PointLights.Length} lamps, reflection and refraction, {((GardenRay)renderer).Bounces} bounces";
+            : $"DXR 1.1 inline ray tracing: {((GardenRay)renderer).Samples} rays a pixel, soft shadows from the moon and {garden.PointLights.Length} lamps, bounced light, reflection and refraction, {((GardenRay)renderer).Bounces} bounces";
         return ([new("Bench_Gpu_Scene_Fps", fps, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS")],
             $"Persian garden off screen at {Width}x{Height}, {n} frames of the camera walk; {how}; {garden.Instances.Length} objects; check frame identical before and after");
     }

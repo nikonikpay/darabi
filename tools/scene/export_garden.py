@@ -1,6 +1,6 @@
-# Exports the Persian-garden scene (Mazesta-Art/persian-garden.blend) to the file the visual GPU tests draw:
-# src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
-#   blender --background ../Mazesta-Art/persian-garden.blend --python tools/scene/export_garden.py
+# Exports the courtyard scene (Mazesta-Art/courtyard-v4.blend, made from DFM_Courtyard_V4.blend by Mazesta-Art/scripts/prepare_courtyard_v4.py)
+# to the file the visual GPU tests draw: src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
+#   blender --background ../Mazesta-Art/courtyard-v4.blend --python tools/scene/export_garden.py
 # (it also runs from Blender's Text Editor with the .blend open).
 #
 # Both of the file's scenes are read: Garden_Raster (the Direct3D test: golden-hour sun) and Garden_RT (the ray-traced test: blue hour,
@@ -20,7 +20,7 @@ OUT = os.environ.get("MAZESTA_SCENE_OUT") or os.path.join(REPO, "src", "Mazesta.
 SCENES = (("Garden_Raster", 1), ("Garden_RT", 2))
 TEX = 256
 DECIMATE_OVER = 6000            # hard-surface meshes above this many triangles are simplified (lantern glass, pots, trunks)
-PER_MESH_BUDGET = 1_500_000     # a mesh placed thousands of times (ivy leaves, blossoms) is simplified until all its copies together stay under this
+PER_MESH_BUDGET = 400_000       # a mesh placed thousands of times (ivy leaves, blossoms) is simplified until all its copies together stay under this
 KEEP_DETAIL = ("CypressFoliage",)
 MAGIC, VERSION = b"MZSC", 1
 K_FLAT, K_CUTOUT, K_BRICK, K_WATER, K_GLASS, K_EMISSIVE = 0, 1, 2, 3, 4, 5
@@ -101,7 +101,7 @@ def material_for(mat):
             rec['tex'] = texture_for(img[0] if img else None, alpha)
             if img: rec['base'] = (1.0, 1.0, 1.0)
             if alpha: rec['kind'] = K_CUTOUT
-        if name == 'Water': rec['kind'] = K_WATER
+        if name.endswith('Water'): rec['kind'] = K_WATER
         elif rec['trans'] > 0.5 or name == 'Spray': rec['kind'] = K_GLASS
         elif max(rec['emit']) > 0.5 and rec['kind'] == K_FLAT: rec['kind'] = K_EMISSIVE
         if name == 'Spray': rec['alpha'] = 0.5

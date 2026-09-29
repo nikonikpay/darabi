@@ -17,6 +17,7 @@ cbuffer Frame : register(b1)
     float3 CamForward; uint Bounces;
     uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: golden hour (Direct3D), 2: blue hour (ray traced)
     float4 Logo;                          // the logo's turn toward the camera (cos, sin) and its float (lift): GardenGpu.LogoMotion
+    uint Samples; uint3 FramePad;         // ray tracer: camera rays a pixel
 };
 
 struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Pad; };

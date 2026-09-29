@@ -2,24 +2,24 @@ using System.Numerics;
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// Where the visual test's camera is at a moment: a slow walk round the garden, the same loop every run (a pure function of time, so the
-/// check frames see one picture). It starts at the Blender scene's own camera by the fountain, goes up the left walk to the logo over
-/// the pool, round behind it by the cascade, to the top of the hall's stairs looking down the garden, back down the right walk and home.
-/// Positions are in the scene's Direct3D axes (y up, z toward the hall); the walks at x = ±5.9 run between the lantern posts and the beds.
+/// Where the visual test's camera is at a moment: a slow walk round the courtyard, the same loop every run (a pure function of time, so the
+/// check frames see one picture). It starts at the gate looking up the pool to the logo, goes along the left outer walk (x = -9.05, between
+/// the inner and outer beds) to the foot of the stairs, up onto the terrace looking back down the garden, down the right walk and home.
+/// Positions are in the scene's Direct3D axes (y up, z toward the hall); the paving is at y 0.05, the terrace at 1.07.
 /// </summary>
 public static class GardenCamera
 {
     public const float Loop = 64f;
     private static readonly (Vector3 Eye, Vector3 Target)[] Keys =
     [
-        (new(-2.6f, 2.1f, -21.8f), new(0.8f, 2.6f, 4.0f)),
-        (new(-5.9f, 1.9f, -13.5f), new(0.0f, 3.0f, -3.0f)),
-        (new(-5.9f, 2.1f, -2.5f), new(0.0f, 3.1f, -3.0f)),
-        (new(-3.2f, 3.2f, 5.2f), new(0.0f, 2.8f, -4.0f)),
-        (new(0.0f, 3.4f, 8.6f), new(0.0f, 2.4f, -12.0f)),
-        (new(5.9f, 2.1f, 1.0f), new(0.0f, 3.1f, -3.0f)),
-        (new(5.9f, 1.9f, -12.0f), new(0.0f, 2.6f, 10.0f)),
-        (new(2.4f, 2.2f, -20.6f), new(-0.5f, 2.6f, 2.0f)),
+        (new(0.0f, 1.75f, -31.3f), new(0.0f, 1.9f, -19.0f)),
+        (new(-9.05f, 1.75f, -31.0f), new(0.0f, 2.0f, -19.0f)),
+        (new(-9.05f, 1.75f, -19.5f), new(0.0f, 2.2f, -12.0f)),
+        (new(-9.05f, 1.75f, -9.3f), new(0.0f, 1.5f, -19.0f)),
+        (new(0.0f, 2.7f, -7.2f), new(0.0f, 1.0f, -26.0f)),
+        (new(9.05f, 1.75f, -9.3f), new(0.0f, 1.5f, -19.0f)),
+        (new(9.05f, 1.75f, -22.4f), new(0.0f, 2.0f, -15.0f)),
+        (new(6.0f, 1.75f, -31.0f), new(0.0f, 2.0f, -19.0f)),
     ];
 
     public static (Vector3 Eye, Vector3 Target) At(float time)

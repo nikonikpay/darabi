@@ -137,7 +137,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     internal static Matrix4x4 SunShadowMatrix(Vector3 toSun)
     {
         if (toSun.LengthSquared() < 1e-6f) toSun = Vector3.UnitY;
-        var centre = new Vector3(0, 4, -1); float radius = 34f;
+        var centre = new Vector3(0, 4, -14); float radius = 27f;   // the courtyard: x ±14, z -34..7, up to the wind-catchers at 10.3
         var eye = centre + Vector3.Normalize(toSun) * 80;
         var up = MathF.Abs(toSun.Y) > 0.99f ? Vector3.UnitZ : Vector3.UnitY;
         return Matrix4x4.CreateLookAtLeftHanded(eye, centre, up) * Matrix4x4.CreateOrthographicLeftHanded(radius * 2, radius * 2, 1f, 160f);

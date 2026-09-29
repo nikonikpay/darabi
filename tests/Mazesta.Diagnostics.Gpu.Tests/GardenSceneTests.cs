@@ -22,7 +22,7 @@ public class GardenSceneTests
     [Fact] public void Every_material_kind_the_shaders_know_is_used_and_nothing_else()
     {
         var kinds = G.Materials.Select(m => m.Kind).ToHashSet();
-        Assert.Contains(GardenMaterialKind.Brick, kinds); Assert.Contains(GardenMaterialKind.Water, kinds); Assert.Contains(GardenMaterialKind.Cutout, kinds); Assert.Contains(GardenMaterialKind.Glass, kinds);
+        Assert.Contains(GardenMaterialKind.Water, kinds); Assert.Contains(GardenMaterialKind.Cutout, kinds); Assert.Contains(GardenMaterialKind.Glass, kinds);
         Assert.All(kinds, k => Assert.InRange((uint)k, 0u, 5u));
         Assert.All(G.Materials.Where(m => m.Kind == GardenMaterialKind.Cutout), m => Assert.True(m.Texture >= 0));
     }
@@ -31,8 +31,8 @@ public class GardenSceneTests
     {
         var logo = G.Instances.Single(i => (i.Flags & GardenScene.LogoFlag) != 0); var mesh = G.Meshes[(int)logo.Mesh];
         var centre = logo.Apply(mesh.Centre);
-        Assert.InRange(centre.X, -0.5f, 0.5f); Assert.InRange(centre.Z, -4f, -2f);   // the pool runs z -12..6, its middle -3
-        Assert.InRange(centre.Y, 2f, 5f);
+        Assert.InRange(centre.X, -0.5f, 0.5f); Assert.InRange(centre.Z, -20f, -18f);   // the pool runs z -26..-12, its middle -19
+        Assert.InRange(centre.Y, 1f, 3f);
         Assert.InRange(mesh.Extent.X * 2, 4.5f, 5.5f);   // five metres across
     }
 
@@ -59,7 +59,7 @@ public class GardenSceneTests
         for (float t = 0; t < GardenCamera.Loop; t += 0.25f)
         {
             var (eye, target) = GardenCamera.At(t);
-            Assert.InRange(eye.X, -13f, 13f); Assert.InRange(eye.Z, -23f, 21f); Assert.InRange(eye.Y, 1.5f, 5f);
+            Assert.InRange(eye.X, -13f, 13f); Assert.InRange(eye.Z, -33f, -4.5f); Assert.InRange(eye.Y, 1.5f, 3.2f);   // walls at x ±13.8 and z -33.3, the hall's front at -4.5
             Assert.True(Vector3.Distance(eye, target) > 3);
         }
         var (start, _) = GardenCamera.At(0); var (end, _) = GardenCamera.At(GardenCamera.Loop);
@@ -69,7 +69,7 @@ public class GardenSceneTests
 
     [Fact] public void The_logo_turns_to_face_the_camera_wherever_the_walk_is()
     {
-        var pivot = new Vector3(0, 3.1f, -3);
+        var pivot = new Vector3(0, 1.55f, -19);
         for (float t = 0; t < GardenCamera.Loop; t += 1.5f)
         {
             var (c, s, lift) = GardenGpu.LogoTurn(pivot, t);
@@ -86,7 +86,7 @@ public class GardenSceneTests
     [Fact] public void The_sun_s_shadow_view_holds_the_whole_courtyard()
     {
         var vp = GardenRaster.SunShadowMatrix(Vector3.Normalize(new Vector3(-0.7f, 0.4f, -0.5f)));
-        foreach (var corner in new[] { new Vector3(-14, 0, -24), new Vector3(14, 0, 22), new Vector3(-14, 11, 22), new Vector3(14, 11, -24) })
+        foreach (var corner in new[] { new Vector3(-14, 0, -34), new Vector3(14, 0, 7), new Vector3(-14, 11, 7), new Vector3(14, 11, -34) })
         {
             var c = Vector4.Transform(new Vector4(corner, 1), vp);
             Assert.InRange(c.X, -1f, 1f); Assert.InRange(c.Y, -1f, 1f); Assert.InRange(c.Z, 0f, 1f);

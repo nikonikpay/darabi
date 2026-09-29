@@ -17,6 +17,8 @@ internal sealed unsafe class GardenRay : GardenRenderer
     private readonly BuildRaytracingAccelerationStructureInputs _tlasInputs;
     private readonly ID3D12DescriptorHeap _srv;
     public int Bounces { get; } = 4;
+    /// <summary>Camera rays a pixel: each with its own soft-shadow rays to every lamp and its own bounced-light ray.</summary>
+    public int Samples { get; } = 4;
 
     public GardenRay(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets) : base(s, g, width, height, targets)
     {
@@ -99,7 +101,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     private void Trace(ID3D12GraphicsCommandList4 l, float time)
     {
-        var frame = GardenFrame.For(G, time, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces;
+        var frame = GardenFrame.For(G, time, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces; frame.Samples = (uint)Samples;
         MemoryMarshal.Write(_constants.Map<byte>(0, 512), in frame); _constants.Unmap(0);
         l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, _tlasInputs, 0, _tlasScratch.GPUVirtualAddress));
         l.ResourceBarrierUnorderedAccessView(_tlas);

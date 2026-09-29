@@ -17,7 +17,7 @@ internal sealed unsafe class GardenGpu
     /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>.</summary>
     public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts);
 
-    public const float WaterLevel = 0.30f;
+    public const float WaterLevel = -0.04f;   // the main pool's surface (courtyard-v4.blend: z -0.04)
     public GardenScene.Mode Mode { get; }
     public Instance[] Instances { get; }
     public Draw[] Draws { get; }
@@ -211,6 +211,7 @@ internal struct GardenFrame
     public Vector3 CamForward; public uint Bounces;
     public uint Width, Height, Pitch, Mode;
     public Vector4 Logo;
+    public uint Samples, Pad0, Pad1, Pad2;
 
     /// <summary>The camera, sky and key light of <paramref name="g"/>'s scene at <paramref name="time"/>, seen at <paramref name="width"/> x <paramref name="height"/>.</summary>
     public static GardenFrame For(GardenGpu g, float time, int width, int height)
