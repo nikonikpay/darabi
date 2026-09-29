@@ -236,4 +236,27 @@ public class TestEngineTests : IDisposable
         Assert.Equal(["@Test_Fake_A", "@Test_Outcome_Passed", "0"], live.Single(l => l.Key == "Log_Test_End").Args);
         Assert.Equal(live, engine.RecentLog());   // a page opened later gets the same lines
     }
+
+    private sealed class FixedStorageEvents(params Storage.StorageEvent[] events) : Storage.IStorageEventSource { public IReadOnlyList<Storage.StorageEvent> Since(DateTimeOffset start) => events; }
+
+    [Fact] public async Task Storage_events_during_a_test_are_evidence_and_never_its_verdict()
+    {
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(Passed(Def1.Id, r, detail: "ok")));
+        var events = new FixedStorageEvents(new(T0, "disk", 153, "Warning", "Disk 3", "The IO operation at logical block address 0x15ac8 for Disk 3 was retried."),
+            new(T0, "disk", 153, "Warning", "Disk 3", "retried again"), new(T0, "stornvme", 129, "Warning", "RaidPort1", @"Reset to device, \Device\RaidPort1, was issued."));
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0), storageEvents: events);
+        TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
+
+        await engine.RunAsync([Once(Def1, 5)], CancellationToken.None);
+
+        Assert.Equal(TestOutcome.Passed, result!.Outcome);
+        Assert.Contains("disk 153 ×2 (Disk 3), stornvme 129 ×1 (RaidPort1)", result.Detail);
+        Assert.Contains("not proof of a failing drive", result.Detail);
+    }
+
+    [Theory]
+    [InlineData(@"An error was detected on device \Device\Harddisk3\DR8 during a paging operation.", @"\Device\Harddisk3\DR8")]
+    [InlineData(@"The IO operation at logical block address 0x15ac8 for Disk 3 (PDO name: \Device\000000f8) was retried.", "Disk 3")]
+    [InlineData("The default transaction resource manager on volume I: encountered an error", "volume I:")]
+    public void The_device_an_event_names_is_found_in_its_text(string text, string device) => Assert.Equal(device, Storage.StorageEventSource.DeviceIn(text));
 }

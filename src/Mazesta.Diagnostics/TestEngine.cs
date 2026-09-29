@@ -6,7 +6,7 @@ public enum TestEngineState { Idle, Running, Stopped }
 /// <summary>Sequential queue runner (spec §8). A plain async pipeline over <see cref="ITestExecutor"/>
 /// calls - no dedicated thread like PollingEngine, since there is no cadence to own; CPU-bound executors
 /// do their own Task.Run. Registered as a singleton so a run survives page navigation.</summary>
-public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null, WorkloadGate? gate = null)
+public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null, WorkloadGate? gate = null, Storage.IStorageEventSource? storageEvents = null)
 {
     private readonly IReadOnlyDictionary<TestId, ITestExecutor> _executors = executors.ToDictionary(e => e.Definition.Id);
     private CancellationTokenSource? _cts;
@@ -124,7 +124,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;
         }
         while (item.Repeat switch { RepeatMode.Once => false, RepeatMode.Count => iteration < item.RepeatCount, RepeatMode.Unlimited => true, _ => false });
-        return WithHardwareErrors(total!, started);
+        return WithStorageEvents(WithHardwareErrors(total!, started), started);
     }
 
     /// <summary>Windows hardware errors (WHEA) logged while the test ran turn it into a Failed one: the machine
@@ -143,6 +143,25 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return result with { Detail = SensorEvidence.Join(result.Detail, $"WHEA log could not be read ({ex.GetType().Name})") };
+        }
+    }
+
+    /// <summary>Storage events Windows logged while the test ran are added to its evidence and the log, whatever the test was: a paging error
+    /// during a RAM test matters too. They never change the outcome (see <see cref="Storage.StorageEventSource"/>); an unreadable log is noted.</summary>
+    private TestRunResult WithStorageEvents(TestRunResult result, DateTimeOffset since)
+    {
+        if (storageEvents is null || result.Outcome == TestOutcome.Unsupported) return result;
+        try
+        {
+            var events = storageEvents.Since(since);
+            string summary = Storage.StorageEventSource.Summarize(events);
+            Emit(result.Id, events.Count > 0 ? TestLogLevel.Warning : TestLogLevel.Info, "Log_StorageEvents", events.Count > 0 ? summary : "System log: disk, storport, stornvme, storahci, Intel RST, NTFS", events.Count);
+            return events.Count == 0 ? result : result with { Detail = SensorEvidence.Join(result.Detail,
+                $"Windows logged {events.Count} storage event(s) during this test: {summary}; not proof of a failing drive on its own - check the cable, controller, driver and power too") };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return result with { Detail = SensorEvidence.Join(result.Detail, $"storage event log could not be read ({ex.GetType().Name})") };
         }
     }
 

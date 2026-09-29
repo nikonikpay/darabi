@@ -15,6 +15,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton(_ => new JsonStore<TestSessionCheckpoint>(Path.Combine(paths.SessionsDir, "test-checkpoint.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, loggers.CreateLogger("Diagnostics")));
         s.AddSingleton<IMemoryProbe, Win32MemoryProbe>();
         s.AddSingleton<IHardwareErrorSource, WheaErrorSource>();
+        s.AddSingleton<IStorageEventSource, StorageEventSource>();
 
         s.AddSingleton<ITestExecutor, CpuMatrixStressExecutor>();
         s.AddSingleton<ITestExecutor>(new CpuCoreCycleExecutor());
@@ -56,7 +57,7 @@ internal static class DiagnosticsRegistration
         // Singleton, not per-page: a queue keeps running when the technician navigates away from Test Center
         // and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.
         s.AddSingleton(sp => new TestEngine(sp.GetRequiredService<IEnumerable<ITestExecutor>>(), sp.GetRequiredService<JsonStore<TestSessionCheckpoint>>(),
-            sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IHardwareErrorSource>(), sp.GetRequiredService<WorkloadGate>()));
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IHardwareErrorSource>(), sp.GetRequiredService<WorkloadGate>(), sp.GetRequiredService<IStorageEventSource>()));
         return s;
     }
 }

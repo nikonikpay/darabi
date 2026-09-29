@@ -1530,4 +1530,5 @@
   <data name="Spec_Vbs" xml:space="preserve"><value>امنیت مبتنی بر مجازی‌سازی (VBS)</value></data>
   <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
   <data name="Spec_XmpOffered" xml:space="preserve"><value>پروفایل‌های XMP ماژول‌ها</value></data>
+  <data name="Log_StorageEvents" xml:space="preserve"><value>گزارش رخدادهای ذخیره‌سازی ویندوز برای بازهٔ این آزمون خوانده شد: {0} رخداد. این رخدادها شاهدند، نه اثبات خرابی درایو.</value></data>
 </root>

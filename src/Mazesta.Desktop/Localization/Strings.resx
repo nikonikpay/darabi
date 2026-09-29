@@ -1530,4 +1530,5 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Vbs" xml:space="preserve"><value>Virtualization-based security</value></data>
   <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
   <data name="Spec_XmpOffered" xml:space="preserve"><value>XMP profiles on the modules</value></data>
+  <data name="Log_StorageEvents" xml:space="preserve"><value>Windows storage event log read for this test's time: {0} event(s). Such events are evidence, not proof of a failing drive.</value></data>
 </root>
