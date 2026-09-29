@@ -29,12 +29,15 @@ export function runPanel(onFocus, page = "monitoring") {
     onchange: (e) => { follow = e.target.checked; keep("mazesta.run.follow", follow); lastPart = undefined; focus(); } });
   const cancel = h("button", { class: "btn stop", type: "button", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   const back = h("a", { class: "btn quiet", href: "#/tests" }, icon("flask"), t("Web_Run_Back"));
+  // A finished session's panel stays until it is closed or the next session starts, so its last log lines can still be read.
+  let closed = false;
+  const close = h("button", { class: "icon-btn", type: "button", title: t("Web_Run_Close"), "aria-label": t("Web_Run_Close"), onclick: () => { closed = true; el.hidden = true; } }, icon("x"));
   const lines = h("div", { class: "run-log", role: "log", "aria-live": "polite", "aria-label": t("Web_Run_Log") });
   const el = h("section", { class: "plane run-panel", hidden: true },
     h("div", { class: "run-head" }, ico,
       h("div", { class: "run-ttl" }, step, title),
       pill, h("span", { class: "grow" }),
-      h("label", { class: "run-follow" }, followBox, t("Web_Run_Follow")), back, cancel),
+      h("label", { class: "run-follow" }, followBox, t("Web_Run_Follow")), back, cancel, close),
     h("div", { class: "run-bar" }, bar, h("div", { class: "run-sub" }, status, h("span", { class: "grow" }), elapsed)),
     h("h3", { class: "run-log-head" }, t("Web_Run_Log")), lines);
 
@@ -71,7 +74,9 @@ export function runPanel(onFocus, page = "monitoring") {
   function update(s) {
     running = !!s.running; current = s.current || null;
     const wasHidden = el.hidden;
-    el.hidden = page === "monitoring" ? !running && !lines.childElementCount : !(running && current && pageOfTest(current.id) === page);
+    if (running) closed = false;
+    close.hidden = running;
+    el.hidden = closed || (page === "monitoring" ? !running && !lines.childElementCount : !(current && pageOfTest(current.id) === page));
     if (wasHidden && !el.hidden) requestAnimationFrame(() => { lines.scrollTop = lines.scrollHeight; });   // first shown: start at the newest line
     cancel.hidden = !running;
     if (current) {
@@ -96,6 +101,6 @@ export function runPanel(onFocus, page = "monitoring") {
   }
 
   call("tests.log").then((all) => { for (const l of all || []) append(l); return call("tests.state"); }).then(update).catch(() => {});
-  const offs = [on("tests", update), on("testlog", (l) => { append(l); if (el.hidden && page === "monitoring") { el.hidden = false; lines.scrollTop = lines.scrollHeight; } })];
+  const offs = [on("tests", update), on("testlog", (l) => { append(l); if (el.hidden && !closed && page === "monitoring") { el.hidden = false; lines.scrollTop = lines.scrollHeight; } })];
   return { el, off: () => { for (const o of offs) o(); clearInterval(timer); } };
 }

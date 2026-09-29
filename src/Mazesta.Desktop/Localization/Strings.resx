@@ -1586,4 +1586,5 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Advice_Inconclusive_Cores" xml:space="preserve"><value>No core computed wrongly, but not every core was tested (the time ran out, or Windows would not keep the thread on a core). Give each core at least a few seconds: the length should be at least the number of cores × seconds per core.</value></data>
   <data name="Advice_Inconclusive_Network" xml:space="preserve"><value>Not one echo reply came back. A firewall or the target may drop ICMP - that is not a fault of the network card. Ping the router or another target; the internet speed benchmark checks the connection another way.</value></data>
   <data name="Advice_Error" xml:space="preserve"><value>The test itself stopped with a program error; nothing is known about the part from this run. Repeat it; if it happens again, send the app's log (Settings) to the shop.</value></data>
+  <data name="Web_Run_Close" xml:space="preserve"><value>Close until the next session</value></data>
 </root>
