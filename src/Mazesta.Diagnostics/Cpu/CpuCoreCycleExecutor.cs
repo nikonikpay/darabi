@@ -7,8 +7,11 @@ namespace Mazesta.Diagnostics.Cpu;
 /// busy thread lets a core reach its highest boost clock and lowest voltage - the state where an unstable boost / Curve Optimizer / undervolt
 /// setting fails, and which an all-core load never reaches. With the variable load the thread also pauses at random moments, so the core
 /// keeps dropping out of and back into boost, which is when marginal voltage steps show.
-/// Every core computes the same seeded matrices, so a core whose result differs from the reference (taken on the first core) is named in
-/// the result: a wrong answer is an error, not a crash the technician has to guess about.
+/// Every core computes the same seeded matrices, and each product is checked against the checksum worked out in advance for them (not
+/// against the first core's answer, which would blame every good core if the first one were the bad one), so the core that computed wrongly
+/// is named: a wrong answer is an error, not a crash the technician has to guess about.
+/// A pass needs every core to have been tested: a core Windows would not pin the thread to, or one the time ran out before, leaves the
+/// result Inconclusive with those cores named, never Passed.
 /// </summary>
 public sealed class CpuCoreCycleExecutor : ITestExecutor
 {
@@ -43,9 +46,8 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
 
     private TestRunResult Run(TestExecutionRequest request, DateTimeOffset started, double slice, bool variable, CancellationToken ct)
     {
-        var a = new double[N, N]; var b = new double[N, N]; var c = new double[N, N];
-        CpuMatrixStressExecutor.Fill(a, new Random(20260928)); CpuMatrixStressExecutor.Fill(b, new Random(19450808));
-        ulong? reference = null; var errorsByCore = new long[_cores.Count]; var unpinned = new List<int>();
+        var (a, b) = CpuMatrixStressExecutor.Inputs(0); var c = new double[N, N];
+        ulong reference = CpuMatrixStressExecutor.Expected[0]; var errorsByCore = new long[_cores.Count]; var unpinned = new List<int>(); var covered = new bool[_cores.Count];
         long multiplies = 0, visits = 0; var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var pause = new Random(Environment.TickCount);
         try
@@ -56,17 +58,18 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
                 {
                     if (total.Elapsed >= duration) break;
                     ct.ThrowIfCancellationRequested();
-                    if (!CpuTopology.Pin(core.Group, core.FirstThreadMask) && !unpinned.Contains(core.Index)) unpinned.Add(core.Index);
+                    bool pinned = CpuTopology.Pin(core.Group, core.FirstThreadMask);
                     Thread.Sleep(0);   // let the scheduler move the thread onto the core before the slice is timed
+                    pinned = pinned && CpuTopology.IsOn(core.Group, core.FirstThreadMask);   // Windows accepted the pin and the thread is really there
+                    if (!pinned && !unpinned.Contains(core.Index)) unpinned.Add(core.Index);
                     visits++;
                     var step = Stopwatch.StartNew(); var burst = Stopwatch.StartNew(); double burstLength = NextBurst(pause, variable);
                     while (step.Elapsed.TotalSeconds < slice && total.Elapsed < duration)
                     {
                         ct.ThrowIfCancellationRequested();
                         CpuMatrixStressExecutor.Multiply(a, b, c); multiplies++;
-                        ulong sum = Checksum(c);
-                        if (reference is null) reference = sum;
-                        else if (sum != reference) errorsByCore[core.Index]++;
+                        if (CpuMatrixStressExecutor.Checksum(c) != reference) errorsByCore[core.Index]++;
+                        if (pinned) covered[core.Index] = true;
                         if (variable && burst.Elapsed.TotalMilliseconds > burstLength)
                         {
                             Thread.Sleep(pause.Next(2, 40));   // an idle gap: the core leaves boost and must come back to it
@@ -79,25 +82,20 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
         }
         catch (OperationCanceledException)
         {
-            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errorsByCore.Sum(), Describe(request, started, slice, variable, multiplies, visits, errorsByCore, unpinned));
+            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errorsByCore.Sum(), Describe(request, started, slice, variable, multiplies, visits, errorsByCore, unpinned, covered));
         }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
         long errors = errorsByCore.Sum();
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(request, started, slice, variable, multiplies, visits, errorsByCore, unpinned));
+        return new(Definition.Id, Verdict(errors, covered), started, request.Clock.UtcNow, errors, Describe(request, started, slice, variable, multiplies, visits, errorsByCore, unpinned, covered));
     }
+
+    /// <summary>A wrong result fails the test whatever else happened; otherwise it passes only when every core was really tested.</summary>
+    internal static TestOutcome Verdict(long errors, bool[] covered) => errors > 0 ? TestOutcome.Failed : covered.All(c => c) ? TestOutcome.Passed : TestOutcome.Inconclusive;
 
     /// <summary>How long the thread works before the next idle gap: 30 ms to 1.5 s, so boost is entered and left at many different moments.</summary>
     private static double NextBurst(Random r, bool variable) => variable ? 30 + r.NextDouble() * 1470 : double.MaxValue;
 
-    /// <summary>The exact bits of every cell: two cores that computed the same product give the same sum, one wrong bit anywhere does not.</summary>
-    internal static ulong Checksum(double[,] m)
-    {
-        ulong h = 1469598103934665603UL;
-        foreach (double v in m) h = (h ^ (ulong)BitConverter.DoubleToInt64Bits(v)) * 1099511628211UL;
-        return h;
-    }
-
-    private string Describe(TestExecutionRequest request, DateTimeOffset started, double slice, bool variable, long multiplies, long visits, long[] errorsByCore, List<int> unpinned)
+    private string Describe(TestExecutionRequest request, DateTimeOffset started, double slice, bool variable, long multiplies, long visits, long[] errorsByCore, List<int> unpinned, bool[] covered)
     {
         var finished = request.Clock.UtcNow;
         bool hybrid = _cores.Select(c => c.EfficiencyClass).Distinct().Count() > 1;
@@ -106,6 +104,7 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
             $"core visits={visits}", $"multiplies={multiplies}",
             errorsByCore.Any(e => e > 0) ? "wrong results on " + string.Join(", ", bad) : null,
             unpinned.Count > 0 ? $"Windows refused pinning to core(s) {string.Join(", ", unpinned)}" : null,
+            covered.Any(x => !x) ? $"not tested: core(s) {string.Join(", ", covered.Select((x, i) => (x, i)).Where(y => !y.x).Select(y => y.i))} - the result covers only the others" : $"every core tested",
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished) is { } clock ? $"peak core clock {clock.Max:F0} MHz" : null,
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
     }

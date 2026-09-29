@@ -6,23 +6,24 @@ public class CpuMatrixStressExecutorTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 9, 18, 0, 0, 0, TimeSpan.Zero);
 
-    [Fact] public void VerifySpotChecks_catches_a_deliberately_corrupted_cell()
+    [Theory, InlineData(0), InlineData(1), InlineData(2), InlineData(3)]
+    public void The_precomputed_checksums_are_what_the_multiply_gives(int set)
     {
-        // This is the test that proves the correctness check actually works (spec §9): a healthy run
-        // never corrupts a multiply, so RunAsync alone could never exercise this branch. Called
-        // directly against a genuine 64x64 multiply plus one flipped cell instead.
-        var rng = new Random(1);
-        var a = new double[64, 64]; var b = new double[64, 64]; var c = new double[64, 64];
-        CpuMatrixStressExecutor.Fill(a, rng); CpuMatrixStressExecutor.Fill(b, rng);
+        // The reference must not come from the machine under test, so it is a constant; this pins it. A different value here means the
+        // multiply or its inputs changed, not a fault: recompute the constant, and treat it as a new workload version.
+        var (a, b) = CpuMatrixStressExecutor.Inputs(set); var c = new double[64, 64];
         CpuMatrixStressExecutor.Multiply(a, b, c);
-        Assert.True(CpuMatrixStressExecutor.VerifySpotChecks(a, b, c, new Random(2)));   // untouched: real multiply verifies clean
+        Assert.Equal(CpuMatrixStressExecutor.Expected[set], CpuMatrixStressExecutor.Checksum(c));
+    }
 
-        // VerifySpotChecks only samples 4 of 4096 cells, so corrupting one cell would pass or fail by
-        // luck depending on the sampling seed. Corrupting every cell instead makes detection
-        // deterministic regardless of which cells get sampled - the point being tested here is that a
-        // real corruption IS caught, not the sampling density.
-        for (int i = 0; i < 64; i++) for (int j = 0; j < 64; j++) c[i, j] += 1.0;   // simulate a bit-flip / RAM fault across the result
-        Assert.False(CpuMatrixStressExecutor.VerifySpotChecks(a, b, c, new Random(3)));
+    [Theory, InlineData(0, 0, 0), InlineData(17, 42, 51), InlineData(63, 63, 1)]
+    public void One_flipped_bit_in_one_cell_is_caught(int row, int col, int bit)
+    {
+        // The whole product is checked, so a single-bit fault anywhere is found every time, not by the luck of a sample.
+        var (a, b) = CpuMatrixStressExecutor.Inputs(1); var c = new double[64, 64];
+        CpuMatrixStressExecutor.Multiply(a, b, c);
+        c[row, col] = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(c[row, col]) ^ 1L << bit);
+        Assert.NotEqual(CpuMatrixStressExecutor.Expected[1], CpuMatrixStressExecutor.Checksum(c));
     }
 
     [Fact] public async Task Zero_or_negative_duration_is_Unsupported_not_run()

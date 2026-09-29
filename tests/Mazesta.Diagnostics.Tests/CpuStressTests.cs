@@ -62,6 +62,21 @@ public class CpuStressTests
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains($"{cores.Count} physical cores", r.Detail);
     }
 
+    [Fact] public void Single_core_passes_only_when_every_core_was_tested()
+    {
+        Assert.Equal(TestOutcome.Passed, CpuCoreCycleExecutor.Verdict(0, [true, true]));
+        Assert.Equal(TestOutcome.Inconclusive, CpuCoreCycleExecutor.Verdict(0, [true, false]));   // a core never reached, or not pinned: not a pass
+        Assert.Equal(TestOutcome.Failed, CpuCoreCycleExecutor.Verdict(3, [true, false]));         // a wrong result fails whatever the coverage
+    }
+
+    [Fact] public async Task Single_core_with_too_little_time_for_every_core_is_Inconclusive()
+    {
+        var cores = CpuTopology.Cores;
+        if (cores.Count < 3) return;   // needs more cores than the one-second run can reach
+        var r = await new CpuCoreCycleExecutor(cores).RunAsync(new(1, new FakeClock(T0), null, null), CancellationToken.None);
+        Assert.Equal(TestOutcome.Inconclusive, r.Outcome); Assert.Contains("not tested", r.Detail);
+    }
+
     [Fact] public void The_topology_lists_every_logical_processor_once()
         => Assert.Equal(Environment.ProcessorCount, CpuTopology.Cores.Sum(c => c.Threads));
 
@@ -74,6 +89,25 @@ public class CpuStressTests
         Assert.NotNull(CpuVectorStressExecutor.Resolve("auto"));
         var r = await new CpuVectorStressExecutor().RunAsync(new(1, new FakeClock(T0), null, null), CancellationToken.None);
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("GFLOPS", r.Detail);
+    }
+
+    [Theory, InlineData(CpuVectorStressExecutor.Width.Sse), InlineData(CpuVectorStressExecutor.Width.Avx2), InlineData(CpuVectorStressExecutor.Width.Avx512)]
+    public void Every_vector_lane_equals_the_scalar_reference(CpuVectorStressExecutor.Width width)
+    {
+        if (CpuVectorStressExecutor.Resolve(width switch { CpuVectorStressExecutor.Width.Avx512 => "avx512", CpuVectorStressExecutor.Width.Avx2 => "avx2", _ => "sse" }) is null) return;
+        var got = new double[CpuVectorStressExecutor.LanesOf(width)];
+        CpuVectorStressExecutor.Block(width, got);
+        Assert.Equal(0, CpuVectorStressExecutor.WrongLanes(got, CpuVectorStressExecutor.Reference(width)));
+    }
+
+    [Fact] public void A_wrong_or_non_finite_lane_is_named()
+    {
+        var expected = CpuVectorStressExecutor.Reference(CpuVectorStressExecutor.Width.Avx2);
+        var got = (double[])expected.Clone();
+        got[2] = BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(got[2]) ^ 1);   // the lowest bit of one lane
+        Assert.Equal(0b0100, CpuVectorStressExecutor.WrongLanes(got, expected));
+        got = (double[])expected.Clone(); got[0] = double.NaN; got[3] = double.PositiveInfinity;
+        Assert.Equal(0b1001, CpuVectorStressExecutor.WrongLanes(got, expected));
     }
 
     [Fact] public void A_width_the_cpu_lacks_is_unavailable_not_failed()

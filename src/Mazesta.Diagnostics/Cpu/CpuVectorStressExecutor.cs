@@ -6,8 +6,10 @@ namespace Mazesta.Diagnostics.Cpu;
 /// chains of fused multiply-adds on the widest vectors the CPU has - AVX-512, AVX2 or SSE2 - on data that never leaves the registers, so
 /// the execution units, not memory, set the pace and the CPU draws the most power it can. That is where a weak VRM, a poor cooler or an
 /// undervolt that survives ordinary loads gives out.
-/// Each block of work starts from the same seeded values, so its result is known after the first pass; a thread whose block result ever
-/// differs has computed wrongly and is counted. The chosen width is Unsupported (not failed) when the CPU lacks it.
+/// Each block of work starts from the same seeded values, and every lane of its result is compared bit for bit with a reference computed
+/// before the run by plain scalar arithmetic (Math.FusedMultiplyAdd, the same single-rounding IEEE operation as the vector FMA; a separate
+/// multiply and add for SSE2) - not with the vector unit's own first answer, which could itself be the wrong one. A lane that differs, or
+/// that is not a finite number, is counted and named. The chosen width is Unsupported (not failed) when the CPU lacks it.
 /// </summary>
 public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
 {
@@ -44,28 +46,71 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
         return Task.Run(() => Run(request, width, started, ct), CancellationToken.None);
     }
 
+    internal static int LanesOf(Width width) => width switch { Width.Avx512 => 8, Width.Avx2 => 4, _ => 2 };
+
+    /// <summary>What every lane of a block must hold, by scalar arithmetic: chain c of lane l starts at <see cref="Seed"/>(c, l), steps
+    /// x = x·s + o <see cref="BlockIterations"/> times (fused for AVX2/AVX-512), and the chains are added in the order the vector code adds them.</summary>
+    internal static double[] Reference(Width width)
+    {
+        int lanes = LanesOf(width); var result = new double[lanes];
+        for (int l = 0; l < lanes; l++)
+        {
+            double sum = 0;
+            for (int c = 0; c < Chains; c++)
+            {
+                double x = Seed(c, l);
+                for (int i = 0; i < BlockIterations; i++) x = width == Width.Sse ? x * Scale + Offset : Math.FusedMultiplyAdd(x, Scale, Offset);
+                sum = c == 0 ? x : sum + x;
+            }
+            result[l] = sum;
+        }
+        return result;
+    }
+
+    private static double Seed(int chain, int lane) => 1.0 + lane * 0.1 + chain * 0.01;
+
+    /// <summary>The lanes of <paramref name="got"/> that differ from <paramref name="expected"/> in any bit or are not finite, as a bit mask.</summary>
+    internal static int WrongLanes(ReadOnlySpan<double> got, ReadOnlySpan<double> expected)
+    {
+        int mask = 0;
+        for (int l = 0; l < got.Length; l++) if (!double.IsFinite(got[l]) || BitConverter.DoubleToInt64Bits(got[l]) != BitConverter.DoubleToInt64Bits(expected[l])) mask |= 1 << l;
+        return mask;
+    }
+
+    /// <summary>One block on <paramref name="width"/>, its lanes written to <paramref name="lanes"/>.</summary>
+    internal static void Block(Width width, Span<double> lanes)
+    {
+        switch (width) { case Width.Avx512: Block512(lanes); break; case Width.Avx2: Block256(lanes); break; default: Block128(lanes); break; }
+    }
+
     private static TestRunResult Run(TestExecutionRequest request, Width width, DateTimeOffset started, CancellationToken ct)
     {
-        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0;
+        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; var laneErrors = new long[LanesOf(width)]; string firstError = "";
+        var expected = Reference(width);
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         void Worker(int index)
         {
-            double? reference = null;
+            Span<double> got = stackalloc double[8];
+            got = got[..expected.Length];
             while (!ct.IsCancellationRequested && total.Elapsed < duration)
             {
-                double result = width switch { Width.Avx512 => Block512(), Width.Avx2 => Block256(), _ => Block128() };
-                reference ??= result;
-                if (BitConverter.DoubleToInt64Bits(result) != BitConverter.DoubleToInt64Bits(reference.Value)) Interlocked.Increment(ref errors);
+                Block(width, got);
+                if (WrongLanes(got, expected) is int wrong and not 0)
+                {
+                    Interlocked.Increment(ref errors);
+                    for (int l = 0; l < got.Length; l++) if ((wrong & 1 << l) != 0) Interlocked.Increment(ref laneErrors[l]);
+                    if (firstError.Length == 0) firstError = $"first wrong block on thread {index}, lanes {string.Join(",", Enumerable.Range(0, got.Length).Where(l => (wrong & 1 << l) != 0))}";
+                }
                 Interlocked.Increment(ref blocks);
             }
         }
         var all = Task.WhenAll(Enumerable.Range(0, threads).Select(i => Task.Factory.StartNew(() => Worker(i), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
         while (!all.IsCompleted) { request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running")); all.Wait(250, CancellationToken.None); }
         var finished = request.Clock.UtcNow;
-        long lanes = width switch { Width.Avx512 => 8, Width.Avx2 => 4, _ => 2 };
-        double gflops = blocks * (double)BlockIterations * Chains * lanes * 2 / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9;
-        string detail = SensorEvidence.Join($"vector FMA stress, {width switch { Width.Avx512 => "AVX-512", Width.Avx2 => "AVX2 + FMA", _ => "SSE2" }}, {threads} threads",
-            $"blocks={blocks}", $"{gflops:F0} GFLOPS (FP64)", errors > 0 ? $"{errors} block(s) computed a different result" : null,
+        long lanes = LanesOf(width);
+        double gflops = blocks * (double)BlockIterations * Chains * lanes * 2 / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9;   // a multiply-add counts as 2 operations
+        string detail = SensorEvidence.Join($"vector FMA stress, {width switch { Width.Avx512 => "AVX-512", Width.Avx2 => "AVX2 + FMA", _ => "SSE2" }}, {threads} threads, every lane checked against a scalar reference",
+            $"blocks={blocks}", $"{gflops:F0} GFLOPS (FP64)", errors > 0 ? $"{errors} block(s) computed a wrong result; errors per lane {string.Join(" ", laneErrors.Select((e, l) => $"{l}:{e}"))}; {firstError}" : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuEffectiveClockAverage, started, finished)?.Format("average effective clock", " MHz"),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
@@ -76,10 +121,10 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
 
     // Twelve independent chains hide the multiply-add latency so every cycle issues one; x = x·s + o converges to o/(1−s) and stays a normal
     // number, so no denormal slow path or overflow ever changes the timing or the result.
-    private static double Block512()
+    private static void Block512(Span<double> lanes)
     {
         var s = Vector512.Create(Scale); var o = Vector512.Create(Offset);
-        Vector512<double> Seed(int c) => Vector512.Create(1.0 + c * 0.01, 1.1 + c * 0.01, 1.2 + c * 0.01, 1.3 + c * 0.01, 1.4 + c * 0.01, 1.5 + c * 0.01, 1.6 + c * 0.01, 1.7 + c * 0.01);
+        Vector512<double> Seed(int c) => Vector512.Create(CpuVectorStressExecutor.Seed(c, 0), CpuVectorStressExecutor.Seed(c, 1), CpuVectorStressExecutor.Seed(c, 2), CpuVectorStressExecutor.Seed(c, 3), CpuVectorStressExecutor.Seed(c, 4), CpuVectorStressExecutor.Seed(c, 5), CpuVectorStressExecutor.Seed(c, 6), CpuVectorStressExecutor.Seed(c, 7));
         Vector512<double> x0 = Seed(0), x1 = Seed(1), x2 = Seed(2), x3 = Seed(3), x4 = Seed(4), x5 = Seed(5), x6 = Seed(6), x7 = Seed(7), x8 = Seed(8), x9 = Seed(9), x10 = Seed(10), x11 = Seed(11);
         for (int i = 0; i < BlockIterations; i++)
         {
@@ -87,13 +132,13 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
             x4 = Avx512F.FusedMultiplyAdd(x4, s, o); x5 = Avx512F.FusedMultiplyAdd(x5, s, o); x6 = Avx512F.FusedMultiplyAdd(x6, s, o); x7 = Avx512F.FusedMultiplyAdd(x7, s, o);
             x8 = Avx512F.FusedMultiplyAdd(x8, s, o); x9 = Avx512F.FusedMultiplyAdd(x9, s, o); x10 = Avx512F.FusedMultiplyAdd(x10, s, o); x11 = Avx512F.FusedMultiplyAdd(x11, s, o);
         }
-        return Vector512.Sum(x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11);
+        (x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11).CopyTo(lanes);
     }
 
-    private static double Block256()
+    private static void Block256(Span<double> lanes)
     {
         var s = Vector256.Create(Scale); var o = Vector256.Create(Offset);
-        Vector256<double> Seed(int c) => Vector256.Create(1.0 + c * 0.01, 1.1 + c * 0.01, 1.2 + c * 0.01, 1.3 + c * 0.01);
+        Vector256<double> Seed(int c) => Vector256.Create(CpuVectorStressExecutor.Seed(c, 0), CpuVectorStressExecutor.Seed(c, 1), CpuVectorStressExecutor.Seed(c, 2), CpuVectorStressExecutor.Seed(c, 3));
         Vector256<double> x0 = Seed(0), x1 = Seed(1), x2 = Seed(2), x3 = Seed(3), x4 = Seed(4), x5 = Seed(5), x6 = Seed(6), x7 = Seed(7), x8 = Seed(8), x9 = Seed(9), x10 = Seed(10), x11 = Seed(11);
         for (int i = 0; i < BlockIterations; i++)
         {
@@ -101,14 +146,14 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
             x4 = Fma.MultiplyAdd(x4, s, o); x5 = Fma.MultiplyAdd(x5, s, o); x6 = Fma.MultiplyAdd(x6, s, o); x7 = Fma.MultiplyAdd(x7, s, o);
             x8 = Fma.MultiplyAdd(x8, s, o); x9 = Fma.MultiplyAdd(x9, s, o); x10 = Fma.MultiplyAdd(x10, s, o); x11 = Fma.MultiplyAdd(x11, s, o);
         }
-        return Vector256.Sum(x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11);
+        (x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11).CopyTo(lanes);
     }
 
     /// <summary>SSE2 has no fused multiply-add: a multiply and an add, the load of CPUs from before AVX2.</summary>
-    private static double Block128()
+    private static void Block128(Span<double> lanes)
     {
         var s = Vector128.Create(Scale); var o = Vector128.Create(Offset);
-        Vector128<double> Seed(int c) => Vector128.Create(1.0 + c * 0.01, 1.1 + c * 0.01);
+        Vector128<double> Seed(int c) => Vector128.Create(CpuVectorStressExecutor.Seed(c, 0), CpuVectorStressExecutor.Seed(c, 1));
         Vector128<double> x0 = Seed(0), x1 = Seed(1), x2 = Seed(2), x3 = Seed(3), x4 = Seed(4), x5 = Seed(5), x6 = Seed(6), x7 = Seed(7), x8 = Seed(8), x9 = Seed(9), x10 = Seed(10), x11 = Seed(11);
         for (int i = 0; i < BlockIterations; i++)
         {
@@ -116,6 +161,6 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
             x4 = Sse2.Add(Sse2.Multiply(x4, s), o); x5 = Sse2.Add(Sse2.Multiply(x5, s), o); x6 = Sse2.Add(Sse2.Multiply(x6, s), o); x7 = Sse2.Add(Sse2.Multiply(x7, s), o);
             x8 = Sse2.Add(Sse2.Multiply(x8, s), o); x9 = Sse2.Add(Sse2.Multiply(x9, s), o); x10 = Sse2.Add(Sse2.Multiply(x10, s), o); x11 = Sse2.Add(Sse2.Multiply(x11, s), o);
         }
-        return Vector128.Sum(x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11);
+        (x0 + x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11).CopyTo(lanes);
     }
 }

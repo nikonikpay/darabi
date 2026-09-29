@@ -60,7 +60,16 @@ public static class CpuTopology
         return SetThreadGroupAffinity(GetCurrentThread(), ref affinity, out _);
     }
 
+    /// <summary>Whether the calling thread is running on a logical processor of <paramref name="mask"/> in <paramref name="group"/> right now.</summary>
+    public static bool IsOn(ushort group, ulong mask)
+    {
+        GetCurrentProcessorNumberEx(out var n);
+        return n.Group == group && n.Number < 64 && (mask & 1UL << n.Number) != 0;
+    }
+
     private const int RelationProcessorCore = 0;
+    [StructLayout(LayoutKind.Sequential)] private struct ProcessorNumber { public ushort Group; public byte Number; public byte Reserved; }
+    [DllImport("kernel32.dll")] private static extern void GetCurrentProcessorNumberEx(out ProcessorNumber number);
     [StructLayout(LayoutKind.Sequential)] private struct GroupAffinity { public nuint Mask; public ushort Group; public ushort R0, R1, R2; }
     [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetLogicalProcessorInformationEx(int relationship, IntPtr buffer, ref uint length);
     [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentThread();
