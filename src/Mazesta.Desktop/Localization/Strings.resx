@@ -1657,4 +1657,9 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Ai_Option_Model" xml:space="preserve"><value>Model</value></data>
   <data name="Ai_Option_Device" xml:space="preserve"><value>Device</value></data>
   <data name="Ai_RamFree" xml:space="preserve"><value>Free RAM now</value></data>
+  <data name="Bench_Mem_Latency" xml:space="preserve"><value>Latency (random access)</value></data>
+  <data name="Test_Memory_BitFade" xml:space="preserve"><value>RAM · Bit Fade (hold and check)</value></data>
+  <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} MiB of free RAM taken; {1} of {2} blocks locked in RAM so Windows cannot page them out while they wait.</value></data>
+  <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>Pattern '{0}' written to every block; now left untouched for {1} s.</value></data>
+  <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>Pattern '{0}' checked after the hold; {1} faded byte(s) so far.</value></data>
 </root>

@@ -38,7 +38,17 @@ internal sealed unsafe class NativeBlock : IDisposable
     public Span<byte> Span => _pointer is null ? throw new ObjectDisposedException(nameof(NativeBlock)) : new(_pointer, Length);
     /// <summary>The block as <see cref="Memory{T}"/>, for asynchronous (overlapped) I/O that must not move the buffer.</summary>
     public Memory<byte> Memory => new Manager(this).Memory;
-    public void Dispose() { if (_pointer is not null) { NativeMemory.AlignedFree(_pointer); _pointer = null; } }
+    private bool _locked;
+    /// <summary>Keeps the block's pages in RAM (VirtualLock) until it is freed; false when Windows refuses (the working-set minimum is too small).</summary>
+    public bool Lock() => _locked = _pointer is not null && VirtualLock((nint)_pointer, (nuint)Length);
+    public void Dispose()
+    {
+        if (_pointer is null) return;
+        if (_locked) VirtualUnlock((nint)_pointer, (nuint)Length);
+        NativeMemory.AlignedFree(_pointer); _pointer = null;
+    }
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool VirtualLock(nint address, nuint size);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool VirtualUnlock(nint address, nuint size);
 
     private sealed class Manager(NativeBlock block) : MemoryManager<byte>
     {

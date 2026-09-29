@@ -81,7 +81,7 @@ public class BenchmarkTests : IDisposable
     {
         var r = await new MemoryBenchmark(new FixedProbe(64L << 30, 48L << 30)).RunAsync(Request(4), CancellationToken.None);
         Assert.Equal(BenchmarkStatus.Completed, r.Status);
-        foreach (var key in new[] { "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_CopyAll", "Bench_Mem_StreamCopy", "Bench_Mem_StreamScale", "Bench_Mem_StreamAdd", "Bench_Mem_StreamTriad" })
+        foreach (var key in new[] { "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_CopyAll", "Bench_Mem_StreamCopy", "Bench_Mem_StreamScale", "Bench_Mem_StreamAdd", "Bench_Mem_StreamTriad", "Bench_Mem_Latency" })
             Assert.True(Value(r, key) > 0, key);
         Assert.Contains("results checked", r.Detail);
     }
@@ -92,6 +92,15 @@ public class BenchmarkTests : IDisposable
         var r = MemoryBenchmark.Stream(a, b, c, TimeSpan.Zero, null, CancellationToken.None);
         Assert.Null(r.Problem); Assert.Equal(3, r.Runs); Assert.InRange(r.Error, 0, 1e-15);
         Assert.All(r.Best, x => Assert.True(x > 0));
+    }
+
+    [Fact] public void The_latency_chain_is_one_cycle_through_every_line()
+    {
+        var block = new byte[64 * 1000]; MemoryBenchmark.Chain(block, 1);
+        var seen = new HashSet<uint>(); uint at = 0;
+        for (int k = 0; k < 1000; k++) { Assert.True(seen.Add(at)); at = BitConverter.ToUInt32(block, (int)at * 64); }
+        Assert.Equal(1000, seen.Count); Assert.Equal(0u, at);   // back at the start only after visiting all 1000 lines
+        Assert.Equal(0u, MemoryBenchmark.Chase(block, 1000)); Assert.NotEqual(0u, MemoryBenchmark.Chase(block, 999));
     }
 
     [Fact] public async Task Storage_reports_every_sequential_and_random_speed_and_leaves_no_file_behind()

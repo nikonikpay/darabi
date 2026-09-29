@@ -1,0 +1,71 @@
+using System.Diagnostics; using System.Runtime.InteropServices;
+namespace Mazesta.Diagnostics.Memory;
+
+/// <summary>
+/// Bit fade (MemTest86's test 10): all ones are written to the free RAM, left untouched for half the run, and checked; then all zeros the same
+/// way. A cell that leaks its charge faster than the memory's refresh loses its bit while nothing reads or writes it - a fault the busy pattern
+/// test never gives time to appear. While it waits nothing may move the data: Windows would otherwise page idle memory out and the test would
+/// check the page file, so every block is locked in RAM (VirtualLock, after raising the process's working-set minimum); when Windows refuses
+/// the lock, the test says so and ends Inconclusive - a pass would claim what it did not test.
+/// </summary>
+public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
+{
+    public static readonly TestDefinition Definition = new(new TestId("memory.bitfade"), "Test_Memory_BitFade", 600,
+        [new TestOption(MemoryPatternExecutor.SizeOption, "Test_Option_MemoryMb", TestOptionKind.Integer, "0")]);
+    TestDefinition ITestExecutor.Definition => Definition;
+    private const int BlockBytes = MemoryPatternExecutor.BlockBytes;
+
+    public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
+    {
+        var started = request.Clock.UtcNow;
+        if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
+        long budget = MemoryPatternExecutor.Budget(probe.Read(), (request.Options ?? TestOptions.None(Definition)).GetInt(MemoryPatternExecutor.SizeOption));
+        if (budget < BlockBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of free RAM is available above the OS reserve; at least {BlockBytes >> 20} MiB is needed."));
+        return Task.Run(() => Run(request, budget, started, ct), CancellationToken.None);
+    }
+
+    private static TestRunResult Run(TestExecutionRequest request, long budget, DateTimeOffset started, CancellationToken ct)
+    {
+        var blocks = new List<NativeBlock>(); long errors = 0; string first = ""; int locked = 0; var sw = Stopwatch.StartNew();
+        var total = TimeSpan.FromSeconds(request.DurationSeconds);
+        try
+        {
+            for (long allocated = 0; allocated + BlockBytes <= budget; allocated += BlockBytes) { ct.ThrowIfCancellationRequested(); var b = new NativeBlock(BlockBytes); b.Span.Clear(); blocks.Add(b); }
+            long bytes = (long)blocks.Count * BlockBytes;
+            // The minimum is what is locked plus what the process already uses; the maximum leaves room above it.
+            nint min = (nint)(bytes + (Environment.WorkingSet)), max = (nint)(bytes + Environment.WorkingSet + (512L << 20));
+            SetProcessWorkingSetSizeEx(GetCurrentProcess(), min, max, 0);
+            foreach (var b in blocks) if (b.Lock()) locked++;
+            request.Note("Log_Mem_BitFade_Locked", "SetProcessWorkingSetSizeEx(min = locked + in use); VirtualLock(every block)", bytes >> 20, locked, blocks.Count);
+
+            foreach (var (value, name, index) in new[] { ((byte)0xFF, "all ones", 0), ((byte)0x00, "all zeros", 1) })
+            {
+                var options = new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount };
+                Parallel.For(0, blocks.Count, options, i => blocks[i].Span.Fill(value));
+                // Each hold ends at its half of the run, so the two patterns rest for the same time whatever writing took.
+                var until = total * (index + 1) / 2 - TimeSpan.FromSeconds(3);
+                request.Note("Log_Mem_BitFade_Hold", "fill(all blocks, pattern); sleep; count(bytes ≠ pattern)", name, Math.Max(0, (int)(until - sw.Elapsed).TotalSeconds));
+                while (sw.Elapsed < until) { ct.ThrowIfCancellationRequested(); Thread.Sleep(250); request.Progress?.Invoke(new TestProgress(Math.Clamp(sw.Elapsed / total, 0, 1), "Test_Status_Running")); }
+                Parallel.For(0, blocks.Count, options, i =>
+                {
+                    var span = blocks[i].Span; long bad = span.Length - span.Count(value);
+                    if (bad > 0) { Interlocked.Add(ref errors, bad); if (first.Length == 0) first = $"first faded bytes in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) after holding '{name}'"; }
+                });
+                request.Note("Log_Mem_BitFade_Checked", null, name, Interlocked.Read(ref errors));
+            }
+        }
+        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, locked, first)); }
+        finally { foreach (var b in blocks) b.Dispose(); }
+        request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
+        var outcome = errors > 0 ? TestOutcome.Failed : locked < blocks.Count ? TestOutcome.Inconclusive : TestOutcome.Passed;
+        return new(Definition.Id, outcome, started, request.Clock.UtcNow, errors, Describe(blocks.Count, locked, first));
+    }
+
+    private static string Describe(int blocks, int locked, string first)
+        => $"Bit fade; held {(long)blocks * BlockBytes >> 20} MiB as all ones, then all zeros, each untouched for half the run; {locked} of {blocks} blocks locked in RAM"
+         + (locked < blocks ? " - Windows would not lock the rest, so they may have been paged out while waiting and their result says nothing about the RAM" : "")
+         + "; addressed by buffer offset, not physical address or slot" + (first.Length > 0 ? $"; {first}" : "");
+
+    [DllImport("kernel32.dll")] private static extern nint GetCurrentProcess();
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetProcessWorkingSetSizeEx(nint process, nint min, nint max, uint flags);
+}

@@ -28,7 +28,7 @@ public sealed class BenchmarkRecords
     private static readonly Dictionary<string, HeadlineMetric> Headlines = new()
     {
         ["bench.cpu.single"] = new("Bench_Cpu_Gflops", true, PeerPart.Cpu), ["bench.cpu.multi"] = new("Bench_Cpu_Gflops", true, PeerPart.Cpu),
-        ["bench.memory"] = new("Bench_Mem_Read", true, PeerPart.Memory, Version: 2), ["bench.storage"] = new("Bench_Storage_SeqRead", true, PeerPart.Drive),
+        ["bench.memory"] = new("Bench_Mem_Read", true, PeerPart.Memory, Version: 3), ["bench.storage"] = new("Bench_Storage_SeqRead", true, PeerPart.Drive),
         ["bench.gpu.d3d"] = new("Bench_Gpu_Fps", true, PeerPart.Gpu), ["bench.gpu.rt"] = new("Bench_Gpu_Rt_Fps", true, PeerPart.Gpu), ["bench.gpu.ai"] = new("Bench_Gpu_Ai_Fp32", true, PeerPart.Gpu),
         ["bench.gpu.scene.d3d"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu, 2), ["bench.gpu.scene.rt"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu, 2),   // v2: the courtyard V4 scene; RT at 4 rays a pixel
         ["bench.network.internet"] = new("Bench_Net_Download", true),

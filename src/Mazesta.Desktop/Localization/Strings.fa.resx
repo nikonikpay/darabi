@@ -1657,4 +1657,9 @@
   <data name="Ai_Option_Model" xml:space="preserve"><value>مدل</value></data>
   <data name="Ai_Option_Device" xml:space="preserve"><value>دستگاه</value></data>
   <data name="Ai_RamFree" xml:space="preserve"><value>RAM آزاد در این لحظه</value></data>
+  <data name="Bench_Mem_Latency" xml:space="preserve"><value>تأخیر دسترسی تصادفی (Latency)</value></data>
+  <data name="Test_Memory_BitFade" xml:space="preserve"><value>رم · محو شدن بیت (نگه‌داشتن و بررسی)</value></data>
+  <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} مگابایت از RAM آزاد گرفته شد؛ {1} از {2} بلوک در RAM قفل شد تا ویندوز هنگام انتظار آن‌ها را به فایل صفحه منتقل نکند.</value></data>
+  <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>الگوی «{0}» در همهٔ بلوک‌ها نوشته شد؛ اکنون {1} ثانیه دست‌نخورده می‌ماند.</value></data>
+  <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>الگوی «{0}» پس از انتظار بررسی شد؛ تا این لحظه {1} بایت محوشده.</value></data>
 </root>

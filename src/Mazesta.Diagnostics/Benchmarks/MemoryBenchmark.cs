@@ -1,11 +1,14 @@
-using Mazesta.Core.Hardware; using System.Diagnostics; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Memory;
+using Mazesta.Core.Hardware; using System.Diagnostics; using System.Runtime.CompilerServices; using System.Runtime.InteropServices; using Mazesta.Diagnostics.Memory;
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>Memory bandwidth on 256 MiB buffers (larger than any CPU cache): single-thread write, read and copy, and a copy spread over every
 /// logical processor - these count the bytes moved once, as memcpy benchmarks conventionally do. Then STREAM's four kernels on every logical
 /// processor over three arrays of doubles (Copy c=a, Scale b=q·c, Add c=a+b, Triad a=b+q·c), counted as STREAM counts them (2, 2, 3 and 3
 /// times 8 bytes per element), each reported as the best of its runs, and checked as STREAM checks them: the arrays must hold the values the
-/// same sequence gives in plain arithmetic. Version 2 of the workload (version 1 had no STREAM kernels and a longer single-thread phase).</summary>
+/// same sequence gives in plain arithmetic. Latency is a pointer chase through the whole buffer: every 64-byte line holds the index of the next,
+/// in one random cycle over all of them, so each load waits for the one before and no prefetcher can guess the next (the figure includes the
+/// page-table misses of 4 KiB pages, as other tools' random-access latency does). Version 3 of the workload (2 added STREAM, 3 the latency phase
+/// and shorter phases for the rest).</summary>
 public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.memory"), "Bench_Memory", 60);
@@ -29,12 +32,12 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
     {
         using var src = new NativeBlock(BufferBytes); using var dst = new NativeBlock(BufferBytes); using var third = new NativeBlock(BufferBytes);
         src.Span.Fill(0x5A); dst.Span.Fill(0xA5); third.Span.Clear();   // commits every page before anything is timed
-        var phase = TimeSpan.FromSeconds(request.DurationSeconds / 8.0); int done = 0;
+        var phase = TimeSpan.FromSeconds(request.DurationSeconds / 10.0); int done = 0;
         double Measure(Action pass)
         {
             long passes = 0; var sw = Stopwatch.StartNew();
             do { ct.ThrowIfCancellationRequested(); pass(); passes++; } while (sw.Elapsed < phase);
-            request.Report(++done / 8.0);
+            request.Report(++done / 10.0);
             return passes * (double)BufferBytes / sw.Elapsed.TotalSeconds / 1e9;
         }
         try
@@ -43,15 +46,51 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
             double read = Measure(() => { ulong s = 0; foreach (ulong v in MemoryMarshal.Cast<byte, ulong>(src.Span)) s += v; _sink = s; });
             double copy = Measure(() => src.Span.CopyTo(dst.Span));
             double copyAll = Measure(() => Parallel.For(0, BufferBytes / Slice, i => src.Span.Slice(i * Slice, Slice).CopyTo(dst.Span.Slice(i * Slice, Slice))));
+            double latency = Latency(third, phase, ct); request.Report(++done / 10.0);
             var stream = Stream(src, dst, third, TimeSpan.FromSeconds(request.DurationSeconds / 2.0), f => request.Report(0.5 + f / 2), ct);
             if (stream.Problem is { } problem) return BenchmarkResult.Failed(Spec.Id, started, request.Clock.UtcNow, problem);
             return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow,
                 [new("Bench_Mem_Write", write, "GB/s"), new("Bench_Mem_Read", read, "GB/s"), new("Bench_Mem_Copy", copy, "GB/s"), new("Bench_Mem_CopyAll", copyAll, "GB/s"),
-                 new("Bench_Mem_StreamCopy", stream.Best[0], "GB/s"), new("Bench_Mem_StreamScale", stream.Best[1], "GB/s"), new("Bench_Mem_StreamAdd", stream.Best[2], "GB/s"), new("Bench_Mem_StreamTriad", stream.Best[3], "GB/s")],
+                 new("Bench_Mem_StreamCopy", stream.Best[0], "GB/s"), new("Bench_Mem_StreamScale", stream.Best[1], "GB/s"), new("Bench_Mem_StreamAdd", stream.Best[2], "GB/s"), new("Bench_Mem_StreamTriad", stream.Best[3], "GB/s"),
+                 new("Bench_Mem_Latency", latency, "ns")],
                 $"{BufferBytes >> 20} MiB buffers; write/read/copy on one thread, copy on {Environment.ProcessorCount} threads; STREAM kernels on {Environment.ProcessorCount} threads over 3 x {BufferBytes / 8:N0} doubles, "
-                + $"best of {stream.Runs} runs (median Triad {stream.MedianTriad:F1} GB/s), results checked (relative error {stream.Error:G2})");
+                + $"latency by a random pointer chase over {BufferBytes >> 20} MiB; best of {stream.Runs} runs (median Triad {stream.MedianTriad:F1} GB/s), results checked (relative error {stream.Error:G2})");
         }
         catch (OperationCanceledException) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
+    }
+
+    /// <summary>Links every 64-byte line of the block into one random cycle (Sattolo's shuffle, which only makes single cycles); the index of
+    /// line i's successor sits in the line's first four bytes.</summary>
+    internal static void Chain(Span<byte> block, int seed)
+    {
+        int lines = block.Length / 64; var next = new int[lines]; var random = new Random(seed);
+        for (int i = 0; i < lines; i++) next[i] = i;
+        for (int i = lines - 1; i > 0; i--) { int j = random.Next(i); (next[i], next[j]) = (next[j], next[i]); }
+        var words = MemoryMarshal.Cast<byte, uint>(block);
+        for (int i = 0; i < lines; i++) words[i * 16] = (uint)next[i];
+    }
+
+    /// <summary>Follows <paramref name="steps"/> links from line 0 and returns the line reached.</summary>
+    internal static uint Chase(Span<byte> block, long steps)
+    {
+        ref byte start = ref MemoryMarshal.GetReference(block); uint at = 0;
+        for (long k = 0; k < steps; k++) at = Unsafe.As<byte, uint>(ref Unsafe.Add(ref start, (nint)at * 64));
+        return at;
+    }
+
+    /// <summary>Nanoseconds per dependent load, the best of the rounds that fit in <paramref name="budget"/> (a round is a million loads).</summary>
+    private static double Latency(NativeBlock block, TimeSpan budget, CancellationToken ct)
+    {
+        Chain(block.Span, 7);
+        const long Round = 1 << 20; double best = double.MaxValue; var sw = Stopwatch.StartNew();
+        Chase(block.Span, Round);   // warm-up: the page tables and the first misses
+        do
+        {
+            ct.ThrowIfCancellationRequested();
+            long t = Stopwatch.GetTimestamp(); _sink = Chase(block.Span, Round);
+            best = Math.Min(best, Stopwatch.GetElapsedTime(t).TotalNanoseconds / Round);
+        } while (sw.Elapsed < budget);
+        return best;
     }
 
     internal sealed record StreamResult(double[] Best, int Runs, double MedianTriad, double Error, string? Problem);
