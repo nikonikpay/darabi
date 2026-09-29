@@ -60,4 +60,27 @@ public class MemoryTests
         var result = await new MemoryPatternExecutor(new FixedProbe(64 * GiB, 60 * GiB)).RunAsync(Request(30, 128), cts.Token);
         Assert.Equal(TestOutcome.Cancelled, result.Outcome);
     }
+
+    // ——— the algorithms: clean memory reads clean, a disturbed word is counted ———
+    [Fact] public void Moving_inversions_find_a_bit_that_flips_between_the_walks()
+    {
+        var block = new byte[1 << 16];
+        Assert.Equal(0, MemoryPatterns.MovingInversions(block, 0));
+        Assert.Equal(1, MemoryPatterns.MovingInversions(block, 0, w => w[777] ^= 1UL << 9));   // one byte of one word no longer holds the complement
+        Assert.True(block.All(b => b == 0));                                                     // the walk down wrote the pattern back
+    }
+
+    [Fact] public void Block_move_finds_a_copy_that_arrived_wrong()
+    {
+        var block = new byte[1 << 16];
+        Assert.Equal(0, MemoryPatterns.BlockMove(block, 3, 1));
+        Assert.Equal(2, MemoryPatterns.BlockMove(block, 3, 1, w => { w[w.Length / 2 + 5] ^= 0xFF0F; })); // two bytes of the copied half
+    }
+
+    [Fact] public void Stride_finds_a_word_changed_between_writing_and_reading()
+    {
+        var block = new byte[1 << 16];
+        Assert.Equal(0, MemoryPatterns.Stride(block, 7, 2));
+        Assert.Equal(8, MemoryPatterns.Stride(block, 7, 2, w => w[1000] = ~w[1000]));             // every byte of one word
+    }
 }

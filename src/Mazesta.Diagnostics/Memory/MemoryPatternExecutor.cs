@@ -36,7 +36,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     private TestRunResult Run(TestExecutionRequest request, long budget, DateTimeOffset started, CancellationToken ct)
     {
         var blocks = new List<NativeBlock>();
-        long errors = 0, passes = 0, bytesTouched = 0; string firstError = "";
+        long errors = 0, passes = 0, bytesTouched = 0; string firstError = ""; var algorithmsRun = new int[3];
         var timed = new Stopwatch();
         try
         {
@@ -53,17 +53,37 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
             do
             {
                 int pass = (int)passes + 1;   // the allocation wrote pass 0
+                // Every fourth pass also runs one of the algorithms, in turn, between checking the last pattern and writing the next.
+                MemoryPatterns.Algorithm? algorithm = pass % 4 == 0 ? (MemoryPatterns.Algorithm)(pass / 4 % 3) : null;
+                if (algorithm is { } run) algorithmsRun[(int)run]++;
                 var options = new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount };
                 Parallel.For(0, blocks.Count, options, i =>
                 {
                     var span = blocks[i].Span;
                     long bad = MemoryPatterns.CountMismatches(span, pass - 1, i);
+                    if (algorithm is { } a)
+                    {
+                        long wrong = a switch
+                        {
+                            MemoryPatterns.Algorithm.MovingInversions => MemoryPatterns.MovingInversions(span, pass % 8 < 4 ? 0UL : 0x5555555555555555UL),
+                            MemoryPatterns.Algorithm.BlockMove => MemoryPatterns.BlockMove(span, pass, i),
+                            _ => MemoryPatterns.Stride(span, pass, i),
+                        };
+                        if (wrong > 0) { Interlocked.Add(ref errors, wrong); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) during '{MemoryPatterns.Name(a)}'"; }
+                        Interlocked.Add(ref bytesTouched, 3L * span.Length);
+                    }
                     MemoryPatterns.Fill(span, pass, i);
                     if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) while verifying '{MemoryPatterns.Name(pass - 1)}'"; }
                     Interlocked.Add(ref bytesTouched, 2L * span.Length);
                 });
                 passes++;
-                request.Note("Log_Mem_Pass", "for every 64 MiB block: count(bytes ≠ pattern[p−1]); fill(pattern[p])", pass, MemoryPatterns.Name(pass - 1), MemoryPatterns.Name(pass), Interlocked.Read(ref errors));
+                request.Note("Log_Mem_Pass", algorithm switch
+                {
+                    MemoryPatterns.Algorithm.MovingInversions => "for every block: count(bytes ≠ pattern[p−1]);  moving inversions: fill P; up: check P, write ~P; down: check ~P, write P;  fill(pattern[p])",
+                    MemoryPatterns.Algorithm.BlockMove => "for every block: count(bytes ≠ pattern[p−1]);  block move: seeded first half, memmove onto the second half, check both;  fill(pattern[p])",
+                    MemoryPatterns.Algorithm.Stride => "for every block: count(bytes ≠ pattern[p−1]);  stride: write f(index) with stride 4099 words, read back with stride 8191;  fill(pattern[p])",
+                    _ => "for every 64 MiB block: count(bytes ≠ pattern[p−1]); fill(pattern[p])",
+                }, pass, MemoryPatterns.Name(pass - 1), algorithm is { } x ? $"{MemoryPatterns.Name(x)} + {MemoryPatterns.Name(pass)}" : MemoryPatterns.Name(pass), Interlocked.Read(ref errors));
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(timed.Elapsed / duration, 0, 1), "Test_Status_Running"));
             }
             while (timed.Elapsed < duration);
@@ -73,15 +93,16 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
         }
         catch (OperationCanceledException)
         {
-            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError));
+            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
         }
         finally { foreach (var b in blocks) b.Dispose(); }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError));
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
     }
 
-    private static string Describe(int blocks, long passes, long bytesTouched, Stopwatch sw, string firstError)
+    private static string Describe(int blocks, long passes, long bytesTouched, Stopwatch sw, string firstError, int[] algorithms)
         => $"RAM pattern test; tested={(long)blocks * BlockBytes >> 20} MiB; passes={passes} of {MemoryPatterns.Count} patterns{(passes < MemoryPatterns.Count ? " (not every pattern ran; a longer run covers them all)" : "")}; "
+         + $"moving inversions ×{algorithms[0]}, block move ×{algorithms[1]}, stride ×{algorithms[2]}; "
          + $"{bytesTouched / 1e9 / Math.Max(0.001, sw.Elapsed.TotalSeconds):F1} GB/s; covers only the RAM Windows let the test have, addressed by buffer offset, not physical address or slot"
          + (firstError.Length > 0 ? $"; {firstError}" : "");
 }

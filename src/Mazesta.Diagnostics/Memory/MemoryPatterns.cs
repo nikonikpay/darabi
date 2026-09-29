@@ -58,6 +58,49 @@ internal static class MemoryPatterns
     /// <summary>One bit set per differing byte of an xor value.</summary>
     private static ulong ByteMask(ulong x) { x |= x >> 4; x |= x >> 2; x |= x >> 1; return x & 0x0101010101010101UL; }
 
+    // ——— algorithms (MemTest86's tests 3-4, 6 and 8 in spirit): each checks as it goes and returns the bytes it found wrong ———
+
+    public enum Algorithm { MovingInversions, BlockMove, Stride }
+    public static string Name(Algorithm a) => a switch { Algorithm.MovingInversions => "moving inversions", Algorithm.BlockMove => "block move", _ => "stride" };
+
+    /// <summary>Moving inversions: fill with <paramref name="basePattern"/>; walk up, checking each word and writing its complement; walk down, checking
+    /// the complement and writing the pattern back. A cell that a write to a neighbour disturbs, or that holds a bit only in one direction, shows.
+    /// <paramref name="between"/> lets a test disturb the memory between the two walks.</summary>
+    public static long MovingInversions(Span<byte> block, ulong basePattern, SpanAction? between = null)
+    {
+        var w = MemoryMarshal.Cast<byte, ulong>(block); long bad = 0;
+        w.Fill(basePattern);
+        for (int i = 0; i < w.Length; i++) { bad += WordDiff(w[i], basePattern); w[i] = ~basePattern; }
+        between?.Invoke(w);
+        for (int i = w.Length - 1; i >= 0; i--) { bad += WordDiff(w[i], ~basePattern); w[i] = basePattern; }
+        return bad;
+    }
+
+    /// <summary>Block move: seeded data in the first half, copied onto the second half in one memmove, both halves checked against the seed.</summary>
+    public static long BlockMove(Span<byte> block, int pass, int blockIndex, SpanAction? between = null)
+    {
+        int half = block.Length / 2; var source = block[..half]; var target = block.Slice(half, half);
+        Fill(source, RandomPass + pass * Count, blockIndex);
+        source.CopyTo(target);
+        between?.Invoke(MemoryMarshal.Cast<byte, ulong>(block));
+        return CountMismatches(source, RandomPass + pass * Count, blockIndex) + CountMismatches(target, RandomPass + pass * Count, blockIndex);
+    }
+
+    /// <summary>Stride: each word gets a value made from its own index, written in one jumping order and read back in another (both strides odd, so
+    /// every word is visited once): the address lines and the row buffers see a far from sequential pattern.</summary>
+    public static long Stride(Span<byte> block, int pass, int blockIndex, SpanAction? between = null)
+    {
+        var w = MemoryMarshal.Cast<byte, ulong>(block); int n = w.Length; long bad = 0;
+        ulong key = Seed(pass, blockIndex);
+        static ulong Value(int index, ulong key) { ulong z = (ulong)index * 0x9E3779B97F4A7C15UL ^ key; z = (z ^ z >> 29) * 0xBF58476D1CE4E5B9UL; return z ^ z >> 32; }
+        for (long i = 0, at = 0; i < n; i++, at = (at + 4099) % n) w[(int)at] = Value((int)at, key);
+        between?.Invoke(w);
+        for (long i = 0, at = 0; i < n; i++, at = (at + 8191) % n) bad += WordDiff(w[(int)at], Value((int)at, key));
+        return bad;
+    }
+
+    public delegate void SpanAction(Span<ulong> words);
+
     private static ulong Seed(int pass, int block) => ((ulong)(uint)pass << 32 | (uint)block) * 0xD1B54A32D192ED03UL + 0x8CB92BA72F3D8DD7UL;
     private static ulong Next(ref ulong s) { s ^= s >> 12; s ^= s << 25; s ^= s >> 27; return s * 0x2545F4914F6CDD1DUL; }
 }
