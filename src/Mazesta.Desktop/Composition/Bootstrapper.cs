@@ -36,6 +36,8 @@ public static class Bootstrapper
         s.AddSingleton<IWmiQuery, WmiQuery>();
         s.AddSingleton<IInventoryProvider, WmiInventoryProvider>();
         s.AddSingleton<InventoryCache>();
+        s.AddSingleton<Mazesta.Hardware.Details.IHardwareDetailsProvider, Mazesta.Hardware.Details.HardwareDetailsReader>();
+        s.AddSingleton<HardwareDetailsCache>();
         s.AddDiagnostics(paths, lf);
         s.AddSingleton<Services.ITrayController, Services.TrayController>();
         s.AddSingleton<Services.ReportService>();

@@ -66,6 +66,21 @@ const tests = () => ({
     error: null, outcome: i < 3 ? OUT[i] : "NotRun", outcomeText: strings[`Test_Outcome_${i < 3 ? OUT[i] : "NotRun"}`], percent: i < 2 ? 1 : i === 2 ? 0.46 : 0,
     status: i === 2 ? strings.Test_Status_Running : "", errors: null, detail: i === 0 ? "matrix 256x256 FP64 on 32 threads; measured CPU load avg 99.6 % (min 98.1); package 142 W max; Tctl 81.4 °C max" : null })),
 });
+// Specification cards as the host builds them (the owner's machine's values, for the design only).
+const R = (label, value, more = false) => ({ label, value, more });
+const DEMO_SPECS = {
+  Cpu: [{ title: "پردازنده", rows: [R("نام", "AMD Ryzen 9 3950X 16-Core Processor"), R("سازنده", "Amd"), R("هسته / رشته", "16 / 32"), R("فرکانس پایه", "3501 MHz"), R("سوکت", "AM4"),
+      R("خانواده / مدل / استپینگ", "Family 23 (17h) · Model 113 (71h) · Stepping 0", true), R("میکروکد", "0x8701030", true), R("فرکانس باس", "100 MHz", true)] },
+    { title: "حافظهٔ نهان (Cache)", rows: [R("L1 داده", "16 × 32 KB"), R("L1 دستورالعمل", "16 × 32 KB"), R("L2", "16 × 512 KB"), R("L3", "4 × 16 MB"), R("مجموع L3", "64 MB"), R("چیدمان L3", "16-way, 64 B line", true)] },
+    { title: "قابلیت‌ها", rows: [R("مجموعه دستورالعمل‌ها", "SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT, AES-NI, PCLMULQDQ, AVX, AVX2, FMA3, BMI1, BMI2, LZCNT, SHA"), R("مجازی‌سازی در BIOS", "بله"), R("SLAT", "بله", true)], note: "مجموعه دستورالعمل‌ها همان‌طور که برنامه روی همین CPU و همین ویندوز قابل استفاده یافت." }],
+  Memory: [{ title: "RAM", rows: [R("کل حافظه", "64 GB"), R("ماژول‌ها", "2 × 32 GB"), R("نوع", "DDR4"), R("سرعت فعلی", "2133 MT/s"), R("پروفایل منطبق با این سرعت", "JEDEC 2133"), R("XMP", "فعال نیست؛ ماژول‌ها این را پشتیبانی می‌کنند: XMP 1 4000"), R("ولتاژ", "1.20 V"), R("ECC", "خیر")] },
+    { title: "DIMM_A2 (BANK 1)", rows: [R("سازنده", "G Skill Intl"), R("پارت‌نامبر", "F4-4000C18-32GTZR"), R("اندازه", "32 GB"), R("تعداد رنک", "2"), R("سرعت فعلی", "2133 MT/s"), R("ساختار چیپ‌ها", "x8, 16 Gb, 4 bank groups", true), R("نسخهٔ XMP", "2.0", true)],
+      table: { headers: ["پروفایل", "سرعت", "تایمینگ", "ولتاژ"], rows: [["XMP 1", "4000 MT/s", "18-22-22-42 (tRC 64)", "1.40 V"], ["JEDEC 2666", "2666 MT/s", "19-19-19-43 (tRC 61)", "1.20 V"], ["JEDEC 2400", "2400 MT/s", "17-17-17-39 (tRC 55)", "1.20 V"], ["JEDEC 2133", "2133 MT/s", "15-15-15-35 (tRC 49)", "1.20 V"]], highlight: 3 },
+      note: "از SPD خود ماژول خوانده شده. پروفایل مشخص‌شده همانی است که سرعتش با سرعت فعلی رم یکی است؛ تایمینگ در حال استفاده خوانده نمی‌شود." }],
+  Gpu: [{ title: "کارت گرافیک", rows: [R("نام", "NVIDIA GeForce RTX 3090"), R("سازندهٔ کارت", "PNY"), R("VRAM", "24 GB"), R("معماری", "Ampere"), R("هسته‌های پردازشی (CUDA)", "10496"), R("پهنای باس حافظه", "384 bit")] },
+    { title: "اتصال", rows: [R("لینک PCIe فعلی", "PCIe 4.0 x16 (16 GT/s)"), R("حداکثر لینک PCIe", "PCIe 4.0 x16 (16 GT/s)"), R("Resizable BAR", "غیرفعال (BAR1 256 MB)"), R("محل PCI", "00000000:0B:00.0", true)] },
+    { title: "درایور و فریم‌ور", rows: [R("نسخه‌ی درایور", "32.0.16.1062"), R("VBIOS", "94.02.42.00.A7"), R("حداکثر فرکانس هسته", "2100 MHz"), R("حداکثر فرکانس حافظه", "9751 MHz")] }],
+};
 const DEMO_LOG = [
   ["12:40:02", null, "Info", "Log_Session_Start", ["6"]],
   ["12:40:02", "cpu.matrix", "Info", "Log_Test_Start", ["1", "6", "@Test_Cpu_Matrix", "60"]],
@@ -185,6 +200,7 @@ export async function call(m, p, emit) {
     case "shop.product": await new Promise((r) => setTimeout(r, 700));
       return { id: 1, title: "نمونهٔ محصول فروشگاه (دادهٔ نمایشی)", summary: "در برنامه، یک محصول تصادفی از سایت dfmrendering.com اینجا نمایش داده می‌شود: نام، خلاصهٔ توضیحات به‌صورت متن ساده و تصویر محصول.", link: "https://www.dfmrendering.com/shop/", image: null };
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }
+    case "specs.get": await new Promise((r) => setTimeout(r, 300)); return { errors: [], cards: DEMO_SPECS[p.kind || "Cpu"] || DEMO_SPECS.Cpu };
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
     case "tweaks.state": return tweaks();

@@ -42,6 +42,19 @@ internal static class Nvml
     [DllImport(Dll)] public static extern int nvmlDeviceGetFanControlPolicy_v2(IntPtr device, uint fan, out uint policy);
     [DllImport(Dll)] public static extern int nvmlDeviceSetFanSpeed_v2(IntPtr device, uint fan, uint percent);
     [DllImport(Dll)] public static extern int nvmlDeviceSetDefaultFanSpeed_v2(IntPtr device, uint fan);
+    // Read-only device facts for the specification pages.
+    [StructLayout(LayoutKind.Sequential)] public struct Bar1Memory { public ulong Total, Free, Used; }
+    [DllImport(Dll)] public static extern int nvmlDeviceGetCurrPcieLinkGeneration(IntPtr device, out uint gen);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetCurrPcieLinkWidth(IntPtr device, out uint width);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetMaxPcieLinkGeneration(IntPtr device, out uint gen);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetMaxPcieLinkWidth(IntPtr device, out uint width);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetVbiosVersion(IntPtr device, byte[] version, uint length);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetMemoryBusWidth(IntPtr device, out uint bits);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetNumGpuCores(IntPtr device, out uint cores);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetBAR1MemoryInfo(IntPtr device, ref Bar1Memory info);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetCudaComputeCapability(IntPtr device, out int major, out int minor);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetArchitecture(IntPtr device, out uint architecture);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetPciInfo_v3(IntPtr device, byte[] info);
 
     /// <summary>Runs one NVML call; an entry point this driver does not export reads as <see cref="FunctionMissing"/>.</summary>
     public static int Call(Func<int> call) { try { return call(); } catch (EntryPointNotFoundException) { return FunctionMissing; } }

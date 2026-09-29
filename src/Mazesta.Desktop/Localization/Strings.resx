@@ -1131,7 +1131,7 @@
   <data name="Web_Boot_Elapsed" xml:space="preserve"><value>{0} s</value></data>
   <data name="Web_Boot_Window" xml:space="preserve"><value>Opening the window…</value></data>
   <data name="Nav_Group_Tests" xml:space="preserve"><value>Tests &amp; benchmarks</value></data>
-  <data name="Nav_Group_Hardware" xml:space="preserve"><value>Hardware</value></data>
+  <data name="Nav_Group_Hardware" xml:space="preserve"><value>Hardware &amp; monitoring</value></data>
   <data name="Nav_Group_Gaming" xml:space="preserve"><value>Gaming &amp; overlay</value></data>
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>Optimization</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>Narrow or widen the menu</value></data>
@@ -1451,4 +1451,82 @@ The update services stopped and disabled</value></data>
   <data name="Web_Run_Live" xml:space="preserve"><value>Live monitor</value></data>
   <data name="Web_Run_Elapsed" xml:space="preserve"><value>{0} elapsed</value></data>
   <data name="Web_Run_Done" xml:space="preserve"><value>The last session ended.</value></data>
+  <data name="Web_Ram_Used" xml:space="preserve"><value>Used</value></data>
+  <data name="Web_Ram_Free" xml:space="preserve"><value>Available</value></data>
+  <data name="Spec_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Spec_No" xml:space="preserve"><value>No</value></data>
+  <data name="Spec_On" xml:space="preserve"><value>On</value></data>
+  <data name="Spec_Off" xml:space="preserve"><value>Off</value></data>
+  <data name="Spec_More" xml:space="preserve"><value>More details</value></data>
+  <data name="Spec_Loading" xml:space="preserve"><value>Reading the specifications…</value></data>
+  <data name="Spec_CoresThreads" xml:space="preserve"><value>Cores / threads</value></data>
+  <data name="Spec_BaseClock" xml:space="preserve"><value>Base clock</value></data>
+  <data name="Spec_FamilyModel" xml:space="preserve"><value>Family / model / stepping</value></data>
+  <data name="Spec_Microcode" xml:space="preserve"><value>Microcode</value></data>
+  <data name="Spec_BusClock" xml:space="preserve"><value>Bus clock</value></data>
+  <data name="Spec_Caches" xml:space="preserve"><value>Caches</value></data>
+  <data name="Spec_CacheLevel" xml:space="preserve"><value>L{0} {1}</value></data>
+  <data name="Spec_Cache_Data" xml:space="preserve"><value>data</value></data>
+  <data name="Spec_Cache_Instruction" xml:space="preserve"><value>instruction</value></data>
+  <data name="Spec_Cache_Unified" xml:space="preserve"><value>unified</value></data>
+  <data name="Spec_Cache_Trace" xml:space="preserve"><value>trace</value></data>
+  <data name="Spec_CacheTotalL3" xml:space="preserve"><value>L3 in all</value></data>
+  <data name="Spec_CacheWays" xml:space="preserve"><value>L{0} {1}: layout</value></data>
+  <data name="Spec_Features" xml:space="preserve"><value>Features</value></data>
+  <data name="Spec_InstructionSets" xml:space="preserve"><value>Instruction sets</value></data>
+  <data name="Spec_Virtualization" xml:space="preserve"><value>Virtualization enabled in firmware</value></data>
+  <data name="Spec_Slat" xml:space="preserve"><value>SLAT (second-level address translation)</value></data>
+  <data name="Spec_Features_Note" xml:space="preserve"><value>Instruction sets as the app found them usable on this CPU and this Windows.</value></data>
+  <data name="Spec_BoardVendor" xml:space="preserve"><value>Board maker</value></data>
+  <data name="Spec_Architecture" xml:space="preserve"><value>Architecture</value></data>
+  <data name="Spec_GpuCores" xml:space="preserve"><value>Shader (CUDA) cores</value></data>
+  <data name="Spec_BusWidth" xml:space="preserve"><value>Memory bus</value></data>
+  <data name="Spec_Subsystem" xml:space="preserve"><value>PCI subsystem (vendor:device)</value></data>
+  <data name="Spec_ComputeCapability" xml:space="preserve"><value>Compute capability</value></data>
+  <data name="Spec_Connection" xml:space="preserve"><value>Connection</value></data>
+  <data name="Spec_LinkNow" xml:space="preserve"><value>PCIe link now</value></data>
+  <data name="Spec_LinkMax" xml:space="preserve"><value>PCIe link at most</value></data>
+  <data name="Spec_Link_Note" xml:space="preserve"><value>The link now is read at this moment: an idle card may step down to save power.</value></data>
+  <data name="Spec_ResizableBar" xml:space="preserve"><value>Resizable BAR</value></data>
+  <data name="Spec_Rebar_On" xml:space="preserve"><value>In use (BAR1 {0})</value></data>
+  <data name="Spec_Rebar_Off" xml:space="preserve"><value>Not in use (BAR1 {0})</value></data>
+  <data name="Spec_PciBus" xml:space="preserve"><value>PCI location</value></data>
+  <data name="Spec_DriverFirmware" xml:space="preserve"><value>Driver and firmware</value></data>
+  <data name="Spec_Vbios" xml:space="preserve"><value>VBIOS</value></data>
+  <data name="Spec_MaxCoreClock" xml:space="preserve"><value>Highest core clock</value></data>
+  <data name="Spec_MaxMemoryClock" xml:space="preserve"><value>Highest memory clock</value></data>
+  <data name="Spec_PowerLimit" xml:space="preserve"><value>Power limit</value></data>
+  <data name="Spec_MemoryType" xml:space="preserve"><value>Type</value></data>
+  <data name="Spec_SpeedNow" xml:space="preserve"><value>Speed now</value></data>
+  <data name="Spec_ProfileNow" xml:space="preserve"><value>Profile at this speed</value></data>
+  <data name="Spec_XmpState" xml:space="preserve"><value>XMP</value></data>
+  <data name="Spec_Xmp_Off" xml:space="preserve"><value>Not in use - the modules offer {0}</value></data>
+  <data name="Spec_Voltage" xml:space="preserve"><value>Voltage</value></data>
+  <data name="Spec_Ecc" xml:space="preserve"><value>ECC</value></data>
+  <data name="Spec_NoSpd" xml:space="preserve"><value>The modules' SPD could not be read (the sensor driver is needed), so their profiles are not shown.</value></data>
+  <data name="Spec_SpdSlot" xml:space="preserve"><value>SPD slot {0}</value></data>
+  <data name="Spec_PartNumber" xml:space="preserve"><value>Part number</value></data>
+  <data name="Spec_Ranks" xml:space="preserve"><value>Ranks</value></data>
+  <data name="Spec_DramMaker" xml:space="preserve"><value>Memory chips by</value></data>
+  <data name="Spec_Organisation" xml:space="preserve"><value>Chip organisation</value></data>
+  <data name="Spec_ManufactureDate" xml:space="preserve"><value>Made</value></data>
+  <data name="Spec_XmpVersion" xml:space="preserve"><value>XMP version</value></data>
+  <data name="Spec_Profile" xml:space="preserve"><value>Profile</value></data>
+  <data name="Spec_Speed" xml:space="preserve"><value>Speed</value></data>
+  <data name="Spec_Timings" xml:space="preserve"><value>Timings</value></data>
+  <data name="Spec_Profile_Note" xml:space="preserve"><value>Read from the module's SPD. The highlighted profile is the one with the speed the memory runs at now; the timings in use are not read.</value></data>
+  <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>{0} profiles are not decoded in this version.</value></data>
+  <data name="Spec_PowerOnHours" xml:space="preserve"><value>Power-on hours</value></data>
+  <data name="Spec_Temperature" xml:space="preserve"><value>Temperature</value></data>
+  <data name="Spec_Wear" xml:space="preserve"><value>Wear (life used)</value></data>
+  <data name="Spec_UncorrectedErrors" xml:space="preserve"><value>Uncorrected read / write errors</value></data>
+  <data name="Spec_BiosVersion" xml:space="preserve"><value>BIOS version</value></data>
+  <data name="Spec_BiosVendor" xml:space="preserve"><value>BIOS vendor</value></data>
+  <data name="Spec_Security" xml:space="preserve"><value>Boot and security</value></data>
+  <data name="Spec_BootMode" xml:space="preserve"><value>Boot mode</value></data>
+  <data name="Spec_SecureBoot" xml:space="preserve"><value>Secure Boot</value></data>
+  <data name="Spec_Tpm" xml:space="preserve"><value>TPM</value></data>
+  <data name="Spec_TpmNone" xml:space="preserve"><value>Not found or off</value></data>
+  <data name="Spec_Vbs" xml:space="preserve"><value>Virtualization-based security</value></data>
+  <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
 </root>

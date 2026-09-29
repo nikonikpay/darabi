@@ -6,7 +6,7 @@ export const PART = {
   Gaming: { cls: "p-game", hue: "--yellow", icon: "gamepad", key: "Web_Overlay_Gaming", page: null },
   Cpu: { cls: "p-cpu", hue: "--c-cpu", icon: "cpu", key: "Nav_Cpu", page: "cpu" },
   Gpu: { cls: "p-gpu", hue: "--c-gpu", icon: "gpu", key: "Nav_Gpu", page: "gpu" },
-  Memory: { cls: "p-ram", hue: "--c-ram", icon: "ram", key: "Dashboard_Ram", page: null },
+  Memory: { cls: "p-ram", hue: "--c-ram", icon: "ram", key: "Dashboard_Ram", page: "ram" },
   Storage: { cls: "p-storage", hue: "--c-storage", icon: "drive", key: "Nav_Storage", page: "storage" },
   Network: { cls: "p-net", hue: "--c-net", icon: "net", key: "Nav_Network", page: "network" },
   Motherboard: { cls: "p-board", hue: "--c-board", icon: "board", key: "Web_Kind_Motherboard", page: "system" },

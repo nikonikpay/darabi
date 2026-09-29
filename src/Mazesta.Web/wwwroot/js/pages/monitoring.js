@@ -17,7 +17,10 @@ const MAX_CHARTS = 10;
 const remember = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
 const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private profile: nothing is kept */ } };
 
-export function mount(el, _, focusKinds = null) {
+// opts: { kinds, page, runSlot } on a part's page (only that part's sensors; the run panel of its tests goes in runSlot, on top of the page);
+// none on Monitoring itself.
+export function mount(el, _, opts = null) {
+  const focusKinds = opts?.kinds || null, page = opts?.page || "monitoring";
   const store = `mazesta.monitor.v2.${focusKinds ? focusKinds.join("-") : "all"}`;   // v2: the first-visit charts changed
   const filter = h("input", { class: "field search", type: "search", placeholder: t("Monitoring_Search"), "aria-label": t("Monitoring_Search") });
   let windowSec = remember("mazesta.monitor.window", 600);
@@ -34,8 +37,8 @@ export function mount(el, _, focusKinds = null) {
 
   if (!focusKinds) el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Monitoring")), h("p", { class: "page-lede" }, t("Web_Monitoring_Lede")))));
   const groups = h("div", { class: "mon-groups" });
-  const run = focusKinds ? null : runPanel((kinds) => followPart(kinds));
-  if (run) el.append(run.el);
+  const run = runPanel((kinds) => followPart(kinds), page);
+  (opts?.runSlot || el).append(run.el);
   el.append(h("div", { class: "toolbar" }, filter, h("span", { class: "grow" }), focusKinds ? h("span", { class: "caption" }, t("Web_Chart_Hint")) : null), h("div", { class: "split" }, groups, charts));
 
   const cells = [];   // [sensor, current, min, avg, max, row, searchText, toggle, group]
@@ -141,7 +144,7 @@ export function mount(el, _, focusKinds = null) {
       const c = cells.find(([s]) => s.node.kind === k && roles.includes(s.role));
       if (c) addChart(c[0], true);
     }
-    first?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    if (!opts?.runSlot) first?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   }
 
   tick();
@@ -150,5 +153,5 @@ export function mount(el, _, focusKinds = null) {
   const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { for (const c of cards.values()) c.redraw(); }); };
   window.addEventListener("resize", onResize);
   const ro = new ResizeObserver(onResize); ro.observe(stack);
-  return () => { off(); run?.off(); window.removeEventListener("resize", onResize); ro.disconnect(); };
+  return () => { off(); run.off(); window.removeEventListener("resize", onResize); ro.disconnect(); };
 }

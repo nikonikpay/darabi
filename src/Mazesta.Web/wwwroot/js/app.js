@@ -16,6 +16,7 @@ export const PAGES = [
   { id: "gpu", key: "Nav_Gpu", load: () => import("./pages/component.js"), arg: "Gpu" },
   { id: "cpu", key: "Nav_Cpu", load: () => import("./pages/component.js"), arg: "Cpu" },
   { id: "network", key: "Nav_Network", load: () => import("./pages/component.js"), arg: "Network" },
+  { id: "ram", key: "Dashboard_Ram", load: () => import("./pages/component.js"), arg: "Memory" },
   { id: "storage", key: "Nav_Storage", load: () => import("./pages/component.js"), arg: "Storage" },
   { id: "overlay", key: "Nav_Overlay", load: () => import("./pages/overlay.js") },
   { id: "tuning", key: "Nav_Tuning", load: () => import("./pages/tuning.js") },
@@ -29,18 +30,18 @@ export const PAGES = [
 
 // The side bar has one entry per family; a family of several pages shows them as tabs at the top of each. Ctrl+1 … Ctrl+9 open the families.
 // The overlay and GPU tuning have entries of their own; Windows' tools (gaming and DNS among them), its tweaks and Windows Update share one.
+// Monitoring and the parts are one family: every sensor with its charts first, then each part with its specifications and its own sensors.
 export const FAMILIES = [
   { key: "Nav_Dashboard", icon: "home", pages: ["dashboard"] },
-  { key: "Nav_Monitoring", icon: "pulse", pages: ["monitoring"] },
+  { key: "Nav_Group_Hardware", icon: "pulse", pages: ["monitoring", "system", "cpu", "gpu", "ram", "storage", "network"] },
   { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks"] },
-  { key: "Nav_Group_Hardware", icon: "cpu", pages: ["system", "cpu", "gpu", "storage", "network"] },
   { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
   { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
   { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
 ];
-const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update", settings: "gear", appupdate: "update" };
+const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update", settings: "gear", appupdate: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 
@@ -71,6 +72,7 @@ async function show(id) {
       return h("a", { href: `#/${id}`, "aria-current": id === page.id ? "page" : null }, icon(TAB_ICON[id] || "doc"), t(p.key));
     })));
     const el = h("div", { class: "page" }); stage.append(el);
+    stage.style.setProperty("--tabs-h", `${stage.querySelector(".tabs")?.offsetHeight || 0}px`);
     unmount = mod.mount(el, page.arg) || null;
     document.title = `${t(page.key)} — Mazesta`;
   };
@@ -98,7 +100,7 @@ function renderIndex(info) {
   index.append(
     h("div", { class: "brand" }, h("img", { src: "img/logo.png", alt: "" }), h("div", {}, h("div", { class: "brand-word" }, logo()), h("div", { class: "brand-sub" }, "TEST SUITE")), toggle),
     h("ul", { class: "index-list" }, FAMILIES.map((f, i) => [
-      i === 2 || i === 7 ? h("li", { class: "sep", role: "presentation" }) : null,
+      i === 2 || i === 6 ? h("li", { class: "sep", role: "presentation" }) : null,
       h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`,
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
         icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no" }, `⌃${i + 1}`))),

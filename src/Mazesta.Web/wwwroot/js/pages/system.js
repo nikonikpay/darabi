@@ -4,6 +4,23 @@ import { call } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, val, toast } from "../ui.js";
 
+// A specification card: the rows that matter, the rest folded under "more", a table (a module's speed profiles, the one in use marked) and a note.
+const latin = (s) => /[a-z]/i.test(s) && !/[؀-ۿ]/.test(s);
+function rows(list) {
+  return h("dl", { class: "kv" }, list.map((r) => [h("dt", { class: latin(r.label) ? "lat" : "" }, r.label),
+    h("dd", { class: latin(r.value) || !/[؀-ۿ]/.test(r.value) ? "lat" : "", style: { textAlign: latin(r.value) ? "left" : null } }, r.value)]));
+}
+export function card(c, i) {
+  const main = c.rows.filter((r) => !r.more), more = c.rows.filter((r) => r.more);
+  return h("div", { class: "col spec-card", style: { "--i": i } }, h("div", { class: "col-head" }, h("span", { class: "h3" }, c.title)),
+    main.length ? rows(main) : null,
+    c.table ? h("div", { class: "spec-table-wrap" }, h("table", { class: "table spec-table" },
+      h("thead", {}, h("tr", {}, c.table.headers.map((x) => h("th", {}, x)))),
+      h("tbody", {}, c.table.rows.map((r, k) => h("tr", { class: k === c.table.highlight ? "on" : "" }, r.map((x, j) => h("td", { class: j ? "lat" : "lat nm" }, x))))))) : null,
+    more.length ? h("details", { class: "spec-more" }, h("summary", {}, t("Spec_More")), rows(more)) : null,
+    c.note ? h("p", { class: "caption spec-note" }, c.note) : null);
+}
+
 export function section(s, i) {
   return h("div", { class: "col", style: { "--i": i } }, h("div", { class: "col-head" }, h("span", { class: "h3" }, s.title)),
     h("dl", { class: "kv" }, s.rows.map((r) => [h("dt", { class: /[a-z]/i.test(r.label) && !/[؀-ۿ]/.test(r.label) ? "lat" : "" }, r.label),
@@ -22,8 +39,8 @@ export function mount(el) {
   }
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_SystemInfo")), h("p", { class: "page-lede" }, t("Web_System_Lede"))),
     h("div", { class: "export", role: "group", "aria-label": t("System_Export") }, h("span", { class: "caption" }, t("System_Export")), buttons)), body);
-  call("inventory.get").then((inv) => {
-    body.replaceChildren(...inv.sections.map(section));
-    if (inv.errors?.length) body.append(h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Web_System_Errors"))), h("p", { class: "caption lat" }, inv.errors.join("\n"))));
+  call("specs.get").then((r) => {
+    body.replaceChildren(...r.cards.map(card));
+    if (r.errors?.length) body.append(h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Web_System_Errors"))), h("p", { class: "caption lat" }, r.errors.join("\n"))));
   });
 }

@@ -1131,7 +1131,7 @@
   <data name="Web_Boot_Elapsed" xml:space="preserve"><value>{0} ثانیه</value></data>
   <data name="Web_Boot_Window" xml:space="preserve"><value>در حال باز کردن پنجره…</value></data>
   <data name="Nav_Group_Tests" xml:space="preserve"><value>تست و بنچمارک</value></data>
-  <data name="Nav_Group_Hardware" xml:space="preserve"><value>سخت‌افزار</value></data>
+  <data name="Nav_Group_Hardware" xml:space="preserve"><value>سخت‌افزار و مانیتورینگ</value></data>
   <data name="Nav_Group_Gaming" xml:space="preserve"><value>گیمینگ و اورلی</value></data>
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>بهینه‌سازی</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>جمع یا باز کردن منو</value></data>
@@ -1451,4 +1451,82 @@
   <data name="Web_Run_Live" xml:space="preserve"><value>مانیتور زنده</value></data>
   <data name="Web_Run_Elapsed" xml:space="preserve"><value>{0} گذشته</value></data>
   <data name="Web_Run_Done" xml:space="preserve"><value>آخرین جلسهٔ آزمون به پایان رسید.</value></data>
+  <data name="Web_Ram_Used" xml:space="preserve"><value>مصرف‌شده</value></data>
+  <data name="Web_Ram_Free" xml:space="preserve"><value>آزاد</value></data>
+  <data name="Spec_Yes" xml:space="preserve"><value>بله</value></data>
+  <data name="Spec_No" xml:space="preserve"><value>خیر</value></data>
+  <data name="Spec_On" xml:space="preserve"><value>فعال</value></data>
+  <data name="Spec_Off" xml:space="preserve"><value>غیرفعال</value></data>
+  <data name="Spec_More" xml:space="preserve"><value>جزئیات بیشتر</value></data>
+  <data name="Spec_Loading" xml:space="preserve"><value>در حال خواندن مشخصات…</value></data>
+  <data name="Spec_CoresThreads" xml:space="preserve"><value>هسته / رشته</value></data>
+  <data name="Spec_BaseClock" xml:space="preserve"><value>فرکانس پایه</value></data>
+  <data name="Spec_FamilyModel" xml:space="preserve"><value>خانواده / مدل / استپینگ</value></data>
+  <data name="Spec_Microcode" xml:space="preserve"><value>میکروکد</value></data>
+  <data name="Spec_BusClock" xml:space="preserve"><value>فرکانس باس</value></data>
+  <data name="Spec_Caches" xml:space="preserve"><value>حافظهٔ نهان (Cache)</value></data>
+  <data name="Spec_CacheLevel" xml:space="preserve"><value>L{0} {1}</value></data>
+  <data name="Spec_Cache_Data" xml:space="preserve"><value>داده</value></data>
+  <data name="Spec_Cache_Instruction" xml:space="preserve"><value>دستورالعمل</value></data>
+  <data name="Spec_Cache_Unified" xml:space="preserve"><value>یکپارچه</value></data>
+  <data name="Spec_Cache_Trace" xml:space="preserve"><value>trace</value></data>
+  <data name="Spec_CacheTotalL3" xml:space="preserve"><value>مجموع L3</value></data>
+  <data name="Spec_CacheWays" xml:space="preserve"><value>چیدمان L{0} {1}</value></data>
+  <data name="Spec_Features" xml:space="preserve"><value>قابلیت‌ها</value></data>
+  <data name="Spec_InstructionSets" xml:space="preserve"><value>مجموعه دستورالعمل‌ها</value></data>
+  <data name="Spec_Virtualization" xml:space="preserve"><value>مجازی‌سازی در BIOS</value></data>
+  <data name="Spec_Slat" xml:space="preserve"><value>SLAT</value></data>
+  <data name="Spec_Features_Note" xml:space="preserve"><value>مجموعه دستورالعمل‌ها همان‌طور که برنامه روی همین CPU و همین ویندوز قابل استفاده یافت.</value></data>
+  <data name="Spec_BoardVendor" xml:space="preserve"><value>سازندهٔ کارت</value></data>
+  <data name="Spec_Architecture" xml:space="preserve"><value>معماری</value></data>
+  <data name="Spec_GpuCores" xml:space="preserve"><value>هسته‌های پردازشی (CUDA)</value></data>
+  <data name="Spec_BusWidth" xml:space="preserve"><value>پهنای باس حافظه</value></data>
+  <data name="Spec_Subsystem" xml:space="preserve"><value>زیرسیستم PCI</value></data>
+  <data name="Spec_ComputeCapability" xml:space="preserve"><value>Compute capability</value></data>
+  <data name="Spec_Connection" xml:space="preserve"><value>اتصال</value></data>
+  <data name="Spec_LinkNow" xml:space="preserve"><value>لینک PCIe فعلی</value></data>
+  <data name="Spec_LinkMax" xml:space="preserve"><value>حداکثر لینک PCIe</value></data>
+  <data name="Spec_Link_Note" xml:space="preserve"><value>لینک فعلی در همین لحظه خوانده می‌شود؛ کارت در حالت بیکار ممکن است برای صرفه‌جویی پایین‌تر برود.</value></data>
+  <data name="Spec_ResizableBar" xml:space="preserve"><value>Resizable BAR</value></data>
+  <data name="Spec_Rebar_On" xml:space="preserve"><value>فعال (BAR1 {0})</value></data>
+  <data name="Spec_Rebar_Off" xml:space="preserve"><value>غیرفعال (BAR1 {0})</value></data>
+  <data name="Spec_PciBus" xml:space="preserve"><value>محل PCI</value></data>
+  <data name="Spec_DriverFirmware" xml:space="preserve"><value>درایور و فریم‌ور</value></data>
+  <data name="Spec_Vbios" xml:space="preserve"><value>VBIOS</value></data>
+  <data name="Spec_MaxCoreClock" xml:space="preserve"><value>حداکثر فرکانس هسته</value></data>
+  <data name="Spec_MaxMemoryClock" xml:space="preserve"><value>حداکثر فرکانس حافظه</value></data>
+  <data name="Spec_PowerLimit" xml:space="preserve"><value>محدودیت توان</value></data>
+  <data name="Spec_MemoryType" xml:space="preserve"><value>نوع</value></data>
+  <data name="Spec_SpeedNow" xml:space="preserve"><value>سرعت فعلی</value></data>
+  <data name="Spec_ProfileNow" xml:space="preserve"><value>پروفایل منطبق با این سرعت</value></data>
+  <data name="Spec_XmpState" xml:space="preserve"><value>XMP</value></data>
+  <data name="Spec_Xmp_Off" xml:space="preserve"><value>فعال نیست؛ ماژول‌ها این را پشتیبانی می‌کنند: {0}</value></data>
+  <data name="Spec_Voltage" xml:space="preserve"><value>ولتاژ</value></data>
+  <data name="Spec_Ecc" xml:space="preserve"><value>ECC</value></data>
+  <data name="Spec_NoSpd" xml:space="preserve"><value>SPD ماژول‌ها خوانده نشد (درایور سنسور لازم است)، پس پروفایل‌ها نمایش داده نمی‌شوند.</value></data>
+  <data name="Spec_SpdSlot" xml:space="preserve"><value>SPD شکاف {0}</value></data>
+  <data name="Spec_PartNumber" xml:space="preserve"><value>پارت‌نامبر</value></data>
+  <data name="Spec_Ranks" xml:space="preserve"><value>تعداد رنک</value></data>
+  <data name="Spec_DramMaker" xml:space="preserve"><value>سازندهٔ چیپ‌ها</value></data>
+  <data name="Spec_Organisation" xml:space="preserve"><value>ساختار چیپ‌ها</value></data>
+  <data name="Spec_ManufactureDate" xml:space="preserve"><value>تاریخ ساخت</value></data>
+  <data name="Spec_XmpVersion" xml:space="preserve"><value>نسخهٔ XMP</value></data>
+  <data name="Spec_Profile" xml:space="preserve"><value>پروفایل</value></data>
+  <data name="Spec_Speed" xml:space="preserve"><value>سرعت</value></data>
+  <data name="Spec_Timings" xml:space="preserve"><value>تایمینگ</value></data>
+  <data name="Spec_Profile_Note" xml:space="preserve"><value>از SPD خود ماژول خوانده شده. پروفایل مشخص‌شده همانی است که سرعتش با سرعت فعلی رم یکی است؛ تایمینگ در حال استفاده خوانده نمی‌شود.</value></data>
+  <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>پروفایل‌های {0} در این نسخه رمزگشایی نمی‌شوند.</value></data>
+  <data name="Spec_PowerOnHours" xml:space="preserve"><value>ساعات روشن بودن</value></data>
+  <data name="Spec_Temperature" xml:space="preserve"><value>دما</value></data>
+  <data name="Spec_Wear" xml:space="preserve"><value>فرسایش (عمر مصرف‌شده)</value></data>
+  <data name="Spec_UncorrectedErrors" xml:space="preserve"><value>خطاهای اصلاح‌نشدهٔ خواندن / نوشتن</value></data>
+  <data name="Spec_BiosVersion" xml:space="preserve"><value>نسخهٔ BIOS</value></data>
+  <data name="Spec_BiosVendor" xml:space="preserve"><value>سازندهٔ BIOS</value></data>
+  <data name="Spec_Security" xml:space="preserve"><value>بوت و امنیت</value></data>
+  <data name="Spec_BootMode" xml:space="preserve"><value>حالت بوت</value></data>
+  <data name="Spec_SecureBoot" xml:space="preserve"><value>Secure Boot</value></data>
+  <data name="Spec_Tpm" xml:space="preserve"><value>TPM</value></data>
+  <data name="Spec_TpmNone" xml:space="preserve"><value>پیدا نشد یا خاموش است</value></data>
+  <data name="Spec_Vbs" xml:space="preserve"><value>امنیت مبتنی بر مجازی‌سازی (VBS)</value></data>
+  <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
 </root>

@@ -306,6 +306,22 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .cols.parts { grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); }
 .cols.spec { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .masonry { columns: 3 320px; column-gap: 14px; }
+/* Specification cards: the rows that matter, a fold for the rest, and a profile table with the one in use marked. */
+.cols.spec { align-items: start; }
+.spec-card .kv dd { font-weight: 600; }
+.spec-more { margin-top: 6px; border-top: 1px dashed var(--rule-2); padding-top: 4px; }
+.spec-more summary { cursor: pointer; font-size: 12px; color: var(--paper-3); padding: 4px 0; list-style: none; display: inline-flex; gap: 6px; align-items: center; }
+.spec-more summary::before { content: "+"; font: 700 13px var(--lat); color: var(--hue, var(--yellow)); }
+.spec-more[open] summary::before { content: "−"; }
+.spec-more summary:hover { color: var(--paper); }
+.spec-table-wrap { overflow-x: auto; margin-top: 10px; }
+.spec-table { width: 100%; font-size: 12.5px; }
+.spec-table th { position: static; background: transparent; }
+.spec-table td { padding: 5px 8px; border-bottom: 1px solid var(--rule); direction: ltr; text-align: left; white-space: nowrap; }
+.spec-table td.nm { font-weight: 700; }
+.spec-table tr.on td { background: color-mix(in oklab, var(--hue, var(--yellow)) 14%, transparent); color: var(--paper); }
+.spec-table tr.on td.nm { box-shadow: inset 3px 0 0 var(--hue, var(--yellow)); }
+.spec-note { margin: 8px 0 0; font-size: 11.5px; line-height: 1.6; }
 .masonry > .col { break-inside: avoid; margin-bottom: 14px; display: block; }
 
 /* ———— Tables (monitoring) ———— */
@@ -367,6 +383,8 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .mon-groups .panel-head { padding-bottom: 4px; }
 .panel .table { margin-top: 8px; }
 .panel .table th { position: static; background: transparent; }
+/* A sensor table's column header stays in view (just under the tab strip) while its panel scrolls past. */
+.mon-groups .panel .table th { position: sticky; top: var(--tabs-h, 0px); z-index: 2; background: var(--ink-2); box-shadow: 0 1px 0 var(--rule-2); }
 .panel .table tr.sec td { color: var(--hue); }
 .table th.c, .table td.c { width: 40px; text-align: center; padding-block: 1px; }
 .table tr.row.charted { background: color-mix(in oklab, var(--hue, var(--yellow)) 8%, transparent); }
@@ -615,7 +633,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .group > .panel-head { cursor: pointer; user-select: none; }
 .group-count { font: 600 11.5px var(--fa); color: var(--paper-3); white-space: nowrap; background: rgb(255 255 255 / 0.04); padding: 2px 10px; border-radius: 3px; }
 .group .group-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--slow) var(--ease); }
-.group .group-body > div { overflow: hidden; min-height: 0; }
+/* clip, not hidden: it folds the same but is no scroll container, so a table header inside can stay stuck while the page scrolls. */
+.group .group-body > div { overflow: clip; min-height: 0; }
 .group.shut .group-body { grid-template-rows: 0fr; }
 .group.shut .panel-head .more svg { transform: rotate(90deg); }
 .group .q-row:last-child { border-bottom: 0; }

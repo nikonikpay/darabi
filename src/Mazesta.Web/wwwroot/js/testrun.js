@@ -1,4 +1,4 @@
-// The live test panel at the top of Monitoring: which test of the queue is running, how far it is and for how long, and a log of what it is
+// The live test panel, on top of the tested part's own page (or of Monitoring for a test no part page shows): which test of the queue is running, how far it is and for how long, and a log of what it is
 // doing right now - each step in words, with the formula it checks or the command it runs beside it. It only shows what the host reports; the
 // verdict is the test's own, never the log's. It tells the page which part is under test, so the sensors of that part come forward.
 import { call, on } from "./bridge.js";
@@ -10,11 +10,16 @@ import { OUTCOME } from "./pages/tests.js";
 const MAX_LINES = 500;
 // The monitor's hardware kinds a test's part is measured by: the power test loads the processor and the graphics card together.
 export const KINDS = { Cpu: ["Cpu"], Gpu: ["Gpu"], Memory: ["Memory"], Storage: ["Storage"], Network: ["Network"], Power: ["Cpu", "Gpu", "Psu"] };
+// Where a running test is watched: its part's page, or Monitoring for the ones no part page covers (the combined power test, Windows' checks).
+const PAGE_OF = { Cpu: "cpu", Gpu: "gpu", Memory: "ram", Storage: "storage", Network: "network" };
+export const pageOfTest = (id) => PAGE_OF[partOfId(id)] || "monitoring";
 const remember = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
 const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* not kept */ } };
 
-// onFocus(kinds | null, partKind): called when the test under way moves to another part, and when following is switched on or off.
-export function runPanel(onFocus) {
+// page: the page the panel sits on. onFocus(kinds | null, partKind): the test under way moved to another part, or following was switched.
+// On a part's page the panel shows only while that part is under test; on Monitoring it shows the last session's log too. When the queue
+// moves to a part that is watched on another page and following is on, the page follows it there.
+export function runPanel(onFocus, page = "monitoring") {
   let follow = remember("mazesta.run.follow", true), current = null, running = false, lastPart = undefined, started = null, timer = 0;
   const title = h("h2", { class: "run-name" }), step = h("span", { class: "run-step" }), pill = h("span", { class: "pill none" });
   const elapsed = h("span", { class: "run-time lat" }), status = h("span", { class: "caption" });
@@ -57,14 +62,16 @@ export function runPanel(onFocus) {
   function focus() {
     const p = running && current ? partOfId(current.id) : null;
     if (p === lastPart) return;
+    const moved = lastPart !== undefined && p !== null;   // not on arrival: a page the technician opened is not taken from them
     lastPart = p;
+    if (moved && follow && pageOfTest(current.id) !== page) { location.hash = `#/${pageOfTest(current.id)}`; return; }
     onFocus?.(follow && p ? KINDS[p] || null : null, p);
   }
 
   function update(s) {
     running = !!s.running; current = s.current || null;
     const wasHidden = el.hidden;
-    el.hidden = !running && !lines.childElementCount;
+    el.hidden = page === "monitoring" ? !running && !lines.childElementCount : !(running && current && pageOfTest(current.id) === page);
     if (wasHidden && !el.hidden) requestAnimationFrame(() => { lines.scrollTop = lines.scrollHeight; });   // first shown: start at the newest line
     cancel.hidden = !running;
     if (current) {
@@ -89,6 +96,6 @@ export function runPanel(onFocus) {
   }
 
   call("tests.log").then((all) => { for (const l of all || []) append(l); return call("tests.state"); }).then(update).catch(() => {});
-  const offs = [on("tests", update), on("testlog", (l) => { append(l); if (el.hidden) { el.hidden = false; lines.scrollTop = lines.scrollHeight; } })];
+  const offs = [on("tests", update), on("testlog", (l) => { append(l); if (el.hidden && page === "monitoring") { el.hidden = false; lines.scrollTop = lines.scrollHeight; } })];
   return { el, off: () => { for (const o of offs) o(); clearInterval(timer); } };
 }

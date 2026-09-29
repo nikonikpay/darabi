@@ -23,7 +23,9 @@ internal static class WmiInventoryParser
         }).ToList();
     internal const long SaturatedAdapterRam = 0xFFF0_0000;
     public static IReadOnlyList<MemoryModuleInfo> Memory(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
-        => rows.Select(r => new MemoryModuleInfo(S(r, "DeviceLocator"), L(r, "Capacity"), S(r, "Manufacturer"), S(r, "PartNumber"), I(r, "ConfiguredClockSpeed"), I(r, "Speed"))).ToList();
+        => rows.Select(r => new MemoryModuleInfo(S(r, "DeviceLocator"), L(r, "Capacity"), S(r, "Manufacturer"), S(r, "PartNumber"), I(r, "ConfiguredClockSpeed"), I(r, "Speed"),
+            S(r, "BankLabel"), I(r, "Attributes") is > 0 and < 16 and var ranks ? ranks : null, I(r, "ConfiguredVoltage") is > 0 and var mv ? mv : null, I(r, "SMBIOSMemoryType") is > 0 and var t ? t : null,
+            I(r, "DataWidth") is > 0 and var dw ? dw : null, I(r, "TotalWidth") is > 0 and var tw ? tw : null)).ToList();
     public static long? TotalMemory(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows) => rows.Count == 0 ? null : L(rows[0], "TotalPhysicalMemory");
     public static MotherboardInfo? Board(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
         => rows.Count == 0 ? null : new MotherboardInfo(S(rows[0], "Manufacturer"), S(rows[0], "Product"), S(rows[0], "Version"), S(rows[0], "SerialNumber"));

@@ -29,6 +29,17 @@ public sealed partial class WebBridge
 
         Method("monitor.popout", p => { if (_window is MainWindow { WebEnvironment: { } env }) ChartWindow.Show(env, engine, Str(p, "id"), _log); return null; });
 
+        // A part's full specification (kind: Cpu, Gpu, Memory, Storage, Network, Motherboard) or, with no kind, every part: read once, after the
+        // sensor driver is up, since the memory modules' SPD is read over its SMBus.
+        var details = _sp.GetRequiredService<HardwareDetailsCache>();
+        MethodAsync("specs.get", async p =>
+        {
+            var inv = await inventory.GetAsync().ConfigureAwait(true); var d = await details.GetAsync().ConfigureAwait(true);
+            string kind = Str(p, "kind");
+            var cards = kind.Length == 0 ? PartSpecs.All(inv, d) : PartSpecs.For(Enum.Parse<HardwareKind>(kind), inv, d);
+            return new { cards = cards.Select(Card), errors = d.Errors };
+        });
+
         MethodAsync("inventory.get", async _ =>
         {
             HardwareInventory inv = await inventory.GetAsync().ConfigureAwait(true);
@@ -43,6 +54,13 @@ public sealed partial class WebBridge
             };
         });
     }
+
+    /// <summary>A specification card for the page: its rows (the folded ones marked), its table with the row in use, and its note.</summary>
+    private static object Card(SpecCard c) => new
+    {
+        title = c.Title, rows = c.Rows.Select(r => new { label = r.Label, value = r.Value, more = r.More }), note = c.Note,
+        table = c.Table is { } t ? new { headers = t.Headers, rows = t.Rows, highlight = t.Highlight } : null,
+    };
 
     private static object Section(InfoSection s) => new { title = s.Title, rows = s.Rows.Select(r => new { label = r.Label, value = r.Value }) };
 }

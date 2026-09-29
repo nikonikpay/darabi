@@ -6,6 +6,7 @@ import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { partOfId } from "../parts.js";
 import { groupPanel, byPart } from "../groups.js";
+import { pageOfTest } from "../testrun.js";
 
 export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
@@ -19,7 +20,7 @@ export function mount(el) {
   // Start goes to the live monitor as soon as the queue is really running; a row with a bad field keeps the page here, where its error shows.
   let toMonitor = false;
   const start = h("button", { class: "btn go", onclick: () => { toMonitor = true; call("tests.exec", { cmd: "start" }).finally(() => { toMonitor = false; }); } }, icon("play"), t("Test_Start"));
-  const watch = h("a", { class: "btn", href: "#/monitoring", hidden: true }, icon("pulse"), t("Web_Run_Live"));
+  const watch = h("a", { class: "btn", href: "#/monitoring", hidden: true }, icon("pulse"), t("Web_Run_Live"));   // points at the running test's page
   const cancel = h("button", { class: "btn stop", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
@@ -64,7 +65,10 @@ export function mount(el) {
   function update(s) {
     if (!rows.size) build(s);
     start.disabled = !s.canStart; cancel.disabled = !s.running; watch.hidden = !s.running;
-    if (toMonitor && s.running) { toMonitor = false; location.hash = "#/monitoring"; return; }
+    const livePage = s.current ? pageOfTest(s.current.id) : "monitoring";
+    watch.href = `#/${livePage}`;
+    // The tested part's page once the first test is under way (its page is known only then).
+    if (toMonitor && s.running && s.current) { toMonitor = false; location.hash = `#/${livePage}`; return; }
     notice.hidden = !s.incomplete;
     blocked.hidden = !s.blocked; blocked.textContent = s.blocked || "";
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));
