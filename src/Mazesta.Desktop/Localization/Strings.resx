@@ -1405,4 +1405,7 @@ The update services stopped and disabled</value></data>
   <data name="Web_Quiet_Text" xml:space="preserve"><value>Until the run ends the rest of the app is paused; only the sensors the measurement needs and the overlay keep working.</value></data>
   <data name="Test_Outcome_Error" xml:space="preserve"><value>Test error</value></data>
   <data name="Test_Outcome_Inconclusive" xml:space="preserve"><value>Inconclusive</value></data>
+  <data name="Workload_Busy_Tests" xml:space="preserve"><value>A test queue is running. Wait for it to end or cancel it first: two loads at once would stress and measure each other.</value></data>
+  <data name="Workload_Busy_Benchmark" xml:space="preserve"><value>A benchmark is running. Wait for it to end or cancel it first: two loads at once would stress and measure each other.</value></data>
+  <data name="Workload_Busy_Tuning" xml:space="preserve"><value>The GPU tuning is running. Wait for it to end or cancel it first: two loads at once would stress and measure each other.</value></data>
 </root>

@@ -6,7 +6,7 @@ public enum TestEngineState { Idle, Running, Stopped }
 /// <summary>Sequential queue runner (spec §8). A plain async pipeline over <see cref="ITestExecutor"/>
 /// calls - no dedicated thread like PollingEngine, since there is no cadence to own; CPU-bound executors
 /// do their own Task.Run. Registered as a singleton so a run survives page navigation.</summary>
-public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null)
+public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null, WorkloadGate? gate = null)
 {
     private readonly IReadOnlyDictionary<TestId, ITestExecutor> _executors = executors.ToDictionary(e => e.Definition.Id);
     private CancellationTokenSource? _cts;
@@ -36,6 +36,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     {
         if (queue.Count == 0) throw new ArgumentException("Queue is empty.", nameof(queue));
         if (State == TestEngineState.Running) throw new InvalidOperationException("A queue is already running.");
+        using var lease = gate is null ? null : gate.TryEnter(Workload.Tests) ?? throw new WorkloadBusyException(gate.Holder ?? Workload.Tests);
         var checkpoint = new TestSessionCheckpoint { SessionId = Guid.NewGuid().ToString("N"), QueueTestIds = [.. queue.Select(q => q.Definition.Id.Value)], StartedAt = clock.UtcNow, LastUpdatedAt = clock.UtcNow };
         _cts = CancellationTokenSource.CreateLinkedTokenSource(external);   // before Running, so a Cancel that follows the state change always finds it
         var ct = _cts.Token;

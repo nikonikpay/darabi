@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel; using System.Globalization; using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input;
 using Mazesta.Core.Inventory; using Mazesta.Core.Text; using Mazesta.Core.Tuning; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization;
-using Mazesta.Diagnostics.Tuning; using Mazesta.Persistence;
+using Mazesta.Diagnostics; using Mazesta.Diagnostics.Tuning; using Mazesta.Persistence;
 namespace Mazesta.Desktop.ViewModels;
 
 /// <summary>The start-up recovery's message (see <see cref="TuningViewModel.Recover"/>), for the shell's banner; null when nothing was recovered.</summary>
@@ -147,9 +147,9 @@ public sealed partial class TuningViewModel : ObservableObject
     public string OtherGpus { get; private set; } = "";
 
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
-        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null)
+        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null)
     {
-        _startupFile = startupFile;
+        _startupFile = startupFile; _gate = gate;
         _provider = provider; _store = store; _doc = store.Load().Value; _confirm = confirm; _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
         _voltageFor = voltageFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
@@ -278,10 +278,22 @@ public sealed partial class TuningViewModel : ObservableObject
     // The curve
 
     /// <summary>Measures the stock curve (about a minute and a half under load, see <see cref="VfCurveScanner"/>) and keeps it for this card.</summary>
+    private readonly WorkloadGate? _gate;
+    /// <summary>The shared gate for a curve scan or a search, or null (and the reason in <see cref="Status"/>) while a test or benchmark runs.</summary>
+    private bool TryEnter(out IDisposable? lease)
+    {
+        lease = _gate?.TryEnter(Workload.Tuning);
+        if (_gate is null || lease is not null) return true;
+        Status = Loc.Get($"Workload_Busy_{_gate.Holder ?? Workload.Tuning}");
+        return false;
+    }
+
     [RelayCommand(CanExecute = nameof(CanChange))]
     private async Task ScanCurve()
     {
         if (!_confirm(Loc.Get("Tuning_ConfirmCurve"))) return;
+        if (!TryEnter(out var lease)) return;
+        using var held = lease;
         var device = Device!;
         IsTuning = true; AutoPercent = 0; CurveStatus = Loc.Get("Tuning_Curve_Scanning"); Status = "";
         _cts = new CancellationTokenSource();
@@ -330,6 +342,8 @@ public sealed partial class TuningViewModel : ObservableObject
 
     private async Task RunAuto(IAutoTuneSearch search, GpuProfileKind kind)
     {
+        if (!TryEnter(out var lease)) return;
+        using var held = lease;
         var device = Device!;
         IsTuning = true; AutoLog.Clear(); AutoResult = ""; AutoPercent = 0; Status = "";
         _cts = new CancellationTokenSource();

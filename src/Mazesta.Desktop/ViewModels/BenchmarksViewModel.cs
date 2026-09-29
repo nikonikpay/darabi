@@ -108,7 +108,8 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
         if (!row.IsAvailable || row.Seconds() is not { } seconds) return;
         IsRunning = true; row.Metrics.Clear(); row.Detail = null; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Running"); row.IsActive = true;
         // The result arrives through Finished; null means another run was already going.
-        if (await _runner.RunAsync(row.Benchmark, seconds, row.OptionValues()).ConfigureAwait(true) is null) { IsRunning = _runner.IsBusy; row.IsActive = false; }
+        if (await _runner.RunAsync(row.Benchmark, seconds, row.OptionValues()).ConfigureAwait(true) is null)
+        { IsRunning = _runner.IsBusy; row.IsActive = false; row.StatusText = _runner.BlockedBy is { } h ? Loc.Get($"Workload_Busy_{h}") : ""; }
     }
 
     private bool CanRunSelected() => !IsRunning && Rows.Any(r => r.IsSelected);
@@ -125,7 +126,11 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
         if (!valid || jobs.Count == 0) return;
         IsRunning = true;
         foreach (var row in Rows.Where(r => r.IsSelected)) { row.StatusText = Loc.Get("Bench_Status_Queued"); row.PercentComplete = 0; }
-        if ((await _runner.RunQueueAsync(jobs).ConfigureAwait(true)).Count == 0) IsRunning = _runner.IsBusy;   // refused: something else was running
+        if ((await _runner.RunQueueAsync(jobs).ConfigureAwait(true)).Count == 0)   // refused: something else was running
+        {
+            IsRunning = _runner.IsBusy;
+            foreach (var row in Rows.Where(r => r.IsSelected)) row.StatusText = _runner.BlockedBy is { } h ? Loc.Get($"Workload_Busy_{h}") : "";
+        }
     }
 
     [RelayCommand] private void SelectAll() { foreach (var row in Rows.Where(r => r.IsAvailable)) row.IsSelected = true; }

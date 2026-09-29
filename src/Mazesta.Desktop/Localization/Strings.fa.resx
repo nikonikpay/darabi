@@ -1405,4 +1405,7 @@
   <data name="Web_Quiet_Text" xml:space="preserve"><value>تا پایان اجرا بخش‌های دیگر برنامه متوقف‌اند؛ فقط سنسورهای لازم برای اندازه‌گیری و اورلی کار می‌کنند.</value></data>
   <data name="Test_Outcome_Error" xml:space="preserve"><value>خطای اجرای آزمون</value></data>
   <data name="Test_Outcome_Inconclusive" xml:space="preserve"><value>نامعین</value></data>
+  <data name="Workload_Busy_Tests" xml:space="preserve"><value>صف آزمون در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
+  <data name="Workload_Busy_Benchmark" xml:space="preserve"><value>بنچمارک در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
+  <data name="Workload_Busy_Tuning" xml:space="preserve"><value>تنظیم خودکار کارت گرافیک در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
 </root>

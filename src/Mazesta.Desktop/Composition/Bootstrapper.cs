@@ -60,7 +60,7 @@ public static class Bootstrapper
             a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), device => new Mazesta.Diagnostics.Gpu.Tuning.ComputeGpuLoad(device.Name), recovered,
             // The core voltage comes from the sensor monitor (NVML has no voltage reading); the reading lives as long as the page's view model, i.e. the session.
             name => LatestReading.Find(sp.GetRequiredService<PollingEngine>(), Mazesta.Core.Hardware.HardwareKind.Gpu, name, Mazesta.Core.Hardware.SensorRole.GpuVoltage) is { } r ? () => r.Value : () => null,
-            startupFile: GpuStartup.FileIn(paths)));
+            startupFile: GpuStartup.FileIn(paths), gate: sp.GetRequiredService<WorkloadGate>()));
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
         var provider = s.BuildServiceProvider();

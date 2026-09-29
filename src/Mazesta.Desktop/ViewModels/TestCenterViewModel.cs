@@ -17,6 +17,8 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasIncompleteSession))] private string? _incompleteSessionMessage;
     public bool HasIncompleteSession => IncompleteSessionMessage is not null;
+    /// <summary>Why the last Start was refused (a benchmark or the GPU tuning is running), or null.</summary>
+    [ObservableProperty] private string? _blockedMessage;
 
     public TestCenterViewModel(TestEngine engine, IEnumerable<ITestExecutor> executors, Func<Action, object> dispatch)
     {
@@ -56,9 +58,10 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
             if (row.TryBuildQueuedTest() is not { } q) return;   // the row now shows its own validation error
             queue.Add(q);
         }
-        IncompleteSessionMessage = null;
+        IncompleteSessionMessage = null; BlockedMessage = null;
         IsRunning = true;   // immediately, so a double-click cannot start twice before StateChanged is dispatched
-        await _engine.RunAsync(queue);
+        try { await _engine.RunAsync(queue); }
+        catch (WorkloadBusyException e) { IsRunning = false; BlockedMessage = Loc.Get($"Workload_Busy_{e.Holder}"); }
     }
     private bool CanStart() => !IsRunning && Rows.Any(r => r.IsSelected);
 

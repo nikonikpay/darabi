@@ -191,4 +191,34 @@ public class TestEngineTests : IDisposable
             Assert.Equal(order[i], R(order[i]).Combine(R(order[i - 1])).Outcome);
         }
     }
+
+    [Fact] public async Task A_queue_does_not_start_while_another_load_holds_the_gate()
+    {
+        var gate = new WorkloadGate();
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(Passed(Def1.Id, r)));
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0), gate: gate);
+        using (gate.TryEnter(Workload.Benchmark))
+        {
+            var e = await Assert.ThrowsAsync<WorkloadBusyException>(() => engine.RunAsync([Once(Def1, 5)], CancellationToken.None));
+            Assert.Equal(Workload.Benchmark, e.Holder);
+            Assert.Equal(0, e1.CallCount);
+            Assert.Equal(TestEngineState.Idle, engine.State);
+        }
+        await engine.RunAsync([Once(Def1, 5)], CancellationToken.None);   // released: it runs, and gives the gate back
+        Assert.Equal(1, e1.CallCount);
+        Assert.Null(gate.Holder);
+    }
+
+    [Fact] public void The_gate_admits_one_holder_and_a_lease_released_twice_frees_it_once()
+    {
+        var gate = new WorkloadGate();
+        var lease = gate.TryEnter(Workload.Tuning);
+        Assert.NotNull(lease);
+        Assert.Null(gate.TryEnter(Workload.Tests));
+        lease!.Dispose();
+        var next = gate.TryEnter(Workload.Tests);
+        lease.Dispose();                        // a stale lease must not free the new holder
+        Assert.Equal(Workload.Tests, gate.Holder);
+        next!.Dispose();
+    }
 }

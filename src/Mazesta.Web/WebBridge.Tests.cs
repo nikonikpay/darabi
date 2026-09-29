@@ -11,7 +11,7 @@ public sealed partial class WebBridge
         _cleanup.Add(tests.Dispose);
         object State() => new
         {
-            running = tests.IsRunning, canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage,
+            running = tests.IsRunning, canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage, blocked = tests.BlockedMessage,
             repeatModes = TestQueueRowViewModel.RepeatModes.Select(m => new { value = m.ToString(), label = Loc.Get($"Test_Repeat_{m}") }),
             rows = tests.Rows.Select(r => new
             {

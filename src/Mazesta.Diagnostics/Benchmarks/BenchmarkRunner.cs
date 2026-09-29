@@ -12,12 +12,26 @@ public sealed record BenchmarkJob(IBenchmark Benchmark, int Seconds, IReadOnlyDi
 /// after another, never side by side (two would measure each other); Cancel stops the running one and drops the rest. Events fire on the
 /// worker's thread; marshalling to the UI is the subscriber's job. A benchmark that throws is reported as Failed, never lost.
 /// </summary>
-public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock clock, PollingEngine? engine)
+public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock clock, PollingEngine? engine, WorkloadGate? gate = null)
 {
     private readonly object _lock = new();
     private readonly Dictionary<TestId, BenchmarkResult> _last = [];
     private readonly Dictionary<TestId, RecordedBenchmark> _completed = [];
-    private CancellationTokenSource? _cts; private bool _queueActive, _queueCancelled;
+    private CancellationTokenSource? _cts; private bool _queueActive, _queueCancelled; private IDisposable? _lease;
+
+    /// <summary>What refused the last start (a test queue or the GPU tuning holding the gate), or null.</summary>
+    public Workload? BlockedBy { get; private set; }
+
+    /// <summary>Takes the shared gate for a run or a queue; false (and <see cref="BlockedBy"/> set) while another activity holds it. Called under _lock.</summary>
+    private bool Enter()
+    {
+        BlockedBy = null;
+        if (gate is null) return true;
+        _lease = gate.TryEnter(Workload.Benchmark);
+        if (_lease is null) BlockedBy = gate.Holder;
+        return _lease is not null;
+    }
+    private void Leave() { lock (_lock) { _lease?.Dispose(); _lease = null; } }
 
     public IReadOnlyList<IBenchmark> Benchmarks { get; } = [.. benchmarks];
     /// <summary>The benchmark running now, or null.</summary>
@@ -49,17 +63,17 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     public async Task<BenchmarkResult?> RunAsync(IBenchmark benchmark, int seconds, IReadOnlyDictionary<string, string> options)
     {
         CancellationTokenSource cts;
-        lock (_lock) { if (Running is not null || _queueActive) return null; Running = benchmark.Definition.Id; _cts = cts = new CancellationTokenSource(); }
+        lock (_lock) { if (Running is not null || _queueActive || !Enter()) return null; Running = benchmark.Definition.Id; _cts = cts = new CancellationTokenSource(); }
         NotifyBusy();
         try { return (await RunOneAsync(benchmark, seconds, options, cts).ConfigureAwait(false)).Result; }
-        finally { NotifyBusy(); }
+        finally { Leave(); NotifyBusy(); }
     }
 
     /// <summary>Runs the jobs one after another, in the given order, unless something is already running (then an empty list). A cancel stops the
     /// running benchmark and skips the ones after it; the list holds what did run.</summary>
     public async Task<IReadOnlyList<RecordedBenchmark>> RunQueueAsync(IReadOnlyList<BenchmarkJob> jobs)
     {
-        lock (_lock) { if (Running is not null || _queueActive || jobs.Count == 0) return []; _queueActive = true; _queueCancelled = false; }
+        lock (_lock) { if (Running is not null || _queueActive || jobs.Count == 0 || !Enter()) return []; _queueActive = true; _queueCancelled = false; }
         NotifyBusy();
         var runs = new List<RecordedBenchmark>();
         try
@@ -72,7 +86,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
                 runs.Add(await RunOneAsync(job.Benchmark, job.Seconds, job.Options, cts).ConfigureAwait(false));
             }
         }
-        finally { lock (_lock) _queueActive = false; NotifyBusy(); }
+        finally { lock (_lock) _queueActive = false; Leave(); NotifyBusy(); }
         QueueFinished?.Invoke(runs);
         return runs;
     }

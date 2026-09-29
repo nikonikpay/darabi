@@ -50,12 +50,13 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark, StorageBenchmark>();
         s.AddSingleton<IBenchmark>(new InternetSpeedBenchmark());
         // Singleton for the same reason as the engine below: a benchmark keeps running, and its result stays, while the page is closed.
-        s.AddSingleton(sp => new BenchmarkRunner(sp.GetRequiredService<IEnumerable<IBenchmark>>(), sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>()));
+        s.AddSingleton<WorkloadGate>();   // one load at a time across tests, benchmarks and GPU tuning
+        s.AddSingleton(sp => new BenchmarkRunner(sp.GetRequiredService<IEnumerable<IBenchmark>>(), sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<WorkloadGate>()));
 
         // Singleton, not per-page: a queue keeps running when the technician navigates away from Test Center
         // and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.
         s.AddSingleton(sp => new TestEngine(sp.GetRequiredService<IEnumerable<ITestExecutor>>(), sp.GetRequiredService<JsonStore<TestSessionCheckpoint>>(),
-            sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IHardwareErrorSource>()));
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IHardwareErrorSource>(), sp.GetRequiredService<WorkloadGate>()));
         return s;
     }
 }

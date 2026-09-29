@@ -15,11 +15,12 @@ export function setField(el, v) { if (document.activeElement !== el && el.value 
 export function mount(el) {
   const list = h("div", { class: "groups" });
   const notice = h("div", { class: "banner", hidden: true });
+  const blocked = h("div", { class: "banner", role: "status", hidden: true });
   const start = h("button", { class: "btn go", onclick: () => call("tests.exec", { cmd: "start" }) }, icon("play"), t("Test_Start"));
   const cancel = h("button", { class: "btn stop", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
-    notice, list,
+    notice, blocked, list,
     h("div", { class: "dock" }, start, cancel, h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
@@ -61,6 +62,7 @@ export function mount(el) {
     if (!rows.size) build(s);
     start.disabled = !s.canStart; cancel.disabled = !s.running;
     notice.hidden = !s.incomplete;
+    blocked.hidden = !s.blocked; blocked.textContent = s.blocked || "";
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));
     for (const r of s.rows) {
       const x = rows.get(r.id); if (!x) continue;

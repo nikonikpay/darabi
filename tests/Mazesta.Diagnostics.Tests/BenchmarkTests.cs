@@ -48,6 +48,21 @@ public class BenchmarkTests : IDisposable
         Assert.Equal(4, finished.Count); Assert.Null(runner.Running);
     }
 
+    [Fact] public async Task The_runner_starts_nothing_while_a_test_queue_holds_the_gate_and_says_so()
+    {
+        var gate = new WorkloadGate();
+        var runner = new BenchmarkRunner([new Scripted(Done(BenchmarkStatus.Completed, 1), Done(BenchmarkStatus.Completed, 2))], new FakeClock(T0), null, gate);
+        using (gate.TryEnter(Workload.Tests))
+        {
+            Assert.Null(await runner.RunAsync(runner.Benchmarks[0], 5, new Dictionary<string, string>()));
+            Assert.Empty(await runner.RunQueueAsync([new(runner.Benchmarks[0], 5, new Dictionary<string, string>())]));
+            Assert.Equal(Workload.Tests, runner.BlockedBy);
+            Assert.False(runner.IsBusy);
+        }
+        Assert.NotNull(await runner.RunAsync(runner.Benchmarks[0], 5, new Dictionary<string, string>()));
+        Assert.Null(runner.BlockedBy); Assert.Null(gate.Holder);   // the run gave the gate back
+    }
+
     [Fact] public async Task Memory_without_enough_free_ram_is_Unsupported_not_a_zero_result()
     {
         var r = await new MemoryBenchmark(new FixedProbe(8L << 30, 1L << 30)).RunAsync(Request(4), CancellationToken.None);
