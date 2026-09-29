@@ -1538,4 +1538,8 @@ The update services stopped and disabled</value></data>
   <data name="Log_CpuFft_Start" xml:space="preserve"><value>{0} threads transform {1}-point and {2}-point signals; the reference is checked before it is trusted.</value></data>
   <data name="Log_CpuFft_Checked" xml:space="preserve"><value>The FFT agrees with a direct DFT (relative error {0}), and the references pass the round-trip and energy checks.</value></data>
   <data name="Log_CpuFft_Progress" xml:space="preserve"><value>Transforms running; {0} wrong so far.</value></data>
+  <data name="Bench_Mem_StreamCopy" xml:space="preserve"><value>STREAM Copy (all threads)</value></data>
+  <data name="Bench_Mem_StreamScale" xml:space="preserve"><value>STREAM Scale (all threads)</value></data>
+  <data name="Bench_Mem_StreamAdd" xml:space="preserve"><value>STREAM Add (all threads)</value></data>
+  <data name="Bench_Mem_StreamTriad" xml:space="preserve"><value>STREAM Triad (all threads)</value></data>
 </root>

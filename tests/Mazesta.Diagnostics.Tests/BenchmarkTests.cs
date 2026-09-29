@@ -81,7 +81,17 @@ public class BenchmarkTests : IDisposable
     {
         var r = await new MemoryBenchmark(new FixedProbe(64L << 30, 48L << 30)).RunAsync(Request(4), CancellationToken.None);
         Assert.Equal(BenchmarkStatus.Completed, r.Status);
-        foreach (var key in new[] { "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_CopyAll" }) Assert.True(Value(r, key) > 0, key);
+        foreach (var key in new[] { "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_CopyAll", "Bench_Mem_StreamCopy", "Bench_Mem_StreamScale", "Bench_Mem_StreamAdd", "Bench_Mem_StreamTriad" })
+            Assert.True(Value(r, key) > 0, key);
+        Assert.Contains("results checked", r.Detail);
+    }
+
+    [Fact] public void Stream_kernels_leave_the_values_plain_arithmetic_predicts()
+    {
+        using var a = new Mazesta.Diagnostics.Memory.NativeBlock(1 << 20); using var b = new Mazesta.Diagnostics.Memory.NativeBlock(1 << 20); using var c = new Mazesta.Diagnostics.Memory.NativeBlock(1 << 20);
+        var r = MemoryBenchmark.Stream(a, b, c, TimeSpan.Zero, null, CancellationToken.None);
+        Assert.Null(r.Problem); Assert.Equal(3, r.Runs); Assert.InRange(r.Error, 0, 1e-15);
+        Assert.All(r.Best, x => Assert.True(x > 0));
     }
 
     [Fact] public async Task Storage_reports_every_sequential_and_random_speed_and_leaves_no_file_behind()
