@@ -41,6 +41,7 @@ public class GpuLogicTests
         Assert.Equal(0, GpuVramExecutor.Budget(300, 24 * gib));                                                            // nearly full: nothing safe to test
         Assert.Equal((long)(8 * gib * 0.6), GpuVramExecutor.Budget(null, 8 * gib));                                        // no sensor: 60 % of the dedicated memory
         Assert.Equal(1024L << 20, GpuVramExecutor.Budget(20 * 1024, 24 * gib, requestedMb: 1024));                          // a request can only lower it
+        Assert.Equal((long)(4 * gib * 0.9), GpuVramExecutor.Budget(20 * 1024, 24 * gib, residentBytes: 4 * gib));          // Windows' resident budget caps it
     }
     [Fact] public void The_cpu_reference_of_the_vram_pattern_rotates_four_patterns()
     {

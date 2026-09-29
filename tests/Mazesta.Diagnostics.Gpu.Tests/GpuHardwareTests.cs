@@ -62,4 +62,12 @@ public class GpuHardwareTests
         var result = await new GpuStressExecutor(GpuStressProfile.Steady).RunAsync(Request(GpuStressExecutor.Steady, 60), cts.Token);
         Assert.Equal(TestOutcome.Cancelled, result.Outcome); Assert.True(sw.Elapsed.TotalSeconds < 5);
     }
+
+    [Fact] public void Windows_reports_a_resident_budget_for_the_card_that_is_not_more_than_its_memory()
+    {
+        var device = GpuDevices.Resolve("")!;
+        var budget = GpuFeatures.ResidentBudgetBytes(device);
+        Assert.NotNull(budget);
+        Assert.InRange(budget!.Value, 1L << 20, (long)device.DedicatedMemorySize);
+    }
 }
