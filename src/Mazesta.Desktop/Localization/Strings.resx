@@ -1544,4 +1544,15 @@ The update services stopped and disabled</value></data>
   <data name="Bench_Mem_StreamTriad" xml:space="preserve"><value>STREAM Triad (all threads)</value></data>
   <data name="Test_IncompleteSession_Detail" xml:space="preserve"><value>The last session broke off at test {0} of {1} ({2}, about {3}% done). Finished before it: {4}. Why it stopped (a crash, a restart, a power cut) is not known without evidence.</value></data>
   <data name="Test_IncompleteSession_NoneFinished" xml:space="preserve"><value>none</value></data>
+  <data name="Profile_Title" xml:space="preserve"><value>Profiles:</value></data>
+  <data name="Profile_Quick" xml:space="preserve"><value>Quick check</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>About 5 minutes: one short load per part and the SMART check. A first look only - intermittent faults and most RAM patterns are not covered.</value></data>
+  <data name="Profile_Standard" xml:space="preserve"><value>Shop standard</value></data>
+  <data name="Profile_Standard_Note" xml:space="preserve"><value>About an hour: every part under a real load once, with enough RAM time for every pattern on most machines, every core in turn, and the combined power test.</value></data>
+  <data name="Profile_Deep" xml:space="preserve"><value>Deep</value></data>
+  <data name="Profile_Deep_Note" xml:space="preserve"><value>Several hours: every test at length, with several passes over the RAM and Windows' own checks. For a machine with a fault that does not show quickly.</value></data>
+  <data name="Profile_Transient" xml:space="preserve"><value>Transient instability</value></data>
+  <data name="Profile_Transient_Note" xml:space="preserve"><value>Load that keeps changing: single cores in and out of boost, GPU steps and pulses, CPU and GPU together. For crashes at light load, in games, or at idle.</value></data>
+  <data name="Profile_OsStorage" xml:space="preserve"><value>Windows drive</value></data>
+  <data name="Profile_OsStorage_Note" xml:space="preserve"><value>The drive's own tests, SMART and Windows' file checks. Pick the Windows drive in the storage tests' options; the tests use a new file in free space, never the drive's data.</value></data>
 </root>

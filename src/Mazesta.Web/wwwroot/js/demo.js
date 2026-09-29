@@ -58,7 +58,8 @@ const TESTS = ["Test_Cpu_Matrix", "Test_Memory_Pattern", "Test_Storage_Sequentia
 const OUT = ["Passed", "Passed", "Running", "NotRun"];
 // A running session for the live monitor: test 3 of 6 (storage), and the log lines such a run writes.
 const tests = () => ({
-  running: true, canStart: false, incomplete: null, blocked: null,
+  running: true, canStart: false, incomplete: null, blocked: null, profileNote: null,
+  profiles: ["Quick", "Standard", "Deep", "Transient", "OsStorage"].map((k) => ({ id: k.toLowerCase(), name: strings[`Profile_${k}`] })),
   current: { id: "storage.sequential", name: strings.Test_Storage_Sequential, index: 3, total: 6, percent: 0.46, status: strings.Test_Status_Running, outcome: "Running", outcomeText: strings.Test_Outcome_Running, startedAt: T0 - 27000 },
   repeatModes: ["Once", "Count", "Unlimited"].map((m) => ({ value: m, label: strings[`Test_Repeat_${m}`] })),
   rows: TESTS.map((k, i) => ({ id: k, name: strings[k], selected: i < 6, duration: "60", repeat: "Once", count: "1",

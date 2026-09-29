@@ -90,6 +90,23 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     }
     private bool CanStart() => !IsRunning && Rows.Any(r => r.IsSelected);
 
+    /// <summary>The note of the profile last applied, shown under the profile buttons; null before any.</summary>
+    [ObservableProperty] private string? _profileNote;
+
+    /// <summary>Selects exactly a profile's tests (those this machine can run) with its lengths, once each; every other test is cleared.</summary>
+    public void ApplyProfile(string id)
+    {
+        var profile = TestProfiles.All.FirstOrDefault(p => p.Id == id) ?? throw new ArgumentException("unknown profile");
+        foreach (var row in Rows)
+        {
+            var entry = profile.Tests.FirstOrDefault(t => t.TestId == row.Definition.Id.Value);
+            row.IsSelected = entry is not null && row.IsAvailable;
+            if (entry is null) continue;
+            row.DurationText = entry.Seconds.ToString(System.Globalization.CultureInfo.InvariantCulture); row.Repeat = RepeatMode.Once;
+        }
+        ProfileNote = Loc.Get(profile.NoteKey);
+    }
+
     [RelayCommand] private void SelectAll() { foreach (var row in Rows.Where(r => r.IsAvailable)) row.IsSelected = true; }
     [RelayCommand] private void ClearSelection() { foreach (var row in Rows) row.IsSelected = false; }
 

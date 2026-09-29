@@ -28,7 +28,8 @@ public sealed partial class WebBridge
         Method("tests.log", _ => engine.RecentLog().Select(LogLine));
         object State() => new
         {
-            running = tests.IsRunning, current = Current(), canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage, blocked = tests.BlockedMessage,
+            running = tests.IsRunning, current = Current(), profileNote = tests.ProfileNote,
+            profiles = TestProfiles.All.Select(p => new { id = p.Id, name = Loc.Get(p.NameKey) }), canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage, blocked = tests.BlockedMessage,
             repeatModes = TestQueueRowViewModel.RepeatModes.Select(m => new { value = m.ToString(), label = Loc.Get($"Test_Repeat_{m}") }),
             rows = tests.Rows.Select(r => new
             {
@@ -65,6 +66,7 @@ public sealed partial class WebBridge
                 case "selectAll": tests.SelectAllCommand.Execute(null); break;
                 case "clear": tests.ClearSelectionCommand.Execute(null); break;
                 case "dismissIncomplete": tests.DismissIncompleteSessionCommand.Execute(null); break;
+                case "profile": if (!tests.IsRunning) tests.ApplyProfile(Str(p, "id")); break;
                 default: throw new ArgumentException("unknown command");
             }
             return null;

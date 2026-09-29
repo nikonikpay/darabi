@@ -17,6 +17,8 @@ export function mount(el) {
   const list = h("div", { class: "groups" });
   const notice = h("div", { class: "banner", hidden: true });
   const blocked = h("div", { class: "banner", role: "status", hidden: true });
+  // Ready-made selections: each picks its tests and their lengths; the note says what it covers and what it leaves out.
+  const profiles = h("div", { class: "profiles", role: "group", "aria-label": t("Profile_Title") }), profileNote = h("p", { class: "caption profile-note", hidden: true });
   // Start goes to the live monitor as soon as the queue is really running; a row with a bad field keeps the page here, where its error shows.
   let toMonitor = false;
   const start = h("button", { class: "btn go", onclick: () => { toMonitor = true; call("tests.exec", { cmd: "start" }).finally(() => { toMonitor = false; }); } }, icon("play"), t("Test_Start"));
@@ -24,7 +26,7 @@ export function mount(el) {
   const cancel = h("button", { class: "btn stop", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
-    notice, blocked, list,
+    notice, blocked, h("div", { class: "profile-bar" }, h("span", { class: "caption" }, t("Profile_Title")), profiles), profileNote, list,
     h("div", { class: "dock" }, start, cancel, watch, h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
@@ -64,6 +66,9 @@ export function mount(el) {
   }
   function update(s) {
     if (!rows.size) build(s);
+    if (!profiles.childElementCount) profiles.append(...s.profiles.map((p) => h("button", { class: "btn quiet", type: "button", onclick: () => call("tests.exec", { cmd: "profile", id: p.id }) }, p.name)));
+    for (const b of profiles.children) b.disabled = s.running;
+    profileNote.hidden = !s.profileNote; profileNote.textContent = s.profileNote || "";
     start.disabled = !s.canStart; cancel.disabled = !s.running; watch.hidden = !s.running;
     const livePage = s.current ? pageOfTest(s.current.id) : "monitoring";
     watch.href = `#/${livePage}`;

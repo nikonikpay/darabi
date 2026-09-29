@@ -1544,4 +1544,15 @@
   <data name="Bench_Mem_StreamTriad" xml:space="preserve"><value>STREAM Triad (همهٔ رشته‌ها)</value></data>
   <data name="Test_IncompleteSession_Detail" xml:space="preserve"><value>نشست قبلی در آزمون {0} از {1} ({2}، حدود {3}٪ انجام‌شده) قطع شد. آزمون‌های تمام‌شده پیش از آن: {4}. علت قطع (کرش، ریستارت یا قطع برق) بدون شاهد معلوم نیست.</value></data>
   <data name="Test_IncompleteSession_NoneFinished" xml:space="preserve"><value>هیچ‌کدام</value></data>
+  <data name="Profile_Title" xml:space="preserve"><value>پروفایل‌ها:</value></data>
+  <data name="Profile_Quick" xml:space="preserve"><value>بررسی سریع</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۵ دقیقه: یک بار کوتاه برای هر قطعه و بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه و بیشتر الگوهای RAM پوشش داده نمی‌شوند.</value></data>
+  <data name="Profile_Standard" xml:space="preserve"><value>استاندارد تعمیرگاه</value></data>
+  <data name="Profile_Standard_Note" xml:space="preserve"><value>حدود یک ساعت: هر قطعه یک بار زیر بار واقعی، با زمان کافی برای همهٔ الگوهای RAM در بیشتر سیستم‌ها، همهٔ هسته‌ها به نوبت و آزمون توان ترکیبی.</value></data>
+  <data name="Profile_Deep" xml:space="preserve"><value>عمیق</value></data>
+  <data name="Profile_Deep_Note" xml:space="preserve"><value>چند ساعت: همهٔ آزمون‌ها با مدت طولانی، چند دور کامل روی RAM و بررسی‌های خود ویندوز. برای سیستمی که ایرادش زود خودش را نشان نمی‌دهد.</value></data>
+  <data name="Profile_Transient" xml:space="preserve"><value>ناپایداری گذرا</value></data>
+  <data name="Profile_Transient_Note" xml:space="preserve"><value>باری که مدام تغییر می‌کند: هسته‌ها تک‌تک داخل و خارج از بوست، پله و پالس روی GPU، CPU و GPU با هم. برای کرش در بار سبک، هنگام بازی یا در حالت بیکار.</value></data>
+  <data name="Profile_OsStorage" xml:space="preserve"><value>درایو ویندوز</value></data>
+  <data name="Profile_OsStorage_Note" xml:space="preserve"><value>آزمون‌های خود درایو، SMART و بررسی فایل‌های ویندوز. در گزینه‌های آزمون ذخیره‌سازی، درایو ویندوز را انتخاب کنید؛ آزمون‌ها فقط از یک فایل تازه در فضای خالی استفاده می‌کنند، نه داده‌های درایو.</value></data>
 </root>
