@@ -21,14 +21,33 @@ internal static class GpuBenchmark
                 using var session = new D3D12Session(device);
                 var (metrics, detail) = body(session);
                 var finished = request.Clock.UtcNow;
-                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_Clock", Unit.MegaHertz);
-                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", Unit.Watt);
-                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempMax", Unit.Celsius, peak: true);
+                var node = Node(request, session.AdapterName);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_Clock", Unit.MegaHertz, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, "Bench_Gpu_MemClock", Unit.MegaHertz, node: node);
+                metrics.AddFirst(request, HardwareKind.Gpu, started, finished, "Bench_Gpu_Load", Unit.Percent, false, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", Unit.Watt, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuVoltage, started, finished, "Bench_Gpu_Voltage", Unit.Volt, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempAvg", Unit.Celsius, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempMax", Unit.Celsius, peak: true, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, "Bench_Gpu_HotSpotMax", Unit.Celsius, peak: true, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuVramTemp, started, finished, "Bench_Gpu_VramTempMax", Unit.Celsius, peak: true, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuFanPercent, started, finished, "Bench_Gpu_Fan", Unit.Percent, node: node);
                 return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}");
             }
             catch (OperationCanceledException) { return BenchmarkResult.Cancelled(spec.Id, started, request.Clock.UtcNow); }
             catch (GpuUnsupportedException e) { return BenchmarkResult.Unsupported(spec.Id, started, e.Message); }
             catch (Exception e) { return BenchmarkResult.Failed(spec.Id, started, request.Clock.UtcNow, $"GPU error during the run: {e.GetType().Name}: {e.Message}"); }
         }, CancellationToken.None);
+    }
+
+    /// <summary>The monitor's node of the adapter a run used: the only GPU there is, or the one of the same name. With two GPUs and no match
+    /// nothing is read, rather than the other card's readings.</summary>
+    internal static Func<HardwareNode, bool> Node(TestExecutionRequest request, string adapter)
+    {
+        var gpus = request.Engine?.Hardware.Where(n => n.Kind == HardwareKind.Gpu && n.ParentId is null).ToList() ?? [];
+        if (gpus.Count == 1) { var only = gpus[0].Id; return n => n.Id == only || n.ParentId == only; }
+        string want = BenchmarkPeers.PartName(adapter);
+        var match = gpus.FirstOrDefault(n => string.Equals(BenchmarkPeers.PartName(n.Name), want, StringComparison.OrdinalIgnoreCase))?.Id;
+        return n => match is { } id && (n.Id == id || n.ParentId == id);
     }
 }

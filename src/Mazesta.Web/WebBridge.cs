@@ -27,7 +27,7 @@ public sealed partial class WebBridge : IDisposable
     {
         _core = core; _sp = sp; _paths = paths; _config = config; _store = store; _configCorrupt = configCorrupt; _window = window; _log = log;
         core.WebMessageReceived += OnMessage;
-        RegisterApp(); RegisterMonitoring(); RegisterTests(); RegisterBenchmarks(); RegisterTuning(); RegisterReports(); RegisterTools(); RegisterSettings(); RegisterDiagnostics(); RegisterOverlay(); RegisterSystem(); RegisterTweaks(); RegisterAppUpdate();
+        RegisterApp(); RegisterMonitoring(); RegisterTests(); RegisterBenchmarks(); RegisterTuning(); RegisterReports(); RegisterTools(); RegisterSettings(); RegisterDiagnostics(); RegisterOverlay(); RegisterSystem(); RegisterTweaks(); RegisterAppUpdate(); RegisterQuiet();
     }
 
     private void MethodAsync(string name, Func<JsonElement, Task<object?>> handler) => _methods[name] = handler;
@@ -59,7 +59,7 @@ public sealed partial class WebBridge : IDisposable
     /// <summary>An event for the page. Always marshalled to the UI thread: the engines raise theirs on worker threads.</summary>
     public void Push(string ev, object? data)
     {
-        if (!_visible && ev is "snapshot") return;
+        if ((!_visible || _quiet) && ev is "snapshot" or "overlayFrames") return;
         if (_window.Dispatcher.CheckAccess()) Post(new { ev, d = data }); else _window.Dispatcher.BeginInvoke(() => Post(new { ev, d = data }));
     }
 

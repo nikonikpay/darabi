@@ -1,4 +1,4 @@
-using System.Security.Cryptography; using System.Text; using System.Text.Json; using System.Text.Json.Serialization; using System.Text.RegularExpressions;
+using System.Globalization; using System.Security.Cryptography; using System.Text; using System.Text.Json; using System.Text.Json.Serialization; using System.Text.RegularExpressions;
 namespace Mazesta.Diagnostics.Benchmarks;
 
 /// <summary>
@@ -8,22 +8,58 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// own files and never go into the lists.
 /// </summary>
 public sealed record BenchmarkRun(string Id, DateTimeOffset At, string Benchmark, int Version, string Settings, string Part, string System, string Machine, string Spec,
-    double Value, string Unit, string? App = null, IReadOnlyList<BenchmarkMetric>? Metrics = null)
+    double Value, string Unit, string? App = null, IReadOnlyList<BenchmarkMetric>? Metrics = null, bool Overclocked = false, IReadOnlyList<SpecItem>? Details = null)
 {
     [JsonIgnore] public string Table => BenchmarkPeers.TableKey(Benchmark, Version, Settings);
 }
 
-/// <summary>One part model in a comparison list: the median of its systems' best runs (each system counts once, however often it ran), the
-/// fastest of them, how many systems and runs it stands for, and the latest run.</summary>
-public sealed record PeerEntry(string Part, double Median, double Best, int Systems, int Runs, DateTimeOffset Last);
+/// <summary>The shop's own say about a logged run, kept apart from the append-only run log: <see cref="Featured"/> puts it among the reference
+/// results every copy shows; <see cref="Overclocked"/>, when set, overrides what was said when it ran. Only the shop's copies' marks are published.</summary>
+public sealed record BenchmarkMark(bool Featured, bool? Overclocked, string? Note, DateTimeOffset At);
 
-/// <summary>The comparison list of one benchmark, workload version and settings: one entry per part model, best first. The published database is
-/// one such file per list, so a client fetches only the lists that changed, and a list grows with the number of models, not of runs.</summary>
-public sealed record PeerTable(string Key, string Benchmark, int Version, string Settings, string Unit, bool HigherIsBetter, DateTimeOffset Built, IReadOnlyList<PeerEntry> Entries);
+/// <summary>One run as the lists show it beside an entry: its number, whether the part was overclocked, what was measured during it (clocks,
+/// temperatures) and the part's and system's specifications. No machine name and no system id: a list names models, not customers.</summary>
+public sealed record RunSample(double Value, bool Overclocked, DateTimeOffset At, IReadOnlyList<BenchmarkMetric>? Metrics, IReadOnlyList<SpecItem>? Details);
+
+/// <summary>A run the shop chose to show as a reference result, with the same facts as a <see cref="RunSample"/>.</summary>
+public sealed record FeaturedRun(string Id, string Part, double Value, bool Overclocked, string? Note, DateTimeOffset At, IReadOnlyList<BenchmarkMetric>? Metrics, IReadOnlyList<SpecItem>? Details);
+
+/// <summary>One part model in a comparison list: the median of its systems' best runs (each system counts once, however often it ran), the
+/// fastest of them, how many systems and runs it stands for, and the latest run. An overclocked part is an entry of its own, so it neither lifts
+/// the model's usual figure nor hides among it. <see cref="Sample"/> is the run nearest the median, with its conditions and specifications.</summary>
+public sealed record PeerEntry(string Part, double Median, double Best, int Systems, int Runs, DateTimeOffset Last, bool Overclocked = false, RunSample? Sample = null)
+{
+    [JsonIgnore] internal string Key => Overclocked ? Part + "\u0001oc" : Part;
+}
+
+/// <summary>The comparison list of one benchmark, workload version and settings: one entry per part model, best first, and the shop's featured
+/// runs. The published database is one such file per list, so a client fetches only the lists that changed, and a list grows with the number of
+/// models, not of runs.</summary>
+public sealed record PeerTable(string Key, string Benchmark, int Version, string Settings, string Unit, bool HigherIsBetter, DateTimeOffset Built, IReadOnlyList<PeerEntry> Entries,
+    IReadOnlyList<FeaturedRun>? Featured = null);
+
+/// <summary>How far apart two results are, read the way people say it: <see cref="Ratio"/> is the faster one over the slower one (so never below 1),
+/// and <see cref="TheyLead"/> says which side is faster. 26 against 6 GFLOPS is 4.3 either way; it is "4.3× faster" on the faster row.</summary>
+public readonly record struct PeerGap(double Ratio, bool TheyLead)
+{
+    /// <summary>Up to double as a percentage ("25%", "4.5%"), from double as a multiple ("3.2×", "12×"), "≈" within half a percent.</summary>
+    public string Text
+    {
+        get
+        {
+            double pct = (Ratio - 1) * 100;
+            if (pct < 0.5) return "≈";
+            if (Ratio >= 1.995) return (Ratio < 9.95 ? Ratio.ToString("0.0", CultureInfo.InvariantCulture) : Ratio.ToString("0", CultureInfo.InvariantCulture)) + "×";
+            return (pct < 9.95 ? pct.ToString("0.0", CultureInfo.InvariantCulture) : pct.ToString("0", CultureInfo.InvariantCulture)) + "%";
+        }
+    }
+    public bool Equal => (Ratio - 1) * 100 < 0.5;
+}
 
 /// <summary>A list entry against this system's result. <see cref="DiffPercent"/> is how much this result is above (+) or below (−) the entry,
-/// signed so that positive is always better; <see cref="Local"/> marks a model known only from this copy's own runs, not yet published.</summary>
-public sealed record PeerRow(PeerEntry Entry, double DiffPercent, bool Local, bool Same);
+/// signed so that positive is always better; <see cref="Gap"/> is the same distance as a ratio, null when there is no result to compare.
+/// <see cref="Local"/> marks a model known only from this copy's own runs, not yet published.</summary>
+public sealed record PeerRow(PeerEntry Entry, double DiffPercent, bool Local, bool Same, PeerGap? Gap = null);
 
 /// <summary>Where this result stands in a list: <see cref="Rows"/> best first, this result sitting before <see cref="MineIndex"/>;
 /// <see cref="Beaten"/> is how many entries it is ahead of.</summary>
@@ -62,27 +98,47 @@ public static partial class BenchmarkPeers
 
     /// <summary>The comparison lists from every run: runs of one list are grouped by part; per part, each system counts once, with its best run,
     /// and the entry's value is the median of those. Runs in a unit other than the list's usual one are left out (they cannot be compared).</summary>
-    public static IReadOnlyList<PeerTable> Aggregate(IEnumerable<BenchmarkRun> runs, DateTimeOffset built)
+    /// <remarks>An overclocked run (as it was logged, or as the shop marked it later) makes an entry of its own. Runs the shop marked as
+    /// featured are also listed one by one, best first.</remarks>
+    public static IReadOnlyList<PeerTable> Aggregate(IEnumerable<BenchmarkRun> runs, DateTimeOffset built, IReadOnlyDictionary<string, BenchmarkMark>? marks = null)
     {
         var tables = new List<PeerTable>();
-        foreach (var list in runs.Where(r => r.Part.Length > 0 && r.Value > 0 && double.IsFinite(r.Value)).GroupBy(r => r.Table, StringComparer.Ordinal))
+        foreach (var list in runs.Where(r => r.Part.Length > 0 && r.Value > 0 && double.IsFinite(r.Value)).Select(r => Marked(r, marks)).GroupBy(r => r.Table, StringComparer.Ordinal))
         {
             var first = list.First();
             bool higher = BenchmarkRecords.Headline(first.Benchmark)?.HigherIsBetter ?? true;
             string unit = list.GroupBy(r => r.Unit).OrderByDescending(g => g.Count()).First().Key;
-            var entries = list.Where(r => r.Unit == unit).GroupBy(r => PartName(r.Part), StringComparer.OrdinalIgnoreCase)
-                .Select(part => Entry(part.Key, part, higher)).ToList();
-            tables.Add(new PeerTable(list.Key, first.Benchmark, first.Version, first.Settings, unit, higher, built, Sort(entries, higher)));
+            var usable = list.Where(r => r.Unit == unit).ToList();
+            var entries = usable.GroupBy(r => (Part: PartName(r.Part).ToUpperInvariant(), r.Overclocked))
+                .Select(part => Entry(PartName(part.First().Part), part, higher)).ToList();
+            var featured = usable.Where(r => marks?.GetValueOrDefault(r.Id) is { Featured: true })
+                .Select(r => new FeaturedRun(r.Id, PartName(r.Part), r.Value, r.Overclocked, marks![r.Id].Note, r.At, r.Metrics, r.Details));
+            featured = higher ? featured.OrderByDescending(f => f.Value) : featured.OrderBy(f => f.Value);
+            tables.Add(new PeerTable(list.Key, first.Benchmark, first.Version, first.Settings, unit, higher, built, Sort(entries, higher), [.. featured]));
         }
         return tables;
     }
 
+    /// <summary>A run with the shop's later word on whether it was overclocked.</summary>
+    public static BenchmarkRun Marked(BenchmarkRun run, IReadOnlyDictionary<string, BenchmarkMark>? marks)
+        => marks?.GetValueOrDefault(run.Id)?.Overclocked is { } oc && oc != run.Overclocked ? run with { Overclocked = oc } : run;
+
     private static PeerEntry Entry(string part, IEnumerable<BenchmarkRun> runs, bool higher)
     {
         var all = runs.ToList();
-        var perSystem = all.GroupBy(r => r.System).Select(s => higher ? s.Max(r => r.Value) : s.Min(r => r.Value)).Order().ToList();
-        double median = perSystem.Count % 2 == 1 ? perSystem[perSystem.Count / 2] : (perSystem[perSystem.Count / 2 - 1] + perSystem[perSystem.Count / 2]) / 2;
-        return new PeerEntry(part, median, higher ? perSystem[^1] : perSystem[0], perSystem.Count, all.Count, all.Max(r => r.At));
+        var perSystem = all.GroupBy(r => r.System).Select(s => higher ? s.MaxBy(r => r.Value)! : s.MinBy(r => r.Value)!).OrderBy(r => r.Value).ToList();
+        double median = perSystem.Count % 2 == 1 ? perSystem[perSystem.Count / 2].Value : (perSystem[perSystem.Count / 2 - 1].Value + perSystem[perSystem.Count / 2].Value) / 2;
+        var sample = perSystem.MinBy(r => Math.Abs(r.Value - median))!;
+        return new PeerEntry(part, median, higher ? perSystem[^1].Value : perSystem[0].Value, perSystem.Count, all.Count, all.Max(r => r.At), all[0].Overclocked,
+            new RunSample(sample.Value, sample.Overclocked, sample.At, sample.Metrics, sample.Details));
+    }
+
+    /// <summary>How far apart this result and another are, or null when either is missing.</summary>
+    public static PeerGap? Gap(double mine, double theirs, bool higherIsBetter)
+    {
+        if (!(mine > 0) || !(theirs > 0) || !double.IsFinite(mine) || !double.IsFinite(theirs)) return null;
+        double r = higherIsBetter ? theirs / mine : mine / theirs;   // above 1: theirs is the faster
+        return r > 1 ? new PeerGap(r, true) : new PeerGap(1 / r, false);
     }
 
     private static List<PeerEntry> Sort(IEnumerable<PeerEntry> entries, bool higher)
@@ -93,11 +149,11 @@ public static partial class BenchmarkPeers
     public static PeerRanking Rank(PeerTable? table, IReadOnlyList<PeerEntry> local, double mine, string? myPart, bool higherIsBetter)
     {
         var published = table?.Entries ?? [];
-        var names = new HashSet<string>(published.Select(e => e.Part), StringComparer.OrdinalIgnoreCase);
-        var merged = published.Select(e => (e, false)).Concat(local.Where(e => !names.Contains(e.Part)).Select(e => (e, true)));
+        var names = new HashSet<string>(published.Select(e => e.Key), StringComparer.OrdinalIgnoreCase);
+        var merged = published.Concat(local.Where(e => !names.Contains(e.Key)));
         string me = PartName(myPart);
-        var rows = Sort(merged.Select(x => x.e), higherIsBetter).Select(e => new PeerRow(e, Diff(mine, e.Median, higherIsBetter), !names.Contains(e.Part),
-            me.Length > 0 && string.Equals(e.Part, me, StringComparison.OrdinalIgnoreCase))).ToList();
+        var rows = Sort(merged, higherIsBetter).Select(e => new PeerRow(e, Diff(mine, e.Median, higherIsBetter), !names.Contains(e.Key),
+            me.Length > 0 && string.Equals(e.Part, me, StringComparison.OrdinalIgnoreCase), Gap(mine, e.Median, higherIsBetter))).ToList();
         int beaten = rows.Count(r => r.DiffPercent > 0);
         return new PeerRanking(rows.Count, beaten, rows.Count(r => r.DiffPercent < 0), rows);
     }
@@ -124,6 +180,8 @@ public sealed class BenchmarkRunLog(string dataRoot)
     private List<BenchmarkRun>? _runs;
 
     public string Folder => _dir;
+    /// <summary>The shop's marks on these runs (featured, overclocked), in <c>marks.json</c> beside the run files.</summary>
+    public BenchmarkMarks Marks { get; } = new(Path.Combine(dataRoot, "benchmarks", "runs"));
 
     public void Append(BenchmarkRun run)
     {
@@ -139,11 +197,18 @@ public sealed class BenchmarkRunLog(string dataRoot)
         }
     }
 
-    /// <summary>This copy's runs of one list, newest first.</summary>
-    public IReadOnlyList<BenchmarkRun> Of(string tableKey) { lock (_lock) return [.. Load().Where(r => r.Table == tableKey).OrderByDescending(r => r.At)]; }
+    /// <summary>This copy's runs of one list, newest first, with the shop's marks applied.</summary>
+    public IReadOnlyList<BenchmarkRun> Of(string tableKey)
+    {
+        var marks = Marks.All();
+        lock (_lock) return [.. Load().Where(r => r.Table == tableKey).OrderByDescending(r => r.At).Select(r => BenchmarkPeers.Marked(r, marks))];
+    }
 
-    /// <summary>This copy's runs of one list as list entries (the same rule as the published lists).</summary>
-    public IReadOnlyList<PeerEntry> Entries(string tableKey) => BenchmarkPeers.Aggregate(Of(tableKey), DateTimeOffset.UtcNow).FirstOrDefault()?.Entries ?? [];
+    public BenchmarkRun? Find(string id) { lock (_lock) return Load().FirstOrDefault(r => r.Id == id); }
+
+    /// <summary>This copy's runs of one list as a list (the same rule as the published lists): its entries and its featured runs.</summary>
+    public PeerTable? Table(string tableKey) => BenchmarkPeers.Aggregate(Of(tableKey), DateTimeOffset.UtcNow, Marks.All()).FirstOrDefault();
+    public IReadOnlyList<PeerEntry> Entries(string tableKey) => Table(tableKey)?.Entries ?? [];
 
     private List<BenchmarkRun> Load() => _runs ??= ReadFolder(_dir).ToList();
 
@@ -162,6 +227,51 @@ public sealed class BenchmarkRunLog(string dataRoot)
                 if (run is { Id.Length: > 0, Benchmark.Length: > 0 }) yield return run;
             }
         }
+    }
+}
+
+/// <summary>The shop's marks on logged runs, by run id, in one small JSON file (the run log itself is only ever appended to). A mark taken back
+/// is kept as "not featured" with its time, so gathering copies' marks together lets the latest word win.</summary>
+public sealed class BenchmarkMarks(string folder)
+{
+    public const string FileName = "marks.json";
+    private readonly object _lock = new();
+    private Dictionary<string, BenchmarkMark>? _marks;
+    private string File_ => Path.Combine(folder, FileName);
+
+    public IReadOnlyDictionary<string, BenchmarkMark> All() { lock (_lock) return new Dictionary<string, BenchmarkMark>(Load()); }
+
+    public void Set(string id, BenchmarkMark mark)
+    {
+        lock (_lock)
+        {
+            var marks = Load();
+            marks[id] = mark;
+            try
+            {
+                Directory.CreateDirectory(folder);
+                File.WriteAllText(File_ + ".tmp", JsonSerializer.Serialize(marks, BenchmarkPeers.Json));
+                File.Move(File_ + ".tmp", File_, overwrite: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+    }
+
+    private Dictionary<string, BenchmarkMark> Load() => _marks ??= Read(File_);
+
+    /// <summary>The marks in a file, or none when it is missing or damaged.</summary>
+    public static Dictionary<string, BenchmarkMark> Read(string file)
+    {
+        try { return File.Exists(file) ? JsonSerializer.Deserialize<Dictionary<string, BenchmarkMark>>(File.ReadAllText(file), BenchmarkPeers.Json) ?? [] : []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { return []; }
+    }
+
+    /// <summary>Several copies' marks as one: for a run marked in more than one, the latest mark wins.</summary>
+    public static Dictionary<string, BenchmarkMark> Merge(IEnumerable<IReadOnlyDictionary<string, BenchmarkMark>> sets)
+    {
+        var all = new Dictionary<string, BenchmarkMark>(StringComparer.Ordinal);
+        foreach (var set in sets) foreach (var (id, m) in set) if (!all.TryGetValue(id, out var had) || m.At > had.At) all[id] = m;
+        return all;
     }
 }
 

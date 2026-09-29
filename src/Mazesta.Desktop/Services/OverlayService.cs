@@ -72,6 +72,14 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     public void Toggle() => SetVisible(!IsVisible);
 
+    /// <summary>The kinds of hardware the overlay reads while it is on screen (none while hidden): the monitor keeps polling these during a benchmark.</summary>
+    public IReadOnlySet<Core.Hardware.HardwareKind> ShownKinds()
+    {
+        if (!IsVisible || _vm is null) return new HashSet<Core.Hardware.HardwareKind>();
+        var ids = _vm.Sections.SelectMany(s => s.Rows).SelectMany(r => r.Sensors).Select(s => s.Hardware).ToHashSet();
+        return engine.Hardware.Where(n => ids.Contains(n.Id)).Select(n => n.Kind).ToHashSet();
+    }
+
     public void SetVisible(bool visible)
     {
         if (visible)

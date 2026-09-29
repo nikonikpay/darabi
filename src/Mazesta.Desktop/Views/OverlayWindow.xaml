@@ -11,7 +11,8 @@
         xmlns:controls="clr-namespace:Mazesta.Desktop.Controls"
         xmlns:loc="clr-namespace:Mazesta.Desktop.Localization"
         Title="Mazesta Overlay" WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True"
-        ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Focusable="False">
+        ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" Focusable="False"
+        UseLayoutRounding="True">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <FontFamily x:Key="Ov.Font">Bahnschrift SemiCondensed, Segoe UI Variable Text, Segoe UI</FontFamily>

@@ -12,7 +12,7 @@ public sealed partial class WebBridge
         // A reading that is not good is sent as null with its quality, so the page can show why, and never as 0.
         void OnSnapshot(SensorSnapshot s)
         {
-            if (!_visible) return;
+            if (!_visible || _quiet) return;
             var readings = s.Readings.Select(r => new object?[] { r.Id.Value, r.Quality == DataQuality.Ok ? r.Value : null, r.Quality.ToString() }).ToList();
             var stats = s.Readings.Select(r => (r.Id, St: engine.Statistics.Get(r.Id))).Where(x => x.St.Count > 0)
                 .Select(x => new object?[] { x.Id.Value, x.St.Min, x.St.Average, x.St.Max }).ToList();

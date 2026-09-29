@@ -33,6 +33,11 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     public event Action<TestId, int, int>? QueueAdvanced;
     /// <summary>A queue ended (all done, or cancelled), with every run it made, in order.</summary>
     public event Action<IReadOnlyList<RecordedBenchmark>>? QueueFinished;
+    /// <summary>Something started running (true) or everything ended (false), raised once per change, also between the benchmarks of a queue
+    /// only at its start and end: the app quiets its other work for as long as the machine is being measured.</summary>
+    public event Action<bool>? BusyChanged;
+    private bool _wasBusy;
+    private void NotifyBusy() { bool busy = IsBusy, changed; lock (_lock) { changed = busy != _wasBusy; _wasBusy = busy; } if (changed) BusyChanged?.Invoke(busy); }
 
     /// <summary>The last result of a benchmark in this session, whatever its status, for the page to show.</summary>
     public BenchmarkResult? Last(TestId id) { lock (_lock) return _last.GetValueOrDefault(id); }
@@ -45,7 +50,9 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     {
         CancellationTokenSource cts;
         lock (_lock) { if (Running is not null || _queueActive) return null; Running = benchmark.Definition.Id; _cts = cts = new CancellationTokenSource(); }
-        return (await RunOneAsync(benchmark, seconds, options, cts).ConfigureAwait(false)).Result;
+        NotifyBusy();
+        try { return (await RunOneAsync(benchmark, seconds, options, cts).ConfigureAwait(false)).Result; }
+        finally { NotifyBusy(); }
     }
 
     /// <summary>Runs the jobs one after another, in the given order, unless something is already running (then an empty list). A cancel stops the
@@ -53,6 +60,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     public async Task<IReadOnlyList<RecordedBenchmark>> RunQueueAsync(IReadOnlyList<BenchmarkJob> jobs)
     {
         lock (_lock) { if (Running is not null || _queueActive || jobs.Count == 0) return []; _queueActive = true; _queueCancelled = false; }
+        NotifyBusy();
         var runs = new List<RecordedBenchmark>();
         try
         {
@@ -64,7 +72,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
                 runs.Add(await RunOneAsync(job.Benchmark, job.Seconds, job.Options, cts).ConfigureAwait(false));
             }
         }
-        finally { lock (_lock) _queueActive = false; }
+        finally { lock (_lock) _queueActive = false; NotifyBusy(); }
         QueueFinished?.Invoke(runs);
         return runs;
     }

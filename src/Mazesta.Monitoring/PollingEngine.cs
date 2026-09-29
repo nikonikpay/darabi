@@ -66,6 +66,15 @@ public sealed class PollingEngine : IDisposable
         lock (_lock) { FastInterval = interval; _options.FastInterval = interval; foreach (var n in Hardware.Where(n => n.Kind != HardwareKind.Storage)) _nextDue[n.Id] = _clock.UtcNow; }
         _wake.Set();
     }
+    private volatile IReadOnlySet<HardwareKind>? _skipped;
+    /// <summary>Kinds of hardware left unread until this is cleared (null): while a benchmark runs, the parts it neither measures nor shows are not
+    /// polled, so reading them (a drive's SMART, the network adapters) costs the run nothing. Their last readings go stale meanwhile.</summary>
+    public IReadOnlySet<HardwareKind>? Skipped => _skipped;
+    public void Skip(IReadOnlySet<HardwareKind>? kinds)
+    {
+        _skipped = kinds is { Count: > 0 } ? kinds : null;
+        if (_skipped is null) { lock (_lock) foreach (var n in Hardware.Where(n => n.Kind != HardwareKind.Storage)) _nextDue[n.Id] = _clock.UtcNow; }
+    }
     private void EnsureProviderStarted() { if (_providerStarted) return; _providerStarted = true; Provider.Start(); }
     private void Loop()
     {
@@ -86,10 +95,10 @@ public sealed class PollingEngine : IDisposable
         try
         {
             EnsureProviderStarted();
-            var now = _clock.UtcNow; var due = new HashSet<HardwareId>();
+            var now = _clock.UtcNow; var due = new HashSet<HardwareId>(); var skipped = _skipped;
             lock (_lock)
                 foreach (var n in Hardware)
-                    if (!_nextDue.TryGetValue(n.Id, out var d) || d <= now) { due.Add(n.Id); _nextDue[n.Id] = now + _options.CadenceFor(n.Kind); }
+                    if (skipped?.Contains(n.Kind) != true && (!_nextDue.TryGetValue(n.Id, out var d) || d <= now)) { due.Add(n.Id); _nextDue[n.Id] = now + _options.CadenceFor(n.Kind); }
             var result = Provider.Poll(new PollRequest(now, due));
             var after = _clock.UtcNow;
             if (after - now > FastInterval && after - _lastOverrunLog > TimeSpan.FromMinutes(1))

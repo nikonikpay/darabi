@@ -69,7 +69,9 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         [OverlayPart.Memory] = ("RAM", "#35D0E0"), [OverlayPart.Storage] = ("DISK", "#FF9A4D"), [OverlayPart.Network] = ("NET", "#FF78B9"),
     };
     private readonly PollingEngine _engine; private readonly Func<Action, object> _dispatch; private readonly IFrameRateSource? _frames;
+    // Only the sensors the overlay shows are kept from each snapshot (a snapshot holds every sensor of the machine, often several hundred).
     private readonly Dictionary<SensorId, double?> _latest = [];
+    private readonly HashSet<SensorId> _wanted;
     private bool _active;
 
     public IReadOnlyList<OverlaySection> Sections { get; }
@@ -118,6 +120,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         _engine = engine; _dispatch = dispatch; _frames = frames;
         Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
+        _wanted = [.. Sections.SelectMany(s => s.Rows).SelectMany(r => r.Sensors)];
         NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming);
         Blocks = [.. Sections.Where(s => s.Part != OverlayPart.Gaming)];
         var game = Sections.FirstOrDefault(s => s.Part == OverlayPart.Gaming)?.Rows ?? [];
@@ -164,7 +167,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
 
     internal void Apply(SensorSnapshot snapshot)
     {
-        foreach (var r in snapshot.Readings) _latest[r.Id] = r.Quality == DataQuality.Ok ? r.Value : null;
+        foreach (var r in snapshot.Readings) if (_wanted.Contains(r.Id)) _latest[r.Id] = r.Quality == DataQuality.Ok ? r.Value : null;
         Frames = NeedsFrames ? _frames?.Read() : null;
         _session.Add(Frames);
         foreach (var section in Sections)
@@ -202,9 +205,10 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         row.History.Enqueue(value ?? double.NaN);
         while (row.History.Count > TrendLength) row.History.Dequeue();
         double[] points = [.. row.History];
-        if (row.Item.FixedMax is { } fixedMax) row.TrendMax = fixedMax;
-        else { var seen = points.Where(double.IsFinite).DefaultIfEmpty(0).Max(); row.TrendMax = Math.Max(seen * 1.15, 1e-6); }
-        row.TrendMaxValue = points.Any(double.IsFinite) ? row.Item.IsFrameItem ? FormatFrame(row.Id, points.Where(double.IsFinite).Max()) : Format(points.Where(double.IsFinite).Max(), row.Unit) : "";
+        double seen = double.NaN;
+        foreach (double p in points) if (double.IsFinite(p) && !(p <= seen)) seen = p;
+        row.TrendMax = row.Item.FixedMax ?? Math.Max((double.IsNaN(seen) ? 0 : seen) * 1.15, 1e-6);
+        row.TrendMaxValue = double.IsNaN(seen) ? "" : row.Item.IsFrameItem ? FormatFrame(row.Id, seen) : Format(seen, row.Unit);
         row.TrendCaption = row.TrendMaxValue.Length > 0 ? Loc.Format("Overlay_ChartMax", row.TrendMaxValue) : "";
         row.Trend = points;
     }

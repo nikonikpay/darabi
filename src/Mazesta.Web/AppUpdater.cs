@@ -56,8 +56,16 @@ public sealed class AppUpdater
     {
         if (_autoChecked) return;
         _autoChecked = true;
-        _ = Task.Delay(TimeSpan.FromSeconds(20)).ContinueWith(_ => CheckAsync(quiet: true), TaskScheduler.Default).Unwrap();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(20)).ConfigureAwait(false);
+            while (Quiet?.Invoke() == true) await Task.Delay(TimeSpan.FromSeconds(30)).ConfigureAwait(false);   // not during a benchmark
+            await CheckAsync(quiet: true).ConfigureAwait(false);
+        });
     }
+
+    /// <summary>True while the app is measuring the machine: the check on its own waits until it is done (one asked for still runs).</summary>
+    public Func<bool>? Quiet { get; set; }
 
     public async Task CheckAsync(bool quiet = false)
     {

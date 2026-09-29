@@ -71,17 +71,31 @@ const bench = () => ({ running: false, queue: "", canRunSelected: true,
       : i === 1 ? [{ name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS" }, { name: strings.Bench_Cpu_PerThread, value: "12.9 GFLOPS" }, { name: strings.Bench_Cpu_Power, value: "142 W" }] : [],
     best: i === 4 ? { name: strings.Bench_Gpu_Fps, value: "318 FPS", at: "1405/07/02 21:14" } : null,
     compared: i === 0 ? { now: { name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS", at: "1405/07/06 14:20" }, previous: { name: strings.Bench_Cpu_Gflops, value: "20.70 GFLOPS", at: "1405/07/01 11:02" }, change: 3.38, saved: true }
-      : i === 1 ? { now: { name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS", at: "1405/07/06 14:22" }, previous: { name: strings.Bench_Cpu_Gflops, value: "421 GFLOPS", at: "1405/07/01 11:05" }, change: -2.14, saved: false } : null,
+      : i === 1 ? { now: { name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS", at: "1405/07/06 14:22" }, previous: { name: strings.Bench_Cpu_Gflops, value: "421 GFLOPS", at: "1405/07/01 11:05", metrics: demoDetail("421 GFLOPS", false, "", false).metrics }, change: -2.14, saved: false } : null,
     peers: i === 1 ? demoPeers(false) : i === 3 ? { total: 0, beaten: null, mineIndex: null, from: 0, around: [], mine: null, part: null } : null })) });
 // A comparison list as the shop would publish it (made-up models and numbers, for the design only).
 const PEERS = [["AMD Ryzen 9 7950X", 905, 6, 14], ["Intel Core i9-14900K", 861, 4, 9], ["AMD Ryzen 9 5950X", 520, 5, 11], ["AMD Ryzen 9 3950X", 405, 3, 7], ["Intel Core i7-12700K", 398, 8, 20],
   ["AMD Ryzen 7 5800X", 301, 7, 12], ["Intel Core i5-13400F", 262, 12, 31], ["AMD Ryzen 5 5600", 214, 9, 18], ["Intel Core i5-10400", 151, 6, 9], ["Intel Core i3-10100", 88, 3, 4]];
-function demoPeers(all) {
-  const mine = 412, rows = PEERS.map(([part, v, systems, runs], k) => ({ part, value: `${v} GFLOPS`, best: `${Math.round(v * 1.04)} GFLOPS`, systems, runs, diff: (mine - v) / v * 100, local: k === 8, same: k === 3 }));
-  const mineIndex = rows.filter((r) => r.diff < 0).length, from = Math.max(0, mineIndex - 3);
-  return all ? { name: strings.Bench_Cpu_Multi, metric: strings.Bench_Cpu_Gflops, higherIsBetter: true, mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", mineIndex, beaten: rows.length - mineIndex, built: "2026/09/29", rows }
-    : { total: rows.length, beaten: rows.length - mineIndex, mineIndex, from, around: rows.slice(from, mineIndex + 3), mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X" };
+function demoGap(mine, v) {
+  const r = v / mine, lead = r > 1, x = lead ? r : 1 / r, pct = (x - 1) * 100;
+  const text = pct < 0.5 ? "≈" : x >= 1.995 ? `${x < 9.95 ? x.toFixed(1) : Math.round(x)}×` : `${pct < 9.95 ? pct.toFixed(1) : Math.round(pct)}%`;
+  return { text, lead, equal: pct < 0.5 };
 }
+const FEATURED = [["f1", "Intel Core i9-13900K", 1012, true, "خنک‌کننده آبی ۳۶۰", "2026/09/20"], ["f2", "AMD Ryzen 7 7800X3D", 540, false, null, "2026/09/18"]];
+function demoPeers(all) {
+  const mine = 412, rows = PEERS.map(([part, v, systems, runs], k) => ({ part, oc: k === 1, value: `${v} GFLOPS`, best: `${Math.round(v * 1.04)} GFLOPS`, systems, runs, diff: (mine - v) / v * 100, gap: demoGap(mine, v), local: k === 8, same: k === 3 }));
+  const featured = FEATURED.map(([id, part, v, oc, note, at]) => ({ id, part, oc, note, at, local: id === "f2", value: `${v} GFLOPS`, gap: demoGap(mine, v) }));
+  const mineIndex = rows.filter((r) => r.diff < 0).length, from = Math.max(0, mineIndex - 3);
+  return all ? { name: strings.Bench_Cpu_Multi, metric: strings.Bench_Cpu_Gflops, higherIsBetter: true, mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", mineIndex, beaten: rows.length - mineIndex, built: "2026/09/29", rows, featured }
+    : { total: rows.length, beaten: rows.length - mineIndex, mineIndex, from, around: rows.slice(from, mineIndex + 3), featured, featuredTotal: featured.length, mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", oc: false };
+}
+const spec = (pairs) => pairs.map(([k, value]) => ({ name: strings[k], value }));
+const demoDetail = (value, oc, at, hybrid) => ({ value, oc, at,
+  metrics: { results: spec([["Bench_Cpu_PerThread", hybrid ? "31.6 GFLOPS" : "12.9 GFLOPS"]]),
+    conditions: spec([["Bench_Threads", hybrid ? "32" : "32"], ["Bench_Cpu_Clock", hybrid ? "4820 MHz" : "3950 MHz"], ...(hybrid ? [["Bench_Cpu_PClock", "5500 MHz"], ["Bench_Cpu_EClock", "4300 MHz"]] : []),
+      ["Bench_Cpu_Power", hybrid ? "283 W" : "142 W"], ["Bench_Cpu_Vcore", "1.312 V"], ["Bench_Cpu_TempAvg", hybrid ? "88.4 °C" : "71.2 °C"], ["Bench_Cpu_TempMax", hybrid ? "100 °C" : "78.0 °C"]]) },
+  part: spec(hybrid ? [["Spec_Cores", "8 P + 16 E (24)"], ["Spec_Threads", "32"], ["Spec_RatedClock", "3.00 GHz"], ["Spec_Socket", "LGA1700"]] : [["Spec_Cores", "16"], ["Spec_Threads", "32"], ["Spec_RatedClock", "3.50 GHz"], ["Spec_Socket", "AM4"]]),
+  system: spec([["Spec_Memory", hybrid ? "32 GB (2×16 GB) 6400 MT/s" : "64 GB (2×32 GB) 3200 MT/s"], ["Spec_Board", hybrid ? "ASUS ROG MAXIMUS Z790 HERO" : "ASUS TUF GAMING X570-PLUS"], ["Spec_Bios", "1402 (2025-11-03)"], ["Spec_Os", "Windows 11 Pro 26200"]]) });
 const CURVE = [[1020, 0.725], [1080, 0.725], [1140, 0.731], [1200, 0.737], [1260, 0.75], [1320, 0.762], [1380, 0.775], [1440, 0.787], [1500, 0.8], [1560, 0.818], [1620, 0.837], [1680, 0.856], [1740, 0.875], [1800, 0.9], [1860, 0.931], [1920, 0.962], [1965, 0.993], [1995, 1.025]];
 const form = { core: "165", memory: "0", lockClock: true, maxClock: "1905", setPower: false, power: "350", manualFan: false, fan: "60", profileName: "", coreValue: 165, capValue: 1905 };
 const tuning = () => ({
@@ -167,7 +181,10 @@ export async function call(m, p, emit) {
     case "tests.state": return tests();
     case "bench.state": return bench();
     case "bench.peers": return demoPeers(true);
-    case "bench.history": return [["1405/07/07 12:24", "DESKTOP-CBSHJEH", "Intel Core i5-12400F", "298 GFLOPS"], ["1405/07/07 12:42", "ALI", "AMD Ryzen 9 3950X", "412 GFLOPS"]].map(([at, machine, part, value]) => ({ at, machine, part, value, app: "0.7.0" }));
+    case "bench.history": return [["1405/07/07 12:24", "DESKTOP-CBSHJEH", "Intel Core i9-13900K", "1012 GFLOPS", true], ["1405/07/07 12:42", "ALI", "AMD Ryzen 9 3950X", "412 GFLOPS", false]].map(([at, machine, part, value, hybrid], k) => ({ id: `r${k}`, at, machine, part, value, app: "0.7.1", featured: k === 0, note: k === 0 ? "خنک‌کننده آبی ۳۶۰" : null, detail: demoDetail(value, hybrid, at.slice(0, 10), hybrid) }));
+    case "bench.detail": return { mine: demoDetail("412 GFLOPS", false, "2026/09/29", false), theirs: p.run === "f2" ? null : demoDetail(p.run ? "1012 GFLOPS" : "861 GFLOPS", !!p.oc || p.run === "f1", "2026/09/20", true) };
+    case "bench.mark": case "bench.oc": return null;
+    case "app.quiet": return false;
     case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/",
       latest: { version: "0.7.0", size: 48234496, date: "2026/09/29", notes: "- به‌روزرسانی خودکار برنامه از سایت\n- مقایسه نتیجه بنچمارک با سیستم‌های دیگر" },
       data: { lists: 9, downloaded: 2, published: "2026/09/29 13:50", syncedAt: "2026/09/29 14:10" } };

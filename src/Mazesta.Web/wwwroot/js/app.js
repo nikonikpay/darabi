@@ -115,7 +115,8 @@ function renderBand(info) {
   const interval = h("span", { id: "intv" }, t("Status_Interval", info.interval));
   const overlay = h("button", { class: "btn quiet", id: "ovl", title: t("Overlay_ToggleHint"), onclick: () => call("app.toggleOverlay") }, t("Overlay_Toggle"));
   const pause = h("button", { class: "btn quiet", id: "pause", onclick: async () => setPause(await call("app.togglePause")) }, t(info.paused ? "Status_Resume" : "Status_Pause"));
-  band.append(...[status, interval, h("span", { class: "grow" }), live ? null : h("span", { class: "pill warn" }, t("Web_DemoData")), overlay, pause].filter(Boolean));
+  const bench = h("span", { class: "pill run", id: "bench-mode", hidden: true, title: t("Web_Quiet_Text") }, t("Web_Quiet_Title"));
+  band.append(...[status, interval, bench, h("span", { class: "grow" }), live ? null : h("span", { class: "pill warn" }, t("Web_DemoData")), overlay, pause].filter(Boolean));
 }
 function setPause(p) { const b = document.getElementById("pause"); if (b) b.textContent = t(p ? "Status_Resume" : "Status_Pause"); }
 
@@ -144,6 +145,9 @@ async function start() {
   on("interval", (s) => { const el = document.getElementById("intv"); if (el) el.textContent = t("Status_Interval", s); });
   on("overlay", (v) => document.getElementById("ovl")?.classList.toggle("primary", v));
   on("visibility", (v) => { app.dataset.visible = String(v); });
+  // While a benchmark runs the host sends no live data and the page stands still: only the run's progress moves.
+  const quiet = (q) => { app.dataset.bench = q ? "on" : "off"; document.getElementById("bench-mode")?.toggleAttribute("hidden", !q); };
+  on("quiet", quiet); call("app.quiet").then(quiet).catch(() => {});
   on("toast", (m) => toast(m.text, m.kind));
   // A new release on the site marks the settings entry (the app update page is there); the host checks once, a while after start-up.
   const mark = (u) => index.querySelector(`a[data-family="${FAMILIES.length - 1}"]`)?.classList.toggle("has-update", ["Available", "Ready"].includes(u?.state));

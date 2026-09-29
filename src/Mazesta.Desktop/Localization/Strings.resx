@@ -1334,7 +1334,7 @@ The update services stopped and disabled</value></data>
   <data name="Web_Peers_Median" xml:space="preserve"><value>The median of this model's systems (each system's best run)</value></data>
   <data name="Web_Peers_DiffHint" xml:space="preserve"><value>How far this system's result is above (+) or below (−) this model</value></data>
   <data name="Web_Peers_Built" xml:space="preserve"><value>list of {0}</value></data>
-  <data name="Web_Peers_Note" xml:space="preserve"><value>One entry per model: the median of the best runs of its systems, each system counted once. The percentage is how far this system's result is above (+) or below (−) that value. Entries marked "this copy" were measured with this copy and are not in the shop's list yet.</value></data>
+  <data name="Web_Peers_Note" xml:space="preserve"><value>One entry per model: the median of the best runs of its systems, each system counted once. The gap is always said from the faster side: a percentage up to double (25% faster), a multiple from there (3.2× faster). An overclocked model has an entry of its own. Click an entry to open its run conditions and specifications beside this system's. Entries marked "this copy" were measured with this copy and are not in the shop's list yet.</value></data>
   <data name="Web_Peers_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Web_Runs_Empty" xml:space="preserve"><value>No run of this benchmark has been recorded with this copy yet.</value></data>
   <data name="Web_Runs_Folder" xml:space="preserve"><value>Open the runs folder</value></data>
@@ -1343,4 +1343,64 @@ The update services stopped and disabled</value></data>
   <data name="Web_Runs_Machine" xml:space="preserve"><value>Computer</value></data>
   <data name="Web_Runs_Part" xml:space="preserve"><value>Part</value></data>
   <data name="Web_Runs_Value" xml:space="preserve"><value>Result</value></data>
+  <data name="Bench_Cpu_PClock" xml:space="preserve"><value>Average P-core clock during the run</value></data>
+  <data name="Bench_Cpu_EClock" xml:space="preserve"><value>Average E-core clock during the run</value></data>
+  <data name="Bench_Cpu_Vcore" xml:space="preserve"><value>Average core voltage (Vcore)</value></data>
+  <data name="Bench_Cpu_TempAvg" xml:space="preserve"><value>Average CPU temperature during the run</value></data>
+  <data name="Bench_Gpu_MemClock" xml:space="preserve"><value>Average GPU memory clock</value></data>
+  <data name="Bench_Gpu_Load" xml:space="preserve"><value>Average GPU load</value></data>
+  <data name="Bench_Gpu_Voltage" xml:space="preserve"><value>Average GPU voltage</value></data>
+  <data name="Bench_Gpu_TempAvg" xml:space="preserve"><value>Average GPU core temperature</value></data>
+  <data name="Bench_Gpu_HotSpotMax" xml:space="preserve"><value>Peak GPU hot spot temperature</value></data>
+  <data name="Bench_Gpu_VramTempMax" xml:space="preserve"><value>Peak GPU memory temperature</value></data>
+  <data name="Bench_Gpu_Fan" xml:space="preserve"><value>Average GPU fan speed</value></data>
+  <data name="Spec_Cores" xml:space="preserve"><value>Cores</value></data>
+  <data name="Spec_Threads" xml:space="preserve"><value>Threads</value></data>
+  <data name="Spec_RatedClock" xml:space="preserve"><value>Rated clock (as Windows reports it)</value></data>
+  <data name="Spec_Socket" xml:space="preserve"><value>Socket</value></data>
+  <data name="Spec_Vram" xml:space="preserve"><value>Video memory</value></data>
+  <data name="Spec_Driver" xml:space="preserve"><value>Driver version</value></data>
+  <data name="Spec_Memory" xml:space="preserve"><value>Memory</value></data>
+  <data name="Spec_Modules" xml:space="preserve"><value>Memory modules</value></data>
+  <data name="Spec_Bus" xml:space="preserve"><value>Interface</value></data>
+  <data name="Spec_Media" xml:space="preserve"><value>Type</value></data>
+  <data name="Spec_Capacity" xml:space="preserve"><value>Capacity</value></data>
+  <data name="Spec_Firmware" xml:space="preserve"><value>Firmware</value></data>
+  <data name="Spec_Cpu" xml:space="preserve"><value>CPU</value></data>
+  <data name="Spec_Board" xml:space="preserve"><value>Motherboard</value></data>
+  <data name="Spec_Bios" xml:space="preserve"><value>BIOS</value></data>
+  <data name="Spec_Os" xml:space="preserve"><value>Windows</value></data>
+  <data name="Web_Peers_TheyFaster" xml:space="preserve"><value>{0} faster</value></data>
+  <data name="Web_Peers_YouFaster" xml:space="preserve"><value>this system {0} faster</value></data>
+  <data name="Web_Peers_Even" xml:space="preserve"><value>even</value></data>
+  <data name="Web_Peers_GapHint" xml:space="preserve"><value>Up to double as a percentage, from double as a multiple; always said from the faster side.</value></data>
+  <data name="Web_Peers_Featured" xml:space="preserve"><value>Featured results</value></data>
+  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>Runs the shop picked as references.</value></data>
+  <data name="Web_Peers_FeaturedMore" xml:space="preserve"><value>and {0} more featured results in the full list</value></data>
+  <data name="Web_Peers_Oc" xml:space="preserve"><value>overclocked</value></data>
+  <data name="Web_Peers_FilterAll" xml:space="preserve"><value>All</value></data>
+  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>Featured only</value></data>
+  <data name="Web_Peers_FilterStock" xml:space="preserve"><value>Not overclocked</value></data>
+  <data name="Web_Peers_Found" xml:space="preserve"><value>{0} shown</value></data>
+  <data name="Web_Detail_Open" xml:space="preserve"><value>Details and comparison</value></data>
+  <data name="Web_Detail_This" xml:space="preserve"><value>This system</value></data>
+  <data name="Web_Detail_That" xml:space="preserve"><value>Compared with</value></data>
+  <data name="Web_Detail_Result" xml:space="preserve"><value>Result</value></data>
+  <data name="Web_Detail_Date" xml:space="preserve"><value>Run on</value></data>
+  <data name="Web_Detail_Results" xml:space="preserve"><value>Measured numbers</value></data>
+  <data name="Web_Detail_Conditions" xml:space="preserve"><value>Conditions during the run</value></data>
+  <data name="Web_Detail_Part" xml:space="preserve"><value>Part specifications</value></data>
+  <data name="Web_Detail_System" xml:space="preserve"><value>System specifications</value></data>
+  <data name="Web_Detail_Loading" xml:space="preserve"><value>Reading…</value></data>
+  <data name="Web_Detail_None" xml:space="preserve"><value>No details were recorded for this one (a run made with a version older than 0.7.1).</value></data>
+  <data name="Web_Detail_Sample" xml:space="preserve"><value>Details of one system of this model: the one whose result is nearest the median.</value></data>
+  <data name="Web_Bench_AllNumbers" xml:space="preserve"><value>Every number and condition of this result</value></data>
+  <data name="Web_Runs_Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="Web_Runs_Oc" xml:space="preserve"><value>Overclocked</value></data>
+  <data name="Web_Runs_NoteLabel" xml:space="preserve"><value>Note (e.g. "water cooled")</value></data>
+  <data name="Web_Runs_MarkHint" xml:space="preserve"><value>Star: once published, every copy shows this run as a featured result. "Overclocked": ranked apart from the model's usual results.</value></data>
+  <data name="Bench_Overclocked" xml:space="preserve"><value>This system is overclocked</value></data>
+  <data name="Bench_OverclockedHint" xml:space="preserve"><value>The next runs are logged as overclocked and compared apart from usual results. Turns off when the app closes.</value></data>
+  <data name="Web_Quiet_Title" xml:space="preserve"><value>Benchmark mode</value></data>
+  <data name="Web_Quiet_Text" xml:space="preserve"><value>Until the run ends the rest of the app is paused; only the sensors the measurement needs and the overlay keep working.</value></data>
 </root>

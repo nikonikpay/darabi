@@ -37,9 +37,13 @@ static int Site(string[] args)
     // 1. The runs, gathered into the archive: each copy's run logs may be brought in again and again, a run is added once.
     var known = BenchmarkRunLog.ReadFolder(archive).Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
     int added = 0;
+    // The shop's marks (featured, overclocked) come along with the runs; for a run marked on more than one copy, the latest mark wins.
+    string marksFile = Path.Combine(archive, BenchmarkMarks.FileName);
+    var markSets = new List<IReadOnlyDictionary<string, BenchmarkMark>> { BenchmarkMarks.Read(marksFile) };
     foreach (var from in Opts(args, "--runs"))
     {
         string folder = Directory.Exists(Path.Combine(from, "benchmarks", "runs")) ? Path.Combine(from, "benchmarks", "runs") : from;
+        markSets.Add(BenchmarkMarks.Read(Path.Combine(folder, BenchmarkMarks.FileName)));
         foreach (var run in BenchmarkRunLog.ReadFolder(folder).Where(r => known.Add(r.Id)))
         {
             Directory.CreateDirectory(archive);
@@ -48,12 +52,14 @@ static int Site(string[] args)
         }
     }
     var all = BenchmarkRunLog.ReadFolder(archive).ToList();
-    Console.WriteLine($"Archive {archive}: {added} new runs, {all.Count} in all");
+    var marks = BenchmarkMarks.Merge(markSets);
+    if (marks.Count > 0) { Directory.CreateDirectory(archive); File.WriteAllText(marksFile, JsonSerializer.Serialize(marks, Json)); }
+    Console.WriteLine($"Archive {archive}: {added} new runs, {all.Count} in all; {marks.Values.Count(m => m.Featured)} featured");
 
     // 2. The comparison lists, one file per benchmark, version and settings; lists no run supports any more are removed.
     string db = Path.Combine(outDir, "benchdb");
     Directory.CreateDirectory(db);
-    var tables = BenchmarkPeers.Aggregate(all, DateTimeOffset.UtcNow);
+    var tables = BenchmarkPeers.Aggregate(all, DateTimeOffset.UtcNow, marks);
     var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     foreach (var t in tables)
     {

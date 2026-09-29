@@ -11,5 +11,8 @@ public static class OverlaySignals
     public const string Toggle = @"Local\Mazesta.Overlay.Toggle";
     public const string Shown = @"Local\Mazesta.Overlay.Shown";
     public const string Argument = "--overlay";
+    /// <summary>Kept set by the app while a benchmark runs: the tray puts its own sensor checks off, so a second reader of the hardware does not
+    /// take time from the run.</summary>
+    public const string BenchmarkBusy = @"Local\Mazesta.Benchmark.Busy";
     public const string TrayProcess = "MazestaTray";
 }

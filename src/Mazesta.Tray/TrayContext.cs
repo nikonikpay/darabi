@@ -41,12 +41,20 @@ internal sealed class TrayContext : ApplicationContext
         _icon.DoubleClick += (_, _) => ShowSummary();
         _icon.BalloonTipClicked += (_, _) => ShowSummary();
         Refresh();
-        _temps.Tick += async (_, _) => await CheckTempsAsync(); _health.Tick += async (_, _) => await CheckHealthAsync();
+        _temps.Tick += async (_, _) => { if (Benchmarking()) Schedule(_temps, TimeSpan.FromMinutes(1)); else await CheckTempsAsync(); };
+        _health.Tick += async (_, _) => { if (Benchmarking()) Schedule(_health, TimeSpan.FromMinutes(1)); else await CheckHealthAsync(); };
         // The first checks come shortly after sign-in, not during it, and not both at once.
         Schedule(_temps, TimeSpan.FromSeconds(intervals.FirstCheckSeconds)); Schedule(_health, TimeSpan.FromSeconds(intervals.FirstCheckSeconds + 40));
         // The GPU profile a little after sign-in, once the driver has settled.
         _gpuAtStart.Tick += (_, _) => { _gpuAtStart.Stop(); _gpu.ApplyAtStart(); Memory.Release(); };
         _gpuAtStart.Start();
+    }
+
+    /// <summary>The app is running a benchmark: a scheduled check waits a minute and asks again (one asked for from the menu still runs).</summary>
+    private static bool Benchmarking()
+    {
+        if (!EventWaitHandle.TryOpenExisting(OverlaySignals.BenchmarkBusy, out var busy)) return false;
+        using (busy) return busy.WaitOne(0);
     }
 
     /// <summary>Whether the app shows the overlay now: the app keeps the named event set while it does; no app running means no overlay.</summary>

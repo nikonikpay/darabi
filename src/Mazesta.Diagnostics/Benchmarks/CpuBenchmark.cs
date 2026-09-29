@@ -27,11 +27,16 @@ public sealed class CpuBenchmark(bool allThreads) : IBenchmark
         if (allThreads)
         {
             metrics.AddRange([new("Bench_Cpu_PerThread", gflops / threads, "GFLOPS"), new("Bench_Threads", threads, "")]);
-            metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuEffectiveClockAverage, started, finished, "Bench_Cpu_Clock", Unit.MegaHertz);
+            metrics.AddFirst(request, HardwareKind.Cpu, started, finished, "Bench_Cpu_Clock", Unit.MegaHertz, false, null, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage);
+            // A hybrid CPU's two kinds of core run at their own clocks, so each is averaged apart (the monitor names them "P-Core #n" and "E-Core #n").
+            metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished, "Bench_Cpu_PClock", Unit.MegaHertz, sensor: s => s.Name.StartsWith("P-Core", StringComparison.Ordinal));
+            metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished, "Bench_Cpu_EClock", Unit.MegaHertz, sensor: s => s.Name.StartsWith("E-Core", StringComparison.Ordinal));
         }
-        else metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuEffectiveClock, started, finished, "Bench_Cpu_ClockPeak", Unit.MegaHertz, peak: true);
+        else metrics.AddFirst(request, HardwareKind.Cpu, started, finished, "Bench_Cpu_ClockPeak", Unit.MegaHertz, true, null, SensorRole.CpuEffectiveClock, SensorRole.CpuCoreClock);
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished, "Bench_Cpu_Power", Unit.Watt);
-        if (SensorEvidence.CpuTemperature(request.Engine, started, finished) is { } temp) metrics.Add(new("Bench_Cpu_TempMax", temp.Max, Units.Symbol(Unit.Celsius)));
+        metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuVcore, started, finished, "Bench_Cpu_Vcore", Unit.Volt);
+        if (SensorEvidence.CpuTemperature(request.Engine, started, finished) is { } temp)
+            metrics.AddRange([new("Bench_Cpu_TempAvg", temp.Average, Units.Symbol(Unit.Celsius)), new("Bench_Cpu_TempMax", temp.Max, Units.Symbol(Unit.Celsius))]);
         return new(Definition.Id, BenchmarkStatus.Completed, started, finished, metrics, $"matrix {N}x{N} double on {threads} thread(s) for {request.DurationSeconds} s");
     }
 

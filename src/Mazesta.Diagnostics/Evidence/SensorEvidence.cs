@@ -15,10 +15,14 @@ public readonly record struct SensorStat(double Average, double Max, int Samples
 /// </summary>
 public static class SensorEvidence
 {
-    public static SensorStat? Read(PollingEngine? engine, HardwareKind kind, SensorRole role, DateTimeOffset from, DateTimeOffset to)
+    public static SensorStat? Read(PollingEngine? engine, HardwareKind kind, SensorRole role, DateTimeOffset from, DateTimeOffset to) => Read(engine, kind, role, from, to, null, null);
+
+    /// <summary>As the plain read, narrowed to some nodes (the one GPU a run used, not every GPU in the machine) and some sensors (the P-cores'
+    /// clocks apart from the E-cores').</summary>
+    public static SensorStat? Read(PollingEngine? engine, HardwareKind kind, SensorRole role, DateTimeOffset from, DateTimeOffset to, Func<HardwareNode, bool>? node, Func<SensorDefinition, bool>? sensor)
     {
         if (engine is null) return null;
-        var sensors = engine.Hardware.Where(n => n.Kind == kind).SelectMany(n => n.Sensors).Where(s => s.Role == role).ToList();
+        var sensors = engine.Hardware.Where(n => n.Kind == kind && (node is null || node(n))).SelectMany(n => n.Sensors).Where(s => s.Role == role && (sensor is null || sensor(s))).ToList();
         int startSec = engine.History.SecondsSinceEpoch(from), endSec = engine.History.SecondsSinceEpoch(to);
         var samples = new List<float>();
         foreach (var s in sensors)

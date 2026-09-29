@@ -19,9 +19,18 @@ public static class BenchmarkRequestExtensions
     public static void Report(this TestExecutionRequest request, double fraction) => request.Progress?.Invoke(new TestProgress(Math.Clamp(fraction, 0, 1), "Test_Status_Running"));
 
     /// <summary>Adds what the monitor measured for a role over the run (its average, or its peak), and nothing when it measured nothing.</summary>
-    public static void AddSensor(this List<BenchmarkMetric> metrics, TestExecutionRequest request, HardwareKind kind, SensorRole role, DateTimeOffset from, DateTimeOffset to, string key, Unit unit, bool peak = false)
+    public static void AddSensor(this List<BenchmarkMetric> metrics, TestExecutionRequest request, HardwareKind kind, SensorRole role, DateTimeOffset from, DateTimeOffset to, string key, Unit unit,
+        bool peak = false, Func<HardwareNode, bool>? node = null, Func<SensorDefinition, bool>? sensor = null)
     {
-        if (SensorEvidence.Read(request.Engine, kind, role, from, to) is { } s) metrics.Add(new(key, peak ? s.Max : s.Average, Units.Symbol(unit)));
+        if (SensorEvidence.Read(request.Engine, kind, role, from, to, node, sensor) is { } s) metrics.Add(new(key, peak ? s.Max : s.Average, Units.Symbol(unit)));
+    }
+
+    /// <summary>The first of <paramref name="roles"/> the machine measured (the same quantity is another sensor per vendor).</summary>
+    public static void AddFirst(this List<BenchmarkMetric> metrics, TestExecutionRequest request, HardwareKind kind, DateTimeOffset from, DateTimeOffset to, string key, Unit unit, bool peak,
+        Func<HardwareNode, bool>? node, params SensorRole[] roles)
+    {
+        foreach (var role in roles)
+            if (SensorEvidence.Read(request.Engine, kind, role, from, to, node, null) is { } s) { metrics.Add(new(key, peak ? s.Max : s.Average, Units.Symbol(unit))); return; }
     }
 }
 

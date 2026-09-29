@@ -1334,7 +1334,7 @@
   <data name="Web_Peers_Median" xml:space="preserve"><value>میانه سیستم‌های این مدل (بهترین اجرای هر سیستم)</value></data>
   <data name="Web_Peers_DiffHint" xml:space="preserve"><value>نتیجه این سیستم چقدر بالاتر (+) یا پایین‌تر (−) از این مدل است</value></data>
   <data name="Web_Peers_Built" xml:space="preserve"><value>فهرست {0}</value></data>
-  <data name="Web_Peers_Note" xml:space="preserve"><value>برای هر مدل یک ردیف: میانه بهترین اجرای سیستم‌های آن مدل، هر سیستم یک بار. درصد نشان می‌دهد نتیجه این سیستم چقدر بالاتر (+) یا پایین‌تر (−) از آن مقدار است. ردیف‌های «این نسخه» با همین نسخه برنامه اندازه‌گیری شده‌اند و هنوز در فهرست فروشگاه نیستند.</value></data>
+  <data name="Web_Peers_Note" xml:space="preserve"><value>برای هر مدل یک ردیف: میانه بهترین اجرای سیستم‌های آن مدل، هر سیستم یک بار. فاصله همیشه از طرف سیستم سریع‌تر گفته می‌شود: تا دو برابر به درصد (۲۵٪ سریع‌تر)، از دو برابر به بعد به «چند برابر» (۳.۲ برابر سریع‌تر). مدل اورکلاک‌شده ردیف جدا دارد. روی هر ردیف بزنید تا شرایط اجرا و مشخصات آن کنار این سیستم باز شود. ردیف‌های «این نسخه» با همین نسخه برنامه اندازه‌گیری شده‌اند و هنوز در فهرست فروشگاه نیستند.</value></data>
   <data name="Web_Peers_Close" xml:space="preserve"><value>بستن</value></data>
   <data name="Web_Runs_Empty" xml:space="preserve"><value>هنوز اجرایی از این بنچمارک با این نسخه ثبت نشده است.</value></data>
   <data name="Web_Runs_Folder" xml:space="preserve"><value>باز کردن پوشه اجراها</value></data>
@@ -1343,4 +1343,64 @@
   <data name="Web_Runs_Machine" xml:space="preserve"><value>کامپیوتر</value></data>
   <data name="Web_Runs_Part" xml:space="preserve"><value>قطعه</value></data>
   <data name="Web_Runs_Value" xml:space="preserve"><value>نتیجه</value></data>
+  <data name="Bench_Cpu_PClock" xml:space="preserve"><value>میانگین کلاک هسته‌های P حین اجرا</value></data>
+  <data name="Bench_Cpu_EClock" xml:space="preserve"><value>میانگین کلاک هسته‌های E حین اجرا</value></data>
+  <data name="Bench_Cpu_Vcore" xml:space="preserve"><value>میانگین ولتاژ هسته (Vcore)</value></data>
+  <data name="Bench_Cpu_TempAvg" xml:space="preserve"><value>میانگین دمای پردازنده حین اجرا</value></data>
+  <data name="Bench_Gpu_MemClock" xml:space="preserve"><value>میانگین کلاک حافظه گرافیک</value></data>
+  <data name="Bench_Gpu_Load" xml:space="preserve"><value>میانگین بار گرافیک</value></data>
+  <data name="Bench_Gpu_Voltage" xml:space="preserve"><value>میانگین ولتاژ گرافیک</value></data>
+  <data name="Bench_Gpu_TempAvg" xml:space="preserve"><value>میانگین دمای هسته گرافیک</value></data>
+  <data name="Bench_Gpu_HotSpotMax" xml:space="preserve"><value>بیشینه دمای هات‌اسپات گرافیک</value></data>
+  <data name="Bench_Gpu_VramTempMax" xml:space="preserve"><value>بیشینه دمای حافظه گرافیک</value></data>
+  <data name="Bench_Gpu_Fan" xml:space="preserve"><value>میانگین سرعت فن گرافیک</value></data>
+  <data name="Spec_Cores" xml:space="preserve"><value>هسته‌ها</value></data>
+  <data name="Spec_Threads" xml:space="preserve"><value>رشته‌ها</value></data>
+  <data name="Spec_RatedClock" xml:space="preserve"><value>فرکانس اسمی (طبق ویندوز)</value></data>
+  <data name="Spec_Socket" xml:space="preserve"><value>سوکت</value></data>
+  <data name="Spec_Vram" xml:space="preserve"><value>حافظه گرافیک</value></data>
+  <data name="Spec_Driver" xml:space="preserve"><value>نسخه درایور</value></data>
+  <data name="Spec_Memory" xml:space="preserve"><value>رم</value></data>
+  <data name="Spec_Modules" xml:space="preserve"><value>ماژول‌های رم</value></data>
+  <data name="Spec_Bus" xml:space="preserve"><value>رابط</value></data>
+  <data name="Spec_Media" xml:space="preserve"><value>نوع</value></data>
+  <data name="Spec_Capacity" xml:space="preserve"><value>ظرفیت</value></data>
+  <data name="Spec_Firmware" xml:space="preserve"><value>فریم‌ور</value></data>
+  <data name="Spec_Cpu" xml:space="preserve"><value>پردازنده</value></data>
+  <data name="Spec_Board" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="Spec_Bios" xml:space="preserve"><value>بایوس</value></data>
+  <data name="Spec_Os" xml:space="preserve"><value>ویندوز</value></data>
+  <data name="Web_Peers_TheyFaster" xml:space="preserve"><value>{0} سریع‌تر</value></data>
+  <data name="Web_Peers_YouFaster" xml:space="preserve"><value>این سیستم {0} سریع‌تر</value></data>
+  <data name="Web_Peers_Even" xml:space="preserve"><value>هم‌سطح</value></data>
+  <data name="Web_Peers_GapHint" xml:space="preserve"><value>تا دو برابر به درصد، از دو برابر به بعد به «چند برابر» نوشته می‌شود؛ همیشه از طرف سیستم سریع‌تر.</value></data>
+  <data name="Web_Peers_Featured" xml:space="preserve"><value>نتایج شاخص</value></data>
+  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>اجراهایی که فروشگاه به‌عنوان مرجع انتخاب کرده است.</value></data>
+  <data name="Web_Peers_FeaturedMore" xml:space="preserve"><value>و {0} نتیجه شاخص دیگر در «کل فهرست»</value></data>
+  <data name="Web_Peers_Oc" xml:space="preserve"><value>اورکلاک</value></data>
+  <data name="Web_Peers_FilterAll" xml:space="preserve"><value>همه</value></data>
+  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>فقط شاخص‌ها</value></data>
+  <data name="Web_Peers_FilterStock" xml:space="preserve"><value>بدون اورکلاک</value></data>
+  <data name="Web_Peers_Found" xml:space="preserve"><value>{0} مورد</value></data>
+  <data name="Web_Detail_Open" xml:space="preserve"><value>جزئیات و مقایسه</value></data>
+  <data name="Web_Detail_This" xml:space="preserve"><value>این سیستم</value></data>
+  <data name="Web_Detail_That" xml:space="preserve"><value>طرف مقایسه</value></data>
+  <data name="Web_Detail_Result" xml:space="preserve"><value>نتیجه</value></data>
+  <data name="Web_Detail_Date" xml:space="preserve"><value>تاریخ اجرا</value></data>
+  <data name="Web_Detail_Results" xml:space="preserve"><value>اعداد اندازه‌گیری‌شده</value></data>
+  <data name="Web_Detail_Conditions" xml:space="preserve"><value>شرایط حین اجرا</value></data>
+  <data name="Web_Detail_Part" xml:space="preserve"><value>مشخصات قطعه</value></data>
+  <data name="Web_Detail_System" xml:space="preserve"><value>مشخصات سیستم</value></data>
+  <data name="Web_Detail_Loading" xml:space="preserve"><value>در حال خواندن…</value></data>
+  <data name="Web_Detail_None" xml:space="preserve"><value>برای این مورد جزئیاتی ثبت نشده است (اجرا با نسخه‌ای قدیمی‌تر از 0.7.1).</value></data>
+  <data name="Web_Detail_Sample" xml:space="preserve"><value>جزئیات یکی از سیستم‌های این مدل که نتیجه‌اش به میانه نزدیک‌تر است.</value></data>
+  <data name="Web_Bench_AllNumbers" xml:space="preserve"><value>همه اعداد و شرایط این نتیجه</value></data>
+  <data name="Web_Runs_Featured" xml:space="preserve"><value>شاخص</value></data>
+  <data name="Web_Runs_Oc" xml:space="preserve"><value>اورکلاک</value></data>
+  <data name="Web_Runs_NoteLabel" xml:space="preserve"><value>یادداشت (مثلاً «خنک‌کننده آبی»)</value></data>
+  <data name="Web_Runs_MarkHint" xml:space="preserve"><value>ستاره: این اجرا بعد از انتشار در همه نسخه‌ها به‌عنوان نتیجه شاخص نشان داده می‌شود. «اورکلاک»: جدا از نتایج عادی همان مدل حساب می‌شود.</value></data>
+  <data name="Bench_Overclocked" xml:space="preserve"><value>این سیستم اورکلاک شده است</value></data>
+  <data name="Bench_OverclockedHint" xml:space="preserve"><value>اجراهای بعدی با برچسب اورکلاک ثبت و جدا از نتایج عادی مقایسه می‌شوند. با بستن برنامه خاموش می‌شود.</value></data>
+  <data name="Web_Quiet_Title" xml:space="preserve"><value>حالت بنچمارک</value></data>
+  <data name="Web_Quiet_Text" xml:space="preserve"><value>تا پایان اجرا بخش‌های دیگر برنامه متوقف‌اند؛ فقط سنسورهای لازم برای اندازه‌گیری و اورلی کار می‌کنند.</value></data>
 </root>
