@@ -89,7 +89,7 @@
     <value>Gaming</value>
   </data>
   <data name="Nav_WindowsTools" xml:space="preserve">
-    <value>Windows Tools</value>
+    <value>Windows &amp; game tools</value>
   </data>
   <data name="Nav_Reports" xml:space="preserve">
     <value>Reports</value>
@@ -1224,6 +1224,20 @@
   <data name="Pref_VerboseLogon" xml:space="preserve"><value>Detailed sign-in messages</value></data>
   <data name="Pref_BsodDetails" xml:space="preserve"><value>Details on the blue screen</value></data>
   <data name="Pref_LongPaths" xml:space="preserve"><value>Long file paths</value></data>
+  <data name="Pref_DarkTheme_Note" xml:space="preserve"><value>Windows and its apps use dark colours instead of light ones.</value></data>
+  <data name="Pref_BingSearch_Note" xml:space="preserve"><value>Start search also sends what you type to Bing and shows web results. Off keeps the search to this PC.</value></data>
+  <data name="Pref_FileExtensions_Note" xml:space="preserve"><value>File Explorer shows the ending of every file name (.exe, .pdf), so a file posing as another is easier to spot.</value></data>
+  <data name="Pref_HiddenFiles_Note" xml:space="preserve"><value>File Explorer shows the files and folders Windows keeps hidden, such as AppData.</value></data>
+  <data name="Pref_MouseAcceleration_Note" xml:space="preserve"><value>The faster the mouse moves, the further the pointer travels. Many gamers turn it off for steady aim.</value></data>
+  <data name="Pref_StickyKeys_Note" xml:space="preserve"><value>Pressing Shift five times asks to turn on Sticky Keys. Off stops that prompt popping up in the middle of a game.</value></data>
+  <data name="Pref_TaskbarCenter_Note" xml:space="preserve"><value>Windows 11 puts Start and the taskbar icons in the middle. Off moves them to the edge, as in Windows 10.</value></data>
+  <data name="Pref_TaskbarSearch_Note" xml:space="preserve"><value>Shows the search icon next to the Start button.</value></data>
+  <data name="Pref_TaskView_Note" xml:space="preserve"><value>Shows the taskbar button for open windows and virtual desktops.</value></data>
+  <data name="Pref_Snapping_Note" xml:space="preserve"><value>Dragging a window to a screen edge sizes it to half or a quarter of the screen.</value></data>
+  <data name="Pref_GameMode_Note" xml:space="preserve"><value>Windows gives the running game priority and holds back updates and background work while it plays.</value></data>
+  <data name="Pref_VerboseLogon_Note" xml:space="preserve"><value>At start-up, shut-down and sign-in Windows says which step it is on instead of only "Please wait". Helps find what makes it slow.</value></data>
+  <data name="Pref_BsodDetails_Note" xml:space="preserve"><value>The blue screen also shows the stop code and the driver behind it, which helps find the fault.</value></data>
+  <data name="Pref_LongPaths_Note" xml:space="preserve"><value>Lets programs use file paths longer than 260 characters. Some developer tools and deeply nested folders need it.</value></data>
   <data name="Dns_Title" xml:space="preserve"><value>DNS</value></data>
   <data name="Dns_Sub" xml:space="preserve"><value>For every connected adapter</value></data>
   <data name="Dns_Auto" xml:space="preserve"><value>Automatic</value></data>

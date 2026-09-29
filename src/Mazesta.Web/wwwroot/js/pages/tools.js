@@ -1,12 +1,15 @@
-// Windows Tools, boxed by what each tool is about: Windows' own repair tools (their real output streams below them), hibernation and Fast
-// Startup, the virtual memory, the hosts file and Windows' own windows. Every change is one button, is read back from Windows afterwards, and
-// says what Windows answered; nothing runs on its own.
+// Windows and game tools, boxed by what each tool is about: Windows' own repair tools (their real output streams below them), hibernation and Fast
+// Startup, the virtual memory, the hosts file, Windows' own windows, the power plan and game switches, and the DNS resolver. Every change is one
+// button, is read back from Windows afterwards, and says what Windows answered; nothing runs on its own.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
 import { box } from "../groups.js";
+import { gamingBoxes } from "./gaming.js";
+import { dnsBox } from "./dns.js";
 
 export function mount(el) {
+  const gaming = gamingBoxes(5);
   // ——— Repair: sfc and DISM ———
   const btn = (cmd, key, cls = "btn") => h("button", { class: cls, "data-cmd": cmd, onclick: () => call("tools.exec", { cmd }) }, t(key));
   const repair = [btn("sfc", "Tools_Sfc", "btn primary"), btn("dismScan", "Tools_DismScan"), btn("dismRestore", "Tools_DismRestore")];
@@ -56,7 +59,8 @@ export function mount(el) {
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
         body: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn, h("span", { class: "grow" }), hostsInfo), hostsMsg, h("p", { class: "note" }, t("Tools_Hosts_Note"))] }),
       box({ kind: "Storage", ico: "drive", title: t("Tools_Windows"), sub: t("Tools_Windows_Sub"), i: 4,
-        body: h("div", { class: "btn-row", style: { marginTop: 0 } }, btn("cleanup", "Tools_DiskCleanup"), btn("update", "Tools_WindowsUpdate")) })));
+        body: h("div", { class: "btn-row", style: { marginTop: 0 } }, btn("cleanup", "Tools_DiskCleanup"), btn("update", "Tools_WindowsUpdate")) }),
+      ...gaming.boxes, dnsBox(7)));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;
@@ -150,5 +154,6 @@ export function mount(el) {
   call("tools.state").then(update);
   call("sys.state").then((s) => { showPower(s.power); showVm(s.vm); });
   loadHosts();
-  return on("tools", update);
+  const off = on("tools", update);
+  return () => { off(); gaming.off(); };
 }

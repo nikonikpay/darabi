@@ -36,6 +36,7 @@ public sealed partial class WebBridge
         };
 
         Method("tweaks.state", _ => State());
+        Method("dns.state", _ => DnsState());
 
         // Ticked tweaks, one after another in the catalog's order (the restore point first), applied or undone; each one's outcome comes back.
         MethodAsync("tweaks.run", async p =>

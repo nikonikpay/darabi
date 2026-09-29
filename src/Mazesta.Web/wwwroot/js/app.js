@@ -17,7 +17,6 @@ export const PAGES = [
   { id: "cpu", key: "Nav_Cpu", load: () => import("./pages/component.js"), arg: "Cpu" },
   { id: "network", key: "Nav_Network", load: () => import("./pages/component.js"), arg: "Network" },
   { id: "storage", key: "Nav_Storage", load: () => import("./pages/component.js"), arg: "Storage" },
-  { id: "gaming", key: "Nav_Gaming", load: () => import("./pages/gaming.js") },
   { id: "overlay", key: "Nav_Overlay", load: () => import("./pages/overlay.js") },
   { id: "tuning", key: "Nav_Tuning", load: () => import("./pages/tuning.js") },
   { id: "tools", key: "Nav_WindowsTools", load: () => import("./pages/tools.js") },
@@ -28,7 +27,7 @@ export const PAGES = [
 ];
 
 // The side bar has one entry per family; a family of several pages shows them as tabs at the top of each. Ctrl+1 … Ctrl+9 open the families.
-// The overlay and GPU tuning have entries of their own; Windows' tools, its tweaks, Windows Update and gaming share one.
+// The overlay and GPU tuning have entries of their own; Windows' tools (gaming and DNS among them), its tweaks and Windows Update share one.
 export const FAMILIES = [
   { key: "Nav_Dashboard", icon: "home", pages: ["dashboard"] },
   { key: "Nav_Monitoring", icon: "pulse", pages: ["monitoring"] },
@@ -36,11 +35,11 @@ export const FAMILIES = [
   { key: "Nav_Group_Hardware", icon: "cpu", pages: ["system", "cpu", "gpu", "storage", "network"] },
   { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
-  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates", "gaming"] },
+  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
   { key: "Nav_Settings", icon: "gear", pages: ["settings"] },
 ];
-const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", gaming: "gamepad", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update" };
+const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 

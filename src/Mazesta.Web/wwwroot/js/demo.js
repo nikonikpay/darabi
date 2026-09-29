@@ -112,7 +112,7 @@ const tweakState = new Map([["telemetry", "Applied"], ["consumerFeatures", "Appl
 let demoUpdate = "Default";
 const tweaks = () => ({ busy: false, update: demoUpdate, presets: { standard: ["restorePoint", "tempFiles", "activityHistory", "consumerFeatures", "telemetry", "location", "deliveryOptimization", "widgets", "gameDvr", "endTask", "wpbt"], minimal: ["restorePoint", "consumerFeatures", "telemetry", "wpbt"] },
   tweaks: [...TWEAKS.map(([id, group, k, action]) => ({ id, group, name: strings[`Tweak_${k}`], note: strings[`Tweak_${k}_Note`], state: action ? "Unknown" : id === "teredo" ? "Unknown" : tweakState.get(id) || "NotApplied", action: !!action, canUndo: !action, restart: ["widgets", "wpbt", "classicMenu", "copilot", "visualFx", "ipv4First", "utcClock"].includes(id) })),
-    ...PREFS.map((k) => ({ id: k, group: "Preference", name: strings[`Pref_${k}`], note: "", state: tweakState.get(k) || "NotApplied", action: false, canUndo: true, restart: false }))],
+    ...PREFS.map((k) => ({ id: k, group: "Preference", name: strings[`Pref_${k}`], note: strings[`Pref_${k}_Note`], state: tweakState.get(k) || "NotApplied", action: false, canUndo: true, restart: false }))],
   dns: { providers: [["cloudflare", "1.1.1.1", "1.0.0.1"], ["google", "8.8.8.8", "8.8.4.4"], ["quad9", "9.9.9.9", "149.112.112.112"], ["shecan", "178.22.122.100", "185.51.200.2"], ["electro", "78.157.42.100", "78.157.42.101"], ["403", "10.202.10.202", "10.202.10.102"]].map(([id, ...servers]) => ({ id, servers })),
     adapters: [{ name: "Ethernet", servers: ["192.168.1.1"], provider: "auto" }] } });
 
@@ -147,6 +147,7 @@ export async function call(m, p, emit) {
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
     case "tweaks.state": return tweaks();
+    case "dns.state": return tweaks().dns;
     case "tweaks.pref": tweakState.set(p.id, p.on ? "Applied" : "NotApplied"); return { error: null, state: tweakState.get(p.id) };
     case "tweaks.run": await new Promise((r) => setTimeout(r, 900));
       return { results: p.ids.map((id) => { const x = TWEAKS.find((y) => y[0] === id); if (!x[3]) tweakState.set(id, p.undo ? "NotApplied" : "Applied");

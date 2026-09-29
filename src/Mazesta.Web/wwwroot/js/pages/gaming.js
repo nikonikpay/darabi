@@ -1,22 +1,21 @@
-// Gaming: Windows' power plans (switchable, reversible) in the power hue, and the two switches Windows keeps in its own settings (Game Mode,
-// hardware-accelerated GPU scheduling) in the GPU's, shown as Windows has them and changed in Windows' own window.
+// Gaming, as boxes on the Windows tools page: Windows' power plans (switchable, reversible) in the power hue, and the two switches Windows keeps
+// in its own settings (Game Mode, hardware-accelerated GPU scheduling) in the GPU's, shown as Windows has them and changed in Windows' own window.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { box } from "../groups.js";
 
-export function mount(el) {
+export function gamingBoxes(i) {
   const plans = h("div", { class: "plans" }), status = h("p", { class: "msg" });
   const ultimate = h("button", { class: "btn", hidden: true, onclick: () => call("gaming.exec", { cmd: "ultimate" }) }, icon("bolt"), t("Gaming_Ultimate"));
   const tiles = h("div", { class: "states" });
-  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Gaming")), h("p", { class: "page-lede" }, t("Gaming_Note")))),
-    h("div", { class: "panels two", style: { marginTop: 0 } },
-      box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i: 0, body: [plans, h("div", { class: "btn-row" }, ultimate), status] }),
-      box({ kind: "Gpu", ico: "gamepad", title: t("Gaming_GameMode"), sub: t("Gaming_Switches_Sub"), i: 1,
-        body: [tiles, h("p", { class: "note" }, t("Gaming_Switches_Note")),
-          h("div", { class: "btn-row" },
-            h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "gameMode" }) }, icon("popout"), t("Gaming_OpenSettings"), " · ", t("Gaming_GameMode")),
-            h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "graphics" }) }, icon("popout"), t("Gaming_OpenSettings"), " · HAGS"))] })));
+  const boxes = [
+    box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i, body: [plans, h("div", { class: "btn-row" }, ultimate), status] }),
+    box({ kind: "Gpu", ico: "gamepad", title: t("Gaming_GameMode"), sub: t("Gaming_Switches_Sub"), i: i + 1,
+      body: [tiles, h("p", { class: "note" }, t("Gaming_Switches_Note")),
+        h("div", { class: "btn-row" },
+          h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "gameMode" }) }, icon("popout"), t("Gaming_OpenSettings"), " · ", t("Gaming_GameMode")),
+          h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "graphics" }) }, icon("popout"), t("Gaming_OpenSettings"), " · HAGS"))] })];
   // Game Mode and HAGS come as text from the host ("on", "off", or Windows' default when the registry does not say).
   const tile = (key, v) => h("div", { class: `state-tile ${v === t("Gaming_On") ? "on" : v === t("Gaming_Off") ? "" : "unknown"}` }, h("span", { class: "k" }, t(key)), h("span", { class: "v" }, v));
   function update(s) {
@@ -28,5 +27,5 @@ export function mount(el) {
       : [h("p", { class: "caption" }, t("Gaming_NoPlans"))]));
   }
   call("gaming.state").then(update);
-  return on("gaming", update);
+  return { boxes, off: on("gaming", update) };
 }

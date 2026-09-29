@@ -89,7 +89,7 @@
     <value>بازی</value>
   </data>
   <data name="Nav_WindowsTools" xml:space="preserve">
-    <value>ابزارهای ویندوز</value>
+    <value>ابزارهای ویندوز و بازی</value>
   </data>
   <data name="Nav_Reports" xml:space="preserve">
     <value>گزارش‌ها</value>
@@ -1224,6 +1224,20 @@
   <data name="Pref_VerboseLogon" xml:space="preserve"><value>پیام‌های کامل هنگام ورود و خروج</value></data>
   <data name="Pref_BsodDetails" xml:space="preserve"><value>جزئیات در صفحه‌ی آبی</value></data>
   <data name="Pref_LongPaths" xml:space="preserve"><value>مسیرهای طولانی فایل</value></data>
+  <data name="Pref_DarkTheme_Note" xml:space="preserve"><value>ویندوز و برنامه‌هایش به‌جای رنگ‌های روشن، رنگ تیره می‌گیرند.</value></data>
+  <data name="Pref_BingSearch_Note" xml:space="preserve"><value>جست‌وجوی استارت آنچه تایپ می‌کنید را به Bing هم می‌فرستد و نتیجه‌ی اینترنتی نشان می‌دهد. خاموش باشد فقط داخل همین کامپیوتر می‌گردد.</value></data>
+  <data name="Pref_FileExtensions_Note" xml:space="preserve"><value>پسوند هر فایل (مثل exe یا pdf) در File Explorer دیده می‌شود تا فایلی که خودش را جای فایل دیگری جا زده راحت‌تر شناخته شود.</value></data>
+  <data name="Pref_HiddenFiles_Note" xml:space="preserve"><value>فایل‌ها و پوشه‌هایی که ویندوز مخفی نگه می‌دارد (مثل AppData) در File Explorer دیده می‌شوند.</value></data>
+  <data name="Pref_MouseAcceleration_Note" xml:space="preserve"><value>هرچه ماوس سریع‌تر حرکت کند، نشانگر مسافت بیشتری می‌رود. بیشتر گیمرها برای نشانه‌گیری ثابت خاموشش می‌کنند.</value></data>
+  <data name="Pref_StickyKeys_Note" xml:space="preserve"><value>پنج بار زدن Shift پیام روشن کردن Sticky Keys را باز می‌کند. خاموش باشد این پیام وسط بازی ظاهر نمی‌شود.</value></data>
+  <data name="Pref_TaskbarCenter_Note" xml:space="preserve"><value>دکمه‌ی استارت و آیکون‌های نوار وظیفه در ویندوز ۱۱ وسط می‌آیند. خاموش باشد مثل ویندوز ۱۰ کنار صفحه می‌روند.</value></data>
+  <data name="Pref_TaskbarSearch_Note" xml:space="preserve"><value>آیکون جست‌وجو کنار دکمه‌ی استارت نشان داده می‌شود.</value></data>
+  <data name="Pref_TaskView_Note" xml:space="preserve"><value>دکمه‌ی نمایش پنجره‌های باز و دسکتاپ‌های مجازی روی نوار وظیفه نشان داده می‌شود.</value></data>
+  <data name="Pref_Snapping_Note" xml:space="preserve"><value>کشیدن پنجره به لبه‌ی صفحه آن را به اندازه‌ی نصف یا یک‌چهارم صفحه درمی‌آورد.</value></data>
+  <data name="Pref_GameMode_Note" xml:space="preserve"><value>ویندوز به بازیِ در حال اجرا اولویت می‌دهد و آپدیت و کارهای پس‌زمینه را هنگام بازی عقب می‌اندازد.</value></data>
+  <data name="Pref_VerboseLogon_Note" xml:space="preserve"><value>هنگام روشن و خاموش شدن و ورود، ویندوز به‌جای «لطفاً صبر کنید» می‌گوید در چه مرحله‌ای است. برای پیدا کردن علت کندی مفید است.</value></data>
+  <data name="Pref_BsodDetails_Note" xml:space="preserve"><value>صفحه‌ی آبی کد خطا و درایور مقصر را هم نشان می‌دهد تا پیدا کردن ایراد راحت‌تر شود.</value></data>
+  <data name="Pref_LongPaths_Note" xml:space="preserve"><value>برنامه‌ها می‌توانند از مسیرهای بیش از ۲۶۰ کاراکتر استفاده کنند. بعضی ابزارهای برنامه‌نویسی و پوشه‌های تودرتو به آن نیاز دارند.</value></data>
   <data name="Dns_Title" xml:space="preserve"><value>DNS</value></data>
   <data name="Dns_Sub" xml:space="preserve"><value>برای همه‌ی کارت‌های شبکه‌ی متصل</value></data>
   <data name="Dns_Auto" xml:space="preserve"><value>خودکار</value></data>

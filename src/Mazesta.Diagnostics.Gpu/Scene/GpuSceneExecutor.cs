@@ -105,22 +105,18 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
         {
             double average = frames / Math.Max(0.001, total.Elapsed.TotalSeconds);
             var now = request.Clock.UtcNow;
-            string sensors = string.Join(" · ", new[]
+            var sensors = new[]
             {
-                Reading(SensorRole.GpuCoreTemp, "{0:F0} °C"), Reading(SensorRole.GpuHotSpotTemp, "hot spot {0:F0} °C"), Reading(SensorRole.GpuCoreClock, "{0:F0} MHz"),
-                Reading(SensorRole.GpuLoad3D, "load {0:F0} %"), Reading(SensorRole.GpuPower, "{0:F0} W"), Reading(SensorRole.GpuFanPercent, "fan {0:F0} %")
-            }.Where(s => s is not null));
-            renderer.Overlay.Update(
-            [
-                new($"MAZESTA  {mode} · {level}", 0xFFD21F),
-                new(frames == 0 ? "starting…" : $"{fps:F0} FPS · {1000 / Math.Max(fps, 0.001):F2} ms · avg {average:F0}" + (minFps < double.MaxValue ? $" · min {minFps:F0}" : ""), 0x7CFF6B),
-                new(card),
-                new($"{w} × {h}" + (window.Width != w || window.Height != h ? $" drawn, shown in {window.Width} × {window.Height}" : ""), 0xC8D2E6),
-                new(work, 0xC8D2E6),
-                new(sensors.Length > 0 ? sensors : "no GPU sensor readings", sensors.Length > 0 ? 0xFFB347u : 0x8890A0u),
-                new($"{(int)total.Elapsed.TotalSeconds} / {request.DurationSeconds} s · check frames {checks} · errors {errors} · Esc stops", errors > 0 ? 0xFF4D4Du : 0xC8D2E6u)
-            ]);
-            string? Reading(SensorRole role, string format) => Latest(request.Engine, gpu, role, now) is { } v ? string.Format(CultureInfo.InvariantCulture, format, v) : null;
+                Reading(SensorRole.GpuCoreTemp, "TEMP", "°C"), Reading(SensorRole.GpuHotSpotTemp, "HOT SPOT", "°C"), Reading(SensorRole.GpuCoreClock, "CLOCK", "MHz"),
+                Reading(SensorRole.GpuLoad3D, "LOAD", "%"), Reading(SensorRole.GpuPower, "POWER", "W"), Reading(SensorRole.GpuFanPercent, "FAN", "%")
+            }.OfType<SceneOverlay.Tile>().ToList();
+            bool running = frames > 0;
+            renderer.Overlay.Update(new(
+                $"{mode} · {level}", running ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, card, sensors,
+                $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""), work,
+                $"{(int)total.Elapsed.TotalSeconds} / {request.DurationSeconds} s · check frames {checks} · errors {errors} · Esc stops", errors > 0));
+            SceneOverlay.Tile? Reading(SensorRole role, string label, string unit) =>
+                Latest(request.Engine, gpu, role, now) is { } v ? new(label, v.ToString("F0", CultureInfo.InvariantCulture), unit) : null;
         }
 
         string Describe()

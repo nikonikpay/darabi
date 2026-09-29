@@ -1,5 +1,5 @@
 // Windows tweaks, as WinUtil lists them: essential and advanced changes are ticked and run together (or undone together), preferences are
-// switches applied on the click, and the DNS resolver is one choice for every connected adapter. Each row says what the registry says now,
+// switches applied on the click (the DNS choice sits on the Windows tools page). Each row says what the registry says now,
 // read back after every change; a one-off action (a restore point, removing temporary files) has no state and no undo.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
@@ -12,7 +12,6 @@ export function mount(el) {
   const ticked = new Set();
   const rows = new Map();   // id -> { row, check, stamp }
   const essential = h("div", { class: "tw-list" }), advanced = h("div", { class: "tw-list" }), prefs = h("div", { class: "tw-prefs" });
-  const dnsList = h("div", { class: "dns-list" }), dnsMsg = h("p", { class: "msg" });
   const status = h("span", { class: "caption tw-status", "aria-live": "polite" }), log = h("ul", { class: "tw-log" });
   const run = h("button", { class: "btn go", onclick: () => go(false) }, icon("play"), t("Tweaks_Run"));
   const undo = h("button", { class: "btn", onclick: () => go(true) }, icon("refresh"), t("Tweaks_Undo"));
@@ -30,8 +29,7 @@ export function mount(el) {
         box({ cls: "p-tool", ico: "check", title: t("Tweaks_Essential"), sub: t("Tweaks_Essential_Sub"), i: 0, body: essential }),
         box({ cls: "p-caution", ico: "alert", title: t("Tweaks_Advanced"), sub: t("Tweaks_Advanced_Sub"), i: 1, body: advanced })),
       h("div", { class: "tw-col" },
-        box({ cls: "p-win", ico: "sliders", title: t("Tweaks_Prefs"), sub: t("Tweaks_Prefs_Sub"), i: 2, body: prefs }),
-        box({ kind: "Network", title: t("Dns_Title"), sub: t("Dns_Sub"), i: 3, body: [dnsList, dnsMsg] }))),
+        box({ cls: "p-win", ico: "sliders", title: t("Tweaks_Prefs"), sub: t("Tweaks_Prefs_Sub"), i: 2, body: prefs }))),
     log,
     h("div", { class: "dock" }, run, undo, status, h("span", { class: "grow" }), h("span", { class: "caption" }, t("Tweaks_Note"))));
 
@@ -62,7 +60,7 @@ export function mount(el) {
   function prefRow(x) {
     const sw = h("input", { type: "checkbox", class: "switch", "aria-label": x.name, checked: x.state === "Applied", onchange: (e) => setPref(x, e.target.checked, sw) });
     sw.indeterminate = x.state === "Partial";
-    const row = h("label", { class: "tw-pref" }, sw, h("span", {}, x.name));
+    const row = h("label", { class: "tw-pref" }, sw, h("span", { class: "tw-pref-t" }, h("b", {}, x.name), x.note ? h("small", {}, x.note) : null));
     rows.set(x.id, { row, sw });
     return row;
   }
@@ -95,29 +93,13 @@ export function mount(el) {
     finally { status.textContent = ""; sync(); }
   }
 
-  function showDns(d) {
-    const current = new Set(d.adapters.map((a) => a.provider));
-    const choice = (id, label, servers) => h("button", { class: `dns-opt ${current.size === 1 && current.has(id) ? "on" : ""}`, type: "button", onclick: () => setDns(id) },
-      h("b", {}, label), servers ? h("span", { class: "lat" }, servers.join("  ")) : h("span", {}, t("Dns_Auto_Sub")));
-    dnsList.replaceChildren(
-      h("div", { class: "dns-opts" }, choice("auto", t("Dns_Auto")), ...d.providers.map((p) => choice(p.id, t(`Dns_${p.id}`), p.servers))),
-      d.adapters.length ? h("dl", { class: "kv" }, d.adapters.flatMap((a) => [h("dt", { class: "lat" }, a.name), h("dd", { class: "lat" }, a.servers.join("  ") || "—")]))
-        : h("p", { class: "caption" }, t("Dns_NoAdapter")));
-  }
-  async function setDns(id) {
-    dnsMsg.className = "msg"; dnsMsg.textContent = t("Tools_Working");
-    try {
-      const r = await call("tweaks.dns", { provider: id });
-      showDns(r.dns); dnsMsg.className = `msg ${r.error ? "fail" : "ok"}`; dnsMsg.textContent = r.error || t("Dns_Done");
-    } catch (e) { dnsMsg.className = "msg fail"; dnsMsg.textContent = String(e.message || e); }
-  }
 
   function render(s) {
     state = s; rows.clear();
     essential.replaceChildren(...s.tweaks.filter((x) => x.group === "Essential").map(tweakRow));
     advanced.replaceChildren(...s.tweaks.filter((x) => x.group === "Advanced").map(tweakRow));
     prefs.replaceChildren(...s.tweaks.filter((x) => x.group === "Preference").map(prefRow));
-    showDns(s.dns); sync();
+    sync();
   }
   call("tweaks.state").then(render);
   return on("tweakProgress", (p) => { status.textContent = t("Tweaks_Running", p.name); });

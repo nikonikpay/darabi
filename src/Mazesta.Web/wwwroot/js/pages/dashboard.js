@@ -205,7 +205,6 @@ function contactPanel() {
       c.office && line(t("Web_Contact_Office"), c.office),
       c.sales && line(t("Web_Contact_Sales"), c.sales, ...messengers("sales")),
       c.support && line(t("Web_Contact_Support"), c.support, ...messengers("support")),
-      c.email && line(t("Web_Contact_Email"), c.email, chip("email", "mail", t("Web_Contact_SendMail"))),
       c.hours && h("p", { class: "note" }, icon("clock"), h("span", {}, t(c.hours))),
       c.address && h("p", { class: "note" }, icon("pin"), h("span", {}, t(c.address), c.postcode ? [` — ${t("Web_Contact_Postcode")} `, h("span", { class: "lat" }, c.postcode)] : null)),
       h("div", { class: "links" }, chip("site", "net", t("Dashboard_Mazesta_Site")), chip("channel-telegram", "send", t("Web_Contact_Channel")), chip("instagram", "camera", t("Web_Contact_Instagram")))));
