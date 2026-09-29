@@ -5,15 +5,18 @@ namespace Mazesta.Diagnostics.Gpu;
 /// A chain of integer multiply/xor-shift rounds per thread: heavy on the shader ALUs, deterministic, and
 /// integer-exact, so the CPU can recompute any thread's result and demand <b>equality</b> - a GPU that
 /// computes wrongly under load (overheating, unstable memory, marginal power) is caught as a mismatch, not
-/// as a rounding difference. <see cref="GpuHash.Reference"/> must stay in lock-step with this arithmetic.
+/// as a rounding difference. With <c>chain</c> set a dispatch starts from what the previous dispatch left in
+/// the buffer instead of the thread index, so the value read back after a submission of many dispatches has
+/// passed through every one of them: a wrong result in any dispatch, not only the last, changes it.
+/// <see cref="GpuHash.Reference"/> must stay in lock-step with this arithmetic.
 /// </summary>
 [ThreadGroupSize(DefaultThreadGroupSizes.X)]
 [GeneratedComputeShaderDescriptor]
-internal readonly partial struct HashStressShader(ReadWriteBuffer<uint> output, int rounds, uint seed) : IComputeShader
+internal readonly partial struct HashStressShader(ReadWriteBuffer<uint> output, int rounds, uint seed, int chain) : IComputeShader
 {
     public void Execute()
     {
-        uint h = (uint)ThreadIds.X ^ seed;
+        uint h = (chain != 0 ? output[ThreadIds.X] : (uint)ThreadIds.X) ^ seed;
         for (int r = 0; r < rounds; r++)
         {
             h = h * 1664525u + 1013904223u;
@@ -27,9 +30,10 @@ internal readonly partial struct HashStressShader(ReadWriteBuffer<uint> output, 
 
 internal static class GpuHash
 {
-    public static uint Reference(uint index, int rounds, uint seed)
+    /// <summary>One dispatch's result for a thread that starts from <paramref name="start"/> (its index, or the previous dispatch's result).</summary>
+    public static uint Reference(uint start, int rounds, uint seed)
     {
-        uint h = index ^ seed;
+        uint h = start ^ seed;
         for (int r = 0; r < rounds; r++)
         {
             unchecked { h = h * 1664525u + 1013904223u; }
@@ -37,6 +41,14 @@ internal static class GpuHash
             unchecked { h *= 0x5BD1E995u; }
             h ^= h >> 15;
         }
+        return h;
+    }
+
+    /// <summary>A thread's result after <paramref name="dispatches"/> chained dispatches: the first starts from its index, each next from the one before.</summary>
+    public static uint Chained(uint index, int rounds, uint seed, int dispatches)
+    {
+        uint h = index;
+        for (int d = 0; d < dispatches; d++) h = Reference(h, rounds, seed);
         return h;
     }
 }

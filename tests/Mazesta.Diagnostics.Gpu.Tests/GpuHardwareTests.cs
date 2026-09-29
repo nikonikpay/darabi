@@ -18,7 +18,7 @@ public class GpuHardwareTests
         var device = GpuDevices.Resolve("")!;
         const int rounds = 64; const uint seed = 12345;
         using var buffer = device.AllocateReadWriteBuffer<uint>(4096);
-        device.For(4096, new HashStressShader(buffer, rounds, seed));
+        device.For(4096, new HashStressShader(buffer, rounds, seed, 0));
         var host = buffer.ToArray();
         for (uint i = 0; i < host.Length; i++) Assert.Equal(GpuHash.Reference(i, rounds, seed), host[i]);
     }

@@ -7,8 +7,10 @@ public enum GpuStressProfile { Steady, Variable, Pulse }
 /// GPU compute stress with three load shapes (spec §10): <b>Steady</b> keeps the GPU saturated,
 /// <b>Variable</b> walks through load levels (100, 30, 0, 60 …) to exercise power-state transitions,
 /// <b>Pulse</b> alternates full load and idle on a configurable beat to provoke coil whine and PSU
-/// transients. Every batch is read back and a sample of its results is recomputed on the CPU - a wrong
-/// result is a counted error - and the GPU's own load, temperature and power are measured for the run.
+/// transients. A batch is many dispatches, each continuing from the previous one's output, so the value a thread
+/// ends with depends on every dispatch of the batch; a sample of those end values is recomputed on the CPU through
+/// the whole chain - a wrong result in any dispatch is a counted error. It is a sample of the threads, and the
+/// result says how many were checked. The GPU's own load, temperature and power are measured for the run.
 /// </summary>
 public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor, ITestAvailability
 {
@@ -21,7 +23,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
     public TestDefinition Definition => profile switch { GpuStressProfile.Steady => Steady, GpuStressProfile.Variable => Variable, _ => Pulse };
     public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
 
-    private const int Threads = 1 << 21, Rounds = 512, FrameMs = 100, VariableStepSeconds = 5, SamplesPerBatch = 512;
+    private const int Threads = 1 << 21, Rounds = 512, FrameMs = 100, VariableStepSeconds = 5, SamplesPerBatch = 128;
     private static readonly double[] VariableLevels = [1, 0.3, 0, 0.6, 1, 0.15, 0.75, 0];
 
     /// <summary>How long the GPU is kept busy, and how long the frame lasts in all, starting at a moment of the run.
@@ -57,7 +59,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
 
     private TestRunResult Run(TestExecutionRequest request, GraphicsDevice device, int pulseMs, int gapMs, DateTimeOffset started, CancellationToken ct)
     {
-        long errors = 0, dispatches = 0, batches = 0;
+        long errors = 0, dispatches = 0, batches = 0, checkedResults = 0;
         var clock = Stopwatch.StartNew(); var random = new Random(0x5EED); var sizer = new BatchSizer();
         try
         {
@@ -72,35 +74,47 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
                 {
                     uint seed = unchecked((uint)(++batches * 2654435761u)); int count = sizer.Count; var batchStart = clock.Elapsed;
                     using (var context = device.CreateComputeContext())
-                        for (int d = 0; d < count; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed)); if (d + 1 < count) context.Barrier(buffer); }
+                        for (int d = 0; d < count; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed, d > 0 ? 1 : 0)); if (d + 1 < count) context.Barrier(buffer); }
                     buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
                     dispatches += count;
-                    for (int s = 0; s < SamplesPerBatch; s++) { int i = random.Next(Threads); if (host[i] != GpuHash.Reference((uint)i, Rounds, seed)) errors++; }
+                    errors += CheckSample(host, random, seed, count); checkedResults += (long)SamplesPerBatch * count;
                     sizer.Record(clock.Elapsed - batchStart, BatchTarget(profile, busy));
                 }
                 Report(request, clock);
                 if (clock.Elapsed - frameStart < frame) ct.WaitHandle.WaitOne(frame - (clock.Elapsed - frameStart));   // the idle part of the frame; wakes at once on cancel
             }
         }
-        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, dispatches, clock, request, started)); }
+        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, dispatches, checkedResults, clock, request, started)); }
         catch (Exception ex)
         {
             // A device that is removed or reset mid-run (driver timeout, overheating, PSU) is exactly the failure this test exists to provoke.
             return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"GPU error during the run: {ex.GetType().Name}: {ex.Message}");
         }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, dispatches, clock, request, started));
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, dispatches, checkedResults, clock, request, started));
     }
 
-    private string Describe(GraphicsDevice device, long dispatches, Stopwatch clock, TestExecutionRequest request, DateTimeOffset started)
+    private string Describe(GraphicsDevice device, long dispatches, long checkedResults, Stopwatch clock, TestExecutionRequest request, DateTimeOffset started)
     {
         var finished = request.Clock.UtcNow; var card = GpuDevices.SensorNode(request.Engine, device.Name);
         double gops = dispatches * (double)Threads * Rounds * 6 / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e9;
         return SensorEvidence.Join($"GPU {profile} compute stress on {device.Name}", $"dispatches={dispatches}", $"{gops:F0} Gop/s integer",
+            $"verified {checkedResults:N0} of {dispatches * (double)Threads:N0} thread results through chained dispatches (a sample, not every thread)",
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, card, null)?.Format("measured GPU load", "%"),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, card, null)?.Format("GPU core", "°C", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, card, null)?.Format("GPU hot spot", "°C", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, card, null)?.Format("GPU power", " W", includeMax: true));
+    }
+
+    /// <summary>Recomputes <see cref="SamplesPerBatch"/> random threads through all <paramref name="dispatches"/> of a batch on the CPU cores and
+    /// counts those whose end value differs. Parallel, so a long chain on a fast card does not leave the GPU idle for long.</summary>
+    internal static long CheckSample(uint[] host, Random random, uint seed, int dispatches)
+    {
+        var picks = new int[SamplesPerBatch];
+        for (int s = 0; s < picks.Length; s++) picks[s] = random.Next(host.Length);
+        long wrong = 0;
+        Parallel.For(0, picks.Length, s => { int i = picks[s]; if (host[i] != GpuHash.Chained((uint)i, Rounds, seed, dispatches)) Interlocked.Increment(ref wrong); });
+        return wrong;
     }
 
     private static void Report(TestExecutionRequest request, Stopwatch clock)

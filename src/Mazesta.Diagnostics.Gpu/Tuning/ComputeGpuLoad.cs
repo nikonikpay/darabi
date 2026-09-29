@@ -41,7 +41,7 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
             ct.ThrowIfCancellationRequested();
             uint seed = unchecked((uint)(++batches * 2654435761u)); int dispatches = sizer.Count; var batchStart = clock.Elapsed;
             using (var context = device.CreateComputeContext())
-                for (int d = 0; d < dispatches; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed)); if (d + 1 < dispatches) context.Barrier(buffer); }
+                for (int d = 0; d < dispatches; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed, 0)); if (d + 1 < dispatches) context.Barrier(buffer); }
             buffer.CopyTo(host);
             for (int s = 0; s < SamplesPerBatch; s++) { int i = random.Next(Threads); if (host[i] != GpuHash.Reference((uint)i, Rounds, seed)) errors++; }
             sizer.Record(clock.Elapsed - batchStart, BatchTarget);
