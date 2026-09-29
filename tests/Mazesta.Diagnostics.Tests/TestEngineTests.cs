@@ -259,4 +259,26 @@ public class TestEngineTests : IDisposable
     [InlineData(@"The IO operation at logical block address 0x15ac8 for Disk 3 (PDO name: \Device\000000f8) was retried.", "Disk 3")]
     [InlineData("The default transaction resource manager on volume I: encountered an error", "volume I:")]
     public void The_device_an_event_names_is_found_in_its_text(string text, string device) => Assert.Equal(device, Storage.StorageEventSource.DeviceIn(text));
+
+    [Fact] public async Task A_session_that_breaks_off_keeps_the_results_of_the_tests_that_had_ended()
+    {
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(new TestRunResult(Def1.Id, TestOutcome.Failed, r.Clock.UtcNow, r.Clock.UtcNow, 3, "bad")));
+        var e2 = new FakeTestExecutor(Def2, (r, ct) => Task.FromResult(Passed(Def2.Id, r)));
+        var engine = new TestEngine([e1, e2], Store(), new FakeClock(T0));
+        engine.TestStarted += id => { if (id == Def2.Id) throw new InvalidOperationException("the process died here"); };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => engine.RunAsync([Once(Def1, 5), Once(Def2, 5)], CancellationToken.None));
+
+        var left = engine.FindIncompleteSession()!;
+        var done = Assert.Single(left.Finished);
+        Assert.Equal(("fake.a", "Failed", 3L), (done.TestId, done.Outcome, done.ErrorCount));
+    }
+
+    [Fact] public void A_version_1_checkpoint_reads_as_version_2_with_nothing_finished()
+    {
+        File.WriteAllText(Path.Combine(_dir, "checkpoint.json"), """{"schemaVersion":1,"sessionId":"old","queueTestIds":["fake.a"],"currentIndex":0,"completed":false}""");
+        var store = new JsonStore<TestSessionCheckpoint>(Path.Combine(_dir, "checkpoint.json"), new SchemaMigrator([new CheckpointV1ToV2()]), TestSessionCheckpoint.CurrentSchemaVersion, NullLogger.Instance);
+        var cp = new TestEngine([], store, new FakeClock(T0)).FindIncompleteSession()!;
+        Assert.Equal("old", cp.SessionId); Assert.Empty(cp.Finished); Assert.Equal(2, cp.SchemaVersion);
+    }
 }

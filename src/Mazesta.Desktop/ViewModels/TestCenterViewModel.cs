@@ -39,8 +39,17 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         engine.TestStarted += OnTestStarted;
         engine.TestProgressChanged += OnTestProgress;
         engine.TestCompleted += OnTestCompleted;
-        if (engine.FindIncompleteSession() is { } cp)
-            IncompleteSessionMessage = Loc.Format("Test_IncompleteSession_Message", cp.CurrentIndex + 1, cp.QueueTestIds.Count);
+        if (engine.FindIncompleteSession() is { } cp) IncompleteSessionMessage = Describe(cp);
+    }
+
+    /// <summary>Where the broken-off session stopped and what it had found by then; why it stopped is not guessed.</summary>
+    internal string Describe(TestSessionCheckpoint cp)
+    {
+        string Name(string id) => RowFor(new TestId(id))?.Name ?? id;
+        string at = cp.CurrentIndex < cp.QueueTestIds.Count ? Name(cp.QueueTestIds[cp.CurrentIndex]) : "";
+        string finished = cp.Finished.Count == 0 ? Loc.Get("Test_IncompleteSession_NoneFinished")
+            : string.Join(Loc.IsRtl ? "، " : ", ", cp.Finished.Select(f => $"{Name(f.TestId)}: {Loc.Get("Test_Outcome_" + f.Outcome)}"));
+        return Loc.Format("Test_IncompleteSession_Detail", cp.CurrentIndex + 1, cp.QueueTestIds.Count, at, (int)Math.Round(cp.CurrentPercent * 100), finished);
     }
 
     private TestQueueRowViewModel? RowFor(TestId id) => Rows.FirstOrDefault(r => r.Definition.Id == id);

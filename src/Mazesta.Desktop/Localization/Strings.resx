@@ -1542,4 +1542,6 @@ The update services stopped and disabled</value></data>
   <data name="Bench_Mem_StreamScale" xml:space="preserve"><value>STREAM Scale (all threads)</value></data>
   <data name="Bench_Mem_StreamAdd" xml:space="preserve"><value>STREAM Add (all threads)</value></data>
   <data name="Bench_Mem_StreamTriad" xml:space="preserve"><value>STREAM Triad (all threads)</value></data>
+  <data name="Test_IncompleteSession_Detail" xml:space="preserve"><value>The last session broke off at test {0} of {1} ({2}, about {3}% done). Finished before it: {4}. Why it stopped (a crash, a restart, a power cut) is not known without evidence.</value></data>
+  <data name="Test_IncompleteSession_NoneFinished" xml:space="preserve"><value>none</value></data>
 </root>

@@ -1542,4 +1542,6 @@
   <data name="Bench_Mem_StreamScale" xml:space="preserve"><value>STREAM Scale (همهٔ رشته‌ها)</value></data>
   <data name="Bench_Mem_StreamAdd" xml:space="preserve"><value>STREAM Add (همهٔ رشته‌ها)</value></data>
   <data name="Bench_Mem_StreamTriad" xml:space="preserve"><value>STREAM Triad (همهٔ رشته‌ها)</value></data>
+  <data name="Test_IncompleteSession_Detail" xml:space="preserve"><value>نشست قبلی در آزمون {0} از {1} ({2}، حدود {3}٪ انجام‌شده) قطع شد. آزمون‌های تمام‌شده پیش از آن: {4}. علت قطع (کرش، ریستارت یا قطع برق) بدون شاهد معلوم نیست.</value></data>
+  <data name="Test_IncompleteSession_NoneFinished" xml:space="preserve"><value>هیچ‌کدام</value></data>
 </root>

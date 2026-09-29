@@ -12,7 +12,7 @@ internal static class DiagnosticsRegistration
     /// </summary>
     public static IServiceCollection AddDiagnostics(this IServiceCollection s, AppPaths paths, ILoggerFactory loggers)
     {
-        s.AddSingleton(_ => new JsonStore<TestSessionCheckpoint>(Path.Combine(paths.SessionsDir, "test-checkpoint.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, loggers.CreateLogger("Diagnostics")));
+        s.AddSingleton(_ => new JsonStore<TestSessionCheckpoint>(Path.Combine(paths.SessionsDir, "test-checkpoint.json"), new SchemaMigrator([new CheckpointV1ToV2()]), TestSessionCheckpoint.CurrentSchemaVersion, loggers.CreateLogger("Diagnostics")));
         s.AddSingleton<IMemoryProbe, Win32MemoryProbe>();
         s.AddSingleton<IHardwareErrorSource, WheaErrorSource>();
         s.AddSingleton<IStorageEventSource, StorageEventSource>();
