@@ -1531,4 +1531,11 @@
   <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
   <data name="Spec_XmpOffered" xml:space="preserve"><value>پروفایل‌های XMP ماژول‌ها</value></data>
   <data name="Log_StorageEvents" xml:space="preserve"><value>گزارش رخدادهای ذخیره‌سازی ویندوز برای بازهٔ این آزمون خوانده شد: {0} رخداد. این رخدادها شاهدند، نه اثبات خرابی درایو.</value></data>
+  <data name="Test_Cpu_Integer" xml:space="preserve"><value>CPU · بار محاسبات صحیح (ضرب، تقسیم، انشعاب)</value></data>
+  <data name="Test_Cpu_Fft" xml:space="preserve"><value>CPU · تبدیل فوریه FFT (درون کش و در حافظه)</value></data>
+  <data name="Log_CpuInteger_Start" xml:space="preserve"><value>{0} رشته دورهای محاسبات صحیح را روی آرایهٔ ثابت ۳۲ کیلوبایتی اجرا می‌کنند؛ هر بلوک با چک‌سام از پیش محاسبه‌شده مقایسه می‌شود.</value></data>
+  <data name="Log_CpuInteger_Progress" xml:space="preserve"><value>تا این لحظه {0} بلوک، {1} گیگاعملیات‌برثانیه، {2} نادرست.</value></data>
+  <data name="Log_CpuFft_Start" xml:space="preserve"><value>{0} رشته سیگنال‌های {1} و {2} نقطه‌ای را تبدیل می‌کنند؛ مرجع پیش از استفاده خودش بررسی می‌شود.</value></data>
+  <data name="Log_CpuFft_Checked" xml:space="preserve"><value>FFT با DFT مستقیم منطبق است (خطای نسبی {0}) و مرجع‌ها از بررسی بازگشت و انرژی گذشتند.</value></data>
+  <data name="Log_CpuFft_Progress" xml:space="preserve"><value>تبدیل‌ها در حال اجرا؛ تا این لحظه {0} نادرست.</value></data>
 </root>

@@ -21,6 +21,8 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor>(new CpuCoreCycleExecutor());
         s.AddSingleton<ITestExecutor, LinpackExecutor>();
         s.AddSingleton<ITestExecutor, CpuVectorStressExecutor>();
+        s.AddSingleton<ITestExecutor, CpuIntegerExecutor>();
+        s.AddSingleton<ITestExecutor, CpuFftExecutor>();
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Steady));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Variable));

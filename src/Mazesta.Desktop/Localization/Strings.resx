@@ -1531,4 +1531,11 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
   <data name="Spec_XmpOffered" xml:space="preserve"><value>XMP profiles on the modules</value></data>
   <data name="Log_StorageEvents" xml:space="preserve"><value>Windows storage event log read for this test's time: {0} event(s). Such events are evidence, not proof of a failing drive.</value></data>
+  <data name="Test_Cpu_Integer" xml:space="preserve"><value>CPU · integer load (multiply, divide, branch)</value></data>
+  <data name="Test_Cpu_Fft" xml:space="preserve"><value>CPU · FFT (in cache and in memory)</value></data>
+  <data name="Log_CpuInteger_Start" xml:space="preserve"><value>{0} threads run integer rounds on a fixed 32 KB array; every block is checked against a checksum worked out in advance.</value></data>
+  <data name="Log_CpuInteger_Progress" xml:space="preserve"><value>{0} blocks so far, {1} Gop/s, {2} wrong.</value></data>
+  <data name="Log_CpuFft_Start" xml:space="preserve"><value>{0} threads transform {1}-point and {2}-point signals; the reference is checked before it is trusted.</value></data>
+  <data name="Log_CpuFft_Checked" xml:space="preserve"><value>The FFT agrees with a direct DFT (relative error {0}), and the references pass the round-trip and energy checks.</value></data>
+  <data name="Log_CpuFft_Progress" xml:space="preserve"><value>Transforms running; {0} wrong so far.</value></data>
 </root>
