@@ -15,6 +15,9 @@ public abstract class StorageExecutor : ITestExecutor
         new TestOption(FileMbOption, "Test_Option_FileMb", TestOptionKind.Integer, fileMbDefault)
     ];
 
+    /// <summary>The folder a run with this drive option used (the first fixed drive when none was chosen), or null when there is none.</summary>
+    public static string? TargetOf(string chosen) { try { return StorageFile.ResolveTarget(chosen); } catch (StorageUnavailableException) { return null; } }
+
     public abstract TestDefinition Definition { get; }
 
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)

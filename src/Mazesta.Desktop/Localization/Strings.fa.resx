@@ -1289,4 +1289,58 @@
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)</value></data>
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>میانگین نرخ فریم در باغ (2560x1440)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>نرخ فریم ۱٪ کندترین فریم‌ها</value></data>
+  <data name="Nav_AppUpdate" xml:space="preserve"><value>به‌روزرسانی برنامه</value></data>
+  <data name="AppUpd_Lede" xml:space="preserve"><value>مزستا خودش را از سایت فروشگاه به‌روز می‌کند: نسخه‌های تازه برنامه و فهرست‌هایی که نتیجه بنچمارک را با سیستم‌های دیگر مقایسه می‌کنند. هر چیزی پیش از استفاده با امضای فروشگاه بررسی می‌شود و تنظیمات، گزارش‌ها و سوابق شما (پوشه Data) هرگز دست نمی‌خورند.</value></data>
+  <data name="AppUpd_Version" xml:space="preserve"><value>نسخه نصب‌شده</value></data>
+  <data name="AppUpd_Check" xml:space="preserve"><value>بررسی به‌روزرسانی</value></data>
+  <data name="AppUpd_Idle" xml:space="preserve"><value>در این اجرا هنوز بررسی نشده است.</value></data>
+  <data name="AppUpd_Checking" xml:space="preserve"><value>در حال بررسی سایت فروشگاه…</value></data>
+  <data name="AppUpd_UpToDate" xml:space="preserve"><value>این آخرین نسخه است.</value></data>
+  <data name="AppUpd_Available" xml:space="preserve"><value>نسخه {0} آماده دریافت است.</value></data>
+  <data name="AppUpd_Download" xml:space="preserve"><value>دریافت و آماده‌سازی</value></data>
+  <data name="AppUpd_Downloading" xml:space="preserve"><value>در حال دریافت… {0}٪</value></data>
+  <data name="AppUpd_Ready" xml:space="preserve"><value>نسخه {0} دریافت و بررسی شد. با نصب، برنامه بسته می‌شود، فایل‌هایش جایگزین می‌شوند و دوباره باز می‌شود.</value></data>
+  <data name="AppUpd_Install" xml:space="preserve"><value>نصب و اجرای دوباره</value></data>
+  <data name="AppUpd_Installing" xml:space="preserve"><value>در حال نصب؛ برنامه چند لحظه دیگر دوباره باز می‌شود.</value></data>
+  <data name="AppUpd_Failed" xml:space="preserve"><value>به‌روزرسانی انجام نشد: {0}</value></data>
+  <data name="AppUpd_ConfirmInstall" xml:space="preserve"><value>برنامه برای نصب نسخه {0} بسته و دوباره باز می‌شود. تست یا بنچمارکی که الان در حال اجراست متوقف می‌شود. ادامه می‌دهید؟</value></data>
+  <data name="AppUpd_Notes" xml:space="preserve"><value>تغییرات این نسخه</value></data>
+  <data name="AppUpd_Size" xml:space="preserve"><value>{0} مگابایت · {1}</value></data>
+  <data name="AppUpd_Checked" xml:space="preserve"><value>آخرین بررسی: {0}</value></data>
+  <data name="AppUpd_Done" xml:space="preserve"><value>مزستا به نسخه {0} به‌روز شد.</value></data>
+  <data name="AppUpd_Data_Title" xml:space="preserve"><value>فهرست‌های مقایسه بنچمارک</value></data>
+  <data name="AppUpd_Data_Sub" xml:space="preserve"><value>نتایج سیستم‌های دیگر که فروشگاه جمع کرده است</value></data>
+  <data name="AppUpd_Data_Lists" xml:space="preserve"><value>{0} فهرست روی این کامپیوتر.</value></data>
+  <data name="AppUpd_Data_None" xml:space="preserve"><value>هنوز هیچ فهرستی دریافت نشده است.</value></data>
+  <data name="AppUpd_Data_Published" xml:space="preserve"><value>انتشار: {0}</value></data>
+  <data name="AppUpd_Data_Synced" xml:space="preserve"><value>دریافت: {0}، {1} مورد تازه یا تغییرکرده</value></data>
+  <data name="AppUpd_Data_Note" xml:space="preserve"><value>فهرست‌ها کمی پس از باز شدن برنامه، اگر اینترنت در دسترس باشد، خودکار دریافت می‌شوند. این دکمه همین حالا دریافتشان می‌کند.</value></data>
+  <data name="AppUpd_Data_Sync" xml:space="preserve"><value>به‌روزرسانی داده‌ها</value></data>
+  <data name="AppUpd_Site" xml:space="preserve"><value>منبع به‌روزرسانی</value></data>
+  <data name="AppUpd_Safe" xml:space="preserve"><value>فقط فایل‌هایی پذیرفته می‌شوند که با کلید فروشگاه امضا شده باشند، و هر فایل باید با اندازه و اثر انگشت ثبت‌شده در فهرست امضاشده یکی باشد. فایل تغییرکرده یا خراب دور ریخته می‌شود و هرگز اجرا نمی‌شود.</value></data>
+  <data name="Web_Peers_Title" xml:space="preserve"><value>مقایسه با سیستم‌های دیگر</value></data>
+  <data name="Web_Peers_Count" xml:space="preserve"><value>{0} مدل در فهرست</value></data>
+  <data name="Web_Peers_Ahead" xml:space="preserve"><value>جلوتر از {0} مدل از {1} مدل</value></data>
+  <data name="Web_Peers_None" xml:space="preserve"><value>هنوز نتیجه‌ای از سیستم دیگری برای این بنچمارک نیست. فهرست‌های فروشگاه با به‌روزرسانی داده‌ها می‌رسند (تنظیمات › به‌روزرسانی برنامه) و هر اجرایی که با این نسخه انجام شود هم اینجا اضافه می‌شود.</value></data>
+  <data name="Web_Peers_RunFirst" xml:space="preserve"><value>اجرایش کنید تا جایگاه این سیستم معلوم شود.</value></data>
+  <data name="Web_Peers_You" xml:space="preserve"><value>این سیستم</value></data>
+  <data name="Web_Peers_All" xml:space="preserve"><value>کل فهرست</value></data>
+  <data name="Web_Peers_History" xml:space="preserve"><value>اجراهای ثبت‌شده</value></data>
+  <data name="Web_Peers_Systems" xml:space="preserve"><value>{0} سیستم · {1} اجرا</value></data>
+  <data name="Web_Peers_Local" xml:space="preserve"><value>این نسخه</value></data>
+  <data name="Web_Peers_Same" xml:space="preserve"><value>همین مدل</value></data>
+  <data name="Web_Peers_Search" xml:space="preserve"><value>جستجوی مدل…</value></data>
+  <data name="Web_Peers_More" xml:space="preserve"><value>{0} مورد دیگر</value></data>
+  <data name="Web_Peers_Median" xml:space="preserve"><value>میانه سیستم‌های این مدل (بهترین اجرای هر سیستم)</value></data>
+  <data name="Web_Peers_DiffHint" xml:space="preserve"><value>نتیجه این سیستم چقدر بالاتر (+) یا پایین‌تر (−) از این مدل است</value></data>
+  <data name="Web_Peers_Built" xml:space="preserve"><value>فهرست {0}</value></data>
+  <data name="Web_Peers_Note" xml:space="preserve"><value>برای هر مدل یک ردیف: میانه بهترین اجرای سیستم‌های آن مدل، هر سیستم یک بار. درصد نشان می‌دهد نتیجه این سیستم چقدر بالاتر (+) یا پایین‌تر (−) از آن مقدار است. ردیف‌های «این نسخه» با همین نسخه برنامه اندازه‌گیری شده‌اند و هنوز در فهرست فروشگاه نیستند.</value></data>
+  <data name="Web_Peers_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Web_Runs_Empty" xml:space="preserve"><value>هنوز اجرایی از این بنچمارک با این نسخه ثبت نشده است.</value></data>
+  <data name="Web_Runs_Folder" xml:space="preserve"><value>باز کردن پوشه اجراها</value></data>
+  <data name="Web_Runs_Note" xml:space="preserve"><value>همه اجراهایی که با این نسخه روی هر سیستمی انجام شده (Data\benchmarks\runs). فروشگاه همین فایل‌ها را جمع می‌کند تا فهرست مشترک ساخته شود.</value></data>
+  <data name="Web_Runs_Date" xml:space="preserve"><value>تاریخ</value></data>
+  <data name="Web_Runs_Machine" xml:space="preserve"><value>کامپیوتر</value></data>
+  <data name="Web_Runs_Part" xml:space="preserve"><value>قطعه</value></data>
+  <data name="Web_Runs_Value" xml:space="preserve"><value>نتیجه</value></data>
 </root>

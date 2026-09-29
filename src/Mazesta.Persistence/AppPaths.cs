@@ -12,6 +12,10 @@ public sealed class AppPaths
     public string ConfigDir => Path.Combine(DataRoot, "config"); public string LogsDir => Path.Combine(DataRoot, "logs");
     public string SessionsDir => Path.Combine(DataRoot, "sessions"); public string HistoryDir => Path.Combine(DataRoot, "history"); public string ReportsDir => Path.Combine(DataRoot, "reports");
     public string CacheDir => Path.Combine(DataRoot, "cache");
+    /// <summary>Downloaded releases, their unpacked copy and the files a release replaced (for going back by hand).</summary>
+    public string UpdateDir => Path.Combine(CacheDir, "update");
+    /// <summary>The benchmark comparison lists downloaded from the shop's site.</summary>
+    public string BenchDbDir => Path.Combine(DataRoot, "benchdb");
     public string ConfigFile => Path.Combine(ConfigDir, "appconfig.json");
     public static AppPaths Create(string exeDirectory) => new() { DataRoot = Path.Combine(exeDirectory, DataFolderName) };
     public static AppPaths Detect() => Create(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));

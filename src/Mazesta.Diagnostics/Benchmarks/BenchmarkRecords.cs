@@ -8,8 +8,14 @@ public sealed record BenchmarkRecord(DateTimeOffset At, string Key, double Value
 /// is signed so that positive is always better (a latency that fell is positive). <see cref="Saved"/> is true only when the run became the record.</summary>
 public sealed record BenchmarkComparison(BenchmarkRecord Current, BenchmarkRecord? Previous, double? ChangePercent, bool Saved);
 
-/// <summary>The one number a benchmark is ranked by, and which way is better. Everything else it measures is kept alongside but not ranked.</summary>
-public sealed record HeadlineMetric(string Key, bool HigherIsBetter);
+/// <summary>The part a benchmark's result belongs to when it is compared with other systems: a CPU benchmark is compared CPU model with CPU
+/// model, a storage one drive model with drive model. <see cref="None"/> is never compared with others (an internet speed measures the line).</summary>
+public enum PeerPart { None, Cpu, Memory, Gpu, Drive }
+
+/// <summary>The one number a benchmark is ranked by, and which way is better. Everything else it measures is kept alongside but not ranked.
+/// <see cref="Version"/> is the benchmark's workload version: results of different versions are never compared, so it is raised whenever a
+/// benchmark's work changes (another matrix size, another scene) and the shared comparison lists start over for it.</summary>
+public sealed record HeadlineMetric(string Key, bool HigherIsBetter, PeerPart Part = PeerPart.None, int Version = 1);
 
 /// <summary>
 /// The best result of each benchmark on each system, and nothing else: a run is kept only when it beats (or first sets) the record, so a slower
@@ -21,10 +27,10 @@ public sealed class BenchmarkRecords
 {
     private static readonly Dictionary<string, HeadlineMetric> Headlines = new()
     {
-        ["bench.cpu.single"] = new("Bench_Cpu_Gflops", true), ["bench.cpu.multi"] = new("Bench_Cpu_Gflops", true),
-        ["bench.memory"] = new("Bench_Mem_Read", true), ["bench.storage"] = new("Bench_Storage_SeqRead", true),
-        ["bench.gpu.d3d"] = new("Bench_Gpu_Fps", true), ["bench.gpu.rt"] = new("Bench_Gpu_Rt_Fps", true), ["bench.gpu.ai"] = new("Bench_Gpu_Ai_Fp32", true),
-        ["bench.gpu.scene.d3d"] = new("Bench_Gpu_Scene_Fps", true), ["bench.gpu.scene.rt"] = new("Bench_Gpu_Scene_Fps", true),
+        ["bench.cpu.single"] = new("Bench_Cpu_Gflops", true, PeerPart.Cpu), ["bench.cpu.multi"] = new("Bench_Cpu_Gflops", true, PeerPart.Cpu),
+        ["bench.memory"] = new("Bench_Mem_Read", true, PeerPart.Memory), ["bench.storage"] = new("Bench_Storage_SeqRead", true, PeerPart.Drive),
+        ["bench.gpu.d3d"] = new("Bench_Gpu_Fps", true, PeerPart.Gpu), ["bench.gpu.rt"] = new("Bench_Gpu_Rt_Fps", true, PeerPart.Gpu), ["bench.gpu.ai"] = new("Bench_Gpu_Ai_Fp32", true, PeerPart.Gpu),
+        ["bench.gpu.scene.d3d"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu), ["bench.gpu.scene.rt"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu),
         ["bench.network.internet"] = new("Bench_Net_Download", true),
     };
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
@@ -47,6 +53,20 @@ public sealed class BenchmarkRecords
     public BenchmarkRecord? Best(string system, string recordKey)
     {
         lock (_lock) return _systems.TryGetValue(system, out var s) ? s.Best.GetValueOrDefault(recordKey) : null;
+    }
+
+    /// <summary>Versions up to 0.6 named a system before its hardware was read, so their records sit under "<c>machine | </c>" with no CPU or GPU.
+    /// They are moved to the machine's full key once it is known, where that key has no record of the same benchmark yet.</summary>
+    public void AdoptUnnamed(string system, string machine)
+    {
+        string old = machine + " | ";
+        lock (_lock)
+        {
+            if (old == system || !_systems.Remove(old, out var legacy)) return;
+            var s = _systems.TryGetValue(system, out var found) ? found : _systems[system] = new SystemRecords(legacy.Name, []);
+            foreach (var (key, record) in legacy.Best) s.Best.TryAdd(key, record);
+            Save();
+        }
     }
 
     /// <summary>Compares a finished run with the record and keeps it if it is better. Null when the run cannot be ranked.</summary>

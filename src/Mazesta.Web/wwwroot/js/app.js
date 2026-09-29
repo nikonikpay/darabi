@@ -24,6 +24,7 @@ export const PAGES = [
   { id: "updates", key: "Nav_Updates", load: () => import("./pages/updates.js") },
   { id: "reports", key: "Nav_Reports", load: () => import("./pages/reports.js") },
   { id: "settings", key: "Nav_Settings", load: () => import("./pages/settings.js") },
+  { id: "appupdate", key: "Nav_AppUpdate", load: () => import("./pages/appupdate.js") },
 ];
 
 // The side bar has one entry per family; a family of several pages shows them as tabs at the top of each. Ctrl+1 … Ctrl+9 open the families.
@@ -37,9 +38,9 @@ export const FAMILIES = [
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
   { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
-  { key: "Nav_Settings", icon: "gear", pages: ["settings"] },
+  { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
 ];
-const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update" };
+const TAB_ICON = { tests: "flask", benchmarks: "trophy", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update", settings: "gear", appupdate: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 
@@ -144,6 +145,10 @@ async function start() {
   on("overlay", (v) => document.getElementById("ovl")?.classList.toggle("primary", v));
   on("visibility", (v) => { app.dataset.visible = String(v); });
   on("toast", (m) => toast(m.text, m.kind));
+  // A new release on the site marks the settings entry (the app update page is there); the host checks once, a while after start-up.
+  const mark = (u) => index.querySelector(`a[data-family="${FAMILIES.length - 1}"]`)?.classList.toggle("has-update", ["Available", "Ready"].includes(u?.state));
+  on("upd", mark); call("upd.state").then(mark).catch(() => {});
+  if (info.updated) toast(t("AppUpd_Done", info.version));
   // The pages read the hardware list once; they wait until the sensor scan has settled, as the WPF edition does.
   if (await call("app.navReady")) whenReady();
   else bootCard(info.provider.text);

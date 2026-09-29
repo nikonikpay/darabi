@@ -34,7 +34,7 @@ public sealed partial class WebBridge
             provider = Provider(engine.Provider.Status),
             banner = _configCorrupt ? Loc.Get("Config_Corrupt") : _sp.GetRequiredService<TuningRecovery>().Message,
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
-            contact = Contact,
+            contact = Contact, updated = App.TakeJustUpdated(),
         });
         var shop = new ShopFeed(_paths.CacheDir, _log);
         MethodAsync("shop.product", async p => await shop.GetAsync(Bool(p, "another")).ConfigureAwait(true));

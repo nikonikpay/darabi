@@ -1289,4 +1289,58 @@ The update services stopped and disabled</value></data>
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>Graphics — Persian garden, ray traced (DXR)</value></data>
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden (2560x1440)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>1% low (the slowest hundredth of frames)</value></data>
+  <data name="Nav_AppUpdate" xml:space="preserve"><value>App update</value></data>
+  <data name="AppUpd_Lede" xml:space="preserve"><value>Mazesta updates itself from the shop's site: new versions of the app, and the lists that compare benchmark results with other systems. Everything is checked against the shop's signature before it is used, and your settings, reports and history (the Data folder) are never touched.</value></data>
+  <data name="AppUpd_Version" xml:space="preserve"><value>Installed version</value></data>
+  <data name="AppUpd_Check" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="AppUpd_Idle" xml:space="preserve"><value>Not checked yet in this session.</value></data>
+  <data name="AppUpd_Checking" xml:space="preserve"><value>Checking the shop's site…</value></data>
+  <data name="AppUpd_UpToDate" xml:space="preserve"><value>This is the latest version.</value></data>
+  <data name="AppUpd_Available" xml:space="preserve"><value>Version {0} is available.</value></data>
+  <data name="AppUpd_Download" xml:space="preserve"><value>Download and prepare</value></data>
+  <data name="AppUpd_Downloading" xml:space="preserve"><value>Downloading… {0}%</value></data>
+  <data name="AppUpd_Ready" xml:space="preserve"><value>Version {0} is downloaded and checked. Installing closes the app, replaces its files and opens it again.</value></data>
+  <data name="AppUpd_Install" xml:space="preserve"><value>Install and restart</value></data>
+  <data name="AppUpd_Installing" xml:space="preserve"><value>Installing; the app opens again in a moment.</value></data>
+  <data name="AppUpd_Failed" xml:space="preserve"><value>The update did not work: {0}</value></data>
+  <data name="AppUpd_ConfirmInstall" xml:space="preserve"><value>The app closes to install version {0} and opens again. A test or benchmark running now is stopped. Continue?</value></data>
+  <data name="AppUpd_Notes" xml:space="preserve"><value>What is new</value></data>
+  <data name="AppUpd_Size" xml:space="preserve"><value>{0} MB · {1}</value></data>
+  <data name="AppUpd_Checked" xml:space="preserve"><value>Last checked {0}</value></data>
+  <data name="AppUpd_Done" xml:space="preserve"><value>Mazesta was updated to version {0}.</value></data>
+  <data name="AppUpd_Data_Title" xml:space="preserve"><value>Benchmark comparison lists</value></data>
+  <data name="AppUpd_Data_Sub" xml:space="preserve"><value>Other systems' results, gathered by the shop</value></data>
+  <data name="AppUpd_Data_Lists" xml:space="preserve"><value>{0} lists on this computer.</value></data>
+  <data name="AppUpd_Data_None" xml:space="preserve"><value>No list has been downloaded yet.</value></data>
+  <data name="AppUpd_Data_Published" xml:space="preserve"><value>Published {0}</value></data>
+  <data name="AppUpd_Data_Synced" xml:space="preserve"><value>fetched {0}, {1} new or changed</value></data>
+  <data name="AppUpd_Data_Note" xml:space="preserve"><value>The lists are fetched on their own a little after the app starts, when the internet can be reached. The button fetches them now.</value></data>
+  <data name="AppUpd_Data_Sync" xml:space="preserve"><value>Update the data now</value></data>
+  <data name="AppUpd_Site" xml:space="preserve"><value>Where updates come from</value></data>
+  <data name="AppUpd_Safe" xml:space="preserve"><value>Only files signed with the shop's key are accepted, and each one must match the size and fingerprint in the signed list. A changed or damaged file is thrown away, never run.</value></data>
+  <data name="Web_Peers_Title" xml:space="preserve"><value>Against other systems</value></data>
+  <data name="Web_Peers_Count" xml:space="preserve"><value>{0} models in the list</value></data>
+  <data name="Web_Peers_Ahead" xml:space="preserve"><value>ahead of {0} of the {1} models</value></data>
+  <data name="Web_Peers_None" xml:space="preserve"><value>No other system's result for this benchmark yet. The shop's lists arrive with the data updates (Settings › App update), and every run made with this copy is added here.</value></data>
+  <data name="Web_Peers_RunFirst" xml:space="preserve"><value>Run it to see where this system stands.</value></data>
+  <data name="Web_Peers_You" xml:space="preserve"><value>This system</value></data>
+  <data name="Web_Peers_All" xml:space="preserve"><value>Whole list</value></data>
+  <data name="Web_Peers_History" xml:space="preserve"><value>Recorded runs</value></data>
+  <data name="Web_Peers_Systems" xml:space="preserve"><value>{0} systems · {1} runs</value></data>
+  <data name="Web_Peers_Local" xml:space="preserve"><value>this copy</value></data>
+  <data name="Web_Peers_Same" xml:space="preserve"><value>same model</value></data>
+  <data name="Web_Peers_Search" xml:space="preserve"><value>Search a model…</value></data>
+  <data name="Web_Peers_More" xml:space="preserve"><value>Show {0} more</value></data>
+  <data name="Web_Peers_Median" xml:space="preserve"><value>The median of this model's systems (each system's best run)</value></data>
+  <data name="Web_Peers_DiffHint" xml:space="preserve"><value>How far this system's result is above (+) or below (−) this model</value></data>
+  <data name="Web_Peers_Built" xml:space="preserve"><value>list of {0}</value></data>
+  <data name="Web_Peers_Note" xml:space="preserve"><value>One entry per model: the median of the best runs of its systems, each system counted once. The percentage is how far this system's result is above (+) or below (−) that value. Entries marked "this copy" were measured with this copy and are not in the shop's list yet.</value></data>
+  <data name="Web_Peers_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Web_Runs_Empty" xml:space="preserve"><value>No run of this benchmark has been recorded with this copy yet.</value></data>
+  <data name="Web_Runs_Folder" xml:space="preserve"><value>Open the runs folder</value></data>
+  <data name="Web_Runs_Note" xml:space="preserve"><value>Every run made with this copy, on any system (Data\benchmarks\runs). The shop gathers these files to build the shared lists.</value></data>
+  <data name="Web_Runs_Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Web_Runs_Machine" xml:space="preserve"><value>Computer</value></data>
+  <data name="Web_Runs_Part" xml:space="preserve"><value>Part</value></data>
+  <data name="Web_Runs_Value" xml:space="preserve"><value>Result</value></data>
 </root>

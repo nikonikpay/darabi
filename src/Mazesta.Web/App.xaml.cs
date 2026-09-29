@@ -27,8 +27,20 @@ public partial class App : Application
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
     private MainWindow? _main; private OverlayService? _overlay;
 
+    /// <summary>Started by the update that has just put this release in place (the page says so once).</summary>
+    private static bool JustUpdated { get; set; }
+    internal static bool TakeJustUpdated() { bool b = JustUpdated; JustUpdated = false; return b; }
+    private static bool s_released;
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        // A downloaded release, started by the running app to put itself in place: no window, no services; see AppUpdater.Apply.
+        if (e.Args.Length == 3 && e.Args[0] == AppUpdater.ApplyArgument && int.TryParse(e.Args[2], out int pid))
+        {
+            AppUpdater.Apply(e.Args[1], pid, () => { if (IsFirstInstance) SingleInstance.ReleaseMutex(); SingleInstance.Dispose(); s_released = true; });
+            Shutdown(); return;
+        }
+        JustUpdated = e.Args.Contains(AppUpdater.UpdatedArgument);
         bool overlayOnly = e.Args.Contains(OverlaySignals.Argument);
         if (!IsFirstInstance)
         {
@@ -134,7 +146,7 @@ public partial class App : Application
         Recorder?.Dispose();
         if (_services is not null) { _services.GetRequiredService<PollingEngine>().Dispose(); _services.Dispose(); }
         _logProvider?.Dispose();
-        if (IsFirstInstance) SingleInstance.ReleaseMutex();
+        if (IsFirstInstance && !s_released) SingleInstance.ReleaseMutex();
         base.OnExit(e);
     }
 }
