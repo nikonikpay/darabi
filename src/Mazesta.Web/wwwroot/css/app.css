@@ -315,9 +315,11 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .spec-more[open] summary::before { content: "−"; }
 .spec-more summary:hover { color: var(--paper); }
 .spec-table-wrap { overflow-x: auto; margin-top: 10px; }
-.spec-table { width: 100%; font-size: 12.5px; }
+.spec-table { width: 100%; font-size: 12.5px; direction: ltr; }   /* a technical table: reads left to right in both languages */
 .spec-table th { position: static; background: transparent; }
-.spec-table td { padding: 5px 8px; border-bottom: 1px solid var(--rule); direction: ltr; text-align: left; white-space: nowrap; }
+.spec-table th, .spec-table td { padding: 5px 6px; }
+.spec-table th { direction: ltr; text-align: left; white-space: nowrap; font-size: 11px; }
+.spec-table td { border-bottom: 1px solid var(--rule); direction: ltr; text-align: left; white-space: nowrap; }
 .spec-table td.nm { font-weight: 700; }
 .spec-table tr.on td { background: color-mix(in oklab, var(--hue, var(--yellow)) 14%, transparent); color: var(--paper); }
 .spec-table tr.on td.nm { box-shadow: inset 3px 0 0 var(--hue, var(--yellow)); }

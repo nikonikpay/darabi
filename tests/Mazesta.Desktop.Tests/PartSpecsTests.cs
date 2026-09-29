@@ -26,7 +26,8 @@ public class PartSpecsTests
         var cards = PartSpecs.For(HardwareKind.Memory, Inventory(Dimm("DIMM_A2", "F4-4000C18-32GTZR"), Dimm("DIMM_B2", "F4-4000C18-32GTZR")), details);
         Assert.Equal(3, cards.Count);   // the summary and one card per module
         Assert.Equal("JEDEC 2133", Row(cards[0], "Spec_ProfileNow"));
-        Assert.Contains("XMP 1 4000", Row(cards[0], "Spec_XmpState"));   // XMP is offered but not in use
+        Assert.Equal(Loc.Get("Spec_Off"), Row(cards[0], "Spec_XmpState"));   // XMP is offered but not in use
+        Assert.Equal("XMP 1: 4000 MT/s", Row(cards[0], "Spec_XmpOffered"));
         Assert.Equal("DIMM_A2 (BANK 1)", cards[1].Title);
         Assert.Equal(1, cards[1].Table!.Highlight);                          // XMP 1 is row 0, JEDEC 2133 row 1
     }

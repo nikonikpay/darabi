@@ -1499,7 +1499,7 @@
   <data name="Spec_MemoryType" xml:space="preserve"><value>نوع</value></data>
   <data name="Spec_SpeedNow" xml:space="preserve"><value>سرعت فعلی</value></data>
   <data name="Spec_ProfileNow" xml:space="preserve"><value>پروفایل منطبق با این سرعت</value></data>
-  <data name="Spec_XmpState" xml:space="preserve"><value>XMP</value></data>
+  <data name="Spec_XmpState" xml:space="preserve"><value>وضعیت XMP</value></data>
   <data name="Spec_Xmp_Off" xml:space="preserve"><value>فعال نیست؛ ماژول‌ها این را پشتیبانی می‌کنند: {0}</value></data>
   <data name="Spec_Voltage" xml:space="preserve"><value>ولتاژ</value></data>
   <data name="Spec_Ecc" xml:space="preserve"><value>ECC</value></data>
@@ -1529,4 +1529,5 @@
   <data name="Spec_TpmNone" xml:space="preserve"><value>پیدا نشد یا خاموش است</value></data>
   <data name="Spec_Vbs" xml:space="preserve"><value>امنیت مبتنی بر مجازی‌سازی (VBS)</value></data>
   <data name="Spec_Hvci" xml:space="preserve"><value>Memory integrity (HVCI)</value></data>
+  <data name="Spec_XmpOffered" xml:space="preserve"><value>پروفایل‌های XMP ماژول‌ها</value></data>
 </root>

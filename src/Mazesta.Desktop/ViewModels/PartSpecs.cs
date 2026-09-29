@@ -138,8 +138,12 @@ public static class PartSpecs
         int? speed = modules.Select(m => m.ConfiguredSpeedMts).FirstOrDefault(s => s is > 0);
         Add(summary, "Spec_SpeedNow", speed, suffix: "MT/s");
         if (paired && spd.Count > 0 && Ddr4Spd.Matching(spd[0], speed) is { } running) Add(summary, "Spec_ProfileNow", running.Name);
-        if (spd.FirstOrDefault(s => s.Xmp.Count > 0) is { } withXmp && speed is { } now && withXmp.Xmp.All(x => Math.Abs(x.SpeedMts - now) > 2))
-            Add(summary, "Spec_XmpState", Loc.Format("Spec_Xmp_Off", string.Join(", ", withXmp.Xmp.Select(x => $"{x.Name} {x.SpeedMts}"))));
+        if (spd.FirstOrDefault(s => s.Xmp.Count > 0) is { } withXmp)
+        {
+            // Two rows, so the Persian state and the Latin profile list each read in their own direction.
+            if (speed is { } now) Add(summary, "Spec_XmpState", Loc.Get(withXmp.Xmp.Any(x => Math.Abs(x.SpeedMts - now) <= 2) ? "Spec_On" : "Spec_Off"));
+            Add(summary, "Spec_XmpOffered", string.Join(", ", withXmp.Xmp.Select(x => $"{x.Name}: {x.SpeedMts} MT/s")));
+        }
         Add(summary, "Spec_Voltage", modules.Select(m => m.ConfiguredVoltageMv).FirstOrDefault(v => v is > 0) is { } mv ? (mv / 1000.0).ToString("F2", CultureInfo.InvariantCulture) : null, suffix: "V");
         Add(summary, "Spec_Ecc", modules.Select(m => m.Ecc).FirstOrDefault(e => e is not null) is { } ecc ? YesNo(ecc) : null);
         var cards = new List<SpecCard> { new(Loc.Get("Dashboard_Ram"), summary, Note: spd.Count == 0 ? Loc.Get("Spec_NoSpd") : null) };
@@ -166,8 +170,9 @@ public static class PartSpecs
         {
             var profiles = s.Xmp.Concat(s.Jedec).ToList();
             var running = Ddr4Spd.Matching(s, m?.ConfiguredSpeedMts ?? speedNow);
-            table = new([Loc.Get("Spec_Profile"), Loc.Get("Spec_Speed"), Loc.Get("Spec_Timings"), Loc.Get("Spec_Voltage")],
-                [.. profiles.Select(p => (IReadOnlyList<string>)[p.Name, $"{p.SpeedMts} MT/s", $"{p.Cl}-{p.Trcd}-{p.Trp}-{p.Tras} (tRC {p.Trc})", p.VoltageV is { } v ? v.ToString("F2", CultureInfo.InvariantCulture) + " V" : ""])],
+            // Units in the headers keep the table narrow enough for a card; tRC is its own column.
+            table = new([Loc.Get("Spec_Profile"), "MT/s", "CL-RCD-RP-RAS", "tRC", "V"],
+                [.. profiles.Select(p => (IReadOnlyList<string>)[p.Name, p.SpeedMts.ToString(CultureInfo.InvariantCulture), $"{p.Cl}-{p.Trcd}-{p.Trp}-{p.Tras}", p.Trc.ToString(CultureInfo.InvariantCulture), p.VoltageV is { } v ? v.ToString("F2", CultureInfo.InvariantCulture) : ""])],
                 running is null ? null : profiles.IndexOf(running));
         }
         string? note = s is null ? null : s.Jedec.Count + s.Xmp.Count == 0 ? Loc.Format("Spec_SpdNotDecoded", s.MemoryType) : Loc.Get("Spec_Profile_Note");

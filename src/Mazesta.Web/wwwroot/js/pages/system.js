@@ -8,7 +8,7 @@ import { h, val, toast } from "../ui.js";
 const latin = (s) => /[a-z]/i.test(s) && !/[؀-ۿ]/.test(s);
 function rows(list) {
   return h("dl", { class: "kv" }, list.map((r) => [h("dt", { class: latin(r.label) ? "lat" : "" }, r.label),
-    h("dd", { class: latin(r.value) || !/[؀-ۿ]/.test(r.value) ? "lat" : "", style: { textAlign: latin(r.value) ? "left" : null } }, r.value)]));
+    h("dd", { class: /[؀-ۿ]/.test(r.value) ? "" : "lat", style: { textAlign: /[؀-ۿ]/.test(r.value) ? null : "left" } }, r.value)]));
 }
 export function card(c, i) {
   const main = c.rows.filter((r) => !r.more), more = c.rows.filter((r) => r.more);
