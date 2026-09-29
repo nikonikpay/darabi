@@ -72,25 +72,30 @@ public sealed partial class WebBridge
             return [.. own, .. BenchmarkDetails.Machine(inv, part)];
         }
 
+        // The overclock mark as it was when the run or its queue started (BusyChanged fires once for a whole queue).
+        bool ocAtStart = s_overclocked;
+        void OnBusy(bool busy) { if (busy) ocAtStart = s_overclocked; }
+        runner.BusyChanged += OnBusy; _cleanup.Add(() => runner.BusyChanged -= OnBusy);
         async void OnFinishedUi(RecordedBenchmark run)
         {
-            // The options are read from the row as it is now: they cannot be changed while its run is going.
+            // The run is filed under the options it started with (the runner's copy), never the row's current ones: a GPU or drive picked on
+            // the page while it ran must not take the result. The overclock mark is the one set when the run (or its queue) started.
             var row = bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id == run.Definition.Id);
             if (row is null) return;
+            var options = run.Options ?? row.OptionValues(); bool overclocked = ocAtStart;
             var s = System() ?? new SystemId(Environment.MachineName + " | ", Environment.MachineName, "", "");
-            var c = records.Offer(s.Key, s.Name, Key(row), run.Result);
+            var c = records.Offer(s.Key, s.Name, BenchmarkRecords.RecordKey(run.Definition.Id.Value, options), run.Result);
             compared[run.Definition.Id.Value] = c;
             if (c is { Saved: false }) _log.LogInformation("Benchmark {Id}: {Value} is below the record {Best}; not kept", run.Definition.Id.Value, c.Current.Value, c.Previous?.Value);
             PushSoon("bench", State);
             if (c is null || Headline(row) is not { } h || s.Hash.Length == 0) return;
             try
             {
-                var options = row.OptionValues();
                 string? part = await PartOf(h.Part, options, s);
                 if (string.IsNullOrWhiteSpace(part)) { _log.LogInformation("Benchmark {Id}: the measured part is not known; the run is not added to the comparison log", run.Definition.Id.Value); return; }
                 var details = await DetailsOf(h.Part, part, options);
                 runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options), BenchmarkPeers.PartName(part),
-                    s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, s_overclocked, details));
+                    s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, details));
                 memo.Clear(); PushSoon("bench", State);
             }
             catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }
@@ -240,7 +245,9 @@ public sealed partial class WebBridge
         Method("bench.set", p =>
         {
             var row = Row(p);
-            switch (Str(p, "field"))
+            string field = Str(p, "field");
+            if (field is "duration" or "option" && runner.Running == row.Benchmark.Definition.Id) throw new InvalidOperationException("The options of a running benchmark cannot change.");
+            switch (field)
             {
                 case "selected": row.IsSelected = Bool(p, "value"); break;
                 case "duration": row.DurationText = Str(p, "value"); break;

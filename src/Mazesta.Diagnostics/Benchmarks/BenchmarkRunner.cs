@@ -1,7 +1,9 @@
 using Mazesta.Core.Time; using Mazesta.Monitoring;
 namespace Mazesta.Diagnostics.Benchmarks;
 
-public sealed record RecordedBenchmark(TestDefinition Definition, BenchmarkResult Result);
+/// <param name="Options">The option values the run was started with, copied at its start: a record or comparison is filed under what was
+/// measured (which GPU, which drive), never under what the page shows by the time the run ends. Null only where a run is built by hand.</param>
+public sealed record RecordedBenchmark(TestDefinition Definition, BenchmarkResult Result, IReadOnlyDictionary<string, string>? Options = null);
 
 /// <summary>One benchmark of a queue, with the length and options the technician chose for it.</summary>
 public sealed record BenchmarkJob(IBenchmark Benchmark, int Seconds, IReadOnlyDictionary<string, string> Options);
@@ -94,6 +96,8 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     private async Task<RecordedBenchmark> RunOneAsync(IBenchmark benchmark, int seconds, IReadOnlyDictionary<string, string> options, CancellationTokenSource cts)
     {
         var id = benchmark.Definition.Id; BenchmarkResult result;
+        var snapshot = new Dictionary<string, string>(options);   // the run's own copy: the caller's dictionary may be the page's live one
+        options = snapshot;
         try
         {
             var request = new TestExecutionRequest(seconds, clock, p => Progress?.Invoke(id, p.PercentComplete), engine, new TestOptions(benchmark.Definition, options));
@@ -107,7 +111,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
             Running = null; _cts = null;
         }
         cts.Dispose();
-        var run = new RecordedBenchmark(benchmark.Definition, result);
+        var run = new RecordedBenchmark(benchmark.Definition, result, snapshot);
         Finished?.Invoke(run);
         return run;
     }

@@ -63,6 +63,15 @@ public class BenchmarkTests : IDisposable
         Assert.Null(runner.BlockedBy); Assert.Null(gate.Holder);   // the run gave the gate back
     }
 
+    [Fact] public async Task A_run_carries_a_copy_of_the_options_it_started_with()
+    {
+        var runner = new BenchmarkRunner([new Scripted(Done(BenchmarkStatus.Completed, 1))], new FakeClock(T0), null);
+        var live = new Dictionary<string, string> { ["gpu"] = "card A" };
+        RecordedBenchmark? run = null; runner.Finished += r => { run = r; live["gpu"] = "card B"; };   // the page changes its pick as the run ends
+        await runner.RunAsync(runner.Benchmarks[0], 5, live);
+        Assert.Equal("card A", run!.Options!["gpu"]);
+    }
+
     [Fact] public async Task Memory_without_enough_free_ram_is_Unsupported_not_a_zero_result()
     {
         var r = await new MemoryBenchmark(new FixedProbe(8L << 30, 1L << 30)).RunAsync(Request(4), CancellationToken.None);
