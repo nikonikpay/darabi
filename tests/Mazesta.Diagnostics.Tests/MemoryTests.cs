@@ -20,10 +20,11 @@ public class MemoryTests
 
     [Fact] public void Address_and_random_patterns_differ_between_blocks_so_a_block_that_returns_another_blocks_data_is_caught()
     {
-        var a = new byte[4096]; MemoryPatterns.Fill(a, 18, 1);
-        Assert.True(MemoryPatterns.CountMismatches(a, 18, 2) > 0);       // only the low address bytes differ between neighbouring blocks - still caught
-        MemoryPatterns.Fill(a, 19, 1);
-        Assert.True(MemoryPatterns.CountMismatches(a, 19, 2) > 4000);
+        var a = new byte[4096]; MemoryPatterns.Fill(a, MemoryPatterns.AddressPass, 1);
+        Assert.True(MemoryPatterns.CountMismatches(a, MemoryPatterns.AddressPass, 2) > 0);       // only the low address bytes differ between neighbouring blocks - still caught
+        Assert.Equal(4096, MemoryPatterns.CountMismatches(a, MemoryPatterns.InverseAddressPass, 1));   // the inverse differs in every byte
+        MemoryPatterns.Fill(a, MemoryPatterns.RandomPass, 1);
+        Assert.True(MemoryPatterns.CountMismatches(a, MemoryPatterns.RandomPass, 2) > 4000);
     }
 
     [Fact] public void Budget_leaves_the_larger_of_2_gib_and_a_tenth_of_ram_for_the_os()

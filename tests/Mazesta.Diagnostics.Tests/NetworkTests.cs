@@ -17,8 +17,8 @@ public class NetworkTests
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Equal(0, r.ErrorCount);
         Assert.Contains("lost=0.0%", r.Detail); Assert.Contains("jitter", r.Detail); Assert.Contains("Ethernet", r.Detail);
     }
-    [Fact] public async Task An_adapter_that_gets_no_reply_at_all_is_Failed_not_Unsupported()
-        => Assert.Equal(TestOutcome.Failed, (await new NetworkLatencyExecutor((_, _, _) => Task.FromResult<long?>(null), () => Up).RunAsync(Request(), CancellationToken.None)).Outcome);
+    [Fact] public async Task No_reply_at_all_is_Inconclusive_since_a_firewall_dropping_icmp_looks_the_same()
+        => Assert.Equal(TestOutcome.Inconclusive, (await new NetworkLatencyExecutor((_, _, _) => Task.FromResult<long?>(null), () => Up).RunAsync(Request(), CancellationToken.None)).Outcome);
 
     [Fact] public async Task Loss_above_five_percent_fails_and_the_lost_echoes_are_the_error_count()
     {
@@ -34,7 +34,7 @@ public class NetworkTests
     }
     [Fact] public void Jitter_is_the_mean_absolute_difference_of_consecutive_round_trips()
     {
-        Assert.Equal(0, NetworkLatencyExecutor.Jitter([10]));
-        Assert.Equal(4, NetworkLatencyExecutor.Jitter([10, 14, 9, 12]), 6);   // (|4| + |5| + |3|) / 3
+        Assert.Null(NetworkLatencyExecutor.Jitter([10]));   // one reply cannot show jitter: not measured, never 0
+        Assert.Equal(4, NetworkLatencyExecutor.Jitter([10, 14, 9, 12])!.Value, 6);   // (|4| + |5| + |3|) / 3
     }
 }

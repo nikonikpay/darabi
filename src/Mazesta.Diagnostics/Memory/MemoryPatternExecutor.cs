@@ -58,7 +58,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                     var span = blocks[i].Span;
                     long bad = MemoryPatterns.CountMismatches(span, pass - 1, i);
                     MemoryPatterns.Fill(span, pass, i);
-                    if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in block {i} while verifying '{MemoryPatterns.Name(pass - 1)}'"; }
+                    if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) while verifying '{MemoryPatterns.Name(pass - 1)}'"; }
                     Interlocked.Add(ref bytesTouched, 2L * span.Length);
                 });
                 passes++;
@@ -79,5 +79,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     }
 
     private static string Describe(int blocks, long passes, long bytesTouched, Stopwatch sw, string firstError)
-        => $"RAM pattern test; tested={(long)blocks * BlockBytes >> 20} MiB; passes={passes}; {bytesTouched / 1e9 / Math.Max(0.001, sw.Elapsed.TotalSeconds):F1} GB/s" + (firstError.Length > 0 ? $"; {firstError}" : "");
+        => $"RAM pattern test; tested={(long)blocks * BlockBytes >> 20} MiB; passes={passes} of {MemoryPatterns.Count} patterns{(passes < MemoryPatterns.Count ? " (not every pattern ran; a longer run covers them all)" : "")}; "
+         + $"{bytesTouched / 1e9 / Math.Max(0.001, sw.Elapsed.TotalSeconds):F1} GB/s; covers only the RAM Windows let the test have, addressed by buffer offset, not physical address or slot"
+         + (firstError.Length > 0 ? $"; {firstError}" : "");
 }

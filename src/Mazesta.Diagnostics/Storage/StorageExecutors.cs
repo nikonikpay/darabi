@@ -60,14 +60,14 @@ public sealed class StorageSequentialExecutor : StorageExecutor
     private protected override string Exercise(StorageFile file, TestExecutionRequest request, CancellationToken ct, ref long errors)
     {
         using var buffer = new NativeBlock(StorageFile.Block);
-        var clock = Stopwatch.StartNew(); double writeSeconds = 0, readSeconds = 0; long bytes = 0; int passes = 0;
+        var clock = Stopwatch.StartNew(); double writeSeconds = 0, readSeconds = 0; long bytes = 0, shortReads = 0, wrongBytes = 0; int passes = 0;
         do
         {
             var phase = Stopwatch.StartNew();
             for (long offset = 0, index = 0; offset < file.Length; offset += StorageFile.Block, index++)
             {
                 ct.ThrowIfCancellationRequested();
-                MemoryPatterns.Fill(buffer.Span, MemoryPatterns.Count - 1 + passes * MemoryPatterns.Count, (int)index);   // the seeded random pattern, different every pass
+                MemoryPatterns.Fill(buffer.Span, MemoryPatterns.RandomPass + passes * MemoryPatterns.Count, (int)index);   // the seeded random pattern, different every pass
                 file.Write(buffer.Span, offset);
                 Report(request, clock);
             }
@@ -76,48 +76,52 @@ public sealed class StorageSequentialExecutor : StorageExecutor
             {
                 ct.ThrowIfCancellationRequested();
                 int read = file.Read(buffer.Span, offset);
-                errors += read < StorageFile.Block ? StorageFile.Block - read : MemoryPatterns.CountMismatches(buffer.Span, MemoryPatterns.Count - 1 + passes * MemoryPatterns.Count, (int)index);
+                // A short read is counted as one error of its own kind, never as a whole block read; a full block is compared byte by byte.
+                if (read < StorageFile.Block) { shortReads++; errors++; }
+                else { long bad = MemoryPatterns.CountMismatches(buffer.Span, MemoryPatterns.RandomPass + passes * MemoryPatterns.Count, (int)index); wrongBytes += bad; errors += bad; }
                 Report(request, clock);
             }
             readSeconds += phase.Elapsed.TotalSeconds; bytes += file.Length; passes++;
         }
         while (clock.Elapsed.TotalSeconds < request.DurationSeconds);
-        return $"sequential unbuffered I/O; write {bytes / Math.Max(0.001, writeSeconds) / 1e6:F0} MB/s; read {bytes / Math.Max(0.001, readSeconds) / 1e6:F0} MB/s; verified {bytes >> 20} MiB in {passes} pass(es)";
+        return $"sequential unbuffered write-through I/O; write {bytes / Math.Max(0.001, writeSeconds) / 1e6:F0} MB/s; read {bytes / Math.Max(0.001, readSeconds) / 1e6:F0} MB/s; verified {bytes >> 20} MiB in {passes} pass(es)"
+             + (shortReads > 0 ? $"; {shortReads} short read(s)" : "") + (wrongBytes > 0 ? $"; {wrongBytes} byte(s) read back wrong" : "");
     }
 }
 
-/// <summary>Random 4 KiB write-then-read at queue depth 1, every block verified; reports IOPS and latency percentiles.</summary>
+/// <summary>Random 4 KiB write-then-read at queue depth 1, every block verified; reports IOPS and the latency percentiles of every read and
+/// every write of the run (not 1/IOPS, and not only the last requests). Short reads and wrong bytes are counted apart.</summary>
 public sealed class StorageRandom4kExecutor : StorageExecutor
 {
     public static readonly TestDefinition Spec = new(new TestId("storage.random4k"), "Test_Storage_Random4k", 30, CommonOptions("256"));
     public override TestDefinition Definition => Spec;
-    private const int Latencies = 4096;
 
     private protected override string Exercise(StorageFile file, TestExecutionRequest request, CancellationToken ct, ref long errors)
     {
         using var buffer = new NativeBlock(StorageFile.Block);
         // Materialise the whole file first: blocks that were never written are not tested and read back as zero without touching the media.
-        for (long offset = 0, index = 0; offset < file.Length; offset += StorageFile.Block, index++) { ct.ThrowIfCancellationRequested(); MemoryPatterns.Fill(buffer.Span, MemoryPatterns.Count - 1, (int)index); file.Write(buffer.Span, offset); }
-        var random = new Random(7421); var recent = new Queue<double>(Latencies + 1);
-        long slots = file.Length / StorageFile.Sector, operations = 0; double writeMs = 0, readMs = 0;
+        for (long offset = 0, index = 0; offset < file.Length; offset += StorageFile.Block, index++) { ct.ThrowIfCancellationRequested(); MemoryPatterns.Fill(buffer.Span, MemoryPatterns.RandomPass, (int)index); file.Write(buffer.Span, offset); }
+        var random = new Random(7421); var reads = new LatencyHistogram(); var writes = new LatencyHistogram();
+        long slots = file.Length / StorageFile.Sector, operations = 0, shortReads = 0, wrongBytes = 0; double writeMs = 0, readMs = 0;
         var clock = Stopwatch.StartNew();
         do
         {
             ct.ThrowIfCancellationRequested();
             long offset = random.NextInt64(slots) * StorageFile.Sector;
             var block = buffer.Span[..StorageFile.Sector];
-            MemoryPatterns.Fill(block, MemoryPatterns.Count - 1, (int)(offset / StorageFile.Sector));
+            MemoryPatterns.Fill(block, MemoryPatterns.RandomPass, (int)(offset / StorageFile.Sector));
             long stamp = Stopwatch.GetTimestamp(); file.Write(block, offset); double w = Stopwatch.GetElapsedTime(stamp).TotalMilliseconds;
             var back = buffer.Span.Slice(StorageFile.Block - StorageFile.Sector, StorageFile.Sector);
             stamp = Stopwatch.GetTimestamp(); int read = file.Read(back, offset); double r = Stopwatch.GetElapsedTime(stamp).TotalMilliseconds;
-            errors += read < StorageFile.Sector ? StorageFile.Sector - read : StorageFile.Sector - CountEqual(block, back);
-            writeMs += w; readMs += r; operations++;
-            recent.Enqueue(w + r); if (recent.Count > Latencies) recent.Dequeue();
+            if (read < StorageFile.Sector) { shortReads++; errors++; }
+            else { int bad = StorageFile.Sector - CountEqual(block, back); wrongBytes += bad; errors += bad; }
+            writeMs += w; readMs += r; operations++; writes.Add(w); reads.Add(r);
             if ((operations & 31) == 0) Report(request, clock);
         }
         while (clock.Elapsed.TotalSeconds < request.DurationSeconds);
-        var ordered = recent.Order().ToArray();
-        return $"random 4K QD1 unbuffered; {operations} verified blocks; write {operations / Math.Max(0.000001, writeMs / 1000):F0} IOPS ({writeMs / operations:F3} ms); read {operations / Math.Max(0.000001, readMs / 1000):F0} IOPS ({readMs / operations:F3} ms); P95 cycle {ordered[Math.Max(0, (int)Math.Ceiling(ordered.Length * 0.95) - 1)]:F3} ms";
+        return $"random 4K QD1 unbuffered write-through; {operations} verified blocks; write {operations / Math.Max(0.000001, writeMs / 1000):F0} IOPS, latency {writes.Describe()}; "
+             + $"read {operations / Math.Max(0.000001, readMs / 1000):F0} IOPS, latency {reads.Describe()}"
+             + (shortReads > 0 ? $"; {shortReads} short read(s)" : "") + (wrongBytes > 0 ? $"; {wrongBytes} byte(s) read back wrong" : "");
     }
 
     private static int CountEqual(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b) { int equal = 0; for (int i = 0; i < a.Length; i++) if (a[i] == b[i]) equal++; return equal; }

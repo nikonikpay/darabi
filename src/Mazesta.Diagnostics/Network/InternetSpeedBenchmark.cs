@@ -34,7 +34,8 @@ public sealed class InternetSpeedBenchmark(HttpMessageHandler? transport = null,
             List<BenchmarkMetric> metrics = [];
             if (downBytes > 0) metrics.Add(new("Bench_Net_Download", down, "Mbps"));
             if (upBytes > 0) metrics.Add(new("Bench_Net_Upload", up, "Mbps"));
-            if (rtts.Count > 0) metrics.AddRange([new("Bench_Net_Ping", rtts.Average(), "ms"), new("Bench_Net_Jitter", NetworkLatencyExecutor.Jitter(rtts), "ms")]);
+            if (rtts.Count > 0) metrics.Add(new("Bench_Net_Ping", rtts.Average(), "ms"));
+            if (NetworkLatencyExecutor.Jitter(rtts) is { } jitter) metrics.Add(new("Bench_Net_Jitter", jitter, "ms"));   // one reply shows no jitter: left out, not 0
             metrics.Add(new("Bench_Net_Loss", 100.0 * (sent - rtts.Count) / Math.Max(1, sent), "%"));
             metrics.Add(new("Bench_Net_DataUsed", (downBytes + upBytes) / 1e6, "MB"));
             return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,

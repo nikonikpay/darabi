@@ -110,7 +110,7 @@ public sealed class StorageBenchmark : IBenchmark
         public Memory<byte>[] Small { get; }
         public Buffers()
         {
-            MemoryPatterns.Fill(_seq.Span, MemoryPatterns.Count - 1, 0); MemoryPatterns.Fill(_small.Span, MemoryPatterns.Count - 1, 1);
+            MemoryPatterns.Fill(_seq.Span, MemoryPatterns.RandomPass, 0); MemoryPatterns.Fill(_small.Span, MemoryPatterns.RandomPass, 1);
             Seq = [.. Enumerable.Range(0, SeqDepth).Select(i => _seq.Memory.Slice(i * StorageFile.Block, StorageFile.Block))];
             Small = [.. Enumerable.Range(0, RandomDepth).Select(i => _small.Memory.Slice(i * StorageFile.Sector, StorageFile.Sector))];
         }

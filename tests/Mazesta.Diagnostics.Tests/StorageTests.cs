@@ -45,4 +45,22 @@ public class StorageTests : IDisposable
         Assert.NotEmpty(choices); Assert.All(choices, c => Assert.Contains("GB free", c.Label));
         Assert.Equal(choices[0].Value, StorageFile.ResolveTarget(""));
     }
+
+    [Fact] public void Latency_percentiles_cover_every_request_and_never_understate()
+    {
+        var h = new LatencyHistogram();
+        for (int i = 1; i <= 10_000; i++) h.Add(i <= 9_900 ? 0.1 : 50);   // 1 % of requests stall at 50 ms, early or late in the run alike
+        Assert.Equal(10_000, h.Count); Assert.Equal(50, h.MaxMs);
+        Assert.InRange(h.Percentile(0.5), 0.1, 0.105);                       // a bucket's upper edge: at most 5 % above
+        Assert.InRange(h.Percentile(0.99), 0.1, 0.105);
+        Assert.InRange(h.Percentile(0.999), 50, 50);                         // the stalls show at P99.9, capped at the true maximum
+        Assert.Contains("P99.9", h.Describe());
+    }
+
+    [Fact] public void P99_9_is_not_given_for_fewer_than_a_thousand_requests()
+    {
+        var h = new LatencyHistogram(); for (int i = 0; i < 999; i++) h.Add(1);
+        Assert.True(double.IsNaN(h.Percentile(0.999))); Assert.DoesNotContain("P99.9", h.Describe());
+        Assert.True(double.IsNaN(new LatencyHistogram().Percentile(0.5)));
+    }
 }

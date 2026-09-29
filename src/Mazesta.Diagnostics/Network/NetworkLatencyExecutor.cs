@@ -3,8 +3,10 @@ namespace Mazesta.Diagnostics.Network;
 
 /// <summary>
 /// Link and latency test (spec §11): ICMP echoes to a chosen target for the duration, then packet loss,
-/// latency and jitter. No adapter that is up is <b>Unsupported</b> (there is nothing to test), an adapter
-/// that gets no reply is <b>Failed</b>; the other local tests never depend on this one. Nothing is uploaded
+/// latency and jitter. No adapter that is up is <b>Unsupported</b> (there is nothing to test). Not one reply
+/// is <b>Inconclusive</b>, not Failed: a firewall or a target that drops ICMP looks exactly like a dead link,
+/// so the network card is not blamed on that alone. Replies with more than <see cref="MaxLossPercent"/> lost
+/// are Failed. Jitter needs at least two replies; with fewer it is not given (never 0). Nothing is uploaded
 /// and the only traffic is the echoes themselves.
 /// </summary>
 public sealed class NetworkLatencyExecutor(Func<IPAddress, TimeSpan, CancellationToken, Task<long?>>? echo = null, Func<IReadOnlyList<string>>? adapters = null) : ITestExecutor
@@ -45,15 +47,17 @@ public sealed class NetworkLatencyExecutor(Func<IPAddress, TimeSpan, Cancellatio
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, 0, Describe(links, address, sent, rtts)); }
 
         double loss = 100.0 * (sent - rtts.Count) / sent;
-        return new(Definition.Id, rtts.Count == 0 || loss > MaxLossPercent ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, sent - rtts.Count, Describe(links, address, sent, rtts));
+        var outcome = rtts.Count == 0 ? TestOutcome.Inconclusive : loss > MaxLossPercent ? TestOutcome.Failed : TestOutcome.Passed;
+        return new(Definition.Id, outcome, started, request.Clock.UtcNow, outcome == TestOutcome.Failed ? sent - rtts.Count : 0, Describe(links, address, sent, rtts));
     }
 
     /// <summary>Jitter as the mean absolute difference of consecutive round trips (RFC 3550 style, without smoothing).</summary>
-    internal static double Jitter(IReadOnlyList<double> rtts) => rtts.Count < 2 ? 0 : Enumerable.Range(1, rtts.Count - 1).Average(i => Math.Abs(rtts[i] - rtts[i - 1]));
+    internal static double? Jitter(IReadOnlyList<double> rtts) => rtts.Count < 2 ? null : Enumerable.Range(1, rtts.Count - 1).Average(i => Math.Abs(rtts[i] - rtts[i - 1]));
 
     private static string Describe(IReadOnlyList<string> links, IPAddress target, int sent, List<double> rtts)
         => $"ICMP to {target}; sent={sent}; lost={100.0 * (sent - rtts.Count) / Math.Max(1, sent):F1}%; "
-         + (rtts.Count > 0 ? $"latency min/avg/max {rtts.Min():F0}/{rtts.Average():F1}/{rtts.Max():F0} ms; jitter {Jitter(rtts):F1} ms; " : "no reply; ")
+         + (rtts.Count > 0 ? $"latency min/avg/max {rtts.Min():F0}/{rtts.Average():F1}/{rtts.Max():F0} ms; " + (Jitter(rtts) is { } j ? $"jitter {j:F1} ms; " : "jitter not measured (fewer than 2 replies); ")
+            : "no reply at all - the target or a firewall may drop ICMP, or there is no route; try another target before blaming the network card; ")
          + "links: " + string.Join(", ", links);
 
     internal static async Task<long?> SystemEcho(IPAddress target, TimeSpan timeout, CancellationToken ct)
