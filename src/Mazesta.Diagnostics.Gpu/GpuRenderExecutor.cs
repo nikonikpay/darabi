@@ -58,5 +58,5 @@ public sealed class GpuRenderExecutor : ITestExecutor, ITestAvailability
     private static string Describe(GraphicsDevice device, long frames, Stopwatch clock, TestExecutionRequest request, DateTimeOffset started)
         => SensorEvidence.Join($"ray-traced scene 512x512, 25 spheres, 4 bounces, on {device.Name}", $"frames={frames}", $"{frames / Math.Max(0.001, clock.Elapsed.TotalSeconds):F1} frame/s",
             $"{frames * (double)Pixels / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e6:F0} MPixel/s (Mazesta's own scene, not a commercial score)",
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, request.Clock.UtcNow)?.Format("measured GPU load", "%"));
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, request.Clock.UtcNow, GpuDevices.SensorNode(request.Engine, device.Name), null)?.Format("measured GPU load", "%"));
 }

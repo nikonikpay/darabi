@@ -126,10 +126,10 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
                 rayTraced ? $"ray traced: camera ray, a shadow ray to the moon and to each of {model.PointLights.Length} lamps in reach, reflections and refraction up to 4 bounces" : $"load level {load}: {work}",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, $"check frames={checks}",
                 firstError.Length > 0 ? firstError : null, model.ModelProblem,
-                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished)?.Format("measured GPU load", "%"),
-                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished)?.Format("GPU power", " W", includeMax: true),
-                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished)?.Format("GPU temperature", "°C", includeMax: true),
-                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished)?.Format("GPU hot spot", "°C", includeMax: true));
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("measured GPU load", "%"),
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU power", " W", includeMax: true),
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU temperature", "°C", includeMax: true),
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU hot spot", "°C", includeMax: true));
         }
     }
 

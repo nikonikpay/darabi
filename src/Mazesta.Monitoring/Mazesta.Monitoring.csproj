@@ -9,5 +9,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Monitoring.Tests" />
     <InternalsVisibleTo Include="Mazesta.Desktop.Tests" />
+    <InternalsVisibleTo Include="Mazesta.Diagnostics.Gpu.Tests" />
   </ItemGroup>
 </Project>

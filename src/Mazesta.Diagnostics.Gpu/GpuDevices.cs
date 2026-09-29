@@ -1,4 +1,4 @@
-using ComputeSharp;
+using ComputeSharp; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring;
 namespace Mazesta.Diagnostics.Gpu;
 
 /// <summary>The DirectX 12 adapters the GPU tests can run on. Software adapters (WARP) are never offered: a
@@ -23,4 +23,19 @@ public static class GpuDevices
         => key.Length == 0 ? Adapters.Value.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault() : Adapters.Value.FirstOrDefault(d => KeyOf(d) == key);
 
     private static string KeyOf(GraphicsDevice d) => $"{d.Name}|{d.Luid}";
+
+    /// <summary>
+    /// Which of the monitor's GPU nodes (and the nodes under it) is the adapter a run used, for reading that card's own sensors. The only GPU
+    /// the monitor sees, or the one whose name matches the adapter's; with several GPUs and no match nothing is chosen, so a run on one card
+    /// is never credited with another card's temperature or free memory. The sensor monitor and DirectX do not share a device identity (LUID),
+    /// so the name is what ties them; two identical cards stay ambiguous and read as the first match.
+    /// </summary>
+    public static Func<HardwareNode, bool> SensorNode(PollingEngine? engine, string adapter)
+    {
+        var gpus = engine?.Hardware.Where(n => n.Kind == HardwareKind.Gpu && n.ParentId is null).ToList() ?? [];
+        if (gpus.Count == 1) { var only = gpus[0].Id; return n => n.Id == only || n.ParentId == only; }
+        string want = BenchmarkPeers.PartName(adapter);
+        var match = gpus.FirstOrDefault(n => string.Equals(BenchmarkPeers.PartName(n.Name), want, StringComparison.OrdinalIgnoreCase))?.Id;
+        return n => match is { } id && (n.Id == id || n.ParentId == id);
+    }
 }

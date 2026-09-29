@@ -94,13 +94,13 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
 
     private string Describe(GraphicsDevice device, long dispatches, Stopwatch clock, TestExecutionRequest request, DateTimeOffset started)
     {
-        var finished = request.Clock.UtcNow;
+        var finished = request.Clock.UtcNow; var card = GpuDevices.SensorNode(request.Engine, device.Name);
         double gops = dispatches * (double)Threads * Rounds * 6 / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e9;
         return SensorEvidence.Join($"GPU {profile} compute stress on {device.Name}", $"dispatches={dispatches}", $"{gops:F0} Gop/s integer",
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished)?.Format("measured GPU load", "%"),
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished)?.Format("GPU core", "°C", includeMax: true),
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished)?.Format("GPU hot spot", "°C", includeMax: true),
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished)?.Format("GPU power", " W", includeMax: true));
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, card, null)?.Format("measured GPU load", "%"),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, card, null)?.Format("GPU core", "°C", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, card, null)?.Format("GPU hot spot", "°C", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, card, null)?.Format("GPU power", " W", includeMax: true));
     }
 
     private static void Report(TestExecutionRequest request, Stopwatch clock)

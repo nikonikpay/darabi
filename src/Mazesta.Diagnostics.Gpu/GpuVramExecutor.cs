@@ -34,7 +34,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
         var options = request.Options ?? TestOptions.None(Definition);
         var device = GpuDevices.Resolve(request, Definition);
         if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, GpuDevices.NoGpu));
-        long budget = Budget(SensorEvidence.Latest(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramFree), (long)device.DedicatedMemorySize, options.GetInt(SizeOption));
+        long budget = Budget(SensorEvidence.Latest(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramFree, started, GpuDevices.SensorNode(request.Engine, device.Name)), (long)device.DedicatedMemorySize, options.GetInt(SizeOption));
         if (budget < ChunkBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of VRAM can safely be tested; at least {ChunkBytes >> 20} MiB is needed."));
         return Task.Run(() => Run(request, device, budget, started, ct), CancellationToken.None);
     }
@@ -89,5 +89,5 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
 
     private static string Describe(GraphicsDevice device, int chunks, uint passes, TestExecutionRequest request, DateTimeOffset started)
         => SensorEvidence.Join($"VRAM pattern test on {device.Name}", $"tested={chunks * (ChunkBytes >> 20)} MiB in {chunks} buffers", $"passes={passes}",
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramUsed, started, request.Clock.UtcNow)?.Format("VRAM in use", " MB", includeMax: true));
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramUsed, started, request.Clock.UtcNow, GpuDevices.SensorNode(request.Engine, device.Name), null)?.Format("VRAM in use", " MB", includeMax: true));
 }

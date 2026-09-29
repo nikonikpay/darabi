@@ -45,15 +45,18 @@ public static class SensorEvidence
     public static SensorStat? CpuTemperature(PollingEngine? engine, DateTimeOffset from, DateTimeOffset to)
         => ReadFirst(engine, HardwareKind.Cpu, from, to, SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp);
 
-    /// <summary>The most recent valid reading of a role, or null. A test uses it to size itself from what the
-    /// machine reports right now (how much VRAM is free) instead of assuming.</summary>
-    public static double? Latest(PollingEngine? engine, HardwareKind kind, SensorRole role)
+    /// <summary>The most recent valid reading of a role taken in the last <paramref name="maxAgeSeconds"/>, or null. A test uses it to size itself
+    /// from what the machine reports right now (how much VRAM is free) instead of assuming; <paramref name="node"/> narrows it to the device the
+    /// test uses, since the first GPU's reading says nothing about the second. An old reading is not a current one: a sensor that stopped
+    /// reporting gives null, never its last value.</summary>
+    public static double? Latest(PollingEngine? engine, HardwareKind kind, SensorRole role, DateTimeOffset now, Func<HardwareNode, bool>? node = null, int maxAgeSeconds = 10)
     {
         if (engine is null) return null;
-        foreach (var s in engine.Hardware.Where(n => n.Kind == kind).SelectMany(n => n.Sensors).Where(s => s.Role == role))
+        int oldest = engine.History.SecondsSinceEpoch(now) - maxAgeSeconds;
+        foreach (var s in engine.Hardware.Where(n => n.Kind == kind && (node is null || node(n))).SelectMany(n => n.Sensors).Where(s => s.Role == role))
         {
             var raw = engine.History.GetRaw(s.Id);
-            for (int i = raw.Values.Length - 1; i >= 0; i--) if (!float.IsNaN(raw.Values[i])) return raw.Values[i];
+            for (int i = raw.Values.Length - 1; i >= 0 && raw.Seconds[i] >= oldest; i--) if (!float.IsNaN(raw.Values[i])) return raw.Values[i];
         }
         return null;
     }

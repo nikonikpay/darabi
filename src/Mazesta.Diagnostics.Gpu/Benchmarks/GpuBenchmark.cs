@@ -42,12 +42,5 @@ internal static class GpuBenchmark
 
     /// <summary>The monitor's node of the adapter a run used: the only GPU there is, or the one of the same name. With two GPUs and no match
     /// nothing is read, rather than the other card's readings.</summary>
-    internal static Func<HardwareNode, bool> Node(TestExecutionRequest request, string adapter)
-    {
-        var gpus = request.Engine?.Hardware.Where(n => n.Kind == HardwareKind.Gpu && n.ParentId is null).ToList() ?? [];
-        if (gpus.Count == 1) { var only = gpus[0].Id; return n => n.Id == only || n.ParentId == only; }
-        string want = BenchmarkPeers.PartName(adapter);
-        var match = gpus.FirstOrDefault(n => string.Equals(BenchmarkPeers.PartName(n.Name), want, StringComparison.OrdinalIgnoreCase))?.Id;
-        return n => match is { } id && (n.Id == id || n.ParentId == id);
-    }
+    internal static Func<HardwareNode, bool> Node(TestExecutionRequest request, string adapter) => GpuDevices.SensorNode(request.Engine, adapter);
 }
