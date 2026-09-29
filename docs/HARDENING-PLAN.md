@@ -47,7 +47,7 @@ Status: `done` · `partial` · `open` · `declined`. "Hardware" means it needs t
 | G-01 | An error in an intermediate dispatch was overwritten | done | Dispatches in a batch chain on the previous output; sampled threads are recomputed on the CPU through the whole chain (parallel). The result says how many thread results were verified, as a sample (test for a fault in any dispatch). |
 | G-02 | VRAM: every allocated cell checked | done (already) | The comparison runs on the GPU over every cell with an atomic counter. Walking bits and stride patterns are open. |
 | G-03 | Garden benchmark: fixed path, capture outside FPS, 1 % low definition | open | Not reviewed in this round. |
-| G-04 | Real AI inference (image/detection/text models with accuracy) (§8) | open | Needs model files, their licences and an inference runtime (ONNX Runtime/DirectML adds tens of MB). An owner decision first. The existing benchmark stays "matrix multiply throughput", not an AI score. |
+| G-04 | Real AI inference (image/detection/text models with accuracy) (§8) | done (language models) | The AI models page: six GGUF language models (0.8B to 35B-A3B, Apache-2.0) downloaded only on request, pinned by SHA-256; a fit estimate before download (llmfit-style, from each file's own header figures and this machine's VRAM and free RAM); llama.cpp b11265 (Vulkan, downloaded the same way) measures prompt and generation tokens/s with llama-bench on the GPU or the CPU. Checked on the owner's RTX 3090: Qwen3 4B 193 tok/s generation (ceiling 376), 9.6 tok/s on the Ryzen 3950X; Qwen3.5 0.8B 367 tok/s. Image and detection models with accuracy are not included. The DirectML benchmark stays "matrix multiply throughput". |
 
 ## Storage and network (plan §9, §10)
 

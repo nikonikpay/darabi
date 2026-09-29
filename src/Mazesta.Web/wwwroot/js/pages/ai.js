@@ -24,16 +24,16 @@ export function mount(el) {
 
   function renderMachine(s) {
     const m = s.machine, row = (k, v) => h("div", {}, h("dt", {}, t(k)), h("dd", { class: "num" }, v ?? "-"));
-    machine.replaceChildren(row("Ai_Gpu", m.gpu ? lat(m.gpu) : t("Ai_NoGpu")), row("Ai_Vram", m.vram), row("Ai_Bandwidth", m.bandwidth), row("Ai_Ram", `${m.ram} (${t("Ai_Free", m.ramFree)})`));
+    machine.replaceChildren(row("Ai_Gpu", m.gpu ? lat(m.gpu) : t("Ai_NoGpu")), row("Ai_Vram", m.vram), row("Ai_Bandwidth", m.bandwidth), row("Ai_Ram", m.ram), row("Ai_RamFree", m.ramFree));
     const r = s.runtime, x = r.transfer;
-    runtime.replaceChildren(
+    runtime.replaceChildren(...[
       h("div", { class: "ai-rt-line" }, h("span", { class: `pill ${r.ready ? "pass" : "none"}` }, r.ready ? t("Ai_Runtime_Ready", r.build) : t("Ai_Runtime_Missing")),
         h("span", { class: "grow" }),
-        !r.ready && !x?.active ? h("button", { class: "btn primary", disabled: !!s.downloading, onclick: () => exec("download", { id: "runtime" }) }, icon("arrow"), t("Ai_Download", r.size)) : null,
+        !r.ready && !x?.active ? h("button", { class: "btn primary", disabled: !!s.downloading, onclick: () => exec("download", { id: "runtime" }) }, t("Ai_Download", r.size)) : null,
         x?.active ? h("button", { class: "btn stop", onclick: () => exec("cancelDownload", { id: "runtime" }) }, t("Ai_CancelDownload")) : null,
         h("button", { class: "btn quiet", onclick: () => exec("openFolder") }, icon("folder"), t("Ai_OpenFolder"))),
       x?.active ? progress(x) : null, x?.error ? h("p", { class: "ai-err" }, x.error) : null,
-      h("p", { class: "caption" }, t("Ai_Runtime_Note")));
+      h("p", { class: "caption" }, t("Ai_Runtime_Note"))].filter(Boolean));
   }
 
   function progress(x) {
@@ -56,7 +56,7 @@ export function mount(el) {
     const where = m.fit.mode === "Split" ? t("Ai_Fit_SplitShare", m.fit.share) : t(key);
     const actions = h("div", { class: "btn-row" },
       !m.downloaded && !x?.active ? h("button", { class: `btn ${s.recommended === m.id ? "primary" : ""}`, disabled: !!s.downloading, onclick: () => exec("download", { id: m.id }) },
-        icon("arrow"), m.partial ? t("Ai_Resume", m.partial, m.size) : t("Ai_Download", m.size)) : null,
+        m.partial ? t("Ai_Resume", m.partial, m.size) : t("Ai_Download", m.size)) : null,
       x?.active ? h("button", { class: "btn stop", onclick: () => exec("cancelDownload", { id: m.id }) }, t("Ai_CancelDownload")) : null,
       m.downloaded && !run ? h("button", { class: "btn go", disabled: busy || !s.runtime.ready || m.fit.mode === "TooBig" || !s.machine.gpu, onclick: () => exec("run", { id: m.id, device: "gpu" }) }, icon("play"), t("Ai_RunGpu")) : null,
       m.downloaded && !run ? h("button", { class: "btn", disabled: busy || !s.runtime.ready || !m.cpuFits, onclick: () => exec("run", { id: m.id, device: "cpu" }) }, icon("cpu"), t("Ai_RunCpu")) : null,
@@ -64,13 +64,13 @@ export function mount(el) {
       h("span", { class: "grow" }),
       m.downloaded || m.partial ? h("button", { class: "btn quiet", disabled: !!run || s.downloading === m.id, onclick: () => { if (confirm(t("Ai_ConfirmDelete", m.name))) exec("delete", { id: m.id }); } }, icon("x"), t("Ai_Delete")) : null);
     const facts = h("dl", { class: "kv" },
-      h("div", {}, h("dt", {}, t("Ai_File")), h("dd", { class: "num" }, lat(`${m.size} · ${m.quant} · ${m.license}`))),
+      h("div", {}, h("dt", {}, t("Ai_File")), h("dd", { class: "num" }, m.size)),
       h("div", {}, h("dt", {}, t("Ai_Need")), h("dd", { class: "num" }, m.fit.need)),
       m.fit.ceiling ? h("div", {}, h("dt", { title: t("Ai_Ceiling_Hint") }, t("Ai_Ceiling")), h("dd", { class: "num" }, m.fit.ceiling)) : null,
       m.fit.maxContext ? h("div", {}, h("dt", { title: t("Ai_MaxContext_Hint") }, t("Ai_MaxContext")), h("dd", { class: "num" }, lat(m.fit.maxContext.toLocaleString("en-US")))) : null);
-    return h("section", { class: `panel ai-model ${s.recommended === m.id ? "rec" : ""}`, style: { "--i": i } },
+    return h("section", { class: `panel ai-model ${s.recommended === m.id ? "suggested" : ""}`, style: { "--i": i } },
       h("header", { class: "panel-head" },
-        h("div", { class: "ttl" }, h("h2", { class: "panel-title lat" }, m.name), h("div", { class: "panel-sub fa" }, `${m.tier} · `, lat(m.params), m.moe ? ` · ${t("Ai_Moe")}` : "")),
+        h("div", { class: "ttl" }, h("h2", { class: "panel-title lat" }, m.name), h("div", { class: "panel-sub fa" }, `${m.tier} · `, lat(`${m.params} · ${m.quant}`), m.moe ? ` · ${t("Ai_Moe")}` : "")),
         s.recommended === m.id ? h("span", { class: "pill run" }, icon("star"), t("Ai_Recommended")) : null),
       h("p", { class: "ai-purpose" }, m.purpose),
       h("div", { class: "ai-fit" }, h("span", { class: `pill ${m.fit.tight && cls === "pass" ? "warn" : cls}` }, where), m.fit.tight ? h("span", { class: "caption" }, t("Ai_Fit_Tight")) : null,

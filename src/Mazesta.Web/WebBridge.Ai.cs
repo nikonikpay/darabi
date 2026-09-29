@@ -44,7 +44,7 @@ public sealed partial class WebBridge
             if (gpu is { } g && bandwidthOf != g.Name) _ = Bandwidth(g.Name);
             return new(gpu?.Name, gpu?.Vram, gpu is { } x && bandwidthOf == x.Name ? bandwidth : null, ram.TotalBytes, ram.AvailableBytes);
         }
-        static string Size(double bytes) => Units.FormatMeasured(bytes / AiFitter.Gib, "GB");
+        static string Size(double bytes) => bytes < AiFitter.Gib ? Units.FormatMeasured(bytes / 1048576, "MB") : Units.FormatMeasured(bytes / AiFitter.Gib, "GB");
         static string Rate(double? v) => v is { } x ? Units.FormatMeasured(x, "tok/s") : "";
         object? Transfer(string id) => transfers.GetValueOrDefault(id) is { } t ? new
         {

@@ -1595,7 +1595,6 @@
   <data name="Ai_Vram" xml:space="preserve"><value>حافظهٔ کارت گرافیک</value></data>
   <data name="Ai_Bandwidth" xml:space="preserve"><value>پهنای باند حافظهٔ کارت (حداکثر)</value></data>
   <data name="Ai_Ram" xml:space="preserve"><value>حافظهٔ سیستم (RAM)</value></data>
-  <data name="Ai_Free" xml:space="preserve"><value>{0} آزاد</value></data>
   <data name="Ai_Runtime_Ready" xml:space="preserve"><value>llama.cpp نسخهٔ {0} آماده است</value></data>
   <data name="Ai_Runtime_Missing" xml:space="preserve"><value>llama.cpp دانلود نشده است</value></data>
   <data name="Ai_Runtime_Note" xml:space="preserve"><value>مدل‌ها با llama.cpp اجرا می‌شوند (متن‌باز، مجوز MIT) که یک بار از انتشار رسمی آن در GitHub دانلود و با checksum آن بررسی می‌شود. نسخهٔ Vulkan آن روی کارت‌های NVIDIA، AMD و Intel و روی پردازنده اجرا می‌شود.</value></data>
@@ -1657,4 +1656,5 @@
   <data name="Bench_Ai_Gen" xml:space="preserve"><value>تولید متن</value></data>
   <data name="Ai_Option_Model" xml:space="preserve"><value>مدل</value></data>
   <data name="Ai_Option_Device" xml:space="preserve"><value>دستگاه</value></data>
+  <data name="Ai_RamFree" xml:space="preserve"><value>RAM آزاد در این لحظه</value></data>
 </root>

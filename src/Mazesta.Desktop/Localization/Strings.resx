@@ -1595,7 +1595,6 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Ai_Vram" xml:space="preserve"><value>Video memory</value></data>
   <data name="Ai_Bandwidth" xml:space="preserve"><value>Memory bandwidth (peak)</value></data>
   <data name="Ai_Ram" xml:space="preserve"><value>System memory</value></data>
-  <data name="Ai_Free" xml:space="preserve"><value>{0} free</value></data>
   <data name="Ai_Runtime_Ready" xml:space="preserve"><value>llama.cpp {0} ready</value></data>
   <data name="Ai_Runtime_Missing" xml:space="preserve"><value>llama.cpp is not downloaded</value></data>
   <data name="Ai_Runtime_Note" xml:space="preserve"><value>The models run in llama.cpp (open source, MIT), downloaded once from its official GitHub release and checked against its checksum. Its Vulkan build runs on NVIDIA, AMD and Intel graphics cards and on the processor.</value></data>
@@ -1657,4 +1656,5 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Bench_Ai_Gen" xml:space="preserve"><value>Text generation</value></data>
   <data name="Ai_Option_Model" xml:space="preserve"><value>Model</value></data>
   <data name="Ai_Option_Device" xml:space="preserve"><value>Device</value></data>
+  <data name="Ai_RamFree" xml:space="preserve"><value>Free RAM now</value></data>
 </root>

@@ -58,7 +58,7 @@ public sealed partial class LlamaBenchmark(AiFiles files) : IBenchmark
         {
             metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished, "Bench_Cpu_Power", Unit.Watt);
         }
-        string detail = $"{model.Name} {model.Quant} · llama.cpp {AiCatalog.Runtime.Build} {result.Backend} on {(gpu ? result.Devices : "CPU")}, {result.Threads} threads"
+        string detail = $"{model.Name} {model.Quant} · llama.cpp {AiCatalog.Runtime.Build} " + (gpu ? $"{result.Backend} on {result.Devices}" : "on the CPU") + $", {result.Threads} CPU threads"
             + $" · prompt 512 tokens ±{result.PromptSpread:0.#}, generation 128 tokens ±{result.GenerationSpread:0.#} tok/s, {Repetitions} runs each"
             + (gpu ? " · fitted by llama.cpp (--fit-target 1024 MiB): layers that do not fit on the card run on the CPU" : "");
         return new BenchmarkResult(Spec.Id, BenchmarkStatus.Completed, started, finished, metrics, detail);

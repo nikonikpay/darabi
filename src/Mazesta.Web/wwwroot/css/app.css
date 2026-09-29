@@ -1072,8 +1072,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .ai-rt-line .grow { flex: 1; }
 .ai-models { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
 .panel.ai-model { --hue: var(--paper-2); border-top: 3px solid var(--rule-2); display: flex; flex-direction: column; }
-.panel.ai-model.rec { --hue: var(--yellow); border-top-color: var(--yellow); box-shadow: var(--shadow), 0 0 0 1px color-mix(in oklab, var(--yellow) 50%, transparent); }
-.ai-model .panel-head .ttl { flex: 1; min-width: 0; }
+.panel.ai-model.suggested { --hue: var(--yellow); border-top-color: var(--yellow); box-shadow: var(--shadow), 0 0 0 1px color-mix(in oklab, var(--yellow) 50%, transparent); }
+.ai-model .panel-head { flex-wrap: wrap; row-gap: 6px; }
+.ai-model .panel-head .ttl { flex: 1 1 60%; min-width: 0; }
 .ai-model .pill svg { width: 11px; height: 11px; stroke: currentColor; }
 .ai-purpose { font-size: 13px; color: var(--paper-2); margin: 10px 0 10px; line-height: 1.7; }
 .ai-fit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
