@@ -221,4 +221,19 @@ public class TestEngineTests : IDisposable
         Assert.Equal(Workload.Tests, gate.Holder);
         next!.Dispose();
     }
+
+    [Fact] public async Task The_log_says_which_test_runs_and_carries_the_test_s_own_lines_tagged_with_it()
+    {
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => { r.Note("Log_Fake_Step", "x = y·z", 42, 1.5); return Task.FromResult(Passed(Def1.Id, r, detail: "evidence")); });
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0));
+        var live = new List<TestLogEntry>(); engine.Logged += live.Add;
+
+        await engine.RunAsync([Once(Def1, 5)], CancellationToken.None);
+
+        Assert.Equal(["Log_Session_Start", "Log_Test_Start", "Log_Fake_Step", "Log_Test_End", "Log_Session_End"], live.Select(l => l.Key));
+        var step = live.Single(l => l.Key == "Log_Fake_Step");
+        Assert.Equal(Def1.Id, step.Test); Assert.Equal(["42", "1.5"], step.Args); Assert.Equal("x = y·z", step.Formula);
+        Assert.Equal(["@Test_Fake_A", "@Test_Outcome_Passed", "0"], live.Single(l => l.Key == "Log_Test_End").Args);
+        Assert.Equal(live, engine.RecentLog());   // a page opened later gets the same lines
+    }
 }

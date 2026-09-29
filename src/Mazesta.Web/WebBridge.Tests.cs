@@ -9,9 +9,26 @@ public sealed partial class WebBridge
         // One Test Center for the session (the engine is a singleton): the page is rebuilt on every visit, its state is not.
         var tests = _sp.GetRequiredService<Func<TestCenterViewModel>>()();
         _cleanup.Add(tests.Dispose);
+        var engine = _sp.GetRequiredService<TestEngine>();
+        // The live monitor's "now": which test of the queue is running, how far it is, and since when.
+        object? Current() => tests.CurrentRow is { } r ? new
+        {
+            id = r.Definition.Id.Value, name = r.Name, index = tests.CurrentIndex + 1, total = tests.RunQueue.Count, percent = r.PercentComplete, status = r.StatusText,
+            outcome = r.Outcome.ToString(), outcomeText = r.OutcomeText, startedAt = tests.CurrentStartedAt?.ToUnixTimeMilliseconds(),
+        } : null;
+        // A log line as key and arguments: the page words it in its language (numbers in its digits); '@' arguments are keys themselves (a
+        // test's name, an outcome). The formula or command stays exactly as written.
+        static object LogLine(TestLogEntry e) => new
+        {
+            at = e.At.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture), test = e.Test?.Value, level = e.Level.ToString(),
+            key = e.Key, args = e.Args, formula = e.Formula,
+        };
+        void OnLogged(TestLogEntry e) => Push("testlog", LogLine(e));
+        engine.Logged += OnLogged; _cleanup.Add(() => engine.Logged -= OnLogged);
+        Method("tests.log", _ => engine.RecentLog().Select(LogLine));
         object State() => new
         {
-            running = tests.IsRunning, canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage, blocked = tests.BlockedMessage,
+            running = tests.IsRunning, current = Current(), canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage, blocked = tests.BlockedMessage,
             repeatModes = TestQueueRowViewModel.RepeatModes.Select(m => new { value = m.ToString(), label = Loc.Get($"Test_Repeat_{m}") }),
             rows = tests.Rows.Select(r => new
             {

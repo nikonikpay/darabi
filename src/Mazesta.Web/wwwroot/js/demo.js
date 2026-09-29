@@ -56,14 +56,31 @@ const demoVm = () => ({ ramMb: 65536, managed: true, pending: null, inUse: [{ pa
 const DEMO_HOSTS = "# Copyright (c) 1993-2009 Microsoft Corp.\n#\n# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.\n\n127.0.0.1       localhost\n::1             localhost\n";
 const TESTS = ["Test_Cpu_Matrix", "Test_Memory_Pattern", "Test_Storage_Sequential", "Test_Storage_Random4k", "Test_Network_Latency", "Test_Gpu_Steady", "Test_Gpu_Variable", "Test_Gpu_Pulse", "Test_Gpu_Vram", "Test_Gpu_Render", "Test_Power_Combined", "Test_Windows_Sfc", "Test_Windows_Dism", "Test_Storage_Smart"];
 const OUT = ["Passed", "Passed", "Running", "NotRun"];
+// A running session for the live monitor: test 3 of 6 (storage), and the log lines such a run writes.
 const tests = () => ({
-  running: true, canStart: false, incomplete: null,
+  running: true, canStart: false, incomplete: null, blocked: null,
+  current: { id: "storage.sequential", name: strings.Test_Storage_Sequential, index: 3, total: 6, percent: 0.46, status: strings.Test_Status_Running, outcome: "Running", outcomeText: strings.Test_Outcome_Running, startedAt: T0 - 27000 },
   repeatModes: ["Once", "Count", "Unlimited"].map((m) => ({ value: m, label: strings[`Test_Repeat_${m}`] })),
   rows: TESTS.map((k, i) => ({ id: k, name: strings[k], selected: i < 6, duration: "60", repeat: "Once", count: "1",
     options: i === 1 ? [{ key: "mb", label: strings.Test_Option_MemoryMb, kind: "Integer", value: "0", choices: null }] : i === 2 ? [{ key: "drive", label: strings.Test_Option_Drive, kind: "Choice", value: "C:\\", choices: [{ value: "C:\\", label: "C:\\ (Samsung SSD 980 PRO)" }, { value: "D:\\", label: "D:\\ (WDC WD20PURZ)" }] }] : [],
     error: null, outcome: i < 3 ? OUT[i] : "NotRun", outcomeText: strings[`Test_Outcome_${i < 3 ? OUT[i] : "NotRun"}`], percent: i < 2 ? 1 : i === 2 ? 0.46 : 0,
     status: i === 2 ? strings.Test_Status_Running : "", errors: null, detail: i === 0 ? "matrix 256x256 FP64 on 32 threads; measured CPU load avg 99.6 % (min 98.1); package 142 W max; Tctl 81.4 °C max" : null })),
 });
+const DEMO_LOG = [
+  ["12:40:02", null, "Info", "Log_Session_Start", ["6"]],
+  ["12:40:02", "cpu.matrix", "Info", "Log_Test_Start", ["1", "6", "@Test_Cpu_Matrix", "60"]],
+  ["12:40:02", "cpu.matrix", "Step", "Log_CpuMatrix_Start", ["32", "64"], "C[i,j] = Σk A[i,k]·B[k,j]   check: FNV-1a(bits of every C[i,j]) == expected[set]   FLOPs = 2·n³ per product"],
+  ["12:40:07", "cpu.matrix", "Step", "Log_CpuMatrix_Progress", ["412880", "84.6", "0"]],
+  ["12:41:02", "cpu.matrix", "Info", "Log_Whea", ["0"], "System log, provider Microsoft-Windows-WHEA-Logger, since 12:40:02"],
+  ["12:41:02", "cpu.matrix", "Info", "Log_Test_End", ["@Test_Cpu_Matrix", "@Test_Outcome_Passed", "0"], "matrix load 64x64, 4 fixed input sets, every product checked in full against a precomputed checksum; threads=32; iterations=4955120; 84.6 GFLOPS (FP64, scalar)"],
+  ["12:41:02", "memory.pattern", "Info", "Log_Test_Start", ["2", "6", "@Test_Memory_Pattern", "60"], "sizeMb=0"],
+  ["12:41:09", "memory.pattern", "Step", "Log_Mem_Allocated", ["24576", "384"], "reserve = max(2 GiB, RAM / 10);  budget = free RAM − reserve"],
+  ["12:41:13", "memory.pattern", "Step", "Log_Mem_Pass", ["1", "walking-1 bit 0", "walking-1 bit 1", "0"], "for every 64 MiB block: count(bytes ≠ pattern[p−1]); fill(pattern[p])"],
+  ["12:42:09", "memory.pattern", "Info", "Log_Test_End", ["@Test_Memory_Pattern", "@Test_Outcome_Passed", "0"]],
+  ["12:42:09", "storage.sequential", "Info", "Log_Test_Start", ["3", "6", "@Test_Storage_Sequential", "60"], "drive=C:\, fileMb=1024"],
+  ["12:42:09", "storage.sequential", "Step", "Log_Storage_File", ["C:\\", "1024"], "CreateNew, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | DELETE_ON_CLOSE"],
+  ["12:42:14", "storage.sequential", "Step", "Log_Storage_SeqPass", ["1", "2140", "3380"], "MB/s = bytes / seconds / 1e6;  every 1 MiB block read back == seeded random data"],
+].map(([at, test, level, key, args, formula]) => ({ at, test, level, key, args, formula: formula || null }));
 const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_Memory", "Memory"], ["Bench_Storage", "Storage"], ["Bench_Gpu_D3D", "Gpu"], ["Bench_Gpu_SceneD3D", "Gpu"], ["Bench_Gpu_Rt", "Gpu"], ["Bench_Gpu_SceneRt", "Gpu"], ["Bench_Gpu_Ai", "Gpu"], ["Bench_Net_Internet", "Network"]];
 const bench = () => ({ running: false, queue: "", canRunSelected: true,
   rows: BENCH.map(([k, c], i) => ({ id: k, name: strings[k], component: c, selected: i === 0 || i === 3, duration: "60", percent: i < 2 ? 100 : 0, status: i < 2 ? strings.Bench_Status_CompletedAt.replace("{0}", "01:40") : "", active: false, detail: null, options: [],
@@ -179,6 +196,7 @@ export async function call(m, p, emit) {
     case "tweaks.update": await new Promise((r) => setTimeout(r, 600)); demoUpdate = p.profile; return { error: null, update: demoUpdate };
     case "tweaks.dns": await new Promise((r) => setTimeout(r, 600)); { const d = tweaks().dns; d.adapters[0].provider = p.provider; d.adapters[0].servers = p.provider === "auto" ? ["192.168.1.1"] : d.providers.find((x) => x.id === p.provider).servers; return { error: null, dns: d }; }
     case "tests.state": return tests();
+    case "tests.log": return DEMO_LOG;
     case "bench.state": return bench();
     case "bench.peers": return demoPeers(true);
     case "bench.history": return [["1405/07/07 12:24", "DESKTOP-CBSHJEH", "Intel Core i9-13900K", "1012 GFLOPS", true], ["1405/07/07 12:42", "ALI", "AMD Ryzen 9 3950X", "412 GFLOPS", false]].map(([at, machine, part, value, hybrid], k) => ({ id: `r${k}`, at, machine, part, value, app: "0.7.1", featured: k === 0, note: k === 0 ? "خنک‌کننده آبی ۳۶۰" : null, detail: demoDetail(value, hybrid, at.slice(0, 10), hybrid) }));

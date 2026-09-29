@@ -448,6 +448,31 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .report .sum { grid-column: 3 / 4; font-size: 12px; color: var(--paper-3); }
 .report .acts { grid-row: 1 / 3; grid-column: 4; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 620px; }
 
+/* ———— Live test panel (top of Monitoring): the test under way in its part's hue, and the log of what it is doing ———— */
+.run-panel { margin-bottom: var(--gut); padding: 16px 18px 14px; }
+.run-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.run-head .ico { width: 34px; height: 34px; flex: none; border-radius: 4px; display: grid; place-items: center; color: var(--ink); background: var(--hue); }
+.run-head .ico svg { width: 19px; height: 19px; stroke: currentColor; stroke-width: 2.1; }
+.run-ttl { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.run-step { font-size: 12px; color: var(--paper-3); }
+.run-name { font-size: 17px; font-weight: 800; line-height: 1.3; margin: 0; }
+.run-head .grow, .run-sub .grow { flex: 1; }
+.run-follow { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--paper-2); cursor: pointer; }
+.run-bar { margin-top: 12px; }
+.run-sub { display: flex; gap: 10px; align-items: baseline; margin-top: 6px; }
+.run-time { font-size: 12.5px; color: var(--paper-2); font-variant-numeric: tabular-nums; }
+.run-log-head { font-size: 12.5px; font-weight: 700; color: var(--paper-2); margin: 14px 0 6px; }
+.run-log { background: var(--well); box-shadow: var(--recess); border: 1px solid var(--rule); border-radius: var(--r-well); height: 240px; overflow-y: auto; overscroll-behavior: contain; padding: 6px 12px; }
+.run-line { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; padding: 5px 0; border-bottom: 1px solid var(--rule); font-size: 13px; line-height: 1.55; }
+.run-line:last-child { border-bottom: 0; }
+.run-at { color: var(--paper-3); font-size: 11.5px; direction: ltr; font-variant-numeric: tabular-nums; }
+.run-text { min-width: 0; }
+.run-line.step .run-text { color: var(--paper-2); }
+.run-line.warning .run-text { color: var(--warn); }
+.run-line.error .run-text { color: var(--fail); font-weight: 700; }
+.run-formula { grid-column: 2; font: 11.5px/1.55 var(--mono); direction: ltr; text-align: left; unicode-bidi: isolate; color: var(--hue, var(--yellow)); white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .run-head .run-follow { order: 9; } .run-log { height: 200px; } }
+
 /* ———— Console (Windows tools): real command output, so a real monospace ———— */
 .console { background: var(--well); box-shadow: var(--recess); border-radius: var(--r-well); border: 1px solid var(--rule); padding: 12px 14px; height: 360px; overflow: auto; font: 12px/1.6 var(--mono); direction: ltr; text-align: left; color: var(--paper-2); white-space: pre-wrap; }
 

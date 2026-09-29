@@ -16,12 +16,15 @@ export function mount(el) {
   const list = h("div", { class: "groups" });
   const notice = h("div", { class: "banner", hidden: true });
   const blocked = h("div", { class: "banner", role: "status", hidden: true });
-  const start = h("button", { class: "btn go", onclick: () => call("tests.exec", { cmd: "start" }) }, icon("play"), t("Test_Start"));
+  // Start goes to the live monitor as soon as the queue is really running; a row with a bad field keeps the page here, where its error shows.
+  let toMonitor = false;
+  const start = h("button", { class: "btn go", onclick: () => { toMonitor = true; call("tests.exec", { cmd: "start" }).finally(() => { toMonitor = false; }); } }, icon("play"), t("Test_Start"));
+  const watch = h("a", { class: "btn", href: "#/monitoring", hidden: true }, icon("pulse"), t("Web_Run_Live"));
   const cancel = h("button", { class: "btn stop", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
     notice, blocked, list,
-    h("div", { class: "dock" }, start, cancel, h("span", { class: "grow" }),
+    h("div", { class: "dock" }, start, cancel, watch, h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
 
@@ -60,7 +63,8 @@ export function mount(el) {
   }
   function update(s) {
     if (!rows.size) build(s);
-    start.disabled = !s.canStart; cancel.disabled = !s.running;
+    start.disabled = !s.canStart; cancel.disabled = !s.running; watch.hidden = !s.running;
+    if (toMonitor && s.running) { toMonitor = false; location.hash = "#/monitoring"; return; }
     notice.hidden = !s.incomplete;
     blocked.hidden = !s.blocked; blocked.textContent = s.blocked || "";
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));

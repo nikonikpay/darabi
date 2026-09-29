@@ -17,6 +17,22 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     public event Action<TestId>? TestStarted;
     public event Action<TestId, TestRunResult>? TestCompleted;
     public event Action<TestId, TestProgress>? TestProgressChanged;
+    /// <summary>Every line of the live log as it is written, on the thread that wrote it (the engine's or a test's worker).</summary>
+    public event Action<TestLogEntry>? Logged;
+
+    private const int LogCapacity = 500;
+    private readonly Queue<TestLogEntry> _log = new();
+    private readonly object _logLock = new();
+
+    /// <summary>The current (or last) session's log, oldest first, up to the last <see cref="LogCapacity"/> lines: a page opened mid-run shows what came before.</summary>
+    public IReadOnlyList<TestLogEntry> RecentLog() { lock (_logLock) return [.. _log]; }
+
+    private void Emit(TestLogEntry entry)
+    {
+        lock (_logLock) { _log.Enqueue(entry); while (_log.Count > LogCapacity) _log.Dequeue(); }
+        Logged?.Invoke(entry);
+    }
+    private void Emit(TestId? test, TestLogLevel level, string key, string? formula, params object?[] args) => Emit(new(clock.UtcNow, test, level, key, TestLog.Format(args), formula));
 
     /// <summary>A checkpoint that never reached Completed means the process ended mid-queue (crash, kill,
     /// reboot - spec §2.5/§8). Null when the last session finished cleanly or none has run.</summary>
@@ -30,7 +46,12 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
 
     /// <summary>Cancels the run in progress, if any. The engine owns the token, so any view model - including
     /// one built after the technician navigated away and back - can still stop a run it did not start.</summary>
-    public void RequestCancel() => _cts?.Cancel();
+    public void RequestCancel()
+    {
+        if (_cts is not { IsCancellationRequested: false } cts) return;
+        Emit(null, TestLogLevel.Warning, "Log_Cancel_Requested", null);
+        cts.Cancel();
+    }
 
     public async Task RunAsync(IReadOnlyList<QueuedTest> queue, CancellationToken external = default)
     {
@@ -40,7 +61,9 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         var checkpoint = new TestSessionCheckpoint { SessionId = Guid.NewGuid().ToString("N"), QueueTestIds = [.. queue.Select(q => q.Definition.Id.Value)], StartedAt = clock.UtcNow, LastUpdatedAt = clock.UtcNow };
         _cts = CancellationTokenSource.CreateLinkedTokenSource(external);   // before Running, so a Cancel that follows the state change always finds it
         var ct = _cts.Token;
+        lock (_logLock) _log.Clear();
         SetState(TestEngineState.Running); SessionStarted?.Invoke(queue);
+        Emit(null, TestLogLevel.Info, "Log_Session_Start", null, queue.Count);
         bool reachedEnd = false;
         try
         {
@@ -49,10 +72,15 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
                 checkpoint.CurrentIndex = i; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
                 var item = queue[i];
                 TestStarted?.Invoke(item.Definition.Id);
+                string? options = item.Options is { Count: > 0 } o ? string.Join(", ", o.Where(x => x.Value.Length > 0).Select(x => $"{x.Key}={x.Value}")) : null;
+                Emit(item.Definition.Id, TestLogLevel.Info, "Log_Test_Start", string.IsNullOrEmpty(options) ? null : options, i + 1, queue.Count, "@" + item.Definition.NameKey, item.DurationSeconds);
                 var result = await RunQueuedAsync(item, ct).ConfigureAwait(false);
+                Emit(item.Definition.Id, result.Outcome switch { TestOutcome.Passed => TestLogLevel.Info, TestOutcome.Failed => TestLogLevel.Error, _ => TestLogLevel.Warning },
+                    "Log_Test_End", result.Detail, "@" + item.Definition.NameKey, "@Test_Outcome_" + result.Outcome, result.ErrorCount);
                 TestCompleted?.Invoke(item.Definition.Id, result);
             }
             reachedEnd = true;
+            Emit(null, TestLogLevel.Info, "Log_Session_End", null);
         }
         finally
         {
@@ -76,11 +104,12 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             return TestRunResult.Unsupported(id, clock.UtcNow, $"No executor registered for '{id}'.");
 
         var started = clock.UtcNow;
-        var request = new TestExecutionRequest(item.DurationSeconds, clock, p => TestProgressChanged?.Invoke(id, p), liveEngine, new TestOptions(item.Definition, item.Options));
+        var request = new TestExecutionRequest(item.DurationSeconds, clock, p => TestProgressChanged?.Invoke(id, p), liveEngine, new TestOptions(item.Definition, item.Options), e => Emit(e with { Test = id }));
         TestRunResult? total = null; int iteration = 0;
         do
         {
             iteration++;
+            if (item.Repeat != RepeatMode.Once) Emit(id, TestLogLevel.Info, "Log_Test_Iteration", null, iteration, item.Repeat == RepeatMode.Count ? item.RepeatCount.ToString(System.Globalization.CultureInfo.InvariantCulture) : "∞");
             TestRunResult single;
             if (ct.IsCancellationRequested) single = TestRunResult.Cancelled(id, started, clock.UtcNow);
             else
@@ -89,7 +118,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
                 catch (OperationCanceledException) { single = TestRunResult.Cancelled(id, started, clock.UtcNow); }
                 // An exception out of an executor is the app's fault, never the part's: the test is Error (the report is then Incomplete),
                 // the queue goes on with the next test, and nothing is swallowed into a pass.
-                catch (Exception e) { single = TestRunResult.Error(id, started, clock.UtcNow, e); }
+                catch (Exception e) { single = TestRunResult.Error(id, started, clock.UtcNow, e); Emit(id, TestLogLevel.Error, "Log_Test_Crashed", $"{e.GetType().Name}: {e.Message}"); }
             }
             total = total?.Combine(single) ?? single;
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;
@@ -106,6 +135,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         try
         {
             var events = hardwareErrors.Since(since);
+            Emit(result.Id, events.Count > 0 ? TestLogLevel.Error : TestLogLevel.Info, "Log_Whea", $"System log, provider Microsoft-Windows-WHEA-Logger, since {since.ToLocalTime():HH:mm:ss}", events.Count);
             if (events.Count == 0) return result;
             string ids = string.Join(", ", events.Select(e => e.EventId).Distinct().Order());
             return result.Combine(new(result.Id, TestOutcome.Failed, since, clock.UtcNow, events.Count, $"WHEA logged {events.Count} hardware error record(s) during this test (event ids {ids}): {events[0].Summary}"));

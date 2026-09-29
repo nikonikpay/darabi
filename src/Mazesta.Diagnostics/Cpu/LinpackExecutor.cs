@@ -46,6 +46,7 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
         long iterations = 0, errors = 0; double bestGflops = 0, worstResidual = 0; ulong? reference = null; string firstError = "";
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         void Progress(double within) => request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
+        request.Note("Log_Linpack_Start", "PA = LU (partial pivoting);  Ly = Pb;  Ux = y;  r = ‖Ax−b‖∞ / (ε·n·(‖A‖∞·‖x‖∞ + ‖b‖∞)) < 16;  FLOPs = (2/3)n³ + 2n²", n, 8L * n * n >> 20, Environment.ProcessorCount);
         try
         {
             do
@@ -65,8 +66,9 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
                 worstResidual = Math.Max(worstResidual, residual);
                 ulong sum = Checksum(x);
                 reference ??= sum;
-                if (!(residual < 16)) { errors++; if (firstError.Length == 0) firstError = $"iteration {iterations}: residual {residual:G4} is above HPL's bound of 16"; }
-                else if (sum != reference) { errors++; if (firstError.Length == 0) firstError = $"iteration {iterations}: the solution differs from iteration 1 (same system, same operations)"; }
+                if (!(residual < 16)) { errors++; if (firstError.Length == 0) firstError = $"iteration {iterations}: residual {residual:G4} is above HPL's bound of 16"; request.NoteError("Log_Wrong_Result", $"iteration {iterations}: r = {residual:G4} ≥ 16"); }
+                else if (sum != reference) { errors++; if (firstError.Length == 0) firstError = $"iteration {iterations}: the solution differs from iteration 1 (same system, same operations)"; request.NoteError("Log_Wrong_Result", $"iteration {iterations}: x differs bit for bit from iteration 1"); }
+                request.Note("Log_Linpack_Solve", null, iterations, (2.0 / 3 * n * (double)n * n + 2.0 * n * n) / solve.Elapsed.TotalSeconds / 1e9, residual.ToString("G3", System.Globalization.CultureInfo.InvariantCulture));
                 Progress(0);
             }
             while (total.Elapsed < duration);

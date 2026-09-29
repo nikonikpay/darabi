@@ -36,7 +36,8 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
 
         long totalIterations = 0, totalErrors = 0; string firstError = "";
         var inputs = Enumerable.Range(0, Sets).Select(Inputs).ToArray();
-        var sw = Stopwatch.StartNew();
+        request.Note("Log_CpuMatrix_Start", "C[i,j] = Σk A[i,k]·B[k,j]   check: FNV-1a(bits of every C[i,j]) == expected[set]   FLOPs = 2·n³ per product", _threadCount, MatrixSize);
+        var sw = Stopwatch.StartNew(); var pacer = new LogPacer();
         var duration = TimeSpan.FromSeconds(request.DurationSeconds);
 
         void RunWorker(int worker)
@@ -49,7 +50,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
                 if (Checksum(c) != Expected[set])
                 {
                     Interlocked.Increment(ref totalErrors);
-                    if (firstError.Length == 0) firstError = $"first wrong product: thread {worker}, input set {set}, {WrongCells(inputs[set].A, inputs[set].B, c)} cell(s) differ from a recomputation";
+                    if (firstError.Length == 0) { firstError = $"first wrong product: thread {worker}, input set {set}, {WrongCells(inputs[set].A, inputs[set].B, c)} cell(s) differ from a recomputation"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
                 Interlocked.Increment(ref totalIterations);
             }
@@ -61,6 +62,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
         while (!allDone.IsCompleted)
         {
             request.Progress?.Invoke(new TestProgress(Math.Clamp(sw.Elapsed.TotalSeconds / duration.TotalSeconds, 0, 1), "Test_Status_Running"));
+            if (pacer.Due()) request.Note("Log_CpuMatrix_Progress", null, Interlocked.Read(ref totalIterations), Interlocked.Read(ref totalIterations) * 2.0 * MatrixSize * MatrixSize * MatrixSize / Math.Max(0.001, sw.Elapsed.TotalSeconds) / 1e9, Interlocked.Read(ref totalErrors));
             await Task.WhenAny(allDone, Task.Delay(250)).ConfigureAwait(false);
         }
         await allDone.ConfigureAwait(false);

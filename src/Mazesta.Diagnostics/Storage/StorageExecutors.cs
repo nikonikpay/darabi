@@ -32,7 +32,9 @@ public abstract class StorageExecutor : ITestExecutor
             long errors = 0; string detail = "";
             try
             {
-                using var file = StorageFile.Create(StorageFile.ResolveTarget(options.Get(DriveOption)), StorageFile.LengthOf(fileMb));
+                string target = StorageFile.ResolveTarget(options.Get(DriveOption));
+                using var file = StorageFile.Create(target, StorageFile.LengthOf(fileMb));
+                request.Note("Log_Storage_File", "CreateNew, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | DELETE_ON_CLOSE", target, file.Length >> 20);
                 detail = Exercise(file, request, ct, ref errors);
             }
             catch (OperationCanceledException) { return new TestRunResult(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, detail); }
@@ -82,6 +84,7 @@ public sealed class StorageSequentialExecutor : StorageExecutor
                 Report(request, clock);
             }
             readSeconds += phase.Elapsed.TotalSeconds; bytes += file.Length; passes++;
+            request.Note("Log_Storage_SeqPass", "MB/s = bytes / seconds / 1e6;  every 1 MiB block read back == seeded random data", passes, file.Length / Math.Max(0.001, writeSeconds / passes) / 1e6, file.Length / Math.Max(0.001, readSeconds / passes) / 1e6);
         }
         while (clock.Elapsed.TotalSeconds < request.DurationSeconds);
         return $"sequential unbuffered write-through I/O; write {bytes / Math.Max(0.001, writeSeconds) / 1e6:F0} MB/s; read {bytes / Math.Max(0.001, readSeconds) / 1e6:F0} MB/s; verified {bytes >> 20} MiB in {passes} pass(es)"
@@ -101,7 +104,8 @@ public sealed class StorageRandom4kExecutor : StorageExecutor
         using var buffer = new NativeBlock(StorageFile.Block);
         // Materialise the whole file first: blocks that were never written are not tested and read back as zero without touching the media.
         for (long offset = 0, index = 0; offset < file.Length; offset += StorageFile.Block, index++) { ct.ThrowIfCancellationRequested(); MemoryPatterns.Fill(buffer.Span, MemoryPatterns.RandomPass, (int)index); file.Write(buffer.Span, offset); }
-        var random = new Random(7421); var reads = new LatencyHistogram(); var writes = new LatencyHistogram();
+        request.Note("Log_Storage_RandStart", "offset = random(0 … size/4096) × 4096;  write 4 KiB;  read 4 KiB;  compare byte by byte;  latency of each request timed on its own");
+        var random = new Random(7421); var reads = new LatencyHistogram(); var writes = new LatencyHistogram(); var pacer = new LogPacer();
         long slots = file.Length / StorageFile.Sector, operations = 0, shortReads = 0, wrongBytes = 0; double writeMs = 0, readMs = 0;
         var clock = Stopwatch.StartNew();
         do
@@ -117,6 +121,7 @@ public sealed class StorageRandom4kExecutor : StorageExecutor
             else { int bad = StorageFile.Sector - CountEqual(block, back); wrongBytes += bad; errors += bad; }
             writeMs += w; readMs += r; operations++; writes.Add(w); reads.Add(r);
             if ((operations & 31) == 0) Report(request, clock);
+            if ((operations & 255) == 0 && pacer.Due()) request.Note("Log_Storage_RandProgress", null, operations, writes.Percentile(0.99), reads.Percentile(0.99), errors);
         }
         while (clock.Elapsed.TotalSeconds < request.DurationSeconds);
         return $"random 4K QD1 unbuffered write-through; {operations} verified blocks; write {operations / Math.Max(0.000001, writeMs / 1000):F0} IOPS, latency {writes.Describe()}; "

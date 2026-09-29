@@ -17,6 +17,7 @@ public sealed class SmartCheckExecutor(IDriveHealthProvider drives) : ITestExecu
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
         IReadOnlyList<DriveHealth> all;
+        request.Note("Log_Smart", @"WMI root\Microsoft\Windows\Storage:MSFT_PhysicalDisk (HealthStatus) + MSFT_StorageReliabilityCounter");
         try { all = drives.Read(); }
         catch (Exception e) when (e is not OperationCanceledException) { return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Windows did not report drive health: {e.Message}")); }
         var reported = all.Where(d => d.Status is not null).ToList();

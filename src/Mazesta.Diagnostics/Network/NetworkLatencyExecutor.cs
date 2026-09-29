@@ -32,13 +32,15 @@ public sealed class NetworkLatencyExecutor(Func<IPAddress, TimeSpan, Cancellatio
         catch (SocketException) { address = null; }
         if (address is null) return TestRunResult.Unsupported(Definition.Id, started, $"'{target}' is not an IP address and did not resolve.");
 
-        var rtts = new List<double>(); int sent = 0; var clock = Stopwatch.StartNew();
+        var rtts = new List<double>(); int sent = 0; var clock = Stopwatch.StartNew(); var pacer = new LogPacer();
+        request.Note("Log_Net_Start", $"ping {address} (ICMP echo, 1 s timeout, every 0.2 s)   jitter = mean |rtt[i] − rtt[i−1]|", address.ToString(), string.Join(", ", links));
         try
         {
             do
             {
                 sent++;
                 if (await _echo(address, TimeSpan.FromSeconds(1), ct) is { } ms) rtts.Add(ms);
+                if (pacer.Due()) request.Note("Log_Net_Progress", null, sent, rtts.Count, rtts.Count > 0 ? rtts[^1] : null);
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(clock.Elapsed.TotalSeconds / request.DurationSeconds, 0, 1), "Test_Status_Running"));
                 await Task.Delay(200, ct);
             }

@@ -87,7 +87,10 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
     {
         int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; var laneErrors = new long[LanesOf(width)]; string firstError = "";
         var expected = Reference(width);
-        var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
+        string name = width switch { Width.Avx512 => "AVX-512", Width.Avx2 => "AVX2 + FMA", _ => "SSE2" };
+        request.Note("Log_CpuVector_Start", $"x ← {(width == Width.Sse ? "x·s + o" : "fma(x, s, o)")} (s = 0.9999999, o = 1e-7), {Chains} chains × {LanesOf(width)} lanes × {BlockIterations} steps per block   FLOPs = 2 per multiply-add   check: every lane == scalar reference, finite",
+            threads, name);
+        var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds); var pacer = new LogPacer();
         void Worker(int index)
         {
             Span<double> got = stackalloc double[8];
@@ -99,13 +102,18 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
                 {
                     Interlocked.Increment(ref errors);
                     for (int l = 0; l < got.Length; l++) if ((wrong & 1 << l) != 0) Interlocked.Increment(ref laneErrors[l]);
-                    if (firstError.Length == 0) firstError = $"first wrong block on thread {index}, lanes {string.Join(",", Enumerable.Range(0, got.Length).Where(l => (wrong & 1 << l) != 0))}";
+                    if (firstError.Length == 0) { firstError = $"first wrong block on thread {index}, lanes {string.Join(",", Enumerable.Range(0, got.Length).Where(l => (wrong & 1 << l) != 0))}"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
                 Interlocked.Increment(ref blocks);
             }
         }
         var all = Task.WhenAll(Enumerable.Range(0, threads).Select(i => Task.Factory.StartNew(() => Worker(i), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
-        while (!all.IsCompleted) { request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running")); all.Wait(250, CancellationToken.None); }
+        while (!all.IsCompleted)
+        {
+            request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
+            if (pacer.Due()) request.Note("Log_CpuVector_Progress", null, Interlocked.Read(ref blocks), Interlocked.Read(ref blocks) * (double)BlockIterations * Chains * LanesOf(width) * 2 / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9, Interlocked.Read(ref errors));
+            all.Wait(250, CancellationToken.None);
+        }
         var finished = request.Clock.UtcNow;
         long lanes = LanesOf(width);
         double gflops = blocks * (double)BlockIterations * Chains * lanes * 2 / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9;   // a multiply-add counts as 2 operations

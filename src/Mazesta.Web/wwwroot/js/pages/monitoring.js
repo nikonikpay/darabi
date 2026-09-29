@@ -1,6 +1,7 @@
 // Every sensor, in a boxed panel per device that wears its part's hue and folds away, grouped by kind inside, at data density. Double-click a
 // row (or its chart button, or Enter) to add its chart to the stack beside the table; each chart can go to a window of its own. Filtering
 // hides rows, it never hides that a sensor exists without a reading: those rows say "not available" in the hatch.
+// While a test runs, its live panel sits on top and the part under test comes forward: its panels open, the others fold, its key charts join.
 import { call, live } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
@@ -8,6 +9,7 @@ import { hw, value, quality, stats, subscribe } from "../store.js";
 import { h, icon, toast } from "../ui.js";
 import { part } from "../parts.js";
 import { chartCard, RANGES } from "../chartcard.js";
+import { runPanel } from "../testrun.js";
 
 const KIND_ORDER = ["Temperature", "Load", "Clock", "Power", "Voltage", "Current", "Fan", "Control", "Data", "SmallData", "Throughput", "Level", "Energy", "Timespan", "Factor", "Frequency", "Timing", "Noise", "Flow", "Humidity", "Conductivity"];
 const MAX_CHARTS = 10;
@@ -32,6 +34,8 @@ export function mount(el, _, focusKinds = null) {
 
   if (!focusKinds) el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Monitoring")), h("p", { class: "page-lede" }, t("Web_Monitoring_Lede")))));
   const groups = h("div", { class: "mon-groups" });
+  const run = focusKinds ? null : runPanel((kinds) => followPart(kinds));
+  if (run) el.append(run.el);
   el.append(h("div", { class: "toolbar" }, filter, h("span", { class: "grow" }), focusKinds ? h("span", { class: "caption" }, t("Web_Chart_Hint")) : null), h("div", { class: "split" }, groups, charts));
 
   const cells = [];   // [sensor, current, min, avg, max, row, searchText, toggle, group]
@@ -49,7 +53,7 @@ export function mount(el, _, focusKinds = null) {
       h("th", {}, t("Web_Col_Sensor")), h("th", { class: "n" }, t("Web_Col_Current")), h("th", { class: "n" }, t("Web_Col_Min")),
       h("th", { class: "n" }, t("Web_Col_Avg")), h("th", { class: "n" }, t("Web_Col_Max")), h("th", { class: "c" }, h("span", { class: "sr" }, t("Web_Chart"))))), tbody);
     const fold = h("button", { class: "more", type: "button", "aria-expanded": "true", "aria-label": node.name }, icon("chevron"));
-    const group = h("section", { class: `panel group ${p.cls}`, style: { "--i": i++ } },
+    const group = h("section", { class: `panel group ${p.cls}`, style: { "--i": i++ }, "data-kind": node.kind },
       h("header", { class: "panel-head", onclick: () => { const shut = group.classList.toggle("shut"); fold.setAttribute("aria-expanded", String(!shut)); } },
         h("span", { class: "ico" }, icon(p.icon)),
         h("div", { class: "ttl" }, h("h2", { class: "panel-title lat" }, node.name), h("div", { class: "panel-sub fa" }, t(`Web_Kind_${node.kind}`))),
@@ -117,11 +121,34 @@ export function mount(el, _, focusKinds = null) {
   for (const s of initial) addChart(s, true);
   changed();
 
+  // The part a running test loads: its panels open and come into view, the others fold (only the ones this folded are reopened afterwards),
+  // and its key readings are charted. kinds null: the test moved to a part the monitor has no sensors for, or following is off.
+  const KEY_ROLES = {
+    Cpu: [["CpuPackageTemp", "CpuTctlTdie", "CpuCoreTemp"], ["CpuTotalLoad"], ["CpuPackagePower"]],
+    Gpu: [["GpuHotSpotTemp", "GpuCoreTemp"], ["GpuLoad3D", "GpuLoadD3D3D", "GpuLoadCompute"], ["GpuPower"]],
+    Memory: [["RamLoad"], ["RamUsed"]], Storage: [["StorageTemp"], ["StorageWriteRate"], ["StorageReadRate"]], Network: [["NetDownload"], ["NetUpload"]],
+  };
+  const folded = new Set();
+  function setShut(g, shut) { g.classList.toggle("shut", shut); g.querySelector(".panel-head .more")?.setAttribute("aria-expanded", String(!shut)); }
+  function followPart(kinds) {
+    if (!kinds) { for (const g of folded) setShut(g, false); folded.clear(); return; }
+    let first = null;
+    for (const g of groups.children) {
+      const on = kinds.includes(g.dataset.kind);
+      if (on) { setShut(g, false); first ??= g; } else if (!g.classList.contains("shut")) { setShut(g, true); folded.add(g); }
+    }
+    for (const k of kinds) for (const roles of KEY_ROLES[k] || []) {
+      const c = cells.find(([s]) => s.node.kind === k && roles.includes(s.role));
+      if (c) addChart(c[0], true);
+    }
+    first?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+
   tick();
   const off = subscribe(tick);
   let raf = 0;
   const onResize = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { for (const c of cards.values()) c.redraw(); }); };
   window.addEventListener("resize", onResize);
   const ro = new ResizeObserver(onResize); ro.observe(stack);
-  return () => { off(); window.removeEventListener("resize", onResize); ro.disconnect(); };
+  return () => { off(); run?.off(); window.removeEventListener("resize", onResize); ro.disconnect(); };
 }

@@ -17,6 +17,14 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasIncompleteSession))] private string? _incompleteSessionMessage;
     public bool HasIncompleteSession => IncompleteSessionMessage is not null;
+    /// <summary>The running queue, in order, as the engine started it: the live monitor says "test 3 of 7" from it.</summary>
+    public IReadOnlyList<TestId> RunQueue { get; private set; } = [];
+    /// <summary>The position in <see cref="RunQueue"/> of the test running now (or last run), -1 before any.</summary>
+    [ObservableProperty] private int _currentIndex = -1;
+    /// <summary>When the current test started, for the elapsed time on the live monitor.</summary>
+    public DateTimeOffset? CurrentStartedAt { get; private set; }
+    public TestQueueRowViewModel? CurrentRow => CurrentIndex >= 0 && CurrentIndex < RunQueue.Count ? RowFor(RunQueue[CurrentIndex]) : null;
+
     /// <summary>Why the last Start was refused (a benchmark or the GPU tuning is running), or null.</summary>
     [ObservableProperty] private string? _blockedMessage;
 
@@ -27,6 +35,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         foreach (var row in Rows) row.PropertyChanged += OnRowChanged;
         IsRunning = engine.State == TestEngineState.Running;
         engine.StateChanged += OnStateChanged;
+        engine.SessionStarted += OnSessionStarted;
         engine.TestStarted += OnTestStarted;
         engine.TestProgressChanged += OnTestProgress;
         engine.TestCompleted += OnTestCompleted;
@@ -36,7 +45,14 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
 
     private TestQueueRowViewModel? RowFor(TestId id) => Rows.FirstOrDefault(r => r.Definition.Id == id);
     private void OnStateChanged(TestEngineState s) => _dispatch(() => IsRunning = s == TestEngineState.Running);
-    private void OnTestStarted(TestId id) => _dispatch(() => { if (RowFor(id) is { } row) { row.Outcome = TestOutcome.Running; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Starting"); } });
+    private void OnSessionStarted(IReadOnlyList<QueuedTest> queue) { var ids = queue.Select(q => q.Definition.Id).ToList(); _dispatch(() => { RunQueue = ids; CurrentIndex = -1; CurrentStartedAt = null; }); }
+    private void OnTestStarted(TestId id) => _dispatch(() =>
+    {
+        int next = -1;
+        for (int i = Math.Max(0, CurrentIndex + 1); i < RunQueue.Count; i++) if (RunQueue[i] == id) { next = i; break; }   // the same test may be queued once only, but search forward anyway
+        CurrentStartedAt = DateTimeOffset.Now; CurrentIndex = next;
+        if (RowFor(id) is { } row) { row.Outcome = TestOutcome.Running; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Starting"); }
+    });
     private void OnTestProgress(TestId id, TestProgress p) => _dispatch(() => { if (RowFor(id) is { } row) { row.PercentComplete = p.PercentComplete; row.StatusText = Loc.Get(p.StatusKey); } });
     private void OnTestCompleted(TestId id, TestRunResult r) => _dispatch(() =>
     {
@@ -77,6 +93,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     {
         foreach (var row in Rows) row.PropertyChanged -= OnRowChanged;
         _engine.StateChanged -= OnStateChanged;
+        _engine.SessionStarted -= OnSessionStarted;
         _engine.TestStarted -= OnTestStarted;
         _engine.TestProgressChanged -= OnTestProgress;
         _engine.TestCompleted -= OnTestCompleted;

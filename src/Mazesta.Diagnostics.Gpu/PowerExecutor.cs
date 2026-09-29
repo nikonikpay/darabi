@@ -17,6 +17,7 @@ public sealed class PowerExecutor(CpuMatrixStressExecutor cpu, GpuStressExecutor
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive.");
+        request.Note("Log_Power_Start", "CPU: matrix load on every thread  +  GPU: steady compute stress, at the same time");
         var cpuTask = cpu.RunAsync(request, ct);
         var gpuTask = gpu.RunAsync(request, ct);
         var cpuResult = await cpuTask.ConfigureAwait(false); var gpuResult = await gpuTask.ConfigureAwait(false);

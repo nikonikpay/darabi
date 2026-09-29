@@ -54,6 +54,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                 Dispatch(device, buffers[^1], counter, buffers.Count - 1, 0, verify: false);
             }
             if (buffers.Count == 0) return TestRunResult.Unsupported(Definition.Id, started, "The driver refused to allocate any VRAM buffer.");
+            request.Note("Log_Vram_Allocated", "budget = 0.9 × free VRAM (this card's sensor) − 512 MiB, else 0.6 × dedicated;  256 MiB per buffer", (long)buffers.Count * (ChunkBytes >> 20), device.Name, buffers.Count);
             var duration = TimeSpan.FromSeconds(request.DurationSeconds); var timed = Stopwatch.StartNew();
             do
             {
@@ -64,6 +65,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                     Dispatch(device, buffers[b], counter, b, passes + 1, verify: false);
                 }
                 passes++;
+                request.Note("Log_Vram_Pass", "on the GPU, for every cell: if (cell ≠ pattern[p]) errors++ (atomic);  then write pattern[p+1]   patterns: address, ~address, 0xAAAAAAAA, 0x55555555", passes, errors);
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(timed.Elapsed / duration, 0, 1), "Test_Status_Running"));
             }
             while (timed.Elapsed < duration);

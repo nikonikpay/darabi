@@ -62,6 +62,10 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
                     Thread.Sleep(0);   // let the scheduler move the thread onto the core before the slice is timed
                     pinned = pinned && CpuTopology.IsOn(core.Group, core.FirstThreadMask);   // Windows accepted the pin and the thread is really there
                     if (!pinned && !unpinned.Contains(core.Index)) unpinned.Add(core.Index);
+                    string kind = _cores.Select(x => x.EfficiencyClass).Distinct().Count() > 1 ? core.EfficiencyClass > 0 ? " (P)" : " (E)" : "";
+                    if (pinned) request.Note("Log_Core_Visit", $"SetThreadGroupAffinity(group {core.Group}, mask 0x{core.FirstThreadMask:X})   C = A·B, 64×64, checksum == expected", core.Index, kind, slice);
+                    else request.NoteWarning("Log_Core_NotPinned", $"SetThreadGroupAffinity(group {core.Group}, mask 0x{core.FirstThreadMask:X})", core.Index);
+                    long before = errorsByCore[core.Index];
                     visits++;
                     var step = Stopwatch.StartNew(); var burst = Stopwatch.StartNew(); double burstLength = NextBurst(pause, variable);
                     while (step.Elapsed.TotalSeconds < slice && total.Elapsed < duration)
@@ -76,6 +80,7 @@ public sealed class CpuCoreCycleExecutor : ITestExecutor
                             burst.Restart(); burstLength = NextBurst(pause, variable);
                         }
                     }
+                    if (errorsByCore[core.Index] > before) request.NoteError("Log_Core_Wrong", null, core.Index, errorsByCore[core.Index] - before);
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
                 }
             }

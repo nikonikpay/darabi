@@ -47,6 +47,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                 MemoryPatterns.Fill(block.Span, 0, blocks.Count - 1);   // commits the pages before anything is timed
                 request.Progress?.Invoke(new TestProgress(0, "Test_Status_Allocating"));
             }
+            request.Note("Log_Mem_Allocated", "reserve = max(2 GiB, RAM / 10);  budget = free RAM − reserve", (long)blocks.Count * BlockBytes >> 20, blocks.Count);
             var duration = TimeSpan.FromSeconds(request.DurationSeconds);
             timed.Restart();
             do
@@ -62,6 +63,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                     Interlocked.Add(ref bytesTouched, 2L * span.Length);
                 });
                 passes++;
+                request.Note("Log_Mem_Pass", "for every 64 MiB block: count(bytes ≠ pattern[p−1]); fill(pattern[p])", pass, MemoryPatterns.Name(pass - 1), MemoryPatterns.Name(pass), Interlocked.Read(ref errors));
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(timed.Elapsed / duration, 0, 1), "Test_Status_Running"));
             }
             while (timed.Elapsed < duration);

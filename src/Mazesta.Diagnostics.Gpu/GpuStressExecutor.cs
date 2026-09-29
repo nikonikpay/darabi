@@ -60,7 +60,8 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
     private TestRunResult Run(TestExecutionRequest request, GraphicsDevice device, int pulseMs, int gapMs, DateTimeOffset started, CancellationToken ct)
     {
         long errors = 0, dispatches = 0, batches = 0, checkedResults = 0;
-        var clock = Stopwatch.StartNew(); var random = new Random(0x5EED); var sizer = new BatchSizer();
+        var clock = Stopwatch.StartNew(); var random = new Random(0x5EED); var sizer = new BatchSizer(); var pacer = new LogPacer();
+        request.Note("Log_Gpu_Start", $"{Threads:N0} threads × {Rounds} rounds per dispatch:  h ← prev ⊕ seed;  h = h·1664525 + 1013904223;  h ^= h≫13;  h *= 0x5BD1E995;  h ^= h≫15   check: {SamplesPerBatch} threads per batch recomputed on the CPU through every dispatch", profile.ToString(), device.Name);
         try
         {
             using var buffer = device.AllocateReadWriteBuffer<uint>(Threads);
@@ -81,6 +82,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
                     sizer.Record(clock.Elapsed - batchStart, BatchTarget(profile, busy));
                 }
                 Report(request, clock);
+                if (pacer.Due()) request.Note("Log_Gpu_Progress", null, dispatches, dispatches * (double)Threads * Rounds * 6 / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e9, checkedResults, errors);
                 if (clock.Elapsed - frameStart < frame) ct.WaitHandle.WaitOne(frame - (clock.Elapsed - frameStart));   // the idle part of the frame; wakes at once on cancel
             }
         }

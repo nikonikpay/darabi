@@ -64,7 +64,15 @@ public static partial class WindowsTool
     {
         var started = request.Clock.UtcNow;
         CommandResult result;
-        try { result = await runner.RunAsync(file, arguments, encoding, l => { if (ProgressOf(l) is { } p) request.Progress?.Invoke(new TestProgress(p, "Test_Status_Running")); }, ct).ConfigureAwait(false); }
+        request.Note("Log_Command", $"{file} {arguments}");
+        try
+        {
+            result = await runner.RunAsync(file, arguments, encoding, l =>
+            {
+                if (ProgressOf(l) is { } p) request.Progress?.Invoke(new TestProgress(p, "Test_Status_Running"));
+                else if (!string.IsNullOrWhiteSpace(l)) request.Note("Log_Output", l.Trim());   // the tool's own words, as it printed them
+            }, ct).ConfigureAwait(false);
+        }
         catch (OperationCanceledException) { return TestRunResult.Cancelled(definition.Id, started, request.Clock.UtcNow); }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { return TestRunResult.Unsupported(definition.Id, started, $"{file} could not run: {e.Message}"); }
         var health = parse(result.Output);

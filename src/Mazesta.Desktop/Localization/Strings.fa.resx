@@ -1408,4 +1408,47 @@
   <data name="Workload_Busy_Tests" xml:space="preserve"><value>صف آزمون در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
   <data name="Workload_Busy_Benchmark" xml:space="preserve"><value>بنچمارک در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
   <data name="Workload_Busy_Tuning" xml:space="preserve"><value>تنظیم خودکار کارت گرافیک در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
+  <data name="Log_Session_Start" xml:space="preserve"><value>جلسهٔ آزمون شروع شد: {0} آزمون در صف.</value></data>
+  <data name="Log_Session_End" xml:space="preserve"><value>همهٔ آزمون‌های صف به پایان رسید.</value></data>
+  <data name="Log_Cancel_Requested" xml:space="preserve"><value>درخواست لغو ثبت شد؛ آزمون در حال اجرا متوقف می‌شود.</value></data>
+  <data name="Log_Test_Start" xml:space="preserve"><value>آزمون {0} از {1}: {2}، به مدت {3} ثانیه.</value></data>
+  <data name="Log_Test_Iteration" xml:space="preserve"><value>دور {0} از {1}.</value></data>
+  <data name="Log_Test_End" xml:space="preserve"><value>{0} تمام شد: {1}، {2} خطا.</value></data>
+  <data name="Log_Test_Crashed" xml:space="preserve"><value>خود آزمون با خطای برنامه متوقف شد؛ این چیزی دربارهٔ سالم یا خراب بودن قطعه نمی‌گوید.</value></data>
+  <data name="Log_Whea" xml:space="preserve"><value>گزارش خطای سخت‌افزاری ویندوز (WHEA) برای بازهٔ این آزمون خوانده شد: {0} مورد.</value></data>
+  <data name="Log_Wrong_Result" xml:space="preserve"><value>یک نتیجهٔ نادرست محاسبه شد.</value></data>
+  <data name="Log_CpuMatrix_Start" xml:space="preserve"><value>{0} رشته ماتریس‌های ثابت {1}x{1} را ضرب می‌کنند؛ هر حاصل‌ضرب به‌طور کامل با چک‌سامی که از قبل محاسبه شده مقایسه می‌شود.</value></data>
+  <data name="Log_CpuMatrix_Progress" xml:space="preserve"><value>تا این لحظه {0} حاصل‌ضرب، {1} گیگافلاپس، {2} نادرست.</value></data>
+  <data name="Log_CpuVector_Start" xml:space="preserve"><value>{0} رشته زنجیره‌های ضرب‌وجمع {1} را در واحدهای برداری اجرا می‌کنند؛ هر lane با مرجع اسکالر مقایسه می‌شود.</value></data>
+  <data name="Log_CpuVector_Progress" xml:space="preserve"><value>تا این لحظه {0} بلوک، {1} گیگافلاپس، {2} نادرست.</value></data>
+  <data name="Log_Core_Visit" xml:space="preserve"><value>هستهٔ {0}{1}: رشته به مدت {2} ثانیه روی نخستین پردازندهٔ منطقی آن قفل شد.</value></data>
+  <data name="Log_Core_NotPinned" xml:space="preserve"><value>هستهٔ {0}: ویندوز رشته را روی این هسته نگه نداشت؛ این هسته آزمون‌شده حساب نمی‌شود.</value></data>
+  <data name="Log_Core_Wrong" xml:space="preserve"><value>هستهٔ {0}، {1} حاصل‌ضرب نادرست محاسبه کرد.</value></data>
+  <data name="Log_Linpack_Start" xml:space="preserve"><value>لین‌پک: حل دستگاه {0}x{0} ({1} مگابایت) با تجزیهٔ LU روی {2} رشته.</value></data>
+  <data name="Log_Linpack_Solve" xml:space="preserve"><value>حل {0}: {1} گیگافلاپس، باقیماندهٔ مقیاس‌شده {2} (باید زیر ۱۶ بماند).</value></data>
+  <data name="Log_Mem_Allocated" xml:space="preserve"><value>{0} مگابایت از RAM آزاد در {1} بلوک ۶۴ مگابایتی گرفته شد؛ بقیه برای ویندوز می‌ماند.</value></data>
+  <data name="Log_Mem_Pass" xml:space="preserve"><value>دور {0}: الگوی «{1}» بررسی و «{2}» نوشته شد؛ تا این لحظه {3} بایت نادرست.</value></data>
+  <data name="Log_Storage_File" xml:space="preserve"><value>فایل آزمون روی {0} ساخته شد: {1} مگابایت، بدون حافظهٔ نهان ویندوز، و در پایان آزمون حذف می‌شود.</value></data>
+  <data name="Log_Storage_SeqPass" xml:space="preserve"><value>دور {0}: نوشتن با {1} مگابایت‌برثانیه، بازخوانی و بررسی با {2} مگابایت‌برثانیه.</value></data>
+  <data name="Log_Storage_RandStart" xml:space="preserve"><value>بلوک‌های تصادفی ۴ کیلوبایتی: نوشتن، بازخوانی و مقایسه، یک درخواست در هر لحظه.</value></data>
+  <data name="Log_Storage_RandProgress" xml:space="preserve"><value>{0} بلوک بررسی شد؛ P99 نوشتن {1} میلی‌ثانیه، P99 خواندن {2} میلی‌ثانیه؛ {3} خطا.</value></data>
+  <data name="Log_Net_Start" xml:space="preserve"><value>درخواست اکو به {0} از طریق: {1}.</value></data>
+  <data name="Log_Net_Progress" xml:space="preserve"><value>{0} ارسال، {1} پاسخ، آخرین {2} میلی‌ثانیه.</value></data>
+  <data name="Log_Gpu_Start" xml:space="preserve"><value>بار محاسباتی {0} روی {1}: دسته‌هایی از dispatchهای زنجیره‌ای؛ نمونه‌ای از رشته‌ها روی CPU دوباره محاسبه می‌شود.</value></data>
+  <data name="Log_Gpu_Progress" xml:space="preserve"><value>{0} dispatch، {1} گیگاعملیات‌برثانیه، {2} نتیجهٔ رشته بررسی شد، {3} نادرست.</value></data>
+  <data name="Log_Vram_Allocated" xml:space="preserve"><value>{0} مگابایت از حافظهٔ گرافیک روی {1} در {2} بافر گرفته شد.</value></data>
+  <data name="Log_Vram_Pass" xml:space="preserve"><value>دور {0}: همهٔ خانه‌ها روی GPU بررسی شد؛ تا این لحظه {1} نادرست.</value></data>
+  <data name="Log_Command" xml:space="preserve"><value>اجرای دستور ویندوز:</value></data>
+  <data name="Log_Output" xml:space="preserve"><value>خروجی ابزار:</value></data>
+  <data name="Log_Smart" xml:space="preserve"><value>خواندن سلامت SMART همهٔ درایوها از ویندوز.</value></data>
+  <data name="Log_Power_Start" xml:space="preserve"><value>بار CPU و GPU هم‌زمان اجرا می‌شود: بیشترین کشش از منبع تغذیه.</value></data>
+  <data name="Web_Run_Title" xml:space="preserve"><value>آزمون در حال اجرا</value></data>
+  <data name="Web_Run_Idle" xml:space="preserve"><value>آزمونی در حال اجرا نیست. از صفحهٔ آزمون‌ها شروع کنید تا اینجا نمایش داده شود.</value></data>
+  <data name="Web_Run_Step" xml:space="preserve"><value>آزمون {0} از {1}</value></data>
+  <data name="Web_Run_Log" xml:space="preserve"><value>آنچه الان انجام می‌شود</value></data>
+  <data name="Web_Run_Follow" xml:space="preserve"><value>دنبال کردن قطعهٔ در حال آزمون</value></data>
+  <data name="Web_Run_Back" xml:space="preserve"><value>بازگشت به آزمون‌ها</value></data>
+  <data name="Web_Run_Live" xml:space="preserve"><value>مانیتور زنده</value></data>
+  <data name="Web_Run_Elapsed" xml:space="preserve"><value>{0} گذشته</value></data>
+  <data name="Web_Run_Done" xml:space="preserve"><value>آخرین جلسهٔ آزمون به پایان رسید.</value></data>
 </root>
