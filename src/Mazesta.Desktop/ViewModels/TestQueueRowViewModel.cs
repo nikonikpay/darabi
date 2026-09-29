@@ -50,6 +50,8 @@ public sealed partial class TestQueueRowViewModel : ObservableObject
     [ObservableProperty] private string _statusText = "";
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasErrors), nameof(ErrorsText))] private long _errorCount;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasDetail))] private string? _detail;
+    /// <summary>What to make of a failed or inconclusive result (<see cref="TestAdvice"/>); null otherwise.</summary>
+    [ObservableProperty] private string? _advice;
 
     public string OutcomeText => Loc.Get($"Test_Outcome_{Outcome}");
     public string ErrorsText => Loc.Format("Test_Errors_Format", ErrorCount);
@@ -73,5 +75,5 @@ public sealed partial class TestQueueRowViewModel : ObservableObject
         return new QueuedTest(Definition, duration, Repeat, repeatCount, Options.ToDictionary(o => o.Option.Key, o => o.Value));
     }
 
-    public void ResetRunState() { Outcome = TestOutcome.NotRun; PercentComplete = 0; StatusText = ""; ErrorCount = 0; Detail = null; }
+    public void ResetRunState() { Outcome = TestOutcome.NotRun; PercentComplete = 0; StatusText = ""; ErrorCount = 0; Detail = null; Advice = null; }
 }

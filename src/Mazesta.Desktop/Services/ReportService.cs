@@ -112,7 +112,7 @@ public sealed class ReportService
         var finished = r.FinishedAt ?? r.StartedAt;
         return new(q.Definition.Id.Value, name, r.Outcome switch { TestOutcome.Passed => ReportOutcome.Passed, TestOutcome.Failed => ReportOutcome.Failed, TestOutcome.Cancelled => ReportOutcome.Cancelled, TestOutcome.Unsupported => ReportOutcome.Unsupported,
             TestOutcome.Error => ReportOutcome.Error, TestOutcome.Inconclusive => ReportOutcome.Inconclusive, _ => ReportOutcome.NotRun },
-            r.StartedAt, finished, (finished - r.StartedAt).TotalSeconds, r.ErrorCount, r.Detail, options);
+            r.StartedAt, finished, (finished - r.StartedAt).TotalSeconds, r.ErrorCount, r.Detail, options, ViewModels.TestAdvice.For(q.Definition.Id.Value, r.Outcome));
     }
 
     // Read once: a report is now saved after every benchmark run, not only after a test session.

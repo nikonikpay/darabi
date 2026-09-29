@@ -32,6 +32,7 @@ public static class ReportPlainText
                 b.AppendLine($"* {t.Name}: {w.OutcomeName(t.Outcome)} · {ReportFormat.Duration(t.DurationSeconds)} · {w.Errors}: {t.ErrorCount}");
                 if (t.Options.Count > 0) b.AppendLine($"  {w.Options}: {string.Join(", ", t.Options.Select(o => $"{o.Key}={o.Value}"))}");
                 if (!string.IsNullOrWhiteSpace(t.Detail)) b.AppendLine($"  {w.Detail}: {t.Detail}");
+                if (!string.IsNullOrWhiteSpace(t.Advice)) b.AppendLine("  " + t.Advice.ReplaceLineEndings(Environment.NewLine + "  "));
             }
         }
         if (r.Benchmarks is { Count: > 0 })

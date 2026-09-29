@@ -83,4 +83,12 @@ public class ReportTests
         var big = SensorSummarizer.Summarize(def, "CPU", new RawSeries(sec, val), 0, 499)!; Assert.InRange(big.Trace.Count, 1, SensorSummarizer.MaxTracePoints);
         Assert.Null(SensorSummarizer.Summarize(def, "CPU", new RawSeries(sec, val), 1000, 2000));
     }
+
+    [Fact] public void A_failed_test_s_advice_is_in_the_report_line_by_line_and_escaped()
+    {
+        var failed = Test("RAM", ReportOutcome.Failed) with { Advice = "Seen: <wrong> data\nNext: MemTest86" };
+        string html = ReportHtml.Write(Report(failed));
+        Assert.Contains("<div class=\"advice\">Seen: &lt;wrong&gt; data<br>Next: MemTest86</div>", html);
+        Assert.Contains("Next: MemTest86", ReportPlainText.Write(Report(failed)));
+    }
 }

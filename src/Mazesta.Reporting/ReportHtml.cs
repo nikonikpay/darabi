@@ -100,6 +100,7 @@ h1{{margin:0;font-size:24px}} h2{{margin:26px 0 10px;font-size:18px;border-inlin
 .card b{{display:block;font-size:22px}} .card span{{color:#5b6675;font-size:12px}}
 table{{width:100%;border-collapse:collapse}} th,td{{padding:7px 9px;border-bottom:1px solid #e3e7ee;text-align:start;vertical-align:top}}
 th{{background:#f5f7fa;font-size:12.5px;color:#4a5566}}
+.advice{{margin-top:6px;padding:6px 10px;border-inline-start:3px solid #f0cf8a;background:#fff8e6;font-size:12.5px;line-height:1.7}}
 .badge{{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12.5px;font-weight:700}}
 .badge.Passed{{background:#e7f6ec;color:#146c2e}} .badge.Failed{{background:#fdecec;color:#a11a1a}} .badge.Cancelled,.badge.NotRun,.badge.Unsupported,.badge.Error,.badge.Inconclusive{{background:#fff4dc;color:#8a5a00}}
 pre{{margin:6px 0 0;white-space:pre-wrap;word-break:break-word;background:#f5f7fa;border:1px solid #e3e7ee;border-radius:6px;padding:7px 9px;direction:ltr;text-align:left;font:12px/1.5 Consolas,'Segoe UI',monospace}}
@@ -138,6 +139,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             b.Append("<tr class=\"test\"><td><b>").Append(E(t.Name)).Append("</b>");
             if (t.Options.Count > 0) b.Append("<br><small>").Append(w.Options).Append(": ").Append(string.Join(" · ", t.Options.Select(o => Lt($"{o.Key}={o.Value}")))).Append("</small>");
             if (!string.IsNullOrWhiteSpace(t.Detail)) b.Append("<br><small>").Append(w.Detail).Append(":</small><pre>").Append(E(t.Detail)).Append("</pre>");
+            if (!string.IsNullOrWhiteSpace(t.Advice)) b.Append("<div class=\"advice\">").Append(E(t.Advice).Replace("\n", "<br>")).Append("</div>");
             b.Append("</td><td><span class=\"badge ").Append(t.Outcome).Append("\">").Append(E(w.OutcomeName(t.Outcome))).Append("</span></td><td>").Append(Lt(ReportFormat.Duration(t.DurationSeconds)))
              .Append("</td><td>").Append(Lt(t.ErrorCount.ToString(Inv))).Append("</td></tr>");
         }

@@ -35,7 +35,7 @@ public sealed partial class WebBridge
             {
                 id = r.Definition.Id.Value, name = r.Name, selected = r.IsSelected, duration = r.DurationText, repeat = r.Repeat.ToString(), count = r.RepeatCountText,
                 options = r.Options.Select(Option), error = r.ValidationError, outcome = r.Outcome.ToString(), outcomeText = r.OutcomeText,
-                percent = r.PercentComplete, status = r.StatusText, errors = r.HasErrors ? r.ErrorsText : null, detail = r.Detail, unavailable = r.UnavailableText,
+                percent = r.PercentComplete, status = r.StatusText, errors = r.HasErrors ? r.ErrorsText : null, detail = r.Detail, advice = r.Advice, unavailable = r.UnavailableText,
             }),
         };
         Mirror("tests", tests, State, tests.Rows);

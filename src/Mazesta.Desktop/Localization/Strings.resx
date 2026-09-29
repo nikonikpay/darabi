@@ -1555,4 +1555,35 @@ The update services stopped and disabled</value></data>
   <data name="Profile_Transient_Note" xml:space="preserve"><value>Load that keeps changing: single cores in and out of boost, GPU steps and pulses, CPU and GPU together. For crashes at light load, in games, or at idle.</value></data>
   <data name="Profile_OsStorage" xml:space="preserve"><value>Windows drive</value></data>
   <data name="Profile_OsStorage_Note" xml:space="preserve"><value>The drive's own tests, SMART and Windows' file checks. Pick the Windows drive in the storage tests' options; the tests use a new file in free space, never the drive's data.</value></data>
+  <data name="Advice_Cpu" xml:space="preserve"><value>Seen: the CPU computed wrong results under load.
+Likely causes: an overclock, undervolt or Curve Optimizer setting that is not stable; too little voltage or a weak VRM; overheating; unstable RAM (the matrix and Linpack loads also use memory).
+Next: reset the BIOS to defaults and repeat; watch the temperature in the report; run single-core cycling to find the core; test the RAM on its own.</value></data>
+  <data name="Advice_Memory" xml:space="preserve"><value>Seen: data read back from RAM differed from what was written.
+Likely causes: a faulty module; the memory controller in the CPU; an XMP or manual memory setting that is not stable; the slot or the board.
+Next: set the memory to its JEDEC speed (XMP off) and repeat; test one module at a time and swap slots; for full coverage run MemTest86 from a USB stick, outside Windows.</value></data>
+  <data name="Advice_Gpu" xml:space="preserve"><value>Seen: the graphics card computed or drew wrong results, or its device was lost.
+Likely causes: a core or memory overclock; overheating (see the hot spot); the power supply or its cables; the driver.
+Next: return the card to stock clocks and repeat; check the hot-spot temperature; reinstall the driver cleanly; run the combined power test to load the power supply.</value></data>
+  <data name="Advice_Vram" xml:space="preserve"><value>Seen: the graphics card's memory returned data different from what was written.
+Likely causes: a memory overclock; VRAM overheating (see the memory junction temperature); faulty memory chips.
+Next: return the memory clock to stock and repeat; check the VRAM temperature and the card's cooling; if it fails at stock and cool, the card needs service.</value></data>
+  <data name="Advice_Storage" xml:space="preserve"><value>Seen: the drive returned wrong or short data, or an I/O error, while being written and read.
+Likely causes: the drive's media or controller; the cable or port (SATA); the board's controller or its driver; the power to the drive.
+Next: read SMART and the storage events in this report; try another cable and port; repeat on another machine if you can. Back up the data first.</value></data>
+  <data name="Advice_Smart" xml:space="preserve"><value>Seen: Windows reports the drive's own health as failing, or it counts uncorrected errors.
+Likely causes: the drive itself, reported by its own monitoring.
+Next: back up the data now; plan to replace the drive; the storage tests can show whether reads and writes still come back right.</value></data>
+  <data name="Advice_Network" xml:space="preserve"><value>Seen: too many echo requests were lost.
+Likely causes: the cable or Wi-Fi signal; the router or the target; the adapter's driver.
+Next: ping the router (gateway) to separate the local link from the internet; try another cable, port or target.</value></data>
+  <data name="Advice_Power" xml:space="preserve"><value>Seen: a fault appeared while the CPU and the graphics card were loaded together.
+Likely causes: the power supply; the board's VRM; the cooling of the case under full heat. This test cannot measure the power supply itself.
+Next: run the CPU and GPU tests one at a time: a fault only together points at power or heat; try a known good power supply.</value></data>
+  <data name="Advice_Windows" xml:space="preserve"><value>Seen: Windows found damaged system files it could not repair.
+Likely causes: an interrupted update; disk errors; failing storage or RAM.
+Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test the RAM and the Windows drive.</value></data>
+  <data name="Advice_Inconclusive" xml:space="preserve"><value>No error was seen, but the test could not cover everything it was asked to; the result is neither a pass nor a fail. See the detail for what was left out, and repeat with more time.</value></data>
+  <data name="Advice_Inconclusive_Cores" xml:space="preserve"><value>No core computed wrongly, but not every core was tested (the time ran out, or Windows would not keep the thread on a core). Give each core at least a few seconds: the length should be at least the number of cores × seconds per core.</value></data>
+  <data name="Advice_Inconclusive_Network" xml:space="preserve"><value>Not one echo reply came back. A firewall or the target may drop ICMP - that is not a fault of the network card. Ping the router or another target; the internet speed benchmark checks the connection another way.</value></data>
+  <data name="Advice_Error" xml:space="preserve"><value>The test itself stopped with a program error; nothing is known about the part from this run. Repeat it; if it happens again, send the app's log (Settings) to the shop.</value></data>
 </root>

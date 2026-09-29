@@ -14,7 +14,8 @@ public enum ReportVerdict { Passed, Failed, Incomplete }
 public enum ReportKind { TestSession, Benchmark }
 
 public sealed record TestEntry(string Id, string Name, ReportOutcome Outcome, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, double DurationSeconds,
-    long ErrorCount, string? Detail, IReadOnlyDictionary<string, string> Options);
+    long ErrorCount, string? Detail, IReadOnlyDictionary<string, string> Options,
+    string? Advice = null);   // what to make of a failed or inconclusive result, in the report's language; absent in older reports
 
 public sealed record TracePoint(double Seconds, double Value);
 

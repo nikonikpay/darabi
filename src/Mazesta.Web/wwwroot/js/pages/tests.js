@@ -55,14 +55,14 @@ export function mount(el) {
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), pill = h("span", { class: "pill none" });
     const error = h("div", { class: "error", hidden: true }), detail = h("div", { class: "detail", hidden: true }), errs = h("span", { class: "caption lat" });
-    const unavailable = h("div", { class: "unavailable", hidden: true });
+    const unavailable = h("div", { class: "unavailable", hidden: true }), advice = h("div", { class: "advice", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
       h("div", { class: "ctrls" }, h("label", {}, dur, t("Test_Seconds")), rep, cnt),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail);
+      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail, advice);
     into.append(row);
-    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs, unavailable });
+    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs, unavailable, advice });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -90,6 +90,7 @@ export function mount(el) {
       x.row.classList.toggle("active", r.outcome === "Running");
       x.error.hidden = !r.error; x.error.textContent = r.error || "";
       x.detail.hidden = !r.detail; x.detail.textContent = r.detail || "";
+      x.advice.hidden = !r.advice; x.advice.textContent = r.advice || "";
     }
     const byId = new Map(s.rows.map((r) => [r.id, r]));
     for (const { g, ids } of groups) {

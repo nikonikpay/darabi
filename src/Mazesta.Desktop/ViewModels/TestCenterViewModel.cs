@@ -66,7 +66,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     private void OnTestCompleted(TestId id, TestRunResult r) => _dispatch(() =>
     {
         if (RowFor(id) is not { } row) return;
-        row.Outcome = r.Outcome; row.ErrorCount = r.ErrorCount; row.Detail = r.Detail; row.StatusText = "";
+        row.Outcome = r.Outcome; row.ErrorCount = r.ErrorCount; row.Detail = r.Detail; row.StatusText = ""; row.Advice = TestAdvice.For(id.Value, r.Outcome);
         if (r.Outcome is TestOutcome.Passed or TestOutcome.Failed) row.PercentComplete = 1.0;
     });
 

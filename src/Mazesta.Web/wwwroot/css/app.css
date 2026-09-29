@@ -468,6 +468,10 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .report .sum { grid-column: 3 / 4; font-size: 12px; color: var(--paper-3); }
 .report .acts { grid-row: 1 / 3; grid-column: 4; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 620px; }
 
+/* A failed or inconclusive test's advice: what was seen, the likely causes, the next test. */
+.q-row .advice { grid-column: 1 / -1; margin-top: 6px; padding: 8px 12px; border-inline-start: 3px solid var(--warn); background: color-mix(in oklab, var(--warn) 8%, transparent);
+  border-radius: 3px; font-size: 12.5px; line-height: 1.7; white-space: pre-line; }
+
 /* ———— Test profiles: a row of ready-made selections above the list ———— */
 .profile-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .profiles { display: flex; gap: 6px; flex-wrap: wrap; }
