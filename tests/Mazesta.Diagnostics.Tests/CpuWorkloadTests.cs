@@ -22,6 +22,24 @@ public class CpuWorkloadTests
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("Gop/s (integer)", r.Detail);
     }
 
+    // ——— hash and compression ———
+    [Fact] public void The_text_hashes_to_the_value_python_worked_out()   // hashlib over the same generator: an independent reference
+        => Assert.Equal(CpuHashExecutor.ExpectedSha256, CpuHashExecutor.Hex(CpuHashExecutor.Text()));
+
+    [Fact] public void A_block_round_trips_through_deflate_and_a_changed_byte_is_caught()
+    {
+        var text = CpuHashExecutor.Text(); var (before, after, size) = CpuHashExecutor.Block(text, new MemoryStream(), new byte[text.Length]);
+        Assert.Equal(CpuHashExecutor.ExpectedSha256, before); Assert.Equal(before, after); Assert.InRange(size, 1, text.Length / 2);   // the word soup compresses well
+        text[4321] ^= 0x10;
+        Assert.NotEqual(CpuHashExecutor.ExpectedSha256, CpuHashExecutor.Block(text, new MemoryStream(), new byte[text.Length]).Before);
+    }
+
+    [Fact] public async Task A_short_hash_run_passes_with_a_rate()
+    {
+        var r = await new CpuHashExecutor().RunAsync(new(1, new FakeClock(T0), null, null), CancellationToken.None);
+        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("MB/s of input", r.Detail);
+    }
+
     // ——— FFT ———
     [Fact] public void The_fft_agrees_with_a_direct_dft() => Assert.InRange(CpuFftExecutor.DftError(256), 0, 1e-12);
 

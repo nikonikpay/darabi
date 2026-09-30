@@ -19,7 +19,7 @@ public static class TestProfiles
              new("gpu.steady", 300), new("gpu.vram", 300), new("gpu.scene.d3d", 120), new("storage.sequential", 60), new("storage.random4k", 60),
              new("network.latency", 30), new("power.combined", 300), new("storage.smart", 5)]),
         new("deep", "Profile_Deep", "Profile_Deep_Note",
-            [new("cpu.matrix", 900), new("cpu.vector", 900), new("cpu.linpack", 1200), new("cpu.integer", 600), new("cpu.fft", 900), new("cpu.singlecore", 1800),
+            [new("cpu.matrix", 900), new("cpu.vector", 900), new("cpu.linpack", 1200), new("cpu.integer", 600), new("cpu.fft", 900), new("cpu.hash", 600), new("cpu.singlecore", 1800),
              new("memory.pattern", 3600), new("memory.bitfade", 1200), new("gpu.steady", 900), new("gpu.variable", 600), new("gpu.pulse", 300), new("gpu.vram", 900), new("gpu.scene.d3d", 300),
              new("storage.sequential", 300), new("storage.random4k", 300), new("network.latency", 60), new("power.combined", 900),
              new("windows.dism", 300), new("windows.sfc", 900), new("storage.smart", 5)]),

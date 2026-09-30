@@ -1662,4 +1662,7 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} MiB of free RAM taken; {1} of {2} blocks locked in RAM so Windows cannot page them out while they wait.</value></data>
   <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>Pattern '{0}' written to every block; now left untouched for {1} s.</value></data>
   <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>Pattern '{0}' checked after the hold; {1} faded byte(s) so far.</value></data>
+  <data name="Test_Cpu_Hash" xml:space="preserve"><value>CPU · hashing and compression (SHA-256, Deflate)</value></data>
+  <data name="Log_CpuHash_Start" xml:space="preserve"><value>{0} threads hash a fixed 256 KB text, compress it, decompress it and hash it again; both hashes must equal the value worked out in advance.</value></data>
+  <data name="Log_CpuHash_Progress" xml:space="preserve"><value>{0} blocks so far, {1} MB/s, {2} wrong.</value></data>
 </root>

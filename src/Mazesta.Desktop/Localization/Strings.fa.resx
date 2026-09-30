@@ -1662,4 +1662,7 @@
   <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} مگابایت از RAM آزاد گرفته شد؛ {1} از {2} بلوک در RAM قفل شد تا ویندوز هنگام انتظار آن‌ها را به فایل صفحه منتقل نکند.</value></data>
   <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>الگوی «{0}» در همهٔ بلوک‌ها نوشته شد؛ اکنون {1} ثانیه دست‌نخورده می‌ماند.</value></data>
   <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>الگوی «{0}» پس از انتظار بررسی شد؛ تا این لحظه {1} بایت محوشده.</value></data>
+  <data name="Test_Cpu_Hash" xml:space="preserve"><value>CPU · هش و فشرده‌سازی (SHA-256 و Deflate)</value></data>
+  <data name="Log_CpuHash_Start" xml:space="preserve"><value>{0} رشته یک متن ثابت ۲۵۶ کیلوبایتی را هش، فشرده و باز می‌کنند و دوباره هش می‌گیرند؛ هر دو هش باید با مقدار از پیش محاسبه‌شده برابر باشد.</value></data>
+  <data name="Log_CpuHash_Progress" xml:space="preserve"><value>تا این لحظه {0} بلوک، {1} مگابایت بر ثانیه، {2} نادرست.</value></data>
 </root>
