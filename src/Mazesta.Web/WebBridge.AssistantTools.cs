@@ -5,26 +5,37 @@ namespace Mazesta.Web;
 
 public sealed partial class WebBridge
 {
-    /// <summary>The tests the assistant may start for each area it names: short, safe ones. Nothing that stresses the GPU or changes Windows is in it.</summary>
+    /// <summary>The tests the assistant may start for each area it names: short ones at their default lengths. Nothing that changes Windows is in it.
+    /// The graphics card's are run with the model unloaded (it would hold the card's memory and share its time).</summary>
     private static readonly IReadOnlyDictionary<string, string[]> AssistantTestAreas = new Dictionary<string, string[]>
     {
         ["cpu"] = ["cpu.matrix", "cpu.integer", "cpu.fft"], ["memory"] = ["memory.pattern"],
-        ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency"],
+        ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency"], ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram"],
     };
 
-    /// <summary>The benchmarks the assistant may start: the ones that do not need the graphics card (it is busy serving the assistant).</summary>
+    /// <summary>The benchmarks the assistant may start; the graphics one with the model unloaded, like the GPU tests.</summary>
     private static readonly IReadOnlyDictionary<string, string> AssistantBenchmarks = new Dictionary<string, string>
     {
-        ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage",
+        ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage", ["gpu"] = "bench.gpu.d3d",
     };
 
+    /// <summary>The pages the assistant may open (the page's own ids), with what each shows, for the tool's description.</summary>
+    private const string AssistantPages =
+        "dashboard (summary), monitoring (every sensor with charts), cpu, gpu, ram, storage, network (a part's specification and sensors), system (the whole specification), " +
+        "tests, benchmarks, checkup (the machine judged from its measurements), checks (hands-on: screen, keyboard, mouse, speakers, microphone), overlay (the on-screen overlay's settings), " +
+        "tuning (graphics card clocks and fans), tools (Windows tools), tweaks (Windows settings), updates (Windows Update), reports (saved test reports), settings, ai (language models)";
+    private static readonly string[] AssistantPageIds = ["dashboard", "monitoring", "cpu", "gpu", "ram", "storage", "network", "system", "tests", "benchmarks", "checkup", "checks", "overlay", "tuning", "tools", "tweaks", "updates", "reports", "settings", "ai"];
+
     /// <summary>
-    /// What the assistant may call. The first four only read. <c>run_tests</c> and <c>run_benchmark</c> start a real run, but only after the user said
-    /// yes on the page (<paramref name="ask"/>); what they return is what the engine reported, outcome names unchanged, so a test that did not run is
-    /// never told as a pass. A value that is not available is left out, never written as 0. The page shows which tools ran beside the answer.
+    /// What the assistant may call. The first four only read. <c>open_page</c> and <c>set_overlay</c> do what the user could do with one click and can
+    /// undo with one. <c>run_tests</c> and <c>run_benchmark</c> start a real run, but only after the user said yes on the page (<paramref name="ask"/>),
+    /// for the items left ticked; what they return is what the engine reported, outcome names unchanged, so a test that did not run is never told as
+    /// a pass. A value that is not available is left out, never written as 0. The page shows which tools ran beside the answer, and a run's outcomes
+    /// from its result.
     /// </summary>
-    private IReadOnlyList<AiTool> AssistantTools(Func<SensorSnapshot?> latest, Func<string, IReadOnlyList<(string, string)>, CancellationToken, Task<bool>> ask,
-        Func<Activity, Func<Task<string>>, Task<string>> running, Func<Func<Task<string>>, Task<string>> ui)
+    private IReadOnlyList<AiTool> AssistantTools(Func<SensorSnapshot?> latest, Func<string, IReadOnlyList<(string, string)>, CancellationToken, Task<bool[]?>> ask,
+        Func<Activity, Func<Task<string>>, Task<string>> running, Func<Func<Task<string>>, Task<string>> ui, Func<Func<Task<string>>, CancellationToken, Task<string>> withoutModel,
+        Action<string> navigate)
     {
         var engine = _sp.GetRequiredService<PollingEngine>(); var inventory = _sp.GetRequiredService<InventoryCache>(); var runner = _sp.GetRequiredService<BenchmarkRunner>();
         static string Json(object o) => JsonSerializer.Serialize(o, Json_);
@@ -80,14 +91,30 @@ public sealed partial class WebBridge
                         .Select(r => new { at = r.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), benchmark = r.Benchmark, settings = r.Settings, value = Math.Round(r.Value, 2), unit = r.Unit, overclocked = r.Overclocked });
                     return Task.FromResult(Json(new { runs }));
                 }),
-            new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome. It takes minutes. Areas: cpu, memory, storage, network. " +
-                "An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass.",
-                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network"]}}},"required":["areas"]}""",
+            new("open_page", "Opens a page of the app on the screen, beside the chat. Pages: " + AssistantPages + ".",
+                """{"type":"object","properties":{"page":{"type":"string","enum":["dashboard","monitoring","cpu","gpu","ram","storage","network","system","tests","benchmarks","checkup","checks","overlay","tuning","tools","tweaks","updates","reports","settings","ai"]}},"required":["page"]}""",
+                (a, _) =>
+                {
+                    if (Text(a, "page") is not { } page || !AssistantPageIds.Contains(page)) return Task.FromResult(Json(new { error = "unknown page" }));
+                    navigate(page);
+                    return Task.FromResult(Json(new { opened = page }));
+                }),
+            new("set_overlay", "Shows or hides the on-screen overlay (the small always-on-top readout of temperatures, loads and frame rate over games). Returns whether it is shown now.",
+                """{"type":"object","properties":{"on":{"type":"boolean"}},"required":["on"]}""",
+                (a, _) => OnUi(() =>
+                {
+                    if (a.ValueKind != JsonValueKind.Object || !a.TryGetProperty("on", out var v) || v.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return Json(new { error = "on must be true or false" });
+                    var overlay = _sp.GetRequiredService<Desktop.Services.OverlayService>(); overlay.SetVisible(v.GetBoolean());
+                    return Json(new { shown = overlay.IsVisible });
+                })),
+            new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome. It takes minutes. Areas: cpu, memory (RAM), storage, network, gpu (graphics card). " +
+                "Name only the areas the user asked for. An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass.",
+                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}}},"required":["areas"]}""",
                 async (a, ct) =>
                 {
                     if (_testVm is not { } tests) return Json(new { error = "the tests are not available yet" });
                     var ids = Texts(a, "areas").Distinct().SelectMany(x => AssistantTestAreas.GetValueOrDefault(x) ?? []).ToHashSet();
-                    if (ids.Count == 0) return Json(new { error = "name at least one area: cpu, memory, storage or network" });
+                    if (ids.Count == 0) return Json(new { error = "name at least one area: cpu, memory, storage, network or gpu" });
                     // The rows this machine can run, with their default lengths; the user sees exactly this list before anything starts.
                     var plan = await OnUi(() => tests.IsRunning || runner.IsBusy ? "" : Json(tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
                         .Select(r => new { id = r.Definition.Id.Value, name = r.Name, seconds = r.Definition.DefaultDurationSeconds }))).ConfigureAwait(false);
@@ -95,10 +122,12 @@ public sealed partial class WebBridge
                     var rows = JsonSerializer.Deserialize<List<JsonElement>>(plan)!;
                     if (rows.Count == 0) return Json(new { error = "this computer can not run those tests" });
                     var items = rows.Select(r => (r.GetProperty("name").GetString()!, r.GetProperty("seconds").GetInt32().ToString(CultureInfo.InvariantCulture))).ToList();
-                    if (!await ask("tests", items, ct).ConfigureAwait(false)) return Json(new { started = false, reason = "the user declined; nothing was run" });
+                    if (await ask("tests", items, ct).ConfigureAwait(false) is not { } kept) return Json(new { started = false, reason = "the user declined; nothing was run" });
 
-                    var chosen = rows.Select(r => r.GetProperty("id").GetString()!).ToHashSet();
-                    return await running(new("tests", () => tests.CurrentRow is { } cur ? (cur.Name, Math.Round((tests.CurrentIndex + cur.PercentComplete) / Math.Max(1, tests.RunQueue.Count) * 100)) : null), async () =>
+                    var chosen = rows.Where((_, i) => kept[i]).Select(r => r.GetProperty("id").GetString()!).ToHashSet();
+                    bool onGpu = chosen.Any(x => x.StartsWith("gpu.", StringComparison.Ordinal));
+                    return await running(new("tests", () => tests.CurrentRow is { } cur ? (cur.Name, Math.Round((tests.CurrentIndex + cur.PercentComplete) / Math.Max(1, tests.RunQueue.Count) * 100)) : null), () => onGpu ? withoutModel(Run, ct) : Run());
+                    async Task<string> Run()
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (tests.CancelCommand.CanExecute(null)) tests.CancelCommand.Execute(null); }));
                         // The page's own selection is put back afterwards; the assistant only borrows the Tests page's queue.
@@ -128,15 +157,15 @@ public sealed partial class WebBridge
                                 return Task.FromResult("");
                             }).ConfigureAwait(false);
                         }
-                    }).ConfigureAwait(false);
+                    }
                 }),
             new("run_benchmark", "Runs one real benchmark, after the user confirmed on the page, and returns its number, the best earlier result of this computer and the change against it " +
-                "(positive change is better, negative is slower than the best kept). It takes about a minute. Benchmarks: cpu_single, cpu_multi, memory, storage. For a trend over time use get_benchmark_history.",
-                """{"type":"object","properties":{"benchmark":{"type":"string","enum":["cpu_single","cpu_multi","memory","storage"]}},"required":["benchmark"]}""",
+                "(positive change is better, negative is slower than the best kept). It takes about a minute. Benchmarks: cpu_single, cpu_multi, memory, storage, gpu. For a trend over time use get_benchmark_history.",
+                """{"type":"object","properties":{"benchmark":{"type":"string","enum":["cpu_single","cpu_multi","memory","storage","gpu"]}},"required":["benchmark"]}""",
                 async (a, ct) =>
                 {
                     if (_benchVm is not { } bench || _benchCompared is not { } compared) return Json(new { error = "the benchmarks are not available yet" });
-                    if (Text(a, "benchmark") is not { } key || !AssistantBenchmarks.TryGetValue(key, out string? id)) return Json(new { error = "benchmark must be cpu_single, cpu_multi, memory or storage" });
+                    if (Text(a, "benchmark") is not { } key || !AssistantBenchmarks.TryGetValue(key, out string? id)) return Json(new { error = "benchmark must be cpu_single, cpu_multi, memory, storage or gpu" });
                     var plan = await OnUi(() =>
                     {
                         if (bench.IsRunning || runner.IsBusy) return "busy";
@@ -146,10 +175,11 @@ public sealed partial class WebBridge
                     if (plan == "busy") return Json(new { error = "a test or a benchmark is already running; nothing was started" });
                     if (plan is "unknown" or "unavailable") return Json(new { error = "this computer can not run that benchmark" });
                     using var info = JsonDocument.Parse(plan);
-                    if (!await ask("benchmark", [(info.RootElement.GetProperty("name").GetString()!, info.RootElement.GetProperty("seconds").GetString()!)], ct).ConfigureAwait(false))
+                    if (await ask("benchmark", [(info.RootElement.GetProperty("name").GetString()!, info.RootElement.GetProperty("seconds").GetString()!)], ct).ConfigureAwait(false) is null)
                         return Json(new { started = false, reason = "the user declined; nothing was run" });
 
-                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), async () =>
+                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => key == "gpu" ? withoutModel(Run, ct) : Run());
+                    async Task<string> Run()
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (bench.CancelCommand.CanExecute(null)) bench.CancelCommand.Execute(null); }));
                         string ran = await ui(async () =>
@@ -180,7 +210,7 @@ public sealed partial class WebBridge
                             await Task.Delay(250, CancellationToken.None).ConfigureAwait(false);
                         }
                         return Json(new { started = true, completed = false, note = "no result was recorded; do not report a number" });
-                    }).ConfigureAwait(false);
+                    }
                 }),
         ];
     }

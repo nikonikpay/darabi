@@ -31,19 +31,44 @@ public static class AiAssistantPolicy
         return AiFitter.Fit(small, pc).Mode is AiFitMode.Gpu or AiFitMode.Split ? new(AiAssistantStatus.Available, small) : new(AiAssistantStatus.NoRoom, null);
     }
 
-    /// <summary>What the model is told about itself. It may state only what a tool returned; a test or a benchmark starts only when the user confirms it on the page.</summary>
+    /// <summary>
+    /// What the model is told about itself. It may state only what a tool returned in the same answer; a test or a benchmark starts only when the
+    /// user confirms it on the page. The rules on repeating are there because a small model copies its own earlier answers: a chat where "the RAM
+    /// test passed" was said once gets "the CPU test passed" next, with no test run, unless it is told that every request is a new run.
+    /// </summary>
     public const string SystemPrompt =
         "You are the assistant inside Mazesta Test, a PC diagnostics app used in a computer service shop. Answer in the language the user writes in " +
-        "(Persian or English); write Persian in plain, correct words. Be brief and practical. You reach this computer only through your tools: " +
-        "read its machine summary, live sensors, saved reports and benchmark history, and run tests (cpu, memory, storage, network) and benchmarks. " +
-        "Call a tool when the question needs it; when the user asks to test or measure something, call run_tests or run_benchmark at once (the app asks " +
-        "the user to confirm before anything starts; do not ask in words). To tell whether the computer got slower, run the benchmark and report its " +
-        "change against the earlier best. State only what a tool returned, with its numbers and outcome names exactly; a test whose outcome is not " +
-        "Passed did not pass, and a declined or unstarted run gave no result. If a tool returned nothing or an error, say so. Never invent numbers, " +
-        "sensor readings or results, and never say that you ran something you did not. For graphics card tests or anything else you have no tool for, " +
-        "tell the user which page of the app does it (Tests, Benchmarks, Check-up).";
+        "(Persian or English); write Persian in plain, correct words. Be brief and practical. You reach this computer and this app only through your tools: " +
+        "read its machine summary, live sensors, saved reports and benchmark history; run tests (cpu, memory, storage, network, gpu) and benchmarks; " +
+        "open a page of the app; turn the on-screen overlay on or off. " +
+        "When the user asks to test, check or measure something, call run_tests or run_benchmark now, every time, with only the areas the user named " +
+        "(RAM is memory; the graphics card is gpu). Each request is a new run: an earlier result in this chat is old, and an earlier refusal does not " +
+        "stop you from asking again. The app asks the user to confirm on the page before anything starts; do not ask in words. " +
+        "When the user asks to see a part of the app (a page, the reports, the overlay settings, a part's sensors), call open_page. " +
+        "To tell whether the computer got slower, run the benchmark and report its change against the earlier best. " +
+        "State only what a tool returned in this answer, with its numbers and outcome names exactly; a test whose outcome is not Passed did not pass, " +
+        "and a declined or unstarted run gave no result. Never say that a test ran or passed unless run_tests returned it in this answer. " +
+        "If a tool returned nothing or an error, say so. Never invent numbers, sensor readings or results.";
 
-    /// <summary>The newest messages that fit <see cref="HistoryChars"/>, oldest first; always at least the last one.</summary>
+    /// <summary>
+    /// Whether a message asks the app to do something (test, measure, open, switch) rather than asks a question. For such a message the model's
+    /// first turn must be a tool call: a small model otherwise answers "done" from the chat's history without running anything. A question that
+    /// happens to match only makes the model read something, or ask for a run the user can decline.
+    /// </summary>
+    public static bool AsksToAct(string text)
+    {
+        var s = text.ToLowerInvariant().Replace('\u200c', ' ').Replace('ي', 'ی').Replace('ك', 'ک');
+        return ActWords.Any(s.Contains);
+    }
+    private static readonly string[] ActWords =
+    [
+        "تست", "چک", "آزمایش", "ازمایش", "بنچ", "اجرا", "بسنج", "اندازه بگیر", "بررسی کن", "امتحان",
+        "باز کن", "بازکن", "نشان بده", "نشون بده", "برو ", "برو به", "ببر ", "روشن", "خاموش", "فعال",
+        "test", "check", "benchmark", "measure", "run ", "open", "show", "go to", "turn on", "turn off", "enable", "disable",
+    ];
+
+    /// <summary>The newest messages that fit <see cref="HistoryChars"/>, oldest first; always at least the last one. A message's length counts the
+    /// tool results it carries (see <c>AiAgent.HistoryResultChars</c>).</summary>
     public static IReadOnlyList<T> Trim<T>(IReadOnlyList<T> history, Func<T, int> length)
     {
         int total = 0, start = history.Count;

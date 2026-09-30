@@ -1614,7 +1614,7 @@
   <data name="Assist_Send" xml:space="preserve"><value>ارسال</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «داخل این کامپیوتر چیست؟»، «پردازنده و رم را تست کن» یا «سیستمم کندتر شده، بررسی کن».</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بگویید: «رم را تست کن»، «کارت گرافیک را تست کن»، «صفحهٔ اورلی را باز کن و روشنش کن» یا «گزارش‌ها را نشان بده».</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>خواند: مشخصات سیستم</value></data>
@@ -1622,7 +1622,7 @@
   <data name="Assist_Tool_list_reports" xml:space="preserve"><value>خواند: گزارش‌های ذخیره‌شده</value></data>
   <data name="Assist_Tool_get_benchmark_history" xml:space="preserve"><value>خواند: تاریخچهٔ بنچمارک</value></data>
   <data name="Assist_Tool_failed" xml:space="preserve"><value>ناموفق</value></data>
-  <data name="Assist_Busy" xml:space="preserve"><value>تا پایان جواب صبر کنید، بعد مدل را عوض کنید.</value></data>
+  <data name="Assist_Busy" xml:space="preserve"><value>اول صبر کنید جواب تمام شود.</value></data>
   <data name="Assist_Model" xml:space="preserve"><value>مدل</value></data>
   <data name="Assist_Confirm_Tests" xml:space="preserve"><value>این تست‌ها اجرا شوند؟</value></data>
   <data name="Assist_Confirm_Benchmark" xml:space="preserve"><value>این بنچمارک اجرا شود؟</value></data>
@@ -1636,6 +1636,21 @@
   <data name="Assist_Tool_run_benchmark" xml:space="preserve"><value>درخواست اجرا: بنچمارک</value></data>
   <data name="Assist_You" xml:space="preserve"><value>شما</value></data>
   <data name="Assist_Name" xml:space="preserve"><value>دستیار</value></data>
+  <data name="Assist_Open" xml:space="preserve"><value>باز کردن دستیار</value></data>
+  <data name="Assist_Collapse" xml:space="preserve"><value>جمع کردن دستیار</value></data>
+  <data name="Assist_History" xml:space="preserve"><value>گفتگوهای قبلی</value></data>
+  <data name="Assist_History_Empty" xml:space="preserve"><value>هنوز گفتگویی نیست. هر گفتگو فقط روی همین کامپیوتر نگه داشته می‌شود.</value></data>
+  <data name="Assist_DeleteChat" xml:space="preserve"><value>پاک کردن این گفتگو</value></data>
+  <data name="Assist_DeleteAll" xml:space="preserve"><value>پاک کردن همهٔ گفتگوها</value></data>
+  <data name="Assist_DeleteAll_Confirm" xml:space="preserve"><value>همهٔ گفتگوهای قبلی پاک شوند؟ این کار برگشت‌پذیر نیست.</value></data>
+  <data name="Assist_Run_NotStarted" xml:space="preserve"><value>چیزی اجرا نشد.</value></data>
+  <data name="Assist_Run_NoResult" xml:space="preserve"><value>نتیجه‌ای ثبت نشد.</value></data>
+  <data name="Assist_Paused" xml:space="preserve"><value>تا پایان تست کارت گرافیک، مدل از حافظهٔ کارت خارج شده است و برای پاسخ دوباره بارگذاری می‌شود.</value></data>
+  <data name="Assist_PausedShort" xml:space="preserve"><value>در انتظار تست</value></data>
+  <data name="Assist_Loading" xml:space="preserve"><value>در حال بارگذاری</value></data>
+  <data name="Assist_OffShort" xml:space="preserve"><value>خاموش</value></data>
+  <data name="Assist_Tool_open_page" xml:space="preserve"><value>باز کردن صفحه</value></data>
+  <data name="Assist_Tool_set_overlay" xml:space="preserve"><value>روشن یا خاموش کردن اورلی</value></data>
   <data name="Ai_Lede" xml:space="preserve"><value>این کامپیوتر کدام مدل‌های زبانی هوش مصنوعی را به‌صورت محلی اجرا می‌کند و با چه سرعتی. سازگاری هر مدل پیش از دانلود برآورد می‌شود؛ مدل‌های دلخواه را دانلود کنید و سرعت واقعی‌شان را روی کارت گرافیک یا پردازنده اندازه بگیرید.</value></data>
   <data name="Ai_Machine" xml:space="preserve"><value>این سیستم برای هوش مصنوعی</value></data>
   <data name="Ai_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>

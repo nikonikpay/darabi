@@ -1,5 +1,5 @@
 // The shell: boot from the host, the numbered index (Ctrl+1 … Ctrl+9 open the families, so the numbers carry meaning), the stage where one
-// page lives at a time, and the status band. A page is a module exporting mount(el) that returns an unmount function.
+// page lives at a time, the assistant's column beside it (assistant.js; it stays while the pages change), and the status band. A page is a module exporting mount(el) that returns an unmount function.
 import { call, on, live } from "./bridge.js";
 import { setStrings, t, fa } from "./i18n.js";
 import { setUnits } from "./format.js";
@@ -15,7 +15,6 @@ export const PAGES = [
   { id: "benchmarks", key: "Nav_Benchmarks", load: () => import("./pages/benchmarks.js") },
   { id: "checkup", key: "Nav_Checkup", load: () => import("./pages/checkup.js") },
   { id: "ai", key: "Nav_Ai", load: () => import("./pages/ai.js") },
-  { id: "assistant", key: "Nav_Assistant", load: () => import("./pages/assistant.js") },
   { id: "checks", key: "Nav_Checks", load: () => import("./pages/checks.js") },
   { id: "gpu", key: "Nav_Gpu", load: () => import("./pages/component.js"), arg: "Gpu" },
   { id: "cpu", key: "Nav_Cpu", load: () => import("./pages/component.js"), arg: "Cpu" },
@@ -38,7 +37,7 @@ export const PAGES = [
 export const FAMILIES = [
   { key: "Nav_Dashboard", icon: "home", pages: ["dashboard"] },
   { key: "Nav_Group_Hardware", icon: "pulse", pages: ["monitoring", "system", "cpu", "gpu", "ram", "storage", "network"] },
-  { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks", "checkup", "ai", "assistant", "checks"] },
+  { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks", "checkup", "ai", "checks"] },
   { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
   { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates"] },
@@ -53,7 +52,7 @@ export const boot = {};
 // ?still turns motion off, for screenshots taken while the page is not on screen (a hidden page runs its animations slowly).
 const still = new URLSearchParams(location.search).has("still");
 if (still) document.documentElement.dataset.still = "";
-const app = document.getElementById("app"), stage = document.getElementById("stage"), index = document.getElementById("index"), band = document.getElementById("band");
+const app = document.getElementById("app"), stage = document.getElementById("stage"), index = document.getElementById("index"), band = document.getElementById("band"), asst = document.getElementById("asst");
 let unmount = null, current = null, ready = false;
 
 export function go(id) { if (location.hash !== `#/${id}`) location.hash = `#/${id}`; else show(id); }
@@ -132,7 +131,7 @@ function banner(text, link) {
     link ? h("button", { class: "btn", onclick: () => call("app.openLink", { key: link }) }, t("Banner_InstallPawnIo")) : null,
     h("button", { class: "btn quiet", onclick: () => el.remove(), "aria-label": "close" }, icon("x")));
   stage.before(el); el.style.gridColumn = "2";
-  app.style.gridTemplateRows = "auto 1fr auto"; index.style.gridRow = "1 / 4"; stage.style.gridRow = "2"; band.style.gridRow = "3";
+  app.style.gridTemplateRows = "auto 1fr auto"; index.style.gridRow = asst.style.gridRow = "1 / 4"; stage.style.gridRow = "2"; band.style.gridRow = "3";
 }
 
 async function start() {
@@ -142,6 +141,8 @@ async function start() {
   setUnits(info.units);
   renderIndex(info); renderBand(info);
   if (info.banner) banner(info.banner);
+  // The assistant's column: loaded after the strings, apart from the pages (it imports the shell back for go()).
+  import("./assistant.js").then((m) => m.mountAssistant(app, asst)).catch((e) => report(String(e && e.stack || e)));
   on("provider", (p) => {
     const el = document.getElementById("prov"); if (el) el.textContent = p.text;
     if (p.state === "Degraded" || p.state === "Failed") banner(t(p.state === "Degraded" ? "Banner_ProviderDegraded" : "Banner_ProviderFailed", p.reason || ""), p.pawnIo ? "pawnio" : null);

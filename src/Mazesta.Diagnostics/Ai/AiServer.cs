@@ -2,7 +2,12 @@ using System.Diagnostics; using System.Net; using System.Net.Http; using System.
 using Mazesta.Core.Ai;
 namespace Mazesta.Diagnostics.Ai;
 
-public readonly record struct ChatTurn(string Role, string Text);
+/// <summary>A message of the chat. An answer keeps the tools it called and what they returned, so a later turn sees that its earlier results came
+/// from a tool, and that an answer without one ran nothing.</summary>
+public readonly record struct ChatTurn(string Role, string Text, IReadOnlyList<ToolExchange>? Tools = null);
+
+/// <summary>One tool call of an answer: what was asked, what came back (the JSON the model was given) and whether the tool ran.</summary>
+public sealed record ToolExchange(string Name, string Arguments, string Result, bool Ok);
 
 /// <summary>A function the model asked for: its name and the arguments as the JSON text it wrote (which may be wrong, and is checked before use).</summary>
 public sealed record ToolCall(string Id, string Name, string Arguments);
@@ -10,8 +15,9 @@ public sealed record ToolCall(string Id, string Name, string Arguments);
 /// <summary>One model turn: the text it wrote and the tools it asked for (none when it answered).</summary>
 public sealed record ChatReply(string Text, IReadOnlyList<ToolCall> Calls);
 
-/// <summary>What the assistant's loop needs of a model: one turn over the messages so far, the text handed on as it is written.</summary>
-public interface IChatModel { Task<ChatReply> CompleteAsync(JsonArray messages, JsonArray? tools, Action<string> onText, CancellationToken ct); }
+/// <summary>What the assistant's loop needs of a model: one turn over the messages so far, the text handed on as it is written. With
+/// <paramref name="mustCallTool"/> the turn has to be a tool call.</summary>
+public interface IChatModel { Task<ChatReply> CompleteAsync(JsonArray messages, JsonArray? tools, bool mustCallTool, Action<string> onText, CancellationToken ct); }
 
 /// <summary>
 /// llama.cpp's own <c>llama-server</c> on the loopback address, serving one downloaded model to the chat page. It is started only when the user
@@ -57,7 +63,7 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisp
     private string[] Tail() { lock (_tail) return [.. _tail]; }
 
     /// <summary>One turn: the reply streams through <paramref name="onText"/>; tool calls arrive in pieces and are put together here.</summary>
-    public async Task<ChatReply> CompleteAsync(JsonArray messages, JsonArray? tools, Action<string> onText, CancellationToken ct)
+    public async Task<ChatReply> CompleteAsync(JsonArray messages, JsonArray? tools, bool mustCallTool, Action<string> onText, CancellationToken ct)
     {
         if (!IsRunning) throw new InvalidOperationException("The assistant is not running.");
         LastUse = DateTime.UtcNow;
@@ -66,7 +72,7 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisp
             ["messages"] = JsonNode.Parse(messages.ToJsonString()), ["stream"] = true, ["temperature"] = 0.6, ["max_tokens"] = AiAssistantPolicy.MaxReplyTokens,
             ["chat_template_kwargs"] = new JsonObject { ["enable_thinking"] = false },   // Qwen3 would otherwise think aloud first: slow, and not an answer for the customer
         };
-        if (tools is { Count: > 0 }) body["tools"] = JsonNode.Parse(tools.ToJsonString());
+        if (tools is { Count: > 0 }) { body["tools"] = JsonNode.Parse(tools.ToJsonString()); if (mustCallTool) body["tool_choice"] = "required"; }
         using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{_port}/v1/chat/completions") { Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json") };
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();

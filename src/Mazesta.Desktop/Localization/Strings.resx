@@ -1614,7 +1614,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Send" xml:space="preserve"><value>Send</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>Try: "What is in this computer?", "Test the CPU and the memory" or "My PC feels slower, check it".</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>Try: "Test the memory", "Test the graphics card", "Open the overlay and turn it on" or "Show the reports".</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>A test or benchmark is running; start the assistant after it.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>Read: machine summary</value></data>
@@ -1622,7 +1622,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Tool_list_reports" xml:space="preserve"><value>Read: saved reports</value></data>
   <data name="Assist_Tool_get_benchmark_history" xml:space="preserve"><value>Read: benchmark history</value></data>
   <data name="Assist_Tool_failed" xml:space="preserve"><value>failed</value></data>
-  <data name="Assist_Busy" xml:space="preserve"><value>Wait for the reply to finish before changing the model.</value></data>
+  <data name="Assist_Busy" xml:space="preserve"><value>Wait for the reply to finish first.</value></data>
   <data name="Assist_Model" xml:space="preserve"><value>Model</value></data>
   <data name="Assist_Confirm_Tests" xml:space="preserve"><value>Run these tests?</value></data>
   <data name="Assist_Confirm_Benchmark" xml:space="preserve"><value>Run this benchmark?</value></data>
@@ -1636,6 +1636,21 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Tool_run_benchmark" xml:space="preserve"><value>Asked to run: benchmark</value></data>
   <data name="Assist_You" xml:space="preserve"><value>You</value></data>
   <data name="Assist_Name" xml:space="preserve"><value>Assistant</value></data>
+  <data name="Assist_Open" xml:space="preserve"><value>Open the assistant</value></data>
+  <data name="Assist_Collapse" xml:space="preserve"><value>Fold the assistant away</value></data>
+  <data name="Assist_History" xml:space="preserve"><value>Past chats</value></data>
+  <data name="Assist_History_Empty" xml:space="preserve"><value>No chats yet. Each chat is kept here, on this computer only.</value></data>
+  <data name="Assist_DeleteChat" xml:space="preserve"><value>Delete this chat</value></data>
+  <data name="Assist_DeleteAll" xml:space="preserve"><value>Delete all chats</value></data>
+  <data name="Assist_DeleteAll_Confirm" xml:space="preserve"><value>Delete all past chats? This cannot be undone.</value></data>
+  <data name="Assist_Run_NotStarted" xml:space="preserve"><value>Nothing was run.</value></data>
+  <data name="Assist_Run_NoResult" xml:space="preserve"><value>No result was recorded.</value></data>
+  <data name="Assist_Paused" xml:space="preserve"><value>The model is out of the graphics card's memory while the card is tested; it is loaded again for the answer.</value></data>
+  <data name="Assist_PausedShort" xml:space="preserve"><value>Waiting for the test</value></data>
+  <data name="Assist_Loading" xml:space="preserve"><value>Loading</value></data>
+  <data name="Assist_OffShort" xml:space="preserve"><value>Off</value></data>
+  <data name="Assist_Tool_open_page" xml:space="preserve"><value>Opened a page</value></data>
+  <data name="Assist_Tool_set_overlay" xml:space="preserve"><value>Overlay on or off</value></data>
   <data name="Ai_Lede" xml:space="preserve"><value>Which local AI language models this computer can run, and how fast. The fit is estimated before anything is downloaded; download the models you want and measure their real speed on the graphics card or the processor.</value></data>
   <data name="Ai_Machine" xml:space="preserve"><value>This system for AI</value></data>
   <data name="Ai_Gpu" xml:space="preserve"><value>Graphics card</value></data>

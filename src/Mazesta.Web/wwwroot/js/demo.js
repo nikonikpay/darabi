@@ -238,7 +238,13 @@ export async function call(m, p, emit) {
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }
     case "ai.state": return demoAi();
     case "ai.exec": return null;
-    case "assistant.state": return { status: "Available", model: { id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", downloaded: true }, choices: [{ id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", fit: "Gpu" }, { id: "qwen3-4b", name: "Qwen3 4B", size: "2.3 GB", fit: "Gpu" }], runtimeReady: true, server: "off", busy: false, error: null, blocked: false, confirm: null, activity: null, messages: [] };
+    case "assistant.state": return { status: "Available", model: { id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", downloaded: true }, choices: [{ id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", fit: "Gpu" }, { id: "qwen3-4b", name: "Qwen3 4B", size: "2.3 GB", fit: "Gpu" }], runtimeReady: true, server: "ready", busy: false, error: null, blocked: false, activity: null, chat: "2",
+      // A made-up chat, for the design only: a run's outcomes are drawn from the tool's result, as in the app.
+      confirm: { kind: "tests", items: [{ name: "الگوی حافظه", duration: "120" }, { name: "ماتریس CPU", duration: "60" }] },
+      history: [{ id: "2", title: "رم سیستم رو چک کن", updated: Date.now() - 6e4, count: 4 }, { id: "1", title: "گرافیک رو تست کن", updated: Date.now() - 864e5, count: 2 }],
+      messages: [{ role: "user", text: "رم سیستم رو چک کن", tools: [] },
+        { role: "assistant", text: "تست حافظه اجرا شد و نتیجهٔ آن «موفق» بود.", tools: [{ name: "run_tests", ok: true, result: JSON.stringify({ started: true, results: [{ id: "memory.pattern", name: "الگوی حافظه", outcome: "Passed" }] }) }] },
+        { role: "user", text: "صفحهٔ اورلی رو باز کن", tools: [] }, { role: "assistant", text: "صفحهٔ اورلی باز شد.", tools: [{ name: "open_page", ok: true, result: null }] }] };
     case "assistant.exec": return null;
     case "specs.get": await new Promise((r) => setTimeout(r, 300)); return { errors: [], cards: DEMO_SPECS[p.kind || "Cpu"] || DEMO_SPECS.Cpu };
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },

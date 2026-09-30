@@ -32,4 +32,12 @@ public class AiAssistantTests
         Assert.Equal(["b", "c"], AiAssistantPolicy.Trim(h, x => x.Length).Select(x => x[..1]));
         Assert.Single(AiAssistantPolicy.Trim(new[] { new string('z', 9000) }, x => x.Length));
     }
+    [Fact] public void A_request_to_test_open_or_switch_is_an_action_and_a_question_is_not()
+    {
+        foreach (var x in new[] { "رم سیستم رو چک کن", "گرافیک رو تست کن", "cpu رو چک کن", "قسمت اورلی رو نشون بده", "اورلی رو فعال کن", "صفحه‌ی گزارش‌ها رو باز کن", "Run a benchmark", "open the reports" })
+            Assert.True(AiAssistantPolicy.AsksToAct(x), x);
+        foreach (var x in new[] { "دمای پردازنده چنده؟", "این سیستم چه کارت گرافیکی داره؟", "how hot is the cpu?" })
+            Assert.False(AiAssistantPolicy.AsksToAct(x), x);
+    }
+    [Fact] public void The_prompt_says_every_request_is_a_new_run() { Assert.Contains("Each request is a new run", AiAssistantPolicy.SystemPrompt); Assert.Contains("open_page", AiAssistantPolicy.SystemPrompt); }
 }
