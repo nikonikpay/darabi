@@ -1110,3 +1110,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .kb-key.wide { flex: none; height: auto; padding: 6px 10px; display: inline-flex; gap: 8px; font-family: var(--fa); }
 .kb-key.hit { background: color-mix(in oklab, var(--pass) 18%, var(--ink-3)); border-color: color-mix(in oklab, var(--pass) 55%, transparent); color: var(--paper); }
 .kb-key.down { background: var(--yellow); color: var(--on-yellow); border-color: var(--yellow); }
+
+/* The LAN partner switch on the network page. */
+.lan-panel { --hue: var(--c-net); margin: 14px 0 4px; }
+.lan-addr { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.lan-addr code { background: var(--well); padding: 3px 8px; border-radius: 4px; font-size: 12.5px; }

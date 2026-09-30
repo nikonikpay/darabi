@@ -26,6 +26,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, CpuHashExecutor>();
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, MemoryBitFadeExecutor>();
+        s.AddSingleton<ITestExecutor, LanExecutor>();
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Steady));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Variable));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Pulse));

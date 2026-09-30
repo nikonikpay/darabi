@@ -14,6 +14,7 @@ public static class TestAdvice
         {
             "gpu.vram" => "Advice_Vram",
             "storage.smart" => "Advice_Smart",
+            "network.lan" => "Advice_Lan",
             _ when testId.StartsWith("cpu.", StringComparison.Ordinal) => "Advice_Cpu",
             _ when testId.StartsWith("memory.", StringComparison.Ordinal) => "Advice_Memory",
             _ when testId.StartsWith("gpu.", StringComparison.Ordinal) => "Advice_Gpu",
@@ -26,6 +27,7 @@ public static class TestAdvice
         TestOutcome.Inconclusive => testId switch
         {
             "cpu.singlecore" => "Advice_Inconclusive_Cores",
+            "network.lan" => "Advice_Inconclusive",
             _ when testId.StartsWith("network.", StringComparison.Ordinal) => "Advice_Inconclusive_Network",
             _ => "Advice_Inconclusive",
         },

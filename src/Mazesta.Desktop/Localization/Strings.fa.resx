@@ -1728,4 +1728,20 @@
   <data name="Checks_Mouse_Forward" xml:space="preserve"><value>جلو</value></data>
   <data name="Checks_Mouse_Wheel" xml:space="preserve"><value>چرخ:</value></data>
   <data name="Checks_Mouse_Double" xml:space="preserve"><value>دابل‌کلیک‌ها:</value></data>
+  <data name="Test_Network_Lan" xml:space="preserve"><value>شبکه · LAN با کامپیوتر دوم (سرعت، تأخیر، بررسی داده)</value></data>
+  <data name="Test_Option_LanPeer" xml:space="preserve"><value>آدرس کامپیوتر دوم (IP)</value></data>
+  <data name="Log_Lan_Start" xml:space="preserve"><value>اتصال به کامپیوتر دوم در {0}: زمان رفت‌وبرگشت در حالت آزاد، سپس آپلود، سپس دانلود هم‌زمان با اندازه‌گیری رفت‌وبرگشت زیر بار.</value></data>
+  <data name="Log_Lan_Idle" xml:space="preserve"><value>رفت‌وبرگشت در حالت آزاد: میانه {0} میلی‌ثانیه.</value></data>
+  <data name="Log_Lan_Up" xml:space="preserve"><value>آپلود {0} مگابیت بر ثانیه؛ کامپیوتر دوم {1} بایت دریافت کرد که {2} بایت آن نادرست بود.</value></data>
+  <data name="Log_Lan_Down" xml:space="preserve"><value>دانلود {0} مگابیت بر ثانیه؛ {1} بایت دریافت شد، {2} نادرست؛ رفت‌وبرگشت هنگام دانلود: میانه {3} میلی‌ثانیه.</value></data>
+  <data name="Advice_Lan" xml:space="preserve"><value>مشاهده: داده بین دو کامپیوتر آسیب‌دیده رسید یا همه‌اش نرسید.
+علت‌های محتمل: کابل شبکه یا پورت؛ کارت شبکه، درایور یا تنظیمات offload آن؛ سوئیچ یا روتر بین دو سیستم؛ RAM ناپایدار در یکی از دو کامپیوتر.
+آزمایش بعدی: با کابل و پورت دیگری تکرار کنید؛ دو کامپیوتر را مستقیم به هم وصل کنید؛ درایور شبکه را به‌روز یا دوباره نصب کنید؛ RAM هر دو کامپیوتر را تست کنید.</value></data>
+  <data name="Lan_Title" xml:space="preserve"><value>همکار تست شبکهٔ محلی (LAN)</value></data>
+  <data name="Lan_Sub" xml:space="preserve"><value>طرف دیگر تست LAN</value></data>
+  <data name="Lan_Text" xml:space="preserve"><value>برای تست شبکه بین دو کامپیوتر، همکار را اینجا روشن کنید و سپس روی کامپیوتر دیگر تست «شبکه · LAN با کامپیوتر دوم» را با یکی از آدرس‌های زیر اجرا کنید. تا وقتی روشن است، این کامپیوتر روی پورت TCP شمارهٔ 47315 پاسخ می‌دهد؛ ممکن است ویندوز یک بار بپرسد که اجازهٔ عبور از فایروال داده شود. با هر بار اجرای برنامه دوباره خاموش است.</value></data>
+  <data name="Lan_Start" xml:space="preserve"><value>روشن کردن همکار</value></data>
+  <data name="Lan_Stop" xml:space="preserve"><value>خاموش کردن همکار</value></data>
+  <data name="Lan_Listening" xml:space="preserve"><value>در حال پاسخ روی پورت {0} · {1} جلسه</value></data>
+  <data name="Lan_Addresses" xml:space="preserve"><value>آدرس‌های این کامپیوتر:</value></data>
 </root>

@@ -1728,4 +1728,20 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Checks_Mouse_Forward" xml:space="preserve"><value>Forward</value></data>
   <data name="Checks_Mouse_Wheel" xml:space="preserve"><value>Wheel:</value></data>
   <data name="Checks_Mouse_Double" xml:space="preserve"><value>Double clicks:</value></data>
+  <data name="Test_Network_Lan" xml:space="preserve"><value>Network · LAN with a partner computer (speed, latency, data check)</value></data>
+  <data name="Test_Option_LanPeer" xml:space="preserve"><value>Partner address (IP)</value></data>
+  <data name="Log_Lan_Start" xml:space="preserve"><value>Connecting to the LAN partner at {0}: round trip at rest, then upload, then download with the round trip measured under load.</value></data>
+  <data name="Log_Lan_Idle" xml:space="preserve"><value>Round trip at rest: median {0} ms.</value></data>
+  <data name="Log_Lan_Up" xml:space="preserve"><value>Upload {0} Mbit/s; the partner received {1} bytes, {2} of them wrong.</value></data>
+  <data name="Log_Lan_Down" xml:space="preserve"><value>Download {0} Mbit/s; {1} bytes received, {2} wrong; round trip while downloading: median {3} ms.</value></data>
+  <data name="Advice_Lan" xml:space="preserve"><value>Seen: data between the two computers arrived damaged, or not all of it arrived.
+Likely causes: the network cable or a port; the network card, its driver or its offload settings; the switch or router between them; unstable RAM on either computer.
+Next: repeat with another cable and port; connect the two computers directly; update or reinstall the network driver; test the RAM of both computers.</value></data>
+  <data name="Lan_Title" xml:space="preserve"><value>LAN test partner</value></data>
+  <data name="Lan_Sub" xml:space="preserve"><value>the other end of the LAN test</value></data>
+  <data name="Lan_Text" xml:space="preserve"><value>To test the network between two computers, switch the partner on here, then on the other computer run the test 'Network · LAN with a partner computer' with one of the addresses below. While it is on, this computer answers on TCP port 47315; Windows may ask once whether to allow it through the firewall. It is off again at every start.</value></data>
+  <data name="Lan_Start" xml:space="preserve"><value>Be the partner</value></data>
+  <data name="Lan_Stop" xml:space="preserve"><value>Stop the partner</value></data>
+  <data name="Lan_Listening" xml:space="preserve"><value>Listening on port {0} · {1} session(s)</value></data>
+  <data name="Lan_Addresses" xml:space="preserve"><value>Addresses of this computer:</value></data>
 </root>
