@@ -108,7 +108,7 @@ public class BenchmarkTests : IDisposable
         var options = new TestOptions(StorageBenchmark.Spec, new Dictionary<string, string> { [StorageExecutor.DriveOption] = _dir, [StorageExecutor.FileMbOption] = "32" });
         var r = await new StorageBenchmark(TimeSpan.FromMilliseconds(50)).RunAsync(Request(2, options), CancellationToken.None);
         Assert.Equal(BenchmarkStatus.Completed, r.Status); Assert.Equal(20, StorageBenchmark.Spec.DefaultDurationSeconds);
-        foreach (var key in new[] { "Bench_Storage_SeqWrite", "Bench_Storage_SeqRead", "Bench_Storage_Rand4kQ32Read", "Bench_Storage_Rand4kQ1Read", "Bench_Storage_Rand4kLatency", "Bench_Storage_Rand4kQ32Write" }) Assert.True(Value(r, key) > 0, key);
+        foreach (var key in new[] { "Bench_Storage_SeqWrite", "Bench_Storage_SeqRead", "Bench_Storage_Rand4kQ32Read", "Bench_Storage_Rand4kQ1Read", "Bench_Storage_Rand4kLatency", "Bench_Storage_Rand4kQ32Write", "Bench_Storage_Mixed", "Bench_Storage_MixedIops" }) Assert.True(Value(r, key) > 0, key);
         Assert.Empty(Directory.GetFiles(_dir, ".mazesta-test-*"));
     }
     [Fact] public async Task A_cancelled_storage_benchmark_returns_no_numbers_and_no_file()

@@ -1751,4 +1751,6 @@
   <data name="Test_Break_BlueScreen" xml:space="preserve"><value>ویندوز در طول جلسه با صفحهٔ آبی متوقف شده است.</value></data>
   <data name="Test_Break_BlueScreenCode" xml:space="preserve"><value>ویندوز در طول جلسه با صفحهٔ آبی متوقف شده است (کد توقف {0}).</value></data>
   <data name="Test_Break_Tdr" xml:space="preserve"><value>درایور گرافیک هم {0} بار از پاسخ دادن بازماند و ریست شد (TDR).</value></data>
+  <data name="Bench_Storage_Mixed" xml:space="preserve"><value>ترکیبی مثل ویندوز (۷۰/۳۰، ۴ تا ۶۴ کیلوبایت، Q4)</value></data>
+  <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
 </root>

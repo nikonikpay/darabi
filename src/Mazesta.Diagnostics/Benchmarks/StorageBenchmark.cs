@@ -10,13 +10,15 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// writing and reading, so each timed phase starts with its write cache flushed (on a busy SLC cache the next phase is slow). Depth 8 of 1 MiB is enough to saturate a PCIe 5.0 x4 drive (~14 GB/s).
 /// The file is written once before anything is timed: reading space that was never written returns zeros without
 /// touching the drive, and extending a file serialises the writes. Nothing is verified here - that is the storage tests' job.
+/// Last, a mix like a busy Windows drive: four requests in flight, 70 % reads and 30 % writes, of 4 KiB (60 %), 16 KiB (25 %) and 64 KiB
+/// (15 %) at random aligned places. Version 2 of the workload (version 1 had no mixed phase and longer sequential phases).
 /// </summary>
 public sealed class StorageBenchmark : IBenchmark
 {
     public static readonly TestDefinition Spec = new(new TestId("bench.storage"), "Bench_Storage", 20, StorageExecutor.CommonOptions("1024"));
     public TestDefinition Definition => Spec;
     public HardwareKind Component => HardwareKind.Storage;
-    private const int SeqDepth = 8, RandomDepth = 32;
+    private const int SeqDepth = 8, RandomDepth = 32, MixedDepth = 4, MixedMax = 64 << 10;
     private readonly TimeSpan _rest;
 
     public StorageBenchmark() : this(TimeSpan.FromSeconds(5)) { }
@@ -61,22 +63,31 @@ public sealed class StorageBenchmark : IBenchmark
         })).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
 
-        cursor = -1; double seqWrite = await PhaseAsync(SeqDepth, Share(0.25), (w, _) => file.WriteAsync(buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqWrite = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => file.WriteAsync(buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
-        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.25), async (w, _) => await file.ReadAsync(buffers.Seq[w], NextBlock(), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
-        double randQ32 = await PhaseAsync(RandomDepth, Share(0.2), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.2), async (w, _) => await file.ReadAsync(buffers.Seq[w], NextBlock(), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
+        double randQ32 = await PhaseAsync(RandomDepth, Share(0.15), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
         double randQ1 = await PhaseAsync(1, Share(0.15), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
         double randWrite = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => file.WriteAsync(buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
+        long mixedBytes = 0, mixedOps = 0;
+        double mixed = await PhaseAsync(MixedDepth, Share(0.15), async (w, r) =>
+        {
+            double pick = r.NextDouble(); int size = pick < 0.6 ? 4096 : pick < 0.85 ? 16384 : MixedMax;
+            long at = r.NextInt64(file.Length / size) * size; var buffer = buffers.Mixed[w][..size];
+            if (r.NextDouble() < 0.7) await file.ReadAsync(buffer, at, ct).ConfigureAwait(false); else await file.WriteAsync(buffer, at, ct).ConfigureAwait(false);
+            Interlocked.Add(ref mixedBytes, size); Interlocked.Increment(ref mixedOps);
+        }, Progress, ct).ConfigureAwait(false);
         request.Report(1);
 
         BenchmarkMetric[] metrics =
         [
             new("Bench_Storage_SeqWrite", seqWrite * StorageFile.Block / 1e6, "MB/s"), new("Bench_Storage_SeqRead", seqRead * StorageFile.Block / 1e6, "MB/s"),
             new("Bench_Storage_Rand4kQ32Read", randQ32, "IOPS"), new("Bench_Storage_Rand4kQ1Read", randQ1, "IOPS"),
-            new("Bench_Storage_Rand4kLatency", 1e6 / randQ1, "µs"), new("Bench_Storage_Rand4kQ32Write", randWrite, "IOPS")   // one request in flight: latency is 1 / IOPS
+            new("Bench_Storage_Rand4kLatency", 1e6 / randQ1, "µs"), new("Bench_Storage_Rand4kQ32Write", randWrite, "IOPS"),   // one request in flight: latency is 1 / IOPS
+            new("Bench_Storage_Mixed", mixed * mixedBytes / Math.Max(1, mixedOps) / 1e6, "MB/s"), new("Bench_Storage_MixedIops", mixed, "IOPS")
         ];
         return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,
-            $"unbuffered overlapped I/O; {file.Length >> 20} MiB file written once before timing and {_rest.TotalSeconds:0} s rest; SEQ1M Q{SeqDepth}T1 write, {_rest.TotalSeconds:0} s rest, SEQ1M Q{SeqDepth}T1 read, RND4K Q{RandomDepth}T1 read, RND4K Q1T1 read, RND4K Q{RandomDepth}T1 write");
+            $"unbuffered overlapped I/O; {file.Length >> 20} MiB file written once before timing and {_rest.TotalSeconds:0} s rest; SEQ1M Q{SeqDepth}T1 write, {_rest.TotalSeconds:0} s rest, SEQ1M Q{SeqDepth}T1 read, RND4K Q{RandomDepth}T1 read, RND4K Q1T1 read, RND4K Q{RandomDepth}T1 write, mixed 70/30 read/write 4-64K Q{MixedDepth}T1");
     }
 
     /// <summary>Keeps <paramref name="depth"/> requests in flight for <paramref name="length"/> and returns requests per second. Each worker
@@ -105,15 +116,18 @@ public sealed class StorageBenchmark : IBenchmark
     /// would flatter a constant pattern.</summary>
     private sealed class Buffers : IDisposable
     {
-        private readonly NativeBlock _seq = new(SeqDepth * StorageFile.Block), _small = new(RandomDepth * StorageFile.Sector);
+        private readonly NativeBlock _seq = new(SeqDepth * StorageFile.Block), _small = new(RandomDepth * StorageFile.Sector), _mixed = new(MixedDepth * MixedMax);
         public Memory<byte>[] Seq { get; }
         public Memory<byte>[] Small { get; }
+        public Memory<byte>[] Mixed { get; }
         public Buffers()
         {
             MemoryPatterns.Fill(_seq.Span, MemoryPatterns.RandomPass, 0); MemoryPatterns.Fill(_small.Span, MemoryPatterns.RandomPass, 1);
             Seq = [.. Enumerable.Range(0, SeqDepth).Select(i => _seq.Memory.Slice(i * StorageFile.Block, StorageFile.Block))];
             Small = [.. Enumerable.Range(0, RandomDepth).Select(i => _small.Memory.Slice(i * StorageFile.Sector, StorageFile.Sector))];
+            MemoryPatterns.Fill(_mixed.Span, MemoryPatterns.RandomPass, 2);
+            Mixed = [.. Enumerable.Range(0, MixedDepth).Select(i => _mixed.Memory.Slice(i * MixedMax, MixedMax))];
         }
-        public void Dispose() { _seq.Dispose(); _small.Dispose(); }
+        public void Dispose() { _seq.Dispose(); _small.Dispose(); _mixed.Dispose(); }
     }
 }
