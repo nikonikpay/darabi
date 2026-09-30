@@ -57,32 +57,51 @@ internal static class GpuHash
 /// VRAM pattern pass over one buffer, dispatched 2-D because a single dimension cannot address hundreds of
 /// megabytes. <c>verify == 0</c> writes the pass's pattern; otherwise every cell is compared with what the
 /// pattern says it should hold and each difference bumps the error counter atomically - the comparison runs
-/// on the GPU, so the <b>whole</b> allocation is checked, not a sample of it (spec §10).
+/// on the GPU, so the <b>whole</b> allocation is checked, not a sample of it (spec §10). Eight patterns rotate: address-derived and its inverse,
+/// 0xAAAAAAAA and 0x55555555, a walking one and a walking zero (the bit moves from cell to cell and from pass to pass, so every data line carries
+/// a lone 1 and a lone 0), an address pattern written in stride order (thread i writes cell i·K mod n, K odd: every cell once, far from where its
+/// neighbours are written, so an address line that is stuck or shorted puts data in the wrong cell), and a pass-seeded scramble.
 /// </summary>
 [ThreadGroupSize(DefaultThreadGroupSizes.XY)]
 [GeneratedComputeShaderDescriptor]
-internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> errors, int width, uint pass, uint baseIndex, int verify) : IComputeShader
+internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> errors, int width, uint pass, uint baseIndex, int verify, uint mask) : IComputeShader
 {
     public void Execute()
     {
-        int i = ThreadIds.Y * width + ThreadIds.X;
-        uint index = (uint)i + baseIndex;
+        uint i = (uint)(ThreadIds.Y * width + ThreadIds.X);
+        uint kind = pass % 8u;
+        // The cell this thread handles: its own, except when the stride pattern is written (mask = cells - 1, a power of two minus one).
+        uint cell = verify == 0 && kind == 6u ? (i * 40503u) & mask : i;
+        uint index = cell + baseIndex;
         uint mixed = index * 2654435761u;
         mixed ^= mixed >> 15;
-        uint kind = pass % 4u;
-        uint expected = kind == 0u ? mixed : kind == 1u ? ~mixed : kind == 2u ? 0xAAAAAAAAu : 0x55555555u;
-        if (verify == 0) buffer[i] = expected;
-        else if (buffer[i] != expected) Hlsl.InterlockedAdd(ref errors[0], 1);
+        uint walk = 1u << (int)((index + pass / 8u) & 31u);
+        uint scramble = (index ^ (pass * 0x9E3779B9u)) * 0x85EBCA6Bu;
+        scramble ^= scramble >> 13;
+        uint expected = kind == 0u ? mixed : kind == 1u ? ~mixed : kind == 2u ? 0xAAAAAAAAu : kind == 3u ? 0x55555555u
+            : kind == 4u ? walk : kind == 5u ? ~walk : kind == 6u ? mixed ^ 0x0F0F0F0Fu : scramble;
+        if (verify == 0) buffer[(int)cell] = expected;
+        else if (buffer[(int)cell] != expected) Hlsl.InterlockedAdd(ref errors[0], 1);
     }
 }
 
 internal static class VramPattern
 {
-    public static uint Expected(uint index, uint pass)
+    public const int Kinds = 8;
+    public static readonly string[] Names = ["address", "~address", "0xAAAAAAAA", "0x55555555", "walking 1", "walking 0", "address, stride-order write", "scramble"];
+
+    /// <summary>The shader's pattern on the CPU, for the tests.</summary>
+    public static uint Expected(uint index, uint pass) => unchecked(Mix(index, pass));
+    private static uint Mix(uint index, uint pass)
     {
         uint mixed = unchecked(index * 2654435761u); mixed ^= mixed >> 15;
-        return (pass % 4u) switch { 0u => mixed, 1u => ~mixed, 2u => 0xAAAAAAAAu, _ => 0x55555555u };
+        uint walk = 1u << (int)((index + pass / 8u) & 31u);
+        uint scramble = unchecked((index ^ (pass * 0x9E3779B9u)) * 0x85EBCA6Bu); scramble ^= scramble >> 13;
+        return (pass % 8u) switch { 0u => mixed, 1u => ~mixed, 2u => 0xAAAAAAAAu, 3u => 0x55555555u, 4u => walk, 5u => ~walk, 6u => mixed ^ 0x0F0F0F0Fu, _ => scramble };
     }
+
+    /// <summary>The cell thread <paramref name="thread"/> writes in the stride pass (40503 is odd, so over a power-of-two buffer every cell is hit once).</summary>
+    public static uint StrideCell(uint thread, uint mask) => unchecked(thread * 40503u) & mask;
 }
 
 /// <summary>A fixed scene of 25 spheres traced with four reflection bounces per pixel - a real 3-D-style

@@ -69,8 +69,8 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
                     for (int p = 0; p < passes; p++, pass++)
                         for (int b = 0; b < buffers.Count; b++)
                         {
-                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass, Base(b), 1)); context.Barrier(buffers[b]);
-                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass + 1, Base(b), 0)); context.Barrier(buffers[b]);
+                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass, Base(b), 1, Mask)); context.Barrier(buffers[b]);
+                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass + 1, Base(b), 0, Mask)); context.Barrier(buffers[b]);
                         }
                 counter.CopyTo(bad); errors += bad[0];
                 sizer.Record(clock.Elapsed - batchStart, BatchTarget);
@@ -83,6 +83,7 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
     }
 
     private static uint Base(int chunk) => (uint)chunk * (uint)GpuVramExecutor.ChunkElements;
+    private const uint Mask = GpuVramExecutor.ChunkElements - 1;
     private static void Write(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass)
-        => device.For(GpuVramExecutor.Width, GpuVramExecutor.ChunkElements / GpuVramExecutor.Width, new VramPatternShader(buffer, counter, GpuVramExecutor.Width, pass, Base(chunk), 0));
+        => device.For(GpuVramExecutor.Width, GpuVramExecutor.ChunkElements / GpuVramExecutor.Width, new VramPatternShader(buffer, counter, GpuVramExecutor.Width, pass, Base(chunk), 0, Mask));
 }

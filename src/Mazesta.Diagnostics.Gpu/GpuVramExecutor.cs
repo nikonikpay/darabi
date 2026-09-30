@@ -4,8 +4,8 @@ namespace Mazesta.Diagnostics.Gpu;
 /// <summary>
 /// VRAM test (spec §10): fills as much of the card's memory as it can safely use with a data pattern,
 /// then on every following pass verifies the previous pattern over <b>every allocated cell</b> - the
-/// comparison runs on the GPU and counts each difference atomically - before writing the next. Four patterns
-/// rotate (address-derived, its inverse, 0xAA…, 0x55…). The budget comes from the card's live free-VRAM
+/// comparison runs on the GPU and counts each difference atomically - before writing the next. Eight patterns
+/// rotate (see <see cref="VramPatternShader"/>: address and inverse, 0xAA… and 0x55…, walking 1 and 0, a stride-order write, a scramble). The budget comes from the card's live free-VRAM
 /// sensor when there is one: a buffer larger than free VRAM would silently spill into system RAM and the
 /// test would be checking the wrong memory.
 /// </summary>
@@ -68,7 +68,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                     Dispatch(device, buffers[b], counter, b, passes + 1, verify: false);
                 }
                 passes++;
-                request.Note("Log_Vram_Pass", "on the GPU, for every cell: if (cell ≠ pattern[p]) errors++ (atomic);  then write pattern[p+1]   patterns: address, ~address, 0xAAAAAAAA, 0x55555555", passes, errors);
+                request.Note("Log_Vram_Pass", $"on the GPU, for every cell: if (cell ≠ pattern[p]) errors++ (atomic);  then write pattern[p+1]   pattern {passes % VramPattern.Kinds}: {VramPattern.Names[passes % VramPattern.Kinds]}", passes, errors);
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(timed.Elapsed / duration, 0, 1), "Test_Status_Running"));
             }
             while (timed.Elapsed < duration);
@@ -82,7 +82,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
     }
 
     private static void Dispatch(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
-        => device.For(Width, ChunkElements / Width, new VramPatternShader(buffer, counter, Width, pass, (uint)chunk * (uint)ChunkElements, verify ? 1 : 0));
+        => device.For(Width, ChunkElements / Width, new VramPatternShader(buffer, counter, Width, pass, (uint)chunk * (uint)ChunkElements, verify ? 1 : 0, ChunkElements - 1));
 
     private static long Verify(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass)
     {

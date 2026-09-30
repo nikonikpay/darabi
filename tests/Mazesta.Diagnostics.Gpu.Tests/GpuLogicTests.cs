@@ -48,4 +48,21 @@ public class GpuLogicTests
         Assert.Equal(0xAAAAAAAAu, VramPattern.Expected(7, 2)); Assert.Equal(0x55555555u, VramPattern.Expected(7, 3));
         Assert.Equal(~VramPattern.Expected(9, 0), VramPattern.Expected(9, 1));
     }
+
+    [Fact] public void The_walking_bit_is_a_single_bit_that_visits_all_32_lines_and_its_inverse_a_single_zero()
+    {
+        var bits = Enumerable.Range(0, 32).Select(i => VramPattern.Expected((uint)i, 4)).ToList();
+        Assert.All(bits, v => Assert.Equal(1, System.Numerics.BitOperations.PopCount(v)));
+        Assert.Equal(uint.MaxValue, bits.Aggregate(0u, (a, v) => a | v));
+        Assert.Equal(31, System.Numerics.BitOperations.PopCount(VramPattern.Expected(5, 5)));
+        Assert.NotEqual(VramPattern.Expected(5, 4), VramPattern.Expected(5, 12));   // the next round moves the bit
+    }
+
+    [Fact] public void The_stride_write_reaches_every_cell_exactly_once()
+    {
+        const uint cells = 1 << 16; var seen = new bool[cells];
+        for (uint t = 0; t < cells; t++) { uint c = VramPattern.StrideCell(t, cells - 1); Assert.False(seen[c]); seen[c] = true; }
+        Assert.Equal(VramPattern.Kinds, VramPattern.Names.Length);
+        Assert.NotEqual(VramPattern.Expected(3, 7), VramPattern.Expected(3, 15));   // the scramble changes from round to round
+    }
 }
