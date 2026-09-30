@@ -1753,4 +1753,5 @@
   <data name="Test_Break_Tdr" xml:space="preserve"><value>درایور گرافیک هم {0} بار از پاسخ دادن بازماند و ریست شد (TDR).</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>ترکیبی مثل ویندوز (۷۰/۳۰، ۴ تا ۶۴ کیلوبایت، Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
+  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم صدک ۹۹</value></data>
 </root>

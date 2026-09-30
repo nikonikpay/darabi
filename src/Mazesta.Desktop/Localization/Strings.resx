@@ -1753,4 +1753,5 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Test_Break_Tdr" xml:space="preserve"><value>The display driver also stopped answering and was reset {0} time(s) (TDR).</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>Mixed like Windows (70/30, 4-64K, Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>Mixed IOPS</value></data>
+  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>99th-percentile frame time</value></data>
 </root>
