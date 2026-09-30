@@ -22,6 +22,21 @@ public class CpuWorkloadTests
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("Gop/s (integer)", r.Detail);
     }
 
+    // ——— which logical processors ran the load ———
+    [Fact] public void Coverage_counts_the_processors_seen_by_core_type_and_by_group()
+    {
+        // A hybrid part: two P-cores with two threads each (class 1) and four E-cores (class 0), the last E-core in group 1.
+        CpuCore[] cores = [new(0, 0, 0b11, 1), new(1, 0, 0b1100, 1), new(2, 0, 1 << 4, 0), new(3, 0, 1 << 5, 0), new(4, 0, 1 << 6, 0), new(5, 1, 1, 0)];
+        var c = new CpuCoverage();
+        foreach (int n in new[] { 0, 1, 2, 4 }) c.Mark(0, n);
+        c.Mark(1, 0);
+        Assert.Equal("ran on 5 of 8 logical processors (P-cores 3/4 threads; E-cores 2/4 threads; groups 0: 4/7, 1: 1/1)", c.Describe(cores));
+        Assert.Equal("ran on 0 of 2 logical processors", new CpuCoverage().Describe([new(0, 0, 0b11, 0)]));
+    }
+
+    [Fact] public async Task A_real_run_names_the_processors_it_ran_on()
+        => Assert.Matches(@"ran on \d+ of \d+ logical processors", (await new CpuIntegerExecutor().RunAsync(new(1, new FakeClock(T0), null, null), CancellationToken.None)).Detail);
+
     // ——— hash and compression ———
     [Fact] public void The_text_hashes_to_the_value_python_worked_out()   // hashlib over the same generator: an independent reference
         => Assert.Equal(CpuHashExecutor.ExpectedSha256, CpuHashExecutor.Hex(CpuHashExecutor.Text()));

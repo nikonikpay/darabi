@@ -50,7 +50,7 @@ public sealed class CpuHashExecutor : ITestExecutor
 
     private static TestRunResult Run(TestExecutionRequest request, DateTimeOffset started, CancellationToken ct)
     {
-        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0, size = -1; string firstError = "";
+        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0, size = -1; string firstError = ""; var coverage = new CpuCoverage();
         var text = Text(); var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds); var pacer = new LogPacer();
         request.Note("Log_CpuHash_Start", $"{Bytes >> 10} KiB text: h1 = SHA-256(text); z = Deflate(text); t = Inflate(z); h2 = SHA-256(t)   check: h1 == h2 == expected, |z| equal in every block", threads);
         void Worker(int index)
@@ -65,7 +65,7 @@ public sealed class CpuHashExecutor : ITestExecutor
                     Interlocked.Increment(ref errors);
                     if (firstError.Length == 0) { firstError = $"first wrong block on thread {index}: {(before != ExpectedSha256 ? "hash of the input" : after != ExpectedSha256 ? "hash after the round trip" : "compressed size")} differs"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
-                Interlocked.Increment(ref blocks);
+                Interlocked.Increment(ref blocks); coverage.Mark();
             }
         }
         var all = Task.WhenAll(Enumerable.Range(0, threads).Select(i => Task.Factory.StartNew(() => Worker(i), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
@@ -77,7 +77,7 @@ public sealed class CpuHashExecutor : ITestExecutor
         }
         var finished = request.Clock.UtcNow;
         string detail = SensorEvidence.Join($"SHA-256 and Deflate round trip on {threads} threads (SHA extensions: {(System.Runtime.Intrinsics.X86.X86Base.IsSupported && (System.Runtime.Intrinsics.X86.X86Base.CpuId(7, 0).Ebx & (1 << 29)) != 0 ? "yes" : "no")}), every block checked against a precomputed hash",
-            $"blocks={blocks}", $"{MBps(blocks, total.Elapsed.TotalSeconds):F0} MB/s of input", size > 0 ? $"compressed to {size * 100.0 / Bytes:F1}%" : null, firstError.Length > 0 ? firstError : null,
+            $"blocks={blocks}", $"{MBps(blocks, total.Elapsed.TotalSeconds):F0} MB/s of input", coverage.Describe(CpuTopology.Cores), size > 0 ? $"compressed to {size * 100.0 / Bytes:F1}%" : null, firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);

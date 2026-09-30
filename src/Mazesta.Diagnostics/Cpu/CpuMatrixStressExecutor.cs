@@ -34,7 +34,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
         if (request.DurationSeconds <= 0)
             return TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive.");
 
-        long totalIterations = 0, totalErrors = 0; string firstError = "";
+        long totalIterations = 0, totalErrors = 0; string firstError = ""; var coverage = new CpuCoverage();
         var inputs = Enumerable.Range(0, Sets).Select(Inputs).ToArray();
         request.Note("Log_CpuMatrix_Start", "C[i,j] = Σk A[i,k]·B[k,j]   check: FNV-1a(bits of every C[i,j]) == expected[set]   FLOPs = 2·n³ per product", _threadCount, MatrixSize);
         var sw = Stopwatch.StartNew(); var pacer = new LogPacer();
@@ -52,7 +52,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
                     Interlocked.Increment(ref totalErrors);
                     if (firstError.Length == 0) { firstError = $"first wrong product: thread {worker}, input set {set}, {WrongCells(inputs[set].A, inputs[set].B, c)} cell(s) differ from a recomputation"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
-                Interlocked.Increment(ref totalIterations);
+                Interlocked.Increment(ref totalIterations); coverage.Mark();
             }
         }
 
@@ -73,7 +73,7 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
         if (ct.IsCancellationRequested)
             return new TestRunResult(Definition.Id, TestOutcome.Cancelled, started, finished, totalErrors, $"threads={_threadCount}; iterations={totalIterations}");
 
-        string detail = SensorEvidence.Join($"matrix load {MatrixSize}x{MatrixSize}, {Sets} fixed input sets, every product checked in full against a precomputed checksum", $"threads={_threadCount}", $"iterations={totalIterations}",
+        string detail = SensorEvidence.Join($"matrix load {MatrixSize}x{MatrixSize}, {Sets} fixed input sets, every product checked in full against a precomputed checksum", $"threads={_threadCount}", $"iterations={totalIterations}", coverage.Describe(CpuTopology.Cores),
             $"{totalIterations * 2.0 * MatrixSize * MatrixSize * MatrixSize / seconds / 1e9:F1} GFLOPS (FP64, scalar)", firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuTotalLoad, started, finished)?.Format("measured CPU load", "%"),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));

@@ -111,7 +111,7 @@ public sealed class CpuFftExecutor : ITestExecutor
         if (refs.FirstOrDefault(r => r.Problem is not null) is { Problem: { } problem }) return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, 1, $"the reference transform failed its own check: {problem}");
         request.Note("Log_CpuFft_Checked", null, dft.ToString("G2", System.Globalization.CultureInfo.InvariantCulture));
 
-        int threads = Environment.ProcessorCount; long transforms = 0, errors = 0; double flops = 0; string firstError = ""; object sum = new();
+        int threads = Environment.ProcessorCount; long transforms = 0, errors = 0; double flops = 0; string firstError = ""; object sum = new(); var coverage = new CpuCoverage();
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds); var pacer = new LogPacer();
         void Worker(int index)
         {
@@ -126,7 +126,7 @@ public sealed class CpuFftExecutor : ITestExecutor
                     Interlocked.Increment(ref errors);
                     if (firstError.Length == 0) { firstError = $"first wrong transform: thread {index}, N={p.N}"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
-                count++; done += 5.0 * p.N * Math.Log2(p.N);
+                count++; done += 5.0 * p.N * Math.Log2(p.N); coverage.Mark();
             }
             lock (sum) { flops += done; transforms += count; }
         }
@@ -139,7 +139,7 @@ public sealed class CpuFftExecutor : ITestExecutor
         }
         var finished = request.Clock.UtcNow;
         string detail = SensorEvidence.Join($"radix-2 complex FFT, N={Small} and N={Large}, {threads} threads; checked against a direct DFT (relative error {dft:G2}), an inverse round trip and Parseval, then bit for bit",
-            $"transforms={transforms}", $"{flops / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9:F1} GFLOPS (5·N·log2 N)", firstError.Length > 0 ? firstError : null,
+            $"transforms={transforms}", coverage.Describe(CpuTopology.Cores), $"{flops / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9:F1} GFLOPS (5·N·log2 N)", firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);

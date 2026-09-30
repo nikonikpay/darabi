@@ -85,7 +85,7 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
 
     private static TestRunResult Run(TestExecutionRequest request, Width width, DateTimeOffset started, CancellationToken ct)
     {
-        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; var laneErrors = new long[LanesOf(width)]; string firstError = "";
+        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; var laneErrors = new long[LanesOf(width)]; string firstError = ""; var coverage = new CpuCoverage();
         var expected = Reference(width);
         string name = width switch { Width.Avx512 => "AVX-512", Width.Avx2 => "AVX2 + FMA", _ => "SSE2" };
         request.Note("Log_CpuVector_Start", $"x ← {(width == Width.Sse ? "x·s + o" : "fma(x, s, o)")} (s = 0.9999999, o = 1e-7), {Chains} chains × {LanesOf(width)} lanes × {BlockIterations} steps per block   FLOPs = 2 per multiply-add   check: every lane == scalar reference, finite",
@@ -104,7 +104,7 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
                     for (int l = 0; l < got.Length; l++) if ((wrong & 1 << l) != 0) Interlocked.Increment(ref laneErrors[l]);
                     if (firstError.Length == 0) { firstError = $"first wrong block on thread {index}, lanes {string.Join(",", Enumerable.Range(0, got.Length).Where(l => (wrong & 1 << l) != 0))}"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
-                Interlocked.Increment(ref blocks);
+                Interlocked.Increment(ref blocks); coverage.Mark();
             }
         }
         var all = Task.WhenAll(Enumerable.Range(0, threads).Select(i => Task.Factory.StartNew(() => Worker(i), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
@@ -118,7 +118,7 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
         long lanes = LanesOf(width);
         double gflops = blocks * (double)BlockIterations * Chains * lanes * 2 / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9;   // a multiply-add counts as 2 operations
         string detail = SensorEvidence.Join($"vector FMA stress, {width switch { Width.Avx512 => "AVX-512", Width.Avx2 => "AVX2 + FMA", _ => "SSE2" }}, {threads} threads, every lane checked against a scalar reference",
-            $"blocks={blocks}", $"{gflops:F0} GFLOPS (FP64)", errors > 0 ? $"{errors} block(s) computed a wrong result; errors per lane {string.Join(" ", laneErrors.Select((e, l) => $"{l}:{e}"))}; {firstError}" : null,
+            $"blocks={blocks}", $"{gflops:F0} GFLOPS (FP64)", coverage.Describe(CpuTopology.Cores), errors > 0 ? $"{errors} block(s) computed a wrong result; errors per lane {string.Join(" ", laneErrors.Select((e, l) => $"{l}:{e}"))}; {firstError}" : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuEffectiveClockAverage, started, finished)?.Format("average effective clock", " MHz"),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));

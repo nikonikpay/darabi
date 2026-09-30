@@ -54,7 +54,7 @@ public sealed class CpuIntegerExecutor : ITestExecutor
 
     private static TestRunResult Run(TestExecutionRequest request, DateTimeOffset started, CancellationToken ct)
     {
-        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; string firstError = "";
+        int threads = Environment.ProcessorCount; long blocks = 0, errors = 0; string firstError = ""; var coverage = new CpuCoverage();
         var seed = Seed(); var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds); var pacer = new LogPacer();
         request.Note("Log_CpuInteger_Start", $"{Elements} × 64-bit values, {Rounds} rounds: x = x·K + (x≫17); x ^= x≪13; x = rotl(x, 23); x += x / (y|1); branch on x&7; x ^= lo32(x)·hi32(x)   check: FNV-1a(result) == expected",
             threads);
@@ -68,7 +68,7 @@ public sealed class CpuIntegerExecutor : ITestExecutor
                     Interlocked.Increment(ref errors);
                     if (firstError.Length == 0) { firstError = $"first wrong block on thread {index}"; request.NoteError("Log_Wrong_Result", firstError); }
                 }
-                Interlocked.Increment(ref blocks);
+                Interlocked.Increment(ref blocks); coverage.Mark();
             }
         }
         var all = Task.WhenAll(Enumerable.Range(0, threads).Select(i => Task.Factory.StartNew(() => Worker(i), CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)));
@@ -80,7 +80,7 @@ public sealed class CpuIntegerExecutor : ITestExecutor
         }
         var finished = request.Clock.UtcNow;
         string detail = SensorEvidence.Join($"integer load (multiply, 64-bit divide, shift, rotate, xor, branch) on {threads} threads, every block checked against a precomputed checksum",
-            $"blocks={blocks}", $"{Gops(blocks, total.Elapsed.TotalSeconds):F1} Gop/s (integer)", firstError.Length > 0 ? firstError : null,
+            $"blocks={blocks}", $"{Gops(blocks, total.Elapsed.TotalSeconds):F1} Gop/s (integer)", coverage.Describe(CpuTopology.Cores), firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);
