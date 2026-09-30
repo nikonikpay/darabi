@@ -15,16 +15,21 @@ public sealed record PciLinkInfo(int? CurrentGen, int? CurrentWidth, int? MaxGen
     public static double? GtPerSecond(int? gen) => gen switch { 1 => 2.5, 2 => 5, 3 => 8, 4 => 16, 5 => 32, 6 => 64, _ => null };
 }
 
+/// <summary>A PCI Express link seen from the slot's side: <see cref="Port"/> is the port the part is plugged into (its current generation and width are
+/// what was negotiated with the part, its maximum is what the slot can do), and <see cref="CardMaxGen"/>/<see cref="CardMaxWidth"/> what the part itself
+/// can do (a card with its own PCIe switch, as AMD's have, is read at the switch's upstream port, not at the GPU behind it).</summary>
+public sealed record PciSlotLink(PciLinkInfo Port, int? CardMaxGen, int? CardMaxWidth);
+
 /// <summary>A graphics card's details: the board maker from the PCI subsystem vendor, the link from Windows, and (NVIDIA) what NVML reports.</summary>
 public sealed record GpuDetails(string? PnpDeviceId, string? BoardVendor, string? SubsystemId, PciLinkInfo? Link, string? Vbios, int? BusWidthBits, int? Cores,
-    string? Architecture, string? ComputeCapability, long? Bar1Bytes, int? MaxCoreClockMhz, int? MaxMemoryClockMhz, int? PowerDefaultW, int? PowerMaxW, string? PciBusId);
+    string? Architecture, string? ComputeCapability, long? Bar1Bytes, int? MaxCoreClockMhz, int? MaxMemoryClockMhz, int? PowerDefaultW, int? PowerMaxW, string? PciBusId, PciSlotLink? Slot = null);
 
 /// <summary>Boot and security state as Windows reports it; null where it could not be read.</summary>
 public sealed record PlatformSecurity(bool? UefiBoot, bool? SecureBoot, string? TpmVersion, bool? TpmEnabled, bool? VbsRunning, bool? HvciRunning);
 
 /// <summary>A drive's link (NVMe drives: their controller's PCIe link) and the counters its SMART log keeps.</summary>
 public sealed record DriveDetails(string? Serial, string? Name, PciLinkInfo? Link, long? PowerOnHours, double? TemperatureC, double? TemperatureMaxC,
-    long? ReadErrorsUncorrected, long? WriteErrorsUncorrected, int? WearPercent, Providers.NvmeHealthLog? Nvme = null);
+    long? ReadErrorsUncorrected, long? WriteErrorsUncorrected, int? WearPercent, Providers.NvmeHealthLog? Nvme = null, PciSlotLink? Slot = null);
 
 /// <summary>A network adapter's PCIe link and driver, where it has them.</summary>
 public sealed record NicDetails(string? Name, PciLinkInfo? Link, string? Driver);
