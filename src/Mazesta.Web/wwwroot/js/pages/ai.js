@@ -20,9 +20,13 @@ export function mount(el) {
     error, models);
 
   const exec = (cmd, extra = {}) => call("ai.exec", { cmd, ...extra }).catch((e) => toast(String(e.message || e), "fail"));
-  let last = "";
+  let machineKey = "", rtProg = null;
+  const cards = new Map();   // model id -> { el, key }: a card is rebuilt only when its own content changes
 
   function renderMachine(s) {
+    const r0 = s.runtime, key = JSON.stringify([s.machine, { ...r0, transfer: r0.transfer && { active: r0.transfer.active, error: r0.transfer.error } }, s.downloading]);
+    if (key === machineKey) { if (r0.transfer?.active) rtProg?.upd(r0.transfer); return; }
+    machineKey = key;
     const m = s.machine, row = (k, v) => h("div", {}, h("dt", {}, t(k)), h("dd", { class: "num" }, v ?? "-"));
     machine.replaceChildren(row("Ai_Gpu", m.gpu ? lat(m.gpu) : t("Ai_NoGpu")), row("Ai_Vram", m.vram), row("Ai_Bandwidth", m.bandwidth), row("Ai_Ram", m.ram), row("Ai_RamFree", m.ramFree));
     const r = s.runtime, x = r.transfer;
@@ -32,13 +36,15 @@ export function mount(el) {
         !r.ready && !x?.active ? h("button", { class: "btn primary", disabled: !!s.downloading, onclick: () => exec("download", { id: "runtime" }) }, t("Ai_Download", r.size)) : null,
         x?.active ? h("button", { class: "btn stop", onclick: () => exec("cancelDownload", { id: "runtime" }) }, t("Ai_CancelDownload")) : null,
         h("button", { class: "btn quiet", onclick: () => exec("openFolder") }, icon("folder"), t("Ai_OpenFolder"))),
-      x?.active ? progress(x) : null, x?.error ? h("p", { class: "ai-err" }, x.error) : null,
+      (rtProg = x?.active ? progress(x) : null), x?.error ? h("p", { class: "ai-err" }, x.error) : null,
       h("p", { class: "caption" }, t("Ai_Runtime_Note"))].filter(Boolean));
   }
 
-  function progress(x) {
-    const bar = h("div", { class: "progress" }, h("i")); bar.firstChild.style.setProperty("--p", x.percent / 100);
-    return h("div", { class: "ai-prog" }, bar, h("span", { class: "caption lat" }, `${Math.floor(x.percent)}% · ${x.done}${x.speed ? " · " + x.speed : ""}`));
+  // A progress line is updated in place: the bar and its text change, nothing around it is rebuilt.
+  function progress(x, label) {
+    const fill = h("i"), text = h("span", { class: "caption lat" }), el = h("div", { class: "ai-prog" }, h("div", { class: "progress" }, fill), text);
+    el.upd = (x) => { fill.style.setProperty("--p", x.percent / 100); text.textContent = label ? t(label) : `${Math.floor(x.percent)}% · ${x.done}${x.speed ? " · " + x.speed : ""}`; };
+    el.upd(x); return el;
   }
 
   function measured(r, deviceKey) {
@@ -53,6 +59,7 @@ export function mount(el) {
 
   function card(m, s, i) {
     const [cls, key] = FIT[m.fit.mode], busy = s.busy || !!s.running, run = s.running?.model === m.id ? s.running : null, x = m.transfer;
+    const tp = x?.active ? progress(x) : null, rp = run ? progress(run, run.device === "gpu" ? "Ai_Running_Gpu" : "Ai_Running_Cpu") : null;
     const where = m.fit.mode === "Split" ? t("Ai_Fit_SplitShare", m.fit.share) : t(key);
     const actions = h("div", { class: "btn-row" },
       !m.downloaded && !x?.active ? h("button", { class: `btn ${s.recommended === m.id ? "primary" : ""}`, disabled: !!s.downloading, onclick: () => exec("download", { id: m.id }) },
@@ -68,7 +75,7 @@ export function mount(el) {
       h("div", {}, h("dt", {}, t("Ai_Need")), h("dd", { class: "num" }, m.fit.need)),
       m.fit.ceiling ? h("div", {}, h("dt", { title: t("Ai_Ceiling_Hint") }, t("Ai_Ceiling")), h("dd", { class: "num" }, m.fit.ceiling)) : null,
       m.fit.maxContext ? h("div", {}, h("dt", { title: t("Ai_MaxContext_Hint") }, t("Ai_MaxContext")), h("dd", { class: "num" }, lat(m.fit.maxContext.toLocaleString("en-US")))) : null);
-    return h("section", { class: `panel ai-model ${s.recommended === m.id ? "suggested" : ""}`, style: { "--i": i } },
+    const el = h("section", { class: `panel ai-model ${s.recommended === m.id ? "suggested" : ""}`, style: { "--i": i } },
       h("header", { class: "panel-head" },
         h("div", { class: "ttl" }, h("h2", { class: "panel-title lat" }, m.name), h("div", { class: "panel-sub fa" }, `${m.tier} · `, lat(`${m.params} · ${m.quant}`), m.moe ? ` · ${t("Ai_Moe")}` : "")),
         s.recommended === m.id ? h("span", { class: "pill run" }, icon("star"), t("Ai_Recommended")) : null),
@@ -76,20 +83,30 @@ export function mount(el) {
       h("div", { class: "ai-fit" }, h("span", { class: `pill ${m.fit.tight && cls === "pass" ? "warn" : cls}` }, where), m.fit.tight ? h("span", { class: "caption" }, t("Ai_Fit_Tight")) : null,
         h("span", { class: "caption" }, t("Ai_Estimate"))),
       facts,
-      x?.active ? progress(x) : null, x?.error ? h("p", { class: "ai-err" }, x.error) : null,
-      run ? h("div", { class: "ai-prog" }, (() => { const b = h("div", { class: "progress" }, h("i")); b.firstChild.style.setProperty("--p", run.percent / 100); return b; })(),
-        h("span", { class: "caption" }, t(run.device === "gpu" ? "Ai_Running_Gpu" : "Ai_Running_Cpu"))) : null,
+      tp, x?.error ? h("p", { class: "ai-err" }, x.error) : null, rp,
       measured(m.gpu, "Ai_Measured_Gpu"), measured(m.cpu, "Ai_Measured_Cpu"),
       m.downloaded && !s.runtime.ready ? h("p", { class: "caption" }, t("Ai_NeedRuntime")) : null,
       actions);
+    el.upd = (m, s) => { if (m.transfer?.active) tp?.upd(m.transfer); if (s.running?.model === m.id) rp?.upd(s.running); };
+    return el;
   }
 
+  // What decides a card's shape. The download's bytes and the run's percent are not in it (they are updated in place), nor is the partial size while
+  // a download grows it: a progress tick must not rebuild the page.
+  const shape = (m, s) => JSON.stringify([{ ...m, transfer: null, partial: m.transfer?.active ? null : m.partial }, m.transfer && { a: m.transfer.active, e: m.transfer.error },
+    s.busy, s.running?.model === m.id ? s.running.device : !!s.running, s.recommended === m.id, s.downloading, s.runtime.ready, !!s.machine.gpu]);
+
   function render(s) {
-    const key = JSON.stringify(s);
-    if (key === last) return; last = key;
     renderMachine(s);
-    error.hidden = !s.error; error.textContent = s.error || "";
-    models.replaceChildren(...s.models.map((m, i) => card(m, s, i)));
+    error.hidden = !s.error; if (error.textContent !== (s.error || "")) error.textContent = s.error || "";
+    const seen = new Set();
+    s.models.forEach((m, i) => {
+      seen.add(m.id); const key = shape(m, s), old = cards.get(m.id);
+      if (old?.key === key) { old.el.upd(m, s); return; }
+      const el = card(m, s, i); el.style.animation = old ? "none" : "";   // a card redrawn in place does not play its entrance again
+      old ? old.el.replaceWith(el) : models.append(el); cards.set(m.id, { el, key });
+    });
+    for (const [id, c] of cards) if (!seen.has(id)) { c.el.remove(); cards.delete(id); }
   }
   const off = on("ai", render);
   call("ai.state").then(render);

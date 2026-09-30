@@ -60,14 +60,15 @@ function keyboard(cleanup) {
     const k = h("span", { class: "kb-key lat", style: { "--w": WIDE[code] || 1 }, title: code }, label(code)); keys.set(code, k); return k;
   }))));
   let armed = false;
-  const onDown = (e) => {
-    if (!armed) return;
+  const press = (e) => {
     e.preventDefault();
     keys.get(e.code)?.classList.add("hit", "down");
     last.textContent = `${e.code}${e.key && e.key.length === 1 ? ` (${e.key})` : ""}`;
     count.textContent = String([...keys.values()].filter((k) => k.classList.contains("hit")).length) + " / " + keys.size;
   };
-  const onUp = (e) => { if (armed) { e.preventDefault(); keys.get(e.code)?.classList.remove("down"); } };
+  const onDown = (e) => { if (armed) press(e); };
+  // Windows gives Print Screen to the system on the way down: the page sees only the release, so that is where the key counts.
+  const onUp = (e) => { if (!armed) return; if (e.code === "PrintScreen") press(e); e.preventDefault(); keys.get(e.code)?.classList.remove("down"); };
   window.addEventListener("keydown", onDown, true); window.addEventListener("keyup", onUp, true);
   cleanup.push(() => { window.removeEventListener("keydown", onDown, true); window.removeEventListener("keyup", onUp, true); });
   const arm = h("button", { class: "btn go", onclick: () => { armed = !armed; arm.classList.toggle("on", armed); arm.lastChild.textContent = t(armed ? "Checks_Keys_Stop" : "Checks_Keys_Start"); } },
@@ -124,14 +125,20 @@ function microphone(cleanup) {
       h("span", { class: "grow" }), peak), bar, status));
 }
 
-function mouse() {
+function mouse(cleanup) {
   const names = ["Checks_Mouse_Left", "Checks_Mouse_Middle", "Checks_Mouse_Right", "Checks_Mouse_Back", "Checks_Mouse_Forward"];
   const btns = names.map((k) => h("span", { class: "kb-key wide" }, t(k), h("b", { class: "lat" }, "0")));
   const wheel = h("span", { class: "lat" }, "↑ 0 · ↓ 0"), dbl = h("span", { class: "lat" }, "0");
   let up = 0, down = 0, doubles = 0;
   const pad = h("div", { class: "chk-pad", tabindex: "0" }, t("Checks_Mouse_Pad"));
   pad.addEventListener("mousedown", (e) => { e.preventDefault(); const b = btns[e.button]; if (!b) return; b.classList.add("hit", "down"); const n = b.lastChild; n.textContent = String(+n.textContent + 1); });
-  pad.addEventListener("mouseup", (e) => btns[e.button]?.classList.remove("down"));
+  pad.addEventListener("mouseup", (e) => { e.preventDefault(); btns[e.button]?.classList.remove("down"); });
+  // Back and Forward (buttons 3 and 4) would otherwise walk the page's history, leave this page and lose the test. The browser acts on the
+  // release (and on the pointer events), so those are stopped too, while the pointer is over the pad.
+  for (const type of ["pointerdown", "pointerup"]) pad.addEventListener(type, (e) => { if (e.button > 2) e.preventDefault(); });
+  const keepHere = (e) => { if (e.button > 2 && pad.matches(":hover")) { e.preventDefault(); e.stopPropagation(); } };
+  for (const type of ["mouseup", "pointerup", "auxclick"]) window.addEventListener(type, keepHere, true);
+  cleanup.push(() => { for (const type of ["mouseup", "pointerup", "auxclick"]) window.removeEventListener(type, keepHere, true); });
   pad.addEventListener("contextmenu", (e) => e.preventDefault());
   pad.addEventListener("auxclick", (e) => e.preventDefault());
   pad.addEventListener("dblclick", () => { dbl.textContent = String(++doubles); });
@@ -143,6 +150,6 @@ function mouse() {
 export function mount(el) {
   const cleanup = [];
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checks")), h("p", { class: "page-lede" }, t("Checks_Lede")))),
-    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), mouse()), keyboard(cleanup));
+    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), mouse(cleanup)), keyboard(cleanup));
   return () => cleanup.forEach((f) => f());
 }

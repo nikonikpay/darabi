@@ -16,7 +16,7 @@ export function mount(el) {
     log, h("div", { class: "as-compose" }, input, h("div", { class: "btn-row" }, send, stop, h("span", { class: "grow" }), clear)), h("p", { class: "caption" }, t("Assist_Disclaimer")));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Assistant")), h("p", { class: "page-lede" }, t("Assist_Lede")))), gate, chat);
 
-  let a = null, ai = null, stick = true;
+  let a = null, ai = null, stick = true, msgShape = "", msgEls = [];
   const exec = (m, cmd, extra = {}) => call(m, { cmd, ...extra }).catch((e) => toast(String(e.message || e), "fail"));
   const ready = () => a?.server === "ready";
   const submit = () => { const text = input.value.trim(); if (!text || !ready() || a.busy) return; input.value = ""; stick = true; exec("assistant.exec", "send", { text }); };
@@ -24,15 +24,21 @@ export function mount(el) {
   input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); } });
   log.addEventListener("scroll", () => { stick = log.scrollHeight - log.scrollTop - log.clientHeight < 40; });
 
+  // Updated in place: a download's ticks change the bar and its text, not the card around it.
   function progress(x) {
-    const b = h("div", { class: "progress" }, h("i")); b.firstChild.style.setProperty("--p", x.percent / 100);
-    return h("div", { class: "ai-prog" }, b, h("span", { class: "caption lat" }, `${Math.floor(x.percent)}% · ${x.done}${x.speed ? " · " + x.speed : ""}`));
+    const fill = h("i"), text = h("span", { class: "caption lat" }), el = h("div", { class: "ai-prog" }, h("div", { class: "progress" }, fill), text);
+    el.upd = (x) => { fill.style.setProperty("--p", x.percent / 100); text.textContent = `${Math.floor(x.percent)}% · ${x.done}${x.speed ? " · " + x.speed : ""}`; };
+    el.upd(x); return el;
   }
 
+  let gateKey = "", gateProg = null;
   function renderGate() {
     const m = a.model, rt = ai?.runtime, tr = rt?.transfer?.active ? rt.transfer : ai?.models.find((x) => x.id === m?.id)?.transfer;
     const downloading = !!tr?.active || (ai?.downloading != null), failed = rt?.transfer?.error || ai?.models.find((x) => x.id === m?.id)?.transfer?.error;
     const installed = a.runtimeReady && m?.downloaded, on_ = a.server !== "off";
+    const key = JSON.stringify([a.status, m && { id: m.id, d: m.downloaded }, a.runtimeReady, a.server, a.error, a.blocked, downloading, !!tr?.active, failed, a.model?.name]);
+    if (key === gateKey) { if (tr?.active) gateProg?.upd(tr); gate.hidden = installed && on_; chat.hidden = !(installed && on_); return; }
+    gateKey = key;
     gate.hidden = installed && on_; chat.hidden = !(installed && on_);
     if (gate.hidden) return;
     const kids = [h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("chat")), h("h2", { class: "panel-title" }, installed ? t("Nav_Assistant") : t("Assist_Enable_Title")))];
@@ -40,7 +46,7 @@ export function mount(el) {
     else if (!installed) {
       kids.push(h("p", { class: "ai-purpose" }, t("Assist_Enable_Text", m.name, m.size)));
       kids.push(h("div", { class: "btn-row" }, h("button", { class: "btn primary", disabled: downloading, onclick: () => exec("ai.exec", "assistantEnable") }, downloading ? t("Assist_Downloading") : t("Assist_Enable"))));
-      if (tr?.active) kids.push(progress(tr));
+      gateProg = tr?.active ? progress(tr) : null; if (gateProg) kids.push(gateProg);
       if (failed) kids.push(h("p", { class: "ai-err" }, failed));
     } else {
       kids.push(h("p", { class: "ai-purpose" }, a.server === "starting" ? t("Assist_Starting") : t("Assist_Off")));
@@ -57,13 +63,17 @@ export function mount(el) {
     if (chat.hidden) return;
     bar.replaceChildren(h("span", { class: "pill pass" }, t("Assist_Ready")), h("span", { class: "caption lat" }, a.model?.name ?? ""), h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => exec("assistant.exec", "stop") }, icon("stop"), t("Assist_Stop")));
-    const msgs = a.messages.map((m) => h("div", { class: `as-msg ${m.role}` }, h("div", { class: "as-who" }, t(m.role === "user" ? "Assist_You" : "Assist_Name")),
-      // dir="auto": a Persian question and an English answer each take their own direction.
-      h("div", { class: "as-text", dir: "auto" }, m.text || (a.busy ? "…" : ""))));
-    log.replaceChildren(...(msgs.length ? msgs : [h("p", { class: "caption as-empty" }, t("Assist_Empty"))]));
+    const shape = a.messages.map((m) => m.role).join();
+    if (shape === msgShape && msgEls.length) a.messages.forEach((m, i) => { const txt = m.text || (a.busy ? "…" : ""); if (msgEls[i].textContent !== txt) msgEls[i].textContent = txt; });
+    else {
+      msgShape = shape;
+      msgEls = a.messages.map((m) => h("div", { class: "as-text", dir: "auto" }, m.text || (a.busy ? "…" : "")));   // dir="auto": each message takes its own direction
+      log.replaceChildren(...(a.messages.length ? a.messages.map((m, i) => h("div", { class: `as-msg ${m.role}` }, h("div", { class: "as-who" }, t(m.role === "user" ? "Assist_You" : "Assist_Name")), msgEls[i]))
+        : [h("p", { class: "caption as-empty" }, t("Assist_Empty"))]));
+    }
     if (stick) log.scrollTop = log.scrollHeight;
     send.disabled = a.busy; stop.hidden = !a.busy; clear.disabled = a.busy || !a.messages.length; input.disabled = false;
-    if (a.error) log.append(h("p", { class: "ai-err" }, a.error));
+    log.querySelector(".ai-err")?.remove(); if (a.error) log.append(h("p", { class: "ai-err" }, a.error));
   }
 
   const render = (s) => { a = s; renderGate(); renderChat(); };

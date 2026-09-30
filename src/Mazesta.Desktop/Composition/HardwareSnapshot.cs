@@ -4,7 +4,7 @@ namespace Mazesta.Desktop.Composition;
 
 /// <summary>
 /// The parts as last read, kept in Data/cache/hardware.json, so the hardware pages draw at once on the next start instead of waiting for WMI and the
-/// sensor driver (the SPD needs its SMBus). The stored read is shown only while <see cref="HardwareFingerprint"/> and the app version are unchanged,
+/// sensor driver (the SPD needs its SMBus). The stored read is shown only while <see cref="HardwareFingerprint"/> and <see cref="Schema"/> are unchanged,
 /// and only until this start's own read is done: that read still runs (drive counters, links, driver versions and IPs move) and replaces it, and
 /// <see cref="Fresh"/> tells the pages to redraw. Reports and tests never use it; they await the live caches.
 /// </summary>
@@ -45,10 +45,11 @@ public sealed class HardwareSnapshot(InventoryCache inventory, HardwareDetailsCa
         }
     }
 
-    // The app's full version (with its commit) is part of the key: a stored read from another build may lack fields this one shows.
-    private static readonly string AppVersion = typeof(HardwareSnapshot).Assembly.GetCustomAttributes(false)
-        .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "";
-    private static string Key() => $"{AppVersion}|{HardwareFingerprint.Read()}";
+    // Not the app's version: every build of the day has another one, and the stored read would never be shown to whoever rebuilds often. It is the
+    // shape of the stored data that matters; raise it when a field the pages show is added to the inventory or the details. A stored read without
+    // a newer field shows it empty only until this start's own read (which always runs) replaces it.
+    internal const string Schema = "2";
+    private static string Key() => $"{Schema}|{HardwareFingerprint.Read()}";
 
     private Stored? Load(string key)
     {
