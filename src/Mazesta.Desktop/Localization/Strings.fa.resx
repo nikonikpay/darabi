@@ -1685,4 +1685,47 @@
   <data name="Spec_NvmeUnsafeShutdowns" xml:space="preserve"><value>خاموشی‌های ناگهانی</value></data>
   <data name="Spec_NvmePowerCycles" xml:space="preserve"><value>دفعات روشن و خاموش شدن</value></data>
   <data name="Spec_NvmeErrorLog" xml:space="preserve"><value>ورودی‌های گزارش خطا</value></data>
+  <data name="Nav_Checks" xml:space="preserve"><value>بررسی‌های دستی</value></data>
+  <data name="Checks_Lede" xml:space="preserve"><value>چیزهایی که فقط یک نفر می‌تواند قضاوت کند: پیکسل سوخته، کلیدها، بلندگو، میکروفون و ماوس. هر بررسی دقیقاً نشان می‌دهد کامپیوتر چه دریافت کرده؛ تصمیم با شماست.</value></data>
+  <data name="Checks_YourCall" xml:space="preserve"><value>نتیجهٔ شما:</value></data>
+  <data name="Checks_Ok" xml:space="preserve"><value>سالم است</value></data>
+  <data name="Checks_Problem" xml:space="preserve"><value>مشکل دارد</value></data>
+  <data name="Checks_Reset" xml:space="preserve"><value>از نو</value></data>
+  <data name="Checks_Stop" xml:space="preserve"><value>توقف</value></data>
+  <data name="Checks_Display" xml:space="preserve"><value>نمایشگر</value></data>
+  <data name="Checks_Display_Sub" xml:space="preserve"><value>پیکسل سوخته یا ثابت، نوار رنگی</value></data>
+  <data name="Checks_Display_Text" xml:space="preserve"><value>صفحه به ترتیب سیاه، سفید، قرمز، سبز، آبی و خاکستری می‌شود و بعد یک طیف رنگ و یک شطرنجی ریز نمایش داده می‌شود. از نزدیک دنبال نقطه‌ای بگردید که تاریک یا روشن می‌ماند، نور ناهمگون در لبه‌ها، یا پله در طیف رنگ.</value></data>
+  <data name="Checks_Display_Start" xml:space="preserve"><value>شروع تمام‌صفحه</value></data>
+  <data name="Checks_Display_Hint" xml:space="preserve"><value>کلیک یا هر کلید: رنگ بعدی · کلیک راست یا ←: قبلی · Esc: پایان</value></data>
+  <data name="Checks_Keys" xml:space="preserve"><value>صفحه‌کلید</value></data>
+  <data name="Checks_Keys_Sub" xml:space="preserve"><value>همهٔ کلیدها ثبت می‌شوند و هیچ‌کدام گیر نمی‌کند</value></data>
+  <data name="Checks_Keys_Text" xml:space="preserve"><value>شروع را بزنید و سپس هر کلید را یک بار بفشارید: کلیدی که کامپیوتر دریافت کند سبز می‌شود و تا وقتی نگه داشته شده زرد است. کلیدی که پس از رها کردن زرد بماند گیر کرده است. کلید ویندوز و برخی کلیدهای Fn لپ‌تاپ اول به ویندوز می‌رسند و ممکن است نمایش داده نشوند.</value></data>
+  <data name="Checks_Keys_Start" xml:space="preserve"><value>شروع دریافت کلیدها</value></data>
+  <data name="Checks_Keys_Stop" xml:space="preserve"><value>توقف دریافت کلیدها</value></data>
+  <data name="Checks_Keys_Last" xml:space="preserve"><value>آخرین:</value></data>
+  <data name="Checks_Keys_Count" xml:space="preserve"><value>کلیدهای دیده‌شده:</value></data>
+  <data name="Checks_Speakers" xml:space="preserve"><value>بلندگو و هدفون</value></data>
+  <data name="Checks_Speakers_Sub" xml:space="preserve"><value>چپ، راست، کل محدوده</value></data>
+  <data name="Checks_Speakers_Text" xml:space="preserve"><value>صدای ۴۴۰ هرتز در سمت چپ، هر دو سمت یا راست؛ صدای چپ باید فقط از چپ شنیده شود. جاروب فرکانس در ۱۰ ثانیه از ۲۰ هرتز تا ۲۰ کیلوهرتز می‌رود: به لرزش، وزوز یا محدوده‌ای که صدا قطع می‌شود گوش دهید.</value></data>
+  <data name="Checks_Left" xml:space="preserve"><value>چپ</value></data>
+  <data name="Checks_Right" xml:space="preserve"><value>راست</value></data>
+  <data name="Checks_Both" xml:space="preserve"><value>هر دو</value></data>
+  <data name="Checks_Sweep" xml:space="preserve"><value>جاروب ۲۰ هرتز تا ۲۰ کیلوهرتز</value></data>
+  <data name="Checks_Mic" xml:space="preserve"><value>میکروفون</value></data>
+  <data name="Checks_Mic_Sub" xml:space="preserve"><value>سطح صدایی که دریافت می‌کند</value></data>
+  <data name="Checks_Mic_Text" xml:space="preserve"><value>نزدیک میکروفون صحبت کنید یا ضربه بزنید: نوار، سطح صدایی را که دستگاه ضبط پیش‌فرض می‌دهد نشان می‌دهد، بدون حذف نویز ویندوز. سکوت باید پایین و ثابت بماند و صحبت باید آن را به‌وضوح حرکت دهد.</value></data>
+  <data name="Checks_Mic_Start" xml:space="preserve"><value>شروع گوش دادن</value></data>
+  <data name="Checks_Mic_Denied" xml:space="preserve"><value>میکروفون باز نشد ({0}): یا وصل نیست یا تنظیمات حریم خصوصی ویندوز جلوی آن را گرفته است.</value></data>
+  <data name="Checks_Mic_Device" xml:space="preserve"><value>در حال گوش دادن به: {0}</value></data>
+  <data name="Checks_Mouse" xml:space="preserve"><value>ماوس و تاچ‌پد</value></data>
+  <data name="Checks_Mouse_Sub" xml:space="preserve"><value>همهٔ دکمه‌ها، چرخ، دابل‌کلیک</value></data>
+  <data name="Checks_Mouse_Text" xml:space="preserve"><value>هر دکمه را داخل کادر بفشارید و چرخ را به دو طرف بچرخانید. هر فشار یک بار شمرده می‌شود: دکمه‌ای که با یک فشار دو تا بشمارد خودبه‌خود دابل‌کلیک می‌کند که ایراد رایج کلیدهای فرسوده است.</value></data>
+  <data name="Checks_Mouse_Pad" xml:space="preserve"><value>اینجا کلیک، اسکرول و دابل‌کلیک کنید</value></data>
+  <data name="Checks_Mouse_Left" xml:space="preserve"><value>چپ</value></data>
+  <data name="Checks_Mouse_Middle" xml:space="preserve"><value>وسط</value></data>
+  <data name="Checks_Mouse_Right" xml:space="preserve"><value>راست</value></data>
+  <data name="Checks_Mouse_Back" xml:space="preserve"><value>عقب</value></data>
+  <data name="Checks_Mouse_Forward" xml:space="preserve"><value>جلو</value></data>
+  <data name="Checks_Mouse_Wheel" xml:space="preserve"><value>چرخ:</value></data>
+  <data name="Checks_Mouse_Double" xml:space="preserve"><value>دابل‌کلیک‌ها:</value></data>
 </root>

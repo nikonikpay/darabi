@@ -1685,4 +1685,47 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Spec_NvmeUnsafeShutdowns" xml:space="preserve"><value>Unsafe shutdowns</value></data>
   <data name="Spec_NvmePowerCycles" xml:space="preserve"><value>Power cycles</value></data>
   <data name="Spec_NvmeErrorLog" xml:space="preserve"><value>Error-log entries</value></data>
+  <data name="Nav_Checks" xml:space="preserve"><value>Hands-on checks</value></data>
+  <data name="Checks_Lede" xml:space="preserve"><value>What only a person can judge: dead pixels, keys, speakers, microphone and mouse. Each check shows exactly what the computer received; you make the call.</value></data>
+  <data name="Checks_YourCall" xml:space="preserve"><value>Your call:</value></data>
+  <data name="Checks_Ok" xml:space="preserve"><value>Works</value></data>
+  <data name="Checks_Problem" xml:space="preserve"><value>Problem</value></data>
+  <data name="Checks_Reset" xml:space="preserve"><value>Reset</value></data>
+  <data name="Checks_Stop" xml:space="preserve"><value>Stop</value></data>
+  <data name="Checks_Display" xml:space="preserve"><value>Display</value></data>
+  <data name="Checks_Display_Sub" xml:space="preserve"><value>dead or stuck pixels, banding</value></data>
+  <data name="Checks_Display_Text" xml:space="preserve"><value>The screen fills with black, white, red, green, blue and grey, then a gradient and a fine checkerboard. Look closely for a dot that stays dark or lit, uneven light at the edges, or steps in the gradient.</value></data>
+  <data name="Checks_Display_Start" xml:space="preserve"><value>Start full screen</value></data>
+  <data name="Checks_Display_Hint" xml:space="preserve"><value>Click or any key: next colour · right click or ←: back · Esc: end</value></data>
+  <data name="Checks_Keys" xml:space="preserve"><value>Keyboard</value></data>
+  <data name="Checks_Keys_Sub" xml:space="preserve"><value>every key registers, none sticks</value></data>
+  <data name="Checks_Keys_Text" xml:space="preserve"><value>Press Start, then every key once: a key turns green when the computer receives it and yellow while it is held. A key that stays yellow after release is stuck. The Windows key and some laptop Fn keys go to Windows first and may not show.</value></data>
+  <data name="Checks_Keys_Start" xml:space="preserve"><value>Start listening</value></data>
+  <data name="Checks_Keys_Stop" xml:space="preserve"><value>Stop listening</value></data>
+  <data name="Checks_Keys_Last" xml:space="preserve"><value>Last:</value></data>
+  <data name="Checks_Keys_Count" xml:space="preserve"><value>Keys seen:</value></data>
+  <data name="Checks_Speakers" xml:space="preserve"><value>Speakers and headphones</value></data>
+  <data name="Checks_Speakers_Sub" xml:space="preserve"><value>left, right, whole range</value></data>
+  <data name="Checks_Speakers_Text" xml:space="preserve"><value>A 440 Hz tone on the left, on both sides, or on the right; the left one must come only from the left. The sweep runs from 20 Hz to 20 kHz in 10 seconds: listen for a rattle, a buzz or a range where the sound drops out.</value></data>
+  <data name="Checks_Left" xml:space="preserve"><value>Left</value></data>
+  <data name="Checks_Right" xml:space="preserve"><value>Right</value></data>
+  <data name="Checks_Both" xml:space="preserve"><value>Both</value></data>
+  <data name="Checks_Sweep" xml:space="preserve"><value>Sweep 20 Hz-20 kHz</value></data>
+  <data name="Checks_Mic" xml:space="preserve"><value>Microphone</value></data>
+  <data name="Checks_Mic_Sub" xml:space="preserve"><value>the input level it receives</value></data>
+  <data name="Checks_Mic_Text" xml:space="preserve"><value>Speak or tap near the microphone: the bar shows the level the default recording device delivers, without Windows' noise suppression. Silence should sit low and steady; speech should move it clearly.</value></data>
+  <data name="Checks_Mic_Start" xml:space="preserve"><value>Start listening</value></data>
+  <data name="Checks_Mic_Denied" xml:space="preserve"><value>The microphone could not be opened ({0}): none connected, or Windows' privacy settings block it.</value></data>
+  <data name="Checks_Mic_Device" xml:space="preserve"><value>Listening to: {0}</value></data>
+  <data name="Checks_Mouse" xml:space="preserve"><value>Mouse and touchpad</value></data>
+  <data name="Checks_Mouse_Sub" xml:space="preserve"><value>every button, the wheel, double clicks</value></data>
+  <data name="Checks_Mouse_Text" xml:space="preserve"><value>Press each button inside the box and turn the wheel both ways. Each press is counted once: a button whose count jumps by two for one press double-clicks by itself, a common fault of worn switches.</value></data>
+  <data name="Checks_Mouse_Pad" xml:space="preserve"><value>Click, scroll and double-click here</value></data>
+  <data name="Checks_Mouse_Left" xml:space="preserve"><value>Left</value></data>
+  <data name="Checks_Mouse_Middle" xml:space="preserve"><value>Middle</value></data>
+  <data name="Checks_Mouse_Right" xml:space="preserve"><value>Right</value></data>
+  <data name="Checks_Mouse_Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Checks_Mouse_Forward" xml:space="preserve"><value>Forward</value></data>
+  <data name="Checks_Mouse_Wheel" xml:space="preserve"><value>Wheel:</value></data>
+  <data name="Checks_Mouse_Double" xml:space="preserve"><value>Double clicks:</value></data>
 </root>

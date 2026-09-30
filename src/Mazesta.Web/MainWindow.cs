@@ -58,7 +58,16 @@ public sealed class MainWindow : Window
             core.NavigationStarting += (_, a) => { if (!a.Uri.StartsWith($"https://{Host}/", StringComparison.OrdinalIgnoreCase)) a.Cancel = true; };
             core.NewWindowRequested += (_, a) => a.Handled = true;
             core.DownloadStarting += (_, a) => a.Cancel = true;
-            core.PermissionRequested += (_, a) => a.State = CoreWebView2PermissionState.Deny;
+            // Only the hands-on checks page asks for anything, and only for the microphone (its level meter); every other request is refused.
+            core.PermissionRequested += (_, a) => a.State = a.PermissionKind == CoreWebView2PermissionKind.Microphone && a.Uri.StartsWith($"https://{Host}/", StringComparison.OrdinalIgnoreCase)
+                ? CoreWebView2PermissionState.Allow : CoreWebView2PermissionState.Deny;
+            // The dead-pixel check puts one element in full screen: the window follows, so the colour covers the whole display.
+            WindowState? before = null; WindowStyle style = WindowStyle;
+            core.ContainsFullScreenElementChanged += (_, _) =>
+            {
+                if (core.ContainsFullScreenElement) { before = WindowState; style = WindowStyle; WindowStyle = WindowStyle.None; WindowState = WindowState.Normal; WindowState = WindowState.Maximized; }
+                else { WindowStyle = style; WindowState = before ?? WindowState.Normal; }
+            };
             // The page shows its own loading card from its first paint, so the native one goes as soon as the page has drawn.
             core.DOMContentLoaded += (_, _) => { _view.Visibility = Visibility.Visible; _loading.Visibility = Visibility.Collapsed; };
             _bridge = new WebBridge(core, _services, _paths, _config, _store, _configCorrupt, this, _log);
