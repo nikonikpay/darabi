@@ -29,7 +29,7 @@ public sealed partial class WebBridge
         var runner = _sp.GetRequiredService<BenchmarkRunner>(); var engine = _sp.GetRequiredService<PollingEngine>();
         var inventory = _sp.GetRequiredService<InventoryCache>(); var wmi = _sp.GetRequiredService<IWmiQuery>();
         string app = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
-        var compared = new Dictionary<string, BenchmarkComparison?>(); var memo = new Dictionary<string, object?>();
+        var compared = _benchCompared = new Dictionary<string, BenchmarkComparison?>(); var memo = new Dictionary<string, object?>();
 
         // The hardware list arrives a few seconds after start-up; until then the system is not known (0.6 and earlier saved records under the bare
         // machine name at that moment; they are moved under the full name here).

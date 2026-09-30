@@ -7,7 +7,7 @@ public sealed partial class WebBridge
     private void RegisterTests()
     {
         // One Test Center for the session (the engine is a singleton): the page is rebuilt on every visit, its state is not.
-        var tests = _sp.GetRequiredService<Func<TestCenterViewModel>>()();
+        var tests = _testVm = _sp.GetRequiredService<Func<TestCenterViewModel>>()();
         _cleanup.Add(tests.Dispose);
         var engine = _sp.GetRequiredService<TestEngine>();
         // The live monitor's "now": which test of the queue is running, how far it is, and since when.

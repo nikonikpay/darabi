@@ -1590,7 +1590,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Web_Run_Close" xml:space="preserve"><value>Close until the next session</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>AI models</value></data>
   <data name="Nav_Assistant" xml:space="preserve"><value>Assistant</value></data>
-  <data name="Assist_Lede" xml:space="preserve"><value>Ask in plain words, in Persian or English. A language model runs on this computer's graphics card; nothing is sent over the internet. It can look at this computer's specification, live sensors, saved reports and benchmark history, but it does not run tests or change anything yet.</value></data>
+  <data name="Assist_Lede" xml:space="preserve"><value>Ask in plain words, in Persian or English. A language model runs on this computer's graphics card; nothing is sent over the internet. It can look at this computer's specification, live sensors, saved reports and benchmark history, and it can run tests and benchmarks for you: each one starts only after you agree on this page, and you see the real results.</value></data>
   <data name="Assist_Unavailable" xml:space="preserve"><value>The assistant is not available on this computer.</value></data>
   <data name="Assist_NotDownloaded" xml:space="preserve"><value>Download the assistant first.</value></data>
   <data name="Assist_StopFirst" xml:space="preserve"><value>Stop the assistant first: it holds the graphics card, and a benchmark beside it would measure the wrong thing.</value></data>
@@ -1610,7 +1610,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Send" xml:space="preserve"><value>Send</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>Try: "What is in this computer?", "How hot is the CPU now?" or "Did my benchmark get slower?". It can not run tests yet: for that use the Tests, Benchmarks or Check-up pages.</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>Try: "What is in this computer?", "Test the CPU and the memory" or "My PC feels slower, check it".</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>A test or benchmark is running; start the assistant after it.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>Read: machine summary</value></data>
@@ -1618,6 +1618,18 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Tool_list_reports" xml:space="preserve"><value>Read: saved reports</value></data>
   <data name="Assist_Tool_get_benchmark_history" xml:space="preserve"><value>Read: benchmark history</value></data>
   <data name="Assist_Tool_failed" xml:space="preserve"><value>failed</value></data>
+  <data name="Assist_Busy" xml:space="preserve"><value>Wait for the reply to finish before changing the model.</value></data>
+  <data name="Assist_Model" xml:space="preserve"><value>Model</value></data>
+  <data name="Assist_Confirm_Tests" xml:space="preserve"><value>Run these tests?</value></data>
+  <data name="Assist_Confirm_Benchmark" xml:space="preserve"><value>Run this benchmark?</value></data>
+  <data name="Assist_Confirm_Text" xml:space="preserve"><value>The assistant asks to start this on your computer now. The computer will be busy while it runs, and nothing starts unless you agree.</value></data>
+  <data name="Assist_Confirm_Yes" xml:space="preserve"><value>Start</value></data>
+  <data name="Assist_Confirm_No" xml:space="preserve"><value>Do not run</value></data>
+  <data name="Assist_Seconds" xml:space="preserve"><value>about {0} s</value></data>
+  <data name="Assist_Running_Tests" xml:space="preserve"><value>Running tests</value></data>
+  <data name="Assist_Running_Benchmark" xml:space="preserve"><value>Running benchmark</value></data>
+  <data name="Assist_Tool_run_tests" xml:space="preserve"><value>Asked to run: tests</value></data>
+  <data name="Assist_Tool_run_benchmark" xml:space="preserve"><value>Asked to run: benchmark</value></data>
   <data name="Assist_You" xml:space="preserve"><value>You</value></data>
   <data name="Assist_Name" xml:space="preserve"><value>Assistant</value></data>
   <data name="Ai_Lede" xml:space="preserve"><value>Which local AI language models this computer can run, and how fast. The fit is estimated before anything is downloaded; download the models you want and measure their real speed on the graphics card or the processor.</value></data>
