@@ -82,7 +82,23 @@ function demoAi() {
       m("qwen3-14b", "Qwen3 14B", "14B", "8.38 GB", "Ai_Tier_Medium", "Gpu", "9.5 GB", { p: "Qwen3_14", ceiling: "104 tok/s", ctx: 40960 }),
       m("gpt-oss-20b", "gpt-oss 20B", "21B (3.6B)", "11.28 GB", "Ai_Tier_Moe", "Gpu", "11.9 GB", { p: "GptOss20", ceiling: "293 tok/s", ctx: 131072 }),
       m("qwen3.8-27b", "Qwen3.8 27B", "27B", "17.67 GB", "Ai_Tier_Large", "Gpu", "18.4 GB", { p: "Qwen38_27", ceiling: "49 tok/s", ctx: 64000 }),
-      m("qwen3.6-35b-a3b", "Qwen3.6 35B-A3B", "35B (3B)", "19.02 GB", "Ai_Tier_Moe", "Gpu", "19.6 GB", { p: "Qwen36_35", ceiling: "327 tok/s", ctx: 158000, tight: true })] };
+      m("qwen3.6-35b-a3b", "Qwen3.6 35B-A3B", "35B (3B)", "19.02 GB", "Ai_Tier_Moe", "Gpu", "19.6 GB", { p: "Qwen36_35", ceiling: "327 tok/s", ctx: 158000, tight: true })],
+    generative: demoGen() };
+}
+// The generative kinds as the host judges them for the same card (24 GB, NVIDIA).
+function demoGen() {
+  const g = (id, name, params, min, full, fit, p, extra = {}) => ({ id, name, params, min: `${min} GB`, full: `${full} GB`, nvidiaOnly: !!extra.nv, license: extra.lic || null,
+    runtime: extra.rt || "ComfyUI", source: extra.src || "", purpose: strings[`AiGen_Purpose_${p}`], note: extra.note ? strings[`AiGen_Note_${extra.note}`] : null, fit, block: null });
+  return [
+    { media: "Image", suggested: "qwen-image-2.1", models: [g("qwen-image-2.1", "Qwen-Image 2.1", "7B + 8B", 6, 24, "Full", "QwenImage", { src: "unsloth.ai/docs/models/qwen-image-2.1" }),
+      g("flux.2-klein-4b", "FLUX.2 [klein] 4B", "4B", 8, 13, "Full", "FluxKlein", { lic: "Apache-2.0", src: "help.bfl.ai" })] },
+    { media: "Video", suggested: "minimax-h3", models: [g("minimax-h3", "MiniMax H3", "33B", 12, 24, "Full", "MiniMaxH3", { lic: "MiniMax Community", src: "blog.comfy.org", note: "H3" }),
+      g("ltx-2.5", "LTX-2.5", "", 16, 32, "Reduced", "Ltx", { nv: true, src: "ltx.io" }), g("wan2.2-ti2v-5b", "Wan 2.2 TI2V 5B", "5B", 8, 24, "Full", "Wan5b", { lic: "Apache-2.0", src: "github.com/Wan-Video/Wan2.2" })] },
+    { media: "Audio", suggested: "qwen3-tts-1.7b", models: [g("minimax-music-3", "MiniMax Music 3", "8B + 0.6B", 8, 32, "Reduced", "MiniMaxMusic", { nv: true, rt: "Python (CUDA)", note: "Linux" }),
+      g("qwen3-tts-1.7b", "Qwen3-TTS 1.7B", "1.7B", 6, 8, "Full", "QwenTts", { lic: "Apache-2.0", rt: "Python · ComfyUI" })] },
+    { media: "Mesh", suggested: "pixal3d", models: [g("pixal3d", "Pixal3D", "", 16, 24, "Full", "Pixal3d", { nv: true, note: "Linux" }), g("trellis.2-4b", "TRELLIS.2 4B", "4B", 12, 24, "Full", "Trellis2", { nv: true, lic: "MIT", note: "Linux" }),
+      g("hunyuan3d-2.1", "Hunyuan3D 2.1", "", 10, 29, "Reduced", "Hunyuan3d", { nv: true, note: "Hunyuan" })] },
+  ];
 }
 
 const DEMO_SPECS = {

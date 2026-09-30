@@ -1,6 +1,8 @@
 // AI: which language models this machine can run, and how fast they really run. Before anything is downloaded, each model's fit is estimated
 // from its own figures and this machine's memory (as llmfit does); the user downloads the ones they want, and llama.cpp's own benchmark
-// measures them on the GPU or the CPU. Estimates and measurements are labelled apart and never mixed.
+// measures them on the GPU or the CPU. Estimates and measurements are labelled apart and never mixed. Below them, image, video, audio and 3D
+// models one can run on one's own computer (in ComfyUI or their own tools; the app neither downloads nor runs these), judged from the figures
+// their publishers give against this card, with one suggestion for each kind.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
@@ -9,15 +11,20 @@ const FIT = { Gpu: ["pass", "Ai_Fit_Gpu"], Split: ["warn", "Ai_Fit_Split"], Cpu:
 // A rough reading of generation speed: people read a chat answer at about 5-10 tokens a second.
 const speedWord = (tps) => tps < 5 ? "Ai_Speed_Slow" : tps < 15 ? "Ai_Speed_Usable" : tps < 40 ? "Ai_Speed_Smooth" : "Ai_Speed_Fast";
 const lat = (text) => h("span", { class: "lat" }, text);
+const GEN_FIT = { Full: ["pass", "AiGen_Fit_Full"], Reduced: ["warn", "AiGen_Fit_Reduced"], No: ["fail", "AiGen_Fit_No"] };
+const GEN_ICON = { Image: "camera", Video: "play", Audio: "pulse", Mesh: "layers" };
 
 export function mount(el) {
+  const gen = h("div", { class: "ai-gen" });
   const machine = h("dl", { class: "kv" }), runtime = h("div", { class: "ai-runtime" }), models = h("div", { class: "ai-models" }), error = h("p", { class: "banner", hidden: true });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Ai")), h("p", { class: "page-lede" }, t("Ai_Lede")))),
     h("div", { class: "ai-top" },
       h("section", { class: "panel p-ai" }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("gpu")), h("h2", { class: "panel-title" }, t("Ai_Machine"))), machine, runtime),
       h("section", { class: "panel ai-help" }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("chat")), h("h2", { class: "panel-title" }, t("Ai_HowTo_Title"))),
         h("ul", { class: "upd-points" }, t("Ai_HowTo").split("\n").map((line) => h("li", {}, line))))),
-    error, models);
+    error, models,
+    h("header", { class: "page-head ai-gen-head" }, h("div", {}, h("h2", { class: "page-title" }, t("AiGen_Title")), h("p", { class: "page-lede" }, t("AiGen_Lede")))),
+    gen);
 
   const exec = (cmd, extra = {}) => call("ai.exec", { cmd, ...extra }).catch((e) => toast(String(e.message || e), "fail"));
   let machineKey = "", rtProg = null;
@@ -96,8 +103,31 @@ export function mount(el) {
   const shape = (m, s) => JSON.stringify([{ ...m, transfer: null, partial: m.transfer?.active ? null : m.partial }, m.transfer && { a: m.transfer.active, e: m.transfer.error },
     s.busy, s.running?.model === m.id ? s.running.device : !!s.running, s.recommended === m.id, s.downloading, s.runtime.ready, !!s.machine.gpu]);
 
+  // One panel per kind, a row per model: where it stands on this card, the memory its publisher names, and the one suggested for the kind.
+  let genKey = "";
+  function renderGen(s) {
+    const key = JSON.stringify(s.generative); if (key === genKey) return; genKey = key;
+    gen.replaceChildren(...s.generative.map((k) => h("section", { class: "panel ai-gen-kind" },
+      h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(GEN_ICON[k.media] || "chat")), h("h2", { class: "panel-title" }, t(`AiGen_Media_${k.media}`))),
+      h("p", { class: "ai-gen-pick" }, k.suggested ? [icon("star"), t("AiGen_Suggested", k.models.find((m) => m.id === k.suggested).name)] : t("AiGen_NoneFits")),
+      h("div", { class: "ai-gen-list" }, k.models.map((m) => {
+        const [cls, label] = GEN_FIT[m.fit];
+        return h("div", { class: `ai-gen-row ${m.id === k.suggested ? "suggested" : ""}` },
+          h("div", { class: "ai-gen-top" }, h("span", { class: "ai-gen-name lat" }, m.name), m.params ? h("span", { class: "caption lat" }, m.params) : null, h("span", { class: "grow" }),
+            h("span", { class: `pill ${cls}` }, m.block ? t(`AiGen_Block_${m.block}`) : t(label))),
+          h("p", { class: "ai-purpose" }, m.purpose),
+          h("dl", { class: "kv" },
+            h("div", {}, h("dt", {}, t("AiGen_Full")), h("dd", { class: "num" }, m.full)),
+            h("div", {}, h("dt", {}, t("AiGen_Min")), h("dd", { class: "num" }, m.min)),
+            h("div", {}, h("dt", {}, t("AiGen_Runs")), h("dd", {}, lat(m.runtime), m.nvidiaOnly ? h("span", { class: "caption" }, " · " + t("AiGen_NvidiaOnly")) : null)),
+            m.license ? h("div", {}, h("dt", {}, t("AiGen_License")), h("dd", {}, lat(m.license))) : null),
+          m.note ? h("p", { class: "caption" }, m.note) : null,
+          h("p", { class: "caption ai-gen-src" }, t("AiGen_Source"), " ", lat(m.source)));
+      })))));
+  }
+
   function render(s) {
-    renderMachine(s);
+    renderMachine(s); renderGen(s);
     error.hidden = !s.error; if (error.textContent !== (s.error || "")) error.textContent = s.error || "";
     const seen = new Set();
     s.models.forEach((m, i) => {

@@ -57,7 +57,8 @@ public sealed partial class WebBridge
             var prog = activity?.Progress();
             return new
             {
-                status = choice.Status.ToString(),
+                // Before the first reading the card's memory is not known yet: that is "Reading", not "no card".
+                status = lastSnapshot is null && choice.Status == AiAssistantStatus.NoGpu ? "Reading" : choice.Status.ToString(),
                 model = m is null ? null : new { id = m.Id, name = m.Name, size = Units.FormatMeasured(m.Bytes / (double)AiFitter.Gib, "GB"), downloaded = files.HasModel(m) },
                 choices = choice.Status != AiAssistantStatus.Available ? [] : Usable(pc).Select(x => new { id = x.Id, name = x.Name, size = Units.FormatMeasured(x.Bytes / (double)AiFitter.Gib, "GB"), fit = AiFitter.Fit(x, pc).Mode.ToString() }),
                 runtimeReady = files.HasRuntime,
@@ -75,6 +76,9 @@ public sealed partial class WebBridge
 
         void StopServer() { idle?.Dispose(); idle = null; replyCts?.Cancel(); server.Stop(); }
         void Push() => PushSoon("assistant", State);
+        // The card's memory is known from the first reading on: the page learns it then, not on its next look.
+        void OnFirst(SensorSnapshot _) { engine.SnapshotPublished -= OnFirst; Push(); }
+        engine.SnapshotPublished += OnFirst; _cleanup.Add(() => engine.SnapshotPublished -= OnFirst);
         void Keep() { if (chat is null) return; try { chats.Save(chat); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the assistant's chat"); } }
         Task<T> Ui<T>(Func<Task<T>> work) => _window.Dispatcher.InvokeAsync(work).Task.Unwrap();
 

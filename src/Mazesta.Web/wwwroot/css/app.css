@@ -107,6 +107,11 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .index-list a[aria-current="page"] svg { stroke: var(--yellow); }
 .index-list a[aria-current="page"]::before { content: ""; position: absolute; inset-inline-start: 0; top: 12px; bottom: 12px; width: 3px; background: var(--yellow); }
 .index-list .sep { height: 1px; background: var(--rule); margin: 8px 10px; }
+.index-asst { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 12px; height: 42px; margin: 10px 0 0; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--r-ctl); background: var(--ink-2); color: var(--paper); font: 650 14px var(--fa); text-align: start; cursor: pointer; }
+.index-asst:hover { background: var(--ink-3); }
+.index-asst svg { width: 18px; height: 18px; stroke: var(--yellow); stroke-width: 1.9; }
+.app[data-nav="mini"] .index-asst { grid-template-columns: 1fr; justify-items: center; padding: 0; }
+.app[data-nav="mini"] .index-asst .nm { display: none; }
 .index-foot { padding: 12px 8px 0; border-top: 1px solid var(--rule); margin-top: 12px; }
 .index-foot label { display: block; font-size: 11.5px; color: var(--paper-3); margin-bottom: 4px; }
 /* The narrow bar: icons only; the names come back on hover as the title. */
@@ -281,7 +286,8 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .quick button:hover { border-color: var(--paper-3); background: var(--ink-4); }
 .quick button .ico { display: grid; place-items: center; color: var(--hue, var(--yellow)); flex: none; }
 .quick button svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.75; }
-@media (max-width: 1240px) { .hero-row { grid-template-columns: 1fr; } .hero-row .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); } }
+@media (max-width: 1240px) { .hero-row { grid-template-columns: 1fr; } .hero-row .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); } }
+
 /* The dashboard is laid out by its own width (the assistant's column takes part of the window): a fixed grid of four, two or one columns.
    The one-reading parts share a row of equal heights with their meter at the foot; a part with a row per drive or adapter takes two columns. */
 .dash-page { container-type: inline-size; }
@@ -1081,6 +1087,19 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .ai-runtime { margin-top: 12px; display: grid; gap: 8px; }
 .ai-rt-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ai-rt-line .grow { flex: 1; }
+.ai-gen-head { margin-top: 28px; }
+.ai-gen { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; margin-top: 8px; align-items: start; }
+.ai-gen-pick { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; font-weight: 650; color: var(--paper); }
+.ai-gen-pick svg { width: 14px; height: 14px; stroke: var(--yellow); flex: none; }
+.ai-gen-list { display: grid; gap: 8px; }
+.ai-gen-row { padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--r-ctl); background: var(--well); }
+.ai-gen-row.suggested { border-color: var(--yellow); }
+.ai-gen-row .ai-purpose { margin: 6px 0; }
+.ai-gen-row .caption { margin: 4px 0 0; }
+.ai-gen-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ai-gen-top .grow { flex: 1; }
+.ai-gen-name { font-weight: 700; font-size: 14px; }
+.ai-gen-src { opacity: 0.8; }
 .ai-models { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
 .panel.ai-model { --hue: var(--paper-2); border-top: 3px solid var(--rule-2); display: flex; flex-direction: column; }
 .panel.ai-model.suggested { --hue: var(--yellow); border-top-color: var(--yellow); box-shadow: var(--shadow), 0 0 0 1px color-mix(in oklab, var(--yellow) 50%, transparent); }
@@ -1105,6 +1124,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .app:not([data-asst="open"]):not([data-asst="closed"]) .asst { display: none; }
 .asst-strip { display: none; flex: 1; flex-direction: column; align-items: center; gap: 10px; padding-top: 18px; border: 0; background: transparent; color: var(--paper-2); cursor: pointer; }
 .asst-strip:hover { color: var(--paper); background: var(--ink-2); }
+.asst-strip-name { writing-mode: vertical-rl; font: 650 12.5px var(--fa); letter-spacing: 0; }
 .asst-strip svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.75; }
 .app[data-asst="closed"] .asst-strip { display: flex; }
 .app[data-asst="closed"] .asst-panel { display: none; }

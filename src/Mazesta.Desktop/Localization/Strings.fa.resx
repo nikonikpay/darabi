@@ -1593,7 +1593,7 @@
   <data name="Advice_Error" xml:space="preserve"><value>خود آزمون با خطای برنامه متوقف شد؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست. دوباره اجرا کنید؛ اگر تکرار شد، گزارش برنامه (در تنظیمات) را برای فروشگاه بفرستید.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>بستن تا جلسهٔ بعدی</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
-  <data name="Nav_Assistant" xml:space="preserve"><value>دستیار</value></data>
+  <data name="Nav_Assistant" xml:space="preserve"><value>دستیار هوشمند</value></data>
   <data name="Assist_Lede" xml:space="preserve"><value>ساده بپرسید، فارسی یا انگلیسی. یک مدل زبانی روی کارت گرافیک همین کامپیوتر اجرا می‌شود و چیزی از طریق اینترنت فرستاده نمی‌شود. می‌تواند مشخصات این کامپیوتر، سنسورهای زنده، گزارش‌های ذخیره‌شده و تاریخچهٔ بنچمارک را ببیند و برای شما تست و بنچمارک اجرا کند: هر کدام فقط بعد از تأیید شما در همین صفحه شروع می‌شود و نتیجهٔ واقعی را می‌بینید.</value></data>
   <data name="Assist_Unavailable" xml:space="preserve"><value>دستیار روی این کامپیوتر در دسترس نیست.</value></data>
   <data name="Assist_NotDownloaded" xml:space="preserve"><value>اول دستیار را دانلود کنید.</value></data>
@@ -1601,6 +1601,40 @@
   <data name="Assist_NoGpu" xml:space="preserve"><value>دستیار کارت گرافیک با حافظهٔ مستقل می‌خواهد. روی این کامپیوتر چنین کارتی پیدا نشد.</value></data>
   <data name="Assist_LittleVram" xml:space="preserve"><value>دستیار کارت گرافیکی با حداقل ۴ گیگابایت حافظهٔ مستقل می‌خواهد؛ کارت این کامپیوتر کمتر دارد.</value></data>
   <data name="Assist_NoRoom" xml:space="preserve"><value>الان حافظهٔ آزاد این کامپیوتر برای مدل دستیار کافی نیست. برنامه‌های دیگر را ببندید و دوباره نگاه کنید.</value></data>
+  <data name="Assist_Reading" xml:space="preserve"><value>در حال خواندن کارت گرافیک… وقتی حافظهٔ کارت معلوم شد، دستیار آماده می‌شود.</value></data>
+  <data name="AiGen_Title" xml:space="preserve"><value>مدل‌های تولید عکس، ویدئو، صدا و سه‌بعدی</value></data>
+  <data name="AiGen_Lede" xml:space="preserve"><value>مدل‌های تولیدی که روی کامپیوتر خودتان اجرا می‌شوند و اینکه این کارت گرافیک می‌تواند اجرایشان کند یا نه. برنامه این مدل‌ها را دانلود یا اجرا نمی‌کند؛ در ComfyUI یا ابزار خودشان اجرا می‌شوند. این ارزیابی از حافظه‌ای است که سازندهٔ هر مدل اعلام کرده، نه اندازه‌گیری روی همین سیستم.</value></data>
+  <data name="AiGen_Media_Image" xml:space="preserve"><value>تولید عکس</value></data>
+  <data name="AiGen_Media_Video" xml:space="preserve"><value>تولید ویدئو</value></data>
+  <data name="AiGen_Media_Audio" xml:space="preserve"><value>صدا و موسیقی</value></data>
+  <data name="AiGen_Media_Mesh" xml:space="preserve"><value>مدل سه‌بعدی</value></data>
+  <data name="AiGen_Suggested" xml:space="preserve"><value>پیشنهاد برای این سیستم: {0}</value></data>
+  <data name="AiGen_NoneFits" xml:space="preserve"><value>هیچ‌کدام از این‌ها روی این کارت گرافیک اجرا نمی‌شود.</value></data>
+  <data name="AiGen_Fit_Full" xml:space="preserve"><value>با کیفیت کامل اجرا می‌شود</value></data>
+  <data name="AiGen_Fit_Reduced" xml:space="preserve"><value>با محدودیت اجرا می‌شود</value></data>
+  <data name="AiGen_Fit_No" xml:space="preserve"><value>اجرا نمی‌شود</value></data>
+  <data name="AiGen_Block_NoGpu" xml:space="preserve"><value>کارت گرافیک لازم دارد</value></data>
+  <data name="AiGen_Block_NeedsNvidia" xml:space="preserve"><value>فقط کارت NVIDIA</value></data>
+  <data name="AiGen_Block_LittleVram" xml:space="preserve"><value>حافظهٔ گرافیک کافی نیست</value></data>
+  <data name="AiGen_Full" xml:space="preserve"><value>برای کیفیت کامل</value></data>
+  <data name="AiGen_Min" xml:space="preserve"><value>حداقل، با محدودیت</value></data>
+  <data name="AiGen_Runs" xml:space="preserve"><value>اجرا در</value></data>
+  <data name="AiGen_NvidiaOnly" xml:space="preserve"><value>فقط NVIDIA</value></data>
+  <data name="AiGen_License" xml:space="preserve"><value>مجوز</value></data>
+  <data name="AiGen_Source" xml:space="preserve"><value>منبع اعداد:</value></data>
+  <data name="AiGen_Note_Linux" xml:space="preserve"><value>سازنده فقط روی لینوکس آزمایشش کرده؛ روی ویندوز با نسخه‌های ساخت جامعهٔ کاربران اجرا می‌شود.</value></data>
+  <data name="AiGen_Note_H3" xml:space="preserve"><value>مجوزش اتحادیهٔ اروپا، بریتانیا، کرهٔ جنوبی و آمریکا را شامل نمی‌شود. مدل محلی تا 768p می‌سازد و 2K از سرویس آنلاین MiniMax می‌گذرد.</value></data>
+  <data name="AiGen_Note_Hunyuan" xml:space="preserve"><value>عدد حداقل فقط برای ساخت شکل است؛ بافت (تکسچر) به‌تنهایی ۲۱ گیگابایت می‌خواهد.</value></data>
+  <data name="AiGen_Purpose_QwenImage" xml:space="preserve"><value>مدل تصویر علی‌بابا: عکس می‌سازد و ویرایش می‌کند و نوشتن متن داخل تصویر را خوب انجام می‌دهد.</value></data>
+  <data name="AiGen_Purpose_FluxKlein" xml:space="preserve"><value>مدل کوچک و سریع تصویر از Black Forest Labs؛ برای استفادهٔ تجاری هم آزاد است.</value></data>
+  <data name="AiGen_Purpose_MiniMaxH3" xml:space="preserve"><value>ویدئو همراه صدای استریو، از متن، عکس، ویدئو یا صدا؛ تا ۱۵ ثانیه در هر کلیپ.</value></data>
+  <data name="AiGen_Purpose_Ltx" xml:space="preserve"><value>مدل ویدئوی Lightricks: سریع، با وضوح بالا و همراه صدا.</value></data>
+  <data name="AiGen_Purpose_Wan5b" xml:space="preserve"><value>مدل ویدئوی سبک (از متن یا عکس به ویدئوی 720p) برای کارت‌های متوسط.</value></data>
+  <data name="AiGen_Purpose_MiniMaxMusic" xml:space="preserve"><value>آهنگ کامل با خواننده و ساز، از روی شعر و توضیح سبک.</value></data>
+  <data name="AiGen_Purpose_QwenTts" xml:space="preserve"><value>تبدیل متن به گفتار و شبیه‌سازی صدا از چند ثانیه صدا؛ برای بیشتر کارت‌ها سبک است.</value></data>
+  <data name="AiGen_Purpose_Pixal3d" xml:space="preserve"><value>ساخت مدل سه‌بعدی از یک عکس، منطبق با پیکسل‌های همان عکس (TencentARC).</value></data>
+  <data name="AiGen_Purpose_Trellis2" xml:space="preserve"><value>مدل مایکروسافت برای ساخت سه‌بعدی از عکس، با بافت آماده برای بازی و رندر.</value></data>
+  <data name="AiGen_Purpose_Hunyuan3d" xml:space="preserve"><value>مدل Tencent برای سه‌بعدی از عکس: اول شکل، بعد بافت.</value></data>
   <data name="Assist_Enable_Title" xml:space="preserve"><value>روشن کردن دستیار</value></data>
   <data name="Assist_Enable_Text" xml:space="preserve"><value>دستیار فقط یک بار و فقط وقتی بخواهید دانلود می‌شود: مدل زبانی ({0}، {1}) و موتور llama.cpp. در پوشهٔ داده‌های برنامه می‌ماند و از صفحهٔ مدل‌های هوش مصنوعی حذف‌شدنی است.</value></data>
   <data name="Assist_Enable" xml:space="preserve"><value>دانلود و روشن کردن</value></data>

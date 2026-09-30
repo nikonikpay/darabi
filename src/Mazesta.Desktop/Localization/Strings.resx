@@ -1593,7 +1593,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Advice_Error" xml:space="preserve"><value>The test itself stopped with a program error; nothing is known about the part from this run. Repeat it; if it happens again, send the app's log (Settings) to the shop.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>Close until the next session</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>AI models</value></data>
-  <data name="Nav_Assistant" xml:space="preserve"><value>Assistant</value></data>
+  <data name="Nav_Assistant" xml:space="preserve"><value>AI assistant</value></data>
   <data name="Assist_Lede" xml:space="preserve"><value>Ask in plain words, in Persian or English. A language model runs on this computer's graphics card; nothing is sent over the internet. It can look at this computer's specification, live sensors, saved reports and benchmark history, and it can run tests and benchmarks for you: each one starts only after you agree on this page, and you see the real results.</value></data>
   <data name="Assist_Unavailable" xml:space="preserve"><value>The assistant is not available on this computer.</value></data>
   <data name="Assist_NotDownloaded" xml:space="preserve"><value>Download the assistant first.</value></data>
@@ -1601,6 +1601,40 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_NoGpu" xml:space="preserve"><value>The assistant needs a graphics card with its own memory. None was found on this computer.</value></data>
   <data name="Assist_LittleVram" xml:space="preserve"><value>The assistant needs a graphics card with at least 4 GB of its own memory; this one has less.</value></data>
   <data name="Assist_NoRoom" xml:space="preserve"><value>This computer does not have enough free memory for the assistant's model right now. Close other programs and look again.</value></data>
+  <data name="Assist_Reading" xml:space="preserve"><value>Reading the graphics card… The assistant is offered once its memory is known.</value></data>
+  <data name="AiGen_Title" xml:space="preserve"><value>Image, video, audio and 3D models</value></data>
+  <data name="AiGen_Lede" xml:space="preserve"><value>Generative models that run on your own computer, and whether this graphics card can run them. The app does not download or run these: they run in ComfyUI or their own tools. The fit is read from the memory each publisher asks for, not measured here.</value></data>
+  <data name="AiGen_Media_Image" xml:space="preserve"><value>Images</value></data>
+  <data name="AiGen_Media_Video" xml:space="preserve"><value>Video</value></data>
+  <data name="AiGen_Media_Audio" xml:space="preserve"><value>Audio and music</value></data>
+  <data name="AiGen_Media_Mesh" xml:space="preserve"><value>3D models</value></data>
+  <data name="AiGen_Suggested" xml:space="preserve"><value>Suggested for this computer: {0}</value></data>
+  <data name="AiGen_NoneFits" xml:space="preserve"><value>None of these runs on this graphics card.</value></data>
+  <data name="AiGen_Fit_Full" xml:space="preserve"><value>Runs at full quality</value></data>
+  <data name="AiGen_Fit_Reduced" xml:space="preserve"><value>Runs reduced</value></data>
+  <data name="AiGen_Fit_No" xml:space="preserve"><value>Does not run</value></data>
+  <data name="AiGen_Block_NoGpu" xml:space="preserve"><value>Needs a graphics card</value></data>
+  <data name="AiGen_Block_NeedsNvidia" xml:space="preserve"><value>NVIDIA cards only</value></data>
+  <data name="AiGen_Block_LittleVram" xml:space="preserve"><value>Too little graphics memory</value></data>
+  <data name="AiGen_Full" xml:space="preserve"><value>Full quality needs</value></data>
+  <data name="AiGen_Min" xml:space="preserve"><value>Least, reduced</value></data>
+  <data name="AiGen_Runs" xml:space="preserve"><value>Runs in</value></data>
+  <data name="AiGen_NvidiaOnly" xml:space="preserve"><value>NVIDIA only</value></data>
+  <data name="AiGen_License" xml:space="preserve"><value>Licence</value></data>
+  <data name="AiGen_Source" xml:space="preserve"><value>Figures from:</value></data>
+  <data name="AiGen_Note_Linux" xml:space="preserve"><value>Its publisher has tested it on Linux only; on Windows it runs through community builds.</value></data>
+  <data name="AiGen_Note_H3" xml:space="preserve"><value>Its licence leaves out the EU, the UK, South Korea and the USA. The local model makes up to 768p; 2K goes through MiniMax's online service.</value></data>
+  <data name="AiGen_Note_Hunyuan" xml:space="preserve"><value>The reduced figure is the shape alone; the texture needs 21 GB more on its own.</value></data>
+  <data name="AiGen_Purpose_QwenImage" xml:space="preserve"><value>Alibaba's image model: makes and edits pictures, and writes text inside them well.</value></data>
+  <data name="AiGen_Purpose_FluxKlein" xml:space="preserve"><value>A small, fast image model from Black Forest Labs; free for commercial use.</value></data>
+  <data name="AiGen_Purpose_MiniMaxH3" xml:space="preserve"><value>Video with its own stereo sound, from text, pictures, video or audio; up to 15 seconds a clip.</value></data>
+  <data name="AiGen_Purpose_Ltx" xml:space="preserve"><value>Lightricks' video model: fast, high resolution, with sound.</value></data>
+  <data name="AiGen_Purpose_Wan5b" xml:space="preserve"><value>A light video model (text or picture to 720p video) for mid-range cards.</value></data>
+  <data name="AiGen_Purpose_MiniMaxMusic" xml:space="preserve"><value>Whole songs with vocals and instruments from lyrics and a description.</value></data>
+  <data name="AiGen_Purpose_QwenTts" xml:space="preserve"><value>Text to speech with voice cloning from a few seconds of audio; light enough for most cards.</value></data>
+  <data name="AiGen_Purpose_Pixal3d" xml:space="preserve"><value>A 3D model from one picture, aligned to the picture's pixels (TencentARC).</value></data>
+  <data name="AiGen_Purpose_Trellis2" xml:space="preserve"><value>Microsoft's picture-to-3D model, with textures ready for games and rendering.</value></data>
+  <data name="AiGen_Purpose_Hunyuan3d" xml:space="preserve"><value>Tencent's picture-to-3D model: the shape first, then its texture.</value></data>
   <data name="Assist_Enable_Title" xml:space="preserve"><value>Turn on the assistant</value></data>
   <data name="Assist_Enable_Text" xml:space="preserve"><value>The assistant is downloaded once, only when you ask: the language model ({0}, {1}) and the llama.cpp runtime. It is kept in the app's data folder and can be removed from the AI models page.</value></data>
   <data name="Assist_Enable" xml:space="preserve"><value>Download and turn on</value></data>

@@ -3,7 +3,9 @@
 // change under it, and it can change them: it opens the page it talks about, and when it starts a test the page follows the test to the part's
 // own page, as a test started by hand does. A test or benchmark starts only after the user agreed on the confirm card, for the items left
 // ticked; what a run gave is drawn here from the run's own result, beside the model's words about it. The past chats are kept on this computer,
-// listed beside the chat, and deleted one by one or all at once. On a computer that cannot run the assistant the column is not there at all.
+// listed beside the chat, and deleted one by one or all at once. The column is always there (folded or open, and the side bar opens it): on a
+// computer that cannot run the assistant it says why. The graphics card is read a moment after the app opens, so that answer is asked again
+// until the card is known.
 // Downloads are the AI page's (same bridge, "ai" event); the chat is this column's ("assistant" event).
 import { call, on } from "./bridge.js";
 import { t, fa } from "./i18n.js";
@@ -16,12 +18,12 @@ const store = (key, v) => { try { if (v === undefined) return localStorage.getIt
 
 export function mountAssistant(app, root) {
   const exec = (m, cmd, extra = {}) => call(m, { cmd, ...extra }).catch((e) => toast(String(e.message || e), "fail"));
-  // open / closed is a per-viewer convenience kept in the browser profile; "none" is the host's: this computer cannot run the assistant.
+  // open / closed is a per-viewer convenience kept in the browser profile; "none" only while the bridge has not answered.
   const setOpen = (open) => { app.dataset.asst = open ? "open" : "closed"; store("mazesta.asst", open ? "open" : "closed"); };
   const setHist = (open) => { app.dataset.hist = open ? "open" : ""; store("mazesta.asst.hist", open ? "open" : ""); histBtn.setAttribute("aria-pressed", String(open)); };
 
   const dot = h("span", { class: "asst-dot", "aria-hidden": "true" });
-  const strip = h("button", { class: "asst-strip", type: "button", title: t("Assist_Open"), "aria-label": t("Assist_Open"), onclick: () => setOpen(true) }, icon("chat"), dot);
+  const strip = h("button", { class: "asst-strip", type: "button", title: t("Assist_Open"), "aria-label": t("Assist_Open"), onclick: () => setOpen(true) }, icon("chat"), dot, h("span", { class: "asst-strip-name" }, t("Nav_Assistant")));
   const histBtn = h("button", { class: "icon-btn", type: "button", title: t("Assist_History"), "aria-label": t("Assist_History"), onclick: () => setHist(app.dataset.hist !== "open") }, icon("clock"));
   const newBtn = h("button", { class: "icon-btn", type: "button", title: t("Assist_Clear"), "aria-label": t("Assist_Clear"), onclick: () => { exec("assistant.exec", "new"); input.focus(); } }, icon("refresh"));
   const shut = h("button", { class: "icon-btn", type: "button", title: t("Assist_Collapse"), "aria-label": t("Assist_Collapse"), onclick: () => setOpen(false) }, icon("x"));
@@ -68,6 +70,11 @@ export function mountAssistant(app, root) {
   // Before the chat: download, start, or why not. Rebuilt only when what it says changes; a download's ticks move its bar in place.
   let gateKey = "", gateProg = null;
   function renderGate() {
+    if (a.status !== "Available") {   // why this computer cannot run it (no card with its own memory, too little of it, no free memory now)
+      chatBox.hidden = true; gate.hidden = false;
+      const key = "why|" + a.status; if (key === gateKey) return; gateKey = key;
+      return gate.replaceChildren(...[a.status === "Reading" ? null : h("h3", { class: "asst-gate-title" }, t("Assist_Unavailable")), h("p", { class: "ai-purpose" }, t(`Assist_${a.status}`))].filter(Boolean));
+    }
     const m = a.model, rt = ai?.runtime, tr = rt?.transfer?.active ? rt.transfer : ai?.models?.find((x) => x.id === m?.id)?.transfer;
     const downloading = !!tr?.active || (ai?.downloading != null), failed = rt?.transfer?.error || ai?.models?.find((x) => x.id === m?.id)?.transfer?.error;
     const installed = a.runtimeReady && m?.downloaded, on_ = a.server !== "off";
@@ -175,8 +182,8 @@ export function mountAssistant(app, root) {
 
   function render(s) {
     a = s;
-    if (!["Available"].includes(a.status)) { app.dataset.asst = "none"; return; }
     if (app.dataset.asst === "none" || !app.dataset.asst) app.dataset.asst = store("mazesta.asst") === "closed" ? "closed" : "open";
+    if (a.status !== "Available") { state.className = "pill none"; state.textContent = t("Assist_OffShort"); dot.dataset.state = ""; return renderGate(); }
     state.className = `pill ${a.server === "ready" ? "pass" : a.server === "off" ? "none" : "run"}`;
     state.textContent = t(a.server === "ready" ? "Assist_Ready" : a.server === "starting" ? "Assist_Loading" : a.server === "paused" ? "Assist_PausedShort" : "Assist_OffShort");
     dot.dataset.state = a.confirm ? "ask" : a.busy || a.activity ? "busy" : a.server === "ready" ? "ready" : "";
@@ -186,8 +193,10 @@ export function mountAssistant(app, root) {
   setHist(store("mazesta.asst.hist") === "open");
   const offA = on("assistant", render), offAi = on("ai", (s) => { ai = s; if (a) renderGate(); });
   const offNav = on("assistantNav", (x) => go(x.page));
+  const onShow = () => setOpen(app.dataset.asst !== "open"); window.addEventListener("assistant:toggle", onShow);
   Promise.all([call("ai.state").then((s) => { ai = s; }).catch(() => {}), call("assistant.state")]).then(([, s]) => render(s)).catch(() => { app.dataset.asst = "none"; });
-  // Free memory decides which model is offered; it is followed every few seconds while the assistant is off and the window is shown.
-  const timer = setInterval(() => { if (!document.hidden && app.dataset.asst === "open" && !a?.busy && a?.server === "off") call("assistant.state").then(render).catch(() => {}); }, 10000);
-  return () => { offA(); offAi(); offNav(); offTests(); clearInterval(timer); };
+  // Free memory decides which model is offered, and the card is read a moment after start: both are followed every few seconds while the
+  // assistant is off or not yet possible and the window is shown.
+  const timer = setInterval(() => { if (!document.hidden && !a?.busy && (a?.status !== "Available" || a?.server === "off" && app.dataset.asst === "open")) call("assistant.state").then(render).catch(() => {}); }, 5000);
+  return () => { offA(); offAi(); offNav(); offTests(); clearInterval(timer); window.removeEventListener("assistant:toggle", onShow); };
 }

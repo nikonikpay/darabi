@@ -108,6 +108,9 @@ function renderIndex(info) {
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
         icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no" }, `⌃${i + 1}`))),
     ])),
+    // The assistant lives in its own column at the other edge; this entry opens and folds it, from any page.
+    h("button", { class: "index-asst", type: "button", title: `${t("Nav_Assistant")} · Ctrl+J`, onclick: () => window.dispatchEvent(new Event("assistant:toggle")) },
+      icon("chat"), h("span", { class: "nm" }, t("Nav_Assistant"))),
     h("div", { class: "index-foot" },
       h("label", { for: "svc" }, t("Service_Number")),
       h("input", { id: "svc", class: "field lat", style: { width: "100%", textAlign: "left" }, maxlength: "40", value: info.serviceNumber || "",
@@ -188,6 +191,7 @@ async function whenReady() {
 window.addEventListener("hashchange", () => show((location.hash.match(/^#\/(\w+)/) || [])[1]));
 window.addEventListener("keydown", (e) => {
   if (!e.ctrlKey || e.altKey || e.shiftKey) return;
+  if (e.key.toLowerCase() === "j") { e.preventDefault(); window.dispatchEvent(new Event("assistant:toggle")); return; }
   const n = "123456789".indexOf(e.key);
   if (n >= 0 && FAMILIES[n]) { e.preventDefault(); go(lastInFamily.get(FAMILIES[n]) || FAMILIES[n].pages[0]); }
 });

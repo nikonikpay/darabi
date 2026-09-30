@@ -89,6 +89,21 @@ public sealed partial class WebBridge
                         gpu = Measured(m, "gpu"), cpu = Measured(m, "cpu"),
                     };
                 }),
+                // Image, video, audio and 3D models: judged from their published figures only, never downloaded or run by the app.
+                generative = Enum.GetValues<AiMedia>().Select(media => new
+                {
+                    media = media.ToString(), suggested = AiGenCatalog.Suggest(media, pc)?.Id,
+                    models = AiGenCatalog.Models.Where(g => g.Media == media).Select(g =>
+                    {
+                        var v = AiGenCatalog.Judge(g, pc);
+                        return new
+                        {
+                            id = g.Id, name = g.Name, @params = g.Params, min = Size(g.MinVram), full = Size(g.FullVram), nvidiaOnly = g.NvidiaOnly, license = g.License,
+                            runtime = g.Runtime, source = g.Source, purpose = Loc.Get(g.PurposeKey), note = g.NoteKey is { } n ? Loc.Get(n) : null,
+                            fit = v.Fit.ToString(), block = v.Block?.ToString(),
+                        };
+                    }),
+                }),
             };
         }
 
