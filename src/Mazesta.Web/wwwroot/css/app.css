@@ -1115,3 +1115,20 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .lan-panel { --hue: var(--c-net); margin: 14px 0 4px; }
 .lan-addr { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .lan-addr code { background: var(--well); padding: 3px 8px; border-radius: 4px; font-size: 12.5px; }
+
+/* ———— Checkup: a finding is a flat panel with its state's colour down the start edge, its stamp, its words and the numbers it stands on ———— */
+.findings { display: grid; gap: 10px; }
+.finding { --lv: var(--rule-2); background: var(--ink-2); border: 1px solid var(--rule); border-inline-start: 3px solid var(--lv); border-radius: var(--r-panel); padding: 10px 14px; min-width: 0; }
+.finding.lv-Good { --lv: var(--pass); } .finding.lv-Attention { --lv: var(--warn); } .finding.lv-Problem { --lv: var(--fail); } .finding.lv-Note { --lv: var(--paper-3); }
+.finding-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.finding-head b { font-size: 14px; }
+.finding-text { margin: 6px 0 0; color: var(--paper-2); font-size: 13px; line-height: 1.8; max-width: 90ch; }
+.finding-hint { margin: 6px 0 0; font-size: 13px; line-height: 1.8; padding-inline-start: 10px; border-inline-start: 2px solid var(--lv); }
+.finding-m { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 0 0; font-size: 12px; }
+.finding-m dt { color: var(--paper-3); } .finding-m dt::after { content: ":"; }
+.finding-m dd { margin: 0; margin-inline-start: -12px; }
+.checkup-run { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.checkup-sum { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 14px; }
+.checkup-sum .pill { font-size: 13px; padding: 3px 12px; }
+.checkup-run-block { display: grid; gap: 8px; margin-bottom: 14px; }
+.q-row .row-checkup { grid-column: 3 / -1; display: grid; gap: 8px; }

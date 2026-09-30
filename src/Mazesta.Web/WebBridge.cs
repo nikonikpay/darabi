@@ -27,7 +27,7 @@ public sealed partial class WebBridge : IDisposable
     {
         _core = core; _sp = sp; _paths = paths; _config = config; _store = store; _configCorrupt = configCorrupt; _window = window; _log = log;
         core.WebMessageReceived += OnMessage;
-        RegisterApp(); RegisterMonitoring(); RegisterTests(); RegisterBenchmarks(); RegisterAi(); RegisterLan(); RegisterTuning(); RegisterReports(); RegisterTools(); RegisterSettings(); RegisterDiagnostics(); RegisterOverlay(); RegisterSystem(); RegisterTweaks(); RegisterAppUpdate(); RegisterQuiet();
+        RegisterApp(); RegisterMonitoring(); RegisterTests(); RegisterBenchmarks(); RegisterCheckup(); RegisterAi(); RegisterLan(); RegisterTuning(); RegisterReports(); RegisterTools(); RegisterSettings(); RegisterDiagnostics(); RegisterOverlay(); RegisterSystem(); RegisterTweaks(); RegisterAppUpdate(); RegisterQuiet();
     }
 
     private void MethodAsync(string name, Func<JsonElement, Task<object?>> handler) => _methods[name] = handler;

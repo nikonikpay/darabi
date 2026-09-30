@@ -1,5 +1,5 @@
 using System.IO; using System.Reflection; using System.Security.Cryptography; using System.Text;
-using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels;
+using Mazesta.Core.Hardware; using Mazesta.Core.Health.Checkup; using Mazesta.Core.Inventory; using Mazesta.Desktop.Services; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels;
 using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Cpu; using Mazesta.Diagnostics.Gpu; using Mazesta.Diagnostics.Storage; using Mazesta.Hardware.Wmi; using Mazesta.Monitoring;
 using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
 namespace Mazesta.Web;
@@ -20,8 +20,9 @@ public sealed partial class WebBridge
 
     private void RegisterBenchmarks()
     {
-        var bench = _sp.GetRequiredService<Func<BenchmarksViewModel>>()();
+        var bench = _benchVm = _sp.GetRequiredService<Func<BenchmarksViewModel>>()();
         _cleanup.Add(bench.Dispose);
+        var checkup = _sp.GetRequiredService<CheckupService>();
         // The best result of each benchmark on this machine, kept across runs and restarts; a run is compared with it when it finishes. Every ranked
         // run also goes to the run log, whatever machine this copy is on: the shop builds the published comparison lists from those logs.
         var records = new BenchmarkRecords(_paths.DataRoot); var runs = new BenchmarkRunLog(_paths.DataRoot);
@@ -78,27 +79,46 @@ public sealed partial class WebBridge
         runner.BusyChanged += OnBusy; _cleanup.Add(() => runner.BusyChanged -= OnBusy);
         async void OnFinishedUi(RecordedBenchmark run)
         {
-            // The run is filed under the options it started with (the runner's copy), never the row's current ones: a GPU or drive picked on
-            // the page while it ran must not take the result. The overclock mark is the one set when the run (or its queue) started.
-            var row = bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id == run.Definition.Id);
-            if (row is null) return;
-            var options = run.Options ?? row.OptionValues(); bool overclocked = ocAtStart;
-            var s = System() ?? new SystemId(Environment.MachineName + " | ", Environment.MachineName, "", "");
-            var c = records.Offer(s.Key, s.Name, BenchmarkRecords.RecordKey(run.Definition.Id.Value, options), run.Result);
-            compared[run.Definition.Id.Value] = c;
-            if (c is { Saved: false }) _log.LogInformation("Benchmark {Id}: {Value} is below the record {Best}; not kept", run.Definition.Id.Value, c.Current.Value, c.Previous?.Value);
-            PushSoon("bench", State);
-            if (c is null || Headline(row) is not { } h || s.Hash.Length == 0) return;
+            // Whatever happens below, the checkup hears whether this run has a standing among other systems, so its report does not wait for it.
+            Finding? peer = null;
             try
             {
-                string? part = await PartOf(h.Part, options, s);
-                if (string.IsNullOrWhiteSpace(part)) { _log.LogInformation("Benchmark {Id}: the measured part is not known; the run is not added to the comparison log", run.Definition.Id.Value); return; }
-                var details = await DetailsOf(h.Part, part, options);
-                runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options), BenchmarkPeers.PartName(part),
-                    s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, details));
-                memo.Clear(); PushSoon("bench", State);
+                // The run is filed under the options it started with (the runner's copy), never the row's current ones: a GPU or drive picked on
+                // the page while it ran must not take the result. The overclock mark is the one set when the run (or its queue) started.
+                var row = bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id == run.Definition.Id);
+                if (row is null) return;
+                var options = run.Options ?? row.OptionValues(); bool overclocked = ocAtStart;
+                var s = System() ?? new SystemId(Environment.MachineName + " | ", Environment.MachineName, "", "");
+                var c = records.Offer(s.Key, s.Name, BenchmarkRecords.RecordKey(run.Definition.Id.Value, options), run.Result);
+                compared[run.Definition.Id.Value] = c;
+                if (c is { Saved: false }) _log.LogInformation("Benchmark {Id}: {Value} is below the record {Best}; not kept", run.Definition.Id.Value, c.Current.Value, c.Previous?.Value);
+                PushSoon("bench", State);
+                if (c is null || Headline(row) is not { } h || s.Hash.Length == 0) return;
+                try
+                {
+                    string? part = await PartOf(h.Part, options, s);
+                    if (string.IsNullOrWhiteSpace(part)) { _log.LogInformation("Benchmark {Id}: the measured part is not known; the run is not added to the comparison log", run.Definition.Id.Value); return; }
+                    // Judged before this run joins the log, so it is compared with the other systems and never with itself.
+                    peer = PeerFinding(row, h, BenchmarkPeers.TableKey(run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options)), c.Current, part, overclocked, run.Result.Metrics);
+                    var details = await DetailsOf(h.Part, part, options);
+                    runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options), BenchmarkPeers.PartName(part),
+                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, details));
+                    memo.Clear(); PushSoon("bench", State);
+                }
+                catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }
             }
-            catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }
+            finally { checkup.SetPeer(run, peer); }
+        }
+        // This run against the same part model on other systems (the stock entry, or the overclocked one for an overclocked run).
+        Finding PeerFinding(BenchmarkRowViewModel row, HeadlineMetric h, string table, BenchmarkRecord current, string part, bool overclocked, IReadOnlyList<BenchmarkMetric> metrics)
+        {
+            var k = BenchmarkPeers.Rank(PeerDb.Table(table), runs.Entries(table), current.Value, part, h.HigherIsBetter);
+            var same = k.Rows.FirstOrDefault(x => x.Same && x.Entry.Overclocked == overclocked)?.Entry;
+            var kind = row.Benchmark.Component;
+            if (same is null)
+                return new Finding(FindingCode.BenchFewPeers, FindingLevel.Note, kind, [new("Check_M_Mine", current.Value, current.Unit), new("Check_M_Systems", 0, "")], row.Name);
+            return PeerCheck.Evaluate(new PeerStanding(row.Name, kind, current.Value, same.Median, same.Systems, h.HigherIsBetter, current.Unit,
+                CheckupService.ConditionsOf(metrics), same.Sample?.Metrics is { } theirs ? CheckupService.ConditionsOf(theirs) : null));
         }
         void OnFinished(RecordedBenchmark run) => _window.Dispatcher.BeginInvoke(() => OnFinishedUi(run));
         runner.Finished += OnFinished; _cleanup.Add(() => runner.Finished -= OnFinished);
@@ -171,9 +191,12 @@ public sealed partial class WebBridge
                 percent = r.PercentComplete, status = r.StatusText, active = r.IsActive, detail = r.Detail, unavailable = r.UnavailableText,
                 options = r.Options.Select(Option), metrics = r.Metrics.Select(m => new { name = m.Name, value = m.Value }),
                 best = Best(r), compared = Compared(r), peers = r.IsActive ? null : Peers(r),
+                checkup = r.IsActive ? null : checkup.Runs().FirstOrDefault(x => x.Id == r.Benchmark.Definition.Id.Value)?.All.Select(FindingJson),
             }),
         };
         Mirror("bench", bench, State, [bench.Rows, .. bench.Rows.Select(r => r.Metrics)]);
+        void OnCheckup() => PushSoon("bench", State);   // a run's findings arrive a moment after its numbers
+        checkup.Changed += OnCheckup; _cleanup.Add(() => checkup.Changed -= OnCheckup);
         foreach (var o in bench.Rows.SelectMany(r => r.Options)) o.PropertyChanged += (_, _) => PushSoon("bench", State);
         // The hardware list is read a few seconds after start-up: the records under the full system name show once it is in.
         void OnSnapshot(SensorSnapshot _) { if (System() is null) return; engine.SnapshotPublished -= OnSnapshot; PushSoon("bench", State); }

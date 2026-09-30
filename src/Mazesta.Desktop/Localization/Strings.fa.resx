@@ -1755,4 +1755,148 @@
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>ترکیبی مثل ویندوز (۷۰/۳۰، ۴ تا ۶۴ کیلوبایت، Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
   <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم صدک ۹۹</value></data>
+  <data name="Nav_Checkup" xml:space="preserve"><value>عیب‌یابی هوشمند</value></data>
+  <data name="Checkup_Lede" xml:space="preserve"><value>آیا این سیستم درست کار می‌کند؟ از روی اندازه‌گیری‌های خودش قضاوت می‌شود: تنظیمات فعلی سیستم، و هر بنچمارک CPU و گرافیک که در این نوبت اجرا شده، در برابر آنچه خود قطعه‌ها اعلام می‌کنند و در برابر سیستم‌های دیگر با همین قطعه‌ها.</value></data>
+  <data name="Checkup_Run" xml:space="preserve"><value>اجرای عیب‌یابی</value></data>
+  <data name="Checkup_RunHint" xml:space="preserve"><value>بنچمارک‌های CPU (همهٔ هسته‌ها و یک هسته)، رم و گرافیک را پشت سر هم اجرا می‌کند. قبلش برنامه‌های دیگر را ببندید.</value></data>
+  <data name="Checkup_Setup" xml:space="preserve"><value>تنظیمات سیستم</value></data>
+  <data name="Checkup_Runs" xml:space="preserve"><value>اجراهای بنچمارک</value></data>
+  <data name="Checkup_NoRuns" xml:space="preserve"><value>هنوز در این نوبت بنچمارک CPU یا گرافیکی اجرا نشده. عیب‌یابی را اجرا کنید، یا هر کدام از آن‌ها را از صفحهٔ بنچمارک‌ها، تا نتیجه‌اش اینجا بیاید.</value></data>
+  <data name="Checkup_Loading" xml:space="preserve"><value>در حال خواندن تنظیمات سیستم…</value></data>
+  <data name="Checkup_Summary_Good" xml:space="preserve"><value>در مواردی که بررسی شد مشکلی پیدا نشد.</value></data>
+  <data name="Checkup_Summary_Attention" xml:space="preserve"><value>{0} مورد نیاز به بررسی دارد.</value></data>
+  <data name="Checkup_Summary_Problem" xml:space="preserve"><value>{0} مشکل پیدا شد.</value></data>
+  <data name="Checkup_Nothing" xml:space="preserve"><value>در این اجرا چیزی برای قضاوت نبود: سنسورهای لازم عددی ندادند.</value></data>
+  <data name="Web_Bench_Checkup" xml:space="preserve"><value>عیب‌یابی این اجرا</value></data>
+  <data name="Check_Level_Good" xml:space="preserve"><value>درست</value></data>
+  <data name="Check_Level_Note" xml:space="preserve"><value>توضیح</value></data>
+  <data name="Check_Level_Attention" xml:space="preserve"><value>نیاز به بررسی</value></data>
+  <data name="Check_Level_Problem" xml:space="preserve"><value>مشکل</value></data>
+  <data name="Check_CpuNotFullyLoaded" xml:space="preserve"><value>CPU کاملاً درگیر نشد</value></data>
+  <data name="Check_CpuNotFullyLoaded_Text" xml:space="preserve"><value>در طول اجرا برنامهٔ دیگری هم از پردازنده استفاده می‌کرد، برای همین فرکانس و دمای آن قضاوت نشد. برنامه‌های دیگر را ببندید و دوباره اجرا کنید.</value></data>
+  <data name="Check_CpuStuckLowClock" xml:space="preserve"><value>فرکانس CPU زیر ۱ گیگاهرتز قفل شده</value></data>
+  <data name="Check_CpuStuckLowClock_Text" xml:space="preserve"><value>زیر بار کامل، پردازنده هیچ‌وقت از ۱ گیگاهرتز بالاتر نرفت: چیزی جلوی آن را گرفته است. در لپ‌تاپ معمولاً شارژر خراب، تقلبی یا کم‌توان است (در این حالت برد سیگنال BD PROCHOT می‌دهد و CPU را روی کمترین فرکانس نگه می‌دارد)، یا باتری فرسوده یا مدار تغذیهٔ معیوب؛ و در هر سیستمی، Power Plan یا تنظیمی در بایوس. اول با شارژر اصلی امتحان کنید، بعد Power Plan و بایوس را بررسی کنید.</value></data>
+  <data name="Check_CpuBelowBaseClock" xml:space="preserve"><value>فرکانس همهٔ هسته‌ها زیر فرکانس پایه</value></data>
+  <data name="Check_CpuBelowBaseClock_Text" xml:space="preserve"><value>زیر بار همهٔ هسته‌ها، فرکانس از فرکانس پایه‌ای که پردازنده برای نگه داشتنش ساخته شده پایین‌تر آمد. علت‌های معمول: خنک‌کننده‌ای که از پس گرما برنمی‌آید، محدودیت توانی کمتر از توان اسمی پردازنده (در لپ‌تاپ‌های باریک رایج است) یا مدار تغذیهٔ ضعیف روی مادربرد.</value></data>
+  <data name="Check_CpuAtTjMax" xml:space="preserve"><value>CPU به سقف دمای خودش رسید</value></data>
+  <data name="Check_CpuAtTjMax_Text" xml:space="preserve"><value>پردازنده به سقفی که خودش اعلام می‌کند (TjMax) رسید؛ در این نقطه برای محافظت از خودش فرکانس را پایین می‌آورد. بعضی پردازنده‌های رده‌بالا زیر بار طولانی همهٔ هسته‌ها طبق طراحی تا همین سقف می‌روند، اما اگر فرکانس زیاد افت کرده، خنک‌کاری کافی نیست: نصب و خمیر خنک‌کننده، فن یا پمپ آن و جریان هوای کیس را بررسی کنید.</value></data>
+  <data name="Check_CpuNearTjMax" xml:space="preserve"><value>فاصلهٔ کم تا سقف دما</value></data>
+  <data name="Check_CpuNearTjMax_Text" xml:space="preserve"><value>پردازنده نزدیک سقف دمای خودش کار کرد ولی به آن نرسید، پس در این اجرا گرما جلوی آن را نگرفت. بار طولانی‌تر یا اتاق گرم‌تر ممکن است آن را به سقف برساند.</value></data>
+  <data name="Check_CpuHeldAtCeiling" xml:space="preserve"><value>CPU روی سقف دمایش نگه داشته شد</value></data>
+  <data name="Check_CpuHeldAtCeiling_Text" xml:space="preserve"><value>دما روی بالاترین مقدارش ثابت ماند و در همین حال فرکانس مدام پایین آمد: پردازنده با کم کردن فرکانس، دمایش را روی سقف نگه می‌دارد. پردازنده‌هایی مثل Ryzen شرکت AMD روی سقف دمایشان می‌ایستند (در بسیاری از مدل‌ها ۹۵ درجه) و به‌جای داغ‌تر شدن فرکانس را کم می‌کنند؛ پس خودِ عدد دما چیز زیادی نمی‌گوید و افت فرکانس نشان می‌دهد خنک‌کاری کم می‌آورد. نصب و خمیر خنک‌کننده، فن یا پمپ آن و جریان هوای کیس را بررسی کنید.</value></data>
+  <data name="Check_CpuHotSteady" xml:space="preserve"><value>داغ، ولی فرکانس ثابت ماند</value></data>
+  <data name="Check_CpuHotSteady_Text" xml:space="preserve"><value>دما نزدیک بالاترین مقدارش ثابت ماند ولی فرکانس افت نکرد، پس در این اجرا گرما جلوی پردازنده را نگرفت. بسیاری از پردازنده‌های امروزی طوری ساخته شده‌اند که تا رسیدن به سقف دما فرکانس را بالا ببرند.</value></data>
+  <data name="Check_CpuHeatOk" xml:space="preserve"><value>گرما مانع کار CPU نشد</value></data>
+  <data name="Check_CpuHeatOk_Text" xml:space="preserve"><value>دما پایین‌تر از حدی ماند که پردازنده در آن خودش را کند می‌کند.</value></data>
+  <data name="Check_CpuPowerStep" xml:space="preserve"><value>بوست کوتاه، سپس محدودیت توان پایین‌تر</value></data>
+  <data name="Check_CpuPowerStep_Text" xml:space="preserve"><value>پردازنده در ثانیه‌های اول توان بیشتری کشید و بعد، در حالی که دما هنوز جا داشت، به سطح پایین‌تر و ثابتی برگشت. این کارِ محدودیت‌های توانی است که در بایوس یا توسط سازندهٔ لپ‌تاپ تعیین شده (یکی کوتاه‌مدت و یکی بلندمدت)، نه خرابی. تنظیمات پیش‌فرض اینتل روی نسل ۱۳ و ۱۴ همین‌طور کار می‌کنند و در کارهای طولانی همهٔ هسته‌ها، فرکانس P-coreها را زیر ۵ گیگاهرتز نگه می‌دارند؛ تنظیم بدون محدودیت یا آندرولت‌شدهٔ مادربرد فرکانس بیشتر، و گرمای بیشتر، می‌دهد.</value></data>
+  <data name="Check_PowerPlanCap" xml:space="preserve"><value>Power Plan پردازنده را محدود کرده</value></data>
+  <data name="Check_PowerPlanCap_Text" xml:space="preserve"><value>در Power Plan فعال، «حداکثر وضعیت پردازنده» کمتر از ۱۰۰٪ است. با مقدار کمتر از ۱۰۰٪، ویندوز پردازنده را روی فرکانس پایه یا پایین‌تر نگه می‌دارد و بوست هیچ‌وقت فعال نمی‌شود. آن را به ۱۰۰٪ برگردانید (Control Panel، Power Options، تنظیمات پیشرفتهٔ Plan، بخش Processor power management).</value></data>
+  <data name="Check_PowerPlanNoBoost" xml:space="preserve"><value>بوست در Power Plan خاموش است</value></data>
+  <data name="Check_PowerPlanNoBoost_Text" xml:space="preserve"><value>در Power Plan، حالت بوست پردازنده روی Disabled است و پردازنده روی فرکانس پایه می‌ماند. این تنظیمی مخفی است که بعضی ابزارهای بهینه‌سازی تغییرش می‌دهند: آن را به Enabled یا Aggressive برگردانید (با powercfg) یا تنظیمات پیش‌فرض Plan را بازگردانید.</value></data>
+  <data name="Check_PowerOnBattery" xml:space="preserve"><value>کار روی باتری</value></data>
+  <data name="Check_PowerOnBattery_Text" xml:space="preserve"><value>سیستم روی باتری کار می‌کند. لپ‌تاپ‌ها روی باتری توان پردازنده و کارت گرافیک را کم می‌کنند؛ بنچمارک لپ‌تاپ را با شارژر وصل بگیرید.</value></data>
+  <data name="Check_PowerPlanOk" xml:space="preserve"><value>Power Plan پردازنده را محدود نکرده</value></data>
+  <data name="Check_PowerPlanOk_Text" xml:space="preserve"><value>Power Plan اجازه می‌دهد پردازنده با فرکانس کامل و بوست کار کند.</value></data>
+  <data name="Check_RamXmpOff" xml:space="preserve"><value>رم زیر سرعت اسمی کار می‌کند (XMP خاموش است)</value></data>
+  <data name="Check_RamXmpOff_Text" xml:space="preserve"><value>ماژول‌ها پروفایل XMP برای سرعت بالاتر دارند، اما رم با سرعت استاندارد کار می‌کند. XMP را در بایوس روشن کنید (بعضی بردها آن را DOCP یا EXPO می‌نامند). اگر با آن سیستم ناپایدار شد، ممکن است برد یا پردازنده آن سرعت را پشتیبانی نکند.</value></data>
+  <data name="Check_RamXmpOn" xml:space="preserve"><value>رم با سرعت XMP کار می‌کند</value></data>
+  <data name="Check_RamXmpOn_Text" xml:space="preserve"><value>رم با سرعت پروفایل XMP ماژول‌ها کار می‌کند.</value></data>
+  <data name="Check_RamBelowJedec" xml:space="preserve"><value>رم زیر سرعت استاندارد خودش کار می‌کند</value></data>
+  <data name="Check_RamBelowJedec_Text" xml:space="preserve"><value>رم کندتر از سرعت استاندارد (JEDEC) خود ماژول‌ها کار می‌کند. ممکن است برد یا پردازنده آن سرعت را پشتیبانی نکند یا با چهار ماژول، برد سرعت را پایین آورده باشد؛ در غیر این صورت آن را در بایوس تنظیم کنید.</value></data>
+  <data name="Check_RamAtJedec" xml:space="preserve"><value>رم با سرعت استاندارد کار می‌کند</value></data>
+  <data name="Check_RamAtJedec_Text" xml:space="preserve"><value>رم با سریع‌ترین سرعت استاندارد (JEDEC) ماژول‌ها کار می‌کند؛ ماژول‌ها پروفایل سریع‌تری ندارند.</value></data>
+  <data name="Check_RamProfileUnread" xml:space="preserve"><value>سرعت اسمی رم خوانده نشد</value></data>
+  <data name="Check_RamProfileUnread_Text" xml:space="preserve"><value>این نسخه هنوز سرعت اسمی ماژول‌های DDR5 را نمی‌خواند، پس روشن بودن XMP یا EXPO قضاوت نشد. سرعت داخل بایوس را با سرعتی که روی برچسب ماژول‌ها نوشته شده مقایسه کنید.</value></data>
+  <data name="Check_RamSingleChannel" xml:space="preserve"><value>یک ماژول رم: تک‌کاناله</value></data>
+  <data name="Check_RamSingleChannel_Text" xml:space="preserve"><value>با یک ماژول، رم تک‌کاناله و با نصف پهنای باند حالت دوکاناله کار می‌کند. بازی‌ها و گرافیک مجتمع بیشترین افت را دارند. یک ماژول دوم مشابه این را درست می‌کند.</value></data>
+  <data name="Check_RamSameChannel" xml:space="preserve"><value>ماژول‌ها در یک کانال</value></data>
+  <data name="Check_RamSameChannel_Text" xml:space="preserve"><value>طبق نام اسلات‌ها، همهٔ ماژول‌ها در یک کانال نصب شده‌اند و رم تک‌کاناله کار می‌کند. آن‌ها را به اسلات‌هایی ببرید که دفترچهٔ مادربرد برای دو ماژول گفته (معمولاً A2 و B2).</value></data>
+  <data name="Check_RamMixed" xml:space="preserve"><value>ماژول‌های رم ناهمسان</value></data>
+  <data name="Check_RamMixed_Text" xml:space="preserve"><value>ماژول‌ها همه از یک مدل یا یک ظرفیت نیستند. ماژول‌های ناهمسان با سرعت و تایمینگ کندترینشان کار می‌کنند و ظرفیت متفاوت می‌تواند بخشی از رم را تک‌کاناله کند.</value></data>
+  <data name="Check_GpuPowerBrake" xml:space="preserve"><value>کارت گرافیک: ترمز توان خارجی</value></data>
+  <data name="Check_GpuPowerBrake_Text" xml:space="preserve"><value>درایور کارت گزارش داد که ترمز توان خارجی فرکانس آن را کم کرد. این از سمت تغذیه است: پاوری که توان کافی نمی‌دهد، کانکتور یا کابل برق شل یا آسیب‌دیده، یا تبدیل. کابل‌ها و پاور را بررسی کنید.</value></data>
+  <data name="Check_GpuHwThermal" xml:space="preserve"><value>کارت گرافیک: کندشدن سخت‌افزاری به‌خاطر دما</value></data>
+  <data name="Check_GpuHwThermal_Text" xml:space="preserve"><value>محافظ داخلی کارت به‌خاطر داغ شدن بخشی از آن، فرکانس را به‌شدت کم کرد. فن‌های کارت، خمیر و پدهای حرارتی آن و جریان هوای کیس را بررسی کنید.</value></data>
+  <data name="Check_GpuHwSlowdown" xml:space="preserve"><value>کارت گرافیک: کندشدن سخت‌افزاری</value></data>
+  <data name="Check_GpuHwSlowdown_Text" xml:space="preserve"><value>درایور کارت برای بخش قابل‌توجهی از اجرا کندشدن سخت‌افزاری گزارش داد (فرکانس نصف یا کمتر). علت‌ها: گرمای زیاد، ترمز توان از سمت پاور، یا جهش‌های توان که محافظ کارت آن‌ها را می‌گیرد. خنک‌کاری، کابل‌ها و پاور را بررسی کنید.</value></data>
+  <data name="Check_GpuThermalSlowdown" xml:space="preserve"><value>کارت گرافیک به دمای هدفش رسید</value></data>
+  <data name="Check_GpuThermalSlowdown_Text" xml:space="preserve"><value>درایور به‌خاطر رسیدن کارت به دمای هدفش فرکانس را پایین آورد. فن‌ها و هیت‌سینک کارت را تمیز کنید و جریان هوای کیس را بررسی کنید؛ در کارت قدیمی‌تر ممکن است خمیر و پدها نیاز به تعویض داشته باشند.</value></data>
+  <data name="Check_GpuPowerLimited" xml:space="preserve"><value>کارت گرافیک روی سقف توانش کار می‌کند</value></data>
+  <data name="Check_GpuPowerLimited_Text" xml:space="preserve"><value>زیر بار کامل، کارت روی سقف توان خودش کار کرد. کارت‌های گرافیک همین‌طور ساخته شده‌اند و این خرابی نیست.</value></data>
+  <data name="Check_GpuHeatOk" xml:space="preserve"><value>گرما مانع کار کارت گرافیک نشد</value></data>
+  <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>کارت پایین‌تر از دمایی ماند که در آن خودش را کند می‌کند.</value></data>
+  <data name="Check_GpuHotspotGap" xml:space="preserve"><value>فاصلهٔ زیاد دمای هات‌اسپات با هسته</value></data>
+  <data name="Check_GpuHotspotGap_Text" xml:space="preserve"><value>زیر بار، داغ‌ترین نقطهٔ چیپ خیلی داغ‌تر از هسته بود. معمولاً یعنی خمیر خشک شده یا خنک‌کننده یکنواخت روی چیپ فشار نمی‌آورد؛ تعویض خمیر (و بررسی پدها) معمولاً درستش می‌کند.</value></data>
+  <data name="Check_GpuLinkNarrow" xml:space="preserve"><value>لینک کارت گرافیک باریک‌تر از حد انتظار</value></data>
+  <data name="Check_GpuLinkNarrow_Text" xml:space="preserve"><value>هم کارت و هم اسلات لین‌های بیشتری از لینک فعلی پشتیبانی می‌کنند. کارت را دوباره جا بزنید، اسلات و کانتکت‌ها را تمیز کنید و اگر رایزر دارد آن را بررسی کنید؛ در بعضی بردها یک درایو M.2 لین‌های این اسلات را به اشتراک می‌گیرد.</value></data>
+  <data name="Check_GpuLinkSlowGen" xml:space="preserve"><value>لینک کارت گرافیک با نسل پایین‌تر PCIe</value></data>
+  <data name="Check_GpuLinkSlowGen_Text" xml:space="preserve"><value>زیر بار، لینک با نسل PCIe پایین‌تری از آنچه کارت و اسلات پشتیبانی می‌کنند کار کرد. تنظیم PCIe در بایوس (ممکن است روی نسل پایین‌تر ثابت شده باشد)، کابل رایزر اگر هست و جا افتادن کارت را بررسی کنید.</value></data>
+  <data name="Check_GpuSlotNarrow" xml:space="preserve"><value>اسلات لین کمتری از توان کارت می‌دهد</value></data>
+  <data name="Check_GpuSlotNarrow_Text" xml:space="preserve"><value>کارت با همهٔ لین‌هایی که اسلاتش دارد کار می‌کند. بیشتر کارت‌ها در x8 افت کمی دارند؛ کارت سریع در اسلات x4 افت بیشتری دارد. اگر اسلات اصلی x16 مادربرد آزاد است، جای بهتری است.</value></data>
+  <data name="Check_GpuSlotOlderGen" xml:space="preserve"><value>اسلات از نسل قدیمی‌تر PCIe است</value></data>
+  <data name="Check_GpuSlotOlderGen_Text" xml:space="preserve"><value>اسلات از نسل قدیمی‌تری از PCIe نسبت به کارت پشتیبانی می‌کند و کارت با نسل اسلات کار می‌کند. این برای این مادربرد طبیعی است و برای بیشتر کارت‌ها افت کمی دارد.</value></data>
+  <data name="Check_GpuLinkOk" xml:space="preserve"><value>لینک کارت گرافیک درست است</value></data>
+  <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>لینک PCIe کارت با همان پهنا و سرعتی کار می‌کند که کارت و اسلات اجازه می‌دهند.</value></data>
+  <data name="Check_GpuLinkBelowCard" xml:space="preserve"><value>کارت گرافیک با لین کمتری از توانش کار می‌کند</value></data>
+  <data name="Check_GpuLinkBelowCard_Text" xml:space="preserve"><value>کارت با لین کمتری از آنچه پشتیبانی می‌کند کار می‌کند؛ در این سیستم نمی‌شد خواند که اسلات چند لین می‌دهد. بسیاری از پردازنده‌های دارای گرافیک مجتمع (APU) و اسلات‌های دوم فقط x8 یا x4 می‌دهند که طبیعی است. اگر کارت در اسلات کامل x16 پردازنده‌ای است که این لین‌ها را دارد، کارت را دوباره جا بزنید.</value></data>
+  <data name="Check_DriveLinkNarrow" xml:space="preserve"><value>لینک SSD باریک‌تر از حد انتظار</value></data>
+  <data name="Check_DriveLinkNarrow_Text" xml:space="preserve"><value>هم درایو و هم اسلاتش لین بیشتری از لینک فعلی پشتیبانی می‌کنند. درایو را دوباره جا بزنید و در دفترچهٔ مادربرد ببینید آیا این اسلات لین‌هایش را با دستگاه دیگری شریک است.</value></data>
+  <data name="Check_DriveSlotLimited" xml:space="preserve"><value>اسلات M.2 سرعت SSD را محدود می‌کند</value></data>
+  <data name="Check_DriveSlotLimited_Text" xml:space="preserve"><value>اسلات باریک‌تر یا از نسل قدیمی‌تر PCIe نسبت به درایو است و بیشترین سرعت ترتیبی درایو کم می‌شود. این اسلات همین‌طور ساخته شده؛ ممکن است اسلات M.2 دیگری روی مادربرد سریع‌تر باشد.</value></data>
+  <data name="Check_DriveLinkBelowDrive" xml:space="preserve"><value>SSD با لین کمتری از توانش کار می‌کند</value></data>
+  <data name="Check_DriveLinkBelowDrive_Text" xml:space="preserve"><value>درایو با لین کمتری از آنچه پشتیبانی می‌کند کار می‌کند؛ تعداد لین اسلات خوانده نشد. بعضی اسلات‌های M.2 (اغلب اسلات‌های چیپست) فقط x2 می‌دهند: دفترچهٔ مادربرد را ببینید.</value></data>
+  <data name="Check_BenchBelowPeers" xml:space="preserve"><value>کندتر از معمولِ این مدل</value></data>
+  <data name="Check_BenchBelowPeers_Text" xml:space="preserve"><value>این نتیجه از نتیجهٔ معمول سیستم‌های دیگر با همین قطعه پایین‌تر است. اعداد کنارش و خط زیرش نشان می‌دهند چه چیزی فرق دارد.</value></data>
+  <data name="Check_BenchWithPeers" xml:space="preserve"><value>برای این مدل طبیعی است</value></data>
+  <data name="Check_BenchWithPeers_Text" xml:space="preserve"><value>این نتیجه در محدودهٔ معمول سیستم‌های دیگر با همین قطعه است.</value></data>
+  <data name="Check_BenchFewPeers" xml:space="preserve"><value>سیستم کافی برای مقایسه نیست</value></data>
+  <data name="Check_BenchFewPeers_Text" xml:space="preserve"><value>کمتر از سه سیستم با این قطعه اندازه‌گیری شده، پس هنوز معلوم نیست چه نتیجه‌ای برایش طبیعی است. نتیجه نگه داشته می‌شود و در فهرست‌های مقایسه حساب می‌شود.</value></data>
+  <data name="Check_Hint_OnBattery" xml:space="preserve"><value>سیستم در طول اجرا روی باتری بود: شارژر را وصل کنید و دوباره اجرا کنید.</value></data>
+  <data name="Check_Hint_PowerSteady" xml:space="preserve"><value>توان زیر بار ثابت ماند، پس فرکانس همهٔ هسته‌ها را محدودیت توان (بایوس یا سازندهٔ لپ‌تاپ) تعیین می‌کند: یک تنظیم است، نه خرابی.</value></data>
+  <data name="Check_Hint_LessPowerThanPeers" xml:space="preserve"><value>این قطعه بدون داغ‌تر شدن، به‌وضوح توان کمتری از سیستم معمول کشید: محدودیت توان پایین‌تری تنظیم شده (پروفایلی در بایوس مثل تنظیمات پیش‌فرض اینتل، یا تنظیم لپ‌تاپ). خرابی نیست؛ اگر سرعت بیشتر لازم است و خنک‌کاری اجازه می‌دهد، محدودیت را در بایوس بالا ببرید.</value></data>
+  <data name="Check_Hint_HotterThanPeers" xml:space="preserve"><value>این قطعه به‌وضوح داغ‌تر از سیستم معمول کار کرد: احتمالاً علت، خنک‌کاری آن است.</value></data>
+  <data name="Check_Hint_LowerClockThanPeers" xml:space="preserve"><value>فرکانس آن با توان و دمای مشابه، به‌وضوح پایین‌تر از سیستم معمول بود: Power Plan، تنظیمات بایوس و موارد دیگر همین صفحه را بررسی کنید.</value></data>
+  <data name="Check_M_Load" xml:space="preserve"><value>بار CPU</value></data>
+  <data name="Check_M_Clock" xml:space="preserve"><value>فرکانس زیر بار</value></data>
+  <data name="Check_M_Power" xml:space="preserve"><value>توان</value></data>
+  <data name="Check_M_ClockLoad" xml:space="preserve"><value>فرکانس همهٔ هسته‌ها، انتهای اجرا</value></data>
+  <data name="Check_M_BaseClock" xml:space="preserve"><value>فرکانس پایه</value></data>
+  <data name="Check_M_ClockStart" xml:space="preserve"><value>فرکانس در شروع</value></data>
+  <data name="Check_M_ClockEnd" xml:space="preserve"><value>فرکانس در انتها</value></data>
+  <data name="Check_M_ClockDrop" xml:space="preserve"><value>افت فرکانس</value></data>
+  <data name="Check_M_TempMax" xml:space="preserve"><value>بیشترین دما</value></data>
+  <data name="Check_M_TjMax" xml:space="preserve"><value>سقف اعلام‌شده توسط CPU (TjMax)</value></data>
+  <data name="Check_M_TempHeld" xml:space="preserve"><value>دمایی که روی آن ماند</value></data>
+  <data name="Check_M_PowerShort" xml:space="preserve"><value>توان در ثانیه‌های اول</value></data>
+  <data name="Check_M_PowerLong" xml:space="preserve"><value>توان پس از آن</value></data>
+  <data name="Check_M_StepAfter" xml:space="preserve"><value>کاهش پس از</value></data>
+  <data name="Check_M_MaxState" xml:space="preserve"><value>حداکثر وضعیت پردازنده</value></data>
+  <data name="Check_M_RamNow" xml:space="preserve"><value>سرعت فعلی</value></data>
+  <data name="Check_M_RamXmp" xml:space="preserve"><value>پروفایل XMP</value></data>
+  <data name="Check_M_RamJedec" xml:space="preserve"><value>استاندارد (JEDEC)</value></data>
+  <data name="Check_M_Modules" xml:space="preserve"><value>تعداد ماژول</value></data>
+  <data name="Check_M_TimeShare" xml:space="preserve"><value>سهم از زمان بار</value></data>
+  <data name="Check_M_SlowdownTemp" xml:space="preserve"><value>دمای کندشدن کارت</value></data>
+  <data name="Check_M_PowerLimit" xml:space="preserve"><value>سقف توان</value></data>
+  <data name="Check_M_HotspotGap" xml:space="preserve"><value>اختلاف هات‌اسپات و هسته (میانه)</value></data>
+  <data name="Check_M_HotspotMax" xml:space="preserve"><value>بیشترین دمای هات‌اسپات</value></data>
+  <data name="Check_M_LinkWidth" xml:space="preserve"><value>پهنای لینک</value></data>
+  <data name="Check_M_LinkWidthExpected" xml:space="preserve"><value>پهنای مورد انتظار</value></data>
+  <data name="Check_M_SlotWidth" xml:space="preserve"><value>پهنای اسلات</value></data>
+  <data name="Check_M_CardWidth" xml:space="preserve"><value>پهنای دستگاه</value></data>
+  <data name="Check_M_LinkGen" xml:space="preserve"><value>نسل PCIe</value></data>
+  <data name="Check_M_LinkGenExpected" xml:space="preserve"><value>نسل مورد انتظار</value></data>
+  <data name="Check_M_SlotGen" xml:space="preserve"><value>نسل اسلات</value></data>
+  <data name="Check_M_CardGen" xml:space="preserve"><value>نسل دستگاه</value></data>
+  <data name="Check_M_Mine" xml:space="preserve"><value>این اجرا</value></data>
+  <data name="Check_M_Median" xml:space="preserve"><value>معمولِ این مدل (میانه)</value></data>
+  <data name="Check_M_Systems" xml:space="preserve"><value>سیستم‌های مقایسه‌شده</value></data>
+  <data name="Check_M_Diff" xml:space="preserve"><value>اختلاف</value></data>
+  <data name="Check_M_PowerOurs" xml:space="preserve"><value>توان، این سیستم</value></data>
+  <data name="Check_M_PowerTheirs" xml:space="preserve"><value>توان، سیستم معمول</value></data>
+  <data name="Check_M_TempOurs" xml:space="preserve"><value>بیشترین دما، این سیستم</value></data>
+  <data name="Check_M_TempTheirs" xml:space="preserve"><value>بیشترین دما، سیستم معمول</value></data>
+  <data name="Check_M_ClockOurs" xml:space="preserve"><value>فرکانس، این سیستم</value></data>
+  <data name="Check_M_ClockTheirs" xml:space="preserve"><value>فرکانس، سیستم معمول</value></data>
 </root>

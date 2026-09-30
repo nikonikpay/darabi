@@ -41,6 +41,7 @@ public static class Bootstrapper
         s.AddSingleton<HardwareSnapshot>();
         s.AddDiagnostics(paths, lf);
         s.AddSingleton<Services.ITrayController, Services.TrayController>();
+        s.AddSingleton<Services.CheckupService>();
         s.AddSingleton<Services.ReportService>();
         s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));
         s.AddSingleton<Services.OverlayService>();
@@ -68,6 +69,7 @@ public static class Bootstrapper
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
         var provider = s.BuildServiceProvider();
+        provider.GetRequiredService<Services.CheckupService>();   // constructed now, before the pages, so it judges a run before anyone asks about it
         provider.GetRequiredService<Services.ReportService>();   // constructed now so it is already listening when the first test run starts
         return provider;
     }

@@ -33,13 +33,19 @@ public sealed record BenchmarkMetricEntry(string Name, double Value, string Unit
 /// <summary>A finished benchmark run. Benchmarks measure, they do not pass or fail, so they never change the report verdict.</summary>
 public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetricEntry> Metrics, string? Detail, DateTimeOffset? StartedAt = null);
 
+/// <summary>One checkup finding as it was worded for the technician (Level is Good, Note, Attention or Problem; Subject names the device or benchmark it
+/// is about). A finding does not change the verdict: tests pass or fail on their own evidence, a finding explains what the measurements show.</summary>
+public sealed record FindingEntry(string Level, string Title, string Text, string? Hint, string? Subject, IReadOnlyList<FindingMeasure> Measures);
+public sealed record FindingMeasure(string Name, string Value);
+
 public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancelled, int Unsupported, int NotRun, long Errors);
 
 public sealed record SessionReport(int SchemaVersion, string Id, DateTimeOffset CreatedAt, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, string ShopName, string AppVersion,
     ReportVerdict? Verdict, ReportCounts Counts, IReadOnlyList<TestEntry> Tests, IReadOnlyList<SensorSummary> Sensors, HardwareInventory Machine, IReadOnlyList<BenchmarkEntry>? Benchmarks = null,
     ReportKind Kind = ReportKind.TestSession,   // absent (TestSession) in reports saved before benchmark reports existed
     string? ServiceNumber = null,               // the shop's job number the technician entered (spec 7.1); absent when none was
-    IReadOnlyList<WindowPeak>? Peaks = null)    // each test's and benchmark's own peak readings; absent in older reports
+    IReadOnlyList<WindowPeak>? Peaks = null,   // each test's and benchmark's own peak readings; absent in older reports
+    IReadOnlyList<FindingEntry>? Findings = null)   // the checkup's findings; absent in older reports and where nothing was judged
 {
     public const int CurrentSchemaVersion = 1;
     public double DurationSeconds => Math.Max(0, (FinishedAt - StartedAt).TotalSeconds);

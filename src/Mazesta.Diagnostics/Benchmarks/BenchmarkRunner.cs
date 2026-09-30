@@ -42,6 +42,8 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     public bool InQueue { get { lock (_lock) return _queueActive; } }
     /// <summary>Something is running or a queue is under way: nothing else may start.</summary>
     public bool IsBusy { get { lock (_lock) return Running is not null || _queueActive; } }
+    /// <summary>A run is about to start (alone or in a queue), with the options it runs with: whoever watches the machine during a run starts here.</summary>
+    public event Action<IBenchmark, IReadOnlyDictionary<string, string>>? Started;
     public event Action<TestId, double>? Progress;
     /// <summary>Every finished run, whatever its status. Completed ones are the ones worth saving (a report) and listing (the next test report).</summary>
     public event Action<RecordedBenchmark>? Finished;
@@ -100,6 +102,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
         options = snapshot;
         try
         {
+            Started?.Invoke(benchmark, snapshot);
             var request = new TestExecutionRequest(seconds, clock, p => Progress?.Invoke(id, p.PercentComplete), engine, new TestOptions(benchmark.Definition, options));
             result = await benchmark.RunAsync(request, cts.Token).ConfigureAwait(false);
         }

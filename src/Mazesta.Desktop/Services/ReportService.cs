@@ -11,7 +11,7 @@ namespace Mazesta.Desktop.Services;
 /// </summary>
 public sealed class ReportService
 {
-    private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkRunner _benchmarks; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
+    private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkRunner _benchmarks; private readonly CheckupService _checkup; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
     private DateTimeOffset _sessionStart; private string _serviceNumber = "";   // the job the session was started for, even if the field changes meanwhile
     public ReportStore Store { get; }
@@ -19,9 +19,9 @@ public sealed class ReportService
     public string BrowserDataDir { get; }
     public event Action<StoredReport>? ReportCreated;
 
-    public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkRunner benchmarks, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
+    public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkRunner benchmarks, CheckupService checkup, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
     {
-        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir); BrowserDataDir = Path.Combine(paths.CacheDir, "report-browser");
+        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _checkup = checkup; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir); BrowserDataDir = Path.Combine(paths.CacheDir, "report-browser");
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; _serviceNumber = _config.ServiceNumber; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
@@ -43,7 +43,9 @@ public sealed class ReportService
             var sensors = SensorSummarizer.Summarize(_polling, tests.Min(t => t.StartedAt), tests.Max(t => t.FinishedAt));
             var benchmarks = _benchmarks.Completed().Select(ToEntry).ToList();
             var peaks = SensorSummarizer.Peaks(_polling, sensors, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.StartedAt, t.FinishedAt)));
-            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks });
+            var findings = await Setup().ConfigureAwait(false);
+            findings.AddRange(_checkup.Runs().SelectMany(c => c.All).Select(CheckupText.Entry));
+            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
@@ -55,7 +57,9 @@ public sealed class ReportService
             var machine = await _inventory.GetAsync().ConfigureAwait(false);
             var sensors = SensorSummarizer.Summarize(_polling, runs.Min(r => r.Result.StartedAt), runs.Max(r => r.Result.FinishedAt));
             var peaks = SensorSummarizer.Peaks(_polling, sensors, runs.Select(r => (r.Result.StartedAt, r.Result.FinishedAt)));
-            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber) with { Peaks = peaks });
+            var findings = await Setup().ConfigureAwait(false);
+            foreach (var run in runs) findings.AddRange((await _checkup.ForRunAsync(run).ConfigureAwait(false)).Select(CheckupText.Entry));
+            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }
@@ -77,6 +81,13 @@ public sealed class ReportService
         var sections = ViewModels.SystemInfoViewModel.Describe(inv).Select(s => new SpecSection(s.Title, [.. s.Rows.Select(r => new SpecRow(r.Label, r.Value))])).ToList();
         string html = SpecSheet.WriteHtml(sections, inv.Errors, now, _config.ShopName, AppVersion, Loc.Get("System_Export_Title"), Loc.Get("System_Export_Footer"), Loc.IsRtl, Font.Value);
         return Store.SaveSpecs(now, html, SpecSheet.WriteJson(inv, now, _config.ShopName, AppVersion));
+    }
+
+    /// <summary>The setup's checkup for a report (memory, power plan, drive links); a report is written all the same when it cannot be read.</summary>
+    private async Task<List<FindingEntry>> Setup()
+    {
+        try { return [.. (await _checkup.SetupAsync().ConfigureAwait(false)).Select(CheckupText.Entry)]; }
+        catch (Exception e) { _log.LogWarning(e, "The setup's checkup failed; the report goes without it"); return []; }
     }
 
     private static string AppVersion => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";

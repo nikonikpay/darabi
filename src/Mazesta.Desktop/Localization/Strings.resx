@@ -1755,4 +1755,148 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>Mixed like Windows (70/30, 4-64K, Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>Mixed IOPS</value></data>
   <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>99th-percentile frame time</value></data>
+  <data name="Nav_Checkup" xml:space="preserve"><value>Checkup</value></data>
+  <data name="Checkup_Lede" xml:space="preserve"><value>Whether this machine works as it should, judged from its own measurements: the setup as it is now, and every CPU and graphics benchmark run in this session, against what its parts report themselves and against other systems with the same parts.</value></data>
+  <data name="Checkup_Run" xml:space="preserve"><value>Run the checkup</value></data>
+  <data name="Checkup_RunHint" xml:space="preserve"><value>Runs the CPU (all cores and one core), memory and graphics benchmarks one after another. Close other programs first.</value></data>
+  <data name="Checkup_Setup" xml:space="preserve"><value>Setup</value></data>
+  <data name="Checkup_Runs" xml:space="preserve"><value>Benchmark runs</value></data>
+  <data name="Checkup_NoRuns" xml:space="preserve"><value>No CPU or graphics benchmark has run in this session yet. Run the checkup, or any of them on the Benchmarks page, and its findings appear here.</value></data>
+  <data name="Checkup_Loading" xml:space="preserve"><value>Reading the setup…</value></data>
+  <data name="Checkup_Summary_Good" xml:space="preserve"><value>No problem found in what was checked.</value></data>
+  <data name="Checkup_Summary_Attention" xml:space="preserve"><value>{0} item(s) need a look.</value></data>
+  <data name="Checkup_Summary_Problem" xml:space="preserve"><value>{0} problem(s) found.</value></data>
+  <data name="Checkup_Nothing" xml:space="preserve"><value>Nothing to judge in this run: the sensors it needs gave no readings.</value></data>
+  <data name="Web_Bench_Checkup" xml:space="preserve"><value>Checkup of this run</value></data>
+  <data name="Check_Level_Good" xml:space="preserve"><value>Fine</value></data>
+  <data name="Check_Level_Note" xml:space="preserve"><value>Note</value></data>
+  <data name="Check_Level_Attention" xml:space="preserve"><value>Needs a look</value></data>
+  <data name="Check_Level_Problem" xml:space="preserve"><value>Problem</value></data>
+  <data name="Check_CpuNotFullyLoaded" xml:space="preserve"><value>The CPU was not fully loaded</value></data>
+  <data name="Check_CpuNotFullyLoaded_Text" xml:space="preserve"><value>Another program used the processor during the run, so its clock and heat are not judged. Close other programs and run it again.</value></data>
+  <data name="Check_CpuStuckLowClock" xml:space="preserve"><value>The CPU is held under 1 GHz</value></data>
+  <data name="Check_CpuStuckLowClock_Text" xml:space="preserve"><value>Under full load the processor never went above 1 GHz: something is holding it down. On a laptop it is most often a faulty, fake or too weak charger (the board then raises BD PROCHOT and keeps the CPU at its lowest clock), a worn battery or a failing power circuit; on any machine, the power plan or a BIOS setting. Try the original charger first, then check the power plan and the BIOS.</value></data>
+  <data name="Check_CpuBelowBaseClock" xml:space="preserve"><value>All-core clock below the base clock</value></data>
+  <data name="Check_CpuBelowBaseClock_Text" xml:space="preserve"><value>Under all-core load the clock fell below the base clock the processor is rated to hold. The usual causes are cooling that cannot keep up, a power limit set below the processor's rating (common on thin laptops), or weak power delivery on the board.</value></data>
+  <data name="Check_CpuAtTjMax" xml:space="preserve"><value>The CPU reached its temperature limit</value></data>
+  <data name="Check_CpuAtTjMax_Text" xml:space="preserve"><value>The processor reached the limit it reports itself (TjMax), where it lowers its clock to protect itself. Some high-end processors run up to it by design under a long all-core load, but if the clock fell a lot the cooling is not enough: check the cooler's mounting and paste, its fan or pump, and the case airflow.</value></data>
+  <data name="Check_CpuNearTjMax" xml:space="preserve"><value>Little temperature headroom</value></data>
+  <data name="Check_CpuNearTjMax_Text" xml:space="preserve"><value>The processor ran close to its own limit but did not reach it, so heat did not hold it back in this run. A longer load or a warmer room may bring it to the limit.</value></data>
+  <data name="Check_CpuHeldAtCeiling" xml:space="preserve"><value>The CPU is held at its temperature ceiling</value></data>
+  <data name="Check_CpuHeldAtCeiling_Text" xml:space="preserve"><value>The temperature sat flat at its top while the clock kept falling: the processor holds its temperature limit by giving up clock. Processors such as AMD's Ryzen stop at their limit (95 °C on many models) and lower the clock instead of getting hotter, so the degree alone says little; the falling clock shows the cooling is not keeping up. Check the cooler's mounting and paste, its fan or pump, and the case airflow.</value></data>
+  <data name="Check_CpuHotSteady" xml:space="preserve"><value>Hot, but the clock held</value></data>
+  <data name="Check_CpuHotSteady_Text" xml:space="preserve"><value>The temperature stayed flat near its top but the clock did not fall, so heat did not hold the processor back in this run. Many current processors are built to boost until they reach their temperature limit.</value></data>
+  <data name="Check_CpuHeatOk" xml:space="preserve"><value>Not held back by heat</value></data>
+  <data name="Check_CpuHeatOk_Text" xml:space="preserve"><value>The temperature stayed below where the processor slows itself.</value></data>
+  <data name="Check_CpuPowerStep" xml:space="preserve"><value>A short boost, then a lower power limit</value></data>
+  <data name="Check_CpuPowerStep_Text" xml:space="preserve"><value>For the first seconds the processor drew more power, then dropped to a lower, steady level while the temperature still had room. That is the power limits set in the BIOS or by the laptop's maker (a short-term and a long-term one), not a fault. Intel's default settings on Core 13th and 14th gen work this way and keep the P-cores under 5 GHz in long all-core work; a board's unlimited or undervolted setting gives more clock, and more heat.</value></data>
+  <data name="Check_PowerPlanCap" xml:space="preserve"><value>The power plan caps the processor</value></data>
+  <data name="Check_PowerPlanCap_Text" xml:space="preserve"><value>The active power plan's maximum processor state is under 100 %. Under 100 % Windows keeps the processor at or below its base clock, so it never boosts. Set it back to 100 % (Control Panel, Power Options, the plan's advanced settings, Processor power management).</value></data>
+  <data name="Check_PowerPlanNoBoost" xml:space="preserve"><value>Boost is turned off in the power plan</value></data>
+  <data name="Check_PowerPlanNoBoost_Text" xml:space="preserve"><value>The power plan's processor boost mode is set to Disabled, so the processor stays at its base clock. It is a hidden setting some optimisation tools change: set it back to Enabled or Aggressive (with powercfg), or restore the plan's defaults.</value></data>
+  <data name="Check_PowerOnBattery" xml:space="preserve"><value>Running on battery</value></data>
+  <data name="Check_PowerOnBattery_Text" xml:space="preserve"><value>The machine runs on battery. Laptops cut the processor's and the graphics card's power on battery; benchmark a laptop with its charger in.</value></data>
+  <data name="Check_PowerPlanOk" xml:space="preserve"><value>The power plan does not hold the processor</value></data>
+  <data name="Check_PowerPlanOk_Text" xml:space="preserve"><value>The power plan lets the processor run at its full clock, with boost.</value></data>
+  <data name="Check_RamXmpOff" xml:space="preserve"><value>Memory runs below its rated speed (XMP off)</value></data>
+  <data name="Check_RamXmpOff_Text" xml:space="preserve"><value>The modules carry an XMP profile for a higher speed, but the memory runs at its standard speed. Turn on XMP in the BIOS (some boards call it DOCP or EXPO). If the system is unstable with it, the board or the processor may not hold that speed.</value></data>
+  <data name="Check_RamXmpOn" xml:space="preserve"><value>Memory runs at its XMP speed</value></data>
+  <data name="Check_RamXmpOn_Text" xml:space="preserve"><value>The memory runs at the speed of the modules' XMP profile.</value></data>
+  <data name="Check_RamBelowJedec" xml:space="preserve"><value>Memory runs below its standard speed</value></data>
+  <data name="Check_RamBelowJedec_Text" xml:space="preserve"><value>The memory runs slower than the modules' own standard (JEDEC) speed. The board or the processor may not support that speed, or with four modules the board lowered it; otherwise set it in the BIOS.</value></data>
+  <data name="Check_RamAtJedec" xml:space="preserve"><value>Memory runs at its standard speed</value></data>
+  <data name="Check_RamAtJedec_Text" xml:space="preserve"><value>The memory runs at the modules' fastest standard (JEDEC) speed; they carry no faster profile.</value></data>
+  <data name="Check_RamProfileUnread" xml:space="preserve"><value>The memory's rated speed was not read</value></data>
+  <data name="Check_RamProfileUnread_Text" xml:space="preserve"><value>This version does not read the rated speed of DDR5 modules yet, so whether XMP or EXPO is on is not judged. Compare the speed in the BIOS with the one on the modules' label.</value></data>
+  <data name="Check_RamSingleChannel" xml:space="preserve"><value>One memory module: single channel</value></data>
+  <data name="Check_RamSingleChannel_Text" xml:space="preserve"><value>With one module the memory runs in a single channel, at half the bandwidth of two. Games and integrated graphics suffer most. A second identical module fixes it.</value></data>
+  <data name="Check_RamSameChannel" xml:space="preserve"><value>Modules in the same channel</value></data>
+  <data name="Check_RamSameChannel_Text" xml:space="preserve"><value>By their slot names, all the modules sit in one channel, so the memory runs single-channel. Move them to the slots the board's manual gives for two modules (usually A2 and B2).</value></data>
+  <data name="Check_RamMixed" xml:space="preserve"><value>Mixed memory modules</value></data>
+  <data name="Check_RamMixed_Text" xml:space="preserve"><value>The modules are not all the same model or size. Mixed modules run at the slowest one's speed and timings, and a different size can leave part of the memory in a single channel.</value></data>
+  <data name="Check_GpuPowerBrake" xml:space="preserve"><value>Graphics card: external power brake</value></data>
+  <data name="Check_GpuPowerBrake_Text" xml:space="preserve"><value>The card's driver reported that an external power brake cut its clock. This comes from the power side: a power supply that cannot deliver, a loose or damaged power connector or cable, or an adapter. Check the cables and the power supply.</value></data>
+  <data name="Check_GpuHwThermal" xml:space="preserve"><value>Graphics card: hardware thermal slowdown</value></data>
+  <data name="Check_GpuHwThermal_Text" xml:space="preserve"><value>The card's own protection cut its clock hard because part of it got too hot. Check the card's fans, its paste and thermal pads, and the case airflow.</value></data>
+  <data name="Check_GpuHwSlowdown" xml:space="preserve"><value>Graphics card: hardware slowdown</value></data>
+  <data name="Check_GpuHwSlowdown_Text" xml:space="preserve"><value>The card's driver reported a hardware slowdown (the clock cut by half or more) for a lasting part of the run. Its causes are too much heat, a power brake from the power supply, or power spikes the card's protection catches. Check the cooling, the cables and the power supply.</value></data>
+  <data name="Check_GpuThermalSlowdown" xml:space="preserve"><value>The graphics card reached its temperature target</value></data>
+  <data name="Check_GpuThermalSlowdown_Text" xml:space="preserve"><value>The driver lowered the card's clock because it reached its temperature target. Clean the card's fans and heatsink and check the case airflow; on an older card the paste and pads may need replacing.</value></data>
+  <data name="Check_GpuPowerLimited" xml:space="preserve"><value>The graphics card runs at its power limit</value></data>
+  <data name="Check_GpuPowerLimited_Text" xml:space="preserve"><value>Under full load the card ran at its power limit. That is how graphics cards are built to run, not a fault.</value></data>
+  <data name="Check_GpuHeatOk" xml:space="preserve"><value>The graphics card was not held back by heat</value></data>
+  <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>The card stayed below the temperature at which it slows itself.</value></data>
+  <data name="Check_GpuHotspotGap" xml:space="preserve"><value>Hot spot far above the core</value></data>
+  <data name="Check_GpuHotspotGap_Text" xml:space="preserve"><value>Under load the hottest spot of the chip ran much hotter than the core. That usually means dried paste or a cooler not pressing evenly on the chip; repasting (and checking the pads) usually fixes it.</value></data>
+  <data name="Check_GpuLinkNarrow" xml:space="preserve"><value>Graphics card link narrower than it should be</value></data>
+  <data name="Check_GpuLinkNarrow_Text" xml:space="preserve"><value>The card and the slot can both run more lanes than the link does. Reseat the card, clean the slot and the contacts, and check the riser cable if there is one; on some boards an M.2 drive shares lanes with this slot.</value></data>
+  <data name="Check_GpuLinkSlowGen" xml:space="preserve"><value>Graphics card link at a lower PCIe generation</value></data>
+  <data name="Check_GpuLinkSlowGen_Text" xml:space="preserve"><value>Under load the link ran at a lower PCIe generation than both the card and the slot support. Check the BIOS's PCIe setting (it may be fixed to a lower generation), the riser cable if any, and the card's seating.</value></data>
+  <data name="Check_GpuSlotNarrow" xml:space="preserve"><value>The slot gives fewer lanes than the card can use</value></data>
+  <data name="Check_GpuSlotNarrow_Text" xml:space="preserve"><value>The card runs at all the lanes its slot has. Most cards lose little at x8; a fast card loses more in a x4 slot. The board's main x16 slot, if free, is the better place.</value></data>
+  <data name="Check_GpuSlotOlderGen" xml:space="preserve"><value>The slot is an older PCIe generation</value></data>
+  <data name="Check_GpuSlotOlderGen_Text" xml:space="preserve"><value>The slot supports an older PCIe generation than the card, and the card runs at the slot's. That is normal for this board and costs most cards little.</value></data>
+  <data name="Check_GpuLinkOk" xml:space="preserve"><value>Graphics card link as expected</value></data>
+  <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>The card's PCIe link runs as wide, and as fast, as the card and the slot allow.</value></data>
+  <data name="Check_GpuLinkBelowCard" xml:space="preserve"><value>The graphics card runs at fewer lanes than it supports</value></data>
+  <data name="Check_GpuLinkBelowCard_Text" xml:space="preserve"><value>The card runs at fewer lanes than it supports; how many the slot provides could not be read on this machine. Many processors with integrated graphics (APUs) and secondary slots give only x8 or x4, which is normal. In a full x16 slot of a processor that has the lanes, reseat the card.</value></data>
+  <data name="Check_DriveLinkNarrow" xml:space="preserve"><value>SSD link narrower than it should be</value></data>
+  <data name="Check_DriveLinkNarrow_Text" xml:space="preserve"><value>The drive and its slot can both run more lanes than the link does. Reseat the drive, and check in the board's manual whether this slot shares its lanes with another device.</value></data>
+  <data name="Check_DriveSlotLimited" xml:space="preserve"><value>The M.2 slot limits the SSD</value></data>
+  <data name="Check_DriveSlotLimited_Text" xml:space="preserve"><value>The slot is narrower, or of an older PCIe generation, than the drive, so the drive's top sequential speed is cut. That is how this slot is built; another M.2 slot on the board may be faster.</value></data>
+  <data name="Check_DriveLinkBelowDrive" xml:space="preserve"><value>The SSD runs at fewer lanes than it supports</value></data>
+  <data name="Check_DriveLinkBelowDrive_Text" xml:space="preserve"><value>The drive runs at fewer lanes than it supports; how many the slot provides could not be read. Some M.2 slots (often the chipset's) give only x2: see the board's manual.</value></data>
+  <data name="Check_BenchBelowPeers" xml:space="preserve"><value>Slower than usual for this model</value></data>
+  <data name="Check_BenchBelowPeers_Text" xml:space="preserve"><value>This result is below the usual result of other systems with the same part. The numbers beside it, and the line under it, show what differs.</value></data>
+  <data name="Check_BenchWithPeers" xml:space="preserve"><value>Normal for this model</value></data>
+  <data name="Check_BenchWithPeers_Text" xml:space="preserve"><value>This result is within the usual range of other systems with the same part.</value></data>
+  <data name="Check_BenchFewPeers" xml:space="preserve"><value>Too few systems to compare with</value></data>
+  <data name="Check_BenchFewPeers_Text" xml:space="preserve"><value>Fewer than three systems with this part have been measured, so what is normal for it is not known yet. The result is kept and counts towards the comparison lists.</value></data>
+  <data name="Check_Hint_OnBattery" xml:space="preserve"><value>The machine was on battery during the run: plug the charger in and run it again.</value></data>
+  <data name="Check_Hint_PowerSteady" xml:space="preserve"><value>Power held steady under load, so the all-core clock is set by the power limit (the BIOS's, or the laptop maker's): a setting, not a fault.</value></data>
+  <data name="Check_Hint_LessPowerThanPeers" xml:space="preserve"><value>This part drew clearly less power than the typical system without getting hotter: a lower power limit is set (a BIOS profile such as Intel's default settings, or the laptop's). Not a fault; raise the limit in the BIOS if more speed is wanted and the cooling allows it.</value></data>
+  <data name="Check_Hint_HotterThanPeers" xml:space="preserve"><value>This part ran clearly hotter than the typical system: its cooling is the likely cause.</value></data>
+  <data name="Check_Hint_LowerClockThanPeers" xml:space="preserve"><value>Its clock was clearly lower than the typical system's at similar power and heat: check the power plan, the BIOS settings and the other findings here.</value></data>
+  <data name="Check_M_Load" xml:space="preserve"><value>CPU load</value></data>
+  <data name="Check_M_Clock" xml:space="preserve"><value>Clock under load</value></data>
+  <data name="Check_M_Power" xml:space="preserve"><value>Power</value></data>
+  <data name="Check_M_ClockLoad" xml:space="preserve"><value>All-core clock, end of run</value></data>
+  <data name="Check_M_BaseClock" xml:space="preserve"><value>Base clock</value></data>
+  <data name="Check_M_ClockStart" xml:space="preserve"><value>Clock at the start</value></data>
+  <data name="Check_M_ClockEnd" xml:space="preserve"><value>Clock at the end</value></data>
+  <data name="Check_M_ClockDrop" xml:space="preserve"><value>Clock drop</value></data>
+  <data name="Check_M_TempMax" xml:space="preserve"><value>Highest temperature</value></data>
+  <data name="Check_M_TjMax" xml:space="preserve"><value>Limit the CPU reports (TjMax)</value></data>
+  <data name="Check_M_TempHeld" xml:space="preserve"><value>Temperature it held at</value></data>
+  <data name="Check_M_PowerShort" xml:space="preserve"><value>Power, first seconds</value></data>
+  <data name="Check_M_PowerLong" xml:space="preserve"><value>Power, after that</value></data>
+  <data name="Check_M_StepAfter" xml:space="preserve"><value>Stepped down after</value></data>
+  <data name="Check_M_MaxState" xml:space="preserve"><value>Maximum processor state</value></data>
+  <data name="Check_M_RamNow" xml:space="preserve"><value>Running at</value></data>
+  <data name="Check_M_RamXmp" xml:space="preserve"><value>XMP profile</value></data>
+  <data name="Check_M_RamJedec" xml:space="preserve"><value>Standard (JEDEC)</value></data>
+  <data name="Check_M_Modules" xml:space="preserve"><value>Modules</value></data>
+  <data name="Check_M_TimeShare" xml:space="preserve"><value>Share of the busy time</value></data>
+  <data name="Check_M_SlowdownTemp" xml:space="preserve"><value>Card's slowdown temperature</value></data>
+  <data name="Check_M_PowerLimit" xml:space="preserve"><value>Power limit</value></data>
+  <data name="Check_M_HotspotGap" xml:space="preserve"><value>Hot spot minus core (median)</value></data>
+  <data name="Check_M_HotspotMax" xml:space="preserve"><value>Highest hot spot</value></data>
+  <data name="Check_M_LinkWidth" xml:space="preserve"><value>Link width</value></data>
+  <data name="Check_M_LinkWidthExpected" xml:space="preserve"><value>Expected width</value></data>
+  <data name="Check_M_SlotWidth" xml:space="preserve"><value>Slot width</value></data>
+  <data name="Check_M_CardWidth" xml:space="preserve"><value>Device's width</value></data>
+  <data name="Check_M_LinkGen" xml:space="preserve"><value>PCIe generation</value></data>
+  <data name="Check_M_LinkGenExpected" xml:space="preserve"><value>Expected generation</value></data>
+  <data name="Check_M_SlotGen" xml:space="preserve"><value>Slot generation</value></data>
+  <data name="Check_M_CardGen" xml:space="preserve"><value>Device's generation</value></data>
+  <data name="Check_M_Mine" xml:space="preserve"><value>This run</value></data>
+  <data name="Check_M_Median" xml:space="preserve"><value>Usual for this model (median)</value></data>
+  <data name="Check_M_Systems" xml:space="preserve"><value>Systems compared</value></data>
+  <data name="Check_M_Diff" xml:space="preserve"><value>Difference</value></data>
+  <data name="Check_M_PowerOurs" xml:space="preserve"><value>Power, this system</value></data>
+  <data name="Check_M_PowerTheirs" xml:space="preserve"><value>Power, typical system</value></data>
+  <data name="Check_M_TempOurs" xml:space="preserve"><value>Highest temperature, this system</value></data>
+  <data name="Check_M_TempTheirs" xml:space="preserve"><value>Highest temperature, typical system</value></data>
+  <data name="Check_M_ClockOurs" xml:space="preserve"><value>Clock, this system</value></data>
+  <data name="Check_M_ClockTheirs" xml:space="preserve"><value>Clock, typical system</value></data>
 </root>

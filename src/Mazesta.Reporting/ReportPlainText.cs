@@ -24,6 +24,18 @@ public static class ReportPlainText
         }
         else b.AppendLine().AppendLine(w.MeasurementsOnly);
 
+        if (r.Findings is { Count: > 0 })
+        {
+            Heading(w.Checkup);
+            foreach (var f in r.Findings.OrderBy(f => f.Level switch { "Problem" => 0, "Attention" => 1, "Note" => 2, _ => 3 }))
+            {
+                b.AppendLine($"* [{w.LevelName(f.Level)}] {f.Title}{(string.IsNullOrWhiteSpace(f.Subject) ? "" : " · " + f.Subject)}");
+                b.AppendLine("  " + f.Text);
+                if (!string.IsNullOrWhiteSpace(f.Hint)) b.AppendLine("  " + f.Hint);
+                if (f.Measures.Count > 0) b.AppendLine("  " + string.Join(" · ", f.Measures.Select(m => $"{m.Name}: {m.Value}")));
+            }
+        }
+
         if (r.Tests.Count > 0)
         {
             Heading(w.Results);

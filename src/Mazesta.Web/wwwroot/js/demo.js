@@ -121,6 +121,7 @@ const bench = () => ({ running: false, queue: "", canRunSelected: true,
     best: i === 4 ? { name: strings.Bench_Gpu_Fps, value: "318 FPS", at: "1405/07/02 21:14" } : null,
     compared: i === 0 ? { now: { name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS", at: "1405/07/06 14:20" }, previous: { name: strings.Bench_Cpu_Gflops, value: "20.70 GFLOPS", at: "1405/07/01 11:02" }, change: 3.38, saved: true }
       : i === 1 ? { now: { name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS", at: "1405/07/06 14:22" }, previous: { name: strings.Bench_Cpu_Gflops, value: "421 GFLOPS", at: "1405/07/01 11:05", metrics: demoDetail("421 GFLOPS", false, "", false).metrics }, change: -2.14, saved: false } : null,
+    checkup: i === 1 ? DEMO_FINDINGS.cpu() : null,
     peers: i === 1 ? demoPeers(false) : i === 3 ? { total: 0, beaten: null, mineIndex: null, from: 0, around: [], mine: null, part: null } : null })) });
 // A comparison list as the shop would publish it (made-up models and numbers, for the design only).
 const PEERS = [["AMD Ryzen 9 7950X", 905, 6, 14], ["Intel Core i9-14900K", 861, 4, 9], ["AMD Ryzen 9 5950X", 520, 5, 11], ["AMD Ryzen 9 3950X", 405, 3, 7], ["Intel Core i7-12700K", 398, 8, 20],
@@ -191,6 +192,19 @@ const tweaks = () => ({ busy: false, update: demoUpdate, presets: { standard: ["
 
 import { overlay, frames } from "./demo-overlay.js";
 
+// Checkup findings shaped as the host sends them, for the demo machine (a Ryzen 9 3950X and an RTX 3090).
+const finding = (code, level, measures, extra = {}) => ({ level, levelName: strings[`Check_Level_${level}`], title: strings[`Check_${code}`], text: strings[`Check_${code}_Text`],
+  hint: extra.hint ? strings[`Check_Hint_${extra.hint}`] : null, subject: extra.subject ?? null, measures: measures.map(([k, value]) => ({ name: strings[`Check_M_${k}`], value })) });
+const DEMO_FINDINGS = {
+  setup: () => [finding("PowerPlanOk", "Good", [["MaxState", "100 %"]]), finding("RamXmpOn", "Good", [["RamNow", "3200 MT/s"], ["RamXmp", "3200 MT/s"]]),
+    finding("DriveSlotLimited", "Note", [["SlotGen", "Gen 3"], ["CardGen", "Gen 4"], ["CardWidth", "x4"]], { subject: "Samsung SSD 980 PRO 1TB" })],
+  cpu: () => [finding("BenchWithPeers", "Good", [["Mine", "412 GFLOPS"], ["Median", "405 GFLOPS"], ["Systems", "7"], ["Diff", "+1.7 %"]], { subject: strings.Bench_Cpu_Multi }),
+    finding("CpuHeatOk", "Good", [["TempMax", "78 °C"], ["Power", "142 W"]], { hint: "PowerSteady" })],
+  gpu: () => [finding("GpuHotspotGap", "Attention", [["HotspotGap", "27 °C"], ["TempMax", "74 °C"], ["HotspotMax", "101 °C"]], { subject: "NVIDIA GeForce RTX 3090" }),
+    finding("GpuPowerLimited", "Note", [["TimeShare", "96 %"], ["PowerLimit", "350 W"], ["Power", "347 W"]], { subject: "NVIDIA GeForce RTX 3090" }),
+    finding("GpuLinkOk", "Good", [["LinkGen", "Gen 4"], ["LinkWidth", "x16"]], { subject: "NVIDIA GeForce RTX 3090" })],
+};
+
 export async function call(m, p, emit) {
   emitRef = emit;
   strings ??= await (await fetch("js/demo-strings.json")).json();
@@ -237,6 +251,9 @@ export async function call(m, p, emit) {
     case "bench.history": return [["1405/07/07 12:24", "DESKTOP-CBSHJEH", "Intel Core i9-13900K", "1012 GFLOPS", true], ["1405/07/07 12:42", "ALI", "AMD Ryzen 9 3950X", "412 GFLOPS", false]].map(([at, machine, part, value, hybrid], k) => ({ id: `r${k}`, at, machine, part, value, app: "0.7.1", featured: k === 0, note: k === 0 ? "خنک‌کننده آبی ۳۶۰" : null, detail: demoDetail(value, hybrid, at.slice(0, 10), hybrid) }));
     case "bench.detail": return { mine: demoDetail("412 GFLOPS", false, "2026/09/29", false), theirs: p.run === "f2" ? null : demoDetail(p.run ? "1012 GFLOPS" : "861 GFLOPS", !!p.oc || p.run === "f1", "2026/09/20", true) };
     case "bench.mark": case "bench.oc": return null;
+    case "checkup.state": return { running: false, runs: [{ id: "bench.cpu.multi", name: strings.Bench_Cpu_Multi, at: "14:32", findings: DEMO_FINDINGS.cpu() }, { id: "bench.gpu.d3d", name: strings.Bench_Gpu_D3D, at: "14:36", findings: DEMO_FINDINGS.gpu() }] };
+    case "checkup.setup": await new Promise((r) => setTimeout(r, 400)); return DEMO_FINDINGS.setup();
+    case "checkup.run": return false;
     case "app.quiet": return false;
     case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/",
       latest: { version: "0.7.0", size: 48234496, date: "2026/09/29", notes: "- به‌روزرسانی خودکار برنامه از سایت\n- مقایسه نتیجه بنچمارک با سیستم‌های دیگر" },

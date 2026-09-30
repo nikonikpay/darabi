@@ -6,6 +6,7 @@ import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { setField } from "./tests.js";
 import { groupPanel, byPart } from "../groups.js";
+import { findingCard, bySeverity } from "./checkup.js";
 
 // The list, optionally only one part's benchmarks (the component pages reuse it).
 export function benchList(component = null) {
@@ -42,14 +43,14 @@ export function benchList(component = null) {
       return { o, input, el: h("label", {}, o.label, input) };
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), metrics = h("div", { class: "metrics" }), detail = h("div", { class: "detail", hidden: true });
-    const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true });
+    const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true }), finds = h("div", { class: "row-checkup", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
       h("div", { class: "ctrls" }, h("label", {}, t("Bench_Duration"), dur, t("Test_Seconds")), run),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, status), unavailable, metrics, rec, peers, detail);
+      h("div", { class: "state" }, bar, status), unavailable, metrics, finds, rec, peers, detail);
     into.append(row);
-    rows.set(r.id, { row, check, dur, run, opts, bar, status, metrics, rec, peers, detail, unavailable, last: "", lastRec: "", lastPeers: "" });
+    rows.set(r.id, { row, check, dur, run, opts, bar, status, metrics, rec, peers, detail, unavailable, finds, last: "", lastRec: "", lastPeers: "", lastCheck: "" });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -71,6 +72,9 @@ export function benchList(component = null) {
       if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean)); }
       // A run in progress keeps the last standing on screen (the host sends none while the row runs).
       const peerKey = JSON.stringify(r.peers);
+      // What this run showed about the machine (the checkup), the ones that need action first; kept on screen while a new run is under way.
+      const checkKey = JSON.stringify(r.checkup);
+      if (r.checkup && checkKey !== x.lastCheck) { x.lastCheck = checkKey; x.finds.hidden = !r.checkup.length; x.finds.replaceChildren(h("div", { class: "peers-head" }, icon("check"), h("b", {}, t("Web_Bench_Checkup"))), ...bySeverity(r.checkup).map(findingCard)); }
       if (r.peers !== null && peerKey !== x.lastPeers) { x.lastPeers = peerKey; x.peers.hidden = false; x.peers.replaceChildren(...standing(r).filter(Boolean)); }
       else if (r.peers === null && !r.active) x.peers.hidden = true;
     }
