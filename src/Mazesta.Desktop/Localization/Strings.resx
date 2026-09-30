@@ -1665,4 +1665,24 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Test_Cpu_Hash" xml:space="preserve"><value>CPU · hashing and compression (SHA-256, Deflate)</value></data>
   <data name="Log_CpuHash_Start" xml:space="preserve"><value>{0} threads hash a fixed 256 KB text, compress it, decompress it and hash it again; both hashes must equal the value worked out in advance.</value></data>
   <data name="Log_CpuHash_Progress" xml:space="preserve"><value>{0} blocks so far, {1} MB/s, {2} wrong.</value></data>
+  <data name="Log_Smart_Nvme" xml:space="preserve"><value>Reading each NVMe drive's own health log (critical warning, spare, media errors).</value></data>
+  <data name="Log_Smart_NvmeFailed" xml:space="preserve"><value>The NVMe health logs could not be read.</value></data>
+  <data name="Log_NvmeLog" xml:space="preserve"><value>NVMe health log before and after the test: {0}</value></data>
+  <data name="Spec_NvmeWarning" xml:space="preserve"><value>Critical warning (drive's own)</value></data>
+  <data name="Spec_NvmeWarning_None" xml:space="preserve"><value>None</value></data>
+  <data name="Spec_NvmeWarning_0" xml:space="preserve"><value>spare capacity below threshold</value></data>
+  <data name="Spec_NvmeWarning_1" xml:space="preserve"><value>temperature beyond its limit</value></data>
+  <data name="Spec_NvmeWarning_2" xml:space="preserve"><value>reliability degraded</value></data>
+  <data name="Spec_NvmeWarning_3" xml:space="preserve"><value>switched to read-only</value></data>
+  <data name="Spec_NvmeWarning_4" xml:space="preserve"><value>volatile memory backup failed</value></data>
+  <data name="Spec_NvmeWarning_5" xml:space="preserve"><value>persistent memory region read-only</value></data>
+  <data name="Spec_NvmeMediaErrors" xml:space="preserve"><value>Media errors (unrecovered)</value></data>
+  <data name="Spec_NvmeSpare" xml:space="preserve"><value>Available spare</value></data>
+  <data name="Spec_NvmeSpareThreshold" xml:space="preserve"><value>warning below {0}%</value></data>
+  <data name="Spec_NvmeUsed" xml:space="preserve"><value>Endurance used (drive's estimate)</value></data>
+  <data name="Spec_DataWritten" xml:space="preserve"><value>Data written (lifetime)</value></data>
+  <data name="Spec_DataRead" xml:space="preserve"><value>Data read (lifetime)</value></data>
+  <data name="Spec_NvmeUnsafeShutdowns" xml:space="preserve"><value>Unsafe shutdowns</value></data>
+  <data name="Spec_NvmePowerCycles" xml:space="preserve"><value>Power cycles</value></data>
+  <data name="Spec_NvmeErrorLog" xml:space="preserve"><value>Error-log entries</value></data>
 </root>

@@ -79,17 +79,18 @@ public sealed class HardwareDetailsReader(IWmiQuery query, IDriveHealthProvider 
     private IReadOnlyList<DriveDetails> Drives(HardwareInventory inv)
     {
         var health = drives.Read();
-        var disks = query.Query(Cimv2, "SELECT Model,SerialNumber,PNPDeviceID FROM Win32_DiskDrive");
+        var disks = query.Query(Cimv2, "SELECT Index,Model,SerialNumber,PNPDeviceID FROM Win32_DiskDrive");
         return [.. inv.Storage.Select(d =>
         {
             var h = health.FirstOrDefault(x => x.Serial is not null && x.Serial == d.SerialNumber) ?? health.FirstOrDefault(x => x.Name == d.FriendlyName);
-            PciLinkInfo? link = null;
+            PciLinkInfo? link = null; NvmeHealthLog? log = null;
             if (d.BusType == "NVMe")
             {
                 var disk = disks.FirstOrDefault(r => Str(r, "SerialNumber") is { } s && d.SerialNumber is { } n && Norm(s) == Norm(n)) ?? disks.FirstOrDefault(r => Str(r, "Model") == d.FriendlyName);
                 link = PciDevice.Link(PciDevice.Ancestor(Str(disk, "PNPDeviceID"), id => id.StartsWith(@"PCI\", StringComparison.OrdinalIgnoreCase)));
+                if (disk?.GetValueOrDefault("Index") is { } index) log = NvmeHealthReader.ReadLog(Convert.ToInt32(index, System.Globalization.CultureInfo.InvariantCulture));
             }
-            return new DriveDetails(d.SerialNumber, d.FriendlyName, link, h?.PowerOnHours, h?.TemperatureC, h?.TemperatureMaxC, h?.ReadErrorsUncorrected, h?.WriteErrorsUncorrected, h?.WearPercent);
+            return new DriveDetails(d.SerialNumber, d.FriendlyName, link, h?.PowerOnHours, h?.TemperatureC, h?.TemperatureMaxC, h?.ReadErrorsUncorrected, h?.WriteErrorsUncorrected, h?.WearPercent, log);
         })];
     }
 

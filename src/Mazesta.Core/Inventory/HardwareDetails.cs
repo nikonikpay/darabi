@@ -24,7 +24,7 @@ public sealed record PlatformSecurity(bool? UefiBoot, bool? SecureBoot, string? 
 
 /// <summary>A drive's link (NVMe drives: their controller's PCIe link) and the counters its SMART log keeps.</summary>
 public sealed record DriveDetails(string? Serial, string? Name, PciLinkInfo? Link, long? PowerOnHours, double? TemperatureC, double? TemperatureMaxC,
-    long? ReadErrorsUncorrected, long? WriteErrorsUncorrected, int? WearPercent);
+    long? ReadErrorsUncorrected, long? WriteErrorsUncorrected, int? WearPercent, Providers.NvmeHealthLog? Nvme = null);
 
 /// <summary>A network adapter's PCIe link and driver, where it has them.</summary>
 public sealed record NicDetails(string? Name, PciLinkInfo? Link, string? Driver);

@@ -1665,4 +1665,24 @@
   <data name="Test_Cpu_Hash" xml:space="preserve"><value>CPU · هش و فشرده‌سازی (SHA-256 و Deflate)</value></data>
   <data name="Log_CpuHash_Start" xml:space="preserve"><value>{0} رشته یک متن ثابت ۲۵۶ کیلوبایتی را هش، فشرده و باز می‌کنند و دوباره هش می‌گیرند؛ هر دو هش باید با مقدار از پیش محاسبه‌شده برابر باشد.</value></data>
   <data name="Log_CpuHash_Progress" xml:space="preserve"><value>تا این لحظه {0} بلوک، {1} مگابایت بر ثانیه، {2} نادرست.</value></data>
+  <data name="Log_Smart_Nvme" xml:space="preserve"><value>خواندن گزارش سلامت خود هر درایو NVMe (هشدار بحرانی، ظرفیت یدک، خطاهای رسانه).</value></data>
+  <data name="Log_Smart_NvmeFailed" xml:space="preserve"><value>گزارش سلامت NVMe خوانده نشد.</value></data>
+  <data name="Log_NvmeLog" xml:space="preserve"><value>گزارش سلامت NVMe قبل و بعد از تست: {0}</value></data>
+  <data name="Spec_NvmeWarning" xml:space="preserve"><value>هشدار بحرانی (از خود درایو)</value></data>
+  <data name="Spec_NvmeWarning_None" xml:space="preserve"><value>ندارد</value></data>
+  <data name="Spec_NvmeWarning_0" xml:space="preserve"><value>ظرفیت یدک کمتر از آستانه</value></data>
+  <data name="Spec_NvmeWarning_1" xml:space="preserve"><value>دما خارج از محدوده</value></data>
+  <data name="Spec_NvmeWarning_2" xml:space="preserve"><value>افت قابلیت اطمینان</value></data>
+  <data name="Spec_NvmeWarning_3" xml:space="preserve"><value>فقط‌خواندنی شده</value></data>
+  <data name="Spec_NvmeWarning_4" xml:space="preserve"><value>خرابی پشتیبان حافظهٔ موقت</value></data>
+  <data name="Spec_NvmeWarning_5" xml:space="preserve"><value>ناحیهٔ حافظهٔ پایدار فقط‌خواندنی</value></data>
+  <data name="Spec_NvmeMediaErrors" xml:space="preserve"><value>خطاهای رسانه (اصلاح‌نشده)</value></data>
+  <data name="Spec_NvmeSpare" xml:space="preserve"><value>ظرفیت یدک باقی‌مانده</value></data>
+  <data name="Spec_NvmeSpareThreshold" xml:space="preserve"><value>هشدار زیر {0}٪</value></data>
+  <data name="Spec_NvmeUsed" xml:space="preserve"><value>عمر مصرف‌شده (برآورد خود درایو)</value></data>
+  <data name="Spec_DataWritten" xml:space="preserve"><value>دادهٔ نوشته‌شده (کل عمر)</value></data>
+  <data name="Spec_DataRead" xml:space="preserve"><value>دادهٔ خوانده‌شده (کل عمر)</value></data>
+  <data name="Spec_NvmeUnsafeShutdowns" xml:space="preserve"><value>خاموشی‌های ناگهانی</value></data>
+  <data name="Spec_NvmePowerCycles" xml:space="preserve"><value>دفعات روشن و خاموش شدن</value></data>
+  <data name="Spec_NvmeErrorLog" xml:space="preserve"><value>ورودی‌های گزارش خطا</value></data>
 </root>

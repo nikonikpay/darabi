@@ -19,6 +19,7 @@ public static class PartSpecs
     private static string Na => Loc.Get("Value_NotAvailable");
     private static string YesNo(bool v) => Loc.Get(v ? "Spec_Yes" : "Spec_No");
     private static string Gb(long bytes, double unit = 1024.0 * 1024 * 1024) => (bytes / unit).ToString(bytes / unit >= 10 ? "F0" : "F1", CultureInfo.InvariantCulture) + " GB";
+    private static string Tb(double bytes) => bytes >= 1e12 ? (bytes / 1e12).ToString("F2", CultureInfo.InvariantCulture) + " TB" : (bytes / 1e9).ToString("F0", CultureInfo.InvariantCulture) + " GB";
     private static string Size(long bytes) => bytes >= 1 << 20 ? $"{bytes >> 20} MB" : $"{bytes >> 10} KB";
 
     /// <summary>Adds a row only when there is a value: a card lists what was read.</summary>
@@ -189,8 +190,22 @@ public static class PartSpecs
         Add(rows, "Spec_LinkNow", Link(d?.Link?.CurrentGen, d?.Link?.CurrentWidth));
         Add(rows, "SystemInfo_Size", s.SizeBytes is { } b ? Gb(b, 1e9) : null);
         Add(rows, "SystemInfo_Health", SystemInfoViewModel.DriveHealth(s.HealthStatus, s.WearPercent));
-        Add(rows, "Spec_PowerOnHours", d?.PowerOnHours, suffix: "h");
+        Add(rows, "Spec_PowerOnHours", d?.PowerOnHours ?? (long?)d?.Nvme?.PowerOnHours, suffix: "h");
         Add(rows, "Spec_Temperature", d?.TemperatureC is { } t ? t.ToString("F0", CultureInfo.InvariantCulture) + (d.TemperatureMaxC is { } mx ? $" °C (max {mx:F0} °C)" : " °C") : null);
+        if (d?.Nvme is { } nv)
+        {
+            // The drive's own health log: a set warning bit and media errors are what matter first; the rest is history.
+            rows.Add(new(Loc.Get("Spec_NvmeWarning"), nv.CriticalWarning == 0 ? Loc.Get("Spec_NvmeWarning_None")
+                : string.Join(" · ", Enumerable.Range(0, 6).Where(bit => (nv.CriticalWarning & (1 << bit)) != 0).Select(bit => Loc.Get($"Spec_NvmeWarning_{bit}")))));
+            Add(rows, "Spec_NvmeMediaErrors", nv.MediaErrors);
+            Add(rows, "Spec_NvmeSpare", $"{nv.AvailableSparePercent}% ({Loc.Format("Spec_NvmeSpareThreshold", nv.SpareThresholdPercent)})");
+            Add(rows, "Spec_NvmeUsed", nv.PercentageUsed, more: true, suffix: "%");
+            Add(rows, "Spec_DataWritten", Tb(nv.BytesWritten), more: true);
+            Add(rows, "Spec_DataRead", Tb(nv.BytesRead), more: true);
+            Add(rows, "Spec_NvmeUnsafeShutdowns", nv.UnsafeShutdowns, more: true);
+            Add(rows, "Spec_NvmePowerCycles", nv.PowerCycles, more: true);
+            Add(rows, "Spec_NvmeErrorLog", nv.ErrorLogEntries, more: true);
+        }
         Add(rows, "Spec_Wear", d?.WearPercent, more: true, suffix: "%");
         Add(rows, "Spec_UncorrectedErrors", d?.ReadErrorsUncorrected is null && d?.WriteErrorsUncorrected is null ? null : $"{d?.ReadErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"} / {d?.WriteErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"}", more: true);
         Add(rows, "Spec_LinkMax", Link(d?.Link?.MaxGen, d?.Link?.MaxWidth), more: true);

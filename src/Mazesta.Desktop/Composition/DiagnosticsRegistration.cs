@@ -40,6 +40,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.SfcExecutor>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.DismScanExecutor>();
+        s.AddSingleton<Mazesta.Core.Providers.INvmeHealthSource>(sp => new Mazesta.Hardware.Details.NvmeHealthReader(sp.GetRequiredService<Mazesta.Hardware.Wmi.IWmiQuery>()));
         s.AddSingleton<Mazesta.Core.Providers.IDriveHealthProvider>(sp => new Mazesta.Hardware.Wmi.WmiDriveHealthProvider(sp.GetRequiredService<Mazesta.Hardware.Wmi.IWmiQuery>()));
         s.AddSingleton<ITestExecutor, SmartCheckExecutor>();   // last: the final SMART re-check sees what the tests did to the drives (spec 4.2, item 11)
 
@@ -61,7 +62,8 @@ internal static class DiagnosticsRegistration
         // Singleton, not per-page: a queue keeps running when the technician navigates away from Test Center
         // and back (TestEngine.RequestCancel's own note) - it must not be recreated per visit.
         s.AddSingleton(sp => new TestEngine(sp.GetRequiredService<IEnumerable<ITestExecutor>>(), sp.GetRequiredService<JsonStore<TestSessionCheckpoint>>(),
-            sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IHardwareErrorSource>(), sp.GetRequiredService<WorkloadGate>(), sp.GetRequiredService<IStorageEventSource>()));
+            sp.GetRequiredService<IClock>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<IHardwareErrorSource>(), sp.GetRequiredService<WorkloadGate>(), sp.GetRequiredService<IStorageEventSource>(),
+            sp.GetRequiredService<Mazesta.Core.Providers.INvmeHealthSource>()));
         return s;
     }
 }

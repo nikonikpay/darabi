@@ -6,7 +6,8 @@ public enum TestEngineState { Idle, Running, Stopped }
 /// <summary>Sequential queue runner (spec §8). A plain async pipeline over <see cref="ITestExecutor"/>
 /// calls - no dedicated thread like PollingEngine, since there is no cadence to own; CPU-bound executors
 /// do their own Task.Run. Registered as a singleton so a run survives page navigation.</summary>
-public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null, WorkloadGate? gate = null, Storage.IStorageEventSource? storageEvents = null)
+public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null, WorkloadGate? gate = null, Storage.IStorageEventSource? storageEvents = null,
+    Core.Providers.INvmeHealthSource? nvme = null)
 {
     private readonly IReadOnlyDictionary<TestId, ITestExecutor> _executors = executors.ToDictionary(e => e.Definition.Id);
     private CancellationTokenSource? _cts;
@@ -106,6 +107,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             return TestRunResult.Unsupported(id, clock.UtcNow, $"No executor registered for '{id}'.");
 
         var started = clock.UtcNow;
+        var nvmeBefore = NvmeSnapshot(id);
         // The checkpoint follows the test's progress, saved at most every ten seconds: a crash later says how far the test had got.
         var lastSave = clock.UtcNow; int iteration = 0;
         void Progress(TestProgress p)
@@ -135,7 +137,47 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;
         }
         while (item.Repeat switch { RepeatMode.Once => false, RepeatMode.Count => iteration < item.RepeatCount, RepeatMode.Unlimited => true, _ => false });
-        return WithStorageEvents(WithHardwareErrors(total!, started), started);
+        return WithNvmeLog(WithStorageEvents(WithHardwareErrors(total!, started), started), nvmeBefore);
+    }
+
+    /// <summary>The NVMe drives' health logs before a storage test, to compare with after it; null for other tests or when none can be read.</summary>
+    private IReadOnlyList<Core.Providers.NvmeDriveHealth>? NvmeSnapshot(TestId id)
+    {
+        if (nvme is null || !id.Value.StartsWith("storage.", StringComparison.Ordinal)) return null;
+        try { var all = nvme.Read(); return all.Count > 0 ? all : null; }
+        catch (Exception ex) when (ex is not OperationCanceledException) { return null; }
+    }
+
+    /// <summary>What each NVMe drive's own log says changed during a storage test. A drive that counted new media errors, or raised a critical
+    /// warning, reported a fault itself: the test fails whatever its own checks found. New error-log entries are evidence only - drives also log
+    /// commands they rejected, which is no fault of the media.</summary>
+    private TestRunResult WithNvmeLog(TestRunResult result, IReadOnlyList<Core.Providers.NvmeDriveHealth>? before)
+    {
+        if (before is null || result.Outcome == TestOutcome.Unsupported) return result;
+        IReadOnlyList<Core.Providers.NvmeDriveHealth> after;
+        try { after = nvme!.Read(); }
+        catch (Exception ex) when (ex is not OperationCanceledException) { return result with { Detail = SensorEvidence.Join(result.Detail, $"NVMe health log could not be read after the test ({ex.GetType().Name})") }; }
+        var changes = NvmeChanges(before, after);
+        Emit(result.Id, changes.Faults > 0 ? TestLogLevel.Error : changes.Notes.Count > 0 ? TestLogLevel.Warning : TestLogLevel.Info, "Log_NvmeLog",
+            "NVMe log page 02h before and after: critical warning, media errors, error-log entries", changes.Notes.Count == 0 ? "-" : string.Join("; ", changes.Notes));
+        if (changes.Notes.Count == 0) return result;
+        var noted = result with { Detail = SensorEvidence.Join(result.Detail, "NVMe health log during the test: " + string.Join("; ", changes.Notes)) };
+        return changes.Faults == 0 ? noted : noted.Combine(new(result.Id, TestOutcome.Failed, result.StartedAt, clock.UtcNow, changes.Faults, noted.Detail));
+    }
+
+    internal static (int Faults, List<string> Notes) NvmeChanges(IReadOnlyList<Core.Providers.NvmeDriveHealth> before, IReadOnlyList<Core.Providers.NvmeDriveHealth> after)
+    {
+        int faults = 0; var notes = new List<string>();
+        foreach (var a in after)
+        {
+            if (before.FirstOrDefault(b => b.DiskNumber == a.DiskNumber) is not { } b) continue;
+            string name = $"{a.Model ?? "disk"} (disk {a.DiskNumber})";
+            if (a.Log.MediaErrors > b.Log.MediaErrors) { faults++; notes.Add($"{name}: media errors {b.Log.MediaErrors} -> {a.Log.MediaErrors}"); }
+            byte raised = (byte)(a.Log.CriticalWarning & ~b.Log.CriticalWarning);
+            if (raised != 0) { faults++; notes.Add($"{name}: critical warning raised: {string.Join(", ", (a.Log with { CriticalWarning = raised }).Warnings)}"); }
+            if (a.Log.ErrorLogEntries > b.Log.ErrorLogEntries) notes.Add($"{name}: error-log entries {b.Log.ErrorLogEntries} -> {a.Log.ErrorLogEntries}");
+        }
+        return (faults, notes);
     }
 
     /// <summary>Windows hardware errors (WHEA) logged while the test ran turn it into a Failed one: the machine
