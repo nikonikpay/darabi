@@ -12,7 +12,7 @@ public static class CheckupText
 
     /// <summary>The finding worded for a saved report, which keeps the words (a report is read later, by another version or in another language).</summary>
     public static Mazesta.Reporting.FindingEntry Entry(Finding f)
-        => new(f.Level.ToString(), Title(f), Text(f), Hint(f), f.Subject, [.. f.Measures.Select(m => new Mazesta.Reporting.FindingMeasure(Loc.Get(m.Key), Value(m)))]);
+        => new(f.Level.ToString(), Title(f), Text(f), Hint(f), f.Subject, [.. f.Measures.Select(m => new Mazesta.Reporting.FindingMeasure(Loc.Get(m.Key), Value(m)))], f.Source);
 
     public static string Value(Measure m)
     {

@@ -18,17 +18,20 @@ public enum FindingCode
     DriveLinkNarrow, DriveSlotLimited,
     BenchBelowPeers, BenchWithPeers, BenchFewPeers,
     GpuLinkBelowCard, DriveLinkBelowDrive,
+    CpuBelowBoost, CpuPowerLimit,
 }
 
 /// <summary>A second sentence a finding may carry: what the measurements beside it point to.</summary>
-public enum FindingHint { None, OnBattery, PowerSteady, LessPowerThanPeers, HotterThanPeers, LowerClockThanPeers }
+public enum FindingHint { None, OnBattery, PowerSteady, LessPowerThanPeers, HotterThanPeers, LowerClockThanPeers, PowerAtBaseSpec, PowerAtTurboSpec, PowerAboveSpec }
 
 /// <summary>One measured number a finding stands on. <see cref="Key"/> names it (a localisation key), <see cref="Unit"/> is its symbol, "" for a count.</summary>
 public sealed record Measure(string Key, double Value, string Unit);
 
 /// <summary>A finding as data; the app words it in the user's language. <see cref="Subject"/> names the device when there can be several (a GPU,
-/// a drive, a benchmark). Every finding is backed by what was measured or read from the part itself; none comes from a model table.</summary>
-public sealed record Finding(FindingCode Code, FindingLevel Level, HardwareKind Part, IReadOnlyList<Measure> Measures, string? Subject = null, FindingHint Hint = FindingHint.None);
+/// a drive, a benchmark). Every finding is backed by what was measured or read from the part itself, or, where <see cref="Source"/> is set, by a
+/// figure its maker publishes on that page.</summary>
+public sealed record Finding(FindingCode Code, FindingLevel Level, HardwareKind Part, IReadOnlyList<Measure> Measures, string? Subject = null, FindingHint Hint = FindingHint.None,
+    string? Source = null);
 
 /// <summary>One quantity sampled over a run: <see cref="T"/> seconds from its start, <see cref="V"/> the readings, in time order. A missed poll is
 /// simply absent, never a zero.</summary>

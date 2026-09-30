@@ -1906,4 +1906,17 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Web_Peers_Last" xml:space="preserve"><value>slower than all {0} models in the list</value></data>
   <data name="Web_Peers_First" xml:space="preserve"><value>faster than all {0} models in the list</value></data>
   <data name="Web_Peers_Nearest" xml:space="preserve"><value>the nearest one, {0}, is {1} faster</value></data>
+  <data name="Check_CpuBelowBoost" xml:space="preserve"><value>The CPU does not reach its boost clock</value></data>
+  <data name="Check_CpuBelowBoost_Text" xml:space="preserve"><value>With one busy thread the fastest core stayed well under the single-core boost its maker publishes for this model. Check the power plan (maximum processor state, boost mode), the BIOS (boost settings, a fixed multiplier) and, on a laptop, the charger and the power mode.</value></data>
+  <data name="Check_CpuPowerLimit" xml:space="preserve"><value>Power limit in use</value></data>
+  <data name="Check_CpuPowerLimit_Text" xml:space="preserve"><value>The power the processor settled at under all-core load, next to the figures Intel publishes for this model. The line under it names the setting in use.</value></data>
+  <data name="Check_Hint_PowerAtBaseSpec" xml:space="preserve"><value>The long-term limit equals Intel's Processor Base Power for this model: a default or Baseline-type setting in the BIOS. The processor is fine; its all-core clock is lower by that setting's design.</value></data>
+  <data name="Check_Hint_PowerAtTurboSpec" xml:space="preserve"><value>The limit equals Intel's Maximum Turbo Power for this model: Intel's default performance setting.</value></data>
+  <data name="Check_Hint_PowerAboveSpec" xml:space="preserve"><value>The processor drew more than Intel's Maximum Turbo Power for this model: the board's BIOS lifts Intel's limits. That gives more clock and much more heat; for Core 13th and 14th gen desktop processors Intel recommends its default power settings and the latest BIOS (microcode).</value></data>
+  <data name="Check_M_TjMaxSpec" xml:space="preserve"><value>Limit the maker publishes (Tjmax)</value></data>
+  <data name="Check_M_ClockPeak" xml:space="preserve"><value>Fastest core, one thread</value></data>
+  <data name="Check_M_BoostSpec" xml:space="preserve"><value>Boost the maker publishes</value></data>
+  <data name="Check_M_BasePowerSpec" xml:space="preserve"><value>Intel Processor Base Power</value></data>
+  <data name="Check_M_TurboPowerSpec" xml:space="preserve"><value>Intel Maximum Turbo Power</value></data>
+  <data name="Check_Source" xml:space="preserve"><value>Maker's figures: {0}</value></data>
 </root>

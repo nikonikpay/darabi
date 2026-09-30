@@ -1,3 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup><InternalsVisibleTo Include="Mazesta.Core.Tests" /></ItemGroup>
+  <!-- Published processor figures (Intel ARK, amd.com) the checkup compares runs with; rebuilt by tools/cpu-specs (see docs/CHECKUP.md). -->
+  <ItemGroup><EmbeddedResource Include="Health/Checkup/cpu-specs.json" LogicalName="Mazesta.Core.Health.Checkup.cpu-specs.json" /></ItemGroup>
 </Project>

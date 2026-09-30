@@ -9,7 +9,7 @@ internal static class CheckupTraces
 {
     private const string DistanceSuffix = " Distance to TjMax";
 
-    public static CpuRunTrace Cpu(PollingEngine engine, DateTimeOffset from, DateTimeOffset to, bool allThreads, int? baseClockMhz, bool? onBattery)
+    public static CpuRunTrace Cpu(PollingEngine engine, DateTimeOffset from, DateTimeOffset to, bool allThreads, int? baseClockMhz, bool? onBattery, CpuSpec? spec)
     {
         var (a, b) = (engine.History.SecondsSinceEpoch(from), engine.History.SecondsSinceEpoch(to));
         var cpu = engine.Hardware.Where(n => n.Kind == HardwareKind.Cpu).SelectMany(n => n.Sensors).ToList();
@@ -20,12 +20,14 @@ internal static class CheckupTraces
             if (Combine(engine, Role(role), a, b, v => v.Max()) is { Count: > 0 } s) { temp = s; break; }
         // Per-core clocks: AMD's effective clocks where there are any (they count only the time a core ran), else the cores' clocks. A hybrid CPU's
         // all-core clock is its P-cores', which is what its base clock is given for.
-        var cores = Role(SensorRole.CpuEffectiveClock) is { Count: > 0 } effective ? effective : Role(SensorRole.CpuCoreClock);
+        // A one-thread run reads the cores' own clocks instead: Windows moves the thread between cores, so no core's effective clock over a second
+        // shows the whole of it, while the fastest core's clock shows the boost it reached.
+        var cores = allThreads && Role(SensorRole.CpuEffectiveClock) is { Count: > 0 } effective ? effective : Role(SensorRole.CpuCoreClock) is { Count: > 0 } own ? own : Role(SensorRole.CpuEffectiveClock);
         if (allThreads && cores.Any(s => s.Name.StartsWith("P-Core", StringComparison.Ordinal))) cores = [.. cores.Where(s => s.Name.StartsWith("P-Core", StringComparison.Ordinal))];
         var clock = Combine(engine, cores, a, b, allThreads ? v => v.Average() : v => v.Max());
         var power = Combine(engine, Role(SensorRole.CpuPackagePower).Take(1), a, b, v => v.First());
         var load = Combine(engine, Role(SensorRole.CpuTotalLoad).Take(1), a, b, v => v.First());
-        return new(allThreads, (to - from).TotalSeconds, temp, clock, power, load, TjMax(engine, cpu, b), baseClockMhz, onBattery);
+        return new(allThreads, (to - from).TotalSeconds, temp, clock, power, load, TjMax(engine, cpu, b), baseClockMhz, onBattery, spec);
     }
 
     /// <summary>The limit an Intel CPU reports: a core's temperature plus its distance to the limit, read in the same poll. Every sample so far is

@@ -35,7 +35,7 @@ public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset Finis
 
 /// <summary>One checkup finding as it was worded for the technician (Level is Good, Note, Attention or Problem; Subject names the device or benchmark it
 /// is about). A finding does not change the verdict: tests pass or fail on their own evidence, a finding explains what the measurements show.</summary>
-public sealed record FindingEntry(string Level, string Title, string Text, string? Hint, string? Subject, IReadOnlyList<FindingMeasure> Measures);
+public sealed record FindingEntry(string Level, string Title, string Text, string? Hint, string? Subject, IReadOnlyList<FindingMeasure> Measures, string? Source = null);
 public sealed record FindingMeasure(string Name, string Value);
 
 public sealed record ReportCounts(int Total, int Passed, int Failed, int Cancelled, int Unsupported, int NotRun, long Errors);

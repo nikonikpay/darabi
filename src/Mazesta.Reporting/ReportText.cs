@@ -11,7 +11,7 @@ public sealed class ReportText
         Started, Finished, ReportId, NoSensors, Cpu, Gpu, Ram, Board, Bios, Storage, Network, Os, Footer, MeasurementsOnly,
         VerdictPassed, VerdictFailed, VerdictIncomplete, OutcomePassed, OutcomeFailed, OutcomeCancelled, OutcomeUnsupported, OutcomeNotRun, OutcomeError, OutcomeInconclusive,
         CompareTitle, Before, After, Change, NotMeasured, ServiceNumber,
-        Checkup, CheckupNote, LevelGood, LevelNote, LevelAttention, LevelProblem;
+        Checkup, CheckupNote, LevelGood, LevelNote, LevelAttention, LevelProblem, MakerFigures;
 
     public string LevelName(string level) => level switch { "Good" => LevelGood, "Attention" => LevelAttention, "Problem" => LevelProblem, _ => LevelNote };
 
@@ -39,7 +39,7 @@ public sealed class ReportText
         OutcomePassed = "موفق", OutcomeFailed = "ناموفق", OutcomeCancelled = "لغو شد", OutcomeUnsupported = "پشتیبانی نمی‌شود", OutcomeNotRun = "اجرا نشده", OutcomeError = "خطای اجرای آزمون (نه خرابی قطعه)", OutcomeInconclusive = "نامعین (پوشش ناقص)",
         CompareTitle = "مقایسه‌ی قبل و بعد از سرویس", Before = "قبل", After = "بعد", Change = "تغییر", NotMeasured = "اندازه‌گیری نشده", ServiceNumber = "شماره‌ی سرویس",
         Checkup = "عیب‌یابی هوشمند", CheckupNote = "از روی اندازه‌گیری‌های همین سیستم و آنچه خود قطعه‌ها اعلام می‌کنند؛ مواردی که بررسی نشدند نیامده‌اند.",
-        LevelGood = "درست", LevelNote = "توضیح", LevelAttention = "نیاز به بررسی", LevelProblem = "مشکل"
+        LevelGood = "درست", LevelNote = "توضیح", LevelAttention = "نیاز به بررسی", LevelProblem = "مشکل", MakerFigures = "اعداد سازنده"
     };
 
     public static readonly ReportText English = new()
@@ -56,6 +56,6 @@ public sealed class ReportText
         OutcomePassed = "Passed", OutcomeFailed = "Failed", OutcomeCancelled = "Cancelled", OutcomeUnsupported = "Not supported", OutcomeNotRun = "Not run", OutcomeError = "Test error (not a hardware fault)", OutcomeInconclusive = "Inconclusive (partial coverage)",
         CompareTitle = "Before and after service", Before = "Before", After = "After", Change = "Change", NotMeasured = "not measured", ServiceNumber = "Service number",
         Checkup = "Checkup", CheckupNote = "From this machine's own measurements and what its parts report themselves; what was not checked is left out.",
-        LevelGood = "Fine", LevelNote = "Note", LevelAttention = "Needs a look", LevelProblem = "Problem"
+        LevelGood = "Fine", LevelNote = "Note", LevelAttention = "Needs a look", LevelProblem = "Problem", MakerFigures = "Maker's figures"
     };
 }

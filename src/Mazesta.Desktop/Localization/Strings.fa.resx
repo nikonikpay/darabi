@@ -1906,4 +1906,17 @@
   <data name="Web_Peers_Last" xml:space="preserve"><value>کندتر از همهٔ {0} مدل فهرست</value></data>
   <data name="Web_Peers_First" xml:space="preserve"><value>سریع‌تر از همهٔ {0} مدل فهرست</value></data>
   <data name="Web_Peers_Nearest" xml:space="preserve"><value>نزدیک‌ترین مدل، {0}، {1} سریع‌تر است</value></data>
+  <data name="Check_CpuBelowBoost" xml:space="preserve"><value>CPU به فرکانس بوست خودش نمی‌رسد</value></data>
+  <data name="Check_CpuBelowBoost_Text" xml:space="preserve"><value>با یک رشتهٔ مشغول، سریع‌ترین هسته خیلی پایین‌تر از فرکانس بوست تک‌هسته‌ای ماند که سازنده برای این مدل اعلام کرده. Power Plan (حداکثر وضعیت پردازنده و حالت بوست)، بایوس (تنظیم بوست یا ضریب ثابت) و در لپ‌تاپ، شارژر و حالت مصرف انرژی را بررسی کنید.</value></data>
+  <data name="Check_CpuPowerLimit" xml:space="preserve"><value>محدودیت توان فعال</value></data>
+  <data name="Check_CpuPowerLimit_Text" xml:space="preserve"><value>توانی که پردازنده زیر بار همهٔ هسته‌ها روی آن ثابت شد، کنار اعدادی که اینتل برای این مدل اعلام کرده. خط زیر آن تنظیم فعال را نام می‌برد.</value></data>
+  <data name="Check_Hint_PowerAtBaseSpec" xml:space="preserve"><value>محدودیت بلندمدت برابر «توان پایهٔ پردازنده» اینتل برای این مدل است: یک تنظیم پیش‌فرض یا از نوع Baseline در بایوس. پردازنده سالم است؛ فرکانس همهٔ هسته‌ها طبق همین تنظیم پایین‌تر است.</value></data>
+  <data name="Check_Hint_PowerAtTurboSpec" xml:space="preserve"><value>محدودیت برابر «حداکثر توان توربو» اینتل برای این مدل است: تنظیم پیش‌فرض کارایی اینتل.</value></data>
+  <data name="Check_Hint_PowerAboveSpec" xml:space="preserve"><value>پردازنده بیشتر از «حداکثر توان توربو» اینتل برای این مدل کشید: بایوس مادربرد محدودیت‌های اینتل را برداشته. این فرکانس بیشتر و گرمای خیلی بیشتری می‌دهد؛ برای پردازنده‌های دسکتاپ نسل ۱۳ و ۱۴، اینتل تنظیمات توان پیش‌فرض و آخرین بایوس (میکروکد) را توصیه می‌کند.</value></data>
+  <data name="Check_M_TjMaxSpec" xml:space="preserve"><value>سقف اعلام‌شده توسط سازنده (Tjmax)</value></data>
+  <data name="Check_M_ClockPeak" xml:space="preserve"><value>سریع‌ترین هسته، یک رشته</value></data>
+  <data name="Check_M_BoostSpec" xml:space="preserve"><value>بوست اعلام‌شده توسط سازنده</value></data>
+  <data name="Check_M_BasePowerSpec" xml:space="preserve"><value>توان پایهٔ پردازنده (اینتل)</value></data>
+  <data name="Check_M_TurboPowerSpec" xml:space="preserve"><value>حداکثر توان توربو (اینتل)</value></data>
+  <data name="Check_Source" xml:space="preserve"><value>اعداد سازنده: {0}</value></data>
 </root>

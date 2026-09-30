@@ -174,6 +174,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
             b.Append("</div><div>").Append(E(f.Text)).Append("</div>");
             if (!string.IsNullOrWhiteSpace(f.Hint)) b.Append("<div class=\"advice\">").Append(E(f.Hint)).Append("</div>");
             if (f.Measures.Count > 0) b.Append("<div class=\"measures\">").Append(string.Join(" · ", f.Measures.Select(m => E(m.Name) + ": " + Lt(m.Value)))).Append("</div>");
+            if (!string.IsNullOrWhiteSpace(f.Source)) b.Append("<div class=\"measures\">").Append(E(w.MakerFigures)).Append(": ").Append(Lt(f.Source)).Append("</div>");
             b.Append("</div>");
         }
     }

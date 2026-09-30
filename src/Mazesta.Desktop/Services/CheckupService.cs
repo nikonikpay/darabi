@@ -58,8 +58,9 @@ public sealed class CheckupService
             string id = run.Definition.Id.Value;
             if (IsCpu(id))
             {
-                int? baseMhz = _inventory.IsLoaded ? _inventory.GetAsync().Result.Cpu?.MaxClockMhz : null;
-                findings = CpuCheck.Evaluate(CheckupTraces.Cpu(_engine, run.Result.StartedAt, run.Result.FinishedAt, id == "bench.cpu.multi", baseMhz, _onBattery));
+                var cpu = _inventory.IsLoaded ? _inventory.GetAsync().Result.Cpu : null;
+                string? name = cpu?.Name ?? _engine.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null)?.Name;
+                findings = CpuCheck.Evaluate(CheckupTraces.Cpu(_engine, run.Result.StartedAt, run.Result.FinishedAt, id == "bench.cpu.multi", cpu?.MaxClockMhz, _onBattery, CpuSpecs.Find(name)));
             }
             else if (run.Definition.Id.Value.StartsWith("bench.gpu.", StringComparison.Ordinal))
             {

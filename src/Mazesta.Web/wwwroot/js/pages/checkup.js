@@ -15,7 +15,8 @@ export function findingCard(f) {
     h("div", { class: "finding-head" }, h("span", { class: `pill ${PILL[f.level] || "none"}` }, f.levelName), h("b", {}, f.title), f.subject ? h("span", { class: "caption lat" }, f.subject) : null),
     h("p", { class: "finding-text" }, f.text),
     f.hint ? h("p", { class: "finding-hint" }, f.hint) : null,
-    f.measures.length ? h("dl", { class: "finding-m" }, f.measures.flatMap((m) => [h("dt", {}, m.name), h("dd", { class: "num" }, m.value)])) : null);
+    f.measures.length ? h("dl", { class: "finding-m" }, f.measures.flatMap((m) => [h("dt", {}, m.name), h("dd", { class: "num" }, m.value)])) : null,
+    f.source ? h("p", { class: "caption finding-src", title: f.source }, t("Check_Source", new URL(f.source).host)) : null);
 }
 
 export function mount(el) {

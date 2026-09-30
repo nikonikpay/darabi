@@ -33,6 +33,7 @@ public static class ReportPlainText
                 b.AppendLine("  " + f.Text);
                 if (!string.IsNullOrWhiteSpace(f.Hint)) b.AppendLine("  " + f.Hint);
                 if (f.Measures.Count > 0) b.AppendLine("  " + string.Join(" · ", f.Measures.Select(m => $"{m.Name}: {m.Value}")));
+                if (!string.IsNullOrWhiteSpace(f.Source)) b.AppendLine($"  {w.MakerFigures}: {f.Source}");
             }
         }
 

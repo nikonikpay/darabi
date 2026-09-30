@@ -42,6 +42,6 @@ public sealed partial class WebBridge
     internal static object FindingJson(Finding f) => new
     {
         level = f.Level.ToString(), levelName = CheckupText.Level(f.Level), part = f.Part.ToString(), title = CheckupText.Title(f), text = CheckupText.Text(f), hint = CheckupText.Hint(f), subject = f.Subject,
-        measures = f.Measures.Select(m => new { name = Loc.Get(m.Key), value = CheckupText.Value(m) }),
+        measures = f.Measures.Select(m => new { name = Loc.Get(m.Key), value = CheckupText.Value(m) }), source = f.Source,
     };
 }

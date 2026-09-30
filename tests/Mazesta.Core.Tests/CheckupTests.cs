@@ -20,7 +20,7 @@ public class CpuCheckTests
     // An AMD CPU has no limit of its own to read: a temperature flat at its top while the clock falls is the sign it is holding its ceiling.
     [Fact] public void Amd_held_at_95_with_a_falling_clock_is_a_problem()
     {
-        var x = One(CpuCheck.Evaluate(Run(t => 5000 - t * 15, temp: t => Math.Min(95, 70 + t * 5), power: _ => 200)), FindingCode.CpuHeldAtCeiling);
+        var x = One(CpuCheck.Evaluate(Run(t => 5000 - t * 20, temp: t => Math.Min(95, 70 + t * 5), power: _ => 200)), FindingCode.CpuHeldAtCeiling);
         Assert.Equal(FindingLevel.Problem, x.Level);
     }
     [Fact] public void Amd_held_at_95_with_a_steady_clock_is_by_design()
@@ -32,10 +32,10 @@ public class CpuCheckTests
 
     [Fact] public void Intel_at_its_tjmax_with_a_falling_clock_is_a_problem()
     {
-        var x = One(CpuCheck.Evaluate(Run(t => t < 15 ? 5500 : 4700, temp: t => t < 5 ? 80 : 100, power: _ => 300, tjMax: 100)), FindingCode.CpuAtTjMax);
+        var x = One(CpuCheck.Evaluate(Run(t => t < 15 ? 5500 : 4500, temp: t => t < 5 ? 80 : 100, power: _ => 300, tjMax: 100)), FindingCode.CpuAtTjMax);
         Assert.Equal(FindingLevel.Problem, x.Level); Assert.Contains(x.Measures, m => m.Key == "Check_M_TjMax" && m.Value == 100);
     }
-    [Fact] public void Intel_touching_tjmax_with_a_steady_clock_needs_attention() => Assert.Equal(FindingLevel.Attention, One(CpuCheck.Evaluate(Run(_ => 5500, temp: _ => 99, tjMax: 100)), FindingCode.CpuAtTjMax).Level);
+    [Fact] public void Touching_tjmax_with_a_steady_clock_is_by_design() => Assert.Equal(FindingLevel.Note, One(CpuCheck.Evaluate(Run(_ => 5500, temp: _ => 99, tjMax: 100)), FindingCode.CpuAtTjMax).Level);
 
     // Intel's default profile on Core 13th/14th gen: a short burst at the higher limit, then the long one holds the P-cores under 5 GHz while the
     // temperature has room. That is a setting, not a fault.
@@ -139,4 +139,56 @@ public class PlatformAndPeerCheckTests
         Assert.Equal(FindingHint.HotterThanPeers, f.Hint); Assert.Equal(FindingLevel.Problem, f.Level);
     }
     [Fact] public void Lower_is_better_benchmarks_are_signed_the_right_way() => Assert.Equal(FindingLevel.Good, PeerCheck.Evaluate(new("lat", HardwareKind.Memory, 95, 100, 5, false, "ns", new(null, null, null), null)).Level);
+}
+
+public class CpuSpecTests
+{
+    private static Series S(Func<int, double> f) => Series.Of(Enumerable.Range(0, 60).Select(t => ((double)t, f(t))));
+    private static readonly CpuSpec Ryzen = new("RYZEN 9 7950X", HardwareVendor.Amd, "Desktop", 16, 32, 4500, 5700, 170, null, 95, "https://www.amd.com/x");
+    private static readonly CpuSpec Raptor = new("I9-13900K", HardwareVendor.Intel, "Desktop", 24, 32, 3000, 5400, 125, 253, 100, "https://www.intel.com/x");
+    private static CpuRunTrace Run(CpuSpec spec, Func<int, double> clock, Func<int, double>? temp = null, Func<int, double>? power = null, bool all = true)
+        => new(all, 60, temp is null ? null : S(temp), S(clock), power is null ? null : S(power), null, null, null, null, spec);
+
+    [Theory]
+    [InlineData("13th Gen Intel(R) Core(TM) i7-13700KF", "I7-13700KF")]
+    [InlineData("Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz", "I9-10900K")]
+    [InlineData("Intel(R) Core(TM) Ultra 7 265K", "ULTRA 7 265K")]
+    [InlineData("Intel(R) Core(TM) Ultra 7 155H", "ULTRA 7 155H")]
+    [InlineData("AMD Ryzen 9 7950X 16-Core Processor", "RYZEN 9 7950X")]
+    [InlineData("AMD Ryzen 5 PRO 3400G with Radeon Vega Graphics", "RYZEN 5 PRO 3400G")]
+    [InlineData("AMD Ryzen 7 5800X3D 8-Core Processor", "RYZEN 7 5800X3D")]
+    public void The_model_number_is_read_from_the_name_windows_gives(string name, string key) => Assert.Equal(key, CpuSpecs.Key(name));
+    [Fact] public void A_name_without_a_model_number_finds_nothing() { Assert.Null(CpuSpecs.Key("Intel(R) Pentium(R) CPU G4560")); Assert.Null(CpuSpecs.Find(null)); }
+
+    [Fact] public void The_table_holds_the_published_figures()
+    {
+        Assert.True(CpuSpecs.Count > 100);
+        var i9 = CpuSpecs.Find("13th Gen Intel(R) Core(TM) i9-13900K")!;
+        Assert.Equal((3000, 5400, 125, 253, 100), (i9.BaseMhz, i9.BoostMhz, i9.BasePowerW, i9.TurboPowerW, i9.TjMaxC)); Assert.StartsWith("https://www.intel.com/", i9.Source);
+        var r9 = CpuSpecs.Find("AMD Ryzen 9 7950X 16-Core Processor")!;
+        Assert.Equal((4500, 5700, 170, 95), (r9.BaseMhz, r9.BoostMhz, r9.BasePowerW, r9.TjMaxC)); Assert.Equal(90, CpuSpecs.Find("AMD Ryzen 7 5800X 8-Core Processor")!.TjMaxC);
+    }
+
+    // AMD reports no limit of its own; its published Tjmax is used, and holding it without losing clock is how these processors are built to run.
+    [Fact] public void Amd_at_its_published_tjmax_with_a_steady_clock_is_a_note_with_its_source()
+    {
+        var x = Assert.Single(CpuCheck.Evaluate(Run(Ryzen, _ => 5100, temp: t => Math.Min(95, 70 + t * 5))), f => f.Code == FindingCode.CpuAtTjMax);
+        Assert.Equal(FindingLevel.Note, x.Level); Assert.Equal(Ryzen.Source, x.Source); Assert.Contains(x.Measures, m => m.Key == "Check_M_TjMaxSpec" && m.Value == 95);
+    }
+    [Fact] public void A_single_thread_well_under_the_published_boost_needs_attention()
+    {
+        var x = Assert.Single(CpuCheck.Evaluate(Run(Ryzen, _ => 4400, all: false)), f => f.Code == FindingCode.CpuBelowBoost);
+        Assert.Equal(FindingLevel.Attention, x.Level);
+        Assert.DoesNotContain(CpuCheck.Evaluate(Run(Ryzen, _ => 5550, all: false)), f => f.Code == FindingCode.CpuBelowBoost);
+    }
+    [Theory]
+    [InlineData(125, FindingHint.PowerAtBaseSpec, FindingLevel.Note)]
+    [InlineData(253, FindingHint.PowerAtTurboSpec, FindingLevel.Note)]
+    [InlineData(320, FindingHint.PowerAboveSpec, FindingLevel.Attention)]
+    public void The_power_an_intel_run_settles_at_names_the_setting(double watts, FindingHint hint, FindingLevel level)
+    {
+        var x = Assert.Single(CpuCheck.Evaluate(Run(Raptor, _ => 4900, temp: _ => 80, power: _ => watts)), f => f.Code == FindingCode.CpuPowerLimit);
+        Assert.Equal((hint, level), (x.Hint, x.Level));
+    }
+    [Fact] public void Amd_power_is_not_judged_against_its_tdp() => Assert.DoesNotContain(CpuCheck.Evaluate(Run(Ryzen, _ => 5000, temp: _ => 80, power: _ => 230)), f => f.Code == FindingCode.CpuPowerLimit);
 }

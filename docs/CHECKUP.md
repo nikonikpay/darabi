@@ -1,8 +1,9 @@
 # Checkup (عیب‌یابی هوشمند)
 
 The Checkup tab (Tests family) says in words whether the machine works as it should, so nobody has to compare numbers themselves. Every
-finding stands on what this machine measured or what its parts report about themselves; nothing comes from a table of models. A rule whose
-measurement is missing says nothing. Findings go into the benchmark and test reports too (HTML and text).
+finding stands on what this machine measured, what its parts report about themselves, or a figure the part's maker publishes for
+the model (base and boost clock, power, Tjmax; each finding that uses one names the page it came from). A rule whose measurement is missing
+says nothing. Findings go into the benchmark and test reports too (HTML and text).
 
 Levels: **Good** (checked and held), **Note** (explains a measurement, not a fault), **Attention**, **Problem**.
 
@@ -12,6 +13,8 @@ Levels: **Good** (checked and held), **Note** (explains a measurement, not a fau
   `NvidiaRunProbe` (NVML clock event reasons, sampled during a GPU run), `PowerSettings` (mains/battery, power plan).
 - App: `CheckupService` (judges each CPU/GPU benchmark run from the monitor's history), `CheckupText` (wording), `WebBridge.Checkup.cs`,
   peer finding in `WebBridge.Benchmarks.cs`, page `wwwroot/js/pages/checkup.js`.
+- Maker's figures: `CpuSpecs` + `cpu-specs.json` (embedded in Core), built by `tools/cpu-specs/build.ps1` from Intel ARK and amd.com pages;
+  see `tools/cpu-specs/README.md` for how they were read and how to read them again.
 
 ## Rules and thresholds
 | Part | Rule | Level |
@@ -19,11 +22,14 @@ Levels: **Good** (checked and held), **Note** (explains a measurement, not a fau
 | CPU | All-thread run with load under 85 %: nothing judged | Note |
 | CPU | Clock under load below 1 GHz (laptop charger / BD PROCHOT, power plan) | Problem |
 | CPU | All-core clock at the end of the run under 85 % / 70 % of the base clock the firmware reports | Attention / Problem |
-| CPU (TjMax known) | Peak within 2 °C of TjMax; clock drop ≥ 10 % makes it a Problem | Attention / Problem |
+| CPU (TjMax from the chip, or the maker's Tjmax) | Peak within 2 °C of the limit: clock kept (drop under 5 %) is by design; drop 5-15 % / 15 % or more | Note / Attention / Problem |
 | CPU (TjMax known) | Peak within 10 °C of TjMax | Note |
-| CPU (no TjMax, e.g. AMD) | Late-run temperature flat at its top (≥ 85 °C, 60 % of samples within 1.5 °C, spread ≤ 3 °C) with the clock falling ≥ 3 % / ≥ 10 % | Attention / Problem |
+| CPU (no TjMax, e.g. AMD) | Late-run temperature flat at its top (≥ 85 °C, 60 % of samples within 1.5 °C, spread ≤ 3 °C) with the clock falling ≥ 5 % / ≥ 15 % | Attention / Problem |
 | CPU (no TjMax) | Flat at the top, clock steady | Note |
 | CPU | Power steps down ≥ 15 % partway through with room in temperature (short/long power limits, Intel default settings) | Note |
+| CPU (one thread, model listed) | Fastest core under 85 % / 70 % of the published single-core boost | Attention / Problem |
+| CPU (Intel, model listed) | All-core power settles at Processor Base Power (±12 %) or Maximum Turbo Power (±8 %): the setting is named | Note |
+| CPU (Intel, model listed) | Power above Maximum Turbo Power by 8 %: board lifts Intel's limits (Attention on Core 13th/14th gen desktop, where Intel advises its defaults) | Note / Attention |
 | Power plan | Maximum processor state under 100 % (no boost) / boost mode Disabled | Attention |
 | Power | On battery | Note |
 | RAM (DDR4 SPD) | Running below the modules' XMP speed | Attention |
@@ -45,5 +51,5 @@ Levels: **Good** (checked and held), **Note** (explains a measurement, not a fau
   so the link is read from the card's side (Gen3 x16 card at x8) and the slot stays unknown.
 
 ## Not verified yet
-- Intel TjMax on a real Intel CPU (the sensor mapping follows LibreHardwareMonitor's names; no Intel machine at hand).
+- Intel TjMax on a real Intel CPU (the sensor mapping follows LibreHardwareMonitor's names; no Intel machine at hand); the maker's-figure rules on real runs.
 - NVML clock event reasons on a card under load; a full checkup run in the app.
