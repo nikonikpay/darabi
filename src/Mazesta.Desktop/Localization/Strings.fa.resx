@@ -878,6 +878,10 @@
   <data name="Web_Shop_Another" xml:space="preserve"><value>محصول دیگر</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>همهٔ محصولات</value></data>
   <data name="Web_Shop_Offline" xml:space="preserve"><value>به فروشگاه دسترسی نشد. با وصل شدن اینترنت، محصولی اینجا نمایش داده می‌شود.</value></data>
+  <data name="Web_Shop_Systems_Title" xml:space="preserve"><value>سیستم‌های آماده</value></data>
+  <data name="Web_Shop_Systems_Sub" xml:space="preserve"><value>کامپیوترهای کامل و آماده از فروشگاه ما</value></data>
+  <data name="Web_Shop_AnotherSystem" xml:space="preserve"><value>سیستم دیگر</value></data>
+  <data name="Web_Shop_AllSystems" xml:space="preserve"><value>همهٔ سیستم‌های آماده</value></data>
   <data name="Web_Contact_Title" xml:space="preserve"><value>فروش و پشتیبانی</value></data>
   <data name="Web_Contact_Sales" xml:space="preserve"><value>واحد فروش</value></data>
   <data name="Web_Contact_Support" xml:space="preserve"><value>پشتیبانی فنی</value></data>

@@ -131,11 +131,18 @@ function mouse(cleanup) {
   const wheel = h("span", { class: "lat" }, "↑ 0 · ↓ 0"), dbl = h("span", { class: "lat" }, "0");
   let up = 0, down = 0, doubles = 0;
   const pad = h("div", { class: "chk-pad", tabindex: "0" }, t("Checks_Mouse_Pad"));
-  pad.addEventListener("mousedown", (e) => { e.preventDefault(); const b = btns[e.button]; if (!b) return; b.classList.add("hit", "down"); const n = b.lastChild; n.textContent = String(+n.textContent + 1); });
-  pad.addEventListener("mouseup", (e) => { e.preventDefault(); btns[e.button]?.classList.remove("down"); });
-  // Back and Forward (buttons 3 and 4) would otherwise walk the page's history, leave this page and lose the test. The browser acts on the
-  // release (and on the pointer events), so those are stopped too, while the pointer is over the pad.
-  for (const type of ["pointerdown", "pointerup"]) pad.addEventListener(type, (e) => { if (e.button > 2) e.preventDefault(); });
+  const press = (i) => { const b = btns[i]; if (!b) return; b.classList.add("hit", "down"); const n = b.lastChild; n.textContent = String(+n.textContent + 1); };
+  pad.addEventListener("mousedown", (e) => { e.preventDefault(); if (e.button <= 2) press(e.button); });
+  pad.addEventListener("mouseup", (e) => { e.preventDefault(); if (e.button <= 2) btns[e.button]?.classList.remove("down"); });
+  // Back and Forward (buttons 3 and 4) would otherwise walk the page's history, leave this page and lose the test, so their pointer events are
+  // cancelled - and a cancelled pointerdown gets no mousedown after it, so these two are counted here, from the pointer events. A button pressed
+  // while another is held arrives as a pointermove whose button names it; the held-buttons mask tells a press from a release.
+  const XBIT = { 3: 8, 4: 16 };
+  for (const type of ["pointerdown", "pointermove", "pointerup"]) pad.addEventListener(type, (e) => {
+    if (!XBIT[e.button]) return;
+    e.preventDefault();
+    if (e.buttons & XBIT[e.button]) press(e.button); else btns[e.button].classList.remove("down");
+  });
   const keepHere = (e) => { if (e.button > 2 && pad.matches(":hover")) { e.preventDefault(); e.stopPropagation(); } };
   for (const type of ["mouseup", "pointerup", "auxclick"]) window.addEventListener(type, keepHere, true);
   cleanup.push(() => { for (const type of ["mouseup", "pointerup", "auxclick"]) window.removeEventListener(type, keepHere, true); });

@@ -9,7 +9,7 @@ public sealed partial class WebBridge
     private static readonly Dictionary<string, string> Links = new()
     {
         ["site"] = "https://www.dfmrendering.com/", ["contact"] = "https://www.dfmrendering.com/contactus/", ["pawnio"] = ProviderText.PawnIoUrl,
-        ["shop"] = "https://www.dfmrendering.com/shop/",
+        ["shop"] = "https://www.dfmrendering.com/shop/", ["systems"] = "https://www.dfmrendering.com/product-category/systems/",
         ["sales-whatsapp"] = "https://wa.me/989197588700", ["support-whatsapp"] = "https://wa.me/989197588701",
         ["sales-telegram"] = "https://t.me/DFMRendering", ["support-telegram"] = "https://t.me/dfm_support", ["bale"] = "https://ble.ir/join/DjEi5p9iS5", ["channel-telegram"] = "https://t.me/DFMRendering", ["instagram"] = "https://www.instagram.com/dfm.rendering/",
         ["email"] = "mailto:info@dfmrendering.com",
@@ -36,8 +36,8 @@ public sealed partial class WebBridge
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
             contact = Contact, updated = App.TakeJustUpdated(),
         });
-        var shop = new ShopFeed(_paths.CacheDir, _log);
-        MethodAsync("shop.product", async p => await shop.GetAsync(Bool(p, "another")).ConfigureAwait(true));
+        var shop = new ShopFeed(_paths.CacheDir, _log); var systems = new ShopFeed(_paths.CacheDir, _log, ShopFeed.SystemsCategory, "system");
+        MethodAsync("shop.product", async p => await (Str(p, "kind") == "system" ? systems : shop).GetAsync(Bool(p, "another")).ConfigureAwait(true));
         Method("shop.open", p => { var url = Str(p, "url"); if (ShopFeed.IsShopLink(url)) Open(url); return null; });
         Method("app.hardware", _ => Hardware(engine));
         // The service job being worked on, printed on every report; Persian digits become Latin so the number reads the same everywhere.

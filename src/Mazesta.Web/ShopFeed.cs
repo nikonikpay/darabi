@@ -10,14 +10,17 @@ public sealed record ShopProduct(long Id, string Title, string Summary, string L
 /// answers with HTML inside its JSON (the title's entities, the excerpt's lists); that is reduced to plain text here, so the page only ever
 /// shows words and never markup. The image is fetched once and handed over as a data URL (the page may load nothing from the internet itself).
 /// The last product is cached in <c>Data/cache/shop</c> and shown while offline; nothing is shown when there has never been one.
+/// A feed may be held to one of the site's product categories (<paramref name="category"/>, its WordPress id), with a cache of its own.
 /// </summary>
-public sealed partial class ShopFeed(string cacheDir, ILogger log)
+public sealed partial class ShopFeed(string cacheDir, ILogger log, int? category = null, string name = "product")
 {
+    /// <summary>The site's "ready systems" category (slug <c>systems</c>): whole computers the shop builds.</summary>
+    public const int SystemsCategory = 9836;
     public const string Site = "https://www.dfmrendering.com";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(12), DefaultRequestHeaders = { { "User-Agent", "MazestaTest/1.0 (+https://www.dfmrendering.com)" } } };
     private static readonly TimeSpan Fresh = TimeSpan.FromHours(6);
     private const int MaxImageBytes = 600_000;
-    private readonly string _file = Path.Combine(cacheDir, "shop", "product.json");
+    private readonly string _file = Path.Combine(cacheDir, "shop", name + ".json");
     private int _total;
 
     /// <summary>The cached product if it is recent, otherwise a new one (or the cached one when the site cannot be reached).</summary>
@@ -37,7 +40,7 @@ public sealed partial class ShopFeed(string cacheDir, ILogger log)
         for (int attempt = 0; attempt < 3; attempt++)
         {
             int page = _total > 0 ? Random.Shared.Next(1, _total + 1) : 1;
-            using var res = await Http.GetAsync($"{Site}/wp-json/wp/v2/product?per_page=1&page={page}&_fields=id,link,title,excerpt,featured_media").ConfigureAwait(false);
+            using var res = await Http.GetAsync($"{Site}/wp-json/wp/v2/product?per_page=1&page={page}{(category is { } c ? $"&product_cat={c}" : "")}&_fields=id,link,title,excerpt,featured_media").ConfigureAwait(false);
             res.EnsureSuccessStatusCode();
             if (res.Headers.TryGetValues("X-WP-Total", out var totals) && int.TryParse(totals.FirstOrDefault(), out int total)) _total = total;
             using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync().ConfigureAwait(false));

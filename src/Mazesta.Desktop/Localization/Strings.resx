@@ -878,6 +878,10 @@
   <data name="Web_Shop_Another" xml:space="preserve"><value>Another product</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>All products</value></data>
   <data name="Web_Shop_Offline" xml:space="preserve"><value>The shop could not be reached. A product will show here once the internet is available.</value></data>
+  <data name="Web_Shop_Systems_Title" xml:space="preserve"><value>Ready systems</value></data>
+  <data name="Web_Shop_Systems_Sub" xml:space="preserve"><value>Complete computers from our shop, ready to use</value></data>
+  <data name="Web_Shop_AnotherSystem" xml:space="preserve"><value>Another system</value></data>
+  <data name="Web_Shop_AllSystems" xml:space="preserve"><value>All ready systems</value></data>
   <data name="Web_Contact_Title" xml:space="preserve"><value>Sales and support</value></data>
   <data name="Web_Contact_Sales" xml:space="preserve"><value>Sales</value></data>
   <data name="Web_Contact_Support" xml:space="preserve"><value>Technical support</value></data>

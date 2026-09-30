@@ -1,6 +1,8 @@
 // The dashboard: the yellow plane with the machine's standing and its two temperatures at poster scale, then a boxed panel per part, each in its
-// own hue: the few readings that matter as a summary, the rest folded under "details". Then the shop's own product and people. Every number is
-// a live reading or says it is not available.
+// own hue: the few readings that matter as a summary, the rest folded under "details". The panels sit on a fixed grid read from the page's own
+// width (not the window's, the assistant's column takes part of it): the one-reading parts side by side on a row of equal heights, the parts with
+// a row per drive or adapter under them at twice the width. Then the shop's own product, one of its ready systems and its people. Every number
+// is a live reading or says it is not available.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
@@ -90,7 +92,7 @@ export function mount(el) {
     return el;
   };
 
-  const panels = h("div", { class: "panels" });
+  const panels = h("div", { class: "panels dash" });
   if (cpu) {
     const all = sensorsUnder(cpu), shown = [cpuTemp, pick(cpu, "CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuCoreClock"), pick(cpu, "CpuTotalLoad"), pick(cpu, "CpuPackagePower")];
     panels.append(panel({ kind: "Cpu", title: t("Nav_Cpu"), sub: cpu.name,
@@ -112,28 +114,6 @@ export function mount(el) {
       body: [h("div", { class: "stats" }, stat(t("Dashboard_Line_Used"), used), stat(t("Dashboard_Line_Free"), free)), meter(t("Dashboard_Line_Load"), percentOf(load))],
       more: details(topNodes("Memory").flatMap(sensorsUnder), ["RamTotal", "DimmTemp", "VirtualMemoryUsed", "VirtualMemoryLoad"]) }));
   }
-  const driveHealth = new Map();   // drive name → its health line, filled in when the inventory arrives
-  if (drives.length) {
-    const rows = drives.map((d) => {
-      const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" });
-      driveHealth.set(d.name.trim().toLowerCase(), hv);
-      updates.push(() => tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null)));
-      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
-        meter(t("Web_Dash_UsedSpace"), percentOf(pick(d, "StorageUsedSpace"))));
-    });
-    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)),
-      body: h("div", { class: "units" }, rows),
-      more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
-  }
-  if (nets.length) {
-    const rows = nets.slice(0, 4).map((n) => {
-      const down = pick(n, "NetDownload"), up = pick(n, "NetUpload"), dv = h("span", {}), uv = h("span", {});
-      updates.push(() => { dv.replaceChildren("↓ ", val(down ? fmt(value(down.id), down.unit) : null)); uv.replaceChildren("↑ ", val(up ? fmt(value(up.id), up.unit) : null)); });
-      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: n.name }, n.name), h("span", { class: "vals" }, dv, uv));
-    });
-    panels.append(panel({ kind: "Network", title: t("Nav_Network"), sub: null, body: h("div", { class: "units" }, rows),
-      more: nets.slice(0, 4).map((n) => { const kv = details(n.sensors, ["NetUtilization", "NetDataDownloaded", "NetDataUploaded"]); return kv.length ? [h("dt", { class: "sub lat" }, n.name), kv] : null; }) }));
-  }
   // Board and system: what the machine is (from the inventory, filled in when it arrives) and the board's own sensors.
   const boardSensors = board ? sensorsUnder(board) : [];
   const inv = { board: h("span", {}), bios: h("dd", { class: "lat" }), os: h("dd", { class: "lat" }) };
@@ -143,8 +123,30 @@ export function mount(el) {
     more: [h("dt", {}, t("Dashboard_Inv_Bios")), inv.bios, h("dt", {}, t("Dashboard_Inv_Os")), inv.os,
       details(boardSensors, ["BoardFan", "CpuFan", "BoardVoltage", "BoardTemp", "ChipsetTemp"], [boardSensors.find((s) => s.role === "BoardTemp"), boardSensors.find((s) => s.role === "ChipsetTemp")])] }));
 
+  const driveHealth = new Map();   // drive name → its health line, filled in when the inventory arrives
+  if (drives.length) {
+    const rows = drives.map((d) => {
+      const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" });
+      driveHealth.set(d.name.trim().toLowerCase(), hv);
+      updates.push(() => tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null)));
+      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
+        meter(t("Web_Dash_UsedSpace"), percentOf(pick(d, "StorageUsedSpace"))));
+    });
+    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)), extraClass: "span2",
+      body: h("div", { class: "units" }, rows),
+      more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
+  }
+  if (nets.length) {
+    const rows = nets.slice(0, 4).map((n) => {
+      const down = pick(n, "NetDownload"), up = pick(n, "NetUpload"), dv = h("span", {}), uv = h("span", {});
+      updates.push(() => { dv.replaceChildren("↓ ", val(down ? fmt(value(down.id), down.unit) : null)); uv.replaceChildren("↑ ", val(up ? fmt(value(up.id), up.unit) : null)); });
+      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: n.name }, n.name), h("span", { class: "vals" }, dv, uv));
+    });
+    panels.append(panel({ kind: "Network", title: t("Nav_Network"), sub: null, body: h("div", { class: "units" }, rows), extraClass: "span2",
+      more: nets.slice(0, 4).map((n) => { const kv = details(n.sensors, ["NetUtilization", "NetDataDownloaded", "NetDataUploaded"]); return kv.length ? [h("dt", { class: "sub lat" }, n.name), kv] : null; }) }));
+  }
   // ——— The shop and its people ———
-  const company = h("div", { class: "panels company" }, shopPanel(), contactPanel());
+  const company = h("div", { class: "panels company" }, shopPanel("product"), shopPanel("system"), contactPanel());
   el.append(plane, panels, h("h2", { class: "section-title" }, t("Web_Company_Title")), company);
 
   const tick = () => { for (const fn of updates) fn(); };
@@ -168,23 +170,26 @@ export function mount(el) {
   });
   load();
   const offFresh = on("hardwareFresh", () => { if (cached) load(); });
+  el.classList.add("dash-page");
   return () => { off(); offFresh(); };
 }
 
-// A random product from the shop's site. The host turns its HTML into plain text and its picture into a data URL; offline, the last one is kept.
-function shopPanel() {
+// A random product from the shop's site ("product": any, "system": one of its ready-built computers). The host turns its HTML into plain text and
+// its picture into a data URL; offline, the last one is kept.
+function shopPanel(kind) {
+  const system = kind === "system";
   const body = h("div", { class: "shop", "aria-busy": "true" }, h("div", { class: "img skeleton" }), h("div", {}, h("div", { class: "skeleton", style: { height: "18px", width: "70%" } }),
     h("div", { class: "skeleton", style: { height: "12px", marginTop: "12px" } }), h("div", { class: "skeleton", style: { height: "12px", marginTop: "8px", width: "85%" } })));
-  const another = h("button", { class: "btn quiet", type: "button", onclick: () => load(true) }, icon("refresh"), t("Web_Shop_Another"));
+  const another = h("button", { class: "btn quiet", type: "button", onclick: () => load(true) }, icon("refresh"), t(system ? "Web_Shop_AnotherSystem" : "Web_Shop_Another"));
   const el = h("section", { class: "panel p-shop" },
-    h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("shop")),
-      h("div", { class: "ttl" }, h("h3", { class: "panel-title" }, t("Web_Shop_Title")), h("div", { class: "panel-sub fa" }, t("Dashboard_Mazesta_L2")))),
+    h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(system ? "cpu" : "shop")),
+      h("div", { class: "ttl" }, h("h3", { class: "panel-title" }, t(system ? "Web_Shop_Systems_Title" : "Web_Shop_Title")), h("div", { class: "panel-sub fa" }, t(system ? "Web_Shop_Systems_Sub" : "Dashboard_Mazesta_L2")))),
     body,
-    h("div", { class: "panel-foot" }, h("a", { href: "#", onclick: (e) => { e.preventDefault(); call("app.openLink", { key: "shop" }); } }, t("Web_Shop_All"), icon("popout")), another));
+    h("div", { class: "panel-foot" }, h("a", { href: "#", onclick: (e) => { e.preventDefault(); call("app.openLink", { key: system ? "systems" : "shop" }); } }, t(system ? "Web_Shop_AllSystems" : "Web_Shop_All"), icon("popout")), another));
   async function load(fresh) {
     another.disabled = true; body.setAttribute("aria-busy", "true");
     try {
-      const p = await call("shop.product", { another: fresh });
+      const p = await call("shop.product", { another: fresh, kind });
       if (!p) { body.replaceChildren(h("p", { class: "muted", style: { gridColumn: "1 / -1", margin: 0 } }, t("Web_Shop_Offline"))); return; }
       body.replaceChildren(
         p.image ? h("img", { class: "img", src: p.image, alt: p.title, loading: "lazy" }) : h("div", { class: "img noimg" }, icon("shop")),

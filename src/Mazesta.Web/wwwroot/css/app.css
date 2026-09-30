@@ -281,7 +281,18 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .quick button:hover { border-color: var(--paper-3); background: var(--ink-4); }
 .quick button .ico { display: grid; place-items: center; color: var(--hue, var(--yellow)); flex: none; }
 .quick button svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.75; }
-@media (max-width: 1240px) { .hero-row { grid-template-columns: 1fr; } .hero-row .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); } }
+@media (max-width: 1240px) { .hero-row { grid-template-columns: 1fr; } .hero-row .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); } }
+/* The dashboard is laid out by its own width (the assistant's column takes part of the window): a fixed grid of four, two or one columns.
+   The one-reading parts share a row of equal heights with their meter at the foot; a part with a row per drive or adapter takes two columns. */
+.dash-page { container-type: inline-size; }
+.panels.dash { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; }
+.panels.dash > .panel { display: flex; flex-direction: column; }
+.panels.dash > .panel > .meter { margin-top: auto; padding-top: 14px; }
+.panels.dash > .span2 { grid-column: span 2; }
+.panels.company { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+@container (max-width: 1180px) { .panels.dash { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panels.company { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panels.company > .p-contact { grid-column: 1 / -1; } }
+@container (max-width: 1000px) { .dash-page .hero-row { grid-template-columns: 1fr; } }
+@container (max-width: 640px) { .panels.dash, .panels.company { grid-template-columns: 1fr; } .panels.dash > .span2, .panels.company > .p-contact { grid-column: auto; } }
 
 /* ———— Ruled columns (system info, specs) as small cards ———— */
 .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 16px; }
@@ -663,7 +674,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 /* Dashboard additions: the company row, a section title between the machine and the shop, buttons inside panels wear the panel's hue. */
 .section-title { font: 750 15.5px/1.3 var(--fa); margin: 30px 0 0; display: flex; align-items: center; gap: 12px; color: var(--paper); }
 .section-title::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
-.panels.company { grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); margin-top: 14px; }
+.panels.company { margin-top: 14px; }
 .panel-sub.fa { font-family: var(--fa); direction: inherit; text-align: start; white-space: normal; font-size: 12px; margin-top: 2px; }
 .panel .slab { background: var(--hue); color: var(--ink); box-shadow: 0 8px 24px -14px var(--hue); }
 .panel .slab.small { font-size: 13px; padding: 8px 15px; }
