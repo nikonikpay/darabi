@@ -28,9 +28,11 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     /// <summary>Why the last Start was refused (a benchmark or the GPU tuning is running), or null.</summary>
     [ObservableProperty] private string? _blockedMessage;
 
-    public TestCenterViewModel(TestEngine engine, IEnumerable<ITestExecutor> executors, Func<Action, object> dispatch)
+    private readonly IBreakEventSource? _breaks;
+
+    public TestCenterViewModel(TestEngine engine, IEnumerable<ITestExecutor> executors, Func<Action, object> dispatch, IBreakEventSource? breaks = null)
     {
-        _engine = engine; _dispatch = dispatch;
+        _engine = engine; _dispatch = dispatch; _breaks = breaks;
         Rows = new(executors.Select(e => new TestQueueRowViewModel(e.Definition, e)));
         foreach (var row in Rows) row.PropertyChanged += OnRowChanged;
         IsRunning = engine.State == TestEngineState.Running;
@@ -42,14 +44,23 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         if (engine.FindIncompleteSession() is { } cp) IncompleteSessionMessage = Describe(cp);
     }
 
-    /// <summary>Where the broken-off session stopped and what it had found by then; why it stopped is not guessed.</summary>
+    /// <summary>Where the broken-off session stopped, what it had found by then, and why it stopped as far as Windows' logs say (never guessed).</summary>
     internal string Describe(TestSessionCheckpoint cp)
     {
         string Name(string id) => RowFor(new TestId(id))?.Name ?? id;
         string at = cp.CurrentIndex < cp.QueueTestIds.Count ? Name(cp.QueueTestIds[cp.CurrentIndex]) : "";
         string finished = cp.Finished.Count == 0 ? Loc.Get("Test_IncompleteSession_NoneFinished")
             : string.Join(Loc.IsRtl ? "، " : ", ", cp.Finished.Select(f => $"{Name(f.TestId)}: {Loc.Get("Test_Outcome_" + f.Outcome)}"));
-        return Loc.Format("Test_IncompleteSession_Detail", cp.CurrentIndex + 1, cp.QueueTestIds.Count, at, (int)Math.Round(cp.CurrentPercent * 100), finished);
+        string text = Loc.Format("Test_IncompleteSession_Detail", cp.CurrentIndex + 1, cp.QueueTestIds.Count, at, (int)Math.Round(cp.CurrentPercent * 100), finished);
+        if (_breaks is null) return text;
+        try
+        {
+            var why = SessionBreak.Classify(cp.LastUpdatedAt, _breaks.BootTime, _breaks.Since(cp.LastUpdatedAt.AddSeconds(-15)));
+            text += " " + (why.Code is { } code ? Loc.Format("Test_Break_BlueScreenCode", code) : Loc.Get($"Test_Break_{why.Cause}"));
+            if (why.DisplayResets > 0) text += " " + Loc.Format("Test_Break_Tdr", why.DisplayResets);
+        }
+        catch (Exception e) when (e is System.Diagnostics.Eventing.Reader.EventLogException or UnauthorizedAccessException) { }   // no reason is better than a guessed one
+        return text;
     }
 
     private TestQueueRowViewModel? RowFor(TestId id) => Rows.FirstOrDefault(r => r.Definition.Id == id);

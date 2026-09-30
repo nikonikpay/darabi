@@ -1744,4 +1744,11 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Lan_Stop" xml:space="preserve"><value>Stop the partner</value></data>
   <data name="Lan_Listening" xml:space="preserve"><value>Listening on port {0} · {1} session(s)</value></data>
   <data name="Lan_Addresses" xml:space="preserve"><value>Addresses of this computer:</value></data>
+  <data name="Test_Break_AppClosed" xml:space="preserve"><value>Windows kept running and logged no crash of the app: it was closed or ended (not a machine fault).</value></data>
+  <data name="Test_Break_AppCrashed" xml:space="preserve"><value>Windows logged a crash of the app itself: a program fault, not proof of a hardware one; a test that crashes the app again on this machine is worth a closer look.</value></data>
+  <data name="Test_Break_Restarted" xml:space="preserve"><value>Windows was restarted or shut down normally during the session.</value></data>
+  <data name="Test_Break_PowerLoss" xml:space="preserve"><value>The computer restarted without shutting down (Kernel-Power 41): a power loss, a reset, a hang that was forced off, or a power supply that could not hold the load.</value></data>
+  <data name="Test_Break_BlueScreen" xml:space="preserve"><value>Windows stopped with a blue screen during the session.</value></data>
+  <data name="Test_Break_BlueScreenCode" xml:space="preserve"><value>Windows stopped with a blue screen (stop code {0}) during the session.</value></data>
+  <data name="Test_Break_Tdr" xml:space="preserve"><value>The display driver also stopped answering and was reset {0} time(s) (TDR).</value></data>
 </root>
