@@ -1,15 +1,24 @@
-using System.Diagnostics; using System.Net; using System.Net.Http; using System.Net.Sockets; using System.Runtime.CompilerServices; using System.Text; using System.Text.Json;
+using System.Diagnostics; using System.Net; using System.Net.Http; using System.Net.Sockets; using System.Text; using System.Text.Json; using System.Text.Json.Nodes;
 using Mazesta.Core.Ai;
 namespace Mazesta.Diagnostics.Ai;
 
 public readonly record struct ChatTurn(string Role, string Text);
 
+/// <summary>A function the model asked for: its name and the arguments as the JSON text it wrote (which may be wrong, and is checked before use).</summary>
+public sealed record ToolCall(string Id, string Name, string Arguments);
+
+/// <summary>One model turn: the text it wrote and the tools it asked for (none when it answered).</summary>
+public sealed record ChatReply(string Text, IReadOnlyList<ToolCall> Calls);
+
+/// <summary>What the assistant's loop needs of a model: one turn over the messages so far, the text handed on as it is written.</summary>
+public interface IChatModel { Task<ChatReply> CompleteAsync(JsonArray messages, JsonArray? tools, Action<string> onText, CancellationToken ct); }
+
 /// <summary>
 /// llama.cpp's own <c>llama-server</c> on the loopback address, serving one downloaded model to the chat page. It is started only when the user
 /// asks, listens on 127.0.0.1 alone on a free port, and is killed on stop, on idle and on exit. The page never sees the port: replies are
-/// streamed through <see cref="ChatAsync"/>.
+/// streamed through <see cref="CompleteAsync"/>.
 /// </summary>
-public sealed class AiServer(AiFiles files, HttpClient http) : IDisposable
+public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisposable
 {
     private Process? _process; private int _port; private readonly Queue<string> _tail = new();
     public AiModel? Model { get; private set; }
@@ -23,7 +32,7 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IDisposable
         if (!files.HasRuntime || !files.HasModel(model)) throw new InvalidOperationException("The assistant is not downloaded.");
         _port = FreePort(); lock (_tail) _tail.Clear();
         // No -ngl: llama.cpp fits the model to the GPU (and RAM) itself, which is what lets a 4 GB card carry the 4B model.
-        string args = $"-m \"{files.ModelPath(model)}\" --host 127.0.0.1 --port {_port} -c {AiFitter.Context} -np 1 --no-webui --jinja";
+        string args = $"-m \"{files.ModelPath(model)}\" --host 127.0.0.1 --port {_port} -c {AiAssistantPolicy.ServerContext} -np 1 --no-webui --jinja";
         var psi = new ProcessStartInfo(files.ServerExe, args) { WorkingDirectory = files.RuntimeDir, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true };
         var p = new Process { StartInfo = psi };
         void Keep(string? line) { if (line is null) return; lock (_tail) { _tail.Enqueue(line); while (_tail.Count > 6) _tail.Dequeue(); } }
@@ -47,40 +56,62 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IDisposable
 
     private string[] Tail() { lock (_tail) return [.. _tail]; }
 
-    /// <summary>The reply's text as it is written, piece by piece.</summary>
-    public async IAsyncEnumerable<string> ChatAsync(IReadOnlyList<ChatTurn> turns, [EnumeratorCancellation] CancellationToken ct)
+    /// <summary>One turn: the reply streams through <paramref name="onText"/>; tool calls arrive in pieces and are put together here.</summary>
+    public async Task<ChatReply> CompleteAsync(JsonArray messages, JsonArray? tools, Action<string> onText, CancellationToken ct)
     {
         if (!IsRunning) throw new InvalidOperationException("The assistant is not running.");
         LastUse = DateTime.UtcNow;
-        var body = new
+        var body = new JsonObject
         {
-            messages = turns.Select(t => new { role = t.Role, content = t.Text }), stream = true, temperature = 0.6, max_tokens = AiAssistantPolicy.MaxReplyTokens,
-            chat_template_kwargs = new { enable_thinking = false },   // Qwen3 would otherwise think aloud first: slow, and not an answer for the customer
+            ["messages"] = JsonNode.Parse(messages.ToJsonString()), ["stream"] = true, ["temperature"] = 0.6, ["max_tokens"] = AiAssistantPolicy.MaxReplyTokens,
+            ["chat_template_kwargs"] = new JsonObject { ["enable_thinking"] = false },   // Qwen3 would otherwise think aloud first: slow, and not an answer for the customer
         };
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{_port}/v1/chat/completions") { Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json") };
+        if (tools is { Count: > 0 }) body["tools"] = JsonNode.Parse(tools.ToJsonString());
+        using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{_port}/v1/chat/completions") { Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json") };
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
         using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false), Encoding.UTF8);
+        var text = new StringBuilder(); var calls = new SortedDictionary<int, (string Id, string Name, StringBuilder Args)>();
         while (await reader.ReadLineAsync(ct).ConfigureAwait(false) is { } line)
         {
             if (!line.StartsWith("data:", StringComparison.Ordinal)) continue;
             string data = line[5..].Trim();
             if (data == "[DONE]") break;
-            string? piece = Piece(data);
-            if (!string.IsNullOrEmpty(piece)) { LastUse = DateTime.UtcNow; yield return piece; }
+            var (piece, deltas) = Parse(data);
+            if (!string.IsNullOrEmpty(piece)) { LastUse = DateTime.UtcNow; text.Append(piece); onText(piece); }
+            foreach (var d in deltas)
+            {
+                var c = calls.TryGetValue(d.Index, out var have) ? have : (Id: "", Name: "", Args: new StringBuilder());
+                calls[d.Index] = (d.Id ?? c.Id, d.Name ?? c.Name, c.Args.Append(d.Arguments));
+            }
         }
+        return new(text.ToString(), [.. calls.Values.Where(c => c.Name.Length > 0).Select((c, i) => new ToolCall(c.Id.Length > 0 ? c.Id : "call_" + i, c.Name, c.Args.ToString()))]);
     }
 
     /// <summary>The text of one streamed chunk (<c>choices[0].delta.content</c>); null for a chunk with none.</summary>
-    public static string? Piece(string json)
+    public static string? Piece(string json) => Parse(json).Text;
+
+    internal readonly record struct CallDelta(int Index, string? Id, string? Name, string? Arguments);
+
+    /// <summary>One streamed chunk: its text and the pieces of tool calls it carries (<c>delta.tool_calls</c>: an index, then a name and argument fragments).</summary>
+    internal static (string? Text, IReadOnlyList<CallDelta> Calls) Parse(string json)
     {
         try
         {
             using var d = JsonDocument.Parse(json);
-            return d.RootElement.TryGetProperty("choices", out var c) && c.GetArrayLength() > 0 && c[0].TryGetProperty("delta", out var delta)
-                && delta.TryGetProperty("content", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
+            if (!d.RootElement.TryGetProperty("choices", out var c) || c.GetArrayLength() == 0 || !c[0].TryGetProperty("delta", out var delta)) return (null, []);
+            string? text = delta.TryGetProperty("content", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() : null;
+            var calls = new List<CallDelta>();
+            if (delta.TryGetProperty("tool_calls", out var tc) && tc.ValueKind == JsonValueKind.Array)
+                foreach (var x in tc.EnumerateArray())
+                {
+                    x.TryGetProperty("function", out var f);
+                    string? Str(JsonElement e, string n) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(n, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+                    calls.Add(new(x.TryGetProperty("index", out var i) && i.TryGetInt32(out var n) ? n : 0, Str(x, "id"), Str(f, "name"), Str(f, "arguments")));
+                }
+            return (text, calls);
         }
-        catch (JsonException) { return null; }
+        catch (JsonException) { return (null, []); }
     }
 
     public void Stop()

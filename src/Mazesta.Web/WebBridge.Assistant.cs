@@ -1,13 +1,13 @@
 using System.IO; using System.Net.Http;
-using Mazesta.Core.Hardware; using Microsoft.Extensions.Logging;
+using Mazesta.Core.Hardware; using Mazesta.Monitoring; using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
 using Mazesta.Core.Ai; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks;
 namespace Mazesta.Web;
 
 public sealed partial class WebBridge
 {
     /// <summary>The chat server while the assistant is on; the AI page's benchmark refuses to run beside it (it would measure a busy GPU).</summary>
-    private AiServer? _aiServer;
-    private sealed class ChatMessage(string role, string text) { public string Role { get; } = role; public string Text { get; set; } = text; }
+    private AiServer? _aiServer; private BenchmarkRunLog? _benchRunLog; private Func<string?>? _benchSystemHash;
+    private sealed class ChatMessage(string role, string text) { public string Role { get; } = role; public string Text { get; set; } = text; public List<(string Name, bool Ok)> Tools { get; } = []; }
 
     /// <summary>The idle time after which the assistant's server is stopped and its GPU memory given back.</summary>
     private static readonly TimeSpan AssistantIdle = TimeSpan.FromMinutes(10);
@@ -20,6 +20,10 @@ public sealed partial class WebBridge
     private void RegisterAssistant(AiFiles files, Func<AiMachine> machine, BenchmarkRunner runner)
     {
         var server = _aiServer = new AiServer(files, AiHttp); _cleanup.Add(server.Dispose);
+        var engine = _sp.GetRequiredService<PollingEngine>(); SensorSnapshot? lastSnapshot = null;
+        void OnSnapshot(SensorSnapshot s) => lastSnapshot = s;
+        engine.SnapshotPublished += OnSnapshot; _cleanup.Add(() => engine.SnapshotPublished -= OnSnapshot);
+        var tools = AssistantTools(() => lastSnapshot);
         var chat = new List<ChatMessage>(); string? error = null; bool starting = false, generating = false;
         CancellationTokenSource? replyCts = null, startCts = null; Timer? idle = null;
         _cleanup.Add(() => { idle?.Dispose(); replyCts?.Cancel(); startCts?.Cancel(); });
@@ -34,7 +38,7 @@ public sealed partial class WebBridge
                 runtimeReady = files.HasRuntime,
                 server = starting ? "starting" : server.IsRunning ? "ready" : "off",
                 busy = generating, error, blocked = runner.IsBusy,
-                messages = chat.Select(x => new { role = x.Role, text = x.Text }),
+                messages = chat.Select(x => new { role = x.Role, text = x.Text, tools = x.Tools.Select(t => new { name = t.Name, ok = t.Ok }) }),
             };
         }
 
@@ -74,9 +78,10 @@ public sealed partial class WebBridge
             try
             {
                 var history = AiAssistantPolicy.Trim<ChatMessage>(chat.Where(x => x != reply).ToList(), x => x.Text.Length);
-                var turns = new List<ChatTurn> { new("system", AiAssistantPolicy.SystemPrompt) };
-                turns.AddRange(history.Select(x => new ChatTurn(x.Role, x.Text)));
-                await foreach (var piece in server.ChatAsync(turns, replyCts.Token).ConfigureAwait(true)) { reply.Text += piece; PushSoon("assistant", State); }
+                // The model's threads call back here; the chat is the UI thread's.
+                await AiAgent.RunAsync(server, AiAssistantPolicy.SystemPrompt, [.. history.Select(x => new ChatTurn(x.Role, x.Text))], tools,
+                    piece => _window.Dispatcher.BeginInvoke(() => { reply.Text += piece; PushSoon("assistant", State); }),
+                    (name, ok) => _window.Dispatcher.BeginInvoke(() => { reply.Tools.Add((name, ok)); PushSoon("assistant", State); }), replyCts.Token).ConfigureAwait(true);
             }
             catch (OperationCanceledException) { }
             catch (Exception e) when (e is IOException or HttpRequestException or InvalidOperationException)

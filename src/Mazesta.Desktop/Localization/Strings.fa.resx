@@ -1590,7 +1590,7 @@
   <data name="Web_Run_Close" xml:space="preserve"><value>بستن تا جلسهٔ بعدی</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
   <data name="Nav_Assistant" xml:space="preserve"><value>دستیار</value></data>
-  <data name="Assist_Lede" xml:space="preserve"><value>ساده بپرسید، فارسی یا انگلیسی. یک مدل زبانی روی کارت گرافیک همین کامپیوتر اجرا می‌شود و چیزی از طریق اینترنت فرستاده نمی‌شود. در این نسخه فقط حرف می‌زند: تست اجرا نمی‌کند و سنسورها را نمی‌خواند.</value></data>
+  <data name="Assist_Lede" xml:space="preserve"><value>ساده بپرسید، فارسی یا انگلیسی. یک مدل زبانی روی کارت گرافیک همین کامپیوتر اجرا می‌شود و چیزی از طریق اینترنت فرستاده نمی‌شود. می‌تواند مشخصات این کامپیوتر، سنسورهای زنده، گزارش‌های ذخیره‌شده و تاریخچهٔ بنچمارک را ببیند، اما هنوز تست اجرا نمی‌کند و چیزی را تغییر نمی‌دهد.</value></data>
   <data name="Assist_Unavailable" xml:space="preserve"><value>دستیار روی این کامپیوتر در دسترس نیست.</value></data>
   <data name="Assist_NotDownloaded" xml:space="preserve"><value>اول دستیار را دانلود کنید.</value></data>
   <data name="Assist_StopFirst" xml:space="preserve"><value>اول دستیار را متوقف کنید: کارت گرافیک دست اوست و بنچمارک کنارش عدد نادرست می‌دهد.</value></data>
@@ -1610,9 +1610,14 @@
   <data name="Assist_Send" xml:space="preserve"><value>ارسال</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>هر چه دربارهٔ کامپیوترتان می‌خواهید بپرسید. برای تست و اندازه‌گیری واقعی از صفحه‌های تست‌ها، بنچمارک‌ها یا چک‌آپ استفاده کنید: دستیار هنوز نمی‌تواند آن‌ها را اجرا کند.</value></data>
-  <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. جواب‌هایش را اندازه‌گیری حساب نکنید.</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «داخل این کامپیوتر چیست؟»، «دمای پردازنده الان چقدر است؟» یا «بنچمارکم کندتر شده؟». هنوز نمی‌تواند تست اجرا کند: برای آن از صفحه‌های تست‌ها، بنچمارک‌ها یا چک‌آپ استفاده کنید.</value></data>
+  <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
+  <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>خواند: مشخصات سیستم</value></data>
+  <data name="Assist_Tool_get_sensors" xml:space="preserve"><value>خواند: سنسورهای زنده</value></data>
+  <data name="Assist_Tool_list_reports" xml:space="preserve"><value>خواند: گزارش‌های ذخیره‌شده</value></data>
+  <data name="Assist_Tool_get_benchmark_history" xml:space="preserve"><value>خواند: تاریخچهٔ بنچمارک</value></data>
+  <data name="Assist_Tool_failed" xml:space="preserve"><value>ناموفق</value></data>
   <data name="Assist_You" xml:space="preserve"><value>شما</value></data>
   <data name="Assist_Name" xml:space="preserve"><value>دستیار</value></data>
   <data name="Ai_Lede" xml:space="preserve"><value>این کامپیوتر کدام مدل‌های زبانی هوش مصنوعی را به‌صورت محلی اجرا می‌کند و با چه سرعتی. سازگاری هر مدل پیش از دانلود برآورد می‌شود؛ مدل‌های دلخواه را دانلود کنید و سرعت واقعی‌شان را روی کارت گرافیک یا پردازنده اندازه بگیرید.</value></data>

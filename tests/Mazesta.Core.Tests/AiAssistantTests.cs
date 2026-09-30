@@ -21,10 +21,10 @@ public class AiAssistantTests
         Assert.Equal(AiAssistantPolicy.LargeModelId, Pick(24 * G).Model!.Id); Assert.Equal(AiAssistantPolicy.BaseModelId, Pick(8 * G).Model!.Id);
     }
     [Fact] public void Without_room_in_memory_nothing_is_offered() => Assert.Equal(AiAssistantStatus.NoRoom, Pick(4 * G, ramFree: 1 * G).Status);
-    [Fact] public void Both_models_are_in_the_catalog_and_the_prompt_admits_it_can_only_talk()
+    [Fact] public void Both_models_are_in_the_catalog_and_the_prompt_admits_it_can_not_run_tests_yet()
     {
         Assert.NotNull(AiCatalog.Find(AiAssistantPolicy.BaseModelId)); Assert.NotNull(AiCatalog.Find(AiAssistantPolicy.LargeModelId));
-        Assert.Contains("can only talk", AiAssistantPolicy.SystemPrompt);
+        Assert.Contains("not run them yet", AiAssistantPolicy.SystemPrompt);
     }
     [Fact] public void History_is_trimmed_from_the_oldest_and_keeps_at_least_the_last_message()
     {

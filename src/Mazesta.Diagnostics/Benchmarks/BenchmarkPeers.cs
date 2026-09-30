@@ -204,6 +204,9 @@ public sealed class BenchmarkRunLog(string dataRoot)
         lock (_lock) return [.. Load().Where(r => r.Table == tableKey).OrderByDescending(r => r.At).Select(r => BenchmarkPeers.Marked(r, marks))];
     }
 
+    /// <summary>The newest runs of one machine (its system hash), of every list.</summary>
+    public IReadOnlyList<BenchmarkRun> Recent(string system, int count) { lock (_lock) return [.. Load().Where(r => r.System == system).OrderByDescending(r => r.At).Take(count)]; }
+
     public BenchmarkRun? Find(string id) { lock (_lock) return Load().FirstOrDefault(r => r.Id == id); }
 
     /// <summary>This copy's runs of one list as a list (the same rule as the published lists): its entries and its featured runs.</summary>

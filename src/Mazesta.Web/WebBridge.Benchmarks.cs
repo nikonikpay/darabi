@@ -45,6 +45,7 @@ public sealed partial class WebBridge
             records.AdoptUnnamed(key, Environment.MachineName);
             return known;
         }
+        _benchRunLog = runs; _benchSystemHash = () => System()?.Hash;   // the assistant's benchmark-history tool reads the same log
         string Key(BenchmarkRowViewModel r) => BenchmarkRecords.RecordKey(r.Benchmark.Definition.Id.Value, r.OptionValues());
         HeadlineMetric? Headline(BenchmarkRowViewModel r) => BenchmarkRecords.Headline(r.Benchmark.Definition.Id.Value) is { Part: not PeerPart.None } h ? h : null;
         string Table(BenchmarkRowViewModel r, HeadlineMetric h) => BenchmarkPeers.TableKey(r.Benchmark.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(r.OptionValues()));

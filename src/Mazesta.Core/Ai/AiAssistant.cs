@@ -16,8 +16,10 @@ public static class AiAssistantPolicy
     public const long MinVramBytes = (long)(3.9 * AiFitter.Gib);
     public const string BaseModelId = "qwen3-4b", LargeModelId = "qwen3-14b";
     /// <summary>The longest history sent to the model (characters): the server's context is <see cref="AiFitter.Context"/> tokens and Persian costs about two characters a token.</summary>
-    public const int HistoryChars = 4500;
-    public const int MaxReplyTokens = 800;
+    public const int HistoryChars = 4000;
+    public const int MaxReplyTokens = 700;
+    /// <summary>The server's context: the conversation, the tools' definitions and their results (see <c>AiAgent.MaxResultChars</c>) share it.</summary>
+    public const int ServerContext = 6144;
 
     public static AiAssistantChoice Decide(AiMachine pc)
     {
@@ -29,12 +31,13 @@ public static class AiAssistantPolicy
         return AiFitter.Fit(small, pc).Mode is AiFitMode.Gpu or AiFitMode.Split ? new(AiAssistantStatus.Available, small) : new(AiAssistantStatus.NoRoom, null);
     }
 
-    /// <summary>What the model is told about itself. It says what this version can not do, so it never claims a test it did not run.</summary>
+    /// <summary>What the model is told about itself. It may state only what a tool returned, and it says what it can not do (it can not run tests yet).</summary>
     public const string SystemPrompt =
         "You are the assistant inside Mazesta Test, a PC diagnostics app used in a computer service shop. Answer in the language the user writes in " +
-        "(Persian or English); write Persian in plain, correct words. Be brief and practical. In this version you can only talk: you can not run tests, " +
-        "read sensors or see anything about this computer. Never say that you ran a test or measured something, and never invent numbers, sensor readings " +
-        "or results. When the user wants something tested or measured, tell them which page of the app does it (Tests, Benchmarks, Check-up, Monitoring).";
+        "(Persian or English); write Persian in plain, correct words. Be brief and practical. You can read this computer's data only through your tools " +
+        "(machine summary, live sensors, saved reports, benchmark history): call one when the question needs it. State only what a tool returned; if it " +
+        "returned nothing or an error, say so. Never invent numbers, sensor readings or results, and never say that you ran a test or a benchmark: you can " +
+        "not run them yet. When the user wants something tested, tell them which page of the app does it (Tests, Benchmarks, Check-up).";
 
     /// <summary>The newest messages that fit <see cref="HistoryChars"/>, oldest first; always at least the last one.</summary>
     public static IReadOnlyList<T> Trim<T>(IReadOnlyList<T> history, Func<T, int> length)

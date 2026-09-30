@@ -63,12 +63,13 @@ export function mount(el) {
     if (chat.hidden) return;
     bar.replaceChildren(h("span", { class: "pill pass" }, t("Assist_Ready")), h("span", { class: "caption lat" }, a.model?.name ?? ""), h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => exec("assistant.exec", "stop") }, icon("stop"), t("Assist_Stop")));
-    const shape = a.messages.map((m) => m.role).join();
+    const shape = a.messages.map((m) => m.role + (m.tools?.length ?? 0)).join();
     if (shape === msgShape && msgEls.length) a.messages.forEach((m, i) => { const txt = m.text || (a.busy ? "…" : ""); if (msgEls[i].textContent !== txt) msgEls[i].textContent = txt; });
     else {
       msgShape = shape;
       msgEls = a.messages.map((m) => h("div", { class: "as-text", dir: "auto" }, m.text || (a.busy ? "…" : "")));   // dir="auto": each message takes its own direction
-      log.replaceChildren(...(a.messages.length ? a.messages.map((m, i) => h("div", { class: `as-msg ${m.role}` }, h("div", { class: "as-who" }, t(m.role === "user" ? "Assist_You" : "Assist_Name")), msgEls[i]))
+      log.replaceChildren(...(a.messages.length ? a.messages.map((m, i) => h("div", { class: `as-msg ${m.role}` }, h("div", { class: "as-who" }, t(m.role === "user" ? "Assist_You" : "Assist_Name")), msgEls[i],
+        m.tools?.length ? h("div", { class: "as-tools" }, m.tools.map((x) => h("span", { class: `pill ${x.ok ? "none" : "fail"}` }, t(`Assist_Tool_${x.name}`) + (x.ok ? "" : " · " + t("Assist_Tool_failed"))))) : null))
         : [h("p", { class: "caption as-empty" }, t("Assist_Empty"))]));
     }
     if (stick) log.scrollTop = log.scrollHeight;
