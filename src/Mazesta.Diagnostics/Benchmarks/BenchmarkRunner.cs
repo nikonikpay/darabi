@@ -107,6 +107,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
             result = await benchmark.RunAsync(request, cts.Token).ConfigureAwait(false);
         }
         catch (Exception e) { result = BenchmarkResult.Failed(id, clock.UtcNow, clock.UtcNow, $"{e.GetType().Name}: {e.Message}"); }
+        if (result.Status == BenchmarkStatus.Completed) result = result with { Setup = [.. Setup(benchmark.Definition, seconds, snapshot), .. result.Setup ?? []] };
         lock (_lock)
         {
             _last[id] = result;
@@ -117,6 +118,20 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
         var run = new RecordedBenchmark(benchmark.Definition, result, snapshot);
         Finished?.Invoke(run);
         return run;
+    }
+
+    /// <summary>How a run was set up, as the technician chose it: its length, the workload's version, and each option that changes the work (the
+    /// device options name the part, which is kept apart). Values are as chosen; a choice keeps its label.</summary>
+    internal static IEnumerable<SpecItem> Setup(TestDefinition definition, int seconds, IReadOnlyDictionary<string, string> options)
+    {
+        yield return new(BenchmarkDetails.RunGroup, "Bench_Set_Duration", $"{seconds} s");
+        if (BenchmarkRecords.Headline(definition.Id.Value) is { } h) yield return new(BenchmarkDetails.RunGroup, "Bench_Set_Version", h.Version.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        foreach (var o in definition.Options.Where(o => !BenchmarkPeers.DeviceOptions.Contains(o.Key)))
+        {
+            string value = options.GetValueOrDefault(o.Key) is { Length: > 0 } v ? v : o.Default;
+            string shown = o.Choices?.Invoke().FirstOrDefault(c => c.Value == value) is { Localized: false } c ? c.Label : value;
+            if (shown.Length > 0) yield return new(BenchmarkDetails.RunGroup, o.LabelKey, shown);
+        }
     }
 
     public void Cancel() { lock (_lock) { if (_queueActive) _queueCancelled = true; _cts?.Cancel(); } }

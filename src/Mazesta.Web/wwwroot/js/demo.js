@@ -122,7 +122,7 @@ const bench = () => ({ running: false, queue: "", canRunSelected: true,
     compared: i === 0 ? { now: { name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS", at: "1405/07/06 14:20" }, previous: { name: strings.Bench_Cpu_Gflops, value: "20.70 GFLOPS", at: "1405/07/01 11:02" }, change: 3.38, saved: true }
       : i === 1 ? { now: { name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS", at: "1405/07/06 14:22" }, previous: { name: strings.Bench_Cpu_Gflops, value: "421 GFLOPS", at: "1405/07/01 11:05", metrics: demoDetail("421 GFLOPS", false, "", false).metrics }, change: -2.14, saved: false } : null,
     checkup: i === 1 ? DEMO_FINDINGS.cpu() : null,
-    peers: i === 1 ? demoPeers(false) : i === 3 ? { total: 0, beaten: null, mineIndex: null, from: 0, around: [], mine: null, part: null } : null })) });
+    peers: i === 0 ? demoLast() : i === 1 ? demoPeers(false) : i === 3 ? { total: 0, beaten: null, mineIndex: null, from: 0, around: [], mine: null, part: null } : null })) });
 // A comparison list as the shop would publish it (made-up models and numbers, for the design only).
 const PEERS = [["AMD Ryzen 9 7950X", 905, 6, 14], ["Intel Core i9-14900K", 861, 4, 9], ["AMD Ryzen 9 5950X", 520, 5, 11], ["AMD Ryzen 9 3950X", 405, 3, 7], ["Intel Core i7-12700K", 398, 8, 20],
   ["AMD Ryzen 7 5800X", 301, 7, 12], ["Intel Core i5-13400F", 262, 12, 31], ["AMD Ryzen 5 5600", 214, 9, 18], ["Intel Core i5-10400", 151, 6, 9], ["Intel Core i3-10100", 88, 3, 4]];
@@ -132,6 +132,11 @@ function demoGap(mine, v) {
   return { text, lead, equal: pct < 0.5 };
 }
 const FEATURED = [["f1", "Intel Core i9-13900K", 1012, true, "خنک‌کننده آبی ۳۶۰", "2026/09/20"], ["f2", "AMD Ryzen 7 7800X3D", 540, false, null, "2026/09/18"]];
+// The case a slow machine meets: every model in the list is faster, so the standing says how far the nearest one is ahead.
+function demoLast() {
+  const around = [["AMD Ryzen 9 9900X", 3.06, "3.8×"], ["13th Gen Intel Core i7-13700KF", 2.09, "2.6×"]].map(([part, v, g]) => ({ part, oc: false, value: `${v} GFLOPS`, best: `${v} GFLOPS`, systems: 1, runs: 1, diff: -70, gap: { text: g, lead: true, equal: false }, local: true, same: false }));
+  return { total: 2, beaten: 0, mineIndex: 2, from: 0, around, featured: [], featuredTotal: 0, mine: "0.82 GFLOPS", part: "AMD Ryzen 5 PRO 3400G with Radeon Vega Graphics", oc: false };
+}
 function demoPeers(all) {
   const mine = 412, rows = PEERS.map(([part, v, systems, runs], k) => ({ part, oc: k === 1, value: `${v} GFLOPS`, best: `${Math.round(v * 1.04)} GFLOPS`, systems, runs, diff: (mine - v) / v * 100, gap: demoGap(mine, v), local: k === 8, same: k === 3 }));
   const featured = FEATURED.map(([id, part, v, oc, note, at]) => ({ id, part, oc, note, at, local: id === "f2", value: `${v} GFLOPS`, gap: demoGap(mine, v) }));

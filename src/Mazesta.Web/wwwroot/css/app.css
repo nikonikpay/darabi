@@ -1132,3 +1132,4 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .checkup-sum .pill { font-size: 13px; padding: 3px 12px; }
 .checkup-run-block { display: grid; gap: 8px; margin-bottom: 14px; }
 .q-row .row-checkup { grid-column: 3 / -1; display: grid; gap: 8px; }
+.peers-sum.behind { flex-wrap: wrap; color: var(--paper); }

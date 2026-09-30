@@ -8,7 +8,7 @@ internal sealed class GpuUnsupportedException(string message) : Exception(messag
 /// Failed and a missing feature into Unsupported, and adding the GPU's own clock, power and temperature for the run.</summary>
 internal static class GpuBenchmark
 {
-    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body)
+    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body, (int Width, int Height)? resolution = null)
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "Duration must be positive."));
@@ -32,7 +32,8 @@ internal static class GpuBenchmark
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, "Bench_Gpu_HotSpotMax", Unit.Celsius, peak: true, node: node);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuVramTemp, started, finished, "Bench_Gpu_VramTempMax", Unit.Celsius, peak: true, node: node);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuFanPercent, started, finished, "Bench_Gpu_Fan", Unit.Percent, node: node);
-                return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}");
+                return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}",
+                    resolution is { } r ? [new(BenchmarkDetails.RunGroup, "Bench_Set_Resolution", $"{r.Width}×{r.Height}")] : null);
             }
             catch (OperationCanceledException) { return BenchmarkResult.Cancelled(spec.Id, started, request.Clock.UtcNow); }
             catch (GpuUnsupportedException e) { return BenchmarkResult.Unsupported(spec.Id, started, e.Message); }

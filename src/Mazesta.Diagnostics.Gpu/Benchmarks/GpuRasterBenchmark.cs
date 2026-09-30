@@ -17,7 +17,7 @@ public sealed class GpuRasterBenchmark : IBenchmark, ITestAvailability
 
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Frame(float Time, uint Columns, float Aspect, uint Layers);
 
-    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, s => Run(s, request, ct));
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Spec, request, s => Run(s, request, ct), (Width, Height));
 
     private static (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
     {

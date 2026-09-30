@@ -1,4 +1,4 @@
-using Mazesta.Core.Time; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring.Tests.Fakes; using Xunit;
+using Mazesta.Desktop.Localization; using Mazesta.Core.Time; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring.Tests.Fakes; using Xunit;
 namespace Mazesta.Desktop.Tests;
 
 public class BenchmarksViewModelTests
@@ -19,7 +19,7 @@ public class BenchmarksViewModelTests
     {
         var (vm, runner) = Build(new Fake(BenchmarkStatus.Completed, new("Bench_Cpu_Gflops", 12.3456, "GFLOPS"), new("Bench_Cpu_PerThread", 250.4, "GFLOPS")));
         await vm.RunCommand.ExecuteAsync(vm.Rows[0]);
-        Assert.Equal(["12.35 GFLOPS", "250 GFLOPS"], vm.Rows[0].Metrics.Select(m => m.Value)); Assert.Single(runner.Completed()); Assert.False(vm.IsRunning);
+        Assert.Equal(["12.35 GFLOPS", "250 GFLOPS"], vm.Rows[0].Metrics.Take(2).Select(m => m.Value)); Assert.Contains(vm.Rows[0].Metrics, m => m.Name == Loc.Get("Bench_Set_Duration")); Assert.Single(runner.Completed()); Assert.False(vm.IsRunning);
     }
     [Fact] public async Task An_unsupported_run_shows_no_numbers_and_is_not_kept()
     {
@@ -44,6 +44,6 @@ public class BenchmarksViewModelTests
         var (vm, runner) = Build(new Fake(BenchmarkStatus.Completed, new BenchmarkMetric("Bench_Cpu_Gflops", 7, "GFLOPS")));
         await vm.RunCommand.ExecuteAsync(vm.Rows[0]); vm.Dispose();
         var again = new BenchmarksViewModel(runner, a => { a(); return null!; });
-        Assert.Equal(["7.00 GFLOPS"], again.Rows[0].Metrics.Select(m => m.Value)); Assert.False(again.IsRunning);
+        Assert.Equal(["7.00 GFLOPS"], again.Rows[0].Metrics.Take(1).Select(m => m.Value)); Assert.False(again.IsRunning);
     }
 }

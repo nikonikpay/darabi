@@ -7,7 +7,10 @@ public sealed record BenchmarkMetric(string Key, double Value, string Unit);
 
 public enum BenchmarkStatus { Completed, Cancelled, Unsupported, Failed }
 
-public sealed record BenchmarkResult(TestId Id, BenchmarkStatus Status, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetric> Metrics, string? Detail)
+/// <param name="Setup">How the run was set up (its length, its options, a fixed resolution), group <see cref="BenchmarkDetails.RunGroup"/>: kept with the
+/// run so two results can be told apart by how they were made, not only by what they measured.</param>
+public sealed record BenchmarkResult(TestId Id, BenchmarkStatus Status, DateTimeOffset StartedAt, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetric> Metrics, string? Detail,
+    IReadOnlyList<SpecItem>? Setup = null)
 {
     public static BenchmarkResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Unsupported, now, now, [], detail);
     public static BenchmarkResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, BenchmarkStatus.Cancelled, started, now, [], null);

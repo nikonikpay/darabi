@@ -13,7 +13,7 @@ public sealed record SpecItem(string Group, string Key, string Value);
 /// </summary>
 public static class BenchmarkDetails
 {
-    public const string PartGroup = "part", SystemGroup = "system";
+    public const string PartGroup = "part", SystemGroup = "system", RunGroup = "run";
 
     /// <summary>The metrics that are measured conditions of the run, not results of the work.</summary>
     public static readonly IReadOnlySet<string> ConditionKeys = new HashSet<string>(StringComparer.Ordinal)

@@ -102,7 +102,7 @@ public sealed partial class WebBridge
                     peer = PeerFinding(row, h, BenchmarkPeers.TableKey(run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options)), c.Current, part, overclocked, run.Result.Metrics);
                     var details = await DetailsOf(h.Part, part, options);
                     runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options), BenchmarkPeers.PartName(part),
-                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, details));
+                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details]));
                     memo.Clear(); PushSoon("bench", State);
                 }
                 catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }
@@ -315,6 +315,7 @@ public sealed partial class WebBridge
         value = Units.FormatMeasured(value, unit), oc = overclocked, at = at?.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), metrics = Metrics(metrics),
         part = (details ?? []).Where(d => d.Group == BenchmarkDetails.PartGroup).Select(SpecJson),
         system = (details ?? []).Where(d => d.Group == BenchmarkDetails.SystemGroup).Select(SpecJson),
+        run = (details ?? []).Where(d => d.Group == BenchmarkDetails.RunGroup).Select(SpecJson),
     };
     private static object SpecJson(SpecItem s) => new { name = Loc.Get(s.Key), value = s.Value };
 

@@ -1899,4 +1899,11 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_M_TempTheirs" xml:space="preserve"><value>Highest temperature, typical system</value></data>
   <data name="Check_M_ClockOurs" xml:space="preserve"><value>Clock, this system</value></data>
   <data name="Check_M_ClockTheirs" xml:space="preserve"><value>Clock, typical system</value></data>
+  <data name="Bench_Set_Duration" xml:space="preserve"><value>Run length</value></data>
+  <data name="Bench_Set_Version" xml:space="preserve"><value>Workload version</value></data>
+  <data name="Bench_Set_Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Web_Detail_Run" xml:space="preserve"><value>Run settings</value></data>
+  <data name="Web_Peers_Last" xml:space="preserve"><value>slower than all {0} models in the list</value></data>
+  <data name="Web_Peers_First" xml:space="preserve"><value>faster than all {0} models in the list</value></data>
+  <data name="Web_Peers_Nearest" xml:space="preserve"><value>the nearest one, {0}, is {1} faster</value></data>
 </root>

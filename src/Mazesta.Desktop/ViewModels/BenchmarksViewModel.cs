@@ -97,6 +97,7 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
     {
         row.Metrics.Clear();
         foreach (var m in result.Metrics) row.Metrics.Add(new(Loc.Get(m.Key), Units.FormatMeasured(m.Value, m.Unit)));
+        foreach (var s in result.Setup ?? []) row.Metrics.Add(new(Loc.Get(s.Key), s.Value));   // how the run was set up: its length, version, resolution
         row.Detail = result.Detail;
         if (result.Status == BenchmarkStatus.Completed) { row.StatusText = Loc.Format("Bench_Status_CompletedAt", result.FinishedAt.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture)); row.PercentComplete = 100; }
         else { row.StatusText = Loc.Get("Bench_Status_" + result.Status); row.PercentComplete = 0; }

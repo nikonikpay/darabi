@@ -1899,4 +1899,11 @@
   <data name="Check_M_TempTheirs" xml:space="preserve"><value>بیشترین دما، سیستم معمول</value></data>
   <data name="Check_M_ClockOurs" xml:space="preserve"><value>فرکانس، این سیستم</value></data>
   <data name="Check_M_ClockTheirs" xml:space="preserve"><value>فرکانس، سیستم معمول</value></data>
+  <data name="Bench_Set_Duration" xml:space="preserve"><value>مدت اجرا</value></data>
+  <data name="Bench_Set_Version" xml:space="preserve"><value>نسخهٔ بار کاری</value></data>
+  <data name="Bench_Set_Resolution" xml:space="preserve"><value>رزولوشن</value></data>
+  <data name="Web_Detail_Run" xml:space="preserve"><value>تنظیمات اجرا</value></data>
+  <data name="Web_Peers_Last" xml:space="preserve"><value>کندتر از همهٔ {0} مدل فهرست</value></data>
+  <data name="Web_Peers_First" xml:space="preserve"><value>سریع‌تر از همهٔ {0} مدل فهرست</value></data>
+  <data name="Web_Peers_Nearest" xml:space="preserve"><value>نزدیک‌ترین مدل، {0}، {1} سریع‌تر است</value></data>
 </root>

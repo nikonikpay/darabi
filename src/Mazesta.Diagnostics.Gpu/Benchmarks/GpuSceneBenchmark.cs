@@ -20,7 +20,7 @@ public sealed class GpuSceneBenchmark(bool rayTraced) : IBenchmark, ITestAvailab
     public Unavailability? CheckAvailability(TestOptions options) => rayTraced ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
     private const int Width = 2560, Height = 1440; private const uint Load = 3; private const float Step = 1 / 30f, CheckTime = 1.234f;
 
-    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Definition, request, s => Run(s, request, ct));
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Definition, request, s => Run(s, request, ct), (Width, Height));
 
     private (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
     {

@@ -144,13 +144,25 @@ function standing(r) {
     if (p.featuredTotal > p.featured.length) out.push(h("p", { class: "rec-none" }, t("Web_Peers_FeaturedMore", fa(p.featuredTotal - p.featured.length))));
   }
   if (!p.total) return out;
-  if (p.mineIndex !== null) out.push(h("div", { class: "peers-sum" }, h("span", { class: "num pct" }, `${Math.round(p.beaten / p.total * 100)}%`), h("span", {}, t("Web_Peers_Ahead", fa(p.beaten), fa(p.total)))));
+  if (p.mineIndex !== null) out.push(standingLine(p.beaten, p.total, p.around[p.mineIndex - 1 - p.from]));
   else out.push(h("p", { class: "rec-none" }, t("Web_Peers_RunFirst")));
   const list = h("ol", { class: "peer-list" }), rank = (idx) => idx + 1 + (p.mineIndex !== null && idx >= p.mineIndex ? 1 : 0);
   p.around.forEach((e, k) => { const idx = p.from + k; if (p.mineIndex === idx) list.append(youRow(p, idx + 1)); addPeer(list, r, e, rank(idx)); });
   if (p.mineIndex !== null && p.mineIndex >= p.from + p.around.length) list.append(youRow(p, p.mineIndex + 1));
   out.push(list);
   return out;
+}
+
+// Where this result stands, said plainly: ahead of some of the models (and what share of them), slower than all of them (with how far behind
+// the nearest one it is, never a bare "0%"), or faster than all of them. `above` is the entry just ahead of this result, if any.
+function standingLine(beaten, total, above) {
+  if (beaten === 0) {
+    const [a, b, c] = t("Web_Peers_Nearest", "\u0001", "\u0002").split(/[\u0001\u0002]/);
+    return h("div", { class: "peers-sum behind" }, h("span", {}, t("Web_Peers_Last", fa(total))),
+      above?.gap && !above.gap.equal ? h("span", { class: "caption" }, a, h("span", { class: "lat" }, above.part), b, h("span", { class: "lat" }, above.gap.text), c) : null);
+  }
+  if (beaten >= total) return h("div", { class: "peers-sum" }, h("span", { class: "num pct" }, "100%"), h("span", {}, t("Web_Peers_First", fa(total))));
+  return h("div", { class: "peers-sum" }, h("span", { class: "num pct" }, `${Math.round(beaten / total * 100)}%`), h("span", {}, t("Web_Peers_Ahead", fa(beaten), fa(total))));
 }
 
 // A row that opens, under itself, its details beside this system's (fetched when opened: the lists carry none, to stay small).
@@ -209,8 +221,9 @@ function compare(mine, theirs, two) {
     h("tbody", {}, h("tr", { class: "big" }, h("th", {}, t("Web_Detail_Result")), sides.map((s) => cell(s?.value, "big"))),
       h("tr", {}, h("th", {}, t("Web_Detail_Date")), sides.map((s) => h("td", { class: "lat" }, s?.at ?? "—"))),
       sides.some((s) => s?.oc) ? h("tr", {}, h("th", {}, t("Web_Peers_Oc")), sides.map((s) => h("td", {}, s ? (s.oc ? "✓" : "—") : "—"))) : null));
-  const noDetail = sides.every((s) => !s || (!s.part?.length && !s.system?.length && !s.metrics?.conditions?.length));
+  const noDetail = sides.every((s) => !s || (!s.part?.length && !s.system?.length && !s.run?.length && !s.metrics?.conditions?.length));
   return h("div", { class: "cmp-wrap" }, head,
+    group("Web_Detail_Run", rows((s) => s?.run)),
     group("Web_Detail_Conditions", rows((s) => s?.metrics?.conditions)),
     group("Web_Detail_Part", rows((s) => s?.part)),
     group("Web_Detail_Results", rows((s) => s?.metrics?.results), false),
@@ -264,7 +277,7 @@ async function allPeers(r) {
   search.oninput = () => { shown = PAGE; paint(); };
   const sub = [d.metric, d.built ? t("Web_Peers_Built", d.built) : ""].filter(Boolean).join(" · ");
   sheet(d.name, sub, [h("p", { class: "note" }, t("Web_Peers_Note")),
-    d.mineIndex !== null ? h("div", { class: "peers-sum" }, h("span", { class: "num pct" }, `${Math.round(d.beaten / Math.max(1, d.rows.length) * 100)}%`), h("span", {}, t("Web_Peers_Ahead", fa(d.beaten), fa(d.rows.length)))) : null,
+    d.mineIndex !== null ? standingLine(d.beaten, d.rows.length, d.rows[d.mineIndex - 1]) : null,
     h("div", { class: "sheet-tools" }, search, chips, found), list, more]);
   paint();
   list.querySelector(".you")?.scrollIntoView({ block: "center" });

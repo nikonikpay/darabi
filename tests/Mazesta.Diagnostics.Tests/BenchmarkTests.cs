@@ -123,4 +123,16 @@ public class BenchmarkTests : IDisposable
         var options = new TestOptions(StorageBenchmark.Spec, new Dictionary<string, string> { [StorageExecutor.DriveOption] = Path.Combine(_dir, "nope"), [StorageExecutor.FileMbOption] = "32" });
         Assert.Equal(BenchmarkStatus.Unsupported, (await new StorageBenchmark(TimeSpan.Zero).RunAsync(Request(2, options), CancellationToken.None)).Status);
     }
+
+    /// <summary>A run keeps how it was set up: its length, the workload's version and the options that change the work, never the device option
+    /// (the drive or GPU is the part, recorded apart).</summary>
+    [Fact] public void A_run_records_its_length_version_and_work_options()
+    {
+        var setup = BenchmarkRunner.Setup(StorageBenchmark.Spec, 20, new Dictionary<string, string> { [StorageExecutor.DriveOption] = "D:\\", [StorageExecutor.FileMbOption] = "256" }).ToList();
+        Assert.Contains(setup, s => s.Key == "Bench_Set_Duration" && s.Value == "20 s");
+        Assert.Contains(setup, s => s.Key == "Bench_Set_Version" && s.Value == "2");
+        Assert.Contains(setup, s => s.Key == "Test_Option_FileMb" && s.Value == "256");
+        Assert.DoesNotContain(setup, s => s.Key == "Test_Option_Drive");
+        Assert.All(setup, s => Assert.Equal(BenchmarkDetails.RunGroup, s.Group));
+    }
 }
