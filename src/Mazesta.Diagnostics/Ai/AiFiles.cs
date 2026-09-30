@@ -19,7 +19,8 @@ public sealed class AiFiles(string dataRoot, HttpClient http)
 
     public string ModelPath(AiModel m) => Path.Combine(ModelsDir, m.File);
     public bool HasModel(AiModel m) => new FileInfo(ModelPath(m)) is { Exists: true } f && f.Length == m.Bytes;
-    public bool HasRuntime => File.Exists(BenchExe);
+    public string ServerExe => Path.Combine(RuntimeDir, "llama-server.exe");
+    public bool HasRuntime => File.Exists(BenchExe) && File.Exists(ServerExe);
     /// <summary>What a stopped download already has (it continues from there).</summary>
     public long PartialBytes(AiModel m) => new FileInfo(ModelPath(m) + ".part") is { Exists: true } f ? f.Length : 0;
 
@@ -33,7 +34,7 @@ public sealed class AiFiles(string dataRoot, HttpClient http)
         string temp = RuntimeDir + ".unpack";
         if (Directory.Exists(temp)) Directory.Delete(temp, true);
         ZipFile.ExtractToDirectory(zip, temp);
-        if (!File.Exists(Path.Combine(temp, "llama-bench.exe"))) throw new InvalidDataException("The llama.cpp package has no llama-bench.exe.");
+        foreach (var exe in new[] { "llama-bench.exe", "llama-server.exe" }) if (!File.Exists(Path.Combine(temp, exe))) throw new InvalidDataException($"The llama.cpp package has no {exe}.");
         if (Directory.Exists(RuntimeDir)) Directory.Delete(RuntimeDir, true);
         Directory.Move(temp, RuntimeDir);
         File.Delete(zip);

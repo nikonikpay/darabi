@@ -238,6 +238,8 @@ export async function call(m, p, emit) {
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }
     case "ai.state": return demoAi();
     case "ai.exec": return null;
+    case "assistant.state": return { status: "Available", model: { id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", downloaded: true }, runtimeReady: true, server: "off", busy: false, error: null, blocked: false, messages: [] };
+    case "assistant.exec": return null;
     case "specs.get": await new Promise((r) => setTimeout(r, 300)); return { errors: [], cards: DEMO_SPECS[p.kind || "Cpu"] || DEMO_SPECS.Cpu };
     case "inventory.get": return { sections: sections(), components: { Cpu: sections().slice(0, 1), Gpu: sections().slice(1, 2), Storage: sections().slice(3, 4), Network: [] },
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };

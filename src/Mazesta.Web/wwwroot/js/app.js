@@ -15,6 +15,7 @@ export const PAGES = [
   { id: "benchmarks", key: "Nav_Benchmarks", load: () => import("./pages/benchmarks.js") },
   { id: "checkup", key: "Nav_Checkup", load: () => import("./pages/checkup.js") },
   { id: "ai", key: "Nav_Ai", load: () => import("./pages/ai.js") },
+  { id: "assistant", key: "Nav_Assistant", load: () => import("./pages/assistant.js") },
   { id: "checks", key: "Nav_Checks", load: () => import("./pages/checks.js") },
   { id: "gpu", key: "Nav_Gpu", load: () => import("./pages/component.js"), arg: "Gpu" },
   { id: "cpu", key: "Nav_Cpu", load: () => import("./pages/component.js"), arg: "Cpu" },
@@ -37,7 +38,7 @@ export const PAGES = [
 export const FAMILIES = [
   { key: "Nav_Dashboard", icon: "home", pages: ["dashboard"] },
   { key: "Nav_Group_Hardware", icon: "pulse", pages: ["monitoring", "system", "cpu", "gpu", "ram", "storage", "network"] },
-  { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks", "checkup", "ai", "checks"] },
+  { key: "Nav_Group_Tests", icon: "flask", pages: ["tests", "benchmarks", "checkup", "ai", "assistant", "checks"] },
   { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
   { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates"] },

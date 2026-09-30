@@ -1589,6 +1589,32 @@
   <data name="Advice_Error" xml:space="preserve"><value>خود آزمون با خطای برنامه متوقف شد؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست. دوباره اجرا کنید؛ اگر تکرار شد، گزارش برنامه (در تنظیمات) را برای فروشگاه بفرستید.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>بستن تا جلسهٔ بعدی</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
+  <data name="Nav_Assistant" xml:space="preserve"><value>دستیار</value></data>
+  <data name="Assist_Lede" xml:space="preserve"><value>ساده بپرسید، فارسی یا انگلیسی. یک مدل زبانی روی کارت گرافیک همین کامپیوتر اجرا می‌شود و چیزی از طریق اینترنت فرستاده نمی‌شود. در این نسخه فقط حرف می‌زند: تست اجرا نمی‌کند و سنسورها را نمی‌خواند.</value></data>
+  <data name="Assist_Unavailable" xml:space="preserve"><value>دستیار روی این کامپیوتر در دسترس نیست.</value></data>
+  <data name="Assist_NotDownloaded" xml:space="preserve"><value>اول دستیار را دانلود کنید.</value></data>
+  <data name="Assist_StopFirst" xml:space="preserve"><value>اول دستیار را متوقف کنید: کارت گرافیک دست اوست و بنچمارک کنارش عدد نادرست می‌دهد.</value></data>
+  <data name="Assist_NoGpu" xml:space="preserve"><value>دستیار کارت گرافیک با حافظهٔ مستقل می‌خواهد. روی این کامپیوتر چنین کارتی پیدا نشد.</value></data>
+  <data name="Assist_LittleVram" xml:space="preserve"><value>دستیار کارت گرافیکی با حداقل ۴ گیگابایت حافظهٔ مستقل می‌خواهد؛ کارت این کامپیوتر کمتر دارد.</value></data>
+  <data name="Assist_NoRoom" xml:space="preserve"><value>الان حافظهٔ آزاد این کامپیوتر برای مدل دستیار کافی نیست. برنامه‌های دیگر را ببندید و دوباره نگاه کنید.</value></data>
+  <data name="Assist_Enable_Title" xml:space="preserve"><value>روشن کردن دستیار</value></data>
+  <data name="Assist_Enable_Text" xml:space="preserve"><value>دستیار فقط یک بار و فقط وقتی بخواهید دانلود می‌شود: مدل زبانی ({0}، {1}) و موتور llama.cpp. در پوشهٔ داده‌های برنامه می‌ماند و از صفحهٔ مدل‌های هوش مصنوعی حذف‌شدنی است.</value></data>
+  <data name="Assist_Enable" xml:space="preserve"><value>دانلود و روشن کردن</value></data>
+  <data name="Assist_Downloading" xml:space="preserve"><value>در حال دانلود…</value></data>
+  <data name="Assist_Start" xml:space="preserve"><value>شروع دستیار</value></data>
+  <data name="Assist_Starting" xml:space="preserve"><value>در حال بارگذاری مدل روی کارت گرافیک…</value></data>
+  <data name="Assist_Stop" xml:space="preserve"><value>توقف دستیار</value></data>
+  <data name="Assist_Ready" xml:space="preserve"><value>آماده</value></data>
+  <data name="Assist_Off" xml:space="preserve"><value>متوقف است. با توقف، کارت گرافیک آزاد می‌شود و پس از ۱۰ دقیقه بی‌کاری خودش هم متوقف می‌شود.</value></data>
+  <data name="Assist_Placeholder" xml:space="preserve"><value>پرسش خود را بنویسید…</value></data>
+  <data name="Assist_Send" xml:space="preserve"><value>ارسال</value></data>
+  <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
+  <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>هر چه دربارهٔ کامپیوترتان می‌خواهید بپرسید. برای تست و اندازه‌گیری واقعی از صفحه‌های تست‌ها، بنچمارک‌ها یا چک‌آپ استفاده کنید: دستیار هنوز نمی‌تواند آن‌ها را اجرا کند.</value></data>
+  <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. جواب‌هایش را اندازه‌گیری حساب نکنید.</value></data>
+  <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
+  <data name="Assist_You" xml:space="preserve"><value>شما</value></data>
+  <data name="Assist_Name" xml:space="preserve"><value>دستیار</value></data>
   <data name="Ai_Lede" xml:space="preserve"><value>این کامپیوتر کدام مدل‌های زبانی هوش مصنوعی را به‌صورت محلی اجرا می‌کند و با چه سرعتی. سازگاری هر مدل پیش از دانلود برآورد می‌شود؛ مدل‌های دلخواه را دانلود کنید و سرعت واقعی‌شان را روی کارت گرافیک یا پردازنده اندازه بگیرید.</value></data>
   <data name="Ai_Machine" xml:space="preserve"><value>این سیستم برای هوش مصنوعی</value></data>
   <data name="Ai_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>

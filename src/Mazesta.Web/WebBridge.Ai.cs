@@ -121,6 +121,7 @@ public sealed partial class WebBridge
         {
             var model = AiCatalog.Find(id) ?? throw new ArgumentException("unknown model");
             if (device is not ("gpu" or "cpu")) throw new ArgumentException("unknown device");
+            if (_aiServer?.IsRunning == true) { runError = Loc.Get("Assist_StopFirst"); PushSoon("ai", State); return; }   // the chat model holds the GPU: a measurement beside it would be wrong
             runError = null; running = (id, device, 0); PushSoon("ai", State);
             try
             {
@@ -132,6 +133,13 @@ public sealed partial class WebBridge
                 else if (result.Status != BenchmarkStatus.Cancelled) runError = result.Detail;
             }
             finally { running = null; PushSoon("ai", State); }
+        }
+
+        // The assistant's download: llama.cpp first (it carries llama-server), then the model the machine is offered; one after the other, as the page allows one download at a time.
+        async Task EnableAssistant(AiModel model)
+        {
+            if (!files.HasRuntime) { await Download("runtime"); if (transfers.ContainsKey("runtime")) return; }
+            if (!files.HasModel(model)) await Download(model.Id);
         }
 
         Method("ai.state", _ => State());
@@ -146,6 +154,9 @@ public sealed partial class WebBridge
                     if (active == id || running?.Model == id) throw new InvalidOperationException("The model is in use.");
                     files.DeleteModel(AiCatalog.Find(id) ?? throw new ArgumentException("unknown model")); transfers.Remove(id); break;
                 case "run": await Run(id, Str(p, "device")); break;
+                case "assistantEnable":
+                    if (active is not null) throw new InvalidOperationException("Another download is in progress.");
+                    _ = EnableAssistant(AiAssistantPolicy.Decide(Machine()).Model ?? throw new InvalidOperationException(Loc.Get("Assist_Unavailable"))); break;
                 case "cancel": if (running is not null) runner.Cancel(); break;
                 case "openFolder": Directory.CreateDirectory(files.Root); Open(files.Root); break;
                 default: throw new ArgumentException("unknown command");
@@ -153,5 +164,6 @@ public sealed partial class WebBridge
             PushSoon("ai", State);
             return null;
         });
+        RegisterAssistant(files, Machine, runner);
     }
 }

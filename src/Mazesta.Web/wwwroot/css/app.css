@@ -1085,6 +1085,19 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .ai-res-nums { display: flex; gap: 22px; align-items: flex-end; flex-wrap: wrap; }
 .ai-res-nums .metric .v { font-size: 24px; }
 .ai-res-nums .pill { margin-bottom: 6px; }
+.as-gate { --hue: var(--paper-2); margin-top: 8px; max-width: 760px; }
+.as-chat { --hue: var(--c-gpu); margin-top: 8px; display: flex; flex-direction: column; gap: 10px; max-width: 900px; }
+.as-bar { display: flex; gap: 8px; align-items: center; flex: 1; }
+.as-bar .grow { flex: 1; }
+.as-log { min-height: 260px; max-height: min(56vh, 560px); overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: var(--well); border-radius: var(--r-ctl); }
+.as-msg { max-width: 86%; padding: 8px 12px; border-radius: var(--r-ctl); line-height: 1.8; background: var(--ink-3); align-self: flex-start; }
+.as-msg.user { align-self: flex-end; background: var(--yellow-soft); }
+.as-who { font-size: 11px; color: var(--paper-3); margin-bottom: 2px; }
+.as-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
+.as-empty { margin: auto; text-align: center; max-width: 46ch; }
+.as-compose { display: grid; gap: 8px; }
+.as-input { width: 100%; resize: vertical; min-height: 54px; max-height: 180px; padding: 8px 10px; background: var(--ink-2); color: var(--paper); border: 1px solid var(--rule-2); border-radius: var(--r-ctl); font: inherit; }
+.as-input:focus-visible { outline: 2px solid var(--yellow); outline-offset: 1px; }
 
 /* Hands-on checks: a plate per part, the keyboard across the width; each plate ends with the technician's own call. */
 .chk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 14px; margin: 8px 0 14px; align-items: stretch; }

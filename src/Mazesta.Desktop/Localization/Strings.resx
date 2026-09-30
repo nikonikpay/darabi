@@ -1589,6 +1589,32 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Advice_Error" xml:space="preserve"><value>The test itself stopped with a program error; nothing is known about the part from this run. Repeat it; if it happens again, send the app's log (Settings) to the shop.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>Close until the next session</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>AI models</value></data>
+  <data name="Nav_Assistant" xml:space="preserve"><value>Assistant</value></data>
+  <data name="Assist_Lede" xml:space="preserve"><value>Ask in plain words, in Persian or English. A language model runs on this computer's graphics card; nothing is sent over the internet. In this version it can only talk: it does not run tests or read your sensors.</value></data>
+  <data name="Assist_Unavailable" xml:space="preserve"><value>The assistant is not available on this computer.</value></data>
+  <data name="Assist_NotDownloaded" xml:space="preserve"><value>Download the assistant first.</value></data>
+  <data name="Assist_StopFirst" xml:space="preserve"><value>Stop the assistant first: it holds the graphics card, and a benchmark beside it would measure the wrong thing.</value></data>
+  <data name="Assist_NoGpu" xml:space="preserve"><value>The assistant needs a graphics card with its own memory. None was found on this computer.</value></data>
+  <data name="Assist_LittleVram" xml:space="preserve"><value>The assistant needs a graphics card with at least 4 GB of its own memory; this one has less.</value></data>
+  <data name="Assist_NoRoom" xml:space="preserve"><value>This computer does not have enough free memory for the assistant's model right now. Close other programs and look again.</value></data>
+  <data name="Assist_Enable_Title" xml:space="preserve"><value>Turn on the assistant</value></data>
+  <data name="Assist_Enable_Text" xml:space="preserve"><value>The assistant is downloaded once, only when you ask: the language model ({0}, {1}) and the llama.cpp runtime. It is kept in the app's data folder and can be removed from the AI models page.</value></data>
+  <data name="Assist_Enable" xml:space="preserve"><value>Download and turn on</value></data>
+  <data name="Assist_Downloading" xml:space="preserve"><value>Downloading…</value></data>
+  <data name="Assist_Start" xml:space="preserve"><value>Start the assistant</value></data>
+  <data name="Assist_Starting" xml:space="preserve"><value>Loading the model onto the graphics card…</value></data>
+  <data name="Assist_Stop" xml:space="preserve"><value>Stop the assistant</value></data>
+  <data name="Assist_Ready" xml:space="preserve"><value>Ready</value></data>
+  <data name="Assist_Off" xml:space="preserve"><value>Stopped. It frees the graphics card when stopped, and stops by itself after 10 idle minutes.</value></data>
+  <data name="Assist_Placeholder" xml:space="preserve"><value>Type your question…</value></data>
+  <data name="Assist_Send" xml:space="preserve"><value>Send</value></data>
+  <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
+  <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>Ask anything about your computer. For a real test or measurement, use the Tests, Benchmarks or Check-up pages: the assistant can not run them yet.</value></data>
+  <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. Do not treat its answers as measurements.</value></data>
+  <data name="Assist_Blocked" xml:space="preserve"><value>A test or benchmark is running; start the assistant after it.</value></data>
+  <data name="Assist_You" xml:space="preserve"><value>You</value></data>
+  <data name="Assist_Name" xml:space="preserve"><value>Assistant</value></data>
   <data name="Ai_Lede" xml:space="preserve"><value>Which local AI language models this computer can run, and how fast. The fit is estimated before anything is downloaded; download the models you want and measure their real speed on the graphics card or the processor.</value></data>
   <data name="Ai_Machine" xml:space="preserve"><value>This system for AI</value></data>
   <data name="Ai_Gpu" xml:space="preserve"><value>Graphics card</value></data>
