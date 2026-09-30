@@ -21,5 +21,8 @@ public enum SensorRole
     BoardFanControl,
     StorageTempLimit, StorageReadActivity, StorageWriteActivity, StorageTotalActivity, StorageSpare, StorageSpareThreshold, StorageWear, StoragePowerCycles,
     StorageDataRead, StorageDataWritten, StorageFreeSpace, StorageTotalSpace,
-    NetDataUploaded, NetDataDownloaded
+    NetDataUploaded, NetDataDownloaded,
+    /// <summary>How far a core is below the limit the processor itself reports (Intel: IA32_TEMPERATURE_TARGET), so its temperature plus this
+    /// is that limit (TjMax). Not a temperature: never shown or judged as one.</summary>
+    CpuTjMaxDistance
 }

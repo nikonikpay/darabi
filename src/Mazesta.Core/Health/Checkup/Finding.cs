@@ -17,6 +17,7 @@ public enum FindingCode
     GpuLinkNarrow, GpuLinkSlowGen, GpuSlotNarrow, GpuSlotOlderGen, GpuLinkOk,
     DriveLinkNarrow, DriveSlotLimited,
     BenchBelowPeers, BenchWithPeers, BenchFewPeers,
+    GpuLinkBelowCard, DriveLinkBelowDrive,
 }
 
 /// <summary>A second sentence a finding may carry: what the measurements beside it point to.</summary>

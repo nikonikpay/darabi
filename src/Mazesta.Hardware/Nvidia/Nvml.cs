@@ -55,6 +55,15 @@ internal static class Nvml
     [DllImport(Dll)] public static extern int nvmlDeviceGetCudaComputeCapability(IntPtr device, out int major, out int minor);
     [DllImport(Dll)] public static extern int nvmlDeviceGetArchitecture(IntPtr device, out uint architecture);
     [DllImport(Dll)] public static extern int nvmlDeviceGetPciInfo_v3(IntPtr device, byte[] info);
+    // Read while a benchmark runs: why the clock is held (the "clock event reasons", named "throttle reasons" before driver 535), how busy the
+    // card is, the temperature at which it slows itself, and the power limit in force.
+    [StructLayout(LayoutKind.Sequential)] public struct Utilization { public uint Gpu, Memory; }
+    public const int TemperatureThresholdSlowdown = 1;
+    [DllImport(Dll)] public static extern int nvmlDeviceGetCurrentClocksEventReasons(IntPtr device, out ulong reasons);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetCurrentClocksThrottleReasons(IntPtr device, out ulong reasons);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetUtilizationRates(IntPtr device, out Utilization utilization);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetTemperatureThreshold(IntPtr device, int threshold, out uint celsius);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetEnforcedPowerLimit(IntPtr device, out uint milliwatts);
 
     /// <summary>Runs one NVML call; an entry point this driver does not export reads as <see cref="FunctionMissing"/>.</summary>
     public static int Call(Func<int> call) { try { return call(); } catch (EntryPointNotFoundException) { return FunctionMissing; } }

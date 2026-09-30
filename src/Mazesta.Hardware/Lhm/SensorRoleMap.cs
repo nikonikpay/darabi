@@ -35,6 +35,7 @@ internal static partial class SensorRoleMap
         SensorType.Temperature when n is "Core (Tctl/Tdie)" or "Core (Tdie)" or "Core (Tctl)" => SensorRole.CpuTctlTdie,
         SensorType.Temperature when Ccd().IsMatch(n) => SensorRole.CpuCcdTemp,
         SensorType.Temperature when CoreName().IsMatch(n) => SensorRole.CpuCoreTemp,
+        SensorType.Temperature when n.EndsWith(" Distance to TjMax", StringComparison.Ordinal) => SensorRole.CpuTjMaxDistance,
         SensorType.Temperature when n == "CCDs Max (Tdie)" => SensorRole.CpuCcdMaxTemp,
         SensorType.Temperature when n == "CCDs Average (Tdie)" => SensorRole.CpuCcdAverageTemp,
         SensorType.Clock when n == "Bus Speed" => SensorRole.CpuBusClock,

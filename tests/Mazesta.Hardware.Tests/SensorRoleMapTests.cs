@@ -4,6 +4,9 @@ namespace Mazesta.Hardware.Tests;
 public class SensorRoleMapTests
 {
     [Theory]
+    [InlineData(HardwareType.Cpu, SensorType.Temperature, "P-Core #1 Distance to TjMax", SensorRole.CpuTjMaxDistance)]
+    [InlineData(HardwareType.Cpu, SensorType.Temperature, "CPU Core #4 Distance to TjMax", SensorRole.CpuTjMaxDistance)]
+    [InlineData(HardwareType.Cpu, SensorType.Temperature, "P-Core #1", SensorRole.CpuCoreTemp)]
     [InlineData(HardwareType.GpuNvidia, SensorType.Temperature, "GPU Hot Spot", SensorRole.GpuHotSpotTemp)]
     [InlineData(HardwareType.GpuNvidia, SensorType.Temperature, "GPU Core", SensorRole.GpuCoreTemp)]
     [InlineData(HardwareType.GpuNvidia, SensorType.Temperature, "GPU Memory Junction", SensorRole.GpuVramTemp)]
@@ -27,7 +30,7 @@ public class SensorRoleMapTests
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "CPU Package", SensorRole.CpuPackageTemp)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "P-Core #3", SensorRole.CpuCoreTemp)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "CPU Core #12", SensorRole.CpuCoreTemp)]
-    [InlineData(HardwareType.Cpu, SensorType.Temperature, "CPU Core #1 Distance to TjMax", SensorRole.None)]
+    [InlineData(HardwareType.Cpu, SensorType.Temperature, "CPU Core #1 Distance to TjMax", SensorRole.CpuTjMaxDistance)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "Core (Tctl/Tdie)", SensorRole.CpuTctlTdie)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "CCD2 (Tdie)", SensorRole.CpuCcdTemp)]
     [InlineData(HardwareType.Cpu, SensorType.Temperature, "CCDs Max (Tdie)", SensorRole.CpuCcdMaxTemp)]

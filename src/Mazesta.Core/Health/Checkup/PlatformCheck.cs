@@ -31,7 +31,8 @@ public static class PlatformCheck
         {
             if (d.Width is not { } w || d.DriveWidth is not { } dw) continue;
             int expect = Math.Min(dw, d.SlotWidth ?? dw);
-            if (w < expect) found.Add(new(FindingCode.DriveLinkNarrow, FindingLevel.Attention, HardwareKind.Storage, [M("Check_M_LinkWidth", w, Lanes), M("Check_M_LinkWidthExpected", expect, Lanes)], d.Name));
+            if (w < expect && d.SlotWidth is null) found.Add(new(FindingCode.DriveLinkBelowDrive, FindingLevel.Note, HardwareKind.Storage, [M("Check_M_LinkWidth", w, Lanes), M("Check_M_CardWidth", dw, Lanes)], d.Name));
+            else if (w < expect) found.Add(new(FindingCode.DriveLinkNarrow, FindingLevel.Attention, HardwareKind.Storage, [M("Check_M_LinkWidth", w, Lanes), M("Check_M_LinkWidthExpected", expect, Lanes)], d.Name));
             else if (d.SlotWidth is { } sw && sw < dw || d.SlotGen is { } sg && d.DriveGen is { } dg && sg < dg)
                 found.Add(new(FindingCode.DriveSlotLimited, FindingLevel.Note, HardwareKind.Storage,
                     [.. d.SlotGen is { } s1 ? [M("Check_M_SlotGen", s1, None)] : Array.Empty<Measure>(), .. d.SlotWidth is { } s2 ? [M("Check_M_SlotWidth", s2, Lanes)] : Array.Empty<Measure>(),

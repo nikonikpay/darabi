@@ -81,6 +81,7 @@ public class GpuCheckTests
         Assert.DoesNotContain(GpuCheck.Evaluate(Run(core: _ => 70, spot: _ => 85)), x => x.Code == FindingCode.GpuHotspotGap);
     }
     [Fact] public void A_link_narrower_than_card_and_slot_allow_needs_attention() => Assert.Contains(GpuCheck.Evaluate(Run(link: new(4, 8, 4, 16, 4, 16, true))), x => x.Code == FindingCode.GpuLinkNarrow);
+    [Fact] public void A_narrow_link_with_the_slot_unknown_is_a_note() => Assert.Equal(FindingLevel.Note, Assert.Single(GpuCheck.Evaluate(Run(link: new(1, 8, 3, 16, null, null, false))), x => x.Code == FindingCode.GpuLinkBelowCard).Level);
     [Fact] public void A_narrow_slot_is_a_note() => Assert.Equal(FindingLevel.Note, Assert.Single(GpuCheck.Evaluate(Run(link: new(4, 8, 4, 16, 4, 8, true))), x => x.Code == FindingCode.GpuSlotNarrow).Level);
     [Fact] public void A_generation_read_at_rest_is_not_judged() => Assert.Contains(GpuCheck.Evaluate(Run(link: new(1, 16, 4, 16, 4, 16, false))), x => x.Code == FindingCode.GpuLinkOk);
     [Fact] public void A_slow_generation_under_load_needs_attention() => Assert.Contains(GpuCheck.Evaluate(Run(link: new(3, 16, 4, 16, 4, 16, true))), x => x.Code == FindingCode.GpuLinkSlowGen);
@@ -119,6 +120,7 @@ public class PlatformAndPeerCheckTests
     [Fact] public void A_plain_plan_is_good() => Assert.Equal(FindingCode.PowerPlanOk, Assert.Single(PlatformCheck.Power(new(true, true, 100, 2))).Code);
     [Fact] public void Running_on_battery_is_noted() => Assert.Contains(PlatformCheck.Power(new(false, true, 100, 2)), f => f.Code == FindingCode.PowerOnBattery);
     [Fact] public void A_drive_at_x2_of_its_x4_needs_attention() => Assert.Equal(FindingCode.DriveLinkNarrow, Assert.Single(PlatformCheck.Drives([new("SSD", 4, 2, 4, 4, 4, 4)])).Code);
+    [Fact] public void A_narrow_drive_link_with_the_slot_unknown_is_a_note() => Assert.Equal(FindingCode.DriveLinkBelowDrive, Assert.Single(PlatformCheck.Drives([new("SSD", 3, 2, 3, 4, null, null)])).Code);
     [Fact] public void A_gen4_drive_in_a_gen3_slot_is_a_note() => Assert.Equal(FindingCode.DriveSlotLimited, Assert.Single(PlatformCheck.Drives([new("SSD", 3, 4, 4, 4, 3, 4)])).Code);
 
     private static PeerStanding Standing(double mine, int systems = 5, RunConditions? ours = null, RunConditions? theirs = null)

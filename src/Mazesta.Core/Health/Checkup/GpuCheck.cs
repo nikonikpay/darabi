@@ -71,7 +71,9 @@ public static class GpuCheck
         if (l.Width is { } w && l.CardWidth is { } cw)
         {
             int expect = Math.Min(cw, l.SlotWidth ?? cw);
-            if (w < expect) { add(FindingCode.GpuLinkNarrow, FindingLevel.Attention, [M("Check_M_LinkWidth", w, Lanes), M("Check_M_LinkWidthExpected", expect, Lanes)]); fine = false; }
+            // With the slot unknown (a port Windows treats as plain PCI) a narrower link may be all the slot has: many APUs give the graphics slot x8.
+            if (w < expect && l.SlotWidth is null) { add(FindingCode.GpuLinkBelowCard, FindingLevel.Note, [M("Check_M_LinkWidth", w, Lanes), M("Check_M_CardWidth", cw, Lanes)]); fine = false; }
+            else if (w < expect) { add(FindingCode.GpuLinkNarrow, FindingLevel.Attention, [M("Check_M_LinkWidth", w, Lanes), M("Check_M_LinkWidthExpected", expect, Lanes)]); fine = false; }
             else if (l.SlotWidth is { } sw && sw < cw) { add(FindingCode.GpuSlotNarrow, FindingLevel.Note, [M("Check_M_SlotWidth", sw, Lanes), M("Check_M_CardWidth", cw, Lanes)]); fine = false; }
         }
         if (l.LiveGen && l.Gen is { } g && l.CardGen is { } cg)

@@ -46,7 +46,8 @@ public sealed class HardwareDetailsReader(IWmiQuery query, IDriveHealthProvider 
             var card = cards.FirstOrDefault(c => bus is not null && c.PciBus == bus) ?? (cards.Count == 1 && nvidia.Count == 1 && nvidia[0] == g ? cards[0] : null);
             var link = PciDevice.Link(g.PnpDeviceId) ?? (card is null ? null : new PciLinkInfo(card.CurrentGen, card.CurrentWidth, card.MaxGen, card.MaxWidth));
             return new GpuDetails(g.PnpDeviceId, sub is { } s ? PciVendors.Name(s.Vendor) : null, sub is { } x ? $"{x.Vendor:X4}:{x.Device:X4}" : null, link, card?.Vbios, card?.BusWidthBits,
-                card?.Cores, card?.Architecture, card?.ComputeCapability, card?.Bar1Bytes, card?.MaxCoreClockMhz, card?.MaxMemoryClockMhz, card?.PowerDefaultW, card?.PowerMaxW, card?.PciBusId);
+                card?.Cores, card?.Architecture, card?.ComputeCapability, card?.Bar1Bytes, card?.MaxCoreClockMhz, card?.MaxMemoryClockMhz, card?.PowerDefaultW, card?.PowerMaxW, card?.PciBusId,
+                PciDevice.Slot(g.PnpDeviceId));
         })];
     }
 
@@ -83,14 +84,15 @@ public sealed class HardwareDetailsReader(IWmiQuery query, IDriveHealthProvider 
         return [.. inv.Storage.Select(d =>
         {
             var h = health.FirstOrDefault(x => x.Serial is not null && x.Serial == d.SerialNumber) ?? health.FirstOrDefault(x => x.Name == d.FriendlyName);
-            PciLinkInfo? link = null; NvmeHealthLog? log = null;
+            PciLinkInfo? link = null; PciSlotLink? slot = null; NvmeHealthLog? log = null;
             if (d.BusType == "NVMe")
             {
                 var disk = disks.FirstOrDefault(r => Str(r, "SerialNumber") is { } s && d.SerialNumber is { } n && Norm(s) == Norm(n)) ?? disks.FirstOrDefault(r => Str(r, "Model") == d.FriendlyName);
-                link = PciDevice.Link(PciDevice.Ancestor(Str(disk, "PNPDeviceID"), id => id.StartsWith(@"PCI\", StringComparison.OrdinalIgnoreCase)));
+                string? controller = PciDevice.Ancestor(Str(disk, "PNPDeviceID"), id => id.StartsWith(@"PCI\", StringComparison.OrdinalIgnoreCase));
+                link = PciDevice.Link(controller); slot = PciDevice.Slot(controller);
                 if (disk?.GetValueOrDefault("Index") is { } index) log = NvmeHealthReader.ReadLog(Convert.ToInt32(index, System.Globalization.CultureInfo.InvariantCulture));
             }
-            return new DriveDetails(d.SerialNumber, d.FriendlyName, link, h?.PowerOnHours, h?.TemperatureC, h?.TemperatureMaxC, h?.ReadErrorsUncorrected, h?.WriteErrorsUncorrected, h?.WearPercent, log);
+            return new DriveDetails(d.SerialNumber, d.FriendlyName, link, h?.PowerOnHours, h?.TemperatureC, h?.TemperatureMaxC, h?.ReadErrorsUncorrected, h?.WriteErrorsUncorrected, h?.WearPercent, log, slot);
         })];
     }
 
