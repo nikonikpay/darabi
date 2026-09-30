@@ -1459,6 +1459,7 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Off" xml:space="preserve"><value>Off</value></data>
   <data name="Spec_More" xml:space="preserve"><value>More details</value></data>
   <data name="Spec_Loading" xml:space="preserve"><value>Reading the specifications…</value></data>
+  <data name="Spec_Cached" xml:space="preserve"><value>From the last read of these same parts; reading them again…</value></data>
   <data name="Spec_CoresThreads" xml:space="preserve"><value>Cores / threads</value></data>
   <data name="Spec_BaseClock" xml:space="preserve"><value>Base clock</value></data>
   <data name="Spec_FamilyModel" xml:space="preserve"><value>Family / model / stepping</value></data>

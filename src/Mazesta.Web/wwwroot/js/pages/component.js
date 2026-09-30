@@ -1,11 +1,11 @@
 // One part of the machine per page, all in the part's own hue: its band with the numbers that matter for it, its specification and its sensors
 // (with the live panel of a test running on it). Benchmarks have their own page.
-import { call } from "../bridge.js";
+import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
 import { topNodes, pick, subscribe } from "../store.js";
 import { h } from "../ui.js";
 import { liveTile, percentOf } from "../tiles.js";
-import { card } from "./system.js";
+import { card, cachedNote } from "./system.js";
 import { part } from "../parts.js";
 import { mount as sensors } from "./monitoring.js";
 import { lanPanel } from "../lanpeer.js";
@@ -44,6 +44,10 @@ export function mount(el, kind) {
   tick();
   const off = subscribe(tick);
   specs.append(h("p", { class: "page-lede" }, t("Spec_Loading")));
-  call("specs.get", { kind }).then((r) => specs.replaceChildren(...r.cards.map(card)));
-  return () => { off(); offSensors?.(); lan?.off(); };
+  // The last start's read of the same parts draws at once (said so), and is replaced when this start's own read is done.
+  let cached = false;
+  const load = () => call("specs.get", { kind }).then((r) => { cached = r.cached; specs.replaceChildren(...(r.cached ? [cachedNote()] : []), ...r.cards.map(card)); });
+  load();
+  const offFresh = on("hardwareFresh", () => { if (cached) load(); });
+  return () => { off(); offFresh(); offSensors?.(); lan?.off(); };
 }

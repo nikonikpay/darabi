@@ -1,7 +1,7 @@
 // The dashboard: the yellow plane with the machine's standing and its two temperatures at poster scale, then a boxed panel per part, each in its
 // own hue: the few readings that matter as a summary, the rest folded under "details". Then the shop's own product and people. Every number is
 // a live reading or says it is not available.
-import { call } from "../bridge.js";
+import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
 import { topNodes, pick, value, stats, subscribe } from "../store.js";
@@ -155,7 +155,10 @@ export function mount(el) {
     const last = r.items.find((x) => x.kind === "TestSession");
     verdict.textContent = t(`Web_Dash_Verdict_${last ? last.badge : "None"}`);
   });
-  call("inventory.get").then((i) => {
+  // The last start's inventory of the same parts draws at once; this start's own read replaces it (a drive's health may have changed).
+  let cached = false;
+  const load = () => call("inventory.get").then((i) => {
+    cached = i.cached;
     inv.board.replaceChildren(i.board || "");
     inv.bios.replaceChildren(val(i.bios, "lat")); inv.os.replaceChildren(val(i.os, "lat"));
     for (const d of i.drives || []) {
@@ -163,7 +166,9 @@ export function mount(el) {
       if (el) { el.textContent = d.health; el.dataset.status = d.status || ""; }
     }
   });
-  return off;
+  load();
+  const offFresh = on("hardwareFresh", () => { if (cached) load(); });
+  return () => { off(); offFresh(); };
 }
 
 // A random product from the shop's site. The host turns its HTML into plain text and its picture into a data URL; offline, the last one is kept.

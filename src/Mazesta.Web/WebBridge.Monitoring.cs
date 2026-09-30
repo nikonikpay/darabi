@@ -6,7 +6,7 @@ public sealed partial class WebBridge
 {
     private void RegisterMonitoring()
     {
-        var engine = _sp.GetRequiredService<PollingEngine>(); var inventory = _sp.GetRequiredService<InventoryCache>();
+        var engine = _sp.GetRequiredService<PollingEngine>();
 
         // One compact array per poll: [id, value or null, quality] and, for sensors with readings, [id, min, avg, max] since the monitor started.
         // A reading that is not good is sent as null with its quality, so the page can show why, and never as 0.
@@ -30,21 +30,25 @@ public sealed partial class WebBridge
         Method("monitor.popout", p => { if (_window is MainWindow { WebEnvironment: { } env }) ChartWindow.Show(env, engine, Str(p, "id"), _log); return null; });
 
         // A part's full specification (kind: Cpu, Gpu, Memory, Storage, Network, Motherboard) or, with no kind, every part: read once, after the
-        // sensor driver is up, since the memory modules' SPD is read over its SMBus.
-        var details = _sp.GetRequiredService<HardwareDetailsCache>();
+        // sensor driver is up, since the memory modules' SPD is read over its SMBus. Until that read is done, the last start's read of the same parts
+        // is answered with cached = true, and "hardwareFresh" tells the page to ask again.
+        var snapshot = _sp.GetRequiredService<HardwareSnapshot>();
+        void OnFresh() => Push("hardwareFresh", null);
+        snapshot.Fresh += OnFresh; _cleanup.Add(() => snapshot.Fresh -= OnFresh);
         MethodAsync("specs.get", async p =>
         {
-            var inv = await inventory.GetAsync().ConfigureAwait(true); var d = await details.GetAsync().ConfigureAwait(true);
+            var (inv, d, cached) = await snapshot.DetailsAsync().ConfigureAwait(true);
             string kind = Str(p, "kind");
             var cards = kind.Length == 0 ? PartSpecs.All(inv, d) : PartSpecs.For(Enum.Parse<HardwareKind>(kind), inv, d);
-            return new { cards = cards.Select(Card), errors = d.Errors };
+            return new { cards = cards.Select(Card), errors = d.Errors, cached };
         });
 
         MethodAsync("inventory.get", async _ =>
         {
-            HardwareInventory inv = await inventory.GetAsync().ConfigureAwait(true);
+            var (inv, cached) = await snapshot.InventoryAsync().ConfigureAwait(true);
             return new
             {
+                cached,
                 sections = SystemInfoViewModel.Describe(inv).Select(Section),
                 components = new[] { HardwareKind.Cpu, HardwareKind.Gpu, HardwareKind.Storage, HardwareKind.Network }
                     .ToDictionary(k => k.ToString(), k => SystemInfoViewModel.Component(inv, k).Select(Section)),

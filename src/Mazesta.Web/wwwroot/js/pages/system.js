@@ -1,6 +1,6 @@
 // The machine's inventory as ruled columns: every field the system reported, and "not available" where it reported nothing. The specifications
 // can be saved whole as HTML, PDF or JSON.
-import { call } from "../bridge.js";
+import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, val, toast } from "../ui.js";
 
@@ -39,8 +39,15 @@ export function mount(el) {
   }
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_SystemInfo")), h("p", { class: "page-lede" }, t("Web_System_Lede"))),
     h("div", { class: "export", role: "group", "aria-label": t("System_Export") }, h("span", { class: "caption" }, t("System_Export")), buttons)), body);
-  call("specs.get").then((r) => {
-    body.replaceChildren(...r.cards.map(card));
+  // The last start's read of the same parts draws at once (said so), and is replaced when this start's own read is done.
+  let cached = false;
+  const load = () => call("specs.get").then((r) => {
+    cached = r.cached;
+    body.replaceChildren(...(r.cached ? [cachedNote()] : []), ...r.cards.map(card));
     if (r.errors?.length) body.append(h("div", { class: "col" }, h("div", { class: "col-head" }, h("span", { class: "h3" }, t("Web_System_Errors"))), h("p", { class: "caption lat" }, r.errors.join("\n"))));
   });
+  load();
+  return on("hardwareFresh", () => { if (cached) load(); });
 }
+
+export const cachedNote = () => h("p", { class: "caption spec-cached" }, t("Spec_Cached"));
