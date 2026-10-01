@@ -234,47 +234,57 @@ public sealed partial class WebBridge
                     if (_testVm is not { } tests) return Json(new { error = "the tests are not available yet" });
                     var ids = Texts(a, "areas").Distinct().SelectMany(x => AssistantTestAreas.GetValueOrDefault(x) ?? []).ToHashSet();
                     if (ids.Count == 0) return Json(new { error = "name at least one area: cpu, memory, storage, network or gpu" });
-                    // The rows this machine can run, with their default lengths; the user sees exactly this list before anything starts.
-                    var plan = await OnUi(() => tests.IsRunning || runner.IsBusy ? "" : Json(tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
-                        .Select(r => new { id = r.Definition.Id.Value, name = r.Name, seconds = r.Definition.DefaultDurationSeconds }))).ConfigureAwait(false);
-                    if (plan.Length == 0) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
-                    var rows = JsonSerializer.Deserialize<List<JsonElement>>(plan)!;
-                    if (rows.Count == 0) return Json(new { error = "this computer can not run those tests" });
-                    var items = rows.Select(r => (r.GetProperty("name").GetString()!, r.GetProperty("seconds").GetInt32().ToString(CultureInfo.InvariantCulture))).ToList();
+                    // The request is fixed here, before the user is asked: the rows this machine can run, each once, at its default length, with the
+                    // options (graphics card, drive) the page has now. The run uses exactly this, whatever the page is changed to meanwhile.
+                    List<ChatTest>? plan = null;
+                    await OnUi(() => { plan = tests.IsRunning || runner.IsBusy ? null : tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
+                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, o.Value)).ToList(),
+                            string.Join("، ", r.Options.Where(o => o.Value.Length > 0).Select(o => o.Label + ": " + (o.IsChoice ? o.SelectedChoice?.Label : o.Value)))))
+                        .ToList(); return ""; }).ConfigureAwait(false);
+                    if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
+                    if (plan.Count == 0) return Json(new { error = "this computer can not run those tests" });
+                    var items = plan.Select(r => (r.Shown.Length > 0 ? $"{r.Name} ({r.Shown})" : r.Name, r.Seconds.ToString(CultureInfo.InvariantCulture))).ToList();
                     if (await ask("tests", items, ct).ConfigureAwait(false) is not { } kept) return Json(new { started = false, reason = "the user declined; nothing was run" });
 
-                    var chosen = rows.Where((_, i) => kept[i]).Select(r => r.GetProperty("id").GetString()!).ToHashSet();
-                    bool onGpu = chosen.Any(x => x.StartsWith("gpu.", StringComparison.Ordinal));
+                    var chosen = plan.Where((_, i) => kept[i]).ToDictionary(r => r.Id);
+                    bool onGpu = chosen.Keys.Any(x => x.StartsWith("gpu.", StringComparison.Ordinal));
                     return await running(new("tests", () => tests.CurrentRow is { } cur ? (cur.Name, Math.Round((tests.CurrentIndex + cur.PercentComplete) / Math.Max(1, tests.RunQueue.Count) * 100)) : null), () => onGpu ? withoutModel(Run, ct) : Run());
                     async Task<string> Run()
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (tests.CancelCommand.CanExecute(null)) tests.CancelCommand.Execute(null); }));
-                        // The page's own selection is put back afterwards; the assistant only borrows the Tests page's queue.
-                        var before = await ui(() => Task.FromResult(Json(tests.Rows.Select(r => new { id = r.Definition.Id.Value, on = r.IsSelected, sec = r.DurationText })))).ConfigureAwait(false);
-                        string started = await ui(async () =>
-                        {
-                            foreach (var r in tests.Rows) { r.IsSelected = chosen.Contains(r.Definition.Id.Value); if (r.IsSelected) r.DurationText = r.Definition.DefaultDurationSeconds.ToString(CultureInfo.InvariantCulture); }
-                            if (!tests.StartCommand.CanExecute(null)) return "refused";
-                            await tests.StartCommand.ExecuteAsync(null);
-                            return tests.BlockedMessage is { } why ? why : "";
-                        }).ConfigureAwait(false);
+                        // The page's own settings are put back afterwards, however the run ends; the assistant only borrows the Tests page's queue.
+                        List<RowState>? before = null;
                         try
                         {
+                            string started = await ui(async () =>
+                            {
+                                before = [.. tests.Rows.Select(RowState.Of)];
+                                foreach (var r in tests.Rows)
+                                {
+                                    r.IsSelected = chosen.TryGetValue(r.Definition.Id.Value, out var want);
+                                    if (want is null) continue;
+                                    r.DurationText = want.Seconds.ToString(CultureInfo.InvariantCulture); r.Repeat = Diagnostics.RepeatMode.Once; r.RepeatCountText = "1";
+                                    foreach ((string key, string value) in want.Options) if (r.Options.FirstOrDefault(o => o.Option.Key == key) is { } o) RowState.Set(o, value);
+                                }
+                                if (!tests.StartCommand.CanExecute(null)) return "refused";
+                                await tests.StartCommand.ExecuteAsync(null);
+                                return tests.BlockedMessage is { } why ? why : "";
+                            }).ConfigureAwait(false);
                             if (started.Length > 0) return Json(new { started = false, reason = started == "refused" ? "the test queue could not start" : started });
                             return await OnUi(() => Json(new
                             {
-                                started = true, results = tests.Rows.Where(r => chosen.Contains(r.Definition.Id.Value))
+                                started = true, results = tests.Rows.Where(r => chosen.ContainsKey(r.Definition.Id.Value))
                                     .Select(r => new { id = r.Definition.Id.Value, name = r.Name, outcome = r.Outcome.ToString(), errors = r.ErrorCount > 0 ? r.ErrorCount : (long?)null, detail = r.HasDetail ? Cut(r.Detail, 240) : null }),
                             })).ConfigureAwait(false);
                         }
                         finally
                         {
-                            await ui(() =>
-                            {
-                                var saved = JsonSerializer.Deserialize<List<JsonElement>>(before)!;
-                                foreach (var s in saved) if (tests.Rows.FirstOrDefault(r => r.Definition.Id.Value == s.GetProperty("id").GetString()) is { } r) { r.IsSelected = s.GetProperty("on").GetBoolean(); r.DurationText = s.GetProperty("sec").GetString()!; }
-                                return Task.FromResult("");
-                            }).ConfigureAwait(false);
+                            if (before is { } saved)
+                                await ui(() =>
+                                {
+                                    foreach (var s in saved) if (tests.Rows.FirstOrDefault(r => r.Definition.Id.Value == s.Id) is { } r) s.Restore(r);
+                                    return Task.FromResult("");
+                                }).ConfigureAwait(false);
                         }
                     }
                 }),
@@ -355,6 +365,26 @@ public sealed partial class WebBridge
     private static string ShortText(SoftShort m) => m.Need is { } need
         ? Desktop.Localization.Loc.Format("Soft_Short_" + m.What, need.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture), m.Have?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")
         : Desktop.Localization.Loc.Get("Soft_Short_" + m.What);
+
+    /// <summary>A test as the user confirmed it from the chat: once, at this length, with these options.</summary>
+    private sealed record ChatTest(string Id, string Name, int Seconds, IReadOnlyList<(string Key, string Value)> Options, string Shown);
+
+    /// <summary>What the Tests page had on a row before the assistant borrowed it, put back afterwards.</summary>
+    private sealed record RowState(string Id, bool On, string Seconds, Diagnostics.RepeatMode Repeat, string Count, IReadOnlyList<(string Key, string Value)> Options)
+    {
+        public static RowState Of(Desktop.ViewModels.TestQueueRowViewModel r)
+            => new(r.Definition.Id.Value, r.IsSelected, r.DurationText, r.Repeat, r.RepeatCountText, [.. r.Options.Select(o => (o.Option.Key, o.IsChoice ? o.Value : o.Text))]);
+        public void Restore(Desktop.ViewModels.TestQueueRowViewModel r)
+        {
+            r.DurationText = Seconds; r.Repeat = Repeat; r.RepeatCountText = Count;
+            foreach (var (key, value) in Options) if (r.Options.FirstOrDefault(o => o.Option.Key == key) is { } o) Set(o, value);
+            r.IsSelected = On;
+        }
+        public static void Set(Desktop.ViewModels.TestOptionViewModel o, string value)
+        {
+            if (o.IsChoice) { if (o.Choices.FirstOrDefault(c => c.Value == value) is { } c) o.SelectedChoice = c; } else o.Text = value;
+        }
+    }
 
     private static readonly System.Text.RegularExpressions.Regex NotAReading = new(@"Resolution|Critical|Warning|Limit|Threshold|Low|High", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
