@@ -60,4 +60,9 @@ public class AiFitTests
         Assert.Equal("qwen3-4b", AiFitter.Recommend(AiCatalog.Models, new AiMachine(null, null, null, 16 * G, 10 * G))!.Id);
         Assert.Null(AiFitter.Recommend(AiCatalog.Models, new AiMachine(null, null, null, 2 * G, 1 * G)));
     }
+    [Fact] public void The_assistant_is_judged_at_the_context_its_server_starts_with()
+    {
+        var m = M(AiAssistantPolicy.LargeModelId);
+        Assert.Equal(m.KvBytesPerToken * (AiAssistantPolicy.ServerContext - AiFitter.Context), AiFitter.Fit(m, Rtx3090, AiAssistantPolicy.ServerContext).NeedBytes - AiFitter.Fit(m, Rtx3090).NeedBytes);
+    }
 }

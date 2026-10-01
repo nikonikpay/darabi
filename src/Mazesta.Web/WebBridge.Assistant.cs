@@ -45,7 +45,7 @@ public sealed partial class WebBridge
 
         // The downloaded models this machine can run and that can hold a chat, largest first; the pick if it is one of them, else the model on offer,
         // else the largest that is there.
-        List<AiModel> Usable(AiMachine pc) => [.. AiCatalog.Models.Where(m => m.Bytes >= AiAssistantPolicy.MinChatModelBytes && files.HasModel(m) && AiFitter.Fit(m, pc).Mode != AiFitMode.TooBig).OrderByDescending(m => m.Bytes)];
+        List<AiModel> Usable(AiMachine pc) => [.. AiCatalog.Models.Where(m => m.Bytes >= AiAssistantPolicy.MinChatModelBytes && files.HasModel(m) && AiFitter.Fit(m, pc, AiAssistantPolicy.ServerContext).Mode != AiFitMode.TooBig).OrderByDescending(m => m.Bytes)];
         AiModel? Selected(AiMachine pc, AiAssistantChoice choice)
         {
             var usable = Usable(pc);
@@ -61,7 +61,7 @@ public sealed partial class WebBridge
                 // Before the first reading the card's memory is not known yet: that is "Reading", not "no card".
                 status = lastSnapshot is null && choice.Status == AiAssistantStatus.NoGpu ? "Reading" : choice.Status.ToString(),
                 model = m is null ? null : new { id = m.Id, name = m.Name, size = Units.FormatMeasured(m.Bytes / (double)AiFitter.Gib, "GB"), downloaded = files.HasModel(m) },
-                choices = choice.Status != AiAssistantStatus.Available ? [] : Usable(pc).Select(x => new { id = x.Id, name = x.Name, size = Units.FormatMeasured(x.Bytes / (double)AiFitter.Gib, "GB"), fit = AiFitter.Fit(x, pc).Mode.ToString() }),
+                choices = choice.Status != AiAssistantStatus.Available ? [] : Usable(pc).Select(x => new { id = x.Id, name = x.Name, size = Units.FormatMeasured(x.Bytes / (double)AiFitter.Gib, "GB"), fit = AiFitter.Fit(x, pc, AiAssistantPolicy.ServerContext).Mode.ToString() }),
                 runtimeReady = files.HasRuntime,
                 // "paused": the model is unloaded while the assistant's own run tests the graphics card, and comes back afterwards.
                 server = starting ? "starting" : server.IsRunning ? "ready" : unloaded ? "paused" : "off",

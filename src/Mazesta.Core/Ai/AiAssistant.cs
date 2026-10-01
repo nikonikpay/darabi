@@ -15,7 +15,7 @@ public static class AiAssistantPolicy
     /// <summary>A "4 GB" card reports 4095 or 4096 MiB; the threshold leaves room for that.</summary>
     public const long MinVramBytes = (long)(3.9 * AiFitter.Gib);
     public const string BaseModelId = "qwen3-4b", LargeModelId = "qwen3-14b";
-    /// <summary>The longest history sent to the model (characters): the server's context is <see cref="AiFitter.Context"/> tokens and Persian costs about two characters a token.</summary>
+    /// <summary>The longest history sent to the model (characters): the server's context is <see cref="ServerContext"/> tokens and Persian costs about two characters a token.</summary>
     public const int HistoryChars = 4000;
     public const int MaxReplyTokens = 700;
     /// <summary>The server's context: the conversation, the tools' definitions and their results (see <c>AiAgent.MaxResultChars</c>) share it.</summary>
@@ -26,9 +26,9 @@ public static class AiAssistantPolicy
         if (pc.VramBytes is not { } vram || vram <= 0) return new(AiAssistantStatus.NoGpu, null);
         if (vram < MinVramBytes) return new(AiAssistantStatus.LittleVram, null);
         var large = AiCatalog.Find(LargeModelId)!; var small = AiCatalog.Find(BaseModelId)!;
-        var f = AiFitter.Fit(large, pc);
+        var f = AiFitter.Fit(large, pc, ServerContext);
         if (f.Mode == AiFitMode.Gpu && !f.Tight) return new(AiAssistantStatus.Available, large);
-        return AiFitter.Fit(small, pc).Mode is AiFitMode.Gpu or AiFitMode.Split ? new(AiAssistantStatus.Available, small) : new(AiAssistantStatus.NoRoom, null);
+        return AiFitter.Fit(small, pc, ServerContext).Mode is AiFitMode.Gpu or AiFitMode.Split ? new(AiAssistantStatus.Available, small) : new(AiAssistantStatus.NoRoom, null);
     }
 
     /// <summary>

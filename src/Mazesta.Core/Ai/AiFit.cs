@@ -32,9 +32,11 @@ public static class AiFitter
 
     public static long NeedBytes(AiModel m, int context = Context) => m.Bytes + m.KvBytesPerToken * context + OverheadBytes;
 
-    public static AiFit Fit(AiModel m, AiMachine pc)
+    /// <param name="context">The tokens the cache is counted for: <see cref="Context"/> for the AI page's estimate, the server's own context
+    /// (<c>AiAssistantPolicy.ServerContext</c>) for the assistant, so what is judged is what is started.</param>
+    public static AiFit Fit(AiModel m, AiMachine pc, int context = Context)
     {
-        long need = NeedBytes(m);
+        long need = NeedBytes(m, context);
         long ram = Math.Max(0, pc.RamAvailableBytes - ReserveBytes);
         if (pc.VramBytes is { } vram and > 0)
         {
