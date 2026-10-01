@@ -221,7 +221,7 @@ export function mount(el) {
         h("span", { class: "sum", style: { gridColumn: 2 } }, p.summary, p.evidence ? h("br") : null, p.evidence)))
         : [h("p", { class: "caption" }, t("Tuning_Profiles_Empty"))]));
     }
-    memory.replaceChildren(...x.memory.map((m) => [h("dt", { class: "lat" }, m.label), h("dd", {}, m.value)]));
+    memory.replaceChildren(...x.memory.flatMap((m) => [h("dt", { class: "lat" }, m.label), h("dd", {}, m.value)]));
   }
   call("tuning.visible", { value: true });
   call("tuning.state").then(update);
