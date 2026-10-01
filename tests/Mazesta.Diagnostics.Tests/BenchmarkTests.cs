@@ -44,7 +44,7 @@ public class BenchmarkTests : IDisposable
         var finished = new List<RecordedBenchmark>(); runner.Finished += finished.Add;
         for (int i = 0; i < 4; i++) await runner.RunAsync(runner.Benchmarks[0], 5, new Dictionary<string, string>());
         Assert.Equal(2, runner.Completed().Single().Result.Metrics[0].Value);
-        Assert.Equal(BenchmarkStatus.Failed, runner.Last(new TestId("bench.x"))!.Status);   // the benchmark threw: reported, never lost
+        Assert.Equal(BenchmarkStatus.Error, runner.Last(new TestId("bench.x"))!.Status);   // the benchmark threw: reported, never lost, and not as the part failing
         Assert.Equal(4, finished.Count); Assert.Null(runner.Running);
     }
 
@@ -101,6 +101,13 @@ public class BenchmarkTests : IDisposable
         for (int k = 0; k < 1000; k++) { Assert.True(seen.Add(at)); at = BitConverter.ToUInt32(block, (int)at * 64); }
         Assert.Equal(1000, seen.Count); Assert.Equal(0u, at);   // back at the start only after visiting all 1000 lines
         Assert.Equal(0u, MemoryBenchmark.Chase(block, 1000)); Assert.NotEqual(0u, MemoryBenchmark.Chase(block, 999));
+    }
+
+    [Fact] public async Task A_short_read_is_an_io_error_not_a_finished_operation()
+    {
+        using var file = StorageFile.Create(_dir, StorageFile.LengthOf(16), asynchronous: true, writeThrough: false);
+        using var buffer = new Mazesta.Diagnostics.Memory.NativeBlock(StorageFile.Block);
+        await Assert.ThrowsAsync<IOException>(async () => await StorageBenchmark.ReadAll(file, buffer.Memory, file.Length - StorageFile.Sector, CancellationToken.None));   // runs off the end
     }
 
     [Fact] public async Task Storage_reports_every_sequential_and_random_speed_and_leaves_no_file_behind()

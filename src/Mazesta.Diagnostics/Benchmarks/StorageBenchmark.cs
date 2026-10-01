@@ -7,9 +7,11 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// writes at queue depth 32. Requests are overlapped - one request at a time (queue depth 1) cannot keep an NVMe drive
 /// busy, and reads suffer most because a write is acknowledged from the drive's cache while a read has to wait for the
 /// flash, which is how reads came out slower than writes. The drive rests after the preparation write and again between
-/// writing and reading, so each timed phase starts with its write cache flushed (on a busy SLC cache the next phase is slow). Depth 8 of 1 MiB is enough to saturate a PCIe 5.0 x4 drive (~14 GB/s).
+/// writing and reading, so each timed phase has a chance to start with its write cache drained (on a busy SLC cache the next phase is slow); the rest is a pause, not a
+/// guarantee: nothing tells us the drive's cache is empty. Depth 8 of 1 MiB is enough to saturate a PCIe 5.0 x4 drive (~14 GB/s).
 /// The file is written once before anything is timed: reading space that was never written returns zeros without
-/// touching the drive, and extending a file serialises the writes. Nothing is verified here - that is the storage tests' job.
+/// touching the drive, and extending a file serialises the writes. The data is not checked here - that is the storage tests' job - but every read must return all the bytes it asked
+/// for, or the run stops as an I/O error.
 /// Last, a mix like a busy Windows drive: four requests in flight, 70 % reads and 30 % writes, of 4 KiB (60 %), 16 KiB (25 %) and 64 KiB
 /// (15 %) at random aligned places. Version 2 of the workload (version 1 had no mixed phase and longer sequential phases).
 /// </summary>
@@ -65,16 +67,16 @@ public sealed class StorageBenchmark : IBenchmark
 
         cursor = -1; double seqWrite = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => file.WriteAsync(buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
         await Task.Delay(_rest, ct).ConfigureAwait(false);
-        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.2), async (w, _) => await file.ReadAsync(buffers.Seq[w], NextBlock(), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
-        double randQ32 = await PhaseAsync(RandomDepth, Share(0.15), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
-        double randQ1 = await PhaseAsync(1, Share(0.15), async (w, r) => await file.ReadAsync(buffers.Small[w], RandomSector(r), ct).ConfigureAwait(false), Progress, ct).ConfigureAwait(false);
+        cursor = -1; double seqRead = await PhaseAsync(SeqDepth, Share(0.2), (w, _) => ReadAll(file, buffers.Seq[w], NextBlock(), ct), Progress, ct).ConfigureAwait(false);
+        double randQ32 = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => ReadAll(file, buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
+        double randQ1 = await PhaseAsync(1, Share(0.15), (w, r) => ReadAll(file, buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
         double randWrite = await PhaseAsync(RandomDepth, Share(0.15), (w, r) => file.WriteAsync(buffers.Small[w], RandomSector(r), ct), Progress, ct).ConfigureAwait(false);
         long mixedBytes = 0, mixedOps = 0;
         double mixed = await PhaseAsync(MixedDepth, Share(0.15), async (w, r) =>
         {
             double pick = r.NextDouble(); int size = pick < 0.6 ? 4096 : pick < 0.85 ? 16384 : MixedMax;
             long at = r.NextInt64(file.Length / size) * size; var buffer = buffers.Mixed[w][..size];
-            if (r.NextDouble() < 0.7) await file.ReadAsync(buffer, at, ct).ConfigureAwait(false); else await file.WriteAsync(buffer, at, ct).ConfigureAwait(false);
+            if (r.NextDouble() < 0.7) await ReadAll(file, buffer, at, ct).ConfigureAwait(false); else await file.WriteAsync(buffer, at, ct).ConfigureAwait(false);
             Interlocked.Add(ref mixedBytes, size); Interlocked.Increment(ref mixedOps);
         }, Progress, ct).ConfigureAwait(false);
         request.Report(1);
@@ -88,6 +90,14 @@ public sealed class StorageBenchmark : IBenchmark
         ];
         return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,
             $"unbuffered overlapped I/O; {file.Length >> 20} MiB file written once before timing and {_rest.TotalSeconds:0} s rest; SEQ1M Q{SeqDepth}T1 write, {_rest.TotalSeconds:0} s rest, SEQ1M Q{SeqDepth}T1 read, RND4K Q{RandomDepth}T1 read, RND4K Q1T1 read, RND4K Q{RandomDepth}T1 write, mixed 70/30 read/write 4-64K Q{MixedDepth}T1");
+    }
+
+    /// <summary>A read inside the file that returns fewer bytes than asked is not a finished operation: counted as one it would make the speed up.
+    /// It stops the run as an I/O error (no number is kept from it).</summary>
+    internal static async ValueTask ReadAll(StorageFile file, Memory<byte> buffer, long offset, CancellationToken ct)
+    {
+        int got = await file.ReadAsync(buffer, offset, ct).ConfigureAwait(false);
+        if (got != buffer.Length) throw new IOException($"short read: {got} of {buffer.Length} bytes at offset {offset}");
     }
 
     /// <summary>Keeps <paramref name="depth"/> requests in flight for <paramref name="length"/> and returns requests per second. Each worker
