@@ -10,8 +10,9 @@ public sealed record DnsScore(string Provider, string Server, int Answered, int 
 /// <summary>
 /// Times the DNS resolvers on this connection, as DNS Jumper does: the same names are looked up from each resolver's first server, straight over
 /// UDP (port 53, an A query of our own, so Windows' cache is not in the way), and the time to a valid answer is measured. A resolver that misses
-/// any lookup is not chosen, however fast its other answers were; among those that answered all, the lowest median wins. Nothing is changed
-/// here: the page applies the winner only when the user asks.
+/// any lookup, or answers one wrongly (no address for a name that exists), is not chosen, however fast its other answers were; among those that
+/// answered all, the lowest median wins. It is the fastest in this short sample on this connection now, not a measure of a resolver's general
+/// reliability. Nothing is changed here: the page applies the winner only when the user asks.
 /// </summary>
 public static class DnsBench
 {
@@ -29,16 +30,49 @@ public static class DnsBench
         return [.. bytes];
     }
 
-    /// <summary>Whether a packet is the answer to that query: the same id, the response bit, and no server failure or refusal (a name that does
-    /// not exist is still an answer).</summary>
-    public static bool IsAnswer(ReadOnlySpan<byte> packet, ushort id)
+    /// <summary>What a packet says to a query of ours.</summary>
+    public enum Reply { NotOurs, Resolved, Wrong }
+
+    /// <summary>Reads a packet against the query it may answer. Not ours: another id, not a response, or a different question (it is ignored and
+    /// the wait goes on). Resolved: no error, not cut short, and an address (A) or an alias (CNAME) for the name in the answer section; every
+    /// name asked exists, so "no such name" or an empty answer is a wrong answer however quick (RFC 1035 §4.1). Wrong: anything else, a cut-short
+    /// reply (TC) or a packet that does not parse.</summary>
+    public static Reply Read(ReadOnlySpan<byte> packet, ReadOnlySpan<byte> query)
     {
-        if (packet.Length < 12 || packet[0] != (byte)(id >> 8) || packet[1] != (byte)id || (packet[2] & 0x80) == 0) return false;
-        int rcode = packet[3] & 0x0F;
-        return rcode is 0 or 3;
+        if (packet.Length < 12 || packet[0] != query[0] || packet[1] != query[1] || (packet[2] & 0x80) == 0) return Reply.NotOurs;
+        // The question: one, and byte for byte the one asked (name, type, class), but for letter case, which a resolver may change.
+        int qEnd = query.Length;
+        if (packet[4] != 0 || packet[5] != 1 || packet.Length < qEnd) return Reply.NotOurs;
+        for (int i = 12; i < qEnd; i++) if (char.ToLowerInvariant((char)packet[i]) != char.ToLowerInvariant((char)query[i])) return Reply.NotOurs;
+        if ((packet[2] & 0x02) != 0 || (packet[3] & 0x0F) != 0) return Reply.Wrong;   // truncated, or an error (3 = no such name)
+        int answers = packet[6] << 8 | packet[7], at = qEnd;
+        for (int k = 0; k < answers; k++)
+        {
+            if (Skip(packet, ref at) is false || at + 10 > packet.Length) return Reply.Wrong;
+            int type = packet[at] << 8 | packet[at + 1], cls = packet[at + 2] << 8 | packet[at + 3], len = packet[at + 8] << 8 | packet[at + 9];
+            at += 10;
+            if (at + len > packet.Length) return Reply.Wrong;
+            if (cls == 1 && (type == 1 && len == 4 || type == 5)) return Reply.Resolved;
+            at += len;
+        }
+        return Reply.Wrong;
     }
 
-    /// <summary>One lookup: the time to a valid answer, or null on a timeout or anything else.</summary>
+    /// <summary>Steps over a name in a packet: labels up to a zero, or ending in a pointer to one elsewhere (compression).</summary>
+    private static bool Skip(ReadOnlySpan<byte> p, ref int at)
+    {
+        while (at < p.Length)
+        {
+            int b = p[at];
+            if (b == 0) { at++; return true; }
+            if ((b & 0xC0) == 0xC0) { at += 2; return at <= p.Length; }
+            if ((b & 0xC0) != 0) return false;
+            at += b + 1;
+        }
+        return false;
+    }
+
+    /// <summary>One lookup: the time to a resolved answer, or null on a timeout, a wrong answer or anything else.</summary>
     public static async Task<double?> TimeAsync(IPAddress server, string name, CancellationToken ct)
     {
         using var udp = new UdpClient(server.AddressFamily);
@@ -53,7 +87,11 @@ public static class DnsBench
             while (true)
             {
                 var r = await udp.ReceiveAsync(limit.Token).ConfigureAwait(false);
-                if (IsAnswer(r.Buffer, id)) return watch.Elapsed.TotalMilliseconds;
+                switch (Read(r.Buffer, query))
+                {
+                    case Reply.Resolved: return watch.Elapsed.TotalMilliseconds;
+                    case Reply.Wrong: return null;
+                }
             }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }

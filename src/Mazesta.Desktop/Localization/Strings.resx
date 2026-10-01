@@ -1266,7 +1266,7 @@
   <data name="Dns_Test" xml:space="preserve"><value>Test only</value></data>
   <data name="Dns_TestApply" xml:space="preserve"><value>Test and use the fastest</value></data>
   <data name="Dns_Testing" xml:space="preserve"><value>Timing every resolver on this connection…</value></data>
-  <data name="Dns_Test_Note" xml:space="preserve"><value>Like DNS Jumper: each resolver is asked for six common names (international and Iranian) twice, straight to it, and the median time counts. One that misses a lookup is not chosen. Shecan, 403, Radar and Begzar are anti-sanction resolvers: they open sites that block Iran, whatever their speed.</value></data>
+  <data name="Dns_Test_Note" xml:space="preserve"><value>As DNS Jumper does: each DNS is asked six popular names (international and Iranian) twice, straight, and the median time counts. Only a reply that gives the name's address counts; a DNS that misses even one, or answers one wrongly (says the name does not exist), is not chosen. The result is the fastest in this short test on this connection, not a measure of lasting reliability. Shecan, 403, Radar and Begzar are anti-sanction DNS: they open sites that block Iran, apart from their speed.</value></data>
   <data name="Dns_Fastest" xml:space="preserve"><value>Fastest</value></data>
   <data name="Dns_Missed" xml:space="preserve"><value>{0} of {1} answered</value></data>
   <data name="Dns_Use" xml:space="preserve"><value>Use</value></data>
@@ -1660,7 +1660,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Report_Findings" xml:space="preserve"><value>Worth attention:</value></data>
   <data name="Assist_Report_More" xml:space="preserve"><value>{0} reports are saved; all of them are on the Reports page, and «give the report as PDF» makes a file.</value></data>
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>Timing the DNS servers on this connection…</value></data>
-  <data name="Assist_Dns_Best" xml:space="preserve"><value>The fastest DNS on this connection is {0} ({1} ms); in use now: {2}. Nothing was changed: the Windows tools page is open at the DNS box, where «Use» switches to it.</value></data>
+  <data name="Assist_Dns_Best" xml:space="preserve"><value>In this short test the fastest DNS on this connection was {0} ({1} ms); in use now: {2}. Nothing was changed: the Windows tools page is open at the DNS box, where «Use» switches to it.</value></data>
   <data name="Assist_Dns_None" xml:space="preserve"><value>No DNS server answered every lookup; nothing was changed.</value></data>
   <data name="Assist_Games" xml:space="preserve"><value>The app has no list of games, so it does not guess at which settings a game runs. This computer has a {0} graphics card with {1} of its own memory, a {2} processor and {3} of RAM; compare these with the game's own requirements. For a measured answer, run the graphics benchmark on the Benchmarks page and compare it with other computers there.</value></data>
   <data name="Soft_Level_Meets" xml:space="preserve"><value>Meets its requirements</value></data>
