@@ -269,7 +269,7 @@ public sealed partial class WebBridge
             }
             if (route.Intent == AiIntent.ReportFile)
             {
-                string args = JsonSerializer.Serialize(new { format = route.Format });
+                string args = JsonSerializer.Serialize(new { format = route.Format, index = route.Index });
                 await _window.Dispatcher.InvokeAsync(() => { reply.Text = Loc.Get("Assist_Making"); Push(); });
                 var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "export_report", args), ct).ConfigureAwait(true);
                 reply.Tools.Add(new("export_report", args, result, ok));
@@ -294,7 +294,7 @@ public sealed partial class WebBridge
                     AiIntent.Specs => AssistantReplies.Specs(route.Part ?? "all", results[0]),
                     AiIntent.Sensors => AssistantReplies.Sensors(route.Kind, route.Part, results[0]),
                     AiIntent.Software or AiIntent.SoftwareList => AssistantReplies.Software(results[0], route.Intent == AiIntent.Software),
-                    AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Part == "temps"),
+                    AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Kind == "Temperature", route.Part),
                     _ => AssistantReplies.Dns(results[0]),
                 };
                 // A program asked about is shown on the programs page as well, with its card marked (not once the reply was stopped).
@@ -322,7 +322,7 @@ public sealed partial class WebBridge
                 AiIntent.Dns => [C("test_dns", new { })],
                 AiIntent.Software when route.App is { } app => [C("check_software", new { app = app.Id })],
                 AiIntent.SoftwareList => [C("check_software", new { category = route.Category?.ToString() })],
-                AiIntent.Report => [C("list_reports", new { limit = 5 }), C("get_report", new { index = 0 })],
+                AiIntent.Report => [C("list_reports", new { limit = 5 }), C("get_report", new { index = route.Index })],
                 AiIntent.Tests when route.Areas is { Count: > 0 } areas => [C("run_tests", new { areas })],
                 AiIntent.HowTo => [C("find_in_app", new { query = text })],
                 _ => null,

@@ -108,7 +108,8 @@ public sealed partial class WebBridge
                     }));
                 }),
             new("get_report", "One saved report in full: its tests and outcomes, its benchmarks' numbers, the highest temperatures while it ran (per part) and the diagnosis findings. " +
-                "Optional index (0 = newest, as list_reports numbers them). Use it to summarise a report or to answer what the highest temperature was. Say only what it holds: " +
+                "Optional index (0 = newest, as list_reports numbers them). Use it to summarise a report or to answer what the highest temperature was (kind says the part: cpu, gpu, " +
+                "motherboard, storage, memory). Say only what it holds: " +
                 "do not call temperatures safe or high, nor the computer good, unless a finding says so.",
                 """{"type":"object","properties":{"index":{"type":"integer"}}}""",
                 (a, _) =>
@@ -127,9 +128,11 @@ public sealed partial class WebBridge
                         benchmarks = (r.Benchmarks ?? []).Select(b => new { name = b.Name, results = b.Metrics.Take(3).Select(m => $"{Math.Round(m.Value, 2)} {m.Unit} ({m.Name})") }),
                         // The hottest reading of each part while the report ran, from every recorded sample.
                         highestTemperatures = r.Sensors.Where(x => x.Kind == "Temperature" && x.Samples > 0).GroupBy(x => x.Hardware)
-                            .Select(g => g.OrderByDescending(x => x.Max).First()).OrderByDescending(x => x.Max).Take(6)
-                            .Select(x => new { part = x.Hardware, sensor = x.Name, maxC = Math.Round(x.Max, 1) }),
-                        findings = (r.Findings ?? []).Take(5).Select(f => new { level = f.Level, title = f.Title }),
+                            .Select(g => g.OrderByDescending(x => x.Max).First()).OrderByDescending(x => x.Max).Take(10)
+                            .Select(x => new { part = x.Hardware, kind = x.Id.Split('/')[0], sensor = x.Name, maxC = Math.Round(x.Max, 1) }),
+                        // The problems first, so a short list never drops one behind the notes; how many were left out is said.
+                        findings = (r.Findings ?? []).OrderBy(f => f.Level switch { "Problem" => 0, "Attention" => 1, _ => 2 }).Take(8).Select(f => new { level = f.Level, title = f.Title }),
+                        findingsOmitted = (r.Findings?.Count ?? 0) > 8 ? r.Findings!.Count - 8 : (int?)null,
                     }));
                 }),
             new("export_report", "Makes a file of a saved report and offers it in the chat with an Open button: pdf (the full report), html (the full report as a web page) or summary " +

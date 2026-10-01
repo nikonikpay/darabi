@@ -76,13 +76,15 @@ internal static class AssistantReplies
         return Loc.Get("Assist_Soft_List") + "\n" + string.Join("\n", programs.Select(p => $"- {S(p, "name")}: {S(p, "levelName")}")) + "\n" + Loc.Get("Assist_Soft_More");
     }
 
-    public static string Report(string listJson, string reportJson, bool temperatures)
+    /// <param name="part">For the temperatures: the part asked about (cpu, gpu, memory, storage), or null for the hottest of all.</param>
+    public static string Report(string listJson, string reportJson, bool temperatures, string? part = null)
     {
         using var d = JsonDocument.Parse(reportJson); var r = d.RootElement;
         if (S(r, "error") is { } e) return e;
-        var temps = A(r, "highestTemperatures").Take(3).Select(t => $"{S(t, "part")} ({S(t, "sensor")}): {N(D(t, "maxC") ?? 0)} °C").ToList();
+        var temps = A(r, "highestTemperatures").Where(t => (part is null || S(t, "kind") == part) && D(t, "maxC") is not null).Take(3)
+            .Select(t => $"{S(t, "part")} ({S(t, "sensor")}): {N(D(t, "maxC")!.Value)} °C").ToList();
         string head = Loc.Format("Assist_Report_Head", T(r, "createdAt"), Loc.Get("Assist_ReportKind_" + S(r, "kind")), D(r, "minutes") is { } m ? N(m) : "—");
-        if (temperatures) return head + "\n" + (temps.Count == 0 ? Loc.Get("Assist_Report_NoTemps") : Loc.Get("Assist_Report_Temps") + "\n" + string.Join("\n", temps.Select(x => "- " + x)));
+        if (temperatures) return head + "\n" + (temps.Count == 0 ? Loc.Get(part is null ? "Assist_Report_NoTemps" : "Assist_Report_NoPartTemps") : Loc.Get("Assist_Report_Temps") + "\n" + string.Join("\n", temps.Select(x => "- " + x)));
         var lines = new List<string> { head };
         var tests = A(r, "tests").ToList();
         if (tests.Count > 0)
@@ -91,10 +93,12 @@ internal static class AssistantReplies
             lines.Add(Loc.Format("Assist_Report_Tests", S(r, "verdict") is { } v && Enum.TryParse<Reporting.ReportVerdict>(v, out _) ? Loc.Get("Reports_Verdict_" + v) : "—", passed, tests.Count));
             foreach (var t in tests.Where(t => S(t, "outcome") != "Passed")) lines.Add($"- {S(t, "name")}: {Loc.Get("Test_Outcome_" + S(t, "outcome"))}");
         }
-        foreach (var b in A(r, "benchmarks")) lines.Add($"- {S(b, "name")}: {A(b, "results").FirstOrDefault().GetString()}");
+        foreach (var b in A(r, "benchmarks"))
+            lines.Add($"- {S(b, "name")}: {A(b, "results").Select(x => x.ValueKind == JsonValueKind.String ? x.GetString() : null).FirstOrDefault(x => !string.IsNullOrEmpty(x)) ?? Loc.Get("Assist_Report_NoNumber")}");
         if (temps.Count > 0) lines.Add(Loc.Get("Assist_Report_Temps") + " " + string.Join("، ", temps));
         var findings = A(r, "findings").Where(f => S(f, "level") is "Attention" or "Problem").Select(f => S(f, "title")).Distinct().ToList();
         if (findings.Count > 0) lines.Add(Loc.Get("Assist_Report_Findings") + " " + string.Join("؛ ", findings));
+        if (D(r, "findingsOmitted") is { } more) lines.Add(Loc.Format("Assist_Report_FindingsMore", N(more)));
         using var l = JsonDocument.Parse(listJson);
         if (D(l.RootElement, "total") is { } total && total > 1) lines.Add(Loc.Format("Assist_Report_More", N(total)));
         return string.Join("\n", lines);

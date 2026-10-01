@@ -16,11 +16,12 @@ public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, Software
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
 /// <param name="Format">For <see cref="AiIntent.ReportFile"/>: pdf, html or summary.</param>
+/// <param name="Index">For the reports: which one, 0 the newest, 1 the one before it.</param>
 /// <param name="Category">For <see cref="AiIntent.SoftwareList"/>: the group asked about, or null for all.</param>
 /// <param name="On">For <see cref="AiIntent.Overlay"/>: shown or hidden.</param>
 /// <param name="Kind">For <see cref="AiIntent.Sensors"/>: Temperature, Load, Clock, Power or Fan, or null for all.</param>
 public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Part = null, SoftApp? App = null, IReadOnlyList<string>? Areas = null, string? Format = null,
-    SoftCategory? Category = null, bool On = false, string? Kind = null);
+    SoftCategory? Category = null, bool On = false, string? Kind = null, int Index = 0);
 
 /// <summary>
 /// The app's pages and the controls on them that people ask for, and the rules that read a message against them. Matching is on normalised
@@ -174,6 +175,9 @@ public static class AppGuide
     ];
 
     private static readonly string[] OverlayWords = ["اورلی", "اورلای", "overlay", "بالای صفحه", "بالای مانیتور", "روی صفحه", "روی بازی", "گوشه صفحه", "fps"];
+    // A command said not to be done ("اجرا نکن", "فقط توضیح بده") is never acted on: the model explains, and nothing starts.
+    private static readonly string[] NotWords = ["نکن", "نکنی", "نزن", "نزنی", "نده", "نشه", "نشود", "نمیخوام", "نمی خوام", "نمیخواهم", "نباید", "فقط توضیح", "فقط بگو", "توضیح بده", "don't", "dont", "do not", "not run", "only explain", "just explain", "explain"];
+    private static readonly string[] EarlierWords = ["قبلی", "قبل", "قبلیه", "ماقبل", "پیشین", "previous", "earlier", "before last"];
     private static readonly string[] OnWords = ["روشن", "فعال", "بیاد", "بیار", "نشون بده", "نشان بده", "نمایش بده", "show", "turn on", "enable"];
     private static readonly string[] OffWords = ["خاموش", "غیرفعال", "غیر فعال", "ببند", "بردار", "قطع", "مخفی", "hide", "turn off", "disable"];
     private static readonly (string Kind, string[] Words)[] SensorKinds =
@@ -193,15 +197,18 @@ public static class AppGuide
         bool go = Any(s, GoWords), page = Any(s, PageWords), doIt = Any(s, DoWords), how = Any(s, HowWords), ask = Any(s, AskWords);
 
         if (how && !go) return new(AiIntent.HowTo, place, App: app);
+        bool not = Any(s, NotWords);
 
         bool report = Has(s, "گزارش") || Has(s, "ریپورت") || Has(s, "report") || Has(s, "نتیجه تست") || Has(s, "نتایج تست") || Has(s, "نتیجه بنچمارک");
         if (report)
         {
             string? format = Has(s, "pdf") || Has(s, "پی دی اف") || Has(s, "پیدیاف") ? (Has(s, "خلاصه") || Has(s, "summary") ? "summary" : "pdf")
                 : Has(s, "html") || Has(s, "اچ تی ام ال") || Has(s, "صفحه وب") ? "html" : null;
-            if (format is not null) return new(AiIntent.ReportFile, Format: format);
-            if (SensorKinds[0].Words.Any(w => Has(s, w))) return new(AiIntent.Report, Part: "temps");
-            if (Any(s, SummaryWords) || ask && !go) return new(AiIntent.Report);
+            int index = Any(s, EarlierWords) ? 1 : 0;
+            if (format is not null) return new(AiIntent.ReportFile, Format: format, Index: index);
+            // The temperatures, of the part named if one is ("بالاترین دمای گرافیکم"): Kind marks the question, Part the part.
+            if (SensorKinds[0].Words.Any(w => Has(s, w))) return new(AiIntent.Report, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area, Kind: "Temperature", Index: index);
+            if (Any(s, SummaryWords) || ask && !go) return new(AiIntent.Report, Index: index);
             return new(AiIntent.Navigate, place is { Page: "reports" } ? place : Page("reports"));
         }
 
@@ -212,8 +219,9 @@ public static class AppGuide
 
         // The overlay over games: shown or hidden by a word of turning it on or off ("دماها بالای صفحه بیاد" is the overlay, not a page).
         // "صفحهٔ اورلی" is its settings page; "بالای صفحه" is the screen.
-        bool on = Any(s, OnWords), off = Any(s, OffWords), screen = Has(s, "بالای صفحه") || Has(s, "روی صفحه") || Has(s, "گوشه صفحه");
-        if (Any(s, OverlayWords) && on != off && (screen || !page)) return new(AiIntent.Overlay, On: on);
+        // "غیر فعال" holds "فعال": the word of turning off decides.
+        bool off = Any(s, OffWords) || not, on = !off && Any(s, OnWords), screen = Has(s, "بالای صفحه") || Has(s, "روی صفحه") || Has(s, "گوشه صفحه");
+        if (Any(s, OverlayWords) && on != off && (screen || !page) && !(not && !Any(s, OffWords))) return new(AiIntent.Overlay, On: on);
 
         // The DNS: finding the fastest is a test the app runs (it changes nothing).
         if ((Has(s, "dns") || Has(s, "دی ان اس")) && (Has(s, "بهترین") || Has(s, "سریع") || Has(s, "تست") || Has(s, "پیدا") || Has(s, "best") || Has(s, "fastest") || Has(s, "test")))
@@ -230,7 +238,7 @@ public static class AppGuide
             return new(AiIntent.Specs, Part: spec.Part);
 
         if (test && place is { Page: "checks" }) return new(AiIntent.Navigate, place);
-        if (test && !go && !page)
+        if (test && !go && !page && !not)
         {
             var areas = TestAreas.Where(a => Any(s, a.Words)).Select(a => a.Area).ToList();
             // "رم گرافیک" is the card's memory: the card's test covers it, not the RAM's.

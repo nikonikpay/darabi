@@ -92,4 +92,25 @@ public class AppGuideTests
         Assert.Equal(AiIntent.Games, R("سیستم من برای گیم مناسبه؟").Intent);
         Goes("برو بخش بازی", "tools", "gamemode");
     }
+    [Fact] public void A_command_said_not_to_be_done_starts_nothing()
+    {
+        Assert.NotEqual(AiIntent.Tests, R("تست CPU را اجرا نکن، فقط توضیح بده").Intent);
+        Assert.NotEqual(AiIntent.Tests, R("تست رم نمیخوام").Intent);
+        Assert.False(AiAssistantPolicy.AsksToAct("تست cpu رو اجرا نکن"));
+        Assert.True(AiAssistantPolicy.AsksToAct("تست cpu بگیر"));
+    }
+    [Fact] public void Not_active_turns_the_overlay_off()
+    {
+        Assert.Equal((AiIntent.Overlay, false), (R("اورلی رو غیر فعال کن").Intent, R("اورلی رو غیر فعال کن").On));
+        Assert.Equal((AiIntent.Overlay, false), (R("اورلی رو غیرفعال کن").Intent, R("اورلی رو غیرفعال کن").On));
+        Assert.Equal((AiIntent.Overlay, true), (R("اورلی رو فعال کن").Intent, R("اورلی رو فعال کن").On));
+    }
+    [Fact] public void A_reports_temperature_is_of_the_part_named_and_the_earlier_report_is_found()
+    {
+        var r = R("تو گزارش ها ببین بالاترین دمای گرافیکم چقدر بوده؟");
+        Assert.Equal(("Temperature", "gpu"), (r.Kind, r.Part));
+        Assert.Null(R("بالاترین دما توی گزارش چند بود").Part);
+        Assert.Equal(1, R("گزارش قبلی رو خلاصه کن").Index); Assert.Equal(0, R("گزارش هارو خلاصه کن").Index);
+        Assert.Equal((AiIntent.ReportFile, 1), (R("گزارش قبلی رو pdf بده").Intent, R("گزارش قبلی رو pdf بده").Index));
+    }
 }

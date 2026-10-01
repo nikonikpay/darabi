@@ -1657,6 +1657,9 @@
   <data name="Assist_Report_Tests" xml:space="preserve"><value>نتیجه: {0}؛ {1} از {2} تست قبول شد.</value></data>
   <data name="Assist_Report_Temps" xml:space="preserve"><value>بیشترین دماها:</value></data>
   <data name="Assist_Report_NoTemps" xml:space="preserve"><value>در این گزارش دمایی ثبت نشده است.</value></data>
+  <data name="Assist_Report_NoPartTemps" xml:space="preserve"><value>در این گزارش دمایی از این قطعه ثبت نشده است.</value></data>
+  <data name="Assist_Report_NoNumber" xml:space="preserve"><value>عددی ثبت نشده</value></data>
+  <data name="Assist_Report_FindingsMore" xml:space="preserve"><value>و {0} یافتهٔ دیگر (در خود گزارش).</value></data>
   <data name="Assist_Report_Findings" xml:space="preserve"><value>نیاز به توجه:</value></data>
   <data name="Assist_Report_More" xml:space="preserve"><value>{0} گزارش ذخیره شده است؛ همه در صفحهٔ «گزارش‌ها» هستند و با «گزارش رو PDF بده» فایلش ساخته می‌شود.</value></data>
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>در حال سنجش DNSها روی همین اینترنت…</value></data>

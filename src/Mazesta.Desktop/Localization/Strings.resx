@@ -1657,6 +1657,9 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Report_Tests" xml:space="preserve"><value>Verdict: {0}; {1} of {2} tests passed.</value></data>
   <data name="Assist_Report_Temps" xml:space="preserve"><value>Highest temperatures:</value></data>
   <data name="Assist_Report_NoTemps" xml:space="preserve"><value>The report recorded no temperatures.</value></data>
+  <data name="Assist_Report_NoPartTemps" xml:space="preserve"><value>This report recorded no temperature of that part.</value></data>
+  <data name="Assist_Report_NoNumber" xml:space="preserve"><value>no number recorded</value></data>
+  <data name="Assist_Report_FindingsMore" xml:space="preserve"><value>and {0} more findings (in the report itself).</value></data>
   <data name="Assist_Report_Findings" xml:space="preserve"><value>Worth attention:</value></data>
   <data name="Assist_Report_More" xml:space="preserve"><value>{0} reports are saved; all of them are on the Reports page, and «give the report as PDF» makes a file.</value></data>
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>Timing the DNS servers on this connection…</value></data>

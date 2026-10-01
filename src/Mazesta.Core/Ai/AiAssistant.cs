@@ -72,8 +72,9 @@ public static class AiAssistantPolicy
     public static bool AsksToAct(string text)
     {
         var s = text.ToLowerInvariant().Replace('\u200c', ' ').Replace('ي', 'ی').Replace('ك', 'ک');
-        return ActWords.Any(s.Contains);
+        return ActWords.Any(s.Contains) && !NotWords.Any(s.Contains);
     }
+    private static readonly string[] NotWords = ["نکن", "نزن", "نشه", "نمیخوام", "نمی خوام", "نباید", "فقط توضیح", "don't", "do not", "only explain", "just explain"];
     private static readonly string[] ActWords =
     [
         "تست", "چک", "آزمایش", "ازمایش", "بنچ", "اجرا", "بسنج", "اندازه بگیر", "بررسی کن", "امتحان",
