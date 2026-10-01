@@ -11,7 +11,7 @@ namespace Mazesta.Diagnostics.Cpu;
 ///  - every later transform must equal that reference bit for bit (same input, same order of operations).
 /// FLOPS use the usual FFT convention, 5·N·log2 N per transform.
 /// </summary>
-public sealed class CpuFftExecutor : ITestExecutor
+public sealed class CpuFftExecutor(Memory.IMemoryProbe? probe = null) : ITestExecutor
 {
     public static readonly TestDefinition Definition = new(new TestId("cpu.fft"), "Test_Cpu_Fft", 60);
     TestDefinition ITestExecutor.Definition => Definition;
@@ -93,14 +93,29 @@ public sealed class CpuFftExecutor : ITestExecutor
 
     internal static bool Same(double[] a, double[] b) { for (int i = 0; i < a.Length; i++) if (BitConverter.DoubleToInt64Bits(a[i]) != BitConverter.DoubleToInt64Bits(b[i])) return false; return true; }
 
+    /// <summary>What one worker holds: the large transform's two arrays and the small one's (the plans and references are shared).</summary>
+    internal const long WorkerBytes = (2L * Large + 2L * Small) * sizeof(double);
+
+    /// <summary>How many workers the free RAM holds above the OS reserve (the same reserve the RAM tests keep), at most one a logical processor;
+    /// 0 when not even one fits. Unknown free RAM (no probe) does not limit them.</summary>
+    internal static int Workers(Memory.MemoryStatus? status, int processors)
+    {
+        if (status is not { } st) return processors;
+        long budget = Memory.MemoryPatternExecutor.Budget(st, 0) - 2 * (2L * Large + 2L * Small) * sizeof(double);   // the two shared references
+        return (int)Math.Clamp(budget / WorkerBytes, 0, processors);
+    }
+
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
-        return Task.Run(() => Run(request, started, ct), CancellationToken.None);
+        // Decided before anything is allocated: too little free RAM is not the processor failing, and fewer workers than threads is said.
+        int workers = Workers(probe?.Read(), Environment.ProcessorCount);
+        if (workers == 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Too little free RAM for even one FFT worker ({WorkerBytes >> 20} MiB each, above the reserve Windows needs)."));
+        return Task.Run(() => Run(request, started, workers, ct), CancellationToken.None);
     }
 
-    private static TestRunResult Run(TestExecutionRequest request, DateTimeOffset started, CancellationToken ct)
+    private static TestRunResult Run(TestExecutionRequest request, DateTimeOffset started, int workers, CancellationToken ct)
     {
         request.Note("Log_CpuFft_Start", "X[k] = Σn x[n]·e^(−2πi·kn/N), radix-2;  checks: FFT vs direct DFT (N=512);  IFFT(FFT(x)) = x and Σ|X|²/N = Σ|x|² within 1e-9;  then every run bit-identical to the reference;  FLOPs = 5·N·log2 N",
             Environment.ProcessorCount, Small, Large);
@@ -111,7 +126,7 @@ public sealed class CpuFftExecutor : ITestExecutor
         if (refs.FirstOrDefault(r => r.Problem is not null) is { Problem: { } problem }) return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, 1, $"the reference transform failed its own check: {problem}");
         request.Note("Log_CpuFft_Checked", null, dft.ToString("G2", System.Globalization.CultureInfo.InvariantCulture));
 
-        int threads = Environment.ProcessorCount; long transforms = 0, errors = 0; double flops = 0; string firstError = ""; object sum = new(); var coverage = new CpuCoverage();
+        int threads = workers; long transforms = 0, errors = 0; double flops = 0; string firstError = ""; object sum = new(); var coverage = new CpuCoverage();
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds); var pacer = new LogPacer();
         void Worker(int index)
         {
@@ -138,7 +153,7 @@ public sealed class CpuFftExecutor : ITestExecutor
             all.Wait(250, CancellationToken.None);
         }
         var finished = request.Clock.UtcNow;
-        string detail = SensorEvidence.Join($"radix-2 complex FFT, N={Small} and N={Large}, {threads} threads; checked against a direct DFT (relative error {dft:G2}), an inverse round trip and Parseval, then bit for bit",
+        string detail = SensorEvidence.Join($"radix-2 complex FFT, N={Small} and N={Large}, {threads} threads" + (threads < Environment.ProcessorCount ? $" of {Environment.ProcessorCount} (free RAM held {threads} workers of {WorkerBytes >> 20} MiB)" : "") + $"; checked against a direct DFT (relative error {dft:G2}), an inverse round trip and Parseval, then bit for bit",
             $"transforms={transforms}", coverage.Describe(CpuTopology.Cores), $"{flops / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9:F1} GFLOPS (5·N·log2 N)", firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));

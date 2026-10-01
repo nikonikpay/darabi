@@ -83,4 +83,15 @@ public class CpuWorkloadTests
         var r = await new CpuFftExecutor().RunAsync(new(2, new FakeClock(T0), null, null), CancellationToken.None);
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("GFLOPS (5·N·log2 N)", r.Detail);
     }
+
+    private sealed class Probe(long total, long free) : Mazesta.Diagnostics.Memory.IMemoryProbe { public Mazesta.Diagnostics.Memory.MemoryStatus Read() => new(total, free); }
+    [Fact] public async Task The_fft_takes_only_the_workers_free_ram_holds_and_none_is_not_a_cpu_failure()
+    {
+        const long G = 1L << 30;
+        Assert.Equal(64, CpuFftExecutor.Workers(new(64 * G, 60 * G), 64));
+        Assert.Equal(1, CpuFftExecutor.Workers(new(16 * G, 2 * G + 50 * (1L << 20)), 64));   // above the 2 GiB reserve: room for one
+        Assert.Equal(0, CpuFftExecutor.Workers(new(16 * G, G), 64));
+        var r = await new CpuFftExecutor(new Probe(16 * G, G)).RunAsync(new(2, new FakeClock(T0), null, null), CancellationToken.None);
+        Assert.Equal(TestOutcome.Unsupported, r.Outcome);
+    }
 }
