@@ -167,10 +167,11 @@ public sealed partial class WebBridge
                     offerFile(path);
                     return Json(new { made = true, format, file = Path.GetFileName(path), path, report = stored.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm") });
                 }),
-            new("check_software", "Whether this computer runs a professional program (rendering, architecture, civil, animation, video editing, graphics) and at which of its " +
+            new("check_software", "Whether this computer runs a professional program (rendering, architecture, civil, mechanical, animation, video editing, graphics) or a game, and at which of its " +
                 "publisher's tiers (Minimum, Recommended, HighEnd), what work that tier suits, and what is missing for the next tier. Give app (its name or id) for one " +
-                "program, or category (Visualization, Rendering, Architecture, Civil, Animation, Video, Graphics) for a group, or neither for all.",
-                """{"type":"object","properties":{"app":{"type":"string"},"category":{"type":"string","enum":["Visualization","Rendering","Architecture","Civil","Animation","Video","Graphics"]}}}""",
+                "program or game, or category (Visualization, Rendering, Architecture, Civil, Mechanical, Animation, Video, Graphics, Game) for a group, or neither for all. " +
+                "A game's tier may carry its publisher's target (resolution, preset, frame rate): say it as the publisher's target, never as a promise for this computer.",
+                """{"type":"object","properties":{"app":{"type":"string"},"category":{"type":"string","enum":["Visualization","Rendering","Architecture","Civil","Mechanical","Animation","Video","Graphics","Game"]}}}""",
                 async (a, _) =>
                 {
                     var pc = await softMachine().ConfigureAwait(false);
@@ -424,14 +425,20 @@ public sealed partial class WebBridge
         return new
         {
             id = x.Id, name = x.Name, level = SoftwareCatalog.LevelName(x, v), levelName = Desktop.Localization.Loc.Get("Soft_Level_" + SoftwareCatalog.LevelName(x, v)),
-            suits = tier is null ? null : Desktop.Localization.Loc.Get(x.Tiers.Count == 1 ? "Soft_Scale_Single" : tier.ScaleKey ?? "Soft_Scale_" + x.Category + "_" + tier.Kind),
+            suits = tier is null ? null : Suits(x, tier),
             missingForNext = v.Missing.Select(m => ShortText(m)),
             notChecked = (v.Unchecked ?? []).Select(x => Desktop.Localization.Loc.Get("Soft_Unchecked_" + x)),
             nextLevel = v.NextTier is { } n ? TierName(n) : null,
-            tiers = detail ? x.Tiers.Select(t => new { level = TierName(t), ramGb = t.RamGb, vramGb = t.VramGb, cores = t.Cores, gpu = t.Gpu, cpu = t.Cpu }) : null,
+            tiers = detail ? x.Tiers.Select(t => new { level = TierName(t), ramGb = t.RamGb, vramGb = t.VramGb, cores = t.Cores, gpu = t.Gpu, cpu = t.Cpu, publisherTarget = t.Target }) : null,
             source = detail ? x.Source : null, note = detail && x.NoteKey is { } nk ? Desktop.Localization.Loc.Get(nk) : null,
         };
     }
+
+    /// <summary>What a tier suits, in the publisher's terms: a game's own target where it gives one (else that it names none), the tier's own
+    /// wording, or its category's.</summary>
+    private static string Suits(SoftApp a, SoftTier t) => a.Category == SoftCategory.Game
+        ? t.Target is { } aim ? Desktop.Localization.Loc.Format("Game_Target", aim) : Desktop.Localization.Loc.Get("Game_NoTarget")
+        : Desktop.Localization.Loc.Get(a.Tiers.Count == 1 ? "Soft_Scale_Single" : t.ScaleKey ?? $"Soft_Scale_{a.Category}_{t.Kind}");
 
     /// <summary>A tier's name: the publisher's own for one of several of a kind (Archicad's building sizes), else its kind's.</summary>
     private static string TierName(SoftTier t) => Desktop.Localization.Loc.Get(t.LabelKey ?? "Soft_Level_" + t.Kind);

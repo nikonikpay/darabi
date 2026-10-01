@@ -96,4 +96,20 @@ public class SoftwareCatalogTests
         Assert.Equal(("Soft_Tier_Archicad_Mid", "Soft_Tier_Archicad_High"), (mid.Reached!.LabelKey, mid.NextTier!.LabelKey));
         Assert.Equal(SoftTierKind.HighEnd, SoftwareCatalog.Find("twinmotion")!.Tiers[1].Kind);
     }
+    [Fact] public void A_game_is_judged_on_its_publishers_tiers_and_keeps_the_publishers_target()
+    {
+        var cp = A("cyberpunk"); Assert.Equal(SoftCategory.Game, cp.Category); Assert.Equal("1080p · Low · 30 FPS", cp.Tiers[0].Target);
+        Assert.Equal(SoftTierKind.Recommended, SoftwareCatalog.Judge(cp, Pc("NVIDIA GeForce RTX 3060", 12, 16) with { Dx12 = true }).Level);
+        // A card without Direct3D 12 does not meet a tier that names DirectX 12, whatever its memory.
+        Assert.Contains(SoftwareCatalog.Judge(cp, Pc("Old card", 8, 32) with { Dx12 = false }).Missing, m => m.What == "Dx12");
+        // No VRAM figure is read off a card's name: the publisher named only cards for Elden Ring.
+        Assert.All(A("eldenring").Tiers, t => Assert.Null(t.VramGb));
+    }
+    [Fact] public void New_programs_hold_their_hard_conditions()
+    {
+        Assert.StartsWith("Blender 5.2", A("blender").Name);
+        Assert.Contains(SoftwareCatalog.Judge(A("houdini"), Pc("NVIDIA GeForce RTX 4070", 12, 32) with { Avx2 = false }).Missing, m => m.What == "Avx2");
+        Assert.Equal(SoftTierKind.Recommended, SoftwareCatalog.Judge(A("solidworks"), Pc("NVIDIA RTX A2000", 6, 31.8)).Level);
+        Assert.Equal(SoftCategory.Mechanical, A("fusion").Category);
+    }
 }

@@ -82,6 +82,8 @@ public static class AppGuide
         P("reports", "Nav_Reports", "saved test and benchmark reports: summary, PDF, HTML, before/after comparison", "گزارش", "گزارشها", "گزارش ها", "ریپورت", "reports", "report"),
         T("reports", "compare", "Reports_Compare", "compare two ticked reports, before and after", null, "مقایسه گزارش", "مقایسه قبل و بعد", "compare"),
         P("apps", "Nav_Apps", "which professional programs (rendering, architecture, civil, animation, editing) run on this computer, and at what level", "برنامه ها", "برنامههای تخصصی", "نرم افزار", "نرمافزار", "نرم افزارها", "برنامه های رندرینگ", "software", "apps"),
+        P("games", "Nav_Games", "which games run on this computer, at their publishers' minimum, recommended and high tiers and the publishers' own targets (resolution, preset, frame rate)",
+            "بازی ها", "بازیها", "لیست بازی", "سیستم مورد نیاز بازی", "سیستم بازی", "مشخصات بازی", "games", "game requirements"),
         P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models", "مدل هوش مصنوعی", "مدلهای هوش مصنوعی", "مدل های هوش مصنوعی", "هوش مصنوعی", "llm", "مدل زبانی", "ai models"),
         P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder", "تنظیمات", "تنظیمات برنامه", "ستینگ", "settings", "tray", "ترای", "پایشگر"),
         P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
@@ -174,7 +176,8 @@ public static class AppGuide
     private static readonly (SoftCategory Category, string[] Words)[] Categories =
     [
         (SoftCategory.Visualization, ["رندرینگ", "رندر", "ریل تایم", "render", "rendering"]), (SoftCategory.Architecture, ["معماری", "architecture", "bim"]),
-        (SoftCategory.Civil, ["عمران", "سازه", "civil", "structural"]), (SoftCategory.Animation, ["انیمیشن", "جلوه ویژه", "جلوه های ویژه", "سه بعدی", "animation", "vfx"]),
+        (SoftCategory.Civil, ["عمران", "سازه", "civil", "structural"]), (SoftCategory.Mechanical, ["مکانیک", "طراحی مکانیکی", "طراحی صنعتی", "mechanical", "cad cam"]),
+        (SoftCategory.Game, ["بازی ها", "بازیها", "گیم ها", "games"]), (SoftCategory.Animation, ["انیمیشن", "جلوه ویژه", "جلوه های ویژه", "سه بعدی", "animation", "vfx"]),
         (SoftCategory.Video, ["تدوین", "ادیت", "ویدیو", "ویدئو", "editing", "video"]), (SoftCategory.Graphics, ["گرافیکی", "طراحی گرافیک", "graphic design"]),
     ];
 
@@ -253,7 +256,7 @@ public static class AppGuide
         }
 
         if (app is not null)
-            return go && !Any(s, RunWords) ? new(AiIntent.Navigate, Page("apps"), App: app) : new(AiIntent.Software, App: app);
+            return go && !Any(s, RunWords) ? new(AiIntent.Navigate, Page(app.Category == SoftCategory.Game ? "games" : "apps"), App: app) : new(AiIntent.Software, App: app);
         if (Any(s, AppsWords) && Any(s, RunWords) && !go)
             return new(AiIntent.SoftwareList, Category: Categories.Where(c => Any(s, c.Words)).Select(c => (SoftCategory?)c.Category).FirstOrDefault());
 

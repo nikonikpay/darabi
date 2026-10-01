@@ -1737,6 +1737,55 @@
   <data name="Soft_Unchecked_GpuSpeed" xml:space="preserve"><value>سرعت کارت گرافیک در برابر نمونهٔ سازنده</value></data>
   <data name="Soft_Unchecked_Api" xml:space="preserve"><value>نسخه یا سطح قابلیت OpenGL / Vulkan / DirectX که سازنده خواسته</value></data>
   <data name="Apps_Unchecked" xml:space="preserve"><value>بررسی نشد (مقایسه را خودتان با جدول انجام دهید):</value></data>
+  <data name="Nav_Games" xml:space="preserve"><value>بازی‌ها</value></data>
+  <data name="Games_Title" xml:space="preserve"><value>کدام بازی‌ها روی این سیستم اجرا می‌شوند</value></data>
+  <data name="Games_Lede" xml:space="preserve"><value>هر بازی با سطح‌بندی خود ناشرش (حداقل، پیشنهادی و سطح بالاتر اگر ناشر نام برده) مقایسه می‌شود: رم، حافظهٔ گرافیک (هر جا ناشر عدد داده) و DirectX 12. کارت‌ها و پردازنده‌های نمونهٔ ناشر نشان داده می‌شوند ولی مقایسه نمی‌شوند، چون سرعتشان از روی نام معلوم نیست.</value></data>
+  <data name="Games_Ai_Text" xml:space="preserve"><value>دربارهٔ هر بازی با نامش از دستیار بپرسید؛ از همین سطح‌بندی ناشر جواب می‌دهد. مدل‌های زبانی و تصویری در زبانهٔ «مدل‌های هوش مصنوعی» هستند.</value></data>
+  <data name="Games_Note" xml:space="preserve"><value>هدف ناشر (رزولوشن، تنظیمات گرافیکی، فریم‌ریت) نتیجهٔ آزمون خودش روی قطعه‌های نمونه است، نه قول برای این سیستم. اینجا هیچ فریم‌ریتی حدس زده نمی‌شود.</value></data>
+  <data name="Games_Count" xml:space="preserve"><value>{0} از {1} بازی اجرا می‌شوند</value></data>
+  <data name="Games_Target" xml:space="preserve"><value>هدف ناشر</value></data>
+  <data name="Games_NoTargetShort" xml:space="preserve"><value>نام نبرده</value></data>
+  <data name="Game_Target" xml:space="preserve"><value>هدف ناشر برای این سطح: {0}. نتیجهٔ آزمون ناشر روی قطعه‌های نمونه است، نه قول برای این سیستم.</value></data>
+  <data name="Game_NoTarget" xml:space="preserve"><value>ناشر برای این سطح رزولوشن یا فریم‌ریتی نام نبرده.</value></data>
+  <data name="Soft_Category_Mechanical" xml:space="preserve"><value>طراحی مکانیکی</value></data>
+  <data name="Soft_Category_Game" xml:space="preserve"><value>بازی‌ها</value></data>
+  <data name="Soft_Scale_Mechanical_Minimum" xml:space="preserve"><value>یادگیری، قطعه‌ها و مونتاژهای کوچک.</value></data>
+  <data name="Soft_Scale_Mechanical_Recommended" xml:space="preserve"><value>کار حرفه‌ای: مونتاژهای بزرگ و تاریخچهٔ طراحی طولانی.</value></data>
+  <data name="Soft_Scale_Mechanical_HighEnd" xml:space="preserve"><value>کار حرفه‌ای: مونتاژهای بزرگ و تاریخچهٔ طراحی طولانی.</value></data>
+  <data name="Soft_Scale_Houdini_High" xml:space="preserve"><value>توصیهٔ جدی SideFX برای شبیه‌سازی سیالات.</value></data>
+  <data name="Soft_Scale_Lightroom_Ai" xml:space="preserve"><value>عدد Adobe برای شتاب کامل کارت گرافیک و قابلیت‌های هوش مصنوعی (Denoise، Lens Blur، Reflection Removal): ۸ گیگابایت حافظهٔ خود کارت یا ۱۶ گیگابایت حافظهٔ اشتراکی.</value></data>
+  <data name="Soft_Note_Solidworks" xml:space="preserve"><value>SOLIDWORKS فقط کارت‌ها و درایورهای فهرست تأییدشدهٔ خودش را پشتیبانی می‌کند و نسخه‌های Home ویندوز را پشتیبانی نمی‌کند؛ SSD پیشنهاد می‌شود.</value></data>
+  <data name="Soft_Note_Houdini" xml:space="preserve"><value>از Houdini 21 پردازنده باید x86-64-v3 باشد (AVX2: اینتل Haswell، AMD Excavator یا جدیدتر). SideFX دوازده گیگابایت حافظهٔ گرافیک می‌خواهد؛ با کمتر از آن، به‌ویژه روی نمایشگر 4K یا دو مانیتور، پنجره‌ها ممکن است خالی یا خراب نمایش داده شوند.</value></data>
+  <data name="Soft_Note_Lightroom" xml:space="preserve"><value>Adobe برای کارت مجتمع حافظهٔ اشتراکی را هم حساب می‌کند (۱۶ گیگابایت اشتراکی برای قابلیت‌های هوش مصنوعی)؛ این برنامه فقط حافظهٔ خود کارت را می‌خواند، پس کارت مجتمع را خودتان با جدول مقایسه کنید.</value></data>
+  <data name="Soft_Note_Cyberpunk" xml:space="preserve"><value>سطح‌بندی خود ناشر طبق به‌روزرسانی ۲۰۲۳ (همراه افزونهٔ Phantom Liberty)؛ SSD لازم است (برای بالاترین سطح NVMe). سطح‌های ری‌تریسینگ آن (RTX 2060 به بالا) جدا هستند و اینجا بررسی نمی‌شوند.</value></data>
+  <data name="Soft_Note_Valorant" xml:space="preserve"><value>Riot برای کارت گرافیک مجزا دست‌کم ۱ گیگابایت حافظهٔ گرافیک می‌خواهد و روی ویندوز ۱۱، TPM 2.0 و UEFI Secure Boot (برای ضدتقلب Vanguard). ماشین مجازی و گیم ابری پشتیبانی نمی‌شوند.</value></data>
+  <data name="Soft_Note_Bf6" xml:space="preserve"><value>EA روشن بودن TPM 2.0 و UEFI Secure Boot و پشتیبانی سیستم از HVCI و VBS را لازم می‌داند (برای ضدتقلب)؛ ویندوز ۱۱ پیشنهاد می‌شود. اینجا بررسی نمی‌شود.</value></data>
+  <data name="Soft_Note_Ssd" xml:space="preserve"><value>ناشر SSD را لازم می‌داند.</value></data>
+  <data name="Soft_Note_Wukong" xml:space="preserve"><value>ارقام ناشر با DLSS، FSR یا XeSS روشن آزموده شده‌اند (با افزایش وضوح، نه رزولوشن اصلی). برای سطح پیشنهادی SSD لازم است.</value></data>
+  <data name="Soft_Purpose_Solidworks" xml:space="preserve"><value>طراحی مکانیکی: قطعه، مونتاژ، نقشه و شبیه‌سازی.</value></data>
+  <data name="Soft_Purpose_Fusion" xml:space="preserve"><value>CAD، CAM و شبیه‌سازی در یک برنامه: طراحی، مسیر ابزار ماشین‌کاری و چاپ سه‌بعدی.</value></data>
+  <data name="Soft_Purpose_Sap2000" xml:space="preserve"><value>تحلیل و طراحی عمومی سازه: پل، برج و سازه‌های صنعتی.</value></data>
+  <data name="Soft_Purpose_Safe" xml:space="preserve"><value>طراحی دال و فونداسیون.</value></data>
+  <data name="Soft_Purpose_Illustrator" xml:space="preserve"><value>طراحی برداری: لوگو، تصویرسازی، چاپ و صفحه‌آرایی.</value></data>
+  <data name="Soft_Purpose_Lightroom" xml:space="preserve"><value>مدیریت و ویرایش عکس، به‌ویژه فایل‌های RAW.</value></data>
+  <data name="Soft_Purpose_Houdini" xml:space="preserve"><value>سه‌بعدی رویه‌ای، جلوه‌های ویژه و شبیه‌سازی: سیال، دود و تخریب.</value></data>
+  <data name="Soft_Purpose_Unity" xml:space="preserve"><value>ساخت بازی و برنامهٔ بلادرنگ (خود ویرایشگر؛ بازی ساخته‌شده نیازهای جداگانه دارد).</value></data>
+  <data name="Soft_Purpose_Cyberpunk" xml:space="preserve"><value>نقش‌آفرینی اکشن جهان‌باز؛ از سنگین‌ترین بازی‌ها برای کارت گرافیک.</value></data>
+  <data name="Soft_Purpose_Valorant" xml:space="preserve"><value>تیراندازی تاکتیکی رقابتی؛ برای کارت گرافیک سبک است و فریم‌ریت بالا مهم است.</value></data>
+  <data name="Soft_Purpose_Cs2" xml:space="preserve"><value>تیراندازی تاکتیکی رقابتی؛ پردازنده به اندازهٔ کارت گرافیک مهم است.</value></data>
+  <data name="Soft_Purpose_Dota2" xml:space="preserve"><value>استراتژی آنلاین (MOBA)؛ سبک.</value></data>
+  <data name="Soft_Purpose_Apex" xml:space="preserve"><value>تیراندازی بتل‌رویال.</value></data>
+  <data name="Soft_Purpose_Pubg" xml:space="preserve"><value>تیراندازی بتل‌رویال روی نقشه‌های بزرگ.</value></data>
+  <data name="Soft_Purpose_Bf6" xml:space="preserve"><value>تیراندازی چندنفرهٔ بزرگ‌مقیاس.</value></data>
+  <data name="Soft_Purpose_R6" xml:space="preserve"><value>تیراندازی تاکتیکی رقابتی.</value></data>
+  <data name="Soft_Purpose_Rivals" xml:space="preserve"><value>تیراندازی تیمی قهرمانی.</value></data>
+  <data name="Soft_Purpose_Fc26" xml:space="preserve"><value>فوتبال.</value></data>
+  <data name="Soft_Purpose_Forza5" xml:space="preserve"><value>مسابقهٔ اتومبیل‌رانی جهان‌باز.</value></data>
+  <data name="Soft_Purpose_Gta5" xml:space="preserve"><value>اکشن جهان‌باز؛ نسخهٔ Enhanced با ری‌تریسینگ.</value></data>
+  <data name="Soft_Purpose_Rdr2" xml:space="preserve"><value>اکشن و ماجرایی جهان‌باز؛ سنگین.</value></data>
+  <data name="Soft_Purpose_EldenRing" xml:space="preserve"><value>نقش‌آفرینی اکشن جهان‌باز.</value></data>
+  <data name="Soft_Purpose_Bg3" xml:space="preserve"><value>نقش‌آفرینی؛ پرده‌های پایانی آن به پردازنده فشار می‌آورند.</value></data>
+  <data name="Soft_Purpose_Wukong" xml:space="preserve"><value>نقش‌آفرینی اکشن؛ برای کارت گرافیک سنگین.</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>رندر بلادرنگ و ویژوالایز</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>موتورهای رندر</value></data>
   <data name="Soft_Category_Architecture" xml:space="preserve"><value>معماری و طراحی</value></data>

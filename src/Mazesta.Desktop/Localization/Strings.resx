@@ -1737,6 +1737,55 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Unchecked_GpuSpeed" xml:space="preserve"><value>the graphics card's speed against the publisher's example</value></data>
   <data name="Soft_Unchecked_Api" xml:space="preserve"><value>the OpenGL / Vulkan / DirectX version or feature level the publisher asks for</value></data>
   <data name="Apps_Unchecked" xml:space="preserve"><value>Not checked (compare with the table yourself):</value></data>
+  <data name="Nav_Games" xml:space="preserve"><value>Games</value></data>
+  <data name="Games_Title" xml:space="preserve"><value>Which games run on this computer</value></data>
+  <data name="Games_Lede" xml:space="preserve"><value>Each game is checked against its publisher's own tiers (minimum, recommended, and a higher one where the publisher names it): RAM, graphics memory where the publisher states it, and DirectX 12. The example cards and processors are shown, not compared, since their speed can not be read from their names.</value></data>
+  <data name="Games_Ai_Text" xml:space="preserve"><value>Ask the assistant about a game by name: it answers from the same publisher tiers. Language and image models are on the AI models tab.</value></data>
+  <data name="Games_Note" xml:space="preserve"><value>A publisher's target (resolution, preset, frame rate) is what it tested on its example parts, not a promise for this computer. No frame rate is guessed here.</value></data>
+  <data name="Games_Count" xml:space="preserve"><value>{0} of {1} games run here</value></data>
+  <data name="Games_Target" xml:space="preserve"><value>Publisher's target</value></data>
+  <data name="Games_NoTargetShort" xml:space="preserve"><value>Not named</value></data>
+  <data name="Game_Target" xml:space="preserve"><value>The publisher's target for this tier: {0}. A target it tested on its example parts, not a promise for this computer.</value></data>
+  <data name="Game_NoTarget" xml:space="preserve"><value>The publisher names no resolution or frame rate for this tier.</value></data>
+  <data name="Soft_Category_Mechanical" xml:space="preserve"><value>Mechanical design</value></data>
+  <data name="Soft_Category_Game" xml:space="preserve"><value>Games</value></data>
+  <data name="Soft_Scale_Mechanical_Minimum" xml:space="preserve"><value>Learning, parts and small assemblies.</value></data>
+  <data name="Soft_Scale_Mechanical_Recommended" xml:space="preserve"><value>Professional work: large assemblies and long design histories.</value></data>
+  <data name="Soft_Scale_Mechanical_HighEnd" xml:space="preserve"><value>Professional work: large assemblies and long design histories.</value></data>
+  <data name="Soft_Scale_Houdini_High" xml:space="preserve"><value>SideFX's strong recommendation for fluid simulations.</value></data>
+  <data name="Soft_Scale_Lightroom_Ai" xml:space="preserve"><value>Adobe's figure for full GPU acceleration and the AI features (Denoise, Lens Blur, Reflection Removal): 8 GB of the card's own memory, or 16 GB shared.</value></data>
+  <data name="Soft_Note_Solidworks" xml:space="preserve"><value>SOLIDWORKS supports only the graphics cards and drivers on its certified list, and not Windows Home editions; it recommends an SSD.</value></data>
+  <data name="Soft_Note_Houdini" xml:space="preserve"><value>Since Houdini 21 the processor must be x86-64-v3 (AVX2: Intel Haswell, AMD Excavator or newer). SideFX asks 12 GB of graphics memory: with less, windows can draw blank or broken, above all on 4K screens or two monitors.</value></data>
+  <data name="Soft_Note_Lightroom" xml:space="preserve"><value>Adobe counts shared memory for an integrated card (16 GB shared for the AI features); this app reads only a card's own memory, so check an integrated card against the table yourself.</value></data>
+  <data name="Soft_Note_Cyberpunk" xml:space="preserve"><value>The publisher's own tiers as updated in 2023 (with the update after Phantom Liberty's pre-orders), with an SSD required (NVMe for the top tier). Its ray-tracing tiers (RTX 2060 and up) are separate and not judged here.</value></data>
+  <data name="Soft_Note_Valorant" xml:space="preserve"><value>Riot also asks, with a card of its own, at least 1 GB of graphics memory; on Windows 11, TPM 2.0 and UEFI Secure Boot (its Vanguard anti-cheat). Virtual machines and cloud gaming are not supported.</value></data>
+  <data name="Soft_Note_Bf6" xml:space="preserve"><value>EA requires TPM 2.0 and UEFI Secure Boot turned on, and a computer capable of HVCI and VBS (its anti-cheat); Windows 11 is recommended. Not checked here.</value></data>
+  <data name="Soft_Note_Ssd" xml:space="preserve"><value>The publisher requires an SSD.</value></data>
+  <data name="Soft_Note_Wukong" xml:space="preserve"><value>The publisher's figures were tested with DLSS, FSR or XeSS on (upscaled, not native resolution). An SSD is required for the recommended tier.</value></data>
+  <data name="Soft_Purpose_Solidworks" xml:space="preserve"><value>Mechanical design: parts, assemblies, drawings and simulation.</value></data>
+  <data name="Soft_Purpose_Fusion" xml:space="preserve"><value>CAD, CAM and simulation in one: design, toolpaths for machining, 3D printing.</value></data>
+  <data name="Soft_Purpose_Sap2000" xml:space="preserve"><value>General structural analysis and design: bridges, towers, industrial structures.</value></data>
+  <data name="Soft_Purpose_Safe" xml:space="preserve"><value>Design of slabs and foundations.</value></data>
+  <data name="Soft_Purpose_Illustrator" xml:space="preserve"><value>Vector design: logos, illustration, print and layout.</value></data>
+  <data name="Soft_Purpose_Lightroom" xml:space="preserve"><value>Organising and editing photos, RAW above all.</value></data>
+  <data name="Soft_Purpose_Houdini" xml:space="preserve"><value>Procedural 3D, effects and simulation: fluids, smoke, destruction.</value></data>
+  <data name="Soft_Purpose_Unity" xml:space="preserve"><value>Game and real-time application making (the Editor; a built game has its own requirements).</value></data>
+  <data name="Soft_Purpose_Cyberpunk" xml:space="preserve"><value>Open-world action RPG; among the heaviest games on a graphics card.</value></data>
+  <data name="Soft_Purpose_Valorant" xml:space="preserve"><value>Competitive tactical shooter; light on the graphics card, high frame rates matter.</value></data>
+  <data name="Soft_Purpose_Cs2" xml:space="preserve"><value>Competitive tactical shooter; the processor counts as much as the card.</value></data>
+  <data name="Soft_Purpose_Dota2" xml:space="preserve"><value>Online strategy (MOBA); light.</value></data>
+  <data name="Soft_Purpose_Apex" xml:space="preserve"><value>Battle-royale shooter.</value></data>
+  <data name="Soft_Purpose_Pubg" xml:space="preserve"><value>Battle-royale shooter on large maps.</value></data>
+  <data name="Soft_Purpose_Bf6" xml:space="preserve"><value>Large-scale multiplayer shooter.</value></data>
+  <data name="Soft_Purpose_R6" xml:space="preserve"><value>Competitive tactical shooter.</value></data>
+  <data name="Soft_Purpose_Rivals" xml:space="preserve"><value>Team hero shooter.</value></data>
+  <data name="Soft_Purpose_Fc26" xml:space="preserve"><value>Football.</value></data>
+  <data name="Soft_Purpose_Forza5" xml:space="preserve"><value>Open-world racing.</value></data>
+  <data name="Soft_Purpose_Gta5" xml:space="preserve"><value>Open-world action; the Enhanced edition with ray tracing.</value></data>
+  <data name="Soft_Purpose_Rdr2" xml:space="preserve"><value>Open-world action and adventure; heavy.</value></data>
+  <data name="Soft_Purpose_EldenRing" xml:space="preserve"><value>Open-world action RPG.</value></data>
+  <data name="Soft_Purpose_Bg3" xml:space="preserve"><value>Role-playing game; its later acts weigh on the processor.</value></data>
+  <data name="Soft_Purpose_Wukong" xml:space="preserve"><value>Action RPG; heavy on the graphics card.</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>Real-time rendering</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>Render engines</value></data>
   <data name="Soft_Category_Architecture" xml:space="preserve"><value>Architecture and CAD</value></data>

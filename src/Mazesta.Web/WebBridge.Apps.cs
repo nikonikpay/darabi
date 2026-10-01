@@ -26,11 +26,11 @@ public sealed partial class WebBridge
                         purpose = Loc.Get(a.PurposeKey), note = a.NoteKey is null ? null : Loc.Get(a.NoteKey), source = a.Source,
                         gpuNeed = a.Gpu.ToString(), level = v.Level?.ToString(), label = SoftwareCatalog.LevelName(a, v), next = v.Next?.ToString(), nextName = v.NextTier is { } nt ? TierName(nt) : null, missing = v.Missing.Select(ShortText),
                         @unchecked = (v.Unchecked ?? []).Select(x => Loc.Get("Soft_Unchecked_" + x)),
-                        suits = tier is null ? null : Loc.Get(a.Tiers.Count == 1 ? "Soft_Scale_Single" : tier.ScaleKey ?? $"Soft_Scale_{a.Category}_{tier.Kind}"),
+                        suits = tier is null ? null : Suits(a, tier),
                         tiers = a.Tiers.Select(t => new
                         {
                             kind = t.Kind.ToString(), name = TierName(t), ram = t.RamGb, vram = t.VramGb, cores = t.Cores, rt = t.RayTracing || a.Gpu == SoftGpu.RayTracing, gpu = t.Gpu, cpu = t.Cpu,
-                            suits = Loc.Get(t.ScaleKey ?? $"Soft_Scale_{a.Category}_{t.Kind}"), met = SoftwareCatalog.Lacks(a, t, pc).Count == 0,
+                            target = t.Target, suits = Suits(a, t), met = SoftwareCatalog.Lacks(a, t, pc).Count == 0,
                         }),
                     };
                 }),

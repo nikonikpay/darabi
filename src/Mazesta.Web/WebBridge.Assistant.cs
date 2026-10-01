@@ -365,10 +365,10 @@ public sealed partial class WebBridge
                     AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Kind == "Temperature", route.Part),
                     _ => AssistantReplies.Dns(results[0]),
                 };
-                // A program asked about is shown on the programs page as well, with its card marked (not once the reply was stopped).
+                // A program asked about is shown on the programs (or games) page as well, with its card marked (not once the reply was stopped).
                 if (route.App is { } app && route.Intent == AiIntent.Software && !ct.IsCancellationRequested)
                 {
-                    string args = JsonSerializer.Serialize(new { page = "apps", target = app.Id });
+                    string args = JsonSerializer.Serialize(new { page = app.Category == Core.Software.SoftCategory.Game ? "games" : "apps", target = app.Id });
                     var (r2, ok2) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), ct).ConfigureAwait(true);
                     reply.Tools.Add(new("open_page", args, r2, ok2));
                 }
