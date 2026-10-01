@@ -1847,10 +1847,100 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>Stopped; nothing was changed.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>Nothing was run. The tests this app has for that part (with their default length); how each one works is written step by step, with its formula, in the live log of its page while it runs:</value></data>
+  <data name="Assist_Drv_Gpu" xml:space="preserve"><value>{0}: driver {1} installed ({2}).</value></data>
+  <data name="Assist_Drv_Newer" xml:space="preserve"><value>Newer {0} from NVIDIA: {1} ({2}).</value></data>
+  <data name="Assist_Drv_Same" xml:space="preserve"><value>Newest {0} from NVIDIA: {1} ({2}); the installed one is not older.</value></data>
+  <data name="Assist_Drv_Problems" xml:space="preserve"><value>{0} device(s) without a working driver: {1}</value></data>
+  <data name="Assist_Drv_Page" xml:space="preserve"><value>The Drivers page is open: there you choose Game Ready or Studio and install it, and search Windows Update for the other drivers.</value></data>
+  <data name="Nav_Drivers" xml:space="preserve"><value>Drivers</value></data>
+  <data name="Workload_Busy_Drivers" xml:space="preserve"><value>A driver is being installed. Wait for it to end: a card is not measured while its driver changes.</value></data>
+  <data name="Drivers_Lede" xml:space="preserve"><value>The graphics card's driver against its maker's newest, the drivers Windows Update has for this computer, and the devices without a working driver. Nothing is downloaded or installed until you press its button.</value></data>
+  <data name="Drivers_Check" xml:space="preserve"><value>Check again</value></data>
+  <data name="Drivers_CheckedAt" xml:space="preserve"><value>Checked {0}</value></data>
+  <data name="Drivers_Checking" xml:space="preserve"><value>Checking…</value></data>
+  <data name="Drivers_NotChecked" xml:space="preserve"><value>Not checked yet.</value></data>
+  <data name="Drivers_Busy" xml:space="preserve"><value>A driver download or install is already running.</value></data>
+  <data name="Drivers_Gpu_Title" xml:space="preserve"><value>Graphics card driver</value></data>
+  <data name="Drivers_Gpu_Sub" xml:space="preserve"><value>From the card's maker</value></data>
+  <data name="Drivers_Card" xml:space="preserve"><value>Card</value></data>
+  <data name="Drivers_Installed" xml:space="preserve"><value>Installed</value></data>
+  <data name="Drivers_Dated" xml:space="preserve"><value>dated {0} ({1} days ago)</value></data>
+  <data name="Drivers_UnknownDevice" xml:space="preserve"><value>Unknown device</value></data>
+  <data name="Drivers_Suggested" xml:space="preserve"><value>Suggested</value></data>
+  <data name="Drivers_InstalledLine" xml:space="preserve"><value>Installed now</value></data>
+  <data name="Drivers_UpToDate" xml:space="preserve"><value>The installed driver is this one or newer.</value></data>
+  <data name="Drivers_Choose" xml:space="preserve"><value>Choose Game Ready or Studio</value></data>
+  <data name="Drivers_Nv_GameReady" xml:space="preserve"><value>Game Ready</value></data>
+  <data name="Drivers_Nv_Studio" xml:space="preserve"><value>Studio</value></data>
+  <data name="Drivers_Nv_Pro" xml:space="preserve"><value>NVIDIA RTX / Quadro driver</value></data>
+  <data name="Drivers_Nv_GameReady_What" xml:space="preserve"><value>Comes out with each big game, tuned for it first. For gaming.</value></data>
+  <data name="Drivers_Nv_Studio_What" xml:space="preserve"><value>Comes out less often, after testing with creative programs (rendering, 3D, editing). For work: fewer surprises. Same features as Game Ready.</value></data>
+  <data name="Drivers_Nv_Pro_What" xml:space="preserve"><value>The driver NVIDIA publishes for this professional card (the Game Ready / Studio choice is GeForce's).</value></data>
+  <data name="Drivers_Advice_Studio" xml:space="preserve"><value>Creative programs are installed ({0}) and no game launcher: Studio suits this computer.</value></data>
+  <data name="Drivers_Advice_Games" xml:space="preserve"><value>Game launchers are installed ({0}) and no creative program: Game Ready suits this computer.</value></data>
+  <data name="Drivers_Advice_Both" xml:space="preserve"><value>Both are installed: creative programs ({0}) and games ({1}). You choose: Studio if the work matters more, Game Ready if the games do.</value></data>
+  <data name="Drivers_Advice_None" xml:space="preserve"><value>No creative program or game launcher was found installed; Game Ready is NVIDIA's default for a GeForce card.</value></data>
+  <data name="Drivers_Nv_Install" xml:space="preserve"><value>Download and install {0}</value></data>
+  <data name="Drivers_Nv_Clean" xml:space="preserve"><value>Clean install (the driver's settings go back to their defaults)</value></data>
+  <data name="Drivers_Nv_Confirm" xml:space="preserve"><value>Download and install the NVIDIA {0} driver {1} ({2})?&#xA;&#xA;The screen goes black for a few seconds during the install; close games and programs that use the graphics card first. Windows may ask for a restart afterwards.</value></data>
+  <data name="Drivers_Nv_Note" xml:space="preserve"><value>From NVIDIA's own site; the file is run only if Windows trusts its signature and it is signed by NVIDIA Corporation. The installer runs silently; the app never restarts the computer by itself.</value></data>
+  <data name="Drivers_Nv_NotListed" xml:space="preserve"><value>NVIDIA's driver list has no card named "{0}"; look it up on NVIDIA's site.</value></data>
+  <data name="Drivers_Nv_Offline" xml:space="preserve"><value>NVIDIA's driver site could not be reached: {0}</value></data>
+  <data name="Drivers_Nv_NoRelease" xml:space="preserve"><value>NVIDIA lists no driver of this line for this card.</value></data>
+  <data name="Drivers_Nv_BadSignature" xml:space="preserve"><value>The downloaded file was deleted and not run: {0}</value></data>
+  <data name="Drivers_Nv_ExitCode" xml:space="preserve"><value>NVIDIA's installer ended with code {0}: the driver may not be installed. A restart may be needed; check again after it.</value></data>
+  <data name="Drivers_nvidia_Open" xml:space="preserve"><value>NVIDIA's driver site</value></data>
+  <data name="Drivers_amd_Open" xml:space="preserve"><value>AMD's driver page</value></data>
+  <data name="Drivers_intel_Open" xml:space="preserve"><value>Intel's driver tool</value></data>
+  <data name="Drivers_amd_Note" xml:space="preserve"><value>AMD has no public way to ask for the newest driver; its page (or the AMD Software app on this computer) finds it. Windows Update below may also have one.</value></data>
+  <data name="Drivers_intel_Note" xml:space="preserve"><value>Intel's Driver &amp; Support Assistant finds this card's newest driver; Windows Update below may also have one.</value></data>
+  <data name="Drivers_Job_Downloading" xml:space="preserve"><value>Downloading {0}… {1}%</value></data>
+  <data name="Drivers_Job_Verifying" xml:space="preserve"><value>Checking the file's signature…</value></data>
+  <data name="Drivers_Job_Installing" xml:space="preserve"><value>Installing {0}… this takes a few minutes; the screen may go black for a moment.</value></data>
+  <data name="Drivers_Job_Done" xml:space="preserve"><value>Driver {0} is installed. If Windows asks, restart.</value></data>
+  <data name="Drivers_Wu_Title" xml:space="preserve"><value>Drivers from Windows Update</value></data>
+  <data name="Drivers_Wu_Sub" xml:space="preserve"><value>Microsoft's signed drivers for this computer</value></data>
+  <data name="Drivers_Wu_Search" xml:space="preserve"><value>Search</value></data>
+  <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>Search again</value></data>
+  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>Asking Windows Update… this can take a minute or two.</value></data>
+  <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} driver(s) not installed yet ({1}). Tick the ones to install.</value></data>
+  <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update has no new driver for this computer ({0}).</value></data>
+  <data name="Drivers_Wu_Install" xml:space="preserve"><value>Install the ticked ({0})</value></data>
+  <data name="Drivers_Wu_Confirm" xml:space="preserve"><value>Download and install {0} driver(s) from Windows Update? A device may stop for a moment while its driver changes.</value></data>
+  <data name="Drivers_Wu_Installing" xml:space="preserve"><value>Installing {0} of {1}: {2}</value></data>
+  <data name="Drivers_Wu_Ok" xml:space="preserve"><value>Installed</value></data>
+  <data name="Drivers_Wu_Bad" xml:space="preserve"><value>Not installed</value></data>
+  <data name="Drivers_Wu_Licence" xml:space="preserve"><value>Its licence must be accepted in Windows Update first.</value></data>
+  <data name="Drivers_Wu_Open" xml:space="preserve"><value>Optional updates in Windows</value></data>
+  <data name="Drivers_Wu_Note" xml:space="preserve"><value>Windows Update's drivers are the ones Microsoft has tested for this hardware; they are often older than the maker's newest, but rarely cause trouble. The graphics card's is better taken from the box above.</value></data>
+  <data name="Drivers_Wu_Failed" xml:space="preserve"><value>Windows Update did not answer ({0}): {1}</value></data>
+  <data name="Drivers_Reboot" xml:space="preserve"><value>Windows needs a restart to finish installing.</value></data>
+  <data name="Drivers_Problems_Title" xml:space="preserve"><value>Devices without a working driver</value></data>
+  <data name="Drivers_Problems_Sub" xml:space="preserve"><value>As Device Manager shows them</value></data>
+  <data name="Drivers_Problems_None" xml:space="preserve"><value>Every device has a working driver.</value></data>
+  <data name="Drivers_Code_1" xml:space="preserve"><value>Not configured correctly (code 1)</value></data>
+  <data name="Drivers_Code_3" xml:space="preserve"><value>The driver may be damaged (code 3)</value></data>
+  <data name="Drivers_Code_10" xml:space="preserve"><value>Cannot start (code 10)</value></data>
+  <data name="Drivers_Code_12" xml:space="preserve"><value>Not enough free resources (code 12)</value></data>
+  <data name="Drivers_Code_14" xml:space="preserve"><value>Needs a restart (code 14)</value></data>
+  <data name="Drivers_Code_18" xml:space="preserve"><value>The driver must be reinstalled (code 18)</value></data>
+  <data name="Drivers_Code_19" xml:space="preserve"><value>Its registry entry is damaged (code 19)</value></data>
+  <data name="Drivers_Code_21" xml:space="preserve"><value>Being removed (code 21)</value></data>
+  <data name="Drivers_Code_22" xml:space="preserve"><value>Disabled (code 22)</value></data>
+  <data name="Drivers_Code_24" xml:space="preserve"><value>Not present or not working (code 24)</value></data>
+  <data name="Drivers_Code_28" xml:space="preserve"><value>No driver installed (code 28)</value></data>
+  <data name="Drivers_Code_31" xml:space="preserve"><value>The driver did not load (code 31)</value></data>
+  <data name="Drivers_Code_32" xml:space="preserve"><value>Its driver service is disabled (code 32)</value></data>
+  <data name="Drivers_Code_37" xml:space="preserve"><value>The driver failed to start (code 37)</value></data>
+  <data name="Drivers_Code_39" xml:space="preserve"><value>The driver is damaged or missing (code 39)</value></data>
+  <data name="Drivers_Code_43" xml:space="preserve"><value>Windows stopped it after it reported a problem (code 43)</value></data>
+  <data name="Drivers_Code_52" xml:space="preserve"><value>Its driver's signature is not trusted (code 52)</value></data>
+  <data name="Drivers_Code_Other" xml:space="preserve"><value>Problem code {0}</value></data>
+  <data name="Assist_Tool_check_drivers" xml:space="preserve"><value>Drivers</value></data>
   <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>Warn when the processor passes (°C)</value></data>
   <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>Warn when the graphics card passes (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>A warning temperature must be a whole number from 60 to 105.</value></data>
-  <data name="Assist_Help" xml:space="preserve"><value>What I can do:&#xA;- This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).&#xA;- Tests and benchmarks: run the processor, RAM, drive, network and graphics card tests and the benchmarks (I ask on the page before anything starts); find the fastest DNS.&#xA;- Professional programs: whether Lumion, V-Ray, Revit and others run on this computer, and at which level.&#xA;- This app: open any page and point at the control for a task; turn the overlay and the tray monitor on or off, and set the temperature the tray warns at ("tell me when the CPU passes 85").&#xA;- Windows: open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer, BitLocker and the sound and display settings; give checked commands (sfc, DISM, chkdsk, ipconfig, manage-bde…) with what they do and their warning, and run the ones that only read after you agree.&#xA;What I do not do: run any other command in Windows, change files, or install programs.</value></data>
+  <data name="Assist_Help" xml:space="preserve"><value>What I can do:&#xA;- This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).&#xA;- Tests and benchmarks: run the processor, RAM, drive, network and graphics card tests and the benchmarks (I ask on the page before anything starts); find the fastest DNS.&#xA;- Professional programs: whether Lumion, V-Ray, Revit and others run on this computer, and at which level.&#xA;- This app: open any page and point at the control for a task; turn the overlay and the tray monitor on or off, and set the temperature the tray warns at ("tell me when the CPU passes 85").&#xA;- Windows: open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer, BitLocker and the sound and display settings; give checked commands (sfc, DISM, chkdsk, ipconfig, manage-bde…) with what they do and their warning, and run the ones that only read after you agree.&#xA;- Drivers: whether the graphics card's driver is the newest (for NVIDIA both Game Ready and Studio, and which suits the installed programs) and which devices have no working driver; installing is on the Drivers page, with a button and a confirmation.&#xA;What I do not do: run any other command in Windows, change files, or install programs.</value></data>
   <data name="Assist_Tray_On" xml:space="preserve"><value>The tray monitor is on: by the Windows clock it checks the temperatures every {0} minutes and the drives' health every {1} minutes, and tells a problem with a Windows notification; it also starts with Windows. It warns above {2} °C for the processor and {3} °C for the graphics card.</value></data>
   <data name="Assist_Tray_Off" xml:space="preserve"><value>The tray monitor is off and no longer starts with Windows.</value></data>
   <data name="Assist_Tray_Failed" xml:space="preserve"><value>The tray monitor could not be changed: {0}</value></data>

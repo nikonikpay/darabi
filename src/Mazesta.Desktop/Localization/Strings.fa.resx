@@ -1847,10 +1847,100 @@
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>متوقف شد؛ چیزی تغییر نکرد.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>چیزی اجرا نشد. تست‌هایی که این برنامه برای این قطعه دارد (با مدت پیش‌فرض)؛ روش هر کدام هنگام اجرا در گزارش زندهٔ همان صفحه، قدم‌به‌قدم و با فرمولش نوشته می‌شود:</value></data>
+  <data name="Assist_Drv_Gpu" xml:space="preserve"><value>{0}: درایور {1} نصب است (تاریخ {2}).</value></data>
+  <data name="Assist_Drv_Newer" xml:space="preserve"><value>{0} جدیدتر از NVIDIA: نسخهٔ {1} ({2}).</value></data>
+  <data name="Assist_Drv_Same" xml:space="preserve"><value>جدیدترین {0} از NVIDIA: نسخهٔ {1} ({2})؛ نسخهٔ نصب‌شده قدیمی‌تر از آن نیست.</value></data>
+  <data name="Assist_Drv_Problems" xml:space="preserve"><value>{0} دستگاه درایور سالم ندارد: {1}</value></data>
+  <data name="Assist_Drv_Page" xml:space="preserve"><value>صفحهٔ «درایورها» باز است: آنجا Game Ready یا Studio را انتخاب و نصب می‌کنید و برای بقیهٔ درایورها در Windows Update جستجو می‌کنید.</value></data>
+  <data name="Nav_Drivers" xml:space="preserve"><value>درایورها</value></data>
+  <data name="Workload_Busy_Drivers" xml:space="preserve"><value>درایوری در حال نصب است. صبر کنید تمام شود؛ کارت گرافیک وقتی درایورش در حال عوض شدن است اندازه‌گیری نمی‌شود.</value></data>
+  <data name="Drivers_Lede" xml:space="preserve"><value>درایور کارت گرافیک در برابر جدیدترین نسخهٔ سازنده، درایورهایی که Windows Update برای این سیستم دارد، و دستگاه‌هایی که درایور سالم ندارند. تا دکمه‌اش را نزنید چیزی دانلود یا نصب نمی‌شود.</value></data>
+  <data name="Drivers_Check" xml:space="preserve"><value>بررسی دوباره</value></data>
+  <data name="Drivers_CheckedAt" xml:space="preserve"><value>بررسی: {0}</value></data>
+  <data name="Drivers_Checking" xml:space="preserve"><value>در حال بررسی…</value></data>
+  <data name="Drivers_NotChecked" xml:space="preserve"><value>هنوز بررسی نشده.</value></data>
+  <data name="Drivers_Busy" xml:space="preserve"><value>یک دانلود یا نصب درایور در حال انجام است.</value></data>
+  <data name="Drivers_Gpu_Title" xml:space="preserve"><value>درایور کارت گرافیک</value></data>
+  <data name="Drivers_Gpu_Sub" xml:space="preserve"><value>از سازندهٔ کارت</value></data>
+  <data name="Drivers_Card" xml:space="preserve"><value>کارت</value></data>
+  <data name="Drivers_Installed" xml:space="preserve"><value>نصب‌شده</value></data>
+  <data name="Drivers_Dated" xml:space="preserve"><value>تاریخ {0} ({1} روز پیش)</value></data>
+  <data name="Drivers_UnknownDevice" xml:space="preserve"><value>دستگاه ناشناخته</value></data>
+  <data name="Drivers_Suggested" xml:space="preserve"><value>پیشنهادی</value></data>
+  <data name="Drivers_InstalledLine" xml:space="preserve"><value>نصب‌شدهٔ فعلی</value></data>
+  <data name="Drivers_UpToDate" xml:space="preserve"><value>درایور نصب‌شده همین نسخه یا جدیدتر است.</value></data>
+  <data name="Drivers_Choose" xml:space="preserve"><value>Game Ready یا Studio را انتخاب کنید</value></data>
+  <data name="Drivers_Nv_GameReady" xml:space="preserve"><value>Game Ready</value></data>
+  <data name="Drivers_Nv_Studio" xml:space="preserve"><value>Studio</value></data>
+  <data name="Drivers_Nv_Pro" xml:space="preserve"><value>درایور NVIDIA RTX / Quadro</value></data>
+  <data name="Drivers_Nv_GameReady_What" xml:space="preserve"><value>هم‌زمان با هر بازی بزرگ منتشر می‌شود و اول برای آن بهینه شده است. مناسب بازی.</value></data>
+  <data name="Drivers_Nv_Studio_What" xml:space="preserve"><value>کمتر منتشر می‌شود و پیش از انتشار با برنامه‌های تخصصی (رندر، سه‌بعدی، تدوین) آزموده شده است. مناسب کار: غافلگیری کمتر. قابلیت‌هایش با Game Ready یکی است.</value></data>
+  <data name="Drivers_Nv_Pro_What" xml:space="preserve"><value>درایوری که NVIDIA برای این کارت حرفه‌ای منتشر می‌کند (انتخاب Game Ready یا Studio مخصوص GeForce است).</value></data>
+  <data name="Drivers_Advice_Studio" xml:space="preserve"><value>برنامه‌های تخصصی نصب است ({0}) و لانچر بازی نیست: Studio برای این سیستم مناسب‌تر است.</value></data>
+  <data name="Drivers_Advice_Games" xml:space="preserve"><value>لانچر بازی نصب است ({0}) و برنامهٔ تخصصی نیست: Game Ready برای این سیستم مناسب‌تر است.</value></data>
+  <data name="Drivers_Advice_Both" xml:space="preserve"><value>هر دو نصب است: برنامه‌های تخصصی ({0}) و بازی ({1}). انتخاب با شماست: اگر کار مهم‌تر است Studio، اگر بازی مهم‌تر است Game Ready.</value></data>
+  <data name="Drivers_Advice_None" xml:space="preserve"><value>برنامهٔ تخصصی یا لانچر بازی نصب‌شده‌ای پیدا نشد؛ پیش‌فرض خود NVIDIA برای کارت GeForce، Game Ready است.</value></data>
+  <data name="Drivers_Nv_Install" xml:space="preserve"><value>دانلود و نصب {0}</value></data>
+  <data name="Drivers_Nv_Clean" xml:space="preserve"><value>نصب تمیز (تنظیمات درایور به پیش‌فرض برمی‌گردد)</value></data>
+  <data name="Drivers_Nv_Confirm" xml:space="preserve"><value>درایور NVIDIA {0} نسخهٔ {1} ({2}) دانلود و نصب شود؟&#xA;&#xA;حین نصب صفحه چند ثانیه سیاه می‌شود؛ قبلش بازی‌ها و برنامه‌هایی را که از کارت گرافیک استفاده می‌کنند ببندید. ممکن است بعد از آن ویندوز ری‌استارت بخواهد.</value></data>
+  <data name="Drivers_Nv_Note" xml:space="preserve"><value>از سایت خود NVIDIA؛ فایل فقط وقتی اجرا می‌شود که ویندوز امضای آن را معتبر بداند و امضاکننده NVIDIA Corporation باشد. نصب بی‌صدا انجام می‌شود و برنامه هیچ‌وقت خودش سیستم را ری‌استارت نمی‌کند.</value></data>
+  <data name="Drivers_Nv_NotListed" xml:space="preserve"><value>در فهرست درایورهای NVIDIA کارتی با نام «{0}» نیست؛ از سایت NVIDIA پیدایش کنید.</value></data>
+  <data name="Drivers_Nv_Offline" xml:space="preserve"><value>به سایت درایور NVIDIA دسترسی نشد: {0}</value></data>
+  <data name="Drivers_Nv_NoRelease" xml:space="preserve"><value>NVIDIA برای این کارت درایوری از این نوع ندارد.</value></data>
+  <data name="Drivers_Nv_BadSignature" xml:space="preserve"><value>فایل دانلودشده پاک شد و اجرا نشد: {0}</value></data>
+  <data name="Drivers_Nv_ExitCode" xml:space="preserve"><value>نصب‌کنندهٔ NVIDIA با کد {0} تمام شد: ممکن است درایور نصب نشده باشد. شاید ری‌استارت لازم باشد؛ بعد از آن دوباره بررسی کنید.</value></data>
+  <data name="Drivers_nvidia_Open" xml:space="preserve"><value>سایت درایور NVIDIA</value></data>
+  <data name="Drivers_amd_Open" xml:space="preserve"><value>صفحهٔ درایور AMD</value></data>
+  <data name="Drivers_intel_Open" xml:space="preserve"><value>ابزار درایور Intel</value></data>
+  <data name="Drivers_amd_Note" xml:space="preserve"><value>AMD راه عمومی برای پرسیدن جدیدترین درایور ندارد؛ صفحهٔ AMD (یا برنامهٔ AMD Software روی همین سیستم) آن را پیدا می‌کند. Windows Update پایین هم ممکن است درایوری داشته باشد.</value></data>
+  <data name="Drivers_intel_Note" xml:space="preserve"><value>ابزار Driver &amp; Support Assistant اینتل جدیدترین درایور این کارت را پیدا می‌کند؛ Windows Update پایین هم ممکن است درایوری داشته باشد.</value></data>
+  <data name="Drivers_Job_Downloading" xml:space="preserve"><value>در حال دانلود {0}… {1}٪</value></data>
+  <data name="Drivers_Job_Verifying" xml:space="preserve"><value>در حال بررسی امضای فایل…</value></data>
+  <data name="Drivers_Job_Installing" xml:space="preserve"><value>در حال نصب {0}… چند دقیقه طول می‌کشد؛ ممکن است صفحه لحظه‌ای سیاه شود.</value></data>
+  <data name="Drivers_Job_Done" xml:space="preserve"><value>درایور {0} نصب شد. اگر ویندوز خواست، ری‌استارت کنید.</value></data>
+  <data name="Drivers_Wu_Title" xml:space="preserve"><value>درایورهای Windows Update</value></data>
+  <data name="Drivers_Wu_Sub" xml:space="preserve"><value>درایورهای امضاشدهٔ مایکروسافت برای این سیستم</value></data>
+  <data name="Drivers_Wu_Search" xml:space="preserve"><value>جستجو</value></data>
+  <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>جستجوی دوباره</value></data>
+  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>در حال پرسیدن از Windows Update… ممکن است یکی دو دقیقه طول بکشد.</value></data>
+  <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} درایور هنوز نصب نشده ({1}). موردهایی را که می‌خواهید نصب شوند تیک بزنید.</value></data>
+  <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update درایور جدیدی برای این سیستم ندارد ({0}).</value></data>
+  <data name="Drivers_Wu_Install" xml:space="preserve"><value>نصب موارد تیک‌خورده ({0})</value></data>
+  <data name="Drivers_Wu_Confirm" xml:space="preserve"><value>{0} درایور از Windows Update دانلود و نصب شود؟ ممکن است هنگام عوض شدن درایور، دستگاه لحظه‌ای از کار بیفتد.</value></data>
+  <data name="Drivers_Wu_Installing" xml:space="preserve"><value>در حال نصب {0} از {1}: {2}</value></data>
+  <data name="Drivers_Wu_Ok" xml:space="preserve"><value>نصب شد</value></data>
+  <data name="Drivers_Wu_Bad" xml:space="preserve"><value>نصب نشد</value></data>
+  <data name="Drivers_Wu_Licence" xml:space="preserve"><value>اول باید مجوزش را در Windows Update بپذیرید.</value></data>
+  <data name="Drivers_Wu_Open" xml:space="preserve"><value>به‌روزرسانی‌های اختیاری ویندوز</value></data>
+  <data name="Drivers_Wu_Note" xml:space="preserve"><value>درایورهای Windows Update را مایکروسافت برای همین سخت‌افزار آزموده است؛ اغلب از جدیدترین نسخهٔ سازنده قدیمی‌ترند ولی کمتر مشکل می‌سازند. درایور کارت گرافیک را بهتر است از بخش بالا بگیرید.</value></data>
+  <data name="Drivers_Wu_Failed" xml:space="preserve"><value>Windows Update جواب نداد ({0}): {1}</value></data>
+  <data name="Drivers_Reboot" xml:space="preserve"><value>برای کامل شدن نصب، ویندوز باید ری‌استارت شود.</value></data>
+  <data name="Drivers_Problems_Title" xml:space="preserve"><value>دستگاه‌های بدون درایور سالم</value></data>
+  <data name="Drivers_Problems_Sub" xml:space="preserve"><value>همان‌طور که Device Manager نشان می‌دهد</value></data>
+  <data name="Drivers_Problems_None" xml:space="preserve"><value>همهٔ دستگاه‌ها درایور سالم دارند.</value></data>
+  <data name="Drivers_Code_1" xml:space="preserve"><value>درست پیکربندی نشده (کد ۱)</value></data>
+  <data name="Drivers_Code_3" xml:space="preserve"><value>درایور ممکن است خراب باشد (کد ۳)</value></data>
+  <data name="Drivers_Code_10" xml:space="preserve"><value>راه‌اندازی نمی‌شود (کد ۱۰)</value></data>
+  <data name="Drivers_Code_12" xml:space="preserve"><value>منابع آزاد کافی ندارد (کد ۱۲)</value></data>
+  <data name="Drivers_Code_14" xml:space="preserve"><value>ری‌استارت لازم دارد (کد ۱۴)</value></data>
+  <data name="Drivers_Code_18" xml:space="preserve"><value>درایور باید دوباره نصب شود (کد ۱۸)</value></data>
+  <data name="Drivers_Code_19" xml:space="preserve"><value>اطلاعات رجیستری‌اش خراب است (کد ۱۹)</value></data>
+  <data name="Drivers_Code_21" xml:space="preserve"><value>در حال حذف (کد ۲۱)</value></data>
+  <data name="Drivers_Code_22" xml:space="preserve"><value>غیرفعال شده (کد ۲۲)</value></data>
+  <data name="Drivers_Code_24" xml:space="preserve"><value>وجود ندارد یا کار نمی‌کند (کد ۲۴)</value></data>
+  <data name="Drivers_Code_28" xml:space="preserve"><value>درایور نصب نشده (کد ۲۸)</value></data>
+  <data name="Drivers_Code_31" xml:space="preserve"><value>درایور بارگذاری نشد (کد ۳۱)</value></data>
+  <data name="Drivers_Code_32" xml:space="preserve"><value>سرویس درایورش غیرفعال است (کد ۳۲)</value></data>
+  <data name="Drivers_Code_37" xml:space="preserve"><value>درایور شروع نشد (کد ۳۷)</value></data>
+  <data name="Drivers_Code_39" xml:space="preserve"><value>درایور خراب است یا وجود ندارد (کد ۳۹)</value></data>
+  <data name="Drivers_Code_43" xml:space="preserve"><value>ویندوز به‌خاطر گزارش مشکل متوقفش کرد (کد ۴۳)</value></data>
+  <data name="Drivers_Code_52" xml:space="preserve"><value>امضای درایورش معتبر نیست (کد ۵۲)</value></data>
+  <data name="Drivers_Code_Other" xml:space="preserve"><value>کد مشکل {0}</value></data>
+  <data name="Assist_Tool_check_drivers" xml:space="preserve"><value>درایورها</value></data>
   <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>هشدار دمای پردازنده از (°C)</value></data>
   <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>هشدار دمای کارت گرافیک از (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>دمای هشدار باید عددی صحیح از ۶۰ تا ۱۰۵ باشد.</value></data>
-  <data name="Assist_Help" xml:space="preserve"><value>این کارها را می‌توانم انجام بدهم:&#xA;- این سیستم: مشخصات قطعه‌ها، دما و سنسورهای همین لحظه، تاریخچهٔ بنچمارک‌ها و خلاصهٔ گزارش‌های ذخیره‌شده (و فایل PDF آن‌ها).&#xA;- تست و بنچمارک: اجرای تست پردازنده، رم، هارد، شبکه و کارت گرافیک و بنچمارک‌ها (پیش از شروع، روی صفحه تأیید می‌گیرم)؛ پیدا کردن سریع‌ترین DNS.&#xA;- برنامه‌های تخصصی: این‌که Lumion، V-Ray، Revit و بقیه روی این سیستم در چه سطحی اجرا می‌شوند.&#xA;- همین برنامه: باز کردن هر صفحه و نشان دادن دکمهٔ هر کار؛ روشن و خاموش کردن اورلی و پایشگر Tray و تنظیم دمای هشدار Tray («وقتی دمای CPU از ۸۵ گذشت خبرم کن»).&#xA;- ویندوز: باز کردن پنجره‌هایی مثل This PC، Device Manager، Task Manager، Disk Management، Services، Event Viewer، BitLocker و تنظیمات صدا و نمایش؛ دادن دستورهای بررسی‌شده (sfc، DISM، chkdsk، ipconfig، manage-bde و…) با توضیح و هشدارشان، و اجرای دستورهایی که فقط اطلاعات می‌خوانند، با تأیید شما.&#xA;کارهایی که نمی‌کنم: اجرای هر دستور دیگری در ویندوز، تغییر فایل‌ها و نصب برنامه.</value></data>
+  <data name="Assist_Help" xml:space="preserve"><value>این کارها را می‌توانم انجام بدهم:&#xA;- این سیستم: مشخصات قطعه‌ها، دما و سنسورهای همین لحظه، تاریخچهٔ بنچمارک‌ها و خلاصهٔ گزارش‌های ذخیره‌شده (و فایل PDF آن‌ها).&#xA;- تست و بنچمارک: اجرای تست پردازنده، رم، هارد، شبکه و کارت گرافیک و بنچمارک‌ها (پیش از شروع، روی صفحه تأیید می‌گیرم)؛ پیدا کردن سریع‌ترین DNS.&#xA;- برنامه‌های تخصصی: این‌که Lumion، V-Ray، Revit و بقیه روی این سیستم در چه سطحی اجرا می‌شوند.&#xA;- همین برنامه: باز کردن هر صفحه و نشان دادن دکمهٔ هر کار؛ روشن و خاموش کردن اورلی و پایشگر Tray و تنظیم دمای هشدار Tray («وقتی دمای CPU از ۸۵ گذشت خبرم کن»).&#xA;- ویندوز: باز کردن پنجره‌هایی مثل This PC، Device Manager، Task Manager، Disk Management، Services، Event Viewer، BitLocker و تنظیمات صدا و نمایش؛ دادن دستورهای بررسی‌شده (sfc، DISM، chkdsk، ipconfig، manage-bde و…) با توضیح و هشدارشان، و اجرای دستورهایی که فقط اطلاعات می‌خوانند، با تأیید شما.&#xA;- درایورها: این‌که درایور کارت گرافیک جدیدترین هست یا نه (برای NVIDIA هر دو نسخهٔ Game Ready و Studio و این‌که کدام به برنامه‌های نصب‌شده می‌خورد) و کدام دستگاه‌ها درایور سالم ندارند؛ نصب در صفحهٔ «درایورها» با یک دکمه و تأیید انجام می‌شود.&#xA;کارهایی که نمی‌کنم: اجرای هر دستور دیگری در ویندوز، تغییر فایل‌ها و نصب برنامه.</value></data>
   <data name="Assist_Tray_On" xml:space="preserve"><value>پایشگر Tray روشن شد: کنار ساعت ویندوز هر {0} دقیقه دماها و هر {1} دقیقه سلامت درایوها را بررسی می‌کند و مشکل را با اعلان ویندوز خبر می‌دهد؛ با روشن شدن ویندوز هم اجرا می‌شود. دمای هشدار: پردازنده بالای {2}°C و کارت گرافیک بالای {3}°C.</value></data>
   <data name="Assist_Tray_Off" xml:space="preserve"><value>پایشگر Tray خاموش شد و دیگر با روشن شدن ویندوز اجرا نمی‌شود.</value></data>
   <data name="Assist_Tray_Failed" xml:space="preserve"><value>تغییر پایشگر Tray ممکن نشد: {0}</value></data>

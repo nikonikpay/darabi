@@ -147,4 +147,11 @@ public class AppGuideTests
         Assert.Equal(["flushdns"], R("دستور پاک کردن dns cache چیه").Ids);
         Assert.Equal(AiIntent.WinCommandUnknown, R("یه دستور بده که ویندوز رو سریعتر کنه").Intent);
     }
+    [Fact] public void A_driver_is_not_a_drive()
+    {
+        Assert.Equal(AiIntent.Drivers, R("درایورهای سیستمم آپدیت لازم دارن؟").Intent);
+        Assert.Equal(AiIntent.Drivers, R("درایور کارت گرافیکم جدیده؟").Intent);
+        Assert.Equal("drivers", R("صفحه درایورها رو باز کن").Place?.Page);
+        Assert.Equal(AiIntent.Specs, R("درایوهام چند گیگ هستن؟").Intent);
+    }
 }

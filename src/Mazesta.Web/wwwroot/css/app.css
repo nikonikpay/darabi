@@ -1297,3 +1297,18 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .as-file { display: flex; align-items: center; gap: 8px; }
 .as-file svg { width: 16px; height: 16px; flex: none; }
 .as-file .grow { flex: 1; }
+
+/* Drivers: the two NVIDIA lines side by side as choices, the lists of Windows Update's drivers and of the devices without one. */
+.drv-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 10px 0; }
+.drv-line { position: relative; display: grid; gap: 4px; padding: 10px 12px; background: var(--well); border-radius: var(--r-panel); border: 1px solid var(--rule); cursor: pointer; transition: border-color var(--fast), background var(--fast); }
+.drv-line.on { border-color: color-mix(in oklab, var(--hue) 60%, transparent); background: color-mix(in oklab, var(--hue) 8%, var(--well)); }
+.drv-line input { position: absolute; opacity: 0; pointer-events: none; }
+.drv-line b { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.drv-line small { color: var(--paper-3); font-size: 12px; line-height: 1.6; }
+.drv-line .drv-ok { color: var(--pass); }
+.drv-advice { display: flex; gap: 8px; align-items: flex-start; line-height: 1.7; margin: 8px 0 0; }
+.drv-clean { display: inline-flex; gap: 6px; align-items: center; }
+.drv-list { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
+.drv-list li { display: grid; gap: 2px; padding: 7px 10px; background: var(--well); border-radius: var(--r-well); }
+.drv-list li label { display: flex; gap: 8px; align-items: center; }
+.drv-list li .pill { justify-self: start; }

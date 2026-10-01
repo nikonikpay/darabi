@@ -17,6 +17,37 @@ internal static class AssistantReplies
     private static string N(double v) => v.ToString(v % 1 == 0 ? "0" : "0.#", Inv);
     private static string Gb(double? v) => v is { } x ? N(x) + " GB" : "—";
 
+    /// <summary>The drivers as the drivers page found them: the card's driver against NVIDIA's newest of each line and the suggested line, and the
+    /// devices without a working driver. Installing is the page's (a button and a confirmation).</summary>
+    public static string Drivers(string json)
+    {
+        using var d = JsonDocument.Parse(json); var r = d.RootElement; var lines = new List<string>();
+        if (S(r, "error") is { } err) return Loc.Format("Assist_FileFailed", err);
+        foreach (var g in A(r, "gpus")) lines.Add(Loc.Format("Assist_Drv_Gpu", T(g, "name"), T(g, "version"), S(g, "date") ?? "—"));
+        if (r.TryGetProperty("nvidia", out var nv) && nv.ValueKind == JsonValueKind.Object)
+        {
+            if (S(nv, "error") is { } ne) lines.Add(ne);
+            else
+            {
+                string? Line(string key, string newerKey, string name) => nv.TryGetProperty(key, out var x) && x.ValueKind == JsonValueKind.Object
+                    ? Loc.Format(nv.TryGetProperty(newerKey, out var nw) && nw.ValueKind == JsonValueKind.True ? "Assist_Drv_Newer" : "Assist_Drv_Same", name, T(x, "version"), S(x, "date") ?? "—") : null;
+                bool geforce = nv.TryGetProperty("geforce", out var gf) && gf.ValueKind == JsonValueKind.True;
+                if (Line("gameReady", "newerGameReady", Loc.Get(geforce ? "Drivers_Nv_GameReady" : "Drivers_Nv_Pro")) is { } a) lines.Add(a);
+                if (Line("studio", "newerStudio", Loc.Get("Drivers_Nv_Studio")) is { } b) lines.Add(b);
+                if (geforce && r.TryGetProperty("advice", out var ad) && ad.ValueKind == JsonValueKind.Object)
+                {
+                    var creative = A(ad, "creative").Select(x => x.GetString()).Take(4).ToList(); var games = A(ad, "games").Select(x => x.GetString()).Take(4).ToList();
+                    lines.Add(creative.Count > 0 && games.Count > 0 ? Loc.Format("Drivers_Advice_Both", string.Join("، ", creative), string.Join("، ", games))
+                        : creative.Count > 0 ? Loc.Format("Drivers_Advice_Studio", string.Join("، ", creative)) : games.Count > 0 ? Loc.Format("Drivers_Advice_Games", string.Join("، ", games)) : Loc.Get("Drivers_Advice_None"));
+                }
+            }
+        }
+        int problems = A(r, "problems").Count();
+        lines.Add(problems == 0 ? Loc.Get("Drivers_Problems_None") : Loc.Format("Assist_Drv_Problems", problems, string.Join("، ", A(r, "problems").Take(4).Select(p => T(p, "name")))));
+        lines.Add(Loc.Get("Assist_Drv_Page"));
+        return string.Join("\n", lines);
+    }
+
     public static string Specs(string part, string json)
     {
         using var d = JsonDocument.Parse(json); var r = d.RootElement; var lines = new List<string>();

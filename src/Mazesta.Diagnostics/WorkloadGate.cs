@@ -1,11 +1,11 @@
 namespace Mazesta.Diagnostics;
 
-public enum Workload { Tests, Benchmark, Tuning }
+public enum Workload { Tests, Benchmark, Tuning, Drivers }
 
 /// <summary>A test queue, a benchmark and the automatic GPU tuning each load the machine to its limit and each measures it. Two at once would
 /// stress each other and measure each other, so a stability result or a speed record made that way means nothing. All three take this one gate
 /// before they start and refuse to start while another holds it. The combined CPU+GPU power test is one test inside the queue, not two
-/// activities, so it is unaffected.</summary>
+/// activities, so it is unaffected. A driver install takes it too: nothing measures a card while its driver changes.</summary>
 public sealed class WorkloadGate
 {
     private readonly object _lock = new();

@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -76,6 +76,8 @@ public static class AppGuide
         T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null, "hosts", "هاست", "فایل هاست"),
         T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null, "پاکسازی دیسک", "پاک سازی دیسک", "disk cleanup"),
         P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable", "ترفند", "ترفندها", "ترفند ویندوز", "تنظیمات ویندوز", "بهینه سازی ویندوز", "tweaks"),
+        P("drivers", "Nav_Drivers", "drivers: the graphics card's driver against NVIDIA's newest (Game Ready or Studio, suggested from the installed programs), the drivers Windows Update offers, and the devices without a working driver; download and install each with a button",
+            "درایور", "درایورها", "درایور ها", "اپدیت درایور", "آپدیت درایور", "به روزرسانی درایور", "driver", "drivers", "game ready", "studio driver"),
         P("updates", "Nav_Updates", "Windows Update: default, recommended (deferred) or off", "اپدیت ویندوز", "آپدیت ویندوز", "به روزرسانی ویندوز", "بروزرسانی ویندوز", "windows update"),
         P("reports", "Nav_Reports", "saved test and benchmark reports: summary, PDF, HTML, before/after comparison", "گزارش", "گزارشها", "گزارش ها", "ریپورت", "reports", "report"),
         T("reports", "compare", "Reports_Compare", "compare two ticked reports, before and after", null, "مقایسه گزارش", "مقایسه قبل و بعد", "compare"),
@@ -223,6 +225,9 @@ public static class AppGuide
             bool trayOff = Any(s, OffWords) || not && !Any(s, OnWords);
             if (trayOff || Any(s, OnWords) || doIt) return new(AiIntent.Tray, On: !trayOff);
         }
+
+        // Drivers ("درایور" also starts with "درایو", a drive): the app checks them and answers; the page is opened to install.
+        if ((Has(s, "درایور") || Has(s, "driver") || Has(s, "گیم ردی") || Has(s, "game ready")) && !Any(s, CommandWords) && !(go || page)) return new(AiIntent.Drivers);
 
         // A Windows command: given from the app's checked list; one that is not there is the model's, and is said to be unchecked.
         if (Any(s, CommandWords))

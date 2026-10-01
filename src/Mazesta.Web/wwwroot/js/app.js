@@ -27,6 +27,7 @@ export const PAGES = [
   { id: "tools", key: "Nav_WindowsTools", load: () => import("./pages/tools.js") },
   { id: "tweaks", key: "Nav_Tweaks", load: () => import("./pages/tweaks.js") },
   { id: "updates", key: "Nav_Updates", load: () => import("./pages/updates.js") },
+  { id: "drivers", key: "Nav_Drivers", load: () => import("./pages/drivers.js") },
   { id: "reports", key: "Nav_Reports", load: () => import("./pages/reports.js") },
   { id: "settings", key: "Nav_Settings", load: () => import("./pages/settings.js") },
   { id: "appupdate", key: "Nav_AppUpdate", load: () => import("./pages/appupdate.js") },
@@ -43,11 +44,11 @@ export const FAMILIES = [
   { key: "Nav_Group_Apps", icon: "apps", pages: ["apps", "ai"] },
   { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
-  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates"] },
+  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates", "drivers"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
   { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
 ];
-const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update", settings: "gear", appupdate: "update" };
+const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 

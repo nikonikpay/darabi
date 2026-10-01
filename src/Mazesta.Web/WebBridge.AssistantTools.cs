@@ -294,6 +294,10 @@ public sealed partial class WebBridge
                     if (file is not null && File.Exists(file)) offerFile(file); else file = null;
                     return Json(new { command = c.Command, exitCode = code, output = Cut(output.Trim(), 6000), path = file });
                 }),
+            new("check_drivers", "The graphics card's installed driver against its maker's newest (for NVIDIA both Game Ready and Studio, and which one the installed " +
+                "programs suit), and the devices Windows has no working driver for. Installing is done by the user on the Drivers page, which open_page opens.",
+                """{"type":"object","properties":{}}""",
+                async (_, ct) => _driversCheck is { } check ? Json(await check(ct).ConfigureAwait(false)) : Json(new { error = "the drivers page is not ready" })),
             new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome. It takes minutes. Areas: cpu, memory (RAM), storage, network, gpu (graphics card). " +
                 "Name only the areas the user asked for. An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass.",
                 """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}}},"required":["areas"]}""",

@@ -302,6 +302,15 @@ public sealed partial class WebBridge
                         + (c.Warn ? "\n⚠ " + Loc.Get("WinCmd_" + c.Id + "_Warn") : "") + (c.Admin ? "\n" + Loc.Get("Assist_Cmd_Admin") : "") + (c.Run is not null ? "\n" + Loc.Get("Assist_Cmd_CanRun") : "")));
                 return true;
             }
+            if (route.Intent == AiIntent.Drivers)
+            {
+                await _window.Dispatcher.InvokeAsync(() => { reply.Text = Loc.Get("Drivers_Checking"); Push(); });
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "check_drivers", "{}"), ct).ConfigureAwait(true);
+                reply.Tools.Add(new("check_drivers", "{}", result, ok));
+                reply.Text = AssistantReplies.Drivers(result);
+                if (!ct.IsCancellationRequested) this.Push("assistantNav", new { page = "drivers", target = (string?)null });
+                return true;
+            }
             if (route.Intent == AiIntent.TestsInfo && _testVm is { } tv)
             {
                 // Every test of the part (an area's id prefix), not only the few the chat runs.
