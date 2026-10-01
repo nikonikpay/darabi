@@ -39,13 +39,20 @@ public static class AiAgent
         if (first is { Count: > 0 })
         {
             await CallAsync(first).ConfigureAwait(false);
-            await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false);
+            if ((await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false)).Text.Trim().Length == 0)
+                await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false);
             return;
         }
         for (int round = 0; ; round++)
         {
             // After the last round the tools are withdrawn, so the turn has to be an answer.
             var reply = await model.CompleteAsync(messages, round < MaxRounds ? defs : null, mustAct && round == 0, onText, ct).ConfigureAwait(false);
+            // A turn after tools that says nothing (Qwen3.5 4B did, after reading the machine): asked once more with the tools withdrawn, so it answers.
+            if (reply.Calls.Count == 0 && reply.Text.Trim().Length == 0 && round > 0 && round < MaxRounds)
+            {
+                await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false);
+                return;
+            }
             if (reply.Calls.Count == 0 || round >= MaxRounds) return;
             await CallAsync(reply.Calls, reply.Text).ConfigureAwait(false);
         }

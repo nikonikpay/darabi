@@ -13,7 +13,7 @@ public class AiFitTests
         Assert.Equal(AiCatalog.Models.Count, AiCatalog.Models.Select(m => m.Id).Distinct().Count());
         Assert.All(AiCatalog.Models, m =>
         {
-            Assert.Matches("^[0-9a-f]{64}$", m.Sha256); Assert.StartsWith("https://huggingface.co/ggml-org/", m.Url); Assert.EndsWith("/" + m.File, m.Url);
+            Assert.Matches("^[0-9a-f]{64}$", m.Sha256); Assert.True(m.Url.StartsWith("https://huggingface.co/ggml-org/", StringComparison.Ordinal) || m.Id == "qwen3.5-4b" && m.Url.StartsWith("https://huggingface.co/bartowski/", StringComparison.Ordinal), m.Url); Assert.EndsWith("/" + m.File, m.Url);
             Assert.InRange(m.ActiveBytes, 1, m.Bytes); Assert.True(m.MixtureOfExperts == m.ActiveBytes < m.Bytes * 0.5);
         });
         Assert.Matches("^[0-9a-f]{64}$", AiCatalog.Runtime.Sha256); Assert.Contains(AiCatalog.Runtime.Build, AiCatalog.Runtime.Url);
@@ -56,8 +56,8 @@ public class AiFitTests
     [Fact] public void The_suggestion_is_the_largest_model_that_fits_the_card_with_room()
     {
         Assert.Equal("qwen3.8-27b", AiFitter.Recommend(AiCatalog.Models, Rtx3090)!.Id);
-        Assert.Equal("qwen3-4b", AiFitter.Recommend(AiCatalog.Models, Rtx3090 with { VramBytes = 6 * G })!.Id);
-        Assert.Equal("qwen3-4b", AiFitter.Recommend(AiCatalog.Models, new AiMachine(null, null, null, 16 * G, 10 * G))!.Id);
+        Assert.Equal("qwen3.5-4b", AiFitter.Recommend(AiCatalog.Models, Rtx3090 with { VramBytes = 6 * G })!.Id);
+        Assert.Equal("gemma-4-e4b", AiFitter.Recommend(AiCatalog.Models, new AiMachine(null, null, null, 16 * G, 10 * G))!.Id);
         Assert.Null(AiFitter.Recommend(AiCatalog.Models, new AiMachine(null, null, null, 2 * G, 1 * G)));
     }
     [Fact] public void The_assistant_is_judged_at_the_context_its_server_starts_with()

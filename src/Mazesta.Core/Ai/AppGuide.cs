@@ -274,7 +274,8 @@ public static class AppGuide
         // A reading now (a temperature, a fan, a load) is the sensors', not the specification's.
         if (!go && !test && SensorKinds.FirstOrDefault(k => Any(s, k.Words)) is { Kind: not null } sensor && (Any(s, NowWords) || ask))
             return new(AiIntent.Sensors, Kind: sensor.Kind, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area);
-        if (!go && !test && ask && SpecParts.FirstOrDefault(p => Any(s, p.Words)) is { Part: not null } spec)
+        // A benchmark's number is its history, not the part's specification ("آخرین بنچمارک پردازنده چند بود").
+        if (!go && !test && ask && !Has(s, "بنچمارک") && !Has(s, "بنچ مارک") && !Has(s, "benchmark") && SpecParts.FirstOrDefault(p => Any(s, p.Words)) is { Part: not null } spec)
             return new(AiIntent.Specs, Part: spec.Part);
 
         if (test && place is { Page: "checks" }) return new(AiIntent.Navigate, place);

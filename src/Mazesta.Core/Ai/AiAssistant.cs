@@ -7,14 +7,16 @@ public sealed record AiAssistantChoice(AiAssistantStatus Status, AiModel? Model)
 
 /// <summary>
 /// The rule for the chat assistant: only a computer with a graphics card of at least 4 GB of its own memory is offered it (a slower way of running
-/// a language model is not worth the wait in a service shop), and the model is chosen for it, never by the user from the whole catalog. Both
-/// are Qwen3, which writes Persian; the bigger one only where it runs wholly on the GPU with room to spare.
+/// a language model is not worth the wait in a service shop), and the model is chosen for it: Qwen3.5 4B, a 3 GB download. Compared on the owner's
+/// RTX 3090 (2026-10-01) with the same Persian questions and the app's tools, it wrote better Persian than Qwen3 4B and called the right tools more
+/// often than Gemma 4 E2B/E4B and Qwen3 14B (which answered like it, at three times the size); Qwen3.5 0.8B wrote nonsense. A larger model the user
+/// downloaded can still be picked (see the assistant's model list).
 /// </summary>
 public static class AiAssistantPolicy
 {
     /// <summary>A "4 GB" card reports 4095 or 4096 MiB; the threshold leaves room for that.</summary>
     public const long MinVramBytes = (long)(3.9 * AiFitter.Gib);
-    public const string BaseModelId = "qwen3-4b", LargeModelId = "qwen3-14b";
+    public const string BaseModelId = "qwen3.5-4b", LargeModelId = "qwen3-14b";
     /// <summary>The longest history sent to the model (characters): the server's context is <see cref="ServerContext"/> tokens and Persian costs about two characters a token.</summary>
     public const int HistoryChars = 4000;
     public const int MaxReplyTokens = 700;
@@ -25,9 +27,7 @@ public static class AiAssistantPolicy
     {
         if (pc.VramBytes is not { } vram || vram <= 0) return new(AiAssistantStatus.NoGpu, null);
         if (vram < MinVramBytes) return new(AiAssistantStatus.LittleVram, null);
-        var large = AiCatalog.Find(LargeModelId)!; var small = AiCatalog.Find(BaseModelId)!;
-        var f = AiFitter.Fit(large, pc, ServerContext);
-        if (f.Mode == AiFitMode.Gpu && !f.Tight) return new(AiAssistantStatus.Available, large);
+        var small = AiCatalog.Find(BaseModelId)!;
         return AiFitter.Fit(small, pc, ServerContext).Mode is AiFitMode.Gpu or AiFitMode.Split ? new(AiAssistantStatus.Available, small) : new(AiAssistantStatus.NoRoom, null);
     }
 

@@ -1847,6 +1847,9 @@
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>متوقف شد؛ چیزی تغییر نکرد.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>چیزی اجرا نشد. تست‌هایی که این برنامه برای این قطعه دارد (با مدت پیش‌فرض)؛ روش هر کدام هنگام اجرا در گزارش زندهٔ همان صفحه، قدم‌به‌قدم و با فرمولش نوشته می‌شود:</value></data>
+  <data name="Ai_Purpose_Gemma4_E2" xml:space="preserve"><value>مدل کوچک گوگل که برای گوشی و لپ‌تاپ ساخته شده: فارسی و انگلیسی روان و درست، پاسخ سریع و کار با ابزارها. حافظه‌ای در حد یک مدل ۲B مصرف می‌کند، هرچند فایلش بزرگ‌تر است. دستیار خوبی برای کارت ۴ گیگابایتی به بالا.</value></data>
+  <data name="Ai_Purpose_Gemma4_E4" xml:space="preserve"><value>بزرگ‌ترِ دو مدل کوچک گوگل: استدلال بهتر از E2B با همان فارسی روان، و هنوز آن‌قدر سبک که روی کارت ۶ گیگابایتی اجرا شود.</value></data>
+  <data name="Ai_Purpose_Qwen35_4" xml:space="preserve"><value>Qwen نسل جدیدِ اندازهٔ ۴B: فارسی بسیار بهتر از Qwen3 4B، پاسخ‌های کامل‌تر و کار با ابزارها. کامل روی کارت ۶ گیگابایتی اجرا می‌شود.</value></data>
   <data name="Assist_Cmd_Unchecked" xml:space="preserve"><value>این دستور را برنامه بررسی نکرده است: {0}. پیش از اجرا از درستی‌اش مطمئن شوید.</value></data>
   <data name="Drivers_Code_56" xml:space="preserve"><value>ویندوز هنوز پیکربندی شبکهٔ آن را تمام نکرده (کد ۵۶)؛ برای کارت‌های مجازی WAN Miniport که VPN اضافه می‌کند عادی و بی‌خطر است.</value></data>
   <data name="Assist_Drv_Gpu" xml:space="preserve"><value>{0}: درایور {1} نصب است (تاریخ {2}).</value></data>

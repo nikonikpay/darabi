@@ -1847,6 +1847,9 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>Stopped; nothing was changed.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>Nothing was run. The tests this app has for that part (with their default length); how each one works is written step by step, with its formula, in the live log of its page while it runs:</value></data>
+  <data name="Ai_Purpose_Gemma4_E2" xml:space="preserve"><value>Google's small model, made for phones and laptops: clear, fluent Persian and English, quick answers and tool use. Uses about as much memory as a 2B model, though the file is larger. A good assistant for a card of 4 GB or more.</value></data>
+  <data name="Ai_Purpose_Gemma4_E4" xml:space="preserve"><value>The larger of Google's two small models: better reasoning than E2B with the same fluent Persian, still light enough for a card of 6 GB.</value></data>
+  <data name="Ai_Purpose_Qwen35_4" xml:space="preserve"><value>The newer Qwen of the 4B size: much better Persian than Qwen3 4B, longer and more detailed answers, and tool use. Runs whole on a card of 6 GB.</value></data>
   <data name="Assist_Cmd_Unchecked" xml:space="preserve"><value>The app has not checked this command: {0}. Make sure of it before running it.</value></data>
   <data name="Drivers_Code_56" xml:space="preserve"><value>Windows is still setting up its network configuration (code 56); usual and harmless for the virtual WAN Miniport adapters a VPN adds.</value></data>
   <data name="Assist_Drv_Gpu" xml:space="preserve"><value>{0}: driver {1} installed ({2}).</value></data>

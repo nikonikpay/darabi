@@ -42,6 +42,14 @@ public class AiAgentTests
         Assert.Equal(AiAgent.MaxRounds + 1, model.Seen.Count); Assert.False(model.HadTools[^1]); Assert.True(model.HadTools[0]);
     }
 
+    [Fact] public async Task A_silent_turn_after_tools_is_asked_again_without_tools()
+    {
+        var model = new Script(new("", [new ToolCall("c", "get_sensors", "{}")]), new("", []), new("GPU is the newest part", []));
+        var text = new List<string>();
+        await AiAgent.RunAsync(model, "s", [new("user", "weakest?")], [Sensors], text.Add, _ => { }, default);
+        Assert.Equal(["GPU is the newest part"], text); Assert.Equal([true, true, false], model.HadTools);
+    }
+
     [Fact] public async Task A_long_result_is_cut()
     {
         var big = new AiTool("big", "d", """{"type":"object"}""", (_, _) => Task.FromResult(new string('x', 9000)));

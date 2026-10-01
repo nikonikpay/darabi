@@ -161,4 +161,9 @@ public class AppGuideTests
         Assert.Equal(["Unlock-Item -Path D:"], WindowsActions.UncheckedIn("```\nUnlock-Item -Path D:\n```"));
         Assert.Empty(WindowsActions.UncheckedIn("کارت `RTX` و فایل `hiberfil.sys`"));
     }
+    [Fact] public void A_benchmarks_number_is_not_the_parts_specification()
+    {
+        Assert.NotEqual(AiIntent.Specs, R("آخرین بنچمارک پردازنده چند بود و نسبت به قبل کندتر شده؟").Intent);
+        Assert.Equal(AiIntent.Specs, R("پردازنده من چند هسته داره؟").Intent);
+    }
 }

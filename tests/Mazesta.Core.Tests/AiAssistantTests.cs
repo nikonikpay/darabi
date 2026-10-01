@@ -16,9 +16,10 @@ public class AiAssistantTests
     {
         var c = Pick(4095L * 1048576); Assert.Equal(AiAssistantStatus.Available, c.Status); Assert.Equal(AiAssistantPolicy.BaseModelId, c.Model!.Id);
     }
-    [Fact] public void A_big_card_gets_the_14b_and_a_middle_one_the_4b()
+    [Fact] public void Every_card_is_offered_the_same_small_model()
     {
-        Assert.Equal(AiAssistantPolicy.LargeModelId, Pick(24 * G).Model!.Id); Assert.Equal(AiAssistantPolicy.BaseModelId, Pick(8 * G).Model!.Id);
+        // One small model for every card: a big card is not given a 9 GB download by default (a larger model can be picked).
+        Assert.Equal(AiAssistantPolicy.BaseModelId, Pick(24 * G).Model!.Id); Assert.Equal(AiAssistantPolicy.BaseModelId, Pick(8 * G).Model!.Id);
     }
     [Fact] public void Without_room_in_memory_nothing_is_offered() => Assert.Equal(AiAssistantStatus.NoRoom, Pick(4 * G, ramFree: 1 * G).Status);
     [Fact] public void Both_models_are_in_the_catalog_and_the_prompt_says_a_test_that_did_not_pass_is_not_a_pass()
