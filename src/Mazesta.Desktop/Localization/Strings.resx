@@ -1831,6 +1831,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Placeholder" xml:space="preserve"><value>Type your question…</value></data>
   <data name="Assist_Send" xml:space="preserve"><value>Send</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
+  <data name="Assist_Stopped" xml:space="preserve"><value>Stopped; nothing was changed.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the overclock page".</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>

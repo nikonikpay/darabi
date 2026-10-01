@@ -209,7 +209,7 @@ public sealed partial class WebBridge
                 // What the message plainly asks is decided here, not by the model (see AppGuide): a page is opened at once and said in the app's own
                 // words; for a question the app first reads what answers it, and the model words the answer from that.
                 var route = AppGuide.Route(text);
-                if (await Direct(route, reply).ConfigureAwait(true)) return;
+                if (await Direct(route, reply, replyCts.Token).ConfigureAwait(true)) return;
                 var history = AiAssistantPolicy.Trim(chat.Messages.Where(x => x != reply).Select(x => x.Turn).ToList(), AiAgent.Length);
                 string prompt = AiAssistantPolicy.Prompt(await MachineLine().ConfigureAwait(true), AppGuide.PageList(Loc.Get));
                 // The model's threads call back here; the chat is the UI thread's.
@@ -219,7 +219,7 @@ public sealed partial class WebBridge
                 // The UI thread may still hold the last pieces; they are in before the reply is tidied.
                 await _window.Dispatcher.InvokeAsync(() => { reply.Text = AiText.Unloop(reply.Text); });
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { if (reply.Text == Loc.Get("Assist_Dns_Testing") || reply.Text == Loc.Get("Assist_Making")) reply.Text = Loc.Get("Assist_Stopped"); }
             catch (Exception e) when (e is IOException or HttpRequestException or InvalidOperationException)
             {
                 error = e.Message; _log.LogWarning(e, "AI assistant reply failed");
@@ -234,13 +234,13 @@ public sealed partial class WebBridge
 
         // A page the message names is opened now, with no model: it can not pick the wrong page, and it answers at once. A file asked for is made
         // and offered the same way.
-        async Task<bool> Direct(AiRoute route, AiChatMessage reply)
+        async Task<bool> Direct(AiRoute route, AiChatMessage reply, CancellationToken ct)
         {
             if (route.Intent == AiIntent.Navigate && route.Place is { } place)
             {
                 string? target = route.App?.Id ?? place.Target;
                 string args = JsonSerializer.Serialize(new { page = place.Page, target });
-                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), CancellationToken.None).ConfigureAwait(true);
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), ct).ConfigureAwait(true);
                 reply.Tools.Add(new("open_page", args, result, ok));
                 string pageName = Loc.Get(AppGuide.Page(place.Page)!.TitleKey);
                 reply.Text = route.App is { } app ? Loc.Format("Assist_OpenedApp", pageName, app.Name)
@@ -251,7 +251,7 @@ public sealed partial class WebBridge
             if (route.Intent == AiIntent.Overlay)
             {
                 string args = JsonSerializer.Serialize(new { on = route.On });
-                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "set_overlay", args), CancellationToken.None).ConfigureAwait(true);
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "set_overlay", args), ct).ConfigureAwait(true);
                 reply.Tools.Add(new("set_overlay", args, result, ok));
                 using var d = JsonDocument.Parse(result);
                 reply.Text = !ok || d.RootElement.TryGetProperty("error", out _) ? Loc.Get("Assist_Overlay_Failed")
@@ -260,7 +260,7 @@ public sealed partial class WebBridge
             }
             if (route.Intent == AiIntent.Games)
             {
-                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "get_machine_summary", "{\"part\":\"all\"}"), CancellationToken.None).ConfigureAwait(true);
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "get_machine_summary", "{\"part\":\"all\"}"), ct).ConfigureAwait(true);
                 reply.Tools.Add(new("get_machine_summary", "{\"part\":\"all\"}", result, ok));
                 var pc = await SoftPc().ConfigureAwait(true);
                 static string Gb(long? b) => b is { } x ? Math.Round(x / 1073741824.0).ToString(System.Globalization.CultureInfo.InvariantCulture) + " GB" : "—";
@@ -271,9 +271,10 @@ public sealed partial class WebBridge
             {
                 string args = JsonSerializer.Serialize(new { format = route.Format });
                 await _window.Dispatcher.InvokeAsync(() => { reply.Text = Loc.Get("Assist_Making"); Push(); });
-                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "export_report", args), CancellationToken.None).ConfigureAwait(true);
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "export_report", args), ct).ConfigureAwait(true);
                 reply.Tools.Add(new("export_report", args, result, ok));
                 using var d = JsonDocument.Parse(result);
+                // Making the file is not stopped half way (a half-written PDF helps nobody): when Stop came meanwhile, the file is still offered.
                 reply.Text = d.RootElement.TryGetProperty("error", out var e) ? Loc.Format("Assist_FileFailed", e.GetString() ?? "")
                     : Loc.Format("Assist_FileReady", d.RootElement.GetProperty("file").GetString() ?? "", d.RootElement.GetProperty("report").GetString() ?? "");
                 return true;
@@ -285,7 +286,7 @@ public sealed partial class WebBridge
                 var results = new List<string>();
                 foreach (var c in calls)
                 {
-                    var (result, ok) = await AiAgent.InvokeAsync(tools, c, CancellationToken.None).ConfigureAwait(true);
+                    var (result, ok) = await AiAgent.InvokeAsync(tools, c, ct).ConfigureAwait(true);
                     reply.Tools.Add(new(c.Name, c.Arguments, result, ok)); results.Add(result);
                 }
                 reply.Text = route.Intent switch
@@ -296,11 +297,11 @@ public sealed partial class WebBridge
                     AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Part == "temps"),
                     _ => AssistantReplies.Dns(results[0]),
                 };
-                // A program asked about is shown on the programs page as well, with its card marked.
-                if (route.App is { } app && route.Intent == AiIntent.Software)
+                // A program asked about is shown on the programs page as well, with its card marked (not once the reply was stopped).
+                if (route.App is { } app && route.Intent == AiIntent.Software && !ct.IsCancellationRequested)
                 {
                     string args = JsonSerializer.Serialize(new { page = "apps", target = app.Id });
-                    var (r2, ok2) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), CancellationToken.None).ConfigureAwait(true);
+                    var (r2, ok2) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), ct).ConfigureAwait(true);
                     reply.Tools.Add(new("open_page", args, r2, ok2));
                 }
                 return true;

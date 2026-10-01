@@ -1831,6 +1831,7 @@
   <data name="Assist_Placeholder" xml:space="preserve"><value>پرسش خود را بنویسید…</value></data>
   <data name="Assist_Send" xml:space="preserve"><value>ارسال</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
+  <data name="Assist_Stopped" xml:space="preserve"><value>متوقف شد؛ چیزی تغییر نکرد.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ اورکلاک».</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
