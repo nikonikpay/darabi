@@ -114,7 +114,9 @@ public sealed partial class WebBridge
                     var devices = q.Query(@"root\cimv2", "SELECT DeviceID,DeviceName,DeviceClass,Manufacturer,DriverVersion,DriverDate FROM Win32_PnPSignedDriver")
                         .Select(r => new BoardDevice(r["DeviceID"] as string ?? "", (r["DeviceName"] as string)?.Trim() ?? "", r["DeviceClass"] as string, r["Manufacturer"] as string, r["DriverVersion"] as string,
                             r["DriverDate"] is string { Length: >= 8 } dd && DateOnly.TryParseExact(dd[..8], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? day : null))
-                        .Where(d => d.Id.Length > 0 && d.Name.Length > 0).ToList();
+                        .Where(d => d.Id.Length > 0 && d.Name.Length > 0)
+                        // The board's kinds of device read live: WMI's list lags behind an install by minutes.
+                        .Select(d => d.Class is "NET" or "MEDIA" or "Bluetooth" && DevNodes.Driver(d.Id) is { Version: { } v } now ? d with { Version = v, Date = now.Date ?? d.Date } : d).ToList();
                     return (cards, bad, b, devices);
                 }, ct).ConfigureAwait(true);
                 gpus = cards; problems = bad; board = boardNow;
