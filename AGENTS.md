@@ -1,6 +1,6 @@
 # Mazesta Test — guide for AI coding agents (Codex, Claude Code)
 
-Persian-first (RTL) .NET 10 diagnostics suite for a PC service shop: live sensor monitoring, hardware tests, reports, and a low-footprint tray monitor. The interface is a local web page in one WebView2 (`Mazesta.Web`); the earlier WPF edition was retired on 2026-09-28 (git tag `wpf-edition-final`) and is not to be revived or extended.
+Persian-first (RTL) .NET 10 diagnostics suite for a PC service shop: live sensor monitoring, hardware tests, reports, and a low-footprint tray monitor. The interface is a local web page in one WebView2 (`Mazesta.Web`); the earlier WPF edition was retired on 2026-09-28 (git tag `wpf-edition-final`) and is not to be revived or extended. WPF itself was removed on 2026-10-01 (tag `pre-wpf-removal`): the window frames are Windows Forms around WebView2 and the overlay is drawn with GDI+. Do not add WPF back.
 Owner: Saeed Darabi (`saeed-darabi`). `CLAUDE.md` imports this file, so there is one source of truth.
 
 ## Build and test
@@ -21,11 +21,11 @@ dotnet test  Mazesta.sln -c Release --no-build --filter "Category!=Hardware"
 | `Mazesta.Persistence` | `AppConfig`, `JsonStore`, schema migrations, `AppPaths`. |
 | `Mazesta.Diagnostics` (+ `.Gpu`) | Test engine and executors (CPU, RAM, storage, network, GPU/DX12). |
 | `Mazesta.Reporting` | Report model, JSON/HTML writers, on-disk store. UI-free. |
-| `Mazesta.Desktop` | The app layer, a library (assembly `MazestaTest`): composition/DI, the page view models the web bridge drives, report and PDF services, tray control, the string tables, and the one native window, the on-screen overlay. No pages of its own. |
+| `Mazesta.Desktop` | The app layer, a library (assembly `MazestaTest`): composition/DI, the page view models the web bridge drives, report and PDF services, tray control, the string tables, and the one native window, the on-screen overlay (`Views/OverlayRenderer`, GDI+ on a layered window). Windows Forms, no WPF. No pages of its own. |
 | `Mazesta.Web` | The app (`MazestaWeb.exe`): the services of Desktop, interface drawn by one WebView2 from `wwwroot` (plain HTML/CSS/JS, no build step) through a fixed JSON bridge (`WebBridge`). Design rules in `DESIGN.md`. |
 | `Mazesta.Tray` | Windowless tray monitor; opens the sensor provider only during a check. |
 
-Put logic in the lowest layer that can hold it, so it is unit-testable without WPF. View models stay thin.
+Put logic in the lowest layer that can hold it, so it is unit-testable without a window. View models stay thin.
 
 ## Honesty rules (the product's core value — never break them)
 - **No fake or guessed data.** A sensor or value that is unavailable is `null`/omitted, never `0` or a placeholder.
@@ -45,7 +45,7 @@ Put logic in the lowest layer that can hold it, so it is unit-testable without W
 
 ## Working on the UI on the owner's machine
 - The app auto-elevates (UAC). UI Automation from a non-elevated shell sees nothing.
-- WPF hardware rendering is broken system-wide on the owner's PC (white windows). The window frame, its loading panel and the overlay are still WPF, so the setting `renderMode: "software"` (Settings page or `appconfig.json`) still matters; keep it working.
+- WPF hardware rendering was broken system-wide on the owner's PC (white windows); the app no longer uses WPF. The setting `renderMode: "software"` (Settings page or `appconfig.json`) now starts WebView2 without the GPU (`--disable-gpu`); keep it working.
 - Idle cost matters: animations only on opacity/transform, nothing animating while the window is hidden, no timers that wake without need.
 
 ## Git workflow
