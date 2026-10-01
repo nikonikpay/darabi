@@ -7,12 +7,13 @@ public sealed record AiTool(string Name, string Description, string ParametersJs
 
 /// <summary>
 /// The assistant's loop: the model answers, or asks for tools; the tools run here, their results go back to it, and it answers from them. Bounded
-/// (<see cref="MaxRounds"/>), and every result is cut to <see cref="MaxResultChars"/> so a tool can not fill the model's context. An earlier
-/// answer goes back to the model with the tool calls it made and their results (shorter, <see cref="HistoryResultChars"/>), as they happened.
+/// (<see cref="MaxRounds"/>, <see cref="MaxCallsPerRound"/>), and what the model is sent of a result is made to fit <see cref="MaxResultChars"/>
+/// as whole JSON (<see cref="Mazesta.Core.Ai.AiJson"/>) so a tool can not fill its context; the page and the chat keep the full result. An earlier
+/// answer goes back to the model with the tool calls it made and their results (smaller, <see cref="HistoryResultChars"/>), as they happened.
 /// </summary>
 public static class AiAgent
 {
-    public const int MaxRounds = 3, MaxResultChars = 2400, HistoryResultChars = 500;
+    public const int MaxRounds = 3, MaxCallsPerRound = 4, MaxResultChars = 2400, HistoryResultChars = 500;
 
     /// <param name="mustAct">The first turn has to call a tool (the user asked for an action, see <c>AiAssistantPolicy.AsksToAct</c>).</param>
     /// <param name="first">Calls the app made for the model, from what the message plainly asks (see <c>AppGuide.Route</c>): they run first, as if
@@ -28,7 +29,7 @@ public static class AiAgent
                 var ids = done.Select(_ => "h" + n++).ToList(); var past = new JsonArray();
                 for (int i = 0; i < done.Count; i++) past.Add(new JsonObject { ["id"] = ids[i], ["type"] = "function", ["function"] = new JsonObject { ["name"] = done[i].Name, ["arguments"] = done[i].Arguments } });
                 messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = "", ["tool_calls"] = past });
-                for (int i = 0; i < done.Count; i++) messages.Add(new JsonObject { ["role"] = "tool", ["tool_call_id"] = ids[i], ["content"] = Cut(done[i].Result, HistoryResultChars) });
+                for (int i = 0; i < done.Count; i++) messages.Add(new JsonObject { ["role"] = "tool", ["tool_call_id"] = ids[i], ["content"] = Mazesta.Core.Ai.AiJson.Shrink(done[i].Result, HistoryResultChars) });
                 if (h.Text.Length == 0) continue;
             }
             messages.Add(Message(h.Role, h.Role == "assistant" ? Cut(h.Text, Mazesta.Core.Ai.AiAssistantPolicy.HistoryReplyChars) : h.Text));
@@ -51,15 +52,15 @@ public static class AiAgent
 
         async Task CallAsync(IReadOnlyList<ToolCall> todo, string text = "")
         {
+            todo = [.. todo.Take(MaxCallsPerRound)];
             var calls = new JsonArray();
             foreach (var c in todo) calls.Add(new JsonObject { ["id"] = c.Id, ["type"] = "function", ["function"] = new JsonObject { ["name"] = c.Name, ["arguments"] = c.Arguments } });
             messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = text, ["tool_calls"] = calls });
             foreach (var c in todo)
             {
                 var (result, ok) = await InvokeAsync(tools, c, ct).ConfigureAwait(false);
-                result = Cut(result, MaxResultChars);
                 onTool(new(c.Name, c.Arguments, result, ok));
-                messages.Add(new JsonObject { ["role"] = "tool", ["tool_call_id"] = c.Id, ["content"] = result });
+                messages.Add(new JsonObject { ["role"] = "tool", ["tool_call_id"] = c.Id, ["content"] = Mazesta.Core.Ai.AiJson.Shrink(result, MaxResultChars) });
             }
         }
     }

@@ -50,6 +50,15 @@ public class AiAgentTests
         Assert.True(model.Seen[1].Length < AiAgent.MaxResultChars + 600);
     }
 
+    [Fact] public async Task The_page_gets_the_full_result_and_one_turn_runs_a_few_calls_at_most()
+    {
+        var big = new AiTool("big", "d", """{"type":"object"}""", (_, _) => Task.FromResult(new string('x', 9000)));
+        var model = new Script(new("", [.. Enumerable.Range(0, 9).Select(i => new ToolCall("c" + i, "big", "{}"))]), new("done", []));
+        var seen = new List<int>();
+        await AiAgent.RunAsync(model, "s", [new("user", "x")], [big], _ => { }, x => seen.Add(x.Result.Length), default);
+        Assert.Equal(AiAgent.MaxCallsPerRound, seen.Count); Assert.All(seen, n => Assert.Equal(9000, n));
+    }
+
     [Fact] public async Task An_earlier_answer_goes_back_with_its_tool_calls_and_their_results()
     {
         var model = new Script(new ChatReply("again", []));

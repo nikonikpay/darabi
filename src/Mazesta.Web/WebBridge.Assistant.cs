@@ -286,7 +286,7 @@ public sealed partial class WebBridge
                 foreach (var c in calls)
                 {
                     var (result, ok) = await AiAgent.InvokeAsync(tools, c, CancellationToken.None).ConfigureAwait(true);
-                    reply.Tools.Add(new(c.Name, c.Arguments, result.Length > AiAgent.MaxResultChars ? result[..AiAgent.MaxResultChars] + " …(cut)" : result, ok)); results.Add(result);
+                    reply.Tools.Add(new(c.Name, c.Arguments, result, ok)); results.Add(result);
                 }
                 reply.Text = route.Intent switch
                 {
