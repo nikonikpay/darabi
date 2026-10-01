@@ -19,7 +19,7 @@ Status: `done` · `partial` · `open` · `declined`. "Hardware" means it needs t
 | H-07 | One load at a time: tests, benchmarks, GPU tuning (§3B) | done | `WorkloadGate`; each refuses to start while another holds it and says which. The combined CPU+GPU power test is one test, so unaffected. |
 | H-08 | GPU sensors of the tested card only; stale readings rejected (§3D) | done | `GpuDevices.SensorNode` (by name; the only GPU; ambiguous → nothing). `SensorEvidence.Latest` ignores readings older than 10 s. Used by the VRAM budget and the GPU tests' evidence. |
 | H-09 | VRAM budget from the OS residency budget (DXGI QueryVideoMemoryInfo) | done | Capped at 90 % of DXGI's local budget for the tested adapter (found by LUID); checked read-only on the RTX 3090. |
-| H-10 | Record versioning (§3E) | done (already) | `HeadlineMetric.Version` is in the record and comparison table keys; raising it starts a new list. No change needed. |
+| H-10 | Record versioning (§3E) | done (2026-10-01) | `HeadlineMetric.Version` was in the peer table key but not in the local record key, so a v3 RAM or v2 SSD run was compared with an earlier workload's record (second review, F04). `BenchmarkRecords.RecordKey` now adds `|v=N` from version 2 on; an earlier record stays in the file under its old key and is not compared. |
 
 ## CPU (plan §5)
 
@@ -35,7 +35,7 @@ Status: `done` · `partial` · `open` · `declined`. "Hardware" means it needs t
 
 | ID | Item | Status | What changed / why not |
 |---|---|---|---|
-| M-01 | More pattern families | done | 23 patterns plus moving inversions, block move and stride every fourth pass; and a bit fade test (all ones, then all zeros, each held untouched for half the run, the RAM locked with VirtualLock so Windows cannot page it out; Inconclusive when it will not lock). Run on the owner's machine: 4 GiB, all 64 blocks locked, no fade. |
+| M-01 | More pattern families | done | 23 patterns plus moving inversions, block move and stride every fourth pass; and a bit fade test (all ones, then all zeros, each held untouched from when it is written for half of what is left of the run (under 60 s a hold ends Inconclusive), the RAM locked with VirtualLock so Windows cannot page it out; Inconclusive when it will not lock). Run on the owner's machine: 4 GiB, all 64 blocks locked, no fade. |
 | M-02 | Honest scope: virtual offsets, not physical addresses or DIMMs; Windows-only share of RAM | done | Stated in the result and the log. |
 | M-03 | Rowhammer as a simple loop | declined | A loop in Windows cannot hammer chosen physical rows; it would be a fake test. An offline tool (MemTest86) is the right path; importing its result is open. |
 | M-04 | STREAM-style benchmark (Copy/Scale/Add/Triad, byte-count convention), latency by pointer chasing | done | STREAM kernels, and latency by a random single-cycle pointer chase over 256 MiB (Sattolo; includes 4 KiB page-table misses, as other tools' random latency does). Workload version 3. Owner's machine (DDR4-2133): Triad 19.6 GB/s, latency 118 ns. |
