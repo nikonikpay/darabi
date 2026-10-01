@@ -264,11 +264,16 @@ public static class DnsChoice
         ["radar"] = ["10.202.10.10", "10.202.10.11"], ["begzar"] = ["185.55.226.26", "185.55.225.25"],
     };
 
-    /// <summary>The adapters that are up (not loopback, not tunnels) with their IPv4 DNS servers.</summary>
+    /// <summary>The adapters that are up (not loopback, not tunnels) and carry IPv4 traffic, with their IPv4 DNS servers. Windows also lists the
+    /// filter drivers stacked on a Wi-Fi card ("…LightWeight Filter-0000", "…Packet Scheduler…") and VPN adapters without a gateway as "up";
+    /// they have no IPv4 gateway or DNS server of their own, are not where the DNS is set, and netsh refuses them.</summary>
     public static IReadOnlyList<(string Name, string[] Servers)> Current() =>
         [.. System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
             .Where(n => n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up && n.NetworkInterfaceType is not (System.Net.NetworkInformation.NetworkInterfaceType.Loopback or System.Net.NetworkInformation.NetworkInterfaceType.Tunnel))
-            .Select(n => (n.Name, n.GetIPProperties().DnsAddresses.Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).Select(a => a.ToString()).ToArray()))];
+            .Select(n => (n, ip: n.GetIPProperties()))
+            .Where(x => x.ip.GatewayAddresses.Any(g => g.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !g.Address.Equals(System.Net.IPAddress.Any))
+                || x.ip.DnsAddresses.Any(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork))
+            .Select(x => (x.n.Name, x.ip.DnsAddresses.Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).Select(a => a.ToString()).ToArray()))];
 
     /// <summary>The provider whose servers an adapter uses, "auto" when it has none of theirs.</summary>
     public static string Identify(IEnumerable<string> servers) => Providers.FirstOrDefault(p => servers.Any(s => p.Value.Contains(s))).Key ?? "auto";

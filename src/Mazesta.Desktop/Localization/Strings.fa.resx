@@ -1669,7 +1669,7 @@
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>اورلی تغییر نکرد.</value></data>
   <data name="Assist_Tool_test_dns" xml:space="preserve"><value>تست DNSها</value></data>
   <data name="Nav_Apps" xml:space="preserve"><value>برنامه‌های تخصصی</value></data>
-  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها و هوش مصنوعی</value></data>
+  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها و AI</value></data>
   <data name="Assist_Opened" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم.</value></data>
   <data name="Assist_OpenedApp" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و {1} را نشان دادم.</value></data>
   <data name="Assist_Pointed" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و «{1}» را روی آن علامت زدم.</value></data>

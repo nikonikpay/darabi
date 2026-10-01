@@ -1173,7 +1173,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .as-msg { max-width: 86%; padding: 8px 12px; border-radius: var(--r-ctl); line-height: 1.8; background: var(--ink-3); align-self: flex-start; }
 .as-msg.user { align-self: flex-end; background: var(--yellow-soft); }
 .as-who { font-size: 11px; color: var(--paper-3); margin-bottom: 2px; }
-.as-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; }
+.as-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; unicode-bidi: plaintext; }  /* each line takes its own direction: "- NVIDIA …: 52 °C" in a Persian answer */
 .as-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .as-empty { margin: auto; text-align: center; max-width: 46ch; }
 .as-pick { display: inline-flex; align-items: center; gap: 6px; }
@@ -1241,7 +1241,6 @@ body.popout .chart { height: 100%; min-height: 120px; }
 /* ——— Programs page: each program's level by its publisher's tiers ——— */
 .apps-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; margin-top: 16px; align-items: stretch; }
 @container (max-width: 900px) { .apps-top { grid-template-columns: 1fr; } }
-.apps-pc { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 16px; }
 .apps-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 4px; }
 .apps-bar .grow { flex: 1; }
 .apps-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1267,6 +1266,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .apps-next { margin: 6px 0; font-size: 12.5px; }
 .apps-next ul { margin: 4px 0 0; padding-inline-start: 18px; color: var(--paper-2, var(--paper)); }
 .apps-note { margin: 6px 0 0; }
+.apps-card p svg { width: 14px; height: 14px; vertical-align: -2px; stroke: var(--pass); }
 .apps-tiers { margin-top: 8px; }
 .apps-tiers summary { cursor: pointer; font-size: 12.5px; color: var(--paper-3); }
 .apps-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
