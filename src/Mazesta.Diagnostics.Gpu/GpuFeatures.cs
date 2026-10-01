@@ -17,6 +17,22 @@ public static class GpuFeatures
 
     public static bool SupportsInlineRayTracing(GraphicsDevice device) => RayTracingTier(device) >= RaytracingTier.Tier1_1;
 
+    /// <summary>For the programs page: whether the card named runs Direct3D 12 in hardware and traces rays in hardware (DXR), as its own device
+    /// says. The adapter is the one of that name, else the one with the most memory; no hardware adapter at all is "no"; a device that can not
+    /// be asked is "unknown" (null), never a guess.</summary>
+    public static (bool? Dx12, bool? Dxr) Describe(string? gpuName)
+    {
+        try
+        {
+            var all = GraphicsDevice.EnumerateDevices().Where(d => d.IsHardwareAccelerated).ToList();
+            if (all.Count == 0) return (false, false);
+            var d = all.FirstOrDefault(x => gpuName is not null && (x.Name.Contains(gpuName.Trim(), StringComparison.OrdinalIgnoreCase) || gpuName.Contains(x.Name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                ?? all.OrderByDescending(x => x.DedicatedMemorySize).First();
+            return (true, RayTracingTier(d) >= RaytracingTier.Tier1_0);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { return (null, null); }
+    }
+
     /// <summary>The availability answer shared by every ray-tracing test and benchmark: no GPU at all, or a GPU without DXR 1.1.</summary>
     public static Unavailability? RayTracingAvailability(TestOptions options)
     {

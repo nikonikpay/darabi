@@ -53,6 +53,18 @@ public class SoftwareCatalogTests
     }
     [Fact] public void Cores_count_only_where_the_publisher_names_them()
         => Assert.Contains(SoftwareCatalog.Judge(A("blender"), Pc("NVIDIA GeForce RTX 3060", 12, 32, cores: 6)).Missing, m => m.What == "Cores");
+    [Fact] public void What_the_card_and_the_processor_say_of_themselves_decides_and_what_could_not_be_read_is_said()
+    {
+        // Plenty of RAM is no help to a processor without AVX2; the card's own DXR answer outranks its name.
+        Assert.Null(SoftwareCatalog.Judge(A("vray"), Pc(null, null, 64) with { Avx2 = false }).Level);
+        Assert.Equal(SoftTierKind.Minimum, SoftwareCatalog.Judge(A("vray"), Pc(null, null, 64) with { Avx2 = true }).Level);
+        Assert.Null(SoftwareCatalog.Judge(A("vantage"), Pc("NVIDIA GeForce RTX 3090", 24, 64) with { Dxr = false }).Level);
+        // Cores not read, an example card to compare with: the level stands for what was checked, and these are named beside it.
+        var v = SoftwareCatalog.Judge(A("unreal"), Pc("NVIDIA GeForce RTX 3090", 24, 64) with { Cores = null, Dx12 = true });
+        Assert.Equal(SoftTierKind.Recommended, v.Level); Assert.Contains("Cores", v.Unchecked!); Assert.Contains("CpuSpeed", v.Unchecked!); Assert.DoesNotContain("Api", v.Unchecked!);
+        Assert.Contains("GpuSpeed", SoftwareCatalog.Judge(A("lumion"), Pc("NVIDIA GeForce RTX 3090", 24, 64)).Unchecked!);
+        Assert.Empty(SoftwareCatalog.Judge(A("lumion"), Pc("Intel(R) UHD Graphics 770", null, 64)).Unchecked!);   // below the minimum: nothing to qualify
+    }
     [Fact] public void A_program_with_one_set_of_requirements_is_met_not_at_its_minimum()
     {
         Assert.Equal("Meets", SoftwareCatalog.LevelName(A("vantage"), SoftwareCatalog.Judge(A("vantage"), Pc("NVIDIA GeForce RTX 3090", 24, 64))));

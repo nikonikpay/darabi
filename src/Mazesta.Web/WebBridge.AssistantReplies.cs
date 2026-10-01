@@ -74,6 +74,8 @@ internal static class AssistantReplies
             if (S(p, "note") is { } note) sb.Append(' ').Append(note);
             var missing = A(p, "missingForNext").Select(x => x.GetString()).ToList();
             if (missing.Count > 0) sb.Append('\n').Append(Loc.Format(S(p, "level") == "Below" ? "Assist_Soft_Lacks" : "Assist_Soft_Next", T(p, "nextLevel"), string.Join("؛ ", missing)));
+            var open = A(p, "notChecked").Select(x => x.GetString()).ToList();
+            if (open.Count > 0) sb.Append('\n').Append(Loc.Get("Apps_Unchecked")).Append(' ').Append(string.Join("، ", open));
             sb.Append('\n').Append(Loc.Get("Assist_Soft_More"));
             return sb.ToString();
         }

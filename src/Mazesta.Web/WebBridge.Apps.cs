@@ -15,7 +15,7 @@ public sealed partial class WebBridge
             var pc = await machine().ConfigureAwait(true);
             return new
             {
-                machine = new { cpu = pc.CpuName, cores = pc.Cores, threads = pc.Threads, ram = Gb(pc.RamBytes), gpu = pc.GpuName, vram = Gb(pc.VramBytes), rt = SoftwareCatalog.RayTracing(pc.GpuName) },
+                machine = new { cpu = pc.CpuName, cores = pc.Cores, threads = pc.Threads, ram = Gb(pc.RamBytes), gpu = pc.GpuName, vram = Gb(pc.VramBytes), rt = pc.Dxr ?? SoftwareCatalog.RayTracing(pc.GpuName) },
                 categories = Enum.GetValues<SoftCategory>().Select(c => new { id = c.ToString(), name = Loc.Get("Soft_Category_" + c) }),
                 apps = SoftwareCatalog.Apps.Select(a =>
                 {
@@ -25,6 +25,7 @@ public sealed partial class WebBridge
                         id = a.Id, name = a.Name, vendor = a.Vendor, category = a.Category.ToString(), icon = a.Icon, mono = a.Mono, color = a.Color,
                         purpose = Loc.Get(a.PurposeKey), note = a.NoteKey is null ? null : Loc.Get(a.NoteKey), source = a.Source,
                         gpuNeed = a.Gpu.ToString(), level = v.Level?.ToString(), label = SoftwareCatalog.LevelName(a, v), next = v.Next?.ToString(), missing = v.Missing.Select(ShortText),
+                        @unchecked = (v.Unchecked ?? []).Select(x => Loc.Get("Soft_Unchecked_" + x)),
                         suits = tier is null ? null : Loc.Get(a.Tiers.Count == 1 ? "Soft_Scale_Single" : tier.ScaleKey ?? $"Soft_Scale_{a.Category}_{tier.Kind}"),
                         tiers = a.Tiers.Select(t => new
                         {

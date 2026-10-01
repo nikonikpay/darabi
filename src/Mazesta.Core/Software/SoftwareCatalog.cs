@@ -24,14 +24,18 @@ public sealed record SoftTier(SoftTierKind Kind, double? RamGb = null, double? V
 public sealed record SoftApp(string Id, string Name, string Vendor, SoftCategory Category, SoftGpu Gpu, IReadOnlyList<SoftTier> Tiers, string Source,
     string? Icon, string Mono, string Color, string[] Words, string PurposeKey, string? NoteKey = null);
 
-/// <summary>The parts of this computer the tiers are judged on; null where it could not be read.</summary>
-public sealed record SoftMachine(string? CpuName, int? Cores, int? Threads, long? RamBytes, string? GpuName, long? VramBytes);
+/// <summary>The parts of this computer the tiers are judged on; null where it could not be read. <see cref="Dx12"/> and <see cref="Dxr"/> are what
+/// Direct3D 12 says of the card (a hardware device, ray tracing in hardware), <see cref="Avx2"/> and <see cref="Sse42"/> what this processor runs.</summary>
+public sealed record SoftMachine(string? CpuName, int? Cores, int? Threads, long? RamBytes, string? GpuName, long? VramBytes,
+    bool? Dx12 = null, bool? Dxr = null, bool? Avx2 = null, bool? Sse42 = null);
 
 /// <summary>A tier's figure this computer does not reach: what (Ram, Vram, Cores, RayTracing, Nvidia, Dedicated), the tier's figure and this computer's.</summary>
 public sealed record SoftShort(string What, double? Need, double? Have);
 
-/// <summary>The highest tier this computer meets (null: not even the minimum), and what keeps it from the next one.</summary>
-public sealed record SoftVerdict(SoftTierKind? Level, IReadOnlyList<SoftShort> Missing, SoftTierKind? Next);
+/// <summary>The highest tier this computer meets (null: not even the minimum), what keeps it from the next one, and what the tiers met ask that
+/// could not be checked (Cores not read, CpuSpeed and GpuSpeed against the publisher's example parts, Api a graphics interface the app does not
+/// test, Avx2 or Sse42 unread): the level holds for what was checked, and these are said beside it.</summary>
+public sealed record SoftVerdict(SoftTierKind? Level, IReadOnlyList<SoftShort> Missing, SoftTierKind? Next, IReadOnlyList<string>? Unchecked = null);
 
 public static class SoftwareCatalog
 {
@@ -175,7 +179,7 @@ public static class SoftwareCatalog
     private static bool Has(string s, string part) => s.Contains(part, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>What of one tier this computer lacks; empty when it meets it. A figure the computer's reading lacks counts as not met, except the
-    /// cores (when they could not be read they are not held against it).</summary>
+    /// cores and the processor's instructions (when they could not be read they are not held against it, and <see cref="Unchecked"/> says so).</summary>
     public static IReadOnlyList<SoftShort> Lacks(SoftApp app, SoftTier tier, SoftMachine pc)
     {
         var lacks = new List<SoftShort>();
@@ -183,11 +187,26 @@ public static class SoftwareCatalog
         bool dedicated = vram is not null;
         if (app.Gpu is SoftGpu.Dedicated or SoftGpu.Nvidia or SoftGpu.RayTracing && !dedicated) lacks.Add(new("Dedicated", null, null));
         else if (app.Gpu == SoftGpu.Nvidia && Maker(pc.GpuName) != GpuMaker.Nvidia) lacks.Add(new("Nvidia", null, null));
-        if ((app.Gpu == SoftGpu.RayTracing || tier.RayTracing) && dedicated && RayTracing(pc.GpuName) != true) lacks.Add(new("RayTracing", null, null));
+        if ((app.Gpu == SoftGpu.RayTracing || tier.RayTracing) && dedicated && (pc.Dxr ?? RayTracing(pc.GpuName)) != true) lacks.Add(new("RayTracing", null, null));
+        if (Has(tier.Gpu ?? "", "DirectX 12") && pc.Dx12 == false) lacks.Add(new("Dx12", null, null));
+        if (Has(tier.Cpu ?? "", "AVX2") && pc.Avx2 == false) lacks.Add(new("Avx2", null, null));
+        if (Has(tier.Cpu ?? "", "SSE4.2") && pc.Sse42 == false) lacks.Add(new("Sse42", null, null));
         if (tier.RamGb is { } r && (ram ?? 0) + RamSlackGb < r) lacks.Add(new("Ram", r, ram is null ? null : Math.Round(ram.Value, 1)));
         if (tier.VramGb is { } v && (vram ?? 0) + VramSlackGb < v) lacks.Add(new("Vram", v, vram is null ? null : Math.Round(vram.Value, 1)));
         if (tier.Cores is { } c && pc.Cores is { } have && have < c) lacks.Add(new("Cores", c, have));
         return lacks;
+    }
+
+    /// <summary>What a tier asks that this computer's reading can not settle either way.</summary>
+    public static IEnumerable<string> Unchecked(SoftTier tier, SoftMachine pc)
+    {
+        if (tier.Cores is not null && pc.Cores is null) yield return "Cores";
+        string cpu = tier.Cpu ?? "", gpu = tier.Gpu ?? "";
+        if (Has(cpu, "AVX2") && pc.Avx2 is null || Has(cpu, "SSE4.2") && pc.Sse42 is null) yield return "Instructions";
+        // Whatever else the publisher names of the processor (a model, a clock, a PassMark figure) is its speed, which the app does not compare.
+        if (System.Text.RegularExpressions.Regex.Replace(cpu, @"AVX2|SSE4\.2|·", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim().Length > 0) yield return "CpuSpeed";
+        if (System.Text.RegularExpressions.Regex.IsMatch(gpu, @"G3DMark|GTX|RTX|RX\s*\d|Arc|Radeon|GeForce|Quadro", System.Text.RegularExpressions.RegexOptions.IgnoreCase)) yield return "GpuSpeed";
+        if (Has(gpu, "OpenGL") || Has(gpu, "Vulkan") || Has(gpu, "Shader Model") || Has(gpu, "DirectX 11") && pc.Dx12 != true || Has(gpu, "DirectX 12") && pc.Dx12 is null) yield return "Api";
     }
 
     /// <summary>The name of the verdict for the page and the assistant: a program whose publisher gives one set of requirements either meets it or
@@ -198,13 +217,13 @@ public static class SoftwareCatalog
     /// tier needs that is missing. A program with only a recommended tier is either at it or below it.</summary>
     public static SoftVerdict Judge(SoftApp app, SoftMachine pc)
     {
-        SoftTierKind? level = null;
+        SoftTierKind? level = null; var open = new List<string>();
         foreach (var tier in app.Tiers)
         {
             var lacks = Lacks(app, tier, pc);
-            if (lacks.Count > 0) return new(level, lacks, tier.Kind);
-            level = tier.Kind;
+            if (lacks.Count > 0) return new(level, lacks, tier.Kind, level is null ? [] : open.Distinct().ToList());
+            level = tier.Kind; open.AddRange(Unchecked(tier, pc));
         }
-        return new(level, [], null);
+        return new(level, [], null, open.Distinct().ToList());
     }
 }

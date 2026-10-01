@@ -1717,6 +1717,15 @@
   <data name="Soft_Short_RayTracing" xml:space="preserve"><value>کارتی با ری‌تریسینگ سخت‌افزاری (NVIDIA RTX، AMD RX 6000 به بعد یا Intel Arc)</value></data>
   <data name="Soft_Short_Nvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA (CUDA)</value></data>
   <data name="Soft_Short_Dedicated" xml:space="preserve"><value>کارت گرافیک با حافظهٔ اختصاصی (نه گرافیک داخلی پردازنده)</value></data>
+  <data name="Soft_Short_Dx12" xml:space="preserve"><value>کارت گرافیک با DirectX 12 سخت‌افزاری</value></data>
+  <data name="Soft_Short_Avx2" xml:space="preserve"><value>پردازنده با دستورهای AVX2</value></data>
+  <data name="Soft_Short_Sse42" xml:space="preserve"><value>پردازنده با دستورهای SSE4.2</value></data>
+  <data name="Soft_Unchecked_Cores" xml:space="preserve"><value>تعداد هسته (خوانده نشد)</value></data>
+  <data name="Soft_Unchecked_Instructions" xml:space="preserve"><value>دستورهای پردازنده (خوانده نشد)</value></data>
+  <data name="Soft_Unchecked_CpuSpeed" xml:space="preserve"><value>سرعت پردازنده در برابر نمونهٔ سازنده</value></data>
+  <data name="Soft_Unchecked_GpuSpeed" xml:space="preserve"><value>سرعت کارت گرافیک در برابر نمونهٔ سازنده</value></data>
+  <data name="Soft_Unchecked_Api" xml:space="preserve"><value>نسخهٔ OpenGL / Vulkan / DirectX که سازنده خواسته</value></data>
+  <data name="Apps_Unchecked" xml:space="preserve"><value>بررسی نشد (مقایسه را خودتان با جدول انجام دهید):</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>رندر بلادرنگ و ویژوالایز</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>موتورهای رندر</value></data>
   <data name="Soft_Category_Architecture" xml:space="preserve"><value>معماری و طراحی</value></data>

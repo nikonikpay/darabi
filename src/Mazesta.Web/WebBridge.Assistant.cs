@@ -144,12 +144,15 @@ public sealed partial class WebBridge
         gate.Changed += OnGate; _cleanup.Add(() => gate.Changed -= OnGate);
         // The parts the programs' tiers are judged on, and the line the model is told about this computer: read once (the inventory is cached), the
         // card's memory from its sensors as the AI page reads it.
-        var inventory = _sp.GetRequiredService<InventoryCache>();
+        var inventory = _sp.GetRequiredService<InventoryCache>(); (bool?, bool?)? gpuApi = null;
         async Task<SoftMachine> SoftPc()
         {
             var inv = await inventory.GetAsync().ConfigureAwait(false); var pc = machine();
             long? vram = pc.VramBytes ?? inv.Gpus.Select(g => g.AdapterRamBytes).FirstOrDefault(b => b is > 0 and < (4L << 30) - (64L << 20));   // WMI's figure stops at 4 GB: only below that is it the size
-            return new(inv.Cpu?.Name?.Trim(), inv.Cpu?.PhysicalCores, inv.Cpu?.LogicalProcessors, inv.TotalPhysicalMemoryBytes ?? pc.RamTotalBytes, pc.GpuName ?? inv.Gpus.FirstOrDefault()?.Name?.Trim(), vram);
+            string? gpu = pc.GpuName ?? inv.Gpus.FirstOrDefault()?.Name?.Trim();
+            var (dx12, dxr) = gpuApi ??= Diagnostics.Gpu.GpuFeatures.Describe(gpu);   // asked of the card once
+            return new(inv.Cpu?.Name?.Trim(), inv.Cpu?.PhysicalCores, inv.Cpu?.LogicalProcessors, inv.TotalPhysicalMemoryBytes ?? pc.RamTotalBytes, gpu, vram,
+                dx12, dxr, System.Runtime.Intrinsics.X86.Avx2.IsSupported, System.Runtime.Intrinsics.X86.Sse42.IsSupported);
         }
         async Task<string> MachineLine()
         {

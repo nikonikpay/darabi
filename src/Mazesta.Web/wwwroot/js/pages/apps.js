@@ -54,6 +54,7 @@ export function mount(el) {
       a.suits ? h("p", { class: "apps-suits" }, h("b", {}, t("Apps_Suits"), ": "), a.suits) : null,
       a.next ? h("div", { class: "apps-next" }, h("span", { class: "caption" }, t("Apps_Next", t(`Soft_Level_${a.next}`))),
         h("ul", {}, a.missing.map((m) => h("li", {}, m)))) : h("p", { class: "caption" }, icon("check"), " ", t("Apps_Top")),
+      a.unchecked && a.unchecked.length ? h("p", { class: "caption apps-unchecked" }, t("Apps_Unchecked"), " ", a.unchecked.join("، ")) : null,
       a.note ? h("p", { class: "caption apps-note" }, a.note) : null, tiers);
   }
 

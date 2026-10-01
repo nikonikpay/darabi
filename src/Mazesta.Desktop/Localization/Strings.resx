@@ -1717,6 +1717,15 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Short_RayTracing" xml:space="preserve"><value>A card with ray tracing in hardware (NVIDIA RTX, AMD RX 6000 or newer, Intel Arc)</value></data>
   <data name="Soft_Short_Nvidia" xml:space="preserve"><value>An NVIDIA graphics card (CUDA)</value></data>
   <data name="Soft_Short_Dedicated" xml:space="preserve"><value>A graphics card with its own memory (not the processor's built-in graphics)</value></data>
+  <data name="Soft_Short_Dx12" xml:space="preserve"><value>a graphics card with hardware DirectX 12</value></data>
+  <data name="Soft_Short_Avx2" xml:space="preserve"><value>a processor with AVX2 instructions</value></data>
+  <data name="Soft_Short_Sse42" xml:space="preserve"><value>a processor with SSE4.2 instructions</value></data>
+  <data name="Soft_Unchecked_Cores" xml:space="preserve"><value>the number of cores (not read)</value></data>
+  <data name="Soft_Unchecked_Instructions" xml:space="preserve"><value>the processor's instructions (not read)</value></data>
+  <data name="Soft_Unchecked_CpuSpeed" xml:space="preserve"><value>the processor's speed against the publisher's example</value></data>
+  <data name="Soft_Unchecked_GpuSpeed" xml:space="preserve"><value>the graphics card's speed against the publisher's example</value></data>
+  <data name="Soft_Unchecked_Api" xml:space="preserve"><value>the OpenGL / Vulkan / DirectX version the publisher asks for</value></data>
+  <data name="Apps_Unchecked" xml:space="preserve"><value>Not checked (compare with the table yourself):</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>Real-time rendering</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>Render engines</value></data>
   <data name="Soft_Category_Architecture" xml:space="preserve"><value>Architecture and CAD</value></data>
