@@ -5,7 +5,9 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// a benchmark reports what was measured, and a value that could not be measured is left out, never zero.</summary>
 public sealed record BenchmarkMetric(string Key, double Value, string Unit);
 
-public enum BenchmarkStatus { Completed, Cancelled, Unsupported, Failed }
+/// <summary>Failed is the part's doing (it computed wrongly, the device was lost); Error is the program's (a window or a file it needed), which says
+/// nothing about the part.</summary>
+public enum BenchmarkStatus { Completed, Cancelled, Unsupported, Failed, Error }
 
 /// <param name="Setup">How the run was set up (its length, its options, a fixed resolution), group <see cref="BenchmarkDetails.RunGroup"/>: kept with the
 /// run so two results can be told apart by how they were made, not only by what they measured.</param>
@@ -15,6 +17,8 @@ public sealed record BenchmarkResult(TestId Id, BenchmarkStatus Status, DateTime
     public static BenchmarkResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Unsupported, now, now, [], detail);
     public static BenchmarkResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, BenchmarkStatus.Cancelled, started, now, [], null);
     public static BenchmarkResult Failed(TestId id, DateTimeOffset started, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Failed, started, now, [], detail);
+    public static BenchmarkResult Error(TestId id, DateTimeOffset started, DateTimeOffset now, Exception e)
+        => new(id, BenchmarkStatus.Error, started, now, [], $"The benchmark itself failed ({e.GetType().Name}: {e.Message}); nothing is known about the part from this run.");
 }
 
 public static class BenchmarkRequestExtensions

@@ -46,7 +46,7 @@ public sealed class GpuSceneBenchmark(bool rayTraced) : IBenchmark, ITestAvailab
             request.Report(Math.Min(1, total.Elapsed.TotalSeconds / request.DurationSeconds));
         }
         if (!renderer.Capture(CheckTime).AsSpan().SequenceEqual(before))
-            throw new InvalidOperationException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
+            throw new GpuWrongResultException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
         double fps = n / times.Sum();
         int tours = n / Stops; bool partial = n % Stops != 0;
         var sorted = times.Order().ToArray();

@@ -106,7 +106,8 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
             var request = new TestExecutionRequest(seconds, clock, p => Progress?.Invoke(id, p.PercentComplete), engine, new TestOptions(benchmark.Definition, options));
             result = await benchmark.RunAsync(request, cts.Token).ConfigureAwait(false);
         }
-        catch (Exception e) { result = BenchmarkResult.Failed(id, clock.UtcNow, clock.UtcNow, $"{e.GetType().Name}: {e.Message}"); }
+        catch (OperationCanceledException) { result = BenchmarkResult.Cancelled(id, clock.UtcNow, clock.UtcNow); }
+        catch (Exception e) { result = BenchmarkResult.Error(id, clock.UtcNow, clock.UtcNow, e); }   // escaped the benchmark's own handling: the program's fault
         if (result.Status == BenchmarkStatus.Completed) result = result with { Setup = [.. Setup(benchmark.Definition, seconds, snapshot), .. result.Setup ?? []] };
         lock (_lock)
         {

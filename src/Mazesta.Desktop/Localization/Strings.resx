@@ -645,6 +645,7 @@
   <data name="Bench_Status_Cancelled" xml:space="preserve"><value>Cancelled</value></data>
   <data name="Bench_Status_Unsupported" xml:space="preserve"><value>Cannot run here</value></data>
   <data name="Bench_Status_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Bench_Status_Error" xml:space="preserve"><value>Program error — says nothing about the part</value></data>
   <data name="Settings_Tray_Checking" xml:space="preserve"><value>Checking the tray…</value></data>
   <data name="Nav_Tuning" xml:space="preserve"><value>Overclock &amp; undervolt</value></data>
   <data name="Tuning_Note" xml:space="preserve"><value>GPU overclock, undervolt, power limit and fan through NVIDIA's own management library (NVML). Every setting is volatile: a restart or a driver reset puts the card back to stock. Values outside the driver's ranges are refused.</value></data>

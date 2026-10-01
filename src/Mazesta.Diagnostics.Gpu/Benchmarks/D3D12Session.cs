@@ -74,7 +74,7 @@ internal sealed unsafe class D3D12Session : IDisposable
     public void Submit()
     {
         Queue.ExecuteCommandList(List); Queue.Signal(_fence, ++_fenceValue); Wait();
-        if (Device.DeviceRemovedReason.Failure) throw new InvalidOperationException($"The GPU was lost during the run (device removed: {Device.DeviceRemovedReason}).");
+        if (Device.DeviceRemovedReason.Failure) throw new GpuLostException($"The GPU was lost during the run (device removed: {Device.DeviceRemovedReason}).");
     }
 
     /// <summary>Copies <paramref name="count"/> 32-bit values to the CPU: <paramref name="copy"/> records the copy into the given readback buffer.</summary>

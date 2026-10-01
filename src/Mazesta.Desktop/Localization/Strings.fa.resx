@@ -645,6 +645,7 @@
   <data name="Bench_Status_Cancelled" xml:space="preserve"><value>لغو شد</value></data>
   <data name="Bench_Status_Unsupported" xml:space="preserve"><value>در اینجا قابل اجرا نیست</value></data>
   <data name="Bench_Status_Failed" xml:space="preserve"><value>ناموفق</value></data>
+  <data name="Bench_Status_Error" xml:space="preserve"><value>خطای برنامه — دربارهٔ قطعه چیزی معلوم نشد</value></data>
   <data name="Settings_Tray_Checking" xml:space="preserve"><value>در حال بررسی وضعیت Tray…</value></data>
   <data name="Nav_Tuning" xml:space="preserve"><value>اورکلاک و آندرولت</value></data>
   <data name="Tuning_Note" xml:space="preserve"><value>اورکلاک، آندرولت، محدودیت توان و فن کارت گرافیک از طریق کتابخانهٔ مدیریتی خود NVIDIA (NVML). همهٔ تنظیمات موقت‌اند: با ری‌استارت یا ری‌ست درایور، کارت به حالت کارخانه برمی‌گردد. مقادیر خارج از محدودهٔ درایور پذیرفته نمی‌شوند.</value></data>

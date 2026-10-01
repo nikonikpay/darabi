@@ -43,7 +43,17 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
         var thread = new Thread(() =>
         {
             try { done.SetResult(Run(request, options, device, started, ct)); }
-            catch (Exception e) { done.SetResult(new(id, TestOutcome.Failed, started, request.Clock.UtcNow, 1, $"GPU error during the visual test: {e.GetType().Name}: {e.Message}")); }
+            catch (Exception e)
+            {
+                var now = request.Clock.UtcNow;
+                done.SetResult(Benchmarks.GpuFault.Of(e) switch
+                {
+                    Benchmarks.GpuFault.Kind.Cancelled => TestRunResult.Cancelled(id, started, now),
+                    Benchmarks.GpuFault.Kind.Unsupported => TestRunResult.Unsupported(id, now, e.Message),
+                    Benchmarks.GpuFault.Kind.Lost or Benchmarks.GpuFault.Kind.Wrong => new(id, TestOutcome.Failed, started, now, 1, $"GPU error during the visual test: {e.Message}"),
+                    _ => TestRunResult.Error(id, started, now, e),   // a window, a shader or a file: the program's fault, not the card's
+                });
+            }
         }) { IsBackground = true, Name = "Mazesta GPU scene" };
         thread.SetApartmentState(ApartmentState.STA); thread.Start();
         return done.Task;

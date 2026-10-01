@@ -4,6 +4,30 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// <summary>The GPU cannot run this workload at all (no DXR 1.1, no DirectML, no FP16...): the benchmark is Unsupported, not failed.</summary>
 internal sealed class GpuUnsupportedException(string message) : Exception(message);
 
+/// <summary>The device was lost mid-run (driver reset, hang, overheating): evidence about the card.</summary>
+internal sealed class GpuLostException(string message) : Exception(message);
+
+/// <summary>The card computed a known result wrongly: evidence about the card.</summary>
+internal sealed class GpuWrongResultException(string message) : Exception(message);
+
+/// <summary>What an exception from a GPU run says about the card. Only a lost device or a wrong result is the card's; anything else (a window, a
+/// shader, a file the program needed) is the program's and is never reported as the card failing.</summary>
+internal static class GpuFault
+{
+    public enum Kind { Lost, Wrong, Unsupported, Cancelled, Internal }
+    // DXGI_ERROR_DEVICE_REMOVED, _HUNG, _RESET, DRIVER_INTERNAL_ERROR
+    private static readonly int[] LostCodes = [unchecked((int)0x887A0005), unchecked((int)0x887A0006), unchecked((int)0x887A0007), unchecked((int)0x887A0020)];
+    public static Kind Of(Exception e) => e switch
+    {
+        OperationCanceledException => Kind.Cancelled,
+        GpuUnsupportedException => Kind.Unsupported,
+        GpuLostException => Kind.Lost,
+        GpuWrongResultException => Kind.Wrong,
+        SharpGen.Runtime.SharpGenException s when LostCodes.Contains(s.HResult) => Kind.Lost,
+        _ => Kind.Internal,
+    };
+}
+
 /// <summary>What the three GPU benchmarks share: picking the adapter, running on a worker thread, turning a lost device into
 /// Failed and a missing feature into Unsupported, and adding the GPU's own clock, power and temperature for the run.</summary>
 internal static class GpuBenchmark
@@ -35,9 +59,16 @@ internal static class GpuBenchmark
                 return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}",
                     resolution is { } r ? [new(BenchmarkDetails.RunGroup, "Bench_Set_Resolution", $"{r.Width}×{r.Height}")] : null);
             }
-            catch (OperationCanceledException) { return BenchmarkResult.Cancelled(spec.Id, started, request.Clock.UtcNow); }
-            catch (GpuUnsupportedException e) { return BenchmarkResult.Unsupported(spec.Id, started, e.Message); }
-            catch (Exception e) { return BenchmarkResult.Failed(spec.Id, started, request.Clock.UtcNow, $"GPU error during the run: {e.GetType().Name}: {e.Message}"); }
+            catch (Exception e)
+            {
+                return GpuFault.Of(e) switch
+                {
+                    GpuFault.Kind.Cancelled => BenchmarkResult.Cancelled(spec.Id, started, request.Clock.UtcNow),
+                    GpuFault.Kind.Unsupported => BenchmarkResult.Unsupported(spec.Id, started, e.Message),
+                    GpuFault.Kind.Lost or GpuFault.Kind.Wrong => BenchmarkResult.Failed(spec.Id, started, request.Clock.UtcNow, $"GPU error during the run: {e.Message}"),
+                    _ => BenchmarkResult.Error(spec.Id, started, request.Clock.UtcNow, e),
+                };
+            }
         }, CancellationToken.None);
     }
 
