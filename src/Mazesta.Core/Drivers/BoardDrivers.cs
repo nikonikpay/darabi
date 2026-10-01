@@ -67,7 +67,7 @@ public static partial class BoardDrivers
                 string? url = f.TryGetProperty("DownloadUrl", out var du) && du.ValueKind == JsonValueKind.Object ? Text(du, "Global") : null;
                 string? version = Text(f, "Version");
                 if (url is null || version is null) continue;
-                string title = WebText(Text(f, "Title") ?? Text(f, "Description") ?? "");
+                string title = part == BoardPart.Bios ? $"BIOS {version}" + (Text(f, "Description") is { } what ? ": " + WebText(what) : "") : WebText(Text(f, "Title") ?? Text(f, "Description") ?? "");
                 var date = DateOnly.TryParseExact(Text(f, "ReleaseDate"), "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : (DateOnly?)null;
                 list.Add(new(part.Value, "asus", title, version, date, Text(f, "FileSize"), url.Split('?')[0], Sha256: Text(f, "sha256"), Vendor: part == BoardPart.Bios ? "ASUS" : VendorIn(title)));
             }

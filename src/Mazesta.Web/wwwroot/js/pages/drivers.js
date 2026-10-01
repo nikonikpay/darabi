@@ -98,7 +98,7 @@ export function mount(el) {
         h("span", { class: "lat" }, i.title),
         h("span", { class: "caption" }, t("Drivers_Board_Offered"), " ", h("span", { class: "lat" }, [i.version, i.date, i.size].filter(Boolean).join(" · ")), i.hash ? ` · ${t("Drivers_Board_Hash", i.hash)}` : ""),
         i.missing ? h("span", { class: "caption" }, t("Drivers_Board_MissingWhy"))
-          : h("span", { class: "caption" }, t("Drivers_Installed"), ": ", h("span", { class: "lat" }, [i.installed ?? t("Drivers_Board_None"), i.installedDate].filter(Boolean).join(" · ")), i.device ? h("span", { class: "lat" }, ` · ${i.device}`) : null),
+          : h("span", { class: "caption" }, t("Drivers_Installed"), ": ", i.installed ? h("span", { class: "lat" }, [i.installed, i.installedDate, i.device].filter(Boolean).join(" · ")) : t("Drivers_Board_None")),
         i.part === "Bios" ? h("small", { class: "caption" }, t("Drivers_Board_BiosNote")) : null,
         can ? h("div", { class: "btn-row" }, h("button", { class: "btn", disabled: busy || !!s.busy, onclick: () => {
           if (confirm(t("Drivers_Board_Confirm", i.title, i.version, i.size ?? ""))) run("drivers.boardInstall", { id: i.id });
