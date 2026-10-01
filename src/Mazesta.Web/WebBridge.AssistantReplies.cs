@@ -53,7 +53,11 @@ internal static class AssistantReplies
                 lines.Add($"- {S(dev, "device")} · {S(s, "name")}: {Units.FormatWithSymbol(D(s, "value") ?? 0, unit)}");
             }
         }
-        return lines.Count == 0 ? Loc.Get("Assist_Sensors_Empty") : Loc.Format("Assist_Sensors", Loc.Get("Assist_Kind_" + (kind ?? "All"))) + "\n" + string.Join("\n", lines);
+        if (lines.Count == 0) return Loc.Get("Assist_Sensors_Empty");
+        string head = r.TryGetProperty("stale", out var st) && st.ValueKind == JsonValueKind.True
+            ? Loc.Format("Assist_Sensors_Stale", Loc.Get("Assist_Kind_" + (kind ?? "All")), N(D(r, "secondsAgo") ?? 0))
+            : Loc.Format("Assist_Sensors", Loc.Get("Assist_Kind_" + (kind ?? "All")));
+        return head + "\n" + string.Join("\n", lines);
     }
 
     public static string Software(string json, bool one)

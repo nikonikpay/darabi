@@ -92,9 +92,11 @@ public sealed partial class WebBridge
                         // A drive's "Critical" or "Warning Temperature" and a DIMM's sensor resolution are limits and settings, not readings.
                         sensors = n.Sensors.Where(s => values.ContainsKey(s.Id) && (kind is null || s.Kind.ToString() == kind) && s.Kind.ToString() is "Temperature" or "Load" or "Clock" or "Power" or "Fan"
                                 && !NotAReading.IsMatch(s.Name))
-                            .Take(12).Select(s => new { name = s.Name, kind = s.Kind.ToString(), value = Math.Round(values[s.Id], 1), unit = s.Unit.ToString() }),
+                            .Take(kind is null ? 12 : 40).Select(s => new { name = s.Name, kind = s.Kind.ToString(), value = Math.Round(values[s.Id], 1), unit = s.Unit.ToString() }),
                     }).Where(d => d.sensors.Any()).Take(8);
-                    return Task.FromResult(Json(new { secondsAgo = Math.Round((DateTimeOffset.UtcNow - snap.Timestamp).TotalSeconds), devices }));
+                    // A reading older than a few polls is not "now" (the polling was paused or stuck): it is said with its age.
+                    double age = Math.Round((DateTimeOffset.UtcNow - snap.Timestamp).TotalSeconds);
+                    return Task.FromResult(Json(new { secondsAgo = age, stale = age > Math.Max(StaleSeconds, 3 * engine.FastInterval.TotalSeconds) ? true : (bool?)null, devices }));
                 }),
             new("list_reports", "The saved test and benchmark reports, newest first: index (0 is the newest), when, kind, verdict and how many tests passed, failed or did not run. Optional limit (default 5, at most 10).",
                 """{"type":"object","properties":{"limit":{"type":"integer"}}}""",
@@ -390,6 +392,7 @@ public sealed partial class WebBridge
         }
     }
 
+    private const double StaleSeconds = 10;
     private static readonly System.Text.RegularExpressions.Regex NotAReading = new(@"Resolution|Critical|Warning|Limit|Threshold|Low|High", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     private static readonly JsonSerializerOptions Json_ = new() {

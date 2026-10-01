@@ -1638,6 +1638,7 @@
   <data name="Assist_Sensors" xml:space="preserve"><value>{0} در همین لحظه:</value></data>
   <data name="Assist_Sensors_None" xml:space="preserve"><value>هنوز خوانده نشده: {0}</value></data>
   <data name="Assist_Sensors_Empty" xml:space="preserve"><value>هیچ سنسوری از این نوع روی این سیستم مقدار نمی‌دهد.</value></data>
+  <data name="Assist_Sensors_Stale" xml:space="preserve"><value>{0} در آخرین خواندن، {1} ثانیه پیش (خواندن سنسورها الان جریان ندارد؛ این‌ها وضعیت همین لحظه نیستند):</value></data>
   <data name="Assist_Kind_Temperature" xml:space="preserve"><value>دماها</value></data>
   <data name="Assist_Kind_Fan" xml:space="preserve"><value>فن‌ها</value></data>
   <data name="Assist_Kind_Load" xml:space="preserve"><value>میزان استفاده</value></data>

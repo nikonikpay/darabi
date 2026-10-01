@@ -1638,6 +1638,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Sensors" xml:space="preserve"><value>{0} now:</value></data>
   <data name="Assist_Sensors_None" xml:space="preserve"><value>No reading yet: {0}</value></data>
   <data name="Assist_Sensors_Empty" xml:space="preserve"><value>No sensor of that kind gives a reading on this computer.</value></data>
+  <data name="Assist_Sensors_Stale" xml:space="preserve"><value>{0} at the last reading, {1} seconds ago (the sensors are not being read now; this is not the state at this moment):</value></data>
   <data name="Assist_Kind_Temperature" xml:space="preserve"><value>Temperatures</value></data>
   <data name="Assist_Kind_Fan" xml:space="preserve"><value>Fans</value></data>
   <data name="Assist_Kind_Load" xml:space="preserve"><value>Loads</value></data>
