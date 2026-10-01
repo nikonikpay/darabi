@@ -1625,7 +1625,7 @@
   <data name="Assist_LittleVram" xml:space="preserve"><value>دستیار کارت گرافیکی با حداقل ۴ گیگابایت حافظهٔ مستقل می‌خواهد؛ کارت این کامپیوتر کمتر دارد.</value></data>
   <data name="Assist_NoRoom" xml:space="preserve"><value>الان حافظهٔ آزاد این کامپیوتر برای مدل دستیار کافی نیست. برنامه‌های دیگر را ببندید و دوباره نگاه کنید.</value></data>
   <data name="Assist_Reading" xml:space="preserve"><value>در حال خواندن کارت گرافیک… وقتی حافظهٔ کارت معلوم شد، دستیار آماده می‌شود.</value></data>
-  <data name="Assist_Soft_Meets" xml:space="preserve"><value>{0} روی این سیستم اجرا می‌شود: هرچه سازنده خواسته را دارد.</value></data>
+  <data name="Assist_Soft_Meets" xml:space="preserve"><value>{0} روی این سیستم اجرا می‌شود: هرچه سازنده خواسته و برنامه می‌تواند بسنجد را دارد.</value></data>
   <data name="Assist_Spec_Cpu" xml:space="preserve"><value>پردازنده: {0}، با {1} هسته و {2} رشته.</value></data>
   <data name="Assist_Spec_Ram" xml:space="preserve"><value>رم: {0}.</value></data>
   <data name="Assist_Spec_Modules" xml:space="preserve"><value>({0} ماژول: {1})</value></data>
@@ -1653,6 +1653,7 @@
   <data name="Assist_Soft_More" xml:space="preserve"><value>سطح‌بندی سازنده و قطعه‌های نمونه در صفحهٔ «برنامه‌های تخصصی» است.</value></data>
   <data name="Assist_Soft_List" xml:space="preserve"><value>روی این سیستم:</value></data>
   <data name="Assist_Report_Head" xml:space="preserve"><value>آخرین گزارش ({0}، {1}، {2} دقیقه):</value></data>
+  <data name="Assist_Report_HeadEarlier" xml:space="preserve"><value>گزارش قبل از آخر ({0}، {1}، {2} دقیقه):</value></data>
   <data name="Assist_ReportKind_TestSession" xml:space="preserve"><value>تست</value></data>
   <data name="Assist_ReportKind_Benchmark" xml:space="preserve"><value>بنچمارک</value></data>
   <data name="Assist_Report_Tests" xml:space="preserve"><value>نتیجه: {0}؛ {1} از {2} تست قبول شد.</value></data>
@@ -1845,6 +1846,7 @@
   <data name="Assist_Send" xml:space="preserve"><value>ارسال</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>متوقف شد؛ چیزی تغییر نکرد.</value></data>
+  <data name="Assist_TestsInfo" xml:space="preserve"><value>چیزی اجرا نشد. تست‌هایی که این برنامه برای این قطعه دارد (با مدت پیش‌فرض)؛ روش هر کدام هنگام اجرا در گزارش زندهٔ همان صفحه، قدم‌به‌قدم و با فرمولش نوشته می‌شود:</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ اورکلاک».</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>

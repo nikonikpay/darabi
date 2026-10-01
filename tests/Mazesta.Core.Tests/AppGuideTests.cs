@@ -94,7 +94,7 @@ public class AppGuideTests
     }
     [Fact] public void A_command_said_not_to_be_done_starts_nothing()
     {
-        Assert.NotEqual(AiIntent.Tests, R("تست CPU را اجرا نکن، فقط توضیح بده").Intent);
+        Assert.Equal((AiIntent.TestsInfo, "cpu"), (R("تست CPU را اجرا نکن، فقط توضیح بده").Intent, R("تست CPU را اجرا نکن، فقط توضیح بده").Areas![0]));
         Assert.NotEqual(AiIntent.Tests, R("تست رم نمیخوام").Intent);
         Assert.False(AiAssistantPolicy.AsksToAct("تست cpu رو اجرا نکن"));
         Assert.True(AiAssistantPolicy.AsksToAct("تست cpu بگیر"));

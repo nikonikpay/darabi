@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -238,6 +238,9 @@ public static class AppGuide
             return new(AiIntent.Specs, Part: spec.Part);
 
         if (test && place is { Page: "checks" }) return new(AiIntent.Navigate, place);
+        // "Don't run it, only explain": the tests of those parts are listed, as the app has them, and nothing starts.
+        if (test && !go && !page && not && TestAreas.Where(a => Any(s, a.Words)).Select(a => a.Area).ToList() is { Count: > 0 } asked)
+            return new(AiIntent.TestsInfo, Areas: asked);
         if (test && !go && !page && !not)
         {
             var areas = TestAreas.Where(a => Any(s, a.Words)).Select(a => a.Area).ToList();

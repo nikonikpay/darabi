@@ -89,7 +89,7 @@ internal static class AssistantReplies
         if (S(r, "error") is { } e) return e;
         var temps = A(r, "highestTemperatures").Where(t => (part is null || S(t, "kind") == part) && D(t, "maxC") is not null).Take(3)
             .Select(t => $"{S(t, "part")} ({S(t, "sensor")}): {N(D(t, "maxC")!.Value)} °C").ToList();
-        string head = Loc.Format("Assist_Report_Head", T(r, "createdAt"), Loc.Get("Assist_ReportKind_" + S(r, "kind")), D(r, "minutes") is { } m ? N(m) : "—");
+        string head = Loc.Format(D(r, "index") is > 0 ? "Assist_Report_HeadEarlier" : "Assist_Report_Head", T(r, "createdAt"), Loc.Get("Assist_ReportKind_" + S(r, "kind")), D(r, "minutes") is { } m ? N(m) : "—");
         if (temperatures) return head + "\n" + (temps.Count == 0 ? Loc.Get(part is null ? "Assist_Report_NoTemps" : "Assist_Report_NoPartTemps") : Loc.Get("Assist_Report_Temps") + "\n" + string.Join("\n", temps.Select(x => "- " + x)));
         var lines = new List<string> { head };
         var tests = A(r, "tests").ToList();

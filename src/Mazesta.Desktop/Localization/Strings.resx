@@ -1625,7 +1625,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_LittleVram" xml:space="preserve"><value>The assistant needs a graphics card with at least 4 GB of its own memory; this one has less.</value></data>
   <data name="Assist_NoRoom" xml:space="preserve"><value>This computer does not have enough free memory for the assistant's model right now. Close other programs and look again.</value></data>
   <data name="Assist_Reading" xml:space="preserve"><value>Reading the graphics card… The assistant is offered once its memory is known.</value></data>
-  <data name="Assist_Soft_Meets" xml:space="preserve"><value>{0} runs on this computer: it has what the publisher asks for.</value></data>
+  <data name="Assist_Soft_Meets" xml:space="preserve"><value>{0} runs on this computer: it has everything the publisher asks for that the app can measure.</value></data>
   <data name="Assist_Spec_Cpu" xml:space="preserve"><value>Processor: {0}, {1} cores, {2} threads.</value></data>
   <data name="Assist_Spec_Ram" xml:space="preserve"><value>RAM: {0}.</value></data>
   <data name="Assist_Spec_Modules" xml:space="preserve"><value>({0} modules: {1})</value></data>
@@ -1653,6 +1653,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Soft_More" xml:space="preserve"><value>The publisher's tiers and example parts are on the Programs page, which is open beside the chat.</value></data>
   <data name="Assist_Soft_List" xml:space="preserve"><value>On this computer:</value></data>
   <data name="Assist_Report_Head" xml:space="preserve"><value>The last report ({0}, {1}, {2} minutes):</value></data>
+  <data name="Assist_Report_HeadEarlier" xml:space="preserve"><value>The report before the last ({0}, {1}, {2} minutes):</value></data>
   <data name="Assist_ReportKind_TestSession" xml:space="preserve"><value>tests</value></data>
   <data name="Assist_ReportKind_Benchmark" xml:space="preserve"><value>benchmark</value></data>
   <data name="Assist_Report_Tests" xml:space="preserve"><value>Verdict: {0}; {1} of {2} tests passed.</value></data>
@@ -1845,6 +1846,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Send" xml:space="preserve"><value>Send</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>Stopped; nothing was changed.</value></data>
+  <data name="Assist_TestsInfo" xml:space="preserve"><value>Nothing was run. The tests this app has for that part (with their default length); how each one works is written step by step, with its formula, in the live log of its page while it runs:</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the overclock page".</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>
