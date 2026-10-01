@@ -1847,6 +1847,8 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>Stopped; nothing was changed.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>Nothing was run. The tests this app has for that part (with their default length); how each one works is written step by step, with its formula, in the live log of its page while it runs:</value></data>
+  <data name="Assist_Cmd_Unchecked" xml:space="preserve"><value>The app has not checked this command: {0}. Make sure of it before running it.</value></data>
+  <data name="Drivers_Code_56" xml:space="preserve"><value>Windows is still setting up its network configuration (code 56); usual and harmless for the virtual WAN Miniport adapters a VPN adds.</value></data>
   <data name="Assist_Drv_Gpu" xml:space="preserve"><value>{0}: driver {1} installed ({2}).</value></data>
   <data name="Assist_Drv_Newer" xml:space="preserve"><value>Newer {0} from NVIDIA: {1} ({2}).</value></data>
   <data name="Assist_Drv_Same" xml:space="preserve"><value>Newest {0} from NVIDIA: {1} ({2}); the installed one is not older.</value></data>
@@ -1902,7 +1904,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Wu_Sub" xml:space="preserve"><value>Microsoft's signed drivers for this computer</value></data>
   <data name="Drivers_Wu_Search" xml:space="preserve"><value>Search</value></data>
   <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>Search again</value></data>
-  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>Asking Windows Update… this can take a minute or two.</value></data>
+  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>Asking Windows Update… this takes a few minutes (five here, on a fast connection).</value></data>
   <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} driver(s) not installed yet ({1}). Tick the ones to install.</value></data>
   <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update has no new driver for this computer ({0}).</value></data>
   <data name="Drivers_Wu_Install" xml:space="preserve"><value>Install the ticked ({0})</value></data>

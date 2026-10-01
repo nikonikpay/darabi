@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 namespace Mazesta.Core.Ai;
 
 /// <summary>A window of Windows the assistant may open (This PC, Device Manager…). <see cref="File"/> and <see cref="Arguments"/> are fixed here:
@@ -83,6 +84,23 @@ public static class WindowsActions
         if (found.Count == 0) return [];
         int best = found.Max(x => x.l);
         return [.. found.Where(x => x.l == best).Select(x => x.c)];
+    }
+
+    /// <summary>The commands a reply quotes (in `backticks` or a code block) that are not in the checked list, compared without case and with any
+    /// drive letter taken as a placeholder (manage-bde -off E: is the listed one; manage-bde -on D: is not). The model was told to give none, and
+    /// still wrote one after running a listed command; such a command is named under the reply as unchecked.</summary>
+    public static IReadOnlyList<string> UncheckedIn(string reply)
+    {
+        static string Key(string c) => Regex.Replace(string.Join(' ', c.Trim().ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries)), @"\b[a-z]:", "x:");
+        var known = Commands.Select(c => Key(c.Command)).ToHashSet();
+        var found = new List<string>();
+        foreach (Match m in Regex.Matches(reply, @"```[a-zA-Z]*\n?([\s\S]*?)```|`([^`\n]+)`"))
+            foreach (var line in (m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value).Split('\n'))
+            {
+                string c = line.Trim().TrimStart('>', '$').Trim();
+                if (Regex.IsMatch(c, @"^[A-Za-z][\w.-]*\s") && !known.Contains(Key(c)) && !found.Contains(c)) found.Add(c);
+            }
+        return found;
     }
 
     private static int Longest(string norm, IEnumerable<string> words) => words.Where(w => AppGuide.Has(norm, w)).Select(w => AppGuide.Normalize(w).Trim().Length).DefaultIfEmpty(0).Max();

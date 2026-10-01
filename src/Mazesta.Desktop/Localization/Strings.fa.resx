@@ -1847,6 +1847,8 @@
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>متوقف شد؛ چیزی تغییر نکرد.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>چیزی اجرا نشد. تست‌هایی که این برنامه برای این قطعه دارد (با مدت پیش‌فرض)؛ روش هر کدام هنگام اجرا در گزارش زندهٔ همان صفحه، قدم‌به‌قدم و با فرمولش نوشته می‌شود:</value></data>
+  <data name="Assist_Cmd_Unchecked" xml:space="preserve"><value>این دستور را برنامه بررسی نکرده است: {0}. پیش از اجرا از درستی‌اش مطمئن شوید.</value></data>
+  <data name="Drivers_Code_56" xml:space="preserve"><value>ویندوز هنوز پیکربندی شبکهٔ آن را تمام نکرده (کد ۵۶)؛ برای کارت‌های مجازی WAN Miniport که VPN اضافه می‌کند عادی و بی‌خطر است.</value></data>
   <data name="Assist_Drv_Gpu" xml:space="preserve"><value>{0}: درایور {1} نصب است (تاریخ {2}).</value></data>
   <data name="Assist_Drv_Newer" xml:space="preserve"><value>{0} جدیدتر از NVIDIA: نسخهٔ {1} ({2}).</value></data>
   <data name="Assist_Drv_Same" xml:space="preserve"><value>جدیدترین {0} از NVIDIA: نسخهٔ {1} ({2})؛ نسخهٔ نصب‌شده قدیمی‌تر از آن نیست.</value></data>
@@ -1902,7 +1904,7 @@
   <data name="Drivers_Wu_Sub" xml:space="preserve"><value>درایورهای امضاشدهٔ مایکروسافت برای این سیستم</value></data>
   <data name="Drivers_Wu_Search" xml:space="preserve"><value>جستجو</value></data>
   <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>جستجوی دوباره</value></data>
-  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>در حال پرسیدن از Windows Update… ممکن است یکی دو دقیقه طول بکشد.</value></data>
+  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>در حال پرسیدن از Windows Update… چند دقیقه طول می‌کشد (روی همین سیستم با اینترنت سریع، پنج دقیقه).</value></data>
   <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} درایور هنوز نصب نشده ({1}). موردهایی را که می‌خواهید نصب شوند تیک بزنید.</value></data>
   <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update درایور جدیدی برای این سیستم ندارد ({0}).</value></data>
   <data name="Drivers_Wu_Install" xml:space="preserve"><value>نصب موارد تیک‌خورده ({0})</value></data>

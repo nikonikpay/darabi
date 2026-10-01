@@ -154,4 +154,11 @@ public class AppGuideTests
         Assert.Equal("drivers", R("صفحه درایورها رو باز کن").Place?.Page);
         Assert.Equal(AiIntent.Specs, R("درایوهام چند گیگ هستن؟").Intent);
     }
+    [Fact] public void A_command_the_model_made_up_is_found_and_a_listed_one_is_not()
+    {
+        Assert.Equal(["manage-bde -on D:"], WindowsActions.UncheckedIn("برای رمزگذاری از `manage-bde -on D:` استفاده کنید."));
+        Assert.Empty(WindowsActions.UncheckedIn("اجرا کنید: `manage-bde -off E:` و بعد `manage-bde -status`"));
+        Assert.Equal(["Unlock-Item -Path D:"], WindowsActions.UncheckedIn("```\nUnlock-Item -Path D:\n```"));
+        Assert.Empty(WindowsActions.UncheckedIn("کارت `RTX` و فایل `hiberfil.sys`"));
+    }
 }

@@ -220,7 +220,11 @@ public sealed partial class WebBridge
                     piece => _window.Dispatcher.BeginInvoke(() => { reply.Text += piece; Push(); }),
                     x => _window.Dispatcher.BeginInvoke(() => { reply.Tools.Add(x); Push(); }), replyCts.Token, route.Intent == AiIntent.None && AiAssistantPolicy.AsksToAct(text), First(route, text)).ConfigureAwait(true);
                 // The UI thread may still hold the last pieces; they are in before the reply is tidied.
-                await _window.Dispatcher.InvokeAsync(() => { reply.Text = AiText.Unloop(AiText.CutAtMarker(reply.Text)); });
+                await _window.Dispatcher.InvokeAsync(() =>
+                {
+                    reply.Text = AiText.Unloop(AiText.CutAtMarker(reply.Text));
+                    if (WindowsActions.UncheckedIn(reply.Text) is { Count: > 0 } made) reply.Text += "\n\n⚠ " + Loc.Format("Assist_Cmd_Unchecked", string.Join("، ", made));
+                });
             }
             catch (OperationCanceledException) { if (reply.Text == Loc.Get("Assist_Dns_Testing") || reply.Text == Loc.Get("Assist_Making")) reply.Text = Loc.Get("Assist_Stopped"); }
             catch (Exception e) when (e is IOException or HttpRequestException or InvalidOperationException)
