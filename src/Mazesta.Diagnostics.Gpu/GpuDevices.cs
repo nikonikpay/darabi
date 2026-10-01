@@ -28,14 +28,16 @@ public static class GpuDevices
     /// Which of the monitor's GPU nodes (and the nodes under it) is the adapter a run used, for reading that card's own sensors. The only GPU
     /// the monitor sees, or the one whose name matches the adapter's; with several GPUs and no match nothing is chosen, so a run on one card
     /// is never credited with another card's temperature or free memory. The sensor monitor and DirectX do not share a device identity (LUID),
-    /// so the name is what ties them; two identical cards stay ambiguous and read as the first match.
+    /// so the name is what ties them; two identical cards stay ambiguous and neither is read.
     /// </summary>
     public static Func<HardwareNode, bool> SensorNode(PollingEngine? engine, string adapter)
     {
         var gpus = engine?.Hardware.Where(n => n.Kind == HardwareKind.Gpu && n.ParentId is null).ToList() ?? [];
         if (gpus.Count == 1) { var only = gpus[0].Id; return n => n.Id == only || n.ParentId == only; }
         string want = BenchmarkPeers.PartName(adapter);
-        var match = gpus.FirstOrDefault(n => string.Equals(BenchmarkPeers.PartName(n.Name), want, StringComparison.OrdinalIgnoreCase))?.Id;
+        // Two cards of one name can not be told apart by it: neither is chosen, rather than the first standing in for the one that ran.
+        var same = gpus.Where(n => string.Equals(BenchmarkPeers.PartName(n.Name), want, StringComparison.OrdinalIgnoreCase)).ToList();
+        HardwareId? match = same.Count == 1 ? same[0].Id : null;
         return n => match is { } id && (n.Id == id || n.ParentId == id);
     }
 }

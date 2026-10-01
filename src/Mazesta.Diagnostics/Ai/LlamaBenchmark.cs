@@ -28,13 +28,18 @@ public sealed partial class LlamaBenchmark(AiFiles files) : IBenchmark
         if (model is null || !files.HasModel(model)) return BenchmarkResult.Unsupported(Spec.Id, started, "The model is not downloaded.");
         if (!files.HasRuntime) return BenchmarkResult.Unsupported(Spec.Id, started, "The llama.cpp runtime is not downloaded.");
         bool gpu = opts.Get(DeviceOption) != "cpu";
-        string? device = null;
+        string? device = null; string twin = "";
         if (gpu)
         {
             var devices = await ListDevicesAsync(ct).ConfigureAwait(false);
             if (devices.Count == 0) return BenchmarkResult.Unsupported(Spec.Id, started, "No GPU can run llama.cpp's Vulkan backend (no Vulkan device found; the graphics driver may be missing or too old).");
             string want = opts.Get(GpuOption);
-            device = devices.FirstOrDefault(d => want.Length > 0 && (want.Contains(d.Name, StringComparison.OrdinalIgnoreCase) || d.Name.Contains(want, StringComparison.OrdinalIgnoreCase))).Id ?? devices[0].Id;
+            // The card chosen, or with no choice the first; a chosen card that is not there is an error, never another card measured in its place.
+            var named = want.Length == 0 ? devices.Take(1).ToList()
+                : devices.Where(d => want.Contains(d.Name, StringComparison.OrdinalIgnoreCase) || d.Name.Contains(want, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (named.Count == 0) return BenchmarkResult.Unsupported(Spec.Id, started, $"The chosen graphics card ({want}) is not among llama.cpp's Vulkan devices ({string.Join(", ", devices.Select(d => d.Name))}).");
+            device = named[0].Id;
+            if (named.Count > 1) twin = $" · one of {named.Count} cards of that name ({named[0].Id}); the card's sensors are not read, as the two can not be told apart";
         }
         string[] args = ["-m", files.ModelPath(model), "-dev", device ?? "none", .. gpu ? new[] { "-fitt", "1024" } : ["-ngl", "0"],
             "-p", "512", "-n", "128", "-r", Repetitions.ToString(CultureInfo.InvariantCulture), "-o", "json", "--progress"];
@@ -49,7 +54,7 @@ public sealed partial class LlamaBenchmark(AiFiles files) : IBenchmark
         List<BenchmarkMetric> metrics = [];
         if (result.PromptTokensPerSecond is { } pp) metrics.Add(new("Bench_Ai_Prompt", pp, "tok/s"));
         metrics.Add(new("Bench_Ai_Gen", result.GenerationTokensPerSecond.Value, "tok/s"));
-        if (gpu)
+        if (gpu && twin.Length == 0)
         {
             metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", Unit.Watt);
             metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, "Bench_Gpu_TempMax", Unit.Celsius, peak: true);
@@ -60,7 +65,7 @@ public sealed partial class LlamaBenchmark(AiFiles files) : IBenchmark
         }
         string detail = $"{model.Name} {model.Quant} · llama.cpp {AiCatalog.Runtime.Build} " + (gpu ? $"{result.Backend} on {result.Devices}" : "on the CPU") + $", {result.Threads} CPU threads"
             + $" · prompt 512 tokens ±{result.PromptSpread:0.#}, generation 128 tokens ±{result.GenerationSpread:0.#} tok/s, {Repetitions} runs each"
-            + (gpu ? " · fitted by llama.cpp (--fit-target 1024 MiB): layers that do not fit on the card run on the CPU" : "");
+            + (gpu ? " · fitted by llama.cpp (--fit-target 1024 MiB): layers that do not fit on the card run on the CPU" : "") + twin;
         return new BenchmarkResult(Spec.Id, BenchmarkStatus.Completed, started, finished, metrics, detail);
     }
 
