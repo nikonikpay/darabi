@@ -89,7 +89,9 @@ public sealed partial class WebBridge
                     var devices = engine.Hardware.Select(n => new
                     {
                         device = n.Name, part = n.Kind.ToString(),
-                        sensors = n.Sensors.Where(s => values.ContainsKey(s.Id) && (kind is null || s.Kind.ToString() == kind) && s.Kind.ToString() is "Temperature" or "Load" or "Clock" or "Power" or "Fan")
+                        // A drive's "Critical" or "Warning Temperature" and a DIMM's sensor resolution are limits and settings, not readings.
+                        sensors = n.Sensors.Where(s => values.ContainsKey(s.Id) && (kind is null || s.Kind.ToString() == kind) && s.Kind.ToString() is "Temperature" or "Load" or "Clock" or "Power" or "Fan"
+                                && !NotAReading.IsMatch(s.Name))
                             .Take(12).Select(s => new { name = s.Name, kind = s.Kind.ToString(), value = Math.Round(values[s.Id], 1), unit = s.Unit.ToString() }),
                     }).Where(d => d.sensors.Any()).Take(8);
                     return Task.FromResult(Json(new { secondsAgo = Math.Round((DateTimeOffset.UtcNow - snap.Timestamp).TotalSeconds), devices }));
@@ -106,7 +108,8 @@ public sealed partial class WebBridge
                     }));
                 }),
             new("get_report", "One saved report in full: its tests and outcomes, its benchmarks' numbers, the highest temperatures while it ran (per part) and the diagnosis findings. " +
-                "Optional index (0 = newest, as list_reports numbers them). Use it to summarise a report or to answer what the highest temperature was.",
+                "Optional index (0 = newest, as list_reports numbers them). Use it to summarise a report or to answer what the highest temperature was. Say only what it holds: " +
+                "do not call temperatures safe or high, nor the computer good, unless a finding says so.",
                 """{"type":"object","properties":{"index":{"type":"integer"}}}""",
                 (a, _) =>
                 {
@@ -117,7 +120,8 @@ public sealed partial class WebBridge
                     if (store.Load(list[i]) is not { } r) return Task.FromResult(Json(new { error = "the report could not be read" }));
                     return Task.FromResult(Json(new
                     {
-                        index = i, total = list.Count, createdAt = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), kind = r.Kind.ToString(), verdict = r.Verdict?.ToString(),
+                        index = i, total = list.Count, createdAt = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), kind = r.Kind.ToString(),
+                        verdict = r.Verdict?.ToString() ?? "none: a benchmark report measures speed, nothing in it passed or failed",
                         minutes = Math.Round(r.DurationSeconds / 60, 1), computer = new { cpu = r.Machine.Cpu?.Name?.Trim(), gpu = r.Machine.Gpus.FirstOrDefault()?.Name?.Trim() },
                         tests = r.Tests.Select(t => new { name = t.Name, outcome = t.Outcome.ToString(), errors = t.ErrorCount > 0 ? t.ErrorCount : (long?)null, detail = Cut(t.Detail, 100) is { Length: > 0 } d ? d : null }),
                         benchmarks = (r.Benchmarks ?? []).Select(b => new { name = b.Name, results = b.Metrics.Take(3).Select(m => $"{Math.Round(m.Value, 2)} {m.Unit} ({m.Name})") }),
@@ -204,6 +208,24 @@ public sealed partial class WebBridge
                     var overlay = _sp.GetRequiredService<Desktop.Services.OverlayService>(); overlay.SetVisible(v.GetBoolean());
                     return Json(new { shown = overlay.IsVisible });
                 })),
+            new("test_dns", "Times every DNS resolver the app knows (and the one in use) on this connection, as DNS Jumper does, and names the fastest that answered " +
+                "every lookup. It changes nothing: the user switches on the Windows tools page (it is opened for them).", """{"type":"object","properties":{}}""",
+                async (_, ct) =>
+                {
+                    var current = Diagnostics.Windows.DnsChoice.Current().SelectMany(a => a.Servers).Distinct().Where(x => Diagnostics.Windows.DnsChoice.Identify([x]) == "auto").Take(1).Select(x => ("current", x));
+                    var scores = await Diagnostics.Windows.DnsBench.RunAsync(Diagnostics.Windows.DnsChoice.Providers.Select(p => (p.Key, p.Value[0])).Concat(current), ct).ConfigureAwait(false);
+                    var best = Diagnostics.Windows.DnsBench.Best(scores);
+                    string Name(string id) => id == "current" ? Loc.Get("Dns_Modem") : Loc.Get("Dns_" + id);
+                    navigate("tools", "dns");
+                    return Json(new
+                    {
+                        fastest = best is null ? null : Name(best.Provider), fastestMs = best?.MedianMs is { } ms ? Math.Round(ms, 1) : (double?)null,
+                        inUse = Diagnostics.Windows.DnsChoice.Current().Select(a => Name(Diagnostics.Windows.DnsChoice.Identify(a.Servers) is "auto" ? "current" : Diagnostics.Windows.DnsChoice.Identify(a.Servers))).Distinct(),
+                        results = scores.Where(x => x.MedianMs is not null).OrderBy(x => x.Reliable ? 0 : 1).ThenBy(x => x.MedianMs).Take(6)
+                            .Select(x => new { name = Name(x.Provider), ms = Math.Round(x.MedianMs!.Value, 1), answered = $"{x.Answered}/{x.Asked}" }),
+                        note = "nothing was changed; the Windows tools page is open at the DNS box, where «فعال کن» switches to one",
+                    });
+                }),
             new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome. It takes minutes. Areas: cpu, memory (RAM), storage, network, gpu (graphics card). " +
                 "Name only the areas the user asked for. An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass.",
                 """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}}},"required":["areas"]}""",
@@ -320,12 +342,12 @@ public sealed partial class WebBridge
         var tier = v.Level is { } l ? x.Tiers.First(t => t.Kind == l) : null;
         return new
         {
-            id = x.Id, name = x.Name, level = v.Level?.ToString() ?? "BelowMinimum", levelName = Desktop.Localization.Loc.Get("Soft_Level_" + (v.Level?.ToString() ?? "Below")),
-            suits = tier is null ? null : Desktop.Localization.Loc.Get(tier.ScaleKey ?? "Soft_Scale_" + x.Category + "_" + tier.Kind),
+            id = x.Id, name = x.Name, level = SoftwareCatalog.LevelName(x, v), levelName = Desktop.Localization.Loc.Get("Soft_Level_" + SoftwareCatalog.LevelName(x, v)),
+            suits = tier is null ? null : Desktop.Localization.Loc.Get(x.Tiers.Count == 1 ? "Soft_Scale_Single" : tier.ScaleKey ?? "Soft_Scale_" + x.Category + "_" + tier.Kind),
             missingForNext = v.Missing.Select(m => ShortText(m)),
             nextLevel = v.Next is { } n ? Desktop.Localization.Loc.Get("Soft_Level_" + n) : null,
             tiers = detail ? x.Tiers.Select(t => new { level = Desktop.Localization.Loc.Get("Soft_Level_" + t.Kind), ramGb = t.RamGb, vramGb = t.VramGb, cores = t.Cores, gpu = t.Gpu, cpu = t.Cpu }) : null,
-            source = detail ? x.Source : null,
+            source = detail ? x.Source : null, note = detail && x.NoteKey is { } nk ? Desktop.Localization.Loc.Get(nk) : null,
         };
     }
 
@@ -333,6 +355,8 @@ public sealed partial class WebBridge
     private static string ShortText(SoftShort m) => m.Need is { } need
         ? Desktop.Localization.Loc.Format("Soft_Short_" + m.What, need.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture), m.Have?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")
         : Desktop.Localization.Loc.Get("Soft_Short_" + m.What);
+
+    private static readonly System.Text.RegularExpressions.Regex NotAReading = new(@"Resolution|Critical|Warning|Limit|Threshold|Low|High", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     private static readonly JsonSerializerOptions Json_ = new() {
         // Persian goes to the model as letters: escaped (پ…) the model can not read it and makes words up in its place.

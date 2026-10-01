@@ -24,8 +24,8 @@ public sealed partial class WebBridge
                     {
                         id = a.Id, name = a.Name, vendor = a.Vendor, category = a.Category.ToString(), icon = a.Icon, mono = a.Mono, color = a.Color,
                         purpose = Loc.Get(a.PurposeKey), note = a.NoteKey is null ? null : Loc.Get(a.NoteKey), source = a.Source,
-                        gpuNeed = a.Gpu.ToString(), level = v.Level?.ToString(), next = v.Next?.ToString(), missing = v.Missing.Select(ShortText),
-                        suits = tier is null ? null : Loc.Get(tier.ScaleKey ?? $"Soft_Scale_{a.Category}_{tier.Kind}"),
+                        gpuNeed = a.Gpu.ToString(), level = v.Level?.ToString(), label = SoftwareCatalog.LevelName(a, v), next = v.Next?.ToString(), missing = v.Missing.Select(ShortText),
+                        suits = tier is null ? null : Loc.Get(a.Tiers.Count == 1 ? "Soft_Scale_Single" : tier.ScaleKey ?? $"Soft_Scale_{a.Category}_{tier.Kind}"),
                         tiers = a.Tiers.Select(t => new
                         {
                             kind = t.Kind.ToString(), ram = t.RamGb, vram = t.VramGb, cores = t.Cores, rt = t.RayTracing || a.Gpu == SoftGpu.RayTracing, gpu = t.Gpu, cpu = t.Cpu,

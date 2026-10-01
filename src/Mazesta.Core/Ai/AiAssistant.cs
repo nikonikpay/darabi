@@ -50,7 +50,8 @@ public static class AiAssistantPolicy
         "State only what a tool returned or what this prompt says about the computer, with its numbers and outcome names exactly; copy names " +
         "(tests, programs, parts) as the tool wrote them. A test whose outcome is not Passed did not pass, and a declined or unstarted run gave no " +
         "result. Never say that a test ran or passed unless run_tests returned it in this answer. " +
-        "If a tool returned nothing or an error, say so. Never invent numbers, sensor readings, results, pages or buttons.";
+        "If a tool returned nothing or an error, say so. Never invent numbers, sensor readings, results, pages or buttons. " +
+        "The app has no list of games: for a game, give this computer's parts and do not say at which resolution or settings it runs.";
 
     /// <summary>The prompt with what the model is told of this computer (read by the app, so a question about the RAM or the processor is
     /// answered from it) and of the app's pages, by the names the pages show.</summary>

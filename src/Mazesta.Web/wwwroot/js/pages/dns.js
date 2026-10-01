@@ -24,12 +24,13 @@ export function dnsBox(i) {
       h("span", { class: "caption lat" }, a.name), h("b", {}, name(a.provider === "auto" ? "current" : a.provider)), h("span", { class: "lat" }, a.servers.join("  ") || "—")))
       : [h("p", { class: "caption" }, t("Dns_NoAdapter"))]));
   }
-  async function setDns(id, done) {
-    dnsMsg.className = "msg"; dnsMsg.textContent = t("Tools_Working");
+  // The message goes where the change was asked: under the test for its winner, under the list for a choice by hand.
+  async function setDns(id, done, msg = dnsMsg) {
+    msg.className = "msg"; msg.textContent = t("Tools_Working");
     try {
       const r = await call("tweaks.dns", { provider: id });
-      showDns(r.dns); dnsMsg.className = `msg ${r.error ? "fail" : "ok"}`; dnsMsg.textContent = r.error || done || t("Dns_Done");
-    } catch (e) { dnsMsg.className = "msg fail"; dnsMsg.textContent = String(e.message || e); }
+      showDns(r.dns); msg.className = `msg ${r.error ? "fail" : "ok"}`; msg.textContent = r.error || done || t("Dns_Done");
+    } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); }
   }
 
   // The test: every resolver at once, a few seconds; the table is drawn from what came back, the fastest reliable one first.
@@ -42,14 +43,14 @@ export function dnsBox(i) {
         h("th", {}, name(x.provider), x.provider === r.best ? h("span", { class: "pill pass" }, t("Dns_Fastest")) : null),
         h("td", { class: "lat caption" }, x.server),
         h("td", { class: "dns-bar" }, x.ms != null ? h("i", { style: { "--p": x.ms / slowest } }) : null),
-        h("td", { class: "num" }, x.ms != null ? `${fa(x.ms)} ms` : "—"),
+        h("td", { class: "num" }, x.ms != null ? `${x.ms} ms` : "—"),
         h("td", { class: "caption" }, x.reliable ? "" : t("Dns_Missed", fa(x.answered), fa(x.asked))),
-        h("td", {}, x.provider !== "current" && x.reliable ? h("button", { class: "btn quiet", type: "button", onclick: () => setDns(x.provider) }, t("Dns_Use")) : null))))));
+        h("td", {}, x.provider !== "current" && x.reliable ? h("button", { class: "btn quiet", type: "button", onclick: () => setDns(x.provider, null, testMsg) }, t("Dns_Use")) : null))))));
       const best = r.scores.find((x) => x.provider === r.best);
       if (!best) { testMsg.className = "msg fail"; testMsg.textContent = t("Dns_None"); return; }
       const already = r.best === "current" || r.inUse.length === 1 && r.inUse[0] === r.best;
       testMsg.className = "msg ok"; testMsg.textContent = already ? t("Dns_AlreadyBest", name(r.best), fa(best.ms)) : t("Dns_Best", name(r.best), fa(best.ms));
-      if (apply && !already) await setDns(r.best, t("Dns_Applied", name(r.best), fa(best.ms)));
+      if (apply && !already) await setDns(r.best, t("Dns_Applied", name(r.best), fa(best.ms)), testMsg);
     } catch (e) { testMsg.className = "msg fail"; testMsg.textContent = String(e.message || e); }
     finally { test.disabled = auto.disabled = false; }
   }

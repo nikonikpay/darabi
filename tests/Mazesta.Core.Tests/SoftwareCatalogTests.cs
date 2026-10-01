@@ -53,4 +53,10 @@ public class SoftwareCatalogTests
     }
     [Fact] public void Cores_count_only_where_the_publisher_names_them()
         => Assert.Contains(SoftwareCatalog.Judge(A("blender"), Pc("NVIDIA GeForce RTX 3060", 12, 32, cores: 6)).Missing, m => m.What == "Cores");
+    [Fact] public void A_program_with_one_set_of_requirements_is_met_not_at_its_minimum()
+    {
+        Assert.Equal("Meets", SoftwareCatalog.LevelName(A("vantage"), SoftwareCatalog.Judge(A("vantage"), Pc("NVIDIA GeForce RTX 3090", 24, 64))));
+        Assert.Equal("Below", SoftwareCatalog.LevelName(A("vantage"), SoftwareCatalog.Judge(A("vantage"), Pc("NVIDIA GeForce GTX 1080", 8, 64))));
+        Assert.Equal("Minimum", SoftwareCatalog.LevelName(A("lumion"), SoftwareCatalog.Judge(A("lumion"), Pc("NVIDIA GeForce RTX 4060", 8, 32))));
+    }
 }

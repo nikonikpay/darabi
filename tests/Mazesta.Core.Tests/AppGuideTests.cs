@@ -78,4 +78,18 @@ public class AppGuideTests
         string list = AppGuide.PageList(k => k);
         foreach (var page in AppGuide.Places.Select(p => p.Page).Distinct()) Assert.Contains(page + " = ", list);
     }
+    [Fact] public void The_overlay_is_switched_and_a_reading_now_is_the_sensors()
+    {
+        Assert.Equal((AiIntent.Overlay, true), (R("میخوام نمایش دما ها بالای صفحه بیاد").Intent, R("میخوام نمایش دما ها بالای صفحه بیاد").On));
+        Assert.Equal((AiIntent.Overlay, false), (R("اورلی رو خاموش کن").Intent, R("اورلی رو خاموش کن").On));
+        Goes("صفحه اورلی رو نشون بده", "overlay");
+        Assert.Equal(("Temperature", AiIntent.Sensors), (R("دمای cpu الان چنده؟").Kind, R("دمای cpu الان چنده؟").Intent));
+        Assert.Equal("Fan", R("دور فن ها چقدره").Kind);
+        Assert.Equal("cpu", R("دمای cpu الان چنده؟").Part);
+        Assert.NotEqual(AiIntent.Specs, R("کامپیوترم کند شده چیکار کنم؟").Intent);
+        Assert.Equal("all", R("مشخصات سیستمم رو بگو").Part);
+        Assert.Equal(AiIntent.Dns, R("بهترین dns رو برام پیدا کن").Intent);
+        Assert.Equal(AiIntent.Games, R("سیستم من برای گیم مناسبه؟").Intent);
+        Goes("برو بخش بازی", "tools", "gamemode");
+    }
 }

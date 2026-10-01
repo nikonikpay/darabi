@@ -1624,6 +1624,50 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_LittleVram" xml:space="preserve"><value>The assistant needs a graphics card with at least 4 GB of its own memory; this one has less.</value></data>
   <data name="Assist_NoRoom" xml:space="preserve"><value>This computer does not have enough free memory for the assistant's model right now. Close other programs and look again.</value></data>
   <data name="Assist_Reading" xml:space="preserve"><value>Reading the graphics card… The assistant is offered once its memory is known.</value></data>
+  <data name="Assist_Soft_Meets" xml:space="preserve"><value>{0} runs on this computer: it has what the publisher asks for.</value></data>
+  <data name="Assist_Spec_Cpu" xml:space="preserve"><value>Processor: {0}, {1} cores, {2} threads.</value></data>
+  <data name="Assist_Spec_Ram" xml:space="preserve"><value>RAM: {0}.</value></data>
+  <data name="Assist_Spec_Modules" xml:space="preserve"><value>({0} modules: {1})</value></data>
+  <data name="Assist_Spec_Gpu" xml:space="preserve"><value>Graphics card: {0}</value></data>
+  <data name="Assist_Spec_Vram" xml:space="preserve"><value>, with {0} of its own memory (VRAM).</value></data>
+  <data name="Assist_Spec_Os" xml:space="preserve"><value>Operating system: {0}.</value></data>
+  <data name="Assist_Spec_Board" xml:space="preserve"><value>Motherboard: {0} · BIOS {1}.</value></data>
+  <data name="Assist_Spec_Drive" xml:space="preserve"><value>Drive {0}: {1}, health: {2}.</value></data>
+  <data name="Assist_Spec_None" xml:space="preserve"><value>The app could not read that part of this computer.</value></data>
+  <data name="Assist_Sensors" xml:space="preserve"><value>{0} now:</value></data>
+  <data name="Assist_Sensors_None" xml:space="preserve"><value>No reading yet: {0}</value></data>
+  <data name="Assist_Sensors_Empty" xml:space="preserve"><value>No sensor of that kind gives a reading on this computer.</value></data>
+  <data name="Assist_Kind_Temperature" xml:space="preserve"><value>Temperatures</value></data>
+  <data name="Assist_Kind_Fan" xml:space="preserve"><value>Fans</value></data>
+  <data name="Assist_Kind_Load" xml:space="preserve"><value>Loads</value></data>
+  <data name="Assist_Kind_Clock" xml:space="preserve"><value>Clocks</value></data>
+  <data name="Assist_Kind_Power" xml:space="preserve"><value>Power</value></data>
+  <data name="Assist_Kind_All" xml:space="preserve"><value>Sensors</value></data>
+  <data name="Assist_Soft_One" xml:space="preserve"><value>{0} runs on this computer at the «{1}» level of its publisher's tiers.</value></data>
+  <data name="Assist_Soft_Below" xml:space="preserve"><value>{0} is below its publisher's minimum on this computer.</value></data>
+  <data name="Assist_Soft_Suits" xml:space="preserve"><value>Suits: {0}</value></data>
+  <data name="Assist_Soft_Next" xml:space="preserve"><value>For «{0}» it lacks: {1}.</value></data>
+  <data name="Assist_Soft_Lacks" xml:space="preserve"><value>It lacks: {1}.</value></data>
+  <data name="Assist_Soft_More" xml:space="preserve"><value>The publisher's tiers and example parts are on the Programs page, which is open beside the chat.</value></data>
+  <data name="Assist_Soft_List" xml:space="preserve"><value>On this computer:</value></data>
+  <data name="Assist_Report_Head" xml:space="preserve"><value>The last report ({0}, {1}, {2} minutes):</value></data>
+  <data name="Assist_ReportKind_TestSession" xml:space="preserve"><value>tests</value></data>
+  <data name="Assist_ReportKind_Benchmark" xml:space="preserve"><value>benchmark</value></data>
+  <data name="Assist_Report_Tests" xml:space="preserve"><value>Verdict: {0}; {1} of {2} tests passed.</value></data>
+  <data name="Assist_Report_Temps" xml:space="preserve"><value>Highest temperatures:</value></data>
+  <data name="Assist_Report_NoTemps" xml:space="preserve"><value>The report recorded no temperatures.</value></data>
+  <data name="Assist_Report_Findings" xml:space="preserve"><value>Worth attention:</value></data>
+  <data name="Assist_Report_More" xml:space="preserve"><value>{0} reports are saved; all of them are on the Reports page, and «give the report as PDF» makes a file.</value></data>
+  <data name="Assist_Dns_Testing" xml:space="preserve"><value>Timing the DNS servers on this connection…</value></data>
+  <data name="Assist_Dns_Best" xml:space="preserve"><value>The fastest DNS on this connection is {0} ({1} ms); in use now: {2}. Nothing was changed: the Windows tools page is open at the DNS box, where «Use» switches to it.</value></data>
+  <data name="Assist_Dns_None" xml:space="preserve"><value>No DNS server answered every lookup; nothing was changed.</value></data>
+  <data name="Assist_Games" xml:space="preserve"><value>The app has no list of games, so it does not guess at which settings a game runs. This computer has a {0} graphics card with {1} of its own memory, a {2} processor and {3} of RAM; compare these with the game's own requirements. For a measured answer, run the graphics benchmark on the Benchmarks page and compare it with other computers there.</value></data>
+  <data name="Soft_Level_Meets" xml:space="preserve"><value>Meets its requirements</value></data>
+  <data name="Soft_Scale_Single" xml:space="preserve"><value>Its publisher names one set of requirements, and this computer meets it; how large a scene it takes depends on the graphics memory and RAM.</value></data>
+  <data name="Assist_Overlay_On" xml:space="preserve"><value>The overlay is on: temperatures, loads and frame rate show over the screen.</value></data>
+  <data name="Assist_Overlay_Off" xml:space="preserve"><value>The overlay is off.</value></data>
+  <data name="Assist_Overlay_Failed" xml:space="preserve"><value>The overlay could not be switched.</value></data>
+  <data name="Assist_Tool_test_dns" xml:space="preserve"><value>Tested the DNS servers</value></data>
   <data name="Nav_Apps" xml:space="preserve"><value>Programs</value></data>
   <data name="Nav_Group_Apps" xml:space="preserve"><value>Programs and AI</value></data>
   <data name="Assist_Opened" xml:space="preserve"><value>Opened «{0}».</value></data>

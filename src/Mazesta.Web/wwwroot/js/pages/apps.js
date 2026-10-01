@@ -6,9 +6,9 @@ import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { go } from "../app.js";
 
-const LEVEL = { HighEnd: "run", Recommended: "pass", Minimum: "warn" };
+const LEVEL = { HighEnd: "run", Recommended: "pass", Meets: "pass", Minimum: "warn" };
 const lat = (text) => h("span", { class: "lat" }, text);
-const gb = (v) => (v == null ? "—" : `${fa(v)} GB`);
+const gb = (v) => (v == null ? "—" : h("span", { class: "num" }, `${v} GB`));
 
 // The program's own site icon where it has one of its own, else a lettered tile in its colour.
 export function appIcon(a, size = 40) {
@@ -17,7 +17,7 @@ export function appIcon(a, size = 40) {
 }
 
 export function levelPill(level) {
-  return h("span", { class: `pill ${LEVEL[level] || "fail"}` }, t(`Soft_Level_${level || "Below"}`));
+  return h("span", { class: `pill ${LEVEL[level] || "fail"}` }, t(`Soft_Level_${level}`));
 }
 
 export function mount(el) {
@@ -45,11 +45,11 @@ export function mount(el) {
           h("th", {}, h("span", { class: `pill ${x.met ? LEVEL[x.kind] : "none"}` }, t(`Soft_Level_${x.kind}`))),
           h("td", { class: "num" }, gb(x.ram)), h("td", { class: "num" }, gb(x.vram)),
           h("td", {}, x.gpu ? lat(x.gpu) : "—", x.rt ? h("div", { class: "caption" }, t("Apps_RayTracing")) : null),
-          h("td", {}, x.cpu ? lat(x.cpu) : x.cores ? `${fa(x.cores)} ${t("Apps_Cores")}` : "—"))))),
+          h("td", {}, x.cpu ? lat(x.cpu) : x.cores ? [h("span", { class: "num" }, x.cores), " ", t("Apps_Cores")] : "—"))))),
       h("p", { class: "caption" }, t("Apps_Source"), " ", lat(a.source)));
-    return h("article", { class: `apps-card lv-${a.level || "Below"}`, "data-app": a.id },
+    return h("article", { class: `apps-card lv-${a.label === "Meets" ? "Recommended" : a.level || "Below"}`, "data-app": a.id },
       h("header", { class: "apps-head" }, appIcon(a),
-        h("div", { class: "apps-name" }, h("h3", {}, lat(a.name)), h("span", { class: "caption" }, a.vendor)), levelPill(a.level)),
+        h("div", { class: "apps-name" }, h("h3", {}, lat(a.name)), h("span", { class: "caption" }, a.vendor)), levelPill(a.label)),
       h("p", { class: "apps-purpose" }, a.purpose),
       a.suits ? h("p", { class: "apps-suits" }, h("b", {}, t("Apps_Suits"), ": "), a.suits) : null,
       a.next ? h("div", { class: "apps-next" }, h("span", { class: "caption" }, t("Apps_Next", t(`Soft_Level_${a.next}`))),
@@ -69,7 +69,7 @@ export function mount(el) {
   function show(state) {
     s = state; const m = s.machine;
     const row = (k, v) => h("div", {}, h("dt", {}, t(k)), h("dd", {}, v ?? "—"));
-    machine.replaceChildren(row("Apps_Cpu", m.cpu ? lat(m.cpu) : null), row("Apps_Cores", m.cores != null ? `${fa(m.cores)}${m.threads ? " / " + fa(m.threads) : ""}` : null),
+    machine.replaceChildren(row("Apps_Cpu", m.cpu ? lat(m.cpu) : null), row("Apps_Cores", m.cores != null ? h("span", { class: "num" }, `${m.cores}${m.threads ? " / " + m.threads : ""}`) : null),
       row("Apps_Ram", m.ram != null ? gb(m.ram) : null), row("Apps_Gpu", m.gpu ? lat(m.gpu) : null), row("Apps_Vram", m.vram != null ? gb(m.vram) : null),
       row("Apps_RayTracing", m.rt == null ? null : t(m.rt ? "Value_Yes" : "Value_No")));
     count.textContent = t("Apps_Count", fa(s.apps.filter((a) => a.level).length), fa(s.apps.length));

@@ -91,7 +91,7 @@ function demoApps() {
   const cat = (id, name) => ({ id, name: strings[`Soft_Category_${id}`] || name });
   const tier = (kind, ram, vram, gpu, cpu, met, scaleKey) => ({ kind, ram, vram, cores: null, rt: false, gpu, cpu, met, suits: strings[scaleKey] || "" });
   const app = (id, name, vendor, category, icon, mono, color, level, next, missing, tiers, purposeKey, source) =>
-    ({ id, name, vendor, category, icon, mono, color, level, next, missing, tiers, purpose: strings[purposeKey] || "", note: null, source, gpuNeed: "Dedicated", suits: tiers.find((x) => x.kind === level)?.suits ?? null });
+    ({ id, name, vendor, category, icon, mono, color, level, label: level ? (tiers.length === 1 ? "Meets" : level) : "Below", next, missing, tiers, purpose: strings[purposeKey] || "", note: null, source, gpuNeed: "Dedicated", suits: tiers.find((x) => x.kind === level)?.suits ?? null });
   return {
     machine: { cpu: "AMD Ryzen 9 3950X 16-Core Processor", cores: 16, threads: 32, ram: 63.9, gpu: "NVIDIA GeForce RTX 3090", vram: 24, rt: true },
     categories: [cat("Visualization"), cat("Rendering"), cat("Architecture"), cat("Civil"), cat("Animation"), cat("Video"), cat("Graphics")],

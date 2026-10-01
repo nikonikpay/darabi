@@ -224,6 +224,25 @@ public sealed partial class WebBridge
                     : Loc.Format("Assist_Pointed", pageName, Loc.Get(place.TitleKey)) + (place.HintKey is { } hint ? " " + Loc.Get(hint) : "");
                 return true;
             }
+            if (route.Intent == AiIntent.Overlay)
+            {
+                string args = JsonSerializer.Serialize(new { on = route.On });
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "set_overlay", args), CancellationToken.None).ConfigureAwait(true);
+                reply.Tools.Add(new("set_overlay", args, result, ok));
+                using var d = JsonDocument.Parse(result);
+                reply.Text = !ok || d.RootElement.TryGetProperty("error", out _) ? Loc.Get("Assist_Overlay_Failed")
+                    : Loc.Get(d.RootElement.TryGetProperty("shown", out var shown) && shown.GetBoolean() ? "Assist_Overlay_On" : "Assist_Overlay_Off");
+                return true;
+            }
+            if (route.Intent == AiIntent.Games)
+            {
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "get_machine_summary", "{\"part\":\"all\"}"), CancellationToken.None).ConfigureAwait(true);
+                reply.Tools.Add(new("get_machine_summary", "{\"part\":\"all\"}", result, ok));
+                var pc = await SoftPc().ConfigureAwait(true);
+                static string Gb(long? b) => b is { } x ? Math.Round(x / 1073741824.0).ToString(System.Globalization.CultureInfo.InvariantCulture) + " GB" : "—";
+                reply.Text = Loc.Format("Assist_Games", pc.GpuName ?? "—", Gb(pc.VramBytes), pc.CpuName ?? "—", Gb(pc.RamBytes));
+                return true;
+            }
             if (route.Intent == AiIntent.ReportFile)
             {
                 string args = JsonSerializer.Serialize(new { format = route.Format });
@@ -235,6 +254,35 @@ public sealed partial class WebBridge
                     : Loc.Format("Assist_FileReady", d.RootElement.GetProperty("file").GetString() ?? "", d.RootElement.GetProperty("report").GetString() ?? "");
                 return true;
             }
+            // A question with one right answer, from what the app reads: the app writes the answer (see AssistantReplies).
+            if (route.Intent is AiIntent.Specs or AiIntent.Sensors or AiIntent.Software or AiIntent.SoftwareList or AiIntent.Report or AiIntent.Dns && First(route, "") is { } calls)
+            {
+                if (route.Intent == AiIntent.Dns) await _window.Dispatcher.InvokeAsync(() => { reply.Text = Loc.Get("Assist_Dns_Testing"); Push(); });
+                var results = new List<string>();
+                foreach (var c in calls)
+                {
+                    var (result, ok) = await AiAgent.InvokeAsync(tools, c, CancellationToken.None).ConfigureAwait(true);
+                    reply.Tools.Add(new(c.Name, c.Arguments, result.Length > AiAgent.MaxResultChars ? result[..AiAgent.MaxResultChars] + " …(cut)" : result, ok)); results.Add(result);
+                }
+                reply.Text = route.Intent switch
+                {
+                    AiIntent.Specs => AssistantReplies.Specs(route.Part ?? "all", results[0]),
+                    AiIntent.Sensors => AssistantReplies.Sensors(route.Kind, route.Part, results[0]),
+                    AiIntent.Software or AiIntent.SoftwareList => AssistantReplies.Software(results[0], route.Intent == AiIntent.Software),
+                    AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Part == "temps"),
+                    _ => AssistantReplies.Dns(results[0]),
+                };
+                // A program asked about is shown on the programs page as well, with its card marked.
+                if (route.App is { } app && route.Intent == AiIntent.Software)
+                {
+                    string args = JsonSerializer.Serialize(new { page = "apps", target = app.Id });
+                    var (r2, ok2) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), CancellationToken.None).ConfigureAwait(true);
+                    reply.Tools.Add(new("open_page", args, r2, ok2));
+                }
+                return true;
+            }
+            // "How do I…": the place is opened as well as explained, so what the answer says is on the screen.
+            if (route.Intent == AiIntent.HowTo && route.Place is { } where) this.Push("assistantNav", new { page = where.Page, target = where.Target });
             return false;
         }
 
@@ -245,6 +293,8 @@ public sealed partial class WebBridge
             return route.Intent switch
             {
                 AiIntent.Specs => [C("get_machine_summary", new { part = route.Part })],
+                AiIntent.Sensors => [C("get_sensors", new { kind = route.Kind })],
+                AiIntent.Dns => [C("test_dns", new { })],
                 AiIntent.Software when route.App is { } app => [C("check_software", new { app = app.Id })],
                 AiIntent.SoftwareList => [C("check_software", new { category = route.Category?.ToString() })],
                 AiIntent.Report => [C("list_reports", new { limit = 5 }), C("get_report", new { index = 0 })],

@@ -60,19 +60,20 @@ public static class DnsBench
         catch (SocketException) { return null; }
     }
 
-    /// <summary>Times every resolver at once (each one's lookups one after another, so they do not queue behind each other on one server).</summary>
+    /// <summary>Times every resolver at once: a few seconds in all, however many do not answer.</summary>
     public static async Task<IReadOnlyList<DnsScore>> RunAsync(IEnumerable<(string Provider, string Server)> resolvers, CancellationToken ct)
     {
         var tasks = resolvers.Select(async r =>
         {
             if (!IPAddress.TryParse(r.Server, out var ip)) return new DnsScore(r.Provider, r.Server, 0, 0, null);
+            // The names of one round at once (a resolver that does not answer costs one timeout a round, not one a name); the rounds one after
+            // another, so the second finds what the first put in the resolver's cache, as browsing does.
             var times = new List<double>(); int asked = 0;
             for (int round = 0; round < Rounds; round++)
-                foreach (var name in Names)
-                {
-                    asked++;
-                    if (await TimeAsync(ip, name, ct).ConfigureAwait(false) is { } ms) times.Add(ms);
-                }
+            {
+                var got = await Task.WhenAll(Names.Select(name => TimeAsync(ip, name, ct))).ConfigureAwait(false);
+                asked += got.Length; times.AddRange(got.Where(x => x is not null).Select(x => x!.Value));
+            }
             return new DnsScore(r.Provider, r.Server, times.Count, asked, Median(times));
         });
         return await Task.WhenAll(tasks).ConfigureAwait(false);

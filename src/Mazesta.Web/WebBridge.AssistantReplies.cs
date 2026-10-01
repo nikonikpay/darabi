@@ -1,0 +1,110 @@
+using System.Globalization; using System.Text; using System.Text.Json;
+using Mazesta.Core.Ai; using Mazesta.Core.Hardware; using Mazesta.Desktop.Localization;
+namespace Mazesta.Web;
+
+/// <summary>
+/// The answers the app writes itself, from what its tools read: a part of this computer, a reading now, a program's level, a report, the DNS
+/// test. These have one right answer, and a small model got them wrong in Persian (it called Vantage "filming", read GFLOPS as a number
+/// word), so the model is left out of them; it still sees them in the history for the questions that follow.
+/// </summary>
+internal static class AssistantReplies
+{
+    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    private static string? S(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+    private static string T(JsonElement e, string name) => S(e, name) ?? "—";
+    private static double? D(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : null;
+    private static IEnumerable<JsonElement> A(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array ? v.EnumerateArray() : [];
+    private static string N(double v) => v.ToString(v % 1 == 0 ? "0" : "0.#", Inv);
+    private static string Gb(double? v) => v is { } x ? N(x) + " GB" : "—";
+
+    public static string Specs(string part, string json)
+    {
+        using var d = JsonDocument.Parse(json); var r = d.RootElement; var lines = new List<string>();
+        if (r.TryGetProperty("cpu", out var cpu) && cpu.ValueKind == JsonValueKind.Object && S(cpu, "name") is { } cn)
+            lines.Add(Loc.Format("Assist_Spec_Cpu", cn, D(cpu, "cores") is { } c ? N(c) : "—", D(cpu, "threads") is { } t ? N(t) : "—"));
+        if (D(r, "ramGb") is { } ram)
+        {
+            var mods = A(r, "ramModules").Select(m => string.Join(" · ", new[] { D(m, "gb") is { } g ? Gb(g) : null, D(m, "speedMts") is { } sp ? N(sp) + " MT/s" : null, S(m, "maker"), S(m, "part") }.Where(x => !string.IsNullOrWhiteSpace(x)))).ToList();
+            lines.Add(Loc.Format("Assist_Spec_Ram", Gb(ram)) + (mods.Count > 0 ? " " + Loc.Format("Assist_Spec_Modules", mods.Count, string.Join("، ", mods)) : ""));
+        }
+        foreach (var g in A(r, "gpus"))
+            if (S(g, "name") is { } gn)
+                lines.Add(part == "vram" && D(g, "vramGb") is null ? "" : Loc.Format("Assist_Spec_Gpu", gn) + (D(g, "vramGb") is { } v ? Loc.Format("Assist_Spec_Vram", Gb(v)) : ""));
+        if (S(r, "os") is { } os) lines.Add(Loc.Format("Assist_Spec_Os", os));
+        if (S(r, "board") is { } b) lines.Add(Loc.Format("Assist_Spec_Board", b, S(r, "bios") ?? "—"));
+        foreach (var dr in A(r, "drives")) if (S(dr, "name") is { } dn) lines.Add(Loc.Format("Assist_Spec_Drive", dn, Gb(D(dr, "sizeGb")), S(dr, "health") ?? "—"));
+        lines.RemoveAll(string.IsNullOrEmpty);
+        return lines.Count == 0 ? Loc.Get("Assist_Spec_None") : string.Join("\n", lines);
+    }
+
+    /// <param name="part">The part asked about (cpu, gpu, memory, storage, network), or null for all.</param>
+    public static string Sensors(string? kind, string? part, string json)
+    {
+        using var d = JsonDocument.Parse(json); var r = d.RootElement;
+        if (S(r, "error") is { } e) return Loc.Format("Assist_Sensors_None", e);
+        var lines = new List<string>();
+        string? want = part switch { "cpu" => "Cpu", "gpu" => "Gpu", "memory" => "Memory", "storage" => "Storage", "network" => "Network", _ => null };
+        foreach (var dev in A(r, "devices").Where(x => want is null || S(x, "part") == want))
+        {
+            // The few that matter most: the hottest (or highest) three of each part.
+            foreach (var s in A(dev, "sensors").OrderByDescending(x => D(x, "value") ?? 0).Take(kind is null ? 2 : 3))
+            {
+                var unit = Enum.TryParse<Unit>(S(s, "unit"), out var u) ? u : Unit.None;
+                lines.Add($"- {S(dev, "device")} · {S(s, "name")}: {Units.FormatWithSymbol(D(s, "value") ?? 0, unit)}");
+            }
+        }
+        return lines.Count == 0 ? Loc.Get("Assist_Sensors_Empty") : Loc.Format("Assist_Sensors", Loc.Get("Assist_Kind_" + (kind ?? "All"))) + "\n" + string.Join("\n", lines);
+    }
+
+    public static string Software(string json, bool one)
+    {
+        using var d = JsonDocument.Parse(json); var r = d.RootElement;
+        if (S(r, "error") is { } e) return e;
+        var programs = A(r, "programs").ToList();
+        if (one && programs.Count == 1)
+        {
+            var p = programs[0]; var sb = new StringBuilder();
+            string level = T(p, "level");
+            sb.Append(Loc.Format(level == "Below" ? "Assist_Soft_Below" : level == "Meets" ? "Assist_Soft_Meets" : "Assist_Soft_One", T(p, "name"), T(p, "levelName")));
+            if (level != "Meets" && S(p, "suits") is { } suits) sb.Append(' ').Append(Loc.Format("Assist_Soft_Suits", suits));
+            if (S(p, "note") is { } note) sb.Append(' ').Append(note);
+            var missing = A(p, "missingForNext").Select(x => x.GetString()).ToList();
+            if (missing.Count > 0) sb.Append('\n').Append(Loc.Format(S(p, "level") == "Below" ? "Assist_Soft_Lacks" : "Assist_Soft_Next", T(p, "nextLevel"), string.Join("؛ ", missing)));
+            sb.Append('\n').Append(Loc.Get("Assist_Soft_More"));
+            return sb.ToString();
+        }
+        return Loc.Get("Assist_Soft_List") + "\n" + string.Join("\n", programs.Select(p => $"- {S(p, "name")}: {S(p, "levelName")}")) + "\n" + Loc.Get("Assist_Soft_More");
+    }
+
+    public static string Report(string listJson, string reportJson, bool temperatures)
+    {
+        using var d = JsonDocument.Parse(reportJson); var r = d.RootElement;
+        if (S(r, "error") is { } e) return e;
+        var temps = A(r, "highestTemperatures").Take(3).Select(t => $"{S(t, "part")} ({S(t, "sensor")}): {N(D(t, "maxC") ?? 0)} °C").ToList();
+        string head = Loc.Format("Assist_Report_Head", T(r, "createdAt"), Loc.Get("Assist_ReportKind_" + S(r, "kind")), D(r, "minutes") is { } m ? N(m) : "—");
+        if (temperatures) return head + "\n" + (temps.Count == 0 ? Loc.Get("Assist_Report_NoTemps") : Loc.Get("Assist_Report_Temps") + "\n" + string.Join("\n", temps.Select(x => "- " + x)));
+        var lines = new List<string> { head };
+        var tests = A(r, "tests").ToList();
+        if (tests.Count > 0)
+        {
+            int passed = tests.Count(t => S(t, "outcome") == "Passed");
+            lines.Add(Loc.Format("Assist_Report_Tests", S(r, "verdict") is { } v && Enum.TryParse<Reporting.ReportVerdict>(v, out _) ? Loc.Get("Reports_Verdict_" + v) : "—", passed, tests.Count));
+            foreach (var t in tests.Where(t => S(t, "outcome") != "Passed")) lines.Add($"- {S(t, "name")}: {Loc.Get("Test_Outcome_" + S(t, "outcome"))}");
+        }
+        foreach (var b in A(r, "benchmarks")) lines.Add($"- {S(b, "name")}: {A(b, "results").FirstOrDefault().GetString()}");
+        if (temps.Count > 0) lines.Add(Loc.Get("Assist_Report_Temps") + " " + string.Join("، ", temps));
+        var findings = A(r, "findings").Where(f => S(f, "level") is "Attention" or "Problem").Select(f => S(f, "title")).Distinct().ToList();
+        if (findings.Count > 0) lines.Add(Loc.Get("Assist_Report_Findings") + " " + string.Join("؛ ", findings));
+        using var l = JsonDocument.Parse(listJson);
+        if (D(l.RootElement, "total") is { } total && total > 1) lines.Add(Loc.Format("Assist_Report_More", N(total)));
+        return string.Join("\n", lines);
+    }
+
+    public static string Dns(string json)
+    {
+        using var d = JsonDocument.Parse(json); var r = d.RootElement;
+        var results = A(r, "results").Select(x => $"- {S(x, "name")}: {N(D(x, "ms") ?? 0)} ms ({S(x, "answered")})");
+        string inUse = string.Join("، ", A(r, "inUse").Select(x => x.GetString()));
+        return (S(r, "fastest") is { } best ? Loc.Format("Assist_Dns_Best", best, N(D(r, "fastestMs") ?? 0), inUse) : Loc.Get("Assist_Dns_None")) + "\n" + string.Join("\n", results);
+    }
+}

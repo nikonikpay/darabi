@@ -11,12 +11,16 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Software, SoftwareList, Report, ReportFile, Tests }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games }
 
-/// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all.</param>
+/// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
+/// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
 /// <param name="Format">For <see cref="AiIntent.ReportFile"/>: pdf, html or summary.</param>
 /// <param name="Category">For <see cref="AiIntent.SoftwareList"/>: the group asked about, or null for all.</param>
-public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Part = null, SoftApp? App = null, IReadOnlyList<string>? Areas = null, string? Format = null, SoftCategory? Category = null);
+/// <param name="On">For <see cref="AiIntent.Overlay"/>: shown or hidden.</param>
+/// <param name="Kind">For <see cref="AiIntent.Sensors"/>: Temperature, Load, Clock, Power or Fan, or null for all.</param>
+public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Part = null, SoftApp? App = null, IReadOnlyList<string>? Areas = null, string? Format = null,
+    SoftCategory? Category = null, bool On = false, string? Kind = null);
 
 /// <summary>
 /// The app's pages and the controls on them that people ask for, and the rules that read a message against them. Matching is on normalised
@@ -39,7 +43,8 @@ public static class AppGuide
         P("ram", "Dashboard_Ram", "the memory modules and their sensors", "صفحه رم", "بخش رم", "صفحه حافظه"),
         P("storage", "Nav_Storage", "the drives, their health and sensors", "ذخیره سازی", "هارد", "هاردها", "درایوها", "storage", "ssd"),
         P("network", "Nav_Network", "the network adapters", "شبکه", "کارت شبکه", "network"),
-        P("tests", "Nav_Tests", "hardware tests (processor, memory, drives, network, graphics card) with a report", "تستها", "تست ها", "صفحه تست", "بخش تست", "tests"),
+        P("tests", "Nav_Tests", "hardware tests with a report: the memory test checks the RAM's health, the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs",
+            "تستها", "تست ها", "صفحه تست", "بخش تست", "tests", "سلامت رم", "سلامت حافظه", "سلامت هارد", "سلامت گرافیک", "سلامت cpu", "تست رم", "تست حافظه", "تست هارد", "تست گرافیک", "تست cpu", "تست پردازنده"),
         T("tests", "start", "Test_Start", "start the ticked tests", null, "شروع تست", "شروع تستها"),
         P("benchmarks", "Nav_Benchmarks", "speed benchmarks and comparison with other computers", "بنچمارک", "بنچ مارک", "بنچمارکها", "benchmark", "benchmarks"),
         P("checkup", "Nav_Checkup", "one-click diagnosis: runs the benchmarks and judges the computer from them", "عیب یابی", "عیبیابی", "عیب یابی هوشمند", "چکاپ", "checkup", "diagnosis"),
@@ -154,7 +159,7 @@ public static class AppGuide
         ("storage", ["هارد", "ssd", "دیسک", "حافظه ذخیره", "درایو", "storage", "disk"]),
         ("board", ["مادربرد", "مادر برد", "بایوس", "motherboard", "bios"]),
         ("os", ["ویندوز", "سیستم عامل", "windows", "os"]),
-        ("all", ["مشخصات", "سیستمم", "سیستم من", "کامپیوترم", "لپ تاپم", "specs", "specification"]),
+        ("all", ["مشخصات", "کانفیگ", "specs", "specification"]),
     ];
     private static readonly (string Area, string[] Words)[] TestAreas =
     [
@@ -167,6 +172,16 @@ public static class AppGuide
         (SoftCategory.Civil, ["عمران", "سازه", "civil", "structural"]), (SoftCategory.Animation, ["انیمیشن", "جلوه ویژه", "جلوه های ویژه", "سه بعدی", "animation", "vfx"]),
         (SoftCategory.Video, ["تدوین", "ادیت", "ویدیو", "ویدئو", "editing", "video"]), (SoftCategory.Graphics, ["گرافیکی", "طراحی گرافیک", "graphic design"]),
     ];
+
+    private static readonly string[] OverlayWords = ["اورلی", "اورلای", "overlay", "بالای صفحه", "بالای مانیتور", "روی صفحه", "روی بازی", "گوشه صفحه", "fps"];
+    private static readonly string[] OnWords = ["روشن", "فعال", "بیاد", "بیار", "نشون بده", "نشان بده", "نمایش بده", "show", "turn on", "enable"];
+    private static readonly string[] OffWords = ["خاموش", "غیرفعال", "غیر فعال", "ببند", "بردار", "قطع", "مخفی", "hide", "turn off", "disable"];
+    private static readonly (string Kind, string[] Words)[] SensorKinds =
+    [
+        ("Temperature", ["دما", "دمای", "حرارت", "داغ", "temperature", "temp"]), ("Fan", ["فن", "دور فن", "fan"]), ("Load", ["لود", "بار پردازنده", "درصد استفاده", "load", "usage"]),
+        ("Clock", ["کلاک", "فرکانس", "clock"]), ("Power", ["توان", "وات", "مصرف برق", "power", "watt"]),
+    ];
+    private static readonly string[] NowWords = ["الان", "اکنون", "همین الان", "در حال حاضر", "فعلا", "now", "current", "چنده", "چقدره", "چقدر"];
 
     /// <summary>What a message asks for, when it is plain; <see cref="AiIntent.None"/> leaves it to the model. The order matters: a question of
     /// "how" is answered, not acted on; the reports and the programs have their own words; a part's figure is a question about this computer;
@@ -185,6 +200,7 @@ public static class AppGuide
             string? format = Has(s, "pdf") || Has(s, "پی دی اف") || Has(s, "پیدیاف") ? (Has(s, "خلاصه") || Has(s, "summary") ? "summary" : "pdf")
                 : Has(s, "html") || Has(s, "اچ تی ام ال") || Has(s, "صفحه وب") ? "html" : null;
             if (format is not null) return new(AiIntent.ReportFile, Format: format);
+            if (SensorKinds[0].Words.Any(w => Has(s, w))) return new(AiIntent.Report, Part: "temps");
             if (Any(s, SummaryWords) || ask && !go) return new(AiIntent.Report);
             return new(AiIntent.Navigate, place is { Page: "reports" } ? place : Page("reports"));
         }
@@ -194,7 +210,22 @@ public static class AppGuide
         if (Any(s, AppsWords) && (Any(s, RunWords) || ask) && !go)
             return new(AiIntent.SoftwareList, Category: Categories.Where(c => Any(s, c.Words)).Select(c => (SoftCategory?)c.Category).FirstOrDefault());
 
+        // The overlay over games: shown or hidden by a word of turning it on or off ("دماها بالای صفحه بیاد" is the overlay, not a page).
+        // "صفحهٔ اورلی" is its settings page; "بالای صفحه" is the screen.
+        bool on = Any(s, OnWords), off = Any(s, OffWords), screen = Has(s, "بالای صفحه") || Has(s, "روی صفحه") || Has(s, "گوشه صفحه");
+        if (Any(s, OverlayWords) && on != off && (screen || !page)) return new(AiIntent.Overlay, On: on);
+
+        // The DNS: finding the fastest is a test the app runs (it changes nothing).
+        if ((Has(s, "dns") || Has(s, "دی ان اس")) && (Has(s, "بهترین") || Has(s, "سریع") || Has(s, "تست") || Has(s, "پیدا") || Has(s, "best") || Has(s, "fastest") || Has(s, "test")))
+            return new(AiIntent.Dns);
+
+        // Games: the app has no list of them, so the answer is this computer's parts and where to measure it, never a guess at settings.
+        if ((Has(s, "بازی") || Has(s, "گیم") || Has(s, "game")) && !go && !page && (ask || Any(s, RunWords))) return new(AiIntent.Games);
+
         bool test = Any(s, TestWords);
+        // A reading now (a temperature, a fan, a load) is the sensors', not the specification's.
+        if (!go && !test && SensorKinds.FirstOrDefault(k => Any(s, k.Words)) is { Kind: not null } sensor && (Any(s, NowWords) || ask))
+            return new(AiIntent.Sensors, Kind: sensor.Kind, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area);
         if (!go && !test && ask && SpecParts.FirstOrDefault(p => Any(s, p.Words)) is { Part: not null } spec)
             return new(AiIntent.Specs, Part: spec.Part);
 

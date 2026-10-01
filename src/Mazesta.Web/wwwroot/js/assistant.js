@@ -108,7 +108,7 @@ export function mountAssistant(app, root) {
     if (x.name === "export_report") return r.made ? h("div", { class: "as-card as-file" }, icon("doc"), h("span", { class: "lat" }, r.file), h("span", { class: "grow" }),
       h("button", { class: "btn primary", type: "button", onclick: () => exec("assistant.exec", "openFile", { path: r.path }) }, icon("popout"), t("Assist_OpenFile"))) : null;
     if (x.name === "check_software") return h("div", { class: "as-card" }, (r.programs || []).slice(0, 8).map((p) => h("div", { class: "as-card-row" }, h("span", { class: "lat" }, p.name),
-      h("span", { class: `pill ${{ HighEnd: "run", Recommended: "pass", Minimum: "warn" }[p.level] || "fail"}` }, p.levelName))));
+      h("span", { class: `pill ${{ HighEnd: "run", Recommended: "pass", Meets: "pass", Minimum: "warn" }[p.level] || "fail"}` }, p.levelName))));
     if (x.name === "run_tests") return h("div", { class: "as-card" }, (r.results || []).map((y) => h("div", { class: "as-card-row" }, h("span", {}, y.name),
       h("span", { class: `pill ${OUTCOME[y.outcome] || "none"}` }, t(`Test_Outcome_${y.outcome}`)))));
     if (r.completed) return h("div", { class: "as-card" }, h("div", { class: "as-card-row" }, h("span", {}, r.benchmark),

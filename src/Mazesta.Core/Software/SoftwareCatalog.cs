@@ -190,6 +190,10 @@ public static class SoftwareCatalog
         return lacks;
     }
 
+    /// <summary>The name of the verdict for the page and the assistant: a program whose publisher gives one set of requirements either meets it or
+    /// not ("Meets", not "Minimum": an RTX 3090 is not the least that runs Vantage).</summary>
+    public static string LevelName(SoftApp app, SoftVerdict v) => v.Level is null ? "Below" : app.Tiers.Count == 1 ? "Meets" : v.Level.Value.ToString();
+
     /// <summary>The highest tier met (tiers are met in order: a higher tier counts only when every lower one is met too), and what the next
     /// tier needs that is missing. A program with only a recommended tier is either at it or below it.</summary>
     public static SoftVerdict Judge(SoftApp app, SoftMachine pc)
