@@ -14,6 +14,8 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
         [new TestOption(MemoryPatternExecutor.SizeOption, "Test_Option_MemoryMb", TestOptionKind.Integer, "0")]);
     TestDefinition ITestExecutor.Definition => Definition;
     private const int BlockBytes = MemoryPatternExecutor.BlockBytes;
+    /// <summary>A hold shorter than this says little about a leaking cell (MemTest86 holds each pattern for minutes): such a run ends Inconclusive.</summary>
+    public const int MinHoldSeconds = 60;
 
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
     {
@@ -27,7 +29,9 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
     private static TestRunResult Run(TestExecutionRequest request, long budget, DateTimeOffset started, CancellationToken ct)
     {
         var blocks = new List<NativeBlock>(); long errors = 0; string first = ""; int locked = 0; var sw = Stopwatch.StartNew();
-        var total = TimeSpan.FromSeconds(request.DurationSeconds);
+        var total = TimeSpan.FromSeconds(request.DurationSeconds); var held = new List<double>();
+        // The process's working-set limits are raised to lock the blocks and put back afterwards, however the run ends.
+        bool hadLimits = GetProcessWorkingSetSizeEx(GetCurrentProcess(), out nint oldMin, out nint oldMax, out uint oldFlags);
         try
         {
             for (long allocated = 0; allocated + BlockBytes <= budget; allocated += BlockBytes) { ct.ThrowIfCancellationRequested(); var b = new NativeBlock(BlockBytes); b.Span.Clear(); blocks.Add(b); }
@@ -42,10 +46,13 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
             {
                 var options = new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount };
                 Parallel.For(0, blocks.Count, options, i => blocks[i].Span.Fill(value));
-                // Each hold ends at its half of the run, so the two patterns rest for the same time whatever writing took.
-                var until = total * (index + 1) / 2 - TimeSpan.FromSeconds(3);
-                request.Note("Log_Mem_BitFade_Hold", "fill(all blocks, pattern); sleep; count(bytes ≠ pattern)", name, Math.Max(0, (int)(until - sw.Elapsed).TotalSeconds));
-                while (sw.Elapsed < until) { ct.ThrowIfCancellationRequested(); Thread.Sleep(250); request.Progress?.Invoke(new TestProgress(Math.Clamp(sw.Elapsed / total, 0, 1), "Test_Status_Running")); }
+                // The hold starts when this pattern is written, not when the run started: what is left of the run is shared by the patterns still
+                // to come (less a few seconds for the check), so slow preparation shortens both holds alike instead of erasing the first.
+                var hold = Stopwatch.StartNew();
+                var length = (total - sw.Elapsed) / (2 - index) - TimeSpan.FromSeconds(3);
+                request.Note("Log_Mem_BitFade_Hold", "fill(all blocks, pattern); sleep; count(bytes ≠ pattern)", name, Math.Max(0, (int)length.TotalSeconds));
+                while (hold.Elapsed < length) { ct.ThrowIfCancellationRequested(); Thread.Sleep(250); request.Progress?.Invoke(new TestProgress(Math.Clamp(sw.Elapsed / total, 0, 1), "Test_Status_Running")); }
+                held.Add(hold.Elapsed.TotalSeconds);
                 Parallel.For(0, blocks.Count, options, i =>
                 {
                     var span = blocks[i].Span; long bad = span.Length - span.Count(value);
@@ -54,18 +61,26 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
                 request.Note("Log_Mem_BitFade_Checked", null, name, Interlocked.Read(ref errors));
             }
         }
-        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, locked, first)); }
-        finally { foreach (var b in blocks) b.Dispose(); }
+        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, locked, first, held)); }
+        finally
+        {
+            foreach (var b in blocks) b.Dispose();
+            if (hadLimits) SetProcessWorkingSetSizeEx(GetCurrentProcess(), oldMin, oldMax, oldFlags);
+        }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        var outcome = errors > 0 ? TestOutcome.Failed : locked < blocks.Count ? TestOutcome.Inconclusive : TestOutcome.Passed;
-        return new(Definition.Id, outcome, started, request.Clock.UtcNow, errors, Describe(blocks.Count, locked, first));
+        // A fault seen is a fault whatever the hold; a clean result counts only when every block was locked and each pattern was held long enough.
+        var outcome = errors > 0 ? TestOutcome.Failed : locked < blocks.Count || held.Count < 2 || held.Min() < MinHoldSeconds ? TestOutcome.Inconclusive : TestOutcome.Passed;
+        return new(Definition.Id, outcome, started, request.Clock.UtcNow, errors, Describe(blocks.Count, locked, first, held));
     }
 
-    private static string Describe(int blocks, int locked, string first)
-        => $"Bit fade; held {(long)blocks * BlockBytes >> 20} MiB as all ones, then all zeros, each untouched for half the run; {locked} of {blocks} blocks locked in RAM"
+    private static string Describe(int blocks, int locked, string first, IReadOnlyList<double> held)
+        => $"Bit fade; held {(long)blocks * BlockBytes >> 20} MiB as all ones, then all zeros, untouched for {string.Join(" and ", held.Select(h => $"{h:0} s"))}"
+         + (held.Count > 0 && held.Min() < MinHoldSeconds ? $" - shorter than the {MinHoldSeconds} s a leaking cell needs to show; run it longer for a result" : "")
+         + $"; {locked} of {blocks} blocks locked in RAM"
          + (locked < blocks ? " - Windows would not lock the rest, so they may have been paged out while waiting and their result says nothing about the RAM" : "")
          + "; addressed by buffer offset, not physical address or slot" + (first.Length > 0 ? $"; {first}" : "");
 
     [DllImport("kernel32.dll")] private static extern nint GetCurrentProcess();
     [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetProcessWorkingSetSizeEx(nint process, nint min, nint max, uint flags);
+    [DllImport("kernel32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetProcessWorkingSetSizeEx(nint process, out nint min, out nint max, out uint flags);
 }

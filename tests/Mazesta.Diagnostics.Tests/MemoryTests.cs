@@ -49,13 +49,13 @@ public class MemoryTests
         Assert.Equal(TestOutcome.Passed, result.Outcome); Assert.Equal(0, result.ErrorCount);
         Assert.Contains("tested=128 MiB", result.Detail);
     }
-    [Fact] public async Task Bit_fade_holds_both_patterns_locked_in_ram_and_finds_nothing_on_good_memory()
+    [Fact] public async Task Bit_fade_holds_both_patterns_and_a_hold_too_short_to_show_fading_is_not_a_pass()
     {
         var options = new TestOptions(MemoryBitFadeExecutor.Definition, new Dictionary<string, string> { [MemoryPatternExecutor.SizeOption] = "128" });
         var result = await new MemoryBitFadeExecutor(new FixedProbe(64 * GiB, 60 * GiB)).RunAsync(new(2, new FakeClock(T0), null, null, options), CancellationToken.None);
         Assert.Equal(0, result.ErrorCount); Assert.Contains("held 128 MiB", result.Detail);
-        // Passed only when every block was locked; a block Windows would not lock makes it Inconclusive, never a pass.
-        Assert.Equal(result.Detail!.Contains("2 of 2 blocks locked") ? TestOutcome.Passed : TestOutcome.Inconclusive, result.Outcome);
+        // Two seconds hold nothing long enough (nor would a block Windows would not lock): Inconclusive, never a pass.
+        Assert.Equal(TestOutcome.Inconclusive, result.Outcome); Assert.Contains($"shorter than the {MemoryBitFadeExecutor.MinHoldSeconds} s", result.Detail);
     }
     [Fact] public async Task Too_little_free_ram_is_Unsupported_not_a_pass()
     {
