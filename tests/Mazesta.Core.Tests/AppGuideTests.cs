@@ -113,4 +113,38 @@ public class AppGuideTests
         Assert.Equal(1, R("گزارش قبلی رو خلاصه کن").Index); Assert.Equal(0, R("گزارش هارو خلاصه کن").Index);
         Assert.Equal((AiIntent.ReportFile, 1), (R("گزارش قبلی رو pdf بده").Intent, R("گزارش قبلی رو pdf بده").Index));
     }
+    // From the owner's chats: each of these went wrong (the overlay for the tray, a made-up "Unlock-Item", the programs list for "what can you do").
+    [Fact] public void The_tray_is_not_the_overlay()
+    {
+        Assert.Equal((AiIntent.Tray, true), (R("پایشگر tray رو فعال کن").Intent, R("پایشگر tray رو فعال کن").On));
+        Assert.Equal((AiIntent.Tray, true), (R("قابلیت ترای رو فعال کن").Intent, R("قابلیت ترای رو فعال کن").On));
+        Assert.Equal((AiIntent.Tray, true), (R("پایشگر رو فعال کن").Intent, R("پایشگر رو فعال کن").On));
+        Assert.Equal((AiIntent.Tray, false), (R("tray رو غیر فعال کن").Intent, R("tray رو غیر فعال کن").On));
+        Assert.Equal(AiIntent.Overlay, R("اورلی رو روشن کن").Intent);
+        Assert.NotEqual(AiIntent.Tray, R("سریع ترین dns رو پیدا کن").Intent);
+    }
+    [Fact] public void A_warning_at_a_temperature_is_the_trays()
+    {
+        var r = R("میتونی وقتی دمای cpu بالای 80 درجه شد بهم گزارش بدی؟");
+        Assert.Equal((AiIntent.Alert, "cpu", 80), (r.Intent, r.Part, r.Value));
+        Assert.Equal((AiIntent.Alert, "gpu", 85), (R("اگه دمای گرافیک از ۸۵ گذشت خبرم کن").Intent, R("اگه دمای گرافیک از ۸۵ گذشت خبرم کن").Part, R("اگه دمای گرافیک از ۸۵ گذشت خبرم کن").Value));
+        Assert.Null(R("هر وقت دما بالا رفت هشدار بده").Value);
+    }
+    [Fact] public void What_the_assistant_can_do_is_the_apps_answer()
+    {
+        Assert.Equal(AiIntent.Help, R("تو چه کارهایی میتونی انجام بدی؟").Intent);
+        Assert.Equal(AiIntent.Help, R("چه کارهای دیگه ای میتونی انجام بدی به غیر از کارهایی که برای همین برنامه هست. ؟ کلا چه سوالاتی میتونم ازت بپرسم؟").Intent);
+        Assert.Equal(AiIntent.SoftwareList, R("چه برنامه هایی روی سیستمم اجرا میشه؟").Intent);
+    }
+    [Fact] public void Windows_windows_open_and_commands_come_from_the_checked_list()
+    {
+        Assert.Equal((AiIntent.WinOpen, "thispc"), (R("میتونی mycomputer رو باز کنی؟").Intent, R("میتونی mycomputer رو باز کنی؟").Ids?[0]));
+        Assert.Equal("devmgr", R("دیوایس منیجر رو باز کن").Ids?[0]);
+        Assert.Equal("diskmgmt", R("مدیریت دیسک").Ids?[0]);
+        Assert.Equal(AiIntent.Navigate, R("صفحه تنظیمات رو باز کن").Intent);
+        var lockQ = R("درایو های من عکس قفل دارن یه دستور بده که اون درایو ها رو بردارم.");
+        Assert.Equal(AiIntent.WinCommand, lockQ.Intent); Assert.Equal(["bitlockerstatus", "bitlockeroff"], lockQ.Ids);
+        Assert.Equal(["flushdns"], R("دستور پاک کردن dns cache چیه").Ids);
+        Assert.Equal(AiIntent.WinCommandUnknown, R("یه دستور بده که ویندوز رو سریعتر کنه").Intent);
+    }
 }

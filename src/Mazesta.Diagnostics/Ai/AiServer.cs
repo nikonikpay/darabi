@@ -87,14 +87,18 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisp
             string data = line[5..].Trim();
             if (data == "[DONE]") break;
             var (piece, deltas) = Parse(data);
-            if (!string.IsNullOrEmpty(piece)) { LastUse = DateTime.UtcNow; text.Append(piece); onText(piece); if (AiText.Looping(text.ToString())) break; }
+            if (!string.IsNullOrEmpty(piece))
+            {
+                LastUse = DateTime.UtcNow; text.Append(piece); onText(piece);
+                if (AiText.Looping(text.ToString()) || AiText.MarkerAt(text.ToString()) >= 0) break;
+            }
             foreach (var d in deltas)
             {
                 var c = calls.TryGetValue(d.Index, out var have) ? have : (Id: "", Name: "", Args: new StringBuilder());
                 calls[d.Index] = (d.Id ?? c.Id, d.Name ?? c.Name, c.Args.Append(d.Arguments));
             }
         }
-        return new(text.ToString(), [.. calls.Values.Where(c => c.Name.Length > 0).Select((c, i) => new ToolCall(c.Id.Length > 0 ? c.Id : "call_" + i, c.Name, c.Args.ToString()))]);
+        return new(AiText.CutAtMarker(text.ToString()), [.. calls.Values.Where(c => c.Name.Length > 0).Select((c, i) => new ToolCall(c.Id.Length > 0 ? c.Id : "call_" + i, c.Name, c.Args.ToString()))]);
     }
 
     /// <summary>The text of one streamed chunk (<c>choices[0].delta.content</c>); null for a chunk with none.</summary>

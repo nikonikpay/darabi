@@ -18,6 +18,16 @@ public static class AiText
         return false;
     }
 
+    /// <summary>The model's own markers (end of turn, thinking) written out as text: a small model sometimes writes "&lt;/s&gt;" and goes on with made-up
+    /// markup ("&lt;tray&gt;&lt;cpu&gt;75.3 °C…"). The reply ends at the first of them.</summary>
+    private static readonly string[] Markers = ["</s>", "<|im_end|>", "<|im_start|>", "<|endoftext|>", "<|eot_id|>", "<end_of_turn>", "<start_of_turn>", "<think>", "</think>", "<|channel|>", "<|end|>"];
+
+    /// <summary>Where the reply must end: the first marker in it, or -1.</summary>
+    public static int MarkerAt(string text) => Markers.Select(m => text.IndexOf(m, StringComparison.Ordinal)).Where(i => i >= 0).DefaultIfEmpty(-1).Min();
+
+    /// <summary>The text cut at the first marker (see <see cref="MarkerAt"/>).</summary>
+    public static string CutAtMarker(string text) => MarkerAt(text) is var i and >= 0 ? text[..i].TrimEnd() : text;
+
     /// <summary>The text with each paragraph (a block between blank lines, or a line of 40 characters or more) kept only the first time it appears.</summary>
     public static string Unloop(string text)
     {

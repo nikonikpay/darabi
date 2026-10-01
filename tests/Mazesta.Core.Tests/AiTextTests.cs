@@ -18,4 +18,10 @@ public class AiTextTests
         Assert.StartsWith("برای تست میکروفن", kept);
     }
     [Fact] public void A_reply_without_repeats_is_kept_as_it_is() => Assert.Equal("یک.\n\nدو.", AiText.Unloop("یک.\n\nدو."));
+    [Fact] public void A_reply_ends_at_a_marker_the_model_wrote_out()
+    {
+        Assert.Equal("پایشگر فعال شد.", AiText.CutAtMarker("پایشگر فعال شد. </s> <tray><cpu>75.3 °C</cpu></tray>"));
+        Assert.Equal("ok", AiText.CutAtMarker("ok"));
+        Assert.Equal(-1, AiText.MarkerAt("a < b and c > d"));
+    }
 }

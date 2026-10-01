@@ -1847,6 +1847,94 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_StopReply" xml:space="preserve"><value>Stop</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>Stopped; nothing was changed.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>Nothing was run. The tests this app has for that part (with their default length); how each one works is written step by step, with its formula, in the live log of its page while it runs:</value></data>
+  <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>Warn when the processor passes (°C)</value></data>
+  <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>Warn when the graphics card passes (°C)</value></data>
+  <data name="Settings_Invalid_Alert" xml:space="preserve"><value>A warning temperature must be a whole number from 60 to 105.</value></data>
+  <data name="Assist_Help" xml:space="preserve"><value>What I can do:&#xA;- This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).&#xA;- Tests and benchmarks: run the processor, RAM, drive, network and graphics card tests and the benchmarks (I ask on the page before anything starts); find the fastest DNS.&#xA;- Professional programs: whether Lumion, V-Ray, Revit and others run on this computer, and at which level.&#xA;- This app: open any page and point at the control for a task; turn the overlay and the tray monitor on or off, and set the temperature the tray warns at ("tell me when the CPU passes 85").&#xA;- Windows: open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer, BitLocker and the sound and display settings; give checked commands (sfc, DISM, chkdsk, ipconfig, manage-bde…) with what they do and their warning, and run the ones that only read after you agree.&#xA;What I do not do: run any other command in Windows, change files, or install programs.</value></data>
+  <data name="Assist_Tray_On" xml:space="preserve"><value>The tray monitor is on: by the Windows clock it checks the temperatures every {0} minutes and the drives' health every {1} minutes, and tells a problem with a Windows notification; it also starts with Windows. It warns above {2} °C for the processor and {3} °C for the graphics card.</value></data>
+  <data name="Assist_Tray_Off" xml:space="preserve"><value>The tray monitor is off and no longer starts with Windows.</value></data>
+  <data name="Assist_Tray_Failed" xml:space="preserve"><value>The tray monitor could not be changed: {0}</value></data>
+  <data name="Assist_Alert_Ask" xml:space="preserve"><value>At what temperature? The tray warns now above {0} °C for the processor and {1} °C for the graphics card; say for example "warn me when the CPU passes 85" (60 to 105).</value></data>
+  <data name="Assist_Alert_Range" xml:space="preserve"><value>The warning temperature can be from 60 to 105 °C: below 60 a computer at work would warn all the time, and above 105 the part protects itself first.</value></data>
+  <data name="Assist_Alert_Set_cpu" xml:space="preserve"><value>Done: the tray monitor is on and warns with a Windows notification when the processor stays above {0} °C. It reads the temperature every {1} minutes, and every {2} seconds once it is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
+  <data name="Assist_Alert_Set_gpu" xml:space="preserve"><value>Done: the tray monitor is on and warns with a Windows notification when the graphics card stays above {0} °C. It reads the temperature every {1} minutes, and every {2} seconds once it is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
+  <data name="Assist_Alert_Set_both" xml:space="preserve"><value>Done: the tray monitor is on and warns with a Windows notification when the processor or the graphics card stays above {0} °C. It reads the temperatures every {1} minutes, and every {2} seconds once one is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
+  <data name="Assist_WinOpened" xml:space="preserve"><value>Opened: {0}.</value></data>
+  <data name="Assist_WinOpen_Failed" xml:space="preserve"><value>That window could not be opened.</value></data>
+  <data name="Assist_Cmd_None" xml:space="preserve"><value>The app has no checked command for this, and I do not give a guessed one: a wrong command in Windows can do damage. The commands I have:</value></data>
+  <data name="Assist_Cmd_Admin" xml:space="preserve"><value>Run it in a terminal opened with "Run as administrator".</value></data>
+  <data name="Assist_Cmd_CanRun" xml:space="preserve"><value>The app can run this one itself: say "run it".</value></data>
+  <data name="Assist_Confirm_Command" xml:space="preserve"><value>Run this Windows command?</value></data>
+  <data name="Assist_Tool_set_tray" xml:space="preserve"><value>Tray monitor</value></data>
+  <data name="Assist_Tool_open_windows" xml:space="preserve"><value>Windows window</value></data>
+  <data name="Assist_Tool_windows_command" xml:space="preserve"><value>Windows command</value></data>
+  <data name="Assist_Tool_run_windows_command" xml:space="preserve"><value>Ran a Windows command</value></data>
+  <data name="Win_thispc" xml:space="preserve"><value>This PC</value></data>
+  <data name="Win_explorer" xml:space="preserve"><value>File Explorer</value></data>
+  <data name="Win_downloads" xml:space="preserve"><value>the Downloads folder</value></data>
+  <data name="Win_recycle" xml:space="preserve"><value>the Recycle Bin</value></data>
+  <data name="Win_devmgr" xml:space="preserve"><value>Device Manager</value></data>
+  <data name="Win_taskmgr" xml:space="preserve"><value>Task Manager</value></data>
+  <data name="Win_diskmgmt" xml:space="preserve"><value>Disk Management</value></data>
+  <data name="Win_control" xml:space="preserve"><value>Control Panel</value></data>
+  <data name="Win_programs" xml:space="preserve"><value>Programs and Features</value></data>
+  <data name="Win_services" xml:space="preserve"><value>Services</value></data>
+  <data name="Win_events" xml:space="preserve"><value>Event Viewer</value></data>
+  <data name="Win_reliability" xml:space="preserve"><value>Reliability Monitor</value></data>
+  <data name="Win_about" xml:space="preserve"><value>About this PC</value></data>
+  <data name="Win_display" xml:space="preserve"><value>Display settings</value></data>
+  <data name="Win_sound" xml:space="preserve"><value>Sound</value></data>
+  <data name="Win_netconn" xml:space="preserve"><value>Network Connections</value></data>
+  <data name="Win_wifi" xml:space="preserve"><value>Wi-Fi settings</value></data>
+  <data name="Win_bluetooth" xml:space="preserve"><value>Bluetooth settings</value></data>
+  <data name="Win_printers" xml:space="preserve"><value>Printers &amp; scanners</value></data>
+  <data name="Win_startup" xml:space="preserve"><value>Startup apps</value></data>
+  <data name="Win_storagesense" xml:space="preserve"><value>Storage settings</value></data>
+  <data name="Win_bitlocker" xml:space="preserve"><value>BitLocker Drive Encryption</value></data>
+  <data name="Win_defender" xml:space="preserve"><value>Windows Security</value></data>
+  <data name="Win_firewall" xml:space="preserve"><value>Windows Defender Firewall</value></data>
+  <data name="Win_poweroptions" xml:space="preserve"><value>Power Options</value></data>
+  <data name="Win_datetime" xml:space="preserve"><value>Date &amp; time settings</value></data>
+  <data name="Win_dxdiag" xml:space="preserve"><value>DirectX Diagnostic Tool (dxdiag)</value></data>
+  <data name="Win_msinfo" xml:space="preserve"><value>System Information (msinfo32)</value></data>
+  <data name="Win_winver" xml:space="preserve"><value>About Windows (winver)</value></data>
+  <data name="WinCmd_bitlockerstatus" xml:space="preserve"><value>BitLocker state of the drives</value></data>
+  <data name="WinCmd_bitlockerstatus_What" xml:space="preserve"><value>Shows which drives BitLocker encrypts or is waiting to turn on (the lock on a drive's icon in This PC is usually this). It changes nothing.</value></data>
+  <data name="WinCmd_bitlockeroff" xml:space="preserve"><value>Turning BitLocker off for a drive (decrypting it)</value></data>
+  <data name="WinCmd_bitlockeroff_What" xml:space="preserve"><value>Decrypts drive D: (put your drive's letter in place of D:). The drive must be unlocked. It runs in the background and can take hours on a large drive; manage-bde -status shows how far it is, and the lock goes when it ends.</value></data>
+  <data name="WinCmd_bitlockeroff_Warn" xml:space="preserve"><value>The drive's protection is removed. If the computer is a customer's, ask them first; on a laptop keep it on the charger until it ends.</value></data>
+  <data name="WinCmd_flushdns" xml:space="preserve"><value>Clearing the DNS cache</value></data>
+  <data name="WinCmd_flushdns_What" xml:space="preserve"><value>Empties Windows' memory of DNS names: for a site that does not open after the DNS was changed.</value></data>
+  <data name="WinCmd_ipconfig" xml:space="preserve"><value>Network addresses (IP, DNS, MAC)</value></data>
+  <data name="WinCmd_ipconfig_What" xml:space="preserve"><value>Lists every network adapter with its IP, gateway, DNS servers and MAC address. It changes nothing.</value></data>
+  <data name="WinCmd_netreset" xml:space="preserve"><value>Resetting Windows' network settings</value></data>
+  <data name="WinCmd_netreset_What" xml:space="preserve"><value>Puts Winsock and TCP/IP back to their defaults: for an internet connection that is up but does not work.</value></data>
+  <data name="WinCmd_netreset_Warn" xml:space="preserve"><value>Windows has to be restarted afterwards; a static IP and some VPN programs may need setting up again.</value></data>
+  <data name="WinCmd_sfc" xml:space="preserve"><value>Checking and repairing Windows' system files</value></data>
+  <data name="WinCmd_sfc_What" xml:space="preserve"><value>Checks Windows' protected files and replaces a damaged one (10 to 30 minutes). The Windows tools page has a button for it.</value></data>
+  <data name="WinCmd_dism" xml:space="preserve"><value>Repairing the Windows image</value></data>
+  <data name="WinCmd_dism_What" xml:space="preserve"><value>Repairs, from Windows Update, the store SFC repairs from: if SFC could not repair, run this and then SFC again. It needs the internet.</value></data>
+  <data name="WinCmd_chkdsk" xml:space="preserve"><value>Checking a drive's file system</value></data>
+  <data name="WinCmd_chkdsk_What" xml:space="preserve"><value>Checks drive C: while it stays in use (/scan). Repairing needs chkdsk D: /f, which locks the drive (on C: it runs at the next restart). The disk's own health (SMART) is the drive test's job in this app.</value></data>
+  <data name="WinCmd_battery" xml:space="preserve"><value>A laptop battery's health report</value></data>
+  <data name="WinCmd_battery_What" xml:space="preserve"><value>Makes an HTML report with the battery's design and present capacity and its charge history. A desktop has no battery to report.</value></data>
+  <data name="WinCmd_hibernateoff" xml:space="preserve"><value>Turning hibernation off</value></data>
+  <data name="WinCmd_hibernateoff_What" xml:space="preserve"><value>Turns hibernation and Fast Startup off and deletes hiberfil.sys (several GB freed on C:). The Windows tools page has a switch for it.</value></data>
+  <data name="WinCmd_hibernateoff_Warn" xml:space="preserve"><value>Fast Startup goes too, and a laptop can no longer hibernate; powercfg /h on brings both back.</value></data>
+  <data name="WinCmd_drivers" xml:space="preserve"><value>The installed drivers</value></data>
+  <data name="WinCmd_drivers_What" xml:space="preserve"><value>Lists every driver with its state and file. It changes nothing.</value></data>
+  <data name="WinCmd_systeminfo" xml:space="preserve"><value>Windows information</value></data>
+  <data name="WinCmd_systeminfo_What" xml:space="preserve"><value>Windows' edition and install date, when it last started, the installed updates and the network adapters. It changes nothing.</value></data>
+  <data name="WinCmd_activation" xml:space="preserve"><value>Windows activation</value></data>
+  <data name="WinCmd_activation_What" xml:space="preserve"><value>Says whether Windows is activated, and until when. It changes nothing.</value></data>
+  <data name="WinCmd_bios" xml:space="preserve"><value>Restarting straight into the BIOS / UEFI</value></data>
+  <data name="WinCmd_bios_What" xml:space="preserve"><value>Restarts the computer at once into its UEFI setup (on UEFI computers only).</value></data>
+  <data name="WinCmd_bios_Warn" xml:space="preserve"><value>The computer restarts immediately: save everything first.</value></data>
+  <data name="WinCmd_wsreset" xml:space="preserve"><value>Resetting the Microsoft Store's cache</value></data>
+  <data name="WinCmd_wsreset_What" xml:space="preserve"><value>Clears the Store's cache: for a Store that does not open or download. Installed programs are not touched.</value></data>
+  <data name="WinCmd_tempclean" xml:space="preserve"><value>Deleting the user's temporary files</value></data>
+  <data name="WinCmd_tempclean_What" xml:space="preserve"><value>Deletes the files in the current user's Temp folder; files in use are skipped.</value></data>
+  <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>What is deleted does not go to the Recycle Bin and can not be brought back. Disk Cleanup, on the Windows tools page, is the safer way.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the overclock page".</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>

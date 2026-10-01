@@ -14,4 +14,14 @@ public class HealthAlertsTests
     [Fact] public void Throttle_is_low_clock_at_full_load() { var h = new HealthAlerts(1); Assert.Empty(h.Evaluate(new(null, null, 50, 1500), T0)); var a = Assert.Single(h.Evaluate(new(null, null, 99, 1500), T0.AddSeconds(30))); Assert.Equal(HealthAlertKind.CpuThrottle, a.Kind); Assert.Equal(1500, a.Value); }
     [Fact] public void Watching_is_true_only_while_a_rule_is_counting() { var h = new HealthAlerts(3); Assert.False(h.IsWatching); h.Evaluate(Hot(96), T0); Assert.True(h.IsWatching); h.Evaluate(Hot(70), T0.AddSeconds(30)); Assert.False(h.IsWatching); }
     [Fact] public void Gpu_overheat_is_independent_of_the_cpu() { var h = new HealthAlerts(1); var a = Assert.Single(h.Evaluate(new(60, 97, null, null), T0)); Assert.Equal(HealthAlertKind.GpuOverheat, a.Kind); }
+    [Fact] public void The_users_threshold_decides_and_clears_five_degrees_below()
+    {
+        var rules = new HealthAlerts(1, cpuAlertC: 80); var t = DateTimeOffset.UnixEpoch;
+        Assert.Empty(rules.Evaluate(new(79, null, null, null), t));
+        Assert.Single(rules.Evaluate(new(81, null, null, null), t));
+        Assert.Empty(rules.Evaluate(new(77, null, null, null), t.AddMinutes(1)));   // below 80, not yet 5 under: not re-armed
+        Assert.Empty(rules.Evaluate(new(81, null, null, null), t.AddMinutes(2)));
+        Assert.Empty(rules.Evaluate(new(74, null, null, null), t.AddMinutes(3)));
+        Assert.Single(rules.Evaluate(new(81, null, null, null), t.AddMinutes(4)));
+    }
 }

@@ -107,6 +107,10 @@ export function mountAssistant(app, root) {
     if (r.started === false) return h("div", { class: "as-card" }, h("span", { class: "caption" }, t("Assist_Run_NotStarted")));
     if (x.name === "export_report") return r.made ? h("div", { class: "as-card as-file" }, icon("doc"), h("span", { class: "lat" }, r.file), h("span", { class: "grow" }),
       h("button", { class: "btn primary", type: "button", onclick: () => exec("assistant.exec", "openFile", { path: r.path }) }, icon("popout"), t("Assist_OpenFile"))) : null;
+    // A Windows command the app ran: its own output, as Windows printed it; the battery report is a file to open.
+    if (x.name === "run_windows_command") return r.declined ? null : h("div", { class: "as-card" }, h("div", { class: "as-card-row" }, h("span", { class: "lat" }, r.command), h("span", { class: `pill ${r.exitCode === 0 ? "none" : "fail"}` }, h("span", { class: "lat" }, `exit ${r.exitCode}`))),
+      r.output ? h("pre", { class: "lat as-out", dir: "ltr" }, r.output) : null,
+      r.path ? h("button", { class: "btn primary", type: "button", onclick: () => exec("assistant.exec", "openFile", { path: r.path }) }, icon("popout"), t("Assist_OpenFile")) : null);
     if (x.name === "check_software") return h("div", { class: "as-card" }, (r.programs || []).slice(0, 8).map((p) => h("div", { class: "as-card-row" }, h("span", { class: "lat" }, p.name),
       h("span", { class: `pill ${{ HighEnd: "run", Recommended: "pass", Meets: "pass", Minimum: "warn" }[p.level] || "fail"}` }, p.levelName))));
     if (x.name === "run_tests") return h("div", { class: "as-card" }, (r.results || []).map((y) => h("div", { class: "as-card-row" }, h("span", {}, y.name),
@@ -146,8 +150,8 @@ export function mountAssistant(app, root) {
     const boxes = c.items.map(() => h("input", { type: "checkbox", class: "check", checked: true }));
     const yes = h("button", { class: "btn primary", onclick: () => exec("assistant.exec", "confirm", { value: true, keep: boxes.map((b, i) => (b.checked ? i : -1)).filter((i) => i >= 0) }) }, icon("play"), t("Assist_Confirm_Yes"));
     for (const b of boxes) b.onchange = () => { yes.disabled = !boxes.some((x) => x.checked); };
-    confirmBox.replaceChildren(h("h3", { class: "as-confirm-title" }, t(c.kind === "tests" ? "Assist_Confirm_Tests" : "Assist_Confirm_Benchmark")),
-      h("ul", { class: "as-confirm-list" }, c.items.map((i, n) => h("li", {}, h("label", {}, c.items.length > 1 ? boxes[n] : null, h("span", {}, i.name)), h("span", { class: "caption" }, t("Assist_Seconds", fa(i.duration)))))),
+    confirmBox.replaceChildren(h("h3", { class: "as-confirm-title" }, t(c.kind === "tests" ? "Assist_Confirm_Tests" : c.kind === "command" ? "Assist_Confirm_Command" : "Assist_Confirm_Benchmark")),
+      h("ul", { class: "as-confirm-list" }, c.items.map((i, n) => h("li", {}, h("label", {}, c.items.length > 1 ? boxes[n] : null, h("span", {}, i.name)), i.duration ? h("span", { class: "caption" }, t("Assist_Seconds", fa(i.duration))) : null))),
       h("p", { class: "caption" }, t("Assist_Confirm_Text")),
       h("div", { class: "btn-row" }, yes, h("button", { class: "btn quiet", onclick: () => exec("assistant.exec", "confirm", { value: false }) }, t("Assist_Confirm_No"))));
     confirmBox.scrollIntoView({ block: "nearest" });

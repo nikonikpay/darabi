@@ -72,7 +72,7 @@ public sealed partial class WebBridge
                 history = chats.List().Select(x => new { id = x.Id, title = x.Title, updated = x.Updated.ToUnixTimeMilliseconds(), count = x.Count }),
                 // A run's result goes to the page as the tool returned it: the page draws the outcomes from it, not from the model's words.
                 // So are a file the assistant made (the chat offers it with an Open button) and a program's verdict (drawn as a card).
-                messages = (chat?.Messages ?? []).Select(x => new { role = x.Role, text = x.Text, tools = x.Tools.Select(t => new { name = t.Name, ok = t.Ok, result = t.Name is "run_tests" or "run_benchmark" or "export_report" or "check_software" ? t.Result : null }) }),
+                messages = (chat?.Messages ?? []).Select(x => new { role = x.Role, text = x.Text, tools = x.Tools.Select(t => new { name = t.Name, ok = t.Ok, result = t.Name is "run_tests" or "run_benchmark" or "export_report" or "check_software" or "run_windows_command" ? t.Result : null }) }),
             };
         }
 
@@ -220,7 +220,7 @@ public sealed partial class WebBridge
                     piece => _window.Dispatcher.BeginInvoke(() => { reply.Text += piece; Push(); }),
                     x => _window.Dispatcher.BeginInvoke(() => { reply.Tools.Add(x); Push(); }), replyCts.Token, route.Intent == AiIntent.None && AiAssistantPolicy.AsksToAct(text), First(route, text)).ConfigureAwait(true);
                 // The UI thread may still hold the last pieces; they are in before the reply is tidied.
-                await _window.Dispatcher.InvokeAsync(() => { reply.Text = AiText.Unloop(reply.Text); });
+                await _window.Dispatcher.InvokeAsync(() => { reply.Text = AiText.Unloop(AiText.CutAtMarker(reply.Text)); });
             }
             catch (OperationCanceledException) { if (reply.Text == Loc.Get("Assist_Dns_Testing") || reply.Text == Loc.Get("Assist_Making")) reply.Text = Loc.Get("Assist_Stopped"); }
             catch (Exception e) when (e is IOException or HttpRequestException or InvalidOperationException)
@@ -259,6 +259,47 @@ public sealed partial class WebBridge
                 using var d = JsonDocument.Parse(result);
                 reply.Text = !ok || d.RootElement.TryGetProperty("error", out _) ? Loc.Get("Assist_Overlay_Failed")
                     : Loc.Get(d.RootElement.TryGetProperty("shown", out var shown) && shown.GetBoolean() ? "Assist_Overlay_On" : "Assist_Overlay_Off");
+                return true;
+            }
+            if (route.Intent == AiIntent.Help) { reply.Text = Loc.Get("Assist_Help"); return true; }
+            // The tray monitor, on or off, or on with the temperature it warns at ("tell me when the CPU passes 80").
+            if (route.Intent is AiIntent.Tray or AiIntent.Alert)
+            {
+                if (route.Intent == AiIntent.Alert && route.Value is not (>= 60 and <= 105))
+                {
+                    reply.Text = route.Value is null ? Loc.Format("Assist_Alert_Ask", _config.TrayCpuAlertC, _config.TrayGpuAlertC) : Loc.Get("Assist_Alert_Range");
+                    return true;
+                }
+                string args = route.Intent == AiIntent.Tray ? JsonSerializer.Serialize(new { on = route.On })
+                    : JsonSerializer.Serialize(new { on = true, cpuAlertC = route.Part is null or "cpu" ? route.Value : null, gpuAlertC = route.Part is null or "gpu" ? route.Value : null });
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "set_tray", args), ct).ConfigureAwait(true);
+                reply.Tools.Add(new("set_tray", args, result, ok));
+                using var d = JsonDocument.Parse(result);
+                string? why = d.RootElement.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null;
+                reply.Text = why is not null ? Loc.Format("Assist_Tray_Failed", why)
+                    : route.Intent == AiIntent.Tray ? (route.On ? Loc.Format("Assist_Tray_On", _config.TrayIdleIntervalMinutes, _config.TrayHealthIntervalMinutes, _config.TrayCpuAlertC, _config.TrayGpuAlertC) : Loc.Get("Assist_Tray_Off"))
+                    : Loc.Format("Assist_Alert_Set_" + (route.Part ?? "both"), route.Value ?? 0, _config.TrayIdleIntervalMinutes, _config.TrayWatchIntervalSeconds);
+                return true;
+            }
+            if (route.Intent == AiIntent.WinOpen)
+            {
+                string args = JsonSerializer.Serialize(new { window = route.Ids![0] });
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_windows", args), ct).ConfigureAwait(true);
+                reply.Tools.Add(new("open_windows", args, result, ok));
+                using var d = JsonDocument.Parse(result);
+                reply.Text = d.RootElement.TryGetProperty("name", out var n) ? Loc.Format("Assist_WinOpened", n.GetString() ?? "") : Loc.Get("Assist_WinOpen_Failed");
+                return true;
+            }
+            // A Windows command: only from the app's checked list, with what it does and its warning. One that is not there is not made up.
+            if (route.Intent is AiIntent.WinCommand or AiIntent.WinCommandUnknown)
+            {
+                string args = JsonSerializer.Serialize(new { topic = route.Ids is { } ids ? string.Join(",", ids) : "" });
+                var cmds = (route.Ids ?? []).Select(WindowsActions.Command).OfType<WinCommand>().ToList();
+                reply.Tools.Add(new("windows_command", args, JsonSerializer.Serialize(new { found = cmds.Count > 0, commands = cmds.Select(c => new { id = c.Id, command = c.Command }) }), true));
+                reply.Text = cmds.Count == 0
+                    ? Loc.Get("Assist_Cmd_None") + "\n" + string.Join("\n", WindowsActions.Commands.Select(c => "- " + Loc.Get("WinCmd_" + c.Id)))
+                    : string.Join("\n\n", cmds.Select(c => Loc.Get("WinCmd_" + c.Id) + ":\n" + c.Command + "\n" + Loc.Get("WinCmd_" + c.Id + "_What")
+                        + (c.Warn ? "\n⚠ " + Loc.Get("WinCmd_" + c.Id + "_Warn") : "") + (c.Admin ? "\n" + Loc.Get("Assist_Cmd_Admin") : "") + (c.Run is not null ? "\n" + Loc.Get("Assist_Cmd_CanRun") : "")));
                 return true;
             }
             if (route.Intent == AiIntent.TestsInfo && _testVm is { } tv)

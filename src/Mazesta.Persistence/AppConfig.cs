@@ -27,6 +27,9 @@ public sealed class AppConfig : IVersionedDocument
     public int TrayWatchIntervalSeconds { get; set; } = 30;
     /// <summary>How often the tray reads the drives' health (SMART / Windows' verdict, wear, uncorrected errors). Absent in older files, so 30.</summary>
     public int TrayHealthIntervalMinutes { get; set; } = 30;
+    /// <summary>The processor's and the graphics card's temperature (°C) above which the tray and the app warn. Absent in older files, so 95.</summary>
+    public int TrayCpuAlertC { get; set; } = 95;
+    public int TrayGpuAlertC { get; set; } = 95;
     /// <summary>The on-screen overlay was on when the app last closed: it comes back on at start. Absent in older files, so off.</summary>
     public bool OverlayVisible { get; set; }
     /// <summary>TopLeft, TopRight, BottomLeft or BottomRight of the primary screen.</summary>

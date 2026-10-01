@@ -32,7 +32,7 @@ export function mount(el) {
       box({ kind: "Storage", ico: "bug", title: t("Web_Diag_Title"), sub: t("Web_Diag_Sub"), i: 1,
         body: [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs] }),
       box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 2,
-        body: [h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth"))),
+        body: [h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth")), row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert"))),
         h("div", { class: "btn-row" }, enableTray, disableTray), h("p", { class: "note" }, trayStatus)] }),
       box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 3,
         body: [folder, h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), h("p", { class: "note" }, version)] })));
@@ -44,7 +44,7 @@ export function mount(el) {
       built = true;
     }
     f.language.value = s.language; f.renderMode.value = s.renderMode;
-    for (const k of ["interval", "storageInterval", "shopName", "trayFirst", "trayIdle", "trayWatch", "trayHealth"]) setField(f[k], s[k]);
+    for (const k of ["interval", "storageInterval", "shopName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert"]) setField(f[k], s[k]);
     message.textContent = s.message || ""; trayStatus.textContent = s.trayStatus || "";
     enableTray.disabled = !s.canEnableTray; disableTray.disabled = !s.canDisableTray;
     folder.textContent = s.dataFolder; version.textContent = `${s.mode} · v${s.version}`;

@@ -15,7 +15,7 @@ internal sealed class TrayContext : ApplicationContext
 {
     private static readonly TimeSpan Busy = TimeSpan.FromSeconds(20);
     private readonly TrayIntervals _intervals; private readonly string _logFile;
-    private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(); private readonly HealthAlerts _rules = new();
+    private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(); private readonly HealthAlerts _rules;
     private readonly HashSet<string> _drivesAnnounced = [];
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
     private readonly GpuProfilesMenu _gpu; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 };
@@ -27,7 +27,7 @@ internal sealed class TrayContext : ApplicationContext
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
-        _intervals = intervals; _logFile = logFile;
+        _intervals = intervals; _logFile = logFile; _rules = new(3, intervals.CpuAlertC, intervals.GpuAlertC);
         Checks = TrayCheckLog.Read(logFile);
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
         var open = new ToolStripMenuItem(TrayText.OpenApp, null, (_, _) => OpenApp()) { Font = new Font(menu.Font, FontStyle.Bold) };

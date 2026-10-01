@@ -233,6 +233,67 @@ public sealed partial class WebBridge
                         note = "nothing was changed; the Windows tools page is open at the DNS box, where «فعال کن» switches to one",
                     });
                 }),
+            new("set_tray", "Turns the tray monitor on or off: the icon by the Windows clock that, in the background, checks the temperatures (every few minutes) and the " +
+                "drives' health and warns with a Windows notification. It is not the overlay over games. Optional cpuAlertC and gpuAlertC (60 to 105) set the temperature it warns at.",
+                """{"type":"object","properties":{"on":{"type":"boolean"},"cpuAlertC":{"type":"integer"},"gpuAlertC":{"type":"integer"}},"required":["on"]}""",
+                async (a, _) =>
+                {
+                    if (a.ValueKind != JsonValueKind.Object || !a.TryGetProperty("on", out var o) || o.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return Json(new { error = "on must be true or false" });
+                    int? Limit(string name) => a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) ? n : null;
+                    int? cpu = Limit("cpuAlertC"), gpu = Limit("gpuAlertC");
+                    if (cpu is < 60 or > 105 || gpu is < 60 or > 105) return Json(new { error = "a warning temperature must be 60 to 105 °C" });
+                    var tray = _sp.GetRequiredService<Desktop.Services.ITrayController>();
+                    bool changed = (cpu ?? _config.TrayCpuAlertC) != _config.TrayCpuAlertC || (gpu ?? _config.TrayGpuAlertC) != _config.TrayGpuAlertC;
+                    if (changed)
+                        await OnUi(() =>
+                        {
+                            _config.TrayCpuAlertC = cpu ?? _config.TrayCpuAlertC; _config.TrayGpuAlertC = gpu ?? _config.TrayGpuAlertC;
+                            if (_settingsVm is { } vm) { vm.TrayCpuAlertText = _config.TrayCpuAlertC.ToString(CultureInfo.InvariantCulture); vm.TrayGpuAlertText = _config.TrayGpuAlertC.ToString(CultureInfo.InvariantCulture); }
+                            _sp.GetRequiredService<Persistence.JsonStore<Persistence.AppConfig>>().Save(_config); return "";
+                        }).ConfigureAwait(false);
+                    bool on = o.GetBoolean(); var before = await Task.Run(tray.Query).ConfigureAwait(false);
+                    // Enabling a running tray does not restart it; it reads its thresholds at start, so a change restarts it.
+                    string? failure = await Task.Run(() => on ? tray.Enable() ?? (changed && before.Running ? tray.Restart() : null) : tray.Disable()).ConfigureAwait(false);
+                    var now = await Task.Run(tray.Query).ConfigureAwait(false);
+                    if (_settingsVm is { } svm) await ui(async () => { await svm.RefreshTrayCommand.ExecuteAsync(null).ConfigureAwait(true); return ""; }).ConfigureAwait(false);
+                    return Json(new
+                    {
+                        running = now.Running, startsWithWindows = now.Registered, error = failure ?? now.Error, cpuAlertC = _config.TrayCpuAlertC, gpuAlertC = _config.TrayGpuAlertC,
+                        checksEveryMinutes = _config.TrayIdleIntervalMinutes, whileWarmingSeconds = _config.TrayWatchIntervalSeconds,
+                    });
+                }),
+            new("open_windows", "Opens a window of Windows itself (not a page of this app) for the user: " + string.Join(", ", WindowsActions.Places.Select(x => $"{x.Id} = {Loc.Get(x.TitleKey)}")) + ". Nothing else can be opened.",
+                "{\"type\":\"object\",\"properties\":{\"window\":{\"type\":\"string\",\"enum\":[" + string.Join(",", WindowsActions.Places.Select(x => $"\"{x.Id}\"")) + "]}},\"required\":[\"window\"]}",
+                (a, _) =>
+                {
+                    if (WindowsActions.Place(Text(a, "window") ?? "") is not { } w) return Task.FromResult(Json(new { error = "that window is not in the app's list" }));
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(w.File, w.Arguments ?? "") { UseShellExecute = true })?.Dispose();
+                    return Task.FromResult(Json(new { opened = w.Id, name = Loc.Get(w.TitleKey) }));
+                }),
+            new("windows_command", "Windows commands the app has checked, for a task (BitLocker and a drive's lock, DNS cache, IP and MAC, network reset, SFC, DISM, chkdsk, battery report, " +
+                "hibernation, drivers, Windows information, activation, restart to BIOS, Microsoft Store, temporary files): the exact command, what it does, its warning, and whether the " +
+                "app can run it. Give the user only commands this returns, as written; when it finds none, say the app has no checked command for that.",
+                """{"type":"object","properties":{"topic":{"type":"string"}},"required":["topic"]}""",
+                (a, _) =>
+                {
+                    string topic = Text(a, "topic") ?? "";
+                    IReadOnlyList<WinCommand> found = WindowsActions.Command(topic) is { } one ? [one] : WindowsActions.FindCommands(AppGuide.Normalize(topic));
+                    return Task.FromResult(found.Count == 0 ? Json(new { found = false, note = "the app has no checked command for this; do not make one up" })
+                        : Json(new { found = true, commands = found.Select(CommandRow) }));
+                }),
+            new("run_windows_command", "Runs one of the commands that only read (" + string.Join(", ", WindowsActions.Commands.Where(x => x.Run is not null).Select(x => $"{x.Id} = {x.Command}")) +
+                "), after the user confirmed on the page, and returns what Windows printed. Nothing else can be run.",
+                "{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"enum\":[" + string.Join(",", WindowsActions.Commands.Where(x => x.Run is not null).Select(x => $"\"{x.Id}\"")) + "]}},\"required\":[\"id\"]}",
+                async (a, ct) =>
+                {
+                    if (WindowsActions.Command(Text(a, "id") ?? "") is not { Run: { } run } c) return Json(new { error = "the app does not run that command" });
+                    var kept = await ask("command", [(Loc.Get("WinCmd_" + c.Id) + " · " + c.Command, "")], ct).ConfigureAwait(false);
+                    if (kept is not [true]) return Json(new { declined = true, command = c.Command });
+                    var (code, output) = await RunCommand(run.File, Environment.ExpandEnvironmentVariables(run.Args), ct).ConfigureAwait(false);
+                    string? file = c.Id == "battery" ? Environment.ExpandEnvironmentVariables("%TEMP%\\battery-report.html") : null;
+                    if (file is not null && File.Exists(file)) offerFile(file); else file = null;
+                    return Json(new { command = c.Command, exitCode = code, output = Cut(output.Trim(), 6000), path = file });
+                }),
             new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome. It takes minutes. Areas: cpu, memory (RAM), storage, network, gpu (graphics card). " +
                 "Name only the areas the user asked for. An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass.",
                 """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}}},"required":["areas"]}""",
@@ -399,4 +460,27 @@ public sealed partial class WebBridge
     private static readonly JsonSerializerOptions Json_ = new() {
         // Persian goes to the model as letters: escaped (پ…) the model can not read it and makes words up in its place.
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping, PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
+    /// <summary>A command's entry as the model and the chat get it: what it does and its warning in the user's language.</summary>
+    private static object CommandRow(WinCommand c) => new
+    {
+        id = c.Id, title = Loc.Get("WinCmd_" + c.Id), command = c.Command, what = Loc.Get("WinCmd_" + c.Id + "_What"), warning = c.Warn ? Loc.Get("WinCmd_" + c.Id + "_Warn") : null,
+        needsAdmin = c.Admin ? true : (bool?)null, appCanRun = c.Run is not null ? true : (bool?)null,
+    };
+
+    /// <summary>Runs a command of the fixed list hidden and returns what it printed. The console is switched to UTF-8 first (chcp 65001), as the
+    /// programs print in the console's code page, which would garble the Persian of a Persian Windows. Stopped after a minute.</summary>
+    private static async Task<(int Code, string Output)> RunCommand(string file, string args, CancellationToken ct)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo("cmd.exe", $"/d /c chcp 65001 >nul & \"{file}\" {args}")
+        {
+            RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
+            StandardOutputEncoding = System.Text.Encoding.UTF8, StandardErrorEncoding = System.Text.Encoding.UTF8,
+        };
+        using var p = System.Diagnostics.Process.Start(psi) ?? throw new InvalidOperationException("the command did not start");
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct); limit.CancelAfter(TimeSpan.FromMinutes(1));
+        var output = p.StandardOutput.ReadToEndAsync(limit.Token); var error = p.StandardError.ReadToEndAsync(limit.Token);
+        try { await p.WaitForExitAsync(limit.Token).ConfigureAwait(false); }
+        catch (OperationCanceledException) { try { p.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } throw; }
+        return (p.ExitCode, await output.ConfigureAwait(false) + await error.ConfigureAwait(false));
+    }
 }

@@ -1847,6 +1847,94 @@
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Stopped" xml:space="preserve"><value>متوقف شد؛ چیزی تغییر نکرد.</value></data>
   <data name="Assist_TestsInfo" xml:space="preserve"><value>چیزی اجرا نشد. تست‌هایی که این برنامه برای این قطعه دارد (با مدت پیش‌فرض)؛ روش هر کدام هنگام اجرا در گزارش زندهٔ همان صفحه، قدم‌به‌قدم و با فرمولش نوشته می‌شود:</value></data>
+  <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>هشدار دمای پردازنده از (°C)</value></data>
+  <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>هشدار دمای کارت گرافیک از (°C)</value></data>
+  <data name="Settings_Invalid_Alert" xml:space="preserve"><value>دمای هشدار باید عددی صحیح از ۶۰ تا ۱۰۵ باشد.</value></data>
+  <data name="Assist_Help" xml:space="preserve"><value>این کارها را می‌توانم انجام بدهم:&#xA;- این سیستم: مشخصات قطعه‌ها، دما و سنسورهای همین لحظه، تاریخچهٔ بنچمارک‌ها و خلاصهٔ گزارش‌های ذخیره‌شده (و فایل PDF آن‌ها).&#xA;- تست و بنچمارک: اجرای تست پردازنده، رم، هارد، شبکه و کارت گرافیک و بنچمارک‌ها (پیش از شروع، روی صفحه تأیید می‌گیرم)؛ پیدا کردن سریع‌ترین DNS.&#xA;- برنامه‌های تخصصی: این‌که Lumion، V-Ray، Revit و بقیه روی این سیستم در چه سطحی اجرا می‌شوند.&#xA;- همین برنامه: باز کردن هر صفحه و نشان دادن دکمهٔ هر کار؛ روشن و خاموش کردن اورلی و پایشگر Tray و تنظیم دمای هشدار Tray («وقتی دمای CPU از ۸۵ گذشت خبرم کن»).&#xA;- ویندوز: باز کردن پنجره‌هایی مثل This PC، Device Manager، Task Manager، Disk Management، Services، Event Viewer، BitLocker و تنظیمات صدا و نمایش؛ دادن دستورهای بررسی‌شده (sfc، DISM، chkdsk، ipconfig، manage-bde و…) با توضیح و هشدارشان، و اجرای دستورهایی که فقط اطلاعات می‌خوانند، با تأیید شما.&#xA;کارهایی که نمی‌کنم: اجرای هر دستور دیگری در ویندوز، تغییر فایل‌ها و نصب برنامه.</value></data>
+  <data name="Assist_Tray_On" xml:space="preserve"><value>پایشگر Tray روشن شد: کنار ساعت ویندوز هر {0} دقیقه دماها و هر {1} دقیقه سلامت درایوها را بررسی می‌کند و مشکل را با اعلان ویندوز خبر می‌دهد؛ با روشن شدن ویندوز هم اجرا می‌شود. دمای هشدار: پردازنده بالای {2}°C و کارت گرافیک بالای {3}°C.</value></data>
+  <data name="Assist_Tray_Off" xml:space="preserve"><value>پایشگر Tray خاموش شد و دیگر با روشن شدن ویندوز اجرا نمی‌شود.</value></data>
+  <data name="Assist_Tray_Failed" xml:space="preserve"><value>تغییر پایشگر Tray ممکن نشد: {0}</value></data>
+  <data name="Assist_Alert_Ask" xml:space="preserve"><value>از چه دمایی؟ الان Tray برای پردازنده بالای {0}°C و برای کارت گرافیک بالای {1}°C هشدار می‌دهد؛ مثلاً بگویید «وقتی دمای CPU از ۸۵ گذشت خبرم کن» (بین ۶۰ تا ۱۰۵).</value></data>
+  <data name="Assist_Alert_Range" xml:space="preserve"><value>دمای هشدار می‌تواند بین ۶۰ تا ۱۰۵ درجه باشد: زیر ۶۰ سیستمِ در حال کار مدام هشدار می‌دهد و بالای ۱۰۵ خود قطعه زودتر از آن از خودش محافظت می‌کند.</value></data>
+  <data name="Assist_Alert_Set_cpu" xml:space="preserve"><value>انجام شد: پایشگر Tray روشن است و وقتی دمای پردازنده بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دما را هر {1} دقیقه می‌خواند و وقتی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
+  <data name="Assist_Alert_Set_gpu" xml:space="preserve"><value>انجام شد: پایشگر Tray روشن است و وقتی دمای کارت گرافیک بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دما را هر {1} دقیقه می‌خواند و وقتی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
+  <data name="Assist_Alert_Set_both" xml:space="preserve"><value>انجام شد: پایشگر Tray روشن است و وقتی دمای پردازنده یا کارت گرافیک بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دماها را هر {1} دقیقه می‌خواند و وقتی یکی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
+  <data name="Assist_WinOpened" xml:space="preserve"><value>باز شد: {0}.</value></data>
+  <data name="Assist_WinOpen_Failed" xml:space="preserve"><value>آن پنجره باز نشد.</value></data>
+  <data name="Assist_Cmd_None" xml:space="preserve"><value>برای این کار دستور بررسی‌شده‌ای در برنامه نیست و دستور حدسی نمی‌دهم، چون دستور اشتباه در ویندوز می‌تواند آسیب بزند. دستورهایی که دارم:</value></data>
+  <data name="Assist_Cmd_Admin" xml:space="preserve"><value>در ترمینالی اجرا شود که با «Run as administrator» باز شده است.</value></data>
+  <data name="Assist_Cmd_CanRun" xml:space="preserve"><value>این یکی را برنامه خودش هم اجرا می‌کند: بگویید «اجراش کن».</value></data>
+  <data name="Assist_Confirm_Command" xml:space="preserve"><value>این دستور ویندوز اجرا شود؟</value></data>
+  <data name="Assist_Tool_set_tray" xml:space="preserve"><value>پایشگر Tray</value></data>
+  <data name="Assist_Tool_open_windows" xml:space="preserve"><value>پنجرهٔ ویندوز</value></data>
+  <data name="Assist_Tool_windows_command" xml:space="preserve"><value>دستور ویندوز</value></data>
+  <data name="Assist_Tool_run_windows_command" xml:space="preserve"><value>اجرای دستور ویندوز</value></data>
+  <data name="Win_thispc" xml:space="preserve"><value>This PC (مای کامپیوتر)</value></data>
+  <data name="Win_explorer" xml:space="preserve"><value>File Explorer</value></data>
+  <data name="Win_downloads" xml:space="preserve"><value>پوشهٔ Downloads</value></data>
+  <data name="Win_recycle" xml:space="preserve"><value>سطل بازیافت (Recycle Bin)</value></data>
+  <data name="Win_devmgr" xml:space="preserve"><value>Device Manager (مدیریت دستگاه‌ها)</value></data>
+  <data name="Win_taskmgr" xml:space="preserve"><value>Task Manager</value></data>
+  <data name="Win_diskmgmt" xml:space="preserve"><value>Disk Management (مدیریت دیسک و پارتیشن)</value></data>
+  <data name="Win_control" xml:space="preserve"><value>Control Panel</value></data>
+  <data name="Win_programs" xml:space="preserve"><value>Programs and Features (حذف برنامه‌ها)</value></data>
+  <data name="Win_services" xml:space="preserve"><value>Services (سرویس‌های ویندوز)</value></data>
+  <data name="Win_events" xml:space="preserve"><value>Event Viewer</value></data>
+  <data name="Win_reliability" xml:space="preserve"><value>Reliability Monitor (تاریخچهٔ پایداری)</value></data>
+  <data name="Win_about" xml:space="preserve"><value>About (درباره سیستم)</value></data>
+  <data name="Win_display" xml:space="preserve"><value>تنظیمات Display</value></data>
+  <data name="Win_sound" xml:space="preserve"><value>تنظیمات صدا (Sound)</value></data>
+  <data name="Win_netconn" xml:space="preserve"><value>Network Connections (اتصالات شبکه)</value></data>
+  <data name="Win_wifi" xml:space="preserve"><value>تنظیمات Wi-Fi</value></data>
+  <data name="Win_bluetooth" xml:space="preserve"><value>تنظیمات Bluetooth</value></data>
+  <data name="Win_printers" xml:space="preserve"><value>Printers &amp; scanners</value></data>
+  <data name="Win_startup" xml:space="preserve"><value>Startup apps (برنامه‌های شروع خودکار)</value></data>
+  <data name="Win_storagesense" xml:space="preserve"><value>تنظیمات Storage</value></data>
+  <data name="Win_bitlocker" xml:space="preserve"><value>BitLocker Drive Encryption</value></data>
+  <data name="Win_defender" xml:space="preserve"><value>Windows Security (امنیت ویندوز)</value></data>
+  <data name="Win_firewall" xml:space="preserve"><value>Windows Defender Firewall</value></data>
+  <data name="Win_poweroptions" xml:space="preserve"><value>Power Options</value></data>
+  <data name="Win_datetime" xml:space="preserve"><value>تنظیمات Date &amp; time</value></data>
+  <data name="Win_dxdiag" xml:space="preserve"><value>DirectX Diagnostic Tool (dxdiag)</value></data>
+  <data name="Win_msinfo" xml:space="preserve"><value>System Information (msinfo32)</value></data>
+  <data name="Win_winver" xml:space="preserve"><value>About Windows (winver)</value></data>
+  <data name="WinCmd_bitlockerstatus" xml:space="preserve"><value>وضعیت BitLocker درایوها</value></data>
+  <data name="WinCmd_bitlockerstatus_What" xml:space="preserve"><value>نشان می‌دهد کدام درایو با BitLocker رمزگذاری شده یا منتظر فعال‌سازی است (علامت قفل روی آیکن درایو در This PC معمولاً همین است). چیزی را تغییر نمی‌دهد.</value></data>
+  <data name="WinCmd_bitlockeroff" xml:space="preserve"><value>برداشتن BitLocker از یک درایو (رمزگشایی)</value></data>
+  <data name="WinCmd_bitlockeroff_What" xml:space="preserve"><value>رمزگذاری درایو D: را برمی‌دارد (به‌جای D: حرف درایو خودتان را بگذارید). درایو باید باز (Unlock) باشد. در پس‌زمینه انجام می‌شود و روی درایو بزرگ ممکن است ساعت‌ها طول بکشد؛ پیشرفتش با manage-bde -status دیده می‌شود و وقتی تمام شد قفل برداشته می‌شود.</value></data>
+  <data name="WinCmd_bitlockeroff_Warn" xml:space="preserve"><value>حفاظت درایو برداشته می‌شود. اگر سیستم مال مشتری است، اول از او بپرسید؛ لپ‌تاپ را تا پایان کار به شارژر وصل نگه دارید.</value></data>
+  <data name="WinCmd_flushdns" xml:space="preserve"><value>پاک کردن کش DNS</value></data>
+  <data name="WinCmd_flushdns_What" xml:space="preserve"><value>حافظهٔ موقت نام‌های DNS ویندوز را خالی می‌کند؛ برای وقتی که سایتی بعد از عوض کردن DNS باز نمی‌شود.</value></data>
+  <data name="WinCmd_ipconfig" xml:space="preserve"><value>نشانی‌های شبکه (IP، DNS، MAC)</value></data>
+  <data name="WinCmd_ipconfig_What" xml:space="preserve"><value>همهٔ کارت‌های شبکه را با IP، Gateway، DNS و MAC نشان می‌دهد. چیزی را تغییر نمی‌دهد.</value></data>
+  <data name="WinCmd_netreset" xml:space="preserve"><value>ریست تنظیمات شبکهٔ ویندوز</value></data>
+  <data name="WinCmd_netreset_What" xml:space="preserve"><value>Winsock و تنظیمات TCP/IP را به حالت اولیه برمی‌گرداند؛ برای اینترنتی که وصل است ولی کار نمی‌کند.</value></data>
+  <data name="WinCmd_netreset_Warn" xml:space="preserve"><value>بعد از آن باید ویندوز را ری‌استارت کنید؛ IP دستی (Static) و بعضی برنامه‌های VPN ممکن است دوباره تنظیم لازم داشته باشند.</value></data>
+  <data name="WinCmd_sfc" xml:space="preserve"><value>بررسی و تعمیر فایل‌های سیستمی ویندوز</value></data>
+  <data name="WinCmd_sfc_What" xml:space="preserve"><value>فایل‌های محافظت‌شدهٔ ویندوز را بررسی می‌کند و نسخهٔ خراب را جایگزین می‌کند (۱۰ تا ۳۰ دقیقه). صفحهٔ «ابزارهای ویندوز» هم برایش دکمه دارد.</value></data>
+  <data name="WinCmd_dism" xml:space="preserve"><value>تعمیر ایمیج ویندوز</value></data>
+  <data name="WinCmd_dism_What" xml:space="preserve"><value>منبعی را که SFC از آن تعمیر می‌کند، از Windows Update درست می‌کند؛ اگر SFC نتوانست تعمیر کند، اول این را و بعد دوباره SFC را اجرا کنید. اینترنت لازم است.</value></data>
+  <data name="WinCmd_chkdsk" xml:space="preserve"><value>بررسی خطای فایل‌سیستم درایو</value></data>
+  <data name="WinCmd_chkdsk_What" xml:space="preserve"><value>درایو C: را بدون از کار انداختنش بررسی می‌کند (/scan). برای تعمیر، chkdsk D: /f لازم است که درایو را قفل می‌کند (روی C: در ری‌استارت بعدی اجرا می‌شود). سلامت خود دیسک (SMART) را تست هارد همین برنامه می‌سنجد.</value></data>
+  <data name="WinCmd_battery" xml:space="preserve"><value>گزارش سلامت باتری لپ‌تاپ</value></data>
+  <data name="WinCmd_battery_What" xml:space="preserve"><value>یک گزارش HTML می‌سازد با ظرفیت طراحی و ظرفیت فعلی باتری و تاریخچهٔ شارژ. کامپیوتر رومیزی باتری ندارد.</value></data>
+  <data name="WinCmd_hibernateoff" xml:space="preserve"><value>خاموش کردن Hibernate</value></data>
+  <data name="WinCmd_hibernateoff_What" xml:space="preserve"><value>Hibernate و Fast Startup را خاموش می‌کند و فایل hiberfil.sys را پاک می‌کند (چند گیگابایت از C: آزاد می‌شود). صفحهٔ «ابزارهای ویندوز» هم برایش کلید دارد.</value></data>
+  <data name="WinCmd_hibernateoff_Warn" xml:space="preserve"><value>Fast Startup هم خاموش می‌شود و لپ‌تاپ دیگر Hibernate نمی‌شود؛ با powercfg /h on برمی‌گردد.</value></data>
+  <data name="WinCmd_drivers" xml:space="preserve"><value>فهرست درایورهای نصب‌شده</value></data>
+  <data name="WinCmd_drivers_What" xml:space="preserve"><value>همهٔ درایورها را با وضعیت و فایلشان نشان می‌دهد. چیزی را تغییر نمی‌دهد.</value></data>
+  <data name="WinCmd_systeminfo" xml:space="preserve"><value>اطلاعات ویندوز</value></data>
+  <data name="WinCmd_systeminfo_What" xml:space="preserve"><value>نسخه و تاریخ نصب ویندوز، زمان آخرین روشن شدن، به‌روزرسانی‌های نصب‌شده و کارت‌های شبکه. چیزی را تغییر نمی‌دهد.</value></data>
+  <data name="WinCmd_activation" xml:space="preserve"><value>وضعیت فعال‌سازی ویندوز</value></data>
+  <data name="WinCmd_activation_What" xml:space="preserve"><value>می‌گوید ویندوز فعال (Activate) است یا نه و تا کی. چیزی را تغییر نمی‌دهد.</value></data>
+  <data name="WinCmd_bios" xml:space="preserve"><value>ری‌استارت مستقیم به BIOS / UEFI</value></data>
+  <data name="WinCmd_bios_What" xml:space="preserve"><value>سیستم را فوراً ری‌استارت می‌کند و به صفحهٔ تنظیمات UEFI می‌برد (فقط روی سیستم‌های UEFI).</value></data>
+  <data name="WinCmd_bios_Warn" xml:space="preserve"><value>سیستم بی‌درنگ ری‌استارت می‌شود؛ قبلش همه‌چیز را ذخیره کنید.</value></data>
+  <data name="WinCmd_wsreset" xml:space="preserve"><value>ریست کش Microsoft Store</value></data>
+  <data name="WinCmd_wsreset_What" xml:space="preserve"><value>حافظهٔ موقت Store را پاک می‌کند؛ برای وقتی Store باز نمی‌شود یا دانلود نمی‌کند. برنامه‌های نصب‌شده دست نمی‌خورند.</value></data>
+  <data name="WinCmd_tempclean" xml:space="preserve"><value>پاک کردن فایل‌های موقت کاربر</value></data>
+  <data name="WinCmd_tempclean_What" xml:space="preserve"><value>فایل‌های پوشهٔ Temp کاربر فعلی را پاک می‌کند؛ فایل‌هایی که در حال استفاده‌اند رد می‌شوند.</value></data>
+  <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>پاک‌شده‌ها به سطل بازیافت نمی‌روند و برنمی‌گردند. «پاکسازی دیسک» در صفحهٔ ابزارهای ویندوز راه امن‌تری است.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ اورکلاک».</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>

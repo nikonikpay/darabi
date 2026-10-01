@@ -14,7 +14,9 @@ public sealed class Notifier : IDisposable
 {
     private readonly Window _window; private readonly PollingEngine _engine; private readonly TestEngine _tests; private readonly IReadOnlyList<ITestExecutor> _executors;
     private readonly Action<string, string> _toast; private readonly ILogger _log;
-    private readonly HealthAlerts _alerts = new();
+    private HealthAlerts _alerts = new(); private (int Cpu, int Gpu) _limits = (95, 95);
+    /// <summary>The user's thresholds (the tray's settings, also set by the assistant); read at each snapshot, so a change applies at once.</summary>
+    public Func<(int Cpu, int Gpu)>? Limits { get; set; }
     private Forms.NotifyIcon? _icon; private System.Windows.Threading.DispatcherTimer? _hide;
     private ProviderState _lastProvider = ProviderState.Ready;
 
@@ -26,6 +28,7 @@ public sealed class Notifier : IDisposable
 
     private void OnSnapshot(SensorSnapshot s)
     {
+        if (Limits?.Invoke() is { } l && l != _limits) { _limits = l; _alerts = new(3, l.Cpu, l.Gpu); }
         foreach (var a in _alerts.Evaluate(HealthSampler.From(_engine.Hardware, s.Readings), s.Timestamp))
             Tell(Loc.Get("Notify_Health_Title"), a.Kind switch
             {

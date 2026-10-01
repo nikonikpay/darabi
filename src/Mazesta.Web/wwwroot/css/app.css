@@ -1167,6 +1167,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
   .app[data-asst="open"][data-hist="open"] .asst { width: min(630px, 96vw); }
 }
 .as-card { margin-top: 8px; display: grid; gap: 4px; padding: 7px 10px; background: var(--well); border-radius: var(--r-well); }
+.as-out { margin: 0; max-height: 220px; overflow: auto; font-size: 11.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
 .as-card-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; }
 .as-paused { margin: 0; text-align: center; }
 .as-log { min-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; background: var(--well); border-radius: var(--r-ctl); }

@@ -53,6 +53,7 @@ public sealed partial class WebBridge
         _cleanup.Add(() => { engine.Provider.StatusChanged -= OnStatus; engine.StateChanged -= OnState; });
         var notifier = new Notifier(_window, engine, _sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(),
             (text, kind) => Push("toast", new { text, kind }), _log);
+        notifier.Limits = () => (_config.TrayCpuAlertC, _config.TrayGpuAlertC);
         _cleanup.Add(notifier.Dispose);
         var overlay = _sp.GetRequiredService<Desktop.Services.OverlayService>();
         void OnOverlay(bool v) => Push("overlay", v);

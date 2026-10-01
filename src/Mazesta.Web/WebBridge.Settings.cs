@@ -4,15 +4,18 @@ namespace Mazesta.Web;
 
 public sealed partial class WebBridge
 {
+    /// <summary>The settings page's state; the assistant writes the tray's warning temperatures through it, so the page shows what was set.</summary>
+    private SettingsViewModel? _settingsVm;
+
     private void RegisterSettings()
     {
         // Validation and saving are the WPF edition's: the same rules, the same config file format.
-        var settings = _sp.GetRequiredService<Func<SettingsViewModel>>()();
+        var settings = _settingsVm = _sp.GetRequiredService<Func<SettingsViewModel>>()();
         object State() => new
         {
             language = settings.Language, languages = settings.Languages, renderMode = settings.RenderMode, renderModes = settings.RenderModes,
             interval = settings.FastIntervalText, storageInterval = settings.StorageIntervalText, shopName = settings.ShopName, message = settings.Message,
-            trayFirst = settings.TrayFirstCheckText, trayIdle = settings.TrayIdleText, trayWatch = settings.TrayWatchText, trayHealth = settings.TrayHealthText, trayStatus = settings.TrayStatusText,
+            trayFirst = settings.TrayFirstCheckText, trayIdle = settings.TrayIdleText, trayWatch = settings.TrayWatchText, trayHealth = settings.TrayHealthText, trayCpuAlert = settings.TrayCpuAlertText, trayGpuAlert = settings.TrayGpuAlertText, trayStatus = settings.TrayStatusText,
             canEnableTray = settings.CanEnableTray, canDisableTray = settings.CanDisableTray, dataFolder = settings.DataFolder, mode = settings.ModeText, version = settings.Version,
         };
         Mirror("settings", settings, State);
@@ -31,6 +34,8 @@ public sealed partial class WebBridge
                 case "trayIdle": settings.TrayIdleText = v; break;
                 case "trayWatch": settings.TrayWatchText = v; break;
                 case "trayHealth": settings.TrayHealthText = v; break;
+                case "trayCpuAlert": settings.TrayCpuAlertText = v; break;
+                case "trayGpuAlert": settings.TrayGpuAlertText = v; break;
                 default: throw new ArgumentException("unknown field");
             }
             return null;

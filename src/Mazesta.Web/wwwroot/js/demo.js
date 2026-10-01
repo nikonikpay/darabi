@@ -316,7 +316,7 @@ export async function call(m, p, emit) {
       pageFile: [{ label: strings.Tools_PageFile_Managed, value: "C:\\pagefile.sys" }, { label: strings.Tools_PageFile_Size, value: "16384 MB" }, { label: strings.Tools_PageFile_Used, value: "120 MB" }] };
     case "gaming.state": return { status: "", gameMode: strings.Gaming_On, gpuScheduling: strings.Gaming_On, plans: [{ index: 0, name: "Balanced", active: false }, { index: 1, name: "High performance", active: false }, { index: 2, name: "AMD Ryzen™ High Performance", active: true }] };
     case "settings.state": return { language: "fa", languages: ["en", "fa"], renderMode: "software", renderModes: ["auto", "software"], interval: "2", storageInterval: "900", shopName: "مازستا", message: "",
-      trayFirst: "20", trayIdle: "10", trayWatch: "30", trayHealth: "30", trayStatus: "Tray: اجرا نمی‌شود · اجرا با ورود به ویندوز: خیر", canEnableTray: true, canDisableTray: false, dataFolder: "D:\\Mazesta-Test\\Data", mode: strings.Settings_Mode_Portable, version: "demo",
+      trayFirst: "20", trayIdle: "10", trayWatch: "30", trayHealth: "30", trayCpuAlert: "95", trayGpuAlert: "95", trayStatus: "Tray: اجرا نمی‌شود · اجرا با ورود به ویندوز: خیر", canEnableTray: true, canDisableTray: false, dataFolder: "D:\\Mazesta-Test\\Data", mode: strings.Settings_Mode_Portable, version: "demo",
       overlayVisible: false, overlayCorner: "TopLeft", overlayCorners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })), hotkey: "Ctrl+Shift+O" };
     default: return null;
   }

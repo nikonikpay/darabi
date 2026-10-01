@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -20,8 +20,10 @@ public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, Software
 /// <param name="Category">For <see cref="AiIntent.SoftwareList"/>: the group asked about, or null for all.</param>
 /// <param name="On">For <see cref="AiIntent.Overlay"/>: shown or hidden.</param>
 /// <param name="Kind">For <see cref="AiIntent.Sensors"/>: Temperature, Load, Clock, Power or Fan, or null for all.</param>
+/// <param name="Value">For <see cref="AiIntent.Alert"/>: the temperature (°C) asked for; <see cref="Part"/> is cpu or gpu, or null for both.</param>
+/// <param name="Ids">For <see cref="AiIntent.WinOpen"/>: the window's id; for <see cref="AiIntent.WinCommand"/>: the commands' ids (see <see cref="WindowsActions"/>).</param>
 public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Part = null, SoftApp? App = null, IReadOnlyList<string>? Areas = null, string? Format = null,
-    SoftCategory? Category = null, bool On = false, string? Kind = null, int Index = 0);
+    SoftCategory? Category = null, bool On = false, string? Kind = null, int Index = 0, int? Value = null, IReadOnlyList<string>? Ids = null);
 
 /// <summary>
 /// The app's pages and the controls on them that people ask for, and the rules that read a message against them. Matching is on normalised
@@ -79,7 +81,7 @@ public static class AppGuide
         T("reports", "compare", "Reports_Compare", "compare two ticked reports, before and after", null, "مقایسه گزارش", "مقایسه قبل و بعد", "compare"),
         P("apps", "Nav_Apps", "which professional programs (rendering, architecture, civil, animation, editing) run on this computer, and at what level", "برنامه ها", "برنامههای تخصصی", "نرم افزار", "نرمافزار", "نرم افزارها", "برنامه های رندرینگ", "software", "apps"),
         P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models", "مدل هوش مصنوعی", "مدلهای هوش مصنوعی", "مدل های هوش مصنوعی", "هوش مصنوعی", "llm", "مدل زبانی", "ai models"),
-        P("settings", "Nav_Settings", "the app's settings: language, units, render mode, tray, data folder", "تنظیمات", "تنظیمات برنامه", "ستینگ", "settings"),
+        P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder", "تنظیمات", "تنظیمات برنامه", "ستینگ", "settings", "tray", "ترای", "پایشگر"),
         P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
     ];
 
@@ -185,6 +187,13 @@ public static class AppGuide
         ("Temperature", ["دما", "دمای", "حرارت", "داغ", "temperature", "temp"]), ("Fan", ["فن", "دور فن", "fan"]), ("Load", ["لود", "بار پردازنده", "درصد استفاده", "load", "usage"]),
         ("Clock", ["کلاک", "فرکانس", "clock"]), ("Power", ["توان", "وات", "مصرف برق", "power", "watt"]),
     ];
+    // "What can you do": the app answers with what it really has, not the model with what it imagines.
+    private static readonly string[] HelpWords = ["چه کارهای", "چه کار های", "چه کارایی", "چه کاری", "چکار میتونی", "چیکار میتونی", "چی کار میتونی", "چه سوالاتی", "چه سوالی", "چه سوال هایی",
+        "چه چیزهایی بپرسم", "کمکم کنی", "what can you do", "what can i ask", "help me", "your abilities"];
+    private static readonly string[] TrayWords = ["tray", "ترای", "پایشگر", "سیستم تری", "کنار ساعت", "system tray"];
+    private static readonly string[] AlertWords = ["خبر بده", "خبرم کن", "خبر کن", "هشدار بده", "هشدار", "اطلاع بده", "اطلاع بدی", "بهم بگو", "گزارش بده", "گزارش بدی", "اعلان", "notify", "alert", "warn"];
+    private static readonly string[] WhenWords = ["وقتی", "اگر", "اگه", "هر وقت", "هروقت", "بالای", "بیشتر از", "رسید", "when", "if", "above", "over"];
+    private static readonly string[] CommandWords = ["دستور", "دستوری", "کامند", "فرمان", "command", "cmd", "سی ام دی", "پاورشل", "powershell", "ترمینال", "terminal"];
     private static readonly string[] NowWords = ["الان", "اکنون", "همین الان", "در حال حاضر", "فعلا", "now", "current", "چنده", "چقدره", "چقدر"];
 
     /// <summary>What a message asks for, when it is plain; <see cref="AiIntent.None"/> leaves it to the model. The order matters: a question of
@@ -195,9 +204,35 @@ public static class AppGuide
         string s = Normalize(text);
         var place = FindPlace(s); var app = FindApp(s);
         bool go = Any(s, GoWords), page = Any(s, PageWords), doIt = Any(s, DoWords), how = Any(s, HowWords), ask = Any(s, AskWords);
+        bool not = Any(s, NotWords);
+
+        if (Any(s, HelpWords) && place is null && app is null) return new(AiIntent.Help);
+
+        // "Tell me when the CPU passes 80": a warning the tray and the app give, at the temperature asked for.
+        if (Any(s, AlertWords) && Any(s, WhenWords) && SensorKinds[0].Words.Any(w => Has(s, w)))
+        {
+            int? limit = null;
+            foreach (var w in s.Split(' ', StringSplitOptions.RemoveEmptyEntries)) if (int.TryParse(w.TrimEnd('c', '°', 'ی'), out int n) && n is >= 30 and <= 130) limit = n;
+            string? part = Any(s, TestAreas[0].Words) && !Any(s, TestAreas[1].Words) ? "gpu" : Any(s, TestAreas[1].Words) && !Any(s, TestAreas[0].Words) ? "cpu" : null;
+            return new(AiIntent.Alert, Part: part, Value: limit);
+        }
+
+        // The tray monitor (by the clock) is not the overlay over games: "پایشگر tray رو فعال کن" turned the overlay on.
+        if (Any(s, TrayWords) && !Any(s, OverlayWords))
+        {
+            bool trayOff = Any(s, OffWords) || not && !Any(s, OnWords);
+            if (trayOff || Any(s, OnWords) || doIt) return new(AiIntent.Tray, On: !trayOff);
+        }
+
+        // A Windows command: given from the app's checked list; one that is not there is the model's, and is said to be unchecked.
+        if (Any(s, CommandWords))
+            return WindowsActions.FindCommands(s) is { Count: > 0 } cmds ? new(AiIntent.WinCommand, Ids: [.. cmds.Select(c => c.Id)]) : new(AiIntent.WinCommandUnknown);
+
+        // A window of Windows (This PC, Device Manager): opened when its name is longer than any of the app's places it shares words with.
+        if ((go || doIt || Words(s) <= 3) && !not && WindowsActions.FindPlace(s) is { } win && (place is null || Normalize(win.Words.First(w => Has(s, w))).Length > Best(s, place.Words)))
+            return new(AiIntent.WinOpen, Ids: [win.Id]);
 
         if (how && !go) return new(AiIntent.HowTo, place, App: app);
-        bool not = Any(s, NotWords);
 
         bool report = Has(s, "گزارش") || Has(s, "ریپورت") || Has(s, "report") || Has(s, "نتیجه تست") || Has(s, "نتایج تست") || Has(s, "نتیجه بنچمارک");
         if (report)
@@ -214,7 +249,7 @@ public static class AppGuide
 
         if (app is not null)
             return go && !Any(s, RunWords) ? new(AiIntent.Navigate, Page("apps"), App: app) : new(AiIntent.Software, App: app);
-        if (Any(s, AppsWords) && (Any(s, RunWords) || ask) && !go)
+        if (Any(s, AppsWords) && Any(s, RunWords) && !go)
             return new(AiIntent.SoftwareList, Category: Categories.Where(c => Any(s, c.Words)).Select(c => (SoftCategory?)c.Category).FirstOrDefault());
 
         // The overlay over games: shown or hidden by a word of turning it on or off ("دماها بالای صفحه بیاد" is the overlay, not a page).
@@ -250,10 +285,12 @@ public static class AppGuide
         }
 
         // A short message that is little more than a place's name ("اورلی", "گرافیکو اندرولت کن") means going there.
-        bool short_ = s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length <= 4 && !ask;
+        bool short_ = Words(s) <= 4 && !ask;
         if (place is not null && (go || page || short_ || doIt && place.Target is not null)) return new(AiIntent.Navigate, place);
         return new(AiIntent.None, place, App: app);
     }
+
+    private static int Words(string norm) => norm.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
 
     /// <summary>The pages as the model is told of them: id, the name the page shows (in the user's language) and what is there.</summary>
     public static string PageList(Func<string, string> name) =>
