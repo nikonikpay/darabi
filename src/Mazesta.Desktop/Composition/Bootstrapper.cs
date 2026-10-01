@@ -45,13 +45,13 @@ public static class Bootstrapper
         s.AddSingleton<Services.ReportService>();
         s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));
         s.AddSingleton<Services.OverlayService>();
-        AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a),
+        AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), UiDispatcher.Post,
             new WindowsBreakEventSource()));
-        AddViewModelFactory(s, sp => new ViewModels.ReportsViewModel(sp.GetRequiredService<Services.ReportService>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }), text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Reports"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes));
-        AddViewModelFactory(s, sp => new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        AddViewModelFactory(s, sp => new ViewModels.ReportsViewModel(sp.GetRequiredService<Services.ReportService>(), UiDispatcher.Post, path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true }), text => Ask(text, Localization.Loc.Get("Nav_Reports"), System.Windows.Forms.MessageBoxIcon.Question)));
+        AddViewModelFactory(s, sp => new ViewModels.BenchmarksViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), UiDispatcher.Post));
         Action<string> open = target => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(target) { UseShellExecute = true });
         // One for the session (see WindowsToolsViewModel): a running repair and its output survive leaving the page.
-        s.AddSingleton(sp => new ViewModels.WindowsToolsViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), sp.GetRequiredService<IWmiQuery>(), open, a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        s.AddSingleton(sp => new ViewModels.WindowsToolsViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), sp.GetRequiredService<IWmiQuery>(), open, UiDispatcher.Post));
         AddViewModelFactory(s, sp => new ViewModels.GamingViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), open, Mazesta.Diagnostics.Windows.GamingStatus.Read()));
         // Opened before the container so a search that never came back (see TuningViewModel.Recover) is undone at start-up, not when the page is first visited.
         var tuningStore = new JsonStore<GpuProfileDocument>(Path.Combine(paths.ConfigDir, "gpu-profiles.json"), new SchemaMigrator([]), GpuProfileDocument.CurrentSchemaVersion, lf.CreateLogger("Tuning"));
@@ -60,19 +60,24 @@ public static class Bootstrapper
         if (recovered is not null) lf.CreateLogger("Tuning").LogWarning("Interrupted automatic GPU tuning found at start-up: {Message}", recovered);
         s.AddSingleton(new ViewModels.TuningRecovery(recovered));
         s.AddSingleton(sp => new ViewModels.TuningViewModel(tuning, tuningStore, sp.GetRequiredService<InventoryCache>(),
-            text => System.Windows.MessageBox.Show(text, Localization.Loc.Get("Nav_Tuning"), System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning) == System.Windows.MessageBoxResult.Yes,
+            text => Ask(text, Localization.Loc.Get("Nav_Tuning"), System.Windows.Forms.MessageBoxIcon.Warning),
             () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("shutdown.exe", "/r /fw /t 0") { UseShellExecute = false, CreateNoWindow = true }),
-            a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a), device => new Mazesta.Diagnostics.Gpu.Tuning.ComputeGpuLoad(device.Name), recovered,
+            UiDispatcher.Post, device => new Mazesta.Diagnostics.Gpu.Tuning.ComputeGpuLoad(device.Name), recovered,
             // The core voltage comes from the sensor monitor (NVML has no voltage reading); the reading lives as long as the page's view model, i.e. the session.
             name => LatestReading.Find(sp.GetRequiredService<PollingEngine>(), Mazesta.Core.Hardware.HardwareKind.Gpu, name, Mazesta.Core.Hardware.SensorRole.GpuVoltage) is { } r ? () => r.Value : () => null,
             startupFile: GpuStartup.FileIn(paths), gate: sp.GetRequiredService<WorkloadGate>()));
-        AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), a => System.Windows.Application.Current.Dispatcher.BeginInvoke(a)));
+        AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), UiDispatcher.Post));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
         var provider = s.BuildServiceProvider();
         provider.GetRequiredService<Services.CheckupService>();   // constructed now, before the pages, so it judges a run before anyone asks about it
         provider.GetRequiredService<Services.ReportService>();   // constructed now so it is already listening when the first test run starts
         return provider;
     }
+
+    /// <summary>A yes-or-no question in Windows's own box, over the main window, laid out right to left in Persian.</summary>
+    private static bool Ask(string text, string title, System.Windows.Forms.MessageBoxIcon icon)
+        => System.Windows.Forms.MessageBox.Show(UiDispatcher.Owner, text, title, System.Windows.Forms.MessageBoxButtons.YesNo, icon, System.Windows.Forms.MessageBoxDefaultButton.Button2,
+            Localization.Loc.IsRtl ? System.Windows.Forms.MessageBoxOptions.RtlReading | System.Windows.Forms.MessageBoxOptions.RightAlign : 0) == System.Windows.Forms.DialogResult.Yes;
 
     /// <summary>
     /// Registers a page view model as a <c>Func&lt;T&gt;</c> factory rather than a transient service.

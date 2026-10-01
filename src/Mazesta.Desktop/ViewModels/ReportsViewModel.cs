@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel; using System.Globalization; using System.IO; using System.Windows;
+using System.Collections.ObjectModel; using System.Globalization; using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel; using CommunityToolkit.Mvvm.Input; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Reporting;
 namespace Mazesta.Desktop.ViewModels;
 
@@ -75,7 +75,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     {
         try
         {
-            if (!File.Exists(row.Report.PdfPath)) { Status = Loc.Get("Reports_PdfBusy"); await PdfExporter.ExportAsync(row.Report.HtmlPath, row.Report.PdfPath, Loc.Get("Reports_PdfBusy"), Application.Current.MainWindow, _service.BrowserDataDir); }
+            if (!File.Exists(row.Report.PdfPath)) { Status = Loc.Get("Reports_PdfBusy"); await PdfExporter.ExportAsync(row.Report.HtmlPath, row.Report.PdfPath, Loc.Get("Reports_PdfBusy"), Composition.UiDispatcher.Owner, _service.BrowserDataDir); }
             Status = ""; _open(row.Report.PdfPath);
         }
         catch (Exception e) { Status = Loc.Format("Reports_PdfFailed", e.Message); }
@@ -92,7 +92,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         try
         {
             string html = _service.CreateSummary(row.Report), pdf = Path.ChangeExtension(html, ".pdf");
-            await PdfExporter.ExportAsync(html, pdf, Loc.Get("Reports_SummaryBusy"), Application.Current.MainWindow, _service.BrowserDataDir, a5: true);
+            await PdfExporter.ExportAsync(html, pdf, Loc.Get("Reports_SummaryBusy"), Composition.UiDispatcher.Owner, _service.BrowserDataDir, a5: true);
             Status = Loc.Get("Reports_SummaryDone"); _open(pdf);
         }
         catch (Exception e) { Status = Loc.Format("Reports_SummaryFailed", e.Message); }

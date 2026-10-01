@@ -1,4 +1,4 @@
-using System.IO; using System.Windows; using Mazesta.Core.Inventory; using Mazesta.Core.Providers; using Mazesta.Core.Tuning; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization;
+using System.IO; using Mazesta.Core.Inventory; using Mazesta.Core.Providers; using Mazesta.Core.Tuning; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization;
 using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics.Tuning; using Mazesta.Persistence; using Microsoft.Extensions.Logging.Abstractions; using Xunit;
 namespace Mazesta.Desktop.Tests;
 

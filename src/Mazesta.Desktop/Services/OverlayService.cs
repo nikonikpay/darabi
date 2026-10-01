@@ -1,5 +1,5 @@
-using System.Runtime.InteropServices; using System.Windows; using System.Windows.Interop;
-using Mazesta.Core.Overlay; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Desktop.Views; using Mazesta.Monitoring; using Mazesta.Persistence;
+using System.Runtime.InteropServices; using System.Windows.Forms;
+using Mazesta.Core.Overlay; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Desktop.Views; using Mazesta.Monitoring; using Mazesta.Persistence;
 namespace Mazesta.Desktop.Services;
 
 /// <summary>
@@ -14,9 +14,9 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     public const string HotkeyText = "Ctrl+Shift+O";
     public static readonly string[] Corners = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"];
     private const int HotkeyId = 0x4D5A, WmHotkey = 0x0312, ModControl = 0x2, ModShift = 0x4, ModNoRepeat = 0x4000, VkO = 0x4F;
-    private OverlayWindow? _window; private OverlayViewModel? _vm; private HwndSource? _source; private nint _hwnd;
+    private OverlayWindow? _window; private OverlayViewModel? _vm; private HotkeyWindow? _source;
 
-    public bool IsVisible => _window?.IsVisible == true;
+    public bool IsVisible => _window?.Visible == true;
     public event Action<bool>? VisibilityChanged;
     /// <summary>Raised after each poll the overlay showed, with what it showed (the web page mirrors it in its preview).</summary>
     public event Action<OverlayViewModel>? Updated;
@@ -55,7 +55,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, a => Application.Current.Dispatcher.BeginInvoke(a), Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout);
+        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout);
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }
@@ -66,7 +66,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         bool visible = IsVisible;
         _vm.SetActive(false); _vm.Dispose();
         _vm = Create();
-        if (_window is not null) _window.DataContext = _vm;
+        _window?.SetModel(_vm);
         if (visible) _vm.SetActive(true);
     }
 
@@ -86,8 +86,8 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         {
             if (engine.Hardware.Count == 0) return;   // the hardware scan has not finished: there is nothing to show yet
             _vm ??= Create();
-            if (_window is null) { _window = new OverlayWindow { DataContext = _vm }; Rtl.Apply(_window.Root); }
-            _vm.SetActive(true); _window.Show(); _window.SetCorner(Corners.Contains(config.OverlayCorner) ? config.OverlayCorner : Corners[0]);
+            _window ??= new OverlayWindow(_vm, Loc.IsRtl);
+            _vm.SetActive(true); _window.SetCorner(Corners.Contains(config.OverlayCorner) ? config.OverlayCorner : Corners[0]); _window.Show();
         }
         else { _vm?.SetActive(false); _window?.Hide(); }
         config.OverlayVisible = visible;
@@ -101,23 +101,22 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     public bool RegisterHotkey()
     {
         if (_source is not null) return true;
-        _source = new HwndSource(new HwndSourceParameters("Mazesta overlay hotkey") { ParentWindow = HwndMessage, WindowStyle = 0, Width = 0, Height = 0 });
-        _source.AddHook(WndProc); _hwnd = _source.Handle;
-        return RegisterHotKey(_hwnd, HotkeyId, ModControl | ModShift | ModNoRepeat, VkO);
+        _source = new HotkeyWindow(Toggle);
+        return RegisterHotKey(_source.Handle, HotkeyId, ModControl | ModShift | ModNoRepeat, VkO);
     }
-    private static readonly nint HwndMessage = -3;
 
-    private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    /// <summary>A message-only window (no screen presence) that receives the shortcut.</summary>
+    private sealed class HotkeyWindow : NativeWindow
     {
-        if (msg == WmHotkey && wParam == HotkeyId) { Toggle(); handled = true; }
-        return 0;
+        private readonly Action _pressed;
+        public HotkeyWindow(Action pressed) { _pressed = pressed; CreateHandle(new CreateParams { Caption = "Mazesta overlay hotkey", Parent = -3 /* HWND_MESSAGE */ }); }
+        protected override void WndProc(ref Message m) { if (m.Msg == WmHotkey && m.WParam == HotkeyId) { _pressed(); return; } base.WndProc(ref m); }
     }
 
     public void Dispose()
     {
-        if (_hwnd != 0) UnregisterHotKey(_hwnd, HotkeyId);
-        _source?.RemoveHook(WndProc); _source?.Dispose();
-        _window?.Close(); _vm?.Dispose();
+        if (_source is not null) { UnregisterHotKey(_source.Handle, HotkeyId); _source.DestroyHandle(); }
+        _window?.Close(); _window?.Dispose(); _vm?.Dispose();
     }
 
     [DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(nint hWnd, int id, int modifiers, int vk);

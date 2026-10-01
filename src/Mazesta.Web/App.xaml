@@ -1,5 +1,0 @@
-<Application x:Class="Mazesta.Web.App"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- The whole interface is the web page; the few native windows (the overlay, the PDF printer's busy window) carry their own resources. -->
-</Application>

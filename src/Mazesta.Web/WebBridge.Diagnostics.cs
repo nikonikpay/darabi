@@ -12,16 +12,16 @@ public sealed partial class WebBridge
         // What the first polls found missing or unreadable on this machine, for the Settings page.
         Method("diag.state", _ =>
         {
-            var (findings, notes) = App.Recorder?.Current() ?? (HardwareDiagnosticsReport.Problems(engine.Hardware, new Dictionary<Core.Hardware.SensorId, SensorTally>()), []);
-            return new { findings, notes, logs = _paths.LogsDir, polled = App.Recorder is not null };
+            var (findings, notes) = Program.Recorder?.Current() ?? (HardwareDiagnosticsReport.Problems(engine.Hardware, new Dictionary<Core.Hardware.SensorId, SensorTally>()), []);
+            return new { findings, notes, logs = _paths.LogsDir, polled = Program.Recorder is not null };
         });
 
         // One zip to bring back: the app's logs, the hardware report, the inventory as text, the settings and the tray's checks. Nothing is sent
         // anywhere; the folder opens with the file selected.
         MethodAsync("diag.export", async _ =>
         {
-            App.Recorder?.Write();
-            App.LogProvider?.Flush();
+            Program.Recorder?.Write();
+            Program.LogProvider?.Flush();
             HardwareInventory? inv = null;
             try { inv = await inventory.GetAsync().ConfigureAwait(true); } catch (Exception e) when (e is not OutOfMemoryException) { _log.LogWarning(e, "Inventory for the export failed"); }
             string dir = Path.Combine(_paths.DataRoot, "diagnostics"); Directory.CreateDirectory(dir);

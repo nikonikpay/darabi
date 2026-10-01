@@ -1,4 +1,4 @@
-using System.IO; using System.Reflection; using System.Windows;
+using System.IO; using System.Reflection;
 using Mazesta.Core.Time; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring; using Mazesta.Persistence; using Mazesta.Reporting;
 using Microsoft.Extensions.Logging;
 namespace Mazesta.Desktop.Services;
@@ -139,7 +139,7 @@ public sealed class ReportService
     {
         try
         {
-            byte[] Read(string file) { using var s = Application.GetResourceStream(new Uri($"pack://application:,,,/Fonts/{file}"))!.Stream; using var ms = new MemoryStream(); s.CopyTo(ms); return ms.ToArray(); }
+            byte[] Read(string file) { using var s = typeof(ReportService).Assembly.GetManifestResourceStream("Fonts." + file)!; using var ms = new MemoryStream(); s.CopyTo(ms); return ms.ToArray(); }
             return new("IRANSansXFaNum", Read("IRANSansXFaNum-Regular.ttf"), Read("IRANSansXFaNum-Bold.ttf"));
         }
         catch (Exception e) when (e is IOException or NullReferenceException or InvalidOperationException) { return null; }   // the report is still complete, just in the system font

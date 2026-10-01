@@ -1,4 +1,3 @@
-using System.Windows;
 using Mazesta.Desktop.Localization;
 namespace Mazesta.Web;
 
@@ -39,7 +38,7 @@ public sealed partial class WebBridge
         Method("upd.install", _ =>
         {
             // The new release waits for this process to end before it replaces the files, then starts the app again.
-            if (updater.Install()) _window.Dispatcher.BeginInvoke(() => Application.Current.Shutdown());
+            if (updater.Install()) _window.Dispatcher.BeginInvoke(Program.Shutdown);
             return State();
         });
     }

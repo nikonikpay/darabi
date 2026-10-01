@@ -1,5 +1,5 @@
-using System.IO; using System.Windows;
-using Microsoft.Web.WebView2.Core; using Microsoft.Web.WebView2.Wpf;
+using System.IO; using System.Windows.Forms;
+using Microsoft.Web.WebView2.Core; using Microsoft.Web.WebView2.WinForms;
 namespace Mazesta.Desktop.Services;
 
 /// <summary>
@@ -10,12 +10,15 @@ namespace Mazesta.Desktop.Services;
 public static class PdfExporter
 {
     /// <summary>A4 unless <paramref name="a5"/> (the customer summary, a half sheet).</summary>
-    public static async Task ExportAsync(string htmlPath, string pdfPath, string busyText, Window? owner, string browserDataDir, bool a5 = false)
+    public static async Task ExportAsync(string htmlPath, string pdfPath, string busyText, IWin32Window? owner, string browserDataDir, bool a5 = false)
     {
         string html = await File.ReadAllTextAsync(htmlPath);
-        using var browser = new WebView2();
-        var window = new Window { Owner = owner, Title = busyText, Width = 360, Height = 120, WindowStartupLocation = WindowStartupLocation.CenterOwner, ShowInTaskbar = false, Content = browser };
-        window.Show();
+        using var browser = new WebView2 { Dock = DockStyle.Fill };
+        // A small window that says what is happening (the browser needs a window to print from); it closes when the file is written.
+        using var window = new Form { Text = busyText, Width = 360, Height = 120, StartPosition = owner is null ? FormStartPosition.CenterScreen : FormStartPosition.CenterParent,
+            ShowInTaskbar = false, FormBorderStyle = FormBorderStyle.FixedToolWindow, RightToLeft = Localization.Loc.IsRtl ? RightToLeft.Yes : RightToLeft.No };
+        window.Controls.Add(browser);
+        if (owner is not null) window.Show(owner); else window.Show();
         string temp = pdfPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {

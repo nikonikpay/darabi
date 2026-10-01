@@ -1,4 +1,4 @@
-using System.Windows; using Forms = System.Windows.Forms;
+using Forms = System.Windows.Forms;
 using Mazesta.Core.Health; using Mazesta.Core.Hardware; using Mazesta.Desktop.Localization; using Mazesta.Diagnostics; using Mazesta.Monitoring;
 using Microsoft.Extensions.Logging;
 namespace Mazesta.Web;
@@ -12,15 +12,15 @@ namespace Mazesta.Web;
 /// </summary>
 public sealed class Notifier : IDisposable
 {
-    private readonly Window _window; private readonly PollingEngine _engine; private readonly TestEngine _tests; private readonly IReadOnlyList<ITestExecutor> _executors;
+    private readonly MainWindow _window; private readonly PollingEngine _engine; private readonly TestEngine _tests; private readonly IReadOnlyList<ITestExecutor> _executors;
     private readonly Action<string, string> _toast; private readonly ILogger _log;
     private HealthAlerts _alerts = new(); private (int Cpu, int Gpu) _limits = (95, 95);
     /// <summary>The user's thresholds (the tray's settings, also set by the assistant); read at each snapshot, so a change applies at once.</summary>
     public Func<(int Cpu, int Gpu)>? Limits { get; set; }
-    private Forms.NotifyIcon? _icon; private System.Windows.Threading.DispatcherTimer? _hide;
+    private Forms.NotifyIcon? _icon; private Forms.Timer? _hide;
     private ProviderState _lastProvider = ProviderState.Ready;
 
-    public Notifier(Window window, PollingEngine engine, TestEngine tests, IEnumerable<ITestExecutor> executors, Action<string, string> toast, ILogger log)
+    public Notifier(MainWindow window, PollingEngine engine, TestEngine tests, IEnumerable<ITestExecutor> executors, Action<string, string> toast, ILogger log)
     {
         _window = window; _engine = engine; _tests = tests; _executors = [.. executors]; _toast = toast; _log = log;
         engine.SnapshotPublished += OnSnapshot; engine.Provider.StatusChanged += OnProvider; tests.TestCompleted += OnTest;
@@ -58,27 +58,28 @@ public sealed class Notifier : IDisposable
         _log.LogWarning("Notified: {Title}: {Text}", title, text);
         _window.Dispatcher.BeginInvoke(() =>
         {
-            if (_window.IsActive && _window.WindowState != WindowState.Minimized) { _toast(text, error ? "fail" : ""); return; }
+            if (_window.InFront) { _toast(text, error ? "fail" : ""); return; }
             try
             {
                 _icon ??= new Forms.NotifyIcon { Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!), Text = "Mazesta" };
                 _icon.BalloonTipClicked -= OnClicked; _icon.BalloonTipClicked += OnClicked;
                 _icon.Visible = true;
                 _icon.ShowBalloonTip(10_000, title, text, error ? Forms.ToolTipIcon.Warning : Forms.ToolTipIcon.Info);
-                _hide ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+                _hide ??= new Forms.Timer { Interval = 20_000 };
                 _hide.Tick -= OnHide; _hide.Tick += OnHide; _hide.Stop(); _hide.Start();
             }
             catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or ArgumentException) { _log.LogWarning(e, "Notification not shown"); }
         });
     }
 
-    private void OnClicked(object? sender, EventArgs e) => (_window as MainWindow)?.BringForward();
+    private void OnClicked(object? sender, EventArgs e) => _window.BringForward();
     private void OnHide(object? sender, EventArgs e) { _hide?.Stop(); if (_icon is not null) _icon.Visible = false; }   // Windows keeps the notification in its centre
 
     public void Dispose()
     {
         _engine.SnapshotPublished -= OnSnapshot; _engine.Provider.StatusChanged -= OnProvider; _tests.TestCompleted -= OnTest;
         _hide?.Stop();
+        _hide?.Dispose();
         if (_icon is not null) { _icon.Visible = false; _icon.Dispose(); }
     }
 }

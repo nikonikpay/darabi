@@ -1,0 +1,9 @@
+<Project>
+  <!-- The WebView2 package references its WPF control on every Windows project. The app has no WPF (removed 2026-10-01): the reference is
+       dropped so nothing can use WPF by accident, WPF's WindowsBase is not pulled in, and the control's dll is not shipped. -->
+  <Target Name="DropWebView2Wpf" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
+    </ItemGroup>
+  </Target>
+</Project>

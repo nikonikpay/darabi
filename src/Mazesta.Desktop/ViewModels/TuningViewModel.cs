@@ -39,7 +39,7 @@ public sealed partial class TuningViewModel : ObservableObject
     private readonly IGpuTuningProvider _provider; private readonly JsonStore<GpuProfileDocument> _store; private readonly GpuProfileDocument _doc;
     private readonly Func<string, bool> _confirm; private readonly Action _restartToFirmware; private readonly Func<Action, object> _dispatch;
     private readonly Func<IGpuTuningDevice, IGpuLoad> _load; private readonly Func<string, Func<(DateTimeOffset At, double Volts)?>> _voltageFor;
-    private readonly System.Windows.Threading.DispatcherTimer? _timer;
+    private readonly Timer? _timer;   // once a second while the page is shown; its tick goes to the UI thread
     private CancellationTokenSource? _cts; private Func<(DateTimeOffset At, double Volts)?> _voltage = () => null;
     private (string GpuId, GpuTuningSettings Settings, LoadMeasurement Baseline)? _lastUndervolt;
 
@@ -156,12 +156,12 @@ public sealed partial class TuningViewModel : ObservableObject
         Profiles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasProfiles));
         Device = Devices.FirstOrDefault();
         if (recovered is not null) Status = recovered;
-        if (withTimer) { _timer = new() { Interval = TimeSpan.FromSeconds(1) }; _timer.Tick += (_, _) => RefreshLive(); }
+        if (withTimer) _timer = new(_ => _dispatch(RefreshLive), null, Timeout.Infinite, Timeout.Infinite);
         _ = LoadInventoryAsync(inventory);
     }
 
     /// <summary>Called by the view as it appears and disappears: nothing polls the card while the page is not on screen.</summary>
-    public void SetVisible(bool visible) { if (visible) { RefreshLive(); _timer?.Start(); } else _timer?.Stop(); }
+    public void SetVisible(bool visible) { if (visible) { RefreshLive(); _timer?.Change(1000, 1000); } else _timer?.Change(Timeout.Infinite, Timeout.Infinite); }
 
     partial void OnDeviceChanged(IGpuTuningDevice? value)
     {

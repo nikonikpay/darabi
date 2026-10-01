@@ -1,30 +1,15 @@
-using System.IO; using System.Windows; using System.Windows.Controls; using Xunit;
+using System.IO; using Xunit;
 using Mazesta.Desktop.ViewModels; using Mazesta.Desktop.Views;
 namespace Mazesta.Desktop.Tests;
 
-/// <summary>The one native window left (the web page draws everything else): it loads and lays out on an STA thread with no app resources.</summary>
+/// <summary>The one native window left (the web page draws everything else): its picture is drawn without a window or a screen.</summary>
 public class ViewLoadTests
 {
-    private static void OnSta(Func<FrameworkElement> make)
-    {
-        Exception? error = null;
-        var t = new Thread(() =>
-        {
-            try
-            {
-                _ = Application.Current ?? new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-                var el = make(); var host = new Window { Content = el, Width = 800, Height = 600, ShowInTaskbar = false };
-                host.Show(); el.UpdateLayout(); host.Close();
-            }
-            catch (Exception e) { error = e; }
-        });
-        t.SetApartmentState(ApartmentState.STA); t.Start(); t.Join();
-        if (error is not null) throw new Exception(error.ToString());
-    }
     /// <summary>The overlay drawn with live-looking values in each layout; with MAZESTA_RENDER_DIR set, saved there as pictures for a look by eye.</summary>
     [Theory, InlineData("list"), InlineData("columns"), InlineData("line")]
     public void OverlayWindow_draws_the_frame_rate_box_and_a_box_per_part(string layout)
-        => OnSta(() =>
+    {
+        foreach (bool rtl in new[] { false, true })
         {
             var c = new Mazesta.Monitoring.Tests.Fakes.FakeClock(DateTimeOffset.UnixEpoch); var p = new Mazesta.Monitoring.Tests.Fakes.FakeSensorProvider();
             var gid = new Mazesta.Core.Hardware.HardwareId("gpu/nvidia-0");
@@ -40,19 +25,13 @@ public class ViewLoadTests
             var frames = new Frames();
             var vm = new OverlayViewModel(e, a => { a(); return null!; }, [new("fps", false), new("low1", false), new("fps.avg", false), new("fps.min", false), new("fps.max", false), new("frametime", false), new("gpu.temp", false), new("gpu.load", false), new("cpu.temp", false), new("cpu.load", true)], frames, layout: layout);
             vm.SetActive(true); for (int i = 0; i < 30; i++) { frames.Fps = 120 + 20 * Math.Sin(i / 3.0); e.TickOnce(); }
-            var window = new OverlayWindow { DataContext = vm };
-            var root = (FrameworkElement)window.Content; window.Content = null; root.DataContext = vm; Mazesta.Desktop.Localization.Rtl.Apply(root);
-            root.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); root.Arrange(new Rect(root.DesiredSize)); root.UpdateLayout();
-            Assert.True(root.DesiredSize.Width > (layout == "list" ? 200 : 300));
-            if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir)
-            {
-                var bmp = new System.Windows.Media.Imaging.RenderTargetBitmap((int)Math.Ceiling(root.ActualWidth * 2), (int)Math.Ceiling(root.ActualHeight * 2), 192, 192, System.Windows.Media.PixelFormats.Pbgra32);
-                bmp.Render(root);
-                var png = new System.Windows.Media.Imaging.PngBitmapEncoder(); png.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
-                using var f = File.Create(Path.Combine(dir, $"overlay-{layout}.png")); png.Save(f);
-            }
-            return new Border();
-        });
+            using var bmp = OverlayRenderer.Render(vm, rtl, 2);
+            // Twice the size: the stacked layouts are their panel's width plus the plate; the strip is as long as what it shows.
+            Assert.True(bmp.Width / 2 > (layout == "list" ? 244 : 300), $"{layout} {bmp.Width}");
+            Assert.True(bmp.Height / 2 > (layout == "line" ? 30 : 200), $"{layout} {bmp.Height}");
+            if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) bmp.Save(Path.Combine(dir, $"overlay-{layout}{(rtl ? "-rtl" : "")}.png"));
+        }
+    }
     private sealed class Frames : Mazesta.Monitoring.IFrameRateSource
     {
         public double Fps = 120;

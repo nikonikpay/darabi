@@ -1,20 +1,20 @@
-using System.Collections.Specialized; using System.ComponentModel; using System.Text.Json; using System.Text.Json.Serialization; using System.Windows;
-using System.Windows.Threading; using Mazesta.Persistence; using Microsoft.Extensions.Logging; using Microsoft.Web.WebView2.Core;
+using System.Collections.Specialized; using System.ComponentModel; using System.Text.Json; using System.Text.Json.Serialization;
+using Mazesta.Persistence; using Microsoft.Extensions.Logging; using Microsoft.Web.WebView2.Core;
 namespace Mazesta.Web;
 
 /// <summary>
 /// The only way the page reaches the machine. The page sends <c>{id, m, p}</c> and gets <c>{id, ok, r | e}</c> back; the host pushes
 /// <c>{ev, d}</c> events. Every method is registered by name here, so the page can only do what is listed: there is no generic "call any
-/// method" and no file path ever comes from the page. Handlers run on the UI thread, like the WPF edition's view models expect.
+/// method" and no file path ever comes from the page. Handlers run on the UI thread, as the view models expect.
 /// Live pushes stop while the window is minimised: nothing is serialised for a page nobody sees.
 /// </summary>
 public sealed partial class WebBridge : IDisposable
 {
     private readonly CoreWebView2 _core; private readonly IServiceProvider _sp; private readonly AppPaths _paths; private readonly AppConfig _config;
-    private readonly JsonStore<AppConfig> _store; private readonly bool _configCorrupt; private readonly Window _window; private readonly ILogger _log;
+    private readonly JsonStore<AppConfig> _store; private readonly bool _configCorrupt; private readonly MainWindow _window; private readonly ILogger _log;
     private readonly Dictionary<string, Func<JsonElement, Task<object?>>> _methods = [];
     private readonly List<Action> _cleanup = [];
-    private readonly Dictionary<string, DispatcherOperation?> _pending = [];
+    private readonly HashSet<string> _pending = [];
     private bool _visible = true;
 
     internal static readonly JsonSerializerOptions Json = new()
@@ -23,7 +23,7 @@ public sealed partial class WebBridge : IDisposable
         ReferenceHandler = ReferenceHandler.IgnoreCycles, Converters = { new JsonStringEnumConverter() }, DefaultIgnoreCondition = JsonIgnoreCondition.Never
     };
 
-    public WebBridge(CoreWebView2 core, IServiceProvider sp, AppPaths paths, AppConfig config, JsonStore<AppConfig> store, bool configCorrupt, Window window, ILogger log)
+    public WebBridge(CoreWebView2 core, IServiceProvider sp, AppPaths paths, AppConfig config, JsonStore<AppConfig> store, bool configCorrupt, MainWindow window, ILogger log)
     {
         _core = core; _sp = sp; _paths = paths; _config = config; _store = store; _configCorrupt = configCorrupt; _window = window; _log = log;
         core.WebMessageReceived += OnMessage;
@@ -68,8 +68,8 @@ public sealed partial class WebBridge : IDisposable
     {
         void Queue()
         {
-            if (_pending.TryGetValue(ev, out var op) && op is { Status: DispatcherOperationStatus.Pending }) return;
-            _pending[ev] = _window.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => Post(new { ev, d = state() }));
+            if (!_pending.Add(ev)) return;   // one already queued sends the newest state
+            _window.Dispatcher.BeginInvoke(() => { _pending.Remove(ev); Post(new { ev, d = state() }); });
         }
         if (_window.Dispatcher.CheckAccess()) Queue(); else _window.Dispatcher.BeginInvoke(Queue);
     }

@@ -1,6 +1,6 @@
-using System.IO; using System.Runtime.InteropServices; using System.Text.Json; using System.Windows; using System.Windows.Interop; using System.Windows.Media;
+using System.Drawing; using System.IO; using System.Runtime.InteropServices; using System.Text.Json; using System.Windows.Forms;
 using Mazesta.Core.Hardware; using Mazesta.Desktop.Localization; using Mazesta.Monitoring; using Microsoft.Extensions.Logging; using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
+using Microsoft.Web.WebView2.WinForms;
 namespace Mazesta.Web;
 
 /// <summary>
@@ -9,10 +9,10 @@ namespace Mazesta.Web;
 /// no downloads. Its bridge knows three things only, all about its own sensor: the sensor's description, its history, and its readings as they
 /// arrive (in the main page's snapshot shape, so the page reuses the same store). Readings are not sent while the window is minimised.
 /// </summary>
-public sealed class ChartWindow : Window
+public sealed class ChartWindow : Form
 {
     private static readonly Dictionary<string, ChartWindow> Open = [];
-    private readonly WebView2 _view = new() { DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x0C, 0x0C, 0x0C) };
+    private readonly WebView2 _view = new() { DefaultBackgroundColor = Color.FromArgb(0x0C, 0x0C, 0x0C), Dock = DockStyle.Fill };
     private readonly CoreWebView2Environment _env; private readonly PollingEngine _engine; private readonly HardwareNode _node; private readonly SensorDefinition _sensor;
     private readonly ILogger _log;
     private CoreWebView2? _core;
@@ -20,24 +20,29 @@ public sealed class ChartWindow : Window
     /// <summary>Opens the chart of a sensor the monitor knows, or brings its window forward if it is already open. Unknown ids do nothing.</summary>
     public static void Show(CoreWebView2Environment env, PollingEngine engine, string id, ILogger log)
     {
-        if (Open.TryGetValue(id, out var existing)) { if (existing.WindowState == WindowState.Minimized) existing.WindowState = WindowState.Normal; existing.Activate(); return; }
+        if (Open.TryGetValue(id, out var existing)) { if (existing.WindowState == FormWindowState.Minimized) existing.WindowState = FormWindowState.Normal; existing.Activate(); return; }
         var node = engine.Hardware.FirstOrDefault(n => n.Sensors.Any(s => s.Id.Value == id));
         if (node is null) return;
         var w = new ChartWindow(env, engine, node, node.Sensors.First(s => s.Id.Value == id), log);
-        Open[id] = w; w.Closed += (_, _) => Open.Remove(id);
+        Open[id] = w; w.FormClosed += (_, _) => { Open.Remove(id); w.Dispose(); };
         w.Show();
     }
 
     private ChartWindow(CoreWebView2Environment env, PollingEngine engine, HardwareNode node, SensorDefinition sensor, ILogger log)
     {
         _env = env; _engine = engine; _node = node; _sensor = sensor; _log = log;
-        Title = $"{sensor.Name} — {node.Name}"; Width = 720; Height = 440; MinWidth = 380; MinHeight = 260;
-        Background = new SolidColorBrush(Color.FromRgb(0x0C, 0x0C, 0x0C));
-        Icon = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/MazestaWeb;component/Assets/mazesta.ico"));
-        Content = _view;
-        SourceInitialized += (_, _) => { int on = 1; _ = DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref on, sizeof(int)); };
-        Loaded += async (_, _) => await StartAsync();
-        Closed += (_, _) => { _engine.SnapshotPublished -= OnSnapshot; if (_core is not null) _core.WebMessageReceived -= OnMessage; };
+        Text = $"{sensor.Name} — {node.Name}"; BackColor = Color.FromArgb(0x0C, 0x0C, 0x0C); AutoScaleMode = AutoScaleMode.None;
+        float k = DeviceDpi / 96f; Size = new Size((int)(720 * k), (int)(440 * k)); MinimumSize = new Size((int)(380 * k), (int)(260 * k));
+        Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
+        Controls.Add(_view);
+        Load += async (_, _) => await StartAsync();
+        FormClosed += (_, _) => { _engine.SnapshotPublished -= OnSnapshot; if (_core is not null) _core.WebMessageReceived -= OnMessage; };
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        int on = 1; _ = DwmSetWindowAttribute(Handle, 20, ref on, sizeof(int));
     }
 
     private async Task StartAsync()
@@ -109,7 +114,8 @@ public sealed class ChartWindow : Window
                 s = st.Count > 0 ? new[] { new object?[] { r.Id.Value, st.Min, st.Average, st.Max } } : [],
             },
         };
-        Dispatcher.BeginInvoke(() => { if (WindowState != WindowState.Minimized) Post(message); });
+        try { if (IsHandleCreated && !IsDisposed) BeginInvoke(() => { if (WindowState != FormWindowState.Minimized) Post(message); }); }
+        catch (InvalidOperationException) { }   // the window closed between the check and the call
     }
 
     private void Post(object message)
