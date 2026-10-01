@@ -148,8 +148,10 @@ public sealed partial class WebBridge
         async Task<SoftMachine> SoftPc()
         {
             var inv = await inventory.GetAsync().ConfigureAwait(false); var pc = machine();
-            long? vram = pc.VramBytes ?? inv.Gpus.Select(g => g.AdapterRamBytes).FirstOrDefault(b => b is > 0 and < (4L << 30) - (64L << 20));   // WMI's figure stops at 4 GB: only below that is it the size
             string? gpu = pc.GpuName ?? inv.Gpus.FirstOrDefault()?.Name?.Trim();
+            // The memory, the name and the card's answers all of one card: WMI's figure only of the card so named (and it stops at 4 GB: only below that is it the size).
+            long? vram = pc.VramBytes ?? inv.Gpus.Where(g => gpu is not null && string.Equals(g.Name?.Trim(), gpu, StringComparison.OrdinalIgnoreCase))
+                .Select(g => g.AdapterRamBytes).FirstOrDefault(b => b is > 0 and < (4L << 30) - (64L << 20));
             var (dx12, dxr) = gpuApi ??= Diagnostics.Gpu.GpuFeatures.Describe(gpu);   // asked of the card once
             return new(inv.Cpu?.Name?.Trim(), inv.Cpu?.PhysicalCores, inv.Cpu?.LogicalProcessors, inv.TotalPhysicalMemoryBytes ?? pc.RamTotalBytes, gpu, vram,
                 dx12, dxr, System.Runtime.Intrinsics.X86.Avx2.IsSupported, System.Runtime.Intrinsics.X86.Sse42.IsSupported);

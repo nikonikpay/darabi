@@ -1669,7 +1669,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Dns_None" xml:space="preserve"><value>No DNS server answered every lookup; nothing was changed.</value></data>
   <data name="Assist_Games" xml:space="preserve"><value>The app has no list of games, so it does not guess at which settings a game runs. This computer has a {0} graphics card with {1} of its own memory, a {2} processor and {3} of RAM; compare these with the game's own requirements. For a measured answer, run the graphics benchmark on the Benchmarks page and compare it with other computers there.</value></data>
   <data name="Soft_Level_Meets" xml:space="preserve"><value>Meets its requirements</value></data>
-  <data name="Soft_Scale_Single" xml:space="preserve"><value>Its publisher names one set of requirements, and this computer meets it; how large a scene it takes depends on the graphics memory and RAM.</value></data>
+  <data name="Soft_Scale_Single" xml:space="preserve"><value>This computer meets the requirements this catalog lists for it; how large a scene it takes depends on the graphics memory and RAM.</value></data>
   <data name="Assist_Overlay_On" xml:space="preserve"><value>The overlay is on: temperatures, loads and frame rate show over the screen.</value></data>
   <data name="Assist_Overlay_Off" xml:space="preserve"><value>The overlay is off.</value></data>
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>The overlay could not be switched.</value></data>
@@ -1709,6 +1709,16 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Apps_Ai" xml:space="preserve"><value>AI models</value></data>
   <data name="Apps_Ai_Text" xml:space="preserve"><value>Language models, and image, video, audio and 3D models that run on this computer, are on the AI models tab.</value></data>
   <data name="Soft_Level_Below" xml:space="preserve"><value>Below the minimum</value></data>
+  <data name="Soft_Level_BelowRec" xml:space="preserve"><value>Below the publisher's recommendation</value></data>
+  <data name="Soft_Short_RamVsVram" xml:space="preserve"><value>RAM: {0} GB needed beside this graphics card's memory (the publisher ties the two), {1} GB here</value></data>
+  <data name="Soft_Short_Dxr" xml:space="preserve"><value>DirectX Raytracing: Direct3D reports that this card does not have it</value></data>
+  <data name="Soft_Short_Unsupported" xml:space="preserve"><value>This graphics card is on the publisher's list of cards it does not support</value></data>
+  <data name="Soft_Tier_Archicad_Entry" xml:space="preserve"><value>Recommended · residential</value></data>
+  <data name="Soft_Tier_Archicad_Mid" xml:space="preserve"><value>Recommended · apartments and offices</value></data>
+  <data name="Soft_Tier_Archicad_High" xml:space="preserve"><value>Recommended · high-rises and hospitals</value></data>
+  <data name="Soft_Scale_Archicad_Base" xml:space="preserve"><value>Graphisoft's minimum: Archicad runs; it names no project size for it.</value></data>
+  <data name="Soft_Scale_Corona_Rec" xml:space="preserve"><value>Chaos's advice for memory: 32 GB is what it calls the least for today's scenes. Corona's only hard requirement is SSE4.2; render speed is the processor's.</value></data>
+  <data name="Soft_Scale_Corona_High" xml:space="preserve"><value>Chaos's advice: 64 GB is the "sweet spot" for heavy, complex scenes. Render speed is still the processor's.</value></data>
   <data name="Soft_Level_Minimum" xml:space="preserve"><value>Minimum</value></data>
   <data name="Soft_Level_Recommended" xml:space="preserve"><value>Recommended</value></data>
   <data name="Soft_Level_HighEnd" xml:space="preserve"><value>High-end</value></data>
@@ -1718,14 +1728,14 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Short_RayTracing" xml:space="preserve"><value>A card with ray tracing in hardware (NVIDIA RTX, AMD RX 6000 or newer, Intel Arc)</value></data>
   <data name="Soft_Short_Nvidia" xml:space="preserve"><value>An NVIDIA graphics card (CUDA)</value></data>
   <data name="Soft_Short_Dedicated" xml:space="preserve"><value>A graphics card with its own memory (not the processor's built-in graphics)</value></data>
-  <data name="Soft_Short_Dx12" xml:space="preserve"><value>a graphics card with hardware DirectX 12</value></data>
-  <data name="Soft_Short_Avx2" xml:space="preserve"><value>a processor with AVX2 instructions</value></data>
-  <data name="Soft_Short_Sse42" xml:space="preserve"><value>a processor with SSE4.2 instructions</value></data>
+  <data name="Soft_Short_Dx12" xml:space="preserve"><value>DirectX 12: this card does not run it</value></data>
+  <data name="Soft_Short_Avx2" xml:space="preserve"><value>The processor's AVX2 instructions, which this processor lacks</value></data>
+  <data name="Soft_Short_Sse42" xml:space="preserve"><value>The processor's SSE4.2 instructions, which this processor lacks</value></data>
   <data name="Soft_Unchecked_Cores" xml:space="preserve"><value>the number of cores (not read)</value></data>
   <data name="Soft_Unchecked_Instructions" xml:space="preserve"><value>the processor's instructions (not read)</value></data>
   <data name="Soft_Unchecked_CpuSpeed" xml:space="preserve"><value>the processor's speed against the publisher's example</value></data>
   <data name="Soft_Unchecked_GpuSpeed" xml:space="preserve"><value>the graphics card's speed against the publisher's example</value></data>
-  <data name="Soft_Unchecked_Api" xml:space="preserve"><value>the OpenGL / Vulkan / DirectX version the publisher asks for</value></data>
+  <data name="Soft_Unchecked_Api" xml:space="preserve"><value>the OpenGL / Vulkan / DirectX version or feature level the publisher asks for</value></data>
   <data name="Apps_Unchecked" xml:space="preserve"><value>Not checked (compare with the table yourself):</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>Real-time rendering</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>Render engines</value></data>
@@ -1747,17 +1757,17 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Scale_Civil_Recommended" xml:space="preserve"><value>Large models and long analyses.</value></data>
   <data name="Soft_Scale_Civil_HighEnd" xml:space="preserve"><value>Very large models.</value></data>
   <data name="Soft_Scale_Animation_Minimum" xml:space="preserve"><value>Learning and simple scenes.</value></data>
-  <data name="Soft_Scale_Animation_Recommended" xml:space="preserve"><value>Typical professional scenes.</value></data>
+  <data name="Soft_Scale_Animation_Recommended" xml:space="preserve"><value>The publisher's recommendation for the program itself; heavy scenes, simulation and rendering ask more.</value></data>
   <data name="Soft_Scale_Animation_HighEnd" xml:space="preserve"><value>Heavy scenes and simulations.</value></data>
   <data name="Soft_Scale_Video_Minimum" xml:space="preserve"><value>HD editing with light effects.</value></data>
   <data name="Soft_Scale_Video_Recommended" xml:space="preserve"><value>HD editing.</value></data>
-  <data name="Soft_Scale_Video_HighEnd" xml:space="preserve"><value>4K and higher.</value></data>
+  <data name="Soft_Scale_Video_HighEnd" xml:space="preserve"><value>The memory Adobe recommends for 4K and higher media; smoothness also depends on the codec, effects and streams.</value></data>
   <data name="Soft_Scale_Graphics_Minimum" xml:space="preserve"><value>Everyday photo work.</value></data>
   <data name="Soft_Scale_Graphics_Recommended" xml:space="preserve"><value>Large files and 4K and higher screens.</value></data>
   <data name="Soft_Scale_Graphics_HighEnd" xml:space="preserve"><value>Large files and 4K and higher screens.</value></data>
   <data name="Soft_Scale_Twinmotion_Min" xml:space="preserve"><value>Small to medium projects (under 1 GB of data), 2K video, 4K images; not VR, path tracing or Lumen (Epic's words).</value></data>
-  <data name="Soft_Scale_Twinmotion_Rec" xml:space="preserve"><value>Large projects (over 1 GB of data), VR, Lumen, path tracing, 8K and larger images (Epic's words).</value></data>
-  <data name="Soft_Scale_Vr" xml:space="preserve"><value>VR and the largest projects.</value></data>
+  <data name="Soft_Scale_Twinmotion_Rec" xml:space="preserve"><value>Epic's high-end level (projects over 1 GB of data, larger images). Path tracing, Lumen and VR have requirements of their own, not checked here.</value></data>
+  <data name="Soft_Scale_Vr" xml:space="preserve"><value>The graphics memory Chaos recommends for VR.</value></data>
   <data name="Soft_Scale_Revit_Min" xml:space="preserve"><value>A single model up to about 300 MB on disk (Autodesk's words).</value></data>
   <data name="Soft_Scale_Revit_Rec" xml:space="preserve"><value>A single model up to about 600 MB on disk (Autodesk's words).</value></data>
   <data name="Soft_Scale_Revit_High" xml:space="preserve"><value>Larger models and several open at once.</value></data>
@@ -1768,12 +1778,12 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Scale_Cad2d" xml:space="preserve"><value>2D drafting.</value></data>
   <data name="Soft_Scale_Cad3d" xml:space="preserve"><value>3D modelling and large drawings.</value></data>
   <data name="Soft_Scale_Hd" xml:space="preserve"><value>HD media.</value></data>
-  <data name="Soft_Scale_4k" xml:space="preserve"><value>4K and higher media.</value></data>
+  <data name="Soft_Scale_4k" xml:space="preserve"><value>The memory Adobe recommends for 4K and higher media. How smoothly it plays also depends on the codec, the effects and the number of streams.</value></data>
   <data name="Soft_Scale_Fusion" xml:space="preserve"><value>With Fusion (effects).</value></data>
-  <data name="Soft_Scale_Photo4k" xml:space="preserve"><value>4K and higher screens and large files.</value></data>
-  <data name="Soft_Note_D5" xml:space="preserve"><value>D5 renders with DirectX 12 ray tracing; the GTX 1060 on its list does it through the driver, slowly.</value></data>
-  <data name="Soft_Note_Vantage" xml:space="preserve"><value>Chaos asks for at least as much RAM as graphics memory, and the whole scene must fit in the card's memory.</value></data>
-  <data name="Soft_Note_Vram" xml:space="preserve"><value>The whole scene must fit in the card's memory: more memory, bigger scenes.</value></data>
+  <data name="Soft_Scale_Photo4k" xml:space="preserve"><value>Adobe's recommendation. Adobe asks 4 GB of graphics memory for 4K and larger displays: that is about the screen, not the size of the photos; big files depend on the processor, RAM and the scratch disk.</value></data>
+  <data name="Soft_Note_D5" xml:space="preserve"><value>D5 needs DirectX Raytracing. A card without ray-tracing cores (GTX 1060) gets it from its driver; D5 names the GTX 1050 and 1650 as unsupported.</value></data>
+  <data name="Soft_Note_Vantage" xml:space="preserve"><value>Chaos asks for RAM at least as large as the graphics memory (twice it recommended), a processor with AVX2, and a DXR card: NVIDIA RTX, AMD RX 6000+ or Intel Arc.</value></data>
+  <data name="Soft_Note_Vram" xml:space="preserve"><value>In CUDA and RTX modes the whole scene must fit in the card's memory (Chaos); a scene too big can still render on the processor in CUDA x86 mode. Chaos supports AMD RDNA 2+ cards from its own list.</value></data>
   <data name="Soft_Note_Autodesk" xml:space="preserve"><value>Autodesk states only these figures, and keeps a list of certified graphics cards.</value></data>
   <data name="Soft_Purpose_Lumion" xml:space="preserve"><value>Real-time rendering for architects: images, video and 360° panoramas of a model, quickly.</value></data>
   <data name="Soft_Purpose_Twinmotion" xml:space="preserve"><value>Epic's real-time visualisation on Unreal Engine: images, video, VR, path tracing.</value></data>
@@ -1782,7 +1792,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Soft_Purpose_Vantage" xml:space="preserve"><value>Real-time ray tracing of whole V-Ray scenes, to explore and animate them.</value></data>
   <data name="Soft_Purpose_Unreal" xml:space="preserve"><value>Game engine also used for architecture, film and VR.</value></data>
   <data name="Soft_Purpose_Vray" xml:space="preserve"><value>Photorealistic renderer for 3ds Max, SketchUp, Revit, Rhino and others, on the processor.</value></data>
-  <data name="Soft_Purpose_VrayGpu" xml:space="preserve"><value>V-Ray's engine on NVIDIA graphics cards (CUDA, RTX).</value></data>
+  <data name="Soft_Purpose_VrayGpu" xml:space="preserve"><value>V-Ray's engine on graphics cards: NVIDIA (CUDA, RTX) and, by Chaos's list, AMD RDNA 2 and newer.</value></data>
   <data name="Soft_Purpose_Corona" xml:space="preserve"><value>Processor renderer for interiors and architecture, simple to set up.</value></data>
   <data name="Soft_Purpose_Revit" xml:space="preserve"><value>BIM modelling of buildings: architecture, structure and services.</value></data>
   <data name="Soft_Purpose_Archicad" xml:space="preserve"><value>BIM for architects.</value></data>

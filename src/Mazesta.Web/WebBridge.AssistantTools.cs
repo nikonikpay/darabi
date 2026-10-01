@@ -420,18 +420,21 @@ public sealed partial class WebBridge
     private static object SoftwareRow(SoftApp x, SoftMachine pc, bool detail)
     {
         var v = SoftwareCatalog.Judge(x, pc);
-        var tier = v.Level is { } l ? x.Tiers.First(t => t.Kind == l) : null;
+        var tier = v.Reached;
         return new
         {
             id = x.Id, name = x.Name, level = SoftwareCatalog.LevelName(x, v), levelName = Desktop.Localization.Loc.Get("Soft_Level_" + SoftwareCatalog.LevelName(x, v)),
             suits = tier is null ? null : Desktop.Localization.Loc.Get(x.Tiers.Count == 1 ? "Soft_Scale_Single" : tier.ScaleKey ?? "Soft_Scale_" + x.Category + "_" + tier.Kind),
             missingForNext = v.Missing.Select(m => ShortText(m)),
             notChecked = (v.Unchecked ?? []).Select(x => Desktop.Localization.Loc.Get("Soft_Unchecked_" + x)),
-            nextLevel = v.Next is { } n ? Desktop.Localization.Loc.Get("Soft_Level_" + n) : null,
-            tiers = detail ? x.Tiers.Select(t => new { level = Desktop.Localization.Loc.Get("Soft_Level_" + t.Kind), ramGb = t.RamGb, vramGb = t.VramGb, cores = t.Cores, gpu = t.Gpu, cpu = t.Cpu }) : null,
+            nextLevel = v.NextTier is { } n ? TierName(n) : null,
+            tiers = detail ? x.Tiers.Select(t => new { level = TierName(t), ramGb = t.RamGb, vramGb = t.VramGb, cores = t.Cores, gpu = t.Gpu, cpu = t.Cpu }) : null,
             source = detail ? x.Source : null, note = detail && x.NoteKey is { } nk ? Desktop.Localization.Loc.Get(nk) : null,
         };
     }
+
+    /// <summary>A tier's name: the publisher's own for one of several of a kind (Archicad's building sizes), else its kind's.</summary>
+    private static string TierName(SoftTier t) => Desktop.Localization.Loc.Get(t.LabelKey ?? "Soft_Level_" + t.Kind);
 
     /// <summary>What a tier lacks, in words: "RAM: 32 GB needed, 16 here".</summary>
     private static string ShortText(SoftShort m) => m.Need is { } need

@@ -6,7 +6,7 @@ import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { go } from "../app.js";
 
-const LEVEL = { HighEnd: "run", Recommended: "pass", Meets: "pass", Minimum: "warn" };
+const LEVEL = { HighEnd: "run", Recommended: "pass", Meets: "pass", Minimum: "warn", BelowRec: "warn" };
 const lat = (text) => h("span", { class: "lat" }, text);
 const gb = (v) => (v == null ? "—" : h("span", { class: "num" }, `${v} GB`));
 
@@ -42,17 +42,17 @@ export function mount(el) {
       h("table", { class: "apps-table" },
         h("thead", {}, h("tr", {}, h("th", {}), h("th", {}, t("Apps_Ram")), h("th", {}, t("Apps_Vram")), h("th", {}, t("Apps_Gpu")), h("th", {}, t("Apps_Cpu")))),
         h("tbody", {}, a.tiers.map((x) => h("tr", { class: x.met ? "met" : "" },
-          h("th", {}, h("span", { class: `pill ${x.met ? LEVEL[x.kind] : "none"}` }, t(`Soft_Level_${x.kind}`))),
+          h("th", {}, h("span", { class: `pill ${x.met ? LEVEL[x.kind] : "none"}` }, x.name)),
           h("td", { class: "num" }, gb(x.ram)), h("td", { class: "num" }, gb(x.vram)),
           h("td", {}, x.gpu ? lat(x.gpu) : "—", x.rt ? h("div", { class: "caption" }, t("Apps_RayTracing")) : null),
           h("td", {}, x.cpu ? lat(x.cpu) : x.cores ? [h("span", { class: "num" }, x.cores), " ", t("Apps_Cores")] : "—"))))),
       h("p", { class: "caption" }, t("Apps_Source"), " ", lat(a.source)));
-    return h("article", { class: `apps-card lv-${a.label === "Meets" ? "Recommended" : a.level || "Below"}`, "data-app": a.id },
+    return h("article", { class: `apps-card lv-${a.label === "Meets" ? "Recommended" : a.level || (a.label === "BelowRec" ? "Minimum" : "Below")}`, "data-app": a.id },
       h("header", { class: "apps-head" }, appIcon(a),
         h("div", { class: "apps-name" }, h("h3", {}, lat(a.name)), h("span", { class: "caption" }, a.vendor)), levelPill(a.label)),
       h("p", { class: "apps-purpose" }, a.purpose),
       a.suits ? h("p", { class: "apps-suits" }, h("b", {}, t("Apps_Suits"), ": "), a.suits) : null,
-      a.next ? h("div", { class: "apps-next" }, h("span", { class: "caption" }, t("Apps_Next", t(`Soft_Level_${a.next}`))),
+      a.next ? h("div", { class: "apps-next" }, h("span", { class: "caption" }, t("Apps_Next", a.nextName)),
         h("ul", {}, a.missing.map((m) => h("li", {}, m)))) : h("p", { class: "caption" }, icon("check"), " ", t("Apps_Top")),
       a.unchecked && a.unchecked.length ? h("p", { class: "caption apps-unchecked" }, t("Apps_Unchecked"), " ", a.unchecked.join("، ")) : null,
       a.note ? h("p", { class: "caption apps-note" }, a.note) : null, tiers);

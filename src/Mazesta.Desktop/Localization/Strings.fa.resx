@@ -1669,7 +1669,7 @@
   <data name="Assist_Dns_None" xml:space="preserve"><value>هیچ DNSی به همهٔ پرسش‌ها پاسخ نداد و چیزی تغییر نکرد.</value></data>
   <data name="Assist_Games" xml:space="preserve"><value>برنامه فهرستی از بازی‌ها ندارد، پس حدس نمی‌زند هر بازی با چه تنظیماتی اجرا می‌شود. این سیستم کارت گرافیک {0} با {1} حافظهٔ اختصاصی، پردازندهٔ {2} و {3} رم دارد؛ این‌ها را با حداقل نیازهای خود بازی مقایسه کنید. برای جواب اندازه‌گیری‌شده، بنچمارک گرافیک را در صفحهٔ «بنچمارک‌ها» اجرا کنید و با سیستم‌های دیگر همان‌جا مقایسه کنید.</value></data>
   <data name="Soft_Level_Meets" xml:space="preserve"><value>نیازهایش را دارد</value></data>
-  <data name="Soft_Scale_Single" xml:space="preserve"><value>سازنده فقط یک سطح نیاز اعلام کرده و این سیستم آن را دارد؛ اندازهٔ صحنه‌ای که جواب می‌دهد به حافظهٔ گرافیک و رم بستگی دارد.</value></data>
+  <data name="Soft_Scale_Single" xml:space="preserve"><value>این سیستم نیازهایی را که این فهرست برای برنامه آورده دارد؛ اندازهٔ صحنه‌ای که جواب می‌دهد به حافظهٔ گرافیک و رم بستگی دارد.</value></data>
   <data name="Assist_Overlay_On" xml:space="preserve"><value>اورلی روشن شد: دما، مصرف و فریم‌ریت روی صفحه نمایش داده می‌شود.</value></data>
   <data name="Assist_Overlay_Off" xml:space="preserve"><value>اورلی خاموش شد.</value></data>
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>اورلی تغییر نکرد.</value></data>
@@ -1709,6 +1709,16 @@
   <data name="Apps_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
   <data name="Apps_Ai_Text" xml:space="preserve"><value>مدل‌های زبانی و مدل‌های تولید عکس، ویدئو، صدا و سه‌بعدی که روی این سیستم اجرا می‌شوند در زبانهٔ «مدل‌های هوش مصنوعی» هستند.</value></data>
   <data name="Soft_Level_Below" xml:space="preserve"><value>پایین‌تر از حداقل</value></data>
+  <data name="Soft_Level_BelowRec" xml:space="preserve"><value>پایین‌تر از توصیهٔ سازنده</value></data>
+  <data name="Soft_Short_RamVsVram" xml:space="preserve"><value>رم: کنار حافظهٔ این کارت گرافیک {0} گیگابایت لازم است (سازنده این دو را به هم بسته)، این سیستم {1}</value></data>
+  <data name="Soft_Short_Dxr" xml:space="preserve"><value>DirectX Raytracing: طبق گزارش Direct3D این کارت آن را ندارد</value></data>
+  <data name="Soft_Short_Unsupported" xml:space="preserve"><value>این کارت گرافیک در فهرست کارت‌هایی است که سازنده پشتیبانی نمی‌کند</value></data>
+  <data name="Soft_Tier_Archicad_Entry" xml:space="preserve"><value>پیشنهادی · مسکونی</value></data>
+  <data name="Soft_Tier_Archicad_Mid" xml:space="preserve"><value>پیشنهادی · آپارتمانی و اداری</value></data>
+  <data name="Soft_Tier_Archicad_High" xml:space="preserve"><value>پیشنهادی · برج و بیمارستان</value></data>
+  <data name="Soft_Scale_Archicad_Base" xml:space="preserve"><value>حداقل Graphisoft: آرشیکد اجرا می‌شود؛ برای این سطح اندازهٔ پروژه‌ای نام نبرده.</value></data>
+  <data name="Soft_Scale_Corona_Rec" xml:space="preserve"><value>توصیهٔ Chaos برای حافظه: ۳۲ گیگابایت را کمترین مقدار برای صحنه‌های امروزی می‌داند. تنها شرط قطعی کرونا SSE4.2 است و سرعت رندر به پردازنده بستگی دارد.</value></data>
+  <data name="Soft_Scale_Corona_High" xml:space="preserve"><value>توصیهٔ Chaos: ۶۴ گیگابایت «نقطهٔ مطلوب» برای صحنه‌های سنگین و پیچیده است. سرعت رندر باز هم به پردازنده بستگی دارد.</value></data>
   <data name="Soft_Level_Minimum" xml:space="preserve"><value>حداقل</value></data>
   <data name="Soft_Level_Recommended" xml:space="preserve"><value>پیشنهادی</value></data>
   <data name="Soft_Level_HighEnd" xml:space="preserve"><value>حرفه‌ای</value></data>
@@ -1718,14 +1728,14 @@
   <data name="Soft_Short_RayTracing" xml:space="preserve"><value>کارتی با ری‌تریسینگ سخت‌افزاری (NVIDIA RTX، AMD RX 6000 به بعد یا Intel Arc)</value></data>
   <data name="Soft_Short_Nvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA (CUDA)</value></data>
   <data name="Soft_Short_Dedicated" xml:space="preserve"><value>کارت گرافیک با حافظهٔ اختصاصی (نه گرافیک داخلی پردازنده)</value></data>
-  <data name="Soft_Short_Dx12" xml:space="preserve"><value>کارت گرافیک با DirectX 12 سخت‌افزاری</value></data>
-  <data name="Soft_Short_Avx2" xml:space="preserve"><value>پردازنده با دستورهای AVX2</value></data>
-  <data name="Soft_Short_Sse42" xml:space="preserve"><value>پردازنده با دستورهای SSE4.2</value></data>
+  <data name="Soft_Short_Dx12" xml:space="preserve"><value>DirectX 12: این کارت آن را اجرا نمی‌کند</value></data>
+  <data name="Soft_Short_Avx2" xml:space="preserve"><value>دستورهای AVX2 پردازنده، که این پردازنده ندارد</value></data>
+  <data name="Soft_Short_Sse42" xml:space="preserve"><value>دستورهای SSE4.2 پردازنده، که این پردازنده ندارد</value></data>
   <data name="Soft_Unchecked_Cores" xml:space="preserve"><value>تعداد هسته (خوانده نشد)</value></data>
   <data name="Soft_Unchecked_Instructions" xml:space="preserve"><value>دستورهای پردازنده (خوانده نشد)</value></data>
   <data name="Soft_Unchecked_CpuSpeed" xml:space="preserve"><value>سرعت پردازنده در برابر نمونهٔ سازنده</value></data>
   <data name="Soft_Unchecked_GpuSpeed" xml:space="preserve"><value>سرعت کارت گرافیک در برابر نمونهٔ سازنده</value></data>
-  <data name="Soft_Unchecked_Api" xml:space="preserve"><value>نسخهٔ OpenGL / Vulkan / DirectX که سازنده خواسته</value></data>
+  <data name="Soft_Unchecked_Api" xml:space="preserve"><value>نسخه یا سطح قابلیت OpenGL / Vulkan / DirectX که سازنده خواسته</value></data>
   <data name="Apps_Unchecked" xml:space="preserve"><value>بررسی نشد (مقایسه را خودتان با جدول انجام دهید):</value></data>
   <data name="Soft_Category_Visualization" xml:space="preserve"><value>رندر بلادرنگ و ویژوالایز</value></data>
   <data name="Soft_Category_Rendering" xml:space="preserve"><value>موتورهای رندر</value></data>
@@ -1747,17 +1757,17 @@
   <data name="Soft_Scale_Civil_Recommended" xml:space="preserve"><value>مدل‌های بزرگ و تحلیل‌های طولانی.</value></data>
   <data name="Soft_Scale_Civil_HighEnd" xml:space="preserve"><value>مدل‌های خیلی بزرگ.</value></data>
   <data name="Soft_Scale_Animation_Minimum" xml:space="preserve"><value>یادگیری و صحنه‌های ساده.</value></data>
-  <data name="Soft_Scale_Animation_Recommended" xml:space="preserve"><value>صحنه‌های حرفه‌ای معمول.</value></data>
+  <data name="Soft_Scale_Animation_Recommended" xml:space="preserve"><value>توصیهٔ سازنده برای خود برنامه؛ صحنه‌های سنگین، شبیه‌سازی و رندر بیشتر می‌خواهند.</value></data>
   <data name="Soft_Scale_Animation_HighEnd" xml:space="preserve"><value>صحنه‌های سنگین و شبیه‌سازی.</value></data>
   <data name="Soft_Scale_Video_Minimum" xml:space="preserve"><value>تدوین HD با جلوه‌های سبک.</value></data>
   <data name="Soft_Scale_Video_Recommended" xml:space="preserve"><value>تدوین HD.</value></data>
-  <data name="Soft_Scale_Video_HighEnd" xml:space="preserve"><value>4K و بالاتر.</value></data>
+  <data name="Soft_Scale_Video_HighEnd" xml:space="preserve"><value>حافظه‌ای که Adobe برای 4K و بالاتر پیشنهاد می‌کند؛ روان بودن کار به کدک، افکت‌ها و تعداد لایه‌ها هم بستگی دارد.</value></data>
   <data name="Soft_Scale_Graphics_Minimum" xml:space="preserve"><value>کارهای روزمرهٔ عکس.</value></data>
   <data name="Soft_Scale_Graphics_Recommended" xml:space="preserve"><value>فایل‌های بزرگ و نمایشگر 4K به بالا.</value></data>
   <data name="Soft_Scale_Graphics_HighEnd" xml:space="preserve"><value>فایل‌های بزرگ و نمایشگر 4K به بالا.</value></data>
   <data name="Soft_Scale_Twinmotion_Min" xml:space="preserve"><value>پروژه‌های کوچک تا متوسط (کمتر از ۱ گیگابایت داده)، ویدئوی 2K و تصویر 4K؛ بدون VR، Path Tracer و Lumen (طبق Epic).</value></data>
-  <data name="Soft_Scale_Twinmotion_Rec" xml:space="preserve"><value>پروژه‌های بزرگ (بیش از ۱ گیگابایت داده)، VR، Lumen، Path Tracer و تصویر 8K به بالا (طبق Epic).</value></data>
-  <data name="Soft_Scale_Vr" xml:space="preserve"><value>واقعیت مجازی (VR) و بزرگ‌ترین پروژه‌ها.</value></data>
+  <data name="Soft_Scale_Twinmotion_Rec" xml:space="preserve"><value>سطح High-end از نظر Epic (پروژه‌های بیش از ۱ گیگابایت داده و تصاویر بزرگ‌تر). Path Tracer، Lumen و VR نیازهای جداگانه دارند که اینجا بررسی نمی‌شوند.</value></data>
+  <data name="Soft_Scale_Vr" xml:space="preserve"><value>حافظهٔ گرافیکی که Chaos برای واقعیت مجازی (VR) پیشنهاد می‌کند.</value></data>
   <data name="Soft_Scale_Revit_Min" xml:space="preserve"><value>یک مدل تا حدود ۳۰۰ مگابایت (طبق Autodesk).</value></data>
   <data name="Soft_Scale_Revit_Rec" xml:space="preserve"><value>یک مدل تا حدود ۶۰۰ مگابایت (طبق Autodesk).</value></data>
   <data name="Soft_Scale_Revit_High" xml:space="preserve"><value>مدل‌های بزرگ‌تر و چند مدل باز هم‌زمان.</value></data>
@@ -1768,12 +1778,12 @@
   <data name="Soft_Scale_Cad2d" xml:space="preserve"><value>نقشه‌کشی دوبعدی.</value></data>
   <data name="Soft_Scale_Cad3d" xml:space="preserve"><value>مدل‌سازی سه‌بعدی و نقشه‌های بزرگ.</value></data>
   <data name="Soft_Scale_Hd" xml:space="preserve"><value>فیلم HD.</value></data>
-  <data name="Soft_Scale_4k" xml:space="preserve"><value>فیلم 4K و بالاتر.</value></data>
+  <data name="Soft_Scale_4k" xml:space="preserve"><value>حافظه‌ای که Adobe برای فیلم 4K و بالاتر پیشنهاد می‌کند. روان بودن کار به کدک، افکت‌ها و تعداد لایه‌های ویدیو هم بستگی دارد.</value></data>
   <data name="Soft_Scale_Fusion" xml:space="preserve"><value>همراه Fusion (جلوه‌ها).</value></data>
-  <data name="Soft_Scale_Photo4k" xml:space="preserve"><value>نمایشگر 4K به بالا و فایل‌های بزرگ.</value></data>
-  <data name="Soft_Note_D5" xml:space="preserve"><value>D5 با ری‌تریسینگ DirectX 12 رندر می‌گیرد؛ GTX 1060 که در فهرستش آمده این کار را از راه درایور و کند انجام می‌دهد.</value></data>
-  <data name="Soft_Note_Vantage" xml:space="preserve"><value>Chaos می‌گوید رم باید دست‌کم هم‌اندازهٔ حافظهٔ گرافیک باشد و کل صحنه باید در حافظهٔ کارت جا شود.</value></data>
-  <data name="Soft_Note_Vram" xml:space="preserve"><value>کل صحنه باید در حافظهٔ کارت جا شود: حافظهٔ بیشتر، صحنهٔ بزرگ‌تر.</value></data>
+  <data name="Soft_Scale_Photo4k" xml:space="preserve"><value>توصیهٔ Adobe. برای نمایشگر 4K و بزرگ‌تر، Adobe چهار گیگابایت حافظهٔ گرافیک می‌خواهد؛ این دربارهٔ نمایشگر است، نه اندازهٔ عکس. فایل‌های بزرگ به پردازنده، رم و دیسک Scratch بستگی دارند.</value></data>
+  <data name="Soft_Note_D5" xml:space="preserve"><value>D5 به DirectX Raytracing نیاز دارد. کارت بدون هستهٔ ری‌تریسینگ (GTX 1060) آن را از درایورش می‌گیرد؛ D5 کارت‌های GTX 1050 و 1650 را پشتیبانی نمی‌کند.</value></data>
+  <data name="Soft_Note_Vantage" xml:space="preserve"><value>Chaos می‌گوید رم باید دست‌کم هم‌اندازهٔ حافظهٔ گرافیک باشد (دو برابرش پیشنهاد می‌شود)، پردازنده AVX2 داشته باشد و کارت DXR داشته باشد: NVIDIA RTX، AMD RX 6000 به بعد یا Intel Arc.</value></data>
+  <data name="Soft_Note_Vram" xml:space="preserve"><value>در حالت CUDA و RTX کل صحنه باید در حافظهٔ کارت جا شود (طبق Chaos)؛ صحنهٔ بزرگ‌تر را می‌توان در حالت CUDA x86 با پردازنده رندر گرفت. Chaos کارت‌های AMD نسل RDNA 2 به بعد را طبق فهرست خودش پشتیبانی می‌کند.</value></data>
   <data name="Soft_Note_Autodesk" xml:space="preserve"><value>Autodesk فقط همین اعداد را اعلام کرده و فهرستی از کارت‌های گرافیک تأییدشده دارد.</value></data>
   <data name="Soft_Purpose_Lumion" xml:space="preserve"><value>رندر بلادرنگ برای معماران: تصویر، ویدئو و پانورامای ۳۶۰ از مدل، سریع.</value></data>
   <data name="Soft_Purpose_Twinmotion" xml:space="preserve"><value>ویژوالایز بلادرنگ Epic بر پایهٔ Unreal Engine: تصویر، ویدئو، VR و Path Tracing.</value></data>
@@ -1782,7 +1792,7 @@
   <data name="Soft_Purpose_Vantage" xml:space="preserve"><value>ری‌تریسینگ بلادرنگ کل صحنه‌های V-Ray، برای گشتن در آن‌ها و ساخت انیمیشن.</value></data>
   <data name="Soft_Purpose_Unreal" xml:space="preserve"><value>موتور بازی‌سازی که در معماری، فیلم و VR هم استفاده می‌شود.</value></data>
   <data name="Soft_Purpose_Vray" xml:space="preserve"><value>رندر واقع‌گرا برای 3ds Max، SketchUp، Revit، Rhino و دیگران، با پردازنده.</value></data>
-  <data name="Soft_Purpose_VrayGpu" xml:space="preserve"><value>موتور V-Ray روی کارت‌های گرافیک NVIDIA (CUDA و RTX).</value></data>
+  <data name="Soft_Purpose_VrayGpu" xml:space="preserve"><value>موتور V-Ray روی کارت گرافیک: NVIDIA (با CUDA و RTX) و طبق فهرست Chaos، کارت‌های AMD نسل RDNA 2 به بعد.</value></data>
   <data name="Soft_Purpose_Corona" xml:space="preserve"><value>رندر با پردازنده برای داخلی و معماری، با تنظیمات ساده.</value></data>
   <data name="Soft_Purpose_Revit" xml:space="preserve"><value>مدل‌سازی BIM ساختمان: معماری، سازه و تأسیسات.</value></data>
   <data name="Soft_Purpose_Archicad" xml:space="preserve"><value>BIM برای معماران.</value></data>
