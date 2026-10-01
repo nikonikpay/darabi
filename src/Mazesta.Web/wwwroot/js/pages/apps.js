@@ -28,7 +28,7 @@ export function mount(el) { return mountList(el, false); }
 export function mountList(el, games) {
   const machine = h("dl", { class: "kv apps-pc" }), chips = h("div", { class: "apps-chips", role: "tablist" }), list = h("div", { class: "apps-list" });
   const count = h("span", { class: "group-count" });
-  const search = h("input", { class: "field apps-search", type: "search", placeholder: t("Apps_Search"), "aria-label": t("Apps_Search"), oninput: () => draw() });
+  const search = h("input", { class: "field apps-search", type: "search", placeholder: t(games ? "Games_Search" : "Apps_Search"), "aria-label": t(games ? "Games_Search" : "Apps_Search"), oninput: () => draw() });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t(games ? "Games_Title" : "Apps_Title")), h("p", { class: "page-lede" }, t(games ? "Games_Lede" : "Apps_Lede")))),
     h("div", { class: "apps-top" },
       h("section", { class: "panel p-ai" }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("board")), h("h2", { class: "panel-title" }, t("Apps_This")), count), machine),
@@ -43,7 +43,7 @@ export function mountList(el, games) {
   function drawChips() { chips.replaceChildren(chip("", t("Apps_All")), ...s.categories.filter((c) => c.id !== "Game").map((c) => chip(c.id, c.name))); }
 
   function card(a) {
-    const tiers = h("details", { class: "apps-tiers" }, h("summary", {}, t("Apps_Tiers")),
+    const tiers = h("details", { class: "apps-tiers" }, h("summary", {}, t(games ? "Games_Tiers" : "Apps_Tiers")),
       h("table", { class: "apps-table" },
         h("thead", {}, h("tr", {}, h("th", {}), games ? h("th", {}, t("Games_Target")) : null, h("th", {}, t("Apps_Ram")), h("th", {}, t("Apps_Vram")), h("th", {}, t("Apps_Gpu")), h("th", {}, t("Apps_Cpu")))),
         h("tbody", {}, a.tiers.map((x) => h("tr", { class: x.met ? "met" : "" },
@@ -59,7 +59,7 @@ export function mountList(el, games) {
       h("p", { class: "apps-purpose" }, a.purpose),
       a.suits ? h("p", { class: "apps-suits" }, h("b", {}, t("Apps_Suits"), ": "), a.suits) : null,
       a.next ? h("div", { class: "apps-next" }, h("span", { class: "caption" }, t("Apps_Next", a.nextName)),
-        h("ul", {}, a.missing.map((m) => h("li", {}, m)))) : h("p", { class: "caption" }, icon("check"), " ", t("Apps_Top")),
+        h("ul", {}, a.missing.map((m) => h("li", {}, m)))) : h("p", { class: "caption" }, icon("check"), " ", t(games ? "Games_Top" : "Apps_Top")),
       a.unchecked && a.unchecked.length ? h("p", { class: "caption apps-unchecked" }, t("Apps_Unchecked"), " ", a.unchecked.join("، ")) : null,
       a.note ? h("p", { class: "caption apps-note" }, a.note) : null, tiers);
   }

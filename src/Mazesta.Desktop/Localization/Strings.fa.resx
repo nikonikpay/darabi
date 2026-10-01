@@ -1743,6 +1743,9 @@
   <data name="Games_Ai_Text" xml:space="preserve"><value>دربارهٔ هر بازی با نامش از دستیار بپرسید؛ از همین سطح‌بندی ناشر جواب می‌دهد. مدل‌های زبانی و تصویری در زبانهٔ «مدل‌های هوش مصنوعی» هستند.</value></data>
   <data name="Games_Note" xml:space="preserve"><value>هدف ناشر (رزولوشن، تنظیمات گرافیکی، فریم‌ریت) نتیجهٔ آزمون خودش روی قطعه‌های نمونه است، نه قول برای این سیستم. اینجا هیچ فریم‌ریتی حدس زده نمی‌شود.</value></data>
   <data name="Games_Count" xml:space="preserve"><value>{0} از {1} بازی اجرا می‌شوند</value></data>
+  <data name="Games_Search" xml:space="preserve"><value>جستجوی بازی…</value></data>
+  <data name="Games_Tiers" xml:space="preserve"><value>سطح‌بندی ناشر</value></data>
+  <data name="Games_Top" xml:space="preserve"><value>همهٔ سطح‌هایی که ناشر نام برده را دارد.</value></data>
   <data name="Games_Target" xml:space="preserve"><value>هدف ناشر</value></data>
   <data name="Games_NoTargetShort" xml:space="preserve"><value>نام نبرده</value></data>
   <data name="Game_Target" xml:space="preserve"><value>هدف ناشر برای این سطح: {0}. نتیجهٔ آزمون ناشر روی قطعه‌های نمونه است، نه قول برای این سیستم.</value></data>

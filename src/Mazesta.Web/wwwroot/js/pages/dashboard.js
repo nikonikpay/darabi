@@ -92,7 +92,7 @@ export function mount(el) {
   };
 
   // The parts the tiles above already show (processor, graphics, memory, network) have their own pages; this row is what the tiles do not hold.
-  const panels = h("div", { class: "panels dash" });
+  const panels = h("div", { class: "panels dash pair" });
   // Board and system: what the machine is (from the inventory, filled in when it arrives) and the board's own sensors.
   const boardSensors = board ? sensorsUnder(board) : [];
   const inv = { board: h("span", {}), bios: h("dd", { class: "lat" }), os: h("dd", { class: "lat" }) };

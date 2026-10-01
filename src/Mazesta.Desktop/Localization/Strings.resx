@@ -1743,6 +1743,9 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Games_Ai_Text" xml:space="preserve"><value>Ask the assistant about a game by name: it answers from the same publisher tiers. Language and image models are on the AI models tab.</value></data>
   <data name="Games_Note" xml:space="preserve"><value>A publisher's target (resolution, preset, frame rate) is what it tested on its example parts, not a promise for this computer. No frame rate is guessed here.</value></data>
   <data name="Games_Count" xml:space="preserve"><value>{0} of {1} games run here</value></data>
+  <data name="Games_Search" xml:space="preserve"><value>Find a game…</value></data>
+  <data name="Games_Tiers" xml:space="preserve"><value>The publisher's tiers</value></data>
+  <data name="Games_Top" xml:space="preserve"><value>Meets every tier its publisher names.</value></data>
   <data name="Games_Target" xml:space="preserve"><value>Publisher's target</value></data>
   <data name="Games_NoTargetShort" xml:space="preserve"><value>Not named</value></data>
   <data name="Game_Target" xml:space="preserve"><value>The publisher's target for this tier: {0}. A target it tested on its example parts, not a promise for this computer.</value></data>
