@@ -1856,6 +1856,7 @@
   <data name="Assist_Drv_Newer" xml:space="preserve"><value>{0} جدیدتر از NVIDIA: نسخهٔ {1} ({2}).</value></data>
   <data name="Assist_Drv_Same" xml:space="preserve"><value>جدیدترین {0} از NVIDIA: نسخهٔ {1} ({2})؛ نسخهٔ نصب‌شده قدیمی‌تر از آن نیست.</value></data>
   <data name="Assist_Drv_Problems" xml:space="preserve"><value>{0} دستگاه درایور سالم ندارد: {1}</value></data>
+  <data name="Assist_Drv_Board" xml:space="preserve"><value>مادربرد، {0}: {1} نسخهٔ {2} را دارد (نصب‌شده: {3}).</value></data>
   <data name="Assist_Drv_Page" xml:space="preserve"><value>صفحهٔ «درایورها» باز است: آنجا Game Ready یا Studio را انتخاب و نصب می‌کنید و برای بقیهٔ درایورها در Windows Update جستجو می‌کنید.</value></data>
   <data name="Nav_Drivers" xml:space="preserve"><value>درایورها</value></data>
   <data name="Workload_Busy_Drivers" xml:space="preserve"><value>درایوری در حال نصب است. صبر کنید تمام شود؛ کارت گرافیک وقتی درایورش در حال عوض شدن است اندازه‌گیری نمی‌شود.</value></data>
@@ -1867,6 +1868,47 @@
   <data name="Drivers_Busy" xml:space="preserve"><value>یک دانلود یا نصب درایور در حال انجام است.</value></data>
   <data name="Drivers_Gpu_Title" xml:space="preserve"><value>درایور کارت گرافیک</value></data>
   <data name="Drivers_Gpu_Sub" xml:space="preserve"><value>از سازندهٔ کارت</value></data>
+  <data name="Drivers_Board_Title" xml:space="preserve"><value>درایورهای مادربرد</value></data>
+  <data name="Drivers_Board_Sub" xml:space="preserve"><value>از سازندهٔ مادربرد، AMD و Intel</value></data>
+  <data name="Drivers_Board_Model" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="Drivers_Board_Bios" xml:space="preserve"><value>نسخهٔ BIOS</value></data>
+  <data name="Drivers_Board_Offered" xml:space="preserve"><value>جدیدترین نسخهٔ سازنده:</value></data>
+  <data name="Drivers_Board_Hash" xml:space="preserve"><value>سازنده {0} آن را منتشر کرده</value></data>
+  <data name="Drivers_Board_None" xml:space="preserve"><value>نصب نیست</value></data>
+  <data name="Drivers_Board_Newer" xml:space="preserve"><value>نسخهٔ جدیدتر هست</value></data>
+  <data name="Drivers_Board_NoCompare" xml:space="preserve"><value>قابل مقایسه نیست</value></data>
+  <data name="Drivers_Board_NotInstalled" xml:space="preserve"><value>نصب نیست</value></data>
+  <data name="Drivers_Board_Missing" xml:space="preserve"><value>این دستگاه نیست</value></data>
+  <data name="Drivers_Board_MissingWhy" xml:space="preserve"><value>این سیستم دستگاهی از این نوع و این سازنده ندارد. بعضی نسخه‌های این مدل مادربرد بدون آن فروخته می‌شوند (مثلاً بدون Wi-Fi)، ولی صفحهٔ سازنده درایورش را به‌هرحال فهرست می‌کند.</value></data>
+  <data name="Drivers_Board_BiosNote" xml:space="preserve"><value>برنامه BIOS را به‌روز نمی‌کند، چون به‌روزرسانی ناموفق BIOS ممکن است مادربرد را از کار بیندازد. با ابزار خود مادربرد (ASUS EZ Flash، MSI M-Flash یا Gigabyte Q-Flash) و فایل صفحهٔ سازنده انجام شود.</value></data>
+  <data name="Drivers_Board_Install" xml:space="preserve"><value>دانلود و نصب</value></data>
+  <data name="Drivers_Board_Confirm" xml:space="preserve"><value>«{0}» نسخهٔ {1} ({2}) دانلود و نصب شود؟&#xA;&#xA;اول فایل با هش یا امضای منتشرشدهٔ سازنده بررسی می‌شود. بعد نصب‌کنندهٔ خود سازنده باز می‌شود؛ مراحلش را در پنجرهٔ خودش تمام کنید. ممکن است ری‌استارت بخواهد.</value></data>
+  <data name="Drivers_Board_Downloading" xml:space="preserve"><value>در حال دانلود {0}: {1}٪</value></data>
+  <data name="Drivers_Board_Verifying" xml:space="preserve"><value>بررسی فایل با هش و امضای سازنده…</value></data>
+  <data name="Drivers_Board_Installing" xml:space="preserve"><value>نصب‌کنندهٔ {0} باز است. مراحلش را در پنجرهٔ خودش تمام کنید؛ این صفحه منتظر می‌ماند.</value></data>
+  <data name="Drivers_Board_Done" xml:space="preserve"><value>نصب‌کنندهٔ {0} بسته شد (کد خروج {1}). نسخه‌ها دوباره خوانده شدند؛ اگر نصب‌کننده خواست، ویندوز را ری‌استارت کنید.</value></data>
+  <data name="Drivers_Board_NoSetup" xml:space="preserve"><value>در این بسته نصب‌کننده‌ای که برنامه بشناسد پیدا نشد. پوشه‌اش را باز کنید و دستی نصب کنید.</value></data>
+  <data name="Drivers_Board_BadSignature" xml:space="preserve"><value>نصب‌کننده اجرا نشد: {0}</value></data>
+  <data name="Drivers_Board_Folder" xml:space="preserve"><value>باز کردن پوشهٔ بسته</value></data>
+  <data name="Drivers_Board_Support" xml:space="preserve"><value>صفحهٔ پشتیبانی سازندهٔ مادربرد</value></data>
+  <data name="Drivers_Board_AmdPage" xml:space="preserve"><value>صفحهٔ چیپست AMD</value></data>
+  <data name="Drivers_Board_IntelPage" xml:space="preserve"><value>صفحهٔ چیپست Intel</value></data>
+  <data name="Drivers_Board_Nothing" xml:space="preserve"><value>از سازنده‌ها بستهٔ درایوری برای این مادربرد پیدا نشد.</value></data>
+  <data name="Drivers_Board_Note" xml:space="preserve"><value>نسخه‌ها از سایت پشتیبانی ASUS برای همین مدل، صفحهٔ چیپست AMD و دادهٔ درایور Intel گرفته می‌شوند. فقط وقتی نسخه‌ای «جدیدتر» نامیده می‌شود که بخش‌به‌بخش با نسخهٔ نصب‌شده قابل مقایسه باشد. اگر شمارهٔ بسته با شمارهٔ درایور فرق کند، «قابل مقایسه نیست» نشان داده می‌شود.</value></data>
+  <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>فقط ASUS اجازه می‌دهد برنامه صفحهٔ مادربرد را بخواند و MSI، Gigabyte و ASRock این را نمی‌پذیرند. برای این مادربردها چیپست AMD و درایورهای Wi-Fi، بلوتوث و شبکهٔ Intel همین‌جا بررسی می‌شوند و برای بقیه، صفحهٔ سازندهٔ مادربرد با دکمه باز می‌شود.</value></data>
+  <data name="Drivers_Board_IntelChipsetNote" xml:space="preserve"><value>درایور چیپست Intel (Chipset INF Utility) را برنامه نمی‌تواند بخواند، چون سایت Intel اجازه نمی‌دهد. صفحه‌اش با دکمه باز می‌شود و صفحهٔ سازندهٔ مادربرد هم آن را دارد.</value></data>
+  <data name="Drivers_Board_Timeout" xml:space="preserve"><value>در ۴۰ ثانیه جوابی نیامد</value></data>
+  <data name="Drivers_Board_AsusUnknown" xml:space="preserve"><value>ASUS مدل «{0}» را ندارد</value></data>
+  <data name="Drivers_Board_AmdNoVersion" xml:space="preserve"><value>صفحهٔ AMD نسخهٔ چیپست را نشان نداد</value></data>
+  <data name="Drivers_Src_asus" xml:space="preserve"><value>ASUS</value></data>
+  <data name="Drivers_Src_amd" xml:space="preserve"><value>AMD</value></data>
+  <data name="Drivers_Src_intel" xml:space="preserve"><value>Intel</value></data>
+  <data name="Drivers_Part_Chipset" xml:space="preserve"><value>چیپست</value></data>
+  <data name="Drivers_Part_Lan" xml:space="preserve"><value>شبکه (LAN)</value></data>
+  <data name="Drivers_Part_Audio" xml:space="preserve"><value>صدا</value></data>
+  <data name="Drivers_Part_Wireless" xml:space="preserve"><value>Wi-Fi</value></data>
+  <data name="Drivers_Part_Bluetooth" xml:space="preserve"><value>بلوتوث</value></data>
+  <data name="Drivers_Part_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Drivers_Card" xml:space="preserve"><value>کارت</value></data>
   <data name="Drivers_Installed" xml:space="preserve"><value>نصب‌شده</value></data>
   <data name="Drivers_Dated" xml:space="preserve"><value>تاریخ {0} ({1} روز پیش)</value></data>

@@ -42,6 +42,9 @@ internal static class AssistantReplies
                 }
             }
         }
+        if (r.TryGetProperty("board", out var bd) && bd.ValueKind == JsonValueKind.Object)
+            foreach (var i in A(bd, "items").Where(i => i.TryGetProperty("newer", out var n) && n.ValueKind == JsonValueKind.True))
+                lines.Add(Loc.Format("Assist_Drv_Board", Loc.Get($"Drivers_Part_{T(i, "part")}"), Loc.Get($"Drivers_Src_{T(i, "source")}"), T(i, "version"), S(i, "installed") ?? "—"));
         int problems = A(r, "problems").Count();
         lines.Add(problems == 0 ? Loc.Get("Drivers_Problems_None") : Loc.Format("Assist_Drv_Problems", problems, string.Join("، ", A(r, "problems").Take(4).Select(p => T(p, "name")))));
         lines.Add(Loc.Get("Assist_Drv_Page"));

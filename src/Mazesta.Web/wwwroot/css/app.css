@@ -1312,3 +1312,5 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .drv-list li { display: grid; gap: 2px; padding: 7px 10px; background: var(--well); border-radius: var(--r-well); }
 .drv-list li label { display: flex; gap: 8px; align-items: center; }
 .drv-list li .pill { justify-self: start; }
+.drv-list li.dim { opacity: .6; }
+.drv-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

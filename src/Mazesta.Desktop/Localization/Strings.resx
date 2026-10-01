@@ -1856,6 +1856,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Drv_Newer" xml:space="preserve"><value>Newer {0} from NVIDIA: {1} ({2}).</value></data>
   <data name="Assist_Drv_Same" xml:space="preserve"><value>Newest {0} from NVIDIA: {1} ({2}); the installed one is not older.</value></data>
   <data name="Assist_Drv_Problems" xml:space="preserve"><value>{0} device(s) without a working driver: {1}</value></data>
+  <data name="Assist_Drv_Board" xml:space="preserve"><value>Motherboard, {0}: {1} offers {2} (installed: {3}).</value></data>
   <data name="Assist_Drv_Page" xml:space="preserve"><value>The Drivers page is open: there you choose Game Ready or Studio and install it, and search Windows Update for the other drivers.</value></data>
   <data name="Nav_Drivers" xml:space="preserve"><value>Drivers</value></data>
   <data name="Workload_Busy_Drivers" xml:space="preserve"><value>A driver is being installed. Wait for it to end: a card is not measured while its driver changes.</value></data>
@@ -1867,6 +1868,47 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Busy" xml:space="preserve"><value>A driver download or install is already running.</value></data>
   <data name="Drivers_Gpu_Title" xml:space="preserve"><value>Graphics card driver</value></data>
   <data name="Drivers_Gpu_Sub" xml:space="preserve"><value>From the card's maker</value></data>
+  <data name="Drivers_Board_Title" xml:space="preserve"><value>Motherboard drivers</value></data>
+  <data name="Drivers_Board_Sub" xml:space="preserve"><value>from the board's maker, AMD and Intel</value></data>
+  <data name="Drivers_Board_Model" xml:space="preserve"><value>Motherboard</value></data>
+  <data name="Drivers_Board_Bios" xml:space="preserve"><value>BIOS version</value></data>
+  <data name="Drivers_Board_Offered" xml:space="preserve"><value>Maker's newest:</value></data>
+  <data name="Drivers_Board_Hash" xml:space="preserve"><value>the maker publishes its {0}</value></data>
+  <data name="Drivers_Board_None" xml:space="preserve"><value>not installed</value></data>
+  <data name="Drivers_Board_Newer" xml:space="preserve"><value>Newer version available</value></data>
+  <data name="Drivers_Board_NoCompare" xml:space="preserve"><value>Not comparable</value></data>
+  <data name="Drivers_Board_NotInstalled" xml:space="preserve"><value>Not installed</value></data>
+  <data name="Drivers_Board_Missing" xml:space="preserve"><value>No such device</value></data>
+  <data name="Drivers_Board_MissingWhy" xml:space="preserve"><value>This computer has no device of this kind and maker. Some boards of this model are sold without it (for example without Wi-Fi), and the maker's page lists its driver anyway.</value></data>
+  <data name="Drivers_Board_BiosNote" xml:space="preserve"><value>The app does not update the BIOS: a failed BIOS update can leave the board unable to start. Use the board's own tool (ASUS EZ Flash, MSI M-Flash, Gigabyte Q-Flash) with the file from the maker's page.</value></data>
+  <data name="Drivers_Board_Install" xml:space="preserve"><value>Download and install</value></data>
+  <data name="Drivers_Board_Confirm" xml:space="preserve"><value>Download and install "{0}" version {1} ({2})?&#xA;&#xA;The file is checked against the maker's published hash or signature first. Then the maker's own installer opens: finish it in its window. It may ask for a restart.</value></data>
+  <data name="Drivers_Board_Downloading" xml:space="preserve"><value>Downloading {0}: {1}%</value></data>
+  <data name="Drivers_Board_Verifying" xml:space="preserve"><value>Checking the file against the maker's hash and signature…</value></data>
+  <data name="Drivers_Board_Installing" xml:space="preserve"><value>The installer of {0} is open. Finish it in its own window; this page waits for it.</value></data>
+  <data name="Drivers_Board_Done" xml:space="preserve"><value>The installer of {0} closed (exit code {1}). The versions were read again; restart Windows if the installer asked for it.</value></data>
+  <data name="Drivers_Board_NoSetup" xml:space="preserve"><value>The package holds no installer this app can recognise. Its folder is open for you to install it by hand.</value></data>
+  <data name="Drivers_Board_BadSignature" xml:space="preserve"><value>The installer was not run: {0}</value></data>
+  <data name="Drivers_Board_Folder" xml:space="preserve"><value>Open the package folder</value></data>
+  <data name="Drivers_Board_Support" xml:space="preserve"><value>Board maker's support page</value></data>
+  <data name="Drivers_Board_AmdPage" xml:space="preserve"><value>AMD chipset page</value></data>
+  <data name="Drivers_Board_IntelPage" xml:space="preserve"><value>Intel chipset page</value></data>
+  <data name="Drivers_Board_Nothing" xml:space="preserve"><value>No driver packages were found for this board from its makers.</value></data>
+  <data name="Drivers_Board_Note" xml:space="preserve"><value>The versions come from ASUS's support site for this model, AMD's chipset page and Intel's driver data. A version is called newer only when it can be compared with the installed one part by part; a package's own number beside a driver's number is shown as not comparable.</value></data>
+  <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>Only ASUS lets a program read its board pages; MSI, Gigabyte and ASRock refuse it. For those boards the chipset (AMD) and Intel's Wi-Fi, Bluetooth and Ethernet drivers are checked here, and the board maker's page opens with the button for the rest.</value></data>
+  <data name="Drivers_Board_IntelChipsetNote" xml:space="preserve"><value>Intel's chipset driver (Chipset INF Utility) cannot be read by a program: Intel's site refuses it. Its page opens with the button; the board maker's page also lists it.</value></data>
+  <data name="Drivers_Board_Timeout" xml:space="preserve"><value>no answer within 40 seconds</value></data>
+  <data name="Drivers_Board_AsusUnknown" xml:space="preserve"><value>ASUS does not list the model "{0}"</value></data>
+  <data name="Drivers_Board_AmdNoVersion" xml:space="preserve"><value>AMD's page did not show a chipset version</value></data>
+  <data name="Drivers_Src_asus" xml:space="preserve"><value>ASUS</value></data>
+  <data name="Drivers_Src_amd" xml:space="preserve"><value>AMD</value></data>
+  <data name="Drivers_Src_intel" xml:space="preserve"><value>Intel</value></data>
+  <data name="Drivers_Part_Chipset" xml:space="preserve"><value>Chipset</value></data>
+  <data name="Drivers_Part_Lan" xml:space="preserve"><value>Network (LAN)</value></data>
+  <data name="Drivers_Part_Audio" xml:space="preserve"><value>Audio</value></data>
+  <data name="Drivers_Part_Wireless" xml:space="preserve"><value>Wi-Fi</value></data>
+  <data name="Drivers_Part_Bluetooth" xml:space="preserve"><value>Bluetooth</value></data>
+  <data name="Drivers_Part_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Drivers_Card" xml:space="preserve"><value>Card</value></data>
   <data name="Drivers_Installed" xml:space="preserve"><value>Installed</value></data>
   <data name="Drivers_Dated" xml:space="preserve"><value>dated {0} ({1} days ago)</value></data>

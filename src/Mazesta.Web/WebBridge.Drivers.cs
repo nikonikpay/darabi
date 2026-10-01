@@ -8,12 +8,16 @@ public sealed partial class WebBridge
     /// <summary>A graphics card and its driver as Windows reports it now (read fresh: after an install the inventory's copy is old).</summary>
     private sealed record DriverGpu(string Name, string Vendor, string? WindowsVersion, string? NvidiaVersion, DateTime? Date);
 
+    /// <summary>The motherboard as Windows names it, its BIOS version, and whose processor it carries ("amd", "intel" or null).</summary>
+    private sealed record DriverBoard(string? Maker, string? Model, string? Bios, string? Cpu);
+
     /// <summary>The drivers page's work, kept so the assistant reads the same answer the page shows.</summary>
     private Func<CancellationToken, Task<object>>? _driversCheck;
 
     /// <summary>
     /// The drivers page: the graphics card's driver against its maker's newest (NVIDIA asked directly, both Game Ready and Studio, with the line
-    /// that suits the installed programs; AMD and Intel by their own detection tools, which the app opens), the drivers Windows Update offers this
+    /// that suits the installed programs; AMD and Intel by their own detection tools, which the app opens), the motherboard's drivers from their
+    /// makers (see <see cref="BoardDriverService"/>; the maker's own installer is opened and waited for), the drivers Windows Update offers this
     /// computer (installed one by one through Windows' own Update Agent), and the devices Windows has no working driver for. Nothing is downloaded or
     /// installed except by a button and a confirmation. An install holds the <see cref="WorkloadGate"/>: no test measures a card while its driver
     /// changes, and the assistant's model leaves the card first.
@@ -21,6 +25,10 @@ public sealed partial class WebBridge
     private void RegisterDrivers()
     {
         var gate = _sp.GetRequiredService<WorkloadGate>(); var nvidia = new NvidiaDriverService(AiHttp, Path.Combine(_paths.DataRoot, "drivers"));
+        var boardService = new BoardDriverService(AiHttp, Path.Combine(_paths.DataRoot, "drivers", "board"));
+        DriverBoard? board = null; IReadOnlyList<BoardItem> boardItems = []; List<object> boardErrors = [];
+        // The board install: idle, downloading, verifying, installing (the maker's window is open), done, failed.
+        string bdState = "idle"; double bdProgress = 0; string? bdError = null, bdTitle = null, bdFolder = null; int? bdExit = null;
         List<DriverGpu> gpus = []; NvidiaProduct? product = null; IReadOnlyList<NvidiaRelease> gameReady = [], studio = [];
         string? nvError = null, checkedAt = null; bool checking = false; DriverAdviceResult? advice = null;
         IReadOnlyList<object> problems = [];
@@ -60,9 +68,25 @@ public sealed partial class WebBridge
                 results = wuResults.Select(r => new { id = r.Id, title = r.Title, ok = r.Succeeded, reboot = r.RebootRequired, error = r.Error }),
             },
             problems,
+            board = board is null ? null : new
+            {
+                maker = board.Maker, model = board.Model, bios = board.Bios, cpu = board.Cpu, errors = boardErrors,
+                support = BoardDrivers.SupportPage(board.Maker, board.Model), asus = board.Maker?.Contains("ASUS", StringComparison.OrdinalIgnoreCase) == true,
+                intelChipset = board.Cpu == "intel" ? BoardDrivers.IntelChipsetPage : null,
+                items = boardItems.Select(i => new
+                {
+                    id = BoardId(i.Package), part = i.Package.Part.ToString(), source = i.Package.Source, title = i.Package.Title, version = i.Package.Version,
+                    date = i.Package.Date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), size = i.Package.Size,
+                    hash = i.Package.Sha256 is not null ? "SHA-256" : i.Package.Sha1 is not null ? "SHA-1" : null,
+                    device = i.DeviceName, installed = i.Installed, installedDate = i.InstalledDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), newer = i.Newer, missing = i.Missing,
+                }),
+                job = new { state = bdState, progress = bdProgress, error = bdError, title = bdTitle, exitCode = bdExit, folder = bdFolder },
+            },
             busy = gate.Holder?.ToString(),
         };
         void Push() => PushSoon("drivers", State);
+
+        static string BoardId(BoardPackage p) => $"{p.Source}|{p.Part}|{p.Vendor}|{p.Version}";
 
         static string VendorOf(string name) => name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) ? "nvidia" : name.Contains("AMD", StringComparison.OrdinalIgnoreCase) || name.Contains("Radeon", StringComparison.OrdinalIgnoreCase) ? "amd"
             : name.Contains("Intel", StringComparison.OrdinalIgnoreCase) ? "intel" : "other";
@@ -72,7 +96,7 @@ public sealed partial class WebBridge
             checking = true; Push();
             try
             {
-                var (cards, bad) = await Task.Run(() =>
+                var (cards, bad, boardNow, devices) = await Task.Run(() =>
                 {
                     var q = new WmiQuery();
                     var cards = q.Query(@"root\cimv2", "SELECT Name,DriverVersion,DriverDate FROM Win32_VideoController")
@@ -83,10 +107,19 @@ public sealed partial class WebBridge
                     // Code 45 is a device that is not plugged in now: not a driver problem.
                     var bad = q.Query(@"root\cimv2", "SELECT Name,PNPClass,ConfigManagerErrorCode FROM Win32_PnPEntity WHERE ConfigManagerErrorCode <> 0 AND ConfigManagerErrorCode <> 45")
                         .Select(r => (object)new { name = (r["Name"] as string)?.Trim() ?? Loc.Get("Drivers_UnknownDevice"), cls = r["PNPClass"] as string, code = Convert.ToInt32(r["ConfigManagerErrorCode"], CultureInfo.InvariantCulture) }).ToList();
-                    return (cards, bad);
+                    string? First(string cls, string field) => q.Query(@"root\cimv2", $"SELECT {field} FROM {cls}").Select(r => (r[field] as string)?.Trim()).FirstOrDefault(v => v is { Length: > 0 });
+                    string? cpu = First("Win32_Processor", "Manufacturer");
+                    var b = new DriverBoard(First("Win32_BaseBoard", "Manufacturer"), First("Win32_BaseBoard", "Product"), First("Win32_BIOS", "SMBIOSBIOSVersion"),
+                        cpu is null ? null : cpu.Contains("AMD", StringComparison.OrdinalIgnoreCase) ? "amd" : cpu.Contains("Intel", StringComparison.OrdinalIgnoreCase) ? "intel" : null);
+                    var devices = q.Query(@"root\cimv2", "SELECT DeviceID,DeviceName,DeviceClass,Manufacturer,DriverVersion,DriverDate FROM Win32_PnPSignedDriver")
+                        .Select(r => new BoardDevice(r["DeviceID"] as string ?? "", (r["DeviceName"] as string)?.Trim() ?? "", r["DeviceClass"] as string, r["Manufacturer"] as string, r["DriverVersion"] as string,
+                            r["DriverDate"] is string { Length: >= 8 } dd && DateOnly.TryParseExact(dd[..8], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day) ? day : null))
+                        .Where(d => d.Id.Length > 0 && d.Name.Length > 0).ToList();
+                    return (cards, bad, b, devices);
                 }, ct).ConfigureAwait(true);
-                gpus = cards; problems = bad;
-                advice = DriverAdvice.Advise(await Task.Run(InstalledPrograms.Read, ct).ConfigureAwait(true));
+                gpus = cards; problems = bad; board = boardNow;
+                var programs = await Task.Run(InstalledPrograms.Entries, ct).ConfigureAwait(true);
+                advice = DriverAdvice.Advise([.. programs.Select(x => x.Name)]);
                 nvError = null; product = null; gameReady = []; studio = [];
                 if (gpus.FirstOrDefault(g => g.Vendor == "nvidia") is { } nv)
                 {
@@ -107,9 +140,38 @@ public sealed partial class WebBridge
                         nvError = Loc.Format("Drivers_Nv_Offline", e.Message); _log.LogWarning(e, "NVIDIA driver lookup failed");
                     }
                 }
+                await CheckBoard(devices, programs, ct).ConfigureAwait(true);
                 checkedAt = DateTime.Now.ToString("yyyy/MM/dd HH:mm", Loc.Culture);
             }
             finally { checking = false; Push(); }
+        }
+
+        // The board's makers, asked side by side; one that does not answer is named, and the others' answers stand.
+        async Task CheckBoard(List<BoardDevice> devices, IReadOnlyList<(string Name, string? Version)> programs, CancellationToken ct)
+        {
+            var errors = new List<object>(); var packages = new List<BoardPackage>();
+            async Task Ask(string source, Func<CancellationToken, Task<IEnumerable<BoardPackage>>> ask)
+            {
+                using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct); limit.CancelAfter(TimeSpan.FromSeconds(40));
+                try { var got = await ask(limit.Token).ConfigureAwait(true); lock (packages) packages.AddRange(got); }
+                catch (Exception e) when (e is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException or InvalidDataException or IOException)
+                {
+                    if (ct.IsCancellationRequested) throw;
+                    lock (errors) errors.Add(new { source, message = e is OperationCanceledException ? Loc.Get("Drivers_Board_Timeout") : e.Message });
+                    _log.LogWarning(e, "Board driver lookup at {Source} failed", source);
+                }
+            }
+            var asks = new List<Task>();
+            if (board?.Model is { } model && board.Maker?.Contains("ASUS", StringComparison.OrdinalIgnoreCase) == true)
+                asks.Add(Ask("asus", async t => await boardService.AsusAsync(model, t).ConfigureAwait(true) is { } l ? l
+                    : throw new HttpRequestException(Loc.Format("Drivers_Board_AsusUnknown", model))));
+            if (board?.Cpu == "amd") asks.Add(Ask("amd", async t => await boardService.AmdChipsetAsync(board.Model, t).ConfigureAwait(true) is { } p ? [p]
+                : throw new InvalidDataException(Loc.Get("Drivers_Board_AmdNoVersion"))));
+            if (devices.Any(d => d.Id.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase) || d.Id.Contains("VID_8087", StringComparison.OrdinalIgnoreCase)))
+                asks.Add(Ask("intel", async t => await boardService.IntelAsync(t).ConfigureAwait(true)));
+            await Task.WhenAll(asks).ConfigureAwait(true);
+            boardErrors = errors;
+            boardItems = [.. BoardDrivers.Match(packages, devices, programs, board?.Bios).OrderBy(i => i.Package.Part).ThenBy(i => i.Missing)];
         }
 
         _driversCheck = async ct =>
@@ -146,6 +208,37 @@ public sealed partial class WebBridge
             }
             finally { jobCts.Dispose(); jobCts = null; Push(); }
             if (nvState == "done") await Check(CancellationToken.None).ConfigureAwait(true);
+        }
+
+        // A board package: downloaded, checked against the maker's hash (or signature), unpacked, then the maker's own installer opens and is waited for.
+        async Task InstallBoard(BoardItem item)
+        {
+            var p = item.Package;
+            using var lease = gate.TryEnter(Workload.Drivers);
+            if (lease is null) { bdState = "failed"; bdError = Loc.Get($"Workload_Busy_{gate.Holder}"); Push(); return; }
+            jobCts = new CancellationTokenSource(); bdError = null; bdExit = null; bdFolder = null; bdTitle = p.Title; bdProgress = 0;
+            try
+            {
+                bdState = "downloading"; Push();
+                string file = await boardService.DownloadAsync(p, new Progress<double>(x => { bdProgress = x; Push(); }), jobCts.Token).ConfigureAwait(true);
+                bdState = "verifying"; Push();
+                var (exe, folder) = await Task.Run(() => (BoardDriverService.Installer(file, out var f), f)).ConfigureAwait(true);
+                bdFolder = folder;
+                if (exe is null) { bdState = "failed"; bdError = Loc.Get("Drivers_Board_NoSetup"); return; }
+                if (await Task.Run(() => BoardDriverService.SignatureError(p, exe)).ConfigureAwait(true) is { } why) throw new InvalidOperationException(Loc.Format("Drivers_Board_BadSignature", why));
+                bdState = "installing"; Push();
+                _log.LogInformation("Running the board driver installer {Exe} for {Title} {Version}", exe, p.Title, p.Version);
+                bdExit = await BoardDriverService.RunAsync(exe, CancellationToken.None).ConfigureAwait(true);
+                bdState = "done";
+                _log.LogInformation("Board driver installer ended with {Code}", bdExit);
+            }
+            catch (OperationCanceledException) { bdState = "idle"; }
+            catch (Exception e) when (e is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException or InvalidDataException or System.ComponentModel.Win32Exception)
+            {
+                bdState = "failed"; bdError = e.Message; _log.LogWarning(e, "Board driver install failed");
+            }
+            finally { jobCts?.Dispose(); jobCts = null; Push(); }
+            if (bdState == "done") await Check(CancellationToken.None).ConfigureAwait(true);
         }
 
         async Task SearchWindowsUpdate()
@@ -202,14 +295,25 @@ public sealed partial class WebBridge
             if (gate.Holder is { } h) throw new InvalidOperationException(Loc.Get($"Workload_Busy_{h}"));
             _ = InstallNvidia(line, Bool(p, "clean")); return State();
         });
-        // Only the download can be stopped: an installer half way would leave the card without a working driver.
-        Method("drivers.cancel", _ => { if (nvState == "downloading") jobCts?.Cancel(); return State(); });
+        Method("drivers.boardInstall", p =>
+        {
+            string id = Str(p, "id");
+            var item = boardItems.FirstOrDefault(i => BoardId(i.Package) == id) ?? throw new ArgumentException("unknown package");
+            if (item.Missing || item.Package.Part == BoardPart.Bios) throw new ArgumentException("not installable here");
+            if (jobCts is not null) throw new InvalidOperationException(Loc.Get("Drivers_Busy"));
+            if (gate.Holder is { } h) throw new InvalidOperationException(Loc.Get($"Workload_Busy_{h}"));
+            _ = InstallBoard(item); return State();
+        });
+        // Only a download can be stopped: an installer half way would leave the device without a working driver.
+        Method("drivers.cancel", _ => { if (nvState == "downloading" || bdState == "downloading") jobCts?.Cancel(); return State(); });
         Method("drivers.open", p =>
         {
             string? target = Str(p, "what") switch
             {
                 "amd" => "https://www.amd.com/en/support/download/drivers.html", "intel" => "https://www.intel.com/content/www/us/en/support/detect.html",
-                "nvidia" => "https://www.nvidia.com/en-us/drivers/", "devmgr" => "devmgmt.msc", "wu" => "ms-settings:windowsupdate-optionalupdates", _ => null,
+                "nvidia" => "https://www.nvidia.com/en-us/drivers/", "devmgr" => "devmgmt.msc", "wu" => "ms-settings:windowsupdate-optionalupdates",
+                "board" => BoardDrivers.SupportPage(board?.Maker, board?.Model), "intelChipset" => BoardDrivers.IntelChipsetPage,
+                "amdChipset" => BoardDrivers.AmdChipsetPage(board?.Model), "boardFolder" => bdFolder is { } f && Directory.Exists(f) ? f : null, _ => null,
             };
             if (target is null) throw new ArgumentException("unknown");
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(target) { UseShellExecute = true })?.Dispose();

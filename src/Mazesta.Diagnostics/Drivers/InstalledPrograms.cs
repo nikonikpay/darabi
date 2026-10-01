@@ -7,9 +7,12 @@ public static class InstalledPrograms
 {
     private const string Key = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
 
-    public static IReadOnlyList<string> Read()
+    public static IReadOnlyList<string> Read() => [.. Entries().Select(e => e.Name)];
+
+    /// <summary>The programs with the version each lists (DisplayVersion), when it lists one.</summary>
+    public static IReadOnlyList<(string Name, string? Version)> Entries()
     {
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var names = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         foreach (var (hive, view) in new[] { (RegistryHive.LocalMachine, RegistryView.Registry64), (RegistryHive.LocalMachine, RegistryView.Registry32), (RegistryHive.CurrentUser, RegistryView.Default) })
         {
             try
@@ -21,11 +24,11 @@ public static class InstalledPrograms
                     using var k = list.OpenSubKey(sub);
                     if (k?.GetValue("DisplayName") is not string name || name.Trim().Length == 0) continue;
                     if (k.GetValue("SystemComponent") is int sc && sc == 1 || k.GetValue("ParentKeyName") is string) continue;
-                    names.Add(name.Trim());
+                    names.TryAdd(name.Trim(), (k.GetValue("DisplayVersion") as string)?.Trim() is { Length: > 0 } v ? v : null);
                 }
             }
             catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException or IOException) { }
         }
-        return [.. names.Order(StringComparer.OrdinalIgnoreCase)];
+        return [.. names.OrderBy(n => n.Key, StringComparer.OrdinalIgnoreCase).Select(n => (n.Key, n.Value))];
     }
 }
