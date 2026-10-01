@@ -1,8 +1,7 @@
-// The dashboard: the yellow plane with the machine's standing and its two temperatures at poster scale, then a boxed panel per part, each in its
-// own hue: the few readings that matter as a summary, the rest folded under "details". The panels sit on a fixed grid read from the page's own
-// width (not the window's, the assistant's column takes part of it): the one-reading parts side by side on a row of equal heights, the parts with
-// a row per drive or adapter under them at twice the width. Then the shop's own product, one of its ready systems and its people. Every number
-// is a live reading or says it is not available.
+// The dashboard: the machine's standing and a live tile per part (processor, graphics, memory, network; each opens its page), then the board
+// and the drives, which the tiles do not hold, the drives side by side. Then the shop's own product, one of its ready systems and its people.
+// The panels sit on a grid read from the page's own width (not the window's, the assistant's column takes part of it). Every number is a live
+// reading or says it is not available.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
@@ -92,28 +91,8 @@ export function mount(el) {
     return el;
   };
 
+  // The parts the tiles above already show (processor, graphics, memory, network) have their own pages; this row is what the tiles do not hold.
   const panels = h("div", { class: "panels dash" });
-  if (cpu) {
-    const all = sensorsUnder(cpu), shown = [cpuTemp, pick(cpu, "CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuCoreClock"), pick(cpu, "CpuTotalLoad"), pick(cpu, "CpuPackagePower")];
-    panels.append(panel({ kind: "Cpu", title: t("Nav_Cpu"), sub: cpu.name,
-      body: [h("div", { class: "stats" }, stat(t("Web_Dash_Temp"), shown[0]), stat(t("Dashboard_Line_Clock"), shown[1]), stat(t("Dashboard_Line_Load"), shown[2]), stat(t("Dashboard_Line_Power"), shown[3])),
-        meter(t("Dashboard_Line_Load"), percentOf(shown[2]))],
-      more: details(all, ["CpuVcore", "CpuCcdTemp", "CpuTctlTdie", "CpuPackageTemp", "CpuEffectiveClockAverage", "CpuCoreClockAverage", "CpuSocVoltage", "CpuCcdMaxTemp", "CpuCoreMaxLoad", "CpuBusClock", "CpuFan"], shown) }));
-  }
-  gpus.forEach((g, i) => {
-    const all = sensorsUnder(g), shown = [pick(g, "GpuCoreTemp"), pick(g, "GpuLoad3D", "GpuLoadD3D3D"), pick(g, "GpuCoreClock"), pick(g, "GpuPower")];
-    const used = pick(g, "GpuVramUsed"), total = pick(g, "GpuVramTotal");
-    panels.append(panel({ kind: "Gpu", title: gpus.length > 1 ? `${t("Nav_Gpu")} ${fa(i + 1)}` : t("Nav_Gpu"), sub: g.name,
-      body: [h("div", { class: "stats" }, stat(t("Web_Dash_Temp"), shown[0]), stat(t("Dashboard_Line_Load"), shown[1]), stat(t("Dashboard_Line_Clock"), shown[2]), stat(t("Dashboard_Line_Power"), shown[3])),
-        meter(t("Dashboard_Line_VramUsed"), ratioOf(used, total))],
-      more: details(all, ["GpuHotSpotTemp", "GpuVramTemp", "GpuMemoryClock", "GpuVoltage", "GpuFanRpm", "GpuFanPercent", "GpuLoadVideo", "GpuLoadCompute", "GpuVramUsed", "GpuVramTotal", "GpuPowerPercent", "GpuLoadBus", "GpuPcieRx", "GpuPcieTx"], shown) }));
-  });
-  if (ram) {
-    const used = pick(ram, "RamUsed"), free = pick(ram, "RamFree"), load = pick(ram, "RamLoad");
-    panels.append(panel({ kind: "Memory", title: t("Dashboard_Ram"), sub: null,
-      body: [h("div", { class: "stats" }, stat(t("Dashboard_Line_Used"), used), stat(t("Dashboard_Line_Free"), free)), meter(t("Dashboard_Line_Load"), percentOf(load))],
-      more: details(topNodes("Memory").flatMap(sensorsUnder), ["RamTotal", "DimmTemp", "VirtualMemoryUsed", "VirtualMemoryLoad"]) }));
-  }
   // Board and system: what the machine is (from the inventory, filled in when it arrives) and the board's own sensors.
   const boardSensors = board ? sensorsUnder(board) : [];
   const inv = { board: h("span", {}), bios: h("dd", { class: "lat" }), os: h("dd", { class: "lat" }) };
@@ -132,18 +111,9 @@ export function mount(el) {
       return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
         meter(t("Web_Dash_UsedSpace"), percentOf(pick(d, "StorageUsedSpace"))));
     });
-    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)), extraClass: "span2",
-      body: h("div", { class: "units" }, rows),
+    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)), extraClass: "span3",
+      body: h("div", { class: "units cols-auto" }, rows),
       more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
-  }
-  if (nets.length) {
-    const rows = nets.slice(0, 4).map((n) => {
-      const down = pick(n, "NetDownload"), up = pick(n, "NetUpload"), dv = h("span", {}), uv = h("span", {});
-      updates.push(() => { dv.replaceChildren("↓ ", val(down ? fmt(value(down.id), down.unit) : null)); uv.replaceChildren("↑ ", val(up ? fmt(value(up.id), up.unit) : null)); });
-      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: n.name }, n.name), h("span", { class: "vals" }, dv, uv));
-    });
-    panels.append(panel({ kind: "Network", title: t("Nav_Network"), sub: null, body: h("div", { class: "units" }, rows), extraClass: "span2",
-      more: nets.slice(0, 4).map((n) => { const kv = details(n.sensors, ["NetUtilization", "NetDataDownloaded", "NetDataUploaded"]); return kv.length ? [h("dt", { class: "sub lat" }, n.name), kv] : null; }) }));
   }
   // ——— The shop and its people ———
   const company = h("div", { class: "panels company" }, shopPanel("product"), shopPanel("system"), contactPanel());
