@@ -46,9 +46,14 @@ public sealed class BenchmarkRecords
 
     public static HeadlineMetric? Headline(string benchmarkId) => Headlines.GetValueOrDefault(benchmarkId);
 
-    /// <summary>The record key: the benchmark and the options it ran with, in a fixed order.</summary>
+    /// <summary>The record key: the benchmark, the options it ran with in a fixed order, and its workload's version from the second on. A record of
+    /// an earlier workload stays in the file under its old key but is never compared with the new one (the first version's keys had no version,
+    /// so they are still its own).</summary>
     public static string RecordKey(string benchmarkId, IReadOnlyDictionary<string, string>? options)
-        => options is null || options.Count == 0 ? benchmarkId : benchmarkId + "|" + string.Join("|", options.OrderBy(o => o.Key, StringComparer.Ordinal).Select(o => $"{o.Key}={o.Value}"));
+    {
+        string key = options is null || options.Count == 0 ? benchmarkId : benchmarkId + "|" + string.Join("|", options.OrderBy(o => o.Key, StringComparer.Ordinal).Select(o => $"{o.Key}={o.Value}"));
+        return Headline(benchmarkId)?.Version is > 1 and int v ? key + "|v=" + v.ToString(System.Globalization.CultureInfo.InvariantCulture) : key;
+    }
 
     public BenchmarkRecord? Best(string system, string recordKey)
     {

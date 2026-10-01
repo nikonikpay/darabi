@@ -187,7 +187,9 @@ public sealed partial class WebBridge
                     if (_benchRunLog is null || _benchSystemHash?.Invoke() is not { } hash) return Task.FromResult(Json(new { error = "the benchmark history is not available yet" }));
                     string? name = Text(a, "benchmark");
                     var runs = _benchRunLog.Recent(hash, 300).Where(r => name is null || r.Benchmark.Contains(name, StringComparison.OrdinalIgnoreCase)).Take(Int(a, "limit", 6, 15))
-                        .Select(r => new { at = r.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), benchmark = r.Benchmark, settings = r.Settings, value = Math.Round(r.Value, 2), unit = r.Unit, overclocked = r.Overclocked });
+                        .Select(r => new { at = r.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), benchmark = r.Benchmark, settings = r.Settings, value = Math.Round(r.Value, 2), unit = r.Unit, overclocked = r.Overclocked,
+                            // A run of an earlier workload measured something else: it is listed, but is not compared with the current one.
+                            earlierWorkload = Diagnostics.Benchmarks.BenchmarkRecords.Headline(r.Benchmark)?.Version is { } v && r.Version != v ? true : (bool?)null });
                     return Task.FromResult(Json(new { runs }));
                 }),
             new("open_page", "Opens a page of the app on the screen, beside the chat, and can point at one control on it (target). Use the page ids of the list in your instructions.",

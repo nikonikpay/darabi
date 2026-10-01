@@ -50,8 +50,17 @@ public class BenchmarkRecordsTests : IDisposable
         var r = new BenchmarkRecords(_dir);
         r.Offer("pc-a", "A", "bench.cpu.multi", Cpu(100));
         Assert.True(r.Offer("pc-b", "B", "bench.cpu.multi", Cpu(50))!.Saved);
-        Assert.Equal("bench.storage|drive=D:\\|size=1024", BenchmarkRecords.RecordKey("bench.storage", new Dictionary<string, string> { ["size"] = "1024", ["drive"] = "D:\\" }));
-        Assert.Equal("bench.memory", BenchmarkRecords.RecordKey("bench.memory", new Dictionary<string, string>()));
+        Assert.Equal("bench.storage|drive=D:\\|size=1024|v=2", BenchmarkRecords.RecordKey("bench.storage", new Dictionary<string, string> { ["size"] = "1024", ["drive"] = "D:\\" }));
+        Assert.Equal("bench.cpu.multi", BenchmarkRecords.RecordKey("bench.cpu.multi", new Dictionary<string, string>()));
+    }
+    [Fact] public void A_record_of_an_earlier_workload_is_kept_but_not_compared()
+    {
+        var r = new BenchmarkRecords(_dir);
+        var mem = new BenchmarkResult(MemoryBenchmark.Spec.Id, BenchmarkStatus.Completed, T0, T0, [new("Bench_Mem_Read", 50, "GB/s")], null);
+        r.Offer("pc", "PC", "bench.memory", mem);   // as version 2 and earlier kept it, with no version in the key
+        var c = r.Offer("pc", "PC", BenchmarkRecords.RecordKey("bench.memory", null), mem with { Metrics = [new("Bench_Mem_Read", 40, "GB/s")] })!;
+        Assert.Null(c.Previous); Assert.True(c.Saved);
+        Assert.Equal(50, new BenchmarkRecords(_dir).Best("pc", "bench.memory")!.Value);
     }
     [Fact] public void Lower_is_better_flips_the_sign()
     {
