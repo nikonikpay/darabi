@@ -1254,6 +1254,28 @@
   <data name="Dns_403" xml:space="preserve"><value>۴۰۳</value></data>
   <data name="Dns_Done" xml:space="preserve"><value>DNS تغییر کرد و حافظه‌ی آن پاک شد.</value></data>
   <data name="Dns_NoAdapter" xml:space="preserve"><value>هیچ کارت شبکه‌ی متصلی نیست.</value></data>
+  <data name="Dns_adguard" xml:space="preserve"><value>AdGuard</value></data>
+  <data name="Dns_opendns" xml:space="preserve"><value>OpenDNS</value></data>
+  <data name="Dns_radar" xml:space="preserve"><value>رادار گیم</value></data>
+  <data name="Dns_begzar" xml:space="preserve"><value>بگذر</value></data>
+  <data name="Dns_Modem" xml:space="preserve"><value>فعلی (از مودم)</value></data>
+  <data name="Dns_Current" xml:space="preserve"><value>در حال استفاده</value></data>
+  <data name="Dns_Jumper" xml:space="preserve"><value>پیدا کردن سریع‌ترین</value></data>
+  <data name="Dns_Choose" xml:space="preserve"><value>انتخاب دستی</value></data>
+  <data name="Dns_Test" xml:space="preserve"><value>فقط تست</value></data>
+  <data name="Dns_TestApply" xml:space="preserve"><value>تست و فعال‌کردن سریع‌ترین</value></data>
+  <data name="Dns_Testing" xml:space="preserve"><value>در حال سنجش همهٔ DNSها روی همین اینترنت…</value></data>
+  <data name="Dns_Test_Note" xml:space="preserve"><value>مثل DNS Jumper: از هر DNS شش نام پرکاربرد (خارجی و ایرانی) دو بار مستقیم پرسیده می‌شود و میانهٔ زمان پاسخ ملاک است. DNSی که حتی یک پاسخ ندهد انتخاب نمی‌شود. شکن، ۴۰۳، رادار و بگذر DNSهای ضدتحریم‌اند و سایت‌هایی را که ایران را تحریم کرده‌اند باز می‌کنند، جدا از سرعتشان.</value></data>
+  <data name="Dns_Fastest" xml:space="preserve"><value>سریع‌ترین</value></data>
+  <data name="Dns_Missed" xml:space="preserve"><value>{0} از {1} پاسخ</value></data>
+  <data name="Dns_Use" xml:space="preserve"><value>فعال کن</value></data>
+  <data name="Dns_Best" xml:space="preserve"><value>سریع‌ترین روی این اینترنت: {0} ({1} میلی‌ثانیه). برای فعال‌کردن، «فعال کن» را بزنید.</value></data>
+  <data name="Dns_AlreadyBest" xml:space="preserve"><value>{0} در حال استفاده است و همین حالا سریع‌ترین است ({1} میلی‌ثانیه).</value></data>
+  <data name="Dns_Applied" xml:space="preserve"><value>DNS روی {0} گذاشته شد، سریع‌ترین روی این اینترنت ({1} میلی‌ثانیه).</value></data>
+  <data name="Dns_None" xml:space="preserve"><value>هیچ DNSی به همهٔ پرسش‌ها پاسخ نداد و چیزی تغییر نکرد. اتصال اینترنت را بررسی کنید.</value></data>
+  <data name="Tools_Sec_Network" xml:space="preserve"><value>اینترنت و بازی</value></data>
+  <data name="Tools_Sec_Repair" xml:space="preserve"><value>تعمیر و پاک‌سازی</value></data>
+  <data name="Tools_Sec_System" xml:space="preserve"><value>حافظه و فایل hosts</value></data>
   <data name="Updates_Lede" xml:space="preserve"><value>ویندوز به‌روزرسانی‌ها را چطور بگیرد. هر پروفایل جای تنظیمات قبلی همین‌جا را می‌گیرد؛ «پیش‌فرض ویندوز» همه را برمی‌دارد.</value></data>
   <data name="Updates_Recommended" xml:space="preserve"><value>پیشنهادی</value></data>
   <data name="Updates_Recommended_Sub" xml:space="preserve"><value>امنیت همین حالا، تغییرهای بزرگ بعداً</value></data>
@@ -1602,6 +1624,123 @@
   <data name="Assist_LittleVram" xml:space="preserve"><value>دستیار کارت گرافیکی با حداقل ۴ گیگابایت حافظهٔ مستقل می‌خواهد؛ کارت این کامپیوتر کمتر دارد.</value></data>
   <data name="Assist_NoRoom" xml:space="preserve"><value>الان حافظهٔ آزاد این کامپیوتر برای مدل دستیار کافی نیست. برنامه‌های دیگر را ببندید و دوباره نگاه کنید.</value></data>
   <data name="Assist_Reading" xml:space="preserve"><value>در حال خواندن کارت گرافیک… وقتی حافظهٔ کارت معلوم شد، دستیار آماده می‌شود.</value></data>
+  <data name="Nav_Apps" xml:space="preserve"><value>برنامه‌های تخصصی</value></data>
+  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها و هوش مصنوعی</value></data>
+  <data name="Assist_Opened" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم.</value></data>
+  <data name="Assist_OpenedApp" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و {1} را نشان دادم.</value></data>
+  <data name="Assist_Pointed" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و «{1}» را روی آن علامت زدم.</value></data>
+  <data name="Assist_Hint_Tuning" xml:space="preserve"><value>فقط وقتی خودتان رویش بزنید شروع می‌شود: ۱۰ تا ۲۵ دقیقه طول می‌کشد و اگر درایور ری‌ست شود ممکن است صفحه لحظه‌ای سیاه شود. قبلش بازی‌ها را ببندید و کارهایتان را ذخیره کنید.</value></data>
+  <data name="Assist_Hint_Repair" xml:space="preserve"><value>SFC و DISM کمی طول می‌کشند و فقط وقتی خودتان بزنید اجرا می‌شوند.</value></data>
+  <data name="Assist_Making" xml:space="preserve"><value>در حال ساختن فایل…</value></data>
+  <data name="Assist_FileReady" xml:space="preserve"><value>فایل {0} از گزارش {1} آماده است؛ با دکمهٔ زیر بازش کنید.</value></data>
+  <data name="Assist_FileFailed" xml:space="preserve"><value>فایل ساخته نشد: {0}</value></data>
+  <data name="Assist_OpenFile" xml:space="preserve"><value>باز کردن</value></data>
+  <data name="Assist_Tool_find_in_app" xml:space="preserve"><value>جستجو در برنامه</value></data>
+  <data name="Assist_Tool_get_report" xml:space="preserve"><value>خواندن گزارش</value></data>
+  <data name="Assist_Tool_export_report" xml:space="preserve"><value>ساختن فایل</value></data>
+  <data name="Assist_Tool_check_software" xml:space="preserve"><value>بررسی برنامه‌ها</value></data>
+  <data name="Apps_Title" xml:space="preserve"><value>کدام برنامه‌ها روی این سیستم اجرا می‌شوند</value></data>
+  <data name="Apps_Lede" xml:space="preserve"><value>هر برنامه با سطح‌بندی خود سازنده‌اش (حداقل، پیشنهادی، حرفه‌ای) مقایسه می‌شود: رم، حافظهٔ گرافیک، تعداد هسته و قابلیت‌هایی که کارت گرافیک باید داشته باشد. سرعت کارت و پردازنده در برابر قطعه‌های نمونهٔ سازنده اندازه‌گیری نمی‌شود؛ برای مقایسهٔ خودتان کنار هر سطح نوشته شده است.</value></data>
+  <data name="Apps_This" xml:space="preserve"><value>این سیستم</value></data>
+  <data name="Apps_Search" xml:space="preserve"><value>جستجوی برنامه…</value></data>
+  <data name="Apps_All" xml:space="preserve"><value>همه</value></data>
+  <data name="Apps_Suits" xml:space="preserve"><value>مناسب برای</value></data>
+  <data name="Apps_Next" xml:space="preserve"><value>برای سطح «{0}»:</value></data>
+  <data name="Apps_Top" xml:space="preserve"><value>همهٔ سطح‌هایی که سازنده نام برده را دارد.</value></data>
+  <data name="Apps_Tiers" xml:space="preserve"><value>سطح‌بندی سازنده</value></data>
+  <data name="Apps_Source" xml:space="preserve"><value>منبع:</value></data>
+  <data name="Apps_Ram" xml:space="preserve"><value>رم</value></data>
+  <data name="Apps_Vram" xml:space="preserve"><value>حافظهٔ گرافیک</value></data>
+  <data name="Apps_Cores" xml:space="preserve"><value>هسته</value></data>
+  <data name="Apps_Gpu" xml:space="preserve"><value>کارت گرافیک</value></data>
+  <data name="Apps_Cpu" xml:space="preserve"><value>پردازنده</value></data>
+  <data name="Apps_RayTracing" xml:space="preserve"><value>ری‌تریسینگ سخت‌افزاری</value></data>
+  <data name="Apps_Count" xml:space="preserve"><value>{0} از {1} برنامه اجرا می‌شوند</value></data>
+  <data name="Apps_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
+  <data name="Apps_Ai_Text" xml:space="preserve"><value>مدل‌های زبانی و مدل‌های تولید عکس، ویدئو، صدا و سه‌بعدی که روی این سیستم اجرا می‌شوند در زبانهٔ «مدل‌های هوش مصنوعی» هستند.</value></data>
+  <data name="Soft_Level_Below" xml:space="preserve"><value>پایین‌تر از حداقل</value></data>
+  <data name="Soft_Level_Minimum" xml:space="preserve"><value>حداقل</value></data>
+  <data name="Soft_Level_Recommended" xml:space="preserve"><value>پیشنهادی</value></data>
+  <data name="Soft_Level_HighEnd" xml:space="preserve"><value>حرفه‌ای</value></data>
+  <data name="Soft_Short_Ram" xml:space="preserve"><value>رم: {0} گیگابایت لازم است، این سیستم {1}</value></data>
+  <data name="Soft_Short_Vram" xml:space="preserve"><value>حافظهٔ گرافیک: {0} گیگابایت لازم است، این سیستم {1}</value></data>
+  <data name="Soft_Short_Cores" xml:space="preserve"><value>هسته: {0} لازم است، این سیستم {1}</value></data>
+  <data name="Soft_Short_RayTracing" xml:space="preserve"><value>کارتی با ری‌تریسینگ سخت‌افزاری (NVIDIA RTX، AMD RX 6000 به بعد یا Intel Arc)</value></data>
+  <data name="Soft_Short_Nvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA (CUDA)</value></data>
+  <data name="Soft_Short_Dedicated" xml:space="preserve"><value>کارت گرافیک با حافظهٔ اختصاصی (نه گرافیک داخلی پردازنده)</value></data>
+  <data name="Soft_Category_Visualization" xml:space="preserve"><value>رندر بلادرنگ و ویژوالایز</value></data>
+  <data name="Soft_Category_Rendering" xml:space="preserve"><value>موتورهای رندر</value></data>
+  <data name="Soft_Category_Architecture" xml:space="preserve"><value>معماری و طراحی</value></data>
+  <data name="Soft_Category_Civil" xml:space="preserve"><value>عمران و سازه</value></data>
+  <data name="Soft_Category_Animation" xml:space="preserve"><value>سه‌بعدی، انیمیشن و جلوه‌های ویژه</value></data>
+  <data name="Soft_Category_Video" xml:space="preserve"><value>تدوین ویدئو</value></data>
+  <data name="Soft_Category_Graphics" xml:space="preserve"><value>گرافیک</value></data>
+  <data name="Soft_Scale_Visualization_Minimum" xml:space="preserve"><value>صحنه‌های کوچک و تصویر ثابت: یک ساختمان با محوطهٔ ساده.</value></data>
+  <data name="Soft_Scale_Visualization_Recommended" xml:space="preserve"><value>پروژه‌های معمول: سایت کامل، انیمیشن 1080p و تصویر 4K.</value></data>
+  <data name="Soft_Scale_Visualization_HighEnd" xml:space="preserve"><value>صحنه‌های بزرگ و پرجزئیات: فضای شهری، پوشش گیاهی انبوه، انیمیشن 4K.</value></data>
+  <data name="Soft_Scale_Rendering_Minimum" xml:space="preserve"><value>صحنه‌های ساده؛ رندر زمان بیشتری می‌برد.</value></data>
+  <data name="Soft_Scale_Rendering_Recommended" xml:space="preserve"><value>صحنه‌های معمول داخلی و خارجی.</value></data>
+  <data name="Soft_Scale_Rendering_HighEnd" xml:space="preserve"><value>صحنه‌های سنگین با بافت‌های زیاد.</value></data>
+  <data name="Soft_Scale_Architecture_Minimum" xml:space="preserve"><value>پروژه‌های کوچک.</value></data>
+  <data name="Soft_Scale_Architecture_Recommended" xml:space="preserve"><value>ساختمان‌های معمول.</value></data>
+  <data name="Soft_Scale_Architecture_HighEnd" xml:space="preserve"><value>مدل‌های بزرگ و پیچیده.</value></data>
+  <data name="Soft_Scale_Civil_Minimum" xml:space="preserve"><value>مدل‌های کوچک و متوسط.</value></data>
+  <data name="Soft_Scale_Civil_Recommended" xml:space="preserve"><value>مدل‌های بزرگ و تحلیل‌های طولانی.</value></data>
+  <data name="Soft_Scale_Civil_HighEnd" xml:space="preserve"><value>مدل‌های خیلی بزرگ.</value></data>
+  <data name="Soft_Scale_Animation_Minimum" xml:space="preserve"><value>یادگیری و صحنه‌های ساده.</value></data>
+  <data name="Soft_Scale_Animation_Recommended" xml:space="preserve"><value>صحنه‌های حرفه‌ای معمول.</value></data>
+  <data name="Soft_Scale_Animation_HighEnd" xml:space="preserve"><value>صحنه‌های سنگین و شبیه‌سازی.</value></data>
+  <data name="Soft_Scale_Video_Minimum" xml:space="preserve"><value>تدوین HD با جلوه‌های سبک.</value></data>
+  <data name="Soft_Scale_Video_Recommended" xml:space="preserve"><value>تدوین HD.</value></data>
+  <data name="Soft_Scale_Video_HighEnd" xml:space="preserve"><value>4K و بالاتر.</value></data>
+  <data name="Soft_Scale_Graphics_Minimum" xml:space="preserve"><value>کارهای روزمرهٔ عکس.</value></data>
+  <data name="Soft_Scale_Graphics_Recommended" xml:space="preserve"><value>فایل‌های بزرگ و نمایشگر 4K به بالا.</value></data>
+  <data name="Soft_Scale_Graphics_HighEnd" xml:space="preserve"><value>فایل‌های بزرگ و نمایشگر 4K به بالا.</value></data>
+  <data name="Soft_Scale_Twinmotion_Min" xml:space="preserve"><value>پروژه‌های کوچک تا متوسط (کمتر از ۱ گیگابایت داده)، ویدئوی 2K و تصویر 4K؛ بدون VR، Path Tracer و Lumen (طبق Epic).</value></data>
+  <data name="Soft_Scale_Twinmotion_Rec" xml:space="preserve"><value>پروژه‌های بزرگ (بیش از ۱ گیگابایت داده)، VR، Lumen، Path Tracer و تصویر 8K به بالا (طبق Epic).</value></data>
+  <data name="Soft_Scale_Vr" xml:space="preserve"><value>واقعیت مجازی (VR) و بزرگ‌ترین پروژه‌ها.</value></data>
+  <data name="Soft_Scale_Revit_Min" xml:space="preserve"><value>یک مدل تا حدود ۳۰۰ مگابایت (طبق Autodesk).</value></data>
+  <data name="Soft_Scale_Revit_Rec" xml:space="preserve"><value>یک مدل تا حدود ۶۰۰ مگابایت (طبق Autodesk).</value></data>
+  <data name="Soft_Scale_Revit_High" xml:space="preserve"><value>مدل‌های بزرگ‌تر و چند مدل باز هم‌زمان.</value></data>
+  <data name="Soft_Scale_Archicad_Min" xml:space="preserve"><value>خانه‌های مسکونی (طبق Graphisoft).</value></data>
+  <data name="Soft_Scale_Archicad_Rec" xml:space="preserve"><value>ساختمان‌های آپارتمانی و اداری (طبق Graphisoft).</value></data>
+  <data name="Soft_Scale_Archicad_High" xml:space="preserve"><value>برج‌ها و بیمارستان‌ها (طبق Graphisoft).</value></data>
+  <data name="Soft_Scale_SketchupPbr" xml:space="preserve"><value>مدل‌های با متریال PBR، Ambient Occlusion و نورپردازی تصویری (طبق Trimble).</value></data>
+  <data name="Soft_Scale_Cad2d" xml:space="preserve"><value>نقشه‌کشی دوبعدی.</value></data>
+  <data name="Soft_Scale_Cad3d" xml:space="preserve"><value>مدل‌سازی سه‌بعدی و نقشه‌های بزرگ.</value></data>
+  <data name="Soft_Scale_Hd" xml:space="preserve"><value>فیلم HD.</value></data>
+  <data name="Soft_Scale_4k" xml:space="preserve"><value>فیلم 4K و بالاتر.</value></data>
+  <data name="Soft_Scale_Fusion" xml:space="preserve"><value>همراه Fusion (جلوه‌ها).</value></data>
+  <data name="Soft_Scale_Photo4k" xml:space="preserve"><value>نمایشگر 4K به بالا و فایل‌های بزرگ.</value></data>
+  <data name="Soft_Note_D5" xml:space="preserve"><value>D5 با ری‌تریسینگ DirectX 12 رندر می‌گیرد؛ GTX 1060 که در فهرستش آمده این کار را از راه درایور و کند انجام می‌دهد.</value></data>
+  <data name="Soft_Note_Vantage" xml:space="preserve"><value>Chaos می‌گوید رم باید دست‌کم هم‌اندازهٔ حافظهٔ گرافیک باشد و کل صحنه باید در حافظهٔ کارت جا شود.</value></data>
+  <data name="Soft_Note_Vram" xml:space="preserve"><value>کل صحنه باید در حافظهٔ کارت جا شود: حافظهٔ بیشتر، صحنهٔ بزرگ‌تر.</value></data>
+  <data name="Soft_Note_Autodesk" xml:space="preserve"><value>Autodesk فقط همین اعداد را اعلام کرده و فهرستی از کارت‌های گرافیک تأییدشده دارد.</value></data>
+  <data name="Soft_Purpose_Lumion" xml:space="preserve"><value>رندر بلادرنگ برای معماران: تصویر، ویدئو و پانورامای ۳۶۰ از مدل، سریع.</value></data>
+  <data name="Soft_Purpose_Twinmotion" xml:space="preserve"><value>ویژوالایز بلادرنگ Epic بر پایهٔ Unreal Engine: تصویر، ویدئو، VR و Path Tracing.</value></data>
+  <data name="Soft_Purpose_D5" xml:space="preserve"><value>رندر بلادرنگ با ری‌تریسینگ برای معماری و داخلی.</value></data>
+  <data name="Soft_Purpose_Enscape" xml:space="preserve"><value>رندر بلادرنگ داخل Revit، SketchUp، Rhino، Archicad و Vectorworks.</value></data>
+  <data name="Soft_Purpose_Vantage" xml:space="preserve"><value>ری‌تریسینگ بلادرنگ کل صحنه‌های V-Ray، برای گشتن در آن‌ها و ساخت انیمیشن.</value></data>
+  <data name="Soft_Purpose_Unreal" xml:space="preserve"><value>موتور بازی‌سازی که در معماری، فیلم و VR هم استفاده می‌شود.</value></data>
+  <data name="Soft_Purpose_Vray" xml:space="preserve"><value>رندر واقع‌گرا برای 3ds Max، SketchUp، Revit، Rhino و دیگران، با پردازنده.</value></data>
+  <data name="Soft_Purpose_VrayGpu" xml:space="preserve"><value>موتور V-Ray روی کارت‌های گرافیک NVIDIA (CUDA و RTX).</value></data>
+  <data name="Soft_Purpose_Corona" xml:space="preserve"><value>رندر با پردازنده برای داخلی و معماری، با تنظیمات ساده.</value></data>
+  <data name="Soft_Purpose_Revit" xml:space="preserve"><value>مدل‌سازی BIM ساختمان: معماری، سازه و تأسیسات.</value></data>
+  <data name="Soft_Purpose_Archicad" xml:space="preserve"><value>BIM برای معماران.</value></data>
+  <data name="Soft_Purpose_Sketchup" xml:space="preserve"><value>مدل‌سازی سه‌بعدی سریع برای معماری و داخلی.</value></data>
+  <data name="Soft_Purpose_Autocad" xml:space="preserve"><value>نقشه‌کشی دوبعدی و طراحی سه‌بعدی.</value></data>
+  <data name="Soft_Purpose_Rhino" xml:space="preserve"><value>مدل‌سازی سه‌بعدی آزاد؛ Grasshopper برای طراحی پارامتریک.</value></data>
+  <data name="Soft_Purpose_Etabs" xml:space="preserve"><value>تحلیل و طراحی سازهٔ ساختمان.</value></data>
+  <data name="Soft_Purpose_Civil3d" xml:space="preserve"><value>طراحی عمران: راه، زمین و زهکشی.</value></data>
+  <data name="Soft_Purpose_Tekla" xml:space="preserve"><value>مدل‌سازی دقیق سازه‌های فولادی و بتنی.</value></data>
+  <data name="Soft_Purpose_3dsMax" xml:space="preserve"><value>مدل‌سازی، انیمیشن و رندر سه‌بعدی؛ رایج در ویژوالایز معماری.</value></data>
+  <data name="Soft_Purpose_Maya" xml:space="preserve"><value>انیمیشن، مدل‌سازی و جلوه‌های ویژه برای فیلم و بازی.</value></data>
+  <data name="Soft_Purpose_Blender" xml:space="preserve"><value>مجموعهٔ رایگان سه‌بعدی: مدل‌سازی، انیمیشن، رندر (Cycles و Eevee) و جلوه‌ها.</value></data>
+  <data name="Soft_Purpose_C4d" xml:space="preserve"><value>موشن‌گرافیک و سه‌بعدی، همراه رندر Redshift.</value></data>
+  <data name="Soft_Purpose_AfterEffects" xml:space="preserve"><value>موشن‌گرافیک و ترکیب تصویر (کامپوزیت).</value></data>
+  <data name="Soft_Purpose_Premiere" xml:space="preserve"><value>تدوین ویدئو.</value></data>
+  <data name="Soft_Purpose_Resolve" xml:space="preserve"><value>تدوین، اصلاح رنگ، جلوه‌ها (Fusion) و صدا.</value></data>
+  <data name="Soft_Purpose_Photoshop" xml:space="preserve"><value>ویرایش عکس و طراحی.</value></data>
   <data name="AiGen_Title" xml:space="preserve"><value>مدل‌های تولید عکس، ویدئو، صدا و سه‌بعدی</value></data>
   <data name="AiGen_Lede" xml:space="preserve"><value>مدل‌های تولیدی که روی کامپیوتر خودتان اجرا می‌شوند و اینکه این کارت گرافیک می‌تواند اجرایشان کند یا نه. برنامه این مدل‌ها را دانلود یا اجرا نمی‌کند؛ در ComfyUI یا ابزار خودشان اجرا می‌شوند. این ارزیابی از حافظه‌ای است که سازندهٔ هر مدل اعلام کرده، نه اندازه‌گیری روی همین سیستم.</value></data>
   <data name="AiGen_Media_Image" xml:space="preserve"><value>تولید عکس</value></data>
@@ -1648,7 +1787,7 @@
   <data name="Assist_Send" xml:space="preserve"><value>ارسال</value></data>
   <data name="Assist_StopReply" xml:space="preserve"><value>توقف</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بگویید: «رم را تست کن»، «کارت گرافیک را تست کن»، «صفحهٔ اورلی را باز کن و روشنش کن» یا «گزارش‌ها را نشان بده».</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ اورکلاک».</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>خواند: مشخصات سیستم</value></data>

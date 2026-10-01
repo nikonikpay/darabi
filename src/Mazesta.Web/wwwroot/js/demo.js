@@ -86,6 +86,25 @@ function demoAi() {
     generative: demoGen() };
 }
 // The generative kinds as the host judges them for the same card (24 GB, NVIDIA).
+// The programs page as the host would answer it for the demo machine (Ryzen 9 3950X, 64 GB, RTX 3090 24 GB).
+function demoApps() {
+  const cat = (id, name) => ({ id, name: strings[`Soft_Category_${id}`] || name });
+  const tier = (kind, ram, vram, gpu, cpu, met, scaleKey) => ({ kind, ram, vram, cores: null, rt: false, gpu, cpu, met, suits: strings[scaleKey] || "" });
+  const app = (id, name, vendor, category, icon, mono, color, level, next, missing, tiers, purposeKey, source) =>
+    ({ id, name, vendor, category, icon, mono, color, level, next, missing, tiers, purpose: strings[purposeKey] || "", note: null, source, gpuNeed: "Dedicated", suits: tiers.find((x) => x.kind === level)?.suits ?? null });
+  return {
+    machine: { cpu: "AMD Ryzen 9 3950X 16-Core Processor", cores: 16, threads: 32, ram: 63.9, gpu: "NVIDIA GeForce RTX 3090", vram: 24, rt: true },
+    categories: [cat("Visualization"), cat("Rendering"), cat("Architecture"), cat("Civil"), cat("Animation"), cat("Video"), cat("Graphics")],
+    apps: [
+      app("lumion", "Lumion Pro 2026", "Lumion", "Visualization", "lumion.png", "Lu", "#1f4e8c", "HighEnd", null, [], [tier("Minimum", 16, 6, "GTX 1060 · RX 580 · G3DMark 8,000+", "PassMark single-thread 2,200+", true, "Soft_Scale_Visualization_Minimum"), tier("Recommended", 32, 10, "RTX 3060 · RX 6700 XT · G3DMark 14,000+", "PassMark single-thread 2,600+", true, "Soft_Scale_Visualization_Recommended"), tier("HighEnd", 64, 16, "RTX 3090 · RX 6800 XT · G3DMark 22,000+", "PassMark single-thread 3,000+", true, "Soft_Scale_Visualization_HighEnd")], "Soft_Purpose_Lumion", "lumion.com/requirements"),
+      app("d5", "D5 Render", "Dimension 5", "Visualization", "d5render.png", "D5", "#6a3df0", "Recommended", "HighEnd", ["RAM: 128 GB needed, 63.9 GB here"], [tier("Minimum", null, 4, "GTX 1060 · RX 6400 · Arc A3", null, true, "Soft_Scale_Visualization_Minimum"), tier("Recommended", 32, 8, "RTX 3060 (Ti)", "Core i5-11400 · Ryzen 3 5300G", true, "Soft_Scale_Visualization_Recommended"), tier("HighEnd", 128, 24, "RTX 3090", "Core i9-13900K · Ryzen 9 7950X", false, "Soft_Scale_Visualization_HighEnd")], "Soft_Purpose_D5", "d5render.com/post/system-requirements-for-d5-render"),
+      app("vantage", "Chaos Vantage", "Chaos", "Visualization", null, "Va", "#e0303a", "Minimum", null, [], [tier("Minimum", 8, null, "NVIDIA RTX · AMD RX 6000+ (DXR)", null, true, "Soft_Scale_Visualization_Minimum")], "Soft_Purpose_Vantage", "docs.chaos.com (Vantage system requirements)"),
+      app("revit", "Revit 2026", "Autodesk", "Architecture", null, "R", "#1d6fb8", "Recommended", "HighEnd", ["RAM: 64 GB needed, 63.9 GB here"], [tier("Minimum", 16, 4, "DirectX 11 · Shader Model 5", null, true, "Soft_Scale_Revit_Min"), tier("Recommended", 32, 4, null, null, true, "Soft_Scale_Revit_Rec"), tier("HighEnd", 64, 4, null, null, false, "Soft_Scale_Revit_High")], "Soft_Purpose_Revit", "autodesk.com (System requirements for Revit 2026)"),
+      app("premiere", "Premiere Pro 2025", "Adobe", "Video", null, "Pr", "#2a1466", "HighEnd", null, [], [tier("Minimum", 8, 2, null, "Intel 6th gen · Ryzen 1000+ (AVX2)", true, "Soft_Scale_Video_Minimum"), tier("Recommended", 16, 8, null, null, true, "Soft_Scale_Hd"), tier("HighEnd", 32, 8, null, null, true, "Soft_Scale_4k")], "Soft_Purpose_Premiere", "helpx.adobe.com/premiere-pro/system-requirements.html"),
+    ],
+  };
+}
+
 function demoGen() {
   const g = (id, name, params, min, full, fit, p, extra = {}) => ({ id, name, params, min: `${min} GB`, full: `${full} GB`, nvidiaOnly: !!extra.nv, license: extra.lic || null,
     runtime: extra.rt || "ComfyUI", source: extra.src || "", purpose: strings[`AiGen_Purpose_${p}`], note: extra.note ? strings[`AiGen_Note_${extra.note}`] : null, fit, block: null });
@@ -254,6 +273,8 @@ export async function call(m, p, emit) {
     case "history.get": { const h = hist.get(p.id) || []; const now = Math.round((Date.now() - T0) / 1000) + 600; return { sec: h.map((x) => x[0]), val: h.map((x) => x[1]), now }; }
     case "ai.state": return demoAi();
     case "ai.exec": return null;
+    case "apps.state": return demoApps();
+    case "dns.bench": await new Promise((r) => setTimeout(r, 1500)); return { best: "electro", inUse: ["auto"], scores: [["electro", "78.157.42.100", 12, 12, 21.4], ["shecan", "178.22.122.100", 12, 12, 28.9], ["current", "192.168.1.1", 12, 12, 31.2], ["403", "10.202.10.202", 12, 12, 44.0], ["cloudflare", "1.1.1.1", 12, 12, 96.5], ["google", "8.8.8.8", 11, 12, 102.3], ["quad9", "9.9.9.9", 0, 12, null]].map(([provider, server, answered, asked, ms]) => ({ provider, server, answered, asked, ms, reliable: answered === asked })) };
     case "assistant.state": return { status: "Available", model: { id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", downloaded: true }, choices: [{ id: "qwen3-14b", name: "Qwen3 14B", size: "8.4 GB", fit: "Gpu" }, { id: "qwen3-4b", name: "Qwen3 4B", size: "2.3 GB", fit: "Gpu" }], runtimeReady: true, server: "ready", busy: false, error: null, blocked: false, activity: null, chat: "2",
       // A made-up chat, for the design only: a run's outcomes are drawn from the tool's result, as in the app.
       confirm: { kind: "tests", items: [{ name: "الگوی حافظه", duration: "120" }, { name: "ماتریس CPU", duration: "60" }] },

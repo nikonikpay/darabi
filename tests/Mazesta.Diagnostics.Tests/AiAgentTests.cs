@@ -81,4 +81,18 @@ public class AiAgentTests
         var (_, calls) = AiServer.Parse("""{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"x","function":{"name":"get_sensors","arguments":"{\"kind\""}}]}}]}""");
         Assert.Equal("get_sensors", calls[0].Name); Assert.Equal("{\"kind\"", calls[0].Arguments); Assert.Equal("x", calls[0].Id);
     }
+
+    [Fact] public async Task Calls_the_app_made_run_first_and_the_model_then_only_answers()
+    {
+        var model = new Script(new ChatReply("CPU is at 61.5 °C.", []));
+        var tools = new List<ToolExchange>();
+        await AiAgent.RunAsync(model, "sys", [new("user", "دمای cpu چنده")], [Sensors], _ => { }, tools.Add, CancellationToken.None, first: [new("pre", "get_sensors", "{}")]);
+        Assert.Equal("get_sensors", Assert.Single(tools).Name);
+        Assert.Equal([false], model.HadTools);
+        Assert.Contains("61.5", model.Seen[0]);
+    }
+    [Fact] public void Persian_reaches_the_model_as_letters_and_a_long_old_reply_is_cut()
+    {
+        Assert.Contains("پردازنده", System.Text.Json.Nodes.JsonValue.Create("پردازنده")!.ToJsonString(new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
+    }
 }

@@ -1,6 +1,6 @@
 using System.IO; using System.Net.Http; using System.Text.Json;
 using Mazesta.Core.Hardware; using Mazesta.Monitoring; using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
-using Mazesta.Core.Ai; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks;
+using Mazesta.Core.Ai; using Mazesta.Core.Software; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks;
 namespace Mazesta.Web;
 
 public sealed partial class WebBridge
@@ -43,8 +43,9 @@ public sealed partial class WebBridge
         try { if (File.Exists(choiceFile)) chosen = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(choiceFile))?.GetValueOrDefault("model"); }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { }
 
-        // The downloaded models this machine can run, largest first; the pick if it is one of them, else the model on offer, else the largest that is there.
-        List<AiModel> Usable(AiMachine pc) => [.. AiCatalog.Models.Where(m => files.HasModel(m) && AiFitter.Fit(m, pc).Mode != AiFitMode.TooBig).OrderByDescending(m => m.Bytes)];
+        // The downloaded models this machine can run and that can hold a chat, largest first; the pick if it is one of them, else the model on offer,
+        // else the largest that is there.
+        List<AiModel> Usable(AiMachine pc) => [.. AiCatalog.Models.Where(m => m.Bytes >= AiAssistantPolicy.MinChatModelBytes && files.HasModel(m) && AiFitter.Fit(m, pc).Mode != AiFitMode.TooBig).OrderByDescending(m => m.Bytes)];
         AiModel? Selected(AiMachine pc, AiAssistantChoice choice)
         {
             var usable = Usable(pc);
@@ -70,7 +71,8 @@ public sealed partial class WebBridge
                 chat = chat?.Id,
                 history = chats.List().Select(x => new { id = x.Id, title = x.Title, updated = x.Updated.ToUnixTimeMilliseconds(), count = x.Count }),
                 // A run's result goes to the page as the tool returned it: the page draws the outcomes from it, not from the model's words.
-                messages = (chat?.Messages ?? []).Select(x => new { role = x.Role, text = x.Text, tools = x.Tools.Select(t => new { name = t.Name, ok = t.Ok, result = t.Name is "run_tests" or "run_benchmark" ? t.Result : null }) }),
+                // So are a file the assistant made (the chat offers it with an Open button) and a program's verdict (drawn as a card).
+                messages = (chat?.Messages ?? []).Select(x => new { role = x.Role, text = x.Text, tools = x.Tools.Select(t => new { name = t.Name, ok = t.Ok, result = t.Name is "run_tests" or "run_benchmark" or "export_report" or "check_software" ? t.Result : null }) }),
             };
         }
 
@@ -116,7 +118,33 @@ public sealed partial class WebBridge
                 await _window.Dispatcher.InvokeAsync(() => { unloaded = false; Push(); });
             }
         }
-        var tools = AssistantTools(() => lastSnapshot, Ask, Running, Ui, WithoutModel, page => this.Push("assistantNav", new { page }));
+        // The parts the programs' tiers are judged on, and the line the model is told about this computer: read once (the inventory is cached), the
+        // card's memory from its sensors as the AI page reads it.
+        var inventory = _sp.GetRequiredService<InventoryCache>();
+        async Task<SoftMachine> SoftPc()
+        {
+            var inv = await inventory.GetAsync().ConfigureAwait(false); var pc = machine();
+            long? vram = pc.VramBytes ?? inv.Gpus.Select(g => g.AdapterRamBytes).FirstOrDefault(b => b is > 0 and < (4L << 30) - (64L << 20));   // WMI's figure stops at 4 GB: only below that is it the size
+            return new(inv.Cpu?.Name?.Trim(), inv.Cpu?.PhysicalCores, inv.Cpu?.LogicalProcessors, inv.TotalPhysicalMemoryBytes ?? pc.RamTotalBytes, pc.GpuName ?? inv.Gpus.FirstOrDefault()?.Name?.Trim(), vram);
+        }
+        async Task<string> MachineLine()
+        {
+            var inv = await inventory.GetAsync().ConfigureAwait(false); var pc = await SoftPc().ConfigureAwait(false);
+            static string Gb(long b) => Math.Round(b / 1073741824.0).ToString(System.Globalization.CultureInfo.InvariantCulture) + " GB";
+            var parts = new List<string>();
+            if (pc.CpuName is { } c) parts.Add($"processor (CPU) {c}" + (pc.Cores is { } k ? $", {k} cores" + (pc.Threads is { } th ? $", {th} threads" : "") : ""));
+            if (pc.RamBytes is { } r) parts.Add($"RAM {Gb(r)}" + (inv.MemoryModules.Count > 0 ? $" in {inv.MemoryModules.Count} modules" : ""));
+            foreach (var g in inv.Gpus.Where(g => g.Name is not null))
+                parts.Add($"graphics card (GPU) {g.Name!.Trim()}" + (pc.VramBytes is { } v && pc.GpuName is not null && Diagnostics.Benchmarks.BenchmarkPeers.PartName(g.Name) == Diagnostics.Benchmarks.BenchmarkPeers.PartName(pc.GpuName) ? $" with {Gb(v)} of its own memory (VRAM)" : ""));
+            if (inv.Os?.Caption is { } os) parts.Add($"{os.Trim()} {inv.Os.Version}");
+            if (inv.Motherboard is { } mb) parts.Add($"motherboard {mb.Manufacturer} {mb.Product}".Trim());
+            foreach (var d in inv.Storage) if (d.FriendlyName is { } dn) parts.Add($"drive {dn.Trim()}" + (d.SizeBytes is { } ds ? $" {Gb(ds)}" : ""));
+            return string.Join("; ", parts);
+        }
+        RegisterApps(SoftPc);
+        // Files the assistant made in this session; only these may be opened from the chat.
+        var offered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var tools = AssistantTools(() => lastSnapshot, Ask, Running, Ui, WithoutModel, (page, target) => this.Push("assistantNav", new { page, target }), SoftPc, path => { lock (offered) offered.Add(path); });
 
         async Task Start()
         {
@@ -154,11 +182,18 @@ public sealed partial class WebBridge
             generating = true; replyCts = new CancellationTokenSource(); Push();
             try
             {
+                // What the message plainly asks is decided here, not by the model (see AppGuide): a page is opened at once and said in the app's own
+                // words; for a question the app first reads what answers it, and the model words the answer from that.
+                var route = AppGuide.Route(text);
+                if (await Direct(route, reply).ConfigureAwait(true)) return;
                 var history = AiAssistantPolicy.Trim(chat.Messages.Where(x => x != reply).Select(x => x.Turn).ToList(), AiAgent.Length);
+                string prompt = AiAssistantPolicy.Prompt(await MachineLine().ConfigureAwait(true), AppGuide.PageList(Loc.Get));
                 // The model's threads call back here; the chat is the UI thread's.
-                await AiAgent.RunAsync(server, AiAssistantPolicy.SystemPrompt, history, tools,
+                await AiAgent.RunAsync(server, prompt, history, tools,
                     piece => _window.Dispatcher.BeginInvoke(() => { reply.Text += piece; Push(); }),
-                    x => _window.Dispatcher.BeginInvoke(() => { reply.Tools.Add(x); Push(); }), replyCts.Token, AiAssistantPolicy.AsksToAct(text)).ConfigureAwait(true);
+                    x => _window.Dispatcher.BeginInvoke(() => { reply.Tools.Add(x); Push(); }), replyCts.Token, route.Intent == AiIntent.None && AiAssistantPolicy.AsksToAct(text), First(route, text)).ConfigureAwait(true);
+                // The UI thread may still hold the last pieces; they are in before the reply is tidied.
+                await _window.Dispatcher.InvokeAsync(() => { reply.Text = AiText.Unloop(reply.Text); });
             }
             catch (OperationCanceledException) { }
             catch (Exception e) when (e is IOException or HttpRequestException or InvalidOperationException)
@@ -171,6 +206,52 @@ public sealed partial class WebBridge
                 if (reply.Text.Length == 0 && reply.Tools.Count == 0) chat.Messages.Remove(reply);
                 chat.Updated = DateTimeOffset.Now; Keep(); Push();
             }
+        }
+
+        // A page the message names is opened now, with no model: it can not pick the wrong page, and it answers at once. A file asked for is made
+        // and offered the same way.
+        async Task<bool> Direct(AiRoute route, AiChatMessage reply)
+        {
+            if (route.Intent == AiIntent.Navigate && route.Place is { } place)
+            {
+                string? target = route.App?.Id ?? place.Target;
+                string args = JsonSerializer.Serialize(new { page = place.Page, target });
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "open_page", args), CancellationToken.None).ConfigureAwait(true);
+                reply.Tools.Add(new("open_page", args, result, ok));
+                string pageName = Loc.Get(AppGuide.Page(place.Page)!.TitleKey);
+                reply.Text = route.App is { } app ? Loc.Format("Assist_OpenedApp", pageName, app.Name)
+                    : place.Target is null ? Loc.Format("Assist_Opened", pageName)
+                    : Loc.Format("Assist_Pointed", pageName, Loc.Get(place.TitleKey)) + (place.HintKey is { } hint ? " " + Loc.Get(hint) : "");
+                return true;
+            }
+            if (route.Intent == AiIntent.ReportFile)
+            {
+                string args = JsonSerializer.Serialize(new { format = route.Format });
+                await _window.Dispatcher.InvokeAsync(() => { reply.Text = Loc.Get("Assist_Making"); Push(); });
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "export_report", args), CancellationToken.None).ConfigureAwait(true);
+                reply.Tools.Add(new("export_report", args, result, ok));
+                using var d = JsonDocument.Parse(result);
+                reply.Text = d.RootElement.TryGetProperty("error", out var e) ? Loc.Format("Assist_FileFailed", e.GetString() ?? "")
+                    : Loc.Format("Assist_FileReady", d.RootElement.GetProperty("file").GetString() ?? "", d.RootElement.GetProperty("report").GetString() ?? "");
+                return true;
+            }
+            return false;
+        }
+
+        // For a question the app reads what answers it first; the model then answers from that alone.
+        static IReadOnlyList<ToolCall>? First(AiRoute route, string text)
+        {
+            static ToolCall C(string name, object args) => new("pre_" + name, name, JsonSerializer.Serialize(args));
+            return route.Intent switch
+            {
+                AiIntent.Specs => [C("get_machine_summary", new { part = route.Part })],
+                AiIntent.Software when route.App is { } app => [C("check_software", new { app = app.Id })],
+                AiIntent.SoftwareList => [C("check_software", new { category = route.Category?.ToString() })],
+                AiIntent.Report => [C("list_reports", new { limit = 5 }), C("get_report", new { index = 0 })],
+                AiIntent.Tests when route.Areas is { Count: > 0 } areas => [C("run_tests", new { areas })],
+                AiIntent.HowTo => [C("find_in_app", new { query = text })],
+                _ => null,
+            };
         }
 
         static bool[]? Kept(JsonElement p, int count)
@@ -201,6 +282,14 @@ public sealed partial class WebBridge
                         string id = Str(p, "id");
                         if (generating && chat?.Id == id) throw new InvalidOperationException(Loc.Get("Assist_Busy"));
                         chats.Delete(id); if (chat?.Id == id) chat = null; break;
+                    }
+                case "openFile":
+                    {
+                        // One the assistant made here, or any file in a report's folder (a past chat's file, made before a restart).
+                        string path = Path.GetFullPath(Str(p, "path")); bool known; lock (offered) known = offered.Contains(path);
+                        known |= path.StartsWith(Path.GetFullPath(_paths.ReportsDir) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+                        if (!known || !File.Exists(path)) throw new ArgumentException("unknown file");
+                        Open(path); return null;
                     }
                 case "deleteAll": if (generating) throw new InvalidOperationException(Loc.Get("Assist_Busy")); chats.DeleteAll(); chat = null; break;
                 case "select":

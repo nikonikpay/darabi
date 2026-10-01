@@ -20,7 +20,7 @@ export function findingCard(f) {
 }
 
 export function mount(el) {
-  const run = h("button", { class: "btn go", onclick: async () => { run.disabled = true; if (!(await call("checkup.run"))) run.disabled = false; } }, icon("play"), t("Checkup_Run"));
+  const run = h("button", { class: "btn go", "data-a": "run", onclick: async () => { run.disabled = true; if (!(await call("checkup.run"))) run.disabled = false; } }, icon("play"), t("Checkup_Run"));
   const summary = h("div", { class: "checkup-sum" });
   const setup = h("div", { class: "findings" }, h("p", { class: "page-lede" }, t("Checkup_Loading")));
   const runs = h("div", { class: "findings" });

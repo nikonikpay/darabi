@@ -21,7 +21,7 @@ export function mount(el) {
   const profiles = h("div", { class: "profiles", role: "group", "aria-label": t("Profile_Title") }), profileNote = h("p", { class: "caption profile-note", hidden: true });
   // Start goes to the live monitor as soon as the queue is really running; a row with a bad field keeps the page here, where its error shows.
   let toMonitor = false;
-  const start = h("button", { class: "btn go", onclick: () => { toMonitor = true; call("tests.exec", { cmd: "start" }).finally(() => { toMonitor = false; }); } }, icon("play"), t("Test_Start"));
+  const start = h("button", { class: "btn go", "data-a": "start", onclick: () => { toMonitor = true; call("tests.exec", { cmd: "start" }).finally(() => { toMonitor = false; }); } }, icon("play"), t("Test_Start"));
   const watch = h("a", { class: "btn", href: "#/monitoring", hidden: true }, icon("pulse"), t("Web_Run_Live"));   // points at the running test's page
   const cancel = h("button", { class: "btn stop", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
   el.append(

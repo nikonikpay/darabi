@@ -70,6 +70,7 @@ const ICONS = {
   update: "M12 3v11M7.5 9.5 12 14l4.5-4.5M4 19h16",
   wrench: "M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z",
   layers: "M12 3 3 8l9 5 9-5zM3 13l9 5 9-5",
+  apps: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
 };
 export function icon(name) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");

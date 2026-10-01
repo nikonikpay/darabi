@@ -1,0 +1,206 @@
+namespace Mazesta.Core.Software;
+
+/// <summary>What a program is for, as the page groups them.</summary>
+public enum SoftCategory { Visualization, Rendering, Architecture, Civil, Animation, Video, Graphics }
+
+/// <summary>A publisher's tier: the least that runs it, what it recommends, and the tier it names for the heaviest work (VR, large models, 4K).</summary>
+public enum SoftTierKind { Minimum, Recommended, HighEnd }
+
+/// <summary>What the program needs of the graphics card whatever its tier: any, a card with memory of its own, an NVIDIA card (CUDA), or a card
+/// with ray tracing in hardware (DXR).</summary>
+public enum SoftGpu { Any, Dedicated, Nvidia, RayTracing }
+
+/// <summary>
+/// One of a publisher's tiers. Only the figures it states are here; a figure it does not state is null and is not judged. <see cref="Gpu"/> and
+/// <see cref="Cpu"/> are its own words (example cards, PassMark thresholds, processor families): shown, not compared, since the speed of two
+/// cards is not something the app can read from their names. <see cref="ScaleKey"/> names the work the tier suits in the publisher's terms
+/// where it gives them (model size, building type, video resolution), else the category's general wording.
+/// </summary>
+public sealed record SoftTier(SoftTierKind Kind, double? RamGb = null, double? VramGb = null, int? Cores = null, bool RayTracing = false, string? Gpu = null, string? Cpu = null, string? ScaleKey = null);
+
+/// <param name="Source">Where the tiers were read (checked on 2026-10-01).</param>
+/// <param name="Icon">An image under <c>img/apps/</c> (the publisher's own site icon), or null for a lettered tile of <see cref="Mono"/> in <see cref="Color"/>.</param>
+/// <param name="Words">What people call it, Persian and English, for the assistant to recognise it (already in <see cref="AppGuide.Normalize"/> form or normalised on use).</param>
+public sealed record SoftApp(string Id, string Name, string Vendor, SoftCategory Category, SoftGpu Gpu, IReadOnlyList<SoftTier> Tiers, string Source,
+    string? Icon, string Mono, string Color, string[] Words, string PurposeKey, string? NoteKey = null);
+
+/// <summary>The parts of this computer the tiers are judged on; null where it could not be read.</summary>
+public sealed record SoftMachine(string? CpuName, int? Cores, int? Threads, long? RamBytes, string? GpuName, long? VramBytes);
+
+/// <summary>A tier's figure this computer does not reach: what (Ram, Vram, Cores, RayTracing, Nvidia, Dedicated), the tier's figure and this computer's.</summary>
+public sealed record SoftShort(string What, double? Need, double? Have);
+
+/// <summary>The highest tier this computer meets (null: not even the minimum), and what keeps it from the next one.</summary>
+public sealed record SoftVerdict(SoftTierKind? Level, IReadOnlyList<SoftShort> Missing, SoftTierKind? Next);
+
+public static class SoftwareCatalog
+{
+    private static SoftTier Min(double? ram = null, double? vram = null, int? cores = null, bool rt = false, string? gpu = null, string? cpu = null, string? scale = null) => new(SoftTierKind.Minimum, ram, vram, cores, rt, gpu, cpu, scale);
+    private static SoftTier Rec(double? ram = null, double? vram = null, int? cores = null, bool rt = false, string? gpu = null, string? cpu = null, string? scale = null) => new(SoftTierKind.Recommended, ram, vram, cores, rt, gpu, cpu, scale);
+    private static SoftTier High(double? ram = null, double? vram = null, int? cores = null, bool rt = false, string? gpu = null, string? cpu = null, string? scale = null) => new(SoftTierKind.HighEnd, ram, vram, cores, rt, gpu, cpu, scale);
+
+    /// <summary>
+    /// The programs a shop is asked about most, grouped by what they do. Every figure is the publisher's (the documentation named in
+    /// <see cref="SoftApp.Source"/>); where a publisher gives only one set, only that tier is here.
+    /// </summary>
+    public static IReadOnlyList<SoftApp> Apps { get; } =
+    [
+        // ——— Real-time visualisation: the graphics card does the work ———
+        new("lumion", "Lumion Pro 2026", "Lumion", SoftCategory.Visualization, SoftGpu.Dedicated,
+            [Min(16, 6, gpu: "GTX 1060 · RX 580 · G3DMark 8,000+", cpu: "PassMark single-thread 2,200+"),
+             Rec(32, 10, gpu: "RTX 3060 · RX 6700 XT · G3DMark 14,000+", cpu: "PassMark single-thread 2,600+"),
+             High(64, 16, gpu: "RTX 3090 · RX 6800 XT · G3DMark 22,000+", cpu: "PassMark single-thread 3,000+")],
+            "lumion.com/requirements", "lumion.png", "Lu", "#1f4e8c", ["lumion", "لومیون", "لومین", "لیومیون"], "Soft_Purpose_Lumion"),
+        new("twinmotion", "Twinmotion 2025", "Epic Games", SoftCategory.Visualization, SoftGpu.Dedicated,
+            [Min(16, 6, gpu: "G3DMark 10,000+", cpu: "PassMark single-thread 2,000+", scale: "Soft_Scale_Twinmotion_Min"),
+             Rec(64, 12, gpu: "G3DMark 20,000+", cpu: "PassMark single-thread 2,500+", scale: "Soft_Scale_Twinmotion_Rec")],
+            "twinmotion.com (system requirements)", "twinmotion.png", "Tm", "#0f7a5a", ["twinmotion", "توین موشن", "تویین موشن", "توینموشن"], "Soft_Purpose_Twinmotion"),
+        new("d5", "D5 Render", "Dimension 5", SoftCategory.Visualization, SoftGpu.Dedicated,
+            [Min(null, 4, gpu: "GTX 1060 · RX 6400 · Arc A3"),
+             Rec(32, 8, gpu: "RTX 3060 (Ti)", cpu: "Core i5-11400 · Ryzen 3 5300G"),
+             High(128, 24, gpu: "RTX 3090", cpu: "Core i9-13900K · Ryzen 9 7950X")],
+            "d5render.com/post/system-requirements-for-d5-render", "d5render.png", "D5", "#6a3df0", ["d5 render", "d5", "دی فایو", "دی ۵", "دی5"], "Soft_Purpose_D5", "Soft_Note_D5"),
+        new("enscape", "Enscape", "Chaos", SoftCategory.Visualization, SoftGpu.Dedicated,
+            [Min(null, 4, gpu: "GTX 900 · RX 400 · Arc A310 (Vulkan 1.1)"),
+             Rec(null, 8, gpu: "RTX 3070 Ti · RX 6800"),
+             High(null, 12, gpu: "RTX 4070 Ti · RX 7900 XT", scale: "Soft_Scale_Vr")],
+            "docs.chaos.com (Enscape system requirements, Windows)", null, "En", "#e0303a", ["enscape", "انسکیپ", "اینسکیپ", "انسکیب"], "Soft_Purpose_Enscape"),
+        new("vantage", "Chaos Vantage", "Chaos", SoftCategory.Visualization, SoftGpu.RayTracing,
+            [Min(8, gpu: "NVIDIA RTX · AMD RX 6000+ (DXR)")],
+            "docs.chaos.com (Vantage system requirements)", null, "Va", "#e0303a", ["vantage", "chaos vantage", "ونتیج", "ونتج", "وانتیج", "ونتیژ", "وَنتیج"], "Soft_Purpose_Vantage", "Soft_Note_Vantage"),
+        new("unreal", "Unreal Engine 5", "Epic Games", SoftCategory.Visualization, SoftGpu.Dedicated,
+            [Rec(32, 8, 4, cpu: "Quad-core 2.5 GHz+", gpu: "DirectX 12")],
+            "dev.epicgames.com (hardware and software specifications)", "unrealengine.png", "UE", "#202020", ["unreal", "unreal engine", "آنریل", "انریل", "ue5"], "Soft_Purpose_Unreal"),
+
+        // ——— Offline renderers ———
+        new("vray", "V-Ray 7 (CPU)", "Chaos", SoftCategory.Rendering, SoftGpu.Any,
+            [Min(8, cpu: "AVX2")],
+            "docs.chaos.com (V-Ray system requirements)", null, "V", "#e0303a", ["v-ray", "vray", "وی ری", "ویری", "وی-ری"], "Soft_Purpose_Vray"),
+        new("vraygpu", "V-Ray GPU", "Chaos", SoftCategory.Rendering, SoftGpu.Nvidia,
+            [Min(gpu: "NVIDIA GTX 900 (Maxwell) or newer · CUDA"), Rec(rt: true, gpu: "NVIDIA RTX (RTX mode)")],
+            "docs.chaos.com (V-Ray GPU hardware)", null, "VG", "#e0303a", ["v-ray gpu", "vray gpu", "ویری جی پی یو", "ویری gpu"], "Soft_Purpose_VrayGpu", "Soft_Note_Vram"),
+        new("corona", "Corona Renderer 13", "Chaos", SoftCategory.Rendering, SoftGpu.Any,
+            [Min(8, cpu: "SSE4.1 · Core i3 or equivalent"), Rec(32, cpu: "Core i7 · Ryzen 7")],
+            "docs.chaos.com (Corona system requirements)", null, "Co", "#e0303a", ["corona", "کرونا"], "Soft_Purpose_Corona"),
+
+        // ——— Architecture and CAD ———
+        new("revit", "Revit 2026", "Autodesk", SoftCategory.Architecture, SoftGpu.Dedicated,
+            [Min(16, 4, gpu: "DirectX 11 · Shader Model 5", scale: "Soft_Scale_Revit_Min"), Rec(32, 4, scale: "Soft_Scale_Revit_Rec"), High(64, 4, scale: "Soft_Scale_Revit_High")],
+            "autodesk.com (System requirements for Revit 2026)", null, "R", "#1d6fb8", ["revit", "رویت", "روت"], "Soft_Purpose_Revit"),
+        new("archicad", "Archicad 28", "Graphisoft", SoftCategory.Architecture, SoftGpu.Dedicated,
+            [Min(16, 4, gpu: "DirectX 11", scale: "Soft_Scale_Archicad_Min"), Rec(32, 6, scale: "Soft_Scale_Archicad_Rec"), High(64, 8, scale: "Soft_Scale_Archicad_High")],
+            "graphisoft.com/system-requirements-28", "graphisoft.png", "Ar", "#1c64d8", ["archicad", "آرشیکد", "ارشیکد", "آرچیکد", "ارچیکد"], "Soft_Purpose_Archicad"),
+        new("sketchup", "SketchUp 2025", "Trimble", SoftCategory.Architecture, SoftGpu.Dedicated,
+            [Rec(8, 8, gpu: "OpenGL 3.1", cpu: "2 GHz+"), High(8, 32, scale: "Soft_Scale_SketchupPbr")],
+            "help.sketchup.com/en/sketchup/system-requirements", "sketchup.png", "Sk", "#d64532", ["sketchup", "اسکچاپ", "اسکچ اپ", "اسکیچاپ"], "Soft_Purpose_Sketchup"),
+        new("autocad", "AutoCAD 2026", "Autodesk", SoftCategory.Architecture, SoftGpu.Any,
+            [Min(8, 2, gpu: "DirectX 11", scale: "Soft_Scale_Cad2d"), Rec(32, 8, gpu: "DirectX 12", scale: "Soft_Scale_Cad3d")],
+            "autodesk.com (System requirements for AutoCAD 2026)", null, "A", "#c8102e", ["autocad", "اتوکد", "آتوکد", "اتو کد"], "Soft_Purpose_Autocad"),
+        new("rhino", "Rhino 8", "Robert McNeel", SoftCategory.Architecture, SoftGpu.Any,
+            [Rec(8, 4, gpu: "OpenGL 4.5")],
+            "rhino3d.com/8/system-requirements", "rhino3d.jpg", "Rh", "#606060", ["rhino", "راینو", "راینو ۸"], "Soft_Purpose_Rhino"),
+
+        // ——— Civil and structural ———
+        new("etabs", "ETABS", "CSI", SoftCategory.Civil, SoftGpu.Any,
+            [Min(16, 1), Rec(64, 4, cpu: "12th-gen Core i5/i7/i9 · Ryzen 5/7/9 (Zen 3)")],
+            "csiamerica.com/products/etabs/system-requirements", "csiamerica.png", "ET", "#274b8f", ["etabs", "ایتبس", "ای تبس", "ایتبز"], "Soft_Purpose_Etabs"),
+        new("civil3d", "Civil 3D 2026", "Autodesk", SoftCategory.Civil, SoftGpu.Any,
+            [Min(8, 2, gpu: "DirectX 11"), Rec(32, 8, gpu: "DirectX 12")],
+            "autodesk.com (System requirements for Civil 3D 2026)", null, "C3", "#0a7d74", ["civil 3d", "civil3d", "سیویل تری دی", "سیویل ۳دی", "سیویل"], "Soft_Purpose_Civil3d"),
+        new("tekla", "Tekla Structures 2025", "Trimble", SoftCategory.Civil, SoftGpu.Dedicated,
+            [Rec(16, gpu: "RTX 3060 / 3070 (two monitors)"), High(32, gpu: "RTX 4080 / 4090")],
+            "support.tekla.com (Tekla Structures 2025 hardware recommendations)", "tekla.png", "Tk", "#0e416c", ["tekla", "تکلا"], "Soft_Purpose_Tekla"),
+
+        // ——— 3D, animation and effects ———
+        new("3dsmax", "3ds Max 2026", "Autodesk", SoftCategory.Animation, SoftGpu.Any,
+            [Min(4, cpu: "SSE4.2"), Rec(8)],
+            "autodesk.com (System requirements for 3ds Max 2026)", null, "3ds", "#0f8c8c", ["3ds max", "3dsmax", "3d max", "3dmax", "تری دی مکس", "تریدی مکس", "تری‌دی مکس", "۳دی مکس"], "Soft_Purpose_3dsMax", "Soft_Note_Autodesk"),
+        new("maya", "Maya 2026", "Autodesk", SoftCategory.Animation, SoftGpu.Any,
+            [Min(8, cpu: "SSE4.2"), Rec(16)],
+            "autodesk.com (System requirements for Maya 2026)", null, "M", "#0f8c8c", ["maya", "مایا"], "Soft_Purpose_Maya", "Soft_Note_Autodesk"),
+        new("blender", "Blender 4.5 LTS", "Blender Foundation", SoftCategory.Animation, SoftGpu.Any,
+            [Min(8, 2, 4, gpu: "OpenGL 4.3 · Vulkan 1.3", cpu: "SSE4.2"), Rec(32, 8, 8)],
+            "blender.org/download/requirements", "blender.png", "Bl", "#e87d0d", ["blender", "بلندر"], "Soft_Purpose_Blender"),
+        new("c4d", "Cinema 4D 2025", "Maxon", SoftCategory.Animation, SoftGpu.Any,
+            [Min(16, 4), Rec(24, 8, gpu: "Redshift GPU: NVIDIA RTX · AMD RDNA 2+")],
+            "maxon.net/en/requirements/cinema-4d-2025-requirements", "maxon.png", "C4", "#011a6a", ["cinema 4d", "c4d", "سینما فوردی", "سینمافوردی", "سینما ۴دی", "سینما 4d"], "Soft_Purpose_C4d"),
+        new("aftereffects", "After Effects 2025", "Adobe", SoftCategory.Animation, SoftGpu.Dedicated,
+            [Min(16, 4, cpu: "Intel 11th gen · Ryzen 3000+", scale: "Soft_Scale_Hd"), Rec(32, 8, scale: "Soft_Scale_4k")],
+            "helpx.adobe.com/after-effects/system-requirements/2025.html", null, "Ae", "#3b2d8f", ["after effects", "aftereffects", "افتر افکت", "افترافکت", "افتر افکتس"], "Soft_Purpose_AfterEffects"),
+
+        // ——— Video editing ———
+        new("premiere", "Premiere Pro 2025", "Adobe", SoftCategory.Video, SoftGpu.Any,
+            [Min(8, 2, cpu: "Intel 6th gen · Ryzen 1000+ (AVX2)"), Rec(16, 8, cpu: "Intel 11th gen · Ryzen 3000+", scale: "Soft_Scale_Hd"), High(32, 8, scale: "Soft_Scale_4k")],
+            "helpx.adobe.com/premiere-pro/system-requirements.html", null, "Pr", "#2a1466", ["premiere", "premiere pro", "پریمیر", "پرمیر", "پریمیر پرو"], "Soft_Purpose_Premiere"),
+        new("resolve", "DaVinci Resolve 20", "Blackmagic Design", SoftCategory.Video, SoftGpu.Dedicated,
+            [Min(16, 4, gpu: "CUDA · OpenCL · Metal"), Rec(32, 4, scale: "Soft_Scale_Fusion")],
+            "blackmagicdesign.com/products/davinciresolve (system requirements)", null, "Dv", "#3c3c3c", ["davinci", "davinci resolve", "resolve", "داوینچی", "داوینچی ریزالو"], "Soft_Purpose_Resolve"),
+
+        // ——— Graphics ———
+        new("photoshop", "Photoshop 2025", "Adobe", SoftCategory.Graphics, SoftGpu.Any,
+            [Min(8, 1.5, gpu: "DirectX 12"), Rec(16, 4, scale: "Soft_Scale_Photo4k")],
+            "helpx.adobe.com/photoshop/system-requirements.html", null, "Ps", "#0b3d66", ["photoshop", "فتوشاپ", "فوتوشاپ"], "Soft_Purpose_Photoshop"),
+    ];
+
+    public static SoftApp? Find(string id) => Apps.FirstOrDefault(a => a.Id == id);
+
+    /// <summary>Memory reads a little under its nominal size (a "16 GB" machine shows 15.8 GiB, less with a card that borrows some); publishers
+    /// name the nominal size.</summary>
+    public const double RamSlackGb = 1, VramSlackGb = 0.5;
+
+    public enum GpuMaker { None, Nvidia, Amd, Intel, Other }
+
+    public static GpuMaker Maker(string? gpu) => gpu is null ? GpuMaker.None
+        : Has(gpu, "NVIDIA") || Has(gpu, "GeForce") || Has(gpu, "Quadro") || Has(gpu, "Tesla") ? GpuMaker.Nvidia
+        : Has(gpu, "AMD") || Has(gpu, "Radeon") ? GpuMaker.Amd : Has(gpu, "Intel") || Has(gpu, "Arc") ? GpuMaker.Intel : GpuMaker.Other;
+
+    /// <summary>
+    /// Whether the card traces rays in hardware (DirectX Raytracing), from its family, which fixes it: NVIDIA's RTX cards (GeForce RTX 20 and
+    /// later, Quadro RTX, RTX A and Ada), AMD's RDNA 2 and later (Radeon RX 6000, 7000, 9000; Radeon PRO W6000, W7000), Intel Arc. Null for a
+    /// name that is none of the families known either way.
+    /// </summary>
+    public static bool? RayTracing(string? gpu)
+    {
+        if (gpu is null) return null;
+        if (Has(gpu, "RTX")) return true;
+        if (Has(gpu, "GTX") || Has(gpu, "GeForce GT ") || Has(gpu, "Quadro")) return false;
+        if (System.Text.RegularExpressions.Regex.Match(gpu, @"\bRX\s*(\d{3,4})", System.Text.RegularExpressions.RegexOptions.IgnoreCase) is { Success: true } rx)
+            return rx.Groups[1].Value.Length == 4 && rx.Groups[1].Value[0] is '6' or '7' or '9';
+        if (System.Text.RegularExpressions.Regex.IsMatch(gpu, @"\bW[67]\d{3}\b")) return true;
+        if (Has(gpu, "Arc")) return true;
+        if (Has(gpu, "Vega") || Has(gpu, "UHD") || Has(gpu, "Iris") || Has(gpu, "HD Graphics")) return false;
+        return null;
+    }
+
+    private static bool Has(string s, string part) => s.Contains(part, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>What of one tier this computer lacks; empty when it meets it. A figure the computer's reading lacks counts as not met, except the
+    /// cores (when they could not be read they are not held against it).</summary>
+    public static IReadOnlyList<SoftShort> Lacks(SoftApp app, SoftTier tier, SoftMachine pc)
+    {
+        var lacks = new List<SoftShort>();
+        double? ram = pc.RamBytes / (double)(1L << 30), vram = pc.VramBytes is > 0 ? pc.VramBytes / (double)(1L << 30) : null;
+        bool dedicated = vram is not null;
+        if (app.Gpu is SoftGpu.Dedicated or SoftGpu.Nvidia or SoftGpu.RayTracing && !dedicated) lacks.Add(new("Dedicated", null, null));
+        else if (app.Gpu == SoftGpu.Nvidia && Maker(pc.GpuName) != GpuMaker.Nvidia) lacks.Add(new("Nvidia", null, null));
+        if ((app.Gpu == SoftGpu.RayTracing || tier.RayTracing) && dedicated && RayTracing(pc.GpuName) != true) lacks.Add(new("RayTracing", null, null));
+        if (tier.RamGb is { } r && (ram ?? 0) + RamSlackGb < r) lacks.Add(new("Ram", r, ram is null ? null : Math.Round(ram.Value, 1)));
+        if (tier.VramGb is { } v && (vram ?? 0) + VramSlackGb < v) lacks.Add(new("Vram", v, vram is null ? null : Math.Round(vram.Value, 1)));
+        if (tier.Cores is { } c && pc.Cores is { } have && have < c) lacks.Add(new("Cores", c, have));
+        return lacks;
+    }
+
+    /// <summary>The highest tier met (tiers are met in order: a higher tier counts only when every lower one is met too), and what the next
+    /// tier needs that is missing. A program with only a recommended tier is either at it or below it.</summary>
+    public static SoftVerdict Judge(SoftApp app, SoftMachine pc)
+    {
+        SoftTierKind? level = null;
+        foreach (var tier in app.Tiers)
+        {
+            var lacks = Lacks(app, tier, pc);
+            if (lacks.Count > 0) return new(level, lacks, tier.Kind);
+            level = tier.Kind;
+        }
+        return new(level, [], null);
+    }
+}

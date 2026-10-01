@@ -1,5 +1,5 @@
 using System.Globalization; using System.IO; using System.Text.Json; using System.Text.Json.Nodes;
-using Mazesta.Core.Hardware; using Mazesta.Desktop.Composition; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring; using Mazesta.Reporting;
+using Mazesta.Core.Ai; using Mazesta.Core.Hardware; using Mazesta.Core.Software; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring; using Mazesta.Reporting;
 using Microsoft.Extensions.DependencyInjection;
 namespace Mazesta.Web;
 
@@ -19,12 +19,9 @@ public sealed partial class WebBridge
         ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage", ["gpu"] = "bench.gpu.d3d",
     };
 
-    /// <summary>The pages the assistant may open (the page's own ids), with what each shows, for the tool's description.</summary>
-    private const string AssistantPages =
-        "dashboard (summary), monitoring (every sensor with charts), cpu, gpu, ram, storage, network (a part's specification and sensors), system (the whole specification), " +
-        "tests, benchmarks, checkup (the machine judged from its measurements), checks (hands-on: screen, keyboard, mouse, speakers, microphone), overlay (the on-screen overlay's settings), " +
-        "tuning (graphics card clocks and fans), tools (Windows tools), tweaks (Windows settings), updates (Windows Update), reports (saved test reports), settings, ai (language models)";
-    private static readonly string[] AssistantPageIds = ["dashboard", "monitoring", "cpu", "gpu", "ram", "storage", "network", "system", "tests", "benchmarks", "checkup", "checks", "overlay", "tuning", "tools", "tweaks", "updates", "reports", "settings", "ai"];
+    /// <summary>The pages the assistant may open (the page's own ids, from <see cref="AppGuide"/>) and the controls it may point at on them.</summary>
+    private static readonly string[] AssistantPageIds = [.. AppGuide.Places.Where(p => p.Target is null).Select(p => p.Page)];
+    private static readonly string[] AssistantTargets = [.. AppGuide.Places.Where(p => p.Target is not null).Select(p => p.Page + "/" + p.Target)];
 
     /// <summary>
     /// What the assistant may call. The first four only read. <c>open_page</c> and <c>set_overlay</c> do what the user could do with one click and can
@@ -35,7 +32,7 @@ public sealed partial class WebBridge
     /// </summary>
     private IReadOnlyList<AiTool> AssistantTools(Func<SensorSnapshot?> latest, Func<string, IReadOnlyList<(string, string)>, CancellationToken, Task<bool[]?>> ask,
         Func<Activity, Func<Task<string>>, Task<string>> running, Func<Func<Task<string>>, Task<string>> ui, Func<Func<Task<string>>, CancellationToken, Task<string>> withoutModel,
-        Action<string> navigate)
+        Action<string, string?> navigate, Func<Task<SoftMachine>> softMachine, Action<string> offerFile)
     {
         var engine = _sp.GetRequiredService<PollingEngine>(); var inventory = _sp.GetRequiredService<InventoryCache>(); var runner = _sp.GetRequiredService<BenchmarkRunner>();
         static string Json(object o) => JsonSerializer.Serialize(o, Json_);
@@ -44,21 +41,44 @@ public sealed partial class WebBridge
         static string[] Texts(JsonElement a, string name) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array
             ? [.. v.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()!)] : [];
         static string Cut(string? s, int n) => s is null ? "" : s.Length <= n ? s : s[..n] + "…";
+        static int Index(JsonElement a) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty("index", out var v) && v.TryGetInt32(out var n) ? n : 0;
         Task<string> OnUi(Func<string> work) => ui(() => Task.FromResult(work()));
-        const string NoArgs = """{"type":"object","properties":{}}""";
 
         return
         [
-            new("get_machine_summary", "The computer's specification: processor, graphics cards, memory, operating system, motherboard, BIOS and the drives with their health.", NoArgs,
-                async (_, _) =>
+            new("get_machine_summary", "This computer's specification as the app read it: processor (cores, threads), graphics cards with their memory (VRAM), " +
+                "RAM size and modules, operating system, motherboard, BIOS and the drives with size and health. Optional part: cpu, gpu, vram, ram, storage, board, os.",
+                """{"type":"object","properties":{"part":{"type":"string","enum":["cpu","gpu","vram","ram","storage","board","os","all"]}}}""",
+                async (a, _) =>
                 {
-                    var inv = await inventory.GetAsync().ConfigureAwait(false);
+                    var inv = await inventory.GetAsync().ConfigureAwait(false); var pc = await softMachine().ConfigureAwait(false);
+                    string part = Text(a, "part") ?? "all"; bool All(params string[] p) => part == "all" || p.Contains(part);
+                    static double? Gb(long? b) => b is { } x ? Math.Round(x / 1073741824.0, 1) : null;
                     return Json(new
                     {
-                        cpu = inv.Cpu?.Name?.Trim(), gpus = inv.Gpus.Select(g => g.Name?.Trim()), ramGb = inv.TotalPhysicalMemoryBytes is { } b ? Math.Round(b / 1073741824.0, 1) : (double?)null,
-                        os = inv.Os?.Caption, board = inv.Motherboard is { } m ? $"{m.Manufacturer} {m.Product}".Trim() : null, bios = inv.Bios?.Version,
-                        drives = inv.Storage.Select(d => new { name = d.FriendlyName, health = SystemInfoViewModel.DriveHealth(d.HealthStatus, d.WearPercent) }),
+                        cpu = All("cpu") ? new { name = inv.Cpu?.Name?.Trim(), cores = inv.Cpu?.PhysicalCores, threads = inv.Cpu?.LogicalProcessors, maxClockMhz = inv.Cpu?.MaxClockMhz, socket = inv.Cpu?.Socket } : null,
+                        gpus = All("gpu", "vram") ? inv.Gpus.Select(g => new
+                        {
+                            name = g.Name?.Trim(), driver = g.DriverVersion,
+                            // The card's own memory comes from its sensors (WMI's figure stops at 4 GB); it is the one the AI page and the programs check use.
+                            vramGb = pc.GpuName is not null && g.Name is not null && Diagnostics.Benchmarks.BenchmarkPeers.PartName(g.Name) == Diagnostics.Benchmarks.BenchmarkPeers.PartName(pc.GpuName) ? Gb(pc.VramBytes) : null,
+                        }) : null,
+                        ramGb = All("ram") ? Gb(inv.TotalPhysicalMemoryBytes) : null,
+                        ramModules = part == "ram" ? inv.MemoryModules.Select(m => new { slot = m.Slot, gb = Gb(m.CapacityBytes), speedMts = m.ConfiguredSpeedMts ?? m.SpeedMts, maker = m.Manufacturer?.Trim(), part = m.PartNumber?.Trim() }) : null,
+                        os = All("os") ? $"{inv.Os?.Caption} {inv.Os?.Version} ({inv.Os?.Architecture})".Trim() : null,
+                        board = All("board") ? (inv.Motherboard is { } m ? $"{m.Manufacturer} {m.Product}".Trim() : null) : null, bios = All("board") ? inv.Bios?.Version : null,
+                        drives = All("storage") ? inv.Storage.Select(d => new { name = d.FriendlyName, sizeGb = Gb(d.SizeBytes), type = d.MediaType, health = SystemInfoViewModel.DriveHealth(d.HealthStatus, d.WearPercent) }) : null,
                     });
+                }),
+            new("find_in_app", "Where in this app something is done: the page and the control for it, by the names the app shows, and what is there. For questions of how or where.",
+                """{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}""",
+                (a, _) =>
+                {
+                    string q = AppGuide.Normalize(Text(a, "query") ?? "");
+                    var place = AppGuide.FindPlace(q);
+                    var page = place is null ? null : AppGuide.Page(place.Page);
+                    if (place is null) return Task.FromResult(Json(new { found = false, pages = AppGuide.PageList(Loc.Get) }));
+                    return Task.FromResult(Json(new { found = true, page = place.Page, pageName = Loc.Get(page?.TitleKey ?? place.TitleKey), control = place.Target is null ? null : Loc.Get(place.TitleKey), what = place.What }));
                 }),
             new("get_sensors", "The live sensor readings now (temperatures, loads, clocks, power, fans), grouped by device. Optional kind: Temperature, Load, Clock, Power or Fan.",
                 """{"type":"object","properties":{"kind":{"type":"string","enum":["Temperature","Load","Clock","Power","Fan"]}}}""",
@@ -74,13 +94,88 @@ public sealed partial class WebBridge
                     }).Where(d => d.sensors.Any()).Take(8);
                     return Task.FromResult(Json(new { secondsAgo = Math.Round((DateTimeOffset.UtcNow - snap.Timestamp).TotalSeconds), devices }));
                 }),
-            new("list_reports", "The newest saved test reports: when, kind, verdict and how many tests passed, failed or did not run. Optional limit (default 5, at most 10).",
+            new("list_reports", "The saved test and benchmark reports, newest first: index (0 is the newest), when, kind, verdict and how many tests passed, failed or did not run. Optional limit (default 5, at most 10).",
                 """{"type":"object","properties":{"limit":{"type":"integer"}}}""",
-                (a, _) => Task.FromResult(Json(new
+                (a, _) =>
                 {
-                    reports = new ReportStore(_paths.ReportsDir).List().OrderByDescending(r => r.CreatedAt).Take(Int(a, "limit", 5, 10))
-                        .Select(r => new { createdAt = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), kind = r.Kind.ToString(), verdict = r.Verdict?.ToString(), r.Counts, benchmarks = r.Benchmarks }),
-                }))),
+                    var list = new ReportStore(_paths.ReportsDir).List();
+                    return Task.FromResult(Json(new
+                    {
+                        total = list.Count,
+                        reports = list.Take(Int(a, "limit", 5, 10)).Select((r, i) => new { index = i, createdAt = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), kind = r.Kind.ToString(), verdict = r.Verdict?.ToString(), r.Counts, benchmarks = r.Benchmarks }),
+                    }));
+                }),
+            new("get_report", "One saved report in full: its tests and outcomes, its benchmarks' numbers, the highest temperatures while it ran (per part) and the diagnosis findings. " +
+                "Optional index (0 = newest, as list_reports numbers them). Use it to summarise a report or to answer what the highest temperature was.",
+                """{"type":"object","properties":{"index":{"type":"integer"}}}""",
+                (a, _) =>
+                {
+                    var store = new ReportStore(_paths.ReportsDir); var list = store.List();
+                    int i = Index(a);
+                    if (list.Count == 0) return Task.FromResult(Json(new { error = "there are no saved reports yet; run tests or benchmarks to make one" }));
+                    if (i < 0 || i >= list.Count) return Task.FromResult(Json(new { error = $"there are {list.Count} reports; index must be 0 to {list.Count - 1}" }));
+                    if (store.Load(list[i]) is not { } r) return Task.FromResult(Json(new { error = "the report could not be read" }));
+                    return Task.FromResult(Json(new
+                    {
+                        index = i, total = list.Count, createdAt = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), kind = r.Kind.ToString(), verdict = r.Verdict?.ToString(),
+                        minutes = Math.Round(r.DurationSeconds / 60, 1), computer = new { cpu = r.Machine.Cpu?.Name?.Trim(), gpu = r.Machine.Gpus.FirstOrDefault()?.Name?.Trim() },
+                        tests = r.Tests.Select(t => new { name = t.Name, outcome = t.Outcome.ToString(), errors = t.ErrorCount > 0 ? t.ErrorCount : (long?)null, detail = Cut(t.Detail, 100) is { Length: > 0 } d ? d : null }),
+                        benchmarks = (r.Benchmarks ?? []).Select(b => new { name = b.Name, results = b.Metrics.Take(3).Select(m => $"{Math.Round(m.Value, 2)} {m.Unit} ({m.Name})") }),
+                        // The hottest reading of each part while the report ran, from every recorded sample.
+                        highestTemperatures = r.Sensors.Where(x => x.Kind == "Temperature" && x.Samples > 0).GroupBy(x => x.Hardware)
+                            .Select(g => g.OrderByDescending(x => x.Max).First()).OrderByDescending(x => x.Max).Take(6)
+                            .Select(x => new { part = x.Hardware, sensor = x.Name, maxC = Math.Round(x.Max, 1) }),
+                        findings = (r.Findings ?? []).Take(5).Select(f => new { level = f.Level, title = f.Title }),
+                    }));
+                }),
+            new("export_report", "Makes a file of a saved report and offers it in the chat with an Open button: pdf (the full report), html (the full report as a web page) or summary " +
+                "(a one-page PDF summary). Optional index (0 = newest). Returns the file's name; the user opens it from the chat.",
+                """{"type":"object","properties":{"format":{"type":"string","enum":["pdf","html","summary"]},"index":{"type":"integer"}},"required":["format"]}""",
+                async (a, _) =>
+                {
+                    var service = _sp.GetRequiredService<Desktop.Services.ReportService>(); var list = service.Store.List();
+                    int i = Index(a);
+                    if (list.Count == 0) return Json(new { error = "there are no saved reports yet" });
+                    if (i < 0 || i >= list.Count) return Json(new { error = $"index must be 0 to {list.Count - 1}" });
+                    var stored = list[i]; string format = Text(a, "format") ?? "pdf";
+                    string path = await ui(async () =>
+                    {
+                        switch (format)
+                        {
+                            case "html": return stored.HtmlPath;
+                            case "summary":
+                                {
+                                    string html = service.CreateSummary(stored), pdf = Path.ChangeExtension(html, ".pdf");
+                                    await Desktop.Services.PdfExporter.ExportAsync(html, pdf, Desktop.Localization.Loc.Get("Reports_SummaryBusy"), _window, service.BrowserDataDir, a5: true);
+                                    return pdf;
+                                }
+                            default:
+                                if (!File.Exists(stored.PdfPath)) await Desktop.Services.PdfExporter.ExportAsync(stored.HtmlPath, stored.PdfPath, Desktop.Localization.Loc.Get("Reports_PdfBusy"), _window, service.BrowserDataDir);
+                                return stored.PdfPath;
+                        }
+                    }).ConfigureAwait(false);
+                    if (!File.Exists(path)) return Json(new { error = "the file was not made" });
+                    offerFile(path);
+                    return Json(new { made = true, format, file = Path.GetFileName(path), path, report = stored.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm") });
+                }),
+            new("check_software", "Whether this computer runs a professional program (rendering, architecture, civil, animation, video editing, graphics) and at which of its " +
+                "publisher's tiers (Minimum, Recommended, HighEnd), what work that tier suits, and what is missing for the next tier. Give app (its name or id) for one " +
+                "program, or category (Visualization, Rendering, Architecture, Civil, Animation, Video, Graphics) for a group, or neither for all.",
+                """{"type":"object","properties":{"app":{"type":"string"},"category":{"type":"string","enum":["Visualization","Rendering","Architecture","Civil","Animation","Video","Graphics"]}}}""",
+                async (a, _) =>
+                {
+                    var pc = await softMachine().ConfigureAwait(false);
+                    string? name = Text(a, "app"); string? cat = Text(a, "category");
+                    var app = name is null ? null : SoftwareCatalog.Find(name.ToLowerInvariant()) ?? AppGuide.FindApp(AppGuide.Normalize(name));
+                    if (name is not null && app is null) return Json(new { error = "that program is not in the app's list", known = SoftwareCatalog.Apps.Select(x => x.Name) });
+                    var apps = app is not null ? [app] : SoftwareCatalog.Apps.Where(x => cat is null || x.Category.ToString() == cat).ToList();
+                    return Json(new
+                    {
+                        computer = new { cpu = pc.CpuName, cores = pc.Cores, ramGb = pc.RamBytes is { } r ? Math.Round(r / 1073741824.0, 1) : (double?)null, gpu = pc.GpuName, vramGb = pc.VramBytes is { } v ? Math.Round(v / 1073741824.0, 1) : (double?)null },
+                        programs = apps.Select(x => SoftwareRow(x, pc, detail: app is not null)),
+                        note = "levels compare memory, graphics memory, cores and graphics card features with the publisher's tiers; the card's and processor's speed against the publisher's example parts is not measured",
+                    });
+                }),
             new("get_benchmark_history", "This computer's newest benchmark results, newest first, to see whether it got slower or faster. Optional benchmark (part of its id) and limit (default 6, at most 15).",
                 """{"type":"object","properties":{"benchmark":{"type":"string"},"limit":{"type":"integer"}}}""",
                 (a, _) =>
@@ -91,13 +186,15 @@ public sealed partial class WebBridge
                         .Select(r => new { at = r.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), benchmark = r.Benchmark, settings = r.Settings, value = Math.Round(r.Value, 2), unit = r.Unit, overclocked = r.Overclocked });
                     return Task.FromResult(Json(new { runs }));
                 }),
-            new("open_page", "Opens a page of the app on the screen, beside the chat. Pages: " + AssistantPages + ".",
-                """{"type":"object","properties":{"page":{"type":"string","enum":["dashboard","monitoring","cpu","gpu","ram","storage","network","system","tests","benchmarks","checkup","checks","overlay","tuning","tools","tweaks","updates","reports","settings","ai"]}},"required":["page"]}""",
+            new("open_page", "Opens a page of the app on the screen, beside the chat, and can point at one control on it (target). Use the page ids of the list in your instructions.",
+                "{\"type\":\"object\",\"properties\":{\"page\":{\"type\":\"string\",\"enum\":[" + string.Join(",", AssistantPageIds.Select(x => $"\"{x}\"")) + "]},\"target\":{\"type\":\"string\",\"description\":\"optional control: " + string.Join(", ", AssistantTargets) + "\"}},\"required\":[\"page\"]}",
                 (a, _) =>
                 {
                     if (Text(a, "page") is not { } page || !AssistantPageIds.Contains(page)) return Task.FromResult(Json(new { error = "unknown page" }));
-                    navigate(page);
-                    return Task.FromResult(Json(new { opened = page }));
+                    string? target = Text(a, "target") is { } x && AssistantTargets.Contains(page + "/" + x) ? x : null;
+                    navigate(page, target);
+                    var place = AppGuide.Places.FirstOrDefault(p => p.Page == page && p.Target == target) ?? AppGuide.Page(page);
+                    return Task.FromResult(Json(new { opened = page, name = place is null ? null : Loc.Get(AppGuide.Page(page)!.TitleKey), control = target is null || place is null ? null : Loc.Get(place.TitleKey) }));
                 }),
             new("set_overlay", "Shows or hides the on-screen overlay (the small always-on-top readout of temperatures, loads and frame rate over games). Returns whether it is shown now.",
                 """{"type":"object","properties":{"on":{"type":"boolean"}},"required":["on"]}""",
@@ -215,5 +312,29 @@ public sealed partial class WebBridge
         ];
     }
 
-    private static readonly JsonSerializerOptions Json_ = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
+    /// <summary>One program's verdict as the assistant and the page read it, in the user's language: its level, what that level suits, what the
+    /// next level lacks. With <paramref name="detail"/> the tiers' own figures too.</summary>
+    private static object SoftwareRow(SoftApp x, SoftMachine pc, bool detail)
+    {
+        var v = SoftwareCatalog.Judge(x, pc);
+        var tier = v.Level is { } l ? x.Tiers.First(t => t.Kind == l) : null;
+        return new
+        {
+            id = x.Id, name = x.Name, level = v.Level?.ToString() ?? "BelowMinimum", levelName = Desktop.Localization.Loc.Get("Soft_Level_" + (v.Level?.ToString() ?? "Below")),
+            suits = tier is null ? null : Desktop.Localization.Loc.Get(tier.ScaleKey ?? "Soft_Scale_" + x.Category + "_" + tier.Kind),
+            missingForNext = v.Missing.Select(m => ShortText(m)),
+            nextLevel = v.Next is { } n ? Desktop.Localization.Loc.Get("Soft_Level_" + n) : null,
+            tiers = detail ? x.Tiers.Select(t => new { level = Desktop.Localization.Loc.Get("Soft_Level_" + t.Kind), ramGb = t.RamGb, vramGb = t.VramGb, cores = t.Cores, gpu = t.Gpu, cpu = t.Cpu }) : null,
+            source = detail ? x.Source : null,
+        };
+    }
+
+    /// <summary>What a tier lacks, in words: "RAM: 32 GB needed, 16 here".</summary>
+    private static string ShortText(SoftShort m) => m.Need is { } need
+        ? Desktop.Localization.Loc.Format("Soft_Short_" + m.What, need.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture), m.Have?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) ?? "—")
+        : Desktop.Localization.Loc.Get("Soft_Short_" + m.What);
+
+    private static readonly JsonSerializerOptions Json_ = new() {
+        // Persian goes to the model as letters: escaped (پ…) the model can not read it and makes words up in its place.
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping, PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull };
 }

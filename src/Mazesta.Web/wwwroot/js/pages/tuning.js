@@ -142,16 +142,16 @@ export function mount(el) {
   const running = h("div", { hidden: true, style: { marginTop: "18px" } });
   const result = h("p", { class: "h3", style: { whiteSpace: "pre-line", marginTop: "16px" } });
   const log = h("div", {}), profiles = h("div", {}), memory = h("dl", { class: "kv" });
-  const autoU = h("button", { class: "btn go", onclick: () => exec("autoUndervolt") }, t("Tuning_AutoUndervolt"));
-  const autoO = h("button", { class: "btn primary", onclick: () => exec("autoOverclock") }, t("Tuning_AutoOverclock"));
+  const autoU = h("button", { class: "btn go", "data-a": "autoundervolt", onclick: () => exec("autoUndervolt") }, t("Tuning_AutoUndervolt"));
+  const autoO = h("button", { class: "btn primary", "data-a": "autooverclock", onclick: () => exec("autoOverclock") }, t("Tuning_AutoOverclock"));
   const cancel = h("button", { class: "btn stop", onclick: () => exec("cancel") }, icon("stop"), t("Tuning_Cancel"));
 
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tuning")), h("p", { class: "page-lede" }, t("Tuning_Note")))),
     unavailable,
     h("div", { class: "has-device panels", style: { gridTemplateColumns: "1fr", marginTop: 0 } },
-      box({ kind: "Gpu", title: name, sub: "NVIDIA · NVML", i: 0, actions: device, body: [live, ranges, others] }),
-      box({ kind: "Gpu", ico: "chart", title: t("Tuning_Curve_Title"), sub: t("Tuning_Curve_Sub"), i: 1, actions: scan,
+      box({ kind: "Gpu", title: name, sub: "NVIDIA · NVML", i: 0, a: "fan", actions: device, body: [live, ranges, others] }),
+      box({ kind: "Gpu", ico: "chart", title: t("Tuning_Curve_Title"), sub: t("Tuning_Curve_Sub"), i: 1, a: "curve", actions: scan,
         body: h("div", { class: "tune", style: { marginTop: 0 } },
           h("div", { class: "curve-wrap" },
             curveInfo, editor.el,
@@ -166,9 +166,9 @@ export function mount(el) {
             h("div", {}, h("div", { class: "h3" }, t("Tuning_AutoUndervolt_Title")), h("p", { class: "caption" }, t("Tuning_AutoUndervolt_Desc")), autoU),
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO)),
           running, result, log] }),
-      box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, body: profiles })),
+      box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, a: "profiles", body: profiles })),
     h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },
-      box({ kind: "Memory", title: t("Tuning_Memory"), sub: t("Tuning_Memory_Sub"), i: 4,
+      box({ kind: "Memory", title: t("Tuning_Memory"), sub: t("Tuning_Memory_Sub"), i: 4, a: "memory",
         actions: h("button", { class: "btn stop", onclick: () => exec("firmware") }, t("Tuning_RestartToFirmware")),
         body: [memory, h("p", { class: "note" }, t("Tuning_Memory_Note"))] })));
 

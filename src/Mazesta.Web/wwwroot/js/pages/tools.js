@@ -1,5 +1,6 @@
-// Windows and game tools, boxed by what each tool is about: Windows' own repair tools (their real output streams below them), hibernation and Fast
-// Startup, the virtual memory, the hosts file, Windows' own windows, the power plan and game switches, and the DNS resolver. Every change is one
+// Windows and game tools, in three sections: the connection and games (the DNS resolver with its speed test, the power plan, the game switches),
+// repair and clean-up (Windows' own repair tools, their real output streaming below them; Windows' own windows; hibernation and Fast Startup),
+// and memory and hosts (the virtual memory, the hosts file). Every change is one
 // button, is read back from Windows afterwards, and says what Windows answered; nothing runs on its own.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
@@ -9,7 +10,7 @@ import { gamingBoxes } from "./gaming.js";
 import { dnsBox } from "./dns.js";
 
 export function mount(el) {
-  const gaming = gamingBoxes(5);
+  const gaming = gamingBoxes(1);
   // ——— Repair: sfc and DISM ———
   const btn = (cmd, key, cls = "btn") => h("button", { class: cls, "data-cmd": cmd, onclick: () => call("tools.exec", { cmd }) }, t(key));
   const repair = [btn("sfc", "Tools_Sfc", "btn primary"), btn("dismScan", "Tools_DismScan"), btn("dismRestore", "Tools_DismRestore")];
@@ -46,21 +47,25 @@ export function mount(el) {
   const restoreBtn = h("button", { class: "btn quiet", onclick: restoreHosts }, t("Tools_Hosts_Restore"));
   let dirty = false;
 
+  // Three sections, by what people come for: the connection and games first (DNS is what is asked for most), then repair and clean-up, then
+  // the settings that change how Windows starts and uses memory.
+  const section = (key, ...boxes) => h("section", { class: "tools-sec" }, h("h2", { class: "tools-sec-title" }, t(key)), h("div", { class: "panels two" }, boxes));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
-    h("div", { class: "panels two", style: { marginTop: 0 } },
-      box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 0,
+    section("Tools_Sec_Network", dnsBox(0), ...gaming.boxes),
+    section("Tools_Sec_Repair",
+      box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 3, a: "repair",
         body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Web_Tools_RepairNote")), h("div", { class: "btn-row" }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar), consoleEl] }),
-      box({ kind: "Power", title: t("Tools_Hib_Title"), sub: t("Tools_Hib_Sub"), i: 1,
-        body: [powerTiles, h("p", { class: "note" }, t("Tools_Hib_Note")), h("div", { class: "btn-row" }, hibOff, hibOn), powerMsg] }),
-      box({ kind: "Memory", title: t("Tools_Vm_Title"), sub: t("Tools_Vm_Sub"), i: 2,
+      box({ kind: "Storage", ico: "drive", title: t("Tools_Windows"), sub: t("Tools_Windows_Sub"), i: 4, a: "cleanup",
+        body: h("div", { class: "btn-row", style: { marginTop: 0 } }, btn("cleanup", "Tools_DiskCleanup"), btn("update", "Tools_WindowsUpdate")) }),
+      box({ kind: "Power", title: t("Tools_Hib_Title"), sub: t("Tools_Hib_Sub"), i: 5, a: "hibernate",
+        body: [powerTiles, h("p", { class: "note" }, t("Tools_Hib_Note")), h("div", { class: "btn-row" }, hibOff, hibOn), powerMsg] })),
+    section("Tools_Sec_System",
+      box({ kind: "Memory", title: t("Tools_Vm_Title"), sub: t("Tools_Vm_Sub"), i: 6, a: "vm",
         actions: h("button", { class: "btn quiet", onclick: () => call("tools.exec", { cmd: "pagefile" }) }, icon("popout"), t("Tools_Vm_Windows")),
         body: [vmInUse, h("div", { style: { marginTop: "14px" } }, choice), custom, vmLimit, h("div", { class: "btn-row" }, vmApply), vmMsg, vmPending] }),
-      box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), wide: true, i: 3,
+      box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
-        body: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn, h("span", { class: "grow" }), hostsInfo), hostsMsg, h("p", { class: "note" }, t("Tools_Hosts_Note"))] }),
-      box({ kind: "Storage", ico: "drive", title: t("Tools_Windows"), sub: t("Tools_Windows_Sub"), i: 4,
-        body: h("div", { class: "btn-row", style: { marginTop: 0 } }, btn("cleanup", "Tools_DiskCleanup"), btn("update", "Tools_WindowsUpdate")) }),
-      ...gaming.boxes, dnsBox(7)));
+        body: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn, h("span", { class: "grow" }), hostsInfo), hostsMsg, h("p", { class: "note" }, t("Tools_Hosts_Note"))] })));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;

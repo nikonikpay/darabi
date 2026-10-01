@@ -259,7 +259,9 @@ public static class DnsChoice
     public static readonly IReadOnlyDictionary<string, string[]> Providers = new Dictionary<string, string[]>
     {
         ["cloudflare"] = ["1.1.1.1", "1.0.0.1"], ["google"] = ["8.8.8.8", "8.8.4.4"], ["quad9"] = ["9.9.9.9", "149.112.112.112"],
+        ["adguard"] = ["94.140.14.14", "94.140.15.15"], ["opendns"] = ["208.67.222.222", "208.67.220.220"],
         ["shecan"] = ["178.22.122.100", "185.51.200.2"], ["electro"] = ["78.157.42.100", "78.157.42.101"], ["403"] = ["10.202.10.202", "10.202.10.102"],
+        ["radar"] = ["10.202.10.10", "10.202.10.11"], ["begzar"] = ["185.55.226.26", "185.55.225.25"],
     };
 
     /// <summary>The adapters that are up (not loopback, not tunnels) with their IPv4 DNS servers.</summary>

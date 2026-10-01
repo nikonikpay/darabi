@@ -8,7 +8,7 @@ import { box } from "../groups.js";
 const BADGE = { Passed: "pass", Failed: "fail", Incomplete: "warn", Benchmark: "run" };
 
 export function mount(el) {
-  const compare = h("button", { class: "btn primary", onclick: () => call("reports.exec", { cmd: "compare" }) }, t("Reports_Compare"));
+  const compare = h("button", { class: "btn primary", "data-a": "compare", onclick: () => call("reports.exec", { cmd: "compare" }) }, t("Reports_Compare"));
   const list = h("div", {}), status = h("p", { class: "caption", style: { minHeight: "1.6em" } });
   const count = h("span", { class: "group-count" });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Reports")))),

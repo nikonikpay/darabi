@@ -1237,3 +1237,62 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .checkup-run-block { display: grid; gap: 8px; margin-bottom: 14px; }
 .q-row .row-checkup { grid-column: 3 / -1; display: grid; gap: 8px; }
 .peers-sum.behind { flex-wrap: wrap; color: var(--paper); }
+
+/* ——— Programs page: each program's level by its publisher's tiers ——— */
+.apps-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; margin-top: 16px; align-items: stretch; }
+@container (max-width: 900px) { .apps-top { grid-template-columns: 1fr; } }
+.apps-pc { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 16px; }
+.apps-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 4px; }
+.apps-bar .grow { flex: 1; }
+.apps-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.apps-chip { font: inherit; font-size: 12.5px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--rule-2); background: var(--ink-3); color: var(--paper-2, var(--paper)); cursor: pointer; transition: border-color var(--fast), background var(--fast); }
+.apps-chip:hover { border-color: var(--yellow); }
+.apps-chip[aria-selected="true"] { background: var(--yellow); border-color: var(--yellow); color: var(--on-yellow); font-weight: 650; }
+.apps-search { min-width: 200px; max-width: 280px; }
+.apps-group { margin-top: 18px; }
+.apps-group-title, .tools-sec-title { font-size: 15px; font-weight: 700; margin: 0 0 10px; color: var(--paper); display: flex; align-items: center; gap: 10px; }
+.apps-group-title::after, .tools-sec-title::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
+.apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 12px; align-items: start; }
+.apps-card { padding: 14px; border: 1px solid var(--rule); border-radius: var(--r-panel); background: var(--ink-2, var(--well)); box-shadow: var(--shadow); border-inline-start: 3px solid var(--fail); }
+.apps-card.lv-Minimum { border-inline-start-color: var(--warn); }
+.apps-card.lv-Recommended { border-inline-start-color: var(--pass); }
+.apps-card.lv-HighEnd { border-inline-start-color: var(--yellow); }
+.apps-head { display: flex; align-items: center; gap: 12px; }
+.apps-name { flex: 1; min-width: 0; display: grid; }
+.apps-name h3 { margin: 0; font-size: 15px; }
+.app-ico { width: 40px; height: 40px; border-radius: 9px; flex: none; object-fit: contain; background: #fff; padding: 4px; }
+.app-ico.mono { display: grid; place-items: center; padding: 0; background: var(--c, #444); color: #fff; font-weight: 800; font-size: 14px; letter-spacing: -0.02em; }
+.apps-purpose { margin: 10px 0 6px; font-size: 13px; color: var(--paper-2, var(--paper)); }
+.apps-suits { margin: 0 0 6px; font-size: 13px; }
+.apps-next { margin: 6px 0; font-size: 12.5px; }
+.apps-next ul { margin: 4px 0 0; padding-inline-start: 18px; color: var(--paper-2, var(--paper)); }
+.apps-note { margin: 6px 0 0; }
+.apps-tiers { margin-top: 8px; }
+.apps-tiers summary { cursor: pointer; font-size: 12.5px; color: var(--paper-3); }
+.apps-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+.apps-table th, .apps-table td { text-align: start; padding: 5px 6px; border-top: 1px solid var(--rule); vertical-align: top; }
+.apps-table thead th { color: var(--paper-3); font-weight: 600; border-top: 0; }
+.apps-table tr.met td { color: var(--paper); }
+
+/* ——— The control the assistant points at ——— */
+.flash { animation: flash 1s var(--ease) 3; outline: 2px solid var(--yellow); outline-offset: 3px; border-radius: var(--r-panel); }
+@keyframes flash { 50% { outline-color: transparent; } }
+
+/* ——— Windows tools: sections, and DNS Jumper's table ——— */
+.tools-sec { margin-top: 22px; }
+.tools-sec > .panels { margin-top: 0; }
+.dns-h { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--paper); }
+.dns-h:first-child { margin-top: 0; }
+.dns-now { display: grid; gap: 6px; }
+.dns-adapter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 8px 10px; border-radius: var(--r-ctl); background: var(--well); border: 1px solid var(--rule); }
+.dns-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+.dns-table th, .dns-table td { padding: 6px 8px; border-top: 1px solid var(--rule); text-align: start; white-space: nowrap; }
+.dns-table th { font-weight: 600; display: flex; align-items: center; gap: 8px; border-top: 0; }
+.dns-table tr + tr th { border-top: 1px solid var(--rule); }
+.dns-table tr.best { background: color-mix(in oklab, var(--pass) 10%, transparent); }
+.dns-table tr.miss { opacity: 0.55; }
+.dns-bar { width: 40%; }
+.dns-bar i { display: block; height: 6px; border-radius: 3px; background: var(--hue, var(--c-net)); width: calc(var(--p) * 100%); min-width: 4px; }
+.as-file { display: flex; align-items: center; gap: 8px; }
+.as-file svg { width: 16px; height: 16px; flex: none; }
+.as-file .grow { flex: 1; }

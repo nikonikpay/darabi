@@ -85,6 +85,21 @@ public sealed partial class WebBridge
             return new { error, update = UpdateProfiles.Read(registry).ToString() };
         });
 
+        // DNS Jumper's test: every resolver on the list and the one in use now, timed on this connection. The page applies the winner only when asked.
+        MethodAsync("dns.bench", async _ =>
+        {
+            var current = DnsChoice.Current().SelectMany(a => a.Servers).Distinct().Where(x => DnsChoice.Identify([x]) == "auto").Take(1).Select(x => ("current", x));
+            var scores = await DnsBench.RunAsync(DnsChoice.Providers.Select(p => (p.Key, p.Value[0])).Concat(current), CancellationToken.None).ConfigureAwait(true);
+            var best = DnsBench.Best(scores);
+            _log.LogInformation("DNS test: {Results}; best {Best}", string.Join(", ", scores.Select(x => $"{x.Provider} {x.Answered}/{x.Asked} {x.MedianMs:F0}ms")), best?.Provider ?? "none");
+            return new
+            {
+                best = best?.Provider, inUse = DnsChoice.Current().Select(a => DnsChoice.Identify(a.Servers)).Distinct().ToArray(),
+                scores = scores.OrderBy(x => x.Reliable ? 0 : 1).ThenBy(x => x.MedianMs ?? double.MaxValue)
+                    .Select(x => new { provider = x.Provider, server = x.Server, answered = x.Answered, asked = x.Asked, ms = x.MedianMs is { } m ? Math.Round(m, 1) : (double?)null, reliable = x.Reliable }),
+            };
+        });
+
         MethodAsync("tweaks.dns", async p =>
         {
             string provider = Str(p, "provider");

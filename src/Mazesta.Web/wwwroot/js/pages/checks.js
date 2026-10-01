@@ -23,6 +23,7 @@ const WIDE = { Backspace: 2, Tab: 1.5, Backslash: 1.5, CapsLock: 1.8, Enter: 2.2
 // Full-screen colours for dead or stuck pixels, then a gradient for banding and a fine checkerboard for pixel response.
 const SCREENS = ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#808080", "linear-gradient(90deg, #000, #fff)", "repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 2px 2px"];
 
+const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic" };
 function card(key, ico, body) {
   const verdict = h("div", { class: "chk-verdict" });
   let state = "";
@@ -30,7 +31,7 @@ function card(key, ico, body) {
   const ok = h("button", { class: "btn quiet chk-ok", onclick: () => pick("ok") }, icon("check"), t("Checks_Ok"));
   const bad = h("button", { class: "btn quiet chk-bad", onclick: () => pick("bad") }, icon("alert"), t("Checks_Problem"));
   verdict.append(h("span", { class: "caption" }, t("Checks_YourCall")), ok, bad);
-  return h("section", { class: "panel chk" }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(ico)),
+  return h("section", { class: "panel chk", "data-a": CHECK_TARGET[key] }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(ico)),
     h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, t(`Checks_${key}`)), h("div", { class: "panel-sub fa" }, t(`Checks_${key}_Sub`)))), body, verdict);
 }
 

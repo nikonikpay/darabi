@@ -105,6 +105,10 @@ export function mountAssistant(app, root) {
     let r; try { r = JSON.parse(x.result); } catch { return null; }
     if (!r || r.error) return r?.error ? h("div", { class: "as-card" }, h("span", { class: "caption" }, t("Assist_Run_NotStarted"))) : null;
     if (r.started === false) return h("div", { class: "as-card" }, h("span", { class: "caption" }, t("Assist_Run_NotStarted")));
+    if (x.name === "export_report") return r.made ? h("div", { class: "as-card as-file" }, icon("doc"), h("span", { class: "lat" }, r.file), h("span", { class: "grow" }),
+      h("button", { class: "btn primary", type: "button", onclick: () => exec("assistant.exec", "openFile", { path: r.path }) }, icon("popout"), t("Assist_OpenFile"))) : null;
+    if (x.name === "check_software") return h("div", { class: "as-card" }, (r.programs || []).slice(0, 8).map((p) => h("div", { class: "as-card-row" }, h("span", { class: "lat" }, p.name),
+      h("span", { class: `pill ${{ HighEnd: "run", Recommended: "pass", Minimum: "warn" }[p.level] || "fail"}` }, p.levelName))));
     if (x.name === "run_tests") return h("div", { class: "as-card" }, (r.results || []).map((y) => h("div", { class: "as-card-row" }, h("span", {}, y.name),
       h("span", { class: `pill ${OUTCOME[y.outcome] || "none"}` }, t(`Test_Outcome_${y.outcome}`)))));
     if (r.completed) return h("div", { class: "as-card" }, h("div", { class: "as-card-row" }, h("span", {}, r.benchmark),
@@ -192,7 +196,17 @@ export function mountAssistant(app, root) {
 
   setHist(store("mazesta.asst.hist") === "open");
   const offA = on("assistant", render), offAi = on("ai", (s) => { ai = s; if (a) renderGate(); });
-  const offNav = on("assistantNav", (x) => go(x.page));
+  // The assistant opens a page, and may mark one control on it ([data-a] on the page, or a program's card): the page draws after it mounts,
+  // so the mark waits for the control to appear.
+  const offNav = on("assistantNav", (x) => { go(x.page); if (x.target) mark(x.target); });
+  function mark(target, tries = 0) {
+    const el = document.querySelector(`#stage [data-a="${CSS.escape(target)}"], #stage [data-app="${CSS.escape(target)}"]`);
+    if (!el) { if (tries < 30) setTimeout(() => mark(target, tries + 1), 100); return; }
+    el.closest("details")?.setAttribute("open", "");
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 3200);
+  }
   const onShow = () => setOpen(app.dataset.asst !== "open"); window.addEventListener("assistant:toggle", onShow);
   Promise.all([call("ai.state").then((s) => { ai = s; }).catch(() => {}), call("assistant.state")]).then(([, s]) => render(s)).catch(() => { app.dataset.asst = "none"; });
   // Free memory decides which model is offered, and the card is read a moment after start: both are followed every few seconds while the

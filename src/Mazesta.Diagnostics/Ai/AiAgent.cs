@@ -12,11 +12,13 @@ public sealed record AiTool(string Name, string Description, string ParametersJs
 /// </summary>
 public static class AiAgent
 {
-    public const int MaxRounds = 3, MaxResultChars = 1800, HistoryResultChars = 500;
+    public const int MaxRounds = 3, MaxResultChars = 2400, HistoryResultChars = 500;
 
     /// <param name="mustAct">The first turn has to call a tool (the user asked for an action, see <c>AiAssistantPolicy.AsksToAct</c>).</param>
+    /// <param name="first">Calls the app made for the model, from what the message plainly asks (see <c>AppGuide.Route</c>): they run first, as if
+    /// the model had asked for them, and the model then only answers from their results, with no tools of its own.</param>
     public static async Task RunAsync(IChatModel model, string system, IReadOnlyList<ChatTurn> history, IReadOnlyList<AiTool> tools, Action<string> onText, Action<ToolExchange> onTool,
-        CancellationToken ct, bool mustAct = false)
+        CancellationToken ct, bool mustAct = false, IReadOnlyList<ToolCall>? first = null)
     {
         var messages = new JsonArray { Message("system", system) }; int n = 0;
         foreach (var h in history)
@@ -29,19 +31,30 @@ public static class AiAgent
                 for (int i = 0; i < done.Count; i++) messages.Add(new JsonObject { ["role"] = "tool", ["tool_call_id"] = ids[i], ["content"] = Cut(done[i].Result, HistoryResultChars) });
                 if (h.Text.Length == 0) continue;
             }
-            messages.Add(Message(h.Role, h.Text));
+            messages.Add(Message(h.Role, h.Role == "assistant" ? Cut(h.Text, Mazesta.Core.Ai.AiAssistantPolicy.HistoryReplyChars) : h.Text));
         }
         var defs = new JsonArray();
         foreach (var t in tools) defs.Add(new JsonObject { ["type"] = "function", ["function"] = new JsonObject { ["name"] = t.Name, ["description"] = t.Description, ["parameters"] = JsonNode.Parse(t.ParametersJson) } });
+        if (first is { Count: > 0 })
+        {
+            await CallAsync(first).ConfigureAwait(false);
+            await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false);
+            return;
+        }
         for (int round = 0; ; round++)
         {
             // After the last round the tools are withdrawn, so the turn has to be an answer.
             var reply = await model.CompleteAsync(messages, round < MaxRounds ? defs : null, mustAct && round == 0, onText, ct).ConfigureAwait(false);
             if (reply.Calls.Count == 0 || round >= MaxRounds) return;
+            await CallAsync(reply.Calls, reply.Text).ConfigureAwait(false);
+        }
+
+        async Task CallAsync(IReadOnlyList<ToolCall> todo, string text = "")
+        {
             var calls = new JsonArray();
-            foreach (var c in reply.Calls) calls.Add(new JsonObject { ["id"] = c.Id, ["type"] = "function", ["function"] = new JsonObject { ["name"] = c.Name, ["arguments"] = c.Arguments } });
-            messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = reply.Text, ["tool_calls"] = calls });
-            foreach (var c in reply.Calls)
+            foreach (var c in todo) calls.Add(new JsonObject { ["id"] = c.Id, ["type"] = "function", ["function"] = new JsonObject { ["name"] = c.Name, ["arguments"] = c.Arguments } });
+            messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = text, ["tool_calls"] = calls });
+            foreach (var c in todo)
             {
                 var (result, ok) = await InvokeAsync(tools, c, ct).ConfigureAwait(false);
                 result = Cut(result, MaxResultChars);
@@ -58,7 +71,7 @@ public static class AiAgent
     public static int Length(ChatTurn t) => t.Text.Length + (t.Tools?.Sum(x => Math.Min(x.Result.Length, HistoryResultChars) + x.Arguments.Length + x.Name.Length) ?? 0);
 
     /// <summary>Runs one call. A tool that does not exist, arguments that are not JSON, or a tool that fails give an error the model is told about, never a made-up result.</summary>
-    internal static async Task<(string Result, bool Ok)> InvokeAsync(IReadOnlyList<AiTool> tools, ToolCall call, CancellationToken ct)
+    public static async Task<(string Result, bool Ok)> InvokeAsync(IReadOnlyList<AiTool> tools, ToolCall call, CancellationToken ct)
     {
         var tool = tools.FirstOrDefault(t => t.Name == call.Name);
         if (tool is null) return (Error("unknown tool"), false);

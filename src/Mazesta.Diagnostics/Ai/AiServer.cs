@@ -69,7 +69,10 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisp
         LastUse = DateTime.UtcNow;
         var body = new JsonObject
         {
-            ["messages"] = JsonNode.Parse(messages.ToJsonString()), ["stream"] = true, ["temperature"] = 0.6, ["max_tokens"] = AiAssistantPolicy.MaxReplyTokens,
+            // Qwen3's own advice for answers without thinking (temperature 0.7, top-p 0.8, top-k 20), a little cooler for tool use, and a presence
+            // penalty against the loops a quantized model falls into.
+            ["messages"] = JsonNode.Parse(messages.ToJsonString()), ["stream"] = true, ["temperature"] = 0.5, ["top_p"] = 0.8, ["top_k"] = 20, ["presence_penalty"] = 1.0,
+            ["max_tokens"] = AiAssistantPolicy.MaxReplyTokens,
             ["chat_template_kwargs"] = new JsonObject { ["enable_thinking"] = false },   // Qwen3 would otherwise think aloud first: slow, and not an answer for the customer
         };
         if (tools is { Count: > 0 }) { body["tools"] = JsonNode.Parse(tools.ToJsonString()); if (mustCallTool) body["tool_choice"] = "required"; }
@@ -84,7 +87,7 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisp
             string data = line[5..].Trim();
             if (data == "[DONE]") break;
             var (piece, deltas) = Parse(data);
-            if (!string.IsNullOrEmpty(piece)) { LastUse = DateTime.UtcNow; text.Append(piece); onText(piece); }
+            if (!string.IsNullOrEmpty(piece)) { LastUse = DateTime.UtcNow; text.Append(piece); onText(piece); if (AiText.Looping(text.ToString())) break; }
             foreach (var d in deltas)
             {
                 var c = calls.TryGetValue(d.Index, out var have) ? have : (Id: "", Name: "", Args: new StringBuilder());

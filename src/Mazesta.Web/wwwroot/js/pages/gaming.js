@@ -10,8 +10,8 @@ export function gamingBoxes(i) {
   const ultimate = h("button", { class: "btn", hidden: true, onclick: () => call("gaming.exec", { cmd: "ultimate" }) }, icon("bolt"), t("Gaming_Ultimate"));
   const tiles = h("div", { class: "states" });
   const boxes = [
-    box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i, body: [plans, h("div", { class: "btn-row" }, ultimate), status] }),
-    box({ kind: "Gpu", ico: "gamepad", title: t("Gaming_GameMode"), sub: t("Gaming_Switches_Sub"), i: i + 1,
+    box({ kind: "Power", title: t("Gaming_PowerPlan"), sub: t("Gaming_PowerPlan_Sub"), i, a: "power", body: [plans, h("div", { class: "btn-row" }, ultimate), status] }),
+    box({ kind: "Gpu", ico: "gamepad", title: t("Gaming_GameMode"), sub: t("Gaming_Switches_Sub"), i: i + 1, a: "gamemode",
       body: [tiles, h("p", { class: "note" }, t("Gaming_Switches_Note")),
         h("div", { class: "btn-row" },
           h("button", { class: "btn", onclick: () => call("gaming.exec", { cmd: "gameMode" }) }, icon("popout"), t("Gaming_OpenSettings"), " · ", t("Gaming_GameMode")),

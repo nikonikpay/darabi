@@ -38,7 +38,7 @@ export function mount(el) {
     finally { for (const b of buttons) b.disabled = false; }
   }
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_SystemInfo")), h("p", { class: "page-lede" }, t("Web_System_Lede"))),
-    h("div", { class: "export", role: "group", "aria-label": t("System_Export") }, h("span", { class: "caption" }, t("System_Export")), buttons)), body);
+    h("div", { class: "export", "data-a": "export", role: "group", "aria-label": t("System_Export") }, h("span", { class: "caption" }, t("System_Export")), buttons)), body);
   // The last start's read of the same parts draws at once (said so), and is replaced when this start's own read is done.
   let cached = false;
   const load = () => call("specs.get").then((r) => {
