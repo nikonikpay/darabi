@@ -263,8 +263,9 @@ public sealed partial class WebBridge
             }
             if (route.Intent == AiIntent.TestsInfo && _testVm is { } tv)
             {
-                var ids = route.Areas!.SelectMany(x => AssistantTestAreas.GetValueOrDefault(x) ?? []).ToHashSet();
-                var rows = await _window.Dispatcher.InvokeAsync(() => tv.Rows.Where(r => ids.Contains(r.Definition.Id.Value))
+                // Every test of the part (an area's id prefix), not only the few the chat runs.
+                var prefixes = route.Areas!.Select(x => x + ".").ToList();
+                var rows = await _window.Dispatcher.InvokeAsync(() => tv.Rows.Where(r => prefixes.Any(p => r.Definition.Id.Value.StartsWith(p, StringComparison.Ordinal)))
                     .Select(r => $"- {r.Name} ({r.Definition.DefaultDurationSeconds} s)" + (r.IsAvailable ? "" : $": {r.UnavailableText}")).ToList());
                 reply.Text = Loc.Get("Assist_TestsInfo") + "\n" + string.Join("\n", rows);
                 return true;
