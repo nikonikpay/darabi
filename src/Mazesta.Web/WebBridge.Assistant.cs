@@ -33,7 +33,7 @@ public sealed partial class WebBridge
         void OnSnapshot(SensorSnapshot s) => lastSnapshot = s;
         engine.SnapshotPublished += OnSnapshot; _cleanup.Add(() => engine.SnapshotPublished -= OnSnapshot);
         var chats = new AiChats(files.Root); AiChat? chat = null;
-        string? error = null; bool starting = false, generating = false, unloaded = false;
+        string? error = null; bool starting = false, generating = false, unloaded = false, ownRun = false;
         CancellationTokenSource? replyCts = null, startCts = null; Timer? idle = null;
         Confirmation? pending = null; Activity? activity = null;
         _cleanup.Add(() => { idle?.Dispose(); replyCts?.Cancel(); startCts?.Cancel(); });
@@ -107,7 +107,7 @@ public sealed partial class WebBridge
         async Task<string> WithoutModel(Func<Task<string>> work, CancellationToken ct)
         {
             var m = server.Model;
-            await _window.Dispatcher.InvokeAsync(() => { unloaded = true; server.Stop(); Push(); });
+            await _window.Dispatcher.InvokeAsync(() => { unloaded = true; ownRun = true; server.Stop(); Push(); });
             try { return await work().ConfigureAwait(false); }
             finally
             {
@@ -115,9 +115,33 @@ public sealed partial class WebBridge
                     try { await server.StartAsync(m, ct).ConfigureAwait(false); }
                     catch (OperationCanceledException) { }
                     catch (Exception e) when (e is IOException or TimeoutException or InvalidOperationException or HttpRequestException) { error = e.Message; _log.LogWarning(e, "AI assistant did not come back after a GPU run"); }
-                await _window.Dispatcher.InvokeAsync(() => { unloaded = false; Push(); });
+                await _window.Dispatcher.InvokeAsync(() => { unloaded = false; ownRun = false; Push(); });
             }
         }
+        // A test, a benchmark or the GPU tuning started from its own page: the model is unloaded for it the same way (a reply being written is
+        // stopped), so no measurement shares the machine with it, and it is loaded again when the gate is free. The assistant's own runs do this in
+        // WithoutModel above.
+        var gate = _sp.GetRequiredService<Diagnostics.WorkloadGate>(); AiModel? resume = null;
+        void OnGate(Diagnostics.Workload? holder)
+        {
+            if (holder is not null)
+            {
+                // On the thread that took the gate, before the load starts: the model's process is gone before anything is measured.
+                if (ownRun || !(server.IsRunning || starting)) return;
+                resume = server.Model; startCts?.Cancel(); replyCts?.Cancel(); server.Stop();
+                _window.Dispatcher.BeginInvoke(() => { idle?.Dispose(); idle = null; unloaded = true; Push(); });
+                _log.LogInformation("AI assistant unloaded for a {Load}", holder);
+                return;
+            }
+            _window.Dispatcher.BeginInvoke(async () =>
+            {
+                if (resume is null) return;
+                resume = null; unloaded = false;
+                if (gate.Holder is null && !server.IsRunning) try { await Start().ConfigureAwait(true); } catch (InvalidOperationException e) { error = e.Message; }
+                Push();
+            });
+        }
+        gate.Changed += OnGate; _cleanup.Add(() => gate.Changed -= OnGate);
         // The parts the programs' tiers are judged on, and the line the model is told about this computer: read once (the inventory is cached), the
         // card's memory from its sensors as the AI page reads it.
         var inventory = _sp.GetRequiredService<InventoryCache>();
@@ -151,7 +175,7 @@ public sealed partial class WebBridge
             var pc = machine(); var choice = AiAssistantPolicy.Decide(pc);
             var m = (choice.Status == AiAssistantStatus.Available ? Selected(pc, choice) : null) ?? throw new InvalidOperationException(Loc.Get("Assist_Unavailable"));
             if (!files.HasRuntime || !files.HasModel(m)) throw new InvalidOperationException(Loc.Get("Assist_NotDownloaded"));
-            if (runner.IsBusy) throw new InvalidOperationException(Loc.Get("Ai_Busy"));
+            if (runner.IsBusy || gate.Holder is not null) throw new InvalidOperationException(Loc.Get("Ai_Busy"));
             if (starting || server.IsRunning) return;
             error = null; starting = true; startCts = new CancellationTokenSource(); Push();
             try

@@ -247,8 +247,7 @@ public sealed partial class WebBridge
                     if (await ask("tests", items, ct).ConfigureAwait(false) is not { } kept) return Json(new { started = false, reason = "the user declined; nothing was run" });
 
                     var chosen = plan.Where((_, i) => kept[i]).ToDictionary(r => r.Id);
-                    bool onGpu = chosen.Keys.Any(x => x.StartsWith("gpu.", StringComparison.Ordinal));
-                    return await running(new("tests", () => tests.CurrentRow is { } cur ? (cur.Name, Math.Round((tests.CurrentIndex + cur.PercentComplete) / Math.Max(1, tests.RunQueue.Count) * 100)) : null), () => onGpu ? withoutModel(Run, ct) : Run());
+                    return await running(new("tests", () => tests.CurrentRow is { } cur ? (cur.Name, Math.Round((tests.CurrentIndex + cur.PercentComplete) / Math.Max(1, tests.RunQueue.Count) * 100)) : null), () => withoutModel(Run, ct));
                     async Task<string> Run()
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (tests.CancelCommand.CanExecute(null)) tests.CancelCommand.Execute(null); }));
@@ -307,7 +306,7 @@ public sealed partial class WebBridge
                     if (await ask("benchmark", [(info.RootElement.GetProperty("name").GetString()!, info.RootElement.GetProperty("seconds").GetString()!)], ct).ConfigureAwait(false) is null)
                         return Json(new { started = false, reason = "the user declined; nothing was run" });
 
-                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => key == "gpu" ? withoutModel(Run, ct) : Run());
+                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => withoutModel(Run, ct));
                     async Task<string> Run()
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (bench.CancelCommand.CanExecute(null)) bench.CancelCommand.Execute(null); }));

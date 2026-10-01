@@ -1862,7 +1862,7 @@
   <data name="Assist_DeleteAll_Confirm" xml:space="preserve"><value>همهٔ گفتگوهای قبلی پاک شوند؟ این کار برگشت‌پذیر نیست.</value></data>
   <data name="Assist_Run_NotStarted" xml:space="preserve"><value>چیزی اجرا نشد.</value></data>
   <data name="Assist_Run_NoResult" xml:space="preserve"><value>نتیجه‌ای ثبت نشد.</value></data>
-  <data name="Assist_Paused" xml:space="preserve"><value>تا پایان تست کارت گرافیک، مدل از حافظهٔ کارت خارج شده است و برای پاسخ دوباره بارگذاری می‌شود.</value></data>
+  <data name="Assist_Paused" xml:space="preserve"><value>تا پایان تست، بنچمارک یا تنظیم خودکار کارت گرافیک، مدل از حافظه خارج شده تا در اندازه‌گیری اثر نگذارد؛ بعد از آن دوباره بارگذاری می‌شود.</value></data>
   <data name="Assist_PausedShort" xml:space="preserve"><value>در انتظار تست</value></data>
   <data name="Assist_Loading" xml:space="preserve"><value>در حال بارگذاری</value></data>
   <data name="Assist_OffShort" xml:space="preserve"><value>خاموش</value></data>

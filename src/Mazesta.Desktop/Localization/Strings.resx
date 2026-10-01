@@ -1862,7 +1862,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_DeleteAll_Confirm" xml:space="preserve"><value>Delete all past chats? This cannot be undone.</value></data>
   <data name="Assist_Run_NotStarted" xml:space="preserve"><value>Nothing was run.</value></data>
   <data name="Assist_Run_NoResult" xml:space="preserve"><value>No result was recorded.</value></data>
-  <data name="Assist_Paused" xml:space="preserve"><value>The model is out of the graphics card's memory while the card is tested; it is loaded again for the answer.</value></data>
+  <data name="Assist_Paused" xml:space="preserve"><value>While a test, a benchmark or the GPU tuning runs, the model is out of memory so it does not affect the measurement; it is loaded again afterwards.</value></data>
   <data name="Assist_PausedShort" xml:space="preserve"><value>Waiting for the test</value></data>
   <data name="Assist_Loading" xml:space="preserve"><value>Loading</value></data>
   <data name="Assist_OffShort" xml:space="preserve"><value>Off</value></data>
