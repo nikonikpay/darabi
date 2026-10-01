@@ -1945,6 +1945,10 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Board_Downloading" xml:space="preserve"><value>Downloading {0}: {1}%</value></data>
   <data name="Drivers_Board_Verifying" xml:space="preserve"><value>Checking the file against the maker's hash and signature…</value></data>
   <data name="Drivers_Board_Installing" xml:space="preserve"><value>The installer of {0} is open. Finish it in its own window; this page waits for it.</value></data>
+  <data name="Drivers_Board_InstallingSilent" xml:space="preserve"><value>Windows is installing the driver files of {0} (its own tool, pnputil; no window). The network may drop for a few seconds.</value></data>
+  <data name="Drivers_Board_DoneSilent" xml:space="preserve"><value>Windows added the driver files of {0} (code {1}). The installed versions below are read again: they show whether the device took the new driver.</value></data>
+  <data name="Drivers_Board_PnpFailed" xml:space="preserve"><value>Windows did not install the driver files (pnputil code {0}). Open the folder to install them by hand from Device Manager.</value></data>
+  <data name="Drivers_Board_AmdNotDesktop" xml:space="preserve"><value>AMD's chipset package on its site is for desktop boards (AM4, AM5). For a laptop, or a Threadripper board, the chipset driver comes from the computer's or board's maker.</value></data>
   <data name="Drivers_Board_Done" xml:space="preserve"><value>The installer of {0} closed (exit code {1}). The versions were read again; restart Windows if the installer asked for it.</value></data>
   <data name="Drivers_Board_NoSetup" xml:space="preserve"><value>The package holds no installer this app can recognise. Its folder is open for you to install it by hand.</value></data>
   <data name="Drivers_Board_BadSignature" xml:space="preserve"><value>The installer was not run: {0}</value></data>

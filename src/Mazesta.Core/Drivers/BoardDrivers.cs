@@ -24,7 +24,10 @@ public sealed record BoardItem(BoardPackage Package, string? DeviceName, string?
 /// </summary>
 public static partial class BoardDrivers
 {
-    public static string AsusDriversUrl(string model) => $"https://www.asus.com/support/api/product.asmx/GetPDDrivers?website=global&model={Uri.EscapeDataString(model)}&osid=52";
+    public static string AsusDriversUrl(string model, string osId) => $"https://www.asus.com/support/api/product.asmx/GetPDDrivers?website=global&model={Uri.EscapeDataString(model)}&osid={osId}";
+
+    /// <summary>ASUS's ids for the Windows its lists are for: 52 is Windows 11 64-bit, 45 Windows 10 64-bit; this Windows's first, the other after.</summary>
+    public static string[] AsusOsIds(int windowsBuild) => windowsBuild >= 22000 ? ["52", "45"] : ["45", "52"];
     public static string AsusBiosUrl(string model) => $"https://www.asus.com/support/api/product.asmx/GetPDBIOS?website=global&model={Uri.EscapeDataString(model)}";
     public const string IntelDataUrl = "https://dsadata.intel.com/data/en";
     public const string IntelChipsetPage = "https://www.intel.com/content/www/us/en/download/19347/chipset-inf-utility.html";
@@ -143,9 +146,17 @@ public static partial class BoardDrivers
         return r;
     }
 
-    /// <summary>AMD's chipset package suits every AMD desktop board (one package for AM4 and AM5); the page asked is the board's socket's.</summary>
-    public static string AmdChipsetPage(string? boardModel) => AmdChipset().Match(boardModel ?? "") is { Success: true } m && m.Groups[1].Value[0] is '3' or '4' or '5'
-        ? "https://www.amd.com/en/support/downloads/drivers.html/chipsets/am4/b550.html" : "https://www.amd.com/en/support/downloads/drivers.html/chipsets/am5/b650.html";
+    public const string AmdAm4Page = "https://www.amd.com/en/support/downloads/drivers.html/chipsets/am4/b550.html";
+    public const string AmdAm5Page = "https://www.amd.com/en/support/downloads/drivers.html/chipsets/am5/b650.html";
+    public const string AmdDriversPage = "https://www.amd.com/en/support/download/drivers.html";
+
+    /// <summary>
+    /// AMD's chipset package for a desktop board of socket AM4 or AM5 (one package serves both; the page asked is the board's socket's), read from
+    /// the chipset in the board's name (B550, X570, A620, X870E…). Null for any other: a laptop's board (its maker ships the chipset driver), or a
+    /// Threadripper's (TRX40, WRX80, TRX50: other packages), so no desktop package is offered to them.
+    /// </summary>
+    public static string? AmdChipsetPage(string? boardModel) => AmdChipset().Match(boardModel ?? "") is not { Success: true } m ? null
+        : m.Groups[1].Value[0] is '3' or '4' or '5' ? AmdAm4Page : AmdAm5Page;
 
     /// <summary>The board maker's own support page for the model, for the makers whose sites a program cannot read.</summary>
     public static string? SupportPage(string? maker, string? model)
@@ -212,7 +223,8 @@ public static partial class BoardDrivers
         {
             BoardPart.Lan => cls.Equals("NET", StringComparison.OrdinalIgnoreCase) && id.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase) && !IsWireless(d.Name),
             BoardPart.Wireless => cls.Equals("NET", StringComparison.OrdinalIgnoreCase) && id.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase) && IsWireless(d.Name),
-            BoardPart.Audio => id.StartsWith("HDAUDIO\\", StringComparison.OrdinalIgnoreCase) && cls.Equals("MEDIA", StringComparison.OrdinalIgnoreCase),
+            // Most boards' codec sits on HD Audio; newer ones (Realtek ALC4080, ALC4082) are wired to USB inside the board.
+            BoardPart.Audio => cls.Equals("MEDIA", StringComparison.OrdinalIgnoreCase) && (id.StartsWith("HDAUDIO\\", StringComparison.OrdinalIgnoreCase) || id.StartsWith("USB\\", StringComparison.OrdinalIgnoreCase)),
             BoardPart.Bluetooth => cls.Equals("Bluetooth", StringComparison.OrdinalIgnoreCase) && (id.StartsWith("USB\\", StringComparison.OrdinalIgnoreCase) || id.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase)),
             _ => false,
         };
@@ -223,5 +235,6 @@ public static partial class BoardDrivers
 
     [GeneratedRegex(@"https://drivers\.amd\.com/drivers/AMD_Chipset_Software_([0-9.]+[0-9])\.exe", RegexOptions.IgnoreCase)] private static partial Regex AmdLink();
     [GeneratedRegex(@"AMD Chipset Drivers Revision Number ([0-9.]+) File Size ([0-9.]+ [KMG]B) Release Date (\d{4}-\d{2}-\d{2})")] private static partial Regex AmdMeta();
-    [GeneratedRegex(@"\b[ABX](\d)\d0(?!\d)")] private static partial Regex AmdChipset();
+    // A desktop chipset: A320…A620, B350…B850, X370…X870 (with an E after some). "TRX40" and "X399" are not matched: no word break, or not "x0".
+    [GeneratedRegex(@"\b[ABX]([3-8])\d0(?!\d)")] private static partial Regex AmdChipset();
 }

@@ -108,7 +108,8 @@ export function mount(el) {
     else if (s.checkedAt && !(b.errors || []).length) kids.push(h("p", { class: "note" }, t("Drivers_Board_Nothing")));
     if (job.state !== "idle") {
       const text = { downloading: t("Drivers_Board_Downloading", job.title, fa(Math.round(job.progress * 100))), verifying: t("Drivers_Board_Verifying"),
-        installing: t("Drivers_Board_Installing", job.title), done: t("Drivers_Board_Done", job.title, job.exitCode ?? "—"), failed: job.error || "" }[job.state];
+        installing: t(job.silent ? "Drivers_Board_InstallingSilent" : "Drivers_Board_Installing", job.title),
+        done: t(job.silent ? "Drivers_Board_DoneSilent" : "Drivers_Board_Done", job.title, job.exitCode ?? "—"), failed: job.error || "" }[job.state];
       kids.push(h("p", { class: `msg ${job.state === "failed" ? "fail" : job.state === "done" ? "ok" : ""}` }, text));
       if (job.state === "downloading") {
         const bar = h("div", { class: "progress" }, h("i")); bar.firstChild.style.setProperty("--p", job.progress); kids.push(bar);
@@ -123,6 +124,7 @@ export function mount(el) {
     if (links.length) kids.push(h("div", { class: "btn-row" }, ...links));
     kids.push(h("p", { class: "note" }, b.asus ? t("Drivers_Board_Note") : t("Drivers_Board_NoteOther")));
     if (b.intelChipset) kids.push(h("p", { class: "note" }, t("Drivers_Board_IntelChipsetNote")));
+    if (b.cpu === "amd" && !b.amdDesktop) kids.push(h("p", { class: "note" }, t("Drivers_Board_AmdNotDesktop")));
     boardBody.replaceChildren(...kids);
   }
 

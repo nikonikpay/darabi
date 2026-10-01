@@ -62,6 +62,9 @@ public class DriversTests
         Assert.Equal(("8.08.12.551", "79 MB", new DateOnly(2026, 8, 14), "https://drivers.amd.com/drivers/AMD_Chipset_Software_8.08.12.551.exe"), (p.Version, p.Size, p.Date!.Value, p.Url));
         Assert.Null(BoardDrivers.ParseAmdChipset("<html>nothing</html>"));
         Assert.Contains("/am4/", BoardDrivers.AmdChipsetPage("PRIME B550M-A")); Assert.Contains("/am5/", BoardDrivers.AmdChipsetPage("ROG STRIX X870E-E GAMING WIFI"));
+        // Threadripper boards and laptops' boards take other packages: AMD's desktop one is not offered to them.
+        Assert.Null(BoardDrivers.AmdChipsetPage("ROG ZENITH II EXTREME TRX40")); Assert.Null(BoardDrivers.AmdChipsetPage("X399 AORUS XTREME")); Assert.Null(BoardDrivers.AmdChipsetPage("8A22"));
+        Assert.Contains("/am5/", BoardDrivers.AmdChipsetPage("PRO A620M-E")); Assert.Contains("/am4/", BoardDrivers.AmdChipsetPage("B450 TOMAHAWK MAX"));
     }
     [Fact] public void Intel_packages_carry_their_driver_version_ids_and_hash()
     {
@@ -121,5 +124,12 @@ public class DriversTests
         Assert.Null(both.Suggested); Assert.Equal(["Blender 4.2"], both.Creative); Assert.Equal(["Epic Games Launcher"], both.Games);
         Assert.Equal(NvidiaLine.GameReady, DriverAdvice.Advise(["Google Chrome"]).Suggested);
         Assert.Empty(DriverAdvice.Advise(["Steamworks Common Redistributables", "Mario Kart Tool"]).Games);
+    }
+    [Fact] public void Asus_lists_this_windows_first_and_board_audio_on_usb_is_the_boards()
+    {
+        Assert.Equal(["52", "45"], BoardDrivers.AsusOsIds(26200)); Assert.Equal(["45", "52"], BoardDrivers.AsusOsIds(19045));
+        var audio = new BoardPackage(BoardPart.Audio, "asus", "Realtek Audio Driver", "6.0.9888.1", null, null, "https://dlcdnets.asus.com/a.zip", Vendor: "Realtek");
+        var usb = new BoardDevice(@"USB\VID_0B05&PID_1A52&MI_00&1", "Realtek USB Audio", "MEDIA", "Realtek", "6.4.0.2392", null);
+        Assert.Equal("6.4.0.2392", BoardDrivers.Match([audio], [usb], [], null).Single().Installed);
     }
 }

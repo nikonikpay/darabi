@@ -1945,6 +1945,10 @@
   <data name="Drivers_Board_Downloading" xml:space="preserve"><value>در حال دانلود {0}: {1}٪</value></data>
   <data name="Drivers_Board_Verifying" xml:space="preserve"><value>بررسی فایل با هش و امضای سازنده…</value></data>
   <data name="Drivers_Board_Installing" xml:space="preserve"><value>نصب‌کنندهٔ {0} باز است. مراحلش را در پنجرهٔ خودش تمام کنید؛ این صفحه منتظر می‌ماند.</value></data>
+  <data name="Drivers_Board_InstallingSilent" xml:space="preserve"><value>ویندوز در حال نصب فایل‌های درایور {0} است (با ابزار خود ویندوز، pnputil، بدون پنجره). ممکن است شبکه چند ثانیه قطع شود.</value></data>
+  <data name="Drivers_Board_DoneSilent" xml:space="preserve"><value>ویندوز فایل‌های درایور {0} را اضافه کرد (کد {1}). نسخه‌های نصب‌شدهٔ پایین دوباره خوانده شدند و نشان می‌دهند دستگاه درایور جدید را گرفته یا نه.</value></data>
+  <data name="Drivers_Board_PnpFailed" xml:space="preserve"><value>ویندوز فایل‌های درایور را نصب نکرد (کد pnputil: {0}). پوشه را باز کنید تا از Device Manager دستی نصب شوند.</value></data>
+  <data name="Drivers_Board_AmdNotDesktop" xml:space="preserve"><value>بستهٔ چیپست سایت AMD برای مادربردهای دسکتاپ (AM4 و AM5) است. برای لپ‌تاپ یا مادربرد Threadripper درایور چیپست را از سازندهٔ همان سیستم یا مادربرد بگیرید.</value></data>
   <data name="Drivers_Board_Done" xml:space="preserve"><value>نصب‌کنندهٔ {0} بسته شد (کد خروج {1}). نسخه‌ها دوباره خوانده شدند؛ اگر نصب‌کننده خواست، ویندوز را ری‌استارت کنید.</value></data>
   <data name="Drivers_Board_NoSetup" xml:space="preserve"><value>در این بسته نصب‌کننده‌ای که برنامه بشناسد پیدا نشد. پوشه‌اش را باز کنید و دستی نصب کنید.</value></data>
   <data name="Drivers_Board_BadSignature" xml:space="preserve"><value>نصب‌کننده اجرا نشد: {0}</value></data>

@@ -28,7 +28,7 @@ public sealed partial class WebBridge
         var boardService = new BoardDriverService(AiHttp, Path.Combine(_paths.DataRoot, "drivers", "board"));
         DriverBoard? board = null; IReadOnlyList<BoardItem> boardItems = []; List<object> boardErrors = [];
         // The board install: idle, downloading, verifying, installing (the maker's window is open), done, failed.
-        string bdState = "idle"; double bdProgress = 0; string? bdError = null, bdTitle = null, bdFolder = null; int? bdExit = null;
+        string bdState = "idle"; double bdProgress = 0; string? bdError = null, bdTitle = null, bdFolder = null; int? bdExit = null; bool bdSilent = false;
         List<DriverGpu> gpus = []; NvidiaProduct? product = null; IReadOnlyList<NvidiaRelease> gameReady = [], studio = [];
         string? nvError = null, checkedAt = null; bool checking = false; DriverAdviceResult? advice = null;
         IReadOnlyList<object> problems = [];
@@ -70,7 +70,7 @@ public sealed partial class WebBridge
             problems,
             board = board is null ? null : new
             {
-                maker = board.Maker, model = board.Model, bios = board.Bios, cpu = board.Cpu, errors = boardErrors,
+                maker = board.Maker, model = board.Model, bios = board.Bios, cpu = board.Cpu, errors = boardErrors, amdDesktop = BoardDrivers.AmdChipsetPage(board.Model) is not null,
                 support = BoardDrivers.SupportPage(board.Maker, board.Model), asus = board.Maker?.Contains("ASUS", StringComparison.OrdinalIgnoreCase) == true,
                 intelChipset = board.Cpu == "intel" ? BoardDrivers.IntelChipsetPage : null,
                 items = boardItems.Select(i => new
@@ -80,7 +80,7 @@ public sealed partial class WebBridge
                     hash = i.Package.Sha256 is not null ? "SHA-256" : i.Package.Sha1 is not null ? "SHA-1" : null,
                     device = i.DeviceName, installed = i.Installed, installedDate = i.InstalledDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), newer = i.Newer, missing = i.Missing,
                 }),
-                job = new { state = bdState, progress = bdProgress, error = bdError, title = bdTitle, exitCode = bdExit, folder = bdFolder },
+                job = new { state = bdState, progress = bdProgress, error = bdError, title = bdTitle, exitCode = bdExit, folder = bdFolder, silent = bdSilent },
             },
             busy = gate.Holder?.ToString(),
         };
@@ -165,7 +165,7 @@ public sealed partial class WebBridge
             if (board?.Model is { } model && board.Maker?.Contains("ASUS", StringComparison.OrdinalIgnoreCase) == true)
                 asks.Add(Ask("asus", async t => await boardService.AsusAsync(model, t).ConfigureAwait(true) is { } l ? l
                     : throw new HttpRequestException(Loc.Format("Drivers_Board_AsusUnknown", model))));
-            if (board?.Cpu == "amd") asks.Add(Ask("amd", async t => await boardService.AmdChipsetAsync(board.Model, t).ConfigureAwait(true) is { } p ? [p]
+            if (board?.Cpu == "amd" && BoardDrivers.AmdChipsetPage(board.Model) is { } amdPage) asks.Add(Ask("amd", async t => await boardService.AmdChipsetAsync(amdPage, t).ConfigureAwait(true) is { } p ? [p]
                 : throw new InvalidDataException(Loc.Get("Drivers_Board_AmdNoVersion"))));
             if (devices.Any(d => d.Id.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase) || d.Id.Contains("VID_8087", StringComparison.OrdinalIgnoreCase)))
                 asks.Add(Ask("intel", async t => await boardService.IntelAsync(t).ConfigureAwait(true)));
@@ -216,21 +216,31 @@ public sealed partial class WebBridge
             var p = item.Package;
             using var lease = gate.TryEnter(Workload.Drivers);
             if (lease is null) { bdState = "failed"; bdError = Loc.Get($"Workload_Busy_{gate.Holder}"); Push(); return; }
-            jobCts = new CancellationTokenSource(); bdError = null; bdExit = null; bdFolder = null; bdTitle = p.Title; bdProgress = 0;
+            jobCts = new CancellationTokenSource(); bdError = null; bdExit = null; bdFolder = null; bdSilent = false; bdTitle = p.Title; bdProgress = 0;
             try
             {
                 bdState = "downloading"; Push();
                 string file = await boardService.DownloadAsync(p, new Progress<double>(x => { bdProgress = x; Push(); }), jobCts.Token).ConfigureAwait(true);
                 bdState = "verifying"; Push();
-                var (exe, folder) = await Task.Run(() => (BoardDriverService.Installer(file, out var f), f)).ConfigureAwait(true);
-                bdFolder = folder;
-                if (exe is null) { bdState = "failed"; bdError = Loc.Get("Drivers_Board_NoSetup"); return; }
-                if (await Task.Run(() => BoardDriverService.SignatureError(p, exe)).ConfigureAwait(true) is { } why) throw new InvalidOperationException(Loc.Format("Drivers_Board_BadSignature", why));
-                bdState = "installing"; Push();
-                _log.LogInformation("Running the board driver installer {Exe} for {Title} {Version}", exe, p.Title, p.Version);
-                bdExit = await BoardDriverService.RunAsync(exe, CancellationToken.None).ConfigureAwait(true);
-                bdState = "done";
-                _log.LogInformation("Board driver installer ended with {Code}", bdExit);
+                var setup = await Task.Run(() => BoardDriverService.Installer(file, p.Part)).ConfigureAwait(true);
+                bdFolder = setup.Folder;
+                if (setup.Exe is null && setup.Infs.Count == 0) { bdState = "failed"; bdError = Loc.Get("Drivers_Board_NoSetup"); return; }
+                if (setup.Exe is { } exe && await Task.Run(() => BoardDriverService.SignatureError(p, exe)).ConfigureAwait(true) is { } why) throw new InvalidOperationException(Loc.Format("Drivers_Board_BadSignature", why));
+                bdState = "installing"; bdSilent = setup.Exe is null; Push();
+                if (setup.Exe is { } run)
+                {
+                    _log.LogInformation("Running the board driver installer {Exe} for {Title} {Version}", run, p.Title, p.Version);
+                    bdExit = await BoardDriverService.RunAsync(run, CancellationToken.None).ConfigureAwait(true);
+                }
+                else
+                {
+                    _log.LogInformation("Adding {Count} driver files of {Title} {Version} through pnputil", setup.Infs.Count, p.Title, p.Version);
+                    bdExit = await BoardDriverService.AddDriversAsync(setup.Infs, CancellationToken.None).ConfigureAwait(true);
+                }
+                // Windows's own tool says plainly whether it worked; a maker's installer's code is only shown (some return non-zero on success).
+                bdState = setup.Exe is null && bdExit is not (0 or 3010) ? "failed" : "done";
+                if (bdState == "failed") bdError = Loc.Format("Drivers_Board_PnpFailed", bdExit);
+                _log.LogInformation("Board driver install ended with {Code}", bdExit);
             }
             catch (OperationCanceledException) { bdState = "idle"; }
             catch (Exception e) when (e is HttpRequestException or IOException or InvalidOperationException or UnauthorizedAccessException or InvalidDataException or System.ComponentModel.Win32Exception)
@@ -313,7 +323,7 @@ public sealed partial class WebBridge
                 "amd" => "https://www.amd.com/en/support/download/drivers.html", "intel" => "https://www.intel.com/content/www/us/en/support/detect.html",
                 "nvidia" => "https://www.nvidia.com/en-us/drivers/", "devmgr" => "devmgmt.msc", "wu" => "ms-settings:windowsupdate-optionalupdates",
                 "board" => BoardDrivers.SupportPage(board?.Maker, board?.Model), "intelChipset" => BoardDrivers.IntelChipsetPage,
-                "amdChipset" => BoardDrivers.AmdChipsetPage(board?.Model), "boardFolder" => bdFolder is { } f && Directory.Exists(f) ? f : null, _ => null,
+                "amdChipset" => BoardDrivers.AmdChipsetPage(board?.Model) ?? BoardDrivers.AmdDriversPage, "boardFolder" => bdFolder is { } f && Directory.Exists(f) ? f : null, _ => null,
             };
             if (target is null) throw new ArgumentException("unknown");
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(target) { UseShellExecute = true })?.Dispose();
