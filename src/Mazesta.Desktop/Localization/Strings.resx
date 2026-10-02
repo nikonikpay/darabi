@@ -486,6 +486,9 @@
   <data name="Reports_Folder" xml:space="preserve"><value>Folder</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Reports_DeleteConfirm" xml:space="preserve"><value>Delete this report permanently?</value></data>
+  <data name="Reports_DeleteSelected" xml:space="preserve"><value>Delete selected</value></data>
+  <data name="Reports_DeleteSelectedConfirm" xml:space="preserve"><value>Delete the {0} selected reports permanently?</value></data>
+  <data name="Web_Net_Internet" xml:space="preserve"><value>{0} (internet)</value></data>
   <data name="Reports_PdfBusy" xml:space="preserve"><value>Creating PDF…</value></data>
   <data name="Reports_PdfFailed" xml:space="preserve"><value>Could not create the PDF: {0}</value></data>
   <data name="Reports_Created" xml:space="preserve"><value>Report saved.</value></data>
@@ -590,6 +593,10 @@
   <data name="Bench_Net_Jitter" xml:space="preserve"><value>Jitter</value></data>
   <data name="Bench_Net_Loss" xml:space="preserve"><value>Packet loss</value></data>
   <data name="Bench_Net_DataUsed" xml:space="preserve"><value>Data used by the test</value></data>
+  <data name="Bench_Net_LoadedPing" xml:space="preserve"><value>Latency while loaded (download/upload)</value></data>
+  <data name="Bench_Net_Score_Streaming" xml:space="preserve"><value>Streaming score (Cloudflare scale)</value></data>
+  <data name="Bench_Net_Score_Gaming" xml:space="preserve"><value>Gaming score (Cloudflare scale)</value></data>
+  <data name="Bench_Net_Score_Calls" xml:space="preserve"><value>Video calls score (Cloudflare scale)</value></data>
   <data name="Component_Note_Cpu" xml:space="preserve"><value>The processor: what it is, its live sensors, and its single-thread and all-thread benchmarks. Stress tests are on the Tests page; overclocking and undervolting come in phase 2.</value></data>
   <data name="Component_Note_Gpu" xml:space="preserve"><value>The graphics card: what it is, its live sensors, and its Direct3D, ray-tracing and AI benchmarks. Stress and VRAM tests are on the Tests page; overclocking and undervolting come in phase 2.</value></data>
   <data name="Component_Note_Storage" xml:space="preserve"><value>The drives: what Windows reports about them (including its health status), their live sensors and SMART values as the drive reports them, and the speed benchmark. Read/write tests that verify the data are on the Tests page.</value></data>
@@ -1460,6 +1467,10 @@ The update services stopped and disabled</value></data>
   <data name="Log_Storage_RandStart" xml:space="preserve"><value>Random 4 KiB blocks: write, read back and compare, one request at a time.</value></data>
   <data name="Log_Storage_RandProgress" xml:space="preserve"><value>{0} blocks verified; write P99 {1} ms, read P99 {2} ms; {3} error(s).</value></data>
   <data name="Log_Net_Start" xml:space="preserve"><value>Echo requests to {0} over: {1}.</value></data>
+  <data name="Test_Network_Speed" xml:space="preserve"><value>Network · Internet speed (download and upload)</value></data>
+  <data name="Log_NetSpeed_Start" xml:space="preserve"><value>Measuring the internet speed with Cloudflare's speed test server: ping, then download, then upload.</value></data>
+  <data name="Log_NetSpeed_Result" xml:space="preserve"><value>Download {0} Mbps · Upload {1} Mbps · Ping {2} ms · Jitter {3} ms</value></data>
+  <data name="Log_NetSpeed_Scores" xml:space="preserve"><value>Cloudflare scores: streaming {0}/5, gaming {1}/5, video calls {2}/5</value></data>
   <data name="Log_Net_Progress" xml:space="preserve"><value>{0} sent, {1} replies, last {2} ms.</value></data>
   <data name="Log_Gpu_Start" xml:space="preserve"><value>{0} compute load on {1}: batches of chained dispatches, a sample of threads recomputed on the CPU.</value></data>
   <data name="Log_Gpu_Progress" xml:space="preserve"><value>{0} dispatches, {1} Gop/s, {2} thread results verified, {3} wrong.</value></data>
@@ -2340,6 +2351,8 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Test_Break_BlueScreen" xml:space="preserve"><value>Windows stopped with a blue screen during the session.</value></data>
   <data name="Test_Break_BlueScreenCode" xml:space="preserve"><value>Windows stopped with a blue screen (stop code {0}) during the session.</value></data>
   <data name="Test_Break_Tdr" xml:space="preserve"><value>The display driver also stopped answering and was reset {0} time(s) (TDR).</value></data>
+  <data name="Bench_Break" xml:space="preserve"><value>The benchmark "{0}" (started {1}) did not finish: the computer stopped while it ran.</value></data>
+  <data name="Test_Break_Banner" xml:space="preserve"><value>A test session did not finish last time; the Tests page shows which test was running and why it stopped.</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>Mixed like Windows (70/30, 4-64K, Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>Mixed IOPS</value></data>
   <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>99th-percentile frame time</value></data>

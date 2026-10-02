@@ -37,6 +37,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
         s.AddSingleton<ITestExecutor, NetworkLatencyExecutor>();
+        s.AddSingleton<ITestExecutor>(_ => new Diagnostics.Network.InternetSpeedExecutor());
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
         s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.SfcExecutor>();

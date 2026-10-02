@@ -32,7 +32,9 @@ public sealed partial class WebBridge
             version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "",
             shopName = _config.ShopName, serviceNumber = _config.ServiceNumber, interval = engine.FastInterval.TotalSeconds, paused = engine.State == EngineState.Paused,
             provider = Provider(engine.Provider.Status),
-            banner = _configCorrupt ? Loc.Get("Config_Corrupt") : _sp.GetRequiredService<TuningRecovery>().Message,
+            banner = _configCorrupt ? Loc.Get("Config_Corrupt") : string.Join(" ", new[] { _sp.GetRequiredService<TuningRecovery>().Message, _sp.GetRequiredService<Desktop.Services.BenchmarkBreakWatch>().Message,
+                // A test session cut off by a restart: the Tests page says where it stopped and why; this says so at the first look.
+                _sp.GetRequiredService<Diagnostics.TestEngine>().FindIncompleteSession() is not null ? Loc.Get("Test_Break_Banner") : null }.OfType<string>()) is { Length: > 0 } b ? b : null,
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
             contact = Contact, updated = Program.TakeJustUpdated(),
         });
@@ -40,6 +42,8 @@ public sealed partial class WebBridge
         MethodAsync("shop.product", async p => await (Str(p, "kind") == "system" ? systems : shop).GetAsync(Bool(p, "another")).ConfigureAwait(true));
         Method("shop.open", p => { var url = Str(p, "url"); if (ShopFeed.IsShopLink(url)) Open(url); return null; });
         Method("app.hardware", _ => Hardware(engine));
+        // The adapters connected now, the internet's first: the network page shows those, not the first port Windows lists (often unplugged).
+        Method("app.network", _ => Diagnostics.Network.InternetAdapter.Find() is var a ? new { internet = a.Internet, up = a.Up } : null);
         // The service job being worked on, printed on every report; Persian digits become Latin so the number reads the same everywhere.
         Method("app.setServiceNumber", p => _config.ServiceNumber = Core.Text.PersianDigits.Normalize(Str(p, "value") ?? "").Trim());
         Method("app.togglePause", _ => { if (engine.State == EngineState.Paused) engine.Resume(); else engine.Pause(); return engine.State == EngineState.Paused; });

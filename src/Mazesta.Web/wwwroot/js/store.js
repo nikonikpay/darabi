@@ -6,8 +6,18 @@ export const readings = new Map();   // id -> { v, q }
 export const stats = new Map();      // id -> [min, avg, max]
 const subs = new Set();
 
+// The network adapters connected now ({ internet, up: [names] }), the internet's first; asked again by the network page when it opens.
+export const net = { internet: null, up: null };
+export async function loadNetwork() {
+  try { const r = await call("app.network"); net.internet = r?.internet ?? null; net.up = r?.up ?? null; } catch { /* the order of adapters only */ }
+  return net;
+}
+// Network adapters, the internet's first, then the other connected ones, then the rest.
+export function netRank(n) { return n.name === net.internet ? 0 : net.up?.includes(n.name) ? 1 : 2; }
+
 export async function loadHardware() {
   hw.nodes = await call("app.hardware");
+  await loadNetwork();
   hw.sensors.clear();
   for (const n of hw.nodes) for (const s of n.sensors) hw.sensors.set(s.id, { ...s, node: n });
 }

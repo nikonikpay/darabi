@@ -1,4 +1,4 @@
-using System.Diagnostics; using System.Net; using System.Net.Http; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Benchmarks;
+using System.Diagnostics; using System.Net; using System.Net.Http; using Mazesta.Core.Hardware; using Mazesta.Core.Health; using Mazesta.Diagnostics.Benchmarks;
 namespace Mazesta.Diagnostics.Network;
 
 /// <summary>
@@ -27,8 +27,9 @@ public sealed class InternetSpeedBenchmark(HttpMessageHandler? transport = null,
         try
         {
             var (rtts, sent) = await PingAsync(pingSeconds, p => request.Report(p * 0.2), ct).ConfigureAwait(false);
-            var (down, downBytes) = await TransferAsync(http, upload: false, phase, p => request.Report(0.2 + p * 0.4), ct).ConfigureAwait(false);
-            var (up, upBytes) = await TransferAsync(http, upload: true, phase, p => request.Report(0.6 + p * 0.4), ct).ConfigureAwait(false);
+            // The latency is measured again while each transfer runs: how much it grows on a busy line is what a game or a call feels.
+            var (down, downBytes, downLoaded) = await Loaded(TransferAsync(http, upload: false, phase, p => request.Report(0.2 + p * 0.4), ct)).ConfigureAwait(false);
+            var (up, upBytes, upLoaded) = await Loaded(TransferAsync(http, upload: true, phase, p => request.Report(0.6 + p * 0.4), ct)).ConfigureAwait(false);
             if (downBytes == 0 && upBytes == 0)
                 return BenchmarkResult.Unsupported(Spec.Id, started, $"No data could be exchanged with {Server}; {(rtts.Count == 0 ? "no ping reply either - no internet connection" : "ping works, so HTTPS is blocked here")}.");
             List<BenchmarkMetric> metrics = [];
@@ -37,11 +38,33 @@ public sealed class InternetSpeedBenchmark(HttpMessageHandler? transport = null,
             if (rtts.Count > 0) metrics.Add(new("Bench_Net_Ping", rtts.Average(), "ms"));
             if (NetworkLatencyExecutor.Jitter(rtts) is { } jitter) metrics.Add(new("Bench_Net_Jitter", jitter, "ms"));   // one reply shows no jitter: left out, not 0
             metrics.Add(new("Bench_Net_Loss", 100.0 * (sent - rtts.Count) / Math.Max(1, sent), "%"));
+            double? loaded = new[] { downLoaded, upLoaded }.Where(x => x is not null).Max();
+            if (loaded is { } lp) metrics.Add(new("Bench_Net_LoadedPing", lp, "ms"));
+            // Cloudflare's own grading of these figures (1 to 5 stars); a use whose figures were not measured is left out.
+            var score = InternetQuality.Score(downBytes > 0 ? down : null, rtts.Count > 0 ? rtts.Average() : null, NetworkLatencyExecutor.Jitter(rtts),
+                100.0 * (sent - rtts.Count) / Math.Max(1, sent), loaded);
+            if (score.Streaming is { } st) metrics.Add(new("Bench_Net_Score_Streaming", st, "/5"));
+            if (score.Gaming is { } gm) metrics.Add(new("Bench_Net_Score_Gaming", gm, "/5"));
+            if (score.VideoCalls is { } vc) metrics.Add(new("Bench_Net_Score_Calls", vc, "/5"));
             metrics.Add(new("Bench_Net_DataUsed", (downBytes + upBytes) / 1e6, "MB"));
             return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,
                 $"HTTPS to {Server}, {Streams} parallel streams, {phase:0} s down then {phase:0} s up; ICMP to {PingTarget} ({sent} echoes); {(downBytes + upBytes) / 1e6:F0} MB transferred; links: {string.Join(", ", NetworkLatencyExecutor.ActiveAdapters())}");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
+    }
+
+    /// <summary>A transfer with pings beside it, one every half second: the median round trip while it ran, or null without a reply.</summary>
+    private async Task<(double Mbps, long Bytes, double? LoadedPing)> Loaded(Task<(double Mbps, long Bytes)> transfer)
+    {
+        var rtts = new List<double>();
+        while (!transfer.IsCompleted)
+        {
+            if (await _echo(PingTarget, TimeSpan.FromSeconds(1), CancellationToken.None).ConfigureAwait(false) is { } ms) rtts.Add(ms);
+            await Task.WhenAny(transfer, Task.Delay(500)).ConfigureAwait(false);
+        }
+        var (mbps, bytes) = await transfer.ConfigureAwait(false);
+        rtts.Sort();
+        return (mbps, bytes, rtts.Count > 0 ? rtts[rtts.Count / 2] : null);
     }
 
     private async Task<(List<double> Rtts, int Sent)> PingAsync(double seconds, Action<double> progress, CancellationToken ct)

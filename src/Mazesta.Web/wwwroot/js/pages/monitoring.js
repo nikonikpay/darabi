@@ -5,7 +5,7 @@
 import { call, live } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
-import { hw, value, quality, stats, subscribe } from "../store.js";
+import { hw, value, quality, stats, subscribe, net, netRank } from "../store.js";
 import { h, icon, toast } from "../ui.js";
 import { part } from "../parts.js";
 import { chartCard, RANGES } from "../chartcard.js";
@@ -47,7 +47,8 @@ export function mount(el, _, opts = null) {
   // The processor first, then the graphics card, then the board (its Super I/O chips follow it); every other part after them, as found.
   const RANK = { Cpu: 0, Gpu: 1, Motherboard: 2 };
   const root = (n) => { while (n.parent) { const up = hw.nodes.find((x) => x.id === n.parent); if (!up) break; n = up; } return n; };
-  const nodes = hw.nodes.map((n, at) => ({ n, at, r: RANK[root(n).kind] ?? 3 })).sort((a, b) => a.r - b.r || a.at - b.at).map((x) => x.n);
+  // Network adapters: the one the internet goes through first, then the other connected ones (an unplugged port reads all zeros).
+  const nodes = hw.nodes.map((n, at) => ({ n, at, r: RANK[root(n).kind] ?? 3, w: n.kind === "Network" ? netRank(n) : 0 })).sort((a, b) => a.r - b.r || a.w - b.w || a.at - b.at).map((x) => x.n);
   for (const node of nodes) {
     if (focusKinds && !focusKinds.includes(node.kind)) continue;
     if (!node.sensors.length) continue;
@@ -55,8 +56,9 @@ export function mount(el, _, opts = null) {
     const table = h("table", { class: "table" }, h("thead", {}, h("tr", {},
       h("th", {}, t("Web_Col_Sensor")), h("th", { class: "n" }, t("Web_Col_Current")), h("th", { class: "n" }, t("Web_Col_Min")),
       h("th", { class: "n" }, t("Web_Col_Avg")), h("th", { class: "n" }, t("Web_Col_Max")), h("th", { class: "c" }, h("span", { class: "sr" }, t("Web_Chart"))))), tbody);
-    const fold = h("button", { class: "more", type: "button", "aria-expanded": "true", "aria-label": node.name }, icon("chevron"));
-    const group = h("section", { class: `panel group ${p.cls}`, style: { "--i": i++ }, "data-kind": node.kind },
+    const idle = node.kind === "Network" && net.up?.length > 0 && netRank(node) === 2;   // an adapter not connected now starts folded
+    const fold = h("button", { class: "more", type: "button", "aria-expanded": String(!idle), "aria-label": node.name }, icon("chevron"));
+    const group = h("section", { class: `panel group ${p.cls}${idle ? " shut" : ""}`, style: { "--i": i++ }, "data-kind": node.kind, "data-idle": idle ? "" : null },
       h("header", { class: "panel-head", onclick: () => { const shut = group.classList.toggle("shut"); fold.setAttribute("aria-expanded", String(!shut)); } },
         h("span", { class: "ico" }, icon(p.icon)),
         h("div", { class: "ttl" }, h("h2", { class: "panel-title lat" }, node.name), h("div", { class: "panel-sub fa" }, t(`Web_Kind_${node.kind}`))),
@@ -137,11 +139,12 @@ export function mount(el, _, opts = null) {
     if (!kinds) { for (const g of folded) setShut(g, false); folded.clear(); return; }
     let first = null;
     for (const g of groups.children) {
-      const on = kinds.includes(g.dataset.kind);
+      const on = kinds.includes(g.dataset.kind) && !("idle" in g.dataset);
       if (on) { setShut(g, false); first ??= g; } else if (!g.classList.contains("shut")) { setShut(g, true); folded.add(g); }
     }
     for (const k of kinds) for (const roles of KEY_ROLES[k] || []) {
-      const c = cells.find(([s]) => s.node.kind === k && roles.includes(s.role));
+      const c = cells.find(([s]) => s.node.kind === k && roles.includes(s.role) && (k !== "Network" || !net.internet || s.node.name === net.internet))
+        ?? cells.find(([s]) => s.node.kind === k && roles.includes(s.role));
       if (c) addChart(c[0], true);
     }
     if (!opts?.runSlot) first?.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });

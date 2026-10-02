@@ -12,7 +12,7 @@ public sealed partial class WebBridge
         _cleanup.Add(reports.Dispose);
         object State() => new
         {
-            status = reports.Status, making = reports.IsMakingSummary, canCompare = reports.CompareCommand.CanExecute(null),
+            status = reports.Status, making = reports.IsMakingSummary, canCompare = reports.CompareCommand.CanExecute(null), canDelete = reports.Items.Any(r => r.IsSelected),
             items = reports.Items.Select(r => new
             {
                 id = r.Report.Id, title = r.Title, badge = r.Badge, verdict = r.VerdictText, summary = r.Summary, selected = r.IsSelected,
@@ -34,6 +34,7 @@ public sealed partial class WebBridge
                 case "json": reports.OpenJsonCommand.Execute(Row(p)); break;
                 case "folder": reports.OpenFolderCommand.Execute(Row(p)); break;
                 case "delete": reports.DeleteCommand.Execute(Row(p)); break;
+                case "deleteSelected": reports.DeleteSelectedCommand.Execute(null); break;
                 case "compare": if (reports.CompareCommand.CanExecute(null)) reports.CompareCommand.Execute(null); break;
                 case "summary": { var row = Row(p); if (reports.SummarizeCommand.CanExecute(row)) await reports.SummarizeCommand.ExecuteAsync(row); break; }
                 default: throw new ArgumentException("unknown command");

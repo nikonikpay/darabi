@@ -41,6 +41,7 @@ public static class Bootstrapper
         s.AddSingleton<HardwareSnapshot>();
         s.AddDiagnostics(paths, lf);
         s.AddSingleton<Services.ITrayController, Services.TrayController>();
+        s.AddSingleton(sp => new Services.BenchmarkBreakWatch(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), paths.SessionsDir, new WindowsBreakEventSource(), lf.CreateLogger("Benchmarks")));
         s.AddSingleton<Services.CheckupService>();
         s.AddSingleton<Services.ReportService>();
         s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));

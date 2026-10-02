@@ -2,7 +2,7 @@
 // (with the live panel of a test running on it). Benchmarks have their own page.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
-import { topNodes, pick, subscribe } from "../store.js";
+import { topNodes, pick, subscribe, net, netRank, loadNetwork } from "../store.js";
 import { h } from "../ui.js";
 import { liveTile, percentOf } from "../tiles.js";
 import { card, cachedNote } from "./system.js";
@@ -21,8 +21,14 @@ const NAV = { Cpu: "Nav_Cpu", Gpu: "Nav_Gpu", Storage: "Nav_Storage", Network: "
 const PAGE = { Cpu: "cpu", Gpu: "gpu", Storage: "storage", Network: "network", Memory: "ram" };
 
 export function mount(el, kind) {
+  if (kind === "Network") loadNetwork();   // for the next visit: adapters come and go (a cable plugged in, Wi-Fi joined)
   // A part's band shows the devices that report one of its figures (for memory: the total, not the page file's "virtual memory").
-  const nodes = topNodes(kind).filter((n) => (kind !== "Network" || !/^vEthernet/i.test(n.name)) && FIGURES[kind].some(([, roles]) => pick(n, ...roles)));
+  let nodes = topNodes(kind).filter((n) => (kind !== "Network" || !/^vEthernet/i.test(n.name)) && FIGURES[kind].some(([, roles]) => pick(n, ...roles)));
+  // Network: the adapter the internet goes through, then the other connected ones; an unplugged port is not shown while one is connected.
+  if (kind === "Network") {
+    nodes = nodes.map((n, at) => ({ n, at })).sort((a, b) => netRank(a.n) - netRank(b.n) || a.at - b.at).map((x) => x.n);
+    if (nodes.some((n) => netRank(n) < 2)) nodes = nodes.filter((n) => netRank(n) < 2);
+  }
   el.classList.add(part(kind).cls, "part-page");
   // The part's card: its device names, then a live tile per figure that matters for it (a share of something draws its bar).
   const tiles = nodes.slice(0, 3).flatMap((n, ni) => FIGURES[kind].filter(([, roles]) => kind !== "Memory" || pick(n, ...roles)).map(([key, roles], fi) => {
@@ -30,7 +36,8 @@ export function mount(el, kind) {
     return liveTile({ kind, label: t(key), main: s, share: s && s.unit === "Percent" ? percentOf(s) : null, foot: nodes.length > 1 ? n.name : null, i: ni * 4 + fi });
   }));
   const band = h("section", { class: "plane part-plane enter" },
-    h("h2", { class: "plane-head lat" }, kind === "Memory" ? t(NAV[kind]) : nodes.map((n) => n.name).join("  ·  ") || t(NAV[kind])),
+    h("h2", { class: "plane-head lat" }, kind === "Memory" ? t(NAV[kind]) : kind === "Network" && net.internet && nodes[0]?.name === net.internet
+      ? [t("Web_Net_Internet", nodes[0].name), ...nodes.slice(1).map((n) => "  ·  " + n.name)] : nodes.map((n) => n.name).join("  ·  ") || t(NAV[kind])),
     h("div", { class: "tiles compact" }, tiles.map((x) => x.el)));
   const specs = h("div", { class: "cols spec", style: { marginTop: "4px" } });
   const sensorBox = h("div", {}), runSlot = h("div", {});

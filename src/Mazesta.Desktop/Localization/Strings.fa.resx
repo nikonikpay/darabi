@@ -486,6 +486,9 @@
   <data name="Reports_Folder" xml:space="preserve"><value>پوشه</value></data>
   <data name="Reports_Delete" xml:space="preserve"><value>حذف</value></data>
   <data name="Reports_DeleteConfirm" xml:space="preserve"><value>این گزارش برای همیشه پاک شود؟</value></data>
+  <data name="Reports_DeleteSelected" xml:space="preserve"><value>حذف انتخاب‌شده‌ها</value></data>
+  <data name="Reports_DeleteSelectedConfirm" xml:space="preserve"><value>{0} گزارش انتخاب‌شده برای همیشه پاک شوند؟</value></data>
+  <data name="Web_Net_Internet" xml:space="preserve"><value>{0} (اینترنت)</value></data>
   <data name="Reports_PdfBusy" xml:space="preserve"><value>در حال ساخت PDF…</value></data>
   <data name="Reports_PdfFailed" xml:space="preserve"><value>ساخت PDF ممکن نشد: {0}</value></data>
   <data name="Reports_Created" xml:space="preserve"><value>گزارش ذخیره شد.</value></data>
@@ -590,6 +593,10 @@
   <data name="Bench_Net_Jitter" xml:space="preserve"><value>نوسان تأخیر (Jitter)</value></data>
   <data name="Bench_Net_Loss" xml:space="preserve"><value>از دست رفتن بسته</value></data>
   <data name="Bench_Net_DataUsed" xml:space="preserve"><value>حجم داده‌ی مصرف‌شده در تست</value></data>
+  <data name="Bench_Net_LoadedPing" xml:space="preserve"><value>تأخیر زیر بار (حین دانلود/آپلود)</value></data>
+  <data name="Bench_Net_Score_Streaming" xml:space="preserve"><value>امتیاز استریم و ویدئو (مقیاس Cloudflare)</value></data>
+  <data name="Bench_Net_Score_Gaming" xml:space="preserve"><value>امتیاز گیمینگ (مقیاس Cloudflare)</value></data>
+  <data name="Bench_Net_Score_Calls" xml:space="preserve"><value>امتیاز تماس تصویری (مقیاس Cloudflare)</value></data>
   <data name="Component_Note_Cpu" xml:space="preserve"><value>پردازنده: مشخصات، سنسورهای زنده و بنچمارک تک‌رشته و چندرشته. تست‌های فشار در صفحه‌ی تست‌ها هستند؛ اورکلاک و اندرولت در مرحله‌ی دوم اضافه می‌شود.</value></data>
   <data name="Component_Note_Gpu" xml:space="preserve"><value>کارت گرافیک: مشخصات، سنسورهای زنده و بنچمارک‌های Direct3D، ری‌تریسینگ و هوش مصنوعی. تست‌های فشار و VRAM در صفحه‌ی تست‌ها هستند؛ اورکلاک و اندرولت در مرحله‌ی دوم اضافه می‌شود.</value></data>
   <data name="Component_Note_Storage" xml:space="preserve"><value>درایوها: آنچه ویندوز گزارش می‌کند (از جمله وضعیت سلامت)، سنسورهای زنده و مقادیر SMART همان‌طور که درایو گزارش می‌دهد، و بنچمارک سرعت. تست‌های خواندن/نوشتن که صحت داده را بررسی می‌کنند در صفحه‌ی تست‌ها هستند.</value></data>
@@ -1460,6 +1467,10 @@
   <data name="Log_Storage_RandStart" xml:space="preserve"><value>بلوک‌های تصادفی ۴ کیلوبایتی: نوشتن، بازخوانی و مقایسه، یک درخواست در هر لحظه.</value></data>
   <data name="Log_Storage_RandProgress" xml:space="preserve"><value>{0} بلوک بررسی شد؛ P99 نوشتن {1} میلی‌ثانیه، P99 خواندن {2} میلی‌ثانیه؛ {3} خطا.</value></data>
   <data name="Log_Net_Start" xml:space="preserve"><value>درخواست اکو به {0} از طریق: {1}.</value></data>
+  <data name="Test_Network_Speed" xml:space="preserve"><value>شبکه · سرعت اینترنت (دانلود و آپلود)</value></data>
+  <data name="Log_NetSpeed_Start" xml:space="preserve"><value>اندازه‌گیری سرعت اینترنت با سرور تست سرعت Cloudflare: اول پینگ، بعد دانلود، بعد آپلود.</value></data>
+  <data name="Log_NetSpeed_Result" xml:space="preserve"><value>دانلود {0} مگابیت · آپلود {1} مگابیت · پینگ {2} میلی‌ثانیه · جیتر {3} میلی‌ثانیه</value></data>
+  <data name="Log_NetSpeed_Scores" xml:space="preserve"><value>امتیاز به مقیاس Cloudflare: استریم {0} از ۵، گیمینگ {1} از ۵، تماس تصویری {2} از ۵</value></data>
   <data name="Log_Net_Progress" xml:space="preserve"><value>{0} ارسال، {1} پاسخ، آخرین {2} میلی‌ثانیه.</value></data>
   <data name="Log_Gpu_Start" xml:space="preserve"><value>بار محاسباتی {0} روی {1}: دسته‌هایی از dispatchهای زنجیره‌ای؛ نمونه‌ای از رشته‌ها روی CPU دوباره محاسبه می‌شود.</value></data>
   <data name="Log_Gpu_Progress" xml:space="preserve"><value>{0} dispatch، {1} گیگاعملیات‌برثانیه، {2} نتیجهٔ رشته بررسی شد، {3} نادرست.</value></data>
@@ -2340,6 +2351,8 @@
   <data name="Test_Break_BlueScreen" xml:space="preserve"><value>ویندوز در طول جلسه با صفحهٔ آبی متوقف شده است.</value></data>
   <data name="Test_Break_BlueScreenCode" xml:space="preserve"><value>ویندوز در طول جلسه با صفحهٔ آبی متوقف شده است (کد توقف {0}).</value></data>
   <data name="Test_Break_Tdr" xml:space="preserve"><value>درایور گرافیک هم {0} بار از پاسخ دادن بازماند و ریست شد (TDR).</value></data>
+  <data name="Bench_Break" xml:space="preserve"><value>بنچمارک «{0}» (شروع {1}) تمام نشد: سیستم در حین اجرای آن متوقف شد.</value></data>
+  <data name="Test_Break_Banner" xml:space="preserve"><value>جلسهٔ تست قبلی تمام نشد؛ صفحهٔ تست‌ها نشان می‌دهد کدام تست در حال اجرا بود و چرا متوقف شد.</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>ترکیبی مثل ویندوز (۷۰/۳۰، ۴ تا ۶۴ کیلوبایت، Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
   <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم صدک ۹۹</value></data>

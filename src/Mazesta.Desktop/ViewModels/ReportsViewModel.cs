@@ -47,7 +47,7 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
     private ReportRowViewModel Row(StoredReport report)
     {
         var row = new ReportRowViewModel(report);
-        row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(ReportRowViewModel.IsSelected)) CompareCommand.NotifyCanExecuteChanged(); };
+        row.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(ReportRowViewModel.IsSelected)) { CompareCommand.NotifyCanExecuteChanged(); DeleteSelectedCommand.NotifyCanExecuteChanged(); } };
         return row;
     }
 
@@ -105,6 +105,17 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         if (!_confirm(Loc.Get("Reports_DeleteConfirm"))) return;
         _service.Store.Delete(row.Report); Items.Remove(row); CompareCommand.NotifyCanExecuteChanged();
     }
+
+    /// <summary>The ticked reports, all at once, after one question that says how many.</summary>
+    [RelayCommand(CanExecute = nameof(AnySelected))]
+    private void DeleteSelected()
+    {
+        var chosen = Items.Where(r => r.IsSelected).ToList();
+        if (chosen.Count == 0 || !_confirm(Loc.Format("Reports_DeleteSelectedConfirm", chosen.Count))) return;
+        foreach (var row in chosen) { _service.Store.Delete(row.Report); Items.Remove(row); }
+        CompareCommand.NotifyCanExecuteChanged(); DeleteSelectedCommand.NotifyCanExecuteChanged();
+    }
+    private bool AnySelected() => Items.Any(r => r.IsSelected);
 
     public void Dispose() => _service.ReportCreated -= OnCreated;
 }

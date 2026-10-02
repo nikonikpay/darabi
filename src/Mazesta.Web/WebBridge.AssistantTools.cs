@@ -10,7 +10,7 @@ public sealed partial class WebBridge
     private static readonly IReadOnlyDictionary<string, string[]> AssistantTestAreas = new Dictionary<string, string[]>
     {
         ["cpu"] = ["cpu.matrix", "cpu.integer", "cpu.fft"], ["memory"] = ["memory.pattern"],
-        ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency"], ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram"],
+        ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency", "network.speed"], ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram"],
     };
 
     /// <summary>The benchmarks the assistant may start, with the model unloaded like the GPU tests. The AI model's own benchmark is not one: it needs a model chosen on its page.</summary>

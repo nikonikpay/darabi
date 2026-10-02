@@ -9,15 +9,16 @@ const BADGE = { Passed: "pass", Failed: "fail", Incomplete: "warn", Benchmark: "
 
 export function mount(el) {
   const compare = h("button", { class: "btn primary", "data-a": "compare", onclick: () => call("reports.exec", { cmd: "compare" }) }, t("Reports_Compare"));
+  const remove = h("button", { class: "btn stop", "data-a": "delete-selected", onclick: () => call("reports.exec", { cmd: "deleteSelected" }) }, t("Reports_DeleteSelected"));
   const list = h("div", {}), status = h("p", { class: "caption", style: { minHeight: "1.6em" } });
   const count = h("span", { class: "group-count" });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Reports")))),
     h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },
-      box({ kind: "System", ico: "doc", title: t("Reports_Saved"), sub: t("Reports_CompareHint"), i: 0, actions: [count, compare], body: [status, list] })));
+      box({ kind: "System", ico: "doc", title: t("Reports_Saved"), sub: t("Reports_CompareHint"), i: 0, actions: [count, remove, compare], body: [status, list] })));
   const act = (cmd, id, key, cls = "btn") => h("button", { class: cls, onclick: () => call("reports.exec", { cmd, id }) }, t(key));
   let shown = "", making = false;
   function update(s) {
-    compare.disabled = !s.canCompare; status.textContent = s.status || "";
+    compare.disabled = !s.canCompare; remove.disabled = !s.canDelete; status.textContent = s.status || "";
     if (s.making !== making) { making = s.making; for (const b of list.querySelectorAll("button[data-summary]")) b.disabled = making; }
     const key = JSON.stringify(s.items.map((i) => [i.id, i.selected]));
     if (key === shown) return; shown = key;
