@@ -23,7 +23,7 @@ export function mount(el) {
   const run = h("button", { class: "btn go", "data-a": "run", onclick: async () => { run.disabled = true; if (!(await call("checkup.run"))) run.disabled = false; } }, icon("play"), t("Checkup_Run"));
   const summary = h("div", { class: "checkup-sum" });
   const setup = h("div", { class: "findings" }, h("p", { class: "page-lede" }, t("Checkup_Loading")));
-  const runs = h("div", { class: "findings" });
+  const runs = h("div", { class: "findings checkup-runs" });
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checkup")), h("p", { class: "page-lede" }, t("Checkup_Lede"))),
     h("div", { class: "checkup-run" }, run, h("span", { class: "caption" }, t("Checkup_RunHint")))),
     summary,

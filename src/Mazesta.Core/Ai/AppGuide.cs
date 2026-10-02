@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -280,6 +280,17 @@ public static class AppGuide
         // A benchmark's number is its history, not the part's specification ("آخرین بنچمارک پردازنده چند بود").
         if (!go && !test && ask && !Has(s, "بنچمارک") && !Has(s, "بنچ مارک") && !Has(s, "benchmark") && SpecParts.FirstOrDefault(p => Any(s, p.Words)) is { Part: not null } spec)
             return new(AiIntent.Specs, Part: spec.Part);
+
+        // "بنچمارک سیستم رو انجام بده": the benchmarks of the parts named, or all of them, asked about together on one card.
+        bool bench = Has(s, "بنچمارک") || Has(s, "بنچ مارک") || Has(s, "benchmark");
+        if (bench && (doIt || Has(s, "بگیر")) && !go && !page && !not && !ask)
+        {
+            var areas = TestAreas.Where(a => Any(s, a.Words)).SelectMany(a => a.Area switch
+            {
+                "cpu" => new[] { "cpu_single", "cpu_multi" }, "gpu" => ["gpu", "gpu_rt", "gpu_scene", "gpu_scene_rt"], var x => [x],
+            }).ToList();
+            return new(AiIntent.Benchmarks, Areas: areas.Count > 0 ? areas : ["all"]);
+        }
 
         if (test && place is { Page: "checks" }) return new(AiIntent.Navigate, place);
         // "Don't run it, only explain": the tests of those parts are listed, as the app has them, and nothing starts.

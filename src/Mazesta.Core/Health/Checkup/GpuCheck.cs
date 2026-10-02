@@ -44,7 +44,7 @@ public static class GpuCheck
             bool hot = Share(r.SwThermal) >= 0.1;
             if (hot) Add(FindingCode.GpuThermalSlowdown, FindingLevel.Attention, [Pct(r.SwThermal), .. temps]);
             if (Share(r.PowerCap) >= 0.5)
-                Add(FindingCode.GpuPowerLimited, FindingLevel.Note, [Pct(r.PowerCap), .. r.PowerLimitW is { } pl ? [M("Check_M_PowerLimit", pl, Watt)] : Array.Empty<Measure>(),
+                Add(FindingCode.GpuPowerLimited, FindingLevel.Good, [Pct(r.PowerCap), .. r.PowerLimitW is { } pl ? [M("Check_M_PowerLimit", pl, Watt)] : Array.Empty<Measure>(),
                     .. loaded(run.Power) is { Count: > 0 } p ? [M("Check_M_Power", p.Median(), Watt)] : Array.Empty<Measure>()]);
             if (!hot && Share(r.HwThermal) < 0.02 && tempMax is { } tmax && r.SlowdownTempC is { } slow) Add(FindingCode.GpuHeatOk, FindingLevel.Good, [M("Check_M_TempMax", tmax, Celsius), M("Check_M_SlowdownTemp", slow, Celsius)]);
         }

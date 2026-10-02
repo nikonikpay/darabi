@@ -1675,7 +1675,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>The overlay could not be switched.</value></data>
   <data name="Assist_Tool_test_dns" xml:space="preserve"><value>Tested the DNS servers</value></data>
   <data name="Nav_Apps" xml:space="preserve"><value>Programs</value></data>
-  <data name="Nav_Group_Apps" xml:space="preserve"><value>Programs and AI</value></data>
+  <data name="Nav_Group_Apps" xml:space="preserve"><value>Apps, games and AI</value></data>
   <data name="Assist_Opened" xml:space="preserve"><value>Opened «{0}».</value></data>
   <data name="Assist_OpenedApp" xml:space="preserve"><value>Opened «{0}» at {1}.</value></data>
   <data name="Assist_Pointed" xml:space="preserve"><value>Opened «{0}» and marked «{1}» on it.</value></data>
@@ -2151,6 +2151,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Model" xml:space="preserve"><value>Model</value></data>
   <data name="Assist_Confirm_Tests" xml:space="preserve"><value>Run these tests?</value></data>
   <data name="Assist_Confirm_Benchmark" xml:space="preserve"><value>Run this benchmark?</value></data>
+  <data name="Assist_Confirm_Benchmarks" xml:space="preserve"><value>Run these benchmarks?</value></data>
   <data name="Assist_Confirm_Text" xml:space="preserve"><value>The assistant asks to start this on your computer now. The computer will be busy while it runs, and nothing starts unless you agree.</value></data>
   <data name="Assist_Confirm_Yes" xml:space="preserve"><value>Start</value></data>
   <data name="Assist_Confirm_No" xml:space="preserve"><value>Do not run</value></data>
@@ -2415,16 +2416,16 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>The card stayed below the temperature at which it slows itself.</value></data>
   <data name="Check_GpuHotspotGap" xml:space="preserve"><value>Hot spot far above the core</value></data>
   <data name="Check_GpuHotspotGap_Text" xml:space="preserve"><value>Under load the hottest spot of the chip ran much hotter than the core. That usually means dried paste or a cooler not pressing evenly on the chip; repasting (and checking the pads) usually fixes it.</value></data>
-  <data name="Check_GpuLinkNarrow" xml:space="preserve"><value>Graphics card link narrower than it should be</value></data>
+  <data name="Check_GpuLinkNarrow" xml:space="preserve"><value>Graphics card runs on fewer PCIe lanes than it should</value></data>
   <data name="Check_GpuLinkNarrow_Text" xml:space="preserve"><value>The card and the slot can both run more lanes than the link does. Reseat the card, clean the slot and the contacts, and check the riser cable if there is one; on some boards an M.2 drive shares lanes with this slot.</value></data>
-  <data name="Check_GpuLinkSlowGen" xml:space="preserve"><value>Graphics card link at a lower PCIe generation</value></data>
+  <data name="Check_GpuLinkSlowGen" xml:space="preserve"><value>Graphics card PCIe lanes at a lower generation</value></data>
   <data name="Check_GpuLinkSlowGen_Text" xml:space="preserve"><value>Under load the link ran at a lower PCIe generation than both the card and the slot support. Check the BIOS's PCIe setting (it may be fixed to a lower generation), the riser cable if any, and the card's seating.</value></data>
   <data name="Check_GpuSlotNarrow" xml:space="preserve"><value>The slot gives fewer lanes than the card can use</value></data>
   <data name="Check_GpuSlotNarrow_Text" xml:space="preserve"><value>The card runs at all the lanes its slot has. Most cards lose little at x8; a fast card loses more in a x4 slot. The board's main x16 slot, if free, is the better place.</value></data>
   <data name="Check_GpuSlotOlderGen" xml:space="preserve"><value>The slot is an older PCIe generation</value></data>
   <data name="Check_GpuSlotOlderGen_Text" xml:space="preserve"><value>The slot supports an older PCIe generation than the card, and the card runs at the slot's. That is normal for this board and costs most cards little.</value></data>
-  <data name="Check_GpuLinkOk" xml:space="preserve"><value>Graphics card link as expected</value></data>
-  <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>The card's PCIe link runs as wide, and as fast, as the card and the slot allow.</value></data>
+  <data name="Check_GpuLinkOk" xml:space="preserve"><value>Graphics card PCIe lanes as expected</value></data>
+  <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>The card's PCIe link runs with as many lanes, and as fast, as the card and the slot allow.</value></data>
   <data name="Check_GpuLinkBelowCard" xml:space="preserve"><value>The graphics card runs at fewer lanes than it supports</value></data>
   <data name="Check_GpuLinkBelowCard_Text" xml:space="preserve"><value>The card runs at fewer lanes than it supports; how many the slot provides could not be read on this machine. Many processors with integrated graphics (APUs) and secondary slots give only x8 or x4, which is normal. In a full x16 slot of a processor that has the lanes, reseat the card.</value></data>
   <data name="Check_DriveLinkNarrow" xml:space="preserve"><value>SSD link narrower than it should be</value></data>
@@ -2468,8 +2469,8 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_M_PowerLimit" xml:space="preserve"><value>Power limit</value></data>
   <data name="Check_M_HotspotGap" xml:space="preserve"><value>Hot spot minus core (median)</value></data>
   <data name="Check_M_HotspotMax" xml:space="preserve"><value>Highest hot spot</value></data>
-  <data name="Check_M_LinkWidth" xml:space="preserve"><value>Link width</value></data>
-  <data name="Check_M_LinkWidthExpected" xml:space="preserve"><value>Expected width</value></data>
+  <data name="Check_M_LinkWidth" xml:space="preserve"><value>Lanes (link width)</value></data>
+  <data name="Check_M_LinkWidthExpected" xml:space="preserve"><value>Expected lanes</value></data>
   <data name="Check_M_SlotWidth" xml:space="preserve"><value>Slot width</value></data>
   <data name="Check_M_CardWidth" xml:space="preserve"><value>Device's width</value></data>
   <data name="Check_M_LinkGen" xml:space="preserve"><value>PCIe generation</value></data>

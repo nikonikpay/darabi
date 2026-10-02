@@ -1675,7 +1675,7 @@
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>اورلی تغییر نکرد.</value></data>
   <data name="Assist_Tool_test_dns" xml:space="preserve"><value>تست DNSها</value></data>
   <data name="Nav_Apps" xml:space="preserve"><value>برنامه‌های تخصصی</value></data>
-  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها و AI</value></data>
+  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها، بازی و AI</value></data>
   <data name="Assist_Opened" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم.</value></data>
   <data name="Assist_OpenedApp" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و {1} را نشان دادم.</value></data>
   <data name="Assist_Pointed" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و «{1}» را روی آن علامت زدم.</value></data>
@@ -2151,6 +2151,7 @@
   <data name="Assist_Model" xml:space="preserve"><value>مدل</value></data>
   <data name="Assist_Confirm_Tests" xml:space="preserve"><value>این تست‌ها اجرا شوند؟</value></data>
   <data name="Assist_Confirm_Benchmark" xml:space="preserve"><value>این بنچمارک اجرا شود؟</value></data>
+  <data name="Assist_Confirm_Benchmarks" xml:space="preserve"><value>این بنچمارک‌ها اجرا شوند؟</value></data>
   <data name="Assist_Confirm_Text" xml:space="preserve"><value>دستیار می‌خواهد همین حالا این را روی کامپیوتر شما شروع کند. تا پایان کار، کامپیوتر مشغول است و بدون تأیید شما چیزی شروع نمی‌شود.</value></data>
   <data name="Assist_Confirm_Yes" xml:space="preserve"><value>شروع کن</value></data>
   <data name="Assist_Confirm_No" xml:space="preserve"><value>اجرا نکن</value></data>
@@ -2415,16 +2416,16 @@
   <data name="Check_GpuHeatOk_Text" xml:space="preserve"><value>کارت پایین‌تر از دمایی ماند که در آن خودش را کند می‌کند.</value></data>
   <data name="Check_GpuHotspotGap" xml:space="preserve"><value>فاصلهٔ زیاد دمای هات‌اسپات با هسته</value></data>
   <data name="Check_GpuHotspotGap_Text" xml:space="preserve"><value>زیر بار، داغ‌ترین نقطهٔ چیپ خیلی داغ‌تر از هسته بود. معمولاً یعنی خمیر خشک شده یا خنک‌کننده یکنواخت روی چیپ فشار نمی‌آورد؛ تعویض خمیر (و بررسی پدها) معمولاً درستش می‌کند.</value></data>
-  <data name="Check_GpuLinkNarrow" xml:space="preserve"><value>لینک کارت گرافیک باریک‌تر از حد انتظار</value></data>
+  <data name="Check_GpuLinkNarrow" xml:space="preserve"><value>کارت گرافیک با لین‌های PCIe کمتر از حد انتظار کار می‌کند</value></data>
   <data name="Check_GpuLinkNarrow_Text" xml:space="preserve"><value>هم کارت و هم اسلات لین‌های بیشتری از لینک فعلی پشتیبانی می‌کنند. کارت را دوباره جا بزنید، اسلات و کانتکت‌ها را تمیز کنید و اگر رایزر دارد آن را بررسی کنید؛ در بعضی بردها یک درایو M.2 لین‌های این اسلات را به اشتراک می‌گیرد.</value></data>
-  <data name="Check_GpuLinkSlowGen" xml:space="preserve"><value>لینک کارت گرافیک با نسل پایین‌تر PCIe</value></data>
+  <data name="Check_GpuLinkSlowGen" xml:space="preserve"><value>لین‌های PCIe کارت گرافیک با نسل پایین‌تر کار می‌کنند</value></data>
   <data name="Check_GpuLinkSlowGen_Text" xml:space="preserve"><value>زیر بار، لینک با نسل PCIe پایین‌تری از آنچه کارت و اسلات پشتیبانی می‌کنند کار کرد. تنظیم PCIe در بایوس (ممکن است روی نسل پایین‌تر ثابت شده باشد)، کابل رایزر اگر هست و جا افتادن کارت را بررسی کنید.</value></data>
   <data name="Check_GpuSlotNarrow" xml:space="preserve"><value>اسلات لین کمتری از توان کارت می‌دهد</value></data>
   <data name="Check_GpuSlotNarrow_Text" xml:space="preserve"><value>کارت با همهٔ لین‌هایی که اسلاتش دارد کار می‌کند. بیشتر کارت‌ها در x8 افت کمی دارند؛ کارت سریع در اسلات x4 افت بیشتری دارد. اگر اسلات اصلی x16 مادربرد آزاد است، جای بهتری است.</value></data>
   <data name="Check_GpuSlotOlderGen" xml:space="preserve"><value>اسلات از نسل قدیمی‌تر PCIe است</value></data>
   <data name="Check_GpuSlotOlderGen_Text" xml:space="preserve"><value>اسلات از نسل قدیمی‌تری از PCIe نسبت به کارت پشتیبانی می‌کند و کارت با نسل اسلات کار می‌کند. این برای این مادربرد طبیعی است و برای بیشتر کارت‌ها افت کمی دارد.</value></data>
-  <data name="Check_GpuLinkOk" xml:space="preserve"><value>لینک کارت گرافیک درست است</value></data>
-  <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>لینک PCIe کارت با همان پهنا و سرعتی کار می‌کند که کارت و اسلات اجازه می‌دهند.</value></data>
+  <data name="Check_GpuLinkOk" xml:space="preserve"><value>لین‌های PCIe کارت گرافیک درست کار می‌کنند</value></data>
+  <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>کارت با همان تعداد لین PCIe و همان سرعتی کار می‌کند که کارت و اسلات اجازه می‌دهند.</value></data>
   <data name="Check_GpuLinkBelowCard" xml:space="preserve"><value>کارت گرافیک با لین کمتری از توانش کار می‌کند</value></data>
   <data name="Check_GpuLinkBelowCard_Text" xml:space="preserve"><value>کارت با لین کمتری از آنچه پشتیبانی می‌کند کار می‌کند؛ در این سیستم نمی‌شد خواند که اسلات چند لین می‌دهد. بسیاری از پردازنده‌های دارای گرافیک مجتمع (APU) و اسلات‌های دوم فقط x8 یا x4 می‌دهند که طبیعی است. اگر کارت در اسلات کامل x16 پردازنده‌ای است که این لین‌ها را دارد، کارت را دوباره جا بزنید.</value></data>
   <data name="Check_DriveLinkNarrow" xml:space="preserve"><value>لینک SSD باریک‌تر از حد انتظار</value></data>
@@ -2468,8 +2469,8 @@
   <data name="Check_M_PowerLimit" xml:space="preserve"><value>سقف توان</value></data>
   <data name="Check_M_HotspotGap" xml:space="preserve"><value>اختلاف هات‌اسپات و هسته (میانه)</value></data>
   <data name="Check_M_HotspotMax" xml:space="preserve"><value>بیشترین دمای هات‌اسپات</value></data>
-  <data name="Check_M_LinkWidth" xml:space="preserve"><value>پهنای لینک</value></data>
-  <data name="Check_M_LinkWidthExpected" xml:space="preserve"><value>پهنای مورد انتظار</value></data>
+  <data name="Check_M_LinkWidth" xml:space="preserve"><value>تعداد لین (پهنای لینک)</value></data>
+  <data name="Check_M_LinkWidthExpected" xml:space="preserve"><value>تعداد لین مورد انتظار</value></data>
   <data name="Check_M_SlotWidth" xml:space="preserve"><value>پهنای اسلات</value></data>
   <data name="Check_M_CardWidth" xml:space="preserve"><value>پهنای دستگاه</value></data>
   <data name="Check_M_LinkGen" xml:space="preserve"><value>نسل PCIe</value></data>

@@ -1231,6 +1231,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 
 /* ———— Checkup: a finding is a flat panel with its state's colour down the start edge, its stamp, its words and the numbers it stands on ———— */
 .findings { display: grid; gap: 10px; }
+.checkup-runs { max-height: min(70vh, 720px); }   /* the benchmark runs hold several cards each: room for more than one at a time */
 .finding { --lv: var(--rule-2); background: var(--ink-2); border: 1px solid var(--rule); border-inline-start: 3px solid var(--lv); border-radius: var(--r-panel); padding: 10px 14px; min-width: 0; }
 .finding.lv-Good { --lv: var(--pass); } .finding.lv-Attention { --lv: var(--warn); } .finding.lv-Problem { --lv: var(--fail); } .finding.lv-Note { --lv: var(--paper-3); }
 .finding-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

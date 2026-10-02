@@ -392,6 +392,7 @@ public sealed partial class WebBridge
                 AiIntent.SoftwareList => [C("check_software", new { category = route.Category?.ToString() })],
                 AiIntent.Report => [C("list_reports", new { limit = 5 }), C("get_report", new { index = route.Index })],
                 AiIntent.Tests when route.Areas is { Count: > 0 } areas => [C("run_tests", new { areas })],
+                AiIntent.Benchmarks when route.Areas is { Count: > 0 } benchmarks => [C("run_benchmark", new { benchmarks })],
                 AiIntent.HowTo => [C("find_in_app", new { query = text })],
                 _ => null,
             };

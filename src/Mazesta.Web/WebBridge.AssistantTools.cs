@@ -13,10 +13,11 @@ public sealed partial class WebBridge
         ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency"], ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram"],
     };
 
-    /// <summary>The benchmarks the assistant may start; the graphics one with the model unloaded, like the GPU tests.</summary>
+    /// <summary>The benchmarks the assistant may start, with the model unloaded like the GPU tests. The AI model's own benchmark is not one: it needs a model chosen on its page.</summary>
     private static readonly IReadOnlyDictionary<string, string> AssistantBenchmarks = new Dictionary<string, string>
     {
         ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage", ["gpu"] = "bench.gpu.d3d",
+        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_scene_rt"] = "bench.gpu.scene.rt", ["network"] = "bench.network.internet",
     };
 
     /// <summary>The pages the assistant may open (the page's own ids, from <see cref="AppGuide"/>) and the controls it may point at on them.</summary>
@@ -80,7 +81,8 @@ public sealed partial class WebBridge
                     if (place is null) return Task.FromResult(Json(new { found = false, pages = AppGuide.PageList(Loc.Get) }));
                     return Task.FromResult(Json(new { found = true, page = place.Page, pageName = Loc.Get(page?.TitleKey ?? place.TitleKey), control = place.Target is null ? null : Loc.Get(place.TitleKey), what = place.What }));
                 }),
-            new("get_sensors", "The live sensor readings now (temperatures, loads, clocks, power, fans), grouped by device. Optional kind: Temperature, Load, Clock, Power or Fan.",
+            new("get_sensors", "The live sensor readings now (temperatures, loads, clocks, power, fans), grouped by device. Optional kind: Temperature, Load, Clock, Power or Fan. " +
+                "For the whole computer's power use systemPower (already summed without double counting), never add the devices' power readings yourself.",
                 """{"type":"object","properties":{"kind":{"type":"string","enum":["Temperature","Load","Clock","Power","Fan"]}}}""",
                 (a, _) =>
                 {
@@ -94,9 +96,21 @@ public sealed partial class WebBridge
                                 && !NotAReading.IsMatch(s.Name))
                             .Take(kind is null ? 12 : 40).Select(s => new { name = s.Name, kind = s.Kind.ToString(), value = Math.Round(values[s.Id], 1), unit = s.Unit.ToString() }),
                     }).Where(d => d.sensors.Any()).Take(8);
+                    // The whole system's power, counted once: the CPU by its package (its cores are inside it), a card by its one reading.
+                    var total = kind is null or "Power" ? PowerTotals.Sum(engine.Hardware.Select(n => (n.Name, n.Kind,
+                        (IReadOnlyList<(SensorDefinition, double)>)[.. n.Sensors.Where(x => values.ContainsKey(x.Id)).Select(x => (x, values[x.Id]))]))) : null;
+                    var systemPower = total is null ? null : new
+                    {
+                        measuredWatts = total.Measured is { } w ? Math.Round(w, 1) : (double?)null, wholeSystemFromPowerSupply = total.FromPsu ? true : (bool?)null,
+                        parts = total.Parts.Select(p => new { device = p.Device, part = p.Kind.ToString(), sensor = p.Sensor, watts = Math.Round(p.Watts, 1) }),
+                        notMeasured = total.Unmeasured.Select(k => k.ToString()),
+                        note = total.FromPsu ? "the power supply's own output reading: the whole computer, on the supply's DC side"
+                            : "the sum of the parts that report their power; per-core power is inside the CPU package and is not added again. The parts in notMeasured " +
+                              "have no power sensor and are not in the sum, so the whole computer draws more; a wall meter measures it all. Never estimate them.",
+                    };
                     // A reading older than a few polls is not "now" (the polling was paused or stuck): it is said with its age.
                     double age = Math.Round((DateTimeOffset.UtcNow - snap.Timestamp).TotalSeconds);
-                    return Task.FromResult(Json(new { secondsAgo = age, stale = age > Math.Max(StaleSeconds, 3 * engine.FastInterval.TotalSeconds) ? true : (bool?)null, devices }));
+                    return Task.FromResult(Json(new { secondsAgo = age, stale = age > Math.Max(StaleSeconds, 3 * engine.FastInterval.TotalSeconds) ? true : (bool?)null, systemPower, devices }));
                 }),
             new("list_reports", "The saved test and benchmark reports, newest first: index (0 is the newest), when, kind, verdict and how many tests passed, failed or did not run. Optional limit (default 5, at most 10).",
                 """{"type":"object","properties":{"limit":{"type":"integer"}}}""",
@@ -360,29 +374,37 @@ public sealed partial class WebBridge
                         }
                     }
                 }),
-            new("run_benchmark", "Runs one real benchmark, after the user confirmed on the page, and returns its number, the best earlier result of this computer and the change against it " +
-                "(positive change is better, negative is slower than the best kept). It takes about a minute. Benchmarks: cpu_single, cpu_multi, memory, storage, gpu. For a trend over time use get_benchmark_history.",
-                """{"type":"object","properties":{"benchmark":{"type":"string","enum":["cpu_single","cpu_multi","memory","storage","gpu"]}},"required":["benchmark"]}""",
+            new("run_benchmark", "Runs real benchmarks, after the user confirmed all of them at once on the page, one after another, and returns each one's number, the best " +
+                "earlier result of this computer and the change against it (positive change is better, negative is slower than the best kept). About a minute each. " +
+                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu, gpu_rt, gpu_scene, gpu_scene_rt, network (internet speed), or all. Name them all in one call. For a trend over time use get_benchmark_history.",
+                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu","gpu_rt","gpu_scene","gpu_scene_rt","network"]}}},"required":["benchmarks"]}""",
                 async (a, ct) =>
                 {
                     if (_benchVm is not { } bench || _benchCompared is not { } compared) return Json(new { error = "the benchmarks are not available yet" });
-                    if (Text(a, "benchmark") is not { } key || !AssistantBenchmarks.TryGetValue(key, out string? id)) return Json(new { error = "benchmark must be cpu_single, cpu_multi, memory, storage or gpu" });
-                    var plan = await OnUi(() =>
-                    {
-                        if (bench.IsRunning || runner.IsBusy) return "busy";
-                        var row = bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id.Value == id);
-                        return row is null ? "unknown" : !row.IsAvailable ? "unavailable" : Json(new { name = row.Name, seconds = row.DurationText });
-                    }).ConfigureAwait(false);
-                    if (plan == "busy") return Json(new { error = "a test or a benchmark is already running; nothing was started" });
-                    if (plan is "unknown" or "unavailable") return Json(new { error = "this computer can not run that benchmark" });
-                    using var info = JsonDocument.Parse(plan);
-                    if (await ask("benchmark", [(info.RootElement.GetProperty("name").GetString()!, info.RootElement.GetProperty("seconds").GetString()!)], ct).ConfigureAwait(false) is null)
+                    var keys = Texts(a, "benchmarks").Append(Text(a, "benchmark") ?? "").Where(k => k.Length > 0).Distinct().ToList();
+                    var ids = (keys.Contains("all") ? AssistantBenchmarks.Values : keys.Select(k => AssistantBenchmarks.GetValueOrDefault(k)).OfType<string>()).Distinct().ToList();
+                    if (ids.Count == 0) return Json(new { error = "name at least one benchmark: " + string.Join(", ", AssistantBenchmarks.Keys) + " or all" });
+                    // The list is fixed here, before the user is asked: the benchmarks this machine can run, in the page's order, all asked about at once.
+                    List<(string Id, string Name, string Seconds)>? plan = null;
+                    await OnUi(() => { plan = bench.IsRunning || runner.IsBusy ? null : bench.Rows.Where(r => ids.Contains(r.Benchmark.Definition.Id.Value) && r.IsAvailable)
+                        .Select(r => (r.Benchmark.Definition.Id.Value, r.Name, r.DurationText)).ToList(); return ""; }).ConfigureAwait(false);
+                    if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
+                    if (plan.Count == 0) return Json(new { error = "this computer can not run those benchmarks" });
+                    if (await ask("benchmark", [.. plan.Select(r => (r.Name, r.Seconds))], ct).ConfigureAwait(false) is not { } kept)
                         return Json(new { started = false, reason = "the user declined; nothing was run" });
+                    var chosen = plan.Where((_, i) => kept[i]).ToList();
 
-                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => withoutModel(Run, ct));
-                    async Task<string> Run()
+                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => withoutModel(RunAll, ct));
+                    async Task<string> RunAll()
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (bench.CancelCommand.CanExecute(null)) bench.CancelCommand.Execute(null); }));
+                        var results = new List<object>();
+                        foreach (var (id, name, _) in chosen)
+                            results.Add(ct.IsCancellationRequested ? new { benchmark = name, completed = false, note = "cancelled; not run" } : await RunOne(id, name).ConfigureAwait(false));
+                        return Json(new { started = true, results });
+                    }
+                    async Task<object> RunOne(string id, string name)
+                    {
                         string ran = await ui(async () =>
                         {
                             var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
@@ -391,26 +413,29 @@ public sealed partial class WebBridge
                             await bench.RunCommand.ExecuteAsync(row);
                             return "";
                         }).ConfigureAwait(false);
-                        if (ran.Length > 0) return Json(new { started = false, reason = "the benchmark could not start" });
+                        if (ran.Length > 0) return new { benchmark = name, completed = false, note = "the benchmark could not start; do not report a number" };
                         // The comparison with the best kept result is filed when the run's own event reaches the page; give it a few seconds.
                         for (int i = 0; i < 40; i++)
                         {
-                            string result = await OnUi(() =>
-                            {
-                                var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
-                                if (compared.GetValueOrDefault(id) is not { } c) return row.IsActive || i < 39 ? "" : Json(new { started = true, completed = false, status = row.StatusText, note = "no result was recorded; do not report a number" });
-                                return Json(new
-                                {
-                                    started = true, completed = true, benchmark = row.Name, value = Math.Round(c.Current.Value, 2), unit = c.Current.Unit,
-                                    previousBest = c.Previous is { } p ? new { value = Math.Round(p.Value, 2), at = p.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm") } : null,
-                                    changePercent = c.ChangePercent is { } ch ? Math.Round(ch, 1) : (double?)null, newRecord = c.Saved,
-                                    note = c.Previous is null ? "the first recorded result of this computer; there is nothing to compare with" : null,
-                                });
-                            }).ConfigureAwait(false);
-                            if (result.Length > 0) return result;
+                            int n = i; object? result = null;
+                            await OnUi(() => { result = Read(n); return ""; }).ConfigureAwait(false);
+                            if (result is not null) return result;
                             await Task.Delay(250, CancellationToken.None).ConfigureAwait(false);
                         }
-                        return Json(new { started = true, completed = false, note = "no result was recorded; do not report a number" });
+                        return new { benchmark = name, completed = false, note = "no result was recorded; do not report a number" };
+                        object? Read(int i)
+                        {
+                            var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
+                            if (compared.GetValueOrDefault(id) is not { } c)
+                                return row.IsActive || i < 39 ? null : new { benchmark = name, completed = false, status = row.StatusText, note = "no result was recorded; do not report a number" };
+                            return new
+                            {
+                                benchmark = row.Name, completed = true, value = Math.Round(c.Current.Value, 2), unit = c.Current.Unit,
+                                previousBest = c.Previous is { } p ? new { value = Math.Round(p.Value, 2), at = p.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm") } : null,
+                                changePercent = c.ChangePercent is { } ch ? Math.Round(ch, 1) : (double?)null, newRecord = c.Saved,
+                                note = c.Previous is null ? "the first recorded result of this computer; there is nothing to compare with" : null,
+                            };
+                        }
                     }
                 }),
         ];

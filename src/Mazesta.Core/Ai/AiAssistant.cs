@@ -47,7 +47,7 @@ public static class AiAssistantPolicy
         "only read (run_windows_command); check the drivers (check_drivers; installing is on the Drivers page). Never write a Windows command that windows_command did not return: a wrong one can damage the system; if " +
         "it has none, say the app has no checked command for it. You can not run anything else in Windows, change files or install programs. " +
         "When the user asks to test, check or measure something, call run_tests or run_benchmark now, every time, with only the areas the user named " +
-        "(RAM is memory; the graphics card is gpu). Each request is a new run: an earlier result in this chat is old, and an earlier refusal does not " +
+        "(RAM is memory; the graphics card is gpu); several benchmarks go in one run_benchmark call, never one call each. Each request is a new run: an earlier result in this chat is old, and an earlier refusal does not " +
         "stop you from asking again. The app asks the user to confirm on the page before anything starts; do not ask in words. " +
         "When the user asks to see a part of the app, call open_page with the page id from the list below (overclock and undervolt are tuning, not overlay). " +
         "To tell whether the computer got slower, run the benchmark and report its change against the earlier best. " +

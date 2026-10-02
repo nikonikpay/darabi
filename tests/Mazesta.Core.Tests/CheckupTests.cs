@@ -70,7 +70,7 @@ public class GpuCheckTests
     [Fact] public void Running_at_the_power_limit_is_only_noted()
     {
         var f = GpuCheck.Evaluate(Run(new(60, 55, 0, 0, 0, 0, 88, 350), core: _ => 70));
-        Assert.Equal(FindingLevel.Note, Assert.Single(f, x => x.Code == FindingCode.GpuPowerLimited).Level);
+        Assert.Equal(FindingLevel.Good, Assert.Single(f, x => x.Code == FindingCode.GpuPowerLimited).Level);   // the card working to its own limit is how it is built: a check that held
         Assert.Contains(f, x => x.Code == FindingCode.GpuHeatOk);
     }
     [Fact] public void Reaching_the_temperature_target_needs_attention() => Assert.Equal(FindingLevel.Attention, Assert.Single(GpuCheck.Evaluate(Run(new(60, 0, 30, 0, 0, 0, 83, 350), core: _ => 83)), x => x.Code == FindingCode.GpuThermalSlowdown).Level);
