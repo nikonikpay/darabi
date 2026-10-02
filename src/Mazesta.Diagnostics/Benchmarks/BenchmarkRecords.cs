@@ -30,7 +30,7 @@ public sealed class BenchmarkRecords
         ["bench.cpu.single"] = new("Bench_Cpu_Gflops", true, PeerPart.Cpu), ["bench.cpu.multi"] = new("Bench_Cpu_Gflops", true, PeerPart.Cpu),
         ["bench.memory"] = new("Bench_Mem_Read", true, PeerPart.Memory, Version: 3), ["bench.storage"] = new("Bench_Storage_SeqRead", true, PeerPart.Drive, Version: 2),
         ["bench.gpu.d3d"] = new("Bench_Gpu_Fps", true, PeerPart.Gpu), ["bench.gpu.rt"] = new("Bench_Gpu_Rt_Fps", true, PeerPart.Gpu), ["bench.gpu.ai"] = new("Bench_Gpu_Ai_Fp32", true, PeerPart.Gpu),
-        ["bench.gpu.scene.d3d"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu, 4), ["bench.gpu.scene.rt"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu, 4),   // v2: the courtyard V4 scene; RT at 4 rays a pixel. v3: the same 128-view tour on every card, timed on the frames alone. v4: the V6 building, leaves as cut-outs on their own trees, the still scene's shadow drawn once
+        ["bench.gpu.scene.d3d"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu, 5), ["bench.gpu.scene.rt"] = new("Bench_Gpu_Scene_Fps", true, PeerPart.Gpu, 5),   // v2: the courtyard V4 scene; RT at 4 rays a pixel. v3: the same 128-view tour on every card, timed on the frames alone. v4: the V6 building, leaves as cut-outs on their own trees, the still scene's shadow drawn once. v5: a clouded sky, rooms behind the stained windows, foliage shading; RT denoised
         ["bench.network.internet"] = new("Bench_Net_Download", true),
     };
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };

@@ -32,7 +32,8 @@ $jobs = @(
     @('GardenRaster.hlsl', 'SkyPS', 'ps_6_0', 'GardenSkyPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
-    @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso')
+    @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso'),
+    @('GardenRay.hlsl', 'Denoise', 'cs_6_5', 'GardenDenoise.cso')
 )
 foreach ($j in $jobs) {
     & $dxc.FullName -nologo -O3 -Qstrip_debug -Qstrip_reflect -E $j[1] -T $j[2] -Fo (Join-Path $dir $j[3]) (Join-Path $dir $j[0])

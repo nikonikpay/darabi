@@ -108,7 +108,7 @@ public enum GardenMaterialKind : uint { Flat, Cutout, Brick, Water, Glass, Emiss
 [StructLayout(LayoutKind.Sequential)]
 public struct GardenMaterial
 {
-    public GardenMaterialKind Kind; public int Texture; public float Pad0, Pad1;
+    public GardenMaterialKind Kind; public int Texture; public float RoomOffset, Pad1;
     public Vector3 Base; public float Alpha;
     public Vector3 Color2; public float Roughness;
     public Vector3 Mortar; public float Metallic;

@@ -21,7 +21,7 @@ cbuffer Frame : register(b1)
 };
 
 struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Pad; };
-struct Material { uint Kind; int Texture; float2 Pad; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
+struct Material { uint Kind; int Texture; float RoomOffset; float Pad; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
 struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float2 Pad; };
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5;
@@ -110,8 +110,87 @@ float3 SkyColor(float3 dir)
     return c;
 }
 
+// Clouds over the sky gradient: a few octaves of value noise on a plane high above, drifting slowly with Time (so a frame drawn twice
+// at one Time is the same), thinning toward the horizon, lit on the sun's side. Used where the sky itself is seen (background, the water's
+// mirror, a ray that leaves the scene); the glossy sheen on surfaces keeps the plain gradient, which is what they would blur it to.
+float Fbm(float3 p) { float a = 0.5, f = 0; [unroll] for (int k = 0; k < 5; k++) { f += a * Noise3(p); p = p * 2.03 + 17.1; a *= 0.5; } return f; }
+float3 Sky(float3 dir)
+{
+    float3 c = SkyColor(dir);
+    if (dir.y <= 0.01) return c;
+    float2 q = dir.xz / (dir.y + 0.12) * 1.6 + float2(Time * 0.004, Time * 0.0015);
+    float d = Fbm(float3(q, 3.7)), cover = smoothstep(0.42, 0.72, d) * smoothstep(0.01, 0.18, dir.y);
+    if (cover <= 0) return c;
+    float toSun = saturate(dot(dir, SunDir)), thick = smoothstep(0.5, 0.85, Fbm(float3(q * 1.7, 9.1)));
+    float3 lit = Mode == 1 ? dot(SkyHorizon, 0.333) * float3(1.55, 1.42, 1.3) + SunColor * (0.04 + 0.12 * pow(toSun, 8))
+                           : dot(SkyZenith, 0.333) * float3(1.1, 1.15, 1.45) + float3(0.5, 0.6, 0.9) * 0.05 * pow(toSun, 8);
+    return lerp(c, lit * lerp(1, 0.62, thick), cover * 0.92);
+}
+
 // The sky's light on a surface. By day it is about half the bright sky's colour, so the sun and its shadows give the courtyard its shape.
 float3 Ambient(float3 n) { return lerp(GroundColor, lerp(SkyHorizon, SkyZenith, 0.5), saturate(n.y * 0.5 + 0.5)) * (Mode == 1 ? 0.5 : 1.0); }
+
+// ——— a room behind a window (interior mapping) ———
+// A window's glass shows a furnished room that is not there: the view ray is carried on into a box behind the pane (one bay of the
+// building wide, Pattern's depth deep, from its floor to its ceiling) and the wall, floor or ceiling it meets is painted here - plaster
+// over a tiled dado, a carpet on a wooden floor, a niche and a cushioned bench on the back wall, a lamp. Each bay gets its own colours.
+// Pattern: bay width, room depth, floor height, ceiling height; RoomOffset: where a bay starts along the facade.
+float Hash1(float x) { return frac(sin(x * 127.1 + 311.7) * 43758.5453); }
+float3 Interior(Material m, float3 p, float3 dir, float3 nOut)
+{
+    float3 inward = -nOut; float3 along = abs(inward.x) > abs(inward.z) ? float3(0, 0, 1) : float3(1, 0, 0);
+    float W = m.Pattern.x, D = m.Pattern.y, F = m.Pattern.z, H = m.Pattern.w - m.Pattern.z;
+    float u = dot(p, along) - m.RoomOffset, bay = floor(u / W); u -= bay * W;
+    float3 o = float3(u, p.y - F, 0), d = float3(dot(dir, along), dir.y, dot(dir, inward));
+    float tu = d.x > 0 ? (W - o.x) / d.x : -o.x / min(d.x, -1e-5);
+    float tv = d.y > 0 ? (H - o.y) / d.y : -o.y / min(d.y, -1e-5);
+    float tw = D / max(d.z, 1e-5), t = min(tu, min(tv, tw));
+    float3 h = o + d * t;
+    float r1 = Hash1(bay), r2 = Hash1(bay + 31.7), r3 = Hash1(bay + 77.3);
+    float3 plaster = lerp(float3(0.62, 0.52, 0.40), float3(0.55, 0.47, 0.42), r1), c;
+    if (t == tv && d.y < 0)   // floor: walnut boards under a carpet with a border
+    {
+        float2 f = float2(h.x, h.z);
+        c = float3(0.20, 0.10, 0.05) * (0.8 + 0.4 * Hash1(floor(f.x / 0.18) + bay * 13));
+        float2 rug = abs(f - float2(W * 0.5, D * 0.55)) - float2(W * 0.36, D * 0.3);
+        if (max(rug.x, rug.y) < 0)
+        {
+            float3 field = lerp(float3(0.42, 0.06, 0.05), float3(0.10, 0.12, 0.32), step(0.6, r2));
+            float edge = -max(rug.x, rug.y);
+            c = edge < 0.12 ? float3(0.55, 0.42, 0.18) : field * (0.8 + 0.25 * Noise3(float3(f * 9, bay)));
+            float2 med = (f - float2(W * 0.5, D * 0.55)) / float2(W * 0.36, D * 0.3);
+            if (length(med * float2(1, 0.8)) < 0.4) c = float3(0.62, 0.48, 0.22);
+        }
+    }
+    else if (t == tv)          // ceiling: wooden beams
+        c = frac(h.z / 0.6) < 0.25 ? float3(0.16, 0.08, 0.04) : plaster * 0.85;
+    else
+    {
+        float2 w = t == tw ? float2(h.x, h.y) : float2(h.z, h.y);   // across the wall, up it
+        float span = t == tw ? W : D;
+        c = h.y < 1.0 ? lerp(float3(0.08, 0.28, 0.42), float3(0.85, 0.80, 0.68), step(0.5, frac((floor(w.x / 0.2) + floor(h.y / 0.2)) * 0.5))) : plaster;
+        if (h.y > 0.98 && h.y < 1.04) c = float3(0.45, 0.36, 0.20);
+        if (t == tw)
+        {
+            float2 n = float2(abs(w.x - span * 0.5), w.y - 1.5);   // a pointed niche
+            if (n.x < span * 0.18 && n.y > 0 && n.y < 1.4 + 0.25 * (1 - n.x / (span * 0.18))) c = plaster * 0.45;
+            if (w.y < 0.55 && abs(w.x - span * 0.5) < span * 0.42) c = lerp(float3(0.45, 0.10, 0.08), float3(0.20, 0.30, 0.15), step(0.5, r3)) * (w.y > 0.45 ? 1.25 : 1);
+        }
+        else if (abs(w.x - span * 0.6) < 0.35 && abs(w.y - 2.2) < 0.45)   // a framed picture on a side wall
+            c = abs(w.x - span * 0.6) > 0.3 || abs(w.y - 2.2) > 0.4 ? float3(0.40, 0.30, 0.12) : lerp(float3(0.30, 0.38, 0.25), float3(0.55, 0.40, 0.25), Noise3(float3(w * 6, bay)));
+    }
+    // daylight from the window fades into the room; a warm lamp hangs in the middle (lit in about two bays of three)
+    float depth = saturate(h.z / D);
+    float3 day = Ambient(float3(0, 1, 0)) * lerp(1.1, 0.3, depth);
+    float3 lampAt = float3(W * 0.5, H - 0.9, D * 0.5);
+    float3 lamp = (r2 > 0.3 ? 1 : 0.15) * float3(1.0, 0.62, 0.30) * (Mode == 1 ? 0.35 : 0.9) / (0.6 + dot(h - lampAt, h - lampAt) * 0.35);
+    float3 col = c * (day + lamp);
+    if (length(h - lampAt) < 0.18) col += float3(4, 2.6, 1.3) * (r2 > 0.3 ? 1 : 0.1);
+    return col;
+}
+
+// What a stained pane passes: its own hue at full strength (clear glass passes nearly everything).
+float3 StainTint(Material m) { return m.Base / max(max(m.Base.r, m.Base.g), max(m.Base.b, 1e-3)) * 0.9; }
 
 // Radiance leaving a surface lit by one light of irradiance E from direction l: Lambert plus a GGX-shaped highlight.
 float3 Brdf(Surface s, float3 v, float3 l, float3 e)

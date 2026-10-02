@@ -19,6 +19,10 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath), "..", "M
 OUT = os.environ.get("MAZESTA_SCENE_OUT") or os.path.join(REPO, "src", "Mazesta.Diagnostics.Gpu", "Scene", "garden.mzscene")
 SCENES = (("Garden_Raster", 1), ("Garden_RT", 2))
 TEX = 256
+# The orsi's panes show a room behind them (interior mapping, Garden.hlsli Interior): one room per bay of the V6 building, whose piers
+# stand 2.8 m apart from x = -9.85; rooms 4 m deep, from the hall's floor (1.07 m) to the underside of its header (5.41 m).
+WINDOW_GLASS = 'CV6_Glass_'
+ROOM = (2.8, 4.0, 1.07, 5.41); ROOM_OFFSET = -9.85
 DECIMATE_OVER = 6000            # hard-surface meshes above this many triangles are simplified (lantern glass, pots, trunks)
 PER_MESH_BUDGET = 400_000       # a mesh placed thousands of times (ivy leaves, blossoms) is simplified until all its copies together stay under this
 KEEP_DETAIL = ("CypressFoliage",)
@@ -193,6 +197,7 @@ def material_for(mat):
         elif rec['trans'] > 0.5 or base == 'Spray': rec['kind'] = K_GLASS
         elif max(rec['emit']) > 0.5 and rec['kind'] == K_FLAT: rec['kind'] = K_EMISSIVE
         if base == 'Spray': rec['alpha'] = 0.5
+        if base.startswith(WINDOW_GLASS) and rec['kind'] == K_GLASS: rec.update(pattern=ROOM, room_offset=ROOM_OFFSET)
     material_index[name] = len(materials); materials.append(rec)
     return material_index[name]
 
@@ -381,7 +386,7 @@ w(struct.pack("<6I", len(textures), len(materials), len(meshes), len(instances),
 for img, cutout in textures:
     for level in mips_of(img, cutout): w(bc3(level))
 for m in materials:
-    w(struct.pack("<Ii", m['kind'], m['tex'])); w(struct.pack("<2f", 0, 0))
+    w(struct.pack("<Ii", m['kind'], m['tex'])); w(struct.pack("<2f", m.get('room_offset', 0), 0))
     w(struct.pack("<4f", *m['base'], m['alpha'])); w(struct.pack("<4f", *m['color2'], m['rough'])); w(struct.pack("<4f", *m['mortar'], m['metal']))
     w(struct.pack("<4f", *m['emit'], m['trans'])); w(struct.pack("<4f", *m['pattern']))
 for me in meshes:

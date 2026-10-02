@@ -6,7 +6,7 @@
 // reflect - up to Bounces deep. The random numbers come from a hash of the pixel and sample, never the clock: the same Time gives the same image.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 
-#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8)), UAV(u0), " \
+#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=2, b2), " \
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR)"
 
 #include "Garden.hlsli"
@@ -24,6 +24,10 @@ ByteAddressBuffer Vertices : register(t6);
 ByteAddressBuffer Indices : register(t7);
 Texture2DArray<float4> Textures : register(t8);
 RWStructuredBuffer<uint> Pixels : register(u0);
+RWStructuredBuffer<float4> Ping : register(u1);    // the denoiser's light, as it goes from pass to pass (Ping -> Pong -> Ping ...)
+RWStructuredBuffer<float4> Guide : register(u2);   // per pixel: first surface's normal and distance, then its colour
+RWStructuredBuffer<float4> Pong : register(u3);
+cbuffer Pass : register(b2) { uint Step; uint Last; };   // Step: tap spacing, bit 16 set when this pass reads Pong
 SamplerState Linear : register(s0);
 
 static const uint MaskVisible = 1, MaskShadow = 2;
@@ -138,7 +142,7 @@ float3 Direct(Surface s, float3 p, float3 v, bool shadows, inout uint seed)
 float3 Glance(float3 origin, float3 dir, float tmax, inout uint seed)
 {
     Hit h;
-    if (!Trace(origin, dir, tmax, MaskVisible, h)) return SkyColor(dir);
+    if (!Trace(origin, dir, tmax, MaskVisible, h)) return Sky(dir);
     Material m = Materials[h.Material];
     float3 v = -dir; Surface s = SurfaceAt(h, v);
     if (m.Kind == KWater || m.Kind == KGlass) return SkyColor(reflect(dir, s.Normal)) * 0.3 + s.Emission;
@@ -152,7 +156,7 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
     for (uint bounce = 0; bounce <= Bounces; bounce++)
     {
         Hit h;
-        if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * SkyColor(dir); break; }
+        if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * Sky(dir); break; }
         Material m = Materials[h.Material];
         float3 v = -dir; Surface s = SurfaceAt(h, v);
 
@@ -169,7 +173,8 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
         {
             float f = 0.04 + 0.96 * pow(1 - saturate(dot(s.Normal, v)), 5);
             color += weight * (s.Emission + f * Glance(h.P + s.Normal * 0.01, reflect(dir, s.Normal), 400, seed));
-            weight *= (1 - f) * lerp(1, m.Base, 0.3) * (m.Alpha < 1 ? m.Alpha + 0.4 : 1);
+            if (m.Pattern.x > 0) { color += weight * (1 - f) * StainTint(m) * Interior(m, h.P, dir, s.Normal); break; }   // a window: the room behind it
+            weight *= (1 - f) * lerp(1, StainTint(m), 0.8) * (m.Alpha < 1 ? m.Alpha + 0.4 : 1);
             origin = h.P + dir * 0.01; continue;   // thin glass: straight on
         }
 
@@ -194,7 +199,18 @@ void Main(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= Width || id.y >= Height) return;
     uint n = max(1, Samples), side = (uint)ceil(sqrt((float)n));
-    float3 color = 0;
+    float3 color = 0; uint i = id.y * Width + id.x;
+    {   // the denoiser's guide: what the pixel's centre ray meets first
+        Hit h0; float2 ndc = (float2(id.xy) + 0.5) / float2(Width, Height) * 2 - 1;
+        float3 d0 = normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect - CamUp * ndc.y * TanHalfFovY);
+        if (Trace(Eye, d0, 400, MaskVisible, h0))
+        {
+            Material m0 = Materials[h0.Material]; Surface s0 = SurfaceAt(h0, -d0);
+            bool plain = m0.Kind != KWater && m0.Kind != KGlass && m0.Kind != KEmissive;
+            Guide[i * 2] = float4(s0.Normal, length(h0.P - Eye)); Guide[i * 2 + 1] = float4(plain ? max(s0.Albedo, 0.03) : 1, 0);
+        }
+        else { Guide[i * 2] = float4(0, 0, 0, -1); Guide[i * 2 + 1] = 1; }
+    }
     for (uint k = 0; k < n; k++)
     {
         uint seed = Hash(id.y * 8191 + id.x * 131071 + k * 524287 + 17);
@@ -203,6 +219,43 @@ void Main(uint3 id : SV_DispatchThreadID)
         float3 dir = normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect - CamUp * ndc.y * TanHalfFovY);
         color += Radiance(Eye, dir, seed);
     }
-    uint3 c = (uint3)(Tonemap(color / n) * 255 + 0.5);
-    Pixels[id.y * Pitch + id.x] = c.r | c.g << 8 | c.b << 16 | 0xFF000000;
+    Ping[i] = float4(color / n / Guide[i * 2 + 1].rgb, 0);   // light without the surface's own colour, so the filter keeps texture detail
+}
+
+// The denoiser: an edge-aware a-trous filter (Dammertz et al. 2010) over the light, a few passes with taps Step apart (1, 2, 4, 8).
+// A tap counts for less the more its surface differs (direction, distance) or its light does, so edges, shadows and texture stay
+// while the speckle of a few rays a pixel is smoothed out. Spatial only, from this frame alone: a frame drawn twice is the same image.
+[RootSignature(RS)]
+[numthreads(8, 8, 1)]
+void Denoise(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Width || id.y >= Height) return;
+    uint i = id.y * Width + id.x; bool fromPing = (Step >> 16) == 0; int step = (int)(Step & 0xFFFF);
+    float4 g = Guide[i * 2]; float3 c0 = fromPing ? Ping[i].rgb : Pong[i].rgb;
+    float3 sum = c0; float wsum = 1;
+    if (g.w > 0)
+    {
+        const float K[3] = { 3.0 / 8, 1.0 / 4, 1.0 / 16 };
+        float l0 = dot(c0, float3(0.3, 0.59, 0.11));
+        [unroll] for (int y = -2; y <= 2; y++) [unroll] for (int x = -2; x <= 2; x++)
+        {
+            if (x == 0 && y == 0) continue;
+            int2 q = int2(id.xy) + int2(x, y) * step;
+            if (any(q < 0) || q.x >= (int)Width || q.y >= (int)Height) continue;
+            uint j = q.y * Width + q.x; float4 gj = Guide[j * 2]; if (gj.w <= 0) continue;
+            float3 cj = fromPing ? Ping[j].rgb : Pong[j].rgb;
+            float w = K[abs(x)] * K[abs(y)] / (K[0] * K[0])
+                    * pow(saturate(dot(g.xyz, gj.xyz)), 32)
+                    * exp(-abs(gj.w - g.w) / (0.01 * g.w * step + 0.02))
+                    * exp(-abs(dot(cj, float3(0.3, 0.59, 0.11)) - l0) / (0.6 * max(l0, 0.02) + 0.03));
+            sum += cj * w; wsum += w;
+        }
+    }
+    float3 c = sum / wsum;
+    if (Last)
+    {
+        uint3 o = (uint3)(Tonemap(c * Guide[i * 2 + 1].rgb) * 255 + 0.5);
+        Pixels[id.y * Pitch + id.x] = o.r | o.g << 8 | o.b << 16 | 0xFF000000;
+    }
+    else if (fromPing) Pong[i] = float4(c, 0); else Ping[i] = float4(c, 0);
 }

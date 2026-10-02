@@ -23,7 +23,7 @@ SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
 
 struct VIn { float4 Position : POSITION; float4 Normal : NORMAL; float2 Uv : TEXCOORD; };
-struct VOut { float4 Position : SV_Position; float3 World : WORLD; float3 Normal : NORMAL; float2 Uv : TEXCOORD; };
+struct VOut { float4 Position : SV_Position; float3 World : WORLD; float3 Normal : NORMAL; float2 Uv : TEXCOORD; float Out : OUTWARD; nointerpolation uint Id : INSTANCE; };
 
 void Place(VIn v, uint instance, out float3 world, out float3 normal)
 {
@@ -39,6 +39,7 @@ VOut MainVS(VIn v, uint instance : SV_InstanceID)
 {
     VOut o; Place(v, instance, o.World, o.Normal);
     o.Position = mul(ViewProj, float4(o.World, 1)); o.Uv = v.Uv;
+    o.Out = saturate(length(v.Position.xyz)); o.Id = InstanceBase + instance;   // how far out in its mesh's bounds: a leaf deep in a crown is shaded by the rest
     return o;
 }
 
@@ -96,6 +97,15 @@ float4 Opaque(VOut i, bool cutout)
     {
         if (Flags & 4) alpha = saturate((s.Alpha - 0.5) / max(fwidth(s.Alpha), 1e-4) + 0.5);   // alpha to coverage: a crisp edge, smoothed by the samples
         else if (s.Alpha < 0.5) discard;
+        // Foliage: no two plants quite the same green, a little less saturated than the card's photograph, darker inside the crown
+        // (which the sky barely reaches), and the sun shining through a leaf seen against it.
+        float h = Hash1(i.Id * 0.618);
+        s.Albedo *= lerp(float3(0.82, 0.86, 0.80), float3(1.08, 1.04, 0.92), h);
+        s.Albedo = lerp(dot(s.Albedo, float3(0.3, 0.59, 0.11)), s.Albedo, 0.74);
+        float inner = lerp(0.42, 1, i.Out * i.Out);
+        float3 c = Lit(s, i.World, v) - s.Albedo * Ambient(s.Normal) * (1 - inner);
+        if (SunOn > 0) c += s.Albedo * s.Albedo * SunColor * 0.35 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n) * inner;
+        return float4(Tonemap(c), alpha);
     }
     return float4(Tonemap(Lit(s, i.World, v)), alpha);
 }
@@ -121,11 +131,20 @@ float4 TransparentPS(VOut i) : SV_Target
             float3 sunGlint = pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn;
             reflected += Tonemap(sunGlint);
         }
-        else reflected = Tonemap(SkyColor(reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn);
+        else reflected = Tonemap(Sky(reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn);
         // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and a faint teal body
         float3 body = Tonemap(m.Base * Ambient(float3(0, 1, 0)) * 0.5);
         float a = fresnel + (1 - fresnel) * 0.22;
         return float4((reflected * fresnel + body * (1 - fresnel) * 0.22) / a, a);
+    }
+    // a window: the room behind it, through the pane's colour, and the courtyard's sky mirrored on it - drawn whole, not blended
+    if (m.Kind == KGlass && m.Pattern.x > 0)
+    {
+        float f = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
+        float3 tint = StainTint(m), behind = Interior(m, i.World, -v, n) * tint;
+        float3 c = behind * (1 - f) + Sky(reflect(-v, n)) * max(f, 0.06) + tint * Ambient(n) * 0.08;   // a little light caught in the colour
+        c += pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * 0.5;   // the sun's glint
+        return float4(Tonemap(c), 1);
     }
     // glass and spray: a tinted sheen and highlights
     Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = 0; s.Emission = m.Emission; s.Normal = n;
@@ -151,5 +170,5 @@ SkyOut SkyVS(uint vertex : SV_VertexID)
 float4 SkyPS(SkyOut i) : SV_Target
 {
     float3 dir = normalize(CamForward + CamRight * i.Ndc.x * TanHalfFovY * Aspect + CamUp * i.Ndc.y * TanHalfFovY);
-    return float4(Tonemap(SkyColor(dir)), 1);
+    return float4(Tonemap(Sky(dir)), 1);
 }

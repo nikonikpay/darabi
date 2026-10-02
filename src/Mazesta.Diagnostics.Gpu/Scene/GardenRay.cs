@@ -9,24 +9,30 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 internal sealed unsafe class GardenRay : GardenRenderer
 {
+    [StructLayout(LayoutKind.Sequential)] private readonly record struct Pass(uint Step, uint Last);
     [StructLayout(LayoutKind.Sequential, Size = 64)] private struct InstanceDesc { public fixed float Transform[12]; public uint IdAndMask, OffsetAndFlags; public ulong Blas; }
 
-    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline;
-    private readonly ID3D12Resource _tlas, _tlasScratch, _instances, _pixels, _constants; private readonly uint _pitch;
+    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise;
+    private readonly ID3D12Resource _tlas, _tlasScratch, _instances, _pixels, _constants, _ping, _pong, _guide; private readonly uint _pitch;
     private readonly ulong[] _blas; private readonly byte[] _masks; private readonly Matrix4x4[] _dequant;
     private readonly BuildRaytracingAccelerationStructureInputs _tlasInputs;
     private readonly ID3D12DescriptorHeap _srv;
     public int Bounces { get; } = 4;
     /// <summary>Camera rays a pixel: each with its own soft-shadow rays to every lamp and its own bounced-light ray.</summary>
     public int Samples { get; } = 4;
+    /// <summary>The denoiser's passes (taps 1, 2, 4, 8 pixels apart): an edge-aware filter over this frame's light alone.</summary>
+    public int DenoisePasses { get; } = 4;
 
     public GardenRay(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets) : base(s, g, width, height, targets)
     {
         byte[] cs = D3D12Session.Shader("GardenRay");
         _root = s.Own(s.Device.CreateRootSignature(cs));
         _pipeline = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = cs }));
+        _denoise = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenDenoise") }));
         _pitch = ((uint)width + 63) & ~63u;
         _pixels = s.UavBuffer((ulong)_pitch * (ulong)height * 4);
+        ulong px = (ulong)width * (ulong)height * 16;
+        _ping = s.UavBuffer(px); _pong = s.UavBuffer(px); _guide = s.UavBuffer(px * 2);
         _constants = s.Buffer(512, HeapType.Upload, ResourceStates.GenericRead);
 
         // one BLAS per mesh drawn, built together: results and scratch each packed into one buffer
@@ -117,7 +123,19 @@ internal sealed unsafe class GardenRay : GardenRenderer
         l.SetComputeRootShaderResourceView(8, G.IndexBuffer.GPUVirtualAddress);
         l.SetComputeRootDescriptorTable(9, _srv.GetGPUDescriptorHandleForHeapStart());
         l.SetComputeRootUnorderedAccessView(10, _pixels.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(11, _ping.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(12, _guide.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(13, _pong.GPUVirtualAddress);
+        l.SetComputeRoot32BitConstants(14, new Pass(0, 0), 0);
         l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
+        l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_guide);
+        l.SetPipelineState(_denoise);
+        for (int k = 0; k < DenoisePasses; k++)   // Ping -> Pong -> Ping ...; the last pass writes the pixels
+        {
+            l.SetComputeRoot32BitConstants(14, new Pass((uint)(1 << k) | (k % 2 == 1 ? 1u << 16 : 0), k == DenoisePasses - 1 ? 1u : 0), 0);
+            l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
+            l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_pong);
+        }
         l.ResourceBarrierUnorderedAccessView(_pixels);
     }
 
