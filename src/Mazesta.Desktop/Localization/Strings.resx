@@ -364,6 +364,7 @@
   <data name="SensorKind_Factor" xml:space="preserve">
     <value>Factors</value>
   </data>
+  <data name="SensorKind_Count" xml:space="preserve"><value>Counters</value></data>
   <data name="SensorKind_Data" xml:space="preserve">
     <value>Data</value>
   </data>
@@ -2444,6 +2445,19 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_GpuSlotOlderGen_Text" xml:space="preserve"><value>The slot supports an older PCIe generation than the card, and the card runs at the slot's. That is normal for this board and costs most cards little.</value></data>
   <data name="Check_GpuLinkOk" xml:space="preserve"><value>Graphics card PCIe lanes as expected</value></data>
   <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>The card's PCIe link runs with as many lanes, and as fast, as the card and the slot allow.</value></data>
+  <data name="Check_GpuPcieErrorsOk" xml:space="preserve"><value>The graphics card's PCIe link is clean</value></data>
+  <data name="Check_GpuPcieErrorsOk_Text" xml:space="preserve"><value>Since the computer started, the card's driver has counted only a few PCIe errors. A few dozen are normal: the link counts some while it starts up and when it changes speed to save power.</value></data>
+  <data name="Check_GpuPcieErrorsMany" xml:space="preserve"><value>Many PCIe errors on the graphics card's link</value></data>
+  <data name="Check_GpuPcieErrorsMany_Text" xml:space="preserve"><value>Since the computer started, the card's driver has counted many errors on its PCIe link. The link corrects them by sending again, which costs speed and can end in a crash or a black screen. Reseat the card, clean the slot and the card's contacts, and check the riser cable if there is one; setting the slot to a lower PCIe generation in the BIOS is a test that often confirms it.</value></data>
+  <data name="Check_GpuPcieErrorsFatal" xml:space="preserve"><value>Fatal PCIe error on the graphics card</value></data>
+  <data name="Check_GpuPcieErrorsFatal_Text" xml:space="preserve"><value>The card's driver has counted an uncorrectable (fatal) PCIe error since the computer started. Such an error breaks the link and usually ends in a crash or the card dropping out. Check the seating, the slot, any riser and the card's power cables; if it happens again, test the card in another computer.</value></data>
+  <data name="Check_GpuPcieErrorsUnderLoad" xml:space="preserve"><value>PCIe errors grew while the graphics card worked</value></data>
+  <data name="Check_GpuPcieErrorsUnderLoad_Text" xml:space="preserve"><value>While the benchmark loaded the card, its PCIe link kept making errors and correcting them. That points to a poor contact: a card not fully seated, a dirty or worn slot, or a riser cable. Reseat and clean, then run the benchmark again.</value></data>
+  <data name="Check_GpuPcieCleanUnderLoad" xml:space="preserve"><value>The PCIe link held under load</value></data>
+  <data name="Check_GpuPcieCleanUnderLoad_Text" xml:space="preserve"><value>While the benchmark loaded the card, its PCIe link added no errors, or only a handful.</value></data>
+  <data name="Check_M_PcieErrorsTotal" xml:space="preserve"><value>PCIe errors since start-up</value></data>
+  <data name="Check_M_PcieErrorsAdded" xml:space="preserve"><value>PCIe errors during the run</value></data>
+  <data name="Check_M_PcieFatal" xml:space="preserve"><value>Fatal errors</value></data>
   <data name="Check_GpuLinkBelowCard" xml:space="preserve"><value>The graphics card runs at fewer lanes than it supports</value></data>
   <data name="Check_GpuLinkBelowCard_Text" xml:space="preserve"><value>The card runs at fewer lanes than it supports; how many the slot provides could not be read on this machine. Many processors with integrated graphics (APUs) and secondary slots give only x8 or x4, which is normal. In a full x16 slot of a processor that has the lanes, reseat the card.</value></data>
   <data name="Check_DriveLinkNarrow" xml:space="preserve"><value>SSD link narrower than it should be</value></data>

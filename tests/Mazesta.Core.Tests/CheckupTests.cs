@@ -191,4 +191,16 @@ public class CpuSpecTests
         Assert.Equal((hint, level), (x.Hint, x.Level));
     }
     [Fact] public void Amd_power_is_not_judged_against_its_tdp() => Assert.DoesNotContain(CpuCheck.Evaluate(Run(Ryzen, _ => 5000, temp: _ => 80, power: _ => 230)), f => f.Code == FindingCode.CpuPowerLimit);
+    // The owner's RTX 3090 after a day's use: 52 receiver errors and 2 bad TLPs since start-up, as HWiNFO showed them, is a clean link.
+    [Theory, InlineData(54, null, FindingCode.GpuPcieErrorsOk, FindingLevel.Good), InlineData(1500, 0.0, FindingCode.GpuPcieErrorsMany, FindingLevel.Attention),
+        InlineData(30000, 0.0, FindingCode.GpuPcieErrorsMany, FindingLevel.Problem), InlineData(3, 1.0, FindingCode.GpuPcieErrorsFatal, FindingLevel.Problem)]
+    public void Pcie_errors_since_start_are_judged_by_count(double total, double? fatal, FindingCode code, FindingLevel level)
+    { var f = Assert.Single(GpuCheck.PcieErrors(new(total, fatal), "RTX")); Assert.Equal((code, level), (f.Code, f.Level)); }
+    [Fact] public void Without_counters_pcie_is_not_judged() => Assert.Empty(GpuCheck.PcieErrors(new(null, null), "RTX"));
+    [Theory, InlineData(2, FindingCode.GpuPcieCleanUnderLoad, FindingLevel.Good), InlineData(40, FindingCode.GpuPcieErrorsUnderLoad, FindingLevel.Attention), InlineData(900, FindingCode.GpuPcieErrorsUnderLoad, FindingLevel.Problem)]
+    public void Pcie_errors_added_under_load(double added, FindingCode code, FindingLevel level)
+    {
+        var f = Assert.Single(GpuCheck.Evaluate(new GpuRunTrace("RTX", HardwareVendor.Nvidia, null, null, null, null, null, null, added)));
+        Assert.Equal((code, level), (f.Code, f.Level));
+    }
 }

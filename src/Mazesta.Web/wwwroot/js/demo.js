@@ -17,7 +17,9 @@ const HW = [
     ["temperature/0", "GPU Core", "Temperature", "Celsius", "GpuCoreTemp"], ["temperature/2", "GPU Hot Spot", "Temperature", "Celsius", "GpuHotSpotTemp"], ["temperature/3", "GPU Memory Junction", "Temperature", "Celsius", "GpuVramTemp"],
     ["load/0", "GPU Core", "Load", "Percent", "GpuLoad3D"], ["clock/0", "GPU Core", "Clock", "MegaHertz", "GpuCoreClock"], ["clock/4", "GPU Memory", "Clock", "MegaHertz", "GpuMemoryClock"],
     ["power/0", "GPU Package", "Power", "Watt", "GpuPower"], ["voltage/0", "GPU Core", "Voltage", "Volt", "GpuVoltage"], ["control/1", "GPU Fan 1", "Control", "Percent", "GpuFanPercent"],
-    ["fan/1", "GPU Fan 1", "Fan", "Rpm", "GpuFanRpm"], ["smalldata/1", "GPU Memory Used", "SmallData", "Megabyte", "GpuVramUsed"], ["smalldata/2", "GPU Memory Total", "SmallData", "Megabyte", "GpuVramTotal"]]),
+    ["fan/1", "GPU Fan 1", "Fan", "Rpm", "GpuFanRpm"], ["smalldata/1", "GPU Memory Used", "SmallData", "Megabyte", "GpuVramUsed"], ["smalldata/2", "GPU Memory Total", "SmallData", "Megabyte", "GpuVramTotal"],
+    ["pcie/total", "PCIe Errors (Total)", "Count", "None", "GpuPcieErrorTotal"], ["pcie/175", "PCIe Receiver Errors", "Count", "None", "GpuPcieErrorCounter"],
+    ["pcie/176", "PCIe Bad TLP Count", "Count", "None", "GpuPcieErrorCounter"], ["pcie/94", "PCIe Replay Count", "Count", "None", "GpuPcieRetryCounter"]]),
   node("memory/ram", "Memory", "Total Memory", [["data/0", "Memory Used", "Data", "Gigabyte", "RamUsed"], ["data/1", "Memory Available", "Data", "Gigabyte", "RamFree"], ["load/0", "Memory", "Load", "Percent", "RamLoad"]]),
   node("lpc/nct6798d", "Motherboard", "Nuvoton NCT6798D", [["temperature/0", "CPU Socket", "Temperature", "Celsius", "BoardTemp"], ["temperature/1", "Chipset", "Temperature", "Celsius", "ChipsetTemp"],
     ["fan/0", "CPU Fan", "Fan", "Rpm", "BoardFan"], ["fan/1", "Chassis Fan #1", "Fan", "Rpm", "BoardFan"], ["voltage/0", "+12V", "Voltage", "Volt", "BoardVoltage"], ["voltage/9", "Vcore", "Voltage", "Volt", "None"]]),
@@ -33,11 +35,13 @@ const BASE = {
   Temperature: 41, "Used Space": 63, "Read Rate": 1200000, "Write Rate": 380000, "Download Speed": 30400000, "Upload Speed": 204800, "Network Utilization": 3,
 };
 for (const c of CORES) { BASE[`Core #${c}`] = 3600 + c * 37; BASE[`Core #${c} (Effective)`] = 400 + ((c * 523) % 1700); BASE[`CPU Core #${c}`] = 2 + ((c * 7) % 23); }
+Object.assign(BASE, { "PCIe Errors (Total)": 54, "PCIe Receiver Errors": 52, "PCIe Bad TLP Count": 2, "PCIe Replay Count": 0 });
 const hist = new Map(), st = new Map();
 function reading(n, s, k) {
   let b = BASE[s.name]; if (s.name === "GPU Core" && s.kind === "Clock") b = 1695; if (s.name === "GPU Core" && s.kind === "Load") b = 11; if (s.name === "GPU Core" && s.kind === "Voltage") b = 0.744;
   if (s.name === "GPU Fan 1" && s.kind === "Fan") b = 1302; if (n.id === "hdd/1" && s.name === "Temperature") b = 36;
   if (b === null || b === undefined) return null;
+  if (s.kind === "Count") return b;   // counters do not wave
   const wave = Math.sin(k / 7 + s.id.length) * 0.08 + (Math.random() - 0.5) * 0.04;
   return s.unit === "Volt" ? +(b * (1 + wave / 6)).toFixed(3) : b * (1 + wave);
 }

@@ -166,4 +166,6 @@ public class AppGuideTests
         Assert.NotEqual(AiIntent.Specs, R("آخرین بنچمارک پردازنده چند بود و نسبت به قبل کندتر شده؟").Intent);
         Assert.Equal(AiIntent.Specs, R("پردازنده من چند هسته داره؟").Intent);
     }
+    [Theory, InlineData("خطاهای pcie کارت گرافیکم چنده"), InlineData("are there pcie errors on my gpu")]
+    public void Pcie_errors_are_read_from_the_driver(string text) => Assert.Equal(AiIntent.PcieErrors, R(text).Intent);
 }

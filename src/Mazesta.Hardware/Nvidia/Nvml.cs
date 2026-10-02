@@ -65,6 +65,16 @@ internal static class Nvml
     [DllImport(Dll)] public static extern int nvmlDeviceGetTemperatureThreshold(IntPtr device, int threshold, out uint celsius);
     [DllImport(Dll)] public static extern int nvmlDeviceGetEnforcedPowerLimit(IntPtr device, out uint milliwatts);
 
+    // Counters read by field id (nvml.h NVML_FI_*): a field this card or driver does not keep answers with its own nvmlReturn.
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    public struct FieldValue
+    {
+        [FieldOffset(0)] public uint FieldId; [FieldOffset(4)] public uint ScopeId; [FieldOffset(8)] public long Timestamp; [FieldOffset(16)] public long LatencyUsec;
+        [FieldOffset(24)] public int ValueType; [FieldOffset(28)] public int Return; [FieldOffset(32)] public ulong Raw; [FieldOffset(32)] public double Double;
+    }
+    [DllImport(Dll)] public static extern int nvmlDeviceGetFieldValues(IntPtr device, int count, [In, Out] FieldValue[] values);
+    [DllImport(Dll)] public static extern int nvmlDeviceGetPcieReplayCounter(IntPtr device, out uint value);
+
     /// <summary>Runs one NVML call; an entry point this driver does not export reads as <see cref="FunctionMissing"/>.</summary>
     public static int Call(Func<int> call) { try { return call(); } catch (EntryPointNotFoundException) { return FunctionMissing; } }
 

@@ -387,6 +387,7 @@ public sealed partial class WebBridge
             {
                 AiIntent.Specs => [C("get_machine_summary", new { part = route.Part })],
                 AiIntent.Sensors => [C("get_sensors", new { kind = route.Kind })],
+                AiIntent.PcieErrors => [C("get_pcie_errors", new { })],
                 AiIntent.Dns => [C("test_dns", new { })],
                 AiIntent.Software when route.App is { } app => [C("check_software", new { app = app.Id })],
                 AiIntent.SoftwareList => [C("check_software", new { category = route.Category?.ToString() })],

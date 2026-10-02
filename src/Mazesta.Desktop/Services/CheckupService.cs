@@ -112,6 +112,7 @@ public sealed class CheckupService
         found.AddRange(PlatformCheck.Power(PowerSettings.Read()));
         found.AddRange(MemoryCheck.Evaluate(inv.MemoryModules, details.Spd));
         found.AddRange(PlatformCheck.Drives(details.Drives.Where(d => d.Slot is not null).Select(d => PlatformCheck.Of(d.Name, d.Slot!))));
+        foreach (var (name, errors) in CheckupTraces.PcieErrors(_engine)) found.AddRange(GpuCheck.PcieErrors(errors, name));
         return found;
     }
 

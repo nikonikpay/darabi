@@ -364,6 +364,7 @@
   <data name="SensorKind_Factor" xml:space="preserve">
     <value>ضریب‌ها</value>
   </data>
+  <data name="SensorKind_Count" xml:space="preserve"><value>شمارنده‌ها</value></data>
   <data name="SensorKind_Data" xml:space="preserve">
     <value>داده‌ها</value>
   </data>
@@ -2444,6 +2445,19 @@
   <data name="Check_GpuSlotOlderGen_Text" xml:space="preserve"><value>اسلات از نسل قدیمی‌تری از PCIe نسبت به کارت پشتیبانی می‌کند و کارت با نسل اسلات کار می‌کند. این برای این مادربرد طبیعی است و برای بیشتر کارت‌ها افت کمی دارد.</value></data>
   <data name="Check_GpuLinkOk" xml:space="preserve"><value>لین‌های PCIe کارت گرافیک درست کار می‌کنند</value></data>
   <data name="Check_GpuLinkOk_Text" xml:space="preserve"><value>کارت با همان تعداد لین PCIe و همان سرعتی کار می‌کند که کارت و اسلات اجازه می‌دهند.</value></data>
+  <data name="Check_GpuPcieErrorsOk" xml:space="preserve"><value>خطاهای لینک PCIe کارت گرافیک در حد عادی است</value></data>
+  <data name="Check_GpuPcieErrorsOk_Text" xml:space="preserve"><value>از روشن شدن سیستم، درایور کارت فقط چند خطای PCIe شمرده است. چند ده خطا عادی است: لینک هنگام راه‌اندازی و وقتی برای صرفه‌جویی سرعتش را عوض می‌کند، تعدادی خطا ثبت می‌کند.</value></data>
+  <data name="Check_GpuPcieErrorsMany" xml:space="preserve"><value>خطاهای زیاد روی لینک PCIe کارت گرافیک</value></data>
+  <data name="Check_GpuPcieErrorsMany_Text" xml:space="preserve"><value>از روشن شدن سیستم، درایور کارت خطاهای زیادی روی لینک PCIe شمرده است. لینک این خطاها را با ارسال دوباره جبران می‌کند؛ این کار سرعت را کم می‌کند و ممکن است به هنگ یا صفحهٔ سیاه برسد. کارت را دوباره جا بزنید، اسلات و کانتکت‌های کارت را تمیز کنید و اگر رایزر دارد کابلش را بررسی کنید. پایین آوردن نسل PCIe اسلات در بایوس آزمایشی است که اغلب علت را تأیید می‌کند.</value></data>
+  <data name="Check_GpuPcieErrorsFatal" xml:space="preserve"><value>خطای مهلک PCIe روی کارت گرافیک</value></data>
+  <data name="Check_GpuPcieErrorsFatal_Text" xml:space="preserve"><value>درایور کارت از روشن شدن سیستم یک خطای PCIe غیرقابل‌اصلاح (مهلک) شمرده است. چنین خطایی لینک را قطع می‌کند و معمولاً به هنگ یا از کار افتادن کارت می‌رسد. جا خوردن کارت، اسلات، رایزر و کابل‌های برق کارت را بررسی کنید. اگر تکرار شد، کارت را روی سیستم دیگری امتحان کنید.</value></data>
+  <data name="Check_GpuPcieErrorsUnderLoad" xml:space="preserve"><value>خطاهای PCIe حین کار کارت گرافیک بالا رفت</value></data>
+  <data name="Check_GpuPcieErrorsUnderLoad_Text" xml:space="preserve"><value>در طول بنچمارک که کارت زیر بار بود، لینک PCIe آن مدام خطا می‌داد و اصلاحش می‌کرد. این نشانهٔ اتصال ضعیف است: کارت کامل جا نخورده، اسلات کثیف یا فرسوده است، یا کابل رایزر مشکل دارد. کارت را دوباره جا بزنید و تمیز کنید و بنچمارک را دوباره اجرا کنید.</value></data>
+  <data name="Check_GpuPcieCleanUnderLoad" xml:space="preserve"><value>لینک PCIe زیر بار سالم ماند</value></data>
+  <data name="Check_GpuPcieCleanUnderLoad_Text" xml:space="preserve"><value>در طول بنچمارک که کارت زیر بار بود، لینک PCIe آن خطای جدیدی نداد، یا فقط چند تا داد.</value></data>
+  <data name="Check_M_PcieErrorsTotal" xml:space="preserve"><value>خطاهای PCIe از روشن شدن سیستم</value></data>
+  <data name="Check_M_PcieErrorsAdded" xml:space="preserve"><value>خطاهای PCIe حین اجرا</value></data>
+  <data name="Check_M_PcieFatal" xml:space="preserve"><value>خطاهای مهلک</value></data>
   <data name="Check_GpuLinkBelowCard" xml:space="preserve"><value>کارت گرافیک با لین کمتری از توانش کار می‌کند</value></data>
   <data name="Check_GpuLinkBelowCard_Text" xml:space="preserve"><value>کارت با لین کمتری از آنچه پشتیبانی می‌کند کار می‌کند؛ در این سیستم نمی‌شد خواند که اسلات چند لین می‌دهد. بسیاری از پردازنده‌های دارای گرافیک مجتمع (APU) و اسلات‌های دوم فقط x8 یا x4 می‌دهند که طبیعی است. اگر کارت در اسلات کامل x16 پردازنده‌ای است که این لین‌ها را دارد، کارت را دوباره جا بزنید.</value></data>
   <data name="Check_DriveLinkNarrow" xml:space="preserve"><value>لینک SSD باریک‌تر از حد انتظار</value></data>

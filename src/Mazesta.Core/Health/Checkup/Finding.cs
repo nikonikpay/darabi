@@ -19,6 +19,7 @@ public enum FindingCode
     BenchBelowPeers, BenchWithPeers, BenchFewPeers,
     GpuLinkBelowCard, DriveLinkBelowDrive,
     CpuBelowBoost, CpuPowerLimit,
+    GpuPcieErrorsOk, GpuPcieErrorsMany, GpuPcieErrorsFatal, GpuPcieErrorsUnderLoad, GpuPcieCleanUnderLoad,
 }
 
 /// <summary>A second sentence a finding may carry: what the measurements beside it point to.</summary>

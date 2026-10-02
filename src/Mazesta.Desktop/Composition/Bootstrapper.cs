@@ -30,7 +30,7 @@ public static class Bootstrapper
         s.AddSingleton<IClock, SystemClock>();
         s.AddSingleton<IEventLog>(sp => new BoundedEventLog(sp.GetRequiredService<IClock>(), lf.CreateLogger("Events")));
         s.AddSingleton(new MonitoringOptions { FastInterval = TimeSpan.FromSeconds(config.FastIntervalSeconds), StorageInterval = TimeSpan.FromSeconds(config.StorageIntervalSeconds) });
-        s.AddSingleton<ISensorProvider>(sp => LibreHardwareMonitorProvider.CreateDefault(sp.GetRequiredService<IClock>(), lf));
+        s.AddSingleton<ISensorProvider>(sp => new Mazesta.Hardware.Nvidia.NvidiaPcieSensors(LibreHardwareMonitorProvider.CreateDefault(sp.GetRequiredService<IClock>(), lf)));
         s.AddSingleton<PollingEngine>();
         s.AddSingleton<MonitoringFocus>();
         s.AddSingleton<IWmiQuery, WmiQuery>();

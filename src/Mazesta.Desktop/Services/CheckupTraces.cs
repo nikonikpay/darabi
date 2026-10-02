@@ -58,7 +58,9 @@ internal static class CheckupTraces
             return null;
         }
         var vendor = nodes.FirstOrDefault(n => n.ParentId is null)?.Vendor ?? nodes.FirstOrDefault()?.Vendor ?? HardwareVendor.Unknown;
-        return new(name, vendor, First(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D), First(SensorRole.GpuCoreTemp), First(SensorRole.GpuHotSpotTemp), First(SensorRole.GpuPower), throttle, link);
+        // The errors the link added while the run lasted: the last total read in it less the first.
+        double? added = Combine(engine, sensors.Where(s => s.Role == SensorRole.GpuPcieErrorTotal).Take(1), a, b, v => v.First()) is { Count: >= 2 } e ? Math.Max(0, e.V[^1] - e.V[0]) : null;
+        return new(name, vendor, First(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D), First(SensorRole.GpuCoreTemp), First(SensorRole.GpuHotSpotTemp), First(SensorRole.GpuPower), throttle, link, added);
     }
 
     private static Series? Combine(PollingEngine engine, IEnumerable<SensorDefinition> sensors, int from, int to, Func<List<double>, double> merge)
@@ -76,5 +78,16 @@ internal static class CheckupTraces
         for (int i = 0; i < raw.Seconds.Length; i++)
             if (raw.Seconds[i] >= from && raw.Seconds[i] <= to && !float.IsNaN(raw.Values[i])) values[raw.Seconds[i]] = raw.Values[i];
         return values;
+    }
+
+    /// <summary>Each card's PCI Express error counters as last read (for the setup checks), by the card's name; cards without them are left out.</summary>
+    public static IEnumerable<(string Name, GpuPcieErrors Errors)> PcieErrors(PollingEngine engine)
+    {
+        foreach (var n in engine.Hardware.Where(n => n.Kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuPcieErrorTotal)))
+        {
+            double? Last(Func<SensorDefinition, bool> pick) => n.Sensors.FirstOrDefault(pick) is { } s && engine.History.GetRaw(s.Id) is { Values.Length: > 0 } r
+                && !float.IsNaN(r.Values[^1]) ? r.Values[^1] : null;
+            yield return (n.Name, new(Last(s => s.Role == SensorRole.GpuPcieErrorTotal), Last(s => s.Role == SensorRole.GpuPcieErrorCounter && s.Name.Contains("Fatal", StringComparison.Ordinal) && !s.Name.Contains("Non-Fatal", StringComparison.Ordinal))));
+        }
     }
 }

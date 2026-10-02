@@ -16,7 +16,7 @@ public static class ReadingValidator
             // LHM returns 0f (not null) when RAPL/MSR energy counters are unreadable, so a zero
             // power/current/energy reading is an unreadable counter, never a real measurement.
             SensorKind.Power or SensorKind.Current or SensorKind.Energy => v <= 0,
-            SensorKind.Fan or SensorKind.Data or SensorKind.SmallData or SensorKind.Throughput => v < 0,
+            SensorKind.Fan or SensorKind.Data or SensorKind.SmallData or SensorKind.Throughput or SensorKind.Count => v < 0,
             _ => false
         };
         return invalid ? DataQuality.Invalid : DataQuality.Ok;

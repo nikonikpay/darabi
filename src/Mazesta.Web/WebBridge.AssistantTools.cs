@@ -112,6 +112,29 @@ public sealed partial class WebBridge
                     double age = Math.Round((DateTimeOffset.UtcNow - snap.Timestamp).TotalSeconds);
                     return Task.FromResult(Json(new { secondsAgo = age, stale = age > Math.Max(StaleSeconds, 3 * engine.FastInterval.TotalSeconds) ? true : (bool?)null, systemPower, devices }));
                 }),
+            new("get_pcie_errors", "The graphics card's PCI Express error counters, as its NVIDIA driver keeps them since the computer started (receiver, bad TLP/DLLP, " +
+                "LCRC, fatal; and the link's own retries: replays, NAKs, recoveries, errors summed over all lanes), with the verdict the diagnosis gives them. " +
+                "A few dozen errors are normal (the link counts some while it starts up); give the verdict, do not alarm the user over a small count. Cards " +
+                "other than NVIDIA's, or a driver that does not keep them, have none: say so, never guess.",
+                """{"type":"object","properties":{}}""",
+                (_, _) =>
+                {
+                    var snap = latest(); var values = snap?.Readings.Where(r => r.Quality == DataQuality.Ok && r.Value is not null).ToDictionary(r => r.Id, r => r.Value!.Value) ?? [];
+                    var cards = engine.Hardware.Where(n => n.Kind == HardwareKind.Gpu && n.Sensors.Any(x => x.Kind == SensorKind.Count)).Select(n =>
+                    {
+                        double? V(SensorDefinition x) => values.TryGetValue(x.Id, out var v) ? v : null;
+                        var total = n.Sensors.FirstOrDefault(x => x.Role == SensorRole.GpuPcieErrorTotal);
+                        var fatal = n.Sensors.FirstOrDefault(x => x.Role == SensorRole.GpuPcieErrorCounter && x.Name.Contains("Fatal", StringComparison.Ordinal) && !x.Name.Contains("Non-Fatal", StringComparison.Ordinal));
+                        var verdict = Mazesta.Core.Health.Checkup.GpuCheck.PcieErrors(new(total is null ? null : V(total), fatal is null ? null : V(fatal)), n.Name).FirstOrDefault();
+                        return new
+                        {
+                            device = n.Name,
+                            counters = n.Sensors.Where(x => x.Kind == SensorKind.Count).Select(x => new { name = x.Name, value = V(x) }),
+                            verdict = verdict is null ? null : new { level = verdict.Level.ToString(), title = Mazesta.Desktop.Services.CheckupText.Title(verdict), text = Mazesta.Desktop.Services.CheckupText.Text(verdict) },
+                        };
+                    }).ToList();
+                    return Task.FromResult(Json(cards.Count == 0 ? new { cards, note = "no card reports PCIe error counters (not an NVIDIA card, or its driver does not keep them)" } : (object)new { cards }));
+                }),
             new("list_reports", "The saved test and benchmark reports, newest first: index (0 is the newest), when, kind, verdict and how many tests passed, failed or did not run. Optional limit (default 5, at most 10).",
                 """{"type":"object","properties":{"limit":{"type":"integer"}}}""",
                 (a, _) =>

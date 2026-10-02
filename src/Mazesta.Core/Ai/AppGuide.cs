@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -272,6 +272,10 @@ public static class AppGuide
 
         // Games: the app has no list of them, so the answer is this computer's parts and where to measure it, never a guess at settings.
         if ((Has(s, "بازی") || Has(s, "گیم") || Has(s, "game")) && !go && !page && (ask || Any(s, RunWords))) return new(AiIntent.Games);
+
+        // The graphics card's PCI Express error counters ("خطاهای pcie کارت گرافیک چنده"): read from the driver, with the diagnosis' verdict.
+        if ((Has(s, "pcie") || Has(s, "pci express") || Has(s, "pci-e") || Has(s, "لینک") || Has(s, "لین ")) && (Has(s, "خطا") || Has(s, "ارور") || Has(s, "error")) && !go)
+            return new(AiIntent.PcieErrors);
 
         bool test = Any(s, TestWords);
         // A reading now (a temperature, a fan, a load) is the sensors', not the specification's.

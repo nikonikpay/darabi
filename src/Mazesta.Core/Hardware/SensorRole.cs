@@ -24,5 +24,9 @@ public enum SensorRole
     NetDataUploaded, NetDataDownloaded,
     /// <summary>How far a core is below the limit the processor itself reports (Intel: IA32_TEMPERATURE_TARGET), so its temperature plus this
     /// is that limit (TjMax). Not a temperature: never shown or judged as one.</summary>
-    CpuTjMaxDistance
+    CpuTjMaxDistance,
+    /// <summary>A graphics card's PCI Express error counters since the computer started (NVIDIA's driver): <see cref="GpuPcieErrorTotal"/> is the
+    /// sum of the link's own error kinds, each of which is a <see cref="GpuPcieErrorCounter"/>; replays, NAKs and recoveries (what the link does
+    /// about an error) are <see cref="GpuPcieRetryCounter"/>.</summary>
+    GpuPcieErrorTotal, GpuPcieErrorCounter, GpuPcieRetryCounter
 }

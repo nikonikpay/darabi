@@ -11,7 +11,12 @@ public sealed record GpuThrottleCounts(int Samples, int PowerCap, int SwThermal,
 public sealed record GpuLink(int? Gen, int? Width, int? CardGen, int? CardWidth, int? SlotGen, int? SlotWidth, bool LiveGen);
 
 /// <summary>What was measured on one card while a GPU benchmark ran.</summary>
-public sealed record GpuRunTrace(string? Name, HardwareVendor Vendor, Series? Load, Series? CoreTemp, Series? HotSpot, Series? Power, GpuThrottleCounts? Throttle, GpuLink? Link);
+public sealed record GpuRunTrace(string? Name, HardwareVendor Vendor, Series? Load, Series? CoreTemp, Series? HotSpot, Series? Power, GpuThrottleCounts? Throttle, GpuLink? Link,
+    double? PcieErrorsAdded = null);
+
+/// <summary>A card's PCI Express error counters as its driver keeps them since the computer started: the sum of the link's error kinds and the
+/// fatal ones among them. Null where the driver does not keep the counter.</summary>
+public sealed record GpuPcieErrors(double? Total, double? Fatal);
 
 /// <summary>
 /// Reads a GPU run: what the driver itself said held the clock (NVIDIA), the gap between the hottest spot and the core, and whether the card's
@@ -62,7 +67,35 @@ public static class GpuCheck
         }
 
         if (run.Link is { } link) Link(link, Add);
+        // Errors the link made while the card was working hard: a few are corrected without anyone noticing; many mean a poor contact (a riser,
+        // a dirty or worn slot, a card not fully seated) that the link keeps retrying through, costing speed and, at worst, a crash.
+        if (run.PcieErrorsAdded is { } added)
+        {
+            Measure[] m = [M("Check_M_PcieErrorsAdded", added, None)];
+            if (added >= PcieUnderLoadProblem) Add(FindingCode.GpuPcieErrorsUnderLoad, FindingLevel.Problem, m);
+            else if (added >= PcieUnderLoadAttention) Add(FindingCode.GpuPcieErrorsUnderLoad, FindingLevel.Attention, m);
+            else Add(FindingCode.GpuPcieCleanUnderLoad, FindingLevel.Good, m);
+        }
         return found;
+    }
+
+    /// <summary>Errors added during one benchmark run (a few minutes of full load) from which the link is worth a look, and from which it is a fault.
+    /// Mazesta's own lines, not a standard: a healthy link adds none or a handful.</summary>
+    public const double PcieUnderLoadAttention = 20, PcieUnderLoadProblem = 500;
+    /// <summary>Errors since the computer started from which they are worth a look, and from which the link is faulty. A few dozen are common:
+    /// the link counts some while it trains at power-on and when it changes speed to save power.</summary>
+    public const double PcieSinceBootAttention = 1000, PcieSinceBootProblem = 20000;
+
+    /// <summary>What the counters say now, since the computer started. A fatal error is always a fault; the rest by how many there are.</summary>
+    public static IReadOnlyList<Finding> PcieErrors(GpuPcieErrors e, string? name)
+    {
+        if (e.Total is not { } total) return [];
+        Measure[] m = [M("Check_M_PcieErrorsTotal", total, None)];
+        Finding F(FindingCode c, FindingLevel l, Measure[] ms) => new(c, l, HardwareKind.Gpu, ms, name);
+        if (e.Fatal is > 0) return [F(FindingCode.GpuPcieErrorsFatal, FindingLevel.Problem, [M("Check_M_PcieFatal", e.Fatal.Value, None), .. m])];
+        if (total >= PcieSinceBootProblem) return [F(FindingCode.GpuPcieErrorsMany, FindingLevel.Problem, m)];
+        if (total >= PcieSinceBootAttention) return [F(FindingCode.GpuPcieErrorsMany, FindingLevel.Attention, m)];
+        return [F(FindingCode.GpuPcieErrorsOk, FindingLevel.Good, m)];
     }
 
     private static void Link(GpuLink l, Action<FindingCode, FindingLevel, IReadOnlyList<Measure>> add)
