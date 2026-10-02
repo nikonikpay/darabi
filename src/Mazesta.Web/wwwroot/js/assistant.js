@@ -194,7 +194,7 @@ export function mountAssistant(app, root) {
 
   function render(s) {
     a = s;
-    if (app.dataset.asst === "none" || !app.dataset.asst) app.dataset.asst = store("mazesta.asst") === "closed" ? "closed" : "open";
+    if (app.dataset.asst === "none" || !app.dataset.asst) app.dataset.asst = store("mazesta.asst") === "open" ? "open" : "closed";
     if (a.status !== "Available") { state.className = "pill none"; state.textContent = t("Assist_OffShort"); dot.dataset.state = ""; return renderGate(); }
     state.className = `pill ${a.server === "ready" ? "pass" : a.server === "off" ? "none" : "run"}`;
     state.textContent = t(a.server === "ready" ? "Assist_Ready" : a.server === "starting" ? "Assist_Loading" : a.server === "paused" ? "Assist_PausedShort" : "Assist_OffShort");
