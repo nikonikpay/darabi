@@ -93,6 +93,8 @@ export function mount(el, _, opts = null) {
         const head = item.head ? sensorRow(item.head, "fam-head", caret)
           : tbody.appendChild(h("tr", { class: "fam-head label", onclick: () => fold() }, h("td", { colspan: "6" }, caret, h("span", { class: "sensor-name" }, item.family))));
         head.querySelector("td").append(count);
+        // A click anywhere on the head opens or folds it (a double click still charts a head that is a sensor).
+        if (item.head) head.addEventListener("click", (e) => { if (!e.target.closest(".icon-btn")) fold(); });
         const kids = item.members.map((s) => sensorRow(s, "fam-kid", null));
         const show = (on) => { for (const r of kids) r.classList.toggle("folded", !on); caret.setAttribute("aria-expanded", String(on)); head.classList.toggle("open", on); };
         function fold() { const on = caret.getAttribute("aria-expanded") !== "true"; show(on); on ? openFamilies.add(key) : openFamilies.delete(key); keep(FAMILY_KEY, [...openFamilies]); }

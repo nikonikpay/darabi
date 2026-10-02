@@ -383,10 +383,10 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .searching .table tr.fam-kid.folded:not([hidden]) { display: table-row; }
 .table tr.fam-kid td:first-child { padding-inline-start: 34px; }
 .table tr.fam-head td:first-child { font-weight: 600; }
-.table tr.fam-head.label { cursor: pointer; }
+.table tr.fam-head { cursor: pointer; }
 .fam-fold { all: unset; cursor: pointer; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-inline-end: 6px; vertical-align: middle; color: var(--hue, var(--yellow)); border-radius: 4px; }
 .fam-fold:focus-visible { outline: 2px solid var(--hue, var(--yellow)); }
-.fam-fold svg { width: 12px; height: 12px; transition: transform var(--fast); transform: rotate(90deg); }
+.fam-fold svg { width: 12px; height: 12px; stroke: currentColor; transition: transform var(--fast); transform: rotate(90deg); }
 .fam-fold[aria-expanded="true"] svg { transform: none; }
 .fam-count { margin-inline-start: 8px; color: var(--paper-3); font-weight: 400; font-size: 11px; }
 .sensor-name { font-family: var(--lat); direction: ltr; unicode-bidi: isolate; }
