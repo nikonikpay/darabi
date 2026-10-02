@@ -10,9 +10,11 @@ import { h, icon, toast } from "../ui.js";
 import { part } from "../parts.js";
 import { chartCard, RANGES } from "../chartcard.js";
 import { runPanel } from "../testrun.js";
+import { families } from "../families.js";
 
 const KIND_ORDER = ["Temperature", "Load", "Clock", "Power", "Voltage", "Current", "Fan", "Control", "Data", "SmallData", "Throughput", "Level", "Energy", "Timespan", "Factor", "Frequency", "Timing", "Noise", "Flow", "Humidity", "Conductivity"];
 const MAX_CHARTS = 10;
+const FAMILY_KEY = "mazesta.sensors.openFamilies";
 // Which charts are open is a per-viewer convenience: kept in the browser profile, and the page works the same without it.
 const remember = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
 const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private profile: nothing is kept */ } };
@@ -41,6 +43,7 @@ export function mount(el, _, opts = null) {
   (opts?.runSlot || el).append(run.el);
   el.append(h("div", { class: "toolbar" }, filter, h("span", { class: "grow" }), focusKinds ? h("span", { class: "caption" }, t("Web_Chart_Hint")) : null), h("div", { class: "split" }, groups, charts));
 
+  const openFamilies = new Set(remember(FAMILY_KEY, []));   // the families the viewer opened; the rest stay folded
   const cells = [];   // [sensor, current, min, avg, max, row, searchText, toggle, group]
   const bySensor = new Map();
   let i = 0;
@@ -70,15 +73,30 @@ export function mount(el, _, opts = null) {
     const kinds = [...byKind.keys()].sort((a, b) => (KIND_ORDER.indexOf(a) + 99) % 99 - (KIND_ORDER.indexOf(b) + 99) % 99);
     for (const k of kinds) {
       tbody.append(h("tr", { class: "sec" }, h("td", { colspan: "6" }, t(`SensorKind_${k}`))));
-      for (const s of byKind.get(k)) {
+      const sensorRow = (s, cls, lead) => {
         const c = [h("td", { class: "n" }), h("td", { class: "n" }), h("td", { class: "n" }), h("td", { class: "n" })];
         const toggle = h("button", { class: "icon-btn", type: "button", title: t("Web_Chart_Add"), "aria-label": `${t("Web_Chart_Add")}: ${s.name}`, "aria-pressed": "false",
           onclick: (e) => { e.stopPropagation(); flip(s); } }, icon("chart"));
-        const row = h("tr", { class: "row", tabindex: "0", ondblclick: () => flip(s), onkeydown: (e) => { if (e.key === "Enter") flip(s); } },
-          h("td", {}, h("span", { class: "sensor-name" }, s.name)), ...c, h("td", { class: "c" }, toggle));
+        const row = h("tr", { class: `row ${cls}`, tabindex: "0", ondblclick: () => flip(s), onkeydown: (e) => { if (e.key === "Enter") flip(s); } },
+          h("td", {}, lead, h("span", { class: "sensor-name" }, s.name)), ...c, h("td", { class: "c" }, toggle));
         tbody.append(row);
         const cell = [s, ...c, row, `${node.name} ${s.name}`.toLowerCase(), toggle, group];
         cells.push(cell); bySensor.set(s.id, cell);
+        return row;
+      };
+      // A family of numbered sensors (each core's clock, each thread's load) folds under its head, the device's own summary where it has one.
+      for (const item of families(byKind.get(k))) {
+        if (item.sensor) { sensorRow(item.sensor, "", null); continue; }
+        const key = `${node.name}|${k}|${item.family}`, open = openFamilies.has(key);
+        const caret = h("button", { class: "fam-fold", type: "button", "aria-expanded": String(open), "aria-label": item.family, onclick: (e) => { e.stopPropagation(); fold(); } }, icon("chevron"));
+        const count = h("small", { class: "fam-count num" }, `×${fa(item.members.length)}`);
+        const head = item.head ? sensorRow(item.head, "fam-head", caret)
+          : tbody.appendChild(h("tr", { class: "fam-head label", onclick: () => fold() }, h("td", { colspan: "6" }, caret, h("span", { class: "sensor-name" }, item.family))));
+        head.querySelector("td").append(count);
+        const kids = item.members.map((s) => sensorRow(s, "fam-kid", null));
+        const show = (on) => { for (const r of kids) r.classList.toggle("folded", !on); caret.setAttribute("aria-expanded", String(on)); head.classList.toggle("open", on); };
+        function fold() { const on = caret.getAttribute("aria-expanded") !== "true"; show(on); on ? openFamilies.add(key) : openFamilies.delete(key); keep(FAMILY_KEY, [...openFamilies]); }
+        show(open);
       }
     }
   }
@@ -94,6 +112,7 @@ export function mount(el, _, opts = null) {
   }
   filter.addEventListener("input", () => {
     const q = filter.value.trim().toLowerCase();
+    groups.classList.toggle("searching", !!q);   // a search shows the folded sensors that match
     for (const [, , , , , row, text] of cells) row.hidden = q && !text.includes(q);
     for (const g of groups.children) g.hidden = q && ![...g.querySelectorAll("tr.row")].some((r) => !r.hidden);
   });

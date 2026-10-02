@@ -877,6 +877,11 @@
   <data name="Web_Dash_BoardTemp" xml:space="preserve"><value>مادربرد</value></data>
   <data name="Web_Dash_ChipsetTemp" xml:space="preserve"><value>چیپ‌ست</value></data>
   <data name="Web_Dash_Drives" xml:space="preserve"><value>{0} دیسک</value></data>
+  <data name="Web_Dash_Power" xml:space="preserve"><value>توان سیستم</value></data>
+  <data name="Web_Dash_PowerSub" xml:space="preserve"><value>از سنسورهای توان خود قطعات</value></data>
+  <data name="Web_Dash_PowerTotal" xml:space="preserve"><value>جمع اندازه‌گیری‌شده</value></data>
+  <data name="Web_Dash_PowerPsu" xml:space="preserve"><value>از خروجی خود پاور خوانده شده: کل سیستم.</value></data>
+  <data name="Web_Dash_PowerUnmeasured" xml:space="preserve"><value>بدون سنسور توان و اندازه‌گیری‌نشده: {0}. مصرف واقعی بیشتر است.</value></data>
   <data name="Web_Group_System" xml:space="preserve"><value>سیستم</value></data>
   <data name="Web_Group_Windows" xml:space="preserve"><value>ویندوز</value></data>
   <data name="Web_Group_Power" xml:space="preserve"><value>کل سیستم (توان)</value></data>

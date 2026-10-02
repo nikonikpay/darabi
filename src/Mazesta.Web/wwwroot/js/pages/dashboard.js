@@ -5,7 +5,7 @@
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
-import { topNodes, pick, value, stats, subscribe } from "../store.js";
+import { hw, topNodes, pick, value, stats, subscribe, netRank } from "../store.js";
 import { h, val, icon } from "../ui.js";
 import { liveTile, percentOf, ratioOf } from "../tiles.js";
 import { go, boot } from "../app.js";
@@ -30,7 +30,8 @@ export function mount(el) {
       action("p-game", "overlay", "Overlay_Toggle", () => call("app.toggleOverlay")), action("p-board", "doc", "Nav_Reports", () => go("reports"))),
     h("div", { class: "colophon" }, h("span", {}, boot.shopName), h("span", {}, date)));
   // Each temperature with its part's load beside it and as the bar, like the overlay; memory used, its load, and the total under it.
-  const net = nets.find((n) => pick(n, "NetDownload") && value(pick(n, "NetDownload").id)) || nets[0];
+  // The adapter the internet goes through, as the network page shows it; the first connected one without it.
+  const net = [...nets].sort((a, b) => netRank(a) - netRank(b))[0];
   const ramUsed = ram && pick(ram, "RamUsed"), ramTotal = ram && pick(ram, "RamTotal"), ramLoad = ram && pick(ram, "RamLoad");
   const cpuLoad = cpu && pick(cpu, "CpuTotalLoad"), gpuLoad = gpu && pick(gpu, "GpuLoad3D", "GpuLoadD3D3D");
   const tiles = [
@@ -111,10 +112,43 @@ export function mount(el) {
       return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
         meter(t("Web_Dash_UsedSpace"), percentOf(pick(d, "StorageUsedSpace"))));
     });
-    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)), extraClass: "span3",
+    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)),
       body: h("div", { class: "units cols-auto" }, rows),
       more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
   }
+  // The system's power: the parts' own readings added up without counting anything twice (the same rule as PowerTotals on the host): a power
+  // supply's output reading is the whole of it; else the CPU by its package (its cores are inside it), each graphics card by its one card reading,
+  // RAM and drives where they report power. The board, the fans and what has no power sensor are named as not measured, never guessed.
+  function powerPanel() {
+    const all = hw.nodes, under = (n) => sensorsUnder(n).filter((s) => s.kind === "Power");
+    const psu = all.filter((n) => n.kind === "Psu").flatMap(under).sort((a, b) => /total/i.test(b.name) - /total/i.test(a.name));
+    const parts = [];
+    for (const n of topNodes()) {
+      const p = under(n);
+      if (n.kind === "Cpu") parts.push(...p.filter((s) => s.role === "CpuPackagePower").slice(0, 1).map((s) => [n, s]));
+      else if (n.kind === "Gpu") parts.push(...p.filter((s) => s.role === "GpuPower").slice(0, 1).map((s) => [n, s]));
+      else if (n.kind === "Memory" || n.kind === "Storage") parts.push(...p.map((s) => [n, s]));
+    }
+    const has = (k) => parts.some(([n]) => n.kind === k);
+    const unmeasured = ["Motherboard", "Cooler", ...["Memory", "Storage"].filter((k) => topNodes(k).length && !has(k))];
+    const total = h("span", { class: "v" }), note = h("p", { class: "power-note" });
+    const fromPsu = () => psu.find((s) => value(s.id) > 0);
+    updates.push(() => {
+      const ps = fromPsu();
+      const vals = parts.map(([, s]) => value(s.id)).filter((v) => v !== null && v >= 0);
+      const w = ps ? value(ps.id) : vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+      total.replaceChildren(w === null ? val(null) : h("span", { class: "num" }, Math.round(w)), w === null ? "" : h("small", {}, "W"));
+      note.textContent = ps ? t("Web_Dash_PowerPsu") : t("Web_Dash_PowerUnmeasured", unmeasured.map((k) => t(`Web_Kind_${k}`)).join("، "));
+    });
+    const rows = parts.map(([n, s]) => {
+      const v = h("span", { class: "num" });
+      updates.push(() => v.replaceChildren(val(fmt(value(s.id), s.unit))));
+      return h("div", { class: "power-row" }, h("span", { class: "nm", title: `${n.name} · ${s.name}` }, t(`Web_Kind_${n.kind}`), " ", h("small", { class: "lat" }, n.name)), v);
+    });
+    return panel({ kind: "Power", title: t("Web_Dash_Power"), sub: t("Web_Dash_PowerSub"),
+      body: [h("div", { class: "stats" }, h("div", { class: "stat" }, h("span", { class: "k" }, t("Web_Dash_PowerTotal")), total)), h("div", { class: "power-rows" }, rows), note] });
+  }
+  panels.append(powerPanel());
   // ——— The shop and its people ———
   const company = h("div", { class: "panels company" }, shopPanel("product"), shopPanel("system"), contactPanel());
   el.append(plane, panels, h("h2", { class: "section-title" }, t("Web_Company_Title")), company);

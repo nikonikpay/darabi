@@ -877,6 +877,11 @@
   <data name="Web_Dash_BoardTemp" xml:space="preserve"><value>Board</value></data>
   <data name="Web_Dash_ChipsetTemp" xml:space="preserve"><value>Chipset</value></data>
   <data name="Web_Dash_Drives" xml:space="preserve"><value>{0} drives</value></data>
+  <data name="Web_Dash_Power" xml:space="preserve"><value>System power</value></data>
+  <data name="Web_Dash_PowerSub" xml:space="preserve"><value>The parts' own power readings</value></data>
+  <data name="Web_Dash_PowerTotal" xml:space="preserve"><value>Measured total</value></data>
+  <data name="Web_Dash_PowerPsu" xml:space="preserve"><value>Read from the power supply's output: the whole system.</value></data>
+  <data name="Web_Dash_PowerUnmeasured" xml:space="preserve"><value>Not measured (no power sensor): {0}. The real draw is higher.</value></data>
   <data name="Web_Group_System" xml:space="preserve"><value>System</value></data>
   <data name="Web_Group_Windows" xml:space="preserve"><value>Windows</value></data>
   <data name="Web_Group_Power" xml:space="preserve"><value>Whole system (power)</value></data>

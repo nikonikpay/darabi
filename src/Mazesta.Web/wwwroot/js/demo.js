@@ -4,11 +4,15 @@ let strings = null, emitRef = null, started = false;
 const T0 = Date.now();
 
 const node = (id, kind, name, sensors, parent = null) => ({ id, kind, name, vendor: "Unknown", parent, sensors: sensors.map(([p, n, k, u, r]) => ({ id: `${id}#${p}`, name: n, kind: k, unit: u, role: r })) });
+const CORES = Array.from({ length: 16 }, (_, i) => i + 1);
 const HW = [
   node("amdcpu/0", "Cpu", "AMD Ryzen 9 3950X", [
     ["temperature/2", "Core (Tctl/Tdie)", "Temperature", "Celsius", "CpuTctlTdie"], ["temperature/3", "CCD1 (Tdie)", "Temperature", "Celsius", "CpuCcdTemp"], ["temperature/4", "CCD2 (Tdie)", "Temperature", "Celsius", "CpuCcdTemp"],
     ["load/0", "CPU Total", "Load", "Percent", "CpuTotalLoad"], ["clock/avg", "Cores (Average)", "Clock", "MegaHertz", "CpuCoreClockAverage"], ["clock/eff", "Cores (Average Effective)", "Clock", "MegaHertz", "CpuEffectiveClockAverage"],
-    ["power/0", "Package", "Power", "Watt", "CpuPackagePower"], ["voltage/0", "Core (SVI2 TFN)", "Voltage", "Volt", "CpuVcore"]]),
+    ["power/0", "Package", "Power", "Watt", "CpuPackagePower"], ["voltage/0", "Core (SVI2 TFN)", "Voltage", "Volt", "CpuVcore"],
+    // Each core's own clock, effective clock and load, as LibreHardwareMonitor names them (the sensors page folds them into families).
+    ...CORES.flatMap((c) => [["clock/" + c, `Core #${c}`, "Clock", "MegaHertz", "CpuCoreClock"], ["clock/e" + c, `Core #${c} (Effective)`, "Clock", "MegaHertz", "CpuEffectiveClock"],
+      ["load/" + c, `CPU Core #${c}`, "Load", "Percent", "CpuThreadLoad"]])]),
   node("gpu-nvidia/0", "Gpu", "NVIDIA GeForce RTX 3090", [
     ["temperature/0", "GPU Core", "Temperature", "Celsius", "GpuCoreTemp"], ["temperature/2", "GPU Hot Spot", "Temperature", "Celsius", "GpuHotSpotTemp"], ["temperature/3", "GPU Memory Junction", "Temperature", "Celsius", "GpuVramTemp"],
     ["load/0", "GPU Core", "Load", "Percent", "GpuLoad3D"], ["clock/0", "GPU Core", "Clock", "MegaHertz", "GpuCoreClock"], ["clock/4", "GPU Memory", "Clock", "MegaHertz", "GpuMemoryClock"],
@@ -28,6 +32,7 @@ const BASE = {
   "Memory Used": 18.5, "Memory Available": 45.4, Memory: 29, "CPU Socket": 44, Chipset: 58, "CPU Fan": 1310, "Chassis Fan #1": 820, "+12V": 12.1, Vcore: null,
   Temperature: 41, "Used Space": 63, "Read Rate": 1200000, "Write Rate": 380000, "Download Speed": 30400000, "Upload Speed": 204800, "Network Utilization": 3,
 };
+for (const c of CORES) { BASE[`Core #${c}`] = 3600 + c * 37; BASE[`Core #${c} (Effective)`] = 400 + ((c * 523) % 1700); BASE[`CPU Core #${c}`] = 2 + ((c * 7) % 23); }
 const hist = new Map(), st = new Map();
 function reading(n, s, k) {
   let b = BASE[s.name]; if (s.name === "GPU Core" && s.kind === "Clock") b = 1695; if (s.name === "GPU Core" && s.kind === "Load") b = 11; if (s.name === "GPU Core" && s.kind === "Voltage") b = 0.744;
