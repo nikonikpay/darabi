@@ -6,18 +6,30 @@ namespace Mazesta.Hardware.Nvidia;
 /// the counters the driver keeps (<see cref="NvmlPcieCounters"/>) and their total. A card is matched to its node by name, in order among cards of
 /// the same name. Everything else passes through untouched.
 /// </summary>
-public sealed class NvidiaPcieSensors(ISensorProvider inner) : ISensorProvider
+public sealed class NvidiaPcieSensors : ISensorProvider
 {
     private sealed record Attached(PcieCard Card, SensorDefinition? Total, IReadOnlyList<SensorDefinition> Sensors);
+    private readonly ISensorProvider inner;
     private readonly List<Attached> _cards = [];
+    private bool _starting;
+    public NvidiaPcieSensors(ISensorProvider inner) { this.inner = inner; inner.StatusChanged += s => { if (!_starting) StatusChanged?.Invoke(s); }; }
     public string Name => inner.Name;
     public ProviderStatus Status => inner.Status;
-    public event Action<ProviderStatus>? StatusChanged { add => inner.StatusChanged += value; remove => inner.StatusChanged -= value; }
+    // The inner provider says Ready inside its Start, before the cards' counters are added here; listeners read Hardware on it, so the
+    // statuses of the start are held back and the last one told once Hardware is complete.
+    public event Action<ProviderStatus>? StatusChanged;
     public IReadOnlyList<HardwareNode> Hardware { get; private set; } = [];
 
     public void Start()
     {
-        inner.Start();
+        _starting = true;
+        try { inner.Start(); Attach(); }
+        finally { _starting = false; }
+        StatusChanged?.Invoke(inner.Status);
+    }
+
+    private void Attach()
+    {
         var nodes = inner.Hardware.ToList();
         try
         {
