@@ -2539,4 +2539,20 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_M_BasePowerSpec" xml:space="preserve"><value>Intel Processor Base Power</value></data>
   <data name="Check_M_TurboPowerSpec" xml:space="preserve"><value>Intel Maximum Turbo Power</value></data>
   <data name="Check_Source" xml:space="preserve"><value>Maker's figures: {0}</value></data>
+  <data name="Check_BenchAsBefore" xml:space="preserve"><value>As fast as before</value></data>
+  <data name="Check_BenchAsBefore_Text" xml:space="preserve"><value>This result is within the usual range of this system&apos;s own earlier runs of this benchmark.</value></data>
+  <data name="Check_BenchSlowerThanBefore" xml:space="preserve"><value>Slower than before</value></data>
+  <data name="Check_BenchSlowerThanBefore_Text" xml:space="preserve"><value>This system did clearly better in its own earlier runs of this benchmark. Something changed: heat (dust, thermal paste), a setting in the BIOS or Windows, a driver, or a program running in the background.</value></data>
+  <data name="Check_DriveHealthy" xml:space="preserve"><value>The drive is healthy</value></data>
+  <data name="Check_DriveHealthy_Text" xml:space="preserve"><value>The drive reports itself healthy: Windows reads no warning from its SMART data, and the wear it counts leaves it plenty of life.</value></data>
+  <data name="Check_DriveUnhealthy" xml:space="preserve"><value>The drive reports a problem</value></data>
+  <data name="Check_DriveUnhealthy_Text" xml:space="preserve"><value>The drive&apos;s own SMART data warns of a fault (or an NVMe drive counted errors it could not correct). Back its data up now and run the SMART test on the Tests page; a drive that warns usually gets worse.</value></data>
+  <data name="Check_DriveWorn" xml:space="preserve"><value>The drive is wearing out</value></data>
+  <data name="Check_DriveWorn_Text" xml:space="preserve"><value>The drive&apos;s wear counter says little of its rated life is left. It still works, but plan to replace it, and keep its data backed up.</value></data>
+  <data name="Check_M_DriveLife" xml:space="preserve"><value>Life left</value></data>
+  <data name="Check_M_DriveTempMax" xml:space="preserve"><value>Hottest recorded</value></data>
+  <data name="Check_M_Earlier" xml:space="preserve"><value>Earlier runs (median)</value></data>
+  <data name="Check_M_EarlierRuns" xml:space="preserve"><value>Earlier runs</value></data>
+  <data name="Check_M_MediaErrors" xml:space="preserve"><value>Uncorrected errors</value></data>
+  <data name="Check_M_PowerOnHours" xml:space="preserve"><value>Hours powered on</value></data>
 </root>

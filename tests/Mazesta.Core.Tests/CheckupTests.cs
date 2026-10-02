@@ -203,4 +203,15 @@ public class CpuSpecTests
         var f = Assert.Single(GpuCheck.Evaluate(new GpuRunTrace("RTX", HardwareVendor.Nvidia, null, null, null, null, null, null, added)));
         Assert.Equal((code, level), (f.Code, f.Level));
     }
-}
+    private static Mazesta.Core.Providers.DriveHealth Drive(string? status, int? wear, long? mediaErrors = null, string bus = "NVMe") => new("SSD", null, status, wear, 40, 60, mediaErrors, 0, 1000, bus);
+    [Theory, InlineData("Healthy", 5, FindingCode.DriveHealthy, FindingLevel.Good), InlineData("Healthy", 75, FindingCode.DriveWorn, FindingLevel.Attention),
+        InlineData("Healthy", 95, FindingCode.DriveWorn, FindingLevel.Problem), InlineData("Warning", 5, FindingCode.DriveUnhealthy, FindingLevel.Attention),
+        InlineData("Unhealthy", 5, FindingCode.DriveUnhealthy, FindingLevel.Problem), InlineData("Healthy", null, FindingCode.DriveHealthy, FindingLevel.Good)]
+    public void Drive_health_is_judged_by_its_own_report(string status, int? wear, FindingCode code, FindingLevel level)
+    { var f = Assert.Single(DriveCheck.Evaluate([Drive(status, wear)])); Assert.Equal((code, level), (f.Code, f.Level)); }
+    [Fact] public void Nvme_media_errors_need_attention() => Assert.Equal(FindingCode.DriveUnhealthy, Assert.Single(DriveCheck.Evaluate([Drive("Healthy", 5, 3)])).Code);
+    [Fact] public void A_drive_that_reports_nothing_says_nothing() => Assert.Empty(DriveCheck.Evaluate([Drive(null, null, bus: "SATA")]));
+    [Fact] public void A_first_run_is_not_judged() => Assert.Null(SelfCheck.Evaluate("CPU", HardwareKind.Cpu, 1000, [], true, "pts"));
+    [Theory, InlineData(980, FindingCode.BenchAsBefore, FindingLevel.Good), InlineData(850, FindingCode.BenchSlowerThanBefore, FindingLevel.Attention), InlineData(700, FindingCode.BenchSlowerThanBefore, FindingLevel.Problem)]
+    public void A_run_is_judged_against_the_machines_own_earlier_runs(double mine, FindingCode code, FindingLevel level)
+    { var f = SelfCheck.Evaluate("CPU", HardwareKind.Cpu, mine, [1000, 990, 1010], true, "pts")!; Assert.Equal((code, level), (f.Code, f.Level)); }}

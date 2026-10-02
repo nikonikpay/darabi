@@ -80,7 +80,7 @@ public sealed partial class WebBridge
         runner.BusyChanged += OnBusy; _cleanup.Add(() => runner.BusyChanged -= OnBusy);
         async void OnFinishedUi(RecordedBenchmark run)
         {
-            // Whatever happens below, the checkup hears whether this run has a standing among other systems, so its report does not wait for it.
+            // Whatever happens below, the checkup hears how this run compares with the machine's own earlier ones, so its report does not wait for it.
             Finding? peer = null;
             try
             {
@@ -99,8 +99,11 @@ public sealed partial class WebBridge
                 {
                     string? part = await PartOf(h.Part, options, s);
                     if (string.IsNullOrWhiteSpace(part)) { _log.LogInformation("Benchmark {Id}: the measured part is not known; the run is not added to the comparison log", run.Definition.Id.Value); return; }
-                    // Judged before this run joins the log, so it is compared with the other systems and never with itself.
-                    peer = PeerFinding(row, h, BenchmarkPeers.TableKey(run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options)), c.Current, part, overclocked, run.Result.Metrics);
+                    // Judged before this run joins the log, so it is compared with this machine's earlier runs and never with itself. Other systems
+                    // are left to the Benchmarks page's lists: a faster or slower model says nothing of this machine's health, and a similar one may never come.
+                    string table = BenchmarkPeers.TableKey(run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options));
+                    peer = SelfCheck.Evaluate(row.Name, row.Benchmark.Component, c.Current.Value,
+                        runs.Of(table).Where(x => x.System == s.Hash && x.Overclocked == overclocked).Select(x => x.Value), h.HigherIsBetter, c.Current.Unit);
                     var details = await DetailsOf(h.Part, part, options);
                     runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options), BenchmarkPeers.PartName(part),
                         s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details]));
@@ -109,17 +112,6 @@ public sealed partial class WebBridge
                 catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }
             }
             finally { checkup.SetPeer(run, peer); }
-        }
-        // This run against the same part model on other systems (the stock entry, or the overclocked one for an overclocked run).
-        Finding PeerFinding(BenchmarkRowViewModel row, HeadlineMetric h, string table, BenchmarkRecord current, string part, bool overclocked, IReadOnlyList<BenchmarkMetric> metrics)
-        {
-            var k = BenchmarkPeers.Rank(PeerDb.Table(table), runs.Entries(table), current.Value, part, h.HigherIsBetter);
-            var same = k.Rows.FirstOrDefault(x => x.Same && x.Entry.Overclocked == overclocked)?.Entry;
-            var kind = row.Benchmark.Component;
-            if (same is null)
-                return new Finding(FindingCode.BenchFewPeers, FindingLevel.Note, kind, [new("Check_M_Mine", current.Value, current.Unit), new("Check_M_Systems", 0, "")], row.Name);
-            return PeerCheck.Evaluate(new PeerStanding(row.Name, kind, current.Value, same.Median, same.Systems, h.HigherIsBetter, current.Unit,
-                CheckupService.ConditionsOf(metrics), same.Sample?.Metrics is { } theirs ? CheckupService.ConditionsOf(theirs) : null));
         }
         void OnFinished(RecordedBenchmark run) => _window.Dispatcher.BeginInvoke(() => OnFinishedUi(run));
         runner.Finished += OnFinished; _cleanup.Add(() => runner.Finished -= OnFinished);

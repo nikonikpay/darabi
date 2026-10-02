@@ -23,6 +23,7 @@ public static class CheckupText
             "°C" => N(m.Value, "0") + " °C",
             "W" => N(m.Value, "0") + " W",
             "s" => N(m.Value, "0") + " s",
+            "h" => N(m.Value, "#,0") + " h",
             "MT/s" => N(m.Value, "0") + " MT/s",
             "×" => "x" + N(m.Value, "0"),
             "%" when m.Key == "Check_M_Diff" => (m.Value > 0 ? "+" : m.Value < 0 ? "−" : "") + N(Math.Abs(m.Value), "0.0") + " %",

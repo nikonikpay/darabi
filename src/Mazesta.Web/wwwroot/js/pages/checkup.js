@@ -1,6 +1,6 @@
 // The checkup: whether this machine works as it should, said in words so nobody has to compare numbers themselves. The setup (memory, power
-// plan, drive links) as it is now, and every CPU and GPU benchmark run of this session judged against what its parts report themselves and
-// against other systems with the same parts. The host does the judging; this page only shows it, the findings that need action first.
+// plan, drive links and health) as it is now, and every CPU and GPU benchmark run of this session judged against what its parts report themselves and
+// against the machine's own earlier runs. The host does the judging; this page only shows it, the findings that need action first.
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";

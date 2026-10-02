@@ -2539,4 +2539,20 @@
   <data name="Check_M_BasePowerSpec" xml:space="preserve"><value>توان پایهٔ پردازنده (اینتل)</value></data>
   <data name="Check_M_TurboPowerSpec" xml:space="preserve"><value>حداکثر توان توربو (اینتل)</value></data>
   <data name="Check_Source" xml:space="preserve"><value>اعداد سازنده: {0}</value></data>
+  <data name="Check_BenchAsBefore" xml:space="preserve"><value>مثل قبل سریع است</value></data>
+  <data name="Check_BenchAsBefore_Text" xml:space="preserve"><value>این نتیجه در محدودهٔ معمول اجراهای قبلی همین سیستم در این بنچمارک است.</value></data>
+  <data name="Check_BenchSlowerThanBefore" xml:space="preserve"><value>کندتر از قبل</value></data>
+  <data name="Check_BenchSlowerThanBefore_Text" xml:space="preserve"><value>این سیستم در اجراهای قبلی خودش در این بنچمارک به‌وضوح بهتر بوده. چیزی تغییر کرده: دما (گردوخاک، خمیر سیلیکون)، تنظیمی در بایوس یا ویندوز، درایور، یا برنامه‌ای که در پس‌زمینه اجرا می‌شود.</value></data>
+  <data name="Check_DriveHealthy" xml:space="preserve"><value>هارد سالم است</value></data>
+  <data name="Check_DriveHealthy_Text" xml:space="preserve"><value>خود هارد اعلام می‌کند سالم است: ویندوز در اطلاعات SMART آن هشداری نمی‌بیند و میزان فرسودگی‌اش هنوز عمر زیادی برایش باقی گذاشته است.</value></data>
+  <data name="Check_DriveUnhealthy" xml:space="preserve"><value>هارد مشکل گزارش می‌کند</value></data>
+  <data name="Check_DriveUnhealthy_Text" xml:space="preserve"><value>اطلاعات SMART خود هارد از یک خرابی خبر می‌دهد (یا هارد NVMe خطاهایی شمرده که نتوانسته اصلاح کند). همین حالا از اطلاعاتش نسخهٔ پشتیبان بگیرید و تست SMART را در صفحهٔ تست‌ها اجرا کنید؛ هاردی که هشدار می‌دهد معمولاً بدتر می‌شود.</value></data>
+  <data name="Check_DriveWorn" xml:space="preserve"><value>هارد رو به فرسودگی است</value></data>
+  <data name="Check_DriveWorn_Text" xml:space="preserve"><value>شمارندهٔ فرسودگی هارد نشان می‌دهد مقدار کمی از عمر اسمی‌اش باقی مانده. هنوز کار می‌کند، اما برای تعویضش برنامه بریزید و از اطلاعاتش نسخهٔ پشتیبان داشته باشید.</value></data>
+  <data name="Check_M_DriveLife" xml:space="preserve"><value>عمر باقی‌مانده</value></data>
+  <data name="Check_M_DriveTempMax" xml:space="preserve"><value>بیشترین دمای ثبت‌شده</value></data>
+  <data name="Check_M_Earlier" xml:space="preserve"><value>اجراهای قبلی (میانه)</value></data>
+  <data name="Check_M_EarlierRuns" xml:space="preserve"><value>تعداد اجراهای قبلی</value></data>
+  <data name="Check_M_MediaErrors" xml:space="preserve"><value>خطاهای اصلاح‌نشده</value></data>
+  <data name="Check_M_PowerOnHours" xml:space="preserve"><value>ساعت کارکرد</value></data>
 </root>

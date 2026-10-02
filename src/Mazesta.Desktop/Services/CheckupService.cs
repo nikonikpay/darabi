@@ -3,8 +3,8 @@ using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu; using Mazes
 using Microsoft.Extensions.Logging;
 namespace Mazesta.Desktop.Services;
 
-/// <summary>The checkup of one benchmark run: what its own measurements say (<see cref="Findings"/>) and where it stands among other systems with
-/// the same part (<see cref="Peer"/>, set a moment later by whoever holds the comparison lists).</summary>
+/// <summary>The checkup of one benchmark run: what its own measurements say (<see cref="Findings"/>) and how it compares with this machine's
+/// earlier runs (<see cref="Peer"/>, set a moment later by whoever holds the run log).</summary>
 public sealed record CheckupRun(string Id, string NameKey, DateTimeOffset At, IReadOnlyList<Finding> Findings, Finding? Peer)
 {
     public IEnumerable<Finding> All => Peer is null ? Findings : [Peer, .. Findings];
@@ -13,12 +13,12 @@ public sealed record CheckupRun(string Id, string NameKey, DateTimeOffset At, IR
 /// <summary>
 /// The app's "is this machine working as it should" judge. It watches every benchmark: while a GPU one runs it samples what the NVIDIA driver says
 /// holds the clock; when a CPU or GPU run ends it reads the monitor's record of that run and applies the checkup rules. The setup (memory, power
-/// plan, drive links) is judged on request. Nothing is guessed: a rule that lacks its measurement says nothing.
+/// plan, drive links, drive health) is judged on request. Nothing is guessed: a rule that lacks its measurement says nothing.
 /// </summary>
 public sealed class CheckupService
 {
     private static readonly TimeSpan PeerWait = TimeSpan.FromSeconds(20);
-    private readonly PollingEngine _engine; private readonly InventoryCache _inventory; private readonly HardwareDetailsCache _details; private readonly ILogger _log;
+    private readonly PollingEngine _engine; private readonly InventoryCache _inventory; private readonly HardwareDetailsCache _details; private readonly Mazesta.Core.Providers.IDriveHealthProvider _drives; private readonly ILogger _log;
     private readonly object _lock = new();
     private readonly Dictionary<string, CheckupRun> _runs = [];
     private readonly Dictionary<BenchmarkResult, TaskCompletionSource> _settled = new(ReferenceEqualityComparer.Instance);
@@ -27,9 +27,9 @@ public sealed class CheckupService
     /// <summary>A run was judged, or its standing among other systems arrived. Raised on a worker thread.</summary>
     public event Action? Changed;
 
-    public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, ILogger<CheckupService> log)
+    public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log)
     {
-        _engine = engine; _inventory = inventory; _details = details; _log = log;
+        _engine = engine; _inventory = inventory; _details = details; _drives = drives; _log = log;
         runner.Started += OnStarted; runner.Finished += OnFinished;
     }
 
@@ -113,6 +113,8 @@ public sealed class CheckupService
         found.AddRange(MemoryCheck.Evaluate(inv.MemoryModules, details.Spd));
         found.AddRange(PlatformCheck.Drives(details.Drives.Where(d => d.Slot is not null).Select(d => PlatformCheck.Of(d.Name, d.Slot!))));
         foreach (var (name, errors) in CheckupTraces.PcieErrors(_engine)) found.AddRange(GpuCheck.PcieErrors(errors, name));
+        try { found.AddRange(DriveCheck.Evaluate(await Task.Run(_drives.Read).ConfigureAwait(false))); }
+        catch (Exception e) { _log.LogWarning(e, "Checkup: reading the drives' health failed"); }
         return found;
     }
 

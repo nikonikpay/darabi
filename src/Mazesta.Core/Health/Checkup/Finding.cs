@@ -20,6 +20,7 @@ public enum FindingCode
     GpuLinkBelowCard, DriveLinkBelowDrive,
     CpuBelowBoost, CpuPowerLimit,
     GpuPcieErrorsOk, GpuPcieErrorsMany, GpuPcieErrorsFatal, GpuPcieErrorsUnderLoad, GpuPcieCleanUnderLoad,
+    DriveHealthy, DriveUnhealthy, DriveWorn, BenchAsBefore, BenchSlowerThanBefore,
 }
 
 /// <summary>A second sentence a finding may carry: what the measurements beside it point to.</summary>
@@ -66,6 +67,6 @@ public sealed record Series(IReadOnlyList<double> T, IReadOnlyList<double> V)
 
 internal static class Measures
 {
-    public const string Celsius = "°C", MHz = "MHz", Watt = "W", Percent = "%", Seconds = "s", MTs = "MT/s", Lanes = "×", None = "";
+    public const string Celsius = "°C", MHz = "MHz", Watt = "W", Percent = "%", Seconds = "s", MTs = "MT/s", Lanes = "×", Hours = "h", None = "";
     public static Measure M(string key, double value, string unit) => new(key, value, unit);
 }
