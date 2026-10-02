@@ -56,14 +56,16 @@ def principled(mat):
 def srgb_to_lin(c): return tuple((x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4) for x in c)
 
 textures, texture_index = [], {}
-def texture_for(color_img, alpha_src):
-    key = (color_img.name if color_img else None, alpha_src[0].name if alpha_src else None, alpha_src[1] if alpha_src else None, alpha_src[2] if alpha_src else None)
+def texture_for(color_img, alpha_src, ops=()):
+    key = (color_img.name if color_img else None, alpha_src[0].name if alpha_src else None) + (tuple(alpha_src[1:]) if alpha_src else ()) + (ops,)
     if key in texture_index: return texture_index[key]
     rgb = image_pixels(color_img)[..., :3] if color_img else np.ones((TEX, TEX, 3), np.float32)
+    if ops: rgb = grade(rgb, ops)
     if alpha_src:
         ap = image_pixels(alpha_src[0])
         a = ap[..., 3] if alpha_src[1] == 'Alpha' else ap[..., :3].mean(axis=2)
         if alpha_src[2]: a = 1 - a
+        a = np.clip((a - alpha_src[3]) * 40 + 0.5, 0, 1)   # the mask's own cut (a colour ramp's threshold), kept as a hard edge
         rgb = bleed(rgb, a > 0.5)
     else: a = np.ones((TEX, TEX), np.float32)
     texture_index[key] = len(textures); textures.append((np.dstack([rgb, a]), alpha_src is not None))
@@ -82,6 +84,49 @@ def bleed(rgb, solid):
         rgb[grow] = acc[grow] / n[grow][:, None]; known |= grow
     return rgb
 
+def ramp_cut(sock):
+    """Where a colour ramp between the mask image and Alpha cuts (the midpoint of its black-to-white step), and whether it is inverted."""
+    n = sock.links[0].from_node if sock.is_linked else None
+    if n is None or n.bl_idname != 'ShaderNodeValToRGB' or len(n.color_ramp.elements) != 2: return 0.5, False
+    e0, e1 = n.color_ramp.elements
+    return (e0.position + e1.position) / 2, e0.color[0] > e1.color[0]
+
+def grade_ops(sock):
+    """The Brightness/Contrast and Hue/Saturation/Value nodes between the base image and Base Color (the thuja's), nearest the image first."""
+    ops = []
+    while sock.is_linked:
+        n = sock.links[0].from_node
+        if n.bl_idname == 'ShaderNodeBrightContrast': ops.append(('bc', float(n.inputs[1].default_value), float(n.inputs[2].default_value))); sock = n.inputs['Color']
+        elif n.bl_idname == 'ShaderNodeHueSaturation': ops.append(('hsv', float(n.inputs['Hue'].default_value), float(n.inputs['Saturation'].default_value), float(n.inputs['Value'].default_value), float(n.inputs['Fac'].default_value))); sock = n.inputs['Color']
+        else: break
+    return tuple(reversed(ops))
+
+def hsv_shift(rgb, h, sat, val):
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    mx = rgb.max(axis=2); mn = rgb.min(axis=2); d = mx - mn; safe = np.where(d > 0, d, 1)
+    hue = np.where(mx == r, (g - b) / safe, np.where(mx == g, 2 + (b - r) / safe, 4 + (r - g) / safe)) / 6 % 1.0
+    hue = np.where(d > 0, hue, 0); s = np.where(mx > 0, d / np.where(mx > 0, mx, 1), 0)
+    return (hue + h - 0.5) % 1.0, np.clip(s * sat, 0, 1), np.maximum(mx * val, 0)
+
+def hsv_to_rgb(h, s, v):
+    i = np.floor(h * 6).astype(int) % 6; f = h * 6 - np.floor(h * 6)
+    p, q, t = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+    sel = [(v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q)]
+    return np.stack([np.choose(i, [c[k] for c in sel]) for k in range(3)], axis=2)
+
+def grade(rgb, ops):
+    """Blender's Brightness/Contrast and Hue/Saturation/Value applied as Cycles does, on linear colour; the result is sRGB-encoded again."""
+    lin = np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    for op in ops:
+        if op[0] == 'bc':
+            a = 1 + op[2]; lin = np.maximum(a * lin + (op[1] - op[2] * 0.5), 0)
+        else:
+            _, h, sat, val, fac = op
+            out = hsv_to_rgb(*hsv_shift(lin, h, sat, val))
+            lin = lin + (out - lin) * fac
+    lin = np.clip(lin, 0, 1)
+    return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055).astype(np.float32)
+
 def mix_alpha(mat):
     """A cut-out made by mixing with a Transparent BSDF (the factor from a mask image): the image, its output, and whether it is inverted."""
     out = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeOutputMaterial' and n.is_active_output), None)
@@ -91,7 +136,7 @@ def mix_alpha(mat):
     for slot, invert in ((1, False), (2, True)):   # transparent at factor 0 means the factor is the opacity
         if any(l.from_node.bl_idname == 'ShaderNodeBsdfTransparent' for l in mix.inputs[slot].links):
             r = upstream_image(mix.inputs[0])
-            return (r[0], r[1], invert) if r else None
+            return (r[0], r[1], invert, 0.5) if r else None
     return None
 
 def tint(sock):
@@ -133,14 +178,14 @@ def material_for(mat):
         rec['alpha'] = float(p.inputs['Alpha'].default_value)
         brick = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeTexBrick'), None)
         img = upstream_image(bc); alpha = upstream_image(p.inputs['Alpha'])
-        alpha = (alpha[0], alpha[1], False) if alpha else mix_alpha(mat)
+        alpha = (alpha[0], alpha[1], *reversed(ramp_cut(p.inputs['Alpha']))) if alpha else mix_alpha(mat)
         if brick is not None:
             mp = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeMapping'), None)
             s = mp.inputs['Scale'].default_value[0] if mp else 1.0
             rec.update(kind=K_BRICK, base=tuple(brick.inputs['Color1'].default_value[:3]), color2=tuple(brick.inputs['Color2'].default_value[:3]), mortar=tuple(brick.inputs['Mortar'].default_value[:3]),
                        pattern=(brick.inputs['Scale'].default_value * s, brick.inputs['Mortar Size'].default_value, brick.inputs['Brick Width'].default_value, brick.inputs['Row Height'].default_value))
         elif img or alpha:
-            rec['tex'] = texture_for(img[0] if img else None, alpha)
+            rec['tex'] = texture_for(img[0] if img else None, alpha, grade_ops(bc) if img else ())
             if img: rec['base'] = tint(bc)
             if alpha: rec['kind'] = K_CUTOUT
         base = re.sub(r'\.\d{3}$', '', name)   # an appended copy of a material is named "....001"
