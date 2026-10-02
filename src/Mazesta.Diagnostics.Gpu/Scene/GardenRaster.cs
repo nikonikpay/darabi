@@ -24,10 +24,11 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private readonly Settings _set; private readonly int _samples;
     private readonly ID3D12RootSignature _root;
     private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR;
-    private readonly ID3D12Resource _shadowMap, _depth, _reflection, _reflectionDepth, _msaa, _constants;
+    private readonly ID3D12Resource _shadowMap, _shadowStatic, _depth, _reflection, _reflectionDepth, _msaa, _constants;
     private readonly ID3D12DescriptorHeap _srv, _rtv, _dsv; private readonly uint _rtvSize, _dsvSize;
     private readonly int _reflW, _reflH;
     private readonly Matrix4x4 _shadowViewProj;
+    private bool _shadowBaked;
 
     public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load) : base(s, g, width, height, targets)
     {
@@ -68,6 +69,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // targets: the shadow map, the reflection (a 4x4 stand-in when the level has none), the MSAA frame and its depth
         _shadowMap = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, (uint)_set.ShadowSize, (uint)_set.ShadowSize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.PixelShaderResource, new ClearValue(Format.D32_Float, 1f, 0)));
+        // The sun and everything but the logo stand still: their shadow depth is drawn once, and each frame starts from a copy of it.
+        _shadowStatic = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, (uint)_set.ShadowSize, (uint)_set.ShadowSize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
+            ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1f, 0)));
         _reflW = _set.ReflectionDivisor > 0 ? Math.Max(4, width / _set.ReflectionDivisor) : 4; _reflH = _set.ReflectionDivisor > 0 ? Math.Max(4, height / _set.ReflectionDivisor) : 4;
         _reflection = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)_reflW, (uint)_reflH, 1, 1, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(Format.R8G8B8A8_UNorm, new Color4(0, 0, 0, 1))));
@@ -93,11 +97,12 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         for (int i = 0; i < Targets.Length; i++) s.Device.CreateRenderTargetView(Targets[i], null, Rtv(i));
         s.Device.CreateRenderTargetView(_reflection, null, Rtv(Targets.Length));
         if (_samples > 1) s.Device.CreateRenderTargetView(_msaa, null, Rtv(Targets.Length + 1));
-        _dsv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, 3, DescriptorHeapFlags.None, 0)));
+        _dsv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, 4, DescriptorHeapFlags.None, 0)));
         _dsvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
         s.Device.CreateDepthStencilView(_depth, null, Dsv(0));
         s.Device.CreateDepthStencilView(_shadowMap, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(1));
         s.Device.CreateDepthStencilView(_reflectionDepth, null, Dsv(2));
+        s.Device.CreateDepthStencilView(_shadowStatic, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(3));
 
         _shadowViewProj = SunShadowMatrix(g.SunDirection);
     }
@@ -163,12 +168,22 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.IASetIndexBuffer(new IndexBufferView(G.IndexBuffer.GPUVirtualAddress, (uint)G.IndexBuffer.Description.Width, Format.R32_UInt));
         l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
 
-        // 1. the sun's shadow map
-        l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
-        l.ClearDepthStencilView(Dsv(1), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(1));
+        // 1. the sun's shadow map: the still scene's depth (drawn on the first frame only), then the moving logo over it
+        static bool Casts(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout;
         l.RSSetViewport(0, 0, _set.ShadowSize, _set.ShadowSize); l.RSSetScissorRect(_set.ShadowSize, _set.ShadowSize);
         l.SetPipelineState(_shadow);
-        Geometry(l, k => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout, draw => G.CastsShadow(draw));
+        if (!_shadowBaked)
+        {
+            l.ClearDepthStencilView(Dsv(3), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(3));
+            Geometry(l, Casts, draw => G.CastsShadow(draw) && !Moves(draw));
+            l.ResourceBarrierTransition(_shadowStatic, ResourceStates.DepthWrite, ResourceStates.CopySource);
+            _shadowBaked = true;
+        }
+        l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.CopyDest);
+        l.CopyResource(_shadowMap, _shadowStatic);
+        l.ResourceBarrierTransition(_shadowMap, ResourceStates.CopyDest, ResourceStates.DepthWrite);
+        l.OMSetRenderTargets([], Dsv(1));
+        Geometry(l, Casts, draw => G.CastsShadow(draw) && Moves(draw));
         l.ResourceBarrierTransition(_shadowMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
         l.SetGraphicsRootDescriptorTable(5, _srv.GetGPUDescriptorHandleForHeapStart());
 
@@ -209,6 +224,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetPipelineState(cutout); Geometry(l, k => k is GardenMaterialKind.Cutout);
         l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass || (k is GardenMaterialKind.Water && !skipWater));
     }
+
+    private bool Moves(GardenGpu.Draw d) => G.LogoInstance >= d.FirstInstance && G.LogoInstance < d.FirstInstance + d.InstanceCount;
 
     private void Geometry(ID3D12GraphicsCommandList4 l, Func<GardenMaterialKind, bool> kinds, Func<GardenGpu.Draw, bool>? which = null)
     {

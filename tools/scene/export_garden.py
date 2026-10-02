@@ -1,6 +1,6 @@
-# Exports the courtyard scene (Mazesta-Art/courtyard-v4.blend, made from DFM_Courtyard_V4.blend by Mazesta-Art/scripts/prepare_courtyard_v4.py)
+# Exports the courtyard scene (Mazesta-Art/courtyard-v6.blend: V4's plants and light rigs around the V6 building, made by Mazesta-Art/scripts/prepare_courtyard_v6.py)
 # to the file the visual GPU tests draw: src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
-#   blender --background ../Mazesta-Art/courtyard-v4.blend --python tools/scene/export_garden.py
+#   blender --background ../Mazesta-Art/courtyard-v6.blend --python tools/scene/export_garden.py
 # (it also runs from Blender's Text Editor with the .blend open).
 #
 # Both of the file's scenes are read: Garden_Raster (the Direct3D test: golden-hour sun) and Garden_RT (the ray-traced test: blue hour,
@@ -13,7 +13,7 @@
 #   textures  - 256x256 BC3 (sRGB) with mips down to 4x4, base colour with the opacity in alpha
 #   lights    - sun, point, spot (area lights become wide spots), watts as Blender has them
 # Coordinates are turned from Blender's (x right, y forward, z up) to Direct3D's (x right, y up, z forward).
-import bpy, bmesh, numpy as np, struct, gzip, math, os, io
+import bpy, bmesh, numpy as np, struct, gzip, math, os, io, re
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath), "..", "Mazesta"))
 OUT = os.environ.get("MAZESTA_SCENE_OUT") or os.path.join(REPO, "src", "Mazesta.Diagnostics.Gpu", "Scene", "garden.mzscene")
@@ -57,15 +57,56 @@ def srgb_to_lin(c): return tuple((x / 12.92 if x <= 0.04045 else ((x + 0.055) / 
 
 textures, texture_index = [], {}
 def texture_for(color_img, alpha_src):
-    key = (color_img.name if color_img else None, alpha_src[0].name if alpha_src else None, alpha_src[1] if alpha_src else None)
+    key = (color_img.name if color_img else None, alpha_src[0].name if alpha_src else None, alpha_src[1] if alpha_src else None, alpha_src[2] if alpha_src else None)
     if key in texture_index: return texture_index[key]
     rgb = image_pixels(color_img)[..., :3] if color_img else np.ones((TEX, TEX, 3), np.float32)
     if alpha_src:
         ap = image_pixels(alpha_src[0])
         a = ap[..., 3] if alpha_src[1] == 'Alpha' else ap[..., :3].mean(axis=2)
+        if alpha_src[2]: a = 1 - a
+        rgb = bleed(rgb, a > 0.5)
     else: a = np.ones((TEX, TEX), np.float32)
     texture_index[key] = len(textures); textures.append((np.dstack([rgb, a]), alpha_src is not None))
     return texture_index[key]
+
+def bleed(rgb, solid):
+    """The cut-away texels take the colour of the nearest kept ones, so filtering and smaller mips draw no background (white) rim round a leaf."""
+    if not solid.any() or solid.all(): return rgb
+    rgb = rgb.copy(); known = solid.copy()
+    for _ in range(TEX):
+        if known.all(): break
+        acc = np.zeros_like(rgb); n = np.zeros(known.shape, np.float32)
+        for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)):
+            k = np.roll(known, (dy, dx), (0, 1)); acc += np.roll(rgb, (dy, dx), (0, 1)) * k[..., None]; n += k
+        grow = ~known & (n > 0)
+        rgb[grow] = acc[grow] / n[grow][:, None]; known |= grow
+    return rgb
+
+def mix_alpha(mat):
+    """A cut-out made by mixing with a Transparent BSDF (the factor from a mask image): the image, its output, and whether it is inverted."""
+    out = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeOutputMaterial' and n.is_active_output), None)
+    if not out or not out.inputs['Surface'].is_linked: return None
+    mix = out.inputs['Surface'].links[0].from_node
+    if mix.bl_idname != 'ShaderNodeMixShader': return None
+    for slot, invert in ((1, False), (2, True)):   # transparent at factor 0 means the factor is the opacity
+        if any(l.from_node.bl_idname == 'ShaderNodeBsdfTransparent' for l in mix.inputs[slot].links):
+            r = upstream_image(mix.inputs[0])
+            return (r[0], r[1], invert) if r else None
+    return None
+
+def tint(sock):
+    """A constant colour the base image is multiplied or mixed with on its way to the Base Color (V6's stone and walnut), as one multiplier."""
+    if not sock.is_linked: return (1.0, 1.0, 1.0)
+    n = sock.links[0].from_node
+    if n.bl_idname not in ('ShaderNodeMixRGB', 'ShaderNodeMix'): return (1.0, 1.0, 1.0)
+    ins = [s for s in n.inputs if s.type == 'RGBA' and s.enabled]
+    fac = next((s for s in n.inputs if s.name in ('Fac', 'Factor') and s.enabled), None)
+    const = next((s for s in ins if not s.is_linked), None)
+    if fac is None or fac.is_linked or const is None: return (1.0, 1.0, 1.0)
+    f, c = float(fac.default_value if not hasattr(fac.default_value, '__len__') else fac.default_value[0]), tuple(const.default_value[:3])
+    if n.blend_type == 'MULTIPLY': return tuple((1 - f) + f * x for x in c)
+    if n.blend_type == 'MIX': return tuple((1 - f) + f * x / 0.5 for x in c)   # towards the constant, as if the image averaged mid-grey
+    return (1.0, 1.0, 1.0)
 
 def image_pixels(img):
     """The image at TEX x TEX, RGBA floats as stored (sRGB colour images stay sRGB-encoded), rows bottom to top as Blender keeps them."""
@@ -92,6 +133,7 @@ def material_for(mat):
         rec['alpha'] = float(p.inputs['Alpha'].default_value)
         brick = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeTexBrick'), None)
         img = upstream_image(bc); alpha = upstream_image(p.inputs['Alpha'])
+        alpha = (alpha[0], alpha[1], False) if alpha else mix_alpha(mat)
         if brick is not None:
             mp = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeMapping'), None)
             s = mp.inputs['Scale'].default_value[0] if mp else 1.0
@@ -99,12 +141,13 @@ def material_for(mat):
                        pattern=(brick.inputs['Scale'].default_value * s, brick.inputs['Mortar Size'].default_value, brick.inputs['Brick Width'].default_value, brick.inputs['Row Height'].default_value))
         elif img or alpha:
             rec['tex'] = texture_for(img[0] if img else None, alpha)
-            if img: rec['base'] = (1.0, 1.0, 1.0)
+            if img: rec['base'] = tint(bc)
             if alpha: rec['kind'] = K_CUTOUT
-        if name.endswith('Water'): rec['kind'] = K_WATER
-        elif rec['trans'] > 0.5 or name == 'Spray': rec['kind'] = K_GLASS
+        base = re.sub(r'\.\d{3}$', '', name)   # an appended copy of a material is named "....001"
+        if base.endswith('Water'): rec['kind'] = K_WATER
+        elif rec['trans'] > 0.5 or base == 'Spray': rec['kind'] = K_GLASS
         elif max(rec['emit']) > 0.5 and rec['kind'] == K_FLAT: rec['kind'] = K_EMISSIVE
-        if name == 'Spray': rec['alpha'] = 0.5
+        if base == 'Spray': rec['alpha'] = 0.5
     material_index[name] = len(materials); materials.append(rec)
     return material_index[name]
 
@@ -191,7 +234,9 @@ def depsgraph_of(sc):
 
 def instance_key(inst):
     o = inst.object
-    return ("i:" + o.original.name + ":" + o.data.name) if inst.is_instance else ("o:" + o.original.name)
+    # instances without modifiers share by mesh data: the realised leaves are thousands of objects over a few meshes
+    if inst.is_instance: return ("d:" + o.data.name) if not o.original.modifiers else ("i:" + o.original.name + ":" + o.data.name)
+    return "o:" + o.original.name
 
 # how many times each mesh is placed (in the busier of the two scenes), so the ones placed thousands of times can be simplified
 counts = {}

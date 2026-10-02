@@ -20,7 +20,7 @@
   <ItemGroup>
     <!-- Raw D3D12 shaders, precompiled to DXIL by tools/compile-gpu-shaders.ps1 (the build does not need the Windows SDK). -->
     <EmbeddedResource Include="Shaders/*.cso" LogicalName="Mazesta.Diagnostics.Gpu.Shaders.%(Filename).cso" />
-    <!-- The Persian garden the visual tests draw, written by tools/scene/export_garden.py from Mazesta-Art/persian-garden.blend. -->
+    <!-- The Persian garden the visual tests draw, written by tools/scene/export_garden.py from Mazesta-Art/courtyard-v6.blend. -->
     <EmbeddedResource Include="Scene/garden.mzscene" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.mzscene" />
   </ItemGroup>
   <ItemGroup>

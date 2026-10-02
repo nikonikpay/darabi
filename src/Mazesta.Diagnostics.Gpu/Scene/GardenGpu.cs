@@ -230,7 +230,7 @@ internal struct GardenFrame
             SkyZenith = raster ? new(0.20f, 0.34f, 0.70f) : new(0.012f, 0.022f, 0.070f),
             SkyHorizon = raster ? new(0.95f, 0.70f, 0.48f) : new(0.10f, 0.085f, 0.17f),
             GroundColor = raster ? new(0.30f, 0.24f, 0.18f) : new(0.020f, 0.018f, 0.025f),
-            Exposure = raster ? 0.85f : 1.6f,
+            Exposure = raster ? 1.05f : 1.6f,
             ViewSize = new(width, height), CamRight = right, CamUp = up, CamForward = forward, TanHalfFovY = MathF.Tan(fovY / 2), Aspect = aspect,
             Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u
         };

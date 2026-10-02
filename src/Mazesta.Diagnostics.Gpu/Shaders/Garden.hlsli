@@ -110,7 +110,8 @@ float3 SkyColor(float3 dir)
     return c;
 }
 
-float3 Ambient(float3 n) { return lerp(GroundColor, lerp(SkyHorizon, SkyZenith, 0.5), saturate(n.y * 0.5 + 0.5)); }
+// The sky's light on a surface. By day it is about half the bright sky's colour, so the sun and its shadows give the courtyard its shape.
+float3 Ambient(float3 n) { return lerp(GroundColor, lerp(SkyHorizon, SkyZenith, 0.5), saturate(n.y * 0.5 + 0.5)) * (Mode == 1 ? 0.5 : 1.0); }
 
 // Radiance leaving a surface lit by one light of irradiance E from direction l: Lambert plus a GGX-shaped highlight.
 float3 Brdf(Surface s, float3 v, float3 l, float3 e)
