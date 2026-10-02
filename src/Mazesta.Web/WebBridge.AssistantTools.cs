@@ -235,6 +235,10 @@ public sealed partial class WebBridge
                             earlierWorkload = Diagnostics.Benchmarks.BenchmarkRecords.Headline(r.Benchmark)?.Version is { } v && r.Version != v ? true : (bool?)null });
                     return Task.FromResult(Json(new { runs }));
                 }),
+            new("company_info", "The company behind the app (Mazesta, DFM Rendering): its website, phones, email, hours, address, what it sells and its services. Call it for any question about Mazesta or how to reach or buy from it.",
+                """{"type":"object","properties":{}}""", (_, _) => Task.FromResult(Json(MazestaCompany.Info))),
+            new("ready_systems", "The company's ready-made systems (name and page link; no prices exist on the site). Optional use: a word of the name, such as gaming, rendering, video, trading.",
+                """{"type":"object","properties":{"use":{"type":"string"}}}""", (a, _) => Task.FromResult(Json(MazestaCompany.SystemsAnswer(Text(a, "use"))))),
             new("open_page", "Opens a page of the app on the screen, beside the chat, and can point at one control on it (target). Use the page ids of the list in your instructions.",
                 "{\"type\":\"object\",\"properties\":{\"page\":{\"type\":\"string\",\"enum\":[" + string.Join(",", AssistantPageIds.Select(x => $"\"{x}\"")) + "]},\"target\":{\"type\":\"string\",\"description\":\"optional control: " + string.Join(", ", AssistantTargets) + "\"}},\"required\":[\"page\"]}",
                 (a, _) =>

@@ -55,7 +55,11 @@ public static class AiAssistantPolicy
         "(tests, programs, parts) as the tool wrote them. A test whose outcome is not Passed did not pass, and a declined or unstarted run gave no " +
         "result. Never say that a test ran or passed unless run_tests returned it in this answer. " +
         "If a tool returned nothing or an error, say so. Never invent numbers, sensor readings, results, pages or buttons. " +
-        "The app has no list of games: for a game, give this computer's parts and do not say at which resolution or settings it runs.";
+        "The app has no list of games: for a game, give this computer's parts and do not say at which resolution or settings it runs. " +
+        "Mazesta (مازستا) is the brand of DFM Rendering, and its site is dfmrendering.com; there is no mazesta.com. When the user asks about Mazesta, the company, " +
+        "its site, how to contact or buy, what it does or its services, call company_info and tell its phones, site, hours and activities in full, as returned. " +
+        "When the user asks for a computer to buy, call ready_systems and name a few that suit the use, with their links; the site shows no prices (تماس بگیرید), " +
+        "so never give a price or say a system fits a budget: give the sales number and the page instead.";
 
     /// <summary>The prompt with what the model is told of this computer (read by the app, so a question about the RAM or the processor is
     /// answered from it) and of the app's pages, by the names the pages show.</summary>

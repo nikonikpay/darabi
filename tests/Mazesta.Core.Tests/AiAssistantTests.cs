@@ -40,5 +40,7 @@ public class AiAssistantTests
         foreach (var x in new[] { "دمای پردازنده چنده؟", "این سیستم چه کارت گرافیکی داره؟", "how hot is the cpu?" })
             Assert.False(AiAssistantPolicy.AsksToAct(x), x);
     }
+    [Fact] public void The_prompt_names_the_real_site_and_forbids_prices() { Assert.Contains("dfmrendering.com", AiAssistantPolicy.SystemPrompt); Assert.Contains("never give a price", AiAssistantPolicy.SystemPrompt); Assert.Contains("company_info", AiAssistantPolicy.SystemPrompt); }
+    [Fact] public void Company_facts_carry_the_real_phones_and_no_price() { var json = System.Text.Json.JsonSerializer.Serialize(MazestaCompany.Info); Assert.Contains("09197588700", json); Assert.Contains("021-41139", json); Assert.Single(MazestaCompany.Systems, s => s.Name.StartsWith("AM9")); Assert.Contains("no price", System.Text.Json.JsonSerializer.Serialize(MazestaCompany.SystemsAnswer(null))); }
     [Fact] public void The_prompt_says_every_request_is_a_new_run() { Assert.Contains("Each request is a new run", AiAssistantPolicy.SystemPrompt); Assert.Contains("open_page", AiAssistantPolicy.SystemPrompt); }
 }
