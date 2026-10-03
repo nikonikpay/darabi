@@ -29,6 +29,8 @@ if (-not (Test-Path $Key)) { throw "The signing key $Key is missing. Restore it 
 $toolArgs = @("site", "--key", $Key, "--out", $Out, "--archive", $Archive)
 foreach ($r in $Runs) { if (Test-Path $r) { $toolArgs += @("--runs", $r) } else { Write-Warning "No runs at $r" } }
 if ($App) {
+    # Checked before the build, which takes minutes: a notes file named but not written.
+    foreach ($n in @($NotesFa, $NotesEn)) { if ($n -and -not (Test-Path $n)) { throw "The notes file $n is missing. Write what changed in it (one line per item, UTF-8), or leave the option out." } }
     # The copy users get: self-contained, one exe for the app and one for the tray, wwwroot and Redist beside them.
     & (Join-Path $PSScriptRoot "publish-release.ps1")
     $toolArgs += @("--app", "artifacts/Mazesta-Release")
