@@ -101,6 +101,8 @@ public static class AppGuide
         T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null,
             "اینترنت وصل نمیشه", "اینترنت وصل نمی شود", "اینترنت قطع", "عیب یابی اینترنت", "مشکل اینترنت", "پراکسی", "پروکسی", "ریست شبکه", "proxy", "internet troubleshooter", "no internet"),
         P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
+        T("appupdate", "site", "Site_Title", "the link to the shop's site: the site key is entered here; a report's summary is sent to the site from the reports page (to be printed there for the serviced case) and benchmark results from the benchmark page", null,
+            "کلید سایت", "اتصال به سایت", "ارسال به سایت", "ارسال گزارش به سایت", "گزارش آنلاین", "اپلود بنچمارک", "آپلود بنچمارک", "ارسال نتایج", "site key", "send to site", "upload results"),
     ];
 
     public static AppPlace? Page(string id) => Places.FirstOrDefault(p => p.Page == id && p.Target is null);

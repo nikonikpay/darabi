@@ -21,6 +21,20 @@ public sealed class AiFiles(string dataRoot, HttpClient http)
     public bool HasModel(AiModel m) => new FileInfo(ModelPath(m)) is { Exists: true } f && f.Length == m.Bytes;
     public string ServerExe => Path.Combine(RuntimeDir, "llama-server.exe");
     public bool HasRuntime => File.Exists(BenchExe) && File.Exists(ServerExe);
+    /// <summary>The llama.cpp builds of earlier versions of the app still on disk. With one there and the current build missing, the assistant
+    /// was set up before an update that moved to a newer build: it is fetched again rather than left switched off.</summary>
+    public IReadOnlyList<string> StaleRuntimes()
+    {
+        string dir = Path.Combine(Root, "runtime");
+        try { return Directory.Exists(dir) ? [.. Directory.EnumerateDirectories(dir).Where(d => !string.Equals(Path.GetFileName(d), AiCatalog.Runtime.Build, StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(d, "llama-server.exe")))] : []; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
+    }
+    /// <summary>Removes the earlier builds once the current one is in place (each is some hundred megabytes).</summary>
+    public void RemoveStaleRuntimes()
+    {
+        if (!HasRuntime) return;
+        foreach (var d in StaleRuntimes()) try { Directory.Delete(d, true); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
     /// <summary>What a stopped download already has (it continues from there).</summary>
     public long PartialBytes(AiModel m) => new FileInfo(ModelPath(m) + ".part") is { Exists: true } f ? f.Length : 0;
 

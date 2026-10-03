@@ -180,5 +180,19 @@ public sealed partial class WebBridge
             return null;
         });
         RegisterAssistant(files, Machine, runner);
+
+        // After an update of the app that moved to a newer llama.cpp build, an assistant that was set up is brought along: the new build (and the
+        // model, if the one offered to this machine changed) is fetched once, then the old build is removed. Never for a copy that had no assistant.
+        async Task BringAlong()
+        {
+            if (!await Task.Run(() => files.StaleRuntimes().Count > 0).ConfigureAwait(true)) return;
+            if (!files.HasRuntime && active is null && AiAssistantPolicy.Decide(Machine()).Model is { } model)
+            {
+                _log.LogInformation("The assistant's llama.cpp build changed with this version; fetching {Build}", AiCatalog.Runtime.Build);
+                await EnableAssistant(model).ConfigureAwait(true);
+            }
+            await Task.Run(files.RemoveStaleRuntimes).ConfigureAwait(true);
+        }
+        _ = BringAlong();
     }
 }

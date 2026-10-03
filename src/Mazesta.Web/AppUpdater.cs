@@ -104,9 +104,14 @@ public sealed class AppUpdater
             var m = await _client.CheckAsync(CancellationToken.None).ConfigureAwait(false);
             Manifest = m; CheckedAt = DateTimeOffset.Now;
             _log.LogInformation("Update check: the site offers {Version} (this is {Current}), {Lists} data files", m.App?.Version ?? "no release", Current, m.Data.Count);
-            var synced = await DataSync.SyncAsync(_client, m, _paths.BenchDbDir, CancellationToken.None).ConfigureAwait(false);
-            DataSyncedAt = DateTimeOffset.Now; DataDownloaded += synced.Downloaded;
-            if (synced.Downloaded + synced.Removed > 0) { _log.LogInformation("Comparison lists: {Down} downloaded, {Removed} removed, {Total} in all", synced.Downloaded, synced.Removed, synced.Total); DataChanged?.Invoke(); }
+            try
+            {
+                var synced = await DataSync.SyncAsync(_client, m, _paths.BenchDbDir, CancellationToken.None).ConfigureAwait(false);
+                DataSyncedAt = DateTimeOffset.Now; DataDownloaded += synced.Downloaded;
+                if (synced.Downloaded + synced.Removed > 0) { _log.LogInformation("Comparison lists: {Down} downloaded, {Removed} removed, {Total} in all", synced.Downloaded, synced.Removed, synced.Total); DataChanged?.Invoke(); }
+            }
+            // A list missing on the site must not hide a release that is there: the lists on disk stay, the release is still offered.
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException or InvalidDataException) { _log.LogInformation("Signed comparison lists not fetched: {Message}", e.Message); }
             Set(m.IsNewer(Current) ? UpdateState.Available : UpdateState.UpToDate);
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException or UpdateRejectedException or InvalidDataException)

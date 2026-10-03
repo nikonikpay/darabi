@@ -8,10 +8,14 @@ using Mazesta.Diagnostics.Benchmarks; using Mazesta.Persistence.Updates;
 //          gathers the run logs into the archive (each run once, by its id), builds the comparison lists from the whole archive, zips the app if
 //          given (otherwise keeps the release the folder already offers) and writes update.json with its signature. The site folder is then
 //          uploaded as it is, to /mazesta/ on the site.
+//   upload --dir <site folder> --key-file <file> [--site <api>]
+//          sends that folder to the site through its Mazesta Connect plugin (the release key from the plugin's settings page, kept in a file
+//          outside the repository).
 return args.FirstOrDefault() switch
 {
     "keygen" => KeyGen(Opt(args, "--out") ?? throw Usage()),
     "site" => Site(args),
+    "upload" => await Upload(args),
     _ => throw Usage(),
 };
 
@@ -108,9 +112,63 @@ static int Site(string[] args)
     return 0;
 }
 
+// Sends the signed folder to the site through its Mazesta Connect plugin, which writes it to /mazesta/: every file in pieces (a host's upload
+// limit is often a few megabytes), each checked there against its size and SHA-256 before anything is put in place; update.json and its
+// signature go in last. A zip the site already serves with the same size is not sent again.
+static async Task<int> Upload(string[] args)
+{
+    string dir = Path.GetFullPath(Opt(args, "--dir") ?? throw Usage());
+    var api = new Uri((Opt(args, "--site") ?? "https://www.dfmrendering.com/wp-json/mazesta/v1/").TrimEnd('/') + "/");
+    string key = File.ReadAllText(Opt(args, "--key-file") ?? throw Usage()).Trim();
+    var manifest = UpdateManifest.Parse(File.ReadAllBytes(Path.Combine(dir, UpdateManifest.FileName)));
+    using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+    http.DefaultRequestHeaders.TryAddWithoutValidation(SiteClient.KeyHeader, key);
+    http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "MazestaRelease/1.0");
+
+    var files = new List<string>();
+    if (manifest.App is { } app)
+    {
+        // The folder the app reads is beside the site's root: <site>/mazesta/.
+        var served = new Uri(new Uri(api.GetLeftPart(UriPartial.Authority)), "/mazesta/" + app.File);
+        long? there = null;
+        try { using var head = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, served)); if (head.IsSuccessStatusCode && head.Content.Headers.ContentType?.MediaType != "text/html") there = head.Content.Headers.ContentLength; }
+        catch (HttpRequestException) { }
+        if (there == app.Size) Console.WriteLine($"{app.File} is on the site already ({app.Size / 1048576.0:0.0} MB); not sent again."); else files.Add(app.File);
+    }
+    files.AddRange(manifest.Data.Select(d => d.File));
+    files.Add(UpdateManifest.FileName); files.Add(UpdateManifest.SignatureName);
+
+    const int Piece = 2 * 1024 * 1024;
+    var sent = new List<object>();
+    foreach (var name in files)
+    {
+        string path = Path.Combine(dir, name.Replace('/', Path.DirectorySeparatorChar)); long size = new FileInfo(path).Length, offset = 0;
+        await using var src = File.OpenRead(path); var buffer = new byte[Piece];
+        for (int tries = 0; offset < size;)
+        {
+            src.Position = offset; int n = await src.ReadAtLeastAsync(buffer, (int)Math.Min(Piece, size - offset), throwOnEndOfStream: false);
+            using var body = new ByteArrayContent(buffer, 0, n); body.Headers.ContentType = new("application/octet-stream");
+            using var res = await http.PostAsync(new Uri(api, $"release/chunk?name={Uri.EscapeDataString(name)}&offset={offset}"), body);
+            string text = await res.Content.ReadAsStringAsync();
+            long? have = null; try { have = JsonDocument.Parse(text).RootElement.TryGetProperty("have", out var h) ? h.GetInt64() : null; } catch (JsonException) { }
+            if (res.IsSuccessStatusCode && have == offset + n) { offset += n; tries = 0; Console.Write($"\r{name}: {offset * 100 / size}%   "); continue; }
+            // The site holds a different length than expected (a piece was lost or doubled on the way): carry on from what it has.
+            if ((int)res.StatusCode == 409 && have is { } h2 && ++tries <= 5) { offset = Math.Min(h2, size); continue; }
+            Console.Error.WriteLine($"\n{name}: the site answered {(int)res.StatusCode}: {text[..Math.Min(300, text.Length)]}"); return 1;
+        }
+        Console.WriteLine();
+        sent.Add(new { name, size, sha256 = UpdateSigning.Sha256(path) });
+    }
+    using var commit = await http.PostAsync(new Uri(api, "release/commit"), new StringContent(JsonSerializer.Serialize(new { files = sent }), System.Text.Encoding.UTF8, "application/json"));
+    string answer = await commit.Content.ReadAsStringAsync();
+    if (!commit.IsSuccessStatusCode) { Console.Error.WriteLine($"The site did not put the files in place ({(int)commit.StatusCode}): {answer[..Math.Min(300, answer.Length)]}"); return 1; }
+    Console.WriteLine($"On the site: {(manifest.App is null ? "no release" : "release " + manifest.App.Version)}, {manifest.Data.Count} lists. Check {new Uri(new Uri(api.GetLeftPart(UriPartial.Authority)), "/mazesta/update.json")}");
+    return 0;
+}
+
 static string? Opt(string[] args, string name) => Opts(args, name).LastOrDefault();
 static IEnumerable<string> Opts(string[] args, string name) { for (int i = 0; i < args.Length - 1; i++) if (args[i] == name) yield return args[i + 1]; }
-static ArgumentException Usage() => new("usage: mazesta-release keygen --out <folder> | site --key <pem> --out <folder> [--app <folder>] [--notes-fa <file>] [--notes-en <file>] [--runs <folder>]... [--archive <folder>]");
+static ArgumentException Usage() => new("usage: mazesta-release keygen --out <folder> | site --key <pem> --out <folder> [--app <folder>] [--notes-fa <file>] [--notes-en <file>] [--runs <folder>]... [--archive <folder>] | upload --dir <site folder> --key-file <release key file> [--site <api address>]");
 
 internal static partial class Program
 {

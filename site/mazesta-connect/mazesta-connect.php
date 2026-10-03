@@ -394,7 +394,7 @@ final class Mazesta_Connect
     /* ---------- the app's release (the signed update folder) ---------- */
 
     private static function release_dir() { return ABSPATH . 'mazesta'; }
-    private static function release_name($name) { return is_string($name) && preg_match('/^(MazestaWeb-\d+\.\d+\.\d+\.zip|update\.json|update\.json\.sig)$/', $name); }
+    private static function release_name($name) { return is_string($name) && preg_match('/^(MazestaWeb-\d+\.\d+\.\d+\.zip|update\.json|update\.json\.sig|benchdb\/[A-Za-z0-9][A-Za-z0-9._@=-]*\.json)$/', $name); }
 
     /** One piece of a release file, appended at its offset into /mazesta/.incoming; a piece at 0 starts the file over. */
     public static function rest_chunk($req)
@@ -404,6 +404,7 @@ final class Mazesta_Connect
         $dir = self::release_dir() . '/.incoming';
         if (!wp_mkdir_p($dir)) { return new WP_Error('mazesta_release', 'The update folder cannot be written.', array('status' => 500)); }
         $file = $dir . '/' . $name;
+        if (!wp_mkdir_p(dirname($file))) { return new WP_Error('mazesta_release', 'The update folder cannot be written.', array('status' => 500)); }
         $have = $offset === 0 ? 0 : (is_file($file) ? filesize($file) : -1);
         if ($have !== $offset) { return self::fresh(array('error' => 'offset', 'have' => max(0, (int) $have)), 409); }
         $body = $req->get_body();
@@ -430,12 +431,16 @@ final class Mazesta_Connect
         if (!in_array('update.json', $names, true) || !in_array('update.json.sig', $names, true)) { return new WP_Error('mazesta_release', 'update.json and its signature are required.', array('status' => 400)); }
         usort($names, function ($a, $b) { return (int) (substr($a, 0, 6) === 'update') <=> (int) (substr($b, 0, 6) === 'update') ?: strcmp($a, $b); });
         foreach ($names as $name) {
-            if (!rename($in . '/' . $name, $dir . '/' . $name)) { return new WP_Error('mazesta_release', 'Could not put ' . $name . ' in place.', array('status' => 500)); }
+            if (!wp_mkdir_p(dirname($dir . '/' . $name)) || !rename($in . '/' . $name, $dir . '/' . $name)) { return new WP_Error('mazesta_release', 'Could not put ' . $name . ' in place.', array('status' => 500)); }
         }
         // The zip the manifest offers stays; older ones go.
         $manifest = json_decode((string) file_get_contents($dir . '/update.json'), true);
         $keep = is_array($manifest) && isset($manifest['app']['file']) ? (string) $manifest['app']['file'] : '';
         foreach (glob($dir . '/MazestaWeb-*.zip') ?: array() as $zip) { if (basename($zip) !== $keep) { @unlink($zip); } }
+        // The same for the signed comparison lists: the ones the manifest no longer names go.
+        $listed = array();
+        if (is_array($manifest) && isset($manifest['data']) && is_array($manifest['data'])) { foreach ($manifest['data'] as $d) { if (isset($d['file'])) { $listed[(string) $d['file']] = true; } } }
+        foreach (glob($dir . '/benchdb/*.json') ?: array() as $list) { if (!isset($listed['benchdb/' . basename($list)])) { @unlink($list); } }
         return self::fresh(array('ok' => true, 'version' => is_array($manifest) && isset($manifest['app']['version']) ? $manifest['app']['version'] : null));
     }
 
