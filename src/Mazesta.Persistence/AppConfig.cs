@@ -44,6 +44,8 @@ public sealed class AppConfig : IVersionedDocument
     public double OverlayScale { get; set; } = 1.0;
     /// <summary>"list" (one column) or "columns" (two blocks side by side, the denser layout of the first overlay). Absent in older files: list.</summary>
     public string OverlayLayout { get; set; } = "list";
+    /// <summary>The address (or name) the overlay's ping, packet loss and jitter are measured to. Absent in older files: Google's resolver.</summary>
+    public string OverlayPingTarget { get; set; } = "8.8.8.8";
 }
 public sealed class Migration0To1 : IMigration
 {

@@ -45,6 +45,7 @@ public static class Bootstrapper
         s.AddSingleton<Services.CheckupService>();
         s.AddSingleton<Services.ReportService>();
         s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));
+        s.AddSingleton<IPingSource>(sp => new PingMonitor(() => sp.GetRequiredService<AppConfig>().OverlayPingTarget));
         s.AddSingleton<Services.OverlayService>();
         AddViewModelFactory(s, sp => new ViewModels.TestCenterViewModel(sp.GetRequiredService<TestEngine>(), sp.GetRequiredService<IEnumerable<ITestExecutor>>(), UiDispatcher.Post,
             new WindowsBreakEventSource()));

@@ -119,6 +119,31 @@ public class OverlayViewModelTests
         Assert.Equal("#59B38BFF", vm.Blocks[0].HueEdge);
     }
 
+    private sealed class FakePing(PingReading reading) : IPingSource
+    {
+        public int Starts, Stops;
+        public void Start() => Starts++;
+        public void Stop() => Stops++;
+        public PingReading Read() => reading;
+        public string Target => "8.8.8.8";
+    }
+    [Fact] public void The_link_rows_show_what_the_echoes_measured_and_a_dash_for_what_they_did_not()
+    {
+        var (_, e, _, _) = Build(); var ping = new FakePing(new(23.4, 3.3, null));
+        var vm = new OverlayViewModel(e, a => { a(); return null!; }, [new("net.ping", false), new("net.loss", false), new("net.jitter", false), new("net.down", false)], ping: ping);
+        Assert.True(vm.NeedsPing); Assert.False(vm.NeedsFrames);
+        vm.SetActive(true); Assert.Equal(1, ping.Starts);
+        e.TickOnce();
+        Assert.Equal("23 ms", Row(vm, "NET", "Overlay_Ping").Value); Assert.Equal("3 %", Row(vm, "NET", "Overlay_Loss").Value);
+        Assert.Equal(OverlayViewModel.Missing, Row(vm, "NET", "Overlay_Jitter").Value);   // not measured yet: never 0
+        vm.SetActive(false); Assert.Equal(1, ping.Stops);
+    }
+    [Fact] public void Without_a_link_item_no_echo_is_sent()
+    {
+        var (_, e, _, _) = Build(); var ping = new FakePing(new(1, 0, 0));
+        var vm = new OverlayViewModel(e, a => { a(); return null!; }, [new("gpu.temp", false), new("net.down", false)], ping: ping);
+        vm.SetActive(true); Assert.False(vm.NeedsPing); Assert.Equal(0, ping.Starts);
+    }
     [Fact] public void Without_game_items_there_is_no_frame_rate_card() => Assert.False(Build().Vm.HasHero);
 
     [Fact] public void Without_frame_items_the_frame_source_is_never_started()

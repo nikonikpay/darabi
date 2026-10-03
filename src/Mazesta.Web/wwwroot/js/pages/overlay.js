@@ -6,7 +6,7 @@ import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
 import { hw, value, subscribe } from "../store.js";
-import { h, icon } from "../ui.js";
+import { h, icon, toast } from "../ui.js";
 import { part, hueOf } from "../parts.js";
 
 const PARTS = ["Gaming", "Gpu", "Cpu", "Memory", "Storage", "Network"];
@@ -40,6 +40,9 @@ export function mount(el) {
   const sizes = seg(t("Web_Overlay_Size"), "scale", [["0.85", "Web_Overlay_Small"], ["1", "Web_Overlay_Normal"], ["1.2", "Web_Overlay_Large"]]);
   const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"], ["line", "Web_Overlay_Layout_Line"]]);
   const hotkey = h("span", { class: "kbd lat" });
+  // Where the ping, loss and jitter are measured to: an address or a name (a game server's, for the figure that matters in that game).
+  const pingTarget = h("input", { class: "field lat", style: { width: "150px" }, "aria-label": t("Web_Overlay_PingTarget"), title: t("Web_Overlay_PingTarget_Hint"),
+    onchange: (e) => call("overlay.set", { field: "pingTarget", value: e.target.value }).catch((x) => { toast(String(x.message || x)); call("overlay.state").then(update); }) });
   const problem = h("p", { class: "banner", hidden: true });
 
   const presets = h("div", { class: "presets" });
@@ -54,6 +57,7 @@ export function mount(el) {
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Layout")), layouts),
       h("label", { class: "ov-ctl" }, h("span", {}, t("Overlay_Corner")), corner),
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Size")), sizes),
+      h("label", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_PingTarget")), pingTarget),
       h("label", { class: "ov-ctl grow" }, h("span", {}, t("Web_Overlay_Opacity")), opacity)),
     problem,
     h("h2", { class: "section-title" }, t("Web_Overlay_Presets")), presets,
@@ -160,8 +164,12 @@ export function mount(el) {
   // ——— Values: sensor items from the snapshots, frame items from what the overlay measured ———
   function current(it) {
     if (it.frame) {
-      const v = frames && { fps: frames.fps, low1: frames.low1, frametime: frames.frametime, "fps.avg": frames.avg, "fps.min": frames.min, "fps.max": frames.max }[it.id];
-      return v === null || v === undefined ? null : { v, text: it.id === "frametime" ? `${v.toFixed(1)} ms` : `${Math.round(v)} FPS` };
+      const v = frames && { fps: frames.fps, low1: frames.low1, frametime: frames.frametime, "fps.avg": frames.avg, "fps.min": frames.min, "fps.max": frames.max,
+        "net.ping": frames.ping, "net.loss": frames.loss, "net.jitter": frames.jitter }[it.id];
+      if (v === null || v === undefined) return null;
+      // The link's figures come from the echoes the overlay sends while it is on screen: ping and jitter in ms, loss in percent.
+      if (it.id.startsWith("net.")) return { v, text: it.id === "net.loss" ? `${Math.round(v)} %` : `${it.id === "net.jitter" ? v.toFixed(1) : Math.round(v)} ms` };
+      return { v, text: it.id === "frametime" ? `${v.toFixed(1)} ms` : `${Math.round(v)} FPS` };
     }
     const vals = it.sensors.map((id) => value(id)).filter((v) => v !== null);
     if (!vals.length) return null;
@@ -281,6 +289,7 @@ export function mount(el) {
     for (const b of sizes.children) b.setAttribute("aria-pressed", String(Math.abs(+b.dataset.v - s.scale) < 0.01));
     for (const b of layouts.children) b.setAttribute("aria-pressed", String(b.dataset.v === s.layout));
     preview.style.setProperty("--ov-scale", s.scale);
+    if (document.activeElement !== pingTarget) pingTarget.value = s.pingTarget || "";
     problem.hidden = !s.frameProblem; problem.textContent = s.frameProblem ? t("Web_Overlay_FrameProblem", s.frameProblem) : "";
     renderPresets(s);
     if (rebuild) renderItems(s);

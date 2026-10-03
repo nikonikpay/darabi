@@ -810,6 +810,12 @@
   <data name="Overlay_Used" xml:space="preserve"><value>مصرفی</value></data>
   <data name="Overlay_Down" xml:space="preserve"><value>دانلود</value></data>
   <data name="Overlay_Up" xml:space="preserve"><value>آپلود</value></data>
+  <data name="Overlay_Ping" xml:space="preserve"><value>پینگ</value></data>
+  <data name="Overlay_Loss" xml:space="preserve"><value>اتلاف بسته</value></data>
+  <data name="Overlay_Jitter" xml:space="preserve"><value>جیتر</value></data>
+  <data name="Overlay_PingTarget_Bad" xml:space="preserve"><value>آدرس پینگ باید یک آدرس IPv4 یا نام سرور باشد.</value></data>
+  <data name="Web_Overlay_PingTarget" xml:space="preserve"><value>پینگ به</value></data>
+  <data name="Web_Overlay_PingTarget_Hint" xml:space="preserve"><value>آدرس یا نامی که پینگ، اتلاف بسته (packet loss) و جیتر نسبت به آن اندازه‌گیری می‌شود: هر ثانیه یک echo، فقط وقتی اورلی روی صفحه است. اتلاف و جیتر از ۳۰ echo آخر حساب می‌شود.</value></data>
   <data name="Overlay_Toggle" xml:space="preserve"><value>اورلی</value></data>
   <data name="Overlay_ToggleHint" xml:space="preserve"><value>نمایش یا پنهان کردن اورلی روی صفحه (Ctrl+Shift+O، داخل بازی هم کار می‌کند)</value></data>
   <data name="Overlay_Title" xml:space="preserve"><value>اورلی روی صفحه</value></data>

@@ -9,7 +9,7 @@ namespace Mazesta.Desktop.Services;
 /// tray runs, after the main window is closed (the app then lives on for the overlay alone; see Mazesta.Web's App).
 /// What it shows (items, charts, preset), its opacity and size come from the settings; changing them rebuilds the view model in place.
 /// </summary>
-public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null) : IDisposable
+public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null, IPingSource? ping = null) : IDisposable
 {
     public const string HotkeyText = "Ctrl+Shift+O";
     public static readonly string[] Corners = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"];
@@ -21,6 +21,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     /// <summary>Raised after each poll the overlay showed, with what it showed (the web page mirrors it in its preview).</summary>
     public event Action<OverlayViewModel>? Updated;
     public IFrameRateSource? FrameSource => frames;
+    public IPingSource? PingSource => ping;
     public OverlayViewModel? Current => _vm;
 
     public IReadOnlyList<OverlayChoice> Items => config.OverlayItems is { Count: > 0 } items ? WithSessionStats(items) : OverlayCatalog.Presets[OverlayCatalog.DefaultPreset];
@@ -31,9 +32,15 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     {
         string[] stats = ["fps.avg", "fps.min", "fps.max"];
         int fps = items.FindIndex(c => c.Id == "fps");
-        if (config.OverlayPreset != "game" || fps < 0 || items.Any(c => stats.Contains(c.Id))) return items;
-        int low = items.FindIndex(c => c.Id == "low1");
-        items.InsertRange((low >= 0 ? low : fps) + 1, stats.Select(id => new OverlayChoice(id, false)));
+        if (config.OverlayPreset != "game" || fps < 0) return items;
+        if (!items.Any(c => stats.Contains(c.Id)))
+        {
+            int low = items.FindIndex(c => c.Id == "low1");
+            items.InsertRange((low >= 0 ? low : fps) + 1, stats.Select(id => new OverlayChoice(id, false)));
+        }
+        // The same for the link (ping, loss, jitter, traffic), which the game set gained later still: added at its end, once.
+        string[] link = ["net.ping", "net.loss", "net.jitter", "net.down", "net.up"];
+        if (!items.Any(c => link.Contains(c.Id))) items.AddRange(link.Select(id => new OverlayChoice(id, false)));
         return items;
     }
 
@@ -55,7 +62,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout);
+        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping);
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }

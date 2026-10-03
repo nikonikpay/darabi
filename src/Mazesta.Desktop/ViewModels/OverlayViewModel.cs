@@ -68,7 +68,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         [OverlayPart.Gaming] = ("GAME", "#FDD400"), [OverlayPart.Gpu] = ("GPU", "#B38BFF"), [OverlayPart.Cpu] = ("CPU", "#5BA8FF"),
         [OverlayPart.Memory] = ("RAM", "#35D0E0"), [OverlayPart.Storage] = ("DISK", "#FF9A4D"), [OverlayPart.Network] = ("NET", "#FF78B9"),
     };
-    private readonly PollingEngine _engine; private readonly Func<Action, object> _dispatch; private readonly IFrameRateSource? _frames;
+    private readonly PollingEngine _engine; private readonly Func<Action, object> _dispatch; private readonly IFrameRateSource? _frames; private readonly IPingSource? _ping;
     // Only the sensors the overlay shows are kept from each snapshot (a snapshot holds every sensor of the machine, often several hundred).
     private readonly Dictionary<SensorId, double?> _latest = [];
     private readonly HashSet<SensorId> _wanted;
@@ -111,17 +111,22 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     /// The strip has no fixed width: it is as long as what it shows.</summary>
     public double PanelWidth => IsLine ? double.NaN : TwoColumns ? SectionWidth * 2 + 8 : SectionWidth;
     public bool NeedsFrames { get; }
+    /// <summary>A ping, loss or jitter item is shown: the echoes are sent only then, and only while the overlay is on screen.</summary>
+    public bool NeedsPing { get; }
+    /// <summary>The link as last measured while a ping item is shown (the web page's preview shows it too).</summary>
+    public PingReading? Ping { get; private set; }
     /// <summary>The last frame reading while a frame item is shown (the web page's preview shows it too).</summary>
     public FrameRateReading? Frames { get; private set; }
     public event Action? Updated;
 
-    public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, string layout = "list")
+    public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, string layout = "list",
+        IPingSource? ping = null)
     {
-        _engine = engine; _dispatch = dispatch; _frames = frames;
+        _engine = engine; _dispatch = dispatch; _frames = frames; _ping = ping;
         Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
         _wanted = [.. Sections.SelectMany(s => s.Rows).SelectMany(r => r.Sensors)];
-        NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming);
+        NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming); NeedsPing = Sections.Any(s => s.Rows.Any(r => r.Item.IsPingItem));
         Blocks = [.. Sections.Where(s => s.Part != OverlayPart.Gaming)];
         var game = Sections.FirstOrDefault(s => s.Part == OverlayPart.Gaming)?.Rows ?? [];
         HeroFps = game.FirstOrDefault(r => r.Id == "fps"); HeroLow = game.FirstOrDefault(r => r.Id == "low1"); HeroFrameTime = game.FirstOrDefault(r => r.Id == "frametime");
@@ -134,6 +139,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     {
         _active = active;
         if (NeedsFrames && _frames is not null) { if (active) _frames.Start(); else _frames.Stop(); }
+        if (NeedsPing && _ping is not null) { if (active) _ping.Start(); else _ping.Stop(); }
         if (!active) return;
         foreach (var r in Sections.SelectMany(s => s.Rows)) { r.History.Clear(); r.Trend = []; }
         _heroHistory.Clear(); HeroTrend = []; HeroLowValue = double.NaN; _session.Reset();
@@ -148,8 +154,8 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         foreach (var choice in choices)
         {
             if (OverlayCatalog.Find(choice.Id) is not { } item || sections.Any(s => s.Rows.Any(r => r.Id == item.Id))) continue;
-            IReadOnlyList<SensorDefinition> sensors = item.IsFrameItem ? [] : OverlayCatalog.Resolve(item, hardware, Include);
-            if (!item.IsFrameItem && sensors.Count == 0) continue;
+            IReadOnlyList<SensorDefinition> sensors = item.IsMeasured ? [] : OverlayCatalog.Resolve(item, hardware, Include);
+            if (!item.IsMeasured && sensors.Count == 0) continue;
             var section = sections.FirstOrDefault(s => s.Part == item.Part && s.Device == item.Device);
             if (section is null)
             {
@@ -158,7 +164,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
                 if (item.Device is not null) section.Subtitle = hardware.FirstOrDefault(n => n.Id.Value == item.Device)?.Name ?? "";
                 sections.Add(section);
             }
-            section.Rows.Add(new(item, Loc.Get(item.LabelKey), item.IsFrameItem ? Unit.None : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
+            section.Rows.Add(new(item, Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
         }
         return sections;
     }
@@ -169,14 +175,16 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     {
         foreach (var r in snapshot.Readings) if (_wanted.Contains(r.Id)) _latest[r.Id] = r.Quality == DataQuality.Ok ? r.Value : null;
         Frames = NeedsFrames ? _frames?.Read() : null;
+        Ping = NeedsPing ? _ping?.Read() : null;
         _session.Add(Frames);
         foreach (var section in Sections)
         {
             if (section.Part == OverlayPart.Gaming) { section.Subtitle = Frames?.App ?? ""; HeroApp = section.Subtitle; }
             foreach (var row in section.Rows)
             {
-                double? v = row.Item.IsFrameItem ? FrameValue(row.Id, Frames) : OverlayCatalog.Combine(row.Item.Aggregate, row.Sensors.Select(id => _latest.GetValueOrDefault(id)));
-                row.Value = v is { } x ? (row.Item.IsFrameItem ? FormatFrame(row.Id, x) : Format(x, row.Unit)) : Missing;
+                double? v = row.Item.IsFrameItem ? FrameValue(row.Id, Frames) : row.Item.IsPingItem ? PingValue(row.Id, Ping)
+                    : OverlayCatalog.Combine(row.Item.Aggregate, row.Sensors.Select(id => _latest.GetValueOrDefault(id)));
+                row.Value = v is { } x ? Text(row, x) : Missing;
                 int cut = row.Value.LastIndexOf(' ');
                 (row.Number, row.UnitText) = cut > 0 ? (row.Value[..cut], row.Value[(cut + 1)..]) : (row.Value, "");
                 row.Fraction = v is { } f && row.Item.FixedMax is { } top ? Math.Clamp(f / top, 0, 1) : 0;
@@ -208,10 +216,15 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         double seen = double.NaN;
         foreach (double p in points) if (double.IsFinite(p) && !(p <= seen)) seen = p;
         row.TrendMax = row.Item.FixedMax ?? Math.Max((double.IsNaN(seen) ? 0 : seen) * 1.15, 1e-6);
-        row.TrendMaxValue = double.IsNaN(seen) ? "" : row.Item.IsFrameItem ? FormatFrame(row.Id, seen) : Format(seen, row.Unit);
+        row.TrendMaxValue = double.IsNaN(seen) ? "" : Text(row, seen);
         row.TrendCaption = row.TrendMaxValue.Length > 0 ? Loc.Format("Overlay_ChartMax", row.TrendMaxValue) : "";
         row.Trend = points;
     }
+
+    /// <summary>A lost echo has no time: the ping is then the dash, not a number.</summary>
+    internal static double? PingValue(string id, PingReading? p) => id switch { "net.ping" => p?.PingMs, "net.loss" => p?.LossPercent, "net.jitter" => p?.JitterMs, _ => null };
+    internal static string FormatPing(string id, double v) => id == "net.loss" ? v.ToString("F0", CultureInfo.InvariantCulture) + " %" : v.ToString(id == "net.jitter" ? "F1" : "F0", CultureInfo.InvariantCulture) + " ms";
+    private static string Text(OverlayRow row, double v) => row.Item.IsFrameItem ? FormatFrame(row.Id, v) : row.Item.IsPingItem ? FormatPing(row.Id, v) : Format(v, row.Unit);
 
     internal static string FormatFrame(string id, double v) => id == "frametime" ? v.ToString("F1", CultureInfo.InvariantCulture) + " ms" : v.ToString("F0", CultureInfo.InvariantCulture) + " FPS";
 
@@ -228,5 +241,5 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         };
     }
 
-    public void Dispose() { _engine.SnapshotPublished -= OnSnapshot; if (_active && NeedsFrames) _frames?.Stop(); }
+    public void Dispose() { _engine.SnapshotPublished -= OnSnapshot; if (_active && NeedsFrames) _frames?.Stop(); if (_active && NeedsPing) _ping?.Stop(); }
 }

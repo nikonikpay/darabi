@@ -10,11 +10,14 @@ public enum OverlayPart { Gaming, Gpu, Cpu, Memory, Storage, Network }
 public enum OverlayAggregate { First, Max, Sum }
 
 /// <summary>One thing the overlay can show. <paramref name="Roles"/> are alternatives, tried in order for <see cref="OverlayAggregate.First"/>;
-/// an item with no roles is measured by the frame-rate monitor, not by a sensor. <paramref name="FixedMax"/> is the chart's fixed top (100 for a
+/// an item with no roles is measured by the app (the frame-rate monitor, or the echoes of the ping monitor), not by a sensor. <paramref name="FixedMax"/> is the chart's fixed top (100 for a
 /// percentage or a temperature); null scales the chart to what it shows.</summary>
 public sealed record OverlayItem(string Id, OverlayPart Part, string LabelKey, SensorRole[] Roles, OverlayAggregate Aggregate = OverlayAggregate.First, double? FixedMax = null)
 {
-    public bool IsFrameItem => Roles.Length == 0;
+    /// <summary>Measured by the app itself, not read from a sensor: the frame rate, or the link's ping, loss and jitter.</summary>
+    public bool IsMeasured => Roles.Length == 0;
+    public bool IsFrameItem => IsMeasured && Part == OverlayPart.Gaming;
+    public bool IsPingItem => IsMeasured && Part == OverlayPart.Network;
     /// <summary>The one device an item is pinned to (a drive's own read rate), by hardware id; null reads the whole part.</summary>
     public string? Device { get; init; }
     /// <summary>The catalog item a pinned item was made from ("storage.read" for "storage.read@storage/…").</summary>
@@ -70,6 +73,7 @@ public static class OverlayCatalog
 
         new("net.down", OverlayPart.Network, "Overlay_Down", [SensorRole.NetDownload], OverlayAggregate.Sum),
         new("net.up", OverlayPart.Network, "Overlay_Up", [SensorRole.NetUpload], OverlayAggregate.Sum),
+        new("net.ping", OverlayPart.Network, "Overlay_Ping", []), new("net.loss", OverlayPart.Network, "Overlay_Loss", [], FixedMax: Percent), new("net.jitter", OverlayPart.Network, "Overlay_Jitter", []),
     ];
 
     /// <summary>The items that can also be pinned to one drive, so each drive can show its own traffic, temperature and activity.</summary>
@@ -92,8 +96,9 @@ public static class OverlayCatalog
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<OverlayChoice>> Presets = new Dictionary<string, IReadOnlyList<OverlayChoice>>
     {
-        // Playing: the frame rate first and charted with its session average, lowest and highest, then what limits it.
-        ["game"] = Choices("fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used"),
+        // Playing: the frame rate first and charted with its session average, lowest and highest, then what limits it, then the link an online
+        // game depends on: ping, packet loss, jitter and the traffic now.
+        ["game"] = Choices("fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up"),
         // Rendering: how busy and how hot the processors stay over a long job, memory, and the drive being written.
         ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write"),
         // Troubleshooting: every temperature, clock, voltage and fan that tells a throttling or failing part.
@@ -108,7 +113,7 @@ public static class OverlayCatalog
     /// Sum, that role on every device of the part. <paramref name="include"/> leaves devices out (virtual network switches count traffic twice).</summary>
     public static IReadOnlyList<SensorDefinition> Resolve(OverlayItem item, IReadOnlyList<HardwareNode> hardware, Func<HardwareNode, bool>? include = null)
     {
-        if (item.IsFrameItem) return [];
+        if (item.IsMeasured) return [];
         var kind = item.Part switch { OverlayPart.Gpu => HardwareKind.Gpu, OverlayPart.Cpu => HardwareKind.Cpu, OverlayPart.Memory => HardwareKind.Memory, OverlayPart.Storage => HardwareKind.Storage, _ => HardwareKind.Network };
         var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (item.Device is null ? include?.Invoke(n) ?? true : n.Id.Value == item.Device))
             .OrderByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuCoreTemp)).ToList();
