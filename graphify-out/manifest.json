@@ -78,9 +78,9 @@
     "semantic_hash": "4e91877bb850d27c5eac8ae55b8bb4bf"
   },
   "src/Mazesta.Core/Ai/AppGuide.cs": {
-    "mtime": 1791022872.8957744,
-    "seen": 1791023384.2031994,
-    "ast_hash": "803fb24fb7147cb8e5cb545e0058eda9",
+    "mtime": 1791031966.2402241,
+    "seen": 1791032211.7785413,
+    "ast_hash": "fd12a4dbf92a38c9b9220f657b50b988",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Ai/MazestaCompany.cs": {
@@ -246,10 +246,10 @@
     "semantic_hash": "3c2ca79b596f9e876246a22f64d31af9"
   },
   "src/Mazesta.Core/Health/Checkup/MemoryCheck.cs": {
-    "mtime": 1790765351.264019,
-    "seen": 1791017325.2787948,
-    "ast_hash": "f71e3cfa2ec62ceb69f69c7b81c0a982",
-    "semantic_hash": "f71e3cfa2ec62ceb69f69c7b81c0a982"
+    "mtime": 1791030622.3212557,
+    "seen": 1791032211.7786367,
+    "ast_hash": "ebce79343e7c1edd9028349f51e73540",
+    "semantic_hash": ""
   },
   "src/Mazesta.Core/Health/Checkup/PeerCheck.cs": {
     "mtime": 1790765410.6897843,
@@ -522,10 +522,10 @@
     "semantic_hash": "5df61299bc2551cf76b3aa2d34cebcb4"
   },
   "src/Mazesta.Desktop/Services/ReportService.cs": {
-    "mtime": 1791008269.9835212,
-    "seen": 1791017325.2788656,
-    "ast_hash": "78ae4d6fecf33ef16212bd6b58119f81",
-    "semantic_hash": "78ae4d6fecf33ef16212bd6b58119f81"
+    "mtime": 1791031382.813435,
+    "seen": 1791032211.7788658,
+    "ast_hash": "41850671b7047a81b5b41a19d4fe66fb",
+    "semantic_hash": ""
   },
   "src/Mazesta.Desktop/Services/TrayController.cs": {
     "mtime": 1790585748.1637135,
@@ -792,10 +792,10 @@
     "semantic_hash": "420c3d10e6cd51d90e3e243b7ed675e3"
   },
   "src/Mazesta.Diagnostics/Ai/AiFiles.cs": {
-    "mtime": 1791008270.0724516,
-    "seen": 1791017325.27893,
-    "ast_hash": "2ad4444301148b05dfca55b794de1794",
-    "semantic_hash": "2ad4444301148b05dfca55b794de1794"
+    "mtime": 1791031966.2638855,
+    "seen": 1791032211.7790227,
+    "ast_hash": "cd6bfee9c70eec0599988ea9a03d671c",
+    "semantic_hash": ""
   },
   "src/Mazesta.Diagnostics/Ai/AiResults.cs": {
     "mtime": 1790756331.5765061,
@@ -828,10 +828,10 @@
     "semantic_hash": "53da1cdfe222a0af88962eb394f6e805"
   },
   "src/Mazesta.Diagnostics/Benchmarks/BenchmarkPeers.cs": {
-    "mtime": 1791008270.0765345,
-    "seen": 1791017325.278938,
-    "ast_hash": "76b3db6abf2356c1c8050b23c60f5d99",
-    "semantic_hash": "76b3db6abf2356c1c8050b23c60f5d99"
+    "mtime": 1791031422.8657937,
+    "seen": 1791032211.779043,
+    "ast_hash": "945c84acaf53944b2491a0bb97d4b015",
+    "semantic_hash": ""
   },
   "src/Mazesta.Diagnostics/Benchmarks/BenchmarkRecords.cs": {
     "mtime": 1791008270.0765345,
@@ -1212,10 +1212,10 @@
     "semantic_hash": "1f0817e8d4535e84459416c2669dd615"
   },
   "src/Mazesta.Hardware/Details/SpdReader.cs": {
-    "mtime": 1790756331.6175098,
-    "seen": 1791017325.2790315,
-    "ast_hash": "aaba8c9e9159baf85ee5c8975ca930ee",
-    "semantic_hash": "aaba8c9e9159baf85ee5c8975ca930ee"
+    "mtime": 1791030622.2413323,
+    "seen": 1791032211.7792847,
+    "ast_hash": "a07357a1509072d42311aba5fd800418",
+    "semantic_hash": ""
   },
   "src/Mazesta.Hardware/Lhm/ILhmComputer.cs": {
     "mtime": 1790585573.4260218,
@@ -1416,16 +1416,16 @@
     "semantic_hash": "dd820f44f30349f5fe79bc32e24257b3"
   },
   "src/Mazesta.Persistence/AppConfig.cs": {
-    "mtime": 1791022805.9905403,
-    "seen": 1791023384.2036629,
-    "ast_hash": "f45d6e0481eba343cab3bfc8f5db7d3a",
+    "mtime": 1791031370.736039,
+    "seen": 1791032211.779456,
+    "ast_hash": "b61266d8dda0f1fc9afb58fb6b74e531",
     "semantic_hash": ""
   },
   "src/Mazesta.Persistence/AppPaths.cs": {
-    "mtime": 1790676301.4517543,
-    "seen": 1791017325.2791023,
-    "ast_hash": "a5a9a194a99658d1301c7c1d5f9f896a",
-    "semantic_hash": "a5a9a194a99658d1301c7c1d5f9f896a"
+    "mtime": 1791031370.7380579,
+    "seen": 1791032211.7794583,
+    "ast_hash": "9fd8cf983cde2bb4401eb296e13f0d5c",
+    "semantic_hash": ""
   },
   "src/Mazesta.Persistence/GpuProfiles.cs": {
     "mtime": 1790585748.2788906,
@@ -1620,10 +1620,10 @@
     "semantic_hash": "ef7e86eb0785630bea5640e1e1b68efa"
   },
   "src/Mazesta.Web/AppUpdater.cs": {
-    "mtime": 1790687563.5528243,
-    "seen": 1791017325.2793026,
-    "ast_hash": "3902ba617a49868a44805a6766f3e5ad",
-    "semantic_hash": "3902ba617a49868a44805a6766f3e5ad"
+    "mtime": 1791031915.5636315,
+    "seen": 1791032211.7795625,
+    "ast_hash": "0b91e64c7843e95989c2ca4297777014",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/ChartWindow.cs": {
     "mtime": 1791008270.0999057,
@@ -1668,10 +1668,10 @@
     "semantic_hash": "9ebecd7c1cf223d2e059cd5cb0376fb2"
   },
   "src/Mazesta.Web/WebBridge.Ai.cs": {
-    "mtime": 1791008270.1056201,
-    "seen": 1791017325.2793233,
-    "ast_hash": "dc402b10a77d9d4ecabc9ecc5f1c7d22",
-    "semantic_hash": "dc402b10a77d9d4ecabc9ecc5f1c7d22"
+    "mtime": 1791031995.8182085,
+    "seen": 1791032211.7795806,
+    "ast_hash": "03d0904cbcee716f65c885e455d73127",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.App.cs": {
     "mtime": 1791008270.1067772,
@@ -1710,10 +1710,10 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Benchmarks.cs": {
-    "mtime": 1791008270.112288,
-    "seen": 1791017325.2793427,
-    "ast_hash": "08272e5e483637949416b9ed188eb6b7",
-    "semantic_hash": "08272e5e483637949416b9ed188eb6b7"
+    "mtime": 1791031370.7637353,
+    "seen": 1791032211.7795975,
+    "ast_hash": "c20e7f942f7c32c7f2366e6bc986e4a4",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Checkup.cs": {
     "mtime": 1790769626.3100567,
@@ -1758,10 +1758,10 @@
     "semantic_hash": "80aa013a707b67c5cb8ea10fc869539c"
   },
   "src/Mazesta.Web/WebBridge.Reports.cs": {
-    "mtime": 1791008270.115564,
-    "seen": 1791017325.279507,
-    "ast_hash": "79fd8fad72c49cc2b8639377ce3a256c",
-    "semantic_hash": "79fd8fad72c49cc2b8639377ce3a256c"
+    "mtime": 1791031438.048733,
+    "seen": 1791032211.779619,
+    "ast_hash": "7aa6c4f2f716fe750944a1d28c523747",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Settings.cs": {
     "mtime": 1791008270.1165738,
@@ -1800,9 +1800,9 @@
     "semantic_hash": "71a2afb2b885b4016ffa35e45797c812"
   },
   "src/Mazesta.Web/WebBridge.cs": {
-    "mtime": 1791022805.9920468,
-    "seen": 1791023384.203853,
-    "ast_hash": "f7dbbde9ade98513a8b315bb68004571",
+    "mtime": 1791031438.0477219,
+    "seen": 1791032211.7796364,
+    "ast_hash": "19131caa86290a4fe6ba763a1c2e2e06",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/app.js": {
@@ -1842,15 +1842,15 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/demo-strings.json": {
-    "mtime": 1791023127.3271532,
-    "seen": 1791023384.2038746,
-    "ast_hash": "36d9d3dd436ad6f5ea0812389258ee43",
+    "mtime": 1791031606.6923885,
+    "seen": 1791032211.7796502,
+    "ast_hash": "0ee7005e9e44d771d0bf21510bea8acf",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/demo.js": {
-    "mtime": 1791023127.379331,
-    "seen": 1791023384.2038789,
-    "ast_hash": "bffd297cf95b58fe8754355a59dc26cc",
+    "mtime": 1791031574.3648489,
+    "seen": 1791032211.7796519,
+    "ast_hash": "0fc3e36e03822ba89c9974c480d29138",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/families.js": {
@@ -1902,16 +1902,16 @@
     "semantic_hash": "45f7761e46304f23afe3fc64261a26be"
   },
   "src/Mazesta.Web/wwwroot/js/pages/appupdate.js": {
-    "mtime": 1790676857.4084406,
-    "seen": 1791017325.2795985,
-    "ast_hash": "a26e0a2fbe9f56627fd4e184a05ea372",
-    "semantic_hash": "a26e0a2fbe9f56627fd4e184a05ea372"
+    "mtime": 1791031541.2562215,
+    "seen": 1791032211.77967,
+    "ast_hash": "4e1b07952896f8c996d135e287b5ee06",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/benchmarks.js": {
-    "mtime": 1790768311.4460378,
-    "seen": 1791017325.279601,
-    "ast_hash": "1043cdc8740e694ec54896ca0f7e41c2",
-    "semantic_hash": "1043cdc8740e694ec54896ca0f7e41c2"
+    "mtime": 1791031551.5446007,
+    "seen": 1791032211.779672,
+    "ast_hash": "eae1d19982a260ff6819a88ffd2fe66c",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/checks.js": {
     "mtime": 1791022103.8795986,
@@ -1974,10 +1974,10 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/reports.js": {
-    "mtime": 1791008270.1464179,
-    "seen": 1791017325.2796583,
-    "ast_hash": "ad003f1c0519577d6d82e13b3443ee49",
-    "semantic_hash": "ad003f1c0519577d6d82e13b3443ee49"
+    "mtime": 1791031541.2734783,
+    "seen": 1791032211.7796981,
+    "ast_hash": "360e5da1b606b1565181881792c44b73",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/settings.js": {
     "mtime": 1791022847.676535,
@@ -2430,10 +2430,10 @@
     "semantic_hash": "cda245f4a81e6daf498c3bcd0f2405d4"
   },
   "tests/Mazesta.Diagnostics.Tests/BenchmarkPeersTests.cs": {
-    "mtime": 1790687457.8052416,
-    "seen": 1791017325.2799263,
-    "ast_hash": "a9a487940d169f278dccb69e880e8490",
-    "semantic_hash": "a9a487940d169f278dccb69e880e8490"
+    "mtime": 1791031682.6501212,
+    "seen": 1791032211.7798924,
+    "ast_hash": "89abad14ad4a25d2c49b1006fad882da",
+    "semantic_hash": ""
   },
   "tests/Mazesta.Diagnostics.Tests/BenchmarkRecordsTests.cs": {
     "mtime": 1791008270.1739726,
@@ -2844,10 +2844,10 @@
     "semantic_hash": "2d6c5ce5ca615dc353f065edd167fdf3"
   },
   "tools/Mazesta.Release/Program.cs": {
-    "mtime": 1790687479.0654461,
-    "seen": 1791017325.2800927,
-    "ast_hash": "b2b806160579d2e11993b393f3d6e742",
-    "semantic_hash": "b2b806160579d2e11993b393f3d6e742"
+    "mtime": 1791031915.5727184,
+    "seen": 1791032211.7800713,
+    "ast_hash": "ea4ac86c3191da942326279e4c537dc5",
+    "semantic_hash": ""
   },
   "tools/compile-gpu-shaders.ps1": {
     "mtime": 1791008270.1796484,
@@ -2892,10 +2892,10 @@
     "semantic_hash": "d5cab0cbb7df63e9f3356e82928c6c0d"
   },
   "tools/release.ps1": {
-    "mtime": 1790677282.8806317,
-    "seen": 1791017325.2801106,
-    "ast_hash": "df9a54dc83ebfddb21bc374cc887431c",
-    "semantic_hash": "df9a54dc83ebfddb21bc374cc887431c"
+    "mtime": 1791031915.5866337,
+    "seen": 1791032211.7800887,
+    "ast_hash": "75312cb10b374b7a35cab1b0e0c176cf",
+    "semantic_hash": ""
   },
   "tools/scene/export_garden.py": {
     "mtime": 1791008270.1818411,
@@ -3000,10 +3000,10 @@
     "semantic_hash": "c7375b256b1c455463b21ae9bf1b61d2"
   },
   "docs/UPDATES.md": {
-    "mtime": 1790688544.5927894,
-    "seen": 1791017325.2801652,
-    "ast_hash": "c575b38343812d9f7ba38036dad22df9",
-    "semantic_hash": "c575b38343812d9f7ba38036dad22df9"
+    "mtime": 1791032110.1218364,
+    "seen": 1791032211.7801287,
+    "ast_hash": "edaa683040c173326c410cc64e0de359",
+    "semantic_hash": ""
   },
   "docs/VERIFICATION-slice1.md": {
     "mtime": 1790585573.3512917,
@@ -3321,6 +3321,42 @@
     "mtime": 1791022122.8242128,
     "seen": 1791023384.2042754,
     "ast_hash": "ee3cd7046a0fe8ff82f8505bdd896f66",
+    "semantic_hash": ""
+  },
+  "site/mazesta-connect/mazesta-connect.php": {
+    "mtime": 1791031915.5626266,
+    "seen": 1791032211.778513,
+    "ast_hash": "5ead54a877c31113633165a3cf34700d",
+    "semantic_hash": ""
+  },
+  "src/Mazesta.Core/Inventory/Ddr5Spd.cs": {
+    "mtime": 1791030622.0969446,
+    "seen": 1791032211.7786725,
+    "ast_hash": "4c700c869ad25498d87cc3bdbb9c00cb",
+    "semantic_hash": ""
+  },
+  "src/Mazesta.Persistence/Updates/SiteClient.cs": {
+    "mtime": 1791031342.2501006,
+    "seen": 1791032211.7794828,
+    "ast_hash": "4591489d7b8a97b463ae221df218f40b",
+    "semantic_hash": ""
+  },
+  "src/Mazesta.Web/WebBridge.Site.cs": {
+    "mtime": 1791031541.2487233,
+    "seen": 1791032211.7796235,
+    "ast_hash": "7a250303f20fdb4525c1be8545892f6f",
+    "semantic_hash": ""
+  },
+  "tests/Mazesta.Core.Tests/Ddr5SpdTests.cs": {
+    "mtime": 1791030622.3590856,
+    "seen": 1791032211.7797458,
+    "ast_hash": "9874e2209b45c0553e9c242e62ae0d18",
+    "semantic_hash": ""
+  },
+  "tests/Mazesta.Persistence.Tests/SiteClientTests.cs": {
+    "mtime": 1791031664.8584518,
+    "seen": 1791032211.780046,
+    "ast_hash": "828a76d8c7733a0d835e659a96b28824",
     "semantic_hash": ""
   }
 }
