@@ -2335,6 +2335,31 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Checks_Mic_Start" xml:space="preserve"><value>Start listening</value></data>
   <data name="Checks_Mic_Denied" xml:space="preserve"><value>The microphone could not be opened ({0}): none connected, or Windows' privacy settings block it.</value></data>
   <data name="Checks_Mic_Device" xml:space="preserve"><value>Listening to: {0}</value></data>
+  <data name="Checks_Battery" xml:space="preserve"><value>Battery</value></data>
+  <data name="Checks_Battery_Sub" xml:space="preserve"><value>its health and a drain test</value></data>
+  <data name="Checks_Battery_Text" xml:space="preserve"><value>The battery&apos;s own controller reports what it held when new and what it holds now when full; their ratio is its health. For the drain test unplug the charger, press Start and use the laptop as usual: the app measures the energy that leaves the battery. The longer it runs, the more exact the figure.</value></data>
+  <data name="Checks_Battery_None" xml:space="preserve"><value>This computer reports no battery.</value></data>
+  <data name="Checks_Battery_NotReported" xml:space="preserve"><value>not reported</value></data>
+  <data name="Checks_Battery_Health" xml:space="preserve"><value>health: full capacity now against capacity when new</value></data>
+  <data name="Checks_Battery_Model" xml:space="preserve"><value>Battery</value></data>
+  <data name="Checks_Battery_Design" xml:space="preserve"><value>Capacity when new</value></data>
+  <data name="Checks_Battery_Full" xml:space="preserve"><value>Capacity now, when full</value></data>
+  <data name="Checks_Battery_Lost" xml:space="preserve"><value>Lost since new</value></data>
+  <data name="Checks_Battery_Cycles" xml:space="preserve"><value>Charge cycles</value></data>
+  <data name="Checks_Battery_Charge" xml:space="preserve"><value>Charge now</value></data>
+  <data name="Checks_Battery_State" xml:space="preserve"><value>State</value></data>
+  <data name="Checks_Battery_State_Charging" xml:space="preserve"><value>Charging</value></data>
+  <data name="Checks_Battery_State_Discharging" xml:space="preserve"><value>Running on the battery</value></data>
+  <data name="Checks_Battery_State_Idle" xml:space="preserve"><value>On the charger, not charging</value></data>
+  <data name="Checks_Battery_Rate" xml:space="preserve"><value>Power now</value></data>
+  <data name="Checks_Battery_Voltage" xml:space="preserve"><value>Voltage</value></data>
+  <data name="Checks_Battery_Start" xml:space="preserve"><value>Start the drain test</value></data>
+  <data name="Checks_Battery_Refresh" xml:space="preserve"><value>Read again</value></data>
+  <data name="Checks_Battery_Plugged" xml:space="preserve"><value>The charger is connected: unplug it, then start the test.</value></data>
+  <data name="Checks_Battery_PluggedDuring" xml:space="preserve"><value>The charger was connected during the test, so the measurement was stopped.</value></data>
+  <data name="Checks_Battery_Running" xml:space="preserve"><value>Measuring: {0} min so far. Too little has left the battery to give a figure yet.</value></data>
+  <data name="Checks_Battery_Result" xml:space="preserve"><value>{0} mWh left the battery in {1} min: {2} W on average. At this use a full charge would last about {3} (hours:minutes).</value></data>
+  <data name="Checks_Battery_Result_NoFull" xml:space="preserve"><value>{0} mWh left the battery in {1} min: {2} W on average. The battery does not report its full capacity, so no running time is given.</value></data>
   <data name="Checks_Mouse" xml:space="preserve"><value>Mouse and touchpad</value></data>
   <data name="Checks_Mouse_Sub" xml:space="preserve"><value>every button, the wheel, double clicks</value></data>
   <data name="Checks_Mouse_Text" xml:space="preserve"><value>Press each button inside the box and turn the wheel both ways. Each press is counted once: a button whose count jumps by two for one press double-clicks by itself, a common fault of worn switches.</value></data>

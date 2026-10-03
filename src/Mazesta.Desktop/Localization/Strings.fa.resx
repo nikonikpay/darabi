@@ -2335,6 +2335,31 @@
   <data name="Checks_Mic_Start" xml:space="preserve"><value>شروع گوش دادن</value></data>
   <data name="Checks_Mic_Denied" xml:space="preserve"><value>میکروفون باز نشد ({0}): یا وصل نیست یا تنظیمات حریم خصوصی ویندوز جلوی آن را گرفته است.</value></data>
   <data name="Checks_Mic_Device" xml:space="preserve"><value>در حال گوش دادن به: {0}</value></data>
+  <data name="Checks_Battery" xml:space="preserve"><value>باتری</value></data>
+  <data name="Checks_Battery_Sub" xml:space="preserve"><value>سلامت باتری و آزمون تخلیه</value></data>
+  <data name="Checks_Battery_Text" xml:space="preserve"><value>کنترلر خود باتری می‌گوید وقتی نو بود چقدر ظرفیت داشت و الان در حالت پر چقدر دارد؛ نسبت این دو، سلامت باتری است. برای آزمون تخلیه شارژر را جدا کنید، «شروع» را بزنید و مثل همیشه با لپ‌تاپ کار کنید: برنامه انرژی‌ای را که از باتری خارج می‌شود اندازه می‌گیرد. هرچه آزمون طولانی‌تر باشد عدد دقیق‌تر است.</value></data>
+  <data name="Checks_Battery_None" xml:space="preserve"><value>این سیستم باتری گزارش نمی‌کند.</value></data>
+  <data name="Checks_Battery_NotReported" xml:space="preserve"><value>گزارش نشده</value></data>
+  <data name="Checks_Battery_Health" xml:space="preserve"><value>سلامت: ظرفیت پر فعلی نسبت به ظرفیت زمان نو بودن</value></data>
+  <data name="Checks_Battery_Model" xml:space="preserve"><value>باتری</value></data>
+  <data name="Checks_Battery_Design" xml:space="preserve"><value>ظرفیت زمان نو بودن</value></data>
+  <data name="Checks_Battery_Full" xml:space="preserve"><value>ظرفیت فعلی در حالت پر</value></data>
+  <data name="Checks_Battery_Lost" xml:space="preserve"><value>ظرفیت ازدست‌رفته</value></data>
+  <data name="Checks_Battery_Cycles" xml:space="preserve"><value>تعداد چرخهٔ شارژ</value></data>
+  <data name="Checks_Battery_Charge" xml:space="preserve"><value>شارژ فعلی</value></data>
+  <data name="Checks_Battery_State" xml:space="preserve"><value>وضعیت</value></data>
+  <data name="Checks_Battery_State_Charging" xml:space="preserve"><value>در حال شارژ</value></data>
+  <data name="Checks_Battery_State_Discharging" xml:space="preserve"><value>روی باتری</value></data>
+  <data name="Checks_Battery_State_Idle" xml:space="preserve"><value>به شارژر وصل است و شارژ نمی‌شود</value></data>
+  <data name="Checks_Battery_Rate" xml:space="preserve"><value>توان فعلی</value></data>
+  <data name="Checks_Battery_Voltage" xml:space="preserve"><value>ولتاژ</value></data>
+  <data name="Checks_Battery_Start" xml:space="preserve"><value>شروع آزمون تخلیه</value></data>
+  <data name="Checks_Battery_Refresh" xml:space="preserve"><value>خواندن دوباره</value></data>
+  <data name="Checks_Battery_Plugged" xml:space="preserve"><value>شارژر وصل است: آن را جدا کنید و بعد آزمون را شروع کنید.</value></data>
+  <data name="Checks_Battery_PluggedDuring" xml:space="preserve"><value>در میانهٔ آزمون شارژر وصل شد و اندازه‌گیری متوقف شد.</value></data>
+  <data name="Checks_Battery_Running" xml:space="preserve"><value>در حال اندازه‌گیری: {0} دقیقه گذشته. هنوز آن‌قدر انرژی از باتری خارج نشده که عددی گفته شود.</value></data>
+  <data name="Checks_Battery_Result" xml:space="preserve"><value>در {1} دقیقه {0} mWh از باتری خارج شد: به‌طور میانگین {2} W. با همین مصرف، یک شارژ کامل حدود {3} (ساعت:دقیقه) دوام می‌آورد.</value></data>
+  <data name="Checks_Battery_Result_NoFull" xml:space="preserve"><value>در {1} دقیقه {0} mWh از باتری خارج شد: به‌طور میانگین {2} W. باتری ظرفیت پر خود را گزارش نمی‌کند، پس زمان دوام گفته نمی‌شود.</value></data>
   <data name="Checks_Mouse" xml:space="preserve"><value>ماوس و تاچ‌پد</value></data>
   <data name="Checks_Mouse_Sub" xml:space="preserve"><value>همهٔ دکمه‌ها، چرخ، دابل‌کلیک</value></data>
   <data name="Checks_Mouse_Text" xml:space="preserve"><value>هر دکمه را داخل کادر بفشارید و چرخ را به دو طرف بچرخانید. هر فشار یک بار شمرده می‌شود: دکمه‌ای که با یک فشار دو تا بشمارد خودبه‌خود دابل‌کلیک می‌کند که ایراد رایج کلیدهای فرسوده است.</value></data>

@@ -1224,6 +1224,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .chk-text { font-size: 13px; color: var(--paper-2); line-height: 1.7; margin: 10px 0 0; }
 .chk-verdict { display: flex; gap: 8px; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--rule); }
 .chk-verdict .caption { flex: 1; }
+.chk-health { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: baseline; margin: 12px 0 6px; --hue: var(--pass); }
+.chk-health b { font-size: 26px; }
+.chk-health .progress { grid-column: 1 / -1; height: 8px; }
 .chk-ok.on { color: var(--pass); border-color: color-mix(in oklab, var(--pass) 50%, transparent); background: color-mix(in oklab, var(--pass) 10%, transparent); }
 .chk-bad.on { color: var(--fail); border-color: color-mix(in oklab, var(--fail) 50%, transparent); background: color-mix(in oklab, var(--fail) 10%, transparent); }
 .chk-screen { position: fixed; inset: 0; z-index: 1000; cursor: none; outline: none; display: grid; place-items: center; }

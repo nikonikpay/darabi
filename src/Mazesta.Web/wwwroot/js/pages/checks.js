@@ -3,6 +3,7 @@
 // decides. Nothing here is a measurement the app could make on its own, so the page draws no verdict itself.
 import { t } from "../i18n.js";
 import { h, icon } from "../ui.js";
+import { call } from "../bridge.js";
 
 // A compact full-size layout, by KeyboardEvent.code (the physical key, whatever the keyboard language).
 const KEYS = [
@@ -23,7 +24,7 @@ const WIDE = { Backspace: 2, Tab: 1.5, Backslash: 1.5, CapsLock: 1.8, Enter: 2.2
 // Full-screen colours for dead or stuck pixels, then a gradient for banding and a fine checkerboard for pixel response.
 const SCREENS = ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#808080", "linear-gradient(90deg, #000, #fff)", "repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 2px 2px"];
 
-const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic" };
+const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Battery: "battery" };
 function card(key, ico, body) {
   const verdict = h("div", { class: "chk-verdict" });
   let state = "";
@@ -155,9 +156,50 @@ function mouse(cleanup) {
     h("div", { class: "chk-mouse" }, btns, h("span", { class: "caption" }, t("Checks_Mouse_Wheel")), wheel, h("span", { class: "caption" }, t("Checks_Mouse_Double")), dbl)));
 }
 
+// The battery as its own controller reports it: health is what it holds when full against what it held when new. The drain test reads the
+// remaining capacity while the laptop runs on the battery; the page asks every fifteen seconds while the test is on, and never otherwise.
+function battery(cleanup) {
+  const facts = h("dl", { class: "kv" }), result = h("p", { class: "msg" }), health = h("div", { class: "chk-health", hidden: true });
+  let timer = 0;
+  const w = (mw) => (mw / 1000).toFixed(1), wh = (mwh) => (mwh / 1000).toFixed(1);
+  const row = (key, value, latin = true) => h("div", {}, h("dt", {}, t(key)), h("dd", { class: latin ? "num" : "" }, value ?? t("Checks_Battery_NotReported")));
+  function show(b) {
+    if (!b) { facts.replaceChildren(h("p", { class: "caption" }, t("Checks_Battery_None"))); health.hidden = true; start.disabled = true; return; }
+    start.disabled = false; health.hidden = b.healthPercent == null;
+    if (b.healthPercent != null) health.replaceChildren(h("b", { class: "num" }, `${b.healthPercent} %`), h("span", { class: "caption" }, t("Checks_Battery_Health")),
+      h("div", { class: "progress" }, h("i", { style: { "--p": Math.min(1, b.healthPercent / 100) } })));
+    const state = b.charging ? "Charging" : b.discharging ? "Discharging" : "Idle";
+    facts.replaceChildren(
+      row("Checks_Battery_Model", [b.maker, b.name].filter(Boolean).join(" ") || null),
+      row("Checks_Battery_Design", b.designMwh != null ? `${wh(b.designMwh)} Wh` : null), row("Checks_Battery_Full", b.fullMwh != null ? `${wh(b.fullMwh)} Wh` : null),
+      row("Checks_Battery_Lost", b.lostMwh != null ? `${wh(b.lostMwh)} Wh` : null), row("Checks_Battery_Cycles", b.cycles != null ? String(b.cycles) : null),
+      row("Checks_Battery_Charge", b.chargePercent != null ? `${b.chargePercent} %` : null), row("Checks_Battery_State", t(`Checks_Battery_State_${state}`), false),
+      row("Checks_Battery_Rate", b.rateMw != null ? `${w(b.rateMw)} W` : null), row("Checks_Battery_Voltage", b.voltageMv != null ? `${(b.voltageMv / 1000).toFixed(2)} V` : null));
+  }
+  const hm = (min) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, "0")}`;
+  const end = () => { clearInterval(timer); timer = 0; start.hidden = false; stop.hidden = true; };
+  async function poll(cmd) {
+    let r;
+    try { r = await call("battery.test", { cmd }); } catch (e) { result.className = "msg fail"; result.textContent = String(e.message || e); end(); return; }
+    if (r.battery) show(r.battery);
+    if (r.state === "none") { show(null); end(); return; }
+    if (r.state === "plugged" || r.state === "pluggedDuring") { result.className = "msg fail"; result.textContent = t(r.state === "plugged" ? "Checks_Battery_Plugged" : "Checks_Battery_PluggedDuring"); end(); return; }
+    result.className = "msg";
+    result.textContent = !r.drain ? t("Checks_Battery_Running", r.minutes)
+      : r.drain.fullChargeMinutes != null ? t("Checks_Battery_Result", r.drain.usedMwh, r.minutes, r.drain.meanWatts, hm(r.drain.fullChargeMinutes))
+        : t("Checks_Battery_Result_NoFull", r.drain.usedMwh, r.minutes, r.drain.meanWatts);
+  }
+  const start = h("button", { class: "btn go", onclick: () => { start.hidden = true; stop.hidden = false; poll("start"); timer = setInterval(() => poll("read"), 15000); } }, icon("play"), t("Checks_Battery_Start"));
+  const stop = h("button", { class: "btn quiet", hidden: true, onclick: () => { end(); call("battery.test", { cmd: "stop" }).catch(() => {}); } }, icon("stop"), t("Checks_Stop"));
+  const refresh = h("button", { class: "btn quiet", onclick: () => call("battery.read").then((all) => show(all[0])).catch(() => {}) }, icon("refresh"), t("Checks_Battery_Refresh"));
+  cleanup.push(() => { if (timer) { clearInterval(timer); call("battery.test", { cmd: "stop" }).catch(() => {}); } });
+  call("battery.read").then((all) => show(all[0])).catch(() => show(null));
+  return card("Battery", "bolt", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Battery_Text")), health, facts, h("div", { class: "btn-row" }, start, stop, refresh), result));
+}
+
 export function mount(el) {
   const cleanup = [];
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checks")), h("p", { class: "page-lede" }, t("Checks_Lede")))),
-    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), mouse(cleanup)), keyboard(cleanup));
+    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup));
   return () => cleanup.forEach((f) => f());
 }
