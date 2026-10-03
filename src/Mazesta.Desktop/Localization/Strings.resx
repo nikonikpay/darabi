@@ -1687,6 +1687,51 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>Timing the DNS servers on this connection…</value></data>
   <data name="Assist_Dns_Best" xml:space="preserve"><value>In this short test the fastest DNS on this connection was {0} ({1} ms); in use now: {2}. Nothing was changed: the Windows tools page is open at the DNS box, where «Use» switches to it.</value></data>
   <data name="Assist_Dns_None" xml:space="preserve"><value>No DNS server answered every lookup; nothing was changed.</value></data>
+  <data name="NetFix_Title" xml:space="preserve"><value>Internet connection troubleshooter</value></data>
+  <data name="NetFix_Sub" xml:space="preserve"><value>finds where the connection stops, then the usual repairs</value></data>
+  <data name="NetFix_Note" xml:space="preserve"><value>The check changes nothing: it looks at the adapter, the router, the internet, the DNS, a web page and the proxy settings, and shows what it measured. The repairs below change Windows; tick the ones you want.</value></data>
+  <data name="NetFix_Check" xml:space="preserve"><value>Check the connection</value></data>
+  <data name="NetFix_Checking" xml:space="preserve"><value>Checking the connection…</value></data>
+  <data name="NetFix_Step_adapter" xml:space="preserve"><value>Network adapter and address</value></data>
+  <data name="NetFix_Step_gateway" xml:space="preserve"><value>Router (gateway)</value></data>
+  <data name="NetFix_Step_internet" xml:space="preserve"><value>Reaching the internet</value></data>
+  <data name="NetFix_Step_dns" xml:space="preserve"><value>Name lookup (DNS)</value></data>
+  <data name="NetFix_Step_web" xml:space="preserve"><value>Opening a web page</value></data>
+  <data name="NetFix_Step_proxy" xml:space="preserve"><value>Proxy settings</value></data>
+  <data name="NetFix_Result_Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="NetFix_Result_Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="NetFix_Result_Skipped" xml:space="preserve"><value>Not checked</value></data>
+  <data name="NetFix_Verdict_Connected" xml:space="preserve"><value>The connection works: a web page opened.</value></data>
+  <data name="NetFix_Verdict_NoAdapter" xml:space="preserve"><value>No network adapter is connected with a route to the internet. Check the cable or the Wi-Fi, and that the adapter is enabled and has its driver.</value></data>
+  <data name="NetFix_Verdict_NoAddress" xml:space="preserve"><value>The adapter is connected but got no address from the router (it gave itself 169.254.x.x). Restart the modem or router, and check the cable or the Wi-Fi password.</value></data>
+  <data name="NetFix_Verdict_NoGateway" xml:space="preserve"><value>The router does not answer and nothing on the internet is reached. The fault is between this computer and the router: the cable, the Wi-Fi, or the router itself.</value></data>
+  <data name="NetFix_Verdict_NoInternet" xml:space="preserve"><value>The router answers but the internet beyond it is not reached. The fault is on the modem&apos;s or the provider&apos;s side; the repairs below rarely help here.</value></data>
+  <data name="NetFix_Verdict_DnsFails" xml:space="preserve"><value>The internet is reached but names are not resolved: the DNS servers in use do not answer. Set the DNS and empty its cache.</value></data>
+  <data name="NetFix_Verdict_WebBlocked" xml:space="preserve"><value>The internet is reached and names resolve, but the test web page did not come back as it should: a sign-in page, a filter, or a wrong setting answers in its place.</value></data>
+  <data name="NetFix_Verdict_ProxyFails" xml:space="preserve"><value>A web page opens without the proxy, and not through the proxy that is set. Clear the proxy settings.</value></data>
+  <data name="NetFix_Repairs" xml:space="preserve"><value>Repairs</value></data>
+  <data name="NetFix_Run" xml:space="preserve"><value>Run the ticked repairs</value></data>
+  <data name="NetFix_NoneTicked" xml:space="preserve"><value>Tick at least one repair.</value></data>
+  <data name="NetFix_Fix_proxy" xml:space="preserve"><value>Clear the proxy settings</value></data>
+  <data name="NetFix_Fix_proxy_Note" xml:space="preserve"><value>Switches the proxy off and removes its server and set-up script, for programs and for Windows&apos; services. What was there is shown, so it can be put back.</value></data>
+  <data name="NetFix_Fix_dns" xml:space="preserve"><value>Set the DNS</value></data>
+  <data name="NetFix_Fix_dns_Note" xml:space="preserve"><value>On every connected adapter: back to automatic (what the router gives), or to Google&apos;s 8.8.8.8 and 8.8.4.4.</value></data>
+  <data name="NetFix_Dns_Auto" xml:space="preserve"><value>automatic (from the router)</value></data>
+  <data name="NetFix_Dns_Google" xml:space="preserve"><value>Google (8.8.8.8)</value></data>
+  <data name="NetFix_Fix_flush" xml:space="preserve"><value>Empty the DNS cache</value></data>
+  <data name="NetFix_Fix_flush_Note" xml:space="preserve"><value>ipconfig /flushdns: forgets the names Windows remembered, so they are looked up again.</value></data>
+  <data name="NetFix_Fix_reset" xml:space="preserve"><value>Reset the network (Winsock and IP)</value></data>
+  <data name="NetFix_Fix_reset_Note" xml:space="preserve"><value>netsh winsock reset and netsh int ip reset: the last resort. It takes effect after a restart, and a fixed IP address set by hand has to be entered again.</value></data>
+  <data name="NetFix_Reset_Confirm" xml:space="preserve"><value>Reset Winsock and the IP settings? The computer has to be restarted afterwards, and an IP address set by hand has to be entered again.</value></data>
+  <data name="NetFix_Proxy_Was" xml:space="preserve"><value>cleared. Before: server {0}, script {1}</value></data>
+  <data name="NetFix_Proxy_Empty" xml:space="preserve"><value>there was nothing to clear; the proxy is off</value></data>
+  <data name="NetFix_Dns_Auto_Done" xml:space="preserve"><value>the DNS is automatic again</value></data>
+  <data name="NetFix_Dns_Google_Done" xml:space="preserve"><value>the DNS is set to 8.8.8.8 and 8.8.4.4</value></data>
+  <data name="NetFix_Flush_Done" xml:space="preserve"><value>the DNS cache was emptied</value></data>
+  <data name="NetFix_Reset_Done" xml:space="preserve"><value>Winsock and the IP settings were reset; restart the computer</value></data>
+  <data name="NetFix_Failed" xml:space="preserve"><value>failed ({0})</value></data>
+  <data name="NetFix_Done" xml:space="preserve"><value>Done. The connection was checked again above.</value></data>
+  <data name="NetFix_Done_Restart" xml:space="preserve"><value>Done. Restart the computer for the reset to take effect, then check again.</value></data>
   <data name="Assist_Tests_Head" xml:space="preserve"><value>The tests ended. Results:</value></data>
   <data name="Assist_Tests_Declined" xml:space="preserve"><value>Nothing was run: the tests were not confirmed.</value></data>
   <data name="Assist_Tests_NotStarted" xml:space="preserve"><value>The tests did not start: {0}</value></data>

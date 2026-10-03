@@ -1687,6 +1687,51 @@
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>در حال سنجش DNSها روی همین اینترنت…</value></data>
   <data name="Assist_Dns_Best" xml:space="preserve"><value>در این آزمون کوتاه، سریع‌ترین DNS روی این اینترنت «{0}» بود ({1} میلی‌ثانیه)؛ DNS فعلی: {2}. چیزی تغییر نکرد: صفحهٔ ابزارهای ویندوز در بخش DNS باز است و با «فعال کن» عوض می‌شود.</value></data>
   <data name="Assist_Dns_None" xml:space="preserve"><value>هیچ DNSی به همهٔ پرسش‌ها پاسخ نداد و چیزی تغییر نکرد.</value></data>
+  <data name="NetFix_Title" xml:space="preserve"><value>عیب‌یابی اتصال اینترنت</value></data>
+  <data name="NetFix_Sub" xml:space="preserve"><value>پیدا می‌کند اتصال کجا قطع می‌شود، بعد رفع‌های رایج</value></data>
+  <data name="NetFix_Note" xml:space="preserve"><value>بررسی چیزی را تغییر نمی‌دهد: کارت شبکه، مودم، اینترنت، DNS، یک صفحهٔ وب و تنظیمات پراکسی را نگاه می‌کند و آنچه اندازه گرفته نشان می‌دهد. رفع‌های پایین ویندوز را تغییر می‌دهند؛ هرکدام را می‌خواهید تیک بزنید.</value></data>
+  <data name="NetFix_Check" xml:space="preserve"><value>بررسی اتصال</value></data>
+  <data name="NetFix_Checking" xml:space="preserve"><value>در حال بررسی اتصال…</value></data>
+  <data name="NetFix_Step_adapter" xml:space="preserve"><value>کارت شبکه و آدرس</value></data>
+  <data name="NetFix_Step_gateway" xml:space="preserve"><value>مودم / روتر (gateway)</value></data>
+  <data name="NetFix_Step_internet" xml:space="preserve"><value>رسیدن به اینترنت</value></data>
+  <data name="NetFix_Step_dns" xml:space="preserve"><value>تبدیل نام به آدرس (DNS)</value></data>
+  <data name="NetFix_Step_web" xml:space="preserve"><value>باز شدن یک صفحهٔ وب</value></data>
+  <data name="NetFix_Step_proxy" xml:space="preserve"><value>تنظیمات پراکسی</value></data>
+  <data name="NetFix_Result_Ok" xml:space="preserve"><value>سالم</value></data>
+  <data name="NetFix_Result_Failed" xml:space="preserve"><value>ناموفق</value></data>
+  <data name="NetFix_Result_Skipped" xml:space="preserve"><value>بررسی نشد</value></data>
+  <data name="NetFix_Verdict_Connected" xml:space="preserve"><value>اتصال برقرار است: یک صفحهٔ وب باز شد.</value></data>
+  <data name="NetFix_Verdict_NoAdapter" xml:space="preserve"><value>هیچ کارت شبکه‌ای با مسیر به اینترنت وصل نیست. کابل یا وای‌فای را بررسی کنید و ببینید کارت شبکه فعال است و درایور دارد.</value></data>
+  <data name="NetFix_Verdict_NoAddress" xml:space="preserve"><value>کارت شبکه وصل است ولی از مودم آدرس نگرفته (خودش آدرس 169.254.x.x برداشته). مودم یا روتر را خاموش و روشن کنید و کابل یا رمز وای‌فای را بررسی کنید.</value></data>
+  <data name="NetFix_Verdict_NoGateway" xml:space="preserve"><value>مودم جواب نمی‌دهد و هیچ آدرسی در اینترنت هم در دسترس نیست. مشکل بین این سیستم و مودم است: کابل، وای‌فای یا خود مودم.</value></data>
+  <data name="NetFix_Verdict_NoInternet" xml:space="preserve"><value>مودم جواب می‌دهد ولی اینترنتِ پشت آن در دسترس نیست. مشکل از سمت مودم یا شرکت اینترنت است؛ رفع‌های پایین این‌جا کمتر کمک می‌کنند.</value></data>
+  <data name="NetFix_Verdict_DnsFails" xml:space="preserve"><value>اینترنت در دسترس است ولی نام‌ها به آدرس تبدیل نمی‌شوند: DNSهای فعلی جواب نمی‌دهند. DNS را تنظیم و کش آن را خالی کنید.</value></data>
+  <data name="NetFix_Verdict_WebBlocked" xml:space="preserve"><value>اینترنت در دسترس است و نام‌ها هم پیدا می‌شوند، ولی صفحهٔ آزمایشی آن‌طور که باید برنگشت: یک صفحهٔ ورود، فیلتر یا تنظیم اشتباه به‌جای آن جواب می‌دهد.</value></data>
+  <data name="NetFix_Verdict_ProxyFails" xml:space="preserve"><value>صفحهٔ وب بدون پراکسی باز می‌شود ولی از راه پراکسیِ تنظیم‌شده باز نمی‌شود. تنظیمات پراکسی را پاک کنید.</value></data>
+  <data name="NetFix_Repairs" xml:space="preserve"><value>رفع مشکل</value></data>
+  <data name="NetFix_Run" xml:space="preserve"><value>اجرای موارد تیک‌خورده</value></data>
+  <data name="NetFix_NoneTicked" xml:space="preserve"><value>دست‌کم یک مورد را تیک بزنید.</value></data>
+  <data name="NetFix_Fix_proxy" xml:space="preserve"><value>پاک کردن تنظیمات پراکسی</value></data>
+  <data name="NetFix_Fix_proxy_Note" xml:space="preserve"><value>پراکسی را خاموش می‌کند و آدرس سرور و اسکریپت آن را برمی‌دارد، هم برای برنامه‌ها و هم برای سرویس‌های ویندوز. مقدار قبلی نشان داده می‌شود تا بشود برگرداند.</value></data>
+  <data name="NetFix_Fix_dns" xml:space="preserve"><value>تنظیم DNS</value></data>
+  <data name="NetFix_Fix_dns_Note" xml:space="preserve"><value>روی همهٔ کارت‌های شبکهٔ وصل: برگشت به حالت خودکار (آنچه مودم می‌دهد)، یا DNS گوگل 8.8.8.8 و 8.8.4.4.</value></data>
+  <data name="NetFix_Dns_Auto" xml:space="preserve"><value>خودکار (از مودم)</value></data>
+  <data name="NetFix_Dns_Google" xml:space="preserve"><value>گوگل (8.8.8.8)</value></data>
+  <data name="NetFix_Fix_flush" xml:space="preserve"><value>خالی کردن کش DNS</value></data>
+  <data name="NetFix_Fix_flush_Note" xml:space="preserve"><value>دستور ipconfig /flushdns: نام‌هایی که ویندوز به خاطر سپرده پاک می‌شود تا دوباره پرسیده شوند.</value></data>
+  <data name="NetFix_Fix_reset" xml:space="preserve"><value>ریست شبکه (Winsock و IP)</value></data>
+  <data name="NetFix_Fix_reset_Note" xml:space="preserve"><value>دستورهای netsh winsock reset و netsh int ip reset: آخرین راه. بعد از ری‌استارت اثر می‌کند و اگر IP دستی تنظیم شده باشد باید دوباره وارد شود.</value></data>
+  <data name="NetFix_Reset_Confirm" xml:space="preserve"><value>Winsock و تنظیمات IP ریست شود؟ بعد از آن باید سیستم ری‌استارت شود و اگر IP دستی داشتید باید دوباره وارد کنید.</value></data>
+  <data name="NetFix_Proxy_Was" xml:space="preserve"><value>پاک شد. مقدار قبلی: سرور {0}، اسکریپت {1}</value></data>
+  <data name="NetFix_Proxy_Empty" xml:space="preserve"><value>چیزی برای پاک کردن نبود؛ پراکسی خاموش است</value></data>
+  <data name="NetFix_Dns_Auto_Done" xml:space="preserve"><value>DNS دوباره خودکار شد</value></data>
+  <data name="NetFix_Dns_Google_Done" xml:space="preserve"><value>DNS روی 8.8.8.8 و 8.8.4.4 تنظیم شد</value></data>
+  <data name="NetFix_Flush_Done" xml:space="preserve"><value>کش DNS خالی شد</value></data>
+  <data name="NetFix_Reset_Done" xml:space="preserve"><value>Winsock و تنظیمات IP ریست شد؛ سیستم را ری‌استارت کنید</value></data>
+  <data name="NetFix_Failed" xml:space="preserve"><value>ناموفق ({0})</value></data>
+  <data name="NetFix_Done" xml:space="preserve"><value>انجام شد. اتصال دوباره در بالا بررسی شد.</value></data>
+  <data name="NetFix_Done_Restart" xml:space="preserve"><value>انجام شد. برای اثر کردن ریست، سیستم را ری‌استارت کنید و بعد دوباره بررسی کنید.</value></data>
   <data name="Assist_Tests_Head" xml:space="preserve"><value>تست‌ها تمام شد. نتیجه:</value></data>
   <data name="Assist_Tests_Declined" xml:space="preserve"><value>چیزی اجرا نشد: تست‌ها تأیید نشدند.</value></data>
   <data name="Assist_Tests_NotStarted" xml:space="preserve"><value>تست‌ها شروع نشدند: {0}</value></data>

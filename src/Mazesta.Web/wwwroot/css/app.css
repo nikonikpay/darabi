@@ -1314,6 +1314,11 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .tools-sec > .panels { margin-top: 0; }
 .dns-h { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--paper); }
 .dns-h:first-child { margin-top: 0; }
+.nf-steps { display: grid; gap: 6px; margin: 12px 0 10px; }
+.nf-step { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 12px; border-radius: var(--r-panel); background: var(--ink-3); border: 1px solid var(--rule); }
+.nf-step .nf-detail { grid-column: 2 / -1; overflow-wrap: anywhere; text-align: start; }
+.nf-dns { margin-inline-start: 10px; font-weight: 400; }
+.choice input[type="checkbox"] { width: 16px; height: 16px; }
 .dns-now { display: grid; gap: 6px; }
 .dns-adapter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 8px 10px; border-radius: var(--r-ctl); background: var(--well); border: 1px solid var(--rule); }
 .dns-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
