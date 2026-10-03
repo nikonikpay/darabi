@@ -1687,6 +1687,15 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>Timing the DNS servers on this connection…</value></data>
   <data name="Assist_Dns_Best" xml:space="preserve"><value>In this short test the fastest DNS on this connection was {0} ({1} ms); in use now: {2}. Nothing was changed: the Windows tools page is open at the DNS box, where «Use» switches to it.</value></data>
   <data name="Assist_Dns_None" xml:space="preserve"><value>No DNS server answered every lookup; nothing was changed.</value></data>
+  <data name="Assist_Tests_Head" xml:space="preserve"><value>The tests ended. Results:</value></data>
+  <data name="Assist_Tests_Declined" xml:space="preserve"><value>Nothing was run: the tests were not confirmed.</value></data>
+  <data name="Assist_Tests_NotStarted" xml:space="preserve"><value>The tests did not start: {0}</value></data>
+  <data name="Assist_Tests_Temp" xml:space="preserve"><value>Highest temperature during its tests: {0} °C</value></data>
+  <data name="Assist_Tests_NoTemp" xml:space="preserve"><value>No temperature was recorded for it during the tests.</value></data>
+  <data name="Assist_Tests_Full" xml:space="preserve"><value>It worked at full power: median load {0} % under the full-load tests.</value></data>
+  <data name="Assist_Tests_NotFull" xml:space="preserve"><value>It did not work at full power: median load {0} % under the full-load tests.</value></data>
+  <data name="Assist_Tests_NoLoad" xml:space="preserve"><value>Whether it used its full power was not measured (no full-load test of it ran, or it has no load sensor).</value></data>
+  <data name="Assist_Tests_NoHeatVerdict" xml:space="preserve"><value>The app has no verdict on whether this temperature is within the part's limit; only the measured figure is given.</value></data>
   <data name="Assist_Games" xml:space="preserve"><value>The app has no list of games, so it does not guess at which settings a game runs. This computer has a {0} graphics card with {1} of its own memory, a {2} processor and {3} of RAM; compare these with the game's own requirements. For a measured answer, run the graphics benchmark on the Benchmarks page and compare it with other computers there.</value></data>
   <data name="Soft_Level_Meets" xml:space="preserve"><value>Meets its requirements</value></data>
   <data name="Soft_Scale_Single" xml:space="preserve"><value>This computer meets the requirements this catalog lists for it; how large a scene it takes depends on the graphics memory and RAM.</value></data>

@@ -326,6 +326,14 @@ public sealed partial class WebBridge
                 reply.Text = Loc.Get("Assist_TestsInfo") + "\n" + string.Join("\n", rows);
                 return true;
             }
+            // A test run: the app runs it and words the result itself, the outcomes as the engine gave them and the judgment as the checkup made it.
+            if (route.Intent == AiIntent.Tests && First(route, "") is [var runCall])
+            {
+                var (result, ok) = await AiAgent.InvokeAsync(tools, runCall, ct).ConfigureAwait(true);
+                reply.Tools.Add(new("run_tests", runCall.Arguments, result, ok));
+                reply.Text = AssistantReplies.Tests(result);
+                return true;
+            }
             if (route.Intent == AiIntent.Games)
             {
                 var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "get_machine_summary", "{\"part\":\"all\"}"), ct).ConfigureAwait(true);
@@ -392,7 +400,7 @@ public sealed partial class WebBridge
                 AiIntent.Software when route.App is { } app => [C("check_software", new { app = app.Id })],
                 AiIntent.SoftwareList => [C("check_software", new { category = route.Category?.ToString() })],
                 AiIntent.Report => [C("list_reports", new { limit = 5 }), C("get_report", new { index = route.Index })],
-                AiIntent.Tests when route.Areas is { Count: > 0 } areas => [C("run_tests", new { areas })],
+                AiIntent.Tests when route.Areas is { Count: > 0 } areas => [C("run_tests", new { areas, all = route.All, together = route.Together, minutes = route.Minutes })],
                 AiIntent.Benchmarks when route.Areas is { Count: > 0 } benchmarks => [C("run_benchmark", new { benchmarks })],
                 AiIntent.HowTo => [C("find_in_app", new { query = text })],
                 _ => null,

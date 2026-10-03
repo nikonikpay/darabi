@@ -23,7 +23,15 @@ public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, Software
 /// <param name="Value">For <see cref="AiIntent.Alert"/>: the temperature (°C) asked for; <see cref="Part"/> is cpu or gpu, or null for both.</param>
 /// <param name="Ids">For <see cref="AiIntent.WinOpen"/>: the window's id; for <see cref="AiIntent.WinCommand"/>: the commands' ids (see <see cref="WindowsActions"/>).</param>
 public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Part = null, SoftApp? App = null, IReadOnlyList<string>? Areas = null, string? Format = null,
-    SoftCategory? Category = null, bool On = false, string? Kind = null, int Index = 0, int? Value = null, IReadOnlyList<string>? Ids = null);
+    SoftCategory? Category = null, bool On = false, string? Kind = null, int Index = 0, int? Value = null, IReadOnlyList<string>? Ids = null)
+{
+    /// <summary>For <see cref="AiIntent.Tests"/>: every test of the areas was asked for ("همشو"), not the usual set.</summary>
+    public bool All { get; init; }
+    /// <summary>For <see cref="AiIntent.Tests"/>: the parts are to be loaded at the same time ("همزمان").</summary>
+    public bool Together { get; init; }
+    /// <summary>For <see cref="AiIntent.Tests"/>: the length asked for each load test, in minutes ("۵ دقیقه"), or null for the page's.</summary>
+    public int? Minutes { get; init; }
+}
 
 /// <summary>
 /// The app's pages and the controls on them that people ask for, and the rules that read a message against them. Matching is on normalised
@@ -181,6 +189,8 @@ public static class AppGuide
         (SoftCategory.Video, ["تدوین", "ادیت", "ویدیو", "ویدئو", "editing", "video"]), (SoftCategory.Graphics, ["گرافیکی", "طراحی گرافیک", "graphic design"]),
     ];
 
+    private static readonly string[] AllWords = ["همه", "همش", "همشو", "همشون", "تمام", "کامل", "تک تک", "all", "every", "full"];
+    private static readonly string[] TogetherWords = ["همزمان", "هم زمان", "با هم", "باهم", "together", "simultaneous", "at once", "at the same time"];
     private static readonly string[] OverlayWords = ["اورلی", "اورلای", "overlay", "بالای صفحه", "بالای مانیتور", "روی صفحه", "روی بازی", "گوشه صفحه", "fps"];
     // A command said not to be done ("اجرا نکن", "فقط توضیح بده") is never acted on: the model explains, and nothing starts.
     private static readonly string[] NotWords = ["نکن", "نکنی", "نزن", "نزنی", "نده", "نشه", "نشود", "نمیخوام", "نمی خوام", "نمیخواهم", "نباید", "فقط توضیح", "فقط بگو", "توضیح بده", "don't", "dont", "do not", "not run", "only explain", "just explain", "explain"];
@@ -291,7 +301,7 @@ public static class AppGuide
         {
             var areas = TestAreas.Where(a => Any(s, a.Words)).SelectMany(a => a.Area switch
             {
-                "cpu" => new[] { "cpu_single", "cpu_multi" }, "gpu" => ["gpu", "gpu_rt", "gpu_scene", "gpu_scene_rt"], var x => [x],
+                "cpu" => new[] { "cpu_single", "cpu_multi" }, "gpu" => ["gpu", "gpu_rt", "gpu_scene", "gpu_scene_rt", "gpu_ai"], var x => [x],
             }).ToList();
             return new(AiIntent.Benchmarks, Areas: areas.Count > 0 ? areas : ["all"]);
         }
@@ -305,7 +315,14 @@ public static class AppGuide
             var areas = TestAreas.Where(a => Any(s, a.Words)).Select(a => a.Area).ToList();
             // "رم گرافیک" is the card's memory: the card's test covers it, not the RAM's.
             if (areas.Contains("gpu") && (Has(s, "رم گرافیک") || Has(s, "حافظه گرافیک"))) areas.Remove("memory");
-            if (areas.Count > 0) return new(AiIntent.Tests, Areas: areas);
+            if (areas.Count > 0)
+            {
+                // "۱۰ دقیقه": the number before the word, 1 to 180.
+                int? minutes = null; var words = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 1; i < words.Length; i++)
+                    if ((words[i].StartsWith("دقیقه", StringComparison.Ordinal) || words[i].StartsWith("min", StringComparison.Ordinal)) && int.TryParse(words[i - 1], out int n) && n is >= 1 and <= 180) minutes = n;
+                return new(AiIntent.Tests, Areas: areas) { All = Any(s, AllWords), Together = Any(s, TogetherWords), Minutes = minutes };
+            }
         }
 
         // A short message that is little more than a place's name ("اورلی", "گرافیکو اندرولت کن") means going there.

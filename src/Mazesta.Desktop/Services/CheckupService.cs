@@ -99,6 +99,87 @@ public sealed class CheckupService
         lock (_lock) return _runs.TryGetValue(run.Definition.Id.Value, out var r) && r.At == run.Result.FinishedAt ? [.. r.All] : [];
     }
 
+    /// <summary>The tests that keep every core busy: only over them is the processor's load and clock judged (one core at a time is another matter).</summary>
+    private static readonly string[] FullCpuTests = ["cpu.matrix", "cpu.linpack", "cpu.vector", "cpu.integer", "cpu.fft", "cpu.hash"];
+    /// <summary>The tests that hold the graphics card at a steady full load (the variable and pulsed ones leave it on purpose).</summary>
+    private static readonly string[] FullGpuTests = ["gpu.steady", "gpu.scene.d3d", "gpu.scene.rt"];
+    /// <summary>The median load under which a part is said not to have been fully used, as <see cref="CpuCheck"/> draws it.</summary>
+    public const double FullLoadPercent = 85;
+    private static readonly TimeSpan ShortestJudged = TimeSpan.FromSeconds(15);
+
+    /// <summary>Starts watching a test run: on an NVIDIA card, what the driver says holds the clock. <see cref="TestWatch.Judge"/> ends it.</summary>
+    public TestWatch WatchTests(string? gpuName)
+    {
+        NvidiaRunProbe? probe = null; bool? battery = null;
+        try { battery = PowerSettings.Read().OnMains is { } mains ? !mains : null; if (gpuName is not null) probe = NvidiaRunProbe.Start(gpuName); }
+        catch (Exception e) { _log.LogWarning(e, "Checkup: watching the tests failed"); }
+        return new(this, probe, battery, gpuName);
+    }
+
+    /// <summary>What a part did while its tests ran, from the monitor's record: its hottest reading, its median load over the tests that load it
+    /// fully (null when none of them ran or it has no such sensor), and the checkup's findings over those tests.</summary>
+    public sealed record PartJudgment(HardwareKind Part, string? Name, double? TempMaxC, double? LoadPercent, IReadOnlyList<Finding> Findings)
+    {
+        public bool? FullyLoaded => LoadPercent is { } l ? l >= FullLoadPercent : null;
+    }
+
+    public sealed class TestWatch(CheckupService owner, NvidiaRunProbe? probe, bool? onBattery, string? gpuName) : IDisposable
+    {
+        private NvidiaRunProbe? _probe = probe;
+        public void Dispose() { _probe?.Dispose(); _probe = null; }
+
+        /// <summary>Judges the processor and the graphics card over the tests that ran (a test that did not run adds nothing).</summary>
+        public IReadOnlyList<PartJudgment> Judge(IReadOnlyList<TestRunResult> results)
+        {
+            var probed = _probe?.Stop(); Dispose();
+            var ran = results.Where(r => r.Outcome is TestOutcome.Passed or TestOutcome.Failed or TestOutcome.Inconclusive && r.FinishedAt - r.StartedAt >= ShortestJudged).ToList();
+            var parts = new List<PartJudgment>();
+            try
+            {
+                if (ran.Where(r => r.Id.Value.StartsWith("cpu.", StringComparison.Ordinal)).ToList() is { Count: > 0 } cpuRuns) parts.Add(owner.JudgeCpu(cpuRuns, onBattery));
+                if (ran.Where(r => r.Id.Value.StartsWith("gpu.", StringComparison.Ordinal)).ToList() is { Count: > 0 } gpuRuns) parts.Add(owner.JudgeGpu(gpuRuns, gpuName, probed));
+            }
+            catch (Exception e) { owner._log.LogWarning(e, "Checkup of a test run failed"); }
+            return parts;
+        }
+    }
+
+    private PartJudgment JudgeCpu(IReadOnlyList<TestRunResult> runs, bool? onBattery)
+    {
+        var cpu = _inventory.IsLoaded ? _inventory.GetAsync().Result.Cpu : null;
+        string? name = cpu?.Name ?? _engine.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null)?.Name;
+        double? temp = null; var loads = new List<double>(); var findings = new List<Finding>();
+        foreach (var r in runs)
+        {
+            bool full = FullCpuTests.Contains(r.Id.Value);
+            var trace = CheckupTraces.Cpu(_engine, r.StartedAt, r.FinishedAt!.Value, full, cpu?.MaxClockMhz, onBattery, CpuSpecs.Find(name));
+            if (trace.Temp is { Count: > 0 } t) temp = Math.Max(temp ?? double.MinValue, t.Max());
+            if (!full) continue;
+            if (trace.Load?.Between(CpuCheck.WarmupSeconds, double.MaxValue) is { Count: >= CpuCheck.MinSamples } load) loads.Add(load.Median());
+            findings.AddRange(CpuCheck.Evaluate(trace));
+        }
+        return new(HardwareKind.Cpu, name?.Trim(), temp, loads.Count > 0 ? loads.Min() : null, Worst(findings));
+    }
+
+    private PartJudgment JudgeGpu(IReadOnlyList<TestRunResult> runs, string? name, (GpuThrottleCounts Counts, int? Gen, int? Width)? probed)
+    {
+        var slot = SlotOf(name);
+        var link = slot is null ? null : new GpuLink(probed?.Gen ?? slot.Port.CurrentGen, probed?.Width ?? slot.Port.CurrentWidth, slot.CardMaxGen, slot.CardMaxWidth, slot.Port.MaxGen, slot.Port.MaxWidth, probed?.Gen is not null);
+        double? temp = null; var loads = new List<double>(); var findings = new List<Finding>();
+        foreach (var r in runs)
+        {
+            var trace = CheckupTraces.Gpu(_engine, r.StartedAt, r.FinishedAt!.Value, GpuDevices.SensorNode(_engine, name ?? ""), name, probed?.Counts, link);
+            if (trace.CoreTemp is { Count: > 0 } t) temp = Math.Max(temp ?? double.MinValue, t.Max());
+            if (!FullGpuTests.Contains(r.Id.Value)) continue;
+            if (trace.Load?.Between(CpuCheck.WarmupSeconds, double.MaxValue) is { Count: >= CpuCheck.MinSamples } load) loads.Add(load.Median());
+            findings.AddRange(GpuCheck.Evaluate(trace));
+        }
+        return new(HardwareKind.Gpu, name, temp, loads.Count > 0 ? loads.Min() : null, Worst(findings));
+    }
+
+    /// <summary>Each finding once, as its worst run had it, the gravest first.</summary>
+    private static IReadOnlyList<Finding> Worst(IEnumerable<Finding> all) => [.. all.GroupBy(f => f.Code).Select(g => g.MaxBy(f => f.Level)!).OrderByDescending(f => f.Level)];
+
     /// <summary>The latest judged run of each benchmark in this session, newest first.</summary>
     public IReadOnlyList<CheckupRun> Runs() { lock (_lock) return [.. _runs.Values.OrderByDescending(r => r.At)]; }
 

@@ -99,6 +99,15 @@ public class AppGuideTests
         Assert.False(AiAssistantPolicy.AsksToAct("تست cpu رو اجرا نکن"));
         Assert.True(AiAssistantPolicy.AsksToAct("تست cpu بگیر"));
     }
+    [Fact] public void A_test_request_says_whether_all_of_them_together_and_for_how_long()
+    {
+        var all = R("تست گرافیک رو همشو انجام بده");
+        Assert.Equal((AiIntent.Tests, true, false, null), (all.Intent, all.All, all.Together, all.Minutes));
+        Assert.Equal(["gpu"], all.Areas);
+        var both = R("تست cpu و گرافیک رو همزمان ۱۰ دقیقه بگیر");
+        Assert.Equal((AiIntent.Tests, false, true, 10), (both.Intent, both.All, both.Together, both.Minutes));
+        Assert.False(R("تست رم بگیر").All);
+    }
     [Fact] public void Not_active_turns_the_overlay_off()
     {
         Assert.Equal((AiIntent.Overlay, false), (R("اورلی رو غیر فعال کن").Intent, R("اورلی رو غیر فعال کن").On));

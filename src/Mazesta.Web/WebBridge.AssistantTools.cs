@@ -10,14 +10,17 @@ public sealed partial class WebBridge
     private static readonly IReadOnlyDictionary<string, string[]> AssistantTestAreas = new Dictionary<string, string[]>
     {
         ["cpu"] = ["cpu.matrix", "cpu.integer", "cpu.fft"], ["memory"] = ["memory.pattern"],
-        ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency", "network.speed"], ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram"],
+        ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency", "network.speed"],
+        ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram", "gpu.scene.d3d", "gpu.scene.rt"],
     };
+    /// <summary>Asked for all of an area, the assistant offers every test of it but this one: it needs a second computer set up as its peer.</summary>
+    private static readonly string[] AssistantNeverTests = ["network.lan"];
 
     /// <summary>The benchmarks the assistant may start, with the model unloaded like the GPU tests. The AI model's own benchmark is not one: it needs a model chosen on its page.</summary>
     private static readonly IReadOnlyDictionary<string, string> AssistantBenchmarks = new Dictionary<string, string>
     {
         ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage", ["gpu"] = "bench.gpu.d3d",
-        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_scene_rt"] = "bench.gpu.scene.rt", ["network"] = "bench.network.internet",
+        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_scene_rt"] = "bench.gpu.scene.rt", ["gpu_ai"] = "bench.gpu.ai", ["network"] = "bench.network.internet",
     };
 
     /// <summary>The pages the assistant may open (the page's own ids, from <see cref="AppGuide"/>) and the controls it may point at on them.</summary>
@@ -340,19 +343,44 @@ public sealed partial class WebBridge
                 "programs suit), and the devices Windows has no working driver for. Installing is done by the user on the Drivers page, which open_page opens.",
                 """{"type":"object","properties":{}}""",
                 async (_, ct) => _driversCheck is { } check ? Json(await check(ct).ConfigureAwait(false)) : Json(new { error = "the drivers page is not ready" })),
-            new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome. It takes minutes. Areas: cpu, memory (RAM), storage, network, gpu (graphics card). " +
-                "Name only the areas the user asked for. An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass.",
-                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}}},"required":["areas"]}""",
+            new("list_tests", "Everything the Tests page and the Benchmarks page offer on this computer, as they are set now: each test and benchmark with its id, name, length in seconds, " +
+                "its options and their choices, and why this computer can not run it when it can not; the ready-made test profiles; and whether tests run together. It runs nothing.",
+                """{"type":"object","properties":{"what":{"type":"string","enum":["tests","benchmarks","all"]}}}""",
+                (a, _) => OnUi(() =>
+                {
+                    string what = Text(a, "what") ?? "all";
+                    static object Options(IEnumerable<TestOptionViewModel> options) => options.Select(o => new { name = o.Label, value = o.IsChoice ? o.SelectedChoice?.Label : o.Text, choices = o.IsChoice ? o.Choices.Select(c => c.Label) : null });
+                    return Json(new
+                    {
+                        tests = what != "benchmarks" ? _testVm?.Rows.Select(r => new { id = r.Definition.Id.Value, name = r.Name, seconds = r.DurationText, options = r.HasOptions ? Options(r.Options) : null, canNotRun = r.UnavailableText }) : null,
+                        profiles = what != "benchmarks" ? TestProfiles.All.Select(p => new { name = Loc.Get(p.NameKey), tests = p.Tests.Count, minutes = Math.Round(p.Tests.Sum(t => t.Seconds) / 60.0) }) : null,
+                        runTogether = what != "benchmarks" ? _testVm?.Together : null,
+                        benchmarks = what != "tests" ? _benchVm?.Rows.Select(r => new { id = r.Benchmark.Definition.Id.Value, name = r.Name, seconds = r.DurationText, options = r.HasOptions ? Options(r.Options) : null, canNotRun = r.UnavailableText }) : null,
+                        note = "run_tests takes areas (all=true for every test of an area) or these test ids; run_benchmark takes its own names. Run together loads the processor, memory and graphics card at once.",
+                    });
+                })),
+            new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome and, for the processor and the graphics card, a judgment: the highest " +
+                "temperature, the median load, whether the part was fully used, and the diagnosis' findings. Areas: cpu, memory (RAM), storage, network, gpu (graphics card); " +
+                "all=true takes every test of those areas (for the graphics card also the variable and pulsed loads), else a usual set (the card's includes the 3D scene and the ray-traced scene). " +
+                "tests names single tests by id (see list_tests). minutes sets the length of each load test (default: the page's, 15 minutes each for processor, memory and graphics card). " +
+                "together=true loads processor, memory and graphics card at the same time. Name only what the user asked for. " +
+                "An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass. Call a temperature fine only when a finding says so.",
+                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}},"all":{"type":"boolean"},"tests":{"type":"array","items":{"type":"string"}},"minutes":{"type":"integer"},"together":{"type":"boolean"}}}""",
                 async (a, ct) =>
                 {
                     if (_testVm is not { } tests) return Json(new { error = "the tests are not available yet" });
-                    var ids = Texts(a, "areas").Distinct().SelectMany(x => AssistantTestAreas.GetValueOrDefault(x) ?? []).ToHashSet();
-                    if (ids.Count == 0) return Json(new { error = "name at least one area: cpu, memory, storage, network or gpu" });
+                    static bool Flag(JsonElement a, string name) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
+                    bool every = Flag(a, "all"), together = Flag(a, "together");
+                    int? minutes = a.ValueKind == JsonValueKind.Object && a.TryGetProperty("minutes", out var mv) && mv.TryGetInt32(out int mn) ? Math.Clamp(mn, 1, 180) : null;
+                    var known = tests.Rows.Select(r => r.Definition.Id.Value).ToList();
+                    var ids = Texts(a, "areas").Distinct().SelectMany(x => every && AssistantTestAreas.ContainsKey(x) ? known.Where(id => id.StartsWith(x + ".", StringComparison.Ordinal) && !AssistantNeverTests.Contains(id))
+                        : AssistantTestAreas.GetValueOrDefault(x) ?? []).Concat(Texts(a, "tests").Where(known.Contains)).ToHashSet();
+                    if (ids.Count == 0) return Json(new { error = "name at least one area (cpu, memory, storage, network, gpu) or one test id of list_tests" });
                     // The request is fixed here, before the user is asked: the rows this machine can run, each once, at its default length, with the
                     // options (graphics card, drive) the page has now. The run uses exactly this, whatever the page is changed to meanwhile.
                     List<ChatTest>? plan = null;
                     await OnUi(() => { plan = tests.IsRunning || runner.IsBusy ? null : tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
-                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, o.Value)).ToList(),
+                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, minutes is { } m && TestEngine.LaneOf(r.Definition.Id) is not null ? m * 60 : r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, o.Value)).ToList(),
                             string.Join("، ", r.Options.Where(o => o.Value.Length > 0).Select(o => o.Label + ": " + (o.IsChoice ? o.SelectedChoice?.Label : o.Value)))))
                         .ToList(); return ""; }).ConfigureAwait(false);
                     if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
@@ -366,12 +394,19 @@ public sealed partial class WebBridge
                     {
                         using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (tests.CancelCommand.CanExecute(null)) tests.CancelCommand.Execute(null); }));
                         // The page's own settings are put back afterwards, however the run ends; the assistant only borrows the Tests page's queue.
-                        List<RowState>? before = null;
+                        List<RowState>? before = null; bool wasTogether = false;
+                        // The run is watched for the judgment: each test's own span, and on an NVIDIA card what the driver says holds its clock.
+                        var testEngine = _sp.GetRequiredService<TestEngine>(); var finished = new List<TestRunResult>();
+                        void OnDone(TestId id, TestRunResult r) { lock (finished) if (chosen.ContainsKey(id.Value)) finished.Add(r); }
+                        string? gpuName = chosen.Values.FirstOrDefault(r => r.Id.StartsWith("gpu.", StringComparison.Ordinal)) is { } g
+                            ? Desktop.Services.CheckupService.GpuName(g.Options.ToDictionary(o => o.Key, o => o.Value)) : null;
+                        using var watch = _sp.GetRequiredService<Desktop.Services.CheckupService>().WatchTests(gpuName);
+                        testEngine.TestCompleted += OnDone;
                         try
                         {
                             string started = await ui(async () =>
                             {
-                                before = [.. tests.Rows.Select(RowState.Of)];
+                                before = [.. tests.Rows.Select(RowState.Of)]; wasTogether = tests.Together; tests.Together = together;
                                 foreach (var r in tests.Rows)
                                 {
                                     r.IsSelected = chosen.TryGetValue(r.Definition.Id.Value, out var want);
@@ -384,17 +419,30 @@ public sealed partial class WebBridge
                                 return tests.BlockedMessage is { } why ? why : "";
                             }).ConfigureAwait(false);
                             if (started.Length > 0) return Json(new { started = false, reason = started == "refused" ? "the test queue could not start" : started });
+                            List<TestRunResult> done; lock (finished) done = [.. finished];
+                            var judged = watch.Judge(done);
                             return await OnUi(() => Json(new
                             {
-                                started = true, results = tests.Rows.Where(r => chosen.ContainsKey(r.Definition.Id.Value))
-                                    .Select(r => new { id = r.Definition.Id.Value, name = r.Name, outcome = r.Outcome.ToString(), errors = r.ErrorCount > 0 ? r.ErrorCount : (long?)null, detail = r.HasDetail ? Cut(r.Detail, 240) : null }),
+                                started = true, together = together ? true : (bool?)null, results = tests.Rows.Where(r => chosen.ContainsKey(r.Definition.Id.Value))
+                                    .Select(r => new { id = r.Definition.Id.Value, name = r.Name, outcome = r.Outcome.ToString(), errors = r.ErrorCount > 0 ? r.ErrorCount : (long?)null, detail = r.HasDetail ? Cut(r.Detail, 160) : null }),
+                                judgment = judged.Select(p => new
+                                {
+                                    part = p.Part.ToString().ToLowerInvariant(), device = p.Name, highestTempC = p.TempMaxC is { } t ? Math.Round(t, 1) : (double?)null,
+                                    medianLoadPercent = p.LoadPercent is { } l ? Math.Round(l) : (double?)null, usedFullPower = p.FullyLoaded,
+                                    // Whether any finding speaks of heat: without one the temperature is a number only, never "fine".
+                                    heatJudged = p.Findings.Any(f => HeatCodes.IsMatch(f.Code.ToString())),
+                                    findings = p.Findings.Select(f => new { level = f.Level.ToString(), levelName = Desktop.Services.CheckupText.Level(f.Level), title = Desktop.Services.CheckupText.Title(f) }),
+                                }),
+                                note = judged.Count == 0 ? null : "usedFullPower is the median load over the full-load tests against 85 %; null means it was not measured. Without a finding on heat (heatJudged false) give the highest temperature as a number, with no verdict.",
                             })).ConfigureAwait(false);
                         }
                         finally
                         {
+                            testEngine.TestCompleted -= OnDone;
                             if (before is { } saved)
                                 await ui(() =>
                                 {
+                                    tests.Together = wasTogether;
                                     foreach (var s in saved) if (tests.Rows.FirstOrDefault(r => r.Definition.Id.Value == s.Id) is { } r) s.Restore(r);
                                     return Task.FromResult("");
                                 }).ConfigureAwait(false);
@@ -403,8 +451,9 @@ public sealed partial class WebBridge
                 }),
             new("run_benchmark", "Runs real benchmarks, after the user confirmed all of them at once on the page, one after another, and returns each one's number, the best " +
                 "earlier result of this computer and the change against it (positive change is better, negative is slower than the best kept). About a minute each. " +
-                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu, gpu_rt, gpu_scene, gpu_scene_rt, network (internet speed), or all. Name them all in one call. For a trend over time use get_benchmark_history.",
-                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu","gpu_rt","gpu_scene","gpu_scene_rt","network"]}}},"required":["benchmarks"]}""",
+                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu (Direct3D), gpu_rt (ray tracing), gpu_scene (3D scene), gpu_scene_rt (ray-traced 3D scene), gpu_ai (AI compute), " +
+                "network (internet speed), or all. Name them all in one call. For a trend over time use get_benchmark_history.",
+                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu","gpu_rt","gpu_scene","gpu_scene_rt","gpu_ai","network"]}}},"required":["benchmarks"]}""",
                 async (a, ct) =>
                 {
                     if (_benchVm is not { } bench || _benchCompared is not { } compared) return Json(new { error = "the benchmarks are not available yet" });
@@ -521,6 +570,8 @@ public sealed partial class WebBridge
     }
 
     private const double StaleSeconds = 10;
+    /// <summary>The checkup's findings that speak of heat, by their code.</summary>
+    private static readonly System.Text.RegularExpressions.Regex HeatCodes = new("Heat|TjMax|Thermal|Hot|Ceiling");
     private static readonly System.Text.RegularExpressions.Regex NotAReading = new(@"Resolution|Critical|Warning|Limit|Threshold|Low|High", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     private static readonly JsonSerializerOptions Json_ = new() {

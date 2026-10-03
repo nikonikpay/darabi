@@ -144,6 +144,30 @@ internal static class AssistantReplies
         return string.Join("\n", lines);
     }
 
+    /// <summary>A test run as it ended: each test's outcome by its own name, then for the processor and the graphics card the highest temperature,
+    /// whether the part was fully used, and the diagnosis' findings. A temperature without a finding on heat is given as a number, with no verdict.</summary>
+    public static string Tests(string json)
+    {
+        using var d = JsonDocument.Parse(json); var r = d.RootElement;
+        if (S(r, "error") is { } e) return Loc.Format("Assist_Tests_NotStarted", e);
+        if (!(r.TryGetProperty("started", out var st) && st.ValueKind == JsonValueKind.True)) return S(r, "reason") is { } why && !why.Contains("declined", StringComparison.Ordinal) ? Loc.Format("Assist_Tests_NotStarted", why) : Loc.Get("Assist_Tests_Declined");
+        var lines = new List<string> { Loc.Get("Assist_Tests_Head") };
+        foreach (var t in A(r, "results"))
+            lines.Add($"- {S(t, "name")}: {Loc.Get("Test_Outcome_" + (S(t, "outcome") ?? "NotRun"))}" + (D(t, "errors") is { } n ? " (" + Loc.Format("Test_Errors_Format", (long)n) + ")" : ""));
+        foreach (var p in A(r, "judgment"))
+        {
+            string part = Loc.Get(S(p, "part") == "gpu" ? "Nav_Gpu" : "Nav_Cpu");
+            lines.Add("");
+            lines.Add(S(p, "device") is { } dev ? $"{part} ({dev}):" : part + ":");
+            lines.Add("- " + (D(p, "highestTempC") is { } temp ? Loc.Format("Assist_Tests_Temp", N(temp)) : Loc.Get("Assist_Tests_NoTemp")));
+            bool? full = p.TryGetProperty("usedFullPower", out var f) && f.ValueKind is JsonValueKind.True or JsonValueKind.False ? f.GetBoolean() : null;
+            lines.Add("- " + (full is null ? Loc.Get("Assist_Tests_NoLoad") : Loc.Format(full.Value ? "Assist_Tests_Full" : "Assist_Tests_NotFull", N(D(p, "medianLoadPercent") ?? 0))));
+            foreach (var x in A(p, "findings")) lines.Add($"- {S(x, "levelName")}: {S(x, "title")}");
+            if (D(p, "highestTempC") is not null && !(p.TryGetProperty("heatJudged", out var h) && h.ValueKind == JsonValueKind.True)) lines.Add("- " + Loc.Get("Assist_Tests_NoHeatVerdict"));
+        }
+        return string.Join("\n", lines);
+    }
+
     public static string Dns(string json)
     {
         using var d = JsonDocument.Parse(json); var r = d.RootElement;
