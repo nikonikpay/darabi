@@ -30,3 +30,7 @@ graphify-out/.graphify_*.json
 graphify-out/.needs_update
 graphify-out/cache/ast/
 graphify-out/cache/stat-index.json
+graphify-out/cache/last_query_stamp
+graphify-out/cache/*.tmp
+# the copy graphify keeps of the graph before an update (one folder per day)
+graphify-out/20*/
