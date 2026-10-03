@@ -3,7 +3,7 @@ namespace Mazesta.Diagnostics;
 
 public enum TestEngineState { Idle, Running, Stopped }
 
-/// <summary>Sequential queue runner (spec §8). A plain async pipeline over <see cref="ITestExecutor"/>
+/// <summary>Queue runner (spec §8): one test after another, or the parts' load tests side by side (see <see cref="RunAsync"/>). A plain async pipeline over <see cref="ITestExecutor"/>
 /// calls - no dedicated thread like PollingEngine, since there is no cadence to own; CPU-bound executors
 /// do their own Task.Run. Registered as a singleton so a run survives page navigation.</summary>
 public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<TestSessionCheckpoint> checkpoints, IClock clock, PollingEngine? liveEngine = null, IHardwareErrorSource? hardwareErrors = null, WorkloadGate? gate = null, Storage.IStorageEventSource? storageEvents = null,
@@ -54,7 +54,13 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         cts.Cancel();
     }
 
-    public async Task RunAsync(IReadOnlyList<QueuedTest> queue, CancellationToken external = default)
+    /// <summary>The part a load test keeps busy (cpu, memory, gpu), or null for a test that needs the machine to itself (drives, network, the
+    /// combined power test, Windows' checks). In a run "together" each part's tests go one after another while the parts run side by side.</summary>
+    public static string? LaneOf(TestId id) => id.Value.Split('.')[0] is "cpu" or "memory" or "gpu" ? id.Value.Split('.')[0] : null;
+
+    /// <param name="together">Runs the processor's, the memory's and the graphics card's tests side by side (one lane per part), as a machine at
+    /// work loads them, then the other tests one by one in the queue's order. With one lane or none it is the plain queue.</param>
+    public async Task RunAsync(IReadOnlyList<QueuedTest> queue, CancellationToken external = default, bool together = false)
     {
         if (queue.Count == 0) throw new ArgumentException("Queue is empty.", nameof(queue));
         if (State == TestEngineState.Running) throw new InvalidOperationException("A queue is already running.");
@@ -66,22 +72,36 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         SetState(TestEngineState.Running); SessionStarted?.Invoke(queue);
         Emit(null, TestLogLevel.Info, "Log_Session_Start", null, queue.Count);
         bool reachedEnd = false;
-        try
+        var saving = new object();   // lanes share the checkpoint
+        async Task RunItem(int i)
         {
-            for (int i = 0; i < queue.Count; i++)
+            var item = queue[i];
+            lock (saving) { checkpoint.CurrentIndex = i; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint); }
+            TestStarted?.Invoke(item.Definition.Id);
+            string? options = item.Options is { Count: > 0 } o ? string.Join(", ", o.Where(x => x.Value.Length > 0).Select(x => $"{x.Key}={x.Value}")) : null;
+            Emit(item.Definition.Id, TestLogLevel.Info, "Log_Test_Start", string.IsNullOrEmpty(options) ? null : options, i + 1, queue.Count, "@" + item.Definition.NameKey, item.DurationSeconds);
+            var result = await RunQueuedAsync(item, ct, checkpoint, saving).ConfigureAwait(false);
+            lock (saving)
             {
-                checkpoint.CurrentIndex = i; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
-                var item = queue[i];
-                TestStarted?.Invoke(item.Definition.Id);
-                string? options = item.Options is { Count: > 0 } o ? string.Join(", ", o.Where(x => x.Value.Length > 0).Select(x => $"{x.Key}={x.Value}")) : null;
-                Emit(item.Definition.Id, TestLogLevel.Info, "Log_Test_Start", string.IsNullOrEmpty(options) ? null : options, i + 1, queue.Count, "@" + item.Definition.NameKey, item.DurationSeconds);
-                var result = await RunQueuedAsync(item, ct, checkpoint).ConfigureAwait(false);
                 checkpoint.Finished.Add(new() { TestId = item.Definition.Id.Value, Outcome = result.Outcome.ToString(), ErrorCount = result.ErrorCount });
                 checkpoint.CurrentIteration = 0; checkpoint.CurrentPercent = 0; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
-                Emit(item.Definition.Id, result.Outcome switch { TestOutcome.Passed => TestLogLevel.Info, TestOutcome.Failed => TestLogLevel.Error, _ => TestLogLevel.Warning },
-                    "Log_Test_End", result.Detail, "@" + item.Definition.NameKey, "@Test_Outcome_" + result.Outcome, result.ErrorCount);
-                TestCompleted?.Invoke(item.Definition.Id, result);
             }
+            Emit(item.Definition.Id, result.Outcome switch { TestOutcome.Passed => TestLogLevel.Info, TestOutcome.Failed => TestLogLevel.Error, _ => TestLogLevel.Warning },
+                "Log_Test_End", result.Detail, "@" + item.Definition.NameKey, "@Test_Outcome_" + result.Outcome, result.ErrorCount);
+            TestCompleted?.Invoke(item.Definition.Id, result);
+        }
+        try
+        {
+            var lanes = together ? Enumerable.Range(0, queue.Count).Where(i => LaneOf(queue[i].Definition.Id) is not null).GroupBy(i => LaneOf(queue[i].Definition.Id)).ToList() : [];
+            if (lanes.Count > 1)
+            {
+                Emit(null, TestLogLevel.Info, "Log_Session_Together", null, lanes.Count);
+                // Task.Run: an executor that works before its first await must not hold the other lanes back.
+                await Task.WhenAll(lanes.Select(lane => Task.Run(async () => { foreach (int i in lane) await RunItem(i).ConfigureAwait(false); }))).ConfigureAwait(false);
+                for (int i = 0; i < queue.Count; i++) if (LaneOf(queue[i].Definition.Id) is null) await RunItem(i).ConfigureAwait(false);
+            }
+            else
+                for (int i = 0; i < queue.Count; i++) await RunItem(i).ConfigureAwait(false);
             reachedEnd = true;
             Emit(null, TestLogLevel.Info, "Log_Session_End", null);
         }
@@ -100,7 +120,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     /// first pass") and folds every iteration into one result via <see cref="TestRunResult.Combine"/>.
     /// Cancelled/Unsupported stop the loop; a Failed iteration does not, so an intermittent fault a few
     /// loops in is still caught.</summary>
-    private async Task<TestRunResult> RunQueuedAsync(QueuedTest item, CancellationToken ct, TestSessionCheckpoint? checkpoint = null)
+    private async Task<TestRunResult> RunQueuedAsync(QueuedTest item, CancellationToken ct, TestSessionCheckpoint? checkpoint = null, object? saving = null)
     {
         var id = item.Definition.Id;
         if (!_executors.TryGetValue(id, out var executor))
@@ -114,8 +134,12 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         {
             TestProgressChanged?.Invoke(id, p);
             if (checkpoint is null || clock.UtcNow - lastSave < TimeSpan.FromSeconds(10)) return;
-            lastSave = clock.UtcNow; checkpoint.CurrentIteration = iteration; checkpoint.CurrentPercent = p.PercentComplete; checkpoint.LastUpdatedAt = lastSave;
-            try { checkpoints.Save(checkpoint); } catch (IOException) { }   // a checkpoint that cannot be written must not stop the test
+            lastSave = clock.UtcNow;
+            lock (saving ?? checkpoint)
+            {
+                checkpoint.CurrentIteration = iteration; checkpoint.CurrentPercent = p.PercentComplete; checkpoint.LastUpdatedAt = lastSave;
+                try { checkpoints.Save(checkpoint); } catch (IOException) { }   // a checkpoint that cannot be written must not stop the test
+            }
         }
         var request = new TestExecutionRequest(item.DurationSeconds, clock, Progress, liveEngine, new TestOptions(item.Definition, item.Options), e => Emit(e with { Test = id }));
         TestRunResult? total = null;

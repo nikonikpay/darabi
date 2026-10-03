@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Memory;
 public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
 {
     public const string SizeOption = "sizeMb";
-    public static readonly TestDefinition Definition = new(new TestId("memory.pattern"), "Test_Memory_Pattern", 60,
+    public static readonly TestDefinition Definition = new(new TestId("memory.pattern"), "Test_Memory_Pattern", 900,
         [new TestOption(SizeOption, "Test_Option_MemoryMb", TestOptionKind.Integer, "0")]);   // 0 = automatic: all free RAM above the reserve
     TestDefinition ITestExecutor.Definition => Definition;
 

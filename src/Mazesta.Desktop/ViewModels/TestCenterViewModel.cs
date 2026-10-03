@@ -24,6 +24,10 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     /// <summary>When the current test started, for the elapsed time on the live monitor.</summary>
     public DateTimeOffset? CurrentStartedAt { get; private set; }
     public TestQueueRowViewModel? CurrentRow => CurrentIndex >= 0 && CurrentIndex < RunQueue.Count ? RowFor(RunQueue[CurrentIndex]) : null;
+    /// <summary>Runs the processor's, the memory's and the graphics card's tests side by side instead of one by one (<see cref="TestEngine.LaneOf"/>).</summary>
+    [ObservableProperty] private bool _together;
+    /// <summary>The tests under way now, in the queue's order: several only in a run <see cref="Together"/>.</summary>
+    public IReadOnlyList<TestQueueRowViewModel> RunningRows => [.. RunQueue.Select(RowFor).OfType<TestQueueRowViewModel>().Where(r => r.Outcome == TestOutcome.Running)];
 
     /// <summary>Why the last Start was refused (a benchmark or the GPU tuning is running), or null.</summary>
     [ObservableProperty] private string? _blockedMessage;
@@ -70,6 +74,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     {
         int next = -1;
         for (int i = Math.Max(0, CurrentIndex + 1); i < RunQueue.Count; i++) if (RunQueue[i] == id) { next = i; break; }   // the same test may be queued once only, but search forward anyway
+        if (next < 0) for (int i = 0; i < RunQueue.Count; i++) if (RunQueue[i] == id) { next = i; break; }   // side by side, the lanes do not start in the queue's order
         CurrentStartedAt = DateTimeOffset.Now; CurrentIndex = next;
         if (RowFor(id) is { } row) { row.Outcome = TestOutcome.Running; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Starting"); }
     });
@@ -79,6 +84,8 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         if (RowFor(id) is not { } row) return;
         row.Outcome = r.Outcome; row.ErrorCount = r.ErrorCount; row.Detail = r.Detail; row.StatusText = ""; row.Advice = TestAdvice.For(id.Value, r.Outcome);
         if (r.Outcome is TestOutcome.Passed or TestOutcome.Failed) row.PercentComplete = 1.0;
+        // Side by side: when the test shown as current ends while another lane still runs, that one is the current test.
+        if (CurrentRow == row && RunningRows is [var other, ..]) for (int i = 0; i < RunQueue.Count; i++) if (RunQueue[i] == other.Definition.Id) { CurrentIndex = i; break; }
     });
 
     private void OnRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -95,8 +102,10 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
             queue.Add(q);
         }
         IncompleteSessionMessage = null; BlockedMessage = null;
+        // The last session's queue is forgotten first: until the engine reports this one, its last test (the drives' SMART check) would read as the current one.
+        RunQueue = []; CurrentIndex = -1; CurrentStartedAt = null;
         IsRunning = true;   // immediately, so a double-click cannot start twice before StateChanged is dispatched
-        try { await _engine.RunAsync(queue); }
+        try { await _engine.RunAsync(queue, together: Together); }
         catch (WorkloadBusyException e) { IsRunning = false; BlockedMessage = Loc.Get($"Workload_Busy_{e.Holder}"); }
     }
     private bool CanStart() => !IsRunning && Rows.Any(r => r.IsSelected);

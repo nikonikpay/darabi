@@ -14,7 +14,7 @@ namespace Mazesta.Diagnostics.Cpu;
 public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
 {
     public const string SizeOption = "size";
-    public static readonly TestDefinition Definition = new(new TestId("cpu.linpack"), "Test_Cpu_Linpack", 120,
+    public static readonly TestDefinition Definition = new(new TestId("cpu.linpack"), "Test_Cpu_Linpack", 900,
         [new TestOption(SizeOption, "Test_Option_LinpackSize", TestOptionKind.Integer, "0")]);   // 0 = automatic from free RAM
     TestDefinition ITestExecutor.Definition => Definition;
 

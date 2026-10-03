@@ -1449,6 +1449,9 @@
   <data name="Workload_Busy_Benchmark" xml:space="preserve"><value>بنچمارک در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
   <data name="Workload_Busy_Tuning" xml:space="preserve"><value>تنظیم خودکار کارت گرافیک در حال اجراست. صبر کنید تمام شود یا آن را لغو کنید؛ دو بار هم‌زمان روی هم اثر می‌گذارند و نتیجه‌ها معتبر نمی‌مانند.</value></data>
   <data name="Log_Session_Start" xml:space="preserve"><value>جلسهٔ آزمون شروع شد: {0} آزمون در صف.</value></data>
+  <data name="Log_Session_Together" xml:space="preserve"><value>اجرای هم‌زمان: {0} قطعه با هم زیر بار می‌روند؛ آزمون‌های هر قطعه پشت سر هم اجرا می‌شود.</value></data>
+  <data name="Test_Together" xml:space="preserve"><value>اجرای هم‌زمان</value></data>
+  <data name="Test_Together_Hint" xml:space="preserve"><value>آزمون‌های پردازنده، حافظه و کارت گرافیک هم‌زمان اجرا می‌شوند (آزمون‌های هر قطعه پشت سر هم). آزمون‌های دیسک، شبکه و ویندوز بعد از آن‌ها، یکی‌یکی اجرا می‌شوند.</value></data>
   <data name="Log_Session_End" xml:space="preserve"><value>همهٔ آزمون‌های صف به پایان رسید.</value></data>
   <data name="Log_Cancel_Requested" xml:space="preserve"><value>درخواست لغو ثبت شد؛ آزمون در حال اجرا متوقف می‌شود.</value></data>
   <data name="Log_Test_Start" xml:space="preserve"><value>آزمون {0} از {1}: {2}، به مدت {3} ثانیه.</value></data>

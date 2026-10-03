@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Memory;
 /// </summary>
 public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("memory.bitfade"), "Test_Memory_BitFade", 600,
+    public static readonly TestDefinition Definition = new(new TestId("memory.bitfade"), "Test_Memory_BitFade", 900,
         [new TestOption(MemoryPatternExecutor.SizeOption, "Test_Option_MemoryMb", TestOptionKind.Integer, "0")]);
     TestDefinition ITestExecutor.Definition => Definition;
     private const int BlockBytes = MemoryPatternExecutor.BlockBytes;

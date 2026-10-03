@@ -6,7 +6,7 @@ import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { partOfId } from "../parts.js";
 import { groupPanel, byPart } from "../groups.js";
-import { pageOfTest } from "../testrun.js";
+import { pageOfRun } from "../testrun.js";
 
 export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
@@ -24,10 +24,13 @@ export function mount(el) {
   const start = h("button", { class: "btn go", "data-a": "start", onclick: () => { toMonitor = true; call("tests.exec", { cmd: "start" }).finally(() => { toMonitor = false; }); } }, icon("play"), t("Test_Start"));
   const watch = h("a", { class: "btn", href: "#/monitoring", hidden: true }, icon("pulse"), t("Web_Run_Live"));   // points at the running test's page
   const cancel = h("button", { class: "btn stop", onclick: () => call("tests.exec", { cmd: "cancel" }) }, icon("stop"), t("Test_Cancel"));
+  // Side by side: the processor's, the memory's and the graphics card's tests load the machine together, as real work does.
+  const togetherBox = h("input", { type: "checkbox", class: "switch", "aria-label": t("Test_Together"), onchange: (e) => call("tests.exec", { cmd: "together", value: e.target.checked }) });
+  const together = h("label", { class: "run-follow", title: t("Test_Together_Hint") }, togetherBox, t("Test_Together"));
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
     notice, blocked, h("div", { class: "profile-bar" }, h("span", { class: "caption" }, t("Profile_Title")), profiles), profileNote, list,
-    h("div", { class: "dock" }, start, cancel, watch, h("span", { class: "grow" }),
+    h("div", { class: "dock" }, start, cancel, watch, together, h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
 
@@ -70,10 +73,11 @@ export function mount(el) {
     for (const b of profiles.children) b.disabled = s.running;
     profileNote.hidden = !s.profileNote; profileNote.textContent = s.profileNote || "";
     start.disabled = !s.canStart; cancel.disabled = !s.running; watch.hidden = !s.running;
-    const livePage = s.current ? pageOfTest(s.current.id) : "monitoring";
+    togetherBox.checked = !!s.together; togetherBox.disabled = s.running;
+    const livePage = s.current ? pageOfRun(s.current) : "monitoring";
     watch.href = `#/${livePage}`;
     // The tested part's page once the first test is under way (its page is known only then).
-    if (toMonitor && s.running && s.current) { toMonitor = false; location.hash = `#/${livePage}`; return; }
+    if (toMonitor && s.running && s.current && s.current.outcome === "Running") {   // a test really under way, never the last session's last one toMonitor = false; location.hash = `#/${livePage}`; return; }
     notice.hidden = !s.incomplete;
     blocked.hidden = !s.blocked; blocked.textContent = s.blocked || "";
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));

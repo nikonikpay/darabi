@@ -1449,6 +1449,9 @@ The update services stopped and disabled</value></data>
   <data name="Workload_Busy_Benchmark" xml:space="preserve"><value>A benchmark is running. Wait for it to end or cancel it first: two loads at once would stress and measure each other.</value></data>
   <data name="Workload_Busy_Tuning" xml:space="preserve"><value>The GPU tuning is running. Wait for it to end or cancel it first: two loads at once would stress and measure each other.</value></data>
   <data name="Log_Session_Start" xml:space="preserve"><value>Test session started: {0} test(s) in the queue.</value></data>
+  <data name="Log_Session_Together" xml:space="preserve"><value>Side by side: {0} parts are loaded at once; each part's tests run one after another.</value></data>
+  <data name="Test_Together" xml:space="preserve"><value>Run together</value></data>
+  <data name="Test_Together_Hint" xml:space="preserve"><value>The processor's, the memory's and the graphics card's tests run at the same time (each part's own tests one after another). Drive, network and Windows tests run afterwards, one by one.</value></data>
   <data name="Log_Session_End" xml:space="preserve"><value>Every test in the queue has ended.</value></data>
   <data name="Log_Cancel_Requested" xml:space="preserve"><value>Cancel requested: the running test is stopping.</value></data>
   <data name="Log_Test_Start" xml:space="preserve"><value>Test {0} of {1}: {2}, for {3} s.</value></data>

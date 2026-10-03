@@ -12,7 +12,7 @@ import { t, fa } from "./i18n.js";
 import { h, icon, toast } from "./ui.js";
 import { go, boot } from "./app.js";
 import { OUTCOME } from "./pages/tests.js";
-import { pageOfTest } from "./testrun.js";
+import { pageOfRun } from "./testrun.js";
 
 const store = (key, v) => { try { if (v === undefined) return localStorage.getItem(key); localStorage.setItem(key, v); } catch { /* not kept */ } return null; };
 
@@ -175,7 +175,7 @@ export function mountAssistant(app, root) {
     actText.textContent = x.name ? `${x.name}${x.percent != null ? " · " + fa(Math.floor(x.percent)) + "%" : ""}` : "";
     actFill.style.setProperty("--p", (x.percent ?? 0) / 100);
   }
-  const offTests = on("tests", (s) => { if (followTests && s.running && s.current) { followTests = false; go(pageOfTest(s.current.id)); } });
+  const offTests = on("tests", (s) => { if (followTests && s.running && s.current && s.current.outcome === "Running") { followTests = false; go(pageOfRun(s.current)); } });
 
   // The past chats beside this one, newest first; the open one is marked. Rebuilt only when the list changes.
   let histKey = "";

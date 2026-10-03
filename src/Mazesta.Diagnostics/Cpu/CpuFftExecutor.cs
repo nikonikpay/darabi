@@ -13,7 +13,7 @@ namespace Mazesta.Diagnostics.Cpu;
 /// </summary>
 public sealed class CpuFftExecutor(Memory.IMemoryProbe? probe = null) : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("cpu.fft"), "Test_Cpu_Fft", 60);
+    public static readonly TestDefinition Definition = new(new TestId("cpu.fft"), "Test_Cpu_Fft", 900);
     TestDefinition ITestExecutor.Definition => Definition;
 
     internal const int Small = 1 << 12, Large = 1 << 20;

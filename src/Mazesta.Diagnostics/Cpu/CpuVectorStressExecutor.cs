@@ -14,7 +14,7 @@ namespace Mazesta.Diagnostics.Cpu;
 public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
 {
     public const string WidthOption = "width";
-    public static readonly TestDefinition Definition = new(new TestId("cpu.vector"), "Test_Cpu_Vector", 120,
+    public static readonly TestDefinition Definition = new(new TestId("cpu.vector"), "Test_Cpu_Vector", 900,
     [
         new TestOption(WidthOption, "Test_Option_VectorWidth", TestOptionKind.Choice, "auto", () =>
             [new("auto", "Test_Vector_Auto", true), new("avx512", "AVX-512"), new("avx2", "AVX2 + FMA"), new("sse", "SSE2")]),

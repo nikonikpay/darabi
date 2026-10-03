@@ -13,6 +13,9 @@ export const KINDS = { Cpu: ["Cpu"], Gpu: ["Gpu"], Memory: ["Memory"], Storage: 
 // Where a running test is watched: its part's page, or Monitoring for the ones no part page covers (the combined power test, Windows' checks).
 const PAGE_OF = { Cpu: "cpu", Gpu: "gpu", Memory: "ram", Storage: "storage", Network: "network" };
 export const pageOfTest = (id) => PAGE_OF[partOfId(id)] || "monitoring";
+// Tests of several parts running side by side are watched on Monitoring, where every part shows.
+export const pageOfRun = (current) => current.parallel ? "monitoring" : pageOfTest(current.id);
+const partOfRun = (current) => current.parallel ? "Power" : partOfId(current.id);
 const remember = (key, fallback) => { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch { return fallback; } };
 const keep = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* not kept */ } };
 
@@ -63,11 +66,11 @@ export function runPanel(onFocus, page = "monitoring") {
   }
 
   function focus() {
-    const p = running && current ? partOfId(current.id) : null;
+    const p = running && current ? partOfRun(current) : null;
     if (p === lastPart) return;
     const moved = lastPart !== undefined && p !== null;   // not on arrival: a page the technician opened is not taken from them
     lastPart = p;
-    if (moved && follow && pageOfTest(current.id) !== page) { location.hash = `#/${pageOfTest(current.id)}`; return; }
+    if (moved && follow && pageOfRun(current) !== page) { location.hash = `#/${pageOfRun(current)}`; return; }
     onFocus?.(follow && p ? KINDS[p] || null : null, p);
   }
 
@@ -76,11 +79,11 @@ export function runPanel(onFocus, page = "monitoring") {
     const wasHidden = el.hidden;
     if (running) closed = false;
     close.hidden = running;
-    el.hidden = closed || (page === "monitoring" ? !running && !lines.childElementCount : !(current && pageOfTest(current.id) === page));
+    el.hidden = closed || (page === "monitoring" ? !running && !lines.childElementCount : !(current && pageOfRun(current) === page));
     if (wasHidden && !el.hidden) requestAnimationFrame(() => { lines.scrollTop = lines.scrollHeight; });   // first shown: start at the newest line
     cancel.hidden = !running;
     if (current) {
-      const p = partOfId(current.id);
+      const p = partOfRun(current);
       el.className = `plane run-panel ${part(p).cls}`;
       ico.replaceChildren(icon(part(p).icon));
       step.textContent = t("Web_Run_Step", fa(current.index), fa(current.total));
