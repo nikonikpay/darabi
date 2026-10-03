@@ -14,16 +14,17 @@ const CATALOG = [
   ["storage.temp", "Storage", "Overlay_HotDrive", ["StorageTemp"], "Max"], ["storage.read", "Storage", "Overlay_Read", ["StorageReadRate"], "Sum"], ["storage.write", "Storage", "Overlay_Write", ["StorageWriteRate"], "Sum"],
   ["storage.activity", "Storage", "Overlay_Activity", ["StorageTotalActivity"], "Max"],
   ["net.down", "Network", "Overlay_Down", ["NetDownload"], "Sum"], ["net.up", "Network", "Overlay_Up", ["NetUpload"], "Sum"],
+  ["net.ping", "Network", "Overlay_Ping", []], ["net.loss", "Network", "Overlay_Loss", []], ["net.jitter", "Network", "Overlay_Jitter", []],
 ];
 const PRESETS = {
-  game: "fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used",
+  game: "fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up",
   render: "cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write",
   troubleshoot: "cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.temp:c gpu.hotspot gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp",
 };
 // The items with a fixed 0-100 top (percentages and temperatures), as FixedMax in the catalog.
-const HUNDRED = new Set(["gpu.temp", "gpu.hotspot", "gpu.vramtemp", "gpu.load", "gpu.fan", "cpu.temp", "cpu.hotcore", "cpu.load", "cpu.maxthread", "ram.load", "ram.temp", "storage.temp", "storage.activity"]);
+const HUNDRED = new Set(["gpu.temp", "gpu.hotspot", "gpu.vramtemp", "gpu.load", "gpu.fan", "cpu.temp", "cpu.hotcore", "cpu.load", "cpu.maxthread", "ram.load", "ram.temp", "storage.temp", "storage.activity", "net.loss"]);
 const parse = (spec) => spec.split(" ").map((s) => ({ id: s.replace(":c", ""), chart: s.endsWith(":c") }));
-let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1, layout = "list";
+let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1, layout = "list", pingTarget = "8.8.8.8";
 const PER_DRIVE = ["storage.read", "storage.write", "storage.temp", "storage.activity"];
 // Each drive's own items, as OverlayCatalog.ForDrives makes them: "base@device", the base item read on that drive only.
 function drives(hw) {
@@ -39,7 +40,7 @@ function resolve(hw, [, part, , roles, agg = "First", device]) {
 }
 
 export function overlay(m, p, hw, strings, emit) {
-  const state = () => ({ visible, corner, opacity, scale, preset, layout, hotkey: "Ctrl+Shift+O", frameProblem: null,
+  const state = () => ({ visible, corner, opacity, scale, preset, layout, hotkey: "Ctrl+Shift+O", frameProblem: null, pingTarget,
     corners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })),
     presets: Object.entries(PRESETS).map(([id, spec]) => ({ id, count: parse(spec).length })), order: chosen.map((c) => c.id),
     items: [...CATALOG, ...drives(hw)].map((c) => { const sensors = resolve(hw, c), ch = chosen.find((x) => x.id === c[0]);
@@ -49,7 +50,7 @@ export function overlay(m, p, hw, strings, emit) {
   switch (m) {
     case "overlay.state": return state();
     case "overlay.set":
-      if (p.field === "visible") visible = p.value; if (p.field === "corner") corner = p.value; if (p.field === "opacity") opacity = p.value; if (p.field === "scale") scale = p.value; if (p.field === "layout") layout = p.value;
+      if (p.field === "visible") visible = p.value; if (p.field === "corner") corner = p.value; if (p.field === "opacity") opacity = p.value; if (p.field === "scale") scale = p.value; if (p.field === "layout") layout = p.value; if (p.field === "pingTarget") pingTarget = p.value || "8.8.8.8";
       return changed();
     case "overlay.preset": chosen = parse(PRESETS[p.id]); preset = p.id; return changed();
     case "overlay.order": { const next = p.ids.map((id) => chosen.find((c) => c.id === id)).filter(Boolean); chosen = [...next, ...chosen.filter((c) => !next.includes(c))]; return changed(); }
@@ -65,9 +66,10 @@ export function overlay(m, p, hw, strings, emit) {
 // A game in front at about 140 FPS with the odd hitch, while the overlay is on; the session's average, lowest and highest as the host keeps them.
 const session = { n: 0, sum: 0, min: Infinity, max: 0 };
 export function frames(emit) {
-  if (!visible || !chosen.some((c) => c.id.startsWith("fps") || ["low1", "frametime"].includes(c.id))) return;
+  if (!visible || !chosen.some((c) => c.id.startsWith("fps") || ["low1", "frametime", "net.ping", "net.loss", "net.jitter"].includes(c.id))) return;
   // A scene that swings and now and then stutters, so the preview's trace has something to show.
   const fps = 128 + 16 * Math.sin(Date.now() / 9000) + Math.random() * 8 - (Math.random() < 0.12 ? 40 : 0);
   session.n++; session.sum += fps; session.min = Math.min(session.min, fps); session.max = Math.max(session.max, fps);
-  emit("overlayFrames", { fps, low1: 96 + Math.random() * 6, frametime: 1000 / fps, app: "Cyberpunk2077", avg: session.sum / session.n, min: session.min, max: session.max });
+  emit("overlayFrames", { fps, low1: 96 + Math.random() * 6, frametime: 1000 / fps, app: "Cyberpunk2077", avg: session.sum / session.n, min: session.min, max: session.max,
+    ping: 38 + Math.random() * 9, loss: Math.random() < 0.2 ? 3.3 : 0, jitter: 2 + Math.random() * 3 });
 }

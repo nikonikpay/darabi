@@ -254,6 +254,16 @@ const DEMO_FINDINGS = {
     finding("GpuLinkOk", "Good", [["LinkGen", "Gen 4"], ["LinkWidth", "x16"]], { subject: "NVIDIA GeForce RTX 3090" })],
 };
 
+// A worn laptop battery, a connection whose DNS does not answer, and the game mode's services, for the pages that show them.
+const demoBattery = { name: "DELL 0XYZ12", maker: "SMP", healthPercent: 78.4, designMwh: 56000, fullMwh: 43900, lostMwh: 12100, cycles: 412, chargePercent: 64.2, charging: false, discharging: true, onMains: false, rateMw: 14600, voltageMv: 11520 };
+let gameOn = false;
+const GAME = [["wuauserv", "Network", "Windows Update", true, true], ["UsoSvc", "Network", "Update Orchestrator Service", true, true], ["BITS", "Network", "Background Intelligent Transfer Service", true, false],
+  ["DoSvc", "Network", "Delivery Optimization", true, true], ["DiagTrack", "Network", "Connected User Experiences and Telemetry", true, true], ["MapsBroker", "Network", "Downloaded Maps Manager", true, false],
+  ["WerSvc", "Network", "Windows Error Reporting Service", true, false], ["WSearch", "Background", "Windows Search", true, true], ["SysMain", "Background", "SysMain", true, true], ["Spooler", "Background", "Print Spooler", false, true]]
+  .map(([name, group, display, chosen, running]) => ({ name, group, display, chosen, running, present: name !== "MapsBroker" }));
+const demoGame = () => ({ on: gameOn, busy: false, held: gameOn ? GAME.filter((x) => x.chosen && x.present && x.name !== "DoSvc").map((x) => x.name) : [], results: [],
+  services: GAME.map((x) => ({ ...x, note: strings[`GameBoost_Svc_${x.name}`], running: x.present ? (gameOn && x.chosen && x.name !== "DoSvc" ? false : x.running) : null, disabled: x.present ? gameOn && x.chosen && x.name !== "DoSvc" : null, error: null })) });
+
 export async function call(m, p, emit) {
   emitRef = emit;
   strings ??= await (await fetch("js/demo-strings.json")).json();
@@ -297,6 +307,15 @@ export async function call(m, p, emit) {
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
     case "tweaks.state": return tweaks();
     case "dns.state": return tweaks().dns;
+    case "battery.read": return [demoBattery];
+    case "battery.test": return p.cmd === "stop" ? null : { state: "running", minutes: p.cmd === "start" ? 0 : 12.5, battery: demoBattery, drain: p.cmd === "start" ? null : { usedMwh: 3050, meanWatts: 14.6, fullChargeMinutes: 187 } };
+    case "netfix.check": await new Promise((r) => setTimeout(r, 900)); return { verdict: "DnsFails", suggested: ["proxy", "dns", "flush"], proxy: { set: true, enabled: true, server: "127.0.0.1:10809", script: null },
+      checks: [{ id: "adapter", result: "Ok", detail: "Wi-Fi: 192.168.1.34" }, { id: "gateway", result: "Ok", detail: "192.168.1.1: 2 ms" }, { id: "internet", result: "Ok", detail: "8.8.8.8: echo 41 ms; 1.1.1.1: TCP 53 open" },
+        { id: "dns", result: "Failed", detail: "www.msftconnecttest.com, www.google.com: not resolved (DNS 10.202.10.202)" }, { id: "web", result: "Skipped", detail: null }, { id: "proxy", result: "Skipped", detail: "on; server 127.0.0.1:10809" }] };
+    case "netfix.run": await new Promise((r) => setTimeout(r, 700)); return { restart: p.steps.includes("reset"), results: p.steps.map((id) => ({ id, error: null, done: strings[{ proxy: "NetFix_Proxy_Empty", dns: p.dns === "google" ? "NetFix_Dns_Google_Done" : "NetFix_Dns_Auto_Done", flush: "NetFix_Flush_Done", reset: "NetFix_Reset_Done" }[id]] })) };
+    case "gameboost.state": return demoGame();
+    case "gameboost.tick": { const s = GAME.find((x) => x.name === p.name); if (s) s.chosen = p.on; return null; }
+    case "gameboost.switch": gameOn = p.on; return { ...demoGame(), results: GAME.filter((x) => x.chosen && x.present).map((x) => ({ name: x.name, changed: x.name !== "DoSvc", error: x.name === "DoSvc" ? "Access is denied" : null })) };
     case "tweaks.pref": tweakState.set(p.id, p.on ? "Applied" : "NotApplied"); return { error: null, state: tweakState.get(p.id) };
     case "tweaks.run": await new Promise((r) => setTimeout(r, 900));
       return { results: p.ids.map((id) => { const x = TWEAKS.find((y) => y[0] === id); if (!x[3]) tweakState.set(id, p.undo ? "NotApplied" : "Applied");

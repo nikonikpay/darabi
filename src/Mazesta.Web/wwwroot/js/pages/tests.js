@@ -77,7 +77,8 @@ export function mount(el) {
     const livePage = s.current ? pageOfRun(s.current) : "monitoring";
     watch.href = `#/${livePage}`;
     // The tested part's page once the first test is under way (its page is known only then).
-    if (toMonitor && s.running && s.current && s.current.outcome === "Running") {   // a test really under way, never the last session's last one toMonitor = false; location.hash = `#/${livePage}`; return; }
+    // (A test really under way: never the last session's last one, which is what "current" still names until the engine reports this run.)
+    if (toMonitor && s.running && s.current && s.current.outcome === "Running") { toMonitor = false; location.hash = `#/${livePage}`; return; }
     notice.hidden = !s.incomplete;
     blocked.hidden = !s.blocked; blocked.textContent = s.blocked || "";
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));
