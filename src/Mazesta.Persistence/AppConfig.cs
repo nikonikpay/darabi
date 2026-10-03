@@ -46,6 +46,10 @@ public sealed class AppConfig : IVersionedDocument
     public string OverlayLayout { get; set; } = "list";
     /// <summary>The address (or name) the overlay's ping, packet loss and jitter are measured to. Absent in older files: Google's resolver.</summary>
     public string OverlayPingTarget { get; set; } = "8.8.8.8";
+    /// <summary>The services the game mode stops (see <see cref="Mazesta.Core.Gaming.GameBoost"/>); null takes its defaults.</summary>
+    public List<string>? GameModeServices { get; set; }
+    /// <summary>What each service was before the game mode stopped it; not empty means the mode is on, and switching it off puts these back.</summary>
+    public List<Mazesta.Core.Gaming.ServiceSnapshot>? GameModeSaved { get; set; }
 }
 public sealed class Migration0To1 : IMigration
 {

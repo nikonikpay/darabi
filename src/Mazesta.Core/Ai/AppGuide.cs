@@ -54,7 +54,7 @@ public static class AppGuide
         P("ram", "Dashboard_Ram", "the memory modules and their sensors", "صفحه رم", "بخش رم", "صفحه حافظه"),
         P("storage", "Nav_Storage", "the drives, their health and sensors", "ذخیره سازی", "هارد", "هاردها", "درایوها", "storage", "ssd"),
         P("network", "Nav_Network", "the network adapters", "شبکه", "کارت شبکه", "network"),
-        P("tests", "Nav_Tests", "hardware tests with a report: the memory test checks the RAM's health, the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs",
+        P("tests", "Nav_Tests", "hardware tests with a report: the memory test checks the RAM's health, the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs; a switch runs processor, memory and graphics card tests together",
             "تستها", "تست ها", "صفحه تست", "بخش تست", "tests", "سلامت رم", "سلامت حافظه", "سلامت هارد", "سلامت گرافیک", "سلامت cpu", "تست رم", "تست حافظه", "تست هارد", "تست گرافیک", "تست cpu", "تست پردازنده"),
         T("tests", "start", "Test_Start", "start the ticked tests", null, "شروع تست", "شروع تستها"),
         P("benchmarks", "Nav_Benchmarks", "speed benchmarks and comparison with other computers", "بنچمارک", "بنچ مارک", "بنچمارکها", "benchmark", "benchmarks"),
@@ -68,7 +68,7 @@ public static class AppGuide
         T("checks", "mic", "Checks_Mic", "records the microphone and shows its level", null, "میکروفون", "میکروفن", "میکرفون", "مایک", "microphone", "mic"),
         T("checks", "battery", "Checks_Battery", "the laptop battery: its health percent (full capacity against capacity when new), charge cycles, and a drain test", null,
             "باتری", "باطری", "سلامت باتری", "سلامت باطری", "تست باتری", "تست باطری", "battery", "battery health"),
-        P("overlay", "Nav_Overlay", "settings of the on-screen overlay: temperatures, loads and frame rate shown over games", "اورلی", "اورلای", "اوورلی", "overlay", "نمایش روی صفحه", "fps"),
+        P("overlay", "Nav_Overlay", "settings of the on-screen overlay: temperatures, loads, frame rate, and the link (ping, packet loss, jitter, download and upload) shown over games", "اورلی", "اورلای", "اوورلی", "overlay", "نمایش روی صفحه", "fps"),
         P("tuning", "Nav_Tuning", "graphics card overclock and undervolt: clocks, voltage curve, power limit, fans, profiles; RAM XMP", "اورکلاک", "اور کلاک", "اندرولت", "اندروالت", "آندر ولت", "اندر ولت", "تیونینگ", "undervolt", "overclock", "tuning"),
         T("tuning", "autoundervolt", "Tuning_AutoUndervolt", "finds the lowest stable voltage by itself (10 to 25 minutes)", "Assist_Hint_Tuning", "اندرولت خودکار", "اندروالت خودکار", "اندر ولت خودکار", "auto undervolt"),
         T("tuning", "autooverclock", "Tuning_AutoOverclock", "raises the clocks step by step while the card stays correct (10 to 25 minutes)", "Assist_Hint_Tuning", "اورکلاک خودکار", "اور کلاک خودکار", "auto overclock"),
@@ -96,6 +96,10 @@ public static class AppGuide
             "بازی ها", "بازیها", "لیست بازی", "سیستم مورد نیاز بازی", "سیستم بازی", "مشخصات بازی", "games", "game requirements"),
         P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models", "مدل هوش مصنوعی", "مدلهای هوش مصنوعی", "مدل های هوش مصنوعی", "هوش مصنوعی", "llm", "مدل زبانی", "ai models"),
         P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder", "تنظیمات", "تنظیمات برنامه", "ستینگ", "settings", "tray", "ترای", "پایشگر"),
+        T("settings", "gameboost", "GameBoost_Title", "game mode: stops background services a game does not need (Windows Update, downloads, telemetry, search indexing) while it is on, with a tick per service; switching it off puts them back", null,
+            "حالت گیم", "حالت بازی", "مود بازی", "سرویس های غیر ضروری", "سرویسهای غیرضروری", "game boost", "gaming mode"),
+        T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null,
+            "اینترنت وصل نمیشه", "اینترنت وصل نمی شود", "اینترنت قطع", "عیب یابی اینترنت", "مشکل اینترنت", "پراکسی", "پروکسی", "ریست شبکه", "proxy", "internet troubleshooter", "no internet"),
         P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
     ];
 

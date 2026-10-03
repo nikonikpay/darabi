@@ -40,6 +40,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor>(_ => new Diagnostics.Network.InternetSpeedExecutor());
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
         s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
+        s.AddSingleton<Mazesta.Core.Gaming.IServiceControl, Mazesta.Diagnostics.Windows.WindowsServiceControl>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.SfcExecutor>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.DismScanExecutor>();
         s.AddSingleton<Mazesta.Core.Providers.INvmeHealthSource>(sp => new Mazesta.Hardware.Details.NvmeHealthReader(sp.GetRequiredService<Mazesta.Hardware.Wmi.IWmiQuery>()));

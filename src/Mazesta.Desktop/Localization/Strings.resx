@@ -1693,6 +1693,30 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Dns_Testing" xml:space="preserve"><value>Timing the DNS servers on this connection…</value></data>
   <data name="Assist_Dns_Best" xml:space="preserve"><value>In this short test the fastest DNS on this connection was {0} ({1} ms); in use now: {2}. Nothing was changed: the Windows tools page is open at the DNS box, where «Use» switches to it.</value></data>
   <data name="Assist_Dns_None" xml:space="preserve"><value>No DNS server answered every lookup; nothing was changed.</value></data>
+  <data name="GameBoost_Title" xml:space="preserve"><value>Game mode</value></data>
+  <data name="GameBoost_Sub" xml:space="preserve"><value>stops background services a game does not need</value></data>
+  <data name="GameBoost_Note" xml:space="preserve"><value>While it is on, the ticked services are stopped and kept from starting again, so they take no bandwidth, disk or processor time from the game. Nothing is removed: switching it off puts every service back as it was, also after a restart. Windows does not let some of its own services be changed; those are listed with what Windows answered.</value></data>
+  <data name="GameBoost_Switch" xml:space="preserve"><value>Game mode</value></data>
+  <data name="GameBoost_Switch_Sub" xml:space="preserve"><value>the ticks below can be changed while it is off</value></data>
+  <data name="GameBoost_Group_Network" xml:space="preserve"><value>Services that use the internet</value></data>
+  <data name="GameBoost_Group_Background" xml:space="preserve"><value>Services that work in the background</value></data>
+  <data name="GameBoost_State_Running" xml:space="preserve"><value>running</value></data>
+  <data name="GameBoost_State_Stopped" xml:space="preserve"><value>stopped</value></data>
+  <data name="GameBoost_State_Disabled" xml:space="preserve"><value>disabled</value></data>
+  <data name="GameBoost_State_Held" xml:space="preserve"><value>stopped by game mode</value></data>
+  <data name="GameBoost_State_Absent" xml:space="preserve"><value>not on this Windows</value></data>
+  <data name="GameBoost_Done_On" xml:space="preserve"><value>Game mode is on: {0} service(s) stopped, {1} could not be changed.</value></data>
+  <data name="GameBoost_Done_Off" xml:space="preserve"><value>Game mode is off: {0} service(s) put back, {1} could not be put back.</value></data>
+  <data name="GameBoost_Svc_wuauserv" xml:space="preserve"><value>Windows Update: looks for, downloads and installs updates.</value></data>
+  <data name="GameBoost_Svc_UsoSvc" xml:space="preserve"><value>Update Orchestrator: schedules Windows Update&apos;s scans and restarts.</value></data>
+  <data name="GameBoost_Svc_BITS" xml:space="preserve"><value>Background Intelligent Transfer: downloads in the background (updates, the Store).</value></data>
+  <data name="GameBoost_Svc_DoSvc" xml:space="preserve"><value>Delivery Optimization: shares update downloads with other computers.</value></data>
+  <data name="GameBoost_Svc_DiagTrack" xml:space="preserve"><value>Connected User Experiences and Telemetry: sends usage data to Microsoft.</value></data>
+  <data name="GameBoost_Svc_MapsBroker" xml:space="preserve"><value>Downloaded Maps Manager: updates offline maps.</value></data>
+  <data name="GameBoost_Svc_WerSvc" xml:space="preserve"><value>Windows Error Reporting: uploads crash reports.</value></data>
+  <data name="GameBoost_Svc_WSearch" xml:space="preserve"><value>Windows Search: indexes files (disk and processor). Search in the Start menu is slower while it is stopped.</value></data>
+  <data name="GameBoost_Svc_SysMain" xml:space="preserve"><value>SysMain (Superfetch): preloads programs into memory; it reads the disk in the background.</value></data>
+  <data name="GameBoost_Svc_Spooler" xml:space="preserve"><value>Print Spooler: needed to print. Leave it unticked if a printer is in use.</value></data>
   <data name="NetFix_Title" xml:space="preserve"><value>Internet connection troubleshooter</value></data>
   <data name="NetFix_Sub" xml:space="preserve"><value>finds where the connection stops, then the usual repairs</value></data>
   <data name="NetFix_Note" xml:space="preserve"><value>The check changes nothing: it looks at the adapter, the router, the internet, the DNS, a web page and the proxy settings, and shows what it measured. The repairs below change Windows; tick the ones you want.</value></data>
