@@ -3,7 +3,7 @@
 // compares with it: only a better run replaces the record (the host keeps it, per system, in Data/benchmarks).
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
-import { h, icon } from "../ui.js";
+import { h, icon, toast } from "../ui.js";
 import { setField } from "./tests.js";
 import { groupPanel, byPart } from "../groups.js";
 import { findingCard, bySeverity } from "./checkup.js";
@@ -16,7 +16,17 @@ export function benchList(component = null) {
   const queue = h("span", { class: "pill run", hidden: true });
   const oc = h("input", { type: "checkbox", class: "check", onchange: (e) => call("bench.oc", { value: e.target.checked }) });
   const list = h("div", { class: "groups" });
-  wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }),
+  // This copy's logged runs go to the shop's site, which builds the comparison lists every copy reads.
+  const upload = h("button", { class: "btn quiet", title: t("Site_Runs_Hint"), "data-a": "send-site", onclick: async () => {
+    upload.disabled = true;
+    try {
+      const r = await call("site.runs");
+      if (r.error) toast(r.error, "fail");
+      else toast(r.nothing || (!r.added && !r.known && !r.rejected) ? t("Site_Runs_Nothing") : r.pending ? t("Site_Runs_Pending", fa(r.added)) : t("Site_Runs_Done", fa(r.added), fa(r.known), fa(r.rejected)), "ok");
+    } catch (e) { toast(String(e.message || e), "fail"); }
+    upload.disabled = false;
+  } }, icon("update"), t("Site_Runs_Send"));
+  wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), upload,
     h("label", { class: "oc-toggle", title: t("Bench_OverclockedHint") }, oc, t("Bench_Overclocked")),
     h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
     h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));

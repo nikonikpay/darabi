@@ -66,6 +66,15 @@ public sealed class ReportService
 
     /// <summary>Writes the one-page summary of a saved report (its verdict, each test's result and the highest temperatures measured while it
     /// ran) into the report's folder and returns its HTML path. It is made from the report alone, never from the machine as it is now.</summary>
+    /// <summary>The report and its one-page summary as the shop's site keeps it: the same page as <see cref="CreateSummary"/>, without the
+    /// embedded font (the site's readers have their own), so it stays a few kilobytes.</summary>
+    public (SessionReport Report, string Html) SummaryForSite(StoredReport stored)
+    {
+        var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");
+        string lang = Loc.IsRtl ? "fa" : "en";
+        return (report, SummaryHtml.Write(ReportSummary.Of(report), null, SummaryText.For(lang), ReportText.For(lang)));
+    }
+
     public string CreateSummary(StoredReport stored)
     {
         var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");

@@ -256,6 +256,7 @@ const DEMO_FINDINGS = {
 
 // A worn laptop battery, a connection whose DNS does not answer, and the game mode's services, for the pages that show them.
 const demoBattery = { name: "DELL 0XYZ12", maker: "SMP", healthPercent: 78.4, designMwh: 56000, fullMwh: 43900, lostMwh: 12100, cycles: 412, chargePercent: 64.2, charging: false, discharging: true, onMains: false, rateMw: 14600, voltageMv: 11520 };
+let demoSite = { hasKey: true, busy: false, error: null, api: "www.dfmrendering.com", checkedAt: "2026/10/03 11:20", unsent: 7, status: { version: "1.0.0", key: "ok", open: false, reports: 14, runs: 212, pending: 3 } };
 let gameOn = false;
 const GAME = [["wuauserv", "Network", "Windows Update", true, true], ["UsoSvc", "Network", "Update Orchestrator Service", true, true], ["BITS", "Network", "Background Intelligent Transfer Service", true, false],
   ["DoSvc", "Network", "Delivery Optimization", true, true], ["DiagTrack", "Network", "Connected User Experiences and Telemetry", true, true], ["MapsBroker", "Network", "Downloaded Maps Manager", true, false],
@@ -313,6 +314,11 @@ export async function call(m, p, emit) {
       checks: [{ id: "adapter", result: "Ok", detail: "Wi-Fi: 192.168.1.34" }, { id: "gateway", result: "Ok", detail: "192.168.1.1: 2 ms" }, { id: "internet", result: "Ok", detail: "8.8.8.8: echo 41 ms; 1.1.1.1: TCP 53 open" },
         { id: "dns", result: "Failed", detail: "www.msftconnecttest.com, www.google.com: not resolved (DNS 10.202.10.202)" }, { id: "web", result: "Skipped", detail: null }, { id: "proxy", result: "Skipped", detail: "on; server 127.0.0.1:10809" }] };
     case "netfix.run": await new Promise((r) => setTimeout(r, 700)); return { restart: p.steps.includes("reset"), results: p.steps.map((id) => ({ id, error: null, done: strings[{ proxy: "NetFix_Proxy_Empty", dns: p.dns === "google" ? "NetFix_Dns_Google_Done" : "NetFix_Dns_Auto_Done", flush: "NetFix_Flush_Done", reset: "NetFix_Reset_Done" }[id]] })) };
+    case "site.state": case "site.check": return demoSite;
+    case "site.key": demoSite = { ...demoSite, hasKey: !!p.value, status: { ...demoSite.status, key: p.value ? "ok" : "missing" } }; return demoSite;
+    case "site.report": return demoSite.hasKey ? { ok: true, url: "https://www.dfmrendering.com/wp-admin/admin-post.php?action=mzc_report&id=12", link: null, updated: false } : { error: strings.Site_Err_NoKey };
+    case "site.runs": return { ok: true, added: 7, known: 21, rejected: 0, pending: false, nothing: false };
+    case "site.open": return null;
     case "gameboost.state": return demoGame();
     case "gameboost.tick": { const s = GAME.find((x) => x.name === p.name); if (s) s.chosen = p.on; return null; }
     case "gameboost.switch": gameOn = p.on; return { ...demoGame(), results: GAME.filter((x) => x.chosen && x.present).map((x) => ({ name: x.name, changed: x.name !== "DoSvc", error: x.name === "DoSvc" ? "Access is denied" : null })) };

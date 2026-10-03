@@ -2,7 +2,7 @@
 // before/after comparison of two ticked reports.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
-import { h } from "../ui.js";
+import { h, toast } from "../ui.js";
 import { box } from "../groups.js";
 
 const BADGE = { Passed: "pass", Failed: "fail", Incomplete: "warn", Benchmark: "run" };
@@ -17,10 +17,19 @@ export function mount(el) {
       box({ kind: "System", ico: "doc", title: t("Reports_Saved"), sub: t("Reports_CompareHint"), i: 0, actions: [count, remove, compare], body: [status, list] })));
   const act = (cmd, id, key, cls = "btn") => h("button", { class: cls, onclick: () => call("reports.exec", { cmd, id }) }, t(key));
   let shown = "", making = false;
+  // The summary of one report goes to the shop's site, where colleagues print it for the serviced case.
+  async function send(id, button) {
+    button.disabled = true;
+    try {
+      const r = await call("site.report", { id });
+      if (r.error) toast(r.error, "fail"); else { toast(t(r.updated ? "Site_Report_Updated" : "Site_Report_Sent"), "ok"); call("reports.state").then(update); }
+    } catch (e) { toast(String(e.message || e), "fail"); }
+    button.disabled = false;
+  }
   function update(s) {
     compare.disabled = !s.canCompare; remove.disabled = !s.canDelete; status.textContent = s.status || "";
     if (s.making !== making) { making = s.making; for (const b of list.querySelectorAll("button[data-summary]")) b.disabled = making; }
-    const key = JSON.stringify(s.items.map((i) => [i.id, i.selected]));
+    const key = JSON.stringify(s.items.map((i) => [i.id, i.selected, i.site]));
     if (key === shown) return; shown = key;
     count.textContent = s.items.length ? t("Web_Group_Count", s.items.length, s.items.filter((i) => i.selected).length) : "";
     if (!s.items.length) { list.replaceChildren(h("p", { class: "caption" }, t("Reports_Empty"))); return; }
@@ -30,7 +39,10 @@ export function mount(el) {
         h("input", { type: "checkbox", class: "check", checked: r.selected, "aria-label": t("Reports_CompareHint"), onchange: (e) => call("reports.select", { id: r.id, value: e.target.checked }) }),
         h("span", { class: `pill ${BADGE[r.badge] || "none"}` }, r.verdict), h("span", { class: "title" }, r.title),
         h("div", { class: "acts" }, summary, act("html", r.id, "Reports_Html"), act("pdf", r.id, "Reports_Pdf"), act("text", r.id, "Reports_Text"), act("json", r.id, "Reports_Json"),
-          act("folder", r.id, "Reports_Folder"), act("delete", r.id, "Reports_Delete", "btn stop")),
+          act("folder", r.id, "Reports_Folder"),
+          h("button", { class: "btn", "data-a": "send-site", onclick: (e) => send(r.id, e.currentTarget) }, t("Site_Report_Send")),
+          r.site ? h("button", { class: "btn quiet", onclick: () => call("site.open", { url: r.site }) }, t("Site_Report_Open")) : null,
+          act("delete", r.id, "Reports_Delete", "btn stop")),
         h("span", { class: "sum" }, r.summary));
     }));
   }

@@ -50,6 +50,8 @@ public sealed class AppConfig : IVersionedDocument
     public List<string>? GameModeServices { get; set; }
     /// <summary>What each service was before the game mode stopped it; not empty means the mode is on, and switching it off puts these back.</summary>
     public List<Mazesta.Core.Gaming.ServiceSnapshot>? GameModeSaved { get; set; }
+    /// <summary>The shop's key for its site (the Mazesta Connect plugin): with it this copy sends report summaries and benchmark runs. Empty: it only reads.</summary>
+    public string SiteKey { get; set; } = "";
 }
 public sealed class Migration0To1 : IMigration
 {

@@ -162,6 +162,9 @@ public static partial class BenchmarkPeers
 
     public static string Write(PeerTable table) => JsonSerializer.Serialize(table, Json);
     public static PeerTable? Read(string json) => JsonSerializer.Deserialize<PeerTable>(json, Json);
+    /// <summary>A run and the shop's marks as the run log writes them: what is sent to the shop's site, which builds its lists from them.</summary>
+    public static string WriteRun(BenchmarkRun run) => JsonSerializer.Serialize(run, Json);
+    public static string WriteMarks(IReadOnlyDictionary<string, BenchmarkMark> marks) => JsonSerializer.Serialize(marks, Json);
 
     [GeneratedRegex(@"\((R|TM|C)\)|®|™", RegexOptions.IgnoreCase)] private static partial Regex Marks();
     [GeneratedRegex(@"(\s+CPU)?\s+@\s+[\d.]+\s*GHz$|\s+\d+-Core\s+Processor$|\s+Processor$", RegexOptions.IgnoreCase)] private static partial Regex CpuTail();
@@ -208,6 +211,8 @@ public sealed class BenchmarkRunLog(string dataRoot)
     public IReadOnlyList<BenchmarkRun> Recent(string system, int count) { lock (_lock) return [.. Load().Where(r => r.System == system).OrderByDescending(r => r.At).Take(count)]; }
 
     public BenchmarkRun? Find(string id) { lock (_lock) return Load().FirstOrDefault(r => r.Id == id); }
+    /// <summary>Every run of this copy, oldest first, as logged (the marks are sent beside them, not applied).</summary>
+    public IReadOnlyList<BenchmarkRun> All() { lock (_lock) return [.. Load()]; }
 
     /// <summary>This copy's runs of one list as a list (the same rule as the published lists): its entries and its featured runs.</summary>
     public PeerTable? Table(string tableKey) => BenchmarkPeers.Aggregate(Of(tableKey), DateTimeOffset.UtcNow, Marks.All()).FirstOrDefault();
@@ -280,7 +285,7 @@ public sealed class BenchmarkMarks(string folder)
 
 /// <summary>The published comparison lists as downloaded into <c>Data/benchdb</c> (checked against the signed manifest before they land there).
 /// A list is read from disk the first time it is needed and kept; <see cref="Reload"/> forgets them after a new download.</summary>
-public sealed class PeerDatabase(string folder)
+public sealed class PeerDatabase(string folder, string? preferred = null)
 {
     private readonly Dictionary<string, PeerTable?> _tables = [];
     private readonly object _lock = new();
@@ -291,12 +296,19 @@ public sealed class PeerDatabase(string folder)
         lock (_lock)
         {
             if (_tables.TryGetValue(tableKey, out var t)) return t;
-            string file = Path.Combine(folder, BenchmarkPeers.FileName(tableKey));
-            try { t = File.Exists(file) ? BenchmarkPeers.Read(File.ReadAllText(file)) : null; }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { t = null; }
-            if (t is not null && t.Key != tableKey) t = null;   // a file that is not the list it is named for is not shown
+            // The site's own list (built from every uploaded run) where there is one, the signed update folder's otherwise.
+            t = (preferred is null ? null : Load(preferred, tableKey)) ?? Load(folder, tableKey);
             return _tables[tableKey] = t;
         }
+    }
+
+    private static PeerTable? Load(string dir, string tableKey)
+    {
+        string file = Path.Combine(dir, BenchmarkPeers.FileName(tableKey));
+        PeerTable? t;
+        try { t = File.Exists(file) ? BenchmarkPeers.Read(File.ReadAllText(file)) : null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { t = null; }
+        return t is not null && t.Key == tableKey && t.Entries is not null ? t : null;   // a file that is not the list it is named for is not shown
     }
 
     public void Reload() { lock (_lock) _tables.Clear(); }

@@ -8,7 +8,7 @@ public sealed partial class WebBridge
 {
     private PeerDatabase? _peerDb;
     /// <summary>The comparison lists downloaded from the shop's site (Data/benchdb); the update page reloads them after a download.</summary>
-    private PeerDatabase PeerDb => _peerDb ??= new PeerDatabase(_paths.BenchDbDir);
+    private PeerDatabase PeerDb => _peerDb ??= new PeerDatabase(_paths.BenchDbDir, _paths.BenchSiteDir);
     private event Action? PeersChanged;
     /// <summary>The technician says this machine is overclocked: the runs made from now on are logged so (and ranked apart). Not kept across
     /// restarts, so the next customer's machine is not labelled by mistake.</summary>

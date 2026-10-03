@@ -2667,4 +2667,32 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_M_EarlierRuns" xml:space="preserve"><value>Earlier runs</value></data>
   <data name="Check_M_MediaErrors" xml:space="preserve"><value>Uncorrected errors</value></data>
   <data name="Check_M_PowerOnHours" xml:space="preserve"><value>Hours powered on</value></data>
+  <data name="Site_Title" xml:space="preserve"><value>Shop site link</value></data>
+  <data name="Site_Sub" xml:space="preserve"><value>Report summaries and benchmark results go to the shop&apos;s site from here</value></data>
+  <data name="Site_Key" xml:space="preserve"><value>Site key</value></data>
+  <data name="Site_Key_Hint" xml:space="preserve"><value>From the site&apos;s dashboard: Mazesta Connect › Settings</value></data>
+  <data name="Site_Key_Save" xml:space="preserve"><value>Save and check</value></data>
+  <data name="Site_Check" xml:space="preserve"><value>Check the link</value></data>
+  <data name="Site_State_Ok" xml:space="preserve"><value>Connected (plugin {0}). On the site: {1} reports, {2} benchmark runs.</value></data>
+  <data name="Site_State_Pending" xml:space="preserve"><value>{0} runs wait for review on the site.</value></data>
+  <data name="Site_State_NoKey" xml:space="preserve"><value>The site answers (plugin {0}), but this copy has no key: it reads the comparison lists and sends nothing.</value></data>
+  <data name="Site_State_Wrong" xml:space="preserve"><value>The site does not accept this key.</value></data>
+  <data name="Site_State_Unknown" xml:space="preserve"><value>Not checked yet.</value></data>
+  <data name="Site_Err_Key" xml:space="preserve"><value>The site does not accept this copy&apos;s key. Check it in the app-update page.</value></data>
+  <data name="Site_Err_NoPlugin" xml:space="preserve"><value>The site has no Mazesta Connect plugin (or it is switched off).</value></data>
+  <data name="Site_Err_Site" xml:space="preserve"><value>The site refused: {0}</value></data>
+  <data name="Site_Err_Offline" xml:space="preserve"><value>The site could not be reached: {0}</value></data>
+  <data name="Site_Err_NoKey" xml:space="preserve"><value>This copy has no site key. Enter it in App update › Shop site link.</value></data>
+  <data name="Site_Err_NoRuns" xml:space="preserve"><value>The benchmark page has not been opened yet.</value></data>
+  <data name="Site_Report_Send" xml:space="preserve"><value>Send to site</value></data>
+  <data name="Site_Report_Sent" xml:space="preserve"><value>Sent. Colleagues can print it from the site&apos;s dashboard (Mazesta Connect › Reports).</value></data>
+  <data name="Site_Report_Updated" xml:space="preserve"><value>Sent again; the site&apos;s copy was replaced.</value></data>
+  <data name="Site_Report_Open" xml:space="preserve"><value>On the site</value></data>
+  <data name="Site_Report_Title" xml:space="preserve"><value>Test report summary</value></data>
+  <data name="Site_Runs_Send" xml:space="preserve"><value>Send results to site</value></data>
+  <data name="Site_Runs_Hint" xml:space="preserve"><value>Sends this copy&apos;s logged runs that the site does not have yet; the comparison lists are then built on the site.</value></data>
+  <data name="Site_Runs_Done" xml:space="preserve"><value>{0} new runs sent; {1} were already there, {2} refused.</value></data>
+  <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} runs sent. They wait for the shop&apos;s review before they enter the lists.</value></data>
+  <data name="Site_Runs_Nothing" xml:space="preserve"><value>Nothing new to send.</value></data>
+  <data name="Site_Note" xml:space="preserve"><value>Nothing is sent on its own. A run carries the computer&apos;s name and its parts&apos; models; a report&apos;s summary carries the service number, the parts and the test results.</value></data>
 </root>

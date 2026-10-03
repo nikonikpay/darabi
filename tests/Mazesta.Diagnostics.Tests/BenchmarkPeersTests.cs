@@ -145,4 +145,28 @@ public class BenchmarkPeersTests : IDisposable
         Assert.Equal(100, new BenchmarkRecords(_dir).Best("PC | CPU | GPU", "bench.cpu.multi")!.Value);
         Assert.Null(r.Best("PC | ", "bench.cpu.multi"));
     }
+    [Fact] public void The_site_s_list_is_read_before_the_signed_folder_s_and_the_signed_one_where_the_site_has_none()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "mz-peers-" + Guid.NewGuid().ToString("N")), signed = Path.Combine(root, "benchdb"), site = Path.Combine(root, "benchdb-site");
+        try
+        {
+            Directory.CreateDirectory(signed); Directory.CreateDirectory(site);
+            var cpu = Assert.Single(BenchmarkPeers.Aggregate([Run("Signed", "s1", 100)], T0)); var disk = Assert.Single(BenchmarkPeers.Aggregate([Run("Drive", "s1", 5, "bench.storage")], T0));
+            File.WriteAllText(Path.Combine(signed, BenchmarkPeers.FileName(cpu.Key)), BenchmarkPeers.Write(cpu)); File.WriteAllText(Path.Combine(signed, BenchmarkPeers.FileName(disk.Key)), BenchmarkPeers.Write(disk));
+            File.WriteAllText(Path.Combine(site, BenchmarkPeers.FileName(cpu.Key)), BenchmarkPeers.Write(Assert.Single(BenchmarkPeers.Aggregate([Run("Site", "s1", 100), Run("Other", "s2", 90)], T0))));
+            var db = new PeerDatabase(signed, site);
+            Assert.Equal(["Site", "Other"], db.Table(cpu.Key)!.Entries.Select(e => e.Part));
+            Assert.Equal("Drive", Assert.Single(db.Table(disk.Key)!.Entries).Part);
+            Assert.Equal("Signed", Assert.Single(new PeerDatabase(signed).Table(cpu.Key)!.Entries).Part);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
+    [Fact] public void A_run_is_sent_to_the_site_as_the_log_writes_it()
+    {
+        var run = Run("CPU A", "s1", 123.5);
+        var back = System.Text.Json.JsonSerializer.Deserialize<BenchmarkRun>(BenchmarkPeers.WriteRun(run), new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase })!;
+        Assert.Equal((run.Id, run.Part, run.System, run.Value, run.Table), (back.Id, back.Part, back.System, back.Value, back.Table));
+        Assert.Contains("\"benchmark\":\"bench.cpu.multi\"", BenchmarkPeers.WriteRun(run));
+    }
 }

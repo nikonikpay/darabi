@@ -20,7 +20,10 @@ public sealed class AppUpdater
     internal const string PublicKey = UpdateKey.Public;
     public const string ApplyArgument = "--apply-update", UpdatedArgument = "--updated";
 
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(10), DefaultRequestHeaders = { { "User-Agent", "MazestaTest/1.0 (+https://www.dfmrendering.com)" } } };
+    /// <summary>The shop's site plugin (Mazesta Connect): what the app sends to the site, and the comparison lists built there.</summary>
+    public static readonly Uri Api = new("https://www.dfmrendering.com/wp-json/mazesta/v1/");
+    // An hour: the release is one self-contained package of some hundred megabytes, and a slow line is not a failure.
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(60), DefaultRequestHeaders = { { "User-Agent", "MazestaTest/1.0 (+https://www.dfmrendering.com)" } } };
     private static AppUpdater? s_instance;
     private readonly AppPaths _paths; private readonly ILogger _log; private readonly UpdateClient _client;
     private readonly SemaphoreSlim _busy = new(1, 1);
@@ -48,7 +51,29 @@ public sealed class AppUpdater
     /// <summary>New comparison lists are on disk.</summary>
     public event Action? DataChanged;
 
-    public int DataLists => DataSync.Count(_paths.BenchDbDir);
+    /// <summary>The lists the comparisons read: the site's own where it has any, the signed update folder's otherwise.</summary>
+    public int DataLists => DataSync.Count(_paths.BenchSiteDir) is > 0 and var site ? site : DataSync.Count(_paths.BenchDbDir);
+    public SiteClient Site { get; } = new(Api, Http);
+
+    /// <summary>The site's comparison lists, fetched where they changed. A site without the plugin (or out of reach) is no error: the lists on
+    /// disk stay. True when something changed on disk.</summary>
+    public async Task<bool> SyncSiteListsAsync()
+    {
+        try
+        {
+            var r = await Site.SyncListsAsync(_paths.BenchSiteDir, CancellationToken.None).ConfigureAwait(false);
+            DataSyncedAt = DateTimeOffset.Now;
+            if (r.Downloaded + r.Removed == 0) return false;
+            _log.LogInformation("Site comparison lists: {Down} downloaded, {Removed} removed, {Total} in all", r.Downloaded, r.Removed, r.Total);
+            DataDownloaded += r.Downloaded; DataChanged?.Invoke();
+            return true;
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException or SiteException or InvalidDataException)
+        {
+            _log.LogInformation("Site comparison lists not fetched: {Message}", e.Message);
+            return false;
+        }
+    }
     private string Staging(string version) => Path.Combine(_paths.UpdateDir, version, "app");
 
     /// <summary>Once per run of the app, a while after start-up: new lists are fetched, a new release is only reported. Nothing is said when offline.</summary>
@@ -74,11 +99,13 @@ public sealed class AppUpdater
         {
             if (State is UpdateState.Ready) return;   // unpacked and waiting for Install
             Set(UpdateState.Checking);
+            DataDownloaded = 0;
+            await SyncSiteListsAsync().ConfigureAwait(false);   // first, and on its own: it does not depend on a release being published
             var m = await _client.CheckAsync(CancellationToken.None).ConfigureAwait(false);
             Manifest = m; CheckedAt = DateTimeOffset.Now;
             _log.LogInformation("Update check: the site offers {Version} (this is {Current}), {Lists} data files", m.App?.Version ?? "no release", Current, m.Data.Count);
             var synced = await DataSync.SyncAsync(_client, m, _paths.BenchDbDir, CancellationToken.None).ConfigureAwait(false);
-            DataSyncedAt = DateTimeOffset.Now; DataDownloaded = synced.Downloaded;
+            DataSyncedAt = DateTimeOffset.Now; DataDownloaded += synced.Downloaded;
             if (synced.Downloaded + synced.Removed > 0) { _log.LogInformation("Comparison lists: {Down} downloaded, {Removed} removed, {Total} in all", synced.Downloaded, synced.Removed, synced.Total); DataChanged?.Invoke(); }
             Set(m.IsNewer(Current) ? UpdateState.Available : UpdateState.UpToDate);
         }

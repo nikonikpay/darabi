@@ -2667,4 +2667,32 @@
   <data name="Check_M_EarlierRuns" xml:space="preserve"><value>تعداد اجراهای قبلی</value></data>
   <data name="Check_M_MediaErrors" xml:space="preserve"><value>خطاهای اصلاح‌نشده</value></data>
   <data name="Check_M_PowerOnHours" xml:space="preserve"><value>ساعت کارکرد</value></data>
+  <data name="Site_Title" xml:space="preserve"><value>اتصال به سایت فروشگاه</value></data>
+  <data name="Site_Sub" xml:space="preserve"><value>خلاصه گزارش‌ها و نتایج بنچمارک از اینجا به سایت می‌روند</value></data>
+  <data name="Site_Key" xml:space="preserve"><value>کلید سایت</value></data>
+  <data name="Site_Key_Hint" xml:space="preserve"><value>از پیشخوان سایت: Mazesta Connect › تنظیمات و انتشار</value></data>
+  <data name="Site_Key_Save" xml:space="preserve"><value>ذخیره و بررسی</value></data>
+  <data name="Site_Check" xml:space="preserve"><value>بررسی اتصال</value></data>
+  <data name="Site_State_Ok" xml:space="preserve"><value>وصل است (افزونه {0}). روی سایت: {1} گزارش و {2} اجرای بنچمارک.</value></data>
+  <data name="Site_State_Pending" xml:space="preserve"><value>{0} اجرا روی سایت در انتظار بررسی است.</value></data>
+  <data name="Site_State_NoKey" xml:space="preserve"><value>سایت جواب می‌دهد (افزونه {0})، ولی این نسخه کلید ندارد: فهرست‌های مقایسه را می‌خواند و چیزی نمی‌فرستد.</value></data>
+  <data name="Site_State_Wrong" xml:space="preserve"><value>سایت این کلید را نمی‌پذیرد.</value></data>
+  <data name="Site_State_Unknown" xml:space="preserve"><value>هنوز بررسی نشده است.</value></data>
+  <data name="Site_Err_Key" xml:space="preserve"><value>سایت کلید این نسخه را نمی‌پذیرد. آن را در صفحه به‌روزرسانی برنامه بررسی کنید.</value></data>
+  <data name="Site_Err_NoPlugin" xml:space="preserve"><value>افزونه Mazesta Connect روی سایت نصب نیست (یا خاموش است).</value></data>
+  <data name="Site_Err_Site" xml:space="preserve"><value>سایت نپذیرفت: {0}</value></data>
+  <data name="Site_Err_Offline" xml:space="preserve"><value>به سایت دسترسی نبود: {0}</value></data>
+  <data name="Site_Err_NoKey" xml:space="preserve"><value>این نسخه کلید سایت ندارد. آن را در «به‌روزرسانی برنامه › اتصال به سایت فروشگاه» وارد کنید.</value></data>
+  <data name="Site_Err_NoRuns" xml:space="preserve"><value>صفحه بنچمارک هنوز باز نشده است.</value></data>
+  <data name="Site_Report_Send" xml:space="preserve"><value>ارسال به سایت</value></data>
+  <data name="Site_Report_Sent" xml:space="preserve"><value>ارسال شد. همکاران از پیشخوان سایت (Mazesta Connect › گزارش‌ها) چاپش می‌کنند.</value></data>
+  <data name="Site_Report_Updated" xml:space="preserve"><value>دوباره ارسال شد؛ نسخه روی سایت جایگزین شد.</value></data>
+  <data name="Site_Report_Open" xml:space="preserve"><value>در سایت</value></data>
+  <data name="Site_Report_Title" xml:space="preserve"><value>خلاصه گزارش آزمون</value></data>
+  <data name="Site_Runs_Send" xml:space="preserve"><value>ارسال نتایج به سایت</value></data>
+  <data name="Site_Runs_Hint" xml:space="preserve"><value>اجراهای ثبت‌شده این نسخه را که سایت هنوز ندارد می‌فرستد؛ فهرست‌های مقایسه بعد روی سایت ساخته می‌شوند.</value></data>
+  <data name="Site_Runs_Done" xml:space="preserve"><value>{0} اجرای تازه ارسال شد؛ {1} از قبل بود و {2} پذیرفته نشد.</value></data>
+  <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} اجرا ارسال شد. تا فروشگاه بررسی نکند وارد فهرست‌ها نمی‌شوند.</value></data>
+  <data name="Site_Runs_Nothing" xml:space="preserve"><value>چیز تازه‌ای برای ارسال نیست.</value></data>
+  <data name="Site_Note" xml:space="preserve"><value>هیچ چیز خودبه‌خود فرستاده نمی‌شود. هر اجرا نام کامپیوتر و مدل قطعه‌هایش را دارد؛ خلاصه گزارش شماره سرویس، قطعه‌ها و نتیجه آزمون‌ها را.</value></data>
 </root>

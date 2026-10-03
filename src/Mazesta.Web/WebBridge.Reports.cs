@@ -16,7 +16,7 @@ public sealed partial class WebBridge
             items = reports.Items.Select(r => new
             {
                 id = r.Report.Id, title = r.Title, badge = r.Badge, verdict = r.VerdictText, summary = r.Summary, selected = r.IsSelected,
-                kind = r.Report.Kind.ToString(), service = (string?)null, created = r.Report.CreatedAt.ToUnixTimeMilliseconds(),
+                kind = r.Report.Kind.ToString(), service = (string?)null, site = SiteUrlOf(r.Report.Folder), created = r.Report.CreatedAt.ToUnixTimeMilliseconds(),
             }),
         };
         Mirror("reports", reports, State, reports.Items);

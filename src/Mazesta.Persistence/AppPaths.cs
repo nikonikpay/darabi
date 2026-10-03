@@ -16,6 +16,8 @@ public sealed class AppPaths
     public string UpdateDir => Path.Combine(CacheDir, "update");
     /// <summary>The benchmark comparison lists downloaded from the shop's site.</summary>
     public string BenchDbDir => Path.Combine(DataRoot, "benchdb");
+    /// <summary>The comparison lists read from the site's plugin (built there from the uploaded runs), beside the signed ones of the update folder.</summary>
+    public string BenchSiteDir => Path.Combine(DataRoot, "benchdb-site");
     public string ConfigFile => Path.Combine(ConfigDir, "appconfig.json");
     public static AppPaths Create(string exeDirectory) => new() { DataRoot = Path.Combine(exeDirectory, DataFolderName) };
     public static AppPaths Detect() => Create(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));

@@ -15,6 +15,24 @@ export function mount(el) {
   const lists = h("p", { class: "au-status" }), published = h("p", { class: "caption" });
   const sync = h("button", { class: "btn", onclick: () => run("upd.check") }, icon("refresh"), t("AppUpd_Data_Sync"));
   const site = h("span", { class: "lat caption" });
+  // The link to the shop's site: the key this copy sends with, and what the site said to it.
+  const keyField = h("input", { class: "field lat", type: "password", autocomplete: "off", spellcheck: false, style: { minWidth: "260px" }, "aria-label": t("Site_Key"), placeholder: "mz_…" });
+  const siteState = h("p", { class: "au-status" });
+  const saveKey = h("button", { class: "btn primary", onclick: () => link("site.key", { value: keyField.value }) }, t("Site_Key_Save"));
+  const checkSite = h("button", { class: "btn", onclick: () => link("site.check") }, icon("refresh"), t("Site_Check"));
+  async function link(method, args) {
+    try { showSite(await call(method, args)); keyField.value = ""; } catch (e) { toast(String(e.message || e), "fail"); }
+  }
+  function showSite(s) {
+    if (!s) return;
+    saveKey.disabled = checkSite.disabled = s.busy;
+    keyField.placeholder = s.hasKey ? "••••••••" : "mz_…";
+    const st = s.status;
+    siteState.classList.toggle("fail", !!s.error || st?.key === "wrong"); siteState.classList.toggle("go", st?.key === "ok");
+    siteState.textContent = s.error ? s.error : !st ? t("Site_State_Unknown")
+      : st.key === "ok" ? [t("Site_State_Ok", st.version, fa(st.reports ?? 0), fa(st.runs ?? 0)), st.pending ? t("Site_State_Pending", fa(st.pending)) : ""].filter(Boolean).join(" ")
+      : st.key === "wrong" ? t("Site_State_Wrong") : t("Site_State_NoKey", st.version);
+  }
   let last = null;
 
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_AppUpdate")), h("p", { class: "page-lede" }, t("AppUpd_Lede")))),
@@ -23,7 +41,10 @@ export function mount(el) {
         body: [status, bar, notes, h("div", { class: "btn-row" }, check, download, install), checked] }),
       box({ kind: "Gpu", ico: "trophy", title: t("AppUpd_Data_Title"), sub: t("AppUpd_Data_Sub"), i: 1,
         body: [lists, published, h("p", { class: "note" }, t("AppUpd_Data_Note")), h("div", { class: "btn-row" }, sync)] }),
-      box({ kind: "Network", ico: "net", title: t("AppUpd_Site"), i: 2, body: [site, h("p", { class: "note" }, t("AppUpd_Safe"))] })));
+      box({ kind: "Network", ico: "net", title: t("AppUpd_Site"), i: 2, body: [site, h("p", { class: "note" }, t("AppUpd_Safe"))] }),
+      box({ kind: "Storage", ico: "net", title: t("Site_Title"), sub: t("Site_Sub"), i: 3, a: "site",
+        body: [siteState, h("label", { class: "caption", style: { display: "block" } }, t("Site_Key"), " · ", t("Site_Key_Hint")),
+          h("div", { class: "btn-row" }, keyField, saveKey, checkSite), h("p", { class: "note" }, t("Site_Note"))] })));
 
   async function run(method) {
     try { render(await call(method)); } catch (e) { toast(String(e.message || e), "fail"); }
@@ -53,5 +74,7 @@ export function mount(el) {
     site.textContent = s.site;
   }
   call("upd.state").then(render);
-  return on("upd", render);
+  call("site.state").then(showSite).then(() => call("site.check")).then(showSite).catch(() => {});
+  const offSite = on("site", showSite), offUpd = on("upd", render);
+  return () => { offSite(); offUpd(); };
 }
