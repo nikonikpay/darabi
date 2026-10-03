@@ -22,5 +22,11 @@ Thumbs.db
 .DS_Store
 # SDD scratch workspace
 .superpowers/
-# knowledge graph (local)
-graphify-out/
+# knowledge graph: the graph and its semantic cache are shared through git; machine-local files stay out
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_*.json
+!graphify-out/.graphify_labels.json
+graphify-out/.needs_update
+graphify-out/cache/ast/
+graphify-out/cache/stat-index.json
