@@ -3,7 +3,7 @@ namespace Mazesta.Core.Health.Checkup;
 
 /// <summary>
 /// The memory as it is set up, from Windows' module list and the modules' own SPD chips: whether it runs at the speed the modules are rated for
-/// (DDR4 only - its profiles are the ones decoded; a DDR5 module's rating is not read yet, and is said so rather than guessed), whether it runs in
+/// (DDR4, and DDR5 with XMP - the profiles that are decoded; a DDR5 kit without XMP is said to be unread rather than guessed), whether it runs in
 /// one channel, and whether the modules are a mix. Windows' own "speed" field is not used for a verdict: which speed a board puts there differs.
 /// </summary>
 public static partial class MemoryCheck
@@ -18,7 +18,8 @@ public static partial class MemoryCheck
         void Add(FindingCode code, FindingLevel level, IReadOnlyList<Measure> m) => found.Add(new(code, level, HardwareKind.Memory, m));
         int? running = modules.Select(m => m.ConfiguredSpeedMts).Where(v => v > 0).Min();
 
-        var ddr4 = spd.Where(s => s.MemoryType == "DDR4" && s.Jedec.Count > 0).ToList();
+        // A DDR5 kit is judged only when its XMP profiles were read: one rated by AMD EXPO alone (not decoded) would otherwise pass as "at its rating".
+        var ddr4 = spd.Where(s => s.Jedec.Count > 0 && (s.MemoryType == "DDR4" || (s.MemoryType == "DDR5" && s.Xmp.Count > 0))).ToList();
         if (running is { } now && ddr4.Count > 0)
         {
             // A kit runs together, so the rating that counts is the slowest module's best.
