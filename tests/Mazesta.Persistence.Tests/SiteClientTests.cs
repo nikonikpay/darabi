@@ -79,6 +79,26 @@ public class SiteClientTests
         Assert.Equal("پردازنده، همهٔ هسته‌ها", sent["names"]!["bench.cpu.multi"]!.GetValue<string>());
     }
 
+    [Fact] public void Only_the_site_s_own_key_counts_as_a_key()
+    {
+        Assert.True(SiteClient.IsKey("mz_" + new string('a', 48)));
+        Assert.False(SiteClient.IsKey("mz_" + new string('a', 47))); Assert.False(SiteClient.IsKey("mz_" + new string('G', 48))); Assert.False(SiteClient.IsKey(null));
+        Assert.False(SiteClient.IsKey("MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg"));   // the start of a PKCS#8 private key, as pasted once by mistake
+    }
+
+    [Fact] public async Task Pairing_sends_the_secret_s_hash_first_and_the_secret_only_to_claim_the_key()
+    {
+        string secret = new('5', 64), id = Sha(secret);
+        var (client, site) = Client((req, _) => req.RequestUri!.AbsolutePath.EndsWith("pair/start", StringComparison.Ordinal)
+            ? (HttpStatusCode.OK, $$"""{"url":"https://shop.example/wp-admin/admin.php?page=mazesta-connect&pair={{id}}","code":"{{id[..6].ToUpperInvariant()}}","seconds":600}""")
+            : (HttpStatusCode.OK, """{"state":"waiting"}"""));
+        var start = await client.PairStartAsync(secret, "SHOP-PC", CancellationToken.None);
+        Assert.Equal((id[..6].ToUpperInvariant(), 600), (start.Code, start.Seconds));
+        Assert.Equal(id, JsonNode.Parse(site.Seen[0].Body)!["id"]!.GetValue<string>()); Assert.DoesNotContain(secret, site.Seen[0].Body);
+        var claim = await client.PairClaimAsync(secret, CancellationToken.None);
+        Assert.Equal(("waiting", (string?)null), (claim.State, claim.Key)); Assert.Contains(secret, site.Seen[1].Body);
+    }
+
     [Fact] public async Task The_lists_are_fetched_where_they_changed_and_a_damaged_one_is_refused()
     {
         string list = """{"key":"bench.cpu.multi@1","entries":[]}""", dir = Path.Combine(Path.GetTempPath(), "mz-site-" + Guid.NewGuid().ToString("N"));

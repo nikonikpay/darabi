@@ -2787,4 +2787,11 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Site_Share_Hint" xml:space="preserve"><value>Sends this computer's newest result of each benchmark to the site and gives you a link to pass on</value></data>
   <data name="Site_Share_None" xml:space="preserve"><value>There is no benchmark result to share yet; run a benchmark first.</value></data>
   <data name="Site_Share_Send" xml:space="preserve"><value>Share my latest results</value></data>
+  <data name="Site_Err_NotAKey" xml:space="preserve"><value>That is not the site's key (it begins with mz_). Nothing was saved or sent. Copy the key from Mazesta Connect &gt; settings on the site, or use «Connect by signing in to the site».</value></data>
+  <data name="Site_Pair_Cancel" xml:space="preserve"><value>Cancel connecting</value></data>
+  <data name="Site_Pair_Expired" xml:space="preserve"><value>The connection was not approved in time, or was refused. Try again.</value></data>
+  <data name="Site_Pair_Note" xml:space="preserve"><value>No key to type: a manager of the site approves this copy in the browser and the key comes by itself. The request is good for ten minutes.</value></data>
+  <data name="Site_Pair_Start" xml:space="preserve"><value>Connect by signing in to the site</value></data>
+  <data name="Site_Pair_Waiting" xml:space="preserve"><value>The site's dashboard is open in your browser. Sign in, check that it shows this same code, and approve:</value></data>
+  <data name="Soft_Note_Unity" xml:space="preserve"><value>Unity publishes one set of requirements for the Editor and no separate recommended tier: 8 GB of memory (its own "recommended minimum"), an x64 processor with SSE2 and a DirectX 10, 11, 12 or Vulkan graphics card with its maker's supported driver. For builds it advises a drive with a high IOPS rating (an SSD). What a project needs beyond that depends on the project.</value></data>
 </root>

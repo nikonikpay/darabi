@@ -17,6 +17,9 @@ public sealed partial class WebBridge
         var reports = _sp.GetRequiredService<ReportService>();
         string app = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
         SiteStatus? status = null; string? error = null; bool busy = false; DateTimeOffset? checkedAt = null;
+        string? pairCode = null; CancellationTokenSource? pairing = null;
+        // A value in the key's place that is not the site's key is dropped, not kept on disk and never sent.
+        if (_config.SiteKey.Length > 0 && !SiteClient.IsKey(_config.SiteKey)) { _config.SiteKey = ""; _store.Save(_config); _log.LogWarning("The stored site key was not a site key; it was removed"); }
         string sentFile = Path.Combine(_paths.DataRoot, "benchmarks", "site-sent.json");
 
         HashSet<string> Sent()
@@ -36,7 +39,7 @@ public sealed partial class WebBridge
 
         object State() => new
         {
-            hasKey = _config.SiteKey.Length > 0, busy, error, api = AppUpdater.Api.Host,
+            hasKey = _config.SiteKey.Length > 0, busy, error, api = AppUpdater.Api.Host, pairCode,
             checkedAt = checkedAt?.ToString("yyyy/MM/dd HH:mm", Loc.Culture),
             status = status is null ? null : new { version = status.Version, key = status.Key, open = status.OpenUploads, sharing = status.Sharing, reports = status.Reports, runs = status.Runs, pending = status.Pending },
             unsent = Unsent(), shareLink = ShareLink(),
@@ -61,8 +64,49 @@ public sealed partial class WebBridge
         MethodAsync("site.check", async _ => { await Check(); return State(); });
         MethodAsync("site.key", async p =>
         {
-            _config.SiteKey = Str(p, "value").Trim(); _store.Save(_config);
+            string typed = Str(p, "value").Trim();
+            // Only the site's own key is kept or sent: another secret pasted here by mistake (it happened with the update-signing key) goes nowhere.
+            if (typed.Length > 0 && !SiteClient.IsKey(typed)) { error = Loc.Get("Site_Err_NotAKey"); return State(); }
+            _config.SiteKey = typed; _store.Save(_config);
             await Check();
+            return State();
+        });
+
+        // Connecting without typing the key: the site's dashboard opens in the browser, a manager signed in there approves this copy (both sides
+        // show the same short code), and the key comes back to the app by itself.
+        async Task Pair(string secret, int seconds, CancellationToken ct)
+        {
+            try
+            {
+                var until = DateTimeOffset.UtcNow.AddSeconds(Math.Clamp(seconds, 60, 900));
+                while (DateTimeOffset.UtcNow < until)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), ct).ConfigureAwait(true);
+                    var claim = await site.PairClaimAsync(secret, ct).ConfigureAwait(true);
+                    if (claim.State == "waiting") continue;
+                    if (claim.State == "ok" && SiteClient.IsKey(claim.Key)) { _config.SiteKey = claim.Key!; _store.Save(_config); pairCode = null; pairing = null; await Check(); return; }
+                    break;
+                }
+                error = Loc.Get("Site_Pair_Expired");
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception e) when (Expected(e) || e is JsonException) { error = Say(e); }
+            pairCode = null; pairing = null; PushSoon("site", State);
+        }
+        MethodAsync("site.pair", async p =>
+        {
+            pairing?.Cancel(); pairing = null; pairCode = null; error = null;
+            if (Str(p, "cmd") == "cancel") return State();
+            try
+            {
+                string secret = Convert.ToHexStringLower(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+                var start = await site.PairStartAsync(secret, Environment.MachineName, CancellationToken.None).ConfigureAwait(true);
+                if (!ShopFeed.IsShopLink(start.Url)) { error = Loc.Format("Site_Err_Site", "link"); return State(); }
+                pairCode = start.Code; pairing = new CancellationTokenSource();
+                Open(start.Url);
+                _ = Pair(secret, start.Seconds, pairing.Token);
+            }
+            catch (Exception e) when (Expected(e) || e is JsonException) { error = Say(e); }
             return State();
         });
 

@@ -42,6 +42,11 @@ export function benchList(component = null) {
     } catch (e) { toast(String(e.message || e), "fail"); }
     share.disabled = false;
   } }, icon("popout"), t("Site_Share_Send"));
+  // Sending every logged run to the lists is the shop's (it needs the site's key); a user's way is the share button beside it.
+  upload.hidden = true;
+  const keyed = (s) => { if (s) upload.hidden = !s.hasKey; };
+  call("site.state").then(keyed).catch(() => {});
+  const offSite = on("site", keyed);
   wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), share, upload,
     h("label", { class: "oc-toggle", title: t("Bench_OverclockedHint") }, oc, t("Bench_Overclocked")),
     h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
@@ -111,7 +116,8 @@ export function benchList(component = null) {
     }
   }
   call("bench.state").then(update);
-  return { el: wrap, off: on("bench", update) };
+  const offBench = on("bench", update);
+  return { el: wrap, off: () => { offBench(); offSite(); } };
 }
 
 // The record line: the best result kept on this system; after a run, the run against it. A better run is saved, a lower one is shown and

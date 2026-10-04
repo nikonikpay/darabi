@@ -2787,4 +2787,11 @@
   <data name="Site_Share_Hint" xml:space="preserve"><value>آخرین نتیجهٔ هر بنچمارک این سیستم را به سایت می‌فرستد و پیوندی برای فرستادن به دیگران می‌دهد</value></data>
   <data name="Site_Share_None" xml:space="preserve"><value>هنوز نتیجهٔ بنچمارکی برای اشتراک‌گذاری نیست؛ اول یک بنچمارک اجرا کنید.</value></data>
   <data name="Site_Share_Send" xml:space="preserve"><value>اشتراک‌گذاری آخرین نتیجه</value></data>
+  <data name="Site_Err_NotAKey" xml:space="preserve"><value>این کلید سایت نیست (کلید سایت با mz_ شروع می‌شود). چیزی ذخیره یا فرستاده نشد. کلید را از «Mazesta Connect › تنظیمات» در سایت کپی کنید، یا «اتصال با ورود به سایت» را بزنید.</value></data>
+  <data name="Site_Pair_Cancel" xml:space="preserve"><value>لغو اتصال</value></data>
+  <data name="Site_Pair_Expired" xml:space="preserve"><value>اتصال در مهلتش تأیید نشد یا رد شد. دوباره امتحان کنید.</value></data>
+  <data name="Site_Pair_Note" xml:space="preserve"><value>کلیدی تایپ نمی‌شود: مدیر سایت در مرورگر این نسخه را تأیید می‌کند و کلید خودش می‌آید. درخواست ده دقیقه اعتبار دارد.</value></data>
+  <data name="Site_Pair_Start" xml:space="preserve"><value>اتصال با ورود به سایت</value></data>
+  <data name="Site_Pair_Waiting" xml:space="preserve"><value>پیشخوان سایت در مرورگر باز شد. وارد سایت شوید، ببینید همین کد را نشان می‌دهد و تأیید کنید:</value></data>
+  <data name="Soft_Note_Unity" xml:space="preserve"><value>Unity برای ویرایشگر فقط یک سطح نیازمندی اعلام کرده و سطح «پیشنهادی» جدا ندارد: ۸ گیگابایت رم (به گفتهٔ خودش «حداقلِ توصیه‌شده»)، پردازندهٔ x64 با SSE2 و کارت گرافیک DirectX 10، 11، 12 یا Vulkan با درایور رسمی سازنده. برای بیلد گرفتن، درایوی با IOPS بالا (SSD) را توصیه می‌کند. نیاز بیشتر از این به خود پروژه بستگی دارد.</value></data>
 </root>

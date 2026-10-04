@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.1.1
+ * Version: 1.2.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) { exit; }
 /**
  * Everything the desktop app says to the site goes through this plugin's REST routes (namespace mazesta/v1):
  *   GET  status                 is the plugin there, and is this key the shop's
+ *   POST pair/start, pair/claim connects a copy of the app without typing the key: a manager signed in to the site approves the request
  *   POST reports                a report's one-page summary (key)          -> kept, listed and printed in the dashboard
  *   POST bench/runs             benchmark runs (key; or without one into the review queue when the shop allows it)
  *   POST share                  a user's latest benchmark results (no key) -> a page of their own, with a link to pass on
@@ -27,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.1.1';
+    const VERSION = '1.2.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_RUNS = 500;
@@ -39,7 +40,7 @@ final class Mazesta_Connect
         add_action('rest_api_init', array(__CLASS__, 'routes'));
         add_action('admin_menu', array(__CLASS__, 'menu'));
         add_action('init', array(__CLASS__, 'public_pages'));
-        foreach (array('report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'share_delete', 'settings', 'rebuild') as $a) {
+        foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'share_delete', 'settings', 'rebuild') as $a) {
             add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
         }
     }
@@ -152,6 +153,8 @@ final class Mazesta_Connect
         register_rest_route(self::NS, '/reports', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_report'), 'permission_callback' => array(__CLASS__, 'need_key')));
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/pair/start', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_start'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/pair/claim', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_claim'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/bench/index', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_index'), 'permission_callback' => $open));
         // No @ in this pattern: WordPress wraps a route in @…@ to match it, and one inside ends the pattern early.
         register_rest_route(self::NS, '/benchdb/(?P<file>[A-Za-z0-9][A-Za-z0-9._=-]*\.json)', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_list'), 'permission_callback' => $open));
@@ -197,6 +200,90 @@ final class Mazesta_Connect
             $out['reports'] = count(self::read('reports')); $out['runs'] = $approved; $out['pending'] = $pending;
         }
         return self::fresh($out);
+    }
+
+    /* ---------- connecting a copy of the app without typing the key ---------- */
+
+    const PAIR_SECONDS = 600;
+
+    /** The requests still open (younger than ten minutes); older ones are dropped. */
+    private static function pairs()
+    {
+        $now = time(); $out = array();
+        foreach (self::read('pairs') as $id => $p) { if (isset($p['created']) && $now - (int) $p['created'] < self::PAIR_SECONDS) { $out[$id] = $p; } }
+        return $out;
+    }
+
+    /**
+     * A copy of the app asks to be connected. It keeps a random secret to itself and sends only the secret's SHA-256 ($id); the answer is the
+     * dashboard page where someone signed in to the site with the right to manage the shop sees the request (the computer's name and a short
+     * code the app shows too) and approves it. Nothing is given out here.
+     */
+    public static function rest_pair_start($req)
+    {
+        if (!self::allowed('pair', 10)) { return new WP_Error('mazesta_busy', 'Too many requests from this address; try again in an hour.', array('status' => 429)); }
+        $p = $req->get_json_params();
+        $id = isset($p['id']) && is_string($p['id']) ? strtolower($p['id']) : '';
+        if (!preg_match('/^[0-9a-f]{64}$/', $id)) { return new WP_Error('mazesta_pair', 'Not a valid request.', array('status' => 400)); }
+        $name = self::text(isset($p['name']) ? $p['name'] : '', 60);
+        $ok = self::locked(function () use ($id, $name) {
+            $all = self::pairs();
+            if (count($all) >= 50 && !isset($all[$id])) { return false; }
+            $all[$id] = array('created' => time(), 'name' => $name, 'approved' => false);
+            return self::write('pairs', $all);
+        });
+        if (!$ok) { return new WP_Error('mazesta_busy', 'Too many open requests; try again in a few minutes.', array('status' => 429)); }
+        return self::fresh(array('url' => admin_url('admin.php?page=mazesta-connect&pair=' . $id), 'code' => strtoupper(substr($id, 0, 6)), 'seconds' => self::PAIR_SECONDS));
+    }
+
+    /** The app asks whether its request was approved, proving it is the one that asked by giving the secret. The key is handed over once; the request is then gone. */
+    public static function rest_pair_claim($req)
+    {
+        if (!self::allowed('claim', 600)) { return new WP_Error('mazesta_busy', 'Too many requests from this address.', array('status' => 429)); }
+        $p = $req->get_json_params();
+        $secret = isset($p['secret']) && is_string($p['secret']) ? $p['secret'] : '';
+        if (!preg_match('/^[0-9a-f]{64}$/', $secret)) { return new WP_Error('mazesta_pair', 'Not a valid request.', array('status' => 400)); }
+        $id = hash('sha256', $secret);
+        $state = self::locked(function () use ($id) {
+            $all = self::pairs();
+            if (!isset($all[$id])) { return 'gone'; }
+            if (empty($all[$id]['approved'])) { return 'waiting'; }
+            unset($all[$id]); self::write('pairs', $all);
+            return 'ok';
+        });
+        if ($state !== 'ok') { return self::fresh(array('state' => $state)); }
+        $c = self::config();
+        return self::fresh(array('state' => 'ok', 'key' => (string) $c['key']));
+    }
+
+    public static function act_pair_approve()
+    {
+        self::guard('pair_approve');
+        $id = self::arg('id'); $yes = empty($_GET['no']);
+        self::locked(function () use ($id, $yes) {
+            $all = self::pairs();
+            if (isset($all[$id])) { if ($yes) { $all[$id]['approved'] = true; } else { unset($all[$id]); } self::write('pairs', $all); }
+        });
+        self::back('settings', $yes ? 'paired' : 'refused');
+    }
+
+    /** The request named in the address, for the signed-in manager to approve or refuse. */
+    private static function pair_panel($id)
+    {
+        $all = self::pairs();
+        if (!preg_match('/^[0-9a-f]{64}$/', $id) || !isset($all[$id])) {
+            echo '<div class="notice notice-warning"><p>این درخواست اتصال پیدا نشد یا مهلت ده‌دقیقه‌ای آن گذشته است. در برنامه دوباره «اتصال با ورود به سایت» را بزنید.</p></div>';
+            return;
+        }
+        $p = $all[$id];
+        echo '<div class="notice notice-info" style="padding:14px 18px"><h2 style="margin-top:0">یک نسخه از برنامه Mazesta Test می‌خواهد به سایت وصل شود</h2>'
+            . '<p>نام سیستم: <strong dir="ltr">' . esc_html($p['name'] !== '' ? $p['name'] : '—') . '</strong> · کد: <strong dir="ltr" style="font-size:18px;letter-spacing:2px">' . esc_html(strtoupper(substr($id, 0, 6))) . '</strong></p>'
+            . '<p>فقط وقتی تأیید کنید که همین کد را الان در برنامه خودتان می‌بینید. با تأیید، کلید سایت به آن برنامه داده می‌شود و می‌تواند گزارش و نتیجه بنچمارک بفرستد.</p>';
+        if (!empty($p['approved'])) { echo '<p><strong>تأیید شده است؛ برنامه تا چند ثانیه دیگر وصل می‌شود.</strong></p>'; }
+        else {
+            echo '<p>' . self::post_link('pair_approve', array('id' => $id), 'تأیید و اتصال', 'button button-primary') . ' ' . self::post_link('pair_approve', array('id' => $id, 'no' => 1), 'رد کردن', 'button') . '</p>';
+        }
+        echo '</div>';
     }
 
     /** A time as ISO 8601 in UTC; now when it does not read as one. */
@@ -254,24 +341,71 @@ final class Mazesta_Connect
             && (is_int($run->value) || is_float($run->value)) && $run->value > 0 && is_finite((float) $run->value);
     }
 
+    /** A short plain text from outside: control characters and angle brackets removed, cut to $n. Anything that is not text is empty. */
+    private static function text($v, $n)
+    {
+        if (!is_string($v)) { return ''; }
+        $s = preg_replace('/[\x00-\x1F\x7F<>]/u', '', $v);   // null when it is not valid UTF-8
+        return is_string($s) ? mb_substr(trim($s), 0, $n) : '';
+    }
+
+    /**
+     * A run rebuilt from the fields the app writes, each checked for its type, range and length. Nothing else in the request is kept, so
+     * what is stored and later sent out in the lists holds only these fields. Null when it is not a run.
+     */
+    private static function clean_run($run, $trusted)
+    {
+        if (!self::valid_run($run) || !preg_match('/^[A-Za-z0-9+\/=_-]{8,128}$/', $run->system)) { return null; }
+        $part = self::text($run->part, 120); $unit = self::text($run->unit, 20);
+        if ($part === '' || $unit === '' || (float) $run->value > 1.0e15) { return null; }
+        $o = new stdClass();
+        $o->id = $run->id; $o->at = self::when(isset($run->at) ? $run->at : null); $o->benchmark = $run->benchmark;
+        $o->version = isset($run->version) && is_int($run->version) && $run->version > 0 && $run->version < 100000 ? $run->version : 1;
+        $o->settings = self::text(isset($run->settings) ? $run->settings : '', 160);
+        $o->part = $part; $o->system = $run->system;
+        $o->machine = $trusted ? self::text(isset($run->machine) ? $run->machine : '', 80) : '';   // a stranger's computer name is not ours to keep
+        $o->spec = $trusted ? self::text(isset($run->spec) ? $run->spec : '', 300) : $part;
+        $o->value = (float) $run->value; $o->unit = $unit;
+        $app = self::text(isset($run->app) ? $run->app : '', 40);
+        if ($app !== '') { $o->app = $app; }
+        if (isset($run->metrics) && is_array($run->metrics)) {
+            $o->metrics = array();
+            foreach (array_slice($run->metrics, 0, 24) as $m) {
+                if (!is_object($m) || !isset($m->key, $m->value) || !(is_int($m->value) || is_float($m->value)) || !is_finite((float) $m->value)) { continue; }
+                $key = self::text($m->key, 60);
+                if ($key === '') { continue; }
+                $x = new stdClass(); $x->key = $key; $x->value = (float) $m->value; $x->unit = self::text(isset($m->unit) ? $m->unit : '', 20);
+                $o->metrics[] = $x;
+            }
+        }
+        $o->overclocked = isset($run->overclocked) && $run->overclocked === true;
+        if (isset($run->details) && is_array($run->details)) {
+            $o->details = array();
+            foreach (array_slice($run->details, 0, 80) as $d) {
+                if (!is_object($d)) { continue; }
+                $x = new stdClass(); $x->group = self::text(isset($d->group) ? $d->group : '', 60); $x->key = self::text(isset($d->key) ? $d->key : '', 80); $x->value = self::text(isset($d->value) ? $d->value : '', 200);
+                if ($x->key !== '') { $o->details[] = $x; }
+            }
+        }
+        return $o;
+    }
+
     /** Adds the runs not yet held (each once, by its id): approved when they came with the shop's key, else waiting for review. */
     private static function add_runs($runs, $higher, $trusted)
     {
         return self::locked(function () use ($runs, $higher, $trusted) {
             $all = self::read('runs'); $added = 0; $known = 0; $bad = 0;
-            foreach ($runs as $run) {
-                if (!self::valid_run($run)) { $bad++; continue; }
-                $settings = isset($run->settings) && is_string($run->settings) ? $run->settings : '';
-                $table = $run->benchmark . '@' . (isset($run->version) ? (int) $run->version : 1) . ($settings !== '' ? '|' . $settings : '');
-                if (strlen($table) > 190) { $bad++; continue; }
+            foreach ($runs as $raw) {
+                $run = self::clean_run($raw, $trusted);
+                if ($run === null) { $bad++; continue; }
+                $table = $run->benchmark . '@' . $run->version . ($run->settings !== '' ? '|' . $run->settings : '');
                 if (isset($all[$run->id])) { $known++; continue; }
-                if (!$trusted) { unset($run->machine); }   // a stranger's computer name is not ours to keep
                 $json = wp_json_encode($run, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 if ($json === false || strlen($json) > 20000) { $bad++; continue; }
                 $all[$run->id] = array(
-                    'table' => $table, 'part' => mb_substr($run->part, 0, 190), 'value' => (float) $run->value, 'unit' => mb_substr($run->unit, 0, 40),
+                    'table' => $table, 'part' => $run->part, 'value' => $run->value, 'unit' => $run->unit,
                     'higher' => !(isset($higher[$run->benchmark]) && !$higher[$run->benchmark]), 'status' => $trusted ? 1 : 0, 'featured' => false, 'oc' => null, 'note' => '', 'markAt' => null,
-                    'runAt' => self::when(isset($run->at) ? $run->at : null), 'received' => self::when(null), 'json' => $json,
+                    'runAt' => $run->at, 'received' => self::when(null), 'json' => $json,
                 );
                 $added++;
             }
@@ -282,6 +416,7 @@ final class Mazesta_Connect
 
     private static function runs_of($req)
     {
+        if (strlen($req->get_body()) > 2000000) { return new WP_Error('mazesta_runs', 'The request is too large.', array('status' => 413)); }
         $body = json_decode($req->get_body());   // objects stay objects, so a run goes back out as it came in
         if (!is_object($body) || !isset($body->runs) || !is_array($body->runs)) { return new WP_Error('mazesta_runs', 'No runs in the request.', array('status' => 400)); }
         if (count($body->runs) > self::MAX_RUNS) { return new WP_Error('mazesta_runs', 'Too many runs in one request.', array('status' => 413)); }
@@ -339,20 +474,21 @@ final class Mazesta_Connect
         if (count($body->runs) > 60) { return new WP_Error('mazesta_runs', 'Too many runs in one request.', array('status' => 413)); }
         $names = isset($body->names) && is_object($body->names) ? (array) $body->names : array();
         $rows = array(); $system = '';
-        foreach ($body->runs as $run) {
-            if (!self::valid_run($run)) { continue; }
+        foreach ($body->runs as $raw) {
+            $run = self::clean_run($raw, false);
+            if ($run === null) { continue; }
             if ($system === '') { $system = $run->system; }
+            $name = self::text(isset($names[$run->benchmark]) ? $names[$run->benchmark] : '', 80);
             $rows[] = array(
-                'benchmark' => $run->benchmark, 'name' => self::clip(isset($names[$run->benchmark]) ? $names[$run->benchmark] : $run->benchmark, 80),
-                'settings' => self::clip(isset($run->settings) ? $run->settings : '', 120), 'value' => (float) $run->value, 'unit' => self::clip($run->unit, 20),
-                'part' => self::clip(self::part_name($run->part), 120), 'at' => self::when(isset($run->at) ? $run->at : null),
+                'benchmark' => $run->benchmark, 'name' => $name !== '' ? $name : $run->benchmark, 'settings' => $run->settings, 'value' => $run->value, 'unit' => $run->unit,
+                'part' => self::part_name($run->part), 'at' => $run->at,
             );
         }
-        if (!$rows || !preg_match('/^[A-Za-z0-9+\/=_-]{8,128}$/', $system)) { return new WP_Error('mazesta_runs', 'No valid runs in the request.', array('status' => 400)); }
+        if (!$rows) { return new WP_Error('mazesta_runs', 'No valid runs in the request.', array('status' => 400)); }
         $m = isset($body->machine) && is_object($body->machine) ? $body->machine : new stdClass();
         $share = array(
-            'created' => self::when(null), 'app' => self::clip(isset($body->appVersion) ? $body->appVersion : '', 40),
-            'cpu' => self::clip(isset($m->cpu) ? $m->cpu : '', 120), 'gpu' => self::clip(isset($m->gpu) ? $m->gpu : '', 120), 'os' => self::clip(isset($m->os) ? $m->os : '', 120),
+            'created' => self::when(null), 'app' => self::text(isset($body->appVersion) ? $body->appVersion : '', 40),
+            'cpu' => self::text(isset($m->cpu) ? $m->cpu : '', 120), 'gpu' => self::text(isset($m->gpu) ? $m->gpu : '', 120), 'os' => self::text(isset($m->os) ? $m->os : '', 120),
             'ramGb' => isset($m->ramGb) && (is_int($m->ramGb) || is_float($m->ramGb)) && $m->ramGb > 0 && $m->ramGb < 100000 ? (float) $m->ramGb : null,
             'rows' => $rows,
         );
@@ -771,6 +907,7 @@ final class Mazesta_Connect
         }
         echo '</h2>';
         if (!self::ensure()) { echo '<div class="notice notice-error"><p>پوشه داده‌ها ساخته نشد: <code dir="ltr">' . esc_html(self::dir()) . '</code>. دسترسی نوشتن wp-content را بررسی کنید.</p></div>'; }
+        if (!empty($_GET['pair'])) { self::pair_panel(strtolower(self::arg('pair'))); }
         if (!empty($_GET['msg'])) { echo '<div class="notice notice-success is-dismissible"><p>انجام شد.</p></div>'; }
         if ($tab === 'reports') { self::tab_reports(); } elseif ($tab === 'bench') { self::tab_bench(); } elseif ($tab === 'shares') { self::tab_shares(); } else { self::tab_settings(); }
         echo '</div>';

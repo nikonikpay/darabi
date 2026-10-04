@@ -12,6 +12,8 @@ public sealed record SiteReportReceipt(string Id, bool Updated, string Url, stri
 public sealed record SiteMachine(string? Cpu, string? Gpu, double? RamGb, string? Os);
 /// <summary><see cref="Link"/>: the page the site made of the results; <see cref="Queued"/>: how many of them also wait for the shop's review.</summary>
 public sealed record SiteShareReceipt(string Link, int Rows, int Queued);
+public sealed record SitePairing(string Url, string Code, int Seconds);
+public sealed record SitePairClaim(string State, string? Key);
 /// <summary><see cref="Pending"/>: the runs went to the site's review queue (sent without the shop's key), not into the lists yet.</summary>
 public sealed record SiteRunsReceipt(int Added, int Known, int Rejected, bool Pending, int? Lists);
 
@@ -62,6 +64,23 @@ public sealed class SiteClient(Uri api, HttpClient http)
         return Read<SiteShareReceipt>(await SendAsync(HttpMethod.Post, "share", null, body.ToJsonString(), ct).ConfigureAwait(false));
     }
     public const int RunsPerShare = 60;
+
+    /// <summary>The shop's key as the site makes it; anything else typed into the key's field (another secret, a line of text) is not sent anywhere.</summary>
+    public static bool IsKey(string? text) => text is { Length: 51 } && text.StartsWith("mz_", StringComparison.Ordinal) && text.AsSpan(3).IndexOfAnyExcept("0123456789abcdef") < 0;
+
+    /// <summary>
+    /// Connecting without typing the key. The app keeps a random secret and sends its SHA-256; the site answers with the dashboard page where a
+    /// manager signed in to the site approves the request, and a short code both sides show. <see cref="PairClaimAsync"/> then trades the secret
+    /// for the key, once, after the approval. A stranger who starts a request gets nothing unless a manager approves that very code.
+    /// </summary>
+    public async Task<SitePairing> PairStartAsync(string secret, string computer, CancellationToken ct)
+    {
+        string id = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.ASCII.GetBytes(secret)));
+        return Read<SitePairing>(await SendAsync(HttpMethod.Post, "pair/start", null, JsonSerializer.Serialize(new { id, name = computer }), ct).ConfigureAwait(false));
+    }
+    /// <summary>State "waiting", "gone" (refused or older than ten minutes) or "ok" with the key.</summary>
+    public async Task<SitePairClaim> PairClaimAsync(string secret, CancellationToken ct)
+        => Read<SitePairClaim>(await SendAsync(HttpMethod.Post, "pair/claim", null, JsonSerializer.Serialize(new { secret }), ct).ConfigureAwait(false));
 
     /// <summary>The site's comparison lists as a manifest (file, size, SHA-256 each), read through the same checks as the signed one's entries.</summary>
     public async Task<UpdateManifest> ListsAsync(CancellationToken ct)

@@ -20,12 +20,18 @@ export function mount(el) {
   const siteState = h("p", { class: "au-status" });
   const saveKey = h("button", { class: "btn primary", onclick: () => link("site.key", { value: keyField.value }) }, t("Site_Key_Save"));
   const checkSite = h("button", { class: "btn", onclick: () => link("site.check") }, icon("refresh"), t("Site_Check"));
+  // Without typing the key: the site's dashboard opens in the browser, a manager signed in there approves this copy, the key comes by itself.
+  const pair = h("button", { class: "btn go", "data-a": "site-pair", onclick: () => link("site.pair", { cmd: pairing ? "cancel" : "start" }) }, icon("net"), t("Site_Pair_Start"));
+  const pairState = h("p", { class: "au-status go", hidden: true });
+  let pairing = false;
   async function link(method, args) {
     try { showSite(await call(method, args)); keyField.value = ""; } catch (e) { toast(String(e.message || e), "fail"); }
   }
   function showSite(s) {
     if (!s) return;
     saveKey.disabled = checkSite.disabled = s.busy;
+    pairing = !!s.pairCode; pair.lastChild.textContent = t(pairing ? "Site_Pair_Cancel" : "Site_Pair_Start");
+    pairState.hidden = !pairing; pairState.replaceChildren(...(pairing ? [t("Site_Pair_Waiting"), " ", h("b", { class: "lat" }, s.pairCode)] : []));
     keyField.placeholder = s.hasKey ? "••••••••" : "mz_…";
     const st = s.status;
     siteState.classList.toggle("fail", !!s.error || st?.key === "wrong"); siteState.classList.toggle("go", st?.key === "ok");
@@ -44,6 +50,7 @@ export function mount(el) {
       box({ kind: "Network", ico: "net", title: t("AppUpd_Site"), i: 2, body: [site, h("p", { class: "note" }, t("AppUpd_Safe"))] }),
       box({ kind: "Storage", ico: "net", title: t("Site_Title"), sub: t("Site_Sub"), i: 3, a: "site",
         body: [siteState, h("label", { class: "caption", style: { display: "block" } }, t("Site_Key"), " · ", t("Site_Key_Hint")),
+          h("div", { class: "btn-row" }, pair), pairState, h("p", { class: "note" }, t("Site_Pair_Note")),
           h("div", { class: "btn-row" }, keyField, saveKey, checkSite), h("p", { class: "note" }, t("Site_Note"))] })));
 
   async function run(method) {
