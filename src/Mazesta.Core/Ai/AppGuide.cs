@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -100,6 +100,8 @@ public static class AppGuide
             "حالت گیم", "حالت بازی", "مود بازی", "سرویس های غیر ضروری", "سرویسهای غیرضروری", "game boost", "gaming mode"),
         T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null,
             "اینترنت وصل نمیشه", "اینترنت وصل نمی شود", "اینترنت قطع", "عیب یابی اینترنت", "مشکل اینترنت", "پراکسی", "پروکسی", "ریست شبکه", "proxy", "internet troubleshooter", "no internet"),
+        T("tools", "crashes", "Bsod_Title", "blue screens (stop errors): lists the ones Windows recorded, with the stop code, its name, its parameters and the likely causes to check", null,
+            "بلو اسکرین", "بلواسکرین", "بلو اسکرین ها", "صفحه ابی", "صفحه ابی مرگ", "bsod", "blue screen", "bluescreen", "stop code", "کد خطای ویندوز", "minidump", "مینی دامپ"),
         P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
         T("appupdate", "site", "Site_Title", "the link to the shop's site: the site key is entered here; a report's summary is sent to the site from the reports page (to be printed there for the serviced case) and benchmark results from the benchmark page", null,
             "کلید سایت", "اتصال به سایت", "ارسال به سایت", "ارسال گزارش به سایت", "گزارش آنلاین", "اپلود بنچمارک", "آپلود بنچمارک", "ارسال نتایج", "site key", "send to site", "upload results"),
@@ -199,6 +201,7 @@ public static class AppGuide
 
     private static readonly string[] AllWords = ["همه", "همش", "همشو", "همشون", "تمام", "کامل", "تک تک", "all", "every", "full"];
     private static readonly string[] TogetherWords = ["همزمان", "هم زمان", "با هم", "باهم", "together", "simultaneous", "at once", "at the same time"];
+    private static readonly string[] CrashWords = ["بلو اسکرین", "بلواسکرین", "بلو اسکیرین", "صفحه ابی", "bsod", "blue screen", "bluescreen", "stop code", "استاپ کد", "minidump", "مینی دامپ"];
     private static readonly string[] OverlayWords = ["اورلی", "اورلای", "overlay", "بالای صفحه", "بالای مانیتور", "روی صفحه", "روی بازی", "گوشه صفحه", "fps"];
     // A command said not to be done ("اجرا نکن", "فقط توضیح بده") is never acted on: the model explains, and nothing starts.
     private static readonly string[] NotWords = ["نکن", "نکنی", "نزن", "نزنی", "نده", "نشه", "نشود", "نمیخوام", "نمی خوام", "نمیخواهم", "نباید", "فقط توضیح", "فقط بگو", "توضیح بده", "don't", "dont", "do not", "not run", "only explain", "just explain", "explain"];
@@ -294,6 +297,9 @@ public static class AppGuide
         // The graphics card's PCI Express error counters ("خطاهای pcie کارت گرافیک چنده"): read from the driver, with the diagnosis' verdict.
         if ((Has(s, "pcie") || Has(s, "pci express") || Has(s, "pci-e") || Has(s, "لینک") || Has(s, "لین ")) && (Has(s, "خطا") || Has(s, "ارور") || Has(s, "error")) && !go)
             return new(AiIntent.PcieErrors);
+
+        // Blue screens ("چرا سیستمم بلو اسکرین میده"): what Windows recorded is read, with the usual causes of each stop code.
+        if (Any(s, CrashWords) && !go) return new(AiIntent.Crashes);
 
         bool test = Any(s, TestWords);
         // A reading now (a temperature, a fan, a load) is the sensors', not the specification's.

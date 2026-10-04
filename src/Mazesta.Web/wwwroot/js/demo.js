@@ -308,6 +308,12 @@ export async function call(m, p, emit) {
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
     case "tweaks.state": return tweaks();
     case "dns.state": return tweaks().dns;
+    case "crashes.read": await new Promise((r) => setTimeout(r, 500)); return { total: 2, dumpFiles: 2, dumpsReadable: true, logReadable: true, logSince: "2026/06/12 09:10", powerLosses: 3, lastPowerLoss: "2026/09/21 22:14", powerLossTimes: [],
+      crashes: [
+        { at: "2026/09/30 21:42", atIsRestart: false, code: "0x00000124", name: "WHEA_UNCORRECTABLE_ERROR", parameters: ["0x0", "0xFFFF9A0C5E2F4028", "0xBE000000", "0x800400"], parametersMean: strings.Bsod_Params_Whea, notes: [strings.Bsod_Note_Whea_Mce],
+          causes: ["Cpu", "Overclock", "Heat", "Psu", "Ram", "Bios"].map((id) => ({ id, title: strings[`Bsod_Cause_${id}`], check: strings[`Bsod_Cause_${id}_Check`] })), dump: "093026-8406-01.dmp", uptimeMinutes: 47 },
+        { at: "2026/08/02 10:05", atIsRestart: true, code: "0x00000116", name: "VIDEO_TDR_FAILURE", parameters: ["0xFFFFC98F0A3D1010", "0xFFFFF8056E2A1F40", "0xFFFFFFFFC000009A", "0x4"], parametersMean: strings.Bsod_Params_Tdr, notes: [],
+          causes: ["GpuDriver", "Gpu", "Heat", "Psu"].map((id) => ({ id, title: strings[`Bsod_Cause_${id}`], check: strings[`Bsod_Cause_${id}_Check`] })), dump: null, uptimeMinutes: null }] };
     case "battery.read": return [demoBattery];
     case "battery.test": return p.cmd === "stop" ? null : { state: "running", minutes: p.cmd === "start" ? 0 : 12.5, battery: demoBattery, drain: p.cmd === "start" ? null : { usedMwh: 3050, meanWatts: 14.6, fullChargeMinutes: 187 } };
     case "netfix.check": await new Promise((r) => setTimeout(r, 900)); return { verdict: "DnsFails", suggested: ["proxy", "dns", "flush"], proxy: { set: true, enabled: true, server: "127.0.0.1:10809", script: null },

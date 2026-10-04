@@ -1314,6 +1314,15 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .tools-sec > .panels { margin-top: 0; }
 .dns-h { font-size: 13px; font-weight: 700; margin: 14px 0 6px; color: var(--paper); }
 .dns-h:first-child { margin-top: 0; }
+.cr-list { display: grid; gap: 6px; margin: 10px 0; }
+.cr-item { padding: 8px 12px; border-radius: var(--r-panel); background: var(--ink-3); border: 1px solid var(--rule); }
+.cr-item summary { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; cursor: pointer; }
+.cr-item summary .caption { margin-inline-start: auto; }
+.cr-code { color: var(--warn); font: 12px var(--mono); }
+.cr-item h4 { margin: 10px 0 4px; font-size: 12px; color: var(--paper-2); }
+.cr-causes { margin: 0; padding-inline-start: 0; list-style: none; display: grid; gap: 6px; font-size: 12px; }
+.cr-causes small { display: block; color: var(--paper-2); }
+.cr-notes { margin: 8px 0 0; padding-inline-start: 18px; font-size: 12px; color: var(--warn); }
 .nf-steps { display: grid; gap: 6px; margin: 12px 0 10px; }
 .nf-step { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 12px; border-radius: var(--r-panel); background: var(--ink-3); border: 1px solid var(--rule); }
 .nf-step .nf-detail { grid-column: 2 / -1; overflow-wrap: anywhere; justify-self: start; }

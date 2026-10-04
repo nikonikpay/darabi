@@ -9,6 +9,7 @@ import { box } from "../groups.js";
 import { gamingBoxes } from "./gaming.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
+import { crashesBox } from "./crashes.js";
 
 export function mount(el) {
   const gaming = gamingBoxes(1);
@@ -54,6 +55,7 @@ export function mount(el) {
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
     section("Tools_Sec_Network", dnsBox(0), netfixBox(0), ...gaming.boxes),
     section("Tools_Sec_Repair",
+      crashesBox(3),
       box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 3, a: "repair",
         body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Web_Tools_RepairNote")), h("div", { class: "btn-row" }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar), consoleEl] }),
       box({ kind: "Storage", ico: "drive", title: t("Tools_Windows"), sub: t("Tools_Windows_Sub"), i: 4, a: "cleanup",

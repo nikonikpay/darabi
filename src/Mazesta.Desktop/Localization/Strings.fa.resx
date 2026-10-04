@@ -2695,4 +2695,90 @@
   <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} اجرا ارسال شد. تا فروشگاه بررسی نکند وارد فهرست‌ها نمی‌شوند.</value></data>
   <data name="Site_Runs_Nothing" xml:space="preserve"><value>چیز تازه‌ای برای ارسال نیست.</value></data>
   <data name="Site_Note" xml:space="preserve"><value>هیچ چیز خودبه‌خود فرستاده نمی‌شود. هر اجرا نام کامپیوتر و مدل قطعه‌هایش را دارد؛ خلاصه گزارش شماره سرویس، قطعه‌ها و نتیجه آزمون‌ها را.</value></data>
+  <data name="Assist_Tool_get_crashes" xml:space="preserve"><value>خواند: صفحه‌های آبی</value></data>
+  <data name="Bsod_AtRestart" xml:space="preserve"><value>راه‌اندازی بعد از آن: {0}</value></data>
+  <data name="Bsod_Cause_Bios" xml:space="preserve"><value>BIOS یا فرم‌ور</value></data>
+  <data name="Bsod_Cause_Bios_Check" xml:space="preserve"><value>BIOS و فرم‌ور درایو را به‌روز کنید؛ مطمئن شوید حالت ذخیره‌سازی (AHCI/RAID) عوض نشده است.</value></data>
+  <data name="Bsod_Cause_Cpu" xml:space="preserve"><value>پردازنده</value></data>
+  <data name="Bsod_Cause_Cpu_Check" xml:space="preserve"><value>تست‌های پردازنده را اجرا کنید؛ پردازنده‌ای که با تنظیمات کارخانه رد شود، خراب است یا برق سالم نمی‌گیرد.</value></data>
+  <data name="Bsod_Cause_Device" xml:space="preserve"><value>یک دستگاه متصل</value></data>
+  <data name="Bsod_Cause_Device_Check" xml:space="preserve"><value>دستگاه‌های USB و کارت‌های جانبی را یکی‌یکی جدا کنید؛ درایور همان دستگاه را به‌روز کنید.</value></data>
+  <data name="Bsod_Cause_Driver" xml:space="preserve"><value>یک درایور</value></data>
+  <data name="Bsod_Cause_Driver_Check" xml:space="preserve"><value>درایورهایی که تازه عوض شده‌اند (شبکه، صدا، چیپ‌ست، ذخیره‌سازی) را به‌روز کنید یا به نسخهٔ قبل برگردانید؛ صفحهٔ درایورها را ببینید. درایور آنتی‌ویروس یا ابزارهای تنظیم هم حساب است.</value></data>
+  <data name="Bsod_Cause_Gpu" xml:space="preserve"><value>خود کارت گرافیک</value></data>
+  <data name="Bsod_Cause_Gpu_Check" xml:space="preserve"><value>تست‌های کارت گرافیک (حافظه و بار ثابت) را اجرا کنید، کارت و کابل‌های برقش را دوباره جا بزنید و اورکلاک یا آندرولت را بردارید.</value></data>
+  <data name="Bsod_Cause_GpuDriver" xml:space="preserve"><value>درایور کارت گرافیک</value></data>
+  <data name="Bsod_Cause_GpuDriver_Check" xml:space="preserve"><value>از صفحهٔ درایورها جدیدترین درایور را تمیز نصب کنید، یا به نسخه‌ای که سالم کار می‌کرد برگردید.</value></data>
+  <data name="Bsod_Cause_Heat" xml:space="preserve"><value>گرما</value></data>
+  <data name="Bsod_Cause_Heat_Check" xml:space="preserve"><value>دماها را زیر بار در صفحهٔ مانیتورینگ ببینید؛ خنک‌کننده را تمیز و خمیر را عوض کنید.</value></data>
+  <data name="Bsod_Cause_Manual" xml:space="preserve"><value>دستی ایجاد شده</value></data>
+  <data name="Bsod_Cause_Manual_Check" xml:space="preserve"><value>کسی دکمهٔ پاور را نگه داشته یا عمداً خطا را ایجاد کرده؛ به‌خودی‌خود خرابی نیست.</value></data>
+  <data name="Bsod_Cause_Overclock" xml:space="preserve"><value>اورکلاک یا آندرولت</value></data>
+  <data name="Bsod_Cause_Overclock_Check" xml:space="preserve"><value>تنظیمات BIOS (پردازنده، رم و ولتاژها) را به پیش‌فرض برگردانید و دوباره امتحان کنید.</value></data>
+  <data name="Bsod_Cause_Psu" xml:space="preserve"><value>منبع تغذیه (پاور)</value></data>
+  <data name="Bsod_Cause_Psu_Check" xml:space="preserve"><value>با یک پاور سالم امتحان کنید؛ ولتاژ ۱۲ ولت را زیر بار هم‌زمان پردازنده و کارت گرافیک ببینید.</value></data>
+  <data name="Bsod_Cause_Ram" xml:space="preserve"><value>حافظه (رم)</value></data>
+  <data name="Bsod_Cause_Ram_Check" xml:space="preserve"><value>تست حافظه را اجرا کنید؛ یک بار با XMP/EXPO خاموش امتحان کنید و ماژول‌ها را تک‌تک تست کنید تا ماژول خراب پیدا شود.</value></data>
+  <data name="Bsod_Cause_Software" xml:space="preserve"><value>یک برنامه (اغلب آنتی‌ویروس)</value></data>
+  <data name="Bsod_Cause_Software_Check" xml:space="preserve"><value>آنتی‌ویروس یا برنامه‌ای که درست قبل از شروع خطاها نصب شده را حذف کنید و دوباره امتحان کنید.</value></data>
+  <data name="Bsod_Cause_Storage" xml:space="preserve"><value>درایو سیستم</value></data>
+  <data name="Bsod_Cause_Storage_Check" xml:space="preserve"><value>سلامت درایو (SMART) را در صفحهٔ ذخیره‌سازی ببینید و تست درایو را اجرا کنید؛ بعد chkdsk.</value></data>
+  <data name="Bsod_Cause_StorageCable" xml:space="preserve"><value>کابل یا اسلات درایو</value></data>
+  <data name="Bsod_Cause_StorageCable_Check" xml:space="preserve"><value>کابل و پورت SATA را عوض کنید، یا درایو M.2 را دوباره جا بزنید.</value></data>
+  <data name="Bsod_Cause_SystemFiles" xml:space="preserve"><value>فایل‌های خراب ویندوز</value></data>
+  <data name="Bsod_Cause_SystemFiles_Check" xml:space="preserve"><value>SFC و DISM را از کادر تعمیر همین صفحه اجرا کنید.</value></data>
+  <data name="Bsod_Causes" xml:space="preserve"><value>علت‌های محتمل و چیزی که باید بررسی شود</value></data>
+  <data name="Bsod_Dump" xml:space="preserve"><value>فایل dump: {0}</value></data>
+  <data name="Bsod_Found" xml:space="preserve"><value>{0} صفحهٔ آبی ثبت شده است</value></data>
+  <data name="Bsod_Looked_Dumps" xml:space="preserve"><value>فایل‌های dump خوانده‌شده: {0}.</value></data>
+  <data name="Bsod_Looked_Log" xml:space="preserve"><value>لاگ ویندوز از {0} به بعد را دارد؛ قدیمی‌تر از آن نگه داشته نشده است.</value></data>
+  <data name="Bsod_Looked_LogEmpty" xml:space="preserve"><value>لاگ ویندوز خالی است.</value></data>
+  <data name="Bsod_Looked_NoDumps" xml:space="preserve"><value>پوشهٔ dump خوانده نشد.</value></data>
+  <data name="Bsod_Looked_NoLog" xml:space="preserve"><value>لاگ ویندوز خوانده نشد.</value></data>
+  <data name="Bsod_NoCauses" xml:space="preserve"><value>برنامه برای این کد فهرست علت ندارد؛ کد را در مرجع Bug Check مایکروسافت جستجو کنید.</value></data>
+  <data name="Bsod_NoDump" xml:space="preserve"><value>فایل dump ندارد؛ فقط از لاگ ویندوز</value></data>
+  <data name="Bsod_None" xml:space="preserve"><value>صفحهٔ آبی‌ای ثبت نشده است.</value></data>
+  <data name="Bsod_Note" xml:space="preserve"><value>فایل‌های dump در C:\Windows\Minidump و لاگ خود ویندوز را می‌خواند و چیزی را تغییر نمی‌دهد. علت‌ها، موارد رایجِ همان کد خطا هستند (محتمل‌ترین اول): می‌گویند کجا را بگردید، حکم قطعی دربارهٔ این سیستم نیستند.</value></data>
+  <data name="Bsod_Note_AccessViolation" xml:space="preserve"><value>استثنا از نوع Access Violation (‎0xC0000005‎) است: کدی به حافظه‌ای دست زده که نباید.</value></data>
+  <data name="Bsod_Note_Clock_Core" xml:space="preserve"><value>یک هستهٔ پردازنده دیگر جواب نداده: ولتاژ پردازنده (آندرولت، اورکلاک) یا BIOS.</value></data>
+  <data name="Bsod_Note_Dpc_Single" xml:space="preserve"><value>یک روال درایور زیادی طول کشیده: یک درایور، اغلب ذخیره‌سازی یا شبکه.</value></data>
+  <data name="Bsod_Note_Dpc_Total" xml:space="preserve"><value>سیستم زیادی در سطح بالا مانده: یک درایور، یا درایوی که دیگر جواب نمی‌داد.</value></data>
+  <data name="Bsod_Note_IllegalInstruction" xml:space="preserve"><value>استثنا از نوع دستور نامعتبر (‎0xC000001D‎) است: کدِ خراب در حافظه، اغلب رم خراب یا پردازندهٔ ناپایدار.</value></data>
+  <data name="Bsod_Note_Io_BadBlocks" xml:space="preserve"><value>درایو با خطای داده جواب داده: بدسکتور روی درایو سیستم.</value></data>
+  <data name="Bsod_Note_Io_Cable" xml:space="preserve"><value>درایو جواب نداده: کابل شل یا خراب، اسلات، یا قطع شدن خود درایو.</value></data>
+  <data name="Bsod_Note_Io_Resources" xml:space="preserve"><value>ویندوز هنگام خواندن صفحه، حافظهٔ nonpaged کم آورد.</value></data>
+  <data name="Bsod_Note_Mm_PageTable" xml:space="preserve"><value>جدول صفحه خراب پیدا شده: این نوع بیشتر وقت‌ها از رم خراب یا ناپایدار است.</value></data>
+  <data name="Bsod_Note_Power_Device" xml:space="preserve"><value>یک دستگاه خواب یا بیدار شدنش را تمام نکرده: درایور همان دستگاه.</value></data>
+  <data name="Bsod_Note_Power_Pnp" xml:space="preserve"><value>تغییر حالت برق زیادی منتظر Plug and Play مانده: یک دستگاه یا درایورش.</value></data>
+  <data name="Bsod_Note_Sec_List" xml:space="preserve"><value>یک فهرست پیوندی خراب پیدا شده: درایوری که جای اشتباه می‌نویسد.</value></data>
+  <data name="Bsod_Note_Sec_Stack" xml:space="preserve"><value>یک پشته سرریز شده: یک درایور.</value></data>
+  <data name="Bsod_Note_Trap_Cpu" xml:space="preserve"><value>خطایی که کد سالم ایجادش نمی‌کند: رم خراب یا پردازندهٔ ناپایدار.</value></data>
+  <data name="Bsod_Note_Trap_DoubleFault" xml:space="preserve"><value>خطای دوگانه (Double Fault): درایوری که از پشته‌اش بیرون زده، یا رم خراب.</value></data>
+  <data name="Bsod_Note_Whea_Corrected" xml:space="preserve"><value>یک خطای سخت‌افزاریِ اصلاح‌شده به خطای جدی تبدیل شده: قطعه در مرز پایداری است.</value></data>
+  <data name="Bsod_Note_Whea_Mce" xml:space="preserve"><value>خود پردازنده خطا را گزارش کرده (Machine Check): پردازنده، ولتاژ یا گرمای آن، یا اورکلاک در اولویت‌اند.</value></data>
+  <data name="Bsod_Note_Whea_Nmi" xml:space="preserve"><value>وقفهٔ NMI: خرابی سخت‌افزاری که مادربرد اعلام کرده است.</value></data>
+  <data name="Bsod_Note_Whea_Other" xml:space="preserve"><value>خطای سخت‌افزاری از منبعی دیگر؛ رکورد خطا می‌گوید کدام.</value></data>
+  <data name="Bsod_Note_Whea_Pcie" xml:space="preserve"><value>خطا از یک دستگاه PCI Express آمده: کارت گرافیک، درایو NVMe یا اسلات و رایزر آن‌ها.</value></data>
+  <data name="Bsod_Parameters" xml:space="preserve"><value>پارامترها</value></data>
+  <data name="Bsod_ParametersMean" xml:space="preserve"><value>معنی پارامترها</value></data>
+  <data name="Bsod_Params_Clock" xml:space="preserve"><value>۱: تعداد تیک‌های ازدست‌رفته · ۴: هسته‌ای که دیگر جواب نداد</value></data>
+  <data name="Bsod_Params_Dpc" xml:space="preserve"><value>۱: ۰ یک روال زیادی طول کشید، ۱ مجموعاً زیادی در سطح بالا ماند · ۲: زمانی که گرفت · ۳: زمان مجاز</value></data>
+  <data name="Bsod_Params_Exception" xml:space="preserve"><value>۱: کد استثنا · ۲: آدرسی که خطا در آن رخ داد</value></data>
+  <data name="Bsod_Params_Inpage" xml:space="preserve"><value>۱: نوع قفل · ۲: وضعیت ورودی/خروجی که خواندن را ناموفق کرد · ۴: آدرسی که خوانده نشد</value></data>
+  <data name="Bsod_Params_Irql" xml:space="preserve"><value>۱: آدرسی که دسترسی شده · ۲: سطح IRQL · ۳: ۰ خواندن، ۱ نوشتن، ۸ اجرا · ۴: دستوری که این کار را کرد</value></data>
+  <data name="Bsod_Params_Mm" xml:space="preserve"><value>۱: نوع خطای مدیریت حافظه؛ بقیه به آن بستگی دارند</value></data>
+  <data name="Bsod_Params_PageFault" xml:space="preserve"><value>۱: آدرسی که دسترسی شده · ۲: نوع دسترسی (۰ خواندن، ۲ نوشتن، ‎0x10‎ اجرا) · ۳: دستوری که این کار را کرد</value></data>
+  <data name="Bsod_Params_Power" xml:space="preserve"><value>۱: چه چیزی ناموفق شد (۳: یک دستگاه درخواست برق را زیادی نگه داشت، ۴: مهلت Plug and Play تمام شد) · ۲: دستگاه</value></data>
+  <data name="Bsod_Params_Process" xml:space="preserve"><value>۱: فرایندی که بسته شد · ۲: ۰ فرایند، ۱ رشته</value></data>
+  <data name="Bsod_Params_Security" xml:space="preserve"><value>۱: چیزی که خراب پیدا شد (۲ پشته، ۳ فهرست پیوندی)</value></data>
+  <data name="Bsod_Params_Service" xml:space="preserve"><value>۱: کد استثنا · ۲: دستوری که این کار را کرد</value></data>
+  <data name="Bsod_Params_Tdr" xml:space="preserve"><value>۱: رکورد بازیابی · ۲: آدرسی داخل درایور گرافیکی که از کار افتاد · ۳: وضعیت آخرین عملیات ناموفق</value></data>
+  <data name="Bsod_Params_Trap" xml:space="preserve"><value>۱: نوع خطای پردازنده (۰ تقسیم، ۶ دستور نامعتبر، ۸ خطای دوگانه، ‎0xD‎ حفاظت عمومی)</value></data>
+  <data name="Bsod_Params_Whea" xml:space="preserve"><value>۱: منبع خطا (۰ خطای پردازنده، ۴ ‏PCI Express) · ۲: رکورد خطا · ۳ و ۴: وضعیت پردازنده (MCi_STATUS)</value></data>
+  <data name="Bsod_PowerLoss" xml:space="preserve"><value>راه‌اندازی دوباره بدون کد خطا (قطع برق، دکمهٔ ریست یا هنگ کامل): {0} بار، آخرین بار {1}. منبع تغذیه، کابل و پریز برق و دما زیر بار را بررسی کنید.</value></data>
+  <data name="Bsod_Read" xml:space="preserve"><value>خواندن صفحه‌های آبی</value></data>
+  <data name="Bsod_Sub" xml:space="preserve"><value>خطاهای توقفی که ویندوز ثبت کرده، با علت‌های محتمل</value></data>
+  <data name="Bsod_Title" xml:space="preserve"><value>صفحه‌های آبی (Blue Screen)</value></data>
+  <data name="Bsod_Unknown" xml:space="preserve"><value>کد خطا در فهرست برنامه نیست</value></data>
+  <data name="Bsod_Uptime" xml:space="preserve"><value>ویندوز {0} دقیقه روشن بود</value></data>
 </root>

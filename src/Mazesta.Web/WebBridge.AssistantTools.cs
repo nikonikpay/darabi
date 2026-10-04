@@ -138,6 +138,18 @@ public sealed partial class WebBridge
                     }).ToList();
                     return Task.FromResult(Json(cards.Count == 0 ? new { cards, note = "no card reports PCIe error counters (not an NVIDIA card, or its driver does not keep them)" } : (object)new { cards }));
                 }),
+            new("get_crashes", "The blue screens (stop errors, BSOD) Windows kept a record of on this computer, newest first: when, the stop code and Microsoft's name for it, " +
+                "its four parameters and what they mean, what the parameters of this crash say (notes), and the usual causes of that code, most likely first, each with what to check. " +
+                "Also the restarts with no stop code (power lost, reset pressed, or a hard hang). The causes are the usual ones for the code, not proof: say likely, give them in the " +
+                "order returned, and name the checks. A crash of one kind many times points more firmly than one. When the list is empty say what was looked at (dumps, the log since " +
+                "logSince), never that the computer has never crashed. Optional limit (default 5, at most 15).",
+                """{"type":"object","properties":{"limit":{"type":"integer"}}}""",
+                async (a, _) =>
+                {
+                    var history = await Task.Run(Diagnostics.Crashes.CrashReader.Read).ConfigureAwait(false);
+                    navigate("tools", "crashes");
+                    return Json(CrashRows(history, Int(a, "limit", 5, 15)));
+                }),
             new("list_reports", "The saved test and benchmark reports, newest first: index (0 is the newest), when, kind, verdict and how many tests passed, failed or did not run. Optional limit (default 5, at most 10).",
                 """{"type":"object","properties":{"limit":{"type":"integer"}}}""",
                 (a, _) =>

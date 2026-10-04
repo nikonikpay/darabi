@@ -2695,4 +2695,90 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} runs sent. They wait for the shop&apos;s review before they enter the lists.</value></data>
   <data name="Site_Runs_Nothing" xml:space="preserve"><value>Nothing new to send.</value></data>
   <data name="Site_Note" xml:space="preserve"><value>Nothing is sent on its own. A run carries the computer&apos;s name and its parts&apos; models; a report&apos;s summary carries the service number, the parts and the test results.</value></data>
+  <data name="Assist_Tool_get_crashes" xml:space="preserve"><value>Read: blue screens</value></data>
+  <data name="Bsod_AtRestart" xml:space="preserve"><value>restart after it: {0}</value></data>
+  <data name="Bsod_Cause_Bios" xml:space="preserve"><value>BIOS or firmware</value></data>
+  <data name="Bsod_Cause_Bios_Check" xml:space="preserve"><value>Update the BIOS and the drive's firmware; check the storage mode (AHCI/RAID) was not changed.</value></data>
+  <data name="Bsod_Cause_Cpu" xml:space="preserve"><value>The processor</value></data>
+  <data name="Bsod_Cause_Cpu_Check" xml:space="preserve"><value>Run the processor tests; a processor that fails them at stock settings is faulty or not getting clean power.</value></data>
+  <data name="Bsod_Cause_Device" xml:space="preserve"><value>A connected device</value></data>
+  <data name="Bsod_Cause_Device_Check" xml:space="preserve"><value>Unplug the USB devices and add-in cards one by one; update that device's driver.</value></data>
+  <data name="Bsod_Cause_Driver" xml:space="preserve"><value>A driver</value></data>
+  <data name="Bsod_Cause_Driver_Check" xml:space="preserve"><value>Update or roll back the drivers changed lately (network, sound, chipset, storage); see the Drivers page. An antivirus or a tuning tool's driver counts too.</value></data>
+  <data name="Bsod_Cause_Gpu" xml:space="preserve"><value>The graphics card</value></data>
+  <data name="Bsod_Cause_Gpu_Check" xml:space="preserve"><value>Run the graphics card tests (memory and steady load), reseat the card and its power plugs, and take off any overclock or undervolt.</value></data>
+  <data name="Bsod_Cause_GpuDriver" xml:space="preserve"><value>The graphics driver</value></data>
+  <data name="Bsod_Cause_GpuDriver_Check" xml:space="preserve"><value>Install the newest driver cleanly from the Drivers page, or go back to the one that worked.</value></data>
+  <data name="Bsod_Cause_Heat" xml:space="preserve"><value>Heat</value></data>
+  <data name="Bsod_Cause_Heat_Check" xml:space="preserve"><value>Watch the temperatures under load on the Monitoring page; clean the cooler, renew the paste.</value></data>
+  <data name="Bsod_Cause_Manual" xml:space="preserve"><value>Started by hand</value></data>
+  <data name="Bsod_Cause_Manual_Check" xml:space="preserve"><value>Someone held the power button or triggered the crash on purpose; it is not a fault by itself.</value></data>
+  <data name="Bsod_Cause_Overclock" xml:space="preserve"><value>Overclock or undervolt</value></data>
+  <data name="Bsod_Cause_Overclock_Check" xml:space="preserve"><value>Put the BIOS back to its defaults (processor, memory and voltage settings) and try again.</value></data>
+  <data name="Bsod_Cause_Psu" xml:space="preserve"><value>The power supply</value></data>
+  <data name="Bsod_Cause_Psu_Check" xml:space="preserve"><value>Test with a known good power supply; watch the 12 V rail under a combined processor and graphics load.</value></data>
+  <data name="Bsod_Cause_Ram" xml:space="preserve"><value>Memory (RAM)</value></data>
+  <data name="Bsod_Cause_Ram_Check" xml:space="preserve"><value>Run the memory test; try with XMP/EXPO off, and one module at a time to find a bad one.</value></data>
+  <data name="Bsod_Cause_Software" xml:space="preserve"><value>A program (often an antivirus)</value></data>
+  <data name="Bsod_Cause_Software_Check" xml:space="preserve"><value>Remove the antivirus or the tool installed just before the crashes began, and try again.</value></data>
+  <data name="Bsod_Cause_Storage" xml:space="preserve"><value>The system drive</value></data>
+  <data name="Bsod_Cause_Storage_Check" xml:space="preserve"><value>Read the drive's health (SMART) on the Storage page and run the drive test; then chkdsk.</value></data>
+  <data name="Bsod_Cause_StorageCable" xml:space="preserve"><value>The drive's cable or slot</value></data>
+  <data name="Bsod_Cause_StorageCable_Check" xml:space="preserve"><value>Change the SATA cable and port, or reseat the M.2 drive.</value></data>
+  <data name="Bsod_Cause_SystemFiles" xml:space="preserve"><value>Damaged Windows files</value></data>
+  <data name="Bsod_Cause_SystemFiles_Check" xml:space="preserve"><value>Run SFC and DISM from the repair box on this page.</value></data>
+  <data name="Bsod_Causes" xml:space="preserve"><value>Likely causes, and what to check</value></data>
+  <data name="Bsod_Dump" xml:space="preserve"><value>Dump file: {0}</value></data>
+  <data name="Bsod_Found" xml:space="preserve"><value>{0} blue screens on record</value></data>
+  <data name="Bsod_Looked_Dumps" xml:space="preserve"><value>Dump files read: {0}.</value></data>
+  <data name="Bsod_Looked_Log" xml:space="preserve"><value>Windows' log goes back to {0}; anything older is not kept.</value></data>
+  <data name="Bsod_Looked_LogEmpty" xml:space="preserve"><value>Windows' log is empty.</value></data>
+  <data name="Bsod_Looked_NoDumps" xml:space="preserve"><value>The dump folder could not be read.</value></data>
+  <data name="Bsod_Looked_NoLog" xml:space="preserve"><value>Windows' log could not be read.</value></data>
+  <data name="Bsod_NoCauses" xml:space="preserve"><value>The app has no list of causes for this code; search Microsoft's bug check reference for it.</value></data>
+  <data name="Bsod_NoDump" xml:space="preserve"><value>No dump file; from Windows' log only</value></data>
+  <data name="Bsod_None" xml:space="preserve"><value>No blue screen is on record.</value></data>
+  <data name="Bsod_Note" xml:space="preserve"><value>Reads the dump files of C:\Windows\Minidump and Windows' own log; it changes nothing. The causes are the usual ones for each stop code, most likely first: they say where to look, they are not a verdict on this computer.</value></data>
+  <data name="Bsod_Note_AccessViolation" xml:space="preserve"><value>The exception is an access violation (0xC0000005): code touched memory it must not.</value></data>
+  <data name="Bsod_Note_Clock_Core" xml:space="preserve"><value>A processor core stopped answering: the processor's voltage (undervolt, overclock), or the BIOS.</value></data>
+  <data name="Bsod_Note_Dpc_Single" xml:space="preserve"><value>One driver routine ran too long: a driver, often storage or network.</value></data>
+  <data name="Bsod_Note_Dpc_Total" xml:space="preserve"><value>The system stayed too long at a raised level: a driver, or a drive that stopped answering.</value></data>
+  <data name="Bsod_Note_IllegalInstruction" xml:space="preserve"><value>The exception is an illegal instruction (0xC000001D): corrupted code in memory, often faulty memory or an unstable processor.</value></data>
+  <data name="Bsod_Note_Io_BadBlocks" xml:space="preserve"><value>The drive answered with a data error: bad blocks on the system drive.</value></data>
+  <data name="Bsod_Note_Io_Cable" xml:space="preserve"><value>The drive did not answer: a loose or bad cable, the slot, or the drive dropping out.</value></data>
+  <data name="Bsod_Note_Io_Resources" xml:space="preserve"><value>Windows ran out of non-paged memory while reading the page.</value></data>
+  <data name="Bsod_Note_Mm_PageTable" xml:space="preserve"><value>A page table was found corrupted: this subtype is most often faulty or unstable memory.</value></data>
+  <data name="Bsod_Note_Power_Device" xml:space="preserve"><value>A device did not finish going to sleep or waking: its driver.</value></data>
+  <data name="Bsod_Note_Power_Pnp" xml:space="preserve"><value>The power change waited too long on plug and play: a device or its driver.</value></data>
+  <data name="Bsod_Note_Sec_List" xml:space="preserve"><value>A linked list was found corrupted: a driver writing where it must not.</value></data>
+  <data name="Bsod_Note_Sec_Stack" xml:space="preserve"><value>A stack was overrun: a driver.</value></data>
+  <data name="Bsod_Note_Trap_Cpu" xml:space="preserve"><value>A processor trap that correct code does not cause: faulty memory, or an unstable processor.</value></data>
+  <data name="Bsod_Note_Trap_DoubleFault" xml:space="preserve"><value>A double fault: a driver that overran its stack, or faulty memory.</value></data>
+  <data name="Bsod_Note_Whea_Corrected" xml:space="preserve"><value>A corrected hardware error was escalated: the part is at its edge.</value></data>
+  <data name="Bsod_Note_Whea_Mce" xml:space="preserve"><value>The processor itself reported the error (a machine check): the processor, its voltage or heat, or an overclock come first.</value></data>
+  <data name="Bsod_Note_Whea_Nmi" xml:space="preserve"><value>A non-maskable interrupt: a hardware fault signalled by the board.</value></data>
+  <data name="Bsod_Note_Whea_Other" xml:space="preserve"><value>A hardware error of another source; the error record holds which.</value></data>
+  <data name="Bsod_Note_Whea_Pcie" xml:space="preserve"><value>The error came from a PCI Express device: the graphics card, an NVMe drive or their slot or riser.</value></data>
+  <data name="Bsod_Parameters" xml:space="preserve"><value>Parameters</value></data>
+  <data name="Bsod_ParametersMean" xml:space="preserve"><value>What they are</value></data>
+  <data name="Bsod_Params_Clock" xml:space="preserve"><value>1: the clock ticks missed · 4: the processor core that stopped answering</value></data>
+  <data name="Bsod_Params_Dpc" xml:space="preserve"><value>1: 0 one routine ran too long, 1 too long in all at a raised level · 2: the time it took · 3: the time allowed</value></data>
+  <data name="Bsod_Params_Exception" xml:space="preserve"><value>1: the exception code · 2: the address where it happened</value></data>
+  <data name="Bsod_Params_Inpage" xml:space="preserve"><value>1: the lock type · 2: the I/O status that failed the read · 4: the address that could not be read</value></data>
+  <data name="Bsod_Params_Irql" xml:space="preserve"><value>1: the address touched · 2: the IRQL · 3: 0 read, 1 write, 8 execute · 4: the instruction that did it</value></data>
+  <data name="Bsod_Params_Mm" xml:space="preserve"><value>1: the kind of memory-management fault; the rest depend on it</value></data>
+  <data name="Bsod_Params_PageFault" xml:space="preserve"><value>1: the address touched · 2: the kind of access (0 read, 2 write, 0x10 execute) · 3: the instruction that did it</value></data>
+  <data name="Bsod_Params_Power" xml:space="preserve"><value>1: what failed (3: a device held a power request too long, 4: plug and play timed out) · 2: the device</value></data>
+  <data name="Bsod_Params_Process" xml:space="preserve"><value>1: the process that ended · 2: 0 a process, 1 a thread</value></data>
+  <data name="Bsod_Params_Security" xml:space="preserve"><value>1: what was found corrupted (2 a stack, 3 a linked list)</value></data>
+  <data name="Bsod_Params_Service" xml:space="preserve"><value>1: the exception code · 2: the instruction that did it</value></data>
+  <data name="Bsod_Params_Tdr" xml:space="preserve"><value>1: the recovery record · 2: an address inside the graphics driver that failed · 3: the status of the last failed operation</value></data>
+  <data name="Bsod_Params_Trap" xml:space="preserve"><value>1: the processor trap (0 divide error, 6 invalid opcode, 8 double fault, 0xD general protection)</value></data>
+  <data name="Bsod_Params_Whea" xml:space="preserve"><value>1: the source of the error (0 machine check, 4 PCI Express) · 2: the error record · 3 and 4: the processor's status words (MCi_STATUS)</value></data>
+  <data name="Bsod_PowerLoss" xml:space="preserve"><value>Restarts with no stop code (power lost, reset pressed, or a hard hang): {0}, the last at {1}. Check the power supply, its cable and the socket, and the temperatures under load.</value></data>
+  <data name="Bsod_Read" xml:space="preserve"><value>Read the blue screens</value></data>
+  <data name="Bsod_Sub" xml:space="preserve"><value>the stop errors Windows recorded, and their likely causes</value></data>
+  <data name="Bsod_Title" xml:space="preserve"><value>Blue screens</value></data>
+  <data name="Bsod_Unknown" xml:space="preserve"><value>Stop code not in the app's list</value></data>
+  <data name="Bsod_Uptime" xml:space="preserve"><value>Windows had been up {0} minutes</value></data>
 </root>
