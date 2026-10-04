@@ -7,6 +7,8 @@ public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, i
 
 /// <summary>A report's one-page summary as the site keeps it: who and what it is about, and the page itself (HTML with nothing to load or run).</summary>
 public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html);
+/// <summary>A report in the site's list (what the print program shows): <see cref="Service"/> is the job it was made for, empty when it has none.</summary>
+public sealed record SiteReportItem(string Id, string? Service, string Title, string Machine, string Kind, string? Verdict, string Summary, DateTimeOffset Created, DateTimeOffset Received);
 public sealed record SiteReportReceipt(string Id, bool Updated, string Url, string? Link);
 /// <summary>The computer a shared result was measured on, as its user chose to show it: the parts' names, never the computer's own name.</summary>
 public sealed record SiteMachine(string? Cpu, string? Gpu, double? RamGb, string? Os, string? Name = null);
@@ -41,6 +43,16 @@ public sealed class SiteClient(Uri api, HttpClient http)
 
     public async Task<SiteReportReceipt> SendReportAsync(string key, SiteReport report, CancellationToken ct)
         => Read<SiteReportReceipt>(await SendAsync(HttpMethod.Post, "reports", key, JsonSerializer.Serialize(report, Json), ct).ConfigureAwait(false));
+
+    /// <summary>The reports the site keeps, newest first; the site's key or its reading key may ask.</summary>
+    public async Task<IReadOnlyList<SiteReportItem>> ReportsAsync(string key, CancellationToken ct)
+        => Read<ReportList>(await SendAsync(HttpMethod.Get, "reports?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(), key, null, ct).ConfigureAwait(false)).Reports;
+    private sealed record ReportList(List<SiteReportItem> Reports);
+    private sealed record ReportPage(string Html);
+
+    /// <summary>One report's summary page (HTML with nothing to load or run) as it was sent.</summary>
+    public async Task<string> ReportHtmlAsync(string key, string id, CancellationToken ct)
+        => Read<ReportPage>(await SendAsync(HttpMethod.Get, $"reports/{Uri.EscapeDataString(id)}?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(), key, null, ct).ConfigureAwait(false)).Html;
 
     /// <summary>Benchmark runs (as the run log writes them), which benchmarks count higher as better, and the shop's marks on runs. At most
     /// <see cref="RunsPerRequest"/> runs a call; the site takes each run once, by its id.</summary>

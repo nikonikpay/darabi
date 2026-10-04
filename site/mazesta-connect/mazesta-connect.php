@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.5.0';
+    const VERSION = '1.6.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_RUNS = 500;
@@ -112,11 +112,12 @@ final class Mazesta_Connect
         static $c = null;
         if ($c !== null) { return $c; }
         $c = self::read('config', array());
-        if (empty($c['key']) || empty($c['releaseKey'])) {
+        if (empty($c['key']) || empty($c['releaseKey']) || empty($c['readKey'])) {
             $c = self::locked(function () {
                 $c = self::read('config', array());
                 if (empty($c['key'])) { $c['key'] = self::new_key(); }
                 if (empty($c['releaseKey'])) { $c['releaseKey'] = self::new_key(); }
+                if (empty($c['readKey'])) { $c['readKey'] = self::new_key(); }
                 $c += array('openUploads' => false, 'publicLinks' => false, 'sharing' => true);
                 self::write('config', $c);
                 return $c;
@@ -150,7 +151,11 @@ final class Mazesta_Connect
     {
         $open = '__return_true';
         register_rest_route(self::NS, '/status', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_status'), 'permission_callback' => $open));
-        register_rest_route(self::NS, '/reports', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_report'), 'permission_callback' => array(__CLASS__, 'need_key')));
+        register_rest_route(self::NS, '/reports', array(
+            array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_report'), 'permission_callback' => array(__CLASS__, 'need_key')),
+            array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_list'), 'permission_callback' => array(__CLASS__, 'need_read_key')),
+        ));
+        register_rest_route(self::NS, '/reports/(?P<id>[A-Za-z0-9-]{8,64})', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_get'), 'permission_callback' => array(__CLASS__, 'need_read_key')));
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/pair/start', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_start'), 'permission_callback' => $open));
@@ -174,6 +179,12 @@ final class Mazesta_Connect
     public static function need_key($req)
     {
         return self::key_state($req) === 'ok' ? true : new WP_Error('mazesta_key', 'The site key is missing or wrong.', array('status' => 401));
+    }
+
+    /** The reading key (the print program on the secretary's computer) or the site key: both may read the reports, only the site key may send them. */
+    public static function need_read_key($req)
+    {
+        return self::key_state($req, 'readKey') === 'ok' || self::key_state($req) === 'ok' ? true : new WP_Error('mazesta_key', 'The key is missing or wrong.', array('status' => 401));
     }
 
     public static function need_release_key($req)
@@ -330,6 +341,30 @@ final class Mazesta_Connect
             'url' => admin_url('admin-post.php?action=mzc_report&id=' . $id),
             'link' => !empty($c['publicLinks']) ? home_url('/?mazesta_report=' . $done[1]) : null,
         ));
+    }
+
+    /** The reports kept here, newest first (what the print program lists): who and what each is about, never the page itself. */
+    public static function rest_report_list($req)
+    {
+        $rows = array();
+        foreach (self::read('reports') as $id => $r) {
+            $rows[] = array(
+                'id' => (string) $id, 'service' => isset($r['service']) ? (string) $r['service'] : '', 'title' => isset($r['title']) ? (string) $r['title'] : '',
+                'machine' => isset($r['machine']) ? (string) $r['machine'] : '', 'kind' => isset($r['kind']) ? (string) $r['kind'] : '', 'verdict' => isset($r['verdict']) ? (string) $r['verdict'] : '',
+                'summary' => isset($r['summary']) ? (string) $r['summary'] : '', 'created' => isset($r['created']) ? (string) $r['created'] : '', 'received' => isset($r['received']) ? (string) $r['received'] : '',
+            );
+        }
+        usort($rows, function ($a, $b) { return strcmp($b['received'], $a['received']); });
+        return self::fresh(array('reports' => array_slice($rows, 0, 500)));
+    }
+
+    /** One report's summary page, as it was sent; the print program shows it in a page that lets nothing in it run. */
+    public static function rest_report_get($req)
+    {
+        $id = (string) $req['id'];
+        $html = preg_match('/^[A-Za-z0-9-]{8,64}$/', $id) ? self::raw('report-' . $id) : null;
+        if ($html === null) { return new WP_Error('mazesta_report', 'The report was not found.', array('status' => 404)); }
+        return self::fresh(array('id' => $id, 'html' => $html));
     }
 
     /** A run as the app logs it, or false when it is not one. */
@@ -956,6 +991,7 @@ final class Mazesta_Connect
             $c['openUploads'] = !empty($_POST['open_uploads']); $c['publicLinks'] = !empty($_POST['public_links']); $c['sharing'] = !empty($_POST['sharing']);
             if (!empty($_POST['new_key'])) { $c['key'] = self::new_key(); }
             if (!empty($_POST['new_release_key'])) { $c['releaseKey'] = self::new_key(); }
+            if (!empty($_POST['new_read_key'])) { $c['readKey'] = self::new_key(); }
             self::write('config', $c);
         });
         self::back('settings', 'saved');
@@ -1102,6 +1138,8 @@ final class Mazesta_Connect
             . '<label><input type="checkbox" name="new_key" value="1"> کلید تازه بساز (کلید قبلی از کار می‌افتد)</label></td></tr>'
             . '<tr><th>کلید انتشار</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['releaseKey']) . '</code><p class="description">فقط روی سیستمی که نسخه تازه برنامه را منتشر می‌کند (فایل <code dir="ltr">G:\\Mazesta-Keys\\site-release-key.txt</code>). به کسی ندهید.</p>'
             . '<label><input type="checkbox" name="new_release_key" value="1"> کلید تازه بساز</label></td></tr>'
+            . '<tr><th>کلید خواندن گزارش‌ها</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['readKey']) . '</code><p class="description">برای برنامه چاپ گزارش‌ها روی سیستم منشی: فقط می‌تواند فهرست گزارش‌ها را بخواند و خلاصه‌شان را ببیند، چیزی نمی‌فرستد.</p>'
+            . '<label><input type="checkbox" name="new_read_key" value="1"> کلید تازه بساز</label></td></tr>'
             . '<tr><th>اشتراک‌گذاری کاربران</th><td><label><input type="checkbox" name="sharing" value="1"' . checked(!empty($c['sharing']), true, false) . '> کاربران بتوانند آخرین نتیجه بنچمارکشان را بدون کلید بفرستند و پیوند صفحه آن را بگیرند</label></td></tr>'
             . '<tr><th>بارگذاری بدون کلید</th><td><label><input type="checkbox" name="open_uploads" value="1"' . checked(!empty($c['openUploads']), true, false) . '> نتیجه کاربران بدون کلید به صف بررسی فهرست‌های مقایسه هم برود (بعد از تأیید شما وارد فهرست می‌شود)</label></td></tr>'
             . '<tr><th>پیوند گزارش</th><td><label><input type="checkbox" name="public_links" value="1"' . checked(!empty($c['publicLinks']), true, false) . '> هر گزارش با پیوند خودش بدون ورود به سایت هم باز شود (هر کس پیوند را داشته باشد گزارش را می‌بیند)</label></td></tr></table>';
