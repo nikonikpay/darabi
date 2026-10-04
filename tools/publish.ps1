@@ -75,10 +75,11 @@ function Clear-Output([string]$Folder) {
     return $t
 }
 
-$print = Clear-Output $PrintOutput
+$print = [IO.Path]::GetFullPath((Join-Path $repo $PrintOutput))
 $running = Get-Process MazestaPrint -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($print, [StringComparison]::OrdinalIgnoreCase) }
-if ($running) { Write-Warning "MazestaPrint is running from $print; it was not republished." }
+if ($running) { Write-Warning "MazestaPrint is running from $print; it was not republished." }   # checked before anything is deleted: a running exe is locked
 else {
+    $print = Clear-Output $PrintOutput
     dotnet publish src/Mazesta.Print @flags -o $print
     if ($LASTEXITCODE -ne 0) { throw "publishing the print program failed ($LASTEXITCODE)." }
     Get-ChildItem $print -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
