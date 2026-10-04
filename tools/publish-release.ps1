@@ -1,4 +1,4 @@
-# Builds the copy for users: self-contained (no .NET to install, Windows 10 and 11, x64) and as few files as possible. It goes to its own
+# Builds the copy for users (the users' edition: no service number, no link to the site, no reference marks): self-contained (no .NET to install, Windows 10 and 11, x64) and as few files as possible. It goes to its own
 # folder and never touches artifacts\Mazesta-Web or its Data. The app and the tray are one exe each; what stays beside them is what must be
 # real files: Redist (the PawnIO setup is run from disk), wwwroot (the page), and the WebView2 loader if the SDK leaves it out.
 #   pwsh tools/publish-release.ps1                       # -> artifacts/Mazesta-Release
@@ -12,7 +12,7 @@ if ($running) { throw "Close Mazesta first (running: $($running.Name -join ', ')
 if (Test-Path $target) { Remove-Item $target -Recurse -Force -Confirm:$false }
 $flags = "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
          "-p:EnableCompressionInSingleFile=true", "-p:DebugType=none", "-p:DebugSymbols=false", "-p:GenerateDocumentationFile=false"
-dotnet publish src/Mazesta.Web @flags -o $target
+dotnet publish src/Mazesta.Web @flags "-p:MazestaEdition=Client" -o $target
 if ($LASTEXITCODE -ne 0) { throw "publishing the app failed ($LASTEXITCODE)." }
 $tray = Join-Path ([IO.Path]::GetTempPath()) "mazesta-tray-publish"
 if (Test-Path $tray) { Remove-Item $tray -Recurse -Force }

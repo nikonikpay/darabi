@@ -15,6 +15,8 @@ public sealed class ReportService
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
     private DateTimeOffset _sessionStart; private string _serviceNumber = "";   // the job the session was started for, even if the field changes meanwhile
     public ReportStore Store { get; }
+    /// <summary>Every report is headed with the company's name (it was a setting, "shop name", before 0.8).</summary>
+    private static string Brand => Loc.Get("Web_Company_Title");
     /// <summary>Where the PDF printer (WebView2) keeps its profile - inside the portable Data folder.</summary>
     public string BrowserDataDir { get; }
     public event Action<StoredReport>? ReportCreated;
@@ -45,7 +47,7 @@ public sealed class ReportService
             var peaks = SensorSummarizer.Peaks(_polling, sensors, tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.StartedAt, t.FinishedAt)));
             var findings = await Setup().ConfigureAwait(false);
             findings.AddRange(_checkup.Runs().SelectMany(c => c.All).Select(CheckupText.Entry));
-            Save(SessionReport.Create(_config.ShopName, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
+            Save(SessionReport.Create(Brand, AppVersion, _clock.UtcNow, tests, sensors, machine, benchmarks: benchmarks, serviceNumber: service) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
         }
         catch (Exception e) { _log.LogError(e, "Creating the test report failed"); }
     }
@@ -59,7 +61,7 @@ public sealed class ReportService
             var peaks = SensorSummarizer.Peaks(_polling, sensors, runs.Select(r => (r.Result.StartedAt, r.Result.FinishedAt)));
             var findings = await Setup().ConfigureAwait(false);
             foreach (var run in runs) findings.AddRange((await _checkup.ForRunAsync(run).ConfigureAwait(false)).Select(CheckupText.Entry));
-            Save(SessionReport.CreateBenchmark(_config.ShopName, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
+            Save(SessionReport.CreateBenchmark(Brand, AppVersion, _clock.UtcNow, [.. runs.Select(ToEntry)], sensors, machine, _config.ServiceNumber) with { Peaks = peaks, Findings = findings.Count > 0 ? findings : null });
         }
         catch (Exception e) { _log.LogError(e, "Saving the benchmark report failed"); }
     }
@@ -88,8 +90,8 @@ public sealed class ReportService
         var inv = await _inventory.GetAsync().ConfigureAwait(false);
         var now = _clock.UtcNow;
         var sections = ViewModels.SystemInfoViewModel.Describe(inv).Select(s => new SpecSection(s.Title, [.. s.Rows.Select(r => new SpecRow(r.Label, r.Value))])).ToList();
-        string html = SpecSheet.WriteHtml(sections, inv.Errors, now, _config.ShopName, AppVersion, Loc.Get("System_Export_Title"), Loc.Get("System_Export_Footer"), Loc.IsRtl, Font.Value);
-        return Store.SaveSpecs(now, html, SpecSheet.WriteJson(inv, now, _config.ShopName, AppVersion));
+        string html = SpecSheet.WriteHtml(sections, inv.Errors, now, Brand, AppVersion, Loc.Get("System_Export_Title"), Loc.Get("System_Export_Footer"), Loc.IsRtl, Font.Value);
+        return Store.SaveSpecs(now, html, SpecSheet.WriteJson(inv, now, Brand, AppVersion));
     }
 
     /// <summary>The setup's checkup for a report (memory, power plan, drive links); a report is written all the same when it cannot be read.</summary>

@@ -26,11 +26,13 @@ public sealed partial class WebBridge
     private void RegisterApp()
     {
         var engine = _sp.GetRequiredService<PollingEngine>();
+        // The service number is Mazesta's own: a users' copy has no field for it, so one left in a carried-over settings file is not printed.
+        if (!Staff) _config.ServiceNumber = "";
         Method("app.boot", _ => new
         {
             language = _config.Language, rtl = Loc.IsRtl, strings = Strings(),
             version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "",
-            shopName = _config.ShopName, serviceNumber = _config.ServiceNumber, interval = engine.FastInterval.TotalSeconds, paused = engine.State == EngineState.Paused,
+            staff = Staff, serviceNumber = _config.ServiceNumber, interval = engine.FastInterval.TotalSeconds, paused = engine.State == EngineState.Paused,
             provider = Provider(engine.Provider.Status),
             banner = _configCorrupt ? Loc.Get("Config_Corrupt") : string.Join(" ", new[] { _sp.GetRequiredService<TuningRecovery>().Message, _sp.GetRequiredService<Desktop.Services.BenchmarkBreakWatch>().Message,
                 // A test session cut off by a restart: the Tests page says where it stopped and why; this says so at the first look.
@@ -45,7 +47,7 @@ public sealed partial class WebBridge
         // The adapters connected now, the internet's first: the network page shows those, not the first port Windows lists (often unplugged).
         Method("app.network", _ => Diagnostics.Network.InternetAdapter.Find() is var a ? new { internet = a.Internet, up = a.Up } : null);
         // The service job being worked on, printed on every report; Persian digits become Latin so the number reads the same everywhere.
-        Method("app.setServiceNumber", p => _config.ServiceNumber = Core.Text.PersianDigits.Normalize(Str(p, "value") ?? "").Trim());
+        Method("app.setServiceNumber", p => { StaffOnly(); return _config.ServiceNumber = Core.Text.PersianDigits.Normalize(Str(p, "value") ?? "").Trim(); });
         Method("app.togglePause", _ => { if (engine.State == EngineState.Paused) engine.Resume(); else engine.Pause(); return engine.State == EngineState.Paused; });
         Method("app.openLink", p => { if (Links.TryGetValue(Str(p, "key"), out var url)) Open(url); return null; });
         Method("app.toggleOverlay", _ => { var o = _sp.GetRequiredService<Desktop.Services.OverlayService>(); o.Toggle(); return o.IsVisible; });

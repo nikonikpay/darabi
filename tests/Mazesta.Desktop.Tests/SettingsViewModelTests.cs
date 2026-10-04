@@ -25,7 +25,7 @@ public class SettingsViewModelTests : IDisposable
     [Fact] public void Fast_interval_must_be_an_allowed_value()
     { var (vm, cfg, _, _, _) = Build(); vm.FastIntervalText = "3"; vm.SaveCommand.Execute(null); Assert.Equal(2, cfg.FastIntervalSeconds); }
     [Fact] public void Save_writes_file_and_language_change_shows_restart_note()
-    { var (vm, _, store, _, _) = Build(); vm.Language = "en"; vm.ShopName = "فروشگاه"; vm.SaveCommand.Execute(null); var r = store.Load(); Assert.Equal(("en", "فروشگاه"), (r.Value.Language, r.Value.ShopName)); Assert.Contains(Mazesta.Desktop.Localization.Loc.Get("Settings_RestartNote"), vm.Message); }
+    { var (vm, _, store, _, _) = Build(); vm.Language = "en"; vm.DisplayName = " سعید "; vm.SaveCommand.Execute(null); var r = store.Load(); Assert.Equal(("en", "سعید"), (r.Value.Language, r.Value.DisplayName)); Assert.Contains(Mazesta.Desktop.Localization.Loc.Get("Settings_RestartNote"), vm.Message); }
     [Fact] public async Task Enable_and_disable_follow_what_the_system_reports_not_a_stored_flag()
     {
         var (vm, _, _, _, tray) = Build(); await vm.TrayLoaded;

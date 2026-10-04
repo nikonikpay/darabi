@@ -175,18 +175,16 @@ function demoGap(mine, v) {
   const text = pct < 0.5 ? "≈" : x >= 1.995 ? `${x < 9.95 ? x.toFixed(1) : Math.round(x)}×` : `${pct < 9.95 ? pct.toFixed(1) : Math.round(pct)}%`;
   return { text, lead, equal: pct < 0.5 };
 }
-const FEATURED = [["f1", "Intel Core i9-13900K", 1012, true, "خنک‌کننده آبی ۳۶۰", "2026/09/20"], ["f2", "AMD Ryzen 7 7800X3D", 540, false, null, "2026/09/18"]];
 // The case a slow machine meets: every model in the list is faster, so the standing says how far the nearest one is ahead.
 function demoLast() {
   const around = [["AMD Ryzen 9 9900X", 3.06, "3.8×"], ["13th Gen Intel Core i7-13700KF", 2.09, "2.6×"]].map(([part, v, g]) => ({ part, oc: false, value: `${v} GFLOPS`, best: `${v} GFLOPS`, systems: 1, runs: 1, diff: -70, gap: { text: g, lead: true, equal: false }, local: true, same: false }));
-  return { total: 2, beaten: 0, mineIndex: 2, from: 0, around, featured: [], featuredTotal: 0, mine: "0.82 GFLOPS", part: "AMD Ryzen 5 PRO 3400G with Radeon Vega Graphics", oc: false };
+  return { total: 2, beaten: 0, mineIndex: 2, from: 0, around, mine: "0.82 GFLOPS", part: "AMD Ryzen 5 PRO 3400G with Radeon Vega Graphics", oc: false };
 }
 function demoPeers(all) {
-  const mine = 412, rows = PEERS.map(([part, v, systems, runs], k) => ({ part, oc: k === 1, value: `${v} GFLOPS`, best: `${Math.round(v * 1.04)} GFLOPS`, systems, runs, diff: (mine - v) / v * 100, gap: demoGap(mine, v), local: k === 8, same: k === 3 }));
-  const featured = FEATURED.map(([id, part, v, oc, note, at]) => ({ id, part, oc, note, at, local: id === "f2", value: `${v} GFLOPS`, gap: demoGap(mine, v) }));
+  const mine = 412, rows = PEERS.map(([part, v, systems, runs], k) => ({ part, oc: k === 1, value: `${v} GFLOPS`, best: `${Math.round(v * 1.04)} GFLOPS`, systems, runs, diff: (mine - v) / v * 100, gap: demoGap(mine, v), local: k === 8, same: k === 3, references: k === 0 ? 2 : 0 }));
   const mineIndex = rows.filter((r) => r.diff < 0).length, from = Math.max(0, mineIndex - 3);
-  return all ? { name: strings.Bench_Cpu_Multi, metric: strings.Bench_Cpu_Gflops, higherIsBetter: true, mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", mineIndex, beaten: rows.length - mineIndex, built: "2026/09/29", rows, featured }
-    : { total: rows.length, beaten: rows.length - mineIndex, mineIndex, from, around: rows.slice(from, mineIndex + 3), featured, featuredTotal: featured.length, mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", oc: false };
+  return all ? { name: strings.Bench_Cpu_Multi, metric: strings.Bench_Cpu_Gflops, higherIsBetter: true, mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", mineIndex, beaten: rows.length - mineIndex, built: "2026/09/29", rows }
+    : { total: rows.length, beaten: rows.length - mineIndex, mineIndex, from, around: rows.slice(from, mineIndex + 3), mine: "412 GFLOPS", part: "AMD Ryzen 9 3950X", oc: false };
 }
 const spec = (pairs) => pairs.map(([k, value]) => ({ name: strings[k], value }));
 const demoDetail = (value, oc, at, hybrid) => ({ value, oc, at,
@@ -271,7 +269,7 @@ export async function call(m, p, emit) {
   if (!started) { started = true; seed(); setTimeout(snapshot, 50); setInterval(() => { snapshot(); frames(emit); }, 2000); }
   if (m.startsWith("overlay.")) return overlay(m, p, HW, strings, emit);
   switch (m) {
-    case "app.boot": return { language: "fa", rtl: true, strings, version: "demo", shopName: "مازستا", serviceNumber: "S-1405-0042", interval: 2, paused: false,
+    case "app.boot": return { language: "fa", rtl: true, strings, version: "demo", staff: !new URLSearchParams(location.search).has("client"), serviceNumber: "S-1405-0042", interval: 2, paused: false,
       contact: { sales: "09197588700", support: "09197588701", office: "021-41139", email: "info@dfmrendering.com", hours: "Contact_Hours", address: "Contact_Address", postcode: "1571837738" },
       provider: { state: "Ready", text: strings.Status_Provider_Ready.replace("{0}", "۴۱۲"), count: 412 }, banner: null,
       units: { Celsius: "°C", MegaHertz: "MHz", Percent: "%", Volt: "V", Ampere: "A", Watt: "W", WattHour: "Wh", Rpm: "RPM", Gigabyte: "GB", Megabyte: "MB", BytesPerSecond: "B/s", Seconds: "s", Hertz: "Hz", None: "" } };
@@ -341,13 +339,14 @@ export async function call(m, p, emit) {
     case "bench.state": return bench();
     case "bench.peers": return demoPeers(true);
     case "bench.history": return [["1405/07/07 12:24", "DESKTOP-CBSHJEH", "Intel Core i9-13900K", "1012 GFLOPS", true], ["1405/07/07 12:42", "ALI", "AMD Ryzen 9 3950X", "412 GFLOPS", false]].map(([at, machine, part, value, hybrid], k) => ({ id: `r${k}`, at, machine, part, value, app: "0.7.1", featured: k === 0, note: k === 0 ? "خنک‌کننده آبی ۳۶۰" : null, detail: demoDetail(value, hybrid, at.slice(0, 10), hybrid) }));
-    case "bench.detail": return { mine: demoDetail("412 GFLOPS", false, "2026/09/29", false), theirs: p.run === "f2" ? null : demoDetail(p.run ? "1012 GFLOPS" : "861 GFLOPS", !!p.oc || p.run === "f1", "2026/09/20", true) };
+    case "bench.detail": return { mine: demoDetail("412 GFLOPS", false, "2026/09/29", false), theirs: demoDetail("861 GFLOPS", !!p.oc, "2026/09/20", true), median: "905 GFLOPS", references: p.part === "AMD Ryzen 9 7950X" ? 2 : 0,
+      members: [["921 GFLOPS", "2026/09/21"], ["905 GFLOPS", "2026/09/12"], ["880 GFLOPS", "2026/08/30"]].map(([value, at]) => ({ value, at, gap: demoGap(412, parseFloat(value)) })) };
     case "bench.mark": case "bench.oc": return null;
     case "checkup.state": return { running: false, runs: [{ id: "bench.cpu.multi", name: strings.Bench_Cpu_Multi, at: "14:32", findings: DEMO_FINDINGS.cpu() }, { id: "bench.gpu.d3d", name: strings.Bench_Gpu_D3D, at: "14:36", findings: DEMO_FINDINGS.gpu() }] };
     case "checkup.setup": await new Promise((r) => setTimeout(r, 400)); return DEMO_FINDINGS.setup();
     case "checkup.run": return false;
     case "app.quiet": return false;
-    case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/",
+    case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),
       latest: { version: "0.7.0", size: 48234496, date: "2026/09/29", notes: "- به‌روزرسانی خودکار برنامه از سایت\n- مقایسه نتیجه بنچمارک با سیستم‌های دیگر" },
       data: { lists: 9, downloaded: 2, published: "2026/09/29 13:50", syncedAt: "2026/09/29 14:10" } };
     case "tuning.state": return tuning();
@@ -357,7 +356,7 @@ export async function call(m, p, emit) {
       output: ["Beginning system scan.  This process will take some time.", "", "Beginning verification phase of system scan.", "Verification 100% complete.", "", "Windows Resource Protection did not find any integrity violations."],
       pageFile: [{ label: strings.Tools_PageFile_Managed, value: "C:\\pagefile.sys" }, { label: strings.Tools_PageFile_Size, value: "16384 MB" }, { label: strings.Tools_PageFile_Used, value: "120 MB" }] };
     case "gaming.state": return { status: "", gameMode: strings.Gaming_On, gpuScheduling: strings.Gaming_On, plans: [{ index: 0, name: "Balanced", active: false }, { index: 1, name: "High performance", active: false }, { index: 2, name: "AMD Ryzen™ High Performance", active: true }] };
-    case "settings.state": return { language: "fa", languages: ["en", "fa"], renderMode: "software", renderModes: ["auto", "software"], interval: "2", storageInterval: "900", shopName: "مازستا", message: "",
+    case "settings.state": return { language: "fa", languages: ["en", "fa"], renderMode: "software", renderModes: ["auto", "software"], interval: "2", storageInterval: "900", displayName: "", message: "",
       trayFirst: "20", trayIdle: "10", trayWatch: "30", trayHealth: "30", trayCpuAlert: "95", trayGpuAlert: "95", trayStatus: "Tray: اجرا نمی‌شود · اجرا با ورود به ویندوز: خیر", canEnableTray: true, canDisableTray: false, dataFolder: "D:\\Mazesta-Test\\Data", mode: strings.Settings_Mode_Portable, version: "demo",
       overlayVisible: false, overlayCorner: "TopLeft", overlayCorners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })), hotkey: "Ctrl+Shift+O" };
     default: return null;

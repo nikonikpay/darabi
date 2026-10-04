@@ -14,6 +14,11 @@
     <ApplicationIcon>..\Mazesta.Desktop\Assets\mazesta.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
   </PropertyGroup>
+  <!-- Two editions of one app: Mazesta's own (the default: the service number, the link to the site, the reference marks) and the users'
+       (-p:MazestaEdition=Client), which has none of those. tools/publish.ps1 builds both. -->
+  <PropertyGroup Condition="'$(MazestaEdition)' == 'Client'">
+    <DefineConstants>$(DefineConstants);MAZESTA_CLIENT</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />

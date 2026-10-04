@@ -7,6 +7,7 @@ import { h, icon, toast } from "../ui.js";
 import { setField } from "./tests.js";
 import { groupPanel, byPart } from "../groups.js";
 import { findingCard, bySeverity } from "./checkup.js";
+import { boot } from "../app.js";
 
 // The list, optionally only one part's benchmarks (the component pages reuse it).
 export function benchList(component = null) {
@@ -16,8 +17,8 @@ export function benchList(component = null) {
   const queue = h("span", { class: "pill run", hidden: true });
   const oc = h("input", { type: "checkbox", class: "check", onchange: (e) => call("bench.oc", { value: e.target.checked }) });
   const list = h("div", { class: "groups" });
-  // This copy's logged runs go to the shop's site, which builds the comparison lists every copy reads.
-  const upload = h("button", { class: "btn quiet", title: t("Site_Runs_Hint"), "data-a": "send-site", onclick: async () => {
+  // This copy's logged runs go to Mazesta's site, which builds the comparison lists every copy reads (Mazesta's edition only).
+  const upload = !boot.staff ? null : h("button", { class: "btn quiet", title: t("Site_Runs_Hint"), "data-a": "send-site", onclick: async () => {
     if (!hasKey) { toast(t("Site_Runs_NeedKey"), "fail"); location.hash = "#/appupdate"; return; }
     upload.disabled = true;
     try {
@@ -43,10 +44,10 @@ export function benchList(component = null) {
     } catch (e) { toast(String(e.message || e), "fail"); }
     share.disabled = false;
   } }, icon("popout"), t("Site_Share_Send"));
-  // Sending every logged run to the lists is the shop's (it needs the site's key): without one the button says so and opens where to connect.
+  // Sending every logged run to the lists needs the site's key: without one the button says so and opens where to connect.
   let hasKey = false;
   const keyed = (s) => { if (s) hasKey = !!s.hasKey; };
-  call("site.state").then(keyed).catch(() => {});
+  if (boot.staff) call("site.state").then(keyed).catch(() => {});
   const offSite = on("site", keyed);
   wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), share, upload,
     h("label", { class: "oc-toggle", title: t("Bench_OverclockedHint") }, oc, t("Bench_Overclocked")),
@@ -159,24 +160,18 @@ function gapCell(g) {
 }
 const ocTag = () => h("span", { class: "tag oc" }, t("Web_Peers_Oc"));
 
-// Where this system stands among other systems: the comparison list is one entry per part model (the median of its systems' best runs), from the
-// shop's published lists and this copy's own runs, and the shop's featured runs above it. The row shows the few entries around this result; the
-// whole list, searchable and filtered, opens apart, since it can hold thousands of models. Any entry opens its details beside this system's.
+// Where this system stands among other systems: the comparison list is one entry per part model, from Mazesta's published lists and this
+// copy's own runs. An entry's number is the median of the reference runs Mazesta verified for that model where there are any (the row says
+// so), the median of its systems' best runs otherwise. The row shows the few entries around this result; the whole list, searchable and
+// filtered, opens apart, since it can hold thousands of models. Any entry opens its details beside this system's.
 function standing(r) {
   const p = r.peers;
   const head = h("div", { class: "peers-head" }, icon("chart"), h("b", {}, t("Web_Peers_Title")),
     p.total ? h("span", { class: "caption" }, t("Web_Peers_Count", fa(p.total))) : null, h("span", { class: "grow" }),
-    p.total || p.featuredTotal ? h("button", { class: "btn quiet", onclick: () => allPeers(r) }, t("Web_Peers_All")) : null,
+    p.total ? h("button", { class: "btn quiet", onclick: () => allPeers(r) }, t("Web_Peers_All")) : null,
     h("button", { class: "btn quiet", onclick: () => history(r) }, t("Web_Peers_History")));
-  if (!p.total && !p.featuredTotal) return [head, h("p", { class: "rec-none" }, t("Web_Peers_None"))];
+  if (!p.total) return [head, h("p", { class: "rec-none" }, t("Web_Peers_None"))];
   const out = [head];
-  if (p.featuredTotal) {
-    const fl = h("ol", { class: "peer-list featured" });
-    for (const f of p.featured) addFeatured(fl, r, f);
-    out.push(h("div", { class: "peers-sub" }, icon("star"), h("b", {}, t("Web_Peers_Featured")), h("span", { class: "caption" }, t("Web_Peers_FeaturedHint"))), fl);
-    if (p.featuredTotal > p.featured.length) out.push(h("p", { class: "rec-none" }, t("Web_Peers_FeaturedMore", fa(p.featuredTotal - p.featured.length))));
-  }
-  if (!p.total) return out;
   if (p.mineIndex !== null) out.push(standingLine(p.beaten, p.total, p.around[p.mineIndex - 1 - p.from]));
   else out.push(h("p", { class: "rec-none" }, t("Web_Peers_RunFirst")));
   const list = h("ol", { class: "peer-list" }), rank = (idx) => idx + 1 + (p.mineIndex !== null && idx >= p.mineIndex ? 1 : 0);
@@ -217,23 +212,18 @@ function openable(li, list, ask) {
 // The systems behind a model's row, one by one (each system's best run, best first): the row's number is their median.
 function membersBox(d) {
   if (!d?.members?.length) return null;
-  return h("details", { class: "cmp-group members", open: d.members.length > 1 || null }, h("summary", {}, t("Web_Peers_Members", fa(d.members.length), d.median || "")),
+  return h("details", { class: "cmp-group members", open: d.members.length > 1 || null },
+    h("summary", {}, d.references ? t("Web_Peers_Members_Ref", fa(d.members.length), d.median || "", fa(d.references)) : t("Web_Peers_Members", fa(d.members.length), d.median || "")),
     h("ol", { class: "peer-list" }, d.members.map((m, i) => h("li", { class: "peer" }, h("span", { class: "rk num" }, i + 1), h("span", { class: "pn caption lat" }, m.at),
       h("span", { class: "pv num" }, m.value), h("span", { class: "ps" }), gapCell(m.gap)))));
 }
 
 function addPeer(list, r, e, rank) {
   const li = h("li", { class: `peer ${e.same ? "same" : ""}` }, h("span", { class: "rk num" }, rank),
-    h("span", { class: "pn" }, h("span", { class: "lat" }, e.part), e.oc ? ocTag() : null, e.same ? h("span", { class: "tag" }, t("Web_Peers_Same")) : null, e.local ? h("span", { class: "tag" }, t("Web_Peers_Local")) : null),
-    h("span", { class: "pv num", title: t("Web_Peers_Median") }, e.value), h("span", { class: "ps caption" }, t("Web_Peers_Systems", fa(e.systems), fa(e.runs))), gapCell(e.gap));
+    h("span", { class: "pn" }, h("span", { class: "lat" }, e.part), e.oc ? ocTag() : null, e.references ? h("span", { class: "tag ref", title: t("Web_Peers_ReferenceMedian", fa(e.references)) }, icon("star"), t("Web_Peers_Reference")) : null,
+      e.same ? h("span", { class: "tag" }, t("Web_Peers_Same")) : null, e.local ? h("span", { class: "tag" }, t("Web_Peers_Local")) : null),
+    h("span", { class: "pv num", title: e.references ? t("Web_Peers_ReferenceMedian", fa(e.references)) : t("Web_Peers_Median") }, e.value), h("span", { class: "ps caption" }, t("Web_Peers_Systems", fa(e.systems), fa(e.runs))), gapCell(e.gap));
   openable(li, list, () => call("bench.detail", { id: r.id, part: e.part, oc: !!e.oc }));
-}
-
-function addFeatured(list, r, f) {
-  const li = h("li", { class: "peer star" }, h("span", { class: "rk" }, icon("star")),
-    h("span", { class: "pn" }, h("span", { class: "lat" }, f.part), f.oc ? ocTag() : null, f.local ? h("span", { class: "tag" }, t("Web_Peers_Local")) : null, f.note ? h("span", { class: "caption" }, f.note) : null),
-    h("span", { class: "pv num" }, f.value), h("span", { class: "ps caption lat" }, f.at), gapCell(f.gap));
-  openable(li, list, () => call("bench.detail", { id: r.id, run: f.id }));
 }
 
 function youRow(p, rank) {
@@ -283,7 +273,7 @@ function sheet(title, sub, body) {
   return d;
 }
 
-// The whole list: searchable, filtered (every model, the featured runs only, or no overclocked entries), a hundred at a time.
+// The whole list: searchable, filtered (every model, the models with a reference result only, or no overclocked entries), a hundred at a time.
 async function allPeers(r) {
   const d = await call("bench.peers", { id: r.id });
   if (!d) return;
@@ -292,24 +282,18 @@ async function allPeers(r) {
   if (d.mineIndex !== null && d.mineIndex >= d.rows.length) items.push({ you: true });
   items.forEach((it, k) => { it.rank = k + 1; });
   const PAGE = 100;
-  let shown = PAGE, filter = d.featured.length && !d.rows.length ? "featured" : "all";
+  let shown = PAGE, filter = "all";
+  const refs = d.rows.filter((e) => e.references).length;
   const search = h("input", { class: "field", type: "search", placeholder: t("Web_Peers_Search"), "aria-label": t("Web_Peers_Search") });
   const chips = h("div", { class: "chips", role: "group" }, [["all", "Web_Peers_FilterAll"], ["featured", "Web_Peers_FilterFeatured"], ["stock", "Web_Peers_FilterStock"]]
-    .map(([k, key]) => h("button", { class: "chip", type: "button", "data-k": k, onclick: () => { filter = k; shown = PAGE; paint(); } }, t(key), k === "featured" ? h("span", { class: "lat" }, ` ${d.featured.length}`) : null)));
+    .map(([k, key]) => h("button", { class: "chip", type: "button", "data-k": k, onclick: () => { filter = k; shown = PAGE; paint(); } }, t(key), k === "featured" ? h("span", { class: "lat" }, ` ${refs}`) : null)));
   const found = h("span", { class: "caption" });
   const list = h("ol", { class: "peer-list long" }), more = h("button", { class: "btn quiet", type: "button" });
   function paint() {
     for (const c of chips.children) c.classList.toggle("on", c.dataset.k === filter);
     const q = search.value.trim().toLowerCase(), match = (s) => !q || s.toLowerCase().includes(q);
     list.replaceChildren();
-    if (filter === "featured") {
-      const hits = d.featured.filter((f) => match(f.part) || (q && (f.note || "").toLowerCase().includes(q)));
-      for (const f of hits.slice(0, shown)) addFeatured(list, r, f);
-      found.textContent = t("Web_Peers_Found", fa(hits.length));
-      more.hidden = hits.length <= shown; more.textContent = t("Web_Peers_More", fa(Math.min(PAGE, hits.length - shown)));
-      return;
-    }
-    const hits = items.filter((it) => it.you || (match(it.e.part) && (filter !== "stock" || !it.e.oc)));
+    const hits = items.filter((it) => it.you || (match(it.e.part) && (filter !== "stock" || !it.e.oc) && (filter !== "featured" || it.e.references)));
     for (const it of hits.slice(0, shown)) { if (it.you) list.append(youRow(d, it.rank)); else addPeer(list, r, it.e, it.rank); }
     found.textContent = t("Web_Peers_Found", fa(hits.filter((it) => !it.you).length));
     more.hidden = hits.length <= shown; more.textContent = t("Web_Peers_More", fa(Math.min(PAGE, hits.length - shown)));
@@ -324,11 +308,13 @@ async function allPeers(r) {
   list.querySelector(".you")?.scrollIntoView({ block: "center" });
 }
 
-// This copy's own recorded runs of a benchmark, on every machine it has been used on: the "results it has recorded", and what the shop gathers.
-// Each opens to its full record; the star makes it a featured result (published with the next lists), the box marks it overclocked.
+// This copy's own recorded runs of a benchmark, on every machine it has been used on. Each opens to its full record. In Mazesta's edition
+// the star makes a run a reference result of its model (published with the next lists) and the box marks it overclocked; the users' edition
+// only shows the runs (a reference is chosen by Mazesta, in its edition or on the site).
 async function history(r) {
   const runs = await call("bench.history", { id: r.id });
-  const cols = ["Web_Runs_Date", "Web_Runs_Machine", "Web_Runs_Part", "Web_Runs_Value", "Web_Runs_Oc", "Web_Runs_Featured"];
+  const staff = !!boot.staff;
+  const cols = ["Web_Runs_Date", "Web_Runs_Machine", "Web_Runs_Part", "Web_Runs_Value", "Web_Runs_Oc", ...(staff ? ["Web_Runs_Featured"] : [])];
   const mark = (x, patch) => call("bench.mark", { id: r.id, run: x.id, ...patch });
   const body = [];
   if (runs && runs.length) {
@@ -337,24 +323,24 @@ async function history(r) {
       const star = h("button", { class: `icon-btn star-btn ${x.featured ? "on" : ""}`, type: "button", "aria-pressed": String(!!x.featured), title: t("Web_Runs_MarkHint"), "aria-label": t("Web_Runs_Featured"),
         onclick: async (e) => { e.stopPropagation(); x.featured = !x.featured; star.classList.toggle("on", x.featured); star.setAttribute("aria-pressed", String(x.featured)); await mark(x, { featured: x.featured }); } }, icon("star"));
       const oc = h("input", { type: "checkbox", class: "check", "aria-label": t("Web_Runs_Oc"), onclick: (e) => e.stopPropagation(), onchange: async (e) => { x.detail.oc = e.target.checked; await mark(x, { oc: e.target.checked }); } });
-      oc.checked = !!x.detail?.oc;
+      oc.checked = !!x.detail?.oc; oc.disabled = !staff;
       const tr = h("tr", { class: "openable", tabIndex: 0, title: t("Web_Detail_Open") },
-        h("td", { class: "lat" }, x.at), h("td", { class: "lat" }, x.machine), h("td", { class: "lat" }, x.part), h("td", { class: "num" }, x.value), h("td", {}, oc), h("td", {}, star));
+        h("td", { class: "lat" }, x.at), h("td", { class: "lat" }, x.machine), h("td", { class: "lat" }, x.part), h("td", { class: "num" }, x.value), h("td", {}, oc), staff ? h("td", {}, star) : null);
       let open = null;
       const toggle = () => {
         if (open) { open.remove(); open = null; return; }
         const note = h("input", { class: "field", value: x.note || "", maxlength: "120", placeholder: t("Web_Runs_NoteLabel"), "aria-label": t("Web_Runs_NoteLabel"),
           onchange: (e) => { x.note = e.target.value; mark(x, { note: e.target.value }); } });
-        open = h("tr", { class: "run-detail" }, h("td", { colspan: String(cols.length) }, h("label", { class: "note-field" }, t("Web_Runs_NoteLabel"), note), compare(x.detail, null, false)));
+        open = h("tr", { class: "run-detail" }, h("td", { colspan: String(cols.length) }, staff ? h("label", { class: "note-field" }, t("Web_Runs_NoteLabel"), note) : null, compare(x.detail, null, false)));
         tr.after(open);
       };
       tr.addEventListener("click", toggle);
       tr.addEventListener("keydown", (e) => { if (e.target === tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } });
       tbody.append(tr);
     }
-    body.push(h("p", { class: "note" }, t("Web_Runs_MarkHint")), h("div", { class: "runs-wrap" }, h("table", { class: "runs" }, h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, t(c))))), tbody)));
+    body.push(staff ? h("p", { class: "note" }, t("Web_Runs_MarkHint")) : null, h("div", { class: "runs-wrap" }, h("table", { class: "runs" }, h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, t(c))))), tbody)));
   } else body.push(h("p", { class: "rec-none" }, t("Web_Runs_Empty")));
-  sheet(r.name, t("Web_Runs_Note"), [...body, h("div", { class: "btn-row" }, h("button", { class: "btn", type: "button", onclick: () => call("bench.exec", { cmd: "openRuns" }) }, icon("folder"), t("Web_Runs_Folder")))]);
+  sheet(r.name, t(staff ? "Web_Runs_Note" : "Web_Runs_Note_Client"), [...body, staff ? h("div", { class: "btn-row" }, h("button", { class: "btn", type: "button", onclick: () => call("bench.exec", { cmd: "openRuns" }) }, icon("folder"), t("Web_Runs_Folder"))) : null]);
 }
 
 export function mount(el) {

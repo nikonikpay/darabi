@@ -14,7 +14,7 @@ public sealed partial class WebBridge
         object State() => new
         {
             language = settings.Language, languages = settings.Languages, renderMode = settings.RenderMode, renderModes = settings.RenderModes,
-            interval = settings.FastIntervalText, storageInterval = settings.StorageIntervalText, shopName = settings.ShopName, message = settings.Message,
+            interval = settings.FastIntervalText, storageInterval = settings.StorageIntervalText, displayName = settings.DisplayName, message = settings.Message,
             trayFirst = settings.TrayFirstCheckText, trayIdle = settings.TrayIdleText, trayWatch = settings.TrayWatchText, trayHealth = settings.TrayHealthText, trayCpuAlert = settings.TrayCpuAlertText, trayGpuAlert = settings.TrayGpuAlertText, trayStatus = settings.TrayStatusText,
             canEnableTray = settings.CanEnableTray, canDisableTray = settings.CanDisableTray, dataFolder = settings.DataFolder, mode = settings.ModeText, version = settings.Version,
         };
@@ -29,7 +29,7 @@ public sealed partial class WebBridge
                 case "renderMode": if (settings.RenderModes.Contains(v)) settings.RenderMode = v; break;
                 case "interval": settings.FastIntervalText = v; break;
                 case "storageInterval": settings.StorageIntervalText = v; break;
-                case "shopName": settings.ShopName = v; break;
+                case "displayName": settings.DisplayName = v; break;
                 case "trayFirst": settings.TrayFirstCheckText = v; break;
                 case "trayIdle": settings.TrayIdleText = v; break;
                 case "trayWatch": settings.TrayWatchText = v; break;

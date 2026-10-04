@@ -28,7 +28,7 @@ export function mount(el) {
     h("div", { class: "quick" },
       action("", "flask", "Web_Dash_RunTests", () => go("tests")), action("p-gpu", "trophy", "Nav_Benchmarks", () => go("benchmarks")),
       action("p-game", "overlay", "Overlay_Toggle", () => call("app.toggleOverlay")), action("p-board", "doc", "Nav_Reports", () => go("reports"))),
-    h("div", { class: "colophon" }, h("span", {}, boot.shopName), h("span", {}, date)));
+    h("div", { class: "colophon" }, h("span", {}, t("Web_Company_Title")), h("span", {}, date)));
   // Each temperature with its part's load beside it and as the bar, like the overlay; memory used, its load, and the total under it.
   // The adapter the internet goes through, as the network page shows it; the first connected one without it.
   const net = [...nets].sort((a, b) => netRank(a) - netRank(b))[0];

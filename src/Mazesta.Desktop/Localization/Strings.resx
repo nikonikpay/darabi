@@ -232,9 +232,6 @@
   <data name="Settings_StorageInterval" xml:space="preserve">
     <value>Disk SMART interval (seconds)</value>
   </data>
-  <data name="Settings_ShopName" xml:space="preserve">
-    <value>Shop name</value>
-  </data>
   <data name="Settings_DataFolder" xml:space="preserve">
     <value>Data folder</value>
   </data>
@@ -893,13 +890,13 @@
   <data name="Web_Group_Windows" xml:space="preserve"><value>Windows</value></data>
   <data name="Web_Group_Power" xml:space="preserve"><value>Whole system (power)</value></data>
   <data name="Web_Company_Title" xml:space="preserve"><value>Mazesta</value></data>
-  <data name="Web_Shop_Title" xml:space="preserve"><value>From our shop</value></data>
+  <data name="Web_Shop_Title" xml:space="preserve"><value>From the Mazesta shop</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>View in shop</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>Another product</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>All products</value></data>
-  <data name="Web_Shop_Offline" xml:space="preserve"><value>The shop could not be reached. A product will show here once the internet is available.</value></data>
+  <data name="Web_Shop_Offline" xml:space="preserve"><value>The Mazesta site could not be reached. A product shows here once the internet is connected.</value></data>
   <data name="Web_Shop_Systems_Title" xml:space="preserve"><value>Ready systems</value></data>
-  <data name="Web_Shop_Systems_Sub" xml:space="preserve"><value>Complete computers from our shop, ready to use</value></data>
+  <data name="Web_Shop_Systems_Sub" xml:space="preserve"><value>Complete, ready computers from the Mazesta shop</value></data>
   <data name="Web_Shop_AnotherSystem" xml:space="preserve"><value>Another system</value></data>
   <data name="Web_Shop_AllSystems" xml:space="preserve"><value>All ready systems</value></data>
   <data name="Web_Contact_Title" xml:space="preserve"><value>Sales and support</value></data>
@@ -1336,11 +1333,11 @@ The update services stopped and disabled</value></data>
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden (2560x1440)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>1% low (the slowest hundredth of frames)</value></data>
   <data name="Nav_AppUpdate" xml:space="preserve"><value>App update</value></data>
-  <data name="AppUpd_Lede" xml:space="preserve"><value>Mazesta updates itself from the shop's site: new versions of the app, and the lists that compare benchmark results with other systems. Everything is checked against the shop's signature before it is used, and your settings, reports and history (the Data folder) are never touched.</value></data>
+  <data name="AppUpd_Lede" xml:space="preserve"><value>The app updates itself from Mazesta's site: new releases of the app, and the lists that compare a benchmark result with other systems. Everything is checked against Mazesta's signature before it is used, and your settings, reports and history (the Data folder) are never touched.</value></data>
   <data name="AppUpd_Version" xml:space="preserve"><value>Installed version</value></data>
   <data name="AppUpd_Check" xml:space="preserve"><value>Check for updates</value></data>
   <data name="AppUpd_Idle" xml:space="preserve"><value>Not checked yet in this session.</value></data>
-  <data name="AppUpd_Checking" xml:space="preserve"><value>Checking the shop's site…</value></data>
+  <data name="AppUpd_Checking" xml:space="preserve"><value>Checking Mazesta's site…</value></data>
   <data name="AppUpd_UpToDate" xml:space="preserve"><value>This is the latest version.</value></data>
   <data name="AppUpd_Available" xml:space="preserve"><value>Version {0} is available.</value></data>
   <data name="AppUpd_Download" xml:space="preserve"><value>Download and prepare</value></data>
@@ -1355,7 +1352,7 @@ The update services stopped and disabled</value></data>
   <data name="AppUpd_Checked" xml:space="preserve"><value>Last checked {0}</value></data>
   <data name="AppUpd_Done" xml:space="preserve"><value>Mazesta was updated to version {0}.</value></data>
   <data name="AppUpd_Data_Title" xml:space="preserve"><value>Benchmark comparison lists</value></data>
-  <data name="AppUpd_Data_Sub" xml:space="preserve"><value>Other systems' results, gathered by the shop</value></data>
+  <data name="AppUpd_Data_Sub" xml:space="preserve"><value>Results of other systems that Mazesta has gathered</value></data>
   <data name="AppUpd_Data_Lists" xml:space="preserve"><value>{0} lists on this computer.</value></data>
   <data name="AppUpd_Data_None" xml:space="preserve"><value>No list has been downloaded yet.</value></data>
   <data name="AppUpd_Data_Published" xml:space="preserve"><value>Published {0}</value></data>
@@ -1363,11 +1360,11 @@ The update services stopped and disabled</value></data>
   <data name="AppUpd_Data_Note" xml:space="preserve"><value>The lists are fetched on their own a little after the app starts, when the internet can be reached. The button fetches them now.</value></data>
   <data name="AppUpd_Data_Sync" xml:space="preserve"><value>Update the data now</value></data>
   <data name="AppUpd_Site" xml:space="preserve"><value>Where updates come from</value></data>
-  <data name="AppUpd_Safe" xml:space="preserve"><value>Only files signed with the shop's key are accepted, and each one must match the size and fingerprint in the signed list. A changed or damaged file is thrown away, never run.</value></data>
+  <data name="AppUpd_Safe" xml:space="preserve"><value>Only files signed with Mazesta's key are accepted, and each file must match the size and fingerprint in the signed list. A changed or damaged file is thrown away and never run.</value></data>
   <data name="Web_Peers_Title" xml:space="preserve"><value>Against other systems</value></data>
   <data name="Web_Peers_Count" xml:space="preserve"><value>{0} models in the list</value></data>
   <data name="Web_Peers_Ahead" xml:space="preserve"><value>ahead of {0} of the {1} models</value></data>
-  <data name="Web_Peers_None" xml:space="preserve"><value>No other system's result for this benchmark yet. The shop's lists arrive with the data updates (Settings › App update), and every run made with this copy is added here.</value></data>
+  <data name="Web_Peers_None" xml:space="preserve"><value>There is no result from another system for this benchmark yet. Mazesta's lists arrive with the data update (Settings › App update).</value></data>
   <data name="Web_Peers_RunFirst" xml:space="preserve"><value>Run it to see where this system stands.</value></data>
   <data name="Web_Peers_You" xml:space="preserve"><value>This system</value></data>
   <data name="Web_Peers_All" xml:space="preserve"><value>Whole list</value></data>
@@ -1380,11 +1377,11 @@ The update services stopped and disabled</value></data>
   <data name="Web_Peers_Median" xml:space="preserve"><value>The median of this model's systems (each system's best run)</value></data>
   <data name="Web_Peers_DiffHint" xml:space="preserve"><value>How far this system's result is above (+) or below (−) this model</value></data>
   <data name="Web_Peers_Built" xml:space="preserve"><value>list of {0}</value></data>
-  <data name="Web_Peers_Note" xml:space="preserve"><value>One entry per model: the median of the best runs of its systems, each system counted once. The gap is always said from the faster side: a percentage up to double (25% faster), a multiple from there (3.2× faster). An overclocked model has an entry of its own. Click an entry to open its run conditions and specifications beside this system's. Entries marked "this copy" were measured with this copy and are not in the shop's list yet.</value></data>
+  <data name="Web_Peers_Note" xml:space="preserve"><value>One row per model. Where Mazesta has verified reference results for a model, the row's number is their median (marked “Reference”); otherwise it is the median of the best run of each of that model's systems, each system once. The gap is always said from the faster side: a percentage up to double (25% faster), a multiple from there (3.2× faster). An overclocked model has a row of its own. Click a row to open that model's systems one by one, with the run's conditions and specifications beside this system's.</value></data>
   <data name="Web_Peers_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Web_Runs_Empty" xml:space="preserve"><value>No run of this benchmark has been recorded with this copy yet.</value></data>
   <data name="Web_Runs_Folder" xml:space="preserve"><value>Open the runs folder</value></data>
-  <data name="Web_Runs_Note" xml:space="preserve"><value>Every run made with this copy, on any system (Data\benchmarks\runs). The shop gathers these files to build the shared lists.</value></data>
+  <data name="Web_Runs_Note" xml:space="preserve"><value>Every run made with this copy, on any system (Data\benchmarks\runs). “Send results to the site” adds them to Mazesta's shared lists.</value></data>
   <data name="Web_Runs_Date" xml:space="preserve"><value>Date</value></data>
   <data name="Web_Runs_Machine" xml:space="preserve"><value>Computer</value></data>
   <data name="Web_Runs_Part" xml:space="preserve"><value>Part</value></data>
@@ -1421,11 +1418,11 @@ The update services stopped and disabled</value></data>
   <data name="Web_Peers_Even" xml:space="preserve"><value>even</value></data>
   <data name="Web_Peers_GapHint" xml:space="preserve"><value>Up to double as a percentage, from double as a multiple; always said from the faster side.</value></data>
   <data name="Web_Peers_Featured" xml:space="preserve"><value>Reference results</value></data>
-  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>Runs the shop verified and chose as the reference for their part.</value></data>
+  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>Runs Mazesta verified and chose as the reference for that part.</value></data>
   <data name="Web_Peers_FeaturedMore" xml:space="preserve"><value>and {0} more featured results in the full list</value></data>
   <data name="Web_Peers_Oc" xml:space="preserve"><value>overclocked</value></data>
   <data name="Web_Peers_FilterAll" xml:space="preserve"><value>All</value></data>
-  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>References only</value></data>
+  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>With a reference only</value></data>
   <data name="Web_Peers_FilterStock" xml:space="preserve"><value>Not overclocked</value></data>
   <data name="Web_Peers_Found" xml:space="preserve"><value>{0} shown</value></data>
   <data name="Web_Detail_Open" xml:space="preserve"><value>Details and comparison</value></data>
@@ -1441,10 +1438,10 @@ The update services stopped and disabled</value></data>
   <data name="Web_Detail_None" xml:space="preserve"><value>No details were recorded for this one (a run made with a version older than 0.7.1).</value></data>
   <data name="Web_Detail_Sample" xml:space="preserve"><value>Details of one system of this model: the one whose result is nearest the median.</value></data>
   <data name="Web_Bench_AllNumbers" xml:space="preserve"><value>Every number and condition of this result</value></data>
-  <data name="Web_Runs_Featured" xml:space="preserve"><value>Featured</value></data>
+  <data name="Web_Runs_Featured" xml:space="preserve"><value>Reference</value></data>
   <data name="Web_Runs_Oc" xml:space="preserve"><value>Overclocked</value></data>
   <data name="Web_Runs_NoteLabel" xml:space="preserve"><value>Note (e.g. "water cooled")</value></data>
-  <data name="Web_Runs_MarkHint" xml:space="preserve"><value>Star: once published, every copy shows this run as a featured result. "Overclocked": ranked apart from the model's usual results.</value></data>
+  <data name="Web_Runs_MarkHint" xml:space="preserve"><value>Star: this run becomes a reference result of its model. Once published, every copy shows that model by the median of its reference results instead of the median of all its systems. “Overclocked”: ranked apart from the model's usual results.</value></data>
   <data name="Bench_Overclocked" xml:space="preserve"><value>This system is overclocked</value></data>
   <data name="Bench_OverclockedHint" xml:space="preserve"><value>The next runs are logged as overclocked and compared apart from usual results. Turns off when the app closes.</value></data>
   <data name="Web_Quiet_Title" xml:space="preserve"><value>Benchmark mode</value></data>
@@ -1601,7 +1598,7 @@ The update services stopped and disabled</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>Profiles:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>Quick check</value></data>
   <data name="Profile_Quick_Note" xml:space="preserve"><value>About 5 minutes: one short load per part and the SMART check. A first look only - intermittent faults and most RAM patterns are not covered.</value></data>
-  <data name="Profile_Standard" xml:space="preserve"><value>Shop standard</value></data>
+  <data name="Profile_Standard" xml:space="preserve"><value>Mazesta standard</value></data>
   <data name="Profile_Standard_Note" xml:space="preserve"><value>About an hour: every part under a real load once, with enough RAM time for every pattern on most machines, every core in turn, and the combined power test.</value></data>
   <data name="Profile_Deep" xml:space="preserve"><value>Deep</value></data>
   <data name="Profile_Deep_Note" xml:space="preserve"><value>Several hours: every test at length, with several passes over the RAM and Windows' own checks. For a machine with a fault that does not show quickly.</value></data>
@@ -1639,7 +1636,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Advice_Inconclusive" xml:space="preserve"><value>No error was seen, but the test could not cover everything it was asked to; the result is neither a pass nor a fail. See the detail for what was left out, and repeat with more time.</value></data>
   <data name="Advice_Inconclusive_Cores" xml:space="preserve"><value>No core computed wrongly, but not every core was tested (the time ran out, or Windows would not keep the thread on a core). Give each core at least a few seconds: the length should be at least the number of cores × seconds per core.</value></data>
   <data name="Advice_Inconclusive_Network" xml:space="preserve"><value>Not one echo reply came back. A firewall or the target may drop ICMP - that is not a fault of the network card. Ping the router or another target; the internet speed benchmark checks the connection another way.</value></data>
-  <data name="Advice_Error" xml:space="preserve"><value>The test itself stopped with a program error; nothing is known about the part from this run. Repeat it; if it happens again, send the app's log (Settings) to the shop.</value></data>
+  <data name="Advice_Error" xml:space="preserve"><value>The test itself stopped with a program error; this run says nothing about the part. Run it again; if it repeats, send the app's log (in Settings) to Mazesta support.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>Close until the next session</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>AI models</value></data>
   <data name="Nav_Assistant" xml:space="preserve"><value>AI assistant</value></data>
@@ -2667,8 +2664,8 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_M_EarlierRuns" xml:space="preserve"><value>Earlier runs</value></data>
   <data name="Check_M_MediaErrors" xml:space="preserve"><value>Uncorrected errors</value></data>
   <data name="Check_M_PowerOnHours" xml:space="preserve"><value>Hours powered on</value></data>
-  <data name="Site_Title" xml:space="preserve"><value>Shop site link</value></data>
-  <data name="Site_Sub" xml:space="preserve"><value>Report summaries and benchmark results go to the shop&apos;s site from here</value></data>
+  <data name="Site_Title" xml:space="preserve"><value>Link to Mazesta's site</value></data>
+  <data name="Site_Sub" xml:space="preserve"><value>Report summaries and benchmark results go to Mazesta's site from here</value></data>
   <data name="Site_Key" xml:space="preserve"><value>Site key</value></data>
   <data name="Site_Key_Hint" xml:space="preserve"><value>From the site&apos;s dashboard: Mazesta Connect › Settings</value></data>
   <data name="Site_Key_Save" xml:space="preserve"><value>Save and check</value></data>
@@ -2682,7 +2679,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Site_Err_NoPlugin" xml:space="preserve"><value>The site has no Mazesta Connect plugin (or it is switched off).</value></data>
   <data name="Site_Err_Site" xml:space="preserve"><value>The site refused: {0}</value></data>
   <data name="Site_Err_Offline" xml:space="preserve"><value>The site could not be reached: {0}</value></data>
-  <data name="Site_Err_NoKey" xml:space="preserve"><value>This copy has no site key. Enter it in App update › Shop site link.</value></data>
+  <data name="Site_Err_NoKey" xml:space="preserve"><value>This copy has no site key. Enter it in “App update › Link to Mazesta's site”.</value></data>
   <data name="Site_Err_NoRuns" xml:space="preserve"><value>The benchmark page has not been opened yet.</value></data>
   <data name="Site_Report_Send" xml:space="preserve"><value>Send to site</value></data>
   <data name="Site_Report_Sent" xml:space="preserve"><value>Sent. Colleagues can print it from the site&apos;s dashboard (Mazesta Connect › Reports).</value></data>
@@ -2692,7 +2689,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Site_Runs_Send" xml:space="preserve"><value>Send results to site</value></data>
   <data name="Site_Runs_Hint" xml:space="preserve"><value>Sends this copy&apos;s logged runs that the site does not have yet; the comparison lists are then built on the site.</value></data>
   <data name="Site_Runs_Done" xml:space="preserve"><value>{0} new runs sent; {1} were already there, {2} refused.</value></data>
-  <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} runs sent. They wait for the shop&apos;s review before they enter the lists.</value></data>
+  <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} run(s) sent. They enter the lists once Mazesta has reviewed them.</value></data>
   <data name="Site_Runs_Nothing" xml:space="preserve"><value>Nothing new to send.</value></data>
   <data name="Site_Note" xml:space="preserve"><value>Nothing is sent on its own. A run carries the computer&apos;s name and its parts&apos; models; a report&apos;s summary carries the service number, the parts and the test results.</value></data>
   <data name="Assist_Tool_get_crashes" xml:space="preserve"><value>Read: blue screens</value></data>
@@ -2818,4 +2815,155 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Overlay_VramLoad" xml:space="preserve"><value>VRAM used %</value></data>
   <data name="Site_Runs_NeedKey" xml:space="preserve"><value>This copy is not connected to the site yet. Connect it first (the page that just opened), then send the results.</value></data>
   <data name="Web_Peers_Members" xml:space="preserve"><value>{0} systems of this model, each with its best run; the row's number is their median ({1})</value></data>
+  <data name="AppUpd_StaffNote" xml:space="preserve"><value>This is Mazesta's own edition. The release on the site is the users' edition and is not installed over this copy; replace this copy with a new Mazesta build instead.</value></data>
+  <data name="Bsod_Ask" xml:space="preserve"><value>Ask the assistant</value></data>
+  <data name="Bsod_Ask_Off" xml:space="preserve"><value>The assistant is not running. Start it in its column, then ask again.</value></data>
+  <data name="Bsod_Ask_Text" xml:space="preserve"><value>Explain the blue screen {0} ({1}) of {2} briefly and simply: what does it usually come from, and what should I check first?</value></data>
+  <data name="Detail_And" xml:space="preserve"><value> and </value></data>
+  <data name="Detail_C_Blocks" xml:space="preserve"><value>Blocks computed: {0}</value></data>
+  <data name="Detail_C_CheckFrames" xml:space="preserve"><value>Frames checked: {0}</value></data>
+  <data name="Detail_C_CoreVisits" xml:space="preserve"><value>Core visits: {0}</value></data>
+  <data name="Detail_C_Multiplies" xml:space="preserve"><value>Matrix products: {0}</value></data>
+  <data name="Detail_C_Sent" xml:space="preserve"><value>Requests sent: {0}</value></data>
+  <data name="Detail_C_Transforms" xml:space="preserve"><value>Transforms computed: {0}</value></data>
+  <data name="Detail_Cpu_Compressed" xml:space="preserve"><value>Compressed to {0}% of its size</value></data>
+  <data name="Detail_Cpu_Coverage" xml:space="preserve"><value>Ran on {0} of {1} logical processors</value></data>
+  <data name="Detail_Cpu_CoverageSplit" xml:space="preserve"><value>Ran on {0} of {1} logical processors ({2})</value></data>
+  <data name="Detail_Cpu_Cycle" xml:space="preserve"><value>One core at a time over {0} physical cores, {1} s each, {2} load, matrix {3}×{3}</value></data>
+  <data name="Detail_Cpu_ECores" xml:space="preserve"><value>E-cores {0} of {1} threads</value></data>
+  <data name="Detail_Cpu_EveryCore" xml:space="preserve"><value>Every core was tested</value></data>
+  <data name="Detail_Cpu_Fft" xml:space="preserve"><value>Fourier transform (radix-2 complex FFT) of sizes {0} and {1} on {2} threads</value></data>
+  <data name="Detail_Cpu_FftChecks" xml:space="preserve"><value>Checked against a direct transform (relative error {0}), a round trip back and Parseval's rule, then bit for bit</value></data>
+  <data name="Detail_Cpu_FftFewer" xml:space="preserve"><value>Fourier transform (radix-2 complex FFT) of sizes {0} and {1} on {2} of {3} threads (free RAM held that many workers of {4} MiB)</value></data>
+  <data name="Detail_Cpu_Groups" xml:space="preserve"><value>groups {0}</value></data>
+  <data name="Detail_Cpu_Hash" xml:space="preserve"><value>SHA-256 hashing and Deflate compression round trip on {0} threads (SHA instructions: {1}); every block was checked against a hash computed beforehand</value></data>
+  <data name="Detail_Cpu_Integer" xml:space="preserve"><value>Integer load (multiply, 64-bit divide, shift, rotate, xor, branch) on {0} threads; every block was checked against a value computed beforehand</value></data>
+  <data name="Detail_Cpu_Linpack" xml:space="preserve"><value>Linpack (LU with partial pivoting), matrix size {0} ({1} MiB) on {2} threads</value></data>
+  <data name="Detail_Cpu_Matrix" xml:space="preserve"><value>Matrix load {0}×{0} with {1} fixed input sets; every product was checked in full against a value computed beforehand</value></data>
+  <data name="Detail_Cpu_NotTested" xml:space="preserve"><value>Not tested: core(s) {0}; the result covers only the others</value></data>
+  <data name="Detail_Cpu_PCores" xml:space="preserve"><value>P-cores {0} of {1} threads</value></data>
+  <data name="Detail_Cpu_Residual" xml:space="preserve"><value>Largest scaled residual: {0} (allowed up to 16)</value></data>
+  <data name="Detail_Cpu_Unpinned" xml:space="preserve"><value>Windows refused to hold the work on core(s) {0}</value></data>
+  <data name="Detail_Cpu_Vector" xml:space="preserve"><value>Vector load (FMA) with {0} on {1} threads; every lane was checked against a plain computation</value></data>
+  <data name="Detail_Cpu_WrongOn" xml:space="preserve"><value>Wrong results on {0}</value></data>
+  <data name="Detail_Drive_Healthy" xml:space="preserve"><value>healthy</value></data>
+  <data name="Detail_Drive_Unhealthy" xml:space="preserve"><value>unhealthy</value></data>
+  <data name="Detail_Drive_Unknown" xml:space="preserve"><value>unknown</value></data>
+  <data name="Detail_Drive_Warning" xml:space="preserve"><value>warning</value></data>
+  <data name="Detail_Gpu_Error" xml:space="preserve"><value>The graphics card gave an error during the run:</value></data>
+  <data name="Detail_Gpu_FpsAvg" xml:space="preserve"><value>Average: {0} FPS</value></data>
+  <data name="Detail_Gpu_FpsLow" xml:space="preserve"><value>Lowest half second: {0} FPS</value></data>
+  <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} megapixels a second (Mazesta's own scene, not a commercial score)</value></data>
+  <data name="Detail_Gpu_Render" xml:space="preserve"><value>Ray-traced scene {0}×{1}, {2} spheres, {3} bounces, on {4}</value></data>
+  <data name="Detail_Gpu_Scene" xml:space="preserve"><value>The Persian garden scene with {0}, drawn at {1}×{2} (window {3}×{4}) on {5}</value></data>
+  <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>Load level {0}:</value></data>
+  <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} triangles in {1} objects; centre model “{2}”</value></data>
+  <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>Ray traced: a camera ray, a shadow ray to the moon and to each of the {0} lamps in reach, reflections and refraction up to 4 bounces</value></data>
+  <data name="Detail_Gpu_Vram" xml:space="preserve"><value>Graphics memory pattern test on {0}</value></data>
+  <data name="Detail_Gpu_VramTested" xml:space="preserve"><value>Graphics memory tested: {0} MiB in {1} buffers</value></data>
+  <data name="Detail_Gpu_WindowClosed" xml:space="preserve"><value>The test window was closed before the time was up</value></data>
+  <data name="Detail_Half" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Detail_Half_Cpu" xml:space="preserve"><value>Processor half</value></data>
+  <data name="Detail_Half_Gpu" xml:space="preserve"><value>Graphics card half</value></data>
+  <data name="Detail_L_VramUsed" xml:space="preserve"><value>VRAM in use</value></data>
+  <data name="Detail_ListComma" xml:space="preserve"><value>, </value></data>
+  <data name="Detail_Load_steady" xml:space="preserve"><value>steady</value></data>
+  <data name="Detail_Load_variable" xml:space="preserve"><value>variable</value></data>
+  <data name="Detail_Log_NvmeDuring" xml:space="preserve"><value>The drive's NVMe health log changed during the test:</value></data>
+  <data name="Detail_Log_NvmeUnread" xml:space="preserve"><value>The NVMe health log could not be read after the test ({0})</value></data>
+  <data name="Detail_Log_Storage" xml:space="preserve"><value>Windows recorded {0} storage event(s) during this test:</value></data>
+  <data name="Detail_Log_StorageNote" xml:space="preserve"><value>Not proof of a failing drive on its own: check the cable, controller, driver and power too</value></data>
+  <data name="Detail_Log_StorageUnread" xml:space="preserve"><value>Windows' storage event log could not be read ({0})</value></data>
+  <data name="Detail_Log_Whea" xml:space="preserve"><value>Windows recorded {0} hardware error(s) (WHEA) during this test (event ids {1}):</value></data>
+  <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>Windows' hardware error log could not be read ({0})</value></data>
+  <data name="Detail_Mem_Algorithms" xml:space="preserve"><value>Moving inversions ×{0}, block move ×{1}, stride ×{2}</value></data>
+  <data name="Detail_Mem_BitFade" xml:space="preserve"><value>Bit fade test (does the memory keep its data while left alone)</value></data>
+  <data name="Detail_Mem_Covers" xml:space="preserve"><value>Covers only the RAM Windows let the test have; errors are placed by position in the test's own buffer, not by physical address or slot</value></data>
+  <data name="Detail_Mem_Faded" xml:space="preserve"><value>First faded bytes in buffer block {0} (at {1} MiB) after holding “{2}”</value></data>
+  <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}</value></data>
+  <data name="Detail_Mem_HeldShort" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}: shorter than the {2} s a leaking cell needs to show</value></data>
+  <data name="Detail_Mem_Locked" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM</value></data>
+  <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM; Windows would not lock the rest, so they may have gone to disk while waiting and their result says nothing about the RAM</value></data>
+  <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>First mismatch in buffer block {0} (at {1} MiB) with the pattern “{2}”</value></data>
+  <data name="Detail_Mem_Offsets" xml:space="preserve"><value>Errors are placed by position in the test's own buffer, not by physical address or slot</value></data>
+  <data name="Detail_Mem_Passes" xml:space="preserve"><value>Passes: {0} of {1} patterns</value></data>
+  <data name="Detail_Mem_PassesShort" xml:space="preserve"><value>Passes: {0} of {1} patterns (not every pattern ran; a longer run covers them all)</value></data>
+  <data name="Detail_Mem_Pattern" xml:space="preserve"><value>Memory pattern test</value></data>
+  <data name="Detail_Mem_RunLonger" xml:space="preserve"><value>Run it longer for a result</value></data>
+  <data name="Detail_Mem_Tested" xml:space="preserve"><value>Memory tested: {0} MiB</value></data>
+  <data name="Detail_Net_Icmp" xml:space="preserve"><value>Ping (ICMP) to {0}</value></data>
+  <data name="Detail_Net_Jitter" xml:space="preserve"><value>Jitter: {0} ms</value></data>
+  <data name="Detail_Net_Lan" xml:space="preserve"><value>LAN test with {0}: upload {1} Mbit/s ({2} MB sent, {3} MB received by the partner, {4} wrong), download {5} Mbit/s ({6} MB, {7} wrong)</value></data>
+  <data name="Detail_Net_Latency" xml:space="preserve"><value>Reply time: lowest {0}, average {1}, highest {2} ms</value></data>
+  <data name="Detail_Net_Links" xml:space="preserve"><value>Connected adapters: {0}</value></data>
+  <data name="Detail_Net_Lost" xml:space="preserve"><value>Lost: {0}%</value></data>
+  <data name="Detail_Net_Metric" xml:space="preserve"><value>{0}: {1} {2}</value></data>
+  <data name="Detail_Net_NoJitter" xml:space="preserve"><value>Jitter was not measured (fewer than 2 replies)</value></data>
+  <data name="Detail_Net_NoReply" xml:space="preserve"><value>No reply at all: the target or a firewall may drop ping, or there is no route</value></data>
+  <data name="Detail_Net_OneWay" xml:space="preserve"><value>Data moved one way only</value></data>
+  <data name="Detail_Net_RoundTrip" xml:space="preserve"><value>Round trip at rest: {0}; while downloading: {1}</value></data>
+  <data name="Detail_Net_TryAnother" xml:space="preserve"><value>Try another target before blaming the network card</value></data>
+  <data name="Detail_no" xml:space="preserve"><value>no</value></data>
+  <data name="Detail_None" xml:space="preserve"><value>none</value></data>
+  <data name="Detail_NotMeasured" xml:space="preserve"><value>not measured</value></data>
+  <data name="Detail_Rate_GbS" xml:space="preserve"><value>Speed: {0} GB/s</value></data>
+  <data name="Detail_Rate_Gflops" xml:space="preserve"><value>Computing speed: {0} GFLOPS{1}</value></data>
+  <data name="Detail_Rate_Input" xml:space="preserve"><value>Input processed: {0} MB/s</value></data>
+  <data name="Detail_Samples" xml:space="preserve"><value>({0} samples)</value></data>
+  <data name="Detail_SecondsOf" xml:space="preserve"><value>{0} s</value></data>
+  <data name="Detail_Sto_Blocks" xml:space="preserve"><value>Blocks written and verified: {0}</value></data>
+  <data name="Detail_Sto_Drive" xml:space="preserve"><value>{0}: {1}{2}</value></data>
+  <data name="Detail_Sto_IoError" xml:space="preserve"><value>The drive gave a read/write error:</value></data>
+  <data name="Detail_Sto_NvmeLog" xml:space="preserve"><value>NVMe health log of {0}: critical warning {1}, media errors {2}, spare {3}% (threshold {4}%), used {5}%, unsafe shutdowns {6}, error-log entries {7}</value></data>
+  <data name="Detail_Sto_Random" xml:space="preserve"><value>Random 4K writing and reading, one request at a time, straight to the drive (no Windows cache)</value></data>
+  <data name="Detail_Sto_Read" xml:space="preserve"><value>Read: {0} MB/s</value></data>
+  <data name="Detail_Sto_ReadIops" xml:space="preserve"><value>Read: {0} IOPS, latency {1}</value></data>
+  <data name="Detail_Sto_Sequential" xml:space="preserve"><value>Sequential writing and reading, straight to the drive (no Windows cache)</value></data>
+  <data name="Detail_Sto_ShortReads" xml:space="preserve"><value>Reads that came back short: {0}</value></data>
+  <data name="Detail_Sto_Verified" xml:space="preserve"><value>Read back and verified: {0} MiB in {1} pass(es)</value></data>
+  <data name="Detail_Sto_Write" xml:space="preserve"><value>Write: {0} MB/s</value></data>
+  <data name="Detail_Sto_WriteIops" xml:space="preserve"><value>Write: {0} IOPS, latency {1}</value></data>
+  <data name="Detail_Sto_WrongBytes" xml:space="preserve"><value>Bytes read back wrong: {0}</value></data>
+  <data name="Detail_W_BadFrame" xml:space="preserve"><value>The first rendered frame is not a valid image (broken numbers or no contrast).</value></data>
+  <data name="Detail_W_CpuLacks" xml:space="preserve"><value>This processor does not support {0}.</value></data>
+  <data name="Detail_W_Duration" xml:space="preserve"><value>The duration must be more than zero.</value></data>
+  <data name="Detail_W_Error" xml:space="preserve"><value>The test itself stopped with an error ({0}); this run says nothing about the part.</value></data>
+  <data name="Detail_W_FftRam" xml:space="preserve"><value>Too little free RAM for even one FFT worker ({0} MiB each, above what Windows needs).</value></data>
+  <data name="Detail_W_LanLost" xml:space="preserve"><value>The connection to {0} was lost during the test ({1}); a run that did not finish says nothing about the network.</value></data>
+  <data name="Detail_W_LanShort" xml:space="preserve"><value>The LAN test needs at least 3 seconds.</value></data>
+  <data name="Detail_W_LanSilent" xml:space="preserve"><value>The LAN partner at {0} did not answer ({1}): is it switched on there, and does its firewall let port {2} in?</value></data>
+  <data name="Detail_W_LinpackRam" xml:space="preserve"><value>A {0}×{0} matrix needs {1} MiB; only {2} MiB of RAM is free.</value></data>
+  <data name="Detail_W_LittleRam" xml:space="preserve"><value>Only {0} MiB of RAM is free above what Windows needs; at least {1} MiB is needed.</value></data>
+  <data name="Detail_W_LittleVram" xml:space="preserve"><value>Only {0} MiB of graphics memory can safely be tested; at least {1} MiB is needed.</value></data>
+  <data name="Detail_W_NoAdapter" xml:space="preserve"><value>No network adapter is connected.</value></data>
+  <data name="Detail_W_NoCores" xml:space="preserve"><value>Windows reported no processor cores.</value></data>
+  <data name="Detail_W_NoInternet" xml:space="preserve"><value>No internet connection.</value></data>
+  <data name="Detail_W_NoLanPartner" xml:space="preserve"><value>No LAN partner was given: start the LAN partner on another computer and enter its address.</value></data>
+  <data name="Detail_W_NoSmart" xml:space="preserve"><value>No drive reported a SMART health status.</value></data>
+  <data name="Detail_W_NotAnAddress" xml:space="preserve"><value>“{0}” is not an IP address and its name was not found.</value></data>
+  <data name="Detail_W_NotIpv4" xml:space="preserve"><value>“{0}” is not an IPv4 address (a port may follow it as :port).</value></data>
+  <data name="Detail_W_NoVramBuffer" xml:space="preserve"><value>The driver refused to give any graphics memory.</value></data>
+  <data name="Detail_W_Pulse" xml:space="preserve"><value>The pulse and gap lengths must be more than zero.</value></data>
+  <data name="Detail_W_SmartFailed" xml:space="preserve"><value>Windows did not report drive health:</value></data>
+  <data name="Detail_Win_Damaged" xml:space="preserve"><value>damaged</value></data>
+  <data name="Detail_Win_Healthy" xml:space="preserve"><value>healthy</value></data>
+  <data name="Detail_Win_Repaired" xml:space="preserve"><value>repaired</value></data>
+  <data name="Detail_Win_Tool" xml:space="preserve"><value>{0} {1}: {2} (exit code {3})</value></data>
+  <data name="Detail_Win_Unknown" xml:space="preserve"><value>result not understood</value></data>
+  <data name="Detail_Word_Core" xml:space="preserve"><value>core</value></data>
+  <data name="Detail_Word_Max" xml:space="preserve"><value>max</value></data>
+  <data name="Detail_Word_Mean" xml:space="preserve"><value>mean</value></data>
+  <data name="Detail_Word_Median" xml:space="preserve"><value>median</value></data>
+  <data name="Detail_Word_PowerOn" xml:space="preserve"><value>power-on</value></data>
+  <data name="Detail_Word_Uncorrected" xml:space="preserve"><value>uncorrected read/write errors</value></data>
+  <data name="Detail_Word_Wear" xml:space="preserve"><value>wear</value></data>
+  <data name="Detail_yes" xml:space="preserve"><value>yes</value></data>
+  <data name="Settings_DisplayName" xml:space="preserve"><value>Display name</value></data>
+  <data name="Settings_DisplayName_Hint" xml:space="preserve"><value>Benchmark results you share go under this name. Left empty, they go under “Mazesta user”.</value></data>
+  <data name="Site_Share_Anonymous" xml:space="preserve"><value>Mazesta user</value></data>
+  <data name="Web_Diag_Note_Client" xml:space="preserve"><value>If something does not work or a sensor is missing, save this file and send it to Mazesta support.</value></data>
+  <data name="Web_Peers_Members_Ref" xml:space="preserve"><value>{0} system(s) of this model, each with its best run. The row's number is the median of Mazesta's {2} reference result(s) ({1})</value></data>
+  <data name="Web_Peers_Reference" xml:space="preserve"><value>Reference</value></data>
+  <data name="Web_Peers_ReferenceMedian" xml:space="preserve"><value>Median of the {0} reference result(s) Mazesta verified for this model</value></data>
+  <data name="Web_Runs_Note_Client" xml:space="preserve"><value>The recorded runs of this benchmark, newest first.</value></data>
 </root>

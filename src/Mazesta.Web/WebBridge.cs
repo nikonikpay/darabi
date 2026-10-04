@@ -17,6 +17,15 @@ public sealed partial class WebBridge : IDisposable
     private readonly HashSet<string> _pending = [];
     private bool _visible = true;
 
+    /// <summary>Mazesta's own edition (the company's copies): the service number, the link to the site and the reference marks exist only here.
+    /// The users' edition is built with <c>-p:MazestaEdition=Client</c>; there the bridge refuses those calls, whatever the page asks.</summary>
+#if MAZESTA_CLIENT
+    internal static readonly bool Staff = false;
+#else
+    internal static readonly bool Staff = true;
+#endif
+    private static void StaffOnly() { if (!Staff) throw new InvalidOperationException("Not in this edition."); }
+
     internal static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase, NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,

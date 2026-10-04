@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.3.0';
+    const VERSION = '1.4.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_RUNS = 500;
@@ -333,6 +333,58 @@ final class Mazesta_Connect
     }
 
     /** A run as the app logs it, or false when it is not one. */
+    /** The benchmarks' names as the app shows them, for the ones known when this was written; the app sends its own with its runs. */
+    private static $bench_names = array(
+        'bench.cpu.multi' => 'پردازنده — چندرشته (همه رشته‌ها)', 'bench.cpu.single' => 'پردازنده — تک‌رشته', 'bench.memory' => 'پهنای‌باند حافظه',
+        'bench.storage' => 'ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)', 'bench.gpu.d3d' => 'گرافیک — رندر Direct3D 12', 'bench.gpu.rt' => 'گرافیک — ری‌تریسینگ (DXR)',
+        'bench.gpu.ai' => 'گرافیک — هوش مصنوعی (DirectML)', 'bench.gpu.scene.d3d' => 'گرافیک — باغ ایرانی (Direct3D 12)', 'bench.gpu.scene.rt' => 'گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)',
+        'bench.ai.llm' => 'مدل زبانی هوش مصنوعی (llama.cpp)', 'bench.network.internet' => 'شبکه — سرعت اینترنت',
+    );
+
+    private static function bench_name($id)
+    {
+        static $sent = null;
+        if ($sent === null) { $sent = self::read('names'); }
+        if (isset($sent[$id]) && is_string($sent[$id]) && $sent[$id] !== '') { return $sent[$id]; }
+        return isset(self::$bench_names[$id]) ? self::$bench_names[$id] : $id;
+    }
+
+    /** The names the app sent with its runs (a benchmark's id and a short plain text each), kept for the pages here. */
+    private static function keep_names($names)
+    {
+        $clean = array();
+        foreach ($names as $id => $name) {
+            if (!is_string($id) || !preg_match('/^[A-Za-z0-9._-]{1,80}$/', $id)) { continue; }
+            $name = self::text($name, 80);
+            if ($name !== '') { $clean[$id] = $name; }
+            if (count($clean) >= 100) { break; }
+        }
+        if (!$clean) { return; }
+        self::locked(function () use ($clean) {
+            $all = self::read('names'); $next = array_slice(array_merge($all, $clean), -200, null, true);
+            if ($next !== $all) { self::write('names', $next); }
+        });
+    }
+
+    /**
+     * A list's key ("bench.storage@1|fileMb=1024") as a manager reads it: the benchmark's name and its settings in words, and the key itself
+     * small underneath (the number after @ is the workload's version: a list starts over when the benchmark's work changes). HTML, escaped.
+     */
+    private static function list_label($table)
+    {
+        $table = (string) $table;
+        if (!preg_match('/^([A-Za-z0-9._-]+)@(\d+)(?:\|(.*))?$/', $table, $m)) { return '<span dir="ltr">' . esc_html($table) . '</span>'; }
+        $label = esc_html(self::bench_name($m[1]));
+        if (isset($m[3]) && $m[3] !== '') {
+            $words = array();
+            foreach (explode('|', $m[3]) as $pair) {
+                $words[] = preg_match('/^fileMb=(\d+)$/', $pair, $f) ? 'فایل ' . number_format_i18n((int) $f[1]) . ' مگابایتی' : $pair;
+            }
+            $label .= ' · ' . esc_html(implode('، ', $words));
+        }
+        return $label . '<br><small dir="ltr" style="color:#787c82">' . esc_html($table) . '</small>';
+    }
+
     private static function valid_run($run)
     {
         return is_object($run) && isset($run->id, $run->benchmark, $run->part, $run->system, $run->value, $run->unit)
@@ -435,7 +487,8 @@ final class Mazesta_Connect
         if (is_wp_error($body)) { return $body; }
         $higher = isset($body->higher) && is_object($body->higher) ? (array) $body->higher : array();
         list($added, $known, $bad) = self::add_runs($body->runs, $higher, $trusted);
-        // The shop's own marks (featured, overclocked) come with its runs; for a run marked on two copies the later mark wins.
+        if ($trusted && isset($body->names) && is_object($body->names)) { self::keep_names((array) $body->names); }
+        // Mazesta's own marks (featured, overclocked) come with its runs; for a run marked on two copies the later mark wins.
         $marked = 0;
         if ($trusted && isset($body->marks) && is_object($body->marks)) {
             $marks = (array) $body->marks;
@@ -488,6 +541,7 @@ final class Mazesta_Connect
         $m = isset($body->machine) && is_object($body->machine) ? $body->machine : new stdClass();
         $share = array(
             'created' => self::when(null), 'app' => self::text(isset($body->appVersion) ? $body->appVersion : '', 40),
+            'owner' => self::text(isset($m->name) ? $m->name : '', 40),
             'cpu' => self::text(isset($m->cpu) ? $m->cpu : '', 120), 'gpu' => self::text(isset($m->gpu) ? $m->gpu : '', 120), 'os' => self::text(isset($m->os) ? $m->os : '', 120),
             'ramGb' => isset($m->ramGb) && (is_int($m->ramGb) || is_float($m->ramGb)) && $m->ramGb > 0 && $m->ramGb < 100000 ? (float) $m->ramGb : null,
             'rows' => $rows,
@@ -497,7 +551,7 @@ final class Mazesta_Connect
             $index = self::read('shares');
             $token = isset($index[$who]['token']) ? (string) $index[$who]['token'] : bin2hex(random_bytes(12));
             if (!self::write('share-' . $token, $share)) { return null; }
-            $index[$who] = array('token' => $token, 'created' => $share['created'], 'cpu' => $share['cpu'], 'gpu' => $share['gpu'], 'rows' => count($share['rows']));
+            $index[$who] = array('token' => $token, 'created' => $share['created'], 'owner' => $share['owner'], 'cpu' => $share['cpu'], 'gpu' => $share['gpu'], 'rows' => count($share['rows']));
             // The oldest pages go when there are too many.
             if (count($index) > self::MAX_SHARES) {
                 uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
@@ -748,6 +802,7 @@ final class Mazesta_Connect
         self::page_headers("default-src 'none'; style-src 'unsafe-inline'");
         $e = 'esc_html';
         $spec = array();
+        $owner = isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا';
         if ($s['cpu'] !== '') { $spec[] = array('پردازنده', $s['cpu']); }
         if ($s['gpu'] !== '') { $spec[] = array('کارت گرافیک', $s['gpu']); }
         if (!empty($s['ramGb'])) { $spec[] = array('حافظه', self::number($s['ramGb']) . ' GB'); }
@@ -760,7 +815,7 @@ final class Mazesta_Connect
             . 'table{width:100%;border-collapse:collapse}th,td{padding:9px 8px;border-bottom:1px solid #262a2f;text-align:right}th{color:#8a9097;font-weight:normal;font-size:13px}'
             . '.n{direction:ltr;unicode-bidi:isolate;font-weight:bold;color:#fff;white-space:nowrap}.n small{color:#fdd400;font-weight:normal}.p{direction:ltr;unicode-bidi:isolate;color:#c3c7cc;font-size:13px}'
             . 'footer{color:#8a9097;font-size:13px;margin-top:18px}a{color:#fdd400}'
-            . '</style></head><body><main><h1>نتایج بنچمارک <b>Mazesta Test</b></h1><p class="sub">ثبت‌شده در ' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($s['created'])), 'Y/m/d H:i')) . '</p>';
+            . '</style></head><body><main><h1>نتایج بنچمارک <b>Mazesta Test</b></h1><p class="sub">' . $e($owner) . ' · ثبت‌شده در ' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($s['created'])), 'Y/m/d H:i')) . '</p>';
         if ($spec) {
             echo '<div class="box"><dl>';
             foreach ($spec as $row) { echo '<dt>' . $e($row[0]) . '</dt><dd>' . $e($row[1]) . '</dd>'; }
@@ -973,22 +1028,23 @@ final class Mazesta_Connect
             echo '<p>' . self::post_link('run_approve', array('all' => 1), 'تأیید همه', 'button button-primary', 'همه اجراهای در انتظار وارد فهرست‌ها شوند؟') . '</p>';
             echo '<table class="widefat striped"><thead><tr><th>بنچمارک</th><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
             foreach ($pending as $id => $r) {
-                echo '<tr><td dir="ltr" style="text-align:right">' . esc_html($r['table']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
+                echo '<tr><td>' . self::list_label($r['table']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
                     . self::post_link('run_approve', array('id' => (string) $id), 'تأیید', 'button button-small button-primary') . ' ' . self::post_link('run_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این اجرا پاک شود؟') . '</td></tr>';
             }
             echo '</tbody></table>';
-        } else { echo '<p class="description">چیزی در انتظار نیست. اجراهایی که با کلید فروشگاه می‌رسند مستقیم وارد فهرست می‌شوند.</p>'; }
-        echo '<h3>فهرست‌ها</h3><table class="widefat striped"><thead><tr><th>فهرست</th><th>مدل قطعه</th><th>اجرا</th><th>آخرین دریافت</th></tr></thead><tbody>';
+        } else { echo '<p class="description">چیزی در انتظار نیست. اجراهایی که با کلید سایت (از نسخه مازستایی برنامه) می‌رسند مستقیم وارد فهرست می‌شوند.</p>'; }
+        echo '<h3>فهرست‌ها</h3><p class="description">هر بنچمارک یک فهرست مقایسه دارد (و اگر تنظیمی مثل اندازه فایل داشته باشد، برای هر تنظیم یک فهرست). روی نام فهرست بزنید تا اجراهایش را ببینید و نتیجه مرجع انتخاب کنید. نوشته کوچک زیر هر نام، شناسه فنی همان فهرست در برنامه است.</p>'
+            . '<table class="widefat striped"><thead><tr><th>بنچمارک (فهرست)</th><th>تعداد مدل قطعه</th><th>تعداد اجرا</th><th>آخرین دریافت</th></tr></thead><tbody>';
         if (!$lists) { echo '<tr><td colspan="4">هنوز اجرایی بارگذاری نشده است. در برنامه: بنچمارک › ارسال نتایج به سایت.</td></tr>'; }
         foreach ($lists as $t => $l) {
-            echo '<tr><td dir="ltr" style="text-align:right"><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . esc_html($t) . '</a></td><td>' . count($l['parts']) . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
+            echo '<tr><td><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . self::list_label($t) . '</a></td><td>' . count($l['parts']) . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
         }
         echo '</tbody></table>';
         $key = self::arg('list');
         if ($key !== '') {
             $runs = array_filter($all, function ($r) use ($key) { return !empty($r['status']) && (string) $r['table'] === $key; });
             uasort($runs, function ($a, $b) { return (float) $b['value'] <=> (float) $a['value']; });
-            echo '<h3 dir="ltr" style="text-align:right">' . esc_html($key) . '</h3><p class="description">«نتیجه مرجع» (★) اجرایی است که شما تأیید می‌کنید بهترین و درست‌ترین نتیجه این قطعه در این بنچمارک است؛ در برنامه بالای فهرست مقایسه می‌آید تا بقیه خودشان را با آن بسنجند.</p><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
+            echo '<h3>' . self::list_label($key) . '</h3><p class="description">«نتیجه مرجع» (★) اجرایی است که مازستا تأیید می‌کند نتیجه درست این مدل در این بنچمارک است. مدلی که نتیجه مرجع داشته باشد در برنامه با <strong>میانه نتایج مرجعش</strong> نشان داده می‌شود (با برچسب «مرجع»)؛ مدلی که ندارد با میانه همه سیستم‌هایش. نتیجه مرجع را فقط از همین‌جا یا از نسخه مازستایی برنامه می‌توان انتخاب کرد؛ کاربران نمی‌توانند.</p><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
             foreach (array_slice($runs, 0, 500, true) as $id => $r) {
                 $star = !empty($r['featured']);
                 echo '<tr><td dir="ltr" style="text-align:right">' . ($star ? '★ ' : '') . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
@@ -1004,10 +1060,10 @@ final class Mazesta_Connect
         $index = self::read('shares');
         uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
         echo '<p class="description">نتیجه‌هایی که کاربران از برنامه با «اشتراک‌گذاری آخرین نتیجه» فرستاده‌اند. هر سیستم یک صفحه دارد و با فرستادن دوباره همان صفحه تازه می‌شود.</p>';
-        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
-        if (!$index) { echo '<tr><td colspan="5">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
+        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
+        if (!$index) { echo '<tr><td colspan="6">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
         foreach (array_slice($index, 0, 300, true) as $s) {
-            echo '<tr><td>' . self::local($s['created']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['cpu']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
+            echo '<tr><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['cpu']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
                 . '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_share=' . $s['token'])) . '">دیدن</a> '
                 . self::post_link('share_delete', array('token' => (string) $s['token']), 'حذف', 'button button-small', 'این صفحه پاک شود؟') . '</td></tr>';
         }
@@ -1024,14 +1080,14 @@ final class Mazesta_Connect
             echo '<p>نسخه <strong dir="ltr">' . esc_html($manifest['app']['version']) . '</strong>، ' . esc_html(size_format((int) $manifest['app']['size'])) . '، فایل <code dir="ltr">' . esc_html($manifest['app']['file']) . '</code> '
                 . (is_file($zip) ? '✔' : '<strong style="color:#b32d2e">روی سایت نیست</strong>') . ' ' . (is_file($dir . '/update.json.sig') ? '' : '<strong style="color:#b32d2e">امضا (update.json.sig) نیست</strong>') . '</p>';
         } else {
-            echo '<p>هنوز نسخه‌ای منتشر نشده است. روی سیستم فروشگاه: <code dir="ltr">pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload</code></p>';
+            echo '<p>هنوز نسخه‌ای منتشر نشده است. روی سیستم مازستا: <code dir="ltr">pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload</code></p>';
         }
         echo '<p class="description">برنامه‌ها این نشانی را می‌خوانند: <code dir="ltr">' . esc_html(home_url('/mazesta/update.json')) . '</code> — این پوشه را از کش مستثنا کنید.</p>';
         echo '<p class="description">داده‌های این افزونه در پایگاه داده وردپرس نیست؛ در این پوشه است: <code dir="ltr">' . esc_html(self::dir()) . '</code> (برای پشتیبان‌گیری همین پوشه را نگه دارید).</p>';
         if (!$admin) { return; }
         echo '<h3>کلیدها و تنظیمات</h3><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_settings">';
         wp_nonce_field('mzc_settings');
-        echo '<table class="form-table"><tr><th>کلید سایت</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['key']) . '</code><p class="description">در برنامه: به‌روزرسانی برنامه › اتصال به سایت فروشگاه. روی هر سیستمی که باید گزارش بفرستد یک بار وارد می‌شود و با پوشه Data برنامه جابه‌جا می‌شود.</p>'
+        echo '<table class="form-table"><tr><th>کلید سایت</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['key']) . '</code><p class="description">در نسخه مازستایی برنامه: به‌روزرسانی برنامه › اتصال به سایت مازستا. روی هر سیستمی که باید گزارش بفرستد یک بار وارد می‌شود و با پوشه Data برنامه جابه‌جا می‌شود.</p>'
             . '<label><input type="checkbox" name="new_key" value="1"> کلید تازه بساز (کلید قبلی از کار می‌افتد)</label></td></tr>'
             . '<tr><th>کلید انتشار</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['releaseKey']) . '</code><p class="description">فقط روی سیستمی که نسخه تازه برنامه را منتشر می‌کند (فایل <code dir="ltr">G:\\Mazesta-Keys\\site-release-key.txt</code>). به کسی ندهید.</p>'
             . '<label><input type="checkbox" name="new_release_key" value="1"> کلید تازه بساز</label></td></tr>'

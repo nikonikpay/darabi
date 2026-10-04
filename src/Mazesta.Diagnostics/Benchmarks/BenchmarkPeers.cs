@@ -34,6 +34,9 @@ public sealed record PeerEntry(string Part, double Median, double Best, int Syst
     IReadOnlyList<PeerMember>? Members = null)
 {
     [JsonIgnore] internal string Key => Overclocked ? Part + "\u0001oc" : Part;
+    /// <summary>How many reference runs Mazesta chose for this model: when there are any, <see cref="Median"/> is their median and not the
+    /// median of every system (set while ranking, never written to a list file).</summary>
+    [JsonIgnore] public int References { get; init; }
 }
 
 /// <summary>The comparison list of one benchmark, workload version and settings: one entry per part model, best first, and the shop's featured
@@ -148,16 +151,37 @@ public static partial class BenchmarkPeers
         return r > 1 ? new PeerGap(r, true) : new PeerGap(1 / r, false);
     }
 
+    private static double Median(IEnumerable<double> values)
+    {
+        var v = values.Order().ToList();
+        return v.Count % 2 == 1 ? v[v.Count / 2] : (v[v.Count / 2 - 1] + v[v.Count / 2]) / 2;
+    }
+
+    /// <summary>The entries with Mazesta's reference runs taken in: a model that has reference runs is shown by their median (and the reference
+    /// run nearest it as its sample); a model without any keeps the median of its systems. The references are not a list of their own.</summary>
+    public static IEnumerable<PeerEntry> WithReferences(IEnumerable<PeerEntry> entries, IEnumerable<FeaturedRun>? featured)
+    {
+        var by = (featured ?? []).Where(f => f.Value > 0 && double.IsFinite(f.Value)).GroupBy(f => f.Overclocked ? f.Part + "\u0001oc" : f.Part, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+        foreach (var e in entries)
+        {
+            if (!by.TryGetValue(e.Key, out var refs)) { yield return e; continue; }
+            double median = Median(refs.Select(f => f.Value)); var near = refs.MinBy(f => Math.Abs(f.Value - median))!;
+            yield return e with { Median = median, References = refs.Count, Sample = new RunSample(near.Value, near.Overclocked, near.At, near.Metrics, near.Details) };
+        }
+    }
+
     private static List<PeerEntry> Sort(IEnumerable<PeerEntry> entries, bool higher)
         => [.. higher ? entries.OrderByDescending(e => e.Median).ThenBy(e => e.Part, StringComparer.OrdinalIgnoreCase) : entries.OrderBy(e => e.Median).ThenBy(e => e.Part, StringComparer.OrdinalIgnoreCase)];
 
     /// <summary>This result against a list: the published entries, plus the models only this copy has measured (marked local; a model in both is
-    /// taken from the published list, so a run is never counted twice). The difference is taken against each entry's median.</summary>
-    public static PeerRanking Rank(PeerTable? table, IReadOnlyList<PeerEntry> local, double mine, string? myPart, bool higherIsBetter)
+    /// taken from the published list, so a run is never counted twice). The difference is taken against each entry's figure: the median of
+    /// its reference runs where <paramref name="featured"/> has any for it, the median of its systems otherwise.</summary>
+    public static PeerRanking Rank(PeerTable? table, IReadOnlyList<PeerEntry> local, double mine, string? myPart, bool higherIsBetter, IEnumerable<FeaturedRun>? featured = null)
     {
         var published = table?.Entries ?? [];
         var names = new HashSet<string>(published.Select(e => e.Key), StringComparer.OrdinalIgnoreCase);
-        var merged = published.Concat(local.Where(e => !names.Contains(e.Key)));
+        var merged = WithReferences(published.Concat(local.Where(e => !names.Contains(e.Key))), featured);
         string me = PartName(myPart);
         var rows = Sort(merged, higherIsBetter).Select(e => new PeerRow(e, Diff(mine, e.Median, higherIsBetter), !names.Contains(e.Key),
             me.Length > 0 && string.Equals(e.Part, me, StringComparison.OrdinalIgnoreCase), Gap(mine, e.Median, higherIsBetter))).ToList();

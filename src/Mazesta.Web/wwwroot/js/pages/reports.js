@@ -4,6 +4,7 @@ import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, toast } from "../ui.js";
 import { box } from "../groups.js";
+import { boot } from "../app.js";
 
 const BADGE = { Passed: "pass", Failed: "fail", Incomplete: "warn", Benchmark: "run" };
 
@@ -40,8 +41,8 @@ export function mount(el) {
         h("span", { class: `pill ${BADGE[r.badge] || "none"}` }, r.verdict), h("span", { class: "title" }, r.title),
         h("div", { class: "acts" }, summary, act("html", r.id, "Reports_Html"), act("pdf", r.id, "Reports_Pdf"), act("text", r.id, "Reports_Text"), act("json", r.id, "Reports_Json"),
           act("folder", r.id, "Reports_Folder"),
-          h("button", { class: "btn", "data-a": "send-site", onclick: (e) => send(r.id, e.currentTarget) }, t("Site_Report_Send")),
-          r.site ? h("button", { class: "btn quiet", onclick: () => call("site.open", { url: r.site }) }, t("Site_Report_Open")) : null,
+          boot.staff ? h("button", { class: "btn", "data-a": "send-site", onclick: (e) => send(r.id, e.currentTarget) }, t("Site_Report_Send")) : null,
+          boot.staff && r.site ? h("button", { class: "btn quiet", onclick: () => call("site.open", { url: r.site }) }, t("Site_Report_Open")) : null,
           act("delete", r.id, "Reports_Delete", "btn stop")),
         h("span", { class: "sum" }, r.summary));
     }));

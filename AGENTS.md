@@ -53,7 +53,8 @@ Put logic in the lowest layer that can hold it, so it is unit-testable without a
 - Git identity is repo-local (`saeed-darabi`); do not change it.
 - Do not touch files another open branch is changing; check `docs/CODEX-TASKS.md` for who owns what.
 - Before a PR: build, run the non-hardware tests, and say plainly in the PR what you did **not** verify.
-- Runnable build: `pwsh tools/publish.ps1` (publishes the app to `artifacts/Mazesta-Web`; the old `artifacts/Mazesta-Test` of the WPF edition is never touched, its `Data` stays). It refuses while the app runs, backs `Data` up to `../Mazesta-Data-Backups/<time>` (outside the repo, newest 20 kept), and deletes everything but `Data` before publishing. Never delete the folder by hand: the portable app keeps the owner's settings, reports and history in `Data`, which git does not hold. `artifacts/` is not committed.
+- Two editions of one code base: Mazesta's own (the default build: service number, link to the site, reference marks) and the users' (`-p:MazestaEdition=Client`, what `tools/publish-release.ps1` releases). A feature meant for the company only is gated on `WebBridge.Staff` in the bridge **and** on `boot.staff` in the page; see `docs/UPDATES.md`.
+- Runnable build: `pwsh tools/publish.ps1` (publishes Mazesta's edition to `artifacts/Mazesta-Web` and the users' edition to `artifacts/Mazesta-Client`; the old `artifacts/Mazesta-Test` of the WPF edition is never touched, its `Data` stays). It refuses while the app runs, backs `Data` up to `../Mazesta-Data-Backups/<time>` (outside the repo, newest 20 kept), and deletes everything but `Data` before publishing. Never delete the folder by hand: the portable app keeps the owner's settings, reports and history in `Data`, which git does not hold. `artifacts/` is not committed.
 - Push every commit to GitHub on its branch right away (the owner's backup); never to `main`.
 
 ## Where things are documented

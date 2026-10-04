@@ -72,6 +72,19 @@ public class BenchmarkPeersTests : IDisposable
         Assert.Equal(100, k.Rows.Single(r => r.Entry.Part == "A").Entry.Median);
         Assert.True(k.Rows.Single(r => r.Entry.Part == "B").Local);
     }
+    [Fact] public void A_model_with_reference_runs_is_shown_by_their_median_and_one_without_keeps_its_own()
+    {
+        // Model A: three systems (median 100) and two runs Mazesta chose as its reference (median 130). Model B has none.
+        var runs = new[] { Run("A", "s1", 90), Run("A", "s2", 100), Run("A", "s3", 140), Run("A", "s4", 120), Run("B", "s5", 110) };
+        var marks = new Dictionary<string, BenchmarkMark> { [runs[2].Id] = new(true, null, null, T0), [runs[3].Id] = new(true, null, null, T0) };
+        var table = Assert.Single(BenchmarkPeers.Aggregate(runs, T0, marks));
+        Assert.Equal(110, table.Entries.Single(e => e.Part == "A").Median);   // the list itself is as before: nothing of this is written to it
+        var k = BenchmarkPeers.Rank(table, [], 115, null, true, table.Featured);
+        var a = k.Rows.Single(r => r.Entry.Part == "A").Entry; var b = k.Rows.Single(r => r.Entry.Part == "B").Entry;
+        Assert.Equal((130.0, 2), (a.Median, a.References)); Assert.Equal((110.0, 0), (b.Median, b.References));
+        Assert.Equal("A", k.Rows[0].Entry.Part); Assert.Equal(1, k.Beaten);   // ranked by the reference figure: 115 is behind A (130) and ahead of B (110)
+        Assert.DoesNotContain("eferences", BenchmarkPeers.Write(table));
+    }
     [Fact] public void No_result_yet_ranks_nothing()
     {
         var k = BenchmarkPeers.Rank(BenchmarkPeers.Aggregate([Run("A", "s1", 100)], T0)[0], [], double.NaN, null, true);

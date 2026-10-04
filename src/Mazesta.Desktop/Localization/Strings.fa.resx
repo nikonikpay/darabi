@@ -232,9 +232,6 @@
   <data name="Settings_StorageInterval" xml:space="preserve">
     <value>فاصله خواندن SMART دیسک (ثانیه)</value>
   </data>
-  <data name="Settings_ShopName" xml:space="preserve">
-    <value>نام فروشگاه</value>
-  </data>
   <data name="Settings_DataFolder" xml:space="preserve">
     <value>پوشه داده</value>
   </data>
@@ -893,13 +890,13 @@
   <data name="Web_Group_Windows" xml:space="preserve"><value>ویندوز</value></data>
   <data name="Web_Group_Power" xml:space="preserve"><value>کل سیستم (توان)</value></data>
   <data name="Web_Company_Title" xml:space="preserve"><value>مازستا</value></data>
-  <data name="Web_Shop_Title" xml:space="preserve"><value>از فروشگاه ما</value></data>
+  <data name="Web_Shop_Title" xml:space="preserve"><value>از فروشگاه مازستا</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>مشاهده در فروشگاه</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>محصول دیگر</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>همهٔ محصولات</value></data>
-  <data name="Web_Shop_Offline" xml:space="preserve"><value>به فروشگاه دسترسی نشد. با وصل شدن اینترنت، محصولی اینجا نمایش داده می‌شود.</value></data>
+  <data name="Web_Shop_Offline" xml:space="preserve"><value>به سایت مازستا دسترسی نشد. با وصل شدن اینترنت، محصولی اینجا نمایش داده می‌شود.</value></data>
   <data name="Web_Shop_Systems_Title" xml:space="preserve"><value>سیستم‌های آماده</value></data>
-  <data name="Web_Shop_Systems_Sub" xml:space="preserve"><value>کامپیوترهای کامل و آماده از فروشگاه ما</value></data>
+  <data name="Web_Shop_Systems_Sub" xml:space="preserve"><value>کامپیوترهای کامل و آماده از فروشگاه مازستا</value></data>
   <data name="Web_Shop_AnotherSystem" xml:space="preserve"><value>سیستم دیگر</value></data>
   <data name="Web_Shop_AllSystems" xml:space="preserve"><value>همهٔ سیستم‌های آماده</value></data>
   <data name="Web_Contact_Title" xml:space="preserve"><value>فروش و پشتیبانی</value></data>
@@ -1336,11 +1333,11 @@
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>میانگین نرخ فریم در باغ (2560x1440)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>نرخ فریم ۱٪ کندترین فریم‌ها</value></data>
   <data name="Nav_AppUpdate" xml:space="preserve"><value>به‌روزرسانی برنامه</value></data>
-  <data name="AppUpd_Lede" xml:space="preserve"><value>مزستا خودش را از سایت فروشگاه به‌روز می‌کند: نسخه‌های تازه برنامه و فهرست‌هایی که نتیجه بنچمارک را با سیستم‌های دیگر مقایسه می‌کنند. هر چیزی پیش از استفاده با امضای فروشگاه بررسی می‌شود و تنظیمات، گزارش‌ها و سوابق شما (پوشه Data) هرگز دست نمی‌خورند.</value></data>
+  <data name="AppUpd_Lede" xml:space="preserve"><value>برنامه خودش را از سایت مازستا به‌روز می‌کند: نسخه‌های تازه برنامه و فهرست‌هایی که نتیجه بنچمارک را با سیستم‌های دیگر مقایسه می‌کنند. هر چیزی پیش از استفاده با امضای مازستا بررسی می‌شود و تنظیمات، گزارش‌ها و سوابق شما (پوشه Data) هرگز دست نمی‌خورند.</value></data>
   <data name="AppUpd_Version" xml:space="preserve"><value>نسخه نصب‌شده</value></data>
   <data name="AppUpd_Check" xml:space="preserve"><value>بررسی به‌روزرسانی</value></data>
   <data name="AppUpd_Idle" xml:space="preserve"><value>در این اجرا هنوز بررسی نشده است.</value></data>
-  <data name="AppUpd_Checking" xml:space="preserve"><value>در حال بررسی سایت فروشگاه…</value></data>
+  <data name="AppUpd_Checking" xml:space="preserve"><value>در حال بررسی سایت مازستا…</value></data>
   <data name="AppUpd_UpToDate" xml:space="preserve"><value>این آخرین نسخه است.</value></data>
   <data name="AppUpd_Available" xml:space="preserve"><value>نسخه {0} آماده دریافت است.</value></data>
   <data name="AppUpd_Download" xml:space="preserve"><value>دریافت و آماده‌سازی</value></data>
@@ -1355,7 +1352,7 @@
   <data name="AppUpd_Checked" xml:space="preserve"><value>آخرین بررسی: {0}</value></data>
   <data name="AppUpd_Done" xml:space="preserve"><value>مزستا به نسخه {0} به‌روز شد.</value></data>
   <data name="AppUpd_Data_Title" xml:space="preserve"><value>فهرست‌های مقایسه بنچمارک</value></data>
-  <data name="AppUpd_Data_Sub" xml:space="preserve"><value>نتایج سیستم‌های دیگر که فروشگاه جمع کرده است</value></data>
+  <data name="AppUpd_Data_Sub" xml:space="preserve"><value>نتایج سیستم‌های دیگر که مازستا جمع کرده است</value></data>
   <data name="AppUpd_Data_Lists" xml:space="preserve"><value>{0} فهرست روی این کامپیوتر.</value></data>
   <data name="AppUpd_Data_None" xml:space="preserve"><value>هنوز هیچ فهرستی دریافت نشده است.</value></data>
   <data name="AppUpd_Data_Published" xml:space="preserve"><value>انتشار: {0}</value></data>
@@ -1363,11 +1360,11 @@
   <data name="AppUpd_Data_Note" xml:space="preserve"><value>فهرست‌ها کمی پس از باز شدن برنامه، اگر اینترنت در دسترس باشد، خودکار دریافت می‌شوند. این دکمه همین حالا دریافتشان می‌کند.</value></data>
   <data name="AppUpd_Data_Sync" xml:space="preserve"><value>به‌روزرسانی داده‌ها</value></data>
   <data name="AppUpd_Site" xml:space="preserve"><value>منبع به‌روزرسانی</value></data>
-  <data name="AppUpd_Safe" xml:space="preserve"><value>فقط فایل‌هایی پذیرفته می‌شوند که با کلید فروشگاه امضا شده باشند، و هر فایل باید با اندازه و اثر انگشت ثبت‌شده در فهرست امضاشده یکی باشد. فایل تغییرکرده یا خراب دور ریخته می‌شود و هرگز اجرا نمی‌شود.</value></data>
+  <data name="AppUpd_Safe" xml:space="preserve"><value>فقط فایل‌هایی پذیرفته می‌شوند که با کلید مازستا امضا شده باشند، و هر فایل باید با اندازه و اثر انگشت ثبت‌شده در فهرست امضاشده یکی باشد. فایل تغییرکرده یا خراب دور ریخته می‌شود و هرگز اجرا نمی‌شود.</value></data>
   <data name="Web_Peers_Title" xml:space="preserve"><value>مقایسه با سیستم‌های دیگر</value></data>
   <data name="Web_Peers_Count" xml:space="preserve"><value>{0} مدل در فهرست</value></data>
   <data name="Web_Peers_Ahead" xml:space="preserve"><value>جلوتر از {0} مدل از {1} مدل</value></data>
-  <data name="Web_Peers_None" xml:space="preserve"><value>هنوز نتیجه‌ای از سیستم دیگری برای این بنچمارک نیست. فهرست‌های فروشگاه با به‌روزرسانی داده‌ها می‌رسند (تنظیمات › به‌روزرسانی برنامه) و هر اجرایی که با این نسخه انجام شود هم اینجا اضافه می‌شود.</value></data>
+  <data name="Web_Peers_None" xml:space="preserve"><value>هنوز نتیجه‌ای از سیستم دیگری برای این بنچمارک نیست. فهرست‌های مازستا با به‌روزرسانی داده‌ها می‌رسند (تنظیمات › به‌روزرسانی برنامه).</value></data>
   <data name="Web_Peers_RunFirst" xml:space="preserve"><value>اجرایش کنید تا جایگاه این سیستم معلوم شود.</value></data>
   <data name="Web_Peers_You" xml:space="preserve"><value>این سیستم</value></data>
   <data name="Web_Peers_All" xml:space="preserve"><value>کل فهرست</value></data>
@@ -1380,11 +1377,11 @@
   <data name="Web_Peers_Median" xml:space="preserve"><value>میانه سیستم‌های این مدل (بهترین اجرای هر سیستم)</value></data>
   <data name="Web_Peers_DiffHint" xml:space="preserve"><value>نتیجه این سیستم چقدر بالاتر (+) یا پایین‌تر (−) از این مدل است</value></data>
   <data name="Web_Peers_Built" xml:space="preserve"><value>فهرست {0}</value></data>
-  <data name="Web_Peers_Note" xml:space="preserve"><value>برای هر مدل یک ردیف: میانه بهترین اجرای سیستم‌های آن مدل، هر سیستم یک بار. فاصله همیشه از طرف سیستم سریع‌تر گفته می‌شود: تا دو برابر به درصد (۲۵٪ سریع‌تر)، از دو برابر به بعد به «چند برابر» (۳.۲ برابر سریع‌تر). مدل اورکلاک‌شده ردیف جدا دارد. روی هر ردیف بزنید تا شرایط اجرا و مشخصات آن کنار این سیستم باز شود. ردیف‌های «این نسخه» با همین نسخه برنامه اندازه‌گیری شده‌اند و هنوز در فهرست فروشگاه نیستند.</value></data>
+  <data name="Web_Peers_Note" xml:space="preserve"><value>برای هر مدل یک ردیف. اگر مازستا برای آن مدل نتیجهٔ مرجع تأیید کرده باشد، عدد ردیف میانهٔ نتایج مرجع است (با برچسب «مرجع»)؛ وگرنه میانهٔ بهترین اجرای سیستم‌های آن مدل است، هر سیستم یک بار. فاصله همیشه از طرف سیستم سریع‌تر گفته می‌شود: تا دو برابر به درصد (۲۵٪ سریع‌تر)، از دو برابر به بعد به «چند برابر» (۳.۲ برابر سریع‌تر). مدل اورکلاک‌شده ردیف جدا دارد. روی هر ردیف بزنید تا تک‌تک سیستم‌های آن مدل، شرایط اجرا و مشخصاتش کنار این سیستم باز شود.</value></data>
   <data name="Web_Peers_Close" xml:space="preserve"><value>بستن</value></data>
   <data name="Web_Runs_Empty" xml:space="preserve"><value>هنوز اجرایی از این بنچمارک با این نسخه ثبت نشده است.</value></data>
   <data name="Web_Runs_Folder" xml:space="preserve"><value>باز کردن پوشه اجراها</value></data>
-  <data name="Web_Runs_Note" xml:space="preserve"><value>همه اجراهایی که با این نسخه روی هر سیستمی انجام شده (Data\benchmarks\runs). فروشگاه همین فایل‌ها را جمع می‌کند تا فهرست مشترک ساخته شود.</value></data>
+  <data name="Web_Runs_Note" xml:space="preserve"><value>همه اجراهایی که با این نسخه روی هر سیستمی انجام شده (Data\benchmarks\runs). با «ارسال نتایج به سایت» به فهرست مشترک مازستا اضافه می‌شوند.</value></data>
   <data name="Web_Runs_Date" xml:space="preserve"><value>تاریخ</value></data>
   <data name="Web_Runs_Machine" xml:space="preserve"><value>کامپیوتر</value></data>
   <data name="Web_Runs_Part" xml:space="preserve"><value>قطعه</value></data>
@@ -1421,11 +1418,11 @@
   <data name="Web_Peers_Even" xml:space="preserve"><value>هم‌سطح</value></data>
   <data name="Web_Peers_GapHint" xml:space="preserve"><value>تا دو برابر به درصد، از دو برابر به بعد به «چند برابر» نوشته می‌شود؛ همیشه از طرف سیستم سریع‌تر.</value></data>
   <data name="Web_Peers_Featured" xml:space="preserve"><value>نتایج مرجع</value></data>
-  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>اجراهایی که فروشگاه تأیید و به‌عنوان مرجع آن قطعه انتخاب کرده است.</value></data>
+  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>اجراهایی که مازستا تأیید و به‌عنوان مرجع آن قطعه انتخاب کرده است.</value></data>
   <data name="Web_Peers_FeaturedMore" xml:space="preserve"><value>و {0} نتیجه شاخص دیگر در «کل فهرست»</value></data>
   <data name="Web_Peers_Oc" xml:space="preserve"><value>اورکلاک</value></data>
   <data name="Web_Peers_FilterAll" xml:space="preserve"><value>همه</value></data>
-  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>فقط مرجع‌ها</value></data>
+  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>فقط مدل‌های دارای مرجع</value></data>
   <data name="Web_Peers_FilterStock" xml:space="preserve"><value>بدون اورکلاک</value></data>
   <data name="Web_Peers_Found" xml:space="preserve"><value>{0} مورد</value></data>
   <data name="Web_Detail_Open" xml:space="preserve"><value>جزئیات و مقایسه</value></data>
@@ -1441,10 +1438,10 @@
   <data name="Web_Detail_None" xml:space="preserve"><value>برای این مورد جزئیاتی ثبت نشده است (اجرا با نسخه‌ای قدیمی‌تر از 0.7.1).</value></data>
   <data name="Web_Detail_Sample" xml:space="preserve"><value>جزئیات یکی از سیستم‌های این مدل که نتیجه‌اش به میانه نزدیک‌تر است.</value></data>
   <data name="Web_Bench_AllNumbers" xml:space="preserve"><value>همه اعداد و شرایط این نتیجه</value></data>
-  <data name="Web_Runs_Featured" xml:space="preserve"><value>شاخص</value></data>
+  <data name="Web_Runs_Featured" xml:space="preserve"><value>مرجع</value></data>
   <data name="Web_Runs_Oc" xml:space="preserve"><value>اورکلاک</value></data>
   <data name="Web_Runs_NoteLabel" xml:space="preserve"><value>یادداشت (مثلاً «خنک‌کننده آبی»)</value></data>
-  <data name="Web_Runs_MarkHint" xml:space="preserve"><value>ستاره: این اجرا بعد از انتشار در همه نسخه‌ها به‌عنوان نتیجه شاخص نشان داده می‌شود. «اورکلاک»: جدا از نتایج عادی همان مدل حساب می‌شود.</value></data>
+  <data name="Web_Runs_MarkHint" xml:space="preserve"><value>ستاره: این اجرا نتیجهٔ مرجع آن مدل می‌شود. پس از انتشار، همهٔ نسخه‌ها آن مدل را با میانهٔ نتایج مرجعش نشان می‌دهند، نه میانهٔ همهٔ سیستم‌ها. «اورکلاک»: جدا از نتایج عادی همان مدل حساب می‌شود.</value></data>
   <data name="Bench_Overclocked" xml:space="preserve"><value>این سیستم اورکلاک شده است</value></data>
   <data name="Bench_OverclockedHint" xml:space="preserve"><value>اجراهای بعدی با برچسب اورکلاک ثبت و جدا از نتایج عادی مقایسه می‌شوند. با بستن برنامه خاموش می‌شود.</value></data>
   <data name="Web_Quiet_Title" xml:space="preserve"><value>حالت بنچمارک</value></data>
@@ -1639,7 +1636,7 @@
   <data name="Advice_Inconclusive" xml:space="preserve"><value>خطایی دیده نشد، اما آزمون نتوانست همهٔ آنچه خواسته شده بود را پوشش دهد؛ نتیجه نه قبول است نه رد. در جزئیات ببینید چه چیزی پوشش داده نشد و با زمان بیشتر تکرار کنید.</value></data>
   <data name="Advice_Inconclusive_Cores" xml:space="preserve"><value>هیچ هسته‌ای اشتباه محاسبه نکرد، اما همهٔ هسته‌ها آزمون نشدند (زمان تمام شد یا ویندوز رشته را روی هسته نگه نداشت). به هر هسته دست‌کم چند ثانیه بدهید: مدت آزمون باید دست‌کم تعداد هسته‌ها ضرب در ثانیه برای هر هسته باشد.</value></data>
   <data name="Advice_Inconclusive_Network" xml:space="preserve"><value>هیچ پاسخ اکویی برنگشت. ممکن است فایروال یا مقصد ICMP را مسدود کند؛ این خرابی کارت شبکه نیست. به روتر یا مقصد دیگری پینگ بگیرید؛ بنچمارک سرعت اینترنت اتصال را از راه دیگری بررسی می‌کند.</value></data>
-  <data name="Advice_Error" xml:space="preserve"><value>خود آزمون با خطای برنامه متوقف شد؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست. دوباره اجرا کنید؛ اگر تکرار شد، گزارش برنامه (در تنظیمات) را برای فروشگاه بفرستید.</value></data>
+  <data name="Advice_Error" xml:space="preserve"><value>خود آزمون با خطای برنامه متوقف شد؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست. دوباره اجرا کنید؛ اگر تکرار شد، گزارش برنامه (در تنظیمات) را برای پشتیبانی مازستا بفرستید.</value></data>
   <data name="Web_Run_Close" xml:space="preserve"><value>بستن تا جلسهٔ بعدی</value></data>
   <data name="Nav_Ai" xml:space="preserve"><value>مدل‌های هوش مصنوعی</value></data>
   <data name="Nav_Assistant" xml:space="preserve"><value>دستیار هوشمند</value></data>
@@ -2667,8 +2664,8 @@
   <data name="Check_M_EarlierRuns" xml:space="preserve"><value>تعداد اجراهای قبلی</value></data>
   <data name="Check_M_MediaErrors" xml:space="preserve"><value>خطاهای اصلاح‌نشده</value></data>
   <data name="Check_M_PowerOnHours" xml:space="preserve"><value>ساعت کارکرد</value></data>
-  <data name="Site_Title" xml:space="preserve"><value>اتصال به سایت فروشگاه</value></data>
-  <data name="Site_Sub" xml:space="preserve"><value>خلاصه گزارش‌ها و نتایج بنچمارک از اینجا به سایت می‌روند</value></data>
+  <data name="Site_Title" xml:space="preserve"><value>اتصال به سایت مازستا</value></data>
+  <data name="Site_Sub" xml:space="preserve"><value>خلاصه گزارش‌ها و نتایج بنچمارک از اینجا به سایت مازستا می‌روند</value></data>
   <data name="Site_Key" xml:space="preserve"><value>کلید سایت</value></data>
   <data name="Site_Key_Hint" xml:space="preserve"><value>از پیشخوان سایت: Mazesta Connect › تنظیمات و انتشار</value></data>
   <data name="Site_Key_Save" xml:space="preserve"><value>ذخیره و بررسی</value></data>
@@ -2682,7 +2679,7 @@
   <data name="Site_Err_NoPlugin" xml:space="preserve"><value>افزونه Mazesta Connect روی سایت نصب نیست (یا خاموش است).</value></data>
   <data name="Site_Err_Site" xml:space="preserve"><value>سایت نپذیرفت: {0}</value></data>
   <data name="Site_Err_Offline" xml:space="preserve"><value>به سایت دسترسی نبود: {0}</value></data>
-  <data name="Site_Err_NoKey" xml:space="preserve"><value>این نسخه کلید سایت ندارد. آن را در «به‌روزرسانی برنامه › اتصال به سایت فروشگاه» وارد کنید.</value></data>
+  <data name="Site_Err_NoKey" xml:space="preserve"><value>این نسخه کلید سایت ندارد. آن را در «به‌روزرسانی برنامه › اتصال به سایت مازستا» وارد کنید.</value></data>
   <data name="Site_Err_NoRuns" xml:space="preserve"><value>صفحه بنچمارک هنوز باز نشده است.</value></data>
   <data name="Site_Report_Send" xml:space="preserve"><value>ارسال به سایت</value></data>
   <data name="Site_Report_Sent" xml:space="preserve"><value>ارسال شد. همکاران از پیشخوان سایت (Mazesta Connect › گزارش‌ها) چاپش می‌کنند.</value></data>
@@ -2692,7 +2689,7 @@
   <data name="Site_Runs_Send" xml:space="preserve"><value>ارسال نتایج به سایت</value></data>
   <data name="Site_Runs_Hint" xml:space="preserve"><value>اجراهای ثبت‌شده این نسخه را که سایت هنوز ندارد می‌فرستد؛ فهرست‌های مقایسه بعد روی سایت ساخته می‌شوند.</value></data>
   <data name="Site_Runs_Done" xml:space="preserve"><value>{0} اجرای تازه ارسال شد؛ {1} از قبل بود و {2} پذیرفته نشد.</value></data>
-  <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} اجرا ارسال شد. تا فروشگاه بررسی نکند وارد فهرست‌ها نمی‌شوند.</value></data>
+  <data name="Site_Runs_Pending" xml:space="preserve"><value>{0} اجرا ارسال شد. تا مازستا بررسی نکند وارد فهرست‌ها نمی‌شوند.</value></data>
   <data name="Site_Runs_Nothing" xml:space="preserve"><value>چیز تازه‌ای برای ارسال نیست.</value></data>
   <data name="Site_Note" xml:space="preserve"><value>هیچ چیز خودبه‌خود فرستاده نمی‌شود. هر اجرا نام کامپیوتر و مدل قطعه‌هایش را دارد؛ خلاصه گزارش شماره سرویس، قطعه‌ها و نتیجه آزمون‌ها را.</value></data>
   <data name="Assist_Tool_get_crashes" xml:space="preserve"><value>خواند: صفحه‌های آبی</value></data>
@@ -2818,4 +2815,155 @@
   <data name="Overlay_VramLoad" xml:space="preserve"><value>درصد پر بودن VRAM</value></data>
   <data name="Site_Runs_NeedKey" xml:space="preserve"><value>این نسخه هنوز به سایت وصل نیست. اول وصلش کنید (صفحه‌ای که باز شد)، بعد نتایج را بفرستید.</value></data>
   <data name="Web_Peers_Members" xml:space="preserve"><value>{0} سیستم از این مدل، هر کدام با بهترین اجرایش؛ عدد ردیف میانهٔ آن‌هاست ({1})</value></data>
+  <data name="AppUpd_StaffNote" xml:space="preserve"><value>این نسخهٔ داخلی مازستا است. نسخه‌ای که روی سایت منتشر می‌شود نسخهٔ کاربر است و روی این نسخه نصب نمی‌شود؛ برای به‌روزرسانی، بیلد تازهٔ مازستا را جایگزین کنید.</value></data>
+  <data name="Bsod_Ask" xml:space="preserve"><value>از دستیار بپرس</value></data>
+  <data name="Bsod_Ask_Off" xml:space="preserve"><value>دستیار روشن نیست. آن را در ستون دستیار روشن کنید و دوباره بپرسید.</value></data>
+  <data name="Bsod_Ask_Text" xml:space="preserve"><value>صفحهٔ آبی {0} ({1}) در تاریخ {2} را کوتاه و ساده توضیح بده: معمولاً از چیست و اول چه چیزی را بررسی کنم؟</value></data>
+  <data name="Detail_And" xml:space="preserve"><value> و </value></data>
+  <data name="Detail_C_Blocks" xml:space="preserve"><value>تعداد بلوک‌های محاسبه‌شده: {0}</value></data>
+  <data name="Detail_C_CheckFrames" xml:space="preserve"><value>فریم‌های بررسی‌شده: {0}</value></data>
+  <data name="Detail_C_CoreVisits" xml:space="preserve"><value>تعداد دفعات رفتن روی هسته‌ها: {0}</value></data>
+  <data name="Detail_C_Multiplies" xml:space="preserve"><value>تعداد ضرب‌های ماتریسی: {0}</value></data>
+  <data name="Detail_C_Sent" xml:space="preserve"><value>درخواست‌های فرستاده‌شده: {0}</value></data>
+  <data name="Detail_C_Transforms" xml:space="preserve"><value>تعداد تبدیل‌های محاسبه‌شده: {0}</value></data>
+  <data name="Detail_Cpu_Compressed" xml:space="preserve"><value>فشرده شد به {0}٪ اندازهٔ اصلی</value></data>
+  <data name="Detail_Cpu_Coverage" xml:space="preserve"><value>روی {0} پردازندهٔ منطقی از {1} اجرا شد</value></data>
+  <data name="Detail_Cpu_CoverageSplit" xml:space="preserve"><value>روی {0} پردازندهٔ منطقی از {1} اجرا شد ({2})</value></data>
+  <data name="Detail_Cpu_Cycle" xml:space="preserve"><value>چرخش تک‌هسته‌ای روی {0} هستهٔ فیزیکی، هر هسته {1} ثانیه، بار {2}، ماتریس {3}x{3}</value></data>
+  <data name="Detail_Cpu_ECores" xml:space="preserve"><value>هسته‌های E: {0} از {1} رشته</value></data>
+  <data name="Detail_Cpu_EveryCore" xml:space="preserve"><value>همهٔ هسته‌ها آزمایش شدند</value></data>
+  <data name="Detail_Cpu_Fft" xml:space="preserve"><value>تبدیل فوریه (FFT مختلط پایهٔ ۲) با اندازه‌های {0} و {1} روی {2} رشته</value></data>
+  <data name="Detail_Cpu_FftChecks" xml:space="preserve"><value>درستی با تبدیل مستقیم (خطای نسبی {0})، رفت‌وبرگشت معکوس و قاعدهٔ پارسوال سنجیده شد و سپس بیت به بیت</value></data>
+  <data name="Detail_Cpu_FftFewer" xml:space="preserve"><value>تبدیل فوریه (FFT مختلط پایهٔ ۲) با اندازه‌های {0} و {1} روی {2} رشته از {3} رشته (حافظهٔ آزاد برای همین تعداد کارگر {4} مگابایتی جا داشت)</value></data>
+  <data name="Detail_Cpu_Groups" xml:space="preserve"><value>گروه‌ها {0}</value></data>
+  <data name="Detail_Cpu_Hash" xml:space="preserve"><value>هش SHA-256 و فشرده‌سازی رفت‌وبرگشتی Deflate روی {0} رشته (دستورهای SHA: {1})؛ هر بلوک با هش ازپیش‌محاسبه‌شده مقایسه شد</value></data>
+  <data name="Detail_Cpu_Integer" xml:space="preserve"><value>بار عدد صحیح (ضرب، تقسیم ۶۴ بیتی، شیفت، چرخش، xor، پرش شرطی) روی {0} رشته؛ هر بلوک با مقدار ازپیش‌محاسبه‌شده مقایسه شد</value></data>
+  <data name="Detail_Cpu_Linpack" xml:space="preserve"><value>Linpack (تجزیهٔ LU با محورگیری جزئی)، اندازهٔ ماتریس {0} ({1} MiB) روی {2} رشته</value></data>
+  <data name="Detail_Cpu_Matrix" xml:space="preserve"><value>بار ماتریسی {0}x{0} با {1} مجموعهٔ ورودی ثابت؛ هر حاصل‌ضرب به‌طور کامل با مقدار ازپیش‌محاسبه‌شده مقایسه شد</value></data>
+  <data name="Detail_Cpu_NotTested" xml:space="preserve"><value>آزمایش‌نشده: هستهٔ {0}؛ نتیجه فقط بقیهٔ هسته‌ها را می‌پوشاند</value></data>
+  <data name="Detail_Cpu_PCores" xml:space="preserve"><value>هسته‌های P: {0} از {1} رشته</value></data>
+  <data name="Detail_Cpu_Residual" xml:space="preserve"><value>بزرگ‌ترین خطای باقی‌مانده: {0} (حد مجاز ۱۶)</value></data>
+  <data name="Detail_Cpu_Unpinned" xml:space="preserve"><value>ویندوز اجازه نداد کار روی هستهٔ {0} ثابت بماند</value></data>
+  <data name="Detail_Cpu_Vector" xml:space="preserve"><value>بار برداری (FMA) با {0} روی {1} رشته؛ هر خانهٔ بردار با محاسبهٔ معمولی مقایسه شد</value></data>
+  <data name="Detail_Cpu_WrongOn" xml:space="preserve"><value>نتیجهٔ نادرست روی {0}</value></data>
+  <data name="Detail_Drive_Healthy" xml:space="preserve"><value>سالم</value></data>
+  <data name="Detail_Drive_Unhealthy" xml:space="preserve"><value>ناسالم</value></data>
+  <data name="Detail_Drive_Unknown" xml:space="preserve"><value>نامعلوم</value></data>
+  <data name="Detail_Drive_Warning" xml:space="preserve"><value>هشدار</value></data>
+  <data name="Detail_Gpu_Error" xml:space="preserve"><value>کارت گرافیک حین اجرا خطا داد:</value></data>
+  <data name="Detail_Gpu_FpsAvg" xml:space="preserve"><value>میانگین: {0} فریم در ثانیه</value></data>
+  <data name="Detail_Gpu_FpsLow" xml:space="preserve"><value>کندترین نیم‌ثانیه: {0} فریم در ثانیه</value></data>
+  <data name="Detail_Gpu_MPixel" xml:space="preserve"><value>{0} مگاپیکسل در ثانیه (صحنهٔ خود مازستا؛ امتیاز برنامه‌های تجاری نیست)</value></data>
+  <data name="Detail_Gpu_Render" xml:space="preserve"><value>صحنهٔ رهگیری پرتو {0}x{1} با {2} کره و {3} بازتاب، روی {4}</value></data>
+  <data name="Detail_Gpu_Scene" xml:space="preserve"><value>صحنهٔ باغ ایرانی با {0}، رسم‌شده در {1}x{2} (پنجره {3}x{4}) روی {5}</value></data>
+  <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>سطح بار {0}:</value></data>
+  <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} مثلث در {1} شیء؛ مدل وسط صحنه «{2}»</value></data>
+  <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>رهگیری پرتو: پرتو دوربین، پرتو سایه به ماه و به هر یک از {0} چراغ نزدیک، بازتاب و شکست تا ۴ بار</value></data>
+  <data name="Detail_Gpu_Vram" xml:space="preserve"><value>آزمون الگویی حافظهٔ گرافیک روی {0}</value></data>
+  <data name="Detail_Gpu_VramTested" xml:space="preserve"><value>حافظهٔ گرافیک آزمایش‌شده: {0} MiB در {1} بافر</value></data>
+  <data name="Detail_Gpu_WindowClosed" xml:space="preserve"><value>پنجرهٔ آزمون پیش از تمام شدن زمان بسته شد</value></data>
+  <data name="Detail_Half" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Detail_Half_Cpu" xml:space="preserve"><value>بخش پردازنده</value></data>
+  <data name="Detail_Half_Gpu" xml:space="preserve"><value>بخش کارت گرافیک</value></data>
+  <data name="Detail_L_VramUsed" xml:space="preserve"><value>حافظهٔ گرافیک در حال استفاده</value></data>
+  <data name="Detail_ListComma" xml:space="preserve"><value>، </value></data>
+  <data name="Detail_Load_steady" xml:space="preserve"><value>ثابت</value></data>
+  <data name="Detail_Load_variable" xml:space="preserve"><value>متغیر</value></data>
+  <data name="Detail_Log_NvmeDuring" xml:space="preserve"><value>گزارش سلامت NVMe درایو حین آزمون تغییر کرد:</value></data>
+  <data name="Detail_Log_NvmeUnread" xml:space="preserve"><value>گزارش سلامت NVMe پس از آزمون خوانده نشد ({0})</value></data>
+  <data name="Detail_Log_Storage" xml:space="preserve"><value>ویندوز حین این آزمون {0} رویداد ذخیره‌سازی ثبت کرد:</value></data>
+  <data name="Detail_Log_StorageNote" xml:space="preserve"><value>این به‌تنهایی دلیل خرابی درایو نیست: کابل، کنترلر، درایور و برق را هم بررسی کنید</value></data>
+  <data name="Detail_Log_StorageUnread" xml:space="preserve"><value>گزارش رویدادهای ذخیره‌سازی ویندوز خوانده نشد ({0})</value></data>
+  <data name="Detail_Log_Whea" xml:space="preserve"><value>ویندوز حین این آزمون {0} خطای سخت‌افزاری (WHEA) ثبت کرد (شناسهٔ رویداد {1}):</value></data>
+  <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>گزارش خطاهای سخت‌افزاری ویندوز (WHEA) خوانده نشد ({0})</value></data>
+  <data name="Detail_Mem_Algorithms" xml:space="preserve"><value>وارونه‌سازی متحرک {0} بار، جابه‌جایی بلوکی {1} بار، دسترسی گام‌دار {2} بار</value></data>
+  <data name="Detail_Mem_BitFade" xml:space="preserve"><value>آزمون محو شدن بیت (آیا حافظه دادهٔ دست‌نخورده را نگه می‌دارد)</value></data>
+  <data name="Detail_Mem_Covers" xml:space="preserve"><value>فقط حافظه‌ای را می‌پوشاند که ویندوز به آزمون داد؛ جای خطا با موقعیت در بافر خود آزمون گفته می‌شود، نه نشانی فیزیکی یا شکاف رم</value></data>
+  <data name="Detail_Mem_Faded" xml:space="preserve"><value>اولین بایت‌های محوشده در بلوک {0} بافر (موقعیت {1} MiB) پس از نگه‌داشتن «{2}»</value></data>
+  <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر، هر بار {1} دست‌نخورده نگه داشته شد</value></data>
+  <data name="Detail_Mem_HeldShort" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر، هر بار {1} دست‌نخورده نگه داشته شد: کوتاه‌تر از {2} ثانیه‌ای که یک سلول نشت‌کننده برای خودنمایی لازم دارد</value></data>
+  <data name="Detail_Mem_Locked" xml:space="preserve"><value>{0} بلوک از {1} بلوک در رم قفل شد</value></data>
+  <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} بلوک از {1} بلوک در رم قفل شد؛ ویندوز بقیه را قفل نکرد، پس شاید حین انتظار به دیسک رفته باشند و نتیجهٔ آن‌ها چیزی دربارهٔ رم نمی‌گوید</value></data>
+  <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>اولین ناهمخوانی در بلوک {0} بافر (موقعیت {1} MiB) با الگوی «{2}»</value></data>
+  <data name="Detail_Mem_Offsets" xml:space="preserve"><value>جای خطا با موقعیت در بافر خود آزمون گفته می‌شود، نه نشانی فیزیکی یا شکاف رم</value></data>
+  <data name="Detail_Mem_Passes" xml:space="preserve"><value>گذرها: {0} از {1} الگو</value></data>
+  <data name="Detail_Mem_PassesShort" xml:space="preserve"><value>گذرها: {0} از {1} الگو (همهٔ الگوها اجرا نشد؛ اجرای طولانی‌تر همه را می‌پوشاند)</value></data>
+  <data name="Detail_Mem_Pattern" xml:space="preserve"><value>آزمون الگویی حافظه</value></data>
+  <data name="Detail_Mem_RunLonger" xml:space="preserve"><value>برای گرفتن نتیجه، طولانی‌تر اجرا کنید</value></data>
+  <data name="Detail_Mem_Tested" xml:space="preserve"><value>حافظهٔ آزمایش‌شده: {0} MiB</value></data>
+  <data name="Detail_Net_Icmp" xml:space="preserve"><value>پینگ (ICMP) به {0}</value></data>
+  <data name="Detail_Net_Jitter" xml:space="preserve"><value>نوسان (جیتر): {0} میلی‌ثانیه</value></data>
+  <data name="Detail_Net_Lan" xml:space="preserve"><value>آزمون LAN با {0}: ارسال {1} Mbit/s ({2} MB فرستاده شد، {3} MB به طرف مقابل رسید، {4} نادرست)، دریافت {5} Mbit/s ({6} MB، {7} نادرست)</value></data>
+  <data name="Detail_Net_Latency" xml:space="preserve"><value>زمان پاسخ: کمترین {0}، میانگین {1}، بیشترین {2} میلی‌ثانیه</value></data>
+  <data name="Detail_Net_Links" xml:space="preserve"><value>کارت‌های شبکهٔ وصل: {0}</value></data>
+  <data name="Detail_Net_Lost" xml:space="preserve"><value>ازدست‌رفته: {0}٪</value></data>
+  <data name="Detail_Net_Metric" xml:space="preserve"><value>{0}: {1} {2}</value></data>
+  <data name="Detail_Net_NoJitter" xml:space="preserve"><value>نوسان اندازه‌گیری نشد (کمتر از ۲ پاسخ)</value></data>
+  <data name="Detail_Net_NoReply" xml:space="preserve"><value>هیچ پاسخی نیامد: شاید مقصد یا فایروال پینگ را رد می‌کند، یا مسیری وجود ندارد</value></data>
+  <data name="Detail_Net_OneWay" xml:space="preserve"><value>داده فقط در یک جهت جابه‌جا شد</value></data>
+  <data name="Detail_Net_RoundTrip" xml:space="preserve"><value>زمان رفت‌وبرگشت در حالت بی‌بار: {0}؛ هنگام دریافت: {1}</value></data>
+  <data name="Detail_Net_TryAnother" xml:space="preserve"><value>پیش از مقصر دانستن کارت شبکه، مقصد دیگری را امتحان کنید</value></data>
+  <data name="Detail_no" xml:space="preserve"><value>ندارد</value></data>
+  <data name="Detail_None" xml:space="preserve"><value>ندارد</value></data>
+  <data name="Detail_NotMeasured" xml:space="preserve"><value>اندازه‌گیری نشد</value></data>
+  <data name="Detail_Rate_GbS" xml:space="preserve"><value>سرعت: {0} GB/s</value></data>
+  <data name="Detail_Rate_Gflops" xml:space="preserve"><value>سرعت محاسبه: {0} GFLOPS{1}</value></data>
+  <data name="Detail_Rate_Input" xml:space="preserve"><value>سرعت پردازش ورودی: {0} MB/s</value></data>
+  <data name="Detail_Samples" xml:space="preserve"><value>({0} نمونه)</value></data>
+  <data name="Detail_SecondsOf" xml:space="preserve"><value>{0} ثانیه</value></data>
+  <data name="Detail_Sto_Blocks" xml:space="preserve"><value>بلوک‌های نوشته و درستی‌سنجی‌شده: {0}</value></data>
+  <data name="Detail_Sto_Drive" xml:space="preserve"><value>{0}: {1}{2}</value></data>
+  <data name="Detail_Sto_IoError" xml:space="preserve"><value>درایو هنگام کار خطای خواندن/نوشتن داد:</value></data>
+  <data name="Detail_Sto_NvmeLog" xml:space="preserve"><value>گزارش سلامت NVMe درایو {0}: هشدار بحرانی {1}، خطای رسانه {2}، فضای یدکی {3}٪ (آستانه {4}٪)، عمر مصرف‌شده {5}٪، خاموشی ناایمن {6}، ورودی‌های گزارش خطا {7}</value></data>
+  <data name="Detail_Sto_Random" xml:space="preserve"><value>نوشتن و خواندن تصادفی ۴K، هر بار یک درخواست، مستقیم روی درایو (بدون کش ویندوز)</value></data>
+  <data name="Detail_Sto_Read" xml:space="preserve"><value>خواندن: {0} MB/s</value></data>
+  <data name="Detail_Sto_ReadIops" xml:space="preserve"><value>خواندن: {0} IOPS، تأخیر {1}</value></data>
+  <data name="Detail_Sto_Sequential" xml:space="preserve"><value>نوشتن و خواندن پیاپی، مستقیم روی درایو (بدون کش ویندوز)</value></data>
+  <data name="Detail_Sto_ShortReads" xml:space="preserve"><value>خواندن‌های ناقص: {0}</value></data>
+  <data name="Detail_Sto_Verified" xml:space="preserve"><value>بازخوانی و درستی‌سنجی‌شده: {0} MiB در {1} گذر</value></data>
+  <data name="Detail_Sto_Write" xml:space="preserve"><value>نوشتن: {0} MB/s</value></data>
+  <data name="Detail_Sto_WriteIops" xml:space="preserve"><value>نوشتن: {0} IOPS، تأخیر {1}</value></data>
+  <data name="Detail_Sto_WrongBytes" xml:space="preserve"><value>بایت‌هایی که نادرست بازخوانده شدند: {0}</value></data>
+  <data name="Detail_W_BadFrame" xml:space="preserve"><value>اولین فریم رسم‌شده تصویر درستی نیست (عدد نامعتبر یا بدون کنتراست).</value></data>
+  <data name="Detail_W_CpuLacks" xml:space="preserve"><value>این پردازنده از {0} پشتیبانی نمی‌کند.</value></data>
+  <data name="Detail_W_Duration" xml:space="preserve"><value>مدت آزمون باید بیشتر از صفر باشد.</value></data>
+  <data name="Detail_W_Error" xml:space="preserve"><value>خود آزمون با خطا متوقف شد ({0})؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست.</value></data>
+  <data name="Detail_W_FftRam" xml:space="preserve"><value>حافظهٔ آزاد حتی برای یک کارگر FFT کافی نیست (هر کدام {0} MiB، بالاتر از نیاز ویندوز).</value></data>
+  <data name="Detail_W_LanLost" xml:space="preserve"><value>اتصال به {0} وسط آزمون قطع شد ({1})؛ از اجرایی که تمام نشده چیزی دربارهٔ شبکه نتیجه گرفته نمی‌شود.</value></data>
+  <data name="Detail_W_LanShort" xml:space="preserve"><value>آزمون LAN دست‌کم ۳ ثانیه زمان می‌خواهد.</value></data>
+  <data name="Detail_W_LanSilent" xml:space="preserve"><value>طرف مقابل در {0} پاسخ نداد ({1}): آیا آن‌جا روشن است و فایروالش درگاه {2} را باز گذاشته است؟</value></data>
+  <data name="Detail_W_LinpackRam" xml:space="preserve"><value>ماتریس {0}x{0} به {1} MiB حافظه نیاز دارد؛ فقط {2} MiB آزاد است.</value></data>
+  <data name="Detail_W_LittleRam" xml:space="preserve"><value>فقط {0} MiB حافظهٔ آزاد بالاتر از نیاز ویندوز هست؛ دست‌کم {1} MiB لازم است.</value></data>
+  <data name="Detail_W_LittleVram" xml:space="preserve"><value>فقط {0} MiB از حافظهٔ گرافیک را می‌توان با اطمینان آزمود؛ دست‌کم {1} MiB لازم است.</value></data>
+  <data name="Detail_W_NoAdapter" xml:space="preserve"><value>هیچ کارت شبکه‌ای وصل نیست.</value></data>
+  <data name="Detail_W_NoCores" xml:space="preserve"><value>ویندوز هیچ هستهٔ پردازنده‌ای گزارش نکرد.</value></data>
+  <data name="Detail_W_NoInternet" xml:space="preserve"><value>اینترنت وصل نیست.</value></data>
+  <data name="Detail_W_NoLanPartner" xml:space="preserve"><value>طرف مقابل شبکه داده نشده است: «طرف مقابل LAN» را روی کامپیوتر دیگری روشن کنید و نشانی آن را وارد کنید.</value></data>
+  <data name="Detail_W_NoSmart" xml:space="preserve"><value>هیچ درایوی وضعیت سلامت SMART گزارش نکرد.</value></data>
+  <data name="Detail_W_NotAnAddress" xml:space="preserve"><value>«{0}» نشانی IP نیست و نام آن هم پیدا نشد.</value></data>
+  <data name="Detail_W_NotIpv4" xml:space="preserve"><value>«{0}» نشانی IPv4 نیست (درگاه را می‌توان به شکل ‎:port‎ پس از آن نوشت).</value></data>
+  <data name="Detail_W_NoVramBuffer" xml:space="preserve"><value>درایور هیچ حافظهٔ گرافیکی در اختیار آزمون نگذاشت.</value></data>
+  <data name="Detail_W_Pulse" xml:space="preserve"><value>طول پالس و فاصلهٔ بین پالس‌ها باید بیشتر از صفر باشد.</value></data>
+  <data name="Detail_W_SmartFailed" xml:space="preserve"><value>ویندوز سلامت درایوها را گزارش نکرد:</value></data>
+  <data name="Detail_Win_Damaged" xml:space="preserve"><value>آسیب‌دیده</value></data>
+  <data name="Detail_Win_Healthy" xml:space="preserve"><value>سالم</value></data>
+  <data name="Detail_Win_Repaired" xml:space="preserve"><value>تعمیر شد</value></data>
+  <data name="Detail_Win_Tool" xml:space="preserve"><value>{0} {1}: {2} (کد خروج {3})</value></data>
+  <data name="Detail_Win_Unknown" xml:space="preserve"><value>نتیجه نامشخص</value></data>
+  <data name="Detail_Word_Core" xml:space="preserve"><value>هستهٔ</value></data>
+  <data name="Detail_Word_Max" xml:space="preserve"><value>بیشینه</value></data>
+  <data name="Detail_Word_Mean" xml:space="preserve"><value>میانگین</value></data>
+  <data name="Detail_Word_Median" xml:space="preserve"><value>میانه</value></data>
+  <data name="Detail_Word_PowerOn" xml:space="preserve"><value>کارکرد</value></data>
+  <data name="Detail_Word_Uncorrected" xml:space="preserve"><value>خطای اصلاح‌نشدهٔ خواندن/نوشتن</value></data>
+  <data name="Detail_Word_Wear" xml:space="preserve"><value>فرسودگی</value></data>
+  <data name="Detail_yes" xml:space="preserve"><value>دارد</value></data>
+  <data name="Settings_DisplayName" xml:space="preserve"><value>نام نمایشی</value></data>
+  <data name="Settings_DisplayName_Hint" xml:space="preserve"><value>نتایج بنچمارکی که به اشتراک می‌گذارید با این نام نمایش داده می‌شوند. اگر خالی بماند، با نام «کاربر مازستا» ثبت می‌شوند.</value></data>
+  <data name="Site_Share_Anonymous" xml:space="preserve"><value>کاربر مازستا</value></data>
+  <data name="Web_Diag_Note_Client" xml:space="preserve"><value>اگر چیزی درست کار نمی‌کند یا سنسوری دیده نمی‌شود، این فایل را ذخیره کنید و برای پشتیبانی مازستا بفرستید.</value></data>
+  <data name="Web_Peers_Members_Ref" xml:space="preserve"><value>{0} سیستم از این مدل، هر کدام با بهترین اجرایش. عدد ردیف میانهٔ {2} نتیجهٔ مرجع مازستاست ({1})</value></data>
+  <data name="Web_Peers_Reference" xml:space="preserve"><value>مرجع</value></data>
+  <data name="Web_Peers_ReferenceMedian" xml:space="preserve"><value>میانهٔ {0} نتیجهٔ مرجع که مازستا برای این مدل تأیید کرده است</value></data>
+  <data name="Web_Runs_Note_Client" xml:space="preserve"><value>اجراهای ثبت‌شدهٔ این بنچمارک، تازه‌ترین اول.</value></data>
 </root>

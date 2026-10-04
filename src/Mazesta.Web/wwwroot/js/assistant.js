@@ -216,9 +216,18 @@ export function mountAssistant(app, root) {
     setTimeout(() => el.classList.remove("flash"), 3200);
   }
   const onShow = () => setOpen(app.dataset.asst !== "open"); window.addEventListener("assistant:toggle", onShow);
+  // A page asks on the user's behalf (a blue screen's "ask the assistant"): the column opens and the question is sent as if typed; while the
+  // assistant is off or busy it waits in the box, to be sent by hand.
+  const onAsk = (e) => {
+    const text = String(e.detail || "").trim(); if (!text) return;
+    setOpen(true);
+    if (ready() && !a.busy) { stick = true; exec("assistant.exec", "send", { text }); }
+    else { input.value = text; input.focus(); if (!ready()) toast(t("Bsod_Ask_Off"), "fail"); }
+  };
+  window.addEventListener("assistant:ask", onAsk);
   Promise.all([call("ai.state").then((s) => { ai = s; }).catch(() => {}), call("assistant.state")]).then(([, s]) => render(s)).catch(() => { app.dataset.asst = "none"; });
   // Free memory decides which model is offered, and the card is read a moment after start: both are followed every few seconds while the
   // assistant is off or not yet possible and the window is shown.
   const timer = setInterval(() => { if (!document.hidden && !a?.busy && (a?.status !== "Available" || a?.server === "off" && app.dataset.asst === "open")) call("assistant.state").then(render).catch(() => {}); }, 5000);
-  return () => { offA(); offAi(); offNav(); offTests(); clearInterval(timer); window.removeEventListener("assistant:toggle", onShow); };
+  return () => { offA(); offAi(); offNav(); offTests(); clearInterval(timer); window.removeEventListener("assistant:toggle", onShow); window.removeEventListener("assistant:ask", onAsk); };
 }

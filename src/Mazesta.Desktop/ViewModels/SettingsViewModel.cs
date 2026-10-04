@@ -5,7 +5,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly AppConfig _config; private readonly JsonStore<AppConfig> _store; private readonly PollingEngine _engine; private readonly MonitoringOptions _options; private readonly Action<string> _openFolder; private readonly ITrayController _tray;
     public string[] Languages => ["en", "fa"];
     public string[] RenderModes => ["auto", "software"];
-    [ObservableProperty] private string _language; [ObservableProperty] private string _renderMode; [ObservableProperty] private string _fastIntervalText; [ObservableProperty] private string _storageIntervalText; [ObservableProperty] private string _shopName; [ObservableProperty] private string _message = "";
+    [ObservableProperty] private string _language; [ObservableProperty] private string _renderMode; [ObservableProperty] private string _fastIntervalText; [ObservableProperty] private string _storageIntervalText; [ObservableProperty] private string _displayName; [ObservableProperty] private string _message = "";
     [ObservableProperty] private string _trayFirstCheckText; [ObservableProperty] private string _trayIdleText; [ObservableProperty] private string _trayWatchText; [ObservableProperty] private string _trayHealthText; [ObservableProperty] private string _trayCpuAlertText; [ObservableProperty] private string _trayGpuAlertText;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEnableTray), nameof(CanDisableTray))] private TrayState _trayState = new(false, false);
     [ObservableProperty] private string _trayStatusText = Loc.Get("Settings_Tray_Checking");
@@ -31,7 +31,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(AppConfig config, JsonStore<AppConfig> store, AppPaths paths, PollingEngine engine, MonitoringOptions options, Action<string> openFolder, ITrayController tray, Services.OverlayService? overlay = null)
     {
         _config = config; _store = store; _engine = engine; _options = options; _openFolder = openFolder; _tray = tray; _overlay = overlay;
-        _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _shopName = config.ShopName;
+        _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _displayName = config.DisplayName;
         _trayFirstCheckText = config.TrayFirstCheckSeconds.ToString(); _trayIdleText = config.TrayIdleIntervalMinutes.ToString(); _trayWatchText = config.TrayWatchIntervalSeconds.ToString(); _trayHealthText = config.TrayHealthIntervalMinutes.ToString();
         _trayCpuAlertText = config.TrayCpuAlertC.ToString(); _trayGpuAlertText = config.TrayGpuAlertC.ToString();
         DataFolder = paths.DataRoot; ModeText = Loc.Get("Settings_Mode_Portable");
@@ -60,7 +60,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (!TryRange(TrayCpuAlertText, 60, 105, out int cpuAlert) || !TryRange(TrayGpuAlertText, 60, 105, out int gpuAlert)) { Message = Loc.Get("Settings_Invalid_Alert"); return; }
         bool restartNeeded = _config.Language != Language || _config.RenderMode != RenderMode;
         bool trayChanged = (_config.TrayFirstCheckSeconds, _config.TrayIdleIntervalMinutes, _config.TrayWatchIntervalSeconds, _config.TrayHealthIntervalMinutes, _config.TrayCpuAlertC, _config.TrayGpuAlertC) != (trayFirst, trayIdle, trayWatch, trayHealth, cpuAlert, gpuAlert);
-        _config.Language = Language; _config.RenderMode = RenderMode; _config.FastIntervalSeconds = fast; _config.StorageIntervalSeconds = storage; _config.ShopName = ShopName.Trim().Length == 0 ? _config.ShopName : ShopName.Trim();
+        _config.Language = Language; _config.RenderMode = RenderMode; _config.FastIntervalSeconds = fast; _config.StorageIntervalSeconds = storage; _config.DisplayName = DisplayName.Trim() is var name && name.Length > AppConfig.MaxDisplayName ? name[..AppConfig.MaxDisplayName] : name;
         _config.TrayFirstCheckSeconds = trayFirst; _config.TrayIdleIntervalMinutes = trayIdle; _config.TrayWatchIntervalSeconds = trayWatch; _config.TrayHealthIntervalMinutes = trayHealth;
         _config.TrayCpuAlertC = cpuAlert; _config.TrayGpuAlertC = gpuAlert;
         bool storageChanged = _options.StorageInterval != TimeSpan.FromSeconds(storage);

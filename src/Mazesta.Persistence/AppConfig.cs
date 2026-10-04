@@ -12,7 +12,11 @@ public sealed class AppConfig : IVersionedDocument
     public string RenderMode { get; set; } = "auto";
     public int FastIntervalSeconds { get; set; } = 2;
     public int StorageIntervalSeconds { get; set; } = 900;
+    /// <summary>Kept for settings files written before 0.8: reports are headed with the company's name, which is no longer a setting.</summary>
     public string ShopName { get; set; } = "مازستا";
+    /// <summary>The name a user's shared benchmark results go under, if they chose one; empty means the one name every unnamed user gets.</summary>
+    public string DisplayName { get; set; } = "";
+    public const int MaxDisplayName = 40;
     /// <summary>The service job being worked on (spec 7.1): printed on every report while set. Saved with the settings so the job survives a
     /// restart or a reboot during a test; empty when there is none.</summary>
     public string ServiceNumber { get; set; } = "";

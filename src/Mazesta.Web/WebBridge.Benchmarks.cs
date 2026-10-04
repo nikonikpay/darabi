@@ -135,28 +135,24 @@ public sealed partial class WebBridge
             return (value, part);
         }
         PeerRanking Ranking(BenchmarkRowViewModel r, HeadlineMetric h, string table, double? mine, string? part)
-            => BenchmarkPeers.Rank(PeerDb.Table(table), runs.EntriesWithout(table, System()?.Hash), mine ?? double.NaN, part, h.HigherIsBetter);
+            => BenchmarkPeers.Rank(PeerDb.Table(table), runs.EntriesWithout(table, System()?.Hash), mine ?? double.NaN, part, h.HigherIsBetter, Featured(table));
         static object? GapJson(PeerGap? g) => g is { } x ? new { text = x.Text, lead = x.TheyLead, equal = x.Equal } : null;
         object PeerJson(PeerRow p, string unit) => new
         {
             part = p.Entry.Part, oc = p.Entry.Overclocked, value = Units.FormatMeasured(p.Entry.Median, unit), best = Units.FormatMeasured(p.Entry.Best, unit),
-            systems = p.Entry.Systems, runs = p.Entry.Runs, diff = double.IsFinite(p.DiffPercent) ? p.DiffPercent : (double?)null, gap = GapJson(p.Gap), local = p.Local, same = p.Same,
+            systems = p.Entry.Systems, runs = p.Entry.Runs, references = p.Entry.References, diff = double.IsFinite(p.DiffPercent) ? p.DiffPercent : (double?)null, gap = GapJson(p.Gap), local = p.Local, same = p.Same,
         };
         string UnitOf(string table) => PeerDb.Table(table)?.Unit ?? runs.Of(table).FirstOrDefault()?.Unit ?? "";
-        // The shop's reference runs of a list: the published ones, and ones marked on this copy and not yet published.
-        IReadOnlyList<(FeaturedRun Run, bool Local)> Featured(string table)
+        // Mazesta's reference runs of a list: the published ones, and ones marked on this copy and not yet published. They are not listed
+        // apart: a model that has any is shown by their median.
+        IReadOnlyList<FeaturedRun> Featured(string table)
         {
             var published = PeerDb.Table(table)?.Featured ?? [];
             var ids = published.Select(f => f.Id).ToHashSet(StringComparer.Ordinal);
-            return [.. published.Select(f => (f, false)), .. (runs.Table(table)?.Featured ?? []).Where(f => !ids.Contains(f.Id)).Select(f => (f, true))];
+            return [.. published, .. (runs.Table(table)?.Featured ?? []).Where(f => !ids.Contains(f.Id))];
         }
-        object FeaturedJson(FeaturedRun f, bool local, double? mine, HeadlineMetric h, string unit) => new
-        {
-            id = f.Id, part = f.Part, oc = f.Overclocked, note = f.Note, local, value = Units.FormatMeasured(f.Value, unit), at = f.At.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture),
-            gap = GapJson(mine is { } m ? BenchmarkPeers.Gap(m, f.Value, h.HigherIsBetter) : null),
-        };
 
-        // The row's standing, kept small for the frequent state pushes: the counts, the few entries around this result and the featured runs. The
+        // The row's standing, kept small for the frequent state pushes: the counts and the few entries around this result. The
         // whole list, and any entry's details, are asked for apart.
         object? Peers(BenchmarkRowViewModel r)
         {
@@ -166,12 +162,10 @@ public sealed partial class WebBridge
             if (memo.TryGetValue(key, out var cached)) return cached;
             var k = Ranking(r, h, table, mine, part); string unit = UnitOf(table);
             int at = mine is null ? 0 : k.MineIndex, from = Math.Max(0, at - 3), to = Math.Min(k.Rows.Count, at + 3);
-            var featured = Featured(table);
             return memo[key] = new
             {
                 total = k.Total, beaten = mine is null ? (int?)null : k.Beaten, mineIndex = mine is null ? (int?)null : k.MineIndex, from,
                 around = k.Rows.Skip(from).Take(to - from).Select(p => PeerJson(p, unit)),
-                featured = featured.Take(5).Select(f => FeaturedJson(f.Run, f.Local, mine, h, unit)), featuredTotal = featured.Count,
                 mine = mine is { } m ? Units.FormatMeasured(m, unit) : null, part, oc = MyLast(table)?.Overclocked ?? false,
             };
         }
@@ -208,10 +202,10 @@ public sealed partial class WebBridge
             {
                 name = r.Name, metric = Loc.Get(h.Key), higherIsBetter = h.HigherIsBetter, mine = mine is { } m ? Units.FormatMeasured(m, unit) : null, part, oc = MyLast(table)?.Overclocked ?? false,
                 mineIndex = mine is null ? (int?)null : k.MineIndex, beaten = k.Beaten, built = PeerDb.Table(table)?.Built.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture),
-                rows = k.Rows.Select(x => PeerJson(x, unit)), featured = Featured(table).Select(f => FeaturedJson(f.Run, f.Local, mine, h, unit)),
+                rows = k.Rows.Select(x => PeerJson(x, unit)),
             };
         });
-        // One entry, or one featured run, beside this system: what was measured during each run and the specifications of each part and machine.
+        // One entry beside this system: what was measured during each run and the specifications of each part and machine.
         Method("bench.detail", p =>
         {
             var r = Row(p);
@@ -219,20 +213,14 @@ public sealed partial class WebBridge
             string table = Table(r, h); string unit = UnitOf(table); var last = MyLast(table);
             var (mine, part) = Mine(r, table);
             object? theirs = null, members = null; string? median = null;
-            if (Str(p, "run") is { Length: > 0 } id)
-            {
-                if (Featured(table).FirstOrDefault(f => f.Run.Id == id).Run is { } f) theirs = Detail(f.Value, unit, f.Overclocked, f.At, f.Metrics, f.Details);
-            }
-            else
-            {
-                string name = Str(p, "part"); bool oc = Bool(p, "oc");
-                var row = Ranking(r, h, table, mine, part).Rows.FirstOrDefault(x => x.Entry.Overclocked == oc && string.Equals(x.Entry.Part, name, StringComparison.OrdinalIgnoreCase));
-                if (row?.Entry.Sample is { } s) theirs = Detail(s.Value, unit, s.Overclocked, s.At, s.Metrics, s.Details);
-                members = row?.Entry.Members?.Select(m => new { value = Units.FormatMeasured(m.Value, unit), at = m.At.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), gap = GapJson(mine is { } my ? BenchmarkPeers.Gap(my, m.Value, h.HigherIsBetter) : null) });
-                median = row is null ? null : Units.FormatMeasured(row.Entry.Median, unit);
-            }
+            string name = Str(p, "part"); bool oc = Bool(p, "oc");
+            var row = Ranking(r, h, table, mine, part).Rows.FirstOrDefault(x => x.Entry.Overclocked == oc && string.Equals(x.Entry.Part, name, StringComparison.OrdinalIgnoreCase));
+            if (row?.Entry.Sample is { } s) theirs = Detail(s.Value, unit, s.Overclocked, s.At, s.Metrics, s.Details);
+            members = row?.Entry.Members?.Select(m => new { value = Units.FormatMeasured(m.Value, unit), at = m.At.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), gap = GapJson(mine is { } my ? BenchmarkPeers.Gap(my, m.Value, h.HigherIsBetter) : null) });
+            median = row is null ? null : Units.FormatMeasured(row.Entry.Median, unit);
+            int references = row?.Entry.References ?? 0;
             var metrics = last?.Metrics ?? compared.GetValueOrDefault(r.Benchmark.Definition.Id.Value)?.Current.Metrics ?? (System() is { } sys ? records.Best(sys.Key, Key(r))?.Metrics : null);
-            return new { mine = mine is { } v ? Detail(v, unit, last?.Overclocked ?? false, last?.At, metrics, last?.Details) : null, theirs, members, median };
+            return new { mine = mine is { } v ? Detail(v, unit, last?.Overclocked ?? false, last?.At, metrics, last?.Details) : null, theirs, members, median, references };
         });
         // This copy's own runs of a row's list: every machine it has measured, newest first, each with its conditions, specifications and the shop's marks.
         Method("bench.history", p =>
@@ -249,6 +237,7 @@ public sealed partial class WebBridge
         // The shop's word on a logged run: featured (a reference result on every copy once published) and overclocked.
         Method("bench.mark", p =>
         {
+            StaffOnly();
             string id = Str(p, "run");
             var run = runs.Find(id) ?? throw new ArgumentException("unknown run");
             var had = runs.Marks.All().GetValueOrDefault(id);

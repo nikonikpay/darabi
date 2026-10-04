@@ -5,6 +5,7 @@ import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
 import { box } from "../groups.js";
+import { boot } from "../app.js";
 
 export function mount(el) {
   const version = h("span", { class: "num au-ver" }), status = h("p", { class: "au-status" }), checked = h("p", { class: "caption" });
@@ -44,14 +45,14 @@ export function mount(el) {
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_AppUpdate")), h("p", { class: "page-lede" }, t("AppUpd_Lede")))),
     h("div", { class: "panels flow", style: { marginTop: 0 } },
       box({ kind: "Cpu", ico: "update", title: t("AppUpd_Version"), sub: h("span", {}, "v", version), i: 0,
-        body: [status, bar, notes, h("div", { class: "btn-row" }, check, download, install), checked] }),
+        body: [status, bar, notes, h("div", { class: "btn-row" }, check, download, install), checked, boot.staff ? h("p", { class: "note" }, t("AppUpd_StaffNote")) : null] }),
       box({ kind: "Gpu", ico: "trophy", title: t("AppUpd_Data_Title"), sub: t("AppUpd_Data_Sub"), i: 1,
         body: [lists, published, h("p", { class: "note" }, t("AppUpd_Data_Note")), h("div", { class: "btn-row" }, sync)] }),
       box({ kind: "Network", ico: "net", title: t("AppUpd_Site"), i: 2, body: [site, h("p", { class: "note" }, t("AppUpd_Safe"))] }),
-      box({ kind: "Storage", ico: "net", title: t("Site_Title"), sub: t("Site_Sub"), i: 3, a: "site",
+      boot.staff ? box({ kind: "Storage", ico: "net", title: t("Site_Title"), sub: t("Site_Sub"), i: 3, a: "site",
         body: [siteState, h("label", { class: "caption", style: { display: "block" } }, t("Site_Key"), " · ", t("Site_Key_Hint")),
           h("div", { class: "btn-row" }, pair), pairState, h("p", { class: "note" }, t("Site_Pair_Note")),
-          h("div", { class: "btn-row" }, keyField, saveKey, checkSite), h("p", { class: "note" }, t("Site_Note"))] })));
+          h("div", { class: "btn-row" }, keyField, saveKey, checkSite), h("p", { class: "note" }, t("Site_Note"))] }) : null));
 
   async function run(method) {
     try { render(await call(method)); } catch (e) { toast(String(e.message || e), "fail"); }
@@ -74,14 +75,14 @@ export function mount(el) {
     if (offer) notes.replaceChildren(h("div", { class: "k" }, t("AppUpd_Notes"), " · ", h("span", { class: "lat" }, `v${v}`), " · ", t("AppUpd_Size", fa((s.latest.size / 1048576).toFixed(1)), s.latest.date)),
       ...(s.latest.notes ? s.latest.notes.split("\n").filter(Boolean).map((line) => h("p", {}, line.replace(/^[-•*]\s*/, ""))) : []));
     check.disabled = busy; sync.disabled = busy;
-    download.hidden = s.state !== "Available"; install.hidden = s.state !== "Ready";
+    download.hidden = s.state !== "Available" || !s.canInstall; install.hidden = s.state !== "Ready" || !s.canInstall;
     checked.textContent = s.checkedAt ? t("AppUpd_Checked", s.checkedAt) : "";
     lists.textContent = s.data.lists ? t("AppUpd_Data_Lists", fa(s.data.lists)) : t("AppUpd_Data_None");
     published.textContent = [s.data.published ? t("AppUpd_Data_Published", s.data.published) : "", s.data.syncedAt ? t("AppUpd_Data_Synced", s.data.syncedAt, fa(s.data.downloaded)) : ""].filter(Boolean).join(" · ");
     site.textContent = s.site;
   }
   call("upd.state").then(render);
-  call("site.state").then(showSite).then(() => call("site.check")).then(showSite).catch(() => {});
+  if (boot.staff) call("site.state").then(showSite).then(() => call("site.check")).then(showSite).catch(() => {});
   const offSite = on("site", showSite), offUpd = on("upd", render);
   return () => { offSite(); offUpd(); };
 }

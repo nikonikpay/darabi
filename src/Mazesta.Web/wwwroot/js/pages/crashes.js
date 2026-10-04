@@ -19,6 +19,9 @@ export function crashesBox(i) {
       causes.length ? [h("h4", {}, t("Bsod_Causes")), h("ol", { class: "cr-causes" }, causes)] : h("p", { class: "note" }, t("Bsod_NoCauses")),
       c.parameters ? h("dl", { class: "kv" }, h("dt", {}, t("Bsod_Parameters")), h("dd", { class: "lat" }, c.parameters.join("  ")),
         c.parametersMean ? [h("dt", {}, t("Bsod_ParametersMean")), h("dd", {}, c.parametersMean)] : null) : null,
+      // The question goes to the assistant's column as if typed there; the assistant reads these same records before it answers.
+      h("div", { class: "btn-row" }, h("button", { class: "btn quiet", type: "button", "data-a": "crash-ask",
+        onclick: () => window.dispatchEvent(new CustomEvent("assistant:ask", { detail: t("Bsod_Ask_Text", c.code, c.name || t("Bsod_Unknown"), c.at) })) }, icon("chat"), t("Bsod_Ask"))),
       h("p", { class: "caption" }, [c.dump ? t("Bsod_Dump", c.dump) : t("Bsod_NoDump"), c.uptimeMinutes != null ? t("Bsod_Uptime", fa(c.uptimeMinutes)) : null].filter(Boolean).join(" · ")));
   }
 

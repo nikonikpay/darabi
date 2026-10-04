@@ -9,7 +9,7 @@ public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, i
 public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html);
 public sealed record SiteReportReceipt(string Id, bool Updated, string Url, string? Link);
 /// <summary>The computer a shared result was measured on, as its user chose to show it: the parts' names, never the computer's own name.</summary>
-public sealed record SiteMachine(string? Cpu, string? Gpu, double? RamGb, string? Os);
+public sealed record SiteMachine(string? Cpu, string? Gpu, double? RamGb, string? Os, string? Name = null);
 /// <summary><see cref="Link"/>: the page the site made of the results; <see cref="Queued"/>: how many of them also wait for the shop's review.</summary>
 public sealed record SiteShareReceipt(string Link, int Rows, int Queued);
 public sealed record SitePairing(string Url, string Code, int Seconds);
@@ -44,10 +44,12 @@ public sealed class SiteClient(Uri api, HttpClient http)
 
     /// <summary>Benchmark runs (as the run log writes them), which benchmarks count higher as better, and the shop's marks on runs. At most
     /// <see cref="RunsPerRequest"/> runs a call; the site takes each run once, by its id.</summary>
-    public async Task<SiteRunsReceipt> SendRunsAsync(string? key, IReadOnlyList<JsonNode> runs, IReadOnlyDictionary<string, bool> higher, JsonNode? marks, CancellationToken ct)
+    public async Task<SiteRunsReceipt> SendRunsAsync(string? key, IReadOnlyList<JsonNode> runs, IReadOnlyDictionary<string, bool> higher, JsonNode? marks, CancellationToken ct,
+        IReadOnlyDictionary<string, string>? names = null)
     {
         var body = new JsonObject { ["runs"] = new JsonArray([.. runs.Select(r => r.DeepClone())]), ["higher"] = JsonSerializer.SerializeToNode(higher) };
         if (marks is not null) body["marks"] = marks.DeepClone();
+        if (names is { Count: > 0 }) body["names"] = JsonSerializer.SerializeToNode(names);
         return Read<SiteRunsReceipt>(await SendAsync(HttpMethod.Post, "bench/runs", key, body.ToJsonString(), ct).ConfigureAwait(false));
     }
     public const int RunsPerRequest = 200;
@@ -65,7 +67,7 @@ public sealed class SiteClient(Uri api, HttpClient http)
     }
     public const int RunsPerShare = 60;
 
-    /// <summary>The shop's key as the site makes it; anything else typed into the key's field (another secret, a line of text) is not sent anywhere.</summary>
+    /// <summary>The site's key as the site makes it; anything else typed into the key's field (another secret, a line of text) is not sent anywhere.</summary>
     public static bool IsKey(string? text) => text is { Length: 51 } && text.StartsWith("mz_", StringComparison.Ordinal) && text.AsSpan(3).IndexOfAnyExcept("0123456789abcdef") < 0;
 
     /// <summary>

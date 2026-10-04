@@ -19,6 +19,8 @@ public sealed partial class WebBridge
         SiteStatus? status = null; string? error = null; bool busy = false; DateTimeOffset? checkedAt = null;
         string? pairCode = null; CancellationTokenSource? pairing = null;
         // A value in the key's place that is not the site's key is dropped, not kept on disk and never sent.
+        // The key is Mazesta's own: a users' copy neither keeps nor sends one (a settings file carried over from a company copy may hold it).
+        if (!Staff && _config.SiteKey.Length > 0) { _config.SiteKey = ""; _store.Save(_config); }
         if (_config.SiteKey.Length > 0 && !SiteClient.IsKey(_config.SiteKey)) { _config.SiteKey = ""; _store.Save(_config); _log.LogWarning("The stored site key was not a site key; it was removed"); }
         string sentFile = Path.Combine(_paths.DataRoot, "benchmarks", "site-sent.json");
 
@@ -64,6 +66,7 @@ public sealed partial class WebBridge
         MethodAsync("site.check", async _ => { await Check(); return State(); });
         MethodAsync("site.key", async p =>
         {
+            StaffOnly();
             string typed = Str(p, "value").Trim();
             // Only the site's own key is kept or sent: another secret pasted here by mistake (it happened with the update-signing key) goes nowhere.
             if (typed.Length > 0 && (typed = SiteClient.FindKey(typed) ?? "").Length == 0) { error = Loc.Get("Site_Err_NotAKey"); return State(); }
@@ -95,6 +98,7 @@ public sealed partial class WebBridge
         }
         MethodAsync("site.pair", async p =>
         {
+            StaffOnly();
             pairing?.Cancel(); pairing = null; pairCode = null; error = null;
             if (Str(p, "cmd") == "cancel") return State();
             try
@@ -113,6 +117,7 @@ public sealed partial class WebBridge
         // A report's summary, as the summary button prints it, kept on the site under the report's own id (sent again, it replaces itself).
         MethodAsync("site.report", async p =>
         {
+            StaffOnly();
             if (_config.SiteKey.Length == 0) return new { error = Loc.Get("Site_Err_NoKey") };
             var stored = reports.Store.List().FirstOrDefault(r => r.Id == Str(p, "id")) ?? throw new ArgumentException("unknown report");
             try
@@ -155,7 +160,9 @@ public sealed partial class WebBridge
                 static string? Name(string? raw) => string.IsNullOrWhiteSpace(raw) ? null : BenchmarkPeers.PartName(raw);
                 var machine = new SiteMachine(Name(inv.Cpu?.Name), Name(inv.Gpus.FirstOrDefault()?.Name), inv.TotalPhysicalMemoryBytes is { } b ? Math.Round(b / 1073741824.0) : null,
                     inv.Os is { } os ? $"{os.Caption} {os.Version}".Trim() : null);
-                var receipt = await site.ShareAsync([.. latest.Select(r => JsonNode.Parse(BenchmarkPeers.WriteRun(r with { Machine = "" }))!)], names, higher, machine, app, CancellationToken.None).ConfigureAwait(true);
+                // Under the name the user chose in the settings; without one, the one name every unnamed user gets (the company's copies: its own).
+                string owner = Staff ? Loc.Get("Web_Company_Title") : _config.DisplayName.Trim() is { Length: > 0 } chosen ? chosen : Loc.Get("Site_Share_Anonymous");
+                var receipt = await site.ShareAsync([.. latest.Select(r => JsonNode.Parse(BenchmarkPeers.WriteRun(r with { Machine = "" }))!)], names, higher, machine with { Name = owner }, app, CancellationToken.None).ConfigureAwait(true);
                 if (!ShopFeed.IsShopLink(receipt.Link)) return new { error = Loc.Format("Site_Err_Site", "link") };
                 try { Directory.CreateDirectory(Path.GetDirectoryName(shareFile)!); File.WriteAllText(shareFile, JsonSerializer.Serialize(new { link = receipt.Link, at = DateTimeOffset.Now })); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }   // shared all the same; the link is in the answer
@@ -169,9 +176,12 @@ public sealed partial class WebBridge
         // This copy's runs the site has not had yet, in batches, with the shop's marks; then the lists the site built from them.
         MethodAsync("site.runs", async _ =>
         {
+            StaffOnly();
             if (_benchRunLog is not { } log) return new { error = Loc.Get("Site_Err_NoRuns") };
             var sent = Sent(); var todo = log.All().Where(r => !sent.Contains(r.Id)).ToList();
             var higher = todo.Select(r => r.Benchmark).Distinct().ToDictionary(b => b, b => BenchmarkRecords.Headline(b)?.HigherIsBetter ?? true);
+            // The benchmarks' names as the app shows them, so the site's own pages name a list in words and not by its id.
+            var names = (_benchVm?.Rows ?? []).ToDictionary(x => x.Benchmark.Definition.Id.Value, x => x.Name);
             var marks = log.Marks.All();
             int added = 0, known = 0, rejected = 0; bool pending = false;
             busy = true; PushSoon("site", State);
@@ -183,7 +193,7 @@ public sealed partial class WebBridge
                 foreach (var batch in batches)
                 {
                     var r = await site.SendRunsAsync(_config.SiteKey.Length > 0 ? _config.SiteKey : null, [.. batch.Select(x => JsonNode.Parse(BenchmarkPeers.WriteRun(x))!)], higher,
-                        _config.SiteKey.Length > 0 && marks.Count > 0 ? JsonNode.Parse(BenchmarkPeers.WriteMarks(marks)) : null, CancellationToken.None).ConfigureAwait(true);
+                        _config.SiteKey.Length > 0 && marks.Count > 0 ? JsonNode.Parse(BenchmarkPeers.WriteMarks(marks)) : null, CancellationToken.None, names).ConfigureAwait(true);
                     added += r.Added; known += r.Known; rejected += r.Rejected; pending |= r.Pending;
                     foreach (var x in batch) sent.Add(x.Id);
                     try { Directory.CreateDirectory(Path.GetDirectoryName(sentFile)!); File.WriteAllText(sentFile, JsonSerializer.Serialize(sent)); }

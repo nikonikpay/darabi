@@ -96,7 +96,7 @@ public static class AppGuide
             "بازی ها", "بازیها", "لیست بازی", "سیستم مورد نیاز بازی", "سیستم بازی", "مشخصات بازی", "games", "game requirements"),
         P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models", "مدل هوش مصنوعی", "مدلهای هوش مصنوعی", "مدل های هوش مصنوعی", "هوش مصنوعی", "llm", "مدل زبانی", "ai models"),
         P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder", "تنظیمات", "تنظیمات برنامه", "ستینگ", "settings", "tray", "ترای", "پایشگر"),
-        T("settings", "gameboost", "GameBoost_Title", "game mode: stops background services a game does not need (Windows Update, downloads, telemetry, search indexing) while it is on, with a tick per service; switching it off puts them back", null,
+        T("tools", "gameboost", "GameBoost_Title", "game mode: stops background services a game does not need (Windows Update, downloads, telemetry, search indexing) while it is on, with a tick per service; switching it off puts them back", null,
             "حالت گیم", "حالت بازی", "مود بازی", "سرویس های غیر ضروری", "سرویسهای غیرضروری", "game boost", "gaming mode"),
         T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null,
             "اینترنت وصل نمیشه", "اینترنت وصل نمی شود", "اینترنت قطع", "عیب یابی اینترنت", "مشکل اینترنت", "پراکسی", "پروکسی", "ریست شبکه", "proxy", "internet troubleshooter", "no internet"),

@@ -60,8 +60,10 @@ public class SiteClientTests
     {
         var (client, site) = Client((_, _) => (HttpStatusCode.OK, """{"added":1,"known":0,"rejected":0,"pending":false,"marked":0,"lists":4}"""));
         var run = JsonNode.Parse("""{"id":"run-00000001","benchmark":"bench.cpu.multi","version":1,"settings":"","part":"Core i7","system":"abc","value":12.5,"unit":"GFLOPS"}""")!;
-        var r = await client.SendRunsAsync("k", [run], new Dictionary<string, bool> { ["bench.cpu.multi"] = true }, null, CancellationToken.None);
+        var r = await client.SendRunsAsync("k", [run], new Dictionary<string, bool> { ["bench.cpu.multi"] = true }, null, CancellationToken.None,
+            new Dictionary<string, string> { ["bench.cpu.multi"] = "پردازنده، همهٔ هسته‌ها" });
         Assert.Equal((1, false, 4), (r.Added, r.Pending, r.Lists));
+        Assert.Equal("پردازنده، همهٔ هسته‌ها", JsonNode.Parse(site.Seen[0].Body)!["names"]!["bench.cpu.multi"]!.GetValue<string>());   // so the site's pages name a list in words
         var sent = JsonNode.Parse(site.Seen[0].Body)!;
         Assert.Equal(12.5, sent["runs"]![0]!["value"]!.GetValue<double>()); Assert.True(sent["higher"]!["bench.cpu.multi"]!.GetValue<bool>()); Assert.Null(sent["marks"]);
     }
@@ -71,10 +73,11 @@ public class SiteClientTests
         var (client, site) = Client((_, _) => (HttpStatusCode.OK, """{"link":"https://shop.example/?mazesta_share=0123456789abcdef01234567","rows":1,"queued":0}"""));
         var run = JsonNode.Parse("""{"id":"run-00000001","benchmark":"bench.cpu.multi","version":1,"settings":"","part":"Core i7","system":"abc","value":12.5,"unit":"GFLOPS"}""")!;
         var r = await client.ShareAsync([run], new Dictionary<string, string> { ["bench.cpu.multi"] = "پردازنده، همهٔ هسته‌ها" }, new Dictionary<string, bool> { ["bench.cpu.multi"] = true },
-            new SiteMachine("Core i7", null, 32, "Windows 11"), "0.8.0", CancellationToken.None);
+            new SiteMachine("Core i7", null, 32, "Windows 11", "سعید"), "0.8.0", CancellationToken.None);
         Assert.Equal(("https://shop.example/?mazesta_share=0123456789abcdef01234567", 1), (r.Link, r.Rows));
         var seen = Assert.Single(site.Seen); var sent = JsonNode.Parse(seen.Body)!;
         Assert.Null(seen.Key); Assert.Equal("/wp-json/mazesta/v1/share", seen.Path);
+        Assert.Equal("سعید", sent["machine"]!["name"]!.GetValue<string>());   // the name the user chose to share under
         Assert.Equal("Core i7", sent["machine"]!["cpu"]!.GetValue<string>()); Assert.Null(sent["machine"]!["gpu"]);   // no card named: left out, not sent empty
         Assert.Equal("پردازنده، همهٔ هسته‌ها", sent["names"]!["bench.cpu.multi"]!.GetValue<string>());
     }
