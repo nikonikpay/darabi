@@ -29,7 +29,7 @@ public sealed partial class WebBridge
                     return new
                     {
                         id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), frame = i.IsMeasured, available = i.IsMeasured || sensors.Count > 0,
-                        on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Aggregate.ToString(), max = i.FixedMax, sensors = sensors.Select(s => s.Id.Value),
+                        on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Of is not null ? "Share" : i.Aggregate.ToString(), max = i.FixedMax, sensors = sensors.Select(s => s.Id.Value),
                         device = i.Device, deviceName = i.Device is null ? null : engine.Hardware.FirstOrDefault(n => n.Id.Value == i.Device)?.Name,
                     };
                 }),

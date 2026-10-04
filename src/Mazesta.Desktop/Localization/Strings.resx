@@ -1373,7 +1373,7 @@ The update services stopped and disabled</value></data>
   <data name="Web_Peers_All" xml:space="preserve"><value>Whole list</value></data>
   <data name="Web_Peers_History" xml:space="preserve"><value>Recorded runs</value></data>
   <data name="Web_Peers_Systems" xml:space="preserve"><value>{0} systems · {1} runs</value></data>
-  <data name="Web_Peers_Local" xml:space="preserve"><value>this copy</value></data>
+  <data name="Web_Peers_Local" xml:space="preserve"><value>measured with this copy, on another system</value></data>
   <data name="Web_Peers_Same" xml:space="preserve"><value>same model</value></data>
   <data name="Web_Peers_Search" xml:space="preserve"><value>Search a model…</value></data>
   <data name="Web_Peers_More" xml:space="preserve"><value>Show {0} more</value></data>
@@ -1420,12 +1420,12 @@ The update services stopped and disabled</value></data>
   <data name="Web_Peers_YouFaster" xml:space="preserve"><value>this system {0} faster</value></data>
   <data name="Web_Peers_Even" xml:space="preserve"><value>even</value></data>
   <data name="Web_Peers_GapHint" xml:space="preserve"><value>Up to double as a percentage, from double as a multiple; always said from the faster side.</value></data>
-  <data name="Web_Peers_Featured" xml:space="preserve"><value>Featured results</value></data>
-  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>Runs the shop picked as references.</value></data>
+  <data name="Web_Peers_Featured" xml:space="preserve"><value>Reference results</value></data>
+  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>Runs the shop verified and chose as the reference for their part.</value></data>
   <data name="Web_Peers_FeaturedMore" xml:space="preserve"><value>and {0} more featured results in the full list</value></data>
   <data name="Web_Peers_Oc" xml:space="preserve"><value>overclocked</value></data>
   <data name="Web_Peers_FilterAll" xml:space="preserve"><value>All</value></data>
-  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>Featured only</value></data>
+  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>References only</value></data>
   <data name="Web_Peers_FilterStock" xml:space="preserve"><value>Not overclocked</value></data>
   <data name="Web_Peers_Found" xml:space="preserve"><value>{0} shown</value></data>
   <data name="Web_Detail_Open" xml:space="preserve"><value>Details and comparison</value></data>
@@ -2794,4 +2794,28 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Site_Pair_Start" xml:space="preserve"><value>Connect by signing in to the site</value></data>
   <data name="Site_Pair_Waiting" xml:space="preserve"><value>The site's dashboard is open in your browser. Sign in, check that it shows this same code, and approve:</value></data>
   <data name="Soft_Note_Unity" xml:space="preserve"><value>Unity publishes one set of requirements for the Editor and no separate recommended tier: 8 GB of memory (its own "recommended minimum"), an x64 processor with SSE2 and a DirectX 10, 11, 12 or Vulkan graphics card with its maker's supported driver. For builds it advises a drive with a high IOPS rating (an SSD). What a project needs beyond that depends on the project.</value></data>
+  <data name="Detail_C_Dispatches" xml:space="preserve"><value>Work rounds run: {0}</value></data>
+  <data name="Detail_C_Frames" xml:space="preserve"><value>Frames drawn: {0}</value></data>
+  <data name="Detail_C_Iterations" xml:space="preserve"><value>Rounds: {0}</value></data>
+  <data name="Detail_C_Passes" xml:space="preserve"><value>Passes: {0}</value></data>
+  <data name="Detail_C_Threads" xml:space="preserve"><value>Threads: {0}</value></data>
+  <data name="Detail_FrameRate" xml:space="preserve"><value>Speed: {0} frames a second</value></data>
+  <data name="Detail_Gops" xml:space="preserve"><value>Speed: {0} billion integer operations a second</value></data>
+  <data name="Detail_GpuStress" xml:space="preserve"><value>Graphics card compute load ({0}) on {1}</value></data>
+  <data name="Detail_GpuVerified" xml:space="preserve"><value>Results checked: {0} of {1} (a sample, not every one)</value></data>
+  <data name="Detail_L_CpuLoad" xml:space="preserve"><value>Processor load</value></data>
+  <data name="Detail_L_CpuPower" xml:space="preserve"><value>Processor power</value></data>
+  <data name="Detail_L_CpuTemp" xml:space="preserve"><value>Processor temperature</value></data>
+  <data name="Detail_L_GpuCore" xml:space="preserve"><value>Graphics card temperature</value></data>
+  <data name="Detail_L_GpuHotSpot" xml:space="preserve"><value>Graphics card hot spot</value></data>
+  <data name="Detail_L_GpuLoad" xml:space="preserve"><value>Graphics card load</value></data>
+  <data name="Detail_L_GpuPower" xml:space="preserve"><value>Graphics card power</value></data>
+  <data name="Detail_Profile_Pulse" xml:space="preserve"><value>pulsed</value></data>
+  <data name="Detail_Profile_Steady" xml:space="preserve"><value>steady</value></data>
+  <data name="Detail_Profile_Variable" xml:space="preserve"><value>variable</value></data>
+  <data name="Detail_Stat" xml:space="preserve"><value>{0}: average {1} {2} ({3} samples)</value></data>
+  <data name="Detail_Stat_Max" xml:space="preserve"><value>{0}: average {1}, highest {2} {3} ({4} samples)</value></data>
+  <data name="Overlay_VramLoad" xml:space="preserve"><value>VRAM used %</value></data>
+  <data name="Site_Runs_NeedKey" xml:space="preserve"><value>This copy is not connected to the site yet. Connect it first (the page that just opened), then send the results.</value></data>
+  <data name="Web_Peers_Members" xml:space="preserve"><value>{0} systems of this model, each with its best run; the row's number is their median ({1})</value></data>
 </root>

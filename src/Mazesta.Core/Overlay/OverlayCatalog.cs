@@ -22,6 +22,9 @@ public sealed record OverlayItem(string Id, OverlayPart Part, string LabelKey, S
     public string? Device { get; init; }
     /// <summary>The catalog item a pinned item was made from ("storage.read" for "storage.read@storage/…").</summary>
     public string BaseId => Device is null ? Id : Id[..Id.IndexOf('@', StringComparison.Ordinal)];
+    /// <summary>For a share of a whole (graphics memory in use, as a percentage): the role of the whole. The item then reads its own role and
+    /// this one on the same device and shows the first over the second; a device that lacks either has no such item.</summary>
+    public SensorRole? Of { get; init; }
 }
 
 /// <summary>The item the overlay settings refer to by id, with its chart on or off.</summary>
@@ -51,6 +54,7 @@ public static class OverlayCatalog
         new("gpu.fan", OverlayPart.Gpu, "Overlay_Fan", [SensorRole.GpuFanPercent], FixedMax: Percent),
         new("gpu.fanrpm", OverlayPart.Gpu, "Overlay_FanRpm", [SensorRole.GpuFanRpm]),
         new("gpu.vram", OverlayPart.Gpu, "Overlay_Vram", [SensorRole.GpuVramUsed]),
+        new("gpu.vramload", OverlayPart.Gpu, "Overlay_VramLoad", [SensorRole.GpuVramUsed], FixedMax: Percent) { Of = SensorRole.GpuVramTotal },
 
         new("cpu.temp", OverlayPart.Cpu, "Overlay_Temp", [SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie], FixedMax: Percent),
         new("cpu.hotcore", OverlayPart.Cpu, "Overlay_HotCore", [SensorRole.CpuCoreTemp, SensorRole.CpuCcdTemp], OverlayAggregate.Max, Percent),
@@ -100,9 +104,9 @@ public static class OverlayCatalog
         // game depends on: ping, packet loss, jitter and the traffic now.
         ["game"] = Choices("fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up"),
         // Rendering: how busy and how hot the processors stay over a long job, memory, and the drive being written.
-        ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write"),
+        ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram gpu.vramload gpu.vramtemp ram.used:c ram.load storage.read storage.write storage.activity"),
         // Troubleshooting: every temperature, clock, voltage and fan that tells a throttling or failing part.
-        ["troubleshoot"] = Choices("cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.temp:c gpu.hotspot gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp"),
+        ["troubleshoot"] = Choices("cpu.load cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.load gpu.temp:c gpu.hotspot gpu.vram gpu.vramload gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp storage.read storage.write storage.activity"),
     };
     public const string DefaultPreset = "game";
 
@@ -117,6 +121,12 @@ public static class OverlayCatalog
         var kind = item.Part switch { OverlayPart.Gpu => HardwareKind.Gpu, OverlayPart.Cpu => HardwareKind.Cpu, OverlayPart.Memory => HardwareKind.Memory, OverlayPart.Storage => HardwareKind.Storage, _ => HardwareKind.Network };
         var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (item.Device is null ? include?.Invoke(n) ?? true : n.Id.Value == item.Device))
             .OrderByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuCoreTemp)).ToList();
+        if (item.Of is { } whole)
+        {
+            foreach (var n in nodes)
+                if (n.Sensors.FirstOrDefault(s => s.Role == item.Roles[0]) is { } part && n.Sensors.FirstOrDefault(s => s.Role == whole) is { } all) return [part, all];
+            return [];
+        }
         if (item.Aggregate == OverlayAggregate.First)
         {
             foreach (var n in nodes)

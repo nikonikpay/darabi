@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.2.0';
+    const VERSION = '1.3.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_RUNS = 500;
@@ -593,6 +593,8 @@ final class Mazesta_Connect
                     'part' => self::part_name($group[0]['run']->part), 'median' => $median, 'best' => (float) ($higher ? $per[$n - 1]['run']->value : $per[0]['run']->value),
                     'systems' => $n, 'runs' => count($group), 'last' => isset($last['run']->at) ? $last['run']->at : $built, 'overclocked' => $group[0]['oc'],
                     'sample' => self::sample($near['run'], $near['oc']),
+                    // The model's systems one by one, best first (the entry is their median); a very common model keeps its best 200.
+                    'members' => array_map(function ($x) use ($built) { return array('value' => (float) $x['run']->value, 'at' => isset($x['run']->at) ? $x['run']->at : $built); }, array_slice($higher ? array_reverse($per) : $per, 0, 200)),
                 );
             }
             if (!$entries) { continue; }
@@ -986,11 +988,11 @@ final class Mazesta_Connect
         if ($key !== '') {
             $runs = array_filter($all, function ($r) use ($key) { return !empty($r['status']) && (string) $r['table'] === $key; });
             uasort($runs, function ($a, $b) { return (float) $b['value'] <=> (float) $a['value']; });
-            echo '<h3 dir="ltr" style="text-align:right">' . esc_html($key) . '</h3><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
+            echo '<h3 dir="ltr" style="text-align:right">' . esc_html($key) . '</h3><p class="description">«نتیجه مرجع» (★) اجرایی است که شما تأیید می‌کنید بهترین و درست‌ترین نتیجه این قطعه در این بنچمارک است؛ در برنامه بالای فهرست مقایسه می‌آید تا بقیه خودشان را با آن بسنجند.</p><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
             foreach (array_slice($runs, 0, 500, true) as $id => $r) {
                 $star = !empty($r['featured']);
                 echo '<tr><td dir="ltr" style="text-align:right">' . ($star ? '★ ' : '') . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
-                    . self::post_link('run_feature', $star ? array('id' => (string) $id, 'off' => 1) : array('id' => (string) $id), $star ? 'برداشتن ستاره' : 'نتیجه شاخص') . ' '
+                    . self::post_link('run_feature', $star ? array('id' => (string) $id, 'off' => 1) : array('id' => (string) $id), $star ? 'برداشتن از مرجع' : 'انتخاب به‌عنوان نتیجه مرجع') . ' '
                     . self::post_link('run_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این اجرا پاک شود؟') . '</td></tr>';
             }
             echo '</tbody></table>';

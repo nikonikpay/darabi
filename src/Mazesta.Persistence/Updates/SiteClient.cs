@@ -73,6 +73,15 @@ public sealed class SiteClient(Uri api, HttpClient http)
     /// manager signed in to the site approves the request, and a short code both sides show. <see cref="PairClaimAsync"/> then trades the secret
     /// for the key, once, after the approval. A stranger who starts a request gets nothing unless a manager approves that very code.
     /// </summary>
+    /// <summary>The key inside what was pasted (a copy from a web page can bring spaces, a direction mark or the label beside it), or null.</summary>
+    public static string? FindKey(string? text)
+    {
+        if (text is null) return null;
+        for (int i = text.IndexOf("mz_", StringComparison.Ordinal); i >= 0 && i + 51 <= text.Length; i = text.IndexOf("mz_", i + 1, StringComparison.Ordinal))
+            if (IsKey(text.Substring(i, 51)) && (i + 51 == text.Length || !Uri.IsHexDigit(text[i + 51]))) return text.Substring(i, 51);
+        return null;
+    }
+
     public async Task<SitePairing> PairStartAsync(string secret, string computer, CancellationToken ct)
     {
         string id = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.ASCII.GetBytes(secret)));

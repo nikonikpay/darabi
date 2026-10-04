@@ -18,6 +18,7 @@ export function benchList(component = null) {
   const list = h("div", { class: "groups" });
   // This copy's logged runs go to the shop's site, which builds the comparison lists every copy reads.
   const upload = h("button", { class: "btn quiet", title: t("Site_Runs_Hint"), "data-a": "send-site", onclick: async () => {
+    if (!hasKey) { toast(t("Site_Runs_NeedKey"), "fail"); location.hash = "#/appupdate"; return; }
     upload.disabled = true;
     try {
       const r = await call("site.runs");
@@ -42,9 +43,9 @@ export function benchList(component = null) {
     } catch (e) { toast(String(e.message || e), "fail"); }
     share.disabled = false;
   } }, icon("popout"), t("Site_Share_Send"));
-  // Sending every logged run to the lists is the shop's (it needs the site's key); a user's way is the share button beside it.
-  upload.hidden = true;
-  const keyed = (s) => { if (s) upload.hidden = !s.hasKey; };
+  // Sending every logged run to the lists is the shop's (it needs the site's key): without one the button says so and opens where to connect.
+  let hasKey = false;
+  const keyed = (s) => { if (s) hasKey = !!s.hasKey; };
   call("site.state").then(keyed).catch(() => {});
   const offSite = on("site", keyed);
   wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), share, upload,
@@ -206,11 +207,19 @@ function openable(li, list, ask) {
     panel = h("li", { class: "peer-detail" }, h("p", { class: "rec-none" }, t("Web_Detail_Loading")));
     li.after(panel); li.setAttribute("aria-expanded", "true");
     const d = await ask();
-    if (panel) panel.replaceChildren(compare(d?.mine, d?.theirs, true));
+    if (panel) panel.replaceChildren(...[membersBox(d), compare(d?.mine, d?.theirs, true)].filter(Boolean));
   };
   li.addEventListener("click", toggle);
   li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
   list.append(li);
+}
+
+// The systems behind a model's row, one by one (each system's best run, best first): the row's number is their median.
+function membersBox(d) {
+  if (!d?.members?.length) return null;
+  return h("details", { class: "cmp-group members", open: d.members.length > 1 || null }, h("summary", {}, t("Web_Peers_Members", fa(d.members.length), d.median || "")),
+    h("ol", { class: "peer-list" }, d.members.map((m, i) => h("li", { class: "peer" }, h("span", { class: "rk num" }, i + 1), h("span", { class: "pn caption lat" }, m.at),
+      h("span", { class: "pv num" }, m.value), h("span", { class: "ps" }), gapCell(m.gap)))));
 }
 
 function addPeer(list, r, e, rank) {

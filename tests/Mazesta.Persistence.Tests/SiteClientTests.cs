@@ -86,6 +86,13 @@ public class SiteClientTests
         Assert.False(SiteClient.IsKey("MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg"));   // the start of a PKCS#8 private key, as pasted once by mistake
     }
 
+    [Fact] public void The_key_is_found_inside_what_was_pasted()
+    {
+        string key = "mz_" + new string('0', 47) + "f";
+        Assert.Equal(key, SiteClient.FindKey("\u200e " + key + "\n")); Assert.Equal(key, SiteClient.FindKey("کلید سایت: " + key + " ."));
+        Assert.Null(SiteClient.FindKey("mz_123")); Assert.Null(SiteClient.FindKey(key + "ab")); Assert.Null(SiteClient.FindKey(null));
+    }
+
     [Fact] public async Task Pairing_sends_the_secret_s_hash_first_and_the_secret_only_to_claim_the_key()
     {
         string secret = new('5', 64), id = Sha(secret);

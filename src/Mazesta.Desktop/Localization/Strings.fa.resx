@@ -1373,7 +1373,7 @@
   <data name="Web_Peers_All" xml:space="preserve"><value>کل فهرست</value></data>
   <data name="Web_Peers_History" xml:space="preserve"><value>اجراهای ثبت‌شده</value></data>
   <data name="Web_Peers_Systems" xml:space="preserve"><value>{0} سیستم · {1} اجرا</value></data>
-  <data name="Web_Peers_Local" xml:space="preserve"><value>این نسخه</value></data>
+  <data name="Web_Peers_Local" xml:space="preserve"><value>اندازه‌گیری با این نسخه، روی سیستم دیگر</value></data>
   <data name="Web_Peers_Same" xml:space="preserve"><value>همین مدل</value></data>
   <data name="Web_Peers_Search" xml:space="preserve"><value>جستجوی مدل…</value></data>
   <data name="Web_Peers_More" xml:space="preserve"><value>{0} مورد دیگر</value></data>
@@ -1420,12 +1420,12 @@
   <data name="Web_Peers_YouFaster" xml:space="preserve"><value>این سیستم {0} سریع‌تر</value></data>
   <data name="Web_Peers_Even" xml:space="preserve"><value>هم‌سطح</value></data>
   <data name="Web_Peers_GapHint" xml:space="preserve"><value>تا دو برابر به درصد، از دو برابر به بعد به «چند برابر» نوشته می‌شود؛ همیشه از طرف سیستم سریع‌تر.</value></data>
-  <data name="Web_Peers_Featured" xml:space="preserve"><value>نتایج شاخص</value></data>
-  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>اجراهایی که فروشگاه به‌عنوان مرجع انتخاب کرده است.</value></data>
+  <data name="Web_Peers_Featured" xml:space="preserve"><value>نتایج مرجع</value></data>
+  <data name="Web_Peers_FeaturedHint" xml:space="preserve"><value>اجراهایی که فروشگاه تأیید و به‌عنوان مرجع آن قطعه انتخاب کرده است.</value></data>
   <data name="Web_Peers_FeaturedMore" xml:space="preserve"><value>و {0} نتیجه شاخص دیگر در «کل فهرست»</value></data>
   <data name="Web_Peers_Oc" xml:space="preserve"><value>اورکلاک</value></data>
   <data name="Web_Peers_FilterAll" xml:space="preserve"><value>همه</value></data>
-  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>فقط شاخص‌ها</value></data>
+  <data name="Web_Peers_FilterFeatured" xml:space="preserve"><value>فقط مرجع‌ها</value></data>
   <data name="Web_Peers_FilterStock" xml:space="preserve"><value>بدون اورکلاک</value></data>
   <data name="Web_Peers_Found" xml:space="preserve"><value>{0} مورد</value></data>
   <data name="Web_Detail_Open" xml:space="preserve"><value>جزئیات و مقایسه</value></data>
@@ -2794,4 +2794,28 @@
   <data name="Site_Pair_Start" xml:space="preserve"><value>اتصال با ورود به سایت</value></data>
   <data name="Site_Pair_Waiting" xml:space="preserve"><value>پیشخوان سایت در مرورگر باز شد. وارد سایت شوید، ببینید همین کد را نشان می‌دهد و تأیید کنید:</value></data>
   <data name="Soft_Note_Unity" xml:space="preserve"><value>Unity برای ویرایشگر فقط یک سطح نیازمندی اعلام کرده و سطح «پیشنهادی» جدا ندارد: ۸ گیگابایت رم (به گفتهٔ خودش «حداقلِ توصیه‌شده»)، پردازندهٔ x64 با SSE2 و کارت گرافیک DirectX 10، 11، 12 یا Vulkan با درایور رسمی سازنده. برای بیلد گرفتن، درایوی با IOPS بالا (SSD) را توصیه می‌کند. نیاز بیشتر از این به خود پروژه بستگی دارد.</value></data>
+  <data name="Detail_C_Dispatches" xml:space="preserve"><value>تعداد دورهای اجراشده: {0}</value></data>
+  <data name="Detail_C_Frames" xml:space="preserve"><value>فریم‌های رسم‌شده: {0}</value></data>
+  <data name="Detail_C_Iterations" xml:space="preserve"><value>تعداد دورها: {0}</value></data>
+  <data name="Detail_C_Passes" xml:space="preserve"><value>تعداد گذرها: {0}</value></data>
+  <data name="Detail_C_Threads" xml:space="preserve"><value>تعداد رشته‌ها: {0}</value></data>
+  <data name="Detail_FrameRate" xml:space="preserve"><value>سرعت: {0} فریم در ثانیه</value></data>
+  <data name="Detail_Gops" xml:space="preserve"><value>سرعت: {0} میلیارد عملیات عدد صحیح در ثانیه</value></data>
+  <data name="Detail_GpuStress" xml:space="preserve"><value>بار محاسباتی کارت گرافیک ({0}) روی {1}</value></data>
+  <data name="Detail_GpuVerified" xml:space="preserve"><value>نتیجه‌های بررسی‌شده: {0} از {1} (نمونه‌برداری، نه همه)</value></data>
+  <data name="Detail_L_CpuLoad" xml:space="preserve"><value>بار پردازنده</value></data>
+  <data name="Detail_L_CpuPower" xml:space="preserve"><value>توان مصرفی پردازنده</value></data>
+  <data name="Detail_L_CpuTemp" xml:space="preserve"><value>دمای پردازنده</value></data>
+  <data name="Detail_L_GpuCore" xml:space="preserve"><value>دمای کارت گرافیک</value></data>
+  <data name="Detail_L_GpuHotSpot" xml:space="preserve"><value>داغ‌ترین نقطهٔ کارت گرافیک</value></data>
+  <data name="Detail_L_GpuLoad" xml:space="preserve"><value>بار کارت گرافیک</value></data>
+  <data name="Detail_L_GpuPower" xml:space="preserve"><value>توان مصرفی کارت گرافیک</value></data>
+  <data name="Detail_Profile_Pulse" xml:space="preserve"><value>پالسی</value></data>
+  <data name="Detail_Profile_Steady" xml:space="preserve"><value>ثابت</value></data>
+  <data name="Detail_Profile_Variable" xml:space="preserve"><value>متغیر</value></data>
+  <data name="Detail_Stat" xml:space="preserve"><value>{0}: میانگین {1} {2} ({3} نمونه)</value></data>
+  <data name="Detail_Stat_Max" xml:space="preserve"><value>{0}: میانگین {1}، بیشترین {2} {3} ({4} نمونه)</value></data>
+  <data name="Overlay_VramLoad" xml:space="preserve"><value>درصد پر بودن VRAM</value></data>
+  <data name="Site_Runs_NeedKey" xml:space="preserve"><value>این نسخه هنوز به سایت وصل نیست. اول وصلش کنید (صفحه‌ای که باز شد)، بعد نتایج را بفرستید.</value></data>
+  <data name="Web_Peers_Members" xml:space="preserve"><value>{0} سیستم از این مدل، هر کدام با بهترین اجرایش؛ عدد ردیف میانهٔ آن‌هاست ({1})</value></data>
 </root>

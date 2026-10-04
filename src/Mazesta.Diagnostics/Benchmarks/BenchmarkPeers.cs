@@ -27,7 +27,11 @@ public sealed record FeaturedRun(string Id, string Part, double Value, bool Over
 /// <summary>One part model in a comparison list: the median of its systems' best runs (each system counts once, however often it ran), the
 /// fastest of them, how many systems and runs it stands for, and the latest run. An overclocked part is an entry of its own, so it neither lifts
 /// the model's usual figure nor hides among it. <see cref="Sample"/> is the run nearest the median, with its conditions and specifications.</summary>
-public sealed record PeerEntry(string Part, double Median, double Best, int Systems, int Runs, DateTimeOffset Last, bool Overclocked = false, RunSample? Sample = null)
+/// <summary>One system of a model in a list: its best run and when. No name and no id, as everywhere in a list.</summary>
+public sealed record PeerMember(double Value, DateTimeOffset At);
+
+public sealed record PeerEntry(string Part, double Median, double Best, int Systems, int Runs, DateTimeOffset Last, bool Overclocked = false, RunSample? Sample = null,
+    IReadOnlyList<PeerMember>? Members = null)
 {
     [JsonIgnore] internal string Key => Overclocked ? Part + "\u0001oc" : Part;
 }
@@ -123,6 +127,7 @@ public static partial class BenchmarkPeers
     public static BenchmarkRun Marked(BenchmarkRun run, IReadOnlyDictionary<string, BenchmarkMark>? marks)
         => marks?.GetValueOrDefault(run.Id)?.Overclocked is { } oc && oc != run.Overclocked ? run with { Overclocked = oc } : run;
 
+    public const int MaxMembers = 200;
     private static PeerEntry Entry(string part, IEnumerable<BenchmarkRun> runs, bool higher)
     {
         var all = runs.ToList();
@@ -130,7 +135,9 @@ public static partial class BenchmarkPeers
         double median = perSystem.Count % 2 == 1 ? perSystem[perSystem.Count / 2].Value : (perSystem[perSystem.Count / 2 - 1].Value + perSystem[perSystem.Count / 2].Value) / 2;
         var sample = perSystem.MinBy(r => Math.Abs(r.Value - median))!;
         return new PeerEntry(part, median, higher ? perSystem[^1].Value : perSystem[0].Value, perSystem.Count, all.Count, all.Max(r => r.At), all[0].Overclocked,
-            new RunSample(sample.Value, sample.Overclocked, sample.At, sample.Metrics, sample.Details));
+            new RunSample(sample.Value, sample.Overclocked, sample.At, sample.Metrics, sample.Details),
+            // The model's systems one by one, best first (the entry is their median); a very common model keeps its best MaxMembers.
+            [.. (higher ? perSystem.AsEnumerable().Reverse() : perSystem).Take(MaxMembers).Select(r => new PeerMember(r.Value, r.At))]);
     }
 
     /// <summary>How far apart this result and another are, or null when either is missing.</summary>
@@ -217,6 +224,9 @@ public sealed class BenchmarkRunLog(string dataRoot)
     /// <summary>This copy's runs of one list as a list (the same rule as the published lists): its entries and its featured runs.</summary>
     public PeerTable? Table(string tableKey) => BenchmarkPeers.Aggregate(Of(tableKey), DateTimeOffset.UtcNow, Marks.All()).FirstOrDefault();
     public IReadOnlyList<PeerEntry> Entries(string tableKey) => Table(tableKey)?.Entries ?? [];
+    /// <summary>The same, without one machine's runs: a system is not compared with itself (its own earlier runs are its record, not a peer).</summary>
+    public IReadOnlyList<PeerEntry> EntriesWithout(string tableKey, string? system)
+        => system is null ? Entries(tableKey) : BenchmarkPeers.Aggregate(Of(tableKey).Where(r => r.System != system), DateTimeOffset.UtcNow, Marks.All()).FirstOrDefault()?.Entries ?? [];
 
     private List<BenchmarkRun> Load() => _runs ??= ReadFolder(_dir).ToList();
 

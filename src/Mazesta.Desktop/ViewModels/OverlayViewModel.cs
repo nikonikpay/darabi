@@ -164,7 +164,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
                 if (item.Device is not null) section.Subtitle = hardware.FirstOrDefault(n => n.Id.Value == item.Device)?.Name ?? "";
                 sections.Add(section);
             }
-            section.Rows.Add(new(item, Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
+            section.Rows.Add(new(item, Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : item.Of is not null ? Unit.Percent : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
         }
         return sections;
     }
@@ -183,6 +183,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
             foreach (var row in section.Rows)
             {
                 double? v = row.Item.IsFrameItem ? FrameValue(row.Id, Frames) : row.Item.IsPingItem ? PingValue(row.Id, Ping)
+                    : row.Item.Of is not null ? Share(_latest.GetValueOrDefault(row.Sensors[0]), _latest.GetValueOrDefault(row.Sensors[1]))
                     : OverlayCatalog.Combine(row.Item.Aggregate, row.Sensors.Select(id => _latest.GetValueOrDefault(id)));
                 row.Value = v is { } x ? Text(row, x) : Missing;
                 int cut = row.Value.LastIndexOf(' ');
@@ -222,6 +223,8 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>A lost echo has no time: the ping is then the dash, not a number.</summary>
+    /// <summary>A part of a whole as a percentage; null when either was not read (never 0).</summary>
+    internal static double? Share(double? part, double? whole) => part is { } p && whole is > 0 ? Math.Clamp(p / whole.Value * 100, 0, 100) : null;
     internal static double? PingValue(string id, PingReading? p) => id switch { "net.ping" => p?.PingMs, "net.loss" => p?.LossPercent, "net.jitter" => p?.JitterMs, _ => null };
     internal static string FormatPing(string id, double v) => id == "net.loss" ? v.ToString("F0", CultureInfo.InvariantCulture) + " %" : v.ToString(id == "net.jitter" ? "F1" : "F0", CultureInfo.InvariantCulture) + " ms";
     private static string Text(OverlayRow row, double v) => row.Item.IsFrameItem ? FormatFrame(row.Id, v) : row.Item.IsPingItem ? FormatPing(row.Id, v) : Format(v, row.Unit);

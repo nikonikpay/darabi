@@ -66,7 +66,7 @@ public sealed partial class WebBridge
         {
             string typed = Str(p, "value").Trim();
             // Only the site's own key is kept or sent: another secret pasted here by mistake (it happened with the update-signing key) goes nowhere.
-            if (typed.Length > 0 && !SiteClient.IsKey(typed)) { error = Loc.Get("Site_Err_NotAKey"); return State(); }
+            if (typed.Length > 0 && (typed = SiteClient.FindKey(typed) ?? "").Length == 0) { error = Loc.Get("Site_Err_NotAKey"); return State(); }
             _config.SiteKey = typed; _store.Save(_config);
             await Check();
             return State();

@@ -1,6 +1,14 @@
 using Mazesta.Core.Hardware; using Mazesta.Core.Overlay; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Monitoring; using Mazesta.Monitoring.Tests.Fakes; using Xunit;
 namespace Mazesta.Desktop.Tests;
 
+public class OverlayShareTests
+{
+    [Fact] public void A_share_is_part_over_whole_and_nothing_when_either_is_missing()
+    {
+        Assert.Equal(25, Mazesta.Desktop.ViewModels.OverlayViewModel.Share(2048, 8192)); Assert.Null(Mazesta.Desktop.ViewModels.OverlayViewModel.Share(null, 8192)); Assert.Null(Mazesta.Desktop.ViewModels.OverlayViewModel.Share(2048, null)); Assert.Null(Mazesta.Desktop.ViewModels.OverlayViewModel.Share(2048, 0));
+    }
+}
+
 public class OverlayViewModelTests
 {
     private static HardwareNode Node(HardwareKind kind, string id, string name, params (string Path, SensorRole Role, Unit Unit)[] sensors)

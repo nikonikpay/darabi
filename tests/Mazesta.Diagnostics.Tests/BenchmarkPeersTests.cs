@@ -9,6 +9,21 @@ public class BenchmarkPeersTests : IDisposable
     private static BenchmarkRun Run(string part, string system, double value, string bench = "bench.cpu.multi", string settings = "", int minutes = 0)
         => new(Guid.NewGuid().ToString("N"), T0.AddMinutes(minutes), bench, 1, settings, part, system, "PC", "PC · CPU", value, "GFLOPS");
 
+    [Fact] public void A_model_s_row_holds_its_systems_one_by_one_best_first_and_their_median()
+    {
+        var e = Assert.Single(BenchmarkPeers.Aggregate([Run("9950X", "s1", 100), Run("9950X", "s1", 90), Run("9950X", "s2", 120), Run("9950X", "s3", 110)], T0).Single().Entries);
+        Assert.Equal((110.0, 3, 4), (e.Median, e.Systems, e.Runs));
+        Assert.Equal([120.0, 110.0, 100.0], e.Members!.Select(m => m.Value));   // each system once, with its best run
+    }
+
+    [Fact] public void A_system_is_not_a_row_to_compare_itself_with()
+    {
+        var log = new BenchmarkRunLog(_dir);
+        log.Append(Run("A", "me", 100)); log.Append(Run("B", "other", 80));
+        Assert.Equal(["B"], log.EntriesWithout("bench.cpu.multi@1", "me").Select(e => e.Part));
+        Assert.Equal(2, log.EntriesWithout("bench.cpu.multi@1", null).Count);
+    }
+
     [Theory]
     [InlineData("Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz", "Intel Core i7-8700")]
     [InlineData("AMD Ryzen 7 7800X3D 8-Core Processor", "AMD Ryzen 7 7800X3D")]

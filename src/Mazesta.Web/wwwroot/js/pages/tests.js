@@ -94,7 +94,9 @@ export function mount(el) {
       x.pill.className = `pill ${OUTCOME[r.outcome] || "none"}`; x.pill.textContent = r.outcomeText;
       x.row.classList.toggle("active", r.outcome === "Running");
       x.error.hidden = !r.error; x.error.textContent = r.error || "";
-      x.detail.hidden = !r.detail; x.detail.textContent = r.detail || "";
+      // The detail as separate lines: the worded ones in the page's direction, an untranslated one left to right, so the two never mix in a line.
+      const dKey = r.detail || "";
+      if (dKey !== x.lastDetail) { x.lastDetail = dKey; x.detail.hidden = !r.detail; x.detail.replaceChildren(...(r.detailLines?.length ? r.detailLines.map((l) => h("div", { class: l.lat ? "dl lat" : "dl" }, l.text)) : [r.detail || ""])); }
       x.advice.hidden = !r.advice; x.advice.textContent = r.advice || "";
     }
     const byId = new Map(s.rows.map((r) => [r.id, r]));

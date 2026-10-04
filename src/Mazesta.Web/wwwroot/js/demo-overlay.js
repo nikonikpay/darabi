@@ -18,8 +18,8 @@ const CATALOG = [
 ];
 const PRESETS = {
   game: "fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up",
-  render: "cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram ram.used:c ram.load storage.write",
-  troubleshoot: "cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.temp:c gpu.hotspot gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp",
+  render: "cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram gpu.vramtemp ram.used:c ram.load storage.read storage.write storage.activity",
+  troubleshoot: "cpu.load cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.power cpu.voltage cpu.fan gpu.load gpu.temp:c gpu.hotspot gpu.vram gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp storage.read storage.write storage.activity",
 };
 // The items with a fixed 0-100 top (percentages and temperatures), as FixedMax in the catalog.
 const HUNDRED = new Set(["gpu.temp", "gpu.hotspot", "gpu.vramtemp", "gpu.load", "gpu.fan", "cpu.temp", "cpu.hotcore", "cpu.load", "cpu.maxthread", "ram.load", "ram.temp", "storage.temp", "storage.activity", "net.loss"]);

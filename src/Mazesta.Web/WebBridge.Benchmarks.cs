@@ -135,7 +135,7 @@ public sealed partial class WebBridge
             return (value, part);
         }
         PeerRanking Ranking(BenchmarkRowViewModel r, HeadlineMetric h, string table, double? mine, string? part)
-            => BenchmarkPeers.Rank(PeerDb.Table(table), runs.Entries(table), mine ?? double.NaN, part, h.HigherIsBetter);
+            => BenchmarkPeers.Rank(PeerDb.Table(table), runs.EntriesWithout(table, System()?.Hash), mine ?? double.NaN, part, h.HigherIsBetter);
         static object? GapJson(PeerGap? g) => g is { } x ? new { text = x.Text, lead = x.TheyLead, equal = x.Equal } : null;
         object PeerJson(PeerRow p, string unit) => new
         {
@@ -218,7 +218,7 @@ public sealed partial class WebBridge
             if (Headline(r) is not { } h) return null;
             string table = Table(r, h); string unit = UnitOf(table); var last = MyLast(table);
             var (mine, part) = Mine(r, table);
-            object? theirs = null;
+            object? theirs = null, members = null; string? median = null;
             if (Str(p, "run") is { Length: > 0 } id)
             {
                 if (Featured(table).FirstOrDefault(f => f.Run.Id == id).Run is { } f) theirs = Detail(f.Value, unit, f.Overclocked, f.At, f.Metrics, f.Details);
@@ -228,9 +228,11 @@ public sealed partial class WebBridge
                 string name = Str(p, "part"); bool oc = Bool(p, "oc");
                 var row = Ranking(r, h, table, mine, part).Rows.FirstOrDefault(x => x.Entry.Overclocked == oc && string.Equals(x.Entry.Part, name, StringComparison.OrdinalIgnoreCase));
                 if (row?.Entry.Sample is { } s) theirs = Detail(s.Value, unit, s.Overclocked, s.At, s.Metrics, s.Details);
+                members = row?.Entry.Members?.Select(m => new { value = Units.FormatMeasured(m.Value, unit), at = m.At.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), gap = GapJson(mine is { } my ? BenchmarkPeers.Gap(my, m.Value, h.HigherIsBetter) : null) });
+                median = row is null ? null : Units.FormatMeasured(row.Entry.Median, unit);
             }
             var metrics = last?.Metrics ?? compared.GetValueOrDefault(r.Benchmark.Definition.Id.Value)?.Current.Metrics ?? (System() is { } sys ? records.Best(sys.Key, Key(r))?.Metrics : null);
-            return new { mine = mine is { } v ? Detail(v, unit, last?.Overclocked ?? false, last?.At, metrics, last?.Details) : null, theirs };
+            return new { mine = mine is { } v ? Detail(v, unit, last?.Overclocked ?? false, last?.At, metrics, last?.Details) : null, theirs, members, median };
         });
         // This copy's own runs of a row's list: every machine it has measured, newest first, each with its conditions, specifications and the shop's marks.
         Method("bench.history", p =>

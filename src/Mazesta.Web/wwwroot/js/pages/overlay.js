@@ -171,6 +171,13 @@ export function mount(el) {
       if (it.id.startsWith("net.")) return { v, text: it.id === "net.loss" ? `${Math.round(v)} %` : `${it.id === "net.jitter" ? v.toFixed(1) : Math.round(v)} ms` };
       return { v, text: it.id === "frametime" ? `${v.toFixed(1)} ms` : `${Math.round(v)} FPS` };
     }
+    // A share of a whole (graphics memory in use): the first sensor over the second, as a percentage; nothing when either is missing.
+    if (it.aggregate === "Share") {
+      const part = value(it.sensors[0]), whole = value(it.sensors[1]);
+      if (part === null || !(whole > 0)) return null;
+      const pct = Math.min(100, Math.max(0, part / whole * 100));
+      return { v: pct, text: ` %` };
+    }
     const vals = it.sensors.map((id) => value(id)).filter((v) => v !== null);
     if (!vals.length) return null;
     const v = it.aggregate === "Max" ? Math.max(...vals) : it.aggregate === "Sum" ? vals.reduce((a, b) => a + b, 0) : vals[0];
