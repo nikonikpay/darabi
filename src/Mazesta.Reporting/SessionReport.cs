@@ -28,7 +28,7 @@ public sealed record SensorSummary(string Id, string Hardware, string Name, stri
 public sealed record WindowPeak(DateTimeOffset From, DateTimeOffset To, string SensorId, double Max);
 
 /// <summary>One measured benchmark number as it was shown to the technician (Name already localised, like a test name).</summary>
-public sealed record BenchmarkMetricEntry(string Name, double Value, string Unit);
+public sealed record BenchmarkMetricEntry(string Name, double Value, string Unit, string? Key = null);   // Key: the metric's own id, which the summary picks its main figures by; absent in older reports
 
 /// <summary>A finished benchmark run. Benchmarks measure, they do not pass or fail, so they never change the report verdict.</summary>
 public sealed record BenchmarkEntry(string Id, string Name, DateTimeOffset FinishedAt, IReadOnlyList<BenchmarkMetricEntry> Metrics, string? Detail, DateTimeOffset? StartedAt = null);

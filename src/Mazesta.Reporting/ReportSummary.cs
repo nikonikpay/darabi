@@ -10,7 +10,14 @@ public sealed record PartPeak(HeatPart Part, string Device, double MaxC, string?
 
 /// <summary>One test or benchmark of the report: its result (null for a benchmark, which neither passes nor fails), how long it ran, and each
 /// part's highest temperature while it ran. A part with no reading in its window is absent, never 0.</summary>
-public sealed record SummaryRow(string Name, ReportOutcome? Outcome, double DurationSeconds, IReadOnlyDictionary<HeatPart, double> Peaks);
+public sealed record SummaryRow(string Name, ReportOutcome? Outcome, double DurationSeconds, IReadOnlyDictionary<HeatPart, double> Peaks)
+{
+    /// <summary>The benchmark's main figures (name, value, unit) - its result, not the conditions it ran in; empty for a test.</summary>
+    public IReadOnlyList<SummaryFigure> Figures { get; init; } = [];
+}
+
+/// <summary>One of a benchmark's main figures, as the summary prints it.</summary>
+public sealed record SummaryFigure(string Name, double Value, string Unit);
 
 /// <summary>
 /// The one-page summary of one saved report, for the customer: its verdict, each test's result and the highest temperatures the parts reached
@@ -31,6 +38,22 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
         ["CPU Package"] = HeatPart.Cpu, ["Core (Tctl/Tdie)"] = HeatPart.Cpu, ["GPU Core"] = HeatPart.Gpu, ["GPU Hot Spot"] = HeatPart.GpuHotSpot, ["GPU Memory Junction"] = HeatPart.GpuMemory,
     };
 
+    /// <summary>The metrics a summary prints for a benchmark: what it measured about the part (speed, latency, frame rate), none of the readings of
+    /// the conditions (clocks, temperatures, power) that the full report keeps. In the order the benchmark lists them.</summary>
+    private static readonly HashSet<string> MainFigures = new(StringComparer.Ordinal)
+    {
+        "Bench_Cpu_Gflops", "Bench_Cpu_PerThread", "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_Latency",
+        "Bench_Storage_SeqRead", "Bench_Storage_SeqWrite", "Bench_Storage_Rand4kQ32Read", "Bench_Storage_Rand4kLatency",
+        "Bench_Gpu_Fps", "Bench_Gpu_Triangles", "Bench_Gpu_Rt_Fps", "Bench_Gpu_Rt_Rays", "Bench_Gpu_Scene_Fps", "Bench_Gpu_Scene_Low", "Bench_Gpu_Scene_P99",
+        "Bench_Gpu_Ai_Fp32", "Bench_Gpu_Ai_Fp16", "Bench_Gpu_Ai_Int8", "Bench_Net_Download", "Bench_Net_Upload", "Bench_Net_Ping", "Bench_Net_Jitter", "Bench_Net_Loss",
+        "Bench_Ai_Prompt", "Bench_Ai_Gen",
+    };
+    /// <summary>A report saved before metrics carried their key: its first metrics, which are the results (the conditions are appended after them).</summary>
+    private const int FiguresWithoutKeys = 4;
+    internal static IReadOnlyList<SummaryFigure> FiguresOf(BenchmarkEntry b)
+        => b.Metrics.Any(m => m.Key is not null) ? [.. b.Metrics.Where(m => m.Key is not null && MainFigures.Contains(m.Key)).Select(m => new SummaryFigure(m.Name, m.Value, m.Unit))]
+            : [.. b.Metrics.Take(FiguresWithoutKeys).Select(m => new SummaryFigure(m.Name, m.Value, m.Unit))];
+
     public static HeatPart? PartOf(SensorSummary s) => s.Kind != "Temperature" ? null
         : s.Role is { } role ? (Roles.TryGetValue(role, out var p) ? p : null) : Names.TryGetValue(s.Name, out var n) ? n : null;
 
@@ -41,8 +64,8 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             .ToDictionary(g => g.Key, g => g.Key == HeatPart.Cpu && g.Any(x => x.Sensor.Role == "CpuPackageTemp" || x.Sensor.Name == "CPU Package")
                 ? g.Where(x => x.Sensor.Role == "CpuPackageTemp" || x.Sensor.Name == "CPU Package").Select(x => x.Sensor).ToList() : g.Select(x => x.Sensor).ToList());
 
-        var runs = r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Name, (ReportOutcome?)t.Outcome, From: t.StartedAt, To: t.FinishedAt, t.DurationSeconds))
-            .Concat((r.Benchmarks ?? []).Select(b => (b.Name, (ReportOutcome?)null, From: b.StartedAt ?? b.FinishedAt, To: b.FinishedAt, Math.Max(0, (b.FinishedAt - (b.StartedAt ?? b.FinishedAt)).TotalSeconds))))
+        var runs = r.Tests.Where(t => t.Outcome != ReportOutcome.NotRun).Select(t => (t.Name, (ReportOutcome?)t.Outcome, From: t.StartedAt, To: t.FinishedAt, t.DurationSeconds, Figures: (IReadOnlyList<SummaryFigure>)[]))
+            .Concat((r.Benchmarks ?? []).Select(b => (b.Name, (ReportOutcome?)null, From: b.StartedAt ?? b.FinishedAt, To: b.FinishedAt, Math.Max(0, (b.FinishedAt - (b.StartedAt ?? b.FinishedAt)).TotalSeconds), Figures: FiguresOf(b))))
             .OrderBy(x => x.From).ToList();
         bool fromTrace = r.Peaks is null;
 
@@ -55,7 +78,7 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
         }
 
         var rows = runs.Select(x => new SummaryRow(x.Name, x.Item2, x.Item5, byPart.Select(kv => (kv.Key, Max: kv.Value.Select(s => PeakIn(s, x.From, x.To)).Where(v => v is not null).Max()))
-            .Where(p => p.Max is not null).ToDictionary(p => p.Key, p => p.Max!.Value))).ToList();
+            .Where(p => p.Max is not null).ToDictionary(p => p.Key, p => p.Max!.Value)) { Figures = x.Figures }).ToList();
 
         var peaks = byPart.OrderBy(kv => kv.Key).Select(kv =>
         {
@@ -75,7 +98,7 @@ public sealed class SummaryText
     public bool IsRtl => Language == "fa";
     public required string Title, Date, Machine, Drives, Peaks, PeaksNote, TraceNote, During, Tests, Test, Result, Duration, Minutes, Seconds, NoRuns, Benchmark,
         Drive, Health, NotReported, HealthHealthy, HealthWarning, HealthUnhealthy, HealthUnknown, NoDrives, Footer, Technician, Customer, Ram, NoTemps,
-        Cpu, Gpu, GpuHotSpot, GpuMemory, DriveTemp, Board;
+        Cpu, Gpu, GpuHotSpot, GpuMemory, DriveTemp, Board, Installed;
 
     public static SummaryText For(string language) => language == "en" ? English : Persian;
 
@@ -86,26 +109,28 @@ public sealed class SummaryText
     {
         Language = "fa", Title = "خلاصه‌ی گزارش آزمون", Date = "تاریخ گزارش", Machine = "مشخصات سیستم", Drives = "سلامت هارد و SSD", Peaks = "بیشترین دما در طول آزمون",
         PeaksNote = "بالاترین دمایی که هر قطعه در مدت این گزارش به آن رسید، و آزمونی که در آن ثبت شد.", TraceNote = "این گزارش پیش از ثبت دقیق اوج هر آزمون ساخته شده؛ اوج هر ردیف از نمونه‌های ذخیره‌شده‌ی گزارش است.",
-        During = "در", Tests = "آزمون‌ها و بیشترین دما در هر کدام", Test = "آزمون", Result = "نتیجه", Duration = "مدت", Minutes = "دقیقه", Seconds = "ثانیه",
+        During = "در", Tests = "نتیجه‌ی آزمون‌ها", Test = "آزمون", Result = "نتیجه", Duration = "مدت", Minutes = "دقیقه", Seconds = "ثانیه",
         NoRuns = "در این گزارش آزمونی اجرا نشده است.", Benchmark = "بنچمارک",
         Drive = "دیسک", Health = "سلامت", NotReported = "گزارش نشد", HealthHealthy = "سالم", HealthWarning = "هشدار", HealthUnhealthy = "معیوب", HealthUnknown = "نامشخص",
         NoDrives = "هیچ دیسکی گزارش نشد.", NoTemps = "در مدت این گزارش دمایی ثبت نشد.",
         Footer = "همه‌ی مقادیر در زمان همین آزمون روی این دستگاه اندازه‌گیری شده‌اند؛ مقداری که در دسترس نبوده «گزارش نشد» نوشته شده است. جزئیات کامل در گزارش اصلی است.",
         Technician = "امضای تکنسین", Customer = "امضای مشتری", Ram = "حافظه‌ی RAM",
-        Cpu = "پردازنده", Gpu = "کارت گرافیک", GpuHotSpot = "نقطه‌ی داغ گرافیک", GpuMemory = "حافظه‌ی گرافیک", DriveTemp = "دیسک", Board = "مادربرد"
+        Cpu = "پردازنده", Gpu = "کارت گرافیک", GpuHotSpot = "نقطه‌ی داغ گرافیک", GpuMemory = "حافظه‌ی گرافیک", DriveTemp = "دیسک", Board = "مادربرد",
+        Installed = "نرم‌افزار تست مازستا روی سیستم شما نصب است و می‌توانید نتایج کامل را از داخل نرم‌افزار ببینید."
     };
 
     public static readonly SummaryText English = new()
     {
         Language = "en", Title = "Test report summary", Date = "Report date", Machine = "System", Drives = "Drive health (HDD / SSD)", Peaks = "Highest temperatures during the test",
         PeaksNote = "The highest temperature each part reached during this report, and the test it was reached in.", TraceNote = "This report predates exact per-test peaks; each row's peak comes from the report's stored samples.",
-        During = "in", Tests = "Tests and their highest temperatures", Test = "Test", Result = "Result", Duration = "Duration", Minutes = "min", Seconds = "s",
+        During = "in", Tests = "Results", Test = "Test", Result = "Result", Duration = "Duration", Minutes = "min", Seconds = "s",
         NoRuns = "No test ran in this report.", Benchmark = "Benchmark",
         Drive = "Drive", Health = "Health", NotReported = "not reported", HealthHealthy = "Healthy", HealthWarning = "Warning", HealthUnhealthy = "Failing", HealthUnknown = "Unknown",
         NoDrives = "No drive was reported.", NoTemps = "No temperature was recorded during this report.",
         Footer = "Every value was measured on this machine during this test; a value that was not available reads “not reported”. The full report has the details.",
         Technician = "Technician", Customer = "Customer", Ram = "Memory (RAM)",
-        Cpu = "CPU", Gpu = "Graphics card", GpuHotSpot = "GPU hot spot", GpuMemory = "GPU memory", DriveTemp = "Drive", Board = "Motherboard"
+        Cpu = "CPU", Gpu = "Graphics card", GpuHotSpot = "GPU hot spot", GpuMemory = "GPU memory", DriveTemp = "Drive", Board = "Motherboard",
+        Installed = "Mazesta Test is installed on your system; you can see the full results inside the app."
     };
 }
 
@@ -115,6 +140,13 @@ public static class SummaryHtml
 {
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     private static string E(string? s) => (s ?? "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace("\"", "&quot;").Replace("'", "&#39;");
+    /// <summary>A figure as a short number and its unit: a hundred and more whole, ten and more with one decimal, else two.</summary>
+    private static string Figure(SummaryFigure f)
+    {
+        double v = Math.Abs(f.Value);
+        string number = f.Value.ToString(v >= 100 ? "F0" : v >= 10 ? "F1" : "F2", Inv);
+        return f.Unit.Length == 0 ? number : $"{number} {f.Unit}";
+    }
     private static string Lt(string? s) => $"<bdi class=\"lt\">{E(s)}</bdi>";
 
     public static string Write(ReportSummary s, ReportFont? font = null, SummaryText? wording = null, ReportText? reportWording = null)
@@ -138,6 +170,7 @@ public static class SummaryHtml
             b.Append("<div class=\"verdict ").Append(verdict).Append("\">").Append(E(rw.VerdictName(verdict))).Append("<small>")
              .Append(Lt($"{r.Counts.Passed}/{r.Counts.Total}")).Append("</small></div>");
         else b.Append("<div class=\"verdict Benchmark\">").Append(E(w.Benchmark)).Append("</div>");
+        b.Append("<div class=\"installed\">").Append(E(w.Installed)).Append("</div>");
 
         // The highest temperatures: one tile per part, with the test it was reached in.
         b.Append("<section><h2>").Append(E(w.Peaks)).Append("</h2>");
@@ -152,28 +185,32 @@ public static class SummaryHtml
                 b.Append("<small>").Append(Lt(p.Device)).Append("</small></div></div>");
             }
             b.Append("</div><p class=\"note\">").Append(E(w.PeaksNote)).Append("</p>");
+            if (s.FromTrace) b.Append("<p class=\"note\">").Append(E(w.TraceNote)).Append("</p>");
         }
         b.Append("</section>");
 
-        // Each test: its result, how long it ran and the parts' highest temperatures while it ran.
+        // Each test or benchmark: its result and, for a benchmark, its own main figures (a network test's speeds and ping, a memory test's bandwidth and
+        // latency) - never the temperatures of parts it did not stress.
         b.Append("<section><h2>").Append(E(w.Tests)).Append("</h2>");
         if (s.Rows.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoRuns)).Append("</p>");
         else
         {
-            b.Append("<table class=\"runs\"><thead><tr><th>").Append(E(w.Test)).Append("</th><th>").Append(E(w.Result)).Append("</th><th>").Append(E(w.Duration)).Append("</th>");
-            foreach (var c in s.Columns) b.Append("<th>").Append(E(w.PartName(c))).Append("</th>");
-            b.Append("</tr></thead><tbody>");
+            b.Append("<div class=\"res\">");
             foreach (var row in s.Rows)
             {
                 string cls = row.Outcome switch { ReportOutcome.Passed => "ok", ReportOutcome.Failed => "bad", null => "unk", _ => "warn" };
                 string result = row.Outcome is { } o ? rw.OutcomeName(o) : w.Benchmark;
-                b.Append("<tr><td><b>").Append(E(row.Name)).Append("</b></td><td><span class=\"badge ").Append(cls).Append("\">").Append(E(result)).Append("</span></td><td>")
-                 .Append(Duration(row.DurationSeconds)).Append("</td>");
-                foreach (var c in s.Columns) b.Append("<td>").Append(row.Peaks.TryGetValue(c, out var v) ? Temp(v) : na).Append("</td>");
-                b.Append("</tr>");
+                b.Append("<div class=\"r\"><div class=\"rn\"><b>").Append(E(row.Name)).Append("</b><span class=\"badge ").Append(cls).Append("\">").Append(E(result)).Append("</span><span class=\"dur\">")
+                 .Append(Duration(row.DurationSeconds)).Append("</span></div>");
+                if (row.Figures.Count > 0)
+                {
+                    b.Append("<div class=\"figs\">");
+                    foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(f.Name)).Append("</small>").Append(Lt(Figure(f))).Append("</span>");
+                    b.Append("</div>");
+                }
+                b.Append("</div>");
             }
-            b.Append("</tbody></table>");
-            if (s.FromTrace) b.Append("<p class=\"note\">").Append(E(w.TraceNote)).Append("</p>");
+            b.Append("</div>");
         }
         b.Append("</section>");
 
@@ -216,7 +253,7 @@ public static class SummaryHtml
     internal static string Fit(ReportSummary s)
     {
         var m = s.Report.Machine;
-        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + (s.Peaks.Count > 0 ? 1 : 0);
+        int lines = s.Rows.Sum(r => r.Figures.Count > 0 ? 2 : 1) + m.Storage.Count + m.Gpus.Count + (s.Peaks.Count > 0 ? 1 : 0);
         return lines > 20 ? "tightest" : lines > 12 ? "tight" : "";
     }
 
@@ -246,12 +283,16 @@ thead th{{font-weight:400;color:#55555f;font-size:9px;border-bottom:1px solid #1
 .badge{{display:inline-block;border-radius:99px;padding:0 7px;font-weight:700;font-size:9px;border:1px solid;white-space:nowrap}}
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
-.temps{{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:4px}}
+.temps{{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:4px}}
 .temp{{border:1px solid #d8d7d0;border-radius:5px;padding:2px 4px;text-align:center;min-width:0}}
-.temp .part{{font-weight:700;font-size:8.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .temp .now{{font-size:13.5px;font-weight:700;line-height:1.2}}
-.temp .max{{font-size:7.5px;color:#33333a;border-top:1px dotted #d0cfc8;margin-top:1px;padding-top:1px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.temp .part{{font-weight:700;font-size:8.5px}} .temp .now{{font-size:13.5px;font-weight:700;line-height:1.2}}
+.temp .max{{font-size:7.5px;color:#33333a;border-top:1px dotted #d0cfc8;margin-top:1px;padding-top:1px;line-height:1.3;overflow-wrap:anywhere}}
 .temp small{{color:#77777f;font-size:7px}}
 .note{{margin:2px 0 0;color:#77777f;font-size:8px}}
+.installed{{border:1.3px solid #FDD400;background:#fffbe6;border-radius:5px;padding:4px 9px;font-weight:700;font-size:10.5px;margin-bottom:10px;text-align:center}}
+.res .r{{padding:3px 0;border-bottom:1px dotted #d0cfc8}} .res .r:last-child{{border-bottom:0}}
+.rn{{display:flex;align-items:center;gap:8px}} .rn b{{font-size:9.8px;flex:1}} .dur{{color:#66666e;font-size:8.5px;white-space:nowrap}}
+.figs{{display:flex;flex-wrap:wrap;gap:1px 14px;margin-top:2px}} .fig small{{color:#55555f;font-size:8.5px;margin-inline-end:5px}} .fig .lt{{font-weight:700;font-size:10px}}
 .verdict{{border-radius:5px;padding:4px 9px;font-weight:700;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:11px}}
 .verdict small{{font-weight:400;color:#44444c;font-size:10px}}
 .verdict.Passed{{background:#e6f6ee;color:#0f6b3c}} .verdict.Failed{{background:#fde8e7;color:#a0180f}} .verdict.Incomplete{{background:#fff4d6;color:#8a5a00}} .verdict.Benchmark{{background:#eef1f7;color:#2b3a55}}
@@ -263,7 +304,7 @@ main.tight{{font-size:9.2px;line-height:1.4}} .tight section{{padding:7px 7px 4p
 .tight .spec div{{padding:1px 0}} .tight .sign div{{margin-top:16px}} .tight header{{margin-bottom:7px}} .tight .verdict{{margin-bottom:10px}}
 main.tightest{{font-size:8.6px;line-height:1.32}} .tightest section{{padding:6px 6px 3px;margin-bottom:7px}} .tightest th,.tightest td{{padding:0.6px 3px}}
 .tightest .runs td b,.tightest .drives td b{{font-size:8.5px}} .tightest thead th{{font-size:8px}} .tightest .badge{{font-size:8px;line-height:1.3;padding:0 5px}}
-.tightest .temp .now{{font-size:12px}} .tightest .temp .max{{display:none}} .tightest .note{{display:none}} .tightest .spec div{{padding:0.5px 0}}
+.tightest .temp .now{{font-size:12px}} .tightest .temp .max{{display:none}} .tightest .note{{display:none}} .tightest .installed{{padding:2px 8px;font-size:9.5px;margin-bottom:7px}} .tightest .fig small{{font-size:7.8px}} .tightest .fig .lt{{font-size:9px}} .tightest .spec div{{padding:0.5px 0}}
 .tightest .sign div{{margin-top:12px}} .tightest header{{margin-bottom:6px;padding-bottom:4px}} .tightest .verdict{{margin-bottom:9px;padding:3px 9px}} .tightest footer{{font-size:7.5px}}
 @media print{{body{{background:#fff}} main{{padding:0;max-width:none}}}}";
     }

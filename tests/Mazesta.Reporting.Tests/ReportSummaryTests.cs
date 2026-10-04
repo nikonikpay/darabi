@@ -35,6 +35,16 @@ public class ReportSummaryTests
             machine, serviceNumber: "S-1405-0042");
     }
 
+    [Fact] public void A_benchmark_shows_its_own_figures_and_none_of_the_conditions_it_ran_in()
+    {
+        var net = new BenchmarkEntry("bench.network.internet", "Internet", T0.AddMinutes(1), [new("Download", 480, "Mbps", "Bench_Net_Download"), new("Upload", 95.5, "Mbps", "Bench_Net_Upload"),
+            new("Ping", 12.3, "ms", "Bench_Net_Ping"), new("GPU temperature", 53, "°C", "Bench_Gpu_TempMax")], null, T0);
+        var r = SessionReport.CreateBenchmark("x", "1", T0.AddMinutes(2), [net], [Sensor("gpu", "RTX", "GPU Core", "GpuCoreTemp", 50, 53)], HardwareInventory.Empty, "S-1");
+        var row = ReportSummary.Of(r).Rows.Single();
+        Assert.Equal(["Download", "Upload", "Ping"], row.Figures.Select(f => f.Name));
+        string html = SummaryHtml.Write(ReportSummary.Of(r));
+        Assert.Contains("480 Mbps", html); Assert.Contains("95.5 Mbps", html); Assert.DoesNotContain("GPU temperature", html); Assert.Contains(SummaryText.Persian.Installed, html);
+    }
     [Fact] public void A_long_report_is_set_tighter_so_the_sheet_stays_one_page()
     {
         Assert.Equal("", SummaryHtml.Fit(ReportSummary.Of(Report())));

@@ -124,7 +124,7 @@ public sealed class ReportService
     }
 
     private static BenchmarkEntry ToEntry(RecordedBenchmark b)
-        => new(b.Definition.Id.Value, Loc.Get(b.Definition.NameKey), b.Result.FinishedAt, [.. b.Result.Metrics.Select(m => new BenchmarkMetricEntry(Loc.Get(m.Key), m.Value, m.Unit))], Detail(b.Result), b.Result.StartedAt);
+        => new(b.Definition.Id.Value, Loc.Get(b.Definition.NameKey), b.Result.FinishedAt, [.. b.Result.Metrics.Select(m => new BenchmarkMetricEntry(Loc.Get(m.Key), m.Value, m.Unit, m.Key))], Detail(b.Result), b.Result.StartedAt);
 
     /// <summary>A run's detail for its report: how it was set up (length, workload version, options, resolution), then what the benchmark itself said.</summary>
     private static string? Detail(BenchmarkResult r)
