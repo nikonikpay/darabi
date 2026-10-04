@@ -342,9 +342,9 @@
     "semantic_hash": "7783342e633cece94ff43f8025583018"
   },
   "src/Mazesta.Core/Overlay/OverlayCatalog.cs": {
-    "mtime": 1791022555.3214214,
-    "seen": 1791023384.2032967,
-    "ast_hash": "de4df9f6bbaafa1b979d024157b64226",
+    "mtime": 1791121007.740481,
+    "seen": 1791121420.3171282,
+    "ast_hash": "2016ffb1a2c2745ef14eaf1a3ae1ce41",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Providers/IDriveHealthProvider.cs": {
@@ -546,9 +546,9 @@
     "semantic_hash": "5770e4e01e62537f45b149461cfecbf5"
   },
   "src/Mazesta.Desktop/ViewModels/OverlayViewModel.cs": {
-    "mtime": 1791022555.3466609,
-    "seen": 1791023384.2033672,
-    "ast_hash": "d35aa748ab9c10ce22e2433d9b7aa4c4",
+    "mtime": 1791121007.7556112,
+    "seen": 1791121420.3172085,
+    "ast_hash": "b3045000b8696b20131f77dacb06ffe3",
     "semantic_hash": ""
   },
   "src/Mazesta.Desktop/ViewModels/PartSpecs.cs": {
@@ -828,9 +828,9 @@
     "semantic_hash": "53da1cdfe222a0af88962eb394f6e805"
   },
   "src/Mazesta.Diagnostics/Benchmarks/BenchmarkPeers.cs": {
-    "mtime": 1791031422.8657937,
-    "seen": 1791032211.779043,
-    "ast_hash": "945c84acaf53944b2491a0bb97d4b015",
+    "mtime": 1791120951.8818023,
+    "seen": 1791121420.3173063,
+    "ast_hash": "73c495ce864aa98ec651dade72a8d61d",
     "semantic_hash": ""
   },
   "src/Mazesta.Diagnostics/Benchmarks/BenchmarkRecords.cs": {
@@ -1710,9 +1710,9 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Benchmarks.cs": {
-    "mtime": 1791031370.7637353,
-    "seen": 1791032211.7795975,
-    "ast_hash": "c20e7f942f7c32c7f2366e6bc986e4a4",
+    "mtime": 1791120951.888663,
+    "seen": 1791121420.317645,
+    "ast_hash": "4a5080397b135a890856d83cffdf2283",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Checkup.cs": {
@@ -1746,9 +1746,9 @@
     "semantic_hash": "9b64ab5b54289b2fa18f33523a83c112"
   },
   "src/Mazesta.Web/WebBridge.Overlay.cs": {
-    "mtime": 1791022555.3639505,
-    "seen": 1791023384.203795,
-    "ast_hash": "e32a4b04898f2b1df6794029603af425",
+    "mtime": 1791121023.4522357,
+    "seen": 1791121420.317665,
+    "ast_hash": "84ab0ee9b56c4926b795f4d5f46dead1",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Quiet.cs": {
@@ -1776,9 +1776,9 @@
     "semantic_hash": "20688ab805759cef78410df3c13681b7"
   },
   "src/Mazesta.Web/WebBridge.Tests.cs": {
-    "mtime": 1791021542.4047635,
-    "seen": 1791023384.2038393,
-    "ast_hash": "f2b46cf58a359505a503cb729a844791",
+    "mtime": 1791121100.0715125,
+    "seen": 1791121420.3176773,
+    "ast_hash": "adb3cb07f10449b018a2c5fcccba0a4d",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Tools.cs": {
@@ -1836,15 +1836,15 @@
     "semantic_hash": "69d275fab622832a8f363019735f928a"
   },
   "src/Mazesta.Web/wwwroot/js/demo-overlay.js": {
-    "mtime": 1791023127.3724566,
-    "seen": 1791023384.2038715,
-    "ast_hash": "377d59f36baa9df837ae2a2afc3b8dce",
+    "mtime": 1791121100.0881734,
+    "seen": 1791121420.317714,
+    "ast_hash": "43a625a599a93b5266da41822cc7fdcb",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/demo-strings.json": {
-    "mtime": 1791116206.6304386,
-    "seen": 1791116431.1105878,
-    "ast_hash": "9d2d22b25f46dccaa0116847c8f58b53",
+    "mtime": 1791121159.430723,
+    "seen": 1791121420.3177168,
+    "ast_hash": "98b85bff8d6264d288e8c7eebcf1b87f",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/demo.js": {
@@ -1908,9 +1908,9 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/benchmarks.js": {
-    "mtime": 1791116205.6902442,
-    "seen": 1791116431.1106088,
-    "ast_hash": "fa636fd2999b5df13ecd8eed237f13b9",
+    "mtime": 1791120968.1594906,
+    "seen": 1791121420.3177538,
+    "ast_hash": "dcc6e5c98b99fb5beba34852de2b6652",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/checks.js": {
@@ -1968,9 +1968,9 @@
     "semantic_hash": "1d6829aae0dd84f34a2fef0900e393ad"
   },
   "src/Mazesta.Web/wwwroot/js/pages/overlay.js": {
-    "mtime": 1791022593.525553,
-    "seen": 1791023384.2039466,
-    "ast_hash": "135ddfaeb87a6058e31e6e83643fa120",
+    "mtime": 1791121023.455925,
+    "seen": 1791121420.317798,
+    "ast_hash": "482b52992c7e03fdc45cdcd6c0411614",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/reports.js": {
@@ -1992,9 +1992,9 @@
     "semantic_hash": "d0ceda6e32ffafb5509efcec2c61552c"
   },
   "src/Mazesta.Web/wwwroot/js/pages/tests.js": {
-    "mtime": 1791023188.0785637,
-    "seen": 1791023384.203958,
-    "ast_hash": "2748b8851864ab7bad25abff2762f7de",
+    "mtime": 1791121100.0730317,
+    "seen": 1791121420.3178117,
+    "ast_hash": "4e84a3b3172b57e590005b394bd45e0a",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/tools.js": {
@@ -2250,9 +2250,9 @@
     "semantic_hash": "2e318e948575b427cf777698b654c448"
   },
   "tests/Mazesta.Desktop.Tests/OverlayViewModelTests.cs": {
-    "mtime": 1791022635.5586717,
-    "seen": 1791023384.204093,
-    "ast_hash": "44a50c175ceb41c8b44142076be25457",
+    "mtime": 1791121189.79525,
+    "seen": 1791121420.3179219,
+    "ast_hash": "dd1b09d64d742cf78437bb9a8f8dabcb",
     "semantic_hash": ""
   },
   "tests/Mazesta.Desktop.Tests/PartSpecsTests.cs": {
@@ -2430,9 +2430,9 @@
     "semantic_hash": "cda245f4a81e6daf498c3bcd0f2405d4"
   },
   "tests/Mazesta.Diagnostics.Tests/BenchmarkPeersTests.cs": {
-    "mtime": 1791031682.6501212,
-    "seen": 1791032211.7798924,
-    "ast_hash": "89abad14ad4a25d2c49b1006fad882da",
+    "mtime": 1791121241.8367047,
+    "seen": 1791121420.3179924,
+    "ast_hash": "f5be0fd5786bf70e6c8653babbbbaa09",
     "semantic_hash": ""
   },
   "tests/Mazesta.Diagnostics.Tests/BenchmarkRecordsTests.cs": {
@@ -3324,9 +3324,9 @@
     "semantic_hash": ""
   },
   "site/mazesta-connect/mazesta-connect.php": {
-    "mtime": 1791116166.9819496,
-    "seen": 1791116431.109933,
-    "ast_hash": "78ac9bbd25f67475234e95d7a41d80d2",
+    "mtime": 1791121159.4234943,
+    "seen": 1791121420.3170068,
+    "ast_hash": "3ce7d8377f87694cb1053d2ef81ed0ab",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Inventory/Ddr5Spd.cs": {
@@ -3336,15 +3336,15 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Persistence/Updates/SiteClient.cs": {
-    "mtime": 1791116167.2308254,
-    "seen": 1791116431.1104548,
-    "ast_hash": "0710b714a5d414e4f0ae0d3c5f947af4",
+    "mtime": 1791120951.848365,
+    "seen": 1791121420.3175411,
+    "ast_hash": "df8a7283475f11727b5a5e24150db421",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Site.cs": {
-    "mtime": 1791116167.3731048,
-    "seen": 1791116431.110562,
-    "ast_hash": "010d3bed28a12f29418a1c385d50f3f6",
+    "mtime": 1791120951.8493688,
+    "seen": 1791121420.3176732,
+    "ast_hash": "39fe63578fc38e8035cbf030edb9c2b5",
     "semantic_hash": ""
   },
   "tests/Mazesta.Core.Tests/Ddr5SpdTests.cs": {
@@ -3354,9 +3354,9 @@
     "semantic_hash": ""
   },
   "tests/Mazesta.Persistence.Tests/SiteClientTests.cs": {
-    "mtime": 1791116256.0120642,
-    "seen": 1791116431.1109226,
-    "ast_hash": "64a91b73abccbd62b888b374b423677e",
+    "mtime": 1791121189.7671065,
+    "seen": 1791121420.3181252,
+    "ast_hash": "fcd53169c0434843e9eb9752ae72dd93",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Crashes/BugCheck.cs": {
@@ -3393,6 +3393,18 @@
     "mtime": 1791037735.6776621,
     "seen": 1791105073.676599,
     "ast_hash": "b4febe907361aa14f0f078625329060f",
+    "semantic_hash": ""
+  },
+  "src/Mazesta.Desktop/Services/TestDetailText.cs": {
+    "mtime": 1791121098.4448605,
+    "seen": 1791121420.3172002,
+    "ast_hash": "ab853290500753369fc46d91a37d3b9c",
+    "semantic_hash": ""
+  },
+  "tests/Mazesta.Desktop.Tests/TestDetailTextTests.cs": {
+    "mtime": 1791121189.7826815,
+    "seen": 1791121420.3179405,
+    "ast_hash": "496f59b6dfce8b94777b3539b166375d",
     "semantic_hash": ""
   }
 }
