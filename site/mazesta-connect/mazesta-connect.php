@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -27,7 +27,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.1.0';
+    const VERSION = '1.1.1';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_RUNS = 500;
@@ -153,7 +153,8 @@ final class Mazesta_Connect
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/bench/index', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_index'), 'permission_callback' => $open));
-        register_rest_route(self::NS, '/benchdb/(?P<file>[A-Za-z0-9][A-Za-z0-9._@=-]*\.json)', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_list'), 'permission_callback' => $open));
+        // No @ in this pattern: WordPress wraps a route in @…@ to match it, and one inside ends the pattern early.
+        register_rest_route(self::NS, '/benchdb/(?P<file>[A-Za-z0-9][A-Za-z0-9._=-]*\.json)', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_list'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/release/chunk', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_chunk'), 'permission_callback' => array(__CLASS__, 'need_release_key')));
         register_rest_route(self::NS, '/release/commit', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_commit'), 'permission_callback' => array(__CLASS__, 'need_release_key')));
     }
