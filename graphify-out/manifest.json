@@ -78,9 +78,9 @@
     "semantic_hash": "4e91877bb850d27c5eac8ae55b8bb4bf"
   },
   "src/Mazesta.Core/Ai/AppGuide.cs": {
-    "mtime": 1791104967.5506563,
-    "seen": 1791105073.6751294,
-    "ast_hash": "6e6a4c769409f9eb4f7e589f89f5a93f",
+    "mtime": 1791124859.5722103,
+    "seen": 1791125431.631516,
+    "ast_hash": "76dbc4e2de8177cafcc0687ca189aa8f",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Ai/MazestaCompany.cs": {
@@ -522,9 +522,9 @@
     "semantic_hash": "5df61299bc2551cf76b3aa2d34cebcb4"
   },
   "src/Mazesta.Desktop/Services/ReportService.cs": {
-    "mtime": 1791031382.813435,
-    "seen": 1791032211.7788658,
-    "ast_hash": "41850671b7047a81b5b41a19d4fe66fb",
+    "mtime": 1791124109.8997395,
+    "seen": 1791125431.6317294,
+    "ast_hash": "fd71b0d5e2bb2fdc1cf502acc8d8da3a",
     "semantic_hash": ""
   },
   "src/Mazesta.Desktop/Services/TrayController.cs": {
@@ -570,10 +570,10 @@
     "semantic_hash": "e21c2dec2aa3a198052b33717c052d24"
   },
   "src/Mazesta.Desktop/ViewModels/SettingsViewModel.cs": {
-    "mtime": 1791008269.9855847,
-    "seen": 1791017325.2788773,
-    "ast_hash": "0c7ca3f8ff1ca78d8c60b352d6e2a789",
-    "semantic_hash": "0c7ca3f8ff1ca78d8c60b352d6e2a789"
+    "mtime": 1791124079.7099433,
+    "seen": 1791125431.6317515,
+    "ast_hash": "dac25f3e890c4356d4934d214782d189",
+    "semantic_hash": ""
   },
   "src/Mazesta.Desktop/ViewModels/SystemInfoViewModel.cs": {
     "mtime": 1790664006.2529728,
@@ -828,9 +828,9 @@
     "semantic_hash": "53da1cdfe222a0af88962eb394f6e805"
   },
   "src/Mazesta.Diagnostics/Benchmarks/BenchmarkPeers.cs": {
-    "mtime": 1791120951.8818023,
-    "seen": 1791121420.3173063,
-    "ast_hash": "73c495ce864aa98ec651dade72a8d61d",
+    "mtime": 1791124195.394607,
+    "seen": 1791125431.6318512,
+    "ast_hash": "558be10273d2e691362b0aa6ec9ff6e3",
     "semantic_hash": ""
   },
   "src/Mazesta.Diagnostics/Benchmarks/BenchmarkRecords.cs": {
@@ -1416,9 +1416,9 @@
     "semantic_hash": "dd820f44f30349f5fe79bc32e24257b3"
   },
   "src/Mazesta.Persistence/AppConfig.cs": {
-    "mtime": 1791031370.736039,
-    "seen": 1791032211.779456,
-    "ast_hash": "b61266d8dda0f1fc9afb58fb6b74e531",
+    "mtime": 1791124079.7109952,
+    "seen": 1791125431.6321023,
+    "ast_hash": "39ac623f7d60d4437d26f6b63fef1f61",
     "semantic_hash": ""
   },
   "src/Mazesta.Persistence/AppPaths.cs": {
@@ -1638,10 +1638,10 @@
     "semantic_hash": "b51970eaebdb9c3d0e8879635d36a9b4"
   },
   "src/Mazesta.Web/Mazesta.Web.csproj": {
-    "mtime": 1791008270.101962,
-    "seen": 1791017325.2793107,
-    "ast_hash": "85ab1013ad346e7e696c87d4521792e6",
-    "semantic_hash": "85ab1013ad346e7e696c87d4521792e6"
+    "mtime": 1791124026.7838862,
+    "seen": 1791125431.632192,
+    "ast_hash": "4285fe08774687a2e1690219c6344ed2",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/Notifier.cs": {
     "mtime": 1791008270.101962,
@@ -1674,16 +1674,16 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.App.cs": {
-    "mtime": 1791008270.1067772,
-    "seen": 1791017325.279326,
-    "ast_hash": "ffab7c37b3aaef64155a70c064fc9ce7",
-    "semantic_hash": "ffab7c37b3aaef64155a70c064fc9ce7"
+    "mtime": 1791124079.6939895,
+    "seen": 1791125431.632206,
+    "ast_hash": "b264f0aa7d9aa7c2e1700d9cd96a2f5d",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.AppUpdate.cs": {
-    "mtime": 1791008270.1067772,
-    "seen": 1791017325.279328,
-    "ast_hash": "f1f02bb9bfe385e3edba980de7675e07",
-    "semantic_hash": "f1f02bb9bfe385e3edba980de7675e07"
+    "mtime": 1791124109.9400022,
+    "seen": 1791125431.632208,
+    "ast_hash": "c047d5b4307fb2a535210b63814eaacc",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Apps.cs": {
     "mtime": 1791008270.107853,
@@ -1710,9 +1710,9 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Benchmarks.cs": {
-    "mtime": 1791120951.888663,
-    "seen": 1791121420.317645,
-    "ast_hash": "4a5080397b135a890856d83cffdf2283",
+    "mtime": 1791124216.2396975,
+    "seen": 1791125431.6322217,
+    "ast_hash": "f681c9eafe97d0225bf79eaeaf00c10d",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Checkup.cs": {
@@ -1764,10 +1764,10 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Settings.cs": {
-    "mtime": 1791008270.1165738,
-    "seen": 1791017325.2795112,
-    "ast_hash": "6a89a783c07b62fed8d5d81d2240e8b2",
-    "semantic_hash": "6a89a783c07b62fed8d5d81d2240e8b2"
+    "mtime": 1791124079.6998386,
+    "seen": 1791125431.6322515,
+    "ast_hash": "438581266f0b7b841235fc4cb0cce150",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.System.cs": {
     "mtime": 1790585748.2990508,
@@ -1800,21 +1800,21 @@
     "semantic_hash": "71a2afb2b885b4016ffa35e45797c812"
   },
   "src/Mazesta.Web/WebBridge.cs": {
-    "mtime": 1791103552.5242956,
-    "seen": 1791105073.676074,
-    "ast_hash": "445b79773fb787f099ed202999a6b67a",
+    "mtime": 1791124026.8543887,
+    "seen": 1791125431.6322672,
+    "ast_hash": "b505efb8425ee3ff9946bbc144faad3e",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/app.js": {
-    "mtime": 1791008270.1303463,
-    "seen": 1791017325.2795444,
-    "ast_hash": "122ec723c9a8cefcad821f99717fb524",
-    "semantic_hash": "122ec723c9a8cefcad821f99717fb524"
+    "mtime": 1791124764.442457,
+    "seen": 1791125431.6322696,
+    "ast_hash": "fc032036f1e4d962d15cd85932f1b403",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/assistant.js": {
-    "mtime": 1791021542.9018607,
-    "seen": 1791023384.2038589,
-    "ast_hash": "e5ed424dfbc35527f8a8109dc2007a8d",
+    "mtime": 1791124764.49543,
+    "seen": 1791125431.6322715,
+    "ast_hash": "7e59a6a6533bad8680c9242d107c3368",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/bridge.js": {
@@ -1842,15 +1842,15 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/demo-strings.json": {
-    "mtime": 1791121159.430723,
-    "seen": 1791121420.3177168,
-    "ast_hash": "98b85bff8d6264d288e8c7eebcf1b87f",
+    "mtime": 1791125179.0589328,
+    "seen": 1791125431.632284,
+    "ast_hash": "d234bc051c85f3e79310e4061bbe905a",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/demo.js": {
-    "mtime": 1791116184.6474001,
-    "seen": 1791116431.1105897,
-    "ast_hash": "43f4eb3f77e4015cc5330793c131fa92",
+    "mtime": 1791124859.6199875,
+    "seen": 1791125431.6322858,
+    "ast_hash": "f4c6786d4a37efd533942e76eef9316d",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/families.js": {
@@ -1902,15 +1902,15 @@
     "semantic_hash": "45f7761e46304f23afe3fc64261a26be"
   },
   "src/Mazesta.Web/wwwroot/js/pages/appupdate.js": {
-    "mtime": 1791116184.6322892,
-    "seen": 1791116431.1106074,
-    "ast_hash": "b16504155e3c0cd551a44e6779d34aa8",
+    "mtime": 1791124764.482506,
+    "seen": 1791125431.6323073,
+    "ast_hash": "7c01d5783487b9690e69315c90e3bcfb",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/benchmarks.js": {
-    "mtime": 1791120968.1594906,
-    "seen": 1791121420.3177538,
-    "ast_hash": "dcc6e5c98b99fb5beba34852de2b6652",
+    "mtime": 1791124813.9188344,
+    "seen": 1791125431.632309,
+    "ast_hash": "533c5f37bdc5bd385026396aa39b9fd8",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/checks.js": {
@@ -1932,10 +1932,10 @@
     "semantic_hash": "1afd7c4a5f5db7d55990f93e7d13f337"
   },
   "src/Mazesta.Web/wwwroot/js/pages/dashboard.js": {
-    "mtime": 1791008270.1415677,
-    "seen": 1791017325.2796414,
-    "ast_hash": "cf5ec6f61f1e87c31cebb1dbc757bab8",
-    "semantic_hash": "cf5ec6f61f1e87c31cebb1dbc757bab8"
+    "mtime": 1791124764.4460714,
+    "seen": 1791125431.6323211,
+    "ast_hash": "46d7c44f5d019309c9a11f921ed3cfad",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/dns.js": {
     "mtime": 1791008270.1425755,
@@ -1956,10 +1956,10 @@
     "semantic_hash": "0821eef7cae0397f846c8dfdec0d1007"
   },
   "src/Mazesta.Web/wwwroot/js/pages/gaming.js": {
-    "mtime": 1791008270.144114,
-    "seen": 1791017325.2796516,
-    "ast_hash": "f9493f3a7370a70aabbaa32aed9d1e3f",
-    "semantic_hash": "f9493f3a7370a70aabbaa32aed9d1e3f"
+    "mtime": 1791124764.4663076,
+    "seen": 1791125431.6323304,
+    "ast_hash": "243e710163acfbeac009ec40347602fc",
+    "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/monitoring.js": {
     "mtime": 1791008270.1464179,
@@ -1974,15 +1974,15 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/reports.js": {
-    "mtime": 1791031541.2734783,
-    "seen": 1791032211.7796981,
-    "ast_hash": "360e5da1b606b1565181881792c44b73",
+    "mtime": 1791124813.8440268,
+    "seen": 1791125431.63234,
+    "ast_hash": "3704483d154c31981240b20c50bfa49e",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/settings.js": {
-    "mtime": 1791022847.676535,
-    "seen": 1791023384.2039526,
-    "ast_hash": "08de8f41e172f1fe3351d1191f2e9a84",
+    "mtime": 1791124764.4640071,
+    "seen": 1791125431.632342,
+    "ast_hash": "dcde1b26939002eca6177882d7511e54",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/system.js": {
@@ -1998,9 +1998,9 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/tools.js": {
-    "mtime": 1791103588.5860226,
-    "seen": 1791105073.6761498,
-    "ast_hash": "76baa24680e0356703cb5255e6e5cd13",
+    "mtime": 1791124764.4719405,
+    "seen": 1791125431.6323483,
+    "ast_hash": "685a2dacc38cd0d11725519133f43cce",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/tuning.js": {
@@ -2274,10 +2274,10 @@
     "semantic_hash": "09fae578d0cc77557be88dca292bdd23"
   },
   "tests/Mazesta.Desktop.Tests/SettingsViewModelTests.cs": {
-    "mtime": 1790664006.4719534,
-    "seen": 1791017325.2798622,
-    "ast_hash": "7a9317f19339617f64143ec2617435b5",
-    "semantic_hash": "7a9317f19339617f64143ec2617435b5"
+    "mtime": 1791124079.7205684,
+    "seen": 1791125431.6324668,
+    "ast_hash": "3b18cd8f93ea90e6c56a01fc3d01d877",
+    "semantic_hash": ""
   },
   "tests/Mazesta.Desktop.Tests/SystemInfoViewModelTests.cs": {
     "mtime": 1790585748.3402622,
@@ -2430,9 +2430,9 @@
     "semantic_hash": "cda245f4a81e6daf498c3bcd0f2405d4"
   },
   "tests/Mazesta.Diagnostics.Tests/BenchmarkPeersTests.cs": {
-    "mtime": 1791121241.8367047,
-    "seen": 1791121420.3179924,
-    "ast_hash": "f5be0fd5786bf70e6c8653babbbbaa09",
+    "mtime": 1791125107.170267,
+    "seen": 1791125431.6325328,
+    "ast_hash": "997a2be5604dfbe8e38d1228c82858ae",
     "semantic_hash": ""
   },
   "tests/Mazesta.Diagnostics.Tests/BenchmarkRecordsTests.cs": {
@@ -2880,16 +2880,16 @@
     "semantic_hash": "d5995d8d73156e2f5071e0fbda82a27c"
   },
   "tools/publish-release.ps1": {
-    "mtime": 1791008270.1806543,
-    "seen": 1791017325.2801058,
-    "ast_hash": "8d09b0e01a6cbf1906937ee2320f44a6",
-    "semantic_hash": "8d09b0e01a6cbf1906937ee2320f44a6"
+    "mtime": 1791125058.713446,
+    "seen": 1791125431.6327174,
+    "ast_hash": "26810d2069ce3d9fec11fa89017add01",
+    "semantic_hash": ""
   },
   "tools/publish.ps1": {
-    "mtime": 1790756331.6976523,
-    "seen": 1791017325.2801082,
-    "ast_hash": "d5cab0cbb7df63e9f3356e82928c6c0d",
-    "semantic_hash": "d5cab0cbb7df63e9f3356e82928c6c0d"
+    "mtime": 1791125055.6100004,
+    "seen": 1791125431.6327193,
+    "ast_hash": "591fd7e1f5dd225793abea5b59617003",
+    "semantic_hash": ""
   },
   "tools/release.ps1": {
     "mtime": 1791037735.328565,
@@ -2916,10 +2916,10 @@
     "semantic_hash": "249b5f6290017d7b1a360ccd5755f5fc"
   },
   "AGENTS.md": {
-    "mtime": 1791008269.9385536,
-    "seen": 1791017325.2801204,
-    "ast_hash": "fb4fd073b1242ed99392f4be66f4329e",
-    "semantic_hash": "fb4fd073b1242ed99392f4be66f4329e"
+    "mtime": 1791125302.563607,
+    "seen": 1791125431.6327317,
+    "ast_hash": "1365ea695048e7b76a8b830cf280b814",
+    "semantic_hash": ""
   },
   "CLAUDE.md": {
     "mtime": 1790585784.1011946,
@@ -3000,9 +3000,9 @@
     "semantic_hash": "c7375b256b1c455463b21ae9bf1b61d2"
   },
   "docs/UPDATES.md": {
-    "mtime": 1791116351.4391856,
-    "seen": 1791116431.1109998,
-    "ast_hash": "9059697e2e640b55c5252cf3ba0a1a8b",
+    "mtime": 1791125302.5626042,
+    "seen": 1791125431.6327658,
+    "ast_hash": "908fa64646df5f0bdede77012faf0b38",
     "semantic_hash": ""
   },
   "docs/VERIFICATION-slice1.md": {
@@ -3324,9 +3324,9 @@
     "semantic_hash": ""
   },
   "site/mazesta-connect/mazesta-connect.php": {
-    "mtime": 1791121159.4234943,
-    "seen": 1791121420.3170068,
-    "ast_hash": "3ce7d8377f87694cb1053d2ef81ed0ab",
+    "mtime": 1791125011.4851594,
+    "seen": 1791125431.6314929,
+    "ast_hash": "530037b8a4ff88875e17c350fcb53523",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Inventory/Ddr5Spd.cs": {
@@ -3336,15 +3336,15 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Persistence/Updates/SiteClient.cs": {
-    "mtime": 1791120951.848365,
-    "seen": 1791121420.3175411,
-    "ast_hash": "df8a7283475f11727b5a5e24150db421",
+    "mtime": 1791124109.9334958,
+    "seen": 1791125431.6321273,
+    "ast_hash": "3d3e4be98e20c2942f2ac475d009af79",
     "semantic_hash": ""
   },
   "src/Mazesta.Web/WebBridge.Site.cs": {
-    "mtime": 1791120951.8493688,
-    "seen": 1791121420.3176732,
-    "ast_hash": "39fe63578fc38e8035cbf030edb9c2b5",
+    "mtime": 1791124109.9240055,
+    "seen": 1791125431.6322532,
+    "ast_hash": "2d00cb2760af837cddf3cc003b091b65",
     "semantic_hash": ""
   },
   "tests/Mazesta.Core.Tests/Ddr5SpdTests.cs": {
@@ -3354,9 +3354,9 @@
     "semantic_hash": ""
   },
   "tests/Mazesta.Persistence.Tests/SiteClientTests.cs": {
-    "mtime": 1791121189.7671065,
-    "seen": 1791121420.3181252,
-    "ast_hash": "fcd53169c0434843e9eb9752ae72dd93",
+    "mtime": 1791125107.178789,
+    "seen": 1791125431.6326752,
+    "ast_hash": "1b104db33ef3b24a76f593a1aef33238",
     "semantic_hash": ""
   },
   "src/Mazesta.Core/Crashes/BugCheck.cs": {
@@ -3378,9 +3378,9 @@
     "semantic_hash": ""
   },
   "src/Mazesta.Web/wwwroot/js/pages/crashes.js": {
-    "mtime": 1791103740.708577,
-    "seen": 1791105073.6761222,
-    "ast_hash": "5fa6387ca85f0ee6352cca7dd64b9f8b",
+    "mtime": 1791124764.48964,
+    "seen": 1791125431.6323187,
+    "ast_hash": "22ee9a2ea7134255a7b0be112a7539ee",
     "semantic_hash": ""
   },
   "tests/Mazesta.Core.Tests/BugCheckTests.cs": {
@@ -3390,21 +3390,21 @@
     "semantic_hash": ""
   },
   "notes-fa.txt": {
-    "mtime": 1791037735.6776621,
-    "seen": 1791105073.676599,
-    "ast_hash": "b4febe907361aa14f0f078625329060f",
+    "mtime": 1791125107.178789,
+    "seen": 1791125431.6328006,
+    "ast_hash": "471f3234e608f63b9f028d2144ed3a26",
     "semantic_hash": ""
   },
   "src/Mazesta.Desktop/Services/TestDetailText.cs": {
-    "mtime": 1791121098.4448605,
-    "seen": 1791121420.3172002,
-    "ast_hash": "ab853290500753369fc46d91a37d3b9c",
+    "mtime": 1791124661.6159053,
+    "seen": 1791125431.631733,
+    "ast_hash": "c0170a9a1547f107b4754e87c2461526",
     "semantic_hash": ""
   },
   "tests/Mazesta.Desktop.Tests/TestDetailTextTests.cs": {
-    "mtime": 1791121189.7826815,
-    "seen": 1791121420.3179405,
-    "ast_hash": "496f59b6dfce8b94777b3539b166375d",
+    "mtime": 1791125177.5006933,
+    "seen": 1791125431.632476,
+    "ast_hash": "dbc132fc2cf7160cc87cf08068f1c6a1",
     "semantic_hash": ""
   }
 }
