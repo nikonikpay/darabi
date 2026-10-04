@@ -44,10 +44,8 @@ function Publish-Edition([string]$Folder, [string]$Name) {
         Get-ChildItem $backups -Directory | Sort-Object Name -Descending | Select-Object -Skip $Keep | Remove-Item -Recurse -Force -Confirm:$false
     }
     if (Test-Path $target) { Get-ChildItem $target -Force | Where-Object Name -ne "Data" | Remove-Item -Recurse -Force -Confirm:$false }
-    dotnet publish $project -c Release -o $target "-p:MazestaEdition=$Name"
-    if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)." }
+    & (Join-Path $PSScriptRoot "publish-single.ps1") -Output $target -Edition $Name   # three things: MazestaWeb.exe, MazestaTray.exe, wwwroot (+ Redist)
     if ($stamp -and -not (Test-Path $data)) { throw "Data is missing after publishing - restore it from $stamp." }
-    Write-Host "Ready ($Name): $(Join-Path $target $exeName)"
 }
 
 # The users' edition first, Mazesta's own last: what is left in bin/obj afterwards is the edition a plain build makes.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.4.0';
+    const VERSION = '1.5.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_RUNS = 500;
@@ -378,11 +378,22 @@ final class Mazesta_Connect
         if (isset($m[3]) && $m[3] !== '') {
             $words = array();
             foreach (explode('|', $m[3]) as $pair) {
-                $words[] = preg_match('/^fileMb=(\d+)$/', $pair, $f) ? 'فایل ' . number_format_i18n((int) $f[1]) . ' مگابایتی' : $pair;
+                if (preg_match('/^fileMb=(\d+)$/', $pair, $f)) { $words[] = 'فایل ' . number_format_i18n((int) $f[1]) . ' مگابایتی'; }
+                elseif (preg_match('/^resolution=(\d+)x(\d+)$/', $pair, $f)) { $words[] = 'رزولوشن ' . (int) $f[1] . '×' . (int) $f[2]; }
+                elseif (preg_match('/^quality=(\d)$/', $pair, $f)) { $words[] = self::quality_words($m[1], (int) $f[1]); }
+                else { $words[] = $pair; }
             }
             $label .= ' · ' . esc_html(implode('، ', $words));
         }
         return $label . '<br><small dir="ltr" style="color:#787c82">' . esc_html($table) . '</small>';
+    }
+
+    /** The garden benchmarks' quality setting in words: the rasteriser's load level, or the ray tracer's rays a pixel. */
+    private static function quality_words($benchmark, $q)
+    {
+        if ($benchmark === 'bench.gpu.scene.rt') { return 'کیفیت: ' . $q . ' پرتو در هر پیکسل'; }
+        $names = array(1 => 'سبک', 2 => 'متوسط', 3 => 'سنگین', 4 => 'بسیار سنگین');
+        return 'کیفیت: ' . (isset($names[$q]) ? $names[$q] : $q);
     }
 
     private static function valid_run($run)
