@@ -93,8 +93,9 @@ if ($Only -ne "Mazesta") {
     Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
     $z = [IO.Compression.ZipFile]::Open($zip, "Create")
     try {
-        Get-ChildItem $client -Recurse -File | Where-Object { $_.FullName.Substring($client.Length + 1) -notmatch '^Data(\|$)' } | ForEach-Object {
-            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $_.FullName, $_.FullName.Substring($client.Length + 1).Replace('', '/'), [IO.Compression.CompressionLevel]::Optimal)
+        $sep = [string][IO.Path]::DirectorySeparatorChar
+        Get-ChildItem $client -Recurse -File | Where-Object { -not $_.FullName.Substring($client.Length + 1).StartsWith("Data$sep", [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object {
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $_.FullName, $_.FullName.Substring($client.Length + 1).Replace($sep, '/'), [IO.Compression.CompressionLevel]::Optimal)
         }
     } finally { $z.Dispose() }
     $setup = Clear-Output $SetupOutput
