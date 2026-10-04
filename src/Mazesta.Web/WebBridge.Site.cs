@@ -38,9 +38,16 @@ public sealed partial class WebBridge
         {
             hasKey = _config.SiteKey.Length > 0, busy, error, api = AppUpdater.Api.Host,
             checkedAt = checkedAt?.ToString("yyyy/MM/dd HH:mm", Loc.Culture),
-            status = status is null ? null : new { version = status.Version, key = status.Key, open = status.OpenUploads, reports = status.Reports, runs = status.Runs, pending = status.Pending },
-            unsent = Unsent(),
+            status = status is null ? null : new { version = status.Version, key = status.Key, open = status.OpenUploads, sharing = status.Sharing, reports = status.Reports, runs = status.Runs, pending = status.Pending },
+            unsent = Unsent(), shareLink = ShareLink(),
         };
+        // The page the site made of this computer's results, once they were shared (the site keeps one page a computer, under one link).
+        string shareFile = Path.Combine(_paths.DataRoot, "benchmarks", "site-share.json");
+        string? ShareLink()
+        {
+            try { return File.Exists(shareFile) && JsonNode.Parse(File.ReadAllText(shareFile))?["link"]?.GetValue<string>() is { } link && ShopFeed.IsShopLink(link) ? link : null; }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException) { return null; }
+        }
         int Unsent() { if (_benchRunLog is not { } log) return 0; var sent = Sent(); return log.All().Count(r => !sent.Contains(r.Id)); }
         async Task Check()
         {
@@ -85,6 +92,34 @@ public sealed partial class WebBridge
             string url = Str(p, "url");
             if (!ShopFeed.IsShopLink(url)) throw new ArgumentException("not the shop's site");
             Open(url); return null;
+        });
+
+        // Anyone's latest results, to pass on: this computer's newest run of each benchmark (as it is set up now), with the parts' names. No key:
+        // it is the user's own to share. The computer's name is not sent.
+        MethodAsync("site.share", async _ =>
+        {
+            if (_benchRunLog is not { } log || _benchSystemHash?.Invoke() is not { } hash) return new { error = Loc.Get("Site_Err_NoRuns") };
+            var latest = log.Recent(hash, 2000).Where(r => BenchmarkRecords.Headline(r.Benchmark)?.Version is not { } v || v == r.Version)
+                .GroupBy(r => r.Table).Select(g => g.First()).OrderBy(r => r.Benchmark, StringComparer.Ordinal).Take(SiteClient.RunsPerShare).ToList();
+            if (latest.Count == 0) return new { error = Loc.Get("Site_Share_None") };
+            var names = latest.Select(r => r.Benchmark).Distinct().ToDictionary(b => b, b => _benchVm?.Rows.FirstOrDefault(x => x.Benchmark.Definition.Id.Value == b)?.Name ?? b);
+            var higher = names.Keys.ToDictionary(b => b, b => BenchmarkRecords.Headline(b)?.HigherIsBetter ?? true);
+            busy = true; PushSoon("site", State);
+            try
+            {
+                var inv = await _sp.GetRequiredService<Desktop.Composition.InventoryCache>().GetAsync().ConfigureAwait(true);
+                static string? Name(string? raw) => string.IsNullOrWhiteSpace(raw) ? null : BenchmarkPeers.PartName(raw);
+                var machine = new SiteMachine(Name(inv.Cpu?.Name), Name(inv.Gpus.FirstOrDefault()?.Name), inv.TotalPhysicalMemoryBytes is { } b ? Math.Round(b / 1073741824.0) : null,
+                    inv.Os is { } os ? $"{os.Caption} {os.Version}".Trim() : null);
+                var receipt = await site.ShareAsync([.. latest.Select(r => JsonNode.Parse(BenchmarkPeers.WriteRun(r with { Machine = "" }))!)], names, higher, machine, app, CancellationToken.None).ConfigureAwait(true);
+                if (!ShopFeed.IsShopLink(receipt.Link)) return new { error = Loc.Format("Site_Err_Site", "link") };
+                try { Directory.CreateDirectory(Path.GetDirectoryName(shareFile)!); File.WriteAllText(shareFile, JsonSerializer.Serialize(new { link = receipt.Link, at = DateTimeOffset.Now })); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }   // shared all the same; the link is in the answer
+                _log.LogInformation("Shared {Count} benchmark results: {Link}", receipt.Rows, receipt.Link);
+                return new { ok = true, link = receipt.Link, rows = receipt.Rows };
+            }
+            catch (Exception e) when (Expected(e) || e is JsonException) { _log.LogInformation("Results not shared: {Message}", e.Message); return new { error = Say(e) }; }
+            finally { busy = false; PushSoon("site", State); }
         });
 
         // This copy's runs the site has not had yet, in batches, with the shop's marks; then the lists the site built from them.

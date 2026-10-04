@@ -103,7 +103,8 @@ public static class AppGuide
         T("tools", "crashes", "Bsod_Title", "blue screens (stop errors): lists the ones Windows recorded, with the stop code, its name, its parameters and the likely causes to check", null,
             "بلو اسکرین", "بلواسکرین", "بلو اسکرین ها", "صفحه ابی", "صفحه ابی مرگ", "bsod", "blue screen", "bluescreen", "stop code", "کد خطای ویندوز", "minidump", "مینی دامپ"),
         P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
-        T("appupdate", "site", "Site_Title", "the link to the shop's site: the site key is entered here; a report's summary is sent to the site from the reports page (to be printed there for the serviced case) and benchmark results from the benchmark page", null,
+        T("appupdate", "site", "Site_Title", "the link to the shop's site: the site key is entered here; a report's summary is sent to the site from the reports page (to be printed there for the serviced case) and benchmark results from the benchmark page, where anyone can also share their latest results as a page with a link (no key needed)", null,
+            "اشتراک گذاری نتیجه", "اشتراک نتیجه", "شیر کردن نتیجه", "share results",
             "کلید سایت", "اتصال به سایت", "ارسال به سایت", "ارسال گزارش به سایت", "گزارش آنلاین", "اپلود بنچمارک", "آپلود بنچمارک", "ارسال نتایج", "site key", "send to site", "upload results"),
     ];
 

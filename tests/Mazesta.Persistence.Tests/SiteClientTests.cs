@@ -48,9 +48,9 @@ public class SiteClientTests
 
     [Fact] public async Task A_report_goes_as_json_with_its_page_and_comes_back_with_where_it_is()
     {
-        var (client, site) = Client((_, _) => (HttpStatusCode.OK, """{"id":12,"updated":false,"url":"https://shop.example/wp-admin/admin-post.php?action=mzc_report&id=12","link":null}"""));
+        var (client, site) = Client((_, _) => (HttpStatusCode.OK, """{"id":"abcdef0123456789","updated":false,"url":"https://shop.example/wp-admin/admin-post.php?action=mzc_report&id=abcdef0123456789","link":null}"""));
         var r = await client.SendReportAsync("k", new SiteReport("abcdef0123456789", "خلاصه", DateTimeOffset.UnixEpoch, "TestSession", null, "CPU · GPU", null, "3 tests", "0.8.0", "<html>x</html>"), CancellationToken.None);
-        Assert.Equal((12, false, (string?)null), (r.Id, r.Updated, r.Link));
+        Assert.Equal(("abcdef0123456789", false, (string?)null), (r.Id, r.Updated, r.Link));
         var sent = JsonNode.Parse(site.Seen[0].Body)!;
         Assert.Equal("abcdef0123456789", sent["id"]!.GetValue<string>()); Assert.Equal("<html>x</html>", sent["html"]!.GetValue<string>());
         Assert.Null(sent["verdict"]);   // a benchmark report has none: left out, not sent as a word
@@ -64,6 +64,19 @@ public class SiteClientTests
         Assert.Equal((1, false, 4), (r.Added, r.Pending, r.Lists));
         var sent = JsonNode.Parse(site.Seen[0].Body)!;
         Assert.Equal(12.5, sent["runs"]![0]!["value"]!.GetValue<double>()); Assert.True(sent["higher"]!["bench.cpu.multi"]!.GetValue<bool>()); Assert.Null(sent["marks"]);
+    }
+
+    [Fact] public async Task A_shared_result_goes_without_a_key_and_comes_back_as_a_link()
+    {
+        var (client, site) = Client((_, _) => (HttpStatusCode.OK, """{"link":"https://shop.example/?mazesta_share=0123456789abcdef01234567","rows":1,"queued":0}"""));
+        var run = JsonNode.Parse("""{"id":"run-00000001","benchmark":"bench.cpu.multi","version":1,"settings":"","part":"Core i7","system":"abc","value":12.5,"unit":"GFLOPS"}""")!;
+        var r = await client.ShareAsync([run], new Dictionary<string, string> { ["bench.cpu.multi"] = "پردازنده، همهٔ هسته‌ها" }, new Dictionary<string, bool> { ["bench.cpu.multi"] = true },
+            new SiteMachine("Core i7", null, 32, "Windows 11"), "0.8.0", CancellationToken.None);
+        Assert.Equal(("https://shop.example/?mazesta_share=0123456789abcdef01234567", 1), (r.Link, r.Rows));
+        var seen = Assert.Single(site.Seen); var sent = JsonNode.Parse(seen.Body)!;
+        Assert.Null(seen.Key); Assert.Equal("/wp-json/mazesta/v1/share", seen.Path);
+        Assert.Equal("Core i7", sent["machine"]!["cpu"]!.GetValue<string>()); Assert.Null(sent["machine"]!["gpu"]);   // no card named: left out, not sent empty
+        Assert.Equal("پردازنده، همهٔ هسته‌ها", sent["names"]!["bench.cpu.multi"]!.GetValue<string>());
     }
 
     [Fact] public async Task The_lists_are_fetched_where_they_changed_and_a_damaged_one_is_refused()

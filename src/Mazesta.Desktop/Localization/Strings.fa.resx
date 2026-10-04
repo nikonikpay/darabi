@@ -2781,4 +2781,10 @@
   <data name="Bsod_Title" xml:space="preserve"><value>صفحه‌های آبی (Blue Screen)</value></data>
   <data name="Bsod_Unknown" xml:space="preserve"><value>کد خطا در فهرست برنامه نیست</value></data>
   <data name="Bsod_Uptime" xml:space="preserve"><value>ویندوز {0} دقیقه روشن بود</value></data>
+  <data name="Site_Share_Confirm" xml:space="preserve"><value>آخرین نتایج بنچمارک این سیستم به سایت فرستاده شود؟ نام پردازنده و کارت گرافیک، مقدار رم و نسخهٔ ویندوز هم فرستاده می‌شود؛ نام کامپیوتر فرستاده نمی‌شود. هر کس پیوند را داشته باشد صفحه را می‌بیند.</value></data>
+  <data name="Site_Share_Done" xml:space="preserve"><value>{0} نتیجه روی سایت قرار گرفت؛ صفحهٔ آن در مرورگر باز شد.</value></data>
+  <data name="Site_Share_Done_Copied" xml:space="preserve"><value>{0} نتیجه روی سایت قرار گرفت؛ پیوند کپی شد و صفحه در مرورگر باز شد.</value></data>
+  <data name="Site_Share_Hint" xml:space="preserve"><value>آخرین نتیجهٔ هر بنچمارک این سیستم را به سایت می‌فرستد و پیوندی برای فرستادن به دیگران می‌دهد</value></data>
+  <data name="Site_Share_None" xml:space="preserve"><value>هنوز نتیجهٔ بنچمارکی برای اشتراک‌گذاری نیست؛ اول یک بنچمارک اجرا کنید.</value></data>
+  <data name="Site_Share_Send" xml:space="preserve"><value>اشتراک‌گذاری آخرین نتیجه</value></data>
 </root>

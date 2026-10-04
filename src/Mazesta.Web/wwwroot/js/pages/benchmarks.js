@@ -26,7 +26,23 @@ export function benchList(component = null) {
     } catch (e) { toast(String(e.message || e), "fail"); }
     upload.disabled = false;
   } }, icon("update"), t("Site_Runs_Send"));
-  wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), upload,
+  // Anyone's own latest results, as a page on the site with a link to pass on (no key needed; the computer's name is not sent).
+  const share = h("button", { class: "btn quiet", title: t("Site_Share_Hint"), "data-a": "share-site", onclick: async () => {
+    if (!confirm(t("Site_Share_Confirm"))) return;
+    share.disabled = true;
+    try {
+      const r = await call("site.share");
+      if (r.error) toast(r.error, "fail");
+      else {
+        let copied = false;
+        try { await navigator.clipboard.writeText(r.link); copied = true; } catch { /* the link is still shown and opened */ }
+        toast(t(copied ? "Site_Share_Done_Copied" : "Site_Share_Done", fa(r.rows)), "ok");
+        call("site.open", { url: r.link });
+      }
+    } catch (e) { toast(String(e.message || e), "fail"); }
+    share.disabled = false;
+  } }, icon("popout"), t("Site_Share_Send"));
+  wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), share, upload,
     h("label", { class: "oc-toggle", title: t("Bench_OverclockedHint") }, oc, t("Bench_Overclocked")),
     h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
     h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));

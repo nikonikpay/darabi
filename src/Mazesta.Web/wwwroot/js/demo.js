@@ -308,6 +308,7 @@ export async function call(m, p, emit) {
       cpu: "AMD Ryzen 9 3950X", gpus: ["NVIDIA GeForce RTX 3090"], board: "ASUSTeK COMPUTER INC. ROG STRIX X570-E GAMING", bios: "4602", os: "Microsoft Windows 11 Pro", errors: [] };
     case "tweaks.state": return tweaks();
     case "dns.state": return tweaks().dns;
+    case "site.share": await new Promise((r) => setTimeout(r, 600)); return { ok: true, link: "https://www.dfmrendering.com/?mazesta_share=0123456789abcdef01234567", rows: 9 };
     case "crashes.read": await new Promise((r) => setTimeout(r, 500)); return { total: 2, dumpFiles: 2, dumpsReadable: true, logReadable: true, logSince: "2026/06/12 09:10", powerLosses: 3, lastPowerLoss: "2026/09/21 22:14", powerLossTimes: [],
       crashes: [
         { at: "2026/09/30 21:42", atIsRestart: false, code: "0x00000124", name: "WHEA_UNCORRECTABLE_ERROR", parameters: ["0x0", "0xFFFF9A0C5E2F4028", "0xBE000000", "0x800400"], parametersMean: strings.Bsod_Params_Whea, notes: [strings.Bsod_Note_Whea_Mce],

@@ -3,11 +3,15 @@ namespace Mazesta.Persistence.Updates;
 
 /// <summary>What the shop's site answered to "are you there, and is this key yours": <see cref="Key"/> is "ok", "wrong" or "missing"; the counts
 /// are only told to a holder of the key.</summary>
-public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, int? Reports, int? Runs, int? Pending);
+public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, int? Reports, int? Runs, int? Pending, bool Sharing = false);
 
 /// <summary>A report's one-page summary as the site keeps it: who and what it is about, and the page itself (HTML with nothing to load or run).</summary>
 public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html);
-public sealed record SiteReportReceipt(int Id, bool Updated, string Url, string? Link);
+public sealed record SiteReportReceipt(string Id, bool Updated, string Url, string? Link);
+/// <summary>The computer a shared result was measured on, as its user chose to show it: the parts' names, never the computer's own name.</summary>
+public sealed record SiteMachine(string? Cpu, string? Gpu, double? RamGb, string? Os);
+/// <summary><see cref="Link"/>: the page the site made of the results; <see cref="Queued"/>: how many of them also wait for the shop's review.</summary>
+public sealed record SiteShareReceipt(string Link, int Rows, int Queued);
 /// <summary><see cref="Pending"/>: the runs went to the site's review queue (sent without the shop's key), not into the lists yet.</summary>
 public sealed record SiteRunsReceipt(int Added, int Known, int Rejected, bool Pending, int? Lists);
 
@@ -45,6 +49,19 @@ public sealed class SiteClient(Uri api, HttpClient http)
         return Read<SiteRunsReceipt>(await SendAsync(HttpMethod.Post, "bench/runs", key, body.ToJsonString(), ct).ConfigureAwait(false));
     }
     public const int RunsPerRequest = 200;
+
+    /// <summary>A user's latest results (one run per benchmark, at most <see cref="RunsPerShare"/>), sent without a key to become a page of
+    /// their own on the site. <paramref name="names"/> are the benchmarks' names as the app shows them.</summary>
+    public async Task<SiteShareReceipt> ShareAsync(IReadOnlyList<JsonNode> runs, IReadOnlyDictionary<string, string> names, IReadOnlyDictionary<string, bool> higher, SiteMachine machine, string appVersion, CancellationToken ct)
+    {
+        var body = new JsonObject
+        {
+            ["runs"] = new JsonArray([.. runs.Select(r => r.DeepClone())]), ["names"] = JsonSerializer.SerializeToNode(names), ["higher"] = JsonSerializer.SerializeToNode(higher),
+            ["machine"] = JsonSerializer.SerializeToNode(machine, Json), ["appVersion"] = appVersion,
+        };
+        return Read<SiteShareReceipt>(await SendAsync(HttpMethod.Post, "share", null, body.ToJsonString(), ct).ConfigureAwait(false));
+    }
+    public const int RunsPerShare = 60;
 
     /// <summary>The site's comparison lists as a manifest (file, size, SHA-256 each), read through the same checks as the signed one's entries.</summary>
     public async Task<UpdateManifest> ListsAsync(CancellationToken ct)
