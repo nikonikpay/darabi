@@ -19,12 +19,13 @@ internal sealed unsafe class GardenRay : GardenRenderer
     private readonly ID3D12DescriptorHeap _srv;
     public int Bounces { get; } = 4;
     /// <summary>Camera rays a pixel: each with its own soft-shadow rays to every lamp and its own bounced-light ray.</summary>
-    public int Samples { get; } = 4;
+    public int Samples { get; }
     /// <summary>The denoiser's passes (taps 1, 2, 4, 8 pixels apart): an edge-aware filter over this frame's light alone.</summary>
     public int DenoisePasses { get; } = 4;
 
-    public GardenRay(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets) : base(s, g, width, height, targets)
+    public GardenRay(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, int samples = 4) : base(s, g, width, height, targets)
     {
+        Samples = samples;
         byte[] cs = D3D12Session.Shader("GardenRay");
         _root = s.Own(s.Device.CreateRootSignature(cs));
         _pipeline = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = cs }));

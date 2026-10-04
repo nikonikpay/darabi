@@ -2631,6 +2631,10 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Bench_Set_Duration" xml:space="preserve"><value>Run length</value></data>
   <data name="Bench_Set_Version" xml:space="preserve"><value>Workload version</value></data>
   <data name="Bench_Set_Resolution" xml:space="preserve"><value>Resolution</value></data>
+  <data name="Bench_Option_Quality" xml:space="preserve"><value>Quality</value></data>
+  <data name="Bench_RtQuality_1" xml:space="preserve"><value>1 ray per pixel (light)</value></data>
+  <data name="Bench_RtQuality_2" xml:space="preserve"><value>2 rays per pixel (medium)</value></data>
+  <data name="Bench_RtQuality_4" xml:space="preserve"><value>4 rays per pixel (high)</value></data>
   <data name="Web_Detail_Run" xml:space="preserve"><value>Run settings</value></data>
   <data name="Web_Peers_Last" xml:space="preserve"><value>slower than all {0} models in the list</value></data>
   <data name="Web_Peers_First" xml:space="preserve"><value>faster than all {0} models in the list</value></data>

@@ -51,9 +51,21 @@ public sealed class BenchmarkRecords
     /// so they are still its own).</summary>
     public static string RecordKey(string benchmarkId, IReadOnlyDictionary<string, string>? options)
     {
+        options = Effective(benchmarkId, options);
         string key = options is null || options.Count == 0 ? benchmarkId : benchmarkId + "|" + string.Join("|", options.OrderBy(o => o.Key, StringComparer.Ordinal).Select(o => $"{o.Key}={o.Value}"));
         return Headline(benchmarkId)?.Version is > 1 and int v ? key + "|v=" + v.ToString(System.Globalization.CultureInfo.InvariantCulture) : key;
     }
+
+    /// <summary>The garden benchmarks gained a resolution and a quality option after their first records and comparison lists existed. At the
+    /// settings they measured before (the defaults) the work is the same, so those options are left out of the keys: the old records and lists
+    /// stay valid, and only a run at other settings starts a list of its own.</summary>
+    private static readonly Dictionary<string, Dictionary<string, string>> Unchanged = new()
+    {
+        ["bench.gpu.scene.d3d"] = new() { ["resolution"] = "2560x1440", ["quality"] = "3" },
+        ["bench.gpu.scene.rt"] = new() { ["resolution"] = "2560x1440", ["quality"] = "4" },
+    };
+    public static IReadOnlyDictionary<string, string>? Effective(string benchmarkId, IReadOnlyDictionary<string, string>? options)
+        => options is not null && Unchanged.TryGetValue(benchmarkId, out var legacy) ? options.Where(o => !(legacy.TryGetValue(o.Key, out var v) && v == o.Value)).ToDictionary(o => o.Key, o => o.Value) : options;
 
     public BenchmarkRecord? Best(string system, string recordKey)
     {

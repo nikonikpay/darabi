@@ -82,6 +82,9 @@ public static partial class BenchmarkPeers
     public static string Settings(IReadOnlyDictionary<string, string>? options)
         => options is null ? "" : string.Join("|", options.Where(o => !DeviceOptions.Contains(o.Key)).OrderBy(o => o.Key, StringComparer.Ordinal).Select(o => $"{o.Key}={o.Value}"));
 
+    /// <summary><see cref="Settings(IReadOnlyDictionary{string, string}?)"/> for a benchmark's own options (see <see cref="BenchmarkRecords.Effective"/>).</summary>
+    public static string Settings(string benchmarkId, IReadOnlyDictionary<string, string>? options) => Settings(BenchmarkRecords.Effective(benchmarkId, options));
+
     public static string TableKey(string benchmark, int version, string settings) => $"{benchmark}@{version}" + (settings.Length > 0 ? "|" + settings : "");
 
     /// <summary>The list's file name on the site and on disk: plain characters only, the settings folded into a short hash.</summary>

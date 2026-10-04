@@ -48,7 +48,7 @@ public sealed partial class WebBridge
         _benchRunLog = runs; _benchSystemHash = () => System()?.Hash;   // the assistant's benchmark-history tool reads the same log
         string Key(BenchmarkRowViewModel r) => BenchmarkRecords.RecordKey(r.Benchmark.Definition.Id.Value, r.OptionValues());
         HeadlineMetric? Headline(BenchmarkRowViewModel r) => BenchmarkRecords.Headline(r.Benchmark.Definition.Id.Value) is { Part: not PeerPart.None } h ? h : null;
-        string Table(BenchmarkRowViewModel r, HeadlineMetric h) => BenchmarkPeers.TableKey(r.Benchmark.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(r.OptionValues()));
+        string Table(BenchmarkRowViewModel r, HeadlineMetric h) => BenchmarkPeers.TableKey(r.Benchmark.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(r.Benchmark.Definition.Id.Value, r.OptionValues()));
 
         async Task<string?> PartOf(PeerPart part, IReadOnlyDictionary<string, string> options, SystemId s) => part switch
         {
@@ -101,11 +101,11 @@ public sealed partial class WebBridge
                     if (string.IsNullOrWhiteSpace(part)) { _log.LogInformation("Benchmark {Id}: the measured part is not known; the run is not added to the comparison log", run.Definition.Id.Value); return; }
                     // Judged before this run joins the log, so it is compared with this machine's earlier runs and never with itself. Other systems
                     // are left to the Benchmarks page's lists: a faster or slower model says nothing of this machine's health, and a similar one may never come.
-                    string table = BenchmarkPeers.TableKey(run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options));
+                    string table = BenchmarkPeers.TableKey(run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(run.Definition.Id.Value, options));
                     peer = SelfCheck.Evaluate(row.Name, row.Benchmark.Component, c.Current.Value,
                         runs.Of(table).Where(x => x.System == s.Hash && x.Overclocked == overclocked).Select(x => x.Value), h.HigherIsBetter, c.Current.Unit);
                     var details = await DetailsOf(h.Part, part, options);
-                    runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(options), BenchmarkPeers.PartName(part),
+                    runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(run.Definition.Id.Value, options), BenchmarkPeers.PartName(part),
                         s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details]));
                     memo.Clear(); PushSoon("bench", State);
                 }

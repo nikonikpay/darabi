@@ -2631,6 +2631,10 @@
   <data name="Bench_Set_Duration" xml:space="preserve"><value>مدت اجرا</value></data>
   <data name="Bench_Set_Version" xml:space="preserve"><value>نسخهٔ بار کاری</value></data>
   <data name="Bench_Set_Resolution" xml:space="preserve"><value>رزولوشن</value></data>
+  <data name="Bench_Option_Quality" xml:space="preserve"><value>کیفیت</value></data>
+  <data name="Bench_RtQuality_1" xml:space="preserve"><value>۱ پرتو در هر پیکسل (سبک)</value></data>
+  <data name="Bench_RtQuality_2" xml:space="preserve"><value>۲ پرتو در هر پیکسل (متوسط)</value></data>
+  <data name="Bench_RtQuality_4" xml:space="preserve"><value>۴ پرتو در هر پیکسل (بالا)</value></data>
   <data name="Web_Detail_Run" xml:space="preserve"><value>تنظیمات اجرا</value></data>
   <data name="Web_Peers_Last" xml:space="preserve"><value>کندتر از همهٔ {0} مدل فهرست</value></data>
   <data name="Web_Peers_First" xml:space="preserve"><value>سریع‌تر از همهٔ {0} مدل فهرست</value></data>

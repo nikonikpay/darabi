@@ -32,13 +32,22 @@ internal static class GpuFault
 /// Failed and a missing feature into Unsupported, and adding the GPU's own clock, power and temperature for the run.</summary>
 internal static class GpuBenchmark
 {
-    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body, (int Width, int Height)? resolution = null)
+    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body, (int Width, int Height)? resolution = null, bool ownThread = false)
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "Duration must be positive."));
         var device = GpuDevices.Resolve(request, spec);
         if (device is null) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, GpuDevices.NoGpu));
-        return Task.Run(() =>
+        // A run that opens a window creates it, pumps it and closes it on one thread: its own, not a pool thread.
+        Func<Func<BenchmarkResult>, Task<BenchmarkResult>> start = work =>
+        {
+            if (!ownThread) return Task.Run(work, CancellationToken.None);
+            var done = new TaskCompletionSource<BenchmarkResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new Thread(() => done.SetResult(work())) { IsBackground = true, Name = "Mazesta GPU benchmark" };
+            thread.SetApartmentState(ApartmentState.STA); thread.Start();
+            return done.Task;
+        };
+        return start(() =>
         {
             try
             {
@@ -69,7 +78,7 @@ internal static class GpuBenchmark
                     _ => BenchmarkResult.Error(spec.Id, started, request.Clock.UtcNow, e),
                 };
             }
-        }, CancellationToken.None);
+        });
     }
 
     /// <summary>The monitor's node of the adapter a run used: the only GPU there is, or the one of the same name. With two GPUs and no match

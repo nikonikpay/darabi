@@ -130,7 +130,8 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
         foreach (var o in definition.Options.Where(o => !BenchmarkPeers.DeviceOptions.Contains(o.Key)))
         {
             string value = options.GetValueOrDefault(o.Key) is { Length: > 0 } v ? v : o.Default;
-            string shown = o.Choices?.Invoke().FirstOrDefault(c => c.Value == value) is { Localized: false } c ? c.Label : value;
+            var choice = o.Choices?.Invoke().FirstOrDefault(c => c.Value == value);
+            string shown = choice?.Summary ?? (choice is { Localized: false } ? choice.Label : value);
             if (shown.Length > 0) yield return new(BenchmarkDetails.RunGroup, o.LabelKey, shown);
         }
     }

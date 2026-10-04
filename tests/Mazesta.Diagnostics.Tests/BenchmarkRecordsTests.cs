@@ -9,6 +9,18 @@ public class BenchmarkRecordsTests : IDisposable
     private static BenchmarkResult Cpu(double gflops, int minutes = 0, BenchmarkStatus status = BenchmarkStatus.Completed)
         => new(CpuBenchmark.Multi.Id, status, T0, T0.AddMinutes(minutes), status == BenchmarkStatus.Completed ? [new("Bench_Cpu_Gflops", gflops, "GFLOPS"), new("Bench_Cpu_Power", 90, "W")] : [], null);
 
+    [Fact] public void The_garden_benchmarks_at_their_default_settings_keep_the_key_they_had_before_they_had_options()
+    {
+        var gpu = new Dictionary<string, string> { ["gpu"] = "0", ["resolution"] = "2560x1440", ["quality"] = "3" };
+        Assert.Equal(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["gpu"] = "0" }), BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", gpu));
+        Assert.Equal("", BenchmarkPeers.Settings("bench.gpu.scene.rt", new Dictionary<string, string> { ["resolution"] = "2560x1440", ["quality"] = "4" }));
+    }
+    [Fact] public void A_garden_run_at_other_settings_gets_a_list_of_its_own()
+    {
+        var other = new Dictionary<string, string> { ["resolution"] = "3840x2160", ["quality"] = "3" };
+        Assert.Equal("resolution=3840x2160", BenchmarkPeers.Settings("bench.gpu.scene.d3d", other));
+        Assert.NotEqual(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", null), BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", other));
+    }
     [Fact] public void The_first_complete_run_sets_the_record()
     {
         var c = new BenchmarkRecords(_dir).Offer("pc", "PC", "bench.cpu.multi", Cpu(100))!;
