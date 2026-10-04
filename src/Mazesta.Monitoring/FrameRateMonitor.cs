@@ -116,7 +116,7 @@ public sealed class FrameRateMonitor(ILogger log) : IFrameRateSource, IDisposabl
         {
             if (!into.TryGetValue(pid, out var q)) into[pid] = q = new Queue<double>();
             q.Enqueue(t);
-            while (q.Count > 0 && t - q.Peek() > FrameTimeStats.LowWindowSeconds + 1) q.Dequeue();
+            while (q.Count > 0 && t - q.Peek() > FrameTimeStats.Low01WindowSeconds + 1) q.Dequeue();
         }
     }
 

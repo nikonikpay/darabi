@@ -2970,4 +2970,9 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Web_Peers_Reference" xml:space="preserve"><value>Reference</value></data>
   <data name="Web_Peers_ReferenceMedian" xml:space="preserve"><value>Median of the {0} reference result(s) Mazesta verified for this model</value></data>
   <data name="Web_Runs_Note_Client" xml:space="preserve"><value>The recorded runs of this benchmark, newest first.</value></data>
+  <data name="Overlay_Low01" xml:space="preserve"><value>0.1% low</value></data>
+  <data name="Overlay_PClock" xml:space="preserve"><value>P-cores clock</value></data>
+  <data name="Overlay_EClock" xml:space="preserve"><value>E-cores clock</value></data>
+  <data name="Web_Overlay_Agg_Average" xml:space="preserve"><value>average</value></data>
+  <data name="Web_Overlay_XLarge" xml:space="preserve"><value>Extra large</value></data>
 </root>

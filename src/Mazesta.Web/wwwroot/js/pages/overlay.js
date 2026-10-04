@@ -37,7 +37,7 @@ export function mount(el) {
     oninput: (e) => { fill(e.target); preview.style.setProperty("--ov-alpha", e.target.value / 100); }, onchange: (e) => call("overlay.set", { field: "opacity", value: e.target.value / 100 }) });
   const seg = (label, field, options) => h("div", { class: "seg", role: "group", "aria-label": label }, options.map(([v, k]) =>
     h("button", { type: "button", "data-v": v, onclick: () => call("overlay.set", { field, value: field === "scale" ? +v : v }) }, t(k))));
-  const sizes = seg(t("Web_Overlay_Size"), "scale", [["0.85", "Web_Overlay_Small"], ["1", "Web_Overlay_Normal"], ["1.2", "Web_Overlay_Large"]]);
+  const sizes = seg(t("Web_Overlay_Size"), "scale", [["0.85", "Web_Overlay_Small"], ["1", "Web_Overlay_Normal"], ["1.2", "Web_Overlay_Large"], ["1.5", "Web_Overlay_XLarge"]]);
   const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"], ["line", "Web_Overlay_Layout_Line"]]);
   // No plate and no boxes: only the text, outlined, in the parts' colours.
   const bare = h("input", { type: "checkbox", class: "switch", "aria-label": t("Web_Overlay_Bare"), title: t("Web_Overlay_Bare_Hint"), onchange: (e) => call("overlay.set", { field: "bare", value: e.target.checked }) });
@@ -167,7 +167,7 @@ export function mount(el) {
   // ——— Values: sensor items from the snapshots, frame items from what the overlay measured ———
   function current(it) {
     if (it.frame) {
-      const v = frames && { fps: frames.fps, low1: frames.low1, frametime: frames.frametime, "fps.avg": frames.avg, "fps.min": frames.min, "fps.max": frames.max,
+      const v = frames && { fps: frames.fps, low1: frames.low1, low01: frames.low01, frametime: frames.frametime, "fps.avg": frames.avg, "fps.min": frames.min, "fps.max": frames.max,
         "net.ping": frames.ping, "net.loss": frames.loss, "net.jitter": frames.jitter }[it.id];
       if (v === null || v === undefined) return null;
       // The link's figures come from the echoes the overlay sends while it is on screen: ping and jitter in ms, loss in percent.
@@ -183,7 +183,7 @@ export function mount(el) {
     }
     const vals = it.sensors.map((id) => value(id)).filter((v) => v !== null);
     if (!vals.length) return null;
-    const v = it.aggregate === "Max" ? Math.max(...vals) : it.aggregate === "Sum" ? vals.reduce((a, b) => a + b, 0) : vals[0];
+    const v = it.aggregate === "Max" ? Math.max(...vals) : it.aggregate === "Sum" ? vals.reduce((a, b) => a + b, 0) : it.aggregate === "Average" ? vals.reduce((a, b) => a + b, 0) / vals.length : vals[0];
     return { v, text: fmt(v, hw.sensors.get(it.sensors[0])?.unit) };
   }
   function tick() {
@@ -215,7 +215,7 @@ export function mount(el) {
       preview.replaceChildren(h("div", { class: "ov-strip" },
         game ? h("div", { class: "ov-card p-game" },
           fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : null,
-          stat("low1", "1% LOW"), stat("fps.avg", "AVG"), stat("fps.min", "MIN"), stat("fps.max", "MAX"), stat("frametime", "MS")) : null,
+          stat("low1", "1% LOW"), stat("low01", "0.1% LOW"), stat("fps.avg", "AVG"), stat("fps.min", "MIN"), stat("fps.max", "MAX"), stat("frametime", "MS")) : null,
         cards.map((b) => h("div", { class: `ov-card ${part(b.part).cls}` }, title(b), b.items.map((it) => {
           const [num, unit] = split(current(it));
           return h("div", { class: "ov-stat" }, h("small", {}, it.label), h("b", { class: "num" }, num, unit ? h("i", {}, unit) : null));
@@ -224,14 +224,14 @@ export function mount(el) {
       return;
     }
     const hero = game && (() => {
-      const fps = get("fps"), low = get("low1"), ft = get("frametime");
+      const fps = get("fps"), low = get("low1"), low01 = get("low01"), ft = get("frametime");
       const side = (it, tag) => it ? h("div", { class: "ov-side-v" }, h("b", { class: "num" }, split(current(it))[0]), h("small", {}, tag)) : null;
       const stats = [stat("fps.avg", "AVG"), stat("fps.min", "MIN"), stat("fps.max", "MAX")].filter(Boolean);
       return h("div", { class: "ov-card ov-hero p-game" },
         h("div", { class: "ov-title" }, h("span", { class: "ov-key" }, "GAME")),
         h("div", { class: "ov-hero-top" },
           fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : h("span"),
-          h("div", { class: "ov-hero-side" }, side(low, "1% LOW"), side(ft, "MS"))),
+          h("div", { class: "ov-hero-side" }, side(low, "1% LOW"), side(low01, "0.1% LOW"), side(ft, "MS"))),
         stats.length ? h("div", { class: "ov-stats" }, stats) : null,
         fps ? frameChart(history.get("fps") || [], low ? current(low)?.v ?? null : null) : null);
     })();

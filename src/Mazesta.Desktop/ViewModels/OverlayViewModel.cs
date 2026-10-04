@@ -81,12 +81,13 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     /// not chosen, and the card is not drawn when none is.</summary>
     public OverlayRow? HeroFps { get; }
     public OverlayRow? HeroLow { get; }
+    public OverlayRow? HeroLow01 { get; }
     public OverlayRow? HeroFrameTime { get; }
     /// <summary>The session's average, lowest and highest frame rate (<see cref="FrameRateSession"/>), each shown when chosen.</summary>
     public OverlayRow? HeroAvg { get; }
     public OverlayRow? HeroMin { get; }
     public OverlayRow? HeroMax { get; }
-    public bool HasHero => HeroFps is not null || HeroLow is not null || HeroFrameTime is not null || HasSessionStats;
+    public bool HasHero => HeroFps is not null || HeroLow is not null || HeroLow01 is not null || HeroFrameTime is not null || HasSessionStats;
     public bool HasSessionStats => HeroAvg is not null || HeroMin is not null || HeroMax is not null;
     private readonly FrameRateSession _session = new();
     /// <summary>The session's numbers for the web page's preview; null until the program in front has drawn.</summary>
@@ -108,10 +109,11 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public bool TwoColumns => Layout == "columns";
     public bool IsLine => Layout == "line";
     public bool IsStacked => !IsLine;
-    public double SectionWidth => TwoColumns ? 186 : 244;
+    /// <summary>The widest the boxes have needed since the overlay came on: the panel only ever widens, so a figure gaining a digit does not make it jump back and forth.</summary>
+    public float SeenWidth { get; set; }
     /// <summary>Each box keeps 4 px on every side and the list gives back 4 px at its edges: two boxes and the 8 px between them fill the panel.
     /// The strip has no fixed width: it is as long as what it shows.</summary>
-    public double PanelWidth => IsLine ? double.NaN : TwoColumns ? SectionWidth * 2 + 8 : SectionWidth;
+    public double PanelWidth => IsLine ? double.NaN : TwoColumns ? SeenWidth * 2 + 8 : SeenWidth;
     public bool NeedsFrames { get; }
     /// <summary>A ping, loss or jitter item is shown: the echoes are sent only then, and only while the overlay is on screen.</summary>
     public bool NeedsPing { get; }
@@ -125,13 +127,13 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         IPingSource? ping = null)
     {
         _engine = engine; _dispatch = dispatch; _frames = frames; _ping = ping;
-        Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.5); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
+        Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.6); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
         _wanted = [.. Sections.SelectMany(s => s.Rows).SelectMany(r => r.Sensors)];
         NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming); NeedsPing = Sections.Any(s => s.Rows.Any(r => r.Item.IsPingItem));
         Blocks = [.. Sections.Where(s => s.Part != OverlayPart.Gaming)];
         var game = Sections.FirstOrDefault(s => s.Part == OverlayPart.Gaming)?.Rows ?? [];
-        HeroFps = game.FirstOrDefault(r => r.Id == "fps"); HeroLow = game.FirstOrDefault(r => r.Id == "low1"); HeroFrameTime = game.FirstOrDefault(r => r.Id == "frametime");
+        HeroFps = game.FirstOrDefault(r => r.Id == "fps"); HeroLow = game.FirstOrDefault(r => r.Id == "low1"); HeroLow01 = game.FirstOrDefault(r => r.Id == "low01"); HeroFrameTime = game.FirstOrDefault(r => r.Id == "frametime");
         HeroAvg = game.FirstOrDefault(r => r.Id == "fps.avg"); HeroMin = game.FirstOrDefault(r => r.Id == "fps.min"); HeroMax = game.FirstOrDefault(r => r.Id == "fps.max");
         engine.SnapshotPublished += OnSnapshot;
     }
@@ -144,7 +146,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         if (NeedsPing && _ping is not null) { if (active) _ping.Start(); else _ping.Stop(); }
         if (!active) return;
         foreach (var r in Sections.SelectMany(s => s.Rows)) { r.History.Clear(); r.Trend = []; }
-        _heroHistory.Clear(); HeroTrend = []; HeroLowValue = double.NaN; _session.Reset();
+        _heroHistory.Clear(); HeroTrend = []; HeroLowValue = double.NaN; _session.Reset(); SeenWidth = 0;
     }
 
     /// <summary>The chosen items this machine can show, grouped into blocks (a part, or one drive's own block), the blocks in the order their first
@@ -208,7 +210,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     {
         // The session's numbers stay while the game is in front but has not drawn for a moment; the live ones do not.
         "fps.avg" => _session.Average, "fps.min" => _session.Min, "fps.max" => _session.Max,
-        _ => f is null ? null : id switch { "fps" => f.Fps, "low1" => f.Low1Fps, "frametime" => f.FrameTimeMs, _ => null },
+        _ => f is null ? null : id switch { "fps" => f.Fps, "low1" => f.Low1Fps, "low01" => f.Low01Fps, "frametime" => f.FrameTimeMs, _ => null },
     };
 
     private void Chart(OverlayRow row, double? value)

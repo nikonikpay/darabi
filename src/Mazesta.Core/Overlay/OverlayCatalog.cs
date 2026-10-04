@@ -7,7 +7,7 @@ public enum OverlayPart { Gaming, Gpu, Cpu, Memory, Storage, Network }
 
 /// <summary>How an item made of several sensors becomes one number: the first sensor found, the highest (hottest core, hottest drive), or the
 /// sum (traffic over every adapter or drive).</summary>
-public enum OverlayAggregate { First, Max, Sum }
+public enum OverlayAggregate { First, Max, Sum, Average }
 
 /// <summary>One thing the overlay can show. <paramref name="Roles"/> are alternatives, tried in order for <see cref="OverlayAggregate.First"/>;
 /// an item with no roles is measured by the app (the frame-rate monitor, or the echoes of the ping monitor), not by a sensor. <paramref name="FixedMax"/> is the chart's fixed top (100 for a
@@ -25,6 +25,9 @@ public sealed record OverlayItem(string Id, OverlayPart Part, string LabelKey, S
     /// <summary>For a share of a whole (graphics memory in use, as a percentage): the role of the whole. The item then reads its own role and
     /// this one on the same device and shows the first over the second; a device that lacks either has no such item.</summary>
     public SensorRole? Of { get; init; }
+    /// <summary>Only the sensors whose name starts with this ("P-Core", "E-Core": an Intel hybrid CPU names its cores' clocks so); null takes all.
+    /// A machine without such sensors (a CPU with one kind of core) simply has no such item.</summary>
+    public string? NamePrefix { get; init; }
 }
 
 /// <summary>The item the overlay settings refer to by id, with its chart on or off.</summary>
@@ -40,7 +43,7 @@ public static class OverlayCatalog
     private const double Percent = 100;
     public static readonly IReadOnlyList<OverlayItem> All =
     [
-        new("fps", OverlayPart.Gaming, "Overlay_Fps", []), new("low1", OverlayPart.Gaming, "Overlay_Low1", []), new("frametime", OverlayPart.Gaming, "Overlay_FrameTime", []),
+        new("fps", OverlayPart.Gaming, "Overlay_Fps", []), new("low1", OverlayPart.Gaming, "Overlay_Low1", []), new("low01", OverlayPart.Gaming, "Overlay_Low01", []), new("frametime", OverlayPart.Gaming, "Overlay_FrameTime", []),
         new("fps.avg", OverlayPart.Gaming, "Overlay_FpsAvg", []), new("fps.min", OverlayPart.Gaming, "Overlay_FpsMin", []), new("fps.max", OverlayPart.Gaming, "Overlay_FpsMax", []),
 
         new("gpu.temp", OverlayPart.Gpu, "Overlay_Temp", [SensorRole.GpuCoreTemp], FixedMax: Percent),
@@ -61,6 +64,8 @@ public static class OverlayCatalog
         new("cpu.load", OverlayPart.Cpu, "Overlay_Load", [SensorRole.CpuTotalLoad], FixedMax: Percent),
         new("cpu.maxthread", OverlayPart.Cpu, "Overlay_MaxThread", [SensorRole.CpuThreadLoad], OverlayAggregate.Max, Percent),
         new("cpu.clock", OverlayPart.Cpu, "Overlay_Clock", [SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage, SensorRole.CpuCoreClock]),
+        new("cpu.pclock", OverlayPart.Cpu, "Overlay_PClock", [SensorRole.CpuCoreClock], OverlayAggregate.Average) { NamePrefix = "P-Core" },
+        new("cpu.eclock", OverlayPart.Cpu, "Overlay_EClock", [SensorRole.CpuCoreClock], OverlayAggregate.Average) { NamePrefix = "E-Core" },
         new("cpu.maxclock", OverlayPart.Cpu, "Overlay_MaxClock", [SensorRole.CpuEffectiveClock, SensorRole.CpuCoreClock], OverlayAggregate.Max),
         new("cpu.power", OverlayPart.Cpu, "Overlay_Power", [SensorRole.CpuPackagePower]),
         new("cpu.voltage", OverlayPart.Cpu, "Overlay_Voltage", [SensorRole.CpuVcore]),
@@ -102,7 +107,7 @@ public static class OverlayCatalog
     {
         // Playing: the frame rate first and charted with its session average, lowest and highest, then what limits it, then the link an online
         // game depends on: ping, packet loss, jitter and the traffic now.
-        ["game"] = Choices("fps:c low1 fps.avg fps.min fps.max frametime:c gpu.temp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up"),
+        ["game"] = Choices("fps:c low1 low01 fps.avg fps.min fps.max frametime:c gpu.temp gpu.hotspot gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.clock cpu.pclock cpu.eclock cpu.power cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up"),
         // Rendering: how busy and how hot the processors stay over a long job, memory, and the drive being written.
         ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram gpu.vramload gpu.vramtemp ram.used:c ram.load storage.read storage.write storage.activity"),
         // Troubleshooting: every temperature, clock, voltage and fan that tells a throttling or failing part.
@@ -118,6 +123,7 @@ public static class OverlayCatalog
     public static IReadOnlyList<SensorDefinition> Resolve(OverlayItem item, IReadOnlyList<HardwareNode> hardware, Func<HardwareNode, bool>? include = null)
     {
         if (item.IsMeasured) return [];
+        bool Named(SensorDefinition s) => item.NamePrefix is null || s.Name.StartsWith(item.NamePrefix, StringComparison.Ordinal);
         var kind = item.Part switch { OverlayPart.Gpu => HardwareKind.Gpu, OverlayPart.Cpu => HardwareKind.Cpu, OverlayPart.Memory => HardwareKind.Memory, OverlayPart.Storage => HardwareKind.Storage, _ => HardwareKind.Network };
         var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (item.Device is null ? include?.Invoke(n) ?? true : n.Id.Value == item.Device))
             .OrderByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuCoreTemp)).ToList();
@@ -131,13 +137,13 @@ public static class OverlayCatalog
         {
             foreach (var n in nodes)
                 foreach (var role in item.Roles)
-                    if (n.Sensors.FirstOrDefault(s => s.Role == role) is { } s) return [s];
+                    if (n.Sensors.FirstOrDefault(s => s.Role == role && Named(s)) is { } s) return [s];
             return [];
         }
         // Max and Sum: the first role any device has, on every device (a mix of roles would add unlike numbers).
         foreach (var role in item.Roles)
         {
-            var all = nodes.SelectMany(n => n.Sensors.Where(s => s.Role == role)).ToList();
+            var all = nodes.SelectMany(n => n.Sensors.Where(s => s.Role == role && Named(s))).ToList();
             if (all.Count > 0) return all;
         }
         return [];
@@ -148,6 +154,6 @@ public static class OverlayCatalog
     {
         var values = readings.OfType<double>().ToList();
         if (values.Count == 0) return null;
-        return aggregate switch { OverlayAggregate.Max => values.Max(), OverlayAggregate.Sum => values.Sum(), _ => values[0] };
+        return aggregate switch { OverlayAggregate.Max => values.Max(), OverlayAggregate.Sum => values.Sum(), OverlayAggregate.Average => values.Average(), _ => values[0] };
     }
 }

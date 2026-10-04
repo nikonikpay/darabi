@@ -2,7 +2,7 @@ namespace Mazesta.Core.Overlay;
 
 /// <summary>The frame rate of the program in front, from the times it presented frames. <see cref="Low1Fps"/> is null until there are enough
 /// frames to say what the slowest 1% were.</summary>
-public sealed record FrameRateReading(double Fps, double? Low1Fps, double FrameTimeMs, int ProcessId, string? App);
+public sealed record FrameRateReading(double Fps, double? Low1Fps, double FrameTimeMs, int ProcessId, string? App, double? Low01Fps = null);
 
 /// <summary>
 /// Frame statistics from present times (seconds, ascending). FPS and frame time are over the last second of frames; the 1% low is the rate of
@@ -13,6 +13,10 @@ public static class FrameTimeStats
 {
     public const double LowWindowSeconds = 10, StaleSeconds = 2.5;
     public const int MinFramesForLow = 100;
+    /// <summary>The 0.1% low (the 99.9th-percentile frame time) looks back further and needs a thousand frame intervals before it is given: a
+    /// single hitch in a short window would otherwise be the whole "0.1%".</summary>
+    public const double Low01WindowSeconds = 30;
+    public const int MinFramesForLow01 = 1000;
 
     /// <param name="presents">Present times in seconds, ascending.</param>
     /// <param name="now">The current time on the same clock; the newest frame must be within <see cref="StaleSeconds"/> of it (events arrive
@@ -29,15 +33,17 @@ public static class FrameTimeStats
         if (span <= 0) return null;
         double fps = (presents.Count - 1 - first) / span;
 
+        double? low = Low(presents, newest, LowWindowSeconds, MinFramesForLow, 0.99), low01 = Low(presents, newest, Low01WindowSeconds, MinFramesForLow01, 0.999);
+        return new FrameRateReading(fps, low, 1000 / fps, processId, app, low01);
+    }
+
+    private static double? Low(IReadOnlyList<double> presents, double newest, double window, int minFrames, double percentile)
+    {
         var intervals = new List<double>();
-        for (int i = presents.Count - 1; i > 0 && newest - presents[i - 1] <= LowWindowSeconds; i--) intervals.Add(presents[i] - presents[i - 1]);
-        double? low = null;
-        if (intervals.Count >= MinFramesForLow)
-        {
-            intervals.Sort();
-            double p99 = intervals[Math.Min(intervals.Count - 1, (int)Math.Ceiling(intervals.Count * 0.99) - 1)];
-            if (p99 > 0) low = 1 / p99;
-        }
-        return new FrameRateReading(fps, low, 1000 / fps, processId, app);
+        for (int i = presents.Count - 1; i > 0 && newest - presents[i - 1] <= window; i--) intervals.Add(presents[i] - presents[i - 1]);
+        if (intervals.Count < minFrames) return null;
+        intervals.Sort();
+        double p = intervals[Math.Min(intervals.Count - 1, (int)Math.Ceiling(intervals.Count * percentile) - 1)];
+        return p > 0 ? 1 / p : null;
     }
 }

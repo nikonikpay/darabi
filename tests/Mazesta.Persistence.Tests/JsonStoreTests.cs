@@ -18,8 +18,8 @@ public class JsonStoreTests : IDisposable
     { var r = Store().Load(); Assert.Equal(LoadOutcome.Defaulted, r.Outcome); Assert.Equal(2, r.Value.FastIntervalSeconds); Assert.Equal("fa", r.Value.Language); }
     [Fact] public void Save_then_load_round_trips_and_leaves_no_temp_file()
     {
-        var s = Store(); s.Save(new AppConfig { Language = "fa", ShopName = "فروشگاه", ExpandedGroups = ["cpu/intelcpu-0"] });
-        var r = s.Load(); Assert.Equal((LoadOutcome.Loaded, "fa", "فروشگاه"), (r.Outcome, r.Value.Language, r.Value.ShopName)); Assert.Equal(["cpu/intelcpu-0"], r.Value.ExpandedGroups);
+        var s = Store(); s.Save(new AppConfig { Language = "fa", DisplayName = "فروشگاه", ExpandedGroups = ["cpu/intelcpu-0"] });
+        var r = s.Load(); Assert.Equal((LoadOutcome.Loaded, "fa", "فروشگاه"), (r.Outcome, r.Value.Language, r.Value.DisplayName)); Assert.Equal(["cpu/intelcpu-0"], r.Value.ExpandedGroups);
         Assert.Empty(Directory.GetFiles(_dir, "*.tmp"));
     }
     [Fact] public void Corrupt_file_is_renamed_aside_and_defaults_used()

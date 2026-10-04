@@ -41,6 +41,16 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         // The same for the link (ping, loss, jitter, traffic), which the game set gained later still: added at its end, once.
         string[] link = ["net.ping", "net.loss", "net.jitter", "net.down", "net.up"];
         if (!items.Any(c => link.Contains(c.Id))) items.AddRange(link.Select(id => new OverlayChoice(id, false)));
+        // And the 0.1 % low, the processor's clocks (all cores, P-cores, E-cores) and power, and the graphics card's hot spot.
+        void Add(string id, params string[] after)
+        {
+            int at = -1; foreach (var a in after) { at = items.FindIndex(c => c.Id == a); if (at >= 0) break; }
+            items.Insert(at >= 0 ? at + 1 : items.Count, new OverlayChoice(id, false));
+        }
+        if (!items.Any(c => c.Id == "low01")) Add("low01", "low1", "fps");
+        if (!items.Any(c => c.Id == "gpu.hotspot")) Add("gpu.hotspot", "gpu.temp");
+        foreach (var id in new[] { "cpu.clock", "cpu.pclock", "cpu.eclock", "cpu.power" })
+            if (!items.Any(c => c.Id == id)) Add(id, id == "cpu.clock" ? "cpu.load" : id == "cpu.pclock" ? "cpu.clock" : id == "cpu.eclock" ? "cpu.pclock" : "cpu.eclock", "cpu.temp");
         return items;
     }
 
@@ -53,7 +63,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     public void SetAppearance(double opacity, double scale)
     {
-        config.OverlayOpacity = Math.Clamp(opacity, 0.5, 1); config.OverlayScale = Math.Clamp(scale, 0.7, 1.5);
+        config.OverlayOpacity = Math.Clamp(opacity, 0.5, 1); config.OverlayScale = Math.Clamp(scale, 0.7, 1.6);
         Rebuild();
     }
 

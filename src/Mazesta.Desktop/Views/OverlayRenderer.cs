@@ -22,6 +22,7 @@ public static class OverlayRenderer
     // Labels and captions are set heavier and larger than a plain "regular": thin strokes of Persian at the small size broke up against a game.
     private const float LabelSize = 12, LineLabelSize = 10.5f, CaptionSize = 10.5f, UnitSize = 10, LineUnitSize = 9.5f, ChartWordSize = 9;
     private const FontStyle LabelStyle = FontStyle.Bold;
+    private const float HeroSize = 44;
     /// <summary>The look being drawn: no plate, no boxes, the text alone with a dark outline and the numbers in the part's colour. Set by
     /// <see cref="Render"/> (one overlay is drawn at a time, on the UI thread) so the many draw calls need not carry it.</summary>
     [ThreadStatic] private static bool s_bare;
@@ -74,7 +75,7 @@ public static class OverlayRenderer
     // ——— Stacked: the header, the frame-rate box, then the part boxes wrapping at the panel's width ———
     private static SizeF Stack(Graphics m, OverlayViewModel vm, bool rtl, float x0, float y0, Graphics? g)
     {
-        float W = (float)vm.PanelWidth, y = y0;
+        float sw = FitWidth(m, vm, rtl), W = vm.TwoColumns ? sw * 2 + 8 : sw, y = y0;
         // The mark, and the program the frame rate is measured in.
         float head = 13, hy = y + 1;
         if (g is not null)
@@ -95,7 +96,7 @@ public static class OverlayRenderer
         y += 1 + head + 7;
         if (vm.HasHero) y += Hero(m, vm, rtl, x0, y, W, g) + 8;
         // The part boxes: one per line, or two side by side; they wrap from the start edge.
-        float sw = (float)vm.SectionWidth; int perRow = vm.TwoColumns ? 2 : 1;
+        int perRow = vm.TwoColumns ? 2 : 1;
         var blocks = vm.Blocks;
         for (int i = 0; i < blocks.Count; i += perRow)
         {
@@ -109,6 +110,32 @@ public static class OverlayRenderer
         }
         if (blocks.Count == 0 && vm.HasHero) y -= 8;
         return new SizeF(W, y - y0);
+    }
+
+    /// <summary>The narrowest box that holds every row (its label, a gap, its number and unit), the frame-rate box and the titles: the panel
+    /// is as wide as what it shows, not a fixed width.</summary>
+    private static float FitWidth(Graphics m, OverlayViewModel vm, bool rtl)
+    {
+        float need = 150;   // the frame-rate box: the rate big, its side figures and the three session figures
+        if (vm.HasHero)
+        {
+            float rate = vm.HeroFps is { } f ? Text(m, f.Number, NumFace, HeroSize, FontStyle.Bold).Width + 36 : 0;
+            float side = new[] { vm.HeroLow, vm.HeroLow01, vm.HeroFrameTime }.Where(r => r is not null).Select(r => Text(m, r!.Number, NumFace, 16, FontStyle.Bold).Width + 52).DefaultIfEmpty(0).Max();
+            need = Math.Max(need, rate + side + 20);
+            float stats = new[] { vm.HeroAvg, vm.HeroMin, vm.HeroMax }.Where(r => r is not null).Sum(r => Math.Max(Text(m, "AVG", TagFace, 9, FontStyle.Bold).Width, Text(m, r!.Number, NumFace, 17, FontStyle.Bold).Width) + 14);
+            need = Math.Max(need, stats + 20);
+        }
+        foreach (var s in vm.Blocks)
+        {
+            var chip = Chip(m, s.Title);
+            need = Math.Max(need, chip.Width + 18 + (s.Subtitle.Length > 0 ? 40 : 0));
+            foreach (var row in s.Rows)
+            {
+                float l = Text(m, row.Label, TextFace, LabelSize, LabelStyle, rtl).Width, n = Text(m, row.Number, NumFace, 15.5f, FontStyle.Bold).Width + (row.UnitText.Length > 0 ? 3 + Text(m, row.UnitText, NumFace, UnitSize, FontStyle.Bold).Width : 0);
+                need = Math.Max(need, l + 12 + n + 18);
+            }
+        }
+        return vm.SeenWidth = Math.Max(vm.SeenWidth, (float)Math.Ceiling(need));
     }
 
     /// <summary>A box measured first, then its wash and edge painted, then its content over them.</summary>
@@ -136,6 +163,7 @@ public static class OverlayRenderer
         float bigH = 40, rightH = 0;
         var right = new List<(OverlayRow Row, string Tag)>();
         if (vm.HeroLow is { } low) right.Add((low, "1% LOW"));
+        if (vm.HeroLow01 is { } low01) right.Add((low01, "0.1% LOW"));
         if (vm.HeroFrameTime is { } ft) right.Add((ft, "MS"));
         foreach (var _ in right) rightH += 20;
         float gridH = Math.Max(vm.HeroFps is null ? 0 : bigH, rightH);
@@ -143,16 +171,16 @@ public static class OverlayRenderer
         {
             if (vm.HeroFps is { } fps)
             {
-                var n = Text(m, fps.Number, NumFace, 44, FontStyle.Bold);
-                Draw(g, fps.Number, NumFace, 44, FontStyle.Bold, Num(Game), ix, y + gridH - n.Height + 4);
+                var n = Text(m, fps.Number, NumFace, HeroSize, FontStyle.Bold);
+                Draw(g, fps.Number, NumFace, HeroSize, FontStyle.Bold, Num(Game), ix, y + gridH - n.Height + 4);
                 var t = Text(m, "FPS", TagFace, 10.5f, FontStyle.Bold);
                 Draw(g, "FPS", TagFace, 10.5f, FontStyle.Bold, Game, ix + n.Width + 6, y + gridH - t.Height - 2);
             }
-            float ry = y + gridH - rightH;
+            float ry = y + gridH - rightH, tagW = right.Select(r => Text(m, r.Tag, TagFace, 9, FontStyle.Bold).Width).DefaultIfEmpty(0).Max() + 6;
             foreach (var (row, tag) in right)
             {
                 var n = Text(m, row.Number, NumFace, 16, FontStyle.Bold);
-                float tx = ix + iw - 40;
+                float tx = ix + iw - tagW;
                 Draw(g, tag, TagFace, 9, FontStyle.Bold, Faint, tx + 5, ry + 20 - Text(m, tag, TagFace, 9, FontStyle.Bold).Height - 3);
                 Draw(g, row.Number, NumFace, 16, FontStyle.Bold, Num(Game), tx - n.Width, ry + 20 - n.Height);
                 ry += 20;
@@ -272,7 +300,7 @@ public static class OverlayRenderer
                     Draw(gg, "FPS", TagFace, 10, FontStyle.Bold, Game, x + n.Width + 4, y + (inner + n.Height) / 2 - t.Height - 4);
                 }));
             }
-            var stats = new[] { (vm.HeroLow, "1% LOW"), (vm.HeroAvg, "AVG"), (vm.HeroMin, "MIN"), (vm.HeroMax, "MAX"), (vm.HeroFrameTime, "MS") }.Where(p => p.Item1 is not null).ToList();
+            var stats = new[] { (vm.HeroLow, "1% LOW"), (vm.HeroLow01, "0.1% LOW"), (vm.HeroAvg, "AVG"), (vm.HeroMin, "MIN"), (vm.HeroMax, "MAX"), (vm.HeroFrameTime, "MS") }.Where(p => p.Item1 is not null).ToList();
             for (int i = 0; i < stats.Count; i++)
             {
                 var (row, tag) = stats[i]; var t = Text(m, tag, TagFace, 9, FontStyle.Bold); var n = Text(m, row!.Number, NumFace, 15, FontStyle.Bold);

@@ -98,7 +98,7 @@ public sealed partial class WebBridge
         {
             if (!vm.NeedsFrames && !vm.NeedsPing) return;
             var f = vm.Frames; var link = vm.Ping;
-            Push("overlayFrames", new { fps = f?.Fps, low1 = f?.Low1Fps, frametime = f?.FrameTimeMs, app = f?.App, avg = vm.SessionAverage, min = vm.SessionMin, max = vm.SessionMax,
+            Push("overlayFrames", new { fps = f?.Fps, low1 = f?.Low1Fps, low01 = f?.Low01Fps, frametime = f?.FrameTimeMs, app = f?.App, avg = vm.SessionAverage, min = vm.SessionMin, max = vm.SessionMax,
                 ping = link?.PingMs, loss = link?.LossPercent, jitter = link?.JitterMs });
         }
         overlay.Updated += OnUpdated; _cleanup.Add(() => overlay.Updated -= OnUpdated);

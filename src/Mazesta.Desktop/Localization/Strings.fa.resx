@@ -2970,4 +2970,9 @@
   <data name="Web_Peers_Reference" xml:space="preserve"><value>مرجع</value></data>
   <data name="Web_Peers_ReferenceMedian" xml:space="preserve"><value>میانهٔ {0} نتیجهٔ مرجع که مازستا برای این مدل تأیید کرده است</value></data>
   <data name="Web_Runs_Note_Client" xml:space="preserve"><value>اجراهای ثبت‌شدهٔ این بنچمارک، تازه‌ترین اول.</value></data>
+  <data name="Overlay_Low01" xml:space="preserve"><value>0.1% low</value></data>
+  <data name="Overlay_PClock" xml:space="preserve"><value>فرکانس P-Core</value></data>
+  <data name="Overlay_EClock" xml:space="preserve"><value>فرکانس E-Core</value></data>
+  <data name="Web_Overlay_Agg_Average" xml:space="preserve"><value>میانگین</value></data>
+  <data name="Web_Overlay_XLarge" xml:space="preserve"><value>خیلی بزرگ</value></data>
 </root>

@@ -50,6 +50,14 @@ public class OverlayTests
         var r = FrameTimeStats.Compute(f, f[^1], 1, null)!;
         Assert.Equal(20, r.Low1Fps!.Value, 1); Assert.True(r.Fps > 80, $"fps {r.Fps}");
     }
+    [Fact] public void The_point_one_percent_low_needs_a_thousand_frames_and_sees_a_single_hitch()
+    {
+        var f = new List<double> { 0 };
+        for (int i = 1; i < 2000; i++) f.Add(f[^1] + (i % 600 == 0 ? 0.1 : 0.01));   // 100 fps, three 100 ms hitches in 2000 frames (0.15%)
+        var r = FrameTimeStats.Compute(f, f[^1], 1, null)!;
+        Assert.Equal(10, r.Low01Fps!.Value, 1); Assert.True(r.Low1Fps!.Value > 90);
+        var few = Frames(100, 5); Assert.Null(FrameTimeStats.Compute(few, few[^1], 1, null)!.Low01Fps);
+    }
     [Fact] public void Too_few_frames_give_no_low_and_old_frames_give_nothing()
     {
         var f = Frames(30, 1);
