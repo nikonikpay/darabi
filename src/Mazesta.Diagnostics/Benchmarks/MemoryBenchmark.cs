@@ -46,15 +46,18 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
             double read = Measure(() => { ulong s = 0; foreach (ulong v in MemoryMarshal.Cast<byte, ulong>(src.Span)) s += v; _sink = s; });
             double copy = Measure(() => src.Span.CopyTo(dst.Span));
             double copyAll = Measure(() => Parallel.For(0, BufferBytes / Slice, i => src.Span.Slice(i * Slice, Slice).CopyTo(dst.Span.Slice(i * Slice, Slice))));
-            double latency = Latency(third, phase, ct); request.Report(++done / 10.0);
+            // The latency of one dependent load at growing working sets: a small one stays in the core's own caches, a large one goes to the RAM
+            // modules. The sizes are named as sizes (which cache level each lands in depends on the processor).
+            var steps = LatencySizes.Select(size => (Metric: size.Key, Ns: LatencyAt(third.Span[..size.Bytes], TimeSpan.FromSeconds(0.4), ct))).ToList();
+            double latency = LatencyAt(third.Span, phase, ct); request.Report(++done / 10.0);
             var stream = Stream(src, dst, third, TimeSpan.FromSeconds(request.DurationSeconds / 2.0), f => request.Report(0.5 + f / 2), ct);
             if (stream.Problem is { } problem) return BenchmarkResult.Failed(Spec.Id, started, request.Clock.UtcNow, problem);
             return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow,
                 [new("Bench_Mem_Write", write, "GB/s"), new("Bench_Mem_Read", read, "GB/s"), new("Bench_Mem_Copy", copy, "GB/s"), new("Bench_Mem_CopyAll", copyAll, "GB/s"),
                  new("Bench_Mem_StreamCopy", stream.Best[0], "GB/s"), new("Bench_Mem_StreamScale", stream.Best[1], "GB/s"), new("Bench_Mem_StreamAdd", stream.Best[2], "GB/s"), new("Bench_Mem_StreamTriad", stream.Best[3], "GB/s"),
-                 new("Bench_Mem_Latency", latency, "ns")],
+                 .. steps.Select(x => new BenchmarkMetric(x.Metric, x.Ns, "ns")), new("Bench_Mem_Latency", latency, "ns")],
                 $"{BufferBytes >> 20} MiB buffers; write/read/copy on one thread, copy on {Environment.ProcessorCount} threads; STREAM kernels on {Environment.ProcessorCount} threads over 3 x {BufferBytes / 8:N0} doubles, "
-                + $"latency by a random pointer chase over {BufferBytes >> 20} MiB; best of {stream.Runs} runs (median Triad {stream.MedianTriad:F1} GB/s), results checked (relative error {stream.Error:G2})");
+                + $"latency by a random pointer chase over {BufferBytes >> 20} MiB and over 32 KiB, 256 KiB, 2, 16 and 64 MiB; best of {stream.Runs} runs (median Triad {stream.MedianTriad:F1} GB/s), results checked (relative error {stream.Error:G2})");
         }
         catch (OperationCanceledException) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
     }
@@ -78,16 +81,20 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
         return at;
     }
 
-    /// <summary>Nanoseconds per dependent load, the best of the rounds that fit in <paramref name="budget"/> (a round is a million loads).</summary>
-    private static double Latency(NativeBlock block, TimeSpan budget, CancellationToken ct)
+    /// <summary>The working sets the latency is also measured at, smallest first (the full buffer is the headline latency).</summary>
+    internal static readonly (string Key, int Bytes)[] LatencySizes =
+        [("Bench_Mem_Latency_32K", 32 << 10), ("Bench_Mem_Latency_256K", 256 << 10), ("Bench_Mem_Latency_2M", 2 << 20), ("Bench_Mem_Latency_16M", 16 << 20), ("Bench_Mem_Latency_64M", 64 << 20)];
+
+    /// <summary>Nanoseconds per dependent load over the whole of <paramref name="region"/>, the best of the rounds that fit in <paramref name="budget"/> (a round is a million loads).</summary>
+    private static double LatencyAt(Span<byte> region, TimeSpan budget, CancellationToken ct)
     {
-        Chain(block.Span, 7);
+        Chain(region, 7);
         const long Round = 1 << 20; double best = double.MaxValue; var sw = Stopwatch.StartNew();
-        Chase(block.Span, Round);   // warm-up: the page tables and the first misses
+        Chase(region, Round);   // warm-up: the page tables and the first misses
         do
         {
             ct.ThrowIfCancellationRequested();
-            long t = Stopwatch.GetTimestamp(); _sink = Chase(block.Span, Round);
+            long t = Stopwatch.GetTimestamp(); _sink = Chase(region, Round);
             best = Math.Min(best, Stopwatch.GetElapsedTime(t).TotalNanoseconds / Round);
         } while (sw.Elapsed < budget);
         return best;

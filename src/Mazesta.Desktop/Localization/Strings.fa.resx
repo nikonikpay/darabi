@@ -2347,7 +2347,7 @@
   <data name="Ai_Option_Model" xml:space="preserve"><value>مدل</value></data>
   <data name="Ai_Option_Device" xml:space="preserve"><value>دستگاه</value></data>
   <data name="Ai_RamFree" xml:space="preserve"><value>RAM آزاد در این لحظه</value></data>
-  <data name="Bench_Mem_Latency" xml:space="preserve"><value>تأخیر دسترسی تصادفی (Latency)</value></data>
+  <data name="Bench_Mem_Latency" xml:space="preserve"><value>تأخیر دسترسی، ۲۵۶ مگابایت (خود رم)</value></data>
   <data name="Test_Memory_BitFade" xml:space="preserve"><value>رم · محو شدن بیت (نگه‌داشتن و بررسی)</value></data>
   <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} مگابایت از RAM آزاد گرفته شد؛ {1} از {2} بلوک در RAM قفل شد تا ویندوز هنگام انتظار آن‌ها را به فایل صفحه منتقل نکند.</value></data>
   <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>الگوی «{0}» در همهٔ بلوک‌ها نوشته شد؛ اکنون {1} ثانیه دست‌نخورده می‌ماند.</value></data>
@@ -2975,4 +2975,9 @@
   <data name="Overlay_EClock" xml:space="preserve"><value>فرکانس E-Core</value></data>
   <data name="Web_Overlay_Agg_Average" xml:space="preserve"><value>میانگین</value></data>
   <data name="Web_Overlay_XLarge" xml:space="preserve"><value>خیلی بزرگ</value></data>
+  <data name="Bench_Mem_Latency_32K" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۳۲ کیلوبایت</value></data>
+  <data name="Bench_Mem_Latency_256K" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۲۵۶ کیلوبایت</value></data>
+  <data name="Bench_Mem_Latency_2M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۲ مگابایت</value></data>
+  <data name="Bench_Mem_Latency_16M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۱۶ مگابایت</value></data>
+  <data name="Bench_Mem_Latency_64M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۶۴ مگابایت</value></data>
 </root>
