@@ -23,7 +23,7 @@ public sealed partial class WebBridge
                     lists = updater.DataLists, downloaded = updater.DataDownloaded, published = m?.Published.ToLocalTime().ToString("yyyy/MM/dd HH:mm", Loc.Culture),
                     syncedAt = updater.DataSyncedAt?.ToString("yyyy/MM/dd HH:mm", Loc.Culture),
                 },
-                site = AppUpdater.Folder.ToString(),
+                dataBusy = updater.DataBusy,
                 // The release on the site is the users' edition: installing it over the company's own copy would turn it into one.
                 canInstall = !Staff,
             };
@@ -36,6 +36,7 @@ public sealed partial class WebBridge
 
         Method("upd.state", _ => State());
         MethodAsync("upd.check", async _ => { await updater.CheckAsync().ConfigureAwait(true); return State(); });
+        MethodAsync("upd.data", async _ => { await updater.SyncDataAsync().ConfigureAwait(true); return State(); });
         MethodAsync("upd.download", async _ => { if (!Staff) await updater.DownloadAsync().ConfigureAwait(true); return State(); });
         Method("upd.install", _ =>
         {

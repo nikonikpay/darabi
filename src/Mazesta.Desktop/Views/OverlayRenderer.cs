@@ -13,12 +13,19 @@ namespace Mazesta.Desktop.Views;
 /// </summary>
 public static class OverlayRenderer
 {
-    private static readonly Color Ink = Color.FromArgb(0x0E, 0x10, 0x12), Label = Hex("#FFC3C7CC"), Faint = Hex("#FF8A9097"), Game = Hex("#FFFDD400"),
+    private static readonly Color Ink = Color.FromArgb(0x0E, 0x10, 0x12), Label = Hex("#FFE6E9ED"), Faint = Hex("#FFB4BAC2"), Game = Hex("#FFFDD400"),
         GameEdge = Hex("#59FDD400"), GameTint = Hex("#14FDD400"), Mark = Hex("#FFA4A8AD");
     private static readonly FontFamily NumFace = Family("Bahnschrift SemiCondensed", "Bahnschrift", "Segoe UI"), TagFace = Family("Bahnschrift", "Segoe UI");
     /// <summary>Labels and captions in the app's own face (IRANSansX, embedded for the reports too), else Segoe UI.</summary>
     private static readonly FontFamily TextFace = AppFace() ?? Family("Segoe UI Semibold", "Segoe UI"), PlainFace = AppFace() ?? Family("Segoe UI");
     private static System.Drawing.Text.PrivateFontCollection? s_fonts;
+    // Labels and captions are set heavier and larger than a plain "regular": thin strokes of Persian at the small size broke up against a game.
+    private const float LabelSize = 12, LineLabelSize = 10.5f, CaptionSize = 10.5f, UnitSize = 10, LineUnitSize = 9.5f, ChartWordSize = 9;
+    private const FontStyle LabelStyle = FontStyle.Bold;
+    /// <summary>The look being drawn: no plate, no boxes, the text alone with a dark outline and the numbers in the part's colour. Set by
+    /// <see cref="Render"/> (one overlay is drawn at a time, on the UI thread) so the many draw calls need not carry it.</summary>
+    [ThreadStatic] private static bool s_bare;
+    private static Color Num(Color hue) => s_bare ? hue : Color.White;
 
     private static FontFamily? AppFace()
     {
@@ -46,6 +53,7 @@ public static class OverlayRenderer
     /// <summary>The overlay at <paramref name="pixelsPerDip"/> (the screen's scale times the user's size), drawn premultiplied for a layered window.</summary>
     public static Bitmap Render(OverlayViewModel vm, bool rtl, float pixelsPerDip)
     {
+        s_bare = vm.Bare;
         using var probe = new Bitmap(1, 1); using var pg = Graphics.FromImage(probe);
         Prepare(pg);
         var size = vm.IsLine ? Line(pg, vm, rtl, 0, 0, null) : Stack(pg, vm, rtl, 0, 0, null);
@@ -54,7 +62,7 @@ public static class OverlayRenderer
         var bmp = new Bitmap(Math.Max(1, (int)Math.Ceiling(w * pixelsPerDip)), Math.Max(1, (int)Math.Ceiling(h * pixelsPerDip)), PixelFormat.Format32bppPArgb);
         using var g = Graphics.FromImage(bmp);
         Prepare(g); g.Clear(Color.Transparent); g.ScaleTransform(pixelsPerDip, pixelsPerDip);
-        using (var plate = Rounded(new RectangleF(0.5f, 0.5f, w - 1, h - 1), 9))
+        if (!vm.Bare) using (var plate = Rounded(new RectangleF(0.5f, 0.5f, w - 1, h - 1), 9))
         {
             using var fill = new SolidBrush(Color.FromArgb((int)Math.Round(vm.Opacity * 255), Ink)); g.FillPath(fill, plate);
             using var edge = new Pen(Hex("#1FFFFFFF"), 1); g.DrawPath(edge, plate);
@@ -108,6 +116,7 @@ public static class OverlayRenderer
     {
         float h = body(null);
         if (g is null) return h;
+        if (s_bare) { body(g); return h; }
         using (var box = Rounded(new RectangleF(at.X + 0.5f, at.Y + 0.5f, at.Width - 1, h - 1), 6))
         using (var b = new SolidBrush(tint)) using (var e = new Pen(edge, 1)) { g.FillPath(b, box); g.DrawPath(e, box); }
         body(g);
@@ -135,7 +144,7 @@ public static class OverlayRenderer
             if (vm.HeroFps is { } fps)
             {
                 var n = Text(m, fps.Number, NumFace, 44, FontStyle.Bold);
-                Draw(g, fps.Number, NumFace, 44, FontStyle.Bold, Color.White, ix, y + gridH - n.Height + 4);
+                Draw(g, fps.Number, NumFace, 44, FontStyle.Bold, Num(Game), ix, y + gridH - n.Height + 4);
                 var t = Text(m, "FPS", TagFace, 10.5f, FontStyle.Bold);
                 Draw(g, "FPS", TagFace, 10.5f, FontStyle.Bold, Game, ix + n.Width + 6, y + gridH - t.Height - 2);
             }
@@ -145,7 +154,7 @@ public static class OverlayRenderer
                 var n = Text(m, row.Number, NumFace, 16, FontStyle.Bold);
                 float tx = ix + iw - 40;
                 Draw(g, tag, TagFace, 9, FontStyle.Bold, Faint, tx + 5, ry + 20 - Text(m, tag, TagFace, 9, FontStyle.Bold).Height - 3);
-                Draw(g, row.Number, NumFace, 16, FontStyle.Bold, Color.White, tx - n.Width, ry + 20 - n.Height);
+                Draw(g, row.Number, NumFace, 16, FontStyle.Bold, Num(Game), tx - n.Width, ry + 20 - n.Height);
                 ry += 20;
             }
         }
@@ -158,7 +167,7 @@ public static class OverlayRenderer
             {
                 if (row is null) continue;
                 var t = Text(m, tag, TagFace, 9, FontStyle.Bold); var n = Text(m, row.Number, NumFace, 17, FontStyle.Bold);
-                if (g is not null) { Draw(g, tag, TagFace, 9, FontStyle.Bold, Game, sx, y); Draw(g, row.Number, NumFace, 17, FontStyle.Bold, Color.White, sx, y + t.Height); }
+                if (g is not null) { Draw(g, tag, TagFace, 9, FontStyle.Bold, Game, sx, y); Draw(g, row.Number, NumFace, 17, FontStyle.Bold, Num(Game), sx, y + t.Height); }
                 sx += Math.Max(t.Width, n.Width) + 14;
             }
             y += Text(m, "AVG", TagFace, 9, FontStyle.Bold).Height + Text(m, "0", NumFace, 17, FontStyle.Bold).Height;
@@ -186,24 +195,24 @@ public static class OverlayRenderer
             DrawChip(g, s.Title, hue, rtl ? ix + iw - chip.Width : ix, y);
             if (s.Subtitle.Length > 0)
             {
-                var sub = Text(m, s.Subtitle, NumFace, 9.5f, FontStyle.Regular);
+                var sub = Text(m, s.Subtitle, NumFace, CaptionSize, FontStyle.Bold);
                 float room = iw - chip.Width - 8, sw = Math.Min(sub.Width, room);
-                DrawClipped(g, s.Subtitle, NumFace, 9.5f, FontStyle.Regular, Faint, new RectangleF(rtl ? ix : ix + iw - sw, y + (chip.Height - sub.Height) / 2, sw, sub.Height));
+                DrawClipped(g, s.Subtitle, NumFace, CaptionSize, FontStyle.Bold, Faint, new RectangleF(rtl ? ix : ix + iw - sw, y + (chip.Height - sub.Height) / 2, sw, sub.Height));
             }
         }
         y += chip.Height + 4;
         foreach (var row in s.Rows)
         {
             y += 3;
-            var label = Text(m, row.Label, TextFace, 11, FontStyle.Regular, rtl);
-            var n = Text(m, row.Number, NumFace, 15.5f, FontStyle.Bold); var u = Text(m, row.UnitText, NumFace, 9, FontStyle.Bold);
+            var label = Text(m, row.Label, TextFace, LabelSize, LabelStyle, rtl);
+            var n = Text(m, row.Number, NumFace, 15.5f, FontStyle.Bold); var u = Text(m, row.UnitText, NumFace, UnitSize, FontStyle.Bold);
             float lineH = Math.Max(label.Height, n.Height);
             if (g is not null)
             {
-                Draw(g, row.Label, TextFace, 11, FontStyle.Regular, Label, rtl ? ix + iw - label.Width : ix, y + (lineH - label.Height) / 2, rtl);
+                Draw(g, row.Label, TextFace, LabelSize, LabelStyle, Label, rtl ? ix + iw - label.Width : ix, y + (lineH - label.Height) / 2, rtl);
                 float numW = n.Width + (row.UnitText.Length > 0 ? 3 + u.Width : 0), nx = rtl ? ix : ix + iw - numW;
-                Draw(g, row.Number, NumFace, 15.5f, FontStyle.Bold, Color.White, nx, y + (lineH - n.Height) / 2);
-                if (row.UnitText.Length > 0) Draw(g, row.UnitText, NumFace, 9, FontStyle.Bold, hue, nx + n.Width + 3, y + (lineH + n.Height) / 2 - u.Height - 2);
+                Draw(g, row.Number, NumFace, 15.5f, FontStyle.Bold, Num(hue), nx, y + (lineH - n.Height) / 2);
+                if (row.UnitText.Length > 0) Draw(g, row.UnitText, NumFace, UnitSize, FontStyle.Bold, hue, nx + n.Width + 3, y + (lineH + n.Height) / 2 - u.Height - 2);
             }
             y += lineH;
             if (row.HasBar)
@@ -223,15 +232,15 @@ public static class OverlayRenderer
                 if (g is not null)
                 {
                     var r = new RectangleF(ix, y, iw, 26);
-                    using (var screen = Rounded(r, 2)) using (var b = new SolidBrush(Hex("#4D000000"))) g.FillPath(b, screen);
+                    if (!s_bare) using (var screen = Rounded(r, 2)) using (var b = new SolidBrush(Hex("#4D000000"))) g.FillPath(b, screen);
                     Sparkline(g, r, row.Trend, row.TrendMax, hue, OverlayViewModel.TrendLength);
                     if (row.TrendMaxValue.Length > 0)
                     {
                         // The word, then the value in its own left-to-right run ("71 °C" would be reordered inside right-to-left text).
-                        string word = Loc.Get("Overlay_ChartMaxWord"); var wd = Text(m, word, PlainFace, 8, FontStyle.Regular, rtl); var vl = Text(m, row.TrendMaxValue, NumFace, 8, FontStyle.Regular);
-                        var dim = Hex("#AAFFFFFF");
-                        if (rtl) { Draw(g, word, PlainFace, 8, FontStyle.Regular, dim, r.Right - 4 - wd.Width, r.Y + 1, true); Draw(g, row.TrendMaxValue, NumFace, 8, FontStyle.Regular, dim, r.Right - 4 - wd.Width - 3 - vl.Width, r.Y + 1); }
-                        else { Draw(g, word, PlainFace, 8, FontStyle.Regular, dim, r.X + 4, r.Y + 1); Draw(g, row.TrendMaxValue, NumFace, 8, FontStyle.Regular, dim, r.X + 4 + wd.Width + 3, r.Y + 1); }
+                        string word = Loc.Get("Overlay_ChartMaxWord"); var wd = Text(m, word, PlainFace, ChartWordSize, FontStyle.Bold, rtl); var vl = Text(m, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold);
+                        var dim = Hex("#E6FFFFFF");
+                        if (rtl) { Draw(g, word, PlainFace, ChartWordSize, FontStyle.Bold, dim, r.Right - 4 - wd.Width, r.Y + 1, true); Draw(g, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold, dim, r.Right - 4 - wd.Width - 3 - vl.Width, r.Y + 1); }
+                        else { Draw(g, word, PlainFace, ChartWordSize, FontStyle.Bold, dim, r.X + 4, r.Y + 1); Draw(g, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold, dim, r.X + 4 + wd.Width + 3, r.Y + 1); }
                     }
                 }
                 y += 26 + 1;
@@ -259,7 +268,7 @@ public static class OverlayRenderer
                 var n = Text(m, fps.Number, NumFace, 26, FontStyle.Bold); var t = Text(m, "FPS", TagFace, 10, FontStyle.Bold);
                 parts.Add((n.Width + 4 + t.Width + 12, (x, y, gg) =>
                 {
-                    Draw(gg, fps.Number, NumFace, 26, FontStyle.Bold, Color.White, x, y + (inner - n.Height) / 2);
+                    Draw(gg, fps.Number, NumFace, 26, FontStyle.Bold, Num(Game), x, y + (inner - n.Height) / 2);
                     Draw(gg, "FPS", TagFace, 10, FontStyle.Bold, Game, x + n.Width + 4, y + (inner + n.Height) / 2 - t.Height - 4);
                 }));
             }
@@ -270,16 +279,19 @@ public static class OverlayRenderer
                 parts.Add((Math.Max(t.Width, n.Width) + (i < stats.Count - 1 ? 14 : 0), (x, y, gg) =>
                 {
                     float top = y + (inner - tagH - numH) / 2;
-                    Draw(gg, tag, TagFace, 9, FontStyle.Bold, Game, x, top); Draw(gg, row.Number, NumFace, 15, FontStyle.Bold, Color.White, x, top + tagH);
+                    Draw(gg, tag, TagFace, 9, FontStyle.Bold, Game, x, top); Draw(gg, row.Number, NumFace, 15, FontStyle.Bold, Num(Game), x, top + tagH);
                 }));
             }
             float hw = 9 + parts.Sum(p => p.W) + 9;
             items.Add((hw + 6, (x, y, gg) =>
             {
                 float bx = rtl ? x + 6 : x;
-                using var box = Rounded(new RectangleF(bx + 0.5f, y + 0.5f, hw - 1, H - 1), 6);
-                using (var tint = new SolidBrush(GameTint)) gg.FillPath(tint, box);
-                using (var edge = new Pen(GameEdge, 1)) gg.DrawPath(edge, box);
+                if (!s_bare)
+                {
+                    using var box = Rounded(new RectangleF(bx + 0.5f, y + 0.5f, hw - 1, H - 1), 6);
+                    using (var tint = new SolidBrush(GameTint)) gg.FillPath(tint, box);
+                    using (var edge = new Pen(GameEdge, 1)) gg.DrawPath(edge, box);
+                }
                 float px = bx + 9; foreach (var p in parts) { p.Paint(px, y + 5, gg); px += p.W; }   // the frame-rate box reads left to right
                 return 0;
             }));
@@ -289,25 +301,26 @@ public static class OverlayRenderer
             var hue = Hex(s.Hue); var chip = Chip(m, s.Title);
             var rows = s.Rows.Select(r =>
             {
-                var l = Text(m, r.Label, TextFace, 9.5f, FontStyle.Regular, rtl); var n = Text(m, r.Number, NumFace, 15, FontStyle.Bold); var u = Text(m, r.UnitText, NumFace, 8.5f, FontStyle.Bold);
+                var l = Text(m, r.Label, TextFace, LineLabelSize, LabelStyle, rtl); var n = Text(m, r.Number, NumFace, 15, FontStyle.Bold); var u = Text(m, r.UnitText, NumFace, LineUnitSize, FontStyle.Bold);
                 return (Row: r, L: l, N: n, U: u, W: Math.Max(l.Width, n.Width + (r.UnitText.Length > 0 ? 2 + u.Width : 0)));
             }).ToList();
             float bw = 8 + chip.Width + 9 + rows.Sum(r => r.W) + 11 * Math.Max(0, rows.Count - 1) + 9;
             items.Add((bw + 6, (x, y, gg) =>
             {
                 float bx = rtl ? x + 6 : x;
-                using (var box = Rounded(new RectangleF(bx + 0.5f, y + 0.5f, bw - 1, H - 1), 6))
-                using (var tint = new SolidBrush(Hex(s.HueTint))) using (var edge = new Pen(Hex(s.HueEdge), 1)) { gg.FillPath(tint, box); gg.DrawPath(edge, box); }
+                if (!s_bare)
+                    using (var box = Rounded(new RectangleF(bx + 0.5f, y + 0.5f, bw - 1, H - 1), 6))
+                    using (var tint = new SolidBrush(Hex(s.HueTint))) using (var edge = new Pen(Hex(s.HueEdge), 1)) { gg.FillPath(tint, box); gg.DrawPath(edge, box); }
                 float cx = rtl ? bx + bw - 9 - chip.Width : bx + 8;
                 DrawChip(gg, s.Title, hue, cx, y + (H - chip.Height) / 2);
                 float px = rtl ? cx - 9 : cx + chip.Width + 9;
                 foreach (var r in rows)
                 {
                     float rx = rtl ? px - r.W : px, top = y + 5 + (inner - r.L.Height - r.N.Height) / 2;
-                    Draw(gg, r.Row.Label, TextFace, 9.5f, FontStyle.Regular, Faint, rtl ? rx + r.W - r.L.Width : rx, top, rtl);
+                    Draw(gg, r.Row.Label, TextFace, LineLabelSize, LabelStyle, Faint, rtl ? rx + r.W - r.L.Width : rx, top, rtl);
                     float nx = rtl ? rx + r.W - (r.N.Width + (r.Row.UnitText.Length > 0 ? 2 + r.U.Width : 0)) : rx;
-                    Draw(gg, r.Row.Number, NumFace, 15, FontStyle.Bold, Color.White, nx, top + r.L.Height);
-                    if (r.Row.UnitText.Length > 0) Draw(gg, r.Row.UnitText, NumFace, 8.5f, FontStyle.Bold, hue, nx + r.N.Width + 2, top + r.L.Height + r.N.Height - r.U.Height - 2);
+                    Draw(gg, r.Row.Number, NumFace, 15, FontStyle.Bold, Num(hue), nx, top + r.L.Height);
+                    if (r.Row.UnitText.Length > 0) Draw(gg, r.Row.UnitText, NumFace, LineUnitSize, FontStyle.Bold, hue, nx + r.N.Width + 2, top + r.L.Height + r.N.Height - r.U.Height - 2);
                     px = rtl ? rx - 11 : rx + r.W + 11;
                 }
                 return 0;
@@ -327,7 +340,7 @@ public static class OverlayRenderer
     /// newest point marked; scaled from zero to a little above the highest shown. A missing reading (NaN) breaks the line.</summary>
     private static void FrameChart(Graphics g, RectangleF r, double[] values, double level, Color stroke, int capacity)
     {
-        using (var screen = Rounded(r, 3)) using (var b = new SolidBrush(Hex("#59000000"))) g.FillPath(b, screen);
+        if (!s_bare) using (var screen = Rounded(r, 3)) using (var b = new SolidBrush(Hex("#59000000"))) g.FillPath(b, screen);
         using (var div = new Pen(Hex("#21FFFFFF"), 1) { DashPattern = [1, 3] })
         {
             for (int i = 1; i < 6; i++) { float x = r.X + (float)Math.Round(r.Width * i / 6) + 0.5f; g.DrawLine(div, x, r.Y, x, r.Bottom); }
@@ -383,6 +396,7 @@ public static class OverlayRenderer
     private static void DrawChip(Graphics g, string text, Color hue, float x, float y)
     {
         var t = Text(g, text, TagFace, 11, FontStyle.Bold);
+        if (s_bare) { Draw(g, text, TagFace, 11, FontStyle.Bold, hue, x + 6, y + 2); return; }
         using (var tag = Rounded(new RectangleF(x, y, t.Width + 12, t.Height + 3), 3)) using (var b = new SolidBrush(hue)) g.FillPath(b, tag);
         Draw(g, text, TagFace, 11, FontStyle.Bold, Ink, x + 6, y + 2);
     }
@@ -399,13 +413,25 @@ public static class OverlayRenderer
         if (text.Length == 0) return;
         using var font = new Font(face, size, Usable(face, style), GraphicsUnit.Pixel); using var b = new SolidBrush(color);
         var w = g.MeasureString(text, font, PointF.Empty, rtl ? TightRtl : Tight).Width;
-        g.DrawString(text, font, b, new RectangleF(x, y, w + 1, font.GetHeight(g) + 1), rtl ? TightRtl : Tight);
+        var box = new RectangleF(x, y, w + 1, font.GetHeight(g) + 1);
+        Halo(g, text, font, color, box, rtl ? TightRtl : Tight);
+        g.DrawString(text, font, b, box, rtl ? TightRtl : Tight);
     }
+    /// <summary>Under light text: a dark outline when the plate is gone (the text sits straight on the game), else a soft shadow. Dark text (on a title tag) gets none.</summary>
+    private static void Halo(Graphics g, string text, Font font, Color color, RectangleF box, StringFormat fmt)
+    {
+        if (color.GetBrightness() < 0.35f) return;
+        using var dark = new SolidBrush(Color.FromArgb(s_bare ? 225 : 110, 0, 0, 0));
+        foreach (var (dx, dy) in s_bare ? Outline : Shadow) g.DrawString(text, font, dark, new RectangleF(box.X + dx, box.Y + dy, box.Width, box.Height), fmt);
+    }
+    private static readonly (float, float)[] Outline = [(-1, 0), (1, 0), (0, -1), (0, 1), (1, 1), (-1, 1)], Shadow = [(0, 1)];
     private static void DrawClipped(Graphics g, string text, FontFamily face, float size, FontStyle style, Color color, RectangleF r)
     {
         using var font = new Font(face, size, Usable(face, style), GraphicsUnit.Pixel); using var b = new SolidBrush(color);
         using var f = (StringFormat)Tight.Clone(); f.Trimming = StringTrimming.EllipsisCharacter; f.FormatFlags |= StringFormatFlags.NoWrap;
-        g.DrawString(text, font, b, new RectangleF(r.X, r.Y, r.Width + 1, r.Height + 1), f);
+        var box = new RectangleF(r.X, r.Y, r.Width + 1, r.Height + 1);
+        Halo(g, text, font, color, box, f);
+        g.DrawString(text, font, b, box, f);
     }
     private static FontStyle Usable(FontFamily face, FontStyle style) => face.IsStyleAvailable(style) ? style : FontStyle.Regular;
 

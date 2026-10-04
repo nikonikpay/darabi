@@ -18,7 +18,7 @@ public sealed partial class WebBridge
             return new
             {
                 visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
-                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout,
+                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout, bare = _config.OverlayBare,
                 frameProblem = overlay.FrameSource?.Problem, pingTarget = overlay.PingSource?.Target,
                 presets = OverlayCatalog.Presets.Select(p => new { id = p.Key, count = p.Value.Count }),
                 order = chosen.Select(c => c.Id),
@@ -46,6 +46,7 @@ public sealed partial class WebBridge
                 case "corner": overlay.SetCorner(Str(p, "value")); break;
                 case "opacity": overlay.SetAppearance(Num(p, "value") ?? _config.OverlayOpacity, _config.OverlayScale); break;
                 case "scale": overlay.SetAppearance(_config.OverlayOpacity, Num(p, "value") ?? _config.OverlayScale); break;
+                case "bare": overlay.SetBare(Bool(p, "value")); break;
                 case "layout": overlay.SetLayout(Str(p, "value")); break;
                 // The address the ping goes to: an IPv4 address or a name. The echoes restart towards it when the overlay is next shown.
                 case "pingTarget":

@@ -801,6 +801,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
   display: grid; justify-items: start; align-content: start; font-size: calc(12px * var(--ov-scale)); direction: ltr; }
 .ov-preview > * { width: calc(244px * var(--ov-scale) + 24px); background: rgb(14 16 18 / var(--ov-alpha)); padding-inline: 12px; box-sizing: border-box; border-inline: 1px solid rgb(255 255 255 / 0.12); }
 .ov-preview.cols > * { width: calc(380px * var(--ov-scale) + 24px); }
+.ov-preview.bare > * { background: none; border: 0; text-shadow: 0 0 2px #000, 0 0 2px #000, 1px 1px 1px #000; }
 .ov-preview > :first-child { border-radius: 8px 8px 0 0; padding-top: 9px; border-top: 1px solid rgb(255 255 255 / 0.12); }
 .ov-preview > :last-child { border-radius: 0 0 8px 8px; padding-bottom: 10px; border-bottom: 1px solid rgb(255 255 255 / 0.12); }
 .ov-brand { display: flex; align-items: center; gap: 7px; font: 700 0.72em var(--lat); font-stretch: 118%; letter-spacing: 0.06em; color: #8a9097; padding-bottom: 8px; }
@@ -1063,7 +1064,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 @media (max-width: 700px) { .peer { grid-template-columns: 28px minmax(0, 1fr) auto 64px; } .peer .ps { display: none; } }
 
 /* Benchmarks: a comparison row opens its details beside this system's; the featured runs; the full list's filters; the run log's marks. */
-.peer .tag.ref { display: inline-flex; align-items: center; gap: 3px; color: var(--part, var(--paper)); border-color: color-mix(in oklab, var(--part, var(--paper)) 50%, transparent); }
+.peer .tag.ref { display: inline-flex; align-items: center; gap: 3px; color: var(--part, var(--paper)); background: color-mix(in oklab, var(--part, var(--paper)) 20%, transparent); border-color: color-mix(in oklab, var(--part, var(--paper)) 65%, transparent); }
 .peer .tag.ref svg { width: 10px; height: 10px; }
 .peer .tag.oc { color: var(--warn); border-color: color-mix(in oklab, var(--warn) 50%, transparent); }
 .peer .sep { color: var(--paper-3); }

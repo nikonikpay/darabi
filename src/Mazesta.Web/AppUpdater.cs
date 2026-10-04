@@ -122,6 +122,31 @@ public sealed class AppUpdater
         finally { _busy.Release(); }
     }
 
+    /// <summary>True while only the comparison lists are being fetched (<see cref="SyncDataAsync"/>).</summary>
+    public bool DataBusy { get; private set; }
+
+    /// <summary>Only the benchmark comparison lists, asked for by the user: the release state and its error are left alone (a manifest the shop
+    /// did not sign must not show up as a failed app update when the user asked for data).</summary>
+    public async Task SyncDataAsync()
+    {
+        if (!await _busy.WaitAsync(0).ConfigureAwait(false)) return;
+        try
+        {
+            DataBusy = true; DataDownloaded = 0; Changed?.Invoke();
+            await SyncSiteListsAsync().ConfigureAwait(false);
+            try
+            {
+                var m = await _client.CheckAsync(CancellationToken.None).ConfigureAwait(false);
+                var synced = await DataSync.SyncAsync(_client, m, _paths.BenchDbDir, CancellationToken.None).ConfigureAwait(false);
+                DataSyncedAt = DateTimeOffset.Now; DataDownloaded += synced.Downloaded;
+                if (synced.Downloaded + synced.Removed > 0) DataChanged?.Invoke();
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException or UpdateRejectedException or InvalidDataException)
+            { _log.LogInformation("Signed comparison lists not fetched: {Message}", e.Message); }
+        }
+        finally { DataBusy = false; _busy.Release(); Changed?.Invoke(); }
+    }
+
     /// <summary>Downloads and unpacks the offered release. It is not installed until <see cref="Install"/>.</summary>
     public async Task DownloadAsync()
     {

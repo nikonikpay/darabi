@@ -23,6 +23,8 @@ public sealed class AppConfig : IVersionedDocument
     public List<string> ExpandedGroups { get; set; } = [];
     public WindowPlacement? MainWindow { get; set; }
     public List<ChartWindowConfig> ChartWindows { get; set; } = [];
+    /// <summary>The tray monitor starts together with the app; "turn the tray off" in the settings switches this off. Absent in older files, so on.</summary>
+    public bool TrayWithApp { get; set; } = true;
     /// <summary>Delay before the tray's first health check after sign-in, so it never runs during it.</summary>
     public int TrayFirstCheckSeconds { get; set; } = 20;
     /// <summary>How often the tray checks while nothing is wrong.</summary>
@@ -44,6 +46,8 @@ public sealed class AppConfig : IVersionedDocument
     public string OverlayPreset { get; set; } = Mazesta.Core.Overlay.OverlayCatalog.DefaultPreset;
     /// <summary>The overlay panel's opacity, 0.5 to 1.</summary>
     public double OverlayOpacity { get; set; } = 0.9;
+    /// <summary>The overlay without any background: only the text, outlined, in colour. Absent in older files, so off.</summary>
+    public bool OverlayBare { get; set; }
     /// <summary>The overlay's size: 0.85 small, 1 normal, 1.2 large.</summary>
     public double OverlayScale { get; set; } = 1.0;
     /// <summary>"list" (one column) or "columns" (two blocks side by side, the denser layout of the first overlay). Absent in older files: list.</summary>

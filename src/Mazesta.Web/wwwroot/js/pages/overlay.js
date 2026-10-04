@@ -39,6 +39,8 @@ export function mount(el) {
     h("button", { type: "button", "data-v": v, onclick: () => call("overlay.set", { field, value: field === "scale" ? +v : v }) }, t(k))));
   const sizes = seg(t("Web_Overlay_Size"), "scale", [["0.85", "Web_Overlay_Small"], ["1", "Web_Overlay_Normal"], ["1.2", "Web_Overlay_Large"]]);
   const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"], ["line", "Web_Overlay_Layout_Line"]]);
+  // No plate and no boxes: only the text, outlined, in the parts' colours.
+  const bare = h("input", { type: "checkbox", class: "switch", "aria-label": t("Web_Overlay_Bare"), title: t("Web_Overlay_Bare_Hint"), onchange: (e) => call("overlay.set", { field: "bare", value: e.target.checked }) });
   const hotkey = h("span", { class: "kbd lat" });
   // Where the ping, loss and jitter are measured to: an address or a name (a game server's, for the figure that matters in that game).
   const pingTarget = h("input", { class: "field lat", style: { width: "150px" }, "aria-label": t("Web_Overlay_PingTarget"), title: t("Web_Overlay_PingTarget_Hint"),
@@ -58,7 +60,8 @@ export function mount(el) {
       h("label", { class: "ov-ctl" }, h("span", {}, t("Overlay_Corner")), corner),
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Size")), sizes),
       h("label", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_PingTarget")), pingTarget),
-      h("label", { class: "ov-ctl grow" }, h("span", {}, t("Web_Overlay_Opacity")), opacity)),
+      h("label", { class: "ov-ctl grow" }, h("span", {}, t("Web_Overlay_Opacity")), opacity),
+      h("label", { class: "ov-ctl", title: t("Web_Overlay_Bare_Hint") }, h("span", {}, t("Web_Overlay_Bare")), bare)),
     problem,
     h("h2", { class: "section-title" }, t("Web_Overlay_Presets")), presets,
     h("div", { class: "ov-split" },
@@ -289,6 +292,7 @@ export function mount(el) {
     const rebuild = !state || key(s) !== key(state);
     const reorder = rebuild || JSON.stringify(s.order) !== JSON.stringify(state.order);
     state = s;
+    bare.checked = s.bare; preview.classList.toggle("bare", !!s.bare);
     show.checked = s.visible; hotkey.textContent = s.hotkey;
     if (!corner.options.length) corner.replaceChildren(...s.corners.map((c) => h("option", { value: c.value }, c.label)));
     corner.value = s.corner;

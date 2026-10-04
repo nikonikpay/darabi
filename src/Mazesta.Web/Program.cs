@@ -93,6 +93,19 @@ internal sealed class Program : ApplicationContext
         _activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
         _activateWait = ThreadPool.RegisterWaitForSingleObject(_activate, (_, _) => _ui.BeginInvoke(ShowMain), null, Timeout.Infinite, false);
         engine.Start();
+        if (!overlayOnly && config.TrayWithApp) StartTray(log);
+    }
+
+    /// <summary>The tray monitor runs whenever the app does (unless the user turned it off); one already running is left alone.</summary>
+    private static void StartTray(ILogger log)
+    {
+        try
+        {
+            string exe = Path.Combine(AppContext.BaseDirectory, OverlaySignals.TrayProcess + ".exe");
+            if (!File.Exists(exe) || TrayRunning()) return;
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = AppContext.BaseDirectory })?.Dispose();
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or IOException) { log.LogInformation("The tray was not started: {Message}", e.Message); }
     }
 
     /// <summary>The window, brought forward if it is open, or made again (it was closed while the overlay kept the app alive).</summary>

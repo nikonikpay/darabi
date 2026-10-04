@@ -947,6 +947,8 @@
   <data name="Web_Overlay_Show" xml:space="preserve"><value>Show the overlay</value></data>
   <data name="Web_Overlay_Hotkey" xml:space="preserve"><value>From anywhere:</value></data>
   <data name="Web_Overlay_Opacity" xml:space="preserve"><value>Opacity</value></data>
+  <data name="Web_Overlay_Bare" xml:space="preserve"><value>Text only, no background</value></data>
+  <data name="Web_Overlay_Bare_Hint" xml:space="preserve"><value>The plate and boxes are removed: only the text shows, outlined, with the numbers in each part's colour.</value></data>
   <data name="Web_Overlay_Size" xml:space="preserve"><value>Size</value></data>
   <data name="Web_Overlay_Small" xml:space="preserve"><value>Small</value></data>
   <data name="Web_Overlay_Normal" xml:space="preserve"><value>Normal</value></data>
@@ -1359,8 +1361,6 @@ The update services stopped and disabled</value></data>
   <data name="AppUpd_Data_Synced" xml:space="preserve"><value>fetched {0}, {1} new or changed</value></data>
   <data name="AppUpd_Data_Note" xml:space="preserve"><value>The lists are fetched on their own a little after the app starts, when the internet can be reached. The button fetches them now.</value></data>
   <data name="AppUpd_Data_Sync" xml:space="preserve"><value>Update the data now</value></data>
-  <data name="AppUpd_Site" xml:space="preserve"><value>Where updates come from</value></data>
-  <data name="AppUpd_Safe" xml:space="preserve"><value>Only files signed with Mazesta's key are accepted, and each file must match the size and fingerprint in the signed list. A changed or damaged file is thrown away and never run.</value></data>
   <data name="Web_Peers_Title" xml:space="preserve"><value>Against other systems</value></data>
   <data name="Web_Peers_Count" xml:space="preserve"><value>{0} models in the list</value></data>
   <data name="Web_Peers_Ahead" xml:space="preserve"><value>ahead of {0} of the {1} models</value></data>
@@ -1368,7 +1368,7 @@ The update services stopped and disabled</value></data>
   <data name="Web_Peers_RunFirst" xml:space="preserve"><value>Run it to see where this system stands.</value></data>
   <data name="Web_Peers_You" xml:space="preserve"><value>This system</value></data>
   <data name="Web_Peers_All" xml:space="preserve"><value>Whole list</value></data>
-  <data name="Web_Peers_History" xml:space="preserve"><value>Recorded runs</value></data>
+  <data name="Web_Peers_History" xml:space="preserve"><value>This system's recorded runs</value></data>
   <data name="Web_Peers_Systems" xml:space="preserve"><value>{0} systems · {1} runs</value></data>
   <data name="Web_Peers_Local" xml:space="preserve"><value>measured with this copy, on another system</value></data>
   <data name="Web_Peers_Same" xml:space="preserve"><value>same model</value></data>
@@ -1414,7 +1414,7 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Spec_Os" xml:space="preserve"><value>Windows</value></data>
   <data name="Web_Peers_TheyFaster" xml:space="preserve"><value>{0} faster</value></data>
-  <data name="Web_Peers_YouFaster" xml:space="preserve"><value>this system {0} faster</value></data>
+  <data name="Web_Peers_YouFaster" xml:space="preserve"><value>you are {0} faster</value></data>
   <data name="Web_Peers_Even" xml:space="preserve"><value>even</value></data>
   <data name="Web_Peers_GapHint" xml:space="preserve"><value>Up to double as a percentage, from double as a multiple; always said from the faster side.</value></data>
   <data name="Web_Peers_Featured" xml:space="preserve"><value>Reference results</value></data>

@@ -14,8 +14,7 @@ export function mount(el) {
   const download = h("button", { class: "btn go", hidden: true, onclick: () => run("upd.download") }, icon("update"), t("AppUpd_Download"));
   const install = h("button", { class: "btn primary", hidden: true, onclick: () => { if (confirm(t("AppUpd_ConfirmInstall", last?.latest?.version || ""))) run("upd.install"); } }, icon("play"), t("AppUpd_Install"));
   const lists = h("p", { class: "au-status" }), published = h("p", { class: "caption" });
-  const sync = h("button", { class: "btn", onclick: () => run("upd.check") }, icon("refresh"), t("AppUpd_Data_Sync"));
-  const site = h("span", { class: "lat caption" });
+  const sync = h("button", { class: "btn", onclick: () => run("upd.data") }, icon("refresh"), t("AppUpd_Data_Sync"));
   // The link to the shop's site: the key this copy sends with, and what the site said to it.
   const keyField = h("input", { class: "field lat", type: "password", autocomplete: "off", spellcheck: false, style: { minWidth: "260px" }, "aria-label": t("Site_Key"), placeholder: "mz_…" });
   const siteState = h("p", { class: "au-status" });
@@ -48,7 +47,6 @@ export function mount(el) {
         body: [status, bar, notes, h("div", { class: "btn-row" }, check, download, install), checked, boot.staff ? h("p", { class: "note" }, t("AppUpd_StaffNote")) : null] }),
       box({ kind: "Gpu", ico: "trophy", title: t("AppUpd_Data_Title"), sub: t("AppUpd_Data_Sub"), i: 1,
         body: [lists, published, h("p", { class: "note" }, t("AppUpd_Data_Note")), h("div", { class: "btn-row" }, sync)] }),
-      box({ kind: "Network", ico: "net", title: t("AppUpd_Site"), i: 2, body: [site, h("p", { class: "note" }, t("AppUpd_Safe"))] }),
       boot.staff ? box({ kind: "Storage", ico: "net", title: t("Site_Title"), sub: t("Site_Sub"), i: 3, a: "site",
         body: [siteState, h("label", { class: "caption", style: { display: "block" } }, t("Site_Key"), " · ", t("Site_Key_Hint")),
           h("div", { class: "btn-row" }, pair), pairState, h("p", { class: "note" }, t("Site_Pair_Note")),
@@ -74,12 +72,11 @@ export function mount(el) {
     notes.hidden = !offer;
     if (offer) notes.replaceChildren(h("div", { class: "k" }, t("AppUpd_Notes"), " · ", h("span", { class: "lat" }, `v${v}`), " · ", t("AppUpd_Size", fa((s.latest.size / 1048576).toFixed(1)), s.latest.date)),
       ...(s.latest.notes ? s.latest.notes.split("\n").filter(Boolean).map((line) => h("p", {}, line.replace(/^[-•*]\s*/, ""))) : []));
-    check.disabled = busy; sync.disabled = busy;
+    check.disabled = busy || s.dataBusy; sync.disabled = busy || s.dataBusy;
     download.hidden = s.state !== "Available" || !s.canInstall; install.hidden = s.state !== "Ready" || !s.canInstall;
     checked.textContent = s.checkedAt ? t("AppUpd_Checked", s.checkedAt) : "";
     lists.textContent = s.data.lists ? t("AppUpd_Data_Lists", fa(s.data.lists)) : t("AppUpd_Data_None");
     published.textContent = [s.data.published ? t("AppUpd_Data_Published", s.data.published) : "", s.data.syncedAt ? t("AppUpd_Data_Synced", s.data.syncedAt, fa(s.data.downloaded)) : ""].filter(Boolean).join(" · ");
-    site.textContent = s.site;
   }
   call("upd.state").then(render);
   if (boot.staff) call("site.state").then(showSite).then(() => call("site.check")).then(showSite).catch(() => {});

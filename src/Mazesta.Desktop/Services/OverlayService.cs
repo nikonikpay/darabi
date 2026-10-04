@@ -57,12 +57,14 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         Rebuild();
     }
 
+    public void SetBare(bool bare) { config.OverlayBare = bare; Rebuild(); }
+
     public static readonly string[] Layouts = OverlayViewModel.Layouts;
     public void SetLayout(string layout) { if (!Layouts.Contains(layout)) return; config.OverlayLayout = layout; Rebuild(); }
 
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping);
+        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping) { Bare = config.OverlayBare };
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }

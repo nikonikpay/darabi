@@ -117,10 +117,10 @@ function renderIndex(info) {
     h("button", { class: "index-asst", type: "button", title: `${t("Nav_Assistant")} · Ctrl+J`, onclick: () => window.dispatchEvent(new Event("assistant:toggle")) },
       icon("chat"), h("span", { class: "nm" }, t("Nav_Assistant"))),
     // The service job's number is Mazesta's own (its edition only): the users' edition has no such field.
-    info.staff ? h("div", { class: "index-foot" },
+    ...(info.staff ? [h("div", { class: "index-foot" },
       h("label", { for: "svc" }, t("Service_Number")),
       h("input", { id: "svc", class: "field lat", style: { width: "100%", textAlign: "left" }, maxlength: "40", value: info.serviceNumber || "",
-        onchange: async (e) => { e.target.value = await call("app.setServiceNumber", { value: e.target.value }); } })) : null);
+        onchange: async (e) => { e.target.value = await call("app.setServiceNumber", { value: e.target.value }); } }))] : []));   // not null: append(null) writes the word "null"
 }
 
 function renderBand(info) {

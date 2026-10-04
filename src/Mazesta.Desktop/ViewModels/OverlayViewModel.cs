@@ -102,6 +102,8 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public double Scale { get; }
     public static readonly string[] Layouts = ["list", "columns", "line"];
     /// <summary>"list": one column of boxes; "columns": two boxes side by side; "line": everything in one row along the screen's edge, as a strip.</summary>
+    /// <summary>No plate and no boxes: the text alone, outlined, the numbers in the part's colour.</summary>
+    public bool Bare { get; init; }
     public string Layout { get; }
     public bool TwoColumns => Layout == "columns";
     public bool IsLine => Layout == "line";

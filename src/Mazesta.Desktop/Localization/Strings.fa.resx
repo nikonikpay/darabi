@@ -947,6 +947,8 @@
   <data name="Web_Overlay_Show" xml:space="preserve"><value>نمایش اورلی</value></data>
   <data name="Web_Overlay_Hotkey" xml:space="preserve"><value>از هر جا:</value></data>
   <data name="Web_Overlay_Opacity" xml:space="preserve"><value>شفافیت</value></data>
+  <data name="Web_Overlay_Bare" xml:space="preserve"><value>متن بدون پس‌زمینه</value></data>
+  <data name="Web_Overlay_Bare_Hint" xml:space="preserve"><value>پس‌زمینه و کادرها حذف می‌شوند؛ فقط متن با حاشیهٔ تیره و عددها به رنگ هر بخش دیده می‌شود.</value></data>
   <data name="Web_Overlay_Size" xml:space="preserve"><value>اندازه</value></data>
   <data name="Web_Overlay_Small" xml:space="preserve"><value>کوچک</value></data>
   <data name="Web_Overlay_Normal" xml:space="preserve"><value>معمولی</value></data>
@@ -1359,8 +1361,6 @@
   <data name="AppUpd_Data_Synced" xml:space="preserve"><value>دریافت: {0}، {1} مورد تازه یا تغییرکرده</value></data>
   <data name="AppUpd_Data_Note" xml:space="preserve"><value>فهرست‌ها کمی پس از باز شدن برنامه، اگر اینترنت در دسترس باشد، خودکار دریافت می‌شوند. این دکمه همین حالا دریافتشان می‌کند.</value></data>
   <data name="AppUpd_Data_Sync" xml:space="preserve"><value>به‌روزرسانی داده‌ها</value></data>
-  <data name="AppUpd_Site" xml:space="preserve"><value>منبع به‌روزرسانی</value></data>
-  <data name="AppUpd_Safe" xml:space="preserve"><value>فقط فایل‌هایی پذیرفته می‌شوند که با کلید مازستا امضا شده باشند، و هر فایل باید با اندازه و اثر انگشت ثبت‌شده در فهرست امضاشده یکی باشد. فایل تغییرکرده یا خراب دور ریخته می‌شود و هرگز اجرا نمی‌شود.</value></data>
   <data name="Web_Peers_Title" xml:space="preserve"><value>مقایسه با سیستم‌های دیگر</value></data>
   <data name="Web_Peers_Count" xml:space="preserve"><value>{0} مدل در فهرست</value></data>
   <data name="Web_Peers_Ahead" xml:space="preserve"><value>جلوتر از {0} مدل از {1} مدل</value></data>
@@ -1368,7 +1368,7 @@
   <data name="Web_Peers_RunFirst" xml:space="preserve"><value>اجرایش کنید تا جایگاه این سیستم معلوم شود.</value></data>
   <data name="Web_Peers_You" xml:space="preserve"><value>این سیستم</value></data>
   <data name="Web_Peers_All" xml:space="preserve"><value>کل فهرست</value></data>
-  <data name="Web_Peers_History" xml:space="preserve"><value>اجراهای ثبت‌شده</value></data>
+  <data name="Web_Peers_History" xml:space="preserve"><value>اجراهای ثبت‌شده این سیستم</value></data>
   <data name="Web_Peers_Systems" xml:space="preserve"><value>{0} سیستم · {1} اجرا</value></data>
   <data name="Web_Peers_Local" xml:space="preserve"><value>اندازه‌گیری با این نسخه، روی سیستم دیگر</value></data>
   <data name="Web_Peers_Same" xml:space="preserve"><value>همین مدل</value></data>
@@ -1414,7 +1414,7 @@
   <data name="Spec_Bios" xml:space="preserve"><value>بایوس</value></data>
   <data name="Spec_Os" xml:space="preserve"><value>ویندوز</value></data>
   <data name="Web_Peers_TheyFaster" xml:space="preserve"><value>{0} سریع‌تر</value></data>
-  <data name="Web_Peers_YouFaster" xml:space="preserve"><value>این سیستم {0} سریع‌تر</value></data>
+  <data name="Web_Peers_YouFaster" xml:space="preserve"><value>{0} سریع‌ترید</value></data>
   <data name="Web_Peers_Even" xml:space="preserve"><value>هم‌سطح</value></data>
   <data name="Web_Peers_GapHint" xml:space="preserve"><value>تا دو برابر به درصد، از دو برابر به بعد به «چند برابر» نوشته می‌شود؛ همیشه از طرف سیستم سریع‌تر.</value></data>
   <data name="Web_Peers_Featured" xml:space="preserve"><value>نتایج مرجع</value></data>

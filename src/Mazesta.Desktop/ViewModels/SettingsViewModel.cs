@@ -85,6 +85,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         string? failure = await Task.Run(change);
         Message = failure is null ? Loc.Get(successKey) : Loc.Format("Settings_Tray_ChangeFailed", failure);
+        if (failure is null) { _config.TrayWithApp = successKey == "Settings_Tray_Enabled"; _store.Save(_config); }
         await RefreshTrayAsync();
     }
 
