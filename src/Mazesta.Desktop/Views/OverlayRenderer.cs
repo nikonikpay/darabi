@@ -419,7 +419,7 @@ public static class OverlayRenderer
 
     private static void Prepare(Graphics g)
     {
-        g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = TextRenderingHint.AntiAlias;   // not grid-fitted: snapping each glyph to whole pixels pulls small text apart ("Tem p") and coarsens Persian joins
         g.PixelOffsetMode = PixelOffsetMode.HighQuality; g.CompositingQuality = CompositingQuality.HighSpeed;   // plain sRGB blending, as WPF drew it: gamma-corrected blending makes a faint wash read three times as strong
     }
 

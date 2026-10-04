@@ -30,6 +30,8 @@ public class ViewLoadTests
             Assert.True(bmp.Width / 2 > (layout == "list" ? 244 : 300), $"{layout} {bmp.Width}");
             Assert.True(bmp.Height / 2 > (layout == "line" ? 30 : 200), $"{layout} {bmp.Height}");
             if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) bmp.Save(Path.Combine(dir, $"overlay-{layout}{(rtl ? "-rtl" : "")}.png"));
+            // At a 100 % screen too, where small text is hardest to draw well.
+            if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir1) { using var one = OverlayRenderer.Render(vm, rtl, 1); one.Save(Path.Combine(dir1, $"overlay-{layout}{(rtl ? "-rtl" : "")}-1x.png")); }
         }
     }
     private sealed class Frames : Mazesta.Monitoring.IFrameRateSource
