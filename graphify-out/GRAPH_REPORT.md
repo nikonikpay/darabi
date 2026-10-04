@@ -1,24 +1,24 @@
 # Graph Report - DFM App  (2026-10-04)
 
 ## Corpus Check
-- 541 files · ~441,174 words
+- 541 files · ~443,445 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 41 file(s) not represented in the graph (top: .cso 17, .hlsl 5, (none) 3)
 
 ## Summary
-- 8236 nodes · 20224 edges · 339 communities (245 shown, 94 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 1714 edges (avg confidence: 0.84)
+- 8254 nodes · 20264 edges · 329 communities (232 shown, 97 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 1716 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `39f72008`
+- Built from commit: `9ff7bea5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Mazesta.Core.Providers
 - Nvml
-- microsoft_extensions_logging
+- Mazesta.Monitoring
 - SensorRole
 - TuningViewModel
 - .RunAsync
@@ -38,7 +38,7 @@
 - HardwareKind
 - FindingCode
 - icon
-- system_text
+- Mazesta.Diagnostics.Benchmarks
 - demo.js
 - .Write
 - .GpuAvailability
@@ -52,10 +52,10 @@
 - StorageBenchmark
 - BenchmarkTests
 - .Classify
-- WmiQuery
+- DevBoxFixture
 - GpuTuningSettings
 - SensorId
-- .ReadAsync
+- HardwareInventory
 - SoftApp
 - GardenGpu
 - SensorKind
@@ -64,23 +64,23 @@
 - FakeSensorProvider
 - Slice 1 Design: Solution Skeleton + Sensors and Monitoring
 - TestQueueRowViewModel
-- TestId
+- TestExecutionRequest
 - .RegisterSystem
 - BenchmarksViewModel
 - VfCurveScanner
 - OverlayRenderer
 - .Compare
 - .Write
-- PlatformAndPeerCheckTests
+- .SetupAsync
 - ReportsViewModel
 - GardenScene
-- Mazesta.Core.Inventory
+- Mazesta.Core.Health.Checkup
 - OverlayViewModel
 - .RunAsync
 - Mazesta_Connect
 - Canvas
-- FakeCard
-- ICommandRunner
+- .Enter
+- .RegisterNetRepair
 - BenchmarkRunner
 - .Run
 - .Build
@@ -91,14 +91,14 @@
 - Mazesta.Core.Hardware
 - OverlayService
 - LibreHardwareMonitorProvider
-- BoardDrivers
+- .RegisterDrivers
 - CpuVectorStressExecutor
-- Card
+- JsonStore
 - TestProgress
-- .A_file_that_does_not_match_its_checksum_is_deleted_never_kept
+- AiResults
 - .Judge
 - OverlayTests
-- .Create
+- .Run
 - .Get
 - .RunAsync
 - Hardening Plan (external review status)
@@ -106,42 +106,42 @@
 - FakeSensor
 - DnsBench
 - HealthAlerts
-- CpuInfo
+- SystemInfoViewModelTests
 - StoredReport
 - FakeRunner
 - AppConfig
 - t
 - MainWindow
 - .Memory
-- OverlaySection
+- .Build
 - .Decode
 - CpuSpecTests
 - .List
-- .AddDiagnostics
+- IMigration
 - call
 - AppGuideTests
 - AiAssistantTests
 - OverlayItem
 - NvmeHealthReader
 - GamingViewModel
-- BenchmarkPeersTests
+- .RegisterBenchmarks
 - SceneModel
 - AppUpdater
-- TestOptions
+- ITestExecutor
 - Slice 1 Verification Record
 - Slice 13 Verification: Web Edition v3
 - .Fit
 - SessionReport
 - OverlayWindow
 - RollingFileLoggerProvider
-- GpuBenchmark.cs
+- .Run
 - IRegistryAccess
 - ReportService
 - GpuProfileDocument
 - Tweaks.cs
 - TrayContext
 - GpuAiBenchmark
-- .Read
+- Fake
 - Checkup (smart troubleshooting tab)
 - Slice 2 Design: Test Engine + CPU Matrix Load
 - LibreHardwareMonitorProviderTests
@@ -151,27 +151,27 @@
 - AiIntent
 - PartSpecs
 - PingMonitor
-- RowState
+- .AssistantTools
 - CpuTopology
-- .Run
-- .Run
+- GardenRenderer
+- .AddDiagnostics
 - FakeHardware
-- .RegisterDrivers
+- .The_rasterised_garden_is_a_stable_picture
 - Finding
 - WindowsToolsViewModel
 - WheaTests
 - Mazesta Test Agent Guide
 - .ReleasesAsync
 - WindowsServiceControl
-- MemoryTests
-- DriveHealth
+- HardwareDetails
+- SessionBreak.cs
 - CpuSpecs
 - NativeBlock
 - FindingHint
-- .RegisterAssistant
+- .Format
 - TestOutcome
 - BenchmarkResult
-- Fake
+- BenchmarkStatus
 - GpuLogicTests
 - SfcExecutor
 - ReportTests
@@ -183,14 +183,14 @@
 - ReportService (report.json and report.html)
 - ChartWindow
 - AppGuide
-- .Apply
+- SensorReading
 - .Run
 - .Judge
 - AutoTuneOptions
 - TestOptionViewModel
 - .Client
 - Runner
-- .Parse
+- IWmiQuery
 - TrayCheck
 - UpdateTests
 - Mazesta.Desktop.Localization
@@ -200,25 +200,25 @@
 - WorkloadGate
 - UiDispatcher
 - .Evaluate
-- HardwareInventory
+- HardwareSnapshot
 - VfPoint
 - WmiInventoryParserTests
-- SiteClient.cs
+- SiteClient
 - Gate
 - Mazesta.Web (MazestaWeb.exe)
-- IGpuTuningDevice
+- GpuProfilesMenu
 - Slice 10 Verification: Yellow Redesign, V/F Curve, Benchmark Queue, Customer Summary, Overlay
 - .InstallAsync
 - SpecItem
-- .Together_the_parts_run_side_by_side_and_the_rest_afterwards
-- ITestExecutor
+- SchemaMigrator
+- .Run
 - .NavigateTwiceAndDrop
-- .AssistantTools
+- WindowsActions
 - .Build
 - CheckupService
 - ReportFont
 - GpuVramExecutor
-- .Call
+- HardwareDetailsCache
 - NetworkLatencyExecutor
 - TestSessionCheckpoint
 - AutoTuneTests
@@ -228,9 +228,9 @@
 - Mazesta.Diagnostics.csproj
 - .SyncAsync
 - AiFiles
-- IWmiQuery
+- HardwareDetailsReader
 - .Run
-- GpuSceneBenchmark
+- GpuRasterBenchmark
 - LibreHardwareMonitorProvider
 - List
 - .TryParseInt
@@ -238,9 +238,9 @@
 - StorageEventSource
 - TrayIntervalsTests
 - Notifier
-- NvmlTuningDevice
+- TrayText
 - Slice 6 Verification: Benchmark Suite
-- .S
+- .From
 - Mazesta.Core.csproj
 - .Choose
 - .Build
@@ -249,14 +249,14 @@
 - PciDevice
 - Mazesta.Desktop.csproj
 - AiChat
-- MemoryBitFadeExecutor
+- PartSpecsTests
 - UpdateManifest
 - ui.js
 - h
 - .Add
 - JsonStoreTests
-- FileInfo
-- LlamaBenchmark
+- .Read
+- .Gpus
 - PawnIoInstallResult
 - CrashCause
 - .Read
@@ -269,43 +269,43 @@
 - TrayController
 - .Reference
 - Mazesta.Web.csproj
-- CpuStressTests
+- .Parse
 - SoftCategory
 - .Resolve
 - .Read
-- UpdateState
-- DriversTests
+- FrameRateSession
+- .Describe
 - FakeLhmComputer
 - SensorNameCatalogTests
 - ReportLanguageTests
 - .Parse
-- .A_critical_warning_or_media_errors_in_the_nvme_log_fail_the_drive
-- NetRepairTests
+- DriveHealth
+- Registry
 - HardwareFingerprint
 - Mazesta.Persistence.csproj
-- .RunAsync
+- ICommandRunner
 - .Apply
 - BugCheckCatalog
 - ResourceParityTests
-- .Gpu
+- BreakCause
 - InternetAdapter
-- NvmeHealthLog
-- SingleInstance
+- SmartCheckExecutor
+- .Apply
 - GpuLoadKind
 - .RequestFocus
-- CpuDetails
+- CpuDetailsReader
 - Processor Figures for the Checkup (cpu-specs README)
 - Mazesta Product Definition
 - Localization and RTL (Strings.resx / Strings.fa.resx)
 - .Report
 - Mazesta.sln
 - .Decode
-- BoardPart
+- LoadOutcome
 - GpuMaker
 - SensorNameCatalog
 - BugCheckTests
-- LhmComputerAdapter
-- NvmlTuningProvider
+- .Health_codes_and_counters_map_and_unreported_values_stay_null
+- EngineState
 - TestProfiles.cs
 - Mazesta.Diagnostics.Tests.csproj
 - Mazesta.Monitoring.Tests.csproj
@@ -313,11 +313,11 @@
 - .Parse_or_query_failure_degrades_only_that_section
 - .SetProcessWorkingSetSize
 - Mazesta.Core.Tests.csproj
-- AiCatalog
+- CheckpointV1ToV2
 - Loc
 - Mazesta logo (yellow disc, black Persian wordmark) - Desktop asset
 - Twinmotion application icon (black disc with white 'T')
-- CrashRecord
+- Reply
 - Blender application icon (orange ring with blue centre)
 - CSI (csiamerica) icon (white 'CSi' letters on blue square)
 - D5 Render application icon (white 'D' shape on blue-purple gradient disc)
@@ -327,26 +327,16 @@
 - Rhino 3D application icon (small dark icon with white rhinoceros shape)
 - SketchUp application icon (blue globe-and-triangle mark)
 - Tekla application icon (blue angular panels on white)
-- Width
 - InstalledPrograms
-- Confirmation
-- .A_network_package_installs_its_own_driver_files_and_leaves_out_other_processors
-- CpuBenchmark
-- .Read
+- CrashHistory
 - Phase
 - NetVerdict
 - mount
 - .IsVirtualBinding
-- AiAssistantStatus
-- .From
-- PeerPart
-- AiFitMode
-- MazestaCompany
-- NvmlDetails.cs
 
 ## God Nodes (most connected - your core abstractions)
 1. `t()` - 189 edges
-2. `h()` - 170 edges
+2. `h()` - 171 edges
 3. `WebBridge` - 135 edges
 4. `Mazesta.Core.Hardware` - 123 edges
 5. `call()` - 112 edges
@@ -354,7 +344,7 @@
 7. `TuningViewModel` - 102 edges
 8. `icon()` - 97 edges
 9. `PollingEngine` - 92 edges
-10. `OverlayViewModel` - 71 edges
+10. `Mazesta_Connect` - 73 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `build.ps1 (copies figures, never estimates)` --semantically_similar_to--> `Global Constraints (no fake data, no network, idle targets)`  [INFERRED] [semantically similar]
@@ -383,27 +373,27 @@
 - **Mazesta web UI review screenshots sharing one shell (sidebar, status bar, sample-data preview)** — impeccable_review_desktop_dashboard_screenshot, impeccable_review_gpu_gpu_page_screenshot, impeccable_review_monitoring_monitoring_page_screenshot, impeccable_review_reports_reports_page_screenshot, impeccable_review_tests_tests_page_screenshot, impeccable_review_tuning_tuning_page_screenshot, impeccable_review_user_1024_dashboard_screenshot [INFERRED 0.95]
 - **Sensor table (now/min/avg/max) paired with a history chart of the selected row** — impeccable_review_monitoring_sensor_table, impeccable_review_monitoring_core_tctl_tdie_history_chart, impeccable_review_gpu_sensor_table, impeccable_review_gpu_gpu_core_history_chart [INFERRED 0.95]
 
-## Communities (339 total, 94 thin omitted)
+## Communities (329 total, 97 thin omitted)
 
 ### Community 0 - "Mazesta.Core.Providers"
-Cohesion: 0.08
-Nodes (6): Mazesta.Hardware.Tests.Fakes, Mazesta.Hardware.Lhm, Mazesta.Hardware.Tests, Mazesta.Hardware.Nvidia, Mazesta.Hardware.Wmi, Mazesta.Core.Providers
+Cohesion: 0.07
+Nodes (7): Mazesta.Hardware.Tests.Fakes, Mazesta.Hardware.Lhm, Mazesta.Core.Time, Mazesta.Hardware.Tests, Mazesta.Hardware.Nvidia, Mazesta.Hardware.Wmi, Mazesta.Core.Providers
 
 ### Community 1 - "Nvml"
-Cohesion: 0.13
-Nodes (3): Bar1Memory, Nvml, Utilization
+Cohesion: 0.05
+Nodes (19): Bar1Memory, ClockOffset, FieldValue, Nvml, Utilization, NvmlCard, NvmlDetails, NvmlPcieCounters (+11 more)
 
-### Community 2 - "microsoft_extensions_logging"
-Cohesion: 0.08
-Nodes (6): Mazesta.Core.Tray, Mazesta.Desktop.Services, Mazesta.Desktop.Composition, Mazesta.Web, OverlaySignals, UpdateKey
+### Community 2 - "Mazesta.Monitoring"
+Cohesion: 0.09
+Nodes (8): Mazesta.Core.Tray, Mazesta.Monitoring, Mazesta.Desktop.Services, Mazesta.Desktop.Composition, Mazesta.Desktop.Views, Mazesta.Web, OverlaySignals, UpdateKey
 
 ### Community 3 - "SensorRole"
 Cohesion: 0.02
 Nodes (90): SensorRole, BoardFan, BoardFanControl, BoardTemp, BoardVoltage, ChipsetTemp, CpuBusClock, CpuCcdAverageTemp (+82 more)
 
 ### Community 4 - "TuningViewModel"
-Cohesion: 0.03
-Nodes (52): InventoryCache, IsLoaded, AutoLogRow, GpuProfileRow, Created, Evidence, Kind, KindValue (+44 more)
+Cohesion: 0.04
+Nodes (50): AutoLogRow, GpuProfileRow, Created, Evidence, Kind, KindValue, Name, Summary (+42 more)
 
 ### Community 5 - ".RunAsync"
 Cohesion: 0.05
@@ -411,31 +401,31 @@ Nodes (20): AiText, AiAgent, AiTool, AiServer, IsRunning, LastUse, Model, CallDe
 
 ### Community 6 - "WebBridge"
 Cohesion: 0.05
-Nodes (6): State, AiTransfer, WebBridge, Activity, SystemId, PeerDb
+Nodes (9): InventoryCache, IsLoaded, TuningRecovery, State, AiTransfer, WebBridge, Activity, Confirmation (+1 more)
 
 ### Community 7 - "PollingEngine"
-Cohesion: 0.05
-Nodes (30): BoundedEventLog, EventEntry, EventLevel, Error, Info, Warning, IEventLog, LatestReading (+22 more)
+Cohesion: 0.06
+Nodes (18): SensorEvidence, SensorStat, MonitoringOptions, FastInterval, StorageInterval, PollingEngine, FastInterval, Hardware (+10 more)
 
 ### Community 8 - "monitoring.js"
 Cohesion: 0.07
 Nodes (66): go(), start(), chartCard(), RANGES, families(), GENERIC, gist(), keyOf() (+58 more)
 
 ### Community 9 - "xunit"
-Cohesion: 0.05
-Nodes (15): Mazesta.Core.Tests, Mazesta.Core.Windows, Mazesta.Diagnostics.Tests.Fakes, Mazesta.Diagnostics.Gpu.Tuning, Mazesta.Core.Overlay, Mazesta.Diagnostics.Tests, Mazesta.Diagnostics.Ai, Mazesta.Diagnostics.Tuning (+7 more)
+Cohesion: 0.09
+Nodes (9): Mazesta.Core.Tests, Mazesta.Core.Overlay, Mazesta.Reporting, Mazesta.Core.Health, Mazesta.Reporting.Tests, Mazesta.Core.Ai, Mazesta.Core.Inventory, Mazesta.Core.Gaming (+1 more)
 
 ### Community 10 - "StorageFile"
-Cohesion: 0.06
+Cohesion: 0.05
 Nodes (14): LatencyHistogram, Count, MaxMs, MeanMs, StorageExecutor, Definition, StorageRandom4kExecutor, Definition (+6 more)
 
 ### Community 11 - "UndervoltSearch"
-Cohesion: 0.08
-Nodes (27): AutoTuneOutcome, AutoTuneVerdict, Cancelled, Failed, Improved, NoImprovement, Unsupported, IAutoTuneSearch (+19 more)
+Cohesion: 0.09
+Nodes (26): AutoTuneOutcome, AutoTuneVerdict, Cancelled, Failed, Improved, NoImprovement, Unsupported, IAutoTuneSearch (+18 more)
 
 ### Community 12 - "IDisposable"
-Cohesion: 0.07
-Nodes (11): D3D12Session, AdapterName, Device, List, Queue, OwnedSince, Frame, GpuRayTracingBenchmark (+3 more)
+Cohesion: 0.06
+Nodes (12): D3D12Session, AdapterName, Device, List, Queue, Icosphere, OwnedSince, Frame (+4 more)
 
 ### Community 13 - "TestEngine"
 Cohesion: 0.10
@@ -458,12 +448,12 @@ Cohesion: 0.13
 Nodes (4): CpuIntegerExecutor, Definition, CpuWorkloadTests, Probe
 
 ### Community 18 - "AppPaths"
-Cohesion: 0.12
-Nodes (12): AppPaths, BenchDbDir, BenchSiteDir, CacheDir, ConfigDir, ConfigFile, DataRoot, HistoryDir (+4 more)
+Cohesion: 0.08
+Nodes (15): AppPaths, BenchDbDir, BenchSiteDir, CacheDir, ConfigDir, ConfigFile, DataRoot, HistoryDir (+7 more)
 
 ### Community 19 - "HardwareKind"
-Cohesion: 0.06
-Nodes (22): HardwareId, HardwareKind, Cooler, Cpu, Gpu, Memory, Motherboard, Network (+14 more)
+Cohesion: 0.07
+Nodes (17): HardwareId, HardwareKind, Cooler, Cpu, Gpu, Memory, Motherboard, Network (+9 more)
 
 ### Community 20 - "FindingCode"
 Cohesion: 0.04
@@ -472,6 +462,10 @@ Nodes (53): FindingCode, BenchAsBefore, BenchBelowPeers, BenchFewPeers, BenchSlo
 ### Community 21 - "icon"
 Cohesion: 0.16
 Nodes (28): mountAssistant(), evidence(), picker(), progress(), render(), renderActivity(), renderChat(), renderConfirm() (+20 more)
+
+### Community 22 - "Mazesta.Diagnostics.Benchmarks"
+Cohesion: 0.05
+Nodes (10): Mazesta.Diagnostics.Tests.Fakes, Mazesta.Diagnostics.Tests, Mazesta.Diagnostics.Ai, Mazesta.Diagnostics.Whea, Mazesta.Diagnostics.Benchmarks, Mazesta.Diagnostics.Storage, Mazesta.Diagnostics.Memory, Mazesta.Core.Crashes (+2 more)
 
 ### Community 23 - "demo.js"
 Cohesion: 0.05
@@ -482,20 +476,28 @@ Cohesion: 0.07
 Nodes (23): HeatPart, Board, Cpu, Drive, Gpu, GpuHotSpot, GpuMemory, PartPeak (+15 more)
 
 ### Community 26 - "GardenRaster"
-Cohesion: 0.06
-Nodes (14): DrawConstants, GardenRaster, Level, Samples, GardenRenderer, Height, OwnTarget, Scene (+6 more)
+Cohesion: 0.09
+Nodes (13): Part, DrawConstants, GardenRaster, Level, Samples, Settings, GardenMaterialKind, Brick (+5 more)
 
 ### Community 27 - "HistoryStore"
 Cohesion: 0.10
-Nodes (12): SensorSnapshot, HistoryStore, Epoch, EstimatedBytes, MinuteCapacity, RawCapacity, MinuteSeries, RawSeries (+4 more)
+Nodes (11): SensorSnapshot, HistoryStore, Epoch, EstimatedBytes, MinuteCapacity, RawCapacity, MinuteSeries, Series (+3 more)
 
 ### Community 28 - "export_garden.py"
 Cohesion: 0.06
 Nodes (19): bc3(), bleed(), decimated(), depsgraph_of(), grade(), grade_ops(), hsv_shift(), hsv_to_rgb() (+11 more)
 
+### Community 29 - "LinpackExecutor"
+Cohesion: 0.09
+Nodes (4): LinpackExecutor, Definition, CpuStressTests, FixedProbe
+
 ### Community 30 - "system_runtime_interopservices"
 Cohesion: 0.09
-Nodes (5): Mazesta.Diagnostics.Gpu.Tests, Mazesta.Core.Drivers, Mazesta.Diagnostics.Gpu.Scene, Mazesta.Diagnostics.Drivers, Mazesta.Diagnostics.Gpu.Benchmarks
+Nodes (4): Mazesta.Diagnostics.Gpu.Tests, Mazesta.Hardware.Details, Mazesta.Diagnostics.Gpu.Scene, Mazesta.Diagnostics.Gpu.Benchmarks
+
+### Community 31 - "Series"
+Cohesion: 0.08
+Nodes (14): HardwareVendor, Amd, Intel, Nvidia, Unknown, Series, Count, GpuCheck (+6 more)
 
 ### Community 32 - ".Run"
 Cohesion: 0.15
@@ -506,28 +508,24 @@ Cohesion: 0.11
 Nodes (7): Buffers, Mixed, Seq, Small, StorageBenchmark, Component, Definition
 
 ### Community 34 - "BenchmarkTests"
-Cohesion: 0.13
-Nodes (5): BenchmarkTests, FixedProbe, Scripted, Component, Definition
+Cohesion: 0.12
+Nodes (8): CpuBenchmark, Component, Definition, BenchmarkTests, FixedProbe, Scripted, Component, Definition
 
-### Community 35 - ".Classify"
-Cohesion: 0.08
-Nodes (17): BenchmarkBreakWatch, Message, Mark, BreakCause, AppClosed, AppCrashed, BlueScreen, PowerLoss (+9 more)
-
-### Community 36 - "WmiQuery"
+### Community 36 - "DevBoxFixture"
 Cohesion: 0.09
-Nodes (7): WmiQuery, CheckupHardwareTests, DevBoxFixture, Last, Polls, Provider, DevBoxHardwareTests
+Nodes (8): LhmComputerAdapter, Hardware, WmiInventoryProvider, DevBoxFixture, Last, Polls, Provider, DevBoxHardwareTests
 
 ### Community 37 - "GpuTuningSettings"
-Cohesion: 0.08
-Nodes (21): GpuTuningLimits, HasCoreOffset, HasFanControl, HasMemoryOffset, HasPowerLimit, MaxLockMHz, GpuTuningSettings, IsStock (+13 more)
+Cohesion: 0.06
+Nodes (31): GpuTelemetry, GpuTuningLimits, HasCoreOffset, HasFanControl, HasMemoryOffset, HasPowerLimit, MaxLockMHz, GpuTuningSettings (+23 more)
 
 ### Community 38 - "SensorId"
-Cohesion: 0.14
+Cohesion: 0.15
 Nodes (8): SensorId, Hardware, HardwareDiagnosticsRecorder, ReportFile, HardwareDiagnosticsReport, SensorTally, HardwareDiagnosticsNotesTests, HardwareDiagnosticsTests
 
-### Community 39 - ".ReadAsync"
-Cohesion: 0.15
-Nodes (9): BiosInfo, MemoryModuleInfo, Ecc, TypeName, MotherboardInfo, OsInfo, StorageDeviceInfo, WmiInventoryParser (+1 more)
+### Community 39 - "HardwareInventory"
+Cohesion: 0.16
+Nodes (12): BiosInfo, CpuInfo, GpuInfo, HardwareInventory, MemoryModuleInfo, Ecc, TypeName, MotherboardInfo (+4 more)
 
 ### Community 40 - "SoftApp"
 Cohesion: 0.11
@@ -538,44 +536,44 @@ Cohesion: 0.06
 Nodes (29): Draw, GardenFrame, GardenGpu, Draws, IndexBuffer, InstanceBuffer, Instances, LightBuffer (+21 more)
 
 ### Community 42 - "SensorKind"
-Cohesion: 0.05
-Nodes (31): DataQuality, Invalid, Missing, Ok, Stale, ReadingValidator, SensorKind, Clock (+23 more)
+Cohesion: 0.08
+Nodes (24): SensorKind, Clock, Conductivity, Control, Count, Current, Data, Energy (+16 more)
 
 ### Community 43 - "Unit"
 Cohesion: 0.07
 Nodes (23): Unit, Ampere, BytesPerSecond, Celsius, Decibel, Gigabyte, Hertz, LitersPerHour (+15 more)
 
 ### Community 44 - "TestCenterViewModel"
-Cohesion: 0.07
-Nodes (11): TestCenterViewModel, CurrentRow, CurrentStartedAt, HasIncompleteSession, Rows, RunningRows, RunQueue, TestEngineState (+3 more)
+Cohesion: 0.06
+Nodes (17): TestCenterViewModel, CurrentRow, CurrentStartedAt, HasIncompleteSession, Rows, RunningRows, RunQueue, TestEngineState (+9 more)
 
 ### Community 45 - "FakeSensorProvider"
-Cohesion: 0.06
-Nodes (18): SensorReading, ISensorProvider, Hardware, Name, Status, PollResult, Attached, NvidiaPcieSensors (+10 more)
+Cohesion: 0.04
+Nodes (29): ProviderState, Degraded, Failed, NotStarted, Ready, Starting, ProviderStatus, ISensorProvider (+21 more)
 
 ### Community 46 - "Slice 1 Design: Solution Skeleton + Sensors and Monitoring"
 Cohesion: 0.11
 Nodes (38): Slice 1 Implementation Plan (Skeleton + Sensors and Monitoring), Planned File Structure, Task 1: Solution Skeleton and Build Configuration, Tasks 13-14: AppPaths, JsonStore, SchemaMigrator, RollingFileLogger, Tasks 15-21: Desktop Shell, HelpTip, Monitoring, Charts, Dashboard, Settings, Robustness, Tasks 2-4: Core Model, Validator and Utilities, Tasks 5-8: Hardware Interfaces, Role Map, LHM Provider, WMI Inventory, Tasks 9-12: Statistics, HistoryStore, EventLog, PollingEngine (+30 more)
 
 ### Community 47 - "TestQueueRowViewModel"
-Cohesion: 0.08
-Nodes (26): TestQueueRowViewModel, Definition, ErrorsText, HasDetail, HasErrors, HasOptions, HasValidationError, IsAvailable (+18 more)
+Cohesion: 0.06
+Nodes (28): TestQueueRowViewModel, Definition, ErrorsText, HasDetail, HasErrors, HasOptions, HasValidationError, IsAvailable (+20 more)
 
-### Community 48 - "TestId"
+### Community 48 - "TestExecutionRequest"
 Cohesion: 0.07
-Nodes (10): TestExecutionRequest, TestLog, TestLogEntry, TestLogLevel, Error, Info, Step, Warning (+2 more)
+Nodes (9): TestExecutionRequest, TestLog, TestLogEntry, TestLogLevel, Error, Info, Step, Warning (+1 more)
 
 ### Community 49 - ".RegisterSystem"
-Cohesion: 0.08
-Nodes (12): PageFileMode, Custom, None, SystemManaged, PageFilePlan, HostsFile, Line, PageFileSettingInfo (+4 more)
+Cohesion: 0.07
+Nodes (14): Mazesta.Core.Windows, PageFileMode, Custom, None, SystemManaged, PageFilePlan, HostsFile, Line (+6 more)
 
 ### Community 50 - "BenchmarksViewModel"
-Cohesion: 0.08
-Nodes (11): BenchmarkRowViewModel, Benchmark, HasDetail, HasOptions, IsAvailable, Metrics, Name, Options (+3 more)
+Cohesion: 0.07
+Nodes (15): BenchmarkRowViewModel, Benchmark, HasDetail, HasOptions, IsAvailable, Metrics, Name, Options (+7 more)
 
 ### Community 51 - "VfCurveScanner"
-Cohesion: 0.10
-Nodes (11): IGpuLoad, VfCurveScanner, VfScanOptions, Duration, SampleInterval, Settle, StepMHz, VfScanResult (+3 more)
+Cohesion: 0.11
+Nodes (10): VfCurveScanner, VfScanOptions, Duration, SampleInterval, Settle, StepMHz, VfScanResult, Ok (+2 more)
 
 ### Community 53 - ".Compare"
 Cohesion: 0.14
@@ -585,8 +583,8 @@ Nodes (11): BenchmarkDelta, MachineMismatch, Cpu, Motherboard, ServiceNumber, St
 Cohesion: 0.15
 Nodes (7): MazestaLogo, ReportFormat, ReportHtml, ReportPlainText, ReportText, IsRtl, Language
 
-### Community 55 - "PlatformAndPeerCheckTests"
-Cohesion: 0.13
+### Community 55 - ".SetupAsync"
+Cohesion: 0.12
 Nodes (7): PeerCheck, PeerStanding, RunConditions, DriveLink, PlatformCheck, PowerFacts, PlatformAndPeerCheckTests
 
 ### Community 56 - "ReportsViewModel"
@@ -594,16 +592,16 @@ Cohesion: 0.09
 Nodes (10): PdfExporter, ReportRowViewModel, Badge, Report, Summary, Title, VerdictText, ReportsViewModel (+2 more)
 
 ### Community 57 - "GardenScene"
-Cohesion: 0.07
-Nodes (34): Part, GardenInstance, GardenLight, GardenLightKind, Point, Spot, Sun, GardenMaterial (+26 more)
+Cohesion: 0.08
+Nodes (26): GardenInstance, GardenLight, GardenLightKind, Point, Spot, Sun, GardenMaterial, GardenMesh (+18 more)
 
-### Community 58 - "Mazesta.Core.Inventory"
-Cohesion: 0.13
-Nodes (4): Mazesta.Hardware.Details, Mazesta.Reporting, Mazesta.Reporting.Tests, Mazesta.Core.Inventory
+### Community 58 - "Mazesta.Core.Health.Checkup"
+Cohesion: 0.10
+Nodes (3): Mazesta.Core.Health.Checkup, Mazesta.Core.Drivers, Mazesta.Diagnostics.Drivers
 
 ### Community 59 - "OverlayViewModel"
-Cohesion: 0.05
-Nodes (36): OverlayRow, HasBar, HasChart, Hue, Id, Item, Label, Sensors (+28 more)
+Cohesion: 0.04
+Nodes (44): OverlayRow, HasBar, HasChart, Hue, Id, Label, Sensors, Unit (+36 more)
 
 ### Community 60 - ".RunAsync"
 Cohesion: 0.15
@@ -613,76 +611,76 @@ Nodes (3): CpuMatrixStressExecutor, Definition, CpuMatrixStressExecutorTests
 Cohesion: 0.06
 Nodes (14): BitmapInfo, Canvas, Pixels, Extent, Rect, Msg, Rect, TestWindow (+6 more)
 
-### Community 63 - "FakeCard"
-Cohesion: 0.10
-Nodes (13): Average, GpuTelemetry, AutoTuneProgress, FakeCard, Applied, Current, Id, Limits (+5 more)
+### Community 63 - ".Enter"
+Cohesion: 0.19
+Nodes (11): GameBoost, Catalog, Defaults, GameService, GameServiceGroup, Background, Network, IServiceControl (+3 more)
 
-### Community 64 - "ICommandRunner"
-Cohesion: 0.21
-Nodes (4): ICommandRunner, NetRepair, ProxySettings, HasData
+### Community 64 - ".RegisterNetRepair"
+Cohesion: 0.13
+Nodes (9): NetCheck, NetCheckResult, Failed, Ok, Skipped, NetRepair, ProxySettings, HasData (+1 more)
 
 ### Community 65 - "BenchmarkRunner"
 Cohesion: 0.10
 Nodes (11): IBenchmark, Component, Definition, BenchmarkJob, BenchmarkRunner, Benchmarks, BlockedBy, InQueue (+3 more)
 
 ### Community 66 - ".Run"
-Cohesion: 0.11
-Nodes (5): Algorithm, BlockMove, MovingInversions, Stride, MemoryPatterns
+Cohesion: 0.05
+Nodes (13): MemoryBitFadeExecutor, Definition, MemoryPatternExecutor, Definition, Algorithm, BlockMove, MovingInversions, Stride (+5 more)
 
 ### Community 67 - ".Build"
 Cohesion: 0.11
 Nodes (11): FrameRateReading, IFrameRateSource, Problem, FakeFrames, Problem, OverlayViewModelTests, SequenceFrames, Problem (+3 more)
 
 ### Community 68 - "BenchmarkRecords"
-Cohesion: 0.15
-Nodes (6): BenchmarkComparison, BenchmarkRecord, BenchmarkRecords, HeadlineMetric, SystemRecords, BenchmarkRecordsTests
+Cohesion: 0.11
+Nodes (12): BenchmarkComparison, BenchmarkRecord, BenchmarkRecords, HeadlineMetric, PeerPart, Cpu, Drive, Gpu (+4 more)
 
 ### Community 69 - "Mazesta.Persistence"
-Cohesion: 0.07
-Nodes (10): Mazesta.Tray, Mazesta.Persistence.Tests, Mazesta.Persistence.Updates, Mazesta.Persistence, LoadOutcome, Corrupt, Defaulted, Loaded (+2 more)
+Cohesion: 0.06
+Nodes (8): Mazesta.Diagnostics.Gpu.Tuning, Mazesta.Tray, Mazesta.Diagnostics.Tuning, Mazesta.Persistence.Tests, Mazesta.Persistence.Updates, Mazesta.Core.Tuning, Mazesta.Persistence, Program
 
 ### Community 71 - "checks.js"
 Cohesion: 0.19
 Nodes (18): battery(), poll(), show(), card(), CHECK_TARGET, display(), start(), keyboard() (+10 more)
 
 ### Community 72 - "Mazesta.Core.Hardware"
-Cohesion: 0.07
-Nodes (12): Mazesta.Core.Health.Checkup, Mazesta.Diagnostics.Whea, Mazesta.Monitoring, Mazesta.Diagnostics.Benchmarks, Mazesta.Diagnostics.Cpu, Mazesta.Core.Time, Mazesta.Diagnostics.Memory, Mazesta.Monitoring.Tests (+4 more)
+Cohesion: 0.11
+Nodes (5): Mazesta.Diagnostics.Cpu, Mazesta.Monitoring.Tests, Mazesta.Diagnostics.Evidence, Mazesta.Core.Hardware, Mazesta.Diagnostics.Gpu
 
 ### Community 73 - "OverlayService"
-Cohesion: 0.07
-Nodes (13): FrameRateSession, Max, Min, Samples, HotkeyWindow, OverlayService, Current, FrameSource (+5 more)
+Cohesion: 0.08
+Nodes (9): HotkeyWindow, OverlayService, Current, FrameSource, IsVisible, Items, PingSource, IPingSource (+1 more)
 
 ### Community 74 - "LibreHardwareMonitorProvider"
+Cohesion: 0.11
+Nodes (7): ILhmComputer, Hardware, LibreHardwareMonitorProvider, Hardware, Name, Status, NodeState
+
+### Community 75 - ".RegisterDrivers"
+Cohesion: 0.06
+Nodes (19): BoardDevice, BoardDrivers, BoardItem, BoardPackage, BoardPart, Audio, Bios, Bluetooth (+11 more)
+
+### Community 76 - "CpuVectorStressExecutor"
 Cohesion: 0.13
-Nodes (5): LibreHardwareMonitorProvider, Hardware, Name, Status, NodeState
+Nodes (6): CpuVectorStressExecutor, Definition, Width, Avx2, Avx512, Sse
 
-### Community 75 - "BoardDrivers"
-Cohesion: 0.15
-Nodes (4): BoardDevice, BoardDrivers, BoardItem, BoardPackage
-
-### Community 77 - "Card"
-Cohesion: 0.17
-Nodes (12): Card, Applied, Id, Limits, Name, Inv, NoLoad, Provider (+4 more)
-
-### Community 78 - "TestProgress"
-Cohesion: 0.08
-Nodes (11): GpuStressExecutor, Definition, GpuStressProfile, Pulse, Steady, Variable, PowerExecutor, Definition (+3 more)
-
-### Community 79 - ".A_file_that_does_not_match_its_checksum_is_deleted_never_kept"
-Cohesion: 0.12
-Nodes (5): AiMeasurement, AiResults, AiTests, FileServer, Ranges
+### Community 77 - "JsonStore"
+Cohesion: 0.11
+Nodes (17): IGpuTuningProvider, Devices, UnavailableDetail, UnavailableReasonKey, JsonStore, Card, Applied, Id (+9 more)
 
 ### Community 80 - ".Judge"
 Cohesion: 0.12
 Nodes (18): AiGenBlock, LittleVram, NeedsNvidia, NoGpu, AiGenCatalog, Models, AiGenFit, Full (+10 more)
 
 ### Community 81 - "OverlayTests"
-Cohesion: 0.11
-Nodes (4): FrameTimeStats, OverlayCatalog, OverlayPinnedTests, OverlayTests
+Cohesion: 0.14
+Nodes (3): FrameTimeStats, OverlayPinnedTests, OverlayTests
+
+### Community 82 - ".Run"
+Cohesion: 0.14
+Nodes (3): GpuSceneExecutor, Definition, Readout
 
 ### Community 83 - ".Get"
-Cohesion: 0.24
+Cohesion: 0.23
 Nodes (5): InfoRow, InfoSection, SystemInfoViewModel, Loaded, Sections
 
 ### Community 84 - ".RunAsync"
@@ -702,88 +700,88 @@ Cohesion: 0.07
 Nodes (14): FakeSensor, Control, Hardware, Identifier, Index, IsDefaultHidden, Max, Min (+6 more)
 
 ### Community 88 - "DnsBench"
-Cohesion: 0.11
-Nodes (8): DnsBench, DnsScore, Reliable, Reply, NotOurs, Resolved, Wrong, DnsBenchTests
+Cohesion: 0.14
+Nodes (4): DnsBench, DnsScore, Reliable, DnsBenchTests
 
 ### Community 89 - "HealthAlerts"
 Cohesion: 0.16
 Nodes (10): HealthAlert, HealthAlertKind, CpuOverheat, CpuThrottle, GpuOverheat, HealthAlerts, IsWatching, HealthSample (+2 more)
 
-### Community 90 - "CpuInfo"
-Cohesion: 0.14
-Nodes (6): CpuInfo, GpuInfo, NetworkAdapterInfo, IInventoryProvider, Inv, SystemInfoViewModelTests
+### Community 90 - "SystemInfoViewModelTests"
+Cohesion: 0.18
+Nodes (3): IInventoryProvider, Inv, SystemInfoViewModelTests
 
 ### Community 91 - "StoredReport"
-Cohesion: 0.17
+Cohesion: 0.19
 Nodes (7): ReportStore, StoredReport, HtmlPath, JsonPath, PdfPath, SummaryPath, TextPath
 
 ### Community 92 - "FakeRunner"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (7): TweakEngine, FakeRegistry, Values, TweaksTests, FakeRunner, Calls, Throw
 
 ### Community 93 - "AppConfig"
 Cohesion: 0.06
-Nodes (33): AppConfig, ChartWindows, ExpandedGroups, FastIntervalSeconds, GameModeSaved, GameModeServices, Language, MainWindow (+25 more)
+Nodes (31): AppConfig, ChartWindows, ExpandedGroups, FastIntervalSeconds, GameModeSaved, GameModeServices, Language, MainWindow (+23 more)
 
 ### Community 94 - "t"
 Cohesion: 0.10
 Nodes (57): byPart(), fa(), prose(), t(), addFeatured(), addPeer(), allPeers(), paint() (+49 more)
 
 ### Community 95 - "MainWindow"
-Cohesion: 0.07
+Cohesion: 0.08
 Nodes (6): Canvas, LoadingPanel, MainWindow, Dispatcher, InFront, WebEnvironment
 
 ### Community 96 - ".Memory"
-Cohesion: 0.19
+Cohesion: 0.21
 Nodes (5): HashStressShader, RayTraceShader, VramPatternShader, ComputeGpuLoad, LoadRunResult
-
-### Community 97 - "OverlaySection"
-Cohesion: 0.12
-Nodes (10): OverlayChoice, OverlaySection, Device, Hue, HueEdge, HueTint, Part, Rows (+2 more)
 
 ### Community 98 - ".Decode"
 Cohesion: 0.22
 Nodes (4): Ddr4Spd, MemoryProfile, SpdModule, Ddr4SpdTests
 
 ### Community 99 - "CpuSpecTests"
-Cohesion: 0.14
+Cohesion: 0.12
 Nodes (7): FindingLevel, Attention, Good, Note, Problem, SelfCheck, CpuSpecTests
 
 ### Community 100 - ".List"
-Cohesion: 0.20
+Cohesion: 0.24
 Nodes (3): AiChatInfo, AiChats, AiChatsTests
 
-### Community 101 - ".AddDiagnostics"
-Cohesion: 0.07
-Nodes (14): DiagnosticsRegistration, CheckpointV1ToV2, From, Migration0To1, From, Migration1To2, From, Migration2To3 (+6 more)
+### Community 101 - "IMigration"
+Cohesion: 0.18
+Nodes (10): ChartWindowConfig, Migration0To1, From, Migration1To2, From, Migration2To3, From, WindowPlacement (+2 more)
 
 ### Community 102 - "call"
 Cohesion: 0.09
 Nodes (37): app, asst, band, banner(), boot, bootCard(), FAMILIES, familyOf() (+29 more)
 
-### Community 105 - "OverlayItem"
+### Community 104 - "AiAssistantTests"
 Cohesion: 0.13
-Nodes (16): OverlayAggregate, Max, Sum, OverlayItem, BaseId, Device, IsFrameItem, IsMeasured (+8 more)
+Nodes (8): AiAssistantChoice, AiAssistantPolicy, AiAssistantStatus, Available, LittleVram, NoGpu, NoRoom, AiAssistantTests
+
+### Community 105 - "OverlayItem"
+Cohesion: 0.09
+Nodes (18): OverlayAggregate, Max, Sum, OverlayCatalog, OverlayChoice, OverlayItem, BaseId, Device (+10 more)
 
 ### Community 107 - "GamingViewModel"
-Cohesion: 0.11
-Nodes (11): GamingViewModel, GameMode, GpuScheduling, HasUltimate, Loaded, Plans, PowerPlanRow, IsActive (+3 more)
+Cohesion: 0.16
+Nodes (9): GamingViewModel, GameMode, GpuScheduling, HasUltimate, Loaded, Plans, PowerPlanRow, IsActive (+1 more)
 
-### Community 108 - "BenchmarkPeersTests"
+### Community 108 - ".RegisterBenchmarks"
 Cohesion: 0.06
-Nodes (23): BenchmarkMetric, BenchmarkMark, BenchmarkMarks, File_, BenchmarkPeers, BenchmarkRun, Table, BenchmarkRunLog (+15 more)
+Nodes (24): BenchmarkMetric, BenchmarkMark, BenchmarkMarks, File_, BenchmarkPeers, BenchmarkRun, Table, BenchmarkRunLog (+16 more)
 
 ### Community 109 - "SceneModel"
 Cohesion: 0.13
 Nodes (8): SceneModel, CustomPath, Name, Triangles, Vertices, SceneVertex, SvgPath, SceneModelTests
 
 ### Community 110 - "AppUpdater"
-Cohesion: 0.10
-Nodes (11): AppUpdater, CheckedAt, Current, DataDownloaded, DataLists, DataSyncedAt, Error, Manifest (+3 more)
+Cohesion: 0.07
+Nodes (20): AppUpdater, CheckedAt, Current, DataDownloaded, DataLists, DataSyncedAt, Error, Manifest (+12 more)
 
-### Community 111 - "TestOptions"
-Cohesion: 0.11
-Nodes (5): ITestAvailability, TestAvailability, Unavailability, TestOptions, TestOptionsTests
+### Community 111 - "ITestExecutor"
+Cohesion: 0.14
+Nodes (8): GpuStressExecutor, Definition, PowerExecutor, Definition, InternetSpeedExecutor, Definition, GpuHardwareTests, NoGpu
 
 ### Community 112 - "Slice 1 Verification Record"
 Cohesion: 0.12
@@ -794,52 +792,52 @@ Cohesion: 0.11
 Nodes (26): ReadingValidator, Overlay Panel (GPU/CPU/RAM/NET blocks), Slice 12 Verification: Web Edition v2, Benchmark Records Comparison, Browser Preview on the Demo Host (?still), Complete Process Exit on Window Close, FPS and 1% Low via ETW Session, Hardware Diagnostics Report (hardware-report.txt) (+18 more)
 
 ### Community 114 - ".Fit"
-Cohesion: 0.21
-Nodes (4): AiFit, AiFitter, AiMachine, AiFitTests
+Cohesion: 0.16
+Nodes (9): AiFit, AiFitMode, Cpu, Gpu, Split, TooBig, AiFitter, AiMachine (+1 more)
 
 ### Community 115 - "SessionReport"
 Cohesion: 0.18
 Nodes (18): BenchmarkEntry, BenchmarkMetricEntry, FindingEntry, FindingMeasure, ReportCounts, ReportKind, Benchmark, TestSession (+10 more)
 
 ### Community 116 - "OverlayWindow"
-Cohesion: 0.13
+Cohesion: 0.15
 Nodes (6): BLENDFUNCTION, OverlayWindow, CreateParams, ShowWithoutActivation, POINT, SIZE
 
 ### Community 117 - "RollingFileLoggerProvider"
 Cohesion: 0.14
 Nodes (3): FileLogger, RollingFileLoggerProvider, RollingFileLoggerTests
 
-### Community 118 - "GpuBenchmark.cs"
-Cohesion: 0.16
-Nodes (11): GpuFault, GpuLostException, GpuUnsupportedException, GpuWrongResultException, Kind, Cancelled, Internal, Lost (+3 more)
+### Community 118 - ".Run"
+Cohesion: 0.10
+Nodes (14): GpuFault, GpuLostException, GpuUnsupportedException, GpuWrongResultException, Kind, Cancelled, Internal, Lost (+6 more)
 
 ### Community 119 - "IRegistryAccess"
-Cohesion: 0.17
-Nodes (7): IRegistryAccess, UpdateProfile, Custom, Default, Disabled, Recommended, WindowsRegistry
+Cohesion: 0.16
+Nodes (8): IRegistryAccess, UpdateProfile, Custom, Default, Disabled, Recommended, UpdateProfiles, WindowsRegistry
 
 ### Community 120 - "ReportService"
-Cohesion: 0.13
-Nodes (5): ReportService, AppVersion, BrowserDataDir, Store, SensorSummarizer
+Cohesion: 0.09
+Nodes (11): ReportService, AppVersion, BrowserDataDir, Store, QueuedTest, RepeatMode, Count, Once (+3 more)
 
 ### Community 121 - "GpuProfileDocument"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (13): GpuCurve, GpuProfile, GpuProfileDocument, Curves, Journal, Profiles, SchemaVersion, GpuProfileKind (+5 more)
 
 ### Community 122 - "Tweaks.cs"
 Cohesion: 0.10
-Nodes (17): DnsChoice, RegValue, TempFiles, Tweak, CanUndo, TweakCatalog, TweakCommand, TweakGroup (+9 more)
+Nodes (16): DnsChoice, RegValue, TempFiles, Tweak, CanUndo, TweakCatalog, TweakCommand, TweakGroup (+8 more)
 
 ### Community 123 - "TrayContext"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (3): TrayContext, Checks, IsChecking
 
 ### Community 124 - "GpuAiBenchmark"
 Cohesion: 0.12
 Nodes (7): GpuAiBenchmark, Component, Definition, Level, Integer, Output, Unit
 
-### Community 125 - ".Read"
-Cohesion: 0.11
-Nodes (10): SensorEvidence, SensorStat, Clock, UtcNow, GpuSensorNodeTests, TwoGpus, Hardware, Name (+2 more)
+### Community 125 - "Fake"
+Cohesion: 0.16
+Nodes (5): Fake, Calls, Locked, Services, GameBoostTests
 
 ### Community 126 - "Checkup (smart troubleshooting tab)"
 Cohesion: 0.09
@@ -850,8 +848,8 @@ Cohesion: 0.17
 Nodes (22): Phase 1 Slice Roadmap, Slice 2 Design: Test Engine + CPU Matrix Load, CpuMatrixStressExecutor (64x64 matrix load with spot checks), Crash Checkpoint (test-checkpoint.json), DescribeMeasuredLoad (measured CPU load evidence), ITestExecutor, Deferred and Known Gaps, Slice 2 Increment Non-Goals (+14 more)
 
 ### Community 128 - "LibreHardwareMonitorProviderTests"
-Cohesion: 0.20
-Nodes (4): PollRequest, FixedClock, UtcNow, LibreHardwareMonitorProviderTests
+Cohesion: 0.24
+Nodes (3): FixedClock, UtcNow, LibreHardwareMonitorProviderTests
 
 ### Community 129 - "InternetSpeedBenchmark"
 Cohesion: 0.07
@@ -870,64 +868,64 @@ Cohesion: 0.08
 Nodes (25): AiIntent, Alert, Benchmarks, Crashes, Dns, Drivers, Games, Help (+17 more)
 
 ### Community 133 - "PartSpecs"
-Cohesion: 0.16
-Nodes (6): InfoTable, PartSpecs, Na, SpecCard, SpecRow, PartSpecsTests
+Cohesion: 0.23
+Nodes (5): InfoTable, PartSpecs, Na, SpecCard, SpecRow
 
 ### Community 134 - "PingMonitor"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (7): PingReading, PingWindow, PingMonitor, Target, PingWindowTests, FakePing, Target
+
+### Community 135 - ".AssistantTools"
+Cohesion: 0.08
+Nodes (4): MazestaCompany, ReadySystem, ChatTest, RowState
 
 ### Community 136 - "CpuTopology"
 Cohesion: 0.16
 Nodes (7): CpuCore, FirstThreadMask, Threads, CpuTopology, Cores, GroupAffinity, ProcessorNumber
 
-### Community 137 - ".Run"
-Cohesion: 0.06
-Nodes (12): GpuSceneExecutor, Definition, SceneView, Garden, Overlay, Work, Box, Readout (+4 more)
+### Community 137 - "GardenRenderer"
+Cohesion: 0.07
+Nodes (15): GardenRenderer, Height, OwnTarget, Scene, Targets, Width, SceneView, Garden (+7 more)
 
-### Community 138 - ".Run"
-Cohesion: 0.11
-Nodes (5): Icosphere, Frame, GpuRasterBenchmark, Component, Definition
+### Community 138 - ".AddDiagnostics"
+Cohesion: 0.21
+Nodes (4): DiagnosticsRegistration, HardwareErrorEvent, IHardwareErrorSource, WheaErrorSource
 
 ### Community 139 - "FakeHardware"
 Cohesion: 0.10
 Nodes (8): FakeHardware, HardwareType, Identifier, Name, Parent, Properties, Sensors, SubHardware
 
-### Community 140 - ".RegisterDrivers"
-Cohesion: 0.18
-Nodes (4): BoardDriverService, Setup, DriverBoard, DriverGpu
+### Community 140 - ".The_rasterised_garden_is_a_stable_picture"
+Cohesion: 0.21
+Nodes (3): GardenRenderHardwareTests, NoGpu, Png
 
 ### Community 141 - "Finding"
-Cohesion: 0.15
-Nodes (8): CpuCheck, CpuRunTrace, DriveCheck, Finding, Measure, Measures, GpuCheck, CheckupText
+Cohesion: 0.20
+Nodes (7): CpuCheck, CpuRunTrace, DriveCheck, Finding, Measure, Measures, CheckupText
 
 ### Community 142 - "WindowsToolsViewModel"
-Cohesion: 0.14
-Nodes (4): WindowsToolsViewModel, Output, PageFile, PageFileInfo
-
-### Community 143 - "WheaTests"
 Cohesion: 0.15
-Nodes (5): HardwareErrorEvent, IHardwareErrorSource, WheaErrorSource, FakeSource, WheaTests
+Nodes (3): WindowsToolsViewModel, Output, PageFile
 
 ### Community 144 - "Mazesta Test Agent Guide"
 Cohesion: 0.14
 Nodes (21): Build and Test (TreatWarningsAsErrors, Category!=Hardware), Git Workflow (never push to main, branch per task), Mazesta Test Agent Guide, tools/publish.ps1 (publish keeping Data), renderMode software (WebView2 --disable-gpu), WPF Edition Retirement and WPF Removal, CLAUDE.md Git Workflow (commit and push after every change), Working Branch slice-13/web-v3 (+13 more)
 
 ### Community 145 - ".ReleasesAsync"
-Cohesion: 0.21
-Nodes (3): NvidiaProduct, NvidiaRelease, NvidiaDriverService
+Cohesion: 0.10
+Nodes (7): NvidiaDrivers, NvidiaProduct, NvidiaRelease, Authenticode, Data, FileInfo, NvidiaDriverService
 
 ### Community 146 - "WindowsServiceControl"
-Cohesion: 0.07
-Nodes (19): GameBoost, Catalog, Defaults, GameService, GameServiceGroup, Background, Network, IServiceControl (+11 more)
+Cohesion: 0.22
+Nodes (3): ServiceConfig, ServiceStatus, WindowsServiceControl
 
-### Community 147 - "MemoryTests"
-Cohesion: 0.14
-Nodes (6): MemoryPatternExecutor, Definition, IMemoryProbe, MemoryStatus, FixedProbe, MemoryTests
+### Community 147 - "HardwareDetails"
+Cohesion: 0.32
+Nodes (9): CacheInfo, CpuDetails, DriveDetails, GpuDetails, HardwareDetails, NicDetails, PciLinkInfo, PciSlotLink (+1 more)
 
-### Community 148 - "DriveHealth"
-Cohesion: 0.17
-Nodes (7): DriveHealth, IDriveHealthProvider, INvmeHealthSource, SmartCheckExecutor, Definition, Drives, Nvme
+### Community 148 - "SessionBreak.cs"
+Cohesion: 0.33
+Nodes (5): BreakEvent, IBreakEventSource, BootTime, WindowsBreakEventSource, BootTime
 
 ### Community 149 - "CpuSpecs"
 Cohesion: 0.15
@@ -946,32 +944,28 @@ Cohesion: 0.14
 Nodes (11): TestAdvice, TestOutcome, Cancelled, Error, Failed, Inconclusive, NotRun, Passed (+3 more)
 
 ### Community 154 - "BenchmarkResult"
-Cohesion: 0.09
+Cohesion: 0.08
 Nodes (6): BenchmarkResult, MemoryBenchmark, Component, Definition, StreamResult, GpuBenchmark
 
-### Community 155 - "Fake"
-Cohesion: 0.19
-Nodes (10): BenchmarkStatus, Cancelled, Completed, Error, Failed, Unsupported, BenchmarksViewModelTests, Fake (+2 more)
+### Community 155 - "BenchmarkStatus"
+Cohesion: 0.33
+Nodes (6): BenchmarkStatus, Cancelled, Completed, Error, Failed, Unsupported
 
 ### Community 156 - "GpuLogicTests"
-Cohesion: 0.17
-Nodes (4): BatchSizer, Count, VramPattern, GpuLogicTests
+Cohesion: 0.12
+Nodes (8): BatchSizer, Count, VramPattern, GpuStressProfile, Pulse, Steady, Variable, GpuLogicTests
 
 ### Community 157 - "SfcExecutor"
-Cohesion: 0.19
-Nodes (4): SfcExecutor, Definition, WindowsToolsHardwareTests, WindowsToolsTests
+Cohesion: 0.11
+Nodes (7): GamingStatus, PowerPlan, PowerPlans, SfcExecutor, Definition, WindowsToolsHardwareTests, WindowsToolsTests
 
 ### Community 160 - "mount"
 Cohesion: 0.22
 Nodes (19): blocksOf(), mount(), arrows(), current(), dropAt(), fill(), frameChart(), itemRow() (+11 more)
 
 ### Community 161 - "Program"
-Cohesion: 0.12
+Cohesion: 0.13
 Nodes (4): Program, JustUpdated, LogProvider, Recorder
-
-### Community 162 - "SummaryForm"
-Cohesion: 0.16
-Nodes (3): TrayDrive, SummaryForm, TrayText
 
 ### Community 163 - "Mazesta Test README"
 Cohesion: 0.15
@@ -982,40 +976,40 @@ Cohesion: 0.15
 Nodes (18): Customer Summary (one A5 page), Slice 3 Verification: Tray Monitor and Component Tests, Tray Check Schedule (20 s, 10 min, 30 s while watching), HealthAlerts Rules (Mazesta.Core.Health), PDF Printed from HTML with System WebView2, Per-Check Sensor Provider with Memory Trim (~16.6 MB), ReportService (report.json and report.html), Tray Monitor (Mazesta.Tray, windowless NotifyIcon) (+10 more)
 
 ### Community 166 - "AppGuide"
-Cohesion: 0.17
+Cohesion: 0.20
 Nodes (7): AiRoute, All, Minutes, Together, AppGuide, Places, AppPlace
 
-### Community 167 - ".Apply"
-Cohesion: 0.25
-Nodes (3): NodeStatus, StaleDetector, StaleDetectorTests
+### Community 167 - "SensorReading"
+Cohesion: 0.09
+Nodes (11): DataQuality, Invalid, Missing, Ok, Stale, NodeStatus, ReadingValidator, SensorReading (+3 more)
 
 ### Community 170 - "AutoTuneOptions"
-Cohesion: 0.11
-Nodes (18): AutoTuneOptions, BaselineDuration, ClockBinMHz, ClockStep, ConfirmDuration, CoreOffsetStep, LongSettle, MaxClockRaise (+10 more)
+Cohesion: 0.07
+Nodes (23): Average, AutoTuneOptions, BaselineDuration, ClockBinMHz, ClockStep, ConfirmDuration, CoreOffsetStep, LongSettle (+15 more)
 
 ### Community 171 - "TestOptionViewModel"
 Cohesion: 0.12
 Nodes (14): TestOptionViewModel, Choices, IsChoice, IsFreeText, IsValid, Label, Option, Value (+6 more)
 
 ### Community 172 - ".Client"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (4): SiteReport, FakeSite, Seen, SiteClientTests
 
 ### Community 173 - "Runner"
-Cohesion: 0.15
-Nodes (5): GamingStatus, NoWmi, Runner, Calls, WindowsPagesTests
+Cohesion: 0.18
+Nodes (4): NoWmi, Runner, Calls, WindowsPagesTests
 
-### Community 174 - ".Parse"
-Cohesion: 0.13
-Nodes (6): WmiDriveHealthParser, WmiDriveHealthProvider, Fake, WmiDriveHealthHardwareTests, WmiDriveHealthParserTests, WmiPageFileTests
+### Community 174 - "IWmiQuery"
+Cohesion: 0.12
+Nodes (6): IWmiQuery, WmiQuery, CheckupHardwareTests, Fake, WmiDriveHealthHardwareTests, WmiPageFileTests
 
 ### Community 175 - "TrayCheck"
-Cohesion: 0.17
-Nodes (5): TrayCheck, IsProblem, TrayCheckLog, TrayCheckLogTests, File_
+Cohesion: 0.22
+Nodes (4): TrayCheck, IsProblem, TrayCheckLogTests, File_
 
 ### Community 177 - "Mazesta.Desktop.Localization"
-Cohesion: 0.12
-Nodes (7): Mazesta.Monitoring.Tests.Fakes, Mazesta.Desktop.Localization, Mazesta.Diagnostics, Mazesta.Core.Text, Mazesta.Desktop.Tests, Mazesta.Desktop.Views, Mazesta.Desktop.ViewModels
+Cohesion: 0.13
+Nodes (6): Mazesta.Monitoring.Tests.Fakes, Mazesta.Desktop.Localization, Mazesta.Diagnostics, Mazesta.Core.Text, Mazesta.Desktop.Tests, Mazesta.Desktop.ViewModels
 
 ### Community 178 - "Design System North Star: Bench Test Gear"
 Cohesion: 0.14
@@ -1037,17 +1031,17 @@ Nodes (10): Lease, Workload, Benchmark, Drivers, Tests, Tuning, WorkloadBusyExce
 Cohesion: 0.15
 Nodes (4): Operation, UiDispatcher, Current, Owner
 
-### Community 184 - "HardwareInventory"
-Cohesion: 0.15
-Nodes (9): HardwareDetails, PlatformSecurity, HardwareInventory, HardwareDetailsCache, HardwareSnapshot, File, Stored, IHardwareDetailsProvider (+1 more)
+### Community 184 - "HardwareSnapshot"
+Cohesion: 0.21
+Nodes (4): HardwareSnapshot, File, Stored, HardwareSnapshotTests
 
 ### Community 185 - "VfPoint"
 Cohesion: 0.26
 Nodes (4): VfCurve, VfPoint, VfScanProgress, VfCurveTests
 
-### Community 187 - "SiteClient.cs"
-Cohesion: 0.16
-Nodes (9): SiteClient, Api, SiteException, Status, SiteMachine, SiteReportReceipt, SiteRunsReceipt, SiteShareReceipt (+1 more)
+### Community 187 - "SiteClient"
+Cohesion: 0.15
+Nodes (11): SiteClient, Api, SiteException, Status, SiteMachine, SitePairClaim, SitePairing, SiteReportReceipt (+3 more)
 
 ### Community 188 - "Gate"
 Cohesion: 0.19
@@ -1057,9 +1051,9 @@ Nodes (5): BenchmarkQueueTests, Now, Gate, Component, Definition
 Cohesion: 0.16
 Nodes (16): GardenScene (Persian garden: GardenRaster, GardenRay), Mazesta.Desktop (app layer library), Mazesta.Diagnostics.Gpu, Mazesta.Web (MazestaWeb.exe), WebBridge (fixed JSON bridge), CheckupService, AI Models Page (GGUF models, llama-bench, fit estimate), VRAM Test and DXGI Budget (+8 more)
 
-### Community 190 - "IGpuTuningDevice"
-Cohesion: 0.13
-Nodes (6): IGpuTuningDevice, Id, Limits, Name, GpuProfilesMenu, Menu
+### Community 190 - "GpuProfilesMenu"
+Cohesion: 0.09
+Nodes (6): GpuStartup, GpuStartupChoice, GpuProfilesMenu, Menu, GpuStartupTests, File1
 
 ### Community 191 - "Slice 10 Verification: Yellow Redesign, V/F Curve, Benchmark Queue, Customer Summary, Overlay"
 Cohesion: 0.21
@@ -1069,33 +1063,21 @@ Nodes (17): Slice 10 Verification: Yellow Redesign, V/F Curve, Benchmark Queue, 
 Cohesion: 0.17
 Nodes (4): DriverInstallResult, Succeeded, DriverUpdate, WindowsDriverUpdates
 
-### Community 194 - ".Together_the_parts_run_side_by_side_and_the_rest_afterwards"
-Cohesion: 0.15
-Nodes (7): Clock, UtcNow, Meeting, Definition, Stub, Definition, TestProfilesTests
-
-### Community 195 - "ITestExecutor"
-Cohesion: 0.16
-Nodes (4): GpuRenderExecutor, Definition, InternetSpeedExecutor, Definition
-
-### Community 197 - ".AssistantTools"
-Cohesion: 0.11
-Nodes (6): WinCommand, WindowsActions, Commands, Places, WinPlace, ChatTest
+### Community 197 - "WindowsActions"
+Cohesion: 0.21
+Nodes (5): WinCommand, WindowsActions, Commands, Places, WinPlace
 
 ### Community 198 - ".Build"
-Cohesion: 0.11
-Nodes (6): IClock, UtcNow, SystemClock, UtcNow, Bootstrapper, TuningRecovery
+Cohesion: 0.06
+Nodes (17): IClock, UtcNow, SystemClock, UtcNow, Bootstrapper, BoundedEventLog, EventEntry, EventLevel (+9 more)
 
 ### Community 199 - "CheckupService"
 Cohesion: 0.10
-Nodes (10): GpuLink, GpuRunTrace, GpuThrottleCounts, CheckupRun, All, CheckupService, PartJudgment, FullyLoaded (+2 more)
+Nodes (7): CheckupRun, All, CheckupService, PartJudgment, FullyLoaded, TestWatch, NvidiaRunProbe
 
 ### Community 200 - "ReportFont"
 Cohesion: 0.18
 Nodes (5): ReportFont, SpecRow, SpecSection, SpecSheet, SpecSheetTests
-
-### Community 202 - ".Call"
-Cohesion: 0.18
-Nodes (4): FieldValue, NvmlPcieCounters, PcieCard, PcieCounter
 
 ### Community 203 - "NetworkLatencyExecutor"
 Cohesion: 0.11
@@ -1118,23 +1100,23 @@ Cohesion: 0.18
 Nodes (5): DataSync, Result, UpdateClient, Folder, UpdateRejectedException
 
 ### Community 211 - "AiFiles"
-Cohesion: 0.16
-Nodes (9): AiModel, AiFiles, BenchExe, HasRuntime, ModelsDir, Root, RuntimeDir, ServerExe (+1 more)
+Cohesion: 0.05
+Nodes (20): AiCatalog, Models, Runtime, AiModel, AiRuntime, AiFiles, BenchExe, HasRuntime (+12 more)
 
 ### Community 213 - ".Run"
 Cohesion: 0.13
 Nodes (4): CpuCoverage, ProcessorNumber, CpuHashExecutor, Definition
 
-### Community 214 - "GpuSceneBenchmark"
-Cohesion: 0.27
-Nodes (5): GpuSceneBenchmark, Component, Definition, GpuBenchmarkHardwareTests, NoGpu
+### Community 214 - "GpuRasterBenchmark"
+Cohesion: 0.15
+Nodes (6): Frame, GpuRasterBenchmark, Component, Definition, GpuBenchmarkHardwareTests, NoGpu
 
 ### Community 215 - "LibreHardwareMonitorProvider"
 Cohesion: 0.21
 Nodes (15): Mazesta.Hardware, Keep with Claude (real hardware, live UI work), Dev Box: Intel i9-14900K, RTX 4090, MSI Z790, DevBoxHardwareTests (Category=Hardware), Hardware Matrix, HWiNFO Cross-Check (pending owner), Observed LibreHardwareMonitor Identifiers, NVMe Serial vs NGUID Mismatch (+7 more)
 
 ### Community 216 - "List"
-Cohesion: 0.25
+Cohesion: 0.23
 Nodes (3): AiJson, List, AiJsonTests
 
 ### Community 219 - "StorageEventSource"
@@ -1142,16 +1124,8 @@ Cohesion: 0.25
 Nodes (3): IStorageEventSource, StorageEvent, StorageEventSource
 
 ### Community 220 - "TrayIntervalsTests"
-Cohesion: 0.25
-Nodes (4): TrayIntervals, Program, TrayIntervalsTests, File_
-
-### Community 221 - "Notifier"
-Cohesion: 0.08
-Nodes (11): ProviderState, Degraded, Failed, NotStarted, Ready, Starting, ProviderStatus, ProviderText (+3 more)
-
-### Community 222 - "NvmlTuningDevice"
-Cohesion: 0.16
-Nodes (5): ClockOffset, NvmlTuningDevice, Id, Limits, Name
+Cohesion: 0.40
+Nodes (3): TrayIntervals, TrayIntervalsTests, File_
 
 ### Community 223 - "Slice 6 Verification: Benchmark Suite"
 Cohesion: 0.25
@@ -1169,20 +1143,16 @@ Nodes (7): FrameLink, Busiest, ChildWindow, Descendant, Foreground, FrameTarget,
 Cohesion: 0.15
 Nodes (11): System.Management, net10.0-windows, LibreHardwareMonitorLib, Microsoft.Extensions.Logging.Abstractions, Microsoft.NET.Sdk, net10.0-windows, LibreHardwareMonitorLib, Microsoft.NET.Test.Sdk (+3 more)
 
-### Community 230 - "PciDevice"
-Cohesion: 0.13
-Nodes (9): DriveDetails, GpuDetails, NicDetails, PciLinkInfo, PciSlotLink, PciVendors, DevPropKey, PciDevice (+1 more)
-
 ### Community 231 - "Mazesta.Desktop.csproj"
 Cohesion: 0.15
 Nodes (11): net10.0-windows, CommunityToolkit.Mvvm, Microsoft.Extensions.DependencyInjection, Microsoft.Extensions.Logging, Microsoft.Web.WebView2, Microsoft.NET.Sdk, net10.0-windows, Microsoft.NET.Test.Sdk (+3 more)
 
 ### Community 232 - "AiChat"
-Cohesion: 0.18
-Nodes (11): AiChat, Created, Id, Messages, Title, Updated, AiChatMessage, Role (+3 more)
+Cohesion: 0.16
+Nodes (10): AiChat, Created, Id, Messages, Title, Updated, AiChatMessage, Text (+2 more)
 
 ### Community 234 - "UpdateManifest"
-Cohesion: 0.21
+Cohesion: 0.23
 Nodes (4): AppRelease, Package, UpdateFile, UpdateManifest
 
 ### Community 235 - "ui.js"
@@ -1193,13 +1163,9 @@ Nodes (29): listeners, on(), pending, box(), lang, rtl, table, mount() (+21 more
 Cohesion: 0.13
 Nodes (33): FIT, GEN_FIT, GEN_ICON, lat(), mount(), card(), measured(), progress() (+25 more)
 
-### Community 239 - "FileInfo"
-Cohesion: 0.27
-Nodes (3): Authenticode, Data, FileInfo
-
-### Community 240 - "LlamaBenchmark"
-Cohesion: 0.16
-Nodes (4): LlamaBenchmark, Component, Definition, LlamaBenchResult
+### Community 239 - ".Read"
+Cohesion: 0.24
+Nodes (3): BenchmarkBreakWatch, Message, Mark
 
 ### Community 241 - "PawnIoInstallResult"
 Cohesion: 0.18
@@ -1210,7 +1176,7 @@ Cohesion: 0.12
 Nodes (16): CrashCause, Bios, Cpu, Device, Driver, Gpu, GpuDriver, Heat (+8 more)
 
 ### Community 246 - ".Advise"
-Cohesion: 0.23
+Cohesion: 0.25
 Nodes (5): DriverAdvice, DriverAdviceResult, NvidiaLine, GameReady, Studio
 
 ### Community 247 - ".Sum"
@@ -1229,49 +1195,45 @@ Nodes (9): net10.0-windows, Microsoft.Extensions.Logging.Abstractions, Microsoft
 Cohesion: 0.20
 Nodes (10): SoftCategory, Animation, Architecture, Civil, Game, Graphics, Mechanical, Rendering (+2 more)
 
-### Community 256 - ".Read"
-Cohesion: 0.17
-Nodes (4): GpuStartup, GpuStartupChoice, GpuStartupTests, File1
-
-### Community 257 - "UpdateState"
-Cohesion: 0.20
-Nodes (9): UpdateState, Available, Checking, Downloading, Failed, Idle, Installing, Ready (+1 more)
+### Community 257 - "FrameRateSession"
+Cohesion: 0.33
+Nodes (4): FrameRateSession, Max, Min, Samples
 
 ### Community 259 - "FakeLhmComputer"
-Cohesion: 0.12
-Nodes (5): ILhmComputer, Hardware, FakeLhmComputer, Hardware, Roots
+Cohesion: 0.20
+Nodes (3): FakeLhmComputer, Hardware, Roots
 
-### Community 264 - "NetRepairTests"
-Cohesion: 0.13
-Nodes (8): NetCheck, NetCheckResult, Failed, Ok, Skipped, NetRepairTests, Registry, Values
+### Community 263 - "DriveHealth"
+Cohesion: 0.15
+Nodes (5): DriveHealth, IDriveHealthProvider, Drives, Nvme, SmartCheckTests
 
 ### Community 266 - "Mazesta.Persistence.csproj"
 Cohesion: 0.22
 Nodes (7): Microsoft.Extensions.Logging, Microsoft.Extensions.Logging.Abstractions, Microsoft.NET.Sdk, Microsoft.NET.Test.Sdk, xunit, xunit.runner.visualstudio, Microsoft.NET.Sdk
 
-### Community 267 - ".RunAsync"
-Cohesion: 0.20
-Nodes (3): CommandResult, ProcessCommandRunner, HibernateStatus
+### Community 267 - "ICommandRunner"
+Cohesion: 0.21
+Nodes (4): CommandResult, ICommandRunner, ProcessCommandRunner, HibernateStatus
 
 ### Community 269 - "BugCheckCatalog"
-Cohesion: 0.26
-Nodes (3): BugCheckCatalog, All, BugCheckInfo
+Cohesion: 0.24
+Nodes (4): BugCheckCatalog, All, BugCheckInfo, CrashRecord
 
-### Community 273 - "NvmeHealthLog"
-Cohesion: 0.16
-Nodes (5): NvmeDriveHealth, NvmeHealthLog, BytesRead, BytesWritten, Warnings
+### Community 271 - "BreakCause"
+Cohesion: 0.29
+Nodes (7): BreakCause, AppClosed, AppCrashed, BlueScreen, PowerLoss, Restarted, SessionBreakInfo
+
+### Community 273 - "SmartCheckExecutor"
+Cohesion: 0.13
+Nodes (8): INvmeHealthSource, NvmeDriveHealth, NvmeHealthLog, BytesRead, BytesWritten, Warnings, SmartCheckExecutor, Definition
 
 ### Community 275 - "GpuLoadKind"
-Cohesion: 0.14
+Cohesion: 0.13
 Nodes (3): GpuLoadKind, Compute, Memory
 
 ### Community 277 - ".RequestFocus"
-Cohesion: 0.36
+Cohesion: 0.38
 Nodes (3): FocusRequest, MonitoringFocus, MonitoringFocusTests
-
-### Community 278 - "CpuDetails"
-Cohesion: 0.24
-Nodes (3): CacheInfo, CpuDetails, CpuDetailsReader
 
 ### Community 279 - "Processor Figures for the Checkup (cpu-specs README)"
 Cohesion: 0.46
@@ -1285,21 +1247,17 @@ Nodes (3): Mazesta Product Definition, Stack: Plain HTML/CSS/JS in WebView2, No 
 Cohesion: 0.29
 Nodes (7): Localization and RTL (Strings.resx / Strings.fa.resx), Typography (Vazirmatn words, Archivo numbers, .lat/.num), T1 Resource Parity Test, Run as Administrator (MSR access), Manifests and Elevation (asInvoker vs requireAdministrator), ProviderStatus Decision Table (Ready, Degraded, Failed), Fonts: Vazirmatn, Archivo, IRANSansXFaNum
 
-### Community 284 - ".Decode"
-Cohesion: 0.14
-Nodes (3): Ddr5Spd, SpdReader, Ddr5SpdTests
-
-### Community 285 - "BoardPart"
-Cohesion: 0.25
-Nodes (7): BoardPart, Audio, Bios, Bluetooth, Chipset, Lan, Wireless
+### Community 285 - "LoadOutcome"
+Cohesion: 0.33
+Nodes (6): LoadOutcome, Corrupt, Defaulted, Loaded, Migrated, LoadResult
 
 ### Community 286 - "GpuMaker"
 Cohesion: 0.33
 Nodes (6): GpuMaker, Amd, Intel, None, Nvidia, Other
 
-### Community 290 - "NvmlTuningProvider"
-Cohesion: 0.20
-Nodes (5): NvmlTuningProvider, Devices, UnavailableDetail, UnavailableReasonKey, NvmlTuningHardwareTests
+### Community 290 - "EngineState"
+Cohesion: 0.40
+Nodes (5): EngineState, Failed, Paused, Running, Stopped
 
 ### Community 291 - "TestProfiles.cs"
 Cohesion: 0.53
@@ -1321,25 +1279,17 @@ Nodes (5): Localization and RTL (Strings.resx / Strings.fa.resx, Vazirmatn), Eng
 Cohesion: 0.40
 Nodes (4): Microsoft.NET.Test.Sdk, xunit, xunit.runner.visualstudio, Microsoft.NET.Sdk
 
-### Community 299 - "AiCatalog"
-Cohesion: 0.40
-Nodes (4): AiCatalog, Models, Runtime, AiRuntime
-
 ### Community 301 - "Loc"
 Cohesion: 0.33
 Nodes (3): Loc, Culture, IsRtl
 
-### Community 305 - "CrashRecord"
-Cohesion: 0.22
-Nodes (3): CrashRecord, PowerLoss, CrashHistory
-
-### Community 322 - "Width"
+### Community 305 - "Reply"
 Cohesion: 0.50
-Nodes (4): Width, Avx2, Avx512, Sse
+Nodes (4): Reply, NotOurs, Resolved, Wrong
 
-### Community 326 - "CpuBenchmark"
-Cohesion: 0.29
-Nodes (3): CpuBenchmark, Component, Definition
+### Community 327 - "CrashHistory"
+Cohesion: 0.18
+Nodes (4): Mazesta.Diagnostics.Crashes, PowerLoss, CrashHistory, CrashReader
 
 ### Community 328 - "Phase"
 Cohesion: 0.22
@@ -1353,18 +1303,6 @@ Nodes (9): NetVerdict, Connected, DnsFails, NoAdapter, NoAddress, NoGateway, NoI
 Cohesion: 0.47
 Nodes (9): mount(), go(), pick(), prefRow(), render(), setPref(), stampOf(), sync() (+1 more)
 
-### Community 332 - "AiAssistantStatus"
-Cohesion: 0.33
-Nodes (6): AiAssistantChoice, AiAssistantStatus, Available, LittleVram, NoGpu, NoRoom
-
-### Community 334 - "PeerPart"
-Cohesion: 0.33
-Nodes (6): PeerPart, Cpu, Drive, Gpu, Memory, None
-
-### Community 335 - "AiFitMode"
-Cohesion: 0.40
-Nodes (5): AiFitMode, Cpu, Gpu, Split, TooBig
-
 ## Ambiguous Edges - Review These
 - `AMD Ryzen 9 3950X (CPU shown in sample data)` → `Measured evidence line under passed CPU test (matrix 256x256 FP64 on 32 threads, load avg 99.6 %, package 142 W, Tctl 81.4 C)`  [AMBIGUOUS]
   .impeccable/review/tests.png · relation: conceptually_related_to
@@ -1375,8 +1313,8 @@ Nodes (5): AiFitMode, Cpu, Gpu, Split, TooBig
 
 ## Knowledge Gaps
 - **1367 isolated node(s):** `Available`, `NoGpu`, `LittleVram`, `NoRoom`, `Runtime` (+1362 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2648 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **94 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2658 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **97 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -1387,11 +1325,11 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Numbered test queue: CPU matrix load, RAM data patterns, disk sequential write/read verify, disk random 4K, network latency/packet loss/jitter` and `Automatic tuning section (stepwise offset search under load with safety margin; text partly cut off)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `PollingEngine` connect `PollingEngine` to `SettingsViewModel`, `WebBridge`, `.Run`, `IDisposable`, `TestEngine`, `.Gpu`, `HardwareKind`, `.RegisterAssistant`, `HistoryStore`, `Program`, `ChartWindow`, `SensorId`, `FakeSensorProvider`, `TestId`, `SensorStatistics`, `HardwareInventory`, `OverlayViewModel`, `BenchmarkRunner`, `.Build`, `.AssistantTools`, `.Build`, `CheckupService`, `Mazesta.Core.Hardware`, `OverlayService`, `Notifier`, `.Build`, `.AddDiagnostics`, `ReportService`, `.Read`?**
-  _High betweenness centrality (0.120) - this node is a cross-community bridge._
-- **Why does `WebBridge` connect `WebBridge` to `microsoft_extensions_logging`, `SettingsViewModel`, `.RunAsync`, `PartSpecs`, `RowState`, `xunit`, `IDisposable`, `Finding`, `BugCheckCatalog`, `.RegisterDrivers`, `AppPaths`, `.RegisterAssistant`, `ShopFeed`, `.ReadAsync`, `SoftApp`, `TestOptionViewModel`, `TestCenterViewModel`, `.RegisterSystem`, `BenchmarksViewModel`, `Mazesta.Desktop.Localization`, `ICommandRunner`, `BenchmarkRecords`, `Mazesta.Persistence`, `Confirmation`, `.AssistantTools`, `Notifier`, `AppConfig`, `MainWindow`, `.AddDiagnostics`, `BenchmarkPeersTests`?**
-  _High betweenness centrality (0.062) - this node is a cross-community bridge._
-- **Why does `SensorRole` connect `SensorRole` to `.S`, `SensorId`, `PollingEngine`, `OverlayItem`, `.Run`, `Unit`, `.Call`, `SensorRoleMap`, `.Resolve`, `HardwareKind`, `.Sum`, `ReportService`, `.Read`?**
-  _High betweenness centrality (0.048) - this node is a cross-community bridge._
+- **Why does `PollingEngine` connect `PollingEngine` to `Mazesta.Core.Providers`, `SettingsViewModel`, `WebBridge`, `.AssistantTools`, `.AddDiagnostics`, `IDisposable`, `TestEngine`, `HardwareKind`, `HistoryStore`, `Series`, `Program`, `EngineState`, `ChartWindow`, `SensorId`, `FakeSensorProvider`, `TestExecutionRequest`, `SensorStatistics`, `OverlayViewModel`, `BenchmarkRunner`, `.Build`, `.Build`, `CheckupService`, `OverlayService`, `HardwareDetailsCache`, `.Run`, `Notifier`, `.Build`, `.Build`, `.RegisterBenchmarks`, `ReportService`?**
+  _High betweenness centrality (0.111) - this node is a cross-community bridge._
+- **Why does `Mazesta.Core.Hardware` connect `Mazesta.Core.Hardware` to `Mazesta.Core.Providers`, `Nvml`, `Mazesta.Monitoring`, `SensorRole`, `xunit`, `Finding`, `HardwareKind`, `Mazesta.Diagnostics.Benchmarks`, `HistoryStore`, `system_runtime_interopservices`, `Series`, `SensorId`, `SensorReading`, `HardwareInventory`, `SensorKind`, `Unit`, `FakeSensorProvider`, `Mazesta.Desktop.Localization`, `SensorStatistics`, `.SetupAsync`, `Mazesta.Core.Health.Checkup`, `.IsVirtualBinding`, `OverlayItem`, `.Sum`?**
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **Why does `WebBridge` connect `WebBridge` to `Mazesta.Monitoring`, `SettingsViewModel`, `.Describe`, `.RunAsync`, `PartSpecs`, `.AssistantTools`, `xunit`, `IDisposable`, `Finding`, `BugCheckCatalog`, `AppPaths`, `SoftApp`, `TestOptionViewModel`, `TestCenterViewModel`, `.RegisterSystem`, `BenchmarksViewModel`, `Mazesta.Desktop.Localization`, `.Enter`, `.RegisterNetRepair`, `SpecItem`, `BenchmarkRecords`, `Mazesta.Persistence`, `WindowsActions`, `.RegisterDrivers`, `JsonStore`, `.Get`, `AppConfig`, `MainWindow`, `.RegisterBenchmarks`?**
+  _High betweenness centrality (0.043) - this node is a cross-community bridge._
 - **What connects `Available`, `NoGpu`, `LittleVram` to the rest of the system?**
   _1367 weakly-connected nodes found - possible documentation gaps or missing edges._
