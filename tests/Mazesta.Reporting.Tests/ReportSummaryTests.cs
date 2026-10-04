@@ -45,6 +45,54 @@ public class ReportSummaryTests
         string html = SummaryHtml.Write(ReportSummary.Of(r));
         Assert.Contains("480 Mbps", html); Assert.Contains("95.5 Mbps", html); Assert.DoesNotContain("GPU temperature", html); Assert.Contains(SummaryText.Persian.Installed, html);
     }
+    [Fact] public void A_benchmark_line_holds_three_figures_at_most_and_names_lose_their_brackets()
+    {
+        var mem = new BenchmarkEntry("bench.memory", "پهنای‌باند حافظه (نوشتن، خواندن)", T0.AddMinutes(1), [new("Write", 10.3, "GB/s", "Bench_Mem_Write"), new("Read", 13.1, "GB/s", "Bench_Mem_Read"),
+            new("Copy", 13.2, "GB/s", "Bench_Mem_Copy"), new("Latency (RAM)", 119, "ns", "Bench_Mem_Latency")], null, T0);
+        var r = SessionReport.CreateBenchmark("x", "1", T0.AddMinutes(2), [mem], [], HardwareInventory.Empty, "S-1");
+        var row = ReportSummary.Of(r).Rows.Single();
+        Assert.Equal(["Write", "Read", "Latency (RAM)"], row.Figures.Select(f => f.Name));
+        Assert.Equal("پهنای‌باند حافظه", SummaryHtml.Short(row.Name)); Assert.Equal("Latency", SummaryHtml.Short("Latency (RAM)"));
+        string html = SummaryHtml.Write(ReportSummary.Of(r));
+        Assert.Single(html.Split("<tr>").Skip(1), x => x.Contains("class=\"rn\""));   // one table row for the one benchmark
+    }
+    [Fact] public void A_full_benchmark_report_renders_on_one_sheet()
+    {
+        BenchmarkEntry B(string name, params (string N, double V, string U, string K)[] m) => new("b." + name, name, T0.AddMinutes(1), [.. m.Select(x => new BenchmarkMetricEntry(x.N, x.V, x.U, x.K))], null, T0);
+        var entries = new[]
+        {
+            B("پردازنده — تک‌رشته", ("توان محاسباتی اعشاری (ماتریس FP64)", 1.58, "GFLOPS", "Bench_Cpu_Gflops")),
+            B("پردازنده — چندرشته (همه‌ی رشته‌ها)", ("توان محاسباتی اعشاری (ماتریس FP64)", 23.1, "GFLOPS", "Bench_Cpu_Gflops"), ("به‌ازای هر رشته", 0.72, "GFLOPS", "Bench_Cpu_PerThread")),
+            B("پهنای‌باند حافظه", ("نوشتن (تک‌رشته)", 10.3, "GB/s", "Bench_Mem_Write"), ("خواندن (تک‌رشته)", 13.1, "GB/s", "Bench_Mem_Read"), ("کپی", 13.2, "GB/s", "Bench_Mem_Copy"), ("تأخیر دسترسی (۲۵۶ مگابایت، خود رم)", 119, "ns", "Bench_Mem_Latency")),
+            B("گرافیک — رندر Direct3D 12", ("نرخ فریم صحنه (۲۵۶×۱۴۴۰)", 1964, "FPS", "Bench_Gpu_Fps"), ("توان پردازش مثلث", 10.3, "Gtri/s", "Bench_Gpu_Triangles")),
+            B("گرافیک — ری‌تریسینگ (DXR)", ("نرخ فریم ری‌تریسینگ (۲۵۶×۱۴۴۰)", 1294, "FPS", "Bench_Gpu_Rt_Fps"), ("تعداد پرتو در ثانیه", 11.5, "Grays/s", "Bench_Gpu_Rt_Rays")),
+            B("گرافیک — باغ ایرانی (ری‌تریسینگ)", ("میانگین نرخ فریم در باغ (۲۵۶×۱۴۴۰)", 14.1, "FPS", "Bench_Gpu_Scene_Fps"), ("نرخ فریم ۱٪ کندترین فریم‌ها", 10.7, "FPS", "Bench_Gpu_Scene_Low"), ("زمان فریم صدک ۹۹", 91.3, "ms", "Bench_Gpu_Scene_P99")),
+            B("گرافیک — هوش مصنوعی (DirectML: FP32, FP16, INT8)", ("FP32 (دقت کامل)", 14.7, "TFLOPS", "Bench_Gpu_Ai_Fp32"), ("FP16 (نیم‌دقت)", 105, "TFLOPS", "Bench_Gpu_Ai_Fp16"), ("INT8 (کوانتیزه)", 12.1, "TOPS", "Bench_Gpu_Ai_Int8")),
+            B("ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)", ("خواندن پیوسته (SEQIM QAT1)", 2882, "MB/s", "Bench_Storage_SeqRead"), ("نوشتن پیوسته", 1277, "MB/s", "Bench_Storage_SeqWrite"), ("خواندن تصادفی 4K (QD32)", 173801, "IOPS", "Bench_Storage_Rand4kQ32Read"), ("تأخیر 4K", 116, "µs", "Bench_Storage_Rand4kLatency")),
+            B("شبکه — سرعت اینترنت (speed.cloudflare.com)", ("دانلود", 120, "Mbps", "Bench_Net_Download"), ("آپلود", 77.2, "Mbps", "Bench_Net_Upload"), ("تأخیر (پینگ به 1.1.1.1)", 76.3, "ms", "Bench_Net_Ping"), ("نوسان تأخیر (Jitter)", 0.36, "ms", "Bench_Net_Jitter")),
+        };
+        var machine = HardwareInventory.Empty with
+        {
+            Cpu = new CpuInfo("AMD Ryzen 9 3950X 16-Core Processor", Mazesta.Core.Hardware.HardwareVendor.Amd, 16, 32, 3500, "AM4"), Gpus = [new GpuInfo("NVIDIA GeForce RTX 3090", "32.0.15.6094", 24L << 30, null)],
+            Motherboard = new MotherboardInfo("ASUSTeK COMPUTER INC.", "PRIME B550M-A", null, null), Bios = new BiosInfo("ASUS", "3404", new DateTime(2023, 10, 7), null), TotalPhysicalMemoryBytes = 64L << 30, Storage = [Nvme, Hdd],
+        };
+        var r = SessionReport.CreateBenchmark("مازستا", "0.8.0", T0.AddMinutes(20), entries, [Sensor("pkg", "Ryzen", "CPU Package", "CpuPackageTemp", 58, 80), Sensor("gpu", "RTX", "GPU Core", "GpuCoreTemp", 40, 77),
+            Sensor("hot", "RTX", "GPU Hot Spot", "GpuHotSpotTemp", 50, 89), Sensor("ssd", "WDC", "Composite", "StorageTemp", 40, 50)], machine, "3550");
+        var s = ReportSummary.Of(r);
+        Assert.Equal("tight", SummaryHtml.Fit(s));
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) File.WriteAllText(Path.Combine(dir, "summary-bench.html"), SummaryHtml.Write(s));
+    }
+    [Fact] public void The_board_line_carries_the_bios_and_the_memory_has_its_own_line()
+    {
+        var machine = HardwareInventory.Empty with
+        {
+            Motherboard = new MotherboardInfo("ASUSTeK", "PRIME B550M-A", null, null), Bios = new BiosInfo("ASUS", "3404", new DateTime(2023, 10, 7), null), TotalPhysicalMemoryBytes = 64L << 30,
+        };
+        string html = SummaryHtml.Write(ReportSummary.Of(Report() with { Machine = machine }), wording: SummaryText.English);
+        int board = html.IndexOf("PRIME B550M-A"), bios = html.IndexOf("3404"), ram = html.IndexOf("64 GB");
+        Assert.True(board > 0 && bios > board && ram > bios);
+        Assert.Equal(board > 0 ? html.LastIndexOf("<div", board) : -1, html.LastIndexOf("<div", bios));   // the same line
+    }
     [Fact] public void A_long_report_is_set_tighter_so_the_sheet_stays_one_page()
     {
         Assert.Equal("", SummaryHtml.Fit(ReportSummary.Of(Report())));

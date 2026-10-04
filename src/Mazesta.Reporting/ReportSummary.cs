@@ -42,17 +42,17 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
     /// the conditions (clocks, temperatures, power) that the full report keeps. In the order the benchmark lists them.</summary>
     private static readonly HashSet<string> MainFigures = new(StringComparer.Ordinal)
     {
-        "Bench_Cpu_Gflops", "Bench_Cpu_PerThread", "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Copy", "Bench_Mem_Latency",
-        "Bench_Storage_SeqRead", "Bench_Storage_SeqWrite", "Bench_Storage_Rand4kQ32Read", "Bench_Storage_Rand4kLatency",
-        "Bench_Gpu_Fps", "Bench_Gpu_Triangles", "Bench_Gpu_Rt_Fps", "Bench_Gpu_Rt_Rays", "Bench_Gpu_Scene_Fps", "Bench_Gpu_Scene_Low", "Bench_Gpu_Scene_P99",
-        "Bench_Gpu_Ai_Fp32", "Bench_Gpu_Ai_Fp16", "Bench_Gpu_Ai_Int8", "Bench_Net_Download", "Bench_Net_Upload", "Bench_Net_Ping", "Bench_Net_Jitter", "Bench_Net_Loss",
+        "Bench_Cpu_Gflops", "Bench_Cpu_PerThread", "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Latency",
+        "Bench_Storage_SeqRead", "Bench_Storage_SeqWrite", "Bench_Storage_Rand4kQ32Read",
+        "Bench_Gpu_Fps", "Bench_Gpu_Triangles", "Bench_Gpu_Rt_Fps", "Bench_Gpu_Rt_Rays", "Bench_Gpu_Scene_Fps", "Bench_Gpu_Scene_Low",
+        "Bench_Gpu_Ai_Fp32", "Bench_Gpu_Ai_Fp16", "Bench_Gpu_Ai_Int8", "Bench_Net_Download", "Bench_Net_Upload", "Bench_Net_Ping",
         "Bench_Ai_Prompt", "Bench_Ai_Gen",
     };
-    /// <summary>A report saved before metrics carried their key: its first metrics, which are the results (the conditions are appended after them).</summary>
-    private const int FiguresWithoutKeys = 4;
+    /// <summary>The most figures a summary line holds: one line a benchmark.</summary>
+    public const int MaxFigures = 3;
     internal static IReadOnlyList<SummaryFigure> FiguresOf(BenchmarkEntry b)
-        => b.Metrics.Any(m => m.Key is not null) ? [.. b.Metrics.Where(m => m.Key is not null && MainFigures.Contains(m.Key)).Select(m => new SummaryFigure(m.Name, m.Value, m.Unit))]
-            : [.. b.Metrics.Take(FiguresWithoutKeys).Select(m => new SummaryFigure(m.Name, m.Value, m.Unit))];
+        => [.. (b.Metrics.Any(m => m.Key is not null) ? b.Metrics.Where(m => m.Key is not null && MainFigures.Contains(m.Key))
+            : b.Metrics).Take(MaxFigures).Select(m => new SummaryFigure(m.Name, m.Value, m.Unit))];   // saved before metrics carried their key: the first ones are the results
 
     public static HeatPart? PartOf(SensorSummary s) => s.Kind != "Temperature" ? null
         : s.Role is { } role ? (Roles.TryGetValue(role, out var p) ? p : null) : Names.TryGetValue(s.Name, out var n) ? n : null;
@@ -148,13 +148,14 @@ public static class SummaryHtml
         return f.Unit.Length == 0 ? number : $"{number} {f.Unit}";
     }
     private static string Lt(string? s) => $"<bdi class=\"lt\">{E(s)}</bdi>";
+    /// <summary>A name without its bracketed detail ("(FP64)", "(256×1440)"): the summary has one line for it, the full report the rest.</summary>
+    internal static string Short(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"\s*[\(（][^\)）]*[\)）]", "").Trim() is { Length: > 0 } t ? t : name;
 
     public static string Write(ReportSummary s, ReportFont? font = null, SummaryText? wording = null, ReportText? reportWording = null)
     {
         var w = wording ?? SummaryText.Persian; var rw = reportWording ?? ReportText.For(w.Language); var r = s.Report;
         string na = $"<span class=\"na\">{E(w.NotReported)}</span>";
         string Temp(double? c) => c is { } v ? Lt($"{v.ToString("F0", Inv)} °C") : na;
-        string Duration(double sec) => sec >= 60 ? $"{Lt((sec / 60).ToString("0.#", Inv))} {E(w.Minutes)}" : $"{Lt(sec.ToString("0", Inv))} {E(w.Seconds)}";
         var b = new StringBuilder(24 * 1024);
         b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
@@ -172,45 +173,44 @@ public static class SummaryHtml
         else b.Append("<div class=\"verdict Benchmark\">").Append(E(w.Benchmark)).Append("</div>");
         b.Append("<div class=\"installed\">").Append(E(w.Installed)).Append("</div>");
 
-        // The highest temperatures: one tile per part, with the test it was reached in.
+        // The highest temperatures: one row of tiles (the parts the summary shows), each with the test it was reached in.
+        var shown = s.Peaks.Where(p => s.Columns.Contains(p.Part)).ToList();
         b.Append("<section><h2>").Append(E(w.Peaks)).Append("</h2>");
-        if (s.Peaks.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoTemps)).Append("</p>");
+        if (shown.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoTemps)).Append("</p>");
         else
         {
-            b.Append("<div class=\"temps\">");
-            foreach (var p in s.Peaks)
+            b.Append("<div class=\"temps\" style=\"grid-template-columns:repeat(").Append(shown.Count).Append(",1fr)\">");
+            foreach (var p in shown)
             {
-                b.Append("<div class=\"temp\"><div class=\"part\">").Append(E(w.PartName(p.Part))).Append("</div><div class=\"now\">").Append(Temp(p.MaxC)).Append("</div><div class=\"max\">");
-                if (p.During is { } during) b.Append(E(w.During)).Append(" ").Append(E(during)).Append("<br>");
-                b.Append("<small>").Append(Lt(p.Device)).Append("</small></div></div>");
+                b.Append("<div class=\"temp\"><div class=\"part\">").Append(E(w.PartName(p.Part))).Append("</div><div class=\"now\">").Append(Temp(p.MaxC)).Append("</div>");
+                if (p.During is { } during) b.Append("<div class=\"max\">").Append(E(Short(during))).Append("</div>");
+                b.Append("</div>");
             }
-            b.Append("</div><p class=\"note\">").Append(E(w.PeaksNote)).Append("</p>");
+            b.Append("</div>");
             if (s.FromTrace) b.Append("<p class=\"note\">").Append(E(w.TraceNote)).Append("</p>");
         }
         b.Append("</section>");
 
-        // Each test or benchmark: its result and, for a benchmark, its own main figures (a network test's speeds and ping, a memory test's bandwidth and
-        // latency) - never the temperatures of parts it did not stress.
+        // The results as a table, one line a test or benchmark: its name and its few main figures (a network test's speeds and ping, a memory test's
+        // bandwidth and latency), never the temperatures of parts it did not stress. A test shows its verdict; a benchmark's figures are its result.
         b.Append("<section><h2>").Append(E(w.Tests)).Append("</h2>");
         if (s.Rows.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoRuns)).Append("</p>");
         else
         {
-            b.Append("<div class=\"res\">");
+            b.Append("<table class=\"res\"><tbody>");
             foreach (var row in s.Rows)
             {
-                string cls = row.Outcome switch { ReportOutcome.Passed => "ok", ReportOutcome.Failed => "bad", null => "unk", _ => "warn" };
-                string result = row.Outcome is { } o ? rw.OutcomeName(o) : w.Benchmark;
-                b.Append("<div class=\"r\"><div class=\"rn\"><b>").Append(E(row.Name)).Append("</b><span class=\"badge ").Append(cls).Append("\">").Append(E(result)).Append("</span><span class=\"dur\">")
-                 .Append(Duration(row.DurationSeconds)).Append("</span></div>");
-                if (row.Figures.Count > 0)
+                b.Append("<tr><td class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"figs\">");
+                foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
+                b.Append("</td><td class=\"end\">");
+                if (row.Outcome is { } o)
                 {
-                    b.Append("<div class=\"figs\">");
-                    foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(f.Name)).Append("</small>").Append(Lt(Figure(f))).Append("</span>");
-                    b.Append("</div>");
+                    string cls = o switch { ReportOutcome.Passed => "ok", ReportOutcome.Failed => "bad", _ => "warn" };
+                    b.Append("<span class=\"badge ").Append(cls).Append("\">").Append(E(rw.OutcomeName(o))).Append("</span>");
                 }
-                b.Append("</div>");
+                b.Append("</td></tr>");
             }
-            b.Append("</div>");
+            b.Append("</tbody></table>");
         }
         b.Append("</section>");
 
@@ -220,9 +220,13 @@ public static class SummaryHtml
         var m = r.Machine;
         Row(rw.Cpu, m.Cpu?.Name?.Trim(), wide: true);
         foreach (var g in m.Gpus) Row(rw.Gpu, g.Name + (g.DriverVersion is { } d ? $" · driver {d}" : ""), wide: true);
-        if (m.Motherboard is { } mb) Row(rw.Board, $"{mb.Manufacturer} {mb.Product}".Trim(), wide: true);
-        if (m.Bios is { } bios) Row(rw.Bios, $"{bios.Version}".Trim() + (bios.ReleaseDate is { } rd ? $" · {rd:yyyy-MM-dd}" : ""));
-        if (m.TotalPhysicalMemoryBytes is { } ram) Row(w.Ram, $"{ram / 1073741824.0:F0} GB · {m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")));
+        // The BIOS sits on the motherboard's line (it belongs to the board), and the memory has a line of its own.
+        string? board = m.Motherboard is { } mb ? $"{mb.Manufacturer} {mb.Product}".Trim() : null;
+        string? bios = m.Bios is { } bi ? $"{bi.Version}".Trim() + (bi.ReleaseDate is { } rd ? $" · {rd:yyyy-MM-dd}" : "") : null;
+        if (!string.IsNullOrWhiteSpace(board) && !string.IsNullOrWhiteSpace(bios))
+            b.Append("<div class=\"wide\"><dt>").Append(E(rw.Board)).Append("</dt><dd>").Append(Lt(board)).Append("</dd><dt class=\"sep\">").Append(E(rw.Bios)).Append("</dt><dd class=\"fixed\">").Append(Lt(bios)).Append("</dd></div>");
+        else { Row(rw.Board, board, wide: true); Row(rw.Bios, bios, wide: true); }
+        if (m.TotalPhysicalMemoryBytes is { } ram) Row(w.Ram, $"{ram / 1073741824.0:F0} GB · {m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")), wide: true);
         if (m.Os is { } os) Row(rw.Os, $"{os.Caption} {os.Version}".Replace("Microsoft ", "").Trim(), wide: true);
         b.Append("</dl></section>");
 
@@ -253,7 +257,7 @@ public static class SummaryHtml
     internal static string Fit(ReportSummary s)
     {
         var m = s.Report.Machine;
-        int lines = s.Rows.Sum(r => r.Figures.Count > 0 ? 2 : 1) + m.Storage.Count + m.Gpus.Count + (s.Peaks.Count > 0 ? 1 : 0);
+        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + (s.Peaks.Count > 0 ? 1 : 0);
         return lines > 20 ? "tightest" : lines > 12 ? "tight" : "";
     }
 
@@ -283,16 +287,16 @@ thead th{{font-weight:400;color:#55555f;font-size:9px;border-bottom:1px solid #1
 .badge{{display:inline-block;border-radius:99px;padding:0 7px;font-weight:700;font-size:9px;border:1px solid;white-space:nowrap}}
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
-.temps{{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:4px}}
+.temps{{display:grid;gap:4px}}
 .temp{{border:1px solid #d8d7d0;border-radius:5px;padding:2px 4px;text-align:center;min-width:0}}
 .temp .part{{font-weight:700;font-size:8.5px}} .temp .now{{font-size:13.5px;font-weight:700;line-height:1.2}}
 .temp .max{{font-size:7.5px;color:#33333a;border-top:1px dotted #d0cfc8;margin-top:1px;padding-top:1px;line-height:1.3;overflow-wrap:anywhere}}
 .temp small{{color:#77777f;font-size:7px}}
 .note{{margin:2px 0 0;color:#77777f;font-size:8px}}
 .installed{{border:1.3px solid #FDD400;background:#fffbe6;border-radius:5px;padding:4px 9px;font-weight:700;font-size:10.5px;margin-bottom:10px;text-align:center}}
-.res .r{{padding:3px 0;border-bottom:1px dotted #d0cfc8}} .res .r:last-child{{border-bottom:0}}
-.rn{{display:flex;align-items:center;gap:8px}} .rn b{{font-size:9.8px;flex:1}} .dur{{color:#66666e;font-size:8.5px;white-space:nowrap}}
-.figs{{display:flex;flex-wrap:wrap;gap:1px 14px;margin-top:2px}} .fig small{{color:#55555f;font-size:8.5px;margin-inline-end:5px}} .fig .lt{{font-weight:700;font-size:10px}}
+.res td{{padding:2px 3px;white-space:nowrap}} .res td.rn{{width:1%}} .res td.rn b{{font-size:9.5px}} .res td.figs{{white-space:normal}} .dur{{color:#66666e;font-size:8.5px;white-space:nowrap}}
+.fig{{display:inline-block;margin-inline-end:6px;white-space:nowrap}} .fig small{{color:#55555f;font-size:7.6px}} .fig .lt{{font-weight:700;font-size:9.5px}}
+.spec dt.sep{{margin-inline-start:8px}} .spec dd.fixed{{flex:0 0 auto}}
 .verdict{{border-radius:5px;padding:4px 9px;font-weight:700;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:11px}}
 .verdict small{{font-weight:400;color:#44444c;font-size:10px}}
 .verdict.Passed{{background:#e6f6ee;color:#0f6b3c}} .verdict.Failed{{background:#fde8e7;color:#a0180f}} .verdict.Incomplete{{background:#fff4d6;color:#8a5a00}} .verdict.Benchmark{{background:#eef1f7;color:#2b3a55}}
