@@ -49,10 +49,11 @@ public class SiteClientTests
     [Fact] public async Task A_report_goes_as_json_with_its_page_and_comes_back_with_where_it_is()
     {
         var (client, site) = Client((_, _) => (HttpStatusCode.OK, """{"id":"abcdef0123456789","updated":false,"url":"https://shop.example/wp-admin/admin-post.php?action=mzc_report&id=abcdef0123456789","link":null}"""));
-        var r = await client.SendReportAsync("k", new SiteReport("abcdef0123456789", "خلاصه", DateTimeOffset.UnixEpoch, "TestSession", null, "CPU · GPU", null, "3 tests", "0.8.0", "<html>x</html>"), CancellationToken.None);
+        var r = await client.SendReportAsync("k", new SiteReport("abcdef0123456789", "خلاصه", DateTimeOffset.UnixEpoch, "TestSession", null, "CPU · GPU", null, "3 tests", "0.8.0", "<html>x</html>", "<html>whole</html>"), CancellationToken.None);
         Assert.Equal(("abcdef0123456789", false, (string?)null), (r.Id, r.Updated, r.Link));
         var sent = JsonNode.Parse(site.Seen[0].Body)!;
         Assert.Equal("abcdef0123456789", sent["id"]!.GetValue<string>()); Assert.Equal("<html>x</html>", sent["html"]!.GetValue<string>());
+        Assert.Equal("<html>whole</html>", sent["full"]!.GetValue<string>());   // the whole report goes with its summary
         Assert.Null(sent["verdict"]);   // a benchmark report has none: left out, not sent as a word
     }
 

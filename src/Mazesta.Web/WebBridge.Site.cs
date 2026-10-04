@@ -122,14 +122,14 @@ public sealed partial class WebBridge
             var stored = reports.Store.List().FirstOrDefault(r => r.Id == Str(p, "id")) ?? throw new ArgumentException("unknown report");
             try
             {
-                var (report, html) = await Task.Run(() => reports.SummaryForSite(stored)).ConfigureAwait(true);
+                var (report, html, full) = await Task.Run(() => reports.SummaryForSite(stored)).ConfigureAwait(true);
                 // The company's copy sends only reports that carry a service job: the site's list is by service number.
                 if (string.IsNullOrWhiteSpace(report.ServiceNumber)) return new { error = Loc.Get("Site_Err_NoService") };
                 string machine = string.Join(" · ", new[] { report.Machine.Cpu?.Name }.Concat(report.Machine.Gpus.Select(g => g.Name)).Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => BenchmarkPeers.PartName(n)));
                 string summary = report.Kind == ReportKind.Benchmark ? string.Join(" · ", (report.Benchmarks ?? []).Select(b => b.Name))
                     : Loc.Format("Reports_RowCounts", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
                 var receipt = await site.SendReportAsync(_config.SiteKey, new SiteReport(report.Id, Loc.Get("Site_Report_Title"), report.CreatedAt, report.Kind.ToString(), report.Verdict?.ToString(),
-                    machine, report.ServiceNumber, summary, app, html), CancellationToken.None).ConfigureAwait(true);
+                    machine, report.ServiceNumber, summary, app, html, full), CancellationToken.None).ConfigureAwait(true);
                 try { File.WriteAllText(Path.Combine(stored.Folder, SiteReceiptName), JsonSerializer.Serialize(new { url = receipt.Url, link = receipt.Link, at = DateTimeOffset.Now })); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }   // sent all the same; only the mark on the row is lost
                 _log.LogInformation("Report {Id} sent to the site ({Url})", report.Id, receipt.Url);

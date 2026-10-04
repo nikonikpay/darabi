@@ -70,12 +70,16 @@ public sealed class ReportService
     /// ran) into the report's folder and returns its HTML path. It is made from the report alone, never from the machine as it is now.</summary>
     /// <summary>The report and its one-page summary as the shop's site keeps it: the same page as <see cref="CreateSummary"/>, without the
     /// embedded font (the site's readers have their own), so it stays a few kilobytes.</summary>
-    public (SessionReport Report, string Html) SummaryForSite(StoredReport stored)
+    public (SessionReport Report, string Html, string? Full) SummaryForSite(StoredReport stored)
     {
         var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");
         string lang = Loc.IsRtl ? "fa" : "en";
-        return (report, SummaryHtml.Write(ReportSummary.Of(report), null, SummaryText.For(lang), ReportText.For(lang)));
+        // The whole report goes with it so the site shows both; one too large for the site's limit is left out (the summary alone is sent).
+        string full = ReportHtml.Write(report, null, ReportText.For(lang));
+        return (report, SummaryHtml.Write(ReportSummary.Of(report), null, SummaryText.For(lang), ReportText.For(lang)), full.Length <= MaxFullForSite ? full : null);
     }
+    /// <summary>The site keeps a whole report up to this many characters (its plugin's limit is 3 MB).</summary>
+    private const int MaxFullForSite = 2_500_000;
 
     public string CreateSummary(StoredReport stored)
     {

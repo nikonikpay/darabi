@@ -5,8 +5,8 @@ namespace Mazesta.Persistence.Updates;
 /// are only told to a holder of the key.</summary>
 public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, int? Reports, int? Runs, int? Pending, bool Sharing = false);
 
-/// <summary>A report's one-page summary as the site keeps it: who and what it is about, and the page itself (HTML with nothing to load or run).</summary>
-public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html);
+/// <summary>A report as the site keeps it: who and what it is about, its one-page summary and (<see cref="Full"/>) the whole report, both HTML with nothing to load or run.</summary>
+public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html, string? Full = null);
 /// <summary>A report in the site's list (what the print program shows): <see cref="Service"/> is the job it was made for, empty when it has none.</summary>
 public sealed record SiteReportItem(string Id, string? Service, string Title, string Machine, string Kind, string? Verdict, string Summary, DateTimeOffset Created, DateTimeOffset Received);
 public sealed record SiteReportReceipt(string Id, bool Updated, string Url, string? Link);

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.6.0
+ * Version: 1.7.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,9 +28,10 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.6.0';
+    const VERSION = '1.7.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
+    const MAX_FULL = 3000000;
     const MAX_RUNS = 500;
     const MAX_SHARES = 5000;
     const GUARD = "<?php exit; ?>\n";
@@ -311,6 +312,7 @@ final class Mazesta_Connect
         $p = $req->get_json_params();
         $id = isset($p['id']) ? (string) $p['id'] : '';
         $html = isset($p['html']) ? (string) $p['html'] : '';
+        $full = isset($p['full']) ? (string) $p['full'] : '';   // the whole report, beside its one-page summary (optional: older apps send the summary only)
         if (!preg_match('/^[A-Za-z0-9-]{8,64}$/', $id)) { return new WP_Error('mazesta_report', 'The report id is not valid.', array('status' => 400)); }
         if ($html === '' || strlen($html) > self::MAX_HTML) { return new WP_Error('mazesta_report', 'The summary is missing or too large.', array('status' => 400)); }
         // The page is kept as it came; it is only ever sent out under a policy that lets nothing in it run (see show_report). A "<?php" in it
@@ -326,11 +328,13 @@ final class Mazesta_Connect
             'created' => self::when(isset($p['created']) ? $p['created'] : null),
             'received' => self::when(null),
         );
-        $done = self::locked(function () use ($id, $row, $html) {
+        if (strlen($full) > self::MAX_FULL) { $full = ''; }
+        $done = self::locked(function () use ($id, $row, $html, $full) {
             $all = self::read('reports');
             $had = isset($all[$id]);
             $row['token'] = $had && !empty($all[$id]['token']) ? $all[$id]['token'] : bin2hex(random_bytes(16));
             if (!self::put('report-' . $id, $html)) { return null; }
+            if ($full !== '') { if (!self::put('report-' . $id . '-full', $full)) { return null; } } else { self::remove('report-' . $id . '-full'); }
             $all[$id] = $row;
             return self::write('reports', $all) ? array($had, $row['token']) : null;
         });
@@ -815,14 +819,24 @@ final class Mazesta_Connect
 
     private static function show_report($id, $print)
     {
-        $html = preg_match('/^[A-Za-z0-9-]{8,64}$/', (string) $id) ? self::raw('report-' . $id) : null;
+        $id = (string) $id;
+        $ok = preg_match('/^[A-Za-z0-9-]{8,64}$/', $id);
+        // The summary by default; ?view=full is the whole report, when the app sent it.
+        $full = $ok && isset($_GET['view']) && $_GET['view'] === 'full' ? self::raw('report-' . $id . '-full') : null;
+        $html = $full !== null ? $full : ($ok ? self::raw('report-' . $id) : null);
         if ($html === null) { wp_die('گزارش پیدا نشد.', '', array('response' => 404)); }
+        $has_full = $ok && is_file(self::file('report-' . $id . '-full'));
         $nonce = bin2hex(random_bytes(12));
-        // The summary came from outside: nothing in it may run or load. Only the print button's script, named by its nonce, runs.
+        // The page came from outside: nothing in it may run or load. Only the print button's script, named by its nonce, runs.
         self::page_headers("default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:; script-src 'nonce-" . $nonce . "'");
         $html = preg_replace('/<meta\s+http-equiv="Content-Security-Policy"[^>]*>/i', '', $html);
-        $bar = '<style>.mzc-bar{position:fixed;top:8px;left:8px;z-index:9;font:14px Tahoma,sans-serif}.mzc-bar button{padding:8px 18px;border:0;border-radius:6px;background:#0b6;color:#fff;cursor:pointer}@media print{.mzc-bar{display:none}}</style>'
-            . '<div class="mzc-bar"><button id="mzc-print" type="button">چاپ</button></div>'
+        $tabs = '';
+        if ($has_full) {
+            $tabs = '<a class="' . ($full === null ? 'on' : '') . '" href="' . esc_url(add_query_arg(array('view' => false, 'print' => false))) . '">خلاصه گزارش</a>'
+                . '<a class="' . ($full !== null ? 'on' : '') . '" href="' . esc_url(add_query_arg(array('view' => 'full', 'print' => false))) . '">گزارش کامل</a>';
+        }
+        $bar = '<style>.mzc-bar{position:fixed;top:8px;left:8px;z-index:9;display:flex;gap:6px;font:14px Tahoma,sans-serif}.mzc-bar button,.mzc-bar a{padding:8px 18px;border:0;border-radius:6px;background:#0b6;color:#fff;cursor:pointer;text-decoration:none}.mzc-bar a{background:#e9e9e4;color:#222}.mzc-bar a.on{background:#222;color:#fff}@media print{.mzc-bar{display:none}}</style>'
+            . '<div class="mzc-bar">' . $tabs . '<button id="mzc-print" type="button">چاپ</button></div>'
             . '<script nonce="' . $nonce . '">document.getElementById("mzc-print").addEventListener("click",function(){window.print()});' . ($print ? 'window.addEventListener("load",function(){window.print()});' : '') . '</script>';
         echo stripos($html, '</body>') !== false ? preg_replace('/<\/body>/i', $bar . '</body>', $html, 1) : $html . $bar;
         exit;
@@ -922,7 +936,7 @@ final class Mazesta_Connect
         self::guard('report_delete');
         $id = self::arg('id');
         if (preg_match('/^[A-Za-z0-9-]{8,64}$/', $id)) {
-            self::locked(function () use ($id) { $all = self::read('reports'); unset($all[$id]); self::write('reports', $all); self::remove('report-' . $id); });
+            self::locked(function () use ($id) { $all = self::read('reports'); unset($all[$id]); self::write('reports', $all); self::remove('report-' . $id); self::remove('report-' . $id . '-full'); });
         }
         self::back('reports', 'deleted');
     }
@@ -1041,7 +1055,8 @@ final class Mazesta_Connect
             $view = admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode((string) $id));
             echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" style="text-align:right">' . esc_html($r['machine']) . '</td>'
                 . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td style="white-space:nowrap">'
-                . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">دیدن</a> '
+                . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">خلاصه</a> '
+                . (is_file(self::file('report-' . $id . '-full')) ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')
                 . ($links && !empty($r['token']) ? '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_report=' . $r['token'])) . '">پیوند</a> ' : '')
                 . self::post_link('report_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این گزارش از سایت پاک شود؟') . '</td></tr>';
         }
