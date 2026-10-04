@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The users' installer (MazestaTestSetup.exe): one self-contained exe that carries the users' edition as a zip (-p:PayloadZip=<file>, made by
+       tools/publish.ps1 from artifacts\Mazesta-Client) and puts it on the computer like any other program: a folder of the user's choice (by default
+       in their own profile, so no administrator is needed), Start menu and desktop shortcuts, and an entry in Installed apps that runs
+       "MazestaWeb.exe" with the uninstall argument. Installing over an installed copy replaces its files and keeps its Data. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>MazestaTestSetup</AssemblyName>
+    <RootNamespace>Mazesta.Setup</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Mazesta.Desktop\Assets\mazesta.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PayloadZip)' != '' And Exists('$(PayloadZip)')">
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="payload.zip" />
+  </ItemGroup>
+</Project>

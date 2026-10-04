@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The secretary's program: a small window that lists the reports the shop's site keeps (by service number), shows one's summary page and prints
+       it. It only reads (with the site's reading key); nothing is sent. Portable like the rest: its key is kept in Data next to the exe. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>MazestaPrint</AssemblyName>
+    <RootNamespace>Mazesta.Print</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Mazesta.Desktop\Assets\mazesta.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mazesta.Persistence/Mazesta.Persistence.csproj" />
+  </ItemGroup>
+</Project>

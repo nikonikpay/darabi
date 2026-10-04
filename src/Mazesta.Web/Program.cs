@@ -33,6 +33,8 @@ internal sealed class Program : ApplicationContext
     [STAThread]
     private static int Main(string[] args)
     {
+        // Uninstall, started from Installed apps for a copy the setup installed: it has its own dialogs and needs none of the app's services.
+        if (args.Length == 1 && args[0] == Uninstaller.Argument) { Application.EnableVisualStyles(); return Uninstaller.Run(); }
         // A downloaded release, started by the running app to put itself in place: no window, no services; see AppUpdater.Apply.
         s_single = new Mutex(true, @"Global\Mazesta.Test.SingleInstance", out s_first);
         if (args.Length == 3 && args[0] == AppUpdater.ApplyArgument && int.TryParse(args[2], out int pid))

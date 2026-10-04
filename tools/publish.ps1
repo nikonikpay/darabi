@@ -2,6 +2,8 @@
 # history, logs):
 #   artifacts\Mazesta-Web      Mazesta's own edition (the service number, the link to the site, the reference marks)
 #   artifacts\Mazesta-Client   the users' edition (none of those)
+#   artifacts\Mazesta-Setup    MazestaTestSetup.exe: the users' installer (carries the users' edition; Start menu, desktop, Installed apps)
+#   artifacts\Mazesta-Print    MazestaPrint.exe: the secretary's program (lists the site's reports by service number, prints their summary)
 # For each folder it
 #   1. refuses while the app or MazestaTray is running from it (its files are locked, and deleting around a running app is how its data was
 #      lost on 2026-09-26);
@@ -20,6 +22,8 @@ param(
     [ValidateSet("Both", "Mazesta", "Client")] [string]$Only = "Both",
     [string]$Output = "artifacts/Mazesta-Web",
     [string]$ClientOutput = "artifacts/Mazesta-Client",
+    [string]$SetupOutput = "artifacts/Mazesta-Setup",
+    [string]$PrintOutput = "artifacts/Mazesta-Print",
     [string]$BackupRoot = (Join-Path (Split-Path $PSScriptRoot -Parent) "../Mazesta-Data-Backups"),
     [int]$Keep = 20
 )
@@ -61,3 +65,42 @@ foreach ($e in $editions) {
     if ($running) { throw "Close Mazesta / Mazesta Monitor first (running: $($running.Name -join ', ')). Nothing was changed." }
 }
 foreach ($e in $editions) { Publish-Edition $e[0] $e[1] }
+
+# The two small programs that are not the app. Each is one self-contained exe; the print program keeps its Data (its key) like the app does.
+$flags = "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
+         "-p:EnableCompressionInSingleFile=true", "-p:DebugType=none", "-p:DebugSymbols=false", "-p:GenerateDocumentationFile=false"
+function Clear-Output([string]$Folder) {
+    $t = [IO.Path]::GetFullPath((Join-Path $repo $Folder))
+    if (Test-Path $t) { Get-ChildItem $t -Force | Where-Object Name -ne "Data" | Remove-Item -Recurse -Force -Confirm:$false }
+    return $t
+}
+
+$print = Clear-Output $PrintOutput
+$running = Get-Process MazestaPrint -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($print, [StringComparison]::OrdinalIgnoreCase) }
+if ($running) { Write-Warning "MazestaPrint is running from $print; it was not republished." }
+else {
+    dotnet publish src/Mazesta.Print @flags -o $print
+    if ($LASTEXITCODE -ne 0) { throw "publishing the print program failed ($LASTEXITCODE)." }
+    Get-ChildItem $print -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
+    Write-Host "Ready (print): $(Join-Path $print 'MazestaPrint.exe')"
+}
+
+# The installer carries the users' edition just built (everything in its folder but Data) as a zip.
+if ($Only -ne "Mazesta") {
+    $client = [IO.Path]::GetFullPath((Join-Path $repo $ClientOutput))
+    $zip = Join-Path ([IO.Path]::GetTempPath()) "mazesta-setup-payload.zip"
+    if (Test-Path $zip) { Remove-Item $zip -Force }
+    Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+    $z = [IO.Compression.ZipFile]::Open($zip, "Create")
+    try {
+        Get-ChildItem $client -Recurse -File | Where-Object { $_.FullName.Substring($client.Length + 1) -notmatch '^Data(\|$)' } | ForEach-Object {
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $_.FullName, $_.FullName.Substring($client.Length + 1).Replace('', '/'), [IO.Compression.CompressionLevel]::Optimal)
+        }
+    } finally { $z.Dispose() }
+    $setup = Clear-Output $SetupOutput
+    dotnet publish src/Mazesta.Setup @flags "-p:PayloadZip=$zip" -o $setup
+    if ($LASTEXITCODE -ne 0) { throw "publishing the installer failed ($LASTEXITCODE)." }
+    Get-ChildItem $setup -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
+    Remove-Item $zip -Force
+    Write-Host "Ready (installer): $(Join-Path $setup 'MazestaTestSetup.exe')"
+}
