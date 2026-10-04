@@ -2980,4 +2980,5 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Bench_Mem_Latency_2M" xml:space="preserve"><value>Latency, 2 MiB working set</value></data>
   <data name="Bench_Mem_Latency_16M" xml:space="preserve"><value>Latency, 16 MiB working set</value></data>
   <data name="Bench_Mem_Latency_64M" xml:space="preserve"><value>Latency, 64 MiB working set</value></data>
+  <data name="Site_Err_NoService" xml:space="preserve"><value>This report has no service number, so it was not sent. Enter the service number (top bar) before the test and run it again.</value></data>
 </root>

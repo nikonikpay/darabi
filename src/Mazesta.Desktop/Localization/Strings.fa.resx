@@ -2980,4 +2980,5 @@
   <data name="Bench_Mem_Latency_2M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۲ مگابایت</value></data>
   <data name="Bench_Mem_Latency_16M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۱۶ مگابایت</value></data>
   <data name="Bench_Mem_Latency_64M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۶۴ مگابایت</value></data>
+  <data name="Site_Err_NoService" xml:space="preserve"><value>این گزارش شماره‌ی سرویس ندارد و ارسال نشد. پیش از آزمون، شماره‌ی سرویس را در نوار بالا وارد کنید و آزمون را دوباره اجرا کنید.</value></data>
 </root>
