@@ -48,6 +48,72 @@ public sealed partial class WebBridge
         static int Index(JsonElement a) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty("index", out var v) && v.TryGetInt32(out var n) ? n : 0;
         Task<string> OnUi(Func<string> work) => ui(() => Task.FromResult(work()));
 
+        async Task<string> RunBenchmarks(List<string> ids, bool diagnose, CancellationToken ct)
+        {
+            if (_benchVm is not { } bench || _benchCompared is not { } compared) return Json(new { error = "the benchmarks are not available yet" });
+            // The list is fixed here, before the user is asked: the benchmarks this machine can run, in the page's order, all asked about at once.
+            List<(string Id, string Name, string Seconds)>? plan = null;
+            await OnUi(() => { plan = bench.IsRunning || runner.IsBusy ? null : bench.Rows.Where(r => ids.Contains(r.Benchmark.Definition.Id.Value) && r.IsAvailable)
+                .Select(r => (r.Benchmark.Definition.Id.Value, r.Name, r.DurationText)).ToList(); return ""; }).ConfigureAwait(false);
+            if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
+            if (plan.Count == 0) return Json(new { error = "this computer can not run those benchmarks" });
+            if (await ask("benchmark", [.. plan.Select(r => (r.Name, r.Seconds))], ct).ConfigureAwait(false) is not { } kept)
+                return Json(new { started = false, reason = "the user declined; nothing was run" });
+            var chosen = plan.Where((_, i) => kept[i]).ToList();
+
+            return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => withoutModel(RunAll, ct));
+            async Task<string> RunAll()
+            {
+                using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (bench.CancelCommand.CanExecute(null)) bench.CancelCommand.Execute(null); }));
+                var results = new List<object>();
+                foreach (var (id, name, _) in chosen)
+                    results.Add(ct.IsCancellationRequested ? new { benchmark = name, completed = false, note = "cancelled; not run" } : await RunOne(id, name).ConfigureAwait(false));
+                return Json(new { started = true, results, checkup = diagnose ? await Diagnosis().ConfigureAwait(false) : null });
+            }
+            async Task<object> RunOne(string id, string name)
+            {
+                string ran = await ui(async () =>
+                {
+                    var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
+                    compared.Remove(id);   // what is found under it afterwards is this run's
+                    if (!bench.RunCommand.CanExecute(row)) return "refused";
+                    await bench.RunCommand.ExecuteAsync(row);
+                    return "";
+                }).ConfigureAwait(false);
+                if (ran.Length > 0) return new { benchmark = name, completed = false, note = "the benchmark could not start; do not report a number" };
+                // The comparison with the best kept result is filed when the run's own event reaches the page; give it a few seconds.
+                for (int i = 0; i < 40; i++)
+                {
+                    int n = i; object? result = null;
+                    await OnUi(() => { result = Read(n); return ""; }).ConfigureAwait(false);
+                    if (result is not null) return result;
+                    await Task.Delay(250, CancellationToken.None).ConfigureAwait(false);
+                }
+                return new { benchmark = name, completed = false, note = "no result was recorded; do not report a number" };
+                object? Read(int i)
+                {
+                    var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
+                    if (compared.GetValueOrDefault(id) is not { } c)
+                        return row.IsActive || i < 39 ? null : new { benchmark = name, completed = false, status = row.StatusText, note = "no result was recorded; do not report a number" };
+                    return new
+                    {
+                        benchmark = row.Name, completed = true, value = Math.Round(c.Current.Value, 2), unit = c.Current.Unit,
+                        previousBest = c.Previous is { } p ? new { value = Math.Round(p.Value, 2), at = p.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm") } : null,
+                        changePercent = c.ChangePercent is { } ch ? Math.Round(ch, 1) : (double?)null, newRecord = c.Saved,
+                        note = c.Previous is null ? "the first recorded result of this computer; there is nothing to compare with" : null,
+                    };
+                }
+            }
+        }
+
+        // The checkup's own findings once its benchmarks have run: the setup as it is now (memory, power plan, drive links) and each run judged.
+        async Task<object> Diagnosis()
+        {
+            var service = _sp.GetRequiredService<Desktop.Services.CheckupService>();
+            var setup = (await service.SetupAsync().ConfigureAwait(false)).Select(FindingJson).ToList();
+            return new { setup, runs = service.Runs().Select(r => new { name = Loc.Get(r.NameKey), findings = r.All.Select(FindingJson) }).ToList() };
+        }
+
         return
         [
             new("get_machine_summary", "This computer's specification as the app read it: processor (cores, threads), graphics cards with their memory (VRAM), " +
@@ -188,6 +254,26 @@ public sealed partial class WebBridge
                         findings = (r.Findings ?? []).OrderBy(f => f.Level switch { "Problem" => 0, "Attention" => 1, _ => 2 }).Take(8).Select(f => new { level = f.Level, title = f.Title }),
                         findingsOmitted = (r.Findings?.Count ?? 0) > 8 ? r.Findings!.Count - 8 : (int?)null,
                     }));
+                }),
+            new("get_part_tests", "What the saved reports recorded about one part of the computer: the newest report's tests (with their outcomes) and benchmarks (their main figures) of it, the highest " +
+                "temperature the part reached while they ran, and the report's date. Part: cpu, ram, gpu, vram, storage or network. When the user asks about a part, give its specification " +
+                "(get_machine_summary) and, when this finds a test, its summary too. tested=false means no saved report has a test of that part: say so, never guess a result.",
+                """{"type":"object","properties":{"part":{"type":"string","enum":["cpu","ram","gpu","vram","storage","network"]}},"required":["part"]}""",
+                async (a, _) =>
+                {
+                    string part = Text(a, "part") ?? "";
+                    if (!PartHistory.Knows(part)) return Json(new { error = "part must be cpu, ram, gpu, vram, storage or network" });
+                    var found = await Task.Run(() =>
+                    {
+                        var store = new ReportStore(_paths.ReportsDir);
+                        return PartHistory.Latest(part, store.List().Take(20).Select(store.Load).OfType<SessionReport>());
+                    }).ConfigureAwait(false);
+                    if (found is null) return Json(new { part, tested = false, note = "no saved report has a test or benchmark of this part" });
+                    return Json(new
+                    {
+                        part, tested = true, at = found.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm"), kind = found.Kind.ToString(), maxTempC = found.MaxTempC is { } t ? Math.Round(t, 1) : (double?)null,
+                        lines = found.Lines.Select(l => new { name = l.Name, outcome = l.Outcome?.ToString(), figures = l.Figures.Select(f => new { name = f.Name, value = Math.Round(f.Value, 2), unit = f.Unit }) }).ToList(),
+                    });
                 }),
             new("export_report", "Makes a file of a saved report and offers it in the chat with an Open button: pdf (the full report), html (the full report as a web page) or summary " +
                 "(a one-page PDF summary). Optional index (0 = newest). Returns the file's name; the user opens it from the chat.",
@@ -468,64 +554,17 @@ public sealed partial class WebBridge
                 """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu","gpu_rt","gpu_scene","gpu_scene_rt","gpu_ai","network"]}}},"required":["benchmarks"]}""",
                 async (a, ct) =>
                 {
-                    if (_benchVm is not { } bench || _benchCompared is not { } compared) return Json(new { error = "the benchmarks are not available yet" });
                     var keys = Texts(a, "benchmarks").Append(Text(a, "benchmark") ?? "").Where(k => k.Length > 0).Distinct().ToList();
                     var ids = (keys.Contains("all") ? AssistantBenchmarks.Values : keys.Select(k => AssistantBenchmarks.GetValueOrDefault(k)).OfType<string>()).Distinct().ToList();
                     if (ids.Count == 0) return Json(new { error = "name at least one benchmark: " + string.Join(", ", AssistantBenchmarks.Keys) + " or all" });
-                    // The list is fixed here, before the user is asked: the benchmarks this machine can run, in the page's order, all asked about at once.
-                    List<(string Id, string Name, string Seconds)>? plan = null;
-                    await OnUi(() => { plan = bench.IsRunning || runner.IsBusy ? null : bench.Rows.Where(r => ids.Contains(r.Benchmark.Definition.Id.Value) && r.IsAvailable)
-                        .Select(r => (r.Benchmark.Definition.Id.Value, r.Name, r.DurationText)).ToList(); return ""; }).ConfigureAwait(false);
-                    if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
-                    if (plan.Count == 0) return Json(new { error = "this computer can not run those benchmarks" });
-                    if (await ask("benchmark", [.. plan.Select(r => (r.Name, r.Seconds))], ct).ConfigureAwait(false) is not { } kept)
-                        return Json(new { started = false, reason = "the user declined; nothing was run" });
-                    var chosen = plan.Where((_, i) => kept[i]).ToList();
-
-                    return await running(new("benchmark", () => bench.Rows.FirstOrDefault(r => r.IsActive) is { } r ? (r.Name, r.PercentComplete) : null), () => withoutModel(RunAll, ct));
-                    async Task<string> RunAll()
-                    {
-                        using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (bench.CancelCommand.CanExecute(null)) bench.CancelCommand.Execute(null); }));
-                        var results = new List<object>();
-                        foreach (var (id, name, _) in chosen)
-                            results.Add(ct.IsCancellationRequested ? new { benchmark = name, completed = false, note = "cancelled; not run" } : await RunOne(id, name).ConfigureAwait(false));
-                        return Json(new { started = true, results });
-                    }
-                    async Task<object> RunOne(string id, string name)
-                    {
-                        string ran = await ui(async () =>
-                        {
-                            var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
-                            compared.Remove(id);   // what is found under it afterwards is this run's
-                            if (!bench.RunCommand.CanExecute(row)) return "refused";
-                            await bench.RunCommand.ExecuteAsync(row);
-                            return "";
-                        }).ConfigureAwait(false);
-                        if (ran.Length > 0) return new { benchmark = name, completed = false, note = "the benchmark could not start; do not report a number" };
-                        // The comparison with the best kept result is filed when the run's own event reaches the page; give it a few seconds.
-                        for (int i = 0; i < 40; i++)
-                        {
-                            int n = i; object? result = null;
-                            await OnUi(() => { result = Read(n); return ""; }).ConfigureAwait(false);
-                            if (result is not null) return result;
-                            await Task.Delay(250, CancellationToken.None).ConfigureAwait(false);
-                        }
-                        return new { benchmark = name, completed = false, note = "no result was recorded; do not report a number" };
-                        object? Read(int i)
-                        {
-                            var row = bench.Rows.First(r => r.Benchmark.Definition.Id.Value == id);
-                            if (compared.GetValueOrDefault(id) is not { } c)
-                                return row.IsActive || i < 39 ? null : new { benchmark = name, completed = false, status = row.StatusText, note = "no result was recorded; do not report a number" };
-                            return new
-                            {
-                                benchmark = row.Name, completed = true, value = Math.Round(c.Current.Value, 2), unit = c.Current.Unit,
-                                previousBest = c.Previous is { } p ? new { value = Math.Round(p.Value, 2), at = p.At.ToLocalTime().ToString("yyyy-MM-dd HH:mm") } : null,
-                                changePercent = c.ChangePercent is { } ch ? Math.Round(ch, 1) : (double?)null, newRecord = c.Saved,
-                                note = c.Previous is null ? "the first recorded result of this computer; there is nothing to compare with" : null,
-                            };
-                        }
-                    }
+                    return await RunBenchmarks(ids, false, ct).ConfigureAwait(false);
                 }),
+            new("run_checkup", "The app's smart diagnosis (the Diagnosis page), done here for the user: runs the processor (all cores and one core), memory and graphics card benchmarks " +
+                "after the user confirmed on the page, then judges the computer from them and from its setup (memory, power plan, drive links and health). Call it whenever the user " +
+                "asks to diagnose, check up or troubleshoot the computer or the system as a whole. Returns each benchmark's number and the checkup's findings (level, title, text). " +
+                "Tell the problems and the things that need attention first, then what the numbers were; say only what the findings and numbers hold, never call the computer healthy unless no finding says otherwise.",
+                """{"type":"object","properties":{}}""",
+                async (_, ct) => await RunBenchmarks([.. CheckupBenchmarks], true, ct).ConfigureAwait(false)),
         ];
     }
 

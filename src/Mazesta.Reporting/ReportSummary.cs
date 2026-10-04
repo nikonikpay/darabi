@@ -50,7 +50,7 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
     };
     /// <summary>The most figures a summary line holds: one line a benchmark.</summary>
     public const int MaxFigures = 3;
-    internal static IReadOnlyList<SummaryFigure> FiguresOf(BenchmarkEntry b)
+    public static IReadOnlyList<SummaryFigure> FiguresOf(BenchmarkEntry b)
         => [.. (b.Metrics.Any(m => m.Key is not null) ? b.Metrics.Where(m => m.Key is not null && MainFigures.Contains(m.Key))
             : b.Metrics).Take(MaxFigures).Select(m => new SummaryFigure(m.Name, m.Value, m.Unit))];   // saved before metrics carried their key: the first ones are the results
 

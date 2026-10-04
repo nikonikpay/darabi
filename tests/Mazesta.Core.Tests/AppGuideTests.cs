@@ -12,6 +12,14 @@ public class AppGuideTests
         Assert.Equal(page, r.Place!.Page); Assert.Equal(target, r.Place.Target);
     }
 
+    [Fact] public void Diagnose_the_system_runs_the_smart_diagnosis_itself_while_a_bare_name_only_opens_its_page()
+    {
+        foreach (var t in new[] { "سیستم رو عیب یابی کن", "عیب‌یابی هوشمند انجام بده", "چکاپ بگیر", "سیستمم رو چک کن", "کامپیوتر رو بررسی کن", "عیب یابی هوشمند رو اجرا کن", "diagnose my system", "run the smart diagnosis" })
+            Assert.True(R(t).Intent == AiIntent.Checkup, $"{t}: {R(t).Intent}");
+        Goes("عیب یابی هوشمند", "checkup"); Goes("برو به صفحه عیب یابی", "checkup"); Goes("صفحه عیب یابی رو باز کن", "checkup");
+        foreach (var t in new[] { "چطوری سیستم رو عیب یابی کنم", "سیستم رو عیب یابی نکن", "اینترنت رو عیب یابی کن", "رم رو تست کن", "مشخصات سیستم رو نشون بده" })
+            Assert.NotEqual(AiIntent.Checkup, R(t).Intent);
+    }
     [Fact] public void Overclock_and_undervolt_are_the_tuning_page_not_the_overlay()
     {
         Goes("برو به بخش اورکلاک گرافیک", "tuning"); Goes("برو بخش اورکلاک", "tuning"); Goes("برو به بخش آندرولت", "tuning");

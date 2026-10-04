@@ -1,6 +1,6 @@
 using System.IO; using System.Net.Http; using System.Text.Json;
 using Mazesta.Core.Hardware; using Mazesta.Monitoring; using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
-using Mazesta.Core.Ai; using Mazesta.Core.Software; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks;
+using Mazesta.Core.Ai; using Mazesta.Core.Software; using Mazesta.Reporting; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Ai; using Mazesta.Diagnostics.Benchmarks;
 namespace Mazesta.Web;
 
 public sealed partial class WebBridge
@@ -334,6 +334,15 @@ public sealed partial class WebBridge
                 reply.Text = AssistantReplies.Tests(result);
                 return true;
             }
+            // "Diagnose the system": the app runs its smart diagnosis (after the user confirmed on the page), opens its page, and tells what it found.
+            if (route.Intent == AiIntent.Checkup)
+            {
+                var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "run_checkup", "{}"), ct).ConfigureAwait(true);
+                reply.Tools.Add(new("run_checkup", "{}", result, ok));
+                reply.Text = AssistantReplies.Checkup(result);
+                if (!ct.IsCancellationRequested && result.Contains("\"started\":true", StringComparison.Ordinal)) this.Push("assistantNav", new { page = "checkup", target = (string?)null });
+                return true;
+            }
             if (route.Intent == AiIntent.Games)
             {
                 var (result, ok) = await AiAgent.InvokeAsync(tools, new ToolCall("direct", "get_machine_summary", "{\"part\":\"all\"}"), ct).ConfigureAwait(true);
@@ -367,7 +376,7 @@ public sealed partial class WebBridge
                 }
                 reply.Text = route.Intent switch
                 {
-                    AiIntent.Specs => AssistantReplies.Specs(route.Part ?? "all", results[0]),
+                    AiIntent.Specs => AssistantReplies.Specs(route.Part ?? "all", results[0]) + (results.Count > 1 && AssistantReplies.PartTests(results[1]) is { Length: > 0 } tested ? "\n\n" + tested : ""),
                     AiIntent.Sensors => AssistantReplies.Sensors(route.Kind, route.Part, results[0]),
                     AiIntent.Software or AiIntent.SoftwareList => AssistantReplies.Software(results[0], route.Intent == AiIntent.Software),
                     AiIntent.Report => AssistantReplies.Report(results[0], results[1], route.Kind == "Temperature", route.Part),
@@ -393,7 +402,8 @@ public sealed partial class WebBridge
             static ToolCall C(string name, object args) => new("pre_" + name, name, JsonSerializer.Serialize(args));
             return route.Intent switch
             {
-                AiIntent.Specs => [C("get_machine_summary", new { part = route.Part })],
+                // A part that is tested also gets what its newest recorded test found.
+                AiIntent.Specs => route.Part is { } sp && PartHistory.Knows(sp) ? [C("get_machine_summary", new { part = sp }), C("get_part_tests", new { part = sp })] : [C("get_machine_summary", new { part = route.Part })],
                 AiIntent.Sensors => [C("get_sensors", new { kind = route.Kind })],
                 AiIntent.PcieErrors => [C("get_pcie_errors", new { })],
                 AiIntent.Dns => [C("test_dns", new { })],

@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes, Checkup }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -57,8 +57,8 @@ public static class AppGuide
         P("tests", "Nav_Tests", "hardware tests with a report: the memory test checks the RAM's health, the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs; a switch runs processor, memory and graphics card tests together",
             "تستها", "تست ها", "صفحه تست", "بخش تست", "tests", "سلامت رم", "سلامت حافظه", "سلامت هارد", "سلامت گرافیک", "سلامت cpu", "تست رم", "تست حافظه", "تست هارد", "تست گرافیک", "تست cpu", "تست پردازنده"),
         T("tests", "start", "Test_Start", "start the ticked tests", null, "شروع تست", "شروع تستها"),
-        P("benchmarks", "Nav_Benchmarks", "speed benchmarks and comparison with other computers", "بنچمارک", "بنچ مارک", "بنچمارکها", "benchmark", "benchmarks"),
-        P("checkup", "Nav_Checkup", "one-click diagnosis: runs the benchmarks and judges the computer from them", "عیب یابی", "عیبیابی", "عیب یابی هوشمند", "چکاپ", "checkup", "diagnosis"),
+        P("benchmarks", "Nav_Benchmarks", "speed benchmarks and comparison with other computers; the memory benchmark also measures access latency (at 32 KB, 256 KB, 2 MB, 16 MB, 64 MB and the RAM itself); the Iranian-garden 3D scene benchmarks (normal and ray-traced) walk the garden once at walking pace and need no setting", "بنچمارک", "بنچ مارک", "بنچمارکها", "benchmark", "benchmarks"),
+        P("checkup", "Nav_Checkup", "one-click smart diagnosis: runs the benchmarks and judges the computer from them (the assistant can run it itself and tell the findings)", "عیب یابی", "عیبیابی", "عیب یابی هوشمند", "چکاپ", "checkup", "diagnosis"),
         T("checkup", "run", "Checkup_Run", "start the diagnosis", null, "اجرای عیب یابی", "شروع عیب یابی"),
         P("checks", "Nav_Checks", "hands-on checks a person judges: screen, keyboard, mouse, speakers, microphone, and the laptop battery's health", "بررسی دستی", "بررسیهای دستی", "تست دستی", "hands-on", "checks"),
         T("checks", "display", "Checks_Display", "full-screen colours for dead or stuck pixels", null, "پیکسل سوخته", "پیکسل", "نمایشگر", "صفحه نمایش", "مانیتور", "ال سی دی", "lcd", "dead pixel", "display"),
@@ -68,7 +68,7 @@ public static class AppGuide
         T("checks", "mic", "Checks_Mic", "records the microphone and shows its level", null, "میکروفون", "میکروفن", "میکرفون", "مایک", "microphone", "mic"),
         T("checks", "battery", "Checks_Battery", "the laptop battery: its health percent (full capacity against capacity when new), charge cycles, and a drain test", null,
             "باتری", "باطری", "سلامت باتری", "سلامت باطری", "تست باتری", "تست باطری", "battery", "battery health"),
-        P("overlay", "Nav_Overlay", "settings of the on-screen overlay: temperatures, loads, frame rate, and the link (ping, packet loss, jitter, download and upload) shown over games", "اورلی", "اورلای", "اوورلی", "overlay", "نمایش روی صفحه", "fps"),
+        P("overlay", "Nav_Overlay", "settings of the on-screen overlay: temperatures, loads, frame rate (with the 1% and 0.1% lows), and the link (ping, packet loss, jitter, download and upload) shown over games; four sizes (small, medium, large, extra large) and a panel that is as narrow as its rows; the game preset shows frame rate with its lows, GPU temperature, hot spot, load, clock, memory and power, and CPU temperature, load, clock, power and busiest thread, with the average clock of the P-cores and of the E-cores on an Intel CPU that has both", "اورلی", "اورلای", "اوورلی", "overlay", "نمایش روی صفحه", "fps"),
         P("tuning", "Nav_Tuning", "graphics card overclock and undervolt: clocks, voltage curve, power limit, fans, profiles; RAM XMP", "اورکلاک", "اور کلاک", "اندرولت", "اندروالت", "آندر ولت", "اندر ولت", "تیونینگ", "undervolt", "overclock", "tuning"),
         T("tuning", "autoundervolt", "Tuning_AutoUndervolt", "finds the lowest stable voltage by itself (10 to 25 minutes)", "Assist_Hint_Tuning", "اندرولت خودکار", "اندروالت خودکار", "اندر ولت خودکار", "auto undervolt"),
         T("tuning", "autooverclock", "Tuning_AutoOverclock", "raises the clocks step by step while the card stays correct (10 to 25 minutes)", "Assist_Hint_Tuning", "اورکلاک خودکار", "اور کلاک خودکار", "auto overclock"),
@@ -89,7 +89,7 @@ public static class AppGuide
         P("drivers", "Nav_Drivers", "drivers: the graphics card's driver against NVIDIA's newest (Game Ready or Studio, suggested from the installed programs), the drivers Windows Update offers, and the devices without a working driver; download and install each with a button",
             "درایور", "درایورها", "درایور ها", "اپدیت درایور", "آپدیت درایور", "به روزرسانی درایور", "driver", "drivers", "game ready", "studio driver"),
         P("updates", "Nav_Updates", "Windows Update: default, recommended (deferred) or off", "اپدیت ویندوز", "آپدیت ویندوز", "به روزرسانی ویندوز", "بروزرسانی ویندوز", "windows update"),
-        P("reports", "Nav_Reports", "saved test and benchmark reports: summary, PDF, HTML, before/after comparison", "گزارش", "گزارشها", "گزارش ها", "ریپورت", "reports", "report"),
+        P("reports", "Nav_Reports", "saved test and benchmark reports: summary (one A5 sheet: the highest temperatures in one row, one line a test with its main figures, the system, drive health, and a note that Mazesta Test is installed on the customer's system), PDF, HTML, before/after comparison; the company's copy needs a service number to send a report to the site, where both the summary and the whole report are kept", "گزارش", "گزارشها", "گزارش ها", "ریپورت", "reports", "report"),
         T("reports", "compare", "Reports_Compare", "compare two ticked reports, before and after", null, "مقایسه گزارش", "مقایسه قبل و بعد", "compare"),
         P("apps", "Nav_Apps", "which professional programs (rendering, architecture, civil, animation, editing) run on this computer, and at what level", "برنامه ها", "برنامههای تخصصی", "نرم افزار", "نرمافزار", "نرم افزارها", "برنامه های رندرینگ", "software", "apps"),
         P("games", "Nav_Games", "which games run on this computer, at their publishers' minimum, recommended and high tiers and the publishers' own targets (resolution, preset, frame rate)",
@@ -264,6 +264,10 @@ public static class AppGuide
 
         if (how && !go) return new(AiIntent.HowTo, place, App: app);
 
+        // "Diagnose the system": the app runs its smart diagnosis itself (the Diagnosis page's benchmarks and its judgment) and tells what it found,
+        // instead of only opening the page. A bare "عیب یابی" or "صفحه عیب یابی" still goes to the page.
+        if (!not && !go && !page && WantsCheckup(s, place)) return new(AiIntent.Checkup);
+
         bool report = Has(s, "گزارش") || Has(s, "ریپورت") || Has(s, "report") || Has(s, "نتیجه تست") || Has(s, "نتایج تست") || Has(s, "نتیجه بنچمارک");
         if (report)
         {
@@ -344,6 +348,22 @@ public static class AppGuide
         bool short_ = Words(s) <= 4 && !ask;
         if (place is not null && (go || page || short_ || doIt && place.Target is not null)) return new(AiIntent.Navigate, place);
         return new(AiIntent.None, place, App: app);
+    }
+
+    private static readonly string[] CheckupWords = ["عیب یاب", "عیبیاب", "چکاپ", "چک اپ", "check up", "checkup", "diagnos", "troubleshoot"];
+    private static readonly string[] SystemWords = ["سیستم", "کامپیوتر", "کامپیوترم", "لپتاپ", "لپ تاپ", "پی سی", "pc", "computer", "laptop", "system"];
+    /// <summary>The words that make a sentence a command (whole words: "کن" must not match "کنار").</summary>
+    private static readonly HashSet<string> CommandTokens = new(["کن", "کنی", "کنید", "بکن", "بگیر", "بگیری", "بزن", "بزنی", "انجام", "اجرا", "شروع", "do", "run", "start", "perform", "check", "test", "scan", "diagnose"], StringComparer.Ordinal);
+
+    /// <summary>Whether a message asks the whole computer to be diagnosed: the diagnosis named with a word of doing ("سیستم رو عیب یابی کن", "چکاپ بگیر"),
+    /// or the computer as a whole checked with no part named ("سیستمم رو چک کن").</summary>
+    private static bool WantsCheckup(string s, AppPlace? place)
+    {
+        bool command = s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(CommandTokens.Contains);
+        // The diagnosis covers the processor, memory and graphics card; the internet or a drive named is another job (its own troubleshooter or test).
+        if (Any(s, CheckupWords)) return command && (place is null || place is { Page: "checkup", Target: null }) && !TestAreas.Any(x => x.Area is "network" or "storage" && Any(s, x.Words));
+        if (place is not null || TestAreas.Any(a => Any(s, a.Words)) || !Any(s, SystemWords)) return false;
+        return Has(s, "چک کن") || Has(s, "بررسی کن") || command && Any(s, TestWords);
     }
 
     private static int Words(string norm) => norm.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
