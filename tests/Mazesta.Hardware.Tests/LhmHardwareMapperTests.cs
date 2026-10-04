@@ -59,6 +59,16 @@ public class LhmHardwareMapperTests
         Assert.Single(sensors); Assert.Equal("GPU Video Engine", sensors[0].Definition.Name);
     }
 
+    // Regression (field report, Gigabyte X299 AORUS Gaming 7, i9-7920X): each module came twice under one identifier and no sensor of the machine was shown.
+    [Fact] public void Parts_the_provider_names_alike_get_distinct_ids()
+    {
+        var a = new FakeHardware(HardwareType.Memory, "/memory/dimm/0", "DIMM #0"); a.Add("DIMM #0", SensorType.Temperature, 0, 38);
+        var b = new FakeHardware(HardwareType.Memory, "/memory/dimm/0", "Corsair - CMK32GX4M2E3200C16 (#0)"); b.Add("Capacity", SensorType.Data, 50, 16);
+        var nodes = Mapper().Map([a, b]);
+        Assert.Equal(("memory/memory-dimm-0", "memory/memory-dimm-0-2"), (nodes[0].Node.Id.Value, nodes[1].Node.Id.Value));
+        Assert.Equal(2, nodes.SelectMany(n => n.Sensors).Select(s => s.Definition.Id).Distinct().Count());
+    }
+
     // Regression: two drives with one serial gave two nodes one id; the duplicate sensor key emptied Monitoring and failed the tray check.
     [Fact] public void Drives_sharing_a_serial_get_distinct_ids()
     {

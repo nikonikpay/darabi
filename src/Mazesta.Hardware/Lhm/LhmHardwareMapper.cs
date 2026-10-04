@@ -19,7 +19,10 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
         // Two drives can report one serial (twin USB enclosures, a bridge that passes a fixed one); the second then keys by its provider path,
         // since a node id prefixes every sensor id and a clash made the sensor list fail to build at all.
         if (serial is not null && taken.Contains(HardwareId.ForStorage(serial))) serial = null;
-        var id = serial is not null ? HardwareId.ForStorage(serial) : HardwareId.FromProviderPath(kind, path); taken.Add(id);
+        var id = serial is not null ? HardwareId.ForStorage(serial) : HardwareId.FromProviderPath(kind, path);
+        // The provider can name two parts alike: on a Gigabyte X299 AORUS Gaming 7 each memory module came twice under /memory/dimm/N (once with
+        // its thermal sensor, once without), and the one clash stopped every sensor of the machine. The later one takes a numbered id.
+        for (int n = 2; !taken.Add(id); n++) id = HardwareId.FromProviderPath(kind, $"{path}/{n}");
         var sensors = new List<MappedSensor>();
         int ordinal = 0; var seen = new HashSet<SensorId>();
         foreach (var s in hw.Sensors.Where(s => !s.IsDefaultHidden).OrderBy(s => s.SensorType).ThenBy(s => s.Index))
