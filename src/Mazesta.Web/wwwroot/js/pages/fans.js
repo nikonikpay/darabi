@@ -74,6 +74,20 @@ export function mount(el) {
   let guard = 85, floor = 20, timer = 0, saveTimer = 0, last = null;
   const msg = h("p", { class: "msg" }), grid = h("div", { class: "panels two fan-cards" }), banner = h("div", { class: "banner", hidden: true });
   const temps = h("p", { class: "caption" });
+  let showUnwired = false;
+  const wiredText = h("span"), wiredBtn = h("button", { class: "btn", type: "button", onclick: () => { showUnwired = !showUnwired; if (last) render(last); } }), wiredNote = h("p", { class: "note", hidden: true }, wiredText, " ", wiredBtn);
+
+  // The profile for all outputs at once: ready-made ones, the ones saved here, and the one in force marked. The tray's menu has the same list.
+  const profileBar = h("div", { class: "seg fan-profiles", role: "group", "aria-label": t("Fans_Profiles_Title") });
+  const saveName = h("input", { class: "field", type: "text", maxlength: 40, placeholder: t("Fans_Profile_Name"), "aria-label": t("Fans_Profile_Name") });
+  const saveBtn = h("button", { class: "btn", type: "button", onclick: () => { if (saveName.value.trim()) { act("fans.profile.save", { name: saveName.value }); saveName.value = ""; } } }, t("Fans_Profile_Save"));
+  const delBtn = h("button", { class: "btn", type: "button", hidden: true, onclick: () => act("fans.profile.delete", { name: last.profile }) }, t("Fans_Profile_Delete"));
+  const profileLabel = (n) => t(n === "auto" ? "Fans_Profile_auto" : ["silent", "standard", "performance", "full"].includes(n) ? `Fans_Preset_${n}` : n === "custom" ? "Fans_Profile_custom" : n);
+  function drawProfiles(s) {
+    const names = [...s.profiles.builtin, ...s.profiles.custom, ...(s.profile === "custom" ? ["custom"] : [])];
+    profileBar.replaceChildren(...names.map((n) => h("button", { type: "button", "aria-pressed": String(s.profile === n), disabled: n === "custom", onclick: () => act("fans.profile", { name: n }) }, profileLabel(n))));
+    delBtn.hidden = !s.profiles.custom.includes(s.profile);
+  }
   const resetAll = h("button", { class: "btn", type: "button", hidden: true, onclick: () => act("fans.reset") }, icon("refresh"), t("Fans_Reset"));
 
   const act = async (method, params) => {
@@ -100,6 +114,22 @@ export function mount(el) {
     const curveBox = h("div", { class: "fan-curve-box" }, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field" }, h("span", {}, t("Fans_Source")), source), presets), editor.svg, h("p", { class: "note" }, t("Fans_Curve_Hint")));
     const fixedBox = h("div", { class: "fan-fixed" }, h("span", {}, t("Fans_Duty")), fixed, fixedOut);
     const held = h("small", { class: "fan-held" });
+    // What the output drives: a name and a kind the user gives (the board's header names differ from board to board), and a button that runs it at full for a few
+    // seconds to find out, which says whether a speed follows, stays or is not there at all.
+    const kinds = ["cpu", "pump", "case"];
+    const kindSel = h("select", { class: "field", "aria-label": t("Fans_Kind"), onchange: () => act("fans.label", { id: c.id, kind: kindSel.value }) }, kinds.map((k) => h("option", { value: k }, t(`Fans_Kind_${k}`))));
+    kindSel.value = c.kind;
+    const label = h("input", { class: "field", type: "text", maxlength: 40, value: c.name === c.boardName ? "" : c.name, placeholder: c.boardName, "aria-label": t("Fans_Name"), onchange: () => act("fans.label", { id: c.id, name: label.value }) });
+    const found = h("p", { class: "note", hidden: true }), findBtn = h("button", { class: "btn", type: "button", onclick: identify }, icon("fan"), t("Fans_Identify"));
+    async function identify() {
+      findBtn.disabled = true; found.hidden = false; found.className = "note"; found.textContent = t("Fans_Identifying");
+      try {
+        const r = await call("fans.identify", { id: c.id });
+        found.textContent = r.answer === "none" ? t("Fans_Id_none") : t(r.answer === "fan" ? "Fans_Id_fan" : "Fans_Id_fixed", Math.round(r.start ?? 0), Math.round(r.peak ?? 0));
+        if (r.suggest && r.suggest !== kindSel.value) found.append(" ", h("button", { class: "btn", type: "button", onclick: () => act("fans.label", { id: c.id, kind: r.suggest }) }, t("Fans_Id_Use", t(`Fans_Kind_${r.suggest}`))));
+      } catch (e) { found.className = "note fail"; found.textContent = String(e.message || e); } finally { findBtn.disabled = false; }
+    }
+    const details = h("div", { class: "fan-details" }, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, h("span", {}, t("Fans_Name")), label), h("label", { class: "rgb-field" }, h("span", {}, t("Fans_Kind")), kindSel)), h("div", { class: "btn-row" }, findBtn), found);
     function send() { act("fans.set", { id: c.id, mode: "curve", source: source.value, points: editor.get() }); }
     function choose(m) {
       mine.mode = m; sync();
@@ -110,8 +140,8 @@ export function mount(el) {
     function sync() { modes.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === mine.mode))); curveBox.hidden = mine.mode !== "curve"; fixedBox.hidden = mine.mode !== "manual"; }
     sync();
     const el = box({ cls: "p-cpu", ico: "fan", title: c.name, sub: c.part, extra: "fan-card", a: "fans",
-      body: [h("div", { class: "fan-top" }, h("div", { class: "fan-read" }, duty, rpm), bar), modes, fixedBox, curveBox, held] });
-    return { el, name, duty, rpm, gauge, held, editor, mine, source, sync, modes };
+      body: [h("div", { class: "fan-top" }, h("div", { class: "fan-read" }, duty, rpm), bar), modes, fixedBox, curveBox, held, details] });
+    return { el, name, duty, rpm, gauge, held, editor, mine, source, sync, modes, sig: `${c.name}|${c.kind}` };
   }
 
   function render(s) {
@@ -119,12 +149,16 @@ export function mount(el) {
     banner.hidden = s.supported; banner.textContent = s.supported ? "" : t("Fans_Unsupported");
     resetAll.hidden = !s.supported;
     temps.textContent = s.supported ? [s.cpu != null ? `${t("Fans_Src_cpu")} ${Math.round(s.cpu)}°` : "", s.gpu != null ? `${t("Fans_Src_gpu")} ${Math.round(s.gpu)}°` : ""].filter(Boolean).join("  ·  ") : "";
+    drawProfiles(s);
+    const unwired = s.channels.filter((c) => !c.wired).length;
+    wiredNote.hidden = !unwired; if (unwired) { wiredText.textContent = t("Fans_Unwired", unwired); wiredBtn.textContent = t(showUnwired ? "Fans_HideUnwired" : "Fans_ShowUnwired"); }
     const ids = new Set(s.channels.map((c) => c.id));
-    for (const [id, c] of cards) if (!ids.has(id)) { c.el.remove(); cards.delete(id); }
+    for (const [id, c] of cards) if (!ids.has(id) || c.sig !== `${s.channels.find((x) => x.id === id)?.name}|${s.channels.find((x) => x.id === id)?.kind}`) { c.el.remove(); cards.delete(id); }
     for (const ch of s.channels) {
       let card = cards.get(ch.id);
       if (!card) { card = build(ch); cards.set(ch.id, card); grid.append(card.el); }
       else if (card.mine.mode !== ch.mode) { card.mine.mode = ch.mode; card.sync(); }
+      card.el.hidden = !ch.wired && !showUnwired;
       card.duty.textContent = ch.percent != null ? `${Math.round(ch.percent)}%` : "—"; card.rpm.textContent = ch.rpm != null ? `${Math.round(ch.rpm)} ${t("Fans_Rpm")}` : "";
       card.gauge.style.width = `${Math.min(100, ch.percent ?? 0)}%`; card.held.textContent = ch.held ? t("Fans_Held") : "";
       const temp = ch.source === "gpu" ? s.gpu : ch.source === "max" ? (s.cpu != null ? Math.max(s.cpu, s.gpu ?? s.cpu) : s.gpu) : s.cpu;
@@ -136,7 +170,9 @@ export function mount(el) {
   const dragging = () => !!el.querySelector(".fan-curve .pt.hot");
 
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Fans")), h("p", { class: "page-lede" }, t("Fans_Lede")))),
-    banner, h("div", { class: "btn-row", style: { marginTop: 0 } }, resetAll, h("span", { class: "grow" }), temps), msg, grid, h("p", { class: "note" }, t("Fans_Note")));
+    banner, box({ cls: "p-cpu", ico: "sliders", title: t("Fans_Profiles_Title"), sub: t("Fans_Profiles_Sub"), a: "fans", i: 0,
+      body: [profileBar, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, saveName), saveBtn, delBtn), h("p", { class: "note" }, t("Fans_Profile_Tray"))] }),
+    h("div", { class: "btn-row", style: { marginTop: 0 } }, resetAll, h("span", { class: "grow" }), temps), msg, wiredNote, grid, h("p", { class: "note" }, t("Fans_Note")));
   call("fans.state").then(render).catch((e) => { msg.className = "msg fail"; msg.textContent = String(e.message || e); });
   timer = setInterval(poll, 2000);
   return () => { clearInterval(timer); clearTimeout(saveTimer); };

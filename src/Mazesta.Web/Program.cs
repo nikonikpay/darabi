@@ -28,7 +28,9 @@ internal sealed class Program : ApplicationContext
     private EventWaitHandle? _activate, _toggle, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait;
     private ServiceProvider? _services;
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
-    private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui;
+    private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans;
+    /// <summary>The tray starts the app with no window to hold a fan profile (see <see cref="FanController"/>): it ends when no profile is held and no overlay is up.</summary>
+    internal const string BackgroundArgument = "--background";
 
     [STAThread]
     private static int Main(string[] args)
@@ -43,9 +45,10 @@ internal sealed class Program : ApplicationContext
             return 0;
         }
         JustUpdated = args.Contains(AppUpdater.UpdatedArgument);
-        bool overlayOnly = args.Contains(OverlaySignals.Argument);
+        bool overlayOnly = args.Contains(OverlaySignals.Argument), background = args.Contains(BackgroundArgument);
         if (!s_first)
         {
+            if (background) return 0;   // the tray's request for the fans is in a file the running app reads; nothing to bring forward
             // The app is running: ask it to come forward (or, from the tray, to show the overlay). Otherwise it is an old copy of the retired WPF
             // edition (same mutex), found by its title.
             if (overlayOnly) { if (EventWaitHandle.TryOpenExisting(OverlaySignals.Toggle, out var toggle)) using (toggle) toggle.Set(); }
@@ -57,12 +60,12 @@ internal sealed class Program : ApplicationContext
         Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         using var app = new Program();
-        try { app.Start(overlayOnly); Application.Run(app); }
+        try { app.Start(overlayOnly, background); Application.Run(app); }
         finally { app.End(); }
         return 0;
     }
 
-    private void Start(bool overlayOnly)
+    private void Start(bool overlayOnly, bool background)
     {
         // The UI thread's message-loop context, set now so the dispatcher can post to it from the start (before any window exists).
         var context = new WindowsFormsSynchronizationContext(); SynchronizationContext.SetSynchronizationContext(context);
@@ -80,7 +83,7 @@ internal sealed class Program : ApplicationContext
         Loc.SetLanguage(config.Language);
         _services = Bootstrapper.Build(paths, config, store, lf);
         string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
-        log.LogInformation("Mazesta Web {Version} on {Os}, {Machine}{Mode}", version, Environment.OSVersion.VersionString, Environment.MachineName, overlayOnly ? " (overlay only, started by the tray)" : "");
+        log.LogInformation("Mazesta Web {Version} on {Os}, {Machine}{Mode}", version, Environment.OSVersion.VersionString, Environment.MachineName, overlayOnly ? " (overlay only, started by the tray)" : background ? " (in the background, started by the tray)" : "");
         var engine = _services.GetRequiredService<PollingEngine>();
         Recorder = new HardwareDiagnosticsRecorder(engine, paths.LogsDir, $"Mazesta Web {version}", lf.CreateLogger("Hardware"));
 
@@ -91,7 +94,9 @@ internal sealed class Program : ApplicationContext
         _toggle = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Toggle);
         _toggleWait = ThreadPool.RegisterWaitForSingleObject(_toggle, (_, _) => _ui.BeginInvoke(ToggleFromTray), null, Timeout.Infinite, false);
 
-        if (overlayOnly) ShowOverlayWhenReady(); else ShowMain();
+        _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
+        if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
+        else ShowMain();
         _activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
         _activateWait = ThreadPool.RegisterWaitForSingleObject(_activate, (_, _) => _ui.BeginInvoke(ShowMain), null, Timeout.Infinite, false);
         engine.Start();
@@ -143,15 +148,19 @@ internal sealed class Program : ApplicationContext
         _main = null; UiDispatcher.Owner = null;
         foreach (var w in Application.OpenForms.OfType<ChartWindow>().ToList()) w.Close();   // pop-out charts go with it
         window.Dispose();
-        if (_overlay?.IsVisible == true && TrayRunning()) { _log?.LogInformation("Main window closed; the overlay stays while the tray runs"); return; }
+        if (KeepAlive()) { _log?.LogInformation("Main window closed; the app stays while the tray runs ({What})", _overlay?.IsVisible == true ? "overlay" : "fan profile"); return; }
         ExitThread();
     }
 
     private void OnOverlayVisibility(bool visible)
     {
         if (visible) _shown?.Set(); else _shown?.Reset();
-        if (!visible && _main is null) _ui?.BeginInvoke(ExitThread);   // it lived on only for the overlay
+        if (!visible) _ui?.BeginInvoke(ExitWhenNeedless);
     }
+
+    /// <summary>With no window the app lives on only while the tray runs and something needs it: the overlay on screen, or fans held by a profile.</summary>
+    private bool KeepAlive() => (_overlay?.IsVisible == true || _fans?.Active == true) && TrayRunning();
+    private void ExitWhenNeedless() { if (_main is null && !KeepAlive()) { _log?.LogInformation("Nothing needs the app without its window; ending"); ExitThread(); } }
 
     private void ToggleFromTray()
     {
@@ -186,7 +195,7 @@ internal sealed class Program : ApplicationContext
         _activateWait?.Unregister(null); _activate?.Dispose();
         _toggleWait?.Unregister(null); _toggle?.Dispose(); _shown?.Dispose();
         if (_config is not null) _store?.Save(_config);   // the overlay's last state, when the app ended from the tray with no window to save it
-        Recorder?.Dispose();
+        _fans?.Dispose(); Recorder?.Dispose();
         if (_services is not null) { _services.GetRequiredService<PollingEngine>().Dispose(); _services.Dispose(); }
         LogProvider?.Dispose();
         if (s_first && !s_released) s_single?.ReleaseMutex();

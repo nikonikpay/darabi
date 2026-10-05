@@ -36,6 +36,10 @@ internal static class TrayText
 
     public const string Overlay = "نمایش اورلی روی صفحه";
     public const string GpuProfiles = "پروفایل کارت گرافیک";
+    public const string Fans = "پروفایل فن";
+    public const string FanCustom = "سفارشی (تنظیم دستی در برنامه)";
+    public static string FanProfile(string name) => name switch { "auto" => "خودکار (کنترل خود برد)", "silent" => "بی‌صدا", "standard" => "استاندارد", "performance" => "عملکرد", "full" => "تمام سرعت", _ => name };
+    public static string FanRequested(string name) => $"پروفایل فن «{name}» درخواست شد.";
     public const string Lights = "نورپردازی RGB";
     public const string LightsOff = "خاموش کردن همه‌ی نورها";
     public const string LightsApply = "اعمال تنظیمات ذخیره‌شده";

@@ -3101,5 +3101,28 @@
   <data name="Fans_Held" xml:space="preserve"><value>در دست این برنامه</value></data>
   <data name="Fans_Reset" xml:space="preserve"><value>همه به حالت خودکار</value></data>
   <data name="Fans_Curve_Hint" xml:space="preserve"><value>یک نقطه را بکشید تا جابه‌جا شود. روی خط دوبار کلیک کنید تا نقطه اضافه شود، روی نقطه دوبار کلیک کنید تا حذف شود. با کلیک روی نقطه، کلیدهای جهت‌دار آن را جابه‌جا می‌کنند.</value></data>
-  <data name="Fans_Note" xml:space="preserve"><value>برنامه فن را فقط تا وقتی که اجراست نگه می‌دارد: وقتی بسته شود یا دما یک دقیقه نیاید، فن‌ها به برد برمی‌گردند. فن هرگز زیر ۲۰٪ نمی‌رود و اگر پردازنده به ۸۵ درجه برسد هر فنی که این برنامه نگه داشته با تمام سرعت می‌چرخد.</value></data>
+  <data name="Fans_Note" xml:space="preserve"><value>تا وقتی برنامه کار می‌کند (با پنجره‌ی بسته هم، به شرطی که tray فعال باشد) فن‌ها را روی همان چیزی نگه می‌دارد که تنظیم کرده‌اید؛ وقتی برنامه بسته شود، یا دما یک دقیقه نیاید، فن‌ها به برد برمی‌گردند. هیچ فنی زیر ۲۰٪ و هیچ پمپی زیر ۶۰٪ نمی‌رود و اگر پردازنده به ۸۵ درجه برسد همه‌ی فن‌های در اختیار برنامه تمام‌سرعت می‌شوند.</value></data>
+  <data name="Fans_Profiles_Title" xml:space="preserve"><value>پروفایل برای همه‌ی فن‌ها</value></data>
+  <data name="Fans_Profiles_Sub" xml:space="preserve"><value>با یک کلیک روی همه‌ی خروجی‌ها اعمال می‌شود؛ پمپ به کنترل خود برد سپرده می‌ماند</value></data>
+  <data name="Fans_Profile_auto" xml:space="preserve"><value>خودکار (خود برد)</value></data>
+  <data name="Fans_Profile_custom" xml:space="preserve"><value>سفارشی (دستی)</value></data>
+  <data name="Fans_Profile_Save" xml:space="preserve"><value>ذخیره‌ی تنظیمات فعلی به‌عنوان پروفایل</value></data>
+  <data name="Fans_Profile_Name" xml:space="preserve"><value>نام پروفایل</value></data>
+  <data name="Fans_Profile_Delete" xml:space="preserve"><value>حذف این پروفایل</value></data>
+  <data name="Fans_Profile_NotNow" xml:space="preserve"><value>سنسورهای فن هنوز آماده نیستند. چند لحظه بعد دوباره امتحان کنید.</value></data>
+  <data name="Fans_Profile_Tray" xml:space="preserve"><value>همین پروفایل‌ها در منوی آیکن tray هم هست.</value></data>
+  <data name="Fans_Kind" xml:space="preserve"><value>به چه وصل است</value></data>
+  <data name="Fans_Kind_cpu" xml:space="preserve"><value>فن پردازنده</value></data>
+  <data name="Fans_Kind_pump" xml:space="preserve"><value>پمپ AIO</value></data>
+  <data name="Fans_Kind_case" xml:space="preserve"><value>فن کیس</value></data>
+  <data name="Fans_Name" xml:space="preserve"><value>نام</value></data>
+  <data name="Fans_Identify" xml:space="preserve"><value>پیدایش کن: ۸ ثانیه تمام‌سرعت</value></data>
+  <data name="Fans_Identifying" xml:space="preserve"><value>تمام‌سرعت شد… ببینید کدام فن تند می‌شود.</value></data>
+  <data name="Fans_Id_fan" xml:space="preserve"><value>سرعتش بالا رفت ({0} به {1} دور): فنی است که قابل کنترل است.</value></data>
+  <data name="Fans_Id_fixed" xml:space="preserve"><value>سرعتش حدود {1} دور ماند: پمپی با تغذیه‌ی ثابت، یا فنی که برد نمی‌تواند کنترلش کند.</value></data>
+  <data name="Fans_Id_none" xml:space="preserve"><value>سرعتی گزارش نمی‌شود: چیزی به آن وصل نیست یا سیم سرعتش استفاده نمی‌شود.</value></data>
+  <data name="Fans_Id_Use" xml:space="preserve"><value>علامت‌گذاری به‌عنوان {0}</value></data>
+  <data name="Fans_Unwired" xml:space="preserve"><value>{0} خروجی فن وصل‌شده ندارد و پنهان است</value></data>
+  <data name="Fans_ShowUnwired" xml:space="preserve"><value>نشان بده</value></data>
+  <data name="Fans_HideUnwired" xml:space="preserve"><value>پنهان کن</value></data>
 </root>

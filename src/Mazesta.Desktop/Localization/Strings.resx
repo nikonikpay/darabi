@@ -3101,5 +3101,28 @@ Cancel: stop.</value></data>
   <data name="Fans_Held" xml:space="preserve"><value>Held by this app</value></data>
   <data name="Fans_Reset" xml:space="preserve"><value>All back to automatic</value></data>
   <data name="Fans_Curve_Hint" xml:space="preserve"><value>Drag a point to move it. Double-click the line to add a point, double-click a point to remove it. The arrow keys move a point you have clicked.</value></data>
-  <data name="Fans_Note" xml:space="preserve"><value>The app holds a fan only while it runs: when it closes, or if the temperature is lost for a minute, the board gets its fans back. A fan never goes below 20 %, and if the processor reaches 85 °C every fan this app holds runs at full speed.</value></data>
+  <data name="Fans_Note" xml:space="preserve"><value>While the app runs (with its window closed too, as long as the tray runs) it holds the fans at what you set; when it ends, or if the temperature is lost for a minute, the board gets its fans back. A fan never goes below 20 %, a pump never below 60 %, and if the processor reaches 85 °C every held fan goes to full speed.</value></data>
+  <data name="Fans_Profiles_Title" xml:space="preserve"><value>Profile for all fans</value></data>
+  <data name="Fans_Profiles_Sub" xml:space="preserve"><value>one click puts it on every output; a pump is left to the board</value></data>
+  <data name="Fans_Profile_auto" xml:space="preserve"><value>Automatic (the board)</value></data>
+  <data name="Fans_Profile_custom" xml:space="preserve"><value>Custom (set by hand)</value></data>
+  <data name="Fans_Profile_Save" xml:space="preserve"><value>Save the present settings as a profile</value></data>
+  <data name="Fans_Profile_Name" xml:space="preserve"><value>Profile name</value></data>
+  <data name="Fans_Profile_Delete" xml:space="preserve"><value>Delete this profile</value></data>
+  <data name="Fans_Profile_NotNow" xml:space="preserve"><value>The fan sensors are not ready yet. Try again in a moment.</value></data>
+  <data name="Fans_Profile_Tray" xml:space="preserve"><value>The same profiles are in the tray icon&apos;s menu.</value></data>
+  <data name="Fans_Kind" xml:space="preserve"><value>What it drives</value></data>
+  <data name="Fans_Kind_cpu" xml:space="preserve"><value>CPU fan</value></data>
+  <data name="Fans_Kind_pump" xml:space="preserve"><value>AIO pump</value></data>
+  <data name="Fans_Kind_case" xml:space="preserve"><value>Case fan</value></data>
+  <data name="Fans_Name" xml:space="preserve"><value>Name</value></data>
+  <data name="Fans_Identify" xml:space="preserve"><value>Find it: run at full for 8 s</value></data>
+  <data name="Fans_Identifying" xml:space="preserve"><value>Running at full... listen for the fan that speeds up.</value></data>
+  <data name="Fans_Id_fan" xml:space="preserve"><value>It sped up ({0} to {1} rpm): a fan you can control.</value></data>
+  <data name="Fans_Id_fixed" xml:space="preserve"><value>The speed stayed about {1} rpm: a pump on a fixed supply, or a fan the board cannot control.</value></data>
+  <data name="Fans_Id_none" xml:space="preserve"><value>No speed is reported: nothing is plugged into it, or its speed wire is not used.</value></data>
+  <data name="Fans_Id_Use" xml:space="preserve"><value>Mark it as {0}</value></data>
+  <data name="Fans_Unwired" xml:space="preserve"><value>{0} outputs have no fan wired and are hidden</value></data>
+  <data name="Fans_ShowUnwired" xml:space="preserve"><value>Show them</value></data>
+  <data name="Fans_HideUnwired" xml:space="preserve"><value>Hide them</value></data>
 </root>
