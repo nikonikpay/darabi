@@ -463,7 +463,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .q-row.active .step { color: var(--yellow); }
 .q-row .name { font-weight: 700; font-size: 14.5px; }
 .q-row .ctrls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-.q-row .ctrls label { font-size: 12px; color: var(--paper-3); display: inline-flex; align-items: center; gap: 8px; }
+.q-row .ctrls label, .q-row .ctrls .lbl { font-size: 12px; color: var(--paper-3); display: inline-flex; align-items: center; gap: 8px; }
 .q-row .extra { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
 .q-row .extra label { font-size: 12px; color: var(--paper-3); display: inline-flex; gap: 8px; align-items: center; }
 .q-row .state { grid-column: 3 / -1; display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; }
@@ -1045,7 +1045,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rn-badge { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--hue) 18%, transparent); }
 .rn-badge svg { width: 14px; height: 14px; stroke: var(--hue); stroke-width: 2; }
 .rn-count { margin-inline-start: auto; min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--ink-3); color: var(--paper-2); font-size: 11.5px; font-weight: 700; text-align: center; line-height: 20px; }
-.rn-group.new { --hue: var(--yellow); } .rn-group.better { --hue: var(--c-cpu); } .rn-group.fix { --hue: var(--c-ram); }
+.rn-group.new { --hue: #4fd68a; }   /* green: new things (the pass colour stays for passed tests) */ .rn-group.better { --hue: var(--c-cpu); } .rn-group.fix { --hue: var(--c-ram); }
 .rn-list { margin: 0; padding: 0 0 4px; list-style: none; display: grid; gap: 2px; }
 .rn-list li { position: relative; padding: 4px 0; padding-inline-start: 33px; font-size: 13.5px; line-height: 1.7; color: var(--paper); }
 .rn-list li::before { content: ""; position: absolute; inset-inline-start: 11px; top: 14px; width: 5px; height: 5px; border-radius: 50%; background: var(--hue, var(--paper-3)); }

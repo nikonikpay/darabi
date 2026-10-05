@@ -80,7 +80,8 @@ export function benchList(component = null) {
     const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true }), finds = h("div", { class: "row-checkup", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
-      h("div", { class: "ctrls" }, h("label", {}, t("Bench_Duration"), dur.el), run),
+      // Not a <label>: a label hands every click and hover inside it to its first control, which here would be the hours' up arrow.
+      h("div", { class: "ctrls" }, h("div", { class: "lbl" }, t("Bench_Duration"), dur.el), run),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
       h("div", { class: "state" }, bar, status), unavailable, metrics, finds, rec, peers, detail);
     into.append(row);
