@@ -28,14 +28,15 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
 
     public void Start()
     {
-        Status = ProviderStatus.Starting;
+        Status = ProviderStatus.Starting; var clock = System.Diagnostics.Stopwatch.StartNew();
         try { _beforeOpen?.Invoke(); }
         catch (Exception ex) { _log.LogWarning(ex, "Preparing the sensor driver failed; continuing without it"); }
-        try { _computer.Open(); }
+        _log.LogInformation("Sensor start: driver ready after {Ms} ms", clock.ElapsedMilliseconds);
+        try { _computer.Open(); _log.LogInformation("Sensor start: hardware opened after {Ms} ms", clock.ElapsedMilliseconds); }
         catch (Exception ex) { _log.LogError(ex, "LHM open failed"); Status = ProviderStatus.Failed(ReasonOpenFailed, ex.Message); return; }
         try
         {
-            PrimeSensors(_computer.Hardware);
+            PrimeSensors(_computer.Hardware); _log.LogInformation("Sensor start: first read done after {Ms} ms", clock.ElapsedMilliseconds);
             DisableSensorHistoryTree(_computer.Hardware);
             foreach (var m in _mapper.Map(_computer.Hardware)) _nodes.Add(new NodeState(m));
             Hardware = _nodes.Select(n => n.Mapped.Node).ToList();
