@@ -16,14 +16,15 @@ public sealed partial class WebBridge
     private void RegisterRgb()
     {
         var session = new RgbSession(AppContext.BaseDirectory, Path.Combine(_paths.DataRoot, "openrgb"), _log); var client = session.Client; var conflicts = session.Conflicts;
-        var scene = RgbSceneStore.Read(_paths); int busy = 0;
+        var scene = RgbSceneStore.Read(_paths); int busy = 0, starting = 0;   // busy: a call is being served; starting: the server is being brought up (not the same: a state call is busy too)
         void Save() { try { RgbSceneStore.Write(_paths, scene); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the lights' scene"); } }
         static bool TrayRuns() { var p = Process.GetProcessesByName(OverlaySignals.TrayProcess); foreach (var x in p) x.Dispose(); return p.Length > 0; }
         _cleanup.Add(() => session.Release(leaveRunning: scene.Enabled && TrayRuns()));
 
         object State(string? error = null) => new
         {
-            found = session.Exe is not null, connected = client.Connected, connecting = Volatile.Read(ref busy) != 0 && !client.Connected, enabled = scene.Enabled, dark = scene.Dark, error,
+            found = session.Exe is not null, connected = client.Connected, enabled = scene.Enabled, dark = scene.Dark, error,
+            connecting = Volatile.Read(ref starting) != 0,   // also while the devices are still being scanned after the socket is up
             makers = conflicts.StoppedNow,   // the makers' programs stopped for now, to be put back by "let go"
             running = client.Connected ? Array.Empty<string>() : conflicts.Running(),
             modeNames = client.Devices.SelectMany(d => d.Modes.Select(m => m.Name)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
@@ -43,14 +44,21 @@ public sealed partial class WebBridge
 
         async Task<object?> Connect(bool start, bool stopMakers)
         {
-            var result = await session.ConnectAsync(start, stopMakers, scene, CancellationToken.None).ConfigureAwait(true);
+            RgbConnect result;
+            if (start) Volatile.Write(ref starting, 1);
+            try
+            {
+                result = await session.ConnectAsync(start, stopMakers, scene, CancellationToken.None).ConfigureAwait(true);
+                if (result == RgbConnect.Connected && start)
+                {
+                    if (session.ZonesDefaulted) Save();
+                    await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true);   // what the user set before, back on
+                }
+            }
+            finally { Volatile.Write(ref starting, 0); }   // before the state is read: it must not say "connecting" about its own call
+            if (start && result != RgbConnect.Connected) _log.LogWarning("The lights were not connected: {Result}", result);
             if (result == RgbConnect.NotFound) return State(Loc.Get("Rgb_NotFound"));
             if (result == RgbConnect.NoServer) return State(Loc.Get("Rgb_NoServer"));
-            if (result == RgbConnect.Connected && start)
-            {
-                if (session.ZonesDefaulted) Save();
-                await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true);   // what the user set before, back on
-            }
             return State();
         }
 

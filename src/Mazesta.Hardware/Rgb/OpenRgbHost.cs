@@ -37,6 +37,9 @@ public static class OpenRgbHost
     /// <summary>Whether something already listens on the SDK port (an OpenRGB the user started, with its SDK server on).</summary>
     public static async Task<bool> ListeningAsync(int port, CancellationToken ct)
     {
+        // The table of listeners answers at once; a connect to a closed local port takes a second or more on Windows (it retries), which is what made the search for six ports last ten.
+        try { if (!System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners().Any(e => e.Port == port && (IPAddress.Loopback.Equals(e.Address) || IPAddress.Any.Equals(e.Address)))) return false; }
+        catch (System.Net.NetworkInformation.NetworkInformationException) { }   // no table: the connect below decides
         try { using var t = new TcpClient(); using var c = CancellationTokenSource.CreateLinkedTokenSource(ct); c.CancelAfter(1500); await t.ConnectAsync("127.0.0.1", port, c.Token).ConfigureAwait(false); return true; }
         catch (Exception e) when (e is SocketException or OperationCanceledException or IOException) { return false; }
     }

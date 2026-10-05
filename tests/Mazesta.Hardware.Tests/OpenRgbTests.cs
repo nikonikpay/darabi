@@ -149,4 +149,13 @@ public class OpenRgbTests
         }
         await done; var resize = Assert.Single(got, g => g.Id == OpenRgbProtocol.ResizeZone); Assert.Equal(new byte[] { 0, 0, 0, 0, 30, 0, 0, 0 }, resize.Body);
     }
+
+    [Fact] public async Task A_closed_port_is_found_not_listening_at_once_and_an_open_one_is_found_listening()
+    {
+        var l = new TcpListener(IPAddress.Loopback, 0); l.Start(); int port = ((IPEndPoint)l.LocalEndpoint).Port;
+        try { Assert.True(await OpenRgbHost.ListeningAsync(port, default)); } finally { l.Stop(); }
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.False(await OpenRgbHost.ListeningAsync(port, default));   // closed now: the table of listeners says so without a connect (which takes a second or more on a closed local port)
+        Assert.True(watch.ElapsedMilliseconds < 400, $"took {watch.ElapsedMilliseconds} ms");
+    }
 }
