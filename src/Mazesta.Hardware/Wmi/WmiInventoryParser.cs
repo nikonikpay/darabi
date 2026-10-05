@@ -29,6 +29,17 @@ internal static class WmiInventoryParser
     public static long? TotalMemory(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows) => rows.Count == 0 ? null : L(rows[0], "TotalPhysicalMemory");
     public static MotherboardInfo? Board(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
         => rows.Count == 0 ? null : new MotherboardInfo(S(rows[0], "Manufacturer"), S(rows[0], "Product"), S(rows[0], "Version"), S(rows[0], "SerialNumber"));
+    private static readonly HashSet<int> PortableChassis = [8, 9, 10, 11, 12, 14, 18, 21, 30, 31, 32];   // portable, laptop, notebook, hand held, docking station, sub notebook, expansion chassis, tablet, convertible, detachable
+    /// <summary>The maker's name for the machine. Portable by the chassis type (or the system type, 2 = mobile), so a desktop is never called a laptop and an unknown chassis is left unsaid.</summary>
+    public static ComputerInfo? Computer(IReadOnlyList<IReadOnlyDictionary<string, object?>> system, IReadOnlyList<IReadOnlyDictionary<string, object?>> enclosure, IReadOnlyList<IReadOnlyDictionary<string, object?>> bios)
+    {
+        if (system.Count == 0) return null; var r = system[0];
+        bool? portable = null;
+        if (enclosure.Count > 0 && enclosure[0].TryGetValue("ChassisTypes", out var ct) && ct is System.Collections.IEnumerable types)
+        { var ints = types.Cast<object>().Select(t => Convert.ToInt32(t, CultureInfo.InvariantCulture)).ToList(); if (ints.Count > 0) portable = ints.Any(PortableChassis.Contains); }
+        portable ??= I(r, "PCSystemType") is { } pc and > 0 ? pc == 2 : null;
+        return new ComputerInfo(S(r, "Manufacturer"), S(r, "Model"), S(r, "SystemFamily"), bios.Count > 0 ? S(bios[0], "SerialNumber") : null, portable);
+    }
     public static BiosInfo? Bios(IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
     {
         if (rows.Count == 0) return null; var r = rows[0];

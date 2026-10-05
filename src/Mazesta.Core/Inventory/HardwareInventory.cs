@@ -12,6 +12,8 @@ public sealed record MemoryModuleInfo(string? Slot, long? CapacityBytes, string?
     public bool? Ecc => DataWidth is { } d && TotalWidth is { } t && d > 0 ? t > d : null;
 }
 public sealed record MotherboardInfo(string? Manufacturer, string? Product, string? Version, string? SerialNumber);
+/// <summary>The machine as its maker sells it (a laptop's own model, not its board); <see cref="IsPortable"/> is from the chassis type, null when Windows does not say.</summary>
+public sealed record ComputerInfo(string? Manufacturer, string? Model, string? Family, string? SerialNumber, bool? IsPortable);
 public sealed record BiosInfo(string? Vendor, string? Version, DateTime? ReleaseDate, string? SmbiosVersion);
 /// <summary><see cref="WearPercent"/> is the drive's own wear counter (life used), null where it has none (an HDD).</summary>
 public sealed record StorageDeviceInfo(string? FriendlyName, string? SerialNumber, string? MediaType, string? BusType, long? SizeBytes, string? FirmwareVersion, string? HealthStatus,
@@ -21,7 +23,7 @@ public sealed record OsInfo(string? Caption, string? Version, string? BuildNumbe
 public sealed record HardwareInventory(
     CpuInfo? Cpu, IReadOnlyList<GpuInfo> Gpus, IReadOnlyList<MemoryModuleInfo> MemoryModules, long? TotalPhysicalMemoryBytes,
     MotherboardInfo? Motherboard, BiosInfo? Bios, IReadOnlyList<StorageDeviceInfo> Storage, IReadOnlyList<NetworkAdapterInfo> NetworkAdapters,
-    OsInfo? Os, IReadOnlyList<string> Errors)
+    OsInfo? Os, IReadOnlyList<string> Errors, ComputerInfo? Computer = null)   // absent in reports saved before it was read
 {
     public static readonly HardwareInventory Empty = new(null, [], [], null, null, null, [], [], null, []);
 }

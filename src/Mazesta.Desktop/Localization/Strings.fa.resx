@@ -467,6 +467,20 @@
   <data name="Settings_RenderMode" xml:space="preserve">
     <value>روش رسم رابط</value>
   </data>
+  <data name="Reports_Source_Title" xml:space="preserve"><value>گزارش‌های کدام نسخه</value></data>
+  <data name="Reports_Source_Pick" xml:space="preserve"><value>پوشه‌ی Data نسخه‌ی مشتری را انتخاب کنید</value></data>
+  <data name="Reports_Source_None" xml:space="preserve"><value>در این پوشه گزارشی پیدا نشد. پوشه‌ی Data (همان که «reports» داخلش است) را انتخاب کنید.</value></data>
+  <data name="Reports_Source_Browse" xml:space="preserve"><value>انتخاب پوشه…</value></data>
+  <data name="Reports_Source_Usual" xml:space="preserve"><value>نسخه‌ی نصب‌شده</value></data>
+  <data name="Reports_Source_Own" xml:space="preserve"><value>همین نسخه</value></data>
+  <data name="Reports_Source_Current" xml:space="preserve"><value>نمایش از: {0}</value></data>
+  <data name="Reports_Source_Missing" xml:space="preserve"><value>نسخه‌ی نصب‌شده در جای همیشگی‌اش پیدا نشد. «انتخاب پوشه» را بزنید و پوشه‌ی Data آن را نشان دهید.</value></data>
+  <data name="Reports_Notes" xml:space="preserve"><value>سرویس و توضیحات</value></data>
+  <data name="Reports_Notes_Service" xml:space="preserve"><value>شماره‌ی سرویس</value></data>
+  <data name="Reports_Notes_Hint" xml:space="preserve"><value>کارهایی که روی سیستم مشتری انجام شد (در گزارش و خلاصه‌ی آن می‌آید)</value></data>
+  <data name="Reports_Notes_Save" xml:space="preserve"><value>ذخیره</value></data>
+  <data name="Reports_Notes_Saved" xml:space="preserve"><value>در گزارش ذخیره شد</value></data>
+  <data name="Reports_Notes_Failed" xml:space="preserve"><value>گزارش ذخیره نشد: {0}</value></data>
   <data name="Reports_Empty" xml:space="preserve"><value>هنوز گزارشی ساخته نشده است. گزارش آزمون‌ها و بنچمارک‌ها به‌طور خودکار اینجا ذخیره می‌شود.</value></data>
   <data name="Reports_Html" xml:space="preserve"><value>باز کردن گزارش (HTML)</value></data>
   <data name="Reports_Pdf" xml:space="preserve"><value>ذخیره / باز کردن PDF</value></data>
@@ -496,6 +510,12 @@
   <data name="Reports_Verdict_Failed" xml:space="preserve"><value>نیازمند بررسی</value></data>
   <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>ناقص</value></data>
   <data name="Nav_SystemInfo" xml:space="preserve"><value>اطلاعات سیستم</value></data>
+  <data name="SystemInfo_Device" xml:space="preserve"><value>دستگاه (مدل فروش)</value></data>
+  <data name="SystemInfo_Model" xml:space="preserve"><value>مدل</value></data>
+  <data name="SystemInfo_Family" xml:space="preserve"><value>خانواده</value></data>
+  <data name="SystemInfo_DeviceKind" xml:space="preserve"><value>نوع</value></data>
+  <data name="SystemInfo_Laptop" xml:space="preserve"><value>لپ‌تاپ</value></data>
+  <data name="SystemInfo_Desktop" xml:space="preserve"><value>کیس دسکتاپ</value></data>
   <data name="SystemInfo_Motherboard" xml:space="preserve"><value>مادربرد</value></data>
   <data name="SystemInfo_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="SystemInfo_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>

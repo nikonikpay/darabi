@@ -25,7 +25,9 @@ public sealed class WmiInventoryProvider(IWmiQuery query, ILogger<WmiInventoryPr
                 query.Query(Cimv2, "SELECT Name,MACAddress,Speed,NetEnabled,InterfaceIndex FROM Win32_NetworkAdapter WHERE PhysicalAdapter=TRUE"),
                 query.Query(Cimv2, "SELECT InterfaceIndex,IPAddress FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=TRUE")), []),
             Section<OsInfo?>("os", () => WmiInventoryParser.Os(query.Query(Cimv2, "SELECT Caption,Version,BuildNumber,OSArchitecture FROM Win32_OperatingSystem")), null),
-            errors);
+            errors,
+            Section<ComputerInfo?>("system", () => WmiInventoryParser.Computer(query.Query(Cimv2, "SELECT Manufacturer,Model,SystemFamily,PCSystemType FROM Win32_ComputerSystem"),
+                query.Query(Cimv2, "SELECT ChassisTypes FROM Win32_SystemEnclosure"), query.Query(Cimv2, "SELECT SerialNumber FROM Win32_BIOS")), null));
     }, ct);
 
     /// <summary>The drives, each with its wear counter from the reliability counters when Windows has one; without them the drives still list.</summary>

@@ -1,9 +1,10 @@
 namespace Mazesta.Reporting;
 
 /// <summary>A saved report as the list shows it. Benchmarks names the benchmark runs it holds (a benchmark report has no test counts to summarise).</summary>
-public sealed record StoredReport(string Folder, string Id, DateTimeOffset CreatedAt, ReportKind Kind, ReportVerdict? Verdict, ReportCounts Counts, string ShopName, IReadOnlyList<string> Benchmarks)
+public sealed record StoredReport(string Folder, string Id, DateTimeOffset CreatedAt, ReportKind Kind, ReportVerdict? Verdict, ReportCounts Counts, string ShopName, IReadOnlyList<string> Benchmarks,
+    string? ServiceNumber = null, string? ServiceNotes = null)
 {
-    internal static StoredReport Of(string folder, SessionReport r) => new(folder, r.Id, r.CreatedAt, r.Kind, r.Verdict, r.Counts, r.ShopName, [.. (r.Benchmarks ?? []).Select(b => b.Name)]);
+    internal static StoredReport Of(string folder, SessionReport r) => new(folder, r.Id, r.CreatedAt, r.Kind, r.Verdict, r.Counts, r.ShopName, [.. (r.Benchmarks ?? []).Select(b => b.Name)], r.ServiceNumber, r.ServiceNotes);
     public string JsonPath => Path.Combine(Folder, ReportStore.JsonName);
     public string HtmlPath => Path.Combine(Folder, ReportStore.HtmlName);
     public string PdfPath => Path.Combine(Folder, ReportStore.PdfName);
@@ -35,6 +36,25 @@ public sealed class ReportStore(string directory)
             catch (Exception e) when (e is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
         }
         return [.. list.OrderByDescending(r => r.CreatedAt)];
+    }
+
+    /// <summary>The reports folder inside what a technician points at: a Data folder (<c>reports</c> in it), the app's own folder (<c>Data/reports</c>) or the reports folder itself.
+    /// Null when none of them holds a report, so a wrong folder is refused rather than shown as an empty list.</summary>
+    public static string? FindReportsDirectory(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)) return null;
+        foreach (var candidate in new[] { Path.Combine(path, "reports"), Path.Combine(path, "Data", "reports"), path })
+            if (Directory.Exists(candidate) && Directory.EnumerateDirectories(candidate).Any(d => File.Exists(Path.Combine(d, JsonName)))) return candidate;
+        return null;
+    }
+
+    /// <summary>Writes a changed report over its own folder (the same id and place) and drops what was made from the old one - the summary page and the PDF -
+    /// so nothing shows the earlier text; they are made again from the new report when asked.</summary>
+    public StoredReport Update(StoredReport stored, SessionReport report, string html, string? text = null)
+    {
+        WriteAtomic(stored.JsonPath, ReportJson.Write(report)); WriteAtomic(stored.HtmlPath, html); if (text is not null) WriteAtomic(stored.TextPath, text);
+        foreach (var stale in new[] { stored.SummaryPath, stored.PdfPath }) if (File.Exists(stale)) File.Delete(stale);
+        return StoredReport.Of(stored.Folder, report);
     }
 
     public SessionReport? Load(StoredReport stored) => ReportJson.Read(File.ReadAllText(stored.JsonPath));

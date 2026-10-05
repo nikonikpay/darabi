@@ -91,4 +91,43 @@ public class ReportTests
         Assert.Contains("<div class=\"advice\">Seen: &lt;wrong&gt; data<br>Next: MemTest86</div>", html);
         Assert.Contains("Next: MemTest86", ReportPlainText.Write(Report(failed)));
     }
+
+    [Fact] public void A_data_folder_the_app_folder_or_the_reports_folder_all_lead_to_the_reports_and_a_wrong_folder_to_none()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "mazesta-src-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            string reports = Path.Combine(root, "app", "Data", "reports"); var store = new ReportStore(reports);
+            store.Save(SessionReport.Create("x", "1", T0, [Test("a", ReportOutcome.Passed)], [], HardwareInventory.Empty, "aaaaaaaa11111111"), "<html/>");
+            Directory.CreateDirectory(Path.Combine(root, "other"));
+            Assert.Equal(reports, ReportStore.FindReportsDirectory(reports)); Assert.Equal(reports, ReportStore.FindReportsDirectory(Path.Combine(root, "app", "Data"))); Assert.Equal(reports, ReportStore.FindReportsDirectory(Path.Combine(root, "app")));
+            Assert.Null(ReportStore.FindReportsDirectory(Path.Combine(root, "other"))); Assert.Null(ReportStore.FindReportsDirectory(Path.Combine(root, "missing"))); Assert.Null(ReportStore.FindReportsDirectory(""));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    [Fact] public void Notes_written_into_a_report_stay_in_its_folder_and_show_in_the_page_and_the_summary_and_drop_the_old_summary()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "mazesta-rep-" + Guid.NewGuid().ToString("N")); var store = new ReportStore(dir);
+        try
+        {
+            var report = SessionReport.Create("x", "1", T0, [Test("a", ReportOutcome.Passed)], [], HardwareInventory.Empty, "cccccccc33333333");
+            var stored = store.Save(report, "<html/>"); store.SaveSummary(stored, "<old/>");
+            var changed = report with { ServiceNumber = "1403", ServiceNotes = "Cleaned the fans <b>and</b> repasted" };
+            var updated = store.Update(stored, changed, ReportHtml.Write(changed, null, ReportText.Persian), ReportPlainText.Write(changed, ReportText.Persian));
+            Assert.Equal(stored.Folder, updated.Folder); Assert.Equal("1403", store.List().Single().ServiceNumber); Assert.False(File.Exists(stored.SummaryPath));
+            Assert.Contains("Cleaned the fans &lt;b&gt;and&lt;/b&gt; repasted", File.ReadAllText(stored.HtmlPath)); Assert.Contains("Cleaned the fans", File.ReadAllText(stored.TextPath));
+            Assert.Contains(ReportText.Persian.WorkDone, SummaryHtml.Write(ReportSummary.Of(changed), null, SummaryText.Persian, ReportText.Persian));
+            Assert.DoesNotContain(ReportText.Persian.WorkDone, SummaryHtml.Write(ReportSummary.Of(report), null, SummaryText.Persian, ReportText.Persian));
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
+    [Fact] public void A_laptop_is_named_by_its_model_and_marked_and_a_board_makers_filler_is_not_shown()
+    {
+        var laptop = HardwareInventory.Empty with { Computer = new ComputerInfo("LENOVO", "82JU", null, "S1", true) };
+        Assert.Equal("LENOVO 82JU", ReportFormat.DeviceName(laptop)); Assert.Contains(ReportText.English.Laptop, ReportFormat.MachineRows(laptop, ReportText.English).First().Value);
+        Assert.Null(ReportFormat.DeviceName(HardwareInventory.Empty with { Computer = new ComputerInfo("To Be Filled By O.E.M.", "To Be Filled By O.E.M.", null, null, false) }));
+        Assert.Null(ReportFormat.DeviceName(HardwareInventory.Empty));
+    }
 }

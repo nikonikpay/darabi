@@ -11,6 +11,7 @@ public sealed class ReportText
         Started, Finished, ReportId, NoSensors, Cpu, Gpu, Ram, Board, Bios, Storage, Network, Os, Footer, MeasurementsOnly,
         VerdictPassed, VerdictFailed, VerdictIncomplete, OutcomePassed, OutcomeFailed, OutcomeCancelled, OutcomeUnsupported, OutcomeNotRun, OutcomeError, OutcomeInconclusive,
         CompareTitle, Before, After, Change, NotMeasured, ServiceNumber,
+        Device, Laptop, WorkDone,
         Checkup, CheckupNote, LevelGood, LevelNote, LevelAttention, LevelProblem, MakerFigures;
 
     public string LevelName(string level) => level switch { "Good" => LevelGood, "Attention" => LevelAttention, "Problem" => LevelProblem, _ => LevelNote };
@@ -32,7 +33,7 @@ public sealed class ReportText
         Name = "آزمون", Outcome = "وضعیت", Duration = "مدت", Errors = "خطاها", Detail = "شواهد اندازه‌گیری", Options = "تنظیمات",
         Sensor = "سنسور", Min = "کمینه", Avg = "میانگین", Max = "بیشینه", Samples = "نمونه", Total = "کل آزمون‌ها", Passed = "موفق", Failed = "ناموفق", NotDone = "انجام‌نشده",
         Started = "شروع", Finished = "پایان", ReportId = "شناسه‌ی گزارش", NoSensors = "در بازه‌ی آزمون هیچ سنسوری ثبت نشد.",
-        Cpu = "پردازنده", Gpu = "کارت گرافیک", Ram = "حافظه‌ی RAM", Board = "مادربرد", Bios = "بایوس", Storage = "ذخیره‌سازی", Network = "شبکه", Os = "سیستم‌عامل",
+        Cpu = "پردازنده", Gpu = "کارت گرافیک", Ram = "حافظه‌ی RAM", Board = "مادربرد", Bios = "بایوس", Storage = "ذخیره‌سازی", Network = "شبکه", Os = "سیستم‌عامل", Device = "مدل دستگاه", Laptop = "لپ‌تاپ", WorkDone = "کارهای انجام‌شده روی سیستم",
         Footer = "همه‌ی مقادیر این گزارش از اندازه‌گیری واقعی همین دستگاه آمده‌اند؛ سنسور یا داده‌ای که در دسترس نبوده، نشان داده نشده است.",
         MeasurementsOnly = "فقط اندازه‌گیری سرعت؛ بنچمارک قبول یا رد ندارد و آزمون سلامت نیست",
         VerdictPassed = "همه‌ی آزمون‌های انجام‌شده موفق بودند", VerdictFailed = "دست‌کم یک آزمون ناموفق بود؛ سیستم نیاز به بررسی دارد", VerdictIncomplete = "آزمون‌ها کامل انجام نشد؛ نتیجه‌ی قطعی نیست",
@@ -49,7 +50,7 @@ public sealed class ReportText
         Name = "Test", Outcome = "Result", Duration = "Duration", Errors = "Errors", Detail = "Measured evidence", Options = "Settings",
         Sensor = "Sensor", Min = "Min", Avg = "Avg", Max = "Max", Samples = "Samples", Total = "Tests", Passed = "Passed", Failed = "Failed", NotDone = "Not done",
         Started = "Started", Finished = "Finished", ReportId = "Report ID", NoSensors = "No sensor was recorded during the tests.",
-        Cpu = "Processor", Gpu = "Graphics card", Ram = "Memory (RAM)", Board = "Motherboard", Bios = "BIOS", Storage = "Storage", Network = "Network", Os = "Operating system",
+        Cpu = "Processor", Gpu = "Graphics card", Ram = "Memory (RAM)", Board = "Motherboard", Bios = "BIOS", Storage = "Storage", Network = "Network", Os = "Operating system", Device = "Device model", Laptop = "Laptop", WorkDone = "Work done on the system",
         Footer = "Every value in this report was measured on this machine; a sensor or value that was not available is not shown.",
         MeasurementsOnly = "Speed measurements only: a benchmark has no pass or fail and is not a health test",
         VerdictPassed = "Every test that ran passed", VerdictFailed = "At least one test failed; the system needs attention", VerdictIncomplete = "The tests were not completed; there is no definite result",

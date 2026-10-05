@@ -14,7 +14,13 @@ public sealed class ReportService
     private readonly PollingEngine _polling; private readonly InventoryCache _inventory; private readonly BenchmarkRunner _benchmarks; private readonly CheckupService _checkup; private readonly AppConfig _config; private readonly IClock _clock; private readonly ILogger _log;
     private readonly object _lock = new(); private IReadOnlyList<QueuedTest> _queue = []; private readonly Dictionary<TestId, TestRunResult> _results = [];
     private DateTimeOffset _sessionStart; private string _serviceNumber = "";   // the job the session was started for, even if the field changes meanwhile
-    public ReportStore Store { get; }
+    /// <summary>The reports this copy lists, reads and sends: its own, or - in the company's edition - another copy's, which a technician pointed it at.</summary>
+    public ReportStore Store { get; private set; }
+    private readonly ReportStore _own;
+    /// <summary>The Data folder the list was taken from; null while it is this copy's own.</summary>
+    public string? SourceData { get; private set; }
+    public bool UsingOwnSource => SourceData is null;
+    public string OwnReportsDirectory { get; }
     /// <summary>Every report is headed with the company's name (it was a setting, "shop name", before 0.8).</summary>
     private static string Brand => Loc.Get("Web_Company_Title");
     /// <summary>Where the PDF printer (WebView2) keeps its profile - inside the portable Data folder.</summary>
@@ -23,13 +29,37 @@ public sealed class ReportService
 
     public ReportService(TestEngine engine, PollingEngine polling, InventoryCache inventory, BenchmarkRunner benchmarks, CheckupService checkup, AppConfig config, AppPaths paths, IClock clock, ILogger<ReportService> log)
     {
-        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _checkup = checkup; _config = config; _clock = clock; _log = log; Store = new(paths.ReportsDir); BrowserDataDir = Path.Combine(paths.CacheDir, "report-browser");
+        _polling = polling; _inventory = inventory; _benchmarks = benchmarks; _checkup = checkup; _config = config; _clock = clock; _log = log; _own = Store = new(paths.ReportsDir); OwnReportsDirectory = paths.ReportsDir; BrowserDataDir = Path.Combine(paths.CacheDir, "report-browser");
         engine.SessionStarted += q => { lock (_lock) { _queue = q; _results.Clear(); _sessionStart = _clock.UtcNow; _serviceNumber = _config.ServiceNumber; } };
         engine.TestCompleted += (id, r) => { lock (_lock) _results[id] = r; };
         engine.StateChanged += s => { if (s == TestEngineState.Stopped) _ = Task.Run(CreateReportAsync); };
         // A run on its own gets its report; a queue gets one report of all its completed runs when it ends. A run that measured nothing has nothing to report.
         benchmarks.Finished += b => { if (b.Result.Status == BenchmarkStatus.Completed && !benchmarks.InQueue) _ = Task.Run(() => CreateBenchmarkReportAsync([b])); };
         benchmarks.QueueFinished += runs => { var done = runs.Where(r => r.Result.Status == BenchmarkStatus.Completed).ToList(); if (done.Count > 0) _ = Task.Run(() => CreateBenchmarkReportAsync(done)); };
+    }
+
+    /// <summary>Lists another copy's reports (a Data folder, the app's folder or the reports folder); null brings this copy's own back. Returns false, changing
+    /// nothing, when the folder holds no report.</summary>
+    public bool UseSource(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) { Store = _own; SourceData = null; return true; }
+        if (ReportStore.FindReportsDirectory(path) is not { } dir) return false;
+        Store = Path.GetFullPath(dir) == Path.GetFullPath(OwnReportsDirectory) ? _own : new ReportStore(dir);
+        SourceData = Store == _own ? null : path;
+        return true;
+    }
+
+    /// <summary>The technician's service number and notes on the work done, written into the report itself (its page, text and data), so the report and its summary
+    /// carry them. Nothing measured is touched.</summary>
+    public StoredReport UpdateNotes(StoredReport stored, string? serviceNumber, string? notes)
+    {
+        var report = Store.Load(stored) ?? throw new IOException("The report could not be read.");
+        static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+        var changed = report with { ServiceNumber = Clean(Mazesta.Core.Text.PersianDigits.Normalize(serviceNumber ?? "")), ServiceNotes = Clean(notes?.Replace("\r\n", "\n")) };
+        var wording = ReportText.For(Loc.IsRtl ? "fa" : "en");
+        var updated = Store.Update(stored, changed, ReportHtml.Write(changed, Font.Value, wording), ReportPlainText.Write(changed, wording));
+        _log.LogInformation("Report {Id}: service number and notes updated", report.Id);
+        return updated;
     }
 
     private async Task CreateReportAsync()
@@ -110,7 +140,7 @@ public sealed class ReportService
     private void Save(SessionReport report)
     {
         var wording = ReportText.For(Loc.IsRtl ? "fa" : "en");   // the report follows the app's language
-        var stored = Store.Save(report, ReportHtml.Write(report, Font.Value, wording), ReportPlainText.Write(report, wording));
+        var stored = _own.Save(report, ReportHtml.Write(report, Font.Value, wording), ReportPlainText.Write(report, wording));
         _log.LogInformation("Report saved: {Folder} ({Verdict})", stored.Folder, report.Verdict);
         ReportCreated?.Invoke(stored);
     }

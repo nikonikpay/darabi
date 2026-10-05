@@ -96,6 +96,22 @@ internal sealed class Program : ApplicationContext
         _activateWait = ThreadPool.RegisterWaitForSingleObject(_activate, (_, _) => _ui.BeginInvoke(ShowMain), null, Timeout.Infinite, false);
         engine.Start();
         if (!overlayOnly && config.TrayWithApp) StartTray(log);
+        if (!overlayOnly) RegisterTrayAtLogon(log);
+    }
+
+    /// <summary>The users' edition starts the tray with Windows from its first run (the owner's choice: on by default); the settings page turns it off, and
+    /// that is never undone here. A copy run from a removable drive or by the company's edition is not registered: its path would not outlive the drive.</summary>
+    private void RegisterTrayAtLogon(ILogger log)
+    {
+        if (WebBridge.Staff || _config!.TrayLogonDecided) return;
+        try
+        {
+            if (new DriveInfo(Path.GetPathRoot(AppContext.BaseDirectory)!).DriveType != DriveType.Fixed) return;
+            var tray = _services!.GetRequiredService<ITrayController>();
+            if (!tray.Query().Registered && tray.Enable() is { } failure) { log.LogInformation("The tray was not set to start with Windows: {Message}", failure); return; }   // asked again at the next start
+            _config.TrayLogonDecided = true; _store!.Save(_config);
+        }
+        catch (Exception e) when (e is IOException or ArgumentException or InvalidOperationException) { log.LogInformation("The tray was not set to start with Windows: {Message}", e.Message); }
     }
 
     /// <summary>The tray monitor runs whenever the app does (unless the user turned it off); one already running is left alone.</summary>

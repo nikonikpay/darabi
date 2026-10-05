@@ -19,7 +19,7 @@ public static class ReportHtml
         b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
          .Append("<title>").Append(E(w.TitleOf(r.Kind))).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main>");
-        Header(b, r, w); Summary(b, r, w); Findings(b, r, w);
+        Header(b, r, w); Summary(b, r, w); WorkDone(b, r, w); Findings(b, r, w);
         Tests(b, r, w);
         if (r.Kind == ReportKind.Benchmark) { Benchmarks(b, r, w); Sensors(b, r, w); } else { Sensors(b, r, w); Benchmarks(b, r, w); }   // the report's subject first
         Machine(b, r.Machine, w);
@@ -163,6 +163,13 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
     }
 
     /// <summary>The checkup's findings, the ones that need action first; each with what it means and the numbers it stands on.</summary>
+    /// <summary>What the technician wrote about the work done on the customer's system (kept apart from every measured value).</summary>
+    private static void WorkDone(StringBuilder b, SessionReport r, ReportText w)
+    {
+        if (string.IsNullOrWhiteSpace(r.ServiceNotes)) return;
+        b.Append("<h2>").Append(E(w.WorkDone)).Append("</h2><div style=\"white-space:pre-wrap;line-height:1.9;border:1px solid #e3e7ee;border-radius:8px;padding:10px 14px\">").Append(E(r.ServiceNotes.Trim())).Append("</div>");
+    }
+
     private static void Findings(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Findings is not { Count: > 0 }) return;

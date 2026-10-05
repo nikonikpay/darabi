@@ -42,7 +42,9 @@ public sealed partial class ReportsViewModel : ObservableObject, IDisposable
         Refresh(); service.ReportCreated += OnCreated;
     }
 
-    private void OnCreated(StoredReport report) => _dispatch(() => { Items.Insert(0, Row(report)); Status = Loc.Get("Reports_Created"); });   // newest first, without re-reading every report
+    private void OnCreated(StoredReport report) => _dispatch(() => { if (!_service.UsingOwnSource) return; Items.Insert(0, Row(report)); Status = Loc.Get("Reports_Created"); });   // newest first, without re-reading every report
+    /// <summary>Lists the reports again (the source changed, or one was edited).</summary>
+    public void Reload() => _dispatch(Refresh);
     private void Refresh() { Items.Clear(); foreach (var r in _service.Store.List()) Items.Add(Row(r)); }
     private ReportRowViewModel Row(StoredReport report)
     {

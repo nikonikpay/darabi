@@ -9,11 +9,21 @@ internal static class ReportFormat
     public static string Duration(double seconds) => seconds >= 60 ? $"{(int)(seconds / 60)}m {seconds % 60:F0}s" : $"{seconds:F0}s";
     public static string Value(double v, SensorSummary s) => Units.FormatMeasured(v, s.Unit, 1);
 
+    /// <summary>The maker and model the machine is sold under ("LENOVO 82JU"); null when Windows gave neither or only a placeholder a board maker leaves in.</summary>
+    public static string? DeviceName(HardwareInventory m)
+    {
+        if (m.Computer is not { } c) return null;
+        static bool Filler(string? s) => string.IsNullOrWhiteSpace(s) || s.Contains("O.E.M.", StringComparison.OrdinalIgnoreCase) || s.Contains("To be filled", StringComparison.OrdinalIgnoreCase) || s.Contains("System Product Name", StringComparison.OrdinalIgnoreCase) || s.Contains("Default string", StringComparison.OrdinalIgnoreCase);
+        string text = $"{(Filler(c.Manufacturer) ? "" : c.Manufacturer)} {(Filler(c.Model) ? "" : c.Model)}".Trim();
+        return text.Length == 0 ? null : text;
+    }
+
     /// <summary>One row per part that was detected; a part that was not is left out, not shown as empty.</summary>
     public static IEnumerable<(string Label, string Value)> MachineRows(HardwareInventory m, ReportText w)
     {
         IEnumerable<(string, string?)> Rows()
         {
+            if (DeviceName(m) is { } device) yield return (w.Device, device + (m.Computer?.IsPortable == true ? $" ({w.Laptop})" : ""));
             if (m.Cpu is { } c) yield return (w.Cpu, $"{c.Name} · {c.PhysicalCores}C/{c.LogicalProcessors}T" + (c.MaxClockMhz is { } mhz ? $" · {mhz / 1000.0:F2} GHz" : ""));
             foreach (var g in m.Gpus) yield return (w.Gpu, $"{g.Name}" + (g.DriverVersion is { } d ? $" · driver {d}" : ""));
             if (m.TotalPhysicalMemoryBytes is { } ram) yield return (w.Ram, $"{ram / 1073741824.0:F0} GB · {m.MemoryModules.Count} module(s)");

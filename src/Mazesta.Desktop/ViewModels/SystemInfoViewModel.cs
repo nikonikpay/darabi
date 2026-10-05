@@ -29,6 +29,7 @@ public sealed partial class SystemInfoViewModel : ObservableObject
     internal static IEnumerable<InfoSection> Describe(HardwareInventory inv)
     {
         foreach (var section in Component(inv, HardwareKind.Cpu)) yield return section;
+        if (inv.Computer is { } pc) yield return new(Loc.Get("SystemInfo_Device"), DeviceRows(pc));
         yield return new(Loc.Get("SystemInfo_Motherboard"), BoardRows(inv.Motherboard));
         yield return new(Loc.Get("SystemInfo_Bios"), BiosRows(inv.Bios));
         yield return new(Loc.Get("Dashboard_Ram"), MemoryRows(inv));
@@ -71,6 +72,15 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         new(Loc.Get("SystemInfo_Driver"), Show(g.DriverVersion)),
         new(Loc.Get("SystemInfo_Vram"), ShowBytes(g.AdapterRamBytes, 1024.0 * 1024 * 1024)),
         new(Loc.Get("SystemInfo_DeviceId"), Show(g.PnpDeviceId)),
+    ];
+
+    private static IReadOnlyList<InfoRow> DeviceRows(ComputerInfo c) =>
+    [
+        new(Loc.Get("SystemInfo_Manufacturer"), Show(c.Manufacturer)),
+        new(Loc.Get("SystemInfo_Model"), Show(c.Model)),
+        new(Loc.Get("SystemInfo_Family"), Show(c.Family)),
+        new(Loc.Get("SystemInfo_Serial"), Show(c.SerialNumber)),
+        new(Loc.Get("SystemInfo_DeviceKind"), c.IsPortable is { } p ? Loc.Get(p ? "SystemInfo_Laptop" : "SystemInfo_Desktop") : Loc.Get("Value_NotAvailable")),
     ];
 
     private static IReadOnlyList<InfoRow> BoardRows(MotherboardInfo? m) => m is null ? NotAvailableRows("SystemInfo_Manufacturer") :

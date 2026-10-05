@@ -171,6 +171,8 @@ public static class SummaryHtml
             b.Append("<div class=\"verdict ").Append(verdict).Append("\">").Append(E(rw.VerdictName(verdict))).Append("<small>")
              .Append(Lt($"{r.Counts.Passed}/{r.Counts.Total}")).Append("</small></div>");
         else b.Append("<div class=\"verdict Benchmark\">").Append(E(w.Benchmark)).Append("</div>");
+        if (!string.IsNullOrWhiteSpace(r.ServiceNotes))
+            b.Append("<section><h2>").Append(E(rw.WorkDone)).Append("</h2><div style=\"white-space:pre-wrap;line-height:1.9\">").Append(E(r.ServiceNotes.Trim())).Append("</div></section>");
         b.Append("<div class=\"installed\">").Append(E(w.Installed)).Append("</div>");
 
         // The highest temperatures: one row of tiles (the parts the summary shows), each with the test it was reached in.
@@ -218,6 +220,7 @@ public static class SummaryHtml
         b.Append("<section><h2>").Append(E(w.Machine)).Append("</h2><dl class=\"spec\">");
         void Row(string label, string? value, bool wide = false) { if (!string.IsNullOrWhiteSpace(value)) b.Append(wide ? "<div class=\"wide\">" : "<div>").Append("<dt>").Append(E(label)).Append("</dt><dd>").Append(Lt(value)).Append("</dd></div>"); }
         var m = r.Machine;
+        if (ReportFormat.DeviceName(m) is { } device) Row(rw.Device, device + (m.Computer?.IsPortable == true ? $" · {rw.Laptop}" : ""), wide: true);
         Row(rw.Cpu, m.Cpu?.Name?.Trim(), wide: true);
         foreach (var g in m.Gpus) Row(rw.Gpu, g.Name + (g.DriverVersion is { } d ? $" · driver {d}" : ""), wide: true);
         // The BIOS sits on the motherboard's line (it belongs to the board), and the memory has a line of its own.

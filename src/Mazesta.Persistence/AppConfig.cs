@@ -18,11 +18,17 @@ public sealed class AppConfig : IVersionedDocument
     /// <summary>The service job being worked on (spec 7.1): printed on every report while set. Saved with the settings so the job survives a
     /// restart or a reboot during a test; empty when there is none.</summary>
     public string ServiceNumber { get; set; } = "";
+    /// <summary>The company's edition: the Data folder of the users' copy whose reports it lists and sends (found at the installed place, or chosen with Browse);
+    /// empty means the usual place is tried each start.</summary>
+    public string ReportsSourceDir { get; set; } = "";
     public List<string> ExpandedGroups { get; set; } = [];
     public WindowPlacement? MainWindow { get; set; }
     public List<ChartWindowConfig> ChartWindows { get; set; } = [];
     /// <summary>The tray monitor starts together with the app; "turn the tray off" in the settings switches this off. Absent in older files, so on.</summary>
     public bool TrayWithApp { get; set; } = true;
+    /// <summary>The users' edition has already decided whether the tray starts with Windows: it registers that on its first start (the default is on),
+    /// and from then on only the settings page changes it. Absent in older files, so the first start after the update does it once.</summary>
+    public bool TrayLogonDecided { get; set; }
     /// <summary>Delay before the tray's first health check after sign-in, so it never runs during it.</summary>
     public int TrayFirstCheckSeconds { get; set; } = 20;
     /// <summary>How often the tray checks while nothing is wrong.</summary>
