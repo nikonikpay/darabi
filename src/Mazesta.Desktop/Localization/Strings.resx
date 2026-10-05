@@ -3031,4 +3031,33 @@ Cancel: stop.</value></data>
   <data name="Assist_Part_Temp" xml:space="preserve"><value>The highest temperature it reached then: {0} °C.</value></data>
   <data name="Assist_Tool_run_checkup" xml:space="preserve"><value>Asked to run: smart diagnosis</value></data>
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>Read the part's recorded tests</value></data>
+  <data name="Tools_Sec_Lights" xml:space="preserve"><value>Lighting (RGB)</value></data>
+  <data name="Rgb_Title" xml:space="preserve"><value>RGB lighting colours</value></data>
+  <data name="Rgb_Sub" xml:space="preserve"><value>memory, graphics card, board and fans, for Corsair, ASUS, Gigabyte, MSI and more</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>The colours are set through OpenRGB, a free program that talks to the lights of these makers; this app does not bundle it. Put its portable folder named OpenRGB beside this app, or install it, then press the button. If a maker&apos;s own program (iCUE, Armoury Crate, RGB Fusion, MSI Center) is running, close it first: two programs cannot drive the same lights. Some devices (memory, boards) need the app to run as administrator.</value></data>
+  <data name="Rgb_Connect" xml:space="preserve"><value>Find the lights</value></data>
+  <data name="Rgb_All" xml:space="preserve"><value>All devices</value></data>
+  <data name="Rgb_Color" xml:space="preserve"><value>Colour</value></data>
+  <data name="Rgb_Apply" xml:space="preserve"><value>Apply</value></data>
+  <data name="Rgb_Off" xml:space="preserve"><value>Off</value></data>
+  <data name="Rgb_ApplyAll" xml:space="preserve"><value>Apply to all</value></data>
+  <data name="Rgb_OffAll" xml:space="preserve"><value>Turn all off</value></data>
+  <data name="Rgb_Mode" xml:space="preserve"><value>Mode</value></data>
+  <data name="Rgb_Mode_Keep" xml:space="preserve"><value>One colour</value></data>
+  <data name="Rgb_Leds" xml:space="preserve"><value>{0} LEDs</value></data>
+  <data name="Rgb_NotFound" xml:space="preserve"><value>OpenRGB was not found. Put its portable folder (with OpenRGB.exe) in a folder named OpenRGB beside this app, or install it from openrgb.org.</value></data>
+  <data name="Rgb_NoServer" xml:space="preserve"><value>OpenRGB did not start its server. Open it yourself, and in its settings turn on the SDK server.</value></data>
+  <data name="Rgb_NotConnected" xml:space="preserve"><value>Not connected to OpenRGB yet. Press "Find the lights".</value></data>
+  <data name="Rgb_Failed" xml:space="preserve"><value>The connection to OpenRGB failed: {0}</value></data>
+  <data name="Rgb_Empty" xml:space="preserve"><value>OpenRGB is running but lists no device yet. Wait a few seconds and press the button again; if there is still none, the maker&apos;s own program may be holding the lights.</value></data>
+  <data name="Rgb_Kind_Motherboard" xml:space="preserve"><value>Motherboard</value></data>
+  <data name="Rgb_Kind_Memory" xml:space="preserve"><value>Memory</value></data>
+  <data name="Rgb_Kind_Graphics" xml:space="preserve"><value>Graphics card</value></data>
+  <data name="Rgb_Kind_Cooler" xml:space="preserve"><value>Cooler or fan</value></data>
+  <data name="Rgb_Kind_Strip" xml:space="preserve"><value>LED strip</value></data>
+  <data name="Rgb_Kind_Keyboard" xml:space="preserve"><value>Keyboard</value></data>
+  <data name="Rgb_Kind_Mouse" xml:space="preserve"><value>Mouse</value></data>
+  <data name="Rgb_Kind_Storage" xml:space="preserve"><value>Drive</value></data>
+  <data name="Rgb_Kind_Case" xml:space="preserve"><value>Case</value></data>
+  <data name="Rgb_Kind_Other" xml:space="preserve"><value>Other device</value></data>
 </root>

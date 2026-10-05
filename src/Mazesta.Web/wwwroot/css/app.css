@@ -1371,3 +1371,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .drv-list li .pill { justify-self: start; }
 .drv-list li.dim { opacity: .6; }
 .drv-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rgb-list { display: grid; gap: 8px; margin-top: 12px; }
+.rgb-dev { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-panel); border: 1px solid var(--rule); }
+.rgb-name { display: grid; gap: 2px; min-width: 0; } .rgb-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: start; }
+.rgb-color { inline-size: 44px; block-size: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--rule); background: transparent; cursor: pointer; }
+.rgb-all { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+@media (max-width: 760px) { .rgb-dev { grid-template-columns: 1fr 1fr; } .rgb-name { grid-column: 1 / -1; } }

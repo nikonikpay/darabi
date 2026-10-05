@@ -3031,4 +3031,33 @@
   <data name="Assist_Part_Temp" xml:space="preserve"><value>بیشترین دمایی که آن موقع به آن رسید: {0} °C.</value></data>
   <data name="Assist_Tool_run_checkup" xml:space="preserve"><value>درخواست اجرا: عیب‌یابی هوشمند</value></data>
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>خواندن تست‌های ثبت‌شدهٔ قطعه</value></data>
+  <data name="Tools_Sec_Lights" xml:space="preserve"><value>نورپردازی (RGB)</value></data>
+  <data name="Rgb_Title" xml:space="preserve"><value>رنگ نورپردازی RGB</value></data>
+  <data name="Rgb_Sub" xml:space="preserve"><value>رم، کارت گرافیک، مادربرد و فن‌ها، برای Corsair، ASUS، Gigabyte، MSI و بقیه</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>رنگ‌ها از راه OpenRGB تنظیم می‌شود؛ برنامه‌ای رایگان که با نور قطعات این سازنده‌ها حرف می‌زند و همراه این برنامه نیست. پوشهٔ قابل‌حمل آن را با نام OpenRGB کنار این برنامه بگذار، یا نصبش کن، بعد دکمه را بزن. اگر برنامهٔ خود سازنده (iCUE، Armoury Crate، RGB Fusion، MSI Center) باز است اول ببندش: دو برنامه نمی‌توانند یک نور را با هم کنترل کنند. بعضی قطعات (رم، مادربرد) لازم دارند برنامه با دسترسی مدیر اجرا شود.</value></data>
+  <data name="Rgb_Connect" xml:space="preserve"><value>پیدا کردن نورها</value></data>
+  <data name="Rgb_All" xml:space="preserve"><value>همهٔ قطعات</value></data>
+  <data name="Rgb_Color" xml:space="preserve"><value>رنگ</value></data>
+  <data name="Rgb_Apply" xml:space="preserve"><value>اعمال</value></data>
+  <data name="Rgb_Off" xml:space="preserve"><value>خاموش</value></data>
+  <data name="Rgb_ApplyAll" xml:space="preserve"><value>اعمال روی همه</value></data>
+  <data name="Rgb_OffAll" xml:space="preserve"><value>خاموش کردن همه</value></data>
+  <data name="Rgb_Mode" xml:space="preserve"><value>حالت</value></data>
+  <data name="Rgb_Mode_Keep" xml:space="preserve"><value>یک رنگ</value></data>
+  <data name="Rgb_Leds" xml:space="preserve"><value>{0} LED</value></data>
+  <data name="Rgb_NotFound" xml:space="preserve"><value>OpenRGB پیدا نشد. پوشهٔ قابل‌حمل آن (با OpenRGB.exe) را در پوشه‌ای به نام OpenRGB کنار این برنامه بگذار، یا از openrgb.org نصبش کن.</value></data>
+  <data name="Rgb_NoServer" xml:space="preserve"><value>OpenRGB سرور خودش را بالا نیاورد. خودت بازش کن و در تنظیماتش سرور SDK را روشن کن.</value></data>
+  <data name="Rgb_NotConnected" xml:space="preserve"><value>هنوز به OpenRGB وصل نیستم. دکمهٔ «پیدا کردن نورها» را بزن.</value></data>
+  <data name="Rgb_Failed" xml:space="preserve"><value>اتصال به OpenRGB ناموفق بود: {0}</value></data>
+  <data name="Rgb_Empty" xml:space="preserve"><value>OpenRGB باز است ولی هنوز قطعه‌ای نشان نمی‌دهد. چند ثانیه صبر کن و دوباره دکمه را بزن؛ اگر باز هم نبود، شاید برنامهٔ خود سازنده نور را در دست دارد.</value></data>
+  <data name="Rgb_Kind_Motherboard" xml:space="preserve"><value>مادربرد</value></data>
+  <data name="Rgb_Kind_Memory" xml:space="preserve"><value>رم</value></data>
+  <data name="Rgb_Kind_Graphics" xml:space="preserve"><value>کارت گرافیک</value></data>
+  <data name="Rgb_Kind_Cooler" xml:space="preserve"><value>خنک‌کننده یا فن</value></data>
+  <data name="Rgb_Kind_Strip" xml:space="preserve"><value>نوار LED</value></data>
+  <data name="Rgb_Kind_Keyboard" xml:space="preserve"><value>کیبورد</value></data>
+  <data name="Rgb_Kind_Mouse" xml:space="preserve"><value>ماوس</value></data>
+  <data name="Rgb_Kind_Storage" xml:space="preserve"><value>درایو</value></data>
+  <data name="Rgb_Kind_Case" xml:space="preserve"><value>کیس</value></data>
+  <data name="Rgb_Kind_Other" xml:space="preserve"><value>قطعهٔ دیگر</value></data>
 </root>

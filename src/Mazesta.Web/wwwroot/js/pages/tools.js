@@ -10,6 +10,7 @@ import { gamingBoxes, gameBoostBox } from "./gaming.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
 import { crashesBox } from "./crashes.js";
+import { rgbBox } from "./rgb.js";
 
 export function mount(el) {
   const gaming = gamingBoxes(1);
@@ -54,6 +55,7 @@ export function mount(el) {
   const section = (key, ...boxes) => h("section", { class: "tools-sec" }, h("h2", { class: "tools-sec-title" }, t(key)), h("div", { class: "panels two" }, boxes));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
     section("Tools_Sec_Network", dnsBox(0), netfixBox(0), ...gaming.boxes, gameBoostBox(3)),
+    section("Tools_Sec_Lights", rgbBox(2)),
     section("Tools_Sec_Repair",
       crashesBox(3),
       box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 3, a: "repair",
