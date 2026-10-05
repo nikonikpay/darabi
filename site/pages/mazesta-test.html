@@ -10,7 +10,9 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 #mzt h1::before,#mzt h2::before,#mzt h3::before,#mzt h1::after,#mzt h2::after,#mzt h3::after,#mzt li::before{content:none}
 #mzt b,#mzt i,#mzt span,#mzt em{font-style:normal;color:inherit}
 #mzt a{color:inherit;text-decoration:none;box-shadow:none}
-#mzt a:focus-visible{outline:2px solid var(--yellow);outline-offset:3px;border-radius:3px}
+#mzt button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;border-radius:0;box-shadow:none;min-height:0;min-width:0;width:auto;height:auto;line-height:inherit;letter-spacing:0;text-align:inherit;text-transform:none}
+#mzt a:focus-visible,#mzt button:focus-visible,#mzt input:focus-visible,#mzt .fpt:focus-visible{outline:2px solid var(--yellow);outline-offset:2px;border-radius:3px}
+#mzt [hidden]{display:none!important}
 #mzt svg{display:block;max-width:100%}
 #mzt .num{font-family:var(--lat);font-stretch:82%;font-weight:600;direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
 #mzt .wrap{max-width:1180px;margin-inline:auto;padding-inline:clamp(18px,4vw,40px)}
@@ -46,12 +48,12 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 #mzt .scale::before{content:"";position:absolute;inset:0;background:var(--hue);transform:scaleX(var(--p,0));transform-origin:right}
 #mzt .scale::after{content:"";position:absolute;inset:0;background:var(--ticks)}
 #mzt .tile .ft{font-size:11.5px;color:var(--paper-3);margin-top:7px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#mzt .note{font-size:12px;color:var(--paper-3);margin-top:12px;line-height:1.6}
+#mzt .note{font-size:12px;color:var(--paper-3);margin-top:12px;line-height:1.7}
 
 /* section index, as the app's tab strip */
 #mzt .tabs{background:var(--side);border-bottom:1px solid var(--rule)}
 #mzt .tabs ul{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-#mzt .tabs a{display:block;padding:15px 14px 13px;font-weight:600;font-size:14px;color:var(--paper-2);white-space:nowrap;border-bottom:2px solid transparent;transition:color 160ms,border-color 160ms}
+#mzt .tabs a{display:block;padding:15px 13px 13px;font-weight:600;font-size:14px;color:var(--paper-2);white-space:nowrap;border-bottom:2px solid transparent;transition:color 160ms,border-color 160ms}
 #mzt .tabs a:hover{color:var(--paper);border-bottom-color:var(--yellow)}
 
 /* feature rows */
@@ -66,36 +68,83 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 #mzt .pts li{padding:10px 0 10px;border-bottom:1px solid var(--rule);font-size:14.5px;line-height:1.7;color:var(--paper);padding-inline-start:16px;position:relative}
 #mzt .pts li::before{content:"";position:absolute;inset-inline-start:0;top:1.25em;width:6px;height:6px;background:var(--hue)}
 #mzt .panel{background:var(--ink-2);border:1px solid var(--rule);border-inline-start:3px solid var(--hue);border-radius:6px;box-shadow:var(--edge);padding:16px;min-width:0}
-#mzt .panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-weight:750;font-size:14.5px;margin-bottom:12px}
+#mzt .panel-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 12px;font-weight:750;font-size:14.5px;margin-bottom:12px}
 #mzt .panel-h .num{font-size:12px;color:var(--paper-3)}
-#mzt .screen{background:var(--well);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--recess);overflow:hidden}
+#mzt .screen{background:var(--well);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--recess);overflow:hidden;color:var(--hue)}
 #mzt .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
 #mzt .stat{background:var(--well);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--recess);padding:6px 10px;font-size:11.5px;color:var(--paper-3);line-height:1.5}
 #mzt .stat .num{display:block;font-size:17px;color:var(--paper);font-stretch:74%;font-weight:700}
 #mzt .stat:first-child .num{color:var(--hue)}
+#mzt .try{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--paper-3)}
+#mzt .try::before{content:"";width:7px;height:7px;border:1.5px solid var(--yellow);border-radius:50%}
+
+/* controls, as in the app: recessed segments, raised buttons */
+#mzt .segs{display:inline-flex;flex-wrap:wrap;gap:3px;background:var(--well);border:1px solid var(--rule-2);border-radius:5px;padding:3px;box-shadow:var(--recess)}
+#mzt .seg{padding:5px 12px;font-weight:600;font-size:13px;color:var(--paper-2);border-radius:3px;white-space:nowrap;transition:color 160ms,background 160ms}
+#mzt .seg:hover{color:var(--paper)}
+#mzt .seg[aria-pressed="true"]{background:var(--ink-3);color:var(--paper);box-shadow:inset 0 -2px 0 var(--yellow)}
+#mzt .btn{display:inline-flex;align-items:center;gap:8px;background:var(--ink-3);border:1px solid var(--rule-2);border-radius:5px;padding:6px 14px;font-weight:600;font-size:13px;box-shadow:var(--edge);white-space:nowrap;transition:background 160ms,border-color 160ms}
+#mzt .btn:hover{background:var(--ink-4);border-color:var(--paper-3)}
+#mzt .btn.pri{background:var(--yellow);border-color:var(--yellow);color:#0c0c0c;font-weight:800}
+#mzt .btn.pri:hover{background:#ffe14d}
+#mzt .btn.stop{border-color:rgb(238 75 61/.4);color:#ff8f84;background:rgb(238 75 61/.08)}
+#mzt .btn:disabled{opacity:.35;cursor:default}
+#mzt .ctl{display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr) 5.2em;align-items:center;gap:12px;font-size:13px;color:var(--paper-2);margin-top:10px}
+#mzt .ctl .num{color:var(--paper);text-align:left}
+#mzt input[type=range]{accent-color:var(--yellow);width:100%;margin:0;padding:0;direction:ltr;background:none;border:0;height:22px}
+
+/* monitoring rows */
+#mzt .sens{display:grid;margin-bottom:10px;border-top:1px solid var(--rule)}
+#mzt .srow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 10px;border-bottom:1px solid var(--rule);border-inline-start:3px solid transparent;font-size:13.5px;color:var(--paper-2);transition:background 160ms}
+#mzt .srow:hover{background:rgb(255 255 255/.03)}
+#mzt .srow .num{color:var(--paper)}
+#mzt .srow[aria-pressed="true"]{background:color-mix(in oklab,var(--hue) 8%,transparent);border-inline-start-color:var(--hue);color:var(--paper)}
+#mzt .srow[aria-pressed="true"] .num{color:var(--hue)}
 
 /* test queue */
-#mzt .queue li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--rule);font-size:14px;font-weight:600}
-#mzt .queue li:last-child{border-bottom:0}
+#mzt .queue li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:10px 2px;border-bottom:1px solid var(--rule);font-size:14px;font-weight:600}
 #mzt .queue .num{color:var(--paper-3);font-size:12px}
 #mzt .queue small{display:block;font-weight:400;font-size:12px;color:var(--paper-3);line-height:1.5}
 #mzt .pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:3px;white-space:nowrap;color:var(--c);border:1px solid color-mix(in oklab,var(--c) 45%,transparent);background:color-mix(in oklab,var(--c) 8%,transparent)}
 #mzt .pill::before{content:"";width:5px;height:5px;background:var(--c)}
 #mzt .bar{grid-column:2/4;height:4px;background:var(--well);border-radius:1px;position:relative;overflow:hidden}
-#mzt .bar::before{content:"";position:absolute;inset:0;background:var(--yellow);transform:scaleX(.62);transform-origin:right}
+#mzt .bar i{position:absolute;inset:0;background:var(--yellow);transform:scaleX(0);transform-origin:right}
+#mzt .dock{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:2px solid var(--yellow)}
+#mzt .dock .sum{font-size:13px;color:var(--paper-2);flex:1;min-width:12em;line-height:1.6}
 
 /* benchmark comparison */
 #mzt .cmp li{display:grid;grid-template-columns:minmax(0,9.5em) minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px 0;font-size:13px;color:var(--paper-2)}
 #mzt .cmp .trk{height:10px;background:var(--well);border-radius:1px;box-shadow:var(--recess);position:relative;overflow:hidden}
-#mzt .cmp .trk::before{content:"";position:absolute;inset:0;background:var(--ink-4);transform:scaleX(var(--p));transform-origin:right}
+#mzt .cmp .trk::before{content:"";position:absolute;inset:0;background:var(--ink-4);transform:scaleX(var(--p));transform-origin:right;transition:transform 520ms var(--ease)}
 #mzt .cmp .me{color:var(--paper);font-weight:700}
 #mzt .cmp .me .trk::before{background:var(--hue)}
-#mzt .cmp .num{font-size:12.5px;color:var(--paper-3);min-width:6.5em;text-align:left}
+#mzt .cmp .num{font-size:12.5px;color:var(--paper-3);min-width:7.5em;text-align:left}
 #mzt .cmp .me .num{color:var(--hue)}
 
+/* tuning and fan curves */
+#mzt .curve{touch-action:none}
+#mzt .curve text{font:600 10px var(--lat);fill:#737a82}
+#mzt .fpt{cursor:ns-resize}
+#mzt .rig{background:var(--well);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--recess);padding:22px 18px;display:grid;grid-template-columns:auto 1fr;gap:20px 26px;align-items:end}
+#mzt .rig .ram{display:flex;gap:6px;direction:ltr}
+#mzt .rig .ram i{display:block;width:15px;height:84px;background:var(--ink-3);border:1px solid var(--rule-2);border-radius:2px;position:relative}
+#mzt .rig .ram i::before,#mzt .rig .strip,#mzt .rig .fans i::before{content:"";background:var(--rgb);opacity:var(--br);box-shadow:0 0 14px var(--rgb)}
+#mzt .rig .ram i::before{position:absolute;inset:-1px -1px auto;height:14px;border-radius:2px 2px 0 0}
+#mzt .rig .fans{display:flex;gap:12px;justify-content:flex-end;direction:ltr}
+#mzt .rig .fans i{display:block;width:62px;height:62px;border-radius:50%;background:var(--ink-3);position:relative}
+#mzt .rig .fans i::before{position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%)}
+#mzt .rig .fans i::after{content:"";position:absolute;inset:38%;border-radius:50%;background:var(--ink-4)}
+#mzt .rig .strip{grid-column:1/3;height:7px;border-radius:2px}
+#mzt .rig.breath .ram i::before,#mzt .rig.breath .strip,#mzt .rig.breath .fans i::before{animation:mzt-breath 2.6s ease-in-out infinite}
+#mzt .rig.rainbow .ram i::before,#mzt .rig.rainbow .strip,#mzt .rig.rainbow .fans i::before{animation:mzt-hue 5s linear infinite}
+#mzt .sw{display:flex;gap:8px;direction:ltr}
+#mzt .sw button{width:26px;height:26px;border-radius:4px;background:var(--c);border:2px solid transparent}
+#mzt .sw button[aria-pressed="true"]{border-color:var(--paper);box-shadow:0 0 0 2px var(--ink-2) inset}
+
 /* overlay */
-#mzt .game{background:linear-gradient(160deg,#2b3340,#191c22 60%);border:1px solid var(--rule);border-radius:6px;padding:clamp(14px,2.4vw,26px);min-height:300px;display:flex;align-items:flex-start;justify-content:flex-end}
-#mzt .ov{direction:ltr;text-align:left;width:min(100%,250px);background:rgb(14 16 18/.86);border:1px solid rgb(255 255 255/.12);border-radius:9px;padding:9px;display:grid;gap:7px;font-family:var(--lat)}
+#mzt .game{background:linear-gradient(160deg,#2b3340,#191c22 60%);border:1px solid var(--rule);border-radius:6px;padding:clamp(14px,2.4vw,22px);min-height:340px;display:flex;flex-direction:column;gap:14px}
+#mzt .game .segs{align-self:flex-start;background:rgb(14 16 18/.7)}
+#mzt .ov{align-self:flex-end;direction:ltr;text-align:left;width:min(100%,250px);background:rgb(14 16 18/.86);border:1px solid rgb(255 255 255/.12);border-radius:9px;padding:9px;display:grid;gap:7px;font-family:var(--lat)}
 #mzt .ov .bx{border:1px solid color-mix(in oklab,var(--hue) 33%,transparent);background:color-mix(in oklab,var(--hue) 7%,transparent);border-radius:5px;padding:8px 9px}
 #mzt .ov .fps{display:flex;align-items:baseline;gap:6px;font:750 38px/1 var(--lat);font-stretch:72%;color:#fff;font-variant-numeric:tabular-nums}
 #mzt .ov .fps em{font-size:13px;font-weight:700;color:var(--yellow);font-stretch:100%}
@@ -103,11 +152,33 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 #mzt .ov .tag{display:inline-block;background:var(--hue);color:#15171a;font:800 10.5px/1 var(--lat);font-stretch:112%;padding:3px 6px;border-radius:3px}
 #mzt .ov .row{display:flex;justify-content:space-between;font:600 12px/1.6 var(--lat);color:var(--paper-2);margin-top:5px}
 #mzt .ov .row b{font-weight:750;color:#fff}
-#mzt .ov .row b i{color:var(--hue);font-size:.82em;margin-left:2px}
+#mzt .ov .row b i{color:var(--hue);font-size:.82em;margin-left:3px}
+
+/* apps */
+#mzt .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#mzt .chip{padding:5px 11px;border:1px solid var(--rule-2);border-radius:4px;background:var(--ink-3);font:600 13px var(--lat);font-stretch:90%;color:var(--paper-2);direction:ltr}
+#mzt .chip[aria-pressed="true"]{border-color:var(--hue);color:var(--paper);box-shadow:inset 0 -2px 0 var(--hue)}
+#mzt .verdict{font-weight:800;font-size:17px;line-height:1.6;margin-top:16px}
+#mzt .tiers{margin-top:8px;border-top:1px solid var(--rule)}
+#mzt .tiers li{display:grid;grid-template-columns:5.5em minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--rule);font-size:13px}
+#mzt .tiers .rq{color:var(--paper-2);font-family:var(--lat);font-stretch:88%;direction:ltr;text-align:right;unicode-bidi:isolate}
+#mzt .tiers b{font-weight:700}
+
+/* assistant */
+#mzt .chat{background:var(--well);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--recess);padding:12px;height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;scrollbar-width:thin}
+#mzt .msg{max-width:88%;padding:8px 12px;border-radius:6px;font-size:13.5px;line-height:1.8;animation:mzt-rise 320ms var(--ease) both}
+#mzt .msg.u{align-self:flex-start;background:var(--ink-4)}
+#mzt .msg.a{align-self:flex-end;background:var(--ink-2);border:1px solid var(--rule);border-inline-start:3px solid var(--yellow)}
+#mzt .msg .row2{display:flex;gap:8px;margin-top:8px}
+#mzt .msg.wait{color:var(--paper-3)}
+#mzt .asks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#mzt .ask{padding:6px 11px;border:1px solid var(--rule-2);border-radius:4px;background:var(--ink-3);font-size:13px;font-weight:600;color:var(--paper)}
+#mzt .ask:hover{border-color:var(--yellow)}
 
 /* report sheet */
-#mzt .sheet{background:#f4f2ec;color:#1b1d20;border-radius:3px;padding:20px 20px 16px;max-width:400px;margin-inline:auto;box-shadow:0 18px 40px rgb(0 0 0/.45)}
-#mzt .sheet-h{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1b1d20;padding-bottom:9px;font-weight:850;font-size:15px}
+#mzt .rep{display:grid;gap:14px;justify-items:center}
+#mzt .sheet{background:#f4f2ec;color:#1b1d20;border-radius:3px;padding:20px 20px 16px;width:min(100%,400px);box-shadow:0 18px 40px rgb(0 0 0/.45)}
+#mzt .sheet-h{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;border-bottom:2px solid #1b1d20;padding-bottom:9px;font-weight:850;font-size:15px}
 #mzt .sheet-h .num{font-size:11px;color:#5b6067}
 #mzt .sheet dl{display:grid;grid-template-columns:auto 1fr;gap:0 14px;font-size:12.5px;margin-top:6px}
 #mzt .sheet dt,#mzt .sheet dd{padding:6px 0;border-bottom:1px solid #d8d5cc;line-height:1.6}
@@ -142,7 +213,9 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 
 @keyframes mzt-rise{from{opacity:0;transform:translateY(10px)}}
 @keyframes mzt-live{50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){#mzt *{animation:none!important;transition:none!important}}
+@keyframes mzt-breath{50%{opacity:calc(var(--br)*.2)}}
+@keyframes mzt-hue{to{filter:hue-rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#mzt *,#mzt *::before,#mzt *::after{animation:none!important;transition:none!important}}
 @media (max-width:900px){
 #mzt .hero .wrap,#mzt .feat .wrap,#mzt .get .plate{grid-template-columns:minmax(0,1fr)}
 #mzt .feat.flip .txt{order:0}
@@ -152,7 +225,9 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 #mzt .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
 #mzt .spec,#mzt .stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 #mzt .slab{width:100%;justify-content:center}
-#mzt .cmp li{grid-template-columns:minmax(0,7em) minmax(0,1fr) auto}
+#mzt .cmp li{grid-template-columns:minmax(0,6.5em) minmax(0,1fr) auto}
+#mzt .ctl{grid-template-columns:minmax(0,6.5em) minmax(0,1fr) 4.6em}
+#mzt .tiers li{grid-template-columns:4.6em minmax(0,1fr) auto}
 }
 </style>
 
@@ -162,7 +237,7 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
   <div>
     <div class="mark">MAZESTA TEST</div>
     <h1>کامپیوترتان را اندازه بگیرید، حدس نزنید</h1>
-    <p class="lede">مازستا تست همان برنامه‌ای است که در کارگاه مازستا روی سیستم‌ها اجرا می‌کنیم: سنسورها را زنده می‌خواند، قطعه‌ها را زیر بار می‌برد و نتیجه را در یک گزارش قابل چاپ می‌نویسد. فارسی است و روی ویندوز نصب می‌شود.</p>
+    <p class="lede">مازستا تست همان برنامه‌ای است که در کارگاه مازستا روی سیستم‌ها اجرا می‌کنیم: سنسورها را زنده می‌خواند، قطعه‌ها را تست می‌کند، کارت گرافیک، فن‌ها و نورها را تنظیم می‌کند و نتیجه را در یک گزارش قابل چاپ می‌نویسد. فارسی است و روی ویندوز نصب می‌شود.</p>
     <div class="act">
       <a class="slab" href="https://www.dfmrendering.com/mazesta/MazestaTestSetup.exe" download><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14" stroke-linecap="round" stroke-linejoin="round"/></svg>دانلود فایل نصب</a>
       <div class="meta">نسخه‌ی <span class="num">0.9.2</span>، حدود <span class="num">175 MB</span><br>ویندوز <span class="num">10</span> و <span class="num">11</span>، <span class="num">64</span> بیتی</div>
@@ -172,14 +247,14 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
   <div class="plate" role="img" aria-label="نمونه‌ای از داشبورد برنامه: دمای پردازنده و کارت گرافیک، مصرف رم، سلامت دیسک و سرعت شبکه، هر کدام به رنگ خودش">
     <div class="plate-h"><span>وضعیت زنده‌ی سیستم</span><span class="live">سنسورها فعال‌اند</span></div>
     <div class="tiles">
-      <div class="tile" style="--hue:var(--cpu);--i:0"><div class="tl"><span>پردازنده</span><span class="num">CPU</span></div><div class="ro">58<i>°C</i></div><div class="scale" style="--p:.34"></div><div class="ft">بار <span class="num">34%</span></div></div>
-      <div class="tile" style="--hue:var(--gpu);--i:1"><div class="tl"><span>گرافیک</span><span class="num">GPU</span></div><div class="ro">71<i>°C</i></div><div class="scale" style="--p:.96"></div><div class="ft">بار <span class="num">96%</span></div></div>
-      <div class="tile" style="--hue:var(--ram);--i:2"><div class="tl"><span>حافظه</span><span class="num">RAM</span></div><div class="ro">18.4<i>GB</i></div><div class="scale" style="--p:.57"></div><div class="ft">از <span class="num">32 GB</span></div></div>
-      <div class="tile" style="--hue:var(--sto);--i:3"><div class="tl"><span>ذخیره‌سازی</span><span class="num">SSD</span></div><div class="ro">41<i>°C</i></div><div class="scale" style="--p:.08"></div><div class="ft">عمر مصرف‌شده <span class="num">8%</span></div></div>
-      <div class="tile" style="--hue:var(--net);--i:4"><div class="tl"><span>شبکه</span><span class="num">LAN</span></div><div class="ro">23.6<i>MB/s</i></div><div class="scale" style="--p:.24"></div><div class="ft">دانلود</div></div>
+      <div class="tile" style="--hue:var(--cpu);--i:0"><div class="tl"><span>پردازنده</span><span class="num">CPU</span></div><div class="ro"><span data-j="58,2,0">58</span><i>°C</i></div><div class="scale" style="--p:.34"></div><div class="ft">بار <span class="num">34%</span></div></div>
+      <div class="tile" style="--hue:var(--gpu);--i:1"><div class="tl"><span>گرافیک</span><span class="num">GPU</span></div><div class="ro"><span data-j="71,1,0">71</span><i>°C</i></div><div class="scale" style="--p:.96"></div><div class="ft">بار <span class="num">96%</span></div></div>
+      <div class="tile" style="--hue:var(--ram);--i:2"><div class="tl"><span>حافظه</span><span class="num">RAM</span></div><div class="ro"><span data-j="18.4,0.2,1">18.4</span><i>GB</i></div><div class="scale" style="--p:.57"></div><div class="ft">از <span class="num">32 GB</span></div></div>
+      <div class="tile" style="--hue:var(--sto);--i:3"><div class="tl"><span>ذخیره‌سازی</span><span class="num">SSD</span></div><div class="ro"><span>41</span><i>°C</i></div><div class="scale" style="--p:.08"></div><div class="ft">عمر مصرف‌شده <span class="num">8%</span></div></div>
+      <div class="tile" style="--hue:var(--net);--i:4"><div class="tl"><span>شبکه</span><span class="num">LAN</span></div><div class="ro"><span data-j="23.6,4,1">23.6</span><i>MB/s</i></div><div class="scale" style="--p:.24"></div><div class="ft">دانلود</div></div>
       <div class="tile" style="--hue:var(--gpu);--i:5"><div class="tl"><span>نقطه‌ی داغ</span><span class="num">GPU</span></div><div class="ro na">در دسترس نیست</div><div class="scale"></div><div class="ft">این کارت سنسورش را ندارد</div></div>
     </div>
-    <p class="note">اعداد این صفحه نمونه‌اند. در برنامه، چیزی که اندازه گرفته نشده مثل خانه‌ی آخر هاشور می‌خورد و هیچ‌وقت صفر یا عدد ساختگی جایش نمی‌نشیند.</p>
+    <p class="note">همه‌ی بخش‌های این صفحه نمونه‌ی زنده‌ی رابط برنامه‌اند و می‌شود با آن‌ها کار کرد؛ اعدادشان نمونه است. در خود برنامه، چیزی که اندازه گرفته نشده مثل خانه‌ی آخر هاشور می‌خورد و هیچ‌وقت صفر یا عدد ساختگی جایش نمی‌نشیند.</p>
   </div>
 </div></header>
 
@@ -187,10 +262,13 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
   <li><a href="#mzt-monitor">مانیتورینگ</a></li>
   <li><a href="#mzt-tests">تست‌ها</a></li>
   <li><a href="#mzt-bench">بنچمارک‌ها</a></li>
-  <li><a href="#mzt-overlay">اورلی</a></li>
+  <li><a href="#mzt-tuning">آندرولت و اورکلاک</a></li>
+  <li><a href="#mzt-fans">فن و نور RGB</a></li>
+  <li><a href="#mzt-gaming">گیمینگ</a></li>
+  <li><a href="#mzt-apps">برنامه‌های تخصصی</a></li>
+  <li><a href="#mzt-asst">دستیار هوشمند</a></li>
   <li><a href="#mzt-reports">گزارش‌ها</a></li>
-  <li><a href="#mzt-more">ابزارهای دیگر</a></li>
-  <li><a href="#mzt-get">دانلود و نصب</a></li>
+  <li><a href="#mzt-get">دانلود</a></li>
 </ul></div></nav>
 
 <section class="feat" id="mzt-monitor" style="--hue:var(--cpu)"><div class="wrap">
@@ -204,18 +282,24 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
       <li>وقتی خواندن متوقف بوده، نمودار شکاف واقعی دارد، نه خطی که دو نقطه را به هم وصل کند.</li>
     </ul>
   </div>
-  <div class="panel" role="img" aria-label="نمونه‌ی نمودار دمای پردازنده در ده دقیقه">
-    <div class="panel-h"><span>دمای پردازنده</span><span class="num">CPU Package · 10 min</span></div>
-    <div class="screen"><svg viewBox="0 0 520 190" preserveAspectRatio="none" style="width:100%;height:auto">
-      <defs><pattern id="mzt-g" width="52" height="47.5" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#fff" opacity=".13"/></pattern></defs>
-      <rect width="520" height="190" fill="url(#mzt-g)"/>
-      <path d="M0 150 L30 148 60 151 90 146 120 149 150 120 175 84 200 66 230 58 262 52 300 55 330 49 352 51 M392 60 L420 94 448 122 480 136 520 141" fill="none" stroke="#5ba8ff" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <path d="M0 150 L30 148 60 151 90 146 120 149 150 120 175 84 200 66 230 58 262 52 300 55 330 49 352 51 V190 H0Z M392 60 L420 94 448 122 480 136 520 141 V190 H392Z" fill="#5ba8ff" opacity=".1"/>
+  <div class="panel" id="mzt-mon">
+    <div class="panel-h"><span data-title>دمای پردازنده</span><span class="try">روی یک سنسور بزنید</span></div>
+    <div class="sens">
+      <button type="button" class="srow" data-s="cpu" aria-pressed="true" style="--hue:var(--cpu)"><span>دمای پردازنده</span><b class="num"></b></button>
+      <button type="button" class="srow" data-s="gpu" aria-pressed="false" style="--hue:var(--gpu)"><span>دمای کارت گرافیک</span><b class="num"></b></button>
+      <button type="button" class="srow" data-s="pwr" aria-pressed="false" style="--hue:var(--gpu)"><span>توان کارت گرافیک</span><b class="num"></b></button>
+      <button type="button" class="srow" data-s="ssd" aria-pressed="false" style="--hue:var(--sto)"><span>سرعت خواندن دیسک</span><b class="num"></b></button>
+    </div>
+    <div class="screen"><svg viewBox="0 0 520 170" preserveAspectRatio="none" style="width:100%;height:auto" aria-hidden="true">
+      <defs><pattern id="mzt-g" width="52" height="42.5" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#fff" opacity=".13"/></pattern></defs>
+      <rect width="520" height="170" fill="url(#mzt-g)"/>
+      <path data-fill fill="currentColor" opacity=".1"/>
+      <path data-line fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
     </svg></div>
     <div class="stats">
-      <div class="stat">اکنون<span class="num">58 °C</span></div>
-      <div class="stat">بیشینه<span class="num">83 °C</span></div>
-      <div class="stat">میانگین<span class="num">64 °C</span></div>
+      <div class="stat">اکنون<span class="num" data-now></span></div>
+      <div class="stat">بیشینه<span class="num" data-max></span></div>
+      <div class="stat">میانگین<span class="num" data-avg></span></div>
     </div>
   </div>
 </div></section>
@@ -228,17 +312,18 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
     <ul class="pts">
       <li>بار ماتریسی پردازنده، الگوهای حافظه، دیسک با بررسی صحت داده، فشار و حافظه‌ی گرافیک، توان هم‌زمان CPU و GPU.</li>
       <li>سلامت ویندوز با SFC و DISM، و در پایان بررسی SMART همه‌ی درایوها.</li>
-      <li>تستی که اجرا نشده یا لغو شده «موفق» حساب نمی‌شود و گزارش را ناقص می‌کند.</li>
+      <li>تستی که اجرا نشده یا لغو شده «موفق» حساب نمی‌شود و گزارش را ناقص می‌کند. «شروع» را بزنید و وسط کار لغو کنید تا ببینید.</li>
     </ul>
   </div>
-  <div class="panel" role="img" aria-label="نمونه‌ی صف تست‌ها: دو تست موفق، یکی در حال اجرا و یکی اجرا نشده">
-    <div class="panel-h"><span>صف تست</span><span class="num">3 / 4</span></div>
+  <div class="panel" id="mzt-tq">
+    <div class="panel-h"><span>صف تست</span><span class="try">شروع را بزنید</span></div>
     <ol class="queue">
-      <li><span class="num">1</span><span>بار ماتریسی پردازنده<small>صحت هر محاسبه بررسی شد</small></span><span class="pill" style="--c:var(--pass)">موفق</span></li>
-      <li><span class="num">2</span><span>الگوهای حافظه<small>بدون خطا</small></span><span class="pill" style="--c:var(--pass)">موفق</span></li>
-      <li><span class="num">3</span><span>فشار کارت گرافیک<small>بار ثابت، متغیر و ضربانی</small></span><span class="pill" style="--c:var(--yellow)">در حال اجرا</span><span class="bar"></span></li>
-      <li><span class="num">4</span><span>بررسی نهایی SMART<small>فقط می‌خواند، چیزی نمی‌نویسد</small></span><span class="pill" style="--c:var(--paper-3)">اجرا نشده</span></li>
+      <li><span class="num">1</span><span>بار ماتریسی پردازنده<small>صحت هر محاسبه بررسی می‌شود</small></span><span class="pill" style="--c:var(--paper-3)">در صف</span><span class="bar"><i></i></span></li>
+      <li><span class="num">2</span><span>الگوهای حافظه<small>نوشتن و بازخوانی الگوها</small></span><span class="pill" style="--c:var(--paper-3)">در صف</span><span class="bar"><i></i></span></li>
+      <li><span class="num">3</span><span>فشار کارت گرافیک<small>بار ثابت، متغیر و ضربانی</small></span><span class="pill" style="--c:var(--paper-3)">در صف</span><span class="bar"><i></i></span></li>
+      <li><span class="num">4</span><span>بررسی نهایی SMART<small>فقط می‌خواند، چیزی نمی‌نویسد</small></span><span class="pill" style="--c:var(--paper-3)">در صف</span><span class="bar"><i></i></span></li>
     </ol>
+    <div class="dock"><span class="sum" aria-live="polite">چهار تست در صف است.</span><button type="button" class="btn stop" data-a="cancel" disabled>لغو</button><button type="button" class="btn pri" data-a="start">شروع</button></div>
   </div>
 </div></section>
 
@@ -253,36 +338,185 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
       <li>بهترین نتیجه‌ی هر سیستم نگه داشته می‌شود و می‌توانید آن را با یک پیوند به اشتراک بگذارید.</li>
     </ul>
   </div>
-  <div class="panel" role="img" aria-label="نمونه‌ی مقایسه‌ی نتیجه‌ی بنچمارک این سیستم با مدل‌های دیگر">
-    <div class="panel-h"><span>رندر Direct3D 12</span><span class="num">FPS</span></div>
+  <div class="panel" id="mzt-bn">
+    <div class="panel-h"><div class="segs" role="group" aria-label="بنچمارک">
+      <button type="button" class="seg" data-b="gpu" aria-pressed="true">گرافیک</button>
+      <button type="button" class="seg" data-b="cpu" aria-pressed="false">پردازنده</button>
+      <button type="button" class="seg" data-b="ssd" aria-pressed="false">دیسک</button>
+    </div><span class="num" data-bt>Direct3D 12 · FPS</span></div>
     <ul class="cmp">
-      <li><span>یک مدل بالاتر</span><span class="trk" style="--p:.92"></span><span class="num">18% faster</span></li>
-      <li class="me"><span>این سیستم</span><span class="trk" style="--p:.78"></span><span class="num">142 FPS</span></li>
-      <li><span>میانه‌ی همین مدل</span><span class="trk" style="--p:.75"></span><span class="num">4% slower</span></li>
-      <li><span>یک مدل پایین‌تر</span><span class="trk" style="--p:.58"></span><span class="num">25% slower</span></li>
+      <li><span>یک مدل بالاتر</span><span class="trk"></span><span class="num"></span></li>
+      <li class="me"><span>این سیستم</span><span class="trk"></span><span class="num"></span></li>
+      <li><span>میانه‌ی همین مدل</span><span class="trk"></span><span class="num"></span></li>
+      <li><span>یک مدل پایین‌تر</span><span class="trk"></span><span class="num"></span></li>
     </ul>
     <p class="note">هر مدل یک ردیف است: میانه‌ی بهترین اجرای سیستم‌هایی که آن قطعه را دارند.</p>
   </div>
 </div></section>
 
-<section class="feat flip" id="mzt-overlay" style="--hue:var(--yellow)"><div class="wrap">
+<section class="feat flip" id="mzt-tuning" style="--hue:var(--gpu)"><div class="wrap">
   <div class="txt">
-    <span class="key"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M13 9h5v4h-5z"/></svg></span>
-    <h2>اورلی روی بازی و رندر</h2>
-    <p>با <span class="num">Ctrl+Shift+O</span> یک پنل کوچک گوشه‌ی صفحه می‌نشیند و ماوس از رویش رد می‌شود. خودتان انتخاب می‌کنید چه چیزی، به چه ترتیبی و با چه اندازه‌ای نشان داده شود.</p>
+    <span class="key"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19c5 0 6-12 16-13M4 5v14h16" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <h2>آندرولت و اورکلاک کارت گرافیک، با اندازه‌گیری</h2>
+    <p>برای کارت‌های NVIDIA. برنامه اول منحنی ولتاژ و فرکانس همان کارت را زیر بار اندازه می‌گیرد؛ بعد خودتان آن را جابه‌جا می‌کنید یا جست‌وجوی خودکار این کار را می‌کند.</p>
     <ul class="pts">
-      <li>FPS، <span class="num">1% low</span> و زمان فریم برای بازی‌های DirectX 9 تا 12.</li>
-      <li>سه حالت آماده: بازی، رندر و عیب‌یابی؛ یک ستون، دو ستون یا یک نوار کنار صفحه.</li>
-      <li>روی بازی در حالت Borderless یا پنجره‌ای دیده می‌شود.</li>
+      <li>آندرولت خودکار قدم‌به‌قدم جلو می‌رود تا خطا ببیند، کمی عقب می‌کشد و با اجرای طولانی تأیید می‌کند. فقط اگر توان یا دما واقعاً کمتر شده باشد پروفایل ذخیره می‌شود.</li>
+      <li>اورکلاک خودکار فقط وقتی ذخیره می‌شود که امتیاز اندازه‌گیری‌شده از حالت کارخانه بهتر باشد.</li>
+      <li>تنظیم دستی: آفست هسته و حافظه، سقف فرکانس، محدودیت توان و سرعت فن کارت.</li>
+      <li>همه‌ی تنظیمات موقت‌اند: با ری‌استارت، کارت به حالت کارخانه برمی‌گردد.</li>
     </ul>
   </div>
-  <div class="game" role="img" aria-label="نمونه‌ی اورلی روی بازی: فریم بر ثانیه، و دما و بار کارت گرافیک و پردازنده">
-    <div class="ov">
-      <div class="bx" style="--hue:var(--yellow)"><div class="fps">144<em>FPS</em></div><div class="sub">1% low 112 · 6.9 ms</div>
-        <svg viewBox="0 0 230 36" preserveAspectRatio="none" style="width:100%;height:36px;margin-top:6px"><path d="M0 9 L20 8 40 10 60 8 80 9 100 7 112 22 124 9 150 8 175 10 200 8 230 9" fill="none" stroke="#fdd400" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg></div>
-      <div class="bx" style="--hue:var(--gpu)"><span class="tag">GPU</span><div class="row"><span>Temp</span><b>71<i>°C</i></b></div><div class="row"><span>Load</span><b>96<i>%</i></b></div><div class="row"><span>Power</span><b>238<i>W</i></b></div></div>
-      <div class="bx" style="--hue:var(--cpu)"><span class="tag">CPU</span><div class="row"><span>Temp</span><b>58<i>°C</i></b></div><div class="row"><span>Load</span><b>34<i>%</i></b></div></div>
+  <div class="panel" id="mzt-tn">
+    <div class="panel-h"><div class="segs" role="group" aria-label="پروفایل">
+      <button type="button" class="seg" data-p="stock" aria-pressed="true">کارخانه</button>
+      <button type="button" class="seg" data-p="uv" aria-pressed="false">آندرولت</button>
+      <button type="button" class="seg" data-p="oc" aria-pressed="false">اورکلاک</button>
+    </div><span class="try">اسلایدرها را جابه‌جا کنید</span></div>
+    <div class="screen"><svg class="curve" viewBox="0 0 520 220" style="width:100%;height:auto" role="img" aria-label="منحنی ولتاژ و فرکانس: خط‌چین حالت کارخانه و خط زرد تنظیم فعلی">
+      <rect width="520" height="220" fill="url(#mzt-g)"/>
+      <text x="40" y="214">700 mV</text><text x="462" y="214">1050 mV</text><text x="4" y="24">2100</text><text x="4" y="190">1200</text>
+      <path data-stock fill="none" stroke="#737a82" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <path data-tuned fill="none" stroke="#fdd400" stroke-width="2.2" stroke-linejoin="round"/>
+      <circle data-op r="6" fill="#2ec08e" stroke="#0e1012" stroke-width="2"/>
+    </svg></div>
+    <label class="ctl"><span>آفست فرکانس هسته</span><input type="range" min="0" max="200" step="5" value="0" data-off aria-label="آفست فرکانس هسته"><span class="num" data-offv></span></label>
+    <label class="ctl"><span>سقف فرکانس</span><input type="range" min="1700" max="2100" step="10" value="1900" data-cap aria-label="سقف فرکانس"><span class="num" data-capv></span></label>
+    <div class="stats">
+      <div class="stat">فرکانس هسته<span class="num" data-f></span></div>
+      <div class="stat">ولتاژ<span class="num" data-v></span></div>
+      <div class="stat">توان<span class="num" data-w></span></div>
     </div>
+    <p class="note">نقطه‌ی سبز جایی است که کارت کار می‌کند. آندرولت یعنی همان فرکانس با ولتاژ کمتر: آفست را بالا ببرید و سقف را نگه دارید.</p>
+  </div>
+</div></section>
+
+<section class="feat" id="mzt-fans" style="--hue:var(--brd)"><div class="wrap">
+  <div class="txt">
+    <span class="key"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.2"/><path d="M12 9.8C12 6 10 4 7.5 5S7 9.5 10 11m2 3.2c0 3.8 2 5.800 4.500 4.800s.5-4.500-2.500-6M9.800 12C6 12 4 14 5 16.500s4.500.5 6-2.500M14.200 12c3.800 0 5.800-2 4.800-4.500s-4.500-.5-6 2.500" stroke-linecap="round"/></svg></span>
+    <h2>سرعت فن و نور RGB، بدون نرم‌افزار اضافه</h2>
+    <p>لازم نیست برای هر قطعه برنامه‌ی سازنده‌اش را نصب کنید. فن‌های مادربرد و نور همه‌ی قطعه‌ها از داخل همین برنامه تنظیم می‌شود.</p>
+    <ul class="pts">
+      <li>فن: خودکار، سرعت ثابت یا منحنی دلخواه که با ماوس می‌کشید؛ پیش‌تنظیم آماده و یک کف ایمنی که فن از آن پایین‌تر نمی‌رود.</li>
+      <li>نور: یک حالت برای همه‌ی دستگاه‌ها با سرعت و روشنایی؛ رم، کارت گرافیک، مادربرد، فن‌ها و نوارهای LED از Corsair، ASUS، Gigabyte، MSI و بقیه.</li>
+      <li>تا وقتی از این صفحه استفاده می‌کنید، برنامه‌های نور سازنده‌ها متوقف می‌شوند تا با هم درگیر نشوند.</li>
+    </ul>
+  </div>
+  <div class="panel" id="mzt-fr">
+    <div class="panel-h"><div class="segs" role="group" aria-label="بخش">
+      <button type="button" class="seg" data-t="fan" aria-pressed="true">کنترل فن</button>
+      <button type="button" class="seg" data-t="rgb" aria-pressed="false">نور RGB</button>
+    </div><span class="try" data-hint>نقطه‌ها را بالا و پایین بکشید</span></div>
+    <div data-pane="fan">
+      <div class="screen"><svg class="curve" id="mzt-fan" viewBox="0 0 520 220" style="width:100%;height:auto">
+        <rect width="520" height="220" fill="url(#mzt-g)"/>
+        <text x="40" y="214">20 °C</text><text x="476" y="214">90 °C</text><text x="4" y="24">100%</text>
+        <path d="M40 164H500" stroke="#ee4b3d" stroke-width="1" stroke-dasharray="3 5" opacity=".7"/><text x="430" y="178" style="fill:#ee4b3d">safety floor</text>
+        <path data-mark stroke="#737a82" stroke-width="1"/>
+        <path data-curve fill="none" stroke="#d9ccb0" stroke-width="2.2" stroke-linejoin="round"/>
+        <g class="fpt" data-i="0" tabindex="0" role="slider" aria-label="سرعت فن در 30 درجه" aria-valuemin="20" aria-valuemax="100"><circle r="16" fill="transparent"/><circle r="6" fill="#fdd400" stroke="#0e1012" stroke-width="2"/></g>
+        <g class="fpt" data-i="1" tabindex="0" role="slider" aria-label="سرعت فن در 50 درجه" aria-valuemin="20" aria-valuemax="100"><circle r="16" fill="transparent"/><circle r="6" fill="#fdd400" stroke="#0e1012" stroke-width="2"/></g>
+        <g class="fpt" data-i="2" tabindex="0" role="slider" aria-label="سرعت فن در 70 درجه" aria-valuemin="20" aria-valuemax="100"><circle r="16" fill="transparent"/><circle r="6" fill="#fdd400" stroke="#0e1012" stroke-width="2"/></g>
+        <g class="fpt" data-i="3" tabindex="0" role="slider" aria-label="سرعت فن در 85 درجه" aria-valuemin="20" aria-valuemax="100"><circle r="16" fill="transparent"/><circle r="6" fill="#fdd400" stroke="#0e1012" stroke-width="2"/></g>
+      </svg></div>
+      <div class="chips"><button type="button" class="seg" data-fp="quiet" aria-pressed="false">آرام</button><button type="button" class="seg" data-fp="bal" aria-pressed="true">متعادل</button><button type="button" class="seg" data-fp="cool" aria-pressed="false">خنک</button></div>
+      <label class="ctl"><span>دمای پردازنده</span><input type="range" min="25" max="90" step="1" value="62" data-temp aria-label="دمای پردازنده"><span class="num" data-tempv></span></label>
+      <div class="stats"><div class="stat">سرعت فن<span class="num" data-fan></span></div><div class="stat">حالت<span class="num" style="font-family:var(--fa);font-size:14px;line-height:1.9">منحنی</span></div><div class="stat">کف ایمنی<span class="num">20%</span></div></div>
+    </div>
+    <div data-pane="rgb" hidden>
+      <div class="rig" id="mzt-rig" style="--rgb:#35d0e0;--br:1" role="img" aria-label="پیش‌نمایش نور چهار ماژول رم، سه فن و یک نوار LED">
+        <div class="ram"><i></i><i></i><i></i><i></i></div><div class="fans"><i></i><i></i><i></i></div><div class="strip"></div>
+      </div>
+      <div class="ctl" style="grid-template-columns:minmax(0,9em) minmax(0,1fr)"><span>رنگ</span><div class="sw" role="group" aria-label="رنگ">
+        <button type="button" data-c="#35d0e0" style="--c:#35d0e0" aria-pressed="true" aria-label="فیروزه‌ای"></button>
+        <button type="button" data-c="#fdd400" style="--c:#fdd400" aria-pressed="false" aria-label="زرد"></button>
+        <button type="button" data-c="#ff4d6d" style="--c:#ff4d6d" aria-pressed="false" aria-label="قرمز"></button>
+        <button type="button" data-c="#7c5cff" style="--c:#7c5cff" aria-pressed="false" aria-label="بنفش"></button>
+        <button type="button" data-c="#3ddc84" style="--c:#3ddc84" aria-pressed="false" aria-label="سبز"></button>
+        <button type="button" data-c="#ffffff" style="--c:#ffffff" aria-pressed="false" aria-label="سفید"></button>
+      </div></div>
+      <div class="ctl" style="grid-template-columns:minmax(0,9em) minmax(0,1fr)"><span>حالت</span><div><div class="segs" role="group" aria-label="حالت نور">
+        <button type="button" class="seg" data-fx="" aria-pressed="true">ثابت</button>
+        <button type="button" class="seg" data-fx="breath" aria-pressed="false">تنفس</button>
+        <button type="button" class="seg" data-fx="rainbow" aria-pressed="false">رنگین‌کمان</button>
+      </div></div></div>
+      <label class="ctl"><span>روشنایی</span><input type="range" min="20" max="100" step="5" value="100" data-br aria-label="روشنایی"><span class="num" data-brv>100%</span></label>
+    </div>
+  </div>
+</div></section>
+
+<section class="feat flip" id="mzt-gaming" style="--hue:var(--yellow)"><div class="wrap">
+  <div class="txt">
+    <span class="key"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M13 9h5v4h-5z"/></svg></span>
+    <h2>برای بازی: فریم روی صفحه، و ویندوزی که آماده است</h2>
+    <p>با <span class="num">Ctrl+Shift+O</span> یک پنل کوچک گوشه‌ی صفحه می‌نشیند و ماوس از رویش رد می‌شود. انتخاب می‌کنید چه چیزی، به چه ترتیبی و با چه اندازه‌ای نشان داده شود.</p>
+    <ul class="pts">
+      <li>FPS، <span class="num">1% low</span> و زمان فریم برای بازی‌های DirectX 9 تا 12، با سه حالت آماده: بازی، رندر و عیب‌یابی.</li>
+      <li>«کدام بازی‌ها روی این سیستم اجرا می‌شوند»: هر بازی با سطح‌بندی خود ناشرش مقایسه می‌شود و هیچ فریم‌ریتی حدس زده نمی‌شود.</li>
+      <li>پلن مصرف انرژی ویندوز و طرح Ultimate Performance از همین‌جا؛ وضعیت Game Mode و زمان‌بندی سخت‌افزاری GPU.</li>
+      <li>سنجش DNSها روی اینترنت خودتان، تا ببینید کدام سریع‌تر جواب می‌دهد.</li>
+    </ul>
+  </div>
+  <div class="game" id="mzt-gm">
+    <div class="segs" role="group" aria-label="حالت اورلی">
+      <button type="button" class="seg" data-o="game" aria-pressed="true">بازی</button>
+      <button type="button" class="seg" data-o="render" aria-pressed="false">رندر</button>
+      <button type="button" class="seg" data-o="diag" aria-pressed="false">عیب‌یابی</button>
+    </div>
+    <div class="ov" aria-live="off"></div>
+  </div>
+</div></section>
+
+<section class="feat" id="mzt-apps" style="--hue:var(--tool)"><div class="wrap">
+  <div class="txt">
+    <span class="key"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v6H4zM15 15l4 4m0-4l-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <h2>کدام برنامه‌ی تخصصی روی این سیستم اجرا می‌شود</h2>
+    <p>برنامه مشخصات سیستم را می‌خواند و با سطح‌بندی خود سازنده‌ی هر نرم‌افزار مقایسه می‌کند: حداقل، پیشنهادی و حرفه‌ای. می‌گوید به کدام سطح می‌رسید و برای سطح بعد چه کم دارید.</p>
+    <ul class="pts">
+      <li>رم، حافظه‌ی گرافیک، تعداد هسته و قابلیت‌هایی مثل ری‌تریسینگ سخت‌افزاری.</li>
+      <li>نرم‌افزارهای رندر، معماری، انیمیشن و مهندسی، مثل Lumion، Twinmotion، D5 Render، Blender، Unreal Engine و SketchUp.</li>
+      <li>مدل‌های هوش مصنوعی هم جدا بررسی می‌شوند: کدام مدل زبانی یا تصویری روی کارت گرافیک شما جا می‌شود.</li>
+    </ul>
+  </div>
+  <div class="panel" id="mzt-ap">
+    <div class="panel-h"><div class="segs" role="group" aria-label="سیستم نمونه">
+      <button type="button" class="seg" data-sys="0" aria-pressed="false">سیستم پایه</button>
+      <button type="button" class="seg" data-sys="1" aria-pressed="true">سیستم میانی</button>
+      <button type="button" class="seg" data-sys="2" aria-pressed="false">سیستم قوی</button>
+    </div><span class="num" data-spec></span></div>
+    <div class="chips" role="group" aria-label="برنامه">
+      <button type="button" class="chip" data-app="lumion" aria-pressed="true">Lumion Pro 2026</button>
+      <button type="button" class="chip" data-app="twin" aria-pressed="false">Twinmotion 2025</button>
+      <button type="button" class="chip" data-app="d5" aria-pressed="false">D5 Render</button>
+      <button type="button" class="chip" data-app="blender" aria-pressed="false">Blender 5.2 LTS</button>
+    </div>
+    <p class="verdict" aria-live="polite"></p>
+    <ul class="tiers"></ul>
+    <p class="note">سطح‌ها از صفحه‌ی نیازمندی‌های خود سازنده است. در برنامه، کارت گرافیک و پردازنده هم با قطعه‌های نمونه‌ی سازنده مقایسه می‌شوند.</p>
+  </div>
+</div></section>
+
+<section class="feat flip" id="mzt-asst" style="--hue:var(--yellow)"><div class="wrap">
+  <div class="txt">
+    <span class="key"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.800 5.200L19 10l-5.200 1.800L12 17l-1.800-5.200L5 10l5.200-1.800zM18.500 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" stroke-linejoin="round"/></svg></span>
+    <h2>دستیار هوشمندی که روی کامپیوتر خودتان اجرا می‌شود</h2>
+    <p>ساده بپرسید، فارسی یا انگلیسی. یک مدل زبانی روی کارت گرافیک همین کامپیوتر اجرا می‌شود و چیزی از طریق اینترنت فرستاده نمی‌شود.</p>
+    <ul class="pts">
+      <li>مشخصات سیستم، سنسورهای زنده، گزارش‌های ذخیره‌شده و تاریخچه‌ی بنچمارک را می‌بیند و از روی همان‌ها جواب می‌دهد.</li>
+      <li>می‌تواند تست و بنچمارک اجرا کند، ولی هر کدام فقط بعد از تأیید شما شروع می‌شود.</li>
+      <li>صفحه‌ی درست برنامه را باز می‌کند، از گزارش فایل PDF می‌سازد و درباره‌ی برنامه‌ها و بازی‌ها از سطح‌بندی سازنده جواب می‌دهد.</li>
+      <li>کارت گرافیکی با دست‌کم <span class="num">4 GB</span> حافظه می‌خواهد و فقط یک بار، وقتی خودتان بخواهید، دانلود می‌شود.</li>
+    </ul>
+  </div>
+  <div class="panel" id="mzt-as">
+    <div class="panel-h"><span>دستیار هوشمند</span><button type="button" class="btn" data-a="reset">از نو</button></div>
+    <div class="chat" aria-live="polite"></div>
+    <div class="asks">
+      <button type="button" class="ask" data-q="temp">دمای کارت گرافیکم الان چنده؟</button>
+      <button type="button" class="ask" data-q="soft">لومیون روی این سیستم اجرا می‌شه؟</button>
+      <button type="button" class="ask" data-q="test">کارت گرافیک رو تست کن</button>
+      <button type="button" class="ask" data-q="pdf">گزارش رو PDF بده</button>
+    </div>
+    <p class="note">گفت‌وگوی نمونه با جواب‌های آماده؛ در برنامه، جواب‌ها از اندازه‌گیری‌های سیستم خودتان می‌آید.</p>
   </div>
 </div></section>
 
@@ -297,16 +531,33 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
       <li>مقداری که خوانده نشده «گزارش نشد» نوشته می‌شود.</li>
     </ul>
   </div>
-  <div class="sheet" role="img" aria-label="نمونه‌ی برگه‌ی خلاصه‌ی گزارش">
-    <div class="sheet-h"><span>خلاصه‌ی وضعیت سیستم</span><span class="num">MAZESTA TEST · A5</span></div>
-    <dl>
-      <dt>آزمون جامع</dt><dd class="ok">موفق، ۹ از ۹</dd>
-      <dt>سلامت SSD</dt><dd><span class="num">Healthy · 8%</span></dd>
-      <dt>بیشینه‌ی دمای CPU</dt><dd><span class="num">83 °C</span></dd>
-      <dt>بیشینه‌ی دمای GPU</dt><dd><span class="num">74 °C</span></dd>
-      <dt>نقطه‌ی داغ GPU</dt><dd><span class="nr">گزارش نشد</span></dd>
-    </dl>
-    <div class="sign"><span>امضای تکنسین</span><span>امضای مشتری</span></div>
+  <div class="rep" id="mzt-rp">
+    <div class="segs" role="group" aria-label="نوع گزارش">
+      <button type="button" class="seg" data-r="a5" aria-pressed="true">خلاصه‌ی A5</button>
+      <button type="button" class="seg" data-r="cmp" aria-pressed="false">قبل و بعد</button>
+    </div>
+    <div class="sheet" data-rp="a5">
+      <div class="sheet-h"><span>خلاصه‌ی وضعیت سیستم</span><span class="num">MAZESTA TEST · A5</span></div>
+      <dl>
+        <dt>آزمون جامع</dt><dd class="ok">موفق، ۹ از ۹</dd>
+        <dt>سلامت SSD</dt><dd><span class="num">Healthy · 8%</span></dd>
+        <dt>بیشینه‌ی دمای CPU</dt><dd><span class="num">83 °C</span></dd>
+        <dt>بیشینه‌ی دمای GPU</dt><dd><span class="num">74 °C</span></dd>
+        <dt>نقطه‌ی داغ GPU</dt><dd><span class="nr">گزارش نشد</span></dd>
+      </dl>
+      <div class="sign"><span>امضای تکنسین</span><span>امضای مشتری</span></div>
+    </div>
+    <div class="sheet" data-rp="cmp" hidden>
+      <div class="sheet-h"><span>مقایسه‌ی قبل و بعد</span><span class="num">BEFORE → AFTER</span></div>
+      <dl>
+        <dt>بیشینه‌ی دمای CPU</dt><dd><span class="num">94 → 83 °C</span> <span class="ok num">−11</span></dd>
+        <dt>بیشینه‌ی دمای GPU</dt><dd><span class="num">82 → 74 °C</span> <span class="ok num">−8</span></dd>
+        <dt>رندر Direct3D 12</dt><dd><span class="num">131 → 142 FPS</span> <span class="ok num">+8%</span></dd>
+        <dt>بار ماتریسی CPU</dt><dd>ناموفق ← <span class="ok">موفق</span></dd>
+        <dt>سلامت SSD</dt><dd><span class="num">Healthy → Healthy</span></dd>
+      </dl>
+      <div class="sign"><span>گزارش قدیمی‌تر «قبل» است</span><span>هر دو از یک دستگاه</span></div>
+    </div>
   </div>
 </div></section>
 
@@ -315,10 +566,8 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
   <ul class="rows">
     <li style="--hue:var(--tool)"><h3>عیب‌یابی هوشمند</h3><p>تنظیمات و نتیجه‌های همین سیستم را با آنچه خود قطعه‌ها اعلام می‌کنند و با سیستم‌های مشابه می‌سنجد و می‌گوید کجا عقب است.</p></li>
     <li style="--hue:var(--tool)"><h3>بررسی‌های دستی</h3><p>پیکسل سوخته، کلیدهای کیبورد، بلندگو، میکروفون و ماوس؛ برنامه نشان می‌دهد چه دریافت کرده و قضاوت با شماست.</p></li>
-    <li style="--hue:var(--gpu)"><h3>اورکلاک و آندرولت کارت گرافیک</h3><p>برای کارت‌های NVIDIA: تنظیم دستی، منحنی ولتاژ و فرکانس، و جست‌وجوی خودکار. همه موقت است و با ری‌استارت برمی‌گردد.</p></li>
-    <li style="--hue:var(--brd)"><h3>کنترل فن</h3><p>فن‌های مادربرد در حالت خودکار، سرعت ثابت یا منحنی دلخواه که با ماوس می‌کشید، با یک کف ایمنی.</p></li>
-    <li style="--hue:var(--net)"><h3>نور RGB</h3><p>رنگ و حالت نور رم، کارت گرافیک، مادربرد، فن‌ها و نوارهای LED از یک صفحه، برای Corsair، ASUS، Gigabyte، MSI و بقیه.</p></li>
-    <li style="--hue:var(--sto)"><h3>ابزارهای ویندوز</h3><p>SFC و DISM با خروجی زنده، هایبرنیت، حافظه‌ی مجازی، ویرایش فایل hosts با نسخه‌ی پشتیبان، ترفندهای ویندوز و درایورها.</p></li>
+    <li style="--hue:var(--sto)"><h3>ابزارهای ویندوز</h3><p>SFC و DISM با خروجی زنده، هایبرنیت، حافظه‌ی مجازی، ویرایش فایل hosts با نسخه‌ی پشتیبان و ترفندهای ویندوز.</p></li>
+    <li style="--hue:var(--gpu)"><h3>درایورها</h3><p>نسخه‌ی نصب‌شده‌ی درایور کارت گرافیک را با تازه‌ترین نسخه مقایسه می‌کند و دستگاه‌هایی را که درایور سالم ندارند نشان می‌دهد.</p></li>
     <li style="--hue:var(--cpu)"><h3>صفحه‌ی هر قطعه</h3><p>پردازنده، گرافیک، ذخیره‌سازی و شبکه هر کدام یک صفحه دارند: مشخصات، سنسورهای زنده و بنچمارک‌های همان قطعه.</p></li>
     <li style="--hue:var(--pass)"><h3>پایشگر کنار ساعت</h3><p>بدون باز بودن برنامه، دماها و سلامت دیسک‌ها را هر چند دقیقه بررسی می‌کند و اگر مشکلی دید اعلان می‌دهد.</p></li>
   </ul>
@@ -351,4 +600,122 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 </div></section>
 
 </div>
+<script>
+(function(){
+var R=document.getElementById('mzt');if(!R)return;
+var still=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function $(s,p){return (p||R).querySelector(s)}
+function $$(s,p){return Array.prototype.slice.call((p||R).querySelectorAll(s))}
+function press(list,on){list.forEach(function(b){b.setAttribute('aria-pressed',b===on?'true':'false')})}
+function on(el,ev,sel,fn){el.addEventListener(ev,function(e){var t=e.target.closest(sel);if(t){if(el.contains(t))fn(t,e)}})}
+function rnd(a){return (Math.random()*2-1)*a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+
+/* monitoring: four live sensors, one charted */
+var M=$('#mzt-mon'),S={cpu:{t:'دمای پردازنده',u:'°C',b:58,a:2.5,lo:30,hi:100,d:0},gpu:{t:'دمای کارت گرافیک',u:'°C',b:71,a:1.5,lo:30,hi:100,d:0},pwr:{t:'توان کارت گرافیک',u:'W',b:238,a:16,lo:0,hi:340,d:0},ssd:{t:'سرعت خواندن دیسک',u:'MB/s',b:410,a:170,lo:0,hi:900,d:0}},cur='cpu';
+Object.keys(S).forEach(function(k){var s=S[k],v=s.b;s.p=[];for(var i=0;i<60;i++){v=clamp(v+rnd(s.a),s.b-s.a*4,s.b+s.a*4);s.p.push(v)}});
+function fmt(v,s){return v.toFixed(s.d)+' '+s.u}
+function mdraw(){var s=S[cur],d='',mx=-1e9,sum=0;s.p.forEach(function(v,i){var x=i*520/59,y=160-(v-s.lo)/(s.hi-s.lo)*150;d+=(i?' L':'M')+x.toFixed(1)+' '+y.toFixed(1);mx=Math.max(mx,v);sum+=v});
+$('[data-line]',M).setAttribute('d',d);$('[data-fill]',M).setAttribute('d',d+' V170 H0Z');
+$('[data-now]',M).textContent=fmt(s.p[59],s);$('[data-max]',M).textContent=fmt(mx,s);$('[data-avg]',M).textContent=fmt(sum/60,s);
+$$('.srow',M).forEach(function(r){var q=S[r.getAttribute('data-s')];$('.num',r).textContent=fmt(q.p[59],q)})}
+on(M,'click','.srow',function(b){cur=b.getAttribute('data-s');press($$('.srow',M),b);M.style.setProperty('--hue',b.style.getPropertyValue('--hue'));$('[data-title]',M).textContent=S[cur].t;mdraw()});
+mdraw();
+
+/* tests: a queue that runs, and can be cancelled */
+var T=$('#mzt-tq'),tl=$$('.queue li',T),ti=-1,tt=0,sum=$('.sum',T),bs=$('[data-a=start]',T),bc=$('[data-a=cancel]',T);
+function pill(li,x,c){var p=$('.pill',li);p.textContent=x;p.style.setProperty('--c','var(--'+c+')')}
+function bar(li,v,ms){var b=$('.bar i',li);b.style.transition='none';if(ms){b.style.transform='scaleX(0)';b.getBoundingClientRect();b.style.transition='transform '+ms+'ms linear'}b.style.transform='scaleX('+v+')'}
+function tstep(){ti++;if(ti>=tl.length){ti=-1;bs.disabled=false;bc.disabled=true;bs.textContent='اجرای دوباره';sum.textContent='موفق: هر چهار تست قبول شد. گزارش ذخیره شد.';return}
+pill(tl[ti],'در حال اجرا','yellow');bar(tl[ti],1,1700);sum.textContent='در حال اجرا: تست '+(ti+1)+' از '+tl.length;
+tt=setTimeout(function(){pill(tl[ti],'موفق','pass');tstep()},1750)}
+on(T,'click','[data-a]',function(b){if(b.disabled)return;
+if(b===bs){tl.forEach(function(li){pill(li,'در صف','paper-3');bar(li,0,0)});ti=-1;bs.disabled=true;bc.disabled=false;tstep()}
+else{clearTimeout(tt);var left=tl.length-ti-1;pill(tl[ti],'لغوشده','warn');bar(tl[ti],0,0);for(var i=ti+1;i<tl.length;i++)pill(tl[i],'اجرا نشده','paper-3');
+sum.textContent='ناقص: یک تست لغو شد'+(left?' و '+left+' تست اجرا نشد':'')+'. هیچ‌کدام «موفق» حساب نمی‌شوند.';ti=-1;bs.disabled=false;bc.disabled=true;bs.textContent='اجرای دوباره'}});
+
+/* benchmarks */
+var B=$('#mzt-bn'),BD={gpu:{t:'Direct3D 12 · FPS',r:[[.92,'18% faster'],[.78,'142 FPS'],[.75,'4% slower'],[.58,'25% slower']]},cpu:{t:'CPU multi-thread · GFLOPS',r:[[.97,'31% faster'],[.74,'412 GFLOPS'],[.7,'5% slower'],[.52,'30% slower']]},ssd:{t:'SEQ1M Q8T1 read · MB/s',r:[[.95,'2.1× faster'],[.45,'3,420 MB/s'],[.46,'2% faster'],[.07,'6.3× slower']]}};
+function bdraw(k){var d=BD[k];$('[data-bt]',B).textContent=d.t;$$('.cmp li',B).forEach(function(li,i){$('.trk',li).style.setProperty('--p',d.r[i][0]);$('.num',li).textContent=d.r[i][1]})}
+on(B,'click','[data-b]',function(b){press($$('[data-b]',B),b);bdraw(b.getAttribute('data-b'))});bdraw('gpu');
+
+/* GPU tuning: the voltage / frequency curve */
+var N=$('#mzt-tn'),off=$('[data-off]',N),cap=$('[data-cap]',N);
+function vx(v){return 40+(v-.7)/.35*460} function fy(f){return 200-(f-1100)/1050*185}
+function stock(v){return 1200+(v-.7)*2000}
+function path(fn){var d='';for(var i=0;i<=14;i++){var v=.7+i*.025;d+=(i?' L':'M')+vx(v).toFixed(1)+' '+fy(fn(v)).toFixed(1)}return d}
+function ndraw(){var o=+off.value,c=+cap.value,top=Math.min(c,1900+o),v=clamp(.7+(top-o-1200)/2000,.7,1.05),w=240*Math.pow(v/1.05,2)*(top/1900);
+$('[data-stock]',N).setAttribute('d',path(stock));$('[data-tuned]',N).setAttribute('d',path(function(x){return Math.min(stock(x)+o,c)}));
+var op=$('[data-op]',N);op.setAttribute('cx',vx(v));op.setAttribute('cy',fy(top));
+$('[data-offv]',N).textContent='+'+o+' MHz';$('[data-capv]',N).textContent=c+' MHz';$('[data-f]',N).textContent=top+' MHz';$('[data-v]',N).textContent=Math.round(v*1000)+' mV';$('[data-w]',N).textContent=Math.round(w)+' W'}
+var NP={stock:[0,1900],uv:[120,1900],oc:[150,2050]};
+on(N,'click','[data-p]',function(b){var p=NP[b.getAttribute('data-p')];off.value=p[0];cap.value=p[1];press($$('[data-p]',N),b);ndraw()});
+on(N,'input','input',function(){press($$('[data-p]',N),null);ndraw()});ndraw();
+
+/* fans: a curve whose points drag; RGB: colour, effect, brightness */
+var F=$('#mzt-fr'),FS=$('#mzt-fan'),ft=[30,50,70,85],fp=[25,45,70,100],FP={quiet:[20,30,55,85],bal:[25,45,70,100],cool:[40,60,85,100]},drag=-1,tmp=$('[data-temp]',F);
+function fx(t){return 40+(t-20)/70*460} function fyy(p){return 200-p/100*180}
+function fat(t){if(t<=ft[0])return fp[0];for(var i=1;i<4;i++){if(t<=ft[i])return fp[i-1]+(fp[i]-fp[i-1])*(t-ft[i-1])/(ft[i]-ft[i-1])}return fp[3]}
+function fdraw(){var d='M'+fx(20)+' '+fyy(fp[0]);ft.forEach(function(t,i){d+=' L'+fx(t)+' '+fyy(fp[i])});d+=' L'+fx(90)+' '+fyy(fp[3]);$('[data-curve]',FS).setAttribute('d',d);
+$$('.fpt',FS).forEach(function(g,i){g.setAttribute('transform','translate('+fx(ft[i])+' '+fyy(fp[i])+')');g.setAttribute('aria-valuenow',Math.round(fp[i]))});
+var t=+tmp.value;$('[data-mark]',FS).setAttribute('d','M'+fx(t)+' 20V200');$('[data-tempv]',F).textContent=t+' °C';$('[data-fan]',F).textContent=Math.round(fat(t))+'%'}
+function fset(i,p){var lo=i?fp[i-1]:20,hi=i<3?fp[i+1]:100;fp[i]=clamp(p,Math.max(20,lo),hi);press($$('[data-fp]',F),null);fdraw()}
+FS.addEventListener('pointerdown',function(e){var g=e.target.closest('.fpt');if(!g)return;drag=+g.getAttribute('data-i');g.setPointerCapture(e.pointerId);e.preventDefault()});
+FS.addEventListener('pointermove',function(e){if(drag<0)return;var r=FS.getBoundingClientRect();fset(drag,(200-(e.clientY-r.top)/r.height*220)/180*100)});
+FS.addEventListener('pointerup',function(){drag=-1});FS.addEventListener('pointercancel',function(){drag=-1});
+FS.addEventListener('keydown',function(e){var g=e.target.closest('.fpt');if(!g)return;var s=e.key==='ArrowUp'?5:e.key==='ArrowDown'?-5:0;if(s){e.preventDefault();var i=+g.getAttribute('data-i');fset(i,fp[i]+s)}});
+on(F,'click','[data-fp]',function(b){fp=FP[b.getAttribute('data-fp')].slice();fdraw();press($$('[data-fp]',F),b)});
+tmp.addEventListener('input',fdraw);fdraw();
+on(F,'click','[data-t]',function(b){var k=b.getAttribute('data-t');press($$('[data-t]',F),b);$$('[data-pane]',F).forEach(function(p){p.hidden=p.getAttribute('data-pane')!==k});$('[data-hint]',F).textContent=k==='fan'?'نقطه‌ها را بالا و پایین بکشید':'رنگ و حالت را عوض کنید'});
+var G=$('#mzt-rig');
+on(F,'click','[data-c]',function(b){G.style.setProperty('--rgb',b.getAttribute('data-c'));press($$('[data-c]',F),b)});
+on(F,'click','[data-fx]',function(b){G.className='rig '+b.getAttribute('data-fx');press($$('[data-fx]',F),b)});
+$('[data-br]',F).addEventListener('input',function(e){G.style.setProperty('--br',e.target.value/100);$('[data-brv]',F).textContent=e.target.value+'%'});
+
+/* overlay presets */
+var O=$('#mzt-gm'),OV=$('.ov',O),fps=144,OD={
+game:[['yellow','FPS'],['gpu','GPU',[['Temp','71','°C'],['Load','96','%'],['Clock','1905','MHz']]],['cpu','CPU',[['Temp','58','°C'],['Load','34','%']]]],
+render:[['cpu','CPU',[['Load','100','%'],['Temp','78','°C'],['Power','142','W']]],['gpu','GPU',[['Load','99','%'],['Temp','70','°C'],['Memory','9.8','GB']]],['ram','RAM',[['Used','24.1','GB']]],['sto','SSD',[['Write','410','MB/s']]]],
+diag:[['gpu','GPU',[['Temp','71','°C'],['Hot spot','84','°C'],['Voltage','990','mV'],['Fan','1450','RPM']]],['cpu','CPU',[['Temp','58','°C'],['Clock','4875','MHz'],['Vcore','1.248','V']]],['brd','BOARD',[['CPU fan','920','RPM'],['System','41','°C']]]]};
+function odraw(k){OV.innerHTML=OD[k].map(function(b){var h='<div class="bx" style="--hue:var(--'+b[0]+')">';
+if(b[1]==='FPS')return h+'<div class="fps"><span data-fps>'+fps+'</span><em>FPS</em></div><div class="sub">1% low 112 · <span data-ft>6.9</span> ms</div></div>';
+return h+'<span class="tag">'+b[1]+'</span>'+b[2].map(function(r){return '<div class="row"><span>'+r[0]+'</span><b>'+r[1]+'<i>'+r[2]+'</i></b></div>'}).join('')+'</div>'}).join('')}
+on(O,'click','[data-o]',function(b){press($$('[data-o]',O),b);odraw(b.getAttribute('data-o'))});odraw('game');
+
+/* specialist programs against the maker's own tiers (RAM GB, graphics memory GB, cores) */
+var A=$('#mzt-ap'),SY=[[4,8,4],[8,32,10],[16,64,16]],TN=['حداقل','پیشنهادی','حرفه‌ای'],
+AP={lumion:['Lumion Pro 2026',[[16,6],[32,10],[64,16]]],twin:['Twinmotion 2025',[[16,6],null,[64,12]]],d5:['D5 Render',[[0,4],[32,8],[128,24]]],blender:['Blender 5.2 LTS',[[8,2,4],[32,8,8],null]]},as=1,aa='lumion';
+function lacks(t,s){var l=[];if(s[1]<t[0])l.push(t[0]+' GB رم');if(s[2]<t[1])l.push(t[1]+' GB حافظه‌ی گرافیک');if(t[2]){if(s[0]<t[2])l.push(t[2]+' هسته')}return l}
+function adraw(){var s=SY[as],a=AP[aa],best=-1,chain=true,next='',h='';$('[data-spec]',A).textContent=s[0]+' cores · '+s[1]+' GB RAM · '+s[2]+' GB VRAM';
+a[1].forEach(function(t,i){if(!t)return;var l=lacks(t,s),ok=!l.length;if(ok){if(chain)best=i}else{chain=false}if(!ok){if(!next)next='برای سطح «'+TN[i]+'» کم دارد: '+l.join('، ')+'.'}
+h+='<li><b>'+TN[i]+'</b><span class="rq">'+(t[0]?t[0]+' GB RAM · ':'')+t[1]+' GB VRAM'+(t[2]?' · '+t[2]+' cores':'')+'</span><span class="pill" style="--c:var(--'+(ok?'pass':'paper-3')+')">'+(ok?'دارد':'کم دارد')+'</span></li>'});
+$('.tiers',A).innerHTML=h;
+$('.verdict',A).textContent=best<0?'این سیستم به حداقل نیازهای '+a[0]+' نمی‌رسد. '+next:a[0]+' روی این سیستم اجرا می‌شود؛ سطح «'+TN[best]+'». '+(next||'همه‌ی سطح‌هایی که سازنده نام برده را دارد.')}
+on(A,'click','[data-sys]',function(b){as=+b.getAttribute('data-sys');press($$('[data-sys]',A),b);adraw()});
+on(A,'click','[data-app]',function(b){aa=b.getAttribute('data-app');press($$('[data-app]',A),b);adraw()});adraw();
+
+/* the assistant: canned answers in the app's own words */
+var C=$('#mzt-as'),CH=$('.chat',C),ct=0,QA={
+temp:['دمای کارت گرافیکم الان چنده؟','دماها در همین لحظه: هسته‌ی کارت گرافیک <span class="num">71 °C</span>، حافظه‌ی آن <span class="num">78 °C</span>. نقطه‌ی داغ روی این کارت سنسور ندارد و خوانده نشد.'],
+soft:['لومیون روی این سیستم اجرا می‌شه؟','Lumion Pro 2026 روی این سیستم اجرا می‌شود؛ سطح آن طبق سطح‌بندی سازنده: «پیشنهادی». برای سطح «حرفه‌ای» کم دارد: <span class="num">64 GB</span> رم و <span class="num">16 GB</span> حافظه‌ی گرافیک.'],
+test:['کارت گرافیک رو تست کن','این تست اجرا شود؟ فشار کارت گرافیک، ۲ دقیقه با بار کامل.<div class="row2"><button type="button" class="btn pri" data-y="1">اجرا کن</button><button type="button" class="btn" data-y="0">نه</button></div>'],
+pdf:['گزارش رو PDF بده','فایل PDF از آخرین گزارش آماده است؛ با دکمه‌ی زیر بازش کنید.<div class="row2"><span class="btn" aria-hidden="true">باز کردن</span></div>']};
+function say(c,h){var m=document.createElement('div');m.className='msg '+c;m.innerHTML=h;CH.appendChild(m);CH.scrollTop=CH.scrollHeight;return m}
+function reply(h,ms){var w=say('a wait','…');clearTimeout(ct);ct=setTimeout(function(){w.className='msg a';w.innerHTML=h;CH.scrollTop=CH.scrollHeight},still?0:ms)}
+function hello(){clearTimeout(ct);CH.innerHTML='';say('a','سلام. درباره‌ی این کامپیوتر بپرسید: مشخصات، دما، گزارش‌ها، یا بگویید چیزی را تست کنم. یکی از پرسش‌های زیر را بزنید.')}
+on(C,'click','[data-q]',function(b){var q=QA[b.getAttribute('data-q')];say('u',q[0]);reply(q[1],700)});
+on(C,'click','[data-y]',function(b){var y=b.getAttribute('data-y')==='1';b.parentNode.remove();if(y){say('u','اجرا کن');reply('تست‌ها تمام شد. نتیجه: موفق. با تمام توان کار کرد: میانه‌ی بار <span class="num">98%</span> بود. بالاترین دما در طول تست: <span class="num">74 °C</span>.',1800)}else{say('u','نه');reply('چیزی اجرا نشد: تست‌ها تأیید نشدند.',500)}});
+on(C,'click','[data-a=reset]',hello);hello();
+
+/* reports */
+var P=$('#mzt-rp');on(P,'click','[data-r]',function(b){var k=b.getAttribute('data-r');press($$('[data-r]',P),b);$$('[data-rp]',P).forEach(function(s){s.hidden=s.getAttribute('data-rp')!==k})});
+
+/* one slow tick keeps the readings alive while the page is on screen */
+if(!still)setInterval(function(){if(document.hidden)return;
+$$('[data-j]').forEach(function(e){var a=e.getAttribute('data-j').split(',');e.textContent=(+a[0]+rnd(+a[1])).toFixed(+a[2])});
+Object.keys(S).forEach(function(k){var s=S[k];s.p.shift();s.p.push(clamp(s.p[58]+rnd(s.a),s.b-s.a*4,s.b+s.a*4))});mdraw();
+var f=$('[data-fps]',OV);if(f){fps=Math.round(clamp(fps+rnd(4),132,156));f.textContent=fps;$('[data-ft]',OV).textContent=(1000/fps).toFixed(1)}
+},1500);
+})();
+</script>
 <!-- /wp:html -->
