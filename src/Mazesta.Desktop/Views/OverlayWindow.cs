@@ -40,7 +40,7 @@ public sealed class OverlayWindow : Form
     {
         if (!IsHandleCreated) return;
         float dpi = DeviceDpi / 96f;
-        using var bmp = OverlayRenderer.Render(_vm, _rtl, dpi * (float)_vm.Scale);
+        using var bmp = OverlayRenderer.Render(_vm, _rtl && !_vm.English, dpi * (float)_vm.Scale);
         var area = Screen.PrimaryScreen?.WorkingArea ?? Screen.GetWorkingArea(Point.Empty);
         int margin = (int)Math.Round(14 * dpi);
         int x = _corner.EndsWith("Right", StringComparison.Ordinal) ? area.Right - bmp.Width - margin : area.Left + margin;

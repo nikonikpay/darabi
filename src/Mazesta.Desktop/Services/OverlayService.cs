@@ -69,12 +69,29 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     public void SetBare(bool bare) { config.OverlayBare = bare; Rebuild(); }
 
+    /// <summary>The overlay's own language: English titles and a left-to-right layout whatever the app's language is.</summary>
+    public void SetEnglish(bool english) { config.OverlayEnglish = english; Rebuild(); }
+
+    /// <summary>The current items kept under a name (a saved set of the user's own); the preset becomes that set. False for a name that is empty, too long or a ready-made one.</summary>
+    public bool SavePreset(string name)
+    {
+        name = name.Trim();
+        if (name.Length is 0 or > 40 || OverlayCatalog.Presets.ContainsKey(name) || name.Equals("custom", StringComparison.OrdinalIgnoreCase)) return false;
+        (config.OverlayUserPresets ??= [])[name] = [.. Items]; config.OverlayPreset = "user:" + name; return true;
+    }
+
+    public void DeletePreset(string name)
+    {
+        if (config.OverlayUserPresets?.Remove(name) != true) return;
+        if (config.OverlayPreset == "user:" + name) config.OverlayPreset = "custom";
+    }
+
     public static readonly string[] Layouts = OverlayViewModel.Layouts;
     public void SetLayout(string layout) { if (!Layouts.Contains(layout)) return; config.OverlayLayout = layout; Rebuild(); }
 
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping) { Bare = config.OverlayBare };
+        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping, config.OverlayEnglish) { Bare = config.OverlayBare };
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }

@@ -18,7 +18,8 @@ public sealed partial class WebBridge
             return new
             {
                 visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
-                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout, bare = _config.OverlayBare,
+                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout, bare = _config.OverlayBare, english = _config.OverlayEnglish,
+                userPresets = (_config.OverlayUserPresets ?? []).OrderBy(p => p.Key).Select(p => new { id = "user:" + p.Key, name = p.Key, count = p.Value.Count }),
                 frameProblem = overlay.FrameSource?.Problem, pingTarget = overlay.PingSource?.Target,
                 presets = OverlayCatalog.Presets.Select(p => new { id = p.Key, count = p.Value.Count }),
                 order = chosen.Select(c => c.Id),
@@ -28,7 +29,7 @@ public sealed partial class WebBridge
                     var choice = chosen.FirstOrDefault(c => c.Id == i.Id);
                     return new
                     {
-                        id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), frame = i.IsMeasured, available = i.IsMeasured || sensors.Count > 0,
+                        id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), labelEn = Loc.GetEnglish(i.LabelKey), frame = i.IsMeasured, available = i.IsMeasured || sensors.Count > 0,
                         on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Of is not null ? "Share" : i.Aggregate.ToString(), max = i.FixedMax, sensors = sensors.Select(s => s.Id.Value),
                         device = i.Device, deviceName = i.Device is null ? null : engine.Hardware.FirstOrDefault(n => n.Id.Value == i.Device)?.Name,
                     };
@@ -47,6 +48,7 @@ public sealed partial class WebBridge
                 case "opacity": overlay.SetAppearance(Num(p, "value") ?? _config.OverlayOpacity, _config.OverlayScale); break;
                 case "scale": overlay.SetAppearance(_config.OverlayOpacity, Num(p, "value") ?? _config.OverlayScale); break;
                 case "bare": overlay.SetBare(Bool(p, "value")); break;
+                case "english": overlay.SetEnglish(Bool(p, "value")); break;
                 case "layout": overlay.SetLayout(Str(p, "value")); break;
                 // The address the ping goes to: an IPv4 address or a name. The echoes restart towards it when the overlay is next shown.
                 case "pingTarget":
@@ -88,10 +90,15 @@ public sealed partial class WebBridge
         Method("overlay.preset", p =>
         {
             string id = Str(p, "id");
-            if (!OverlayCatalog.Presets.TryGetValue(id, out var items)) throw new ArgumentException("unknown preset");
-            overlay.Configure(items, id);
+            IReadOnlyList<OverlayChoice>? items = null;
+            if (id.StartsWith("user:", StringComparison.Ordinal)) { if (_config.OverlayUserPresets?.TryGetValue(id[5..], out var mine) == true) items = mine; }
+            else OverlayCatalog.Presets.TryGetValue(id, out items);
+            overlay.Configure(items ?? throw new ArgumentException("unknown preset"), id);
             Save(); return null;
         });
+        // The items shown now, kept under a name of the user's own; and taken away again.
+        Method("overlay.preset.save", p => { if (!overlay.SavePreset(Str(p, "name"))) throw new ArgumentException(Loc.Get("Web_Overlay_Preset_NameBad")); Save(); return null; });
+        Method("overlay.preset.delete", p => { overlay.DeletePreset(Str(p, "name")); Save(); return null; });
 
         // The frame rate the overlay measured at its last update, for the page's preview (sensor items the page reads from the snapshots itself).
         void OnUpdated(Desktop.ViewModels.OverlayViewModel vm)

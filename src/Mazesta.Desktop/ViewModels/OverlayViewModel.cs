@@ -101,14 +101,19 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     private readonly Queue<double> _heroHistory = new();
     public double Opacity { get; }
     public double Scale { get; }
-    public static readonly string[] Layouts = ["list", "columns", "line"];
+    public static readonly string[] Layouts = ["list", "columns", "line", "compact"];
     /// <summary>"list": one column of boxes; "columns": two boxes side by side; "line": everything in one row along the screen's edge, as a strip.</summary>
     /// <summary>No plate and no boxes: the text alone, outlined, the numbers in the part's colour.</summary>
     public bool Bare { get; init; }
     public string Layout { get; }
     public bool TwoColumns => Layout == "columns";
     public bool IsLine => Layout == "line";
-    public bool IsStacked => !IsLine;
+    /// <summary>One line for each part, its name first and its figures one after another, under the frame rate: no labels and no charts but the frame rate's.</summary>
+    public bool IsCompact => Layout == "compact";
+    public bool IsStacked => !IsLine && !IsCompact;
+    /// <summary>Titles and labels in English, the layout left to right, whatever the app's language is.</summary>
+    public bool English { get; }
+    internal string T(string key) => English ? Loc.GetEnglish(key) : Loc.Get(key);
     /// <summary>The widest the boxes have needed since the overlay came on: the panel only ever widens, so a figure gaining a digit does not make it jump back and forth.</summary>
     public float SeenWidth { get; set; }
     /// <summary>Each box keeps 4 px on every side and the list gives back 4 px at its edges: two boxes and the 8 px between them fill the panel.
@@ -124,11 +129,12 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public event Action? Updated;
 
     public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, string layout = "list",
-        IPingSource? ping = null)
+        IPingSource? ping = null, bool english = false)
     {
+        English = english;
         _engine = engine; _dispatch = dispatch; _frames = frames; _ping = ping;
         Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.6); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
-        Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset]);
+        Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset], english);
         _wanted = [.. Sections.SelectMany(s => s.Rows).SelectMany(r => r.Sensors)];
         NeedsFrames = Sections.Any(s => s.Part == OverlayPart.Gaming); NeedsPing = Sections.Any(s => s.Rows.Any(r => r.Item.IsPingItem));
         Blocks = [.. Sections.Where(s => s.Part != OverlayPart.Gaming)];
@@ -151,7 +157,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
 
     /// <summary>The chosen items this machine can show, grouped into blocks (a part, or one drive's own block), the blocks in the order their first
     /// item was put and the items in their chosen order: the technician's order is the overlay's order.</summary>
-    internal static IReadOnlyList<OverlaySection> Build(IReadOnlyList<HardwareNode> hardware, IReadOnlyList<OverlayChoice> choices)
+    internal static IReadOnlyList<OverlaySection> Build(IReadOnlyList<HardwareNode> hardware, IReadOnlyList<OverlayChoice> choices, bool english = false)
     {
         bool Include(HardwareNode n) => n.Kind != HardwareKind.Network || (!NetworkAdapterFilter.IsVirtualBinding(n.Name) && !n.Name.StartsWith("vEthernet", StringComparison.OrdinalIgnoreCase));
         var sections = new List<OverlaySection>();
@@ -168,7 +174,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
                 if (item.Device is not null) section.Subtitle = hardware.FirstOrDefault(n => n.Id.Value == item.Device)?.Name ?? "";
                 sections.Add(section);
             }
-            section.Rows.Add(new(item, Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : item.Of is not null ? Unit.Percent : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
+            section.Rows.Add(new(item, english ? Loc.GetEnglish(item.LabelKey) : Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : item.Of is not null ? Unit.Percent : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
         }
         return sections;
     }
@@ -222,7 +228,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         foreach (double p in points) if (double.IsFinite(p) && !(p <= seen)) seen = p;
         row.TrendMax = row.Item.FixedMax ?? Math.Max((double.IsNaN(seen) ? 0 : seen) * 1.15, 1e-6);
         row.TrendMaxValue = double.IsNaN(seen) ? "" : Text(row, seen);
-        row.TrendCaption = row.TrendMaxValue.Length > 0 ? Loc.Format("Overlay_ChartMax", row.TrendMaxValue) : "";
+        row.TrendCaption = row.TrendMaxValue.Length > 0 ? string.Format(CultureInfo.InvariantCulture, T("Overlay_ChartMax"), row.TrendMaxValue) : "";
         row.Trend = points;
     }
 

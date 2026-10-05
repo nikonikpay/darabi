@@ -1353,6 +1353,14 @@ The update services stopped and disabled</value></data>
   <data name="Overlay_FpsMin" xml:space="preserve"><value>Lowest FPS</value></data>
   <data name="Overlay_FpsMax" xml:space="preserve"><value>Highest FPS</value></data>
   <data name="Web_Overlay_Layout_Line" xml:space="preserve"><value>Line</value></data>
+  <data name="Web_Overlay_Layout_Compact" xml:space="preserve"><value>Compact</value></data>
+  <data name="Web_Overlay_English" xml:space="preserve"><value>English titles</value></data>
+  <data name="Web_Overlay_English_Hint" xml:space="preserve"><value>The overlay&apos;s words in English and its layout left to right, whatever the app&apos;s language is.</value></data>
+  <data name="Web_Overlay_Preset_Save" xml:space="preserve"><value>Save these items as my own set</value></data>
+  <data name="Web_Overlay_Preset_Name" xml:space="preserve"><value>Name of the set</value></data>
+  <data name="Web_Overlay_Preset_NameBad" xml:space="preserve"><value>The name is empty, longer than 40 characters, or one of the ready-made sets&apos;.</value></data>
+  <data name="Web_Overlay_Preset_Delete" xml:space="preserve"><value>Delete this set</value></data>
+  <data name="Web_Overlay_Preset_User_Note" xml:space="preserve"><value>A set you saved</value></data>
   <data name="Tuning_Startup" xml:space="preserve"><value>At sign-in</value></data>
   <data name="Tuning_Startup_Hint" xml:space="preserve"><value>The tray puts the card in this profile at every Windows sign-in (GPU settings are lost on a reboot). Put the card back to stock to stop it.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>It was not kept for the next sign-in: {0}</value></data>

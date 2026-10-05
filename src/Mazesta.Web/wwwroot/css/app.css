@@ -1005,6 +1005,20 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .ov-stat b { font: 700 1.38em/1.05 var(--lat); font-stretch: 76%; color: #fff; }
 .ov-preview.line { overflow-x: auto; }
 .ov-preview.line > * { width: max-content; padding: 7px 8px; }
+/* The compact layout's preview: the frame rate on top, then a line for each part, its name first and its figures after it. */
+.ov-preview.compact > * { width: calc(330px * var(--ov-scale) + 24px); padding: 10px 12px; border-radius: 8px; border: 1px solid rgb(255 255 255 / 0.12); }
+.ov-compact .ov-chead { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.ov-compact .ov-frames { width: 100%; height: auto; margin: 6px 0 4px; border-radius: 3px; }
+.ov-cline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 13px; padding: 5px 0; border-top: 1px solid rgb(255 255 255 / 0.1); }
+.ov-cline .ov-ct { flex: none; min-width: 3.2em; font: 700 0.85em var(--lat); font-stretch: 118%; color: var(--hue); }
+.ov-cline b { font: 700 1.2em/1 var(--lat); font-stretch: 76%; color: #fff; }
+.ov-cline b i { font-style: normal; font-size: 0.6em; color: #aeb4bb; margin-inline-start: 2px; }
+.ov-split:has(.ov-preview.compact) { grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); }
+.ov-saveset { margin-top: 10px; gap: 8px; align-items: center; }
+.ov-saveset .field { min-width: 200px; }
+.preset.user { display: flex; align-items: stretch; gap: 4px; padding: 0; }
+.preset.user .preset-main { flex: 1; display: flex; align-items: center; gap: 10px; background: none; border: 0; color: inherit; text-align: start; cursor: pointer; padding: 12px; font: inherit; }
+.preset.user > .icon-btn { align-self: center; margin-inline-end: 8px; }
 .ov-strip { display: flex; gap: 6px; align-items: stretch; }
 .ov-strip::before { content: ""; width: 3px; background: var(--yellow); margin-block: 4px; }
 .ov-strip .ov-card { display: flex; align-items: center; gap: 11px; padding: 5px 9px; }

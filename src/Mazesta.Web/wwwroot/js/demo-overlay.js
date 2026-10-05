@@ -24,7 +24,7 @@ const PRESETS = {
 // The items with a fixed 0-100 top (percentages and temperatures), as FixedMax in the catalog.
 const HUNDRED = new Set(["gpu.temp", "gpu.hotspot", "gpu.vramtemp", "gpu.load", "gpu.fan", "cpu.temp", "cpu.hotcore", "cpu.load", "cpu.maxthread", "ram.load", "ram.temp", "storage.temp", "storage.activity", "net.loss"]);
 const parse = (spec) => spec.split(" ").map((s) => ({ id: s.replace(":c", ""), chart: s.endsWith(":c") }));
-let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1, layout = "list", pingTarget = "8.8.8.8";
+let chosen = parse(PRESETS.game), preset = "game", visible = false, corner = "TopLeft", opacity = 0.9, scale = 1, layout = "list", pingTarget = "8.8.8.8", english = false; const userPresets = new Map();
 const PER_DRIVE = ["storage.read", "storage.write", "storage.temp", "storage.activity"];
 // Each drive's own items, as OverlayCatalog.ForDrives makes them: "base@device", the base item read on that drive only.
 function drives(hw) {
@@ -40,19 +40,21 @@ function resolve(hw, [, part, , roles, agg = "First", device]) {
 }
 
 export function overlay(m, p, hw, strings, emit) {
-  const state = () => ({ visible, corner, opacity, scale, preset, layout, hotkey: "Ctrl+Shift+O", frameProblem: null, pingTarget,
+  const state = () => ({ visible, corner, opacity, scale, preset, layout, english, userPresets: [...userPresets].map(([name, items]) => ({ id: "user:" + name, name, count: items.length })), hotkey: "Ctrl+Shift+O", frameProblem: null, pingTarget,
     corners: ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((c) => ({ value: c, label: strings[`Overlay_Corner_${c}`] })),
     presets: Object.entries(PRESETS).map(([id, spec]) => ({ id, count: parse(spec).length })), order: chosen.map((c) => c.id),
     items: [...CATALOG, ...drives(hw)].map((c) => { const sensors = resolve(hw, c), ch = chosen.find((x) => x.id === c[0]);
-      return { id: c[0], part: c[1], label: strings[c[2]] ?? c[2], frame: !c[3].length, available: !c[3].length || sensors.length > 0, on: !!ch, chart: ch?.chart ?? false, aggregate: c[4] || "First", max: HUNDRED.has(c[0].split("@")[0]) ? 100 : null, sensors,
+      return { id: c[0], part: c[1], label: strings[c[2]] ?? c[2], labelEn: strings[c[2]] ?? c[2], frame: !c[3].length, available: !c[3].length || sensors.length > 0, on: !!ch, chart: ch?.chart ?? false, aggregate: c[4] || "First", max: HUNDRED.has(c[0].split("@")[0]) ? 100 : null, sensors,
         device: c[5]?.id ?? null, deviceName: c[5]?.name ?? null }; }) });
   const changed = () => { setTimeout(() => emit("overlayState", state()), 30); return null; };
   switch (m) {
     case "overlay.state": return state();
     case "overlay.set":
-      if (p.field === "visible") visible = p.value; if (p.field === "corner") corner = p.value; if (p.field === "opacity") opacity = p.value; if (p.field === "scale") scale = p.value; if (p.field === "layout") layout = p.value; if (p.field === "pingTarget") pingTarget = p.value || "8.8.8.8";
+      if (p.field === "visible") visible = p.value; if (p.field === "corner") corner = p.value; if (p.field === "opacity") opacity = p.value; if (p.field === "scale") scale = p.value; if (p.field === "layout") layout = p.value; if (p.field === "english") english = p.value; if (p.field === "pingTarget") pingTarget = p.value || "8.8.8.8";
       return changed();
-    case "overlay.preset": chosen = parse(PRESETS[p.id]); preset = p.id; return changed();
+    case "overlay.preset": chosen = p.id.startsWith("user:") ? structuredClone(userPresets.get(p.id.slice(5))) : parse(PRESETS[p.id]); preset = p.id; return changed();
+    case "overlay.preset.save": userPresets.set(p.name, structuredClone(chosen)); preset = "user:" + p.name; return changed();
+    case "overlay.preset.delete": userPresets.delete(p.name); if (preset === "user:" + p.name) preset = "custom"; return changed();
     case "overlay.order": { const next = p.ids.map((id) => chosen.find((c) => c.id === id)).filter(Boolean); chosen = [...next, ...chosen.filter((c) => !next.includes(c))]; return changed(); }
     case "overlay.item": {
       const i = chosen.findIndex((c) => c.id === p.id);

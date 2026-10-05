@@ -264,7 +264,7 @@ const demoGame = () => ({ on: gameOn, busy: false, held: gameOn ? GAME.filter((x
   services: GAME.map((x) => ({ ...x, note: strings[`GameBoost_Svc_${x.name}`], running: x.present ? (gameOn && x.chosen && x.name !== "DoSvc" ? false : x.running) : null, disabled: x.present ? gameOn && x.chosen && x.name !== "DoSvc" : null, error: null })) });
 
 // Lights and fans, as an OpenRGB with a RAM kit, a graphics card and a board with two addressable headers, and a board with three fan outputs, would answer.
-let rgbOn = false, rgbMakers = [], fanSet = {};
+let rgbOn = false, rgbMakers = [], fanSet = {}, fanProfile = "auto"; const fanCustom = [];
 const rgbMode = (i, name, color, speed = false, bright = false) => ({ index: i, name, color, speed, brightness: bright, speedNow: 60, brightnessNow: 100 });
 const RGB_DEVICES = () => [
   { index: 0, kind: "Memory", name: "Corsair Vengeance RGB RT", vendor: "Corsair", location: "I2C: SMBus 0x19", leds: 10, active: 0, color: "#ff2bd6", colors: Array(10).fill("#ff2bd6"), zones: [{ index: 0, name: "DRAM", leds: 10, min: 10, max: 10, resizable: false }],
@@ -277,10 +277,10 @@ const RGB_DEVICES = () => [
 ];
 const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Static", "Rainbow Wave", "Breathing"] : [], devices: rgbOn ? RGB_DEVICES() : [] });
 const FAN_NAMES = [["CPU Fan", 1180], ["Chassis Fan #1", 760], ["Chassis Fan #2", 690]];
-const fansState = () => ({ supported: true, error: null, floor: 20, guard: 85, cpu: 54, gpu: 61,
+const fansState = () => ({ supported: true, error: null, floor: 20, pumpFloor: 60, guard: 85, cpu: 54, gpu: 61, profile: fanProfile, profiles: { builtin: ["auto", "silent", "standard", "performance", "full"], custom: fanCustom },
   presets: { silent: [[30, 20], [50, 25], [65, 40], [75, 65], [85, 100]], standard: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]], performance: [[30, 45], [45, 60], [60, 80], [70, 100]], full: [[20, 100], [100, 100]] },
   channels: FAN_NAMES.map(([name, rpm], i) => { const s = fanSet[`f${i}`] || { mode: "auto", manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] };
-    return { id: `f${i}`, name, part: "Nuvoton NCT6798D", percent: s.mode === "manual" ? s.manual : 42 + i * 3, rpm, held: s.mode !== "auto", mode: s.mode, manual: s.manual, source: s.source, points: s.points, min: 20, max: 100 }; }) });
+    return { id: `f${i}`, name, boardName: name, kind: i === 0 ? "cpu" : "case", wired: true, part: "Nuvoton NCT6798D", percent: s.mode === "manual" ? s.manual : 42 + i * 3, rpm, held: s.mode !== "auto", mode: s.mode, manual: s.manual, source: s.source, points: s.points, min: 20, max: 100 }; }) });
 
 export async function call(m, p, emit) {
   emitRef = emit;
@@ -374,7 +374,12 @@ export async function call(m, p, emit) {
     case "rgb.set": case "rgb.zone": return rgbState();
     case "fans.state": return fansState();
     case "fans.set": fanSet[p.id] = { ...(fanSet[p.id] || { manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] }), mode: p.mode, ...(p.percent != null ? { manual: p.percent } : {}), ...(p.source ? { source: p.source } : {}), ...(p.points ? { points: p.points } : {}) }; return fansState();
-    case "fans.reset": fanSet = {}; return fansState();
+    case "fans.reset": fanSet = {}; fanProfile = "auto"; return fansState();
+    case "fans.profile": fanProfile = p.name; return fansState();
+    case "fans.profile.save": fanCustom.push(p.name); fanProfile = p.name; return fansState();
+    case "fans.profile.delete": fanCustom.splice(fanCustom.indexOf(p.name), 1); fanProfile = "custom"; return fansState();
+    case "fans.label": return fansState();
+    case "fans.identify": await new Promise((r) => setTimeout(r, 1200)); return { id: p.id, answer: "fan", start: 700, peak: 1500, duty: 40, suggest: null };
     case "tuning.state": return tuning();
     case "tuning.set": if (p.field === "curve") { form.core = p.core; form.coreValue = +p.core; form.capValue = +p.cap; form.maxClock = p.cap; } return null;
     case "reports.state": return reports();

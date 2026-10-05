@@ -1,5 +1,5 @@
 using System.Drawing; using System.Drawing.Drawing2D; using System.Drawing.Imaging; using System.Drawing.Text; using System.Globalization;
-using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels;
+using Mazesta.Core.Overlay; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels;
 namespace Mazesta.Desktop.Views;
 
 /// <summary>
@@ -26,6 +26,9 @@ public static class OverlayRenderer
     /// <summary>The look being drawn: no plate, no boxes, the text alone with a dark outline and the numbers in the part's colour. Set by
     /// <see cref="Render"/> (one overlay is drawn at a time, on the UI thread) so the many draw calls need not carry it.</summary>
     [ThreadStatic] private static bool s_bare;
+    /// <summary>The overlay's own words in English whatever the app's language is (set by <see cref="Render"/> like <see cref="s_bare"/>).</summary>
+    [ThreadStatic] private static bool s_english;
+    private static string Tr(string key) => s_english ? Loc.GetEnglish(key) : Loc.Get(key);
     private static Color Num(Color hue) => s_bare ? hue : Color.White;
 
     private static FontFamily? AppFace()
@@ -54,10 +57,11 @@ public static class OverlayRenderer
     /// <summary>The overlay at <paramref name="pixelsPerDip"/> (the screen's scale times the user's size), drawn premultiplied for a layered window.</summary>
     public static Bitmap Render(OverlayViewModel vm, bool rtl, float pixelsPerDip)
     {
-        s_bare = vm.Bare;
+        s_bare = vm.Bare; s_english = vm.English;
+        if (vm.IsCompact) rtl = false;   // its names and figures are Latin, and it reads from the left in either language
         using var probe = new Bitmap(1, 1); using var pg = Graphics.FromImage(probe);
         Prepare(pg);
-        var size = vm.IsLine ? Line(pg, vm, rtl, 0, 0, null) : Stack(pg, vm, rtl, 0, 0, null);
+        var size = vm.IsLine ? Line(pg, vm, rtl, 0, 0, null) : vm.IsCompact ? Compact(pg, vm, rtl, 0, 0, null) : Stack(pg, vm, rtl, 0, 0, null);
         float pad = 9;   // the plate's 1 px edge and 8 px padding
         float w = size.Width + 2 * pad, h = size.Height + 2 * pad;
         var bmp = new Bitmap(Math.Max(1, (int)Math.Ceiling(w * pixelsPerDip)), Math.Max(1, (int)Math.Ceiling(h * pixelsPerDip)), PixelFormat.Format32bppPArgb);
@@ -68,7 +72,7 @@ public static class OverlayRenderer
             using var fill = new SolidBrush(Color.FromArgb((int)Math.Round(vm.Opacity * 255), Ink)); g.FillPath(fill, plate);
             using var edge = new Pen(Hex("#1FFFFFFF"), 1); g.DrawPath(edge, plate);
         }
-        if (vm.IsLine) Line(g, vm, rtl, pad, pad, g); else Stack(g, vm, rtl, pad, pad, g);
+        if (vm.IsLine) Line(g, vm, rtl, pad, pad, g); else if (vm.IsCompact) Compact(g, vm, rtl, pad, pad, g); else Stack(g, vm, rtl, pad, pad, g);
         return bmp;
     }
 
@@ -265,7 +269,7 @@ public static class OverlayRenderer
                     if (row.TrendMaxValue.Length > 0)
                     {
                         // The word, then the value in its own left-to-right run ("71 °C" would be reordered inside right-to-left text).
-                        string word = Loc.Get("Overlay_ChartMaxWord"); var wd = Text(m, word, PlainFace, ChartWordSize, FontStyle.Bold, rtl); var vl = Text(m, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold);
+                        string word = Tr("Overlay_ChartMaxWord"); var wd = Text(m, word, PlainFace, ChartWordSize, FontStyle.Bold, rtl); var vl = Text(m, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold);
                         var dim = Hex("#E6FFFFFF");
                         if (rtl) { Draw(g, word, PlainFace, ChartWordSize, FontStyle.Bold, dim, r.Right - 4 - wd.Width, r.Y + 1, true); Draw(g, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold, dim, r.Right - 4 - wd.Width - 3 - vl.Width, r.Y + 1); }
                         else { Draw(g, word, PlainFace, ChartWordSize, FontStyle.Bold, dim, r.X + 4, r.Y + 1); Draw(g, row.TrendMaxValue, NumFace, ChartWordSize, FontStyle.Bold, dim, r.X + 4 + wd.Width + 3, r.Y + 1); }
@@ -277,6 +281,122 @@ public static class OverlayRenderer
         }
         y += 7;
         return y - y0;
+    }
+
+    // ——— Compact: the frame rate on top (the rate big, a few figures beside it, its last minute under it), then one line for each part: the part's name first,
+    // then its figures one after another, each a number with its unit small; no labels and no charts of their own. A line too long wraps under its own name. ———
+    private sealed record Strip(string Title, string Hue, List<OverlayRow> Rows);
+
+    /// <summary>The lines of the compact layout: a line for each part, the graphics card's memory (its use, clock and temperature) on a line of its own.</summary>
+    private static List<Strip> Strips(OverlayViewModel vm)
+    {
+        var list = new List<Strip>();
+        foreach (var s in vm.Blocks)
+        {
+            if (s.Part == OverlayPart.Gpu)
+            {
+                var vram = s.Rows.Where(r => r.Id is "gpu.vram" or "gpu.vramload" or "gpu.memclock" or "gpu.vramtemp").ToList();
+                var gpu = s.Rows.Where(r => !vram.Contains(r)).ToList();
+                if (gpu.Count > 0) list.Add(new("GPU", s.Hue, gpu));
+                if (vram.Count > 0) list.Add(new("VRAM", s.Hue, vram));
+            }
+            else list.Add(new(s.Part == OverlayPart.Memory ? "MEM" : s.Title, s.Hue, [.. s.Rows]));
+        }
+        return list;
+    }
+
+    /// <summary>The figures beside the big frame rate: the 1 % and 0.1 % lows, the frame time, then the session's average, lowest and highest.</summary>
+    private static List<(OverlayRow Row, string Tag)> HeroSide(OverlayViewModel vm)
+    {
+        var side = new List<(OverlayRow Row, string Tag)>();
+        if (vm.HeroLow is { } low) side.Add((low, "1% LOW"));
+        if (vm.HeroLow01 is { } low01) side.Add((low01, "0.1% LOW"));
+        if (vm.HeroFrameTime is { } ft) side.Add((ft, "MS"));
+        foreach (var (row, tag) in new[] { (vm.HeroAvg, "AVG"), (vm.HeroMin, "MIN"), (vm.HeroMax, "MAX") }) if (row is not null) side.Add((row, tag));
+        return side;
+    }
+
+    private static SizeF Compact(Graphics m, OverlayViewModel vm, bool rtl, float x0, float y0, Graphics? g)
+    {
+        const float Gap = 14, MaxLine = 540, TitleSize = 12.5f, NumSize = 15.5f, UnitPx = 9.5f, LinePad = 5, SideRow = 17;
+        var strips = Strips(vm);
+        float titleW = strips.Select(st => Text(m, st.Title, TagFace, TitleSize, FontStyle.Bold).Width).DefaultIfEmpty(0).Max() + 12;
+        float numH = Text(m, "0", NumFace, NumSize, FontStyle.Bold).Height, rowH = numH + 2 * LinePad;
+        float Fig(OverlayRow r) { var n = Text(m, r.Number, NumFace, NumSize, FontStyle.Bold); var u = Text(m, r.UnitText, NumFace, UnitPx, FontStyle.Bold); return n.Width + (r.UnitText.Length > 0 ? 2 + u.Width : 0); }
+        // The figures laid out in lines that wrap at MaxLine; the first line of a part carries its name.
+        var lines = new List<(Strip Strip, bool First, List<OverlayRow> Rows)>(); float need = 120;
+        foreach (var st in strips)
+        {
+            var cur = new List<OverlayRow>(); float w = titleW; bool first = true;
+            foreach (var r in st.Rows)
+            {
+                float fw = Fig(r);
+                if (cur.Count > 0 && w + Gap + fw > MaxLine) { lines.Add((st, first, cur)); first = false; cur = []; w = titleW; }
+                w += (cur.Count > 0 ? Gap : 0) + fw; cur.Add(r); need = Math.Max(need, w);
+            }
+            if (cur.Count > 0) lines.Add((st, first, cur));
+        }
+        var side = HeroSide(vm);
+        if (vm.HasHero)
+        {
+            float rate = vm.HeroFps is { } f ? Text(m, f.Number, NumFace, HeroSize, FontStyle.Bold).Width + 8 + Text(m, "FPS", TagFace, 10.5f, FontStyle.Bold).Width : 0;
+            float sideW = side.Select(p => Text(m, p.Row.Number, NumFace, 15, FontStyle.Bold).Width + 6 + Text(m, p.Tag, TagFace, 9, FontStyle.Bold).Width).DefaultIfEmpty(0).Max();
+            need = Math.Max(need, rate + 24 + sideW);
+        }
+        // Only ever wider than before, so a figure gaining a digit does not make the panel jump back and forth.
+        float W = vm.SeenWidth = Math.Max(vm.SeenWidth, (float)Math.Ceiling(need)), y = y0; bool hero = false;
+        // The frame-rate part reads left to right in either language.
+        if (vm.HasHero)
+        {
+            hero = true;
+            float bigH = Text(m, "0", NumFace, HeroSize, FontStyle.Bold).Height, topH = Math.Max(vm.HeroFps is null ? 0 : bigH, side.Count * SideRow);
+            if (g is not null)
+            {
+                if (vm.HeroFps is { } fps)
+                {
+                    var n = Text(m, fps.Number, NumFace, HeroSize, FontStyle.Bold);
+                    Draw(g, fps.Number, NumFace, HeroSize, FontStyle.Bold, Num(Game), x0, y + (topH - n.Height) / 2);
+                    var tg = Text(m, "FPS", TagFace, 10.5f, FontStyle.Bold);
+                    Draw(g, "FPS", TagFace, 10.5f, FontStyle.Bold, Game, x0 + n.Width + 6, y + (topH + n.Height) / 2 - tg.Height - 4);
+                }
+                float sy = y + (topH - side.Count * SideRow) / 2;
+                foreach (var (row, tag) in side)
+                {
+                    var n = Text(m, row.Number, NumFace, 15, FontStyle.Bold); var tg = Text(m, tag, TagFace, 9, FontStyle.Bold);
+                    Draw(g, tag, TagFace, 9, FontStyle.Bold, Faint, x0 + W - tg.Width, sy + SideRow - tg.Height - 2);
+                    Draw(g, row.Number, NumFace, 15, FontStyle.Bold, Num(Game), x0 + W - tg.Width - 6 - n.Width, sy + SideRow - n.Height);
+                    sy += SideRow;
+                }
+            }
+            y += topH;
+            if (vm.HeroFps is not null)
+            {
+                y += 6;
+                if (g is not null) FrameChart(g, new RectangleF(x0, y, W, 40), vm.HeroTrend, vm.HeroLowValue, Game, OverlayViewModel.TrendLength);
+                y += 40;
+            }
+            if (lines.Count > 0) y += 4;
+        }
+        for (int i = 0; i < lines.Count; i++)
+        {
+            var (strip, first, rows) = lines[i]; var hue = Hex(strip.Hue);
+            if (g is not null)
+            {
+                if (first && (i > 0 || hero)) using (var sep = new Pen(Hex("#1FFFFFFF"), 1)) g.DrawLine(sep, x0, y + 0.5f, x0 + W, y + 0.5f);
+                var tt = Text(m, strip.Title, TagFace, TitleSize, FontStyle.Bold);
+                if (first) Draw(g, strip.Title, TagFace, TitleSize, FontStyle.Bold, hue, rtl ? x0 + W - tt.Width : x0, y + (rowH - tt.Height) / 2);
+                float cx = rtl ? x0 + W - titleW : x0 + titleW;
+                foreach (var r in rows)
+                {
+                    var n = Text(m, r.Number, NumFace, NumSize, FontStyle.Bold); var u = Text(m, r.UnitText, NumFace, UnitPx, FontStyle.Bold); float fw = Fig(r), fx = rtl ? cx - fw : cx;
+                    Draw(g, r.Number, NumFace, NumSize, FontStyle.Bold, Num(hue), fx, y + (rowH - n.Height) / 2);
+                    if (r.UnitText.Length > 0) Draw(g, r.UnitText, NumFace, UnitPx, FontStyle.Bold, s_bare ? hue : Faint, fx + n.Width + 2, y + (rowH + n.Height) / 2 - u.Height - 2);
+                    cx = rtl ? fx - Gap : fx + fw + Gap;
+                }
+            }
+            y += rowH;
+        }
+        return new SizeF(W, Math.Max(1, y - y0));
     }
 
     // ——— Line: one strip of boxes side by side, each reading a label over its number ———

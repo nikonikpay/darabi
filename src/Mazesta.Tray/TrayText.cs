@@ -34,7 +34,7 @@ internal static class TrayText
 
     public const string HotSpot = "نقطه‌ی داغ";
 
-    public const string Overlay = "نمایش اورلی روی صفحه";
+    public const string Overlay = "نمایش نمودارها روی صفحه";
     public const string GpuProfiles = "پروفایل کارت گرافیک";
     public const string Fans = "پروفایل فن";
     public const string FanCustom = "سفارشی (تنظیم دستی در برنامه)";

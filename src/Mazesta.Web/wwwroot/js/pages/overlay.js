@@ -38,9 +38,11 @@ export function mount(el) {
   const seg = (label, field, options) => h("div", { class: "seg", role: "group", "aria-label": label }, options.map(([v, k]) =>
     h("button", { type: "button", "data-v": v, onclick: () => call("overlay.set", { field, value: field === "scale" ? +v : v }) }, t(k))));
   const sizes = seg(t("Web_Overlay_Size"), "scale", [["0.85", "Web_Overlay_Small"], ["1", "Web_Overlay_Normal"], ["1.2", "Web_Overlay_Large"], ["1.5", "Web_Overlay_XLarge"]]);
-  const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"], ["line", "Web_Overlay_Layout_Line"]]);
+  const layouts = seg(t("Web_Overlay_Layout"), "layout", [["list", "Web_Overlay_Layout_List"], ["columns", "Web_Overlay_Layout_Columns"], ["line", "Web_Overlay_Layout_Line"], ["compact", "Web_Overlay_Layout_Compact"]]);
   // No plate and no boxes: only the text, outlined, in the parts' colours.
   const bare = h("input", { type: "checkbox", class: "switch", "aria-label": t("Web_Overlay_Bare"), title: t("Web_Overlay_Bare_Hint"), onchange: (e) => call("overlay.set", { field: "bare", value: e.target.checked }) });
+  // The overlay's own words in English and its layout left to right, whatever the app's language is.
+  const english = h("input", { type: "checkbox", class: "switch", "aria-label": t("Web_Overlay_English"), title: t("Web_Overlay_English_Hint"), onchange: (e) => call("overlay.set", { field: "english", value: e.target.checked }) });
   const hotkey = h("span", { class: "kbd lat" });
   // Where the ping, loss and jitter are measured to: an address or a name (a game server's, for the figure that matters in that game).
   const pingTarget = h("input", { class: "field lat", style: { width: "150px" }, "aria-label": t("Web_Overlay_PingTarget"), title: t("Web_Overlay_PingTarget_Hint"),
@@ -48,6 +50,14 @@ export function mount(el) {
   const problem = h("p", { class: "banner", hidden: true });
 
   const presets = h("div", { class: "presets" });
+  const saveName = h("input", { class: "field", type: "text", maxlength: 40, placeholder: t("Web_Overlay_Preset_Name"), "aria-label": t("Web_Overlay_Preset_Name"),
+    onkeydown: (e) => { if (e.key === "Enter") saveSet(); } });
+  const saveBtn = h("button", { class: "btn", type: "button", onclick: () => saveSet() }, icon("check"), t("Web_Overlay_Preset_Save"));
+  function saveSet() {
+    const name = saveName.value.trim(); if (!name) return;
+    call("overlay.preset.save", { name }).then(() => { saveName.value = ""; }).catch((x) => toast(String(x.message || x)));
+  }
+  const saveRow = h("div", { class: "btn-row ov-saveset" }, saveName, saveBtn);
   const groups = h("div", { class: "ov-groups" });
   const order = h("div", { class: "ov-order" });
   const preview = h("div", { class: "ov-preview", "aria-label": t("Web_Overlay_Preview") });
@@ -61,9 +71,10 @@ export function mount(el) {
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Size")), sizes),
       h("label", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_PingTarget")), pingTarget),
       h("label", { class: "ov-ctl grow" }, h("span", {}, t("Web_Overlay_Opacity")), opacity),
-      h("label", { class: "ov-ctl", title: t("Web_Overlay_Bare_Hint") }, h("span", {}, t("Web_Overlay_Bare")), bare)),
+      h("label", { class: "ov-ctl", title: t("Web_Overlay_Bare_Hint") }, h("span", {}, t("Web_Overlay_Bare")), bare),
+      h("label", { class: "ov-ctl", title: t("Web_Overlay_English_Hint") }, h("span", {}, t("Web_Overlay_English")), english)),
     problem,
-    h("h2", { class: "section-title" }, t("Web_Overlay_Presets")), presets,
+    h("h2", { class: "section-title" }, t("Web_Overlay_Presets")), presets, saveRow,
     h("div", { class: "ov-split" },
       h("div", {},
         h("h2", { class: "section-title" }, t("Web_Overlay_Order")), h("p", { class: "caption" }, t("Web_Overlay_OrderNote")), order,
@@ -80,6 +91,14 @@ export function mount(el) {
         h("span", { class: "ico" }, icon(PRESET_ICON[p.id] || "overlay")),
         h("span", { class: "txt" }, h("b", {}, t(`Web_Overlay_Preset_${p.id}`)), h("small", {}, t(`Web_Overlay_Preset_${p.id}_Note`))),
         h("span", { class: "cnt" }, active ? [icon("check"), t("Web_Overlay_InUse")] : t("Web_Overlay_ItemsCount", fa(p.count))));
+    }), ...(s.userPresets || []).map((p) => {
+      const active = s.preset === p.id;
+      return h("div", { class: `preset user ${active ? "on" : ""}` },
+        h("button", { class: "preset-main", type: "button", "aria-pressed": String(active), onclick: () => call("overlay.preset", { id: p.id }) },
+          h("span", { class: "ico" }, icon("overlay")),
+          h("span", { class: "txt" }, h("b", {}, p.name), h("small", {}, t("Web_Overlay_Preset_User_Note"))),
+          h("span", { class: "cnt" }, active ? [icon("check"), t("Web_Overlay_InUse")] : t("Web_Overlay_ItemsCount", fa(p.count)))),
+        h("button", { class: "icon-btn", type: "button", title: t("Web_Overlay_Preset_Delete"), "aria-label": `${t("Web_Overlay_Preset_Delete")}: ${p.name}`, onclick: () => call("overlay.preset.delete", { name: p.name }) }, icon("x")));
     }), s.preset === "custom" ? h("div", { class: "preset custom on", role: "status" }, h("span", { class: "ico" }, icon("overlay")),
       h("span", { class: "txt" }, h("b", {}, t("Web_Overlay_Preset_custom")), h("small", {}, t("Web_Overlay_Preset_custom_Note")))) : "");
   }
@@ -205,8 +224,10 @@ export function mount(el) {
   function split(c) { if (!c) return ["—", ""]; const i = c.text.lastIndexOf(" "); return i > 0 ? [c.text.slice(0, i), c.text.slice(i + 1)] : [c.text, ""]; }
   function renderPreview() {
     const blocks = shownBlocks(), game = blocks.find((b) => b.part === "Gaming"), cards = blocks.filter((b) => b.part !== "Gaming");
-    const line = state.layout === "line";
-    preview.classList.toggle("cols", state.layout === "columns"); preview.classList.toggle("line", line);
+    const line = state.layout === "line", compact = state.layout === "compact", lab = (it) => (state.english && it.labelEn) || it.label;
+    preview.classList.toggle("cols", state.layout === "columns"); preview.classList.toggle("line", line); preview.classList.toggle("compact", compact);
+    preview.dir = compact || state.english ? "ltr" : "";
+    if (compact) { renderCompact(blocks, game, cards); return; }
     const get = (id) => game?.items.find((x) => x.id === id);
     const stat = (id, tag) => { const it = get(id); return it ? h("div", { class: "ov-stat" }, h("small", {}, tag), h("b", { class: "num" }, split(current(it))[0])) : null; };
     const title = (b) => h("div", { class: "ov-title" }, h("span", { class: "ov-key" }, SHORT[b.part]), b.device && !line ? h("small", {}, b.deviceName || "") : null);
@@ -218,7 +239,7 @@ export function mount(el) {
           stat("low1", "1% LOW"), stat("low01", "0.1% LOW"), stat("fps.avg", "AVG"), stat("fps.min", "MIN"), stat("fps.max", "MAX"), stat("frametime", "MS")) : null,
         cards.map((b) => h("div", { class: `ov-card ${part(b.part).cls}` }, title(b), b.items.map((it) => {
           const [num, unit] = split(current(it));
-          return h("div", { class: "ov-stat" }, h("small", {}, it.label), h("b", { class: "num" }, num, unit ? h("i", {}, unit) : null));
+          return h("div", { class: "ov-stat" }, h("small", {}, lab(it)), h("b", { class: "num" }, num, unit ? h("i", {}, unit) : null));
         })))));
       if (!blocks.length) preview.append(h("p", { class: "caption" }, t("Web_Overlay_Empty")));
       return;
@@ -242,10 +263,30 @@ export function mount(el) {
         h("div", { class: `ov-card ${part(b.part).cls}` }, title(b),
           b.items.map((it) => {
             const c = current(it), [num, unit] = split(c);
-            return h("div", { class: "ov-line" }, h("div", { class: "ov-lv" }, h("span", {}, it.label), h("b", { class: "num" }, num, unit ? h("small", {}, unit) : null)),
+            return h("div", { class: "ov-line" }, h("div", { class: "ov-lv" }, h("span", {}, lab(it)), h("b", { class: "num" }, num, unit ? h("small", {}, unit) : null)),
               it.chart ? spark(history.get(it.id) || [], hueOf(b.part))
                 : it.max && c ? h("div", { class: "ov-meter" }, h("i", { style: { "--p": Math.min(1, Math.max(0, c.v / it.max)) } })) : null);
           })))));
+    if (!blocks.length) preview.append(h("p", { class: "caption" }, t("Web_Overlay_Empty")));
+  }
+  // The compact layout: the frame rate big with its few figures beside it and its trace under it, then a line for each part (the graphics card's memory on its own):
+  // the part's name, then its figures one after another, no labels and no charts. Always left to right, in Latin.
+  const VRAM = ["gpu.vram", "gpu.vramload", "gpu.memclock", "gpu.vramtemp"];
+  function renderCompact(blocks, game, cards) {
+    const get = (id) => game?.items.find((x) => x.id === id), fps = get("fps"), low = get("low1");
+    const side = [["low1", "1% LOW"], ["low01", "0.1% LOW"], ["frametime", "MS"], ["fps.avg", "AVG"], ["fps.min", "MIN"], ["fps.max", "MAX"]].map(([id, tag]) => {
+      const it = get(id); return it ? h("div", { class: "ov-side-v" }, h("b", { class: "num" }, split(current(it))[0]), h("small", {}, tag)) : null;
+    }).filter(Boolean);
+    const lines = [];
+    for (const b of cards) {
+      const name = SHORT[b.part] === "RAM" ? "MEM" : SHORT[b.part];
+      const groups = b.part === "Gpu" ? [["GPU", b.items.filter((i) => !VRAM.includes(i.id))], ["VRAM", b.items.filter((i) => VRAM.includes(i.id))]] : [[name, b.items]];
+      for (const [title, its] of groups) if (its.length) lines.push(h("div", { class: `ov-cline ${part(b.part).cls}` }, h("span", { class: "ov-ct" }, title),
+        its.map((it) => { const [num, unit] = split(current(it)); return h("b", { class: "num" }, num, unit ? h("i", {}, unit) : null); })));
+    }
+    preview.replaceChildren(h("div", { class: "ov-compact" },
+      game && (fps || side.length) ? h("div", { class: "ov-chead p-game" }, fps ? h("div", { class: "ov-fps" }, h("b", { class: "num" }, split(current(fps))[0]), h("small", {}, "FPS")) : h("span"), h("div", { class: "ov-hero-side" }, side)) : null,
+      fps ? frameChart(history.get("fps") || [], low ? current(low)?.v ?? null : null) : null, lines));
     if (!blocks.length) preview.append(h("p", { class: "caption" }, t("Web_Overlay_Empty")));
   }
   // The frame rate's last minute as a trace on a scope screen: dotted divisions, the area under the line faintly filled, the 1 % low as a
@@ -292,7 +333,7 @@ export function mount(el) {
     const rebuild = !state || key(s) !== key(state);
     const reorder = rebuild || JSON.stringify(s.order) !== JSON.stringify(state.order);
     state = s;
-    bare.checked = s.bare; preview.classList.toggle("bare", !!s.bare);
+    bare.checked = s.bare; english.checked = !!s.english; preview.classList.toggle("bare", !!s.bare);
     show.checked = s.visible; hotkey.textContent = s.hotkey;
     if (!corner.options.length) corner.replaceChildren(...s.corners.map((c) => h("option", { value: c.value }, c.label)));
     corner.value = s.corner;
