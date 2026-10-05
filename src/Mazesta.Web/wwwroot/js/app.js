@@ -172,6 +172,7 @@ async function start() {
   const mark = (u) => index.querySelector(`a[data-family="${FAMILIES.length - 1}"]`)?.classList.toggle("has-update", ["Available", "Ready"].includes(u?.state));
   on("upd", mark); call("upd.state").then(mark).catch(() => {});
   if (info.updated) toast(t("AppUpd_Done", info.version));
+  import("./updatenotice.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   // The pages read the hardware list once; they wait until the sensor scan has settled, as the WPF edition does.
   if (await call("app.navReady")) whenReady();
   else bootCard(info.provider.text);

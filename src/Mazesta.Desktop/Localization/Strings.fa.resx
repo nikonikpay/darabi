@@ -1384,6 +1384,11 @@
   <data name="AppUpd_Failed" xml:space="preserve"><value>به‌روزرسانی انجام نشد: {0}</value></data>
   <data name="AppUpd_ConfirmInstall" xml:space="preserve"><value>برنامه برای نصب نسخه {0} بسته و دوباره باز می‌شود. تست یا بنچمارکی که الان در حال اجراست متوقف می‌شود. ادامه می‌دهید؟</value></data>
   <data name="AppUpd_Notes" xml:space="preserve"><value>تغییرات این نسخه</value></data>
+  <data name="AppUpd_UpdateNow" xml:space="preserve"><value>به‌روزرسانی همین حالا</value></data>
+  <data name="AppUpd_Notice_Title" xml:space="preserve"><value>نسخه‌ی {0} آماده است</value></data>
+  <data name="AppUpd_Notice_Later" xml:space="preserve"><value>بعداً</value></data>
+  <data name="AppUpd_Notice_Restart" xml:space="preserve"><value>با یک کلیک همه‌چیز انجام می‌شود: به‌روزرسانی دانلود و بررسی می‌شود، برنامه خودش بسته می‌شود، آن را نصب می‌کند و دوباره باز می‌شود. تست یا بنچمارکی که در حال اجراست متوقف می‌شود؛ تنظیمات و گزارش‌های شما می‌ماند.</value></data>
+  <data name="AppUpd_NoNotes" xml:space="preserve"><value>برای این نسخه توضیحی منتشر نشده است.</value></data>
   <data name="AppUpd_Size" xml:space="preserve"><value>{0} مگابایت · {1}</value></data>
   <data name="AppUpd_Checked" xml:space="preserve"><value>آخرین بررسی: {0}</value></data>
   <data name="AppUpd_Done" xml:space="preserve"><value>مزستا به نسخه {0} به‌روز شد.</value></data>

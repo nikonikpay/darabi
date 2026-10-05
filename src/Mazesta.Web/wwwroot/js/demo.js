@@ -368,6 +368,7 @@ export async function call(m, p, emit) {
     case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),
       latest: { version: "0.7.0", size: 48234496, date: "2026/09/29", notes: "- به‌روزرسانی خودکار برنامه از سایت\n- مقایسه نتیجه بنچمارک با سیستم‌های دیگر" },
       data: { lists: 9, downloaded: 2, published: "2026/09/29 13:50", syncedAt: "2026/09/29 14:10" } };
+    case "upd.now": return { ...(await call("upd.state", {}, emit)), state: "Installing" };
     case "rgb.state": return rgbState();
     case "rgb.start": rgbOn = true; rgbMakers = p?.keepMakers ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"]; return rgbState();
     case "rgb.release": rgbOn = false; rgbMakers = []; return rgbState();

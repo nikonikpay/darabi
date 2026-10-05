@@ -38,6 +38,14 @@ public sealed partial class WebBridge
         MethodAsync("upd.check", async _ => { await updater.CheckAsync().ConfigureAwait(true); return State(); });
         MethodAsync("upd.data", async _ => { await updater.SyncDataAsync().ConfigureAwait(true); return State(); });
         MethodAsync("upd.download", async _ => { if (!Staff) await updater.DownloadAsync().ConfigureAwait(true); return State(); });
+        // One step for the user: what is on offer is downloaded and checked, then installed; the app closes and the new release opens it again by itself.
+        MethodAsync("upd.now", async _ =>
+        {
+            if (Staff) return State();
+            if (updater.State == UpdateState.Available) await updater.DownloadAsync().ConfigureAwait(true);
+            if (updater.State == UpdateState.Ready && updater.Install()) _window.Dispatcher.BeginInvoke(Program.Shutdown);
+            return State();
+        });
         Method("upd.install", _ =>
         {
             if (Staff) return State();
