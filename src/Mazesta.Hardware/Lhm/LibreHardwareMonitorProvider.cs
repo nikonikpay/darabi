@@ -1,7 +1,7 @@
 using Mazesta.Core.Providers; using System.Security.Principal; using LibreHardwareMonitor.Hardware; using LibreHardwareMonitor.Hardware.Storage; using LibreHardwareMonitor.PawnIo;
 using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Microsoft.Extensions.Logging;
 namespace Mazesta.Hardware.Lhm;
-public sealed class LibreHardwareMonitorProvider : ISensorProvider
+public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlSource
 {
     public const string ReasonPawnIoMissing = "Provider.PawnIoMissing", ReasonNotElevated = "Provider.NotElevated", ReasonOpenFailed = "Provider.OpenFailed", ReasonNoHardware = "Provider.NoHardware", ReasonCpuSensorsUnread = "Provider.CpuSensorsUnread";
     private sealed class NodeState(MappedNode mapped) { public MappedNode Mapped = mapped; public DateTimeOffset? LastOk; public string? Failure; public DateTimeOffset? FailingSince; public int ConsecutiveFailures; }
@@ -105,6 +105,40 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider
     }
     private void DisableSensorHistoryTree(IEnumerable<IHardware> roots)
     { foreach (var hw in roots) { DisableSensorHistory(hw); DisableSensorHistoryTree(hw.SubHardware); } }
+
+    /// <summary>The board's fan outputs the driver can write (a Super I/O or embedded controller output with a software control), each with the speed of the fan on the same
+    /// number when the chip reads one. Graphics cards' fans are not listed: they have their own tuning.</summary>
+    public IReadOnlyList<FanChannel> Fans()
+    {
+        var list = new List<FanChannel>();
+        foreach (var n in _nodes.Where(n => n.Mapped.Node.Kind == HardwareKind.Motherboard))
+            foreach (var c in n.Mapped.Sensors.Where(s => s.Source.SensorType == SensorType.Control && s.Source.Control is not null))
+            {
+                var fan = n.Mapped.Sensors.FirstOrDefault(s => s.Source.SensorType == SensorType.Fan && s.Source.Index == c.Source.Index);
+                string name = fan?.Definition.Name ?? c.Definition.Name.Replace(" Control", "", StringComparison.Ordinal);
+                var ctl = c.Source.Control!;
+                list.Add(new FanChannel(c.Source.Identifier.ToString(), name, n.Mapped.Node.Name, c.Source.Value is { } v ? v : null, fan?.Source.Value is { } r && r > 0 ? r : null,
+                    ctl.ControlMode == ControlMode.Software, (int)Math.Ceiling(ctl.MinSoftwareValue), (int)Math.Floor(ctl.MaxSoftwareValue)));
+            }
+        return list;
+    }
+
+    private IControl? ControlOf(string id) => _nodes.Where(n => n.Mapped.Node.Kind == HardwareKind.Motherboard).SelectMany(n => n.Mapped.Sensors)
+        .FirstOrDefault(s => s.Source.SensorType == SensorType.Control && s.Source.Identifier.ToString() == id)?.Source.Control;
+
+    public bool SetManual(string id, double percent)
+    {
+        if (ControlOf(id) is not { } c) return false;
+        try { c.SetSoftware((float)Math.Clamp(percent, c.MinSoftwareValue, c.MaxSoftwareValue)); return true; }
+        catch (Exception ex) { _log.LogWarning(ex, "Setting fan output {Id} failed", id); return false; }
+    }
+
+    public bool SetAuto(string id)
+    {
+        if (ControlOf(id) is not { } c) return false;
+        try { c.SetDefault(); return true; }
+        catch (Exception ex) { _log.LogWarning(ex, "Giving fan output {Id} back failed", id); return false; }
+    }
 
     public PollResult Poll(PollRequest request)
     {

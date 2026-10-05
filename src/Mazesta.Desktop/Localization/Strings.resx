@@ -3031,10 +3031,8 @@ Cancel: stop.</value></data>
   <data name="Assist_Part_Temp" xml:space="preserve"><value>The highest temperature it reached then: {0} °C.</value></data>
   <data name="Assist_Tool_run_checkup" xml:space="preserve"><value>Asked to run: smart diagnosis</value></data>
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>Read the part's recorded tests</value></data>
-  <data name="Tools_Sec_Lights" xml:space="preserve"><value>Lighting (RGB)</value></data>
   <data name="Rgb_Title" xml:space="preserve"><value>RGB lighting colours</value></data>
   <data name="Rgb_Sub" xml:space="preserve"><value>memory, graphics card, board and fans, for Corsair, ASUS, Gigabyte, MSI and more</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>The colours are set through OpenRGB, a free program that talks to the lights of these makers; this app does not bundle it. Put its portable folder named OpenRGB beside this app, or install it, then press the button. If a maker&apos;s own program (iCUE, Armoury Crate, RGB Fusion, MSI Center) is running, close it first: two programs cannot drive the same lights. Some devices (memory, boards) need the app to run as administrator.</value></data>
   <data name="Rgb_Connect" xml:space="preserve"><value>Find the lights</value></data>
   <data name="Rgb_All" xml:space="preserve"><value>All devices</value></data>
   <data name="Rgb_Color" xml:space="preserve"><value>Colour</value></data>
@@ -3060,4 +3058,45 @@ Cancel: stop.</value></data>
   <data name="Rgb_Kind_Storage" xml:space="preserve"><value>Drive</value></data>
   <data name="Rgb_Kind_Case" xml:space="preserve"><value>Case</value></data>
   <data name="Rgb_Kind_Other" xml:space="preserve"><value>Other device</value></data>
+  <data name="Nav_Group_Lights" xml:space="preserve"><value>Lights &amp; fans</value></data>
+  <data name="Nav_Lights" xml:space="preserve"><value>Lighting (RGB)</value></data>
+  <data name="Nav_Fans" xml:space="preserve"><value>Fan control</value></data>
+  <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colours and effects of the memory, graphics card, board, fans and strips - for Corsair, ASUS, Gigabyte, MSI and more.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>Colours are set through OpenRGB, a free program that talks to the lights of these makers; it comes with this app. Press the button: the makers&apos; own programs (Armoury Crate, MSI Center, RGB Fusion, iCUE) are stopped while you use this page, because two programs cannot drive the same lights, and are started again when you let go or close the app. Memory and boards need the app to run as administrator.</value></data>
+  <data name="Rgb_Release" xml:space="preserve"><value>Let go (give the lights back)</value></data>
+  <data name="Rgb_Keep" xml:space="preserve"><value>Do not stop the makers&apos; programs</value></data>
+  <data name="Rgb_Makers_Running" xml:space="preserve"><value>These makers&apos; programs are running and will be stopped while you use this page, then started again: {0}</value></data>
+  <data name="Rgb_Makers_Stopped" xml:space="preserve"><value>Stopped for now, started again when you let go or close the app: {0}</value></data>
+  <data name="Rgb_Speed" xml:space="preserve"><value>Speed</value></data>
+  <data name="Rgb_Brightness" xml:space="preserve"><value>Brightness</value></data>
+  <data name="Rgb_Effect" xml:space="preserve"><value>Effect</value></data>
+  <data name="Rgb_Effect_Note" xml:space="preserve"><value>An effect is chosen by its name: each device that has it switches to it, and a device that does not is left as it is.</value></data>
+  <data name="Rgb_All_Sub" xml:space="preserve"><value>one colour or one effect for every device</value></data>
+  <data name="Rgb_Devices" xml:space="preserve"><value>Devices</value></data>
+  <data name="Rgb_Zones" xml:space="preserve"><value>Outputs</value></data>
+  <data name="Rgb_Zone_Count" xml:space="preserve"><value>number of LEDs</value></data>
+  <data name="Rgb_Zone_Max" xml:space="preserve"><value>up to {0}</value></data>
+  <data name="Rgb_Zone_Set" xml:space="preserve"><value>Set</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>A header listed with 0 LEDs does not know how long the strip plugged into it is. Give it the number of LEDs of that strip, then colours reach it.</value></data>
+  <data name="Fans_Lede" xml:space="preserve"><value>The fan outputs of the board: the board&apos;s own control, a fixed speed, or a curve of temperature against speed that you draw.</value></data>
+  <data name="Fans_Unsupported" xml:space="preserve"><value>The fan outputs of this board cannot be controlled from here (its chip is not supported, or the sensor driver is not running as administrator). The board keeps control of its fans.</value></data>
+  <data name="Fans_Mode" xml:space="preserve"><value>Mode</value></data>
+  <data name="Fans_Mode_auto" xml:space="preserve"><value>Automatic</value></data>
+  <data name="Fans_Mode_manual" xml:space="preserve"><value>Fixed</value></data>
+  <data name="Fans_Mode_curve" xml:space="preserve"><value>Curve</value></data>
+  <data name="Fans_Preset_silent" xml:space="preserve"><value>Silent</value></data>
+  <data name="Fans_Preset_standard" xml:space="preserve"><value>Standard</value></data>
+  <data name="Fans_Preset_performance" xml:space="preserve"><value>Performance</value></data>
+  <data name="Fans_Preset_full" xml:space="preserve"><value>Full speed</value></data>
+  <data name="Fans_Presets" xml:space="preserve"><value>Ready-made curves</value></data>
+  <data name="Fans_Source" xml:space="preserve"><value>Temperature of</value></data>
+  <data name="Fans_Src_cpu" xml:space="preserve"><value>Processor</value></data>
+  <data name="Fans_Src_gpu" xml:space="preserve"><value>Graphics card</value></data>
+  <data name="Fans_Src_max" xml:space="preserve"><value>The hotter of the two</value></data>
+  <data name="Fans_Duty" xml:space="preserve"><value>Speed</value></data>
+  <data name="Fans_Rpm" xml:space="preserve"><value>RPM</value></data>
+  <data name="Fans_Held" xml:space="preserve"><value>Held by this app</value></data>
+  <data name="Fans_Reset" xml:space="preserve"><value>All back to automatic</value></data>
+  <data name="Fans_Curve_Hint" xml:space="preserve"><value>Drag a point to move it. Double-click the line to add a point, double-click a point to remove it. The arrow keys move a point you have clicked.</value></data>
+  <data name="Fans_Note" xml:space="preserve"><value>The app holds a fan only while it runs: when it closes, or if the temperature is lost for a minute, the board gets its fans back. A fan never goes below 20 %, and if the processor reaches 85 °C every fan this app holds runs at full speed.</value></data>
 </root>

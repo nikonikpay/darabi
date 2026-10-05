@@ -263,6 +263,25 @@ const GAME = [["wuauserv", "Network", "Windows Update", true, true], ["UsoSvc", 
 const demoGame = () => ({ on: gameOn, busy: false, held: gameOn ? GAME.filter((x) => x.chosen && x.present && x.name !== "DoSvc").map((x) => x.name) : [], results: [],
   services: GAME.map((x) => ({ ...x, note: strings[`GameBoost_Svc_${x.name}`], running: x.present ? (gameOn && x.chosen && x.name !== "DoSvc" ? false : x.running) : null, disabled: x.present ? gameOn && x.chosen && x.name !== "DoSvc" : null, error: null })) });
 
+// Lights and fans, as an OpenRGB with a RAM kit, a graphics card and a board with two addressable headers, and a board with three fan outputs, would answer.
+let rgbOn = false, rgbMakers = [], fanSet = {};
+const rgbMode = (i, name, color, speed = false, bright = false) => ({ index: i, name, color, speed, brightness: bright, speedNow: 60, brightnessNow: 100 });
+const RGB_DEVICES = () => [
+  { index: 0, kind: "Memory", name: "Corsair Vengeance RGB RT", vendor: "Corsair", location: "I2C: SMBus 0x19", leds: 10, active: 0, color: "#ff2bd6", colors: Array(10).fill("#ff2bd6"), zones: [{ index: 0, name: "DRAM", leds: 10, min: 10, max: 10, resizable: false }],
+    modes: [rgbMode(0, "Direct", true), rgbMode(1, "Static", true), rgbMode(2, "Rainbow Wave", false, true, true), rgbMode(3, "Breathing", true, true, true)] },
+  { index: 1, kind: "Graphics", name: "ASUS ROG STRIX RTX 3090", vendor: "ASUS", location: "I2C: NVAPI", leds: 3, active: 0, color: "#00e5ff", colors: Array(3).fill("#00e5ff"), zones: [{ index: 0, name: "Logo", leds: 3, min: 3, max: 3, resizable: false }],
+    modes: [rgbMode(0, "Direct", true), rgbMode(1, "Static", true), rgbMode(2, "Rainbow Wave", false, true, true), rgbMode(3, "Breathing", true, true, true)] },
+  { index: 2, kind: "Motherboard", name: "ASUS ROG STRIX X570-E", vendor: "ASUS", location: "HID: Aura", leds: 0, active: 0, color: null, colors: [], zones: [{ index: 0, name: "Back I/O", leds: 4, min: 4, max: 4, resizable: false },
+    { index: 1, name: "Addressable Header 1", leds: 0, min: 0, max: 120, resizable: true }, { index: 2, name: "Addressable Header 2", leds: 0, min: 0, max: 120, resizable: true }],
+    modes: [rgbMode(0, "Direct", true), rgbMode(1, "Static", true), rgbMode(2, "Rainbow Wave", false, true, true), rgbMode(3, "Breathing", true, true, true)] },
+];
+const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Static", "Rainbow Wave", "Breathing"] : [], devices: rgbOn ? RGB_DEVICES() : [] });
+const FAN_NAMES = [["CPU Fan", 1180], ["Chassis Fan #1", 760], ["Chassis Fan #2", 690]];
+const fansState = () => ({ supported: true, error: null, floor: 20, guard: 85, cpu: 54, gpu: 61,
+  presets: { silent: [[30, 20], [50, 25], [65, 40], [75, 65], [85, 100]], standard: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]], performance: [[30, 45], [45, 60], [60, 80], [70, 100]], full: [[20, 100], [100, 100]] },
+  channels: FAN_NAMES.map(([name, rpm], i) => { const s = fanSet[`f${i}`] || { mode: "auto", manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] };
+    return { id: `f${i}`, name, part: "Nuvoton NCT6798D", percent: s.mode === "manual" ? s.manual : 42 + i * 3, rpm, held: s.mode !== "auto", mode: s.mode, manual: s.manual, source: s.source, points: s.points, min: 20, max: 100 }; }) });
+
 export async function call(m, p, emit) {
   emitRef = emit;
   strings ??= await (await fetch("js/demo-strings.json")).json();
@@ -349,6 +368,13 @@ export async function call(m, p, emit) {
     case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),
       latest: { version: "0.7.0", size: 48234496, date: "2026/09/29", notes: "- به‌روزرسانی خودکار برنامه از سایت\n- مقایسه نتیجه بنچمارک با سیستم‌های دیگر" },
       data: { lists: 9, downloaded: 2, published: "2026/09/29 13:50", syncedAt: "2026/09/29 14:10" } };
+    case "rgb.state": return rgbState();
+    case "rgb.start": rgbOn = true; rgbMakers = p?.keepMakers ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"]; return rgbState();
+    case "rgb.release": rgbOn = false; rgbMakers = []; return rgbState();
+    case "rgb.set": case "rgb.zone": return rgbState();
+    case "fans.state": return fansState();
+    case "fans.set": fanSet[p.id] = { ...(fanSet[p.id] || { manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] }), mode: p.mode, ...(p.percent != null ? { manual: p.percent } : {}), ...(p.source ? { source: p.source } : {}), ...(p.points ? { points: p.points } : {}) }; return fansState();
+    case "fans.reset": fanSet = {}; return fansState();
     case "tuning.state": return tuning();
     case "tuning.set": if (p.field === "curve") { form.core = p.core; form.coreValue = +p.core; form.capValue = +p.cap; form.maxClock = p.cap; } return null;
     case "reports.state": return reports();

@@ -58,22 +58,41 @@ public sealed class OpenRgbClient : IDisposable
     }
 
     /// <summary>Puts a device in one of its modes (an index into <see cref="RgbDevice.Modes"/>); a colour is used only if the mode takes one.</summary>
-    public async Task SetModeAsync(int device, int mode, RgbColor? color, CancellationToken ct)
+    public async Task SetModeAsync(int device, int mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null)
     {
         var d = Find(device);
         if (mode < 0 || mode >= d.Modes.Count) throw new ArgumentOutOfRangeException(nameof(mode));
-        await SendModeAsync(d, d.Modes[mode], color, ct).ConfigureAwait(false);
+        await SendModeAsync(d, d.Modes[mode], color, ct, speedPercent, brightnessPercent).ConfigureAwait(false);
+    }
+
+    /// <summary>The index of the mode with this name (case does not matter) on a device, or -1: the same effect (Rainbow, Breathing...) has a different index on each device.</summary>
+    public int ModeIndex(int device, string name) => Find(device).Modes.ToList().FindIndex(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Gives a zone this many LEDs (within what the device allows), for the strip plugged into an addressable header. Read the devices again afterwards.</summary>
+    public async Task ResizeZoneAsync(int device, int zone, int leds, CancellationToken ct)
+    {
+        var d = Find(device); var z = d.Zones.FirstOrDefault(x => x.Index == zone) ?? throw new ArgumentOutOfRangeException(nameof(zone));
+        if (!z.Resizable) throw new NotSupportedException($"{d.Name}: {z.Name} has a fixed number of LEDs.");
+        if (leds < z.LedsMin || leds > z.LedsMax) throw new ArgumentOutOfRangeException(nameof(leds), $"{z.Name} takes {z.LedsMin} to {z.LedsMax} LEDs.");
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try { await SendAsync(d.Index, OpenRgbProtocol.ResizeZone, OpenRgbProtocol.Resize(zone, leds), ct).ConfigureAwait(false); }
+        finally { _gate.Release(); }
     }
 
     private RgbDevice Find(int device) => _devices.FirstOrDefault(d => d.Index == device) ?? throw new InvalidOperationException("That device is not in the list; refresh it.");
     private static RgbMode? Named(RgbDevice d, string name) => d.Modes.FirstOrDefault(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private async Task SendModeAsync(RgbDevice d, RgbMode mode, RgbColor? color, CancellationToken ct)
+    private static uint Scale(uint min, uint max, int percent) => max <= min ? min : min + (uint)Math.Round((max - min) * Math.Clamp(percent, 0, 100) / 100.0);
+
+    private async Task SendModeAsync(RgbDevice d, RgbMode mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null)
     {
         var send = mode;
+        // The speed and brightness are percentages of what the mode reports (a mode that has none keeps what it has).
+        if (speedPercent is { } sp && mode.Flags.HasFlag(RgbModeFlags.Speed)) send = send with { Speed = Scale(mode.SpeedMin, mode.SpeedMax, sp) };
+        if (brightnessPercent is { } bp && mode.Flags.HasFlag(RgbModeFlags.Brightness)) send = send with { Brightness = Scale(mode.BrightnessMin, mode.BrightnessMax, bp) };
         if (color is { } c && mode.ModeColors)
         {
-            int n = Math.Max(1, (int)Math.Clamp(1u, mode.ColorsMin, Math.Max(mode.ColorsMin, mode.ColorsMax))); send = mode with { Colors = Enumerable.Repeat(c, n).ToList() };
+            int n = Math.Max(1, (int)Math.Clamp(1u, mode.ColorsMin, Math.Max(mode.ColorsMin, mode.ColorsMax))); send = send with { Colors = Enumerable.Repeat(c, n).ToList() };
         }
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try

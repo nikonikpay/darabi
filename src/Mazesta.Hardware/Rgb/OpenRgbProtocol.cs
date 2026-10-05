@@ -9,7 +9,7 @@ namespace Mazesta.Hardware.Rgb;
 internal static class OpenRgbProtocol
 {
     public const uint ClientVersion = 3;
-    public const int RequestControllerCount = 0, RequestControllerData = 1, RequestProtocolVersion = 40, SetClientName = 50, UpdateLeds = 1050, UpdateMode = 1101;
+    public const int RequestControllerCount = 0, RequestControllerData = 1, RequestProtocolVersion = 40, SetClientName = 50, ResizeZone = 1000, UpdateLeds = 1050, UpdateMode = 1101;
     public const int HeaderSize = 16;
 
     public static byte[] Packet(int device, int id, ReadOnlySpan<byte> payload)
@@ -47,6 +47,12 @@ internal static class OpenRgbProtocol
         w.Flush(); var b = s.ToArray(); BinaryPrimitives.WriteUInt32LittleEndian(b, (uint)b.Length); return b;
     }
 
+    /// <summary>The "resize zone" payload: the zone's index and its new number of LEDs.</summary>
+    public static byte[] Resize(int zone, int leds)
+    {
+        var b = new byte[8]; BinaryPrimitives.WriteInt32LittleEndian(b, zone); BinaryPrimitives.WriteInt32LittleEndian(b.AsSpan(4), leds); return b;
+    }
+
     private static void Str(BinaryWriter w, string s) { var bytes = Encoding.UTF8.GetBytes(s); w.Write((ushort)(bytes.Length + 1)); w.Write(bytes); w.Write((byte)0); }
 
     /// <summary>Reads a device's description (the answer to "controller data"). Throws <see cref="FormatException"/> on a truncated or odd one.</summary>
@@ -56,12 +62,12 @@ internal static class OpenRgbProtocol
         var kind = Kind((int)r.U32()); string name = r.Str(), vendor = version >= 1 ? r.Str() : "", description = r.Str(); r.Str(); r.Str(); string location = r.Str();
         int modeCount = r.U16(); int active = (int)r.U32(); var modes = new List<RgbMode>(modeCount);
         for (int i = 0; i < modeCount; i++) modes.Add(ReadMode(r, version));
-        int zones = r.U16();
-        for (int i = 0; i < zones; i++) { r.Str(); r.U32(); r.U32(); r.U32(); r.U32(); r.Skip(r.U16()); }
+        int zoneCount = r.U16(); var zones = new List<RgbZone>(zoneCount);
+        for (int i = 0; i < zoneCount; i++) { string zoneName = r.Str(); uint type = r.U32(), min = r.U32(), max = r.U32(), count = r.U32(); r.Skip(r.U16()); zones.Add(new RgbZone(i, zoneName, type, min, max, count)); }
         int leds = r.U16(); for (int i = 0; i < leds; i++) { r.Str(); r.U32(); }
         int colorCount = r.U16(); var colors = new List<RgbColor>(colorCount);
         for (int i = 0; i < colorCount; i++) colors.Add(r.Color());
-        return new RgbDevice(index, kind, name, vendor, description, location, modes, active, leds, colors);
+        return new RgbDevice(index, kind, name, vendor, description, location, modes, active, leds, colors, zones);
     }
 
     private static RgbMode ReadMode(Reader r, uint version)

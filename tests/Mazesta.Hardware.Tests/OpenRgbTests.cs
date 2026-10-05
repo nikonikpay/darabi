@@ -6,13 +6,13 @@ public class OpenRgbTests
     private static void Str(BinaryWriter w, string s) { var b = Encoding.UTF8.GetBytes(s); w.Write((ushort)(b.Length + 1)); w.Write(b); w.Write((byte)0); }
 
     /// <summary>A device as an OpenRGB 3 server describes it: a RAM stick with a Direct and a Static mode, one zone with a matrix, 4 LEDs.</summary>
-    private static byte[] Description(int type = 1, bool matrix = true)
+    private static byte[] Description(int type = 1, bool matrix = true, uint zoneMin = 4, uint zoneMax = 4, uint zoneCount = 4)
     {
         using var s = new MemoryStream(); using var w = new BinaryWriter(s);
         w.Write(0u); w.Write(type); Str(w, "Corsair Vengeance RGB"); Str(w, "Corsair"); Str(w, "DRAM"); Str(w, "1.0"); Str(w, "SN"); Str(w, "I2C: SMBus 0x19");
         w.Write((ushort)2); w.Write(0u);
         Mode(w, "Direct", 0, 32, 1); Mode(w, "Static", 1, 64, 2);
-        w.Write((ushort)1); Str(w, "DRAM"); w.Write(1u); w.Write(4u); w.Write(4u); w.Write(4u);
+        w.Write((ushort)1); Str(w, "DRAM"); w.Write(1u); w.Write(zoneMin); w.Write(zoneMax); w.Write(zoneCount);
         if (matrix) { w.Write((ushort)(8 + 4 * 4)); w.Write(1u); w.Write(4u); for (uint i = 0; i < 4; i++) w.Write(i); } else w.Write((ushort)0);
         w.Write((ushort)4); for (int i = 0; i < 4; i++) { Str(w, $"LED {i}"); w.Write(0u); }
         w.Write((ushort)4); for (int i = 0; i < 4; i++) { w.Write((byte)10); w.Write((byte)20); w.Write((byte)30); w.Write((byte)0); }
@@ -65,7 +65,9 @@ public class OpenRgbTests
     }
 
     /// <summary>A one-device server on loopback, answering like OpenRGB; it records the packets it is sent.</summary>
-    private static (int Port, List<(int Id, byte[] Body)> Got, Task Done) Serve()
+    private static (int Port, List<(int Id, byte[] Body)> Got, Task Done) Serve() => ServeWith(Description());
+
+    private static (int Port, List<(int Id, byte[] Body)> Got, Task Done) ServeWith(byte[] description)
     {
         var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start(); var got = new List<(int, byte[])>();
         var done = Task.Run(async () =>
@@ -79,7 +81,7 @@ public class OpenRgbTests
                     byte[]? reply = id switch
                     {
                         OpenRgbProtocol.RequestProtocolVersion => BitConverter.GetBytes(3u), OpenRgbProtocol.RequestControllerCount => BitConverter.GetBytes(1u),
-                        OpenRgbProtocol.RequestControllerData => Description(), _ => null
+                        OpenRgbProtocol.RequestControllerData => description, _ => null
                     };
                     if (reply is not null) await s.WriteAsync(OpenRgbProtocol.Packet(dev, id, reply));
                 }
@@ -115,5 +117,36 @@ public class OpenRgbTests
             await Assert.ThrowsAsync<InvalidOperationException>(() => client.SetColorAsync(5, new RgbColor(1, 1, 1), default));
         }
         await done;
+    }
+
+    [Fact] public void A_zone_is_read_with_its_range_and_only_a_ranged_one_can_be_resized()
+    {
+        var fixedZone = OpenRgbProtocol.Device(0, Description(), 3).Zones[0]; var header = OpenRgbProtocol.Device(0, Description(zoneMin: 0, zoneMax: 120, zoneCount: 0), 3).Zones[0];
+        Assert.False(fixedZone.Resizable); Assert.True(header.Resizable); Assert.Equal((0u, 120u, 0u), (header.LedsMin, header.LedsMax, header.LedsCount));
+    }
+
+    [Fact] public void The_resize_payload_is_the_zone_and_the_new_count() => Assert.Equal(new byte[] { 1, 0, 0, 0, 30, 0, 0, 0 }, OpenRgbProtocol.Resize(1, 30));
+
+    [Fact] public async Task A_fixed_zone_or_a_count_out_of_range_is_refused()
+    {
+        var (port, _, done) = Serve();
+        using (var client = new OpenRgbClient())
+        {
+            await client.ConnectAsync(port, default); await client.RefreshAsync(default);
+            await Assert.ThrowsAsync<NotSupportedException>(() => client.ResizeZoneAsync(0, 0, 8, default));
+        }
+        await done;
+    }
+
+    [Fact] public async Task A_zone_resize_reaches_the_server_as_its_own_packet()
+    {
+        var (port, got, done) = ServeWith(Description(zoneMin: 0, zoneMax: 120, zoneCount: 0));
+        using (var client = new OpenRgbClient())
+        {
+            await client.ConnectAsync(port, default); await client.RefreshAsync(default);
+            await client.ResizeZoneAsync(0, 0, 30, default);
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => client.ResizeZoneAsync(0, 0, 121, default));
+        }
+        await done; var resize = Assert.Single(got, g => g.Id == OpenRgbProtocol.ResizeZone); Assert.Equal(new byte[] { 0, 0, 0, 0, 30, 0, 0, 0 }, resize.Body);
     }
 }

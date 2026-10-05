@@ -1371,9 +1371,35 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .drv-list li .pill { justify-self: start; }
 .drv-list li.dim { opacity: .6; }
 .drv-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.rgb-list { display: grid; gap: 8px; margin-top: 12px; }
-.rgb-dev { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-panel); border: 1px solid var(--rule); }
-.rgb-name { display: grid; gap: 2px; min-width: 0; } .rgb-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; text-align: start; }
-.rgb-color { inline-size: 44px; block-size: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--rule); background: transparent; cursor: pointer; }
-.rgb-all { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
-@media (max-width: 760px) { .rgb-dev { grid-template-columns: 1fr 1fr; } .rgb-name { grid-column: 1 / -1; } }
+/* Lights and fans: a card for each device or fan output, in the hue of its part. */
+.rgb-cards, .fan-cards { margin-top: 12px; }
+.rgb-color { inline-size: 46px; block-size: 36px; padding: 2px; border-radius: 8px; border: 1px solid var(--rule); background: transparent; cursor: pointer; }
+.rgb-color:disabled { opacity: .35; cursor: not-allowed; }
+.rgb-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-top: 12px; }
+.rgb-field { display: grid; gap: 4px; font-size: 12.5px; color: var(--paper-2); min-inline-size: 0; } .rgb-field.grow { flex: 1 1 160px; }
+.rgb-field > span:first-child { font-weight: 700; }
+.rgb-range { display: flex; align-items: center; gap: 10px; } .rgb-range .range { flex: 1; min-inline-size: 90px; } .rgb-range b { min-inline-size: 3.2em; text-align: end; color: var(--paper); }
+.rgb-swatches { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; } .rgb-row .rgb-swatches { margin-top: 0; }
+.rgb-sw { inline-size: 22px; block-size: 22px; border-radius: 50%; border: 2px solid rgb(255 255 255 / 0.18); cursor: pointer; padding: 0; transition: transform var(--fast) var(--ease), border-color var(--fast); }
+.rgb-sw:hover, .rgb-sw:focus-visible { transform: scale(1.18); border-color: var(--paper); outline: none; }
+.rgb-strip { display: flex; gap: 3px; min-block-size: 10px; margin-top: 2px; } .rgb-strip i { flex: 1 1 0; max-inline-size: 22px; block-size: 10px; border-radius: 3px; box-shadow: 0 0 8px -1px currentColor; }
+.rgb-keep { display: inline-flex; align-items: center; gap: 10px; margin: 10px 0 4px; font-size: 13px; }
+.rgb-zones { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.rgb-zone { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0; font-size: 13px; }
+.rgb-zone > .lat { min-inline-size: 9em; flex: 0 1 auto; } .rgb-zone-n { color: var(--paper-3); }
+.rgb-zone.resizable .range { flex: 1 1 120px; } .rgb-zone .field.num { inline-size: 5.2em; text-align: center; direction: ltr; }
+.rgb-zone small { color: var(--paper-3); }
+.fan-top { display: grid; gap: 8px; } .fan-read { display: flex; align-items: baseline; gap: 14px; }
+.fan-duty { font: 800 34px var(--lat); color: var(--hue); line-height: 1; } .fan-rpm { color: var(--paper-2); font: 600 14px var(--lat); }
+.fan-bar { block-size: 6px; } .fan-bar > i { transition: width 600ms var(--ease); }
+.fan-card .seg { margin-top: 14px; }
+.fan-fixed { display: flex; align-items: center; gap: 12px; margin-top: 16px; } .fan-fixed .range { flex: 1; } .fan-fixed b { min-inline-size: 3.2em; text-align: end; }
+.fan-curve-box { margin-top: 14px; } .fan-presets { display: flex; gap: 6px; flex-wrap: wrap; } .fan-presets .btn { padding-block: 5px; font-size: 12.5px; }
+.fan-held { display: block; margin-top: 10px; color: var(--hue); font-weight: 700; } .fan-held:empty { display: none; }
+.fan-curve { height: 260px; margin-top: 12px; border-radius: var(--r-well); background: var(--well); }
+.fan-curve .tuned, .fan-curve .pt { stroke: var(--hue); } .fan-curve .pt:hover, .fan-curve .pt.hot { fill: var(--hue); } .fan-curve .pt { cursor: grab; } .fan-curve .pt.hot { cursor: grabbing; }
+.fan-curve .fan-area { fill: color-mix(in srgb, var(--hue) 14%, transparent); stroke: none; }
+.fan-curve .fan-floor { fill: rgb(238 75 61 / 0.07); pointer-events: none; }
+.fan-curve .fan-now { stroke: var(--paper-3); stroke-dasharray: 3 4; } .fan-curve .fan-tag { fill: var(--paper-2); font: 600 10.5px var(--lat); pointer-events: none; }
+.fan-curve.ro .pt { cursor: default; }
+@media (max-width: 760px) { .rgb-row { flex-direction: column; align-items: stretch; } }

@@ -24,4 +24,11 @@ public readonly record struct RgbColor(byte R, byte G, byte B)
     }
 }
 
-public sealed record RgbDevice(int Index, RgbKind Kind, string Name, string Vendor, string Description, string Location, IReadOnlyList<RgbMode> Modes, int ActiveMode, int LedCount, IReadOnlyList<RgbColor> Colors);
+/// <summary>One output of a device (a header on a board, a stick's LED strip...). OpenRGB lets a zone with <see cref="LedsMin"/> below <see cref="LedsMax"/> be resized:
+/// an addressable header is described with no LEDs until it is told how many the strip plugged into it has.</summary>
+public sealed record RgbZone(int Index, string Name, uint Type, uint LedsMin, uint LedsMax, uint LedsCount)
+{
+    public bool Resizable => LedsMax > LedsMin;
+}
+
+public sealed record RgbDevice(int Index, RgbKind Kind, string Name, string Vendor, string Description, string Location, IReadOnlyList<RgbMode> Modes, int ActiveMode, int LedCount, IReadOnlyList<RgbColor> Colors, IReadOnlyList<RgbZone> Zones);

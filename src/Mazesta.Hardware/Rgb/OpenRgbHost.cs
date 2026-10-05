@@ -24,16 +24,17 @@ public static class OpenRgbHost
         catch (Exception e) when (e is SocketException or OperationCanceledException or IOException) { return false; }
     }
 
-    /// <summary>Starts OpenRGB minimised with its SDK server and waits for the port (its device scan goes on after that). False if it did not come up in time.</summary>
-    public static async Task<bool> StartAsync(string exe, int port, CancellationToken ct)
+    /// <summary>Starts OpenRGB minimised with its SDK server and waits for the port (its device scan goes on after that). Null if it did not come up in time;
+    /// the process is returned so that whoever started it can close it again.</summary>
+    public static async Task<Process?> StartAsync(string exe, int port, CancellationToken ct)
     {
         var info = new ProcessStartInfo(exe, $"--server --server-port {port} --startminimized") { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe)! };
-        using var process = Process.Start(info);
+        var process = Process.Start(info);
         for (int i = 0; i < 40 && !ct.IsCancellationRequested; i++)
         {
-            if (await ListeningAsync(port, ct).ConfigureAwait(false)) return true;
+            if (await ListeningAsync(port, ct).ConfigureAwait(false)) return process;
             await Task.Delay(500, ct).ConfigureAwait(false);
         }
-        return false;
+        return null;
     }
 }
