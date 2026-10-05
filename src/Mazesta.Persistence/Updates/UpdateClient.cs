@@ -30,7 +30,9 @@ public sealed class UpdateClient(Uri folder, string publicKey, HttpClient http)
         string tmp = target + ".part";
         try
         {
-            using (var res = await http.GetAsync(new Uri(folder, file.File), HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false))
+            // The release zip keeps one name across versions, so the address changes per download: no cache on the way hands back the previous release.
+            // (A stale copy would fail the hash check anyway; this just avoids the failed update.)
+            using (var res = await http.GetAsync(new Uri(folder, file.File + "?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds()),HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false))
             {
                 res.EnsureSuccessStatusCode();
                 await using var src = await res.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);

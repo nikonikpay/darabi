@@ -64,7 +64,7 @@
 |---|---|
 | `update.json` | فهرست امضاشده: آخرین نسخه برنامه و فهرست فایل‌های داده، با اندازه و SHA-256 هرکدام |
 | `update.json.sig` | امضای `update.json` با کلید خصوصی فروشگاه |
-| `MazestaWeb-0.8.0.zip` | خود برنامه: نسخه کاربر (`MazestaWeb.exe`، `MazestaTray.exe`، `wwwroot`، `Redist`)، **بدون** Data |
+| `MazestaWeb.zip` | خود برنامه: نسخه کاربر (`MazestaWeb.exe`، `MazestaTray.exe`، `wwwroot`، `Redist`)، **بدون** Data. نام فایل **ثابت** است و شماره نسخه ندارد (نسخه در `update.json` است)، پس پیوند دکمه دانلود در صفحه سایت با هر به‌روزرسانی عوض نمی‌شود: `https://www.dfmrendering.com/mazesta/MazestaWeb.zip` |
 | `benchdb/*.json` | فهرست‌های مقایسه؛ برای هر بنچمارک یک فایل |
 
 این فایل‌ها را **دستی نسازید و دستی ویرایش نکنید**؛ ابزار `tools/release.ps1` همه را می‌سازد و امضا می‌کند. با `-Upload` خودش هم آن‌ها را از راه

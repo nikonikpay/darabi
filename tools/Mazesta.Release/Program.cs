@@ -80,7 +80,8 @@ static int Site(string[] args)
     {
         string exe = Path.Combine(appDir, UpdateInstaller.ExeName);
         string version = FileVersionInfo.GetVersionInfo(exe).FileVersion is { } v && Version.TryParse(v, out var parsed) ? parsed.ToString(3) : throw new InvalidOperationException($"No version in {exe}");
-        string zipName = $"MazestaWeb-{version}.zip", zip = Path.Combine(outDir, zipName);
+        // The name never carries the version, so the site's download page can link to one address for good; update.json says which version it holds.
+        string zipName = "MazestaWeb.zip", zip = Path.Combine(outDir, zipName);
         File.Delete(zip);
         using (var z = ZipFile.Open(zip, ZipArchiveMode.Create))
             foreach (var file in Directory.EnumerateFiles(appDir, "*", SearchOption.AllDirectories))
@@ -89,7 +90,7 @@ static int Site(string[] args)
                 if (rel.StartsWith("Data/", StringComparison.OrdinalIgnoreCase)) continue;   // the owner's settings and reports never ship
                 z.CreateEntryFromFile(file, rel, CompressionLevel.Optimal);
             }
-        foreach (var old in Directory.EnumerateFiles(outDir, "MazestaWeb-*.zip").Where(f => Path.GetFileName(f) != zipName)) File.Delete(old);
+        foreach (var old in Directory.EnumerateFiles(outDir, "MazestaWeb-*.zip")) File.Delete(old);   // the versioned names of earlier releases
         release = new AppRelease(version, zipName, new FileInfo(zip).Length, UpdateSigning.Sha256(zip), DateTimeOffset.UtcNow,
             Opt(args, "--notes-fa") is { } fa ? File.ReadAllText(fa).Trim() : null, Opt(args, "--notes-en") is { } en ? File.ReadAllText(en).Trim() : null);
         Console.WriteLine($"Release {version}: {zipName}, {release.Size / 1048576.0:0.0} MB");
@@ -114,7 +115,7 @@ static int Site(string[] args)
 
 // Sends the signed folder to the site through its Mazesta Connect plugin, which writes it to /mazesta/: every file in pieces (a host's upload
 // limit is often a few megabytes), each checked there against its size and SHA-256 before anything is put in place; update.json and its
-// signature go in last. A zip the site already serves with the same size is not sent again.
+// signature go in last.
 static async Task<int> Upload(string[] args)
 {
     string dir = Path.GetFullPath(Opt(args, "--dir") ?? throw Usage());
@@ -126,15 +127,8 @@ static async Task<int> Upload(string[] args)
     http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "MazestaRelease/1.0");
 
     var files = new List<string>();
-    if (manifest.App is { } app)
-    {
-        // The folder the app reads is beside the site's root: <site>/mazesta/.
-        var served = new Uri(new Uri(api.GetLeftPart(UriPartial.Authority)), "/mazesta/" + app.File);
-        long? there = null;
-        try { using var head = await http.SendAsync(new HttpRequestMessage(HttpMethod.Head, served)); if (head.IsSuccessStatusCode && head.Content.Headers.ContentType?.MediaType != "text/html") there = head.Content.Headers.ContentLength; }
-        catch (HttpRequestException) { }
-        if (there == app.Size) Console.WriteLine($"{app.File} is on the site already ({app.Size / 1048576.0:0.0} MB); not sent again."); else files.Add(app.File);
-    }
+    // Always sent: the zip keeps one name across versions, so a file of the same size on the site may be an older release.
+    if (manifest.App is { } app) files.Add(app.File);
     files.AddRange(manifest.Data.Select(d => d.File));
     files.Add(UpdateManifest.FileName); files.Add(UpdateManifest.SignatureName);
 
