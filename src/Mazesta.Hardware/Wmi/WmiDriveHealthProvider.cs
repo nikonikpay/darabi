@@ -3,12 +3,13 @@ namespace Mazesta.Hardware.Wmi;
 
 /// <summary>Drive health from Windows Storage Management: MSFT_PhysicalDisk (the health verdict, which Windows derives from the drive's own SMART
 /// and NVMe critical warnings) and its associated MSFT_StorageReliabilityCounter (wear, temperature, uncorrected errors, power-on hours - the same
-/// numbers as Get-StorageReliabilityCounter; they need administrator rights, which the app has).</summary>
+/// numbers as Get-StorageReliabilityCounter; they need administrator rights, which the app has). Drives on USB (flash sticks, external disks) are left out: they
+/// are the customer's or the technician's, a failing one can stall these queries for a minute, and the app's start must not wait on them.</summary>
 public sealed class WmiDriveHealthProvider(IWmiQuery query) : IDriveHealthProvider
 {
     private const string Storage = @"root\Microsoft\Windows\Storage";
     public IReadOnlyList<DriveHealth> Read()
-        => WmiDriveHealthParser.Parse(query.QueryWithRelated(Storage, "SELECT * FROM MSFT_PhysicalDisk", "MSFT_StorageReliabilityCounter"));
+        => WmiDriveHealthParser.Parse(query.QueryWithRelated(Storage, "SELECT * FROM MSFT_PhysicalDisk WHERE BusType <> 7 OR BusType IS NULL", "MSFT_StorageReliabilityCounter"));
 }
 
 public static class WmiDriveHealthParser

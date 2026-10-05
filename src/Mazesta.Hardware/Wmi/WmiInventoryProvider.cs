@@ -33,7 +33,7 @@ public sealed class WmiInventoryProvider(IWmiQuery query, ILogger<WmiInventoryPr
     /// <summary>The drives, each with its wear counter from the reliability counters when Windows has one; without them the drives still list.</summary>
     private IReadOnlyList<StorageDeviceInfo> Disks(List<string> errors)
     {
-        var disks = WmiInventoryParser.Disks(query.Query(Storage, "SELECT FriendlyName,SerialNumber,MediaType,BusType,Size,FirmwareVersion,HealthStatus FROM MSFT_PhysicalDisk"));
+        var disks = WmiInventoryParser.Disks(query.Query(Storage, "SELECT FriendlyName,SerialNumber,MediaType,BusType,Size,FirmwareVersion,HealthStatus FROM MSFT_PhysicalDisk WHERE BusType <> 7 OR BusType IS NULL"));
         try { return WmiInventoryParser.WithWear(disks, new WmiDriveHealthProvider(query).Read()); }
         catch (Exception ex) when (ex is not OperationCanceledException) { logger.LogWarning(ex, "WMI drive wear failed"); errors.Add($"wear: {ex.Message}"); return disks; }
     }
