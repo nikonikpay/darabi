@@ -4,7 +4,7 @@
 // the see-through water and glass. Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
-           "DescriptorTable(SRV(t3, numDescriptors=3)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=4)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
@@ -18,9 +18,12 @@ StructuredBuffer<Light> Lights : register(t2);
 Texture2DArray<float4> Textures : register(t3);
 Texture2D<float> ShadowMap : register(t4);
 Texture2D<float4> Reflection : register(t5);
+Texture2D<float4> BackdropImage : register(t6);
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
+
+float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Aniso, uv, 0).rgb; }   // level 0: the way round wraps, which a screen-space derivative would smear
 
 struct VIn { float4 Position : POSITION; float4 Normal : NORMAL; float2 Uv : TEXCOORD; };
 struct VOut { float4 Position : SV_Position; float3 World : WORLD; float3 Normal : NORMAL; float2 Uv : TEXCOORD; float Out : OUTWARD; nointerpolation uint Id : INSTANCE; };
@@ -85,13 +88,23 @@ float3 Lit(Surface s, float3 p, float3 v)
     return c;
 }
 
+// Which way the texture's u and v run over the surface at this pixel, from how the position and the coordinates change across the screen.
+void TangentFrame(float3 p, float2 uv, float3 n, out float3 t, out float3 b)
+{
+    float3 dp1 = ddx(p), dp2 = ddy(p); float2 d1 = ddx(uv), d2 = ddy(uv);
+    float3 p2 = cross(dp2, n), p1 = cross(n, dp1); float side = dot(dp1, p2) < 0 ? -1 : 1;   // the mirror image and back faces turn the other way
+    t = (p2 * d1.x + p1 * d2.x) * side; b = (p2 * d1.y + p1 * d2.y) * side;
+}
+
 float4 Opaque(VOut i, bool cutout)
 {
     if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;   // the mirror image holds only what is above the water
     Material m = Materials[MaterialIndex];
     float4 texel = m.Texture >= 0 ? Textures.Sample(Aniso, float3(i.Uv, m.Texture)) : 1;
+    float4 relief = Textures.Sample(Aniso, float3(i.Uv, max(m.NormalTexture, 0)));
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;   // two-sided: leaves and cards are seen from both faces
     Surface s = MaterialSurface(m, i.World, n, texel);
+    if (m.NormalTexture >= 0) { float3 t, b; TangentFrame(i.World, i.Uv, n, t, b); s.Normal = Bumped(n, t, b, relief); }
     float alpha = 1;
     if (cutout)
     {

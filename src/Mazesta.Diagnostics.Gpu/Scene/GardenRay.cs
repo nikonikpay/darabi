@@ -83,8 +83,9 @@ internal sealed unsafe class GardenRay : GardenRenderer
         _tlas = s.Buffer(tsizes.ResultDataMaxSizeInBytes, state: ResourceStates.RaytracingAccelerationStructure, flags: ResourceFlags.AllowUnorderedAccess);
         _tlasScratch = s.UavBuffer(tsizes.ScratchDataSizeInBytes);
 
-        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 1, DescriptorHeapFlags.ShaderVisible, 0)));
+        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 2, DescriptorHeapFlags.ShaderVisible, 0)));
         s.Device.CreateShaderResourceView(g.Textures, g.TextureView, _srv.GetCPUDescriptorHandleForHeapStart());
+        s.Device.CreateShaderResourceView(g.Backdrop, null, _srv.GetCPUDescriptorHandleForHeapStart().Offset(1, s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView)));
     }
 
     private static ulong Align(ulong n) => (n + 255) & ~255ul;

@@ -19,7 +19,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         };
     }
 
-    /// <summary>One pass's constants (GardenFrame, 320 bytes) at a 256-byte-aligned slot.</summary>
+    /// <summary>One pass's constants (GardenFrame, 336 bytes) at a 256-byte-aligned slot.</summary>
     private const ulong Slot = 512;
     private readonly Settings _set; private readonly int _samples;
     private readonly ID3D12RootSignature _root;
@@ -85,12 +85,13 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             : _depth;   // unused at one sample
         _constants = s.Buffer(Slot * 2, HeapType.Upload, ResourceStates.GenericRead);
 
-        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 3, DescriptorHeapFlags.ShaderVisible, 0)));
+        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 4, DescriptorHeapFlags.ShaderVisible, 0)));
         uint srvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle Srv(int i) => _srv.GetCPUDescriptorHandleForHeapStart().Offset(i, srvSize);   // Offset moves the handle it is called on: start afresh each time
         s.Device.CreateShaderResourceView(g.Textures, g.TextureView, Srv(0));
         s.Device.CreateShaderResourceView(_shadowMap, new ShaderResourceViewDescription { Format = Format.R32_Float, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D, Shader4ComponentMapping = ShaderComponentMapping.Default, Texture2D = new Texture2DShaderResourceView { MipLevels = 1 } }, Srv(1));
         s.Device.CreateShaderResourceView(_reflection, null, Srv(2));
+        s.Device.CreateShaderResourceView(g.Backdrop, null, Srv(3));
 
         _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)Targets.Length + 2, DescriptorHeapFlags.None, 0)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
@@ -142,7 +143,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     internal static Matrix4x4 SunShadowMatrix(Vector3 toSun)
     {
         if (toSun.LengthSquared() < 1e-6f) toSun = Vector3.UnitY;
-        var centre = new Vector3(0, 4, -14); float radius = 27f;   // the courtyard: x ±14, z -34..7, up to the wind-catchers at 10.3
+        var centre = new Vector3(0, 4, -14); float radius = 27f;   // the courtyard: x ±14, z -34..7.5, up to the wind-catchers at 11
         var eye = centre + Vector3.Normalize(toSun) * 80;
         var up = MathF.Abs(toSun.Y) > 0.99f ? Vector3.UnitZ : Vector3.UnitY;
         return Matrix4x4.CreateLookAtLeftHanded(eye, centre, up) * Matrix4x4.CreateOrthographicLeftHanded(radius * 2, radius * 2, 1f, 160f);

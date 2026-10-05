@@ -18,10 +18,11 @@ cbuffer Frame : register(b1)
     uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: golden hour (Direct3D), 2: blue hour (ray traced)
     float4 Logo;                          // the logo's turn toward the camera (cos, sin) and its float (lift): GardenGpu.LogoMotion
     uint Samples; uint3 FramePad;         // ray tracer: camera rays a pixel
+    float4 Backdrop;                      // the mountains round the horizon: the heights they cover as tangents (low, high), and 1 when they are there
 };
 
 struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Pad; };
-struct Material { uint Kind; int Texture; float RoomOffset; float Pad; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
+struct Material { uint Kind; int Texture; float RoomOffset; int NormalTexture; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
 struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float2 Pad; };
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5;
@@ -84,7 +85,11 @@ struct Surface { float3 Albedo; float Alpha; float Roughness; float Metallic; fl
 Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
 {
     Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission; s.Normal = n;
-    if (m.Texture >= 0) { s.Albedo *= texel.rgb; s.Alpha *= texel.a; }
+    if (m.Texture >= 0)   // alpha: a leaf card's opacity, any other surface's roughness
+    {
+        s.Albedo *= texel.rgb;
+        if (m.Kind == KCutout) s.Alpha *= texel.a; else s.Roughness = texel.a;
+    }
     if (m.Kind == KBrick)
     {
         float2 b = Brick(FaceCoords(p, n) * m.Pattern.x, m.Pattern.y, m.Pattern.z, m.Pattern.w);
@@ -95,6 +100,16 @@ Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
     else if (m.Kind == KFlat && m.Texture < 0)
         s.Albedo *= lerp(1, 0.8 + 0.4 * Noise3(p * 4), 0.3);
     return s;
+}
+
+// A normal map's direction (tangent space, x in alpha and y in green) on a surface whose texture runs along t (its u) and b (its v):
+// the stone's joints, the plaster's straw and the wood's grain catch the light as relief, on flat triangles.
+float3 Bumped(float3 n, float3 t, float3 b, float4 texel)
+{
+    float2 xy = float2(texel.a, texel.g) * 2 - 1;
+    t -= n * dot(n, t); b -= n * dot(n, b);
+    float lt = dot(t, t), lb = dot(b, b); if (lt < 1e-12 || lb < 1e-12) return n;
+    return normalize(t * rsqrt(lt) * xy.x + b * rsqrt(lb) * xy.y + n * sqrt(saturate(1 - dot(xy, xy))));
 }
 
 // ——— lighting ———
@@ -114,10 +129,8 @@ float3 SkyColor(float3 dir)
 // at one Time is the same), thinning toward the horizon, lit on the sun's side. Used where the sky itself is seen (background, the water's
 // mirror, a ray that leaves the scene); the glossy sheen on surfaces keeps the plain gradient, which is what they would blur it to.
 float Fbm(float3 p) { float a = 0.5, f = 0; [unroll] for (int k = 0; k < 5; k++) { f += a * Noise3(p); p = p * 2.03 + 17.1; a *= 0.5; } return f; }
-float3 Sky(float3 dir)
+float3 Clouds(float3 c, float3 dir)
 {
-    float3 c = SkyColor(dir);
-    if (dir.y <= 0.01) return c;
     float2 q = dir.xz / (dir.y + 0.12) * 1.6 + float2(Time * 0.004, Time * 0.0015);
     float d = Fbm(float3(q, 3.7)), cover = smoothstep(0.42, 0.72, d) * smoothstep(0.01, 0.18, dir.y);
     if (cover <= 0) return c;
@@ -125,6 +138,23 @@ float3 Sky(float3 dir)
     float3 lit = Mode == 1 ? dot(SkyHorizon, 0.333) * float3(1.55, 1.42, 1.3) + SunColor * (0.04 + 0.12 * pow(toSun, 8))
                            : dot(SkyZenith, 0.333) * float3(1.1, 1.15, 1.45) + float3(0.5, 0.6, 0.9) * 0.05 * pow(toSun, 8);
     return lerp(c, lit * lerp(1, 0.62, thick), cover * 0.92);
+}
+
+// The mountains round the horizon (GardenBackdrop: a picture all the way round, its rows the tangent of the height): they stand in
+// front of the low sky and its clouds and give way to them above the peaks. At blue hour they are the same range after dusk.
+// Each renderer binds the picture and samples it its own way.
+float3 Mountains(float2 uv);
+float3 Sky(float3 dir)
+{
+    float3 c = SkyColor(dir);
+    if (dir.y > 0.01) c = Clouds(c, dir);
+    if (Backdrop.z <= 0) return c;
+    float t = dir.y / max(length(dir.xz), 1e-4), span = Backdrop.y - Backdrop.x;
+    float w = (1 - smoothstep(Backdrop.x + span * 0.55, Backdrop.x + span * 0.95, t)) * saturate(1 + (t - Backdrop.x) * 25);   // under the horizon the ground's haze takes over
+    if (w <= 0) return c;
+    float3 m = Mountains(float2(atan2(dir.x, dir.z) / (2 * Pi) + 0.5, clamp((t - Backdrop.x) / span, 0.004, 0.996)));
+    m = Mode == 1 ? m * 1.15 : lerp(dot(m, float3(0.3, 0.59, 0.11)), m, 0.3) * float3(0.07, 0.09, 0.18);
+    return lerp(c, m, w);
 }
 
 // The sky's light on a surface. By day it is about half the bright sky's colour, so the sun and its shadows give the courtyard its shape.

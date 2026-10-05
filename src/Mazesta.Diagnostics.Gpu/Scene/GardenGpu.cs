@@ -4,7 +4,8 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
 /// The garden on the GPU for one of its two scenes: every mesh in one vertex and one index buffer, the instances of that scene grouped by
-/// mesh (so each mesh is one instanced draw per material), the materials, the lights, and the textures as one BC3 texture array.
+/// mesh (so each mesh is one instanced draw per material), the materials, the lights, the textures (base colours and normal maps) as one
+/// BC3 texture array, and the mountains round the horizon.
 /// Both renderers build on it. The owner's Models\gpu-test.obj, when there is one, takes the logo's place over the pool.
 /// </summary>
 internal sealed unsafe class GardenGpu
@@ -35,6 +36,10 @@ internal sealed unsafe class GardenGpu
     public ID3D12Resource MeshInfoBuffer { get; } public ID3D12Resource SubmeshInfoBuffer { get; }
     public ID3D12Resource Textures { get; }
     public int TextureCount { get; }
+    /// <summary>The mountains round the horizon (a 4 x 4 stand-in when the scene has none) and, for the shaders, the range of heights
+    /// it covers as tangents (low, high) and whether it is there (1 or 0).</summary>
+    public ID3D12Resource Backdrop { get; } public Vector4 BackdropRange { get; }
+    private readonly int _textureMips;
 
     public GardenGpu(D3D12Session s, GardenScene scene, GardenScene.Mode mode, SceneModel? custom = null, string? customProblem = null)
     {
@@ -101,8 +106,11 @@ internal sealed unsafe class GardenGpu
         MeshInfoBuffer = s.Upload(infos.ToArray(), ResourceStates.NonPixelShaderResource);
         SubmeshInfoBuffer = s.Upload(subs.ToArray(), ResourceStates.NonPixelShaderResource);
 
-        TextureCount = Math.Max(1, scene.Textures.Count);
+        TextureCount = Math.Max(1, scene.Textures.Count); _textureMips = scene.TextureMips;
         Textures = UploadTextures(s, scene);
+        var sky = scene.Backdrop;
+        Backdrop = UploadImage(s, sky?.Width ?? 4, sky?.Height ?? 4, sky?.Bc3 ?? new byte[16]);
+        BackdropRange = sky is null ? Vector4.Zero : new(sky.TanLow, sky.TanHigh, 1, 0);
     }
 
     /// <summary>Whether a mesh blocks light: one made only of water, glass and glowing parts does not (a lantern's glass would otherwise hide its own lamp).</summary>
@@ -139,7 +147,7 @@ internal sealed unsafe class GardenGpu
 
     private ID3D12Resource UploadTextures(D3D12Session s, GardenScene scene)
     {
-        int size = Math.Max(4, scene.TextureSize), count = TextureCount, mips = GardenScene.TextureMips;
+        int size = Math.Max(4, scene.TextureSize), count = TextureCount, mips = _textureMips;
         var tex = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.BC3_UNorm_SRgb, (uint)size, (uint)size, (ushort)count, (ushort)mips), ResourceStates.CopyDest));
         // one staging buffer: every subresource at a 512-byte boundary, rows 256-byte aligned, as buffer-to-texture copies require
         var places = new List<(ulong Offset, uint Pitch, int Rows, int Width, byte[] Data)>(); ulong total = 0;
@@ -168,10 +176,28 @@ internal sealed unsafe class GardenGpu
         return tex;
     }
 
+    /// <summary>One BC3 image as a texture of a single mip.</summary>
+    private static ID3D12Resource UploadImage(D3D12Session s, int width, int height, byte[] bc3)
+    {
+        var tex = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.BC3_UNorm_SRgb, (uint)width, (uint)height, 1, 1), ResourceStates.CopyDest));
+        int across = width / 4, rows = height / 4; uint pitch = (uint)((across * 16 + 255) & ~255);
+        using var staging = s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(pitch * (ulong)rows), ResourceStates.GenericRead);
+        var dst = staging.Map<byte>(0, (int)(pitch * rows));
+        for (int r = 0; r < rows; r++) bc3.AsSpan(r * across * 16, across * 16).CopyTo(dst[(int)(r * pitch)..]);
+        staging.Unmap(0);
+        s.Run(l =>
+        {
+            var footprint = new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Format.BC3_UNorm_SRgb, (uint)width, (uint)height, 1, pitch) };
+            l.CopyTextureRegion(new TextureCopyLocation(tex, 0), 0, 0, 0, new TextureCopyLocation(staging, footprint));
+            l.ResourceBarrierTransition(tex, ResourceStates.CopyDest, ResourceStates.PixelShaderResource | ResourceStates.NonPixelShaderResource);
+        });
+        return tex;
+    }
+
     public ShaderResourceViewDescription TextureView => new()
     {
         Format = Format.BC3_UNorm_SRgb, ViewDimension = ShaderResourceViewDimension.Texture2DArray, Shader4ComponentMapping = ShaderComponentMapping.Default,
-        Texture2DArray = new Texture2DArrayShaderResourceView { MipLevels = GardenScene.TextureMips, ArraySize = (uint)TextureCount }
+        Texture2DArray = new Texture2DArrayShaderResourceView { MipLevels = (uint)_textureMips, ArraySize = (uint)TextureCount }
     };
 
     /// <summary>The owner's model in the logo's place and size: turned to face down the garden as the logo does, as wide as it.</summary>
@@ -212,6 +238,7 @@ internal struct GardenFrame
     public uint Width, Height, Pitch, Mode;
     public Vector4 Logo;
     public uint Samples, Pad0, Pad1, Pad2;
+    public Vector4 Backdrop;
 
     /// <summary>The camera, sky and key light of <paramref name="g"/>'s scene at <paramref name="time"/>, seen at <paramref name="width"/> x <paramref name="height"/>.</summary>
     public static GardenFrame For(GardenGpu g, float time, int width, int height)
@@ -232,7 +259,7 @@ internal struct GardenFrame
             GroundColor = raster ? new(0.30f, 0.24f, 0.18f) : new(0.020f, 0.018f, 0.025f),
             Exposure = raster ? 1.05f : 1.6f,
             ViewSize = new(width, height), CamRight = right, CamUp = up, CamForward = forward, TanHalfFovY = MathF.Tan(fovY / 2), Aspect = aspect,
-            Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u
+            Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u, Backdrop = g.BackdropRange
         };
         var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0);
         return f;

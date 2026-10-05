@@ -27,6 +27,39 @@ public class GardenSceneTests
         Assert.All(G.Materials.Where(m => m.Kind == GardenMaterialKind.Cutout), m => Assert.True(m.Texture >= 0));
     }
 
+    [Fact] public void Every_texture_is_a_whole_mip_chain_at_the_array_s_size_and_the_building_has_its_normal_maps()
+    {
+        Assert.Equal(512, G.TextureSize);
+        Assert.All(G.Textures, t => { Assert.Equal(G.TextureMips, t.Length); for (int m = 0, s = G.TextureSize; m < t.Length; m++, s /= 2) Assert.Equal(s / 4 * (s / 4) * 16, t[m].Length); });
+        Assert.Equal(4, G.Textures[0][^1].Length / 16 * 4);   // down to one 4 x 4 block
+        var relief = G.Materials.Where(m => m.NormalTexture >= 0).ToList();
+        Assert.True(relief.Count >= 4);   // limestone, kahgel, walnut, the turquoise tile
+        Assert.All(relief, m => { Assert.Equal(GardenMaterialKind.Flat, m.Kind); Assert.True(m.Texture >= 0 && m.Texture != m.NormalTexture); });
+    }
+
+    [Fact] public void A_texture_doubled_in_its_blocks_shows_each_texel_four_times()
+    {
+        // one block: end alphas 200 and 40, end colours white and black, texel k picks alpha k % 8 and colour k % 4
+        ulong alpha = 0; uint color = 0; for (int k = 0; k < 16; k++) { alpha |= (ulong)(k % 8) << k * 3; color |= (uint)(k % 4) << k * 2; }
+        byte[] block = [200, 40, (byte)alpha, (byte)(alpha >> 8), (byte)(alpha >> 16), (byte)(alpha >> 24), (byte)(alpha >> 32), (byte)(alpha >> 40), 0xFF, 0xFF, 0, 0, (byte)color, (byte)(color >> 8), (byte)(color >> 16), (byte)(color >> 24)];
+        byte[] doubled = GardenScene.Bc3Doubled(block, 1);
+        Assert.Equal(64, doubled.Length);
+        for (int y = 0; y < 8; y++)
+            for (int x = 0; x < 8; x++)
+            {
+                var b = doubled.AsSpan((y / 4 * 2 + x / 4) * 16, 16); int k = y % 4 * 4 + x % 4, from = y / 2 * 4 + x / 2;
+                Assert.Equal(block.AsSpan(0, 2).ToArray(), b[..2].ToArray()); Assert.Equal(block.AsSpan(8, 4).ToArray(), b.Slice(8, 4).ToArray());
+                Assert.Equal(from % 8, (int)(BitConverter.ToUInt64(b) >> 16 >> k * 3 & 7)); Assert.Equal(from % 4, (int)(BitConverter.ToUInt32(b[12..]) >> k * 2 & 3));
+            }
+    }
+
+    [Fact] public void The_mountains_stand_all_the_way_round_the_horizon()
+    {
+        var sky = G.Backdrop; Assert.NotNull(sky);
+        Assert.True(sky.Width >= 1024 && sky.Height >= 64); Assert.Equal(sky.Width / 4 * (sky.Height / 4) * 16, sky.Bc3.Length);
+        Assert.Equal(0f, sky.TanLow); Assert.InRange(sky.TanHigh, 0.2f, 0.6f);   // from the horizon to some 20 degrees up
+    }
+
     [Fact] public void The_logo_floats_over_the_middle_of_the_pool()
     {
         var logo = G.Instances.Single(i => (i.Flags & GardenScene.LogoFlag) != 0); var mesh = G.Meshes[(int)logo.Mesh];
@@ -51,7 +84,7 @@ public class GardenSceneTests
         static MemoryStream Gz(byte[] raw) { var ms = new MemoryStream(); using (var gz = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true)) gz.Write(raw); ms.Position = 0; return ms; }
         Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz("NOPE"u8.ToArray())));
         Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 99, 0, 0, 0])));        // another version
-        Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 1, 0, 0, 0, 1, 0])));  // cut short
+        Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 2, 0, 0, 0, 1, 0])));  // cut short
     }
 
     [Fact] public void The_camera_walks_inside_the_courtyard_and_comes_back_to_where_it_started()

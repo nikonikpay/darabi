@@ -1,6 +1,6 @@
-# Exports the courtyard scene (Mazesta-Art/courtyard-v6.blend: V4's plants and light rigs around the V6 building, made by Mazesta-Art/scripts/prepare_courtyard_v6.py)
+# Exports the courtyard scene (Mazesta-Art/courtyard-v8.blend: V4's plants and light rigs around the V8 building, made by tools/scene/prepare_courtyard_v8.py)
 # to the file the visual GPU tests draw: src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
-#   blender --background ../Mazesta-Art/courtyard-v6.blend --python tools/scene/export_garden.py
+#   blender --background ../Mazesta-Art/courtyard-v8.blend --python tools/scene/export_garden.py
 # (it also runs from Blender's Text Editor with the .blend open).
 #
 # Both of the file's scenes are read: Garden_Raster (the Direct3D test: golden-hour sun) and Garden_RT (the ray-traced test: blue hour,
@@ -9,24 +9,42 @@
 # The format is documented in GardenScene.cs, which reads it. In short, gzip over little-endian records:
 #   meshes    - 16-byte vertices (position snorm16x4 within the mesh's bounds, normal snorm8x4, uv float16x2), 32-bit indices, one submesh per material
 #   instances - a mesh, a 3x4 world matrix, which scene(s) it is in
+#   (vertices, indices and instances are written byte plane by byte plane, the indices as differences, the vertices in the order the
+#   indices first use them: the same data, a little over half the size once gzip has been over it)
 #   materials - flat, alpha-tested (texture), brick pattern (procedural, as in Blender), water, glass, emissive
-#   textures  - 256x256 BC3 (sRGB) with mips down to 4x4, base colour with the opacity in alpha
+#   textures  - BC3 (sRGB) with mips down to 4x4, 512x512 for the building's stone, plaster, wood and tile, 256x256 for the rest:
+#               base colour with, in alpha, a leaf card's opacity or else the surface's roughness; or a normal map (x in alpha, y in green)
 #   lights    - sun, point, spot (area lights become wide spots), watts as Blender has them
+#   backdrop  - the mountains round the horizon (V8's world panorama, laid as its world lays it): one BC3 image, 360 degrees wide
 # Coordinates are turned from Blender's (x right, y forward, z up) to Direct3D's (x right, y up, z forward).
 import bpy, bmesh, numpy as np, struct, gzip, math, os, io, re
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath), "..", "Mazesta"))
 OUT = os.environ.get("MAZESTA_SCENE_OUT") or os.path.join(REPO, "src", "Mazesta.Diagnostics.Gpu", "Scene", "garden.mzscene")
 SCENES = (("Garden_Raster", 1), ("Garden_RT", 2))
-TEX = 256
-# The orsi's panes show a room behind them (interior mapping, Garden.hlsli Interior): one room per bay of the V6 building, whose piers
-# stand 2.8 m apart from x = -9.85; rooms 4 m deep, from the hall's floor (1.07 m) to the underside of its header (5.41 m).
-WINDOW_GLASS = 'CV6_Glass_'
-ROOM = (2.8, 4.0, 1.07, 5.41); ROOM_OFFSET = -9.85
+TEX, SMALL = 512, 256
+# V8's stone and soil are lighter than this renderer's sun and tone curve leave room for (Cycles shows them under a filmic view): their
+# base colours are scaled so the paving keeps its joints and the beds read as damp earth, as in V8's own preview renders.
+ALBEDO_SCALE = {"V8_Limestone": 0.8, "V8_Carved_Pale_Limestone": 0.85, "V8_Granular_Garden_Loam": 0.5}
+BIG_TEXTURES = ("V8_", "CV5_")   # the materials whose textures are kept at TEX: the ones the walk passes within arm's reach, tiled over metres
+# The orsi's panes show a room behind them (interior mapping, Garden.hlsli Interior): one room per bay of the building, whose bays
+# are 2.8 m wide from x = -9.8; rooms 4 m deep, from the hall's floor (1.07 m) to the underside of its header (5.41 m).
+WINDOW_GLASS = 'V7_Stained_'
+ROOM = (2.8, 4.0, 1.07, 5.41); ROOM_OFFSET = -9.8
 DECIMATE_OVER = 6000            # hard-surface meshes above this many triangles are simplified (lantern glass, pots, trunks)
 PER_MESH_BUDGET = 400_000       # a mesh placed thousands of times (ivy leaves, blossoms) is simplified until all its copies together stay under this
-KEEP_DETAIL = ("CypressFoliage",)
-MAGIC, VERSION = b"MZSC", 1
+KEEP_DETAIL = ("CypressFoliage", "V7_", "V8_", "CV4_Walls", "CV5_PoolDetails")   # the trees' crowns, and the building: its carving and lattices are what is looked at
+# The building's heaviest meshes, simplified to what the walk can tell apart (the windcatchers' carving is on the roof, never nearer than 12 m).
+BUDGET = {"V7_Orsi_V7_Walnut": 160_000, "V7_OpenDoor_V7_Walnut": 45_000, "V8_Carved_Windcatchers_V8_Carved_Pale_Limestone": 50_000}
+# Its bevels are 2 to 4 mm wide and multiply its triangles by up to eight; the soil's subdivision smooths what is nearly flat. Neither is exported.
+BUILDING = ("V7_", "V8_", "CV4_", "CV5_", "PV2_")
+for o in bpy.data.objects:
+    if o.type == 'MESH' and o.name.startswith(BUILDING):
+        for m in o.modifiers:
+            if m.type in ('BEVEL', 'SUBSURF'): m.show_viewport = m.show_render = False
+# The backdrop: all the way round by the tangent of the height above the horizon, 0 to SKY_TAN (20 degrees: the peaks reach 10)
+SKY_WORLD, SKY_W, SKY_H, SKY_TAN = "V8_Alborz_Sunset_HDR", 2048, 256, 0.36
+MAGIC, VERSION = b"MZSC", 2
 K_FLAT, K_CUTOUT, K_BRICK, K_WATER, K_GLASS, K_EMISSIVE = 0, 1, 2, 3, 4, 5
 
 def swap(v): return (v[0], v[2], v[1])   # Blender -> Direct3D axes
@@ -60,26 +78,39 @@ def principled(mat):
 def srgb_to_lin(c): return tuple((x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4) for x in c)
 
 textures, texture_index = [], {}
-def texture_for(color_img, alpha_src, ops=()):
-    key = (color_img.name if color_img else None, alpha_src[0].name if alpha_src else None) + (tuple(alpha_src[1:]) if alpha_src else ()) + (ops,)
+def texture_for(color_img, alpha_src, ops=(), rough=1.0, size=SMALL):
+    """rough: what a texture without a cut-out keeps in alpha - the roughness image, or the material's one value."""
+    rough_key = None if alpha_src else (rough.name if hasattr(rough, 'name') else round(rough, 2))
+    key = (color_img.name if color_img else None, alpha_src[0].name if alpha_src else None) + (tuple(alpha_src[1:]) if alpha_src else ()) + (ops, rough_key, size)
     if key in texture_index: return texture_index[key]
-    rgb = image_pixels(color_img)[..., :3] if color_img else np.ones((TEX, TEX, 3), np.float32)
+    rgb = image_pixels(color_img, size)[..., :3] if color_img else np.ones((size, size, 3), np.float32)
     if ops: rgb = grade(rgb, ops)
     if alpha_src:
-        ap = image_pixels(alpha_src[0])
+        ap = image_pixels(alpha_src[0], size)
         a = ap[..., 3] if alpha_src[1] == 'Alpha' else ap[..., :3].mean(axis=2)
         if alpha_src[2]: a = 1 - a
         a = np.clip((a - alpha_src[3]) * 40 + 0.5, 0, 1)   # the mask's own cut (a colour ramp's threshold), kept as a hard edge
         rgb = bleed(rgb, a > 0.5)
-    else: a = np.ones((TEX, TEX), np.float32)
-    texture_index[key] = len(textures); textures.append((np.dstack([rgb, a]), alpha_src is not None))
+    elif hasattr(rough, 'name'): a = image_pixels(rough, size)[..., :3].mean(axis=2)
+    else: a = np.full((size, size), rough, np.float32)
+    texture_index[key] = len(textures); textures.append((np.dstack([rgb, a]), alpha_src is not None, False))
+    return texture_index[key]
+
+def normal_texture_for(img, size, strength):
+    """A tangent-space normal map (Blender's: y up the image) as the shaders read it: x in alpha, y in green - the two channels BC3 keeps best.
+    The Normal Map node's strength is applied here (the slope is scaled)."""
+    key = ("normal", img.name, size, round(strength, 3))
+    if key in texture_index: return texture_index[key]
+    px = image_pixels(img, size); zero = np.zeros((size, size), np.float32)
+    xy = np.clip((px[..., :2] * 2 - 1) * strength, -1, 1) * 0.5 + 0.5
+    texture_index[key] = len(textures); textures.append((np.dstack([zero, xy[..., 1], zero, xy[..., 0]]), False, True))
     return texture_index[key]
 
 def bleed(rgb, solid):
     """The cut-away texels take the colour of the nearest kept ones, so filtering and smaller mips draw no background (white) rim round a leaf."""
     if not solid.any() or solid.all(): return rgb
     rgb = rgb.copy(); known = solid.copy()
-    for _ in range(TEX):
+    for _ in range(solid.shape[0]):
         if known.all(): break
         acc = np.zeros_like(rgb); n = np.zeros(known.shape, np.float32)
         for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)):
@@ -157,25 +188,34 @@ def tint(sock):
     if n.blend_type == 'MIX': return tuple((1 - f) + f * x / 0.5 for x in c)   # towards the constant, as if the image averaged mid-grey
     return (1.0, 1.0, 1.0)
 
-def image_pixels(img):
-    """The image at TEX x TEX, RGBA floats as stored (sRGB colour images stay sRGB-encoded), rows bottom to top as Blender keeps them."""
+def ramp_mean(sock):
+    """A procedural base colour (noise through a colour ramp, V8's loam): the middle of the ramp's colours."""
+    n = sock.links[0].from_node
+    if n.bl_idname != 'ShaderNodeValToRGB': return None
+    return tuple(float(np.mean([e.color[i] for e in n.color_ramp.elements])) for i in range(3))
+
+def image_pixels(img, size):
+    """The image at size x size, RGBA floats as stored (sRGB colour images stay sRGB-encoded), rows bottom to top as Blender keeps them."""
     c = img.copy()
     try:
-        if tuple(c.size) != (TEX, TEX): c.scale(TEX, TEX)
-        px = np.empty(TEX * TEX * 4, np.float32); c.pixels.foreach_get(px)
-        return px.reshape(TEX, TEX, 4)
+        if tuple(c.size) != (size, size): c.scale(size, size)
+        px = np.empty(size * size * 4, np.float32); c.pixels.foreach_get(px)
+        return px.reshape(size, size, 4)
     finally: bpy.data.images.remove(c)
 
 materials, material_index = [], {}
 def material_for(mat):
     name = mat.name if mat else "(none)"
     if name in material_index: return material_index[name]
-    rec = dict(kind=K_FLAT, tex=-1, base=(0.6, 0.6, 0.6), alpha=1.0, color2=(0, 0, 0), rough=0.6, mortar=(0, 0, 0), metal=0.0, emit=(0, 0, 0), trans=0.0, pattern=(0, 0, 0, 0))
+    size = TEX if name.startswith(BIG_TEXTURES) else SMALL
+    rec = dict(kind=K_FLAT, tex=-1, normal=-1, base=(0.6, 0.6, 0.6), alpha=1.0, color2=(0, 0, 0), rough=0.6, mortar=(0, 0, 0), metal=0.0, emit=(0, 0, 0), trans=0.0, pattern=(0, 0, 0, 0))
     p = principled(mat)
     if p:
         bc = p.inputs['Base Color']
         rec['base'] = tuple(bc.default_value[:3]); rec['rough'] = float(p.inputs['Roughness'].default_value); rec['metal'] = float(p.inputs['Metallic'].default_value)
+        rough_img = upstream_image(p.inputs['Roughness'])
         if p.inputs['Roughness'].is_linked: rec['rough'] = 0.6
+        if bc.is_linked and not upstream_image(bc): rec['base'] = ramp_mean(bc) or rec['base']
         rec['trans'] = float(p.inputs['Transmission Weight'].default_value)
         es = float(p.inputs['Emission Strength'].default_value); ec = p.inputs['Emission Color'].default_value
         rec['emit'] = (ec[0] * es, ec[1] * es, ec[2] * es)
@@ -189,15 +229,19 @@ def material_for(mat):
             rec.update(kind=K_BRICK, base=tuple(brick.inputs['Color1'].default_value[:3]), color2=tuple(brick.inputs['Color2'].default_value[:3]), mortar=tuple(brick.inputs['Mortar'].default_value[:3]),
                        pattern=(brick.inputs['Scale'].default_value * s, brick.inputs['Mortar Size'].default_value, brick.inputs['Brick Width'].default_value, brick.inputs['Row Height'].default_value))
         elif img or alpha:
-            rec['tex'] = texture_for(img[0] if img else None, alpha, grade_ops(bc) if img else ())
+            rec['tex'] = texture_for(img[0] if img else None, alpha, grade_ops(bc) if img else (), rough_img[0] if rough_img else rec['rough'], size)
             if img: rec['base'] = tint(bc)
             if alpha: rec['kind'] = K_CUTOUT
+            bump = upstream_image(p.inputs['Normal'])   # the hard surfaces' own relief (stone joints, plaster, grain); leaves do without
+            node = next((n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeNormalMap'), None)
+            if bump and node and not alpha and size == TEX: rec['normal'] = normal_texture_for(bump[0], size, float(node.inputs['Strength'].default_value))
         base = re.sub(r'\.\d{3}$', '', name)   # an appended copy of a material is named "....001"
         if base.endswith('Water'): rec['kind'] = K_WATER
-        elif rec['trans'] > 0.5 or base == 'Spray': rec['kind'] = K_GLASS
+        elif rec['trans'] > 0.5 or base == 'Spray' or base.endswith('Foam'): rec['kind'] = K_GLASS
         elif max(rec['emit']) > 0.5 and rec['kind'] == K_FLAT: rec['kind'] = K_EMISSIVE
-        if base == 'Spray': rec['alpha'] = 0.5
+        if base == 'Spray' or base.endswith('Foam'): rec['alpha'] = 0.5
         if base.startswith(WINDOW_GLASS) and rec['kind'] == K_GLASS: rec.update(pattern=ROOM, room_offset=ROOM_OFFSET)
+        if base in ALBEDO_SCALE: rec['base'] = tuple(c * ALBEDO_SCALE[base] for c in rec['base'])
     material_index[name] = len(materials); materials.append(rec)
     return material_index[name]
 
@@ -219,7 +263,8 @@ def pack_pending():
     for key, me, slots, tris, name in pending:
         cutout = any(materials[material_for(m)]['kind'] == K_CUTOUT for m in slots)
         target = tris
-        if tris > DECIMATE_OVER and not cutout and not name.startswith(KEEP_DETAIL): target = DECIMATE_OVER
+        if name in BUDGET: target = min(tris, BUDGET[name])
+        elif tris > DECIMATE_OVER and not cutout and not name.startswith(KEEP_DETAIL): target = DECIMATE_OVER
         copies = counts.get(key, 1)
         if tris * copies > PER_MESH_BUDGET: target = min(target, max(48, PER_MESH_BUDGET // copies))
         data = decimated(me, slots, target / tris) if target < tris * 0.9 else pack(me, slots)
@@ -265,6 +310,9 @@ def pack(me, slots):
         subs.append((start, len(sel) * 3, material_for(slots[m] if m < len(slots) else None)))
         order.append(idx[sel]); start += len(sel) * 3
     indices = np.concatenate(order).ravel()
+    used, first_use = np.unique(indices, return_index=True); by_use = used[np.argsort(first_use)]   # vertices in the order the indices first use them
+    remap = np.zeros(len(vertices), np.uint32); remap[by_use] = np.arange(len(by_use), dtype=np.uint32)
+    vertices = vertices[by_use]; indices = remap[indices]
     return dict(centre=centre.astype(np.float32), extent=extent.astype(np.float32), vertices=vertices.tobytes(), vcount=len(vertices), indices=indices.astype(np.uint32).tobytes(), icount=len(indices), subs=subs)
 
 # ——— the scenes ———
@@ -327,7 +375,31 @@ for scene_name, bit in SCENES:
 if bpy.context.window: bpy.context.window.scene = bpy.data.scenes["Garden_Raster"]
 pack_pending()
 
+# ——— the backdrop ———
+
+def backdrop():
+    """The world's camera-ray panorama as the shaders look it up (Garden.hlsli Sky): column = the direction round the horizon (the app's
+    atan2(x, z)), row = the tangent of the height, lowest first. Each texel's direction goes through the world's own Mapping node
+    (scale, then rotation) and Cycles' equirectangular lookup, so the mountains stand where V8's renders have them."""
+    world = bpy.data.worlds.get(SKY_WORLD)
+    node = next((n for n in world.node_tree.nodes if n.bl_idname == 'ShaderNodeTexEnvironment' and n.image), None) if world else None
+    if node is None: return None
+    mp = node.inputs['Vector'].links[0].from_node if node.inputs['Vector'].is_linked else None
+    scale, rot = (tuple(mp.inputs['Scale'].default_value), tuple(mp.inputs['Rotation'].default_value)) if mp and mp.bl_idname == 'ShaderNodeMapping' else ((1, 1, 1), (0, 0, 0))
+    img = node.image; iw, ih = img.size
+    px = np.empty(iw * ih * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(ih, iw, 4)[..., :3]
+    az, tan = np.meshgrid((np.arange(SKY_W) + 0.5) / SKY_W * 2 * math.pi - math.pi, (np.arange(SKY_H) + 0.5) / SKY_H * SKY_TAN)
+    x, y, z = np.sin(az) * scale[0], np.cos(az) * scale[1], tan * scale[2]   # the app's (x, height, z) is Blender's (x, z, y)
+    c, s = math.cos(rot[2]), math.sin(rot[2]); x, y = c * x - s * y, s * x + c * y
+    u = (0.5 - np.arctan2(y, x) / (2 * math.pi)) % 1.0 * iw - 0.5; v = np.clip((0.5 + np.arctan2(z, np.hypot(x, y)) / math.pi) * ih - 0.5, 0, ih - 1)
+    u0 = np.floor(u).astype(int); v0 = np.minimum(np.floor(v).astype(int), ih - 2); fu = (u - u0)[..., None]; fv = (v - v0)[..., None]
+    sample = lambda uu, vv: px[vv, uu % iw]
+    out = (sample(u0, v0) * (1 - fu) + sample(u0 + 1, v0) * fu) * (1 - fv) + (sample(u0, v0 + 1) * (1 - fu) + sample(u0 + 1, v0 + 1) * fu) * fv
+    return np.dstack([out, np.ones((SKY_H, SKY_W), np.float32)])
+
 # ——— BC3 ———
+
+def srgb_encode(x): return np.where(x <= 0.0031308, x * 12.92, 1.055 * np.maximum(x, 0) ** (1 / 2.4) - 0.055)
 
 def mips_of(img, cutout):
     levels = [img]; ref = (img[..., 3] > 0.5).mean() if cutout else None
@@ -380,31 +452,46 @@ def bc3(img):
 
 # ——— write ———
 
+def planes(data, stride):
+    """Records of stride bytes as stride runs of one byte each (every record's first byte, then every second...)."""
+    return np.ascontiguousarray(np.frombuffer(data, np.uint8).reshape(-1, stride).T).tobytes()
+
 buf = io.BytesIO(); w = buf.write
 w(MAGIC); w(struct.pack("<I", VERSION))
 w(struct.pack("<6I", len(textures), len(materials), len(meshes), len(instances), len(lights), TEX))
-for img, cutout in textures:
-    for level in mips_of(img, cutout): w(bc3(level))
+for img, cutout, normal in textures:
+    w(struct.pack("<I", img.shape[0]))
+    for level in mips_of(img, cutout):
+        if normal: level = level.copy(); level[..., 1] = srgb_encode(level[..., 1])   # the array is sRGB: green comes back as it was
+        w(bc3(level))
 for m in materials:
-    w(struct.pack("<Ii", m['kind'], m['tex'])); w(struct.pack("<2f", m.get('room_offset', 0), 0))
+    w(struct.pack("<Ii", m['kind'], m['tex'])); w(struct.pack("<fi", m.get('room_offset', 0), m['normal']))
     w(struct.pack("<4f", *m['base'], m['alpha'])); w(struct.pack("<4f", *m['color2'], m['rough'])); w(struct.pack("<4f", *m['mortar'], m['metal']))
     w(struct.pack("<4f", *m['emit'], m['trans'])); w(struct.pack("<4f", *m['pattern']))
 for me in meshes:
     w(struct.pack("<3I", me['vcount'], me['icount'], len(me['subs']))); w(struct.pack("<6f", *me['centre'], *me['extent']))
     for s in me['subs']: w(struct.pack("<3I", *s))
-    w(me['vertices']); w(me['indices'])
-for mi, mask, flags, rows in instances.values():
-    w(struct.pack("<3I", mi, mask, flags)); w(struct.pack("<12f", *[x for r in rows for x in r]))
+    w(planes(me['vertices'], 16))
+    w(planes(np.diff(np.frombuffer(me['indices'], np.uint32).astype(np.int64), prepend=0).astype('<i4').tobytes(), 4))
+w(planes(b"".join(struct.pack("<3I12f", mi, mask, flags, *[x for r in rows for x in r]) for mi, mask, flags, rows in instances.values()), 60))
 for rec, mask in lights.values():
     kind, pos, aim, color, energy, cone, blend, radius, angle = rec
     w(struct.pack("<2I", kind, mask)); w(struct.pack("<3f3f3f", *pos, *aim, *color)); w(struct.pack("<5f", energy, cone, blend, radius, angle))
 for bit in (1, 2):
     pos, target, fov = cameras.get(bit, cameras.get(1))
     w(struct.pack("<7f", *pos, *target, fov))
+sky = backdrop()
+w(struct.pack("<2I2f", *((SKY_W, SKY_H, 0.0, SKY_TAN) if sky is not None else (0, 0, 0.0, 0.0))))
+if sky is not None:
+    w(bc3(sky))
+    lum = sky[..., :3].sum(axis=2); r, col = np.unravel_index(np.argmax(lum), lum.shape); sun = next((rec for rec, mask in lights.values() if rec[0] == 0 and mask & 1), None)
+    print("BACKDROP brightest at", round(math.degrees((col + 0.5) / SKY_W * 2 * math.pi - math.pi), 1), "degrees round from +z; the raster sun at",
+          round(math.degrees(math.atan2(-sun[2][0], -sun[2][2])), 1) if sun else None, "height", round(math.degrees(math.asin(-sun[2][1])), 1) if sun else None)
 raw = buf.getvalue()
 with open(OUT, "wb") as f: f.write(gzip.compress(raw, 9, mtime=0))
 tris = sum(m['icount'] for m in meshes) // 3
 per_frame = sum(meshes[mi]['icount'] // 3 for mi, mask, flags, rows in instances.values() if mask & 1)
+for t, name in sorted(((m['icount'] // 3, pending[i][4]) for i, m in enumerate(meshes) if m), reverse=True)[:30]: print("MESH", t, name)
 result = {"raster_tris_per_frame": per_frame, "file": OUT, "raw_mb": round(len(raw) / 1e6, 2), "gz_mb": round(os.path.getsize(OUT) / 1e6, 2), "meshes": len(meshes), "unique_tris": tris, "instances": len(instances),
-          "materials": len(materials), "textures": len(textures), "lights": len(lights)}
+          "materials": len(materials), "textures": len(textures), "big_textures": sum(1 for t in textures if t[0].shape[0] == TEX), "normal_maps": sum(1 for t in textures if t[2]), "lights": len(lights)}
 print(result)

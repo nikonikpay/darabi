@@ -6,7 +6,7 @@
 // reflect - up to Bounces deep. The random numbers come from a hash of the pixel and sample, never the clock: the same Time gives the same image.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 
-#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=2, b2), " \
+#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8, numDescriptors=2)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=2, b2), " \
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR)"
 
 #include "Garden.hlsli"
@@ -23,6 +23,7 @@ StructuredBuffer<SubInfo> Subs : register(t5);
 ByteAddressBuffer Vertices : register(t6);
 ByteAddressBuffer Indices : register(t7);
 Texture2DArray<float4> Textures : register(t8);
+Texture2D<float4> BackdropImage : register(t9);
 RWStructuredBuffer<uint> Pixels : register(u0);
 RWStructuredBuffer<float4> Ping : register(u1);    // the denoiser's light, as it goes from pass to pass (Ping -> Pong -> Ping ...)
 RWStructuredBuffer<float4> Guide : register(u2);   // per pixel: first surface's normal and distance, then its colour
@@ -30,9 +31,12 @@ RWStructuredBuffer<float4> Pong : register(u3);
 cbuffer Pass : register(b2) { uint Step; uint Last; };   // Step: tap spacing, bit 16 set when this pass reads Pong
 SamplerState Linear : register(s0);
 
+float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Linear, uv, 0).rgb; }
+
 static const uint MaskVisible = 1, MaskShadow = 2;
 
-struct Hit { float3 P; float3 N; float2 Uv; uint Material; };
+// T, B: the directions the texture's u and v run in over the triangle; Lod: the mip level at which a texel is the size of a pixel there
+struct Hit { float3 P; float3 N; float2 Uv; uint Material; float3 T; float3 B; float Lod; };
 
 uint Hash(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return x; }
 float Rand(inout uint seed) { seed = Hash(seed); return (seed >> 8) * (1.0 / 16777216.0); }
@@ -67,7 +71,7 @@ bool AlphaPass(uint instance, uint geometry, uint prim, float2 bary)
     return Textures.SampleLevel(Linear, float3(UvAt(instance, geometry, prim, bary), mat.Texture), 1).a >= 0.5;
 }
 
-Hit Fetch(uint instance, uint geometry, uint prim, float2 bary, float3 p)
+Hit Fetch(uint instance, uint geometry, uint prim, float2 bary, float3 p, float dist)
 {
     Instance inst = Instances[instance]; MeshInfo m = Meshes[inst.Mesh]; SubInfo s = Subs[m.FirstSubmesh + geometry];
     uint3 t = Triangle(s, prim);
@@ -78,6 +82,17 @@ Hit Fetch(uint instance, uint geometry, uint prim, float2 bary, float3 p)
     h.N = normalize(mul(Rotation(inst), na + (nb - na) * bary.x + (nc - na) * bary.y));
     if (inst.Flags & 1) h.N = LogoTurn(h.N);
     h.Uv = ua + (ub - ua) * bary.x + (uc - ua) * bary.y;
+    float3 pa = DecodePosition(Vertices.Load2(o.x), 0, m.Extent), e1 = mul(Rotation(inst), DecodePosition(Vertices.Load2(o.y), 0, m.Extent) - pa), e2 = mul(Rotation(inst), DecodePosition(Vertices.Load2(o.z), 0, m.Extent) - pa);
+    float2 d1 = ub - ua, d2 = uc - ua; float det = d1.x * d2.y - d2.x * d1.y, area = length(cross(e1, e2));
+    h.T = 0; h.B = 0; h.Lod = 0;
+    if (abs(det) > 1e-12 && area > 1e-12)
+    {
+        h.T = (e1 * d2.y - e2 * d1.y) / det; h.B = (e2 * d1.x - e1 * d2.x) / det;
+        if (inst.Flags & 1) { h.T = LogoTurn(h.T); h.B = LogoTurn(h.B); }
+        uint w, hh, layers, levels; Textures.GetDimensions(0, w, hh, layers, levels);
+        // texels a metre (the triangle's share of the texture over its size) times the metres a pixel spans at this distance
+        h.Lod = clamp(log2(max(sqrt(abs(det) / area) * w * dist * 2 * TanHalfFovY / Height, 1e-6)) - 0.5, 0, levels - 1);
+    }
     return h;
 }
 
@@ -91,7 +106,7 @@ bool Trace(float3 origin, float3 dir, float tmax, uint mask, out Hit hit)
             q.CommitNonOpaqueTriangleHit();
     hit = (Hit)0;
     if (q.CommittedStatus() != COMMITTED_TRIANGLE_HIT) return false;
-    hit = Fetch(q.CommittedInstanceID(), q.CommittedGeometryIndex(), q.CommittedPrimitiveIndex(), q.CommittedTriangleBarycentrics(), origin + dir * q.CommittedRayT());
+    hit = Fetch(q.CommittedInstanceID(), q.CommittedGeometryIndex(), q.CommittedPrimitiveIndex(), q.CommittedTriangleBarycentrics(), origin + dir * q.CommittedRayT(), q.CommittedRayT());
     return true;
 }
 
@@ -109,9 +124,11 @@ bool Occluded(float3 origin, float3 dir, float tmax)
 Surface SurfaceAt(Hit h, float3 v)
 {
     Material m = Materials[h.Material];
-    float4 texel = m.Texture >= 0 ? Textures.SampleLevel(Linear, float3(h.Uv, m.Texture), 0) : 1;
+    float4 texel = m.Texture >= 0 ? Textures.SampleLevel(Linear, float3(h.Uv, m.Texture), h.Lod) : 1;
     float3 n = h.N; if (dot(n, v) < 0) n = -n;
-    return MaterialSurface(m, h.P, n, texel);
+    Surface s = MaterialSurface(m, h.P, n, texel);
+    if (m.NormalTexture >= 0) s.Normal = Bumped(n, h.T, h.B, Textures.SampleLevel(Linear, float3(h.Uv, m.NormalTexture), h.Lod));
+    return s;
 }
 
 // Light arriving from the moon and every lamp in reach. With shadows, each is checked by a ray to a random point on it (the moon's

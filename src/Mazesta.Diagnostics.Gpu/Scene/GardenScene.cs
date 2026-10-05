@@ -2,22 +2,28 @@ using System.IO.Compression; using System.Numerics; using System.Reflection; usi
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The Persian garden both visual GPU tests draw: a walled courtyard with a pool, a columned hall, cypresses, flower beds, lanterns and the
-/// Mazesta logo floating over the water. Built in Blender (Mazesta-Art/persian-garden.blend) and written by tools/scene/export_garden.py
+/// The Persian garden both visual GPU tests draw: a walled courtyard with a pool, a columned hall with windcatchers, cypresses, flower beds,
+/// lanterns and the Mazesta logo floating over the water. Built in Blender (Mazesta-Art/courtyard-v8.blend: the owner's DFM_Courtyard_V8
+/// building among the earlier garden's plants and lights) and written by tools/scene/export_garden.py
 /// into garden.mzscene, embedded in this assembly; this reads it. The file holds both of the .blend's scenes: what only the Direct3D test
 /// shows (the golden-hour sun) or only the ray-traced one (its blue-hour light rig, glass orbs, a mirror sphere) is marked with <see cref="Mode"/>.
 /// <para>Format (gzip, little-endian): "MZSC", version, then counts of textures, materials, meshes, instances, lights and the texture size;
-/// the textures' BC3 mip chains; the materials (<see cref="GardenMaterial"/>, 96 bytes); each mesh (vertex and index counts, submeshes,
-/// quantisation centre and extent, 16-byte vertices, 32-bit indices); the instances (mesh, scene mask, flags, 3x4 world rows);
-/// the lights; and one camera per scene. Axes are Direct3D's: y up, z forward.</para>
+/// the textures (each its own size, then its BC3 mip chain: one stored smaller than the texture size is doubled on reading); the materials
+/// (<see cref="GardenMaterial"/>, 96 bytes); each mesh (vertex and index counts, quantisation centre and extent, submeshes, 16-byte vertices,
+/// 32-bit indices); the instances (mesh, scene mask, flags, 3x4 world rows); the lights; one camera per scene; and the backdrop
+/// (<see cref="GardenBackdrop"/>: width, height, the range it covers and one BC3 image; width 0 when there is none).
+/// Vertices, indices and instances are stored byte plane by byte plane (every record's first byte, then every second...), the indices
+/// as differences from the one before: gzip makes far less of them that way. Axes are Direct3D's: y up, z forward.</para>
 /// </summary>
 public sealed class GardenScene
 {
-    public const int Version = 1, TextureMips = 7;
+    public const int Version = 2;
     [Flags] public enum Mode : uint { Raster = 1, RayTraced = 2 }
     public const uint LogoFlag = 1;
 
     public int TextureSize { get; private init; }
+    /// <summary>Mip levels of every texture: <see cref="TextureSize"/> down to 4.</summary>
+    public int TextureMips => int.Log2(Math.Max(4, TextureSize)) - 1;
     /// <summary>Each texture's BC3 mip chain (TextureSize down to 4), largest first.</summary>
     public IReadOnlyList<byte[][]> Textures { get; private init; } = [];
     public GardenMaterial[] Materials { get; private init; } = [];
@@ -27,6 +33,8 @@ public sealed class GardenScene
     /// <summary>The Blender camera of each scene: where the hero shot stands and looks, and its vertical field of view.</summary>
     public (Vector3 Eye, Vector3 Target, float FovY) RasterCamera { get; private init; }
     public (Vector3 Eye, Vector3 Target, float FovY) RayCamera { get; private init; }
+    /// <summary>The mountains round the horizon, when the scene has them.</summary>
+    public GardenBackdrop? Backdrop { get; private init; }
 
     public long UniqueTriangles => Meshes.Sum(m => (long)m.Indices.Length / 3);
     public long Triangles(Mode mode) => Instances.Where(i => (i.Mask & (uint)mode) != 0).Sum(i => (long)Meshes[(int)i.Mesh].Indices.Length / 3);
@@ -52,12 +60,15 @@ public sealed class GardenScene
         if (r.Bytes(4).Span is not [(byte)'M', (byte)'Z', (byte)'S', (byte)'C']) throw new InvalidDataException("Not a Mazesta scene file.");
         int version = r.I32(); if (version != Version) throw new InvalidDataException($"Scene file version {version}; this build reads {Version}.");
         int nTex = r.I32(), nMat = r.I32(), nMesh = r.I32(), nInst = r.I32(), nLight = r.I32(), size = r.I32();
+        if (size < 4 || size > 4096 || !int.IsPow2(size)) throw new InvalidDataException($"Texture size {size}.");
         var textures = new List<byte[][]>(nTex);
         for (int t = 0; t < nTex; t++)
         {
-            var mips = new byte[TextureMips][];
-            for (int m = 0, s = size; m < TextureMips; m++, s /= 2) mips[m] = r.Bytes(Math.Max(1, s / 4) * Math.Max(1, s / 4) * 16).ToArray();
-            textures.Add(mips);
+            int own = r.I32(); if (own < 4 || own > size || !int.IsPow2(own)) throw new InvalidDataException($"A texture of size {own} in a scene of {size}.");
+            var mips = new List<byte[]>();
+            for (int s = own; s >= 4; s /= 2) mips.Add(r.Bytes(s / 4 * (s / 4) * 16).ToArray());
+            for (int s = own; s < size; s *= 2) mips.Insert(0, Bc3Doubled(mips[0], s / 4));
+            textures.Add([.. mips]);
         }
         var materials = MemoryMarshal.Cast<byte, GardenMaterial>(r.Bytes(nMat * Marshal.SizeOf<GardenMaterial>()).Span).ToArray();
         var meshes = new List<GardenMesh>(nMesh);
@@ -66,14 +77,21 @@ public sealed class GardenScene
             int vc = r.I32(), ic = r.I32(), sc = r.I32();
             var centre = new Vector3(r.F32(), r.F32(), r.F32()); var extent = new Vector3(r.F32(), r.F32(), r.F32());
             var subs = MemoryMarshal.Cast<byte, GardenSubmesh>(r.Bytes(sc * 12).Span).ToArray();
-            var vertices = r.Bytes(vc * 16).ToArray();
-            var indices = MemoryMarshal.Cast<byte, uint>(r.Bytes(ic * 4).Span).ToArray();
+            var vertices = Records(r.Bytes(checked(vc * 16)).Span, 16);
+            var indices = MemoryMarshal.Cast<byte, uint>(Records(r.Bytes(checked(ic * 4)).Span, 4)).ToArray();
+            for (int k = 1; k < indices.Length; k++) indices[k] += indices[k - 1];
             meshes.Add(new GardenMesh(centre, extent, vertices, indices, subs));
         }
-        var instances = MemoryMarshal.Cast<byte, GardenInstance>(r.Bytes(nInst * Marshal.SizeOf<GardenInstance>()).Span).ToArray();
+        var instances = MemoryMarshal.Cast<byte, GardenInstance>(Records(r.Bytes(checked(nInst * Marshal.SizeOf<GardenInstance>())).Span, Marshal.SizeOf<GardenInstance>())).ToArray();
         var lights = MemoryMarshal.Cast<byte, GardenLight>(r.Bytes(nLight * Marshal.SizeOf<GardenLight>()).Span).ToArray();
         (Vector3, Vector3, float) Camera() => (new(r.F32(), r.F32(), r.F32()), new(r.F32(), r.F32(), r.F32()), r.F32());
         var rasterCam = Camera(); var rayCam = Camera();
+        int skyW = r.I32(), skyH = r.I32(); float skyLow = r.F32(), skyHigh = r.F32(); GardenBackdrop? backdrop = null;
+        if (skyW != 0)
+        {
+            if (skyW < 4 || skyH < 4 || skyW > 16384 || skyH > 16384 || skyW % 4 != 0 || skyH % 4 != 0 || !(skyHigh > skyLow)) throw new InvalidDataException($"A backdrop of {skyW} x {skyH}.");
+            backdrop = new GardenBackdrop(skyW, skyH, skyLow, skyHigh, r.Bytes(skyW / 4 * (skyH / 4) * 16).ToArray());
+        }
         if (!r.AtEnd) throw new InvalidDataException("The scene file has trailing data.");
         foreach (var inst in instances) if (inst.Mesh >= meshes.Count) throw new InvalidDataException($"An instance refers to mesh {inst.Mesh} of {meshes.Count}.");
         foreach (var mesh in meshes)
@@ -83,8 +101,38 @@ public sealed class GardenScene
                 if (sub.Material >= materials.Length || sub.IndexStart + sub.IndexCount > mesh.Indices.Length) throw new InvalidDataException("A submesh is out of range.");
             foreach (uint ix in mesh.Indices) if (ix >= vc) throw new InvalidDataException("An index is out of range.");
         }
-        foreach (var m in materials) if (m.Texture >= nTex) throw new InvalidDataException($"A material refers to texture {m.Texture} of {nTex}.");
-        return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam };
+        foreach (var m in materials) if (m.Texture >= nTex || m.NormalTexture >= nTex) throw new InvalidDataException($"A material refers to texture {Math.Max(m.Texture, m.NormalTexture)} of {nTex}.");
+        return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop };
+    }
+
+    /// <summary>Records of <paramref name="stride"/> bytes back from their byte planes.</summary>
+    private static byte[] Records(ReadOnlySpan<byte> planes, int stride)
+    {
+        int n = planes.Length / stride; var records = new byte[planes.Length];
+        for (int p = 0; p < stride; p++) { var plane = planes.Slice(p * n, n); for (int i = 0; i < n; i++) records[i * stride + p] = plane[i]; }
+        return records;
+    }
+
+    /// <summary>A BC3 image of <paramref name="blocks"/> x blocks 4x4 blocks at twice the size, each texel doubled: every block becomes four
+    /// that keep its end colours and alphas and repeat a quarter of its picks, so nothing is decoded or lost.</summary>
+    internal static byte[] Bc3Doubled(byte[] source, int blocks)
+    {
+        var doubled = new byte[source.Length * 4];
+        for (int by = 0; by < blocks * 2; by++)
+            for (int bx = 0; bx < blocks * 2; bx++)
+            {
+                var from = source.AsSpan((by / 2 * blocks + bx / 2) * 16, 16); var to = doubled.AsSpan((by * blocks * 2 + bx) * 16, 16);
+                from[..2].CopyTo(to); from.Slice(8, 4).CopyTo(to[8..]);
+                ulong alphaFrom = BitConverter.ToUInt64(from) >> 16, alphaTo = 0; uint colorFrom = BitConverter.ToUInt32(from[12..]), colorTo = 0;
+                for (int k = 0; k < 16; k++)
+                {
+                    int texel = (by % 2 * 2 + k / 4 / 2) * 4 + bx % 2 * 2 + k % 4 / 2;   // the source texel under this one
+                    alphaTo |= (alphaFrom >> texel * 3 & 7) << k * 3; colorTo |= (colorFrom >> texel * 2 & 3) << k * 2;
+                }
+                for (int k = 0; k < 6; k++) to[2 + k] = (byte)(alphaTo >> k * 8);
+                BitConverter.TryWriteBytes(to[12..], colorTo);
+            }
+        return doubled;
     }
 
     private sealed class Reader(ReadOnlyMemory<byte> data)
@@ -104,11 +152,13 @@ public sealed class GardenScene
 public enum GardenMaterialKind : uint { Flat, Cutout, Brick, Water, Glass, Emissive }
 
 /// <summary>A material as the shaders read it (six float4s). Colours are linear. Brick is Blender's brick texture, laid on each face from
-/// world coordinates as the .blend's own shader does: <see cref="Pattern"/> is its scale, mortar size, brick width and row height.</summary>
+/// world coordinates as the .blend's own shader does: <see cref="Pattern"/> is its scale, mortar size, brick width and row height.
+/// <see cref="Texture"/> holds the base colour and, in alpha, a leaf card's opacity or any other surface's roughness;
+/// <see cref="NormalTexture"/> (-1: none) a tangent-space normal map, x in alpha and y in green.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct GardenMaterial
 {
-    public GardenMaterialKind Kind; public int Texture; public float RoomOffset, Pad1;
+    public GardenMaterialKind Kind; public int Texture; public float RoomOffset; public int NormalTexture;
     public Vector3 Base; public float Alpha;
     public Vector3 Color2; public float Roughness;
     public Vector3 Mortar; public float Metallic;
@@ -140,6 +190,11 @@ public struct GardenInstance
     public Vector4 Row0, Row1, Row2;
     public readonly Vector3 Apply(Vector3 p) => new(Row0.X * p.X + Row0.Y * p.Y + Row0.Z * p.Z + Row0.W, Row1.X * p.X + Row1.Y * p.Y + Row1.Z * p.Z + Row1.W, Row2.X * p.X + Row2.Y * p.Y + Row2.Z * p.Z + Row2.W);
 }
+
+/// <summary>What stands round the horizon behind the courtyard: one BC3 (sRGB) image, <see cref="Width"/> texels all the way round
+/// (a direction's column is atan2(x, z) / 2 pi + 1/2), its rows the tangent of the height above the horizon from <see cref="TanLow"/>
+/// (first row) to <see cref="TanHigh"/>. Above it the sky is the shaders' own.</summary>
+public sealed record GardenBackdrop(int Width, int Height, float TanLow, float TanHigh, byte[] Bc3);
 
 public enum GardenLightKind : uint { Sun, Point, Spot }
 
