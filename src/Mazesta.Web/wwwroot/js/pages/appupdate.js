@@ -6,6 +6,7 @@ import { t, fa } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
 import { box } from "../groups.js";
 import { boot } from "../app.js";
+import { notesView } from "../releasenotes.js";
 
 export function mount(el) {
   const version = h("span", { class: "num au-ver" }), status = h("p", { class: "au-status" }), checked = h("p", { class: "caption" });
@@ -71,8 +72,7 @@ export function mount(el) {
     bar.hidden = s.state !== "Downloading"; bar.firstChild.style.setProperty("--p", s.progress);
     const offer = s.latest && ["Available", "Downloading", "Ready"].includes(s.state);
     notes.hidden = !offer;
-    if (offer) notes.replaceChildren(h("div", { class: "k" }, t("AppUpd_Notes"), " · ", h("span", { class: "lat" }, `v${v}`), " · ", t("AppUpd_Size", fa((s.latest.size / 1048576).toFixed(1)), s.latest.date)),
-      ...(s.latest.notes ? s.latest.notes.split("\n").filter(Boolean).map((line) => h("p", {}, line.replace(/^[-•*]\s*/, ""))) : []));
+    if (offer) notes.replaceChildren(h("div", { class: "k" }, t("AppUpd_Notes"), " · ", h("span", { class: "lat" }, `v${v}`), " · ", t("AppUpd_Size", fa((s.latest.size / 1048576).toFixed(1)), s.latest.date)), notesView(s.latest.notes));
     check.disabled = busy || s.dataBusy; sync.disabled = busy || s.dataBusy;
     now.hidden = !["Available", "Ready", "Downloading", "Installing"].includes(s.state) || !s.canInstall; now.disabled = s.state === "Downloading" || s.state === "Installing"; restart.hidden = now.hidden;
     checked.textContent = s.checkedAt ? t("AppUpd_Checked", s.checkedAt) : "";

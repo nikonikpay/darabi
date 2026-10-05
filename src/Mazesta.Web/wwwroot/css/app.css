@@ -100,7 +100,10 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
   text-decoration: none; position: relative; transition: color var(--fast), background var(--fast); white-space: nowrap; }
 .index-list a svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.75; }
 .index-list a .nm { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; }
-.index-list a .no { font: 600 10.5px var(--lat); color: var(--paper-3); opacity: 0; transition: opacity var(--fast); direction: ltr; }
+/* The hover mark is a drawn arrow (the shortcut is in the tooltip): no font, so nothing can show as a stray glyph. */
+.index-list a .no { display: grid; place-items: center; color: var(--paper-3); opacity: 0; transition: opacity var(--fast); }
+.index-list a .no svg { width: 14px; height: 14px; }
+[dir="ltr"] .index-list a .no svg { transform: scaleX(-1); }
 .index-list a:hover { color: var(--paper); background: var(--ink-2); }
 .index-list a:hover .no { opacity: 1; }
 .index-list a[aria-current="page"] { color: var(--paper); background: var(--ink-3); }
@@ -1021,14 +1024,46 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .ov-cline b { font: 700 1.2em/1 var(--lat); font-stretch: 76%; color: #fff; }
 .ov-cline b i { font-style: normal; font-size: 0.6em; color: #aeb4bb; margin-inline-start: 2px; }
 .ov-split:has(.ov-preview.compact) { grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); }
-/* The notice of a new release, with what changed in it. */
-.upd-dialog { border: 1px solid var(--line, rgb(255 255 255 / 0.14)); border-radius: 14px; background: var(--panel, #1b1d21); color: inherit; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
-.upd-dialog::backdrop { background: rgb(0 0 0 / 0.55); }
-.upd-box { padding: 22px 24px; display: grid; gap: 10px; }
-.upd-title { margin: 0; font-size: 1.25rem; }
-.upd-notes { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; max-height: 280px; overflow: auto; }
-.upd-notes li::marker { color: var(--yellow, #fdd400); }
-.upd-notes .dim { opacity: 0.6; list-style: none; margin-inline-start: -20px; }
+/* The notice of a new release: the versions, what changed (grouped, one short line each), and the progress of the update. */
+.upd-dialog { border: 1px solid var(--rule-2); border-radius: 14px; background: var(--ink-2); color: var(--paper); padding: 0; width: min(540px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: hidden; box-shadow: 0 24px 60px rgb(0 0 0 / 0.5); }
+.upd-dialog[open] { display: flex; }
+.upd-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+.upd-box { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 22px 24px 20px; }
+.upd-head { display: flex; align-items: center; gap: 14px; }
+.upd-mark { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: var(--yellow); color: var(--on-yellow); }
+.upd-mark svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2; }
+.upd-title { margin: 0; font-size: 1.2rem; line-height: 1.3; }
+.upd-versions { display: flex; align-items: center; gap: 8px; direction: ltr; justify-content: flex-end; margin-top: 3px; font-size: 12.5px; color: var(--paper-3); }
+[dir="rtl"] .upd-versions { justify-content: flex-start; }
+.upd-versions svg { width: 14px; height: 14px; stroke: var(--paper-3); transform: scaleX(-1); }
+.upd-versions b { color: var(--yellow); font-weight: 700; }
+.upd-facts { margin: -6px 0 0; font-size: 12.5px; color: var(--paper-3); }
+.upd-sub { margin: 0; font-size: 13px; font-weight: 700; color: var(--paper-2); }
+.upd-notes { min-height: 0; overflow: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--well); padding: 6px 14px 10px; max-height: 340px; }
+.rn-group + .rn-group { border-top: 1px solid var(--rule); }
+.rn-head { display: flex; align-items: center; gap: 9px; margin: 0; padding: 12px 0 6px; font-size: 13px; font-weight: 700; color: var(--hue); }
+.rn-badge { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: color-mix(in srgb, var(--hue) 18%, transparent); }
+.rn-badge svg { width: 14px; height: 14px; stroke: var(--hue); stroke-width: 2; }
+.rn-count { margin-inline-start: auto; min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--ink-3); color: var(--paper-2); font-size: 11.5px; font-weight: 700; text-align: center; line-height: 20px; }
+.rn-group.new { --hue: var(--yellow); } .rn-group.better { --hue: var(--c-cpu); } .rn-group.fix { --hue: var(--c-ram); }
+.rn-list { margin: 0; padding: 0 0 4px; list-style: none; display: grid; gap: 2px; }
+.rn-list li { position: relative; padding: 4px 0; padding-inline-start: 33px; font-size: 13.5px; line-height: 1.7; color: var(--paper); }
+.rn-list li::before { content: ""; position: absolute; inset-inline-start: 11px; top: 14px; width: 5px; height: 5px; border-radius: 50%; background: var(--hue, var(--paper-3)); }
+.rn-list.plain { padding-top: 8px; }
+.rn-none { margin: 10px 0; color: var(--paper-3); font-size: 13px; }
+.upd-work { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--ink-3); }
+.upd-work-line { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 600; }
+.upd-pct { font: 700 15px var(--lat); color: var(--yellow); direction: ltr; }
+.upd-work .progress { height: 8px; border-radius: 4px; }
+.upd-work .progress > i { border-radius: 4px; }
+.upd-work.busy .progress > i { animation: upd-pulse 1.4s ease-in-out infinite; }
+@keyframes upd-pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .upd-work.busy .progress > i { animation: none; } }
+.upd-restart { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--paper-3); }
+.upd-restart svg { flex: none; width: 15px; height: 15px; margin-top: 4px; stroke: var(--paper-3); }
+.upd-box .btn-row { margin-top: 2px; }
+.upd-box .btn-row .btn.primary { flex: 1; justify-content: center; }
+.au-notes .rn { margin-top: 8px; }
 .ov-saveset { margin-top: 10px; gap: 8px; align-items: center; }
 .ov-saveset .field { min-width: 200px; }
 .preset.user { display: flex; align-items: stretch; gap: 4px; padding: 0; }

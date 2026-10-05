@@ -3,6 +3,7 @@
 import { call, on } from "./bridge.js";
 import { t, fa } from "./i18n.js";
 import { h, icon } from "./ui.js";
+import { notesView } from "./releasenotes.js";
 
 const told = new Set();   // the versions already announced in this run
 let dialog = null, current = null;
@@ -19,16 +20,22 @@ export function start(boot) {
 }
 
 function open(s) {
-  const title = h("h2", { class: "upd-title" }), meta = h("p", { class: "caption" }), list = h("ul", { class: "upd-notes" });
-  const bar = h("div", { class: "progress", hidden: true }, h("i")), status = h("p", { class: "au-status", hidden: true });
+  const title = h("h2", { class: "upd-title", id: "upd-title" }), versions = h("div", { class: "upd-versions" }), facts = h("p", { class: "upd-facts" });
+  const notes = h("div", { class: "upd-notes" });
+  const pct = h("span", { class: "num upd-pct" }), what = h("span", { class: "upd-what" }), bar = h("div", { class: "progress" }, h("i"));
+  const work = h("div", { class: "upd-work", hidden: true }, h("div", { class: "upd-work-line" }, what, pct), bar);
+  const fail = h("p", { class: "au-status fail", hidden: true });
   const go = h("button", { class: "btn primary", type: "button", onclick: () => run() }, icon("update"), t("AppUpd_UpdateNow"));
   const later = h("button", { class: "btn", type: "button", onclick: () => close() }, t("AppUpd_Notice_Later"));
   dialog = h("dialog", { class: "upd-dialog", "aria-labelledby": "upd-title" },
-    h("div", { class: "upd-box" }, title, meta, h("h3", { class: "h3" }, t("AppUpd_Notes")), list, bar, status, h("p", { class: "note" }, t("AppUpd_Notice_Restart")), h("div", { class: "btn-row" }, go, later)));
-  title.id = "upd-title";
+    h("div", { class: "upd-box" },
+      h("header", { class: "upd-head" }, h("span", { class: "upd-mark" }, icon("update")), h("div", {}, title, versions)),
+      facts, h("h3", { class: "upd-sub" }, t("AppUpd_Notes")), notes, work, fail,
+      h("p", { class: "upd-restart" }, icon("refresh"), h("span", {}, t("AppUpd_Notice_Restart"))),
+      h("div", { class: "btn-row" }, go, later)));
   dialog.addEventListener("cancel", (e) => { if (current?.state === "Downloading" || current?.state === "Installing") e.preventDefault(); else close(); });
   document.body.append(dialog); dialog.showModal();
-  dialog._parts = { title, meta, list, bar, status, go, later };
+  dialog._parts = { title, versions, facts, notes, work, what, pct, bar, fail, go, later };
   paint(s);
   async function run() { try { paint(await call("upd.now")); } catch (e) { paint({ ...current, state: "Failed", error: String(e.message || e) }); } }
 }
@@ -37,17 +44,19 @@ function close() { dialog?.close(); dialog?.remove(); dialog = null; }
 
 function paint(s) {
   if (!dialog || !s?.latest) return;
-  current = s; const { title, meta, list, bar, status, go, later } = dialog._parts;
+  current = s; const { title, versions, facts, notes, work, what, pct, bar, fail, go, later } = dialog._parts;
   title.textContent = t("AppUpd_Notice_Title", s.latest.version);
-  meta.textContent = t("AppUpd_Size", fa((s.latest.size / 1048576).toFixed(1)), s.latest.date) + " · v" + s.current + " → v" + s.latest.version;
-  const lines = (s.latest.notes || "").split("\n").map((l) => l.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
-  list.replaceChildren(...(lines.length ? lines.map((l) => h("li", {}, l)) : [h("li", { class: "dim" }, t("AppUpd_NoNotes"))]));
-  const working = s.state === "Downloading" || s.state === "Ready" || s.state === "Installing";
-  bar.hidden = s.state !== "Downloading"; bar.firstChild.style.setProperty("--p", s.progress || 0);
-  status.hidden = !(working || s.state === "Failed");
-  status.className = `au-status ${s.state === "Failed" ? "fail" : "go"}`;
-  status.textContent = s.state === "Downloading" ? t("AppUpd_Downloading", fa(Math.round((s.progress || 0) * 100))) : s.state === "Installing" || s.state === "Ready" ? t("AppUpd_Installing")
-    : s.state === "Failed" ? t("AppUpd_Failed", s.error || "") : "";
+  versions.replaceChildren(h("span", { class: "lat" }, `v${s.current}`), icon("arrow"), h("b", { class: "lat" }, `v${s.latest.version}`));
+  facts.textContent = t("AppUpd_Size", fa((s.latest.size / 1048576).toFixed(1)), s.latest.date);
+  const key = s.latest.version + "|" + s.latest.notes;
+  if (notes.dataset.key !== key) { notes.dataset.key = key; notes.replaceChildren(notesView(s.latest.notes)); }
+  const downloading = s.state === "Downloading", installing = s.state === "Ready" || s.state === "Installing", working = downloading || installing;
+  work.hidden = !working;
+  what.textContent = downloading ? t("AppUpd_Step_Download") : t("AppUpd_Installing");
+  pct.textContent = downloading ? fa(Math.round((s.progress || 0) * 100)) + "%" : "";
+  work.classList.toggle("busy", installing);
+  bar.firstChild.style.setProperty("--p", downloading ? s.progress || 0 : 1);
+  fail.hidden = s.state !== "Failed"; fail.textContent = s.state === "Failed" ? t("AppUpd_Failed", s.error || "") : "";
   go.disabled = later.disabled = working;
-  go.hidden = false; if (s.state === "Failed") { go.disabled = false; later.disabled = false; }
+  if (s.state === "Failed") { go.disabled = false; later.disabled = false; }
 }

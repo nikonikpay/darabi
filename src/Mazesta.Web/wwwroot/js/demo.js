@@ -365,8 +365,8 @@ export async function call(m, p, emit) {
     case "checkup.setup": await new Promise((r) => setTimeout(r, 400)); return DEMO_FINDINGS.setup();
     case "checkup.run": return false;
     case "app.quiet": return false;
-    case "upd.state": case "upd.check": return { current: "0.6.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),
-      latest: { version: "0.7.0", size: 48234496, date: "2026/09/29", notes: "- به‌روزرسانی خودکار برنامه از سایت\n- مقایسه نتیجه بنچمارک با سیستم‌های دیگر" },
+    case "upd.state": case "upd.check": return { current: "0.10.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),
+      latest: { version: "0.10.1", size: 134217728, date: "2026/10/06", notes: "+ به‌روزرسانی با یک کلیک، همراه با فهرست تغییرات\n+ نور RGB بی‌پنجره، ذخیره‌شده و قابل کنترل از Tray\n+ پروفایل فن برای همه‌ی فن‌ها\n~ «نمایش نمودارها»: چیدمان فشرده و عنوان‌های انگلیسی\n~ پمپ AIO هرگز زیر ۶۰٪ نمی‌رود\n! رفع گیر کردن صفحه‌ی RGB روی «در حال اتصال»\n! رفع نوشته‌ی ناخوانا کنار منوی کناری" },
       data: { lists: 9, downloaded: 2, published: "2026/09/29 13:50", syncedAt: "2026/09/29 14:10" } };
     case "upd.now": return { ...(await call("upd.state", {}, emit)), state: "Installing" };
     case "rgb.state": return rgbState();
