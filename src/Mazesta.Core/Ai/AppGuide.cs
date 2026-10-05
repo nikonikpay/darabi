@@ -1,4 +1,4 @@
-using System.Text; using Mazesta.Core.Software;
+using System.Text; using System.Text.RegularExpressions; using Mazesta.Core.Software;
 namespace Mazesta.Core.Ai;
 
 /// <summary>
@@ -29,8 +29,10 @@ public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Pa
     public bool All { get; init; }
     /// <summary>For <see cref="AiIntent.Tests"/>: the parts are to be loaded at the same time ("همزمان").</summary>
     public bool Together { get; init; }
-    /// <summary>For <see cref="AiIntent.Tests"/>: the length asked for each load test, in minutes ("۵ دقیقه"), or null for the page's.</summary>
-    public int? Minutes { get; init; }
+    /// <summary>For <see cref="AiIntent.Tests"/>: the length asked for, in seconds ("۵ دقیقه", "۳۰ ثانیه", "۱ ساعت و ۳۰ دقیقه"), or null for the page's.</summary>
+    public int? Seconds { get; init; }
+    /// <summary>For <see cref="AiIntent.Tests"/>: <see cref="Seconds"/> is the whole run's, shared by the load tests ("به ترتیب در ۵ دقیقه"), not each one's.</summary>
+    public bool Total { get; init; }
 }
 
 /// <summary>
@@ -336,11 +338,9 @@ public static class AppGuide
             if (areas.Contains("gpu") && (Has(s, "رم گرافیک") || Has(s, "حافظه گرافیک"))) areas.Remove("memory");
             if (areas.Count > 0)
             {
-                // "۱۰ دقیقه": the number before the word, 1 to 180.
-                int? minutes = null; var words = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 1; i < words.Length; i++)
-                    if ((words[i].StartsWith("دقیقه", StringComparison.Ordinal) || words[i].StartsWith("min", StringComparison.Ordinal)) && int.TryParse(words[i - 1], out int n) && n is >= 1 and <= 180) minutes = n;
-                return new(AiIntent.Tests, Areas: areas) { All = Any(s, AllWords), Together = Any(s, TogetherWords), Minutes = minutes };
+                bool together = Any(s, TogetherWords);
+                var (seconds, inTotal) = Length(s);
+                return new(AiIntent.Tests, Areas: areas) { All = Any(s, AllWords), Together = together, Seconds = seconds, Total = inTotal && !together && areas.Count > 1 };
             }
         }
 
@@ -348,6 +348,25 @@ public static class AppGuide
         bool short_ = Words(s) <= 4 && !ask;
         if (place is not null && (go || page || short_ || doIt && place.Target is not null)) return new(AiIntent.Navigate, place);
         return new(AiIntent.None, place, App: app);
+    }
+
+    private static readonly Regex LengthPart = new(@"(?<in>(?:در|تو|طی|ظرف|in|within)\s+)?(?<n>\d{1,5})\s*(?<u>ساعت|hours?|hrs?|h|دقیقه|minutes?|mins?|m|ثانیه|seconds?|secs?|s)(?![a-z])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly string[] TotalWords = ["مجموع", "جمعا", "کلا", "total", "overall"];
+
+    /// <summary>The length a message names ("۱۰ دقیقه", "۹۰ ثانیه", "۲ ساعت و ۱۵ دقیقه", "نیم ساعت"), 5 seconds to 3 hours, or null; and whether it is the
+    /// whole run's ("در ۵ دقیقه", "مجموع ۵ دقیقه") rather than each test's.</summary>
+    internal static (int? Seconds, bool Total) Length(string s)
+    {
+        int sum = 0; bool any = false, total = Any(s, TotalWords);
+        foreach (Match m in LengthPart.Matches(s))
+        {
+            if (!int.TryParse(m.Groups["n"].Value, out int n)) continue;
+            string u = m.Groups["u"].Value;
+            sum += u[0] is 'س' or 'h' ? n * 3600 : u[0] is 'د' or 'm' ? n * 60 : n; any = true;
+            if (m.Groups["in"].Success) total = true;
+        }
+        if (!any && (s.Contains("نیم ساعت", StringComparison.Ordinal) || s.Contains("half an hour", StringComparison.Ordinal))) { sum = 1800; any = true; }
+        return any && sum is >= 5 and <= 10800 ? (sum, total) : (null, false);
     }
 
     private static readonly string[] CheckupWords = ["عیب یاب", "عیبیاب", "چکاپ", "چک اپ", "check up", "checkup", "diagnos", "troubleshoot"];

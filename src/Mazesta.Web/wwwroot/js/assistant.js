@@ -13,6 +13,7 @@ import { h, icon, toast } from "./ui.js";
 import { go, boot } from "./app.js";
 import { OUTCOME } from "./pages/tests.js";
 import { pageOfRun } from "./testrun.js";
+import { lengthText } from "./duration.js";
 
 const store = (key, v) => { try { if (v === undefined) return localStorage.getItem(key); localStorage.setItem(key, v); } catch { /* not kept */ } return null; };
 
@@ -155,7 +156,7 @@ export function mountAssistant(app, root) {
     const yes = h("button", { class: "btn primary", onclick: () => exec("assistant.exec", "confirm", { value: true, keep: boxes.map((b, i) => (b.checked ? i : -1)).filter((i) => i >= 0) }) }, icon("play"), t("Assist_Confirm_Yes"));
     for (const b of boxes) b.onchange = () => { yes.disabled = !boxes.some((x) => x.checked); };
     confirmBox.replaceChildren(h("h3", { class: "as-confirm-title" }, t(c.kind === "tests" ? "Assist_Confirm_Tests" : c.kind === "command" ? "Assist_Confirm_Command" : c.items.length > 1 ? "Assist_Confirm_Benchmarks" : "Assist_Confirm_Benchmark")),
-      h("ul", { class: "as-confirm-list" }, c.items.map((i, n) => h("li", {}, h("label", {}, c.items.length > 1 ? boxes[n] : null, h("span", {}, i.name)), i.duration ? h("span", { class: "caption" }, t("Assist_Seconds", fa(i.duration))) : null))),
+      h("ul", { class: "as-confirm-list" }, c.items.map((i, n) => h("li", {}, h("label", {}, c.items.length > 1 ? boxes[n] : null, h("span", {}, i.name)), i.duration ? h("span", { class: "caption" }, t("Assist_About", lengthText(i.duration))) : null))),
       h("p", { class: "caption" }, t("Assist_Confirm_Text")),
       h("div", { class: "btn-row" }, yes, h("button", { class: "btn quiet", onclick: () => exec("assistant.exec", "confirm", { value: false }) }, t("Assist_Confirm_No"))));
     confirmBox.scrollIntoView({ block: "nearest" });

@@ -7,6 +7,7 @@ import { h, icon } from "../ui.js";
 import { partOfId } from "../parts.js";
 import { groupPanel, byPart } from "../groups.js";
 import { pageOfRun } from "../testrun.js";
+import { durationField } from "../duration.js";
 
 export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
@@ -47,7 +48,7 @@ export function mount(el) {
   function addRow(s, r, i, into) {
     const set = (field, value, extra = {}) => call("tests.set", { id: r.id, field, value, ...extra });
     const check = h("input", { type: "checkbox", class: "check", "aria-label": r.name, onchange: (e) => set("selected", e.target.checked) });
-    const dur = h("input", { class: "field lat short", inputmode: "numeric", "aria-label": t("Test_Seconds"), oninput: (e) => set("duration", e.target.value) });
+    const dur = durationField((v) => set("duration", v));
     const rep = h("select", { class: "field", onchange: (e) => set("repeat", e.target.value) }, s.repeatModes.map((m) => h("option", { value: m.value }, m.label)));
     const cnt = h("input", { class: "field lat short", inputmode: "numeric", oninput: (e) => set("count", e.target.value) });
     const opts = r.options.map((o) => {
@@ -61,7 +62,7 @@ export function mount(el) {
     const unavailable = h("div", { class: "unavailable", hidden: true }), advice = h("div", { class: "advice", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
-      h("div", { class: "ctrls" }, h("label", {}, dur, t("Test_Seconds")), rep, cnt),
+      h("div", { class: "ctrls" }, dur.el, rep, cnt),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
       h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail, advice);
     into.append(row);
@@ -84,7 +85,7 @@ export function mount(el) {
     if (s.incomplete) notice.replaceChildren(h("span", { class: "grow" }, s.incomplete), h("button", { class: "btn", onclick: () => call("tests.exec", { cmd: "dismissIncomplete" }) }, t("Test_IncompleteSession_Dismiss")));
     for (const r of s.rows) {
       const x = rows.get(r.id); if (!x) continue;
-      x.check.checked = r.selected; x.check.disabled = !!r.unavailable; setField(x.dur, r.duration); x.rep.value = r.repeat;
+      x.check.checked = r.selected; x.check.disabled = !!r.unavailable; x.dur.set(r.duration); x.rep.value = r.repeat;
       // A test this machine cannot run is shown with the reason, never offered: it could only end Unsupported.
       x.row.classList.toggle("off", !!r.unavailable); x.unavailable.hidden = !r.unavailable; x.unavailable.textContent = r.unavailable || "";
       setField(x.cnt, r.count); x.cnt.hidden = r.repeat !== "Count";

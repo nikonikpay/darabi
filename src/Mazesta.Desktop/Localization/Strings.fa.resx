@@ -289,6 +289,12 @@
   <data name="Test_Seconds" xml:space="preserve">
     <value>ثانیه</value>
   </data>
+  <data name="Test_Minutes" xml:space="preserve">
+    <value>دقیقه</value>
+  </data>
+  <data name="Test_Hours" xml:space="preserve">
+    <value>ساعت</value>
+  </data>
   <data name="Test_Start" xml:space="preserve">
     <value>شروع</value>
   </data>
@@ -2277,6 +2283,7 @@
   <data name="Assist_Confirm_Yes" xml:space="preserve"><value>شروع کن</value></data>
   <data name="Assist_Confirm_No" xml:space="preserve"><value>اجرا نکن</value></data>
   <data name="Assist_Seconds" xml:space="preserve"><value>حدود {0} ثانیه</value></data>
+  <data name="Assist_About" xml:space="preserve"><value>حدود {0}</value></data>
   <data name="Assist_Running_Tests" xml:space="preserve"><value>تست‌ها در حال اجرا</value></data>
   <data name="Assist_Running_Benchmark" xml:space="preserve"><value>بنچمارک در حال اجرا</value></data>
   <data name="Assist_Tool_run_tests" xml:space="preserve"><value>درخواست اجرا: تست‌ها</value></data>

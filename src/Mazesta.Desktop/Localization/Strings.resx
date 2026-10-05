@@ -289,6 +289,12 @@
   <data name="Test_Seconds" xml:space="preserve">
     <value>s</value>
   </data>
+  <data name="Test_Minutes" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="Test_Hours" xml:space="preserve">
+    <value>h</value>
+  </data>
   <data name="Test_Start" xml:space="preserve">
     <value>Start</value>
   </data>
@@ -2277,6 +2283,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Confirm_Yes" xml:space="preserve"><value>Start</value></data>
   <data name="Assist_Confirm_No" xml:space="preserve"><value>Do not run</value></data>
   <data name="Assist_Seconds" xml:space="preserve"><value>about {0} s</value></data>
+  <data name="Assist_About" xml:space="preserve"><value>about {0}</value></data>
   <data name="Assist_Running_Tests" xml:space="preserve"><value>Running tests</value></data>
   <data name="Assist_Running_Benchmark" xml:space="preserve"><value>Running benchmark</value></data>
   <data name="Assist_Tool_run_tests" xml:space="preserve"><value>Asked to run: tests</value></data>

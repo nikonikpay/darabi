@@ -460,16 +460,18 @@ public sealed partial class WebBridge
             new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome and, for the processor and the graphics card, a judgment: the highest " +
                 "temperature, the median load, whether the part was fully used, and the diagnosis' findings. Areas: cpu, memory (RAM), storage, network, gpu (graphics card); " +
                 "all=true takes every test of those areas (for the graphics card also the variable and pulsed loads), else a usual set (the card's includes the 3D scene and the ray-traced scene). " +
-                "tests names single tests by id (see list_tests). minutes sets the length of each load test (default: the page's, 15 minutes each for processor, memory and graphics card). " +
-                "together=true loads processor, memory and graphics card at the same time. Name only what the user asked for. " +
+                "tests names single tests by id (see list_tests). seconds (or minutes) sets the length of each load test of the processor, memory and graphics card (default: 15 minutes each); " +
+                "total_seconds instead gives the whole length of the load tests, shared equally between them (one after another; with together=true each part gets all of it) - use it when the user says " +
+                "\"both in 5 minutes\". Storage and network tests keep their own length. together=true loads processor, memory and graphics card at the same time, else the tests run one after another. Name only what the user asked for. " +
                 "An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass. Call a temperature fine only when a finding says so.",
-                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}},"all":{"type":"boolean"},"tests":{"type":"array","items":{"type":"string"}},"minutes":{"type":"integer"},"together":{"type":"boolean"}}}""",
+                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}},"all":{"type":"boolean"},"tests":{"type":"array","items":{"type":"string"}},"seconds":{"type":"integer"},"minutes":{"type":"integer"},"total_seconds":{"type":"integer"},"together":{"type":"boolean"}}}""",
                 async (a, ct) =>
                 {
                     if (_testVm is not { } tests) return Json(new { error = "the tests are not available yet" });
                     static bool Flag(JsonElement a, string name) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.True;
                     bool every = Flag(a, "all"), together = Flag(a, "together");
-                    int? minutes = a.ValueKind == JsonValueKind.Object && a.TryGetProperty("minutes", out var mv) && mv.TryGetInt32(out int mn) ? Math.Clamp(mn, 1, 180) : null;
+                    static int? Num(JsonElement a, string name, int scale) => a.ValueKind == JsonValueKind.Object && a.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) && n > 0 ? Math.Clamp(n * scale, 5, 10800) : null;
+                    int? each = Num(a, "seconds", 1) ?? Num(a, "minutes", 60), whole = Num(a, "total_seconds", 1);
                     var known = tests.Rows.Select(r => r.Definition.Id.Value).ToList();
                     var ids = Texts(a, "areas").Distinct().SelectMany(x => every && AssistantTestAreas.ContainsKey(x) ? known.Where(id => id.StartsWith(x + ".", StringComparison.Ordinal) && !AssistantNeverTests.Contains(id))
                         : AssistantTestAreas.GetValueOrDefault(x) ?? []).Concat(Texts(a, "tests").Where(known.Contains)).ToHashSet();
@@ -478,9 +480,16 @@ public sealed partial class WebBridge
                     // options (graphics card, drive) the page has now. The run uses exactly this, whatever the page is changed to meanwhile.
                     List<ChatTest>? plan = null;
                     await OnUi(() => { plan = tests.IsRunning || runner.IsBusy ? null : tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
-                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, minutes is { } m && TestEngine.LaneOf(r.Definition.Id) is not null ? m * 60 : r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, o.Value)).ToList(),
+                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, o.Value)).ToList(),
                             string.Join("، ", r.Options.Where(o => o.Value.Length > 0).Select(o => o.Label + ": " + (o.IsChoice ? o.SelectedChoice?.Label : o.Value)))))
                         .ToList(); return ""; }).ConfigureAwait(false);
+                    // The load tests' length: each one's, or the whole run's shared by them (by part when side by side, since the parts then run at once).
+                    if (plan is { Count: > 0 } && (each ?? whole) is { } asked)
+                    {
+                        var load = plan.Where(r => TestEngine.LaneOf(new TestId(r.Id)) is not null).ToList();
+                        int share(ChatTest r) => whole is { } w ? Math.Max(5, w / Math.Max(1, together ? load.Count(x => TestEngine.LaneOf(new TestId(x.Id)) == TestEngine.LaneOf(new TestId(r.Id))) : load.Count)) : asked;
+                        plan = [.. plan.Select(r => load.Contains(r) ? r with { Seconds = share(r) } : r)];
+                    }
                     if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
                     if (plan.Count == 0) return Json(new { error = "this computer can not run those tests" });
                     var items = plan.Select(r => (r.Shown.Length > 0 ? $"{r.Name} ({r.Shown})" : r.Name, r.Seconds.ToString(CultureInfo.InvariantCulture))).ToList();

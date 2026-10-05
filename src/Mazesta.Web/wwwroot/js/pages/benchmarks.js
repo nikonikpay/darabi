@@ -8,6 +8,7 @@ import { setField } from "./tests.js";
 import { groupPanel, byPart } from "../groups.js";
 import { findingCard, bySeverity } from "./checkup.js";
 import { boot } from "../app.js";
+import { durationField } from "../duration.js";
 
 // The list, optionally only one part's benchmarks (the component pages reuse it).
 export function benchList(component = null) {
@@ -67,7 +68,7 @@ export function benchList(component = null) {
   function addRow(r, i, into) {
     const set = (field, value, extra = {}) => call("bench.set", { id: r.id, field, value, ...extra });
     const check = h("input", { type: "checkbox", class: "check", "aria-label": r.name, onchange: (e) => set("selected", e.target.checked) });
-    const dur = h("input", { class: "field lat short", inputmode: "numeric", oninput: (e) => set("duration", e.target.value) });
+    const dur = durationField((v) => set("duration", v));
     const run = h("button", { class: "btn", onclick: () => call("bench.exec", { cmd: "run", id: r.id }) }, t("Bench_Run"));
     const opts = r.options.map((o) => {
       const input = o.choices
@@ -79,7 +80,7 @@ export function benchList(component = null) {
     const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true }), finds = h("div", { class: "row-checkup", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
-      h("div", { class: "ctrls" }, h("label", {}, t("Bench_Duration"), dur, t("Test_Seconds")), run),
+      h("div", { class: "ctrls" }, h("label", {}, t("Bench_Duration"), dur.el), run),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
       h("div", { class: "state" }, bar, status), unavailable, metrics, finds, rec, peers, detail);
     into.append(row);
@@ -92,7 +93,7 @@ export function benchList(component = null) {
     oc.checked = !!s.overclocked; oc.disabled = s.running;
     for (const r of s.rows) {
       const x = rows.get(r.id); if (!x) continue;
-      x.check.checked = r.selected; x.check.disabled = !!r.unavailable; setField(x.dur, r.duration); x.run.disabled = s.running || !!r.unavailable;
+      x.check.checked = r.selected; x.check.disabled = !!r.unavailable; x.dur.set(r.duration); x.run.disabled = s.running || !!r.unavailable;
       x.row.classList.toggle("off", !!r.unavailable); x.unavailable.hidden = !r.unavailable; x.unavailable.textContent = r.unavailable || "";
       for (const o of x.opts) { const cur = r.options.find((y) => y.key === o.o.key); if (cur) setField(o.input, cur.value); }
       x.bar.firstChild.style.setProperty("--p", r.percent / 100);

@@ -110,11 +110,23 @@ public class AppGuideTests
     [Fact] public void A_test_request_says_whether_all_of_them_together_and_for_how_long()
     {
         var all = R("تست گرافیک رو همشو انجام بده");
-        Assert.Equal((AiIntent.Tests, true, false, null), (all.Intent, all.All, all.Together, all.Minutes));
+        Assert.Equal((AiIntent.Tests, true, false, null), (all.Intent, all.All, all.Together, all.Seconds));
         Assert.Equal(["gpu"], all.Areas);
         var both = R("تست cpu و گرافیک رو همزمان ۱۰ دقیقه بگیر");
-        Assert.Equal((AiIntent.Tests, false, true, 10), (both.Intent, both.All, both.Together, both.Minutes));
+        Assert.Equal((AiIntent.Tests, false, true, 600, false), (both.Intent, both.All, both.Together, both.Seconds, both.Total));
         Assert.False(R("تست رم بگیر").All);
+    }
+    [Fact] public void A_test_length_is_hours_minutes_and_seconds_and_may_be_the_whole_runs()
+    {
+        Assert.Equal(((int?)90, false), AppGuide.Length(AppGuide.Normalize("تست cpu رو ۹۰ ثانیه بگیر")));
+        Assert.Equal(((int?)5400, false), AppGuide.Length(AppGuide.Normalize("1 hour 30 min")));
+        Assert.Equal(((int?)1800, false), AppGuide.Length(AppGuide.Normalize("نیم ساعت")));
+        Assert.Equal(((int?)null, false), AppGuide.Length(AppGuide.Normalize("تست رم بگیر")));
+        Assert.Equal(((int?)null, false), AppGuide.Length(AppGuide.Normalize("1 second")));
+        var seq = R("تست های رم و سی پی یو رو به ترتیب انجام بده تو 5 دقیقه");
+        Assert.Equal((AiIntent.Tests, 300, true), (seq.Intent, seq.Seconds, seq.Total));
+        var each = R("تست رم و cpu رو هر کدوم 5 دقیقه بگیر");
+        Assert.Equal((300, false), (each.Seconds, each.Total));
     }
     [Fact] public void Not_active_turns_the_overlay_off()
     {
