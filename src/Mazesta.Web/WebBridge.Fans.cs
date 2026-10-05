@@ -24,6 +24,11 @@ public sealed partial class WebBridge
 
         void OnSnapshot(Mazesta.Core.Hardware.SensorSnapshot s) { sample = HealthSampler.From(engine.Hardware, s.Readings); Interlocked.Exchange(ref sampleTicks, Environment.TickCount64); }
         engine.SnapshotPublished += OnSnapshot;
+        void OnStatus(Mazesta.Core.Hardware.ProviderStatus st)
+        {
+            if (Source() is { } fs && fs.Fans() is { Count: > 0 } found) _log.LogInformation("Fan outputs: {Fans}", string.Join(" | ", found.Select(f => $"{f.Name} {f.Percent:0}% {f.Rpm:0}rpm [{f.MinPercent}-{f.MaxPercent}] ({f.Id})")));
+        }
+        engine.Provider.StatusChanged += OnStatus;
         IFanControlSource? Source() => engine.Provider as IFanControlSource;
         void Save() { try { Directory.CreateDirectory(_paths.ConfigDir); File.WriteAllText(file, JsonSerializer.Serialize(settings)); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the fan settings"); } }
         double? Temp(string source) => source switch { "gpu" => sample.GpuTempC, "max" => sample.CpuTempC is { } c ? Math.Max(c, sample.GpuTempC ?? c) : sample.GpuTempC, _ => sample.CpuTempC };
@@ -51,7 +56,7 @@ public sealed partial class WebBridge
         }
         void Arm() { lock (gate) { bool any = settings.Values.Any(v => v.Mode != "auto"); if (any && timer is null) timer = new Timer(_ => { try { Tick(); } catch (Exception e) { _log.LogWarning(e, "Fan control tick failed"); } }, null, 1000, 2000); else if (!any && timer is not null) { timer.Dispose(); timer = null; } } }
         void GiveAll() { lock (gate) { foreach (var id in touched.ToList()) Give(id); } }
-        _cleanup.Add(() => { engine.SnapshotPublished -= OnSnapshot; lock (gate) { timer?.Dispose(); timer = null; } GiveAll(); });
+        _cleanup.Add(() => { engine.SnapshotPublished -= OnSnapshot; engine.Provider.StatusChanged -= OnStatus; lock (gate) { timer?.Dispose(); timer = null; } GiveAll(); });
         Arm();
 
         object State(string? error = null)
