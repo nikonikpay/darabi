@@ -36,6 +36,12 @@ internal static class TrayText
 
     public const string Overlay = "نمایش اورلی روی صفحه";
     public const string GpuProfiles = "پروفایل کارت گرافیک";
+    public const string Lights = "نورپردازی RGB";
+    public const string LightsOff = "خاموش کردن همه‌ی نورها";
+    public const string LightsApply = "اعمال تنظیمات ذخیره‌شده";
+    public const string LightsOn = "نورها با تنظیمات ذخیره‌شده روشن شدند.";
+    public const string LightsNoProgram = "OpenRGB کنار مازستا پیدا نشد.";
+    public const string LightsNoServer = "سرور نورپردازی بالا نیامد.";
     public const string Reading = "در حال خواندن…";
     public const string Stock = "حالت کارخانه (بدون تغییر)";
     public const string NoNvidia = "کارت گرافیک NVIDIA پیدا نشد";

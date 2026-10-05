@@ -3033,7 +3033,7 @@
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>خواندن تست‌های ثبت‌شدهٔ قطعه</value></data>
   <data name="Rgb_Title" xml:space="preserve"><value>رنگ نورپردازی RGB</value></data>
   <data name="Rgb_Sub" xml:space="preserve"><value>رم، کارت گرافیک، مادربرد و فن‌ها، برای Corsair، ASUS، Gigabyte، MSI و بقیه</value></data>
-  <data name="Rgb_Connect" xml:space="preserve"><value>پیدا کردن نورها</value></data>
+  <data name="Rgb_Connect" xml:space="preserve"><value>روشن کردن نورها</value></data>
   <data name="Rgb_All" xml:space="preserve"><value>همهٔ قطعات</value></data>
   <data name="Rgb_Color" xml:space="preserve"><value>رنگ</value></data>
   <data name="Rgb_Apply" xml:space="preserve"><value>اعمال</value></data>
@@ -3044,7 +3044,7 @@
   <data name="Rgb_Mode_Keep" xml:space="preserve"><value>یک رنگ</value></data>
   <data name="Rgb_Leds" xml:space="preserve"><value>{0} LED</value></data>
   <data name="Rgb_NotFound" xml:space="preserve"><value>OpenRGB پیدا نشد. پوشهٔ قابل‌حمل آن (با OpenRGB.exe) را در پوشه‌ای به نام OpenRGB کنار این برنامه بگذار، یا از openrgb.org نصبش کن.</value></data>
-  <data name="Rgb_NoServer" xml:space="preserve"><value>OpenRGB سرور خودش را بالا نیاورد. خودت بازش کن و در تنظیماتش سرور SDK را روشن کن.</value></data>
+  <data name="Rgb_NoServer" xml:space="preserve"><value>سرویس نور بالا نیامد. اگر OpenRGB دیگری باز است ببندید، کمی صبر کنید و دوباره امتحان کنید.</value></data>
   <data name="Rgb_NotConnected" xml:space="preserve"><value>هنوز به OpenRGB وصل نیستم. دکمهٔ «پیدا کردن نورها» را بزن.</value></data>
   <data name="Rgb_Failed" xml:space="preserve"><value>اتصال به OpenRGB ناموفق بود: {0}</value></data>
   <data name="Rgb_Empty" xml:space="preserve"><value>OpenRGB باز است ولی هنوز قطعه‌ای نشان نمی‌دهد. چند ثانیه صبر کن و دوباره دکمه را بزن؛ اگر باز هم نبود، شاید برنامهٔ خود سازنده نور را در دست دارد.</value></data>
@@ -3062,7 +3062,7 @@
   <data name="Nav_Lights" xml:space="preserve"><value>نور RGB</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>کنترل فن</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>رنگ و حالت نور رم، کارت گرافیک، مادربرد، فن‌ها و نوارهای LED، برای Corsair، ASUS، Gigabyte، MSI و بقیه.</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>رنگ‌ها از راه OpenRGB تنظیم می‌شود؛ برنامه‌ای رایگان که با نور این سازنده‌ها حرف می‌زند و همراه همین برنامه می‌آید. دکمه را بزنید: برنامه‌های خود سازنده‌ها (Armoury Crate، MSI Center، RGB Fusion، iCUE) تا وقتی از این صفحه استفاده می‌کنید بسته می‌شوند، چون دو برنامه نمی‌توانند یک نور را کنترل کنند، و وقتی رها کنید یا برنامه را ببندید دوباره باز می‌شوند. برای رم و مادربرد برنامه باید با دسترسی مدیر اجرا شود.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>رنگ‌ها از راه OpenRGB تنظیم می‌شود؛ برنامه‌ای رایگان که با نور این سازنده‌ها حرف می‌زند، همراه همین برنامه می‌آید و بی‌پنجره و پنهان اجرا می‌شود. دکمه را بزنید: برنامه‌های خود سازنده‌ها (Armoury Crate، MSI Center، RGB Fusion، iCUE) بسته می‌شوند تا سر نورها دعوا نکنند. آنچه تنظیم می‌کنید ذخیره می‌شود و هر بار که برنامه یا tray شروع شود دوباره اعمال می‌شود.</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>رها کردن (برگرداندن نور)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>برنامه‌های سازنده را نبند</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>این برنامه‌های سازنده‌ها باز هستند و تا وقتی از این صفحه استفاده می‌کنید بسته و بعد دوباره باز می‌شوند: {0}</value></data>
@@ -3077,7 +3077,10 @@
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>تعداد LED</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>تا {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>اعمال</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>هدری که با ۰ LED نشان داده می‌شود طول نواری را که به آن وصل است نمی‌داند. تعداد LEDهای آن نوار را بدهید تا رنگ‌ها به آن برسد.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>هدری که طولش گفته نشده خودش روی ۳۰ LED می‌ماند تا رنگ‌ها فوراً به آن برسد. اگر نوار وصل‌شده تعداد LED دیگری دارد، همان عدد را اینجا بدهید؛ ذخیره می‌شود.</value></data>
+  <data name="Rgb_Connecting" xml:space="preserve"><value>در حال راه‌اندازی نورها… اولین جست‌وجو کمی طول می‌کشد.</value></data>
+  <data name="Rgb_Dark_Off" xml:space="preserve"><value>خاموش کردن همه (تنظیمات می‌ماند)</value></data>
+  <data name="Rgb_Dark_On" xml:space="preserve"><value>برگرداندن نورها</value></data>
   <data name="Fans_Lede" xml:space="preserve"><value>خروجی‌های فن مادربرد: کنترل خود برد، سرعت ثابت، یا نموداری از دما در برابر سرعت که خودتان می‌کشید.</value></data>
   <data name="Fans_Unsupported" xml:space="preserve"><value>خروجی‌های فن این مادربرد از اینجا قابل کنترل نیست (چیپ آن پشتیبانی نمی‌شود، یا درایور سنسور با دسترسی مدیر کار نمی‌کند). کنترل فن‌ها در دست خود برد می‌ماند.</value></data>
   <data name="Fans_Mode" xml:space="preserve"><value>حالت</value></data>

@@ -1,47 +1,29 @@
-using System.Diagnostics; using System.IO; using System.Text.Json; using Mazesta.Desktop.Localization; using Mazesta.Hardware.Rgb; using Microsoft.Extensions.Logging;
+using System.Diagnostics; using System.IO; using System.Text.Json; using Mazesta.Core.Rgb; using Mazesta.Core.Tray; using Mazesta.Desktop.Localization; using Mazesta.Hardware.Rgb; using Mazesta.Persistence; using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 namespace Mazesta.Web;
 
 public sealed partial class WebBridge
 {
+    private static bool s_rgbAutoStarted;
+
     /// <summary>
-    /// Light colours of the memory, graphics card, board and what plugs into it, through OpenRGB (a separate program, run as its server; see
-    /// <see cref="OpenRgbClient"/>). The page can only ask for a colour (as "#rrggbb", or none for off), a mode by its name or number, a speed and brightness
-    /// in percent, and the number of LEDs of a zone; the program's place is found here. The makers' own lighting programs are stopped while the page is in
-    /// use and put back when it lets go (the button, or the app closing).
+    /// Light colours of the memory, graphics card, board and what plugs into it, through OpenRGB (a separate program, run hidden as its server; see
+    /// <see cref="RgbSession"/>). The page can only ask for a colour (as "#rrggbb", or none for off), a mode by its name or number, a speed and brightness
+    /// in percent, and the number of LEDs of a zone; the program's place is found here. What is set is kept as the <see cref="RgbScene"/>: the next start of
+    /// the app (or of the tray) puts it back, with no search and no question. The makers' own lighting programs are stopped while the lights are ours and
+    /// put back when the page lets go (the button, or the app closing without the tray to hold the scene).
     /// </summary>
     private void RegisterRgb()
     {
-        var client = new OpenRgbClient(); var conflicts = new RgbConflicts(); Process? server = null; var rgbLock = new object();
-        const int port = OpenRgbClient.DefaultPort; bool busy = false;
-        string zonesFile = Path.Combine(_paths.ConfigDir, "rgb-zones.json");
-        string? Exe() => OpenRgbHost.Find(AppContext.BaseDirectory);
-        static string ZoneKey(RgbDevice d, RgbZone z) => $"{d.Vendor}|{d.Name}|{d.Location}|{z.Name}";
-
-        Dictionary<string, int> LoadZones()
-        {
-            try { return File.Exists(zonesFile) ? JsonSerializer.Deserialize<Dictionary<string, int>>(File.ReadAllText(zonesFile)) ?? [] : []; }
-            catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { return []; }
-        }
-        void SaveZone(string key, int leds)
-        {
-            var all = LoadZones(); all[key] = leds;
-            try { Directory.CreateDirectory(_paths.ConfigDir); File.WriteAllText(zonesFile, JsonSerializer.Serialize(all)); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the LED counts"); }
-        }
-
-        void Release()
-        {
-            lock (rgbLock)
-            {
-                client.Disconnect();
-                try { if (server is { HasExited: false }) { server.Kill(true); server.WaitForExit(3000); } } catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception) { }
-                server?.Dispose(); server = null; conflicts.RestoreAll();
-            }
-        }
-        _cleanup.Add(Release);
+        var session = new RgbSession(AppContext.BaseDirectory, Path.Combine(_paths.DataRoot, "openrgb"), _log); var client = session.Client; var conflicts = session.Conflicts;
+        var scene = RgbSceneStore.Read(_paths); int busy = 0;
+        void Save() { try { RgbSceneStore.Write(_paths, scene); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the lights' scene"); } }
+        static bool TrayRuns() { var p = Process.GetProcessesByName(OverlaySignals.TrayProcess); foreach (var x in p) x.Dispose(); return p.Length > 0; }
+        _cleanup.Add(() => session.Release(leaveRunning: scene.Enabled && TrayRuns()));
 
         object State(string? error = null) => new
         {
-            found = Exe() is not null, connected = client.Connected, error,
+            found = session.Exe is not null, connected = client.Connected, connecting = Volatile.Read(ref busy) != 0 && !client.Connected, enabled = scene.Enabled, dark = scene.Dark, error,
             makers = conflicts.StoppedNow,   // the makers' programs stopped for now, to be put back by "let go"
             running = client.Connected ? Array.Empty<string>() : conflicts.Running(),
             modeNames = client.Devices.SelectMany(d => d.Modes.Select(m => m.Name)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
@@ -59,52 +41,66 @@ public sealed partial class WebBridge
         };
         static int Percent(uint min, uint max, uint v) => max <= min ? 100 : (int)Math.Round(100.0 * (Math.Clamp(v, min, max) - min) / (max - min));
 
-        async Task ReapplyZones()
-        {
-            var saved = LoadZones();
-            foreach (var d in client.Devices.ToList())
-                foreach (var z in d.Zones.Where(z => z.Resizable))
-                    if (saved.TryGetValue(ZoneKey(d, z), out int leds) && leds != z.LedsCount && leds >= z.LedsMin && leds <= z.LedsMax)
-                        await client.ResizeZoneAsync(d.Index, z.Index, leds, CancellationToken.None).ConfigureAwait(true);
-            await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
-        }
-
         async Task<object?> Connect(bool start, bool stopMakers)
         {
-            if (!client.Connected)
+            var result = await session.ConnectAsync(start, stopMakers, scene, CancellationToken.None).ConfigureAwait(true);
+            if (result == RgbConnect.NotFound) return State(Loc.Get("Rgb_NotFound"));
+            if (result == RgbConnect.NoServer) return State(Loc.Get("Rgb_NoServer"));
+            if (result == RgbConnect.Connected && start)
             {
-                if (!await OpenRgbHost.ListeningAsync(port, CancellationToken.None).ConfigureAwait(true))
-                {
-                    if (!start) return State();
-                    if (Exe() is not { } exe) return State(Loc.Get("Rgb_NotFound"));
-                    if (stopMakers) { var stopped = await Task.Run(conflicts.StopAll).ConfigureAwait(true); if (stopped.Count > 0) _log.LogInformation("Stopped for the lights: {Makers}", string.Join(", ", stopped)); }
-                    server = await OpenRgbHost.StartAsync(exe, port, CancellationToken.None).ConfigureAwait(true);
-                    if (server is null) { conflicts.RestoreAll(); return State(Loc.Get("Rgb_NoServer")); }
-                    await Task.Delay(3000).ConfigureAwait(true);   // the port opens before the first device scan has finished
-                }
-                await client.ConnectAsync(port, CancellationToken.None).ConfigureAwait(true);
+                if (session.ZonesDefaulted) Save();
+                await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true);   // what the user set before, back on
             }
-            await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
-            if (start) await ReapplyZones().ConfigureAwait(true);
-            _log.LogInformation("OpenRGB devices: {Devices}", string.Join(" | ", client.Devices.Select(d => $"{d.Kind} {d.Vendor} {d.Name} [{string.Join(", ", d.Zones.Select(z => $"{z.Name}:{z.LedsCount}/{z.LedsMax}"))}]")));
             return State();
         }
 
-        async Task<object?> Guard(Func<Task<object?>> run)
+        async Task<object?> Guard(Func<Task<object?>> run, bool shareBusy = false)
         {
-            if (busy) throw new InvalidOperationException(Loc.Get("Tweaks_Busy"));
-            busy = true;
+            if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) return shareBusy ? State() : throw new InvalidOperationException(Loc.Get("Tweaks_Busy"));
             try { return await run().ConfigureAwait(true); }
             catch (Exception e) when (e is System.Net.Sockets.SocketException or IOException or InvalidDataException or FormatException or OperationCanceledException)
             {
                 _log.LogWarning(e, "OpenRGB call failed"); client.Disconnect(); return State(Loc.Format("Rgb_Failed", e.Message));
             }
-            finally { busy = false; }
+            finally { Volatile.Write(ref busy, 0); }
         }
 
-        MethodAsync("rgb.state", _ => Guard(() => Connect(false, false)));
-        MethodAsync("rgb.start", p => Guard(() => Connect(true, !p.TryGetProperty("keepMakers", out var k) || k.ValueKind != JsonValueKind.True)));
-        Method("rgb.release", _ => { Release(); return State(); });
+        // Once per run of the app: a scene the user left switched on is put back without the page being opened. The tray does the same at sign-in; the two
+        // find each other's server by its port.
+        if (scene.Enabled && !s_rgbAutoStarted)
+        {
+            s_rgbAutoStarted = true;
+            _ = Task.Run(async () =>
+            {
+                if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
+                try { await Connect(true, scene.StopMakers).ConfigureAwait(false); }
+                catch (Exception e) when (e is System.Net.Sockets.SocketException or IOException or InvalidDataException or FormatException or OperationCanceledException) { _log.LogWarning(e, "The lights' scene was not put back"); client.Disconnect(); }
+                finally { Volatile.Write(ref busy, 0); }
+            });
+        }
+        // The lights forget their colours when the PC sleeps: the scene is put back when it wakes (a while after, once the devices are up again).
+        PowerModeChangedEventHandler wake = (_, e) =>
+        {
+            if (e.Mode != PowerModes.Resume || !scene.Enabled) return;
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(8000).ConfigureAwait(false);
+                if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
+                try { if (client.Connected) await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(false); }
+                catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidDataException or OperationCanceledException) { client.Disconnect(); }
+                finally { Volatile.Write(ref busy, 0); }
+            });
+        };
+        SystemEvents.PowerModeChanged += wake; _cleanup.Add(() => SystemEvents.PowerModeChanged -= wake);
+
+        MethodAsync("rgb.state", _ => Guard(() => Connect(false, false), shareBusy: true));
+        MethodAsync("rgb.start", p => Guard(() =>
+        {
+            bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True;
+            scene.Enabled = true; scene.StopMakers = !keep; Save();
+            return Connect(true, !keep);
+        }));
+        Method("rgb.release", _ => { scene.Enabled = false; Save(); session.Release(); return State(); });
         MethodAsync("rgb.set", p => Guard(async () =>
         {
             if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
@@ -114,22 +110,31 @@ public sealed partial class WebBridge
             int? speed = p.TryGetProperty("speed", out var sv) && sv.TryGetInt32(out var si) ? si : null, bright = p.TryGetProperty("brightness", out var bv) && bv.TryGetInt32(out var bi) ? bi : null;
             string hex = Str(p, "color"); var color = RgbColor.Parse(hex);
             if (hex.Length > 0 && color is null) throw new ArgumentException("color");
-            var targets = device < 0 ? client.Devices.Select(d => d.Index).ToList() : [device]; var failed = new List<string>(); int skipped = 0;
-            foreach (var i in targets)
+            var targets = device < 0 ? client.Devices.ToList() : client.Devices.Where(d => d.Index == device).ToList(); var failed = new List<string>(); int skipped = 0;
+            foreach (var d in targets)
             {
                 try
                 {
                     // For everything at once the effect is named (its number differs by device); a device without it is left as it is.
-                    int? m = modeName.Length > 0 ? client.ModeIndex(i, modeName) is var found and >= 0 ? found : null : mode;
-                    if (modeName.Length > 0 && m is null) { skipped++; continue; }
-                    if (m is { } index) await client.SetModeAsync(i, index, color, CancellationToken.None, speed, bright).ConfigureAwait(true);
-                    else await client.SetColorAsync(i, color, CancellationToken.None).ConfigureAwait(true);
+                    string name = modeName.Length > 0 ? modeName : mode is { } index && index >= 0 && index < d.Modes.Count ? d.Modes[index].Name : "";
+                    var look = new RgbLook(hex.Length > 0 ? hex : null, name.Length > 0 ? name : null, speed, bright, Off: hex.Length == 0 && name.Length == 0);
+                    if (!await session.ApplyLookAsync(d.Index, look, CancellationToken.None).ConfigureAwait(true)) { skipped++; continue; }
+                    if (device >= 0) scene.Devices[RgbScene.DeviceKey(d.Vendor, d.Name, d.Location)] = look;
                 }
                 catch (NotSupportedException e) { failed.Add(e.Message); }
             }
+            if (device < 0 && skipped < targets.Count) { scene.All = new RgbLook(hex.Length > 0 ? hex : null, modeName.Length > 0 ? modeName : null, speed, bright, Off: hex.Length == 0 && modeName.Length == 0); scene.Devices.Clear(); }
+            scene.Dark = false; Save();
             _log.LogInformation("RGB set: device {Device}, mode {Mode}{Name}, colour {Color}; refused: {Refused}, without the mode: {Skipped}", device, mode, modeName, hex.Length > 0 ? hex : "off", failed.Count, skipped);
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
             return State(failed.Count > 0 ? string.Join(" ", failed) : null);
+        }));
+        MethodAsync("rgb.dark", p => Guard(async () =>
+        {
+            if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
+            scene.Dark = p.TryGetProperty("on", out var o) && o.ValueKind == JsonValueKind.True; Save();
+            await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true);
+            return State();
         }));
         MethodAsync("rgb.zone", p => Guard(async () =>
         {
@@ -140,7 +145,7 @@ public sealed partial class WebBridge
             if (d is null || z is null) throw new ArgumentException("zone");
             try { await client.ResizeZoneAsync(device, zone, leds, CancellationToken.None).ConfigureAwait(true); }
             catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException) { return State(e.Message); }
-            SaveZone(ZoneKey(d, z), leds); _log.LogInformation("RGB zone {Device}/{Zone} set to {Leds} LEDs", d.Name, z.Name, leds);
+            scene.Zones[RgbScene.ZoneKey(d.Vendor, d.Name, d.Location, z.Name)] = leds; Save(); _log.LogInformation("RGB zone {Device}/{Zone} set to {Leds} LEDs", d.Name, z.Name, leds);
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
             return State();
         }));

@@ -3033,7 +3033,7 @@ Cancel: stop.</value></data>
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>Read the part's recorded tests</value></data>
   <data name="Rgb_Title" xml:space="preserve"><value>RGB lighting colours</value></data>
   <data name="Rgb_Sub" xml:space="preserve"><value>memory, graphics card, board and fans, for Corsair, ASUS, Gigabyte, MSI and more</value></data>
-  <data name="Rgb_Connect" xml:space="preserve"><value>Find the lights</value></data>
+  <data name="Rgb_Connect" xml:space="preserve"><value>Turn on the lights</value></data>
   <data name="Rgb_All" xml:space="preserve"><value>All devices</value></data>
   <data name="Rgb_Color" xml:space="preserve"><value>Colour</value></data>
   <data name="Rgb_Apply" xml:space="preserve"><value>Apply</value></data>
@@ -3044,7 +3044,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_Mode_Keep" xml:space="preserve"><value>One colour</value></data>
   <data name="Rgb_Leds" xml:space="preserve"><value>{0} LEDs</value></data>
   <data name="Rgb_NotFound" xml:space="preserve"><value>OpenRGB was not found. Put its portable folder (with OpenRGB.exe) in a folder named OpenRGB beside this app, or install it from openrgb.org.</value></data>
-  <data name="Rgb_NoServer" xml:space="preserve"><value>OpenRGB did not start its server. Open it yourself, and in its settings turn on the SDK server.</value></data>
+  <data name="Rgb_NoServer" xml:space="preserve"><value>The lights service did not start. Close any other OpenRGB that may be open, wait a moment and try again.</value></data>
   <data name="Rgb_NotConnected" xml:space="preserve"><value>Not connected to OpenRGB yet. Press "Find the lights".</value></data>
   <data name="Rgb_Failed" xml:space="preserve"><value>The connection to OpenRGB failed: {0}</value></data>
   <data name="Rgb_Empty" xml:space="preserve"><value>OpenRGB is running but lists no device yet. Wait a few seconds and press the button again; if there is still none, the maker&apos;s own program may be holding the lights.</value></data>
@@ -3062,7 +3062,7 @@ Cancel: stop.</value></data>
   <data name="Nav_Lights" xml:space="preserve"><value>Lighting (RGB)</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>Fan control</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colours and effects of the memory, graphics card, board, fans and strips - for Corsair, ASUS, Gigabyte, MSI and more.</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>Colours are set through OpenRGB, a free program that talks to the lights of these makers; it comes with this app. Press the button: the makers&apos; own programs (Armoury Crate, MSI Center, RGB Fusion, iCUE) are stopped while you use this page, because two programs cannot drive the same lights, and are started again when you let go or close the app. Memory and boards need the app to run as administrator.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>Colours are set through OpenRGB, a free program that talks to the lights of these makers; it comes with this app and runs hidden, with no window of its own. Press the button: the makers&apos; own programs (Armoury Crate, MSI Center, RGB Fusion, iCUE) are stopped so they do not fight over the lights. What you set is kept and put back every time the app or the tray starts.</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>Let go (give the lights back)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>Do not stop the makers&apos; programs</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>These makers&apos; programs are running and will be stopped while you use this page, then started again: {0}</value></data>
@@ -3077,7 +3077,10 @@ Cancel: stop.</value></data>
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>number of LEDs</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>up to {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>Set</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>A header listed with 0 LEDs does not know how long the strip plugged into it is. Give it the number of LEDs of that strip, then colours reach it.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>A header with no length given is set to 30 LEDs by itself, so colours reach it at once. If the strip on it has another number of LEDs, give that number here; it is kept.</value></data>
+  <data name="Rgb_Connecting" xml:space="preserve"><value>Starting the lights... the first search takes a little while.</value></data>
+  <data name="Rgb_Dark_Off" xml:space="preserve"><value>Switch all off (the scene is kept)</value></data>
+  <data name="Rgb_Dark_On" xml:space="preserve"><value>Switch the scene back on</value></data>
   <data name="Fans_Lede" xml:space="preserve"><value>The fan outputs of the board: the board&apos;s own control, a fixed speed, or a curve of temperature against speed that you draw.</value></data>
   <data name="Fans_Unsupported" xml:space="preserve"><value>The fan outputs of this board cannot be controlled from here (its chip is not supported, or the sensor driver is not running as administrator). The board keeps control of its fans.</value></data>
   <data name="Fans_Mode" xml:space="preserve"><value>Mode</value></data>

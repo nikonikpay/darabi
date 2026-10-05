@@ -18,7 +18,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(); private readonly HealthAlerts _rules;
     private readonly HashSet<string> _drivesAnnounced = [];
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
-    private readonly GpuProfilesMenu _gpu; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 };
+    private readonly GpuProfilesMenu _gpu; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb;
     private SummaryForm? _summary; private bool _checking;
 
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
@@ -34,7 +34,8 @@ internal sealed class TrayContext : ApplicationContext
         _checkNow = new ToolStripMenuItem(TrayText.CheckNow, null, async (_, _) => await CheckAllAsync());
         _overlay = new ToolStripMenuItem(TrayText.Overlay, null, (_, _) => ToggleOverlay());
         _gpu = new GpuProfilesMenu(paths, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
-        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, new ToolStripSeparator(), _overlay, _gpu.Menu, new ToolStripSeparator(),
+        _rgb = new RgbMenu(paths, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
+        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, new ToolStripSeparator(), _overlay, _gpu.Menu, _rgb.Menu, new ToolStripSeparator(),
             _status, new ToolStripSeparator(), new ToolStripMenuItem(TrayText.Exit, null, (_, _) => ExitThread())]);
         menu.Opening += (_, _) => _overlay.Checked = OverlayShown();
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
@@ -46,7 +47,7 @@ internal sealed class TrayContext : ApplicationContext
         // The first checks come shortly after sign-in, not during it, and not both at once.
         Schedule(_temps, TimeSpan.FromSeconds(intervals.FirstCheckSeconds)); Schedule(_health, TimeSpan.FromSeconds(intervals.FirstCheckSeconds + 40));
         // The GPU profile a little after sign-in, once the driver has settled.
-        _gpuAtStart.Tick += (_, _) => { _gpuAtStart.Stop(); _gpu.ApplyAtStart(); Memory.Release(); };
+        _gpuAtStart.Tick += async (_, _) => { _gpuAtStart.Stop(); _gpu.ApplyAtStart(); await _rgb.ApplyAtStartAsync(); Memory.Release(); };
         _gpuAtStart.Start();
     }
 
@@ -169,7 +170,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }

@@ -19,7 +19,9 @@ export function mount(el) {
   const keep = h("input", { type: "checkbox", class: "switch", "aria-label": t("Rgb_Keep") });
   const start = h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.start", { keepMakers: keep.checked }) }, icon("bolt"), t("Rgb_Connect"));
   const release = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("stop"), t("Rgb_Release"));
+  const dark = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("stop"), t("Rgb_Dark_Off"));
   const list = h("div", { class: "panels two rgb-cards" });
+  let alive = true, poll = 0;
 
   // ——— The whole set ———
   const allColor = h("input", { type: "color", class: "rgb-color", value: "#ff0000", "aria-label": t("Rgb_Color") });
@@ -44,8 +46,9 @@ export function mount(el) {
 
   function show(s) {
     state = s;
-    start.hidden = s.connected; release.hidden = !s.connected && !(s.makers || []).length;
-    msg.className = `msg ${s.error ? "fail" : ""}`; msg.textContent = s.error || (!s.found && !s.connected ? t("Rgb_NotFound") : s.connected && !s.devices.length ? t("Rgb_Empty") : "");
+    start.hidden = s.connected || s.connecting; release.hidden = !s.connected && !(s.makers || []).length; dark.hidden = !s.connected; dark.lastChild.textContent = t(s.dark ? "Rgb_Dark_On" : "Rgb_Dark_Off");
+    clearTimeout(poll); if (s.connecting && alive) poll = setTimeout(() => alive && run("rgb.state", undefined, true), 2000);   // the first search runs on its own: ask again until it is done
+    msg.className = `msg ${s.error ? "fail" : ""}`; msg.textContent = s.error || (s.connecting ? t("Rgb_Connecting") : !s.found && !s.connected ? t("Rgb_NotFound") : s.connected && !s.devices.length ? t("Rgb_Empty") : "");
     const shown = s.makers?.length ? t("Rgb_Makers_Stopped", s.makers.join("، ")) : s.running?.length ? t("Rgb_Makers_Running", s.running.join("، ")) : "";
     makers.hidden = !shown; makers.textContent = shown;
     allBody.hidden = !s.devices.length;
@@ -93,9 +96,9 @@ export function mount(el) {
     h("div", { class: "panels two" },
       box({ cls: "p-tool", ico: "bolt", title: t("Rgb_Title"), sub: t("Rgb_Sub"), a: "rgb", i: 0,
         body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Rgb_Note")), makers,
-          h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("div", { class: "btn-row" }, start, release), msg] }),
+          h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("div", { class: "btn-row" }, start, dark, release), msg] }),
       box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] })),
     h("h2", { class: "tools-sec-title" }, t("Rgb_Devices")), list);
   run("rgb.state");
-  return () => { /* the connection is the host's: it is let go by the button or when the app closes */ };
+  return () => { alive = false; clearTimeout(poll); /* the connection is the host's: it is let go by the button or when the app closes */ };
 }
