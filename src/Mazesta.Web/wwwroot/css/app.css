@@ -174,9 +174,16 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .field:focus { outline: none; border-color: var(--yellow); box-shadow: var(--recess), 0 0 0 3px var(--yellow-soft); }
 .field.lat { text-align: center; }
 .field.short { width: 80px; }
-.dur { display: inline-flex; align-items: center; gap: 4px; direction: ltr; }
-.dur-part { width: 46px; text-align: center; }
-.dur-unit { color: var(--muted, inherit); font-size: .85em; margin-inline-end: 6px; }
+/* Hours, minutes, seconds: each a small column with its picture on top, an arrow up, the number, an arrow down. */
+.dur { display: inline-flex; align-items: flex-start; gap: 8px; direction: ltr; }
+.dur-part-box { display: inline-grid; justify-items: center; gap: 2px; }
+.dur-pic { display: inline-flex; align-items: center; gap: 4px; color: var(--paper-3); font-size: .78em; }
+.dur-pic svg { width: 14px; height: 14px; stroke: currentColor; }
+.dur-part { width: 52px; text-align: center; }
+.dur-arrow { display: grid; place-items: center; width: 52px; height: 16px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--paper-3); cursor: pointer; }
+.dur-arrow svg { width: 14px; height: 14px; stroke: currentColor; }
+.dur-arrow:hover { color: var(--yellow); background: var(--yellow-soft); }
+.dur-arrow:active { transform: translateY(1px); }
 select.field { appearance: none; padding-inline-end: 26px; background-color: var(--well); background-image: linear-gradient(45deg, transparent 50%, var(--yellow) 50%), linear-gradient(-45deg, transparent 50%, var(--yellow) 50%);
   background-repeat: no-repeat; background-size: 5px 5px; background-position: left 13px center, left 8px center; cursor: pointer; }
 [dir="ltr"] select.field { background-position: right 8px center, right 13px center; }

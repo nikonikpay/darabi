@@ -114,7 +114,7 @@ function renderIndex(info) {
       i === 2 || i === 6 ? h("li", { class: "sep", role: "presentation" }) : null,
       h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`,
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
-        icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no" }, `⌃${i + 1}`))),
+        icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no" }, `Ctrl+${i + 1}`))),
     ])),
     // The assistant lives in its own column at the other edge; this entry opens and folds it, from any page.
     h("button", { class: "index-asst", type: "button", title: `${t("Nav_Assistant")} · Ctrl+J`, onclick: () => window.dispatchEvent(new Event("assistant:toggle")) },
