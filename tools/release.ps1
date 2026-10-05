@@ -13,12 +13,12 @@
 param(
     [switch]$App,
     [switch]$Upload,   # send the folder to the site through the Mazesta Connect plugin when it is built
-    [string]$SiteKey = "G:/Mazesta-Keys/site-release-key.txt",
+    [string]$SiteKey = "artifacts/Mazesta-Update/Keys/site-release-key.txt",
     [string[]]$Runs = @("artifacts/Mazesta-Web/Data"),
     [string]$NotesFa,
     [string]$NotesEn,
-    [string]$Key = "G:/Mazesta-Keys/mazesta-update-private.pem",
-    [string]$Out = "artifacts/site/mazesta",
+    [string]$Key = "artifacts/Mazesta-Update/Keys/mazesta-update-private.pem",
+    [string]$Out = "artifacts/Mazesta-Update/mazesta",
     [string]$Archive = (Join-Path (Split-Path $PSScriptRoot -Parent) "../Mazesta-BenchArchive")
 )
 $ErrorActionPreference = "Stop"

@@ -60,4 +60,4 @@ Put logic in the lowest layer that can hold it, so it is unit-testable without a
 
 ## Where things are documented
 `docs/ARCHITECTURE.md`, `docs/VERIFICATION-*.md` (what was actually verified, on real hardware), `docs/GUIDE-FA.md`, `docs/CODEX-TASKS.md` (the task board), `docs/HARDENING-PLAN.md` (the external review's items: done, open, declined), `docs/UPDATES.md` (the app's self-update, the site's /mazesta/ folder, the signing key and the benchmark comparison lists).
-- The update-signing private key lives outside the repo (`G:\Mazesta-Keys`); never commit it. Raise a benchmark's `Version` in `BenchmarkRecords.Headlines` whenever its workload changes, so its comparison list starts over.
+- The update-signing private key lives in `artifacts\Mazesta-Update\Keys` (`artifacts/` is not committed; keep a copy elsewhere); never commit it. The release folder to upload is `artifacts\Mazesta-Update\mazesta`. Raise a benchmark's `Version` in `BenchmarkRecords.Headlines` whenever its workload changes, so its comparison list starts over.
