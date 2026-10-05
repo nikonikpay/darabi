@@ -128,6 +128,7 @@ public class ReportTests
         var laptop = HardwareInventory.Empty with { Computer = new ComputerInfo("LENOVO", "82JU", null, "S1", true) };
         Assert.Equal("LENOVO 82JU", ReportFormat.DeviceName(laptop)); Assert.Contains(ReportText.English.Laptop, ReportFormat.MachineRows(laptop, ReportText.English).First().Value);
         Assert.Null(ReportFormat.DeviceName(HardwareInventory.Empty with { Computer = new ComputerInfo("To Be Filled By O.E.M.", "To Be Filled By O.E.M.", null, null, false) }));
+        Assert.Equal("LENOVO 82XB (Yoga Slim 7)", ReportFormat.DeviceName(HardwareInventory.Empty with { Computer = new ComputerInfo("LENOVO", "82XB", "Yoga Slim 7", null, true) }));
         Assert.Null(ReportFormat.DeviceName(HardwareInventory.Empty));
     }
 }

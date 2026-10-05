@@ -38,7 +38,7 @@ internal sealed class MainForm : Form
 
         var top = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 46, Padding = new Padding(8, 8, 8, 4), WrapContents = false };
         top.Controls.AddRange([_search, _refresh, _key, _status]);
-        _list.Columns.Add(PrintText.Service, 130); _list.Columns.Add(PrintText.Date, 130); _list.Columns.Add(PrintText.Machine, 230); _list.Columns.Add(PrintText.Result, 80);
+        _list.Columns.Add(PrintText.Service, 130); _list.Columns.Add(PrintText.Date, 130); _list.Columns.Add(PrintText.Device, 190); _list.Columns.Add(PrintText.Machine, 230); _list.Columns.Add(PrintText.Result, 80);
         var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 52, Padding = new Padding(8, 8, 8, 8), WrapContents = false };
         bottom.Controls.AddRange([_print, _pdf]);
         var preview = new Panel { Dock = DockStyle.Fill };
@@ -82,12 +82,13 @@ internal sealed class MainForm : Form
     {
         string q = _search.Text.Trim(); string? keep = _shownId;
         var rows = _all.Where(r => q.Length == 0 || (r.Service ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) || r.Machine.Contains(q, StringComparison.OrdinalIgnoreCase)
-            || r.Summary.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+            || (r.Device ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) || (r.Notes ?? "").Contains(q, StringComparison.OrdinalIgnoreCase) || r.Summary.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
         _list.BeginUpdate();
         _list.Items.Clear();
         foreach (var r in rows)
         {
-            var item = new ListViewItem([string.IsNullOrWhiteSpace(r.Service) ? PrintText.NoService : r.Service, r.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), r.Machine,
+            var item = new ListViewItem([string.IsNullOrWhiteSpace(r.Service) ? PrintText.NoService : r.Service, r.Created.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+                (r.Device ?? "") + (r.Laptop == true ? " · " + PrintText.Laptop : ""), r.Machine,
                 PrintText.Verdict(r.Verdict, r.Kind)]) { Tag = r };
             if (string.IsNullOrWhiteSpace(r.Service)) item.ForeColor = Color.FromArgb(0x88, 0x88, 0x88);
             if (!string.IsNullOrWhiteSpace(r.Service)) item.Font = _bold;

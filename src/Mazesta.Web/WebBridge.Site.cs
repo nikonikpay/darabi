@@ -129,7 +129,7 @@ public sealed partial class WebBridge
                 string summary = report.Kind == ReportKind.Benchmark ? string.Join(" · ", (report.Benchmarks ?? []).Select(b => b.Name))
                     : Loc.Format("Reports_RowCounts", report.Counts.Total, report.Counts.Passed, report.Counts.Failed, report.Counts.Cancelled + report.Counts.Unsupported + report.Counts.NotRun);
                 var receipt = await site.SendReportAsync(_config.SiteKey, new SiteReport(report.Id, Loc.Get("Site_Report_Title"), report.CreatedAt, report.Kind.ToString(), report.Verdict?.ToString(),
-                    machine, report.ServiceNumber, summary, app, html, full), CancellationToken.None).ConfigureAwait(true);
+                    machine, report.ServiceNumber, summary, app, html, full, Reporting.DeviceLabel.Of(report.Machine), report.Machine.Computer?.IsPortable, report.ServiceNotes), CancellationToken.None).ConfigureAwait(true);
                 try { File.WriteAllText(Path.Combine(stored.Folder, SiteReceiptName), JsonSerializer.Serialize(new { url = receipt.Url, link = receipt.Link, at = DateTimeOffset.Now })); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }   // sent all the same; only the mark on the row is lost
                 _log.LogInformation("Report {Id} sent to the site ({Url})", report.Id, receipt.Url);

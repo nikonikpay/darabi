@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.7.0
+ * Version: 1.8.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.7.0';
+    const VERSION = '1.8.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_FULL = 3000000;
@@ -321,6 +321,9 @@ final class Mazesta_Connect
             'title' => self::clip(isset($p['title']) ? $p['title'] : '', 255),
             'machine' => self::clip(isset($p['machine']) ? $p['machine'] : '', 190),
             'service' => self::clip(isset($p['service']) ? $p['service'] : '', 190),
+            'device' => self::clip(isset($p['device']) ? $p['device'] : '', 190),   // the maker and model Windows names (System Information), as the app read it
+            'laptop' => !empty($p['laptop']) ? '1' : '',
+            'notes' => self::clip(isset($p['notes']) ? $p['notes'] : '', 4000),   // the work done on the computer, as the technician wrote it
             'verdict' => self::clip(isset($p['verdict']) ? $p['verdict'] : '', 40),
             'kind' => self::clip(isset($p['kind']) ? $p['kind'] : '', 40),
             'summary' => self::clip(isset($p['summary']) ? $p['summary'] : '', 2000),
@@ -354,7 +357,8 @@ final class Mazesta_Connect
         foreach (self::read('reports') as $id => $r) {
             $rows[] = array(
                 'id' => (string) $id, 'service' => isset($r['service']) ? (string) $r['service'] : '', 'title' => isset($r['title']) ? (string) $r['title'] : '',
-                'machine' => isset($r['machine']) ? (string) $r['machine'] : '', 'kind' => isset($r['kind']) ? (string) $r['kind'] : '', 'verdict' => isset($r['verdict']) ? (string) $r['verdict'] : '',
+                'machine' => isset($r['machine']) ? (string) $r['machine'] : '', 'device' => isset($r['device']) ? (string) $r['device'] : '', 'laptop' => !empty($r['laptop']),
+                'notes' => isset($r['notes']) ? (string) $r['notes'] : '', 'kind' => isset($r['kind']) ? (string) $r['kind'] : '', 'verdict' => isset($r['verdict']) ? (string) $r['verdict'] : '',
                 'summary' => isset($r['summary']) ? (string) $r['summary'] : '', 'created' => isset($r['created']) ? (string) $r['created'] : '', 'received' => isset($r['received']) ? (string) $r['received'] : '',
             );
         }
@@ -1038,7 +1042,7 @@ final class Mazesta_Connect
         $rows = self::read('reports');
         if ($s !== '') {
             $rows = array_filter($rows, function ($r) use ($s) {
-                foreach (array('title', 'machine', 'service', 'summary') as $f) { if (isset($r[$f]) && mb_stripos((string) $r[$f], $s) !== false) { return true; } }
+                foreach (array('title', 'machine', 'service', 'summary', 'device', 'notes') as $f) { if (isset($r[$f]) && mb_stripos((string) $r[$f], $s) !== false) { return true; } }
                 return false;
             });
         }
@@ -1048,12 +1052,12 @@ final class Mazesta_Connect
         $links = !empty($c['publicLinks']);
         $verdicts = array('Passed' => 'سالم', 'Failed' => 'ایراد دارد', 'Incomplete' => 'ناقص', '' => 'بنچمارک');
         echo '<form method="get" style="margin:12px 0"><input type="hidden" name="page" value="mazesta-connect"><input type="hidden" name="tab" value="reports">'
-            . '<input type="search" name="s" value="' . esc_attr($s) . '" placeholder="شماره سرویس، نام سیستم…"> <button class="button">جستجو</button> <span class="description">' . esc_html(number_format_i18n($total)) . ' گزارش</span></form>';
-        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>شماره سرویس</th><th>سیستم</th><th>نتیجه</th><th>خلاصه</th><th></th></tr></thead><tbody>';
-        if (!$rows) { echo '<tr><td colspan="6">هنوز گزارشی از برنامه نرسیده است. در برنامه: گزارش‌ها › ارسال به سایت.</td></tr>'; }
+            . '<input type="search" name="s" value="' . esc_attr($s) . '" placeholder="شماره سرویس، مدل دستگاه، سیستم، توضیحات…"> <button class="button">جستجو</button> <span class="description">' . esc_html(number_format_i18n($total)) . ' گزارش</span></form>';
+        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>شماره سرویس</th><th>مدل دستگاه</th><th>سیستم</th><th>نتیجه</th><th>خلاصه</th><th></th></tr></thead><tbody>';
+        if (!$rows) { echo '<tr><td colspan="7">هنوز گزارشی از برنامه نرسیده است. در برنامه: گزارش‌ها › ارسال به سایت.</td></tr>'; }
         foreach ($rows as $id => $r) {
             $view = admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode((string) $id));
-            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" style="text-align:right">' . esc_html($r['machine']) . '</td>'
+            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" style="text-align:right">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['machine']) . '</td>'
                 . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td style="white-space:nowrap">'
                 . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">خلاصه</a> '
                 . (is_file(self::file('report-' . $id . '-full')) ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')

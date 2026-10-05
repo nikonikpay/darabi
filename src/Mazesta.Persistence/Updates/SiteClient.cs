@@ -6,9 +6,9 @@ namespace Mazesta.Persistence.Updates;
 public sealed record SiteStatus(string? Version, string Key, bool OpenUploads, int? Reports, int? Runs, int? Pending, bool Sharing = false);
 
 /// <summary>A report as the site keeps it: who and what it is about, its one-page summary and (<see cref="Full"/>) the whole report, both HTML with nothing to load or run.</summary>
-public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html, string? Full = null);
+public sealed record SiteReport(string Id, string Title, DateTimeOffset Created, string Kind, string? Verdict, string Machine, string? Service, string Summary, string AppVersion, string Html, string? Full = null, string? Device = null, bool? Laptop = null, string? Notes = null);
 /// <summary>A report in the site's list (what the print program shows): <see cref="Service"/> is the job it was made for, empty when it has none.</summary>
-public sealed record SiteReportItem(string Id, string? Service, string Title, string Machine, string Kind, string? Verdict, string Summary, DateTimeOffset Created, DateTimeOffset Received);
+public sealed record SiteReportItem(string Id, string? Service, string Title, string Machine, string Kind, string? Verdict, string Summary, DateTimeOffset Created, DateTimeOffset Received, string? Device = null, bool? Laptop = null, string? Notes = null);
 public sealed record SiteReportReceipt(string Id, bool Updated, string Url, string? Link);
 /// <summary>The computer a shared result was measured on, as its user chose to show it: the parts' names, never the computer's own name.</summary>
 public sealed record SiteMachine(string? Cpu, string? Gpu, double? RamGb, string? Os, string? Name = null);

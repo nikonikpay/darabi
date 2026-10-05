@@ -15,6 +15,8 @@ internal static class ReportFormat
         if (m.Computer is not { } c) return null;
         static bool Filler(string? s) => string.IsNullOrWhiteSpace(s) || s.Contains("O.E.M.", StringComparison.OrdinalIgnoreCase) || s.Contains("To be filled", StringComparison.OrdinalIgnoreCase) || s.Contains("System Product Name", StringComparison.OrdinalIgnoreCase) || s.Contains("Default string", StringComparison.OrdinalIgnoreCase);
         string text = $"{(Filler(c.Manufacturer) ? "" : c.Manufacturer)} {(Filler(c.Model) ? "" : c.Model)}".Trim();
+        // Lenovo and others give a product code as the model ("82XB") and the name people know as the family ("Yoga Slim 7"): both are shown.
+        if (!Filler(c.Family) && !text.Contains(c.Family!.Trim(), StringComparison.OrdinalIgnoreCase)) text = $"{text} ({c.Family.Trim()})".Trim();
         return text.Length == 0 ? null : text;
     }
 

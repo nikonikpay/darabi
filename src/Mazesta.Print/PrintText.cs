@@ -10,9 +10,11 @@ internal static class PrintText
     public static string Title => T("چاپ گزارش‌های مازستا", "Mazesta report printing");
     public static string Refresh => T("تازه‌سازی", "Refresh");
     public static string Settings => T("کلید اتصال", "Connection key");
-    public static string Search => T("جستجوی شماره‌ی سرویس یا سیستم…", "Search service number or system…");
+    public static string Search => T("جستجوی شماره‌ی سرویس، مدل یا سیستم…", "Search service number, model or system…");
     public static string Service => T("شماره‌ی سرویس", "Service no.");
     public static string Date => T("تاریخ گزارش", "Report date");
+    public static string Device => T("مدل دستگاه", "Device model");
+    public static string Laptop => T("لپ‌تاپ", "Laptop");
     public static string Machine => T("سیستم", "System");
     public static string Result => T("نتیجه", "Result");
     public static string Print => T("چاپ خلاصه", "Print summary");
