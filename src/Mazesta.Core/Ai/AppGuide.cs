@@ -340,7 +340,7 @@ public static class AppGuide
             {
                 bool together = Any(s, TogetherWords);
                 var (seconds, inTotal) = Length(s);
-                return new(AiIntent.Tests, Areas: areas) { All = Any(s, AllWords), Together = together, Seconds = seconds, Total = inTotal && !together && areas.Count > 1 };
+                return new(AiIntent.Tests, Areas: areas) { All = Any(s, AllWords) && !together, Together = together, Seconds = seconds, Total = inTotal && !together && areas.Count > 1 };
             }
         }
 

@@ -462,7 +462,7 @@ public sealed partial class WebBridge
                 "all=true takes every test of those areas (for the graphics card also the variable and pulsed loads), else a usual set (the card's includes the 3D scene and the ray-traced scene). " +
                 "tests names single tests by id (see list_tests). seconds (or minutes) sets the length of each load test of the processor, memory and graphics card (default: 15 minutes each); " +
                 "total_seconds instead gives the whole length of the load tests, shared equally between them (one after another; with together=true each part gets all of it) - use it when the user says " +
-                "\"both in 5 minutes\". Storage and network tests keep their own length. together=true loads processor, memory and graphics card at the same time, else the tests run one after another. Name only what the user asked for. " +
+                "\"both in 5 minutes\". Storage and network tests keep their own length. together=true loads processor, memory and graphics card at the same time, with ONE load test per part (all=true is ignored then: everything at once would hang the computer), else the tests run one after another. Name only what the user asked for. " +
                 "An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass. Call a temperature fine only when a finding says so.",
                 """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}},"all":{"type":"boolean"},"tests":{"type":"array","items":{"type":"string"}},"seconds":{"type":"integer"},"minutes":{"type":"integer"},"total_seconds":{"type":"integer"},"together":{"type":"boolean"}}}""",
                 async (a, ct) =>
@@ -475,6 +475,14 @@ public sealed partial class WebBridge
                     var known = tests.Rows.Select(r => r.Definition.Id.Value).ToList();
                     var ids = Texts(a, "areas").Distinct().SelectMany(x => every && AssistantTestAreas.ContainsKey(x) ? known.Where(id => id.StartsWith(x + ".", StringComparison.Ordinal) && !AssistantNeverTests.Contains(id))
                         : AssistantTestAreas.GetValueOrDefault(x) ?? []).Concat(Texts(a, "tests").Where(known.Contains)).ToHashSet();
+                    // Side by side only one load test of each part: the whole set at once would hang the machine. Tests the user named by id stay.
+                    if (together)
+                    {
+                        var named = Texts(a, "tests").ToHashSet();
+                        foreach (var x in Texts(a, "areas").Distinct())
+                            if (AssistantTestAreas.TryGetValue(x, out var usual) && TestEngine.LaneOf(new TestId(usual[0])) is not null && usual.FirstOrDefault(known.Contains) is { } keep)
+                                ids.RemoveWhere(id => id.StartsWith(x + ".", StringComparison.Ordinal) && id != keep && !named.Contains(id));
+                    }
                     if (ids.Count == 0) return Json(new { error = "name at least one area (cpu, memory, storage, network, gpu) or one test id of list_tests" });
                     // The request is fixed here, before the user is asked: the rows this machine can run, each once, at its default length, with the
                     // options (graphics card, drive) the page has now. The run uses exactly this, whatever the page is changed to meanwhile.
