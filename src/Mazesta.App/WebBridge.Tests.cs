@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System.Text.Json; using Mazesta.Desktop.Localization; using Mazesta.Desktop.ViewModels; using Mazesta.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 namespace Mazesta.App;
@@ -28,7 +29,13 @@ public sealed partial class WebBridge
             at = e.At.ToLocalTime().ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture), test = e.Test?.Value, level = e.Level.ToString(),
             key = e.Key, args = e.Args, formula = e.Formula,
         };
-        void OnLogged(TestLogEntry e) => Push("testlog", LogLine(e));
+        // The live log is kept in memory: the lines that say where a session is (a test begins or ends, a stage begins) also go to the
+        // app's log file, which is still there after a reset.
+        void OnLogged(TestLogEntry e)
+        {
+            Push("testlog", LogLine(e));
+            if (e.Level != TestLogLevel.Step || e.Key.EndsWith("_Stage", StringComparison.Ordinal)) _log.LogInformation("Test log: {Test} {Key} [{Args}]", e.Test?.Value, e.Key, string.Join(", ", e.Args));
+        }
         engine.Logged += OnLogged; _cleanup.Add(() => engine.Logged -= OnLogged);
         Method("tests.log", _ => engine.RecentLog().Select(LogLine));
         object State() => new

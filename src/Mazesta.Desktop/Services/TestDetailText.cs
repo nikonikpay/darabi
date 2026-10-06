@@ -64,6 +64,11 @@ public static partial class TestDetailText
     [
         // ——— processor ———
         R(@"matrix load (\d+)x\d+, (\d+) fixed input sets, every product checked in full against a precomputed checksum", "Detail_Cpu_Matrix"),
+        R(@"full load in (\d+) stages of (\d+) s on (\d+) threads, every block checked against a value worked out in advance", "Detail_Cpu_Stress"),
+        R(@"(matrix|integer|hash): (\d+) blocks in (\d+) s, (\d+) wrong", "Detail_Cpu_StressStage", m => [Loc.Get("Test_Cpu_Stage_" + char.ToUpperInvariant(G(m, 1)[0]) + G(m, 1)[1..]), G(m, 2), G(m, 3), G(m, 4)]),
+        R(@"part load: (\d+)% for (\d+) s, then (\d+)% for (\d+) s, in turn", "Detail_Cpu_StressSwing"),
+        R(@"part load: held at (\d+)%", "Detail_Cpu_StressHeld"),
+        R(@"memory filled: (\d+) systems, (\d+) MiB \((.+)\)", "Detail_Cpu_LinpackFilled"),
         R(@"single-core cycling over (\d+) physical cores, ([\d.]+) s each, (variable|steady) load, matrix (\d+)x\d+", "Detail_Cpu_Cycle", m => [G(m, 1), G(m, 2), Loc.Get("Detail_Load_" + G(m, 3)), G(m, 4)]),
         R(@"radix-2 complex FFT, N=(\d+) and N=(\d+), (\d+) threads", "Detail_Cpu_Fft"),
         R(@"radix-2 complex FFT, N=(\d+) and N=(\d+), (\d+) threads of (\d+) \(free RAM held \d+ workers of (\d+) MiB\)", "Detail_Cpu_FftFewer"),

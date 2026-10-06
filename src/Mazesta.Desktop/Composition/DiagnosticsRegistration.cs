@@ -17,13 +17,11 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IHardwareErrorSource, WheaErrorSource>();
         s.AddSingleton<IStorageEventSource, StorageEventSource>();
 
-        s.AddSingleton<ITestExecutor, CpuMatrixStressExecutor>();
+        s.AddSingleton<ITestExecutor, CpuStressExecutor>();   // the matrix, integer and hashing loads, once three tests, are its stages
         s.AddSingleton<ITestExecutor>(new CpuCoreCycleExecutor());
         s.AddSingleton<ITestExecutor, LinpackExecutor>();
         s.AddSingleton<ITestExecutor, CpuVectorStressExecutor>();
-        s.AddSingleton<ITestExecutor, CpuIntegerExecutor>();
         s.AddSingleton<ITestExecutor, CpuFftExecutor>();
-        s.AddSingleton<ITestExecutor, CpuHashExecutor>();
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, MemoryBitFadeExecutor>();
         s.AddSingleton<ITestExecutor, LanExecutor>();

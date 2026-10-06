@@ -56,6 +56,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         string finished = cp.Finished.Count == 0 ? Loc.Get("Test_IncompleteSession_NoneFinished")
             : string.Join(Loc.IsRtl ? "، " : ", ", cp.Finished.Select(f => $"{Name(f.TestId)}: {Loc.Get("Test_Outcome_" + f.Outcome)}"));
         string text = Loc.Format("Test_IncompleteSession_Detail", cp.CurrentIndex + 1, cp.QueueTestIds.Count, at, (int)Math.Round(cp.CurrentPercent * 100), finished);
+        if (cp.CurrentStage is { Length: > 0 } stage) text += " " + Loc.Format("Test_IncompleteSession_Stage", Loc.Get(stage));
         if (_breaks is null) return text;
         try
         {
@@ -78,7 +79,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         CurrentStartedAt = DateTimeOffset.Now; CurrentIndex = next;
         if (RowFor(id) is { } row) { row.Outcome = TestOutcome.Running; row.PercentComplete = 0; row.StatusText = Loc.Get("Test_Status_Starting"); }
     });
-    private void OnTestProgress(TestId id, TestProgress p) => _dispatch(() => { if (RowFor(id) is { } row) { row.PercentComplete = p.PercentComplete; row.StatusText = Loc.Get(p.StatusKey); } });
+    private void OnTestProgress(TestId id, TestProgress p) => _dispatch(() => { if (RowFor(id) is { } row) { row.PercentComplete = p.PercentComplete; row.StatusText = p.Stage is null ? Loc.Get(p.StatusKey) : $"{Loc.Get(p.StatusKey)} · {Loc.Get(p.Stage)}"; } });
     private void OnTestCompleted(TestId id, TestRunResult r) => _dispatch(() =>
     {
         if (RowFor(id) is not { } row) return;

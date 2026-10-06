@@ -21,6 +21,8 @@ public sealed class TestSessionCheckpoint : IVersionedDocument
     /// <summary>The running test's round (from 1) and progress (0-1) when last saved.</summary>
     public int CurrentIteration { get; set; }
     public double CurrentPercent { get; set; }
+    /// <summary>The stage the running test was in when last saved (the key of its name), for a test that has stages; else null.</summary>
+    public string? CurrentStage { get; set; }
     public List<CheckpointResult> Finished { get; set; } = [];
 }
 

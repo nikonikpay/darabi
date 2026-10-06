@@ -17,7 +17,9 @@ public sealed record TestDefinition(TestId Id, string NameKey, int DefaultDurati
 /// Both are appended so values saved as numbers keep their meaning.</summary>
 public enum TestOutcome { NotRun, Running, Passed, Failed, Cancelled, Unsupported, Error, Inconclusive }
 
-public readonly record struct TestProgress(double PercentComplete, string StatusKey);
+/// <param name="Stage">For a test that goes through stages (the processor's full-load test): the key of the stage's name. The engine writes it
+/// to the session's checkpoint the moment it changes, so a session that ends in a reset says which stage it was in.</param>
+public readonly record struct TestProgress(double PercentComplete, string StatusKey, string? Stage = null);
 
 /// <summary>Detail is a technical English string for the log/JSON (spec §12); the UI localises Outcome and
 /// shows Detail as measured evidence, never as the customer-facing verdict.</summary>

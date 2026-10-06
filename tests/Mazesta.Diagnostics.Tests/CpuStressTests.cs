@@ -44,13 +44,64 @@ public class CpuStressTests
         Assert.Equal(2048, LinpackExecutor.ChooseSize(0, 4L * 8 * 2048 * 2048));
     }
 
+    [Fact] public void Linpack_fills_the_free_ram_with_systems_and_goes_past_it_only_when_asked()
+    {
+        const long GiB = 1L << 30;
+        Assert.Equal((LinpackExecutor.FillSize, 58), LinpackExecutor.Plan(0, "physical", new(32 * GiB, 31 * GiB, 60 * GiB)));   // 31 GiB free less a twentieth of 32: 29.4 GiB of 512 MiB systems
+        Assert.Equal((LinpackExecutor.FillSize, 92), LinpackExecutor.Plan(0, "virtual", new(32 * GiB, 31 * GiB, 60 * GiB)));    // one and a half times the RAM, less 2 GiB
+        Assert.Equal(LinpackExecutor.Plan(0, "physical", new(32 * GiB, 31 * GiB)), LinpackExecutor.Plan(0, "virtual", new(32 * GiB, 31 * GiB)));   // the commit limit is not known: as physical
+        Assert.Equal(1, LinpackExecutor.Plan(0, "single", new(32 * GiB, 31 * GiB, 60 * GiB)).Count);
+        var small = LinpackExecutor.Plan(0, "physical", new(2 * GiB, GiB + (GiB >> 2)));   // a quarter of a gibibyte to fill: one smaller system
+        Assert.True(small.Count >= 1 && 8L * small.N * small.N <= GiB >> 2);
+    }
+
+    [Fact] public async Task Linpack_fills_memory_and_says_how_much()
+    {
+        var r = await new LinpackExecutor(new FixedProbe(2L << 30, (1L << 30) + (64L << 20))).RunAsync(new(1, new FakeClock(T0), null, null,
+            new TestOptions(LinpackExecutor.Definition, new Dictionary<string, string> { [LinpackExecutor.SizeOption] = "512" })), CancellationToken.None);   // 64 MiB to fill with 2 MiB systems
+        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("memory filled: 32 systems, 64 MiB (Physical only)", r.Detail);
+    }
+
+    // ——— the full-load test ———
+    [Fact] public void The_full_load_test_goes_through_its_stages_in_turn_and_through_all_of_them_in_a_short_run()
+    {
+        Assert.Equal(60, CpuStressExecutor.StageSeconds(60, 300)); Assert.Equal(10, CpuStressExecutor.StageSeconds(60, 30));
+        Assert.Equal([0, 1, 2, 0], new[] { 0.0, 61, 125, 180 }.Select(t => CpuStressExecutor.StageAt(t, 60)));
+    }
+
+    [Fact] public void A_variable_load_is_high_then_low_in_turn_and_a_steady_one_stays_high()
+    {
+        Assert.Equal([1.0, 1.0, 0.0, 1.0], new[] { 0.0, 19.9, 20, 30 }.Select(t => CpuStressExecutor.LoadAt(t, true, 100, 0, 20, 10)));
+        Assert.Equal(0.8, CpuStressExecutor.LoadAt(25, false, 80, 0, 20, 10)); Assert.Equal(0.3, CpuStressExecutor.LoadAt(25, true, 80, 30, 20, 10));
+    }
+
+    [Fact] public async Task The_full_load_test_runs_every_stage_names_it_in_the_log_and_hands_it_on_with_the_progress()
+    {
+        var log = new List<TestLogEntry>(); var stages = new List<string?>();
+        var r = await new CpuStressExecutor().RunAsync(new(3, new FakeClock(T0), p => { lock (stages) stages.Add(p.Stage); }, null,
+            new TestOptions(CpuStressExecutor.Definition, new Dictionary<string, string> { [CpuStressExecutor.StageOption] = "1" }), e => { lock (log) log.Add(e); }), CancellationToken.None);
+        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Equal(0, r.ErrorCount);
+        foreach (var s in CpuStressExecutor.Stages)
+        {
+            Assert.Contains(log, e => e.Key == "Log_CpuStress_Stage" && e.Args.Contains("@" + s.NameKey));
+            Assert.Contains(s.NameKey, stages); Assert.DoesNotContain($"{s.Name}: 0 blocks", r.Detail);
+        }
+    }
+
+    [Fact] public async Task A_variable_load_is_said_in_the_account_so_the_checkup_does_not_judge_it_as_a_full_one()
+    {
+        var r = await new CpuStressExecutor().RunAsync(new(3, new FakeClock(T0), null, null,
+            new TestOptions(CpuStressExecutor.Definition, new Dictionary<string, string> { [CpuStressExecutor.PatternOption] = "variable", [CpuStressExecutor.HighSecondsOption] = "1", [CpuStressExecutor.LowSecondsOption] = "1" })), CancellationToken.None);
+        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains(CpuStressExecutor.PartLoadMark, r.Detail);
+    }
+
     [Fact] public async Task Linpack_passes_a_short_run_and_refuses_what_ram_cannot_hold()
     {
         var ok = await new LinpackExecutor(new FixedProbe(16L << 30, 8L << 30)).RunAsync(new(1, new FakeClock(T0), null, null,
-            new TestOptions(LinpackExecutor.Definition, new Dictionary<string, string> { [LinpackExecutor.SizeOption] = "256" })), CancellationToken.None);
+            new TestOptions(LinpackExecutor.Definition, new Dictionary<string, string> { [LinpackExecutor.SizeOption] = "256", [LinpackExecutor.MemoryOption] = "single" })), CancellationToken.None);
         Assert.Equal(TestOutcome.Passed, ok.Outcome); Assert.Contains("GFLOPS", ok.Detail);
         var no = await new LinpackExecutor(new FixedProbe(2L << 30, 1L << 30)).RunAsync(new(1, new FakeClock(T0), null, null,
-            new TestOptions(LinpackExecutor.Definition, new Dictionary<string, string> { [LinpackExecutor.SizeOption] = "20000" })), CancellationToken.None);
+            new TestOptions(LinpackExecutor.Definition, new Dictionary<string, string> { [LinpackExecutor.SizeOption] = "20000", [LinpackExecutor.MemoryOption] = "single" })), CancellationToken.None);
         Assert.Equal(TestOutcome.Unsupported, no.Outcome);
     }
 

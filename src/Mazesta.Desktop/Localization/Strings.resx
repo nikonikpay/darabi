@@ -1134,9 +1134,7 @@
   <data name="Test_Cpu_SingleCore" xml:space="preserve">
     <value>CPU single-core, core by core (variable boost)</value>
   </data>
-  <data name="Test_Cpu_Linpack" xml:space="preserve">
-    <value>CPU Linpack (LU solve, residual check)</value>
-  </data>
+  <data name="Test_Cpu_Linpack" xml:space="preserve"><value>CPU Linpack (LU solve with residual check)</value></data>
   <data name="Test_Cpu_Vector" xml:space="preserve">
     <value>CPU AVX/FMA maximum heat</value>
   </data>
@@ -2426,10 +2424,10 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Ai_Option_Device" xml:space="preserve"><value>Device</value></data>
   <data name="Ai_RamFree" xml:space="preserve"><value>Free RAM now</value></data>
   <data name="Bench_Mem_Latency" xml:space="preserve"><value>Latency, 256 MiB (the RAM itself)</value></data>
-  <data name="Test_Memory_BitFade" xml:space="preserve"><value>RAM · Bit Fade (hold and check)</value></data>
+  <data name="Test_Memory_BitFade" xml:space="preserve"><value>RAM · Bit Fade (data retention: write, wait, check again)</value></data>
   <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} MiB of free RAM taken; {1} of {2} blocks locked in RAM so Windows cannot page them out while they wait.</value></data>
   <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>Pattern '{0}' written to every block; now left untouched for {1} s.</value></data>
-  <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>Pattern '{0}' checked after the hold; {1} faded byte(s) so far.</value></data>
+  <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>Pattern '{0}' checked after the hold; {1} changed byte(s) so far.</value></data>
   <data name="Test_Cpu_Hash" xml:space="preserve"><value>CPU · hashing and compression (SHA-256, Deflate)</value></data>
   <data name="Log_CpuHash_Start" xml:space="preserve"><value>{0} threads hash a fixed 256 KB text, compress it, decompress it and hash it again; both hashes must equal the value worked out in advance.</value></data>
   <data name="Log_CpuHash_Progress" xml:space="preserve"><value>{0} blocks so far, {1} MB/s, {2} wrong.</value></data>
@@ -2960,7 +2958,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Log_Whea" xml:space="preserve"><value>Windows recorded {0} hardware error(s) (WHEA) during this test (event ids {1}):</value></data>
   <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>Windows' hardware error log could not be read ({0})</value></data>
   <data name="Detail_Mem_Algorithms" xml:space="preserve"><value>Moving inversions ×{0}, block move ×{1}, stride ×{2}</value></data>
-  <data name="Detail_Mem_BitFade" xml:space="preserve"><value>Bit fade test (does the memory keep its data while left alone)</value></data>
+  <data name="Detail_Mem_BitFade" xml:space="preserve"><value>Bit Fade test (does the memory keep its data while left alone)</value></data>
   <data name="Detail_Mem_Covers" xml:space="preserve"><value>Covers only the RAM Windows let the test have; errors are placed by position in the test's own buffer, not by physical address or slot</value></data>
   <data name="Detail_Mem_Faded" xml:space="preserve"><value>First faded bytes in buffer block {0} (at {1} MiB) after holding “{2}”</value></data>
   <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, untouched for {1}</value></data>
@@ -3180,4 +3178,30 @@ Cancel: stop.</value></data>
   <data name="Web_Bench_RunDetails" xml:space="preserve"><value>Conditions and settings of this run</value></data>
   <data name="Web_Tests_Advanced" xml:space="preserve"><value>Advanced</value></data>
   <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>Shows each test's length, repeat and options, and the full account of its result</value></data>
+  <data name="Test_Cpu_Stress" xml:space="preserve"><value>CPU · full load (matrix, integer, hashing and compression, in turn)</value></data>
+  <data name="Test_Cpu_Stage_Matrix" xml:space="preserve"><value>matrix products (floating point)</value></data>
+  <data name="Test_Cpu_Stage_Integer" xml:space="preserve"><value>integer arithmetic (multiply, divide, branch)</value></data>
+  <data name="Test_Cpu_Stage_Hash" xml:space="preserve"><value>hashing and compression (SHA-256, Deflate)</value></data>
+  <data name="Test_Option_StageSeconds" xml:space="preserve"><value>Seconds per stage</value></data>
+  <data name="Test_Option_LoadPattern" xml:space="preserve"><value>Load</value></data>
+  <data name="Test_LoadPattern_Steady" xml:space="preserve"><value>Steady</value></data>
+  <data name="Test_LoadPattern_Variable" xml:space="preserve"><value>Variable (high, then low)</value></data>
+  <data name="Test_Option_LoadHigh" xml:space="preserve"><value>High load (%)</value></data>
+  <data name="Test_Option_LoadHighSeconds" xml:space="preserve"><value>Seconds at high</value></data>
+  <data name="Test_Option_LoadLow" xml:space="preserve"><value>Low load (%)</value></data>
+  <data name="Test_Option_LoadLowSeconds" xml:space="preserve"><value>Seconds at low</value></data>
+  <data name="Log_CpuStress_Start" xml:space="preserve"><value>{0} threads go through {1} stages, {2} s each, round and round; every block is checked against a value worked out in advance.</value></data>
+  <data name="Log_CpuStress_Pattern" xml:space="preserve"><value>Variable load: {0}% for {1} s, then {2}% for {3} s, in turn.</value></data>
+  <data name="Log_CpuStress_Stage" xml:space="preserve"><value>Stage {0} of {1} begins: {2} (round {3}).</value></data>
+  <data name="Log_CpuStress_StageEnd" xml:space="preserve"><value>Stage ended: {0} — {1} blocks, {2} wrong.</value></data>
+  <data name="Log_CpuStress_Level" xml:space="preserve"><value>Load goes to {0}% (stage: {1}).</value></data>
+  <data name="Test_IncompleteSession_Stage" xml:space="preserve"><value>The test was in this stage: {0}.</value></data>
+  <data name="Test_Option_LinpackMemory" xml:space="preserve"><value>Memory</value></data>
+  <data name="Test_Linpack_Mem_Single" xml:space="preserve"><value>One matrix</value></data>
+  <data name="Log_Linpack_Fill" xml:space="preserve"><value>Memory filled: {0} systems, {1} MiB ({2}); they are solved and checked one after another.</value></data>
+  <data name="Detail_Cpu_Stress" xml:space="preserve"><value>Full load in {0} stages of {1} s on {2} threads; every block checked against a value worked out in advance</value></data>
+  <data name="Detail_Cpu_StressStage" xml:space="preserve"><value>{0}: {1} blocks in {2} s, {3} wrong</value></data>
+  <data name="Detail_Cpu_StressSwing" xml:space="preserve"><value>Variable load: {0}% for {1} s, then {2}% for {3} s, in turn</value></data>
+  <data name="Detail_Cpu_StressHeld" xml:space="preserve"><value>Load held at {0}%</value></data>
+  <data name="Detail_Cpu_LinpackFilled" xml:space="preserve"><value>Memory filled: {0} systems, {1} MiB ({2})</value></data>
 </root>

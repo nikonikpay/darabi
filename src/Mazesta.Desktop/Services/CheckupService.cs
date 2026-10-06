@@ -100,7 +100,7 @@ public sealed class CheckupService
     }
 
     /// <summary>The tests that keep every core busy: only over them is the processor's load and clock judged (one core at a time is another matter).</summary>
-    private static readonly string[] FullCpuTests = ["cpu.matrix", "cpu.linpack", "cpu.vector", "cpu.integer", "cpu.fft", "cpu.hash"];
+    private static readonly string[] FullCpuTests = ["cpu.stress", "cpu.matrix", "cpu.linpack", "cpu.vector", "cpu.integer", "cpu.fft", "cpu.hash"];
     /// <summary>The tests that hold the graphics card at a steady full load (the variable and pulsed ones leave it on purpose).</summary>
     private static readonly string[] FullGpuTests = ["gpu.steady", "gpu.scene.d3d", "gpu.scene.rt"];
     /// <summary>The median load under which a part is said not to have been fully used, as <see cref="CpuCheck"/> draws it.</summary>
@@ -151,7 +151,7 @@ public sealed class CheckupService
         double? temp = null; var loads = new List<double>(); var findings = new List<Finding>();
         foreach (var r in runs)
         {
-            bool full = FullCpuTests.Contains(r.Id.Value);
+            bool full = FullCpuTests.Contains(r.Id.Value) && r.Detail?.Contains(Mazesta.Diagnostics.Cpu.CpuStressExecutor.PartLoadMark, StringComparison.Ordinal) != true;   // (a run asked to swing or hold back its load is not judged as a full one)
             var trace = CheckupTraces.Cpu(_engine, r.StartedAt, r.FinishedAt!.Value, full, cpu?.MaxClockMhz, onBattery, CpuSpecs.Find(name));
             if (trace.Temp is { Count: > 0 } t) temp = Math.Max(temp ?? double.MinValue, t.Max());
             if (!full) continue;

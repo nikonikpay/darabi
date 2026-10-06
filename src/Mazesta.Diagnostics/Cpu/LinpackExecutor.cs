@@ -10,15 +10,21 @@ namespace Mazesta.Diagnostics.Cpu;
 ///    sequence of operations: the solution must be bit-for-bit the first iteration's (IntelBurnTest's "residuals must match" rule). A healthy
 ///    CPU never differs; a marginal one does long before it crashes.
 /// GFLOPS counts (2/3)n³ + 2n² per solve, the standard Linpack figure.
+/// The memory it works in is the technician's choice (<see cref="MemoryOption"/>), as in OCCT's Linpack: one matrix; "Physical only", the free RAM
+/// filled with matrices; or "Physical and virtual", past the RAM into the page file. One system of the whole size would take hours to solve
+/// once, and a run that ends before its first check proves nothing: the memory is filled with systems of <see cref="FillSize"/> instead, all
+/// written at the start and then solved and checked one after another, round and round, so every part of it is worked and verified in turn.
 /// </summary>
 public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
 {
-    public const string SizeOption = "size";
+    public const string SizeOption = "size", MemoryOption = "memory";
     public static readonly TestDefinition Definition = new(new TestId("cpu.linpack"), "Test_Cpu_Linpack", 300,
-        [new TestOption(SizeOption, "Test_Option_LinpackSize", TestOptionKind.Integer, "0")]);   // 0 = automatic from free RAM
+        [new TestOption(SizeOption, "Test_Option_LinpackSize", TestOptionKind.Integer, "0"),   // 0 = automatic from free RAM
+         new TestOption(MemoryOption, "Test_Option_LinpackMemory", TestOptionKind.Choice, "physical",
+            () => [new("single", "Test_Linpack_Mem_Single", true), new("physical", "Physical only"), new("virtual", "Physical and virtual")])]);
     TestDefinition ITestExecutor.Definition => Definition;
 
-    internal const int Block = 64, MinSize = 256, MaxSize = 30000, AutoMax = 6144;
+    internal const int Block = 64, MinSize = 256, MaxSize = 30000, AutoMax = 6144, FillSize = 8192;   // (a system of FillSize is 512 MiB)
     private const ulong Seed = 0x4D415A45535441;   // "MAZESTA"
 
     /// <summary>The matrix order: the technician's, or the largest up to <see cref="AutoMax"/> whose matrix fits in a quarter of the free RAM.</summary>
@@ -29,20 +35,46 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
         return Math.Clamp(Math.Min(fits, AutoMax), MinSize, AutoMax) / 64 * 64;
     }
 
+    /// <summary>The systems a run works on: their order and how many. "single" is one, sized as before. "physical" fills the free RAM but a
+    /// twentieth of the machine's (a gibibyte at least), left so Windows does not start paging; "virtual" goes on into what Windows will still
+    /// commit, up to one and a half times the RAM, less two gibibytes (where that is not known, as "physical").</summary>
+    internal static (int N, int Count) Plan(int requested, string mode, MemoryStatus status)
+    {
+        if (mode == "single") return (ChooseSize(requested, status.AvailableBytes), 1);
+        long physical = status.AvailableBytes - Math.Max(1L << 30, status.TotalBytes / 20);
+        long target = mode == "virtual" && status.AvailableCommitBytes > 0 ? Math.Max(physical, Math.Min(status.AvailableCommitBytes, status.TotalBytes * 3 / 2) - (2L << 30)) : physical;
+        int fits = (int)Math.Sqrt(Math.Max(0, target) / 8.0) / 64 * 64, n = Math.Max(MinSize, Math.Min(requested > 0 ? Math.Clamp(requested, MinSize, MaxSize) / 8 * 8 : FillSize, fits));
+        return (n, (int)Math.Max(1, target / (8L * n * n)));
+    }
+
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
-        var status = memory.Read();
-        int n = ChooseSize((request.Options ?? TestOptions.None(Definition)).GetInt(SizeOption), status.AvailableBytes);
+        var status = memory.Read(); var options = request.Options ?? TestOptions.None(Definition); string mode = options.Get(MemoryOption);
+        var (n, count) = Plan(options.GetInt(SizeOption), mode, status);
         long needed = 8L * n * n;
         if (needed > status.AvailableBytes - (1L << 30)) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"A {n}x{n} matrix needs {needed >> 20} MiB; only {status.AvailableBytes >> 20} MiB of RAM is free."));
-        return Task.Run(() => Run(request, n, started, ct), CancellationToken.None);
+        return Task.Run(() => Run(request, n, count, mode, started, ct), CancellationToken.None);
     }
 
-    private static TestRunResult Run(TestExecutionRequest request, int n, DateTimeOffset started, CancellationToken ct)
+    private static TestRunResult Run(TestExecutionRequest request, int n, int count, string mode, DateTimeOffset started, CancellationToken ct)
     {
-        var a = GC.AllocateUninitializedArray<double>(n * n); var piv = new int[n]; var b = new double[n]; var x = new double[n];
+        // The memory: every system is allocated and written before the first solve, so the whole of it is held for the whole run. What
+        // Windows will not give is done without (the account says how much was filled).
+        var systems = new List<double[]>(count); var piv = new int[n]; var b = new double[n]; var x = new double[n];
+        try { for (int k = 0; k < count && !ct.IsCancellationRequested; k++) { var m = GC.AllocateUninitializedArray<double>(n * n); Generate(m, n); systems.Add(m); if (count > 1) request.Progress?.Invoke(new TestProgress(0, "Test_Status_Starting")); } }
+        catch (OutOfMemoryException) { }
+        if (systems.Count == 0) return TestRunResult.Unsupported(Definition.Id, started, $"Windows did not give the {8L * n * n >> 20} MiB a {n}x{n} matrix needs.");
+        string label = mode == "virtual" ? "Physical and virtual" : "Physical only";
+        string filled = mode == "single" ? "" : $"memory filled: {systems.Count} systems, {8L * n * n * systems.Count >> 20} MiB ({label})";
+        if (mode != "single") request.Note("Log_Linpack_Fill", null, systems.Count, 8L * n * n * systems.Count >> 20, label);
+        try { return Run(request, n, systems, piv, b, x, filled, started, ct); }
+        finally { systems.Clear(); GC.Collect(); }   // gigabytes, given back now and not at the collector's leisure
+    }
+
+    private static TestRunResult Run(TestExecutionRequest request, int n, List<double[]> systems, int[] piv, double[] b, double[] x, string filled, DateTimeOffset started, CancellationToken ct)
+    {
         long iterations = 0, errors = 0; double bestGflops = 0, worstResidual = 0; ulong? reference = null; string firstError = "";
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         void Progress(double within) => request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
@@ -52,6 +84,7 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
             do
             {
                 ct.ThrowIfCancellationRequested();
+                var a = systems[(int)(iterations % systems.Count)];
                 Generate(a, n); GenerateRhs(b);
                 var solve = Stopwatch.StartNew();
                 bool regular = Factor(a, n, piv, ct, Progress);
@@ -75,16 +108,16 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
         }
         catch (OperationCanceledException)
         {
-            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError));
+            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError, filled));
         }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError));
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError, filled));
     }
 
-    private static string Describe(TestExecutionRequest request, DateTimeOffset started, int n, long iterations, double gflops, double residual, string firstError)
+    private static string Describe(TestExecutionRequest request, DateTimeOffset started, int n, long iterations, double gflops, double residual, string firstError, string filled)
     {
         var finished = request.Clock.UtcNow;
-        return SensorEvidence.Join($"Linpack (LU with partial pivoting), n={n} ({8L * n * n >> 20} MiB), {Environment.ProcessorCount} threads", $"iterations={iterations}",
+        return SensorEvidence.Join($"Linpack (LU with partial pivoting), n={n} ({8L * n * n >> 20} MiB), {Environment.ProcessorCount} threads", filled.Length > 0 ? filled : null, $"iterations={iterations}",
             iterations > 0 ? $"{gflops:F1} GFLOPS" : null, iterations > 0 ? $"worst scaled residual {residual:G3} (bound 16)" : null, firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));

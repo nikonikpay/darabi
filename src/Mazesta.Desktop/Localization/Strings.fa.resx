@@ -1134,9 +1134,7 @@
   <data name="Test_Cpu_SingleCore" xml:space="preserve">
     <value>CPU تک‌هسته‌ای، هسته به هسته (بوست متغیر)</value>
   </data>
-  <data name="Test_Cpu_Linpack" xml:space="preserve">
-    <value>CPU لین‌پک (حل LU با بررسی باقیمانده)</value>
-  </data>
+  <data name="Test_Cpu_Linpack" xml:space="preserve"><value>CPU Linpack (حل LU با بررسی باقیمانده)</value></data>
   <data name="Test_Cpu_Vector" xml:space="preserve">
     <value>CPU حداکثر حرارت AVX/FMA</value>
   </data>
@@ -1547,7 +1545,7 @@
   <data name="Log_Core_Visit" xml:space="preserve"><value>هستهٔ {0}{1}: رشته به مدت {2} ثانیه روی نخستین پردازندهٔ منطقی آن قفل شد.</value></data>
   <data name="Log_Core_NotPinned" xml:space="preserve"><value>هستهٔ {0}: ویندوز رشته را روی این هسته نگه نداشت؛ این هسته آزمون‌شده حساب نمی‌شود.</value></data>
   <data name="Log_Core_Wrong" xml:space="preserve"><value>هستهٔ {0}، {1} حاصل‌ضرب نادرست محاسبه کرد.</value></data>
-  <data name="Log_Linpack_Start" xml:space="preserve"><value>لین‌پک: حل دستگاه {0}x{0} ({1} مگابایت) با تجزیهٔ LU روی {2} رشته.</value></data>
+  <data name="Log_Linpack_Start" xml:space="preserve"><value>Linpack: حل دستگاه {0}x{0} ({1} مگابایت) با تجزیهٔ LU روی {2} رشته.</value></data>
   <data name="Log_Linpack_Solve" xml:space="preserve"><value>حل {0}: {1} گیگافلاپس، باقیماندهٔ مقیاس‌شده {2} (باید زیر ۱۶ بماند).</value></data>
   <data name="Log_Mem_Allocated" xml:space="preserve"><value>{0} مگابایت از RAM آزاد در {1} بلوک ۶۴ مگابایتی گرفته شد؛ بقیه برای ویندوز می‌ماند.</value></data>
   <data name="Log_Mem_Pass" xml:space="preserve"><value>دور {0}: الگوی «{1}» بررسی و «{2}» نوشته شد؛ تا این لحظه {3} بایت نادرست.</value></data>
@@ -1684,7 +1682,7 @@
   <data name="Profile_OsStorage" xml:space="preserve"><value>درایو ویندوز</value></data>
   <data name="Profile_OsStorage_Note" xml:space="preserve"><value>آزمون‌های خود درایو، SMART و بررسی فایل‌های ویندوز. در گزینه‌های آزمون ذخیره‌سازی، درایو ویندوز را انتخاب کنید؛ آزمون‌ها فقط از یک فایل تازه در فضای خالی استفاده می‌کنند، نه داده‌های درایو.</value></data>
   <data name="Advice_Cpu" xml:space="preserve"><value>مشاهده: CPU زیر بار نتیجهٔ نادرست محاسبه کرد.
-علت‌های محتمل: اورکلاک، آندرولت یا Curve Optimizer ناپایدار؛ ولتاژ ناکافی یا VRM ضعیف؛ دمای زیاد؛ RAM ناپایدار (بار ماتریسی و لین‌پک از حافظه هم استفاده می‌کنند).
+علت‌های محتمل: اورکلاک، آندرولت یا Curve Optimizer ناپایدار؛ ولتاژ ناکافی یا VRM ضعیف؛ دمای زیاد؛ RAM ناپایدار (بار ماتریسی و Linpack از حافظه هم استفاده می‌کنند).
 آزمایش بعدی: BIOS را به تنظیمات پیش‌فرض برگردانید و تکرار کنید؛ دما را در گزارش ببینید؛ آزمون تک‌هسته‌ای را برای پیدا کردن هسته اجرا کنید؛ RAM را جداگانه آزمون کنید.</value></data>
   <data name="Advice_Memory" xml:space="preserve"><value>مشاهده: داده‌ای که از RAM خوانده شد با آنچه نوشته شده بود فرق داشت.
 علت‌های محتمل: ماژول معیوب؛ کنترلر حافظه در CPU؛ تنظیم XMP یا دستی ناپایدار؛ اسلات یا مادربرد.
@@ -2426,10 +2424,10 @@
   <data name="Ai_Option_Device" xml:space="preserve"><value>دستگاه</value></data>
   <data name="Ai_RamFree" xml:space="preserve"><value>RAM آزاد در این لحظه</value></data>
   <data name="Bench_Mem_Latency" xml:space="preserve"><value>تأخیر دسترسی، ۲۵۶ مگابایت (خود رم)</value></data>
-  <data name="Test_Memory_BitFade" xml:space="preserve"><value>رم · محو شدن بیت (نگه‌داشتن و بررسی)</value></data>
+  <data name="Test_Memory_BitFade" xml:space="preserve"><value>رم · Bit Fade - ماندگاری داده (نوشتن، انتظار، بررسی دوباره)</value></data>
   <data name="Log_Mem_BitFade_Locked" xml:space="preserve"><value>{0} مگابایت از RAM آزاد گرفته شد؛ {1} از {2} بلوک در RAM قفل شد تا ویندوز هنگام انتظار آن‌ها را به فایل صفحه منتقل نکند.</value></data>
   <data name="Log_Mem_BitFade_Hold" xml:space="preserve"><value>الگوی «{0}» در همهٔ بلوک‌ها نوشته شد؛ اکنون {1} ثانیه دست‌نخورده می‌ماند.</value></data>
-  <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>الگوی «{0}» پس از انتظار بررسی شد؛ تا این لحظه {1} بایت محوشده.</value></data>
+  <data name="Log_Mem_BitFade_Checked" xml:space="preserve"><value>الگوی «{0}» پس از انتظار بررسی شد؛ تا این لحظه {1} بایت تغییر کرده است.</value></data>
   <data name="Test_Cpu_Hash" xml:space="preserve"><value>CPU · هش و فشرده‌سازی (SHA-256 و Deflate)</value></data>
   <data name="Log_CpuHash_Start" xml:space="preserve"><value>{0} رشته یک متن ثابت ۲۵۶ کیلوبایتی را هش، فشرده و باز می‌کنند و دوباره هش می‌گیرند؛ هر دو هش باید با مقدار از پیش محاسبه‌شده برابر باشد.</value></data>
   <data name="Log_CpuHash_Progress" xml:space="preserve"><value>تا این لحظه {0} بلوک، {1} مگابایت بر ثانیه، {2} نادرست.</value></data>
@@ -2960,9 +2958,9 @@
   <data name="Detail_Log_Whea" xml:space="preserve"><value>ویندوز حین این آزمون {0} خطای سخت‌افزاری (WHEA) ثبت کرد (شناسهٔ رویداد {1}):</value></data>
   <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>گزارش خطاهای سخت‌افزاری ویندوز (WHEA) خوانده نشد ({0})</value></data>
   <data name="Detail_Mem_Algorithms" xml:space="preserve"><value>وارونه‌سازی متحرک {0} بار، جابه‌جایی بلوکی {1} بار، دسترسی گام‌دار {2} بار</value></data>
-  <data name="Detail_Mem_BitFade" xml:space="preserve"><value>آزمون محو شدن بیت (آیا حافظه دادهٔ دست‌نخورده را نگه می‌دارد)</value></data>
+  <data name="Detail_Mem_BitFade" xml:space="preserve"><value>آزمون Bit Fade - ماندگاری داده (آیا حافظه دادهٔ دست‌نخورده را نگه می‌دارد)</value></data>
   <data name="Detail_Mem_Covers" xml:space="preserve"><value>فقط حافظه‌ای را می‌پوشاند که ویندوز به آزمون داد؛ جای خطا با موقعیت در بافر خود آزمون گفته می‌شود، نه نشانی فیزیکی یا شکاف رم</value></data>
-  <data name="Detail_Mem_Faded" xml:space="preserve"><value>اولین بایت‌های محوشده در بلوک {0} بافر (موقعیت {1} MiB) پس از نگه‌داشتن «{2}»</value></data>
+  <data name="Detail_Mem_Faded" xml:space="preserve"><value>اولین بایت‌های تغییرکرده در بلوک {0} بافر (موقعیت {1} MiB) پس از نگه‌داشتن «{2}»</value></data>
   <data name="Detail_Mem_Held" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر، هر بار {1} دست‌نخورده نگه داشته شد</value></data>
   <data name="Detail_Mem_HeldShort" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر، هر بار {1} دست‌نخورده نگه داشته شد: کوتاه‌تر از {2} ثانیه‌ای که یک سلول نشت‌کننده برای خودنمایی لازم دارد</value></data>
   <data name="Detail_Mem_Locked" xml:space="preserve"><value>{0} بلوک از {1} بلوک در رم قفل شد</value></data>
@@ -3180,4 +3178,30 @@
   <data name="Web_Bench_RunDetails" xml:space="preserve"><value>شرایط و تنظیمات این اجرا</value></data>
   <data name="Web_Tests_Advanced" xml:space="preserve"><value>پیشرفته</value></data>
   <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>مدت، تکرار و تنظیمات هر تست و شرح کامل نتیجهٔ آن را نشان می‌دهد</value></data>
+  <data name="Test_Cpu_Stress" xml:space="preserve"><value>CPU · بار کامل (ماتریس، محاسبات صحیح، هش و فشرده‌سازی به‌نوبت)</value></data>
+  <data name="Test_Cpu_Stage_Matrix" xml:space="preserve"><value>ضرب ماتریس (ممیز شناور)</value></data>
+  <data name="Test_Cpu_Stage_Integer" xml:space="preserve"><value>محاسبات صحیح (ضرب، تقسیم، انشعاب)</value></data>
+  <data name="Test_Cpu_Stage_Hash" xml:space="preserve"><value>هش و فشرده‌سازی (SHA-256 و Deflate)</value></data>
+  <data name="Test_Option_StageSeconds" xml:space="preserve"><value>ثانیهٔ هر مرحله</value></data>
+  <data name="Test_Option_LoadPattern" xml:space="preserve"><value>بار</value></data>
+  <data name="Test_LoadPattern_Steady" xml:space="preserve"><value>ثابت</value></data>
+  <data name="Test_LoadPattern_Variable" xml:space="preserve"><value>متغیر (بالا، سپس پایین)</value></data>
+  <data name="Test_Option_LoadHigh" xml:space="preserve"><value>بار بالا (٪)</value></data>
+  <data name="Test_Option_LoadHighSeconds" xml:space="preserve"><value>ثانیه در بار بالا</value></data>
+  <data name="Test_Option_LoadLow" xml:space="preserve"><value>بار پایین (٪)</value></data>
+  <data name="Test_Option_LoadLowSeconds" xml:space="preserve"><value>ثانیه در بار پایین</value></data>
+  <data name="Log_CpuStress_Start" xml:space="preserve"><value>{0} رشته {1} مرحله را هر کدام {2} ثانیه، پشت سر هم و دوباره از اول، اجرا می‌کنند؛ هر بلوک با مقداری که از قبل محاسبه شده مقایسه می‌شود.</value></data>
+  <data name="Log_CpuStress_Pattern" xml:space="preserve"><value>بار متغیر: {0}٪ به مدت {1} ثانیه، سپس {2}٪ به مدت {3} ثانیه، به‌نوبت.</value></data>
+  <data name="Log_CpuStress_Stage" xml:space="preserve"><value>مرحلهٔ {0} از {1} شروع شد: {2} (دور {3}).</value></data>
+  <data name="Log_CpuStress_StageEnd" xml:space="preserve"><value>مرحله تمام شد: {0} — {1} بلوک، {2} خطا.</value></data>
+  <data name="Log_CpuStress_Level" xml:space="preserve"><value>بار به {0}٪ رفت (مرحله: {1}).</value></data>
+  <data name="Test_IncompleteSession_Stage" xml:space="preserve"><value>آزمون در این مرحله بود: {0}.</value></data>
+  <data name="Test_Option_LinpackMemory" xml:space="preserve"><value>حافظه</value></data>
+  <data name="Test_Linpack_Mem_Single" xml:space="preserve"><value>یک ماتریس</value></data>
+  <data name="Log_Linpack_Fill" xml:space="preserve"><value>حافظه پر شد: {0} دستگاه، {1} مگابایت ({2})؛ یکی‌یکی حل و بررسی می‌شوند.</value></data>
+  <data name="Detail_Cpu_Stress" xml:space="preserve"><value>بار کامل در {0} مرحلهٔ {1} ثانیه‌ای روی {2} رشته؛ هر بلوک با مقدار ازپیش‌محاسبه‌شده مقایسه شد</value></data>
+  <data name="Detail_Cpu_StressStage" xml:space="preserve"><value>{0}: {1} بلوک در {2} ثانیه، {3} خطا</value></data>
+  <data name="Detail_Cpu_StressSwing" xml:space="preserve"><value>بار متغیر: {0}٪ به مدت {1} ثانیه، سپس {2}٪ به مدت {3} ثانیه، به‌نوبت</value></data>
+  <data name="Detail_Cpu_StressHeld" xml:space="preserve"><value>بار روی {0}٪ نگه داشته شد</value></data>
+  <data name="Detail_Cpu_LinpackFilled" xml:space="preserve"><value>حافظهٔ پرشده: {0} دستگاه، {1} مگابایت ({2})</value></data>
 </root>

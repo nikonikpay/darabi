@@ -26,7 +26,7 @@ public class TestProfilesTests
         string dir = Path.Combine(Path.GetTempPath(), "mazesta-profile-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(dir);
         try
         {
-            ITestExecutor[] executors = [new Stub(new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", 60)), new Stub(new(new TestId("memory.pattern"), "Test_Memory_Pattern", 60)), new Stub(new(new TestId("cpu.fft"), "Test_Cpu_Fft", 60))];
+            ITestExecutor[] executors = [new Stub(new(new TestId("cpu.stress"), "Test_Cpu_Stress", 60)), new Stub(new(new TestId("memory.pattern"), "Test_Memory_Pattern", 60)), new Stub(new(new TestId("cpu.fft"), "Test_Cpu_Fft", 60))];
             var engine = new TestEngine(executors, new JsonStore<TestSessionCheckpoint>(Path.Combine(dir, "cp.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, NullLogger.Instance), new Clock());
             using var vm = new TestCenterViewModel(engine, executors, a => { a(); return null!; });
             vm.Rows[2].IsSelected = true;   // chosen before: a profile replaces the selection
@@ -56,7 +56,7 @@ public class TestProfilesTests
         try
         {
             using var all = new Barrier(3); var ended = new List<string>();
-            ITestExecutor[] executors = [new Meeting(new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", 60), all, ended), new Meeting(new(new TestId("memory.pattern"), "Test_Memory_Pattern", 60), all, ended),
+            ITestExecutor[] executors = [new Meeting(new(new TestId("cpu.stress"), "Test_Cpu_Stress", 60), all, ended), new Meeting(new(new TestId("memory.pattern"), "Test_Memory_Pattern", 60), all, ended),
                 new Meeting(new(new TestId("storage.smart"), "Test_Storage_Smart", 5), null, ended), new Meeting(new(new TestId("gpu.steady"), "Test_Gpu_Steady", 60), all, ended)];
             var engine = new TestEngine(executors, new JsonStore<TestSessionCheckpoint>(Path.Combine(dir, "cp.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, NullLogger.Instance), new Clock());
             var outcomes = new Dictionary<string, TestOutcome>(); engine.TestCompleted += (id, r) => { lock (outcomes) outcomes[id.Value] = r.Outcome; };

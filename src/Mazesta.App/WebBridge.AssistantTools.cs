@@ -9,7 +9,7 @@ public sealed partial class WebBridge
     /// The graphics card's are run with the model unloaded (it would hold the card's memory and share its time).</summary>
     private static readonly IReadOnlyDictionary<string, string[]> AssistantTestAreas = new Dictionary<string, string[]>
     {
-        ["cpu"] = ["cpu.matrix", "cpu.integer", "cpu.fft"], ["memory"] = ["memory.pattern"],
+        ["cpu"] = ["cpu.stress", "cpu.fft"], ["memory"] = ["memory.pattern"],
         ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency", "network.speed"],
         ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram", "gpu.scene.d3d"],
     };

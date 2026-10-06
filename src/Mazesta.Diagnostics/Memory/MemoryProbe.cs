@@ -1,7 +1,8 @@
 using System.Buffers; using System.Runtime.InteropServices;
 namespace Mazesta.Diagnostics.Memory;
 
-public readonly record struct MemoryStatus(long TotalBytes, long AvailableBytes);
+/// <param name="AvailableCommitBytes">What Windows will still let programs commit, RAM and page file together (0 where it is not read).</param>
+public readonly record struct MemoryStatus(long TotalBytes, long AvailableBytes, long AvailableCommitBytes = 0);
 
 /// <summary>How much RAM the machine has and how much is free right now - a fact the RAM test must ask the
 /// OS for (spec §10: "ظرفیت آزاد را خودکار تشخیص دهد"), and the seam that keeps it testable.</summary>
@@ -20,7 +21,7 @@ public sealed class Win32MemoryProbe : IMemoryProbe
     {
         var m = new MemoryStatusEx { Length = (uint)Marshal.SizeOf<MemoryStatusEx>() };
         if (!GlobalMemoryStatusEx(ref m)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-        return new((long)m.TotalPhys, (long)m.AvailPhys);
+        return new((long)m.TotalPhys, (long)m.AvailPhys, (long)m.AvailPageFile);
     }
 }
 

@@ -86,7 +86,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             lock (saving)
             {
                 checkpoint.Finished.Add(new() { TestId = item.Definition.Id.Value, Outcome = result.Outcome.ToString(), ErrorCount = result.ErrorCount });
-                checkpoint.CurrentIteration = 0; checkpoint.CurrentPercent = 0; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
+                checkpoint.CurrentIteration = 0; checkpoint.CurrentPercent = 0; checkpoint.CurrentStage = null; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
             }
             Emit(item.Definition.Id, result.Outcome switch { TestOutcome.Passed => TestLogLevel.Info, TestOutcome.Failed => TestLogLevel.Error, _ => TestLogLevel.Warning },
                 "Log_Test_End", result.Detail, "@" + item.Definition.NameKey, "@Test_Outcome_" + result.Outcome, result.ErrorCount);
@@ -131,15 +131,16 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         var started = clock.UtcNow;
         var nvmeBefore = NvmeSnapshot(id);
         // The checkpoint follows the test's progress, saved at most every ten seconds: a crash later says how far the test had got.
-        var lastSave = clock.UtcNow; int iteration = 0;
+        // A change of stage is saved at once, whatever the pace: the stage is what a reset in the middle of the test is traced to.
+        var lastSave = clock.UtcNow; int iteration = 0; string? stage = null;
         void Progress(TestProgress p)
         {
             TestProgressChanged?.Invoke(id, p);
-            if (checkpoint is null || clock.UtcNow - lastSave < TimeSpan.FromSeconds(10)) return;
-            lastSave = clock.UtcNow;
+            if (checkpoint is null || (p.Stage == stage && clock.UtcNow - lastSave < TimeSpan.FromSeconds(10))) return;
+            lastSave = clock.UtcNow; stage = p.Stage;
             lock (saving ?? checkpoint)
             {
-                checkpoint.CurrentIteration = iteration; checkpoint.CurrentPercent = p.PercentComplete; checkpoint.LastUpdatedAt = lastSave;
+                checkpoint.CurrentIteration = iteration; checkpoint.CurrentPercent = p.PercentComplete; checkpoint.CurrentStage = p.Stage; checkpoint.LastUpdatedAt = lastSave;
                 try { checkpoints.Save(checkpoint); } catch (IOException) { }   // a checkpoint that cannot be written must not stop the test
             }
         }
