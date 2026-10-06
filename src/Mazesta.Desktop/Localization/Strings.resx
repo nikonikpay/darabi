@@ -265,9 +265,7 @@
   <data name="Config_Corrupt" xml:space="preserve">
     <value>Settings file was unreadable and has been reset. The old file was kept beside it.</value>
   </data>
-  <data name="Engine_Failed" xml:space="preserve">
-    <value>Sensor engine stopped after an internal error. See the log.</value>
-  </data>
+  <data name="Engine_Failed" xml:space="preserve"><value>Reading the sensors stopped after an error. Close the app and open it again.</value></data>
   <data name="Test_Cpu_Matrix" xml:space="preserve">
     <value>CPU multi-core (matrix load, all threads)</value>
   </data>
@@ -558,30 +556,30 @@
   <data name="SystemInfo_LinkSpeed" xml:space="preserve"><value>Link speed</value></data>
   <data name="Value_Connected" xml:space="preserve"><value>Connected</value></data>
   <data name="Value_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
-  <data name="Settings_Tray_Section" xml:space="preserve"><value>Tray monitor</value></data>
+  <data name="Settings_Tray_Section" xml:space="preserve"><value>Background monitor</value></data>
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>First check delay (seconds)</value></data>
   <data name="Settings_Tray_Idle" xml:space="preserve"><value>Idle check interval (minutes)</value></data>
   <data name="Settings_Tray_Watch" xml:space="preserve"><value>Watch check interval (seconds)</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>Enable</value></data>
   <data name="Settings_Tray_Disable" xml:space="preserve"><value>Disable</value></data>
-  <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>MazestaTray.exe was not found next to this app.</value></data>
+  <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>The background monitor's file was not found next to this app. Install the app again.</value></data>
   <data name="Settings_Tray_Running" xml:space="preserve"><value>Running</value></data>
   <data name="Settings_Tray_Stopped" xml:space="preserve"><value>Not running</value></data>
   <data name="Value_Yes" xml:space="preserve"><value>Yes</value></data>
   <data name="Value_No" xml:space="preserve"><value>No</value></data>
-  <data name="Settings_Tray_State" xml:space="preserve"><value>Tray: {0} · Starts with Windows: {1}</value></data>
-  <data name="Settings_Tray_CheckFailed" xml:space="preserve"><value>Could not check the tray: {0}</value></data>
-  <data name="Settings_Tray_Enabled" xml:space="preserve"><value>Tray enabled: it is running and starts with Windows.</value></data>
-  <data name="Settings_Tray_Disabled" xml:space="preserve"><value>Tray disabled: it is stopped and no longer starts with Windows.</value></data>
-  <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>Could not change the tray: {0}</value></data>
-  <data name="Settings_Tray_Restarted" xml:space="preserve"><value>The tray was restarted to apply the new intervals.</value></data>
+  <data name="Settings_Tray_State" xml:space="preserve"><value>Background monitor: {0} · Starts with Windows: {1}</value></data>
+  <data name="Settings_Tray_CheckFailed" xml:space="preserve"><value>Could not check the background monitor: {0}</value></data>
+  <data name="Settings_Tray_Enabled" xml:space="preserve"><value>Background monitor on: it is running and starts with Windows.</value></data>
+  <data name="Settings_Tray_Disabled" xml:space="preserve"><value>Background monitor off: it is stopped and no longer starts with Windows.</value></data>
+  <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>Could not change the background monitor: {0}</value></data>
+  <data name="Settings_Tray_Restarted" xml:space="preserve"><value>The background monitor was restarted to apply the new intervals.</value></data>
   <data name="Bench_Cpu_Single" xml:space="preserve"><value>CPU — single thread</value></data>
   <data name="Bench_Cpu_Multi" xml:space="preserve"><value>CPU — all threads</value></data>
   <data name="Bench_Memory" xml:space="preserve"><value>Memory bandwidth</value></data>
   <data name="Bench_Storage" xml:space="preserve"><value>Storage (uncached sequential and random)</value></data>
   <data name="Bench_Gpu_D3D" xml:space="preserve"><value>Graphics — Direct3D 12 rendering</value></data>
   <data name="Bench_Gpu_Rt" xml:space="preserve"><value>Graphics — ray tracing (DXR)</value></data>
-  <data name="Bench_Gpu_Ai" xml:space="preserve"><value>Graphics — AI (DirectML: FP32, FP16, INT8)</value></data>
+  <data name="Bench_Gpu_Ai" xml:space="preserve"><value>Graphics — AI (FP32, FP16, INT8)</value></data>
   <data name="Bench_Cpu_Gflops" xml:space="preserve"><value>Floating-point throughput (FP64 matrix)</value></data>
   <data name="Bench_Cpu_PerThread" xml:space="preserve"><value>Per thread</value></data>
   <data name="Bench_Threads" xml:space="preserve"><value>Threads used</value></data>
@@ -677,9 +675,9 @@
   <data name="Bench_Status_Unsupported" xml:space="preserve"><value>Cannot run here</value></data>
   <data name="Bench_Status_Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="Bench_Status_Error" xml:space="preserve"><value>Program error — says nothing about the part</value></data>
-  <data name="Settings_Tray_Checking" xml:space="preserve"><value>Checking the tray…</value></data>
+  <data name="Settings_Tray_Checking" xml:space="preserve"><value>Checking the background monitor…</value></data>
   <data name="Nav_Tuning" xml:space="preserve"><value>Overclock &amp; undervolt</value></data>
-  <data name="Tuning_Note" xml:space="preserve"><value>GPU overclock, undervolt, power limit and fan through NVIDIA's own management library (NVML). Every setting is volatile: a restart or a driver reset puts the card back to stock. Values outside the driver's ranges are refused.</value></data>
+  <data name="Tuning_Note" xml:space="preserve"><value>Overclock, undervolt, power limit and fan of the graphics card. Every setting is temporary: a restart or a driver reset puts the card back to factory settings. Values outside the range the card's driver allows are refused.</value></data>
   <data name="Tuning_Manual" xml:space="preserve"><value>Manual settings</value></data>
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>NVIDIA's public interface does not set a voltage directly. An undervolt is a positive core offset together with a clock cap: the offset lifts the voltage/frequency curve, the cap keeps the clock where it was, so the card reaches that clock at a lower voltage. An overclock is a higher cap (or no cap) with an offset.</value></data>
   <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>Core clock offset</value></data>
@@ -688,7 +686,7 @@
   <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>Power limit</value></data>
   <data name="Tuning_Label_Fan" xml:space="preserve"><value>Fixed fan speed</value></data>
   <data name="Tuning_Hint_CoreOffset" xml:space="preserve"><value>Shifts the whole voltage/frequency curve; + raises the clock at every voltage.</value></data>
-  <data name="Tuning_Hint_MemoryOffset" xml:space="preserve"><value>In the unit NVML reports the memory clock in.</value></data>
+  <data name="Tuning_Hint_MemoryOffset" xml:space="preserve"><value>In the unit the card's driver reports the memory clock in.</value></data>
   <data name="Tuning_Hint_MaxClock" xml:space="preserve"><value>Unchecked: no cap (the driver's own boost).</value></data>
   <data name="Tuning_Hint_PowerLimit" xml:space="preserve"><value>Unchecked: the card's default limit.</value></data>
   <data name="Tuning_Hint_Fan" xml:space="preserve"><value>Unchecked: automatic fan. A fixed speed stays until you set it back.</value></data>
@@ -864,7 +862,7 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>Disk</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>OS</value></data>
-  <data name="Web_NoRuntime" xml:space="preserve"><value>The Microsoft Edge WebView2 runtime is needed to show the web edition. Use the classic edition (MazestaTest.exe), or install WebView2 from Microsoft.</value></data>
+  <data name="Web_NoRuntime" xml:space="preserve"><value>Microsoft Edge WebView2 is needed to show the app. Install WebView2 from Microsoft's site and open the app again.</value></data>
   <data name="Web_DemoData" xml:space="preserve"><value>Browser preview: demo data, not this machine</value></data>
   <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>This machine has not had a full test yet</value></data>
   <data name="Web_Dash_Verdict_Passed" xml:space="preserve"><value>Last full test: every test passed</value></data>
@@ -1216,7 +1214,7 @@
   <data name="Nav_Group_Windows" xml:space="preserve"><value>Windows &amp; games</value></data>
   <data name="Nav_Tweaks" xml:space="preserve"><value>Tweaks</value></data>
   <data name="Nav_Updates" xml:space="preserve"><value>Windows Update</value></data>
-  <data name="Tweaks_Lede" xml:space="preserve"><value>Changes to Windows as WinUtil offers them. Tick what to change and run it; every row shows what Windows has now, read after each change.</value></data>
+  <data name="Tweaks_Lede" xml:space="preserve"><value>Settings and clean-ups of Windows. Tick what to change and run it; every row shows what Windows has now, read again after each change.</value></data>
   <data name="Tweaks_Presets" xml:space="preserve"><value>Recommended selections</value></data>
   <data name="Tweaks_Preset_Standard" xml:space="preserve"><value>Standard</value></data>
   <data name="Tweaks_Preset_Minimal" xml:space="preserve"><value>Minimal</value></data>
@@ -1338,7 +1336,7 @@
   <data name="Dns_Test" xml:space="preserve"><value>Test only</value></data>
   <data name="Dns_TestApply" xml:space="preserve"><value>Test and use the fastest</value></data>
   <data name="Dns_Testing" xml:space="preserve"><value>Timing every resolver on this connection…</value></data>
-  <data name="Dns_Test_Note" xml:space="preserve"><value>As DNS Jumper does: each DNS is asked six popular names (international and Iranian) twice, straight, and the median time counts. Only a reply that gives the name's address counts; a DNS that misses even one, or answers one wrongly (says the name does not exist), is not chosen. The result is the fastest in this short test on this connection, not a measure of lasting reliability. Shecan, 403, Radar and Begzar are anti-sanction DNS: they open sites that block Iran, apart from their speed.</value></data>
+  <data name="Dns_Test_Note" xml:space="preserve"><value>Each DNS is asked six popular names (international and Iranian) twice, straight, and the median time counts. Only a reply that gives the name's address counts; a DNS that misses even one, or answers one wrongly (says the name does not exist), is not chosen. The result is the fastest in this short test on this connection, not a measure of lasting reliability. Shecan, 403, Radar and Begzar are anti-sanction DNS: they open sites that block Iran, apart from their speed.</value></data>
   <data name="Dns_Fastest" xml:space="preserve"><value>Fastest</value></data>
   <data name="Dns_Missed" xml:space="preserve"><value>{0} of {1} answered</value></data>
   <data name="Dns_Use" xml:space="preserve"><value>Use</value></data>
@@ -2072,7 +2070,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="AiGen_Purpose_Trellis2" xml:space="preserve"><value>Microsoft's picture-to-3D model, with textures ready for games and rendering.</value></data>
   <data name="AiGen_Purpose_Hunyuan3d" xml:space="preserve"><value>Tencent's picture-to-3D model: the shape first, then its texture.</value></data>
   <data name="Assist_Enable_Title" xml:space="preserve"><value>Turn on the assistant</value></data>
-  <data name="Assist_Enable_Text" xml:space="preserve"><value>The assistant is downloaded once, only when you ask: the language model ({0}, {1}) and the llama.cpp runtime. It is kept in the app's data folder and can be removed from the AI models page.</value></data>
+  <data name="Assist_Enable_Text" xml:space="preserve"><value>The assistant is downloaded once, only when you ask: the language model ({0}, {1}) and the engine that runs it. It is kept in the app's data folder and can be removed from the AI models page.</value></data>
   <data name="Assist_Enable" xml:space="preserve"><value>Download and turn on</value></data>
   <data name="Assist_Downloading" xml:space="preserve"><value>Downloading…</value></data>
   <data name="Assist_Start" xml:space="preserve"><value>Start the assistant</value></data>
@@ -2229,22 +2227,32 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>Warn when the processor passes (°C)</value></data>
   <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>Warn when the graphics card passes (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>A warning temperature must be a whole number from 60 to 105.</value></data>
-  <data name="Assist_Help" xml:space="preserve"><value>What I can do:&#xA;- This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).&#xA;- Smart diagnosis: say "diagnose my system" and I run it myself (after you confirm) and tell you what it found, problems first.&#xA;- When you ask about a part (processor, RAM, graphics card, drives) I give its specification and, if a test of it was recorded, that test's summary.&#xA;- Tests and benchmarks: run the processor, RAM, drive, network and graphics card tests and the benchmarks (I ask on the page before anything starts); find the fastest DNS.&#xA;- Professional programs: whether Lumion, V-Ray, Revit and others run on this computer, and at which level.&#xA;- This app: open any page and point at the control for a task; turn the overlay and the tray monitor on or off, and set the temperature the tray warns at ("tell me when the CPU passes 85").&#xA;- Windows: open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer, BitLocker and the sound and display settings; give checked commands (sfc, DISM, chkdsk, ipconfig, manage-bde…) with what they do and their warning, and run the ones that only read after you agree.&#xA;- Drivers: whether the graphics card's driver is the newest (for NVIDIA both Game Ready and Studio, and which suits the installed programs) and which devices have no working driver; installing is on the Drivers page, with a button and a confirmation.&#xA;What I do not do: run any other command in Windows, change files, or install programs.</value></data>
-  <data name="Assist_Tray_On" xml:space="preserve"><value>The tray monitor is on: by the Windows clock it checks the temperatures every {0} minutes and the drives' health every {1} minutes, and tells a problem with a Windows notification; it also starts with Windows. It warns above {2} °C for the processor and {3} °C for the graphics card.</value></data>
-  <data name="Assist_Tray_Off" xml:space="preserve"><value>The tray monitor is off and no longer starts with Windows.</value></data>
-  <data name="Assist_Tray_Failed" xml:space="preserve"><value>The tray monitor could not be changed: {0}</value></data>
+  <data name="Assist_Help" xml:space="preserve"><value>What I can do:
+- This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).
+- Smart diagnosis: say "diagnose my system" and I run a short test of each part (about eight minutes, after you confirm) and tell you what it found, failed tests and problems first.
+- When you ask about a part (processor, RAM, graphics card, drives) I give its specification and, if a test of it was recorded, that test's summary.
+- Tests and benchmarks: run the processor, RAM, drive, network and graphics card tests and the benchmarks (I ask on the page before anything starts); find the fastest DNS.
+- Test settings: say them in words, such as "CPU test with variable load, 100% for 20 seconds then 0% for 10", "core by core with 4 cores at a time" or "Linpack with physical and virtual memory"; and "turn on the advanced view of the tests" shows every test's settings and full result.
+- Professional programs: whether Lumion, V-Ray, Revit and others run on this computer, and at which level.
+- This app: open any page and point at the control for a task; turn the overlay and the background monitor on or off, and set the temperature the tray warns at ("tell me when the CPU passes 85").
+- Windows: open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer, BitLocker and the sound and display settings; give checked commands (sfc, DISM, chkdsk, ipconfig, manage-bde…) with what they do and their warning, and run the ones that only read after you agree.
+- Drivers: whether the graphics card's driver is the newest (for NVIDIA both Game Ready and Studio, and which suits the installed programs) and which devices have no working driver; installing is on the Drivers page, with a button and a confirmation.
+What I do not do: run any other command in Windows, change files, or install programs.</value></data>
+  <data name="Assist_Tray_On" xml:space="preserve"><value>The background monitor is on: by the Windows clock it checks the temperatures every {0} minutes and the drives' health every {1} minutes, and tells a problem with a Windows notification; it also starts with Windows. It warns above {2} °C for the processor and {3} °C for the graphics card.</value></data>
+  <data name="Assist_Tray_Off" xml:space="preserve"><value>The background monitor is off and no longer starts with Windows.</value></data>
+  <data name="Assist_Tray_Failed" xml:space="preserve"><value>The background monitor could not be changed: {0}</value></data>
   <data name="Assist_Alert_Ask" xml:space="preserve"><value>At what temperature? The tray warns now above {0} °C for the processor and {1} °C for the graphics card; say for example "warn me when the CPU passes 85" (60 to 105).</value></data>
   <data name="Assist_Alert_Range" xml:space="preserve"><value>The warning temperature can be from 60 to 105 °C: below 60 a computer at work would warn all the time, and above 105 the part protects itself first.</value></data>
-  <data name="Assist_Alert_Set_cpu" xml:space="preserve"><value>Done: the tray monitor is on and warns with a Windows notification when the processor stays above {0} °C. It reads the temperature every {1} minutes, and every {2} seconds once it is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
-  <data name="Assist_Alert_Set_gpu" xml:space="preserve"><value>Done: the tray monitor is on and warns with a Windows notification when the graphics card stays above {0} °C. It reads the temperature every {1} minutes, and every {2} seconds once it is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
-  <data name="Assist_Alert_Set_both" xml:space="preserve"><value>Done: the tray monitor is on and warns with a Windows notification when the processor or the graphics card stays above {0} °C. It reads the temperatures every {1} minutes, and every {2} seconds once one is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
+  <data name="Assist_Alert_Set_cpu" xml:space="preserve"><value>Done: the background monitor is on and warns with a Windows notification when the processor stays above {0} °C. It reads the temperature every {1} minutes, and every {2} seconds once it is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
+  <data name="Assist_Alert_Set_gpu" xml:space="preserve"><value>Done: the background monitor is on and warns with a Windows notification when the graphics card stays above {0} °C. It reads the temperature every {1} minutes, and every {2} seconds once it is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
+  <data name="Assist_Alert_Set_both" xml:space="preserve"><value>Done: the background monitor is on and warns with a Windows notification when the processor or the graphics card stays above {0} °C. It reads the temperatures every {1} minutes, and every {2} seconds once one is high; it warns after three readings in a row above it, so a short spike between readings is not seen. While this app is open it warns at the same temperature.</value></data>
   <data name="Assist_WinOpened" xml:space="preserve"><value>Opened: {0}.</value></data>
   <data name="Assist_WinOpen_Failed" xml:space="preserve"><value>That window could not be opened.</value></data>
   <data name="Assist_Cmd_None" xml:space="preserve"><value>The app has no checked command for this, and I do not give a guessed one: a wrong command in Windows can do damage. The commands I have:</value></data>
   <data name="Assist_Cmd_Admin" xml:space="preserve"><value>Run it in a terminal opened with "Run as administrator".</value></data>
   <data name="Assist_Cmd_CanRun" xml:space="preserve"><value>The app can run this one itself: say "run it".</value></data>
   <data name="Assist_Confirm_Command" xml:space="preserve"><value>Run this Windows command?</value></data>
-  <data name="Assist_Tool_set_tray" xml:space="preserve"><value>Tray monitor</value></data>
+  <data name="Assist_Tool_set_tray" xml:space="preserve"><value>Background monitor</value></data>
   <data name="Assist_Tool_open_windows" xml:space="preserve"><value>Windows window</value></data>
   <data name="Assist_Tool_windows_command" xml:space="preserve"><value>Windows command</value></data>
   <data name="Assist_Tool_run_windows_command" xml:space="preserve"><value>Ran a Windows command</value></data>
@@ -2361,17 +2369,17 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Ai_Vram" xml:space="preserve"><value>Video memory</value></data>
   <data name="Ai_Bandwidth" xml:space="preserve"><value>Memory bandwidth (peak)</value></data>
   <data name="Ai_Ram" xml:space="preserve"><value>System memory</value></data>
-  <data name="Ai_Runtime_Ready" xml:space="preserve"><value>llama.cpp {0} ready</value></data>
-  <data name="Ai_Runtime_Missing" xml:space="preserve"><value>llama.cpp is not downloaded</value></data>
-  <data name="Ai_Runtime_Note" xml:space="preserve"><value>The models run in llama.cpp (open source, MIT), downloaded once from its official GitHub release and checked against its checksum. Its Vulkan build runs on NVIDIA, AMD and Intel graphics cards and on the processor.</value></data>
-  <data name="Ai_NeedRuntime" xml:space="preserve"><value>Download llama.cpp above to run this model.</value></data>
+  <data name="Ai_Runtime_Ready" xml:space="preserve"><value>The model engine, version {0}, is ready</value></data>
+  <data name="Ai_Runtime_Missing" xml:space="preserve"><value>The model engine is not downloaded</value></data>
+  <data name="Ai_Runtime_Note" xml:space="preserve"><value>The models run in an engine that is downloaded once and checked before it is used. It runs on NVIDIA, AMD and Intel graphics cards and on the processor.</value></data>
+  <data name="Ai_NeedRuntime" xml:space="preserve"><value>Download the model engine at the top of the page to run this model.</value></data>
   <data name="Ai_OpenFolder" xml:space="preserve"><value>Open folder</value></data>
   <data name="Ai_HowTo_Title" xml:space="preserve"><value>How to read this page</value></data>
-  <data name="Ai_HowTo" xml:space="preserve"><value>Fit is an estimate made before downloading: the model's weights, its cache for 4,096 tokens of text and the runtime's working memory, against this machine's video memory and free RAM (1 GB of each is left free, as llama.cpp does).
-Speed is measured, never estimated: llama.cpp's own benchmark (llama-bench) reads a 512-token prompt, then writes 128 tokens, three times each.
+  <data name="Ai_HowTo" xml:space="preserve"><value>Fit is an estimate made before downloading: the model's weights, its cache for 4,096 tokens of text and the runtime's working memory, against this machine's video memory and free RAM (1 GB of each is left free).
+Speed is measured, never estimated: the benchmark reads a 512-token prompt, then writes 128 tokens, three times each.
 Generation is how fast the answer is written. A token is a piece of a word; at about 10 tokens a second the answer appears as fast as you read it.
 Prompt processing is how fast the question and any documents given to the model are read: it sets the wait before the first word.
-Nothing is downloaded until you press Download. Models come from Hugging Face (ggml-org, the llama.cpp project) and are checked against their published checksums.</value></data>
+Nothing is downloaded until you press Download. Every model is checked after it is downloaded, before it is used.</value></data>
   <data name="Ai_Download" xml:space="preserve"><value>Download ({0})</value></data>
   <data name="Ai_Resume" xml:space="preserve"><value>Continue download ({0} of {1})</value></data>
   <data name="Ai_CancelDownload" xml:space="preserve"><value>Stop download</value></data>
@@ -2417,7 +2425,7 @@ Nothing is downloaded until you press Download. Models come from Hugging Face (g
   <data name="Ai_Purpose_GptOss20" xml:space="preserve"><value>OpenAI's open model, a mixture of experts: 21 billion parameters, of which only 3.6 billion work on each token, so it writes about as fast as a small model while knowing much more. Good at reasoning and at using tools. Needs 16 GB of video memory, or runs split with the RAM.</value></data>
   <data name="Ai_Purpose_Qwen38_27" xml:space="preserve"><value>The most capable model in this list: for hard questions, long code and careful writing. Every token reads all of its 19 GB of weights, so it needs a 24 GB card and is the slowest here.</value></data>
   <data name="Ai_Purpose_Qwen36_35" xml:space="preserve"><value>The knowledge of a large model at the speed of a small one: 35 billion parameters, 3 billion active per token. It runs whole on a 24 GB card; with less, part of it goes to the RAM and it stays usable, since few weights are read for each token.</value></data>
-  <data name="Bench_Ai_Llm" xml:space="preserve"><value>AI language model (llama.cpp)</value></data>
+  <data name="Bench_Ai_Llm" xml:space="preserve"><value>AI language model</value></data>
   <data name="Bench_Ai_Prompt" xml:space="preserve"><value>Prompt processing</value></data>
   <data name="Bench_Ai_Gen" xml:space="preserve"><value>Text generation</value></data>
   <data name="Ai_Option_Model" xml:space="preserve"><value>Model</value></data>
@@ -3093,11 +3101,11 @@ Cancel: stop.</value></data>
   <data name="Rgb_Mode" xml:space="preserve"><value>Mode</value></data>
   <data name="Rgb_Mode_Keep" xml:space="preserve"><value>One colour</value></data>
   <data name="Rgb_Leds" xml:space="preserve"><value>{0} LEDs</value></data>
-  <data name="Rgb_NotFound" xml:space="preserve"><value>OpenRGB was not found. Put its portable folder (with OpenRGB.exe) in a folder named OpenRGB beside this app, or install it from openrgb.org.</value></data>
-  <data name="Rgb_NoServer" xml:space="preserve"><value>The lights service did not start. Close any other OpenRGB that may be open, wait a moment and try again.</value></data>
-  <data name="Rgb_NotConnected" xml:space="preserve"><value>Not connected to OpenRGB yet. Press "Find the lights".</value></data>
-  <data name="Rgb_Failed" xml:space="preserve"><value>The connection to OpenRGB failed: {0}</value></data>
-  <data name="Rgb_Empty" xml:space="preserve"><value>OpenRGB is running but lists no device yet. Wait a few seconds and press the button again; if there is still none, the maker&apos;s own program may be holding the lights.</value></data>
+  <data name="Rgb_NotFound" xml:space="preserve"><value>The lighting control is missing from this copy of the app. Install the app again, or call support.</value></data>
+  <data name="Rgb_NoServer" xml:space="preserve"><value>The lights service did not start. Close any other lighting program that may be open, wait a moment and try again.</value></data>
+  <data name="Rgb_NotConnected" xml:space="preserve"><value>The lights are not found yet. Press "Turn on the lights".</value></data>
+  <data name="Rgb_Failed" xml:space="preserve"><value>The connection to the lights service failed: {0}</value></data>
+  <data name="Rgb_Empty" xml:space="preserve"><value>The lights service is ready but lists no device yet. Wait a few seconds and press the button again; if there is still none, the maker's own program may be holding the lights.</value></data>
   <data name="Rgb_Kind_Motherboard" xml:space="preserve"><value>Motherboard</value></data>
   <data name="Rgb_Kind_Memory" xml:space="preserve"><value>Memory</value></data>
   <data name="Rgb_Kind_Graphics" xml:space="preserve"><value>Graphics card</value></data>
@@ -3112,7 +3120,7 @@ Cancel: stop.</value></data>
   <data name="Nav_Lights" xml:space="preserve"><value>Lighting (RGB)</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>Fan control</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colours and effects of the memory, graphics card, board, fans and strips - for Corsair, ASUS, Gigabyte, MSI and more.</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>Colours are set through OpenRGB, a free program that talks to the lights of these makers; it comes with this app and runs hidden, with no window of its own. Press the button: the makers&apos; own programs (Armoury Crate, MSI Center, RGB Fusion, iCUE) are stopped so they do not fight over the lights. What you set is kept and put back every time the app or the tray starts.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>Press the button to find the lights of the parts. The makers' own programs (Armoury Crate, MSI Center, RGB Fusion, iCUE) are stopped so they do not fight over the lights. What you set is kept and put back every time the app starts.</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>Let go (give the lights back)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>Do not stop the makers&apos; programs</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>These makers&apos; programs are running and will be stopped while you use this page, then started again: {0}</value></data>
@@ -3151,7 +3159,7 @@ Cancel: stop.</value></data>
   <data name="Fans_Held" xml:space="preserve"><value>Held by this app</value></data>
   <data name="Fans_Reset" xml:space="preserve"><value>All back to automatic</value></data>
   <data name="Fans_Curve_Hint" xml:space="preserve"><value>Drag a point to move it. Double-click the line to add a point, double-click a point to remove it. The arrow keys move a point you have clicked.</value></data>
-  <data name="Fans_Note" xml:space="preserve"><value>While the app runs (with its window closed too, as long as the tray runs) it holds the fans at what you set; when it ends, or if the temperature is lost for a minute, the board gets its fans back. A fan never goes below 20 %, a pump never below 60 %, and if the processor reaches 85 °C every held fan goes to full speed.</value></data>
+  <data name="Fans_Note" xml:space="preserve"><value>While the app runs (with its window closed too, as long as the background monitor is on) it holds the fans at what you set; when it ends, or if the temperature is lost for a minute, the board gets its fans back. A fan never goes below 20 %, a pump never below 60 %, and if the processor reaches 85 °C every held fan goes to full speed.</value></data>
   <data name="Fans_Profiles_Title" xml:space="preserve"><value>Profile for all fans</value></data>
   <data name="Fans_Profiles_Sub" xml:space="preserve"><value>one click puts it on every output; a pump is left to the board</value></data>
   <data name="Fans_Profile_auto" xml:space="preserve"><value>Automatic (the board)</value></data>
@@ -3160,7 +3168,7 @@ Cancel: stop.</value></data>
   <data name="Fans_Profile_Name" xml:space="preserve"><value>Profile name</value></data>
   <data name="Fans_Profile_Delete" xml:space="preserve"><value>Delete this profile</value></data>
   <data name="Fans_Profile_NotNow" xml:space="preserve"><value>The fan sensors are not ready yet. Try again in a moment.</value></data>
-  <data name="Fans_Profile_Tray" xml:space="preserve"><value>The same profiles are in the tray icon&apos;s menu.</value></data>
+  <data name="Fans_Profile_Tray" xml:space="preserve"><value>The same profiles are in the menu of the icon by the Windows clock.</value></data>
   <data name="Fans_Kind" xml:space="preserve"><value>What it drives</value></data>
   <data name="Fans_Kind_cpu" xml:space="preserve"><value>CPU fan</value></data>
   <data name="Fans_Kind_pump" xml:space="preserve"><value>AIO pump</value></data>

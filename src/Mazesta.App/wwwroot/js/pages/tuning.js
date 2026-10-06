@@ -175,7 +175,7 @@ export function mount(el) {
     unavailable,
     h("div", { class: "banner risk-banner", role: "note", "data-a": "tuning-risk" }, h("span", { class: "risk-ico" }, icon("alert")), h("div", { class: "grow" }, h("b", {}, t("Tuning_Risk_Banner_Title")), h("p", {}, t("Tuning_Risk_Banner")))),
     h("div", { class: "has-device panels", style: { gridTemplateColumns: "1fr", marginTop: 0 } },
-      box({ kind: "Gpu", title: name, sub: "NVIDIA · NVML", i: 0, a: "fan", actions: device, body: [live, ranges, others] }),
+      box({ kind: "Gpu", title: name, sub: "NVIDIA", i: 0, a: "fan", actions: device, body: [live, ranges, others] }),
       box({ kind: "Gpu", ico: "chart", title: t("Tuning_Curve_Title"), sub: t("Tuning_Curve_Sub"), i: 1, a: "curve", actions: scan,
         body: h("div", { class: "tune", style: { marginTop: 0 } },
           h("div", { class: "curve-wrap" },

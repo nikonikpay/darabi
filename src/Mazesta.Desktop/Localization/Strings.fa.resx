@@ -265,9 +265,7 @@
   <data name="Config_Corrupt" xml:space="preserve">
     <value>فایل تنظیمات خوانا نبود و بازنشانی شد. فایل قبلی کنار آن نگه داشته شده است.</value>
   </data>
-  <data name="Engine_Failed" xml:space="preserve">
-    <value>موتور سنسور پس از یک خطای داخلی متوقف شد. لاگ را ببینید.</value>
-  </data>
+  <data name="Engine_Failed" xml:space="preserve"><value>خواندن سنسورها پس از یک خطا متوقف شد. برنامه را ببندید و دوباره باز کنید.</value></data>
   <data name="Test_Cpu_Matrix" xml:space="preserve">
     <value>CPU چندهسته‌ای (بار ماتریسی، همه رشته‌ها)</value>
   </data>
@@ -558,30 +556,30 @@
   <data name="SystemInfo_LinkSpeed" xml:space="preserve"><value>سرعت اتصال</value></data>
   <data name="Value_Connected" xml:space="preserve"><value>متصل</value></data>
   <data name="Value_Disconnected" xml:space="preserve"><value>قطع</value></data>
-  <data name="Settings_Tray_Section" xml:space="preserve"><value>پایشگر Tray</value></data>
+  <data name="Settings_Tray_Section" xml:space="preserve"><value>پایشگر پس‌زمینه</value></data>
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>تأخیر اولین بررسی (ثانیه)</value></data>
   <data name="Settings_Tray_Idle" xml:space="preserve"><value>بازهٔ بررسی در حالت عادی (دقیقه)</value></data>
   <data name="Settings_Tray_Watch" xml:space="preserve"><value>بازهٔ بررسی در حالت هشدار (ثانیه)</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>فعال‌سازی</value></data>
   <data name="Settings_Tray_Disable" xml:space="preserve"><value>غیرفعال‌سازی</value></data>
-  <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>MazestaTray.exe در کنار این برنامه پیدا نشد.</value></data>
+  <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>فایل پایشگر پس‌زمینه کنار این برنامه پیدا نشد. برنامه را دوباره نصب کنید.</value></data>
   <data name="Settings_Tray_Running" xml:space="preserve"><value>در حال اجرا</value></data>
   <data name="Settings_Tray_Stopped" xml:space="preserve"><value>اجرا نمی‌شود</value></data>
   <data name="Value_Yes" xml:space="preserve"><value>بله</value></data>
   <data name="Value_No" xml:space="preserve"><value>خیر</value></data>
-  <data name="Settings_Tray_State" xml:space="preserve"><value>Tray: {0} · اجرا با ورود به ویندوز: {1}</value></data>
-  <data name="Settings_Tray_CheckFailed" xml:space="preserve"><value>بررسی وضعیت Tray ممکن نشد: {0}</value></data>
-  <data name="Settings_Tray_Enabled" xml:space="preserve"><value>Tray فعال شد: اجرا می‌شود و با ورود به ویندوز شروع می‌شود.</value></data>
-  <data name="Settings_Tray_Disabled" xml:space="preserve"><value>Tray غیرفعال شد: متوقف شد و دیگر با ورود به ویندوز شروع نمی‌شود.</value></data>
-  <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>تغییر Tray ممکن نشد: {0}</value></data>
-  <data name="Settings_Tray_Restarted" xml:space="preserve"><value>برای اعمال بازه‌های جدید، Tray دوباره راه‌اندازی شد.</value></data>
+  <data name="Settings_Tray_State" xml:space="preserve"><value>پایشگر پس‌زمینه: {0} · اجرا با ورود به ویندوز: {1}</value></data>
+  <data name="Settings_Tray_CheckFailed" xml:space="preserve"><value>بررسی وضعیت پایشگر پس‌زمینه ممکن نشد: {0}</value></data>
+  <data name="Settings_Tray_Enabled" xml:space="preserve"><value>پایشگر پس‌زمینه روشن شد: اجرا می‌شود و با ورود به ویندوز شروع می‌شود.</value></data>
+  <data name="Settings_Tray_Disabled" xml:space="preserve"><value>پایشگر پس‌زمینه خاموش شد: متوقف شد و دیگر با ورود به ویندوز شروع نمی‌شود.</value></data>
+  <data name="Settings_Tray_ChangeFailed" xml:space="preserve"><value>تغییر پایشگر پس‌زمینه ممکن نشد: {0}</value></data>
+  <data name="Settings_Tray_Restarted" xml:space="preserve"><value>برای اعمال بازه‌های جدید، پایشگر پس‌زمینه دوباره راه‌اندازی شد.</value></data>
   <data name="Bench_Cpu_Single" xml:space="preserve"><value>پردازنده — تک‌رشته</value></data>
   <data name="Bench_Cpu_Multi" xml:space="preserve"><value>پردازنده — چندرشته (همه‌ی رشته‌ها)</value></data>
   <data name="Bench_Memory" xml:space="preserve"><value>پهنای‌باند حافظه</value></data>
   <data name="Bench_Storage" xml:space="preserve"><value>ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)</value></data>
   <data name="Bench_Gpu_D3D" xml:space="preserve"><value>گرافیک — رندر Direct3D 12</value></data>
   <data name="Bench_Gpu_Rt" xml:space="preserve"><value>گرافیک — ری‌تریسینگ (DXR)</value></data>
-  <data name="Bench_Gpu_Ai" xml:space="preserve"><value>گرافیک — هوش مصنوعی (DirectML: FP32، FP16، INT8)</value></data>
+  <data name="Bench_Gpu_Ai" xml:space="preserve"><value>گرافیک — هوش مصنوعی (FP32، FP16، INT8)</value></data>
   <data name="Bench_Cpu_Gflops" xml:space="preserve"><value>توان محاسبه‌ی اعشاری (ماتریس FP64)</value></data>
   <data name="Bench_Cpu_PerThread" xml:space="preserve"><value>به‌ازای هر رشته</value></data>
   <data name="Bench_Threads" xml:space="preserve"><value>تعداد رشته‌های استفاده‌شده</value></data>
@@ -677,9 +675,9 @@
   <data name="Bench_Status_Unsupported" xml:space="preserve"><value>در اینجا قابل اجرا نیست</value></data>
   <data name="Bench_Status_Failed" xml:space="preserve"><value>ناموفق</value></data>
   <data name="Bench_Status_Error" xml:space="preserve"><value>خطای برنامه — دربارهٔ قطعه چیزی معلوم نشد</value></data>
-  <data name="Settings_Tray_Checking" xml:space="preserve"><value>در حال بررسی وضعیت Tray…</value></data>
+  <data name="Settings_Tray_Checking" xml:space="preserve"><value>در حال بررسی وضعیت پایشگر پس‌زمینه…</value></data>
   <data name="Nav_Tuning" xml:space="preserve"><value>اورکلاک و آندرولت</value></data>
-  <data name="Tuning_Note" xml:space="preserve"><value>اورکلاک، آندرولت، محدودیت توان و فن کارت گرافیک از طریق کتابخانهٔ مدیریتی خود NVIDIA (NVML). همهٔ تنظیمات موقت‌اند: با ری‌استارت یا ری‌ست درایور، کارت به حالت کارخانه برمی‌گردد. مقادیر خارج از محدودهٔ درایور پذیرفته نمی‌شوند.</value></data>
+  <data name="Tuning_Note" xml:space="preserve"><value>اورکلاک، آندرولت، محدودیت توان و فن کارت گرافیک. همهٔ تنظیمات موقت‌اند: با ری‌استارت یا ری‌ست درایور، کارت به حالت کارخانه برمی‌گردد. مقادیر خارج از محدودهٔ مجاز درایور کارت پذیرفته نمی‌شوند.</value></data>
   <data name="Tuning_Manual" xml:space="preserve"><value>تنظیمات دستی</value></data>
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>رابط عمومی NVIDIA ولتاژ را مستقیم تنظیم نمی‌کند. آندرولت یعنی آفست مثبت هسته به‌همراه سقف فرکانس: آفست منحنی ولتاژ/فرکانس را بالا می‌برد و سقف، فرکانس را همان‌جا نگه می‌دارد؛ پس کارت همان فرکانس را با ولتاژ کمتر می‌گیرد. اورکلاک یعنی سقف بالاتر (یا بدون سقف) همراه با آفست.</value></data>
   <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>آفست فرکانس هسته</value></data>
@@ -688,7 +686,7 @@
   <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>محدودیت توان</value></data>
   <data name="Tuning_Label_Fan" xml:space="preserve"><value>سرعت ثابت فن</value></data>
   <data name="Tuning_Hint_CoreOffset" xml:space="preserve"><value>کل منحنی ولتاژ/فرکانس را جابه‌جا می‌کند؛ مثبت یعنی فرکانس بیشتر در هر ولتاژ.</value></data>
-  <data name="Tuning_Hint_MemoryOffset" xml:space="preserve"><value>با همان واحدی که NVML فرکانس حافظه را گزارش می‌کند.</value></data>
+  <data name="Tuning_Hint_MemoryOffset" xml:space="preserve"><value>با همان واحدی که درایور کارت فرکانس حافظه را گزارش می‌کند.</value></data>
   <data name="Tuning_Hint_MaxClock" xml:space="preserve"><value>بدون تیک: بدون سقف (بوست خود درایور).</value></data>
   <data name="Tuning_Hint_PowerLimit" xml:space="preserve"><value>بدون تیک: محدودیت پیش‌فرض کارت.</value></data>
   <data name="Tuning_Hint_Fan" xml:space="preserve"><value>بدون تیک: فن خودکار. سرعت ثابت تا وقتی برنگردانید می‌ماند.</value></data>
@@ -864,7 +862,7 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>بایوس</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>دیسک</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>سیستم‌عامل</value></data>
-  <data name="Web_NoRuntime" xml:space="preserve"><value>برای نمایش نسخه‌ی وب، WebView2 مایکروسافت اج لازم است. از نسخه‌ی کلاسیک (MazestaTest.exe) استفاده کنید یا WebView2 را از سایت مایکروسافت نصب کنید.</value></data>
+  <data name="Web_NoRuntime" xml:space="preserve"><value>برای نمایش برنامه، WebView2 مایکروسافت اج لازم است. آن را از سایت مایکروسافت نصب کنید و برنامه را دوباره باز کنید.</value></data>
   <data name="Web_DemoData" xml:space="preserve"><value>پیش‌نمایش مرورگر: داده‌ی نمونه، نه این سیستم</value></data>
   <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>این سیستم هنوز آزمون جامع نشده است</value></data>
   <data name="Web_Dash_Verdict_Passed" xml:space="preserve"><value>آخرین آزمون جامع: همه‌ی آزمون‌ها موفق</value></data>
@@ -1216,7 +1214,7 @@
   <data name="Nav_Group_Windows" xml:space="preserve"><value>ویندوز و بازی</value></data>
   <data name="Nav_Tweaks" xml:space="preserve"><value>ترفندهای ویندوز</value></data>
   <data name="Nav_Updates" xml:space="preserve"><value>به‌روزرسانی ویندوز</value></data>
-  <data name="Tweaks_Lede" xml:space="preserve"><value>تغییرهای ویندوز، همان‌هایی که برنامه‌ی WinUtil دارد. موارد را تیک بزنید و اجرا کنید؛ هر ردیف وضعیت فعلی ویندوز را نشان می‌دهد که بعد از هر تغییر دوباره خوانده می‌شود.</value></data>
+  <data name="Tweaks_Lede" xml:space="preserve"><value>تنظیمات و بهینه‌سازی‌های ویندوز. موارد را تیک بزنید و اجرا کنید؛ هر ردیف وضعیت فعلی ویندوز را نشان می‌دهد که بعد از هر تغییر دوباره خوانده می‌شود.</value></data>
   <data name="Tweaks_Presets" xml:space="preserve"><value>انتخاب‌های پیشنهادی</value></data>
   <data name="Tweaks_Preset_Standard" xml:space="preserve"><value>استاندارد</value></data>
   <data name="Tweaks_Preset_Minimal" xml:space="preserve"><value>حداقلی</value></data>
@@ -1338,7 +1336,7 @@
   <data name="Dns_Test" xml:space="preserve"><value>فقط تست</value></data>
   <data name="Dns_TestApply" xml:space="preserve"><value>تست و فعال‌کردن سریع‌ترین</value></data>
   <data name="Dns_Testing" xml:space="preserve"><value>در حال سنجش همهٔ DNSها روی همین اینترنت…</value></data>
-  <data name="Dns_Test_Note" xml:space="preserve"><value>مثل DNS Jumper: از هر DNS شش نام پرکاربرد (خارجی و ایرانی) دو بار مستقیم پرسیده می‌شود و میانهٔ زمان پاسخ ملاک است. فقط پاسخی حساب می‌شود که آدرس همان نام را بدهد؛ DNSی که حتی یک بار پاسخ ندهد یا پاسخ غلط بدهد (مثلاً بگوید چنین نامی نیست) انتخاب نمی‌شود. نتیجه سریع‌ترینِ همین آزمون کوتاه روی همین اینترنت است، نه سنجش پایداری همیشگی. شکن، ۴۰۳، رادار و بگذر DNSهای ضدتحریم‌اند و سایت‌هایی را که ایران را تحریم کرده‌اند باز می‌کنند، جدا از سرعتشان.</value></data>
+  <data name="Dns_Test_Note" xml:space="preserve"><value>از هر DNS شش نام پرکاربرد (خارجی و ایرانی) دو بار مستقیم پرسیده می‌شود و میانهٔ زمان پاسخ ملاک است. فقط پاسخی حساب می‌شود که آدرس همان نام را بدهد؛ DNSی که حتی یک بار پاسخ ندهد یا پاسخ غلط بدهد (مثلاً بگوید چنین نامی نیست) انتخاب نمی‌شود. نتیجه سریع‌ترینِ همین آزمون کوتاه روی همین اینترنت است، نه سنجش پایداری همیشگی. شکن، ۴۰۳، رادار و بگذر DNSهای ضدتحریم‌اند و سایت‌هایی را که ایران را تحریم کرده‌اند باز می‌کنند، جدا از سرعتشان.</value></data>
   <data name="Dns_Fastest" xml:space="preserve"><value>سریع‌ترین</value></data>
   <data name="Dns_Missed" xml:space="preserve"><value>{0} از {1} پاسخ</value></data>
   <data name="Dns_Use" xml:space="preserve"><value>فعال کن</value></data>
@@ -2072,7 +2070,7 @@
   <data name="AiGen_Purpose_Trellis2" xml:space="preserve"><value>مدل مایکروسافت برای ساخت سه‌بعدی از عکس، با بافت آماده برای بازی و رندر.</value></data>
   <data name="AiGen_Purpose_Hunyuan3d" xml:space="preserve"><value>مدل Tencent برای سه‌بعدی از عکس: اول شکل، بعد بافت.</value></data>
   <data name="Assist_Enable_Title" xml:space="preserve"><value>روشن کردن دستیار</value></data>
-  <data name="Assist_Enable_Text" xml:space="preserve"><value>دستیار فقط یک بار و فقط وقتی بخواهید دانلود می‌شود: مدل زبانی ({0}، {1}) و موتور llama.cpp. در پوشهٔ داده‌های برنامه می‌ماند و از صفحهٔ مدل‌های هوش مصنوعی حذف‌شدنی است.</value></data>
+  <data name="Assist_Enable_Text" xml:space="preserve"><value>دستیار فقط یک بار و فقط وقتی بخواهید دانلود می‌شود: مدل زبانی ({0}، {1}) و موتور اجرای آن. در پوشهٔ داده‌های برنامه می‌ماند و از صفحهٔ مدل‌های هوش مصنوعی حذف‌شدنی است.</value></data>
   <data name="Assist_Enable" xml:space="preserve"><value>دانلود و روشن کردن</value></data>
   <data name="Assist_Downloading" xml:space="preserve"><value>در حال دانلود…</value></data>
   <data name="Assist_Start" xml:space="preserve"><value>شروع دستیار</value></data>
@@ -2229,22 +2227,32 @@
   <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>هشدار دمای پردازنده از (°C)</value></data>
   <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>هشدار دمای کارت گرافیک از (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>دمای هشدار باید عددی صحیح از ۶۰ تا ۱۰۵ باشد.</value></data>
-  <data name="Assist_Help" xml:space="preserve"><value>این کارها را می‌توانم انجام بدهم:&#xA;- این سیستم: مشخصات قطعه‌ها، دما و سنسورهای همین لحظه، تاریخچهٔ بنچمارک‌ها و خلاصهٔ گزارش‌های ذخیره‌شده (و فایل PDF آن‌ها).&#xA;- عیب‌یابی هوشمند: بگویید «سیستم را عیب‌یابی کن» تا خودم آن را اجرا کنم (بعد از تأیید شما) و یافته‌ها را بگویم، اول مشکلات.&#xA;- وقتی دربارهٔ یک قطعه (پردازنده، رم، کارت گرافیک، هارد) می‌پرسید، مشخصاتش را می‌گویم و اگر تستی از آن ثبت شده باشد، خلاصهٔ همان تست را هم.&#xA;- تست و بنچمارک: اجرای تست پردازنده، رم، هارد، شبکه و کارت گرافیک و بنچمارک‌ها (پیش از شروع، روی صفحه تأیید می‌گیرم)؛ پیدا کردن سریع‌ترین DNS.&#xA;- برنامه‌های تخصصی: این‌که Lumion، V-Ray، Revit و بقیه روی این سیستم در چه سطحی اجرا می‌شوند.&#xA;- همین برنامه: باز کردن هر صفحه و نشان دادن دکمهٔ هر کار؛ روشن و خاموش کردن اورلی و پایشگر Tray و تنظیم دمای هشدار Tray («وقتی دمای CPU از ۸۵ گذشت خبرم کن»).&#xA;- ویندوز: باز کردن پنجره‌هایی مثل This PC، Device Manager، Task Manager، Disk Management، Services، Event Viewer، BitLocker و تنظیمات صدا و نمایش؛ دادن دستورهای بررسی‌شده (sfc، DISM، chkdsk، ipconfig، manage-bde و…) با توضیح و هشدارشان، و اجرای دستورهایی که فقط اطلاعات می‌خوانند، با تأیید شما.&#xA;- درایورها: این‌که درایور کارت گرافیک جدیدترین هست یا نه (برای NVIDIA هر دو نسخهٔ Game Ready و Studio و این‌که کدام به برنامه‌های نصب‌شده می‌خورد) و کدام دستگاه‌ها درایور سالم ندارند؛ نصب در صفحهٔ «درایورها» با یک دکمه و تأیید انجام می‌شود.&#xA;کارهایی که نمی‌کنم: اجرای هر دستور دیگری در ویندوز، تغییر فایل‌ها و نصب برنامه.</value></data>
-  <data name="Assist_Tray_On" xml:space="preserve"><value>پایشگر Tray روشن شد: کنار ساعت ویندوز هر {0} دقیقه دماها و هر {1} دقیقه سلامت درایوها را بررسی می‌کند و مشکل را با اعلان ویندوز خبر می‌دهد؛ با روشن شدن ویندوز هم اجرا می‌شود. دمای هشدار: پردازنده بالای {2}°C و کارت گرافیک بالای {3}°C.</value></data>
-  <data name="Assist_Tray_Off" xml:space="preserve"><value>پایشگر Tray خاموش شد و دیگر با روشن شدن ویندوز اجرا نمی‌شود.</value></data>
-  <data name="Assist_Tray_Failed" xml:space="preserve"><value>تغییر پایشگر Tray ممکن نشد: {0}</value></data>
-  <data name="Assist_Alert_Ask" xml:space="preserve"><value>از چه دمایی؟ الان Tray برای پردازنده بالای {0}°C و برای کارت گرافیک بالای {1}°C هشدار می‌دهد؛ مثلاً بگویید «وقتی دمای CPU از ۸۵ گذشت خبرم کن» (بین ۶۰ تا ۱۰۵).</value></data>
+  <data name="Assist_Help" xml:space="preserve"><value>این کارها را می‌توانم انجام بدهم:
+- این سیستم: مشخصات قطعه‌ها، دما و سنسورهای همین لحظه، تاریخچهٔ بنچمارک‌ها و خلاصهٔ گزارش‌های ذخیره‌شده (و فایل PDF آن‌ها).
+- عیب‌یابی هوشمند: بگویید «سیستم را عیب‌یابی کن» تا یک تست کوتاه از هر قطعه بگیرم (حدود هشت دقیقه، بعد از تأیید شما) و یافته‌ها را بگویم، اول تست‌های ناموفق و مشکلات.
+- وقتی دربارهٔ یک قطعه (پردازنده، رم، کارت گرافیک، هارد) می‌پرسید، مشخصاتش را می‌گویم و اگر تستی از آن ثبت شده باشد، خلاصهٔ همان تست را هم.
+- تست و بنچمارک: اجرای تست پردازنده، رم، هارد، شبکه و کارت گرافیک و بنچمارک‌ها (پیش از شروع، روی صفحه تأیید می‌گیرم)؛ پیدا کردن سریع‌ترین DNS.
+- تنظیمات تست: با جمله بگویید، مثلاً «تست CPU با بار متغیر، ۲۰ ثانیه ۱۰۰٪ و ۱۰ ثانیه ۰٪»، «هسته به هسته با ۴ هستهٔ هم‌زمان» یا «Linpack با حافظهٔ Physical and virtual»؛ و با «حالت پیشرفتهٔ تست‌ها را روشن کن» تنظیمات و نتیجهٔ کامل هر تست دیده می‌شود.
+- برنامه‌های تخصصی: این‌که Lumion، V-Ray، Revit و بقیه روی این سیستم در چه سطحی اجرا می‌شوند.
+- همین برنامه: باز کردن هر صفحه و نشان دادن دکمهٔ هر کار؛ روشن و خاموش کردن اورلی و پایشگر پس‌زمینه و تنظیم دمای هشدار Tray («وقتی دمای CPU از ۸۵ گذشت خبرم کن»).
+- ویندوز: باز کردن پنجره‌هایی مثل This PC، Device Manager، Task Manager، Disk Management، Services، Event Viewer، BitLocker و تنظیمات صدا و نمایش؛ دادن دستورهای بررسی‌شده (sfc، DISM، chkdsk، ipconfig، manage-bde و…) با توضیح و هشدارشان، و اجرای دستورهایی که فقط اطلاعات می‌خوانند، با تأیید شما.
+- درایورها: این‌که درایور کارت گرافیک جدیدترین هست یا نه (برای NVIDIA هر دو نسخهٔ Game Ready و Studio و این‌که کدام به برنامه‌های نصب‌شده می‌خورد) و کدام دستگاه‌ها درایور سالم ندارند؛ نصب در صفحهٔ «درایورها» با یک دکمه و تأیید انجام می‌شود.
+کارهایی که نمی‌کنم: اجرای هر دستور دیگری در ویندوز، تغییر فایل‌ها و نصب برنامه.</value></data>
+  <data name="Assist_Tray_On" xml:space="preserve"><value>پایشگر پس‌زمینه روشن شد: کنار ساعت ویندوز هر {0} دقیقه دماها و هر {1} دقیقه سلامت درایوها را بررسی می‌کند و مشکل را با اعلان ویندوز خبر می‌دهد؛ با روشن شدن ویندوز هم اجرا می‌شود. دمای هشدار: پردازنده بالای {2}°C و کارت گرافیک بالای {3}°C.</value></data>
+  <data name="Assist_Tray_Off" xml:space="preserve"><value>پایشگر پس‌زمینه خاموش شد و دیگر با روشن شدن ویندوز اجرا نمی‌شود.</value></data>
+  <data name="Assist_Tray_Failed" xml:space="preserve"><value>تغییر پایشگر پس‌زمینه ممکن نشد: {0}</value></data>
+  <data name="Assist_Alert_Ask" xml:space="preserve"><value>از چه دمایی؟ الان پایشگر پس‌زمینه برای پردازنده بالای {0}°C و برای کارت گرافیک بالای {1}°C هشدار می‌دهد؛ مثلاً بگویید «وقتی دمای CPU از ۸۵ گذشت خبرم کن» (بین ۶۰ تا ۱۰۵).</value></data>
   <data name="Assist_Alert_Range" xml:space="preserve"><value>دمای هشدار می‌تواند بین ۶۰ تا ۱۰۵ درجه باشد: زیر ۶۰ سیستمِ در حال کار مدام هشدار می‌دهد و بالای ۱۰۵ خود قطعه زودتر از آن از خودش محافظت می‌کند.</value></data>
-  <data name="Assist_Alert_Set_cpu" xml:space="preserve"><value>انجام شد: پایشگر Tray روشن است و وقتی دمای پردازنده بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دما را هر {1} دقیقه می‌خواند و وقتی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
-  <data name="Assist_Alert_Set_gpu" xml:space="preserve"><value>انجام شد: پایشگر Tray روشن است و وقتی دمای کارت گرافیک بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دما را هر {1} دقیقه می‌خواند و وقتی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
-  <data name="Assist_Alert_Set_both" xml:space="preserve"><value>انجام شد: پایشگر Tray روشن است و وقتی دمای پردازنده یا کارت گرافیک بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دماها را هر {1} دقیقه می‌خواند و وقتی یکی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
+  <data name="Assist_Alert_Set_cpu" xml:space="preserve"><value>انجام شد: پایشگر پس‌زمینه روشن است و وقتی دمای پردازنده بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دما را هر {1} دقیقه می‌خواند و وقتی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
+  <data name="Assist_Alert_Set_gpu" xml:space="preserve"><value>انجام شد: پایشگر پس‌زمینه روشن است و وقتی دمای کارت گرافیک بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دما را هر {1} دقیقه می‌خواند و وقتی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
+  <data name="Assist_Alert_Set_both" xml:space="preserve"><value>انجام شد: پایشگر پس‌زمینه روشن است و وقتی دمای پردازنده یا کارت گرافیک بالای {0}°C بماند، با اعلان ویندوز خبر می‌دهد. دماها را هر {1} دقیقه می‌خواند و وقتی یکی بالا رفت هر {2} ثانیه؛ بعد از سه خواندن پشت‌سرهم بالاتر از آن هشدار می‌دهد، پس جهش کوتاهی که بین دو خواندن باشد دیده نمی‌شود. وقتی همین برنامه باز است، با همین دما هشدار می‌دهد.</value></data>
   <data name="Assist_WinOpened" xml:space="preserve"><value>باز شد: {0}.</value></data>
   <data name="Assist_WinOpen_Failed" xml:space="preserve"><value>آن پنجره باز نشد.</value></data>
   <data name="Assist_Cmd_None" xml:space="preserve"><value>برای این کار دستور بررسی‌شده‌ای در برنامه نیست و دستور حدسی نمی‌دهم، چون دستور اشتباه در ویندوز می‌تواند آسیب بزند. دستورهایی که دارم:</value></data>
   <data name="Assist_Cmd_Admin" xml:space="preserve"><value>در ترمینالی اجرا شود که با «Run as administrator» باز شده است.</value></data>
   <data name="Assist_Cmd_CanRun" xml:space="preserve"><value>این یکی را برنامه خودش هم اجرا می‌کند: بگویید «اجراش کن».</value></data>
   <data name="Assist_Confirm_Command" xml:space="preserve"><value>این دستور ویندوز اجرا شود؟</value></data>
-  <data name="Assist_Tool_set_tray" xml:space="preserve"><value>پایشگر Tray</value></data>
+  <data name="Assist_Tool_set_tray" xml:space="preserve"><value>پایشگر پس‌زمینه</value></data>
   <data name="Assist_Tool_open_windows" xml:space="preserve"><value>پنجرهٔ ویندوز</value></data>
   <data name="Assist_Tool_windows_command" xml:space="preserve"><value>دستور ویندوز</value></data>
   <data name="Assist_Tool_run_windows_command" xml:space="preserve"><value>اجرای دستور ویندوز</value></data>
@@ -2361,17 +2369,17 @@
   <data name="Ai_Vram" xml:space="preserve"><value>حافظهٔ کارت گرافیک</value></data>
   <data name="Ai_Bandwidth" xml:space="preserve"><value>پهنای باند حافظهٔ کارت (حداکثر)</value></data>
   <data name="Ai_Ram" xml:space="preserve"><value>حافظهٔ سیستم (RAM)</value></data>
-  <data name="Ai_Runtime_Ready" xml:space="preserve"><value>llama.cpp نسخهٔ {0} آماده است</value></data>
-  <data name="Ai_Runtime_Missing" xml:space="preserve"><value>llama.cpp دانلود نشده است</value></data>
-  <data name="Ai_Runtime_Note" xml:space="preserve"><value>مدل‌ها با llama.cpp اجرا می‌شوند (متن‌باز، مجوز MIT) که یک بار از انتشار رسمی آن در GitHub دانلود و با checksum آن بررسی می‌شود. نسخهٔ Vulkan آن روی کارت‌های NVIDIA، AMD و Intel و روی پردازنده اجرا می‌شود.</value></data>
-  <data name="Ai_NeedRuntime" xml:space="preserve"><value>برای اجرای این مدل، llama.cpp را از بالای صفحه دانلود کنید.</value></data>
+  <data name="Ai_Runtime_Ready" xml:space="preserve"><value>موتور اجرای مدل‌ها (نسخهٔ {0}) آماده است</value></data>
+  <data name="Ai_Runtime_Missing" xml:space="preserve"><value>موتور اجرای مدل‌ها دانلود نشده است</value></data>
+  <data name="Ai_Runtime_Note" xml:space="preserve"><value>مدل‌ها با موتوری اجرا می‌شوند که یک بار دانلود و پیش از استفاده درستی‌اش بررسی می‌شود. روی کارت‌های NVIDIA، AMD و Intel و روی پردازنده اجرا می‌شود.</value></data>
+  <data name="Ai_NeedRuntime" xml:space="preserve"><value>برای اجرای این مدل، موتور اجرای مدل‌ها را از بالای صفحه دانلود کنید.</value></data>
   <data name="Ai_OpenFolder" xml:space="preserve"><value>باز کردن پوشه</value></data>
   <data name="Ai_HowTo_Title" xml:space="preserve"><value>راهنمای این صفحه</value></data>
-  <data name="Ai_HowTo" xml:space="preserve"><value>سازگاری، برآوردی پیش از دانلود است: وزن‌های مدل، حافظهٔ لازم برای ۴۰۹۶ توکن متن و حافظهٔ کاری برنامه، در مقایسه با حافظهٔ کارت گرافیک و RAM آزاد این سیستم (از هر کدام ۱ گیگابایت آزاد می‌ماند، مثل خود llama.cpp).
-سرعت اندازه‌گیری می‌شود، نه برآورد: بنچمارک خود llama.cpp یعنی llama-bench یک متن ۵۱۲ توکنی را می‌خواند و سپس ۱۲۸ توکن می‌نویسد؛ هر کدام سه بار.
+  <data name="Ai_HowTo" xml:space="preserve"><value>سازگاری، برآوردی پیش از دانلود است: وزن‌های مدل، حافظهٔ لازم برای ۴۰۹۶ توکن متن و حافظهٔ کاری برنامه، در مقایسه با حافظهٔ کارت گرافیک و RAM آزاد این سیستم (از هر کدام ۱ گیگابایت آزاد می‌ماند).
+سرعت اندازه‌گیری می‌شود، نه برآورد: بنچمارک یک متن ۵۱۲ توکنی را می‌خواند و سپس ۱۲۸ توکن می‌نویسد؛ هر کدام سه بار.
 تولید متن یعنی سرعت نوشتن پاسخ. هر توکن تکه‌ای از یک کلمه است؛ با حدود ۱۰ توکن در ثانیه پاسخ هم‌زمان با خواندن شما ظاهر می‌شود.
 پردازش ورودی یعنی سرعت خواندن سؤال و متن‌هایی که به مدل می‌دهید؛ زمان انتظار تا اولین کلمه را تعیین می‌کند.
-تا دکمهٔ دانلود را نزنید چیزی دانلود نمی‌شود. مدل‌ها از Hugging Face (ggml-org، پروژهٔ llama.cpp) دریافت و با checksum منتشرشده‌شان بررسی می‌شوند.</value></data>
+تا دکمهٔ دانلود را نزنید چیزی دانلود نمی‌شود. هر مدل پس از دانلود و پیش از استفاده بررسی می‌شود.</value></data>
   <data name="Ai_Download" xml:space="preserve"><value>دانلود ({0})</value></data>
   <data name="Ai_Resume" xml:space="preserve"><value>ادامهٔ دانلود ({0} از {1})</value></data>
   <data name="Ai_CancelDownload" xml:space="preserve"><value>توقف دانلود</value></data>
@@ -2417,7 +2425,7 @@
   <data name="Ai_Purpose_GptOss20" xml:space="preserve"><value>مدل باز OpenAI با معماری ترکیب متخصص‌ها: ۲۱ میلیارد پارامتر که فقط ۳.۶ میلیارد از آن‌ها برای هر توکن کار می‌کنند؛ پس تقریباً به سرعت یک مدل کوچک می‌نویسد ولی دانش بسیار بیشتری دارد. در استدلال و استفاده از ابزارها خوب است. ۱۶ گیگابایت حافظهٔ کارت گرافیک لازم دارد یا با RAM تقسیم می‌شود.</value></data>
   <data name="Ai_Purpose_Qwen38_27" xml:space="preserve"><value>توانمندترین مدل این فهرست: برای سؤال‌های سخت، کدهای طولانی و نوشتن دقیق. هر توکن همهٔ ۱۹ گیگابایت وزن‌هایش را می‌خواند، پس کارت ۲۴ گیگابایتی لازم دارد و کندترین مدل این فهرست است.</value></data>
   <data name="Ai_Purpose_Qwen36_35" xml:space="preserve"><value>دانش یک مدل بزرگ با سرعت یک مدل کوچک: ۳۵ میلیارد پارامتر که ۳ میلیارد از آن‌ها برای هر توکن فعال است. روی کارت ۲۴ گیگابایتی کامل اجرا می‌شود؛ با حافظهٔ کمتر بخشی از آن به RAM می‌رود و باز هم قابل استفاده می‌ماند، چون برای هر توکن وزن کمی خوانده می‌شود.</value></data>
-  <data name="Bench_Ai_Llm" xml:space="preserve"><value>مدل زبانی هوش مصنوعی (llama.cpp)</value></data>
+  <data name="Bench_Ai_Llm" xml:space="preserve"><value>مدل زبانی هوش مصنوعی</value></data>
   <data name="Bench_Ai_Prompt" xml:space="preserve"><value>پردازش ورودی</value></data>
   <data name="Bench_Ai_Gen" xml:space="preserve"><value>تولید متن</value></data>
   <data name="Ai_Option_Model" xml:space="preserve"><value>مدل</value></data>
@@ -3093,11 +3101,11 @@
   <data name="Rgb_Mode" xml:space="preserve"><value>حالت</value></data>
   <data name="Rgb_Mode_Keep" xml:space="preserve"><value>یک رنگ</value></data>
   <data name="Rgb_Leds" xml:space="preserve"><value>{0} LED</value></data>
-  <data name="Rgb_NotFound" xml:space="preserve"><value>OpenRGB پیدا نشد. پوشهٔ قابل‌حمل آن (با OpenRGB.exe) را در پوشه‌ای به نام OpenRGB کنار این برنامه بگذار، یا از openrgb.org نصبش کن.</value></data>
-  <data name="Rgb_NoServer" xml:space="preserve"><value>سرویس نور بالا نیامد. اگر OpenRGB دیگری باز است ببندید، کمی صبر کنید و دوباره امتحان کنید.</value></data>
-  <data name="Rgb_NotConnected" xml:space="preserve"><value>هنوز به OpenRGB وصل نیستم. دکمهٔ «پیدا کردن نورها» را بزن.</value></data>
-  <data name="Rgb_Failed" xml:space="preserve"><value>اتصال به OpenRGB ناموفق بود: {0}</value></data>
-  <data name="Rgb_Empty" xml:space="preserve"><value>OpenRGB باز است ولی هنوز قطعه‌ای نشان نمی‌دهد. چند ثانیه صبر کن و دوباره دکمه را بزن؛ اگر باز هم نبود، شاید برنامهٔ خود سازنده نور را در دست دارد.</value></data>
+  <data name="Rgb_NotFound" xml:space="preserve"><value>بخش کنترل نور در این نسخهٔ برنامه پیدا نشد. برنامه را دوباره نصب کنید یا با پشتیبانی تماس بگیرید.</value></data>
+  <data name="Rgb_NoServer" xml:space="preserve"><value>سرویس نور بالا نیامد. اگر برنامهٔ نورپردازی دیگری باز است ببندید، کمی صبر کنید و دوباره امتحان کنید.</value></data>
+  <data name="Rgb_NotConnected" xml:space="preserve"><value>هنوز نورها پیدا نشده‌اند. دکمهٔ «روشن کردن نورها» را بزنید.</value></data>
+  <data name="Rgb_Failed" xml:space="preserve"><value>اتصال به سرویس نور ناموفق بود: {0}</value></data>
+  <data name="Rgb_Empty" xml:space="preserve"><value>سرویس نور آماده است ولی هنوز قطعه‌ای نشان نمی‌دهد. چند ثانیه صبر کنید و دوباره دکمه را بزنید؛ اگر باز هم نبود، شاید برنامهٔ خود سازنده نور را در دست دارد.</value></data>
   <data name="Rgb_Kind_Motherboard" xml:space="preserve"><value>مادربرد</value></data>
   <data name="Rgb_Kind_Memory" xml:space="preserve"><value>رم</value></data>
   <data name="Rgb_Kind_Graphics" xml:space="preserve"><value>کارت گرافیک</value></data>
@@ -3112,7 +3120,7 @@
   <data name="Nav_Lights" xml:space="preserve"><value>نور RGB</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>کنترل فن</value></data>
   <data name="Rgb_Page_Lede" xml:space="preserve"><value>رنگ و حالت نور رم، کارت گرافیک، مادربرد، فن‌ها و نوارهای LED، برای Corsair، ASUS، Gigabyte، MSI و بقیه.</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>رنگ‌ها از راه OpenRGB تنظیم می‌شود؛ برنامه‌ای رایگان که با نور این سازنده‌ها حرف می‌زند، همراه همین برنامه می‌آید و بی‌پنجره و پنهان اجرا می‌شود. دکمه را بزنید: برنامه‌های خود سازنده‌ها (Armoury Crate، MSI Center، RGB Fusion، iCUE) بسته می‌شوند تا سر نورها دعوا نکنند. آنچه تنظیم می‌کنید ذخیره می‌شود و هر بار که برنامه یا tray شروع شود دوباره اعمال می‌شود.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>دکمه را بزنید تا نور قطعات پیدا شود. برنامه‌های خود سازنده‌ها (Armoury Crate، MSI Center، RGB Fusion، iCUE) بسته می‌شوند تا سر نورها تداخل نکنند. آنچه تنظیم می‌کنید ذخیره می‌شود و با هر بار شروع برنامه دوباره اعمال می‌شود.</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>رها کردن (برگرداندن نور)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>برنامه‌های سازنده را نبند</value></data>
   <data name="Rgb_Makers_Running" xml:space="preserve"><value>این برنامه‌های سازنده‌ها باز هستند و تا وقتی از این صفحه استفاده می‌کنید بسته و بعد دوباره باز می‌شوند: {0}</value></data>
@@ -3151,7 +3159,7 @@
   <data name="Fans_Held" xml:space="preserve"><value>در دست این برنامه</value></data>
   <data name="Fans_Reset" xml:space="preserve"><value>همه به حالت خودکار</value></data>
   <data name="Fans_Curve_Hint" xml:space="preserve"><value>یک نقطه را بکشید تا جابه‌جا شود. روی خط دوبار کلیک کنید تا نقطه اضافه شود، روی نقطه دوبار کلیک کنید تا حذف شود. با کلیک روی نقطه، کلیدهای جهت‌دار آن را جابه‌جا می‌کنند.</value></data>
-  <data name="Fans_Note" xml:space="preserve"><value>تا وقتی برنامه کار می‌کند (با پنجره‌ی بسته هم، به شرطی که tray فعال باشد) فن‌ها را روی همان چیزی نگه می‌دارد که تنظیم کرده‌اید؛ وقتی برنامه بسته شود، یا دما یک دقیقه نیاید، فن‌ها به برد برمی‌گردند. هیچ فنی زیر ۲۰٪ و هیچ پمپی زیر ۶۰٪ نمی‌رود و اگر پردازنده به ۸۵ درجه برسد همه‌ی فن‌های در اختیار برنامه تمام‌سرعت می‌شوند.</value></data>
+  <data name="Fans_Note" xml:space="preserve"><value>تا وقتی برنامه کار می‌کند (با پنجره‌ی بسته هم، به شرطی که پایشگر پس‌زمینه روشن باشد) فن‌ها را روی همان چیزی نگه می‌دارد که تنظیم کرده‌اید؛ وقتی برنامه بسته شود، یا دما یک دقیقه نیاید، فن‌ها به برد برمی‌گردند. هیچ فنی زیر ۲۰٪ و هیچ پمپی زیر ۶۰٪ نمی‌رود و اگر پردازنده به ۸۵ درجه برسد همه‌ی فن‌های در اختیار برنامه تمام‌سرعت می‌شوند.</value></data>
   <data name="Fans_Profiles_Title" xml:space="preserve"><value>پروفایل برای همه‌ی فن‌ها</value></data>
   <data name="Fans_Profiles_Sub" xml:space="preserve"><value>با یک کلیک روی همه‌ی خروجی‌ها اعمال می‌شود؛ پمپ به کنترل خود برد سپرده می‌ماند</value></data>
   <data name="Fans_Profile_auto" xml:space="preserve"><value>خودکار (خود برد)</value></data>
@@ -3160,7 +3168,7 @@
   <data name="Fans_Profile_Name" xml:space="preserve"><value>نام پروفایل</value></data>
   <data name="Fans_Profile_Delete" xml:space="preserve"><value>حذف این پروفایل</value></data>
   <data name="Fans_Profile_NotNow" xml:space="preserve"><value>سنسورهای فن هنوز آماده نیستند. چند لحظه بعد دوباره امتحان کنید.</value></data>
-  <data name="Fans_Profile_Tray" xml:space="preserve"><value>همین پروفایل‌ها در منوی آیکن tray هم هست.</value></data>
+  <data name="Fans_Profile_Tray" xml:space="preserve"><value>همین پروفایل‌ها در منوی آیکن کنار ساعت ویندوز هم هست.</value></data>
   <data name="Fans_Kind" xml:space="preserve"><value>به چه وصل است</value></data>
   <data name="Fans_Kind_cpu" xml:space="preserve"><value>فن پردازنده</value></data>
   <data name="Fans_Kind_pump" xml:space="preserve"><value>پمپ AIO</value></data>
