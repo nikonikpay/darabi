@@ -35,6 +35,7 @@ $jobs = @(
     @('GardenRaster.hlsl', 'GlowDownPS', 'ps_6_0', 'GardenGlowDownPS.cso'),
     @('GardenRaster.hlsl', 'GlowUpPS', 'ps_6_0', 'GardenGlowUpPS.cso'),
     @('GardenRaster.hlsl', 'LensPS', 'ps_6_0', 'GardenLensPS.cso'),
+    @('GardenRaster.hlsl', 'RoundDownPS', 'ps_6_0', 'GardenRoundDownPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
     @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso'),

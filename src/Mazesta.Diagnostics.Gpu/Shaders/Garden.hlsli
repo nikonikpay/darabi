@@ -11,7 +11,7 @@ cbuffer Frame : register(b1)
     float3 SunColor; uint LightCount;    // SunColor: irradiance, colour times strength
     float3 SkyZenith; float WaterLevel;
     float3 SkyHorizon; float Exposure;
-    float3 GroundColor; uint Flags;      // bit 0: a reflection image is bound; bit 1: this pass draws the reflection (clip under the water); bit 2: alpha to coverage
+    float3 GroundColor; uint Flags;      // bit 0: a reflection image is bound; bit 1: this pass draws the reflection (clip under the water); bit 2: alpha to coverage; bit 3: the pictures of the surroundings are bound
     float2 ViewSize; float ShadowTexel; uint ShadowTaps;
     float3 CamRight; float TanHalfFovY;
     float3 CamUp; float Aspect;
@@ -28,6 +28,8 @@ cbuffer Frame : register(b1)
     float4 Post;                          // how much of the glow round bright things is added to the frame; for the light volume's baker, how much of the sky's brightness it keeps
     float4 Grid;                          // the light volume (GardenLightVolume): its first point, and the distance from point to point
     float4 Grid2;                         // its points along x, y and z, and 1 when the rasteriser has it bound
+    float4 Round0; float4 Round0Low; float4 Round0High;   // rasteriser: where the courtyard's picture of its surroundings was taken from (w: its mip levels), and the box it stands for
+    float4 Round1; float4 Round1Low; float4 Round1High;   // the same for the hall's rooms: a surface inside this box mirrors that picture
 };
 
 // Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index

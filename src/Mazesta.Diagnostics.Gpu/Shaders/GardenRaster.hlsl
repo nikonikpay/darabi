@@ -1,6 +1,7 @@
 // Visual GPU test, Direct3D 12 rasterisation (GpuSceneExecutor + GardenRaster.cs): the Persian garden under a low golden sun.
 // Passes: the sun's shadow map and, once, the view straight down that says where the open sky is and what each lamp sees round it
-// (all depth only); the pool's mirror
+// (all depth only) and, once, the garden all round from the middle of the courtyard and of the hall, for what surfaces mirror;
+// the pool's mirror
 // image (the scene drawn again from the eye reflected in the water, when the load level asks for it); the frame's depth alone, from
 // which the ambient occlusion image is worked out; then the frame itself - sky, solid geometry, leaves (alpha tested, or alpha to
 // coverage under MSAA) and last the see-through water and glass - in light's own units (Packed into ten bits a colour); and the lens:
@@ -9,7 +10,7 @@
 // garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
-           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=2)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=3)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
@@ -31,6 +32,8 @@ Texture2D<float4> LensA : register(t10);       // the lens passes: what this one
 Texture2D<float4> LensB : register(t11);       // the last pass: the glow, to add to the frame
 TextureCubeArray<float> LampShadows : register(t12);   // what each lamp sees round it, as depth: the still scene, drawn once
 Texture3D<float4> LightVolume : register(t13);         // the light bounced round the courtyard: six blocks side by side, one for each way a surface can face
+TextureCubeArray<float4> Surroundings : register(t14); // what is all round the middle of the courtyard, and of the hall: the still scene, drawn once (Packed), blurrier in each mip
+Texture2DArray<float4> RoundFaces : register(t10);     // those pictures' faces at one mip, while the next is made from it
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
@@ -154,6 +157,23 @@ float3 Bounced(float3 p, float3 n, float open)
          + w.z * LightVolume.SampleLevel(Clamp, float3((f.x + (n.z < 0 ? 5 : 4)) / 6, f.yz), 0).rgb;
 }
 
+// What a surface at p mirrors along r. A rasteriser cannot follow the ray, so the garden was drawn once all round from the middle of
+// the courtyard and from the middle of the hall: the ray is carried to where it leaves the courtyard's (or the hall's) box and the
+// picture looked up toward that point, so a window pane shows the wall across the room and the gilt logo the garden, where they are.
+// The rougher the surface the blurrier the mip; a matt one takes the light volume's word for that direction instead.
+float3 Mirrored(float3 p, float3 r, float roughness, float open)
+{
+    float3 soft = Bounced(p, r, open) * (Grid2.w > 0 ? 1 : 3);
+    if (!(Flags & 8)) return lerp(SkyColor(r) * lerp(0.2, 1, open), soft, saturate(roughness * 1.4));
+    bool inside = all(p > Round1Low.xyz - 0.2) && all(p < Round1High.xyz + 0.2);
+    float3 low = inside ? Round1Low.xyz : Round0Low.xyz, high = inside ? Round1High.xyz : Round0High.xyz, from = inside ? Round1.xyz : Round0.xyz;
+    float3 along = float3(abs(r.x) > 1e-5 ? r.x : 1e-5, abs(r.y) > 1e-5 ? r.y : 1e-5, abs(r.z) > 1e-5 ? r.z : 1e-5);
+    float3 t = (lerp(low, high, step(0, r)) - p) / along;
+    float3 d = p + r * max(min(t.x, min(t.y, t.z)), 0) - from;
+    float3 sharp = Unpack(Surroundings.SampleLevel(Clamp, float4(d, inside ? 1 : 0), min(roughness * 9, Round0.w - 1)).rgb);
+    return lerp(sharp, soft, smoothstep(0.3, 0.6, roughness));
+}
+
 float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
 {
     // the light from all round, as far as the surface's own corners and crevices let it in
@@ -165,11 +185,8 @@ float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
         Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
         if (any(e > 0)) c += Brdf(s, v, l, e) * LampShadow(L, p, s.Normal, pixel);
     }
-    // every surface mirrors its surroundings a little, a metal or a polished floor a lot: the sky where it is open, blurred as far as
-    // the surface is rough, and a dim stand-in for the walls where it is not (a rasteriser cannot trace what is really there)
-    float3 r = reflect(-v, s.Normal);
-    float3 mirrored = lerp(SkyColor(r), Ambient(r) * (Mode == 1 ? 3 : 1), saturate(s.Roughness * 1.4));
-    c += mirrored * EnvBrdf(s, v) * lerp(0.2, 1, open) * near;
+    // every surface mirrors its surroundings a little, a metal or a polished floor a lot
+    c += Mirrored(p, reflect(-v, s.Normal), s.Roughness, open) * EnvBrdf(s, v) * near;
     return c;
 }
 
@@ -194,6 +211,7 @@ float4 Opaque(VOut i, bool cutout)
     float4 relief = Textures.SampleGrad(Aniso, float3(uv, max(m.NormalTexture, 0)), d1, d2);
     Surface s = MaterialSurface(m, i.World, n, texel);
     if (m.NormalTexture >= 0) { float3 t, b; TangentFrame(i.World, d1, d2, n, t, b); Relief(s, t, b, relief); }
+    if (Instances[i.Id].Flags & FLogo) s.Emission += s.Albedo * Logo.w;   // the logo is a sign: it keeps its own gold whatever it mirrors
     float alpha = 1;
     if (cutout)
     {
@@ -242,7 +260,7 @@ float4 TransparentPS(VOut i) : SV_Target
     // is behind it, in its colour; clear glass nearly all
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
-    float3 mirrored = Sky(reflect(-v, n)) * lerp(0.25, 1, open) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
+    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, reflect(-v, n), 0.03, open) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
     float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission;
     if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
     [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
@@ -295,6 +313,13 @@ float4 GlowUpPS(SkyOut i) : SV_Target
     float2 uv = LensUv(i), t = LensTexel(); float3 c = 0;
     [unroll] for (int y = -1; y <= 1; y++) [unroll] for (int x = -1; x <= 1; x++) c += LensA.SampleLevel(Clamp, uv + float2(x, y) * t, 0).rgb * ((2 - abs(x)) * (2 - abs(y)) / 16.0);
     return float4(c, 1);
+}
+
+// A face of a picture of the surroundings at half the size: each texel the mean of four of the level before (still Packed: the
+// mean weighs them as the eye would). InstanceBase: which face of which picture.
+float4 RoundDownPS(SkyOut i) : SV_Target
+{
+    return RoundFaces.SampleLevel(Clamp, float3(LensUv(i), InstanceBase), 0);
 }
 
 float ViewDistance(int2 pixel) { return Ambience.z / max(SceneDepth.Load(int3(clamp(pixel, 0, int2(ViewSize) - 1), 0)), 1e-6); }

@@ -256,6 +256,24 @@ public class GardenSceneTests
         Assert.InRange(G.Lights.Count(l => (l.Mask & 1) != 0 && l.Kind == GardenLightKind.Point), 3, GardenGpu.MostShadowLamps);
     }
 
+    [Fact] public void The_pictures_of_the_surroundings_are_taken_from_open_air_inside_the_space_each_stands_for()
+    {
+        Assert.Equal(2, GardenRaster.Rounds.Length);
+        foreach (var (from, low, high) in GardenRaster.Rounds)
+            Assert.True(from.X > low.X + 1 && from.Y > low.Y + 1 && from.Z > low.Z + 1 && from.X < high.X - 1 && from.Y < high.Y - 1 && from.Z < high.Z - 1);
+        // the courtyard's: over the pool, clear of the fountain's bowl and jet and of the logo; the hall's: inside the hall, off its floor
+        var (yard, _, _) = GardenRaster.Rounds[0]; var f = G.Fountain!;
+        Assert.True(new Vector2(yard.X - f.Nozzle.X, yard.Z - f.Nozzle.Z).Length() > f.RimRadius + 2 && yard.Y > G.WaterLevel + 1);
+        var (hall, hallLow, hallHigh) = GardenRaster.Rounds[1];
+        Assert.True(hall.Z > -3 && hall.Y > 2 && hallLow.Z >= -3.3f && hallHigh.Z <= 7.2f);
+        // the walk's eye inside the hall is inside the hall's box, outside it is not
+        for (float t = 0; t < GardenCamera.Loop; t += 0.5f)
+        {
+            var (eye, _) = GardenCamera.At(t); bool inBox = eye.X > hallLow.X && eye.X < hallHigh.X && eye.Y > hallLow.Y && eye.Y < hallHigh.Y && eye.Z > hallLow.Z && eye.Z < hallHigh.Z;
+            if (eye.Z > -2.5f) Assert.True(inBox, $"t={t}"); else if (eye.Z < -3.5f) Assert.False(inBox, $"t={t}");
+        }
+    }
+
     private sealed class Vec3Near(float tolerance) : IEqualityComparer<Vector3>
     {
         public bool Equals(Vector3 a, Vector3 b) => Vector3.Distance(a, b) <= tolerance;
