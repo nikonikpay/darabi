@@ -108,6 +108,20 @@ public class OpenRgbTests
         var leds = got[^1].Body; Assert.Equal(4, BinaryPrimitives.ReadUInt16LittleEndian(leds.AsSpan(4))); Assert.Equal([255, 0, 0, 0], leds[6..10]);
     }
 
+    [Fact] public async Task Each_led_gets_its_own_colour_and_one_past_the_list_stays_dark()
+    {
+        var (port, got, done) = Serve();
+        using (var client = new OpenRgbClient())
+        {
+            await client.ConnectAsync(port, default); await client.RefreshAsync(default);
+            await client.SetLedsAsync(0, [new RgbColor(255, 0, 0), new RgbColor(0, 255, 0), new RgbColor(0, 0, 255)], default);   // the device has four LEDs
+        }
+        await done;
+        Assert.Equal([OpenRgbProtocol.UpdateMode, OpenRgbProtocol.UpdateLeds], got.Select(g => g.Id).TakeLast(2));
+        var leds = got[^1].Body; Assert.Equal(4, BinaryPrimitives.ReadUInt16LittleEndian(leds.AsSpan(4)));
+        Assert.Equal([255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 0], leds[6..22]);
+    }
+
     [Fact] public async Task A_device_that_is_not_in_the_list_is_refused()
     {
         var (port, _, done) = Serve();

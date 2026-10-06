@@ -68,12 +68,18 @@ export function mount(el) {
     function sync() { const m = current(); pick.disabled = !!m && !m.color; speed.el.hidden = !m?.speed; bright.el.hidden = !m?.brightness; }
     sync();
     const go = () => run("rgb.set", mode.value === "" ? { device: d.index, color: pick.value } : { device: d.index, color: pick.value, mode: Number(mode.value), ...(current()?.speed ? { speed: speed.value() } : {}), ...(current()?.brightness ? { brightness: bright.value() } : {}) });
-    const strip = h("div", { class: "rgb-strip", "aria-hidden": "true" }, (d.colors.length ? d.colors : []).slice(0, 40).map((c) => h("i", { style: { background: c } })));
+    // The LEDs as they are lit. Where the device takes a colour for each LED, an LED is a button: it opens the colour picker for that one alone.
+    const one = h("input", { type: "color", class: "rgb-one", tabindex: "-1", "aria-hidden": "true" }); let oneLed = -1;
+    one.addEventListener("change", () => { if (oneLed >= 0) run("rgb.led", { device: d.index, led: oneLed, color: one.value }); });
+    const strip = d.perLed
+      ? h("div", { class: "rgb-strip pick", role: "group", "aria-label": t("Rgb_Led_Hint") }, d.colors.map((c, i) => h("button", { type: "button", class: "rgb-led", style: { background: c, color: c }, title: t("Rgb_Led", i + 1), "aria-label": t("Rgb_Led", i + 1),
+          onclick: () => { oneLed = i; one.value = /^#[0-9a-f]{6}$/i.test(c) ? c : "#ffffff"; if (one.showPicker) one.showPicker(); else one.click(); } })), one)
+      : h("div", { class: "rgb-strip", "aria-hidden": "true" }, d.colors.slice(0, 40).map((c) => h("i", { style: { background: c } })));
     const zones = d.zones.filter((z) => z.resizable || z.leds > 0);
     const zoneRows = zones.length ? h("div", { class: "rgb-zones" }, h("h3", { class: "h3" }, t("Rgb_Zones")), zones.map((z) => zoneRow(d, z)),
       zones.some((z) => z.resizable && z.leds === 0) ? h("p", { class: "note" }, t("Rgb_Zone_Hint")) : null) : null;
     return box({ cls: HUE[d.kind] || "p-tool", ico: ICON[d.kind] || "bolt", title: d.name, sub: [t(`Rgb_Kind_${d.kind}`), d.vendor, d.leds ? t("Rgb_Leds", d.leds) : ""].filter(Boolean).join(" · "), extra: "rgb-card", a: "rgb",
-      body: [strip, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Mode")), mode), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), pick)),
+      body: [strip, d.perLed ? h("p", { class: "note rgb-led-hint" }, t("Rgb_Led_Hint")) : null, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Mode")), mode), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), pick)),
         swatches((c) => { pick.value = c; mine.color = c; }), h("div", { class: "rgb-row" }, speed.el, bright.el),
         h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: go }, t("Rgb_Apply")), h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: d.index, color: "" }) }, t("Rgb_Off"))), zoneRows] });
   }

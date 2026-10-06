@@ -113,6 +113,7 @@ public sealed class RgbSession : IDisposable
             if (m < 0) return false;
             await Client.SetModeAsync(device, m, color, ct, look.Speed, look.Brightness).ConfigureAwait(false); return true;
         }
+        if (look.Leds is { Count: > 0 } leds) { await Client.SetLedsAsync(device, [.. leds.Select(h => RgbColor.Parse(h) ?? new RgbColor(0, 0, 0))], ct).ConfigureAwait(false); return true; }
         if (color is null) return false;
         await Client.SetColorAsync(device, color, ct).ConfigureAwait(false); return true;
     }

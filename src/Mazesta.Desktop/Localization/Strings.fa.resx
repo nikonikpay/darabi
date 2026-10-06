@@ -3241,4 +3241,6 @@
   <data name="Checkup_Tests" xml:space="preserve"><value>نتیجهٔ تست‌ها</value></data>
   <data name="Checkup_NoTests" xml:space="preserve"><value>هنوز در این نوبت تستی اجرا نشده. عیب‌یابی را اجرا کنید، یا هر تستی را از صفحهٔ تست‌ها، تا نتیجه‌اش اینجا بررسی شود.</value></data>
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>این تست‌ها ناموفق بودند: {0}</value></data>
+  <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
+  <data name="Rgb_Led_Hint" xml:space="preserve"><value>روی هر LED کلیک کنید تا فقط رنگ همان یکی عوض شود.</value></data>
 </root>

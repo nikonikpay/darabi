@@ -276,7 +276,7 @@ const RGB_DEVICES = () => [
     { index: 1, name: "Addressable Header 1", leds: 0, min: 0, max: 120, resizable: true }, { index: 2, name: "Addressable Header 2", leds: 0, min: 0, max: 120, resizable: true }],
     modes: [rgbMode(0, "Direct", true), rgbMode(1, "Static", true), rgbMode(2, "Rainbow Wave", false, true, true), rgbMode(3, "Breathing", true, true, true)] },
 ];
-const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Static", "Rainbow Wave", "Breathing"] : [], devices: rgbOn ? RGB_DEVICES() : [] });
+const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Static", "Rainbow Wave", "Breathing"] : [], devices: rgbOn ? RGB_DEVICES().map((d) => ({ ...d, perLed: d.leds > 0 })) : [] });
 const FAN_NAMES = [["CPU Fan", 1180], ["Chassis Fan #1", 760], ["Chassis Fan #2", 690]];
 const fansState = () => ({ supported: true, error: null, floor: 20, pumpFloor: 60, guard: 85, cpu: 54, gpu: 61, profile: fanProfile, profiles: { builtin: ["auto", "silent", "standard", "performance", "full"], custom: fanCustom },
   presets: { silent: [[30, 20], [50, 25], [65, 40], [75, 65], [85, 100]], standard: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]], performance: [[30, 45], [45, 60], [60, 80], [70, 100]], full: [[20, 100], [100, 100]] },
@@ -377,7 +377,7 @@ export async function call(m, p, emit) {
     case "rgb.state": return rgbState();
     case "rgb.start": rgbOn = true; rgbMakers = p?.keepMakers ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"]; return rgbState();
     case "rgb.release": rgbOn = false; rgbMakers = []; return rgbState();
-    case "rgb.set": case "rgb.zone": return rgbState();
+    case "rgb.set": case "rgb.zone": case "rgb.led": return rgbState();
     case "fans.state": return fansState();
     case "fans.set": fanSet[p.id] = { ...(fanSet[p.id] || { manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] }), mode: p.mode, ...(p.percent != null ? { manual: p.percent } : {}), ...(p.source ? { source: p.source } : {}), ...(p.points ? { points: p.points } : {}) }; return fansState();
     case "fans.reset": fanSet = {}; fanProfile = "auto"; return fansState();

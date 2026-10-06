@@ -13,6 +13,9 @@ public sealed partial class WebBridge
     /// the app (or of the tray) puts it back, with no search and no question. The makers' own lighting programs are stopped while the lights are ours and
     /// put back when the page lets go (the button, or the app closing without the tray to hold the scene).
     /// </summary>
+    /// <summary>The most LEDs a device's card draws one by one (and lets be coloured one by one): a long strip is still a strip on the card.</summary>
+    private const int MostLedsShown = 160;
+
     private void RegisterRgb()
     {
         var session = new RgbSession(AppContext.BaseDirectory, Path.Combine(_paths.DataRoot, "openrgb"), _log); var client = session.Client; var conflicts = session.Conflicts;
@@ -31,7 +34,7 @@ public sealed partial class WebBridge
             devices = client.Devices.Select(d => new
             {
                 index = d.Index, kind = d.Kind.ToString(), name = d.Name, vendor = d.Vendor, location = d.Location, leds = d.LedCount, active = d.ActiveMode,
-                color = d.Colors.Count > 0 ? d.Colors[0].Hex : null, colors = d.Colors.Take(64).Select(c => c.Hex),
+                color = d.Colors.Count > 0 ? d.Colors[0].Hex : null, colors = d.Colors.Take(MostLedsShown).Select(c => c.Hex), perLed = d.LedCount > 0 && d.LedCount <= MostLedsShown && d.Modes.Any(m => m.PerLed),
                 zones = d.Zones.Select(z => new { index = z.Index, name = z.Name, leds = z.LedsCount, min = z.LedsMin, max = z.LedsMax, resizable = z.Resizable }),
                 modes = d.Modes.Select((m, i) => new
                 {
@@ -136,6 +139,22 @@ public sealed partial class WebBridge
             _log.LogInformation("RGB set: device {Device}, mode {Mode}{Name}, colour {Color}; refused: {Refused}, without the mode: {Skipped}", device, mode, modeName, hex.Length > 0 ? hex : "off", failed.Count, skipped);
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
             return State(failed.Count > 0 ? string.Join(" ", failed) : null);
+        }));
+        // One LED's colour, the others as they are: the device goes to the mode with a colour for each LED, and the whole set is kept as its look.
+        MethodAsync("rgb.led", p => Guard(async () =>
+        {
+            if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
+            int device = p.TryGetProperty("device", out var dv) && dv.TryGetInt32(out var di) ? di : -1, led = p.TryGetProperty("led", out var lv) && lv.TryGetInt32(out var li) ? li : -1;
+            var color = RgbColor.Parse(Str(p, "color")) ?? throw new ArgumentException("color");
+            var d = client.Devices.FirstOrDefault(x => x.Index == device) ?? throw new ArgumentException("device");
+            if (led < 0 || led >= d.LedCount) throw new ArgumentException("led");
+            var look = new RgbLook(Leds: [.. Enumerable.Range(0, d.LedCount).Select(i => i == led ? color.Hex : i < d.Colors.Count ? d.Colors[i].Hex : "#000000")]);
+            try { await session.ApplyLookAsync(d.Index, look, CancellationToken.None).ConfigureAwait(true); }
+            catch (NotSupportedException e) { return State(e.Message); }
+            scene.Devices[RgbScene.DeviceKey(d.Vendor, d.Name, d.Location)] = look; scene.Dark = false; Save();
+            _log.LogInformation("RGB set: device {Device}, LED {Led}, colour {Color}", device, led, color.Hex);
+            await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
+            return State();
         }));
         MethodAsync("rgb.dark", p => Guard(async () =>
         {

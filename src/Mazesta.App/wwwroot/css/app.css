@@ -1506,6 +1506,11 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rgb-swatches { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; } .rgb-row .rgb-swatches { margin-top: 0; }
 .rgb-sw { inline-size: 22px; block-size: 22px; border-radius: 50%; border: 2px solid rgb(255 255 255 / 0.18); cursor: pointer; padding: 0; transition: transform var(--fast) var(--ease), border-color var(--fast); }
 .rgb-sw:hover, .rgb-sw:focus-visible { transform: scale(1.18); border-color: var(--paper); outline: none; }
+.rgb-strip.pick { flex-wrap: wrap; gap: 4px; position: relative; }
+.rgb-led { flex: 1 1 14px; min-inline-size: 12px; max-inline-size: 26px; block-size: 16px; padding: 0; border: 1px solid color-mix(in oklab, currentColor 50%, #000); border-radius: 4px; cursor: pointer; box-shadow: 0 0 8px -1px currentColor; transition: transform var(--fast); }
+.rgb-led:hover, .rgb-led:focus-visible { transform: scale(1.25); outline: 2px solid var(--paper); outline-offset: 1px; z-index: 1; }
+.rgb-one { position: absolute; inset-inline-start: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.rgb-led-hint { margin: 6px 0 0; font-size: 11.5px; }
 .rgb-strip { display: flex; gap: 3px; min-block-size: 10px; margin-top: 2px; } .rgb-strip i { flex: 1 1 0; max-inline-size: 22px; block-size: 10px; border-radius: 3px; box-shadow: 0 0 8px -1px currentColor; }
 .rgb-keep { display: inline-flex; align-items: center; gap: 10px; margin: 10px 0 4px; font-size: 13px; }
 .rgb-zones { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule); }

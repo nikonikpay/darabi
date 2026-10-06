@@ -3241,4 +3241,6 @@ Cancel: stop.</value></data>
   <data name="Checkup_Tests" xml:space="preserve"><value>Test results</value></data>
   <data name="Checkup_NoTests" xml:space="preserve"><value>No test has run yet in this session. Run the troubleshooting, or any test from the Tests page, and its result is judged here.</value></data>
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>These tests failed: {0}</value></data>
+  <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
+  <data name="Rgb_Led_Hint" xml:space="preserve"><value>Click an LED to change the colour of that one alone.</value></data>
 </root>

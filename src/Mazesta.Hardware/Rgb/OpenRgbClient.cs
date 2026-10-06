@@ -57,6 +57,23 @@ public sealed class OpenRgbClient : IDisposable
         await SendModeAsync(d, mode, color ?? new RgbColor(0, 0, 0), ct).ConfigureAwait(false);
     }
 
+    /// <summary>Gives each LED of a device its own colour (<paramref name="colors"/> in the device's LED order; an LED past its end is left dark), in the
+    /// device's "Direct" mode. A device that has no mode with a colour for each LED is refused: one colour for all is the most it can show.</summary>
+    public async Task SetLedsAsync(int device, IReadOnlyList<RgbColor> colors, CancellationToken ct)
+    {
+        var d = Find(device);
+        var mode = Named(d, "Direct") is { PerLed: true } direct ? direct : d.Modes.FirstOrDefault(m => m.PerLed);
+        if (mode is null || d.LedCount <= 0) throw new NotSupportedException($"{d.Name} cannot colour its LEDs one by one.");
+        var all = Enumerable.Range(0, d.LedCount).Select(i => i < colors.Count ? colors[i] : new RgbColor(0, 0, 0)).ToList();
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(d.Modes.ToList().IndexOf(mode), mode, _version), ct).ConfigureAwait(false);
+            await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false);
+        }
+        finally { _gate.Release(); }
+    }
+
     /// <summary>Puts a device in one of its modes (an index into <see cref="RgbDevice.Modes"/>); a colour is used only if the mode takes one.</summary>
     public async Task SetModeAsync(int device, int mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null)
     {
