@@ -188,8 +188,8 @@ public sealed partial class WebBridge
             bool other = lastKey.ContainsKey(r.Benchmark.Definition.Id.Value);   // the last run was made with other options: its numbers are not this row's
             return new { metrics = other ? [] : r.Metrics.Select(m => (object)new { name = m.Name, value = m.Value }), more = Array.Empty<object>(), detail = other ? null : r.Detail };
         }
-        // The switches that are on (ray tracing), shown as marks beside the row's name and its results.
-        static IEnumerable<string> Tags(BenchmarkRowViewModel r) => r.Options.Where(o => o.Value == "on" && o.Choices.Count == 2 && o.Choices[0].Value == "off").Select(o => o.Label);
+        // The switches that are on and change the work (ray tracing; not the readout over the scene), shown as marks beside the row's name and its results.
+        static IEnumerable<string> Tags(BenchmarkRowViewModel r) => r.Options.Where(o => o.Value == "on" && BenchmarkRecords.Effective(r.Benchmark.Definition.Id.Value, new Dictionary<string, string> { [o.Option.Key] = "on" })!.Count > 0 && o.Choices.Count == 2 && o.Choices[0].Value == "off").Select(o => o.Label);
         object State() => new
         {
             running = bench.IsRunning, queue = bench.QueueText, canRunSelected = bench.RunSelectedCommand.CanExecute(null), overclocked = s_overclocked,

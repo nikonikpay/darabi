@@ -93,4 +93,9 @@ public class BenchmarkRecordsTests : IDisposable
     public void A_cards_record_key_does_not_carry_the_adapters_luid()   // Windows gives the adapter another LUID at every start
         => Assert.Equal(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["gpu"] = "NVIDIA GeForce RTX 3090|59061", ["raytracing"] = "on" }),
             BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["gpu"] = "NVIDIA GeForce RTX 3090|64116", ["raytracing"] = "on" }));
+
+    [Fact]
+    public void The_readout_over_the_garden_is_not_part_of_the_work()   // hidden or shown, it is the same record
+        => Assert.Equal(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["raytracing"] = "on", ["overlay"] = "off" }),
+            BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["raytracing"] = "on", ["overlay"] = "on" }));
 }

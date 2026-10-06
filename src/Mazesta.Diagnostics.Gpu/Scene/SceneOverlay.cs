@@ -3,33 +3,42 @@ using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vort
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The readout in the corner of the visual GPU test, laid out like the app's own overlay: a header, a yellow GAME card with the FPS large and
-/// AVG / MIN / MS beside it, a GPU card of sensor tiles, and a faint footer. It is drawn by GDI on the CPU into a small bitmap - only when it
-/// changes, twice a second - and laid over each frame by one tiny draw, so it costs the GPU nothing measurable. The shader reads a pixel's
-/// brightness as its coverage over the dark panel, so a dim fill of a colour reads as a tint of it. It is sized from the render height, so at
-/// 4K it reads the same once the frame is scaled down to the window. It is never part of the check frames: those draw the scene alone.
+/// The readout in the corner of the visual GPU test, laid out like the app's own compact overlay: the frame rate large with AVG / MIN / MS
+/// beside it, then one line for each part - the graphics card, its memory, the processor, the RAM - and a faint footer. It is drawn by GDI on
+/// the CPU into a small bitmap - only when it changes, twice a second - and laid over each frame by one tiny draw, so it costs the GPU nothing
+/// measurable. The shader reads a pixel's brightness as its coverage over the dark panel, so a dim fill of a colour reads as a tint of it. It
+/// is sized from the render height, so at 4K it reads the same once the frame is scaled down to the window. It can be hidden
+/// (<see cref="Visible"/>: the test's option, or the O key in its window). It is never part of the check frames: those draw the scene alone.
 /// </summary>
 internal sealed unsafe class SceneOverlay : IDisposable
 {
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Box(uint Left, uint Top, uint Width, uint Height);
-    /// <summary>A sensor tile: a label, the value, and its unit (drawn small in the GPU hue).</summary>
-    public readonly record struct Tile(string Label, string Value, string Unit);
+    /// <summary>One figure of a part's line: the value, and its unit (drawn small in the part's hue).</summary>
+    public readonly record struct Figure(string Value, string Unit);
+    /// <summary>A part's line: its name in its hue, then its figures. Only what was measured is in it.</summary>
+    public sealed record Row(string Name, uint Rgb, IReadOnlyList<Figure> Figures);
     /// <summary>What the readout shows; a null number was not measured yet and shows a dash.</summary>
-    public sealed record Readout(string Mode, double? Fps, double? Average, double? Minimum, string Card, IReadOnlyList<Tile> Sensors, string Size, string Work, string Status, bool Failing);
+    public sealed record Readout(string Mode, double? Fps, double? Average, double? Minimum, IReadOnlyList<Row> Rows, string Size, string Status, bool Failing);
 
-    private const uint Game = 0xFDD400, GameEdge = 0x5A4C00, GameTint = 0x1C1800, Hue = 0x5BE37D, HueEdge = 0x1F4A2A, HueTint = 0x0A170D;
+    public const uint Game = 0xFDD400, GpuHue = 0x5BE37D, CpuHue = 0x5AA9FF, RamHue = 0xC08CFF;
     private const uint Label = 0xC3C7CC, Faint = 0x8A9097, White = 0xFFFFFF, Fail = 0xFF4D4D, Rule = 0x2A2D31;
+    private const int MaxRows = 4;
 
     private readonly D3D12Session _s; private readonly ID3D12Resource[] _targets;
     private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline; private readonly ID3D12DescriptorHeap _rtvHeap; private readonly uint _rtvSize;
     private readonly ID3D12Resource _pixels; private readonly Canvas _c;
-    private readonly int _width, _height, _u, _margin;
+    private readonly int _width, _height, _u, _margin; private int _used;
+
+    /// <summary>Whether the readout is laid over the frames (hidden, it costs nothing at all).</summary>
+    public bool Visible { get; set; } = true;
+    /// <summary>The readout's size in pixels of the frame, as last drawn.</summary>
+    internal (int Width, int Height) Size => (_width, _used);
 
     public SceneOverlay(D3D12Session s, ID3D12Resource[] targets, int renderHeight)
     {
         _s = s; _targets = targets;
-        _u = Math.Max(11, renderHeight / 72); _margin = _u * 4 / 5;
-        _width = _u * 25; _height = _u * 21;
+        _u = Math.Max(10, renderHeight / 90); _margin = _u * 7 / 10;
+        _width = _u * 23; _height = _margin * 2 + _u * 3 + MaxRows * RowHeight + _u * 13 / 5; _used = _height;
         _c = new Canvas(_width, _height);
 
         byte[] vs = D3D12Session.Shader("SceneOverlayVS");
@@ -48,58 +57,54 @@ internal sealed unsafe class SceneOverlay : IDisposable
         for (int i = 0; i < targets.Length; i++) s.Device.CreateRenderTargetView(targets[i], null, _rtvHeap.GetCPUDescriptorHandleForHeapStart().Offset(i, _rtvSize));
     }
 
+    private int RowHeight => _u * 8 / 5;
+
     public void Update(Readout r)
     {
-        int u = _u, x0 = _margin, x1 = _width - _margin, y = _margin, pad = u * 2 / 3;
+        if (!Visible) return;
+        int u = _u, x0 = _margin, x1 = _width - _margin, y = _margin;
         static string N(double? v, string format) => v is { } d ? d.ToString(format, CultureInfo.InvariantCulture) : "—";
+        var rows = r.Rows.Take(MaxRows).ToList();
+        _used = _margin * 2 + u * 3 + rows.Count * RowHeight + u * 13 / 5;
         _c.Clear();
-        _c.Fill(0, 0, _width, _height, Rule); _c.Fill(1, 1, _width - 1, _height - 1, 0);   // the hairline frame the app's overlay has
+        _c.Fill(0, 0, _width, _used, Rule); _c.Fill(1, 1, _width - 1, _used - 1, 0);   // the hairline frame the app's overlay has
 
-        // Header: the yellow tick, MAZESTA, and the mode on the far side.
-        _c.Fill(x0, y + u * 3 / 10, x0 + Math.Max(2, u / 5), y + u, Game);
-        _c.Text(x0 + u / 2, y, x1, y + u * 13 / 10, "MAZESTA", 0xA4A8AD, u * 4 / 5, 800);
-        _c.Text(x0 + u * 5, y, x1, y + u * 13 / 10, r.Mode, Faint, u * 4 / 5, 400, right: true);
-        y += u * 17 / 10;
-
-        // The GAME card: FPS large, AVG / MIN / MS as columns beside it.
-        int gh = u * 9 / 2;
-        _c.Card(x0, y, x1, y + gh, GameEdge, GameTint, u / 3);
-        _c.Pill(x0 + pad, y + pad, "GAME", Game, u * 7 / 10);
-        string fps = N(r.Fps, "F0"); int fpsW = _c.Measure(fps, u * 5 / 2, 700);
-        _c.Text(x0 + pad, y + u * 3 / 2, x0 + pad + fpsW + u, y + gh - u / 4, fps, White, u * 5 / 2, 700);
-        _c.Text(x0 + pad + fpsW + u / 4, y + gh - u * 17 / 10, x1, y + gh, "FPS", Game, u * 7 / 10, 800);
+        // The frame rate, large, with AVG / MIN / MS as columns beside it.
+        string fps = N(r.Fps, "F0"); int big = u * 12 / 5, fpsW = _c.Measure(fps, big, 700);
+        _c.Text(x0, y - u / 5, x0 + fpsW + u, y + u * 14 / 5, fps, White, big, 700);
+        _c.Text(x0 + fpsW + u / 4, y + u * 3 / 2, x1, y + u * 14 / 5, "FPS", Game, u * 7 / 10, 800);
         double? ms = r.Fps is > 0 ? 1000 / r.Fps : null;
-        (string Tag, string Value)[] cols = [("AVG", N(r.Average, "F0")), ("MIN", N(r.Minimum, "F0")), ("MS", N(ms, "F2"))];
-        int colW = u * 7 / 2, cx = x1 - pad - colW * cols.Length;
+        (string Tag, string Value)[] cols = [("AVG", N(r.Average, "F0")), ("MIN", N(r.Minimum, "F0")), ("MS", N(ms, "F1"))];
+        int colW = u * 17 / 5, cx = x1 - colW * cols.Length;
         foreach (var (tag, value) in cols)
         {
-            _c.Text(cx, y + u * 3 / 2, cx + colW, y + u * 5 / 2, tag, Game, u * 7 / 10, 800);
-            _c.Text(cx, y + u * 5 / 2, cx + colW, y + u * 4, value, White, u * 6 / 5, 700);
+            _c.Text(cx, y + u / 5, cx + colW, y + u * 6 / 5, tag, Game, u * 13 / 20, 800, right: true);
+            _c.Text(cx, y + u * 11 / 10, cx + colW, y + u * 13 / 5, value, White, u * 23 / 20, 700, right: true);
             cx += colW;
         }
-        y += gh + u * 3 / 5;
+        y += u * 3;
 
-        // The GPU card: its name, then the sensor tiles two to a row; a sensor the card does not report is left out.
-        int rows = Math.Max(1, (r.Sensors.Count + 1) / 2), rowH = u * 2, ch = u * 2 + rows * rowH + u / 3;
-        _c.Card(x0, y, x1, y + ch, HueEdge, HueTint, u / 3);
-        int pw = _c.Pill(x0 + pad, y + pad, "GPU", Hue, u * 7 / 10);
-        _c.Text(x0 + pad + pw + u / 2, y + u / 2, x1 - pad, y + u * 3 / 2, r.Card, Faint, u * 3 / 4, 400, right: true);
-        int ty = y + u * 2, half = (x1 - x0 - pad * 2) / 2;
-        if (r.Sensors.Count == 0) _c.Text(x0 + pad, ty, x1, ty + rowH, "no GPU sensor readings", Faint, u * 4 / 5, 400, middle: true);
-        for (int i = 0; i < r.Sensors.Count; i++)
+        // A line for each part: its name in its hue, then what was measured of it, each figure with its unit.
+        foreach (var row in rows)
         {
-            var t = r.Sensors[i];
-            int tx = x0 + pad + i % 2 * half, row = ty + i / 2 * rowH, tx1 = tx + half - u / 2, unitW = _c.Measure(t.Unit, u * 3 / 5, 700);
-            _c.Text(tx, row, tx1, row + rowH, t.Label, Label, u * 4 / 5, 600, middle: true);
-            _c.Text(tx, row, tx1 - unitW - u / 5, row + rowH, t.Value, White, u * 6 / 5, 700, right: true, middle: true);
-            _c.Text(tx, row + u / 5, tx1, row + rowH, t.Unit, Hue, u * 3 / 5, 700, right: true, middle: true);
-            if (i / 2 < rows - 1) _c.Fill(tx, row + rowH - 1, tx1, row + rowH, Rule);
+            _c.Fill(x0, y, x1, y + 1, Rule);
+            _c.Text(x0, y, x0 + u * 3, y + RowHeight, row.Name, row.Rgb, u * 4 / 5, 800, middle: true);
+            int fx = x0 + u * 16 / 5;
+            foreach (var f in row.Figures)
+            {
+                int vw = _c.Measure(f.Value, u, 700), uw = _c.Measure(f.Unit, u * 13 / 20, 700);
+                if (fx + vw + uw > x1) break;
+                _c.Text(fx, y, fx + vw + 2, y + RowHeight, f.Value, White, u, 700, middle: true);
+                _c.Text(fx + vw + u / 8, y + u / 6, x1, y + RowHeight, f.Unit, row.Rgb, u * 13 / 20, 700, middle: true);
+                fx += vw + uw + u * 3 / 5;
+            }
+            y += RowHeight;
         }
-        y += ch + u / 2;
+        _c.Fill(x0, y, x1, y + 1, Rule); y += u * 3 / 10;
 
-        // Footer: what is drawn and how, then the run's state.
-        _c.Text(x0, y, x1, y + u * 6 / 5, $"{r.Size} · {r.Work}", Faint, u * 7 / 10, 400);
-        _c.Text(x0, y + u * 6 / 5, x1, y + u * 12 / 5, r.Status, r.Failing ? Fail : Label, u * 7 / 10, r.Failing ? 700 : 400);
+        // Footer: how it is drawn, then the run's state.
+        _c.Text(x0, y, x1, y + u * 11 / 10, $"{r.Mode} · {r.Size}", Faint, u * 13 / 20, 400);
+        _c.Text(x0, y + u * 11 / 10, x1, y + u * 11 / 5, r.Status, r.Failing ? Fail : Label, u * 13 / 20, r.Failing ? 700 : 400);
         _c.Flush();
         _c.Pixels.CopyTo(_pixels.Map<byte>(0, _width * _height * 4)); _pixels.Unmap(0);
     }
@@ -107,8 +112,9 @@ internal sealed unsafe class SceneOverlay : IDisposable
     /// <summary>Lays the readout over back buffer <paramref name="index"/>, which is in the present state before and after.</summary>
     public void Draw(ID3D12GraphicsCommandList4 l, int index, int targetWidth, int targetHeight)
     {
-        int left = Math.Max(0, Math.Min(_margin * 2, targetWidth - _width)), top = Math.Max(0, Math.Min(_margin * 2, targetHeight - _height));
-        int w = Math.Min(_width, targetWidth - left), h = Math.Min(_height, targetHeight - top);
+        if (!Visible) return;
+        int left = Math.Max(0, Math.Min(_margin * 2, targetWidth - _width)), top = Math.Max(0, Math.Min(_margin * 2, targetHeight - _used));
+        int w = Math.Min(_width, targetWidth - left), h = Math.Min(_used, targetHeight - top);
         var target = _targets[index];
         l.ResourceBarrierTransition(target, ResourceStates.Present, ResourceStates.RenderTarget);
         l.OMSetRenderTargets(_rtvHeap.GetCPUDescriptorHandleForHeapStart().Offset(index, _rtvSize));

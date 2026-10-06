@@ -54,6 +54,10 @@ internal sealed class TestWindow : IDisposable
         lock (Closed) return !Closed.Contains(Handle);
     }
 
+    /// <summary>Whether O was pressed in the window since this was last asked: the key that shows and hides the readout.</summary>
+    public bool OverlayKey() { lock (Closed) return OverlayKeys.Remove(Handle); }
+    private static readonly HashSet<IntPtr> OverlayKeys = [];
+
     public string Title { set => SetWindowText(Handle, value); }
 
     public void Dispose()
@@ -66,6 +70,7 @@ internal sealed class TestWindow : IDisposable
     {
         const uint WmClose = 0x0010, WmKeyDown = 0x0100, WmEraseBkgnd = 0x0014;
         if (msg == WmClose || (msg == WmKeyDown && w == 0x1B /* Esc */)) { lock (Closed) Closed.Add(hwnd); return IntPtr.Zero; }
+        if (msg == WmKeyDown && w == 0x4F /* O */ && (l & (1 << 30)) == 0) { lock (Closed) OverlayKeys.Add(hwnd); return IntPtr.Zero; }   // (not the key's own repeats while it is held)
         if (msg == WmEraseBkgnd) return 1;   // the swap chain paints every pixel; erasing first only flickers
         return DefWindowProc(hwnd, msg, w, l);
     }

@@ -3217,4 +3217,10 @@ Cancel: stop.</value></data>
   <data name="Tuning_Risk_Agree" xml:space="preserve"><value>I have read this and accept the responsibility</value></data>
   <data name="Tuning_Risk_Continue" xml:space="preserve"><value>Continue</value></data>
   <data name="Tuning_Risk_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Web_Overlay_Refresh" xml:space="preserve"><value>Sensor refresh</value></data>
+  <data name="Web_Overlay_Refresh_Hint" xml:space="preserve"><value>How often the sensors are read while the overlay is shown. Faster reading costs a little more processor time.</value></data>
+  <data name="Web_Overlay_Refresh_App" xml:space="preserve"><value>As the app</value></data>
+  <data name="Web_Overlay_Refresh_Seconds" xml:space="preserve"><value>Every {0} s</value></data>
+  <data name="Test_Option_SceneOverlay" xml:space="preserve"><value>Readout over the scene</value></data>
+  <data name="Test_Switch_On" xml:space="preserve"><value>On</value></data>
 </root>

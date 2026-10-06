@@ -18,7 +18,10 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay";
+    /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
+    /// test's window shows and hides it while it runs. It is laid over the finished frame and is outside what a benchmark times.</summary>
+    internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>Ray tracing on or off: the same garden, its shadows and mirror images found with rays (DXR 1.1) instead of maps.</summary>
     internal static readonly TestOption RayTracing = new(RayTracingOption, "Test_Option_RayTracing", TestOptionKind.Choice, "off",
         () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1)")]);
@@ -29,7 +32,7 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
                new("fullscreen", "Test_Resolution_FullScreen", true)]);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracing]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracing, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -78,6 +81,7 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";
         var gpu = GpuNode(request.Engine, session.AdapterName);
+        renderer.Overlay.Visible = options.Get(OverlayOption) != "off";
 
         long frames = 0, checks = 0, errors = 0; ulong? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
@@ -89,6 +93,7 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
             {
                 ct.ThrowIfCancellationRequested();
                 if (!window.Pump()) { closed = true; break; }
+                if (window.OverlayKey()) { renderer.Overlay.Visible = !renderer.Overlay.Visible; ShowReadout(0); }
                 if (reference is null || lastCheck.Elapsed.TotalSeconds >= CheckSeconds)
                 {
                     ulong sum = renderer.CheckFrame(CheckTime); checks++; lastCheck.Restart();
@@ -120,18 +125,11 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
         {
             double average = frames / Math.Max(0.001, total.Elapsed.TotalSeconds);
             var now = request.Clock.UtcNow;
-            var sensors = new[]
-            {
-                Reading(SensorRole.GpuCoreTemp, "TEMP", "°C"), Reading(SensorRole.GpuHotSpotTemp, "HOT SPOT", "°C"), Reading(SensorRole.GpuCoreClock, "CLOCK", "MHz"),
-                Reading(SensorRole.GpuLoad3D, "LOAD", "%"), Reading(SensorRole.GpuPower, "POWER", "W"), Reading(SensorRole.GpuFanPercent, "FAN", "%")
-            }.OfType<SceneOverlay.Tile>().ToList();
             bool running = frames > 0;
             renderer.Overlay.Update(new(
-                $"{mode} · {level}", running ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, card, sensors,
-                $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""), work,
-                $"{(int)total.Elapsed.TotalSeconds} / {request.DurationSeconds} s · check frames {checks} · errors {errors} · Esc stops", errors > 0));
-            SceneOverlay.Tile? Reading(SensorRole role, string label, string unit) =>
-                Latest(request.Engine, gpu, role, now) is { } v ? new(label, v.ToString("F0", CultureInfo.InvariantCulture), unit) : null;
+                $"{mode} · {level}", running && fps > 0 ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, Rows(request.Engine, gpu, now),
+                $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""),
+                $"{(int)total.Elapsed.TotalSeconds} / {request.DurationSeconds} s · checks {checks} · errors {errors} · Esc stops · O hides", errors > 0));
         }
 
         string Describe()
@@ -161,16 +159,45 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
     }
 
     /// <summary>The node's newest reading of <paramref name="role"/> from the last few seconds, or null: a stale value is not a live reading.</summary>
-    internal static double? Latest(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now)
+    internal static double? Latest(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now) => Reading(engine, node, role, now)?.Value;
+
+    /// <summary><see cref="Latest"/> with the unit the sensor reports in; the node's own sensors first, then those of the nodes under it.</summary>
+    private static (double Value, Unit Unit)? Reading(PollingEngine? engine, HardwareNode? node, SensorRole role, DateTimeOffset now)
     {
         if (engine is null || node is null) return null;
         int recent = engine.History.SecondsSinceEpoch(now) - 5;
-        foreach (var s in node.Sensors.Where(s => s.Role == role))
+        foreach (var s in node.Sensors.Concat(engine.Hardware.Where(n => n.ParentId == node.Id).SelectMany(n => n.Sensors)).Where(s => s.Role == role))
         {
             var raw = engine.History.GetRaw(s.Id);
-            for (int i = raw.Values.Length - 1; i >= 0 && raw.Seconds[i] >= recent; i--) if (!float.IsNaN(raw.Values[i])) return raw.Values[i];
+            for (int i = raw.Values.Length - 1; i >= 0 && raw.Seconds[i] >= recent; i--) if (!float.IsNaN(raw.Values[i])) return (raw.Values[i], s.Unit);
         }
         return null;
+    }
+
+    /// <summary>The readout's lines: the card under test, its memory, the processor and the RAM, each with what the monitor read of it in the last
+    /// seconds. A figure that was not read is left out, a part with none has no line: nothing is shown that was not measured.</summary>
+    internal static IReadOnlyList<SceneOverlay.Row> Rows(PollingEngine? engine, HardwareNode? gpu, DateTimeOffset now)
+    {
+        var cpu = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null); var ram = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Memory && n.ParentId is null);
+        SceneOverlay.Figure? One(HardwareNode? node, string unit, params SensorRole[] roles)
+        {
+            foreach (var role in roles) if (Reading(engine, node, role, now) is { } r) return new(r.Value.ToString("F0", CultureInfo.InvariantCulture), unit);
+            return null;
+        }
+        static double? Gb((double Value, Unit Unit)? r) => r is not { } x ? null : x.Unit == Unit.Megabyte ? x.Value / 1024 : x.Unit == Unit.Gigabyte ? x.Value : null;
+        SceneOverlay.Figure? Used(HardwareNode? node, SensorRole used, SensorRole total, SensorRole free)
+        {
+            double? u = Gb(Reading(engine, node, used, now)), t = Gb(Reading(engine, node, total, now)) ?? (u is { } a && Gb(Reading(engine, node, free, now)) is { } f ? a + f : null);
+            return u is null ? null : new(u.Value.ToString("F1", CultureInfo.InvariantCulture) + (t is { } all ? " / " + all.ToString("F0", CultureInfo.InvariantCulture) : ""), "GB");
+        }
+        var rows = new List<SceneOverlay.Row>();
+        void Add(string name, uint hue, params SceneOverlay.Figure?[] figures) { var f = figures.OfType<SceneOverlay.Figure>().ToList(); if (f.Count > 0) rows.Add(new(name, hue, f)); }
+        Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "MHz", SensorRole.GpuCoreClock), One(gpu, "% fan", SensorRole.GpuFanPercent));
+        Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "°C hot", SensorRole.GpuHotSpotTemp));
+        Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),
+            One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
+        Add("RAM", SceneOverlay.RamHue, Used(ram, SensorRole.RamUsed, SensorRole.RamTotal, SensorRole.RamFree), One(ram, "%", SensorRole.RamLoad));
+        return rows;
     }
 
     internal static (int, int) ParseSize(string s) { var p = s.Split('x'); return p.Length == 2 && int.TryParse(p[0], out int w) && int.TryParse(p[1], out int h) ? (w, h) : (1280, 720); }

@@ -22,7 +22,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
     private static readonly TestOption RasterQuality = new(QualityOption, "Bench_Option_Quality", TestOptionKind.Choice, "3",
         () => [new("1", "Test_GpuLoad_Light", true, "shadows 2048 · no MSAA · no pool reflection"), new("2", "Test_GpuLoad_Medium", true, "shadows 2048 · MSAA 2× · pool reflection 1/2"),
                new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")]);
-    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, GpuSceneExecutor.RayTracing]);
+    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, GpuSceneExecutor.RayTracing, GpuSceneExecutor.Overlay]);
     public TestDefinition Definition => Scene;
     public HardwareKind Component => HardwareKind.Gpu;
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(GpuSceneExecutor.RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -43,7 +43,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         using var view = new SceneView(s, window, width, height, rayTraced, load, null, null);
         var renderer = view.Renderer; var garden = view.Garden;
         var gpu = GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName);
-        string card = $"{s.AdapterName}";
+        view.Overlay.Visible = options.Get(GpuSceneExecutor.OverlayOption) != "off";
         var before = view.CheckFrame(CheckTime);
         for (int i = 0; i < 3; i++) { view.DrawFrame(i * Step); view.ShowFrame(); }   // warm-up: first-use costs are not measured
 
@@ -58,6 +58,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         {
             ct.ThrowIfCancellationRequested();
             if (!window.Pump()) throw new OperationCanceledException("The benchmark window was closed.");
+            if (window.OverlayKey()) { view.Overlay.Visible = !view.Overlay.Visible; ShowReadout(0, n > 0 ? n / times.Sum() : 0); }
             float t = (float)total.Elapsed.TotalSeconds; n++;
             frame.Restart();
             view.DrawFrame(t);   // every submission is waited for: the time is the frame's own
@@ -90,17 +91,10 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         void ShowReadout(double fps, double mean)
         {
             var now = request.Clock.UtcNow;
-            var sensors = new[]
-            {
-                Reading(SensorRole.GpuCoreTemp, "TEMP", "°C"), Reading(SensorRole.GpuHotSpotTemp, "HOT SPOT", "°C"), Reading(SensorRole.GpuCoreClock, "CLOCK", "MHz"),
-                Reading(SensorRole.GpuLoad3D, "LOAD", "%"), Reading(SensorRole.GpuPower, "POWER", "W"), Reading(SensorRole.GpuFanPercent, "FAN", "%")
-            }.OfType<SceneOverlay.Tile>().ToList();
             bool running = tickFrames > 0 || n > 0;
-            view.Overlay.Update(new($"{mode} · benchmark", running && fps > 0 ? fps : null, running && mean > 0 ? mean : null, lowestHalfSecond < double.MaxValue ? lowestHalfSecond : null, card, sensors,
-                $"{width} × {height}" + (window.Width != width || window.Height != height ? $" → {window.Width} × {window.Height}" : ""), view.Work,
-                $"{(int)total.Elapsed.TotalSeconds} / {runSeconds:F0} s · Esc stops", false));
-            SceneOverlay.Tile? Reading(SensorRole role, string label, string unit) =>
-                GpuSceneExecutor.Latest(request.Engine, gpu, role, now) is { } v ? new(label, v.ToString("F0", CultureInfo.InvariantCulture), unit) : null;
+            view.Overlay.Update(new($"{mode} · benchmark", running && fps > 0 ? fps : null, running && mean > 0 ? mean : null, lowestHalfSecond < double.MaxValue ? lowestHalfSecond : null, GpuSceneExecutor.Rows(request.Engine, gpu, now),
+                $"{width} × {height}" + (window.Width != width || window.Height != height ? $" → {window.Width} × {window.Height}" : ""),
+                $"{(int)total.Elapsed.TotalSeconds} / {runSeconds:F0} s · Esc stops · O hides", false));
         }
     }
 }

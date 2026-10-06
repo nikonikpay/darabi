@@ -3217,4 +3217,10 @@
   <data name="Tuning_Risk_Agree" xml:space="preserve"><value>این متن را خواندم و مسئولیت آن را می‌پذیرم</value></data>
   <data name="Tuning_Risk_Continue" xml:space="preserve"><value>ادامه</value></data>
   <data name="Tuning_Risk_Cancel" xml:space="preserve"><value>انصراف</value></data>
+  <data name="Web_Overlay_Refresh" xml:space="preserve"><value>به‌روزرسانی سنسورها</value></data>
+  <data name="Web_Overlay_Refresh_Hint" xml:space="preserve"><value>سنسورها تا وقتی اورلی دیده می‌شود هر چند وقت یک‌بار خوانده شوند. خواندن سریع‌تر کمی بیشتر از پردازنده وقت می‌گیرد.</value></data>
+  <data name="Web_Overlay_Refresh_App" xml:space="preserve"><value>مثل برنامه</value></data>
+  <data name="Web_Overlay_Refresh_Seconds" xml:space="preserve"><value>هر {0} ثانیه</value></data>
+  <data name="Test_Option_SceneOverlay" xml:space="preserve"><value>اورلی روی صحنه</value></data>
+  <data name="Test_Switch_On" xml:space="preserve"><value>روشن</value></data>
 </root>

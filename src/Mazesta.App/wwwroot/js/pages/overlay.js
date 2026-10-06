@@ -43,6 +43,8 @@ export function mount(el) {
   const bare = h("input", { type: "checkbox", class: "switch", "aria-label": t("Web_Overlay_Bare"), title: t("Web_Overlay_Bare_Hint"), onchange: (e) => call("overlay.set", { field: "bare", value: e.target.checked }) });
   // The overlay's own words in English and its layout left to right, whatever the app's language is.
   const english = h("input", { type: "checkbox", class: "switch", "aria-label": t("Web_Overlay_English"), title: t("Web_Overlay_English_Hint"), onchange: (e) => call("overlay.set", { field: "english", value: e.target.checked }) });
+  // How often the overlay's sensors are read while it is shown (the app's own interval, or a faster or slower one of the overlay's own).
+  const refresh = h("select", { class: "field", "aria-label": t("Web_Overlay_Refresh"), title: t("Web_Overlay_Refresh_Hint"), onchange: (e) => call("overlay.set", { field: "refresh", value: +e.target.value }) });
   const hotkey = h("span", { class: "kbd lat" });
   // Where the ping, loss and jitter are measured to: an address or a name (a game server's, for the figure that matters in that game).
   const pingTarget = h("input", { class: "field lat", style: { width: "150px" }, "aria-label": t("Web_Overlay_PingTarget"), title: t("Web_Overlay_PingTarget_Hint"),
@@ -70,6 +72,7 @@ export function mount(el) {
       h("label", { class: "ov-ctl" }, h("span", {}, t("Overlay_Corner")), corner),
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Size")), sizes),
       h("label", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_PingTarget")), pingTarget),
+      h("label", { class: "ov-ctl", title: t("Web_Overlay_Refresh_Hint") }, h("span", {}, t("Web_Overlay_Refresh")), refresh),
       h("label", { class: "ov-ctl grow" }, h("span", {}, t("Web_Overlay_Opacity")), opacity),
       h("label", { class: "ov-ctl", title: t("Web_Overlay_Bare_Hint") }, h("span", {}, t("Web_Overlay_Bare")), bare),
       h("label", { class: "ov-ctl", title: t("Web_Overlay_English_Hint") }, h("span", {}, t("Web_Overlay_English")), english)),
@@ -335,6 +338,8 @@ export function mount(el) {
     state = s;
     bare.checked = s.bare; english.checked = !!s.english; preview.classList.toggle("bare", !!s.bare);
     show.checked = s.visible; hotkey.textContent = s.hotkey;
+    if (!refresh.options.length) refresh.replaceChildren(h("option", { value: "0" }, t("Web_Overlay_Refresh_App")), ...(s.refreshChoices || []).map((n) => h("option", { value: String(n) }, t("Web_Overlay_Refresh_Seconds", fa(n)))));
+    if (document.activeElement !== refresh) refresh.value = String(s.refresh || 0);
     if (!corner.options.length) corner.replaceChildren(...s.corners.map((c) => h("option", { value: c.value }, c.label)));
     corner.value = s.corner;
     opacity.value = Math.round(s.opacity * 100); fill(opacity); preview.style.setProperty("--ov-alpha", s.opacity);

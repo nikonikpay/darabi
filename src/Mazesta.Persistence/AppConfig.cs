@@ -62,6 +62,8 @@ public sealed class AppConfig : IVersionedDocument
     public Dictionary<string, List<Mazesta.Core.Overlay.OverlayChoice>>? OverlayUserPresets { get; set; }
     /// <summary>The address (or name) the overlay's ping, packet loss and jitter are measured to. Absent in older files: Google's resolver.</summary>
     public string OverlayPingTarget { get; set; } = "8.8.8.8";
+    /// <summary>How often the sensors are read while the overlay is shown, in seconds (one of the monitor's allowed intervals); 0, and older files: as often as the app reads them anyway.</summary>
+    public int OverlayRefreshSeconds { get; set; }
     /// <summary>The services the game mode stops (see <see cref="Mazesta.Core.Gaming.GameBoost"/>); null takes its defaults.</summary>
     public List<string>? GameModeServices { get; set; }
     /// <summary>What each service was before the game mode stopped it; not empty means the mode is on, and switching it off puts these back.</summary>

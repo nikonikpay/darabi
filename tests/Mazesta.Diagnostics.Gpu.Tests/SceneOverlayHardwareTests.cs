@@ -16,7 +16,9 @@ public class SceneOverlayHardwareTests
         var rtvHeap = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, 1)));
         s.Device.CreateRenderTargetView(target, null, rtvHeap.GetCPUDescriptorHandleForHeapStart());
         using var overlay = new SceneOverlay(s, [target], H);
-        overlay.Update(new("Direct3D 12 · heavy", 999, 998, 900, "Test card", [new("TEMP", "60", "°C")], "640 × 360", "work", "1 / 60 s", false));
+        overlay.Update(new("Direct3D 12 · heavy", 999, 998, 900, [new("GPU", SceneOverlay.GpuHue, [new("95", "%"), new("73", "°C"), new("348", "W"), new("1800", "MHz"), new("52", "% fan")]),
+            new("VRAM", SceneOverlay.GpuHue, [new("9.8 / 24", "GB"), new("88", "°C"), new("84", "°C hot")]), new("CPU", SceneOverlay.CpuHue, [new("34", "%"), new("62", "°C"), new("95", "W"), new("4250", "MHz")]),
+            new("RAM", SceneOverlay.RamHue, [new("18.2 / 64", "GB"), new("28", "%")])], "640 × 360", "1 / 60 s · Esc stops · O hides", false));
         uint pitch = (W * 4 + 255) & ~255u;
         var pixels = s.Read((int)(pitch / 4 * H), (l, readback) =>
         {
@@ -31,7 +33,10 @@ public class SceneOverlayHardwareTests
         uint At(int x, int y) => pixels[y * (pitch / 4) + x];
         static int G(uint rgba) => (int)(rgba >> 8 & 0xFF);
         Assert.Equal(255, G(At(W - 2, H - 2)));                    // far from the readout: the frame untouched
-        Assert.InRange(G(At(117, 237)), 60, 140);                   // under the panel below the footer, clear of the text: darkened, still seen through
+        var (bw, bh) = overlay.Size;
+        Assert.InRange(G(At(bw - 4, bh - 2)), 60, 140);             // under the panel's corner, clear of the text: darkened, still seen through
+        Assert.True(bh < H / 2 && bw < W / 2, $"{bw} × {bh}: the readout takes a corner, not the picture");
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) Png.Write(Path.Combine(dir, "overlay.png"), [.. Enumerable.Range(0, H).SelectMany(y => Enumerable.Range(0, W).Select(x => At(x, y)))], W, H);
         int white = 0; for (int y = 0; y < 60; y++) for (int x = 0; x < 200; x++) if ((At(x, y) & 0xFF) > 200) white++;   // red channel: only text has it
         Assert.True(white > 30, $"{white} text pixels");
     }

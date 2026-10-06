@@ -69,6 +69,15 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     public void SetBare(bool bare) { config.OverlayBare = bare; Rebuild(); }
 
+    /// <summary>The overlay's own pace: while it is shown the sensors are read every <paramref name="seconds"/> (0: at the app's own interval);
+    /// hidden, the monitor goes back to the interval of the Settings page. Only the monitor's allowed intervals are taken.</summary>
+    public void SetRefresh(int seconds) { config.OverlayRefreshSeconds = seconds > 0 && MonitoringOptions.AllowedFastSeconds.Contains(seconds) ? seconds : 0; Pace(config.OverlayVisible); }
+    private void Pace(bool shown)
+    {
+        int seconds = shown && config.OverlayRefreshSeconds > 0 ? config.OverlayRefreshSeconds : config.FastIntervalSeconds;
+        if (MonitoringOptions.AllowedFastSeconds.Contains(seconds) && engine.FastInterval != TimeSpan.FromSeconds(seconds)) engine.SetFastInterval(TimeSpan.FromSeconds(seconds));
+    }
+
     /// <summary>The overlay's own language: English titles and a left-to-right layout whatever the app's language is.</summary>
     public void SetEnglish(bool english) { config.OverlayEnglish = english; Rebuild(); }
 
@@ -126,6 +135,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
             _vm.SetActive(true); _window.SetCorner(Corners.Contains(config.OverlayCorner) ? config.OverlayCorner : Corners[0]); _window.Show();
         }
         else { _vm?.SetActive(false); _window?.Hide(); }
+        if (config.OverlayRefreshSeconds > 0) Pace(visible);
         config.OverlayVisible = visible;
         VisibilityChanged?.Invoke(visible);
     }
