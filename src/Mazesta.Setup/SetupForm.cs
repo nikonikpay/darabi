@@ -76,7 +76,7 @@ internal sealed class SetupForm : Form
         if (Installer.IsRunning()) { _status.Text = SetupText.Running; return; }
         _busy = true; _install.Enabled = _close.Enabled = _folder.Enabled = false; _bar.Visible = true; _status.Text = SetupText.Replacing; Fit();
         string folder = _folder.Text; bool desktop = _desktop.Checked, launch = _launch.Checked;
-        var progress = new Progress<(int Percent, string Text)>(p => { _bar.Value = Math.Clamp(p.Percent, 0, 100); _status.Text = p.Text; });
+        var progress = new Progress<(int Percent, string Text)>(p => { _bar.Value = Math.Max(0, Math.Min(100, p.Percent)); _status.Text = p.Text; });
         try
         {
             await Task.Run(() => Installer.Install(folder, desktop, progress));

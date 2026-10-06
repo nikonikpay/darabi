@@ -75,7 +75,7 @@ foreach ($e in $editions) {
 }
 foreach ($e in $editions) { Publish-Edition $e[0] $e[1] }
 
-# The two small programs that are not the app. Each is one self-contained exe; the print program keeps its Data (its key) like the app does.
+# The two small programs that are not the app. The print program is one self-contained exe and keeps its Data (its key) like the app does.
 $flags = "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
          "-p:EnableCompressionInSingleFile=true", "-p:DebugType=none", "-p:DebugSymbols=false", "-p:GenerateDocumentationFile=false"
 function Clear-Output([string]$Folder) {
@@ -109,9 +109,11 @@ if ($Only -ne "Mazesta") {
         }
     } finally { $z.Dispose() }
     $setup = Clear-Output $SetupOutput
-    dotnet publish src/Mazesta.Setup @flags "-p:PayloadZip=$zip" -o $setup
-    if ($LASTEXITCODE -ne 0) { throw "publishing the installer failed ($LASTEXITCODE)." }
-    Get-ChildItem $setup -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
+    # The installer runs on the .NET Framework that is part of Windows, so it is built, not published self-contained: it adds a few hundred
+    # kilobytes to the zip it carries, where a runtime of its own added some 46 MB.
+    dotnet build src/Mazesta.Setup -c Release "-p:PayloadZip=$zip" -p:DebugType=none -p:DebugSymbols=false -p:GenerateDocumentationFile=false -o $setup
+    if ($LASTEXITCODE -ne 0) { throw "building the installer failed ($LASTEXITCODE)." }
+    Get-ChildItem $setup -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb", ".config" } | Remove-Item -Force
     Remove-Item $zip -Force
     Write-Host "Ready (installer): $(Join-Path $setup 'MazestaTestSetup.exe')"
 }
