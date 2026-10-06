@@ -239,14 +239,13 @@ def light(name, kind, at, watts, color, aim=None, cone=None, blend=0.5, radius=0
 # the moon: low over the garden's right-hand wall, in front of the hall, so the cypresses and the windcatchers throw long shadows
 # across the paving (the renderer carries it slowly along its arc: GardenFrame)
 moon = light("Moon", 'SUN', (0, 0, 30), 0.9, (0.62, 0.72, 1.0), aim=(-0.62, 0.42, 30 - 0.52)); moon.data.angle = math.radians(2.0)
-# the hall is lit from inside: its two chandeliers (the lamp just under each, so the ceiling's medallion is in its light and not in the
-# fixture's shadow) and a lamp between them, whose light falls out through the open door and the orsi onto the terrace
+# the hall is lit from inside by its two chandeliers and by nothing else (the lamp just under each, so the ceiling's medallion is in its
+# light and not in the fixture's shadow): a lamp that hangs from nothing reads as a mistake on the bare ceiling between them
 chandeliers = sorted((o.matrix_world.translation.x, o.matrix_world.translation.y, o.matrix_world.translation.z) for o in bpy.data.collections["V12_Two_Decorative_Chandeliers"].objects)
 if len(chandeliers) != 2: raise SystemExit("the hall's two chandeliers were not found")
-for k, (x, y, z) in enumerate((chandeliers[0], (0.0, 4.2, 4.9), chandeliers[1])):
-    z = z - 0.12 if k != 1 else z
-    light(f"Hall_{k}", 'POINT', (x, y, z), 260, WARM, radius=0.18)
-    light(f"Hall_Day_{k}", 'POINT', (x, y, z), 80, WARM, lights=day)   # the rasteriser's lamps: by day the hall is lit as much by them as by its door and windows
+for k, (x, y, z) in enumerate(chandeliers):
+    light(f"Hall_{k}", 'POINT', (x, y, z - 0.12), 340, WARM, radius=0.18)
+    light(f"Hall_Day_{k}", 'POINT', (x, y, z - 0.12), 105, WARM, lights=day)   # the rasteriser's lamps: by day the hall is lit as much by them as by its door and windows
 for x in (-7.2, -2.4, 2.4, 7.2): light(f"Canopy_{x}", 'POINT', (x, -4.7, 4.55), 70, WARM, radius=0.08)
 # under the water: along both sides of the pool, and in the upper basins
 for x in (-2.3, 2.3):

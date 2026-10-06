@@ -16,9 +16,10 @@ public class SceneOverlayHardwareTests
         var rtvHeap = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, 1)));
         s.Device.CreateRenderTargetView(target, null, rtvHeap.GetCPUDescriptorHandleForHeapStart());
         using var overlay = new SceneOverlay(s, [target], H);
-        overlay.Update(new("Direct3D 12 · heavy", 999, 998, 900, [new("GPU", SceneOverlay.GpuHue, [new("95", "%"), new("73", "°C"), new("348", "W"), new("1800", "MHz"), new("52", "% fan")]),
-            new("VRAM", SceneOverlay.GpuHue, [new("9.8 / 24", "GB"), new("88", "°C"), new("84", "°C hot")]), new("CPU", SceneOverlay.CpuHue, [new("34", "%"), new("62", "°C"), new("95", "W"), new("4250", "MHz")]),
-            new("RAM", SceneOverlay.RamHue, [new("18.2 / 64", "GB"), new("28", "%")])], "640 × 360", "1 / 60 s · Esc stops · O hides", false));
+        float[] trace = [.. Enumerable.Range(0, 60).Select(i => 90 + 30 * MathF.Sin(i * 0.3f))];
+        overlay.Update(new("D3D12 + RT · heavy", 999, 998, 900, 870, trace, [.. trace.Select(v => v * 0.8f)], [new("GPU", SceneOverlay.GpuHue, [new("95", "%"), new("73", "°C"), new("84", "°C HOT"), new("348", "W"), new("52", "% FAN")]),
+            new("VRAM", SceneOverlay.GpuHue, [new("9.8 / 24", "GB"), new("88", "°C"), new("1800", "MHz")]), new("CPU", SceneOverlay.CpuHue, [new("34", "%"), new("62", "°C"), new("95", "W"), new("4250", "MHz")]),
+            new("RAM", SceneOverlay.RamHue, [new("18.2 / 64", "GB"), new("28", "%")])], "2560 × 1440", "12/60 s · errors 0", false));
         uint pitch = (W * 4 + 255) & ~255u;
         var pixels = s.Read((int)(pitch / 4 * H), (l, readback) =>
         {

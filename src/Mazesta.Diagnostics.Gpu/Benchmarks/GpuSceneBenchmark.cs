@@ -52,7 +52,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         // the progress report are outside it.
         double runSeconds = Math.Max(10, request.DurationSeconds), walks = runSeconds / GardenCamera.Loop; bool whole = Math.Abs(walks - Math.Round(walks)) < 0.01;
         var times = new List<double>(); var total = Stopwatch.StartNew(); var frame = new Stopwatch(); int n = 0;
-        var tick = Stopwatch.StartNew(); double tickTime = 0; int tickFrames = 0; double lowestHalfSecond = double.MaxValue;
+        var tick = Stopwatch.StartNew(); double tickTime = 0; int tickFrames = 0; double lowestHalfSecond = double.MaxValue; var pace = new FramePace();
         ShowReadout(0, 0);
         while (total.Elapsed.TotalSeconds < runSeconds)
         {
@@ -62,14 +62,14 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
             float t = (float)total.Elapsed.TotalSeconds; n++;
             frame.Restart();
             view.DrawFrame(t);   // every submission is waited for: the time is the frame's own
-            frame.Stop(); times.Add(frame.Elapsed.TotalSeconds); tickTime += frame.Elapsed.TotalSeconds; tickFrames++;
+            frame.Stop(); times.Add(frame.Elapsed.TotalSeconds); tickTime += frame.Elapsed.TotalSeconds; tickFrames++; pace.Frame(frame.Elapsed.TotalSeconds);
             view.ShowFrame();
             if (tick.Elapsed.TotalSeconds >= 0.5)
             {
                 double fps = tickFrames / tickTime;
                 if (total.Elapsed.TotalSeconds > 2) lowestHalfSecond = Math.Min(lowestHalfSecond, fps);
                 window.Title = $"Mazesta — {mode} — benchmark — {fps:F0} FPS — {Math.Max(0, (int)(runSeconds - total.Elapsed.TotalSeconds))} s";
-                ShowReadout(fps, n / times.Sum());
+                pace.Sample(fps); ShowReadout(fps, n / times.Sum());
                 tickTime = 0; tickFrames = 0; tick.Restart();
                 request.Report(Math.Min(1, total.Elapsed.TotalSeconds / runSeconds));
             }
@@ -92,9 +92,9 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         {
             var now = request.Clock.UtcNow;
             bool running = tickFrames > 0 || n > 0;
-            view.Overlay.Update(new($"{mode} · benchmark", running && fps > 0 ? fps : null, running && mean > 0 ? mean : null, lowestHalfSecond < double.MaxValue ? lowestHalfSecond : null, GpuSceneExecutor.Rows(request.Engine, gpu, now),
+            view.Overlay.Update(new($"{(rayTraced ? "D3D12 + RT" : "D3D12")} · benchmark", running && fps > 0 ? fps : null, running && mean > 0 ? mean : null, lowestHalfSecond < double.MaxValue ? lowestHalfSecond : null, pace.Low, pace.Fps, pace.Lows, GpuSceneExecutor.Rows(request.Engine, gpu, now),
                 $"{width} × {height}" + (window.Width != width || window.Height != height ? $" → {window.Width} × {window.Height}" : ""),
-                $"{(int)total.Elapsed.TotalSeconds} / {runSeconds:F0} s · Esc stops · O hides", false));
+                $"{(int)total.Elapsed.TotalSeconds}/{runSeconds:F0} s", false));
         }
     }
 }

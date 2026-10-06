@@ -85,7 +85,7 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
 
         long frames = 0, checks = 0, errors = 0; ulong? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
-        var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0;
+        var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0; var pace = new FramePace(); var frameClock = new Stopwatch();
         ShowReadout(0);
         try
         {
@@ -100,14 +100,16 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
                     if (reference is null) reference = sum;
                     else if (sum != reference) { errors++; if (firstError.Length == 0) firstError = $"check frame {checks} differs from the first one (same scene, same moment)"; }
                 }
+                frameClock.Restart();
                 renderer.Present((float)total.Elapsed.TotalSeconds);
+                pace.Frame(frameClock.Elapsed.TotalSeconds);   // the frame's own drawing, as the benchmark counts it: a check frame between two is not a stutter
                 frames++; updateFrames++;
                 if (updateClock.Elapsed.TotalSeconds >= 0.5)
                 {
                     double fps = updateFrames / updateClock.Elapsed.TotalSeconds;
                     if (total.Elapsed.TotalSeconds > 2) minFps = Math.Min(minFps, fps);   // the first moments include start-up, not the card's pace
                     window.Title = $"Mazesta — {mode} — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
-                    ShowReadout(fps);
+                    pace.Sample(fps); ShowReadout(fps);
                     updateFrames = 0; updateClock.Restart();
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
                 }
@@ -127,9 +129,9 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
             var now = request.Clock.UtcNow;
             bool running = frames > 0;
             renderer.Overlay.Update(new(
-                $"{mode} · {level}", running && fps > 0 ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, Rows(request.Engine, gpu, now),
+                $"{(rayTraced ? "D3D12 + RT" : "D3D12")} · {level}", running && fps > 0 ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, pace.Low, pace.Fps, pace.Lows, Rows(request.Engine, gpu, now),
                 $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""),
-                $"{(int)total.Elapsed.TotalSeconds} / {request.DurationSeconds} s · checks {checks} · errors {errors} · Esc stops · O hides", errors > 0));
+                $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · errors {errors}", errors > 0));
         }
 
         string Describe()
@@ -192,8 +194,8 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
         }
         var rows = new List<SceneOverlay.Row>();
         void Add(string name, uint hue, params SceneOverlay.Figure?[] figures) { var f = figures.OfType<SceneOverlay.Figure>().ToList(); if (f.Count > 0) rows.Add(new(name, hue, f)); }
-        Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "MHz", SensorRole.GpuCoreClock), One(gpu, "% fan", SensorRole.GpuFanPercent));
-        Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "°C hot", SensorRole.GpuHotSpotTemp));
+        Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "°C HOT", SensorRole.GpuHotSpotTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "% FAN", SensorRole.GpuFanPercent));
+        Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "MHz", SensorRole.GpuCoreClock));
         Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),
             One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
         Add("RAM", SceneOverlay.RamHue, Used(ram, SensorRole.RamUsed, SensorRole.RamTotal, SensorRole.RamFree), One(ram, "%", SensorRole.RamLoad));
