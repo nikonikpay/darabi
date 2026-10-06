@@ -3,7 +3,7 @@
   "generatedAt": "2026-09-27T17:31:22+00:00",
   "title": "Design System: Mazesta Test (web edition)",
   "extensions": {
-    "scope": "Governs the web edition (src/Mazesta.Web/wwwroot) only. The WPF edition (src/Mazesta.Desktop, Themes/Dark.xaml) is a separate earlier design in the same brand colours and is not governed by this file.",
+    "scope": "Governs the web edition (src/Mazesta.App/wwwroot) only. The WPF edition (src/Mazesta.Desktop, Themes/Dark.xaml) is a separate earlier design in the same brand colours and is not governed by this file.",
     "colorMeta": {
       "ink": {
         "role": "neutral",
@@ -224,14 +224,14 @@
     "fonts": [
       {
         "family": "Vazirmatn",
-        "source": "src/Mazesta.Web/wwwroot/fonts/Vazirmatn-Variable.woff2",
+        "source": "src/Mazesta.App/wwwroot/fonts/Vazirmatn-Variable.woff2",
         "license": "OFL",
         "weights": "100 900",
         "display": "block"
       },
       {
         "family": "Archivo",
-        "source": "src/Mazesta.Web/wwwroot/fonts/Archivo-Variable.ttf",
+        "source": "src/Mazesta.App/wwwroot/fonts/Archivo-Variable.ttf",
         "license": "OFL",
         "weights": "100 900",
         "stretch": "62% 125%",

@@ -84,7 +84,7 @@ spacing:
 
 # Design System: Mazesta Test (web edition)
 
-This file governs the web edition (`src/Mazesta.Web/wwwroot`, hosted in WebView2) and the on-screen overlay (`src/Mazesta.Desktop/Views/OverlayWindow.xaml`), which follows it. The WPF edition and its own theme were retired on 2026-09-28 (git tag `wpf-edition-final`).
+This file governs the web edition (`src/Mazesta.App/wwwroot`, hosted in WebView2) and the on-screen overlay (`src/Mazesta.Desktop/Views/OverlayWindow.xaml`), which follows it. The WPF edition and its own theme were retired on 2026-09-28 (git tag `wpf-edition-final`).
 
 ## Overview
 

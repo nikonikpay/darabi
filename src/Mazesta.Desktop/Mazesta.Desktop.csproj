@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The app layer under the web edition (Mazesta.Web): composition, the page view models the web bridge drives, the services (reports and
+  <!-- The app layer under the web edition (Mazesta.App): composition, the page view models the web bridge drives, the services (reports and
        PDF printing, the overlay), the string tables, and the one window still drawn natively, the on-screen overlay (Windows Forms and GDI+;
        WPF was removed on 2026-10-01, tag pre-wpf-removal). It was the WPF edition's own app until that edition was retired (tag
        wpf-edition-final); it is a library now. The assembly keeps its old name so the resource names stay as they were. The report font is

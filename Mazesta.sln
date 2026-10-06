@@ -41,7 +41,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mazesta.Reporting", "src\Ma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mazesta.Reporting.Tests", "tests\Mazesta.Reporting.Tests\Mazesta.Reporting.Tests.csproj", "{CBCC7CC5-EC32-4E1B-A7D1-14B0E268BA1B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mazesta.Web", "src\Mazesta.Web\Mazesta.Web.csproj", "{A9576A21-3EEB-43F1-87C2-CF245B3519EA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mazesta.App", "src\Mazesta.App\Mazesta.App.csproj", "{A9576A21-3EEB-43F1-87C2-CF245B3519EA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
 EndProject

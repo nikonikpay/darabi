@@ -9,7 +9,7 @@ Set-Location $repo
 $target = [IO.Path]::GetFullPath($Output, $repo)
 $flags = "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
          "-p:EnableCompressionInSingleFile=true", "-p:DebugType=none", "-p:DebugSymbols=false", "-p:GenerateDocumentationFile=false"
-dotnet publish src/Mazesta.Web @flags "-p:MazestaEdition=$Edition" -o $target
+dotnet publish src/Mazesta.App @flags "-p:MazestaEdition=$Edition" -o $target
 if ($LASTEXITCODE -ne 0) { throw "publishing the app failed ($LASTEXITCODE)." }
 $tray = Join-Path ([IO.Path]::GetTempPath()) "mazesta-tray-publish"
 if (Test-Path $tray) { Remove-Item $tray -Recurse -Force }

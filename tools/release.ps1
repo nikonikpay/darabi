@@ -6,7 +6,7 @@
 #   pwsh tools/release.ps1                                  # data only: gather the runs, rebuild the lists, re-sign (daily)
 #   pwsh tools/release.ps1 -App -NotesFa notes-fa.txt       # also publish the app and offer it as the new release
 #   pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload   # ... and send it all to the site through the Mazesta Connect plugin
-#   pwsh tools/release.ps1 -Runs E:\Mazesta-Web\Data, F:\Mazesta-Web\Data   # runs from other copies (USB sticks) too
+#   pwsh tools/release.ps1 -Runs E:\Mazesta-Admin\Data, F:\Mazesta-Admin\Data   # runs from other copies (USB sticks) too
 #
 # The runs are kept in the archive (outside the repository, next to it) so a run brought in twice counts once, and nothing is lost when a
 # copy's Data folder is cleaned. The private key never leaves this machine; the site only ever gets signed files.
@@ -14,7 +14,7 @@ param(
     [switch]$App,
     [switch]$Upload,   # send the folder to the site through the Mazesta Connect plugin when it is built
     [string]$SiteKey = "artifacts/Mazesta-Update/Keys/site-release-key.txt",
-    [string[]]$Runs = @("artifacts/Mazesta-Web/Data"),
+    [string[]]$Runs = @("artifacts/Mazesta-Admin/Data"),
     [string]$NotesFa,
     [string]$NotesEn,
     [string]$Key = "artifacts/Mazesta-Update/Keys/mazesta-update-private.pem",

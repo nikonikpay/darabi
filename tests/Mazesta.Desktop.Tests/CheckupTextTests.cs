@@ -18,7 +18,7 @@ public class CheckupTextTests
         foreach (var c in Enum.GetValues<FindingCode>()) { yield return $"Check_{c}"; yield return $"Check_{c}_Text"; }
         foreach (var h in Enum.GetValues<FindingHint>().Where(h => h != FindingHint.None)) yield return $"Check_Hint_{h}";
         foreach (var l in Enum.GetValues<FindingLevel>()) yield return $"Check_Level_{l}";
-        var sources = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "Mazesta.Core", "Health", "Checkup"), "*.cs").Append(Path.Combine(RepoRoot(), "src", "Mazesta.Web", "WebBridge.Benchmarks.cs"));
+        var sources = Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "Mazesta.Core", "Health", "Checkup"), "*.cs").Append(Path.Combine(RepoRoot(), "src", "Mazesta.App", "WebBridge.Benchmarks.cs"));
         foreach (var key in sources.SelectMany(f => Regex.Matches(File.ReadAllText(f), "\"(Check_M_[A-Za-z]+)\"").Select(m => m.Groups[1].Value)).Distinct()) yield return key;
     }
 

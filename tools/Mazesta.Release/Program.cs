@@ -27,7 +27,7 @@ static int KeyGen(string folder)
     var (priv, pub) = UpdateSigning.NewKey();
     File.WriteAllText(file, priv);
     Console.WriteLine($"Private key: {file}  (keep it, and a copy of it, outside the repository)");
-    Console.WriteLine($"Public key (src/Mazesta.Web/UpdateKey.cs): {pub}");
+    Console.WriteLine($"Public key (src/Mazesta.App/UpdateKey.cs): {pub}");
     return 0;
 }
 

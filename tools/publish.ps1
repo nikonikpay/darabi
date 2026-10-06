@@ -1,6 +1,6 @@
 # Publishes the runnable app (the WebView2 edition: Mazesta-Admin.exe for the company, Mazesta.exe for users) in its two editions, without ever losing a Data folder (settings, reports,
 # history, logs):
-#   artifacts\Mazesta-Web      Mazesta's own edition (the service number, the link to the site, the reference marks)
+#   artifacts\Mazesta-Admin      Mazesta's own edition (the service number, the link to the site, the reference marks)
 #   artifacts\Mazesta-Client   the users' edition (none of those)
 #   artifacts\Mazesta-Setup    MazestaTestSetup.exe: the users' installer (carries the users' edition; Start menu, desktop, Installed apps)
 #   artifacts\Mazesta-Print    MazestaPrint.exe: the secretary's program (lists the site's reports by service number, prints their summary)
@@ -20,7 +20,7 @@
 param(
     [ValidateSet("web")] [string]$Edition = "web",   # kept so older command lines (-Edition web) still work
     [ValidateSet("Both", "Mazesta", "Client")] [string]$Only = "Both",
-    [string]$Output = "artifacts/Mazesta-Web",
+    [string]$Output = "artifacts/Mazesta-Admin",
     [string]$ClientOutput = "artifacts/Mazesta-Client",
     [string]$SetupOutput = "artifacts/Mazesta-Setup",
     [string]$PrintOutput = "artifacts/Mazesta-Print",
@@ -29,7 +29,7 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
-$project = "src/Mazesta.Web"
+$project = "src/Mazesta.App"
 Set-Location $repo
 $backups = [IO.Path]::GetFullPath($BackupRoot)
 
@@ -55,6 +55,16 @@ function Publish-Edition([string]$Folder, [string]$Name) {
 $editions = @()
 if ($Only -ne "Mazesta") { $editions += , @($ClientOutput, "Client") }
 if ($Only -ne "Client") { $editions += , @($Output, "Mazesta") }
+
+# Mazesta's own edition was published to artifacts\Mazesta-Web until 2026-10-06 (the folder was named for the project, as that was).
+# A copy still there is moved, Data and all, to the folder named for its exe - once, and only while nothing runs from it.
+$old = [IO.Path]::GetFullPath((Join-Path $repo "artifacts/Mazesta-Web")); $new = [IO.Path]::GetFullPath((Join-Path $repo $Output))
+if ($Only -ne "Client" -and $Output -eq "artifacts/Mazesta-Admin" -and (Test-Path $old) -and -not (Test-Path $new)) {
+    $running = Get-Process MazestaTest, Mazesta, Mazesta-Admin, MazestaWeb, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($old, [StringComparison]::OrdinalIgnoreCase) }
+    if ($running) { throw "Close Mazesta / Mazesta Monitor first (running: $($running.Name -join ', ')). Nothing was changed." }
+    Move-Item $old $new
+    Write-Host "Moved $old to $new (its Data with it)"
+}
 
 # Checked for every folder before anything is touched. An elevated app's path cannot be read from a normal shell (Path is empty): then it
 # may be ours, so stop as well.

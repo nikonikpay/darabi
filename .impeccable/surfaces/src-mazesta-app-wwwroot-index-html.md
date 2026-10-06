@@ -1,3 +1,10 @@
+---
+version: 1
+slug: "src-mazesta-app-wwwroot-index-html"
+primary_target: "src/Mazesta.App/wwwroot/index.html"
+related_targets: []
+---
+
 # Surface: Mazesta Web edition (WebView2 host, all pages)
 
 Scope: a separate executable (Mazesta.App) whose whole UI is one web app over the existing core. Mode: Operate. Audience: technicians at the

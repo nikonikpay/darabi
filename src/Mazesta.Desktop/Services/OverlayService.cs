@@ -6,7 +6,7 @@ namespace Mazesta.Desktop.Services;
 /// Shows and hides the on-screen overlay and remembers it (and its corner) in the settings. Ctrl+Shift+O toggles it from anywhere, also while a
 /// game has the keyboard. The overlay window and its view model are made on first use and kept; hidden, the view model ignores the monitor's
 /// snapshots, so an unused overlay costs nothing. It is not owned by the main window, so it stays up while the app is minimised - and, when the
-/// tray runs, after the main window is closed (the app then lives on for the overlay alone; see Mazesta.Web's App).
+/// tray runs, after the main window is closed (the app then lives on for the overlay alone; see Mazesta.App's App).
 /// What it shows (items, charts, preset), its opacity and size come from the settings; changing them rebuilds the view model in place.
 /// </summary>
 public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null, IPingSource? ping = null) : IDisposable

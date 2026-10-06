@@ -83,7 +83,7 @@
 
 - کلید خصوصی: `artifacts\Mazesta-Update\Keys\mazesta-update-private.pem` (کلید دوم، ۲۰۲۶-۱۰-۰۶؛ کلید اول هرگز با نسخه‌ای منتشر نشد؛ `artifacts/` در git نیست، پس از این پوشه هم یک نسخه پشتیبان جای دیگر بگذارید). **هرگز** روی سایت، در git یا در پوشه برنامه نگذارید.
 - **حتماً دو نسخه پشتیبان** از آن جای دیگری نگه دارید (فلش جدا، فضای ابری رمزدار). اگر گم شود، نسخه‌های نصب‌شده دیگر هیچ به‌روزرسانی‌ای نمی‌پذیرند و باید یک بار دستی به‌روز شوند.
-- کلید عمومی داخل برنامه است (`src/Mazesta.Web/UpdateKey.cs`). برنامه فقط `update.json`ای را می‌پذیرد که با این کلید امضا شده باشد، و هر فایلی که دانلود می‌کند باید با اندازه و SHA-256 نوشته‌شده در آن یکی باشد. پس اگر سایت هک شود یا فایلی در راه عوض شود، نهایتاً به‌روزرسانی نمی‌رسد؛ چیزی برای اجرا به برنامه داده نمی‌شود.
+- کلید عمومی داخل برنامه است (`src/Mazesta.App/UpdateKey.cs`). برنامه فقط `update.json`ای را می‌پذیرد که با این کلید امضا شده باشد، و هر فایلی که دانلود می‌کند باید با اندازه و SHA-256 نوشته‌شده در آن یکی باشد. پس اگر سایت هک شود یا فایلی در راه عوض شود، نهایتاً به‌روزرسانی نمی‌رسد؛ چیزی برای اجرا به برنامه داده نمی‌شود.
 
 ## انتشار نسخه تازه برنامه
 
@@ -94,7 +94,7 @@
    pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload
    ```
    این کار نسخه کاربر را می‌سازد (`tools/publish-release.ps1` در `artifacts/Mazesta-Release`: دو exe مستقل به‌علاوه `wwwroot` و `Redist`؛ به
-   `artifacts/Mazesta-Web` و Data آن دست نمی‌زند)، از آن zip می‌سازد، `update.json` را امضا می‌کند و همه را به سایت می‌فرستد. zip قدیمی را سایت خودش پاک می‌کند.
+   `artifacts/Mazesta-Admin` و Data آن دست نمی‌زند)، از آن zip می‌سازد، `update.json` را امضا می‌کند و همه را به سایت می‌فرستد. zip قدیمی را سایت خودش پاک می‌کند.
 4. بدون `-Upload`، پوشه در `artifacts/Mazesta-Update/mazesta/` آماده می‌ماند تا دستی بارگذاری کنید (ترتیب بالا).
 5. درستی: «Mazesta Connect › تنظیمات و انتشار» باید همان شماره نسخه را نشان بدهد، و `https://www.dfmrendering.com/mazesta/update.json` متن JSON باشد.
 
@@ -116,7 +116,7 @@
 
 برنامه یک کد است که دو جور بیلد می‌شود (`-p:MazestaEdition=Client` برای نسخه کاربر؛ بدون آن، نسخه مازستا):
 
-- **نسخه مازستا** (`artifacts/Mazesta-Web`، برای داخل شرکت): شماره سرویس، اتصال به سایت (کلید و ورود به سایت)، ارسال خلاصه گزارش، ارسال اجراها به فهرست‌ها، و انتخاب نتیجه مرجع و اورکلاک در «اجراهای ثبت‌شده».
+- **نسخه مازستا** (`artifacts/Mazesta-Admin`، برای داخل شرکت): شماره سرویس، اتصال به سایت (کلید و ورود به سایت)، ارسال خلاصه گزارش، ارسال اجراها به فهرست‌ها، و انتخاب نتیجه مرجع و اورکلاک در «اجراهای ثبت‌شده».
 - **نسخه کاربر** (`artifacts/Mazesta-Client` و همان چیزی که `tools/publish-release.ps1` برای انتشار می‌سازد): هیچ‌کدام از این‌ها را ندارد؛ پل برنامه هم این فراخوانی‌ها را رد می‌کند و کلید سایت یا شماره سرویسی را که در فایل تنظیمات مانده باشد نگه نمی‌دارد. کاربر فقط «اشتراک‌گذاری آخرین نتیجه» را دارد، با «نام نمایشی» از تنظیمات (خالی: «کاربر مازستا»).
 
 `pwsh tools/publish.ps1` هر دو را می‌سازد (`-Only Mazesta` یا `-Only Client` برای یکی). نسخه‌ای که روی سایت منتشر می‌شود نسخه کاربر است، پس نسخه مازستا آن را روی خودش نصب نمی‌کند (وگرنه به نسخه کاربر تبدیل می‌شد)؛ نسخه مازستا با بیلد تازه جایگزین می‌شود.
@@ -136,9 +136,9 @@
 
 ### هر روز
 1. فلش/نسخه‌هایی را که با آن‌ها بنچ گرفته‌اید وصل کنید.
-2. اجرا کنید (مسیر Data هر نسخه را بدهید؛ پیش‌فرض نسخه `artifacts/Mazesta-Web` است):
+2. اجرا کنید (مسیر Data هر نسخه را بدهید؛ پیش‌فرض نسخه `artifacts/Mazesta-Admin` است):
    ```
-   pwsh tools/release.ps1 -Runs E:\Mazesta-Web\Data, F:\Mazesta-Web\Data
+   pwsh tools/release.ps1 -Runs E:\Mazesta-Admin\Data, F:\Mazesta-Admin\Data
    ```
 3. پوشه `benchdb` و بعد `update.json` و `update.json.sig` را بارگذاری کنید. (zip تغییر نکرده، دوباره لازم نیست.)
 
@@ -186,7 +186,7 @@
 - داده‌ها کمی پس از باز شدن برنامه خودکار دریافت می‌شوند؛ دکمه «به‌روزرسانی داده‌ها» همان لحظه دریافت می‌کند.
 
 ## کد
-- کلاینت: `src/Mazesta.Persistence/Updates/` (manifest، امضا، دانلود با بررسی، جایگزینی فایل‌ها با بازگشت)، `src/Mazesta.Web/AppUpdater.cs`، صفحه `wwwroot/js/pages/appupdate.js`.
-- سایت: افزونه `site/mazesta-connect/mazesta-connect.php`؛ سمت برنامه `src/Mazesta.Persistence/Updates/SiteClient.cs` و `src/Mazesta.Web/WebBridge.Site.cs`.
+- کلاینت: `src/Mazesta.Persistence/Updates/` (manifest، امضا، دانلود با بررسی، جایگزینی فایل‌ها با بازگشت)، `src/Mazesta.App/AppUpdater.cs`، صفحه `wwwroot/js/pages/appupdate.js`.
+- سایت: افزونه `site/mazesta-connect/mazesta-connect.php`؛ سمت برنامه `src/Mazesta.Persistence/Updates/SiteClient.cs` و `src/Mazesta.App/WebBridge.Site.cs`.
 - فهرست‌ها: `src/Mazesta.Diagnostics/Benchmarks/BenchmarkPeers.cs` (اجراها، ساخت فهرست، رتبه‌بندی)، `WebBridge.Benchmarks.cs`.
 - ابزار فروشگاه: `tools/Mazesta.Release` (`keygen`، `site`) و `tools/release.ps1`.
