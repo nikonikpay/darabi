@@ -3204,4 +3204,17 @@ Cancel: stop.</value></data>
   <data name="Detail_Cpu_StressSwing" xml:space="preserve"><value>Variable load: {0}% for {1} s, then {2}% for {3} s, in turn</value></data>
   <data name="Detail_Cpu_StressHeld" xml:space="preserve"><value>Load held at {0}%</value></data>
   <data name="Detail_Cpu_LinpackFilled" xml:space="preserve"><value>Memory filled: {0} systems, {1} MiB ({2})</value></data>
+  <data name="Tuning_Risk_Banner_Title" xml:space="preserve"><value>Overclocking and undervolting are at your own risk</value></data>
+  <data name="Tuning_Risk_Banner" xml:space="preserve"><value>The app only sets values inside the range the card's driver allows, and everything goes back to factory settings at a restart. Even so, depending on a card's health, cooling, power supply and age, changed settings can make it unstable, crash the system or, rarely, harm the hardware. Settings entered by hand carry the most risk: nothing has tested them.</value></data>
+  <data name="Tuning_Risk_Title" xml:space="preserve"><value>Read this before you go on</value></data>
+  <data name="Tuning_Risk_Text" xml:space="preserve"><value>You are about to change how the graphics card runs. The responsibility for this is yours.</value></data>
+  <data name="Tuning_Risk_Point_Range" xml:space="preserve"><value>The app stays inside the range the driver reports as allowed. That range is not a promise that every card is safe at every point of it.</value></data>
+  <data name="Tuning_Risk_Point_Crash" xml:space="preserve"><value>The picture may freeze or go black, the driver may reset and Windows may restart. Save your open work first.</value></data>
+  <data name="Tuning_Risk_Point_Damage" xml:space="preserve"><value>A card that is worn, runs hot, has poor cooling or a weak power supply can be harmed by more load or other voltages. This can also affect its warranty.</value></data>
+  <data name="Tuning_Risk_Point_Temporary" xml:space="preserve"><value>The settings are temporary: a restart or a driver reset brings the card back to factory settings.</value></data>
+  <data name="Tuning_Risk_Manual" xml:space="preserve"><value>You are applying values set by hand. The app checks only that they are inside the driver's range; it has not tested whether the card is stable with them.</value></data>
+  <data name="Tuning_Risk_Auto" xml:space="preserve"><value>The automatic search takes the card to the edge of stability on purpose and steps back: a driver crash or a black screen during it is expected.</value></data>
+  <data name="Tuning_Risk_Agree" xml:space="preserve"><value>I have read this and accept the responsibility</value></data>
+  <data name="Tuning_Risk_Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Tuning_Risk_Cancel" xml:space="preserve"><value>Cancel</value></data>
 </root>

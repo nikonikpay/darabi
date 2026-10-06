@@ -3204,4 +3204,17 @@
   <data name="Detail_Cpu_StressSwing" xml:space="preserve"><value>بار متغیر: {0}٪ به مدت {1} ثانیه، سپس {2}٪ به مدت {3} ثانیه، به‌نوبت</value></data>
   <data name="Detail_Cpu_StressHeld" xml:space="preserve"><value>بار روی {0}٪ نگه داشته شد</value></data>
   <data name="Detail_Cpu_LinpackFilled" xml:space="preserve"><value>حافظهٔ پرشده: {0} دستگاه، {1} مگابایت ({2})</value></data>
+  <data name="Tuning_Risk_Banner_Title" xml:space="preserve"><value>اورکلاک و آندرولت با مسئولیت خود شماست</value></data>
+  <data name="Tuning_Risk_Banner" xml:space="preserve"><value>برنامه فقط در محدوده‌ای که درایور کارت مجاز می‌داند تنظیم می‌کند و همه‌چیز با ری‌استارت به حالت کارخانه برمی‌گردد. با این حال، بسته به سلامت، خنک‌کاری، منبع تغذیه و عمر هر کارت، تغییر تنظیمات می‌تواند باعث ناپایداری، کرش سیستم و در موارد نادر آسیب سخت‌افزاری شود. تنظیم دستی بیشترین ریسک را دارد، چون هیچ آزمونی آن مقادیر را نسنجیده است.</value></data>
+  <data name="Tuning_Risk_Title" xml:space="preserve"><value>پیش از ادامه بخوانید</value></data>
+  <data name="Tuning_Risk_Text" xml:space="preserve"><value>شما در حال تغییر شیوهٔ کار کارت گرافیک هستید. مسئولیت این کار با خود شماست.</value></data>
+  <data name="Tuning_Risk_Point_Range" xml:space="preserve"><value>برنامه از محدوده‌ای که درایور مجاز اعلام می‌کند بیرون نمی‌رود؛ اما این محدوده تضمین نمی‌کند که هر کارتی در هر نقطهٔ آن سالم بماند.</value></data>
+  <data name="Tuning_Risk_Point_Crash" xml:space="preserve"><value>ممکن است تصویر قفل یا سیاه شود، درایور ری‌ست شود یا ویندوز ری‌استارت شود. پیش از شروع، کارهای باز را ذخیره کنید.</value></data>
+  <data name="Tuning_Risk_Point_Damage" xml:space="preserve"><value>کارتی که فرسوده است، داغ کار می‌کند، خنک‌کاری ضعیف یا منبع تغذیهٔ ناکافی دارد ممکن است با بار بیشتر یا ولتاژ متفاوت آسیب ببیند. این کار می‌تواند بر گارانتی هم اثر بگذارد.</value></data>
+  <data name="Tuning_Risk_Point_Temporary" xml:space="preserve"><value>تنظیمات موقت‌اند: با ری‌استارت یا ری‌ست درایور، کارت به حالت کارخانه برمی‌گردد.</value></data>
+  <data name="Tuning_Risk_Manual" xml:space="preserve"><value>شما مقادیری را اعمال می‌کنید که دستی تعیین شده‌اند. برنامه فقط بررسی می‌کند که در محدودهٔ درایور باشند و پایداری کارت را با آن‌ها نسنجیده است.</value></data>
+  <data name="Tuning_Risk_Auto" xml:space="preserve"><value>جست‌وجوی خودکار کارت را عمداً تا مرز ناپایداری می‌برد و سپس عقب می‌کشد: کرش درایور یا سیاه شدن تصویر در حین آن دور از انتظار نیست.</value></data>
+  <data name="Tuning_Risk_Agree" xml:space="preserve"><value>این متن را خواندم و مسئولیت آن را می‌پذیرم</value></data>
+  <data name="Tuning_Risk_Continue" xml:space="preserve"><value>ادامه</value></data>
+  <data name="Tuning_Risk_Cancel" xml:space="preserve"><value>انصراف</value></data>
 </root>

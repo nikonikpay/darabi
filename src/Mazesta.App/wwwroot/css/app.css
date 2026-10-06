@@ -576,6 +576,16 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .banner { display: flex; gap: 14px; align-items: center; background: color-mix(in oklab, var(--warn) 10%, var(--ink-2)); border: 1px solid color-mix(in oklab, var(--warn) 35%, transparent);
   border-radius: var(--r-panel); margin: 12px var(--pad) 0; padding: 10px 14px; font-size: 13px; }
 .banner .grow { flex: 1; }
+.risk-banner { align-items: flex-start; margin-bottom: 14px; }
+.risk-banner p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.8; color: var(--paper-2); }
+.risk-ico svg { width: 22px; height: 22px; stroke: var(--warn); fill: none; flex: none; }
+.sheet.risk { width: min(600px, calc(100vw - 32px)); }
+.sheet.risk .sheet-head { align-items: center; }
+.sheet.risk p { margin: 0; font-size: 13.5px; line-height: 1.9; }
+.risk-list { margin: 0; padding-inline-start: 20px; display: grid; gap: 6px; font-size: 13px; line-height: 1.8; color: var(--paper-2); }
+.risk-kind { padding: 8px 12px; border-inline-start: 3px solid var(--warn); background: color-mix(in oklab, var(--warn) 8%, transparent); }
+.risk-agree { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: 13.5px; cursor: pointer; margin-top: 4px; }
+.sheet.risk .btn-row { display: flex; gap: 10px; margin-top: 6px; }
 .toasts { position: fixed; inset-inline-end: 24px; bottom: 50px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
 .toast { background: var(--ink-3); color: var(--paper); border: 1px solid var(--rule-2); border-inline-start: 3px solid var(--yellow); border-radius: var(--r-panel); padding: 10px 16px; font-weight: 600; font-size: 13px; max-width: 440px;
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.5); animation: toast-in 420ms var(--ease) both; }

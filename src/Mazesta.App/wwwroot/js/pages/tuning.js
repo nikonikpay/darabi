@@ -102,9 +102,33 @@ function curveEditor(onChange) {
   return { el: svg, set(next) { if (drag) { st.liveClock = next.liveClock; st.liveVolt = next.liveVolt; return; } st = next; draw(); } };
 }
 
+// Nothing that changes the card's clocks, voltage curve or power starts before the owner has read what it can cost and said yes: the
+// app keeps to the range the driver allows, but no range makes every card safe. An automatic search asks every time (it takes the card to
+// the edge of stability on purpose); settings applied by hand ask once in a session of the app, and say that nothing has tested them.
+let manualAccepted = false;
+function acceptRisk(kind) {
+  if (kind === "manual" && manualAccepted) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let yes = false;
+    const go = h("button", { class: "btn primary", type: "button", disabled: true, onclick: () => { yes = true; d.close(); } }, t("Tuning_Risk_Continue"));
+    const agree = h("input", { type: "checkbox", class: "check", onchange: (e) => { go.disabled = !e.target.checked; } });
+    const d = h("dialog", { class: "sheet risk" },
+      h("header", { class: "sheet-head" }, h("span", { class: "risk-ico" }, icon("alert")), h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, t("Tuning_Risk_Title")))),
+      h("div", { class: "sheet-body" },
+        h("p", {}, t("Tuning_Risk_Text")),
+        h("ul", { class: "risk-list" }, ["Tuning_Risk_Point_Range", "Tuning_Risk_Point_Crash", "Tuning_Risk_Point_Damage", "Tuning_Risk_Point_Temporary"].map((k) => h("li", {}, t(k)))),
+        h("p", { class: "risk-kind" }, t(kind === "manual" ? "Tuning_Risk_Manual" : "Tuning_Risk_Auto")),
+        h("label", { class: "risk-agree" }, agree, t("Tuning_Risk_Agree")),
+        h("div", { class: "btn-row" }, go, h("button", { class: "btn", type: "button", onclick: () => d.close() }, t("Tuning_Risk_Cancel")))));
+    d.addEventListener("close", () => { d.remove(); if (yes && kind === "manual") manualAccepted = true; resolve(yes); });
+    document.body.append(d); d.showModal();
+  });
+}
+
 export function mount(el) {
   const set = (field, value, extra = {}) => call("tuning.set", { field, value, ...extra });
   const exec = (cmd, extra = {}) => call("tuning.exec", { cmd, ...extra });
+  const risky = (kind, cmd, extra = {}) => acceptRisk(kind).then((yes) => { if (yes) exec(cmd, extra); });
   const unavailable = h("div", { class: "banner", hidden: true });
   const name = h("span", { class: "lat" }), device = h("select", { class: "field", hidden: true, onchange: (e) => set("device", e.target.value) });
   const live = h("div", { class: "live" }), ranges = h("p", { class: "caption", style: { marginTop: "10px" } }), others = h("p", { class: "caption" });
@@ -134,7 +158,7 @@ export function mount(el) {
     slider("core", "Tuning_Label_CoreOffset", "MHz", null, 15), slider("memory", "Tuning_Label_MemoryOffset", "MHz", null, 50),
     slider("maxClock", "Tuning_Label_MaxClock", "MHz", "lockClock", 15), slider("power", "Tuning_Label_PowerLimit", "W", "setPower"), slider("fan", "Tuning_Label_Fan", "%", "manualFan"),
     h("div", { class: "toolbar", style: { marginTop: "18px" } },
-      h("button", { class: "btn primary", id: "tApply", onclick: () => exec("apply") }, t("Tuning_Apply")), h("button", { class: "btn stop", id: "tReset", onclick: () => exec("reset") }, t("Tuning_Reset"))),
+      h("button", { class: "btn primary", id: "tApply", onclick: () => risky("manual", "apply") }, t("Tuning_Apply")), h("button", { class: "btn stop", id: "tReset", onclick: () => exec("reset") }, t("Tuning_Reset"))),
     h("div", { class: "toolbar" }, (f.profileName = h("input", { class: "field", placeholder: t("Tuning_ProfileNameHint"), style: { flex: 1 }, oninput: (e) => set("profileName", e.target.value) })),
       h("button", { class: "btn", onclick: () => exec("saveProfile") }, t("Tuning_SaveProfile"))),
     h("p", { class: "h3", id: "tStatus" }));
@@ -142,13 +166,14 @@ export function mount(el) {
   const running = h("div", { hidden: true, style: { marginTop: "18px" } });
   const result = h("p", { class: "h3", style: { whiteSpace: "pre-line", marginTop: "16px" } });
   const log = h("div", {}), profiles = h("div", {}), memory = h("dl", { class: "kv" });
-  const autoU = h("button", { class: "btn go", "data-a": "autoundervolt", onclick: () => exec("autoUndervolt") }, t("Tuning_AutoUndervolt"));
-  const autoO = h("button", { class: "btn primary", "data-a": "autooverclock", onclick: () => exec("autoOverclock") }, t("Tuning_AutoOverclock"));
+  const autoU = h("button", { class: "btn go", "data-a": "autoundervolt", onclick: () => risky("auto", "autoUndervolt") }, t("Tuning_AutoUndervolt"));
+  const autoO = h("button", { class: "btn primary", "data-a": "autooverclock", onclick: () => risky("auto", "autoOverclock") }, t("Tuning_AutoOverclock"));
   const cancel = h("button", { class: "btn stop", onclick: () => exec("cancel") }, icon("stop"), t("Tuning_Cancel"));
 
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tuning")), h("p", { class: "page-lede" }, t("Tuning_Note")))),
     unavailable,
+    h("div", { class: "banner risk-banner", role: "note", "data-a": "tuning-risk" }, h("span", { class: "risk-ico" }, icon("alert")), h("div", { class: "grow" }, h("b", {}, t("Tuning_Risk_Banner_Title")), h("p", {}, t("Tuning_Risk_Banner")))),
     h("div", { class: "has-device panels", style: { gridTemplateColumns: "1fr", marginTop: 0 } },
       box({ kind: "Gpu", title: name, sub: "NVIDIA · NVML", i: 0, a: "fan", actions: device, body: [live, ranges, others] }),
       box({ kind: "Gpu", ico: "chart", title: t("Tuning_Curve_Title"), sub: t("Tuning_Curve_Sub"), i: 1, a: "curve", actions: scan,
@@ -216,7 +241,7 @@ export function mount(el) {
         h("span", {}, h("b", {}, p.name), "  ", h("span", { class: "caption lat" }, p.created), p.startup ? [" ", h("span", { class: "pill run", title: t("Tuning_Startup_Hint") }, t("Tuning_Startup"))] : null),
         h("div", { class: "acts", style: { gridColumn: 3, gridRow: "1 / 3" } },
           h("button", { class: "btn", title: t("Tuning_LoadProfile_Hint"), onclick: () => exec("loadProfile", { index: String(p.index) }) }, t("Tuning_LoadProfile")),
-          h("button", { class: "btn primary", onclick: () => exec("applyProfile", { index: String(p.index) }) }, t("Tuning_Apply")),
+          h("button", { class: "btn primary", onclick: () => risky("manual", "applyProfile", { index: String(p.index) }) }, t("Tuning_Apply")),
           h("button", { class: "btn stop", onclick: () => exec("deleteProfile", { index: String(p.index) }) }, t("Tuning_Delete"))),
         h("span", { class: "sum", style: { gridColumn: 2 } }, p.summary, p.evidence ? h("br") : null, p.evidence)))
         : [h("p", { class: "caption" }, t("Tuning_Profiles_Empty"))]));
