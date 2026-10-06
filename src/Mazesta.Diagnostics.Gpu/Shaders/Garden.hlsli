@@ -30,6 +30,7 @@ cbuffer Frame : register(b1)
     float4 Grid2;                         // its points along x, y and z, and 1 when the rasteriser has it bound
     float4 Round0; float4 Round0Low; float4 Round0High;   // rasteriser: where the courtyard's picture of its surroundings was taken from (w: its mip levels), and the box it stands for
     float4 Round1; float4 Round1Low; float4 Round1High;   // the same for the hall's rooms: a surface inside this box mirrors that picture
+    float4x4 PrevViewProj; float4 PrevEye;                // ray tracer: the frame shown before this one - its view, its eye, and (w) 1 when its light is kept to add this frame's to
 };
 
 // Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index;

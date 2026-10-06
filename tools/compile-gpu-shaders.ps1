@@ -39,6 +39,7 @@ $jobs = @(
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
     @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso'),
+    @('GardenRay.hlsl', 'Gather', 'cs_6_5', 'GardenGather.cso'),
     @('GardenRay.hlsl', 'Denoise', 'cs_6_5', 'GardenDenoise.cso'),
     @('GardenRay.hlsl', 'Finish', 'cs_6_5', 'GardenFinish.cso'),
     @('GardenRay.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso')

@@ -6,10 +6,10 @@
 // during traversal; the water reflects and refracts (into the lit pool), glass lets light through and mirrors, metal and polished stone
 // reflect (the mirror sphere gliding round the pool most of all) - up to Bounces deep. After the denoiser the frame goes through the
 // same lens as the rasteriser's: what is out of focus blurred, a glow round the lamps and the moon, the tone curve.
-// The random numbers come from a hash of the pixel and sample, never the clock: the same Time gives the same image.
+// The random numbers come from a hash of the pixel, the sample and the frame's Time, never the clock: the same Time gives the same image.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 
-#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8, numDescriptors=2)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=4, b2), " \
+#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8, numDescriptors=2)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=4, b2), UAV(u4), UAV(u5), " \
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR)"
 
 #include "Garden.hlsli"
@@ -31,7 +31,9 @@ RWStructuredBuffer<uint> Pixels : register(u0);
 RWStructuredBuffer<float4> Ping : register(u1);    // the denoiser's light, as it goes from pass to pass (Ping -> Pong -> Ping ...)
 RWStructuredBuffer<float4> Guide : register(u2);   // per pixel: first surface's normal and distance, then its colour
 RWStructuredBuffer<float4> Pong : register(u3);
-cbuffer Pass : register(b2) { uint Step; uint Last; uint Stage; uint PassPad; };   // Step: tap spacing, bit 16 set when this pass reads Pong; Stage: the lens's pass
+RWStructuredBuffer<float4> PrevGuide : register(u4);   // the frame shown before: each pixel's first surface (its normal in two numbers, how light its own colour is or -1 for water, glass and what glows, its distance)
+RWStructuredBuffer<float4> PrevLight : register(u5);   // and the light gathered for it so far (alpha: over how many frames)
+cbuffer Pass : register(b2) { uint Step; uint Last; uint Stage; uint Keep; };   // Step: tap spacing, bit 16 set when this pass reads Pong; Stage: the lens's pass; Keep: this pass keeps the frame for the next
 SamplerState Linear : register(s0);
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Linear, uv, 0).rgb; }
@@ -275,13 +277,13 @@ void Main(uint3 id : SV_DispatchThreadID)
         {
             Material m0 = Materials[h0.Material]; Surface s0 = SurfaceAt(h0, -d0);
             bool plain = m0.Kind != KWater && m0.Kind != KGlass && m0.Kind != KEmissive;
-            Guide[i * 2] = float4(s0.Normal, length(h0.P - Eye)); Guide[i * 2 + 1] = float4(plain ? max(s0.Albedo, 0.03) : 1, 0);
+            Guide[i * 2] = float4(s0.Normal, length(h0.P - Eye)); Guide[i * 2 + 1] = float4(plain ? max(s0.Albedo, 0.03) : 1, plain ? 1 : 0);
         }
         else { Guide[i * 2] = float4(0, 0, 0, -1); Guide[i * 2 + 1] = 1; }
     }
     for (uint k = 0; k < n; k++)
     {
-        uint seed = Hash(id.y * 8191 + id.x * 131071 + k * 524287 + 17);
+        uint seed = Hash(id.y * 8191 + id.x * 131071 + k * 524287 + 17 + Hash(asuint(Time)));   // other rays at another moment, the same at the same
         float2 jitter = n == 1 ? 0.5 : (float2(k % side, k / side) + float2(Rand(seed), Rand(seed))) / side;   // stratified within the pixel
         float2 ndc = (float2(id.xy) + jitter) / float2(Width, Height) * 2 - 1;
         float3 dir = normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect - CamUp * ndc.y * TanHalfFovY);
@@ -290,9 +292,56 @@ void Main(uint3 id : SV_DispatchThreadID)
     Ping[i] = float4(color / n / Guide[i * 2 + 1].rgb, 0);   // light without the surface's own colour, so the filter keeps texture detail
 }
 
+// A direction as two numbers (octahedral), and back.
+float2 Squeezed(float3 n) { float2 p = n.xy / (abs(n.x) + abs(n.y) + abs(n.z)); return n.z >= 0 ? p : (1 - abs(p.yx)) * float2(p.x >= 0 ? 1 : -1, p.y >= 0 ? 1 : -1); }
+float3 Unsqueezed(float2 p)
+{
+    float3 n = float3(p, 1 - abs(p.x) - abs(p.y));
+    if (n.z < 0) n.xy = (1 - abs(n.yx)) * float2(n.x >= 0 ? 1 : -1, n.y >= 0 ? 1 : -1);
+    return normalize(n);
+}
+
+// The denoiser's first half, for frames shown one after another: a pixel's light is added to what the frames before gathered for the
+// surface it shows. That surface is looked for in the last frame through that frame's view; the light kept there counts if what was
+// kept is the same surface (as far from that eye as this one is, facing the same way, about as light in its own colour - the light
+// is kept without that colour, and a dark lattice's would flood the pane behind it), blended from the four pixels round where it
+// falls. Up to eight frames' light is held, so a pixel's few rays become some thirty and the speckle no longer crawls; a surface
+// just come into view starts afresh, and so does water, glass and what glows every frame (what is seen in or through them does not
+// stay where their surface does). A frame drawn on its own skips this pass.
+[RootSignature(RS)]
+[numthreads(8, 8, 1)]
+void Gather(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= Width || id.y >= Height) return;
+    uint i = id.y * Width + id.x; float4 g = Guide[i * 2], own = Guide[i * 2 + 1]; float3 c = Ping[i].rgb; float frames = 1;
+    if (g.w > 0 && own.a > 0.5 && PrevEye.w > 0)
+    {
+        float light = dot(own.rgb, 1.0 / 3);
+        float2 ndc = (float2(id.xy) + 0.5) / float2(Width, Height) * 2 - 1;
+        float3 p = Eye + normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect - CamUp * ndc.y * TanHalfFovY) * g.w;
+        float4 clip = mul(PrevViewProj, float4(p, 1));
+        if (clip.w > 0.01)
+        {
+            float2 q = (clip.xy / clip.w * float2(0.5, -0.5) + 0.5) * float2(Width, Height) - 0.5; int2 q0 = (int2)floor(q); float2 f = q - q0;
+            float was = length(p - PrevEye.xyz); float3 sum = 0; float held = 0, weight = 0;
+            [unroll] for (int k = 0; k < 4; k++)
+            {
+                int2 t = q0 + int2(k & 1, k >> 1);
+                if (any(t < 0) || t.x >= (int)Width || t.y >= (int)Height) continue;
+                uint j = t.y * Width + t.x; float4 pg = PrevGuide[j];
+                if (pg.w <= 0 || pg.z <= 0 || abs(pg.w - was) > 0.03 * was + 0.03 || max(pg.z, light) > 2 * min(pg.z, light) || dot(Unsqueezed(pg.xy), g.xyz) < 0.9) continue;
+                float w = ((k & 1) ? f.x : 1 - f.x) * ((k >> 1) ? f.y : 1 - f.y); float4 kept = PrevLight[j];
+                sum += kept.rgb * w; held += kept.a * w; weight += w;
+            }
+            if (weight > 0.05) { frames = min(held / weight + 1, 8); c = lerp(sum / weight, c, 1 / frames); }
+        }
+    }
+    Ping[i] = float4(c, frames);
+}
+
 // The denoiser: an edge-aware a-trous filter (Dammertz et al. 2010) over the light, a few passes with taps Step apart (1, 2, 4, 8).
 // A tap counts for less the more its surface differs (direction, distance) or its light does, so edges, shadows and texture stay
-// while the speckle of a few rays a pixel is smoothed out. Spatial only, from this frame alone: a frame drawn twice is the same image.
+// while the speckle of a few rays a pixel is smoothed out. From this frame's light alone (after Gather, in a shown frame): a frame drawn on its own twice is the same image.
 [RootSignature(RS)]
 [numthreads(8, 8, 1)]
 void Denoise(uint3 id : SV_DispatchThreadID)
@@ -300,6 +349,11 @@ void Denoise(uint3 id : SV_DispatchThreadID)
     if (id.x >= Width || id.y >= Height) return;
     uint i = id.y * Width + id.x; bool fromPing = (Step >> 16) == 0; int step = (int)(Step & 0xFFFF);
     float4 g = Guide[i * 2]; float3 c0 = fromPing ? Ping[i].rgb : Pong[i].rgb;
+    if (Keep)   // for the next frame: what this pixel met, and the light gathered for it
+    {
+        float4 own = Guide[i * 2 + 1];
+        PrevGuide[i] = float4(Squeezed(g.xyz), own.a > 0.5 ? dot(own.rgb, 1.0 / 3) : -1, g.w); PrevLight[i] = float4(c0, max(Ping[i].a, 1));
+    }
     float3 sum = c0; float wsum = 1;
     if (g.w > 0)
     {

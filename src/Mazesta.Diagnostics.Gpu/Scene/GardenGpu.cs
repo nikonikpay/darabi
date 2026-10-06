@@ -461,6 +461,7 @@ internal struct GardenFrame
     public Matrix4x4 SkyViewProj;
     public Vector4 Fountain, Fountain2, Ambience, Lens, Post, Grid, Grid2;
     public Vector4 Round0, Round0Low, Round0High, Round1, Round1Low, Round1High;
+    public Matrix4x4 PrevViewProj; public Vector4 PrevEye;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>

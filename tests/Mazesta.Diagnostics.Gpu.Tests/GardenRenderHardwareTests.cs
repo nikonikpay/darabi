@@ -53,11 +53,21 @@ public class GardenRenderHardwareTests
     {
         var a = r.Capture(1.234f); var b = r.Capture(1.234f);
         Assert.Equal(a, b);
+        // frames shown one after another build on each other (the ray tracer gathers light across them): a check frame drawn after
+        // them must still be the first one's bits
+        for (int k = 0; k < 4; k++) r.Capture(2f + k / 30f, live: true);
+        Assert.Equal(a, r.Capture(1.234f));
         Assert.True(a.Distinct().Count() > 2000, "the frame is nearly one colour");
         string? dir = Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR");
         if (dir is { Length: > 0 })
             foreach (float t in Times)
+            {
                 Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}.png")), r.Capture(t), r.Width, r.Height);
+                if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_LIVE") is not { Length: > 0 }) continue;
+                // also as the last of ten frames shown a thirtieth of a second apart: what the test's window shows
+                uint[] shown = []; for (int k = 9; k >= 0; k--) shown = r.Capture(t - k / 30f, live: true);
+                Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}-shown.png")), shown, r.Width, r.Height);
+            }
         // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk (drawn off screen and read back: slower than the test's own window)
         if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })
         {

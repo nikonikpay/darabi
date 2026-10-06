@@ -8,14 +8,18 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// mirror sphere and the fountain's droplets can move and the plants lean with the wind.
 /// Instances made only of water, glass and glowing parts are left out of shadow rays (instance mask), so lanterns light through their
 /// glass; the stained panes have a mask bit of their own, by which the shader finds the colour light takes on passing through them.
+/// A few rays a pixel leave speckle, which two filters take out: across the frames being shown (each frame's light is added to what
+/// the frames before gathered for the same surface, found again through the last frame's view) and then across each frame's own pixels.
+/// A frame drawn on its own - a check frame - has only the second, and is the same bits whenever it is drawn.
 /// </summary>
 internal sealed unsafe class GardenRay : GardenRenderer
 {
-    [StructLayout(LayoutKind.Sequential)] private readonly record struct Pass(uint Step, uint Last, uint Stage = 0, uint Pad = 0);
+    [StructLayout(LayoutKind.Sequential)] private readonly record struct Pass(uint Step, uint Last, uint Stage = 0, uint Keep = 0);
     [StructLayout(LayoutKind.Sequential, Size = 64)] private struct InstanceDesc { public fixed float Transform[12]; public uint IdAndMask, OffsetAndFlags; public ulong Blas; }
 
-    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise, _finish;
-    private readonly ID3D12Resource _tlas, _tlasScratch, _instances, _pixels, _constants, _ping, _pong, _guide; private readonly uint _pitch;
+    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise, _finish, _gather;
+    private readonly ID3D12Resource _tlas, _tlasScratch, _instances, _pixels, _constants, _ping, _pong, _guide, _prevGuide, _prevLight; private readonly uint _pitch;
+    private Matrix4x4 _prevViewProj; private Vector3 _prevEye; private bool _hasPrev;
     private readonly ulong[] _blas; private readonly byte[] _masks; private readonly Matrix4x4[] _dequant;
     private readonly BuildRaytracingAccelerationStructureInputs _tlasInputs;
     private readonly ID3D12DescriptorHeap _srv;
@@ -33,11 +37,13 @@ internal sealed unsafe class GardenRay : GardenRenderer
         _root = s.Own(s.Device.CreateRootSignature(cs));
         _pipeline = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = cs }));
         _denoise = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenDenoise") }));
+        _gather = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenGather") }));
         _finish = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenFinish") }));
         _pitch = ((uint)width + 63) & ~63u;
         _pixels = s.UavBuffer((ulong)_pitch * (ulong)height * 4);
         ulong px = (ulong)width * (ulong)height * 16;
         _ping = s.UavBuffer(px); _pong = s.UavBuffer(px); _guide = s.UavBuffer(px * 2);
+        _prevGuide = s.UavBuffer(px); _prevLight = s.UavBuffer(px);   // the frame shown before: what each pixel met, and the light gathered for it so far
         _constants = s.Buffer(768, HeapType.Upload, ResourceStates.GenericRead);
 
         // one BLAS per mesh drawn, built together: results and scratch each packed into one buffer
@@ -144,6 +150,8 @@ internal sealed unsafe class GardenRay : GardenRenderer
         l.SetComputeRootUnorderedAccessView(11, _ping.GPUVirtualAddress);
         l.SetComputeRootUnorderedAccessView(12, _guide.GPUVirtualAddress);
         l.SetComputeRootUnorderedAccessView(13, _pong.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(15, _prevGuide.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(16, _prevLight.GPUVirtualAddress);
     }
 
     /// <summary>The TLAS instances: every one at build time, afterwards only those that move.</summary>
@@ -162,9 +170,11 @@ internal sealed unsafe class GardenRay : GardenRenderer
         _instances.Unmap(0);
     }
 
-    private void Trace(ID3D12GraphicsCommandList4 l, float time)
+    private void Trace(ID3D12GraphicsCommandList4 l, float time, bool live)
     {
         var frame = GardenFrame.For(G, time, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces; frame.Samples = (uint)Samples;
+        frame.PrevViewProj = _prevViewProj; frame.PrevEye = new(_prevEye, live && _hasPrev ? 1 : 0);
+        if (live) { _prevViewProj = frame.ViewProj; _prevEye = frame.Eye; _hasPrev = true; }
         MemoryMarshal.Write(_constants.Map<byte>(0, 768), in frame); _constants.Unmap(0);
         l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, _tlasInputs, 0, _tlasScratch.GPUVirtualAddress));
         l.ResourceBarrierUnorderedAccessView(_tlas);
@@ -172,12 +182,18 @@ internal sealed unsafe class GardenRay : GardenRenderer
         l.SetComputeRoot32BitConstants(14, new Pass(0, 0), 0);
         l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
         l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_guide);
+        if (live)
+        {   // this frame's light added to what the frames before gathered for the same surfaces
+            l.SetPipelineState(_gather); l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
+            l.ResourceBarrierUnorderedAccessView(_ping);
+        }
         l.SetPipelineState(_denoise);
         for (int k = 0; k < DenoisePasses; k++)   // Ping -> Pong -> Ping ...; the last pass leaves the frame's light, surface colour and all
         {
-            l.SetComputeRoot32BitConstants(14, new Pass((uint)(1 << k) | (k % 2 == 1 ? 1u << 16 : 0), k == DenoisePasses - 1 ? 1u : 0), 0);
+            l.SetComputeRoot32BitConstants(14, new Pass((uint)(1 << k) | (k % 2 == 1 ? 1u << 16 : 0), k == DenoisePasses - 1 ? 1u : 0, 0, live && k == 0 ? 1u : 0), 0);   // the first pass of a shown frame also keeps it for the next
             l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
             l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_pong);
+            if (live && k == 0) { l.ResourceBarrierUnorderedAccessView(_prevGuide); l.ResourceBarrierUnorderedAccessView(_prevLight); }
         }
         // the lens: the glow at a quarter of the size (its bright part, then three blurs across and down), then the picture
         l.SetPipelineState(_finish);
@@ -190,10 +206,10 @@ internal sealed unsafe class GardenRay : GardenRenderer
         l.ResourceBarrierUnorderedAccessView(_pixels);
     }
 
-    protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target)
+    protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
         if (G.Moving.Length + G.Swaying.Length > 0) WriteInstances(time, all: false);   // safe: the previous submission has finished (every Run waits for the GPU)
-        Trace(l, time);
+        Trace(l, time, live);
         var dest = Targets[target];
         l.ResourceBarrierTransition(_pixels, ResourceStates.UnorderedAccess, ResourceStates.CopySource);
         l.ResourceBarrierTransition(dest, ResourceStates.Present, ResourceStates.CopyDest);

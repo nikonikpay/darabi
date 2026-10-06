@@ -362,7 +362,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         return Matrix4x4.CreateLookAtLeftHanded(centre + Vector3.UnitY * 60, centre, Vector3.UnitZ) * Matrix4x4.CreateOrthographicLeftHanded(radius * 2, radius * 2, 1f, 90f);
     }
 
-    protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target)
+    protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
         var frame = GardenFrame.For(G, time, Width, Height);
         frame.ShadowViewProj = _shadowViewProj; frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
@@ -527,17 +527,22 @@ internal abstract class GardenRenderer : IDisposable
     /// <summary>The renderer's own off-screen target, for drawing with nothing to show it on (the benchmark).</summary>
     public int OwnTarget => Targets.Length - 1;
 
-    /// <summary>Draws the frame at <paramref name="time"/> into target <paramref name="target"/>.</summary>
-    public void Draw(ID3D12GraphicsCommandList4 l, float time, int target) => DrawScene(l, time, target);
-    protected abstract void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target);
+    /// <summary>Draws the frame at <paramref name="time"/> into target <paramref name="target"/>, as one of the frames being shown
+    /// one after another (the ray tracer adds each one's light to what it has gathered from those before).</summary>
+    public void Draw(ID3D12GraphicsCommandList4 l, float time, int target) => DrawScene(l, time, target, live: true);
+    /// <summary><paramref name="live"/>: the frame follows the one drawn before it, and may build on it. A frame that does not is a
+    /// pure function of its time, and leaves nothing behind for the next.</summary>
+    protected abstract void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live);
 
-    /// <summary>The frame at <paramref name="time"/>, drawn off screen and read back: RGBA8 pixels, rows of <see cref="Width"/>.</summary>
-    public uint[] Capture(float time)
+    /// <summary>The frame at <paramref name="time"/>, drawn off screen and read back: RGBA8 pixels, rows of <see cref="Width"/>.
+    /// On its own (the check frames: the same time is the same bits, whatever was drawn before), or with <paramref name="live"/>
+    /// as the next of the frames being shown.</summary>
+    public uint[] Capture(float time, bool live = false)
     {
         int own = Targets.Length - 1; uint pitch = ((uint)Width * 4 + 255) & ~255u;
         var raw = S.Read((int)(pitch / 4 * Height), (l, readback) =>
         {
-            DrawScene(l, time, own);
+            DrawScene(l, time, own, live);
             l.ResourceBarrierTransition(Targets[own], ResourceStates.Common, ResourceStates.CopySource);
             l.CopyTextureRegion(new TextureCopyLocation(readback, new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Format.R8G8B8A8_UNorm, (uint)Width, (uint)Height, 1, pitch) }), 0, 0, 0, new TextureCopyLocation(Targets[own], 0));
             l.ResourceBarrierTransition(Targets[own], ResourceStates.CopySource, ResourceStates.Common);
