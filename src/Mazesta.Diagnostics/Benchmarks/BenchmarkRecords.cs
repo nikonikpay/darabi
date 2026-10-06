@@ -42,6 +42,14 @@ public sealed class BenchmarkRecords
     {
         _file = Path.Combine(dataRoot, "benchmarks", "records.json");
         _systems = Load(_file);
+        foreach (var s in _systems.Values)
+            foreach (var (key, record) in s.Best.ToList())
+            {
+                string to = Normalized(key);
+                if (to == key) continue;
+                s.Best.Remove(key); bool higher = Headline(key.Split('|')[0])?.HigherIsBetter ?? true;
+                if (!s.Best.TryGetValue(to, out var had) || (higher ? record.Value > had.Value : record.Value < had.Value)) s.Best[to] = record;
+            }
     }
 
     public static HeadlineMetric? Headline(string benchmarkId) => Headlines.GetValueOrDefault(benchmarkId);
@@ -52,7 +60,7 @@ public sealed class BenchmarkRecords
     public static string RecordKey(string benchmarkId, IReadOnlyDictionary<string, string>? options)
     {
         options = Effective(benchmarkId, options);
-        string key = options is null || options.Count == 0 ? benchmarkId : benchmarkId + "|" + string.Join("|", options.OrderBy(o => o.Key, StringComparer.Ordinal).Select(o => $"{o.Key}={o.Value}"));
+        string key = Normalized( options is null || options.Count == 0 ? benchmarkId : benchmarkId + "|" + string.Join("|", options.OrderBy(o => o.Key, StringComparer.Ordinal).Select(o => $"{o.Key}={o.Value}")));
         return Headline(benchmarkId)?.Version is > 1 and int v ? key + "|v=" + v.ToString(System.Globalization.CultureInfo.InvariantCulture) : key;
     }
 
@@ -65,6 +73,10 @@ public sealed class BenchmarkRecords
     };
     public static IReadOnlyDictionary<string, string>? Effective(string benchmarkId, IReadOnlyDictionary<string, string>? options)
         => options is not null && Unchanged.TryGetValue(benchmarkId, out var legacy) ? options.Where(o => !(legacy.TryGetValue(o.Key, out var v) && v == o.Value)).ToDictionary(o => o.Key, o => o.Value) : options;
+
+    /// <summary>A graphics card is chosen as "name|LUID", and Windows gives the adapter another LUID at every start: with it in the key a
+    /// card's record was lost at the next restart. The key names the card alone; records kept under the old keys are moved at load.</summary>
+    internal static string Normalized(string key) => System.Text.RegularExpressions.Regex.Replace(key, @"(\|gpu=[^|]*)\|\d+(?=\||$)", "$1");
 
     public BenchmarkRecord? Best(string system, string recordKey)
     {

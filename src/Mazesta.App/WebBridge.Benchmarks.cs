@@ -30,6 +30,9 @@ public sealed partial class WebBridge
         var inventory = _sp.GetRequiredService<InventoryCache>(); var wmi = _sp.GetRequiredService<IWmiQuery>();
         string app = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
         var compared = _benchCompared = new Dictionary<string, BenchmarkComparison?>(); var memo = new Dictionary<string, object?>();
+        // What the page shows of a row is the last run made with the options the row has now (ray tracing on and off are two results
+        // of one row): each finished run is kept under its record key, and the row's last key says a run was made at all.
+        var shown = new Dictionary<string, (BenchmarkResult Result, BenchmarkComparison? Compared)>(); var lastKey = new Dictionary<string, string>();
 
         // The hardware list arrives a few seconds after start-up; until then the system is not known (0.6 and earlier saved records under the bare
         // machine name at that moment; they are moved under the full name here).
@@ -92,6 +95,7 @@ public sealed partial class WebBridge
                 var s = System() ?? new SystemId(Environment.MachineName + " | ", Environment.MachineName, "", "");
                 var c = records.Offer(s.Key, s.Name, BenchmarkRecords.RecordKey(run.Definition.Id.Value, options), run.Result);
                 compared[run.Definition.Id.Value] = c;
+                string rk = BenchmarkRecords.RecordKey(run.Definition.Id.Value, options); shown[rk] = (run.Result, c); lastKey[run.Definition.Id.Value] = rk;
                 if (c is { Saved: false }) _log.LogInformation("Benchmark {Id}: {Value} is below the record {Best}; not kept", run.Definition.Id.Value, c.Current.Value, c.Previous?.Value);
                 PushSoon("bench", State);
                 if (c is null || Headline(row) is not { } h || s.Hash.Length == 0) return;
@@ -121,14 +125,14 @@ public sealed partial class WebBridge
         // This system's latest logged run of a list: its conditions and specifications stand for "this system" in a comparison.
         BenchmarkRun? MyLast(string table) => System()?.Hash is { } hash ? runs.Of(table).FirstOrDefault(x => x.System == hash) : null;
         object? Best(BenchmarkRowViewModel r) => System() is { } s && records.Best(s.Key, Key(r)) is { } b ? Record(b) : null;
-        object? Compared(BenchmarkRowViewModel r) => compared.GetValueOrDefault(r.Benchmark.Definition.Id.Value) is { } c
+        object? Compared(BenchmarkRowViewModel r) => shown.TryGetValue(Key(r), out var last) && last.Compared is { } c
             ? new { now = Record(c.Current), previous = c.Previous is { } p ? Record(p) : null, change = c.ChangePercent, saved = c.Saved } : null;
 
         // This system's result for the comparison: the run just made, or else the best kept one; and the part it measured, as the run log last named it
         // on this machine (a drive or memory name needs a WMI read, which a state push must not wait for).
         (double? Value, string? Part) Mine(BenchmarkRowViewModel r, string table)
         {
-            double? value = compared.GetValueOrDefault(r.Benchmark.Definition.Id.Value)?.Current.Value ?? (System() is { } s ? records.Best(s.Key, Key(r))?.Value : null);
+            double? value = (shown.TryGetValue(Key(r), out var last) ? last.Compared?.Current.Value : null) ?? (System() is { } s ? records.Best(s.Key, Key(r))?.Value : null);
             string? part = MyLast(table)?.Part;
             if (part is null && Headline(r) is { Part: PeerPart.Cpu } && System() is { } sys) part = sys.Cpu;
             if (part is null && Headline(r) is { Part: PeerPart.Gpu }) part = GpuName(r.OptionValues());
@@ -169,14 +173,31 @@ public sealed partial class WebBridge
                 mine = mine is { } m ? Units.FormatMeasured(m, unit) : null, part, oc = MyLast(table)?.Overclocked ?? false,
             };
         }
+        // A row's numbers: the run made with the row's present options (its results apart from the conditions it ran in and how it was
+        // set up, which the page folds away); before any run of this session, whatever the row itself holds.
+        object Numbers(BenchmarkRowViewModel r)
+        {
+            if (r.IsActive) return new { metrics = Array.Empty<object>(), more = Array.Empty<object>(), detail = (string?)null };
+            if (shown.TryGetValue(Key(r), out var last))
+                return new
+                {
+                    metrics = last.Result.Metrics.Where(m => !BenchmarkDetails.IsCondition(m.Key)).Select(MetricJson),
+                    more = last.Result.Metrics.Where(m => BenchmarkDetails.IsCondition(m.Key)).Select(MetricJson).Concat((last.Result.Setup ?? []).Select(SpecJson)),
+                    detail = last.Result.Detail,
+                };
+            bool other = lastKey.ContainsKey(r.Benchmark.Definition.Id.Value);   // the last run was made with other options: its numbers are not this row's
+            return new { metrics = other ? [] : r.Metrics.Select(m => (object)new { name = m.Name, value = m.Value }), more = Array.Empty<object>(), detail = other ? null : r.Detail };
+        }
+        // The switches that are on (ray tracing), shown as marks beside the row's name and its results.
+        static IEnumerable<string> Tags(BenchmarkRowViewModel r) => r.Options.Where(o => o.Value == "on" && o.Choices.Count == 2 && o.Choices[0].Value == "off").Select(o => o.Label);
         object State() => new
         {
             running = bench.IsRunning, queue = bench.QueueText, canRunSelected = bench.RunSelectedCommand.CanExecute(null), overclocked = s_overclocked,
             rows = bench.Rows.Select(r => new
             {
                 id = r.Benchmark.Definition.Id.Value, name = r.Name, component = r.Benchmark.Component.ToString(), selected = r.IsSelected, duration = r.DurationText,
-                percent = r.PercentComplete, status = r.StatusText, active = r.IsActive, detail = r.Detail, unavailable = r.UnavailableText,
-                options = r.Options.Select(Option), metrics = r.Metrics.Select(m => new { name = m.Name, value = m.Value }),
+                percent = r.PercentComplete, status = r.StatusText, active = r.IsActive, unavailable = r.UnavailableText,
+                options = r.Options.Select(Option), numbers = Numbers(r), tags = Tags(r),
                 best = Best(r), compared = Compared(r), peers = r.IsActive ? null : Peers(r),
                 checkup = r.IsActive ? null : checkup.Runs().FirstOrDefault(x => x.Id == r.Benchmark.Definition.Id.Value)?.All.Select(FindingJson),
             }),
@@ -219,7 +240,7 @@ public sealed partial class WebBridge
             members = row?.Entry.Members?.Select(m => new { value = Units.FormatMeasured(m.Value, unit), at = m.At.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), gap = GapJson(mine is { } my ? BenchmarkPeers.Gap(my, m.Value, h.HigherIsBetter) : null) });
             median = row is null ? null : Units.FormatMeasured(row.Entry.Median, unit);
             int references = row?.Entry.References ?? 0;
-            var metrics = last?.Metrics ?? compared.GetValueOrDefault(r.Benchmark.Definition.Id.Value)?.Current.Metrics ?? (System() is { } sys ? records.Best(sys.Key, Key(r))?.Metrics : null);
+            var metrics = last?.Metrics ?? (shown.TryGetValue(Key(r), out var mineLast) ? mineLast.Compared?.Current.Metrics : null) ?? (System() is { } sys ? records.Best(sys.Key, Key(r))?.Metrics : null);
             return new { mine = mine is { } v ? Detail(v, unit, last?.Overclocked ?? false, last?.At, metrics, last?.Details) : null, theirs, members, median, references };
         });
         // This copy's own runs of a row's list: every machine it has measured, newest first, each with its conditions, specifications and the shop's marks.

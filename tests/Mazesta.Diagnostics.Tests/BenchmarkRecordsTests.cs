@@ -88,4 +88,9 @@ public class BenchmarkRecordsTests : IDisposable
         new BenchmarkRecords(_dir).Offer("pc", "PC", "bench.cpu.multi", Cpu(100));
         Assert.Single(Directory.GetFiles(Path.Combine(_dir, "benchmarks"), "records.json.damaged-*"));
     }
+
+    [Fact]
+    public void A_cards_record_key_does_not_carry_the_adapters_luid()   // Windows gives the adapter another LUID at every start
+        => Assert.Equal(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["gpu"] = "NVIDIA GeForce RTX 3090|59061", ["raytracing"] = "on" }),
+            BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["gpu"] = "NVIDIA GeForce RTX 3090|64116", ["raytracing"] = "on" }));
 }

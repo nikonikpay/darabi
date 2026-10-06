@@ -480,9 +480,18 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .dock { position: sticky; bottom: 12px; background: var(--ink-3); border: 1px solid var(--rule-2); border-top: 2px solid var(--yellow); border-radius: var(--r-panel); padding: 10px 14px; display: flex; gap: 12px; align-items: center;
   margin-top: 22px; z-index: 4; box-shadow: 0 12px 24px -12px rgb(0 0 0 / 0.8); }
 .dock .grow { flex: 1; }
+/* The plain test list: one line a test (tick, name, verdict); its controls and the account of its result show with "Advanced". */
+.groups.simple .q-row { grid-template-columns: 44px 24px minmax(0, 1fr) auto; padding: 9px 0 8px; }
+.groups.simple .q-row .ctrls, .groups.simple .q-row .extra, .groups.simple .q-row .detail, .groups.simple .q-row .advice, .groups.simple .q-row .error, .groups.simple .q-row .state > span:not(.pill) { display: none; }
+.groups.simple .q-row .state { grid-column: 4; grid-row: 1; display: flex; align-items: center; gap: 12px; }
+.groups.simple .q-row .state .progress { width: 120px; }
+.groups.simple .q-row:not(.active) .state .progress { display: none; }
+.groups.simple .q-row .step { font-size: 15px; align-self: center; padding-top: 0; }
+.groups.simple .q-row .name { font-size: 13.5px; }
+.adv-toggle { margin-inline-start: auto; align-self: center; }
 .metrics { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 0 32px; }
 .metric { padding-top: 6px; }
-.metric .v { font: 750 30px/1.05 var(--lat); font-stretch: 72%; direction: ltr; text-align: left; color: var(--hue, var(--paper)); }
+.metric .v { font: 750 22px/1.1 var(--lat); font-stretch: 72%; direction: ltr; text-align: left; color: var(--hue, var(--paper)); }
 .metric .n { font-size: 12px; color: var(--paper-3); max-width: 24ch; }
 
 /* ———— Tuning ———— */
@@ -750,7 +759,13 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .groups .progress { --yellow: var(--hue); }
 .group.running .panel-head .ico { animation: live 1.6s ease-in-out infinite; }
 .groups .metrics { gap: 6px 36px; margin-top: 4px; }
-.groups .metric .v { font-size: 28px; }
+.groups .metric .v { font-size: 20px; }
+.groups .metric .n { font-size: 11.5px; }
+.row-tags { display: inline-flex; gap: 6px; margin-inline-start: 8px; vertical-align: middle; }
+.tag.mode { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 3px; color: var(--ink); background: var(--hue, var(--yellow)); }
+.run-more { grid-column: 3 / -1; margin-top: 0; }
+.run-more .run-spec { max-width: 560px; margin: 6px 0; }
+.run-more .detail { grid-column: auto; margin: 6px 0 0; direction: ltr; text-align: left; font: 12px/1.5 var(--lat); }
 
 /* The record line under a benchmark: the best kept on this system, and the last run against it. */
 .rec { grid-column: 3 / -1; }
@@ -1339,7 +1354,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .checkup-sum { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 14px; }
 .checkup-sum .pill { font-size: 13px; padding: 3px 12px; }
 .checkup-run-block { display: grid; gap: 8px; margin-bottom: 14px; }
-.q-row .row-checkup { grid-column: 3 / -1; display: grid; gap: 8px; }
+.q-row .row-checkup { grid-column: 3 / -1; margin-top: 0; }
+.q-row .row-checkup > .finding { margin-top: 8px; }
 .peers-sum.behind { flex-wrap: wrap; color: var(--paper); }
 
 /* ——— Programs page: each program's level by its publisher's tiers ——— */

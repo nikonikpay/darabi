@@ -57,9 +57,12 @@ export function benchList(component = null) {
 
   const rows = new Map(), groups = [];
   function build(s) {
-    const mine = s.rows.filter((r) => !component || r.component === component), index = new Map(mine.map((r, i) => [r.id, i]));
+    // The parts in the order a machine is judged by: processor, graphics, memory, storage, and the network (which measures the line) last.
+    const ORDER = ["Cpu", "Gpu", "Memory", "Storage", "Network"], place = (k) => (ORDER.indexOf(k) + 1) || ORDER.length + 1;
+    const parts = [...byPart(s.rows.filter((r) => !component || r.component === component), (r) => r.component)].sort((a, b) => place(a[0]) - place(b[0]));
+    const index = new Map(parts.flatMap(([, members]) => members).map((r, i) => [r.id, i]));
     let gi = 0;
-    for (const [kind, members] of byPart(mine, (r) => r.component)) {
+    for (const [kind, members] of parts) {
       const g = groupPanel("bench", kind, gi++, (on) => { for (const r of members) call("bench.set", { id: r.id, field: "selected", value: on }); });
       groups.push({ g, ids: members.map((r) => r.id) }); list.append(g.el);
       for (const r of members) addRow(r, index.get(r.id), g.body);
@@ -79,16 +82,17 @@ export function benchList(component = null) {
         : h("input", { class: "field lat", style: { width: "110px" }, oninput: (e) => set("option", e.target.value, { key: o.key }) });
       return { o, input, el: h("label", {}, o.label, input) };
     });
-    const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), metrics = h("div", { class: "metrics" }), detail = h("div", { class: "detail", hidden: true });
-    const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true }), finds = h("div", { class: "row-checkup", hidden: true });
+    const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), metrics = h("div", { class: "metrics" }), detail = h("details", { class: "rec-more run-more", hidden: true });
+    const tags = h("span", { class: "row-tags" });
+    const rec = h("div", { class: "rec" }), unavailable = h("div", { class: "unavailable", hidden: true }), peers = h("div", { class: "peers", hidden: true }), finds = h("details", { class: "row-checkup rec-more", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
-      h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
+      h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name, tags),
       // Not a <label>: a label hands every click and hover inside it to its first control, which here would be the hours' up arrow.
       h("div", { class: "ctrls" }, h("div", { class: "lbl" }, t("Bench_Duration"), dur.el), run),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, status), unavailable, metrics, finds, rec, peers, detail);
+      h("div", { class: "state" }, bar, status), unavailable, metrics, detail, rec, finds, peers);
     into.append(row);
-    rows.set(r.id, { row, check, dur, run, opts, bar, status, metrics, rec, peers, detail, unavailable, finds, last: "", lastRec: "", lastPeers: "", lastCheck: "" });
+    rows.set(r.id, { row, check, dur, run, opts, bar, status, metrics, rec, peers, detail, unavailable, finds, tags, lastTags: "", last: "", lastRec: "", lastPeers: "", lastCheck: "" });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -103,16 +107,27 @@ export function benchList(component = null) {
       x.bar.firstChild.style.setProperty("--p", r.percent / 100);
       x.status.textContent = r.status || "";
       x.row.classList.toggle("active", r.active);
-      const key = JSON.stringify(r.metrics);
-      if (key !== x.last) { x.last = key; x.metrics.replaceChildren(...r.metrics.map((m) => h("div", { class: "metric" }, h("div", { class: "v" }, m.value), h("div", { class: "n" }, m.name)))); }
-      x.detail.hidden = !r.detail; x.detail.textContent = r.detail || "";
+      // The switches that are on (ray tracing) mark the row: its numbers, record and standing are that mode's.
+      const tagKey = (r.tags || []).join("|");
+      if (tagKey !== x.lastTags) { x.lastTags = tagKey; x.tags.replaceChildren(...(r.tags || []).map((g) => h("span", { class: "tag mode" }, g))); }
+      // The run's results stand in the row; the conditions it ran in, how it was set up and the benchmark's own account fold away under them.
+      const n = r.numbers, key = JSON.stringify([n, r.tags]);
+      if (key !== x.last) {
+        x.last = key;
+        x.metrics.replaceChildren(...n.metrics.map((m) => h("div", { class: "metric" }, h("div", { class: "v" }, m.value), h("div", { class: "n" }, m.name))));
+        x.detail.hidden = !n.more.length && !n.detail;
+        x.detail.replaceChildren(h("summary", {}, t("Web_Bench_RunDetails")),
+          n.more.length ? h("dl", { class: "spec run-spec" }, n.more.flatMap((m) => [h("dt", {}, m.name), h("dd", { class: "num" }, m.value)])) : null,
+          n.detail ? h("p", { class: "detail" }, n.detail) : null);
+      }
       const recKey = JSON.stringify([r.best, r.compared]);
       if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean)); }
       // A run in progress keeps the last standing on screen (the host sends none while the row runs).
       const peerKey = JSON.stringify(r.peers);
       // What this run showed about the machine (the checkup), the ones that need action first; kept on screen while a new run is under way.
       const checkKey = JSON.stringify(r.checkup);
-      if (r.checkup && checkKey !== x.lastCheck) { x.lastCheck = checkKey; x.finds.hidden = !r.checkup.length; x.finds.replaceChildren(h("div", { class: "peers-head" }, icon("check"), h("b", {}, t("Web_Bench_Checkup"))), ...bySeverity(r.checkup).map(findingCard)); }
+      if (r.checkup && checkKey !== x.lastCheck) { x.lastCheck = checkKey; x.finds.hidden = !r.checkup.length; x.finds.replaceChildren(h("summary", {}, t("Web_Bench_Checkup"), " ", h("span", { class: "lat" }, `(${r.checkup.length})`)), ...bySeverity(r.checkup).map(findingCard));
+        x.finds.open = r.checkup.some((f) => f.level === "Problem" || f.level === "Attention"); }   // folded while every finding says all is well
       if (r.peers !== null && peerKey !== x.lastPeers) { x.lastPeers = peerKey; x.peers.hidden = false; x.peers.replaceChildren(...standing(r).filter(Boolean)); }
       else if (r.peers === null && !r.active) x.peers.hidden = true;
     }

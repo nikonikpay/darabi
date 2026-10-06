@@ -159,9 +159,10 @@ const DEMO_LOG = [
 ].map(([at, test, level, key, args, formula]) => ({ at, test, level, key, args, formula: formula || null }));
 const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_Memory", "Memory"], ["Bench_Storage", "Storage"], ["Bench_Gpu_D3D", "Gpu"], ["Bench_Gpu_SceneD3D", "Gpu"], ["Bench_Gpu_Rt", "Gpu"], ["Bench_Gpu_Ai", "Gpu"], ["Bench_Net_Internet", "Network"]];
 const bench = () => ({ running: false, queue: "", canRunSelected: true,
-  rows: BENCH.map(([k, c], i) => ({ id: k, name: strings[k], component: c, selected: i === 0 || i === 3, duration: "60", percent: i < 2 ? 100 : 0, status: i < 2 ? strings.Bench_Status_CompletedAt.replace("{0}", "01:40") : "", active: false, detail: null, options: [],
-    metrics: i === 0 ? [{ name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS" }, { name: strings.Bench_Cpu_ClockPeak, value: "4650 MHz" }, { name: strings.Bench_Cpu_TempMax, value: "71.0 °C" }]
-      : i === 1 ? [{ name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS" }, { name: strings.Bench_Cpu_PerThread, value: "12.9 GFLOPS" }, { name: strings.Bench_Cpu_Power, value: "142 W" }] : [],
+  rows: BENCH.map(([k, c], i) => ({ id: k, name: strings[k], component: c, selected: i === 0 || i === 3, duration: "60", percent: i < 2 ? 100 : 0, status: i < 2 ? strings.Bench_Status_CompletedAt.replace("{0}", "01:40") : "", active: false, options: [], tags: i === 5 ? [strings.Test_Option_RayTracing] : [],
+    numbers: { detail: null, metrics: i === 0 ? [{ name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS" }]
+      : i === 1 ? [{ name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS" }, { name: strings.Bench_Cpu_PerThread, value: "12.9 GFLOPS" }] : [],
+      more: i === 0 ? [{ name: strings.Bench_Cpu_ClockPeak, value: "4650 MHz" }, { name: strings.Bench_Cpu_TempMax, value: "71.0 °C" }] : i === 1 ? [{ name: strings.Bench_Cpu_Power, value: "142 W" }] : [] },
     best: i === 4 ? { name: strings.Bench_Gpu_Fps, value: "318 FPS", at: "1405/07/02 21:14" } : null,
     compared: i === 0 ? { now: { name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS", at: "1405/07/06 14:20" }, previous: { name: strings.Bench_Cpu_Gflops, value: "20.70 GFLOPS", at: "1405/07/01 11:02" }, change: 3.38, saved: true }
       : i === 1 ? { now: { name: strings.Bench_Cpu_Gflops, value: "412 GFLOPS", at: "1405/07/06 14:22" }, previous: { name: strings.Bench_Cpu_Gflops, value: "421 GFLOPS", at: "1405/07/01 11:05", metrics: demoDetail("421 GFLOPS", false, "", false).metrics }, change: -2.14, saved: false } : null,

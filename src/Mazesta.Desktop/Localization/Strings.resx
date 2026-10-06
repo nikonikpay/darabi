@@ -3177,4 +3177,7 @@ Cancel: stop.</value></data>
   <data name="Fans_Unwired" xml:space="preserve"><value>{0} outputs have no fan wired and are hidden</value></data>
   <data name="Fans_ShowUnwired" xml:space="preserve"><value>Show them</value></data>
   <data name="Fans_HideUnwired" xml:space="preserve"><value>Hide them</value></data>
+  <data name="Web_Bench_RunDetails" xml:space="preserve"><value>Conditions and settings of this run</value></data>
+  <data name="Web_Tests_Advanced" xml:space="preserve"><value>Advanced</value></data>
+  <data name="Web_Tests_Advanced_Hint" xml:space="preserve"><value>Shows each test's length, repeat and options, and the full account of its result</value></data>
 </root>

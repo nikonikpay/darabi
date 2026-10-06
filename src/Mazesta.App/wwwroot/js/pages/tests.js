@@ -16,6 +16,12 @@ export function setField(el, v) { if (el.type === "checkbox") { el.checked = v =
 
 export function mount(el) {
   const list = h("div", { class: "groups" });
+  // Plain by default: a test is a line with its tick and, once run, whether it passed. "Advanced" brings each test's length, repeat
+  // and options forward, and the whole account of its result. (A per-viewer convenience, kept in the browser profile.)
+  let advanced = false; try { advanced = localStorage.getItem("mazesta.tests.advanced") === "1"; } catch { /* not kept */ }
+  const advBox = h("input", { type: "checkbox", class: "switch", checked: advanced, "aria-label": t("Web_Tests_Advanced"),
+    onchange: (e) => { advanced = e.target.checked; list.classList.toggle("simple", !advanced); try { localStorage.setItem("mazesta.tests.advanced", advanced ? "1" : "0"); } catch { /* not kept */ } } });
+  list.classList.toggle("simple", !advanced);
   const notice = h("div", { class: "banner", hidden: true });
   const blocked = h("div", { class: "banner", role: "status", hidden: true });
   // Ready-made selections: each picks its tests and their lengths; the note says what it covers and what it leaves out.
@@ -29,7 +35,8 @@ export function mount(el) {
   const togetherBox = h("input", { type: "checkbox", class: "switch", "aria-label": t("Test_Together"), onchange: (e) => call("tests.exec", { cmd: "together", value: e.target.checked }) });
   const together = h("label", { class: "run-follow", title: t("Test_Together_Hint") }, togetherBox, t("Test_Together"));
   el.append(
-    h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede")))),
+    h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede"))),
+      h("label", { class: "run-follow adv-toggle", title: t("Web_Tests_Advanced_Hint"), "data-a": "tests-advanced" }, advBox, t("Web_Tests_Advanced"))),
     notice, blocked, h("div", { class: "profile-bar" }, h("span", { class: "caption" }, t("Profile_Title")), profiles), profileNote, list,
     h("div", { class: "dock" }, start, cancel, watch, together, h("span", { class: "grow" }),
       h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
