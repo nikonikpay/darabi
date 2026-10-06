@@ -4,7 +4,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>
 /// The Persian garden both visual GPU tests draw: a walled courtyard with a pool and its fountain, a columned hall with windcatchers and
 /// furnished rooms behind its orsi, cypresses, blossom trees, planted beds, ivy, lanterns, a gate, and the Mazesta logo floating over the
-/// water. Built in Blender (Mazesta-Art/courtyard-v10.blend: the owner's DFM_Courtyard_V10, whole) and written by tools/scene/export_garden.py
+/// water. Built in Blender (Mazesta-Art/courtyard-v12.blend: the owner's DFM_Courtyard_V12, whole) and written by tools/scene/export_garden.py
 /// into garden.mzscene, embedded in this assembly; this reads it. The file holds both of the .blend's scenes: what only the Direct3D test
 /// shows (the low golden sun) or only the ray-traced one (its night light rig, a mirror sphere) is marked with <see cref="Mode"/>.
 /// <para>Format (gzip, little-endian): "MZSC", version, then counts of textures, materials, meshes, instances, lights and the texture size;
@@ -25,6 +25,9 @@ public sealed class GardenScene
     /// <summary>An instance's flags: the logo; the ray-traced scene's mirror sphere; a droplet of the fountain (those are not in the
     /// file: <see cref="GardenGpu"/> adds them).</summary>
     public const uint LogoFlag = 1, SphereFlag = 2, DropletFlag = 4;
+    /// <summary>A light fitting (a chandelier): the lamps cast no shadow of it in the Direct3D scene, where a lamp is one point and the
+    /// fitting's own bulbs are all round it.</summary>
+    public const uint FittingFlag = 8;
     /// <summary>Bits 8 to 15 of an instance's flags: how far the wind bends it, in thousandths of a metre sideways for every metre above
     /// where it stands (a plant; 0 for everything else). <see cref="GardenGpu.Wind"/> says which way and when.</summary>
     public const int SwayShift = 8;
@@ -213,7 +216,8 @@ public enum GardenMaterialKind : uint { Flat, Cutout, Brick, Water, Glass, Emiss
 /// <see cref="NormalTexture"/> (-1: none) a tangent-space normal map, x in alpha and y in green, with the material's ambient occlusion in
 /// red and its metalness in blue. <see cref="Pattern"/>: for a brick (Blender's brick texture, laid on each face from world coordinates as
 /// the .blend's own shader does) its scale, mortar size, brick width and row height; for any other textured surface how many times the
-/// texture repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre.
+/// texture repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre;
+/// for a flat surface without a texture, in w, how strongly the shaders mottle it (0: as they see fit).
 /// <see cref="LightTint"/> 1: light passing through takes the material's colour (the orsi's stained panes, in the ray tracer).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct GardenMaterial

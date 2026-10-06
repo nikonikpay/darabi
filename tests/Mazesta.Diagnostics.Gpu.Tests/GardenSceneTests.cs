@@ -193,7 +193,9 @@ public class GardenSceneTests
             Assert.True(Vector3.Distance(eye, target) > 3);
             // the hall's front wall is at z -3.2 to -3.0 and its door leaves stand open to -1.9: the walk passes only between them
             if (eye.Z > -3.4f && eye.Z < -1.8f) Assert.InRange(eye.X, -0.45f, 0.45f);
-            if (eye.Z > -1.8f) { inside = true; Assert.InRange(eye.X, -8f, 8f); Assert.InRange(eye.Y, 2.5f, 3.0f); }   // standing on the hall's floor (1.11)
+            if (eye.Z > -1.8f) { inside = true; Assert.InRange(eye.X, -8.4f, 8.4f); Assert.InRange(eye.Y, 2.5f, 3.0f); }   // standing on the hall's floor (1.11), clear of the tea counter (x -8.77)
+            // the benches on the outer walks (x 8.35 to 9.09 either side, z -28.7 to -27.1 and -17.5 to -15.9): passed on their open side
+            if (eye.Y < 2.2f && (eye.Z is > -28.9f and < -26.9f || eye.Z is > -17.7f and < -15.7f) && MathF.Abs(eye.X) > 8f) Assert.InRange(MathF.Abs(eye.X), 9.35f, 9.85f);
         }
         Assert.True(inside);
         var (start, _) = GardenCamera.At(0); var (end, _) = GardenCamera.At(GardenCamera.Loop);

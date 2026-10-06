@@ -1,18 +1,22 @@
-# Builds Mazesta-Art/courtyard-v10.blend from the owner's DFM_Courtyard_V10.blend (left untouched): the whole of that scene - the hall and
-# its furnished rooms, the taller walls and the gate, the fountain, every plant - as the two scenes the visual GPU tests draw:
-#   Garden_Raster  the Direct3D test: V10's own low sun, and three lamps in the hall (its rooms would else be lit by nothing but the door)
+# Builds Mazesta-Art/courtyard-v12.blend from the owner's DFM_Courtyard_V12.blend (left untouched): the whole of that scene - the hall, its
+# plasterwork, chandeliers, paintings and furnished rooms, the walls and the gate, the fountain, every plant and pot - as the two scenes
+# the visual GPU tests draw:
+#   Garden_Raster  the Direct3D test: the .blend's own low sun, and the hall's lamps (its rooms would else be lit by nothing but the door)
 #   Garden_RT      the ray-traced test: nightfall, with a light rig made here (moon, the lit hall, lanterns, pool and fountain lights) and a mirror sphere
+# The hall's lamps hang where the .blend's two chandeliers do (it leaves them unlit: Cycles lights the hall through the door), with a
+# third between them. A painting wider than the scene file's textures is cut into two panels side by side, so none of it is lost.
 # Nothing of the earlier garden is carried over but what is the app's own: the Mazesta logo, now smaller and over the pool between the
 # fountain and the stairs (the fountain stands where it used to float), and the ray tracer's mirror sphere, which the renderer sends
 # gliding round the pool. The fountain's bowl is filled with water; its jet is drawn by the renderer (GardenGpu).
 # Run headless, then export (tools/scene/export_garden.py):
-#   blender --background <DFM_Courtyard_V10.blend> --python tools/scene/prepare_courtyard_v10.py
-import bpy, math, os
+#   blender --background <DFM_Courtyard_V12.blend> --python tools/scene/prepare_courtyard_v12.py
+import bpy, math, os, numpy as np
 from mathutils import Vector
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 ART = os.environ.get("MAZESTA_ART") or os.path.abspath(os.path.join(REPO, "..", "Mazesta-Art"))
 APP = os.path.join(ART, "courtyard-v8.blend")   # where the logo and the mirror sphere are kept
-OUT = os.path.join(ART, "courtyard-v10.blend")
+OUT = os.path.join(ART, "courtyard-v12.blend")
+WIDEST = 1024   # the scene file's largest texture (export_garden.py TEX)
 LOGO_AT, LOGO_SCALE = (0.0, -15.3, 2.9), 0.7
 SPHERE_AT = (2.5, -19.0, 1.4)   # GardenGpu.SphereDrift carries it round the fountain from here
 FOUNTAIN = (0.0, -19.0)
@@ -42,6 +46,25 @@ me.from_pydata([(FOUNTAIN[0], FOUNTAIN[1], Z)] + [(FOUNTAIN[0] + R * math.cos(2 
 me.materials.append(water)
 bpy.data.collections["V9_Fountain"].objects.link(bpy.data.objects.new("App_Fountain_Bowl_Water", me))
 
+# A painting wider than a texture becomes two panels, each with its own half of the picture (cut, not resampled).
+for o in list(bpy.data.collections["V12_User_Paintings"].objects):
+    mat = o.data.materials[0]; node = next(n for n in mat.node_tree.nodes if n.bl_idname == 'ShaderNodeTexImage'); img = node.image; w, h = img.size
+    if w <= WIDEST: continue
+    px = np.empty(w * h * 4, np.float32); img.pixels.foreach_get(px); px = px.reshape(h, w, 4)
+    co = [v.co.copy() for v in o.data.vertices]; uv = [l.uv.copy() for l in o.data.uv_layers.active.data]
+    if [tuple(u) for u in uv] != [(0, 0), (1, 0), (1, 1), (0, 1)]: raise SystemExit(f"{o.name} is not one quad over the whole picture")
+    mid = [(co[0] + co[1]) / 2, (co[3] + co[2]) / 2]; half = w // 2
+    me = bpy.data.meshes.new(o.data.name + "_Panels")
+    me.from_pydata([co[0], mid[0], mid[1], co[3], co[1], co[2]], [], [(0, 1, 2, 3), (1, 4, 5, 2)])
+    layer = me.uv_layers.new(name="UVMap")
+    for k, u in enumerate(((0, 0), (1, 0), (1, 1), (0, 1)) * 2): layer.data[k].uv = u
+    for k in range(2):
+        part = bpy.data.images.new(f"{img.name}_{k}", half, h, alpha=False); part.colorspace_settings.name = img.colorspace_settings.name
+        part.pixels.foreach_set(np.ascontiguousarray(px[:, k * half:(k + 1) * half]).ravel()); part.pack()
+        m = mat.copy(); m.name = f"{mat.name}_{k}"; next(n for n in m.node_tree.nodes if n.bl_idname == 'ShaderNodeTexImage').image = part
+        me.materials.append(m); me.polygons[k].material_index = k
+    o.data = me
+
 # The camera both tests start from (the walk itself is GardenCamera's): at the gate, looking up the pool.
 cam = bpy.data.objects.new("App_Camera", bpy.data.cameras.new("App_Camera")); cam.location = (0, -31.3, 1.75)
 cam.rotation_euler = (Vector((0, -19, 1.9)) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
@@ -62,10 +85,14 @@ def light(name, kind, at, watts, color, aim=None, cone=None, blend=0.5, radius=0
 # the moon: low over the garden's right-hand wall, in front of the hall, so the cypresses and the windcatchers throw long shadows
 # across the paving (the renderer carries it slowly along its arc: GardenFrame)
 moon = light("Moon", 'SUN', (0, 0, 30), 0.9, (0.62, 0.72, 1.0), aim=(-0.62, 0.42, 30 - 0.52)); moon.data.angle = math.radians(2.0)
-# the hall is lit from inside: three hanging lamps, whose light falls out through the open door and the orsi onto the terrace
-for k, (x, y) in enumerate(((-5.4, 2.4), (0.0, 4.6), (5.4, 2.4))):
-    light(f"Hall_{k}", 'POINT', (x, y, 4.7), 260, WARM, radius=0.18)
-    light(f"Hall_Day_{k}", 'POINT', (x, y, 4.7), 80, WARM, lights=day)   # the rasteriser's lamps: by day the hall is lit as much by them as by its door and windows
+# the hall is lit from inside: its two chandeliers (the lamp just under each, so the ceiling's medallion is in its light and not in the
+# fixture's shadow) and a lamp between them, whose light falls out through the open door and the orsi onto the terrace
+chandeliers = sorted((o.matrix_world.translation.x, o.matrix_world.translation.y, o.matrix_world.translation.z) for o in bpy.data.collections["V12_Two_Decorative_Chandeliers"].objects)
+if len(chandeliers) != 2: raise SystemExit("the hall's two chandeliers were not found")
+for k, (x, y, z) in enumerate((chandeliers[0], (0.0, 4.2, 4.9), chandeliers[1])):
+    z = z - 0.12 if k != 1 else z
+    light(f"Hall_{k}", 'POINT', (x, y, z), 260, WARM, radius=0.18)
+    light(f"Hall_Day_{k}", 'POINT', (x, y, z), 80, WARM, lights=day)   # the rasteriser's lamps: by day the hall is lit as much by them as by its door and windows
 for x in (-7.2, -2.4, 2.4, 7.2): light(f"Canopy_{x}", 'POINT', (x, -4.7, 4.55), 70, WARM, radius=0.08)
 # under the water: along both sides of the pool, and in the upper basins
 for x in (-2.3, 2.3):

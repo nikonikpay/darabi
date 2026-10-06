@@ -197,7 +197,7 @@ Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
     {
         // earth, turf and bare stone are never one colour: broad patches, a finer mottle, and grain at the scale of a pebble
         float v = 0.55 * Noise3(p * 2.3) + 0.30 * Noise3(p * 9.1) + 0.15 * Noise3(p * 37);
-        s.Albedo *= lerp(1, 0.5 + v, m.Roughness > 0.5 ? 0.5 : 0.2);
+        s.Albedo *= lerp(1, 0.5 + v, m.Pattern.w > 0 ? m.Pattern.w : m.Roughness > 0.5 ? 0.5 : 0.2);   // the hall's plaster says how faintly
     }
     return s;
 }

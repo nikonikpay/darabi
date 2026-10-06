@@ -34,7 +34,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     internal static readonly (Vector3 From, Vector3 Low, Vector3 High)[] Rounds =
     [
         (new(0, 2.4f, -23f), new(-13.8f, 0, -33.3f), new(13.8f, 9, -3.1f)),
-        (new(0, 3.2f, 2f), new(-9f, 1.1f, -3f), new(9f, 5.4f, 7f)),
+        (new(0, 3.2f, 2f), new(-9.9f, 1.1f, -2.6f), new(9.9f, 6.3f, 6.85f)),
     ];
     /// <summary>The frame's light before the lens: ten bits a colour (GardenRaster.hlsl's Pack). The glow: floats.</summary>
     private const Format Light = Format.R10G10B10A2_UNorm, GlowFormat = Format.R11G11B10_Float;
@@ -276,7 +276,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     /// the face can see, drawn in runs of neighbours.</summary>
     private void LampShadows(ID3D12GraphicsCommandList4 l, GardenFrame frame)
     {
-        var casters = G.Draws.Where(d => G.CastsShadow(d) && !d.Moving).Select(d => (Draw: d, Bounds: Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => G.Bounds(d, i)).ToArray())).ToArray();
+        var casters = G.Draws.Where(d => G.CastsShadow(d) && !d.Moving && (G.Instances[d.FirstInstance].Flags & GardenScene.FittingFlag) == 0).Select(d => (Draw: d, Bounds: Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => G.Bounds(d, i)).ToArray())).ToArray();
         var map = _constants.Map<byte>(0, (int)Slot * (Slots + G.ShadowLamps * 6));
         l.SetPipelineState(_lampShadow); l.RSSetViewport(0, 0, LampSize, LampSize); l.RSSetScissorRect(LampSize, LampSize);
         foreach (var lamp in G.PointLights.Where(p => p.Shadow > 0))

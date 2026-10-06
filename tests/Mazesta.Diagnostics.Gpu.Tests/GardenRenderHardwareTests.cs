@@ -13,7 +13,7 @@ public class GardenRenderHardwareTests
     private static int H => W * 9 / 16;
     /// <summary>The moments drawn for looking at: round the walk (the garden, the terrace, the hall's rooms), or those MAZESTA_RENDER_TIMES lists.</summary>
     private static float[] Times => Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIMES") is { Length: > 0 } list
-        ? [.. list.Split(',').Select(t => float.Parse(t, System.Globalization.CultureInfo.InvariantCulture))] : [0f, 12f, 21f, 27f, 36f, 42f, 48f, 54f, 60f, 72f, 78f, 87f];
+        ? [.. list.Split(',').Select(t => float.Parse(t, System.Globalization.CultureInfo.InvariantCulture))] : [0f, 15f, 30f, 48f, 54f, 66f, 72f, 80f, 90f, 96f, 102f, 120f, 141f];
 
     [Theory, InlineData(1u), InlineData(2u), InlineData(3u), InlineData(4u)]
     public void The_rasterised_garden_is_a_stable_picture(uint load)
