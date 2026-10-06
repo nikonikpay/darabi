@@ -5,6 +5,8 @@
 #   Garden_RT      the ray-traced test: nightfall, with a light rig made here (moon, the lit hall, lanterns, pool and fountain lights) and a mirror sphere
 # The hall's lamps hang where the .blend's two chandeliers do (it leaves them unlit: Cycles lights the hall through the door), with a
 # third between them. A painting wider than the scene file's textures is cut into two panels side by side, so none of it is lost.
+# Two things of the owner's scene are put right for the walk: the benches, which stood with their seats against the inner beds, stand
+# back against the outer ones, and the pool's coping, whose slabs overhang the pool's wall a hand above the paving, gets a footing.
 # Nothing of the earlier garden is carried over but what is the app's own: the Mazesta logo, now smaller and over the pool between the
 # fountain and the stairs (the fountain stands where it used to float), and the ray tracer's mirror sphere, which the renderer sends
 # gliding round the pool. The fountain's bowl is filled with water; its jet is drawn by the renderer (GardenGpu).
@@ -64,6 +66,23 @@ for o in list(bpy.data.collections["V12_User_Paintings"].objects):
         m = mat.copy(); m.name = f"{mat.name}_{k}"; next(n for n in m.node_tree.nodes if n.bl_idname == 'ShaderNodeTexImage').image = part
         me.materials.append(m); me.polygons[k].material_index = k
     o.data = me
+
+# The benches stood 17 cm from the inner beds, seat first: nobody could have sat on one. They stand back, against the outer beds
+# (whose kerb is at x 9.92), with the walk in front of them.
+BENCH_X = 9.48
+for o in bpy.data.collections["V11_Courtyard_Wood_Benches"].objects: o.location.x = math.copysign(BENCH_X, o.location.x)
+
+# The pool's coping slabs (x 3.1 to 3.56, z 0.16 to 0.33) reach past the pool's wall (3.29): under them, down to the paving, was a
+# slot a hand high all round the pool, open to the wall's back. A footing of the coping's own stone closes it, a little inside the
+# slabs' edge so they still cast their line of shadow. (The far end runs into the upper basin's steps.)
+def box(lo, hi):
+    v = [(x, y, z) for z in (lo[2], hi[2]) for y in (lo[1], hi[1]) for x in (lo[0], hi[0])]
+    return v, [(0, 2, 3, 1), (4, 5, 7, 6), (0, 1, 5, 4), (2, 6, 7, 3), (0, 4, 6, 2), (1, 3, 7, 5)]
+verts, faces = [], []
+for lo, hi in (((-3.545, -26.515, -0.02), (-3.25, -11.6, 0.17)), ((3.25, -26.515, -0.02), (3.545, -11.6, 0.17)), ((-3.25, -26.515, -0.02), (3.25, -26.25, 0.17))):
+    v, f = box(lo, hi); faces += [tuple(i + len(verts) for i in q) for q in f]; verts += v
+me = bpy.data.meshes.new("App_Pool_Coping_Footing"); me.from_pydata(verts, [], faces); me.materials.append(bpy.data.materials["V8_Carved_Pale_Limestone"])
+bpy.data.objects["V8_Pool_Stonework_V8_Limestone"].users_collection[0].objects.link(bpy.data.objects.new("App_Pool_Coping_Footing", me))
 
 # The camera both tests start from (the walk itself is GardenCamera's): at the gate, looking up the pool.
 cam = bpy.data.objects.new("App_Camera", bpy.data.cameras.new("App_Camera")); cam.location = (0, -31.3, 1.75)

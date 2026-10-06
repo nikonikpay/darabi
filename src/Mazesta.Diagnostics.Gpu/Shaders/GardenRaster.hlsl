@@ -207,10 +207,22 @@ float4 Opaque(VOut i, bool cutout)
     bool world; float2 uv = TexCoords(m, i.Uv, i.World, n, world), d1, d2;
     if (world) { d1 = FaceCoords(ddx(i.World), n) * m.Pattern.z; d2 = FaceCoords(ddy(i.World), n) * m.Pattern.z; }
     else { float2 rep = m.Kind <= KCutout && m.Pattern.x > 0 ? m.Pattern.xy : 1; d1 = ddx(i.Uv) * rep; d2 = ddy(i.Uv) * rep; }
+    // What lies under the pool's water is seen through its ripples, never sharply: its texture is taken at the mip its longest
+    // stretch across the pixel asks for, so the tiles' joints blur away toward the far end of the pool instead of coming and going
+    // from pixel to pixel as the walk moves (stretched filtering keeps them a pixel thin, and has too few taps at that slant).
+    if (i.World.y < WaterLevel) { float l1 = length(d1), l2 = length(d2), l = max(l1, l2); d1 *= l / max(l1, 1e-9); d2 *= l / max(l2, 1e-9); }
     float4 texel = m.Texture >= 0 ? Textures.SampleGrad(Aniso, float3(uv, m.Texture), d1, d2) : 1;
     float4 relief = Textures.SampleGrad(Aniso, float3(uv, max(m.NormalTexture, 0)), d1, d2);
     Surface s = MaterialSurface(m, i.World, n, texel);
-    if (m.NormalTexture >= 0) { float3 t, b; TangentFrame(i.World, d1, d2, n, t, b); Relief(s, t, b, relief); }
+    if (m.NormalTexture >= 0)
+    {
+        float3 t, b; TangentFrame(i.World, d1, d2, n, t, b); Relief(s, t, b, relief);
+        // Where a pixel holds more than one bump of the relief (the pool's tiles from the stairs, the paving far down the walk), each
+        // bump's own glint would come and go as the eye moves. The surface is taken as rougher by as much as its direction changes
+        // across the pixel (Tokuyoshi and Kaplanyan 2019): the glints spread into the sheen they add up to.
+        float3 nx = ddx(s.Normal), ny = ddy(s.Normal); float a = s.Roughness * s.Roughness;
+        s.Roughness = sqrt(sqrt(a * a + min(dot(nx, nx) + dot(ny, ny), 0.18)));
+    }
     if (Instances[i.Id].Flags & FLogo) s.Emission += s.Albedo * Logo.w;   // the logo is a sign: it keeps its own gold whatever it mirrors
     float alpha = 1;
     if (cutout)
@@ -261,10 +273,18 @@ float4 TransparentPS(VOut i) : SV_Target
         }
         else reflected = Sky(reflect(-v, n));
         reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n);   // the sun's glint
-        // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and a faint teal body
+        // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and its own teal body, more of it the
+        // more water the eye looks through (what the frame's depth says lies behind, along the ray): straight down the tiles are
+        // clear, toward the far end of the pool they sink into the water's colour - and their fine grid no longer shimmers there
         float3 body = m.Base * Bounced(i.World, float3(0, 1, 0), 1) * 0.5;
-        float a = fresnel + (1 - fresnel) * 0.22;
-        return float4(Pack((reflected * fresnel + body * (1 - fresnel) * 0.22) / a), a);
+        float density = 0.22;
+        if (Ambience.x > 0)
+        {
+            float behind = Ambience.z / max(SceneDepth.Load(int3(i.Position.xy, 0)), 1e-6), through = max(behind - i.Position.w, 0) * length(Eye - i.World) / i.Position.w;
+            density = lerp(0.22, 0.88, 1 - exp(-through * 0.5));
+        }
+        float a = fresnel + (1 - fresnel) * density;
+        return float4(Pack((reflected * fresnel + body * (1 - fresnel) * density) / a), a);
     }
     // glass: the sky's mirror image on it and the sun's glint, over its own colour - a stained pane lets through about half of what
     // is behind it, in its colour; clear glass nearly all

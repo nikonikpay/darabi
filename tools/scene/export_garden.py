@@ -60,7 +60,9 @@ KEEP_DETAIL = ("V7_", "V8_", "CV4_Walls", "CV5_PoolDetails", "V10_Persian", "V9_
 # arm's reach, keep most of their carving; the windcatchers' is on the roof, never nearer than 12 m; the furniture is seen from a step away.
 BUDGET = {"V7_Orsi_V7_Walnut": 260_000, "V7_OpenDoor_V7_Walnut": 80_000, "V8_Carved_Windcatchers_V8_Carved_Pale_Limestone": 140_000,
           "V9_SOURCE_Armchair": 18_000, "V9_SOURCE_Chair": 16_000, "V9_SOURCE_Sofa": 18_000, "V10_Living_Climbers_V9_Living_Vine_Stems": 40_000,
-          "V7_Orsi_V7_Stained_Cobalt": 6_000, "V7_Orsi_V7_Stained_Emerald": 6_000, "V7_Orsi_V7_Stained_Ruby": 6_000, "V7_Orsi_V7_Stained_Amber": 6_000,
+          # (the orsi's stained panes are left as they are: simplified, a pane no longer filled its frame)
+          # the lanterns round the pool: their cage is filigree, and six of them stand at the walk's elbow
+          "chain": 17_100, "glass": 13_400, "glass_frame": 16_200,
           "V9_SOURCE_Blossom_Trunk": 20_000, "CV5_Terrain_CV5_Terrain_Earth": 8_000, "CV5_Soil_CV5_Loamy_Soil": 6_000, "V9_Turf_Bed_Surface": 6_000,
           # the rug is modelled pile and all; the pots round the pool are one mesh; the hall's tea things and flowers are seen from a step away
           "V11_SOURCE_RugBlue": 7_000, "V11_Pool_Geranium_Pots_V11_Handmade_Terracotta": 26_000, "V11_SOURCE_Bench": 9_000, "V12_SOURCE_Chandelier": 22_000,
@@ -68,16 +70,19 @@ BUDGET = {"V7_Orsi_V7_Walnut": 260_000, "V7_OpenDoor_V7_Walnut": 80_000, "V8_Car
           "V12_SOURCE_Samovar": 30_000, "V12_SOURCE_Kettle": 14_000, "V12_SOURCE_TeaSet": 20_000, "V12_SOURCE_Teapot": 6_000, "V12_SOURCE_Bouquet": 18_000, "V12_SOURCE_CallaVase": 10_000}
 # What all the copies of one plant may come to (the default is PER_MESH_BUDGET): leaves by the thousand need only be leaf-shaped,
 # the trees beyond the walls are never nearer than fifteen metres.
-COPIES_BUDGET = {"V9_SOURCE_IvyLeaf": 260_000, "V10_SOURCE_VineLeaf": 110_000, "V10_SOURCE_VariegatedLeaf": 60_000, "V10_SOURCE_Broadleaf": 390_000, "V10_SOURCE_Broadleaf~far": 290_000,
-                 "V9_SOURCE_Shrub": 520_000, "V10_SOURCE_Alpine": 420_000, "V9_SOURCE_Grass": 330_000, "V9_SOURCE_Daisy": 200_000, "V9_SOURCE_WhiteFlowers": 110_000,
-                 "V11_SOURCE_GeraniumRed": 280_000, "V11_SOURCE_GeraniumPink": 90_000, "V11_SOURCE_GeraniumRedBloom": 75_000, "V11_SOURCE_GeraniumPinkBloom": 25_000}
+COPIES_BUDGET = {"V9_SOURCE_IvyLeaf": 260_000, "V10_SOURCE_VineLeaf": 110_000, "V10_SOURCE_VariegatedLeaf": 60_000, "V10_SOURCE_Broadleaf": 900_000, "V10_SOURCE_Broadleaf~far": 780_000,
+                 "V9_SOURCE_Shrub": 1_150_000, "V10_SOURCE_Alpine": 640_000, "V9_SOURCE_Cypress": 640_000, "V9_SOURCE_Grass": 330_000, "V9_SOURCE_Daisy": 200_000, "V9_SOURCE_WhiteFlowers": 110_000,
+                 "V11_SOURCE_GeraniumRed": 600_000, "V11_SOURCE_GeraniumPink": 190_000, "V11_SOURCE_GeraniumRedBloom": 75_000, "V11_SOURCE_GeraniumPinkBloom": 25_000}
 # A tree that stands both by the pool and beyond the walls is exported twice: the copies outside ("~far" after the mesh's name above)
 # are never nearer than fifteen metres, and get by with a third of the triangles.
 FAR, FAR_MESHES = ("V10_Exterior_Tree_Belt",), ("V10_SOURCE_Broadleaf",)
 # A plant is simplified one material at a time (see plant()): its leaves must not pay for its twigs. Leaves modelled one by one - a few
 # triangles each, up to CARD - are first flattened to about LEAF_TRIS triangles, then thinned: some are left out, the rest grown (by no
-# more than GROW) so the crown covers what it did.
-CARD, LEAF_TRIS, GROW = 12, 2.5, 1.7
+# more than GROW) so the crown covers what it did. A leaf of two or three triangles is a sliver, which only does for what is never
+# near: the trees by the pool and the shrubs in the beds, which the walk brushes past, keep enough of each leaf for its outline
+# (LEAF_SHAPE), and every one of their leaves.
+CARD, LEAF_TRIS, GROW = 20, 2.5, 1.7
+LEAF_SHAPE = {"V10_SOURCE_Broadleaf": 6, "V9_SOURCE_Shrub": 8}
 # A mesh that is one large plain piece and many small fine ones (a rug and its tassels): simplified whole, the large piece would lose
 # its shape and its texture's place to pay for the small ones. It is kept as it is, and only the rest is simplified.
 BODY_AND_TRIM = ("V11_SOURCE_RugBlue",)
@@ -86,11 +91,13 @@ BODY_AND_TRIM = ("V11_SOURCE_RugBlue",)
 MOTTLE = {"V12_": 0.1}
 # Bevels are 2 to 4 mm wide and multiply the triangles by up to eight; subdivision smooths what is nearly flat. The building keeps its
 # bevels - the edges of its stone, its steps and its woodwork catch the light as worn edges do, not as knife edges; nothing else is
-# exported with either (nor the hall's plasterwork: it is on the ceiling, metres from the eye).
+# exported with either (nor the hall's plasterwork: it is on the ceiling, metres from the eye; nor the pool's tiles: under the water
+# their thousands of bevelled edges only glittered as the walk went by).
+NO_BEVEL = ("V12_", "CV5_PoolDetails")
 for o in bpy.data.objects:
     if o.type == 'MESH':
         for m in o.modifiers:
-            if m.type == 'SUBSURF' or (m.type == 'BEVEL' and (not o.name.startswith(KEEP_DETAIL) or o.name.startswith("V12_"))): m.show_viewport = m.show_render = False
+            if m.type == 'SUBSURF' or (m.type == 'BEVEL' and (not o.name.startswith(KEEP_DETAIL) or o.name.startswith(NO_BEVEL))): m.show_viewport = m.show_render = False
 # A lantern's lamp is one asset in both scenes: by day it only glows, at night it lights the paving round it.
 LAMP_SCALE = {1: 0.1, 2: 0.45}
 # A photograph of leaves is far lighter than a leaf is: under this renderer's sun a crown would bleach. Leaf cards keep this much of it.
@@ -514,7 +521,7 @@ def plant(me, slots, target, name):
         bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index != m], context='FACES')
         part = me.copy(); bm.to_mesh(part); bm.free()
         ratio = share / tris; each = tris / islands(part)[1]
-        if m < len(kinds) and kinds[m] == K_CUTOUT and each <= CARD: ratio = max(ratio, min(1.0, LEAF_TRIS / each))
+        if m < len(kinds) and kinds[m] == K_CUTOUT and each <= CARD: ratio = max(ratio, min(1.0, LEAF_SHAPE.get(name, LEAF_TRIS) / each))
         if ratio < 0.9: less = collapsed(part, ratio); bpy.data.meshes.remove(part); part = less
         left = measure(part).get(m, (0, 0.0))[0]
         if left > share * 1.15:

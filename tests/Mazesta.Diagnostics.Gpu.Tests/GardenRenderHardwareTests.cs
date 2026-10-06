@@ -4,7 +4,8 @@ namespace Mazesta.Diagnostics.Gpu.Tests;
 
 /// <summary>Draws the garden on the real GPU. A frame drawn twice at one moment must be the same bits (the check frames rely on it), and
 /// the picture must be a picture (sky above, lit garden below, not one flat colour). With MAZESTA_RENDER_DIR set, the frames are also
-/// written there as PNG files to look at (MAZESTA_RENDER_WIDTH: how wide, 960 unless said; MAZESTA_RENDER_TIMES: at which moments).</summary>
+/// written there as PNG files to look at (MAZESTA_RENDER_WIDTH: how wide, 960 unless said; MAZESTA_RENDER_TIMES: at which moments;
+/// MAZESTA_RENDER_VIEW: from one place instead of the walk's, as six numbers - the eye, then what it looks at).</summary>
 [Trait("Category", "Hardware")]
 public class GardenRenderHardwareTests
 {
@@ -59,6 +60,16 @@ public class GardenRenderHardwareTests
         Assert.Equal(a, r.Capture(1.234f));
         Assert.True(a.Distinct().Count() > 2000, "the frame is nearly one colour");
         string? dir = Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR");
+        if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_VIEW") is { Length: > 0 } view)
+        {
+            var v = view.Split(',').Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            GardenCamera.Fixed = (new(v[0], v[1], v[2]), new(v[3], v[4], v[5]));
+        }
+        try { Look(r, name, dir); } finally { GardenCamera.Fixed = null; }
+    }
+
+    private static void Look(GardenRenderer r, string name, string? dir)
+    {
         if (dir is { Length: > 0 })
             foreach (float t in Times)
             {

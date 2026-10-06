@@ -4,7 +4,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>
 /// Where the visual test's camera is at a moment: a slow walk round the courtyard, the same loop every run (a pure function of time, so the
 /// check frames see one picture). It starts at the gate looking up the pool to the fountain and the logo, goes along the left outer walk
-/// (x = -9.5: the walk lies between the beds at -9.9 and -8.2, and a bench stands on it twice, against the inner bed) to the foot of the
+/// (the walk lies between the beds at x -9.9 and -8.2; a bench stands on it twice, its back to the outer bed, and is passed in front) to the foot of the
 /// stairs, up onto the terrace and in at the hall's open door, round its rooms (the chandelier, the tea counter by the left wall, the
 /// two paintings and the reading table between them, the right sitting corner), out again onto the terrace looking back down the
 /// garden, down the right walk and home. Every key is six seconds from the next.
@@ -18,9 +18,9 @@ public static class GardenCamera
     [
         (new(0.0f, 1.75f, -31.3f), new(0.0f, 1.9f, -19.0f)),
         (new(-6.0f, 1.75f, -31.1f), new(0.0f, 2.0f, -19.0f)),
-        (new(-9.5f, 1.75f, -29.0f), new(-2.0f, 2.0f, -19.0f)),    // past the first bench: it stands on the walk, against the inner bed
-        (new(-9.5f, 1.75f, -24.0f), new(0.0f, 2.1f, -16.0f)),
-        (new(-9.5f, 1.75f, -17.0f), new(0.0f, 2.2f, -11.0f)),     // and the second
+        (new(-8.67f, 1.75f, -29.0f), new(-2.0f, 2.0f, -19.0f)),   // past the first bench: it stands back against the outer bed, the walk before it
+        (new(-8.67f, 1.75f, -24.0f), new(0.0f, 2.1f, -16.0f)),
+        (new(-8.67f, 1.75f, -17.0f), new(0.0f, 2.2f, -11.0f)),    // and the second
         (new(-9.2f, 1.75f, -11.2f), new(-1.0f, 2.6f, -4.0f)),     // the end of the beds, the hall ahead
         (new(-5.0f, 1.9f, -9.0f), new(0.0f, 2.7f, -1.0f)),
         (new(0.0f, 2.6f, -7.8f), new(0.0f, 2.7f, 0.0f)),          // on the stairs, facing the door
@@ -39,14 +39,18 @@ public static class GardenCamera
         (new(0.0f, 2.7f, -7.4f), new(0.0f, 1.0f, -26.0f)),        // the top of the stairs, the garden below
         (new(5.0f, 1.9f, -9.0f), new(3.0f, 1.2f, -22.0f)),
         (new(9.2f, 1.75f, -11.2f), new(3.5f, 1.2f, -24.0f)),      // down the right walk, past its benches
-        (new(9.5f, 1.75f, -17.0f), new(0.0f, 1.8f, -19.0f)),
-        (new(9.5f, 1.75f, -24.0f), new(0.0f, 2.0f, -17.0f)),
-        (new(9.5f, 1.75f, -29.0f), new(0.0f, 2.0f, -19.0f)),
+        (new(8.67f, 1.75f, -17.0f), new(0.0f, 1.8f, -19.0f)),
+        (new(8.67f, 1.75f, -24.0f), new(0.0f, 2.0f, -17.0f)),
+        (new(8.67f, 1.75f, -29.0f), new(0.0f, 2.0f, -19.0f)),
         (new(6.0f, 1.75f, -31.1f), new(0.0f, 2.0f, -19.0f)),
     ];
 
+    /// <summary>For the render checks: one view to draw every moment from, instead of the walk's (null: the walk).</summary>
+    internal static (Vector3 Eye, Vector3 Target)? Fixed { get; set; }
+
     public static (Vector3 Eye, Vector3 Target) At(float time)
     {
+        if (Fixed is { } view) return view;
         float t = (time % Loop + Loop) % Loop / Loop * Keys.Length;
         int i = (int)t; float f = t - i;
         f = f * f * (3 - 2 * f) * 0.35f + f * 0.65f;   // a touch of ease at each key, never a stop
