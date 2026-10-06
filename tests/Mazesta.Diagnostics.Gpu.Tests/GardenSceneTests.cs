@@ -97,11 +97,16 @@ public class GardenSceneTests
         Assert.All(G.Materials.Where(m => m.Kind == GardenMaterialKind.Cutout), m => Assert.True(m.Texture >= 0));
     }
 
-    [Fact] public void Every_texture_is_a_whole_mip_chain_at_the_array_s_size_and_the_building_has_its_normal_maps()
+    [Fact] public void Every_texture_is_a_whole_mip_chain_up_to_the_array_s_size_and_the_building_has_its_normal_maps()
     {
-        Assert.Equal(512, G.TextureSize);
-        Assert.All(G.Textures, t => { Assert.Equal(G.TextureMips, t.Length); for (int m = 0, s = G.TextureSize; m < t.Length; m++, s /= 2) Assert.Equal(s / 4 * (s / 4) * 16, t[m].Length); });
-        Assert.Equal(4, G.Textures[0][^1].Length / 16 * 4);   // down to one 4 x 4 block
+        Assert.Equal(1024, G.TextureSize);
+        for (int t = 0; t < G.Textures.Count; t++)
+        {
+            var chain = G.Textures[t]; int own = 4 << (chain.Length - 1); Assert.InRange(own, 256, G.TextureSize);
+            for (int m = 0, s = own; m < chain.Length; m++, s /= 2) Assert.Equal(s / 4 * (s / 4) * 16, chain[m].Length);   // down to one 4 x 4 block
+            for (int m = 0, s = G.TextureSize; m < G.TextureMips; m++, s /= 2) Assert.Equal(s / 4 * (s / 4) * 16, G.TextureLevel(t, m).Length);   // and doubled up to the array's
+        }
+        Assert.Contains(G.Textures, t => t.Length == G.TextureMips);   // the stone, plaster, wood and tile are stored at the full size
         var relief = G.Materials.Where(m => m.NormalTexture >= 0).ToList();
         Assert.True(relief.Count >= 12);   // limestone, kahgel, walnut, the turquoise tile, the pool's mosaic, the gate, the furniture's wood and cloth
         Assert.All(relief, m => { Assert.Equal(GardenMaterialKind.Flat, m.Kind); Assert.True(m.Texture >= 0 && m.Texture != m.NormalTexture); });
@@ -160,8 +165,8 @@ public class GardenSceneTests
         static MemoryStream Gz(byte[] raw) { var ms = new MemoryStream(); using (var gz = new GZipStream(ms, CompressionLevel.Fastest, leaveOpen: true)) gz.Write(raw); ms.Position = 0; return ms; }
         Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz("NOPE"u8.ToArray())));
         Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 99, 0, 0, 0])));        // another version
-        Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 2, 0, 0, 0])));         // the version before this one
-        Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 3, 0, 0, 0, 1, 0])));  // cut short
+        Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 3, 0, 0, 0])));         // the version before this one
+        Assert.Throws<InvalidDataException>(() => GardenScene.Read(Gz([.. "MZSC"u8.ToArray(), 4, 0, 0, 0, 1, 0])));  // cut short
     }
 
     [Fact] public void The_camera_walks_the_courtyard_and_the_hall_and_comes_back_to_where_it_started()

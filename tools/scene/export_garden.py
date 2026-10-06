@@ -12,19 +12,23 @@
 #   (vertices, indices and instances are written byte plane by byte plane, the indices as differences, the vertices in the order the
 #   indices first use them: the same data, a little over half the size once gzip has been over it)
 #   materials - flat, alpha-tested (texture), brick pattern (procedural, as in Blender), water, glass, emissive
-#   textures  - BC3 (sRGB) with mips down to 4x4, 512x512 for the building's stone, plaster, wood and tile, the gate and the rugs, 256x256 for the rest:
+#   textures  - 1024x1024 for the building's stone, plaster, wood and tile, the gate and the rugs, 512x512 for the rest:
 #               base colour with, in alpha, a leaf card's opacity or else the surface's roughness; or a normal map (x in alpha, y in green)
-#               with the material's ambient occlusion in red and its metalness in blue
+#               with the material's ambient occlusion in red and its metalness in blue. Stored as JPEG pictures, one or more a texture
+#               (colour; then each further channel as a grey picture, a leaf's opacity as one bit a texel, or one value when it is the
+#               same all over): a fifth of what the BC3 blocks the GPU wants come to. The reader makes those, and the smaller mips.
 #   lights    - sun, point, spot (area lights become wide spots), watts as Blender has them
 #   backdrop  - the mountains round the horizon (the world's panorama, laid as the world lays it): one BC3 image, 360 degrees wide
 #   features  - the pool's water level, and the fountain: its nozzle, the water in its bowl and the bowl's rim (the renderer draws the jet)
 # Coordinates are turned from Blender's (x right, y forward, z up) to Direct3D's (x right, y up, z forward).
-import bpy, bmesh, numpy as np, struct, gzip, math, os, io, re
+import bpy, bmesh, numpy as np, struct, gzip, math, os, io, re, tempfile
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath), "..", "Mazesta"))
 OUT = os.environ.get("MAZESTA_SCENE_OUT") or os.path.join(REPO, "src", "Mazesta.Diagnostics.Gpu", "Scene", "garden.mzscene")
 SCENES = (("Garden_Raster", 1), ("Garden_RT", 2))
-TEX, SMALL = 512, 256
+TEX, SMALL = 1024, 512
+# JPEG quality: the colour pictures, a normal map's two directions, and what only shades (roughness, occlusion, metalness)
+Q_COLOUR, Q_NORMAL, Q_SHADE = 86, 88, 72
 # The stone and soil are lighter than this renderer's sun and tone curve leave room for (Cycles shows them under AgX): their
 # base colours are scaled so the paving keeps its joints and the beds read as damp earth, as in the owner's own preview renders.
 ALBEDO_SCALE = {"V8_Limestone": 0.8, "V8_Carved_Pale_Limestone": 0.85, "V8_Granular_Garden_Loam": 0.6}
@@ -61,7 +65,7 @@ LAMP_SCALE = {1: 0.1, 2: 0.45}
 LEAF_ALBEDO = 0.6
 # The backdrop: all the way round by the tangent of the height above the horizon, 0 to SKY_TAN (20 degrees: the peaks reach 10)
 SKY_WORLD, SKY_W, SKY_H, SKY_TAN = "V8_Alborz_Sunset_HDR", 2048, 256, 0.36
-MAGIC, VERSION = b"MZSC", 3
+MAGIC, VERSION = b"MZSC", 4
 K_FLAT, K_CUTOUT, K_BRICK, K_WATER, K_GLASS, K_EMISSIVE = 0, 1, 2, 3, 4, 5
 F_LOGO, F_SPHERE = 1, 2
 
@@ -521,23 +525,6 @@ def features():
 
 # ——— BC3 ———
 
-def srgb_encode(x): return np.where(x <= 0.0031308, x * 12.92, 1.055 * np.maximum(x, 0) ** (1 / 2.4) - 0.055)
-
-def mips_of(img, cutout):
-    levels = [img]; ref = (img[..., 3] > 0.5).mean() if cutout else None
-    while levels[-1].shape[0] > 4:
-        a = levels[-1]; h = a.shape[0] // 2
-        m = a.reshape(h, 2, h, 2, 4).mean(axis=(1, 3))
-        if cutout and ref > 0:   # keep the leaves' coverage at a distance: scale alpha so as many texels pass the 0.5 test as at full size
-            lo, hi = 0.5, 8.0
-            for _ in range(12):
-                mid = (lo + hi) / 2
-                if (np.clip(m[..., 3] * mid, 0, 1) > 0.5).mean() < ref: lo = mid
-                else: hi = mid
-            m[..., 3] = np.clip(m[..., 3] * hi, 0, 1)
-        levels.append(m)
-    return levels
-
 def bc3(img):
     h, w = img.shape[:2]
     b = (np.clip(img, 0, 1) * 255 + 0.5).astype(np.int32).reshape(h // 4, 4, w // 4, 4, 4).transpose(0, 2, 1, 3, 4).reshape(-1, 16, 4)
@@ -572,6 +559,32 @@ def bc3(img):
     for k in range(4): out[:, 12 + k] = (cbits >> np.uint64(8 * k)) & np.uint64(255)
     return out.tobytes()
 
+# ——— JPEG ———
+
+def jpeg(planes, quality):
+    """An H x W picture (three channels, or one: grey) of 0..1 values, rows bottom to top, as a JPEG file's bytes - written by Blender's own
+    writer through a temporary file. The values go in as they are (no colour management: the image's bytes are what is saved)."""
+    h, w = planes.shape[:2]; px = np.ones((h, w, 4), np.float32); px[..., :3] = np.clip(planes if planes.ndim == 3 else planes[..., None], 0, 1)
+    img = bpy.data.images.new("_jpeg", w, h, alpha=False); path = os.path.join(tempfile.gettempdir(), "mazesta-export.jpg")
+    try:
+        img.colorspace_settings.name = 'sRGB'; img.pixels.foreach_set(px.ravel()); img.file_format = 'JPEG'; img.filepath_raw = path; img.save(quality=quality)
+        with open(path, "rb") as f: return f.read()
+    finally:
+        bpy.data.images.remove(img)
+        if os.path.exists(path): os.remove(path)
+
+P_VALUE, P_JPEG, P_BITS = 0, 1, 2
+def texture_parts(img, cutout, normal):
+    """A texture as the parts the reader puts together: (which channels - bits 0 to 3 for red, green, blue, alpha, how it is stored, its bytes)."""
+    def plane(ch, quality):
+        a = img[..., ch]; v = int(round(float(a.flat[0]) * 255))
+        if np.all(np.abs(a - a.flat[0]) < 0.5 / 255): return (1 << ch, P_VALUE, bytes([v]))
+        return (1 << ch, P_JPEG, jpeg(a, quality))
+    if normal: return [plane(0, Q_SHADE), plane(1, Q_NORMAL), plane(2, Q_SHADE), plane(3, Q_NORMAL)]
+    colour = (7, P_JPEG, jpeg(img[..., :3], Q_COLOUR))
+    if cutout: return [colour, (8, P_BITS, np.packbits(img[::-1, :, 3] > 0.5).tobytes())]   # top row first, as a JPEG has its rows
+    return [colour, plane(3, Q_SHADE)]
+
 # ——— write ———
 
 def planes(data, stride):
@@ -581,11 +594,12 @@ def planes(data, stride):
 buf = io.BytesIO(); w = buf.write
 w(MAGIC); w(struct.pack("<I", VERSION))
 w(struct.pack("<6I", len(textures), len(materials), len(meshes), len(instances), len(lights), TEX))
+texture_bytes = buf.tell()
 for img, cutout, normal in textures:
-    w(struct.pack("<I", img.shape[0]))
-    for level in mips_of(img, cutout):
-        if normal: level = level.copy(); level[..., :3] = srgb_encode(level[..., :3])   # the array is sRGB: the three come back as they were
-        w(bc3(level))
+    parts = texture_parts(img, cutout, normal)
+    w(struct.pack("<3I", img.shape[0], (1 if cutout else 0) | (2 if normal else 0), len(parts)))
+    for channels, kind, data in parts: w(struct.pack("<2I", channels | kind << 8, len(data))); w(data)
+texture_bytes = buf.tell() - texture_bytes
 for m in materials:
     w(struct.pack("<Ii", m['kind'], m['tex'])); w(struct.pack("<fi", m.get('light_tint', 0.0), m['normal']))
     w(struct.pack("<4f", *m['base'], m['alpha'])); w(struct.pack("<4f", *m['color2'], m['rough'])); w(struct.pack("<4f", *m['mortar'], m['metal']))
@@ -619,6 +633,6 @@ with open(OUT, "wb") as f: f.write(gzip.compress(raw, 9, mtime=0))
 tris = sum(m['icount'] for m in meshes) // 3
 per_frame = sum(meshes[mi]['icount'] // 3 for mi, mask, flags, rows in instances.values() if mask & 1)
 for t, c, name in sorted(((m['icount'] // 3, counts.get(pending[i][0], 1), pending[i][4]) for i, m in enumerate(meshes) if m), key=lambda x: -x[0] * x[1])[:45]: print("MESH", t, "x", c, "=", t * c, name)
-result = {"raster_tris_per_frame": per_frame, "file": OUT, "raw_mb": round(len(raw) / 1e6, 2), "gz_mb": round(os.path.getsize(OUT) / 1e6, 2), "meshes": len(meshes), "unique_tris": tris, "instances": len(instances),
+result = {"raster_tris_per_frame": per_frame, "file": OUT, "raw_mb": round(len(raw) / 1e6, 2), "textures_mb": round(texture_bytes / 1e6, 2), "gz_mb": round(os.path.getsize(OUT) / 1e6, 2), "meshes": len(meshes), "unique_tris": tris, "instances": len(instances),
           "materials": len(materials), "textures": len(textures), "big_textures": sum(1 for t in textures if t[0].shape[0] == TEX), "normal_maps": sum(1 for t in textures if t[2]), "lights": len(lights)}
 print(result)

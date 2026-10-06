@@ -259,7 +259,7 @@ internal sealed unsafe class GardenGpu
             for (int m = 0, w = size; m < mips; m++, w = Math.Max(4, w / 2))
             {
                 int blocks = Math.Max(1, w / 4); uint pitch = (uint)((blocks * 16 + 255) & ~255);
-                byte[] data = t < scene.Textures.Count ? scene.Textures[t][m] : new byte[blocks * blocks * 16];
+                byte[] data = t < scene.Textures.Count ? scene.TextureLevel(t, m) : new byte[blocks * blocks * 16];
                 total = (total + 511) & ~511ul; places.Add((total, pitch, blocks, w, data)); total += pitch * (ulong)blocks;
             }
         using var staging = s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(total), ResourceStates.GenericRead);

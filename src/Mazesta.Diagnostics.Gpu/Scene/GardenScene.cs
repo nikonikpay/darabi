@@ -8,7 +8,9 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// into garden.mzscene, embedded in this assembly; this reads it. The file holds both of the .blend's scenes: what only the Direct3D test
 /// shows (the low golden sun) or only the ray-traced one (its night light rig, a mirror sphere) is marked with <see cref="Mode"/>.
 /// <para>Format (gzip, little-endian): "MZSC", version, then counts of textures, materials, meshes, instances, lights and the texture size;
-/// the textures (each its own size, then its BC3 mip chain: one stored smaller than the texture size is doubled on reading); the materials
+/// the textures (each its own size, whether it is a leaf card's or a normal map's, and its parts: JPEG pictures for the colour and for
+/// each further channel, a leaf's opacity as one bit a texel, or one value for a channel that is the same all over - <see cref="Bc3"/>
+/// makes the GPU's blocks and the smaller mips of them here); the materials
 /// (<see cref="GardenMaterial"/>, 96 bytes); each mesh (vertex and index counts, quantisation centre and extent, submeshes, 16-byte vertices,
 /// 32-bit indices); the instances (mesh, scene mask, flags, 3x4 world rows); the lights; one camera per scene; the backdrop
 /// (<see cref="GardenBackdrop"/>: width, height, the range it covers and one BC3 image; width 0 when there is none); and seven floats:
@@ -18,17 +20,26 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GardenScene
 {
-    public const int Version = 3;
+    public const int Version = 4;
     [Flags] public enum Mode : uint { Raster = 1, RayTraced = 2 }
     /// <summary>An instance's flags: the logo; the ray-traced scene's mirror sphere; a droplet of the fountain (those are not in the
     /// file: <see cref="GardenGpu"/> adds them).</summary>
     public const uint LogoFlag = 1, SphereFlag = 2, DropletFlag = 4;
 
     public int TextureSize { get; private init; }
-    /// <summary>Mip levels of every texture: <see cref="TextureSize"/> down to 4.</summary>
+    /// <summary>Mip levels of the texture array: <see cref="TextureSize"/> down to 4.</summary>
     public int TextureMips => int.Log2(Math.Max(4, TextureSize)) - 1;
-    /// <summary>Each texture's BC3 mip chain (TextureSize down to 4), largest first.</summary>
+    /// <summary>Each texture's BC3 mip chain, largest first, from its own size (<see cref="TextureSize"/> or a power of two under it:
+    /// the array's larger levels are then that one doubled, <see cref="TextureLevel"/>) down to 4.</summary>
     public IReadOnlyList<byte[][]> Textures { get; private init; } = [];
+    /// <summary>Texture <paramref name="texture"/> at level <paramref name="mip"/> of the array (0: <see cref="TextureSize"/> across).</summary>
+    public byte[] TextureLevel(int texture, int mip)
+    {
+        var chain = Textures[texture]; int own = 4 << (chain.Length - 1), wanted = TextureSize >> mip;
+        if (wanted <= own) return chain[int.Log2(own) - int.Log2(wanted)];
+        var level = chain[0]; for (int s = own; s < wanted; s *= 2) level = Bc3Doubled(level, s / 4);
+        return level;
+    }
     public GardenMaterial[] Materials { get; private init; } = [];
     public IReadOnlyList<GardenMesh> Meshes { get; private init; } = [];
     public GardenInstance[] Instances { get; private init; } = [];
@@ -67,15 +78,17 @@ public sealed class GardenScene
         int version = r.I32(); if (version != Version) throw new InvalidDataException($"Scene file version {version}; this build reads {Version}.");
         int nTex = r.I32(), nMat = r.I32(), nMesh = r.I32(), nInst = r.I32(), nLight = r.I32(), size = r.I32();
         if (size < 4 || size > 4096 || !int.IsPow2(size)) throw new InvalidDataException($"Texture size {size}.");
-        var textures = new List<byte[][]>(nTex);
+        var stored = new List<(int Size, uint Flags, (uint Channels, ReadOnlyMemory<byte> Data)[] Parts)>(nTex);
         for (int t = 0; t < nTex; t++)
         {
-            int own = r.I32(); if (own < 4 || own > size || !int.IsPow2(own)) throw new InvalidDataException($"A texture of size {own} in a scene of {size}.");
-            var mips = new List<byte[]>();
-            for (int s = own; s >= 4; s /= 2) mips.Add(r.Bytes(s / 4 * (s / 4) * 16).ToArray());
-            for (int s = own; s < size; s *= 2) mips.Insert(0, Bc3Doubled(mips[0], s / 4));
-            textures.Add([.. mips]);
+            int own = r.I32(); uint flags = (uint)r.I32(); int parts = r.I32();
+            if (own < 4 || own > size || !int.IsPow2(own) || parts is < 1 or > 4) throw new InvalidDataException($"A texture of size {own} in {parts} parts, in a scene of {size}.");
+            var list = new (uint, ReadOnlyMemory<byte>)[parts];
+            for (int k = 0; k < parts; k++) { uint channels = (uint)r.I32(); list[k] = (channels, r.Bytes(r.I32())); }
+            stored.Add((own, flags, list));
         }
+        var textures = new byte[nTex][][];
+        Parallel.For(0, nTex, t => textures[t] = Bc3.MipChain(Texels(stored[t].Size, stored[t].Parts), stored[t].Size, cutout: (stored[t].Flags & 1) != 0, data: (stored[t].Flags & 2) != 0));
         var materials = MemoryMarshal.Cast<byte, GardenMaterial>(r.Bytes(nMat * Marshal.SizeOf<GardenMaterial>()).Span).ToArray();
         var meshes = new List<GardenMesh>(nMesh);
         for (int i = 0; i < nMesh; i++)
@@ -112,6 +125,28 @@ public sealed class GardenScene
         }
         foreach (var m in materials) if (m.Texture >= nTex || m.NormalTexture >= nTex) throw new InvalidDataException($"A material refers to texture {Math.Max(m.Texture, m.NormalTexture)} of {nTex}.");
         return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop, WaterLevel = waterLevel, Fountain = fountain };
+    }
+
+    /// <summary>A texture's RGBA texels from its stored parts, bottom row first (as the exporter had them). Each part fills the
+    /// channels its low four bits name; bits 8 and up say how it is stored: 0 one value, 1 a JPEG picture, 2 one bit a texel (set: 255).</summary>
+    private static byte[] Texels(int size, (uint Channels, ReadOnlyMemory<byte> Data)[] parts)
+    {
+        var rgba = new byte[size * size * 4];
+        foreach (var (channels, data) in parts)
+        {
+            var d = data.Span; uint kind = channels >> 8;
+            if (kind > 2 || (channels & 0xFF) is 0 or > 15) throw new InvalidDataException("A texture part of a kind this build does not read.");
+            if (kind == 0 && d.Length != 1 || kind == 2 && d.Length != size * size / 8) throw new InvalidDataException("A texture part of the wrong length.");
+            byte[]? picture = null;
+            if (kind == 1) { picture = Jpeg.Decode(d, out int w, out int h); if (w != size || h != size) throw new InvalidDataException($"A picture of {w} x {h} in a texture of {size}."); }
+            bool colour = (channels & 7) == 7;
+            for (int y = 0; y < size; y++)
+                for (int x = 0, from = (size - 1 - y) * size; x < size; x++, from++)   // the stored rows run top to bottom
+                    for (int c = 0; c < 4; c++)
+                        if ((channels >> c & 1) != 0)
+                            rgba[(y * size + x) * 4 + c] = kind switch { 0 => d[0], 1 => picture![from * 3 + (colour ? c : 0)], _ => (byte)((d[from >> 3] >> (7 - (from & 7)) & 1) * 255) };
+        }
+        return rgba;
     }
 
     /// <summary>Records of <paramref name="stride"/> bytes back from their byte planes.</summary>
