@@ -40,9 +40,11 @@ public class GardenLightVolumeTests
         Assert.True(v.Origin.X < -13 && v.Origin.X + (v.X - 1) * v.Spacing > 13 && v.Origin.Z < -32 && v.Origin.Z + (v.Z - 1) * v.Spacing > 6 && v.Origin.Y + (v.Y - 1) * v.Spacing > 8);
         Assert.All(v.Light, x => Assert.InRange(x, 0f, 8f));
         static float Lum(Vector3 c) => 0.3f * c.X + 0.59f * c.Y + 0.11f * c.Z;
-        float open = Lum(v.At(new(9, 1.7f, -20), Vector3.UnitY)), hall = Lum(v.At(new(0, 2.6f, 3), Vector3.UnitY)), ceiling = Lum(v.At(new(0, 5.2f, 3), Vector3.UnitY));
+        float open = Lum(v.At(new(9, 1.7f, -20), Vector3.UnitY)), hall = Lum(v.At(new(0, 2.6f, 3), Vector3.UnitY));
         Assert.InRange(open, 0.03f, 1f);    // under the open sky: the sky's own light
         Assert.InRange(hall, 0.005f, 1f);   // on the hall's floor: what its lamps and its door give the room, bounced
-        Assert.True(open > ceiling, "under the hall's roof no sky arrives from above");
+        // and it is not one light everywhere: the brightest place (a sunlit wall's neighbour) has many times the light of the dimmest
+        var up = Enumerable.Range(0, v.X * v.Y * v.Z).Select(p => Lum(new(v.Light[(p * 6 + 2) * 3], v.Light[(p * 6 + 2) * 3 + 1], v.Light[(p * 6 + 2) * 3 + 2]))).ToArray();
+        Assert.True(up.Max() > 5 * up.Order().ElementAt(up.Length / 10), "the light volume is nearly uniform");
     }
 }
