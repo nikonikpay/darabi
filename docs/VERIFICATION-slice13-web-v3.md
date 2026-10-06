@@ -18,7 +18,7 @@ time from an **elevated** shell, so the Release build ran with real sensors.
     as a real WPF window; the owner's overlay settings were restored afterwards (render preset, one column, hidden);
   - settings show the findings and the notes apart;
   - the overlay's chart caption reads "بیشینه 57 °C" in order (it was reordered to "C° 57 بیشینه"; the value is now its own left-to-right run);
-  - closing the window left no MazestaWeb or WebView2 process.
+  - closing the window left no Mazesta or WebView2 process.
 - Browser preview (demo host): the Windows tools, gaming, tuning, reports and settings panels, the overlay order panel (arrow buttons and
   drag and drop both reorder blocks and items; the preview follows), the two-column preview.
 

@@ -12,9 +12,9 @@ pwsh tools/publish.ps1
 
 | خروجی | مسیر | برای چه کسی |
 |---|---|---|
-| نسخه‌ی مازستایی | `artifacts/Mazesta-Web/MazestaWeb.exe` | خود شرکت (شماره‌ی سرویس، ارسال به سایت) |
-| نسخه‌ی کاربر | `artifacts/Mazesta-Client/MazestaWeb.exe` | کاربران، بدون ویژگی‌های شرکت (پوشه‌ی بدون نصب) |
-| **نصب‌کننده‌ی کاربر** | `artifacts/Mazesta-Setup/MazestaTestSetup.exe` | **همین فایل را به کاربر بدهید**: نصب با Start menu، میان‌بر دسکتاپ و ثبت در Installed apps؛ حذف از `MazestaWeb.exe --uninstall` |
+| نسخه‌ی مازستایی | `artifacts/Mazesta-Web/Mazesta-Admin.exe` | خود شرکت (شماره‌ی سرویس، ارسال به سایت) |
+| نسخه‌ی کاربر | `artifacts/Mazesta-Client/Mazesta.exe` | کاربران، بدون ویژگی‌های شرکت (پوشه‌ی بدون نصب) |
+| **نصب‌کننده‌ی کاربر** | `artifacts/Mazesta-Setup/MazestaTestSetup.exe` | **همین فایل را به کاربر بدهید**: نصب با Start menu، میان‌بر دسکتاپ و ثبت در Installed apps؛ حذف از `Mazesta.exe --uninstall` |
 | **برنامه‌ی منشی** | `artifacts/Mazesta-Print/MazestaPrint.exe` | سیستم منشی: فهرست گزارش‌های سایت با شماره‌ی سرویس و چاپ خلاصه (فایل جداگانه، نیازی به برنامه‌ی اصلی ندارد) |
 
 - نصب‌کننده، نسخه‌ی کاربر (`Mazesta-Client`) را بدون پوشه‌ی `Data` داخل خودش می‌گذارد، پس همیشه **بعد از** ساخت نسخه‌ی کاربر ساخته می‌شود (خود اسکریپت این ترتیب را رعایت می‌کند).

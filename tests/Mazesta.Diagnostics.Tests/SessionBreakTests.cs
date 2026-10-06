@@ -22,7 +22,7 @@ public class SessionBreakTests
 
     [Fact] public void A_crash_record_naming_the_app_is_an_app_crash_and_one_naming_another_program_is_not()
     {
-        Assert.Equal(BreakCause.AppCrashed, SessionBreak.Classify(Saved, BootBefore, [E("Application Error", 1000, 1, "Faulting application name: MazestaWeb.exe, version: 0.9")]).Cause);
+        Assert.Equal(BreakCause.AppCrashed, SessionBreak.Classify(Saved, BootBefore, [E("Application Error", 1000, 1, "Faulting application name: Mazesta.exe, version: 0.9")]).Cause);
         Assert.Equal(BreakCause.AppClosed, SessionBreak.Classify(Saved, BootBefore, [E("Application Error", 1000, 1, "Faulting application name: chrome.exe")]).Cause);
     }
 

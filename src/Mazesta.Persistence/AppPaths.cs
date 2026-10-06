@@ -2,7 +2,7 @@ namespace Mazesta.Persistence;
 
 /// <summary>
 /// The app is portable only: everything it writes - settings, logs, reports, history, test checkpoints and the PDF printer's browser
-/// cache - lives in <c>Data</c> next to MazestaWeb.exe (the tray, which sits beside it, reads the same folder). The whole folder can
+/// cache - lives in <c>Data</c> next to the app's exe (the tray, which sits beside it, reads the same folder). The whole folder can
 /// be copied to a USB stick or another machine and keeps its results; nothing is written to the user profile.
 /// </summary>
 public sealed class AppPaths

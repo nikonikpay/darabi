@@ -1,6 +1,6 @@
 # Builds the update folder for the shop's site (see docs/UPDATES.md), ready to upload as it is to /mazesta/ on www.dfmrendering.com:
 #   update.json + update.json.sig   the signed list of what is offered
-#   MazestaWeb.zip                  the app (only with -App); the name has no version, so the download page's link never changes
+#   MazestaUpdate-<version>.zip     the app (only with -App), for the installed copies to update from; new users download MazestaTestSetup.exe instead
 #   benchdb/*.json                  the benchmark comparison lists, rebuilt from every run gathered so far
 #
 #   pwsh tools/release.ps1                                  # data only: gather the runs, rebuild the lists, re-sign (daily)

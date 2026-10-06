@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
 Set-Location $repo
 $target = [IO.Path]::GetFullPath((Join-Path $repo $Output))
-$running = Get-Process MazestaWeb, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($target, [StringComparison]::OrdinalIgnoreCase) }
+$running = Get-Process Mazesta, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($target, [StringComparison]::OrdinalIgnoreCase) }
 if ($running) { throw "Close Mazesta first (running: $($running.Name -join ', ')). Nothing was changed." }
 if (Test-Path $target) { Remove-Item $target -Recurse -Force -Confirm:$false }
 & (Join-Path $PSScriptRoot "publish-single.ps1") -Output $Output -Edition Client

@@ -1,6 +1,6 @@
 # Architecture
 
-Mazesta is a single elevated process (`MazestaWeb.exe`) whose whole interface is a local web page in one WebView2, built from
+Mazesta is a single elevated process (`Mazesta.exe`) whose whole interface is a local web page in one WebView2, built from
 layered class libraries, plus a separate low-footprint tray process. Each layer is its own project so the project graph, not
 convention, enforces the dependencies. Logic lives in the lowest layer that can hold it, so it is unit-testable without a window.
 
@@ -44,7 +44,7 @@ web bridge builds the ones it drives when the window opens and disposes them whe
 
 ## Data (portable)
 
-Everything the app writes lives in `Data\` next to `MazestaWeb.exe`: `config\appconfig.json`, `logs\`, `sessions\` (test
+Everything the app writes lives in `Data\` next to `Mazesta.exe`: `config\appconfig.json`, `logs\`, `sessions\` (test
 checkpoint), `history\`, `reports\<date>-<id>\` (`report.json`, `report.html`, `report.txt`, `report.pdf` when exported, and
 `comparison-*.html`), `cache\` (the PDF printer's and the web edition's WebView2 profiles, the shop product in `cache\shop`),
 `benchmarks\records.json` (the best result of each benchmark per system), `tray\checks.json` (the tray's recent checks), `logs\hardware-report.txt`

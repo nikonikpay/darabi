@@ -45,7 +45,7 @@ internal sealed class FanMenu
         if (!AppRuns()) _startApp(AppArgs.Background);
     }
 
-    private static bool AppRuns() { var p = Process.GetProcessesByName("MazestaWeb"); foreach (var x in p) x.Dispose(); return p.Length > 0; }
+    private static bool AppRuns() { var p = Process.GetProcessesByName("Mazesta").Concat(Process.GetProcessesByName("Mazesta-Admin")).ToList(); foreach (var x in p) x.Dispose(); return p.Count > 0; }
 }
 
 /// <summary>The app's start-up argument for "no window" (kept in step with <c>Program.BackgroundArgument</c> of the app).</summary>

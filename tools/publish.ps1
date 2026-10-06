@@ -1,4 +1,4 @@
-# Publishes the runnable app (the WebView2 edition, MazestaWeb.exe) in its two editions, without ever losing a Data folder (settings, reports,
+# Publishes the runnable app (the WebView2 edition: Mazesta-Admin.exe for the company, Mazesta.exe for users) in its two editions, without ever losing a Data folder (settings, reports,
 # history, logs):
 #   artifacts\Mazesta-Web      Mazesta's own edition (the service number, the link to the site, the reference marks)
 #   artifacts\Mazesta-Client   the users' edition (none of those)
@@ -30,7 +30,6 @@ param(
 $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
 $project = "src/Mazesta.Web"
-$exeName = "MazestaWeb.exe"
 Set-Location $repo
 $backups = [IO.Path]::GetFullPath($BackupRoot)
 
@@ -48,7 +47,7 @@ function Publish-Edition([string]$Folder, [string]$Name) {
         Get-ChildItem $backups -Directory | Sort-Object Name -Descending | Select-Object -Skip $Keep | Remove-Item -Recurse -Force -Confirm:$false
     }
     if (Test-Path $target) { Get-ChildItem $target -Force | Where-Object Name -ne "Data" | Remove-Item -Recurse -Force -Confirm:$false }
-    & (Join-Path $PSScriptRoot "publish-single.ps1") -Output $target -Edition $Name   # three things: MazestaWeb.exe, MazestaTray.exe, wwwroot (+ Redist)
+    & (Join-Path $PSScriptRoot "publish-single.ps1") -Output $target -Edition $Name   # three things: the app exe, MazestaTray.exe, wwwroot (+ Redist)
     if ($stamp -and -not (Test-Path $data)) { throw "Data is missing after publishing - restore it from $stamp." }
 }
 
@@ -61,7 +60,7 @@ if ($Only -ne "Client") { $editions += , @($Output, "Mazesta") }
 # may be ours, so stop as well.
 foreach ($e in $editions) {
     $target = [IO.Path]::GetFullPath((Join-Path $repo $e[0]))
-    $running = Get-Process MazestaTest, MazestaWeb, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($target, [StringComparison]::OrdinalIgnoreCase) }
+    $running = Get-Process MazestaTest, Mazesta, Mazesta-Admin, MazestaTray -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($target, [StringComparison]::OrdinalIgnoreCase) }
     if ($running) { throw "Close Mazesta / Mazesta Monitor first (running: $($running.Name -join ', ')). Nothing was changed." }
 }
 foreach ($e in $editions) { Publish-Edition $e[0] $e[1] }

@@ -27,7 +27,8 @@ public interface IBreakEventSource
 /// </summary>
 public static partial class SessionBreak
 {
-    public const string AppExe = "MazestaWeb.exe";
+    /// <summary>The app's exe names in the event text: the users' edition, Mazesta's own, and the name before the rename.</summary>
+    public static readonly string[] AppExes = ["Mazesta.exe", "Mazesta-Admin.exe", "MazestaWeb.exe"];
 
     public static SessionBreakInfo Classify(DateTimeOffset lastSaved, DateTimeOffset bootTime, IReadOnlyList<BreakEvent> events)
     {
@@ -37,7 +38,7 @@ public static partial class SessionBreak
             return new(BreakCause.BlueScreen, bug.Text is { } t && StopCode().Match(t) is { Success: true } m ? m.Value : null, tdr);
         if (after.Any(e => (e.Provider == "Microsoft-Windows-Kernel-Power" && e.Id == 41) || (e.Provider == "EventLog" && e.Id == 6008))) return new(BreakCause.PowerLoss, null, tdr);
         if (bootTime > lastSaved) return new(BreakCause.Restarted, null, tdr);
-        if (after.Any(e => (e.Provider == "Application Error" && e.Id == 1000 || e.Provider == ".NET Runtime" && e.Id == 1026) && e.Text?.Contains(AppExe, StringComparison.OrdinalIgnoreCase) == true))
+        if (after.Any(e => (e.Provider == "Application Error" && e.Id == 1000 || e.Provider == ".NET Runtime" && e.Id == 1026) && e.Text is { } txt && AppExes.Any(x => txt.Contains(x, StringComparison.OrdinalIgnoreCase))))
             return new(BreakCause.AppCrashed, null, tdr);
         return new(BreakCause.AppClosed, null, tdr);
     }

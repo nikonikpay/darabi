@@ -18,7 +18,7 @@ Gaming and Windows Tools are phase 2 in the spec and are placeholders. See `docs
 ## Portable
 
 The app is portable only: it is not installed and writes nothing to the user profile. Everything it creates (settings, logs,
-reports, history) lives in `Data\` next to `MazestaWeb.exe`; copy the whole folder to move it, results included.
+reports, history) lives in `Data\` next to `Mazesta.exe`; copy the whole folder to move it, results included.
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ dotnet test  Mazesta.sln -c Release --no-build --filter "Category=Hardware"    #
 pwsh tools/publish.ps1                                                        # keeps the app's Data folder
 ```
 
-Run `artifacts\Mazesta-Web\MazestaWeb.exe`. `build.ps1 -Test -Publish` wraps the build, tests and a publish, and copies the Persian
+Run `artifacts\Mazesta-Web\Mazesta.exe`. `build.ps1 -Test -Publish` wraps the build, tests and a publish, and copies the Persian
 guide and the notices into the publish folder. The WPF edition (`MazestaTest.exe`) was retired on 2026-09-28 (git tag `wpf-edition-final`). After changing a shader in `src/Mazesta.Diagnostics.Gpu/Shaders`, run `tools/compile-gpu-shaders.ps1`
 (needs the Windows SDK). `tools/measure-idle.ps1` measures idle memory and CPU of the published app.
 

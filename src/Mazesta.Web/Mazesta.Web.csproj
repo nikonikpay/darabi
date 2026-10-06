@@ -7,7 +7,9 @@
     <!-- The window, the pop-out charts and the notification icon are Windows Forms (WPF was removed on 2026-10-01); its global usings are
          removed so its names (Timer, Label, Screen...) never shadow the app's own: each file names what it uses. -->
     <UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>MazestaWeb</AssemblyName>
+    <!-- The users' app is Mazesta.exe; Mazesta's own edition is Mazesta-Admin.exe. -->
+    <AssemblyName>Mazesta</AssemblyName>
+    <AssemblyName Condition="'$(MazestaEdition)' != 'Client'">Mazesta-Admin</AssemblyName>
     <RootNamespace>Mazesta.Web</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.debug.manifest</ApplicationManifest>

@@ -66,7 +66,7 @@ internal sealed class RgbMenu : IDisposable
     public void Dispose()
     {
         SystemEvents.PowerModeChanged -= OnPower;
-        var app = System.Diagnostics.Process.GetProcessesByName("MazestaWeb"); bool appRuns = app.Length > 0; foreach (var p in app) p.Dispose();
+        var app = System.Diagnostics.Process.GetProcessesByName("Mazesta").Concat(System.Diagnostics.Process.GetProcessesByName("Mazesta-Admin")).ToArray(); bool appRuns = app.Length > 0; foreach (var p in app) p.Dispose();
         _session.Release(leaveRunning: appRuns); _session.Client.Dispose();
     }
 }

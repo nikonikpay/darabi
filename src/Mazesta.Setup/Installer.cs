@@ -3,10 +3,10 @@ using Microsoft.Win32;
 namespace Mazesta.Setup;
 
 /// <summary>What installing does, apart from the window: checks the target, replaces an earlier copy's files (never its Data), unpacks the carried
-/// zip, makes the shortcuts and the entry in Installed apps. The uninstall side is <c>MazestaWeb.exe --uninstall</c> in the app itself.</summary>
+/// zip, makes the shortcuts and the entry in Installed apps. The uninstall side is <c>Mazesta.exe --uninstall</c> in the app itself.</summary>
 internal static class Installer
 {
-    public const string AppExe = "MazestaWeb.exe", ShortcutName = "Mazesta Test", Publisher = "Mazesta", RegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\MazestaTest";
+    public const string AppExe = "Mazesta.exe", ShortcutName = "Mazesta Test", Publisher = "Mazesta", RegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\MazestaTest";
     public static string Version => typeof(Installer).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "";
     public static string DefaultFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Mazesta Test");
     public static bool HasPayload => typeof(Installer).Assembly.GetManifestResourceStream("payload.zip") is not null;
@@ -29,7 +29,7 @@ internal static class Installer
         return File.Exists(Path.Combine(full, AppExe)) ? null : SetupText.NotEmpty;
     }
 
-    public static bool IsRunning() => Process.GetProcessesByName("MazestaWeb").Length + Process.GetProcessesByName("MazestaTray").Length > 0;
+    public static bool IsRunning() => Process.GetProcessesByName("Mazesta").Length + Process.GetProcessesByName("MazestaTray").Length > 0;
 
     public static void Install(string folder, bool desktop, IProgress<(int Percent, string Text)> progress)
     {

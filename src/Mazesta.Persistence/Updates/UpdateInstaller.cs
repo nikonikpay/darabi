@@ -8,7 +8,7 @@ namespace Mazesta.Persistence.Updates;
 /// </summary>
 public static class UpdateInstaller
 {
-    public const string ExeName = "MazestaWeb.exe";
+    public const string ExeName = "Mazesta.exe";
 
     /// <summary>Unpacks a downloaded release into an empty <paramref name="staging"/> folder and checks it is one (the app's exe at its top, no Data).</summary>
     public static void Extract(string zip, string staging)

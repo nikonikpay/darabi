@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Desktop.Tests" />
-    <InternalsVisibleTo Include="MazestaWeb" />
+    <InternalsVisibleTo Include="Mazesta" />
+    <InternalsVisibleTo Include="Mazesta-Admin" />
   </ItemGroup>
 </Project>

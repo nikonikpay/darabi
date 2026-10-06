@@ -80,8 +80,8 @@ static int Site(string[] args)
     {
         string exe = Path.Combine(appDir, UpdateInstaller.ExeName);
         string version = FileVersionInfo.GetVersionInfo(exe).FileVersion is { } v && Version.TryParse(v, out var parsed) ? parsed.ToString(3) : throw new InvalidOperationException($"No version in {exe}");
-        // The name never carries the version, so the site's download page can link to one address for good; update.json says which version it holds.
-        string zipName = "MazestaWeb.zip", zip = Path.Combine(outDir, zipName);
+        // Only installed copies fetch this (update.json names it); new users get MazestaTestSetup.exe, so a version in the name costs no download link.
+        string zipName = $"MazestaUpdate-{version}.zip", zip = Path.Combine(outDir, zipName);
         File.Delete(zip);
         using (var z = ZipFile.Open(zip, ZipArchiveMode.Create))
             foreach (var file in Directory.EnumerateFiles(appDir, "*", SearchOption.AllDirectories))
@@ -90,7 +90,7 @@ static int Site(string[] args)
                 if (rel.StartsWith("Data/", StringComparison.OrdinalIgnoreCase)) continue;   // the owner's settings and reports never ship
                 z.CreateEntryFromFile(file, rel, CompressionLevel.Optimal);
             }
-        foreach (var old in Directory.EnumerateFiles(outDir, "MazestaWeb-*.zip")) File.Delete(old);   // the versioned names of earlier releases
+        foreach (var old in Directory.EnumerateFiles(outDir, "Mazesta*.zip").Where(f => Path.GetFileName(f) != zipName)) File.Delete(old);   // earlier releases and the names before MazestaUpdate
         release = new AppRelease(version, zipName, new FileInfo(zip).Length, UpdateSigning.Sha256(zip), DateTimeOffset.UtcNow,
             Opt(args, "--notes-fa") is { } fa ? File.ReadAllText(fa).Trim() : null, Opt(args, "--notes-en") is { } en ? File.ReadAllText(en).Trim() : null);
         Console.WriteLine($"Release {version}: {zipName}, {release.Size / 1048576.0:0.0} MB");
@@ -127,7 +127,7 @@ static async Task<int> Upload(string[] args)
     http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", "MazestaRelease/1.0");
 
     var files = new List<string>();
-    // Always sent: the zip keeps one name across versions, so a file of the same size on the site may be an older release.
+    // Always sent, so a damaged or stale copy on the site is replaced.
     if (manifest.App is { } app) files.Add(app.File);
     files.AddRange(manifest.Data.Select(d => d.File));
     files.Add(UpdateManifest.FileName); files.Add(UpdateManifest.SignatureName);

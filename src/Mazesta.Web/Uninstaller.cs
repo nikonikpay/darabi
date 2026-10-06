@@ -3,7 +3,7 @@ using Mazesta.Core.Tray; using Mazesta.Desktop.Localization; using Microsoft.Win
 namespace Mazesta.Web;
 
 /// <summary>
-/// "Uninstall" for a copy that MazestaTestSetup put on the computer (Settings › Apps › Installed apps runs <c>MazestaWeb.exe --uninstall</c>). It
+/// "Uninstall" for a copy that MazestaTestSetup put on the computer (Settings › Apps › Installed apps runs <c>Mazesta.exe --uninstall</c>). It
 /// only acts on the folder the setup recorded for this very exe, so a portable copy or a developer's build is never touched. It asks whether the data
 /// (settings, reports, history: the Data folder) goes too - by default it stays, so a later install picks it up - stops the tray, removes its start-up
 /// task, shortcuts and the entry in Installed apps, then hands the deleting of the folder to a hidden PowerShell that waits for this process to end
@@ -19,7 +19,7 @@ internal static class Uninstaller
         using (var key = Registry.CurrentUser.OpenSubKey(RegistryKey))
             if (key?.GetValue("InstallLocation") is not string where || !string.Equals(Path.GetFullPath(where).TrimEnd(Path.DirectorySeparatorChar), dir, StringComparison.OrdinalIgnoreCase))
             { Say(Loc.Get("Uninstall_NotInstalled"), MessageBoxIcon.Information); return 1; }
-        if (Process.GetProcessesByName("MazestaWeb").Any(p => p.Id != Environment.ProcessId)) { Say(Loc.Get("Uninstall_Running"), MessageBoxIcon.Warning); return 1; }
+        if (Process.GetProcessesByName("Mazesta").Any(p => p.Id != Environment.ProcessId)) { Say(Loc.Get("Uninstall_Running"), MessageBoxIcon.Warning); return 1; }
         if (MessageBox.Show(Loc.Get("Uninstall_Ask"), Loc.Get("Uninstall_Title"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return 0;
         // Yes: the data goes too; No: it stays in the folder; Cancel: nothing changes.
         var data = MessageBox.Show(Loc.Get("Uninstall_Data"), Loc.Get("Uninstall_Title"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);

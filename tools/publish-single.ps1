@@ -1,5 +1,5 @@
 # The compact build every published copy uses: self-contained (no .NET to install, Windows 10 and 11, x64), the app and the tray one exe each, so
-# the folder holds three things - MazestaWeb.exe, MazestaTray.exe and what must stay real files: wwwroot (the page) and Redist (the PawnIO setup
+# the folder holds three things - the app exe (Mazesta.exe, or Mazesta-Admin.exe for the Mazesta edition), MazestaTray.exe and what must stay real files: wwwroot (the page) and Redist (the PawnIO setup
 # is run from disk). Called by publish.ps1 and publish-release.ps1; it only adds files to $Output (they clear the folder first, keeping Data).
 #   pwsh tools/publish-single.ps1 -Output <folder> -Edition Mazesta|Client
 param([Parameter(Mandatory)][string]$Output, [ValidateSet("Mazesta", "Client")][string]$Edition = "Mazesta")
@@ -38,4 +38,5 @@ Copy-Item $cache $rgb -Recurse -Force
 Set-Content (Join-Path $rgb "NOTICE.txt") "OpenRGB 1.0, GPL-2.0-only, https://openrgb.org - source code: https://codeberg.org/OpenRGB/OpenRGB (tag release_1.0). Run as a separate program by Mazesta Test; not modified."
 Get-ChildItem $target -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
 Remove-Item $tray -Recurse -Force
-Write-Host "Ready ($Edition): $(Join-Path $target 'MazestaWeb.exe')"
+$exe = if ($Edition -eq "Client") { "Mazesta.exe" } else { "Mazesta-Admin.exe" }
+Write-Host "Ready ($Edition): $(Join-Path $target $exe)"

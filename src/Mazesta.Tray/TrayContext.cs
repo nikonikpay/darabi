@@ -152,7 +152,7 @@ internal sealed class TrayContext : ApplicationContext
 
     private void StartApp(string arguments)
     {
-        string? exe = Path.Combine(AppContext.BaseDirectory, "MazestaWeb.exe"); if (!File.Exists(exe)) exe = null;
+        string? exe = new[] { "Mazesta.exe", "Mazesta-Admin.exe" }.Select(n => Path.Combine(AppContext.BaseDirectory, n)).FirstOrDefault(File.Exists);
         if (exe is null) { _icon.ShowBalloonTip(8000, TrayText.Title, TrayText.NoApp, ToolTipIcon.Error); return; }
         try { Process.Start(new ProcessStartInfo(exe, arguments) { UseShellExecute = true, WorkingDirectory = AppContext.BaseDirectory })?.Dispose(); }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { _icon.ShowBalloonTip(8000, TrayText.Title, e.Message, ToolTipIcon.Error); }
