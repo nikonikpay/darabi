@@ -48,12 +48,12 @@ AS_SAID = {"Clay pot": dict(base=(0.5, 0.17, 0.085), rough=0.75)}
 DECIMATE_OVER = 6000            # hard-surface meshes above this many triangles are simplified (lantern glass, pots, trunks)
 PER_MESH_BUDGET = 400_000       # a mesh placed thousands of times (ivy leaves, blossoms) is simplified until all its copies together stay under this
 KEEP_DETAIL = ("V7_", "V8_", "CV4_Walls", "CV5_PoolDetails", "V10_Persian", "V9_Fountain")   # the building: its carving and lattices are what is looked at
-# The heaviest meshes, simplified to what the walk can tell apart (the windcatchers' carving is on the roof, never nearer than 12 m;
-# the furniture is seen across a room or the terrace).
-BUDGET = {"V7_Orsi_V7_Walnut": 160_000, "V7_OpenDoor_V7_Walnut": 45_000, "V8_Carved_Windcatchers_V8_Carved_Pale_Limestone": 50_000,
-          "V9_SOURCE_Armchair": 9_000, "V9_SOURCE_Chair": 8_000, "V9_SOURCE_Sofa": 9_000, "V10_Living_Climbers_V9_Living_Vine_Stems": 40_000,
+# The heaviest meshes, simplified to what the walk can tell apart: the orsi's lattices and the door's panels, which it passes within
+# arm's reach, keep most of their carving; the windcatchers' is on the roof, never nearer than 12 m; the furniture is seen from a step away.
+BUDGET = {"V7_Orsi_V7_Walnut": 260_000, "V7_OpenDoor_V7_Walnut": 80_000, "V8_Carved_Windcatchers_V8_Carved_Pale_Limestone": 140_000,
+          "V9_SOURCE_Armchair": 18_000, "V9_SOURCE_Chair": 16_000, "V9_SOURCE_Sofa": 18_000, "V10_Living_Climbers_V9_Living_Vine_Stems": 40_000,
           "V7_Orsi_V7_Stained_Cobalt": 6_000, "V7_Orsi_V7_Stained_Emerald": 6_000, "V7_Orsi_V7_Stained_Ruby": 6_000, "V7_Orsi_V7_Stained_Amber": 6_000,
-          "V9_SOURCE_Blossom_Trunk": 12_000, "CV5_Terrain_CV5_Terrain_Earth": 8_000, "CV5_Soil_CV5_Loamy_Soil": 6_000, "V9_Turf_Bed_Surface": 6_000}
+          "V9_SOURCE_Blossom_Trunk": 20_000, "CV5_Terrain_CV5_Terrain_Earth": 8_000, "CV5_Soil_CV5_Loamy_Soil": 6_000, "V9_Turf_Bed_Surface": 6_000}
 # What all the copies of one plant may come to (the default is PER_MESH_BUDGET): leaves by the thousand need only be leaf-shaped,
 # the trees beyond the walls are never nearer than fifteen metres.
 COPIES_BUDGET = {"V9_SOURCE_IvyLeaf": 260_000, "V10_SOURCE_VineLeaf": 110_000, "V10_SOURCE_VariegatedLeaf": 60_000, "V10_SOURCE_Broadleaf": 520_000,
