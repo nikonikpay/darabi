@@ -19,7 +19,7 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
 {
     public const string SizeOption = "size", MemoryOption = "memory";
     public static readonly TestDefinition Definition = new(new TestId("cpu.linpack"), "Test_Cpu_Linpack", 300,
-        [new TestOption(SizeOption, "Test_Option_LinpackSize", TestOptionKind.Integer, "0"),   // 0 = automatic from free RAM
+        [new TestOption(SizeOption, "Test_Option_LinpackSize", TestOptionKind.Integer, "0", When: MemoryOption + "=single"),   // 0 = automatic from free RAM; filling the memory has its own fixed size
          new TestOption(MemoryOption, "Test_Option_LinpackMemory", TestOptionKind.Choice, "physical",
             () => [new("single", "Test_Linpack_Mem_Single", true), new("physical", "Physical only"), new("virtual", "Physical and virtual")])]);
     TestDefinition ITestExecutor.Definition => Definition;

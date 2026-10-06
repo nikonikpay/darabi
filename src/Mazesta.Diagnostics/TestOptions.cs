@@ -10,7 +10,18 @@ public sealed record OptionChoice(string Value, string Label, bool Localized = f
 /// MB, which GPU). Declared by the test itself, so the Test Center renders any test's options without
 /// knowing what they mean. <see cref="Choices"/> is a function, evaluated when the page is built, because a
 /// list of drives or adapters is a fact about this machine right now, not a constant.</summary>
-public sealed record TestOption(string Key, string LabelKey, TestOptionKind Kind, string Default, Func<IReadOnlyList<OptionChoice>>? Choices = null);
+/// <param name="When">"key=value" (or "key=a|b"): the option only matters while that other option of the same test has one of those values,
+/// and the page shows it only then (the steady load has no high and low percentages to set). Null: it always matters.</param>
+public sealed record TestOption(string Key, string LabelKey, TestOptionKind Kind, string Default, Func<IReadOnlyList<OptionChoice>>? Choices = null, string? When = null)
+{
+    /// <summary>Whether the option matters with the values <paramref name="valueOf"/> gives for the test's other options.</summary>
+    public bool Applies(Func<string, string?> valueOf)
+    {
+        if (When is null) return true;
+        int cut = When.IndexOf('=');
+        return cut > 0 && valueOf(When[..cut]) is { } now && When[(cut + 1)..].Split('|').Contains(now);
+    }
+}
 
 /// <summary>The values chosen for one run. Anything not chosen falls back to the option's declared default,
 /// so an executor never sees a missing key.</summary>

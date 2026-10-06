@@ -14,6 +14,13 @@ export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsu
 // Keeps a field's value unless the technician is typing in it.
 export function setField(el, v) { if (el.type === "checkbox") { el.checked = v === "on"; return; } if (document.activeElement !== el && el.value !== (v ?? "")) el.value = v ?? ""; }
 
+// "key=a|b": the option matters only while the option `key` of the same test is a or b.
+export function applies(when, options) {
+  if (!when) return true;
+  const cut = when.indexOf("="), now = options.find((y) => y.key === when.slice(0, cut))?.value;
+  return when.slice(cut + 1).split("|").includes(now);
+}
+
 export function mount(el) {
   const list = h("div", { class: "groups" });
   // Plain by default: a test is a line with its tick and, once run, whether it passed. "Advanced" brings each test's length, repeat
@@ -100,6 +107,8 @@ export function mount(el) {
       x.row.classList.toggle("off", !!r.unavailable); x.unavailable.hidden = !r.unavailable; x.unavailable.textContent = r.unavailable || "";
       setField(x.cnt, r.count); x.cnt.hidden = r.repeat !== "Count";
       for (const o of x.opts) { const cur = r.options.find((y) => y.key === o.o.key); if (cur) setField(o.input, cur.value); }
+      // An option that only matters for one choice of another (the variable load's percentages) is shown only with that choice.
+      for (const o of x.opts) o.el.hidden = !applies(o.o.when, r.options);
       x.bar.firstChild.style.setProperty("--p", r.percent);
       x.status.textContent = r.status || ""; x.errs.textContent = r.errors || "";
       x.pill.className = `pill ${OUTCOME[r.outcome] || "none"}`; x.pill.textContent = r.outcomeText;

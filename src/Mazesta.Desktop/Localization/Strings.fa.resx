@@ -3235,4 +3235,5 @@
   <data name="Web_Dash_DrivesFull" xml:space="preserve"><value>{0} درایو رو به پر شدن</value></data>
   <data name="Tuning_Curve_Driver" xml:space="preserve"><value>منحنی خود کارت، خوانده‌شده از درایور · {0} · تا {1}</value></data>
   <data name="Tuning_Curve_Scan_Hint" xml:space="preserve"><value>منحنی همین حالا از درایور کارت نمایش داده می‌شود. این دکمه ولتاژی را که کارت زیر بار واقعاً در هر فرکانس انتخاب می‌کند اندازه می‌گیرد (حدود یک و نیم دقیقه).</value></data>
+  <data name="Test_Option_CoresAtOnce" xml:space="preserve"><value>تعداد هستهٔ هم‌زمان</value></data>
 </root>

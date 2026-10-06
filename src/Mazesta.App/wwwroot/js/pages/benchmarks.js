@@ -4,7 +4,7 @@
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
-import { setField } from "./tests.js";
+import { setField, applies } from "./tests.js";
 import { groupPanel, byPart } from "../groups.js";
 import { findingCard, bySeverity } from "./checkup.js";
 import { boot } from "../app.js";
@@ -104,6 +104,7 @@ export function benchList(component = null) {
       x.check.checked = r.selected; x.check.disabled = !!r.unavailable; x.dur.set(r.duration); x.run.disabled = s.running || !!r.unavailable;
       x.row.classList.toggle("off", !!r.unavailable); x.unavailable.hidden = !r.unavailable; x.unavailable.textContent = r.unavailable || "";
       for (const o of x.opts) { const cur = r.options.find((y) => y.key === o.o.key); if (cur) setField(o.input, cur.value); }
+      for (const o of x.opts) o.el.hidden = !applies(o.o.when, r.options);
       x.bar.firstChild.style.setProperty("--p", r.percent / 100);
       x.status.textContent = r.status || "";
       x.row.classList.toggle("active", r.active);

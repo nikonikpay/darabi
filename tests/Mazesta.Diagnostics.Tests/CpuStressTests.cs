@@ -113,6 +113,33 @@ public class CpuStressTests
         Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains($"{cores.Count} physical cores", r.Detail);
     }
 
+    [Fact] public void Single_core_groups_cover_every_core_whatever_the_number_at_a_time()
+    {
+        CpuCore[] cores = [.. Enumerable.Range(0, 6).Select(i => new CpuCore(i, 0, 3UL << (i * 2), 0))];   // six cores, two threads each
+        Assert.Equal(6, CpuCoreCycleExecutor.Groups(cores, 1).Count);
+        var four = CpuCoreCycleExecutor.Groups(cores, 4);                                                    // two groups of four: the second is filled from the start
+        Assert.Equal(2, four.Count); Assert.All(four, g => Assert.Equal(4, g.Count));
+        Assert.Equal([0, 1, 2, 3, 4, 5], four.SelectMany(g => g).Select(x => x.Core).Distinct().Order());
+        Assert.All(four.SelectMany(g => g), x => Assert.Equal(cores[x.Core].FirstThreadMask, x.Mask));       // up to the core count, never a core's second thread
+        var all = Assert.Single(CpuCoreCycleExecutor.Groups(cores, 12));                                     // every thread: one group, each logical processor once
+        Assert.Equal(12, all.Select(x => (x.Core, x.Mask)).Distinct().Count());
+        Assert.Equal(12, Assert.Single(CpuCoreCycleExecutor.Groups(cores, 99)).Count);                       // more than there are: all of them
+    }
+
+    [Fact] public async Task Single_core_with_two_at_a_time_loads_two_and_still_tests_every_core()
+    {
+        var cores = CpuTopology.Cores.Take(4).ToList(); if (cores.Count < 4) return;
+        var r = await new CpuCoreCycleExecutor(cores).RunAsync(new(2, new FakeClock(T0), null, null, new TestOptions(CpuCoreCycleExecutor.Definition, new Dictionary<string, string> { ["cores"] = "2" })), CancellationToken.None);
+        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("2 at a time", r.Detail); Assert.Contains("every core tested", r.Detail);
+    }
+
+    [Fact] public void An_option_that_depends_on_another_applies_only_with_that_choice()
+    {
+        var high = CpuStressExecutor.Definition.Options.Single(o => o.Key == CpuStressExecutor.HighOption);
+        Assert.True(high.Applies(k => k == "pattern" ? "variable" : null)); Assert.False(high.Applies(k => k == "pattern" ? "steady" : null));
+        Assert.True(CpuStressExecutor.Definition.Options.Single(o => o.Key == CpuStressExecutor.StageOption).Applies(_ => null));
+    }
+
     [Fact] public void Single_core_passes_only_when_every_core_was_tested()
     {
         Assert.Equal(TestOutcome.Passed, CpuCoreCycleExecutor.Verdict(0, [true, true]));

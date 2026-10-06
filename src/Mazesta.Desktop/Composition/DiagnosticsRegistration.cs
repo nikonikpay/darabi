@@ -24,7 +24,6 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, CpuFftExecutor>();
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, MemoryBitFadeExecutor>();
-        s.AddSingleton<ITestExecutor, LanExecutor>();
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Steady));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Variable));
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Pulse));
@@ -33,13 +32,15 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor>();
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
-        s.AddSingleton<ITestExecutor, NetworkLatencyExecutor>();
-        s.AddSingleton<ITestExecutor>(_ => new Diagnostics.Network.InternetSpeedExecutor());
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
         s.AddSingleton<Mazesta.Diagnostics.Windows.ICommandRunner, Mazesta.Diagnostics.Windows.ProcessCommandRunner>();
         s.AddSingleton<Mazesta.Core.Gaming.IServiceControl, Mazesta.Diagnostics.Windows.WindowsServiceControl>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.SfcExecutor>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Windows.DismScanExecutor>();
+        // The network's tests come after every part of the machine itself (they measure the line and the router as much as the computer).
+        s.AddSingleton<ITestExecutor, LanExecutor>();
+        s.AddSingleton<ITestExecutor, NetworkLatencyExecutor>();
+        s.AddSingleton<ITestExecutor>(_ => new Diagnostics.Network.InternetSpeedExecutor());
         s.AddSingleton<Mazesta.Core.Providers.INvmeHealthSource>(sp => new Mazesta.Hardware.Details.NvmeHealthReader(sp.GetRequiredService<Mazesta.Hardware.Wmi.IWmiQuery>()));
         s.AddSingleton<Mazesta.Core.Providers.IDriveHealthProvider>(sp => new Mazesta.Hardware.Wmi.WmiDriveHealthProvider(sp.GetRequiredService<Mazesta.Hardware.Wmi.IWmiQuery>()));
         s.AddSingleton<ITestExecutor, SmartCheckExecutor>();   // last: the final SMART re-check sees what the tests did to the drives (spec 4.2, item 11)

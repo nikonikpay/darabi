@@ -3235,4 +3235,5 @@ Cancel: stop.</value></data>
   <data name="Web_Dash_DrivesFull" xml:space="preserve"><value>{0} nearly full</value></data>
   <data name="Tuning_Curve_Driver" xml:space="preserve"><value>The card's own curve, read from its driver · {0} · up to {1}</value></data>
   <data name="Tuning_Curve_Scan_Hint" xml:space="preserve"><value>The curve is already shown from the card's driver. This measures, under load, the voltage the card really chooses at each frequency (about a minute and a half).</value></data>
+  <data name="Test_Option_CoresAtOnce" xml:space="preserve"><value>Cores at a time</value></data>
 </root>

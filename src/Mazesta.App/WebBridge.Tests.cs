@@ -89,7 +89,7 @@ public sealed partial class WebBridge
     private static object Option(TestOptionViewModel o) => new
     {
         key = o.Option.Key, label = o.Label, kind = o.Option.Kind.ToString(), value = o.IsChoice ? o.SelectedChoice?.Value : o.Text,
-        choices = o.IsChoice ? o.Choices.Select(c => new { value = c.Value, label = c.Label }) : null,
+        choices = o.IsChoice ? o.Choices.Select(c => new { value = c.Value, label = c.Label }) : null, when = o.Option.When,
     };
 
     private static void SetOption(IReadOnlyList<TestOptionViewModel> options, string key, string value)

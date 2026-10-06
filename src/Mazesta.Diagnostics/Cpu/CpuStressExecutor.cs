@@ -16,12 +16,13 @@ namespace Mazesta.Diagnostics.Cpu;
 public sealed class CpuStressExecutor : ITestExecutor
 {
     public const string StageOption = "stageSeconds", PatternOption = "pattern", HighOption = "high", LowOption = "low", HighSecondsOption = "highSeconds", LowSecondsOption = "lowSeconds";
+    private const string Swing = PatternOption + "=variable";   // the high and low shares and their lengths are the variable load's alone
     public static readonly TestDefinition Definition = new(new TestId("cpu.stress"), "Test_Cpu_Stress", 300,
     [
         new TestOption(StageOption, "Test_Option_StageSeconds", TestOptionKind.Integer, "60"),
         new TestOption(PatternOption, "Test_Option_LoadPattern", TestOptionKind.Choice, "steady", () => [new("steady", "Test_LoadPattern_Steady", true), new("variable", "Test_LoadPattern_Variable", true)]),
-        new TestOption(HighOption, "Test_Option_LoadHigh", TestOptionKind.Integer, "100"), new TestOption(HighSecondsOption, "Test_Option_LoadHighSeconds", TestOptionKind.Integer, "20"),
-        new TestOption(LowOption, "Test_Option_LoadLow", TestOptionKind.Integer, "0"), new TestOption(LowSecondsOption, "Test_Option_LoadLowSeconds", TestOptionKind.Integer, "10"),
+        new TestOption(HighOption, "Test_Option_LoadHigh", TestOptionKind.Integer, "100", When: Swing), new TestOption(HighSecondsOption, "Test_Option_LoadHighSeconds", TestOptionKind.Integer, "20", When: Swing),
+        new TestOption(LowOption, "Test_Option_LoadLow", TestOptionKind.Integer, "0", When: Swing), new TestOption(LowSecondsOption, "Test_Option_LoadLowSeconds", TestOptionKind.Integer, "10", When: Swing),
     ]);
     TestDefinition ITestExecutor.Definition => Definition;
 
