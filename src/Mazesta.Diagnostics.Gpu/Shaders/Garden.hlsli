@@ -34,7 +34,8 @@ struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; u
 // repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre.
 // LightTint 1: light passing through takes the pane's colour (stained glass).
 struct Material { uint Kind; int Texture; float LightTint; int NormalTexture; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
-struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float2 Pad; };
+// Shadow: for the rasteriser, which of its shadow cubes is this lamp's, counted from 1 (0: it casts none)
+struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float Shadow; float Pad; };
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5;
 static const uint LSun = 0, LPoint = 1, LSpot = 2;

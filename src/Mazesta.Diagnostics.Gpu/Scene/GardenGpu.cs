@@ -13,7 +13,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 internal sealed unsafe class GardenGpu
 {
     [StructLayout(LayoutKind.Sequential)] public struct Instance { public Vector4 Row0, Row1, Row2; public uint Mesh, Mask, Flags, Index; }
-    [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Pad0, Pad1; }
+    [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Shadow, Pad1; }
     [StructLayout(LayoutKind.Sequential)] public struct MeshInfo { public Vector3 Centre; public uint FirstSubmesh; public Vector3 Extent; public uint BaseVertex; }
     [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, Pad; }
     public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind);
@@ -33,6 +33,12 @@ internal sealed unsafe class GardenGpu
     public Draw[] Draws { get; }
     public GardenMaterial[] Materials { get; }
     public Light[] PointLights { get; }
+    /// <summary>How many of the lamps the rasteriser gives a shadow cube (<see cref="Light.Shadow"/>: which, from 1): its point
+    /// lamps - the hall's and the lanterns' - up to this many. The ray tracer shadows every light with rays of its own.</summary>
+    public int ShadowLamps { get; }
+    public const int MostShadowLamps = 12;
+    /// <summary>The nearest a lamp's shadow cube sees: inside a lantern, its own cage is a hand's breadth away.</summary>
+    public const float LampNear = 0.03f;
     /// <summary>The key light: toward the sun (Direct3D) or the moon (ray traced), and its irradiance.</summary>
     public Vector3 SunDirection { get; } public Vector3 SunColor { get; }
     public long Triangles { get; }
@@ -107,9 +113,10 @@ internal sealed unsafe class GardenGpu
             var intensity = l.Color * l.Energy / (area ? MathF.PI * 2 : 4 * MathF.PI);
             float range = Math.Clamp(MathF.Sqrt(Math.Max(intensity.X, Math.Max(intensity.Y, intensity.Z)) / 0.04f), 1.5f, 28f);
             float half = l.Cone / 2;
+            bool shadowed = mode == GardenScene.Mode.Raster && l.Kind == GardenLightKind.Point && ShadowLamps < MostShadowLamps;
             points.Add(new Light
             {
-                Position = l.Position, Kind = (uint)l.Kind, Direction = Vector3.Normalize(l.Direction), Range = range, Color = intensity, Radius = Math.Max(0.05f, l.Radius),
+                Position = l.Position, Kind = (uint)l.Kind, Direction = Vector3.Normalize(l.Direction), Range = range, Color = intensity, Radius = Math.Max(0.05f, l.Radius), Shadow = shadowed ? ++ShadowLamps : 0,
                 CosOuter = l.Kind == GardenLightKind.Spot ? MathF.Cos(half) : -2, CosInner = l.Kind == GardenLightKind.Spot ? MathF.Cos(half * (1 - Math.Clamp(l.Blend, 0.02f, 1f))) : -1,
             });
         }
@@ -131,6 +138,15 @@ internal sealed unsafe class GardenGpu
         var sky = scene.Backdrop;
         Backdrop = UploadImage(s, sky?.Width ?? 4, sky?.Height ?? 4, sky?.Bc3 ?? new byte[16]);
         BackdropRange = sky is null ? Vector4.Zero : new(sky.TanLow, sky.TanHigh, 1, 0);
+    }
+
+    /// <summary>Instance <paramref name="i"/>'s bounds as it was placed: the centre of a ball that holds it, and its radius.</summary>
+    public (Vector3 Centre, float Radius) Bounds(Draw d, int i)
+    {
+        var inst = Instances[i]; var c = d.Centre; var e = d.Extent;
+        var centre = new Vector3(inst.Row0.X * c.X + inst.Row0.Y * c.Y + inst.Row0.Z * c.Z + inst.Row0.W, inst.Row1.X * c.X + inst.Row1.Y * c.Y + inst.Row1.Z * c.Z + inst.Row1.W, inst.Row2.X * c.X + inst.Row2.Y * c.Y + inst.Row2.Z * c.Z + inst.Row2.W);
+        float scale = MathF.Sqrt(MathF.Max(new Vector3(inst.Row0.X, inst.Row1.X, inst.Row2.X).LengthSquared(), MathF.Max(new Vector3(inst.Row0.Y, inst.Row1.Y, inst.Row2.Y).LengthSquared(), new Vector3(inst.Row0.Z, inst.Row1.Z, inst.Row2.Z).LengthSquared())));
+        return (centre, e.Length() * scale);
     }
 
     /// <summary>Whether a mesh blocks light: one made only of water, glass and glowing parts does not (a lantern's glass would otherwise hide its own lamp).</summary>

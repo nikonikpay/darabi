@@ -237,6 +237,25 @@ public class GardenSceneTests
         }
     }
 
+    [Fact] public void A_lamp_s_six_views_see_all_round_it_each_down_its_own_axis()
+    {
+        var at = new Vector3(1, 2, 3); Vector3[] ways = [Vector3.UnitX, -Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ];
+        for (int face = 0; face < 6; face++)
+        {
+            var c = Vector4.Transform(new Vector4(at + ways[face] * 4, 1), GardenRaster.LampFace(at, 10, face));
+            Assert.Equal(0, c.X / c.W, 4); Assert.Equal(0, c.Y / c.W, 4); Assert.Equal(4, c.W, 4);   // straight ahead, four metres off
+            // the depth the shader works out for that distance (GardenRaster.hlsl LampShadow) is the one the view stores
+            Assert.Equal(10 / (10 - GardenGpu.LampNear) * (1 - GardenGpu.LampNear / 4), c.Z / c.W, 5);
+            // a point off to the side is inside the view while it is nearer the axis than along it, and outside beyond
+            var side = ways[(face + 2) % 6];
+            var inside = Vector4.Transform(new Vector4(at + ways[face] * 4 + side * 3.9f, 1), GardenRaster.LampFace(at, 10, face));
+            var outside = Vector4.Transform(new Vector4(at + ways[face] * 4 + side * 4.1f, 1), GardenRaster.LampFace(at, 10, face));
+            Assert.True(MathF.Max(MathF.Abs(inside.X), MathF.Abs(inside.Y)) < inside.W && MathF.Max(MathF.Abs(outside.X), MathF.Abs(outside.Y)) > outside.W);
+        }
+        // the rasterised scene's lamps: the hall's three and the lanterns, each with a cube of its own
+        Assert.InRange(G.Lights.Count(l => (l.Mask & 1) != 0 && l.Kind == GardenLightKind.Point), 3, GardenGpu.MostShadowLamps);
+    }
+
     private sealed class Vec3Near(float tolerance) : IEqualityComparer<Vector3>
     {
         public bool Equals(Vector3 a, Vector3 b) => Vector3.Distance(a, b) <= tolerance;
