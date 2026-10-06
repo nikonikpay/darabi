@@ -22,6 +22,8 @@
     <EmbeddedResource Include="Shaders/*.cso" LogicalName="Mazesta.Diagnostics.Gpu.Shaders.%(Filename).cso" />
     <!-- The Persian garden the visual tests draw, written by tools/scene/export_garden.py from Mazesta-Art/courtyard-v10.blend. -->
     <EmbeddedResource Include="Scene/garden.mzscene" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.mzscene" />
+    <!-- The light bounced round that garden, worked out for the Direct3D test by the ray tracer (Scene/GardenLightVolume.cs). -->
+    <EmbeddedResource Include="Scene/garden.light" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.light" Condition="Exists('Scene/garden.light')" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Mazesta.Diagnostics.Gpu.Tests" />

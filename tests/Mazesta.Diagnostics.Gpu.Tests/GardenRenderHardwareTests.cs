@@ -36,6 +36,16 @@ public class GardenRenderHardwareTests
         Check(r, "garden-ray");
     }
 
+    /// <summary>Not a check but the tool that makes Scene\garden.light: with MAZESTA_BAKE_LIGHT naming a file, the light bounced round
+    /// the embedded garden is worked out by the ray tracer and written there (see <see cref="GardenLightBaker"/>). Build again afterwards.</summary>
+    [Fact] public void Bakes_the_garden_s_bounced_light_when_asked()
+    {
+        if (Environment.GetEnvironmentVariable("MAZESTA_BAKE_LIGHT") is not { Length: > 0 } to || NoGpu || !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!);
+        var volume = GardenLightBaker.Bake(s, GardenScene.Embedded);
+        using var f = File.Create(to); volume.Write(f);
+    }
+
     private static void Check(GardenRenderer r, string name)
     {
         var a = r.Capture(1.234f); var b = r.Capture(1.234f);

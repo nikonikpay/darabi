@@ -52,6 +52,10 @@ public sealed class GardenScene
     /// <summary>The height of the main pool's surface.</summary>
     public float WaterLevel { get; private init; }
     public GardenFountain? Fountain { get; private init; }
+    /// <summary>A number that names this scene file (a hash of its bytes): what was worked out for one scene is not used with another.</summary>
+    public ulong Stamp { get; private init; }
+    /// <summary>The light bounced round the courtyard, for the Direct3D test - when it is embedded and was worked out for this very scene.</summary>
+    public GardenLightVolume? Light { get; private set; }
 
     public long UniqueTriangles => Meshes.Sum(m => (long)m.Indices.Length / 3);
     public long Triangles(Mode mode) => Instances.Where(i => (i.Mask & (uint)mode) != 0).Sum(i => (long)Meshes[(int)i.Mesh].Indices.Length / 3);
@@ -65,13 +69,18 @@ public sealed class GardenScene
             if (_embedded is not null) return _embedded;
             using var s = Assembly.GetExecutingAssembly().GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.garden.mzscene")
                 ?? throw new InvalidOperationException("The garden scene is not embedded.");
-            return _embedded = Read(s);
+            var scene = Read(s);
+            using var light = Assembly.GetExecutingAssembly().GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.garden.light");
+            if (light is not null && GardenLightVolume.Read(light) is { } volume && volume.SceneStamp == scene.Stamp) scene.Light = volume;
+            return _embedded = scene;
         }
     }
 
     public static GardenScene Read(Stream compressed)
     {
-        using var gz = new GZipStream(compressed, CompressionMode.Decompress);
+        using var file = new MemoryStream(); compressed.CopyTo(file); file.Position = 0;
+        ulong stamp = 1469598103934665603UL; foreach (byte b in file.GetBuffer().AsSpan(0, (int)file.Length)) stamp = (stamp ^ b) * 1099511628211UL;
+        using var gz = new GZipStream(file, CompressionMode.Decompress);
         using var ms = new MemoryStream(); gz.CopyTo(ms);
         var r = new Reader(ms.GetBuffer().AsMemory(0, (int)ms.Length));
         if (r.Bytes(4).Span is not [(byte)'M', (byte)'Z', (byte)'S', (byte)'C']) throw new InvalidDataException("Not a Mazesta scene file.");
@@ -124,7 +133,7 @@ public sealed class GardenScene
             foreach (uint ix in mesh.Indices) if (ix >= vc) throw new InvalidDataException("An index is out of range.");
         }
         foreach (var m in materials) if (m.Texture >= nTex || m.NormalTexture >= nTex) throw new InvalidDataException($"A material refers to texture {Math.Max(m.Texture, m.NormalTexture)} of {nTex}.");
-        return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop, WaterLevel = waterLevel, Fountain = fountain };
+        return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop, WaterLevel = waterLevel, Fountain = fountain, Stamp = stamp };
     }
 
     /// <summary>A texture's RGBA texels from its stored parts, bottom row first (as the exporter had them). Each part fills the

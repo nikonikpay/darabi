@@ -26,6 +26,8 @@ internal sealed unsafe class GardenGpu
     /// <summary>The main pool's surface.</summary>
     public float WaterLevel { get; }
     public GardenFountain? Fountain { get; }
+    /// <summary>The light bounced round the courtyard, when the scene has it (the rasteriser reads it; the ray tracer works its own out).</summary>
+    public GardenLightVolume? LightVolume { get; }
     public GardenScene.Mode Mode { get; }
     public Instance[] Instances { get; }
     /// <summary>The instances that move, by their place in <see cref="Instances"/>.</summary>
@@ -58,7 +60,7 @@ internal sealed unsafe class GardenGpu
 
     public GardenGpu(D3D12Session s, GardenScene scene, GardenScene.Mode mode, SceneModel? custom = null, string? customProblem = null)
     {
-        Mode = mode; ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain;
+        Mode = mode; ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
         var meshes = scene.Meshes.ToList(); var materials = scene.Materials.ToList();
         var chosen = scene.Instances.Where(i => (i.Mask & (uint)mode) != 0).ToArray();
         if (Fountain is not null)
@@ -360,7 +362,7 @@ internal struct GardenFrame
     public uint Samples, Pad0, Pad1, Pad2;
     public Vector4 Backdrop;
     public Matrix4x4 SkyViewProj;
-    public Vector4 Fountain, Fountain2, Ambience, Lens, Post;
+    public Vector4 Fountain, Fountain2, Ambience, Lens, Post, Grid, Grid2;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>

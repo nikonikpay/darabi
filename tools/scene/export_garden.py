@@ -2,6 +2,10 @@
 # to the file the visual GPU tests draw: src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
 #   blender --background ../Mazesta-Art/courtyard-v10.blend --python tools/scene/export_garden.py
 # (it also runs from Blender's Text Editor with the .blend open).
+# Afterwards the light bounced round the new scene has to be worked out again (Scene/garden.light: GardenLightVolume.cs), on a GPU with
+# ray-tracing hardware - build, then with MAZESTA_BAKE_LIGHT set to that file's full path:
+#   dotnet test tests/Mazesta.Diagnostics.Gpu.Tests -c Release --filter "FullyQualifiedName~Bakes_the_garden"
+# and build again. A test fails while the light is another scene's.
 #
 # Both of the file's scenes are read: Garden_Raster (the Direct3D test: a low golden sun) and Garden_RT (the ray-traced test: nightfall,
 # its own light rig and a mirror sphere). What appears in both is written once, marked for both.

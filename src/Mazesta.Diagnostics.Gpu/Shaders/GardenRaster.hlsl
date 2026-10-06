@@ -9,10 +9,10 @@
 // garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
-           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=2)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
-           "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
+           "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
 
 #include "Garden.hlsli"
 
@@ -30,6 +30,7 @@ Texture2D<float> Occlusion : register(t9);     // the ambient occlusion worked o
 Texture2D<float4> LensA : register(t10);       // the lens passes: what this one reads (the frame, or a level of its glow)
 Texture2D<float4> LensB : register(t11);       // the last pass: the glow, to add to the frame
 TextureCubeArray<float> LampShadows : register(t12);   // what each lamp sees round it, as depth: the still scene, drawn once
+Texture3D<float4> LightVolume : register(t13);         // the light bounced round the courtyard: six blocks side by side, one for each way a surface can face
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
@@ -140,12 +141,24 @@ float Occluded(float2 pixel)
           + Occlusion.SampleLevel(Clamp, (pixel + float2(-1.5, 0.5)) * t, 0) + Occlusion.SampleLevel(Clamp, (pixel + float2(0.5, 0.5)) * t, 0)) * 0.25;
 }
 
+// The light a surface at p facing n gets from everything but the sun and the lamps themselves - the sky where it can be seen, and
+// what the sunlit paving, the walls and the lit rooms give back: read from the volume the ray tracer worked out (GardenLightVolume),
+// one spacing out from the surface (so the points it is blended from all stand on the surface's own side of its wall), as the mix of
+// the three directions the surface faces. Without a volume: the sky's own light where the sky stands open, and a little under a roof.
+float3 Bounced(float3 p, float3 n, float open)
+{
+    if (Grid2.w <= 0) return Ambient(n) * lerp(0.3, 1, open);
+    float3 size = Grid2.xyz, f = clamp(((p + n * Grid.w - Grid.xyz) / Grid.w + 0.5) / size, 0.5 / size, 1 - 0.5 / size), w = n * n;
+    return w.x * LightVolume.SampleLevel(Clamp, float3((f.x + (n.x < 0 ? 1 : 0)) / 6, f.yz), 0).rgb
+         + w.y * LightVolume.SampleLevel(Clamp, float3((f.x + (n.y < 0 ? 3 : 2)) / 6, f.yz), 0).rgb
+         + w.z * LightVolume.SampleLevel(Clamp, float3((f.x + (n.z < 0 ? 5 : 4)) / 6, f.yz), 0).rgb;
+}
+
 float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
 {
-    // the sky's light, where the sky can be seen and the surface's own corners and crevices let it in; under a roof a little still
-    // arrives, bounced off what the sun does reach
-    float open = SkyOpen(p, s.Normal, pixel), near = Occluded(pixel) * s.Occlusion, sky = lerp(0.3, 1, open) * near;
-    float3 c = s.Albedo * Ambient(s.Normal) * (1 - s.Metallic) * sky + s.Emission;
+    // the light from all round, as far as the surface's own corners and crevices let it in
+    float open = SkyOpen(p, s.Normal, pixel), near = Occluded(pixel) * s.Occlusion;
+    float3 c = s.Albedo * Bounced(p, s.Normal, open) * (1 - s.Metallic) * near + s.Emission;
     if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor) * Shadow(p, s.Normal) * lerp(1, near, 0.35);
     [loop] for (uint k = 0; k < LightCount; k++)
     {
@@ -192,7 +205,7 @@ float4 Opaque(VOut i, bool cutout)
         s.Albedo *= lerp(float3(0.82, 0.86, 0.80), float3(1.08, 1.04, 0.92), h);
         s.Albedo = lerp(dot(s.Albedo, float3(0.3, 0.59, 0.11)), s.Albedo, 0.9);
         float inner = lerp(0.42, 1, i.Out * i.Out);
-        float3 c = Lit(s, i.World, v, i.Position.xy) - s.Albedo * Ambient(s.Normal) * (1 - inner) * 0.6;
+        float3 c = Lit(s, i.World, v, i.Position.xy) - s.Albedo * Bounced(i.World, s.Normal, 1) * (1 - inner) * 0.6;
         if (SunOn > 0) c += s.Albedo * s.Albedo * SunColor * 0.35 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n) * inner;
         return float4(Pack(Haze(max(c, 0), i.World)), alpha);
     }
@@ -221,7 +234,7 @@ float4 TransparentPS(VOut i) : SV_Target
         else reflected = Sky(reflect(-v, n));
         reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n);   // the sun's glint
         // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and a faint teal body
-        float3 body = m.Base * Ambient(float3(0, 1, 0)) * 0.5;
+        float3 body = m.Base * Bounced(i.World, float3(0, 1, 0), 1) * 0.5;
         float a = fresnel + (1 - fresnel) * 0.22;
         return float4(Pack((reflected * fresnel + body * (1 - fresnel) * 0.22) / a), a);
     }
@@ -230,7 +243,7 @@ float4 TransparentPS(VOut i) : SV_Target
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
     float3 mirrored = Sky(reflect(-v, n)) * lerp(0.25, 1, open) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
-    float3 own = m.Base * (Ambient(n) + Ambient(-n)) * 0.5 * lerp(0.4, 1, open) + m.Emission;
+    float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission;
     if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
     [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);

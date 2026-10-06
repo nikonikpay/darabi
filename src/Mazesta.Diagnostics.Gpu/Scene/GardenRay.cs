@@ -38,7 +38,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
         _pixels = s.UavBuffer((ulong)_pitch * (ulong)height * 4);
         ulong px = (ulong)width * (ulong)height * 16;
         _ping = s.UavBuffer(px); _pong = s.UavBuffer(px); _guide = s.UavBuffer(px * 2);
-        _constants = s.Buffer(512, HeapType.Upload, ResourceStates.GenericRead);
+        _constants = s.Buffer(768, HeapType.Upload, ResourceStates.GenericRead);
 
         // one BLAS per mesh drawn, built together: results and scratch each packed into one buffer
         int meshCount = g.Draws.Max(d => d.Mesh) + 1;
@@ -94,6 +94,58 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     private static ulong Align(ulong n) => (n + 255) & ~255ul;
 
+    /// <summary>How many entries of the light volume's list one row of a baking dispatch does (GardenRay.hlsl's BakeRow): a renderer
+    /// made this wide, and high enough, has room for the list in its buffers.</summary>
+    public const int BakeRow = 1024;
+
+    /// <summary>For <see cref="GardenLightBaker"/>: the light at each point of a grid, for each of six directions, as four floats an
+    /// entry (red, green, blue, and the share of its rays that met the back of a surface). The scene is this renderer's own, as it
+    /// stands at time 0; <paramref name="rays"/> rays an entry, a few rows of entries a submission so no one of them holds the GPU long.</summary>
+    public float[] BakeLight(Vector4 grid, Vector3 points, int count, uint rays, float skyGain)
+    {
+        if (Width != BakeRow || (long)Width * Height < count) throw new InvalidOperationException("The renderer is not the size the light volume's list needs.");
+        var bake = S.Own(S.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenBake") }));
+        var frame = GardenFrame.For(G, 0, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces; frame.Samples = 1;
+        frame.Grid = grid; frame.Grid2 = new(points, 0); frame.Post.Y = skyGain;
+        MemoryMarshal.Write(_constants.Map<byte>(0, 768), in frame); _constants.Unmap(0);
+        WriteInstances(0, all: true);
+        int rows = (count + BakeRow - 1) / BakeRow;
+        for (int row = 0; row < rows; row += 8)
+            S.Run(l =>
+            {
+                if (row == 0) { l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, _tlasInputs, 0, _tlasScratch.GPUVirtualAddress)); l.ResourceBarrierUnorderedAccessView(_tlas); }
+                Bind(l); l.SetPipelineState(bake);
+                l.SetComputeRoot32BitConstants(14, new Pass((uint)row, rays), 0);
+                l.Dispatch(BakeRow / 8, 1, 1);
+            });
+        var raw = S.Read(count * 4, (l, readback) =>
+        {
+            l.ResourceBarrierTransition(_ping, ResourceStates.UnorderedAccess, ResourceStates.CopySource);
+            l.CopyBufferRegion(readback, 0, _ping, 0, (ulong)count * 16);
+            l.ResourceBarrierTransition(_ping, ResourceStates.CopySource, ResourceStates.UnorderedAccess);
+        });
+        return MemoryMarshal.Cast<uint, float>(raw).ToArray();
+    }
+
+    private void Bind(ID3D12GraphicsCommandList4 l)
+    {
+        l.SetComputeRootSignature(_root); l.SetDescriptorHeaps(_srv);
+        l.SetComputeRootConstantBufferView(0, _constants.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(1, _tlas.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(2, G.InstanceBuffer.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(3, G.MaterialBuffer.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(4, G.LightBuffer.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(5, G.MeshInfoBuffer.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(6, G.SubmeshInfoBuffer.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(7, G.VertexBuffer.GPUVirtualAddress);
+        l.SetComputeRootShaderResourceView(8, G.IndexBuffer.GPUVirtualAddress);
+        l.SetComputeRootDescriptorTable(9, _srv.GetGPUDescriptorHandleForHeapStart());
+        l.SetComputeRootUnorderedAccessView(10, _pixels.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(11, _ping.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(12, _guide.GPUVirtualAddress);
+        l.SetComputeRootUnorderedAccessView(13, _pong.GPUVirtualAddress);
+    }
+
     /// <summary>The TLAS instances: every one at build time, afterwards only those that move.</summary>
     private void WriteInstances(float time, bool all)
     {
@@ -113,24 +165,10 @@ internal sealed unsafe class GardenRay : GardenRenderer
     private void Trace(ID3D12GraphicsCommandList4 l, float time)
     {
         var frame = GardenFrame.For(G, time, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces; frame.Samples = (uint)Samples;
-        MemoryMarshal.Write(_constants.Map<byte>(0, 512), in frame); _constants.Unmap(0);
+        MemoryMarshal.Write(_constants.Map<byte>(0, 768), in frame); _constants.Unmap(0);
         l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, _tlasInputs, 0, _tlasScratch.GPUVirtualAddress));
         l.ResourceBarrierUnorderedAccessView(_tlas);
-        l.SetPipelineState(_pipeline); l.SetComputeRootSignature(_root); l.SetDescriptorHeaps(_srv);
-        l.SetComputeRootConstantBufferView(0, _constants.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(1, _tlas.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(2, G.InstanceBuffer.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(3, G.MaterialBuffer.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(4, G.LightBuffer.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(5, G.MeshInfoBuffer.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(6, G.SubmeshInfoBuffer.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(7, G.VertexBuffer.GPUVirtualAddress);
-        l.SetComputeRootShaderResourceView(8, G.IndexBuffer.GPUVirtualAddress);
-        l.SetComputeRootDescriptorTable(9, _srv.GetGPUDescriptorHandleForHeapStart());
-        l.SetComputeRootUnorderedAccessView(10, _pixels.GPUVirtualAddress);
-        l.SetComputeRootUnorderedAccessView(11, _ping.GPUVirtualAddress);
-        l.SetComputeRootUnorderedAccessView(12, _guide.GPUVirtualAddress);
-        l.SetComputeRootUnorderedAccessView(13, _pong.GPUVirtualAddress);
+        l.SetPipelineState(_pipeline); Bind(l);
         l.SetComputeRoot32BitConstants(14, new Pass(0, 0), 0);
         l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
         l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_guide);

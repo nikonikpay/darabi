@@ -65,7 +65,7 @@ moon = light("Moon", 'SUN', (0, 0, 30), 0.9, (0.62, 0.72, 1.0), aim=(-0.62, 0.42
 # the hall is lit from inside: three hanging lamps, whose light falls out through the open door and the orsi onto the terrace
 for k, (x, y) in enumerate(((-5.4, 2.4), (0.0, 4.6), (5.4, 2.4))):
     light(f"Hall_{k}", 'POINT', (x, y, 4.7), 260, WARM, radius=0.18)
-    light(f"Hall_Day_{k}", 'POINT', (x, y, 4.7), 120, WARM, lights=day)   # the rasteriser's lamps: by day the hall is lit as much by them as by its door and windows
+    light(f"Hall_Day_{k}", 'POINT', (x, y, 4.7), 80, WARM, lights=day)   # the rasteriser's lamps: by day the hall is lit as much by them as by its door and windows
 for x in (-7.2, -2.4, 2.4, 7.2): light(f"Canopy_{x}", 'POINT', (x, -4.7, 4.55), 70, WARM, radius=0.08)
 # under the water: along both sides of the pool, and in the upper basins
 for x in (-2.3, 2.3):

@@ -25,7 +25,9 @@ cbuffer Frame : register(b1)
     float4 Fountain2;                     // that water's level, the radius of the bowl's rim, how many droplets are the jet's (the rest spill from the rim), 1 when there is a fountain
     float4 Ambience;                      // rasteriser: 1 when the occlusion image is bound, its taps, the near plane's distance
     float4 Lens;                          // the distance in focus, the blur in pixels a dioptre out of focus brings, the most blur in pixels, the taps it is gathered with (0: none)
-    float4 Post;                          // how much of the glow round bright things is added to the frame
+    float4 Post;                          // how much of the glow round bright things is added to the frame; for the light volume's baker, how much of the sky's brightness it keeps
+    float4 Grid;                          // the light volume (GardenLightVolume): its first point, and the distance from point to point
+    float4 Grid2;                         // its points along x, y and z, and 1 when the rasteriser has it bound
 };
 
 // Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index

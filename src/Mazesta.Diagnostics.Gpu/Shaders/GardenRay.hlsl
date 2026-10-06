@@ -36,6 +36,8 @@ SamplerState Linear : register(s0);
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Linear, uv, 0).rgb; }
 
+static float SkyGain = 1;      // the light volume's baker keeps only a share of the sky's brightness (GardenLightBaker.SkyGain)
+static bool Baking = false;   // and sees from no eye (no air between one and the surface); it follows light for two bounces with shadow rays at both, and adds no stand-in for the rest
 static const uint MaskVisible = 1, MaskShadow = 2, MaskTint = 4;   // what a camera ray meets; what blocks light; the stained panes, which colour it
 
 // T, B: the directions the texture's u and v run in over the triangle; Lod: the mip level at which a texel is the size of a pixel there
@@ -188,10 +190,11 @@ float3 Direct(Surface s, float3 p, float3 v, bool shadows, inout uint seed)
 float3 Glance(float3 origin, float3 dir, float tmax, inout uint seed)
 {
     Hit h;
-    if (!Trace(origin, dir, tmax, MaskVisible, h)) return Sky(dir);
+    if (!Trace(origin, dir, tmax, MaskVisible, h)) return Sky(dir) * SkyGain;
     Material m = Materials[h.Material];
     float3 v = -dir; Surface s = SurfaceAt(h, v);
     if (m.Kind == KWater || m.Kind == KGlass) return SkyColor(reflect(dir, s.Normal)) * 0.3 + s.Emission;
+    if (Baking) return s.Emission + Direct(s, h.P, v, true, seed);
     return s.Albedo * Ambient(s.Normal) * (1 - s.Metallic) * 0.5 * s.Occlusion + s.Emission + Direct(s, h.P, v, false, seed);
 }
 
@@ -202,7 +205,7 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
     for (uint bounce = 0; bounce <= Bounces; bounce++)
     {
         Hit h;
-        if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * Sky(dir); break; }
+        if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * Sky(dir) * SkyGain; break; }
         Material m = Materials[h.Material];
         float3 v = -dir; Surface s = SurfaceAt(h, v);
 
@@ -225,8 +228,9 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
 
         // light bounced off what is near: one diffuse ray on the first surface (deeper ones use the ambient term alone)
         float3 bounced = bounce == 0 ? Glance(h.P + s.Normal * 0.01, CosineAround(s.Normal, seed), 12, seed) : Ambient(s.Normal) * 0.6;
-        float3 lit = s.Albedo * (1 - s.Metallic) * (bounced * 0.8 + Ambient(s.Normal) * 0.15) * s.Occlusion + s.Emission + Direct(s, h.P, v, true, seed);
-        if (bounce == 0) lit = Haze(lit, h.P);
+        float3 around = Baking ? (bounce == 0 ? bounced : 0) : bounced * 0.8 + Ambient(s.Normal) * 0.15;
+        float3 lit = s.Albedo * (1 - s.Metallic) * around * s.Occlusion + s.Emission + Direct(s, h.P, v, true, seed);
+        if (bounce == 0 && !Baking) lit = Haze(lit, h.P);
         // mirror-like surfaces (metal, polished stone, glazed tiles) carry on as a reflection
         float gloss = saturate(1 - s.Roughness * 3);
         float3 f0 = lerp(0.04, s.Albedo, s.Metallic);
@@ -300,6 +304,32 @@ void Denoise(uint3 id : SV_DispatchThreadID)
     float3 c = sum / wsum;
     if (Last) c *= Guide[i * 2 + 1].rgb;   // the surface's own colour again: the frame's light, for the lens
     if (fromPing) Pong[i] = float4(c, 0); else Ping[i] = float4(c, 0);
+}
+
+// The light volume (GardenLightVolume), worked out for the rasteriser: for each point of the grid and each of the six ways a surface
+// there can face, the mean of the light Last rays find, sent out round that direction as a matt surface would gather them. Each
+// dispatch does some rows of the list (row Step on, BakeRow entries a row) into Ping: the light, and the share of the rays that met
+// the back of a surface - a point that sees mostly backs is inside a wall.
+static const uint BakeRow = 1024;
+[RootSignature(RS)]
+[numthreads(8, 8, 1)]
+void Bake(uint3 id : SV_DispatchThreadID)
+{
+    uint3 n = (uint3)Grid2.xyz; uint index = (id.y + Step) * BakeRow + id.x;
+    if (id.x >= BakeRow || index >= n.x * n.y * n.z * 6) return;
+    uint face = index % 6, at = index / 6;
+    float3 p = Grid.xyz + float3(at % n.x, at / n.x % n.y, at / (n.x * n.y)) * Grid.w;
+    float3 axis = float3(face / 2 == 0, face / 2 == 1, face / 2 == 2) * (face % 2 == 0 ? 1 : -1);
+    SkyGain = Post.y; Baking = true;
+    uint seed = Hash(index * 9781 + 7); float3 sum = 0; float back = 0;
+    for (uint k = 0; k < Last; k++)
+    {
+        float3 dir = CosineAround(axis, seed); Hit h;
+        if (!Trace(p, dir, 400, MaskVisible, h)) { sum += min(Sky(dir) * SkyGain, 8); continue; }
+        if (dot(h.N, dir) > 0 && Materials[h.Material].Kind != KCutout) back += 1;
+        sum += min(Radiance(p, dir, seed), 8);
+    }
+    Ping[index] = float4(sum / Last, back / Last);
 }
 
 // The lens, as the rasteriser has it (Garden.hlsli): the frame's light is in Ping, and Pong, done with, holds the glow at a quarter
