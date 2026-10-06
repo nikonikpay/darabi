@@ -274,6 +274,20 @@ public class GardenSceneTests
         }
     }
 
+    [Fact] public void The_wind_bends_the_plants_where_they_stand_and_nothing_else()
+    {
+        var swaying = G.Instances.Where(i => GardenScene.Sway(i.Flags) > 0).ToList();
+        Assert.True(swaying.Count > 5_000);                                                       // every tree, shrub, tuft and leaf
+        Assert.All(swaying, i => Assert.Equal(0u, i.Flags & 7));                                  // not the logo, the sphere or a droplet
+        Assert.All(swaying, i => Assert.InRange(GardenScene.Sway(i.Flags), 0.005f, 0.2f));
+        Assert.True(G.Instances.Count(i => GardenScene.Sway(i.Flags) == 0) > 150);               // the building, the furniture, the rugs stand still
+        // the wind is a gentle one, the same at the same moment, and never still for long
+        float most = 0;
+        for (float t = 0; t < 60; t += 0.1f) { var w = GardenGpu.Wind(new(3, 0, -12), t); most = MathF.Max(most, w.Length()); Assert.True(w.Length() < 2.2f); }
+        Assert.True(most > 1.2f); Assert.Equal(GardenGpu.Wind(new(3, 0, -12), 7.5f), GardenGpu.Wind(new(3, 0, -12), 7.5f));
+        Assert.True((GardenGpu.Wind(new(3, 0, -12), 7.5f) - GardenGpu.Wind(new(3, 0, -12), 8.5f)).Length() > 0.05f);
+    }
+
     private sealed class Vec3Near(float tolerance) : IEqualityComparer<Vector3>
     {
         public bool Equals(Vector3 a, Vector3 b) => Vector3.Distance(a, b) <= tolerance;

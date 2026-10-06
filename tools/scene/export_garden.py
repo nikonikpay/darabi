@@ -12,7 +12,7 @@
 #
 # The format is documented in GardenScene.cs, which reads it. In short, gzip over little-endian records:
 #   meshes    - 16-byte vertices (position snorm16x4 within the mesh's bounds, normal snorm8x4, uv float16x2), 32-bit indices, one submesh per material
-#   instances - a mesh, a 3x4 world matrix, which scene(s) it is in
+#   instances - a mesh, a 3x4 world matrix, which scene(s) it is in, and flags: the logo, the mirror sphere, how far the wind bends it
 #   (vertices, indices and instances are written byte plane by byte plane, the indices as differences, the vertices in the order the
 #   indices first use them: the same data, a little over half the size once gzip has been over it)
 #   materials - flat, alpha-tested (texture), brick pattern (procedural, as in Blender), water, glass, emissive
@@ -72,6 +72,11 @@ SKY_WORLD, SKY_W, SKY_H, SKY_TAN = "V8_Alborz_Sunset_HDR", 2048, 256, 0.36
 MAGIC, VERSION = b"MZSC", 4
 K_FLAT, K_CUTOUT, K_BRICK, K_WATER, K_GLASS, K_EMISSIVE = 0, 1, 2, 3, 4, 5
 F_LOGO, F_SPHERE = 1, 2
+# How far the wind bends each kind of plant: thousandths of a metre sideways for every metre above where it is rooted (bits 8 to 15 of an
+# instance's flags). A tree leans a hand's breadth at its top; a sprig, a blade or a leaf on its stalk flutters.
+SWAY = {"V10_SOURCE_Broadleaf": 10, "V9_SOURCE_Cypress": 8, "V10_SOURCE_Alpine": 9, "V10_SOURCE_Juniper": 14, "V9_SOURCE_Shrub": 30, "V9_BlossomSprig": 110,
+        "V9_SOURCE_Grass": 90, "V9_SOURCE_WildGrass": 90, "V9_SOURCE_Daisy": 70, "V9_SOURCE_WhiteFlowers": 70,
+        "V9_SOURCE_IvyLeaf": 150, "V10_SOURCE_VineLeaf": 150, "V10_SOURCE_VariegatedLeaf": 150}
 
 def swap(v): return (v[0], v[2], v[1])   # Blender -> Direct3D axes
 
@@ -468,7 +473,7 @@ for scene_name, bit in SCENES:
             mi = mesh_for(key, o, dg)
             if mi < 0: continue
             rows = matrix_rows(mw); k = (mi, tuple(round(x, 4) for r in rows for x in r))
-            flags = {"MazestaLogo": F_LOGO, "MirrorSphere": F_SPHERE}.get(o.original.name, 0)
+            flags = {"MazestaLogo": F_LOGO, "MirrorSphere": F_SPHERE}.get(o.original.name, 0) | next((v for n, v in SWAY.items() if o.original.name.startswith(n)), 0) << 8
             prev = instances.get(k); instances[k] = (mi, (prev[1] if prev else 0) | bit, flags, rows)
         elif o.type == 'LIGHT':
             d = o.data; pos = swap(mw.translation); aim = mw.to_3x3() @ __import__('mathutils').Vector((0, 0, -1)); aim = swap(aim.normalized())

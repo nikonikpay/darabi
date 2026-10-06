@@ -25,6 +25,10 @@ public sealed class GardenScene
     /// <summary>An instance's flags: the logo; the ray-traced scene's mirror sphere; a droplet of the fountain (those are not in the
     /// file: <see cref="GardenGpu"/> adds them).</summary>
     public const uint LogoFlag = 1, SphereFlag = 2, DropletFlag = 4;
+    /// <summary>Bits 8 to 15 of an instance's flags: how far the wind bends it, in thousandths of a metre sideways for every metre above
+    /// where it stands (a plant; 0 for everything else). <see cref="GardenGpu.Wind"/> says which way and when.</summary>
+    public const int SwayShift = 8;
+    public static float Sway(uint flags) => (flags >> SwayShift & 255) / 1000f;
 
     public int TextureSize { get; private init; }
     /// <summary>Mip levels of the texture array: <see cref="TextureSize"/> down to 4.</summary>

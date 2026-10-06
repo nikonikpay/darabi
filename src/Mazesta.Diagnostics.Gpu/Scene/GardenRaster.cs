@@ -25,9 +25,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         };
     }
 
-    /// <summary>One pass's constants (GardenFrame, 528 bytes) at a 256-byte-aligned slot: the frame, its mirror image, its depth alone,
-    /// and (once) the view from above.</summary>
-    private const ulong Slot = 768; private const int Slots = 4, SkySize = 2048, GlowLevels = 5, LampSize = 512, RoundSize = 256, RoundMips = 5;
+    /// <summary>One pass's constants (GardenFrame) at a 256-byte-aligned slot: the frame, its mirror image, its depth alone, and (once)
+    /// the view from above and the sun's view of the still scene; then the lamps' and the surroundings' views.</summary>
+    private const ulong Slot = 768; private const int Slots = 5, SkySize = 2048, GlowLevels = 5, LampSize = 512, RoundSize = 256, RoundMips = 5;
     /// <summary>Where the still garden is drawn all round from, once, for what surfaces mirror, and the box each picture stands for
     /// (a ray is carried to the box's side before the picture is looked up): the courtyard, from over the pool between the fountain and
     /// the gate; the hall's rooms, from their middle.</summary>
@@ -370,15 +370,15 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         if (G.LightVolume is { } volume) { frame.Grid = new(volume.Origin, volume.Spacing); frame.Grid2 = new(volume.X, volume.Y, volume.Z, 1); }
         frame.Round0 = new(Rounds[0].From, RoundMips); frame.Round0Low = new(Rounds[0].Low, 0); frame.Round0High = new(Rounds[0].High, 0);
         frame.Round1 = new(Rounds[1].From, RoundMips); frame.Round1Low = new(Rounds[1].Low, 0); frame.Round1High = new(Rounds[1].High, 0);
-        var first = frame;   // the passes drawn once see no mirror images: the sky stands in
+        var first = frame; first.Post.Z = 0;   // the passes drawn once see no mirror images (the sky stands in) and no wind: the plants stand as they were placed
         if (_set.ReflectionDivisor > 0) frame.Flags |= 1;
         if (_samples > 1) frame.Flags |= 4;
         frame.Flags |= 8;
         var mirrored = frame.Mirrored(); mirrored.Flags &= ~4u; mirrored.ViewSize = new(_reflW, _reflH);
         // the depth-only passes draw through ShadowViewProj: the camera's own view for the frame's depth, the view from above for the sky map
-        var depthOnly = frame; depthOnly.ShadowViewProj = frame.ViewProj; var above = frame; above.ShadowViewProj = _skyViewProj;
+        var depthOnly = frame; depthOnly.ShadowViewProj = frame.ViewProj; var above = first; above.ShadowViewProj = _skyViewProj;
         var map = _constants.Map<byte>(0, (int)Slot * Slots);
-        MemoryMarshal.Write(map, in frame); MemoryMarshal.Write(map[(int)Slot..], in mirrored); MemoryMarshal.Write(map[((int)Slot * 2)..], in depthOnly); MemoryMarshal.Write(map[((int)Slot * 3)..], in above);
+        MemoryMarshal.Write(map, in frame); MemoryMarshal.Write(map[(int)Slot..], in mirrored); MemoryMarshal.Write(map[((int)Slot * 2)..], in depthOnly); MemoryMarshal.Write(map[((int)Slot * 3)..], in above); MemoryMarshal.Write(map[((int)Slot * 4)..], in first);
         _constants.Unmap(0);
 
         l.SetGraphicsRootSignature(_root); l.SetDescriptorHeaps(_srv);
@@ -400,6 +400,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         bool once = !_shadowBaked;
         if (once)
         {
+            l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * 4);
             l.ClearDepthStencilView(Dsv(3), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(3));
             Geometry(l, Casts, draw => G.CastsShadow(draw) && !draw.Moving);
             l.ResourceBarrierTransition(_shadowStatic, ResourceStates.DepthWrite, ResourceStates.CopySource);

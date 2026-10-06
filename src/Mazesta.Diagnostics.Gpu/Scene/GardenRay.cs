@@ -5,7 +5,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>
 /// Draws the garden with DirectX Raytracing (GardenRay.hlsl): a bottom-level acceleration structure per mesh (one geometry per material,
 /// leaf cards non-opaque so the shader cuts them out), and a top-level one over every placed mesh, rebuilt each frame so the logo, the
-/// mirror sphere and the fountain's droplets can move.
+/// mirror sphere and the fountain's droplets can move and the plants lean with the wind.
 /// Instances made only of water, glass and glowing parts are left out of shadow rays (instance mask), so lanterns light through their
 /// glass; the stained panes have a mask bit of their own, by which the shader finds the colour light takes on passing through them.
 /// </summary>
@@ -150,7 +150,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
     private void WriteInstances(float time, bool all)
     {
         var span = _instances.Map<InstanceDesc>(0, G.Instances.Length);
-        foreach (int i in all ? Enumerable.Range(0, G.Instances.Length) : G.Moving)
+        foreach (int i in all ? Enumerable.Range(0, G.Instances.Length) : G.Moving.Concat(G.Swaying))
         {
             var inst = G.Instances[i];
             var m = _dequant[inst.Mesh] * G.World(i, time);
@@ -192,7 +192,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target)
     {
-        if (G.Moving.Length > 0) WriteInstances(time, all: false);   // safe: the previous submission has finished (every Run waits for the GPU)
+        if (G.Moving.Length + G.Swaying.Length > 0) WriteInstances(time, all: false);   // safe: the previous submission has finished (every Run waits for the GPU)
         Trace(l, time);
         var dest = Targets[target];
         l.ResourceBarrierTransition(_pixels, ResourceStates.UnorderedAccess, ResourceStates.CopySource);

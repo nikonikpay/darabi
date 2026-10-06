@@ -4,13 +4,16 @@ namespace Mazesta.Diagnostics.Gpu.Tests;
 
 /// <summary>Draws the garden on the real GPU. A frame drawn twice at one moment must be the same bits (the check frames rely on it), and
 /// the picture must be a picture (sky above, lit garden below, not one flat colour). With MAZESTA_RENDER_DIR set, the frames are also
-/// written there as PNG files to look at (MAZESTA_RENDER_WIDTH: how wide, 960 unless said).</summary>
+/// written there as PNG files to look at (MAZESTA_RENDER_WIDTH: how wide, 960 unless said; MAZESTA_RENDER_TIMES: at which moments).</summary>
 [Trait("Category", "Hardware")]
 public class GardenRenderHardwareTests
 {
     private static bool NoGpu => GpuDevices.Resolve("") is null;
     private static int W => int.TryParse(Environment.GetEnvironmentVariable("MAZESTA_RENDER_WIDTH"), out int w) && w is >= 320 and <= 3840 ? w / 16 * 16 : 960;
     private static int H => W * 9 / 16;
+    /// <summary>The moments drawn for looking at: round the walk (the garden, the terrace, the hall's rooms), or those MAZESTA_RENDER_TIMES lists.</summary>
+    private static float[] Times => Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIMES") is { Length: > 0 } list
+        ? [.. list.Split(',').Select(t => float.Parse(t, System.Globalization.CultureInfo.InvariantCulture))] : [0f, 12f, 21f, 27f, 36f, 42f, 48f, 54f, 60f, 72f, 78f, 87f];
 
     [Theory, InlineData(1u), InlineData(3u)]
     public void The_rasterised_garden_is_a_stable_picture(uint load)
@@ -53,8 +56,8 @@ public class GardenRenderHardwareTests
         Assert.True(a.Distinct().Count() > 2000, "the frame is nearly one colour");
         string? dir = Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR");
         if (dir is { Length: > 0 })
-            foreach (float t in new[] { 0f, 12f, 21f, 27f, 36f, 42f, 48f, 54f, 60f, 72f, 78f, 87f })   // round the walk: the garden, the terrace, the hall's rooms
-                Png.Write(Path.Combine(dir, $"{name}-t{t:00}.png"), r.Capture(t), r.Width, r.Height);
+            foreach (float t in Times)
+                Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}.png")), r.Capture(t), r.Width, r.Height);
         // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk (drawn off screen and read back: slower than the test's own window)
         if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })
         {

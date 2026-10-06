@@ -52,7 +52,7 @@ void Place(VIn v, uint instance, out float3 world, out float3 normal)
         float3 pos, vel; float size; Droplet(i.Index, Time, pos, vel, size);
         world = DropletPlace(local, pos, vel, size); normal = local; return;
     }
-    world = mul(Rotation(i), local) + Translation(i);
+    world = Swayed(mul(Rotation(i), local) + Translation(i), i);
     normal = mul(Rotation(i), v.Normal.xyz);
     if (i.Flags & FLogo) { float3 pivot = Translation(i); world = LogoMove(world, pivot); normal = LogoTurn(normal); }
 }

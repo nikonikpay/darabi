@@ -25,14 +25,15 @@ cbuffer Frame : register(b1)
     float4 Fountain2;                     // that water's level, the radius of the bowl's rim, how many droplets are the jet's (the rest spill from the rim), 1 when there is a fountain
     float4 Ambience;                      // rasteriser: 1 when the occlusion image is bound, its taps, the near plane's distance
     float4 Lens;                          // the distance in focus, the blur in pixels a dioptre out of focus brings, the most blur in pixels, the taps it is gathered with (0: none)
-    float4 Post;                          // how much of the glow round bright things is added to the frame; for the light volume's baker, how much of the sky's brightness it keeps
+    float4 Post;                          // how much of the glow round bright things is added to the frame; for the light volume's baker, how much of the sky's brightness it keeps; 1 while the wind blows (0 in the passes drawn once)
     float4 Grid;                          // the light volume (GardenLightVolume): its first point, and the distance from point to point
     float4 Grid2;                         // its points along x, y and z, and 1 when the rasteriser has it bound
     float4 Round0; float4 Round0Low; float4 Round0High;   // rasteriser: where the courtyard's picture of its surroundings was taken from (w: its mip levels), and the box it stands for
     float4 Round1; float4 Round1Low; float4 Round1High;   // the same for the hall's rooms: a surface inside this box mirrors that picture
 };
 
-// Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index
+// Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index;
+// bits 8 to 15: how far the wind bends it (a plant), in thousandths of a metre sideways for every metre above where it stands
 struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Index; };
 // Pattern: for a brick, its scale, mortar size, brick width and row height; for any other textured surface, how many times the texture
 // repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre.
@@ -60,6 +61,24 @@ float3 LogoMove(float3 p, float3 pivot)
     return pivot + float3(c * d.x + s * d.z, d.y + Logo.z, -s * d.x + c * d.z);
 }
 float3 LogoTurn(float3 n) { float c = Logo.x, s = Logo.y; return float3(c * n.x + s * n.z, n.y, -s * n.x + c * n.z); }
+
+// The wind at a plant standing at root: which way (x, z) and how hard it pushes, in units of the plant's own sway - gusts rolling
+// across the garden, a quicker flutter over them, a swirl across (GardenGpu.Wind is its twin, for the ray tracer's instances).
+float2 Wind(float3 root, float time)
+{
+    float phase = root.x * 0.35 + root.z * 0.21;
+    float gust = sin(time * 0.9 + phase) + 0.5 * sin(time * 2.3 + phase * 1.7) + 0.25 * sin(time * 5.1 + phase * 3.1);
+    float swirl = 0.4 * sin(time * 1.7 + phase * 2.3);
+    return float2(0.8 * gust - 0.6 * swirl, 0.6 * gust + 0.8 * swirl);
+}
+// A plant leaning with it: every point pushed sideways by its height above where the plant stands.
+float3 Swayed(float3 world, Instance i)
+{
+    float sway = ((i.Flags >> 8) & 255) / 1000.0 * Post.z;
+    if (sway <= 0) return world;
+    float3 root = Translation(i); float2 w = Wind(root, Time) * sway * (world.y - root.y);
+    return world + float3(w.x, 0, w.y);
+}
 
 // ——— Blender's brick texture (intern/cycles/kernel/svm/brick.h), offset 0.5 every second row, no squash ———
 

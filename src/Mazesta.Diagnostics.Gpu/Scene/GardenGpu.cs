@@ -30,8 +30,10 @@ internal sealed unsafe class GardenGpu
     public GardenLightVolume? LightVolume { get; }
     public GardenScene.Mode Mode { get; }
     public Instance[] Instances { get; }
-    /// <summary>The instances that move, by their place in <see cref="Instances"/>.</summary>
+    /// <summary>The instances that move from place to place (the logo, the sphere, the droplets), by their place in <see cref="Instances"/>.</summary>
     public int[] Moving { get; }
+    /// <summary>The plants the wind bends where they stand (<see cref="GardenScene.Sway"/>).</summary>
+    public int[] Swaying { get; }
     public Draw[] Draws { get; }
     public GardenMaterial[] Materials { get; }
     public Light[] PointLights { get; }
@@ -91,7 +93,8 @@ internal sealed unsafe class GardenGpu
         Instances = [.. order.Select(i => new Instance { Row0 = i.Row0, Row1 = i.Row1, Row2 = i.Row2, Mesh = i.Mesh, Mask = i.Mask, Flags = i.Flags })];
         for (uint k = 0, d = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.DropletFlag) != 0) Instances[k].Index = d++;
         LogoInstance = Array.FindIndex(Instances, i => (i.Flags & GardenScene.LogoFlag) != 0);
-        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => Instances[k].Flags != 0)];
+        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => (Instances[k].Flags & 7) != 0)];
+        Swaying = [.. Enumerable.Range(0, Instances.Length).Where(k => GardenScene.Sway(Instances[k].Flags) > 0)];
         var draws = new List<Draw>();
         for (int k = 0; k < order.Length;)
         {
@@ -99,7 +102,7 @@ internal sealed unsafe class GardenGpu
             var mesh = meshes[m];
             draws.Add(new Draw(m, (uint)k, (uint)n, baseVertex[m], (uint)mesh.VertexCount, mesh.Centre, mesh.Extent,
                 [.. mesh.Submeshes.Select(sub => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))],
-                order.Skip(k).Take(n).Any(i => i.Flags != 0)));
+                order.Skip(k).Take(n).Any(i => (i.Flags & 7) != 0)));
             Triangles += (long)mesh.Indices.Length / 3 * n; k += n;
         }
         Draws = [.. draws];
@@ -162,10 +165,27 @@ internal sealed unsafe class GardenGpu
         var m = new Matrix4x4(inst.Row0.X, inst.Row1.X, inst.Row2.X, 0, inst.Row0.Y, inst.Row1.Y, inst.Row2.Y, 0, inst.Row0.Z, inst.Row1.Z, inst.Row2.Z, 0, inst.Row0.W, inst.Row1.W, inst.Row2.W, 1);
         if ((inst.Flags & GardenScene.DropletFlag) != 0) { var (pos, vel, size) = Droplet(inst.Index, time); return DropletWorld(pos, vel, size); }
         if ((inst.Flags & GardenScene.SphereFlag) != 0) return m * Matrix4x4.CreateTranslation(SphereDrift(time));
+        if (GardenScene.Sway(inst.Flags) is > 0 and float sway)
+        {
+            // leaning with the wind: every point pushed sideways by its height above where the plant stands (Garden.hlsli's Swayed is its twin)
+            var root = new Vector3(inst.Row0.W, inst.Row1.W, inst.Row2.W); var w = Wind(root, time) * sway;
+            return m * new Matrix4x4(1, 0, 0, 0, w.X, 1, w.Y, 0, 0, 0, 1, 0, -w.X * root.Y, 0, -w.Y * root.Y, 1);
+        }
         if ((inst.Flags & GardenScene.LogoFlag) == 0) return m;
         var pivot = new Vector3(inst.Row0.W, inst.Row1.W, inst.Row2.W);
         var (c, s, lift) = LogoTurn(pivot, time);
         return m * Matrix4x4.CreateTranslation(-pivot) * LogoMotion(c, s, lift) * Matrix4x4.CreateTranslation(pivot);
+    }
+
+    /// <summary>The wind at a plant standing at <paramref name="root"/>, at <paramref name="time"/>: which way (x, z) and how hard it
+    /// pushes, in units of the plant's own sway. Gusts roll across the garden - neighbours lean nearly together - with a quicker
+    /// flutter over them and a swirl across. A pure function of the time (Garden.hlsli's Wind is its twin): the same frame is the same picture.</summary>
+    public static Vector2 Wind(Vector3 root, float time)
+    {
+        float phase = root.X * 0.35f + root.Z * 0.21f;
+        float gust = MathF.Sin(time * 0.9f + phase) + 0.5f * MathF.Sin(time * 2.3f + phase * 1.7f) + 0.25f * MathF.Sin(time * 5.1f + phase * 3.1f);
+        float swirl = 0.4f * MathF.Sin(time * 1.7f + phase * 2.3f);
+        return new(0.8f * gust - 0.6f * swirl, 0.6f * gust + 0.8f * swirl);
     }
 
     /// <summary>How far the mirror sphere is from where the scene placed it (beside the fountain, over the pool's right half) at
@@ -399,7 +419,7 @@ internal struct GardenFrame
         // soft from the terrace, and a door's leaf an arm's length away from the middle of a room: blur in pixels = 2.2 % of the
         // frame's height for each dioptre out of focus, and never more than 0.7 % of it.
         f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.022f * height, 0.007f * height, 16);
-        f.Post = new(raster ? 0.11f : 0.55f, 0, 0, 0);   // the rasteriser's glow is five levels summed, the ray tracer's one
+        f.Post = new(raster ? 0.11f : 0.55f, 0, 1, 0);   // the rasteriser's glow is five levels summed, the ray tracer's one; the wind blows
         var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, raster ? 0.3f : 0.45f);   // the logo is a lit sign: it glows of itself, by day a little, at night more
         return f;
     }
