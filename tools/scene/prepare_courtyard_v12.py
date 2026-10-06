@@ -12,12 +12,13 @@
 # gliding round the pool. The fountain's bowl is filled with water; its jet is drawn by the renderer (GardenGpu).
 # Run headless, then export (tools/scene/export_garden.py):
 #   blender --background <DFM_Courtyard_V12.blend> --python tools/scene/prepare_courtyard_v12.py
-import bpy, math, os, numpy as np
+import bpy, bmesh, math, os, random, numpy as np
 from mathutils import Vector
 REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 ART = os.environ.get("MAZESTA_ART") or os.path.abspath(os.path.join(REPO, "..", "Mazesta-Art"))
 APP = os.path.join(ART, "courtyard-v8.blend")   # where the logo and the mirror sphere are kept
 OUT = os.path.join(ART, "courtyard-v12.blend")
+ADDED = os.path.join(ART, "assets", "v13-additions.blend")   # BlenderKit pieces fetched for this revision: the hall's mirror, and the woods of its furniture
 WIDEST = 1024   # the scene file's largest texture (export_garden.py TEX)
 LOGO_AT, LOGO_SCALE = (0.0, -15.3, 2.9), 0.7
 SPHERE_AT = (2.5, -19.0, 1.4)   # GardenGpu.SphereDrift carries it round the fountain from here
@@ -121,6 +122,102 @@ added("App_Basin_Spout_Water", *tube(fall, [0.017 - 0.006 * k / 11 for k in rang
 # The orsi's brass pulls stood a hand before the middle of their panes, on nothing (the leaves' stiles are a hand to the side):
 # from the garden they read as bars across the glass. They are left out.
 bpy.data.objects.remove(bpy.data.objects["V7_Orsi_V7_Antique_Brass"], do_unlink=True)
+
+# The open door's brass pulls stood before the lattice of each leaf, a hand off it, held by nothing. Each is moved onto its leaf's
+# free stile (whose face toward the doorway runs from (0.818, -2.057) to (0.796, -1.986) on the plan), three and a half centimetres
+# off it, on two brass stand-offs let into the wood.
+brass = bpy.data.objects["V7_OpenDoor_V7_Antique_Brass"]; bm = bmesh.new(); bm.from_mesh(brass.data); moved = 0
+seen = set()
+for v in bm.verts:
+    if v in seen: continue
+    island, stack = [], [v]; seen.add(v)
+    while stack:
+        a = stack.pop(); island.append(a)
+        for e in a.link_edges:
+            b = e.other_vert(a)
+            if b not in seen: seen.add(b); stack.append(b)
+    xs = [(brass.matrix_world @ a.co).x for a in island]; ys = [(brass.matrix_world @ a.co).y for a in island]
+    if len(island) == 16 and max(ys) - min(ys) < 0.06 and -2.3 < min(ys) < -2.2:   # a pull: a bar 29 cm tall
+        side = math.copysign(1, sum(xs)); shift = brass.matrix_world.inverted().to_3x3() @ Vector((side * -0.0425, 0.2063, 0))
+        for a in island: a.co += shift
+        moved += 1
+if moved != 2: raise SystemExit(f"the door's two pulls were not found ({moved})")
+bm.to_mesh(brass.data); bm.free()
+for side in (-1, 1):
+    for z in (2.67, 2.86):
+        added(f"App_Door_Pull_Standoff_{side}_{z}", *tube([(side * 0.7735, -2.0317, z), (side * 0.8166, -2.0185, z)], 0.009, 8), "V7_Antique_Brass", smooth=True)
+
+# The teapot stood on the middle of the samovar's body; its crown, where a teapot is kept warm, is 3.6 cm off that (the model's
+# chimney is not on its axis). It stands on the crown.
+bpy.data.objects["V12_Samovar_Teapot"].location.x += 0.004; bpy.data.objects["V12_Samovar_Teapot"].location.y -= 0.0363
+
+# The windcatchers were open to the sky: their cornice is four pieces round a hole, with the vanes' tops and the sky showing in
+# it. Each gets a slab of the cornice's stone inside the ring and a low hipped cap of the towers' kahgel over it.
+for x0, x1 in ((-9.53, -7.67), (7.67, 9.53)):
+    y0, y1, z = -2.41, -0.55, 11.04; xm, ym = (x0 + x1) / 2, (y0 + y1) / 2
+    added(f"App_Windcatcher_Roof_Slab_{x0}", *boxes(((x0, y0, 10.86), (x1, y1, z))), "V8_Carved_Pale_Limestone")
+    i = 0.12; base = [(x0 + i, y0 + i, z), (x1 - i, y0 + i, z), (x1 - i, y1 - i, z), (x0 + i, y1 - i, z)]; r = 0.28
+    ridge = [(xm - r, ym - r, z + 0.42), (xm + r, ym - r, z + 0.42), (xm + r, ym + r, z + 0.42), (xm - r, ym + r, z + 0.42)]
+    added(f"App_Windcatcher_Roof_Cap_{x0}", base + ridge, [(k, (k + 1) % 4, 4 + (k + 1) % 4, 4 + k) for k in range(4)] + [(4, 5, 6, 7)], "V8_Kahgel")
+
+# The broadleaf tree's model has, beside its two trunks, two stubs of a metre and a half: beside a bed's young tree, scaled down
+# and simplified, each is a grey spike among the shrubs. They are left out.
+tree = bpy.data.objects["V10_SOURCE_Broadleaf"]; bm = bmesh.new(); bm.from_mesh(tree.data); slot = [m.name for m in tree.data.materials].index("trunk")
+seen, gone = set(), []
+for f in bm.faces:
+    if f.material_index != slot or f in seen: continue
+    island, stack = [], [f]; seen.add(f)
+    while stack:
+        a = stack.pop(); island.append(a)
+        for e in a.edges:
+            for b in e.link_faces:
+                if b not in seen and b.material_index == slot: seen.add(b); stack.append(b)
+    zs = [v.co.z for a in island for v in a.verts]
+    if min(zs) < 0.05 and max(zs) < 2.0: gone += island
+if not gone: raise SystemExit("the broadleaf's stubs were not found")
+bmesh.ops.delete(bm, geom=list({v for a in gone for v in a.verts}), context='VERTS'); bm.to_mesh(tree.data); bm.free()
+
+# ——— what this revision adds (BlenderKit: ADDED) ———
+with bpy.data.libraries.load(ADDED, link=False) as (src, dst):
+    dst.objects = ["V13_SOURCE_Mirror"]; dst.materials = ["App_Wood_Oak", "App_Wood_Teak", "App_Wood_Rosewood", "App_Wood_Mahogany"]
+# Every piece of wood in the scene was the one walnut. The doors, the orsi and the canopy keep it; the tea corner's sideboard is
+# mahogany, the bookcases oak, the tables teak, the mirror's frame rosewood.
+for name, wood in (("V12_Traditional_Tea_Corner_V8_Walnut", "App_Wood_Mahogany"), ("V9_Interior_Decor_V8_Walnut", "App_Wood_Oak"), ("V9_Furniture_V8_Walnut", "App_Wood_Teak")):
+    o = bpy.data.objects[name]; o.data = o.data.copy()
+    for k, m in enumerate(o.data.materials):
+        if m.name == "V8_Walnut": o.data.materials[k] = bpy.data.materials[wood]
+# A tall mirror in a heavy wooden frame hangs on the back wall (y 6.848), facing the door, between the two paintings: with ray
+# tracing it shows the room, the door and the garden beyond. Its lit strip and plastic lip become a fillet of the door's brass.
+mirror = bpy.data.objects["V13_SOURCE_Mirror"]
+for k, m in enumerate(mirror.data.materials):
+    if m.name in ("Lamp", "Plastic"): mirror.data.materials[k] = bpy.data.materials["V7_Antique_Brass"]
+    elif m.name in ("Metal", "App_Wood_Mahogany"): mirror.data.materials[k] = bpy.data.materials["App_Wood_Rosewood"]
+    elif m.name == "Mirror": m.name = "App_Mirror_Glass"
+mirror.name = "App_Hall_Mirror"; mirror.scale = (1.6,) * 3; mirror.rotation_euler = (0, 0, -math.pi / 2); mirror.location = (0, 6.846, 1.45 + 1.02 * 1.6)
+collection("App_Hall_Mirror", raster, rt).objects.link(mirror)
+
+# The roof between the windcatchers was bare. Seven large terracotta urns stand along it (the lantern pedestals' urn, three
+# times its size and more), planted with juniper, geranium and shrubs from the garden's own beds.
+planters = collection("App_Roof_Planters", raster, rt); random.seed(12)
+def inst(name, what, at, scale, turn=0.0):
+    o = bpy.data.objects.new(name, None); o.instance_type = 'COLLECTION'; o.instance_collection = bpy.data.collections[what]
+    o.location = at; o.scale = (scale,) * 3; o.rotation_euler = (0, 0, turn); planters.objects.link(o); return o
+urn = bpy.data.collections["A_urn"].objects[0]; corners = [urn.matrix_world @ Vector(c) for c in urn.bound_box]
+urn_low, urn_high = min(c.z for c in corners), max(c.z for c in corners)
+def planter(tag, x, y, z, size, plant):
+    inst(f"App_Planter_{tag}_Urn", "A_urn", (x, y, z - urn_low * size), size, random.uniform(0, 6.28)); top = z + (urn_high - urn_low) * size
+    r = 0.075 * size; soil = [(x + r * math.cos(k * math.pi / 6), y + r * math.sin(k * math.pi / 6), top - 0.05 * size) for k in range(12)]
+    me = bpy.data.meshes.new(f"App_Planter_{tag}_Soil"); me.from_pydata(soil, [], [tuple(range(12))]); me.materials.append(bpy.data.materials["V8_Granular_Garden_Loam"])
+    planters.objects.link(bpy.data.objects.new(me.name, me))
+    if plant == "juniper": inst(f"App_Planter_{tag}_Juniper", "V10_ASSET_Juniper", (x, y, top - 0.08 * size), 0.7 * size, random.uniform(0, 6.28))
+    elif plant == "shrub": inst(f"App_Planter_{tag}_Shrub", "V9_ASSET_Shrub", (x, y, top - 0.1 * size), 0.42 * size, random.uniform(0, 6.28))
+    else:
+        for k in range(6): inst(f"App_Planter_{tag}_Sprig_{k}", f"V11_ASSET_Geranium{plant}", (x, y, top - 0.07 * size), random.uniform(0.42, 0.52) * size, k * math.pi / 3 + random.uniform(-0.3, 0.3))
+        for k in range(14):
+            a, d = random.uniform(0, 6.28), random.uniform(0.02, 0.13) * size
+            inst(f"App_Planter_{tag}_Bloom_{k}", f"V11_ASSET_Geranium{plant}Bloom", (x + d * math.cos(a), y + d * math.sin(a), top + random.uniform(0.13, 0.21) * size), 1.1 * size, a)
+for k, plant in enumerate(("juniper", "Red", "shrub", "juniper", "shrub", "Pink", "juniper")):
+    planter(f"Roof_{k}", -6.0 + 2.0 * k, -1.5, 6.58, 3.4 if plant == "juniper" else 3.0, plant)
 
 # The camera both tests start from (the walk itself is GardenCamera's): at the gate, looking up the pool.
 cam = bpy.data.objects.new("App_Camera", bpy.data.cameras.new("App_Camera")); cam.location = (0, -31.3, 1.75)
