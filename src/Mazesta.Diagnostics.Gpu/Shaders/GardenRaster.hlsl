@@ -8,7 +8,12 @@
 // coverage under MSAA) and last the see-through water and glass - in light's own units (Packed into ten bits a colour); and the lens:
 // the glow of what is bright (halved five times and summed back up), the blur of what is out of focus, the tone curve.
 // Depth is reversed (1 at the near plane, 0 infinitely far), which keeps surfaces a centimetre apart from flickering across the whole
-// garden. Compiled offline by tools/compile-gpu-shaders.ps1.
+// garden.
+// With ray tracing switched on (the pixel shaders compiled with RT defined, on a GPU with DXR 1.1) the same frame asks the GPU's
+// ray-tracing hardware what its maps only approximate: a shadow ray from every lit pixel to the sun or the moon (through the
+// stained panes, whose colour it takes) and to every lit lamp in reach, and a ray along what the water, glass, metal and polished
+// stone mirror, lit where it lands. The courtyard's shadow map, the lamps' shadow cubes and the pool's second drawing are then not made.
+// Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), SRV(t18), SRV(t19), SRV(t20), SRV(t21), SRV(t22), SRV(t23), " \
            "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=5)), " \
@@ -42,6 +47,20 @@ Texture2DArray<float4> RoundFaces : register(t10);     // those pictures' faces 
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
+
+#ifdef RT
+RaytracingAccelerationStructure Scene : register(t19);
+StructuredBuffer<MeshInfo> Meshes : register(t20);
+StructuredBuffer<SubInfo> Subs : register(t21);
+ByteAddressBuffer Vertices : register(t22);
+ByteAddressBuffer Indices : register(t23);
+#define TraceSampler Aniso
+#include "GardenTrace.hlsli"
+static float2 Pixel;   // the pixel being lit: its rays are aimed by a hash of where it is, so the same frame is the same picture
+static bool Sign = false;   // the logo is being lit: a sign of gilt letters, which keeps the soft picture of its surroundings (a ray off each facet of a letter shows the facets)
+// A point in the unit ball, this pixel's k-th: where on a light's disc or bulb a shadow ray is aimed.
+float3 Aim(uint k) { uint seed = Hash((uint)Pixel.x * 8191 + (uint)Pixel.y * 131071 + k * 524287 + 17); return InBall(seed); }
+#endif
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Aniso, uv, 0).rgb; }   // level 0: the way round wraps, which a screen-space derivative would smear
 
@@ -87,6 +106,18 @@ ShadowOut ShadowVS(VIn v, uint instance : SV_InstanceID)
     ShadowOut o; o.Position = mul(ShadowViewProj, float4(w, 1)); o.Uv = v.Uv; return o;
 }
 
+// The frame's leaves as depth alone, before its light (MainVS's own depth, to the bit): a leaf's edge takes as many of the pixel's
+// samples as it covers of the pixel, so the edge is as smooth as alpha to coverage makes it - and afterwards each sample is lit once,
+// by the leaf that owns it, however many leaves lie behind one another there.
+uint LeafDepthPS(VOut i) : SV_Coverage
+{
+    Material m = Materials[MaterialIndex];
+    float a = m.Texture >= 0 ? Textures.Sample(Aniso, float3(m.Pattern.x > 0 ? i.Uv * m.Pattern.xy : i.Uv, m.Texture)).a * m.Alpha : m.Alpha;
+    uint n = Samples > 1 ? (uint)round(saturate((a - 0.5) / max(fwidth(a), 1e-4) + 0.5) * Samples) : (a >= 0.5 ? 1 : 0);
+    if (n == 0) discard;
+    return (1u << n) - 1;
+}
+
 // Leaves cut out of their cards cast leaf-shaped shadows.
 void ShadowPS(ShadowOut i)
 {
@@ -104,6 +135,27 @@ float3 Unpack(float3 p) { float3 c = p * p; return c / max(1 - max(c.r, max(c.g,
 // two panes in a row both count).
 float4 TintPS(ShadowOut i) : SV_Target { return float4(StainTint(Materials[MaterialIndex]), 1); }
 
+#ifdef RT
+// How much of the key light reaches p: of ShadowTaps rays aimed at points of its disc, the share that meet nothing - shadows as
+// sharp as what casts them is near, soft-edged far from it, of every leaf and lattice whatever its size.
+float Shadow(float3 p, float3 n)
+{
+    float3 o = p + n * 0.012; uint rays = max(ShadowTaps, 1); float open = 0;
+    [loop] for (uint k = 0; k < rays; k++) open += Occluded(o, normalize(SunDir + Aim(k) * (Day.z > 0 ? 0.018 : 0.007)), 300) ? 0 : 1;
+    return open / rays;
+}
+
+// The colour the key light has where it falls inside the hall: that of the stained pane on its way there.
+float3 KeyTint(float3 p) { return !InHall(p) || p.z < -3.09 ? 1 : Through(p, SunDir, 60); }
+
+// Whether a lamp's light reaches p: a ray to a point of its bulb (a firefly's glow reaches a hand's breadth: it is not asked).
+float LampShadow(Light L, float3 p, float3 n, float2 pixel)
+{
+    if (L.Range < 2) return 1;
+    float3 o = p + n * 0.012, q = L.Position + Aim(7) * min(L.Radius, 0.06) - o; float d = length(q);
+    return Occluded(o, q / d, max(0.01, d - 0.05)) ? 0 : 1;
+}
+#else
 // The hall has a shadow map of its own (InHall says where), three times as fine as the courtyard's: its light comes through lattices a finger wide.
 
 float Shadow(float3 p, float3 n)
@@ -113,7 +165,9 @@ float Shadow(float3 p, float3 n)
     float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
     if (any(uv < 0) || any(uv > 1)) return 1;
     // three taps by three (five by five at the heaviest level), each the mean of four texels, spread over as wide a square as the level asks
-    float depth = s.z - (hall ? 0.0004 : 0.0006), sum = 0; int r = ShadowTaps >= 3 ? 2 : 1; float2 apart = (2.0 * ShadowTaps + 1) / (2 * r + 1) * ShadowTexel;
+    // (the hall's always five by five, two texels apart: the low sun lays its windows' light along the floor and up the far wall, a
+    // texel of the map drawn out to a hand's breadth there - its edge is spread over several, or it shows as steps and shimmers as the sun moves)
+    float depth = s.z - (hall ? 0.0006 : 0.0006), sum = 0; int r = hall || ShadowTaps >= 3 ? 2 : 1; float2 apart = (hall ? 2.0 : (2.0 * ShadowTaps + 1) / (2 * r + 1)) * ShadowTexel;
     if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
     else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
     return sum / ((2 * r + 1) * (2 * r + 1));
@@ -123,8 +177,9 @@ float Shadow(float3 p, float3 n)
 float3 KeyTint(float3 p)
 {
     if (!InHall(p) || p.z < -3.09) return 1;
-    float4 s = mul(HallViewProj, float4(p, 1));
-    return HallTint.SampleLevel(Clamp, s.xy * float2(0.5, -0.5) + 0.5, 0).rgb;
+    float4 s = mul(HallViewProj, float4(p, 1)); float2 uv = s.xy * float2(0.5, -0.5) + 0.5; float t = 2.5 / 2048;   // the mean of five taps: a pane's edge is as soft as its shadow's
+    return (HallTint.SampleLevel(Clamp, uv, 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(t, t), 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(-t, t), 0).rgb
+          + HallTint.SampleLevel(Clamp, uv + float2(t, -t), 0).rgb + HallTint.SampleLevel(Clamp, uv - float2(t, t), 0).rgb) * 0.2;
 }
 
 // How much of a lamp's light reaches a point: what the lamp sees in that direction (its cube of depths, six views of ninety degrees)
@@ -145,6 +200,7 @@ float LampShadow(Light L, float3 p, float3 n, float2 pixel)
     }
     return sum / 4;
 }
+#endif
 
 // How much of the sky stands open over a point: the share of a ring of taps round it, a metre and a half across, that nothing is
 // above. Under the canopy, inside the hall and beneath a tree's crown the sky's light does not arrive - which is most of what tells
@@ -186,11 +242,19 @@ float3 Bounced(float3 p, float3 n, float open)
          + w.z * LightVolume.SampleLevel(Clamp, float3((f.x + (n.z < 0 ? 5 : 4)) / 6, f.yz), 0).rgb;
 }
 
+// The lit lamps whose light can reach p: where its square's list starts in LightGrid, and how many it holds. The garden's plan is
+// cut into squares two metres across (GardenGpu.Lamps fills the lists each frame), so a pixel asks a dozen lamps, not all sixty.
+uint2 LampsAt(float3 p)
+{
+    int2 c = clamp(int2(floor((p.xz - float2(-16, -36)) * 0.5)), 0, int2(15, 21)); uint i = (c.y * 16 + c.x) * 2;
+    return uint2(LightGrid[i], LightGrid[i + 1]);
+}
+
 // What a surface at p mirrors along r. A rasteriser cannot follow the ray, so the garden was drawn once all round from the middle of
 // the courtyard and from the middle of the hall: the ray is carried to where it leaves the courtyard's (or the hall's) box and the
 // picture looked up toward that point, so a window pane shows the wall across the room and the gilt logo the garden, where they are.
 // The rougher the surface the blurrier the mip; a matt one takes the light volume's word for that direction instead.
-float3 Mirrored(float3 p, float3 r, float roughness, float open)
+float3 Pictured(float3 p, float3 r, float roughness, float open)
 {
     float3 soft = Bounced(p, r, open) * (Grid2.w > 0 ? 1 : 3);
     if (!(Flags & 8)) return lerp(SkyColor(r) * lerp(0.2, 1, open), soft, saturate(roughness * 1.4));
@@ -203,12 +267,38 @@ float3 Mirrored(float3 p, float3 r, float roughness, float open)
     return lerp(sharp, soft, smoothstep(0.3, 0.6, roughness));
 }
 
-// The lit lamps whose light can reach p: where its square's list starts in LightGrid, and how many it holds. The garden's plan is
-// cut into squares two metres across (GardenGpu.Lamps fills the lists each frame), so a pixel asks a dozen lamps, not all sixty.
-uint2 LampsAt(float3 p)
+#ifdef RT
+// What a ray from a surface at p (facing n) along r meets, lit as the frame's own surfaces are: by the light bounced round it, the
+// key light and the lamps in reach (a shadow ray each), and - in place of a mirror image of its own - the picture of its surroundings.
+float3 Reflected(float3 p, float3 n, float3 r)
 {
-    int2 c = clamp(int2(floor((p.xz - float2(-16, -36)) * 0.5)), 0, int2(15, 21)); uint i = (c.y * 16 + c.x) * 2;
-    return uint2(LightGrid[i], LightGrid[i + 1]);
+    Hit h; if (!Trace(p + n * 0.012, r, 300, MaskVisible, h)) return Sky(r);
+    Material m = Materials[h.Material]; float3 v = -r; Surface s = SurfaceAt(h, v);
+    if (m.Kind == KWater) return lerp(m.Base * Bounced(h.P, float3(0, 1, 0), 1) * 0.5, Sky(reflect(r, float3(0, 1, 0))), 0.3);
+    if (m.Kind == KGlass) return m.Base * (Bounced(h.P, s.Normal, 1) + Bounced(h.P, -s.Normal, 1)) * 0.5 + s.Emission + Pictured(h.P, reflect(r, s.Normal), 0.03, 1) * 0.08;
+    float3 c = s.Albedo * Bounced(h.P, s.Normal, 1) * (1 - s.Metallic) * s.Occlusion + s.Emission, o = h.P + s.Normal * 0.012;
+    if (SunOn > 0 && dot(s.Normal, SunDir) > 0 && !Occluded(o, SunDir, 300)) c += Brdf(s, v, SunDir, SunColor * KeyTint(h.P));
+    uint2 lamps = LampsAt(h.P);
+    [loop] for (uint j = 0; j < lamps.y; j++)
+    {
+        uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, h.P, l, d) * LampLit(L, k);
+        if (max(e.r, max(e.g, e.b)) <= 0.01 || dot(s.Normal, l) <= 0) continue;
+        if (L.Range >= 2 && Occluded(o, l, max(0.01, d - 0.05))) continue;
+        c += Brdf(s, v, l, e);
+    }
+    return c + Pictured(h.P, reflect(r, s.Normal), s.Roughness, 1) * EnvBrdf(s, v);
+}
+#endif
+
+// What a surface mirrors along r: the picture of its surroundings - or, with ray tracing, for a surface smooth enough to show a
+// mirror image (and mirroring enough of it to matter: weight), what the ray along r really meets.
+float3 Mirrored(float3 p, float3 n, float3 r, float roughness, float open, float weight)
+{
+    float3 pictured = Pictured(p, r, roughness, open);
+#ifdef RT
+    if ((Flags & 8) && !Sign && roughness < 0.3 && weight > 0.02) return lerp(Reflected(p, n, r), pictured, smoothstep(0.1, 0.3, roughness));
+#endif
+    return pictured;
 }
 
 float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
@@ -225,11 +315,12 @@ float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
     [loop] for (uint j = 0; j < lamps.y; j++)
     {
         uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
-        if (all(e <= 0) || dot(s.Normal, l) <= 0) continue;
+        if (max(e.r, max(e.g, e.b)) <= 0.004 || dot(s.Normal, l) <= 0) continue;   // (the last of a lamp's reach is under a hundredth of what the eye can tell at night)
         c += Brdf(s, v, l, e * LampLit(L, k)) * LampShadow(L, p, s.Normal, pixel) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
     }
     // every surface mirrors its surroundings a little, a metal or a polished floor a lot
-    c += Mirrored(p, reflect(-v, s.Normal), s.Roughness, open) * EnvBrdf(s, v) * near;
+    float3 mirrors = EnvBrdf(s, v);
+    c += Mirrored(p, s.Normal, reflect(-v, s.Normal), s.Roughness, open, max(mirrors.r, max(mirrors.g, mirrors.b))) * mirrors * near;
     return c;
 }
 
@@ -243,6 +334,9 @@ void TangentFrame(float3 p, float2 d1, float2 d2, float3 n, out float3 t, out fl
 
 float4 Opaque(VOut i, bool cutout)
 {
+#ifdef RT
+    Pixel = i.Position.xy;
+#endif
     if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;   // the mirror image holds only what is above the water
     Material m = Materials[MaterialIndex];
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;   // two-sided: leaves and cards are seen from both faces
@@ -266,11 +360,15 @@ float4 Opaque(VOut i, bool cutout)
         float3 nx = ddx(s.Normal), ny = ddy(s.Normal); float a = s.Roughness * s.Roughness;
         s.Roughness = sqrt(sqrt(a * a + min(dot(nx, nx) + dot(ny, ny), 0.18)));
     }
-    if (Instances[i.Id].Flags & FLogo) s.Emission += s.Albedo * Logo.w;   // the logo is a sign: it keeps its own gold whatever it mirrors
+#ifdef RT
+    Sign = (Instances[i.Id].Flags & FLogo) != 0;
+#endif
+    if (Instances[i.Id].Flags & FLogo) s.Emission += s.Albedo * Logo.w;   // the logo is a sign: it keeps a little of its own gold whatever it mirrors
     float alpha = 1;
     if (cutout)
     {
-        if (Flags & 4) alpha = saturate((s.Alpha - 0.5) / max(fwidth(s.Alpha), 1e-4) + 0.5);   // alpha to coverage: a crisp edge, smoothed by the samples
+        if (Flags & 16) { }
+        else if (Flags & 4) alpha = saturate((s.Alpha - 0.5) / max(fwidth(s.Alpha), 1e-4) + 0.5);   // alpha to coverage: a crisp edge, smoothed by the samples
         else if (s.Alpha < 0.5) discard;
         // Foliage: no two plants quite the same green, a little less saturated than the card's photograph, darker inside the crown
         // (which the sky barely reaches), and the sun shining through a leaf seen against it.
@@ -291,6 +389,9 @@ float4 CutoutPS(VOut i) : SV_Target { return Opaque(i, true); }
 // Water and glass: blended over what is behind them.
 float4 TransparentPS(VOut i) : SV_Target
 {
+#ifdef RT
+    Pixel = i.Position.xy;
+#endif
     if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;
     Material m = Materials[MaterialIndex];
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;
@@ -308,12 +409,20 @@ float4 TransparentPS(VOut i) : SV_Target
         if (!level)
         {
             // falling water: what it mirrors, the daylight caught in it, and the sun's glint; more of it shows than of a still pool
-            reflected = (Flags & 8) ? Mirrored(i.World, reflect(-v, n), 0.03, 1) : Sky(reflect(-v, n));
+            reflected = (Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, 1, 1) : Sky(reflect(-v, n));
             reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 200) * SunColor * SunOn * Shadow(i.World, n);
             float3 caught = float3(0.82, 0.92, 0.96) * ((Bounced(i.World, n, 1) + Bounced(i.World, -n, 1)) * 1.5 + SunColor * SunOn * Shadow(i.World, n) * 0.25);
             float a = fresnel + (1 - fresnel) * 0.6;
             return float4(Pack((reflected * fresnel + caught * (1 - fresnel) * 0.6) / a), a);
         }
+#ifdef RT
+        if (Flags & 8)
+        {   // what the water really mirrors, ripples and all (a ray a ripple would send under the surface is laid along it)
+            float3 r = reflect(-v, n); if (r.y < 0.03) r = normalize(float3(r.x, 0.03, r.z));
+            reflected = Reflected(i.World, float3(0, 1, 0), r);
+        }
+        else
+#endif
         if ((Flags & 1) && abs(i.World.y - WaterLevel) < 0.2)
         {
             float2 uv = i.Position.xy / ViewSize + n.xz * 0.04;
@@ -338,7 +447,7 @@ float4 TransparentPS(VOut i) : SV_Target
     // is behind it, in its colour; clear glass nearly all
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
-    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, reflect(-v, n), 0.03, open) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
+    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, open, 1) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
     float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Glowing(i.World);
     if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
     uint2 lamps = LampsAt(i.World);

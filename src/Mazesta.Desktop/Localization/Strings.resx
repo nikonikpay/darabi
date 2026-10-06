@@ -1165,7 +1165,7 @@
     <value>Not available: this CPU does not have the chosen instruction set.</value>
   </data>
   <data name="Test_Gpu_Scene3D" xml:space="preserve">
-    <value>GPU 3-D scene in a window (Direct3D 12)</value>
+    <value>GPU 3-D scene in a window (Direct3D 12, ray tracing optional)</value>
   </data>
   <data name="Test_Gpu_SceneRt" xml:space="preserve">
     <value>GPU ray-traced 3-D scene in a window (DirectX Raytracing)</value>
@@ -1394,7 +1394,10 @@ The update services stopped and disabled</value></data>
   <data name="Tuning_Startup" xml:space="preserve"><value>At sign-in</value></data>
   <data name="Tuning_Startup_Hint" xml:space="preserve"><value>The tray puts the card in this profile at every Windows sign-in (GPU settings are lost on a reboot). Put the card back to stock to stop it.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>It was not kept for the next sign-in: {0}</value></data>
-  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>Graphics — Persian garden (Direct3D 12)</value></data>
+  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>Graphics — Persian garden (Direct3D 12, ray tracing optional)</value></data>
+  <data name="Test_Option_RayTracing" xml:space="preserve"><value>Ray tracing</value></data>
+  <data name="Test_RayTracing_Off" xml:space="preserve"><value>Off</value></data>
+  <data name="Test_RayTracing_On" xml:space="preserve"><value>On (DXR 1.1)</value></data>
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>Graphics — Persian garden, ray traced (DXR)</value></data>
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden (2560x1440)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>1% low (the slowest hundredth of frames)</value></data>

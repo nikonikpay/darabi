@@ -5,13 +5,13 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 internal sealed class SceneView : IDisposable
 {
     private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing; private readonly D3D12Session _s;
-    private readonly GardenRenderer _renderer;
+    private readonly GardenRaster _renderer;
     public SceneOverlay Overlay { get; }
     public GardenGpu Garden => _renderer.Scene;
-    public GardenRenderer Renderer => _renderer;
+    public GardenRaster Renderer => _renderer;
     public string Work { get; }
 
-    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, int raySamples = 4)
+    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem)
     {
         _s = s;
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);
@@ -26,18 +26,11 @@ internal sealed class SceneView : IDisposable
         _swap = swap1.QueryInterface<IDXGISwapChain3>();
         _back = [_swap.GetBuffer<ID3D12Resource>(0), _swap.GetBuffer<ID3D12Resource>(1)];
         Overlay = new SceneOverlay(s, _back, height);
-        var garden = new GardenGpu(s, GardenScene.Embedded, rayTraced ? GardenScene.Mode.RayTraced : GardenScene.Mode.Raster, custom, customProblem);
-        if (rayTraced)
-        {
-            var ray = new GardenRay(s, garden, width, height, _back, raySamples); _renderer = ray;
-            Work = $"{garden.Instances.Length:N0} objects · sun, moon and {garden.PointLights.Length} lamps, a shadow ray each · reflection, refraction · {ray.Bounces} bounces";
-        }
-        else
-        {
-            var raster = new GardenRaster(s, garden, width, height, _back, load); _renderer = raster;
-            Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps · shadows {raster.Level.ShadowSize}"
-                + (raster.Samples > 1 ? $" · MSAA {raster.Samples}×" : "") + (raster.Level.ReflectionDivisor > 0 ? $" · pool reflection 1/{raster.Level.ReflectionDivisor}" : "");
-        }
+        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem);
+        var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced); _renderer = raster;
+        Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps"
+            + (rayTraced ? $" · ray-traced shadows ({raster.Level.ShadowTaps} a light) and reflections" : $" · shadows {raster.Level.ShadowSize}")
+            + (raster.Samples > 1 ? $" · MSAA {raster.Samples}×" : "") + (raster.Level.ReflectionDivisor > 0 ? $" · pool reflection 1/{raster.Level.ReflectionDivisor}" : "");
     }
 
     /// <summary>Draws the scene at <paramref name="time"/> into the next back buffer, lays the readout over it and shows it, as fast as the

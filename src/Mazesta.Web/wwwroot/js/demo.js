@@ -157,7 +157,7 @@ const DEMO_LOG = [
   ["12:42:09", "storage.sequential", "Step", "Log_Storage_File", ["C:\\", "1024"], "CreateNew, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | DELETE_ON_CLOSE"],
   ["12:42:14", "storage.sequential", "Step", "Log_Storage_SeqPass", ["1", "2140", "3380"], "MB/s = bytes / seconds / 1e6;  every 1 MiB block read back == seeded random data"],
 ].map(([at, test, level, key, args, formula]) => ({ at, test, level, key, args, formula: formula || null }));
-const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_Memory", "Memory"], ["Bench_Storage", "Storage"], ["Bench_Gpu_D3D", "Gpu"], ["Bench_Gpu_SceneD3D", "Gpu"], ["Bench_Gpu_Rt", "Gpu"], ["Bench_Gpu_SceneRt", "Gpu"], ["Bench_Gpu_Ai", "Gpu"], ["Bench_Net_Internet", "Network"]];
+const BENCH = [["Bench_Cpu_Single", "Cpu"], ["Bench_Cpu_Multi", "Cpu"], ["Bench_Memory", "Memory"], ["Bench_Storage", "Storage"], ["Bench_Gpu_D3D", "Gpu"], ["Bench_Gpu_SceneD3D", "Gpu"], ["Bench_Gpu_Rt", "Gpu"], ["Bench_Gpu_Ai", "Gpu"], ["Bench_Net_Internet", "Network"]];
 const bench = () => ({ running: false, queue: "", canRunSelected: true,
   rows: BENCH.map(([k, c], i) => ({ id: k, name: strings[k], component: c, selected: i === 0 || i === 3, duration: "60", percent: i < 2 ? 100 : 0, status: i < 2 ? strings.Bench_Status_CompletedAt.replace("{0}", "01:40") : "", active: false, detail: null, options: [],
     metrics: i === 0 ? [{ name: strings.Bench_Cpu_Gflops, value: "21.40 GFLOPS" }, { name: strings.Bench_Cpu_ClockPeak, value: "4650 MHz" }, { name: strings.Bench_Cpu_TempMax, value: "71.0 °C" }]

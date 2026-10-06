@@ -12,14 +12,14 @@ cbuffer Frame : register(b1)
     float3 SunColor; uint LightCount;    // SunColor: irradiance, colour times strength
     float3 SkyZenith; float WaterLevel;
     float3 SkyHorizon; float Exposure;
-    float3 GroundColor; uint Flags;      // bit 0: a reflection image is bound; bit 1: this pass draws the reflection (clip under the water); bit 2: alpha to coverage; bit 3: the pictures of the surroundings are bound
+    float3 GroundColor; uint Flags;      // bit 0: a reflection image is bound; bit 1: this pass draws the reflection (clip under the water); bit 2: alpha to coverage; bit 3: the pictures of the surroundings are bound; bit 4: the frame's depth is laid already, leaves and all (nothing is cut out again)
     float2 ViewSize; float ShadowTexel; uint ShadowTaps;
     float3 CamRight; float TanHalfFovY;
     float3 CamUp; float Aspect;
     float3 CamForward; uint Bounces;
-    uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: the rasteriser, 2: the ray tracer
+    uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: the frame, 2: the light volume's baker
     float4 Logo;                          // the logo's turn toward the camera (cos, sin), its float (lift): GardenGpu.LogoMotion; and how much it glows of itself
-    uint Samples; uint3 FramePad;         // ray tracer: camera rays a pixel
+    uint Samples; uint3 FramePad;         // the frame's samples a pixel (MSAA)
     float4 Backdrop;                      // the mountains round the horizon: the heights they cover as tangents (low, high), and 1 when they are there
     float4x4 SkyViewProj;                 // rasteriser: the view straight down over the courtyard (what stands between a point and the open sky)
     float4 Fountain;                      // the fountain's nozzle, and the radius of the water in its bowl
@@ -47,6 +47,10 @@ struct Material { uint Kind; int Texture; float LightTint; int NormalTexture; fl
 // Shadow: for the rasteriser, which of its shadow cubes is this lamp's, counted from 1 (0: it casts none). Lit: how far it is lit
 // just now, 0 to 1 (GardenGpu.Lamps sets it every frame: the lamps are lit at dusk one after another, the hall's burn by day as well)
 struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float Shadow; float Lit; };
+
+// For rays (GardenTrace.hlsli): where each mesh's vertices and each of its materials' triangles start.
+struct MeshInfo { float3 Centre; uint FirstSubmesh; float3 Extent; uint BaseVertex; };
+struct SubInfo { uint IndexStart; uint Material; uint Opaque; uint Pad; };
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5, KSmoke = 6;
 static const uint LSun = 0, LPoint = 1, LSpot = 2;

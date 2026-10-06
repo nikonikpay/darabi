@@ -11,9 +11,10 @@ public class BenchmarkRecordsTests : IDisposable
 
     [Fact] public void The_garden_benchmarks_at_their_default_settings_keep_the_key_they_had_before_they_had_options()
     {
-        var gpu = new Dictionary<string, string> { ["gpu"] = "0", ["resolution"] = "2560x1440", ["quality"] = "3" };
+        var gpu = new Dictionary<string, string> { ["gpu"] = "0", ["resolution"] = "2560x1440", ["quality"] = "3", ["raytracing"] = "off" };
         Assert.Equal(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["gpu"] = "0" }), BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", gpu));
-        Assert.Equal("", BenchmarkPeers.Settings("bench.gpu.scene.rt", new Dictionary<string, string> { ["resolution"] = "2560x1440", ["quality"] = "4" }));
+        // with ray tracing switched on it is another workload: a record and a list of its own
+        Assert.Equal("raytracing=on", BenchmarkPeers.Settings("bench.gpu.scene.d3d", new Dictionary<string, string> { ["resolution"] = "2560x1440", ["quality"] = "3", ["raytracing"] = "on" }));
     }
     [Fact] public void A_garden_run_at_other_settings_gets_a_list_of_its_own()
     {

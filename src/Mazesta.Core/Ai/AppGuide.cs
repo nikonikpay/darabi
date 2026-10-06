@@ -324,7 +324,7 @@ public static class AppGuide
         {
             var areas = TestAreas.Where(a => Any(s, a.Words)).SelectMany(a => a.Area switch
             {
-                "cpu" => new[] { "cpu_single", "cpu_multi" }, "gpu" => ["gpu", "gpu_rt", "gpu_scene", "gpu_scene_rt", "gpu_ai"], var x => [x],
+                "cpu" => new[] { "cpu_single", "cpu_multi" }, "gpu" => ["gpu", "gpu_rt", "gpu_scene", "gpu_ai"], var x => [x],
             }).ToList();
             return new(AiIntent.Benchmarks, Areas: areas.Count > 0 ? areas : ["all"]);
         }

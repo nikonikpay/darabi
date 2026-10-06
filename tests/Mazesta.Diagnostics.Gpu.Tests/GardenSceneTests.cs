@@ -9,7 +9,7 @@ public class GardenSceneTests
     [Fact] public void The_embedded_garden_reads_whole_with_both_scenes_in_it()
     {
         Assert.True(G.Meshes.Count > 100); Assert.True(G.Textures.Count > 5); Assert.True(G.Materials.Length > 10);
-        Assert.True(G.Triangles(GardenScene.Mode.Raster) > 1_000_000); Assert.True(G.Triangles(GardenScene.Mode.RayTraced) > 1_000_000);
+        Assert.True(G.Triangles(GardenScene.Mode.Raster) > 1_000_000);
         // the logo, once, in both scenes; the low sun only in Direct3D, the moon only in the ray-traced scene
         var logo = Assert.Single(G.Instances, i => (i.Flags & GardenScene.LogoFlag) != 0);
         Assert.Equal(3u, logo.Mask);
@@ -84,24 +84,6 @@ public class GardenSceneTests
         Assert.InRange(spill[^1].At.X - f.RimRadius, 0.1f, 0.35f);        // a hand's breadth out from under the rim
         for (int k = 1; k < spill.Length; k++) { Assert.True(spill[k].At.Y < spill[k - 1].At.Y && spill[k].At.X > spill[k - 1].At.X); Assert.True(spill[k].Radius <= spill[k - 1].Radius); }
     }
-
-    [Fact] public void The_mirror_sphere_circles_the_fountain_over_the_water_clear_of_everything()
-    {
-        var sphere = G.Instances.Single(i => (i.Flags & GardenScene.SphereFlag) != 0); var mesh = G.Meshes[(int)sphere.Mesh];
-        var start = sphere.Apply(mesh.Centre); float radius = mesh.Extent.X * sphere.Row0.X; var f = G.Fountain!;
-        var logo = G.Instances.Single(i => (i.Flags & GardenScene.LogoFlag) != 0); var logoMesh = G.Meshes[(int)logo.Mesh];
-        float logoUnder = logo.Apply(logoMesh.Centre).Y - logoMesh.Extent.Y * logo.Row1.Y - 0.121f;   // its lowest, at the bottom of its float
-        Assert.Equal(Vector3.Zero, GardenGpu.SphereDrift(0)); Assert.True(GardenGpu.SphereDrift(GardenGpu.SphereLap).Length() < 1e-3f);
-        for (float t = 0; t < GardenGpu.SphereLap; t += 0.2f)
-        {
-            var p = start + GardenGpu.SphereDrift(t);
-            Assert.True(MathF.Abs(p.X) + radius < 3.1f && p.Z - radius > -26.1f && p.Z + radius < -11.9f, $"t={t}: off the pool at {p}");   // the pool: x ±3.1, z -26.1..-11.9
-            Assert.True(p.Y - radius > G.WaterLevel + 0.3f && p.Y + radius < logoUnder, $"t={t}: height {p.Y}");
-            Assert.True(new Vector2(p.X - f.Nozzle.X, p.Z - f.Nozzle.Z).Length() - radius > f.RimRadius + 0.5f, $"t={t}: in the fountain");
-        }
-        Assert.True((GardenGpu.SphereDrift(8) - GardenGpu.SphereDrift(24)).Length() > 8);   // it does travel: the two ends of the pool
-    }
-
 
     [Fact] public void Every_material_kind_the_shaders_know_is_used_and_nothing_else()
     {
@@ -359,7 +341,7 @@ public class GardenSceneTests
         Assert.True(Vector3.Distance(GardenGpu.Butterfly(3, 20).At, GardenGpu.Butterfly(3, 21).At) > 0.1f);   // they do fly
         Assert.True(GardenGpu.LitFireflies <= GardenGpu.Fireflies);
         // the steam rises from the tea counter, by the hall's left wall
-        Assert.True(GardenGpu.KettleSpout.X < -8.5f && GardenGpu.KettleSpout.Y > 2);
+        Assert.True(GardenGpu.SamovarCrown.X < -8.5f && GardenGpu.SamovarCrown.Y > 2.5f);
     }
 
     [Fact] public void The_wind_bends_the_plants_where_they_stand_and_nothing_else()

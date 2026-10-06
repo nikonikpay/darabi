@@ -21,7 +21,7 @@ public class GardenRenderHardwareTests
     {
         if (NoGpu) return;
         using var s = new D3D12Session(GpuDevices.Resolve("")!);
-        var g = new GardenGpu(s, GardenScene.Embedded, GardenScene.Mode.Raster);
+        var g = new GardenGpu(s, GardenScene.Embedded);
         using var r = new GardenRaster(s, g, W, H, [], load);
         Check(r, $"garden-raster-load{load}");
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir && r.Level.ReflectionDivisor > 0)
@@ -31,17 +31,18 @@ public class GardenRenderHardwareTests
         }
     }
 
-    [Fact] public void The_ray_traced_garden_is_a_stable_picture()
+    [Theory, InlineData(1u), InlineData(3u)]
+    public void The_garden_with_ray_tracing_on_is_a_stable_picture(uint load)
     {
         if (NoGpu || !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
         using var s = new D3D12Session(GpuDevices.Resolve("")!);
-        var g = new GardenGpu(s, GardenScene.Embedded, GardenScene.Mode.RayTraced);
-        using var r = new GardenRay(s, g, W, H, []);
-        Check(r, "garden-ray");
+        var g = new GardenGpu(s, GardenScene.Embedded);
+        using var r = new GardenRaster(s, g, W, H, [], load, rayTraced: true);
+        Check(r, $"garden-rays-load{load}");
     }
 
     /// <summary>Not a check but the tool that makes Scene\garden.light: with MAZESTA_BAKE_LIGHT naming a file, the light bounced round
-    /// the embedded garden is worked out by the ray tracer and written there (see <see cref="GardenLightBaker"/>). Build again afterwards.</summary>
+    /// the embedded garden is worked out with rays and written there (see <see cref="GardenLightBaker"/>). Build again afterwards.</summary>
     [Fact] public void Bakes_the_garden_s_bounced_light_when_asked()
     {
         if (Environment.GetEnvironmentVariable("MAZESTA_BAKE_LIGHT") is not { Length: > 0 } to || NoGpu || !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
@@ -58,7 +59,7 @@ public class GardenRenderHardwareTests
             Png.Write(Path.Combine(to, $"{name}-first.png"), a, r.Width, r.Height); Png.Write(Path.Combine(to, $"{name}-second.png"), b, r.Width, r.Height);
         }
         Assert.Equal(a, b);
-        // frames shown one after another build on each other (the ray tracer gathers light across them): a check frame drawn after
+        // frames shown one after another build on each other (maps drawn every few frames): a check frame drawn after
         // them must still be the first one's bits
         for (int k = 0; k < 4; k++) r.Capture(2f + k / 30f, live: true);
         Assert.Equal(a, r.Capture(1.234f));

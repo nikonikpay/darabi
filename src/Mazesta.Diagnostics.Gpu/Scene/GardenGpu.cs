@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// this class adds to the scene: the column the jet rises as and a stream falling from each lobe of the bowl's rim (still shapes of
 /// running water), and droplets, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
 /// It also adds what is alive in the garden (<see cref="Mover"/>): butterflies over the beds by day, fireflies by night - some of
-/// them lights, which the leaves round them catch - and the steam of the kettle boiling on the hall's tea counter.
+/// them lights, which the leaves round them catch - and the steam of the samovar on the hall's tea counter.
 /// Both renderers build on it. The owner's Models\gpu-test.obj, when there is one, takes the logo's place over the pool.
 /// </summary>
 internal sealed unsafe class GardenGpu
@@ -27,10 +27,10 @@ internal sealed unsafe class GardenGpu
     /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
     public const uint JetDroplets = 520, SpillDroplets = 12 * 26;
     /// <summary>The garden's small life: fireflies (the first <see cref="LitFireflies"/> of them are lights as well), butterflies
-    /// (two wings each), and the puffs of steam the kettle on the tea counter gives off.</summary>
+    /// (two wings each), and the puffs of steam the samovar on the tea counter gives off.</summary>
     public const int Fireflies = 140, LitFireflies = 16, Butterflies = 24, SteamPuffs = 14;
-    /// <summary>Where steam leaves the kettle (its spout's tip), on the hall's tea counter.</summary>
-    public static readonly Vector3 KettleSpout = new(-9.057f, 2.24f, 2.66f);
+    /// <summary>Where steam leaves the samovar (the large silver one; over the teapot on its crown), on the hall's tea counter.</summary>
+    public static readonly Vector3 SamovarCrown = new(-9.245f, 2.81f, 3.5f);
     /// <summary>The beds the garden's small life keeps to, on the right of the pool (x from, to; z from, to): three between the pool
     /// and the walk, three along the outer wall. The left side mirrors them.</summary>
     private static readonly (float X0, float X1, float Z0, float Z1)[] Beds =
@@ -46,7 +46,6 @@ internal sealed unsafe class GardenGpu
     public GardenFountain? Fountain { get; }
     /// <summary>The light bounced round the courtyard, when the scene has it (the rasteriser reads it; the ray tracer works its own out).</summary>
     public GardenLightVolume? LightVolume { get; }
-    public GardenScene.Mode Mode { get; }
     public Instance[] Instances { get; }
     /// <summary>The instances that move from place to place (the logo, the sphere, the droplets), by their place in <see cref="Instances"/>.</summary>
     public int[] Moving { get; }
@@ -94,9 +93,10 @@ internal sealed unsafe class GardenGpu
     public ID3D12Resource Backdrop { get; } public Vector4 BackdropRange { get; }
     private readonly int _textureMips;
 
-    public GardenGpu(D3D12Session s, GardenScene scene, GardenScene.Mode mode, SceneModel? custom = null, string? customProblem = null)
+    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null)
     {
-        Mode = mode; ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
+        const GardenScene.Mode mode = GardenScene.Mode.Raster;   // the file's Direct3D scene: its ray-traced one lent only its night rig of lamps
+        ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
         var meshes = scene.Meshes.ToList(); var materials = scene.Materials.ToList();
         var chosen = scene.Instances.Where(i => (i.Mask & (uint)mode) != 0).ToArray();
         if (Fountain is not null)
@@ -150,9 +150,9 @@ internal sealed unsafe class GardenGpu
         var baseVertex = new int[meshes.Count]; var baseIndex = new uint[meshes.Count]; long vbytes = 0, icount = 0;
         for (int m = 0; m < meshes.Count; m++) { baseVertex[m] = (int)(vbytes / 16); baseIndex[m] = (uint)icount; vbytes += meshes[m].Vertices.Length; icount += meshes[m].Indices.Length; }
         VertexBuffer = s.Buffer((ulong)vbytes, HeapType.Default, ResourceStates.CopyDest);
-        s.Fill(VertexBuffer, d => { int at = 0; foreach (var m in meshes) { m.Vertices.CopyTo(d[at..]); at += m.Vertices.Length; } }, ResourceStates.VertexAndConstantBuffer | ResourceStates.NonPixelShaderResource);
+        s.Fill(VertexBuffer, d => { int at = 0; foreach (var m in meshes) { m.Vertices.CopyTo(d[at..]); at += m.Vertices.Length; } }, ResourceStates.VertexAndConstantBuffer | ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
         IndexBuffer = s.Buffer((ulong)icount * 4, HeapType.Default, ResourceStates.CopyDest);
-        s.Fill(IndexBuffer, d => { int at = 0; foreach (var m in meshes) { MemoryMarshal.AsBytes(m.Indices.AsSpan()).CopyTo(d[at..]); at += m.Indices.Length * 4; } }, ResourceStates.IndexBuffer | ResourceStates.NonPixelShaderResource);
+        s.Fill(IndexBuffer, d => { int at = 0; foreach (var m in meshes) { MemoryMarshal.AsBytes(m.Indices.AsSpan()).CopyTo(d[at..]); at += m.Indices.Length * 4; } }, ResourceStates.IndexBuffer | ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
         // instances grouped by mesh, in the file's order within a mesh
         var order = chosen.Select((inst, k) => (inst, k)).OrderBy(x => x.inst.Mesh).ThenBy(x => x.k).Select(x => x.inst).ToArray();
@@ -178,7 +178,7 @@ internal sealed unsafe class GardenGpu
             Triangles += (long)mesh.Indices.Length / 3 * n; k += n;
         }
         Draws = [.. draws];
-        InstanceBuffer = s.Upload(Instances, ResourceStates.NonPixelShaderResource);
+        InstanceBuffer = s.Upload(Instances, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
         MaterialBuffer = s.Upload(Materials, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
         // lights: Blender's watts become the intensity the shaders divide by distance squared. Both tests have the day's sun (the
@@ -197,7 +197,7 @@ internal sealed unsafe class GardenGpu
             var intensity = l.Color * l.Energy / (area ? MathF.PI * 2 : 4 * MathF.PI);
             float range = Math.Clamp(MathF.Sqrt(Math.Max(intensity.X, Math.Max(intensity.Y, intensity.Z)) / 0.04f), 1.5f, 28f);
             float half = l.Cone / 2;
-            bool shadowed = mode == GardenScene.Mode.Raster && l.Kind == GardenLightKind.Point && l.Position.Y > WaterLevel && ShadowLamps < MostShadowLamps;
+            bool shadowed = l.Kind == GardenLightKind.Point && l.Position.Y > WaterLevel && ShadowLamps < MostShadowLamps;
             points.Add(new Light
             {
                 Position = l.Position, Kind = (uint)l.Kind, Direction = Vector3.Normalize(l.Direction), Range = range, Color = intensity, Radius = Math.Max(0.05f, l.Radius), Shadow = shadowed ? ++ShadowLamps : 0,
@@ -222,8 +222,8 @@ internal sealed unsafe class GardenGpu
             infos.Add(new MeshInfo { Centre = meshes[m].Centre, Extent = meshes[m].Extent, FirstSubmesh = (uint)subs.Count, BaseVertex = (uint)baseVertex[m] });
             foreach (var sub in meshes[m].Submeshes) subs.Add(new SubmeshInfo { IndexStart = baseIndex[m] + sub.IndexStart, Material = sub.Material, Opaque = materials[(int)sub.Material].Kind == GardenMaterialKind.Cutout ? 0u : 1u });
         }
-        MeshInfoBuffer = s.Upload(infos.ToArray(), ResourceStates.NonPixelShaderResource);
-        SubmeshInfoBuffer = s.Upload(subs.ToArray(), ResourceStates.NonPixelShaderResource);
+        MeshInfoBuffer = s.Upload(infos.ToArray(), ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
+        SubmeshInfoBuffer = s.Upload(subs.ToArray(), ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
         TextureCount = Math.Max(1, scene.Textures.Count); _textureMips = scene.TextureMips;
         Textures = UploadTextures(s, scene);
@@ -332,7 +332,7 @@ internal sealed unsafe class GardenGpu
             default:
                 float phase = time / 2.8f + (float)n / SteamPuffs; phase -= MathF.Floor(phase);
                 uint id = (uint)n * 16 + 7000; float lean = phase * phase, thick = (0.02f + 0.085f * phase) * MathF.Min(1, (1 - phase) * 4) * MathF.Min(1, phase * 8);
-                var puff = KettleSpout + new Vector3((H(id) - 0.5f) * 0.18f * lean + 0.012f * MathF.Sin(time * 2.1f + n), 0.02f + 0.5f * phase, -0.02f + (H(id + 1) - 0.5f) * 0.18f * lean - 0.05f * phase);
+                var puff = SamovarCrown + new Vector3((H(id) - 0.5f) * 0.18f * lean + 0.012f * MathF.Sin(time * 2.1f + n), 0.02f + 0.5f * phase, (H(id + 1) - 0.5f) * 0.18f * lean);
                 return Matrix4x4.CreateScale(thick) * Matrix4x4.CreateTranslation(puff);
         }
     }
@@ -357,7 +357,6 @@ internal sealed unsafe class GardenGpu
         var m = new Matrix4x4(inst.Row0.X, inst.Row1.X, inst.Row2.X, 0, inst.Row0.Y, inst.Row1.Y, inst.Row2.Y, 0, inst.Row0.Z, inst.Row1.Z, inst.Row2.Z, 0, inst.Row0.W, inst.Row1.W, inst.Row2.W, 1);
         if ((inst.Flags & GardenScene.DropletFlag) != 0) { var (pos, vel, size) = Droplet(inst.Index, time); return DropletWorld(pos, vel, size); }
         if ((inst.Flags & GardenScene.MoverFlag) != 0) return Mover((int)inst.Index, time);
-        if ((inst.Flags & GardenScene.SphereFlag) != 0) return m * Matrix4x4.CreateTranslation(SphereDrift(time));
         if (GardenScene.Sway(inst.Flags) is > 0 and float sway)
         {
             // leaning with the wind: every point pushed sideways by its height above where the plant stands (Garden.hlsli's Swayed is its twin)
@@ -380,18 +379,6 @@ internal sealed unsafe class GardenGpu
         float swirl = 0.4f * MathF.Sin(time * 1.7f + phase * 2.3f);
         return new(0.8f * gust - 0.6f * swirl, 0.6f * gust + 0.8f * swirl);
     }
-
-    /// <summary>How far the mirror sphere is from where the scene placed it (beside the fountain, over the pool's right half) at
-    /// <paramref name="time"/>: once round the fountain in <see cref="SphereLap"/> seconds, along the pool and back over the water,
-    /// rising and sinking a little as it goes. It keeps clear of the fountain, the pool's edge and the logo above.</summary>
-    public static Vector3 SphereDrift(float time)
-    {
-        float a = time / SphereLap * 2 * MathF.PI;
-        return new(SphereReach.X * (MathF.Cos(a) - 1), 0.2f * MathF.Sin(a * 3), SphereReach.Y * MathF.Sin(a));
-    }
-    public const float SphereLap = 32f;
-    /// <summary>The sphere's path: an ellipse this far across the pool and along it from the fountain.</summary>
-    public static readonly Vector2 SphereReach = new(2.5f, 5.4f);
 
     /// <summary>Where the fountain's droplet <paramref name="id"/> is at <paramref name="time"/>, how fast it is going and how big it is
     /// (size 0: it is spent, in the water until its next turn). Water leaves the nozzle as droplets, each on its own ballistic flight;
@@ -662,7 +649,7 @@ internal struct GardenFrame
     public const int Bytes = 1024;
 
     /// <summary>How many times longer the picture is exposed in the hall by day than in the garden.</summary>
-    public const float Indoors = 2.4f;
+    public const float Indoors = 1.7f;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>
@@ -677,14 +664,14 @@ internal struct GardenFrame
         var view = Matrix4x4.CreateLookAtLeftHanded(eye, target, Vector3.UnitY);
         float h = 1 / MathF.Tan(fovY / 2);
         var proj = new Matrix4x4(h / aspect, 0, 0, 0, 0, h, 0, 0, 0, 0, 0, 1, 0, 0, Near, 0);   // depth = Near / distance
-        bool raster = g.Mode == GardenScene.Mode.Raster; var day = g.Day(time);
+        var day = g.Day(time);
         var f = new GardenFrame
         {
             ViewProj = view * proj, Eye = eye, Time = time, SunDir = day.Key, SunOn = day.KeyColor.LengthSquared() > 0 ? 1 : 0, SunColor = day.KeyColor,
             LightCount = (uint)g.PointLights.Length, WaterLevel = g.WaterLevel,
             SkyZenith = day.Zenith, SkyHorizon = day.Horizon, GroundColor = day.Ground, Exposure = day.Exposure,
             ViewSize = new(width, height), CamRight = right, CamUp = up, CamForward = forward, TanHalfFovY = MathF.Tan(fovY / 2), Aspect = aspect,
-            Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u, Backdrop = g.BackdropRange,
+            Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = 1, Backdrop = g.BackdropRange,
             Day = new(day.Night, day.Lamps, day.Moon ? 1 : 0, day.Noon)
         };
         if (g.Fountain is { } fountain) { f.Fountain = new(fountain.Nozzle, fountain.BowlRadius); f.Fountain2 = new(fountain.BowlLevel, fountain.RimRadius, GardenGpu.JetDroplets, 1); }
@@ -693,8 +680,8 @@ internal struct GardenFrame
         // soft from the middle of a room: blur in pixels = 1 % of the frame's height for each dioptre out of focus, and never more
         // than 0.3 % of it (at twice that the garden beyond what was looked at went dull: the picture is to be sharp).
         f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.010f * height, 0.003f * height, 16);
-        f.Post = new(raster ? 0.11f : 0.55f, 0, 1, GardenGpu.HallLit(day));   // the rasteriser's glow is five levels summed, the ray tracer's one; the wind blows; the hall's lamps
-        var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0.3f + 0.15f * day.Night);   // the logo is a lit sign: it glows of itself, by day a little, at night more
+        f.Post = new(0.11f, 0, 1, GardenGpu.HallLit(day));   // the glow (five levels summed); the wind blows; the hall's lamps
+        var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0.05f + 0.17f * day.Night);   // the logo is a sign: by day the sun, the shade and the sky light it like anything else in the garden, at night it glows of itself a little
         var hall = GardenRaster.Rounds[1]; f.Round1Low = new(hall.Low, 0); f.Round1High = new(hall.High, 0);   // the hall's rooms: where the light is the orsi's
         // The eye gets used to the dark: by day the hall's rooms hold a fraction of the garden's light, and the picture is exposed for
         // them as the walk goes in at the door (the windows then burn out, as they do to anyone standing in such a room).

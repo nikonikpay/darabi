@@ -12,7 +12,7 @@ import { durationField } from "../duration.js";
 export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
 // Keeps a field's value unless the technician is typing in it.
-export function setField(el, v) { if (document.activeElement !== el && el.value !== (v ?? "")) el.value = v ?? ""; }
+export function setField(el, v) { if (el.type === "checkbox") { el.checked = v === "on"; return; } if (document.activeElement !== el && el.value !== (v ?? "")) el.value = v ?? ""; }
 
 export function mount(el) {
   const list = h("div", { class: "groups" });
@@ -52,7 +52,10 @@ export function mount(el) {
     const rep = h("select", { class: "field", onchange: (e) => set("repeat", e.target.value) }, s.repeatModes.map((m) => h("option", { value: m.value }, m.label)));
     const cnt = h("input", { class: "field lat short", inputmode: "numeric", oninput: (e) => set("count", e.target.value) });
     const opts = r.options.map((o) => {
-      const input = o.choices
+      // a choice between off and on is a switch
+      const input = o.choices && o.choices.map((c) => c.value).join() === "off,on"
+        ? h("input", { type: "checkbox", class: "switch", onchange: (e) => set("option", e.target.checked ? "on" : "off", { key: o.key }) })
+        : o.choices
         ? h("select", { class: "field", onchange: (e) => set("option", e.target.value, { key: o.key }) }, o.choices.map((c) => h("option", { value: c.value }, c.label)))
         : h("input", { class: "field lat", style: { width: "110px" }, oninput: (e) => set("option", e.target.value, { key: o.key }) });
       return { o, input, el: h("label", {}, o.label, input) };

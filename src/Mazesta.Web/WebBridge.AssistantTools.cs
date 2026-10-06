@@ -11,7 +11,7 @@ public sealed partial class WebBridge
     {
         ["cpu"] = ["cpu.matrix", "cpu.integer", "cpu.fft"], ["memory"] = ["memory.pattern"],
         ["storage"] = ["storage.smart", "storage.sequential"], ["network"] = ["network.latency", "network.speed"],
-        ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram", "gpu.scene.d3d", "gpu.scene.rt"],
+        ["gpu"] = ["gpu.render", "gpu.steady", "gpu.vram", "gpu.scene.d3d"],
     };
     /// <summary>Asked for all of an area, the assistant offers every test of it but this one: it needs a second computer set up as its peer.</summary>
     private static readonly string[] AssistantNeverTests = ["network.lan"];
@@ -20,7 +20,7 @@ public sealed partial class WebBridge
     private static readonly IReadOnlyDictionary<string, string> AssistantBenchmarks = new Dictionary<string, string>
     {
         ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage", ["gpu"] = "bench.gpu.d3d",
-        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_scene_rt"] = "bench.gpu.scene.rt", ["gpu_ai"] = "bench.gpu.ai", ["network"] = "bench.network.internet",
+        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_ai"] = "bench.gpu.ai", ["network"] = "bench.network.internet",
     };
 
     /// <summary>The pages the assistant may open (the page's own ids, from <see cref="AppGuide"/>) and the controls it may point at on them.</summary>
@@ -566,9 +566,9 @@ public sealed partial class WebBridge
                 }),
             new("run_benchmark", "Runs real benchmarks, after the user confirmed all of them at once on the page, one after another, and returns each one's number, the best " +
                 "earlier result of this computer and the change against it (positive change is better, negative is slower than the best kept). About a minute each. " +
-                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu (Direct3D), gpu_rt (ray tracing), gpu_scene (3D scene), gpu_scene_rt (ray-traced 3D scene), gpu_ai (AI compute), " +
+                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu (Direct3D), gpu_rt (ray tracing), gpu_scene (3D scene; its ray-tracing switch is set on the page), gpu_ai (AI compute), " +
                 "network (internet speed), or all. Name them all in one call. For a trend over time use get_benchmark_history.",
-                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu","gpu_rt","gpu_scene","gpu_scene_rt","gpu_ai","network"]}}},"required":["benchmarks"]}""",
+                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu","gpu_rt","gpu_scene","gpu_ai","network"]}}},"required":["benchmarks"]}""",
                 async (a, ct) =>
                 {
                     var keys = Texts(a, "benchmarks").Append(Text(a, "benchmark") ?? "").Where(k => k.Length > 0).Distinct().ToList();

@@ -9,27 +9,30 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// the camera walks round it and through the hall, drawn as fast as the GPU can with no v-sync cap, so the card runs at full load while the
 /// technician watches the picture for artefacts and the monitor records clocks, power and temperature. In one walk the garden goes
 /// through a day (<see cref="GardenDay"/>): morning on the way up it, the afternoon sun coming in at the hall's stained windows, sunset,
-/// and the way back by night with the lamps lit. Two modes of the same garden: Direct3D 12 rasterisation (shadow maps, sky map, ambient
-/// occlusion, the pool's reflection, MSAA - set by the load level), and DirectX Raytracing (DXR 1.1), with a shadow ray to the sun or
-/// the moon and to each lit lamp, reflections and refraction, offered only on a GPU with hardware ray tracing.
+/// and the way back by night with the lamps lit. Drawn by Direct3D 12 (shadow maps, sky map, ambient occlusion, the pool's
+/// reflection, MSAA - set by the load level); with the ray-tracing option on (DXR 1.1, on a GPU that has it) the same frame finds
+/// its shadows and mirror images with rays instead: one to the sun or the moon and to each lit lamp from every pixel, one along what
+/// water, glass and polished surfaces mirror.
 /// A picture that merely looks right is not the pass: every few seconds the scene is also drawn off screen at one fixed moment and read
 /// back, and that frame must be bit-for-bit the first one - a GPU that draws the same frame differently under load has computed wrongly.
 /// </summary>
-public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvailability
+public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing";
+    /// <summary>Ray tracing on or off: the same garden, its shadows and mirror images found with rays (DXR 1.1) instead of maps.</summary>
+    internal static readonly TestOption RayTracing = new(RayTracingOption, "Test_Option_RayTracing", TestOptionKind.Choice, "off",
+        () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1)")]);
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K load can be
     // tested on any monitor; full screen draws at the screen's own size.
     private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, "1920x1080",
         () => [new("1280x720", "1280 × 720 (HD)"), new("1920x1080", "1920 × 1080 (Full HD)"), new("2560x1440", "2560 × 1440 (2K)"), new("3840x2160", "3840 × 2160 (4K)"),
                new("fullscreen", "Test_Resolution_FullScreen", true)]);
-    public static readonly TestDefinition Raster = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
+    public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)])]);
-    public static readonly TestDefinition RayTraced = new(new TestId("gpu.scene.rt"), "Test_Gpu_SceneRt", 300, [GpuDevices.Option, Resolution]);
-    public TestDefinition Definition => rayTraced ? RayTraced : Raster;
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracing]);
+    public TestDefinition Definition => Scene;
 
-    public Unavailability? CheckAvailability(TestOptions options) => rayTraced ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
+    public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
 
     private const int CheckSeconds = 3; private const float CheckTime = 1.234f;
 
@@ -63,10 +66,10 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
     private TestRunResult Run(TestExecutionRequest request, TestOptions options, GraphicsDevice device, DateTimeOffset started, CancellationToken ct)
     {
         var custom = SceneModel.LoadCustom(out string? modelProblem);
-        string res = options.Get(ResolutionOption); bool full = res == "fullscreen";
+        string res = options.Get(ResolutionOption); bool full = res == "fullscreen", rayTraced = options.Get(RayTracingOption) == "on";
         var (w, h) = full ? (0, 0) : ParseSize(res);
-        uint load = rayTraced ? 3u : (uint)Math.Clamp(int.TryParse(options.Get(LoadOption), out int l) ? l : 3, 1, 4);
-        string mode = rayTraced ? "DirectX Raytracing" : "Direct3D 12", level = rayTraced ? "4 bounces" : LoadNames[load - 1];
+        uint load = (uint)Math.Clamp(int.TryParse(options.Get(LoadOption), out int l) ? l : 3, 1, 4);
+        string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12", level = LoadNames[load - 1];
         using var session = new D3D12Session(device);
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (full) (w, h) = (window.Width, window.Height);
@@ -135,7 +138,7 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
         {
             var finished = request.Clock.UtcNow;
             return SensorEvidence.Join($"{mode} Persian garden drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}; {model.Triangles:N0} triangles in {model.Instances.Length:N0} objects, centre model '{model.ModelName}'",
-                rayTraced ? $"ray traced: camera ray, a shadow ray to the sun or the moon and to each of {model.PointLights.Length} lamps in reach once they are lit, reflections and refraction up to 4 bounces" : $"load level {load}: {work}",
+                $"load level {load}: {work}",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, $"check frames={checks}",
                 firstError.Length > 0 ? firstError : null, model.ModelProblem,
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("measured GPU load", "%"),

@@ -71,7 +71,10 @@ export function benchList(component = null) {
     const dur = durationField((v) => set("duration", v));
     const run = h("button", { class: "btn", onclick: () => call("bench.exec", { cmd: "run", id: r.id }) }, t("Bench_Run"));
     const opts = r.options.map((o) => {
-      const input = o.choices
+      // a choice between off and on is a switch
+      const input = o.choices && o.choices.map((c) => c.value).join() === "off,on"
+        ? h("input", { type: "checkbox", class: "switch", onchange: (e) => set("option", e.target.checked ? "on" : "off", { key: o.key }) })
+        : o.choices
         ? h("select", { class: "field", onchange: (e) => set("option", e.target.value, { key: o.key }) }, o.choices.map((c) => h("option", { value: c.value }, c.label)))
         : h("input", { class: "field lat", style: { width: "110px" }, oninput: (e) => set("option", e.target.value, { key: o.key }) });
       return { o, input, el: h("label", {}, o.label, input) };

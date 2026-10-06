@@ -146,7 +146,7 @@ public sealed class GardenLightVolume
 }
 
 /// <summary>
-/// Works the garden's <see cref="GardenLightVolume"/> out with the ray tracer (GardenRay.hlsl's Bake), on a GPU that has ray-tracing
+/// Works the garden's <see cref="GardenLightVolume"/> out with rays (GardenBake.hlsl, through <see cref="GardenLightTracer"/>), on a GPU that has ray-tracing
 /// hardware: from each grid point rays are sent out round each of the six directions and the mean of the light they find is taken -
 /// the surfaces they meet lit with shadow rays, and by a bounce of their own - once for each of the volume's parts, with that part's
 /// light alone: the sky, the garden's lamps, the hall's, the sun at each point of its arc. Run after the scene is exported, by the hardware test that
@@ -167,9 +167,8 @@ internal static class GardenLightBaker
     public static GardenLightVolume Bake(D3D12Session s, GardenScene scene, uint rays = 1024)
     {
         int count = X * Y * Z * 6;
-        var g = new GardenGpu(s, scene, GardenScene.Mode.Raster);
-        using var ray = new GardenRay(s, g, GardenRay.BakeRow, (count + GardenRay.BakeRow - 1) / GardenRay.BakeRow / 8 * 8 + 8, []);
-        float[] Part(GardenRay.FrameSetup light) => Settled(ray.BakeLight(new(Origin, Spacing), new(X, Y, Z), count, rays, (ref GardenFrame f) =>
+        var g = new GardenGpu(s, scene); var ray = new GardenLightTracer(s, g, count);
+        float[] Part(GardenLightTracer.FrameSetup light) => Settled(ray.BakeLight(new(Origin, Spacing), new(X, Y, Z), count, rays, (ref GardenFrame f) =>
         {
             // nothing shines but what the part is of: no key light, no lamp lit, no sky, nothing glowing, and no flame wavering
             f.SunOn = 0; f.SunColor = Vector3.Zero; f.LightCount = 0; f.SkyZenith = f.SkyHorizon = f.GroundColor = Vector3.Zero; f.Post = default; f.Day = default; f.Logo.W = 0;
@@ -188,7 +187,7 @@ internal static class GardenLightBaker
         var parts = new List<float[]>
         {
             Indoors(Part((ref GardenFrame f) => { f.SkyZenith = Vector3.One; f.Post.Y = 1; })),
-            Part((ref GardenFrame f) => { g.Lamps(1, 0); f.LightCount = (uint)g.PointLights.Length; f.Day = new(1, 1, 1, 0); f.Logo.W = 0.45f; }),
+            Part((ref GardenFrame f) => { g.Lamps(1, 0); f.LightCount = (uint)g.PointLights.Length; f.Day = new(1, 1, 1, 0); f.Logo.W = 0.22f; }),
             Indoors(Part((ref GardenFrame f) => { g.Lamps(0, 1); f.LightCount = (uint)g.PointLights.Length; f.Day = new(1, 0, 1, 0); f.Post.W = 1; })),
         };
         for (int k = 0; k < Suns; k++)

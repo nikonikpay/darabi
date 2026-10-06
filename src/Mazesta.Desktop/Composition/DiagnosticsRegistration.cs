@@ -32,8 +32,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Pulse));
         s.AddSingleton<ITestExecutor, GpuVramExecutor>();
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
-        s.AddSingleton<ITestExecutor>(new Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor(rayTraced: false));
-        s.AddSingleton<ITestExecutor>(new Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor(rayTraced: true));
+        s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor>();
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
         s.AddSingleton<ITestExecutor, NetworkLatencyExecutor>();
@@ -52,9 +51,8 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: true));
         s.AddSingleton<IBenchmark, MemoryBenchmark>();
         s.AddSingleton<IBenchmark, GpuRasterBenchmark>();
-        s.AddSingleton<IBenchmark>(new GpuSceneBenchmark(rayTraced: false));
+        s.AddSingleton<IBenchmark, GpuSceneBenchmark>();
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
-        s.AddSingleton<IBenchmark>(new GpuSceneBenchmark(rayTraced: true));
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();
         s.AddSingleton<IBenchmark, StorageBenchmark>();
         s.AddSingleton<IBenchmark>(new InternetSpeedBenchmark());

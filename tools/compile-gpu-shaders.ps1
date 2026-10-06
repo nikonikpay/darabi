@@ -25,6 +25,7 @@ $jobs = @(
     @('GardenRaster.hlsl', 'MainVS', 'vs_6_0', 'GardenMainVS.cso'),
     @('GardenRaster.hlsl', 'ShadowVS', 'vs_6_0', 'GardenShadowVS.cso'),
     @('GardenRaster.hlsl', 'ShadowPS', 'ps_6_0', 'GardenShadowPS.cso'),
+    @('GardenRaster.hlsl', 'LeafDepthPS', 'ps_6_0', 'GardenLeafDepthPS.cso'),
     @('GardenRaster.hlsl', 'TintPS', 'ps_6_0', 'GardenTintPS.cso'),
     @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_0', 'GardenOpaquePS.cso'),
     @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_0', 'GardenCutoutPS.cso'),
@@ -39,14 +40,15 @@ $jobs = @(
     @('GardenRaster.hlsl', 'RoundDownPS', 'ps_6_0', 'GardenRoundDownPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
-    @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso'),
-    @('GardenRay.hlsl', 'Gather', 'cs_6_5', 'GardenGather.cso'),
-    @('GardenRay.hlsl', 'Denoise', 'cs_6_5', 'GardenDenoise.cso'),
-    @('GardenRay.hlsl', 'Finish', 'cs_6_5', 'GardenFinish.cso'),
-    @('GardenRay.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso')
+    # the garden's frame with ray tracing switched on: the same pixel shaders, RT defined (DXR 1.1 inline ray queries)
+    @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_5', 'GardenOpaqueRtPS.cso', 'RT'),
+    @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_5', 'GardenCutoutRtPS.cso', 'RT'),
+    @('GardenRaster.hlsl', 'TransparentPS', 'ps_6_5', 'GardenTransparentRtPS.cso', 'RT'),
+    @('GardenBake.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso')
 )
 foreach ($j in $jobs) {
-    & $dxc.FullName -nologo -O3 -Qstrip_debug -Qstrip_reflect -E $j[1] -T $j[2] -Fo (Join-Path $dir $j[3]) (Join-Path $dir $j[0])
+    $define = if ($j.Count -gt 4) { @('-D', $j[4]) } else { @() }
+    & $dxc.FullName -nologo -O3 -Qstrip_debug -Qstrip_reflect @define -E $j[1] -T $j[2] -Fo (Join-Path $dir $j[3]) (Join-Path $dir $j[0])
     if ($LASTEXITCODE -ne 0) { throw "dxc failed on $($j[0]) $($j[1])" }
 }
 Write-Host "Compiled $($jobs.Count) shaders with $($dxc.FullName)"

@@ -43,7 +43,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private const Format Light = Format.R10G10B10A2_UNorm, GlowFormat = Format.R11G11B10_Float;
     private readonly Settings _set; private readonly int _samples;
     private readonly ID3D12RootSignature _root;
-    private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown, _tint, _before;
+    private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown, _tint, _before, _beforeLeaves;
     private readonly ID3D12Resource _shadowMap, _hallShadow, _hallTint, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light, _lamps, _volume, _round, _roundDepth;
     private readonly ID3D12Resource? _volumeStaging; private readonly float[] _mixed = []; private readonly uint _volumePitch;
     /// <summary>The stained panes' draws, and for each face of the pictures of the surroundings the still instances it can see, in runs of neighbours.</summary>
@@ -61,17 +61,19 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     /// <summary>The pool's water on the plan (x and z, from and to): its mirror image is drawn only where the frame shows it.</summary>
     private readonly Vector4 _pool;
 
-    public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load) : base(s, g, width, height, targets)
+    /// <summary><paramref name="rayTraced"/>: on a GPU with DirectX Raytracing 1.1, shadows and mirror images are found with rays
+    /// (GardenRaster.hlsl compiled with RT) - the courtyard's shadow map, the lamps' cubes and the pool's second drawing are not made.</summary>
+    public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load, bool rayTraced = false) : base(s, g, width, height, targets)
     {
-        _set = Settings.ForLoad(load);
+        _set = Settings.ForLoad(load); if (rayTraced) { _set = _set with { ReflectionDivisor = 0 }; _accel = new GardenAccel(s, g); }
         _samples = SupportedSamples(s, _set.Samples);
         byte[] vs = D3D12Session.Shader("GardenMainVS");
         _root = s.Own(s.Device.CreateRootSignature(vs));
         InputElementDescription[] layout = [new("POSITION", 0, Format.R16G16B16A16_SNorm, 0, 0), new("NORMAL", 0, Format.R8G8B8A8_SNorm, 8, 0), new("TEXCOORD", 0, Format.R16G16_Float, 12, 0)];
         byte[] shadowVs = D3D12Session.Shader("GardenShadowVS"), shadowPs = D3D12Session.Shader("GardenShadowPS"), skyVs = D3D12Session.Shader("GardenSkyVS"), skyPs = D3D12Session.Shader("GardenSkyPS");
-        byte[] opaquePs = D3D12Session.Shader("GardenOpaquePS"), cutoutPs = D3D12Session.Shader("GardenCutoutPS"), transparentPs = D3D12Session.Shader("GardenTransparentPS");
+        string rt = rayTraced ? "Rt" : "";
+        byte[] opaquePs = D3D12Session.Shader($"GardenOpaque{rt}PS"), cutoutPs = D3D12Session.Shader($"GardenCutout{rt}PS"), transparentPs = D3D12Session.Shader($"GardenTransparent{rt}PS");
         var blend = new BlendDescription(Blend.SourceAlpha, Blend.InverseSourceAlpha);
-        var a2c = BlendDescription.Opaque; a2c.AlphaToCoverageEnable = true;
         // the frame's depth is reversed (GardenFrame.Near): nearer is greater, the sky lies at 0
         var nearer = new DepthStencilDescription(true, DepthWriteMask.All, ComparisonFunction.GreaterEqual);
         var readOnly = new DepthStencilDescription(true, DepthWriteMask.Zero, ComparisonFunction.GreaterEqual);
@@ -92,7 +94,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         Format[] color = [Light];
         _sky = Make(skyVs, skyPs, BlendDescription.Opaque, skyDepth, _samples, color, input: false);
         _opaque = Make(vs, opaquePs, BlendDescription.Opaque, nearer, _samples, color);
-        _cutout = Make(vs, cutoutPs, _samples > 1 ? a2c : BlendDescription.Opaque, nearer, _samples, color);
+        // (the frame's leaves are lit where their depth, laid before, is theirs: nothing is cut out or written again)
+        _cutout = Make(vs, cutoutPs, BlendDescription.Opaque, new DepthStencilDescription(true, DepthWriteMask.Zero, ComparisonFunction.Equal), _samples, color);
         _transparent = Make(vs, transparentPs, blend, readOnly, _samples, color);
         if (_set.ReflectionDivisor > 0)
         {
@@ -103,7 +106,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         }
         else _skyR = _opaqueR = _cutoutR = _transparentR = _sky;
         _depthOnly = Make(shadowVs, shadowPs, BlendDescription.Opaque, nearer, 1, []);
-        _before = Make(vs, null, BlendDescription.Opaque, nearer, _samples, []);   // the frame's solid surfaces as depth alone, through the frame's own vertex shader: the same depth to the bit
+        _before = Make(vs, null, BlendDescription.Opaque, nearer, _samples, []);
+        _beforeLeaves = Make(vs, D3D12Session.Shader("GardenLeafDepthPS"), BlendDescription.Opaque, nearer, _samples, []);   // the frame's solid surfaces as depth alone, through the frame's own vertex shader: the same depth to the bit
         _occlude = Make(skyVs, D3D12Session.Shader("GardenAoPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [Format.R8_UNorm], input: false);
         _glowFirst = Make(skyVs, D3D12Session.Shader("GardenGlowFirstPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [GlowFormat], input: false);
         _glowDown = Make(skyVs, D3D12Session.Shader("GardenGlowDownPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [GlowFormat], input: false);
@@ -251,6 +255,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     }
 
     public int Samples => _samples;
+    private readonly GardenAccel? _accel;
+    /// <summary>Whether shadows and mirror images are found with rays.</summary>
+    public bool RayTraced => _accel is not null;
     private const int LensViews = 7, LampView = LensViews + GlowLevels + 2, RoundView = LampView + 5;
     /// <summary>The root signature's first table of views (the scene's); the lens's and the lamps' follow it.</summary>
     private const int Views = 12;
@@ -451,8 +458,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         var first = frame; first.Post.Z = 0;   // the passes of the still scene see no mirror images (the sky stands in) and no wind: the plants stand as they were placed
         if (_set.ReflectionDivisor > 0) frame.Flags |= 1;
         if (_samples > 1) frame.Flags |= 4;
-        frame.Flags |= 8;
-        var mirrored = frame.Mirrored(); mirrored.Flags &= ~4u; mirrored.ViewSize = new(_reflW, _reflH);
+        frame.Flags |= 8; frame.Samples = (uint)_samples;
+        var mirrored = frame.Mirrored(); mirrored.Flags &= ~4u; frame.Flags |= 16; mirrored.ViewSize = new(_reflW, _reflH);
         // the depth-only passes draw through ShadowViewProj: the camera's own view for the frame's depth, the view from above for the sky map, the hall's own for its shadow map
         var depthOnly = frame; depthOnly.ShadowViewProj = frame.ViewProj; var above = first; above.ShadowViewProj = _skyViewProj; var hall = frame; hall.ShadowViewProj = frame.HallViewProj;
         var map = _constants.Map<byte>(0, (int)Slot * Slots);
@@ -479,6 +486,12 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetGraphicsRootShaderResourceView(4, G.LightBuffer.GPUVirtualAddress);
         l.SetGraphicsRootShaderResourceView(5, G.MoverBuffer.GPUVirtualAddress);
         l.SetGraphicsRootShaderResourceView(6, G.LightGridBuffer.GPUVirtualAddress);
+        if (_accel is not null)
+        {
+            _accel.Build(l, time);
+            l.SetGraphicsRootShaderResourceView(7, _accel.Address); l.SetGraphicsRootShaderResourceView(8, G.MeshInfoBuffer.GPUVirtualAddress); l.SetGraphicsRootShaderResourceView(9, G.SubmeshInfoBuffer.GPUVirtualAddress);
+            l.SetGraphicsRootShaderResourceView(10, G.VertexBuffer.GPUVirtualAddress); l.SetGraphicsRootShaderResourceView(11, G.IndexBuffer.GPUVirtualAddress);
+        }
         l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         l.IASetVertexBuffers(0, new VertexBufferView(G.VertexBuffer.GPUVirtualAddress, (uint)G.VertexBuffer.Description.Width, 16));
         l.IASetIndexBuffer(new IndexBufferView(G.IndexBuffer.GPUVirtualAddress, (uint)G.IndexBuffer.Description.Width, Format.R32_UInt));
@@ -495,7 +508,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.ClearDepthStencilView(Dsv(4), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(4));
             Geometry(l, Still, draw => G.CastsShadow(draw) && !draw.Moving);
             l.ResourceBarrierTransition(_skyMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
-            LampShadows(l, first);
+            if (_accel is null) LampShadows(l, first); else l.ResourceBarrierTransition(_lamps, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
             _onceDrawn = true; l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
         }
         // 1. the key light's shadow maps - the light moves, so they are drawn anew: the courtyard's, the hall's own, and through the
@@ -503,7 +516,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         static bool Casts(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout;
         l.RSSetViewport(0, 0, _set.ShadowSize, _set.ShadowSize); l.RSSetScissorRect(_set.ShadowSize, _set.ShadowSize);
         l.SetPipelineState(_shadow);
-        if (drawKey)
+        if (drawKey && _accel is null)
         {
             l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
             l.ClearDepthStencilView(Dsv(1), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(1));
@@ -592,9 +605,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // 4. the frame's light
         var rtv = _samples > 1 ? Rtv(Targets.Length + 1) : Rtv(Targets.Length + 3);
         if (_samples == 1) l.ResourceBarrierTransition(_light, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
-        // first the solid surfaces' depth alone, so that of the surfaces one behind another only the nearest is lit
+        // first the depth alone, of the solid surfaces and the leaves, so that of the surfaces one behind another only the nearest is lit
         l.ClearDepthStencilView(Dsv(0), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets([], Dsv(0));
-        l.SetPipelineState(_before); Geometry(l, Solid);
+        l.SetPipelineState(_before); Geometry(l, Solid); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout);
         l.OMSetRenderTargets(rtv, Dsv(0));
         Pass(l, _sky, _opaque, _cutout, _transparent, skipWater: false);
         if (_samples > 1)

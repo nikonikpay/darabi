@@ -139,7 +139,7 @@ public static partial class TestDetailText
         R(@"VRAM pattern test on (.+)", "Detail_Gpu_Vram"),
         R(@"tested=(\d+) MiB in (\d+) buffers", "Detail_Gpu_VramTested"),
         R(@"GPU error during (?:the run|rendering|the VRAM test): (.+)", "Detail_Gpu_Error", tail: 1),
-        R(@"(DirectX Raytracing|Direct3D 12) Persian garden drawn at (\d+)x(\d+) \(window (\d+)x(\d+)\) on (.+)", "Detail_Gpu_Scene"),
+        R(@"(DirectX Raytracing|Direct3D 12 \+ ray tracing|Direct3D 12) Persian garden drawn at (\d+)x(\d+) \(window (\d+)x(\d+)\) on (.+)", "Detail_Gpu_Scene"),
         R(@"([\d,]+) triangles in ([\d,]+) objects, centre model '(.+)'", "Detail_Gpu_SceneModel"),
         R(@"ray traced: camera ray, a shadow ray to the moon and to each of (\d+) lamps in reach, reflections and refraction up to 4 bounces", "Detail_Gpu_SceneRays"),
         R(@"ray traced: camera ray, a shadow ray to the sun or the moon and to each of (\d+) lamps in reach once they are lit, reflections and refraction up to 4 bounces", "Detail_Gpu_SceneRaysDay"),

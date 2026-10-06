@@ -84,6 +84,44 @@ for lo, hi in (((-3.545, -26.515, -0.02), (-3.25, -11.6, 0.17)), ((3.25, -26.515
 me = bpy.data.meshes.new("App_Pool_Coping_Footing"); me.from_pydata(verts, [], faces); me.materials.append(bpy.data.materials["V8_Carved_Pale_Limestone"])
 bpy.data.objects["V8_Pool_Stonework_V8_Limestone"].users_collection[0].objects.link(bpy.data.objects.new("App_Pool_Coping_Footing", me))
 
+def added(name, verts, faces, material, smooth=False):
+    me = bpy.data.meshes.new(name); me.from_pydata(verts, [], faces); me.materials.append(bpy.data.materials[material])
+    if smooth: me.polygons.foreach_set("use_smooth", [True] * len(me.polygons))
+    bpy.data.objects["V8_Pool_Stonework_V8_Limestone"].users_collection[0].objects.link(bpy.data.objects.new(name, me))
+def boxes(*spans):
+    verts, faces = [], []
+    for lo, hi in spans: v, f = box(lo, hi); faces += [tuple(i + len(verts) for i in q) for q in f]; verts += v
+    return verts, faces
+def tube(path, radius, sides=10):
+    """A tube round a line of points (its ends closed with a point each)."""
+    verts, faces = [], []; pts = [Vector(p) for p in path]
+    for i, p in enumerate(pts):
+        along = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized(); u = along.cross(Vector((1, 0, 0))).normalized(); w = along.cross(u)
+        r = radius[i] if isinstance(radius, (list, tuple)) else radius
+        verts += [tuple(p + (u * math.cos(a) + w * math.sin(a)) * r) for a in (k * 2 * math.pi / sides for k in range(sides))]
+    for i in range(len(pts) - 1):
+        faces += [(i * sides + k, i * sides + (k + 1) % sides, (i + 1) * sides + (k + 1) % sides, (i + 1) * sides + k) for k in range(sides)]
+    verts += [tuple(pts[0]), tuple(pts[-1])]; n = len(pts) * sides
+    faces += [(n, (k + 1) % sides, k) for k in range(sides)] + [(n + 1, (len(pts) - 1) * sides + k, (len(pts) - 1) * sides + (k + 1) % sides) for k in range(sides)]
+    return verts, faces
+
+# The upper basin, between the stairs and the pool, stood in the air: its rim (x 1.48, underside at z 0.44, the back piece's at 0.58)
+# reaches past its tiled box (x 1.38, from z 0.34), and under the box there was nothing down to the slab at 0.24. A plinth of the
+# rim's own stone carries it, a little inside the rim's edge.
+added("App_Upper_Basin_Plinth", *boxes(((-1.45, -10.08, 0.2), (1.45, -8.66, 0.445)), ((-1.45, -8.72, 0.2), (1.45, -8.61, 0.585))), "V8_Limestone")
+
+# And nothing fed it: its water ran over into the two basins below from nowhere. A spout stands on the middle of its back rim - a
+# short stone post with a cap, a brass pipe out of its face - and a stream of the pool's own water falls from the pipe into the basin
+# (0.37 m down at the 0.55 m/s it leaves with: 15 cm out).
+added("App_Basin_Spout_Post", *boxes(((-0.24, -8.80, 0.76), (0.24, -8.60, 1.14)), ((-0.28, -8.83, 1.14), (0.28, -8.57, 1.20))), "V8_Limestone")
+added("App_Basin_Spout_Pipe", *tube([(0, -8.79, 1.02), (0, -8.93, 1.02), (0, -8.975, 1.005)], 0.028), "V7_Antique_Brass", smooth=True)
+fall = [(0, -8.975 - 0.55 * t, 1.0 - 4.905 * t * t) for t in (k * 0.2746 / 11 for k in range(12))]
+added("App_Basin_Spout_Water", *tube(fall, [0.017 - 0.006 * k / 11 for k in range(12)]), "V8_Animated_Clear_Pond_Water", smooth=True)
+
+# The orsi's brass pulls stood a hand before the middle of their panes, on nothing (the leaves' stiles are a hand to the side):
+# from the garden they read as bars across the glass. They are left out.
+bpy.data.objects.remove(bpy.data.objects["V7_Orsi_V7_Antique_Brass"], do_unlink=True)
+
 # The camera both tests start from (the walk itself is GardenCamera's): at the gate, looking up the pool.
 cam = bpy.data.objects.new("App_Camera", bpy.data.cameras.new("App_Camera")); cam.location = (0, -31.3, 1.75)
 cam.rotation_euler = (Vector((0, -19, 1.9)) - Vector(cam.location)).to_track_quat('-Z', 'Y').to_euler()
