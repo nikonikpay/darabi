@@ -1,6 +1,7 @@
 // Shared by the garden's two renderers (GardenRaster.hlsl, GardenRay.hlsl): the frame constants, the scene's records as GardenScene.cs
-// lays them out, the materials (Blender's brick texture included, so the paving and walls look as they do in the .blend), the sky and the
-// light falloff. Everything is a pure function of its inputs and the frame's Time: a frame drawn twice at one Time is the same image.
+// lays them out, the materials (base colour, roughness, metalness, a normal map and its occlusion: the metal-roughness model the .blend's
+// own Principled shader is), the light they give back (GGX), the sky, the fountain's water and the light falloff.
+// Everything is a pure function of its inputs and the frame's Time: a frame drawn twice at one Time is the same image.
 
 cbuffer Frame : register(b1)
 {
@@ -16,18 +17,30 @@ cbuffer Frame : register(b1)
     float3 CamUp; float Aspect;
     float3 CamForward; uint Bounces;
     uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: golden hour (Direct3D), 2: blue hour (ray traced)
-    float4 Logo;                          // the logo's turn toward the camera (cos, sin) and its float (lift): GardenGpu.LogoMotion
+    float4 Logo;                          // the logo's turn toward the camera (cos, sin), its float (lift): GardenGpu.LogoMotion; and how much it glows of itself
     uint Samples; uint3 FramePad;         // ray tracer: camera rays a pixel
     float4 Backdrop;                      // the mountains round the horizon: the heights they cover as tangents (low, high), and 1 when they are there
+    float4x4 SkyViewProj;                 // rasteriser: the view straight down over the courtyard (what stands between a point and the open sky)
+    float4 Fountain;                      // the fountain's nozzle, and the radius of the water in its bowl
+    float4 Fountain2;                     // that water's level, the radius of the bowl's rim, how many droplets are the jet's (the rest spill from the rim), 1 when there is a fountain
+    float4 Ambience;                      // rasteriser: 1 when the occlusion image is bound, its taps, the near plane's distance
 };
 
-struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Pad; };
-struct Material { uint Kind; int Texture; float RoomOffset; int NormalTexture; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
+// Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index
+struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Index; };
+// Pattern: for a brick, its scale, mortar size, brick width and row height; for any other textured surface, how many times the texture
+// repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre.
+// LightTint 1: light passing through takes the pane's colour (stained glass).
+struct Material { uint Kind; int Texture; float LightTint; int NormalTexture; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
 struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float2 Pad; };
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5;
 static const uint LSun = 0, LPoint = 1, LSpot = 2;
+static const uint FLogo = 1, FSphere = 2, FDroplet = 4;
 static const float Pi = 3.14159265;
+
+uint Hash(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return x; }
+float Hash01(uint x) { return (Hash(x) >> 8) * (1.0 / 16777216.0); }
 
 float3x3 Rotation(Instance i) { return float3x3(i.Row0.xyz, i.Row1.xyz, i.Row2.xyz); }
 float3 Translation(Instance i) { return float3(i.Row0.w, i.Row1.w, i.Row2.w); }
@@ -62,6 +75,7 @@ float2 Brick(float2 p, float mortarSize, float brickWidth, float rowHeight)
     return float2(d < mortarSize ? 1 : 0, tint);
 }
 
+float Hash1(float x) { return frac(sin(x * 127.1 + 311.7) * 43758.5453); }
 float Hash3(float3 p) { p = frac(p * 0.3183099 + 0.1); p *= 17; return frac(p.x * p.y * p.z * (p.x + p.y + p.z)); }
 float Noise3(float3 x)
 {
@@ -80,11 +94,66 @@ float2 FaceCoords(float3 p, float3 n)
     return float2(p.x, p.y);
 }
 
-struct Surface { float3 Albedo; float Alpha; float Roughness; float Metallic; float3 Emission; float3 Normal; };
+// ——— the fountain ———
+// Water leaves the nozzle as droplets, each on its own ballistic flight (a pure function of its number and the time, so the CPU can
+// place the same droplets for the ray tracer: GardenGpu.Droplet is this function's twin). A flight ends where it meets something:
+// the water in the bowl, from which the droplet splashes up again, slower and scattered, or - once it has cleared the rim - the pool.
+// The rest of the droplets are the bowl running over: they leave the rim's twelve lobes and fall to the pool.
+static const float Gravity = 9.81;
+void Droplet(uint id, float time, out float3 pos, out float3 vel, out float size)
+{
+    float3 nozzle = Fountain.xyz; float level = Fountain2.x, rim = Fountain2.y; uint jets = (uint)Fountain2.z;
+    float h1 = Hash01(id * 16 + 1), h2 = Hash01(id * 16 + 2), h3 = Hash01(id * 16 + 3), h4 = Hash01(id * 16 + 4);
+    float t; float3 p, v;
+    if (id < jets)
+    {
+        t = frac(time / 2.3 + h1) * 2.3;
+        float a = h3 * 2 * Pi, u = 0.10 + 0.50 * h2 * h2;   // most of them near the axis
+        p = nozzle; v = float3(cos(a) * u, 4.0 + 0.7 * h4, sin(a) * u);
+    }
+    else
+    {
+        t = frac(time / 0.8 + h1) * 0.8;
+        float a = ((id - jets) % 12 + 0.5 + (h3 - 0.5) * 0.4) / 12 * 2 * Pi;
+        p = float3(nozzle.x + cos(a) * rim, level + 0.03, nozzle.z + sin(a) * rim); v = float3(cos(a), 0, sin(a)) * (0.30 + 0.25 * h2); v.y = -0.2;
+    }
+    size = 0.016 + 0.012 * h4;
+    for (uint k = 0; k < 3; k++)
+    {
+        float toBowl = (v.y + sqrt(max(v.y * v.y + 2 * Gravity * (p.y - level), 0))) / Gravity;
+        float2 q = p.xz + v.xz * toBowl - nozzle.xz; bool bowl = dot(q, q) < rim * rim;
+        float end = bowl ? toBowl : (v.y + sqrt(max(v.y * v.y + 2 * Gravity * (p.y - WaterLevel), 0))) / Gravity;
+        if (t <= end) { pos = p + v * t - float3(0, 0.5 * Gravity * t * t, 0); vel = v - float3(0, Gravity * t, 0); return; }
+        if (!bowl || k == 2) break;
+        p = float3(p.x + v.x * end, level + 0.002, p.z + v.z * end); t -= end; size *= 0.75;
+        float sa = Hash01(id * 16 + 5 + k) * 2 * Pi, su = 0.5 + 0.9 * Hash01(id * 16 + 8 + k);
+        v = float3(v.x * 0.3 + cos(sa) * su, 1.1 + 0.9 * Hash01(id * 16 + 11 + k), v.z * 0.3 + sin(sa) * su);
+    }
+    pos = float3(0, -100, 0); vel = 0; size = 0;   // spent: in the water until its next turn
+}
+// A droplet's mesh is a small ball: drawn out along its flight, as a falling drop is seen.
+float3 DropletPlace(float3 unit, float3 pos, float3 vel, float size)
+{
+    float speed = length(vel); float3 d = vel / max(speed, 1e-4);
+    return pos + size * (unit + d * dot(unit, d) * min(speed * 0.22, 1.6));
+}
+
+// Occlusion: how much of the surrounding light the material's own crevices let in (its map; 1 without one).
+// Sheen: how much of its mirror-like reflection is kept (1; a crown of leaf cards, which face every way, has next to none).
+struct Surface { float3 Albedo; float Alpha; float Roughness; float Metallic; float3 Emission; float3 Normal; float Occlusion; float Sheen; };
+
+// Where a material's texture is looked up: the mesh's own coordinates, repeated as the material says, or - for stone that has none of
+// its own - the world position on the face's plane. world is true in the second case (du and dv then run along the world's axes).
+float2 TexCoords(Material m, float2 uv, float3 p, float3 n, out bool world)
+{
+    world = m.Pattern.z > 0 && m.Kind <= KCutout;
+    if (world) return FaceCoords(p, n) * m.Pattern.z;
+    return m.Kind <= KCutout && m.Pattern.x > 0 ? uv * m.Pattern.xy : uv;
+}
 
 Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
 {
-    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission; s.Normal = n;
+    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission; s.Normal = n; s.Occlusion = 1; s.Sheen = m.Kind == KCutout ? 0.12 : 1;
     if (m.Texture >= 0)   // alpha: a leaf card's opacity, any other surface's roughness
     {
         s.Albedo *= texel.rgb;
@@ -97,8 +166,12 @@ Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
         s.Albedo *= lerp(1, 0.75 + 0.5 * Noise3(p * 6), 0.25);   // the .blend multiplies a noise over it
         if (b.x > 0) s.Roughness = min(1, s.Roughness + 0.2);
     }
-    else if (m.Kind == KFlat && m.Texture < 0)
-        s.Albedo *= lerp(1, 0.8 + 0.4 * Noise3(p * 4), 0.3);
+    else if (m.Kind == KFlat && m.Texture < 0 && m.Metallic < 0.5)
+    {
+        // earth, turf and bare stone are never one colour: broad patches, a finer mottle, and grain at the scale of a pebble
+        float v = 0.55 * Noise3(p * 2.3) + 0.30 * Noise3(p * 9.1) + 0.15 * Noise3(p * 37);
+        s.Albedo *= lerp(1, 0.5 + v, m.Roughness > 0.5 ? 0.5 : 0.2);
+    }
     return s;
 }
 
@@ -111,6 +184,8 @@ float3 Bumped(float3 n, float3 t, float3 b, float4 texel)
     float lt = dot(t, t), lb = dot(b, b); if (lt < 1e-12 || lb < 1e-12) return n;
     return normalize(t * rsqrt(lt) * xy.x + b * rsqrt(lb) * xy.y + n * sqrt(saturate(1 - dot(xy, xy))));
 }
+// The rest of a normal map's texel: the material's ambient occlusion in red, its metalness in blue.
+void Relief(inout Surface s, float3 t, float3 b, float4 texel) { s.Normal = Bumped(s.Normal, t, b, texel); s.Occlusion = texel.r; s.Metallic = texel.b; }
 
 // ——— lighting ———
 
@@ -119,7 +194,7 @@ float3 SkyColor(float3 dir)
     float up = saturate(dir.y), h = pow(1 - up, 3);
     float3 c = lerp(SkyZenith, SkyHorizon, h);
     float toSun = saturate(dot(dir, SunDir));
-    if (Mode == 1) c += SunColor * (0.08 * pow(toSun, 6) + 0.25 * pow(toSun, 64)) + SunColor * 6 * smoothstep(0.9995, 0.9998, toSun);
+    if (Mode == 1) c += SunColor * (0.05 * pow(toSun, 6) + 0.16 * pow(toSun, 64)) + SunColor * 2 * smoothstep(0.99988, 0.99996, toSun);
     else c += float3(0.5, 0.6, 0.9) * (0.06 * pow(toSun, 12) + 3 * smoothstep(0.99975, 0.9999, toSun));
     if (dir.y < 0) c = lerp(c, GroundColor, saturate(-dir.y * 4));
     return c;
@@ -135,7 +210,7 @@ float3 Clouds(float3 c, float3 dir)
     float d = Fbm(float3(q, 3.7)), cover = smoothstep(0.42, 0.72, d) * smoothstep(0.01, 0.18, dir.y);
     if (cover <= 0) return c;
     float toSun = saturate(dot(dir, SunDir)), thick = smoothstep(0.5, 0.85, Fbm(float3(q * 1.7, 9.1)));
-    float3 lit = Mode == 1 ? dot(SkyHorizon, 0.333) * float3(1.55, 1.42, 1.3) + SunColor * (0.04 + 0.12 * pow(toSun, 8))
+    float3 lit = Mode == 1 ? dot(SkyHorizon, 0.333) * float3(1.55, 1.42, 1.3) + SunColor * (0.026 + 0.08 * pow(toSun, 8))
                            : dot(SkyZenith, 0.333) * float3(1.1, 1.15, 1.45) + float3(0.5, 0.6, 0.9) * 0.05 * pow(toSun, 8);
     return lerp(c, lit * lerp(1, 0.62, thick), cover * 0.92);
 }
@@ -153,85 +228,54 @@ float3 Sky(float3 dir)
     float w = (1 - smoothstep(Backdrop.x + span * 0.55, Backdrop.x + span * 0.95, t)) * saturate(1 + (t - Backdrop.x) * 25);   // under the horizon the ground's haze takes over
     if (w <= 0) return c;
     float3 m = Mountains(float2(atan2(dir.x, dir.z) / (2 * Pi) + 0.5, clamp((t - Backdrop.x) / span, 0.004, 0.996)));
-    m = Mode == 1 ? m * 1.15 : lerp(dot(m, float3(0.3, 0.59, 0.11)), m, 0.3) * float3(0.07, 0.09, 0.18);
+    m = Mode == 1 ? m * 0.76 : lerp(dot(m, float3(0.3, 0.59, 0.11)), m, 0.3) * float3(0.07, 0.09, 0.18);
     return lerp(c, m, w);
 }
 
-// The sky's light on a surface. By day it is about half the bright sky's colour, so the sun and its shadows give the courtyard its shape.
-float3 Ambient(float3 n) { return lerp(GroundColor, lerp(SkyHorizon, SkyZenith, 0.5), saturate(n.y * 0.5 + 0.5)) * (Mode == 1 ? 0.5 : 1.0); }
-
-// ——— a room behind a window (interior mapping) ———
-// A window's glass shows a furnished room that is not there: the view ray is carried on into a box behind the pane (one bay of the
-// building wide, Pattern's depth deep, from its floor to its ceiling) and the wall, floor or ceiling it meets is painted here - plaster
-// over a tiled dado, a carpet on a wooden floor, a niche and a cushioned bench on the back wall, a lamp. Each bay gets its own colours.
-// Pattern: bay width, room depth, floor height, ceiling height; RoomOffset: where a bay starts along the facade.
-float Hash1(float x) { return frac(sin(x * 127.1 + 311.7) * 43758.5453); }
-float3 Interior(Material m, float3 p, float3 dir, float3 nOut)
+// The sky's light on a surface facing n: the sky's own colour from above (brighter toward the low sun), and from below what the lit
+// paving and earth give back. By day it is about half the bright sky's colour, so the sun and its shadows give the courtyard its shape.
+float3 Ambient(float3 n)
 {
-    float3 inward = -nOut; float3 along = abs(inward.x) > abs(inward.z) ? float3(0, 0, 1) : float3(1, 0, 0);
-    float W = m.Pattern.x, D = m.Pattern.y, F = m.Pattern.z, H = m.Pattern.w - m.Pattern.z;
-    float u = dot(p, along) - m.RoomOffset, bay = floor(u / W); u -= bay * W;
-    float3 o = float3(u, p.y - F, 0), d = float3(dot(dir, along), dir.y, dot(dir, inward));
-    float tu = d.x > 0 ? (W - o.x) / d.x : -o.x / min(d.x, -1e-5);
-    float tv = d.y > 0 ? (H - o.y) / d.y : -o.y / min(d.y, -1e-5);
-    float tw = D / max(d.z, 1e-5), t = min(tu, min(tv, tw));
-    float3 h = o + d * t;
-    float r1 = Hash1(bay), r2 = Hash1(bay + 31.7), r3 = Hash1(bay + 77.3);
-    float3 plaster = lerp(float3(0.62, 0.52, 0.40), float3(0.55, 0.47, 0.42), r1), c;
-    if (t == tv && d.y < 0)   // floor: walnut boards under a carpet with a border
-    {
-        float2 f = float2(h.x, h.z);
-        c = float3(0.20, 0.10, 0.05) * (0.8 + 0.4 * Hash1(floor(f.x / 0.18) + bay * 13));
-        float2 rug = abs(f - float2(W * 0.5, D * 0.55)) - float2(W * 0.36, D * 0.3);
-        if (max(rug.x, rug.y) < 0)
-        {
-            float3 field = lerp(float3(0.42, 0.06, 0.05), float3(0.10, 0.12, 0.32), step(0.6, r2));
-            float edge = -max(rug.x, rug.y);
-            c = edge < 0.12 ? float3(0.55, 0.42, 0.18) : field * (0.8 + 0.25 * Noise3(float3(f * 9, bay)));
-            float2 med = (f - float2(W * 0.5, D * 0.55)) / float2(W * 0.36, D * 0.3);
-            if (length(med * float2(1, 0.8)) < 0.4) c = float3(0.62, 0.48, 0.22);
-        }
-    }
-    else if (t == tv)          // ceiling: wooden beams
-        c = frac(h.z / 0.6) < 0.25 ? float3(0.16, 0.08, 0.04) : plaster * 0.85;
-    else
-    {
-        float2 w = t == tw ? float2(h.x, h.y) : float2(h.z, h.y);   // across the wall, up it
-        float span = t == tw ? W : D;
-        c = h.y < 1.0 ? lerp(float3(0.08, 0.28, 0.42), float3(0.85, 0.80, 0.68), step(0.5, frac((floor(w.x / 0.2) + floor(h.y / 0.2)) * 0.5))) : plaster;
-        if (h.y > 0.98 && h.y < 1.04) c = float3(0.45, 0.36, 0.20);
-        if (t == tw)
-        {
-            float2 n = float2(abs(w.x - span * 0.5), w.y - 1.5);   // a pointed niche
-            if (n.x < span * 0.18 && n.y > 0 && n.y < 1.4 + 0.25 * (1 - n.x / (span * 0.18))) c = plaster * 0.45;
-            if (w.y < 0.55 && abs(w.x - span * 0.5) < span * 0.42) c = lerp(float3(0.45, 0.10, 0.08), float3(0.20, 0.30, 0.15), step(0.5, r3)) * (w.y > 0.45 ? 1.25 : 1);
-        }
-        else if (abs(w.x - span * 0.6) < 0.35 && abs(w.y - 2.2) < 0.45)   // a framed picture on a side wall
-            c = abs(w.x - span * 0.6) > 0.3 || abs(w.y - 2.2) > 0.4 ? float3(0.40, 0.30, 0.12) : lerp(float3(0.30, 0.38, 0.25), float3(0.55, 0.40, 0.25), Noise3(float3(w * 6, bay)));
-    }
-    // daylight from the window fades into the room; a warm lamp hangs in the middle (lit in about two bays of three)
-    float depth = saturate(h.z / D);
-    float3 day = Ambient(float3(0, 1, 0)) * lerp(1.1, 0.3, depth);
-    float3 lampAt = float3(W * 0.5, H - 0.9, D * 0.5);
-    float3 lamp = (r2 > 0.3 ? 1 : 0.15) * float3(1.0, 0.62, 0.30) * (Mode == 1 ? 0.35 : 0.9) / (0.6 + dot(h - lampAt, h - lampAt) * 0.35);
-    float3 col = c * (day + lamp);
-    if (length(h - lampAt) < 0.18) col += float3(4, 2.6, 1.3) * (r2 > 0.3 ? 1 : 0.1);
-    return col;
+    float3 sky = lerp(SkyHorizon, SkyZenith, 0.5 + 0.3 * saturate(n.y));
+    float3 ground = GroundColor + SunColor * saturate(SunDir.y) * (Mode == 1 ? 0.10 : 0.03) * float3(0.85, 0.74, 0.58);
+    float3 c = lerp(ground, sky, saturate(n.y * 0.5 + 0.5));
+    if (Mode != 1) return c;
+    c += SkyHorizon * 0.3 * saturate(dot(normalize(n.xz + 1e-5), normalize(SunDir.xz + 1e-5))) * (1 - abs(n.y));
+    return c * 0.34;
+}
+
+// The air between the eye and a far surface takes on the low sky's colour: the trees beyond the walls and the hills stand back.
+float3 Haze(float3 c, float3 p)
+{
+    float f = 1 - exp(-length(p - Eye) * (Mode == 1 ? 0.0035 : 0.0015));
+    return lerp(c, lerp(SkyHorizon, SkyZenith, 0.25) * (Mode == 1 ? 0.8 : 0.6), f);
 }
 
 // What a stained pane passes: its own hue at full strength (clear glass passes nearly everything).
 float3 StainTint(Material m) { return m.Base / max(max(m.Base.r, m.Base.g), max(m.Base.b, 1e-3)) * 0.9; }
 
-// Radiance leaving a surface lit by one light of irradiance E from direction l: Lambert plus a GGX-shaped highlight.
+// Radiance leaving a surface lit by one light of irradiance E from direction l - the metal-roughness model: a GGX highlight with
+// Smith's height-correlated shadowing and Schlick's Fresnel, over Lambert's diffuse for what the surface does not mirror (a metal: nothing).
 float3 Brdf(Surface s, float3 v, float3 l, float3 e)
 {
     float nl = saturate(dot(s.Normal, l)); if (nl <= 0) return 0;
-    float3 h = normalize(l + v); float nh = saturate(dot(s.Normal, h)), a = max(0.03, s.Roughness * s.Roughness), a2 = a * a;
+    float3 h = normalize(l + v); float nh = saturate(dot(s.Normal, h)), nv = max(abs(dot(s.Normal, v)), 1e-3);
+    float a = max(0.045, s.Roughness * s.Roughness), a2 = a * a;
     float d = a2 / (Pi * pow(nh * nh * (a2 - 1) + 1, 2));
+    float vis = 0.5 / (nl * sqrt(nv * nv * (1 - a2) + a2) + nv * sqrt(nl * nl * (1 - a2) + a2));
     float3 f0 = lerp(0.04, s.Albedo, s.Metallic);
     float3 f = f0 + (1 - f0) * pow(1 - saturate(dot(h, v)), 5);
-    float3 spec = f * d * 0.25 / max(0.1, saturate(dot(s.Normal, v)));
-    return e * nl * ((1 - s.Metallic) * s.Albedo / Pi + spec);
+    return e * nl * ((1 - f * s.Sheen) * (1 - s.Metallic) * s.Albedo / Pi + f * min(d * vis, 60) * s.Sheen);
+}
+
+// How much of its surroundings a surface mirrors, over all the directions its roughness spreads the mirror image across
+// (Karis' fit to the split-sum integral): f0 scaled and offset by the angle it is seen at.
+float3 EnvBrdf(Surface s, float3 v)
+{
+    float nv = saturate(dot(s.Normal, v)); float3 f0 = lerp(0.04, s.Albedo, s.Metallic);
+    float4 r = s.Roughness * float4(-1, -0.0275, -0.572, 0.022) + float4(1, 0.0425, 1.04, -0.04);
+    float2 ab = float2(-1.04, 1.04) * (min(r.x * r.x, exp2(-9.28 * nv)) * r.x + r.y) + r.zw;
+    return (f0 * ab.x + ab.y) * s.Sheen;
 }
 
 // Irradiance a point or spot light gives at p (0 outside its range), and the direction to it.
@@ -259,6 +303,11 @@ float3 WaterNormal(float3 p, float t)
     g += 0.030 * float2(cos(q.x * 1.7 + t * 1.3), 0) + 0.025 * float2(0, cos(q.y * 2.1 - t * 1.1));
     g += 0.012 * cos(dot(q, float2(3.1, 2.3)) + t * 2.2) * float2(3.1, 2.3) * 0.3;
     g += 0.008 * cos(dot(q, float2(-4.7, 5.3)) - t * 2.9) * float2(-4.7, 5.3) * 0.2;
+    if (Fountain2.w > 0)   // rings running out from where the fountain's water falls: round the bowl's rim, and in the bowl from the jet
+    {
+        float2 d = q - Fountain.xz; float r = max(length(d), 1e-3), from = p.y > WaterLevel + 0.3 ? 0 : Fountain2.y;
+        g += d / r * 0.045 * cos((r - from) * 11 - t * 7) * exp(-abs(r - from) * 0.6);
+    }
     return normalize(float3(-g.x, 1, -g.y));
 }
 

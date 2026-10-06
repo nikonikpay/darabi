@@ -1,9 +1,11 @@
-// Visual GPU test, DirectX Raytracing (GpuSceneExecutor + GardenRay.cs): the courtyard at blue hour, every pixel ray traced through
+// Visual GPU test, DirectX Raytracing (GpuSceneExecutor + GardenRay.cs): the courtyard at nightfall, every pixel ray traced through
 // the GPU's ray-tracing hardware (DXR 1.1 inline RayQuery in a compute shader). Samples camera rays a pixel (stratified, so edges are
-// antialiased); at each surface a shadow ray to the moon and to every lamp in reach, aimed at a random point on the lamp (soft shadows),
-// and one diffuse ray for the light bounced off nearby surfaces (global illumination); leaves are cut out of their cards during
-// traversal; the water reflects and refracts (into the lit pool), glass lets light through and mirrors, metal and polished stone
-// reflect - up to Bounces deep. The random numbers come from a hash of the pixel and sample, never the clock: the same Time gives the same image.
+// antialiased); at each surface a shadow ray to the moon and to every lamp in reach, aimed at a random point on the lamp (soft shadows:
+// the moon crosses the sky as the walk goes on, and its shadows with it), coloured where it has come through a stained pane of the
+// hall's windows; one diffuse ray for the light bounced off nearby surfaces (global illumination); leaves are cut out of their cards
+// during traversal; the water reflects and refracts (into the lit pool), glass lets light through and mirrors, metal and polished stone
+// reflect (the mirror sphere gliding round the pool most of all) - up to Bounces deep.
+// The random numbers come from a hash of the pixel and sample, never the clock: the same Time gives the same image.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8, numDescriptors=2)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=2, b2), " \
@@ -33,12 +35,11 @@ SamplerState Linear : register(s0);
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Linear, uv, 0).rgb; }
 
-static const uint MaskVisible = 1, MaskShadow = 2;
+static const uint MaskVisible = 1, MaskShadow = 2, MaskTint = 4;   // what a camera ray meets; what blocks light; the stained panes, which colour it
 
 // T, B: the directions the texture's u and v run in over the triangle; Lod: the mip level at which a texel is the size of a pixel there
-struct Hit { float3 P; float3 N; float2 Uv; uint Material; float3 T; float3 B; float Lod; };
+struct Hit { float3 P; float3 N; float2 Uv; uint Material; float3 T; float3 B; float Lod; uint Flags; };
 
-uint Hash(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return x; }
 float Rand(inout uint seed) { seed = Hash(seed); return (seed >> 8) * (1.0 / 16777216.0); }
 float3 InBall(inout uint seed)
 {
@@ -59,7 +60,8 @@ float2 UvAt(uint instance, uint geometry, uint prim, float2 bary)
     MeshInfo m = Meshes[Instances[instance].Mesh]; SubInfo s = Subs[m.FirstSubmesh + geometry];
     uint3 t = Triangle(s, prim);
     float2 a = DecodeUv(Vertices.Load((m.BaseVertex + t.x) * 16 + 12)), b = DecodeUv(Vertices.Load((m.BaseVertex + t.y) * 16 + 12)), c = DecodeUv(Vertices.Load((m.BaseVertex + t.z) * 16 + 12));
-    return a + (b - a) * bary.x + (c - a) * bary.y;
+    Material mat = Materials[s.Material];
+    return (a + (b - a) * bary.x + (c - a) * bary.y) * (mat.Pattern.x > 0 ? mat.Pattern.xy : 1);
 }
 
 // A leaf card is a hit only where its texture is opaque.
@@ -78,21 +80,30 @@ Hit Fetch(uint instance, uint geometry, uint prim, float2 bary, float3 p, float 
     uint3 o = (m.BaseVertex + t) * 16;
     float3 na = DecodeNormal(Vertices.Load(o.x + 8)), nb = DecodeNormal(Vertices.Load(o.y + 8)), nc = DecodeNormal(Vertices.Load(o.z + 8));
     float2 ua = DecodeUv(Vertices.Load(o.x + 12)), ub = DecodeUv(Vertices.Load(o.y + 12)), uc = DecodeUv(Vertices.Load(o.z + 12));
-    Hit h; h.P = p; h.Material = s.Material;
+    Hit h; h.P = p; h.Material = s.Material; h.Flags = inst.Flags;
     h.N = normalize(mul(Rotation(inst), na + (nb - na) * bary.x + (nc - na) * bary.y));
-    if (inst.Flags & 1) h.N = LogoTurn(h.N);
+    if (inst.Flags & FLogo) h.N = LogoTurn(h.N);
     h.Uv = ua + (ub - ua) * bary.x + (uc - ua) * bary.y;
     float3 pa = DecodePosition(Vertices.Load2(o.x), 0, m.Extent), e1 = mul(Rotation(inst), DecodePosition(Vertices.Load2(o.y), 0, m.Extent) - pa), e2 = mul(Rotation(inst), DecodePosition(Vertices.Load2(o.z), 0, m.Extent) - pa);
     float2 d1 = ub - ua, d2 = uc - ua; float det = d1.x * d2.y - d2.x * d1.y, area = length(cross(e1, e2));
     h.T = 0; h.B = 0; h.Lod = 0;
-    if (abs(det) > 1e-12 && area > 1e-12)
+    uint w, hh, layers, levels; Textures.GetDimensions(0, w, hh, layers, levels);
+    Material mat = Materials[s.Material]; bool world; float2 uv = TexCoords(mat, h.Uv, p, h.N, world);
+    if (world)   // laid by world position: u and v run along the world's own axes on this face
+    {
+        float3 a = abs(h.N);
+        h.T = a.y > 0.6 || a.x <= 0.6 ? float3(1, 0, 0) : float3(0, 0, 1); h.B = a.y > 0.6 ? float3(0, 0, 1) : float3(0, 1, 0);
+        h.Lod = clamp(log2(max(mat.Pattern.z * w * dist * 2 * TanHalfFovY / Height, 1e-6)) - 0.5, 0, levels - 1);
+    }
+    else if (abs(det) > 1e-12 && area > 1e-12)
     {
         h.T = (e1 * d2.y - e2 * d1.y) / det; h.B = (e2 * d1.x - e1 * d2.x) / det;
-        if (inst.Flags & 1) { h.T = LogoTurn(h.T); h.B = LogoTurn(h.B); }
-        uint w, hh, layers, levels; Textures.GetDimensions(0, w, hh, layers, levels);
+        if (inst.Flags & FLogo) { h.T = LogoTurn(h.T); h.B = LogoTurn(h.B); }
+        float repeats = mat.Kind <= KCutout && mat.Pattern.x > 0 ? max(mat.Pattern.x, mat.Pattern.y) : 1;
         // texels a metre (the triangle's share of the texture over its size) times the metres a pixel spans at this distance
-        h.Lod = clamp(log2(max(sqrt(abs(det) / area) * w * dist * 2 * TanHalfFovY / Height, 1e-6)) - 0.5, 0, levels - 1);
+        h.Lod = clamp(log2(max(sqrt(abs(det) / area) * repeats * w * dist * 2 * TanHalfFovY / Height, 1e-6)) - 0.5, 0, levels - 1);
     }
+    h.Uv = uv;
     return h;
 }
 
@@ -127,9 +138,25 @@ Surface SurfaceAt(Hit h, float3 v)
     float4 texel = m.Texture >= 0 ? Textures.SampleLevel(Linear, float3(h.Uv, m.Texture), h.Lod) : 1;
     float3 n = h.N; if (dot(n, v) < 0) n = -n;
     Surface s = MaterialSurface(m, h.P, n, texel);
-    if (m.NormalTexture >= 0) s.Normal = Bumped(n, h.T, h.B, Textures.SampleLevel(Linear, float3(h.Uv, m.NormalTexture), h.Lod));
+    if (m.NormalTexture >= 0) Relief(s, h.T, h.B, Textures.SampleLevel(Linear, float3(h.Uv, m.NormalTexture), h.Lod));
+    if (h.Flags & FLogo) s.Emission += s.Albedo * Logo.w;   // the logo is a lit sign at night
     return s;
 }
+
+// What colour light keeps on its way along a ray: that of the first stained pane it passes (white when it meets none).
+float3 Through(float3 origin, float3 dir, float tmax)
+{
+    RayDesc ray; ray.Origin = origin; ray.Direction = dir; ray.TMin = 0.002; ray.TMax = tmax;
+    RayQuery<RAY_FLAG_FORCE_OPAQUE> q;
+    q.TraceRayInline(Scene, RAY_FLAG_NONE, MaskTint, ray); q.Proceed();
+    if (q.CommittedStatus() != COMMITTED_TRIANGLE_HIT) return 1;
+    MeshInfo m = Meshes[Instances[q.CommittedInstanceID()].Mesh];
+    Material mat = Materials[Subs[m.FirstSubmesh + q.CommittedGeometryIndex()].Material];
+    return mat.LightTint > 0 ? StainTint(mat) : 1;
+}
+
+// A flame is never still: a lantern's or a sconce's light wavers a little, each to its own beat.
+float Flicker(Light L, uint k) { return L.Kind == LPoint && L.Color.b < L.Color.r * 0.5 ? 1 + 0.09 * sin(Time * 9.1 + k * 2.3) + 0.05 * sin(Time * 23.7 + k * 5.1) : 1; }
 
 // Light arriving from the moon and every lamp in reach. With shadows, each is checked by a ray to a random point on it (the moon's
 // disc, the lamp's bulb), so shadows soften with distance from what casts them.
@@ -138,17 +165,18 @@ float3 Direct(Surface s, float3 p, float3 v, bool shadows, inout uint seed)
     float3 c = 0, o = p + s.Normal * 0.01;
     if (SunOn > 0 && dot(s.Normal, SunDir) > 0)
     {
-        float3 toSun = shadows ? normalize(SunDir + InBall(seed) * 0.012) : SunDir;
-        if (!(shadows && Occluded(o, toSun, 300))) c += Brdf(s, v, SunDir, SunColor);
+        float3 toSun = shadows ? normalize(SunDir + InBall(seed) * 0.018) : SunDir;
+        if (!(shadows && Occluded(o, toSun, 300))) c += Brdf(s, v, SunDir, SunColor) * (shadows ? Through(o, toSun, 300) : 1);
     }
     for (uint k = 0; k < LightCount; k++)
     {
-        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
+        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d) * Flicker(L, k);
         if (all(e <= 0) || dot(s.Normal, l) <= 0) continue;
         if (shadows)
         {
             float3 q = L.Position + InBall(seed) * L.Radius - o; float dq = length(q);
             if (Occluded(o, q / dq, max(0.01, dq - 0.05))) continue;
+            e *= Through(o, q / dq, max(0.01, dq - 0.05));
         }
         c += Brdf(s, v, l, e);
     }
@@ -163,7 +191,7 @@ float3 Glance(float3 origin, float3 dir, float tmax, inout uint seed)
     Material m = Materials[h.Material];
     float3 v = -dir; Surface s = SurfaceAt(h, v);
     if (m.Kind == KWater || m.Kind == KGlass) return SkyColor(reflect(dir, s.Normal)) * 0.3 + s.Emission;
-    return s.Albedo * Ambient(s.Normal) * (1 - s.Metallic) * 0.5 + s.Emission + Direct(s, h.P, v, false, seed);
+    return s.Albedo * Ambient(s.Normal) * (1 - s.Metallic) * 0.5 * s.Occlusion + s.Emission + Direct(s, h.P, v, false, seed);
 }
 
 // One camera ray's light: the surfaces it meets, through water and glass and off polished surfaces, up to Bounces deep.
@@ -190,14 +218,14 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
         {
             float f = 0.04 + 0.96 * pow(1 - saturate(dot(s.Normal, v)), 5);
             color += weight * (s.Emission + f * Glance(h.P + s.Normal * 0.01, reflect(dir, s.Normal), 400, seed));
-            if (m.Pattern.x > 0) { color += weight * (1 - f) * StainTint(m) * Interior(m, h.P, dir, s.Normal); break; }   // a window: the room behind it
             weight *= (1 - f) * lerp(1, StainTint(m), 0.8) * (m.Alpha < 1 ? m.Alpha + 0.4 : 1);
             origin = h.P + dir * 0.01; continue;   // thin glass: straight on
         }
 
         // light bounced off what is near: one diffuse ray on the first surface (deeper ones use the ambient term alone)
         float3 bounced = bounce == 0 ? Glance(h.P + s.Normal * 0.01, CosineAround(s.Normal, seed), 12, seed) : Ambient(s.Normal) * 0.6;
-        float3 lit = s.Albedo * (1 - s.Metallic) * (bounced * 0.8 + Ambient(s.Normal) * 0.15) + s.Emission + Direct(s, h.P, v, true, seed);
+        float3 lit = s.Albedo * (1 - s.Metallic) * (bounced * 0.8 + Ambient(s.Normal) * 0.15) * s.Occlusion + s.Emission + Direct(s, h.P, v, true, seed);
+        if (bounce == 0) lit = Haze(lit, h.P);
         // mirror-like surfaces (metal, polished stone, glazed tiles) carry on as a reflection
         float gloss = saturate(1 - s.Roughness * 3);
         float3 f0 = lerp(0.04, s.Albedo, s.Metallic);

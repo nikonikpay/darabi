@@ -2,24 +2,27 @@ using System.IO.Compression; using System.Numerics; using System.Reflection; usi
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The Persian garden both visual GPU tests draw: a walled courtyard with a pool, a columned hall with windcatchers, cypresses, flower beds,
-/// lanterns and the Mazesta logo floating over the water. Built in Blender (Mazesta-Art/courtyard-v8.blend: the owner's DFM_Courtyard_V8
-/// building among the earlier garden's plants and lights) and written by tools/scene/export_garden.py
+/// The Persian garden both visual GPU tests draw: a walled courtyard with a pool and its fountain, a columned hall with windcatchers and
+/// furnished rooms behind its orsi, cypresses, blossom trees, planted beds, ivy, lanterns, a gate, and the Mazesta logo floating over the
+/// water. Built in Blender (Mazesta-Art/courtyard-v10.blend: the owner's DFM_Courtyard_V10, whole) and written by tools/scene/export_garden.py
 /// into garden.mzscene, embedded in this assembly; this reads it. The file holds both of the .blend's scenes: what only the Direct3D test
-/// shows (the golden-hour sun) or only the ray-traced one (its blue-hour light rig, glass orbs, a mirror sphere) is marked with <see cref="Mode"/>.
+/// shows (the low golden sun) or only the ray-traced one (its night light rig, a mirror sphere) is marked with <see cref="Mode"/>.
 /// <para>Format (gzip, little-endian): "MZSC", version, then counts of textures, materials, meshes, instances, lights and the texture size;
 /// the textures (each its own size, then its BC3 mip chain: one stored smaller than the texture size is doubled on reading); the materials
 /// (<see cref="GardenMaterial"/>, 96 bytes); each mesh (vertex and index counts, quantisation centre and extent, submeshes, 16-byte vertices,
-/// 32-bit indices); the instances (mesh, scene mask, flags, 3x4 world rows); the lights; one camera per scene; and the backdrop
-/// (<see cref="GardenBackdrop"/>: width, height, the range it covers and one BC3 image; width 0 when there is none).
+/// 32-bit indices); the instances (mesh, scene mask, flags, 3x4 world rows); the lights; one camera per scene; the backdrop
+/// (<see cref="GardenBackdrop"/>: width, height, the range it covers and one BC3 image; width 0 when there is none); and seven floats:
+/// the pool's water level and the fountain (<see cref="GardenFountain"/>; a rim radius of 0 when there is none).
 /// Vertices, indices and instances are stored byte plane by byte plane (every record's first byte, then every second...), the indices
 /// as differences from the one before: gzip makes far less of them that way. Axes are Direct3D's: y up, z forward.</para>
 /// </summary>
 public sealed class GardenScene
 {
-    public const int Version = 2;
+    public const int Version = 3;
     [Flags] public enum Mode : uint { Raster = 1, RayTraced = 2 }
-    public const uint LogoFlag = 1;
+    /// <summary>An instance's flags: the logo; the ray-traced scene's mirror sphere; a droplet of the fountain (those are not in the
+    /// file: <see cref="GardenGpu"/> adds them).</summary>
+    public const uint LogoFlag = 1, SphereFlag = 2, DropletFlag = 4;
 
     public int TextureSize { get; private init; }
     /// <summary>Mip levels of every texture: <see cref="TextureSize"/> down to 4.</summary>
@@ -35,6 +38,9 @@ public sealed class GardenScene
     public (Vector3 Eye, Vector3 Target, float FovY) RayCamera { get; private init; }
     /// <summary>The mountains round the horizon, when the scene has them.</summary>
     public GardenBackdrop? Backdrop { get; private init; }
+    /// <summary>The height of the main pool's surface.</summary>
+    public float WaterLevel { get; private init; }
+    public GardenFountain? Fountain { get; private init; }
 
     public long UniqueTriangles => Meshes.Sum(m => (long)m.Indices.Length / 3);
     public long Triangles(Mode mode) => Instances.Where(i => (i.Mask & (uint)mode) != 0).Sum(i => (long)Meshes[(int)i.Mesh].Indices.Length / 3);
@@ -92,6 +98,9 @@ public sealed class GardenScene
             if (skyW < 4 || skyH < 4 || skyW > 16384 || skyH > 16384 || skyW % 4 != 0 || skyH % 4 != 0 || !(skyHigh > skyLow)) throw new InvalidDataException($"A backdrop of {skyW} x {skyH}.");
             backdrop = new GardenBackdrop(skyW, skyH, skyLow, skyHigh, r.Bytes(skyW / 4 * (skyH / 4) * 16).ToArray());
         }
+        float waterLevel = r.F32(); var nozzle = new Vector3(r.F32(), r.F32(), r.F32()); float bowlRadius = r.F32(), bowlLevel = r.F32(), rimRadius = r.F32();
+        var fountain = rimRadius > 0 ? new GardenFountain(nozzle, bowlRadius, bowlLevel, rimRadius) : null;
+        if (fountain is not null && !(bowlLevel > waterLevel && nozzle.Y > bowlLevel && bowlRadius > 0 && rimRadius >= bowlRadius)) throw new InvalidDataException("The fountain's bowl is not over the pool and under its nozzle.");
         if (!r.AtEnd) throw new InvalidDataException("The scene file has trailing data.");
         foreach (var inst in instances) if (inst.Mesh >= meshes.Count) throw new InvalidDataException($"An instance refers to mesh {inst.Mesh} of {meshes.Count}.");
         foreach (var mesh in meshes)
@@ -102,7 +111,7 @@ public sealed class GardenScene
             foreach (uint ix in mesh.Indices) if (ix >= vc) throw new InvalidDataException("An index is out of range.");
         }
         foreach (var m in materials) if (m.Texture >= nTex || m.NormalTexture >= nTex) throw new InvalidDataException($"A material refers to texture {Math.Max(m.Texture, m.NormalTexture)} of {nTex}.");
-        return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop };
+        return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop, WaterLevel = waterLevel, Fountain = fountain };
     }
 
     /// <summary>Records of <paramref name="stride"/> bytes back from their byte planes.</summary>
@@ -151,14 +160,17 @@ public sealed class GardenScene
 
 public enum GardenMaterialKind : uint { Flat, Cutout, Brick, Water, Glass, Emissive }
 
-/// <summary>A material as the shaders read it (six float4s). Colours are linear. Brick is Blender's brick texture, laid on each face from
-/// world coordinates as the .blend's own shader does: <see cref="Pattern"/> is its scale, mortar size, brick width and row height.
+/// <summary>A material as the shaders read it (six float4s): the metal-roughness model of Blender's Principled shader. Colours are linear.
 /// <see cref="Texture"/> holds the base colour and, in alpha, a leaf card's opacity or any other surface's roughness;
-/// <see cref="NormalTexture"/> (-1: none) a tangent-space normal map, x in alpha and y in green.</summary>
+/// <see cref="NormalTexture"/> (-1: none) a tangent-space normal map, x in alpha and y in green, with the material's ambient occlusion in
+/// red and its metalness in blue. <see cref="Pattern"/>: for a brick (Blender's brick texture, laid on each face from world coordinates as
+/// the .blend's own shader does) its scale, mortar size, brick width and row height; for any other textured surface how many times the
+/// texture repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre.
+/// <see cref="LightTint"/> 1: light passing through takes the material's colour (the orsi's stained panes, in the ray tracer).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct GardenMaterial
 {
-    public GardenMaterialKind Kind; public int Texture; public float RoomOffset; public int NormalTexture;
+    public GardenMaterialKind Kind; public int Texture; public float LightTint; public int NormalTexture;
     public Vector3 Base; public float Alpha;
     public Vector3 Color2; public float Roughness;
     public Vector3 Mortar; public float Metallic;
@@ -190,6 +202,10 @@ public struct GardenInstance
     public Vector4 Row0, Row1, Row2;
     public readonly Vector3 Apply(Vector3 p) => new(Row0.X * p.X + Row0.Y * p.Y + Row0.Z * p.Z + Row0.W, Row1.X * p.X + Row1.Y * p.Y + Row1.Z * p.Z + Row1.W, Row2.X * p.X + Row2.Y * p.Y + Row2.Z * p.Z + Row2.W);
 }
+
+/// <summary>The fountain in the pool: the top of its nozzle, the radius and level of the water in its bowl, the radius of the bowl's rim.
+/// The renderers draw its jet from these (<see cref="GardenGpu.Droplet"/>).</summary>
+public sealed record GardenFountain(Vector3 Nozzle, float BowlRadius, float BowlLevel, float RimRadius);
 
 /// <summary>What stands round the horizon behind the courtyard: one BC3 (sRGB) image, <see cref="Width"/> texels all the way round
 /// (a direction's column is atan2(x, z) / 2 pi + 1/2), its rows the tangent of the height above the horizon from <see cref="TanLow"/>

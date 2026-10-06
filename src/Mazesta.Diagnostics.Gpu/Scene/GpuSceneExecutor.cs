@@ -4,12 +4,13 @@ using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vort
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// The visual GPU test: a window opens on the Persian garden (<see cref="GardenScene"/>) - a walled courtyard with its pool, columned hall,
-/// cypresses and lanterns, the Mazesta logo floating over the water (or the owner's Models\gpu-test.obj in its place) - and the camera walks
-/// round it, drawn as fast as the GPU can with no v-sync cap, so the card runs at full load while the technician watches the picture for
-/// artefacts and the monitor records clocks, power and temperature. Two modes of the same garden: Direct3D 12 rasterisation at golden hour
-/// (shadow map, the pool's reflection, MSAA - set by the load level), and DirectX Raytracing (DXR 1.1) at blue hour, lit by some fifty lamps
-/// with a shadow ray each, reflections and refraction, offered only on a GPU with hardware ray tracing.
+/// The visual GPU test: a window opens on the Persian garden (<see cref="GardenScene"/>) - a walled courtyard with its pool and fountain,
+/// columned hall, cypresses and lanterns, the Mazesta logo floating over the water (or the owner's Models\gpu-test.obj in its place) - and
+/// the camera walks round it and through the hall, drawn as fast as the GPU can with no v-sync cap, so the card runs at full load while the
+/// technician watches the picture for artefacts and the monitor records clocks, power and temperature. Two modes of the same garden:
+/// Direct3D 12 rasterisation under a low golden sun (shadow map, sky map, ambient occlusion, the pool's reflection, MSAA - set by the load
+/// level), and DirectX Raytracing (DXR 1.1) at nightfall, lit by the moon and some fifty lamps with a shadow ray each, reflections and
+/// refraction, offered only on a GPU with hardware ray tracing.
 /// A picture that merely looks right is not the pass: every few seconds the scene is also drawn off screen at one fixed moment and read
 /// back, and that frame must be bit-for-bit the first one - a GPU that draws the same frame differently under load has computed wrongly.
 /// </summary>

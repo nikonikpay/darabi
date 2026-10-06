@@ -1,10 +1,12 @@
-// Visual GPU test, Direct3D 12 rasterisation (GpuSceneExecutor + GardenRaster.cs): the Persian garden at golden hour.
-// Passes: the sun's shadow map (depth only), the pool's mirror image (the scene drawn again from the eye reflected in the water, when the
-// load level asks for it), then the frame itself - sky, solid geometry, leaves (alpha tested, or alpha to coverage under MSAA) and last
-// the see-through water and glass. Compiled offline by tools/compile-gpu-shaders.ps1.
+// Visual GPU test, Direct3D 12 rasterisation (GpuSceneExecutor + GardenRaster.cs): the Persian garden under a low golden sun.
+// Passes: the sun's shadow map and, once, the view straight down that says where the open sky is (both depth only); the pool's mirror
+// image (the scene drawn again from the eye reflected in the water, when the load level asks for it); the frame's depth alone, from
+// which the ambient occlusion image is worked out; then the frame itself - sky, solid geometry, leaves (alpha tested, or alpha to
+// coverage under MSAA) and last the see-through water and glass. Depth is reversed (1 at the near plane, 0 infinitely far), which keeps
+// surfaces a centimetre apart from flickering across the whole garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
-           "DescriptorTable(SRV(t3, numDescriptors=4)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=7)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
@@ -19,6 +21,9 @@ Texture2DArray<float4> Textures : register(t3);
 Texture2D<float> ShadowMap : register(t4);
 Texture2D<float4> Reflection : register(t5);
 Texture2D<float4> BackdropImage : register(t6);
+Texture2D<float> SkyMap : register(t7);        // depth seen from straight above
+Texture2D<float> SceneDepth : register(t8);    // the frame's own depth, one sample a pixel
+Texture2D<float> Occlusion : register(t9);     // the ambient occlusion worked out from it
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
@@ -32,9 +37,14 @@ void Place(VIn v, uint instance, out float3 world, out float3 normal)
 {
     Instance i = Instances[InstanceBase + instance];
     float3 local = Centre + Extent * v.Position.xyz;
+    if (i.Flags & FDroplet)
+    {
+        float3 pos, vel; float size; Droplet(i.Index, Time, pos, vel, size);
+        world = DropletPlace(local, pos, vel, size); normal = local; return;
+    }
     world = mul(Rotation(i), local) + Translation(i);
     normal = mul(Rotation(i), v.Normal.xyz);
-    if (i.Flags & 1) { float3 pivot = Translation(i); world = LogoMove(world, pivot); normal = LogoTurn(normal); }
+    if (i.Flags & FLogo) { float3 pivot = Translation(i); world = LogoMove(world, pivot); normal = LogoTurn(normal); }
 }
 
 [RootSignature(RS)]
@@ -48,6 +58,7 @@ VOut MainVS(VIn v, uint instance : SV_InstanceID)
 
 struct ShadowOut { float4 Position : SV_Position; float2 Uv : TEXCOORD; };
 
+// Depth alone, through whichever view the pass's constants hold as ShadowViewProj: the sun's, the one straight down, or the camera's own.
 [RootSignature(RS)]
 ShadowOut ShadowVS(VIn v, uint instance : SV_InstanceID)
 {
@@ -59,39 +70,72 @@ ShadowOut ShadowVS(VIn v, uint instance : SV_InstanceID)
 void ShadowPS(ShadowOut i)
 {
     Material m = Materials[MaterialIndex];
-    if (m.Kind == KCutout && Textures.Sample(Aniso, float3(i.Uv, m.Texture)).a < 0.5) discard;
+    if (m.Kind == KCutout && Textures.Sample(Aniso, float3(m.Pattern.x > 0 ? i.Uv * m.Pattern.xy : i.Uv, m.Texture)).a < 0.5) discard;
 }
+
+// A pixel's own angle, to turn each pixel's ring of taps differently (interleaved gradient noise: Jimenez 2014).
+float Turn(float2 pixel) { return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715)))) * 2 * Pi; }
 
 float Shadow(float3 p, float3 n)
 {
     float4 s = mul(ShadowViewProj, float4(p + n * 0.04, 1));
     float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
     if (any(uv < 0) || any(uv > 1)) return 1;
-    float depth = s.z - 0.0008, sum = 0; int r = (int)ShadowTaps;
+    float depth = s.z - 0.0006, sum = 0; int r = (int)ShadowTaps;
     [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * ShadowTexel, depth);
     return sum / ((2 * r + 1) * (2 * r + 1));
 }
 
-float3 Lit(Surface s, float3 p, float3 v)
+// How much of the sky stands open over a point: the share of a ring of taps round it, a metre and a half across, that nothing is
+// above. Under the canopy, inside the hall and beneath a tree's crown the sky's light does not arrive - which is most of what tells
+// a lit garden from a painted one.
+float SkyOpen(float3 p, float3 n, float2 pixel)
 {
-    // metal has no diffuse light of its own; a little of its surroundings' light stands in for the reflections a rasteriser cannot trace
-    float3 c = s.Albedo * Ambient(s.Normal) * (1 - s.Metallic * 0.6) + s.Emission;
-    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor) * Shadow(p, s.Normal);
+    float4 s = mul(SkyViewProj, float4(p + n * 0.12 + float3(0, 0.15, 0), 1));
+    float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
+    if (any(uv < 0) || any(uv > 1)) return 1;
+    float a = Turn(pixel), sum = 0;
+    [unroll] for (int k = 0; k < 8; k++)
+    {
+        float r = sqrt((k + 0.5) / 8) * 0.011, t = k * 2.399963 + a;
+        sum += SkyMap.SampleCmpLevelZero(ShadowSampler, uv + float2(cos(t), sin(t)) * r, s.z);
+    }
+    return sum / 8;
+}
+
+// The occlusion image, smoothed over the four by four pixels round this one (four taps, each the mean of two by two).
+float Occluded(float2 pixel)
+{
+    if (Ambience.x <= 0 || (Flags & 2)) return 1;
+    float2 t = 1 / ViewSize;
+    return (Occlusion.SampleLevel(Clamp, (pixel + float2(-1.5, -1.5)) * t, 0) + Occlusion.SampleLevel(Clamp, (pixel + float2(0.5, -1.5)) * t, 0)
+          + Occlusion.SampleLevel(Clamp, (pixel + float2(-1.5, 0.5)) * t, 0) + Occlusion.SampleLevel(Clamp, (pixel + float2(0.5, 0.5)) * t, 0)) * 0.25;
+}
+
+float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
+{
+    // the sky's light, where the sky can be seen and the surface's own corners and crevices let it in; under a roof a little still
+    // arrives, bounced off what the sun does reach
+    float open = SkyOpen(p, s.Normal, pixel), near = Occluded(pixel) * s.Occlusion, sky = lerp(0.3, 1, open) * near;
+    float3 c = s.Albedo * Ambient(s.Normal) * (1 - s.Metallic) * sky + s.Emission;
+    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor) * Shadow(p, s.Normal) * lerp(1, near, 0.35);
     [loop] for (uint k = 0; k < LightCount; k++)
     {
         Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
         if (any(e > 0)) c += Brdf(s, v, l, e);
     }
-    // metals and polished floors mirror the sky
-    float3 r = reflect(-v, s.Normal); float gloss = saturate(1 - s.Roughness * 2.5);
-    c += SkyColor(r) * lerp(0.04, 1, s.Metallic) * gloss * lerp(1, s.Albedo, s.Metallic);
+    // every surface mirrors its surroundings a little, a metal or a polished floor a lot: the sky where it is open, blurred as far as
+    // the surface is rough, and a dim stand-in for the walls where it is not (a rasteriser cannot trace what is really there)
+    float3 r = reflect(-v, s.Normal);
+    float3 mirrored = lerp(SkyColor(r), Ambient(r) * (Mode == 1 ? 3 : 1), saturate(s.Roughness * 1.4));
+    c += mirrored * EnvBrdf(s, v) * lerp(0.2, 1, open) * near;
     return c;
 }
 
 // Which way the texture's u and v run over the surface at this pixel, from how the position and the coordinates change across the screen.
-void TangentFrame(float3 p, float2 uv, float3 n, out float3 t, out float3 b)
+void TangentFrame(float3 p, float2 d1, float2 d2, float3 n, out float3 t, out float3 b)
 {
-    float3 dp1 = ddx(p), dp2 = ddy(p); float2 d1 = ddx(uv), d2 = ddy(uv);
+    float3 dp1 = ddx(p), dp2 = ddy(p);
     float3 p2 = cross(dp2, n), p1 = cross(n, dp1); float side = dot(dp1, p2) < 0 ? -1 : 1;   // the mirror image and back faces turn the other way
     t = (p2 * d1.x + p1 * d2.x) * side; b = (p2 * d1.y + p1 * d2.y) * side;
 }
@@ -100,11 +144,15 @@ float4 Opaque(VOut i, bool cutout)
 {
     if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;   // the mirror image holds only what is above the water
     Material m = Materials[MaterialIndex];
-    float4 texel = m.Texture >= 0 ? Textures.Sample(Aniso, float3(i.Uv, m.Texture)) : 1;
-    float4 relief = Textures.Sample(Aniso, float3(i.Uv, max(m.NormalTexture, 0)));
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;   // two-sided: leaves and cards are seen from both faces
+    // the texture's coordinates and how they change across the screen: a surface laid by world position changes face, not coordinates, at an edge
+    bool world; float2 uv = TexCoords(m, i.Uv, i.World, n, world), d1, d2;
+    if (world) { d1 = FaceCoords(ddx(i.World), n) * m.Pattern.z; d2 = FaceCoords(ddy(i.World), n) * m.Pattern.z; }
+    else { float2 rep = m.Kind <= KCutout && m.Pattern.x > 0 ? m.Pattern.xy : 1; d1 = ddx(i.Uv) * rep; d2 = ddy(i.Uv) * rep; }
+    float4 texel = m.Texture >= 0 ? Textures.SampleGrad(Aniso, float3(uv, m.Texture), d1, d2) : 1;
+    float4 relief = Textures.SampleGrad(Aniso, float3(uv, max(m.NormalTexture, 0)), d1, d2);
     Surface s = MaterialSurface(m, i.World, n, texel);
-    if (m.NormalTexture >= 0) { float3 t, b; TangentFrame(i.World, i.Uv, n, t, b); s.Normal = Bumped(n, t, b, relief); }
+    if (m.NormalTexture >= 0) { float3 t, b; TangentFrame(i.World, d1, d2, n, t, b); Relief(s, t, b, relief); }
     float alpha = 1;
     if (cutout)
     {
@@ -114,13 +162,13 @@ float4 Opaque(VOut i, bool cutout)
         // (which the sky barely reaches), and the sun shining through a leaf seen against it.
         float h = Hash1(i.Id * 0.618);
         s.Albedo *= lerp(float3(0.82, 0.86, 0.80), float3(1.08, 1.04, 0.92), h);
-        s.Albedo = lerp(dot(s.Albedo, float3(0.3, 0.59, 0.11)), s.Albedo, 0.74);
+        s.Albedo = lerp(dot(s.Albedo, float3(0.3, 0.59, 0.11)), s.Albedo, 0.9);
         float inner = lerp(0.42, 1, i.Out * i.Out);
-        float3 c = Lit(s, i.World, v) - s.Albedo * Ambient(s.Normal) * (1 - inner);
+        float3 c = Lit(s, i.World, v, i.Position.xy) - s.Albedo * Ambient(s.Normal) * (1 - inner) * 0.6;
         if (SunOn > 0) c += s.Albedo * s.Albedo * SunColor * 0.35 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n) * inner;
-        return float4(Tonemap(c), alpha);
+        return float4(Tonemap(Haze(max(c, 0), i.World)), alpha);
     }
-    return float4(Tonemap(Lit(s, i.World, v)), alpha);
+    return float4(Tonemap(Haze(Lit(s, i.World, v, i.Position.xy), i.World)), alpha);
 }
 
 float4 OpaquePS(VOut i) : SV_Target { return Opaque(i, false); }
@@ -134,54 +182,81 @@ float4 TransparentPS(VOut i) : SV_Target
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;
     if (m.Kind == KWater)
     {
-        n = WaterNormal(i.World, Time);
+        n = abs(n.y) > 0.7 ? WaterNormal(i.World, Time) : n;   // a pool's surface ripples; a sheet falling from one basin to the next keeps its own slope
         float fresnel = 0.02 + 0.98 * pow(1 - saturate(dot(n, v)), 5);
         float3 reflected;
         if ((Flags & 1) && abs(i.World.y - WaterLevel) < 0.2)
         {
             float2 uv = i.Position.xy / ViewSize + n.xz * 0.04;
             reflected = Reflection.SampleLevel(Clamp, uv, 0).rgb;   // already tone-mapped
-            float3 sunGlint = pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn;
+            float3 sunGlint = pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n);
             reflected += Tonemap(sunGlint);
         }
-        else reflected = Tonemap(Sky(reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn);
+        else reflected = Tonemap(Sky(reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n));
         // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and a faint teal body
         float3 body = Tonemap(m.Base * Ambient(float3(0, 1, 0)) * 0.5);
         float a = fresnel + (1 - fresnel) * 0.22;
         return float4((reflected * fresnel + body * (1 - fresnel) * 0.22) / a, a);
     }
-    // a window: the room behind it, through the pane's colour, and the courtyard's sky mirrored on it - drawn whole, not blended
-    if (m.Kind == KGlass && m.Pattern.x > 0)
-    {
-        float f = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
-        float3 tint = StainTint(m), behind = Interior(m, i.World, -v, n) * tint;
-        float3 c = behind * (1 - f) + Sky(reflect(-v, n)) * max(f, 0.06) + tint * Ambient(n) * 0.08;   // a little light caught in the colour
-        c += pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * 0.5;   // the sun's glint
-        return float4(Tonemap(c), 1);
-    }
-    // glass and spray: a tinted sheen and highlights
-    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = 0; s.Emission = m.Emission; s.Normal = n;
+    // glass: the sky's mirror image on it and the sun's glint, over its own colour - a stained pane lets through about half of what
+    // is behind it, in its colour; clear glass nearly all
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
-    float3 c = s.Emission + SkyColor(reflect(-v, n)) * fresnel;
-    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor) * 0.5;
-    [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d); if (any(e > 0)) c += Brdf(s, v, l, e) * 0.5; }
-    float a = m.Kind == KGlass ? saturate(max(0.18, fresnel) + max(max(m.Emission.r, m.Emission.g), m.Emission.b) * 0.05) : 0.5;
-    if (m.Alpha < 1) a = m.Alpha;
-    return float4(Tonemap(c), a);
+    float open = SkyOpen(i.World, n, i.Position.xy);
+    float3 mirrored = Sky(reflect(-v, n)) * lerp(0.25, 1, open) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
+    float3 own = m.Base * (Ambient(n) + Ambient(-n)) * 0.5 * lerp(0.4, 1, open) + m.Emission;
+    if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
+    [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d); if (any(e > 0)) own += m.Base * e * 0.3 / Pi; }
+    float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
+    float density = m.Alpha < 1 ? m.Alpha : lerp(0.08, 0.6, saturation);
+    float a = fresnel + (1 - fresnel) * density;
+    return float4(Tonemap((mirrored * fresnel + own * (1 - fresnel) * density) / a), a);
 }
 
-// The sky: a full-screen triangle behind everything.
+// The sky: a full-screen triangle behind everything (depth 0: infinitely far).
 struct SkyOut { float4 Position : SV_Position; float2 Ndc : NDC; };
 
 [RootSignature(RS)]
 SkyOut SkyVS(uint vertex : SV_VertexID)
 {
     float2 uv = float2((vertex << 1) & 2, vertex & 2);
-    SkyOut o; o.Ndc = uv * float2(2, -2) + float2(-1, 1); o.Position = float4(o.Ndc, 1, 1); return o;
+    SkyOut o; o.Ndc = uv * float2(2, -2) + float2(-1, 1); o.Position = float4(o.Ndc, 0, 1); return o;
 }
 
 float4 SkyPS(SkyOut i) : SV_Target
 {
     float3 dir = normalize(CamForward + CamRight * i.Ndc.x * TanHalfFovY * Aspect + CamUp * i.Ndc.y * TanHalfFovY);
     return float4(Tonemap(Sky(dir)), 1);
+}
+
+// ——— ambient occlusion ———
+// Where a pixel's surface is, in the camera's own axes (right, up, forward), from the frame's depth.
+float3 ViewPosition(int2 pixel)
+{
+    pixel = clamp(pixel, 0, int2(ViewSize) - 1);
+    float d = SceneDepth.Load(int3(pixel, 0)), z = Ambience.z / max(d, 1e-6);
+    float2 ndc = (pixel + 0.5) / ViewSize * float2(2, -2) + float2(-1, 1);
+    return float3(ndc.x * TanHalfFovY * Aspect, ndc.y * TanHalfFovY, 1) * z;
+}
+
+// How much of the half-space over each pixel's surface is taken up by other surfaces within half a metre: corners, the foot of a
+// column, the gap under a chair, the joints of the steps. Taps on a spiral round the pixel, turned differently in each pixel; each one
+// that rises over the surface's own plane counts by how steeply, less the farther it is. The frame darkens its sky light by this.
+float4 AoPS(SkyOut i) : SV_Target
+{
+    int2 px = int2(i.Position.xy);
+    if (SceneDepth.Load(int3(px, 0)) <= 0) return 1;   // the sky
+    float3 p = ViewPosition(px), r = ViewPosition(px + int2(1, 0)), l = ViewPosition(px - int2(1, 0)), u = ViewPosition(px - int2(0, 1)), d = ViewPosition(px + int2(0, 1));
+    float3 dx = abs(r.z - p.z) < abs(p.z - l.z) ? r - p : p - l, dy = abs(d.z - p.z) < abs(p.z - u.z) ? d - p : p - u;
+    float3 n = normalize(cross(dx, dy)); if (n.z > 0) n = -n;
+    const float reach = 0.55;
+    float span = clamp(reach / p.z * ViewSize.y * 0.5 / TanHalfFovY, 3, ViewSize.y * 0.12);   // the reach in pixels, here
+    float a = Turn(i.Position.xy), sum = 0; int taps = (int)Ambience.y;
+    [loop] for (int k = 0; k < taps; k++)
+    {
+        float t = k * 2.399963 + a, s = sqrt((k + 0.5) / taps) * span;
+        float3 q = ViewPosition(px + int2(round(float2(cos(t), sin(t)) * s))) - p; float d2 = dot(q, q);
+        sum += saturate(dot(n, q) * rsqrt(d2 + 1e-6) - 0.12) * saturate(1 - d2 / (reach * reach));
+    }
+    float open = saturate(1 - 1.9 * sum / taps);
+    return float4(open, open, open, 1);
 }

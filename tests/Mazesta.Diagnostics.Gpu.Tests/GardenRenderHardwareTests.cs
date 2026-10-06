@@ -4,11 +4,13 @@ namespace Mazesta.Diagnostics.Gpu.Tests;
 
 /// <summary>Draws the garden on the real GPU. A frame drawn twice at one moment must be the same bits (the check frames rely on it), and
 /// the picture must be a picture (sky above, lit garden below, not one flat colour). With MAZESTA_RENDER_DIR set, the frames are also
-/// written there as PNG files to look at.</summary>
+/// written there as PNG files to look at (MAZESTA_RENDER_WIDTH: how wide, 960 unless said).</summary>
 [Trait("Category", "Hardware")]
 public class GardenRenderHardwareTests
 {
     private static bool NoGpu => GpuDevices.Resolve("") is null;
+    private static int W => int.TryParse(Environment.GetEnvironmentVariable("MAZESTA_RENDER_WIDTH"), out int w) && w is >= 320 and <= 3840 ? w / 16 * 16 : 960;
+    private static int H => W * 9 / 16;
 
     [Theory, InlineData(1u), InlineData(3u)]
     public void The_rasterised_garden_is_a_stable_picture(uint load)
@@ -16,7 +18,7 @@ public class GardenRenderHardwareTests
         if (NoGpu) return;
         using var s = new D3D12Session(GpuDevices.Resolve("")!);
         var g = new GardenGpu(s, GardenScene.Embedded, GardenScene.Mode.Raster);
-        using var r = new GardenRaster(s, g, 960, 540, [], load);
+        using var r = new GardenRaster(s, g, W, H, [], load);
         Check(r, $"garden-raster-load{load}");
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir && r.Level.ReflectionDivisor > 0)
         {
@@ -30,7 +32,7 @@ public class GardenRenderHardwareTests
         if (NoGpu || !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
         using var s = new D3D12Session(GpuDevices.Resolve("")!);
         var g = new GardenGpu(s, GardenScene.Embedded, GardenScene.Mode.RayTraced);
-        using var r = new GardenRay(s, g, 960, 540, []);
+        using var r = new GardenRay(s, g, W, H, []);
         Check(r, "garden-ray");
     }
 
@@ -41,8 +43,15 @@ public class GardenRenderHardwareTests
         Assert.True(a.Distinct().Count() > 2000, "the frame is nearly one colour");
         string? dir = Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR");
         if (dir is { Length: > 0 })
-            foreach (float t in new[] { 0f, 10f, 20f, 28f, 36f, 44f, 52f })
+            foreach (float t in new[] { 0f, 12f, 21f, 27f, 36f, 42f, 48f, 54f, 60f, 72f, 78f, 87f })   // round the walk: the garden, the terrace, the hall's rooms
                 Png.Write(Path.Combine(dir, $"{name}-t{t:00}.png"), r.Capture(t), r.Width, r.Height);
+        // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk (drawn off screen and read back: slower than the test's own window)
+        if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })
+        {
+            const int n = 96; var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int k = 0; k < n; k++) r.Capture(k * GardenCamera.Loop / n);
+            File.AppendAllText(Path.Combine(dir, "timing.txt"), $"{name} {r.Width}x{r.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms a frame, {n} frames round the walk" + Environment.NewLine);
+        }
     }
 }
 

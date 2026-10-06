@@ -4,8 +4,10 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
 /// Draws the garden with DirectX Raytracing (GardenRay.hlsl): a bottom-level acceleration structure per mesh (one geometry per material,
-/// leaf cards non-opaque so the shader cuts them out), and a top-level one over every placed mesh, rebuilt each frame so the logo can move.
-/// Instances made only of water, glass and glowing parts are left out of shadow rays (instance mask), so lanterns light through their glass.
+/// leaf cards non-opaque so the shader cuts them out), and a top-level one over every placed mesh, rebuilt each frame so the logo, the
+/// mirror sphere and the fountain's droplets can move.
+/// Instances made only of water, glass and glowing parts are left out of shadow rays (instance mask), so lanterns light through their
+/// glass; the stained panes have a mask bit of their own, by which the shader finds the colour light takes on passing through them.
 /// </summary>
 internal sealed unsafe class GardenRay : GardenRenderer
 {
@@ -55,7 +57,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
             var sizes = s.Device.GetRaytracingAccelerationStructurePrebuildInfo(bi);
             inputs.Add((d, bi, resultBytes, scratchBytes));
             resultBytes += Align(sizes.ResultDataMaxSizeInBytes); scratchBytes += Align(sizes.ScratchDataSizeInBytes);
-            _masks[d.Mesh] = (byte)(1 | (g.CastsShadow(d) ? 2 : 0));
+            _masks[d.Mesh] = (byte)(1 | (g.CastsShadow(d) ? 2 : 0) | (d.Parts.Any(p => g.Materials[p.Material].LightTint > 0) ? 4 : 0));
             // the BLAS holds the quantised positions: world x dequantise (centre + extent * q)
             _dequant[d.Mesh] = Matrix4x4.CreateScale(d.Extent) * Matrix4x4.CreateTranslation(d.Centre);
         }
@@ -90,13 +92,12 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     private static ulong Align(ulong n) => (n + 255) & ~255ul;
 
-    /// <summary>The TLAS instances: every one at build time, afterwards only the moving logo.</summary>
+    /// <summary>The TLAS instances: every one at build time, afterwards only those that move.</summary>
     private void WriteInstances(float time, bool all)
     {
         var span = _instances.Map<InstanceDesc>(0, G.Instances.Length);
-        for (int i = 0; i < G.Instances.Length; i++)
+        foreach (int i in all ? Enumerable.Range(0, G.Instances.Length) : G.Moving)
         {
-            if (!all && i != G.LogoInstance) continue;
             var inst = G.Instances[i];
             var m = _dequant[inst.Mesh] * G.World(i, time);
             var desc = new InstanceDesc { IdAndMask = (uint)i & 0xFFFFFF | (uint)_masks[inst.Mesh] << 24, Blas = _blas[inst.Mesh] };
@@ -143,7 +144,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target)
     {
-        if (G.LogoInstance >= 0) WriteInstances(time, all: false);   // safe: the previous submission has finished (every Run waits for the GPU)
+        if (G.Moving.Length > 0) WriteInstances(time, all: false);   // safe: the previous submission has finished (every Run waits for the GPU)
         Trace(l, time);
         var dest = Targets[target];
         l.ResourceBarrierTransition(_pixels, ResourceStates.UnorderedAccess, ResourceStates.CopySource);

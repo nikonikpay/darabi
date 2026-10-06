@@ -3,7 +3,7 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 
 /// <summary>
 /// The visual tests' Persian garden as a benchmark: the same scene and camera walk, in a window like the test's, drawn with no v-sync cap - by
-/// Direct3D 12 rasterisation (shadow map, the pool's reflection, MSAA: set by the quality) or by DirectX Raytracing (camera rays a pixel, each with a
+/// Direct3D 12 rasterisation (shadow map, sky map, ambient occlusion, the pool's reflection, MSAA: set by the quality) or by DirectX Raytracing (camera rays a pixel, each with a
 /// soft-shadow ray to the moon and every lamp in reach and a bounced-light ray, reflection and refraction, 4 bounces). The resolution and the quality are
 /// options (rasterisation); the ray-traced one has a single setting, 4 rays a pixel, like the visual test, and only the resolution to choose.
 /// The camera walks the garden at the test's own pace (a walk is <see cref="GardenCamera.Loop"/> seconds, by the clock), and a run lasts whole
@@ -80,7 +80,7 @@ public sealed class GpuSceneBenchmark(bool rayTraced) : IBenchmark, ITestAvailab
         var slowest = sorted.TakeLast(Math.Max(1, sorted.Length / 100)).Average();
         double p99 = sorted[Math.Min(sorted.Length - 1, (int)Math.Ceiling(sorted.Length * 0.99) - 1)];
         string how = renderer is GardenRaster r
-            ? $"Direct3D 12, quality {quality}: shadow map {r.Level.ShadowSize}, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
+            ? $"Direct3D 12, quality {quality}: shadow map {r.Level.ShadowSize}, ambient occlusion {r.Level.OcclusionTaps} taps, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
             : $"DXR 1.1 inline ray tracing: {((GardenRay)renderer).Samples} rays a pixel, soft shadows from the moon and {garden.PointLights.Length} lamps, bounced light, reflection and refraction, {((GardenRay)renderer).Bounces} bounces";
         return ([new("Bench_Gpu_Scene_Fps", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms")],
             $"Persian garden in a window at {width}x{height}, {n} frames: " + $"{walks} walk{(walks == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" + $"; {how}; {garden.Instances.Length:N0} objects");

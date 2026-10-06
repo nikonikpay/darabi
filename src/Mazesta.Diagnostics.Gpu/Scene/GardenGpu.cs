@@ -5,22 +5,31 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>
 /// The garden on the GPU for one of its two scenes: every mesh in one vertex and one index buffer, the instances of that scene grouped by
 /// mesh (so each mesh is one instanced draw per material), the materials, the lights, the textures (base colours and normal maps) as one
-/// BC3 texture array, and the mountains round the horizon.
+/// BC3 texture array, and the mountains round the horizon. What moves is placed here for both renderers, as a function of the time alone:
+/// the logo (turning to the camera), the ray-traced scene's mirror sphere (gliding round the pool) and the fountain's water - droplets
+/// this class adds to the scene, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
 /// Both renderers build on it. The owner's Models\gpu-test.obj, when there is one, takes the logo's place over the pool.
 /// </summary>
 internal sealed unsafe class GardenGpu
 {
-    [StructLayout(LayoutKind.Sequential)] public struct Instance { public Vector4 Row0, Row1, Row2; public uint Mesh, Mask, Flags, Pad; }
+    [StructLayout(LayoutKind.Sequential)] public struct Instance { public Vector4 Row0, Row1, Row2; public uint Mesh, Mask, Flags, Index; }
     [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Pad0, Pad1; }
     [StructLayout(LayoutKind.Sequential)] public struct MeshInfo { public Vector3 Centre; public uint FirstSubmesh; public Vector3 Extent; public uint BaseVertex; }
     [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, Pad; }
     public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind);
-    /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>.</summary>
-    public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts);
+    /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>. Moving: some of them
+    /// are placed anew every frame (the logo, the sphere, the droplets).</summary>
+    public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts, bool Moving);
 
-    public const float WaterLevel = -0.04f;   // the main pool's surface (courtyard-v4.blend: z -0.04)
+    /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
+    public const uint JetDroplets = 220, SpillDroplets = 12 * 14;
+    /// <summary>The main pool's surface.</summary>
+    public float WaterLevel { get; }
+    public GardenFountain? Fountain { get; }
     public GardenScene.Mode Mode { get; }
     public Instance[] Instances { get; }
+    /// <summary>The instances that move, by their place in <see cref="Instances"/>.</summary>
+    public int[] Moving { get; }
     public Draw[] Draws { get; }
     public GardenMaterial[] Materials { get; }
     public Light[] PointLights { get; }
@@ -43,9 +52,17 @@ internal sealed unsafe class GardenGpu
 
     public GardenGpu(D3D12Session s, GardenScene scene, GardenScene.Mode mode, SceneModel? custom = null, string? customProblem = null)
     {
-        Mode = mode; ModelProblem = customProblem;
+        Mode = mode; ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain;
         var meshes = scene.Meshes.ToList(); var materials = scene.Materials.ToList();
         var chosen = scene.Instances.Where(i => (i.Mask & (uint)mode) != 0).ToArray();
+        if (Fountain is not null)
+        {
+            // the fountain's water: one small ball of white water, placed anew every frame for each droplet (their numbers follow below)
+            materials.Add(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = new(0.80f, 0.89f, 0.93f), Alpha = 1, Roughness = 0.12f });
+            meshes.Add(Ball((uint)materials.Count - 1));
+            var droplet = new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Flags = GardenScene.DropletFlag, Row0 = new(1, 0, 0, 0), Row1 = new(0, 1, 0, 0), Row2 = new(0, 0, 1, 0) };
+            chosen = [.. chosen, .. Enumerable.Repeat(droplet, (int)(JetDroplets + SpillDroplets))];
+        }
         if (custom is not null)
         {
             int logo = Array.FindIndex(chosen, i => (i.Flags & GardenScene.LogoFlag) != 0);
@@ -64,14 +81,17 @@ internal sealed unsafe class GardenGpu
         // instances grouped by mesh, in the file's order within a mesh
         var order = chosen.Select((inst, k) => (inst, k)).OrderBy(x => x.inst.Mesh).ThenBy(x => x.k).Select(x => x.inst).ToArray();
         Instances = [.. order.Select(i => new Instance { Row0 = i.Row0, Row1 = i.Row1, Row2 = i.Row2, Mesh = i.Mesh, Mask = i.Mask, Flags = i.Flags })];
+        for (uint k = 0, d = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.DropletFlag) != 0) Instances[k].Index = d++;
         LogoInstance = Array.FindIndex(Instances, i => (i.Flags & GardenScene.LogoFlag) != 0);
+        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => Instances[k].Flags != 0)];
         var draws = new List<Draw>();
         for (int k = 0; k < order.Length;)
         {
             int m = (int)order[k].Mesh, n = 0; while (k + n < order.Length && order[k + n].Mesh == m) n++;
             var mesh = meshes[m];
             draws.Add(new Draw(m, (uint)k, (uint)n, baseVertex[m], (uint)mesh.VertexCount, mesh.Centre, mesh.Extent,
-                [.. mesh.Submeshes.Select(sub => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))]));
+                [.. mesh.Submeshes.Select(sub => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))],
+                order.Skip(k).Take(n).Any(i => i.Flags != 0)));
             Triangles += (long)mesh.Indices.Length / 3 * n; k += n;
         }
         Draws = [.. draws];
@@ -116,15 +136,99 @@ internal sealed unsafe class GardenGpu
     /// <summary>Whether a mesh blocks light: one made only of water, glass and glowing parts does not (a lantern's glass would otherwise hide its own lamp).</summary>
     public bool CastsShadow(Draw d) => d.Parts.Any(p => p.Kind is GardenMaterialKind.Flat or GardenMaterialKind.Cutout or GardenMaterialKind.Brick);
 
-    /// <summary>Instance <paramref name="i"/>'s world transform at <paramref name="time"/>: the logo turns to the camera and floats (Garden.hlsli's LogoMove is its twin).</summary>
+    /// <summary>Instance <paramref name="i"/>'s world transform at <paramref name="time"/>: the logo turns to the camera and floats
+    /// (Garden.hlsli's LogoMove is its twin), the mirror sphere glides round the pool, a droplet is on its flight.</summary>
     public Matrix4x4 World(int i, float time)
     {
         var inst = Instances[i];
         var m = new Matrix4x4(inst.Row0.X, inst.Row1.X, inst.Row2.X, 0, inst.Row0.Y, inst.Row1.Y, inst.Row2.Y, 0, inst.Row0.Z, inst.Row1.Z, inst.Row2.Z, 0, inst.Row0.W, inst.Row1.W, inst.Row2.W, 1);
+        if ((inst.Flags & GardenScene.DropletFlag) != 0) { var (pos, vel, size) = Droplet(inst.Index, time); return DropletWorld(pos, vel, size); }
+        if ((inst.Flags & GardenScene.SphereFlag) != 0) return m * Matrix4x4.CreateTranslation(SphereDrift(time));
         if ((inst.Flags & GardenScene.LogoFlag) == 0) return m;
         var pivot = new Vector3(inst.Row0.W, inst.Row1.W, inst.Row2.W);
         var (c, s, lift) = LogoTurn(pivot, time);
         return m * Matrix4x4.CreateTranslation(-pivot) * LogoMotion(c, s, lift) * Matrix4x4.CreateTranslation(pivot);
+    }
+
+    /// <summary>How far the mirror sphere is from where the scene placed it (beside the fountain, over the pool's right half) at
+    /// <paramref name="time"/>: once round the fountain in <see cref="SphereLap"/> seconds, along the pool and back over the water,
+    /// rising and sinking a little as it goes. It keeps clear of the fountain, the pool's edge and the logo above.</summary>
+    public static Vector3 SphereDrift(float time)
+    {
+        float a = time / SphereLap * 2 * MathF.PI;
+        return new(SphereReach.X * (MathF.Cos(a) - 1), 0.2f * MathF.Sin(a * 3), SphereReach.Y * MathF.Sin(a));
+    }
+    public const float SphereLap = 32f;
+    /// <summary>The sphere's path: an ellipse this far across the pool and along it from the fountain.</summary>
+    public static readonly Vector2 SphereReach = new(2.5f, 5.4f);
+
+    /// <summary>Where the fountain's droplet <paramref name="id"/> is at <paramref name="time"/>, how fast it is going and how big it is
+    /// (size 0: it is spent, in the water until its next turn). Water leaves the nozzle as droplets, each on its own ballistic flight;
+    /// a flight ends where it meets something: the water in the bowl, from which the droplet splashes up again, slower and scattered,
+    /// or - once it has cleared the rim - the pool. The droplets after the first <see cref="JetDroplets"/> are the bowl running over:
+    /// they leave the rim's twelve lobes and fall to the pool. A pure function, the twin of Garden.hlsli's Droplet (which places them
+    /// for the rasteriser; this one places them in the ray tracer's acceleration structure).</summary>
+    public (Vector3 Position, Vector3 Velocity, float Size) Droplet(uint id, float time) => Fountain is { } f ? Droplet(f, WaterLevel, id, time) : (default, default, 0);
+
+    /// <summary>The same, for a fountain and a pool given.</summary>
+    public static (Vector3 Position, Vector3 Velocity, float Size) Droplet(GardenFountain f, float waterLevel, uint id, float time)
+    {
+        const float gravity = 9.81f; float level = f.BowlLevel, rim = f.RimRadius;
+        static float H(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return (x >> 8) * (1f / 16777216f); }
+        static float Frac(float x) => x - MathF.Floor(x);
+        float h1 = H(id * 16 + 1), h2 = H(id * 16 + 2), h3 = H(id * 16 + 3), h4 = H(id * 16 + 4), t; Vector3 p, v;
+        if (id < JetDroplets)
+        {
+            t = Frac(time / 2.3f + h1) * 2.3f;
+            float a = h3 * 2 * MathF.PI, u = 0.10f + 0.50f * h2 * h2;
+            p = f.Nozzle; v = new(MathF.Cos(a) * u, 4.0f + 0.7f * h4, MathF.Sin(a) * u);
+        }
+        else
+        {
+            t = Frac(time / 0.8f + h1) * 0.8f;
+            float a = ((id - JetDroplets) % 12 + 0.5f + (h3 - 0.5f) * 0.4f) / 12 * 2 * MathF.PI;
+            p = new(f.Nozzle.X + MathF.Cos(a) * rim, level + 0.03f, f.Nozzle.Z + MathF.Sin(a) * rim);
+            v = new Vector3(MathF.Cos(a), 0, MathF.Sin(a)) * (0.30f + 0.25f * h2); v.Y = -0.2f;
+        }
+        float size = 0.016f + 0.012f * h4;
+        for (uint k = 0; k < 3; k++)
+        {
+            float toBowl = (v.Y + MathF.Sqrt(MathF.Max(v.Y * v.Y + 2 * gravity * (p.Y - level), 0))) / gravity;
+            var q = new Vector2(p.X + v.X * toBowl - f.Nozzle.X, p.Z + v.Z * toBowl - f.Nozzle.Z); bool bowl = q.LengthSquared() < rim * rim;
+            float end = bowl ? toBowl : (v.Y + MathF.Sqrt(MathF.Max(v.Y * v.Y + 2 * gravity * (p.Y - waterLevel), 0))) / gravity;
+            if (t <= end) return (p + v * t - new Vector3(0, 0.5f * gravity * t * t, 0), v - new Vector3(0, gravity * t, 0), size);
+            if (!bowl || k == 2) break;
+            p = new(p.X + v.X * end, level + 0.002f, p.Z + v.Z * end); t -= end; size *= 0.75f;
+            float sa = H(id * 16 + 5 + k) * 2 * MathF.PI, su = 0.5f + 0.9f * H(id * 16 + 8 + k);
+            v = new(v.X * 0.3f + MathF.Cos(sa) * su, 1.1f + 0.9f * H(id * 16 + 11 + k), v.Z * 0.3f + MathF.Sin(sa) * su);
+        }
+        return (new(0, -100, 0), default, 0);
+    }
+
+    /// <summary>A droplet's ball as it is drawn: of its size, drawn out along its flight (Garden.hlsli's DropletPlace is its twin).
+    /// A spent one is a speck far under the ground.</summary>
+    public static Matrix4x4 DropletWorld(Vector3 pos, Vector3 vel, float size)
+    {
+        if (size <= 0) return Matrix4x4.CreateScale(1e-4f) * Matrix4x4.CreateTranslation(0, -100, 0);
+        float speed = vel.Length(), k = MathF.Min(speed * 0.22f, 1.6f); var d = speed > 1e-4f ? vel / speed : Vector3.UnitY;
+        return new(size * (1 + k * d.X * d.X), size * k * d.X * d.Y, size * k * d.X * d.Z, 0, size * k * d.Y * d.X, size * (1 + k * d.Y * d.Y), size * k * d.Y * d.Z, 0,
+                   size * k * d.Z * d.X, size * k * d.Z * d.Y, size * (1 + k * d.Z * d.Z), 0, pos.X, pos.Y, pos.Z, 1);
+    }
+
+    /// <summary>A ball of twenty faces, one unit in radius: a droplet's mesh.</summary>
+    private static GardenMesh Ball(uint material)
+    {
+        float phi = (1 + MathF.Sqrt(5)) / 2;
+        Vector3[] v = [new(-1, phi, 0), new(1, phi, 0), new(-1, -phi, 0), new(1, -phi, 0), new(0, -1, phi), new(0, 1, phi), new(0, -1, -phi), new(0, 1, -phi), new(phi, 0, -1), new(phi, 0, 1), new(-phi, 0, -1), new(-phi, 0, 1)];
+        uint[] indices = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1];
+        var bytes = new byte[v.Length * 16];
+        for (int i = 0; i < v.Length; i++)
+        {
+            var n = Vector3.Normalize(v[i]); var span = bytes.AsSpan(i * 16);
+            MemoryMarshal.Write(span, (short)MathF.Round(n.X * 32767)); MemoryMarshal.Write(span[2..], (short)MathF.Round(n.Y * 32767)); MemoryMarshal.Write(span[4..], (short)MathF.Round(n.Z * 32767));
+            span[8] = (byte)(sbyte)MathF.Round(n.X * 127); span[9] = (byte)(sbyte)MathF.Round(n.Y * 127); span[10] = (byte)(sbyte)MathF.Round(n.Z * 127);
+        }
+        return new GardenMesh(Vector3.Zero, Vector3.One, bytes, indices, [new GardenSubmesh(0, (uint)indices.Length, material)]);
     }
 
     /// <summary>Where the logo has turned at <paramref name="time"/>: its face (which looks down the garden, -z) toward the camera's eye,
@@ -239,6 +343,12 @@ internal struct GardenFrame
     public Vector4 Logo;
     public uint Samples, Pad0, Pad1, Pad2;
     public Vector4 Backdrop;
+    public Matrix4x4 SkyViewProj;
+    public Vector4 Fountain, Fountain2, Ambience;
+
+    /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
+    /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>
+    public const float Near = 0.1f;
 
     /// <summary>The camera, sky and key light of <paramref name="g"/>'s scene at <paramref name="time"/>, seen at <paramref name="width"/> x <paramref name="height"/>.</summary>
     public static GardenFrame For(GardenGpu g, float time, int width, int height)
@@ -247,22 +357,35 @@ internal struct GardenFrame
         float fovY = 1.0f, aspect = width / (float)height;
         var forward = Vector3.Normalize(target - eye); var right = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, forward)); var up = Vector3.Cross(forward, right);
         var view = Matrix4x4.CreateLookAtLeftHanded(eye, target, Vector3.UnitY);
-        var proj = Matrix4x4.CreatePerspectiveFieldOfViewLeftHanded(fovY, aspect, 0.08f, 250f);
+        float h = 1 / MathF.Tan(fovY / 2);
+        var proj = new Matrix4x4(h / aspect, 0, 0, 0, 0, h, 0, 0, 0, 0, 0, 1, 0, 0, Near, 0);   // depth = Near / distance
         bool raster = g.Mode == GardenScene.Mode.Raster;
         var f = new GardenFrame
         {
-            ViewProj = view * proj, Eye = eye, Time = time, SunDir = g.SunDirection, SunOn = g.SunColor.LengthSquared() > 0 ? 1 : 0, SunColor = g.SunColor,
-            LightCount = (uint)g.PointLights.Length, WaterLevel = GardenGpu.WaterLevel,
-            // golden hour for Direct3D, blue hour for the ray tracer: the .blend's two skies, as simple gradients
-            SkyZenith = raster ? new(0.20f, 0.34f, 0.70f) : new(0.012f, 0.022f, 0.070f),
-            SkyHorizon = raster ? new(0.95f, 0.70f, 0.48f) : new(0.10f, 0.085f, 0.17f),
-            GroundColor = raster ? new(0.30f, 0.24f, 0.18f) : new(0.020f, 0.018f, 0.025f),
-            Exposure = raster ? 1.05f : 1.6f,
+            ViewProj = view * proj, Eye = eye, Time = time, SunDir = raster ? g.SunDirection : MoonAt(g.SunDirection, time), SunOn = g.SunColor.LengthSquared() > 0 ? 1 : 0, SunColor = g.SunColor,
+            LightCount = (uint)g.PointLights.Length, WaterLevel = g.WaterLevel,
+            // a low golden sun for Direct3D, nightfall for the ray tracer: two skies, as simple gradients
+            // (by day the exposure is set for the sunlit stone, and the sky's own light is a fraction of the sun's, as it is with the
+            // sun this low: what it does not reach stays in real shade)
+            SkyZenith = raster ? new(0.13f, 0.22f, 0.46f) : new(0.012f, 0.022f, 0.070f),
+            SkyHorizon = raster ? new(0.62f, 0.46f, 0.32f) : new(0.10f, 0.085f, 0.17f),
+            GroundColor = raster ? new(0.20f, 0.16f, 0.12f) : new(0.020f, 0.018f, 0.025f),
+            Exposure = raster ? 1.9f : 1.45f,
             ViewSize = new(width, height), CamRight = right, CamUp = up, CamForward = forward, TanHalfFovY = MathF.Tan(fovY / 2), Aspect = aspect,
             Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u, Backdrop = g.BackdropRange
         };
-        var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0);
+        if (g.Fountain is { } fountain) { f.Fountain = new(fountain.Nozzle, fountain.BowlRadius); f.Fountain2 = new(fountain.BowlLevel, fountain.RimRadius, GardenGpu.JetDroplets, 1); }
+        f.Ambience = new(0, 0, Near, 0);
+        var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, raster ? 0 : 0.45f);   // at night the logo is a lit sign: it glows of itself
         return f;
+    }
+
+    /// <summary>Toward the moon at <paramref name="time"/>: it swings slowly across the sky about where the scene has it, there and back
+    /// in one walk of the garden, so the ray-traced shadows of the cypresses, the columns and the lattices creep over the paving.</summary>
+    public static Vector3 MoonAt(Vector3 placed, float time)
+    {
+        float a = 0.42f * MathF.Sin(time / GardenCamera.Loop * 2 * MathF.PI), c = MathF.Cos(a), s = MathF.Sin(a);
+        return Vector3.Normalize(new(c * placed.X + s * placed.Z, placed.Y * (1 + 0.25f * MathF.Cos(time / GardenCamera.Loop * 2 * MathF.PI)), -s * placed.X + c * placed.Z));
     }
 
     /// <summary>The same frame seen in the pool: the camera mirrored in the water's plane, drawing only what is above it.</summary>
