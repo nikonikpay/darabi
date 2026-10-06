@@ -71,7 +71,8 @@ public class GardenLightVolumeTests
         float open = Lum(v.At(GardenLightVolume.Sky, walk, Vector3.UnitY)), hall = Lum(v.At(GardenLightVolume.Sky, floor, Vector3.UnitY));
         Assert.InRange(open, 0.5f, 1.3f); Assert.InRange(hall, 0.002f, open / 4);
         // the lamps' parts: the walk is lit by the garden's lamps, bounced, the hall's floor by its own
-        Assert.True(Lum(v.At(GardenLightVolume.Lamps, walk, Vector3.UnitY)) > 0.0005f); Assert.True(Lum(v.At(GardenLightVolume.Hall, floor, Vector3.UnitY)) > 0.005f);
+        float byLamps = Lum(v.At(GardenLightVolume.Lamps, walk, Vector3.UnitY)), byHall = Lum(v.At(GardenLightVolume.Hall, floor, Vector3.UnitY));
+        Assert.True(byLamps > 0.0002f, $"the walk by the garden's lamps: {byLamps}"); Assert.True(byHall > 0.005f, $"the hall's floor by its lamps: {byHall}");
         // the sun's parts: with the sun before the hall its light comes in at the windows and is given back to the ceiling; no part is all dark
         for (int k = 0; k < v.Suns; k++) Assert.True(v.Parts[GardenLightVolume.FirstSun + k].Max() > 0.05f, $"sun part {k}");
         Assert.True(Lum(v.At(GardenLightVolume.FirstSun + v.Suns / 2, floor + new Vector3(0, 2.5f, -2), -Vector3.UnitY)) > 0.002f);

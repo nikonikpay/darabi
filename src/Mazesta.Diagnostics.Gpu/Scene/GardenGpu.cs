@@ -30,7 +30,7 @@ internal sealed unsafe class GardenGpu
     /// (two wings each), and the puffs of steam the samovar on the tea counter gives off.</summary>
     public const int Fireflies = 140, LitFireflies = 16, Butterflies = 24, SteamPuffs = 14;
     /// <summary>Where steam leaves the samovar (the large silver one; over the teapot on its crown), on the hall's tea counter.</summary>
-    public static readonly Vector3 SamovarCrown = new(-9.245f, 2.81f, 3.5f);
+    public static readonly Vector3 SamovarCrown = new(-9.236f, 2.81f, 3.464f);
     /// <summary>The beds the garden's small life keeps to, on the right of the pool (x from, to; z from, to): three between the pool
     /// and the walk, three along the outer wall. The left side mirrors them.</summary>
     private static readonly (float X0, float X1, float Z0, float Z1)[] Beds =
@@ -82,9 +82,11 @@ internal sealed unsafe class GardenGpu
     private readonly uint[] _grid; private readonly bool[] _hallLamp;
     /// <summary>How far the hall's own lamps are lit by day: its chandeliers burn low while the sun is up, so the paintings on the
     /// back wall can be seen from the door.</summary>
-    public const float HallByDay = 0.1f;
+    public const float HallByDay = 0.05f;
+    /// <summary>And by night: half of what its chandeliers can give, so the room keeps its shade and the lamps their glow.</summary>
+    public const float HallByNight = 0.5f;
     /// <summary>How far the hall's lamps are lit at a moment of <paramref name="day"/>.</summary>
-    public static float HallLit(GardenDay day) => MathF.Max(day.Lamps, HallByDay * (1 - day.Night));
+    public static float HallLit(GardenDay day) => MathF.Max(day.Lamps * HallByNight, HallByDay * (1 - day.Night));
     public ID3D12Resource MeshInfoBuffer { get; } public ID3D12Resource SubmeshInfoBuffer { get; }
     public ID3D12Resource Textures { get; }
     public int TextureCount { get; }
@@ -195,7 +197,7 @@ internal sealed unsafe class GardenGpu
             if (!night) continue;
             bool area = l.Kind == GardenLightKind.Spot && l.Blend >= 0.999f && l.Cone > 2.7f;   // the exporter's stand-in for an area light
             var intensity = l.Color * l.Energy / (area ? MathF.PI * 2 : 4 * MathF.PI);
-            float range = Math.Clamp(MathF.Sqrt(Math.Max(intensity.X, Math.Max(intensity.Y, intensity.Z)) / 0.04f), 1.5f, 28f);
+            float range = Math.Clamp(MathF.Sqrt(Math.Max(intensity.X, Math.Max(intensity.Y, intensity.Z)) / 0.07f), 1.5f, 28f);   // (as far as it gives what the eye can tell from the night's own light: a pixel then asks half as many lamps)
             float half = l.Cone / 2;
             bool shadowed = l.Kind == GardenLightKind.Point && l.Position.Y > WaterLevel && ShadowLamps < MostShadowLamps;
             points.Add(new Light
@@ -649,7 +651,7 @@ internal struct GardenFrame
     public const int Bytes = 1024;
 
     /// <summary>How many times longer the picture is exposed in the hall by day than in the garden.</summary>
-    public const float Indoors = 1.7f;
+    public const float Indoors = 1.4f;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>

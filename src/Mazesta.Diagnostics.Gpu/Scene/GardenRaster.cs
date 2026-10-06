@@ -44,6 +44,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private readonly Settings _set; private readonly int _samples;
     private readonly ID3D12RootSignature _root;
     private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown, _tint, _before, _beforeLeaves;
+    /// <summary>With rays: how much of the key light each pixel of the frame sees (GardenRaster.hlsl's SunShadePS), and that picture smoothed.</summary>
+    private readonly ID3D12PipelineState? _shade, _shadeBlur; private readonly ID3D12Resource? _shadeA, _shadeB;
     private readonly ID3D12Resource _shadowMap, _hallShadow, _hallTint, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light, _lamps, _volume, _round, _roundDepth;
     private readonly ID3D12Resource? _volumeStaging; private readonly float[] _mixed = []; private readonly uint _volumePitch;
     /// <summary>The stained panes' draws, and for each face of the pictures of the surroundings the still instances it can see, in runs of neighbours.</summary>
@@ -114,6 +116,14 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         _glowUp = Make(skyVs, D3D12Session.Shader("GardenGlowUpPS"), new BlendDescription(Blend.One, Blend.One), DepthStencilDescription.None, 1, [GlowFormat], input: false);
         _lens = Make(skyVs, D3D12Session.Shader("GardenLensPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [Format.R8G8B8A8_UNorm], input: false);
         _roundDown = Make(skyVs, D3D12Session.Shader("GardenRoundDownPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, color, input: false);
+        if (rayTraced)
+        {
+            _shade = Make(skyVs, D3D12Session.Shader("GardenSunShadePS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [Format.R8_UNorm], input: false);
+            _shadeBlur = Make(skyVs, D3D12Session.Shader("GardenShadeBlurPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [Format.R8_UNorm], input: false);
+            ID3D12Resource Shade() => s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+                ResourceStates.PixelShaderResource, new ClearValue(Format.R8_UNorm, new Color4(1, 1, 1, 1))));
+            _shadeA = Shade(); _shadeB = Shade();
+        }
         if (_set.ReflectionDivisor == 0)
         {   // the pictures of the surroundings are drawn at one sample too
             _skyR = Make(skyVs, skyPs, BlendDescription.Opaque, skyDepth, 1, color, input: false);
@@ -180,12 +190,13 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
         // the shader's views: the scene's seven (t3..t9), then the lens's - the frame's light, the glow's levels, and the last level again
         // (a lens pass sees two views in a row: what it reads, and what follows it)
-        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, RoundView + RoundMips, DescriptorHeapFlags.ShaderVisible, 0)));
+        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, ShadeView + 3, DescriptorHeapFlags.ShaderVisible, 0)));
         uint srvSize = _srvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle Srv(int i) => _srv.GetCPUDescriptorHandleForHeapStart().Offset(i, srvSize);   // Offset moves the handle it is called on: start afresh each time
         s.Device.CreateShaderResourceView(g.Textures, g.TextureView, Srv(0));
         s.Device.CreateShaderResourceView(_shadowMap, new ShaderResourceViewDescription { Format = Format.R32_Float, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D, Shader4ComponentMapping = ShaderComponentMapping.Default, Texture2D = new Texture2DShaderResourceView { MipLevels = 1 } }, Srv(1));
-        s.Device.CreateShaderResourceView(_reflection, null, Srv(2));
+        s.Device.CreateShaderResourceView(_shadeA ?? _reflection, null, Srv(2));   // (with rays the pool has no mirror image: the key light's share takes its place)
+        if (_shadeA is not null) for (int k = 0; k < 3; k++) s.Device.CreateShaderResourceView(k == 1 ? _shadeB : _shadeA, null, Srv(ShadeView + k));
         s.Device.CreateShaderResourceView(g.Backdrop, null, Srv(3));
         var depthView = new ShaderResourceViewDescription { Format = Format.R32_Float, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D, Shader4ComponentMapping = ShaderComponentMapping.Default, Texture2D = new Texture2DShaderResourceView { MipLevels = 1 } };
         s.Device.CreateShaderResourceView(_skyMap, depthView, Srv(4));
@@ -204,7 +215,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         s.Device.CreateShaderResourceView(_hallShadow, depthView, Srv(LampView + 3));
         s.Device.CreateShaderResourceView(_hallTint, null, Srv(LampView + 4));
 
-        _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)(Targets.Length + 5 + GlowLevels + Rounds.Length * 6 * RoundMips), DescriptorHeapFlags.None, 0)));
+        _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)(Targets.Length + 7 + GlowLevels + Rounds.Length * 6 * RoundMips), DescriptorHeapFlags.None, 0)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
         for (int i = 0; i < Targets.Length; i++) s.Device.CreateRenderTargetView(Targets[i], null, Rtv(i));
         s.Device.CreateRenderTargetView(_reflection, null, Rtv(Targets.Length));
@@ -216,6 +227,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             for (int m = 0; m < RoundMips; m++)
                 s.Device.CreateRenderTargetView(_round, new RenderTargetViewDescription { Format = Light, ViewDimension = RenderTargetViewDimension.Texture2DArray, Texture2DArray = new Texture2DArrayRenderTargetView { MipSlice = (uint)m, FirstArraySlice = (uint)face, ArraySize = 1 } }, RoundRtv(face, m));
         s.Device.CreateRenderTargetView(_hallTint, null, TintRtv);
+        if (_shadeA is not null) { s.Device.CreateRenderTargetView(_shadeA, null, ShadeRtv(0)); s.Device.CreateRenderTargetView(_shadeB, null, ShadeRtv(1)); }
         _dsv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, (uint)(7 + cubes * 6), DescriptorHeapFlags.None, 0)));
         _dsvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
         s.Device.CreateDepthStencilView(_depth, null, Dsv(0));
@@ -258,12 +270,13 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private readonly GardenAccel? _accel;
     /// <summary>Whether shadows and mirror images are found with rays.</summary>
     public bool RayTraced => _accel is not null;
-    private const int LensViews = 7, LampView = LensViews + GlowLevels + 2, RoundView = LampView + 5;
+    private const int LensViews = 7, LampView = LensViews + GlowLevels + 2, RoundView = LampView + 5, ShadeView = RoundView + RoundMips;
     /// <summary>The root signature's first table of views (the scene's); the lens's and the lamps' follow it.</summary>
     private const int Views = 12;
     private readonly int _roundSlot;
     private CpuDescriptorHandle RoundRtv(int face, int mip) => Rtv(Targets.Length + 4 + GlowLevels + face * RoundMips + mip);
     private CpuDescriptorHandle TintRtv => Rtv(Targets.Length + 4 + GlowLevels + Rounds.Length * 6 * RoundMips);
+    private CpuDescriptorHandle ShadeRtv(int k) => Rtv(Targets.Length + 5 + GlowLevels + Rounds.Length * 6 * RoundMips + k);
 
     /// <summary>The still garden all round from each of <see cref="Rounds"/>, into those of its pictures' twelve faces that
     /// <paramref name="faces"/> names (the cube's order and turns, as <see cref="LampFace"/> has them), then each face's smaller mips.
@@ -508,7 +521,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.ClearDepthStencilView(Dsv(4), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(4));
             Geometry(l, Still, draw => G.CastsShadow(draw) && !draw.Moving);
             l.ResourceBarrierTransition(_skyMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
-            if (_accel is null) LampShadows(l, first); else l.ResourceBarrierTransition(_lamps, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
+            LampShadows(l, first);   // (with rays too: a far lamp's faint shadow is read from its cube)
             _onceDrawn = true; l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
         }
         // 1. the key light's shadow maps - the light moves, so they are drawn anew: the courtyard's, the hall's own, and through the
@@ -601,6 +614,18 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.OMSetRenderTargets(Rtv(Targets.Length + 2), null);
         l.SetPipelineState(_occlude); l.DrawInstanced(3, 1, 0, 0);
         l.ResourceBarrierTransition(_occlusion, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
+        if (_shadeA is not null && _shadeB is not null)
+        {   // with rays: the key light's share at every pixel of that depth, then smoothed across and down
+            void Into(ID3D12Resource to, int rtv, ID3D12PipelineState pipeline, int reads, uint axis)
+            {
+                l.ResourceBarrierTransition(to, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget); l.OMSetRenderTargets(ShadeRtv(rtv), null);
+                if (reads >= 0) l.SetGraphicsRootDescriptorTable(Views + 1, _srv.GetGPUDescriptorHandleForHeapStart().Offset(ShadeView + reads, _srvSize));
+                l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = axis }, 0);
+                l.SetPipelineState(pipeline); l.DrawInstanced(3, 1, 0, 0);
+                l.ResourceBarrierTransition(to, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
+            }
+            Into(_shadeA, 0, _shade!, -1, 0); Into(_shadeB, 1, _shadeBlur!, 0, 0); Into(_shadeA, 0, _shadeBlur!, 1, 1);
+        }
 
         // 4. the frame's light
         var rtv = _samples > 1 ? Rtv(Targets.Length + 1) : Rtv(Targets.Length + 3);

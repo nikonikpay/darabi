@@ -44,6 +44,8 @@ $jobs = @(
     @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_5', 'GardenOpaqueRtPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_5', 'GardenCutoutRtPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'TransparentPS', 'ps_6_5', 'GardenTransparentRtPS.cso', 'RT'),
+    @('GardenRaster.hlsl', 'SunShadePS', 'ps_6_5', 'GardenSunShadePS.cso', 'RT'),
+    @('GardenRaster.hlsl', 'ShadeBlurPS', 'ps_6_0', 'GardenShadeBlurPS.cso'),
     @('GardenBake.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso')
 )
 foreach ($j in $jobs) {

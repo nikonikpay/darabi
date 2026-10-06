@@ -58,8 +58,6 @@ ByteAddressBuffer Indices : register(t23);
 #include "GardenTrace.hlsli"
 static float2 Pixel;   // the pixel being lit: its rays are aimed by a hash of where it is, so the same frame is the same picture
 static bool Sign = false;   // the logo is being lit: a sign of gilt letters, which keeps the soft picture of its surroundings (a ray off each facet of a letter shows the facets)
-// A point in the unit ball, this pixel's k-th: where on a light's disc or bulb a shadow ray is aimed.
-float3 Aim(uint k) { uint seed = Hash((uint)Pixel.x * 8191 + (uint)Pixel.y * 131071 + k * 524287 + 17); return InBall(seed); }
 #endif
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Aniso, uv, 0).rgb; }   // level 0: the way round wraps, which a screen-space derivative would smear
@@ -138,21 +136,48 @@ float4 TintPS(ShadowOut i) : SV_Target { return float4(StainTint(Materials[Mater
 #ifdef RT
 // How much of the key light reaches p: of ShadowTaps rays aimed at points of its disc, the share that meet nothing - shadows as
 // sharp as what casts them is near, soft-edged far from it, of every leaf and lattice whatever its size.
+// The k-th of n directions spread evenly over the key light's disc (a spiral from its middle out), turned by an angle of the pixel's own.
+float3 ToKey(uint k, uint n, float turn)
+{
+    float3 t = normalize(cross(SunDir, abs(SunDir.y) < 0.9 ? float3(0, 1, 0) : float3(1, 0, 0))), b = cross(SunDir, t);
+    float r = sqrt((k + 0.5) / n) * (Day.z > 0 ? 0.012 : 0.007), a = k * 2.399963 + turn;
+    return normalize(SunDir + (t * cos(a) + b * sin(a)) * r);
+}
+
+// The share of the key light's disc seen from o: two rays to opposite sides of its rim first and, only where they disagree (the edge of a
+// shadow), five more over the whole of it.
+float KeySeen(float3 o, float2 pixel)
+{
+    float turn = Turn(pixel), open = 0; uint k;
+    float3 t = normalize(cross(SunDir, abs(SunDir.y) < 0.9 ? float3(0, 1, 0) : float3(1, 0, 0))), side = (t * cos(turn) + cross(SunDir, t) * sin(turn)) * (Day.z > 0 ? 0.012 : 0.007);
+    open = (Occluded(o, normalize(SunDir + side), 300) ? 0 : 1) + (Occluded(o, normalize(SunDir - side), 300) ? 0 : 1);
+    if (open == 0 || open == 2) return open / 2;
+    [loop] for (k = 0; k < 5; k++) open += Occluded(o, ToKey(k, 5, turn), 300) ? 0 : 1;
+    return open / 7;
+}
+
+// The frame's own surfaces take the key light's share from the picture worked out before the frame (SunShadePS, smoothed: in the
+// place the pool's mirror image has without rays), which is free of the grain a few rays a pixel leave at a shadow's edge. What is
+// not the surface that picture saw at this pixel - glass, water, steam, an edge where the pixel's samples are of two surfaces, the
+// pictures of the surroundings - asks for itself.
 float Shadow(float3 p, float3 n)
 {
-    float3 o = p + n * 0.012; uint rays = max(ShadowTaps, 1); float open = 0;
-    [loop] for (uint k = 0; k < rays; k++) open += Occluded(o, normalize(SunDir + Aim(k) * (Day.z > 0 ? 0.018 : 0.007)), 300) ? 0 : 1;
-    return open / rays;
+    if (Flags & 16)
+    {
+        float z = dot(p - Eye, CamForward), seen = Ambience.z / max(SceneDepth.Load(int3(Pixel, 0)), 1e-6);
+        if (abs(z - seen) < 0.015 * z + 0.01) return Reflection.Load(int3(Pixel, 0)).r;
+    }
+    return KeySeen(p + n * 0.012, Pixel);
 }
 
 // The colour the key light has where it falls inside the hall: that of the stained pane on its way there.
 float3 KeyTint(float3 p) { return !InHall(p) || p.z < -3.09 ? 1 : Through(p, SunDir, 60); }
 
-// Whether a lamp's light reaches p: a ray to a point of its bulb (a firefly's glow reaches a hand's breadth: it is not asked).
-float LampShadow(Light L, float3 p, float3 n, float2 pixel)
+// Whether a lamp's light reaches p: a ray to its bulb (a firefly's glow reaches a hand's breadth: it is not asked).
+float LampRay(Light L, float3 p, float3 n)
 {
     if (L.Range < 2) return 1;
-    float3 o = p + n * 0.012, q = L.Position + Aim(7) * min(L.Radius, 0.06) - o; float d = length(q);
+    float3 o = p + n * 0.012, q = L.Position - o; float d = length(q);   // (to its middle: a point of the bulb chosen by chance would leave a grain along every shadow's edge)
     return Occluded(o, q / d, max(0.01, d - 0.05)) ? 0 : 1;
 }
 #else
@@ -182,10 +207,12 @@ float3 KeyTint(float3 p)
           + HallTint.SampleLevel(Clamp, uv + float2(t, -t), 0).rgb + HallTint.SampleLevel(Clamp, uv - float2(t, t), 0).rgb) * 0.2;
 }
 
+#endif
+
 // How much of a lamp's light reaches a point: what the lamp sees in that direction (its cube of depths, six views of ninety degrees)
 // is no nearer than the point itself. Four taps round the direction, turned differently in each pixel, each the mean of four texels:
 // a chair's legs, a lantern's cage and the hall's columns lay soft-edged shadows away from their lamps.
-float LampShadow(Light L, float3 p, float3 n, float2 pixel)
+float LampShadowMap(Light L, float3 p, float3 n, float2 pixel)
 {
     if (L.Shadow <= 0) return 1;
     float3 d = p + n * 0.03 - L.Position; float m = max(abs(d.x), max(abs(d.y), abs(d.z)));
@@ -200,7 +227,16 @@ float LampShadow(Light L, float3 p, float3 n, float2 pixel)
     }
     return sum / 4;
 }
+
+// A lamp's shadow: from its cube - or, with rays, a ray to it where its light is strong enough for the shadow's edge to be seen
+// (strength: what it gives the point unshadowed). At night a pixel is in reach of a dozen lamps, most of them far and faint.
+float LampShadow(Light L, float3 p, float3 n, float2 pixel, float strength)
+{
+#ifdef RT
+    if (strength > 0.1) return LampRay(L, p, n);
 #endif
+    return LampShadowMap(L, p, n, pixel);
+}
 
 // How much of the sky stands open over a point: the share of a ring of taps round it, a metre and a half across, that nothing is
 // above. Under the canopy, inside the hall and beneath a tree's crown the sky's light does not arrive - which is most of what tells
@@ -316,7 +352,7 @@ float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
     {
         uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
         if (max(e.r, max(e.g, e.b)) <= 0.004 || dot(s.Normal, l) <= 0) continue;   // (the last of a lamp's reach is under a hundredth of what the eye can tell at night)
-        c += Brdf(s, v, l, e * LampLit(L, k)) * LampShadow(L, p, s.Normal, pixel) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
+        c += Brdf(s, v, l, e * LampLit(L, k)) * LampShadow(L, p, s.Normal, pixel, max(e.r, max(e.g, e.b))) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
     }
     // every surface mirrors its surroundings a little, a metal or a polished floor a lot
     float3 mirrors = EnvBrdf(s, v);
@@ -449,9 +485,14 @@ float4 TransparentPS(VOut i) : SV_Target
     float open = SkyOpen(i.World, n, i.Position.xy);
     float3 mirrored = ((Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, open, 1) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
     float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Glowing(i.World);
-    if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
+#ifdef RT
+    const float shine = 1.5;   // with rays a pane stands out a little more in the key light: enough for the lens to lay a faint glow round it
+#else
+    const float shine = 1;
+#endif
+    if (SunOn > 0) own += m.Base * SunColor * shine * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
     uint2 lamps = LampsAt(i.World);
-    [loop] for (uint j = 0; j < lamps.y; j++) { uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
+    [loop] for (uint j = 0; j < lamps.y; j++) { uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy, 0); }
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
     float density = m.Alpha < 1 ? m.Alpha : lerp(0.08, 0.6, saturation);
     float a = fresnel + (1 - fresnel) * density;
@@ -594,4 +635,36 @@ float4 AoPS(SkyOut i) : SV_Target
     }
     float open = saturate(1 - 2.7 * sum / taps); open *= open * (3 - 2 * open) * 0.5 + 0.5;   // corners, feet and joints are dark: the shade there is what gives the stone its weight
     return float4(open, open, open, 1);
+}
+
+#ifdef RT
+// ——— the key light's share, with rays ———
+// For every pixel of the frame's depth: how much of the key light's disc its surface sees (KeySeen).
+float4 SunShadePS(SkyOut i) : SV_Target
+{
+    int2 px = int2(i.Position.xy);
+    if (SunOn <= 0 || SceneDepth.Load(int3(px, 0)) <= 0) return 1;
+    float3 p = ViewPosition(px), r = ViewPosition(px + int2(1, 0)), l = ViewPosition(px - int2(1, 0)), u = ViewPosition(px - int2(0, 1)), d = ViewPosition(px + int2(0, 1));
+    float3 dx = abs(r.z - p.z) < abs(p.z - l.z) ? r - p : p - l, dy = abs(d.z - p.z) < abs(p.z - u.z) ? d - p : p - u;
+    float3 n = normalize(cross(dx, dy)); if (n.z > 0) n = -n;
+    float3 world = Eye + CamRight * p.x + CamUp * p.y + CamForward * p.z, facing = CamRight * n.x + CamUp * n.y + CamForward * n.z;
+    float seen = KeySeen(world + facing * (0.012 + 0.0015 * p.z), i.Position.xy);
+    return float4(seen, seen, seen, 1);
+}
+#endif
+
+// That picture smoothed along one axis (InstanceBase: 0 across, 1 down), seven pixels wide, each neighbour counted as far as it lies
+// at the pixel's own distance: the last of the rays' grain goes, a shadow does not run over the edge of what it lies on.
+float4 ShadeBlurPS(SkyOut i) : SV_Target
+{
+    int2 px = int2(i.Position.xy), along = InstanceBase ? int2(0, 1) : int2(1, 0);
+    float z0 = ViewDistance(px), sum = LensA.Load(int3(px, 0)).r, n = 1;
+    [unroll] for (int k = -3; k <= 3; k++)
+    {
+        if (k == 0) continue;
+        int2 q = clamp(px + along * k, 0, int2(ViewSize) - 1);
+        float w = exp(-k * k / 4.5) * saturate(1 - abs(ViewDistance(q) - z0) / (0.02 * z0 + 0.01));
+        sum += LensA.Load(int3(q, 0)).r * w; n += w;
+    }
+    return float4(sum / n, 0, 0, 1);
 }
