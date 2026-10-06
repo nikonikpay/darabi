@@ -2,11 +2,13 @@
 // Passes: the sun's shadow map and, once, the view straight down that says where the open sky is (both depth only); the pool's mirror
 // image (the scene drawn again from the eye reflected in the water, when the load level asks for it); the frame's depth alone, from
 // which the ambient occlusion image is worked out; then the frame itself - sky, solid geometry, leaves (alpha tested, or alpha to
-// coverage under MSAA) and last the see-through water and glass. Depth is reversed (1 at the near plane, 0 infinitely far), which keeps
-// surfaces a centimetre apart from flickering across the whole garden. Compiled offline by tools/compile-gpu-shaders.ps1.
+// coverage under MSAA) and last the see-through water and glass - in light's own units (Packed into ten bits a colour); and the lens:
+// the glow of what is bright (halved five times and summed back up), the blur of what is out of focus, the tone curve.
+// Depth is reversed (1 at the near plane, 0 infinitely far), which keeps surfaces a centimetre apart from flickering across the whole
+// garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
-           "DescriptorTable(SRV(t3, numDescriptors=7)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
@@ -24,6 +26,8 @@ Texture2D<float4> BackdropImage : register(t6);
 Texture2D<float> SkyMap : register(t7);        // depth seen from straight above
 Texture2D<float> SceneDepth : register(t8);    // the frame's own depth, one sample a pixel
 Texture2D<float> Occlusion : register(t9);     // the ambient occlusion worked out from it
+Texture2D<float4> LensA : register(t10);       // the lens passes: what this one reads (the frame, or a level of its glow)
+Texture2D<float4> LensB : register(t11);       // the last pass: the glow, to add to the frame
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
 SamplerState Clamp : register(s2);
@@ -73,8 +77,11 @@ void ShadowPS(ShadowOut i)
     if (m.Kind == KCutout && Textures.Sample(Aniso, float3(m.Pattern.x > 0 ? i.Uv * m.Pattern.xy : i.Uv, m.Texture)).a < 0.5) discard;
 }
 
-// A pixel's own angle, to turn each pixel's ring of taps differently (interleaved gradient noise: Jimenez 2014).
-float Turn(float2 pixel) { return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715)))) * 2 * Pi; }
+// The frame's light as it is kept until the lens: squeezed into 0..1 (c / (1 + its brightest colour)) and stored as its square root,
+// which ten bits a colour hold without banding from the hall's shade up to the sun's glint. Averaging the squeezed values (MSAA's
+// resolve, a see-through surface's blend) weighs a pixel's samples as the eye would, so a bright edge stays smooth.
+float3 Pack(float3 c) { c = max(c, 0); return sqrt(c / (1 + max(c.r, max(c.g, c.b)))); }
+float3 Unpack(float3 p) { float3 c = p * p; return c / max(1 - max(c.r, max(c.g, c.b)), 1.0 / 128); }
 
 float Shadow(float3 p, float3 n)
 {
@@ -166,9 +173,9 @@ float4 Opaque(VOut i, bool cutout)
         float inner = lerp(0.42, 1, i.Out * i.Out);
         float3 c = Lit(s, i.World, v, i.Position.xy) - s.Albedo * Ambient(s.Normal) * (1 - inner) * 0.6;
         if (SunOn > 0) c += s.Albedo * s.Albedo * SunColor * 0.35 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n) * inner;
-        return float4(Tonemap(Haze(max(c, 0), i.World)), alpha);
+        return float4(Pack(Haze(max(c, 0), i.World)), alpha);
     }
-    return float4(Tonemap(Haze(Lit(s, i.World, v, i.Position.xy), i.World)), alpha);
+    return float4(Pack(Haze(Lit(s, i.World, v, i.Position.xy), i.World)), alpha);
 }
 
 float4 OpaquePS(VOut i) : SV_Target { return Opaque(i, false); }
@@ -188,15 +195,14 @@ float4 TransparentPS(VOut i) : SV_Target
         if ((Flags & 1) && abs(i.World.y - WaterLevel) < 0.2)
         {
             float2 uv = i.Position.xy / ViewSize + n.xz * 0.04;
-            reflected = Reflection.SampleLevel(Clamp, uv, 0).rgb;   // already tone-mapped
-            float3 sunGlint = pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n);
-            reflected += Tonemap(sunGlint);
+            reflected = Unpack(Reflection.SampleLevel(Clamp, uv, 0).rgb);
         }
-        else reflected = Tonemap(Sky(reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n));
+        else reflected = Sky(reflect(-v, n));
+        reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n);   // the sun's glint
         // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and a faint teal body
-        float3 body = Tonemap(m.Base * Ambient(float3(0, 1, 0)) * 0.5);
+        float3 body = m.Base * Ambient(float3(0, 1, 0)) * 0.5;
         float a = fresnel + (1 - fresnel) * 0.22;
-        return float4((reflected * fresnel + body * (1 - fresnel) * 0.22) / a, a);
+        return float4(Pack((reflected * fresnel + body * (1 - fresnel) * 0.22) / a), a);
     }
     // glass: the sky's mirror image on it and the sun's glint, over its own colour - a stained pane lets through about half of what
     // is behind it, in its colour; clear glass nearly all
@@ -209,7 +215,7 @@ float4 TransparentPS(VOut i) : SV_Target
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
     float density = m.Alpha < 1 ? m.Alpha : lerp(0.08, 0.6, saturation);
     float a = fresnel + (1 - fresnel) * density;
-    return float4(Tonemap((mirrored * fresnel + own * (1 - fresnel) * density) / a), a);
+    return float4(Pack((mirrored * fresnel + own * (1 - fresnel) * density) / a), a);
 }
 
 // The sky: a full-screen triangle behind everything (depth 0: infinitely far).
@@ -225,7 +231,60 @@ SkyOut SkyVS(uint vertex : SV_VertexID)
 float4 SkyPS(SkyOut i) : SV_Target
 {
     float3 dir = normalize(CamForward + CamRight * i.Ndc.x * TanHalfFovY * Aspect + CamUp * i.Ndc.y * TanHalfFovY);
-    return float4(Tonemap(Sky(dir)), 1);
+    return float4(Pack(Sky(dir)), 1);
+}
+
+// ——— the lens ———
+// The glow: the frame's bright part at half its size, halved again four times (each level the mean of four by four texels of the one
+// before, through four bilinear taps), then each level laid over the one above it through a tent of nine taps and added: a bright point
+// ends as a soft halo some tens of pixels wide, a thirty-second of the work at each step down.
+float2 LensUv(SkyOut i) { return i.Ndc * float2(0.5, -0.5) + 0.5; }
+float2 LensTexel() { float w, h; LensA.GetDimensions(w, h); return 1 / float2(w, h); }
+
+float4 GlowFirstPS(SkyOut i) : SV_Target
+{
+    float2 uv = LensUv(i), t = LensTexel(); float3 c = 0;
+    [unroll] for (int k = 0; k < 4; k++) c += Glow(Unpack(LensA.SampleLevel(Clamp, uv + float2(k & 1 ? 1 : -1, k & 2 ? 1 : -1) * t, 0).rgb));
+    return float4(c / 4, 1);
+}
+
+float4 GlowDownPS(SkyOut i) : SV_Target
+{
+    float2 uv = LensUv(i), t = LensTexel(); float3 c = 0;
+    [unroll] for (int k = 0; k < 4; k++) c += LensA.SampleLevel(Clamp, uv + float2(k & 1 ? 1 : -1, k & 2 ? 1 : -1) * t, 0).rgb;
+    return float4(c / 4, 1);
+}
+
+// Added to the level it is drawn over (the pipeline blends one and one).
+float4 GlowUpPS(SkyOut i) : SV_Target
+{
+    float2 uv = LensUv(i), t = LensTexel(); float3 c = 0;
+    [unroll] for (int y = -1; y <= 1; y++) [unroll] for (int x = -1; x <= 1; x++) c += LensA.SampleLevel(Clamp, uv + float2(x, y) * t, 0).rgb * ((2 - abs(x)) * (2 - abs(y)) / 16.0);
+    return float4(c, 1);
+}
+
+float ViewDistance(int2 pixel) { return Ambience.z / max(SceneDepth.Load(int3(clamp(pixel, 0, int2(ViewSize) - 1), 0)), 1e-6); }
+
+// The frame through the lens: each pixel gathers, from a disc of taps as wide as the most blur, the pixels whose own blur reaches
+// it (what lies behind a pixel in focus does not spill over it); the glow is added; the tone curve makes the picture.
+float4 LensPS(SkyOut i) : SV_Target
+{
+    int2 px = int2(i.Position.xy);
+    float3 c = Unpack(LensA.Load(int3(px, 0)).rgb); int taps = (int)Lens.w;
+    if (taps > 0)
+    {
+        float z0 = ViewDistance(px), b0 = Blur(z0), a = Turn(i.Position.xy), n = 1;
+        [loop] for (int k = 0; k < taps; k++)
+        {
+            float r = sqrt((k + 0.5) / taps) * Lens.z, t = k * 2.399963 + a;
+            int2 q = clamp(px + int2(round(float2(cos(t), sin(t)) * r)), 0, int2(ViewSize) - 1);
+            float zq = ViewDistance(q), bq = Blur(zq); if (zq > z0) bq = min(bq, b0 * 2);
+            c += lerp(c / n, Unpack(LensA.Load(int3(q, 0)).rgb), smoothstep(r - 0.5, r + 0.5, bq)); n += 1;
+        }
+        c /= n;
+    }
+    c += LensB.SampleLevel(Clamp, LensUv(i), 0).rgb * Post.x;
+    return float4(Finished(c, uint2(px)), 1);
 }
 
 // ——— ambient occlusion ———

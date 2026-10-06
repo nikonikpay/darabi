@@ -24,6 +24,8 @@ cbuffer Frame : register(b1)
     float4 Fountain;                      // the fountain's nozzle, and the radius of the water in its bowl
     float4 Fountain2;                     // that water's level, the radius of the bowl's rim, how many droplets are the jet's (the rest spill from the rim), 1 when there is a fountain
     float4 Ambience;                      // rasteriser: 1 when the occlusion image is bound, its taps, the near plane's distance
+    float4 Lens;                          // the distance in focus, the blur in pixels a dioptre out of focus brings, the most blur in pixels, the taps it is gathered with (0: none)
+    float4 Post;                          // how much of the glow round bright things is added to the frame
 };
 
 // Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index
@@ -295,6 +297,23 @@ float3 Tonemap(float3 c)
     c = saturate((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14));   // ACES (Narkowicz)
     return pow(c, 1 / 2.2);
 }
+
+// ——— the lens ———
+// Both renderers work the frame out in light's own units and only then pass it through a lens: what is out of focus is blurred, what
+// is bright glows into its surroundings, and last the tone curve makes a picture of it.
+
+// A pixel's own angle, to turn each pixel's ring of taps differently (interleaved gradient noise: Jimenez 2014).
+float Turn(float2 pixel) { return frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715)))) * 2 * Pi; }
+
+// How far out of focus, in pixels of blur, a surface dist away is.
+float Blur(float dist) { return min(abs(1 / Lens.x - 1 / max(dist, 0.05)) * Lens.y, Lens.z); }
+
+// The part of a pixel's light that glows: what the tone curve cannot hold (the sun on the water, a lamp, the sky round the sun).
+float3 Glow(float3 c) { float l = dot(c, float3(0.3, 0.59, 0.11)) * Exposure; return min(c, 24 / Exposure) * smoothstep(0.85, 3.5, l); }
+
+// The finished pixel: tone-mapped, with a grain of less than one step of the eight bits it is stored in, so that the sky's slow
+// gradients do not show as bands. The grain is the pixel's own (a hash of where it is): the same frame is the same bits.
+float3 Finished(float3 c, uint2 pixel) { return Tonemap(c) + (Hash01(pixel.x * 7919 + pixel.y * 104729 + 3) - 0.5) / 255; }
 
 float3 WaterNormal(float3 p, float t)
 {

@@ -31,10 +31,15 @@ $jobs = @(
     @('GardenRaster.hlsl', 'SkyVS', 'vs_6_0', 'GardenSkyVS.cso'),
     @('GardenRaster.hlsl', 'SkyPS', 'ps_6_0', 'GardenSkyPS.cso'),
     @('GardenRaster.hlsl', 'AoPS', 'ps_6_0', 'GardenAoPS.cso'),
+    @('GardenRaster.hlsl', 'GlowFirstPS', 'ps_6_0', 'GardenGlowFirstPS.cso'),
+    @('GardenRaster.hlsl', 'GlowDownPS', 'ps_6_0', 'GardenGlowDownPS.cso'),
+    @('GardenRaster.hlsl', 'GlowUpPS', 'ps_6_0', 'GardenGlowUpPS.cso'),
+    @('GardenRaster.hlsl', 'LensPS', 'ps_6_0', 'GardenLensPS.cso'),
     @('SceneOverlay.hlsl', 'OverlayVS', 'vs_6_0', 'SceneOverlayVS.cso'),
     @('SceneOverlay.hlsl', 'OverlayPS', 'ps_6_0', 'SceneOverlayPS.cso'),
     @('GardenRay.hlsl', 'Main', 'cs_6_5', 'GardenRay.cso'),
-    @('GardenRay.hlsl', 'Denoise', 'cs_6_5', 'GardenDenoise.cso')
+    @('GardenRay.hlsl', 'Denoise', 'cs_6_5', 'GardenDenoise.cso'),
+    @('GardenRay.hlsl', 'Finish', 'cs_6_5', 'GardenFinish.cso')
 )
 foreach ($j in $jobs) {
     & $dxc.FullName -nologo -O3 -Qstrip_debug -Qstrip_reflect -E $j[1] -T $j[2] -Fo (Join-Path $dir $j[3]) (Join-Path $dir $j[0])

@@ -11,10 +11,10 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 internal sealed unsafe class GardenRay : GardenRenderer
 {
-    [StructLayout(LayoutKind.Sequential)] private readonly record struct Pass(uint Step, uint Last);
+    [StructLayout(LayoutKind.Sequential)] private readonly record struct Pass(uint Step, uint Last, uint Stage = 0, uint Pad = 0);
     [StructLayout(LayoutKind.Sequential, Size = 64)] private struct InstanceDesc { public fixed float Transform[12]; public uint IdAndMask, OffsetAndFlags; public ulong Blas; }
 
-    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise;
+    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise, _finish;
     private readonly ID3D12Resource _tlas, _tlasScratch, _instances, _pixels, _constants, _ping, _pong, _guide; private readonly uint _pitch;
     private readonly ulong[] _blas; private readonly byte[] _masks; private readonly Matrix4x4[] _dequant;
     private readonly BuildRaytracingAccelerationStructureInputs _tlasInputs;
@@ -22,7 +22,8 @@ internal sealed unsafe class GardenRay : GardenRenderer
     public int Bounces { get; } = 4;
     /// <summary>Camera rays a pixel: each with its own soft-shadow rays to every lamp and its own bounced-light ray.</summary>
     public int Samples { get; }
-    /// <summary>The denoiser's passes (taps 1, 2, 4, 8 pixels apart): an edge-aware filter over this frame's light alone.</summary>
+    /// <summary>The denoiser's passes (taps 1, 2, 4, 8 pixels apart): an edge-aware filter over this frame's light alone. An even
+    /// number: the last one leaves the frame's light in the first of the two buffers, where the lens's passes look for it.</summary>
     public int DenoisePasses { get; } = 4;
 
     public GardenRay(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, int samples = 4) : base(s, g, width, height, targets)
@@ -32,6 +33,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
         _root = s.Own(s.Device.CreateRootSignature(cs));
         _pipeline = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = cs }));
         _denoise = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenDenoise") }));
+        _finish = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenFinish") }));
         _pitch = ((uint)width + 63) & ~63u;
         _pixels = s.UavBuffer((ulong)_pitch * (ulong)height * 4);
         ulong px = (ulong)width * (ulong)height * 16;
@@ -133,11 +135,19 @@ internal sealed unsafe class GardenRay : GardenRenderer
         l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
         l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_guide);
         l.SetPipelineState(_denoise);
-        for (int k = 0; k < DenoisePasses; k++)   // Ping -> Pong -> Ping ...; the last pass writes the pixels
+        for (int k = 0; k < DenoisePasses; k++)   // Ping -> Pong -> Ping ...; the last pass leaves the frame's light, surface colour and all
         {
             l.SetComputeRoot32BitConstants(14, new Pass((uint)(1 << k) | (k % 2 == 1 ? 1u << 16 : 0), k == DenoisePasses - 1 ? 1u : 0), 0);
             l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
             l.ResourceBarrierUnorderedAccessView(_ping); l.ResourceBarrierUnorderedAccessView(_pong);
+        }
+        // the lens: the glow at a quarter of the size (its bright part, then three blurs across and down), then the picture
+        l.SetPipelineState(_finish);
+        for (uint stage = 0; stage <= 7; stage++)
+        {
+            l.SetComputeRoot32BitConstants(14, new Pass(0, 0, stage), 0);
+            if (stage < 7) l.Dispatch((((uint)Width + 3) / 4 + 7) / 8, (((uint)Height + 3) / 4 + 7) / 8, 1); else l.Dispatch(((uint)Width + 7) / 8, ((uint)Height + 7) / 8, 1);
+            l.ResourceBarrierUnorderedAccessView(_pong);
         }
         l.ResourceBarrierUnorderedAccessView(_pixels);
     }

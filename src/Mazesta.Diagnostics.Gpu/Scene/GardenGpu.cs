@@ -344,7 +344,7 @@ internal struct GardenFrame
     public uint Samples, Pad0, Pad1, Pad2;
     public Vector4 Backdrop;
     public Matrix4x4 SkyViewProj;
-    public Vector4 Fountain, Fountain2, Ambience;
+    public Vector4 Fountain, Fountain2, Ambience, Lens, Post;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>
@@ -376,6 +376,11 @@ internal struct GardenFrame
         };
         if (g.Fountain is { } fountain) { f.Fountain = new(fountain.Nozzle, fountain.BowlRadius); f.Fountain2 = new(fountain.BowlLevel, fountain.RimRadius, GardenGpu.JetDroplets, 1); }
         f.Ambience = new(0, 0, Near, 0);
+        // The lens is focused on what the walk is looking at, and wide enough open that the far end of the garden and the hills go
+        // soft from the terrace, and a door's leaf an arm's length away from the middle of a room: blur in pixels = 2.2 % of the
+        // frame's height for each dioptre out of focus, and never more than 0.7 % of it.
+        f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.022f * height, 0.007f * height, 16);
+        f.Post = new(raster ? 0.11f : 0.55f, 0, 0, 0);   // the rasteriser's glow is five levels summed, the ray tracer's one
         var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, raster ? 0 : 0.45f);   // at night the logo is a lit sign: it glows of itself
         return f;
     }

@@ -5,30 +5,34 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>
 /// Draws the garden with Direct3D 12 rasterisation (GardenRaster.hlsl): the sun's shadow map, a map of where the sky stands open
 /// (the scene seen from straight above, drawn once), the pool's mirror image, the frame's depth and the ambient occlusion worked out
-/// from it, and the frame, into any of the targets it was given (the swap chain's back buffers) or its own off-screen one for the check
-/// frames. The load level sets how much work a frame is: the shadows' filter, the occlusion's taps, whether the pool reflects the garden
-/// (and at what resolution), and MSAA.
+/// from it, the frame in light's own units, and the lens (the glow round what is bright, the blur of what is out of focus, the tone
+/// curve) into any of the targets it was given (the swap chain's back buffers) or its own off-screen one for the check frames.
+/// The load level sets how much work a frame is: the shadows' filter, the occlusion's taps, whether the pool reflects the garden
+/// (and at what resolution), the lens's taps, and MSAA.
 /// </summary>
 internal sealed unsafe class GardenRaster : GardenRenderer
 {
     [StructLayout(LayoutKind.Sequential)] private struct DrawConstants { public uint InstanceBase, Material, Pad0, Pad1; public Vector3 Centre; public float Pad2; public Vector3 Extent; public float Pad3; }
-    public readonly record struct Settings(int ShadowSize, int ShadowTaps, int Samples, int ReflectionDivisor, int OcclusionTaps)
+    public readonly record struct Settings(int ShadowSize, int ShadowTaps, int Samples, int ReflectionDivisor, int OcclusionTaps, int LensTaps)
     {
         /// <summary>Per load level 1..4: light, medium, heavy, extreme. The shadow map is as fine at every level: the sun is low, its
         /// shadows long, and all but the moving things' share of it is drawn once.</summary>
         public static Settings ForLoad(uint load) => load switch
         {
-            1 => new(4096, 1, 1, 0, 8), 2 => new(4096, 1, 2, 2, 10), 3 => new(4096, 2, 4, 1, 14), _ => new(4096, 3, 8, 1, 20)
+            1 => new(4096, 1, 1, 0, 8, 8), 2 => new(4096, 1, 2, 2, 10, 12), 3 => new(4096, 2, 4, 1, 14, 16), _ => new(4096, 3, 8, 1, 20, 28)
         };
     }
 
     /// <summary>One pass's constants (GardenFrame, 448 bytes) at a 256-byte-aligned slot: the frame, its mirror image, its depth alone,
     /// and (once) the view from above.</summary>
-    private const ulong Slot = 512; private const int Slots = 4, SkySize = 2048;
+    private const ulong Slot = 512; private const int Slots = 4, SkySize = 2048, GlowLevels = 5;
+    /// <summary>The frame's light before the lens: ten bits a colour (GardenRaster.hlsl's Pack). The glow: floats.</summary>
+    private const Format Light = Format.R10G10B10A2_UNorm, GlowFormat = Format.R11G11B10_Float;
     private readonly Settings _set; private readonly int _samples;
     private readonly ID3D12RootSignature _root;
-    private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude;
-    private readonly ID3D12Resource _shadowMap, _shadowStatic, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion;
+    private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens;
+    private readonly ID3D12Resource _shadowMap, _shadowStatic, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light;
+    private readonly ID3D12Resource[] _glow = new ID3D12Resource[GlowLevels]; private readonly uint _srvSize;
     private readonly ID3D12DescriptorHeap _srv, _rtv, _dsv; private readonly uint _rtvSize, _dsvSize;
     private readonly int _reflW, _reflH;
     private readonly Matrix4x4 _shadowViewProj, _skyViewProj;
@@ -58,7 +62,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             }));
         var shadowRaster = new RasterizerDescription(CullMode.None, FillMode.Solid) { DepthBias = 800, SlopeScaledDepthBias = 2.0f, DepthClipEnable = true };
         _shadow = Make(shadowVs, shadowPs, BlendDescription.Opaque, DepthStencilDescription.Default, 1, [], raster: shadowRaster);
-        Format[] color = [Format.R8G8B8A8_UNorm];
+        Format[] color = [Light];
         _sky = Make(skyVs, skyPs, BlendDescription.Opaque, skyDepth, _samples, color, input: false);
         _opaque = Make(vs, opaquePs, BlendDescription.Opaque, nearer, _samples, color);
         _cutout = Make(vs, cutoutPs, _samples > 1 ? a2c : BlendDescription.Opaque, nearer, _samples, color);
@@ -73,6 +77,10 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         else _skyR = _opaqueR = _cutoutR = _transparentR = _sky;
         _depthOnly = Make(shadowVs, shadowPs, BlendDescription.Opaque, nearer, 1, []);
         _occlude = Make(skyVs, D3D12Session.Shader("GardenAoPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [Format.R8_UNorm], input: false);
+        _glowFirst = Make(skyVs, D3D12Session.Shader("GardenGlowFirstPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [GlowFormat], input: false);
+        _glowDown = Make(skyVs, D3D12Session.Shader("GardenGlowDownPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [GlowFormat], input: false);
+        _glowUp = Make(skyVs, D3D12Session.Shader("GardenGlowUpPS"), new BlendDescription(Blend.One, Blend.One), DepthStencilDescription.None, 1, [GlowFormat], input: false);
+        _lens = Make(skyVs, D3D12Session.Shader("GardenLensPS"), BlendDescription.Opaque, DepthStencilDescription.None, 1, [Format.R8G8B8A8_UNorm], input: false);
 
         // targets: the shadow map, the reflection (a 4x4 stand-in when the level has none), the MSAA frame and its depth
         _shadowMap = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, (uint)_set.ShadowSize, (uint)_set.ShadowSize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
@@ -89,20 +97,28 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         _occlusion = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(Format.R8_UNorm, new Color4(1, 1, 1, 1))));
         _reflW = _set.ReflectionDivisor > 0 ? Math.Max(4, width / _set.ReflectionDivisor) : 4; _reflH = _set.ReflectionDivisor > 0 ? Math.Max(4, height / _set.ReflectionDivisor) : 4;
-        _reflection = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)_reflW, (uint)_reflH, 1, 1, flags: ResourceFlags.AllowRenderTarget),
-            ResourceStates.PixelShaderResource, new ClearValue(Format.R8G8B8A8_UNorm, new Color4(0, 0, 0, 1))));
+        _reflection = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Light, (uint)_reflW, (uint)_reflH, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+            ResourceStates.PixelShaderResource, new ClearValue(Light, new Color4(0, 0, 0, 1))));
         _reflectionDepth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)_reflW, (uint)_reflH, 1, 1, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 0f, 0)));
         _depth = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.D32_Float, (uint)width, (uint)height, 1, 1, sampleCount: (uint)_samples, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 0f, 0)));
         _msaa = _samples > 1
-            ? s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, sampleCount: (uint)_samples, flags: ResourceFlags.AllowRenderTarget),
-                ResourceStates.RenderTarget, new ClearValue(Format.R8G8B8A8_UNorm, new Color4(0, 0, 0, 1))))
+            ? s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Light, (uint)width, (uint)height, 1, 1, sampleCount: (uint)_samples, flags: ResourceFlags.AllowRenderTarget),
+                ResourceStates.RenderTarget, new ClearValue(Light, new Color4(0, 0, 0, 1))))
             : _depth;   // unused at one sample
+        // The frame's light at one sample a pixel (what MSAA resolves into), and its glow: half the frame's size, and four halvings of that.
+        _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Light, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+            ResourceStates.PixelShaderResource, new ClearValue(Light, new Color4(0, 0, 0, 1))));
+        for (int k = 0; k < GlowLevels; k++)
+            _glow[k] = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(GlowFormat, (uint)GlowSize(k).W, (uint)GlowSize(k).H, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+                ResourceStates.PixelShaderResource, new ClearValue(GlowFormat, new Color4(0, 0, 0, 1))));
         _constants = s.Buffer(Slot * Slots, HeapType.Upload, ResourceStates.GenericRead);
 
-        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 7, DescriptorHeapFlags.ShaderVisible, 0)));
-        uint srvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
+        // the shader's views: the scene's seven (t3..t9), then the lens's - the frame's light, the glow's levels, and the last level again
+        // (a lens pass sees two views in a row: what it reads, and what follows it)
+        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, LensViews + GlowLevels + 2, DescriptorHeapFlags.ShaderVisible, 0)));
+        uint srvSize = _srvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle Srv(int i) => _srv.GetCPUDescriptorHandleForHeapStart().Offset(i, srvSize);   // Offset moves the handle it is called on: start afresh each time
         s.Device.CreateShaderResourceView(g.Textures, g.TextureView, Srv(0));
         s.Device.CreateShaderResourceView(_shadowMap, new ShaderResourceViewDescription { Format = Format.R32_Float, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D, Shader4ComponentMapping = ShaderComponentMapping.Default, Texture2D = new Texture2DShaderResourceView { MipLevels = 1 } }, Srv(1));
@@ -112,13 +128,17 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         s.Device.CreateShaderResourceView(_skyMap, depthView, Srv(4));
         s.Device.CreateShaderResourceView(_sceneDepth, depthView, Srv(5));
         s.Device.CreateShaderResourceView(_occlusion, null, Srv(6));
+        s.Device.CreateShaderResourceView(_light, null, Srv(LensViews));
+        for (int k = 0; k <= GlowLevels; k++) s.Device.CreateShaderResourceView(_glow[Math.Min(k, GlowLevels - 1)], null, Srv(LensViews + 1 + k));
 
-        _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)Targets.Length + 3, DescriptorHeapFlags.None, 0)));
+        _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)Targets.Length + 4 + GlowLevels, DescriptorHeapFlags.None, 0)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
         for (int i = 0; i < Targets.Length; i++) s.Device.CreateRenderTargetView(Targets[i], null, Rtv(i));
         s.Device.CreateRenderTargetView(_reflection, null, Rtv(Targets.Length));
         if (_samples > 1) s.Device.CreateRenderTargetView(_msaa, null, Rtv(Targets.Length + 1));
         s.Device.CreateRenderTargetView(_occlusion, null, Rtv(Targets.Length + 2));
+        s.Device.CreateRenderTargetView(_light, null, Rtv(Targets.Length + 3));
+        for (int k = 0; k < GlowLevels; k++) s.Device.CreateRenderTargetView(_glow[k], null, Rtv(Targets.Length + 4 + k));
         _dsv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, 6, DescriptorHeapFlags.None, 0)));
         _dsvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
         s.Device.CreateDepthStencilView(_depth, null, Dsv(0));
@@ -132,19 +152,24 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     }
 
     public int Samples => _samples;
+    private const int LensViews = 7;
+    private (int W, int H) GlowSize(int level) => (Math.Max(1, Width >> (level + 1)), Math.Max(1, Height >> (level + 1)));
+    private GpuDescriptorHandle LensView(int i) => _srv.GetGPUDescriptorHandleForHeapStart().Offset(LensViews + i, _srvSize);
 
-    /// <summary>For the render checks: the pool's mirror image of the last frame drawn, RGBA8 rows (its own size).</summary>
+    /// <summary>For the render checks: the pool's mirror image of the last frame drawn, rows of its own size, as RGBA8 to look at
+    /// (the square root of the squeezed light is close to what a screen shows).</summary>
     internal (uint[] Pixels, int Width, int Height) ReflectionImage()
     {
         uint pitch = ((uint)_reflW * 4 + 255) & ~255u;
         var raw = S.Read((int)(pitch / 4 * _reflH), (l, readback) =>
         {
             l.ResourceBarrierTransition(_reflection, ResourceStates.PixelShaderResource, ResourceStates.CopySource);
-            l.CopyTextureRegion(new TextureCopyLocation(readback, new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Format.R8G8B8A8_UNorm, (uint)_reflW, (uint)_reflH, 1, pitch) }), 0, 0, 0, new TextureCopyLocation(_reflection, 0));
+            l.CopyTextureRegion(new TextureCopyLocation(readback, new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Light, (uint)_reflW, (uint)_reflH, 1, pitch) }), 0, 0, 0, new TextureCopyLocation(_reflection, 0));
             l.ResourceBarrierTransition(_reflection, ResourceStates.CopySource, ResourceStates.PixelShaderResource);
         });
         var px = new uint[_reflW * _reflH];
-        for (int y = 0; y < _reflH; y++) raw.AsSpan((int)(y * pitch / 4), _reflW).CopyTo(px.AsSpan(y * _reflW));
+        for (int y = 0; y < _reflH; y++)
+            for (int x = 0; x < _reflW; x++) { uint p = raw[(int)(y * pitch / 4) + x]; px[y * _reflW + x] = (p >> 2 & 255) | (p >> 12 & 255) << 8 | (p >> 22 & 255) << 16 | 0xFF000000; }
         return (px, _reflW, _reflH);
     }
     public Settings Level => _set;
@@ -156,7 +181,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     {
         for (int n = wanted; n > 1; n /= 2)
         {
-            var q = new FeatureDataMultisampleQualityLevels { Format = Format.R8G8B8A8_UNorm, SampleCount = (uint)n };
+            var q = new FeatureDataMultisampleQualityLevels { Format = Light, SampleCount = (uint)n };
             if (s.Device.CheckFeatureSupport(Vortice.Direct3D12.Feature.MultisampleQualityLevels, ref q) && q.NumQualityLevels > 0) return n;
         }
         return 1;
@@ -184,7 +209,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     {
         var frame = GardenFrame.For(G, time, Width, Height);
         frame.ShadowViewProj = _shadowViewProj; frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
-        frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0);
+        frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps;
         if (_set.ReflectionDivisor > 0) frame.Flags |= 1;
         if (_samples > 1) frame.Flags |= 4;
         var mirrored = frame.Mirrored(); mirrored.Flags &= ~4u; mirrored.ViewSize = new(_reflW, _reflH);
@@ -255,21 +280,32 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetPipelineState(_occlude); l.DrawInstanced(3, 1, 0, 0);
         l.ResourceBarrierTransition(_occlusion, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
 
-        // 4. the frame
-        var dest = Targets[target];
-        var rtv = _samples > 1 ? Rtv(Targets.Length + 1) : Rtv(target);
-        if (_samples == 1) l.ResourceBarrierTransition(dest, ResourceStates.Present, ResourceStates.RenderTarget);
+        // 4. the frame's light
+        var rtv = _samples > 1 ? Rtv(Targets.Length + 1) : Rtv(Targets.Length + 3);
+        if (_samples == 1) l.ResourceBarrierTransition(_light, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
         l.ClearDepthStencilView(Dsv(0), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets(rtv, Dsv(0));
         Pass(l, _sky, _opaque, _cutout, _transparent, skipWater: false);
         if (_samples > 1)
         {
             l.ResourceBarrierTransition(_msaa, ResourceStates.RenderTarget, ResourceStates.ResolveSource);
-            l.ResourceBarrierTransition(dest, ResourceStates.Present, ResourceStates.ResolveDest);
-            l.ResolveSubresource(dest, 0, _msaa, 0, Format.R8G8B8A8_UNorm);
-            l.ResourceBarrierTransition(dest, ResourceStates.ResolveDest, ResourceStates.Present);
+            l.ResourceBarrierTransition(_light, ResourceStates.PixelShaderResource, ResourceStates.ResolveDest);
+            l.ResolveSubresource(_light, 0, _msaa, 0, Light);
+            l.ResourceBarrierTransition(_light, ResourceStates.ResolveDest, ResourceStates.PixelShaderResource);
             l.ResourceBarrierTransition(_msaa, ResourceStates.ResolveSource, ResourceStates.RenderTarget);
         }
-        else l.ResourceBarrierTransition(dest, ResourceStates.RenderTarget, ResourceStates.Present);
+        else l.ResourceBarrierTransition(_light, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
+
+        // 5. the lens: the glow down its levels and summed back up, then the picture
+        void Full(ID3D12PipelineState pipeline, ID3D12Resource to, CpuDescriptorHandle view, int w, int h, int reads)
+        {
+            l.ResourceBarrierTransition(to, to == Targets[target] ? ResourceStates.Present : ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
+            l.OMSetRenderTargets(view, null); l.RSSetViewport(0, 0, w, h); l.RSSetScissorRect(w, h);
+            l.SetGraphicsRootDescriptorTable(6, LensView(reads)); l.SetPipelineState(pipeline); l.DrawInstanced(3, 1, 0, 0);
+            l.ResourceBarrierTransition(to, ResourceStates.RenderTarget, to == Targets[target] ? ResourceStates.Present : ResourceStates.PixelShaderResource);
+        }
+        for (int k = 0; k < GlowLevels; k++) Full(k == 0 ? _glowFirst : _glowDown, _glow[k], Rtv(Targets.Length + 4 + k), GlowSize(k).W, GlowSize(k).H, k);
+        for (int k = GlowLevels - 2; k >= 0; k--) Full(_glowUp, _glow[k], Rtv(Targets.Length + 4 + k), GlowSize(k).W, GlowSize(k).H, k + 2);
+        Full(_lens, Targets[target], Rtv(target), Width, Height, 0);
     }
 
     private void Pass(ID3D12GraphicsCommandList4 l, ID3D12PipelineState sky, ID3D12PipelineState opaque, ID3D12PipelineState cutout, ID3D12PipelineState transparent, bool skipWater)

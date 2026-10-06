@@ -4,11 +4,12 @@
 // the moon crosses the sky as the walk goes on, and its shadows with it), coloured where it has come through a stained pane of the
 // hall's windows; one diffuse ray for the light bounced off nearby surfaces (global illumination); leaves are cut out of their cards
 // during traversal; the water reflects and refracts (into the lit pool), glass lets light through and mirrors, metal and polished stone
-// reflect (the mirror sphere gliding round the pool most of all) - up to Bounces deep.
+// reflect (the mirror sphere gliding round the pool most of all) - up to Bounces deep. After the denoiser the frame goes through the
+// same lens as the rasteriser's: what is out of focus blurred, a glow round the lamps and the moon, the tone curve.
 // The random numbers come from a hash of the pixel and sample, never the clock: the same Time gives the same image.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 
-#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8, numDescriptors=2)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=2, b2), " \
+#define RS "CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t3), SRV(t4), SRV(t5), SRV(t6), SRV(t7), DescriptorTable(SRV(t8, numDescriptors=2)), UAV(u0), UAV(u1), UAV(u2), UAV(u3), RootConstants(num32BitConstants=4, b2), " \
            "StaticSampler(s0, filter=FILTER_MIN_MAG_MIP_LINEAR)"
 
 #include "Garden.hlsli"
@@ -30,7 +31,7 @@ RWStructuredBuffer<uint> Pixels : register(u0);
 RWStructuredBuffer<float4> Ping : register(u1);    // the denoiser's light, as it goes from pass to pass (Ping -> Pong -> Ping ...)
 RWStructuredBuffer<float4> Guide : register(u2);   // per pixel: first surface's normal and distance, then its colour
 RWStructuredBuffer<float4> Pong : register(u3);
-cbuffer Pass : register(b2) { uint Step; uint Last; };   // Step: tap spacing, bit 16 set when this pass reads Pong
+cbuffer Pass : register(b2) { uint Step; uint Last; uint Stage; uint PassPad; };   // Step: tap spacing, bit 16 set when this pass reads Pong; Stage: the lens's pass
 SamplerState Linear : register(s0);
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Linear, uv, 0).rgb; }
@@ -297,10 +298,61 @@ void Denoise(uint3 id : SV_DispatchThreadID)
         }
     }
     float3 c = sum / wsum;
-    if (Last)
+    if (Last) c *= Guide[i * 2 + 1].rgb;   // the surface's own colour again: the frame's light, for the lens
+    if (fromPing) Pong[i] = float4(c, 0); else Ping[i] = float4(c, 0);
+}
+
+// The lens, as the rasteriser has it (Garden.hlsli): the frame's light is in Ping, and Pong, done with, holds the glow at a quarter
+// of the size each way - A, the bright part of the frame (Stage 0: the mean of four by four pixels), blurred across into B and down
+// back into A three times over, with taps one, two and four texels apart (Stages 1 to 6) - before the last pass (Stage 7) gathers
+// each pixel's blur from the pixels round it, adds the glow and writes the picture.
+uint2 GlowSize() { return uint2((Width + 3) / 4, (Height + 3) / 4); }
+float3 GlowAt(uint2 q, bool b) { uint2 s = GlowSize(); q = min(q, s - 1); return Pong[(b ? s.x * s.y : 0) + q.y * s.x + q.x].rgb; }
+
+[RootSignature(RS)]
+[numthreads(8, 8, 1)]
+void Finish(uint3 id : SV_DispatchThreadID)
+{
+    uint2 gs = GlowSize();
+    if (Stage == 0)
     {
-        uint3 o = (uint3)(Tonemap(c * Guide[i * 2 + 1].rgb) * 255 + 0.5);
+        if (id.x >= gs.x || id.y >= gs.y) return;
+        float3 c = 0;
+        [unroll] for (uint y = 0; y < 4; y++) [unroll] for (uint x = 0; x < 4; x++) { uint2 q = min(id.xy * 4 + uint2(x, y), uint2(Width, Height) - 1); c += Glow(Ping[q.y * Width + q.x].rgb); }
+        Pong[id.y * gs.x + id.x] = float4(c / 16, 0);
+    }
+    else if (Stage < 7)
+    {
+        if (id.x >= gs.x || id.y >= gs.y) return;
+        bool across = (Stage & 1) != 0; int step = (int)(1u << ((Stage - 1) / 2));
+        const float K[5] = { 0.2270270, 0.1945946, 0.1216216, 0.0540541, 0.0162162 };
+        float3 c = 0;
+        [unroll] for (int k = -4; k <= 4; k++) { int2 q = int2(id.xy) + (across ? int2(k, 0) : int2(0, k)) * step; c += GlowAt((uint2)max(q, 0), !across) * K[abs(k)]; }
+        Pong[(across ? gs.x * gs.y : 0) + id.y * gs.x + id.x] = float4(c, 0);
+    }
+    else
+    {
+        if (id.x >= Width || id.y >= Height) return;
+        uint i = id.y * Width + id.x; float3 c = Ping[i].rgb; int taps = (int)Lens.w;
+        if (taps > 0)
+        {
+            float z0 = Guide[i * 2].w; if (z0 <= 0) z0 = 1e6;
+            float b0 = Blur(z0), a = Turn(float2(id.xy) + 0.5), n = 1;
+            [loop] for (int k = 0; k < taps; k++)
+            {
+                float r = sqrt((k + 0.5) / taps) * Lens.z, t = k * 2.399963 + a;
+                int2 q = clamp(int2(id.xy) + int2(round(float2(cos(t), sin(t)) * r)), 0, int2(Width, Height) - 1); uint j = q.y * Width + q.x;
+                float zq = Guide[j * 2].w; if (zq <= 0) zq = 1e6;
+                float bq = Blur(zq); if (zq > z0) bq = min(bq, b0 * 2);
+                c += lerp(c / n, Ping[j].rgb, smoothstep(r - 0.5, r + 0.5, bq)); n += 1;
+            }
+            c /= n;
+        }
+        // the glow, between the four quarter-size texels round this pixel
+        float2 g = (float2(id.xy) + 0.5) / 4 - 0.5; int2 g0 = (int2)floor(g); float2 f = g - g0;
+        float3 glow = lerp(lerp(GlowAt((uint2)max(g0, 0), false), GlowAt((uint2)max(g0 + int2(1, 0), 0), false), f.x),
+                           lerp(GlowAt((uint2)max(g0 + int2(0, 1), 0), false), GlowAt((uint2)max(g0 + 1, 0), false), f.x), f.y);
+        uint3 o = (uint3)(saturate(Finished(c + glow * Post.x, id.xy)) * 255 + 0.5);
         Pixels[id.y * Pitch + id.x] = o.r | o.g << 8 | o.b << 16 | 0xFF000000;
     }
-    else if (fromPing) Pong[i] = float4(c, 0); else Ping[i] = float4(c, 0);
 }
