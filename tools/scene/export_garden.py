@@ -58,11 +58,13 @@ BUDGET = {"V7_Orsi_V7_Walnut": 260_000, "V7_OpenDoor_V7_Walnut": 80_000, "V8_Car
 # the trees beyond the walls are never nearer than fifteen metres.
 COPIES_BUDGET = {"V9_SOURCE_IvyLeaf": 260_000, "V10_SOURCE_VineLeaf": 110_000, "V10_SOURCE_VariegatedLeaf": 60_000, "V10_SOURCE_Broadleaf": 520_000,
                  "V9_SOURCE_Shrub": 520_000, "V10_SOURCE_Alpine": 420_000, "V9_SOURCE_Grass": 330_000, "V9_SOURCE_Daisy": 200_000, "V9_SOURCE_WhiteFlowers": 110_000}
-# Bevels are 2 to 4 mm wide and multiply the triangles by up to eight; subdivision smooths what is nearly flat. Neither is exported.
+# Bevels are 2 to 4 mm wide and multiply the triangles by up to eight; subdivision smooths what is nearly flat. The building keeps its
+# bevels - the edges of its stone, its steps and its woodwork catch the light as worn edges do, not as knife edges; nothing else is
+# exported with either.
 for o in bpy.data.objects:
     if o.type == 'MESH':
         for m in o.modifiers:
-            if m.type in ('BEVEL', 'SUBSURF'): m.show_viewport = m.show_render = False
+            if m.type == 'SUBSURF' or (m.type == 'BEVEL' and not o.name.startswith(KEEP_DETAIL)): m.show_viewport = m.show_render = False
 # A lantern's lamp is one asset in both scenes: by day it only glows, at night it lights the paving round it.
 LAMP_SCALE = {1: 0.1, 2: 0.45}
 # A photograph of leaves is far lighter than a leaf is: under this renderer's sun a crown would bleach. Leaf cards keep this much of it.
