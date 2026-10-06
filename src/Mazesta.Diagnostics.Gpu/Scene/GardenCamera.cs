@@ -4,10 +4,12 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>
 /// Where the visual test's camera is at a moment: a slow walk round the courtyard, the same loop every run (a pure function of time, so the
 /// check frames see one picture). It starts at the gate looking up the pool to the fountain and the logo, goes along the left outer walk
-/// (the walk lies between the beds at x -9.9 and -8.2; a bench stands on it twice, its back to the outer bed, and is passed in front) to the foot of the
-/// stairs, up onto the terrace and in at the hall's open door, round its rooms (the chandelier, the tea counter by the left wall, the
-/// two paintings and the reading table between them, the right sitting corner), out again onto the terrace looking back down the
-/// garden, down the right walk and home. Every key is six seconds from the next.
+/// (the walk lies between the beds at x -9.9 and -8.2; a bench stands on it twice, its back to the outer bed, and is passed in front) to
+/// the foot of the stairs, up onto the terrace and in at the hall's open door; round its rooms - along the orsi and the light they
+/// lay on the floor, the tea corner seen across the room, the paintings on the back wall and the reading table between them, the
+/// right sitting corner, the orsi again from within - out onto the terrace looking back down the garden, down the right walk and home.
+/// Every key is six seconds from the next. The garden's day (<see cref="GardenDay"/>) is timed by this walk: morning on the way up
+/// the garden, the afternoon sun coming in at the windows while it is in the hall, sunset as it leaves, night on the way back.
 /// Positions are in the scene's Direct3D axes (y up, z toward the hall); the paving is at y 0, the terrace at 1.07, the hall's floor at
 /// 1.11; the doorway is at z -3.3 to -1.9, 1.6 m wide between its open leaves.
 /// </summary>
@@ -21,28 +23,28 @@ public static class GardenCamera
         (new(-8.67f, 1.75f, -29.0f), new(-2.0f, 2.0f, -19.0f)),   // past the first bench: it stands back against the outer bed, the walk before it
         (new(-8.67f, 1.75f, -24.0f), new(0.0f, 2.1f, -16.0f)),
         (new(-8.67f, 1.75f, -17.0f), new(0.0f, 2.2f, -11.0f)),    // and the second
-        (new(-9.2f, 1.75f, -11.2f), new(-1.0f, 2.6f, -4.0f)),     // the end of the beds, the hall ahead
-        (new(-5.0f, 1.9f, -9.0f), new(0.0f, 2.7f, -1.0f)),
+        (new(-9.05f, 1.75f, -9.4f), new(-1.0f, 2.6f, -4.0f)),     // round the end of the beds, the hall ahead
+        (new(-5.0f, 1.9f, -8.6f), new(0.0f, 2.7f, -1.0f)),
         (new(0.0f, 2.6f, -7.8f), new(0.0f, 2.7f, 0.0f)),          // on the stairs, facing the door
         (new(0.0f, 2.75f, -3.7f), new(-1.5f, 2.6f, 3.5f)),        // at the threshold
-        (new(0.0f, 2.75f, -1.0f), new(-5.05f, 4.5f, 2.1f)),       // just inside, looking up at the left chandelier and its medallion
-        (new(-4.2f, 2.75f, -1.0f), new(-9.2f, 2.4f, 3.0f)),       // along the orsi, behind the armchairs
-        (new(-7.6f, 2.75f, -0.5f), new(-9.25f, 2.35f, 3.4f)),
-        (new(-7.9f, 2.75f, 1.45f), new(-9.6f, 2.3f, 4.2f)),       // the tea counter: the samovar, the kettle, the glasses
-        (new(-5.6f, 2.75f, 1.6f), new(-4.4f, 3.7f, 6.75f)),       // between the armchairs and the low table, the painting over the sofa
-        (new(-2.6f, 2.75f, 2.8f), new(-4.1f, 4.0f, 6.75f)),       // before the left painting
+        (new(0.0f, 2.75f, -1.0f), new(-5.5f, 3.3f, 1.8f)),        // just inside: the left rooms, the chandelier over them, the sun on the floor
+        (new(-3.0f, 2.75f, -0.6f), new(-9.2f, 2.3f, 3.2f)),       // along the orsi: the tea corner across the room, by the left wall
+        (new(-2.6f, 2.75f, 3.0f), new(-7.5f, 1.3f, -1.5f)),       // from the middle of the room, back at the orsi and the light they lay on the floor
+        (new(-2.0f, 2.75f, 3.3f), new(-4.6f, 3.9f, 6.75f)),       // the left painting
         (new(0.0f, 2.75f, 1.9f), new(0.0f, 3.4f, 6.75f)),         // the reading table, a painting either side
         (new(2.6f, 2.75f, 2.9f), new(4.1f, 4.0f, 6.75f)),         // before the right painting
-        (new(2.4f, 2.75f, -0.7f), new(6.2f, 1.9f, 3.4f)),         // the right sitting corner
-        (new(0.0f, 2.75f, -1.3f), new(2.0f, 2.2f, -10.0f)),       // back to the door, looking out through the orsi
+        (new(2.9f, 2.75f, 1.6f), new(9.0f, 2.0f, 0.6f)),          // the right sitting corner, the low sun reaching across it
+        (new(0.9f, 2.75f, -0.3f), new(6.5f, 2.2f, -2.9f)),         // and the right orsi from within, red with the last of it
+        (new(0.0f, 2.75f, -1.3f), new(2.0f, 2.2f, -10.0f)),       // back to the door, looking out: the sun is going down
         (new(0.0f, 2.75f, -3.7f), new(0.0f, 1.6f, -19.0f)),
-        (new(0.0f, 2.7f, -7.4f), new(0.0f, 1.0f, -26.0f)),        // the top of the stairs, the garden below
-        (new(5.0f, 1.9f, -9.0f), new(3.0f, 1.2f, -22.0f)),
-        (new(9.2f, 1.75f, -11.2f), new(3.5f, 1.2f, -24.0f)),      // down the right walk, past its benches
-        (new(8.67f, 1.75f, -17.0f), new(0.0f, 1.8f, -19.0f)),
-        (new(8.67f, 1.75f, -24.0f), new(0.0f, 2.0f, -17.0f)),
+        (new(0.0f, 2.7f, -7.4f), new(0.0f, 1.0f, -26.0f)),        // the top of the stairs, the garden below, its lamps lit
+        (new(4.6f, 1.9f, -8.4f), new(3.0f, 1.2f, -22.0f)),
+        (new(9.05f, 1.75f, -9.6f), new(3.5f, 1.2f, -24.0f)),      // down the right walk by night, past its benches
+        (new(8.67f, 1.75f, -15.5f), new(1.0f, 1.6f, -19.0f)),
+        (new(8.67f, 1.75f, -20.0f), new(0.0f, 1.9f, -19.0f)),
+        (new(8.67f, 1.75f, -24.5f), new(0.0f, 2.2f, -17.0f)),
         (new(8.67f, 1.75f, -29.0f), new(0.0f, 2.0f, -19.0f)),
-        (new(6.0f, 1.75f, -31.1f), new(0.0f, 2.0f, -19.0f)),
+        (new(6.0f, 1.75f, -31.1f), new(0.0f, 2.0f, -19.0f)),      // day breaks
     ];
 
     /// <summary>For the render checks: one view to draw every moment from, instead of the walk's (null: the walk).</summary>

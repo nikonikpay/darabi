@@ -7,10 +7,11 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// The visual GPU test: a window opens on the Persian garden (<see cref="GardenScene"/>) - a walled courtyard with its pool and fountain,
 /// columned hall, cypresses and lanterns, the Mazesta logo floating over the water (or the owner's Models\gpu-test.obj in its place) - and
 /// the camera walks round it and through the hall, drawn as fast as the GPU can with no v-sync cap, so the card runs at full load while the
-/// technician watches the picture for artefacts and the monitor records clocks, power and temperature. Two modes of the same garden:
-/// Direct3D 12 rasterisation under a low golden sun (shadow map, sky map, ambient occlusion, the pool's reflection, MSAA - set by the load
-/// level), and DirectX Raytracing (DXR 1.1) at nightfall, lit by the moon and some fifty lamps with a shadow ray each, reflections and
-/// refraction, offered only on a GPU with hardware ray tracing.
+/// technician watches the picture for artefacts and the monitor records clocks, power and temperature. In one walk the garden goes
+/// through a day (<see cref="GardenDay"/>): morning on the way up it, the afternoon sun coming in at the hall's stained windows, sunset,
+/// and the way back by night with the lamps lit. Two modes of the same garden: Direct3D 12 rasterisation (shadow maps, sky map, ambient
+/// occlusion, the pool's reflection, MSAA - set by the load level), and DirectX Raytracing (DXR 1.1), with a shadow ray to the sun or
+/// the moon and to each lit lamp, reflections and refraction, offered only on a GPU with hardware ray tracing.
 /// A picture that merely looks right is not the pass: every few seconds the scene is also drawn off screen at one fixed moment and read
 /// back, and that frame must be bit-for-bit the first one - a GPU that draws the same frame differently under load has computed wrongly.
 /// </summary>
@@ -134,7 +135,7 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
         {
             var finished = request.Clock.UtcNow;
             return SensorEvidence.Join($"{mode} Persian garden drawn at {w}x{h} (window {window.Width}x{window.Height}) on {session.AdapterName}; {model.Triangles:N0} triangles in {model.Instances.Length:N0} objects, centre model '{model.ModelName}'",
-                rayTraced ? $"ray traced: camera ray, a shadow ray to the moon and to each of {model.PointLights.Length} lamps in reach, reflections and refraction up to 4 bounces" : $"load level {load}: {work}",
+                rayTraced ? $"ray traced: camera ray, a shadow ray to the sun or the moon and to each of {model.PointLights.Length} lamps in reach once they are lit, reflections and refraction up to 4 bounces" : $"load level {load}: {work}",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, $"check frames={checks}",
                 firstError.Length > 0 ? firstError : null, model.ModelProblem,
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("measured GPU load", "%"),

@@ -2907,6 +2907,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>Load level {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} triangles in {1} objects; centre model “{2}”</value></data>
   <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>Ray traced: a camera ray, a shadow ray to the moon and to each of the {0} lamps in reach, reflections and refraction up to 4 bounces</value></data>
+  <data name="Detail_Gpu_SceneRaysDay" xml:space="preserve"><value>Ray traced: a camera ray, a shadow ray to the sun or the moon and to each of the {0} lamps in reach once they are lit, reflections and refraction up to 4 bounces</value></data>
   <data name="Detail_Gpu_Vram" xml:space="preserve"><value>Graphics memory pattern test on {0}</value></data>
   <data name="Detail_Gpu_VramTested" xml:space="preserve"><value>Graphics memory tested: {0} MiB in {1} buffers</value></data>
   <data name="Detail_Gpu_WindowClosed" xml:space="preserve"><value>The test window was closed before the time was up</value></data>

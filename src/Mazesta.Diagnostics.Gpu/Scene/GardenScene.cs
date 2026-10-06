@@ -5,8 +5,9 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// The Persian garden both visual GPU tests draw: a walled courtyard with a pool and its fountain, a columned hall with windcatchers and
 /// furnished rooms behind its orsi, cypresses, blossom trees, planted beds, ivy, lanterns, a gate, and the Mazesta logo floating over the
 /// water. Built in Blender (Mazesta-Art/courtyard-v12.blend: the owner's DFM_Courtyard_V12, whole) and written by tools/scene/export_garden.py
-/// into garden.mzscene, embedded in this assembly; this reads it. The file holds both of the .blend's scenes: what only the Direct3D test
-/// shows (the low golden sun) or only the ray-traced one (its night light rig, a mirror sphere) is marked with <see cref="Mode"/>.
+/// into garden.mzscene, embedded in this assembly; this reads it. The file holds both of the .blend's scenes, each thing marked with
+/// the <see cref="Mode"/> it is of: the Direct3D scene has the day's sun, the ray-traced one the night's moon and lamps - both tests
+/// go through the whole day with them (<see cref="GardenDay"/>) - and a mirror sphere, which only the ray-traced test shows.
 /// <para>Format (gzip, little-endian): "MZSC", version, then counts of textures, materials, meshes, instances, lights and the texture size;
 /// the textures (each its own size, whether it is a leaf card's or a normal map's, and its parts: JPEG pictures for the colour and for
 /// each further channel, a leaf's opacity as one bit a texel, or one value for a channel that is the same all over - <see cref="Bc3"/>
@@ -78,10 +79,12 @@ public sealed class GardenScene
                 ?? throw new InvalidOperationException("The garden scene is not embedded.");
             var scene = Read(s);
             using var light = Assembly.GetExecutingAssembly().GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.garden.light");
-            if (light is not null && GardenLightVolume.Read(light) is { } volume && volume.SceneStamp == scene.Stamp) scene.Light = volume;
+            if (light is not null && LightIn(light) is { } volume && volume.SceneStamp == scene.Stamp) scene.Light = volume;
             return _embedded = scene;
         }
     }
+    /// <summary>A light file of an earlier build's making is as good as none: the garden is drawn without, until it is worked out again.</summary>
+    private static GardenLightVolume? LightIn(Stream file) { try { return GardenLightVolume.Read(file); } catch (InvalidDataException) { return null; } }
 
     public static GardenScene Read(Stream compressed)
     {

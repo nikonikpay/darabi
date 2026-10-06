@@ -1,8 +1,8 @@
-// Visual GPU test, DirectX Raytracing (GpuSceneExecutor + GardenRay.cs): the courtyard at nightfall, every pixel ray traced through
-// the GPU's ray-tracing hardware (DXR 1.1 inline RayQuery in a compute shader). Samples camera rays a pixel (stratified, so edges are
-// antialiased); at each surface a shadow ray to the moon and to every lamp in reach, aimed at a random point on the lamp (soft shadows:
-// the moon crosses the sky as the walk goes on, and its shadows with it), coloured where it has come through a stained pane of the
-// hall's windows; one diffuse ray for the light bounced off nearby surfaces (global illumination); leaves are cut out of their cards
+// Visual GPU test, DirectX Raytracing (GpuSceneExecutor + GardenRay.cs): the courtyard through a day and a night, every pixel ray
+// traced through the GPU's ray-tracing hardware (DXR 1.1 inline RayQuery in a compute shader). Samples camera rays a pixel (stratified,
+// so edges are antialiased); at each surface a shadow ray to the sun or the moon and, once they are lit, to every lamp in reach, aimed
+// at a random point on the light (soft shadows, which cross the garden with the sun), coloured where it has come through a stained
+// pane of the hall's windows - the orsi's colours lie on the floor and move over it; one diffuse ray for the light bounced off nearby surfaces (global illumination); leaves are cut out of their cards
 // during traversal; the water reflects and refracts (into the lit pool), glass lets light through and mirrors, metal and polished stone
 // reflect (the mirror sphere gliding round the pool most of all) - up to Bounces deep. After the denoiser the frame goes through the
 // same lens as the rasteriser's: what is out of focus blurred, a glow round the lamps and the moon, the tone curve.
@@ -38,8 +38,7 @@ SamplerState Linear : register(s0);
 
 float3 Mountains(float2 uv) { return BackdropImage.SampleLevel(Linear, uv, 0).rgb; }
 
-static float SkyGain = 1;      // the light volume's baker keeps only a share of the sky's brightness (GardenLightBaker.SkyGain)
-static bool Baking = false;   // and sees from no eye (no air between one and the surface); it follows light for two bounces with shadow rays at both, and adds no stand-in for the rest
+static bool Baking = false;   // the light volume's baker sees from no eye (no air between one and the surface); it follows light for two bounces with shadow rays at both, and adds no stand-in for the rest
 static const uint MaskVisible = 1, MaskShadow = 2, MaskTint = 4;   // what a camera ray meets; what blocks light; the stained panes, which colour it
 
 // T, B: the directions the texture's u and v run in over the triangle; Lod: the mip level at which a texel is the size of a pixel there
@@ -160,22 +159,24 @@ float3 Through(float3 origin, float3 dir, float tmax)
     return mat.LightTint > 0 ? StainTint(mat) : 1;
 }
 
-// A flame is never still: a lantern's or a sconce's light wavers a little, each to its own beat.
-float Flicker(Light L, uint k) { return L.Kind == LPoint && L.Color.b < L.Color.r * 0.5 ? 1 + 0.09 * sin(Time * 9.1 + k * 2.3) + 0.05 * sin(Time * 23.7 + k * 5.1) : 1; }
+// The sky's light along a ray that leaves the scene. What lights a matt surface is, by day, a share of the sky's brightness
+// (Garden.hlsli SkyShare); what is seen or mirrored is the sky itself. For the baker the sky is one even light, of Post.y.
+float3 SkyLight(float3 dir, bool matt) { return Baking ? SkyZenith * Post.y : Sky(dir) * (matt ? SkyLit() : 1); }
 
-// Light arriving from the moon and every lamp in reach. With shadows, each is checked by a ray to a random point on it (the moon's
-// disc, the lamp's bulb), so shadows soften with distance from what casts them.
+// Light arriving from the sun or the moon and every lit lamp in reach. With shadows, each is checked by a ray to a random point on
+// it (the sun's or the moon's disc, the lamp's bulb), so shadows soften with distance from what casts them. The key light is
+// always checked (unshadowed, the sun would light every room a bounced ray looks into); shadows: the lamps are too.
 float3 Direct(Surface s, float3 p, float3 v, bool shadows, inout uint seed)
 {
     float3 c = 0, o = p + s.Normal * 0.01;
     if (SunOn > 0 && dot(s.Normal, SunDir) > 0)
     {
-        float3 toSun = shadows ? normalize(SunDir + InBall(seed) * 0.018) : SunDir;
-        if (!(shadows && Occluded(o, toSun, 300))) c += Brdf(s, v, SunDir, SunColor) * (shadows ? Through(o, toSun, 300) : 1);
+        float3 toSun = normalize(SunDir + InBall(seed) * (Day.z > 0 ? 0.018 : 0.007));
+        if (!Occluded(o, toSun, 300)) c += Brdf(s, v, SunDir, SunColor) * Through(o, toSun, 300);
     }
     for (uint k = 0; k < LightCount; k++)
     {
-        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d) * Flicker(L, k);
+        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d) * LampLit(L, k);
         if (all(e <= 0) || dot(s.Normal, l) <= 0) continue;
         if (shadows)
         {
@@ -188,16 +189,16 @@ float3 Direct(Surface s, float3 p, float3 v, bool shadows, inout uint seed)
     return c;
 }
 
-// What a secondary ray sees, lit without further bounces or shadow rays.
-float3 Glance(float3 origin, float3 dir, float tmax, inout uint seed)
+// What a secondary ray sees, lit without further bounces or shadow rays. matt: the ray gathers light for a matt surface.
+float3 Glance(float3 origin, float3 dir, float tmax, inout uint seed, bool matt)
 {
     Hit h;
-    if (!Trace(origin, dir, tmax, MaskVisible, h)) return Sky(dir) * SkyGain;
+    if (!Trace(origin, dir, tmax, MaskVisible, h)) return SkyLight(dir, matt);
     Material m = Materials[h.Material];
     float3 v = -dir; Surface s = SurfaceAt(h, v);
     if (m.Kind == KWater || m.Kind == KGlass) return SkyColor(reflect(dir, s.Normal)) * 0.3 + s.Emission;
     if (Baking) return s.Emission + Direct(s, h.P, v, true, seed);
-    return s.Albedo * Ambient(s.Normal) * (1 - s.Metallic) * 0.5 * s.Occlusion + s.Emission + Direct(s, h.P, v, false, seed);
+    return s.Albedo * AmbientAt(h.P, s.Normal) * (1 - s.Metallic) * 0.5 * s.Occlusion + s.Emission + Direct(s, h.P, v, false, seed);
 }
 
 // One camera ray's light: the surfaces it meets, through water and glass and off polished surfaces, up to Bounces deep.
@@ -207,7 +208,7 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
     for (uint bounce = 0; bounce <= Bounces; bounce++)
     {
         Hit h;
-        if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * Sky(dir) * SkyGain; break; }
+        if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * SkyLight(dir, false); break; }
         Material m = Materials[h.Material];
         float3 v = -dir; Surface s = SurfaceAt(h, v);
 
@@ -221,10 +222,10 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
             if (entering)
             {
                 float f = 0.02 + 0.98 * pow(1 - saturate(dot(n, v)), 5);
-                color += weight * f * Glance(h.P + n * 0.004, reflect(dir, n), 400, seed);
+                color += weight * f * Glance(h.P + n * 0.004, reflect(dir, n), 400, seed, false);
                 // running water is full of air: part of the light that falls on it comes back white
                 Surface white = s; white.Albedo = float3(0.82, 0.92, 0.96); white.Roughness = 0.5; white.Metallic = 0; white.Normal = n; white.Sheen = 0;
-                color += weight * (1 - f) * 0.45 * (white.Albedo * Ambient(n) * 0.6 + Direct(white, h.P, v, true, seed));
+                color += weight * (1 - f) * 0.45 * (white.Albedo * AmbientAt(h.P, n) * 0.6 + Direct(white, h.P, v, true, seed));
                 weight *= (1 - f) * 0.55 * float3(0.93, 0.98, 0.98);
             }
             origin = h.P - n * 0.004; dir = r; continue;
@@ -233,7 +234,7 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
         {
             float3 n = WaterNormal(h.P, Time); if (dot(n, v) < 0) n = -n;
             float f = 0.02 + 0.98 * pow(1 - saturate(dot(n, v)), 5);
-            color += weight * f * Glance(h.P + n * 0.01, reflect(dir, n), 400, seed);
+            color += weight * f * Glance(h.P + n * 0.01, reflect(dir, n), 400, seed, false);
             float3 r = refract(dir, n, 1 / 1.33); if (all(r == 0)) break;
             weight *= (1 - f) * float3(0.75, 0.92, 0.9);
             origin = h.P - n * 0.01; dir = r; continue;
@@ -241,14 +242,14 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
         if (m.Kind == KGlass)
         {
             float f = 0.04 + 0.96 * pow(1 - saturate(dot(s.Normal, v)), 5);
-            color += weight * (s.Emission + f * Glance(h.P + s.Normal * 0.01, reflect(dir, s.Normal), 400, seed));
+            color += weight * (s.Emission + f * Glance(h.P + s.Normal * 0.01, reflect(dir, s.Normal), 400, seed, false));
             weight *= (1 - f) * lerp(1, StainTint(m), 0.8) * (m.Alpha < 1 ? m.Alpha + 0.4 : 1);
             origin = h.P + dir * 0.01; continue;   // thin glass: straight on
         }
 
         // light bounced off what is near: one diffuse ray on the first surface (deeper ones use the ambient term alone)
-        float3 bounced = bounce == 0 ? Glance(h.P + s.Normal * 0.01, CosineAround(s.Normal, seed), 12, seed) : Ambient(s.Normal) * 0.6;
-        float3 around = Baking ? (bounce == 0 ? bounced : 0) : bounced * 0.8 + Ambient(s.Normal) * 0.15;
+        float3 bounced = bounce == 0 ? Glance(h.P + s.Normal * 0.01, CosineAround(s.Normal, seed), 40, seed, true) : AmbientAt(h.P, s.Normal) * 0.6;
+        float3 around = Baking ? (bounce == 0 ? bounced : 0) : bounced * 0.8 + AmbientAt(h.P, s.Normal) * 0.15;
         float3 lit = s.Albedo * (1 - s.Metallic) * around * s.Occlusion + s.Emission + Direct(s, h.P, v, true, seed);
         if (bounce == 0 && !Baking) lit = Haze(lit, h.P);
         // mirror-like surfaces (metal, polished stone, glazed tiles) carry on as a reflection
@@ -392,12 +393,12 @@ void Bake(uint3 id : SV_DispatchThreadID)
     uint face = index % 6, at = index / 6;
     float3 p = Grid.xyz + float3(at % n.x, at / n.x % n.y, at / (n.x * n.y)) * Grid.w;
     float3 axis = float3(face / 2 == 0, face / 2 == 1, face / 2 == 2) * (face % 2 == 0 ? 1 : -1);
-    SkyGain = Post.y; Baking = true;
+    Baking = true;
     uint seed = Hash(index * 9781 + 7); float3 sum = 0; float back = 0;
     for (uint k = 0; k < Last; k++)
     {
         float3 dir = CosineAround(axis, seed); Hit h;
-        if (!Trace(p, dir, 400, MaskVisible, h)) { sum += min(Sky(dir) * SkyGain, 8); continue; }
+        if (!Trace(p, dir, 400, MaskVisible, h)) { sum += min(SkyLight(dir, true), 8); continue; }
         if (dot(h.N, dir) > 0 && Materials[h.Material].Kind != KCutout) back += 1;
         sum += min(Radiance(p, dir, seed), 8);
     }

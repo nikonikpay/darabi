@@ -25,6 +25,7 @@ $jobs = @(
     @('GardenRaster.hlsl', 'MainVS', 'vs_6_0', 'GardenMainVS.cso'),
     @('GardenRaster.hlsl', 'ShadowVS', 'vs_6_0', 'GardenShadowVS.cso'),
     @('GardenRaster.hlsl', 'ShadowPS', 'ps_6_0', 'GardenShadowPS.cso'),
+    @('GardenRaster.hlsl', 'TintPS', 'ps_6_0', 'GardenTintPS.cso'),
     @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_0', 'GardenOpaquePS.cso'),
     @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_0', 'GardenCutoutPS.cso'),
     @('GardenRaster.hlsl', 'TransparentPS', 'ps_6_0', 'GardenTransparentPS.cso'),

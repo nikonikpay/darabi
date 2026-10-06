@@ -53,6 +53,10 @@ public class GardenRenderHardwareTests
     private static void Check(GardenRenderer r, string name)
     {
         var a = r.Capture(1.234f); var b = r.Capture(1.234f);
+        if (!a.AsSpan().SequenceEqual(b) && Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } to)
+        {   // the two frames that should have been one, to look at
+            Png.Write(Path.Combine(to, $"{name}-first.png"), a, r.Width, r.Height); Png.Write(Path.Combine(to, $"{name}-second.png"), b, r.Width, r.Height);
+        }
         Assert.Equal(a, b);
         // frames shown one after another build on each other (the ray tracer gathers light across them): a check frame drawn after
         // them must still be the first one's bits
@@ -79,11 +83,11 @@ public class GardenRenderHardwareTests
                 uint[] shown = []; for (int k = 9; k >= 0; k--) shown = r.Capture(t - k / 30f, live: true);
                 Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}-shown.png")), shown, r.Width, r.Height);
             }
-        // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk (drawn off screen and read back: slower than the test's own window)
+        // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk, each drawn as one of the frames being shown (off screen and read back: slower than the test's own window)
         if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })
         {
             const int n = 96; var sw = System.Diagnostics.Stopwatch.StartNew();
-            for (int k = 0; k < n; k++) r.Capture(k * GardenCamera.Loop / n);
+            for (int k = 0; k < n; k++) r.Capture(k * GardenCamera.Loop / n, live: true);
             File.AppendAllText(Path.Combine(dir, "timing.txt"), $"{name} {r.Width}x{r.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms a frame, {n} frames round the walk" + Environment.NewLine);
         }
     }

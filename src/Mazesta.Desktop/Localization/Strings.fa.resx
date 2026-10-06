@@ -2907,6 +2907,7 @@
   <data name="Detail_Gpu_SceneLoad" xml:space="preserve"><value>سطح بار {0}:</value></data>
   <data name="Detail_Gpu_SceneModel" xml:space="preserve"><value>{0} مثلث در {1} شیء؛ مدل وسط صحنه «{2}»</value></data>
   <data name="Detail_Gpu_SceneRays" xml:space="preserve"><value>رهگیری پرتو: پرتو دوربین، پرتو سایه به ماه و به هر یک از {0} چراغ نزدیک، بازتاب و شکست تا ۴ بار</value></data>
+  <data name="Detail_Gpu_SceneRaysDay" xml:space="preserve"><value>رهگیری پرتو: پرتو دوربین، پرتو سایه به خورشید یا ماه و (پس از روشن شدن) به هر یک از {0} چراغ نزدیک، بازتاب و شکست تا ۴ بار</value></data>
   <data name="Detail_Gpu_Vram" xml:space="preserve"><value>آزمون الگویی حافظهٔ گرافیک روی {0}</value></data>
   <data name="Detail_Gpu_VramTested" xml:space="preserve"><value>حافظهٔ گرافیک آزمایش‌شده: {0} MiB در {1} بافر</value></data>
   <data name="Detail_Gpu_WindowClosed" xml:space="preserve"><value>پنجرهٔ آزمون پیش از تمام شدن زمان بسته شد</value></data>

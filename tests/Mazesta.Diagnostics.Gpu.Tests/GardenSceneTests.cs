@@ -193,7 +193,7 @@ public class GardenSceneTests
             Assert.True(Vector3.Distance(eye, target) > 3);
             // the hall's front wall is at z -3.2 to -3.0 and its door leaves stand open to -1.9: the walk passes only between them
             if (eye.Z > -3.4f && eye.Z < -1.8f) Assert.InRange(eye.X, -0.45f, 0.45f);
-            if (eye.Z > -1.8f) { inside = true; Assert.InRange(eye.X, -8.4f, 8.4f); Assert.InRange(eye.Y, 2.5f, 3.0f); }   // standing on the hall's floor (1.11), clear of the tea counter (x -8.77)
+            if (eye.Z > -1.8f) { inside = true; Assert.InRange(eye.X, -3.3f, 3.3f); Assert.InRange(eye.Y, 2.5f, 3.0f); }   // standing on the hall's floor (1.11), in the middle rooms: the tea corner (x -8.8) is looked at from across the hall, not stood over
             // the benches on the outer walks (x 9.12 to 9.84 either side, z -28.7 to -27.1 and -17.5 to -15.9): passed in front, clear of the inner bed (8.18)
             if (eye.Y < 2.2f && (eye.Z is > -28.9f and < -26.9f || eye.Z is > -17.7f and < -15.7f) && MathF.Abs(eye.X) > 8f) Assert.InRange(MathF.Abs(eye.X), 8.45f, 8.9f);
         }
@@ -222,15 +222,64 @@ public class GardenSceneTests
     [Fact] public void The_moon_swings_across_the_sky_and_is_back_where_it_was_when_the_walk_ends()
     {
         var placed = Vector3.Normalize(new Vector3(0.62f, 0.52f, -0.42f));
-        Assert.True(Vector3.Distance(GardenFrame.MoonAt(placed, 0), GardenFrame.MoonAt(placed, GardenCamera.Loop)) < 1e-4f);
+        Assert.True(Vector3.Distance(GardenDay.MoonAt(placed, 0), GardenDay.MoonAt(placed, GardenCamera.Loop)) < 1e-4f);
         float least = 1, most = 0;
         for (float t = 0; t < GardenCamera.Loop; t += 1f)
         {
-            var m = GardenFrame.MoonAt(placed, t); Assert.Equal(1, m.Length(), 4);
+            var m = GardenDay.MoonAt(placed, t); Assert.Equal(1, m.Length(), 4);
             least = MathF.Min(least, m.Y); most = MathF.Max(most, m.Y);
         }
         Assert.True(least > 0.3f, "the moon must stay well above the walls");   // 17 degrees and more
-        Assert.True(Vector3.Dot(GardenFrame.MoonAt(placed, GardenCamera.Loop / 4), GardenFrame.MoonAt(placed, GardenCamera.Loop * 3 / 4)) < 0.85f);   // its shadows do move: over 30 degrees between its two ends
+        Assert.True(Vector3.Dot(GardenDay.MoonAt(placed, GardenCamera.Loop / 4), GardenDay.MoonAt(placed, GardenCamera.Loop * 3 / 4)) < 0.85f);   // its shadows do move: over 30 degrees between its two ends
+    }
+
+    /// <summary>The embedded scene's own sun and moon (toward each, and its light), as <see cref="GardenGpu"/> takes them from its two scenes.</summary>
+    private static GardenDay DayAt(float t)
+    {
+        var sun = G.Lights.Single(l => l.Kind == GardenLightKind.Sun && (l.Mask & 2) == 0); var moon = G.Lights.Single(l => l.Kind == GardenLightKind.Sun && (l.Mask & 2) != 0);
+        return GardenDay.At(t, Vector3.Normalize(-sun.Direction), sun.Color * sun.Energy, Vector3.Normalize(-moon.Direction), moon.Color * moon.Energy);
+    }
+
+    [Fact] public void The_walk_goes_through_a_whole_day_and_ends_in_the_light_it_began_in()
+    {
+        Assert.Equal(DayAt(0), DayAt(GardenCamera.Loop)); Assert.Equal(DayAt(37.5f), DayAt(37.5f));
+        float night = 0, lamps = 0; GardenDay before = DayAt(-0.25f);
+        for (float t = 0; t < GardenCamera.Loop; t += 0.25f)
+        {
+            var d = DayAt(t);
+            Assert.Equal(1, d.Key.Length(), 4); Assert.True(d.Key.Y > 0.02f, $"the key light is below the ground at {t}");
+            Assert.InRange(d.Night, 0, 1); Assert.InRange(d.Lamps, 0, 1); Assert.InRange(d.Noon, 0, 1); Assert.InRange(d.Sun, 0, 1);
+            // by day the sun is the key light and no lamp burns; in full night the moon is, and every lamp does
+            if (d.Night == 0) { Assert.False(d.Moon); Assert.Equal(0, d.Lamps); Assert.True(d.KeyColor.X > 0); }
+            if (d.Night == 1) { Assert.True(d.Moon); Assert.Equal(1, d.Lamps); Assert.True(d.KeyColor.Z > d.KeyColor.X); night += 0.25f; }
+            if (d.Lamps == 1) lamps += 0.25f;
+            // nothing jumps from one frame to the next: not the sky, not the lamps, and the key light only while it is dark (sun to moon)
+            Assert.True(Vector3.Distance(d.Zenith, before.Zenith) < 0.02f && Vector3.Distance(d.Horizon, before.Horizon) < 0.03f && MathF.Abs(d.Lamps - before.Lamps) < 0.08f, $"t={t}");
+            if (Vector3.Distance(d.Key, before.Key) > 0.03f) Assert.True(d.KeyColor.Length() < 0.05f && before.KeyColor.Length() < 0.05f, $"the key light jumps while it shines at {t}");
+            before = d;
+        }
+        Assert.InRange(night, 20f, 50f); Assert.True(lamps >= night);   // a good part of the walk is by night, the lamps lit a little longer than it lasts
+    }
+
+    [Fact] public void While_the_walk_is_in_the_hall_the_sun_shines_in_at_its_windows_and_sinks()
+    {
+        // the hall's windows face down the garden (-z); the walk is inside from the threshold (48 s) to the door again (102 s)
+        float highest = 0, lowest = 90, reachBefore = 0, first = 0;
+        for (float t = 54; t <= 96; t += 6)
+        {
+            var d = DayAt(t); float up = MathF.Asin(d.Key.Y) * 180 / MathF.PI;
+            Assert.False(d.Moon); Assert.True(d.Key.Z < -0.5f, $"the sun is not before the hall at {t}");   // within 60 degrees of straight in
+            Assert.InRange(up, 5f, 41f); highest = MathF.Max(highest, up); lowest = MathF.Min(lowest, up);
+            // how far from the sill the light of a window's top lies on the floor (the pane's top is 4 m over it): farther every key
+            float reach = 4 / MathF.Tan(up * MathF.PI / 180);
+            Assert.True(reach > reachBefore + 0.1f, $"the light does not creep on at {t}"); reachBefore = reach; if (first == 0) first = reach;
+        }
+        Assert.True(highest > 30 && lowest < 12 && reachBefore > 4 * first);
+        // the scene's own sun, as the .blend has it, is a moment of that afternoon
+        var placed = Vector3.Normalize(-G.Lights.Single(l => l.Kind == GardenLightKind.Sun && (l.Mask & 2) == 0).Direction);
+        Assert.Contains(Enumerable.Range(0, 400).Select(k => DayAt(60 + k * 0.1f).Key), key => Vector3.Dot(key, placed) > 0.995f);
+        // and it sets as the walk leaves: at the door the sun is on the horizon, on the stairs it is night
+        Assert.InRange(DayAt(102).Key.Y, 0.02f, 0.1f); Assert.Equal(1, DayAt(120).Night);
     }
 
     [Fact] public void The_frame_s_depth_is_reversed_one_at_the_near_plane_and_never_negative()
@@ -268,8 +317,9 @@ public class GardenSceneTests
             var outside = Vector4.Transform(new Vector4(at + ways[face] * 4 + side * 4.1f, 1), GardenRaster.LampFace(at, 10, face));
             Assert.True(MathF.Max(MathF.Abs(inside.X), MathF.Abs(inside.Y)) < inside.W && MathF.Max(MathF.Abs(outside.X), MathF.Abs(outside.Y)) > outside.W);
         }
-        // the rasterised scene's lamps: the hall's three and the lanterns, each with a cube of its own
-        Assert.InRange(G.Lights.Count(l => (l.Mask & 1) != 0 && l.Kind == GardenLightKind.Point), 3, GardenGpu.MostShadowLamps);
+        // the night's lamps (the ray-traced scene's rig, which both tests light at dusk): the ones over the water that are points get a
+        // cube each as far as the cubes go - the lanterns', the hall's, the canopy's and the gate's among them
+        Assert.True(G.Lights.Count(l => (l.Mask & 2) != 0 && l.Kind == GardenLightKind.Point && l.Position.Y > G.WaterLevel) >= GardenGpu.MostShadowLamps - 1);
     }
 
     [Fact] public void The_pictures_of_the_surroundings_are_taken_from_open_air_inside_the_space_each_stands_for()

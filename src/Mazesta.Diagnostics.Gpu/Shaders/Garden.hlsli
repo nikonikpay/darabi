@@ -1,6 +1,7 @@
 // Shared by the garden's two renderers (GardenRaster.hlsl, GardenRay.hlsl): the frame constants, the scene's records as GardenScene.cs
 // lays them out, the materials (base colour, roughness, metalness, a normal map and its occlusion: the metal-roughness model the .blend's
 // own Principled shader is), the light they give back (GGX), the sky, the fountain's water and the light falloff.
+// Both go through the garden's whole day in one walk (GardenDay.cs): the frame's sky, key light and lamps are that moment's.
 // Everything is a pure function of its inputs and the frame's Time: a frame drawn twice at one Time is the same image.
 
 cbuffer Frame : register(b1)
@@ -16,7 +17,7 @@ cbuffer Frame : register(b1)
     float3 CamRight; float TanHalfFovY;
     float3 CamUp; float Aspect;
     float3 CamForward; uint Bounces;
-    uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: golden hour (Direct3D), 2: blue hour (ray traced)
+    uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: the rasteriser, 2: the ray tracer
     float4 Logo;                          // the logo's turn toward the camera (cos, sin), its float (lift): GardenGpu.LogoMotion; and how much it glows of itself
     uint Samples; uint3 FramePad;         // ray tracer: camera rays a pixel
     float4 Backdrop;                      // the mountains round the horizon: the heights they cover as tangents (low, high), and 1 when they are there
@@ -31,6 +32,8 @@ cbuffer Frame : register(b1)
     float4 Round0; float4 Round0Low; float4 Round0High;   // rasteriser: where the courtyard's picture of its surroundings was taken from (w: its mip levels), and the box it stands for
     float4 Round1; float4 Round1Low; float4 Round1High;   // the same for the hall's rooms: a surface inside this box mirrors that picture
     float4x4 PrevViewProj; float4 PrevEye;                // ray tracer: the frame shown before this one - its view, its eye, and (w) 1 when its light is kept to add this frame's to
+    float4x4 HallViewProj;                                // rasteriser: the key light's view of the hall alone (a finer shadow map of its own, and the colour its stained panes give the light)
+    float4 Day;                                           // the moment of the day: night (0 by day to 1), how far the lamps are lit (0 to 1), 1 when the key light is the moon, noon (0 with the sun low to 1 with it high)
 };
 
 // Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index;
@@ -180,7 +183,7 @@ float2 TexCoords(Material m, float2 uv, float3 p, float3 n, out bool world)
 
 Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
 {
-    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission; s.Normal = n; s.Occlusion = 1; s.Sheen = m.Kind == KCutout ? 0.12 : 1;
+    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission * Day.y; s.Normal = n; s.Occlusion = 1; s.Sheen = m.Kind == KCutout ? 0.12 : 1;   // what glows is a lamp: lit with the others
     if (m.Texture >= 0)   // alpha: a leaf card's opacity, any other surface's roughness
     {
         s.Albedo *= texel.rgb;
@@ -221,8 +224,14 @@ float3 SkyColor(float3 dir)
     float up = saturate(dir.y), h = pow(1 - up, 3);
     float3 c = lerp(SkyZenith, SkyHorizon, h);
     float toSun = saturate(dot(dir, SunDir));
-    if (Mode == 1) c += SunColor * (0.05 * pow(toSun, 6) + 0.16 * pow(toSun, 64)) + SunColor * 2 * smoothstep(0.99988, 0.99996, toSun);
-    else c += float3(0.5, 0.6, 0.9) * (0.06 * pow(toSun, 12) + 3 * smoothstep(0.99975, 0.9999, toSun));
+    if (Day.z > 0) c += float3(0.5, 0.6, 0.9) * (0.06 * pow(toSun, 12) + 3 * smoothstep(0.99975, 0.9999, toSun)) * saturate(Day.x * 2 - 1);   // the moon and its halo
+    else c += SunColor * (0.05 * pow(toSun, 6) + 0.16 * pow(toSun, 64)) + SunColor * 2 * smoothstep(0.99988, 0.99996, toSun);
+    if (Day.x > 0.2 && dir.y > 0)
+    {
+        // the stars come out with the night: one in some of the cells the sky is cut into, each with its own brightness and twinkle
+        float3 q = dir * 190, cell = floor(q), f = q - cell - 0.5; float h = Hash3(cell);
+        if (h > 0.986) c += smoothstep(0.05, 0, dot(f, f)) * (0.3 + 0.7 * frac(h * 913.7)) * (0.82 + 0.18 * sin(Time * 2.7 + h * 5000)) * 2.2 * smoothstep(0.2, 1, Day.x) * saturate(dir.y * 4);
+    }
     if (dir.y < 0) c = lerp(c, GroundColor, saturate(-dir.y * 4));
     return c;
 }
@@ -237,13 +246,14 @@ float3 Clouds(float3 c, float3 dir)
     float d = Fbm(float3(q, 3.7)), cover = smoothstep(0.42, 0.72, d) * smoothstep(0.01, 0.18, dir.y);
     if (cover <= 0) return c;
     float toSun = saturate(dot(dir, SunDir)), thick = smoothstep(0.5, 0.85, Fbm(float3(q * 1.7, 9.1)));
-    float3 lit = Mode == 1 ? dot(SkyHorizon, 0.333) * float3(1.55, 1.42, 1.3) + SunColor * (0.026 + 0.08 * pow(toSun, 8))
-                           : dot(SkyZenith, 0.333) * float3(1.1, 1.15, 1.45) + float3(0.5, 0.6, 0.9) * 0.05 * pow(toSun, 8);
+    float3 lit = lerp(dot(SkyHorizon, 0.333) * float3(1.55, 1.42, 1.3) + SunColor * (0.026 + 0.08 * pow(toSun, 8)) * (1 - Day.z),
+                      dot(SkyZenith, 0.333) * float3(1.1, 1.15, 1.45) + float3(0.5, 0.6, 0.9) * 0.05 * pow(toSun, 8) * Day.z, Day.x);
     return lerp(c, lit * lerp(1, 0.62, thick), cover * 0.92);
 }
 
 // The mountains round the horizon (GardenBackdrop: a picture all the way round, its rows the tangent of the height): they stand in
-// front of the low sky and its clouds and give way to them above the peaks. At blue hour they are the same range after dusk.
+// front of the low sky and its clouds and give way to them above the peaks. The picture is the range at sunset: with the sun
+// high it is taken toward the haze's blue, at night it is the same range after dusk.
 // Each renderer binds the picture and samples it its own way.
 float3 Mountains(float2 uv);
 float3 Sky(float3 dir)
@@ -255,27 +265,37 @@ float3 Sky(float3 dir)
     float w = (1 - smoothstep(Backdrop.x + span * 0.55, Backdrop.x + span * 0.95, t)) * saturate(1 + (t - Backdrop.x) * 25);   // under the horizon the ground's haze takes over
     if (w <= 0) return c;
     float3 m = Mountains(float2(atan2(dir.x, dir.z) / (2 * Pi) + 0.5, clamp((t - Backdrop.x) / span, 0.004, 0.996)));
-    m = Mode == 1 ? m * 0.76 : lerp(dot(m, float3(0.3, 0.59, 0.11)), m, 0.3) * float3(0.07, 0.09, 0.18);
+    float grey = dot(m, float3(0.3, 0.59, 0.11));
+    m = lerp(lerp(m * 0.76, lerp(grey, m, 0.4) * float3(0.66, 0.76, 0.95), Day.w), lerp(grey, m, 0.3) * float3(0.07, 0.09, 0.18), Day.x);
     return lerp(c, m, w);
 }
+
+// How much of the sky's own brightness lights the garden by day: the picture's exposure is set for sunlit stone, and the sky's
+// light is a fraction of the sun's (GardenLightVolume keeps the same share). At night the sky is what there is.
+static const float SkyShare = 0.34;
+float SkyLit() { return lerp(SkyShare, 1, Day.x); }
 
 // The sky's light on a surface facing n: the sky's own colour from above (brighter toward the low sun), and from below what the lit
 // paving and earth give back. By day it is about half the bright sky's colour, so the sun and its shadows give the courtyard its shape.
 float3 Ambient(float3 n)
 {
     float3 sky = lerp(SkyHorizon, SkyZenith, 0.5 + 0.3 * saturate(n.y));
-    float3 ground = GroundColor + SunColor * saturate(SunDir.y) * (Mode == 1 ? 0.10 : 0.03) * float3(0.85, 0.74, 0.58);
+    float3 ground = GroundColor + SunColor * saturate(SunDir.y) * lerp(0.10, 0.03, Day.x) * float3(0.85, 0.74, 0.58);
     float3 c = lerp(ground, sky, saturate(n.y * 0.5 + 0.5));
-    if (Mode != 1) return c;
-    c += SkyHorizon * 0.3 * saturate(dot(normalize(n.xz + 1e-5), normalize(SunDir.xz + 1e-5))) * (1 - abs(n.y));
-    return c * 0.34;
+    float3 day = (c + SkyHorizon * 0.3 * saturate(dot(normalize(n.xz + 1e-5), normalize(SunDir.xz + 1e-5))) * (1 - abs(n.y))) * SkyShare;
+    return lerp(day, c, Day.x);
 }
+
+// Inside the hall: its rooms, its front wall and door, and half a metre round them.
+bool InHall(float3 p) { return all(p > Round1Low.xyz - float3(0.5, 0.6, 0.9)) && all(p < Round1High.xyz + 0.5); }
+// The same light where a renderer has nothing better to go by (no ray sent, no volume): under the hall's roof the sky is not overhead.
+float3 AmbientAt(float3 p, float3 n) { return Ambient(n) * (InHall(p) ? 0.1 : 1); }
 
 // The air between the eye and a far surface takes on the low sky's colour: the trees beyond the walls and the hills stand back.
 float3 Haze(float3 c, float3 p)
 {
-    float f = 1 - exp(-length(p - Eye) * (Mode == 1 ? 0.0035 : 0.0015));
-    return lerp(c, lerp(SkyHorizon, SkyZenith, 0.25) * (Mode == 1 ? 0.8 : 0.6), f);
+    float f = 1 - exp(-length(p - Eye) * lerp(0.0035, 0.0015, Day.x));
+    return lerp(c, lerp(SkyHorizon, SkyZenith, 0.25) * lerp(0.8, 0.6, Day.x), f);
 }
 
 // What a stained pane passes: its own hue at full strength (clear glass passes nearly everything).
@@ -303,6 +323,14 @@ float3 EnvBrdf(Surface s, float3 v)
     float4 r = s.Roughness * float4(-1, -0.0275, -0.572, 0.022) + float4(1, 0.0425, 1.04, -0.04);
     float2 ab = float2(-1.04, 1.04) * (min(r.x * r.x, exp2(-9.28 * nv)) * r.x + r.y) + r.zw;
     return (f0 * ab.x + ab.y) * s.Sheen;
+}
+
+// How brightly lamp k burns just now: the lamps are lit at dusk one after another, each at its own moment, and put out at dawn;
+// and a flame is never still - a lantern's or a sconce's light wavers a little, each to its own beat (not in the passes drawn once).
+float LampLit(Light L, uint k)
+{
+    float on = saturate((Day.y - Hash01(k * 31 + 7) * 0.7) / 0.3);
+    return L.Kind == LPoint && L.Color.b < L.Color.r * 0.5 && Post.z > 0 ? on * (1 + 0.09 * sin(Time * 9.1 + k * 2.3) + 0.05 * sin(Time * 23.7 + k * 5.1)) : on;
 }
 
 // Irradiance a point or spot light gives at p (0 outside its range), and the direction to it.

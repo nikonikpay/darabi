@@ -30,7 +30,7 @@ internal sealed class SceneView : IDisposable
         if (rayTraced)
         {
             var ray = new GardenRay(s, garden, width, height, _back, raySamples); _renderer = ray;
-            Work = $"{garden.Instances.Length:N0} objects · moon + {garden.PointLights.Length} lamps, a shadow ray each · reflection, refraction · {ray.Bounces} bounces";
+            Work = $"{garden.Instances.Length:N0} objects · sun, moon and {garden.PointLights.Length} lamps, a shadow ray each · reflection, refraction · {ray.Bounces} bounces";
         }
         else
         {

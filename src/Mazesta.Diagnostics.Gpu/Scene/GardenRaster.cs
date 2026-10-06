@@ -3,10 +3,13 @@ using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vort
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
-/// Draws the garden with Direct3D 12 rasterisation (GardenRaster.hlsl): the sun's shadow map, a map of where the sky stands open
-/// (the scene seen from straight above, drawn once), a shadow cube for each of the hall's lamps and the lanterns (drawn once), the
-/// garden all round from the middle of the courtyard and of the hall (drawn once: what polished surfaces, glass and metal mirror), the
-/// pool's mirror image, the light bounced round the courtyard (<see cref="GardenLightVolume"/>, worked out beforehand), the frame's depth and the ambient occlusion worked out
+/// Draws the garden with Direct3D 12 rasterisation (GardenRaster.hlsl), through its day (<see cref="GardenDay"/>): the key light's
+/// shadow maps - the sun's or the moon's, of the whole courtyard and a finer one of the hall alone, with the colour the hall's
+/// stained panes give the light passing them - drawn every frame, for the light moves; a map of where the sky stands open
+/// (the scene seen from straight above, drawn once), a shadow cube for each of the lamps (drawn once), the
+/// garden all round from the middle of the courtyard and of the hall (what polished surfaces, glass and metal mirror: one face of
+/// those pictures is drawn again each frame, so they follow the light), the
+/// pool's mirror image, the light bounced round the courtyard (<see cref="GardenLightVolume"/>, worked out beforehand and put together for the moment), the frame's depth and the ambient occlusion worked out
 /// from it, the frame in light's own units, and the lens (the glow round what is bright, the blur of what is out of focus, the tone
 /// curve) into any of the targets it was given (the swap chain's back buffers) or its own off-screen one for the check frames.
 /// The load level sets how much work a frame is: the shadows' filter, the occlusion's taps, whether the pool reflects the garden
@@ -25,9 +28,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         };
     }
 
-    /// <summary>One pass's constants (GardenFrame) at a 256-byte-aligned slot: the frame, its mirror image, its depth alone, and (once)
-    /// the view from above and the sun's view of the still scene; then the lamps' and the surroundings' views.</summary>
-    private const ulong Slot = 768; private const int Slots = 5, SkySize = 2048, GlowLevels = 5, LampSize = 512, RoundSize = 256, RoundMips = 5;
+    /// <summary>One pass's constants (GardenFrame) at a 256-byte-aligned slot: the frame, its mirror image, its depth alone, (once)
+    /// the view from above, the still scene's passes, and the key light's view of the hall; then the lamps' and the surroundings' views.</summary>
+    private const ulong Slot = GardenFrame.Bytes; private const int Slots = 6, SkySize = 2048, GlowLevels = 5, LampSize = 512, RoundSize = 256, RoundMips = 5, TintSize = 2048;
     /// <summary>Where the still garden is drawn all round from, once, for what surfaces mirror, and the box each picture stands for
     /// (a ray is carried to the box's side before the picture is looked up): the courtyard, from over the pool between the fountain and
     /// the gate; the hall's rooms, from their middle.</summary>
@@ -40,13 +43,19 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private const Format Light = Format.R10G10B10A2_UNorm, GlowFormat = Format.R11G11B10_Float;
     private readonly Settings _set; private readonly int _samples;
     private readonly ID3D12RootSignature _root;
-    private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown;
-    private readonly ID3D12Resource _shadowMap, _shadowStatic, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light, _lamps, _volume, _round, _roundDepth;
+    private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown, _tint;
+    private readonly ID3D12Resource _shadowMap, _hallShadow, _hallTint, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light, _lamps, _volume, _round, _roundDepth;
+    private readonly ID3D12Resource? _volumeStaging; private readonly float[] _mixed = []; private readonly uint _volumePitch;
+    /// <summary>The stained panes' draws, and for each face of the pictures of the surroundings the still instances it can see, in runs of neighbours.</summary>
+    private readonly (GardenGpu.Draw Draw, GardenGpu.Part Part)[] _stained; private readonly (GardenGpu.Draw Draw, uint First, uint Count)[][] _roundRuns;
+    private int _roundNext; private bool _roundsDrawn;
+    /// <summary>What casts shadows: each such draw with its instances' bounds as they were placed (a ball's centre and radius).</summary>
+    private readonly (GardenGpu.Draw Draw, (Vector3 Centre, float Radius)[] Bounds)[] _casters;
     private readonly ID3D12Resource[] _glow = new ID3D12Resource[GlowLevels]; private readonly uint _srvSize;
     private readonly ID3D12DescriptorHeap _srv, _rtv, _dsv; private readonly uint _rtvSize, _dsvSize;
     private readonly int _reflW, _reflH;
-    private readonly Matrix4x4 _shadowViewProj, _skyViewProj;
-    private bool _shadowBaked;
+    private readonly Matrix4x4 _skyViewProj;
+    private bool _onceDrawn;
 
     public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load) : base(s, g, width, height, targets)
     {
@@ -74,6 +83,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         _shadow = Make(shadowVs, shadowPs, BlendDescription.Opaque, DepthStencilDescription.Default, 1, [], raster: shadowRaster);
         var lampRaster = new RasterizerDescription(CullMode.None, FillMode.Solid) { DepthBias = 2, SlopeScaledDepthBias = 1.5f, DepthClipEnable = true };
         _lampShadow = Make(shadowVs, shadowPs, BlendDescription.Opaque, DepthStencilDescription.Default, 1, [], raster: lampRaster, depth: Format.D16_UNorm);
+        // the stained panes seen from the key light: each multiplies what is behind it by its colour
+        _tint = Make(shadowVs, D3D12Session.Shader("GardenTintPS"), new BlendDescription(Blend.Zero, Blend.SourceColor, Blend.Zero, Blend.One), DepthStencilDescription.None, 1, [Format.R8G8B8A8_UNorm]);
         Format[] color = [Light];
         _sky = Make(skyVs, skyPs, BlendDescription.Opaque, skyDepth, _samples, color, input: false);
         _opaque = Make(vs, opaquePs, BlendDescription.Opaque, nearer, _samples, color);
@@ -105,9 +116,11 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // targets: the shadow map, the reflection (a 4x4 stand-in when the level has none), the MSAA frame and its depth
         _shadowMap = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, (uint)_set.ShadowSize, (uint)_set.ShadowSize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.PixelShaderResource, new ClearValue(Format.D32_Float, 1f, 0)));
-        // The sun and everything but the logo stand still: their shadow depth is drawn once, and each frame starts from a copy of it.
-        _shadowStatic = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, (uint)_set.ShadowSize, (uint)_set.ShadowSize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
-            ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1f, 0)));
+        // The hall's own shadow map, as large over a third of the width, and the colour of the stained panes in the light's way.
+        _hallShadow = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, (uint)_set.ShadowSize, (uint)_set.ShadowSize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
+            ResourceStates.PixelShaderResource, new ClearValue(Format.D32_Float, 1f, 0)));
+        _hallTint = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, TintSize, TintSize, 1, 1, flags: ResourceFlags.AllowRenderTarget),
+            ResourceStates.PixelShaderResource, new ClearValue(Format.R8G8B8A8_UNorm, new Color4(1, 1, 1, 1))));
         // What stands over each point of the courtyard: the still scene's depth from straight above, drawn on the first frame.
         _skyMap = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R32_Typeless, SkySize, SkySize, 1, 1, flags: ResourceFlags.AllowDepthStencil),
             ResourceStates.DepthWrite, new ClearValue(Format.D32_Float, 1f, 0)));
@@ -145,26 +158,20 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         _roundSlot = Slots + cubes * 6;
         _constants = s.Buffer(Slot * (ulong)(_roundSlot + Rounds.Length * 6), HeapType.Upload, ResourceStates.GenericRead);
 
-        // The light bounced round the courtyard, as a texture of six blocks along x (one point of nothing when the scene has none).
-        var bounced = g.LightVolume; int vx = (bounced?.X ?? 1) * 6, vy = bounced?.Y ?? 1, vz = bounced?.Z ?? 1; var halves = bounced?.Texels() ?? new Half[24];
-        _volume = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture3D(Format.R16G16B16A16_Float, (uint)vx, (uint)vy, (ushort)vz, 1), ResourceStates.CopyDest));
-        uint volumePitch = (uint)((vx * 8 + 255) & ~255);
-        using (var staging = s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(volumePitch * (ulong)(vy * vz)), ResourceStates.GenericRead))
+        // The light bounced round the courtyard, as a texture of six blocks along x (one point of nothing when the scene has none):
+        // put together for each frame's moment of the day (GardenLightVolume.Mix) and sent up through a buffer of its own.
+        var bounced = g.LightVolume; int vx = (bounced?.X ?? 1) * 6, vy = bounced?.Y ?? 1, vz = bounced?.Z ?? 1;
+        _volume = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture3D(Format.R32G32B32A32_Float, (uint)vx, (uint)vy, (ushort)vz, 1), ResourceStates.PixelShaderResource));
+        _volumePitch = (uint)((vx * 16 + 255) & ~255);
+        if (bounced is not null)
         {
-            var dst = staging.Map<byte>(0, (int)(volumePitch * vy * vz));
-            for (int row = 0; row < vy * vz; row++) MemoryMarshal.AsBytes(halves.AsSpan(row * vx * 4, vx * 4)).CopyTo(dst[(int)(row * volumePitch)..]);
-            staging.Unmap(0);
-            s.Run(l =>
-            {
-                var footprint = new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Format.R16G16B16A16_Float, (uint)vx, (uint)vy, (uint)vz, volumePitch) };
-                l.CopyTextureRegion(new TextureCopyLocation(_volume, 0), 0, 0, 0, new TextureCopyLocation(staging, footprint));
-                l.ResourceBarrierTransition(_volume, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
-            });
+            _mixed = new float[bounced.TexelFloats];
+            _volumeStaging = s.Own(s.Device.CreateCommittedResource(HeapType.Upload, ResourceDescription.Buffer(_volumePitch * (ulong)(vy * vz)), ResourceStates.GenericRead));
         }
 
         // the shader's views: the scene's seven (t3..t9), then the lens's - the frame's light, the glow's levels, and the last level again
         // (a lens pass sees two views in a row: what it reads, and what follows it)
-        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, LampView + 3 + RoundMips, DescriptorHeapFlags.ShaderVisible, 0)));
+        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, RoundView + RoundMips, DescriptorHeapFlags.ShaderVisible, 0)));
         uint srvSize = _srvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle Srv(int i) => _srv.GetCPUDescriptorHandleForHeapStart().Offset(i, srvSize);   // Offset moves the handle it is called on: start afresh each time
         s.Device.CreateShaderResourceView(g.Textures, g.TextureView, Srv(0));
@@ -184,9 +191,11 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             TextureCubeArray = new TextureCubeArrayShaderResourceView { MipLevels = RoundMips, NumCubes = (uint)Rounds.Length } }, Srv(LampView + 2));
         for (int m = 0; m < RoundMips; m++)   // each mip's faces as plain pictures, for making the next mip (and one more view after the last: a lens pass sees two in a row)
             s.Device.CreateShaderResourceView(_round, new ShaderResourceViewDescription { Format = Light, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2DArray, Shader4ComponentMapping = ShaderComponentMapping.Default,
-                Texture2DArray = new Texture2DArrayShaderResourceView { MostDetailedMip = (uint)Math.Min(m, RoundMips - 2), MipLevels = 1, ArraySize = (uint)(Rounds.Length * 6) } }, Srv(LampView + 3 + m));
+                Texture2DArray = new Texture2DArrayShaderResourceView { MostDetailedMip = (uint)Math.Min(m, RoundMips - 2), MipLevels = 1, ArraySize = (uint)(Rounds.Length * 6) } }, Srv(RoundView + m));
+        s.Device.CreateShaderResourceView(_hallShadow, depthView, Srv(LampView + 3));
+        s.Device.CreateShaderResourceView(_hallTint, null, Srv(LampView + 4));
 
-        _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)(Targets.Length + 4 + GlowLevels + Rounds.Length * 6 * RoundMips), DescriptorHeapFlags.None, 0)));
+        _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)(Targets.Length + 5 + GlowLevels + Rounds.Length * 6 * RoundMips), DescriptorHeapFlags.None, 0)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
         for (int i = 0; i < Targets.Length; i++) s.Device.CreateRenderTargetView(Targets[i], null, Rtv(i));
         s.Device.CreateRenderTargetView(_reflection, null, Rtv(Targets.Length));
@@ -197,35 +206,58 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         for (int face = 0; face < Rounds.Length * 6; face++)
             for (int m = 0; m < RoundMips; m++)
                 s.Device.CreateRenderTargetView(_round, new RenderTargetViewDescription { Format = Light, ViewDimension = RenderTargetViewDimension.Texture2DArray, Texture2DArray = new Texture2DArrayRenderTargetView { MipSlice = (uint)m, FirstArraySlice = (uint)face, ArraySize = 1 } }, RoundRtv(face, m));
+        s.Device.CreateRenderTargetView(_hallTint, null, TintRtv);
         _dsv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, (uint)(7 + cubes * 6), DescriptorHeapFlags.None, 0)));
         _dsvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
         s.Device.CreateDepthStencilView(_depth, null, Dsv(0));
         s.Device.CreateDepthStencilView(_shadowMap, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(1));
         s.Device.CreateDepthStencilView(_reflectionDepth, null, Dsv(2));
-        s.Device.CreateDepthStencilView(_shadowStatic, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(3));
+        s.Device.CreateDepthStencilView(_hallShadow, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(3));
         s.Device.CreateDepthStencilView(_skyMap, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(4));
         s.Device.CreateDepthStencilView(_sceneDepth, new DepthStencilViewDescription { Format = Format.D32_Float, ViewDimension = DepthStencilViewDimension.Texture2D }, Dsv(5));
         s.Device.CreateDepthStencilView(_roundDepth, null, Dsv(6 + cubes * 6));
         for (int k = 0; k < cubes * 6; k++)
             s.Device.CreateDepthStencilView(_lamps, new DepthStencilViewDescription { Format = Format.D16_UNorm, ViewDimension = DepthStencilViewDimension.Texture2DArray, Texture2DArray = new Texture2DArrayDepthStencilView { FirstArraySlice = (uint)k, ArraySize = 1 } }, Dsv(6 + k));
 
-        _shadowViewProj = SunShadowMatrix(g.SunDirection); _skyViewProj = SkyMatrix();
+        _skyViewProj = SkyMatrix();
+        _casters = [.. g.Draws.Where(g.CastsShadow).Select(d => (d, Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => g.Bounds(d, i)).ToArray()))];
+        _stained = [.. g.Draws.SelectMany(d => d.Parts.Where(p => g.Materials[p.Material].LightTint > 0).Select(p => (d, p)))];
+        // what each face of the pictures of the surroundings can see of the still scene: an instance inside its pyramid, or touching it
+        _roundRuns = new (GardenGpu.Draw, uint, uint)[Rounds.Length * 6][];
+        for (int k = 0; k < _roundRuns.Length; k++)
+        {
+            var from = Rounds[k / 6].From; int axis = k % 6 / 2; float sign = k % 2 == 0 ? 1 : -1; var runs = new List<(GardenGpu.Draw, uint, uint)>();
+            bool Seen((Vector3 Centre, float Radius) b)
+            {
+                var c = b.Centre - from; float along = (axis == 0 ? c.X : axis == 1 ? c.Y : c.Z) * sign + b.Radius * 1.4143f;
+                return axis switch { 0 => along >= MathF.Abs(c.Y) && along >= MathF.Abs(c.Z), 1 => along >= MathF.Abs(c.X) && along >= MathF.Abs(c.Z), _ => along >= MathF.Abs(c.X) && along >= MathF.Abs(c.Y) };
+            }
+            foreach (var d in g.Draws.Where(d => !d.Moving))
+                for (uint i = 0; i < d.InstanceCount;)
+                {
+                    if (!Seen(g.Bounds(d, (int)(d.FirstInstance + i)))) { i++; continue; }
+                    uint n = 1; while (i + n < d.InstanceCount && Seen(g.Bounds(d, (int)(d.FirstInstance + i + n)))) n++;
+                    runs.Add((d, d.FirstInstance + i, n)); i += n;
+                }
+            _roundRuns[k] = [.. runs];
+        }
     }
 
     public int Samples => _samples;
-    private const int LensViews = 7, LampView = LensViews + GlowLevels + 2;
+    private const int LensViews = 7, LampView = LensViews + GlowLevels + 2, RoundView = LampView + 5;
     private readonly int _roundSlot;
     private CpuDescriptorHandle RoundRtv(int face, int mip) => Rtv(Targets.Length + 4 + GlowLevels + face * RoundMips + mip);
+    private CpuDescriptorHandle TintRtv => Rtv(Targets.Length + 4 + GlowLevels + Rounds.Length * 6 * RoundMips);
 
-    /// <summary>The still garden all round from each of <see cref="Rounds"/>, into its picture's six faces (the cube's order and
-    /// turns, as <see cref="LampFace"/> has them), then each face's smaller mips. Drawn as the frame is, but for what moves, what is
-    /// worked out from the frame's own depth, and the mirror images themselves; at time 0, whenever the first frame is.</summary>
-    private void Surroundings(ID3D12GraphicsCommandList4 l, GardenFrame frame)
+    /// <summary>The still garden all round from each of <see cref="Rounds"/>, into those of its pictures' twelve faces that
+    /// <paramref name="faces"/> names (the cube's order and turns, as <see cref="LampFace"/> has them), then each face's smaller mips.
+    /// Drawn as the frame is, in its moment's light, but for what moves, what is worked out from the frame's own depth, and the
+    /// mirror images themselves. A frame on its own draws all twelve; of the frames shown one after another each draws one, in turn.</summary>
+    private void Surroundings(ID3D12GraphicsCommandList4 l, GardenFrame frame, IEnumerable<int> faces)
     {
         var map = _constants.Map<byte>(0, (int)Slot * (_roundSlot + Rounds.Length * 6));
-        l.ResourceBarrierTransition(_round, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
-        l.RSSetViewport(0, 0, RoundSize, RoundSize); l.RSSetScissorRect(RoundSize, RoundSize);
-        for (int k = 0; k < Rounds.Length * 6; k++)
+        var depth = Dsv(6 + Math.Max(1, G.ShadowLamps) * 6);
+        foreach (int k in faces)
         {
             var from = Rounds[k / 6].From; int face = k % 6;
             var (to, up) = face switch
@@ -236,28 +268,44 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             var pass = frame;
             pass.ViewProj = Matrix4x4.CreateLookAtLeftHanded(from, from + to, up) * new Matrix4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, GardenFrame.Near, 0);
             pass.Eye = from; pass.CamForward = to; pass.CamUp = up; pass.CamRight = Vector3.Cross(up, to); pass.TanHalfFovY = 1; pass.Aspect = 1; pass.ViewSize = new(RoundSize, RoundSize);
-            pass.Time = 0; pass.Flags = 0; pass.Ambience.X = 0;
+            pass.Flags = 0; pass.Ambience.X = 0;
             MemoryMarshal.Write(map[((int)Slot * (_roundSlot + k))..], in pass);
             l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * (ulong)(_roundSlot + k));
-            l.ClearDepthStencilView(Dsv(6 + Math.Max(1, G.ShadowLamps) * 6), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets(RoundRtv(k, 0), Dsv(6 + Math.Max(1, G.ShadowLamps) * 6));
-            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: false, still: true);
-        }
-        _constants.Unmap(0);
-        l.SetPipelineState(_roundDown);
-        for (int m = 1; m < RoundMips; m++)
-        {
-            // level m - 1 is read while level m is drawn
-            for (int k = 0; k < Rounds.Length * 6; k++) l.ResourceBarrierTransition(_round, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource, (uint)(k * RoundMips + m - 1));
-            l.SetGraphicsRootDescriptorTable(6, _srv.GetGPUDescriptorHandleForHeapStart().Offset(LampView + 3 + m - 1, _srvSize));
-            l.RSSetViewport(0, 0, RoundSize >> m, RoundSize >> m); l.RSSetScissorRect(RoundSize >> m, RoundSize >> m);
-            for (int k = 0; k < Rounds.Length * 6; k++)
+            l.ResourceBarrierTransition(_round, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget, Sub(k, 0));
+            l.RSSetViewport(0, 0, RoundSize, RoundSize); l.RSSetScissorRect(RoundSize, RoundSize);
+            l.ClearDepthStencilView(depth, ClearFlags.Depth, 0, 0); l.OMSetRenderTargets(RoundRtv(k, 0), depth);
+            l.SetPipelineState(_skyR); l.DrawInstanced(3, 1, 0, 0);
+            l.SetPipelineState(_opaqueR); Runs(l, _roundRuns[k], kind => kind is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive);
+            l.SetPipelineState(_cutoutR); Runs(l, _roundRuns[k], kind => kind is GardenMaterialKind.Cutout);
+            l.SetPipelineState(_transparentR); Runs(l, _roundRuns[k], kind => kind is GardenMaterialKind.Glass or GardenMaterialKind.Water);
+            l.SetPipelineState(_roundDown);
+            for (int m = 1; m < RoundMips; m++)
             {
+                // level m - 1 is read while level m is drawn
+                l.ResourceBarrierTransition(_round, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource, Sub(k, m - 1));
+                l.ResourceBarrierTransition(_round, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget, Sub(k, m));
+                l.SetGraphicsRootDescriptorTable(6, _srv.GetGPUDescriptorHandleForHeapStart().Offset(RoundView + m - 1, _srvSize));
+                l.RSSetViewport(0, 0, RoundSize >> m, RoundSize >> m); l.RSSetScissorRect(RoundSize >> m, RoundSize >> m);
                 l.OMSetRenderTargets(RoundRtv(k, m), null);
                 l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = (uint)k }, 0);
                 l.DrawInstanced(3, 1, 0, 0);
             }
+            l.ResourceBarrierTransition(_round, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource, Sub(k, RoundMips - 1));
         }
-        for (int k = 0; k < Rounds.Length * 6; k++) l.ResourceBarrierTransition(_round, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource, (uint)(k * RoundMips + RoundMips - 1));
+        _constants.Unmap(0);
+        l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
+    }
+    private static uint Sub(int face, int mip) => (uint)(face * RoundMips + mip);
+
+    private static void Runs(ID3D12GraphicsCommandList4 l, (GardenGpu.Draw Draw, uint First, uint Count)[] runs, Func<GardenMaterialKind, bool> kinds)
+    {
+        foreach (var (d, first, count) in runs)
+            foreach (var p in d.Parts)
+            {
+                if (!kinds(p.Kind)) continue;
+                l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = first, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
+                l.DrawIndexedInstanced(p.IndexCount, count, p.IndexStart, d.BaseVertex, 0);
+            }
     }
 
     /// <summary>The six views of a lamp's shadow cube, in the order Direct3D keeps a cube's faces (+x, -x, +y, -y, +z, -z): ninety
@@ -362,24 +410,51 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         return Matrix4x4.CreateLookAtLeftHanded(centre + Vector3.UnitY * 60, centre, Vector3.UnitZ) * Matrix4x4.CreateOrthographicLeftHanded(radius * 2, radius * 2, 1f, 90f);
     }
 
+    /// <summary>The key light's view of the hall alone - its rooms, its front wall and door - from the same side as
+    /// <see cref="SunShadowMatrix"/>, a third as wide: the hall's own, finer shadow map, and the stained panes' colours, are drawn through it.</summary>
+    internal static Matrix4x4 HallShadowMatrix(Vector3 toKey)
+    {
+        if (toKey.LengthSquared() < 1e-6f) toKey = Vector3.UnitY;
+        var (_, low, high) = Rounds[1]; var centre = (low + high) / 2 + new Vector3(0, 0, -0.2f);
+        var up = MathF.Abs(toKey.Y) > 0.99f ? Vector3.UnitZ : Vector3.UnitY;
+        return Matrix4x4.CreateLookAtLeftHanded(centre + Vector3.Normalize(toKey) * 70, centre, up) * Matrix4x4.CreateOrthographicLeftHanded(HallRadius * 2, HallRadius * 2, 1f, 90f);
+    }
+    /// <summary>Half the width of that view: the hall's box and half a metre round it, a little more toward the terrace.</summary>
+    internal const float HallRadius = 12.3f;
+
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
+        var day = G.Day(time);
         var frame = GardenFrame.For(G, time, Width, Height);
-        frame.ShadowViewProj = _shadowViewProj; frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
+        frame.ShadowViewProj = SunShadowMatrix(day.Key); frame.HallViewProj = HallShadowMatrix(day.Key); frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
         frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps;
         if (G.LightVolume is { } volume) { frame.Grid = new(volume.Origin, volume.Spacing); frame.Grid2 = new(volume.X, volume.Y, volume.Z, 1); }
         frame.Round0 = new(Rounds[0].From, RoundMips); frame.Round0Low = new(Rounds[0].Low, 0); frame.Round0High = new(Rounds[0].High, 0);
-        frame.Round1 = new(Rounds[1].From, RoundMips); frame.Round1Low = new(Rounds[1].Low, 0); frame.Round1High = new(Rounds[1].High, 0);
-        var first = frame; first.Post.Z = 0;   // the passes drawn once see no mirror images (the sky stands in) and no wind: the plants stand as they were placed
+        frame.Round1 = new(Rounds[1].From, RoundMips);
+        var first = frame; first.Post.Z = 0;   // the passes of the still scene see no mirror images (the sky stands in) and no wind: the plants stand as they were placed
         if (_set.ReflectionDivisor > 0) frame.Flags |= 1;
         if (_samples > 1) frame.Flags |= 4;
         frame.Flags |= 8;
         var mirrored = frame.Mirrored(); mirrored.Flags &= ~4u; mirrored.ViewSize = new(_reflW, _reflH);
-        // the depth-only passes draw through ShadowViewProj: the camera's own view for the frame's depth, the view from above for the sky map
-        var depthOnly = frame; depthOnly.ShadowViewProj = frame.ViewProj; var above = first; above.ShadowViewProj = _skyViewProj;
+        // the depth-only passes draw through ShadowViewProj: the camera's own view for the frame's depth, the view from above for the sky map, the hall's own for its shadow map
+        var depthOnly = frame; depthOnly.ShadowViewProj = frame.ViewProj; var above = first; above.ShadowViewProj = _skyViewProj; var hall = frame; hall.ShadowViewProj = frame.HallViewProj;
         var map = _constants.Map<byte>(0, (int)Slot * Slots);
-        MemoryMarshal.Write(map, in frame); MemoryMarshal.Write(map[(int)Slot..], in mirrored); MemoryMarshal.Write(map[((int)Slot * 2)..], in depthOnly); MemoryMarshal.Write(map[((int)Slot * 3)..], in above); MemoryMarshal.Write(map[((int)Slot * 4)..], in first);
+        MemoryMarshal.Write(map, in frame); MemoryMarshal.Write(map[(int)Slot..], in mirrored); MemoryMarshal.Write(map[((int)Slot * 2)..], in depthOnly); MemoryMarshal.Write(map[((int)Slot * 3)..], in above);
+        MemoryMarshal.Write(map[((int)Slot * 4)..], in first); MemoryMarshal.Write(map[((int)Slot * 5)..], in hall);
         _constants.Unmap(0);
+
+        // the light bounced round the garden, as this moment of the day has it
+        if (G.LightVolume is { } bounced && _volumeStaging is not null)
+        {
+            bounced.Mix(_mixed, day.SkyLight, day.Lamps, day.Moon ? Vector3.Zero : day.KeyColor, day.Sun);
+            int rows = bounced.Y * bounced.Z, across = bounced.X * 6 * 4; var dst = _volumeStaging.Map<byte>(0, (int)_volumePitch * rows);
+            for (int row = 0; row < rows; row++) MemoryMarshal.AsBytes(_mixed.AsSpan(row * across, across)).CopyTo(dst[(row * (int)_volumePitch)..]);
+            _volumeStaging.Unmap(0);
+            l.ResourceBarrierTransition(_volume, ResourceStates.PixelShaderResource, ResourceStates.CopyDest);
+            var footprint = new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Format.R32G32B32A32_Float, (uint)(bounced.X * 6), (uint)bounced.Y, (uint)bounced.Z, _volumePitch) };
+            l.CopyTextureRegion(new TextureCopyLocation(_volume, 0), 0, 0, 0, new TextureCopyLocation(_volumeStaging, footprint));
+            l.ResourceBarrierTransition(_volume, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
+        }
 
         l.SetGraphicsRootSignature(_root); l.SetDescriptorHeaps(_srv);
         l.SetGraphicsRootShaderResourceView(2, G.InstanceBuffer.GPUVirtualAddress);
@@ -393,41 +468,63 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetGraphicsRootDescriptorTable(5, _srv.GetGPUDescriptorHandleForHeapStart());
         l.SetGraphicsRootDescriptorTable(7, _srv.GetGPUDescriptorHandleForHeapStart().Offset(LampView, _srvSize));
 
-        // 1. the sun's shadow map: the still scene's depth (drawn on the first frame only), then the moving logo over it
+        if (!_onceDrawn)
+        {   // what is drawn once: where the sky stands open over the still scene (its depth from straight above), and the lamps' shadow cubes
+            static bool Still(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout;
+            l.SetPipelineState(_shadow); l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * 3);
+            l.RSSetViewport(0, 0, SkySize, SkySize); l.RSSetScissorRect(SkySize, SkySize);
+            l.ClearDepthStencilView(Dsv(4), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(4));
+            Geometry(l, Still, draw => G.CastsShadow(draw) && !draw.Moving);
+            l.ResourceBarrierTransition(_skyMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
+            LampShadows(l, first);
+            _onceDrawn = true; l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
+        }
+        // 1. the key light's shadow maps - the light moves, so they are drawn anew: the courtyard's, the hall's own, and through the
+        // hall's view the stained panes, each laying its colour over what is behind it
         static bool Casts(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout;
         l.RSSetViewport(0, 0, _set.ShadowSize, _set.ShadowSize); l.RSSetScissorRect(_set.ShadowSize, _set.ShadowSize);
         l.SetPipelineState(_shadow);
-        bool once = !_shadowBaked;
-        if (once)
-        {
-            l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * 4);
-            l.ClearDepthStencilView(Dsv(3), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(3));
-            Geometry(l, Casts, draw => G.CastsShadow(draw) && !draw.Moving);
-            l.ResourceBarrierTransition(_shadowStatic, ResourceStates.DepthWrite, ResourceStates.CopySource);
-            // the sky map: the same still scene from straight above
-            l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * 3);
-            l.RSSetViewport(0, 0, SkySize, SkySize); l.RSSetScissorRect(SkySize, SkySize);
-            l.ClearDepthStencilView(Dsv(4), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(4));
-            Geometry(l, Casts, draw => G.CastsShadow(draw) && !draw.Moving);
-            l.ResourceBarrierTransition(_skyMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
-            l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
-            l.RSSetViewport(0, 0, _set.ShadowSize, _set.ShadowSize); l.RSSetScissorRect(_set.ShadowSize, _set.ShadowSize);
-            _shadowBaked = true;
-        }
-        l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.CopyDest);
-        l.CopyResource(_shadowMap, _shadowStatic);
-        if (once)
-        {   // what else is drawn once, now that the sun's shadows of the still scene can be read: the lamps' shadow cubes, the garden all round
-            l.ResourceBarrierTransition(_shadowMap, ResourceStates.CopyDest, ResourceStates.PixelShaderResource);
-            LampShadows(l, first); Surroundings(l, first);
-            l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.CopyDest);
-            l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress); l.SetPipelineState(_shadow);
-            l.RSSetViewport(0, 0, _set.ShadowSize, _set.ShadowSize); l.RSSetScissorRect(_set.ShadowSize, _set.ShadowSize);
-        }
-        l.ResourceBarrierTransition(_shadowMap, ResourceStates.CopyDest, ResourceStates.DepthWrite);
-        l.OMSetRenderTargets([], Dsv(1));
-        Geometry(l, Casts, draw => G.CastsShadow(draw) && draw.Moving);
+        l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
+        l.ClearDepthStencilView(Dsv(1), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(1));
+        Geometry(l, Casts, G.CastsShadow);
         l.ResourceBarrierTransition(_shadowMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
+        l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * 5);
+        l.ResourceBarrierTransition(_hallShadow, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
+        l.ClearDepthStencilView(Dsv(3), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(3));
+        // of all that casts shadows, only what stands in the light's way to the hall: inside its view's square, or touching it
+        foreach (var (d, bounds) in _casters)
+        {
+            bool Reaches((Vector3 Centre, float Radius) b)
+            {
+                var c = Vector4.Transform(new Vector4(b.Centre, 1), frame.HallViewProj); float r = b.Radius / HallRadius;
+                return MathF.Abs(c.X) <= 1 + r && MathF.Abs(c.Y) <= 1 + r;
+            }
+            for (int k = 0; k < bounds.Length;)
+            {
+                if (!d.Moving && !Reaches(bounds[k])) { k++; continue; }
+                int n = 1; while (k + n < bounds.Length && (d.Moving || Reaches(bounds[k + n]))) n++;
+                foreach (var p in d.Parts)
+                {
+                    if (!Casts(p.Kind)) continue;
+                    l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + (uint)k, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
+                    l.DrawIndexedInstanced(p.IndexCount, (uint)n, p.IndexStart, d.BaseVertex, 0);
+                }
+                k += n;
+            }
+        }
+        l.ResourceBarrierTransition(_hallShadow, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
+        l.ResourceBarrierTransition(_hallTint, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
+        l.ClearRenderTargetView(TintRtv, new Color4(1, 1, 1, 1)); l.OMSetRenderTargets(TintRtv, null);
+        l.RSSetViewport(0, 0, TintSize, TintSize); l.RSSetScissorRect(TintSize, TintSize); l.SetPipelineState(_tint);
+        foreach (var (d, p) in _stained)
+        {
+            l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
+            l.DrawIndexedInstanced(p.IndexCount, d.InstanceCount, p.IndexStart, d.BaseVertex, 0);
+        }
+        l.ResourceBarrierTransition(_hallTint, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
+        // the garden all round, for what surfaces mirror: every face for a frame on its own (and for the first shown after one),
+        // else the next face in turn - twelve frames on, the pictures are of the light as it is by then
+        Surroundings(l, first, live && _roundsDrawn ? [_roundNext++ % (Rounds.Length * 6)] : Enumerable.Range(0, Rounds.Length * 6)); _roundsDrawn = live;
 
         // 2. the pool's mirror image
         if (_set.ReflectionDivisor > 0)

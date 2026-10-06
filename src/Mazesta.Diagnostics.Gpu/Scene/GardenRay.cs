@@ -6,6 +6,8 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// Draws the garden with DirectX Raytracing (GardenRay.hlsl): a bottom-level acceleration structure per mesh (one geometry per material,
 /// leaf cards non-opaque so the shader cuts them out), and a top-level one over every placed mesh, rebuilt each frame so the logo, the
 /// mirror sphere and the fountain's droplets can move and the plants lean with the wind.
+/// The garden's day goes by as the walk does (<see cref="GardenDay"/>): the sun's shadows cross the paving, its light comes in at
+/// the hall's stained windows, the lamps are lit at dusk and the moon takes over.
 /// Instances made only of water, glass and glowing parts are left out of shadow rays (instance mask), so lanterns light through their
 /// glass; the stained panes have a mask bit of their own, by which the shader finds the colour light takes on passing through them.
 /// A few rays a pixel leave speckle, which two filters take out: across the frames being shown (each frame's light is added to what
@@ -17,7 +19,9 @@ internal sealed unsafe class GardenRay : GardenRenderer
     [StructLayout(LayoutKind.Sequential)] private readonly record struct Pass(uint Step, uint Last, uint Stage = 0, uint Keep = 0);
     [StructLayout(LayoutKind.Sequential, Size = 64)] private struct InstanceDesc { public fixed float Transform[12]; public uint IdAndMask, OffsetAndFlags; public ulong Blas; }
 
-    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise, _finish, _gather;
+    /// <summary>What a pass of the light volume's baker changes in the frame's constants: which light shines.</summary>
+    public delegate void FrameSetup(ref GardenFrame frame);
+    private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline, _denoise, _finish, _gather; private ID3D12PipelineState? _bake;
     private readonly ID3D12Resource _tlas, _tlasScratch, _instances, _pixels, _constants, _ping, _pong, _guide, _prevGuide, _prevLight; private readonly uint _pitch;
     private Matrix4x4 _prevViewProj; private Vector3 _prevEye; private bool _hasPrev;
     private readonly ulong[] _blas; private readonly byte[] _masks; private readonly Matrix4x4[] _dequant;
@@ -44,7 +48,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
         ulong px = (ulong)width * (ulong)height * 16;
         _ping = s.UavBuffer(px); _pong = s.UavBuffer(px); _guide = s.UavBuffer(px * 2);
         _prevGuide = s.UavBuffer(px); _prevLight = s.UavBuffer(px);   // the frame shown before: what each pixel met, and the light gathered for it so far
-        _constants = s.Buffer(768, HeapType.Upload, ResourceStates.GenericRead);
+        _constants = s.Buffer(GardenFrame.Bytes, HeapType.Upload, ResourceStates.GenericRead);
 
         // one BLAS per mesh drawn, built together: results and scratch each packed into one buffer
         int meshCount = g.Draws.Max(d => d.Mesh) + 1;
@@ -106,14 +110,15 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     /// <summary>For <see cref="GardenLightBaker"/>: the light at each point of a grid, for each of six directions, as four floats an
     /// entry (red, green, blue, and the share of its rays that met the back of a surface). The scene is this renderer's own, as it
-    /// stands at time 0; <paramref name="rays"/> rays an entry, a few rows of entries a submission so no one of them holds the GPU long.</summary>
-    public float[] BakeLight(Vector4 grid, Vector3 points, int count, uint rays, float skyGain)
+    /// stands at time 0, lit as <paramref name="light"/> leaves the frame's constants; <paramref name="rays"/> rays an entry, a few
+    /// rows of entries a submission so no one of them holds the GPU long.</summary>
+    public float[] BakeLight(Vector4 grid, Vector3 points, int count, uint rays, FrameSetup light)
     {
         if (Width != BakeRow || (long)Width * Height < count) throw new InvalidOperationException("The renderer is not the size the light volume's list needs.");
-        var bake = S.Own(S.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenBake") }));
+        var bake = _bake ??= S.Own(S.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader("GardenBake") }));
         var frame = GardenFrame.For(G, 0, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces; frame.Samples = 1;
-        frame.Grid = grid; frame.Grid2 = new(points, 0); frame.Post.Y = skyGain;
-        MemoryMarshal.Write(_constants.Map<byte>(0, 768), in frame); _constants.Unmap(0);
+        light(ref frame); frame.Grid = grid; frame.Grid2 = new(points, 0);
+        MemoryMarshal.Write(_constants.Map<byte>(0, GardenFrame.Bytes), in frame); _constants.Unmap(0);
         WriteInstances(0, all: true);
         int rows = (count + BakeRow - 1) / BakeRow;
         for (int row = 0; row < rows; row += 8)
@@ -175,7 +180,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
         var frame = GardenFrame.For(G, time, Width, Height); frame.Pitch = _pitch; frame.Bounces = (uint)Bounces; frame.Samples = (uint)Samples;
         frame.PrevViewProj = _prevViewProj; frame.PrevEye = new(_prevEye, live && _hasPrev ? 1 : 0);
         if (live) { _prevViewProj = frame.ViewProj; _prevEye = frame.Eye; _hasPrev = true; }
-        MemoryMarshal.Write(_constants.Map<byte>(0, 768), in frame); _constants.Unmap(0);
+        MemoryMarshal.Write(_constants.Map<byte>(0, GardenFrame.Bytes), in frame); _constants.Unmap(0);
         l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, _tlasInputs, 0, _tlasScratch.GPUVirtualAddress));
         l.ResourceBarrierUnorderedAccessView(_tlas);
         l.SetPipelineState(_pipeline); Bind(l);

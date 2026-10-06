@@ -1,7 +1,8 @@
-// Visual GPU test, Direct3D 12 rasterisation (GpuSceneExecutor + GardenRaster.cs): the Persian garden under a low golden sun.
-// Passes: the sun's shadow map and, once, the view straight down that says where the open sky is and what each lamp sees round it
-// (all depth only) and, once, the garden all round from the middle of the courtyard and of the hall, for what surfaces mirror;
-// the pool's mirror
+// Visual GPU test, Direct3D 12 rasterisation (GpuSceneExecutor + GardenRaster.cs): the Persian garden through a day and a night.
+// Passes: the key light's shadow maps (the sun's or the moon's: one of the whole courtyard and a finer one of the hall alone, with
+// the colour its stained panes give the light that passes them) and, once, the view straight down that says where the open sky is
+// and what each lamp sees round it (all depth only); the garden all round from the middle of the courtyard and of the hall, for
+// what surfaces mirror (a face of those pictures a frame, as the light changes); the pool's mirror
 // image (the scene drawn again from the eye reflected in the water, when the load level asks for it); the frame's depth alone, from
 // which the ambient occlusion image is worked out; then the frame itself - sky, solid geometry, leaves (alpha tested, or alpha to
 // coverage under MSAA) and last the see-through water and glass - in light's own units (Packed into ten bits a colour); and the lens:
@@ -10,7 +11,7 @@
 // garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
-           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=3)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=5)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
@@ -33,6 +34,8 @@ Texture2D<float4> LensB : register(t11);       // the last pass: the glow, to ad
 TextureCubeArray<float> LampShadows : register(t12);   // what each lamp sees round it, as depth: the still scene, drawn once
 Texture3D<float4> LightVolume : register(t13);         // the light bounced round the courtyard: six blocks side by side, one for each way a surface can face
 TextureCubeArray<float4> Surroundings : register(t14); // what is all round the middle of the courtyard, and of the hall: the still scene, drawn once (Packed), blurrier in each mip
+Texture2D<float> HallShadow : register(t15);           // the key light's view of the hall alone, as depth
+Texture2D<float4> HallTint : register(t16);            // and, through the same view, the colour the stained panes in the light's way give it (white where there are none)
 Texture2DArray<float4> RoundFaces : register(t10);     // those pictures' faces at one mip, while the next is made from it
 SamplerState Aniso : register(s0);
 SamplerComparisonState ShadowSampler : register(s1);
@@ -89,14 +92,30 @@ void ShadowPS(ShadowOut i)
 float3 Pack(float3 c) { c = max(c, 0); return sqrt(c / (1 + max(c.r, max(c.g, c.b)))); }
 float3 Unpack(float3 p) { float3 c = p * p; return c / max(1 - max(c.r, max(c.g, c.b)), 1.0 / 128); }
 
+// A stained pane as the key light's view of the hall has it: the colour it gives the light that passes (blended as a product, so
+// two panes in a row both count).
+float4 TintPS(ShadowOut i) : SV_Target { return float4(StainTint(Materials[MaterialIndex]), 1); }
+
+// The hall has a shadow map of its own (InHall says where), three times as fine as the courtyard's: its light comes through lattices a finger wide.
+
 float Shadow(float3 p, float3 n)
 {
-    float4 s = mul(ShadowViewProj, float4(p + n * 0.04, 1));
+    bool hall = InHall(p);
+    float4 s = mul(hall ? HallViewProj : ShadowViewProj, float4(p + n * (hall ? 0.015 : 0.04), 1));
     float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
     if (any(uv < 0) || any(uv > 1)) return 1;
-    float depth = s.z - 0.0006, sum = 0; int r = (int)ShadowTaps;
-    [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * ShadowTexel, depth);
+    float depth = s.z - (hall ? 0.0004 : 0.0006), sum = 0; int r = (int)ShadowTaps;
+    if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * ShadowTexel, depth); }
+    else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * ShadowTexel, depth); }
     return sum / ((2 * r + 1) * (2 * r + 1));
+}
+
+// The colour the key light has where it falls inside the hall: that of the stained panes it came through (the orsi stand at z -3.1).
+float3 KeyTint(float3 p)
+{
+    if (!InHall(p) || p.z < -3.09) return 1;
+    float4 s = mul(HallViewProj, float4(p, 1));
+    return HallTint.SampleLevel(Clamp, s.xy * float2(0.5, -0.5) + 0.5, 0).rgb;
 }
 
 // How much of a lamp's light reaches a point: what the lamp sees in that direction (its cube of depths, six views of ninety degrees)
@@ -179,10 +198,10 @@ float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
     // the light from all round, as far as the surface's own corners and crevices let it in
     float open = SkyOpen(p, s.Normal, pixel), near = Occluded(pixel) * s.Occlusion;
     float3 c = s.Albedo * Bounced(p, s.Normal, open) * (1 - s.Metallic) * near + s.Emission;
-    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor) * Shadow(p, s.Normal) * lerp(1, near, 0.35);
+    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor * KeyTint(p)) * Shadow(p, s.Normal) * lerp(1, near, 0.35);
     [loop] for (uint k = 0; k < LightCount; k++)
     {
-        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
+        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d) * LampLit(L, k);
         if (any(e > 0)) c += Brdf(s, v, l, e) * LampShadow(L, p, s.Normal, pixel);
     }
     // every surface mirrors its surroundings a little, a metal or a polished floor a lot
@@ -291,9 +310,9 @@ float4 TransparentPS(VOut i) : SV_Target
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
     float3 mirrored = ((Flags & 8) ? Mirrored(i.World, reflect(-v, n), 0.03, open) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
-    float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission;
+    float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Day.y;
     if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
-    [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
+    [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
     float density = m.Alpha < 1 ? m.Alpha : lerp(0.08, 0.6, saturation);
     float a = fresnel + (1 - fresnel) * density;

@@ -39,13 +39,18 @@ internal sealed unsafe class GardenGpu
     public GardenMaterial[] Materials { get; }
     public Light[] PointLights { get; }
     /// <summary>How many of the lamps the rasteriser gives a shadow cube (<see cref="Light.Shadow"/>: which, from 1): its point
-    /// lamps - the hall's and the lanterns' - up to this many. The ray tracer shadows every light with rays of its own.</summary>
+    /// lamps above the water - the lanterns', the hall's, the canopy's, the gate's - up to this many. The ray tracer shadows every
+    /// light with rays of its own.</summary>
     public int ShadowLamps { get; }
-    public const int MostShadowLamps = 12;
+    public const int MostShadowLamps = 16;
     /// <summary>The nearest a lamp's shadow cube sees: inside a lantern, its own cage is a hand's breadth away.</summary>
     public const float LampNear = 0.03f;
-    /// <summary>The key light: toward the sun (Direct3D) or the moon (ray traced), and its irradiance.</summary>
+    /// <summary>The scene's own sun and moon: toward each, and its irradiance. Where they stand and how they shine at a moment of
+    /// the walk is <see cref="Day"/>'s to say.</summary>
     public Vector3 SunDirection { get; } public Vector3 SunColor { get; }
+    public Vector3 MoonDirection { get; } = Vector3.UnitY; public Vector3 MoonColor { get; }
+    /// <summary>The light at <paramref name="time"/> of the walk: both tests go through the garden's whole day in it.</summary>
+    public GardenDay Day(float time) => GardenDay.At(time, SunDirection, SunColor, MoonDirection, MoonColor);
     public long Triangles { get; }
     public int LogoInstance { get; } = -1;
     public string? ModelProblem { get; }
@@ -123,16 +128,23 @@ internal sealed unsafe class GardenGpu
         InstanceBuffer = s.Upload(Instances, ResourceStates.NonPixelShaderResource);
         MaterialBuffer = s.Upload(Materials, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
-        // lights: Blender's watts become the intensity the shaders divide by distance squared
+        // lights: Blender's watts become the intensity the shaders divide by distance squared. Both tests have the day's sun (the
+        // .blend's own, in its Direct3D scene) and the night's moon and lamps (the rig of its ray-traced scene).
         var points = new List<Light>();
-        foreach (var l in scene.Lights.Where(l => (l.Mask & (uint)mode) != 0))
+        foreach (var l in scene.Lights)
         {
-            if (l.Kind == GardenLightKind.Sun) { SunDirection = Vector3.Normalize(-l.Direction); SunColor = l.Color * l.Energy; continue; }
+            bool night = (l.Mask & (uint)GardenScene.Mode.RayTraced) != 0;
+            if (l.Kind == GardenLightKind.Sun)
+            {
+                if (night) { MoonDirection = Vector3.Normalize(-l.Direction); MoonColor = l.Color * l.Energy; } else { SunDirection = Vector3.Normalize(-l.Direction); SunColor = l.Color * l.Energy; }
+                continue;
+            }
+            if (!night) continue;
             bool area = l.Kind == GardenLightKind.Spot && l.Blend >= 0.999f && l.Cone > 2.7f;   // the exporter's stand-in for an area light
             var intensity = l.Color * l.Energy / (area ? MathF.PI * 2 : 4 * MathF.PI);
             float range = Math.Clamp(MathF.Sqrt(Math.Max(intensity.X, Math.Max(intensity.Y, intensity.Z)) / 0.04f), 1.5f, 28f);
             float half = l.Cone / 2;
-            bool shadowed = mode == GardenScene.Mode.Raster && l.Kind == GardenLightKind.Point && ShadowLamps < MostShadowLamps;
+            bool shadowed = mode == GardenScene.Mode.Raster && l.Kind == GardenLightKind.Point && l.Position.Y > WaterLevel && ShadowLamps < MostShadowLamps;
             points.Add(new Light
             {
                 Position = l.Position, Kind = (uint)l.Kind, Direction = Vector3.Normalize(l.Direction), Range = range, Color = intensity, Radius = Math.Max(0.05f, l.Radius), Shadow = shadowed ? ++ShadowLamps : 0,
@@ -462,6 +474,13 @@ internal struct GardenFrame
     public Vector4 Fountain, Fountain2, Ambience, Lens, Post, Grid, Grid2;
     public Vector4 Round0, Round0Low, Round0High, Round1, Round1Low, Round1High;
     public Matrix4x4 PrevViewProj; public Vector4 PrevEye;
+    public Matrix4x4 HallViewProj; public Vector4 Day;
+
+    /// <summary>The room a pass's constants are given in a constant buffer: this struct, rounded up to the 256 bytes buffers are cut in.</summary>
+    public const int Bytes = 1024;
+
+    /// <summary>How many times longer the picture is exposed in the hall by day than in the garden.</summary>
+    public const float Indoors = 3.4f;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>
@@ -476,20 +495,15 @@ internal struct GardenFrame
         var view = Matrix4x4.CreateLookAtLeftHanded(eye, target, Vector3.UnitY);
         float h = 1 / MathF.Tan(fovY / 2);
         var proj = new Matrix4x4(h / aspect, 0, 0, 0, 0, h, 0, 0, 0, 0, 0, 1, 0, 0, Near, 0);   // depth = Near / distance
-        bool raster = g.Mode == GardenScene.Mode.Raster;
+        bool raster = g.Mode == GardenScene.Mode.Raster; var day = g.Day(time);
         var f = new GardenFrame
         {
-            ViewProj = view * proj, Eye = eye, Time = time, SunDir = raster ? g.SunDirection : MoonAt(g.SunDirection, time), SunOn = g.SunColor.LengthSquared() > 0 ? 1 : 0, SunColor = g.SunColor,
-            LightCount = (uint)g.PointLights.Length, WaterLevel = g.WaterLevel,
-            // a low golden sun for Direct3D, nightfall for the ray tracer: two skies, as simple gradients
-            // (by day the exposure is set for the sunlit stone, and the sky's own light is a fraction of the sun's, as it is with the
-            // sun this low: what it does not reach stays in real shade)
-            SkyZenith = raster ? new(0.13f, 0.22f, 0.46f) : new(0.012f, 0.022f, 0.070f),
-            SkyHorizon = raster ? new(0.62f, 0.46f, 0.32f) : new(0.10f, 0.085f, 0.17f),
-            GroundColor = raster ? new(0.20f, 0.16f, 0.12f) : new(0.020f, 0.018f, 0.025f),
-            Exposure = raster ? 1.9f : 1.45f,
+            ViewProj = view * proj, Eye = eye, Time = time, SunDir = day.Key, SunOn = day.KeyColor.LengthSquared() > 0 ? 1 : 0, SunColor = day.KeyColor,
+            LightCount = day.Lamps > 0 ? (uint)g.PointLights.Length : 0, WaterLevel = g.WaterLevel,   // by day no lamp is lit: none is looked at
+            SkyZenith = day.Zenith, SkyHorizon = day.Horizon, GroundColor = day.Ground, Exposure = day.Exposure,
             ViewSize = new(width, height), CamRight = right, CamUp = up, CamForward = forward, TanHalfFovY = MathF.Tan(fovY / 2), Aspect = aspect,
-            Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u, Backdrop = g.BackdropRange
+            Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u, Backdrop = g.BackdropRange,
+            Day = new(day.Night, day.Lamps, day.Moon ? 1 : 0, day.Noon)
         };
         if (g.Fountain is { } fountain) { f.Fountain = new(fountain.Nozzle, fountain.BowlRadius); f.Fountain2 = new(fountain.BowlLevel, fountain.RimRadius, GardenGpu.JetDroplets, 1); }
         f.Ambience = new(0, 0, Near, 0);
@@ -498,16 +512,14 @@ internal struct GardenFrame
         // frame's height for each dioptre out of focus, and never more than 0.7 % of it.
         f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.022f * height, 0.007f * height, 16);
         f.Post = new(raster ? 0.11f : 0.55f, 0, 1, 0);   // the rasteriser's glow is five levels summed, the ray tracer's one; the wind blows
-        var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, raster ? 0.3f : 0.45f);   // the logo is a lit sign: it glows of itself, by day a little, at night more
+        var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0.3f + 0.15f * day.Night);   // the logo is a lit sign: it glows of itself, by day a little, at night more
+        var hall = GardenRaster.Rounds[1]; f.Round1Low = new(hall.Low, 0); f.Round1High = new(hall.High, 0);   // the hall's rooms: where the light is the orsi's
+        // The eye gets used to the dark: by day the hall's rooms hold a fraction of the garden's light, and the picture is exposed for
+        // them as the walk goes in at the door (the windows then burn out, as they do to anyone standing in such a room).
+        float inside = Math.Clamp((eye.Z + 4.6f) / 3.2f, 0, 1); inside = inside * inside * (3 - 2 * inside);
+        float longer = 1 + (Indoors - 1) * inside * (1 - day.Night);
+        f.Exposure *= longer; f.Post.X /= longer;   // (the windows' glow is no wider for it: it would veil the room)
         return f;
-    }
-
-    /// <summary>Toward the moon at <paramref name="time"/>: it swings slowly across the sky about where the scene has it, there and back
-    /// in one walk of the garden, so the ray-traced shadows of the cypresses, the columns and the lattices creep over the paving.</summary>
-    public static Vector3 MoonAt(Vector3 placed, float time)
-    {
-        float a = 0.42f * MathF.Sin(time / GardenCamera.Loop * 2 * MathF.PI), c = MathF.Cos(a), s = MathF.Sin(a);
-        return Vector3.Normalize(new(c * placed.X + s * placed.Z, placed.Y * (1 + 0.25f * MathF.Cos(time / GardenCamera.Loop * 2 * MathF.PI)), -s * placed.X + c * placed.Z));
     }
 
     /// <summary>The same frame seen in the pool: the camera mirrored in the water's plane, drawing only what is above it.</summary>
