@@ -1400,6 +1400,7 @@ The update services stopped and disabled</value></data>
   <data name="Test_RayTracing_On" xml:space="preserve"><value>On (DXR 1.1)</value></data>
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>Graphics — Persian garden, ray traced (DXR)</value></data>
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden (2560x1440)</value></data>
+  <data name="Bench_Gpu_Scene_FpsPart" xml:space="preserve"><value>Average frame rate, part of the walk (not compared)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>1% low (the slowest hundredth of frames)</value></data>
   <data name="Nav_AppUpdate" xml:space="preserve"><value>App update</value></data>
   <data name="AppUpd_Lede" xml:space="preserve"><value>The app updates itself from Mazesta's site: new releases of the app, and the lists that compare a benchmark result with other systems. Everything is checked against Mazesta's signature before it is used, and your settings, reports and history (the Data folder) are never touched.</value></data>

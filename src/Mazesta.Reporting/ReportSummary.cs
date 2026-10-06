@@ -44,7 +44,7 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
     {
         "Bench_Cpu_Gflops", "Bench_Cpu_PerThread", "Bench_Mem_Write", "Bench_Mem_Read", "Bench_Mem_Latency",
         "Bench_Storage_SeqRead", "Bench_Storage_SeqWrite",
-        "Bench_Gpu_Fps", "Bench_Gpu_Triangles", "Bench_Gpu_Rt_Fps", "Bench_Gpu_Rt_Rays", "Bench_Gpu_Scene_Fps", "Bench_Gpu_Scene_Low",
+        "Bench_Gpu_Fps", "Bench_Gpu_Triangles", "Bench_Gpu_Rt_Fps", "Bench_Gpu_Rt_Rays", "Bench_Gpu_Scene_Fps", "Bench_Gpu_Scene_FpsPart", "Bench_Gpu_Scene_Low",
         "Bench_Gpu_Ai_Fp32", "Bench_Gpu_Ai_Fp16", "Bench_Gpu_Ai_Int8", "Bench_Net_Download", "Bench_Net_Upload", "Bench_Net_Ping",
         "Bench_Ai_Prompt", "Bench_Ai_Gen",
     };

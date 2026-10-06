@@ -1400,6 +1400,7 @@
   <data name="Test_RayTracing_On" xml:space="preserve"><value>روشن (DXR 1.1)</value></data>
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)</value></data>
   <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>میانگین نرخ فریم در باغ (2560x1440)</value></data>
+  <data name="Bench_Gpu_Scene_FpsPart" xml:space="preserve"><value>میانگین نرخ فریم، بخشی از مسیر (مقایسه نمی‌شود)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>نرخ فریم ۱٪ کندترین فریم‌ها</value></data>
   <data name="Nav_AppUpdate" xml:space="preserve"><value>به‌روزرسانی برنامه</value></data>
   <data name="AppUpd_Lede" xml:space="preserve"><value>برنامه خودش را از سایت مازستا به‌روز می‌کند: نسخه‌های تازه برنامه و فهرست‌هایی که نتیجه بنچمارک را با سیستم‌های دیگر مقایسه می‌کنند. هر چیزی پیش از استفاده با امضای مازستا بررسی می‌شود و تنظیمات، گزارش‌ها و سوابق شما (پوشه Data) هرگز دست نمی‌خورند.</value></data>

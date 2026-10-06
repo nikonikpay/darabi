@@ -6,8 +6,9 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// Direct3D 12 rasterisation (shadow map, sky map, ambient occlusion, the pool's reflection, MSAA: set by the quality) or by DirectX Raytracing (camera rays a pixel, each with a
 /// soft-shadow ray to the moon and every lamp in reach and a bounced-light ray, reflection and refraction, 4 bounces). The resolution and the quality are
 /// options (rasterisation); the ray-traced one has a single setting, 4 rays a pixel, like the visual test, and only the resolution to choose.
-/// The camera walks the garden at the test's own pace (a walk is <see cref="GardenCamera.Loop"/> seconds, by the clock), and a run lasts whole
-/// walks (one, for the default length), so every card draws the same route and the picture moves as it does in the visual test, however fast the card is. Only the drawing of each frame is timed: showing it in the window and the readout over it are not. Reported: the average frame rate, the 1 % low (the
+/// The camera walks the garden at the test's own pace (a walk is <see cref="GardenCamera.Loop"/> seconds, by the clock: the default length), and a run
+/// lasts the time asked for, from the gate on. Only a run of whole walks draws the route every card is compared on: a shorter or longer one reports
+/// its frame rate under a name of its own ("part of the walk"), which is kept neither as the machine's record nor in the comparison list. Only the drawing of each frame is timed: showing it in the window and the readout over it are not. Reported: the average frame rate, the 1 % low (the
 /// frame rate of the average of the slowest hundredth of frames, as CapFrameX and most reviews define it) and the 99th-percentile frame
 /// time (the other common definition: 99 % of frames were quicker). The check frames are drawn before and after the timed run, never in it. A frame drawn before the run and again after it at the same moment must be the same
 /// bits, or the run failed. Mazesta's own scene - not comparable with other programs' or games' scores. Closing the window cancels the run.
@@ -21,7 +22,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
     private static readonly TestOption RasterQuality = new(QualityOption, "Bench_Option_Quality", TestOptionKind.Choice, "3",
         () => [new("1", "Test_GpuLoad_Light", true, "shadows 2048 · no MSAA · no pool reflection"), new("2", "Test_GpuLoad_Medium", true, "shadows 2048 · MSAA 2× · pool reflection 1/2"),
                new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")]);
-    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", 64, [GpuDevices.Option, Resolution, RasterQuality, GpuSceneExecutor.RayTracing]);
+    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, GpuSceneExecutor.RayTracing]);
     public TestDefinition Definition => Scene;
     public HardwareKind Component => HardwareKind.Gpu;
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(GpuSceneExecutor.RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -49,7 +50,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         // The camera follows the clock, as in the visual test, so the walk looks the same however fast the card is; the run lasts whole walks, so
         // every card draws the same route. The time counted is each frame's drawing alone, so the readout, the picture shown, the check frame and
         // the progress report are outside it.
-        int walks = Math.Max(1, (int)Math.Ceiling(request.DurationSeconds / GardenCamera.Loop)); double runSeconds = walks * GardenCamera.Loop;
+        double runSeconds = Math.Max(10, request.DurationSeconds), walks = runSeconds / GardenCamera.Loop; bool whole = Math.Abs(walks - Math.Round(walks)) < 0.01;
         var times = new List<double>(); var total = Stopwatch.StartNew(); var frame = new Stopwatch(); int n = 0;
         var tick = Stopwatch.StartNew(); double tickTime = 0; int tickFrames = 0; double lowestHalfSecond = double.MaxValue;
         ShowReadout(0, 0);
@@ -82,8 +83,8 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         string how = rayTraced
             ? $"Direct3D 12 with DXR 1.1 ray tracing, quality {quality}: {r.Level.ShadowTaps} shadow ray{(r.Level.ShadowTaps == 1 ? "" : "s")} a pixel to the sun or the moon and one to each lit lamp in reach, ray-traced reflections, ambient occlusion {r.Level.OcclusionTaps} taps, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
             : $"Direct3D 12, quality {quality}: shadow map {r.Level.ShadowSize}, ambient occlusion {r.Level.OcclusionTaps} taps, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame";
-        return ([new("Bench_Gpu_Scene_Fps", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms")],
-            $"Persian garden in a window at {width}x{height}, {n} frames: " + $"{walks} walk{(walks == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" + $"; {how}; {garden.Instances.Length:N0} objects");
+        return ([new(whole ? "Bench_Gpu_Scene_Fps" : "Bench_Gpu_Scene_FpsPart", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms")],
+            $"Persian garden in a window at {width}x{height}, {n} frames: " + (whole ? $"{walks:F0} walk{(Math.Round(walks) == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" : $"the first {runSeconds:F0} s of the {GardenCamera.Loop:F0} s walk of the garden (not the whole route: not compared with other runs)") + $"; {how}; {garden.Instances.Length:N0} objects");
 
         // The readout shows only what was measured: a sensor this card does not report (or has not reported in the last seconds) is left out.
         void ShowReadout(double fps, double mean)
