@@ -204,13 +204,24 @@ float3 Glance(float3 origin, float3 dir, float tmax, inout uint seed, bool matt)
 // One camera ray's light: the surfaces it meets, through water and glass and off polished surfaces, up to Bounces deep.
 float3 Radiance(float3 origin, float3 dir, inout uint seed)
 {
-    float3 color = 0, weight = 1;
+    float3 color = 0, weight = 1; uint puffs = 0;
     for (uint bounce = 0; bounce <= Bounces; bounce++)
     {
         Hit h;
         if (!Trace(origin, dir, 400, MaskVisible, h)) { color += weight * SkyLight(dir, false); break; }
         Material m = Materials[h.Material];
         float3 v = -dir; Surface s = SurfaceAt(h, v);
+
+        if (m.Kind == KSmoke)
+        {
+            // a puff of steam: it hides a little of what is behind it and gives back the light that falls on it; the ray goes
+            // straight on (and its passing a puff is no bounce, for the first dozen)
+            float a = Puff(m, h.N, v); Surface white = s; white.Roughness = 1; white.Metallic = 0; white.Sheen = 0;
+            color += weight * a * (m.Base * Ambient(s.Normal) * 0.8 + Direct(white, h.P, v, true, seed) * 0.5);
+            weight *= 1 - a; origin = h.P + dir * 0.003;
+            if (puffs++ < 12) bounce--;
+            continue;
+        }
 
         if (m.Kind == KWater && abs(h.N.y) <= 0.7)
         {
@@ -277,7 +288,7 @@ void Main(uint3 id : SV_DispatchThreadID)
         if (Trace(Eye, d0, 400, MaskVisible, h0))
         {
             Material m0 = Materials[h0.Material]; Surface s0 = SurfaceAt(h0, -d0);
-            bool plain = m0.Kind != KWater && m0.Kind != KGlass && m0.Kind != KEmissive;
+            bool plain = m0.Kind != KWater && m0.Kind != KGlass && m0.Kind != KEmissive && m0.Kind != KSmoke;
             Guide[i * 2] = float4(s0.Normal, length(h0.P - Eye)); Guide[i * 2 + 1] = float4(plain ? max(s0.Albedo, 0.03) : 1, plain ? 1 : 0);
         }
         else { Guide[i * 2] = float4(0, 0, 0, -1); Guide[i * 2 + 1] = 1; }

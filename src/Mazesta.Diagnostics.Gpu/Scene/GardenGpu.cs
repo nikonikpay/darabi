@@ -9,6 +9,8 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// the logo (turning to the camera), the ray-traced scene's mirror sphere (gliding round the pool) and the fountain's water, which
 /// this class adds to the scene: the column the jet rises as and a stream falling from each lobe of the bowl's rim (still shapes of
 /// running water), and droplets, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
+/// It also adds what is alive in the garden (<see cref="Mover"/>): butterflies over the beds by day, fireflies by night - some of
+/// them lights, which the leaves round them catch - and the steam of the kettle and the samovar on the hall's tea counter.
 /// Both renderers build on it. The owner's Models\gpu-test.obj, when there is one, takes the logo's place over the pool.
 /// </summary>
 internal sealed unsafe class GardenGpu
@@ -23,7 +25,22 @@ internal sealed unsafe class GardenGpu
     public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts, bool Moving);
 
     /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
-    public const uint JetDroplets = 220, SpillDroplets = 12 * 14;
+    public const uint JetDroplets = 520, SpillDroplets = 12 * 26;
+    /// <summary>The garden's small life: fireflies (the first <see cref="LitFireflies"/> of them are lights as well), butterflies
+    /// (two wings each), and the puffs of steam each of the tea counter's two vessels gives off.</summary>
+    public const int Fireflies = 140, LitFireflies = 16, Butterflies = 24, SteamPuffs = 12;
+    /// <summary>Where steam leaves the kettle (its spout's tip) and the samovar (over the teapot on its crown), on the hall's tea counter.</summary>
+    public static readonly Vector3 KettleSpout = new(-9.057f, 2.24f, 2.66f), SamovarCrown = new(-9.245f, 2.81f, 3.5f);
+    /// <summary>The beds the garden's small life keeps to, on the right of the pool (x from, to; z from, to): three between the pool
+    /// and the walk, three along the outer wall. The left side mirrors them.</summary>
+    private static readonly (float X0, float X1, float Z0, float Z1)[] Beds =
+        [(3.9f, 7.9f, -15.6f, -10.6f), (4.6f, 7.9f, -21.6f, -17.2f), (3.9f, 7.9f, -28.9f, -23.2f), (10.2f, 12.1f, -15.6f, -10.2f), (10.2f, 12.1f, -21.9f, -17.2f), (10.2f, 12.1f, -29.6f, -23.5f)];
+    private enum Life : byte { Firefly, WingRight, WingLeft, Steam }
+    /// <summary>What each mover is and which of its kind, by the number its instance carries (<see cref="Instance.Index"/>).</summary>
+    private readonly (Life Kind, int Number)[] _movers = [];
+    private readonly int _firstFirefly = -1;
+    /// <summary>The movers' places for the frame being drawn (three rows of a 3x4 matrix each), for the rasteriser's vertex shader.</summary>
+    public ID3D12Resource MoverBuffer { get; }
     /// <summary>The main pool's surface.</summary>
     public float WaterLevel { get; }
     public GardenFountain? Fountain { get; }
@@ -92,6 +109,25 @@ internal sealed unsafe class GardenGpu
                 }
             }
         }
+        // the garden's small life: every one a mover, placed anew each frame (Mover)
+        var still = new GardenInstance { Mask = (uint)mode, Flags = GardenScene.MoverFlag, Row0 = new(1, 0, 0, 0), Row1 = new(0, 1, 0, 0), Row2 = new(0, 0, 1, 0) };
+        var life = new List<(int Mesh, Life Kind, int Number)>();
+        void Add(GardenMaterial material, Func<uint, GardenMesh> shape, Life kind, int first, int count)
+        {
+            materials.Add(material); meshes.Add(shape((uint)materials.Count - 1));
+            for (int k = 0; k < count; k++) { life.Add((meshes.Count - 1, kind, first + k)); chosen = [.. chosen, still with { Mesh = (uint)meshes.Count - 1 }]; }
+        }
+        Add(new GardenMaterial { Kind = GardenMaterialKind.Emissive, Texture = -1, NormalTexture = -1, Base = new(0.5f, 0.6f, 0.1f), Alpha = 1, Roughness = 0.6f, Emission = new(7f, 10f, 1.6f) }, Ball, Life.Firefly, 0, Fireflies);
+        Vector3[] wings = [new(0.85f, 0.36f, 0.06f), new(0.92f, 0.9f, 0.8f), new(0.25f, 0.42f, 0.85f), new(0.9f, 0.75f, 0.12f)];
+        for (int c = 0; c < wings.Length; c++)
+        {   // butterflies of four colours, a wing of each colour's mesh for every fourth butterfly's two sides
+            int each = (Butterflies + wings.Length - 1 - c) / wings.Length;
+            materials.Add(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = wings[c], Alpha = 1, Roughness = 0.7f, Pattern = new(0, 0, 0, 0.01f) });
+            meshes.Add(Wing((uint)materials.Count - 1));
+            for (int k = 0; k < each; k++)
+                foreach (var side in (Life[])[Life.WingRight, Life.WingLeft]) { life.Add((meshes.Count - 1, side, c + k * wings.Length)); chosen = [.. chosen, still with { Mesh = (uint)meshes.Count - 1 }]; }
+        }
+        Add(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.9f, 0.92f, 0.95f), Alpha = 0.2f, Roughness = 1 }, Ball, Life.Steam, 0, SteamPuffs * 2);
         if (custom is not null)
         {
             int logo = Array.FindIndex(chosen, i => (i.Flags & GardenScene.LogoFlag) != 0);
@@ -111,8 +147,14 @@ internal sealed unsafe class GardenGpu
         var order = chosen.Select((inst, k) => (inst, k)).OrderBy(x => x.inst.Mesh).ThenBy(x => x.k).Select(x => x.inst).ToArray();
         Instances = [.. order.Select(i => new Instance { Row0 = i.Row0, Row1 = i.Row1, Row2 = i.Row2, Mesh = i.Mesh, Mask = i.Mask, Flags = i.Flags })];
         for (uint k = 0, d = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.DropletFlag) != 0) Instances[k].Index = d++;
+        // the movers are numbered as they come (grouped by mesh, in the order they were added within one): which is which is kept beside
+        var kinds = new List<(Life, int)>();
+        foreach (var grouped in life.GroupBy(x => x.Mesh).OrderBy(x => x.Key)) kinds.AddRange(grouped.Select(x => (x.Kind, x.Number)));
+        _movers = [.. kinds];
+        for (uint k = 0, m = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.MoverFlag) != 0) Instances[k].Index = m++;
+        MoverBuffer = s.Buffer((ulong)Math.Max(1, _movers.Length) * 48, HeapType.Upload, ResourceStates.GenericRead);
         LogoInstance = Array.FindIndex(Instances, i => (i.Flags & GardenScene.LogoFlag) != 0);
-        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => (Instances[k].Flags & 7) != 0)];
+        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => (Instances[k].Flags & (7 | GardenScene.MoverFlag)) != 0)];
         Swaying = [.. Enumerable.Range(0, Instances.Length).Where(k => GardenScene.Sway(Instances[k].Flags) > 0)];
         var draws = new List<Draw>();
         for (int k = 0; k < order.Length;)
@@ -121,7 +163,7 @@ internal sealed unsafe class GardenGpu
             var mesh = meshes[m];
             draws.Add(new Draw(m, (uint)k, (uint)n, baseVertex[m], (uint)mesh.VertexCount, mesh.Centre, mesh.Extent,
                 [.. mesh.Submeshes.Select(sub => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))],
-                order.Skip(k).Take(n).Any(i => (i.Flags & 7) != 0)));
+                order.Skip(k).Take(n).Any(i => (i.Flags & (7 | GardenScene.MoverFlag)) != 0)));
             Triangles += (long)mesh.Indices.Length / 3 * n; k += n;
         }
         Draws = [.. draws];
@@ -151,8 +193,12 @@ internal sealed unsafe class GardenGpu
                 CosOuter = l.Kind == GardenLightKind.Spot ? MathF.Cos(half) : -2, CosInner = l.Kind == GardenLightKind.Spot ? MathF.Cos(half * (1 - Math.Clamp(l.Blend, 0.02f, 1f))) : -1,
             });
         }
+        // the fireflies that are lights: a hand's breadth of green glow each, moved and dimmed with the firefly every frame (Update)
+        _firstFirefly = points.Count;
+        for (int k = 0; k < LitFireflies; k++) points.Add(new Light { Kind = (uint)GardenLightKind.Point, Direction = -Vector3.UnitY, Range = 1.7f, Radius = 0.05f, CosOuter = -2, CosInner = -1 });
         PointLights = [.. points];
-        LightBuffer = s.Upload(PointLights.Length > 0 ? PointLights : [new Light()], ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
+        LightBuffer = s.Buffer((ulong)PointLights.Length * 64, HeapType.Upload, ResourceStates.GenericRead);
+        Update(0);
 
         // for the ray tracer: where each mesh's vertices and each submesh's indices start
         var infos = new List<MeshInfo>(); var subs = new List<SubmeshInfo>();
@@ -169,6 +215,81 @@ internal sealed unsafe class GardenGpu
         var sky = scene.Backdrop;
         Backdrop = UploadImage(s, sky?.Width ?? 4, sky?.Height ?? 4, sky?.Bc3 ?? new byte[16]);
         BackdropRange = sky is null ? Vector4.Zero : new(sky.TanLow, sky.TanHigh, 1, 0);
+    }
+
+    /// <summary>Sets what moves of itself for the frame at <paramref name="time"/>: the movers' places for the rasteriser, and the
+    /// lit fireflies among the lamps. A renderer calls it before it draws (the frame before has been drawn by then).</summary>
+    public void Update(float time)
+    {
+        var rows = MoverBuffer.Map<Vector4>(0, Math.Max(1, _movers.Length) * 3);
+        for (int k = 0; k < _movers.Length; k++)
+        {
+            var m = Mover(k, time);
+            rows[k * 3] = new(m.M11, m.M21, m.M31, m.M41); rows[k * 3 + 1] = new(m.M12, m.M22, m.M32, m.M42); rows[k * 3 + 2] = new(m.M13, m.M23, m.M33, m.M43);
+        }
+        MoverBuffer.Unmap(0);
+        float lamps = Day(time).Lamps;
+        for (int k = 0; k < LitFireflies; k++)
+        {
+            var (at, glow) = Firefly(k, time);
+            PointLights[_firstFirefly + k].Position = at; PointLights[_firstFirefly + k].Color = new Vector3(0.45f, 0.75f, 0.12f) * (0.11f * glow * lamps);
+        }
+        PointLights.AsSpan().CopyTo(LightBuffer.Map<Light>(0, PointLights.Length)); LightBuffer.Unmap(0);
+    }
+
+    private static float H(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return (x >> 8) * (1f / 16777216f); }
+
+    /// <summary>A place over one of the first <paramref name="beds"/> beds, picked by <paramref name="seed"/>: what a firefly or a butterfly keeps near.</summary>
+    private static Vector3 Home(uint seed, float low, float high, int beds)
+    {
+        var bed = Beds[(int)(H(seed) * beds) % beds]; float side = H(seed + 1) < 0.5f ? -1 : 1;
+        return new(side * (bed.X0 + (bed.X1 - bed.X0) * H(seed + 2)), low + (high - low) * H(seed + 3), bed.Z0 + (bed.Z1 - bed.Z0) * H(seed + 4));
+    }
+
+    /// <summary>Where firefly <paramref name="n"/> is at <paramref name="time"/> and how brightly it glows just then (0 to 1): it
+    /// drifts about its place among the plants, and its light swells and fades to its own slow beat.</summary>
+    public static (Vector3 At, float Glow) Firefly(int n, float time)
+    {
+        uint id = (uint)n * 16 + 9000; var home = Home(id, 0.55f, 2.3f, Beds.Length); float a = H(id + 5) * 6.28f, b = H(id + 6) * 6.28f, c = H(id + 7) * 6.28f;
+        var at = home + new Vector3(0.7f * MathF.Sin(time * 0.31f + a) + 0.25f * MathF.Sin(time * 0.83f + b), 0.3f * MathF.Sin(time * 0.47f + c) + 0.1f * MathF.Sin(time * 1.3f + a),
+                                    0.7f * MathF.Cos(time * 0.27f + b) + 0.25f * MathF.Sin(time * 0.71f + c));
+        float beat = MathF.Sin(time * (1.1f + 0.9f * H(id + 8)) + c);
+        return (at, beat > 0 ? beat * beat : 0);
+    }
+
+    /// <summary>Butterfly <paramref name="n"/> at <paramref name="time"/>: where it is, which way it is heading (about the vertical),
+    /// and how far its wings are raised - it wanders over the beds' flowers, dipping and rising, its wings beating some ten times a second.</summary>
+    public static (Vector3 At, float Heading, float Raised) Butterfly(int n, float time)
+    {
+        uint id = (uint)n * 16 + 5000; var home = Home(id, 0.75f, 1.5f, 3);   // the beds by the pool: the ones along the wall are too narrow to wander over float a = H(id + 5) * 6.28f, b = H(id + 6) * 6.28f, pace = 0.8f + 0.5f * H(id + 7);
+        Vector3 At(float t) => home + new Vector3(1.3f * MathF.Sin(t * 0.43f * pace + a) + 0.4f * MathF.Sin(t * 1.1f * pace + b), 0.22f * MathF.Sin(t * 0.9f * pace + b) + 0.07f * MathF.Sin(t * 4.3f + a),
+                                                  1.3f * MathF.Cos(t * 0.37f * pace + b) + 0.4f * MathF.Sin(t * 1.3f * pace + a));
+        var at = At(time); var ahead = At(time + 0.05f) - at;
+        return (at, MathF.Atan2(ahead.X, ahead.Z), 0.15f + 1.05f * MathF.Abs(MathF.Sin(time * (30 + 8 * H(id + 8)) + a)));
+    }
+
+    /// <summary>Mover <paramref name="index"/>'s world transform at <paramref name="time"/> (a row-vector matrix, as <see cref="World"/>'s):
+    /// a firefly is a spark as large as it glows, out only while the lamps are lit; a butterfly's wing is raised about the body's
+    /// line and turned the way it flies, out only by day; a puff of steam rises from its vessel, swelling, and is gone.</summary>
+    public Matrix4x4 Mover(int index, float time)
+    {
+        var (kind, n) = _movers[index]; var day = Day(time); var nowhere = Matrix4x4.CreateScale(1e-4f) * Matrix4x4.CreateTranslation(0, -100, 0);
+        switch (kind)
+        {
+            case Life.Firefly:
+                var (at, glow) = Firefly(n, time); float size = 0.026f * (0.25f + 0.75f * glow) * day.Lamps;
+                return size > 1e-4f ? Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(at) : nowhere;
+            case Life.WingRight or Life.WingLeft:
+                if (day.Night >= 0.6f) return nowhere;
+                var (where, heading, raised) = Butterfly(n, time); float side = kind == Life.WingRight ? 1 : -1, grown = 2.2f * (1 - day.Night / 0.6f);
+                return Matrix4x4.CreateScale(side * grown, grown, grown) * Matrix4x4.CreateRotationZ(side * raised) * Matrix4x4.CreateRotationY(heading) * Matrix4x4.CreateTranslation(where);
+            default:
+                bool kettle = n < SteamPuffs; float phase = time / 2.8f + (float)(n % SteamPuffs) / SteamPuffs + (kettle ? 0 : 0.37f); phase -= MathF.Floor(phase);
+                uint id = (uint)n * 16 + 7000; float lean = phase * phase, thick = (0.02f + 0.085f * phase) * MathF.Min(1, (1 - phase) * 4) * MathF.Min(1, phase * 8) * (kettle ? 1 : 0.8f);
+                var from = kettle ? KettleSpout + new Vector3(0, 0, -0.02f) : SamovarCrown;
+                var puff = from + new Vector3((H(id) - 0.5f) * 0.18f * lean + 0.012f * MathF.Sin(time * 2.1f + n), 0.02f + 0.5f * phase, (H(id + 1) - 0.5f) * 0.18f * lean - (kettle ? 0.05f * phase : 0));
+                return Matrix4x4.CreateScale(thick) * Matrix4x4.CreateTranslation(puff);
+        }
     }
 
     /// <summary>Instance <paramref name="i"/>'s bounds as it was placed: the centre of a ball that holds it, and its radius.</summary>
@@ -190,6 +311,7 @@ internal sealed unsafe class GardenGpu
         var inst = Instances[i];
         var m = new Matrix4x4(inst.Row0.X, inst.Row1.X, inst.Row2.X, 0, inst.Row0.Y, inst.Row1.Y, inst.Row2.Y, 0, inst.Row0.Z, inst.Row1.Z, inst.Row2.Z, 0, inst.Row0.W, inst.Row1.W, inst.Row2.W, 1);
         if ((inst.Flags & GardenScene.DropletFlag) != 0) { var (pos, vel, size) = Droplet(inst.Index, time); return DropletWorld(pos, vel, size); }
+        if ((inst.Flags & GardenScene.MoverFlag) != 0) return Mover((int)inst.Index, time);
         if ((inst.Flags & GardenScene.SphereFlag) != 0) return m * Matrix4x4.CreateTranslation(SphereDrift(time));
         if (GardenScene.Sway(inst.Flags) is > 0 and float sway)
         {
@@ -254,7 +376,7 @@ internal sealed unsafe class GardenGpu
             p = new(f.Nozzle.X + MathF.Cos(a) * rim, level + 0.03f, f.Nozzle.Z + MathF.Sin(a) * rim);
             v = new Vector3(MathF.Cos(a), 0, MathF.Sin(a)) * (0.30f + 0.25f * h2); v.Y = -0.2f;
         }
-        float size = 0.016f + 0.012f * h4;
+        float size = 0.008f + 0.011f * h4;
         for (uint k = 0; k < 3; k++)
         {
             float toBowl = (v.Y + MathF.Sqrt(MathF.Max(v.Y * v.Y + 2 * gravity * (p.Y - level), 0))) / gravity;
@@ -340,6 +462,21 @@ internal sealed unsafe class GardenGpu
                 indices.AddRange([a, c, b, b, c, d]);
             }
         return new GardenMesh(centre, extent, bytes, [.. indices], [new GardenSubmesh(0, (uint)indices.Count, material)]);
+    }
+
+    /// <summary>A butterfly's right wing, lying flat (its body's line along z, the wing out along +x): seven triangles round its root,
+    /// a fore wing and a hind wing in one, five centimetres out.</summary>
+    private static GardenMesh Wing(uint material)
+    {
+        Vector2[] outline = [new(0, 0), new(0, 0.022f), new(0.03f, 0.04f), new(0.05f, 0.03f), new(0.046f, 0.008f), new(0.03f, -0.004f), new(0.036f, -0.026f), new(0.018f, -0.034f), new(0, -0.02f)];
+        var extent = new Vector3(0.05f, 0.001f, 0.04f); var bytes = new byte[outline.Length * 16];
+        for (int i = 0; i < outline.Length; i++)
+        {
+            var span = bytes.AsSpan(i * 16);
+            MemoryMarshal.Write(span, (short)MathF.Round(outline[i].X / extent.X * 32767)); MemoryMarshal.Write(span[4..], (short)MathF.Round(outline[i].Y / extent.Z * 32767)); span[9] = 127;
+        }
+        var indices = new List<uint>(); for (uint k = 1; k + 1 < outline.Length; k++) indices.AddRange([0, k, k + 1]);
+        return new GardenMesh(Vector3.Zero, extent, bytes, [.. indices], [new GardenSubmesh(0, (uint)indices.Count, material)]);
     }
 
     /// <summary>A ball of twenty faces, one unit in radius: a droplet's mesh.</summary>

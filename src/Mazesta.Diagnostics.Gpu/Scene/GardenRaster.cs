@@ -245,6 +245,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
     public int Samples => _samples;
     private const int LensViews = 7, LampView = LensViews + GlowLevels + 2, RoundView = LampView + 5;
+    /// <summary>The root signature's first table of views (the scene's); the lens's and the lamps' follow it.</summary>
+    private const int Views = 6;
     private readonly int _roundSlot;
     private CpuDescriptorHandle RoundRtv(int face, int mip) => Rtv(Targets.Length + 4 + GlowLevels + face * RoundMips + mip);
     private CpuDescriptorHandle TintRtv => Rtv(Targets.Length + 4 + GlowLevels + Rounds.Length * 6 * RoundMips);
@@ -284,7 +286,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
                 // level m - 1 is read while level m is drawn
                 l.ResourceBarrierTransition(_round, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource, Sub(k, m - 1));
                 l.ResourceBarrierTransition(_round, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget, Sub(k, m));
-                l.SetGraphicsRootDescriptorTable(6, _srv.GetGPUDescriptorHandleForHeapStart().Offset(RoundView + m - 1, _srvSize));
+                l.SetGraphicsRootDescriptorTable(Views + 1, _srv.GetGPUDescriptorHandleForHeapStart().Offset(RoundView + m - 1, _srvSize));
                 l.RSSetViewport(0, 0, RoundSize >> m, RoundSize >> m); l.RSSetScissorRect(RoundSize >> m, RoundSize >> m);
                 l.OMSetRenderTargets(RoundRtv(k, m), null);
                 l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = (uint)k }, 0);
@@ -424,7 +426,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
-        var day = G.Day(time);
+        var day = G.Day(time); G.Update(time);
         var frame = GardenFrame.For(G, time, Width, Height);
         frame.ShadowViewProj = SunShadowMatrix(day.Key); frame.HallViewProj = HallShadowMatrix(day.Key); frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
         frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps;
@@ -460,13 +462,14 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetGraphicsRootShaderResourceView(2, G.InstanceBuffer.GPUVirtualAddress);
         l.SetGraphicsRootShaderResourceView(3, G.MaterialBuffer.GPUVirtualAddress);
         l.SetGraphicsRootShaderResourceView(4, G.LightBuffer.GPUVirtualAddress);
+        l.SetGraphicsRootShaderResourceView(5, G.MoverBuffer.GPUVirtualAddress);
         l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         l.IASetVertexBuffers(0, new VertexBufferView(G.VertexBuffer.GPUVirtualAddress, (uint)G.VertexBuffer.Description.Width, 16));
         l.IASetIndexBuffer(new IndexBufferView(G.IndexBuffer.GPUVirtualAddress, (uint)G.IndexBuffer.Description.Width, Format.R32_UInt));
         l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
         // the views are bound from the start: the depth passes read the leaves' textures through them (and nothing they are drawing into)
-        l.SetGraphicsRootDescriptorTable(5, _srv.GetGPUDescriptorHandleForHeapStart());
-        l.SetGraphicsRootDescriptorTable(7, _srv.GetGPUDescriptorHandleForHeapStart().Offset(LampView, _srvSize));
+        l.SetGraphicsRootDescriptorTable(Views, _srv.GetGPUDescriptorHandleForHeapStart());
+        l.SetGraphicsRootDescriptorTable(Views + 2, _srv.GetGPUDescriptorHandleForHeapStart().Offset(LampView, _srvSize));
 
         if (!_onceDrawn)
         {   // what is drawn once: where the sky stands open over the still scene (its depth from straight above), and the lamps' shadow cubes
@@ -571,7 +574,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         {
             l.ResourceBarrierTransition(to, to == Targets[target] ? ResourceStates.Present : ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
             l.OMSetRenderTargets(view, null); l.RSSetViewport(0, 0, w, h); l.RSSetScissorRect(w, h);
-            l.SetGraphicsRootDescriptorTable(6, LensView(reads)); l.SetPipelineState(pipeline); l.DrawInstanced(3, 1, 0, 0);
+            l.SetGraphicsRootDescriptorTable(Views + 1, LensView(reads)); l.SetPipelineState(pipeline); l.DrawInstanced(3, 1, 0, 0);
             l.ResourceBarrierTransition(to, ResourceStates.RenderTarget, to == Targets[target] ? ResourceStates.Present : ResourceStates.PixelShaderResource);
         }
         for (int k = 0; k < GlowLevels; k++) Full(k == 0 ? _glowFirst : _glowDown, _glow[k], Rtv(Targets.Length + 4 + k), GlowSize(k).W, GlowSize(k).H, k);
@@ -585,7 +588,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetPipelineState(sky); l.DrawInstanced(3, 1, 0, 0);
         l.SetPipelineState(opaque); Geometry(l, k => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive, which);
         l.SetPipelineState(cutout); Geometry(l, k => k is GardenMaterialKind.Cutout, which);
-        l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass || (k is GardenMaterialKind.Water && !skipWater), which);
+        l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass or GardenMaterialKind.Smoke || (k is GardenMaterialKind.Water && !skipWater), which);
     }
 
     private void Geometry(ID3D12GraphicsCommandList4 l, Func<GardenMaterialKind, bool> kinds, Func<GardenGpu.Draw, bool>? which = null)

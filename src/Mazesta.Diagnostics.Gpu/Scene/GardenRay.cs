@@ -213,6 +213,7 @@ internal sealed unsafe class GardenRay : GardenRenderer
 
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
+        G.Update(time);
         if (G.Moving.Length + G.Swaying.Length > 0) WriteInstances(time, all: false);   // safe: the previous submission has finished (every Run waits for the GPU)
         Trace(l, time, live);
         var dest = Targets[target];

@@ -10,7 +10,7 @@
 // Depth is reversed (1 at the near plane, 0 infinitely far), which keeps surfaces a centimetre apart from flickering across the whole
 // garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
-#define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), " \
+#define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), " \
            "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=5)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
@@ -22,6 +22,7 @@ cbuffer Draw : register(b0) { uint InstanceBase; uint MaterialIndex; uint2 DrawP
 StructuredBuffer<Instance> Instances : register(t0);
 StructuredBuffer<Material> Materials : register(t1);
 StructuredBuffer<Light> Lights : register(t2);
+StructuredBuffer<float4> Movers : register(t17);       // where each mover is this frame: three rows of a 3x4 matrix apiece
 Texture2DArray<float4> Textures : register(t3);
 Texture2D<float> ShadowMap : register(t4);
 Texture2D<float4> Reflection : register(t5);
@@ -54,6 +55,12 @@ void Place(VIn v, uint instance, out float3 world, out float3 normal)
     {
         float3 pos, vel; float size; Droplet(i.Index, Time, pos, vel, size);
         world = DropletPlace(local, pos, vel, size); normal = local; return;
+    }
+    if (i.Flags & FMover)
+    {
+        float4 r0 = Movers[i.Index * 3], r1 = Movers[i.Index * 3 + 1], r2 = Movers[i.Index * 3 + 2];
+        world = float3(dot(r0.xyz, local) + r0.w, dot(r1.xyz, local) + r1.w, dot(r2.xyz, local) + r2.w);
+        normal = float3(dot(r0.xyz, v.Normal.xyz), dot(r1.xyz, v.Normal.xyz), dot(r2.xyz, v.Normal.xyz)); return;
     }
     world = Swayed(mul(Rotation(i), local) + Translation(i), i);
     normal = mul(Rotation(i), v.Normal.xyz);
@@ -270,6 +277,11 @@ float4 TransparentPS(VOut i) : SV_Target
     if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;
     Material m = Materials[MaterialIndex];
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;
+    if (m.Kind == KSmoke)
+    {   // steam: lit by what is round it and, in a beam of the key light, by that
+        float3 c = m.Base * ((Bounced(i.World, n, 1) + Bounced(i.World, -n, 1)) * 1.5 + SunColor * SunOn * KeyTint(i.World) * Shadow(i.World, n) * 0.2);
+        return float4(Pack(c), Puff(m, n, v));
+    }
     if (m.Kind == KWater)
     {
         bool level = abs(n.y) > 0.7;

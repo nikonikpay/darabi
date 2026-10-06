@@ -340,6 +340,28 @@ public class GardenSceneTests
         }
     }
 
+    [Fact] public void The_garden_s_small_life_keeps_to_the_beds_and_is_the_same_at_the_same_moment()
+    {
+        for (float t = 0; t < GardenCamera.Loop; t += 2.3f)
+        {
+            for (int n = 0; n < GardenGpu.Fireflies; n++)
+            {   // among the plants of the beds either side of the pool, inside the walls (x 13.5)
+                var (at, glow) = GardenGpu.Firefly(n, t); Assert.InRange(glow, 0, 1);
+                Assert.InRange(MathF.Abs(at.X), 2.9f, 13.2f); Assert.InRange(at.Z, -31f, -9f); Assert.InRange(at.Y, 0.1f, 2.8f);
+            }
+            for (int n = 0; n < GardenGpu.Butterflies; n++)
+            {   // over the flowers of the beds by the pool, their wings never flat and never closed
+                var (at, _, raised) = GardenGpu.Butterfly(n, t); Assert.InRange(raised, 0.1f, 1.25f);
+                Assert.InRange(MathF.Abs(at.X), 2.1f, 9.7f); Assert.InRange(at.Z, -31f, -8.5f); Assert.InRange(at.Y, 0.4f, 1.9f);
+            }
+        }
+        Assert.Equal(GardenGpu.Firefly(5, 77.7f), GardenGpu.Firefly(5, 77.7f)); Assert.Equal(GardenGpu.Butterfly(5, 77.7f), GardenGpu.Butterfly(5, 77.7f));
+        Assert.True(Vector3.Distance(GardenGpu.Butterfly(3, 20).At, GardenGpu.Butterfly(3, 21).At) > 0.1f);   // they do fly
+        Assert.True(GardenGpu.LitFireflies <= GardenGpu.Fireflies);
+        // the steam rises from the tea counter, by the hall's left wall
+        Assert.True(GardenGpu.KettleSpout.X < -8.5f && GardenGpu.KettleSpout.Y > 2 && GardenGpu.SamovarCrown.Y > GardenGpu.KettleSpout.Y);
+    }
+
     [Fact] public void The_wind_bends_the_plants_where_they_stand_and_nothing_else()
     {
         var swaying = G.Instances.Where(i => GardenScene.Sway(i.Flags) > 0).ToList();

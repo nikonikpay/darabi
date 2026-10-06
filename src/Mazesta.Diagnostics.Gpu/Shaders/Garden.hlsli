@@ -37,6 +37,7 @@ cbuffer Frame : register(b1)
 };
 
 // Flags: 1 the logo, 2 the mirror sphere (moved by the CPU alone), 4 a droplet of the fountain, whose number is Index;
+// 16 a mover (a firefly, a butterfly's wing, a puff of steam: placed by the CPU each frame, GardenGpu.Mover; Index is its number);
 // bits 8 to 15: how far the wind bends it (a plant), in thousandths of a metre sideways for every metre above where it stands
 struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; uint Flags; uint Index; };
 // Pattern: for a brick, its scale, mortar size, brick width and row height; for any other textured surface, how many times the texture
@@ -46,9 +47,12 @@ struct Material { uint Kind; int Texture; float LightTint; int NormalTexture; fl
 // Shadow: for the rasteriser, which of its shadow cubes is this lamp's, counted from 1 (0: it casts none)
 struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float Shadow; float Pad; };
 
-static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5;
+static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5, KSmoke = 6;
 static const uint LSun = 0, LPoint = 1, LSpot = 2;
-static const uint FLogo = 1, FSphere = 2, FDroplet = 4;
+static const uint FLogo = 1, FSphere = 2, FDroplet = 4, FMover = 16;
+
+// A puff of steam is thickest seen through its middle and nothing at its rim: how much of what is behind it it hides.
+float Puff(Material m, float3 n, float3 v) { return pow(saturate(abs(dot(n, v))), 2.5) * m.Alpha; }
 static const float Pi = 3.14159265;
 
 uint Hash(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return x; }
@@ -147,7 +151,7 @@ void Droplet(uint id, float time, out float3 pos, out float3 vel, out float size
         float a = ((id - jets) % 12 + 0.5 + (h3 - 0.5) * 0.4) / 12 * 2 * Pi;
         p = float3(nozzle.x + cos(a) * rim, level + 0.03, nozzle.z + sin(a) * rim); v = float3(cos(a), 0, sin(a)) * (0.30 + 0.25 * h2); v.y = -0.2;
     }
-    size = 0.016 + 0.012 * h4;
+    size = 0.008 + 0.011 * h4;
     for (uint k = 0; k < 3; k++)
     {
         float toBowl = (v.y + sqrt(max(v.y * v.y + 2 * Gravity * (p.y - level), 0))) / Gravity;

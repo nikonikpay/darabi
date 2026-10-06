@@ -29,6 +29,9 @@ public sealed class GardenScene
     /// <summary>A light fitting (a chandelier): the lamps cast no shadow of it in the Direct3D scene, where a lamp is one point and the
     /// fitting's own bulbs are all round it.</summary>
     public const uint FittingFlag = 8;
+    /// <summary>A small thing alive in the garden - a firefly, a butterfly's wing, a puff of steam (those are not in the file either:
+    /// <see cref="GardenGpu"/> adds them, and says where each is at a moment).</summary>
+    public const uint MoverFlag = 16;
     /// <summary>Bits 8 to 15 of an instance's flags: how far the wind bends it, in thousandths of a metre sideways for every metre above
     /// where it stands (a plant; 0 for everything else). <see cref="GardenGpu.Wind"/> says which way and when.</summary>
     public const int SwayShift = 8;
@@ -212,7 +215,8 @@ public sealed class GardenScene
     }
 }
 
-public enum GardenMaterialKind : uint { Flat, Cutout, Brick, Water, Glass, Emissive }
+/// <summary>Smoke: a puff of steam, thickest through its middle (the renderers' own; no scene file has it).</summary>
+public enum GardenMaterialKind : uint { Flat, Cutout, Brick, Water, Glass, Emissive, Smoke }
 
 /// <summary>A material as the shaders read it (six float4s): the metal-roughness model of Blender's Principled shader. Colours are linear.
 /// <see cref="Texture"/> holds the base colour and, in alpha, a leaf card's opacity or any other surface's roughness;
