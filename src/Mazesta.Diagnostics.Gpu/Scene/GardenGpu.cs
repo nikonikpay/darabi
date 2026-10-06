@@ -644,10 +644,10 @@ internal struct GardenFrame
         };
         if (g.Fountain is { } fountain) { f.Fountain = new(fountain.Nozzle, fountain.BowlRadius); f.Fountain2 = new(fountain.BowlLevel, fountain.RimRadius, GardenGpu.JetDroplets, 1); }
         f.Ambience = new(0, 0, Near, 0);
-        // The lens is focused on what the walk is looking at, and wide enough open that the far end of the garden and the hills go
-        // soft from the terrace, and a door's leaf an arm's length away from the middle of a room: blur in pixels = 2.2 % of the
-        // frame's height for each dioptre out of focus, and never more than 0.7 % of it.
-        f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.022f * height, 0.007f * height, 16);
+        // The lens is focused on what the walk is looking at, and open just wide enough that a door's leaf an arm's length away goes
+        // soft from the middle of a room: blur in pixels = 1 % of the frame's height for each dioptre out of focus, and never more
+        // than 0.3 % of it (at twice that the garden beyond what was looked at went dull: the picture is to be sharp).
+        f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.010f * height, 0.003f * height, 16);
         f.Post = new(raster ? 0.11f : 0.55f, 0, 1, 0);   // the rasteriser's glow is five levels summed, the ray tracer's one; the wind blows
         var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0.3f + 0.15f * day.Night);   // the logo is a lit sign: it glows of itself, by day a little, at night more
         var hall = GardenRaster.Rounds[1]; f.Round1Low = new(hall.Low, 0); f.Round1High = new(hall.High, 0);   // the hall's rooms: where the light is the orsi's

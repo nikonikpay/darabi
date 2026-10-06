@@ -12,7 +12,7 @@
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), " \
            "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=5)), " \
-           "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=8), " \
+           "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=16), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
 
@@ -205,11 +205,11 @@ float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
     // the light from all round, as far as the surface's own corners and crevices let it in
     float open = SkyOpen(p, s.Normal, pixel), near = Occluded(pixel) * s.Occlusion;
     float3 c = s.Albedo * Bounced(p, s.Normal, open) * (1 - s.Metallic) * near + s.Emission;
-    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor * KeyTint(p)) * Shadow(p, s.Normal) * lerp(1, near, 0.35);
+    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor * KeyTint(p)) * Shadow(p, s.Normal) * lerp(1, near, 0.45);
     [loop] for (uint k = 0; k < LightCount; k++)
     {
         Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d) * LampLit(L, k);
-        if (any(e > 0)) c += Brdf(s, v, l, e) * LampShadow(L, p, s.Normal, pixel);
+        if (any(e > 0)) c += Brdf(s, v, l, e) * LampShadow(L, p, s.Normal, pixel) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
     }
     // every surface mirrors its surroundings a little, a metal or a polished floor a lot
     c += Mirrored(p, reflect(-v, s.Normal), s.Roughness, open) * EnvBrdf(s, v) * near;
@@ -385,6 +385,28 @@ float4 RoundDownPS(SkyOut i) : SV_Target
 
 float ViewDistance(int2 pixel) { return Ambience.z / max(SceneDepth.Load(int3(clamp(pixel, 0, int2(ViewSize) - 1), 0)), 1e-6); }
 
+// The key light in the hall's air: the dust of a room shows the beams that come in at its windows, each the colour of its pane.
+// Along the eye's ray, as far as it runs inside the hall and no farther than what it meets, the light is looked up at a dozen
+// points (the hall's shadow map, the stained panes' colours) and what the air there turns toward the eye is added to the frame.
+float3 Shafts(SkyOut i, int2 px)
+{
+    if (SunOn <= 0) return 0;
+    float3 dir = normalize(CamForward + CamRight * i.Ndc.x * TanHalfFovY * Aspect + CamUp * i.Ndc.y * TanHalfFovY);
+    float3 low = Round1Low.xyz + float3(0, 0, -0.45), high = Round1High.xyz, inv = 1 / float3(abs(dir.x) > 1e-5 ? dir.x : 1e-5, abs(dir.y) > 1e-5 ? dir.y : 1e-5, abs(dir.z) > 1e-5 ? dir.z : 1e-5);
+    float3 a = (low - Eye) * inv, b = (high - Eye) * inv, t0 = min(a, b), t1 = max(a, b);
+    float from = max(max(t0.x, t0.y), max(t0.z, 0)), to = min(min(t1.x, t1.y), min(t1.z, ViewDistance(px) / dot(dir, CamForward)));
+    if (to <= from) return 0;
+    const int steps = 14; float step = (to - from) / steps, lit = 0; float3 sum = 0, start = Eye + dir * (from + step * frac(Turn(i.Position.xy) * 0.159155));
+    [loop] for (int k = 0; k < steps; k++)
+    {
+        float3 p = start + dir * (step * k); float4 s = mul(HallViewProj, float4(p, 1)); float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
+        float open = HallShadow.SampleCmpLevelZero(ShadowSampler, uv, s.z - 0.0004);
+        if (open > 0) sum += open * (p.z > -3.09 ? HallTint.SampleLevel(Clamp, uv, 0).rgb : 1);
+    }
+    float toward = dot(dir, SunDir), phase = 0.6 + 1.6 * pow(saturate(toward * 0.5 + 0.5), 4);   // dust throws most of it on, toward an eye that looks into the beam
+    return sum * step * SunColor * 0.010 * phase * saturate(SunDir.y * 3.2);   // (a sun on the horizon lights the whole room's air: held back, or the room is all haze)
+}
+
 // The frame through the lens: each pixel gathers, from a disc of taps as wide as the most blur, the pixels whose own blur reaches
 // it (what lies behind a pixel in focus does not spill over it); the glow is added; the tone curve makes the picture.
 float4 LensPS(SkyOut i) : SV_Target
@@ -403,6 +425,13 @@ float4 LensPS(SkyOut i) : SV_Target
         }
         c /= n;
     }
+    {
+        // what the lens holds in focus it draws crisply: each such pixel is set off a little against the mean of its four neighbours
+        // (never by more than half of itself, so a bright edge gets no dark rim)
+        float3 own = Unpack(LensA.Load(int3(px, 0)).rgb), round = (Unpack(LensA.Load(int3(px + int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px + int2(0, 1), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(0, 1), 0)).rgb)) * 0.25;
+        c = max(c + clamp(own - round, -0.5 * own, 0.5 * own) * 0.45 * (1 - saturate(Blur(ViewDistance(px)))), 0);
+    }
+    c += Shafts(i, px);
     c += LensB.SampleLevel(Clamp, LensUv(i), 0).rgb * Post.x;
     return float4(Finished(c, uint2(px)), 1);
 }
@@ -427,7 +456,7 @@ float4 AoPS(SkyOut i) : SV_Target
     float3 p = ViewPosition(px), r = ViewPosition(px + int2(1, 0)), l = ViewPosition(px - int2(1, 0)), u = ViewPosition(px - int2(0, 1)), d = ViewPosition(px + int2(0, 1));
     float3 dx = abs(r.z - p.z) < abs(p.z - l.z) ? r - p : p - l, dy = abs(d.z - p.z) < abs(p.z - u.z) ? d - p : p - u;
     float3 n = normalize(cross(dx, dy)); if (n.z > 0) n = -n;
-    const float reach = 0.55;
+    const float reach = 0.8;
     float span = clamp(reach / p.z * ViewSize.y * 0.5 / TanHalfFovY, 3, ViewSize.y * 0.12);   // the reach in pixels, here
     float a = Turn(i.Position.xy), sum = 0; int taps = (int)Ambience.y;
     [loop] for (int k = 0; k < taps; k++)
@@ -436,6 +465,6 @@ float4 AoPS(SkyOut i) : SV_Target
         float3 q = ViewPosition(px + int2(round(float2(cos(t), sin(t)) * s))) - p; float d2 = dot(q, q);
         sum += saturate(dot(n, q) * rsqrt(d2 + 1e-6) - 0.12) * saturate(1 - d2 / (reach * reach));
     }
-    float open = saturate(1 - 1.9 * sum / taps);
+    float open = saturate(1 - 2.7 * sum / taps); open *= open * (3 - 2 * open) * 0.5 + 0.5;   // corners, feet and joints are dark: the shade there is what gives the stone its weight
     return float4(open, open, open, 1);
 }
