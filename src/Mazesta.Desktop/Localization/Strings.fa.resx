@@ -2548,9 +2548,9 @@
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
   <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم صدک ۹۹</value></data>
   <data name="Nav_Checkup" xml:space="preserve"><value>عیب‌یابی هوشمند</value></data>
-  <data name="Checkup_Lede" xml:space="preserve"><value>آیا این سیستم درست کار می‌کند؟ از روی اندازه‌گیری‌های خودش قضاوت می‌شود: تنظیمات فعلی سیستم، و هر بنچمارک CPU و گرافیک که در این نوبت اجرا شده، در برابر آنچه خود قطعه‌ها اعلام می‌کنند و در برابر سیستم‌های دیگر با همین قطعه‌ها.</value></data>
+  <data name="Checkup_Lede" xml:space="preserve"><value>آیا این سیستم درست کار می‌کند؟ از روی اندازه‌گیری‌های خودش قضاوت می‌شود: یک تست کوتاه از هر قطعه و تنظیمات فعلی سیستم.</value></data>
   <data name="Checkup_Run" xml:space="preserve"><value>اجرای عیب‌یابی</value></data>
-  <data name="Checkup_RunHint" xml:space="preserve"><value>بنچمارک‌های CPU (همهٔ هسته‌ها و یک هسته)، رم و گرافیک را پشت سر هم اجرا می‌کند. قبلش برنامه‌های دیگر را ببندید.</value></data>
+  <data name="Checkup_RunHint" xml:space="preserve"><value>حدود {0} دقیقه: {1}. قبلش برنامه‌های دیگر را ببندید.</value></data>
   <data name="Checkup_Setup" xml:space="preserve"><value>تنظیمات سیستم</value></data>
   <data name="Checkup_Runs" xml:space="preserve"><value>اجراهای بنچمارک</value></data>
   <data name="Checkup_NoRuns" xml:space="preserve"><value>هنوز در این نوبت بنچمارک CPU یا گرافیکی اجرا نشده. عیب‌یابی را اجرا کنید، یا هر کدام از آن‌ها را از صفحهٔ بنچمارک‌ها، تا نتیجه‌اش اینجا بیاید.</value></data>
@@ -3069,12 +3069,12 @@
   <data name="Uninstall_NotInstalled" xml:space="preserve"><value>این نسخه با برنامه‌ی نصب اینجا قرار نگرفته، پس چیزی برای حذف نیست. اگر دیگر لازمش ندارید پوشه‌اش را خودتان پاک کنید.</value></data>
   <data name="Uninstall_Done" xml:space="preserve"><value>مازستا تست در حال حذف است.</value></data>
   <data name="Uninstall_DoneKept" xml:space="preserve"><value>مازستا تست در حال حذف است. اطلاعات شما در پوشه‌ی Data می‌ماند.</value></data>
-  <data name="Assist_Checkup_Head" xml:space="preserve"><value>عیب‌یابی هوشمند انجام شد (بنچمارک پردازنده، رم و کارت گرافیک و وضعیت راه‌اندازی سیستم).</value></data>
+  <data name="Assist_Checkup_Head" xml:space="preserve"><value>عیب‌یابی هوشمند انجام شد (تست کوتاه پردازنده، رم، کارت گرافیک و دیسک، و وضعیت تنظیمات سیستم).</value></data>
   <data name="Assist_Checkup_Counts" xml:space="preserve"><value>{0} مشکل و {1} مورد نیازمند توجه پیدا شد:</value></data>
   <data name="Assist_Checkup_Clean" xml:space="preserve"><value>هیچ یافته‌ای مشکل یا موردی که نیاز به توجه داشته باشد گزارش نکرد.</value></data>
-  <data name="Assist_Checkup_Numbers" xml:space="preserve"><value>نتیجهٔ بنچمارک‌ها:</value></data>
+  <data name="Assist_Checkup_Numbers" xml:space="preserve"><value>نتیجهٔ تست‌ها:</value></data>
   <data name="Assist_Checkup_Change" xml:space="preserve"><value>{0}٪ نسبت به بهترین نتیجهٔ قبلی</value></data>
-  <data name="Assist_Checkup_NotDone" xml:space="preserve"><value>این‌ها کامل نشدند و دربارهٔ آن‌ها چیزی نمی‌گویم: {0}</value></data>
+  <data name="Assist_Checkup_NotDone" xml:space="preserve"><value>این‌ها کامل نشدند؛ موفق حساب نمی‌شوند و از آن‌ها نتیجه‌ای نمی‌گیرم: {0}</value></data>
   <data name="Assist_Checkup_Declined" xml:space="preserve"><value>چیزی اجرا نشد: عیب‌یابی تأیید نشد.</value></data>
   <data name="Assist_Checkup_Page" xml:space="preserve"><value>همهٔ یافته‌ها با اعدادشان در صفحهٔ «عیب‌یابی هوشمند» است که کنار گفتگو باز شد.</value></data>
   <data name="Assist_Part_Head" xml:space="preserve"><value>آخرین تست ثبت‌شده برای این قطعه ({0}، {1}):</value></data>
@@ -3236,4 +3236,9 @@
   <data name="Tuning_Curve_Driver" xml:space="preserve"><value>منحنی خود کارت، خوانده‌شده از درایور · {0} · تا {1}</value></data>
   <data name="Tuning_Curve_Scan_Hint" xml:space="preserve"><value>منحنی همین حالا از درایور کارت نمایش داده می‌شود. این دکمه ولتاژی را که کارت زیر بار واقعاً در هر فرکانس انتخاب می‌کند اندازه می‌گیرد (حدود یک و نیم دقیقه).</value></data>
   <data name="Test_Option_CoresAtOnce" xml:space="preserve"><value>تعداد هستهٔ هم‌زمان</value></data>
+  <data name="Checkup_Running" xml:space="preserve"><value>تست‌ها در حال اجرا هستند؛ نتیجه با پایان آن‌ها همین‌جا می‌آید.</value></data>
+  <data name="Checkup_Watch" xml:space="preserve"><value>دیدن تست‌ها</value></data>
+  <data name="Checkup_Tests" xml:space="preserve"><value>نتیجهٔ تست‌ها</value></data>
+  <data name="Checkup_NoTests" xml:space="preserve"><value>هنوز در این نوبت تستی اجرا نشده. عیب‌یابی را اجرا کنید، یا هر تستی را از صفحهٔ تست‌ها، تا نتیجه‌اش اینجا بررسی شود.</value></data>
+  <data name="Assist_Checkup_Failed" xml:space="preserve"><value>این تست‌ها ناموفق بودند: {0}</value></data>
 </root>

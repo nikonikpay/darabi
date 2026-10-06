@@ -38,6 +38,10 @@ public sealed partial class WebBridge
         }
         engine.Logged += OnLogged; _cleanup.Add(() => engine.Logged -= OnLogged);
         Method("tests.log", _ => engine.RecentLog().Select(LogLine));
+        var checkupService = _sp.GetRequiredService<Desktop.Services.CheckupService>();
+        var checks = new Dictionary<string, object[]>();
+        void ReadChecks() { checks = checkupService.TestRuns().Where(c => c.Findings.Count > 0).ToDictionary(c => c.Id, c => c.Findings.Select(FindingJson).ToArray()); }
+        ReadChecks();
         object State() => new
         {
             running = tests.IsRunning, together = tests.Together, current = Current(), profileNote = tests.ProfileNote,
@@ -48,9 +52,13 @@ public sealed partial class WebBridge
                 id = r.Definition.Id.Value, name = r.Name, selected = r.IsSelected, duration = r.DurationText, repeat = r.Repeat.ToString(), count = r.RepeatCountText,
                 options = r.Options.Select(Option), error = r.ValidationError, outcome = r.Outcome.ToString(), outcomeText = r.OutcomeText,
                 percent = r.PercentComplete, status = r.StatusText, errors = r.HasErrors ? r.ErrorsText : null, detail = r.Detail, detailLines = Desktop.Services.TestDetailText.Lines(r.Detail).Select(l => new { text = l.Text, lat = l.Latin }), advice = r.Advice, unavailable = r.UnavailableText,
+                // What the monitor's record of this test's last run says about the part it loaded (the diagnosis' rules), once the session has ended.
+                checkup = !tests.IsRunning && checks.TryGetValue(r.Definition.Id.Value, out var found) && r.Outcome is not (TestOutcome.NotRun or TestOutcome.Running) ? found : null,
             }),
         };
         Mirror("tests", tests, State, tests.Rows);
+        void OnChecked() { ReadChecks(); PushSoon("tests", State); }
+        checkupService.Changed += OnChecked; _cleanup.Add(() => checkupService.Changed -= OnChecked);
         foreach (var o in tests.Rows.SelectMany(r => r.Options)) o.PropertyChanged += (_, _) => PushSoon("tests", State);   // the rows' options are not in a collection the mirror sees
 
         Method("tests.state", _ => State());

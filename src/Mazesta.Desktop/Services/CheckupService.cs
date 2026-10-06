@@ -5,6 +5,10 @@ namespace Mazesta.Desktop.Services;
 
 /// <summary>The checkup of one benchmark run: what its own measurements say (<see cref="Findings"/>) and how it compares with this machine's
 /// earlier runs (<see cref="Peer"/>, set a moment later by whoever holds the run log).</summary>
+/// <summary>The checkup of one test of the last test session: how the test itself ended, and what the monitor's record of it says about the
+/// part it loaded (nothing for a test that loads no part the checkup has rules for).</summary>
+public sealed record TestCheck(string Id, string NameKey, DateTimeOffset At, TestOutcome Outcome, IReadOnlyList<Finding> Findings);
+
 public sealed record CheckupRun(string Id, string NameKey, DateTimeOffset At, IReadOnlyList<Finding> Findings, Finding? Peer)
 {
     public IEnumerable<Finding> All => Peer is null ? Findings : [Peer, .. Findings];
@@ -23,15 +27,47 @@ public sealed class CheckupService
     private readonly Dictionary<string, CheckupRun> _runs = [];
     private readonly Dictionary<BenchmarkResult, TaskCompletionSource> _settled = new(ReferenceEqualityComparer.Instance);
     private NvidiaRunProbe? _probe; private bool? _onBattery;
+    private TestWatch? _sessionWatch; private IReadOnlyList<QueuedTest> _sessionQueue = []; private readonly List<TestRunResult> _sessionDone = []; private IReadOnlyList<TestCheck> _tests = [];
 
     /// <summary>A run was judged, or its standing among other systems arrived. Raised on a worker thread.</summary>
     public event Action? Changed;
 
-    public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log)
+    public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log, TestEngine? tests = null)
     {
         _engine = engine; _inventory = inventory; _details = details; _drives = drives; _log = log;
         runner.Started += OnStarted; runner.Finished += OnFinished;
+        if (tests is not null) { tests.SessionStarted += OnTestsStarted; tests.TestCompleted += OnTestDone; tests.StateChanged += OnTestsState; }
     }
+
+    // ——— Every test session is judged as it ends: the diagnosis is made from the Tests page's own tests, whoever started them ———
+    private void OnTestsStarted(IReadOnlyList<QueuedTest> queue)
+    {
+        string? gpu = queue.FirstOrDefault(q => q.Definition.Id.Value.StartsWith("gpu.", StringComparison.Ordinal)) is { } g ? GpuName(g.Options ?? new Dictionary<string, string>()) : null;
+        var watch = WatchTests(gpu);
+        lock (_lock) { _sessionWatch?.Dispose(); _sessionWatch = watch; _sessionQueue = queue; _sessionDone.Clear(); }
+    }
+    private void OnTestDone(TestId id, TestRunResult result) { lock (_lock) { _sessionDone.RemoveAll(r => r.Id == id); _sessionDone.Add(result); } }   // (a repeated test: its last run)
+    private void OnTestsState(TestEngineState state)
+    {
+        if (state == TestEngineState.Running) return;
+        TestWatch? watch; List<TestRunResult> done; IReadOnlyList<QueuedTest> queue;
+        lock (_lock) { watch = _sessionWatch; _sessionWatch = null; done = [.. _sessionDone]; queue = _sessionQueue; }
+        if (watch is null) return;
+        try
+        {
+            var parts = watch.Judge(done);
+            var checks = done.Select(r => new TestCheck(r.Id.Value, queue.FirstOrDefault(q => q.Definition.Id == r.Id)?.Definition.NameKey ?? r.Id.Value, r.FinishedAt ?? r.StartedAt, r.Outcome,
+                parts.Select(p => p.ByTest?.GetValueOrDefault(r.Id.Value)).FirstOrDefault(f => f is not null) ?? [])).ToList();
+            lock (_lock) _tests = checks;
+            _log.LogInformation("Checkup of the test session: {Tests}", string.Join("; ", checks.Select(c => $"{c.Id} {c.Outcome} [{string.Join(", ", c.Findings.Select(f => $"{f.Code}/{f.Level}"))}]")));
+        }
+        catch (Exception e) { _log.LogWarning(e, "Checkup of the test session failed"); }
+        finally { watch.Dispose(); }
+        Changed?.Invoke();
+    }
+
+    /// <summary>The tests of the last test session of this run of the app, each with how it ended and what its measurements say, in the order they ran.</summary>
+    public IReadOnlyList<TestCheck> TestRuns() { lock (_lock) return _tests; }
 
     public static bool IsCpu(string id) => id is "bench.cpu.single" or "bench.cpu.multi";
 
@@ -118,7 +154,7 @@ public sealed class CheckupService
 
     /// <summary>What a part did while its tests ran, from the monitor's record: its hottest reading, its median load over the tests that load it
     /// fully (null when none of them ran or it has no such sensor), and the checkup's findings over those tests.</summary>
-    public sealed record PartJudgment(HardwareKind Part, string? Name, double? TempMaxC, double? LoadPercent, IReadOnlyList<Finding> Findings)
+    public sealed record PartJudgment(HardwareKind Part, string? Name, double? TempMaxC, double? LoadPercent, IReadOnlyList<Finding> Findings, IReadOnlyDictionary<string, IReadOnlyList<Finding>>? ByTest = null)
     {
         public bool? FullyLoaded => LoadPercent is { } l ? l >= FullLoadPercent : null;
     }
@@ -148,7 +184,7 @@ public sealed class CheckupService
     {
         var cpu = _inventory.IsLoaded ? _inventory.GetAsync().Result.Cpu : null;
         string? name = cpu?.Name ?? _engine.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null)?.Name;
-        double? temp = null; var loads = new List<double>(); var findings = new List<Finding>();
+        double? temp = null; var loads = new List<double>(); var findings = new List<Finding>(); var byTest = new Dictionary<string, IReadOnlyList<Finding>>();
         foreach (var r in runs)
         {
             bool full = FullCpuTests.Contains(r.Id.Value) && r.Detail?.Contains(Mazesta.Diagnostics.Cpu.CpuStressExecutor.PartLoadMark, StringComparison.Ordinal) != true;   // (a run asked to swing or hold back its load is not judged as a full one)
@@ -156,25 +192,25 @@ public sealed class CheckupService
             if (trace.Temp is { Count: > 0 } t) temp = Math.Max(temp ?? double.MinValue, t.Max());
             if (!full) continue;
             if (trace.Load?.Between(CpuCheck.WarmupSeconds, double.MaxValue) is { Count: >= CpuCheck.MinSamples } load) loads.Add(load.Median());
-            findings.AddRange(CpuCheck.Evaluate(trace));
+            var found = CpuCheck.Evaluate(trace); findings.AddRange(found); byTest[r.Id.Value] = found;
         }
-        return new(HardwareKind.Cpu, name?.Trim(), temp, loads.Count > 0 ? loads.Min() : null, Worst(findings));
+        return new(HardwareKind.Cpu, name?.Trim(), temp, loads.Count > 0 ? loads.Min() : null, Worst(findings), byTest);
     }
 
     private PartJudgment JudgeGpu(IReadOnlyList<TestRunResult> runs, string? name, (GpuThrottleCounts Counts, int? Gen, int? Width)? probed)
     {
         var slot = SlotOf(name);
         var link = slot is null ? null : new GpuLink(probed?.Gen ?? slot.Port.CurrentGen, probed?.Width ?? slot.Port.CurrentWidth, slot.CardMaxGen, slot.CardMaxWidth, slot.Port.MaxGen, slot.Port.MaxWidth, probed?.Gen is not null);
-        double? temp = null; var loads = new List<double>(); var findings = new List<Finding>();
+        double? temp = null; var loads = new List<double>(); var findings = new List<Finding>(); var byTest = new Dictionary<string, IReadOnlyList<Finding>>();
         foreach (var r in runs)
         {
             var trace = CheckupTraces.Gpu(_engine, r.StartedAt, r.FinishedAt!.Value, GpuDevices.SensorNode(_engine, name ?? ""), name, probed?.Counts, link);
             if (trace.CoreTemp is { Count: > 0 } t) temp = Math.Max(temp ?? double.MinValue, t.Max());
             if (!FullGpuTests.Contains(r.Id.Value)) continue;
             if (trace.Load?.Between(CpuCheck.WarmupSeconds, double.MaxValue) is { Count: >= CpuCheck.MinSamples } load) loads.Add(load.Median());
-            findings.AddRange(GpuCheck.Evaluate(trace));
+            var found = GpuCheck.Evaluate(trace); findings.AddRange(found); byTest[r.Id.Value] = found;
         }
-        return new(HardwareKind.Gpu, name, temp, loads.Count > 0 ? loads.Min() : null, Worst(findings));
+        return new(HardwareKind.Gpu, name, temp, loads.Count > 0 ? loads.Min() : null, Worst(findings), byTest);
     }
 
     /// <summary>Each finding once, as its worst run had it, the gravest first.</summary>

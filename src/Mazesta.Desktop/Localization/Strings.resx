@@ -2548,9 +2548,9 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>Mixed IOPS</value></data>
   <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>99th-percentile frame time</value></data>
   <data name="Nav_Checkup" xml:space="preserve"><value>Checkup</value></data>
-  <data name="Checkup_Lede" xml:space="preserve"><value>Whether this machine works as it should, judged from its own measurements: the setup as it is now, and every CPU and graphics benchmark run in this session, against what its parts report themselves and against other systems with the same parts.</value></data>
+  <data name="Checkup_Lede" xml:space="preserve"><value>Is this computer working as it should? It is judged from its own measurements: a short test of each part, and the system's setup as it is now.</value></data>
   <data name="Checkup_Run" xml:space="preserve"><value>Run the checkup</value></data>
-  <data name="Checkup_RunHint" xml:space="preserve"><value>Runs the CPU (all cores and one core), memory and graphics benchmarks one after another. Close other programs first.</value></data>
+  <data name="Checkup_RunHint" xml:space="preserve"><value>About {0} minutes: {1}. Close other programs first.</value></data>
   <data name="Checkup_Setup" xml:space="preserve"><value>Setup</value></data>
   <data name="Checkup_Runs" xml:space="preserve"><value>Benchmark runs</value></data>
   <data name="Checkup_NoRuns" xml:space="preserve"><value>No CPU or graphics benchmark has run in this session yet. Run the checkup, or any of them on the Benchmarks page, and its findings appear here.</value></data>
@@ -3069,12 +3069,12 @@ Cancel: stop.</value></data>
   <data name="Uninstall_NotInstalled" xml:space="preserve"><value>This copy was not put here by the installer, so there is nothing to uninstall. Delete its folder by hand if you no longer need it.</value></data>
   <data name="Uninstall_Done" xml:space="preserve"><value>Mazesta Test is being removed.</value></data>
   <data name="Uninstall_DoneKept" xml:space="preserve"><value>Mazesta Test is being removed. Your data stays in its Data folder.</value></data>
-  <data name="Assist_Checkup_Head" xml:space="preserve"><value>The smart diagnosis is done (processor, memory and graphics card benchmarks, and the computer's setup).</value></data>
+  <data name="Assist_Checkup_Head" xml:space="preserve"><value>The smart diagnosis is done (a short test of the processor, memory, graphics card and drive, and the computer's setup).</value></data>
   <data name="Assist_Checkup_Counts" xml:space="preserve"><value>It found {0} problem(s) and {1} thing(s) that need attention:</value></data>
   <data name="Assist_Checkup_Clean" xml:space="preserve"><value>No finding reports a problem or something that needs attention.</value></data>
-  <data name="Assist_Checkup_Numbers" xml:space="preserve"><value>The benchmarks:</value></data>
+  <data name="Assist_Checkup_Numbers" xml:space="preserve"><value>The tests:</value></data>
   <data name="Assist_Checkup_Change" xml:space="preserve"><value>{0}% against the best earlier result</value></data>
-  <data name="Assist_Checkup_NotDone" xml:space="preserve"><value>These did not finish, so nothing is said about them: {0}</value></data>
+  <data name="Assist_Checkup_NotDone" xml:space="preserve"><value>These did not finish, so they are not a pass and nothing is concluded from them: {0}</value></data>
   <data name="Assist_Checkup_Declined" xml:space="preserve"><value>Nothing was run: the diagnosis was not confirmed.</value></data>
   <data name="Assist_Checkup_Page" xml:space="preserve"><value>Every finding with its numbers is on the Diagnosis page, which is open beside the chat.</value></data>
   <data name="Assist_Part_Head" xml:space="preserve"><value>Last recorded test of this part ({0}, {1}):</value></data>
@@ -3236,4 +3236,9 @@ Cancel: stop.</value></data>
   <data name="Tuning_Curve_Driver" xml:space="preserve"><value>The card's own curve, read from its driver · {0} · up to {1}</value></data>
   <data name="Tuning_Curve_Scan_Hint" xml:space="preserve"><value>The curve is already shown from the card's driver. This measures, under load, the voltage the card really chooses at each frequency (about a minute and a half).</value></data>
   <data name="Test_Option_CoresAtOnce" xml:space="preserve"><value>Cores at a time</value></data>
+  <data name="Checkup_Running" xml:space="preserve"><value>The tests are running; the result appears here when they end.</value></data>
+  <data name="Checkup_Watch" xml:space="preserve"><value>Watch the tests</value></data>
+  <data name="Checkup_Tests" xml:space="preserve"><value>Test results</value></data>
+  <data name="Checkup_NoTests" xml:space="preserve"><value>No test has run yet in this session. Run the troubleshooting, or any test from the Tests page, and its result is judged here.</value></data>
+  <data name="Assist_Checkup_Failed" xml:space="preserve"><value>These tests failed: {0}</value></data>
 </root>

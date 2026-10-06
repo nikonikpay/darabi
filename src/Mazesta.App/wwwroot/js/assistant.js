@@ -208,6 +208,8 @@ export function mountAssistant(app, root) {
   // The assistant opens a page, and may mark one control on it ([data-a] on the page, or a program's card): the page draws after it mounts,
   // so the mark waits for the control to appear.
   const offNav = on("assistantNav", (x) => { go(x.page); if (x.target) mark(x.target); });
+  // The Tests page's Advanced view, switched from the chat: kept where the page keeps it, and told to the page if it is open.
+  on("testsAdvanced", (x) => { try { localStorage.setItem("mazesta.tests.advanced", x.on ? "1" : "0"); } catch { /* not kept */ } window.dispatchEvent(new CustomEvent("tests:advanced", { detail: !!x.on })); });
   function mark(target, tries = 0) {
     const el = document.querySelector(`#stage [data-a="${CSS.escape(target)}"], #stage [data-app="${CSS.escape(target)}"]`);
     if (!el) { if (tries < 30) setTimeout(() => mark(target, tries + 1), 100); return; }

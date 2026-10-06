@@ -168,8 +168,8 @@ internal static class AssistantReplies
         return string.Join("\n", lines);
     }
 
-    /// <summary>The smart diagnosis as it ended: how many problems and things needing attention its findings hold, those findings (problems first), and each
-    /// benchmark's number with its change against the best earlier one. A benchmark that did not finish is named, with no number.</summary>
+    /// <summary>The smart diagnosis as it ended: the tests that failed, how many problems and things needing attention its findings hold, those
+    /// findings (problems first), and each test's own outcome. A test that did not finish is named as that, never as a pass.</summary>
     public static string Checkup(string json)
     {
         using var d = JsonDocument.Parse(json); var r = d.RootElement;
@@ -182,26 +182,27 @@ internal static class AssistantReplies
             findings.AddRange(A(cu, "setup"));
             foreach (var run in A(cu, "runs")) findings.AddRange(A(run, "findings"));
         }
-        // The same finding can come from the setup and from a run of this session: said once.
+        // The same finding can come from the setup and from a test of this session: said once.
         var distinct = findings.GroupBy(f => (S(f, "title"), S(f, "subject"))).Select(g => g.First()).ToList();
         var problems = distinct.Where(f => S(f, "level") == "Problem").ToList(); var attention = distinct.Where(f => S(f, "level") == "Attention").ToList();
-        // "Nothing found" is only said when the benchmarks it rests on were measured.
-        if (problems.Count + attention.Count == 0) { if (A(r, "results").Any(x => x.TryGetProperty("completed", out var c) && c.ValueKind == JsonValueKind.True)) lines.Add(Loc.Get("Assist_Checkup_Clean")); }
+        var results = A(r, "results").ToList();
+        var failed = results.Where(x => S(x, "outcome") == "Failed").ToList(); var passed = results.Where(x => S(x, "outcome") == "Passed").ToList();
+        var open = results.Where(x => S(x, "outcome") is not ("Passed" or "Failed")).ToList();
+        if (failed.Count > 0) lines.Add(Loc.Format("Assist_Checkup_Failed", string.Join("، ", failed.Select(x => S(x, "test")))));
+        // "Nothing found" is only said when tests it rests on really passed, and none failed.
+        if (problems.Count + attention.Count == 0) { if (passed.Count > 0 && failed.Count == 0) lines.Add(Loc.Get("Assist_Checkup_Clean")); }
         else
         {
             lines.Add(Loc.Format("Assist_Checkup_Counts", problems.Count, attention.Count));
             foreach (var f in problems.Concat(attention).Take(8))
                 lines.Add($"- {S(f, "levelName")}: {S(f, "title")}" + (S(f, "subject") is { Length: > 0 } sub ? $" ({sub})" : "") + (S(f, "text") is { Length: > 0 } text ? " — " + (text.Length > 200 ? text[..200] + "…" : text) : ""));
         }
-        var done = A(r, "results").Where(x => x.TryGetProperty("completed", out var c) && c.ValueKind == JsonValueKind.True).ToList();
-        if (done.Count > 0)
+        if (results.Count > 0)
         {
             lines.Add(Loc.Get("Assist_Checkup_Numbers"));
-            foreach (var b in done)
-                lines.Add($"- {S(b, "benchmark")}: {N(D(b, "value") ?? 0)} {S(b, "unit")}" + (D(b, "changePercent") is { } ch ? " (" + Loc.Format("Assist_Checkup_Change", (ch > 0 ? "+" : "") + N(ch)) + ")" : ""));
+            foreach (var x in results) lines.Add($"- {S(x, "test")}: {S(x, "outcomeText")}");
         }
-        var notDone = A(r, "results").Where(x => !(x.TryGetProperty("completed", out var c) && c.ValueKind == JsonValueKind.True)).Select(x => S(x, "benchmark")).OfType<string>().ToList();
-        if (notDone.Count > 0) lines.Add(Loc.Format("Assist_Checkup_NotDone", string.Join("، ", notDone)));
+        if (open.Count > 0) lines.Add(Loc.Format("Assist_Checkup_NotDone", string.Join("، ", open.Select(x => S(x, "test")))));
         lines.Add(Loc.Get("Assist_Checkup_Page"));
         return string.Join("\n", lines);
     }

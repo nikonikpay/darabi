@@ -350,6 +350,15 @@ public sealed partial class WebBridge
                     var place = AppGuide.Places.FirstOrDefault(p => p.Page == page && p.Target == target) ?? AppGuide.Page(page);
                     return Task.FromResult(Json(new { opened = page, name = place is null ? null : Loc.Get(AppGuide.Page(page)!.TitleKey), control = target is null || place is null ? null : Loc.Get(place.TitleKey) }));
                 }),
+            new("set_tests_advanced", "Turns the Tests page's Advanced view on or off. Off (the default): each test is one line with its tick and whether it passed. On: each test's length, repeat, " +
+                "options and the full account of its result with the diagnosis of that run are shown. Opens the Tests page.",
+                """{"type":"object","properties":{"on":{"type":"boolean"}},"required":["on"]}""",
+                (a, _) =>
+                {
+                    if (a.ValueKind != JsonValueKind.Object || !a.TryGetProperty("on", out var v) || v.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) return Task.FromResult(Json(new { error = "on must be true or false" }));
+                    Push("testsAdvanced", new { on = v.GetBoolean() }); navigate("tests", "tests-advanced");
+                    return Task.FromResult(Json(new { advanced = v.GetBoolean(), opened = "tests" }));
+                }),
             new("set_overlay", "Shows or hides the on-screen overlay (the small always-on-top readout of temperatures, loads and frame rate over games). Returns whether it is shown now.",
                 """{"type":"object","properties":{"on":{"type":"boolean"}},"required":["on"]}""",
                 (a, _) => OnUi(() =>
@@ -447,14 +456,14 @@ public sealed partial class WebBridge
                 (a, _) => OnUi(() =>
                 {
                     string what = Text(a, "what") ?? "all";
-                    static object Options(IEnumerable<TestOptionViewModel> options) => options.Select(o => new { name = o.Label, value = o.IsChoice ? o.SelectedChoice?.Label : o.Text, choices = o.IsChoice ? o.Choices.Select(c => c.Label) : null });
+                    static object Options(IEnumerable<TestOptionViewModel> options) => options.Select(o => new { key = o.Option.Key, name = o.Label, value = o.IsChoice ? o.SelectedChoice?.Value : o.Text, choices = o.IsChoice && o.Choices.Count <= 12 ? o.Choices.Select(c => new { value = c.Value, name = c.Label }) : null, onlyWhen = o.Option.When });
                     return Json(new
                     {
                         tests = what != "benchmarks" ? _testVm?.Rows.Select(r => new { id = r.Definition.Id.Value, name = r.Name, seconds = r.DurationText, options = r.HasOptions ? Options(r.Options) : null, canNotRun = r.UnavailableText }) : null,
                         profiles = what != "benchmarks" ? TestProfiles.All.Select(p => new { name = Loc.Get(p.NameKey), tests = p.Tests.Count, minutes = Math.Round(p.Tests.Sum(t => t.Seconds) / 60.0) }) : null,
                         runTogether = what != "benchmarks" ? _testVm?.Together : null,
                         benchmarks = what != "tests" ? _benchVm?.Rows.Select(r => new { id = r.Benchmark.Definition.Id.Value, name = r.Name, seconds = r.DurationText, options = r.HasOptions ? Options(r.Options) : null, canNotRun = r.UnavailableText }) : null,
-                        note = "run_tests takes areas (all=true for every test of an area) or these test ids; run_benchmark takes its own names. Run together loads the processor, memory and graphics card at once.",
+                        note = "run_tests takes areas (all=true for every test of an area) or these test ids, and options as {key: value} with the keys and values listed here (an option with onlyWhen matters only with that other choice); run_benchmark takes its own names. Run together loads the processor, memory and graphics card at once.",
                     });
                 })),
             new("run_tests", "Runs real hardware tests, after the user confirmed on the page, and returns each test's outcome and, for the processor and the graphics card, a judgment: the highest " +
@@ -463,8 +472,11 @@ public sealed partial class WebBridge
                 "tests names single tests by id (see list_tests). seconds (or minutes) sets the length of each load test of the processor, memory and graphics card (default: 15 minutes each); " +
                 "total_seconds instead gives the whole length of the load tests, shared equally between them (one after another; with together=true each part gets all of it) - use it when the user says " +
                 "\"both in 5 minutes\". Storage and network tests keep their own length. together=true loads processor, memory and graphics card at the same time, with ONE load test per part (all=true is ignored then: everything at once would hang the computer), else the tests run one after another. Name only what the user asked for. " +
+                "options sets the tests' own settings as {key: value}, applied to every chosen test that has that key: cpu.stress (the full-load test: matrix, integer and hash stages in turn) takes stageSeconds, " +
+                "pattern (steady or variable) and, for variable, high and low (percent of load) with highSeconds and lowSeconds; cpu.singlecore takes cores (how many at a time, 1 to the thread count), secondsPerCore and load (variable or steady); " +
+                "cpu.linpack takes memory (physical = fill the RAM, virtual = RAM and page file, single = one matrix); other keys are in list_tests. " +
                 "An outcome other than Passed (Failed, Cancelled, Unsupported, NotRun, Error, Inconclusive) is never to be told as a pass. Call a temperature fine only when a finding says so.",
-                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}},"all":{"type":"boolean"},"tests":{"type":"array","items":{"type":"string"}},"seconds":{"type":"integer"},"minutes":{"type":"integer"},"total_seconds":{"type":"integer"},"together":{"type":"boolean"}}}""",
+                """{"type":"object","properties":{"areas":{"type":"array","items":{"type":"string","enum":["cpu","memory","storage","network","gpu"]}},"all":{"type":"boolean"},"tests":{"type":"array","items":{"type":"string"}},"seconds":{"type":"integer"},"minutes":{"type":"integer"},"total_seconds":{"type":"integer"},"together":{"type":"boolean"},"options":{"type":"object","additionalProperties":{"type":"string"}}}}""",
                 async (a, ct) =>
                 {
                     if (_testVm is not { } tests) return Json(new { error = "the tests are not available yet" });
@@ -486,10 +498,17 @@ public sealed partial class WebBridge
                     if (ids.Count == 0) return Json(new { error = "name at least one area (cpu, memory, storage, network, gpu) or one test id of list_tests" });
                     // The request is fixed here, before the user is asked: the rows this machine can run, each once, at its default length, with the
                     // options (graphics card, drive) the page has now. The run uses exactly this, whatever the page is changed to meanwhile.
+                    // The settings asked for in the chat, by option key; a value a choice does not have is not taken (the page's own stays).
+                    var set = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    if (a.ValueKind == JsonValueKind.Object && a.TryGetProperty("options", out var given) && given.ValueKind == JsonValueKind.Object)
+                        foreach (var p in given.EnumerateObject()) set[p.Name] = p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString()! : p.Value.GetRawText();
+                    string ValueOf(TestOptionViewModel o) => set.TryGetValue(o.Option.Key, out var v) && (!o.IsChoice || o.Choices.Any(c => c.Value == v)) && (o.Option.Kind != TestOptionKind.Integer || int.TryParse(v, out _)) ? v : o.Value;
+                    string LabelOf(TestOptionViewModel o) { string v = ValueOf(o); return o.IsChoice ? o.Choices.FirstOrDefault(c => c.Value == v)?.Label ?? v : v; }
                     List<ChatTest>? plan = null;
                     await OnUi(() => { plan = tests.IsRunning || runner.IsBusy ? null : tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
-                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, o.Value)).ToList(),
-                            string.Join("، ", r.Options.Where(o => o.Value.Length > 0).Select(o => o.Label + ": " + (o.IsChoice ? o.SelectedChoice?.Label : o.Value)))))
+                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, ValueOf(o))).ToList(),
+                            // (shown to the user before they confirm: only the settings that matter with the choices made)
+                            string.Join("، ", r.Options.Where(o => ValueOf(o).Length > 0 && o.Option.Applies(k => r.Options.FirstOrDefault(x => x.Option.Key == k) is { } other ? ValueOf(other) : null)).Select(o => o.Label + ": " + LabelOf(o)))))
                         .ToList(); return ""; }).ConfigureAwait(false);
                     // The load tests' length: each one's, or the whole run's shared by them (by part when side by side, since the parts then run at once).
                     if (plan is { Count: > 0 } && (each ?? whole) is { } asked)
@@ -576,12 +595,46 @@ public sealed partial class WebBridge
                     if (ids.Count == 0) return Json(new { error = "name at least one benchmark: " + string.Join(", ", AssistantBenchmarks.Keys) + " or all" });
                     return await RunBenchmarks(ids, false, ct).ConfigureAwait(false);
                 }),
-            new("run_checkup", "The app's smart diagnosis (the Diagnosis page), done here for the user: runs the processor (all cores and one core), memory and graphics card benchmarks " +
-                "after the user confirmed on the page, then judges the computer from them and from its setup (memory, power plan, drive links and health). Call it whenever the user " +
-                "asks to diagnose, check up or troubleshoot the computer or the system as a whole. Returns each benchmark's number and the checkup's findings (level, title, text). " +
-                "Tell the problems and the things that need attention first, then what the numbers were; say only what the findings and numbers hold, never call the computer healthy unless no finding says otherwise.",
+            new("run_checkup", "The app's smart diagnosis (the Diagnosis page), done here for the user: after the user confirmed on the page it runs a short sample of the Tests page's own tests " +
+                "(the processor under full load in its three stages and core by core, the memory, the graphics card at full load and its memory, the system drive, the drives' health record; " +
+                "one to two minutes each, about eight minutes in all), then judges the computer from how each test ended, from what the sensors read meanwhile, and from its setup " +
+                "(memory, power plan, drive links and health). It does not run benchmarks. Call it whenever the user asks to diagnose, check up or troubleshoot the computer or the system as a whole. " +
+                "Returns each test's outcome and the findings (level, title, text). Tell the failed tests, the problems and the things that need attention first; an outcome other than Passed is never a pass; " +
+                "say only what the outcomes and findings hold, never call the computer healthy unless every test passed and no finding says otherwise.",
                 """{"type":"object","properties":{}}""",
-                async (_, ct) => await RunBenchmarks([.. CheckupBenchmarks], true, ct).ConfigureAwait(false)),
+                async (_, ct) =>
+                {
+                    if (_testVm is not { } tests) return Json(new { error = "the tests are not available yet" });
+                    List<(string Id, string Name, int Seconds)>? plan = null;
+                    await OnUi(() => { plan = tests.IsRunning || runner.IsBusy ? null : [.. CheckupTests.Select(x => (x, Row: tests.Rows.FirstOrDefault(r => r.Definition.Id.Value == x.Id)))
+                        .Where(p => p.Row is { IsAvailable: true }).Select(p => (p.x.Id, p.Row!.Name, p.x.Seconds))]; return ""; }).ConfigureAwait(false);
+                    if (plan is null) return Json(new { error = "a test or a benchmark is already running; nothing was started" });
+                    if (plan.Count == 0) return Json(new { error = "this computer can not run the diagnosis' tests" });
+                    if (await ask("tests", [.. plan.Select(r => (r.Name, r.Seconds.ToString(CultureInfo.InvariantCulture)))], ct).ConfigureAwait(false) is not { } kept)
+                        return Json(new { started = false, reason = "the user declined; nothing was run" });
+                    var chosen = plan.Where((_, i) => kept[i]).Select(r => r.Id).ToHashSet();
+                    return await running(new("tests", () => tests.CurrentRow is { } cur ? (cur.Name, Math.Round((tests.CurrentIndex + cur.PercentComplete) / Math.Max(1, tests.RunQueue.Count) * 100)) : null), () => withoutModel(Run, ct));
+                    async Task<string> Run()
+                    {
+                        using var stop = ct.Register(() => _window.Dispatcher.BeginInvoke(() => { if (tests.CancelCommand.CanExecute(null)) tests.CancelCommand.Execute(null); }));
+                        string started = await ui(async () => await RunCheckupTests(chosen.Contains) ? "" : "refused").ConfigureAwait(false);
+                        if (started.Length > 0) return Json(new { started = false, reason = "the test queue could not start" });
+                        // The session was judged as it ended (CheckupService); the setup is read now.
+                        var service = _sp.GetRequiredService<Desktop.Services.CheckupService>();
+                        var setup = (await service.SetupAsync().ConfigureAwait(false)).Select(FindingJson).ToList();
+                        var ran = service.TestRuns().Where(c => chosen.Contains(c.Id)).ToList();
+                        return Json(new
+                        {
+                            started = true,
+                            results = plan.Where(p => chosen.Contains(p.Id)).Select(p => (p, Check: ran.FirstOrDefault(c => c.Id == p.Id))).Select(x => new
+                            {
+                                test = x.p.Name, outcome = (x.Check?.Outcome ?? Diagnostics.TestOutcome.NotRun).ToString(), outcomeText = Loc.Get($"Test_Outcome_{x.Check?.Outcome ?? Diagnostics.TestOutcome.NotRun}"),
+                            }),
+                            checkup = new { setup, runs = ran.Select(c => new { name = Loc.Get(c.NameKey), findings = c.Findings.Select(FindingJson) }).ToList() },
+                            note = "outcome is each test's own verdict; only Passed is a pass. The findings are what the sensors showed during the tests and what the setup is.",
+                        });
+                    }
+                }),
         ];
     }
 

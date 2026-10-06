@@ -362,7 +362,11 @@ export async function call(m, p, emit) {
     case "bench.detail": return { mine: demoDetail("412 GFLOPS", false, "2026/09/29", false), theirs: demoDetail("861 GFLOPS", !!p.oc, "2026/09/20", true), median: "905 GFLOPS", references: p.part === "AMD Ryzen 9 7950X" ? 2 : 0,
       members: [["921 GFLOPS", "2026/09/21"], ["905 GFLOPS", "2026/09/12"], ["880 GFLOPS", "2026/08/30"]].map(([value, at]) => ({ value, at, gap: demoGap(412, parseFloat(value)) })) };
     case "bench.mark": case "bench.oc": return null;
-    case "checkup.state": return { running: false, runs: [{ id: "bench.cpu.multi", name: strings.Bench_Cpu_Multi, at: "14:32", findings: DEMO_FINDINGS.cpu() }, { id: "bench.gpu.d3d", name: strings.Bench_Gpu_D3D, at: "14:36", findings: DEMO_FINDINGS.gpu() }] };
+    case "checkup.state": return { running: false, own: false, minutes: 8, plan: [strings.Test_Cpu_Stress, strings.Test_Cpu_SingleCore, strings.Test_Memory_Pattern, strings.Test_Gpu_Steady, strings.Test_Storage_Smart],
+      tests: [{ id: "cpu.stress", name: strings.Test_Cpu_Stress, at: "14:20", outcome: "Passed", outcomeText: strings.Test_Outcome_Passed, findings: DEMO_FINDINGS.cpu() },
+        { id: "memory.pattern", name: strings.Test_Memory_Pattern, at: "14:23", outcome: "Passed", outcomeText: strings.Test_Outcome_Passed, findings: [] },
+        { id: "gpu.steady", name: strings.Test_Gpu_Steady, at: "14:25", outcome: "Failed", outcomeText: strings.Test_Outcome_Failed, findings: DEMO_FINDINGS.gpu() }],
+      runs: [{ id: "bench.cpu.multi", name: strings.Bench_Cpu_Multi, at: "14:32", findings: DEMO_FINDINGS.cpu() }, { id: "bench.gpu.d3d", name: strings.Bench_Gpu_D3D, at: "14:36", findings: DEMO_FINDINGS.gpu() }] };
     case "checkup.setup": await new Promise((r) => setTimeout(r, 400)); return DEMO_FINDINGS.setup();
     case "checkup.run": return false;
     case "app.quiet": return false;

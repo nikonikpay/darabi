@@ -8,6 +8,7 @@ import { partOfId } from "../parts.js";
 import { groupPanel, byPart } from "../groups.js";
 import { pageOfRun } from "../testrun.js";
 import { durationField } from "../duration.js";
+import { findingCard, bySeverity } from "./checkup.js";
 
 export const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
@@ -29,6 +30,8 @@ export function mount(el) {
   const advBox = h("input", { type: "checkbox", class: "switch", checked: advanced, "aria-label": t("Web_Tests_Advanced"),
     onchange: (e) => { advanced = e.target.checked; list.classList.toggle("simple", !advanced); try { localStorage.setItem("mazesta.tests.advanced", advanced ? "1" : "0"); } catch { /* not kept */ } } });
   list.classList.toggle("simple", !advanced);
+  const onAdvanced = (e) => { advanced = e.detail; advBox.checked = advanced; list.classList.toggle("simple", !advanced); };
+  window.addEventListener("tests:advanced", onAdvanced);
   const notice = h("div", { class: "banner", hidden: true });
   const blocked = h("div", { class: "banner", role: "status", hidden: true });
   // Ready-made selections: each picks its tests and their lengths; the note says what it covers and what it leaves out.
@@ -76,14 +79,14 @@ export function mount(el) {
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), pill = h("span", { class: "pill none" });
     const error = h("div", { class: "error", hidden: true }), detail = h("div", { class: "detail", hidden: true }), errs = h("span", { class: "caption lat" });
-    const unavailable = h("div", { class: "unavailable", hidden: true }), advice = h("div", { class: "advice", hidden: true });
+    const unavailable = h("div", { class: "unavailable", hidden: true }), advice = h("div", { class: "advice", hidden: true }), finds = h("details", { class: "row-checkup rec-more", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
       h("div", { class: "ctrls" }, dur.el, rep, cnt),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail, advice);
+      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail, advice, finds);
     into.append(row);
-    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs, unavailable, advice });
+    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs, unavailable, advice, finds });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -118,6 +121,11 @@ export function mount(el) {
       const dKey = r.detail || "";
       if (dKey !== x.lastDetail) { x.lastDetail = dKey; x.detail.hidden = !r.detail; x.detail.replaceChildren(...(r.detailLines?.length ? r.detailLines.map((l) => h("div", { class: l.lat ? "dl lat" : "dl" }, l.text)) : [r.detail || ""])); }
       x.advice.hidden = !r.advice; x.advice.textContent = r.advice || "";
+      // What this run showed about the part (the diagnosis), the ones that need action first; open by itself only when something needs a look.
+      const checkKey = JSON.stringify(r.checkup || null);
+      if (checkKey !== x.lastCheck) { x.lastCheck = checkKey; x.finds.hidden = !r.checkup?.length;
+        x.finds.replaceChildren(h("summary", {}, t("Web_Bench_Checkup"), " ", h("span", { class: "lat" }, `(${r.checkup?.length || 0})`)), ...bySeverity(r.checkup || []).map(findingCard));
+        x.finds.open = (r.checkup || []).some((f) => f.level === "Problem" || f.level === "Attention"); }
     }
     const byId = new Map(s.rows.map((r) => [r.id, r]));
     for (const { g, ids } of groups) {
@@ -126,5 +134,6 @@ export function mount(el) {
     }
   }
   call("tests.state").then(update);
-  return on("tests", update);
+  const off = on("tests", update);
+  return () => { off(); window.removeEventListener("tests:advanced", onAdvanced); };
 }
