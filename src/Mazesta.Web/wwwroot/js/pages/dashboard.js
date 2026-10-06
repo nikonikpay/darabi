@@ -178,7 +178,7 @@ export function mount(el) {
   return () => { off(); offFresh(); };
 }
 
-// A random product from the shop's site ("product": any, "system": one of its ready-built computers). The host turns its HTML into plain text and
+// A product from the shop's site: one on special sale when there is one, else a random one ("product": any, "system": one of its ready-built computers). The host turns its HTML into plain text and
 // its picture into a data URL; offline, the last one is kept.
 function shopPanel(kind) {
   const system = kind === "system";
@@ -197,7 +197,7 @@ function shopPanel(kind) {
       if (!p) { body.replaceChildren(h("p", { class: "muted", style: { gridColumn: "1 / -1", margin: 0 } }, t("Web_Shop_Offline"))); return; }
       body.replaceChildren(
         p.image ? h("img", { class: "img", src: p.image, alt: p.title, loading: "lazy" }) : h("div", { class: "img noimg" }, icon("shop")),
-        h("div", {}, h("h4", {}, p.title), p.summary ? h("p", {}, p.summary) : null,
+        h("div", {}, p.onSale ? h("span", { class: "sale" }, t("Web_Shop_OnSale")) : null, h("h4", {}, p.title), p.summary ? h("p", {}, p.summary) : null,
           h("div", { class: "acts" }, h("button", { class: "slab small", type: "button", onclick: () => call("shop.open", { url: p.link }) }, t("Web_Shop_View"), icon("arrow")))));
     } catch { body.replaceChildren(h("p", { class: "muted", style: { margin: 0 } }, t("Web_Shop_Offline"))); }
     finally { another.disabled = false; body.removeAttribute("aria-busy"); }

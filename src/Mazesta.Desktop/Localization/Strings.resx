@@ -917,6 +917,7 @@
   <data name="Web_Group_Power" xml:space="preserve"><value>Whole system (power)</value></data>
   <data name="Web_Company_Title" xml:space="preserve"><value>Mazesta</value></data>
   <data name="Web_Shop_Title" xml:space="preserve"><value>From the Mazesta shop</value></data>
+  <data name="Web_Shop_OnSale" xml:space="preserve"><value>On special sale</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>View in shop</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>Another product</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>All products</value></data>

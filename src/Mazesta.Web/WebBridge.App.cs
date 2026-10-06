@@ -40,7 +40,7 @@ public sealed partial class WebBridge
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
             contact = Contact, updated = Program.TakeJustUpdated(),
         });
-        var shop = new ShopFeed(_paths.CacheDir, _log); var systems = new ShopFeed(_paths.CacheDir, _log, ShopFeed.SystemsCategory, "system");
+        var shop = new ShopFeed(_paths.CacheDir, _log, null, "product", onSaleFirst: true); var systems = new ShopFeed(_paths.CacheDir, _log, ShopFeed.SystemsCategory, "system");
         MethodAsync("shop.product", async p => await (Str(p, "kind") == "system" ? systems : shop).GetAsync(Bool(p, "another")).ConfigureAwait(true));
         Method("shop.open", p => { var url = Str(p, "url"); if (ShopFeed.IsShopLink(url)) Open(url); return null; });
         Method("app.hardware", _ => Hardware(engine));

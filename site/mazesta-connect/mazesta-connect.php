@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.8.0
+ * Version: 1.9.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -28,7 +28,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.8.0';
+    const VERSION = '1.9.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_FULL = 3000000;
@@ -157,6 +157,7 @@ final class Mazesta_Connect
             array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_list'), 'permission_callback' => array(__CLASS__, 'need_read_key')),
         ));
         register_rest_route(self::NS, '/reports/(?P<id>[A-Za-z0-9-]{8,64})', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_get'), 'permission_callback' => array(__CLASS__, 'need_read_key')));
+        register_rest_route(self::NS, '/featured', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_featured'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/pair/start', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_start'), 'permission_callback' => $open));
@@ -200,6 +201,21 @@ final class Mazesta_Connect
         $res->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
         $res->header('X-LiteSpeed-Cache-Control', 'no-cache');
         return $res;
+    }
+
+    /** The shop's products on special sale now (WooCommerce's own "on sale" flag), for the app's dashboard. Public data only; the Store API of this site answers 500, hence this. */
+    public static function rest_featured($req)
+    {
+        $out = array();
+        if (function_exists('wc_get_product_ids_on_sale')) {
+            foreach (array_slice((array) wc_get_product_ids_on_sale(), 0, 30) as $id) {
+                $p = wc_get_product($id);
+                if (!$p || $p->get_status() !== 'publish' || !$p->is_in_stock()) { continue; }
+                $img = $p->get_image_id() ? wp_get_attachment_image_url($p->get_image_id(), 'medium_large') : '';
+                $out[] = array('id' => (int) $id, 'title' => wp_strip_all_tags($p->get_name()), 'summary' => wp_strip_all_tags($p->get_short_description()), 'link' => get_permalink($id), 'image' => $img ? $img : null);
+            }
+        }
+        return rest_ensure_response($out);
     }
 
     public static function rest_status($req)
@@ -755,7 +771,7 @@ final class Mazesta_Connect
     /* ---------- the app's release (the signed update folder) ---------- */
 
     private static function release_dir() { return ABSPATH . 'mazesta'; }
-    private static function release_name($name) { return is_string($name) && preg_match('/^(MazestaWeb-\d+\.\d+\.\d+\.zip|update\.json|update\.json\.sig|benchdb\/[A-Za-z0-9][A-Za-z0-9._@=-]*\.json)$/', $name); }
+    private static function release_name($name) { return is_string($name) && preg_match('/^(MazestaUpdate-\d+\.\d+\.\d+\.zip|update\.json|update\.json\.sig|benchdb\/[A-Za-z0-9][A-Za-z0-9._@=-]*\.json)$/', $name); }
 
     /** One piece of a release file, appended at its offset into /mazesta/.incoming; a piece at 0 starts the file over. */
     public static function rest_chunk($req)
@@ -800,7 +816,7 @@ final class Mazesta_Connect
         // The zip the manifest offers stays; older ones go.
         $manifest = json_decode((string) file_get_contents($dir . '/update.json'), true);
         $keep = is_array($manifest) && isset($manifest['app']['file']) ? (string) $manifest['app']['file'] : '';
-        $zips = glob($dir . '/MazestaWeb-*.zip');
+        $zips = glob($dir . '/MazestaUpdate-*.zip');
         foreach (is_array($zips) ? $zips : array() as $zip) { if (basename($zip) !== $keep) { @unlink($zip); } }
         // The same for the signed comparison lists: the ones the manifest no longer names go.
         $listed = array();

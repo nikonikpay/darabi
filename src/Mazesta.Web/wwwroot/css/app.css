@@ -682,6 +682,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .shop h4 { font: 800 14px/1.5 var(--fa); margin: 0 0 6px; }
 .shop p { font-size: 12.5px; line-height: 1.75; color: var(--paper-2); margin: 0 0 12px; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .shop .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.shop .sale { display: inline-block; margin-bottom: 6px; padding: 2px 10px; border-radius: 999px; font: 800 11px/1.6 var(--fa); background: #e5484d; color: #fff; }
 .skeleton { background: linear-gradient(90deg, var(--ink-3) 0, var(--ink-4) 50%, var(--ink-3) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--r-ctl); }
 .contact { display: grid; gap: 10px; margin-top: 14px; }
 .contact .line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--rule); }

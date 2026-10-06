@@ -3,16 +3,17 @@ using Microsoft.Extensions.Logging;
 namespace Mazesta.Web;
 
 /// <summary>A product from the shop's site, as plain text: the site's HTML is never passed to the page.</summary>
-public sealed record ShopProduct(long Id, string Title, string Summary, string Link, string? Image, DateTimeOffset Fetched);
+public sealed record ShopProduct(long Id, string Title, string Summary, string Link, string? Image, DateTimeOffset Fetched, bool OnSale = false);
 
 /// <summary>
 /// One random product from the shop's own WordPress site (dfmrendering.com, the WordPress REST API's product list) for the dashboard. The site
 /// answers with HTML inside its JSON (the title's entities, the excerpt's lists); that is reduced to plain text here, so the page only ever
 /// shows words and never markup. The image is fetched once and handed over as a data URL (the page may load nothing from the internet itself).
 /// The last product is cached in <c>Data/cache/shop</c> and shown while offline; nothing is shown when there has never been one.
+/// With <c>onSaleFirst</c> a product the shop has on special sale is shown (the plugin's /featured list), and a random one only when none is.
 /// A feed may be held to one of the site's product categories (<paramref name="category"/>, its WordPress id), with a cache of its own.
 /// </summary>
-public sealed partial class ShopFeed(string cacheDir, ILogger log, int? category = null, string name = "product")
+public sealed partial class ShopFeed(string cacheDir, ILogger log, int? category = null, string name = "product", bool onSaleFirst = false)
 {
     /// <summary>The site's "ready systems" category (slug <c>systems</c>): whole computers the shop builds.</summary>
     public const int SystemsCategory = 9836;
@@ -36,6 +37,7 @@ public sealed partial class ShopFeed(string cacheDir, ILogger log, int? category
 
     private async Task<ShopProduct?> FetchAsync(long? not)
     {
+        if (onSaleFirst && await OnSaleAsync(not).ConfigureAwait(false) is { } sale) return sale;
         // The site reports how many products there are; a random page of one product picks one of them. The first call learns the count.
         for (int attempt = 0; attempt < 3; attempt++)
         {
@@ -58,6 +60,26 @@ public sealed partial class ShopFeed(string cacheDir, ILogger log, int? category
         return null;
     }
 
+    /// <summary>One of the products on sale now, from the shop plugin's open list; null when there is none or the plugin is not there.</summary>
+    private static async Task<ShopProduct?> OnSaleAsync(long? not)
+    {
+        try
+        {
+            using var res = await Http.GetAsync($"{Site}/wp-json/mazesta/v1/featured").ConfigureAwait(false);
+            if (!res.IsSuccessStatusCode) return null;
+            using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync().ConfigureAwait(false));
+            var list = doc.RootElement.EnumerateArray().Where(e => IsShopLink(e.GetProperty("link").GetString() ?? "")).ToList();
+            if (list.Count == 0) return null;
+            var pool = list.Where(e => e.GetProperty("id").GetInt64() != not).ToList();
+            if (pool.Count == 0) return null;   // the one on sale is the one just shown: another comes from the random list
+            var p = pool[Random.Shared.Next(pool.Count)];
+            string? url = p.TryGetProperty("image", out var im) && im.ValueKind == JsonValueKind.String ? im.GetString() : null;
+            return new ShopProduct(p.GetProperty("id").GetInt64(), Plain(p.GetProperty("title").GetString()), Clip(Plain(p.GetProperty("summary").GetString()), 220), p.GetProperty("link").GetString()!,
+                url is not null && IsShopLink(url) ? await DownloadImageAsync(url).ConfigureAwait(false) : null, DateTimeOffset.UtcNow, true);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException or KeyNotFoundException) { return null; }
+    }
+
     private static async Task<string?> ImageAsync(long media)
     {
         using var res = await Http.GetAsync($"{Site}/wp-json/wp/v2/media/{media}?_fields=source_url,media_details").ConfigureAwait(false);
@@ -68,7 +90,11 @@ public sealed partial class ShopFeed(string cacheDir, ILogger log, int? category
             ? new[] { "medium_large", "medium", "woocommerce_single", "full" }.Select(s => sizes.TryGetProperty(s, out var size) ? size.GetProperty("source_url").GetString() : null).FirstOrDefault(u => u is not null)
             : null;
         url ??= root.TryGetProperty("source_url", out var src) ? src.GetString() : null;
-        if (url is null || !IsShopLink(url)) return null;
+        return url is null || !IsShopLink(url) ? null : await DownloadImageAsync(url).ConfigureAwait(false);
+    }
+
+    private static async Task<string?> DownloadImageAsync(string url)
+    {
         using var img = await Http.GetAsync(url).ConfigureAwait(false);
         var type = img.Content.Headers.ContentType?.MediaType;
         if (!img.IsSuccessStatusCode || type is not ("image/jpeg" or "image/png" or "image/webp")) return null;

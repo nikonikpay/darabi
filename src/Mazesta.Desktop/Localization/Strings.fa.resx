@@ -917,6 +917,7 @@
   <data name="Web_Group_Power" xml:space="preserve"><value>کل سیستم (توان)</value></data>
   <data name="Web_Company_Title" xml:space="preserve"><value>مازستا</value></data>
   <data name="Web_Shop_Title" xml:space="preserve"><value>از فروشگاه مازستا</value></data>
+  <data name="Web_Shop_OnSale" xml:space="preserve"><value>فروش ویژه</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>مشاهده در فروشگاه</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>محصول دیگر</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>همهٔ محصولات</value></data>
