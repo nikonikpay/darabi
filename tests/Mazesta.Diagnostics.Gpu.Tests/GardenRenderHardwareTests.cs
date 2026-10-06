@@ -15,7 +15,7 @@ public class GardenRenderHardwareTests
     private static float[] Times => Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIMES") is { Length: > 0 } list
         ? [.. list.Split(',').Select(t => float.Parse(t, System.Globalization.CultureInfo.InvariantCulture))] : [0f, 12f, 21f, 27f, 36f, 42f, 48f, 54f, 60f, 72f, 78f, 87f];
 
-    [Theory, InlineData(1u), InlineData(3u)]
+    [Theory, InlineData(1u), InlineData(2u), InlineData(3u), InlineData(4u)]
     public void The_rasterised_garden_is_a_stable_picture(uint load)
     {
         if (NoGpu) return;
