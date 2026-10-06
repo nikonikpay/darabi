@@ -261,7 +261,7 @@ internal sealed unsafe class GardenGpu
     /// and how far its wings are raised - it wanders over the beds' flowers, dipping and rising, its wings beating some ten times a second.</summary>
     public static (Vector3 At, float Heading, float Raised) Butterfly(int n, float time)
     {
-        uint id = (uint)n * 16 + 5000; var home = Home(id, 0.75f, 1.5f, 3);   // the beds by the pool: the ones along the wall are too narrow to wander over float a = H(id + 5) * 6.28f, b = H(id + 6) * 6.28f, pace = 0.8f + 0.5f * H(id + 7);
+        uint id = (uint)n * 16 + 5000; var home = Home(id, 0.75f, 1.5f, 3); float a = H(id + 5) * 6.28f, b = H(id + 6) * 6.28f, pace = 0.8f + 0.5f * H(id + 7);   // (the beds by the pool: the ones along the wall are too narrow to wander over)
         Vector3 At(float t) => home + new Vector3(1.3f * MathF.Sin(t * 0.43f * pace + a) + 0.4f * MathF.Sin(t * 1.1f * pace + b), 0.22f * MathF.Sin(t * 0.9f * pace + b) + 0.07f * MathF.Sin(t * 4.3f + a),
                                                   1.3f * MathF.Cos(t * 0.37f * pace + b) + 0.4f * MathF.Sin(t * 1.3f * pace + a));
         var at = At(time); var ahead = At(time + 0.05f) - at;
