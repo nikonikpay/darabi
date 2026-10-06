@@ -6,7 +6,7 @@ import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { fmt } from "../format.js";
 import { hw, topNodes, pick, value, stats, subscribe, netRank } from "../store.js";
-import { h, val, icon } from "../ui.js";
+import { h, val, icon, toast } from "../ui.js";
 import { liveTile, percentOf, ratioOf } from "../tiles.js";
 import { go, boot } from "../app.js";
 import { contactLines } from "../contact.js";
@@ -23,13 +23,23 @@ export function mount(el) {
   const verdict = h("h2", { class: "verdict" }, t("Web_Dash_Verdict_None"));
   const machine = h("div", { class: "machine lat" }, [cpu?.name, gpu?.name].filter(Boolean).join("  ·  "));
   const date = new Intl.DateTimeFormat(boot.rtl ? "fa-IR-u-ca-persian" : "en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
-  const action = (cls, ico, key, onclick) => h("button", { class: cls, type: "button", onclick }, h("span", { class: "ico" }, icon(ico)), t(key));
+  const action = (cls, ico, key, onclick, extra) => h("button", { class: cls, type: "button", onclick }, h("span", { class: "ico" }, icon(ico)), h("span", { class: "nm" }, t(key)), extra || null);
+  // Windows Update, on or off, from here: the same profiles as its own page (Windows' own behaviour, or everything off), read back from Windows.
+  const wu = h("span", { class: "pill none" }, "—"); let wuState = null;
+  const showWu = (state) => { wuState = state; const off = state === "Disabled"; wu.className = `pill ${off ? "warn" : "pass"}`; wu.textContent = t(off ? "Web_Dash_Updates_Off" : "Web_Dash_Updates_On"); };
+  const toggleWu = async () => {
+    if (!wuState) return;
+    const to = wuState === "Disabled" ? "Default" : "Disabled";
+    if (to === "Disabled" && !confirm(t("Updates_ConfirmDisable"))) return;
+    try { const r = await call("tweaks.update", { profile: to }); showWu(r.update); toast(r.error ? t("Tweaks_Failed", t("Nav_Updates"), r.error) : t("Updates_Done", t(`Updates_${to}`)), r.error ? "fail" : "ok"); }
+    catch (e) { toast(String(e.message || e), "fail"); }
+  };
+  call("tweaks.state").then((x) => showWu(x.update)).catch(() => {});
   const status = h("section", { class: "plane status-card enter" },
-    h("span", { class: "status-kicker" }, t("Web_Dash_Live")), verdict, machine, h("div", { class: "grow" }),
+    h("div", { class: "status-text" }, h("span", { class: "status-kicker" }, t("Web_Dash_Live"), h("span", { class: "status-date" }, date)), verdict, machine),
     h("div", { class: "quick" },
-      action("", "flask", "Web_Dash_RunTests", () => go("tests")), action("p-gpu", "trophy", "Nav_Benchmarks", () => go("benchmarks")),
-      action("p-game", "overlay", "Overlay_Toggle", () => call("app.toggleOverlay")), action("p-board", "doc", "Nav_Reports", () => go("reports"))),
-    h("div", { class: "colophon" }, h("span", {}, t("Web_Company_Title")), h("span", {}, date)));
+      action("", "check", "Web_Dash_Checkup", () => go("checkup")), action("p-gpu", "trophy", "Web_Dash_Bench", () => go("benchmarks")),
+      action("p-game", "update", "Web_Dash_Updates", toggleWu, wu), action("p-board", "board", "Web_Dash_Info", () => go("system"))));
   // Each temperature with its part's load beside it and as the bar, like the overlay; memory used, its load, and the total under it.
   // The adapter the internet goes through, as the network page shows it; the first connected one without it.
   const net = [...nets].sort((a, b) => netRank(a) - netRank(b))[0];
@@ -44,7 +54,7 @@ export function mount(el) {
       share: percentOf(pick(net, "NetUtilization")), foot: net.name, page: "network", i: 3 }),
   ].filter(Boolean);
   for (const x of tiles) updates.push(x.update);
-  const plane = h("div", { class: "hero-row" }, status, h("div", { class: "tiles" }, tiles.map((x) => x.el)));
+  const plane = h("div", { class: "hero-row" }, status, h("div", { class: "tiles compact" }, tiles.map((x) => x.el)));
 
   // ——— Pieces a panel is made of; each registers its own update ———
   // A big reading: the number and its unit apart. A sensor that is missing, or has no reading now, is the hatch.
@@ -95,61 +105,71 @@ export function mount(el) {
 
   // The parts the tiles above already show (processor, graphics, memory, network) have their own pages; this row is what the tiles do not hold.
   const panels = h("div", { class: "panels dash pair" });
-  // Board and system: what the machine is (from the inventory, filled in when it arrives) and the board's own sensors.
+  // Board, system and power in one panel: what the machine is (from the inventory, filled in when it arrives), the board's own sensors, and
+  // the parts' power added up without counting anything twice (the same rule as PowerTotals on the host): a power supply's output reading is
+  // the whole of it; else the CPU by its package (its cores are inside it), each graphics card by its one card reading, RAM and drives where
+  // they report power. The board, the fans and what has no power sensor are named as not measured, never guessed.
   const boardSensors = board ? sensorsUnder(board) : [];
   const inv = { board: h("span", {}), bios: h("dd", { class: "lat" }), os: h("dd", { class: "lat" }) };
-  panels.append(panel({ kind: "System", title: t("Web_Dash_System"), sub: null,
-    body: [h("div", { class: "panel-sub", style: { marginTop: "6px" } }, inv.board),
-      h("div", { class: "stats" }, stat(t("Web_Dash_BoardTemp"), boardSensors.find((s) => s.role === "BoardTemp")), stat(t("Web_Dash_ChipsetTemp"), boardSensors.find((s) => s.role === "ChipsetTemp")))],
-    more: [h("dt", {}, t("Dashboard_Inv_Bios")), inv.bios, h("dt", {}, t("Dashboard_Inv_Os")), inv.os,
-      details(boardSensors, ["BoardFan", "CpuFan", "BoardVoltage", "BoardTemp", "ChipsetTemp"], [boardSensors.find((s) => s.role === "BoardTemp"), boardSensors.find((s) => s.role === "ChipsetTemp")])] }));
-
-  const driveHealth = new Map();   // drive name → its health line, filled in when the inventory arrives
-  if (drives.length) {
-    const rows = drives.map((d) => {
-      const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" });
-      driveHealth.set(d.name.trim().toLowerCase(), hv);
-      updates.push(() => tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null)));
-      return h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
-        meter(t("Web_Dash_UsedSpace"), percentOf(pick(d, "StorageUsedSpace"))));
-    });
-    panels.append(panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)),
-      body: h("div", { class: "units cols-auto" }, rows),
-      more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) }));
-  }
-  // The system's power: the parts' own readings added up without counting anything twice (the same rule as PowerTotals on the host): a power
-  // supply's output reading is the whole of it; else the CPU by its package (its cores are inside it), each graphics card by its one card reading,
-  // RAM and drives where they report power. The board, the fans and what has no power sensor are named as not measured, never guessed.
-  function powerPanel() {
-    const all = hw.nodes, under = (n) => sensorsUnder(n).filter((s) => s.kind === "Power");
-    const psu = all.filter((n) => n.kind === "Psu").flatMap(under).sort((a, b) => /total/i.test(b.name) - /total/i.test(a.name));
+  {
+    const all = hw.nodes, under = (n) => sensorsUnder(n).filter((x) => x.kind === "Power");
+    const psu = all.filter((n) => n.kind === "Psu").flatMap(under).sort((x, y) => /total/i.test(y.name) - /total/i.test(x.name));
     const parts = [];
     for (const n of topNodes()) {
       const p = under(n);
-      if (n.kind === "Cpu") parts.push(...p.filter((s) => s.role === "CpuPackagePower").slice(0, 1).map((s) => [n, s]));
-      else if (n.kind === "Gpu") parts.push(...p.filter((s) => s.role === "GpuPower").slice(0, 1).map((s) => [n, s]));
-      else if (n.kind === "Memory" || n.kind === "Storage") parts.push(...p.map((s) => [n, s]));
+      if (n.kind === "Cpu") parts.push(...p.filter((x) => x.role === "CpuPackagePower").slice(0, 1).map((x) => [n, x]));
+      else if (n.kind === "Gpu") parts.push(...p.filter((x) => x.role === "GpuPower").slice(0, 1).map((x) => [n, x]));
+      else if (n.kind === "Memory" || n.kind === "Storage") parts.push(...p.map((x) => [n, x]));
     }
     const has = (k) => parts.some(([n]) => n.kind === k);
     const unmeasured = ["Motherboard", "Cooler", ...["Memory", "Storage"].filter((k) => topNodes(k).length && !has(k))];
     const total = h("span", { class: "v" }), note = h("p", { class: "power-note" });
-    const fromPsu = () => psu.find((s) => value(s.id) > 0);
     updates.push(() => {
-      const ps = fromPsu();
-      const vals = parts.map(([, s]) => value(s.id)).filter((v) => v !== null && v >= 0);
-      const w = ps ? value(ps.id) : vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+      const ps = psu.find((x) => value(x.id) > 0);
+      const vals = parts.map(([, x]) => value(x.id)).filter((v) => v !== null && v >= 0);
+      const w = ps ? value(ps.id) : vals.length ? vals.reduce((x, y) => x + y, 0) : null;
       total.replaceChildren(w === null ? val(null) : h("span", { class: "num" }, Math.round(w)), w === null ? "" : h("small", {}, "W"));
       note.textContent = ps ? t("Web_Dash_PowerPsu") : t("Web_Dash_PowerUnmeasured", unmeasured.map((k) => t(`Web_Kind_${k}`)).join("، "));
     });
-    const rows = parts.map(([n, s]) => {
+    const rows = parts.map(([n, x]) => {
       const v = h("span", { class: "num" });
-      updates.push(() => v.replaceChildren(val(fmt(value(s.id), s.unit))));
-      return h("div", { class: "power-row" }, h("span", { class: "nm", title: `${n.name} · ${s.name}` }, t(`Web_Kind_${n.kind}`), " ", h("small", { class: "lat" }, n.name)), v);
+      updates.push(() => v.replaceChildren(val(fmt(value(x.id), x.unit))));
+      return h("div", { class: "power-row" }, h("span", { class: "nm", title: `${n.name} · ${x.name}` }, t(`Web_Kind_${n.kind}`), " ", h("small", { class: "lat" }, n.name)), v);
     });
-    return panel({ kind: "Power", title: t("Web_Dash_Power"), sub: t("Web_Dash_PowerSub"),
-      body: [h("div", { class: "stats" }, h("div", { class: "stat" }, h("span", { class: "k" }, t("Web_Dash_PowerTotal")), total)), h("div", { class: "power-rows" }, rows), note] });
+    const boardTemp = boardSensors.find((x) => x.role === "BoardTemp"), chipTemp = boardSensors.find((x) => x.role === "ChipsetTemp");
+    panels.append(panel({ kind: "System", title: t("Web_Dash_SystemPower"), sub: inv.board,
+      body: [h("div", { class: "stats three" }, h("div", { class: "stat" }, h("span", { class: "k" }, t("Web_Dash_PowerTotal")), total), stat(t("Web_Dash_BoardTemp"), boardTemp), chipTemp ? stat(t("Web_Dash_ChipsetTemp"), chipTemp) : null),
+        h("div", { class: "power-rows" }, rows), note],
+      more: [h("dt", {}, t("Dashboard_Inv_Bios")), inv.bios, h("dt", {}, t("Dashboard_Inv_Os")), inv.os,
+        details(boardSensors, ["BoardFan", "CpuFan", "BoardVoltage", "BoardTemp", "ChipsetTemp"], [boardTemp, chipTemp])] }));
   }
-  panels.append(powerPanel());
+
+  const driveHealth = new Map();   // drive name → its health line, filled in when the inventory arrives
+  if (drives.length) {
+    // A drive more than nine tenths full is marked: its row and bar turn red and it says so (a full system drive slows Windows and stops updates).
+    const FULL = 0.9, alert = h("span", { class: "pill fail", hidden: true });
+    const shares = drives.map((d) => percentOf(pick(d, "StorageUsedSpace")));
+    const rows = drives.map((d, k) => {
+      const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" }), num = h("span", {}), bar = h("i", {}), full = h("span", { class: "full-mark", hidden: true }, icon("alert"), t("Web_Dash_DriveFull"));
+      driveHealth.set(d.name.trim().toLowerCase(), hv);
+      const row = h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
+        h("div", { class: "meter" }, h("div", { class: "row" }, h("span", {}, t("Web_Dash_UsedSpace"), full), num), h("div", { class: "bar", role: "presentation" }, bar)));
+      updates.push(() => {
+        tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null));
+        const p = shares[k]();
+        bar.style.setProperty("--p", p === null ? 0 : Math.min(1, Math.max(0, p)));
+        num.replaceChildren(p === null ? val(null) : h("span", { class: "num" }, `${Math.round(p * 100)}%`));
+        row.classList.toggle("full", p !== null && p > FULL); full.hidden = !(p !== null && p > FULL);
+      });
+      return row;
+    });
+    updates.push(() => { const n = shares.filter((f) => { const p = f(); return p !== null && p > FULL; }).length; alert.hidden = !n; alert.textContent = t("Web_Dash_DrivesFull", fa(n)); });
+    const p = panel({ kind: "Storage", title: t("Nav_Storage"), sub: t("Web_Dash_Drives", fa(drives.length)),
+      body: h("div", { class: `units drives ${drives.length > 3 ? "scroll" : ""}`, tabindex: drives.length > 3 ? "0" : null }, rows),
+      more: drives.map((d) => { const kv = details(d.sensors, ["StorageReadRate", "StorageWriteRate", "StorageTotalActivity", "StorageRemainingLife", "StorageWear", "StorageSpare", "StorageDataWritten", "StoragePowerOnHours", "StoragePowerCycles", "StorageFreeSpace"]); return kv.length ? [h("dt", { class: "sub lat" }, d.name), kv] : null; }) });
+    p.querySelector(".panel-head .ttl").after(alert);
+    panels.append(p);
+  }
   // ——— The shop and its people ———
   const company = h("div", { class: "panels company" }, shopPanel("product"), shopPanel("system"), contactPanel());
   el.append(plane, panels, h("h2", { class: "section-title" }, t("Web_Company_Title")), company);

@@ -95,7 +95,7 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .nav-toggle { margin-inline-start: auto; }
 
 /* The index: plain rows; the open family is lit (text full strength, a raised plate) and marked by a yellow notch at its start edge. */
-.index-list { list-style: none; margin: 0; padding: 0; flex: 1; display: grid; align-content: start; gap: 1px; }
+.index-list { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 1px; }
 .index-list a { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: var(--r-ctl); color: var(--paper-2);
   text-decoration: none; position: relative; transition: color var(--fast), background var(--fast); white-space: nowrap; }
 .index-list a svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.75; }
@@ -110,9 +110,11 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .index-list a[aria-current="page"] svg { stroke: var(--yellow); }
 .index-list a[aria-current="page"]::before { content: ""; position: absolute; inset-inline-start: 0; top: 12px; bottom: 12px; width: 3px; background: var(--yellow); }
 .index-list .sep { height: 1px; background: var(--rule); margin: 8px 10px; }
-.index-asst { display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 12px; height: 42px; margin: 10px 0 0; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--r-ctl); background: var(--ink-2); color: var(--paper); font: 650 14px var(--fa); text-align: start; cursor: pointer; }
-.index-asst:hover { background: var(--ink-3); }
-.index-asst svg { width: 18px; height: 18px; stroke: var(--yellow); stroke-width: 1.9; }
+.index-asst { --hue: var(--c-gpu, #8e7dff); display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 12px; height: 42px; flex: none; margin: 12px 0 0; padding: 0 12px; border: 1px solid color-mix(in oklab, var(--hue) 55%, transparent); border-radius: var(--r-ctl);
+  background: color-mix(in oklab, var(--hue) 16%, var(--ink-2)); color: var(--paper); font: 700 14px var(--fa); text-align: start; cursor: pointer; transition: background var(--fast), border-color var(--fast); }
+.index-asst:hover { background: color-mix(in oklab, var(--hue) 26%, var(--ink-2)); border-color: var(--hue); }
+.index-asst svg { width: 18px; height: 18px; stroke: var(--hue); stroke-width: 1.9; }
+.index-gap { flex: 1; min-height: 10px; }
 .app[data-nav="mini"] .index-asst { grid-template-columns: 1fr; justify-items: center; padding: 0; }
 .app[data-nav="mini"] .index-asst .nm { display: none; }
 .index-foot { padding: 12px 8px 0; border-top: 1px solid var(--rule); margin-top: 12px; }
@@ -286,20 +288,32 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .tiles.compact .tile-val { font-size: 30px; }
 
 /* The dashboard's first row: the machine's standing and what to do next, beside the live tiles. */
-.hero-row { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr); gap: 14px; align-items: stretch; }
-.hero-row .tiles { margin-top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.status-card { display: flex; flex-direction: column; }
-.status-card .grow { flex: 1; }
+.hero-row { display: grid; gap: 10px; }
+.hero-row .tiles { margin-top: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+/* The standing is a band: what the machine is on one side, what to do next on the other, no taller than its buttons. */
+.status-card { display: flex; align-items: center; gap: 12px 24px; flex-wrap: wrap; padding-block: 12px; }
+.status-text { flex: 1 1 260px; min-width: 0; }
+.status-date { margin-inline-start: 10px; padding-inline-start: 10px; border-inline-start: 1px solid var(--rule-2); font-weight: 500; }
+.status-card .quick { flex: 3 1 600px; margin-top: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.status-card .quick button { padding: 8px 10px; gap: 8px; }
+.status-card .machine { margin-top: 2px; font-size: 12.5px; }
+.status-card .verdict { font-size: clamp(17px, 1.5vw, 22px); }
+.quick button .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quick button .pill { flex: none; }
+.hero-row .tile { padding: 9px 12px 9px; }
+.hero-row .tile-main { margin-top: 6px; padding: 6px 10px 5px; }
+.hero-row .tiles.compact .tile-val { font-size: 27px; }
+.hero-row .tile .bar { margin-top: 7px; height: 5px; }
+.hero-row .tile-foot { margin-top: 6px; font-size: 11px; }
 .status-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--paper-3); font-weight: 600; }
 .status-kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--pass); animation: live 2.4s ease-in-out infinite; }
-.status-card .verdict { margin-top: 10px; }
+.status-card .verdict { margin-top: 4px; }
 .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 14px; }
 .quick button { display: flex; align-items: center; gap: 10px; text-align: start; padding: 9px 12px; border-radius: var(--r-ctl); border: 1px solid var(--rule-2); background: var(--ink-3); color: var(--paper); cursor: pointer;
   font-weight: 600; font-size: 13px; box-shadow: var(--shadow); transition: border-color var(--fast), background var(--fast); }
 .quick button:hover { border-color: var(--paper-3); background: var(--ink-4); }
 .quick button .ico { display: grid; place-items: center; color: var(--hue, var(--yellow)); flex: none; }
 .quick button svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1.75; }
-@media (max-width: 1240px) { .hero-row { grid-template-columns: 1fr; } .hero-row .tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); } }
 
 /* The dashboard is laid out by its own width (the assistant's column takes part of the window): a fixed grid of four, two or one columns.
    The one-reading parts share a row of equal heights with their meter at the foot; a part with a row per drive or adapter takes two columns. */
@@ -309,14 +323,27 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .panels.dash > .panel > .meter { margin-top: auto; padding-top: 14px; }
 .panels.dash > .span2 { grid-column: span 2; }
 /* The board beside the drives: the board narrow, the drives side by side in the rest. */
-.panels.dash.pair { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.panels.dash.pair { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
+.stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; }
+.panels.dash .stat .v { font-size: 20px; }
+/* The drives: three in view, the rest by scrolling; one that is nearly full in red, saying so. */
+.units.drives { margin-top: 10px; gap: 8px; }
+.units.drives.scroll { max-height: 190px; overflow-y: auto; padding-inline-end: 8px; scrollbar-gutter: stable; }
+.units.drives .unit-row { padding-bottom: 8px; }
+.units.drives .meter { margin-top: 0; }
+.units.drives .meter .row { margin-bottom: 4px; }
+.unit-row.full .meter .bar i { background: var(--fail); }
+.unit-row.full .nm, .unit-row.full .meter .row .num { color: var(--fail); }
+.full-mark { display: inline-flex; align-items: center; gap: 4px; margin-inline-start: 8px; color: var(--fail); font-weight: 700; }
+.full-mark svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+.full-mark[hidden] { display: none; }
 /* Board, drives and power share one row; the drives stack in their third of it. */
 .panels.dash.pair .units.cols-auto { grid-template-columns: 1fr; }
-.power-rows { display: grid; gap: 4px; margin-top: 10px; font-size: 12.5px; }
+.power-rows { display: grid; gap: 3px; margin-top: 8px; font-size: 12.5px; }
 .power-row { display: flex; justify-content: space-between; gap: 8px; }
 .power-row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .power-row small { color: var(--paper-3); }
-.power-note { margin: auto 0 0; padding-top: 10px; font-size: 11.5px; color: var(--paper-3); line-height: 1.6; }
+.power-note { margin: auto 0 0; padding-top: 6px; font-size: 11px; color: var(--paper-3); line-height: 1.6; }
 .panels.dash.pair > .span3 { grid-column: auto; }
 /* The first rows read at nine tenths of the page's size (the owner's ask), so the shop below comes into view; zoom keeps the full width. */
 .dash-page .hero-row, .dash-page .panels.dash { zoom: 0.9; }
@@ -324,9 +351,9 @@ a.tile:hover { background: var(--ink-3); border-color: var(--rule-2); border-inl
 .units.cols-auto { grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); column-gap: 18px; }
 .units.cols-auto > .unit-row:last-child { border-bottom: 1px solid var(--rule); padding-bottom: 10px; }
 .panels.company { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
-@container (max-width: 1180px) { .panels.dash { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panels.company { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panels.company > .p-contact { grid-column: 1 / -1; } }
-@container (max-width: 1000px) { .dash-page .hero-row { grid-template-columns: 1fr; } }
-@container (max-width: 860px) { .panels.dash.pair { grid-template-columns: 1fr; } }
+@container (max-width: 1180px) { .panels.dash:not(.pair) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panels.company { grid-template-columns: repeat(2, minmax(0, 1fr)); } .panels.company > .p-contact { grid-column: 1 / -1; } }
+@container (max-width: 620px) { .hero-row .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .status-card .quick { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 620px) { .panels.dash.pair { grid-template-columns: 1fr; } }
 @container (max-width: 640px) { .panels.dash, .panels.dash.pair, .panels.company { grid-template-columns: 1fr; } .panels.dash > .span2, .panels.dash > .span3, .panels.company > .p-contact { grid-column: auto; } }
 
 /* ———— Ruled columns (system info, specs) as small cards ———— */
@@ -739,9 +766,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
 /* Dashboard additions: the company row, a section title between the machine and the shop, buttons inside panels wear the panel's hue. */
-.section-title { font: 750 15.5px/1.3 var(--fa); margin: 30px 0 0; display: flex; align-items: center; gap: 12px; color: var(--paper); }
+.section-title { font: 750 15.5px/1.3 var(--fa); margin: 18px 0 0; display: flex; align-items: center; gap: 12px; color: var(--paper); }
 .section-title::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
-.panels.company { margin-top: 14px; }
+.panels.company { margin-top: 10px; }
 .panel-sub.fa { font-family: var(--fa); direction: inherit; text-align: start; white-space: normal; font-size: 12px; margin-top: 2px; }
 .panel .slab { background: var(--hue); color: var(--ink); box-shadow: 0 8px 24px -14px var(--hue); }
 .panel .slab.small { font-size: 13px; padding: 8px 15px; }

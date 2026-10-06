@@ -1208,7 +1208,7 @@
   <data name="Web_Boot_Elapsed" xml:space="preserve"><value>{0} ثانیه</value></data>
   <data name="Web_Boot_Window" xml:space="preserve"><value>در حال باز کردن پنجره…</value></data>
   <data name="Nav_Group_Tests" xml:space="preserve"><value>تست و بنچمارک</value></data>
-  <data name="Nav_Group_Hardware" xml:space="preserve"><value>سخت‌افزار و مانیتورینگ</value></data>
+  <data name="Nav_Group_Hardware" xml:space="preserve"><value>مانیتورینگ و سیستم</value></data>
   <data name="Nav_Group_Gaming" xml:space="preserve"><value>گیمینگ و اورلی</value></data>
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>بهینه‌سازی</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>جمع یا باز کردن منو</value></data>
@@ -3223,4 +3223,14 @@
   <data name="Web_Overlay_Refresh_Seconds" xml:space="preserve"><value>هر {0} ثانیه</value></data>
   <data name="Test_Option_SceneOverlay" xml:space="preserve"><value>اورلی روی صحنه</value></data>
   <data name="Test_Switch_On" xml:space="preserve"><value>روشن</value></data>
+  <data name="Web_Dash_Checkup" xml:space="preserve"><value>عیب‌یابی هوشمند</value></data>
+  <data name="Web_Dash_Bench" xml:space="preserve"><value>بنچمارک</value></data>
+  <data name="Web_Dash_Updates" xml:space="preserve"><value>آپدیت ویندوز</value></data>
+  <data name="Web_Dash_Updates_On" xml:space="preserve"><value>روشن</value></data>
+  <data name="Web_Dash_Updates_Off" xml:space="preserve"><value>خاموش</value></data>
+  <data name="Web_Dash_Info" xml:space="preserve"><value>اطلاعات سیستم</value></data>
+  <data name="Web_Dash_SystemPower" xml:space="preserve"><value>سیستم و توان</value></data>
+  <data name="Web_Dash_Machine" xml:space="preserve"><value>این کامپیوتر</value></data>
+  <data name="Web_Dash_DriveFull" xml:space="preserve"><value>رو به پر شدن</value></data>
+  <data name="Web_Dash_DrivesFull" xml:space="preserve"><value>{0} درایو رو به پر شدن</value></data>
 </root>

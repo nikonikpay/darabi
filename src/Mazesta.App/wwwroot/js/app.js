@@ -52,7 +52,7 @@ export const FAMILIES = [
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
   { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
 ];
-const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", tools: "wrench", tweaks: "layers", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
+const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", lights: "bulb", fans: "fan", tools: "wrench", tweaks: "layers", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 
@@ -116,12 +116,13 @@ function renderIndex(info) {
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
         icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no", "aria-hidden": "true" }, icon("chevronend")))),
     ])),
-    // The shop's two desks, a box above the assistant's entry: one dialog with the numbers and the messengers.
-    h("button", { class: "index-support", type: "button", onclick: () => import("./support.js").then((m) => m.openSupport(boot)) },
-      h("span", { class: "sup-ico" }, icon("phone")), h("span", { class: "nm" }, h("b", {}, t("Support_Button")), h("small", {}, t("Support_Sub")))),
-    // The assistant lives in its own column at the other edge; this entry opens and folds it, from any page.
+    // The assistant lives in its own column at the other edge; this entry, right under the pages, opens and folds it from any page.
     h("button", { class: "index-asst", type: "button", title: `${t("Nav_Assistant")} · Ctrl+J`, onclick: () => window.dispatchEvent(new Event("assistant:toggle")) },
       icon("chat"), h("span", { class: "nm" }, t("Nav_Assistant"))),
+    h("div", { class: "index-gap" }),
+    // The shop's two desks, a box at the foot: one dialog with the numbers and the messengers.
+    h("button", { class: "index-support", type: "button", onclick: () => import("./support.js").then((m) => m.openSupport(boot)) },
+      h("span", { class: "sup-ico" }, icon("phone")), h("span", { class: "nm" }, h("b", {}, t("Support_Button")), h("small", {}, t("Support_Sub")))),
     // The service job's number is Mazesta's own (its edition only): the users' edition has no such field.
     ...(info.staff ? [h("div", { class: "index-foot" },
       h("label", { for: "svc" }, t("Service_Number")),
