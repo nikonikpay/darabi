@@ -9,6 +9,7 @@ import { hw, topNodes, pick, value, stats, subscribe, netRank } from "../store.j
 import { h, val, icon } from "../ui.js";
 import { liveTile, percentOf, ratioOf } from "../tiles.js";
 import { go, boot } from "../app.js";
+import { contactLines } from "../contact.js";
 import { part, sensorsUnder } from "../parts.js";
 
 export function mount(el) {
@@ -208,18 +209,8 @@ function shopPanel(kind) {
 
 // The company's sales and support lines as its own site publishes them; the chips open only the links the host knows by name.
 function contactPanel() {
-  const c = boot.contact || {};
-  const chip = (key, ico, label) => h("button", { class: "chip", type: "button", onclick: () => call("app.openLink", { key }) }, icon(ico), label);
-  const line = (who, number, ...chips) => h("div", { class: "line" }, h("span", { class: "who" }, who), h("span", { class: "no" }, number), chips.length ? h("div", { class: "links" }, chips) : null);
-  const messengers = (desk) => [chip(`${desk}-telegram`, "send", t("Web_Contact_Telegram")), chip(`${desk}-whatsapp`, "chat", t("Web_Contact_WhatsApp")), chip("bale", "chat", t("Web_Contact_Bale"))];
   return h("section", { class: "panel p-contact" },
     h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon("phone")),
       h("div", { class: "ttl" }, h("h3", { class: "panel-title" }, t("Web_Contact_Title")), h("div", { class: "panel-sub fa" }, t("Dashboard_Mazesta_L1")))),
-    h("div", { class: "contact" },
-      c.office && line(t("Web_Contact_Office"), c.office),
-      c.sales && line(t("Web_Contact_Sales"), c.sales, ...messengers("sales")),
-      c.support && line(t("Web_Contact_Support"), c.support, ...messengers("support")),
-      c.hours && h("p", { class: "note" }, icon("clock"), h("span", {}, t(c.hours))),
-      c.address && h("p", { class: "note" }, icon("pin"), h("span", {}, t(c.address), c.postcode ? [` — ${t("Web_Contact_Postcode")} `, h("span", { class: "lat" }, c.postcode)] : null)),
-      h("div", { class: "links" }, chip("site", "net", t("Dashboard_Mazesta_Site")), chip("channel-telegram", "send", t("Web_Contact_Channel")), chip("instagram", "camera", t("Web_Contact_Instagram")))));
+    contactLines(boot.contact || {}));
 }

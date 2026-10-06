@@ -918,6 +918,35 @@
   <data name="Web_Company_Title" xml:space="preserve"><value>مازستا</value></data>
   <data name="Web_Shop_Title" xml:space="preserve"><value>از فروشگاه مازستا</value></data>
   <data name="Web_Shop_OnSale" xml:space="preserve"><value>فروش ویژه</value></data>
+  <data name="Fail_Title" xml:space="preserve"><value>در اجرای آزمون مشکلی پیش آمد</value></data>
+  <data name="Fail_Intro" xml:space="preserve"><value>این موارد درست به پایان نرسیدند. این همیشه به معنای خرابی قطعه نیست؛ در ادامه می‌بینید بیشتر به چه چیزی اشاره دارد.</value></data>
+  <data name="Fail_More" xml:space="preserve"><value>و {0} مورد دیگر</value></data>
+  <data name="Fail_Likely" xml:space="preserve"><value>محتمل‌ترین علت</value></data>
+  <data name="Fail_Try" xml:space="preserve"><value>چه کار کنید</value></data>
+  <data name="Fail_Support" xml:space="preserve"><value>اگر بعد از این هم تکرار شد، با پشتیبانی مازستا تماس بگیرید و فایل عیب‌یابی را برایشان بفرستید تا همراه شما بررسی کنند.</value></data>
+  <data name="Fail_Contact" xml:space="preserve"><value>تماس با پشتیبانی</value></data>
+  <data name="Fail_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Support_Button" xml:space="preserve"><value>ارتباط با پشتیبانی و فروش</value></data>
+  <data name="Support_Title" xml:space="preserve"><value>ارتباط با مازستا</value></data>
+  <data name="Support_Sub" xml:space="preserve"><value>واحد پشتیبانی و واحد فروش مازستا آمادهٔ کمک به شما هستند.</value></data>
+  <data name="Support_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Advice_GpuDriver_Cause" xml:space="preserve"><value>درایور کارت گرافیک پاسخ نداد و ویندوز آن را ریست کرد. این یعنی درایور از کار افتاده، نه الزاماً خرابی کارت. علت‌های معمول: درایور خراب یا قدیمی، اورکلاک یا آندرولت ناپایدار، گرمای زیاد، یا پاورِ ناتوان در تحمل بار.</value></data>
+  <data name="Advice_GpuDriver_Steps" xml:space="preserve"><value>تازه‌ترین درایور را از سایت NVIDIA، AMD یا Intel نصب کنید و گزینهٔ نصب تمیز را بزنید|اورکلاک یا آندرولت کارت را بردارید و دوباره آزمون را اجرا کنید|دمای کارت و فن‌هایش را ببینید و مطمئن شوید کابل‌های برقش کامل جا رفته‌اند|ویندوز و درایور چیپست مادربرد را به‌روز کنید|اگر با همهٔ تنظیمات پیش‌فرض باز هم تکرار شد، ممکن است کارت یا پاور مشکل داشته باشد</value></data>
+  <data name="Advice_Gpu_Cause" xml:space="preserve"><value>آزمون گرافیک تا آخر اجرا نشد. ممکن است درایور، پشتیبانی از DirectX 12 یا حافظهٔ کارت علت باشد.</value></data>
+  <data name="Advice_Gpu_Steps" xml:space="preserve"><value>درایور گرافیک را به‌روز کنید|بازی‌ها، مرورگر و برنامه‌هایی که از کارت استفاده می‌کنند را ببندید و دوباره اجرا کنید|دمای کارت را بررسی کنید|آزمون حافظهٔ گرافیک را اجرا کنید تا خرابی حافظهٔ کارت رد یا تأیید شود</value></data>
+  <data name="Advice_Memory_Cause" xml:space="preserve"><value>آزمون حافظه رد شد یا نتوانست حافظهٔ لازم را بگیرد. علت‌های ممکن: یک ماژول خراب، پروفایل حافظه (XMP یا EXPO) که مادربرد تحمل نمی‌کند، یا کمبود حافظهٔ آزاد.</value></data>
+  <data name="Advice_Memory_Steps" xml:space="preserve"><value>برنامه‌های دیگر را ببندید و دوباره اجرا کنید|در BIOS گزینهٔ XMP یا EXPO را خاموش کنید و دوباره آزمون بگیرید|هر ماژول را تنها و در هر اسلات جداگانه آزمایش کنید|اگر ماژول‌ها از دو نوع‌اند، آن‌ها را با سرعت پیش‌فرض اجرا کنید</value></data>
+  <data name="Advice_Storage_Cause" xml:space="preserve"><value>آزمون حافظهٔ ذخیره رد شد. ممکن است دیسک رو به خرابی باشد، کابل یا پورتش شل یا معیوب باشد، یا دیسک تقریباً پر باشد.</value></data>
+  <data name="Advice_Storage_Steps" xml:space="preserve"><value>سلامت دیسک را در صفحهٔ ذخیره‌سازی ببینید|کابل داده و برق را دوباره جا بزنید یا عوض کنید، یا پورت دیگری امتحان کنید|مقداری از فضای دیسک را خالی کنید|اگر سلامتش هشدار نشان می‌دهد، همین حالا از فایل‌های مهم پشتیبان بگیرید</value></data>
+  <data name="Advice_Network_Cause" xml:space="preserve"><value>آزمون شبکه رد شد. ممکن است اتصال قطع یا ناپایدار باشد، یا فایروال یا VPN جلوی آزمون را گرفته باشد.</value></data>
+  <data name="Advice_Network_Steps" xml:space="preserve"><value>در مرورگر ببینید اینترنت کار می‌کند|VPN یا پروکسی را خاموش کنید و دوباره اجرا کنید|کابل دیگری یا باند دیگر وای‌فای را امتحان کنید|روتر و مودم را خاموش و روشن کنید</value></data>
+  <data name="Advice_Cpu_Cause" xml:space="preserve"><value>آزمون پردازنده رد شد یا نیمه‌کاره ماند. علت‌های معمول: گرمای زیاد، اورکلاک یا پروفایل حافظهٔ ناپایدار، یا پاور ضعیف.</value></data>
+  <data name="Advice_Cpu_Steps" xml:space="preserve"><value>دمای پردازنده و خنک‌کننده‌اش را بررسی کنید|BIOS را به تنظیمات پیش‌فرض برگردانید (بدون اورکلاک و با XMP خاموش) و دوباره آزمون بگیرید|مطمئن شوید پاور توان کافی دارد|BIOS را به‌روز کنید</value></data>
+  <data name="Advice_Windows_Cause" xml:space="preserve"><value>یکی از بررسی‌های ویندوز تمام نشد. ممکن است فایل‌های خود ویندوز یا سرویس به‌روزرسانی‌اش آسیب دیده باشند.</value></data>
+  <data name="Advice_Windows_Steps" xml:space="preserve"><value>برنامه را با دسترسی مدیر اجرا کنید|ویندوز را ری‌استارت کنید و دوباره اجرا کنید|به‌روزرسانی‌های در انتظار ویندوز را نصب کنید|اگر باز هم ناموفق بود، با پشتیبانی تماس بگیرید</value></data>
+  <data name="Advice_Unknown_Cause" xml:space="preserve"><value>آزمون نتوانست تمام شود. دلیلش در لاگ عیب‌یابی ذخیره شده است.</value></data>
+  <data name="Advice_Unknown_Steps" xml:space="preserve"><value>آزمون را دوباره اجرا کنید|رایانه را ری‌استارت کنید و یک بار دیگر امتحان کنید|لاگ عیب‌یابی را خروجی بگیرید و برای پشتیبانی بفرستید</value></data>
+  <data name="Font_Smoothing_Off" xml:space="preserve"><value>گزینهٔ «Smooth edges of screen fonts» ویندوز خاموش است و به همین دلیل نوشته‌ها درشت‌پیکسل و بی‌کیفیت دیده می‌شوند. برای روشن کردنش: کلید ویندوز را بزنید و «Adjust the appearance and performance of Windows» را جست‌وجو کنید، در تب Visual Effects گزینهٔ «Smooth edges of screen fonts» را تیک بزنید.</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>مشاهده در فروشگاه</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>محصول دیگر</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>همهٔ محصولات</value></data>

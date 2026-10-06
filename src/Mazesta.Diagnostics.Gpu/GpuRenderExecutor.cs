@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Gpu;
 /// </summary>
 public sealed class GpuRenderExecutor : ITestExecutor, ITestAvailability
 {
-    public static readonly TestDefinition Definition = new(new TestId("gpu.render"), "Test_Gpu_Render", 900, [GpuDevices.Option]);
+    public static readonly TestDefinition Definition = new(new TestId("gpu.render"), "Test_Gpu_Render", 300, [GpuDevices.Option]);
     TestDefinition ITestExecutor.Definition => Definition;
     public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
     private const int Pixels = 512 * 512, FramesPerBatch = 8;

@@ -16,7 +16,7 @@ public sealed partial class WebBridge
             return new { findings, notes, logs = _paths.LogsDir, polled = Program.Recorder is not null };
         });
 
-        // One zip to bring back: the app's logs, the hardware report, the inventory as text, the settings and the tray's checks. Nothing is sent
+        // One zip to bring back: the app's logs (every failed test and benchmark with its reason), the newest reports, the hardware report, the inventory as text, the settings and the tray's checks. Nothing is sent
         // anywhere; the folder opens with the file selected.
         MethodAsync("diag.export", async _ =>
         {
@@ -32,6 +32,12 @@ public sealed partial class WebBridge
                 foreach (var f in Directory.EnumerateFiles(_paths.LogsDir)) Add(archive, f, "logs/" + Path.GetFileName(f));
                 Add(archive, _paths.ConfigFile, "config/appconfig.json");
                 Add(archive, TrayCheckLog.FileIn(_paths), "tray/checks.json");
+                // The newest reports: what each test found, and why one broke (its detail), beside the log lines of the same minute.
+                if (Directory.Exists(_paths.ReportsDir))
+                    foreach (var d in new DirectoryInfo(_paths.ReportsDir).EnumerateDirectories().OrderByDescending(x => x.Name).Take(5))
+                        foreach (var n in new[] { "report.json", "report.txt" }) Add(archive, Path.Combine(d.FullName, n), $"reports/{d.Name}/{n}");
+                using (var w = new StreamWriter(archive.CreateEntry("about.txt").Open()))
+                    w.Write($"Mazesta {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)} ({(Staff ? "Admin" : "Client")}){Environment.NewLine}{Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}{Environment.NewLine}{Environment.MachineName}{Environment.NewLine}{DateTime.Now:yyyy-MM-dd HH:mm:ss}{Environment.NewLine}");
                 if (inv is not null)
                 {
                     var text = string.Join(Environment.NewLine + Environment.NewLine, SystemInfoViewModel.Describe(inv).Select(s => s.Title + Environment.NewLine + string.Join(Environment.NewLine, s.Rows.Select(r => $"  {r.Label}: {r.Value}"))));

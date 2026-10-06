@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Cpu;
 /// FLOPS count 2n³ per multiply (one multiply and one add per term).</summary>
 public sealed class CpuMatrixStressExecutor : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", 900);
+    public static readonly TestDefinition Definition = new(new TestId("cpu.matrix"), "Test_Cpu_Matrix", 300);
     TestDefinition ITestExecutor.Definition => Definition;
 
     internal const int MatrixSize = 64, Sets = 4;

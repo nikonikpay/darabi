@@ -16,7 +16,7 @@ namespace Mazesta.Diagnostics.Cpu;
 public sealed class CpuCoreCycleExecutor : ITestExecutor
 {
     public const string SecondsPerCoreOption = "secondsPerCore", LoadOption = "load";
-    public static readonly TestDefinition Definition = new(new TestId("cpu.singlecore"), "Test_Cpu_SingleCore", 900,
+    public static readonly TestDefinition Definition = new(new TestId("cpu.singlecore"), "Test_Cpu_SingleCore", 300,
     [
         new TestOption(SecondsPerCoreOption, "Test_Option_SecondsPerCore", TestOptionKind.Integer, "10"),
         new TestOption(LoadOption, "Test_Option_Load", TestOptionKind.Choice, "variable", () => [new("variable", "Test_Load_Variable", true), new("steady", "Test_Load_Steady", true)]),

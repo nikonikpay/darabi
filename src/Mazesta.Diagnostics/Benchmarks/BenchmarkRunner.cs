@@ -45,6 +45,8 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     /// <summary>A run is about to start (alone or in a queue), with the options it runs with: whoever watches the machine during a run starts here.</summary>
     public event Action<IBenchmark, IReadOnlyDictionary<string, string>>? Started;
     public event Action<TestId, double>? Progress;
+    /// <summary>An exception that escaped a benchmark, whole, for the app's log.</summary>
+    public event Action<TestId, Exception>? Crashed;
     /// <summary>Every finished run, whatever its status. Completed ones are the ones worth saving (a report) and listing (the next test report).</summary>
     public event Action<RecordedBenchmark>? Finished;
     /// <summary>A queue's benchmark is about to start: its position (from 0) and the queue's length.</summary>
@@ -107,7 +109,7 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
             result = await benchmark.RunAsync(request, cts.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { result = BenchmarkResult.Cancelled(id, clock.UtcNow, clock.UtcNow); }
-        catch (Exception e) { result = BenchmarkResult.Error(id, clock.UtcNow, clock.UtcNow, e); }   // escaped the benchmark's own handling: the program's fault
+        catch (Exception e) { result = BenchmarkResult.Error(id, clock.UtcNow, clock.UtcNow, e); Crashed?.Invoke(id, e); }   // escaped the benchmark's own handling: the program's fault
         if (result.Status == BenchmarkStatus.Completed) result = result with { Setup = [.. Setup(benchmark.Definition, seconds, snapshot), .. result.Setup ?? []] };
         lock (_lock)
         {

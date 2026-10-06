@@ -84,6 +84,7 @@ internal sealed class Program : ApplicationContext
         _services = Bootstrapper.Build(paths, config, store, lf);
         string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";
         log.LogInformation("Mazesta Web {Version} on {Os}, {Machine}{Mode}", version, Environment.OSVersion.VersionString, Environment.MachineName, overlayOnly ? " (overlay only, started by the tray)" : background ? " (in the background, started by the tray)" : "");
+        if (FontSmoothing.IsOff()) log.LogWarning("Windows font smoothing is off: the page's text is drawn without anti-aliasing and looks rough");
         var engine = _services.GetRequiredService<PollingEngine>();
         Recorder = new HardwareDiagnosticsRecorder(engine, paths.LogsDir, $"Mazesta Web {version}", lf.CreateLogger("Hardware"));
 

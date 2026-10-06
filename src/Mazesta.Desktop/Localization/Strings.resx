@@ -918,6 +918,35 @@
   <data name="Web_Company_Title" xml:space="preserve"><value>Mazesta</value></data>
   <data name="Web_Shop_Title" xml:space="preserve"><value>From the Mazesta shop</value></data>
   <data name="Web_Shop_OnSale" xml:space="preserve"><value>On special sale</value></data>
+  <data name="Fail_Title" xml:space="preserve"><value>A test ran into a problem</value></data>
+  <data name="Fail_Intro" xml:space="preserve"><value>These did not finish properly. That does not always mean the hardware is faulty; below is what it most likely points at.</value></data>
+  <data name="Fail_More" xml:space="preserve"><value>and {0} more</value></data>
+  <data name="Fail_Likely" xml:space="preserve"><value>Most likely cause</value></data>
+  <data name="Fail_Try" xml:space="preserve"><value>What to try</value></data>
+  <data name="Fail_Support" xml:space="preserve"><value>If it happens again after this, contact Mazesta support and send them the diagnostic file; they will look at it with you.</value></data>
+  <data name="Fail_Contact" xml:space="preserve"><value>Contact support</value></data>
+  <data name="Fail_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Support_Button" xml:space="preserve"><value>Sales and support</value></data>
+  <data name="Support_Title" xml:space="preserve"><value>Talk to Mazesta</value></data>
+  <data name="Support_Sub" xml:space="preserve"><value>The support and sales teams are glad to help.</value></data>
+  <data name="Support_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Advice_GpuDriver_Cause" xml:space="preserve"><value>The graphics driver stopped responding and Windows reset it. That is a driver crash, not always a faulty card. Usual reasons: a damaged or old driver, an overclock or undervolt that is not stable, overheating, or a power supply that cannot hold the load.</value></data>
+  <data name="Advice_GpuDriver_Steps" xml:space="preserve"><value>Install the newest driver from NVIDIA, AMD or Intel, choosing the clean installation|Remove any overclock or undervolt of the card, then run the test again|Check the card's temperature and fans, and that its power cables are fully seated|Update Windows and the motherboard's chipset drivers|If it happens again with everything at default, the card or its power supply may be at fault</value></data>
+  <data name="Advice_Gpu_Cause" xml:space="preserve"><value>The graphics test could not run to the end. The driver, DirectX 12 support or the card's memory may be the reason.</value></data>
+  <data name="Advice_Gpu_Steps" xml:space="preserve"><value>Update the graphics driver|Close games, browsers and other programs that use the card, then run again|Check the card's temperature|Run the video memory test to rule out the card's memory</value></data>
+  <data name="Advice_Memory_Cause" xml:space="preserve"><value>The memory test failed or could not get the memory it needs. Possible reasons: a faulty module, a memory profile (XMP or EXPO) the board cannot hold, or too little free memory.</value></data>
+  <data name="Advice_Memory_Steps" xml:space="preserve"><value>Close other programs and run again|Turn XMP or EXPO off in the BIOS and test again|Test each module alone, and in each slot|Run the modules at their default speed if they are of different kinds</value></data>
+  <data name="Advice_Storage_Cause" xml:space="preserve"><value>The drive test failed. The drive may be failing, its cable or port may be loose or bad, or the drive may be nearly full.</value></data>
+  <data name="Advice_Storage_Steps" xml:space="preserve"><value>Check the drive's health on the Storage page|Reseat or change the data and power cables, or try another port|Free some space on the drive|If its health shows a warning, back up the important files now</value></data>
+  <data name="Advice_Network_Cause" xml:space="preserve"><value>The network test failed. The connection may be down or unstable, or a firewall or VPN may be blocking the test.</value></data>
+  <data name="Advice_Network_Steps" xml:space="preserve"><value>Check that the internet works in a browser|Turn off any VPN or proxy and run again|Try another cable or the other Wi-Fi band|Restart the router and modem</value></data>
+  <data name="Advice_Cpu_Cause" xml:space="preserve"><value>The processor test failed or was cut short. Common reasons: overheating, an unstable overclock or memory profile, or a weak power supply.</value></data>
+  <data name="Advice_Cpu_Steps" xml:space="preserve"><value>Check the processor's temperature and its cooler|Set the BIOS back to defaults (no overclock, XMP off) and test again|Make sure the power supply is strong enough|Update the BIOS</value></data>
+  <data name="Advice_Windows_Cause" xml:space="preserve"><value>A Windows check could not finish. Windows' own files or its update service may be damaged.</value></data>
+  <data name="Advice_Windows_Steps" xml:space="preserve"><value>Run the app as administrator|Restart Windows and run again|Install the pending Windows updates|If it keeps failing, contact support</value></data>
+  <data name="Advice_Unknown_Cause" xml:space="preserve"><value>The test could not finish. The reason is saved in the diagnostic log.</value></data>
+  <data name="Advice_Unknown_Steps" xml:space="preserve"><value>Run the test again|Restart the PC and try once more|Export the diagnostic log and send it to support</value></data>
+  <data name="Font_Smoothing_Off" xml:space="preserve"><value>Windows has "Smooth edges of screen fonts" turned off, so text looks rough and pixelated. Turn it on: Windows key, type "Adjust the appearance and performance of Windows", Visual Effects, tick "Smooth edges of screen fonts".</value></data>
   <data name="Web_Shop_View" xml:space="preserve"><value>View in shop</value></data>
   <data name="Web_Shop_Another" xml:space="preserve"><value>Another product</value></data>
   <data name="Web_Shop_All" xml:space="preserve"><value>All products</value></data>

@@ -12,7 +12,7 @@ namespace Mazesta.Diagnostics.Gpu;
 public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
 {
     public const string SizeOption = "sizeMb";
-    public static readonly TestDefinition Definition = new(new TestId("gpu.vram"), "Test_Gpu_Vram", 900,
+    public static readonly TestDefinition Definition = new(new TestId("gpu.vram"), "Test_Gpu_Vram", 300,
         [GpuDevices.Option, new TestOption(SizeOption, "Test_Option_VramMb", TestOptionKind.Integer, "0")]);   // 0 = automatic
     TestDefinition ITestExecutor.Definition => Definition;
     public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);

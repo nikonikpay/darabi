@@ -23,10 +23,10 @@ public sealed class GpuSceneExecutor(bool rayTraced) : ITestExecutor, ITestAvail
     private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, "1920x1080",
         () => [new("1280x720", "1280 × 720 (HD)"), new("1920x1080", "1920 × 1080 (Full HD)"), new("2560x1440", "2560 × 1440 (2K)"), new("3840x2160", "3840 × 2160 (4K)"),
                new("fullscreen", "Test_Resolution_FullScreen", true)]);
-    public static readonly TestDefinition Raster = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 900,
+    public static readonly TestDefinition Raster = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
             () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)])]);
-    public static readonly TestDefinition RayTraced = new(new TestId("gpu.scene.rt"), "Test_Gpu_SceneRt", 900, [GpuDevices.Option, Resolution]);
+    public static readonly TestDefinition RayTraced = new(new TestId("gpu.scene.rt"), "Test_Gpu_SceneRt", 300, [GpuDevices.Option, Resolution]);
     public TestDefinition Definition => rayTraced ? RayTraced : Raster;
 
     public Unavailability? CheckAvailability(TestOptions options) => rayTraced ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);

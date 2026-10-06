@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Cpu;
 /// </summary>
 public sealed class CpuIntegerExecutor : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("cpu.integer"), "Test_Cpu_Integer", 900);
+    public static readonly TestDefinition Definition = new(new TestId("cpu.integer"), "Test_Cpu_Integer", 300);
     TestDefinition ITestExecutor.Definition => Definition;
 
     internal const int Elements = 4096, Rounds = 64, OpsPerElement = 14;

@@ -34,7 +34,7 @@ public sealed partial class WebBridge
             version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "",
             staff = Staff, serviceNumber = _config.ServiceNumber, interval = engine.FastInterval.TotalSeconds, paused = engine.State == EngineState.Paused,
             provider = Provider(engine.Provider.Status),
-            banner = _configCorrupt ? Loc.Get("Config_Corrupt") : string.Join(" ", new[] { _sp.GetRequiredService<TuningRecovery>().Message, _sp.GetRequiredService<Desktop.Services.BenchmarkBreakWatch>().Message,
+            banner = _configCorrupt ? Loc.Get("Config_Corrupt") : string.Join(" ", new[] { _sp.GetRequiredService<TuningRecovery>().Message, _sp.GetRequiredService<Desktop.Services.BenchmarkBreakWatch>().Message, FontSmoothing.IsOff() ? Loc.Get("Font_Smoothing_Off") : null,
                 // A test session cut off by a restart: the Tests page says where it stopped and why; this says so at the first look.
                 _sp.GetRequiredService<Diagnostics.TestEngine>().FindIncompleteSession() is not null ? Loc.Get("Test_Break_Banner") : null }.OfType<string>()) is { Length: > 0 } b ? b : null,
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
@@ -61,6 +61,8 @@ public sealed partial class WebBridge
             (text, kind) => Push("toast", new { text, kind }), _log);
         notifier.Limits = () => (_config.TrayCpuAlertC, _config.TrayGpuAlertC);
         _cleanup.Add(notifier.Dispose);
+        var failures = new FailureWatch(_sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<Diagnostics.Benchmarks.BenchmarkRunner>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(), _log, f => Push("testfail", f));
+        _cleanup.Add(failures.Dispose);
         var overlay = _sp.GetRequiredService<Desktop.Services.OverlayService>();
         void OnOverlay(bool v) => Push("overlay", v);
         overlay.VisibilityChanged += OnOverlay; _cleanup.Add(() => overlay.VisibilityChanged -= OnOverlay);

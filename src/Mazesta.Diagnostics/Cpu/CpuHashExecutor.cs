@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Cpu;
 /// </summary>
 public sealed class CpuHashExecutor : ITestExecutor
 {
-    public static readonly TestDefinition Definition = new(new TestId("cpu.hash"), "Test_Cpu_Hash", 900);
+    public static readonly TestDefinition Definition = new(new TestId("cpu.hash"), "Test_Cpu_Hash", 300);
     TestDefinition ITestExecutor.Definition => Definition;
 
     internal const int Bytes = 256 << 10;

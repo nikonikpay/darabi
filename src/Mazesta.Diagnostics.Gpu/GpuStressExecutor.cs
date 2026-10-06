@@ -15,9 +15,9 @@ public enum GpuStressProfile { Steady, Variable, Pulse }
 public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor, ITestAvailability
 {
     public const string PulseMsOption = "pulseMs", GapMsOption = "gapMs";
-    public static readonly TestDefinition Steady = new(new TestId("gpu.steady"), "Test_Gpu_Steady", 900, [GpuDevices.Option]);
-    public static readonly TestDefinition Variable = new(new TestId("gpu.variable"), "Test_Gpu_Variable", 900, [GpuDevices.Option]);
-    public static readonly TestDefinition Pulse = new(new TestId("gpu.pulse"), "Test_Gpu_Pulse", 900,
+    public static readonly TestDefinition Steady = new(new TestId("gpu.steady"), "Test_Gpu_Steady", 300, [GpuDevices.Option]);
+    public static readonly TestDefinition Variable = new(new TestId("gpu.variable"), "Test_Gpu_Variable", 300, [GpuDevices.Option]);
+    public static readonly TestDefinition Pulse = new(new TestId("gpu.pulse"), "Test_Gpu_Pulse", 300,
         [GpuDevices.Option, new TestOption(PulseMsOption, "Test_Option_PulseMs", TestOptionKind.Integer, "250"), new TestOption(GapMsOption, "Test_Option_GapMs", TestOptionKind.Integer, "250")]);
 
     public TestDefinition Definition => profile switch { GpuStressProfile.Steady => Steady, GpuStressProfile.Variable => Variable, _ => Pulse };

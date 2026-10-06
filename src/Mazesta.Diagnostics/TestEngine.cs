@@ -18,6 +18,8 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     public event Action<TestId>? TestStarted;
     public event Action<TestId, TestRunResult>? TestCompleted;
     public event Action<TestId, TestProgress>? TestProgressChanged;
+    /// <summary>An exception that escaped an executor, whole (type, message, stack), for the app's log: the result keeps only its message.</summary>
+    public event Action<TestId, Exception>? Crashed;
     /// <summary>Every line of the live log as it is written, on the thread that wrote it (the engine's or a test's worker).</summary>
     public event Action<TestLogEntry>? Logged;
 
@@ -155,7 +157,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
                 catch (OperationCanceledException) { single = TestRunResult.Cancelled(id, started, clock.UtcNow); }
                 // An exception out of an executor is the app's fault, never the part's: the test is Error (the report is then Incomplete),
                 // the queue goes on with the next test, and nothing is swallowed into a pass.
-                catch (Exception e) { single = TestRunResult.Error(id, started, clock.UtcNow, e); Emit(id, TestLogLevel.Error, "Log_Test_Crashed", $"{e.GetType().Name}: {e.Message}"); }
+                catch (Exception e) { single = TestRunResult.Error(id, started, clock.UtcNow, e); Crashed?.Invoke(id, e); Emit(id, TestLogLevel.Error, "Log_Test_Crashed", $"{e.GetType().Name}: {e.Message}"); }
             }
             total = total?.Combine(single) ?? single;
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;

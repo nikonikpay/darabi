@@ -116,6 +116,9 @@ function renderIndex(info) {
         onclick: (e) => { e.preventDefault(); go(lastInFamily.get(f) || f.pages[0]); } },
         icon(f.icon), h("span", { class: "nm" }, t(f.key)), h("span", { class: "no", "aria-hidden": "true" }, icon("chevronend")))),
     ])),
+    // The shop's two desks, a box above the assistant's entry: one dialog with the numbers and the messengers.
+    h("button", { class: "index-support", type: "button", onclick: () => import("./support.js").then((m) => m.openSupport(boot)) },
+      h("span", { class: "sup-ico" }, icon("phone")), h("span", { class: "nm" }, h("b", {}, t("Support_Button")), h("small", {}, t("Support_Sub")))),
     // The assistant lives in its own column at the other edge; this entry opens and folds it, from any page.
     h("button", { class: "index-asst", type: "button", title: `${t("Nav_Assistant")} · Ctrl+J`, onclick: () => window.dispatchEvent(new Event("assistant:toggle")) },
       icon("chat"), h("span", { class: "nm" }, t("Nav_Assistant"))),
@@ -172,6 +175,7 @@ async function start() {
   const mark = (u) => index.querySelector(`a[data-family="${FAMILIES.length - 1}"]`)?.classList.toggle("has-update", ["Available", "Ready"].includes(u?.state));
   on("upd", mark); call("upd.state").then(mark).catch(() => {});
   if (info.updated) toast(t("AppUpd_Done", info.version));
+  import("./failures.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   import("./updatenotice.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   // The pages read the hardware list once; they wait until the sensor scan has settled, as the WPF edition does.
   if (await call("app.navReady")) whenReady();
