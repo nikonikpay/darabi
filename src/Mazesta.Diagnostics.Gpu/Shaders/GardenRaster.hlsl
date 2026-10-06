@@ -186,13 +186,13 @@ float LampRay(Light L, float3 p, float3 n)
 float Shadow(float3 p, float3 n)
 {
     bool hall = InHall(p);
-    float4 s = mul(hall ? HallViewProj : ShadowViewProj, float4(p + n * (hall ? 0.015 : 0.04), 1));
+    float4 s = mul(hall ? HallViewProj : ShadowViewProj, float4(p + n * (hall ? 0.015 : 0.014), 1));
     float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
     if (any(uv < 0) || any(uv > 1)) return 1;
     // three taps by three (five by five at the heaviest level), each the mean of four texels, spread over as wide a square as the level asks
     // (the hall's always five by five, two texels apart: the low sun lays its windows' light along the floor and up the far wall, a
     // texel of the map drawn out to a hand's breadth there - its edge is spread over several, or it shows as steps and shimmers as the sun moves)
-    float depth = s.z - (hall ? 0.0006 : 0.0006), sum = 0; int r = hall || ShadowTaps >= 3 ? 2 : 1; float2 apart = (hall ? 2.0 : (2.0 * ShadowTaps + 1) / (2 * r + 1)) * ShadowTexel;
+    float depth = s.z - (hall ? 0.0006 : 0.00025), sum = 0; int r = hall || ShadowTaps >= 3 ? 2 : 1; float2 apart = (hall ? 2.0 : (2.0 * ShadowTaps + 1) / (2 * r + 1)) * ShadowTexel;
     if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
     else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
     return sum / ((2 * r + 1) * (2 * r + 1));
@@ -644,11 +644,10 @@ float4 SunShadePS(SkyOut i) : SV_Target
 {
     int2 px = int2(i.Position.xy);
     if (SunOn <= 0 || SceneDepth.Load(int3(px, 0)) <= 0) return 1;
-    float3 p = ViewPosition(px), r = ViewPosition(px + int2(1, 0)), l = ViewPosition(px - int2(1, 0)), u = ViewPosition(px - int2(0, 1)), d = ViewPosition(px + int2(0, 1));
-    float3 dx = abs(r.z - p.z) < abs(p.z - l.z) ? r - p : p - l, dy = abs(d.z - p.z) < abs(p.z - u.z) ? d - p : p - u;
-    float3 n = normalize(cross(dx, dy)); if (n.z > 0) n = -n;
-    float3 world = Eye + CamRight * p.x + CamUp * p.y + CamForward * p.z, facing = CamRight * n.x + CamUp * n.y + CamForward * n.z;
-    float seen = KeySeen(world + facing * (0.012 + 0.0015 * p.z), i.Position.xy);
+    // (the ray starts a finger off the surface toward the eye and the light: a normal worked out from the depth is not to be trusted
+    // on a floor seen along its length, and a start under it leaves the floor in shade)
+    float3 p = ViewPosition(px), world = Eye + CamRight * p.x + CamUp * p.y + CamForward * p.z;
+    float seen = KeySeen(world + normalize(Eye - world) * (0.01 + 0.002 * p.z) + SunDir * 0.01, i.Position.xy);
     return float4(seen, seen, seen, 1);
 }
 #endif

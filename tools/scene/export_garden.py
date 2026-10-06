@@ -83,6 +83,8 @@ FAR, FAR_MESHES = ("V10_Exterior_Tree_Belt",), ("V10_SOURCE_Broadleaf",)
 # (LEAF_SHAPE), and every one of their leaves.
 CARD, LEAF_TRIS, GROW = 20, 2.5, 1.7
 LEAF_SHAPE = {"V10_SOURCE_Broadleaf": 6, "V9_SOURCE_Shrub": 8}
+WOOD = ("trunk", "bark", "pine procedural")   # materials that are a plant's wood, whatever their kind: see plant()
+LEAVES_ONLY = ("V9_SOURCE_Shrub",)     # plants drawn without their wood: the shrub's stems are one fine mesh inside its leaves, which simplified is grey shards showing through them
 # The small-leaved trees and the shrubs are modelled leaf for leaf at life size: a leaf of theirs is under a pixel from across the
 # garden at 1080p, and the crown then looks bald, a sprinkle of dots on bare twigs. Each of their leaves is grown about its own
 # middle by this much (more than half as large again; the owner asked for it), so the crowns read as full.
@@ -531,13 +533,23 @@ def plant(me, slots, target, name):
         bm = bmesh.new(); bm.from_mesh(me); bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index != m], context='FACES')
         part = me.copy(); bm.to_mesh(part); bm.free()
         ratio = share / tris; each = tris / islands(part)[1]
-        if m < len(kinds) and kinds[m] == K_CUTOUT and each <= CARD: ratio = max(ratio, min(1.0, LEAF_SHAPE.get(name, LEAF_TRIS) / each))
-        if ratio < 0.9: less = collapsed(part, ratio); bpy.data.meshes.remove(part); part = less
-        left = measure(part).get(m, (0, 0.0))[0]
-        if left > share * 1.15:
-            if each <= CARD: thinned(part, share / left)
-            else: pruned(part, share)
-        if m < len(kinds) and kinds[m] == K_CUTOUT and each <= CARD and name in LEAF_GROW: grown(part, LEAF_GROW[name])
+        # Leaves are cards: each keeps its shape, they are thinned and what is left grown to make up the area. Wood is not: its
+        # largest pieces (the trunk, the boughs, a shrub's main stems) are kept as they are modelled and the twigs go - collapsing
+        # the edges of thousands of twigs left each a fat grey shard among the leaves. Only a trunk too fine by itself is simplified.
+        wood = m < len(slots) and slots[m] is not None and any(w in slots[m].name.lower() for w in WOOD)
+        leaf = not wood and m < len(kinds) and kinds[m] == K_CUTOUT and each <= CARD
+        if wood and name in LEAVES_ONLY: bpy.data.meshes.remove(part); continue
+        if wood:
+            pruned(part, share); left = measure(part).get(m, (0, 0.0))[0]
+            if left > share * 1.5: less = collapsed(part, share / left); bpy.data.meshes.remove(part); part = less
+        else:
+            if leaf: ratio = max(ratio, min(1.0, LEAF_SHAPE.get(name, LEAF_TRIS) / each))
+            if ratio < 0.9: less = collapsed(part, ratio); bpy.data.meshes.remove(part); part = less
+            left = measure(part).get(m, (0, 0.0))[0]
+            if left > share * 1.15:
+                if leaf: thinned(part, share / left)
+                else: pruned(part, share)
+            if leaf and name in LEAF_GROW: grown(part, LEAF_GROW[name])
         after = measure(part).get(m, (0, 0.0))
         print("PLANT", name, slots[m].name if m < len(slots) and slots[m] else None, "triangles", tris, "->", after[0], "area", round(area, 2), "->", round(after[1], 2))
         whole.from_mesh(part); bpy.data.meshes.remove(part)
