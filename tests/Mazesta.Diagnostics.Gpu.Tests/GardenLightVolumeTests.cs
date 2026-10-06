@@ -4,11 +4,11 @@ namespace Mazesta.Diagnostics.Gpu.Tests;
 
 public class GardenLightVolumeTests
 {
-    /// <summary>A volume of 2 x 3 x 4 points in four parts (the sky, the lamps, the sun at two points of its arc), each part its own light.</summary>
+    /// <summary>A volume of 2 x 3 x 4 points in five parts (the sky, the garden's lamps, the hall's, the sun at two points of its arc), each part its own light.</summary>
     private static GardenLightVolume Made()
     {
-        var parts = new float[4][];
-        for (int p = 0; p < 4; p++) { parts[p] = new float[2 * 3 * 4 * 18]; for (int i = 0; i < parts[p].Length; i++) parts[p][i] = 0.002f * (p + 1) * MathF.Pow(1.02f, i); }   // from deep shade to a sunlit wall
+        var parts = new float[5][];
+        for (int p = 0; p < 5; p++) { parts[p] = new float[2 * 3 * 4 * 18]; for (int i = 0; i < parts[p].Length; i++) parts[p][i] = 0.002f * (p + 1) * MathF.Pow(1.02f, i); }   // from deep shade to a sunlit wall
         return new GardenLightVolume(0xFEEDUL, new(-1, 0.5f, 2), 0.75f, 2, 3, 4, parts);
     }
 
@@ -16,8 +16,8 @@ public class GardenLightVolumeTests
     {
         var made = Made(); var ms = new MemoryStream(); made.Write(ms); ms.Position = 0;
         var read = GardenLightVolume.Read(ms);
-        Assert.Equal((0xFEEDUL, new Vector3(-1, 0.5f, 2), 0.75f, 2, 3, 4, 4, 2), (read.SceneStamp, read.Origin, read.Spacing, read.X, read.Y, read.Z, read.Parts.Count, read.Suns));
-        for (int p = 0; p < 4; p++) for (int i = 0; i < made.Parts[p].Length; i++) Assert.InRange(read.Parts[p][i], made.Parts[p][i] * 0.98f, made.Parts[p][i] * 1.02f);
+        Assert.Equal((0xFEEDUL, new Vector3(-1, 0.5f, 2), 0.75f, 2, 3, 4, 5, 2), (read.SceneStamp, read.Origin, read.Spacing, read.X, read.Y, read.Z, read.Parts.Count, read.Suns));
+        for (int p = 0; p < 5; p++) for (int i = 0; i < made.Parts[p].Length; i++) Assert.InRange(read.Parts[p][i], made.Parts[p][i] * 0.98f, made.Parts[p][i] * 1.02f);
         // a surface reads the direction it faces, or a mix of the three it leans toward
         int from = ((1 + 2 * (2 + 3 * 3)) * 6 + 4) * 3; var lamps = read.Parts[GardenLightVolume.Lamps];   // point (1, 2, 3), direction +z
         Assert.Equal(new Vector3(lamps[from], lamps[from + 1], lamps[from + 2]), read.At(GardenLightVolume.Lamps, new Vector3(-1, 0.5f, 2) + new Vector3(1, 2, 3) * 0.75f, Vector3.UnitZ));
@@ -29,16 +29,16 @@ public class GardenLightVolumeTests
         int from = ((1 + 2 * (2 + 3 * 3)) * 6 + 4) * 3, to = ((3 * 3 + 2) * 12 + 4 * 2 + 1) * 4;   // point (1, 2, 3), direction +z: six blocks side by side along x, one for each direction
         float Part(int p, int c) => v.Parts[p][from + c];
         // the sky alone, in its colour
-        v.Mix(t, new(0.5f, 1, 2), 0, Vector3.Zero, 0.5f);
+        v.Mix(t, new(0.5f, 1, 2), 0, 0, Vector3.Zero, 0.5f);
         for (int c = 0; c < 3; c++) Assert.Equal(Part(0, c) * new[] { 0.5f, 1, 2 }[c], t[to + c], 5);
         Assert.Equal(0, t[to + 3]);
-        // the lamps half lit over it, and the sun a quarter of the way between its two points (which stand at 1/4 and 3/4 of the arc)
-        v.Mix(t, Vector3.One, 0.5f, new(2, 2, 2), 0.375f);
-        for (int c = 0; c < 3; c++) Assert.Equal(Part(0, c) + 0.5f * Part(1, c) + 2 * (0.75f * Part(2, c) + 0.25f * Part(3, c)), t[to + c], 5);
+        // the garden's lamps half lit over it, the hall's a quarter, and the sun a quarter of the way between its two points (which stand at 1/4 and 3/4 of the arc)
+        v.Mix(t, Vector3.One, 0.5f, 0.25f, new(2, 2, 2), 0.375f);
+        for (int c = 0; c < 3; c++) { float sum = Part(0, c) + 0.5f * Part(1, c) + 0.25f * Part(2, c) + 2 * (0.75f * Part(3, c) + 0.25f * Part(4, c)); Assert.InRange(t[to + c], sum * 0.99999f, sum * 1.00001f); }
         // before its first point and after its last the sun's light is that point's
         Assert.Equal((0, 1, 0f), v.SunParts(0.1f)); Assert.Equal(1f, v.SunParts(0.9f).T + v.SunParts(0.9f).A);
         // every texel is done, whatever the width the processor adds them up at
-        v.Mix(t, Vector3.One, 0, Vector3.Zero, 0);
+        v.Mix(t, Vector3.One, 0, 0, Vector3.Zero, 0);
         for (int i = 0; i < 2 * 3 * 4 * 6; i++) Assert.True(t[i * 4] > 0 && t[i * 4 + 3] == 0);
     }
 
@@ -49,9 +49,9 @@ public class GardenLightVolumeTests
         var ms = new MemoryStream(); Made().Write(ms);
         using var whole = new GZipStream(new MemoryStream(ms.ToArray()), CompressionMode.Decompress); var raw = new MemoryStream(); whole.CopyTo(raw);
         Assert.Throws<InvalidDataException>(() => GardenLightVolume.Read(Gz(raw.ToArray()[..^5])));   // cut short
-        var old = raw.ToArray(); old[4] = 1;                                                              // the version before this one: one part, no count of them
+        var old = raw.ToArray(); old[4] = 2;                                                              // the version before this one: no part for the hall's lamps
         Assert.Throws<InvalidDataException>(() => GardenLightVolume.Read(Gz(old)));
-        Assert.Throws<ArgumentException>(() => new GardenLightVolume(1, default, 1, 2, 2, 2, [new float[2 * 2 * 2 * 18], new float[2 * 2 * 2 * 18]]));   // no sun
+        Assert.Throws<ArgumentException>(() => new GardenLightVolume(1, default, 1, 2, 2, 2, [new float[2 * 2 * 2 * 18], new float[2 * 2 * 2 * 18], new float[2 * 2 * 2 * 18]]));   // no sun
     }
 
     [Fact] public void The_embedded_garden_has_its_bounced_light_worked_out_for_this_very_scene()
@@ -70,8 +70,8 @@ public class GardenLightVolumeTests
         // the sky's part, of one unit of light all over: nearly all of it arrives under the open sky, a little on the hall's floor (through its door and windows)
         float open = Lum(v.At(GardenLightVolume.Sky, walk, Vector3.UnitY)), hall = Lum(v.At(GardenLightVolume.Sky, floor, Vector3.UnitY));
         Assert.InRange(open, 0.5f, 1.3f); Assert.InRange(hall, 0.002f, open / 4);
-        // the lamps' part: the hall's floor is lit by its lamps, bounced, more than the walk outside is
-        Assert.True(Lum(v.At(GardenLightVolume.Lamps, floor, Vector3.UnitY)) > 0.005f);
+        // the lamps' parts: the walk is lit by the garden's lamps, bounced, the hall's floor by its own
+        Assert.True(Lum(v.At(GardenLightVolume.Lamps, walk, Vector3.UnitY)) > 0.0005f); Assert.True(Lum(v.At(GardenLightVolume.Hall, floor, Vector3.UnitY)) > 0.005f);
         // the sun's parts: with the sun before the hall its light comes in at the windows and is given back to the ceiling; no part is all dark
         for (int k = 0; k < v.Suns; k++) Assert.True(v.Parts[GardenLightVolume.FirstSun + k].Max() > 0.05f, $"sun part {k}");
         Assert.True(Lum(v.At(GardenLightVolume.FirstSun + v.Suns / 2, floor + new Vector3(0, 2.5f, -2), -Vector3.UnitY)) > 0.002f);

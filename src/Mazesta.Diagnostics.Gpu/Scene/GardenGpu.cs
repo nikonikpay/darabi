@@ -10,13 +10,13 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// this class adds to the scene: the column the jet rises as and a stream falling from each lobe of the bowl's rim (still shapes of
 /// running water), and droplets, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
 /// It also adds what is alive in the garden (<see cref="Mover"/>): butterflies over the beds by day, fireflies by night - some of
-/// them lights, which the leaves round them catch - and the steam of the kettle and the samovar on the hall's tea counter.
+/// them lights, which the leaves round them catch - and the steam of the kettle boiling on the hall's tea counter.
 /// Both renderers build on it. The owner's Models\gpu-test.obj, when there is one, takes the logo's place over the pool.
 /// </summary>
 internal sealed unsafe class GardenGpu
 {
     [StructLayout(LayoutKind.Sequential)] public struct Instance { public Vector4 Row0, Row1, Row2; public uint Mesh, Mask, Flags, Index; }
-    [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Shadow, Pad1; }
+    [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Shadow, Lit; }
     [StructLayout(LayoutKind.Sequential)] public struct MeshInfo { public Vector3 Centre; public uint FirstSubmesh; public Vector3 Extent; public uint BaseVertex; }
     [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, Pad; }
     public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind);
@@ -27,10 +27,10 @@ internal sealed unsafe class GardenGpu
     /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
     public const uint JetDroplets = 520, SpillDroplets = 12 * 26;
     /// <summary>The garden's small life: fireflies (the first <see cref="LitFireflies"/> of them are lights as well), butterflies
-    /// (two wings each), and the puffs of steam each of the tea counter's two vessels gives off.</summary>
-    public const int Fireflies = 140, LitFireflies = 16, Butterflies = 24, SteamPuffs = 12;
-    /// <summary>Where steam leaves the kettle (its spout's tip) and the samovar (over the teapot on its crown), on the hall's tea counter.</summary>
-    public static readonly Vector3 KettleSpout = new(-9.057f, 2.24f, 2.66f), SamovarCrown = new(-9.245f, 2.81f, 3.5f);
+    /// (two wings each), and the puffs of steam the kettle on the tea counter gives off.</summary>
+    public const int Fireflies = 140, LitFireflies = 16, Butterflies = 24, SteamPuffs = 14;
+    /// <summary>Where steam leaves the kettle (its spout's tip), on the hall's tea counter.</summary>
+    public static readonly Vector3 KettleSpout = new(-9.057f, 2.24f, 2.66f);
     /// <summary>The beds the garden's small life keeps to, on the right of the pool (x from, to; z from, to): three between the pool
     /// and the walk, three along the outer wall. The left side mirrors them.</summary>
     private static readonly (float X0, float X1, float Z0, float Z1)[] Beds =
@@ -75,6 +75,17 @@ internal sealed unsafe class GardenGpu
 
     public ID3D12Resource VertexBuffer { get; } public ID3D12Resource IndexBuffer { get; }
     public ID3D12Resource InstanceBuffer { get; } public ID3D12Resource MaterialBuffer { get; } public ID3D12Resource LightBuffer { get; }
+    /// <summary>Which lit lamps reach each square of the garden's plan (<see cref="Lamps"/>), for the rasteriser: for each of
+    /// <see cref="GridX"/> x <see cref="GridZ"/> squares <see cref="GridCell"/> across, from <see cref="GridFrom"/> on (x, z), where
+    /// its list starts and how many it holds; then the lists. A pixel asks the lamps of its square, not all of them.</summary>
+    public ID3D12Resource LightGridBuffer { get; }
+    public const int GridX = 16, GridZ = 22; public const float GridCell = 2f; public static readonly Vector2 GridFrom = new(-16, -36);
+    private readonly uint[] _grid; private readonly bool[] _hallLamp;
+    /// <summary>How far the hall's own lamps are lit by day: its chandeliers burn low while the sun is up, so the paintings on the
+    /// back wall can be seen from the door.</summary>
+    public const float HallByDay = 0.1f;
+    /// <summary>How far the hall's lamps are lit at a moment of <paramref name="day"/>.</summary>
+    public static float HallLit(GardenDay day) => MathF.Max(day.Lamps, HallByDay * (1 - day.Night));
     public ID3D12Resource MeshInfoBuffer { get; } public ID3D12Resource SubmeshInfoBuffer { get; }
     public ID3D12Resource Textures { get; }
     public int TextureCount { get; }
@@ -127,7 +138,7 @@ internal sealed unsafe class GardenGpu
             for (int k = 0; k < each; k++)
                 foreach (var side in (Life[])[Life.WingRight, Life.WingLeft]) { life.Add((meshes.Count - 1, side, c + k * wings.Length)); chosen = [.. chosen, still with { Mesh = (uint)meshes.Count - 1 }]; }
         }
-        Add(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.9f, 0.92f, 0.95f), Alpha = 0.2f, Roughness = 1 }, Ball, Life.Steam, 0, SteamPuffs * 2);
+        Add(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.9f, 0.92f, 0.95f), Alpha = 0.2f, Roughness = 1 }, Ball, Life.Steam, 0, SteamPuffs);
         if (custom is not null)
         {
             int logo = Array.FindIndex(chosen, i => (i.Flags & GardenScene.LogoFlag) != 0);
@@ -198,6 +209,10 @@ internal sealed unsafe class GardenGpu
         for (int k = 0; k < LitFireflies; k++) points.Add(new Light { Kind = (uint)GardenLightKind.Point, Direction = -Vector3.UnitY, Range = 1.7f, Radius = 0.05f, CosOuter = -2, CosInner = -1 });
         PointLights = [.. points];
         LightBuffer = s.Buffer((ulong)PointLights.Length * 64, HeapType.Upload, ResourceStates.GenericRead);
+        var (_, hallLow, hallHigh) = GardenRaster.Rounds[1];
+        _hallLamp = [.. PointLights.Select((p, k) => k < _firstFirefly && p.Position.X > hallLow.X && p.Position.Y > hallLow.Y && p.Position.Z > hallLow.Z && p.Position.X < hallHigh.X && p.Position.Y < hallHigh.Y && p.Position.Z < hallHigh.Z)];
+        _grid = new uint[GridX * GridZ * (2 + PointLights.Length)];
+        LightGridBuffer = s.Buffer((ulong)_grid.Length * 4, HeapType.Upload, ResourceStates.GenericRead);
         Update(0);
 
         // for the ray tracer: where each mesh's vertices and each submesh's indices start
@@ -234,7 +249,38 @@ internal sealed unsafe class GardenGpu
             var (at, glow) = Firefly(k, time);
             PointLights[_firstFirefly + k].Position = at; PointLights[_firstFirefly + k].Color = new Vector3(0.45f, 0.75f, 0.12f) * (0.11f * glow * lamps);
         }
+        Lamps(lamps, HallLit(Day(time)));
+    }
+
+    /// <summary>Lights the lamps: the garden's as far as <paramref name="garden"/> says (0 to 1: they are lit at dusk one after
+    /// another, each at its own moment, and put out at dawn), the hall's own as far as <paramref name="hall"/> does; and lists, for
+    /// each square of the garden's plan, the lit lamps whose light can reach it (a spot lamp's is the ball round its cone).</summary>
+    public void Lamps(float garden, float hall)
+    {
+        int cells = GridX * GridZ, stride = PointLights.Length;
+        for (int c = 0; c < cells; c++) { _grid[c * 2] = (uint)(cells * 2 + c * stride); _grid[c * 2 + 1] = 0; }
+        for (int k = 0; k < PointLights.Length; k++)
+        {
+            ref var p = ref PointLights[k];
+            p.Lit = k >= _firstFirefly ? 1 : _hallLamp[k] ? hall : Math.Clamp((garden - H((uint)k * 31 + 7) * 0.7f) / 0.3f, 0, 1);
+            if (p.Lit <= 0 || MathF.Max(p.Color.X, MathF.Max(p.Color.Y, p.Color.Z)) <= 0) continue;
+            var at = p.Position; float reach = p.Range;
+            if (p.Kind == (uint)GardenLightKind.Spot && p.CosOuter > 0.7072f) { reach = p.Range / (2 * p.CosOuter); at += p.Direction * reach; }
+            int x0 = Math.Clamp((int)MathF.Floor((at.X - reach - GridFrom.X) / GridCell), 0, GridX - 1), x1 = Math.Clamp((int)MathF.Floor((at.X + reach - GridFrom.X) / GridCell), 0, GridX - 1);
+            int z0 = Math.Clamp((int)MathF.Floor((at.Z - reach - GridFrom.Y) / GridCell), 0, GridZ - 1), z1 = Math.Clamp((int)MathF.Floor((at.Z + reach - GridFrom.Y) / GridCell), 0, GridZ - 1);
+            for (int z = z0; z <= z1; z++)
+                for (int x = x0; x <= x1; x++)
+                {
+                    // the nearest point of the square to the lamp (the squares along the edges go on outward for ever)
+                    float lowX = x == 0 ? float.MinValue : GridFrom.X + x * GridCell, highX = x == GridX - 1 ? float.MaxValue : GridFrom.X + (x + 1) * GridCell;
+                    float lowZ = z == 0 ? float.MinValue : GridFrom.Y + z * GridCell, highZ = z == GridZ - 1 ? float.MaxValue : GridFrom.Y + (z + 1) * GridCell;
+                    float dx = at.X - Math.Clamp(at.X, lowX, highX), dz = at.Z - Math.Clamp(at.Z, lowZ, highZ);
+                    if (dx * dx + dz * dz > reach * reach) continue;
+                    int c = z * GridX + x; _grid[cells * 2 + c * stride + (int)_grid[c * 2 + 1]++] = (uint)k;
+                }
+        }
         PointLights.AsSpan().CopyTo(LightBuffer.Map<Light>(0, PointLights.Length)); LightBuffer.Unmap(0);
+        _grid.AsSpan().CopyTo(LightGridBuffer.Map<uint>(0, _grid.Length)); LightGridBuffer.Unmap(0);
     }
 
     private static float H(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return (x >> 8) * (1f / 16777216f); }
@@ -284,10 +330,9 @@ internal sealed unsafe class GardenGpu
                 var (where, heading, raised) = Butterfly(n, time); float side = kind == Life.WingRight ? 1 : -1, grown = 2.2f * (1 - day.Night / 0.6f);
                 return Matrix4x4.CreateScale(side * grown, grown, grown) * Matrix4x4.CreateRotationZ(side * raised) * Matrix4x4.CreateRotationY(heading) * Matrix4x4.CreateTranslation(where);
             default:
-                bool kettle = n < SteamPuffs; float phase = time / 2.8f + (float)(n % SteamPuffs) / SteamPuffs + (kettle ? 0 : 0.37f); phase -= MathF.Floor(phase);
-                uint id = (uint)n * 16 + 7000; float lean = phase * phase, thick = (0.02f + 0.085f * phase) * MathF.Min(1, (1 - phase) * 4) * MathF.Min(1, phase * 8) * (kettle ? 1 : 0.8f);
-                var from = kettle ? KettleSpout + new Vector3(0, 0, -0.02f) : SamovarCrown;
-                var puff = from + new Vector3((H(id) - 0.5f) * 0.18f * lean + 0.012f * MathF.Sin(time * 2.1f + n), 0.02f + 0.5f * phase, (H(id + 1) - 0.5f) * 0.18f * lean - (kettle ? 0.05f * phase : 0));
+                float phase = time / 2.8f + (float)n / SteamPuffs; phase -= MathF.Floor(phase);
+                uint id = (uint)n * 16 + 7000; float lean = phase * phase, thick = (0.02f + 0.085f * phase) * MathF.Min(1, (1 - phase) * 4) * MathF.Min(1, phase * 8);
+                var puff = KettleSpout + new Vector3((H(id) - 0.5f) * 0.18f * lean + 0.012f * MathF.Sin(time * 2.1f + n), 0.02f + 0.5f * phase, -0.02f + (H(id + 1) - 0.5f) * 0.18f * lean - 0.05f * phase);
                 return Matrix4x4.CreateScale(thick) * Matrix4x4.CreateTranslation(puff);
         }
     }
@@ -617,7 +662,7 @@ internal struct GardenFrame
     public const int Bytes = 1024;
 
     /// <summary>How many times longer the picture is exposed in the hall by day than in the garden.</summary>
-    public const float Indoors = 3.4f;
+    public const float Indoors = 2.4f;
 
     /// <summary>The near plane. Depth is reversed and the far plane infinitely far: 1 here, falling to 0 with distance, which a
     /// floating-point depth buffer keeps apart to the millimetre across the whole garden.</summary>
@@ -636,7 +681,7 @@ internal struct GardenFrame
         var f = new GardenFrame
         {
             ViewProj = view * proj, Eye = eye, Time = time, SunDir = day.Key, SunOn = day.KeyColor.LengthSquared() > 0 ? 1 : 0, SunColor = day.KeyColor,
-            LightCount = day.Lamps > 0 ? (uint)g.PointLights.Length : 0, WaterLevel = g.WaterLevel,   // by day no lamp is lit: none is looked at
+            LightCount = (uint)g.PointLights.Length, WaterLevel = g.WaterLevel,
             SkyZenith = day.Zenith, SkyHorizon = day.Horizon, GroundColor = day.Ground, Exposure = day.Exposure,
             ViewSize = new(width, height), CamRight = right, CamUp = up, CamForward = forward, TanHalfFovY = MathF.Tan(fovY / 2), Aspect = aspect,
             Bounces = 4, Width = (uint)width, Height = (uint)height, Mode = raster ? 1u : 2u, Backdrop = g.BackdropRange,
@@ -648,12 +693,12 @@ internal struct GardenFrame
         // soft from the middle of a room: blur in pixels = 1 % of the frame's height for each dioptre out of focus, and never more
         // than 0.3 % of it (at twice that the garden beyond what was looked at went dull: the picture is to be sharp).
         f.Lens = new(Math.Clamp(Vector3.Distance(eye, target), 2.5f, 14f), 0.010f * height, 0.003f * height, 16);
-        f.Post = new(raster ? 0.11f : 0.55f, 0, 1, 0);   // the rasteriser's glow is five levels summed, the ray tracer's one; the wind blows
+        f.Post = new(raster ? 0.11f : 0.55f, 0, 1, GardenGpu.HallLit(day));   // the rasteriser's glow is five levels summed, the ray tracer's one; the wind blows; the hall's lamps
         var (c, s, lift) = GardenGpu.LogoTurn(g.LogoPivot, time); f.Logo = new(c, s, lift, 0.3f + 0.15f * day.Night);   // the logo is a lit sign: it glows of itself, by day a little, at night more
         var hall = GardenRaster.Rounds[1]; f.Round1Low = new(hall.Low, 0); f.Round1High = new(hall.High, 0);   // the hall's rooms: where the light is the orsi's
         // The eye gets used to the dark: by day the hall's rooms hold a fraction of the garden's light, and the picture is exposed for
         // them as the walk goes in at the door (the windows then burn out, as they do to anyone standing in such a room).
-        float inside = Math.Clamp((eye.Z + 4.6f) / 3.2f, 0, 1); inside = inside * inside * (3 - 2 * inside);
+        float inside = Math.Clamp((eye.Z + 6.6f) / 3.6f, 0, 1); inside = inside * inside * (3 - 2 * inside);   // from the top of the stairs to just inside the door
         float longer = 1 + (Indoors - 1) * inside * (1 - day.Night);
         f.Exposure *= longer; f.Post.X /= longer;   // (the windows' glow is no wider for it: it would veil the room)
         return f;

@@ -26,7 +26,7 @@ cbuffer Frame : register(b1)
     float4 Fountain2;                     // that water's level, the radius of the bowl's rim, how many droplets are the jet's (the rest spill from the rim), 1 when there is a fountain
     float4 Ambience;                      // rasteriser: 1 when the occlusion image is bound, its taps, the near plane's distance
     float4 Lens;                          // the distance in focus, the blur in pixels a dioptre out of focus brings, the most blur in pixels, the taps it is gathered with (0: none)
-    float4 Post;                          // how much of the glow round bright things is added to the frame; for the light volume's baker, how much of the sky's brightness it keeps; 1 while the wind blows (0 in the passes drawn once)
+    float4 Post;                          // how much of the glow round bright things is added to the frame; for the light volume's baker, how much of the sky's brightness it keeps; 1 while the wind blows (0 in the passes drawn once); how far the hall's own lamps are lit (they burn by day too)
     float4 Grid;                          // the light volume (GardenLightVolume): its first point, and the distance from point to point
     float4 Grid2;                         // its points along x, y and z, and 1 when the rasteriser has it bound
     float4 Round0; float4 Round0Low; float4 Round0High;   // rasteriser: where the courtyard's picture of its surroundings was taken from (w: its mip levels), and the box it stands for
@@ -44,8 +44,9 @@ struct Instance { float4 Row0; float4 Row1; float4 Row2; uint Mesh; uint Mask; u
 // repeats across the mesh's coordinates (x, y) and, when z is not 0, that it is laid by world position instead, z repeats a metre.
 // LightTint 1: light passing through takes the pane's colour (stained glass).
 struct Material { uint Kind; int Texture; float LightTint; int NormalTexture; float3 Base; float Alpha; float3 Color2; float Roughness; float3 Mortar; float Metallic; float3 Emission; float Transmission; float4 Pattern; };
-// Shadow: for the rasteriser, which of its shadow cubes is this lamp's, counted from 1 (0: it casts none)
-struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float Shadow; float Pad; };
+// Shadow: for the rasteriser, which of its shadow cubes is this lamp's, counted from 1 (0: it casts none). Lit: how far it is lit
+// just now, 0 to 1 (GardenGpu.Lamps sets it every frame: the lamps are lit at dusk one after another, the hall's burn by day as well)
+struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3 Color; float CosOuter; float CosInner; float Radius; float Shadow; float Lit; };
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5, KSmoke = 6;
 static const uint LSun = 0, LPoint = 1, LSpot = 2;
@@ -57,6 +58,10 @@ static const float Pi = 3.14159265;
 
 uint Hash(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return x; }
 float Hash01(uint x) { return (Hash(x) >> 8) * (1.0 / 16777216.0); }
+
+bool InHall(float3 p);
+// How far what glows at p is lit: the hall's lamps keep their own hours.
+float Glowing(float3 p) { return InHall(p) ? Post.w : Day.y; }
 
 float3x3 Rotation(Instance i) { return float3x3(i.Row0.xyz, i.Row1.xyz, i.Row2.xyz); }
 float3 Translation(Instance i) { return float3(i.Row0.w, i.Row1.w, i.Row2.w); }
@@ -187,7 +192,7 @@ float2 TexCoords(Material m, float2 uv, float3 p, float3 n, out bool world)
 
 Surface MaterialSurface(Material m, float3 p, float3 n, float4 texel)
 {
-    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission * Day.y; s.Normal = n; s.Occlusion = 1; s.Sheen = m.Kind == KCutout ? 0.12 : 1;   // what glows is a lamp: lit with the others
+    Surface s; s.Albedo = m.Base; s.Alpha = m.Alpha; s.Roughness = m.Roughness; s.Metallic = m.Metallic; s.Emission = m.Emission * Glowing(p); s.Normal = n; s.Occlusion = 1; s.Sheen = m.Kind == KCutout ? 0.12 : 1;   // what glows is a lamp: lit with the others
     if (m.Texture >= 0)   // alpha: a leaf card's opacity, any other surface's roughness
     {
         s.Albedo *= texel.rgb;
@@ -329,11 +334,11 @@ float3 EnvBrdf(Surface s, float3 v)
     return (f0 * ab.x + ab.y) * s.Sheen;
 }
 
-// How brightly lamp k burns just now: the lamps are lit at dusk one after another, each at its own moment, and put out at dawn;
-// and a flame is never still - a lantern's or a sconce's light wavers a little, each to its own beat (not in the passes drawn once).
+// How brightly lamp k burns just now: as far as it is lit, and a flame is never still - a lantern's or a sconce's light wavers a
+// little, each to its own beat (not in the passes drawn once).
 float LampLit(Light L, uint k)
 {
-    float on = saturate((Day.y - Hash01(k * 31 + 7) * 0.7) / 0.3);
+    float on = L.Lit;
     return L.Kind == LPoint && L.Color.b < L.Color.r * 0.5 && Post.z > 0 ? on * (1 + 0.09 * sin(Time * 9.1 + k * 2.3) + 0.05 * sin(Time * 23.7 + k * 5.1)) : on;
 }
 

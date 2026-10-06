@@ -83,6 +83,10 @@ FAR, FAR_MESHES = ("V10_Exterior_Tree_Belt",), ("V10_SOURCE_Broadleaf",)
 # (LEAF_SHAPE), and every one of their leaves.
 CARD, LEAF_TRIS, GROW = 20, 2.5, 1.7
 LEAF_SHAPE = {"V10_SOURCE_Broadleaf": 6, "V9_SOURCE_Shrub": 8}
+# The small-leaved trees and the shrubs are modelled leaf for leaf at life size: a leaf of theirs is under a pixel from across the
+# garden at 1080p, and the crown then looks bald, a sprinkle of dots on bare twigs. Each of their leaves is grown about its own
+# middle by this much (more than half as large again; the owner asked for it), so the crowns read as full.
+LEAF_GROW = {"V10_SOURCE_Broadleaf": 1.7, "V10_SOURCE_Broadleaf~far": 1.6, "V9_SOURCE_Shrub": 1.7, "V10_SOURCE_Alpine": 1.5}
 # A mesh that is one large plain piece and many small fine ones (a rug and its tassels): simplified whole, the large piece would lose
 # its shape and its texture's place to pay for the small ones. It is kept as it is, and only the rest is simplified.
 BODY_AND_TRIM = ("V11_SOURCE_RugBlue",)
@@ -490,6 +494,12 @@ def thinned(me, keep):
     me.vertices.foreach_set("co", (middle[piece] + (co - middle[piece]) * grow).astype(np.float32).ravel())
     without(me, ~stays[piece])
 
+def grown(me, by):
+    """Every piece of the mesh (a leaf) made by times as large, about its own middle."""
+    piece, n = islands(me); co = np.empty(len(me.vertices) * 3, np.float32); me.vertices.foreach_get("co", co); co = co.reshape(-1, 3)
+    middle = np.stack([np.bincount(piece, co[:, a], n) for a in range(3)], axis=1) / np.maximum(np.bincount(piece, minlength=n), 1)[:, None]
+    me.vertices.foreach_set("co", (middle[piece] + (co - middle[piece]) * by).astype(np.float32).ravel()); me.update()
+
 def pruned(me, most):
     """Keeps the largest pieces of the mesh, as many as come to most triangles: of a tree's wood, the trunk and the boughs; the twigs
     go (collapsing edges cannot take a closed twig below a few triangles, and a tree has thousands). Pieces of one size are kept
@@ -527,6 +537,7 @@ def plant(me, slots, target, name):
         if left > share * 1.15:
             if each <= CARD: thinned(part, share / left)
             else: pruned(part, share)
+        if m < len(kinds) and kinds[m] == K_CUTOUT and each <= CARD and name in LEAF_GROW: grown(part, LEAF_GROW[name])
         after = measure(part).get(m, (0, 0.0))
         print("PLANT", name, slots[m].name if m < len(slots) and slots[m] else None, "triangles", tris, "->", after[0], "area", round(area, 2), "->", round(after[1], 2))
         whole.from_mesh(part); bpy.data.meshes.remove(part)

@@ -9,7 +9,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// in garden.light, embedded in this assembly. The Direct3D garden reads it for every pixel (GardenRaster.hlsl's Bounced).
 /// <para>The garden's light changes through the day (<see cref="GardenDay"/>), and light adds up: the volume is kept in
 /// <see cref="Parts"/>, each the light of one source alone - the sky, of one unit of brightness all over (<see cref="Sky"/>); the
-/// lamps, all lit (<see cref="Lamps"/>); and the sun, of one unit, at each of <see cref="Suns"/> points of its arc
+/// garden's lamps, all lit (<see cref="Lamps"/>); the hall's own, which burn by day too (<see cref="Hall"/>); and the sun, of one unit, at each of <see cref="Suns"/> points of its arc
 /// (<see cref="FirstSun"/> on: point k is (k + 1/2) / Suns of the way from sunrise to sunset). <see cref="Mix"/> puts a moment's
 /// light together from them.</para>
 /// <para>Format (gzip, little-endian): "MZLT", version, the <see cref="GardenScene.Stamp"/> of the scene it was worked out for, the
@@ -18,7 +18,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GardenLightVolume
 {
-    public const int Version = 2, Sky = 0, Lamps = 1, FirstSun = 2;
+    public const int Version = 3, Sky = 0, Lamps = 1, Hall = 2, FirstSun = 3;
     public ulong SceneStamp { get; private init; }
     public Vector3 Origin { get; private init; }
     public float Spacing { get; private init; }
@@ -56,24 +56,24 @@ public sealed class GardenLightVolume
     /// <summary>How many floats the texture the shader reads holds: six blocks side by side along x, one for each direction, four floats a texel.</summary>
     public int TexelFloats => X * 6 * Y * Z * 4;
 
-    /// <summary>A moment's light as that texture: the sky's part times the sky's colour, the lamps' times how far they are lit, and
+    /// <summary>A moment's light as that texture: the sky's part times the sky's colour, the lamps' and the hall's times how far each are lit, and
     /// the sun's, between the two points of its arc it stands between, times its light. Some two million multiplications, done
-    /// eight or sixteen at a time: it is put together anew for every frame.</summary>
-    public void Mix(float[] into, Vector3 sky, float lamps, Vector3 sun, float s)
+    /// eight or sixteen at a time: it is put together anew every few frames.</summary>
+    public void Mix(float[] into, Vector3 sky, float lamps, float hall, Vector3 sun, float s)
     {
         if (into.Length != TexelFloats) throw new ArgumentException("Not the size of the volume's texture.", nameof(into));
         var t = _texels ??= [.. Parts.Select(Texels)]; var (a, b, f) = SunParts(s); int n = Vector<float>.Count;
-        float[] p0 = t[Sky], p1 = t[Lamps], pa = t[FirstSun + a], pb = t[FirstSun + b];
+        float[] p0 = t[Sky], p1 = t[Lamps], p2 = t[Hall], pa = t[FirstSun + a], pb = t[FirstSun + b];
         Vector3 wa = sun * (1 - f), wb = sun * f; int i = 0;
         if (Vector.IsHardwareAccelerated && n % 4 == 0)
         {
-            Vector<float> vs = Weights(sky), vl = Weights(new(lamps)), va = Weights(wa), vb = Weights(wb);
-            for (; i <= into.Length - n; i += n) (new Vector<float>(p0, i) * vs + new Vector<float>(p1, i) * vl + new Vector<float>(pa, i) * va + new Vector<float>(pb, i) * vb).CopyTo(into, i);
+            Vector<float> vs = Weights(sky), vl = Weights(new(lamps)), vh = Weights(new(hall)), va = Weights(wa), vb = Weights(wb);
+            for (; i <= into.Length - n; i += n) (new Vector<float>(p0, i) * vs + new Vector<float>(p1, i) * vl + new Vector<float>(p2, i) * vh + new Vector<float>(pa, i) * va + new Vector<float>(pb, i) * vb).CopyTo(into, i);
         }
         for (; i < into.Length; i++)
         {
             int c = i & 3; float Of(Vector3 w) => c == 0 ? w.X : c == 1 ? w.Y : c == 2 ? w.Z : 0;
-            into[i] = p0[i] * Of(sky) + p1[i] * (c < 3 ? lamps : 0) + pa[i] * Of(wa) + pb[i] * Of(wb);
+            into[i] = p0[i] * Of(sky) + (p1[i] * lamps + p2[i] * hall) * (c < 3 ? 1 : 0) + pa[i] * Of(wa) + pb[i] * Of(wb);
         }
     }
 
@@ -149,7 +149,7 @@ public sealed class GardenLightVolume
 /// Works the garden's <see cref="GardenLightVolume"/> out with the ray tracer (GardenRay.hlsl's Bake), on a GPU that has ray-tracing
 /// hardware: from each grid point rays are sent out round each of the six directions and the mean of the light they find is taken -
 /// the surfaces they meet lit with shadow rays, and by a bounce of their own - once for each of the volume's parts, with that part's
-/// light alone: the sky, the lamps, the sun at each point of its arc. Run after the scene is exported, by the hardware test that
+/// light alone: the sky, the garden's lamps, the hall's, the sun at each point of its arc. Run after the scene is exported, by the hardware test that
 /// writes garden.light (tools/scene/export_garden.py says how); the app itself never bakes.
 /// </summary>
 internal static class GardenLightBaker
@@ -188,7 +188,8 @@ internal static class GardenLightBaker
         var parts = new List<float[]>
         {
             Indoors(Part((ref GardenFrame f) => { f.SkyZenith = Vector3.One; f.Post.Y = 1; })),
-            Part((ref GardenFrame f) => { f.LightCount = (uint)g.PointLights.Length; f.Day = new(1, 1, 1, 0); f.Logo.W = 0.45f; }),
+            Part((ref GardenFrame f) => { g.Lamps(1, 0); f.LightCount = (uint)g.PointLights.Length; f.Day = new(1, 1, 1, 0); f.Logo.W = 0.45f; }),
+            Indoors(Part((ref GardenFrame f) => { g.Lamps(0, 1); f.LightCount = (uint)g.PointLights.Length; f.Day = new(1, 0, 1, 0); f.Post.W = 1; })),
         };
         for (int k = 0; k < Suns; k++)
         {

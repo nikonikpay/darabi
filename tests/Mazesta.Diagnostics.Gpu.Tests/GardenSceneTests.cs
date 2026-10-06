@@ -269,15 +269,15 @@ public class GardenSceneTests
         {
             var d = DayAt(t); float up = MathF.Asin(d.Key.Y) * 180 / MathF.PI;
             Assert.False(d.Moon); Assert.True(d.Key.Z < -0.5f, $"the sun is not before the hall at {t}");   // within 60 degrees of straight in
-            Assert.InRange(up, 5f, 41f); highest = MathF.Max(highest, up); lowest = MathF.Min(lowest, up);
+            Assert.InRange(up, 3f, 30f); highest = MathF.Max(highest, up); lowest = MathF.Min(lowest, up);
             // how far from the sill the light of a window's top lies on the floor (the pane's top is 4 m over it): farther every key
             float reach = 4 / MathF.Tan(up * MathF.PI / 180);
             Assert.True(reach > reachBefore + 0.1f, $"the light does not creep on at {t}"); reachBefore = reach; if (first == 0) first = reach;
         }
-        Assert.True(highest > 30 && lowest < 12 && reachBefore > 4 * first);
-        // the scene's own sun, as the .blend has it, is a moment of that afternoon
+        Assert.True(highest > 20 && highest < 28 && lowest < 10 && reachBefore > 3 * first);   // low from the first: the light lies as far as the middle of the room (4 m / tan 24 degrees = 9 m from the pane's top)
+        // the scene's own sun, as the .blend has it, is near a moment of that afternoon
         var placed = Vector3.Normalize(-G.Lights.Single(l => l.Kind == GardenLightKind.Sun && (l.Mask & 2) == 0).Direction);
-        Assert.Contains(Enumerable.Range(0, 400).Select(k => DayAt(60 + k * 0.1f).Key), key => Vector3.Dot(key, placed) > 0.995f);
+        Assert.Contains(Enumerable.Range(0, 400).Select(k => DayAt(60 + k * 0.1f).Key), key => Vector3.Dot(key, placed) > 0.985f);
         // and it sets as the walk leaves: at the door the sun is on the horizon, on the stairs it is night
         Assert.InRange(DayAt(102).Key.Y, 0.02f, 0.1f); Assert.Equal(1, DayAt(120).Night);
     }
@@ -359,7 +359,7 @@ public class GardenSceneTests
         Assert.True(Vector3.Distance(GardenGpu.Butterfly(3, 20).At, GardenGpu.Butterfly(3, 21).At) > 0.1f);   // they do fly
         Assert.True(GardenGpu.LitFireflies <= GardenGpu.Fireflies);
         // the steam rises from the tea counter, by the hall's left wall
-        Assert.True(GardenGpu.KettleSpout.X < -8.5f && GardenGpu.KettleSpout.Y > 2 && GardenGpu.SamovarCrown.Y > GardenGpu.KettleSpout.Y);
+        Assert.True(GardenGpu.KettleSpout.X < -8.5f && GardenGpu.KettleSpout.Y > 2);
     }
 
     [Fact] public void The_wind_bends_the_plants_where_they_stand_and_nothing_else()

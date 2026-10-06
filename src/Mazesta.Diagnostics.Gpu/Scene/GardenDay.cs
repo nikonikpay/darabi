@@ -3,8 +3,9 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 
 /// <summary>
 /// The garden's day, which both visual tests go through once in every walk of the garden (<see cref="GardenCamera.Loop"/>): the sun
-/// is just up as the walk sets out from the gate, stands highest as it reaches the hall, and sinks while it is inside - so the light
-/// of the orsi's stained panes creeps across the floor and reaches deeper into the rooms - and sets as it comes out onto the terrace
+/// is just up as the walk sets out from the gate, stands highest on the way up the garden, and is low again by the time the walk
+/// is in the hall - so the light of the orsi's stained panes lies far across the floor, on the chairs and the tea table, and creeps
+/// on to the back wall - and sets as it comes out onto the terrace
 /// again. At dusk the lamps are lit one after another; the walk back down the garden is by night, under the moon; day breaks as it ends.
 /// It is a winter's day, the kind the hall was built for: the sun low from morning to evening, shining in at its windows.
 /// A pure function of the walk's time - the same moment is the same light - which both renderers and the light volume read.
@@ -17,9 +18,23 @@ public readonly record struct GardenDay(Vector3 Key, Vector3 KeyColor, bool Moon
     /// <summary>When, in the walk's seconds, the sun comes up (four seconds before the walk starts over) and goes down (as the walk
     /// turns to leave the hall), and how long each twilight lasts.</summary>
     public const float Sunrise = -4f, Sunset = 104f, Twilight = 14f;
-    /// <summary>The sun's arc: how high it stands at noon, and how far round from the garden's axis it rises and sets. The scene's
-    /// own sun (16 degrees up, 40 round) is a point of it, late in the afternoon.</summary>
-    public const float Highest = 40f * MathF.PI / 180, Sweep = 54f * MathF.PI / 180;
+    /// <summary>The sun's arc: how far round from the garden's axis it rises and sets, and how many degrees up it stands at nine
+    /// points of the day, evenly apart - highest in the morning, low all the afternoon (what the picture wants, not an almanac:
+    /// the walk is in the hall then, and the light must reach its middle). The scene's own sun (16 degrees up, 40 round) is near a
+    /// point of it, late in the afternoon.</summary>
+    public const float Sweep = 54f * MathF.PI / 180;
+    private static readonly float[] Heights = [0, 24, 38, 34, 23, 19, 14, 8, 0];
+    /// <summary>How many degrees above the horizon the sun stands at point <paramref name="s"/> of its arc (under it before 0 and after 1).</summary>
+    public static float SunHeight(float s)
+    {
+        int last = Heights.Length - 1;
+        if (s <= 0) return s * last * Heights[1];
+        if (s >= 1) return (1 - s) * last * Heights[last - 1];
+        float t = s * last; int i = Math.Min((int)t, last - 1); t -= i;
+        float K(int k) => k < 0 ? -Heights[1] : k > last ? -Heights[last - 1] : Heights[k];
+        float p0 = K(i - 1), p1 = K(i), p2 = K(i + 1), p3 = K(i + 2);
+        return 0.5f * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (3 * p1 - p0 - 3 * p2 + p3) * t * t * t);
+    }
     /// <summary>How much of the sky's own brightness lights the garden by day (Garden.hlsli has the same number): the picture's
     /// exposure is set for sunlit stone, and the sky's light is a fraction of the sun's. At night the sky is what there is.</summary>
     public const float SkyShare = 0.34f;
@@ -38,7 +53,7 @@ public readonly record struct GardenDay(Vector3 Key, Vector3 KeyColor, bool Moon
     /// (-z: the hall's windows face it), from one side of the axis to the other; <paramref name="side"/> (1 or -1) is the x it sets on.</summary>
     public static Vector3 SunDirection(float s, float side)
     {
-        float az = Sweep * (2 * s - 1) * side, el = Highest * MathF.Sin(MathF.PI * s);
+        float az = Sweep * (2 * s - 1) * side, el = SunHeight(s) * MathF.PI / 180;
         return new(MathF.Sin(az) * MathF.Cos(el), MathF.Sin(el), -MathF.Cos(az) * MathF.Cos(el));
     }
 

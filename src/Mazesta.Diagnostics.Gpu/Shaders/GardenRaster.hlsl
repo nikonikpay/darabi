@@ -10,7 +10,7 @@
 // Depth is reversed (1 at the near plane, 0 infinitely far), which keeps surfaces a centimetre apart from flickering across the whole
 // garden. Compiled offline by tools/compile-gpu-shaders.ps1.
 
-#define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), " \
+#define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), SRV(t18), SRV(t19), SRV(t20), SRV(t21), SRV(t22), SRV(t23), " \
            "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=5)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=16), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
@@ -23,6 +23,7 @@ StructuredBuffer<Instance> Instances : register(t0);
 StructuredBuffer<Material> Materials : register(t1);
 StructuredBuffer<Light> Lights : register(t2);
 StructuredBuffer<float4> Movers : register(t17);       // where each mover is this frame: three rows of a 3x4 matrix apiece
+StructuredBuffer<uint> LightGrid : register(t18);      // which lit lamps reach each square of the garden's plan (GardenGpu.Lamps): a first entry and a count for each square, then the lists
 Texture2DArray<float4> Textures : register(t3);
 Texture2D<float> ShadowMap : register(t4);
 Texture2D<float4> Reflection : register(t5);
@@ -111,9 +112,10 @@ float Shadow(float3 p, float3 n)
     float4 s = mul(hall ? HallViewProj : ShadowViewProj, float4(p + n * (hall ? 0.015 : 0.04), 1));
     float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
     if (any(uv < 0) || any(uv > 1)) return 1;
-    float depth = s.z - (hall ? 0.0004 : 0.0006), sum = 0; int r = (int)ShadowTaps;
-    if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * ShadowTexel, depth); }
-    else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * ShadowTexel, depth); }
+    // three taps by three (five by five at the heaviest level), each the mean of four texels, spread over as wide a square as the level asks
+    float depth = s.z - (hall ? 0.0004 : 0.0006), sum = 0; int r = ShadowTaps >= 3 ? 2 : 1; float2 apart = (2.0 * ShadowTaps + 1) / (2 * r + 1) * ShadowTexel;
+    if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
+    else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
     return sum / ((2 * r + 1) * (2 * r + 1));
 }
 
@@ -149,6 +151,7 @@ float LampShadow(Light L, float3 p, float3 n, float2 pixel)
 // a lit garden from a painted one.
 float SkyOpen(float3 p, float3 n, float2 pixel)
 {
+    if (Grid2.w > 0 && (Flags & 8)) return 1;   // the light volume and the pictures of the surroundings know it already: nothing asks
     float4 s = mul(SkyViewProj, float4(p + n * 0.12 + float3(0, 0.15, 0), 1));
     float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
     if (any(uv < 0) || any(uv > 1)) return 1;
@@ -200,16 +203,30 @@ float3 Mirrored(float3 p, float3 r, float roughness, float open)
     return lerp(sharp, soft, smoothstep(0.3, 0.6, roughness));
 }
 
+// The lit lamps whose light can reach p: where its square's list starts in LightGrid, and how many it holds. The garden's plan is
+// cut into squares two metres across (GardenGpu.Lamps fills the lists each frame), so a pixel asks a dozen lamps, not all sixty.
+uint2 LampsAt(float3 p)
+{
+    int2 c = clamp(int2(floor((p.xz - float2(-16, -36)) * 0.5)), 0, int2(15, 21)); uint i = (c.y * 16 + c.x) * 2;
+    return uint2(LightGrid[i], LightGrid[i + 1]);
+}
+
 float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
 {
     // the light from all round, as far as the surface's own corners and crevices let it in
     float open = SkyOpen(p, s.Normal, pixel), near = Occluded(pixel) * s.Occlusion;
     float3 c = s.Albedo * Bounced(p, s.Normal, open) * (1 - s.Metallic) * near + s.Emission;
-    if (SunOn > 0) c += Brdf(s, v, SunDir, SunColor * KeyTint(p)) * Shadow(p, s.Normal) * lerp(1, near, 0.45);
-    [loop] for (uint k = 0; k < LightCount; k++)
+    if (SunOn > 0 && dot(s.Normal, SunDir) > 0)
     {
-        Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d) * LampLit(L, k);
-        if (any(e > 0)) c += Brdf(s, v, l, e) * LampShadow(L, p, s.Normal, pixel) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
+        float lit = Shadow(p, s.Normal);
+        if (lit > 0) c += Brdf(s, v, SunDir, SunColor * KeyTint(p)) * lit * lerp(1, near, 0.45);
+    }
+    uint2 lamps = LampsAt(p);
+    [loop] for (uint j = 0; j < lamps.y; j++)
+    {
+        uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
+        if (all(e <= 0) || dot(s.Normal, l) <= 0) continue;
+        c += Brdf(s, v, l, e * LampLit(L, k)) * LampShadow(L, p, s.Normal, pixel) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
     }
     // every surface mirrors its surroundings a little, a metal or a polished floor a lot
     c += Mirrored(p, reflect(-v, s.Normal), s.Roughness, open) * EnvBrdf(s, v) * near;
@@ -262,7 +279,7 @@ float4 Opaque(VOut i, bool cutout)
         s.Albedo = lerp(dot(s.Albedo, float3(0.3, 0.59, 0.11)), s.Albedo, 0.9);
         float inner = lerp(0.42, 1, i.Out * i.Out);
         float3 c = Lit(s, i.World, v, i.Position.xy) - s.Albedo * Bounced(i.World, s.Normal, 1) * (1 - inner) * 0.6;
-        if (SunOn > 0) c += s.Albedo * s.Albedo * SunColor * 0.35 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n) * inner;
+        if (SunOn > 0 && dot(n, SunDir) < 0) c += s.Albedo * s.Albedo * SunColor * 0.35 * -dot(n, SunDir) * Shadow(i.World, -n) * inner;
         return float4(Pack(Haze(max(c, 0), i.World)), alpha);
     }
     return float4(Pack(Haze(Lit(s, i.World, v, i.Position.xy), i.World)), alpha);
@@ -322,9 +339,10 @@ float4 TransparentPS(VOut i) : SV_Target
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
     float3 mirrored = ((Flags & 8) ? Mirrored(i.World, reflect(-v, n), 0.03, open) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
-    float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Day.y;
+    float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Glowing(i.World);
     if (SunOn > 0) own += m.Base * SunColor * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
-    [loop] for (uint k = 0; k < LightCount; k++) { Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
+    uint2 lamps = LampsAt(i.World);
+    [loop] for (uint j = 0; j < lamps.y; j++) { uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy); }
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
     float density = m.Alpha < 1 ? m.Alpha : lerp(0.08, 0.6, saturation);
     float a = fresnel + (1 - fresnel) * density;
@@ -404,7 +422,7 @@ float3 Shafts(SkyOut i, int2 px)
         if (open > 0) sum += open * (p.z > -3.09 ? HallTint.SampleLevel(Clamp, uv, 0).rgb : 1);
     }
     float toward = dot(dir, SunDir), phase = 0.6 + 1.6 * pow(saturate(toward * 0.5 + 0.5), 4);   // dust throws most of it on, toward an eye that looks into the beam
-    return sum * step * SunColor * 0.010 * phase * saturate(SunDir.y * 3.2);   // (a sun on the horizon lights the whole room's air: held back, or the room is all haze)
+    return sum * step * SunColor * 0.0075 * phase * saturate(SunDir.y * 3.2);   // (a sun on the horizon lights the whole room's air: held back, or the room is all haze)
 }
 
 // The frame through the lens: each pixel gathers, from a disc of taps as wide as the most blur, the pixels whose own blur reaches

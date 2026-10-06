@@ -86,9 +86,9 @@ public class GardenRenderHardwareTests
         // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk, each drawn as one of the frames being shown (off screen and read back: slower than the test's own window)
         if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })
         {
-            const int n = 96; var sw = System.Diagnostics.Stopwatch.StartNew();
-            for (int k = 0; k < n; k++) r.Capture(k * GardenCamera.Loop / n, live: true);
-            File.AppendAllText(Path.Combine(dir, "timing.txt"), $"{name} {r.Width}x{r.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms a frame, {n} frames round the walk" + Environment.NewLine);
+            const int n = 96; var sw = System.Diagnostics.Stopwatch.StartNew(); var parts = new double[4];
+            for (int k = 0; k < n; k++) { var one = System.Diagnostics.Stopwatch.StartNew(); r.Capture(k * GardenCamera.Loop / n, live: true); parts[k * 4 / n] += one.Elapsed.TotalMilliseconds * 4 / n; }
+            File.AppendAllText(Path.Combine(dir, "timing.txt"), $"{name} {r.Width}x{r.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms a frame, {n} frames round the walk (its quarters: {string.Join(", ", parts.Select(p => p.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)))})" + Environment.NewLine);
         }
     }
 }
