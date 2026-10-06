@@ -354,6 +354,13 @@ float3 WaterNormal(float3 p, float t)
     return normalize(float3(-g.x, 1, -g.y));
 }
 
+// Running water's surface is never smooth: a stream's normal is jostled by a noise that runs along with the flow.
+float3 Running(float3 n, float3 p)
+{
+    float3 q = float3(p.x * 55, p.y * 16 + Time * 9, p.z * 55);
+    return normalize(n + (float3(Noise3(q), Noise3(q + 17.3), Noise3(q + 41.7)) - 0.5) * 0.8);
+}
+
 // ——— vertex decoding, for the ray tracer (the rasteriser's input assembler does it in hardware) ———
 
 float3 DecodePosition(uint2 raw, float3 centre, float3 extent)

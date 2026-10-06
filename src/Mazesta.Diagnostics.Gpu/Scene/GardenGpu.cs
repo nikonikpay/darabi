@@ -6,8 +6,9 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// The garden on the GPU for one of its two scenes: every mesh in one vertex and one index buffer, the instances of that scene grouped by
 /// mesh (so each mesh is one instanced draw per material), the materials, the lights, the textures (base colours and normal maps) as one
 /// BC3 texture array, and the mountains round the horizon. What moves is placed here for both renderers, as a function of the time alone:
-/// the logo (turning to the camera), the ray-traced scene's mirror sphere (gliding round the pool) and the fountain's water - droplets
-/// this class adds to the scene, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
+/// the logo (turning to the camera), the ray-traced scene's mirror sphere (gliding round the pool) and the fountain's water, which
+/// this class adds to the scene: the column the jet rises as and a stream falling from each lobe of the bowl's rim (still shapes of
+/// running water), and droplets, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
 /// Both renderers build on it. The owner's Models\gpu-test.obj, when there is one, takes the logo's place over the pool.
 /// </summary>
 internal sealed unsafe class GardenGpu
@@ -72,6 +73,19 @@ internal sealed unsafe class GardenGpu
             meshes.Add(Ball((uint)materials.Count - 1));
             var droplet = new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Flags = GardenScene.DropletFlag, Row0 = new(1, 0, 0, 0), Row1 = new(0, 1, 0, 0), Row2 = new(0, 0, 1, 0) };
             chosen = [.. chosen, .. Enumerable.Repeat(droplet, (int)(JetDroplets + SpillDroplets))];
+            // and its steady water, of the pool's own: the column the jet rises as, and a stream falling from each of the rim's twelve lobes
+            int water = materials.FindIndex(m => m.Kind == GardenMaterialKind.Water);
+            if (water >= 0)
+            {
+                meshes.Add(Tube(JetColumn(Fountain), (uint)water));
+                chosen = [.. chosen, new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Row0 = new(1, 0, 0, 0), Row1 = new(0, 1, 0, 0), Row2 = new(0, 0, 1, 0) }];
+                meshes.Add(Tube(SpillStream(Fountain, WaterLevel), (uint)water));
+                for (int k = 0; k < 12; k++)
+                {
+                    float a = (k + 0.5f) / 12 * 2 * MathF.PI, c = MathF.Cos(a), s2 = MathF.Sin(a);   // about the fountain's axis, out through lobe k
+                    chosen = [.. chosen, new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Row0 = new(c, 0, -s2, Fountain.Nozzle.X), Row1 = new(0, 1, 0, 0), Row2 = new(s2, 0, c, Fountain.Nozzle.Z) }];
+                }
+            }
         }
         if (custom is not null)
         {
@@ -251,6 +265,69 @@ internal sealed unsafe class GardenGpu
         float speed = vel.Length(), k = MathF.Min(speed * 0.22f, 1.6f); var d = speed > 1e-4f ? vel / speed : Vector3.UnitY;
         return new(size * (1 + k * d.X * d.X), size * k * d.X * d.Y, size * k * d.X * d.Z, 0, size * k * d.Y * d.X, size * (1 + k * d.Y * d.Y), size * k * d.Y * d.Z, 0,
                    size * k * d.Z * d.X, size * k * d.Z * d.Y, size * (1 + k * d.Z * d.Z), 0, pos.X, pos.Y, pos.Z, 1);
+    }
+
+    /// <summary>The fountain's jet while it holds together: the centre line and radius of the column of water that leaves the nozzle
+    /// at the droplets' mean speed, slowing as it rises and so thickening (the same water passes every height), up to where it breaks
+    /// into the droplets. Where a droplet is thrown (<see cref="Droplet"/>), the column is.</summary>
+    public static (Vector3 At, float Radius)[] JetColumn(GardenFountain f)
+    {
+        const float speed = 4.2f, radius = 0.022f, height = 0.78f; var path = new List<(Vector3, float)>();
+        for (int k = 0; k <= 12; k++)
+        {
+            float y = height * k / 12, v = MathF.Sqrt(speed * speed - 2 * 9.81f * y);
+            path.Add((f.Nozzle + new Vector3(0, y, 0), radius * MathF.Sqrt(speed / v)));
+        }
+        path.Add((f.Nozzle + new Vector3(0, height + 0.05f, 0), 0.016f));   // closing over at its top
+        return [.. path];
+    }
+
+    /// <summary>The water running over one lobe of the bowl's rim, in the fountain's own frame (its axis through the origin, the
+    /// stream leaving along +x): the centre line and radius of its fall from the rim to the pool's surface, at the spilling droplets'
+    /// mean speed - a parabola, thinning as it quickens.</summary>
+    public static (Vector3 At, float Radius)[] SpillStream(GardenFountain f, float waterLevel)
+    {
+        const float gravity = 9.81f, radius = 0.024f; var from = new Vector3(f.RimRadius, f.BowlLevel + 0.03f, 0); var v0 = new Vector3(0.42f, -0.2f, 0);
+        float end = (v0.Y + MathF.Sqrt(v0.Y * v0.Y + 2 * gravity * (from.Y - waterLevel))) / gravity; var path = new (Vector3, float)[16];
+        for (int k = 0; k < path.Length; k++)
+        {
+            float t = end * k / (path.Length - 1); var v = v0 - new Vector3(0, gravity * t, 0);
+            path[k] = (from + v0 * t - new Vector3(0, 0.5f * gravity * t * t, 0), MathF.Max(radius * MathF.Sqrt(v0.Length() / v.Length()), 0.009f));
+        }
+        return path;
+    }
+
+    /// <summary>A tube of eight sides round a centre line: a stream of water's mesh.</summary>
+    private static GardenMesh Tube((Vector3 At, float Radius)[] path, uint material)
+    {
+        const int sides = 8; var pos = new Vector3[path.Length * sides]; var normal = new Vector3[pos.Length];
+        for (int i = 0; i < path.Length; i++)
+        {
+            var along = Vector3.Normalize(path[Math.Min(i + 1, path.Length - 1)].At - path[Math.Max(i - 1, 0)].At);
+            var u = Vector3.Normalize(Vector3.Cross(along, Vector3.UnitZ)); var w = Vector3.Cross(along, u);
+            for (int s = 0; s < sides; s++)
+            {
+                float a = s * 2 * MathF.PI / sides; var n = u * MathF.Cos(a) + w * MathF.Sin(a);
+                pos[i * sides + s] = path[i].At + n * path[i].Radius; normal[i * sides + s] = n;
+            }
+        }
+        Vector3 lo = pos.Aggregate(new Vector3(float.MaxValue), Vector3.Min), hi = pos.Aggregate(new Vector3(float.MinValue), Vector3.Max);
+        Vector3 centre = (lo + hi) / 2, extent = Vector3.Max((hi - lo) / 2, new Vector3(1e-4f));
+        var bytes = new byte[pos.Length * 16];
+        for (int i = 0; i < pos.Length; i++)
+        {
+            var q = (pos[i] - centre) / extent * 32767; var span = bytes.AsSpan(i * 16);
+            MemoryMarshal.Write(span, (short)MathF.Round(q.X)); MemoryMarshal.Write(span[2..], (short)MathF.Round(q.Y)); MemoryMarshal.Write(span[4..], (short)MathF.Round(q.Z));
+            span[8] = (byte)(sbyte)MathF.Round(normal[i].X * 127); span[9] = (byte)(sbyte)MathF.Round(normal[i].Y * 127); span[10] = (byte)(sbyte)MathF.Round(normal[i].Z * 127);
+        }
+        var indices = new List<uint>();
+        for (int i = 0; i + 1 < path.Length; i++)
+            for (int s = 0; s < sides; s++)
+            {
+                uint a = (uint)(i * sides + s), b = (uint)(i * sides + (s + 1) % sides), c = a + sides, d = b + sides;
+                indices.AddRange([a, c, b, b, c, d]);
+            }
+        return new GardenMesh(centre, extent, bytes, [.. indices], [new GardenSubmesh(0, (uint)indices.Count, material)]);
     }
 
     /// <summary>A ball of twenty faces, one unit in radius: a droplet's mesh.</summary>

@@ -71,6 +71,20 @@ public class GardenSceneTests
         Assert.True(fast.M22 > slow.M22 && slow.M22 > slow.M11); Assert.Equal(0.02f, fast.M11, 5);
     }
 
+    [Fact] public void The_fountain_s_streams_rise_from_the_nozzle_and_fall_from_the_rim_to_the_pool()
+    {
+        var f = G.Fountain!; var jet = GardenGpu.JetColumn(f);
+        Assert.Equal(f.Nozzle, jet[0].At);
+        Assert.All(jet, p => { Assert.Equal(f.Nozzle.X, p.At.X); Assert.Equal(f.Nozzle.Z, p.At.Z); Assert.InRange(p.Radius, 0.01f, 0.05f); });
+        Assert.InRange(jet[^1].At.Y - f.Nozzle.Y, 0.6f, 0.95f);           // not above where the slowest droplet turns (0.82 m)
+        Assert.True(jet[^2].Radius > jet[0].Radius * 1.3f);                // thicker where it has slowed
+        var spill = GardenGpu.SpillStream(f, G.WaterLevel);
+        Assert.Equal(f.RimRadius, spill[0].At.X, 4); Assert.InRange(spill[0].At.Y, f.BowlLevel, f.BowlLevel + 0.05f);   // from the rim
+        Assert.Equal(G.WaterLevel, spill[^1].At.Y, 3);                    // to the pool's surface, and no farther
+        Assert.InRange(spill[^1].At.X - f.RimRadius, 0.1f, 0.35f);        // a hand's breadth out from under the rim
+        for (int k = 1; k < spill.Length; k++) { Assert.True(spill[k].At.Y < spill[k - 1].At.Y && spill[k].At.X > spill[k - 1].At.X); Assert.True(spill[k].Radius <= spill[k - 1].Radius); }
+    }
+
     [Fact] public void The_mirror_sphere_circles_the_fountain_over_the_water_clear_of_everything()
     {
         var sphere = G.Instances.Single(i => (i.Flags & GardenScene.SphereFlag) != 0); var mesh = G.Meshes[(int)sphere.Mesh];

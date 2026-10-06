@@ -241,9 +241,19 @@ float4 TransparentPS(VOut i) : SV_Target
     float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;
     if (m.Kind == KWater)
     {
-        n = abs(n.y) > 0.7 ? WaterNormal(i.World, Time) : n;   // a pool's surface ripples; a sheet falling from one basin to the next keeps its own slope
+        bool level = abs(n.y) > 0.7;
+        n = level ? WaterNormal(i.World, Time) : Running(n, i.World);   // a pool's surface ripples; a sheet or a stream of falling water keeps its own slope, jostled as it runs
         float fresnel = 0.02 + 0.98 * pow(1 - saturate(dot(n, v)), 5);
         float3 reflected;
+        if (!level)
+        {
+            // falling water: what it mirrors, the daylight caught in it, and the sun's glint; more of it shows than of a still pool
+            reflected = (Flags & 8) ? Mirrored(i.World, reflect(-v, n), 0.03, 1) : Sky(reflect(-v, n));
+            reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 200) * SunColor * SunOn * Shadow(i.World, n);
+            float3 caught = float3(0.82, 0.92, 0.96) * ((Bounced(i.World, n, 1) + Bounced(i.World, -n, 1)) * 1.5 + SunColor * SunOn * Shadow(i.World, n) * 0.25);
+            float a = fresnel + (1 - fresnel) * 0.6;
+            return float4(Pack((reflected * fresnel + caught * (1 - fresnel) * 0.6) / a), a);
+        }
         if ((Flags & 1) && abs(i.World.y - WaterLevel) < 0.2)
         {
             float2 uv = i.Position.xy / ViewSize + n.xz * 0.04;

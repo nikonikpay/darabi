@@ -209,6 +209,24 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
         Material m = Materials[h.Material];
         float3 v = -dir; Surface s = SurfaceAt(h, v);
 
+        if (m.Kind == KWater && abs(h.N.y) <= 0.7)
+        {
+            // falling water (a sheet between two basins, the fountain's streams): the ray bends going in and again coming out,
+            // or is turned back inside it
+            float3 n = Running(h.N, h.P); bool entering = dot(n, dir) < 0; if (!entering) n = -n;
+            float3 r = refract(dir, n, entering ? 1 / 1.33 : 1.33);
+            if (all(r == 0)) { origin = h.P + n * 0.004; dir = reflect(dir, n); continue; }
+            if (entering)
+            {
+                float f = 0.02 + 0.98 * pow(1 - saturate(dot(n, v)), 5);
+                color += weight * f * Glance(h.P + n * 0.004, reflect(dir, n), 400, seed);
+                // running water is full of air: part of the light that falls on it comes back white
+                Surface white = s; white.Albedo = float3(0.82, 0.92, 0.96); white.Roughness = 0.5; white.Metallic = 0; white.Normal = n; white.Sheen = 0;
+                color += weight * (1 - f) * 0.45 * (white.Albedo * Ambient(n) * 0.6 + Direct(white, h.P, v, true, seed));
+                weight *= (1 - f) * 0.55 * float3(0.93, 0.98, 0.98);
+            }
+            origin = h.P - n * 0.004; dir = r; continue;
+        }
         if (m.Kind == KWater)
         {
             float3 n = WaterNormal(h.P, Time); if (dot(n, v) < 0) n = -n;
