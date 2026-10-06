@@ -9,12 +9,12 @@ let dialog = null;
 
 export function start(boot) { on("testfail", (f) => show(f, boot)); }
 
-function show(f, boot) {
+export function show(f, boot) {
   dialog?.remove();
   // One block per kind of cause: three memory tests that broke share one explanation.
   const kinds = [...new Set(f.items.map((i) => i.kind))];
   const list = h("ul", { class: "fail-list" }, f.items.map((i) => h("li", {}, h("b", {}, i.name), h("span", { class: "fail-out" }, i.outcome),
-    i.detail ? h("code", { class: "fail-detail lat" }, i.detail) : null)), f.more ? h("li", { class: "caption" }, t("Fail_More", f.more)) : null);
+    i.detail ? h("code", { class: "fail-detail lat" }, i.detail) : null)), f.more ? h("li", { class: "fail-more caption" }, t("Fail_More", f.more)) : null);
   const advice = kinds.map((k) => h("section", { class: "fail-advice" },
     h("h3", {}, t("Fail_Likely")), h("p", {}, t(`Advice_${k}_Cause`)),
     h("h3", {}, t("Fail_Try")), h("ol", {}, t(`Advice_${k}_Steps`).split("|").map((s) => h("li", {}, s)))));
