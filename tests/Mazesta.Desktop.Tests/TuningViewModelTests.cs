@@ -30,6 +30,31 @@ public sealed class TuningViewModelTests : IDisposable
     private TuningViewModel Vm(IGpuTuningProvider provider, JsonStore<GpuProfileDocument>? store = null, bool answer = true)
         => new(provider, store ?? Store(), new InventoryCache(new Inv(), NullLogger<InventoryCache>.Instance), _ => answer, () => { }, a => { a(); return null!; }, _ => new NoLoad(), null, withTimer: false);
 
+    internal sealed class CurveCard(IReadOnlyList<VfPoint>? curve) : IGpuTuningDevice, IGpuStockCurve
+    {
+        private readonly Card _card = new("GPU-C");
+        public string Id => _card.Id; public string Name => _card.Name; public GpuTuningLimits Limits => _card.Limits;
+        public GpuTelemetry ReadTelemetry() => _card.ReadTelemetry(); public GpuTuningSettings ReadCurrent() => _card.ReadCurrent();
+        public TuningApplyResult Apply(GpuTuningSettings settings) => _card.Apply(settings); public TuningApplyResult Reset() => _card.Reset();
+        public IReadOnlyList<VfPoint>? ReadStockCurve() => curve;
+    }
+
+    [Fact] public void The_curve_the_driver_gives_is_shown_at_once_without_a_scan()
+    {
+        VfPoint[] table = [.. Enumerable.Range(0, 120).Select(i => new VfPoint(i < 8 ? 210 : 210 + (i - 7) * 15, 0.45 + i * 0.00625))];
+        var vm = Vm(new Provider(new CurveCard(table)));
+        Assert.True(vm.HasCurve);
+        Assert.InRange(vm.Curve!.Count, 20, 40);                                        // thinned for the editor
+        Assert.Equal(table[^1], vm.Curve[^1]); Assert.Equal(table[7], vm.Curve[0]);     // the top kept, the flat run at the bottom down to its last point
+        Assert.Contains(Loc.Format("Tuning_Curve_Driver", "", "").Split('·')[0].Trim(), vm.CurveInfo);
+    }
+
+    [Fact] public void A_card_whose_driver_gives_no_curve_has_none_until_it_is_measured()
+    {
+        var vm = Vm(new Provider(new CurveCard(null)));
+        Assert.False(vm.HasCurve); Assert.Equal(Loc.Get("Tuning_Curve_None"), vm.CurveInfo);
+    }
+
     [Fact] public void The_form_accepts_persian_digits_and_negative_offsets_and_names_the_field_that_is_not_a_number()
     {
         Assert.Equal(new GpuTuningSettings(-50, 500, 1905, null, 70), TuningViewModel.Parse("-50", "۵۰۰", true, "1905", false, "x", true, "۷۰").Settings);

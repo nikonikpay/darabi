@@ -111,9 +111,11 @@ public sealed partial class TuningViewModel : ObservableObject
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasCurve), nameof(CurveEstimate), nameof(CurveInfo))] private IReadOnlyList<VfPoint>? _curve;
     [ObservableProperty] private string _curveStatus = "";
-    private DateTimeOffset? _curveMeasuredAt;
+    private DateTimeOffset? _curveMeasuredAt; private bool _curveFromDriver;
     public bool HasCurve => Curve is { Count: >= 2 };
-    public string CurveInfo => Curve is { Count: >= 2 } c && _curveMeasuredAt is { } at
+    public string CurveInfo => Curve is { Count: >= 2 } d && _curveFromDriver
+        ? Loc.Format("Tuning_Curve_Driver", Ltr($"{d.Min(p => p.VoltageV):F3}–{d.Max(p => p.VoltageV):F3} V"), Ltr($"{d.Max(p => p.ClockMHz):F0} MHz"))
+        : Curve is { Count: >= 2 } c && _curveMeasuredAt is { } at
         ? Loc.Format("Tuning_Curve_Info", c.Count, Ltr($"{c.Min(p => p.VoltageV):F3}–{c.Max(p => p.VoltageV):F3} V"), Ltr($"{c.Max(p => p.ClockMHz):F0} MHz"), Ltr(at.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)))
         : Loc.Get("Tuning_Curve_None");
 
@@ -174,8 +176,23 @@ public sealed partial class TuningViewModel : ObservableObject
         ManualFan = now.FanPercent is not null; FanPercent = Num(now.FanPercent ?? 60);
         LoadProfiles();
         StartupProfile = _startupFile is null ? "" : GpuStartup.For(_startupFile, value.Id) ?? "";
+        // The curve is there as the page opens: the driver's own table when it gives one, else what a scan measured on this card before.
         var saved = _doc.Curves.FirstOrDefault(c => c.GpuId == value.Id);
-        _curveMeasuredAt = saved?.MeasuredAt; Curve = saved?.Points;
+        var driver = (value as IGpuStockCurve)?.ReadStockCurve();
+        _curveFromDriver = driver is not null; _curveMeasuredAt = saved?.MeasuredAt; Curve = driver is not null ? Thin(driver) : saved?.Points;
+        OnPropertyChanged(nameof(CurveInfo));
+    }
+
+    /// <summary>The driver's table has a point every few millivolts, far more than can be told apart, or caught, on the editor: about thirty
+    /// of them are kept, evenly, with the first and the last. The flat run at the bottom (the lowest clock, repeated) keeps its last point only.</summary>
+    internal static IReadOnlyList<VfPoint> Thin(IReadOnlyList<VfPoint> all, int about = 32)
+    {
+        int first = 0; while (first + 1 < all.Count && all[first + 1].ClockMHz <= all[first].ClockMHz) first++;
+        int n = all.Count - first, step = Math.Max(1, (int)Math.Ceiling(n / (double)about));
+        var kept = new List<VfPoint>();
+        for (int i = first; i < all.Count; i += step) kept.Add(all[i]);
+        if (kept[^1] != all[^1]) kept.Add(all[^1]);
+        return kept;
     }
 
     public string Ranges => Device?.Limits is not { } l ? "" : string.Join("   ·   ", new[]
@@ -309,7 +326,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!result.Ok) { CurveStatus = Loc.Get(result.ReasonKey!) + (result.Detail is { } d ? $" ({d})" : ""); return; }
         var curve = new GpuCurve(device.Id, DateTimeOffset.Now, result.Points);
         _doc.Curves.RemoveAll(c => c.GpuId == device.Id); _doc.Curves.Add(curve); _store.Save(_doc);
-        _curveMeasuredAt = curve.MeasuredAt; Curve = curve.Points; OnPropertyChanged(nameof(CurveInfo));
+        _curveFromDriver = false; _curveMeasuredAt = curve.MeasuredAt; Curve = curve.Points; OnPropertyChanged(nameof(CurveInfo));
         CurveStatus = Loc.Get("Tuning_Curve_Done");
     }
 

@@ -67,6 +67,13 @@ public interface IGpuTuningDevice
     TuningApplyResult Reset();
 }
 
+/// <summary>A card whose driver gives its stock voltage/frequency curve outright, with nothing put under load.</summary>
+public interface IGpuStockCurve
+{
+    /// <summary>The stock curve, lowest voltage first, or null when the driver gives none that can be trusted.</summary>
+    IReadOnlyList<VfPoint>? ReadStockCurve();
+}
+
 /// <summary>The tunable GPUs, or the reason there are none (no NVIDIA driver, no administrator rights, an unsupported vendor).</summary>
 public interface IGpuTuningProvider
 {

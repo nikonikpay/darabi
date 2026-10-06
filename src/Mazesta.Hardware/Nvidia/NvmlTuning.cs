@@ -30,8 +30,9 @@ public sealed class NvmlTuningProvider(ILogger log) : IGpuTuningProvider
 /// restrictive offset across states, so an offset set on P0 alone could be silently overruled by another state's. All settings need
 /// administrator rights (the app runs elevated) and are dropped by the driver on a reboot or driver reset.
 /// </summary>
-internal sealed class NvmlTuningDevice : IGpuTuningDevice
+internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
 {
+    public IReadOnlyList<VfPoint>? ReadStockCurve() => NvApiCurve.ReadStock(Name);
     private readonly IntPtr _h; private readonly int[] _pstates;
     public string Id { get; }
     public string Name { get; }

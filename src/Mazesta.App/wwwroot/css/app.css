@@ -603,6 +603,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .banner { display: flex; gap: 14px; align-items: center; background: color-mix(in oklab, var(--warn) 10%, var(--ink-2)); border: 1px solid color-mix(in oklab, var(--warn) 35%, transparent);
   border-radius: var(--r-panel); margin: 12px var(--pad) 0; padding: 10px 14px; font-size: 13px; }
 .banner .grow { flex: 1; }
+/* The profile the card is running: its row stands out from the others. */
+.report.active { background: color-mix(in oklab, var(--pass) 9%, transparent); border-radius: var(--r-ctl); box-shadow: inset 3px 0 0 var(--pass), inset 0 0 0 1px color-mix(in oklab, var(--pass) 40%, transparent); padding-inline: 12px; }
+[dir="rtl"] .report.active { box-shadow: inset -3px 0 0 var(--pass), inset 0 0 0 1px color-mix(in oklab, var(--pass) 40%, transparent); }
 .risk-banner { align-items: flex-start; margin-bottom: 14px; }
 .risk-banner p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.8; color: var(--paper-2); }
 .risk-ico svg { width: 22px; height: 22px; stroke: var(--warn); fill: none; flex: none; }

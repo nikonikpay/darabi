@@ -781,10 +781,10 @@
   <data name="Tuning_Live_Temperature" xml:space="preserve"><value>دما</value></data>
   <data name="Tuning_Live_Power" xml:space="preserve"><value>توان</value></data>
   <data name="Tuning_Curve_Title" xml:space="preserve"><value>منحنی ولتاژ / فرکانس</value></data>
-  <data name="Tuning_Curve_Scan" xml:space="preserve"><value>اندازه‌گیری منحنی</value></data>
+  <data name="Tuning_Curve_Scan" xml:space="preserve"><value>اندازه‌گیری دقیق</value></data>
   <data name="Tuning_Curve_Info" xml:space="preserve"><value>{0} نقطهٔ اندازه‌گیری‌شده · {1} · تا {2} · اندازه‌گیری {3}</value></data>
-  <data name="Tuning_Curve_None" xml:space="preserve"><value>منحنی این کارت هنوز اندازه‌گیری نشده است. «اندازه‌گیری منحنی» حدود یک و نیم دقیقه کارت را زیر بار می‌برد و در هر فرکانس، ولتاژی را که کارت واقعاً انتخاب می‌کند ثبت می‌کند.</value></data>
-  <data name="Tuning_Curve_Empty" xml:space="preserve"><value>برای ویرایش، ابتدا منحنی را اندازه‌گیری کنید</value></data>
+  <data name="Tuning_Curve_None" xml:space="preserve"><value>درایور منحنی این کارت را نداد. «اندازه‌گیری دقیق» حدود یک و نیم دقیقه کارت را زیر بار می‌برد و در هر فرکانس، ولتاژی را که کارت واقعاً انتخاب می‌کند ثبت می‌کند.</value></data>
+  <data name="Tuning_Curve_Empty" xml:space="preserve"><value>منحنی این کارت خوانده نشد</value></data>
   <data name="Tuning_Curve_LegendStock" xml:space="preserve"><value>منحنی کارخانه (اندازه‌گیری‌شده)</value></data>
   <data name="Tuning_Curve_LegendTuned" xml:space="preserve"><value>با تنظیمات فعلی فرم</value></data>
   <data name="Tuning_Curve_LegendLive" xml:space="preserve"><value>نقطهٔ کاری فعلی کارت</value></data>
@@ -807,8 +807,8 @@
   <data name="Tuning_AutoOverclock_Desc" xml:space="preserve"><value>از نتیجهٔ آندرولت شروع می‌کند و فرکانس هسته و حافظه را بالا می‌برد؛ فقط وقتی نگه داشته می‌شود که امتیاز اندازه‌گیری‌شده بالا برود.</value></data>
   <data name="Tuning_Log_Clean" xml:space="preserve"><value>درست</value></data>
   <data name="Tuning_Profiles_Empty" xml:space="preserve"><value>هنوز پروفایلی برای این کارت ذخیره نشده است.</value></data>
-  <data name="Tuning_LoadProfile" xml:space="preserve"><value>روی فرم</value></data>
-  <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>تنظیمات پروفایل را روی فرم و منحنی می‌آورد، بدون اعمال روی کارت.</value></data>
+  <data name="Tuning_LoadProfile" xml:space="preserve"><value>نمایش مقادیر</value></data>
+  <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>تنظیمات این پروفایل را روی اسلایدرها و منحنی نشان می‌دهد، بدون اعمال روی کارت.</value></data>
   <data name="Tuning_ProfileLoaded" xml:space="preserve"><value>تنظیمات «{0}» روی فرم آمد؛ برای اعمال، «اعمال» را بزنید.</value></data>
   <data name="Bench_RunSelected" xml:space="preserve"><value>اجرای انتخاب‌شده‌ها به ترتیب</value></data>
   <data name="Bench_SelectHint" xml:space="preserve"><value>برای اضافه شدن به صف تیک بزنید</value></data>
@@ -1110,7 +1110,7 @@
   <data name="Web_Diag_Waiting" xml:space="preserve"><value>خوانش‌های اول هنوز در حال بررسی است.</value></data>
   <data name="Web_Diag_NotesTitle" xml:space="preserve"><value>سخت‌افزار اندازه نمی‌گیرد:</value></data>
   <data name="Web_Diag_NotesNote" xml:space="preserve"><value>این‌ها مقداری ندارند چون خود دستگاه گزارششان نمی‌کند (ایراد برنامه نیست) و به‌صورت «دریافت نشد» نمایش داده می‌شوند.</value></data>
-  <data name="Tuning_Curve_Sub" xml:space="preserve"><value>منحنی اندازه‌گیری‌شده‌ی کارخانه و منحنی حاصل از تنظیمات شما</value></data>
+  <data name="Tuning_Curve_Sub" xml:space="preserve"><value>منحنی کارخانهٔ کارت و منحنی حاصل از تنظیمات شما</value></data>
   <data name="Tuning_Auto_Sub" xml:space="preserve"><value>مرحله‌به‌مرحله، هر مرحله زیر بار بررسی می‌شود</value></data>
   <data name="Tuning_Memory_Sub" xml:space="preserve"><value>تایمینگ‌ها و XMP/EXPO در بایوس تنظیم می‌شوند</value></data>
   <data name="Overlay_Activity" xml:space="preserve"><value>فعالیت</value></data>
@@ -1389,8 +1389,8 @@
   <data name="Web_Overlay_Preset_NameBad" xml:space="preserve"><value>نام خالی است، از ۴۰ نویسه بلندتر است، یا نام یکی از مجموعه‌های آماده است.</value></data>
   <data name="Web_Overlay_Preset_Delete" xml:space="preserve"><value>حذف این مجموعه</value></data>
   <data name="Web_Overlay_Preset_User_Note" xml:space="preserve"><value>مجموعه‌ای که خودتان ذخیره کرده‌اید</value></data>
-  <data name="Tuning_Startup" xml:space="preserve"><value>هنگام ورود</value></data>
-  <data name="Tuning_Startup_Hint" xml:space="preserve"><value>tray هر بار که وارد ویندوز می‌شوید کارت را در این پروفایل می‌گذارد (تنظیمات کارت با ری‌استارت پاک می‌شود). برای توقف، کارت را به حالت کارخانه برگردانید.</value></data>
+  <data name="Tuning_Startup" xml:space="preserve"><value>فعال</value></data>
+  <data name="Tuning_Startup_Hint" xml:space="preserve"><value>کارت با این پروفایل کار می‌کند و هر بار که وارد ویندوز می‌شوید دوباره اعمال می‌شود (تنظیمات کارت با ری‌استارت پاک می‌شود). برای توقف، کارت را به حالت کارخانه برگردانید.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>برای ورود بعدی ذخیره نشد: {0}</value></data>
   <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>گرافیک — باغ ایرانی (Direct3D 12، با گزینهٔ ری‌تریسینگ)</value></data>
   <data name="Test_Option_RayTracing" xml:space="preserve"><value>ری‌تریسینگ</value></data>
@@ -3233,4 +3233,6 @@
   <data name="Web_Dash_Machine" xml:space="preserve"><value>این کامپیوتر</value></data>
   <data name="Web_Dash_DriveFull" xml:space="preserve"><value>رو به پر شدن</value></data>
   <data name="Web_Dash_DrivesFull" xml:space="preserve"><value>{0} درایو رو به پر شدن</value></data>
+  <data name="Tuning_Curve_Driver" xml:space="preserve"><value>منحنی خود کارت، خوانده‌شده از درایور · {0} · تا {1}</value></data>
+  <data name="Tuning_Curve_Scan_Hint" xml:space="preserve"><value>منحنی همین حالا از درایور کارت نمایش داده می‌شود. این دکمه ولتاژی را که کارت زیر بار واقعاً در هر فرکانس انتخاب می‌کند اندازه می‌گیرد (حدود یک و نیم دقیقه).</value></data>
 </root>

@@ -781,10 +781,10 @@
   <data name="Tuning_Live_Temperature" xml:space="preserve"><value>Temperature</value></data>
   <data name="Tuning_Live_Power" xml:space="preserve"><value>Power</value></data>
   <data name="Tuning_Curve_Title" xml:space="preserve"><value>Voltage / frequency curve</value></data>
-  <data name="Tuning_Curve_Scan" xml:space="preserve"><value>Measure the curve</value></data>
+  <data name="Tuning_Curve_Scan" xml:space="preserve"><value>Measure precisely</value></data>
   <data name="Tuning_Curve_Info" xml:space="preserve"><value>{0} measured points · {1} · up to {2} · measured {3}</value></data>
-  <data name="Tuning_Curve_None" xml:space="preserve"><value>This card's curve has not been measured yet. “Measure the curve” loads the card for about a minute and a half and records, at each clock, the voltage the card really chooses.</value></data>
-  <data name="Tuning_Curve_Empty" xml:space="preserve"><value>Measure the curve to edit it</value></data>
+  <data name="Tuning_Curve_None" xml:space="preserve"><value>The driver did not give this card's curve. "Measure precisely" runs the card under load for about a minute and a half and records the voltage it really chooses at each frequency.</value></data>
+  <data name="Tuning_Curve_Empty" xml:space="preserve"><value>This card's curve could not be read</value></data>
   <data name="Tuning_Curve_LegendStock" xml:space="preserve"><value>Stock (measured)</value></data>
   <data name="Tuning_Curve_LegendTuned" xml:space="preserve"><value>With the settings on the form</value></data>
   <data name="Tuning_Curve_LegendLive" xml:space="preserve"><value>Where the card runs now</value></data>
@@ -807,8 +807,8 @@
   <data name="Tuning_AutoOverclock_Desc" xml:space="preserve"><value>Starts from the undervolt and raises the core and memory clocks; kept only when the measured score rises.</value></data>
   <data name="Tuning_Log_Clean" xml:space="preserve"><value>correct</value></data>
   <data name="Tuning_Profiles_Empty" xml:space="preserve"><value>No profile saved for this card yet.</value></data>
-  <data name="Tuning_LoadProfile" xml:space="preserve"><value>To the form</value></data>
-  <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>Puts the profile's settings on the form and the curve without applying them.</value></data>
+  <data name="Tuning_LoadProfile" xml:space="preserve"><value>Show values</value></data>
+  <data name="Tuning_LoadProfile_Hint" xml:space="preserve"><value>Shows this profile's settings on the sliders and the curve, without applying them to the card.</value></data>
   <data name="Tuning_ProfileLoaded" xml:space="preserve"><value>The settings of “{0}” are on the form; press Apply to use them.</value></data>
   <data name="Bench_RunSelected" xml:space="preserve"><value>Run selected in order</value></data>
   <data name="Bench_SelectHint" xml:space="preserve"><value>Tick to include in the queue</value></data>
@@ -1110,7 +1110,7 @@
   <data name="Web_Diag_Waiting" xml:space="preserve"><value>The first readings are still being checked.</value></data>
   <data name="Web_Diag_NotesTitle" xml:space="preserve"><value>Not measured by the hardware:</value></data>
   <data name="Web_Diag_NotesNote" xml:space="preserve"><value>these have no value because the device does not report them (not a fault of the app); they are shown as not available.</value></data>
-  <data name="Tuning_Curve_Sub" xml:space="preserve"><value>Measured stock curve and the curve your settings give</value></data>
+  <data name="Tuning_Curve_Sub" xml:space="preserve"><value>The card's factory curve and the curve your settings make</value></data>
   <data name="Tuning_Auto_Sub" xml:space="preserve"><value>Step by step, each step checked under load</value></data>
   <data name="Tuning_Memory_Sub" xml:space="preserve"><value>Timings and XMP/EXPO are set in the BIOS</value></data>
   <data name="Overlay_Activity" xml:space="preserve"><value>Activity</value></data>
@@ -1389,8 +1389,8 @@ The update services stopped and disabled</value></data>
   <data name="Web_Overlay_Preset_NameBad" xml:space="preserve"><value>The name is empty, longer than 40 characters, or one of the ready-made sets&apos;.</value></data>
   <data name="Web_Overlay_Preset_Delete" xml:space="preserve"><value>Delete this set</value></data>
   <data name="Web_Overlay_Preset_User_Note" xml:space="preserve"><value>A set you saved</value></data>
-  <data name="Tuning_Startup" xml:space="preserve"><value>At sign-in</value></data>
-  <data name="Tuning_Startup_Hint" xml:space="preserve"><value>The tray puts the card in this profile at every Windows sign-in (GPU settings are lost on a reboot). Put the card back to stock to stop it.</value></data>
+  <data name="Tuning_Startup" xml:space="preserve"><value>Active</value></data>
+  <data name="Tuning_Startup_Hint" xml:space="preserve"><value>The card is running this profile, and it is put back each time you sign in to Windows (the card's settings are cleared by a restart). To stop, return the card to factory settings.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>It was not kept for the next sign-in: {0}</value></data>
   <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>Graphics — Persian garden (Direct3D 12, ray tracing optional)</value></data>
   <data name="Test_Option_RayTracing" xml:space="preserve"><value>Ray tracing</value></data>
@@ -3233,4 +3233,6 @@ Cancel: stop.</value></data>
   <data name="Web_Dash_Machine" xml:space="preserve"><value>This computer</value></data>
   <data name="Web_Dash_DriveFull" xml:space="preserve"><value>nearly full</value></data>
   <data name="Web_Dash_DrivesFull" xml:space="preserve"><value>{0} nearly full</value></data>
+  <data name="Tuning_Curve_Driver" xml:space="preserve"><value>The card's own curve, read from its driver · {0} · up to {1}</value></data>
+  <data name="Tuning_Curve_Scan_Hint" xml:space="preserve"><value>The curve is already shown from the card's driver. This measures, under load, the voltage the card really chooses at each frequency (about a minute and a half).</value></data>
 </root>

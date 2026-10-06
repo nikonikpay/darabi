@@ -139,7 +139,7 @@ export function mount(el) {
     if (final) send(); else sendTimer = setTimeout(send, 90);
   });
   const curveInfo = h("p", { class: "caption" }), estimate = h("div", { class: "estimate", hidden: true }), curveStatus = h("p", { class: "h3", style: { marginTop: "12px" } });
-  const scan = h("button", { class: "btn primary", onclick: () => exec("scanCurve") }, t("Tuning_Curve_Scan"));
+  const scan = h("button", { class: "btn", title: t("Tuning_Curve_Scan_Hint"), onclick: () => exec("scanCurve") }, t("Tuning_Curve_Scan"));
 
   // Manual controls: a slider and an exact field per setting, and a switch for the settings that are off unless turned on.
   const f = {};
@@ -236,9 +236,9 @@ export function mount(el) {
     const pk = JSON.stringify(x.profiles);
     if (pk !== shownProfiles) {
       shownProfiles = pk;
-      profiles.replaceChildren(...(x.profiles.length ? x.profiles.map((p) => h("div", { class: "report", style: { gridTemplateColumns: "auto 1fr auto" } },
+      profiles.replaceChildren(...(x.profiles.length ? x.profiles.map((p) => h("div", { class: `report ${p.startup ? "active" : ""}`, style: { gridTemplateColumns: "auto 1fr auto" } },
         h("span", { class: `pill ${p.kind === "Manual" ? "none" : "run"}` }, p.kindText),
-        h("span", {}, h("b", {}, p.name), "  ", h("span", { class: "caption lat" }, p.created), p.startup ? [" ", h("span", { class: "pill run", title: t("Tuning_Startup_Hint") }, t("Tuning_Startup"))] : null),
+        h("span", {}, h("b", {}, p.name), "  ", h("span", { class: "caption lat" }, p.created), p.startup ? [" ", h("span", { class: "pill pass", title: t("Tuning_Startup_Hint") }, t("Tuning_Startup"))] : null),
         h("div", { class: "acts", style: { gridColumn: 3, gridRow: "1 / 3" } },
           h("button", { class: "btn", title: t("Tuning_LoadProfile_Hint"), onclick: () => exec("loadProfile", { index: String(p.index) }) }, t("Tuning_LoadProfile")),
           h("button", { class: "btn primary", onclick: () => risky("manual", "applyProfile", { index: String(p.index) }) }, t("Tuning_Apply")),
