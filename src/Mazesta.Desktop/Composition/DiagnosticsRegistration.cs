@@ -29,6 +29,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor>(new GpuStressExecutor(GpuStressProfile.Pulse));
         s.AddSingleton<ITestExecutor, GpuVramExecutor>();
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
+        s.AddSingleton<ITestExecutor, GpuAiExecutor>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor>();
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
@@ -49,7 +50,6 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: false));
         s.AddSingleton<IBenchmark>(new CpuBenchmark(allThreads: true));
         s.AddSingleton<IBenchmark, MemoryBenchmark>();
-        s.AddSingleton<IBenchmark, GpuRasterBenchmark>();
         s.AddSingleton<IBenchmark, GpuSceneBenchmark>();
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();

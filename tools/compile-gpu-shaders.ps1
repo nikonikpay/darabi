@@ -17,10 +17,6 @@ if (-not $dxc) {
 }
 $dir = Join-Path $PSScriptRoot '..\src\Mazesta.Diagnostics.Gpu\Shaders'
 $jobs = @(
-    @('Raster.hlsl', 'SceneVS', 'vs_6_0', 'RasterSceneVS.cso'),
-    @('Raster.hlsl', 'ScenePS', 'ps_6_0', 'RasterScenePS.cso'),
-    @('Raster.hlsl', 'FillVS', 'vs_6_0', 'RasterFillVS.cso'),
-    @('Raster.hlsl', 'FillPS', 'ps_6_0', 'RasterFillPS.cso'),
     @('RayQuery.hlsl', 'Main', 'cs_6_5', 'RayQuery.cso'),
     @('GardenRaster.hlsl', 'MainVS', 'vs_6_0', 'GardenMainVS.cso'),
     @('GardenRaster.hlsl', 'ShadowVS', 'vs_6_0', 'GardenShadowVS.cso'),

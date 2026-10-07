@@ -18,13 +18,13 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
     public const string ResolutionOption = "resolution", QualityOption = "quality", DefaultResolution = "1920x1080";
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K can be measured on any monitor.
     private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, DefaultResolution,
-        () => [new("1280x720", "1280 × 720 (HD)"), new(DefaultResolution, "1920 × 1080 (Full HD)"), new("2560x1440", "2560 × 1440 (2K)"), new("3840x2160", "3840 × 2160 (4K)")]);
+        GpuSceneExecutor.Sizes);
     private static readonly TestOption RasterQuality = new(QualityOption, "Bench_Option_Quality", TestOptionKind.Choice, "3",
         () => [new("1", "Test_GpuLoad_Light", true, "shadows 2048 · no MSAA · no pool reflection"), new("2", "Test_GpuLoad_Medium", true, "shadows 2048 · MSAA 2× · pool reflection 1/2"),
                new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")], When: GpuSceneExecutor.RayTracingOption + "=off");
     /// <summary>Ray tracing starts on where the card has DXR 1.1, off otherwise.</summary>
     private static readonly TestOption RayTracing = GpuSceneExecutor.RayTracing with { Preferred = () => GpuFeatures.RayTracingAvailability(TestOptions.None(Scene!)) is null ? "on" : "off" };
-    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.Overlay]);
+    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.FullScreen, GpuSceneExecutor.Overlay]);
     public TestDefinition Definition => Scene;
     public HardwareKind Component => HardwareKind.Gpu;
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(GpuSceneExecutor.RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -42,7 +42,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         int quality = !rayTraced && int.TryParse(options.Get(QualityOption), out int q) ? q : 3;
         uint load = (uint)Math.Clamp(quality, 1, 4);
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12";
-        using var window = new TestWindow($"Mazesta — {mode} — benchmark", width, height, false);
+        using var window = new TestWindow($"Mazesta — {mode} — benchmark", width, height, options.Get(GpuSceneExecutor.FullScreenOption) == "on");
         using var view = new SceneView(s, window, width, height, rayTraced, load, null, null);
         var renderer = view.Renderer; var garden = view.Garden;
         var gpu = GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName);

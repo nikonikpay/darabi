@@ -18,21 +18,27 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen";
     /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
     /// test's window shows and hides it while it runs. It is laid over the finished frame and is outside what a benchmark times.</summary>
     internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>Ray tracing on or off: the same garden, its shadows and mirror images found with rays (DXR 1.1) instead of maps.</summary>
     internal static readonly TestOption RayTracing = new(RayTracingOption, "Test_Option_RayTracing", TestOptionKind.Choice, "off",
         () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1)")]);
+    /// <summary>The window covers the screen with no border (the frame is still drawn at the resolution chosen and shown scaled to the screen): on unless switched off.</summary>
+    internal static readonly TestOption FullScreen = new(FullScreenOption, "Test_Option_FullScreen", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
+    /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>
+    internal static string SizeLabel(string text) => "⁦" + text + "⁩";
+    internal static IReadOnlyList<OptionChoice> Sizes() => [new("1280x720", SizeLabel("1280 × 720 (HD)")), new("1920x1080", SizeLabel("1920 × 1080 (Full HD)")), new("2560x1440", SizeLabel("2560 × 1440 (2K)")), new("3840x2160", SizeLabel("3840 × 2160 (4K)"))];
+    /// <summary>Ray tracing starts on where the card has DXR 1.1, off otherwise.</summary>
+    private static readonly TestOption RayTracingPreferred = RayTracing with { Preferred = () => GpuFeatures.RayTracingAvailability(TestOptions.None(Scene!)) is null ? "on" : "off" };
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K load can be
     // tested on any monitor; full screen draws at the screen's own size.
     private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, "1920x1080",
-        () => [new("1280x720", "1280 × 720 (HD)"), new("1920x1080", "1920 × 1080 (Full HD)"), new("2560x1440", "2560 × 1440 (2K)"), new("3840x2160", "3840 × 2160 (4K)"),
-               new("fullscreen", "Test_Resolution_FullScreen", true)]);
+        Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracing, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, FullScreen, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -69,13 +75,13 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
     private TestRunResult Run(TestExecutionRequest request, TestOptions options, GraphicsDevice device, DateTimeOffset started, CancellationToken ct)
     {
         var custom = SceneModel.LoadCustom(out string? modelProblem);
-        string res = options.Get(ResolutionOption); bool full = res == "fullscreen", rayTraced = options.Get(RayTracingOption) == "on";
-        var (w, h) = full ? (0, 0) : ParseSize(res);
+        string res = options.Get(ResolutionOption); bool screenSize = res == "fullscreen" /* an older saved choice: the screen's own size */, full = screenSize || options.Get(FullScreenOption) == "on", rayTraced = options.Get(RayTracingOption) == "on";
+        var (w, h) = screenSize ? (0, 0) : ParseSize(res);
         uint load = (uint)Math.Clamp(int.TryParse(options.Get(LoadOption), out int l) ? l : 3, 1, 4);
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12", level = LoadNames[load - 1];
         using var session = new D3D12Session(device);
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
-        if (full) (w, h) = (window.Width, window.Height);
+        if (screenSize) (w, h) = (window.Width, window.Height);
         using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem);
         string work = renderer.Work;
         var model = renderer.Garden;

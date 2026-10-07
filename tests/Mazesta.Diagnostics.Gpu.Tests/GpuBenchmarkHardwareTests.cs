@@ -18,7 +18,6 @@ public class GpuBenchmarkHardwareTests(ITestOutputHelper output)
         return result;
     }
 
-    [Fact] public async Task Direct3D_rasterisation_measures_frames_triangles_and_fill() { if (!NoGpu) Assert.Equal(3, (await Run(new GpuRasterBenchmark())).Metrics.Count); }
     [Fact] public async Task Ray_tracing_measures_frames_and_rays_or_is_unsupported() => await Run(new GpuRayTracingBenchmark());
     [Fact] public async Task Ai_measures_every_precision_the_gpu_supports() => await Run(new GpuAiBenchmark());
     [Fact] public async Task The_garden_measures_its_frame_rate_and_1_percent_low() { if (!NoGpu) Assert.Equal(2, (await Run(new GpuSceneBenchmark())).Metrics.Count(m => m.Unit == "FPS")); }
@@ -26,7 +25,7 @@ public class GpuBenchmarkHardwareTests(ITestOutputHelper output)
     {
         if (NoGpu) return;
         using var cts = new CancellationTokenSource(); cts.Cancel();
-        var r = await new GpuRasterBenchmark().RunAsync(new TestExecutionRequest(3, new SystemClock(), null, null), cts.Token);
+        var r = await new GpuAiBenchmark().RunAsync(new TestExecutionRequest(3, new SystemClock(), null, null), cts.Token);
         Assert.Equal(BenchmarkStatus.Cancelled, r.Status); Assert.Empty(r.Metrics);
     }
 }

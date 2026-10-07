@@ -1391,7 +1391,7 @@
   <data name="Tuning_Startup" xml:space="preserve"><value>فعال</value></data>
   <data name="Tuning_Startup_Hint" xml:space="preserve"><value>کارت با این پروفایل کار می‌کند و هر بار که وارد ویندوز می‌شوید دوباره اعمال می‌شود (تنظیمات کارت با ری‌استارت پاک می‌شود). برای توقف، کارت را به حالت کارخانه برگردانید.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>برای ورود بعدی ذخیره نشد: {0}</value></data>
-  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>گرافیک — باغ ایرانی (Direct3D 12، با گزینهٔ ری‌تریسینگ)</value></data>
+  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>صحنه سه‌بعدی GPU در پنجره (Direct3D 12، با گزینهٔ ری‌تریسینگ)</value></data>
   <data name="Test_Option_RayTracing" xml:space="preserve"><value>ری‌تریسینگ</value></data>
   <data name="Test_RayTracing_Off" xml:space="preserve"><value>خاموش</value></data>
   <data name="Test_RayTracing_On" xml:space="preserve"><value>روشن (DXR 1.1)</value></data>
@@ -3252,4 +3252,6 @@
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>این تست‌ها ناموفق بودند: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>روی هر LED کلیک کنید تا فقط رنگ همان یکی عوض شود.</value></data>
+  <data name="Test_Option_FullScreen" xml:space="preserve"><value>تمام‌صفحه</value></data>
+  <data name="Test_Gpu_Ai" xml:space="preserve"><value>GPU · هوش مصنوعی (DirectML: FP32، FP16، INT8)</value></data>
 </root>

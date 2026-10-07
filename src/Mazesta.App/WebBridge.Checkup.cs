@@ -50,7 +50,7 @@ public sealed partial class WebBridge
     private Func<object> CheckupState = () => new { };
 
     /// <summary>The benchmarks the assistant's older diagnosis ran; kept for the benchmark runs the page still judges when they are run.</summary>
-    private static readonly string[] CheckupBenchmarks = ["bench.cpu.multi", "bench.cpu.single", "bench.memory", "bench.gpu.d3d"];
+    private static readonly string[] CheckupBenchmarks = ["bench.cpu.multi", "bench.cpu.single", "bench.memory", "bench.gpu.scene.d3d"];
     /// <summary>The Benchmarks page's view model, which the checkup drives so a run shows on that page as any other would.</summary>
     private BenchmarksViewModel? _benchVm;
 

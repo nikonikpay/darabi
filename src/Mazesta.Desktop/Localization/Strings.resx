@@ -1391,7 +1391,7 @@ The update services stopped and disabled</value></data>
   <data name="Tuning_Startup" xml:space="preserve"><value>Active</value></data>
   <data name="Tuning_Startup_Hint" xml:space="preserve"><value>The card is running this profile, and it is put back each time you sign in to Windows (the card's settings are cleared by a restart). To stop, return the card to factory settings.</value></data>
   <data name="Tuning_StartupNotSaved" xml:space="preserve"><value>It was not kept for the next sign-in: {0}</value></data>
-  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>Graphics — Persian garden (Direct3D 12, ray tracing optional)</value></data>
+  <data name="Bench_Gpu_SceneD3D" xml:space="preserve"><value>GPU 3-D scene in a window (Direct3D 12, ray tracing optional)</value></data>
   <data name="Test_Option_RayTracing" xml:space="preserve"><value>Ray tracing</value></data>
   <data name="Test_RayTracing_Off" xml:space="preserve"><value>Off</value></data>
   <data name="Test_RayTracing_On" xml:space="preserve"><value>On (DXR 1.1)</value></data>
@@ -3252,4 +3252,6 @@ Cancel: stop.</value></data>
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>These tests failed: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>Click an LED to change the colour of that one alone.</value></data>
+  <data name="Test_Option_FullScreen" xml:space="preserve"><value>Full screen</value></data>
+  <data name="Test_Gpu_Ai" xml:space="preserve"><value>GPU · AI compute (DirectML: FP32, FP16, INT8)</value></data>
 </root>
