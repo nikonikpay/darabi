@@ -39,20 +39,20 @@ public sealed class SiteClient(Uri api, HttpClient http)
     public Uri Api => api;
 
     public async Task<SiteStatus> StatusAsync(string? key, CancellationToken ct)
-        => Read<SiteStatus>(await SendAsync(HttpMethod.Get, "status?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(), key, null, ct).ConfigureAwait(false));
+        => Read<SiteStatus>(await SendAsync(HttpMethod.Get, "status?t=" + Nonce(), key, null, ct).ConfigureAwait(false));
 
     public async Task<SiteReportReceipt> SendReportAsync(string key, SiteReport report, CancellationToken ct)
         => Read<SiteReportReceipt>(await SendAsync(HttpMethod.Post, "reports", key, JsonSerializer.Serialize(report, Json), ct).ConfigureAwait(false));
 
     /// <summary>The reports the site keeps, newest first; the site's key or its reading key may ask.</summary>
     public async Task<IReadOnlyList<SiteReportItem>> ReportsAsync(string key, CancellationToken ct)
-        => Read<ReportList>(await SendAsync(HttpMethod.Get, "reports?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(), key, null, ct).ConfigureAwait(false)).Reports;
+        => Read<ReportList>(await SendAsync(HttpMethod.Get, "reports?t=" + Nonce(), key, null, ct).ConfigureAwait(false)).Reports;
     private sealed record ReportList(List<SiteReportItem> Reports);
     private sealed record ReportPage(string Html);
 
     /// <summary>One report's summary page (HTML with nothing to load or run) as it was sent.</summary>
     public async Task<string> ReportHtmlAsync(string key, string id, CancellationToken ct)
-        => Read<ReportPage>(await SendAsync(HttpMethod.Get, $"reports/{Uri.EscapeDataString(id)}?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(), key, null, ct).ConfigureAwait(false)).Html;
+        => Read<ReportPage>(await SendAsync(HttpMethod.Get, $"reports/{Uri.EscapeDataString(id)}?t=" + Nonce(), key, null, ct).ConfigureAwait(false)).Html;
 
     /// <summary>Benchmark runs (as the run log writes them), which benchmarks count higher as better, and the shop's marks on runs. At most
     /// <see cref="RunsPerRequest"/> runs a call; the site takes each run once, by its id.</summary>
@@ -108,7 +108,7 @@ public sealed class SiteClient(Uri api, HttpClient http)
     /// <summary>The site's comparison lists as a manifest (file, size, SHA-256 each), read through the same checks as the signed one's entries.</summary>
     public async Task<UpdateManifest> ListsAsync(CancellationToken ct)
     {
-        var json = await SendAsync(HttpMethod.Get, "bench/index?t=" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(), null, null, ct).ConfigureAwait(false);
+        var json = await SendAsync(HttpMethod.Get, "bench/index?t=" + Nonce(), null, null, ct).ConfigureAwait(false);
         try
         {
             var files = JsonNode.Parse(json)?["files"] as JsonArray ?? throw new SiteException("The site's list index is not understood.");
@@ -121,6 +121,10 @@ public sealed class SiteClient(Uri api, HttpClient http)
     /// <summary>Fetches the lists that changed into <paramref name="folder"/> and removes the ones the site no longer has.</summary>
     public async Task<DataSync.Result> SyncListsAsync(string folder, CancellationToken ct)
         => await DataSync.SyncAsync(new UpdateClient(api, "", http), await ListsAsync(ct).ConfigureAwait(false), folder, ct).ConfigureAwait(false);
+
+    /// <summary>The site's page cache (LiteSpeed) keeps a REST GET for a week by its address alone, whatever the key header says, so two calls in one
+    /// second (the one without the key, the one with it) would get the same cached answer: every call gets an address of its own.</summary>
+    private static string Nonce() => Guid.NewGuid().ToString("N");
 
     private async Task<string> SendAsync(HttpMethod method, string path, string? key, string? body, CancellationToken ct)
     {
