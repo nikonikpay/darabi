@@ -3323,5 +3323,10 @@ Cancel: stop.</value></data>
   <data name="Test_Option_Smoothing" xml:space="preserve"><value>Mesh smoothing (subdivision)</value></data>
   <data name="Test_Smooth_1" xml:space="preserve"><value>Smooth, 4× the triangles</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
+  <data name="Test_Option_Upscaling" xml:space="preserve"><value>NVIDIA Image Scaling (NIS)</value></data>
+  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>Sharpen (drawn at full size)</value></data>
+  <data name="Test_Nis_Quality" xml:space="preserve"><value>Quality: drawn at 77 %, scaled up</value></data>
+  <data name="Test_Nis_Balanced" xml:space="preserve"><value>Balanced: drawn at 67 %, scaled up</value></data>
+  <data name="Test_Nis_Performance" xml:space="preserve"><value>Performance: drawn at 59 %, scaled up</value></data>
   <data name="Test_Smooth_2" xml:space="preserve"><value>Smooth, 16× the triangles</value></data>
 </root>

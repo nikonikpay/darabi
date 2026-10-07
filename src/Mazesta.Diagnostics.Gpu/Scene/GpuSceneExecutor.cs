@@ -18,7 +18,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", SmoothingOption = "smoothing", WeatherOption = "weather";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", SmoothingOption = "smoothing", WeatherOption = "weather", UpscalingOption = "upscaling";
     /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
     /// test's window shows and hides it while it runs. It is laid over the finished frame and is outside what a benchmark times.</summary>
     internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
@@ -35,6 +35,11 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     /// On unless switched off; it loads the processor and the memory (the grid of solids it collides with), not the card.</summary>
     internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "on",
         () => [new("off", "Test_RayTracing_Off", true, "no rain, no wind-blown leaves"), new("on", "Test_Switch_On", true, "rain, gusts, leaves and twigs simulated on the processor")]);
+    /// <summary>NVIDIA Image Scaling (<see cref="GardenNis"/>): the frame finished with the SDK's adaptive sharpener at its own size (the default), or the garden drawn at a share of the
+    /// window's size and scaled up to it with the SDK's edge-directed scaler (faster, and the edges stay smooth); off, the lens's picture is the frame.</summary>
+    internal static readonly TestOption Upscaling = new(UpscalingOption, "Test_Option_Upscaling", TestOptionKind.Choice, "sharpen",
+        () => [new("off", "Test_RayTracing_Off", true, "the lens's picture as it is"), new("sharpen", "Test_Nis_Sharpen", true, "NIS adaptive sharpening, drawn at full size"), new("quality", "Test_Nis_Quality", true, "drawn at 77 % of the size, NIS scales it up"),
+               new("balanced", "Test_Nis_Balanced", true, "drawn at 67 % of the size, NIS scales it up"), new("performance", "Test_Nis_Performance", true, "drawn at 59 % of the size, NIS scales it up")]);
     /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>
     internal static string SizeLabel(string text) => "⁦" + text + "⁩";
     internal static IReadOnlyList<OptionChoice> Sizes() => [new("1280x720", SizeLabel("1280 × 720 (HD)")), new("1920x1080", SizeLabel("1920 × 1080 (Full HD)")), new("2560x1440", SizeLabel("2560 × 1440 (2K)")), new("3840x2160", SizeLabel("3840 × 2160 (4K)"))];
@@ -46,7 +51,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Smoothing, Weather, FullScreen, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Smoothing, Weather, Upscaling, FullScreen, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -90,7 +95,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         using var session = new D3D12Session(device);
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (screenSize) (w, h) = (window.Width, window.Height);
-        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, int.TryParse(options.Get(SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0, options.Get(WeatherOption) != "off");
+        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, int.TryParse(options.Get(SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0, options.Get(WeatherOption) != "off", NisMode.Parse(options.Get(UpscalingOption)));
         string work = renderer.Work;
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";

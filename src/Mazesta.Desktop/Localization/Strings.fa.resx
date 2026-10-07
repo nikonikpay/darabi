@@ -3323,5 +3323,10 @@
   <data name="Test_Option_Smoothing" xml:space="preserve"><value>نرم‌سازی مش (تقسیم مثلث‌ها)</value></data>
   <data name="Test_Smooth_1" xml:space="preserve"><value>نرم، ۴ برابر مثلث</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
+  <data name="Test_Option_Upscaling" xml:space="preserve"><value>انویدیا ایمیج اسکیلینگ (NIS)</value></data>
+  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>وضوح‌دهی (با اندازهٔ کامل)</value></data>
+  <data name="Test_Nis_Quality" xml:space="preserve"><value>کیفیت: ۷۷٪ رسم و بزرگ‌نمایی</value></data>
+  <data name="Test_Nis_Balanced" xml:space="preserve"><value>متعادل: ۶۷٪ رسم و بزرگ‌نمایی</value></data>
+  <data name="Test_Nis_Performance" xml:space="preserve"><value>کارایی: ۵۹٪ رسم و بزرگ‌نمایی</value></data>
   <data name="Test_Smooth_2" xml:space="preserve"><value>نرم، ۱۶ برابر مثلث</value></data>
 </root>
