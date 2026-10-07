@@ -55,7 +55,7 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12";
         var nis = NisMode.Parse(options.Get(GpuSceneExecutor.UpscalingOption));
         using var window = new TestWindow($"Mazesta — {mode} — benchmark", width, height, options.Get(GpuSceneExecutor.FullScreenOption) == "on");
-        using var view = new SceneView(s, window, width, height, rayTraced, load, null, null, int.TryParse(options.Get(GpuSceneExecutor.SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0, options.Get(GpuSceneExecutor.WeatherOption) != "off", nis);
+        using var view = new SceneView(s, window, width, height, rayTraced, load, null, null, int.TryParse(options.Get(GpuSceneExecutor.SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0, WeatherLevel.Parse(options.Get(GpuSceneExecutor.WeatherOption)), nis);
         var renderer = view.Renderer; var garden = view.Garden;
         var gpu = GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName);
         view.Overlay.Visible = options.Get(GpuSceneExecutor.OverlayOption) != "off";
@@ -129,7 +129,7 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         if (probe is { } pr) metrics.AddRange([new("Bench_Ram_Bandwidth", pr.Triad, "GB/s"), new("Bench_Ram_Latency", pr.Latency, "ns")]);
         s.Setup.AddRange(setup);
         return (metrics,
-            $"Persian garden in a window at {width}x{height}, {n} frames: " + (whole ? $"{walks:F0} walk{(Math.Round(walks) == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" : $"the first {runSeconds:F0} s of the {GardenCamera.Loop:F0} s walk of the garden (not the whole route: not compared with other runs)") + $"; {how}; {garden.Instances.Length:N0} objects" + (garden.Weather is { } w2 ? $"; weather on {GardenWeather.Threads} threads: {GardenWeather.Rain:N0} raindrops, {GardenWeather.Leaves:N0} leaves, {GardenWeather.Twigs:N0} twigs, a {w2.VoxelBytes / 1048576.0:F0} MB grid of solids" : ""));
+            $"Persian garden in a window at {width}x{height}, {n} frames: " + (whole ? $"{walks:F0} walk{(Math.Round(walks) == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" : $"the first {runSeconds:F0} s of the {GardenCamera.Loop:F0} s walk of the garden (not the whole route: not compared with other runs)") + $"; {how}; {garden.Instances.Length:N0} objects" + (garden.Weather is { } w2 ? $"; weather on {GardenWeather.Threads} threads: {w2.Level.Rain:N0} raindrops, {w2.Level.Leaves:N0} leaves, {w2.Level.Twigs:N0} twigs, a {w2.VoxelBytes / 1048576.0:F0} MB grid of solids" : ""));
 
         // The readout shows only what was measured: a sensor this card does not report (or has not reported in the last seconds) is left out.
         void ShowReadout(double fps, double mean)

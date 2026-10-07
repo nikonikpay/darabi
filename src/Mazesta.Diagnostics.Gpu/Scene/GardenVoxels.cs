@@ -13,15 +13,15 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 internal sealed class GardenVoxels
 {
     /// <summary>A cell's side, in metres: the leaf cards and the thinnest rails of the scene are a cell or less thick, so they mark one cell.</summary>
-    public const float Cell = 0.125f;
+    public float Cell { get; }
     public Vector3 Origin { get; } public int X { get; } public int Y { get; } public int Z { get; }
-    private readonly byte[] _cells; private readonly float _inverse = 1 / Cell;
+    private readonly byte[] _cells; private readonly float _inverse;
     public long Bytes => _cells.LongLength;
     public long Filled { get; private set; }
 
-    private GardenVoxels(Vector3 low, Vector3 high)
+    private GardenVoxels(Vector3 low, Vector3 high, float cell)
     {
-        Origin = low; X = (int)MathF.Ceiling((high.X - low.X) / Cell) + 1; Y = (int)MathF.Ceiling((high.Y - low.Y) / Cell) + 1; Z = (int)MathF.Ceiling((high.Z - low.Z) / Cell) + 1;
+        Cell = cell; _inverse = 1 / cell; Origin = low; X = (int)MathF.Ceiling((high.X - low.X) / Cell) + 1; Y = (int)MathF.Ceiling((high.Y - low.Y) / Cell) + 1; Z = (int)MathF.Ceiling((high.Z - low.Z) / Cell) + 1;
         _cells = new byte[(long)X * Y * Z];
     }
 
@@ -38,7 +38,7 @@ internal sealed class GardenVoxels
     /// <summary>The way out of the solid at a point: away from the solid cells round it (a unit vector; straight up where it is boxed in evenly).</summary>
     public Vector3 Outward(Vector3 p)
     {
-        const float s = Cell * 1.5f;
+        float s = Cell * 1.5f;
         var n = new Vector3((Solid(p.X - s, p.Y, p.Z) ? 1 : 0) - (Solid(p.X + s, p.Y, p.Z) ? 1 : 0), (Solid(p.X, p.Y - s, p.Z) ? 1 : 0) - (Solid(p.X, p.Y + s, p.Z) ? 1 : 0), (Solid(p.X, p.Y, p.Z - s) ? 1 : 0) - (Solid(p.X, p.Y, p.Z + s) ? 1 : 0));
         return n.LengthSquared() < 1e-6f ? Vector3.UnitY : Vector3.Normalize(n);
     }
@@ -60,21 +60,21 @@ internal sealed class GardenVoxels
             for (int j = 0; j <= n - i; j++) Mark(a + ab * i + ac * j);
     }
 
-    private static GardenVoxels? _embedded; private static ulong _embeddedStamp; private static readonly object Lock = new();
-    /// <summary>The grid of <paramref name="scene"/>, built once and kept (the scene is one for the whole run).</summary>
-    public static GardenVoxels For(GardenScene scene)
+    private static readonly Dictionary<(ulong, float), GardenVoxels> Kept = []; private static readonly object Lock = new();
+    /// <summary>The grid of <paramref name="scene"/> at cells of <paramref name="cell"/> metres, built once and kept (the scene is one for the whole run).</summary>
+    public static GardenVoxels For(GardenScene scene, float cell = 0.125f)
     {
         lock (Lock)
         {
-            if (_embedded is not null && _embeddedStamp == scene.Stamp) return _embedded;
-            _embeddedStamp = scene.Stamp; return _embedded = Build(scene);
+            if (Kept.TryGetValue((scene.Stamp, cell), out var kept)) return kept;
+            Kept.Clear(); return Kept[(scene.Stamp, cell)] = Build(scene, cell);   // (one at a time: a finer grid is hundreds of megabytes)
         }
     }
 
     /// <summary>Which of the scene's materials are things in the way of the weather: not the water (a surface, not an obstacle) nor smoke.</summary>
     private static bool Obstacle(GardenMaterialKind kind) => kind is GardenMaterialKind.Flat or GardenMaterialKind.Cutout or GardenMaterialKind.Brick or GardenMaterialKind.Glass or GardenMaterialKind.Emissive;
 
-    public static GardenVoxels Build(GardenScene scene)
+    public static GardenVoxels Build(GardenScene scene, float cell = 0.125f)
     {
         const uint Moving = GardenScene.LogoFlag | GardenScene.SphereFlag | GardenScene.DropletFlag | GardenScene.MoverFlag;
         var instances = scene.Instances.Where(i => (i.Mask & (uint)GardenScene.Mode.Raster) != 0 && (i.Flags & Moving) == 0).ToArray();
@@ -89,7 +89,7 @@ internal sealed class GardenVoxels
             low = Vector3.Min(low, c - new Vector3(r)); high = Vector3.Max(high, c + new Vector3(r));
         }
         low = Vector3.Max(low, new Vector3(-30, -0.5f, -48)); high = Vector3.Min(high, new Vector3(30, 14, 20));
-        var grid = new GardenVoxels(low, high);
+        var grid = new GardenVoxels(low, high, cell);
         Parallel.For(0, instances.Length, k =>
         {
             var inst = instances[k]; var mesh = scene.Meshes[(int)inst.Mesh]; var local = vertices[(int)inst.Mesh];

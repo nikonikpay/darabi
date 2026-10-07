@@ -13,19 +13,19 @@ public class GardenWeatherTests(ITestOutputHelper output)
         var water = raster.Where(i => Has(i, GardenMaterialKind.Water) && (i.Flags & GardenScene.DropletFlag) == 0).Select(Ball).ToArray();
         var pool = new Vector4(water.Min(b => b.Centre.X - b.Radius), water.Min(b => b.Centre.Z - b.Radius), water.Max(b => b.Centre.X + b.Radius), water.Max(b => b.Centre.Z + b.Radius));
         var crowns = raster.Where(i => Has(i, GardenMaterialKind.Cutout)).Select(Ball).Where(b => b.Centre.Y > 1.6f && b.Radius is > 0.25f and < 7f).Select(b => new Vector4(b.Centre, b.Radius)).ToArray();
-        return new GardenWeather(voxels, scene.WaterLevel, pool, crowns);
+        return new GardenWeather(WeatherLevel.Standard, voxels, scene.WaterLevel, pool, crowns);
     }
 
     [Fact] public void The_grid_holds_the_garden_s_walls_and_roof_but_not_its_air()
     {
         var v = GardenVoxels.For(GardenScene.Embedded);
-        output.WriteLine($"grid {v.X} x {v.Y} x {v.Z} cells of {GardenVoxels.Cell} m, {v.Bytes / 1048576.0:F1} MB, {v.Filled:N0} filled ({100.0 * v.Filled / v.Bytes:F2} %)");
+        output.WriteLine($"grid {v.X} x {v.Y} x {v.Z} cells of {v.Cell} m, {v.Bytes / 1048576.0:F1} MB, {v.Filled:N0} filled ({100.0 * v.Filled / v.Bytes:F2} %)");
         Assert.True(v.Bytes > 4_000_000);                                  // larger than a processor's cache: its reads are the memory's
         Assert.InRange(100.0 * v.Filled / v.Bytes, 0.2, 40);
         Assert.False(v.Solid(0, 12.9f, -14));                              // the open sky over the courtyard
         Assert.False(v.Solid(1000, 1, 1000));                              // outside the grid
         // straight up from the hall's floor there is a roof somewhere (the rain must stop on it)
-        bool roof = false; for (float y = 1.5f; y < 13; y += GardenVoxels.Cell) roof |= v.Solid(0, y, 3);
+        bool roof = false; for (float y = 1.5f; y < 13; y += v.Cell) roof |= v.Solid(0, y, 3);
         Assert.True(roof);
     }
 
@@ -34,7 +34,7 @@ public class GardenWeatherTests(ITestOutputHelper output)
         var w = Weather(); var v = GardenVoxels.For(GardenScene.Embedded);
         foreach (float t in new[] { 2f, 9.5f }) w.Advance(t, live: false);
         var rows = w.Rows; int flying = 0, inside = 0, underRoof = 0;
-        for (int b = 0; b < GardenWeather.Rain; b++)
+        for (int b = 0; b < WeatherLevel.Standard.Rain; b++)
         {
             if (rows[b * 3 + 1].W < -50) continue;                                // spent (put far under the ground)
             var at = new Vector3(rows[b * 3].W, rows[b * 3 + 1].W, rows[b * 3 + 2].W); flying++;
@@ -42,7 +42,7 @@ public class GardenWeatherTests(ITestOutputHelper output)
             if (at.X is > -8 and < 8 && at.Z is > 0.5f and < 6 && at.Y is > 1.5f and < 5) underRoof++;   // in the hall's rooms
         }
         output.WriteLine($"{flying} drops falling, {inside} in a solid, {underRoof} in the hall's rooms");
-        Assert.True(flying > GardenWeather.Rain / 3);
+        Assert.True(flying > WeatherLevel.Standard.Rain / 3);
         Assert.True(inside < flying / 200);                                   // (a step's last point may touch the surface it meets)
         Assert.Equal(0, underRoof);
     }
@@ -58,7 +58,7 @@ public class GardenWeatherTests(ITestOutputHelper output)
 
     [Fact] public void Leaves_are_carried_by_the_gusts_and_come_to_rest()
     {
-        var w = Weather(); const int first = GardenWeather.Rain + GardenWeather.Splashes, n = GardenWeather.Leaves;
+        var w = Weather(); var level = WeatherLevel.Standard; int first = level.Rain + level.Splashes, n = level.Leaves;
         var t0 = Stopwatch.GetTimestamp(); double slowest = 0;
         w.Advance(0, true); var before = w.Rows.Slice(first * 3, n * 3).ToArray();
         for (float t = 1f / 60; t <= 8; t += 1f / 60) { w.Advance(t, true); slowest = Math.Max(slowest, w.LastSeconds); }
@@ -67,5 +67,22 @@ public class GardenWeatherTests(ITestOutputHelper output)
         output.WriteLine($"8 s in {Stopwatch.GetElapsedTime(t0).TotalSeconds:F1} s on {GardenWeather.Threads} threads, slowest step {slowest * 1000:F2} ms; {moved} of {n} leaves moved more than a metre sideways");
         Assert.True(moved > n / 10);
         Assert.All(after, r => Assert.True(float.IsFinite(r.X) && float.IsFinite(r.W)));
+    }
+}
+
+/// <summary>The high level: a grid far larger than any cache. Built once here (it takes seconds and hundreds of megabytes), then stepped.</summary>
+public class GardenWeatherHighTests(ITestOutputHelper output)
+{
+    [Fact] public void The_high_level_is_a_grid_of_hundreds_of_megabytes_stepped_by_three_times_the_bodies()
+    {
+        var level = WeatherLevel.High; var scene = GardenScene.Embedded; var t0 = Stopwatch.GetTimestamp();
+        var voxels = GardenVoxels.For(scene, level.Cell);
+        output.WriteLine($"grid {voxels.Bytes / 1048576.0:F0} MB built in {Stopwatch.GetElapsedTime(t0).TotalSeconds:F1} s, {voxels.Filled:N0} cells filled");
+        Assert.True(voxels.Bytes > 150_000_000);
+        var w = new GardenWeather(level, voxels, scene.WaterLevel, new Vector4(-4, -28, 4, -9), [new Vector4(0, 5, -14, 3)]);
+        w.Advance(0, true); double sum = 0; int n = 0;
+        for (float t = 1f / 60; t <= 4; t += 1f / 60, n++) { w.Advance(t, true); if (n > 30) sum += w.LastSeconds; }
+        output.WriteLine($"{level.Bodies:N0} bodies: {sum / (n - 31) * 1000:F2} ms a step on {GardenWeather.Threads} threads");
+        Assert.Equal(level.Count * 3, w.Rows.Length);
     }
 }

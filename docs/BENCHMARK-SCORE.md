@@ -20,3 +20,7 @@ Every benchmark's result and every test's evidence also carries what this progra
 ## Mesh smoothing (the 3-D scene's heavy option)
 
 The scene has a `smoothing` option (off by default, so existing records keep their key): every triangle of the garden's meshes is made four (or sixteen) times when the scene is loaded, with the new vertices moved onto the curve their ends' normals describe (Phong tessellation, `MeshSmoother`), so the round things lose their facets and the card gets many times the geometry and the memory. It is the mesh refined in memory, not the GPU's hardware tessellation stage (that would need hull and domain shaders in every pass of the renderer, and in the ray tracer none at all). The option is part of a record's key.
+
+## Weather, the processor and memory work, and NIS (v32)
+
+The scene has weather (rain, gusts carrying leaves and twigs, simulated on every core against a grid of the garden solids) - option `weather`: off, on, high - and ends with NVIDIA Image Scaling - option `upscaling`: off, sharpen (default), quality, balanced, performance. Both are part of a record key (the defaults are left out of it). The processor time per frame now includes the weather step, so the CPU score has work to measure; `Bench_Scene_SimFrame` is that step alone. See `docs/SCENE-PERFORMANCE.md` for what a frame costs and why.

@@ -16,8 +16,8 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 internal sealed class GardenWeather
 {
-    public const int Rain = 14000, Splashes = 1600, LeafKinds = 3, LeavesPerKind = 1200, Twigs = 700;
-    public const int Leaves = LeafKinds * LeavesPerKind, Bodies = Rain + Leaves + Twigs, Count = Rain + Splashes + Leaves + Twigs;
+    private readonly WeatherLevel _level;
+    private int Rain => _level.Rain; private int Splashes => _level.Splashes; private int Leaves => _level.Leaves; private int Bodies => _level.Bodies; private int Count => _level.Count;
     /// <summary>The fixed step of a frame on its own, and the longest a body lives (a twig's cycle), which sets how far back a rebuild reaches.</summary>
     private const float Fixed = 1f / 60, LongestCycle = 18.5f;
     private const int Window = (int)(LongestCycle / Fixed) + 4;
@@ -27,22 +27,22 @@ internal sealed class GardenWeather
     private readonly GardenVoxels _voxels; private readonly float _water; private readonly Vector4 _pool; private readonly Vector4[] _crowns;
 
     /// <summary>One set of bodies: the live frames' or the check frames'.</summary>
-    private sealed class Sim
+    private sealed class Sim(int bodies, int count)
     {
-        public readonly Vector3[] P = new Vector3[Bodies], V = new Vector3[Bodies], Axis = new Vector3[Bodies];
-        public readonly Quaternion[] Q = new Quaternion[Bodies];
-        public readonly Vector4[] Impact = new Vector4[Bodies];   // a drop's last place and the moment it met something (w: -1 while it falls)
-        public readonly float[] Rate = new float[Bodies];
-        public readonly int[] Cycle = new int[Bodies];
-        public readonly Mode[] State = new Mode[Bodies];
-        public readonly Vector4[] Rows = new Vector4[Count * 3];
+        public readonly Vector3[] P = new Vector3[bodies], V = new Vector3[bodies], Axis = new Vector3[bodies];
+        public readonly Quaternion[] Q = new Quaternion[bodies];
+        public readonly Vector4[] Impact = new Vector4[bodies];   // a drop's last place and the moment it met something (w: -1 while it falls)
+        public readonly float[] Rate = new float[bodies];
+        public readonly int[] Cycle = new int[bodies];
+        public readonly Mode[] State = new Mode[bodies];
+        public readonly Vector4[] Rows = new Vector4[count * 3];
         public float Time; public bool Valid;
     }
-    private readonly Sim _live = new(), _check = new();
+    private readonly Sim _live, _check;
 
     /// <param name="water">The pool's surface height; <paramref name="pool"/> its plan (x from, z from, x to, z to).</param>
     /// <param name="crowns">Where leaves and twigs come from: the centre and radius of each crown of foliage.</param>
-    public GardenWeather(GardenVoxels voxels, float water, Vector4 pool, Vector4[] crowns) { _voxels = voxels; _water = water; _pool = pool; _crowns = crowns.Length > 0 ? crowns : [new Vector4(0, 5, -14, 3)]; }
+    public GardenWeather(WeatherLevel level, GardenVoxels voxels, float water, Vector4 pool, Vector4[] crowns) { _level = level; _live = new(level.Bodies, level.Count); _check = new(level.Bodies, level.Count); _voxels = voxels; _water = water; _pool = pool; _crowns = crowns.Length > 0 ? crowns : [new Vector4(0, 5, -14, 3)]; }
 
     /// <summary>The rows (three float4s a body, the renderers' mover layout) of the last <see cref="Advance"/>.</summary>
     public ReadOnlySpan<Vector4> Rows => _rows;
@@ -51,6 +51,7 @@ internal sealed class GardenWeather
     public double LastSeconds { get; private set; }
     public long VoxelBytes => _voxels.Bytes;
     public static int Threads => Environment.ProcessorCount;
+    public WeatherLevel Level => _level;
 
     public void Advance(float time, bool live)
     {
@@ -71,9 +72,9 @@ internal sealed class GardenWeather
     // ----- hashes and the cycle of a body -----
 
     private static float H(int body, int salt, int cycle = 0) => GardenGpu.H((uint)body * 0x9E3779B1u + (uint)salt * 0x85EBCA6Bu + (uint)cycle * 0xC2B2AE35u + 0x27D4EB2Fu);
-    private static float Period(int b) => b < Rain ? RainPeriod : b < Rain + Leaves ? 10f + 5f * H(b, 1) : 12f + 6f * H(b, 1);
+    private float Period(int b) => b < Rain ? RainPeriod : b < Rain + Leaves ? 10f + 5f * H(b, 1) : 12f + 6f * H(b, 1);
     private static float Phase(int b) => H(b, 2);
-    private static int CycleOf(int b, float time) => (int)MathF.Floor(time / Period(b) - Phase(b));
+    private int CycleOf(int b, float time) => (int)MathF.Floor(time / Period(b) - Phase(b));
 
     // ----- the wind -----
 
@@ -131,7 +132,7 @@ internal sealed class GardenWeather
         }
         float u = H(b, 40, cycle) * 2 - 1, phi = 2 * MathF.PI * H(b, 41, cycle), ring = MathF.Sqrt(1 - u * u), reach = crown.W * 0.9f * MathF.Cbrt(H(b, 42, cycle));
         var p = new Vector3(crown.X, crown.Y, crown.Z) + new Vector3(ring * MathF.Cos(phi), u, ring * MathF.Sin(phi)) * reach;
-        for (int k = 0; k < 24 && _voxels.Solid(p); k++) p.Y += GardenVoxels.Cell;   // (a card of the crown it started in: up to its surface)
+        for (int k = 0; k < 24 && _voxels.Solid(p); k++) p.Y += _voxels.Cell;   // (a card of the crown it started in: up to its surface)
         if (_voxels.Solid(p)) s.State[b] = Mode.Gone;
         s.P[b] = p; s.V[b] = Vector3.Zero;
         float ax = H(b, 43, cycle) * 2 - 1, az = H(b, 44, cycle) * 2 - 1, ay = H(b, 45, cycle) * 2 - 1; var axis = new Vector3(ax, ay, az);
@@ -156,7 +157,7 @@ internal sealed class GardenWeather
             var w = Wind(p, fronts, t); float k = MathF.Min(1, dt * 4);
             v += (new Vector3(w.X * 0.6f, -9.2f, w.Z * 0.6f) - v) * k;
             var from = p; p += v * dt;
-            int n = (int)MathF.Ceiling((p - from).Length() / (GardenVoxels.Cell * 0.6f));
+            int n = (int)MathF.Ceiling((p - from).Length() / (_voxels.Cell * 0.6f));
             for (int i = 1; i <= n; i++)
             {
                 var q = from + (p - from) * ((float)i / n);
@@ -288,7 +289,7 @@ internal sealed class GardenWeather
         s.Valid = true;
     }
 
-    private static void RunChunks(Action<int> body)
+    private void RunChunks(Action<int> body)
     {
         const int Chunk = 512;
         Parallel.For(0, (Bodies + Chunk - 1) / Chunk, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, c =>
@@ -296,4 +297,14 @@ internal sealed class GardenWeather
             for (int b = c * Chunk, end = Math.Min(Bodies, b + Chunk); b < end; b++) body(b);
         });
     }
+}
+
+/// <summary>How much weather there is: the numbers of drops, splashes, leaves (of each of three colours) and twigs, and how fine the grid of solids they collide with is. The standard level is about
+/// 20,000 bodies against a 29 MB grid; the high level three times the bodies against a 235 MB one - a working set far larger than any processor's cache, so it is the memory's latency that sets the speed.</summary>
+internal readonly record struct WeatherLevel(string Name, int Rain, int Splashes, int LeavesPerKind, int Twigs, float Cell)
+{
+    public int Leaves => LeavesPerKind * 3; public int Bodies => Rain + Leaves + Twigs; public int Count => Rain + Splashes + Leaves + Twigs;
+    public static readonly WeatherLevel Standard = new("on", 14000, 1600, 1200, 700, 0.125f), High = new("high", 42000, 4800, 3600, 2100, 0.0625f);
+    /// <summary>The level an option names: null for off.</summary>
+    public static WeatherLevel? Parse(string? name) => name switch { "off" => null, "high" => High, _ => Standard };
 }

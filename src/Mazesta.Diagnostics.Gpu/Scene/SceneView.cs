@@ -11,7 +11,7 @@ internal sealed class SceneView : IDisposable
     public GardenRaster Renderer => _renderer;
     public string Work { get; }
 
-    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, int smoothing = 0, bool weather = true, NisMode? nis = null)
+    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, int smoothing = 0, WeatherLevel? weather = null, NisMode? nis = null)
     {
         _s = s;
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);

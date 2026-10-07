@@ -3328,5 +3328,6 @@ Cancel: stop.</value></data>
   <data name="Test_Nis_Quality" xml:space="preserve"><value>Quality: drawn at 77 %, scaled up</value></data>
   <data name="Test_Nis_Balanced" xml:space="preserve"><value>Balanced: drawn at 67 %, scaled up</value></data>
   <data name="Test_Nis_Performance" xml:space="preserve"><value>Performance: drawn at 59 %, scaled up</value></data>
+  <data name="Test_Weather_High" xml:space="preserve"><value>Weather detail: three times the bodies, a 235 MB grid</value></data>
   <data name="Test_Smooth_2" xml:space="preserve"><value>Smooth, 16× the triangles</value></data>
 </root>

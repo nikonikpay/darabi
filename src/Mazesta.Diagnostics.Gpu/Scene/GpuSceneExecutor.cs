@@ -34,7 +34,8 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     /// <summary>The garden's weather (<see cref="GardenWeather"/>): rain, gusts that lift leaves and twigs out of the crowns and carry them, simulated on every core of the processor each frame.
     /// On unless switched off; it loads the processor and the memory (the grid of solids it collides with), not the card.</summary>
     internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "on",
-        () => [new("off", "Test_RayTracing_Off", true, "no rain, no wind-blown leaves"), new("on", "Test_Switch_On", true, "rain, gusts, leaves and twigs simulated on the processor")]);
+        () => [new("off", "Test_RayTracing_Off", true, "no rain, no wind-blown leaves"), new("on", "Test_Switch_On", true, "rain, gusts, leaves and twigs simulated on the processor (20,000 bodies, a 29 MB grid)"),
+               new("high", "Test_Weather_High", true, "three times the bodies against a 235 MB grid: the memory's latency sets the speed")]);
     /// <summary>NVIDIA Image Scaling (<see cref="GardenNis"/>): the frame finished with the SDK's adaptive sharpener at its own size (the default), or the garden drawn at a share of the
     /// window's size and scaled up to it with the SDK's edge-directed scaler (faster, and the edges stay smooth); off, the lens's picture is the frame.</summary>
     internal static readonly TestOption Upscaling = new(UpscalingOption, "Test_Option_Upscaling", TestOptionKind.Choice, "sharpen",
@@ -95,7 +96,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         using var session = new D3D12Session(device);
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (screenSize) (w, h) = (window.Width, window.Height);
-        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, int.TryParse(options.Get(SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0, options.Get(WeatherOption) != "off", NisMode.Parse(options.Get(UpscalingOption)));
+        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, int.TryParse(options.Get(SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0, WeatherLevel.Parse(options.Get(WeatherOption)), NisMode.Parse(options.Get(UpscalingOption)));
         string work = renderer.Work;
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";

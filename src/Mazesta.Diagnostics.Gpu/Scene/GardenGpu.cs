@@ -99,7 +99,7 @@ internal sealed unsafe class GardenGpu
     public ID3D12Resource Backdrop { get; } public Vector4 BackdropRange { get; }
     private readonly int _textureMips;
 
-    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, int smoothing = 0, bool weather = true)
+    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, int smoothing = 0, WeatherLevel? weather = null)
     {
         const GardenScene.Mode mode = GardenScene.Mode.Raster;   // the file's Direct3D scene: its ray-traced one lent only its night rig of lamps
         ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
@@ -150,7 +150,7 @@ internal sealed unsafe class GardenGpu
             int logo = Array.FindIndex(chosen, i => (i.Flags & GardenScene.LogoFlag) != 0);
             if (logo >= 0) { chosen[logo].Mesh = (uint)meshes.Count; meshes.Add(FromModel(custom, meshes[(int)scene.Instances.First(i => (i.Flags & GardenScene.LogoFlag) != 0).Mesh])); ModelName = custom.Name; }
         }
-        if (weather)
+        if (weather is { } level)
         {   // the weather (GardenWeather): rain streaks, their splashes, leaves of three colours, twigs - each a mover placed by the processor, after everything else so they come last
             var still0 = still with { Flags = GardenScene.MoverFlag | GardenScene.WeatherFlag };
             void Body(GardenMaterial material, Func<uint, GardenMesh> shape, int count)
@@ -158,12 +158,12 @@ internal sealed unsafe class GardenGpu
                 materials.Add(material); meshes.Add(shape((uint)materials.Count - 1));
                 chosen = [.. chosen, .. Enumerable.Repeat(still0 with { Mesh = (uint)meshes.Count - 1 }, count)];
             }
-            Body(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.82f, 0.88f, 0.95f), Alpha = 0.4f, Roughness = 1 }, Streak, GardenWeather.Rain);
-            Body(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.9f, 0.94f, 1f), Alpha = 0.5f, Roughness = 1 }, Ball, GardenWeather.Splashes);
+            Body(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.82f, 0.88f, 0.95f), Alpha = 0.4f, Roughness = 1 }, Streak, level.Rain);
+            Body(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.9f, 0.94f, 1f), Alpha = 0.5f, Roughness = 1 }, Ball, level.Splashes);
             Vector3[] leafColours = [new(0.20f, 0.36f, 0.07f), new(0.46f, 0.42f, 0.08f), new(0.50f, 0.25f, 0.06f)];
             foreach (var colour in leafColours)
-                Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = colour, Alpha = 1, Roughness = 0.65f, Pattern = new(0, 0, 0, 0.12f) }, Leaf, GardenWeather.LeavesPerKind);
-            Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = new(0.17f, 0.11f, 0.07f), Alpha = 1, Roughness = 0.85f, Pattern = new(0, 0, 0, 0.1f) }, Twig, GardenWeather.Twigs);
+                Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = colour, Alpha = 1, Roughness = 0.65f, Pattern = new(0, 0, 0, 0.12f) }, Leaf, level.LeavesPerKind);
+            Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = new(0.17f, 0.11f, 0.07f), Alpha = 1, Roughness = 0.85f, Pattern = new(0, 0, 0, 0.1f) }, Twig, level.Twigs);
         }
         Materials = [.. materials];
 
@@ -209,7 +209,7 @@ internal sealed unsafe class GardenGpu
             var pool = water.Length == 0 ? default : new Vector4(water.Min(b => b.Centre.X - b.Radius), water.Min(b => b.Centre.Z - b.Radius), water.Max(b => b.Centre.X + b.Radius), water.Max(b => b.Centre.Z + b.Radius));
             var crowns = Draws.Where(d => !d.Moving && d.Parts.Any(p => p.Kind == GardenMaterialKind.Cutout)).SelectMany(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => Bounds(d, i)))
                 .Where(b => b.Centre.Y > 1.6f && b.Radius is > 0.25f and < 7f).Select(b => new Vector4(b.Centre, b.Radius)).ToArray();
-            Weather = new GardenWeather(GardenVoxels.For(scene), WaterLevel, pool, crowns);
+            Weather = new GardenWeather(weather!.Value, GardenVoxels.For(scene, weather.Value.Cell), WaterLevel, pool, crowns);
         }
         InstanceBuffer = s.Upload(Instances, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
         MaterialBuffer = s.Upload(Materials, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
