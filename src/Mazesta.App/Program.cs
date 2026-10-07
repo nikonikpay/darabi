@@ -65,12 +65,38 @@ internal sealed class Program : ApplicationContext
         return 0;
     }
 
+    /// <summary>A copy with <c>flash.json</c> beside it runs from a flash drive on a customer's PC: it takes the installed copy's Data (found through the Installed apps
+    /// entry of the users' setup) and the shop's key from that file, which is never written into the customer's files.</summary>
+    private static AppPaths DetectPaths(out string key)
+    {
+        key = "";
+        string exeDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), file = Path.Combine(exeDir, AppPaths.FlashFile);
+        if (!File.Exists(file)) return AppPaths.Detect();
+        try { using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(file)); if (doc.RootElement.TryGetProperty("siteKey", out var k) && k.GetString() is { } s) key = s.Trim(); }
+        catch (Exception e) when (e is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
+        string? data = null;
+        try
+        {
+            // The setup registers per user: the signed-in user's entry, then any user's (the technician may have elevated as another account).
+            foreach (var hive in new[] { Microsoft.Win32.Registry.CurrentUser }.Concat(Microsoft.Win32.Registry.Users.GetSubKeyNames().Select(n => Microsoft.Win32.Registry.Users.OpenSubKey(n)!)))
+            {
+                using (hive)
+                {
+                    using var reg = hive.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MazestaTest");
+                    if (reg?.GetValue("InstallLocation") is string dir && Directory.Exists(Path.Combine(dir, AppPaths.DataFolderName))) { data = Path.Combine(dir, AppPaths.DataFolderName); break; }
+                }
+            }
+        }
+        catch (Exception e) when (e is System.Security.SecurityException or IOException or UnauthorizedAccessException) { }
+        return AppPaths.CreateFlash(exeDir, data);
+    }
+
     private void Start(bool overlayOnly, bool background)
     {
         // The UI thread's message-loop context, set now so the dispatcher can post to it from the start (before any window exists).
         var context = new WindowsFormsSynchronizationContext(); SynchronizationContext.SetSynchronizationContext(context);
         _ui = new UiDispatcher(context, Environment.CurrentManagedThreadId); UiDispatcher.Current = _ui;
-        var paths = AppPaths.Detect(); paths.EnsureDirectories(); _paths = paths;
+        var paths = DetectPaths(out string flashKey); paths.EnsureDirectories(); _paths = paths;
         var logProvider = new RollingFileLoggerProvider(paths.LogsDir, "mazesta-web"); LogProvider = logProvider;
         var lf = LoggerFactory.Create(b => { b.SetMinimumLevel(LogLevel.Information); b.AddProvider(logProvider); });
         var log = lf.CreateLogger("Web"); _log = log;
@@ -79,7 +105,8 @@ internal sealed class Program : ApplicationContext
         TaskScheduler.UnobservedTaskException += (_, a) => { log.LogError(a.Exception, "Unobserved task exception"); a.SetObserved(); };
         AppDomain.CurrentDomain.UnhandledException += (_, a) => { log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); LogProvider?.Flush(); };
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, log); _store = store;
-        var load = store.Load(); var config = load.Value; _config = config; _configCorrupt = load.Outcome == LoadOutcome.Corrupt;
+        if (paths.Flash) store.ForDisk = c => { var copy = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(System.Text.Json.JsonSerializer.Serialize(c, JsonStore<AppConfig>.Options), JsonStore<AppConfig>.Options)!; copy.SiteKey = ""; return copy; };
+        var load = store.Load(); var config = load.Value; if (paths.Flash && flashKey.Length > 0) config.SiteKey = flashKey; _config = config; _configCorrupt = load.Outcome == LoadOutcome.Corrupt;
         Loc.SetLanguage(config.Language);
         _services = Bootstrapper.Build(paths, config, store, lf);
         string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";

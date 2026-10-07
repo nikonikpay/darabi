@@ -3,6 +3,7 @@
 #   artifacts\Mazesta-Admin      Mazesta's own edition (the service number, the link to the site, the reference marks)
 #   artifacts\Mazesta-Client   the users' edition (none of those)
 #   artifacts\Mazesta-Setup    MazestaTestSetup.exe: the users' installer (carries the users' edition; Start menu, desktop, Installed apps)
+#   artifacts\Mazesta-Flash    the technician's flash-drive copy: Mazesta's edition alone (no tray), with the shop's key, working on the installed copy's Data
 #   artifacts\Mazesta-Print    MazestaPrint.exe: the secretary's program (lists the site's reports by service number, prints their summary)
 # For each folder it
 #   1. refuses while the app or MazestaTray is running from it (its files are locked, and deleting around a running app is how its data was
@@ -24,6 +25,7 @@ param(
     [string]$ClientOutput = "artifacts/Mazesta-Client",
     [string]$SetupOutput = "artifacts/Mazesta-Setup",
     [string]$PrintOutput = "artifacts/Mazesta-Print",
+    [string]$FlashOutput = "artifacts/Mazesta-Flash",
     [string]$BackupRoot = (Join-Path (Split-Path $PSScriptRoot -Parent) "../Mazesta-Data-Backups"),
     [int]$Keep = 20
 )
@@ -116,4 +118,23 @@ if ($Only -ne "Mazesta") {
     Get-ChildItem $setup -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb", ".config" } | Remove-Item -Force
     Remove-Item $zip -Force
     Write-Host "Ready (installer): $(Join-Path $setup 'MazestaTestSetup.exe')"
+}
+
+# The flash-drive copy: Mazesta's edition just built, without the tray and without Data. flash.json beside the exe makes it use the installed copy's Data on the
+# customer's PC (see AppPaths.CreateFlash) and carries the shop's key (taken from this machine's Mazesta-Admin settings), so nothing of ours is left on that PC.
+if ($Only -ne "Client") {
+    $admin = [IO.Path]::GetFullPath((Join-Path $repo $Output)); $flash = [IO.Path]::GetFullPath((Join-Path $repo $FlashOutput))
+    $running = Get-Process Mazesta-Admin -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($flash, [StringComparison]::OrdinalIgnoreCase) }
+    if ($running) { Write-Warning "The flash copy is running from $flash; it was not rebuilt." }
+    else {
+        if (Test-Path $flash) { Get-ChildItem $flash -Force | Remove-Item -Recurse -Force -Confirm:$false }
+        New-Item -ItemType Directory -Force $flash | Out-Null
+        Get-ChildItem $admin -Force | Where-Object { $_.Name -notin "Data", "MazestaTray.exe" } | Copy-Item -Destination $flash -Recurse -Force
+        $key = ""
+        $cfg = Join-Path $admin "Data/config/appconfig.json"
+        if (Test-Path $cfg) { try { $key = [string](Get-Content $cfg -Raw | ConvertFrom-Json).siteKey } catch { } }
+        if (-not $key) { Write-Warning "No site key in $cfg: the flash copy has none. Put it in flash.json (siteKey) by hand." }
+        @{ siteKey = $key } | ConvertTo-Json | Set-Content (Join-Path $flash "flash.json") -Encoding utf8
+        Write-Host "Ready (flash): $(Join-Path $flash 'Mazesta-Admin.exe') - copy the whole folder to the drive"
+    }
 }

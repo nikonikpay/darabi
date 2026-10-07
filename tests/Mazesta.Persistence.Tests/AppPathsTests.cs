@@ -20,4 +20,11 @@ public class AppPathsTests : IDisposable
         Assert.False(p.AdoptLegacyData(legacy));   // Data exists now: never copied twice, never over the portable data
         Assert.False(AppPaths.Create(Path.Combine(_dir, "other")).AdoptLegacyData(Path.Combine(_dir, "missing")));
     }
+    [Fact] public void Flash_copy_takes_the_installed_data_and_keeps_logs_and_caches_on_the_drive()
+    {
+        string drive = Path.Combine(Path.GetTempPath(), "flash"), data = Path.Combine(Path.GetTempPath(), "installed", "Data");
+        var p = AppPaths.CreateFlash(drive, data);
+        Assert.True(p.Flash); Assert.Equal(Path.Combine(data, "reports"), p.ReportsDir); Assert.Equal(Path.Combine(drive, "Local", "logs"), p.LogsDir); Assert.Equal(Path.Combine(drive, "Local", "cache"), p.CacheDir);
+        Assert.Equal(Path.Combine(drive, "Data"), AppPaths.CreateFlash(drive, null).DataRoot);
+    }
 }

@@ -79,7 +79,7 @@ public sealed class AppUpdater
     /// <summary>Once per run of the app, a while after start-up: new lists are fetched, a new release is only reported. Nothing is said when offline.</summary>
     public void AutoCheck()
     {
-        if (_autoChecked) return;
+        if (_autoChecked || _paths.Flash) return;   // a flash-drive copy is replaced by hand, not by itself
         _autoChecked = true;
         _ = Task.Run(async () =>
         {

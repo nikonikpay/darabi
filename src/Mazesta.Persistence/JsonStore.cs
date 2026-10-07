@@ -36,12 +36,14 @@ public sealed class JsonStore<T>(string path, SchemaMigrator migrator, int curre
     /// <summary>Writes the document atomically. Returns false (and logs) instead of throwing when
     /// the file cannot be written: callers are UI paths such as window close and the settings page,
     /// where an unwritable data folder must not take the app down.</summary>
+    /// <summary>What is written to disk in place of the document (a flash-drive copy leaves its key out of the customer's files); null: the document itself.</summary>
+    public Func<T, T>? ForDisk { get; set; }
     public bool Save(T value)
     {
         try
         {
             value.SchemaVersion = currentVersion; Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            string tmp = path + ".tmp"; File.WriteAllText(tmp, JsonSerializer.Serialize(value, Options));
+            string tmp = path + ".tmp"; File.WriteAllText(tmp, JsonSerializer.Serialize(ForDisk?.Invoke(value) ?? value, Options));
             if (File.Exists(path)) File.Replace(tmp, path, null); else File.Move(tmp, path);
             return true;
         }
