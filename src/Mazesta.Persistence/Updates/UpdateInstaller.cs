@@ -48,7 +48,8 @@ public static class UpdateInstaller
         }
     }
 
-    private static IEnumerable<string> Entries(string dir) => Directory.EnumerateFileSystemEntries(dir).Where(p => !string.Equals(Path.GetFileName(p), AppPaths.DataFolderName, StringComparison.OrdinalIgnoreCase));
+    private static IEnumerable<string> Entries(string dir) => Directory.EnumerateFileSystemEntries(dir).Where(p => !string.Equals(Path.GetFileName(p), AppPaths.DataFolderName, StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(Path.GetFileName(p), AppPaths.InstalledMarker, StringComparison.OrdinalIgnoreCase));   // the setup's marker stays: without it the copy would look portable
 
     private static void CopyTree(string from, string to)
     {
@@ -61,7 +62,14 @@ public static class UpdateInstaller
         }
     }
 
-    private static void Move(string from, string to) { if (Directory.Exists(from)) Directory.Move(from, to); else File.Move(from, to); }
+    /// <summary>A rename on one drive; across drives (an app in Program Files on D:, the aside folder in the profile on C:) a copy then a delete.</summary>
+    private static void Move(string from, string to)
+    {
+        if (string.Equals(Path.GetPathRoot(Path.GetFullPath(from)), Path.GetPathRoot(Path.GetFullPath(to)), StringComparison.OrdinalIgnoreCase))
+        { if (Directory.Exists(from)) Directory.Move(from, to); else File.Move(from, to); return; }
+        if (Directory.Exists(from)) { Directory.CreateDirectory(to); CopyTree(from, to); } else File.Copy(from, to, true);
+        Delete(from);
+    }
     private static void Delete(string path) { if (Directory.Exists(path)) Directory.Delete(path, true); else File.Delete(path); }
 
     /// <summary>A file the old process (or an antivirus scan) still holds for a moment is tried again for a few seconds before giving up.</summary>

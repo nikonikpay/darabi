@@ -3068,7 +3068,7 @@
   <data name="Bench_Mem_Latency_64M" xml:space="preserve"><value>تأخیر دسترسی، حجم کاری ۶۴ مگابایت</value></data>
   <data name="Site_Err_NoService" xml:space="preserve"><value>این گزارش شماره‌ی سرویس ندارد و ارسال نشد. پیش از آزمون، شماره‌ی سرویس را در نوار بالا وارد کنید و آزمون را دوباره اجرا کنید.</value></data>
   <data name="Uninstall_Title" xml:space="preserve"><value>حذف مازستا تست</value></data>
-  <data name="Uninstall_Ask" xml:space="preserve"><value>مازستا تست از این کامپیوتر حذف شود؟</value></data>
+  <data name="Uninstall_Ask" xml:space="preserve"><value>مازستا تست از این کامپیوتر حذف شود؟ درایور PawnIO و برنامه‌ی OpenRGB که همراه آن آمده‌اند هم حذف می‌شوند.</value></data>
   <data name="Uninstall_Data" xml:space="preserve"><value>اطلاعات شما (تنظیمات، گزارش‌ها و تاریخچه) هم پاک شود؟
 
 بله: همه‌چیز پاک شود.
@@ -3077,7 +3077,7 @@
   <data name="Uninstall_Running" xml:space="preserve"><value>مازستا تست در حال اجراست. اول آن را ببندید (از نوار کنار ساعت هم)، بعد دوباره حذف کنید.</value></data>
   <data name="Uninstall_NotInstalled" xml:space="preserve"><value>این نسخه با برنامه‌ی نصب اینجا قرار نگرفته، پس چیزی برای حذف نیست. اگر دیگر لازمش ندارید پوشه‌اش را خودتان پاک کنید.</value></data>
   <data name="Uninstall_Done" xml:space="preserve"><value>مازستا تست در حال حذف است.</value></data>
-  <data name="Uninstall_DoneKept" xml:space="preserve"><value>مازستا تست در حال حذف است. اطلاعات شما در پوشه‌ی Data می‌ماند.</value></data>
+  <data name="Uninstall_DoneKept" xml:space="preserve"><value>مازستا تست در حال حذف است. اطلاعات شما در پوشه‌ی %LocalAppData%\Mazesta Test می‌ماند.</value></data>
   <data name="Assist_Checkup_Head" xml:space="preserve"><value>عیب‌یابی هوشمند انجام شد (تست کوتاه پردازنده، رم، کارت گرافیک و دیسک، و وضعیت تنظیمات سیستم).</value></data>
   <data name="Assist_Checkup_Counts" xml:space="preserve"><value>{0} مشکل و {1} مورد نیازمند توجه پیدا شد:</value></data>
   <data name="Assist_Checkup_Clean" xml:space="preserve"><value>هیچ یافته‌ای مشکل یا موردی که نیاز به توجه داشته باشد گزارش نکرد.</value></data>

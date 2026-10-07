@@ -12,6 +12,14 @@ public class AppPathsTests : IDisposable
         Assert.Equal(@"E:\Tools\Mazesta\Data", p.DataRoot); Assert.Equal(@"E:\Tools\Mazesta\Data\config\appconfig.json", p.ConfigFile);
         Assert.All(new[] { p.LogsDir, p.ReportsDir, p.SessionsDir, p.HistoryDir, p.CacheDir }, d => Assert.StartsWith(p.DataRoot + @"\", d));
     }
+    [Fact] public void An_installed_copy_keeps_its_data_in_the_users_profile()
+    {
+        string app = Path.Combine(_dir, "ProgramFiles", "Mazesta Test"); Directory.CreateDirectory(app);
+        Assert.Equal(Path.Combine(app, "Data"), AppPaths.Create(app).DataRoot);   // no marker: portable
+        File.WriteAllText(Path.Combine(app, AppPaths.InstalledMarker), "");
+        var p = AppPaths.Create(app);
+        Assert.Equal(AppPaths.InstalledDataRoot(), p.DataRoot); Assert.EndsWith(Path.Combine("Mazesta Test", "Data"), p.DataRoot); Assert.DoesNotContain(app, p.LogsDir);
+    }
     [Fact] public void An_earlier_installed_versions_data_is_copied_in_once_and_left_in_place()
     {
         string legacy = Path.Combine(_dir, "legacy"); Directory.CreateDirectory(Path.Combine(legacy, "reports", "r1")); File.WriteAllText(Path.Combine(legacy, "reports", "r1", "report.json"), "{}");

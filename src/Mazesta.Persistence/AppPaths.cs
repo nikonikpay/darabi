@@ -24,7 +24,15 @@ public sealed class AppPaths
     /// <summary>The comparison lists read from the site's plugin (built there from the uploaded runs), beside the signed ones of the update folder.</summary>
     public string BenchSiteDir => Path.Combine(LocalRoot, "benchdb-site");
     public string ConfigFile => Path.Combine(ConfigDir, "appconfig.json");
-    public static AppPaths Create(string exeDirectory) { string data = Path.Combine(exeDirectory, DataFolderName); return new() { DataRoot = data, LocalRoot = data }; }
+    /// <summary>The file the setup puts beside the exe of an installed copy (Program Files, where the app may not write): Data then lives in the user's profile.</summary>
+    public const string InstalledMarker = "installed.flag";
+    /// <summary>Where an installed copy keeps each user's settings, reports and history: %LocalAppData%\Mazesta Test\Data.</summary>
+    public static string InstalledDataRoot() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Mazesta Test", DataFolderName);
+    public static AppPaths Create(string exeDirectory)
+    {
+        string data = File.Exists(Path.Combine(exeDirectory, InstalledMarker)) ? InstalledDataRoot() : Path.Combine(exeDirectory, DataFolderName);
+        return new() { DataRoot = data, LocalRoot = data };
+    }
     /// <summary>The flash-drive copy: settings, reports and history are the installed copy's <paramref name="installedData"/> (the drive's own Data folder when
     /// there is no installed copy); logs and caches stay on the drive, so the customer's disk only gets what the app itself is for.</summary>
     public static AppPaths CreateFlash(string exeDirectory, string? installedData)

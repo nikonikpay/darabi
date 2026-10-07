@@ -52,6 +52,14 @@ public class UpdateTests : IDisposable
         Assert.Equal("mine", File.ReadAllText(Path.Combine(app, "Data", "appconfig.json")));
         Assert.Equal("old", File.ReadAllText(Path.Combine(app, "Data", "cache", "update", "previous", "Mazesta.exe")));
     }
+    [Fact] public void Installing_keeps_the_setups_marker_so_an_installed_copy_stays_installed()
+    {
+        string app = Path.Combine(_dir, "app2"), staging = Path.Combine(_dir, "staging2");
+        Directory.CreateDirectory(app); Directory.CreateDirectory(staging);
+        File.WriteAllText(Path.Combine(app, AppPaths.InstalledMarker), "x"); File.WriteAllText(Path.Combine(app, "Mazesta.exe"), "old"); File.WriteAllText(Path.Combine(staging, "Mazesta.exe"), "new");
+        Assert.True(UpdateInstaller.Apply(staging, app, Path.Combine(_dir, "previous2"), _ => { }));
+        Assert.True(File.Exists(Path.Combine(app, AppPaths.InstalledMarker))); Assert.Equal("new", File.ReadAllText(Path.Combine(app, "Mazesta.exe")));
+    }
     [Fact] public void A_package_with_a_Data_folder_or_without_the_exe_is_refused()
     {
         string zip = Path.Combine(_dir, "p.zip");

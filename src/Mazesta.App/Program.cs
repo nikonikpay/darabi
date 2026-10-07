@@ -65,8 +65,7 @@ internal sealed class Program : ApplicationContext
         return 0;
     }
 
-    /// <summary>A copy with <c>flash.json</c> beside it runs from a flash drive on a customer's PC: it takes the installed copy's Data (found through the Installed apps
-    /// entry of the users' setup) and the shop's key from that file, which is never written into the customer's files.</summary>
+    /// <summary>A copy with <c>flash.json</c> beside it runs from a flash drive on a customer's PC: it takes the installed copy's Data (found through ClientData) and the shop's key from that file, which is never written into the customer's files.</summary>
     private static AppPaths DetectPaths(out string key)
     {
         key = "";
@@ -74,20 +73,8 @@ internal sealed class Program : ApplicationContext
         if (!File.Exists(file)) return AppPaths.Detect();
         try { using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(file)); if (doc.RootElement.TryGetProperty("siteKey", out var k) && k.GetString() is { } s) key = s.Trim(); }
         catch (Exception e) when (e is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
-        string? data = null;
-        try
-        {
-            // The setup registers per user: the signed-in user's entry, then any user's (the technician may have elevated as another account).
-            foreach (var hive in new[] { Microsoft.Win32.Registry.CurrentUser }.Concat(Microsoft.Win32.Registry.Users.GetSubKeyNames().Select(n => Microsoft.Win32.Registry.Users.OpenSubKey(n)!)))
-            {
-                using (hive)
-                {
-                    using var reg = hive.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MazestaTest");
-                    if (reg?.GetValue("InstallLocation") is string dir && Directory.Exists(Path.Combine(dir, AppPaths.DataFolderName))) { data = Path.Combine(dir, AppPaths.DataFolderName); break; }
-                }
-            }
-        }
-        catch (Exception e) when (e is System.Security.SecurityException or IOException or UnauthorizedAccessException) { }
+        // The installed copy keeps each user's Data in the profile (%LocalAppData%\Mazesta Test\Data); a copy installed by an earlier setup kept it beside its exe.
+        string? data = ClientData.FindExisting();
         return AppPaths.CreateFlash(exeDir, data);
     }
 
