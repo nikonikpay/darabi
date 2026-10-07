@@ -244,6 +244,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         var water = g.Draws.Where(d => !d.Moving && d.Parts.Any(p => p.Kind == GardenMaterialKind.Water)).SelectMany(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => g.Bounds(d, i))).ToArray();   // (every still water's ball on the plan: the pool's, and what runs into it)
         _pool = water.Length == 0 ? default : new(water.Min(b => b.Centre.X - b.Radius), water.Min(b => b.Centre.Z - b.Radius), water.Max(b => b.Centre.X + b.Radius), water.Max(b => b.Centre.Z + b.Radius));
         _casters = [.. g.Draws.Where(g.CastsShadow).Select(d => (d, Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => g.Bounds(d, i)).ToArray()))];
+        // the ball each instance's picture can reach, for the camera's passes: where it stands, grown by the lean of a plant in the wind (every point is pushed sideways
+        // by up to twice its sway times its height) and a margin for the water's ripples
+        _viewBounds = [.. g.Draws.Select(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => { var (c, r) = g.Bounds(d, i); return (c, r * (1 + 4 * GardenScene.Sway(g.Instances[i].Flags)) + 0.5f); }).ToArray())];
         _stained = [.. g.Draws.SelectMany(d => d.Parts.Where(p => g.Materials[p.Material].LightTint > 0).Select(p => (d, p)))];
         // what each face of the pictures of the surroundings can see of the still scene: an instance inside its pyramid, or touching it
         _roundRuns = new (GardenGpu.Draw, uint, uint)[Rounds.Length * 6][];
@@ -264,6 +267,24 @@ internal sealed unsafe class GardenRaster : GardenRenderer
                 }
             _roundRuns[k] = [.. runs];
         }
+    }
+
+    private readonly (Vector3 Centre, float Radius)[][] _viewBounds;
+    /// <summary>Whether the camera's passes skip what is out of its view; the render checks turn it off to show the picture is the same bits either way.</summary>
+    internal static bool ViewCulling = true;
+
+    /// <summary>The five sides of what a camera sees as planes (inward normals, normalised), from its view-projection: left, right, bottom, top and the plane through the eye.</summary>
+    private static Vector4[] ViewPlanes(Matrix4x4 m)
+    {
+        Vector4 x = new(m.M11, m.M21, m.M31, m.M41), y = new(m.M12, m.M22, m.M32, m.M42), w = new(m.M14, m.M24, m.M34, m.M44);
+        Vector4[] planes = [w + x, w - x, w + y, w - y, w];
+        for (int k = 0; k < planes.Length; k++) { float n = new Vector3(planes[k].X, planes[k].Y, planes[k].Z).Length(); if (n > 1e-9f) planes[k] /= n; }
+        return planes;
+    }
+    private static bool InView(Vector4[] planes, (Vector3 Centre, float Radius) b)
+    {
+        foreach (var p in planes) if (p.X * b.Centre.X + p.Y * b.Centre.Y + p.Z * b.Centre.Z + p.W < -b.Radius) return false;
+        return true;
     }
 
     public int Samples => _samples;
@@ -597,7 +618,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.ResourceBarrierTransition(_reflection, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
             l.ClearDepthStencilView(Dsv(2), ClearFlags.Depth, 0, 0); l.ClearRenderTargetView(Rtv(Targets.Length), new Color4(0, 0, 0, 1)); l.OMSetRenderTargets(Rtv(Targets.Length), Dsv(2));   // (cleared whole: what is left outside the part drawn must not be an earlier frame's)
             l.RSSetViewport(0, 0, _reflW, _reflH); l.RSSetScissorRect(seen);
-            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: true);
+            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: true, frame.Mirrored().ViewProj);
             l.ResourceBarrierTransition(_reflection, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
             l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
         }
@@ -607,7 +628,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress + Slot * 2);
         l.ResourceBarrierTransition(_sceneDepth, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
         l.ClearDepthStencilView(Dsv(5), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets([], Dsv(5));
-        l.SetPipelineState(_depthOnly); Geometry(l, Casts);
+        l.SetPipelineState(_depthOnly); Geometry(l, Casts, null, frame.ViewProj);
         l.ResourceBarrierTransition(_sceneDepth, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
         l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
         l.ResourceBarrierTransition(_occlusion, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
@@ -632,9 +653,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         if (_samples == 1) l.ResourceBarrierTransition(_light, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
         // first the depth alone, of the solid surfaces and the leaves, so that of the surfaces one behind another only the nearest is lit
         l.ClearDepthStencilView(Dsv(0), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets([], Dsv(0));
-        l.SetPipelineState(_before); Geometry(l, Solid); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout);
+        l.SetPipelineState(_before); Geometry(l, Solid, null, frame.ViewProj); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout, null, frame.ViewProj);
         l.OMSetRenderTargets(rtv, Dsv(0));
-        Pass(l, _sky, _opaque, _cutout, _transparent, skipWater: false);
+        Pass(l, _sky, _opaque, _cutout, _transparent, skipWater: false, frame.ViewProj);
         if (_samples > 1)
         {
             l.ResourceBarrierTransition(_msaa, ResourceStates.RenderTarget, ResourceStates.ResolveSource);
@@ -676,25 +697,39 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         return new((int)((x0 * 0.5f + 0.5f) * _reflW), (int)((0.5f - y1 * 0.5f) * _reflH), (int)MathF.Ceiling((x1 * 0.5f + 0.5f) * _reflW), (int)MathF.Ceiling((0.5f - y0 * 0.5f) * _reflH));
     }
 
-    private void Pass(ID3D12GraphicsCommandList4 l, ID3D12PipelineState sky, ID3D12PipelineState opaque, ID3D12PipelineState cutout, ID3D12PipelineState transparent, bool skipWater, bool still = false)
+    private void Pass(ID3D12GraphicsCommandList4 l, ID3D12PipelineState sky, ID3D12PipelineState opaque, ID3D12PipelineState cutout, ID3D12PipelineState transparent, bool skipWater, Matrix4x4 view, bool still = false)
     {
         Func<GardenGpu.Draw, bool>? which = still ? d => !d.Moving : null;
         l.SetPipelineState(sky); l.DrawInstanced(3, 1, 0, 0);
-        l.SetPipelineState(opaque); Geometry(l, k => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive, which);
-        l.SetPipelineState(cutout); Geometry(l, k => k is GardenMaterialKind.Cutout, which);
-        l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass or GardenMaterialKind.Smoke || (k is GardenMaterialKind.Water && !skipWater), which);
+        l.SetPipelineState(opaque); Geometry(l, k => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive, which, view);
+        l.SetPipelineState(cutout); Geometry(l, k => k is GardenMaterialKind.Cutout, which, view);
+        l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass or GardenMaterialKind.Smoke || (k is GardenMaterialKind.Water && !skipWater), which, view);
     }
 
-    private void Geometry(ID3D12GraphicsCommandList4 l, Func<GardenMaterialKind, bool> kinds, Func<GardenGpu.Draw, bool>? which = null)
+    /// <summary>The draws of the kinds wanted. With <paramref name="view"/> (a camera's view-projection) only the instances inside what it sees, in runs of neighbours; what moves is always drawn.</summary>
+    private void Geometry(ID3D12GraphicsCommandList4 l, Func<GardenMaterialKind, bool> kinds, Func<GardenGpu.Draw, bool>? which = null, Matrix4x4? view = null)
     {
-        foreach (var d in G.Draws)
+        var planes = ViewCulling && view is { } m ? ViewPlanes(m) : null;
+        for (int di = 0; di < G.Draws.Length; di++)
         {
+            var d = G.Draws[di];
             if (which is not null && !which(d)) continue;
-            foreach (var p in d.Parts)
+            var bounds = _viewBounds[di];
+            for (uint k = 0; k < d.InstanceCount;)
             {
-                if (!kinds(p.Kind)) continue;
-                l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
-                l.DrawIndexedInstanced(p.IndexCount, d.InstanceCount, p.IndexStart, d.BaseVertex, 0);
+                uint n = d.InstanceCount;
+                if (planes is not null && !d.Moving)
+                {
+                    if (!InView(planes, bounds[k])) { k++; continue; }
+                    n = 1; while (k + n < d.InstanceCount && InView(planes, bounds[k + n])) n++;
+                }
+                foreach (var p in d.Parts)
+                {
+                    if (!kinds(p.Kind)) continue;
+                    l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + k, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
+                    l.DrawIndexedInstanced(p.IndexCount, n, p.IndexStart, d.BaseVertex, 0);
+                }
+                k += n;
             }
         }
     }

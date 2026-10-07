@@ -31,6 +31,25 @@ public class GardenRenderHardwareTests
         }
     }
 
+    [Theory, InlineData(1u), InlineData(3u)]
+    public void Skipping_what_the_camera_cannot_see_changes_no_pixel(uint load)
+    {
+        if (NoGpu) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!);
+        var g = new GardenGpu(s, GardenScene.Embedded);
+        using var r = new GardenRaster(s, g, W, H, [], load);
+        try
+        {
+            foreach (float t in Times)
+            {
+                GardenRaster.ViewCulling = true; var culled = r.Capture(t);
+                GardenRaster.ViewCulling = false; var whole = r.Capture(t);
+                Assert.True(culled.AsSpan().SequenceEqual(whole), $"the picture at {t} s differs with the unseen skipped");
+            }
+        }
+        finally { GardenRaster.ViewCulling = true; }
+    }
+
     [Theory, InlineData(1), InlineData(2)]
     public void The_smoothed_garden_is_a_stable_picture(int smoothing)
     {
