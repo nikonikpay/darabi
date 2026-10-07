@@ -793,6 +793,7 @@
   <data name="Tuning_Curve_Scanning" xml:space="preserve"><value>Measuring the curve…</value></data>
   <data name="Tuning_Curve_Step" xml:space="preserve"><value>Measuring the curve: point {0} of {1} · cap {2}</value></data>
   <data name="Tuning_Curve_Done" xml:space="preserve"><value>The curve was measured and saved. The card is back to stock.</value></data>
+  <data name="Tuning_Curve_DoneDriver" xml:space="preserve"><value>The curve was measured and saved, and the card is back to stock. The chart keeps the driver's own table, which is complete; a measurement under load cannot go below the voltage the card holds while working, so its low points pile up there.</value></data>
   <data name="Tuning_ConfirmCurve" xml:space="preserve"><value>Measuring the curve loads the graphics card for about a minute and a half and caps its clock step by step. The card's current settings are removed, and at the end it is back at stock. Start?</value></data>
   <data name="Tuning_Curve_ApplyRefused" xml:space="preserve"><value>The driver refused the clock cap; the curve cannot be measured</value></data>
   <data name="Tuning_Curve_Lost" xml:space="preserve"><value>The driver reset during the scan. The card is back to stock.</value></data>

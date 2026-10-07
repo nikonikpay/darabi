@@ -793,6 +793,7 @@
   <data name="Tuning_Curve_Scanning" xml:space="preserve"><value>در حال اندازه‌گیری منحنی…</value></data>
   <data name="Tuning_Curve_Step" xml:space="preserve"><value>اندازه‌گیری منحنی: نقطهٔ {0} از {1} · سقف {2}</value></data>
   <data name="Tuning_Curve_Done" xml:space="preserve"><value>منحنی اندازه‌گیری و ذخیره شد. کارت به حالت کارخانه برگشت.</value></data>
+  <data name="Tuning_Curve_DoneDriver" xml:space="preserve"><value>منحنی اندازه‌گیری و ذخیره شد و کارت به حالت کارخانه برگشت. نمودار همان جدول خود درایور را نگه می‌دارد که کامل است؛ اندازه‌گیری زیر بار نمی‌تواند از ولتاژی که کارت هنگام کار نگه می‌دارد پایین‌تر برود و نقطه‌های پایین آن روی هم می‌افتند.</value></data>
   <data name="Tuning_ConfirmCurve" xml:space="preserve"><value>اندازه‌گیری منحنی حدود یک و نیم دقیقه کارت گرافیک را زیر بار می‌برد و فرکانس آن را قدم‌به‌قدم محدود می‌کند. تنظیمات فعلی کارت برداشته می‌شود و در پایان کارت به حالت کارخانه برمی‌گردد. شروع شود؟</value></data>
   <data name="Tuning_Curve_ApplyRefused" xml:space="preserve"><value>درایور سقف فرکانس را نپذیرفت؛ منحنی قابل اندازه‌گیری نیست</value></data>
   <data name="Tuning_Curve_Lost" xml:space="preserve"><value>درایور حین اندازه‌گیری ری‌ست شد. کارت به حالت کارخانه برگشت.</value></data>

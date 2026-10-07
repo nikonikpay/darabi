@@ -326,8 +326,13 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!result.Ok) { CurveStatus = Loc.Get(result.ReasonKey!) + (result.Detail is { } d ? $" ({d})" : ""); return; }
         var curve = new GpuCurve(device.Id, DateTimeOffset.Now, result.Points);
         _doc.Curves.RemoveAll(c => c.GpuId == device.Id); _doc.Curves.Add(curve); _store.Save(_doc);
-        _curveFromDriver = false; _curveMeasuredAt = curve.MeasuredAt; Curve = curve.Points; OnPropertyChanged(nameof(CurveInfo));
-        CurveStatus = Loc.Get("Tuning_Curve_Done");
+        // The driver's table, when it gives one, is the whole curve; the scan is only what the card did under load, which stops at the voltage it
+        // holds while working. It is kept in the file, but does not replace the complete curve on the chart.
+        bool driverKept = _curveFromDriver;
+        _curveMeasuredAt = curve.MeasuredAt;
+        if (!driverKept) Curve = curve.Points;
+        OnPropertyChanged(nameof(CurveInfo));
+        CurveStatus = Loc.Get(driverKept ? "Tuning_Curve_DoneDriver" : "Tuning_Curve_Done");
     }
 
     // The automatic search
