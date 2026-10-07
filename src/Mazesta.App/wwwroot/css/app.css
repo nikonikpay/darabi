@@ -1216,6 +1216,13 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .cmp td.win { color: var(--hue, var(--yellow)); }
 .gain { display: inline-block; margin-inline-start: 8px; padding: 0 7px; border-radius: 99px; font: 750 11px/1.6 var(--lat); background: color-mix(in srgb, var(--hue, var(--yellow)) 16%, transparent); color: var(--hue, var(--yellow)); }
 .run-more > .cmp-group { margin: 4px 0; }
+.sec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 28px; margin: 4px 0 8px; }
+.sec-item { display: flex; gap: 10px; align-items: baseline; padding: 3px 0; border-bottom: 1px dotted var(--rule); min-width: 0; }
+.sec-item .k { color: var(--paper-3); font-size: 12px; }
+.sec-item .v { font-weight: 700; font-size: 12.5px; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+.sec-block { min-width: 0; }
+.spec-cached { grid-column: 1 / -1; }
+.sec-block > .spec-h { font-weight: 800; color: var(--paper-2); border-bottom: 1px solid var(--rule); padding-bottom: 3px; }
 .rec-more { margin-top: 8px; }
 .spec-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 18px; padding: 6px 0 2px; }
 .spec { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; margin: 0; font-size: 12.5px; align-content: start; }

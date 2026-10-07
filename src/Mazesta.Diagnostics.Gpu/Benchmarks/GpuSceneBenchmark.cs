@@ -113,6 +113,12 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
             if (ramScore is { } rs) metrics.Add(new("Bench_Scene_Score", SceneScore.Overall(graphics, cpu, rs), "pts"));
             metrics.AddRange([new("Bench_Scene_ScoreGpu", graphics, "pts"), new("Bench_Scene_ScoreCpu", cpu, "pts")]);
             if (ramScore is { } r2) metrics.Add(new("Bench_Scene_ScoreRam", r2, "pts"));
+            metrics.AddRange([new("Bench_Scene_Frames", n, ""), new("Bench_Scene_GpuFps", 1 / gpuFrame, "FPS"), new("Bench_Scene_CpuFps", 1 / cpuFrame, "FPS")]);
+            if (ramScore is { } r3)
+            {
+                var (sg, sc, sr) = SceneScore.Shares(graphics, cpu, r3);
+                metrics.AddRange([new("Bench_Scene_ShareGpu", sg, "%"), new("Bench_Scene_ShareCpu", sc, "%"), new("Bench_Scene_ShareRam", sr, "%"), new("Bench_Scene_RamEffect", SceneScore.RamEffect(graphics, cpu, r3), "%")]);
+            }
             setup.Add(new(BenchmarkDetails.RunGroup, "Bench_Set_Limit", SceneScore.Bottleneck(gpuFrame, cpuFrame) switch { SceneScore.Limit.Graphics => "GPU", SceneScore.Limit.Cpu => "CPU", _ => "balanced" }));
         }
         metrics.AddRange([new(whole ? "Bench_Gpu_Scene_Fps" : "Bench_Gpu_Scene_FpsPart", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms"),

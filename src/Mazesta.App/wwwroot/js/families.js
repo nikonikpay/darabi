@@ -8,6 +8,8 @@ const numbered = (name) => /\d/.test(name);
 const GENERIC = new Set(["average", "avg", "max", "maximum", "min", "minimum", "total", "all", "core", "thread", "of"]);
 const SUMMARY = /\b(average|avg|max|maximum|total)\b/i;
 const keyOf = (name) => name.replace(NUM, "#").replace(/\s+/g, " ").trim();
+// A Ryzen's cores sharing a level-3 cache are one CCD: each CCD's cores are a family of their own ("CCD 1 · Core #"), without the whole-processor summary.
+const famKey = (s) => (s.ccd ? `CCD ${s.ccd} · ` : "") + keyOf(s.name);
 const gist = (name) => name.toLowerCase().replace(NUM, " ").replace(/[()#:,_/-]/g, " ").split(/\s+/)
   .map((w) => w.replace(/s$/, "")).filter((w) => w.length > 1 && !GENERIC.has(w)).join(" ");
 
@@ -15,14 +17,14 @@ const gist = (name) => name.toLowerCase().replace(NUM, " ").replace(/[()#:,_/-]/
 // (head: the summary sensor or null). A group takes the place of its head or its first member, whichever comes first.
 export function families(sensors) {
   const byKey = new Map();
-  for (const s of sensors) if (numbered(s.name)) { const k = keyOf(s.name); if (!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(s); }
+  for (const s of sensors) if (numbered(s.name)) { const k = famKey(s); if (!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(s); }
   const keyOf2 = new Map(), headOf = new Map();
   for (const [k, members] of byKey) {
     if (members.length < 3) continue;
     for (const s of members) keyOf2.set(s, k);
-    const want = gist(k);
+    const want = members[0].ccd ? null : gist(k.replace(/^CCD \d+ · /, ""));
     // A family named only by generic words ("Core #1") takes a summary that says it is one ("Core Max").
-    const head = sensors.find((s) => !numbered(s.name) && !keyOf2.has(s) && gist(s.name) === want && (want || SUMMARY.test(s.name)));
+    const head = want === null ? undefined : sensors.find((s) => !numbered(s.name) && !keyOf2.has(s) && gist(s.name) === want && (want || SUMMARY.test(s.name)));
     if (head) { keyOf2.set(head, k); headOf.set(k, head); }
   }
   const out = [], placed = new Set();

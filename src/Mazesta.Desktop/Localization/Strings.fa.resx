@@ -1396,7 +1396,7 @@
   <data name="Test_RayTracing_Off" xml:space="preserve"><value>خاموش</value></data>
   <data name="Test_RayTracing_On" xml:space="preserve"><value>روشن (DXR 1.1)</value></data>
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)</value></data>
-  <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>میانگین نرخ فریم در باغ (2560x1440)</value></data>
+  <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>میانگین نرخ فریم در باغ</value></data>
   <data name="Bench_Gpu_Scene_FpsPart" xml:space="preserve"><value>میانگین نرخ فریم، بخشی از مسیر (مقایسه نمی‌شود)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>نرخ فریم ۱٪ کندترین فریم‌ها</value></data>
   <data name="Nav_AppUpdate" xml:space="preserve"><value>به‌روزرسانی برنامه</value></data>
@@ -3298,4 +3298,25 @@
   <data name="Web_Detail_Cpu" xml:space="preserve"><value>پردازنده حین اجرا</value></data>
   <data name="Web_Detail_Ram" xml:space="preserve"><value>حافظه RAM حین اجرا</value></data>
   <data name="Web_Detail_GainHint" xml:space="preserve"><value>این سمت چند درصد سریع‌تر از طرف دیگر است</value></data>
+  <data name="Bench_Scene_Frames" xml:space="preserve"><value>تعداد کل فریم‌های تولیدشده</value></data>
+  <data name="Bench_Scene_GpuFps" xml:space="preserve"><value>فریم در ثانیه‌ای که کارت گرافیک به‌تنهایی می‌سازد</value></data>
+  <data name="Bench_Scene_CpuFps" xml:space="preserve"><value>فریم در ثانیه‌ای که پردازنده به‌تنهایی آماده می‌کند</value></data>
+  <data name="Bench_Scene_ShareGpu" xml:space="preserve"><value>سهم کارت گرافیک از هزینه‌ی هر فریم (مدل امتیاز)</value></data>
+  <data name="Bench_Scene_ShareCpu" xml:space="preserve"><value>سهم پردازنده از هزینه‌ی هر فریم (مدل امتیاز)</value></data>
+  <data name="Bench_Scene_ShareRam" xml:space="preserve"><value>سهم رم از هزینه‌ی هر فریم (مدل امتیاز)</value></data>
+  <data name="Bench_Scene_RamEffect" xml:space="preserve"><value>افزایش امتیاز کل با رمِ ۱۰٪ سریع‌تر (مدل امتیاز)</value></data>
+  <data name="Bench_App_Cores" xml:space="preserve"><value>مصرف پردازنده‌ی خود برنامه، میانگین (هسته‌ی مشغول)</value></data>
+  <data name="Bench_App_CoresMax" xml:space="preserve"><value>بیشترین مصرف پردازنده‌ی خود برنامه (هسته‌ی مشغول)</value></data>
+  <data name="Bench_App_CpuLoad" xml:space="preserve"><value>سهم برنامه از کل پردازنده، میانگین</value></data>
+  <data name="Bench_App_Ram" xml:space="preserve"><value>رمی که خود برنامه گرفته، میانگین</value></data>
+  <data name="Bench_App_RamMax" xml:space="preserve"><value>بیشترین رمی که خود برنامه گرفته</value></data>
+  <data name="Web_Detail_App" xml:space="preserve"><value>بار خود برنامه حین اجرا</value></data>
+  <data name="Overlay_CcdClock1" xml:space="preserve"><value>فرکانس CCD 1</value></data>
+  <data name="Overlay_CcdClock2" xml:space="preserve"><value>فرکانس CCD 2</value></data>
+  <data name="Overlay_CcdClock3" xml:space="preserve"><value>فرکانس CCD 3</value></data>
+  <data name="Overlay_CcdClock4" xml:space="preserve"><value>فرکانس CCD 4</value></data>
+  <data name="Overlay_CcdClock5" xml:space="preserve"><value>فرکانس CCD 5</value></data>
+  <data name="Overlay_CcdClock6" xml:space="preserve"><value>فرکانس CCD 6</value></data>
+  <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
+  <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
 </root>

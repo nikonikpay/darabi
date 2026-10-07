@@ -27,6 +27,16 @@ public static class SceneScore
     public static double Overall(double graphics, double cpu, double ram)
         => (GraphicsWeight + CpuWeight + RamWeight) / (GraphicsWeight / graphics + CpuWeight / cpu + RamWeight / ram);
 
+    /// <summary>How the cost of a frame (each part's weight over its score: the terms of the harmonic mean) divides between the three parts, in percent: the
+    /// model's reading of where the time goes, so a result shows how much a faster card, processor or RAM could still change. Not a measurement of the part.</summary>
+    public static (double Graphics, double Cpu, double Ram) Shares(double graphics, double cpu, double ram)
+    {
+        double g = GraphicsWeight / graphics, c = CpuWeight / cpu, r = RamWeight / ram, sum = g + c + r;
+        return (g / sum * 100, c / sum * 100, r / sum * 100);
+    }
+    /// <summary>What the overall score would gain, in percent, if the RAM were a tenth faster (its score a tenth higher): how much the RAM's speed and latency matter to this machine's result, in the score's own model.</summary>
+    public static double RamEffect(double graphics, double cpu, double ram) => (Overall(graphics, cpu, ram * 1.1) / Overall(graphics, cpu, ram) - 1) * 100;
+
     /// <summary>Which of the two sides of a frame holds the frame rate back: the one that takes longer. With both within a tenth of each other neither
     /// is named (a balanced scene), and the result says so.</summary>
     public enum Limit { Balanced, Graphics, Cpu }

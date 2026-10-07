@@ -1396,7 +1396,7 @@ The update services stopped and disabled</value></data>
   <data name="Test_RayTracing_Off" xml:space="preserve"><value>Off</value></data>
   <data name="Test_RayTracing_On" xml:space="preserve"><value>On (DXR 1.1)</value></data>
   <data name="Bench_Gpu_SceneRt" xml:space="preserve"><value>Graphics — Persian garden, ray traced (DXR)</value></data>
-  <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden (2560x1440)</value></data>
+  <data name="Bench_Gpu_Scene_Fps" xml:space="preserve"><value>Average frame rate in the garden</value></data>
   <data name="Bench_Gpu_Scene_FpsPart" xml:space="preserve"><value>Average frame rate, part of the walk (not compared)</value></data>
   <data name="Bench_Gpu_Scene_Low" xml:space="preserve"><value>1% low (the slowest hundredth of frames)</value></data>
   <data name="Nav_AppUpdate" xml:space="preserve"><value>App update</value></data>
@@ -3298,4 +3298,25 @@ Cancel: stop.</value></data>
   <data name="Web_Detail_Cpu" xml:space="preserve"><value>Processor during the run</value></data>
   <data name="Web_Detail_Ram" xml:space="preserve"><value>RAM during the run</value></data>
   <data name="Web_Detail_GainHint" xml:space="preserve"><value>How much faster this side is than the other</value></data>
+  <data name="Bench_Scene_Frames" xml:space="preserve"><value>Frames drawn in all</value></data>
+  <data name="Bench_Scene_GpuFps" xml:space="preserve"><value>Frames a second the graphics card alone can make</value></data>
+  <data name="Bench_Scene_CpuFps" xml:space="preserve"><value>Frames a second the processor alone can prepare</value></data>
+  <data name="Bench_Scene_ShareGpu" xml:space="preserve"><value>Graphics card's share of a frame's cost (the score's model)</value></data>
+  <data name="Bench_Scene_ShareCpu" xml:space="preserve"><value>Processor's share of a frame's cost (the score's model)</value></data>
+  <data name="Bench_Scene_ShareRam" xml:space="preserve"><value>RAM's share of a frame's cost (the score's model)</value></data>
+  <data name="Bench_Scene_RamEffect" xml:space="preserve"><value>Overall score gained by RAM 10 % faster (the score's model)</value></data>
+  <data name="Bench_App_Cores" xml:space="preserve"><value>Mazesta's processor use, average (cores busy)</value></data>
+  <data name="Bench_App_CoresMax" xml:space="preserve"><value>Mazesta's processor use, highest (cores busy)</value></data>
+  <data name="Bench_App_CpuLoad" xml:space="preserve"><value>Mazesta's share of the whole processor, average</value></data>
+  <data name="Bench_App_Ram" xml:space="preserve"><value>RAM held by Mazesta, average</value></data>
+  <data name="Bench_App_RamMax" xml:space="preserve"><value>RAM held by Mazesta, highest</value></data>
+  <data name="Web_Detail_App" xml:space="preserve"><value>Load of Mazesta itself during the run</value></data>
+  <data name="Overlay_CcdClock1" xml:space="preserve"><value>CCD 1 clock</value></data>
+  <data name="Overlay_CcdClock2" xml:space="preserve"><value>CCD 2 clock</value></data>
+  <data name="Overlay_CcdClock3" xml:space="preserve"><value>CCD 3 clock</value></data>
+  <data name="Overlay_CcdClock4" xml:space="preserve"><value>CCD 4 clock</value></data>
+  <data name="Overlay_CcdClock5" xml:space="preserve"><value>CCD 5 clock</value></data>
+  <data name="Overlay_CcdClock6" xml:space="preserve"><value>CCD 6 clock</value></data>
+  <data name="Overlay_CcdClock7" xml:space="preserve"><value>CCD 7 clock</value></data>
+  <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
 </root>

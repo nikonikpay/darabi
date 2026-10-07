@@ -22,7 +22,7 @@ internal sealed unsafe class SceneOverlay : IDisposable
 
     public const uint Game = 0xFDD400, GpuHue = 0x5BE37D, CpuHue = 0x5AA9FF, RamHue = 0xC08CFF, LowHue = 0xFF8A3D;
     private const uint Label = 0xC3C7CC, Faint = 0x8A9097, White = 0xFFFFFF, Fail = 0xFF4D4D, Rule = 0x2A2D31, Well = 0x101214;
-    private const int MaxRows = 4;
+    private const int MaxRows = 5;
 
     private readonly D3D12Session _s; private readonly ID3D12Resource[] _targets;
     private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline; private readonly ID3D12DescriptorHeap _rtvHeap; private readonly uint _rtvSize;

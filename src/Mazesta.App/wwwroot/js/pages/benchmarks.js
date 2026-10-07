@@ -116,11 +116,9 @@ export function benchList(component = null) {
       if (key !== x.last) {
         x.last = key;
         x.metrics.replaceChildren(...n.metrics.map((m) => h("div", { class: "metric" }, h("div", { class: "v" }, m.value), h("div", { class: "n" }, m.name))));
-        x.detail.hidden = !n.more.length && !n.detail && !n.sections?.length;
+        x.detail.hidden = !n.more.length && !n.detail;
         x.detail.replaceChildren(h("summary", {}, t("Web_Bench_RunDetails")),
-          // each part's figures (graphics card, processor, RAM) under a heading of their own, closed until opened
-          ...(n.sections || []).map(sectionBox),
-          n.more.length ? h("dl", { class: "spec run-spec" }, n.more.flatMap((m) => [h("dt", {}, m.name), h("dd", { class: "num" }, m.value)])) : null,
+          n.more.length ? itemGrid(n.more) : null,
           n.detail ? h("p", { class: "detail" }, n.detail) : null);
       }
       const recKey = JSON.stringify([r.best, r.compared]);
@@ -147,8 +145,12 @@ export function benchList(component = null) {
 
 // One part's figures (graphics card, processor, RAM) as a folding group with a heading, closed until opened.
 function sectionBox(sec) {
-  return h("details", { class: "cmp-group" }, h("summary", {}, t(sec.key)),
-    h("dl", { class: "spec" }, sec.items.flatMap((x) => [h("dt", {}, x.name), h("dd", { class: "num" }, x.value)])));
+  return h("details", { class: "cmp-group" }, h("summary", {}, t(sec.key)), itemGrid(sec.items));
+}
+
+// Figures in columns, each value right beside its name (a long list stays short, and a value is never a screen away from what it is).
+function itemGrid(items) {
+  return h("div", { class: "sec-grid" }, items.map((x) => h("div", { class: "sec-item" }, h("span", { class: "k" }, x.name), h("b", { class: "v num" }, x.value))));
 }
 
 // Which of two runs is the faster at a figure and by how much: the larger of the two over the smaller, less one, as a percentage - on the
@@ -171,7 +173,7 @@ function record(r) {
     const sections = m?.metrics?.sections || [];
     if (!groups.length && !sections.length) return null;
     return h("details", { class: "rec-more" }, h("summary", {}, t("Web_Bench_AllNumbers")),
-      h("div", { class: "spec-cols" }, groups.map(([k, xs]) => h("dl", { class: "spec" }, h("dt", { class: "spec-h" }, t(k)), xs.flatMap((x) => [h("dt", {}, x.name), h("dd", { class: "num" }, x.value)])))),
+      h("div", { class: "spec-cols" }, groups.map(([k, xs]) => h("div", { class: "sec-block" }, h("div", { class: "spec-h" }, t(k)), itemGrid(xs)))),
       ...sections.map(sectionBox));
   };
   if (c) {

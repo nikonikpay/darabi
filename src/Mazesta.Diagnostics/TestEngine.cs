@@ -146,6 +146,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         }
         var request = new TestExecutionRequest(item.DurationSeconds, clock, Progress, liveEngine, new TestOptions(item.Definition, item.Options), e => Emit(e with { Test = id }));
         TestRunResult? total = null;
+        using var footprint = Evidence.RunFootprint.Start();   // the load this program itself put on the machine during the test, kept in its evidence
         do
         {
             iteration++;
@@ -164,6 +165,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;
         }
         while (item.Repeat switch { RepeatMode.Once => false, RepeatMode.Count => iteration < item.RepeatCount, RepeatMode.Unlimited => true, _ => false });
+        if (total!.Outcome is not (TestOutcome.Unsupported or TestOutcome.Error) && footprint.Stop().Describe() is { } load) total = total with { Detail = SensorEvidence.Join(total.Detail, load) };
         return WithNvmeLog(WithStorageEvents(WithHardwareErrors(total!, started), started), nvmeBefore);
     }
 

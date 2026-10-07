@@ -26,13 +26,16 @@ public static class BenchmarkDetails
     };
     /// <summary>A measured condition of the run, not a result of its work: the listed keys, the RAM's figures (its use, speed and CL; the bandwidth and
     /// latency of the quick probe are conditions of the score they make), and a CCD's clock.</summary>
-    public static bool IsCondition(string key) => ConditionKeys.Contains(key) || key.StartsWith("Bench_Ram_", StringComparison.Ordinal) || IsCcd(key);
+    public static bool IsCondition(string key) => ConditionKeys.Contains(key) || key.StartsWith("Bench_Ram_", StringComparison.Ordinal) || key.StartsWith("Bench_App_", StringComparison.Ordinal) || IsCcd(key);
     private static bool IsCcd(string key) => key.StartsWith("Bench_Cpu_Ccd", StringComparison.Ordinal);
 
     /// <summary>The part a condition belongs to ("Gpu", "Cpu", "Ram"): the page folds each part's figures under a heading of its own, closed until opened.
     /// Null for a condition of no part (the thread count).</summary>
     public static string? Section(string key) => !IsCondition(key) ? null
-        : key.StartsWith("Bench_Gpu_", StringComparison.Ordinal) ? "Gpu" : key.StartsWith("Bench_Cpu_", StringComparison.Ordinal) ? "Cpu" : key.StartsWith("Bench_Ram_", StringComparison.Ordinal) ? "Ram" : null;
+        : key.StartsWith("Bench_Gpu_", StringComparison.Ordinal) ? "Gpu" : key.StartsWith("Bench_Cpu_", StringComparison.Ordinal) ? "Cpu" : key.StartsWith("Bench_Ram_", StringComparison.Ordinal) ? "Ram" : key.StartsWith("Bench_App_", StringComparison.Ordinal) ? "App" : null;
+
+    /// <summary>Whether a result is one that can be won: the shares and the RAM's effect (what the score's model says of where the cost lies) are not.</summary>
+    public static bool HasDirection(string key) => !IsCondition(key) && !key.StartsWith("Bench_Scene_Share", StringComparison.Ordinal) && key != "Bench_Scene_RamEffect";
 
     /// <summary>Whether a higher value of a result is the better one: false for times (ms, ns), true for everything else a result counts.</summary>
     public static bool HigherIsBetter(string unit) => unit is not ("ms" or "ns" or "s" or "µs");

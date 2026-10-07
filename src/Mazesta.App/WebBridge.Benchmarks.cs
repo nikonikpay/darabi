@@ -317,14 +317,14 @@ public sealed partial class WebBridge
 
     /// <summary>The conditions of each part (the graphics card, the processor, the RAM) as a group of its own, in that order; a part with none has no group.</summary>
     private static IEnumerable<object> Sections(IReadOnlyList<BenchmarkMetric>? metrics)
-        => new[] { "Gpu", "Cpu", "Ram" }.Select(part => new { key = $"Web_Detail_{part}", items = (metrics ?? []).Where(m => BenchmarkDetails.Section(m.Key) == part).Select(MetricJson).ToList() }).Where(s => s.items.Count > 0);
+        => new[] { "Gpu", "Cpu", "Ram", "App" }.Select(part => new { key = $"Web_Detail_{part}", items = (metrics ?? []).Where(m => BenchmarkDetails.Section(m.Key) == part).Select(MetricJson).ToList() }).Where(s => s.items.Count > 0);
 
     /// <summary>A number for the page: its name and the value as shown, and the value itself with which way is better (null for a condition, which is not a result to win),
     /// so two runs side by side can say how much faster the quicker one is.</summary>
     private static object MetricJson(BenchmarkMetric m) => new
     {
         name = Loc.Get(m.Key), value = m.Unit.Length == 0 ? Units.FormatMeasured(m.Value, "", 0) : Units.FormatMeasured(m.Value, m.Unit),
-        raw = m.Value, hb = BenchmarkDetails.IsCondition(m.Key) ? (bool?)null : BenchmarkDetails.HigherIsBetter(m.Unit),
+        raw = m.Value, hb = BenchmarkDetails.HasDirection(m.Key) ? BenchmarkDetails.HigherIsBetter(m.Unit) : (bool?)null,
     };
 
     /// <summary>One run in full: its number, whether it was overclocked, when, its measured numbers and its part's and machine's specifications.</summary>

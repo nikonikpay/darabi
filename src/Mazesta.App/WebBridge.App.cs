@@ -78,7 +78,7 @@ public sealed partial class WebBridge
     private static object Hardware(PollingEngine engine) => engine.Hardware.Select(n => new
     {
         id = n.Id.Value, name = n.Name, kind = n.Kind.ToString(), vendor = n.Vendor.ToString(), parent = n.ParentId?.Value,
-        sensors = n.Sensors.OrderBy(s => s.Ordinal).Select(s => new { id = s.Id.Value, name = s.Name, kind = s.Kind.ToString(), unit = s.Unit.ToString(), role = s.Role.ToString() }),
+        sensors = n.Sensors.OrderBy(s => s.Ordinal).Select(s => new { id = s.Id.Value, name = s.Name, kind = s.Kind.ToString(), unit = s.Unit.ToString(), role = s.Role.ToString(), ccd = n.Kind == HardwareKind.Cpu ? Mazesta.Diagnostics.Benchmarks.HostMetrics.CcdOfCore(s.Name) : null }),
     });
 
     /// <summary>The whole string table in the app's language (English underneath, so a key missing in Persian still reads), kept in the app layer

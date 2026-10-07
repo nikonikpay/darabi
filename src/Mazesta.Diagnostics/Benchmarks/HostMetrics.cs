@@ -41,10 +41,23 @@ public static class HostMetrics
             metrics.AddRange([new("Bench_Cpu_TempAvg", temp.Average, Units.Symbol(Unit.Celsius)), new("Bench_Cpu_TempMax", temp.Max, Units.Symbol(Unit.Celsius))]);
     }
 
+    /// <summary>The CCD (counted from 1: the cores that share a level-3 cache) of the core a CPU sensor is named after ("Core #7", "Core #7 (SMU)"), or null: for a sensor
+    /// of no single core, and for a processor with one cache for all its cores (every Intel one, and a Ryzen of one CCD).</summary>
+    public static int? CcdOfCore(string sensorName)
+    {
+        var groups = CpuTopology.CacheGroups;
+        if (groups.Count is < 2 or > MaxCcds || CoreNumber.Match(sensorName) is not { Success: true } m) return null;
+        int index = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) - 1;
+        var core = CpuTopology.Cores.FirstOrDefault(c => c.Index == index);
+        if (core is null) return null;
+        for (int g = 0; g < groups.Count; g++) if (groups[g].Group == core.Group && (groups[g].Mask & core.Mask) != 0) return g + 1;
+        return null;
+    }
+    private static readonly Regex CoreNumber = new(@"^Core #(\d+)", RegexOptions.Compiled);
+
     /// <summary>The RAM in use over the run (GB, average and peak), its load, and what it runs at; <paramref name="facts"/> may be null.</summary>
     public static void AddRam(List<BenchmarkMetric> metrics, TestExecutionRequest request, DateTimeOffset from, DateTimeOffset to, MemoryFacts? facts)
     {
-        if (UsedGb(request.Engine, from, to) is { } used) metrics.AddRange([new("Bench_Ram_Used", used.Average, "GB"), new("Bench_Ram_UsedMax", used.Max, "GB")]);
         metrics.AddSensor(request, HardwareKind.Memory, SensorRole.RamLoad, from, to, "Bench_Ram_Load", Unit.Percent);
         if (facts?.SpeedMts is { } mts) metrics.Add(new("Bench_Ram_Speed", mts, "MT/s"));
         if (facts?.CasLatency is { } cl) metrics.Add(new("Bench_Ram_Cl", cl, "CL"));
@@ -77,7 +90,7 @@ public static class HostMetrics
         string?[] parts =
         [
             Get("Bench_Cpu_ClockPeak", "CPU clock peak"), Get("Bench_Cpu_Clock", "CPU clock avg"), Get("Bench_Cpu_Load", "CPU load avg"), Get("Bench_Cpu_PowerMax", "CPU power peak"),
-            Get("Bench_Ram_Used", "RAM used avg", "F1"), Get("Bench_Ram_UsedMax", "RAM used peak", "F1"), Get("Bench_Ram_Speed", "RAM speed"), Get("Bench_Ram_Cl", "RAM CAS latency (profile at that speed)"),
+            Get("Bench_Ram_Speed", "RAM speed"), Get("Bench_Ram_Cl", "RAM CAS latency (profile at that speed)"),
         ];
         return [.. parts.OfType<string>()];
     }

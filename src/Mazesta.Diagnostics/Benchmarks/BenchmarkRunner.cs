@@ -106,7 +106,9 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
         {
             Started?.Invoke(benchmark, snapshot);
             var request = new TestExecutionRequest(seconds, clock, p => Progress?.Invoke(id, p.PercentComplete), engine, new TestOptions(benchmark.Definition, options));
+            using var footprint = Evidence.RunFootprint.Start();   // what this program itself takes of the machine while it measures: kept with the result
             result = await benchmark.RunAsync(request, cts.Token).ConfigureAwait(false);
+            if (result.Status == BenchmarkStatus.Completed) result = result with { Metrics = [.. result.Metrics, .. footprint.Stop().Metrics()] };
         }
         catch (OperationCanceledException) { result = BenchmarkResult.Cancelled(id, clock.UtcNow, clock.UtcNow); }
         catch (Exception e) { result = BenchmarkResult.Error(id, clock.UtcNow, clock.UtcNow, e); Crashed?.Invoke(id, e); }   // escaped the benchmark's own handling: the program's fault

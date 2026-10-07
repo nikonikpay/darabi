@@ -1,5 +1,5 @@
 using System.Diagnostics; using System.Globalization; using System.Numerics; using System.Runtime.InteropServices; using ComputeSharp;
-using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring; using Mazesta.Diagnostics.Evidence; using Mazesta.Diagnostics.Gpu.Benchmarks;
+using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Evidence; using Mazesta.Monitoring; using Mazesta.Diagnostics.Gpu.Benchmarks;
 using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vortice.Mathematics;
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
@@ -207,9 +207,21 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "MHz", SensorRole.GpuCoreClock));
         Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),
             One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
+        // A Ryzen's CCDs, each with the clock of its cores (the cores that share a level-3 cache), where the processor has more than one.
+        if (cpu is not null && engine is not null)
+        {
+            int recent = engine.History.SecondsSinceEpoch(now) - 5; var byCcd = new SortedDictionary<int, List<double>>();
+            foreach (var s in cpu.Sensors.Where(s => s.Role == SensorRole.CpuCoreClock))
+                if (HostMetrics.CcdOfCore(s.Name) is { } ccd)
+                {
+                    var raw = engine.History.GetRaw(s.Id);
+                    for (int i = raw.Values.Length - 1; i >= 0 && raw.Seconds[i] >= recent; i--) if (!float.IsNaN(raw.Values[i])) { (byCcd.TryGetValue(ccd, out var l) ? l : byCcd[ccd] = []).Add(raw.Values[i]); break; }
+                }
+            Add("CCD", SceneOverlay.CpuHue, [.. byCcd.Select(c => (SceneOverlay.Figure?)new SceneOverlay.Figure(c.Value.Average().ToString("F0", CultureInfo.InvariantCulture), "MHz·" + c.Key.ToString(CultureInfo.InvariantCulture)))]);
+        }
         // The RAM: in use, the speed it is set to, the CAS latency of its profile at that speed (Windows does not report the timings in use), and last the load, which is dropped first when the line is full.
-        Add("RAM", SceneOverlay.RamHue, Used(ramNode, SensorRole.RamUsed, SensorRole.RamTotal, SensorRole.RamFree), ram?.SpeedMts is { } mts ? new(mts.ToString(CultureInfo.InvariantCulture), "MT/s") : null,
-            ram?.CasLatency is { } cl ? new("CL" + cl.ToString(CultureInfo.InvariantCulture), "") : null, One(ramNode, "%", SensorRole.RamLoad));
+        Add("RAM", SceneOverlay.RamHue, new SceneOverlay.Figure(RunFootprint.CurrentRamMb().ToString("F0", CultureInfo.InvariantCulture), "MB APP"), ram?.SpeedMts is { } mts ? new(mts.ToString(CultureInfo.InvariantCulture), "MT/s") : null,
+            ram?.CasLatency is { } cl ? new("CL" + cl.ToString(CultureInfo.InvariantCulture), "") : null, Used(ramNode, SensorRole.RamUsed, SensorRole.RamTotal, SensorRole.RamFree), One(ramNode, "%", SensorRole.RamLoad));
         return rows;
     }
 
