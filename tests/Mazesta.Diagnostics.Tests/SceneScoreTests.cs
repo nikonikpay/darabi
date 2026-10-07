@@ -5,12 +5,13 @@ public class SceneScoreTests
 {
     [Fact] public void The_graphics_score_is_the_cards_own_rate_per_full_hd_of_pixels()
     {
-        Assert.Equal(6000, SceneScore.Graphics(60, 1920, 1080), 6);
-        Assert.Equal(SceneScore.Graphics(60, 1920, 1080) * 4, SceneScore.Graphics(60, 3840, 2160), 6);   // the same rate at four times the pixels is four times the work
+        Assert.Equal(6000, SceneScore.Graphics(60), 6);
+        Assert.Equal(SceneScore.Graphics(60), SceneScore.Graphics(60), 6);   // the pixel count is not in the score: a slower frame at a bigger size scores lower
+        Assert.True(SceneScore.Graphics(16) < SceneScore.Graphics(30));
     }
     [Fact] public void A_card_twice_as_quick_scores_twice_as_much_and_a_slower_processor_scores_less()
     {
-        Assert.Equal(2 * SceneScore.Graphics(1 / 0.020, 1920, 1080), SceneScore.Graphics(1 / 0.010, 1920, 1080), 6);
+        Assert.Equal(2 * SceneScore.Graphics(1 / 0.020), SceneScore.Graphics(1 / 0.010), 6);
         Assert.True(SceneScore.Cpu(1 / 0.002) > SceneScore.Cpu(1 / 0.004));
     }
     [Fact] public void The_ram_score_counts_bandwidth_and_latency_alike()

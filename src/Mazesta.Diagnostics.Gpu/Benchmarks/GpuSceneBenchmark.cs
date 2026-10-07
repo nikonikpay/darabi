@@ -108,7 +108,7 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         var setup = new List<SpecItem>();
         if (whole)
         {
-            double graphics = SceneScore.Graphics(1 / gpuFrame, width, height), cpu = SceneScore.Cpu(1 / cpuFrame);
+            double graphics = SceneScore.Graphics(1 / gpuFrame), cpu = SceneScore.Cpu(1 / cpuFrame);
             double? ramScore = probe is { } p ? SceneScore.Ram(p.Triad, p.Latency) : null;
             if (ramScore is { } rs) metrics.Add(new("Bench_Scene_Score", SceneScore.Overall(graphics, cpu, rs), "pts"));
             metrics.AddRange([new("Bench_Scene_ScoreGpu", graphics, "pts"), new("Bench_Scene_ScoreCpu", cpu, "pts")]);

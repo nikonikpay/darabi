@@ -4,7 +4,7 @@ The Persian-garden benchmark (`bench.gpu.scene.d3d`) reports points, not only a 
 
 | Score | Formula | Measured from |
 |---|---|---|
-| Graphics (the list's headline) | `fps_gpu × (w × h / 1920 × 1080) × 100` | the card's time per frame: the submission's start to its end (`D3D12Session.LastSubmitSeconds`), over the whole walk |
+| Graphics (the list's headline) | `fps_gpu × 100` (not scaled by the pixel count: v29 did, and a 4K run then scored higher than a 720p one at the same frame rate; the resolution is part of the record's key instead) | the card's time per frame: the submission's start to its end (`D3D12Session.LastSubmitSeconds`), over the whole walk |
 | CPU | `fps_cpu × 3` | the processor's time to record a frame (`LastRecordSeconds`): what a game loop pays per frame |
 | RAM | `5000 × √((Triad GB/s ÷ 40) × (80 ns ÷ latency))` | a 4-second probe after the walk: STREAM Triad on every thread over 3 × 256 MiB, and a random pointer chase |
 | Overall | weighted harmonic mean, 0.75 / 0.15 / 0.10 | the three above; absent when the RAM probe could not run (not enough free RAM) |

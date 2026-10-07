@@ -8,7 +8,8 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// constants are chosen so that a mid-range machine lands in the thousands, and they are never changed without raising the benchmark's version, so
 /// the numbers of one version are comparable with each other and with nothing else.
 /// <list type="bullet">
-/// <item><b>Graphics</b> = 100 × the frame rate the card alone could hold, per Full HD of pixels: <c>fps × (width × height / 1920 × 1080) × 100</c>.
+/// <item><b>Graphics</b> = 100 × the frame rate the card alone could hold: <c>fps × 100</c>. Not scaled by the pixel count: a bigger picture must not raise the score (it
+/// can only lower the rate), so the resolution is a setting of the run - part of the record's key, lists never mix resolutions - not a factor in the number.
 /// The frame's time on the card is its submission to its completion; the processor's share of the frame is the CPU score's.</item>
 /// <item><b>CPU</b> = 3 × the frames a second the processor and driver can prepare (record and submit) for this scene: its single-thread speed as the
 /// game loop of a real program feels it.</item>
@@ -19,9 +20,8 @@ namespace Mazesta.Diagnostics.Benchmarks;
 public static class SceneScore
 {
     public const double GraphicsWeight = 0.75, CpuWeight = 0.15, RamWeight = 0.10;
-    private const double ReferencePixels = 1920.0 * 1080;
 
-    public static double Graphics(double gpuFramesPerSecond, int width, int height) => gpuFramesPerSecond * width * height / ReferencePixels * 100;
+    public static double Graphics(double gpuFramesPerSecond) => gpuFramesPerSecond * 100;
     public static double Cpu(double preparedFramesPerSecond) => preparedFramesPerSecond * 3;
     public static double Ram(double triadGbPerSecond, double latencyNs) => 5000 * Math.Sqrt(triadGbPerSecond / 40.0 * (80.0 / latencyNs));
     public static double Overall(double graphics, double cpu, double ram)
