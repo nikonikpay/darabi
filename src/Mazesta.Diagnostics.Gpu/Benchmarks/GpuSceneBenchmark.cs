@@ -15,14 +15,16 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// </summary>
 public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", QualityOption = "quality", DefaultResolution = "2560x1440";
+    public const string ResolutionOption = "resolution", QualityOption = "quality", DefaultResolution = "1920x1080";
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K can be measured on any monitor.
     private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, DefaultResolution,
-        () => [new("1280x720", "1280 × 720 (HD)"), new("1920x1080", "1920 × 1080 (Full HD)"), new(DefaultResolution, "2560 × 1440 (2K)"), new("3840x2160", "3840 × 2160 (4K)")]);
+        () => [new("1280x720", "1280 × 720 (HD)"), new(DefaultResolution, "1920 × 1080 (Full HD)"), new("2560x1440", "2560 × 1440 (2K)"), new("3840x2160", "3840 × 2160 (4K)")]);
     private static readonly TestOption RasterQuality = new(QualityOption, "Bench_Option_Quality", TestOptionKind.Choice, "3",
         () => [new("1", "Test_GpuLoad_Light", true, "shadows 2048 · no MSAA · no pool reflection"), new("2", "Test_GpuLoad_Medium", true, "shadows 2048 · MSAA 2× · pool reflection 1/2"),
-               new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")]);
-    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, GpuSceneExecutor.RayTracing, GpuSceneExecutor.Overlay]);
+               new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")], When: GpuSceneExecutor.RayTracingOption + "=off");
+    /// <summary>Ray tracing starts on where the card has DXR 1.1, off otherwise.</summary>
+    private static readonly TestOption RayTracing = GpuSceneExecutor.RayTracing with { Preferred = () => GpuFeatures.RayTracingAvailability(TestOptions.None(Scene!)) is null ? "on" : "off" };
+    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.Overlay]);
     public TestDefinition Definition => Scene;
     public HardwareKind Component => HardwareKind.Gpu;
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(GpuSceneExecutor.RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -36,7 +38,8 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         if (rayTraced && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve(request, Definition)!))
             throw new GpuUnsupportedException($"{s.AdapterName} does not support DirectX Raytracing 1.1 (inline ray tracing).");
         var (width, height) = GpuSceneExecutor.ParseSize(options.Get(ResolutionOption));
-        int quality = int.TryParse(options.Get(QualityOption), out int q) ? q : 3;
+        // The quality is for the rasterised garden and is not offered with rays: a ray-traced run is always at the default one, whatever a stale choice says.
+        int quality = !rayTraced && int.TryParse(options.Get(QualityOption), out int q) ? q : 3;
         uint load = (uint)Math.Clamp(quality, 1, 4);
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12";
         using var window = new TestWindow($"Mazesta — {mode} — benchmark", width, height, false);

@@ -10,9 +10,10 @@ public sealed record OptionChoice(string Value, string Label, bool Localized = f
 /// MB, which GPU). Declared by the test itself, so the Test Center renders any test's options without
 /// knowing what they mean. <see cref="Choices"/> is a function, evaluated when the page is built, because a
 /// list of drives or adapters is a fact about this machine right now, not a constant.</summary>
+/// <param name="Preferred">What the option starts at on this machine when that differs from <see cref="Default"/> (ray tracing on where the card has it): asked when the page is built; null or a failure leaves the default.</param>
 /// <param name="When">"key=value" (or "key=a|b"): the option only matters while that other option of the same test has one of those values,
 /// and the page shows it only then (the steady load has no high and low percentages to set). Null: it always matters.</param>
-public sealed record TestOption(string Key, string LabelKey, TestOptionKind Kind, string Default, Func<IReadOnlyList<OptionChoice>>? Choices = null, string? When = null)
+public sealed record TestOption(string Key, string LabelKey, TestOptionKind Kind, string Default, Func<IReadOnlyList<OptionChoice>>? Choices = null, string? When = null, Func<string>? Preferred = null)
 {
     /// <summary>Whether the option matters with the values <paramref name="valueOf"/> gives for the test's other options.</summary>
     public bool Applies(Func<string, string?> valueOf)

@@ -77,6 +77,9 @@ public sealed class BenchmarkRecords
     public static IReadOnlyDictionary<string, string>? Effective(string benchmarkId, IReadOnlyDictionary<string, string>? options)
     {
         if (options is null) return null;
+        // The quality does not apply with ray tracing (it is not offered): whatever it was left at, a ray-traced run is the default quality's.
+        if (benchmarkId == "bench.gpu.scene.d3d" && options.GetValueOrDefault("raytracing") == "on" && options.TryGetValue("quality", out var qv) && qv != "3")
+            options = options.ToDictionary(o => o.Key, o => o.Key == "quality" ? "3" : o.Value);
         var legacy = Unchanged.GetValueOrDefault(benchmarkId);
         return legacy is null && !options.Keys.Any(NotTheWork.Contains) ? options : options.Where(o => !NotTheWork.Contains(o.Key) && !(legacy is not null && legacy.TryGetValue(o.Key, out var v) && v == o.Value)).ToDictionary(o => o.Key, o => o.Value);
     }

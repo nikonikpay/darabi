@@ -18,8 +18,15 @@ public sealed partial class TestOptionViewModel : ObservableObject
     {
         Option = option;
         Choices = [.. (option.Choices?.Invoke() ?? []).Select(c => c.Localized ? c with { Label = Loc.Get(c.Label), Localized = false } : c)];
-        _text = option.Default;
-        _selectedChoice = Choices.FirstOrDefault(c => c.Value == option.Default) ?? Choices.FirstOrDefault();
+        string start = Starting(option);
+        _text = start;
+        _selectedChoice = Choices.FirstOrDefault(c => c.Value == start) ?? Choices.FirstOrDefault(c => c.Value == option.Default) ?? Choices.FirstOrDefault();
+    }
+
+    private static string Starting(TestOption option)
+    {
+        try { return option.Preferred?.Invoke() is { Length: > 0 } p ? p : option.Default; }
+        catch (Exception e) when (e is not OutOfMemoryException) { return option.Default; }
     }
 
     /// <summary>What is handed to the test: the chosen item's value, or the typed text (digits normalised).</summary>
