@@ -56,7 +56,12 @@ internal static class GpuBenchmark
                 var finished = request.Clock.UtcNow;
                 var node = Node(request, session.AdapterName);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_Clock", Unit.MegaHertz, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, "Bench_Gpu_ClockMax", Unit.MegaHertz, peak: true, node: node);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, "Bench_Gpu_MemClock", Unit.MegaHertz, node: node);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, "Bench_Gpu_MemClockMax", Unit.MegaHertz, peak: true, node: node);
+                metrics.AddFirst(request, HardwareKind.Gpu, started, finished, "Bench_Gpu_LoadMax", Unit.Percent, true, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D);
+                metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_PowerMax", Unit.Watt, peak: true, node: node);
+                if (HostMetrics.Gigabytes(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramUsed, node, started, finished) is { } vram) metrics.Add(new("Bench_Gpu_VramUsedMax", vram.Max, "GB"));
                 metrics.AddFirst(request, HardwareKind.Gpu, started, finished, "Bench_Gpu_Load", Unit.Percent, false, node, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, "Bench_Gpu_Power", Unit.Watt, node: node);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuVoltage, started, finished, "Bench_Gpu_Voltage", Unit.Volt, node: node);
@@ -66,7 +71,7 @@ internal static class GpuBenchmark
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuVramTemp, started, finished, "Bench_Gpu_VramTempMax", Unit.Celsius, peak: true, node: node);
                 metrics.AddSensor(request, HardwareKind.Gpu, SensorRole.GpuFanPercent, started, finished, "Bench_Gpu_Fan", Unit.Percent, node: node);
                 return new BenchmarkResult(spec.Id, BenchmarkStatus.Completed, started, finished, metrics, $"{detail}; on {session.AdapterName}",
-                    resolution is { } r ? [new(BenchmarkDetails.RunGroup, "Bench_Set_Resolution", $"{r.Width}×{r.Height}")] : null);
+                    [.. resolution is { } r ? [new SpecItem(BenchmarkDetails.RunGroup, "Bench_Set_Resolution", $"{r.Width}×{r.Height}")] : Array.Empty<SpecItem>(), .. session.Setup]);
             }
             catch (Exception e)
             {

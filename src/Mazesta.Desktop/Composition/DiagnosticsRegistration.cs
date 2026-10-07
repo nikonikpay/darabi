@@ -14,6 +14,23 @@ internal static class DiagnosticsRegistration
     {
         s.AddSingleton(_ => new JsonStore<TestSessionCheckpoint>(Path.Combine(paths.SessionsDir, "test-checkpoint.json"), new SchemaMigrator([new CheckpointV1ToV2()]), TestSessionCheckpoint.CurrentSchemaVersion, loggers.CreateLogger("Diagnostics")));
         s.AddSingleton<IMemoryProbe, Win32MemoryProbe>();
+        // What the RAM runs at (speed, and the CL of its profile at that speed): read once when a 3-D scene asks, from the inventory and the modules' SPD, never waited for longer than a few seconds.
+        s.AddSingleton<Mazesta.Core.Inventory.MemoryFactsSource>(sp =>
+        {
+            Mazesta.Core.Inventory.MemoryFacts? facts = null; bool known = false;
+            return () =>
+            {
+                if (known) return facts;
+                try
+                {
+                    var inventory = sp.GetRequiredService<InventoryCache>().GetAsync(); var details = sp.GetRequiredService<HardwareDetailsCache>().GetAsync();
+                    if (!Task.WhenAll(inventory, details).Wait(TimeSpan.FromSeconds(10))) return null;
+                    facts = Mazesta.Core.Inventory.MemoryFacts.From(inventory.Result, details.Result.Spd); known = true;
+                }
+                catch (Exception e) when (e is AggregateException or InvalidOperationException) { }
+                return facts;
+            };
+        });
         s.AddSingleton<IHardwareErrorSource, WheaErrorSource>();
         s.AddSingleton<IStorageEventSource, StorageEventSource>();
 

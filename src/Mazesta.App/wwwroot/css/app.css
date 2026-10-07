@@ -1213,6 +1213,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .cmp-head .big td.num { font: 750 17px var(--lat); font-stretch: 80%; color: var(--hue, var(--yellow)); }
 .cmp-group > summary, .rec-more > summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--paper-2); padding: 4px 0; }
 .cmp-group > summary:hover, .rec-more > summary:hover { color: var(--paper); }
+.cmp td.win { color: var(--hue, var(--yellow)); }
+.gain { display: inline-block; margin-inline-start: 8px; padding: 0 7px; border-radius: 99px; font: 750 11px/1.6 var(--lat); background: color-mix(in srgb, var(--hue, var(--yellow)) 16%, transparent); color: var(--hue, var(--yellow)); }
+.run-more > .cmp-group { margin: 4px 0; }
 .rec-more { margin-top: 8px; }
 .spec-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 18px; padding: 6px 0 2px; }
 .spec { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; margin: 0; font-size: 12.5px; align-content: start; }

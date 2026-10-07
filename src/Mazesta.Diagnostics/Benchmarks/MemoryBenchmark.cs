@@ -62,6 +62,24 @@ public sealed class MemoryBenchmark(IMemoryProbe probe) : IBenchmark
         catch (OperationCanceledException) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
     }
 
+    /// <summary>The RAM's bandwidth and latency in a few seconds, for a score beside another benchmark: STREAM Triad on every logical processor over three
+    /// 256 MiB arrays, and the random-access latency over the whole of one. Null (never a zero) when the RAM free is not enough, or the run was
+    /// cancelled; a Triad that fails STREAM's own check is not a result either.</summary>
+    public static (double TriadGbPerSecond, double LatencyNs)? Quick(IMemoryProbe probe, TimeSpan budget, CancellationToken ct)
+    {
+        var status = probe.Read();
+        if (status.AvailableBytes < 3L * BufferBytes + Math.Max(2L << 30, status.TotalBytes / 10)) return null;
+        try
+        {
+            using var a = new NativeBlock(BufferBytes); using var b = new NativeBlock(BufferBytes); using var c = new NativeBlock(BufferBytes);
+            a.Span.Fill(0x5A); b.Span.Fill(0xA5); c.Span.Clear();   // commits every page before anything is timed
+            double latency = LatencyAt(c.Span, TimeSpan.FromSeconds(1), ct);
+            var stream = Stream(a, b, c, budget, null, ct);
+            return stream.Problem is null ? (stream.Best[3], latency) : null;
+        }
+        catch (OperationCanceledException) { return null; }
+    }
+
     /// <summary>Links every 64-byte line of the block into one random cycle (Sattolo's shuffle, which only makes single cycles); the index of
     /// line i's successor sits in the line's first four bytes.</summary>
     internal static void Chain(Span<byte> block, int seed)

@@ -68,7 +68,17 @@ internal sealed unsafe class D3D12Session : IDisposable
     }
 
     /// <summary>Records once and runs it once.</summary>
-    public void Run(Action<ID3D12GraphicsCommandList4> record) { Record(record); Submit(); }
+    public void Run(Action<ID3D12GraphicsCommandList4> record)
+    {
+        long a = Stopwatch.GetTimestamp(); Record(record); long b = Stopwatch.GetTimestamp(); Submit(); long c = Stopwatch.GetTimestamp();
+        LastRecordSeconds = Stopwatch.GetElapsedTime(a, b).TotalSeconds; LastSubmitSeconds = Stopwatch.GetElapsedTime(b, c).TotalSeconds;
+    }
+    /// <summary>The last <see cref="Run"/>'s two halves: the processor recording the commands, and the card (with the driver) taking the submission to its end.
+    /// A frame's time is their sum, because every submission is waited for; the benchmark reads them apart as the processor's and the card's share.</summary>
+    /// <summary>Further facts of how a run was set up, which the benchmark that made them leaves for its result.</summary>
+    public List<Mazesta.Diagnostics.Benchmarks.SpecItem> Setup { get; } = [];
+    public double LastRecordSeconds { get; private set; }
+    public double LastSubmitSeconds { get; private set; }
 
     /// <summary>Runs the recorded list and waits for the GPU to finish it. A device lost mid-run (driver reset, overheating) throws.</summary>
     public void Submit()

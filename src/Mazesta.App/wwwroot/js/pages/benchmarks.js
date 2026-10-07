@@ -116,8 +116,10 @@ export function benchList(component = null) {
       if (key !== x.last) {
         x.last = key;
         x.metrics.replaceChildren(...n.metrics.map((m) => h("div", { class: "metric" }, h("div", { class: "v" }, m.value), h("div", { class: "n" }, m.name))));
-        x.detail.hidden = !n.more.length && !n.detail;
+        x.detail.hidden = !n.more.length && !n.detail && !n.sections?.length;
         x.detail.replaceChildren(h("summary", {}, t("Web_Bench_RunDetails")),
+          // each part's figures (graphics card, processor, RAM) under a heading of their own, closed until opened
+          ...(n.sections || []).map(sectionBox),
           n.more.length ? h("dl", { class: "spec run-spec" }, n.more.flatMap((m) => [h("dt", {}, m.name), h("dd", { class: "num" }, m.value)])) : null,
           n.detail ? h("p", { class: "detail" }, n.detail) : null);
       }
@@ -143,6 +145,21 @@ export function benchList(component = null) {
   return { el: wrap, off: () => { offBench(); offSite(); } };
 }
 
+// One part's figures (graphics card, processor, RAM) as a folding group with a heading, closed until opened.
+function sectionBox(sec) {
+  return h("details", { class: "cmp-group" }, h("summary", {}, t(sec.key)),
+    h("dl", { class: "spec" }, sec.items.flatMap((x) => [h("dt", {}, x.name), h("dd", { class: "num" }, x.value)])));
+}
+
+// Which of two runs is the faster at a figure and by how much: the larger of the two over the smaller, less one, as a percentage - on the
+// quicker side (a lower time is the quicker). Only for a result that has a direction (a condition of the run has none) and two real values.
+export function gain(a, b) {
+  if (!a || !b || !(a.raw > 0) || !(b.raw > 0) || a.hb === null || a.hb === undefined || a.raw === b.raw) return null;
+  const aWins = a.hb ? a.raw > b.raw : a.raw < b.raw;
+  return { win: aWins ? 0 : 1, pct: (Math.max(a.raw, b.raw) / Math.min(a.raw, b.raw) - 1) * 100 };
+}
+const gainTag = (g) => h("span", { class: "gain", title: t("Web_Detail_GainHint") }, `+${g.pct >= 100 ? g.pct.toFixed(0) : g.pct.toFixed(1)}%`);
+
 // The record line: the best result kept on this system; after a run, the run against it. A better run is saved, a lower one is shown and
 // dropped. The change is written as a signed percentage in the part's hue for a record, plain for a lower run (never pass/fail colours).
 // Under it, folded, every number the kept result measured and the conditions it ran in.
@@ -151,9 +168,11 @@ function record(r) {
   const cell = (label, m, extra = null) => h("div", { class: "rec-cell" }, h("span", { class: "k" }, label), h("span", { class: "v num" }, m.value), h("span", { class: "d" }, m.name, extra ? " · " : "", extra ? h("span", { class: "lat" }, extra) : null));
   const numbers = (m) => {
     const groups = [["Web_Detail_Conditions", m?.metrics?.conditions], ["Web_Detail_Results", m?.metrics?.results]].filter(([, xs]) => xs && xs.length);
-    if (!groups.length) return null;
+    const sections = m?.metrics?.sections || [];
+    if (!groups.length && !sections.length) return null;
     return h("details", { class: "rec-more" }, h("summary", {}, t("Web_Bench_AllNumbers")),
-      h("div", { class: "spec-cols" }, groups.map(([k, xs]) => h("dl", { class: "spec" }, h("dt", { class: "spec-h" }, t(k)), xs.flatMap((x) => [h("dt", {}, x.name), h("dd", { class: "num" }, x.value)])))));
+      h("div", { class: "spec-cols" }, groups.map(([k, xs]) => h("dl", { class: "spec" }, h("dt", { class: "spec-h" }, t(k)), xs.flatMap((x) => [h("dt", {}, x.name), h("dd", { class: "num" }, x.value)])))),
+      ...sections.map(sectionBox));
   };
   if (c) {
     const pct = c.change === null || c.change === undefined ? null : `${c.change > 0 ? "+" : c.change < 0 ? "−" : ""}${Math.abs(c.change).toFixed(1)}%`;
@@ -258,28 +277,39 @@ function youRow(p, rank) {
 function compare(mine, theirs, two) {
   const sides = two ? [mine, theirs] : [mine];
   if (!sides.some(Boolean)) return h("p", { class: "rec-none" }, t("Web_Detail_None"));
+  // Each row is a figure's name and, per side, its value (with the number behind it where the page can compare it); two sides get the quicker one marked.
   const rows = (pick) => {
     const names = [];
     for (const s of sides) for (const x of pick(s) || []) if (!names.includes(x.name)) names.push(x.name);
-    return names.map((n) => [n, ...sides.map((s) => (pick(s) || []).find((x) => x.name === n)?.value)]);
+    return names.map((n) => [n, ...sides.map((s) => (pick(s) || []).find((x) => x.name === n))]);
   };
-  const cell = (v, cls = "") => h("td", { class: `num ${cls}` }, v ?? "—");
-  const group = (key, list, open = true) => {
+  const cell = (x, win = false, g = null) => h("td", { class: `num ${win ? "win" : ""}` }, x?.value ?? "—", win && g ? gainTag(g) : null);
+  const group = (key, list, open = false) => {
     if (!list.length) return null;
     return h("details", { class: "cmp-group", open: open || null }, h("summary", {}, t(key)),
-      h("table", { class: "cmp" }, h("tbody", {}, list.map(([n, ...vs]) => h("tr", {}, h("th", {}, n), vs.map((v) => cell(v)))))));
+      h("table", { class: "cmp" }, h("tbody", {}, list.map(([n, ...xs]) => {
+        const g = two ? gain(xs[0], xs[1]) : null;
+        return h("tr", {}, h("th", {}, n), xs.map((x, i) => cell(x, g?.win === i, g)));
+      }))));
   };
   const head = h("table", { class: "cmp cmp-head" }, h("thead", {}, h("tr", {}, h("th", {}), sides.map((s, i) => h("th", {}, two ? t(i ? "Web_Detail_That" : "Web_Detail_This") : t("Web_Detail_Result"))))),
-    h("tbody", {}, h("tr", { class: "big" }, h("th", {}, t("Web_Detail_Result")), sides.map((s) => cell(s?.value, "big"))),
+    h("tbody", {}, (() => {
+      const g = two ? gain(mine && { raw: mine.raw, hb: mine.hb }, theirs && { raw: theirs.raw, hb: theirs.hb }) : null;
+      return h("tr", { class: "big" }, h("th", {}, t("Web_Detail_Result")), sides.map((s, i) => h("td", { class: `num big ${g?.win === i ? "win" : ""}` }, s?.value ?? "—", g?.win === i ? gainTag(g) : null)));
+    })(),
       h("tr", {}, h("th", {}, t("Web_Detail_Date")), sides.map((s) => h("td", { class: "lat" }, s?.at ?? "—"))),
       sides.some((s) => s?.oc) ? h("tr", {}, h("th", {}, t("Web_Peers_Oc")), sides.map((s) => h("td", {}, s ? (s.oc ? "✓" : "—") : "—"))) : null));
-  const noDetail = sides.every((s) => !s || (!s.part?.length && !s.system?.length && !s.run?.length && !s.metrics?.conditions?.length));
+  // The graphics card's, the processor's and the RAM's own figures, each under a heading of its own, closed until opened.
+  const sectionKeys = [];
+  for (const s of sides) for (const sec of s?.metrics?.sections || []) if (!sectionKeys.includes(sec.key)) sectionKeys.push(sec.key);
+  const noDetail = sides.every((s) => !s || (!s.part?.length && !s.system?.length && !s.run?.length && !s.metrics?.conditions?.length && !s.metrics?.sections?.length));
   return h("div", { class: "cmp-wrap" }, head,
-    group("Web_Detail_Run", rows((s) => s?.run)),
+    group("Web_Detail_Results", rows((s) => s?.metrics?.results), true),
+    group("Web_Detail_Run", rows((s) => s?.run), true),
+    ...sectionKeys.map((k) => group(k, rows((s) => s?.metrics?.sections?.find((x) => x.key === k)?.items))),
     group("Web_Detail_Conditions", rows((s) => s?.metrics?.conditions)),
     group("Web_Detail_Part", rows((s) => s?.part)),
-    group("Web_Detail_Results", rows((s) => s?.metrics?.results), false),
-    group("Web_Detail_System", rows((s) => s?.system), false),
+    group("Web_Detail_System", rows((s) => s?.system)),
     noDetail ? h("p", { class: "rec-none" }, t("Web_Detail_None")) : null);
 }
 

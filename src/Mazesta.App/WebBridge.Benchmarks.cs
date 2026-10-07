@@ -177,16 +177,17 @@ public sealed partial class WebBridge
         // set up, which the page folds away); before any run of this session, whatever the row itself holds.
         object Numbers(BenchmarkRowViewModel r)
         {
-            if (r.IsActive) return new { metrics = Array.Empty<object>(), more = Array.Empty<object>(), detail = (string?)null };
+            if (r.IsActive) return new { metrics = Array.Empty<object>(), more = Array.Empty<object>(), sections = Array.Empty<object>(), detail = (string?)null };
             if (shown.TryGetValue(Key(r), out var last))
                 return new
                 {
                     metrics = last.Result.Metrics.Where(m => !BenchmarkDetails.IsCondition(m.Key)).Select(MetricJson),
-                    more = last.Result.Metrics.Where(m => BenchmarkDetails.IsCondition(m.Key)).Select(MetricJson).Concat((last.Result.Setup ?? []).Select(SpecJson)),
+                    more = last.Result.Metrics.Where(m => BenchmarkDetails.IsCondition(m.Key) && BenchmarkDetails.Section(m.Key) is null).Select(MetricJson).Concat((last.Result.Setup ?? []).Select(SpecJson)),
+                    sections = Sections(last.Result.Metrics),
                     detail = last.Result.Detail,
                 };
             bool other = lastKey.ContainsKey(r.Benchmark.Definition.Id.Value);   // the last run was made with other options: its numbers are not this row's
-            return new { metrics = other ? [] : r.Metrics.Select(m => (object)new { name = m.Name, value = m.Value }), more = Array.Empty<object>(), detail = other ? null : r.Detail };
+            return new { metrics = other ? [] : r.Metrics.Select(m => (object)new { name = m.Name, value = m.Value }), more = Array.Empty<object>(), sections = Array.Empty<object>(), detail = other ? null : r.Detail };
         }
         // The switches that are on and change the work (ray tracing; not the readout over the scene), shown as marks beside the row's name and its results.
         static IEnumerable<string> Tags(BenchmarkRowViewModel r) => r.Options.Where(o => o.Value == "on" && BenchmarkRecords.Effective(r.Benchmark.Definition.Id.Value, new Dictionary<string, string> { [o.Option.Key] = "on" })!.Count > 0 && o.Choices.Count == 2 && o.Choices[0].Value == "off").Select(o => o.Label);
@@ -310,14 +311,26 @@ public sealed partial class WebBridge
     private static object Metrics(IReadOnlyList<BenchmarkMetric>? metrics, string? headline = null) => new
     {
         results = (metrics ?? []).Where(m => !BenchmarkDetails.IsCondition(m.Key) && m.Key != headline).Select(MetricJson),
-        conditions = (metrics ?? []).Where(m => BenchmarkDetails.IsCondition(m.Key)).Select(MetricJson),
+        conditions = (metrics ?? []).Where(m => BenchmarkDetails.IsCondition(m.Key) && BenchmarkDetails.Section(m.Key) is null).Select(MetricJson),
+        sections = Sections(metrics),
     };
-    private static object MetricJson(BenchmarkMetric m) => new { name = Loc.Get(m.Key), value = m.Unit.Length == 0 ? Units.FormatMeasured(m.Value, "", 0) : Units.FormatMeasured(m.Value, m.Unit) };
+
+    /// <summary>The conditions of each part (the graphics card, the processor, the RAM) as a group of its own, in that order; a part with none has no group.</summary>
+    private static IEnumerable<object> Sections(IReadOnlyList<BenchmarkMetric>? metrics)
+        => new[] { "Gpu", "Cpu", "Ram" }.Select(part => new { key = $"Web_Detail_{part}", items = (metrics ?? []).Where(m => BenchmarkDetails.Section(m.Key) == part).Select(MetricJson).ToList() }).Where(s => s.items.Count > 0);
+
+    /// <summary>A number for the page: its name and the value as shown, and the value itself with which way is better (null for a condition, which is not a result to win),
+    /// so two runs side by side can say how much faster the quicker one is.</summary>
+    private static object MetricJson(BenchmarkMetric m) => new
+    {
+        name = Loc.Get(m.Key), value = m.Unit.Length == 0 ? Units.FormatMeasured(m.Value, "", 0) : Units.FormatMeasured(m.Value, m.Unit),
+        raw = m.Value, hb = BenchmarkDetails.IsCondition(m.Key) ? (bool?)null : BenchmarkDetails.HigherIsBetter(m.Unit),
+    };
 
     /// <summary>One run in full: its number, whether it was overclocked, when, its measured numbers and its part's and machine's specifications.</summary>
     private static object Detail(double value, string unit, bool overclocked, DateTimeOffset? at, IReadOnlyList<BenchmarkMetric>? metrics, IReadOnlyList<SpecItem>? details) => new
     {
-        value = Units.FormatMeasured(value, unit), oc = overclocked, at = at?.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), metrics = Metrics(metrics),
+        value = Units.FormatMeasured(value, unit), raw = value, hb = BenchmarkDetails.HigherIsBetter(unit), oc = overclocked, at = at?.ToLocalTime().ToString("yyyy/MM/dd", Loc.Culture), metrics = Metrics(metrics),
         part = (details ?? []).Where(d => d.Group == BenchmarkDetails.PartGroup).Select(SpecJson),
         system = (details ?? []).Where(d => d.Group == BenchmarkDetails.SystemGroup).Select(SpecJson),
         run = (details ?? []).Where(d => d.Group == BenchmarkDetails.RunGroup).Select(SpecJson),

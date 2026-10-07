@@ -21,8 +21,21 @@ public static class BenchmarkDetails
         "Bench_Threads", "Bench_Cpu_Clock", "Bench_Cpu_ClockPeak", "Bench_Cpu_PClock", "Bench_Cpu_EClock", "Bench_Cpu_Power", "Bench_Cpu_Vcore", "Bench_Cpu_TempAvg", "Bench_Cpu_TempMax",
         "Bench_Gpu_Clock", "Bench_Gpu_MemClock", "Bench_Gpu_Load", "Bench_Gpu_Power", "Bench_Gpu_Voltage", "Bench_Gpu_TempAvg", "Bench_Gpu_TempMax", "Bench_Gpu_HotSpotMax",
         "Bench_Gpu_VramTempMax", "Bench_Gpu_Fan",
+        "Bench_Gpu_ClockMax", "Bench_Gpu_MemClockMax", "Bench_Gpu_LoadMax", "Bench_Gpu_PowerMax", "Bench_Gpu_VramUsedMax",
+        "Bench_Cpu_PClockMax", "Bench_Cpu_EClockMax", "Bench_Cpu_Load", "Bench_Cpu_LoadMax", "Bench_Cpu_PowerMax",
     };
-    public static bool IsCondition(string key) => ConditionKeys.Contains(key);
+    /// <summary>A measured condition of the run, not a result of its work: the listed keys, the RAM's figures (its use, speed and CL; the bandwidth and
+    /// latency of the quick probe are conditions of the score they make), and a CCD's clock.</summary>
+    public static bool IsCondition(string key) => ConditionKeys.Contains(key) || key.StartsWith("Bench_Ram_", StringComparison.Ordinal) || IsCcd(key);
+    private static bool IsCcd(string key) => key.StartsWith("Bench_Cpu_Ccd", StringComparison.Ordinal);
+
+    /// <summary>The part a condition belongs to ("Gpu", "Cpu", "Ram"): the page folds each part's figures under a heading of its own, closed until opened.
+    /// Null for a condition of no part (the thread count).</summary>
+    public static string? Section(string key) => !IsCondition(key) ? null
+        : key.StartsWith("Bench_Gpu_", StringComparison.Ordinal) ? "Gpu" : key.StartsWith("Bench_Cpu_", StringComparison.Ordinal) ? "Cpu" : key.StartsWith("Bench_Ram_", StringComparison.Ordinal) ? "Ram" : null;
+
+    /// <summary>Whether a higher value of a result is the better one: false for times (ms, ns), true for everything else a result counts.</summary>
+    public static bool HigherIsBetter(string unit) => unit is not ("ms" or "ns" or "s" or "µs");
 
     /// <summary>The cores as Windows reports them: "8 P + 16 E" on a hybrid CPU (performance cores are the higher efficiency class), else the count.</summary>
     public static (int Performance, int Efficient, int Threads) Split(IReadOnlyList<CpuCore> cores)

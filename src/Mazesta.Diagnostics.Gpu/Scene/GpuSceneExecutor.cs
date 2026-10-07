@@ -1,5 +1,5 @@
 using System.Diagnostics; using System.Globalization; using System.Numerics; using System.Runtime.InteropServices; using ComputeSharp;
-using Mazesta.Core.Hardware; using Mazesta.Monitoring; using Mazesta.Diagnostics.Evidence; using Mazesta.Diagnostics.Gpu.Benchmarks;
+using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Monitoring; using Mazesta.Diagnostics.Evidence; using Mazesta.Diagnostics.Gpu.Benchmarks;
 using Vortice.Direct3D; using Vortice.Direct3D12; using Vortice.DXGI; using Vortice.Mathematics;
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
@@ -16,7 +16,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// A picture that merely looks right is not the pass: every few seconds the scene is also drawn off screen at one fixed moment and read
 /// back, and that frame must be bit-for-bit the first one - a GPU that draws the same frame differently under load has computed wrongly.
 /// </summary>
-public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
+public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExecutor, ITestAvailability
 {
     public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen";
     /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
@@ -86,7 +86,7 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
         string work = renderer.Work;
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";
-        var gpu = GpuNode(request.Engine, session.AdapterName);
+        var gpu = GpuNode(request.Engine, session.AdapterName); var ram = facts?.Invoke();
         renderer.Overlay.Visible = options.Get(OverlayOption) != "off";
 
         long frames = 0, checks = 0, errors = 0; ulong? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
@@ -135,7 +135,7 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
             var now = request.Clock.UtcNow;
             bool running = frames > 0;
             renderer.Overlay.Update(new(
-                $"{(rayTraced ? "D3D12 + RT" : "D3D12")} · {level}", running && fps > 0 ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, pace.Low, pace.Fps, pace.Lows, Rows(request.Engine, gpu, now),
+                $"{(rayTraced ? "D3D12 + RT" : "D3D12")} · {level}", running && fps > 0 ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, pace.Low, pace.Fps, pace.Lows, Rows(request.Engine, gpu, now, ram),
                 $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""),
                 $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · errors {errors}", errors > 0));
         }
@@ -150,7 +150,10 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("measured GPU load", "%"),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU power", " W", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU temperature", "°C", includeMax: true),
-                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU hot spot", "°C", includeMax: true));
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU hot spot", "°C", includeMax: true),
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU clock", " MHz", includeMax: true),
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU memory clock", " MHz", includeMax: true),
+                string.Join("; ", HostMetrics.Evidence(request, started, finished, ram)));
         }
     }
 
@@ -184,9 +187,9 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
 
     /// <summary>The readout's lines: the card under test, its memory, the processor and the RAM, each with what the monitor read of it in the last
     /// seconds. A figure that was not read is left out, a part with none has no line: nothing is shown that was not measured.</summary>
-    internal static IReadOnlyList<SceneOverlay.Row> Rows(PollingEngine? engine, HardwareNode? gpu, DateTimeOffset now)
+    internal static IReadOnlyList<SceneOverlay.Row> Rows(PollingEngine? engine, HardwareNode? gpu, DateTimeOffset now, MemoryFacts? ram = null)
     {
-        var cpu = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null); var ram = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Memory && n.ParentId is null);
+        var cpu = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null); var ramNode = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Memory && n.ParentId is null);
         SceneOverlay.Figure? One(HardwareNode? node, string unit, params SensorRole[] roles)
         {
             foreach (var role in roles) if (Reading(engine, node, role, now) is { } r) return new(r.Value.ToString("F0", CultureInfo.InvariantCulture), unit);
@@ -204,7 +207,9 @@ public sealed class GpuSceneExecutor : ITestExecutor, ITestAvailability
         Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "MHz", SensorRole.GpuCoreClock));
         Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),
             One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
-        Add("RAM", SceneOverlay.RamHue, Used(ram, SensorRole.RamUsed, SensorRole.RamTotal, SensorRole.RamFree), One(ram, "%", SensorRole.RamLoad));
+        // The RAM: in use, the speed it is set to, the CAS latency of its profile at that speed (Windows does not report the timings in use), and last the load, which is dropped first when the line is full.
+        Add("RAM", SceneOverlay.RamHue, Used(ramNode, SensorRole.RamUsed, SensorRole.RamTotal, SensorRole.RamFree), ram?.SpeedMts is { } mts ? new(mts.ToString(CultureInfo.InvariantCulture), "MT/s") : null,
+            ram?.CasLatency is { } cl ? new("CL" + cl.ToString(CultureInfo.InvariantCulture), "") : null, One(ramNode, "%", SensorRole.RamLoad));
         return rows;
     }
 

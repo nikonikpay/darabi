@@ -3254,4 +3254,48 @@ Cancel: stop.</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>Click an LED to change the colour of that one alone.</value></data>
   <data name="Test_Option_FullScreen" xml:space="preserve"><value>Full screen</value></data>
   <data name="Test_Gpu_Ai" xml:space="preserve"><value>GPU · AI compute (DirectML: FP32, FP16, INT8)</value></data>
+  <data name="Bench_Scene_Score" xml:space="preserve"><value>Mazesta 3-D score (overall)</value></data>
+  <data name="Bench_Scene_ScoreGpu" xml:space="preserve"><value>Graphics score</value></data>
+  <data name="Bench_Scene_ScoreCpu" xml:space="preserve"><value>CPU score</value></data>
+  <data name="Bench_Scene_ScoreRam" xml:space="preserve"><value>RAM score</value></data>
+  <data name="Bench_Scene_GpuFrame" xml:space="preserve"><value>Graphics card's time per frame</value></data>
+  <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>Processor's time per frame (preparing the frame)</value></data>
+  <data name="Bench_Set_Limit" xml:space="preserve"><value>Held back by (the longer side of a frame)</value></data>
+  <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>GPU clock, highest</value></data>
+  <data name="Bench_Gpu_MemClockMax" xml:space="preserve"><value>GPU memory clock, highest</value></data>
+  <data name="Bench_Gpu_LoadMax" xml:space="preserve"><value>GPU load, highest</value></data>
+  <data name="Bench_Gpu_PowerMax" xml:space="preserve"><value>GPU power, highest (spike)</value></data>
+  <data name="Bench_Gpu_VramUsedMax" xml:space="preserve"><value>Video memory used, highest</value></data>
+  <data name="Bench_Cpu_PClockMax" xml:space="preserve"><value>P-core clock, highest</value></data>
+  <data name="Bench_Cpu_EClockMax" xml:space="preserve"><value>E-core clock, highest</value></data>
+  <data name="Bench_Cpu_Load" xml:space="preserve"><value>CPU load, average</value></data>
+  <data name="Bench_Cpu_LoadMax" xml:space="preserve"><value>CPU load, highest</value></data>
+  <data name="Bench_Cpu_PowerMax" xml:space="preserve"><value>CPU power, highest (spike)</value></data>
+  <data name="Bench_Cpu_Ccd1Clock" xml:space="preserve"><value>Clock, CCD 1 (average)</value></data>
+  <data name="Bench_Cpu_Ccd2Clock" xml:space="preserve"><value>Clock, CCD 2 (average)</value></data>
+  <data name="Bench_Cpu_Ccd3Clock" xml:space="preserve"><value>Clock, CCD 3 (average)</value></data>
+  <data name="Bench_Cpu_Ccd4Clock" xml:space="preserve"><value>Clock, CCD 4 (average)</value></data>
+  <data name="Bench_Cpu_Ccd5Clock" xml:space="preserve"><value>Clock, CCD 5 (average)</value></data>
+  <data name="Bench_Cpu_Ccd6Clock" xml:space="preserve"><value>Clock, CCD 6 (average)</value></data>
+  <data name="Bench_Cpu_Ccd7Clock" xml:space="preserve"><value>Clock, CCD 7 (average)</value></data>
+  <data name="Bench_Cpu_Ccd8Clock" xml:space="preserve"><value>Clock, CCD 8 (average)</value></data>
+  <data name="Bench_Cpu_Ccd9Clock" xml:space="preserve"><value>Clock, CCD 9 (average)</value></data>
+  <data name="Bench_Cpu_Ccd10Clock" xml:space="preserve"><value>Clock, CCD 10 (average)</value></data>
+  <data name="Bench_Cpu_Ccd11Clock" xml:space="preserve"><value>Clock, CCD 11 (average)</value></data>
+  <data name="Bench_Cpu_Ccd12Clock" xml:space="preserve"><value>Clock, CCD 12 (average)</value></data>
+  <data name="Bench_Cpu_Ccd13Clock" xml:space="preserve"><value>Clock, CCD 13 (average)</value></data>
+  <data name="Bench_Cpu_Ccd14Clock" xml:space="preserve"><value>Clock, CCD 14 (average)</value></data>
+  <data name="Bench_Cpu_Ccd15Clock" xml:space="preserve"><value>Clock, CCD 15 (average)</value></data>
+  <data name="Bench_Cpu_Ccd16Clock" xml:space="preserve"><value>Clock, CCD 16 (average)</value></data>
+  <data name="Bench_Ram_Used" xml:space="preserve"><value>RAM in use, average</value></data>
+  <data name="Bench_Ram_UsedMax" xml:space="preserve"><value>RAM in use, highest</value></data>
+  <data name="Bench_Ram_Load" xml:space="preserve"><value>RAM load, average</value></data>
+  <data name="Bench_Ram_Speed" xml:space="preserve"><value>RAM speed</value></data>
+  <data name="Bench_Ram_Cl" xml:space="preserve"><value>RAM CAS latency (its profile at this speed)</value></data>
+  <data name="Bench_Ram_Bandwidth" xml:space="preserve"><value>RAM bandwidth (STREAM Triad)</value></data>
+  <data name="Bench_Ram_Latency" xml:space="preserve"><value>RAM latency (random access)</value></data>
+  <data name="Web_Detail_Gpu" xml:space="preserve"><value>Graphics card during the run</value></data>
+  <data name="Web_Detail_Cpu" xml:space="preserve"><value>Processor during the run</value></data>
+  <data name="Web_Detail_Ram" xml:space="preserve"><value>RAM during the run</value></data>
+  <data name="Web_Detail_GainHint" xml:space="preserve"><value>How much faster this side is than the other</value></data>
 </root>

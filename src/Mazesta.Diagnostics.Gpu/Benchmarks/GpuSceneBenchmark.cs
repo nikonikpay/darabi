@@ -1,4 +1,4 @@
-using System.Diagnostics; using System.Globalization; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu.Scene;
+using System.Diagnostics; using System.Globalization; using Mazesta.Core.Hardware; using Mazesta.Core.Inventory; using Mazesta.Diagnostics.Memory; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu.Scene;
 namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 
 /// <summary>
@@ -13,7 +13,7 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// time (the other common definition: 99 % of frames were quicker). The check frames are drawn before and after the timed run, never in it. A frame drawn before the run and again after it at the same moment must be the same
 /// bits, or the run failed. Mazesta's own scene - not comparable with other programs' or games' scores. Closing the window cancels the run.
 /// </summary>
-public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
+public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryProbe? memory = null) : IBenchmark, ITestAvailability
 {
     public const string ResolutionOption = "resolution", QualityOption = "quality", DefaultResolution = "1920x1080";
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K can be measured on any monitor.
@@ -32,6 +32,17 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
 
     public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Definition, request, s => Run(s, request, ct), ownThread: true);
 
+    /// <summary>The RAM's Triad bandwidth and latency in a few seconds, with the window kept alive (its messages answered) so it is not marked as not responding.</summary>
+    private static (double Triad, double Latency)? MeasureRam(TestWindow window, IMemoryProbe memory, CancellationToken ct)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var work = Task.Run(() => MemoryBenchmark.Quick(memory, TimeSpan.FromSeconds(3), cts.Token), CancellationToken.None);
+        while (!work.IsCompleted) { if (!window.Pump()) cts.Cancel(); Thread.Sleep(25); }
+        ct.ThrowIfCancellationRequested();
+        if (cts.IsCancellationRequested) throw new OperationCanceledException("The benchmark window was closed.");
+        return work.Result;
+    }
+
     private (List<BenchmarkMetric>, string) Run(D3D12Session s, TestExecutionRequest request, CancellationToken ct)
     {
         var options = request.Options ?? TestOptions.None(Definition); bool rayTraced = options.Get(GpuSceneExecutor.RayTracingOption) == "on";
@@ -47,6 +58,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         var renderer = view.Renderer; var garden = view.Garden;
         var gpu = GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName);
         view.Overlay.Visible = options.Get(GpuSceneExecutor.OverlayOption) != "off";
+        var ram = facts?.Invoke();   // what the RAM runs at, for the readout and the result (null where it is not known)
         var before = view.CheckFrame(CheckTime);
         for (int i = 0; i < 3; i++) { view.DrawFrame(i * Step); view.ShowFrame(); }   // warm-up: first-use costs are not measured
 
@@ -54,6 +66,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         // every card draws the same route. The time counted is each frame's drawing alone, so the readout, the picture shown, the check frame and
         // the progress report are outside it.
         double runSeconds = Math.Max(10, request.DurationSeconds), walks = runSeconds / GardenCamera.Loop; bool whole = Math.Abs(walks - Math.Round(walks)) < 0.01;
+        var hostFrom = request.Clock.UtcNow; double cpuSeconds = 0, gpuSeconds = 0;
         var times = new List<double>(); var total = Stopwatch.StartNew(); var frame = new Stopwatch(); int n = 0;
         var tick = Stopwatch.StartNew(); double tickTime = 0; int tickFrames = 0; double lowestHalfSecond = double.MaxValue; var pace = new FramePace();
         ShowReadout(0, 0);
@@ -65,7 +78,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
             float t = (float)total.Elapsed.TotalSeconds; n++;
             frame.Restart();
             view.DrawFrame(t);   // every submission is waited for: the time is the frame's own
-            frame.Stop(); times.Add(frame.Elapsed.TotalSeconds); tickTime += frame.Elapsed.TotalSeconds; tickFrames++; pace.Frame(frame.Elapsed.TotalSeconds);
+            frame.Stop(); cpuSeconds += s.LastRecordSeconds; gpuSeconds += s.LastSubmitSeconds; times.Add(frame.Elapsed.TotalSeconds); tickTime += frame.Elapsed.TotalSeconds; tickFrames++; pace.Frame(frame.Elapsed.TotalSeconds);
             view.ShowFrame();
             if (tick.Elapsed.TotalSeconds >= 0.5)
             {
@@ -77,6 +90,9 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
                 request.Report(Math.Min(1, total.Elapsed.TotalSeconds / runSeconds));
             }
         }
+        var hostTo = request.Clock.UtcNow;
+        // The RAM's own speed in a few seconds, after the timed run (the window is kept alive meanwhile): the score's third part.
+        (double Triad, double Latency)? probe = whole && memory is not null ? MeasureRam(window, memory, ct) : null;
         if (view.CheckFrame(CheckTime) != before)
             throw new GpuWrongResultException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
         double average = n / times.Sum();
@@ -87,7 +103,24 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         string how = rayTraced
             ? $"Direct3D 12 with DXR 1.1 ray tracing, quality {quality}: {r.Level.ShadowTaps} shadow ray{(r.Level.ShadowTaps == 1 ? "" : "s")} a pixel to the sun or the moon and one to each lit lamp in reach, ray-traced reflections, ambient occlusion {r.Level.OcclusionTaps} taps, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
             : $"Direct3D 12, quality {quality}: shadow map {r.Level.ShadowSize}, ambient occlusion {r.Level.OcclusionTaps} taps, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame";
-        return ([new(whole ? "Bench_Gpu_Scene_Fps" : "Bench_Gpu_Scene_FpsPart", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms")],
+        var metrics = new List<BenchmarkMetric>();
+        double cpuFrame = cpuSeconds / n, gpuFrame = gpuSeconds / n;   // the processor's recording and the card's time to finish, per frame
+        var setup = new List<SpecItem>();
+        if (whole)
+        {
+            double graphics = SceneScore.Graphics(1 / gpuFrame, width, height), cpu = SceneScore.Cpu(1 / cpuFrame);
+            double? ramScore = probe is { } p ? SceneScore.Ram(p.Triad, p.Latency) : null;
+            if (ramScore is { } rs) metrics.Add(new("Bench_Scene_Score", SceneScore.Overall(graphics, cpu, rs), "pts"));
+            metrics.AddRange([new("Bench_Scene_ScoreGpu", graphics, "pts"), new("Bench_Scene_ScoreCpu", cpu, "pts")]);
+            if (ramScore is { } r2) metrics.Add(new("Bench_Scene_ScoreRam", r2, "pts"));
+            setup.Add(new(BenchmarkDetails.RunGroup, "Bench_Set_Limit", SceneScore.Bottleneck(gpuFrame, cpuFrame) switch { SceneScore.Limit.Graphics => "GPU", SceneScore.Limit.Cpu => "CPU", _ => "balanced" }));
+        }
+        metrics.AddRange([new(whole ? "Bench_Gpu_Scene_Fps" : "Bench_Gpu_Scene_FpsPart", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms"),
+            new("Bench_Scene_GpuFrame", gpuFrame * 1000, "ms"), new("Bench_Scene_CpuFrame", cpuFrame * 1000, "ms")]);
+        HostMetrics.AddCpu(metrics, request, hostFrom, hostTo); HostMetrics.AddRam(metrics, request, hostFrom, hostTo, ram);
+        if (probe is { } pr) metrics.AddRange([new("Bench_Ram_Bandwidth", pr.Triad, "GB/s"), new("Bench_Ram_Latency", pr.Latency, "ns")]);
+        s.Setup.AddRange(setup);
+        return (metrics,
             $"Persian garden in a window at {width}x{height}, {n} frames: " + (whole ? $"{walks:F0} walk{(Math.Round(walks) == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" : $"the first {runSeconds:F0} s of the {GardenCamera.Loop:F0} s walk of the garden (not the whole route: not compared with other runs)") + $"; {how}; {garden.Instances.Length:N0} objects");
 
         // The readout shows only what was measured: a sensor this card does not report (or has not reported in the last seconds) is left out.
@@ -95,7 +128,7 @@ public sealed class GpuSceneBenchmark : IBenchmark, ITestAvailability
         {
             var now = request.Clock.UtcNow;
             bool running = tickFrames > 0 || n > 0;
-            view.Overlay.Update(new($"{(rayTraced ? "D3D12 + RT" : "D3D12")} · benchmark", running && fps > 0 ? fps : null, running && mean > 0 ? mean : null, lowestHalfSecond < double.MaxValue ? lowestHalfSecond : null, pace.Low, pace.Fps, pace.Lows, GpuSceneExecutor.Rows(request.Engine, gpu, now),
+            view.Overlay.Update(new($"{(rayTraced ? "D3D12 + RT" : "D3D12")} · benchmark", running && fps > 0 ? fps : null, running && mean > 0 ? mean : null, lowestHalfSecond < double.MaxValue ? lowestHalfSecond : null, pace.Low, pace.Fps, pace.Lows, GpuSceneExecutor.Rows(request.Engine, gpu, now, ram),
                 $"{width} × {height}" + (window.Width != width || window.Height != height ? $" → {window.Width} × {window.Height}" : ""),
                 $"{(int)total.Elapsed.TotalSeconds}/{runSeconds:F0} s", false));
         }

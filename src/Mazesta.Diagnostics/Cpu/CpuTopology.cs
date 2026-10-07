@@ -49,6 +49,34 @@ public static class CpuTopology
         finally { Marshal.FreeHGlobal(buffer); }
     }
 
+    private static readonly Lazy<IReadOnlyList<(ushort Group, ulong Mask)>> L3 = new(ReadL3);
+    /// <summary>The logical processors that share each level-3 cache: one entry per CCD on a Ryzen (one per core complex, which is the CCD from Zen 3 on),
+    /// one for the whole processor on most Intel ones. Empty when Windows does not say.</summary>
+    public static IReadOnlyList<(ushort Group, ulong Mask)> CacheGroups => L3.Value;
+
+    private static IReadOnlyList<(ushort Group, ulong Mask)> ReadL3()
+    {
+        uint length = 0;
+        GetLogicalProcessorInformationEx(RelationCache, IntPtr.Zero, ref length);
+        if (length == 0) return [];
+        var buffer = Marshal.AllocHGlobal((int)length);
+        try
+        {
+            if (!GetLogicalProcessorInformationEx(RelationCache, buffer, ref length)) return [];
+            var found = new List<(ushort Group, ulong Mask)>();
+            for (int offset = 0; offset < length;)
+            {
+                // Relationship (4), Size (4), then CACHE_RELATIONSHIP: Level (1), Associativity (1), LineSize (2), CacheSize (4), Type (4),
+                // Reserved (18), GroupCount (2), GROUP_AFFINITY (Mask 8, Group 2, Reserved 6) - the mask at 32 from the union's start.
+                var p = buffer + offset; int size = Marshal.ReadInt32(p, 4);
+                if (Marshal.ReadByte(p, 8) == 3) { ulong mask = (ulong)Marshal.ReadInt64(p, 40); if (mask != 0) found.Add(((ushort)Marshal.ReadInt16(p, 48), mask)); }
+                offset += size;
+            }
+            return [.. found.OrderBy(f => f.Group).ThenBy(f => f.Mask)];
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
     /// <summary>When Windows cannot say: every logical processor of group 0 as its own core, which is still a valid place to pin a thread.</summary>
     private static List<CpuCore> Fallback() => [.. Enumerable.Range(0, Math.Min(64, Environment.ProcessorCount)).Select(i => new CpuCore(i, 0, 1UL << i, 0))];
 
@@ -67,7 +95,7 @@ public static class CpuTopology
         return n.Group == group && n.Number < 64 && (mask & 1UL << n.Number) != 0;
     }
 
-    private const int RelationProcessorCore = 0;
+    private const int RelationProcessorCore = 0, RelationCache = 2;
     [StructLayout(LayoutKind.Sequential)] private struct ProcessorNumber { public ushort Group; public byte Number; public byte Reserved; }
     [DllImport("kernel32.dll")] private static extern void GetCurrentProcessorNumberEx(out ProcessorNumber number);
     [StructLayout(LayoutKind.Sequential)] private struct GroupAffinity { public nuint Mask; public ushort Group; public ushort R0, R1, R2; }
