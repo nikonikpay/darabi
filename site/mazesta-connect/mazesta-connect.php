@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.9.0
+ * Version: 1.10.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -18,7 +18,8 @@ if (!defined('ABSPATH')) { exit; }
  *   POST reports                a report's one-page summary (key)          -> kept, listed and printed in the dashboard
  *   POST bench/runs             benchmark runs (key; or without one into the review queue when the shop allows it)
  *   POST share                  a user's latest benchmark results (no key) -> a page of their own, with a link to pass on
- *   GET  bench/index, benchdb/* the comparison lists built from the approved runs, one file per benchmark, version and settings
+ *   GET  bench/index, benchdb/* the comparison lists built from the approved runs, one file per benchmark, version and settings; each says whether it is of an old workload
+ *        (a newer version of the benchmark has approved runs: its numbers are not comparable with today's). A shared result of an old benchmark or app version carries a notice on its page.
  *   POST release/chunk, commit  the signed update folder (release key)     -> written to /mazesta/ in the site's root, where the app reads it
  * The lists are built the way the app builds them (BenchmarkPeers.Aggregate): one row per part model, the median of each system's best run.
  *
@@ -28,7 +29,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.9.0';
+    const VERSION = '1.10.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_FULL = 3000000;
@@ -221,7 +222,8 @@ final class Mazesta_Connect
     public static function rest_status($req)
     {
         $key = self::key_state($req); $c = self::config();
-        $out = array('name' => 'Mazesta Connect', 'version' => self::VERSION, 'key' => $key, 'openUploads' => !empty($c['openUploads']), 'sharing' => !empty($c['sharing']));
+        $out = array('name' => 'Mazesta Connect', 'version' => self::VERSION, 'key' => $key, 'openUploads' => !empty($c['openUploads']), 'sharing' => !empty($c['sharing']),
+            'benchmarkVersions' => (object) self::latest_versions(), 'appVersion' => self::latest_app());
         if ($key === 'ok') {
             $approved = 0; $pending = 0;
             foreach (self::read('runs') as $r) { if (!empty($r['status'])) { $approved++; } else { $pending++; } }
@@ -425,6 +427,45 @@ final class Mazesta_Connect
         });
     }
 
+    /* ---------- old versions ---------- */
+
+    /** The newest workload version of each benchmark among the approved runs (written at every rebuild): what "current" means for the notices below. */
+    private static function latest_versions()
+    {
+        static $latest = null;
+        if ($latest === null) {
+            $latest = self::read('latest'); if (!is_array($latest)) { $latest = array(); }
+            if (!$latest) {   // before the first rebuild of this version of the plugin: from the approved runs themselves
+                foreach (self::read('runs') as $row) {
+                    if (!empty($row['status']) && isset($row['table']) && preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $row['table'], $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
+                }
+            }
+        }
+        return $latest;
+    }
+
+    /** Whether a result of this benchmark at this workload version is of an old one: a newer version of the benchmark has approved runs. */
+    private static function is_old($benchmark, $version)
+    {
+        $l = self::latest_versions();
+        return isset($l[$benchmark]) && (int) $version < (int) $l[$benchmark];
+    }
+
+    /** The app version the shop has published (the release folder's manifest), or null. */
+    private static function latest_app()
+    {
+        $f = self::release_dir() . '/update.json';
+        $m = is_readable($f) ? json_decode((string) file_get_contents($f), true) : null;
+        return is_array($m) && isset($m['app']['version']) && is_string($m['app']['version']) && preg_match('/^\d+(\.\d+){1,3}$/', $m['app']['version']) ? $m['app']['version'] : null;
+    }
+
+    /** Whether an app version a result came from is older than the published one. */
+    private static function old_app($version)
+    {
+        $latest = self::latest_app();
+        return $latest !== null && is_string($version) && preg_match('/^\d+(\.\d+){1,3}/', $version) && version_compare($version, $latest, '<');
+    }
+
     /**
      * A list's key ("bench.storage@1|fileMb=1024") as a manager reads it: the benchmark's name and its settings in words, and the key itself
      * small underneath (the number after @ is the workload's version: a list starts over when the benchmark's work changes). HTML, escaped.
@@ -434,6 +475,7 @@ final class Mazesta_Connect
         $table = (string) $table;
         if (!preg_match('/^([A-Za-z0-9._-]+)@(\d+)(?:\|(.*))?$/', $table, $m)) { return '<span dir="ltr">' . esc_html($table) . '</span>'; }
         $label = esc_html(self::bench_name($m[1]));
+        if (self::is_old($m[1], (int) $m[2])) { $label .= ' <span style="background:#b32d2e;color:#fff;border-radius:3px;padding:0 6px;font-size:11px">نسخه قدیمی بنچمارک</span>'; }
         if (isset($m[3]) && $m[3] !== '') {
             $words = array();
             foreach (explode('|', $m[3]) as $pair) {
@@ -604,7 +646,7 @@ final class Mazesta_Connect
             $name = self::text(isset($names[$run->benchmark]) ? $names[$run->benchmark] : '', 80);
             $rows[] = array(
                 'benchmark' => $run->benchmark, 'name' => $name !== '' ? $name : $run->benchmark, 'settings' => $run->settings, 'value' => $run->value, 'unit' => $run->unit,
-                'part' => self::part_name($run->part), 'at' => $run->at,
+                'part' => self::part_name($run->part), 'at' => $run->at, 'version' => $run->version,
             );
         }
         if (!$rows) { return new WP_Error('mazesta_runs', 'No valid runs in the request.', array('status' => 400)); }
@@ -679,6 +721,12 @@ final class Mazesta_Connect
             $oc = isset($row['oc']) && $row['oc'] !== null ? (bool) $row['oc'] : !empty($run->overclocked);
             $tables[$row['table']][] = array('run' => $run, 'oc' => $oc, 'higher' => !isset($row['higher']) || $row['higher'], 'featured' => !empty($row['featured']), 'note' => isset($row['note']) ? (string) $row['note'] : '', 'ts' => isset($run->at) ? (int) strtotime($run->at) : 0);
         }
+        // the newest version of each benchmark that has approved runs: a list of an older one is marked, so whoever shows it can say it is old
+        $latest = array();
+        foreach (array_keys($tables) as $key) {
+            if (preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $key, $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
+        }
+        self::write('latest', $latest);
         $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
         $files = array(); $built = gmdate('Y-m-d\TH:i:s\Z');
         foreach ($tables as $key => $list) {
@@ -728,14 +776,16 @@ final class Mazesta_Connect
             });
             usort($featured, function ($a, $b) use ($higher) { return $higher ? $b['value'] <=> $a['value'] : $a['value'] <=> $b['value']; });
             $r = $first['run'];
+            $version = isset($r->version) ? (int) $r->version : 1; $newest = isset($latest[$r->benchmark]) ? $latest[$r->benchmark] : $version;
             $json = wp_json_encode(array(
-                'key' => $key, 'benchmark' => $r->benchmark, 'version' => isset($r->version) ? (int) $r->version : 1, 'settings' => isset($r->settings) ? (string) $r->settings : '',
+                'key' => $key, 'benchmark' => $r->benchmark, 'version' => $version, 'settings' => isset($r->settings) ? (string) $r->settings : '',
+                'latestVersion' => $newest, 'outdated' => $version < $newest,
                 'unit' => $unit, 'higherIsBetter' => $higher, 'built' => $built, 'entries' => $entries, 'featured' => $featured,
             ), $flags);
             $name = self::file_name($key);
             if ($json === false || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._@=-]*\.json$/', $name)) { continue; }
             if (file_put_contents($dir . '/' . $name . '.tmp', $json) === false || !rename($dir . '/' . $name . '.tmp', $dir . '/' . $name)) { continue; }
-            $files[$name] = array('file' => 'benchdb/' . $name, 'size' => strlen($json), 'sha256' => hash('sha256', $json));
+            $files[$name] = array('file' => 'benchdb/' . $name, 'size' => strlen($json), 'sha256' => hash('sha256', $json), 'benchmark' => $r->benchmark, 'version' => $version, 'latestVersion' => $newest, 'outdated' => $version < $newest);
         }
         $have = glob($dir . '/*.json');
         foreach (is_array($have) ? $have : array() as $f) {
@@ -894,6 +944,7 @@ final class Mazesta_Connect
             . 'dl{display:grid;grid-template-columns:auto 1fr;gap:2px 16px;margin:0}dt{color:#8a9097}dd{margin:0;direction:ltr;text-align:right;unicode-bidi:isolate}'
             . 'table{width:100%;border-collapse:collapse}th,td{padding:9px 8px;border-bottom:1px solid #262a2f;text-align:right}th{color:#8a9097;font-weight:normal;font-size:13px}'
             . '.n{direction:ltr;unicode-bidi:isolate;font-weight:bold;color:#fff;white-space:nowrap}.n small{color:#fdd400;font-weight:normal}.p{direction:ltr;unicode-bidi:isolate;color:#c3c7cc;font-size:13px}'
+            . '.warn{background:#2a1a12;border-color:#7a3a1a;color:#f0c8a0}.warn p{margin:6px 0 0}.old{background:#7a3a1a;color:#fff;border-radius:3px;padding:0 6px;font-size:11px;white-space:nowrap}'
             . 'footer{color:#8a9097;font-size:13px;margin-top:18px}a{color:#fdd400}'
             . '</style></head><body><main><h1>نتایج بنچمارک <b>Mazesta Test</b></h1><p class="sub">' . $e($owner) . ' · ثبت‌شده در ' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($s['created'])), 'Y/m/d H:i')) . '</p>';
         if ($spec) {
@@ -901,9 +952,18 @@ final class Mazesta_Connect
             foreach ($spec as $row) { echo '<dt>' . $e($row[0]) . '</dt><dd>' . $e($row[1]) . '</dd>'; }
             echo '</dl></div>';
         }
+        $stale = 0;
+        foreach ($s['rows'] as $r) { if (isset($r['version']) && self::is_old($r['benchmark'], $r['version'])) { $stale++; } }
+        $old_app = !empty($s['app']) && self::old_app($s['app']) ? $s['app'] : '';
+        if ($stale > 0 || $old_app !== '') {
+            echo '<div class="box warn"><strong>این نتایج با نسخه قدیمی برنامه گرفته شده‌اند.</strong>';
+            if ($stale > 0) { echo '<p>' . $e($stale === 1 ? 'یکی از بنچمارک‌های این صفحه' : $stale . ' بنچمارک این صفحه') . ' (با برچسب «نسخه قدیمی») با کار قدیمی‌تر برنامه اندازه‌گرفته شده است؛ صحنه یا روش امتیازدهی بعد از آن عوض شده و عددش با نتیجه‌های امروز قابل مقایسه نیست.</p>'; }
+            if ($old_app !== '') { echo '<p>این نتایج را نسخه <span dir="ltr">' . $e($old_app) . '</span> برنامه گرفته؛ آخرین نسخه <span dir="ltr">' . $e((string) self::latest_app()) . '</span> است.</p>'; }
+            echo '<p>بهتر است Mazesta Test را از بخش به‌روزرسانی داخل خودش به‌روز کنید و بنچمارک را دوباره اجرا کنید.</p></div>';
+        }
         echo '<div class="box"><table><thead><tr><th>بنچمارک</th><th>نتیجه</th><th>قطعه</th><th>تاریخ اجرا</th></tr></thead><tbody>';
         foreach ($s['rows'] as $r) {
-            echo '<tr><td>' . $e($r['name']) . ($r['settings'] !== '' ? ' <span class="p">' . $e($r['settings']) . '</span>' : '') . '</td><td class="n">' . $e(self::number($r['value'])) . ' <small>' . $e($r['unit']) . '</small></td>'
+            echo '<tr><td>' . $e($r['name']) . (isset($r['version']) && self::is_old($r['benchmark'], $r['version']) ? ' <span class="old">نسخه قدیمی</span>' : '') . ($r['settings'] !== '' ? ' <span class="p">' . $e($r['settings']) . '</span>' : '') . '</td><td class="n">' . $e(self::number($r['value'])) . ' <small>' . $e($r['unit']) . '</small></td>'
                 . '<td class="p">' . $e($r['part']) . '</td><td>' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($r['at'])), 'Y/m/d')) . '</td></tr>';
         }
         echo '</tbody></table></div><footer>این اعداد را برنامه Mazesta Test روی همین سیستم اندازه گرفته و کاربر آن فرستاده است. <a href="' . esc_url(home_url('/')) . '">' . $e(get_bloginfo('name')) . '</a></footer></main></body></html>';
