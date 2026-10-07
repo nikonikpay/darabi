@@ -1,5 +1,5 @@
 using System.Windows.Forms;
-using Mazesta.Core.Tray; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Monitoring; using Mazesta.Persistence;
+using Mazesta.Core.Tray; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Localization; using Mazesta.Desktop.Services; using Mazesta.Monitoring; using Mazesta.Persistence; using Mazesta.Persistence.Updates;
 using Microsoft.Extensions.DependencyInjection; using Microsoft.Extensions.Logging;
 namespace Mazesta.App;
 
@@ -91,12 +91,21 @@ internal sealed class Program : ApplicationContext
         return AppPaths.CreateFlash(exeDir, data);
     }
 
+    /// <summary>A key typed or paired in the flash copy is kept in its <c>flash.json</c> on the drive (the file the key is read from at start), so it is still there next time; never in the customer's Data.</summary>
+    private static string s_flashKey = "";
+    private static void KeepFlashKey(AppPaths _, string key)
+    {
+        if (key == s_flashKey || (key.Length > 0 && !SiteClient.IsKey(key))) return;
+        try { File.WriteAllText(Path.Combine(AppContext.BaseDirectory, AppPaths.FlashFile), System.Text.Json.JsonSerializer.Serialize(new { siteKey = key })); s_flashKey = key; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
+
     private void Start(bool overlayOnly, bool background)
     {
         // The UI thread's message-loop context, set now so the dispatcher can post to it from the start (before any window exists).
         var context = new WindowsFormsSynchronizationContext(); SynchronizationContext.SetSynchronizationContext(context);
         _ui = new UiDispatcher(context, Environment.CurrentManagedThreadId); UiDispatcher.Current = _ui;
-        var paths = DetectPaths(out string flashKey); paths.EnsureDirectories(); _paths = paths;
+        var paths = DetectPaths(out string flashKey); s_flashKey = flashKey; paths.EnsureDirectories(); _paths = paths;
         var logProvider = new RollingFileLoggerProvider(paths.LogsDir, "mazesta-web"); LogProvider = logProvider;
         var lf = LoggerFactory.Create(b => { b.SetMinimumLevel(LogLevel.Information); b.AddProvider(logProvider); });
         var log = lf.CreateLogger("Web"); _log = log;
@@ -105,7 +114,7 @@ internal sealed class Program : ApplicationContext
         TaskScheduler.UnobservedTaskException += (_, a) => { log.LogError(a.Exception, "Unobserved task exception"); a.SetObserved(); };
         AppDomain.CurrentDomain.UnhandledException += (_, a) => { log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); LogProvider?.Flush(); };
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, log); _store = store;
-        if (paths.Flash) store.ForDisk = c => { var copy = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(System.Text.Json.JsonSerializer.Serialize(c, JsonStore<AppConfig>.Options), JsonStore<AppConfig>.Options)!; copy.SiteKey = ""; return copy; };
+        if (paths.Flash) store.ForDisk = c => { var copy = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(System.Text.Json.JsonSerializer.Serialize(c, JsonStore<AppConfig>.Options), JsonStore<AppConfig>.Options)!; copy.SiteKey = ""; KeepFlashKey(paths, c.SiteKey); return copy; };
         var load = store.Load(); var config = load.Value; if (paths.Flash && flashKey.Length > 0) config.SiteKey = flashKey; _config = config; _configCorrupt = load.Outcome == LoadOutcome.Corrupt;
         Loc.SetLanguage(config.Language);
         _services = Bootstrapper.Build(paths, config, store, lf);
