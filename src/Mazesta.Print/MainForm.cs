@@ -22,6 +22,7 @@ internal sealed class MainForm : Form
     private readonly ListView _list = new() { View = View.Details, FullRowSelect = true, HideSelection = false, MultiSelect = false, Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10.5f) };
     private readonly WebView2 _web = new() { Dock = DockStyle.Fill, DefaultBackgroundColor = Color.White };
     private readonly Button _print = new() { Text = PrintText.Print, AutoSize = true, Enabled = false }, _pdf = new() { Text = PrintText.SavePdf, AutoSize = true, Enabled = false };
+    private readonly ComboBox _paper = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 230, Font = new Font("Segoe UI", 10.5f) };
     private readonly Label _hint = new() { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 11f), ForeColor = Color.FromArgb(0x55, 0x55, 0x5F) };
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = (int)Every.TotalMilliseconds };
     private readonly Font _bold = new("Segoe UI Semibold", 10.5f);
@@ -40,7 +41,9 @@ internal sealed class MainForm : Form
         top.Controls.AddRange([_search, _refresh, _key, _status]);
         _list.Columns.Add(PrintText.Service, 130); _list.Columns.Add(PrintText.Date, 130); _list.Columns.Add(PrintText.Device, 190); _list.Columns.Add(PrintText.Machine, 230); _list.Columns.Add(PrintText.Result, 80);
         var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 52, Padding = new Padding(8, 8, 8, 8), WrapContents = false };
-        bottom.Controls.AddRange([_print, _pdf]);
+        bottom.Controls.AddRange([_print, _pdf, new Label { Text = PrintText.Paper, AutoSize = true, Padding = new Padding(12, 9, 2, 0), Font = new Font("Segoe UI", 10.5f) }, _paper]);
+        foreach (var l in Enum.GetValues<SheetLayout>()) _paper.Items.Add(new Choice(l));
+        _paper.SelectedIndex = Math.Max(0, (int)_settings.Layout);
         var preview = new Panel { Dock = DockStyle.Fill };
         preview.Controls.Add(_web); preview.Controls.Add(_hint); preview.Controls.Add(bottom);
         var split = new SplitContainer { Dock = DockStyle.Fill, FixedPanel = FixedPanel.Panel1, SplitterDistance = 610 };
@@ -53,6 +56,12 @@ internal sealed class MainForm : Form
         _refresh.Click += async (_, _) => await RefreshAsync();
         _key.Click += (_, _) => { if (AskKey()) _ = RefreshAsync(); };
         _list.SelectedIndexChanged += async (_, _) => { if (_list.SelectedItems.Count > 0) await ShowAsync((SiteReportItem)_list.SelectedItems[0].Tag!); };
+        _paper.SelectedIndexChanged += (_, _) =>
+        {
+            _settings.Layout = ((Choice)_paper.SelectedItem!).Layout;
+            try { _settings.Save(); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+            if (_html is not null && _browserReady) _web.CoreWebView2.NavigateToString(PrintLayout.Apply(_html, _settings.Layout));
+        };
         _print.Click += (_, _) => PrintShown();
         _pdf.Click += async (_, _) => await SavePdfAsync();
         _timer.Tick += async (_, _) => { if (WindowState != FormWindowState.Minimized && Visible) await RefreshAsync(); };
@@ -60,6 +69,8 @@ internal sealed class MainForm : Form
         FormClosed += (_, _) => { _timer.Dispose(); _http.Dispose(); };
         _hint.Text = PrintText.PickOne;
     }
+
+    private sealed record Choice(SheetLayout Layout) { public override string ToString() => PrintText.LayoutName(Layout); }
 
     private async Task RefreshAsync()
     {
@@ -109,7 +120,7 @@ internal sealed class MainForm : Form
             if (mine != _loadingId) return;   // another row was chosen meanwhile
             await EnsureBrowserAsync();
             _html = html; _shownId = report.Id; _serviceOfShown = report.Service;
-            _web.CoreWebView2.NavigateToString(html);
+            _web.CoreWebView2.NavigateToString(PrintLayout.Apply(html, _settings.Layout));
             _web.Visible = true; _hint.Visible = false; _print.Enabled = _pdf.Enabled = true;
             _status.Text = PrintText.Updated(DateTime.Now, _all.Count);
         }
@@ -142,7 +153,7 @@ internal sealed class MainForm : Form
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
         try
         {
-            var settings = _web.CoreWebView2.Environment.CreatePrintSettings(); settings.PageWidth = 5.8268; settings.PageHeight = 8.2677; settings.ShouldPrintBackgrounds = true; settings.ShouldPrintHeaderAndFooter = false;
+            var settings = _web.CoreWebView2.Environment.CreatePrintSettings(); var (pw, ph, turned) = PrintLayout.Paper(_settings.Layout); settings.PageWidth = pw; settings.PageHeight = ph; if (turned) settings.Orientation = CoreWebView2PrintOrientation.Landscape; settings.ShouldPrintBackgrounds = true; settings.ShouldPrintHeaderAndFooter = false;
             if (!await _web.CoreWebView2.PrintToPdfAsync(dialog.FileName, settings)) throw new IOException("Printing to PDF failed.");
             _status.Text = PrintText.Saved(dialog.FileName);
         }

@@ -19,6 +19,13 @@ internal static class PrintText
     public static string Result => T("نتیجه", "Result");
     public static string Print => T("چاپ خلاصه", "Print summary");
     public static string SavePdf => T("ذخیره PDF", "Save PDF");
+    public static string Paper => T("کاغذ:", "Paper:");
+    public static string LayoutName(SheetLayout l) => l switch
+    {
+        SheetLayout.A5 => T("A5 عمودی", "A5 portrait"),
+        SheetLayout.A4Landscape => T("A4 افقی (یک برگه)", "A4 landscape (one sheet)"),
+        _ => T("A4 افقی (دو برگه کنار هم)", "A4 landscape (two sheets side by side)"),
+    };
     public static string NoService => T("بدون شماره", "no number");
     public static string Loading => T("در حال دریافت…", "Loading…");
     public static string Empty => T("گزارشی روی سایت نیست.", "The site holds no reports.");
