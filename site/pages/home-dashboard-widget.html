@@ -17,7 +17,9 @@ max-width:820px;margin-inline:auto;background:var(--ink-2);color:var(--paper);bo
 #mzw .tl .num{font-size:12px;font-stretch:112%;color:var(--paper-3);letter-spacing:.04em}
 #mzw .ro{display:flex;align-items:baseline;direction:ltr;background:var(--well);border:1px solid var(--rule);border-radius:4px;box-shadow:inset 0 1px 2px rgb(0 0 0/.55);padding:10px 14px 9px;margin-top:10px;color:var(--hue);font:750 clamp(26px,4.4vw,44px)/1 var(--lat);font-stretch:68%;font-variant-numeric:tabular-nums}
 #mzw .ro i{font-size:.42em;font-weight:600;color:var(--paper-2);margin-left:5px;font-stretch:90%}
-#mzw .ro.na{direction:rtl;justify-content:center;font:700 clamp(12.5px,1.6vw,15px)/1 var(--fa);padding-block:clamp(17px,2.9vw,26px);color:var(--paper-2);background:var(--well) repeating-linear-gradient(135deg,rgb(255 255 255/.13) 0 1px,transparent 1px 6px)}
+#mzw .spark{display:block;width:100%;height:26px;margin-top:8px;direction:ltr;overflow:visible}
+#mzw .spark .ar{fill:var(--hue);opacity:.14}
+#mzw .spark .ln{fill:none;stroke:var(--hue);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 #mzw .scale{height:5px;margin-top:12px;background:var(--well);position:relative;border-radius:1px;overflow:hidden}
 #mzw .scale::before{content:"";position:absolute;inset:0;background:var(--hue);transform:scaleX(var(--p,0));transform-origin:right;transition:transform 900ms var(--ease)}
 #mzw .scale::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to right,rgb(255 255 255/.16) 0 1px,transparent 1px 10%)}
@@ -40,10 +42,10 @@ max-width:820px;margin-inline:auto;background:var(--ink-2);color:var(--paper);bo
     <div class="tile" style="--hue:var(--ram);--i:2"><div class="tl"><span>حافظه</span><span class="num">RAM</span></div><div class="ro"><span data-j="18.4,0.2,1">18.4</span><i>GB</i></div><div class="scale" style="--p:.57"></div><div class="ft">از <span class="num">32 GB</span></div></div>
     <div class="tile" style="--hue:var(--sto);--i:3"><div class="tl"><span>ذخیره‌سازی</span><span class="num">SSD</span></div><div class="ro"><span>41</span><i>°C</i></div><div class="scale" style="--p:.08"></div><div class="ft">عمر مصرف‌شده <span class="num">8%</span></div></div>
     <div class="tile" style="--hue:var(--net);--i:4"><div class="tl"><span>شبکه</span><span class="num">LAN</span></div><div class="ro"><span data-j="23.6,4,1">23.6</span><i>MB/s</i></div><div class="scale" style="--p:.24"></div><div class="ft">دانلود</div></div>
-    <div class="tile" style="--hue:var(--gpu);--i:5"><div class="tl"><span>نقطه‌ی داغ</span><span class="num">GPU</span></div><div class="ro na">در دسترس نیست</div><div class="scale"></div><div class="ft">این کارت سنسورش را ندارد</div></div>
+    <div class="tile" style="--hue:var(--yellow);--i:5"><div class="tl"><span>نرخ فریم</span><span class="num">FPS</span></div><div class="ro"><span data-fps>142</span><i>FPS</i></div><svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path class="ar"/><path class="ln"/></svg><div class="ft">میانگین <span class="num" data-avg>141</span></div></div>
   </div>
   <div class="foot">
-    <p class="note">نمونه‌ای از داشبورد برنامه‌ی مزستا تست؛ اعداد نمونه‌اند. در خود برنامه، چیزی که اندازه گرفته نشده مثل خانه‌ی آخر هاشور می‌خورد و هیچ‌وقت صفر یا عدد ساختگی جایش نمی‌نشیند.</p>
+    <p class="note">نمونه‌ای از داشبورد برنامه‌ی مزستا تست؛ اعداد نمونه‌اند. در خود برنامه، چیزی که اندازه گرفته نشده «در دسترس نیست» نشان داده می‌شود و هیچ‌وقت صفر یا عدد ساختگی جایش نمی‌نشیند.</p>
     <a class="go" href="https://www.dfmrendering.com/mazesta-test/">معرفی و دانلود برنامه</a>
   </div>
 </div>
@@ -52,7 +54,17 @@ max-width:820px;margin-inline:auto;background:var(--ink-2);color:var(--paper);bo
 (function(){
   var root=document.getElementById('mzw');if(!root)return;
   var still=false;try{still=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
-  var seen=false;
+  var seen=false,tk=0;
+  /* the frame-rate tile: a short history, drawn as a line */
+  var fv=root.querySelector('[data-fps]'),fa=root.querySelector('[data-avg]'),ln=root.querySelector('.spark .ln'),ar=root.querySelector('.spark .ar'),fs=[],fi;
+  for(fi=0;fi<30;fi++)fs.push(141+Math.sin(fi/3)*7+(Math.random()*2-1)*5);
+  function draw(){
+    var lo=110,hi=170,d='',sum=0,k;
+    for(k=0;k<fs.length;k++){sum+=fs[k];var y=24-(Math.max(lo,Math.min(hi,fs[k]))-lo)/(hi-lo)*22;d+=(k?'L':'M')+(k*100/(fs.length-1)).toFixed(1)+' '+y.toFixed(1)}
+    ln.setAttribute('d',d);ar.setAttribute('d',d+'L100 26L0 26Z');
+    fv.textContent=Math.round(fs[fs.length-1]);fa.textContent=Math.round(sum/fs.length);
+  }
+  draw();
   function show(){root.classList.add('in')}
   if(still){show();return}
   if(!('IntersectionObserver' in window)){show();seen=true}
@@ -61,12 +73,16 @@ max-width:820px;margin-inline:auto;background:var(--ink-2);color:var(--paper);bo
   /* sample readings drift a little, only while the plate is on screen */
   setInterval(function(){
     if(!seen)return;if(document.hidden)return;
+    var last=fs[fs.length-1],nx=last+(141-last)*.25+(Math.random()*2-1)*9;
+    if(Math.random()<.07)nx-=18;
+    fs.shift();fs.push(Math.max(112,Math.min(168,nx)));draw();
+    tk++;if(tk%2)return;
     for(var i=0;i<vals.length;i++){
       var a=vals[i].getAttribute('data-j').split(','),b=+a[0],amp=+a[1],d=+a[2];
       vals[i].textContent=(b+(Math.random()*2-1)*amp).toFixed(d);
       var t=vals[i].closest('.tile'),s=t.querySelector('[data-p]'),l=t.querySelector('[data-l]');
       if(s){var p=Math.max(.02,Math.min(1,+s.getAttribute('data-p')+(Math.random()*2-1)*.03));s.style.setProperty('--p',p.toFixed(2));if(l)l.textContent=Math.round(p*100)+'%'}
     }
-  },2000);
+  },1000);
 })();
 </script>
