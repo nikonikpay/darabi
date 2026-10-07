@@ -133,7 +133,7 @@ if ($Only -ne "Client") {
         $key = ""
         $cfg = Join-Path $admin "Data/config/appconfig.json"
         if (Test-Path $cfg) { try { $key = [string](Get-Content $cfg -Raw | ConvertFrom-Json).siteKey } catch { } }
-        if (-not $key) { Write-Warning "No site key in $cfg: the flash copy has none. Put it in flash.json (siteKey) by hand." }
+        if (-not $key) { Write-Warning "No site key in ${cfg}: the flash copy has none. Put it in flash.json (siteKey) by hand." }
         @{ siteKey = $key } | ConvertTo-Json | Set-Content (Join-Path $flash "flash.json") -Encoding utf8
         Write-Host "Ready (flash): $(Join-Path $flash 'Mazesta-Admin.exe') - copy the whole folder to the drive"
     }
