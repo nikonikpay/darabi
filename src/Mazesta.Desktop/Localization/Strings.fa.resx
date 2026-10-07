@@ -3319,4 +3319,7 @@
   <data name="Overlay_CcdClock6" xml:space="preserve"><value>فرکانس CCD 6</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
+  <data name="Test_Option_Smoothing" xml:space="preserve"><value>نرم‌سازی مش (تقسیم مثلث‌ها)</value></data>
+  <data name="Test_Smooth_1" xml:space="preserve"><value>نرم، ۴ برابر مثلث</value></data>
+  <data name="Test_Smooth_2" xml:space="preserve"><value>نرم، ۱۶ برابر مثلث</value></data>
 </root>

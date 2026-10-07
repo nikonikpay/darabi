@@ -31,6 +31,17 @@ public class GardenRenderHardwareTests
         }
     }
 
+    [Theory, InlineData(1), InlineData(2)]
+    public void The_smoothed_garden_is_a_stable_picture(int smoothing)
+    {
+        if (NoGpu) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!);
+        var g = new GardenGpu(s, GardenScene.Embedded, null, null, smoothing);
+        Assert.True(g.Triangles > 3 * GardenScene.Embedded.Triangles(GardenScene.Mode.Raster));   // refined: several times the triangles
+        using var r = new GardenRaster(s, g, W, H, [], 3);
+        Check(r, $"garden-smooth{smoothing}");
+    }
+
     [Theory, InlineData(1u), InlineData(3u)]
     public void The_garden_with_ray_tracing_on_is_a_stable_picture(uint load)
     {

@@ -11,7 +11,7 @@ internal sealed class SceneView : IDisposable
     public GardenRaster Renderer => _renderer;
     public string Work { get; }
 
-    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem)
+    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, int smoothing = 0)
     {
         _s = s;
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);
@@ -26,7 +26,7 @@ internal sealed class SceneView : IDisposable
         _swap = swap1.QueryInterface<IDXGISwapChain3>();
         _back = [_swap.GetBuffer<ID3D12Resource>(0), _swap.GetBuffer<ID3D12Resource>(1)];
         Overlay = new SceneOverlay(s, _back, height);
-        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem);
+        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, smoothing);
         var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced); _renderer = raster;
         Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps"
             + (rayTraced ? $" · ray-traced shadows ({raster.Level.ShadowTaps} a light) and reflections" : $" · shadows {raster.Level.ShadowSize}")

@@ -69,7 +69,7 @@ public sealed class BenchmarkRecords
     /// stay valid, and only a run at other settings starts a list of its own.</summary>
     private static readonly Dictionary<string, Dictionary<string, string>> Unchanged = new()
     {
-        ["bench.gpu.scene.d3d"] = new() { ["resolution"] = "2560x1440", ["quality"] = "3", ["raytracing"] = "off" },
+        ["bench.gpu.scene.d3d"] = new() { ["resolution"] = "2560x1440", ["quality"] = "3", ["raytracing"] = "off", ["smoothing"] = "off" },
     };
     /// <summary>Options that do not change what is measured (the readout over the garden is laid over the finished frame, outside the time
     /// counted): they are in no key, so a run with it hidden is the same record and the same list.</summary>

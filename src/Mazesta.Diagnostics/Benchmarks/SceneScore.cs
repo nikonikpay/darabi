@@ -10,7 +10,7 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// <list type="bullet">
 /// <item><b>Graphics</b> = 100 × the frame rate the card alone could hold, per Full HD of pixels: <c>fps × (width × height / 1920 × 1080) × 100</c>.
 /// The frame's time on the card is its submission to its completion; the processor's share of the frame is the CPU score's.</item>
-/// <item><b>CPU</b> = 20 × the frames a second the processor and driver can prepare (record and submit) for this scene: its single-thread speed as the
+/// <item><b>CPU</b> = 3 × the frames a second the processor and driver can prepare (record and submit) for this scene: its single-thread speed as the
 /// game loop of a real program feels it.</item>
 /// <item><b>RAM</b> = 5000 × √((STREAM Triad GB/s ÷ 40) × (80 ns ÷ random-access latency)): bandwidth and latency count equally, so neither one alone decides it.</item>
 /// <item><b>Overall</b> = weighted harmonic mean, weights 0.75 graphics, 0.15 CPU, 0.10 RAM (3DMark Time Spy weighs graphics 0.85 and CPU 0.15).</item>
@@ -22,7 +22,7 @@ public static class SceneScore
     private const double ReferencePixels = 1920.0 * 1080;
 
     public static double Graphics(double gpuFramesPerSecond, int width, int height) => gpuFramesPerSecond * width * height / ReferencePixels * 100;
-    public static double Cpu(double preparedFramesPerSecond) => preparedFramesPerSecond * 20;
+    public static double Cpu(double preparedFramesPerSecond) => preparedFramesPerSecond * 3;
     public static double Ram(double triadGbPerSecond, double latencyNs) => 5000 * Math.Sqrt(triadGbPerSecond / 40.0 * (80.0 / latencyNs));
     public static double Overall(double graphics, double cpu, double ram)
         => (GraphicsWeight + CpuWeight + RamWeight) / (GraphicsWeight / graphics + CpuWeight / cpu + RamWeight / ram);

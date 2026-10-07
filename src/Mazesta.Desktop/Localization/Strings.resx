@@ -3319,4 +3319,7 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock6" xml:space="preserve"><value>CCD 6 clock</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>CCD 7 clock</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
+  <data name="Test_Option_Smoothing" xml:space="preserve"><value>Mesh smoothing (subdivision)</value></data>
+  <data name="Test_Smooth_1" xml:space="preserve"><value>Smooth, 4× the triangles</value></data>
+  <data name="Test_Smooth_2" xml:space="preserve"><value>Smooth, 16× the triangles</value></data>
 </root>
