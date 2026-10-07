@@ -190,8 +190,8 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .dur-arrow:hover { color: var(--yellow); background: var(--yellow-soft); }
 .dur-arrow:active { transform: translateY(1px); }
 select.field { appearance: none; padding-inline-end: 26px; background-color: var(--well); background-image: linear-gradient(45deg, transparent 50%, var(--yellow) 50%), linear-gradient(-45deg, transparent 50%, var(--yellow) 50%);
-  background-repeat: no-repeat; background-size: 5px 5px; background-position: left 13px center, left 8px center; cursor: pointer; }
-[dir="ltr"] select.field { background-position: right 8px center, right 13px center; }
+  background-repeat: no-repeat; background-size: 5px 5px; background-position: left 8px center, left 13px center; cursor: pointer; }
+[dir="ltr"] select.field { background-position: right 13px center, right 8px center; }
 select.field option { background: var(--ink-3); color: var(--paper); }
 
 .check { position: relative; width: 18px; height: 18px; flex: none; appearance: none; margin: 0; border: 1.5px solid var(--paper-3); border-radius: 3px; background: var(--well); cursor: pointer; transition: background var(--fast), border-color var(--fast); }
