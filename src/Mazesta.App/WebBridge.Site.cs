@@ -122,6 +122,9 @@ public sealed partial class WebBridge
             var stored = reports.Store.List().FirstOrDefault(r => r.Id == Str(p, "id")) ?? throw new ArgumentException("unknown report");
             try
             {
+                // A report made on another computer (a user's setup copy) has no job number; the one typed in the top bar now is taken for it and written into the report.
+                if (_config.ServiceNumber.Length > 0 && string.IsNullOrWhiteSpace(stored.ServiceNumber))
+                    stored = await Task.Run(() => reports.UpdateNotes(stored, _config.ServiceNumber, stored.ServiceNotes)).ConfigureAwait(true);
                 var (report, html, full) = await Task.Run(() => reports.SummaryForSite(stored)).ConfigureAwait(true);
                 // The company's copy sends only reports that carry a service job: the site's list is by service number.
                 if (string.IsNullOrWhiteSpace(report.ServiceNumber)) return new { error = Loc.Get("Site_Err_NoService") };
