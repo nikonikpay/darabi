@@ -109,6 +109,11 @@ public class MemoryCheckTests
     }
     [Theory, InlineData("DIMM_A1", 'A'), InlineData("DIMMB2", 'B'), InlineData("DDR4_B1", 'B'), InlineData("ChannelA-DIMM0", 'A'), InlineData("P0 CHANNEL B", 'B'), InlineData("Controller1-ChannelB-DIMM0", 'B')]
     public void Channel_letters_are_read_from_common_slot_names(string slot, char channel) => Assert.Equal(channel, MemoryCheck.Channel(slot));
+    [Fact] public void Two_controllers_with_the_same_channel_letter_are_two_channels()
+    {
+        Assert.NotEqual(MemoryCheck.ChannelKey("Controller0-ChannelA-DIMM0"), MemoryCheck.ChannelKey("Controller1-ChannelA-DIMM0"));
+        Assert.Equal(MemoryCheck.ChannelKey("Controller0-ChannelA-DIMM0"), MemoryCheck.ChannelKey("Controller0-ChannelA-DIMM1"));
+    }
     [Theory, InlineData("DIMM 0"), InlineData("BANK 0"), InlineData("Bottom-Slot 1(left)")] public void Unknown_slot_names_give_no_channel(string slot) => Assert.Null(MemoryCheck.Channel(slot));
     [Fact] public void Mixed_modules_are_noted() => Assert.Contains(MemoryCheck.Evaluate([Dimm("DIMM_A2", 3200), Dimm("DIMM_B2", 3200, "CMK16GX4M2B3200C16")], []), f => f.Code == FindingCode.RamMixed);
 }

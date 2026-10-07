@@ -37,7 +37,7 @@ public static partial class MemoryCheck
         if (socketed.Count == 1 && modules.Count == 1) Add(FindingCode.RamSingleChannel, FindingLevel.Attention, [M("Check_M_Modules", 1, None)]);
         else if (socketed.Count >= 2 && socketed.Count == modules.Count)
         {
-            var channels = socketed.Select(m => Channel(m.Slot) ?? Channel(m.Bank)).ToList();
+            var channels = socketed.Select(m => ChannelKey(m.Slot) ?? ChannelKey(m.Bank)).ToList();
             if (channels.All(c => c is not null) && channels.Distinct().Count() == 1) Add(FindingCode.RamSameChannel, FindingLevel.Attention, [M("Check_M_Modules", socketed.Count, None)]);
         }
 
@@ -46,6 +46,13 @@ public static partial class MemoryCheck
         if (modules.Count >= 2 && (parts > 1 || sizes > 1)) Add(FindingCode.RamMixed, FindingLevel.Note, [M("Check_M_Modules", modules.Count, None)]);
         return found;
     }
+
+    [GeneratedRegex(@"CONTROLLER\s?-?(\d+)", RegexOptions.IgnoreCase)] private static partial Regex ControllerName();
+
+    /// <summary>The channel with its memory controller when the slot names one: "Controller0-ChannelA-DIMM0" and "Controller1-ChannelA-DIMM0" are two
+    /// channels (a board with 4 slots on 2 controllers names its channels A and A again), not one.</summary>
+    internal static string? ChannelKey(string? slot)
+        => Channel(slot) is { } c ? (ControllerName().Match(slot!) is { Success: true } m ? m.Groups[1].Value : "") + c : null;
 
     internal static char? Channel(string? slot)
     {
