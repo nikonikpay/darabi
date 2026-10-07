@@ -53,6 +53,11 @@ public class PollingEngineTests
         var (e, _, _, _) = Build(); e.SetFastInterval(TimeSpan.FromSeconds(5)); Assert.Equal(TimeSpan.FromSeconds(5), e.FastInterval);
         Assert.Throws<ArgumentOutOfRangeException>(() => e.SetFastInterval(TimeSpan.FromSeconds(3)));
     }
+    [Fact] public void Half_a_second_is_allowed_for_the_overlay_but_nothing_between()
+    {
+        var (e, _, _, _) = Build(); e.SetFastInterval(TimeSpan.FromMilliseconds(500)); Assert.Equal(TimeSpan.FromMilliseconds(500), e.FastInterval);
+        Assert.Throws<ArgumentOutOfRangeException>(() => e.SetFastInterval(TimeSpan.FromMilliseconds(700)));
+    }
     [Fact] public void Pause_stops_ticks_and_resume_continues()
     {
         var (e, p, c, _) = Build(); e.PrepareForManualTicks();

@@ -19,7 +19,7 @@ public sealed partial class WebBridge
             {
                 visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
                 opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout, bare = _config.OverlayBare, english = _config.OverlayEnglish,
-                refresh = _config.OverlayRefreshSeconds, refreshChoices = MonitoringOptions.AllowedFastSeconds.Where(s => s <= 5),
+                refresh = _config.OverlayRefresh, refreshChoices = MonitoringOptions.OverlayRefreshSeconds,
                 userPresets = (_config.OverlayUserPresets ?? []).OrderBy(p => p.Key).Select(p => new { id = "user:" + p.Key, name = p.Key, count = p.Value.Count }),
                 frameProblem = overlay.FrameSource?.Problem, pingTarget = overlay.PingSource?.Target,
                 presets = OverlayCatalog.Presets.Select(p => new { id = p.Key, count = p.Value.Count }),
@@ -51,7 +51,7 @@ public sealed partial class WebBridge
                 case "bare": overlay.SetBare(Bool(p, "value")); break;
                 case "english": overlay.SetEnglish(Bool(p, "value")); break;
                 case "layout": overlay.SetLayout(Str(p, "value")); break;
-                case "refresh": overlay.SetRefresh((int)(Num(p, "value") ?? 0)); break;
+                case "refresh": overlay.SetRefresh(Num(p, "value") ?? 0); break;
                 // The address the ping goes to: an IPv4 address or a name. The echoes restart towards it when the overlay is next shown.
                 case "pingTarget":
                     {

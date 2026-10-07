@@ -338,7 +338,7 @@ export function mount(el) {
     state = s;
     bare.checked = s.bare; english.checked = !!s.english; preview.classList.toggle("bare", !!s.bare);
     show.checked = s.visible; hotkey.textContent = s.hotkey;
-    if (!refresh.options.length) refresh.replaceChildren(h("option", { value: "0" }, t("Web_Overlay_Refresh_App")), ...(s.refreshChoices || []).map((n) => h("option", { value: String(n) }, t("Web_Overlay_Refresh_Seconds", fa(n)))));
+    if (!refresh.options.length) refresh.replaceChildren(h("option", { value: "0" }, t("Web_Overlay_Refresh_App")), ...(s.refreshChoices || []).map((n) => h("option", { value: String(n) }, t("Web_Overlay_Refresh_Seconds", fa(n === 0.5 ? "0.5" : n).replace(".", "٫")))));
     if (document.activeElement !== refresh) refresh.value = String(s.refresh || 0);
     if (!corner.options.length) corner.replaceChildren(...s.corners.map((c) => h("option", { value: c.value }, c.label)));
     corner.value = s.corner;

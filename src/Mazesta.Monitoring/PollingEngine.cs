@@ -62,7 +62,7 @@ public sealed class PollingEngine : IDisposable
     public void Resume() { if (_disposed) throw new ObjectDisposedException(nameof(PollingEngine)); if (State == EngineState.Paused) { State = EngineState.Running; _wake.Set(); } }
     public void SetFastInterval(TimeSpan interval)
     {
-        if (!MonitoringOptions.AllowedFastSeconds.Contains((int)interval.TotalSeconds) || interval.TotalSeconds != Math.Floor(interval.TotalSeconds)) throw new ArgumentOutOfRangeException(nameof(interval));
+        if (!MonitoringOptions.IsAllowed(interval)) throw new ArgumentOutOfRangeException(nameof(interval));
         lock (_lock) { FastInterval = interval; _options.FastInterval = interval; foreach (var n in Hardware.Where(n => n.Kind != HardwareKind.Storage)) _nextDue[n.Id] = _clock.UtcNow; }
         _wake.Set();
     }
