@@ -474,7 +474,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
-        var day = G.Day(time); G.Update(time);
+        var day = G.Day(time); G.Update(time, live);
         var frame = GardenFrame.For(G, time, Width, Height);
         // The key light crosses the sky slowly: of the frames shown one after another its shadow maps are drawn anew only every few
         // (the frames between are lit through the maps as they were last drawn) - the courtyard's every other frame, or every sixth

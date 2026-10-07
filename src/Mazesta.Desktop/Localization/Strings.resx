@@ -3259,6 +3259,7 @@ Cancel: stop.</value></data>
   <data name="Bench_Scene_ScoreCpu" xml:space="preserve"><value>CPU score</value></data>
   <data name="Bench_Scene_ScoreRam" xml:space="preserve"><value>RAM score</value></data>
   <data name="Bench_Scene_GpuFrame" xml:space="preserve"><value>Graphics card's time per frame</value></data>
+  <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>Weather simulation per frame (rain, leaves; on every core)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>Processor's time per frame (preparing the frame)</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>Held back by (the longer side of a frame)</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>GPU clock, highest</value></data>
@@ -3321,5 +3322,6 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
   <data name="Test_Option_Smoothing" xml:space="preserve"><value>Mesh smoothing (subdivision)</value></data>
   <data name="Test_Smooth_1" xml:space="preserve"><value>Smooth, 4× the triangles</value></data>
+  <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
   <data name="Test_Smooth_2" xml:space="preserve"><value>Smooth, 16× the triangles</value></data>
 </root>

@@ -3259,6 +3259,7 @@
   <data name="Bench_Scene_ScoreCpu" xml:space="preserve"><value>امتیاز پردازنده</value></data>
   <data name="Bench_Scene_ScoreRam" xml:space="preserve"><value>امتیاز رم</value></data>
   <data name="Bench_Scene_GpuFrame" xml:space="preserve"><value>زمان کارت گرافیک در هر فریم</value></data>
+  <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>زمان شبیه‌سازی آب‌وهوا در هر فریم (باران و برگ؛ روی همه هسته‌ها)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>زمان پردازنده برای آماده‌کردن هر فریم</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>گلوگاه (طرف طولانی‌تر هر فریم)</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>بیشترین فرکانس گرافیک</value></data>
@@ -3321,5 +3322,6 @@
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
   <data name="Test_Option_Smoothing" xml:space="preserve"><value>نرم‌سازی مش (تقسیم مثلث‌ها)</value></data>
   <data name="Test_Smooth_1" xml:space="preserve"><value>نرم، ۴ برابر مثلث</value></data>
+  <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
   <data name="Test_Smooth_2" xml:space="preserve"><value>نرم، ۱۶ برابر مثلث</value></data>
 </root>
