@@ -27,7 +27,7 @@ internal sealed unsafe class GardenAccel
         _blas = new ulong[meshCount]; _masks = new byte[meshCount]; _dequant = new Matrix4x4[meshCount];
         var inputs = new List<(GardenGpu.Draw Draw, BuildRaytracingAccelerationStructureInputs Inputs, ulong Result, ulong Scratch)>();
         ulong resultBytes = 0, scratchBytes = 0;
-        foreach (var d in g.Draws.Where(d => !d.Weather))
+        foreach (var d in g.Draws)
         {
             var geometries = d.Parts.Select(p => new RaytracingGeometryDescription(
                 new RaytracingGeometryTrianglesDescription(new GpuVirtualAddressAndStride(g.VertexBuffer.GPUVirtualAddress + (ulong)d.BaseVertex * 16, 16), Format.R16G16B16A16_SNorm, d.VertexCount,
@@ -63,7 +63,7 @@ internal sealed unsafe class GardenAccel
         _tlasInputs = new BuildRaytracingAccelerationStructureInputs
         {
             Type = RaytracingAccelerationStructureType.TopLevel, Flags = RaytracingAccelerationStructureBuildFlags.PreferFastTrace, Layout = ElementsLayout.Array,
-            DescriptorsCount = (uint)g.RayInstances, InstanceDescriptions = _instances.GPUVirtualAddress
+            DescriptorsCount = (uint)g.Instances.Length, InstanceDescriptions = _instances.GPUVirtualAddress
         };
         var tsizes = s.Device.GetRaytracingAccelerationStructurePrebuildInfo(_tlasInputs);
         _tlas = s.Buffer(tsizes.ResultDataMaxSizeInBytes, state: ResourceStates.RaytracingAccelerationStructure, flags: ResourceFlags.AllowUnorderedAccess);
@@ -88,7 +88,7 @@ internal sealed unsafe class GardenAccel
     private void WriteInstances(float time, bool all)
     {
         var span = _instances.Map<InstanceDesc>(0, _g.Instances.Length);
-        foreach (int i in all ? Enumerable.Range(0, _g.RayInstances) : _g.Moving.Concat(_g.Swaying))
+        foreach (int i in all ? Enumerable.Range(0, _g.Instances.Length) : _g.Moving.Concat(_g.Swaying))
         {
             var inst = _g.Instances[i];
             var m = _dequant[inst.Mesh] * _g.World(i, time);

@@ -2555,7 +2555,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Test_Break_Banner" xml:space="preserve"><value>A test session did not finish last time; the Tests page shows which test was running and why it stopped.</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>Mixed like Windows (70/30, 4-64K, Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>Mixed IOPS</value></data>
-  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>Frame time of the slowest 1 % of frames (P99)</value></data>
+  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>99th-percentile frame time</value></data>
   <data name="Nav_Checkup" xml:space="preserve"><value>Checkup</value></data>
   <data name="Checkup_Lede" xml:space="preserve"><value>Is this computer working as it should? It is judged from its own measurements: a short test of each part, and the system's setup as it is now.</value></data>
   <data name="Checkup_Run" xml:space="preserve"><value>Run the checkup</value></data>
@@ -3259,7 +3259,6 @@ Cancel: stop.</value></data>
   <data name="Bench_Scene_ScoreCpu" xml:space="preserve"><value>CPU score</value></data>
   <data name="Bench_Scene_ScoreRam" xml:space="preserve"><value>RAM score</value></data>
   <data name="Bench_Scene_GpuFrame" xml:space="preserve"><value>Graphics card's time per frame</value></data>
-  <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>Weather simulation per frame (rain, leaves; on every core)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>Processor's time per frame (preparing the frame)</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>Held back by (the longer side of a frame)</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>GPU clock, highest</value></data>
@@ -3320,6 +3319,7 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock6" xml:space="preserve"><value>CCD 6 clock</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>CCD 7 clock</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
-  <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
-  <data name="Test_Weather_High" xml:space="preserve"><value>Weather detail: three times the bodies, finer air, a 233 MB grid</value></data>
+  <data name="Test_Option_Smoothing" xml:space="preserve"><value>Mesh smoothing (subdivision)</value></data>
+  <data name="Test_Smooth_1" xml:space="preserve"><value>Smooth, 4× the triangles</value></data>
+  <data name="Test_Smooth_2" xml:space="preserve"><value>Smooth, 16× the triangles</value></data>
 </root>

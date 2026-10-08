@@ -50,6 +50,17 @@ public class GardenRenderHardwareTests
         finally { GardenRaster.ViewCulling = true; }
     }
 
+    [Theory, InlineData(1), InlineData(2)]
+    public void The_smoothed_garden_is_a_stable_picture(int smoothing)
+    {
+        if (NoGpu) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!);
+        var g = new GardenGpu(s, GardenScene.Embedded, null, null, smoothing);
+        Assert.True(g.Triangles > 3 * GardenScene.Embedded.Triangles(GardenScene.Mode.Raster));   // refined: several times the triangles
+        using var r = new GardenRaster(s, g, W, H, [], 3);
+        Check(r, $"garden-smooth{smoothing}");
+    }
+
     [Theory, InlineData(1u), InlineData(3u)]
     public void The_garden_with_ray_tracing_on_is_a_stable_picture(uint load)
     {
@@ -75,7 +86,7 @@ public class GardenRenderHardwareTests
         var a = r.Capture(1.234f); var b = r.Capture(1.234f);
         if (!a.AsSpan().SequenceEqual(b) && Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } to)
         {   // the two frames that should have been one, to look at
-            Png.Write(Path.Combine(to, $"{name}-first.png"), a, r.OutWidth, r.OutHeight); Png.Write(Path.Combine(to, $"{name}-second.png"), b, r.OutWidth, r.OutHeight);
+            Png.Write(Path.Combine(to, $"{name}-first.png"), a, r.Width, r.Height); Png.Write(Path.Combine(to, $"{name}-second.png"), b, r.Width, r.Height);
         }
         Assert.Equal(a, b);
         // frames shown one after another build on each other (maps drawn every few frames): a check frame drawn after
@@ -97,11 +108,11 @@ public class GardenRenderHardwareTests
         if (dir is { Length: > 0 })
             foreach (float t in Times)
             {
-                Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}.png")), r.Capture(t), r.OutWidth, r.OutHeight);
+                Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}.png")), r.Capture(t), r.Width, r.Height);
                 if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_LIVE") is not { Length: > 0 }) continue;
                 // also as the last of ten frames shown a thirtieth of a second apart: what the test's window shows
                 uint[] shown = []; for (int k = 9; k >= 0; k--) shown = r.Capture(t - k / 30f, live: true);
-                Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}-shown.png")), shown, r.OutWidth, r.OutHeight);
+                Png.Write(Path.Combine(dir, FormattableString.Invariant($"{name}-t{t:00.##}-shown.png")), shown, r.Width, r.Height);
             }
         // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk, each drawn as one of the frames being shown (off screen and read back: slower than the test's own window)
         if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })

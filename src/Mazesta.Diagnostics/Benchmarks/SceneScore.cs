@@ -11,9 +11,8 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// <item><b>Graphics</b> = 100 × the frame rate the card alone could hold: <c>fps × 100</c>. Not scaled by the pixel count: a bigger picture must not raise the score (it
 /// can only lower the rate), so the resolution is a setting of the run - part of the record's key, lists never mix resolutions - not a factor in the number.
 /// The frame's time on the card is its submission to its completion; the processor's share of the frame is the CPU score's.</item>
-/// <item><b>CPU</b> = 30 × the frames a second the processor and driver can prepare for this scene: the frame's simulation (the wind's air, the rain, leaves and twigs and their
-/// collisions - on every core, as a game's job system does it) and the recording and submission of its draws: the game loop of a real program, which
-/// wants speed from one core and the number of them. (Version 33: it was 3 ×, for a frame that took 0.7 ms to record.)</item>
+/// <item><b>CPU</b> = 3 × the frames a second the processor and driver can prepare (record and submit) for this scene: its single-thread speed as the
+/// game loop of a real program feels it.</item>
 /// <item><b>RAM</b> = 5000 × √((STREAM Triad GB/s ÷ 40) × (80 ns ÷ random-access latency)): bandwidth and latency count equally, so neither one alone decides it.</item>
 /// <item><b>Overall</b> = weighted harmonic mean, weights 0.75 graphics, 0.15 CPU, 0.10 RAM (3DMark Time Spy weighs graphics 0.85 and CPU 0.15).</item>
 /// </list>
@@ -23,7 +22,7 @@ public static class SceneScore
     public const double GraphicsWeight = 0.75, CpuWeight = 0.15, RamWeight = 0.10;
 
     public static double Graphics(double gpuFramesPerSecond) => gpuFramesPerSecond * 100;
-    public static double Cpu(double preparedFramesPerSecond) => preparedFramesPerSecond * 30;
+    public static double Cpu(double preparedFramesPerSecond) => preparedFramesPerSecond * 3;
     public static double Ram(double triadGbPerSecond, double latencyNs) => 5000 * Math.Sqrt(triadGbPerSecond / 40.0 * (80.0 / latencyNs));
     public static double Overall(double graphics, double cpu, double ram)
         => (GraphicsWeight + CpuWeight + RamWeight) / (GraphicsWeight / graphics + CpuWeight / cpu + RamWeight / ram);
