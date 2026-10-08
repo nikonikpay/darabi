@@ -99,11 +99,11 @@ internal sealed unsafe class GardenGpu
     public ID3D12Resource Backdrop { get; } public Vector4 BackdropRange { get; }
     private readonly int _textureMips;
 
-    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, int smoothing = 0, WeatherLevel? weather = null)
+    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, WeatherLevel? weather = null)
     {
         const GardenScene.Mode mode = GardenScene.Mode.Raster;   // the file's Direct3D scene: its ray-traced one lent only its night rig of lamps
         ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
-        var meshes = (smoothing > 0 ? scene.Meshes.Select(m => MeshSmoother.Subdivide(m, smoothing)) : scene.Meshes).ToList(); var materials = scene.Materials.ToList();
+        var meshes = scene.Meshes.ToList(); var materials = scene.Materials.ToList();
         var chosen = scene.Instances.Where(i => (i.Mask & (uint)mode) != 0).ToArray();
         if (Fountain is not null)
         {

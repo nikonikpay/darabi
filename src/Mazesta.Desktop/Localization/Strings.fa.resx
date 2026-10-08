@@ -3320,14 +3320,11 @@
   <data name="Overlay_CcdClock6" xml:space="preserve"><value>فرکانس CCD 6</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
-  <data name="Test_Option_Smoothing" xml:space="preserve"><value>نرم‌سازی مش (تقسیم مثلث‌ها)</value></data>
-  <data name="Test_Smooth_1" xml:space="preserve"><value>نرم، ۴ برابر مثلث</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
   <data name="Test_Option_Upscaling" xml:space="preserve"><value>انویدیا ایمیج اسکیلینگ (NIS)</value></data>
-  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>وضوح‌دهی (با اندازهٔ کامل)</value></data>
-  <data name="Test_Nis_Quality" xml:space="preserve"><value>کیفیت: ۷۷٪ رسم و بزرگ‌نمایی</value></data>
-  <data name="Test_Nis_Balanced" xml:space="preserve"><value>متعادل: ۶۷٪ رسم و بزرگ‌نمایی</value></data>
-  <data name="Test_Nis_Performance" xml:space="preserve"><value>کارایی: ۵۹٪ رسم و بزرگ‌نمایی</value></data>
-  <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، شبکهٔ ۲۳۵ مگابایتی</value></data>
-  <data name="Test_Smooth_2" xml:space="preserve"><value>نرم، ۱۶ برابر مثلث</value></data>
+  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>فقط وضوح‌دهی، مثل F7 در پیش‌نمایش (با اندازهٔ کامل)</value></data>
+  <data name="Test_Nis_Quality" xml:space="preserve"><value>بزرگ‌نمایی، کیفیت: ۷۷٪ رسم و بزرگ‌نمایی (نرم‌تر)</value></data>
+  <data name="Test_Nis_Balanced" xml:space="preserve"><value>بزرگ‌نمایی، متعادل: ۶۷٪ رسم و بزرگ‌نمایی</value></data>
+  <data name="Test_Nis_Performance" xml:space="preserve"><value>بزرگ‌نمایی، کارایی: ۵۹٪ رسم و بزرگ‌نمایی</value></data>
+  <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، هوای ریزتر، شبکهٔ ۲۳۳ مگابایتی</value></data>
 </root>
