@@ -43,29 +43,33 @@ walls. None changes what the scene is; each changes the picture a little, so eac
 
 ## What was added for the processor and the memory
 
-The processor's score was a recording time of 0.7 ms: the scene gave it almost nothing to do. The garden now has weather (`GardenWeather`), simulated every frame
-the way a game's particle system is (nothing a game would not do; the ray tracer's structure is not made to carry it):
+The processor's score was a recording time of 0.7 ms: the scene gave it almost nothing to do. The garden now has weather and a wind that moves (`GardenWeather`, `GardenWind`), each part simulated the way a game does it - nothing a game would not do, and nothing the ray tracer's structure is made to carry:
 
-* **rain** that falls round the camera, is carried by the wind, stops on the hall's roof and a tree's crown and splashes on the pool and the paving;
-* **gusts** (three fronts of different periods and directions, each with a swirl and an updraft behind it) that lift **leaves and twigs** out of the crowns and
-  off the ground, carry and tumble them, and let them settle on the paving, against walls and on the water;
-* every body is stepped (drag toward the wind, gravity, tumbling), tested against the garden's real solids in `GardenVoxels` (a grid of what is solid, built from
-  the scene's triangles once: 29 MB at the standard level, 233 MB at the high one), and written as the rows of a matrix for the card;
-* the bodies are independent, so each frame's step is cut into chunks and run on every core (a job system's way); what the processor does per frame is in the
-  CPU score and in its own result line (`Bench_Scene_SimFrame`).
+* **the air**: a grid of velocities (stable fluids, Stam's method) that the gusts force, that carries itself, that the crowns slow and that a pressure projection makes go round the hall, its
+  columns, its walls and the ground (the cells `GardenVoxels` marks hard). 0.67 million cells / 29 MB at the standard level, 2.2 million / 98 MB at the high one; the sweeps are the memory's
+  bandwidth as much as the cores' arithmetic, and run on a crew of threads that spin at a barrier between passes (`GardenCrew`);
+* **rain** that falls round the camera, is blown by the air, stops on the hall's roof and a tree's crown and splashes on the pool and the paving;
+* **leaves and twigs** lifted out of the crowns and off the ground by the gusts, carried and tumbled, tested against the voxels at four points each (a leaf's tip, stalk and edges), turned by
+  the corner that strikes, and colliding with one another through a spatial hash, so they settle on the paving, against walls and on the water, and heap up;
+* every body is stepped (drag toward the air, gravity, tumbling) and written as the rows of a matrix for the card (the renderers' movers); the bodies are independent, so the frame's step is cut
+  into chunks and run on every core, as a game's job system does.
 
-The **weather option** has three levels: off; on (14,000 drops, 3,600 leaves, 700 twigs and 1,600 splashes against the 29 MB grid); high (three times the bodies
-against a 233 MB grid). At the high level the working set is far larger than any processor's cache and the reads of the grid are random: the speed is the memory's
-latency as much as the processor's. The RAM *score* itself is still its own probe (Triad and latency): a scene cannot measure the memory's speed, only be limited by
-it; the weather's time per frame says how much the machine's memory and cores matter to a game of this kind.
+What the processor does per frame is in the CPU score and in its own result line (`Bench_Scene_SimFrame`): at the standard level about 6.8 ms of the frame's 8.8 on a 32-thread Ryzen 9
+(the air 4.3, the bodies 0.6, their collisions 0.3); at the high level (three times the bodies, the air at 2.2 million cells and 16 sweeps) about 29 ms.
 
-A frame shown after another steps the bodies one step of its own length (so the work per frame does not depend on how fast the card is); a frame on its own (the check
-frames) steps each body from the start of its cycle at a fixed 1/60 s, so the same time is the same picture and the card's check (the same bits before and after the
-run) still holds. Rain, splashes, leaves and twigs are movers (`WeatherFlag`): they are not in the ray tracer's top-level structure, so a ray-traced frame does not
-reflect or shadow them.
+The **weather option** has three levels: off; on (14,000 drops, 3,600 leaves, 700 twigs and 1,600 splashes, the air 0.45 m cells, 10 sweeps, against the 29 MB grid of solids); high (three
+times the bodies, 0.3 m cells and 16 sweeps, against a 233 MB grid). At the high level the working set is far larger than any processor's cache and the reads are random: the speed is the memory's
+latency and bandwidth as much as the processor's. The RAM *score* itself is still its own probe (Triad and latency): a scene cannot measure the memory's speed, only be limited by it; the
+simulation's time per frame says how much the machine's memory and cores matter to a game of this kind.
+
+A frame shown after another (a live frame) steps the air and the bodies one step of its own length (so the work per frame does not depend on how fast the card is); a frame on its own
+(the check frames) uses the plain wind of the fronts, steps each body from the start of its cycle at a fixed 1/60 s, so the same time
+is the same picture whatever was drawn before - and the card's check (the same bits before and after the run) still holds. Rain, splashes, leaves and twigs are movers (`WeatherFlag`): they are
+not in the ray tracer's top-level structure, so a ray-traced frame does not reflect or shadow them.
 
 ## NVIDIA Image Scaling
 
-The frame can end with NVIDIA's open-source scaler and sharpener (the SDK's `NIS_Scaler.h`, MIT; `GardenNis`): `sharpen` (the default: adaptive directional sharpening
-at the window's own size, free on this card) or the garden drawn at 77 / 67 / 59 % of the window's size and scaled up by the SDK's six-tap filter with four directional
-filters (smooth edges, crisp detail). It runs after the lens, on the tone-mapped picture, as the SDK asks. The option is part of a record's key.
+The frame ends with NVIDIA's open-source NIS (the SDK's `NIS_Scaler.h`, MIT; `GardenNis`). Its default, `sharpen`, is the SDK's NVSharpen alone at the window's own size, at 35 % strength - the setting of the preview's F7 -
+and draws nothing smaller: it is free on this card and holds about twice the fine detail of the unsharpened picture (a test measures it). The other choices are NIS *upscaling*, not sharpening: the garden drawn at
+77 / 67 / 59 % of the window's size and scaled up by the SDK's six-tap filter with four directional filters; they trade softness for time (1.8 ms at 77 % here) and are named so in the option. It runs after the lens, on the
+tone-mapped picture, as the SDK asks. The option is part of a record's key.

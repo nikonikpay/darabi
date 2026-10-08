@@ -43,21 +43,29 @@ internal sealed class GardenVoxels
         return n.LengthSquared() < 1e-6f ? Vector3.UnitY : Vector3.Normalize(n);
     }
 
-    private void Mark(Vector3 p)
+    /// <summary>What fills the cell at a point: 0 nothing, <see cref="Hard"/> a wall, floor, rail or other solid, <see cref="Foliage"/> only the cards of a crown (which air passes through).</summary>
+    public byte Kind(int ix, int iy, int iz) => (uint)ix < (uint)X && (uint)iy < (uint)Y && (uint)iz < (uint)Z ? _cells[((long)iz * Y + iy) * X + ix] : (byte)0;
+    public const byte Hard = 1, Foliage = 2;
+
+    private void Mark(Vector3 p, byte kind)
     {
         int ix = (int)MathF.Floor((p.X - Origin.X) * _inverse), iy = (int)MathF.Floor((p.Y - Origin.Y) * _inverse), iz = (int)MathF.Floor((p.Z - Origin.Z) * _inverse);
-        if ((uint)ix < (uint)X && (uint)iy < (uint)Y && (uint)iz < (uint)Z) _cells[((long)iz * Y + iy) * X + ix] = 1;   // (every writer writes the same value: threads may share a cell)
+        if ((uint)ix < (uint)X && (uint)iy < (uint)Y && (uint)iz < (uint)Z)
+        {   // (threads may share a cell: a solid always wins over foliage, whichever came first, so the grid is the same every time)
+            ref byte cell = ref _cells[((long)iz * Y + iy) * X + ix];
+            if (kind == Hard) cell = Hard; else Interlocked.CompareExchange(ref cell, Foliage, 0);
+        }
     }
 
     /// <summary>A triangle's cells: its corners and, where it is larger than a cell, points across it no further apart than half of one.</summary>
-    private void Mark(Vector3 a, Vector3 b, Vector3 c)
+    private void Mark(Vector3 a, Vector3 b, Vector3 c, byte kind)
     {
         float longest = MathF.Sqrt(MathF.Max(MathF.Max((b - a).LengthSquared(), (c - b).LengthSquared()), (a - c).LengthSquared()));
         int n = (int)MathF.Ceiling(longest / (Cell * 0.5f));
-        if (n <= 1) { Mark(a); Mark(b); Mark(c); Mark((a + b + c) / 3); return; }
+        if (n <= 1) { Mark(a, kind); Mark(b, kind); Mark(c, kind); Mark((a + b + c) / 3, kind); return; }
         var ab = (b - a) / n; var ac = (c - a) / n;
         for (int i = 0; i <= n; i++)
-            for (int j = 0; j <= n - i; j++) Mark(a + ab * i + ac * j);
+            for (int j = 0; j <= n - i; j++) Mark(a + ab * i + ac * j, kind);
     }
 
     private static readonly Dictionary<(ulong, float), GardenVoxels> Kept = []; private static readonly object Lock = new();
@@ -96,11 +104,12 @@ internal sealed class GardenVoxels
             var world = new Vector3[local.Length]; for (int v = 0; v < world.Length; v++) world[v] = inst.Apply(local[v]);
             foreach (var sub in mesh.Submeshes)
             {
-                if (!Obstacle(scene.Materials[sub.Material].Kind)) continue;
-                for (uint i = sub.IndexStart; i < sub.IndexStart + sub.IndexCount; i += 3) grid.Mark(world[mesh.Indices[i]], world[mesh.Indices[i + 1]], world[mesh.Indices[i + 2]]);
+                var material = scene.Materials[sub.Material].Kind; if (!Obstacle(material)) continue;
+                byte kind = material == GardenMaterialKind.Cutout ? Foliage : Hard;
+                for (uint i = sub.IndexStart; i < sub.IndexStart + sub.IndexCount; i += 3) grid.Mark(world[mesh.Indices[i]], world[mesh.Indices[i + 1]], world[mesh.Indices[i + 2]], kind);
             }
         });
-        long filled = 0; foreach (byte b in grid._cells) filled += b; grid.Filled = filled;
+        long filled = 0; foreach (byte b in grid._cells) if (b != 0) filled++; grid.Filled = filled;
         return grid;
     }
 }

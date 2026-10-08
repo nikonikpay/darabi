@@ -24,7 +24,7 @@ internal sealed class GardenWeather
     private const float RainPeriod = 1.6f, SplashLife = 0.3f;
     private enum Mode : byte { Flying, Resting, Gone, Floating }
 
-    private readonly GardenVoxels _voxels; private readonly float _water; private readonly Vector4 _pool; private readonly Vector4[] _crowns;
+    private readonly GardenVoxels _voxels; private readonly GardenWind? _wind; private readonly float _water; private readonly Vector4 _pool; private readonly Vector4[] _crowns;
 
     /// <summary>One set of bodies: the live frames' or the check frames'.</summary>
     private sealed class Sim(int bodies, int count)
@@ -42,7 +42,7 @@ internal sealed class GardenWeather
 
     /// <param name="water">The pool's surface height; <paramref name="pool"/> its plan (x from, z from, x to, z to).</param>
     /// <param name="crowns">Where leaves and twigs come from: the centre and radius of each crown of foliage.</param>
-    public GardenWeather(WeatherLevel level, GardenVoxels voxels, float water, Vector4 pool, Vector4[] crowns) { _level = level; _live = new(level.Bodies, level.Count); _check = new(level.Bodies, level.Count); _voxels = voxels; _water = water; _pool = pool; _crowns = crowns.Length > 0 ? crowns : [new Vector4(0, 5, -14, 3)]; }
+    public GardenWeather(WeatherLevel level, GardenVoxels voxels, float water, Vector4 pool, Vector4[] crowns) { _level = level; _live = new(level.Bodies, level.Count); _check = new(level.Bodies, level.Count); _voxels = voxels; _wind = level.WindCell > 0 ? new GardenWind(voxels, level.WindCell, level.WindIterations) : null; _push = new Vector3[Math.Max(0, level.Bodies - level.Rain)]; _water = water; _pool = pool; _crowns = crowns.Length > 0 ? crowns : [new Vector4(0, 5, -14, 3)]; }
 
     /// <summary>The rows (three float4s a body, the renderers' mover layout) of the last <see cref="Advance"/>.</summary>
     public ReadOnlySpan<Vector4> Rows => _rows;
@@ -50,6 +50,12 @@ internal sealed class GardenWeather
     /// <summary>Seconds the last live step took (the bodies' stepping and their rows, on every core).</summary>
     public double LastSeconds { get; private set; }
     public long VoxelBytes => _voxels.Bytes;
+    /// <summary>The air the weather and the plants are blown by (null at a level without one, or before the first live frame).</summary>
+    public GardenWind? Field => _wind;
+    /// <summary>Seconds of the last live step that went on the air (the wind field), the bodies' stepping, and their collisions with one another.</summary>
+    public double WindSeconds { get; private set; }
+    public double CollideSeconds { get; private set; }
+    public long FieldBytes => _wind?.Bytes ?? 0;
     public static int Threads => Environment.ProcessorCount;
     public WeatherLevel Level => _level;
 
@@ -58,7 +64,7 @@ internal sealed class GardenWeather
         long begin = Stopwatch.GetTimestamp();
         if (live)
         {
-            if (!_live.Valid || time < _live.Time || time - _live.Time > 1f) Rebuild(_live, time);
+            if (!_live.Valid || time < _live.Time || time - _live.Time > 1f) { Rebuild(_live, time); _wind?.Reset(time); WindSeconds = 0; }
             else StepLive(_live, time);
             _rows = _live.Rows; LastSeconds = Stopwatch.GetElapsedTime(begin).TotalSeconds;
         }
@@ -79,10 +85,10 @@ internal sealed class GardenWeather
     // ----- the wind -----
 
     /// <summary>A gust front: it travels across the courtyard along (<see cref="Dx"/>, <see cref="Dz"/>), <see cref="Place"/> metres from its middle, strongest at the middle of its life.</summary>
-    private struct Front { public float Dx, Dz, Place, Strength; }
-    private struct Fronts { public Front A, B, C; }
+    internal struct Front { public float Dx, Dz, Place, Strength; }
+    internal struct Fronts { public Front A, B, C; }
     private static readonly float[] FrontPeriod = [6.3f, 9.7f, 14.9f], FrontOffset = [1.1f, 4.3f, 7.9f];
-    private static Fronts FrontsAt(float t)
+    internal static Fronts FrontsAt(float t)
     {
         Front One(int k)
         {
@@ -99,13 +105,22 @@ internal sealed class GardenWeather
         float env = f.Strength * MathF.Exp(-q);
         w += new Vector3(f.Dx, 0, f.Dz) * (9.5f * env) + new Vector3(-f.Dz, 0, f.Dx) * (4.5f * env * MathF.Sin(a * 0.7f + l * 0.25f)) + new Vector3(0, 3.4f * env * MathF.Cos(a * 0.55f + 1.3f), 0);
     }
-    /// <summary>The wind at a point, in metres a second: the breeze the plants lean to (<see cref="GardenGpu.Wind"/>), slower near the ground, and the gust fronts passing.</summary>
-    private static Vector3 Wind(Vector3 p, in Fronts f, float t)
+    /// <summary>What blows over the ground at (<paramref name="x"/>, <paramref name="z"/>) whatever the height: the breeze (before the ground slows it) and the fronts' gusts. Neither depends on y,
+    /// so a field of air works this out once for a column of cells.</summary>
+    internal static void Column(float x, float z, in Fronts f, float t, out Vector2 breeze, out Vector3 gusts)
     {
-        var amb = GardenGpu.Wind(p, t); var w = new Vector3(amb.X, 0, amb.Y) * 1.4f;
-        float height = Math.Clamp(p.Y * 0.5f, 0.35f, 1f); w.X *= height; w.Z *= height;
+        var amb = GardenGpu.Wind(new Vector3(x, 0, z), t); breeze = amb * 4.5f;
+        var w = Vector3.Zero; var p = new Vector3(x, 0, z);
         Add(ref w, f.A, p); Add(ref w, f.B, p); Add(ref w, f.C, p);
-        return w;
+        gusts = w;
+    }
+    /// <summary>How much of the breeze reaches a height: it is slower near the ground.</summary>
+    internal static float Slowed(float y) => Math.Clamp(0.55f + 0.1125f * y, 0.55f, 1f);
+    /// <summary>The wind at a point, in metres a second: the breeze the plants lean to (<see cref="GardenGpu.Wind"/>), slower near the ground, and the gust fronts passing.</summary>
+    internal static Vector3 Wind(Vector3 p, in Fronts f, float t)
+    {
+        Column(p.X, p.Z, f, t, out var breeze, out var gusts); float height = Slowed(p.Y);
+        return new Vector3(breeze.X * height, 0, breeze.Y * height) + gusts;
     }
 
     // ----- spawning and stepping -----
@@ -141,6 +156,9 @@ internal sealed class GardenWeather
         s.Q[b] = Quaternion.Normalize(new Quaternion(H(b, 48, cycle) - 0.5f, H(b, 49, cycle) - 0.5f, H(b, 50, cycle) - 0.5f, 0.3f + H(b, 51, cycle)));
     }
 
+    /// <summary>The points of a leaf (tip, stalk, edges) and of a twig (its ends) that are tested against the grid, in the body's own space at size 1.</summary>
+    private static readonly Vector3[] LeafPoints = [new(0, 0, 0.075f), new(0, 0, -0.075f), new(0.035f, 0, 0), new(-0.035f, 0, 0)], TwigPoints = [new(0, 0, 0.11f), new(0, 0, -0.11f)];
+
     private static Quaternion Lying(Vector3 up, float yaw)
     {
         var axis = Vector3.Cross(Vector3.UnitY, up); float s = axis.Length(), angle = MathF.Atan2(s, up.Y);
@@ -148,13 +166,16 @@ internal sealed class GardenWeather
         return Quaternion.Normalize(align * Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw));
     }
 
-    private void Step(Sim s, int b, float dt, float t, in Fronts fronts)
+    /// <summary>The air at a point: the field's where the frame is a live one and the point is inside the grid, the analytic wind of the fronts otherwise.</summary>
+    private Vector3 Air(Vector3 p, in Fronts fronts, float t, bool field) => field && _wind is { } f && f.Sample(p, out var w) ? w : Wind(p, fronts, t);
+
+    private void Step(Sim s, int b, float dt, float t, in Fronts fronts, bool field)
     {
         if (s.State[b] == Mode.Gone) return;
         var p = s.P[b]; var v = s.V[b];
         if (b < Rain)
         {   // a drop: pulled toward the wind's sideways speed and its fall speed, then marched along its step, a cell at a time at most, so no wall is stepped through
-            var w = Wind(p, fronts, t); float k = MathF.Min(1, dt * 4);
+            var w = Air(p, fronts, t, field); float k = MathF.Min(1, dt * 4);
             v += (new Vector3(w.X * 0.6f, -9.2f, w.Z * 0.6f) - v) * k;
             var from = p; p += v * dt;
             int n = (int)MathF.Ceiling((p - from).Length() / (_voxels.Cell * 0.6f));
@@ -172,30 +193,47 @@ internal sealed class GardenWeather
         {
             case Mode.Resting:
                 {   // lying where it came to rest, until a gust strong enough comes by
-                    var w = Wind(p, fronts, t);
+                    var w = Air(p, fronts, t, field);
                     if (w.X * w.X + w.Z * w.Z > (leaf ? 6f : 9f) * (leaf ? 6f : 9f) * (1 + H(b, 8))) { s.State[b] = Mode.Flying; v = new Vector3(w.X * 0.3f, 1.4f + H(b, 9), w.Z * 0.3f); p.Y += 0.04f; s.V[b] = v; s.P[b] = p; }
                     return;
                 }
             case Mode.Floating:
                 {   // on the pool, drifting before the wind
-                    var w = Wind(p, fronts, t); p.X += w.X * 0.15f * dt; p.Z += w.Z * 0.15f * dt; p.Y = _water + 0.004f;
+                    var w = Air(p, fronts, t, field); p.X += w.X * 0.15f * dt; p.Z += w.Z * 0.15f * dt; p.Y = _water + 0.004f;
                     if (!InPool(p)) { p.Y = _water + 0.4f; s.State[b] = Mode.Flying; }
                     s.P[b] = p; return;
                 }
         }
         {
-            var w = Wind(p, fronts, t);
+            var w = Air(p, fronts, t, field);
             // a leaf flutters across its fall: the air round it is swirled, faster the faster it falls
             float flutter = leaf ? 0.9f * MathF.Sin(t * (3f + 3f * H(b, 11)) + 6.28f * H(b, 12)) : 0.2f * MathF.Sin(t * 1.5f + b);
             w.X += flutter * (-v.Z * 0.3f + 0.4f); w.Z += flutter * (v.X * 0.3f + 0.3f);
             v = (v + dt * (drag * w + new Vector3(0, -9.81f, 0))) / (1 + dt * drag);   // (the implicit form: stable however large drag * dt)
-            var from = p; p += v * dt;
-            if (_voxels.Solid(p))
+            var from = p; var move = v * dt; var q = s.Q[b];
+            // a body is not a point: a leaf is its tip, its stalk and its two edges, a twig its two ends; each is tested against the grid along the step (a cell and a half at a
+            // time at most, so a thin wall is not stepped through), and the one that strikes first turns the body about the axis its lever and the wall make
+            var points = leaf ? LeafPoints : TwigPoints; float size = leaf ? 0.8f + 0.5f * H(b, 15) : 0.9f + 0.4f * H(b, 15);
+            int steps = Math.Clamp((int)MathF.Ceiling(move.Length() / (_voxels.Cell * 1.5f)), 1, 8), touching = 0; Vector3 normal = default, lever = default;
+            for (int k = 1; k <= steps && touching == 0; k++)
             {
-                var n = _voxels.Outward(p); p = from;
+                var at = from + move * ((float)k / steps);
+                if (_voxels.Solid(at)) { normal += _voxels.Outward(at); touching++; }
+                for (int c = 0; c < points.Length; c++)
+                {
+                    var offset = Vector3.Transform(points[c] * size, q); var corner = at + offset;
+                    if (_voxels.Solid(corner)) { normal += _voxels.Outward(corner); lever += offset; touching++; }
+                }
+                p = touching > 0 ? from + move * ((float)(k - 1) / steps) : at;
+            }
+            if (touching > 0)
+            {
+                var n = normal.LengthSquared() > 1e-6f ? Vector3.Normalize(normal) : Vector3.UnitY;
                 float vn = Vector3.Dot(v, n);
-                if (vn < 0) v -= (1.2f) * vn * n;
+                if (vn < 0) v -= 1.2f * vn * n;
                 v.X *= 1 - MathF.Min(1, dt * 6); v.Z *= 1 - MathF.Min(1, dt * 6);
+                var torque = Vector3.Cross(lever / touching, n);
+                if (torque.LengthSquared() > 1e-8f) { s.Axis[b] = Vector3.Normalize(torque); s.Rate[b] = (s.Rate[b] < 0 ? -1 : 1) * Math.Clamp(MathF.Abs(vn) * 8f + 2f, 2f, 12f); }
                 if (v.LengthSquared() < 0.16f && n.Y > 0.4f) { s.State[b] = Mode.Resting; s.Q[b] = Lying(n, 6.28f * H(b, 13, s.Cycle[b])); v = Vector3.Zero; }
             }
             else if (p.Y <= _water && InPool(p)) { p.Y = _water + 0.004f; v = Vector3.Zero; s.State[b] = Mode.Floating; s.Q[b] = Lying(Vector3.UnitY, 6.28f * H(b, 13, s.Cycle[b])); }
@@ -262,11 +300,60 @@ internal sealed class GardenWeather
     private void StepLive(Sim s, float time)
     {
         float dt = Math.Clamp(time - s.Time, 1f / 240, 1f / 12); var fronts = FrontsAt(time); s.Time = time;
+        long begin = Stopwatch.GetTimestamp();
+        _wind?.Step(dt, time); WindSeconds = Stopwatch.GetElapsedTime(begin).TotalSeconds;
         RunChunks(b =>
         {
             int cycle = CycleOf(b, time);
             if (cycle != s.Cycle[b]) Spawn(s, b, cycle, time);
-            Step(s, b, dt, time, fronts); WriteRows(s, b);
+            Step(s, b, dt, time, fronts, true);
+        });
+        begin = Stopwatch.GetTimestamp(); Collide(s); CollideSeconds = Stopwatch.GetElapsedTime(begin).TotalSeconds;
+        RunChunks(b => WriteRows(s, b));
+    }
+
+    // ----- bodies against one another -----
+
+    private int[] _starts = [], _cursor = [], _items = [];
+    private readonly Vector3[] _push;
+    private const float HashCell = 0.3f, BodyRadius = 0.07f;
+    private static int CellKey(int x, int y, int z, int mask) => (int)(((uint)(x * 73856093) ^ (uint)(y * 19349663) ^ (uint)(z * 83492791)) & (uint)mask);
+
+    /// <summary>Leaves and twigs are not ghosts to one another: a spatial hash (a counting sort of the bodies into cells of 30 cm) finds each flying body's neighbours in the 27 cells round it, and
+    /// those that touch are pushed apart, so a gust drives a drift of leaves against a wall into a heap and not into one point. The way a game finds what a particle meets.</summary>
+    private void Collide(Sim s)
+    {
+        int first = Rain, count = Bodies - Rain; if (count <= 0) return;
+        int table = (int)BitOperations.RoundUpToPowerOf2((uint)Math.Max(64, count * 2)), mask = table - 1;
+        if (_starts.Length != table + 1) { _starts = new int[table + 1]; _cursor = new int[table]; _items = new int[count]; }
+        Array.Clear(_starts); var starts = _starts; var cursor = _cursor; var items = _items; var push = _push; const float Inverse = 1f / HashCell;
+        int KeyOf(Vector3 p) => CellKey((int)MathF.Floor(p.X * Inverse), (int)MathF.Floor(p.Y * Inverse), (int)MathF.Floor(p.Z * Inverse), mask);
+        RunChunks(count, k => { int b = first + k; if (s.State[b] != Mode.Gone) Interlocked.Increment(ref starts[KeyOf(s.P[b]) + 1]); });
+        for (int k = 0; k < table; k++) starts[k + 1] += starts[k];
+        Array.Copy(starts, cursor, table);
+        RunChunks(count, k => { int b = first + k; if (s.State[b] != Mode.Gone) items[Interlocked.Increment(ref cursor[KeyOf(s.P[b])]) - 1] = k; });
+        RunChunks(count, k =>
+        {
+            int b = first + k; push[k] = default;
+            if (s.State[b] != Mode.Flying) return;
+            var p = s.P[b]; int cx = (int)MathF.Floor(p.X * Inverse), cy = (int)MathF.Floor(p.Y * Inverse), cz = (int)MathF.Floor(p.Z * Inverse); Vector3 sum = default;
+            for (int dz = -1; dz <= 1; dz++) for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
+            {
+                int key = CellKey(cx + dx, cy + dy, cz + dz, mask);
+                for (int i = starts[key]; i < starts[key + 1]; i++)
+                {
+                    int j = first + items[i]; if (j == b) continue;
+                    var d = p - s.P[j]; float r2 = d.LengthSquared();
+                    if (r2 < 4 * BodyRadius * BodyRadius && r2 > 1e-8f) { float r = MathF.Sqrt(r2); sum += d * ((2 * BodyRadius - r) * 0.5f / r); }
+                }
+            }
+            push[k] = sum;
+        });
+        RunChunks(count, k =>
+        {
+            int b = first + k; var d = push[k];
+            if (d == default) return;
+            var np = s.P[b] + d; if (!_voxels.Solid(np)) { s.P[b] = np; s.V[b] += d * 3f; }
         });
     }
 
@@ -282,29 +369,30 @@ internal sealed class GardenWeather
             int cycle = CycleOf(b, time); float born = (cycle + Phase(b)) * Period(b);
             int n0 = Math.Min((int)MathF.Ceiling(born / Fixed), now);
             Spawn(s, b, cycle, n0 * Fixed);
-            for (int n = n0; n < now; n++) Step(s, b, Fixed, (n + 1) * Fixed, table[n + 1 - first]);
-            if (rest > 1e-5f) Step(s, b, rest, time, last);
+            for (int n = n0; n < now; n++) Step(s, b, Fixed, (n + 1) * Fixed, table[n + 1 - first], false);
+            if (rest > 1e-5f) Step(s, b, rest, time, last, false);
             WriteRows(s, b);
         });
         s.Valid = true;
     }
 
-    private void RunChunks(Action<int> body)
+    private void RunChunks(Action<int> body) => RunChunks(Bodies, body);
+    private static void RunChunks(int count, Action<int> body)
     {
         const int Chunk = 512;
-        Parallel.For(0, (Bodies + Chunk - 1) / Chunk, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, c =>
+        Parallel.For(0, (count + Chunk - 1) / Chunk, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, c =>
         {
-            for (int b = c * Chunk, end = Math.Min(Bodies, b + Chunk); b < end; b++) body(b);
+            for (int b = c * Chunk, end = Math.Min(count, b + Chunk); b < end; b++) body(b);
         });
     }
 }
 
 /// <summary>How much weather there is: the numbers of drops, splashes, leaves (of each of three colours) and twigs, and how fine the grid of solids they collide with is. The standard level is about
 /// 20,000 bodies against a 29 MB grid; the high level three times the bodies against a 235 MB one - a working set far larger than any processor's cache, so it is the memory's latency that sets the speed.</summary>
-internal readonly record struct WeatherLevel(string Name, int Rain, int Splashes, int LeavesPerKind, int Twigs, float Cell)
+internal readonly record struct WeatherLevel(string Name, int Rain, int Splashes, int LeavesPerKind, int Twigs, float Cell, float WindCell, int WindIterations)
 {
     public int Leaves => LeavesPerKind * 3; public int Bodies => Rain + Leaves + Twigs; public int Count => Rain + Splashes + Leaves + Twigs;
-    public static readonly WeatherLevel Standard = new("on", 14000, 1600, 1200, 700, 0.125f), High = new("high", 42000, 4800, 3600, 2100, 0.0625f);
+    public static readonly WeatherLevel Standard = new("on", 14000, 1600, 1200, 700, 0.125f, 0.45f, 10), High = new("high", 42000, 4800, 3600, 2100, 0.0625f, 0.3f, 16);
     /// <summary>The level an option names: null for off.</summary>
     public static WeatherLevel? Parse(string? name) => name switch { "off" => null, "high" => High, _ => Standard };
 }
