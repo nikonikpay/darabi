@@ -70,7 +70,7 @@ public class GardenRenderHardwareTests
         Assert.True(quality > off * 0.85, $"quality {quality} off {off}");
     }
 
-    [Theory, InlineData("sharpen"), InlineData("quality"), InlineData("performance")]
+    [Theory, InlineData("off"), InlineData("sharpen"), InlineData("quality"), InlineData("performance")]
     public void The_garden_finished_by_NVIDIA_Image_Scaling_is_a_stable_picture_of_the_window_s_size(string name)
     {
         if (NoGpu) return;
