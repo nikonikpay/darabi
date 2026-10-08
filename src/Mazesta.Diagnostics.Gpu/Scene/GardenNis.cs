@@ -27,14 +27,11 @@ internal sealed unsafe class GardenNis : IDisposable
     private readonly ID3D12Resource _config, _output, _input;
     private readonly int _outWidth, _outHeight; private readonly bool _scaler;
     private readonly uint _groupsX, _groupsY;
-    // sharpening alone is preceded by GardenClean (the edges' stair-steps smoothed, as a sharpener would raise them): its pass and the picture it leaves
-    private readonly ID3D12RootSignature? _cleanRoot; private readonly ID3D12PipelineState? _clean; private readonly ID3D12DescriptorHeap? _cleanHeap; private readonly ID3D12Resource? _mid;
-    private readonly int _inWidth, _inHeight;
 
     /// <param name="input">The lens's picture (RGBA8, <paramref name="inWidth"/> x <paramref name="inHeight"/>), left in the shader-readable state between frames.</param>
     public GardenNis(D3D12Session s, ID3D12Resource input, int inWidth, int inHeight, int outWidth, int outHeight, float sharpness = 0.5f)
     {
-        _input = input; _inWidth = inWidth; _inHeight = inHeight; _outWidth = outWidth; _outHeight = outHeight; _scaler = inWidth != outWidth || inHeight != outHeight;
+        _input = input; _outWidth = outWidth; _outHeight = outHeight; _scaler = inWidth != outWidth || inHeight != outHeight;
         byte[] shader = D3D12Session.Shader(_scaler ? "GardenNisScaler" : "GardenNisSharpen");
         _root = s.Own(s.Device.CreateRootSignature(shader));
         _pipeline = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = shader }));
@@ -42,23 +39,12 @@ internal sealed unsafe class GardenNis : IDisposable
         _groupsX = (uint)((outWidth + 31) / 32); _groupsY = (uint)((outHeight + (_scaler ? 24 : 32) - 1) / (_scaler ? 24 : 32));
         _output = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)outWidth, (uint)outHeight, 1, 1, flags: ResourceFlags.AllowUnorderedAccess), ResourceStates.UnorderedAccess));
         _config = s.Buffer(256, HeapType.Upload, ResourceStates.GenericRead);
-        if (!_scaler)
-        {
-            byte[] clean = D3D12Session.Shader("GardenClean");
-            _cleanRoot = s.Own(s.Device.CreateRootSignature(clean));
-            _clean = s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _cleanRoot, ComputeShader = clean }));
-            _mid = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)inWidth, (uint)inHeight, 1, 1, flags: ResourceFlags.AllowUnorderedAccess), ResourceStates.UnorderedAccess));
-            _cleanHeap = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 2, DescriptorHeapFlags.ShaderVisible, 0)));
-            uint step = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
-            s.Device.CreateShaderResourceView(input, null, _cleanHeap.GetCPUDescriptorHandleForHeapStart());
-            s.Device.CreateUnorderedAccessView(_mid, null, null, _cleanHeap.GetCPUDescriptorHandleForHeapStart().Offset(1, step));
-        }
         WriteConfig(sharpness, inWidth, inHeight);
         var coefScale = Coefficients(s, NisCoefficients.Scale); var coefUsm = Coefficients(s, NisCoefficients.Usm);
         _heap = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, 4, DescriptorHeapFlags.ShaderVisible, 0)));
         uint size = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle At(int i) => _heap.GetCPUDescriptorHandleForHeapStart().Offset(i, size);
-        s.Device.CreateShaderResourceView(_mid ?? input, null, At(0)); s.Device.CreateShaderResourceView(coefScale, null, At(1)); s.Device.CreateShaderResourceView(coefUsm, null, At(2));
+        s.Device.CreateShaderResourceView(input, null, At(0)); s.Device.CreateShaderResourceView(coefScale, null, At(1)); s.Device.CreateShaderResourceView(coefUsm, null, At(2));
         s.Device.CreateUnorderedAccessView(_output, null, null, At(3));
     }
 
@@ -101,21 +87,11 @@ internal sealed unsafe class GardenNis : IDisposable
     public void Record(ID3D12GraphicsCommandList4 l, ID3D12Resource target)
     {
         const ResourceStates Read = ResourceStates.PixelShaderResource | ResourceStates.NonPixelShaderResource;   // (a compute shader reads what a pixel shader reads, in the state of both)
-        if (_clean is not null && _mid is not null && _cleanHeap is not null)
-        {
-            l.SetComputeRootSignature(_cleanRoot); l.SetPipelineState(_clean); l.SetDescriptorHeaps(_cleanHeap);
-            l.SetComputeRootDescriptorTable(0, _cleanHeap.GetGPUDescriptorHandleForHeapStart());
-            l.ResourceBarrierTransition(_input, ResourceStates.PixelShaderResource, Read);
-            l.Dispatch((uint)((_inWidth + 7) / 8), (uint)((_inHeight + 7) / 8), 1);
-            l.ResourceBarrierTransition(_input, Read, ResourceStates.PixelShaderResource);
-            l.ResourceBarrierTransition(_mid, ResourceStates.UnorderedAccess, Read);
-        }
-        else l.ResourceBarrierTransition(_input, ResourceStates.PixelShaderResource, Read);
+        l.ResourceBarrierTransition(_input, ResourceStates.PixelShaderResource, Read);
         l.SetComputeRootSignature(_root); l.SetPipelineState(_pipeline); l.SetDescriptorHeaps(_heap);
         l.SetComputeRootConstantBufferView(0, _config.GPUVirtualAddress); l.SetComputeRootDescriptorTable(1, _heap.GetGPUDescriptorHandleForHeapStart());
         l.Dispatch(_groupsX, _groupsY, 1);
-        if (_mid is not null) l.ResourceBarrierTransition(_mid, Read, ResourceStates.UnorderedAccess);
-        else l.ResourceBarrierTransition(_input, Read, ResourceStates.PixelShaderResource);
+        l.ResourceBarrierTransition(_input, Read, ResourceStates.PixelShaderResource);
         l.ResourceBarrierTransition(_output, ResourceStates.UnorderedAccess, ResourceStates.CopySource);
         l.ResourceBarrierTransition(target, ResourceStates.Common, ResourceStates.CopyDest);
         l.CopyResource(target, _output);
