@@ -88,15 +88,24 @@ internal sealed unsafe class GardenAccel
     private void WriteInstances(float time, bool all)
     {
         var span = _instances.Map<InstanceDesc>(0, _g.Instances.Length);
-        foreach (int i in all ? Enumerable.Range(0, _g.RayInstances) : _g.Moving.Concat(_g.Swaying))
+        int[] ids = all ? [.. Enumerable.Range(0, _g.RayInstances)] : _moving ??= [.. _g.Moving.Concat(_g.Swaying)];
+        fixed (InstanceDesc* first = span)
         {
-            var inst = _g.Instances[i];
-            var m = _dequant[inst.Mesh] * _g.World(i, time);
-            var desc = new InstanceDesc { IdAndMask = (uint)i & 0xFFFFFF | (uint)_masks[inst.Mesh] << 24, Blas = _blas[inst.Mesh] };
-            float[] rows = [m.M11, m.M21, m.M31, m.M41, m.M12, m.M22, m.M32, m.M42, m.M13, m.M23, m.M33, m.M43];
-            for (int k = 0; k < 12; k++) desc.Transform[k] = rows[k];
-            span[i] = desc;
+            nint at = (nint)first;   // (a pointer cannot be captured: the instances are placed on every core, a thousand and more plants a frame)
+            Parallel.ForEach(System.Collections.Concurrent.Partitioner.Create(0, ids.Length, 512), range =>
+            {
+                var to = (InstanceDesc*)at;
+                for (int n = range.Item1; n < range.Item2; n++)
+                {
+                    int i = ids[n]; var inst = _g.Instances[i];
+                    var m = _dequant[inst.Mesh] * _g.World(i, time);
+                    ref var desc = ref to[i]; desc = new InstanceDesc { IdAndMask = (uint)i & 0xFFFFFF | (uint)_masks[inst.Mesh] << 24, Blas = _blas[inst.Mesh] };
+                    desc.Transform[0] = m.M11; desc.Transform[1] = m.M21; desc.Transform[2] = m.M31; desc.Transform[3] = m.M41; desc.Transform[4] = m.M12; desc.Transform[5] = m.M22;
+                    desc.Transform[6] = m.M32; desc.Transform[7] = m.M42; desc.Transform[8] = m.M13; desc.Transform[9] = m.M23; desc.Transform[10] = m.M33; desc.Transform[11] = m.M43;
+                }
+            });
         }
         _instances.Unmap(0);
     }
+    private int[]? _moving;
 }

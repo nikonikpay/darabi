@@ -63,9 +63,47 @@ internal sealed class GardenWeather
     public void Prefetch(float time) { Advance(time, true); _ahead = true; }
     private bool _ahead;
 
+    /// <summary>For the window that shows the garden: the weather is stepped on a thread of its own, as a game's simulation runs beside its renderer, so the card never waits for it. Called every
+    /// frame with the frame's time; <see cref="Advance"/> (live) then takes the rows of the latest step done, which may be a frame or two behind (the weather moves at the pace the processor can
+    /// step it, the picture at the card's).</summary>
+    public void Follow(float time)
+    {
+        Volatile.Write(ref _wanted, time); _wake.Set();
+        if (_thread is not null) return;
+        _cores = Math.Max(1, Environment.ProcessorCount - 4); if (_wind is not null) _wind.Crew = GardenCrew.Beside(_cores);   // (the renderer, the driver and the system keep a few cores)
+        _thread = new Thread(Loop) { IsBackground = true, Name = "Mazesta weather", Priority = ThreadPriority.BelowNormal }; _thread.Start();
+    }
+    private int _cores = Environment.ProcessorCount;
+    private Thread? _thread; private float _wanted; private volatile bool _stop; private Exception? _failed;
+    private readonly ManualResetEventSlim _wake = new(false), _ready = new(false); private readonly object _gate = new(); private Vector4[]? _published, _taken;
+    private void Loop()
+    {
+        try
+        {
+            while (!_stop)
+            {
+                _wake.Wait(); _wake.Reset(); if (_stop) break;
+                float t = Volatile.Read(ref _wanted); long begin = Stopwatch.GetTimestamp();
+                if (!_live.Valid || t < _live.Time || t - _live.Time > 1f) { Rebuild(_live, t); _wind?.Reset(t); WindSeconds = 0; } else StepLive(_live, t);
+                LastSeconds = Stopwatch.GetElapsedTime(begin).TotalSeconds;
+                lock (_gate) { _published ??= new Vector4[_live.Rows.Length]; _live.Rows.CopyTo(_published, 0); }
+                _ready.Set(); if (Volatile.Read(ref _wanted) != t) _wake.Set();   // (a frame has come meanwhile: step on at once)
+            }
+        }
+        catch (Exception e) { _failed = e; _ready.Set(); }
+    }
+    /// <summary>Stops the weather thread.</summary>
+    public void Stop() { _stop = true; _wake.Set(); _thread?.Join(2000); }
+
     public void Advance(float time, bool live)
     {
         long begin = Stopwatch.GetTimestamp();
+        if (live && _thread is not null)
+        {
+            _ready.Wait(); if (_failed is { } f) throw new InvalidOperationException("The weather thread failed.", f);
+            lock (_gate) { _taken ??= new Vector4[_published!.Length]; _published!.CopyTo(_taken, 0); }
+            _rows = _taken; return;
+        }
         if (live && _ahead) { _ahead = false; return; }   // (a frame's time differs from the guess by a few milliseconds: unseen)
         if (live)
         {
@@ -382,10 +420,10 @@ internal sealed class GardenWeather
     }
 
     private void RunChunks(Action<int> body) => RunChunks(Bodies, body);
-    private static void RunChunks(int count, Action<int> body)
+    private void RunChunks(int count, Action<int> body)
     {
         const int Chunk = 512;
-        Parallel.For(0, (count + Chunk - 1) / Chunk, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, c =>
+        Parallel.For(0, (count + Chunk - 1) / Chunk, new ParallelOptions { MaxDegreeOfParallelism = _cores }, c =>
         {
             for (int b = c * Chunk, end = Math.Min(count, b + Chunk); b < end; b++) body(b);
         });
@@ -399,5 +437,5 @@ internal readonly record struct WeatherLevel(string Name, int Rain, int Splashes
     public int Leaves => LeavesPerKind * 3; public int Bodies => Rain + Leaves + Twigs; public int Count => Rain + Splashes + Leaves + Twigs;
     public static readonly WeatherLevel Standard = new("on", 14000, 1600, 1200, 700, 0.125f, 0.45f, 10), High = new("high", 42000, 4800, 3600, 2100, 0.0625f, 0.3f, 16);
     /// <summary>The level an option names: null for off.</summary>
-    public static WeatherLevel? Parse(string? name) => name switch { "off" => null, "high" => High, _ => Standard };
+    public static WeatherLevel? Parse(string? name) => name switch { "high" => High, "on" => Standard, _ => null };
 }

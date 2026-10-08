@@ -13,13 +13,16 @@ internal sealed class GardenCrew
     private readonly SemaphoreSlim[] _wake; private Action<int>? _job;
     private volatile int _finished, _generation; private int _arrived; private readonly object _one = new();
 
-    private GardenCrew(int size)
+    /// <summary>A crew of its own, below the picture's priority and short of a few cores: for a simulation that runs beside the renderer and must not take the processor from it.</summary>
+    public static GardenCrew Beside(int size) => new(size, ThreadPriority.BelowNormal);
+
+    private GardenCrew(int size, ThreadPriority priority = ThreadPriority.AboveNormal)
     {
         Size = Math.Max(1, size); _wake = new SemaphoreSlim[Size];
         for (int w = 1; w < Size; w++)
         {
             int number = w; _wake[w] = new SemaphoreSlim(0);
-            new Thread(() => Work(number)) { IsBackground = true, Name = "Garden crew " + number, Priority = ThreadPriority.AboveNormal }.Start();
+            new Thread(() => Work(number)) { IsBackground = true, Name = "Garden crew " + number, Priority = priority }.Start();
         }
     }
 

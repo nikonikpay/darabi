@@ -75,10 +75,10 @@ public class GardenRenderHardwareTests
     public void The_shown_loop_frame_rate_is_written_when_asked(bool rays)
     {
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is not { Length: > 0 } || Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is not { Length: > 0 } dir || NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!); using var w = new TestWindow("frame rate", 1920, 1080, Environment.GetEnvironmentVariable("MAZESTA_FULL") is { Length: > 0 });
-        using var v = new SceneView(s, w, 1920, 1080, rays, 3, null, null, WeatherLevel.Standard);
+        using var s = new D3D12Session(GpuDevices.Resolve("")!); int W2 = int.Parse(Environment.GetEnvironmentVariable("MAZESTA_W") ?? "1920"), H2 = W2 * 9 / 16; using var w = new TestWindow("frame rate", W2, H2, Environment.GetEnvironmentVariable("MAZESTA_FULL") is { Length: > 0 });
+        using var v = new SceneView(s, w, W2, H2, rays, 3, null, null, Environment.GetEnvironmentVariable("MAZESTA_WEATHER") == "off" ? null : WeatherLevel.Standard);
         var sw = System.Diagnostics.Stopwatch.StartNew(); long n = 0; double from = 0;
-        while (sw.Elapsed.TotalSeconds < (Environment.GetEnvironmentVariable("MAZESTA_FULL") is null ? 8 : 20)) { w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds); if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; } else n++; }
+        while (sw.Elapsed.TotalSeconds < (Environment.GetEnvironmentVariable("MAZESTA_FULL") is null ? 8 : 20)) { w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds + float.Parse(Environment.GetEnvironmentVariable("MAZESTA_T0") ?? "0")); if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; } else n++; }
         File.AppendAllText(Path.Combine(dir, "timing.txt"), FormattableString.Invariant($"shown loop rays={rays}: {n / (sw.Elapsed.TotalSeconds - from):F1} FPS, {(sw.Elapsed.TotalSeconds - from) * 1000 / n:F2} ms a frame") + Environment.NewLine);
     }
 

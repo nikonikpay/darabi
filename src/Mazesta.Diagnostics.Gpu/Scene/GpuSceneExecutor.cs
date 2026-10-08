@@ -28,8 +28,8 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     /// <summary>The window covers the screen with no border (the frame is still drawn at the resolution chosen and shown scaled to the screen): on unless switched off.</summary>
     internal static readonly TestOption FullScreen = new(FullScreenOption, "Test_Option_FullScreen", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>The garden's weather (<see cref="GardenWeather"/>): rain, gusts that lift leaves and twigs out of the crowns and carry them, simulated on every core of the processor each frame, in air that is a fluid going round the hall; the plants sway in it.
-    /// On unless switched off; it loads the processor and the memory (the grids of solids and of air), not the card.</summary>
-    internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "on",
+    /// Off unless switched on (the card is then the only thing the test loads); it loads the processor and the memory (the grids of solids and of air), not the card.</summary>
+    internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "off",
         () => [new("off", "Test_RayTracing_Off", true, "no rain, no wind-blown leaves"), new("on", "Test_Switch_On", true, "rain, gusts, leaves and twigs, the air a fluid on every core, plants swaying (20,000 bodies, 29 MB of solids, 29 MB of air)"),
                new("high", "Test_Weather_High", true, "three times the bodies, a finer air (98 MB) and 233 MB of solids: the memory and every core set the speed")]);
     /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>

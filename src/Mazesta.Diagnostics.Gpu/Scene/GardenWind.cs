@@ -24,6 +24,8 @@ internal sealed class GardenWind
     public long SolidCells { get; }
     /// <summary>Seconds the last <see cref="Step"/> took, on every core.</summary>
     public double LastSeconds { get; private set; }
+    /// <summary>The workers that step the air (all the processor's, unless the weather runs beside the renderer).</summary>
+    public GardenCrew Crew { get; set; } = GardenCrew.Shared;
     public readonly double[] Phase = new double[8];
     public float Time { get; private set; }
     public bool Valid { get; private set; }
@@ -76,7 +78,7 @@ internal sealed class GardenWind
     /// <summary>Starts the air at the wind that blows at <paramref name="time"/>, where it is not blocked (the first frame, or after a jump in time).</summary>
     public void Reset(float time)
     {
-        var fronts = GardenWeather.FrontsAt(time); var crew = GardenCrew.Shared;
+        var fronts = GardenWeather.FrontsAt(time); var crew = Crew;
         crew.Run(w =>
         {
             var (z0, z1) = crew.Share(w, Z);
@@ -147,7 +149,7 @@ internal sealed class GardenWind
     {
         long begin = Stopwatch.GetTimestamp();
         if (!Valid || time < Time || time - Time > 1f) Reset(time);
-        var fronts = GardenWeather.FrontsAt(time); float pull = MathF.Min(1, Relax * dt), inverseDt = dt * _inverse; var crew = GardenCrew.Shared;
+        var fronts = GardenWeather.FrontsAt(time); float pull = MathF.Min(1, Relax * dt), inverseDt = dt * _inverse; var crew = Crew;
         int nx = X, ny = Y, nz = Z, slab = nx * ny; var solid = _solid; var scale = _scale; var p = _p; var d = _d;
         crew.Run(w =>
         {

@@ -38,9 +38,10 @@ internal sealed class SceneView : IDisposable
     public void Present(float time)
     {
         int index = (int)_swap.CurrentBackBufferIndex;
+        Garden.Weather?.Follow(time);   // (stepped beside the frame, not in the card's way)
         _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(_s.List, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false);
         _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();   // queued behind the frame: shown the moment the card has drawn it, not after the processor has also finished waiting
-        Overlap(time);
+        _s.Finish();
     }
 
     /// <summary>The benchmark's two halves of <see cref="Present"/>: the scene drawn into the next back buffer on its own (the part that is timed),
@@ -66,5 +67,5 @@ internal sealed class SceneView : IDisposable
         ulong h = 1469598103934665603UL; foreach (uint p in _renderer.Capture(time)) h = (h ^ p) * 1099511628211UL; return h;
     }
 
-    public void Dispose() { _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
+    public void Dispose() { Garden.Weather?.Stop(); _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
 }
