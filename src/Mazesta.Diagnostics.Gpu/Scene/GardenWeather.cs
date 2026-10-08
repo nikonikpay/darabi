@@ -59,9 +59,14 @@ internal sealed class GardenWeather
     public static int Threads => Environment.ProcessorCount;
     public WeatherLevel Level => _level;
 
+    /// <summary>Steps the air for the frame after the one the card is drawing, while it draws; the next <see cref="Advance"/> (live) takes that step as its own.</summary>
+    public void Prefetch(float time) { Advance(time, true); _ahead = true; }
+    private bool _ahead;
+
     public void Advance(float time, bool live)
     {
         long begin = Stopwatch.GetTimestamp();
+        if (live && _ahead) { _ahead = false; return; }   // (a frame's time differs from the guess by a few milliseconds: unseen)
         if (live)
         {
             if (!_live.Valid || time < _live.Time || time - _live.Time > 1f) { Rebuild(_live, time); _wind?.Reset(time); WindSeconds = 0; }

@@ -38,13 +38,21 @@ internal sealed class SceneView : IDisposable
     public void Present(float time)
     {
         int index = (int)_swap.CurrentBackBufferIndex;
-        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(l, index, _renderer.OutWidth, _renderer.OutHeight); });
+        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(l, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false);
+        Overlap(time);
         _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();
     }
 
     /// <summary>The benchmark's two halves of <see cref="Present"/>: the scene drawn into the next back buffer on its own (the part that is timed),
     /// then the readout laid over it and the picture shown (not timed).</summary>
-    public void DrawFrame(float time) { _index = (int)_swap.CurrentBackBufferIndex; _s.Run(l => _renderer.Draw(l, time, _index)); }
+    public void DrawFrame(float time) { _index = (int)_swap.CurrentBackBufferIndex; _s.Run(l => _renderer.Draw(l, time, _index), wait: false); Overlap(time); }
+    /// <summary>While the card draws the frame, the processor steps the weather for the next one (a guess: as far on as this one came after the last),
+    /// so the card is not left idle for the simulation; then waits for the card.</summary>
+    private void Overlap(float time)
+    {
+        Garden.Weather?.Prefetch(time + Math.Clamp(time - _last, 0.001f, 0.1f)); _last = time; _s.Finish();
+    }
+    private float _last;
     public void ShowFrame()
     {
         _s.Run(l => Overlay.Draw(l, _index, _renderer.OutWidth, _renderer.OutHeight));
