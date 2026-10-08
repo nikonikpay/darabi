@@ -75,26 +75,29 @@ public class GardenRenderHardwareTests
     public void The_shown_loop_frame_rate_is_written_when_asked(bool rays)
     {
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is not { Length: > 0 } || Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is not { Length: > 0 } dir || NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!); using var w = new TestWindow("frame rate", 1920, 1080, false);
-        using var v = new SceneView(s, w, 1920, 1080, rays, 3, null, null);
+        using var s = new D3D12Session(GpuDevices.Resolve("")!); using var w = new TestWindow("frame rate", 1920, 1080, Environment.GetEnvironmentVariable("MAZESTA_FULL") is { Length: > 0 });
+        using var v = new SceneView(s, w, 1920, 1080, rays, 3, null, null, WeatherLevel.Standard);
         var sw = System.Diagnostics.Stopwatch.StartNew(); long n = 0; double from = 0;
-        while (sw.Elapsed.TotalSeconds < 8) { w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds); if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; } else n++; }
+        while (sw.Elapsed.TotalSeconds < (Environment.GetEnvironmentVariable("MAZESTA_FULL") is null ? 8 : 20)) { w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds); if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; } else n++; }
         File.AppendAllText(Path.Combine(dir, "timing.txt"), FormattableString.Invariant($"shown loop rays={rays}: {n / (sw.Elapsed.TotalSeconds - from):F1} FPS, {(sw.Elapsed.TotalSeconds - from) * 1000 / n:F2} ms a frame") + Environment.NewLine);
     }
 
-    /// <summary>A frame sent to the card in pieces (as the test window does, so the card works while the rest is recorded) is the same bits as the same frame in one list.</summary>
+    /// <summary>The frames shown one after another, sent to the card in pieces (as the test window does, so the card works while the rest is recorded), are the same picture (to the few pixels two runs of shown frames differ by) as the
+    /// same frames in one list - at moments far apart, so a piece that draws nothing (and leaves the picture of the frame before) cannot pass.</summary>
     [Theory, InlineData(1u, false), InlineData(3u, false), InlineData(1u, true), InlineData(3u, true)]
-    public void A_frame_recorded_in_pieces_is_the_same_picture(uint load, bool rays)
+    public void Frames_recorded_in_pieces_are_the_same_pictures(uint load, bool rays)
     {
         if (NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!);
-        var g = new GardenGpu(s, GardenScene.Embedded);
-        using var r = new GardenRaster(s, g, W, H, [], load, rayTraced: rays);
-        foreach (float t in new[] { 1.234f, 40f, 100f })
+        using var s = new D3D12Session(GpuDevices.Resolve("")!); var g = new GardenGpu(s, GardenScene.Embedded);
+        float[] times = [1f, 1.03f, 9f, 9.03f, 40f]; var whole = new List<uint[]>(); var pieces = new List<uint[]>();
+        using (var r = new GardenRaster(s, g, W, H, [], load, rayTraced: rays)) { r.Capture(0.5f); foreach (float t in times) whole.Add(r.Capture(t, live: true)); }
+        using (var r = new GardenRaster(s, g, W, H, [], load, rayTraced: rays)) { r.Capture(0.5f); foreach (float t in times) pieces.Add(r.Capture(t, live: true, chunked: true)); }
+        for (int k = 0; k < times.Length; k++)
         {
-            var whole = r.Capture(t); var pieces = r.Capture(t, chunked: true);
-            Assert.True(whole.AsSpan().SequenceEqual(pieces), $"the frame at {t} s differs when recorded in pieces");
+            int d = 0, y0 = H, y1 = 0; for (int i = 0; i < whole[k].Length; i++) if (whole[k][i] != pieces[k][i]) { d++; y0 = Math.Min(y0, i / W); y1 = Math.Max(y1, i / W); }
+            Assert.True(d < W * H / 50, $"the frame at {times[k]} s differs when recorded in pieces: {d} pixels, rows {y0}-{y1} of {H}");   // (two runs of the same shown frames differ by up to a percent themselves: the frames build on each other; a piece that draws nothing leaves all of them)
         }
+        Assert.False(whole[0].AsSpan().SequenceEqual(whole[2]), "the picture does not change with time");
     }
 
     private static void Check(GardenRenderer r, string name)

@@ -705,7 +705,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         }
 
         Mark(l, "ambient occlusion (+ray shade)");
-        if (Chunked) { l = S.Handoff(); Bind(l); }
+        if (Chunked) { l = S.Handoff(); Bind(l); l.RSSetViewport(0, 0, Width, Height); l.RSSetScissorRect(Width, Height); }   // (a new list has no viewport: nothing would be drawn, and the lens would show the light of the frame before)
         // 4. the frame's light
         var rtv = _samples > 1 ? Rtv(Targets.Length + 1) : Rtv(Targets.Length + 3);
         if (_samples == 1) l.ResourceBarrierTransition(_light, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
