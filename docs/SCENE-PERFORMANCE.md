@@ -67,9 +67,6 @@ A frame shown after another (a live frame) steps the air and the bodies one step
 is the same picture whatever was drawn before - and the card's check (the same bits before and after the run) still holds. Rain, splashes, leaves and twigs are movers (`WeatherFlag`): they are
 not in the ray tracer's top-level structure, so a ray-traced frame does not reflect or shadow them.
 
-## NVIDIA Image Scaling
+## NVIDIA Image Scaling (removed)
 
-The frame ends with NVIDIA's open-source NIS (the SDK's `NIS_Scaler.h`, MIT; `GardenNis`). Its default, `sharpen`, is the SDK's NVSharpen alone at the window's own size, at 35 % strength, straight on the lens's picture (no smoothing pass before it: one softened real detail such as tile, leaves and lettering) -
-and draws nothing smaller: it is free on this card and holds about twice the fine detail of the unsharpened picture (a test measures it). The other choices are NIS *upscaling*, not sharpening: the garden drawn at
-77 / 67 / 59 % of the window's size and scaled up by the SDK's six-tap filter with four directional filters; they trade softness for time (1.8 ms at 77 % here) and are named so in the option. It runs after the lens, on the
-tone-mapped picture, as the SDK asks. The option is part of a record's key.
+NIS was tried as the frame's last step and removed (2026-10-08): its sharpener lifted the ray-traced reflections' and the leaves' grain as much as the detail. The frame is the lens's picture.

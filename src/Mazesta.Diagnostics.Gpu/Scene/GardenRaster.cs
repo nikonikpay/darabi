@@ -65,7 +65,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
     /// <summary><paramref name="rayTraced"/>: on a GPU with DirectX Raytracing 1.1, shadows and mirror images are found with rays
     /// (GardenRaster.hlsl compiled with RT) - the courtyard's shadow map, the lamps' cubes and the pool's second drawing are not made.</summary>
-    public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load, bool rayTraced = false, NisMode? nis = null, int outWidth = 0, int outHeight = 0) : base(s, g, width, height, targets, outWidth, outHeight)
+    public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load, bool rayTraced = false) : base(s, g, width, height, targets)
     {
         _set = Settings.ForLoad(load); if (rayTraced) { _set = _set with { ReflectionDivisor = 0 }; _accel = new GardenAccel(s, g); }
         _samples = SupportedSamples(s, _set.Samples);
@@ -162,12 +162,6 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // The frame's light at one sample a pixel (what MSAA resolves into), and its glow: half the frame's size, and four halvings of that.
         _light = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Light, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
             ResourceStates.PixelShaderResource, new ClearValue(Light, new Color4(0, 0, 0, 1))));
-        if (nis is { Active: true })
-        {   // NVIDIA Image Scaling finishes the frame: the lens writes its picture here, and the scaler or sharpener makes the window's own from it
-            _ldr = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
-                ResourceStates.PixelShaderResource, new ClearValue(Format.R8G8B8A8_UNorm, new Color4(0, 0, 0, 1))));
-            _nis = new GardenNis(s, _ldr, width, height, OutWidth, OutHeight, nis.Value.Scales ? 0.5f : 0.35f);   // (0.35: NVSharpen at 35 %)
-        }
         for (int k = 0; k < GlowLevels; k++)
             _glow[k] = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(GlowFormat, (uint)GlowSize(k).W, (uint)GlowSize(k).H, 1, 1, flags: ResourceFlags.AllowRenderTarget),
                 ResourceStates.PixelShaderResource, new ClearValue(GlowFormat, new Color4(0, 0, 0, 1))));
@@ -233,7 +227,6 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             for (int m = 0; m < RoundMips; m++)
                 s.Device.CreateRenderTargetView(_round, new RenderTargetViewDescription { Format = Light, ViewDimension = RenderTargetViewDimension.Texture2DArray, Texture2DArray = new Texture2DArrayRenderTargetView { MipSlice = (uint)m, FirstArraySlice = (uint)face, ArraySize = 1 } }, RoundRtv(face, m));
         s.Device.CreateRenderTargetView(_hallTint, null, TintRtv);
-        if (_ldr is not null) s.Device.CreateRenderTargetView(_ldr, null, LdrRtv);
         if (_shadeA is not null) { s.Device.CreateRenderTargetView(_shadeA, null, ShadeRtv(0)); s.Device.CreateRenderTargetView(_shadeB, null, ShadeRtv(1)); }
         _dsv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, (uint)(7 + cubes * 6), DescriptorHeapFlags.None, 0)));
         _dsvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
@@ -306,8 +299,6 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private readonly int _roundSlot;
     private CpuDescriptorHandle RoundRtv(int face, int mip) => Rtv(Targets.Length + 4 + GlowLevels + face * RoundMips + mip);
     private CpuDescriptorHandle TintRtv => Rtv(Targets.Length + 4 + GlowLevels + Rounds.Length * 6 * RoundMips);
-    private CpuDescriptorHandle LdrRtv => Rtv(Targets.Length + 7 + GlowLevels + Rounds.Length * 6 * RoundMips);
-    private readonly ID3D12Resource? _ldr; private readonly GardenNis? _nis;
     private CpuDescriptorHandle ShadeRtv(int k) => Rtv(Targets.Length + 5 + GlowLevels + Rounds.Length * 6 * RoundMips + k);
 
     /// <summary>The still garden all round from each of <see cref="Rounds"/>, into those of its pictures' twelve faces that
@@ -743,9 +734,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         for (int k = 0; k < GlowLevels; k++) Full(k == 0 ? _glowFirst : _glowDown, _glow[k], Rtv(Targets.Length + 4 + k), GlowSize(k).W, GlowSize(k).H, k);
         for (int k = GlowLevels - 2; k >= 0; k--) Full(_glowUp, _glow[k], Rtv(Targets.Length + 4 + k), GlowSize(k).W, GlowSize(k).H, k + 2);
         Mark(l, "glow");
-        if (_nis is not null && _ldr is not null) { Full(_lens, _ldr, LdrRtv, Width, Height, 0); _nis.Record(l, Targets[target]); }
-        else Full(_lens, Targets[target], Rtv(target), Width, Height, 0);
-        Mark(l, "lens + scaling");
+        Full(_lens, Targets[target], Rtv(target), Width, Height, 0);
+        Mark(l, "lens");
     }
 
     /// <summary>The part of the mirror image's picture the pool's water can be seen in (null: none of it). With a corner of the pool

@@ -50,49 +50,6 @@ public class GardenRenderHardwareTests
         finally { GardenRaster.ViewCulling = true; }
     }
 
-    /// <summary>Mean absolute Laplacian of the luma: how much fine detail a picture holds.</summary>
-    private static double Detail(uint[] px, int w, int h)
-    {
-        double sum = 0; static double Y(uint c) => 0.299 * (c & 255) + 0.587 * ((c >> 8) & 255) + 0.114 * ((c >> 16) & 255);
-        for (int y = 1; y < h - 1; y++) for (int x = 1; x < w - 1; x++) sum += Math.Abs(4 * Y(px[y * w + x]) - Y(px[y * w + x - 1]) - Y(px[y * w + x + 1]) - Y(px[(y - 1) * w + x]) - Y(px[(y + 1) * w + x]));
-        return sum / ((w - 2) * (h - 2));
-    }
-
-    [Fact]
-    public void Sharpening_holds_more_fine_detail_than_off_and_the_scaler_at_77_percent_not_much_less()
-    {
-        if (NoGpu) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!); var g = new GardenGpu(s, GardenScene.Embedded);
-        double Measure(string name) { var nis = NisMode.Parse(name); var (w, h) = nis.Render(W, H); using var r = new GardenRaster(s, g, w, h, [], 3, false, nis, W, H); return Detail(r.Capture(1.234f), r.OutWidth, r.OutHeight); }
-        double off = Measure("off"), sharp = Measure("sharpen"), quality = Measure("quality");
-        Console.WriteLine($"detail off {off:F3}  sharpen {sharp:F3}  quality {quality:F3}");
-        Assert.True(sharp > off * 1.05, $"sharpen {sharp} off {off}");
-        Assert.True(quality > off * 0.85, $"quality {quality} off {off}");
-    }
-
-    [Theory, InlineData("off"), InlineData("sharpen"), InlineData("quality"), InlineData("performance")]
-    public void The_garden_finished_by_NVIDIA_Image_Scaling_is_a_stable_picture_of_the_window_s_size(string name)
-    {
-        if (NoGpu) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!);
-        var g = new GardenGpu(s, GardenScene.Embedded); var nis = NisMode.Parse(name); var (w, h) = nis.Render(W, H);
-        Assert.Equal(nis.Scales, w < W);
-        using var r = new GardenRaster(s, g, w, h, [], 3, false, nis, W, H);
-        Assert.Equal((W, H), (r.OutWidth, r.OutHeight));
-        Assert.Equal(W * H, r.Capture(1.234f).Length);
-        Check(r, $"garden-nis-{name}");
-    }
-
-    [Theory, InlineData("off"), InlineData("sharpen")]
-    public void The_ray_traced_garden_finished_by_NIS_is_drawn_to_look_at(string name)
-    {
-        if (NoGpu || !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!);
-        var g = new GardenGpu(s, GardenScene.Embedded); var nis = NisMode.Parse(name);
-        using var r = new GardenRaster(s, g, W, H, [], 3, true, nis, W, H);
-        Look(r, $"garden-rays-nis-{name}", Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR"));
-    }
-
     [Theory, InlineData(1u), InlineData(3u)]
     public void The_garden_with_ray_tracing_on_is_a_stable_picture(uint load)
     {

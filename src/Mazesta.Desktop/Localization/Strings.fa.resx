@@ -3321,10 +3321,5 @@
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
-  <data name="Test_Option_Upscaling" xml:space="preserve"><value>انویدیا ایمیج اسکیلینگ (NIS)</value></data>
-  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>فقط وضوح‌دهی NVIDIA (ابتدا لبه‌ها نرم می‌شوند، با اندازهٔ کامل)</value></data>
-  <data name="Test_Nis_Quality" xml:space="preserve"><value>بزرگ‌نمایی، کیفیت: ۷۷٪ رسم و بزرگ‌نمایی (نرم‌تر)</value></data>
-  <data name="Test_Nis_Balanced" xml:space="preserve"><value>بزرگ‌نمایی، متعادل: ۶۷٪ رسم و بزرگ‌نمایی</value></data>
-  <data name="Test_Nis_Performance" xml:space="preserve"><value>بزرگ‌نمایی، کارایی: ۵۹٪ رسم و بزرگ‌نمایی</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، هوای ریزتر، شبکهٔ ۲۳۳ مگابایتی</value></data>
 </root>

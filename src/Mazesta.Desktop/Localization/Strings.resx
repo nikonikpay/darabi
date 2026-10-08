@@ -3321,10 +3321,5 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>CCD 7 clock</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
-  <data name="Test_Option_Upscaling" xml:space="preserve"><value>NVIDIA Image Scaling (NIS)</value></data>
-  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>NVIDIA Image Sharpening only (edges smoothed first, drawn at full size)</value></data>
-  <data name="Test_Nis_Quality" xml:space="preserve"><value>Upscaling, quality: drawn at 77 % and scaled up (softer)</value></data>
-  <data name="Test_Nis_Balanced" xml:space="preserve"><value>Upscaling, balanced: drawn at 67 % and scaled up</value></data>
-  <data name="Test_Nis_Performance" xml:space="preserve"><value>Upscaling, performance: drawn at 59 % and scaled up</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>Weather detail: three times the bodies, finer air, a 233 MB grid</value></data>
 </root>

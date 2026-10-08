@@ -42,10 +42,7 @@ $jobs = @(
     @('GardenRaster.hlsl', 'TransparentPS', 'ps_6_5', 'GardenTransparentRtPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'SunShadePS', 'ps_6_5', 'GardenSunShadePS.cso', 'RT'),
     @('GardenRaster.hlsl', 'ShadeBlurPS', 'ps_6_0', 'GardenShadeBlurPS.cso'),
-    @('GardenBake.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso'),
-    # NVIDIA Image Scaling (MIT, Shaders/NIS): the scaler with its sharpening, and the sharpening alone
-    @('GardenNis.hlsl', 'main', 'cs_6_0', 'GardenNisScaler.cso', 'NIS_SCALER=1'),
-    @('GardenNis.hlsl', 'main', 'cs_6_0', 'GardenNisSharpen.cso', 'NIS_SCALER=0')
+    @('GardenBake.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso')
 )
 foreach ($j in $jobs) {
     $define = if ($j.Count -gt 4) { @('-D', $j[4]) } else { @() }
