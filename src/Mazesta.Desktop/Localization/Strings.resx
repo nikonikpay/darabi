@@ -2555,7 +2555,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Test_Break_Banner" xml:space="preserve"><value>A test session did not finish last time; the Tests page shows which test was running and why it stopped.</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>Mixed like Windows (70/30, 4-64K, Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>Mixed IOPS</value></data>
-  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>99th-percentile frame time</value></data>
+  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>Frame time of the slowest 1 % of frames (P99)</value></data>
   <data name="Nav_Checkup" xml:space="preserve"><value>Checkup</value></data>
   <data name="Checkup_Lede" xml:space="preserve"><value>Is this computer working as it should? It is judged from its own measurements: a short test of each part, and the system's setup as it is now.</value></data>
   <data name="Checkup_Run" xml:space="preserve"><value>Run the checkup</value></data>
@@ -3322,7 +3322,7 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
   <data name="Test_Option_Upscaling" xml:space="preserve"><value>NVIDIA Image Scaling (NIS)</value></data>
-  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>Sharpening only, like F7 in the preview (drawn at full size)</value></data>
+  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>NVIDIA Image Sharpening only (edges smoothed first, drawn at full size)</value></data>
   <data name="Test_Nis_Quality" xml:space="preserve"><value>Upscaling, quality: drawn at 77 % and scaled up (softer)</value></data>
   <data name="Test_Nis_Balanced" xml:space="preserve"><value>Upscaling, balanced: drawn at 67 % and scaled up</value></data>
   <data name="Test_Nis_Performance" xml:space="preserve"><value>Upscaling, performance: drawn at 59 % and scaled up</value></data>

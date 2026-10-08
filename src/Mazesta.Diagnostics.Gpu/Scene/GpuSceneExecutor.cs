@@ -35,7 +35,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     /// <summary>NVIDIA Image Scaling (<see cref="GardenNis"/>): the frame finished with the SDK's adaptive sharpener at its own size (the default), or the garden drawn at a share of the
     /// window's size and scaled up to it with the SDK's edge-directed scaler (faster, and the edges stay smooth); off, the lens's picture is the frame.</summary>
     internal static readonly TestOption Upscaling = new(UpscalingOption, "Test_Option_Upscaling", TestOptionKind.Choice, "sharpen",
-        () => [new("off", "Test_RayTracing_Off", true, "the lens's picture as it is"), new("sharpen", "Test_Nis_Sharpen", true, "NIS sharpening only (the preview's F7), drawn at the full size: no upscaling"), new("quality", "Test_Nis_Quality", true, "UPSCALING, not sharpening: fewer pixels drawn (77 %) and scaled up, softer than full size"),
+        () => [new("off", "Test_RayTracing_Off", true, "the lens's picture as it is"), new("sharpen", "Test_Nis_Sharpen", true, "NIS sharpening only (edges smoothed first), drawn at the full size: no upscaling"), new("quality", "Test_Nis_Quality", true, "UPSCALING, not sharpening: fewer pixels drawn (77 %) and scaled up, softer than full size"),
                new("balanced", "Test_Nis_Balanced", true, "drawn at 67 % of the size, NIS scales it up"), new("performance", "Test_Nis_Performance", true, "drawn at 59 % of the size, NIS scales it up")]);
     /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>
     internal static string SizeLabel(string text) => "⁦" + text + "⁩";

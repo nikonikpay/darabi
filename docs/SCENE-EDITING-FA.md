@@ -9,7 +9,7 @@
 | صحنهٔ صادرشده که برنامه می‌کشد | `src\Mazesta.Diagnostics.Gpu\Scene\garden.mzscene` (۳۰ مگابایت) | بله |
 | نور بازتاب‌شده‌ی از‌پیش‌محاسبه‌شده | `src\Mazesta.Diagnostics.Gpu\Scene\garden.light` (۳٫۵ مگابایت) | بله |
 | شیدرها (HLSL) و نسخهٔ کامپایل‌شده‌شان | `src\Mazesta.Diagnostics.Gpu\Shaders\*.hlsl` و `*.cso` | بله |
-| کد باد، باران، گیاهان، رندر | `src\Mazesta.Diagnostics.Gpu\Scene\` (`GardenWind.cs`، `GardenWeather.cs`، `GardenPlants.cs`، `GardenRaster.cs`، …) | بله |
+| کد باد، باران، گیاهان، رندر | `src\Mazesta.Diagnostics.Gpu\Scene\` (`GardenWind.cs`، `GardenWeather.cs`، `GardenRaster.cs`، …) | بله |
 | آزمایشگاه پیش‌نمایش (V13 و V14، `Preview-v2` تا `v4`) | `D:\DFM APp\Cloudy\Garden-Quality-Lab` | جدا از برنامه؛ هر چه آنجا ساخته‌اید خودکار وارد برنامه نمی‌شود |
 
 برنامه خودِ `.blend` را نمی‌خواند. خروجی `garden.mzscene` در فایل اجرایی گذاشته می‌شود؛ پس تغییر ظاهر یعنی: ویرایش در Blender، صادرکردن، ساخت دوبارهٔ برنامه.
@@ -20,6 +20,20 @@
 * **شیدر (نور، آب، برگ، باد روی گیاه):** هر ویرایشگر متن، ترجیحاً VS Code با افزونهٔ HLSL، یا Visual Studio. بعد از تغییر: `pwsh tools/compile-gpu-shaders.ps1` (از `dxc` که با Windows SDK آمده استفاده می‌کند).
 * **کد C#:** Visual Studio 2022، Rider یا VS Code.
 * **بافت جدید:** هر برنامهٔ تصویری (Krita، Photoshop)؛ بافت‌ها JPEG و ۱۰۲۴×۱۰۲۴ برای ساختمان و ۵۱۲×۵۱۲ برای بقیه‌اند.
+
+## ویرایش دیداری و اجرای export_garden.py
+
+برنامهٔ دیگری (Unreal، Unity، ...) جای Blender را نمی‌گیرد: اسکریپت صادرکننده فقط داخل Blender (با `bpy`) کار می‌کند و صحنه را به قالب اختصاصی `garden.mzscene` می‌نویسد؛ Unreal هم چند گیگابایت است و قالبش را برنامه نمی‌خواند. Blender خودش سبک است (حدود ۳۰۰ مگابایت) و رایگان.
+
+**با پنجره (دیداری):**
+1. `courtyard-v12.blend` را در Blender باز کنید (نسخهٔ پشتیبان بگیرید).
+2. در نمای سه‌بعدی شیءها را جابه‌جا، اضافه یا حذف کنید و ذخیره کنید.
+3. بالای پنجره بروید به **Scripting**. در ویرایشگر متن **Open** بزنید و `tools\scene\export_garden.py` را باز کنید، سپس **Run Script** (▶). کنسول Blender (Window ← Toggle System Console) پیشرفت و در پایان اندازهٔ خروجی را می‌نویسد.
+4. سربرگ خود اسکریپت می‌گوید از Text Editor با .blend باز هم کار می‌کند، ولی من آن را با پنجره نیازموده‌ام؛ اگر خطا داد، روش خط فرمان (مرحلهٔ ۳ در بخش پایین) مطمئن‌تر است و پنجرهٔ بازِ Blender را هم به هم نمی‌ریزد.
+
+**بدون پنجره (خط فرمان):** همان دستور مرحلهٔ ۳ در بخش پایین.
+
+برای خروجی دیگر: متغیر `MAZESTA_SCENE_OUT` مسیر دلخواه می‌دهد (پیش‌فرض `garden.mzscene` در پروژه).
 
 ## مراحل یک تغییر در صحنه
 

@@ -166,7 +166,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         {   // NVIDIA Image Scaling finishes the frame: the lens writes its picture here, and the scaler or sharpener makes the window's own from it
             _ldr = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R8G8B8A8_UNorm, (uint)width, (uint)height, 1, 1, flags: ResourceFlags.AllowRenderTarget),
                 ResourceStates.PixelShaderResource, new ClearValue(Format.R8G8B8A8_UNorm, new Color4(0, 0, 0, 1))));
-            _nis = new GardenNis(s, _ldr, width, height, OutWidth, OutHeight, nis.Value.Scales ? 0.5f : 0.35f);   // (0.35: the preview's F7, NVSharpen at 35 %)
+            _nis = new GardenNis(s, _ldr, width, height, OutWidth, OutHeight, nis.Value.Scales ? 0.5f : 0.35f);   // (0.35: NVSharpen at 35 %)
         }
         for (int k = 0; k < GlowLevels; k++)
             _glow[k] = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(GlowFormat, (uint)GlowSize(k).W, (uint)GlowSize(k).H, 1, 1, flags: ResourceFlags.AllowRenderTarget),

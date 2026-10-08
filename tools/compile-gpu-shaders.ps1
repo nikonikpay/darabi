@@ -45,7 +45,9 @@ $jobs = @(
     @('GardenBake.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso'),
     # NVIDIA Image Scaling (MIT, Shaders/NIS): the scaler with its sharpening, and the sharpening alone
     @('GardenNis.hlsl', 'main', 'cs_6_0', 'GardenNisScaler.cso', 'NIS_SCALER=1'),
-    @('GardenNis.hlsl', 'main', 'cs_6_0', 'GardenNisSharpen.cso', 'NIS_SCALER=0')
+    @('GardenNis.hlsl', 'main', 'cs_6_0', 'GardenNisSharpen.cso', 'NIS_SCALER=0'),
+    # the edges' stair-steps smoothed before the sharpener raises them
+    @('GardenClean.hlsl', 'main', 'cs_6_0', 'GardenClean.cso')
 )
 foreach ($j in $jobs) {
     $define = if ($j.Count -gt 4) { @('-D', $j[4]) } else { @() }

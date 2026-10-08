@@ -69,7 +69,7 @@ not in the ray tracer's top-level structure, so a ray-traced frame does not refl
 
 ## NVIDIA Image Scaling
 
-The frame ends with NVIDIA's open-source NIS (the SDK's `NIS_Scaler.h`, MIT; `GardenNis`). Its default, `sharpen`, is the SDK's NVSharpen alone at the window's own size, at 35 % strength - the setting of the preview's F7 -
+The frame ends with NVIDIA's open-source NIS (the SDK's `NIS_Scaler.h`, MIT; `GardenNis`). Its default, `sharpen`, is the SDK's NVSharpen alone at the window's own size, at 35 % strength, after a small edge-smoothing pass (`GardenClean`, the idea of FXAA: a sharpener raises stair-steps and grain as much as detail, so they are smoothed first) -
 and draws nothing smaller: it is free on this card and holds about twice the fine detail of the unsharpened picture (a test measures it). The other choices are NIS *upscaling*, not sharpening: the garden drawn at
 77 / 67 / 59 % of the window's size and scaled up by the SDK's six-tap filter with four directional filters; they trade softness for time (1.8 ms at 77 % here) and are named so in the option. It runs after the lens, on the
 tone-mapped picture, as the SDK asks. The option is part of a record's key.

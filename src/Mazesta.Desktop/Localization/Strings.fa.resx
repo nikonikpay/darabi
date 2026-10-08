@@ -2555,7 +2555,7 @@
   <data name="Test_Break_Banner" xml:space="preserve"><value>جلسهٔ تست قبلی تمام نشد؛ صفحهٔ تست‌ها نشان می‌دهد کدام تست در حال اجرا بود و چرا متوقف شد.</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>ترکیبی مثل ویندوز (۷۰/۳۰، ۴ تا ۶۴ کیلوبایت، Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
-  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم صدک ۹۹</value></data>
+  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم در ۱٪ کندترین فریم‌ها (P99)</value></data>
   <data name="Nav_Checkup" xml:space="preserve"><value>عیب‌یابی هوشمند</value></data>
   <data name="Checkup_Lede" xml:space="preserve"><value>آیا این سیستم درست کار می‌کند؟ از روی اندازه‌گیری‌های خودش قضاوت می‌شود: یک تست کوتاه از هر قطعه و تنظیمات فعلی سیستم.</value></data>
   <data name="Checkup_Run" xml:space="preserve"><value>اجرای عیب‌یابی</value></data>
@@ -3322,7 +3322,7 @@
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
   <data name="Test_Option_Upscaling" xml:space="preserve"><value>انویدیا ایمیج اسکیلینگ (NIS)</value></data>
-  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>فقط وضوح‌دهی، مثل F7 در پیش‌نمایش (با اندازهٔ کامل)</value></data>
+  <data name="Test_Nis_Sharpen" xml:space="preserve"><value>فقط وضوح‌دهی NVIDIA (ابتدا لبه‌ها نرم می‌شوند، با اندازهٔ کامل)</value></data>
   <data name="Test_Nis_Quality" xml:space="preserve"><value>بزرگ‌نمایی، کیفیت: ۷۷٪ رسم و بزرگ‌نمایی (نرم‌تر)</value></data>
   <data name="Test_Nis_Balanced" xml:space="preserve"><value>بزرگ‌نمایی، متعادل: ۶۷٪ رسم و بزرگ‌نمایی</value></data>
   <data name="Test_Nis_Performance" xml:space="preserve"><value>بزرگ‌نمایی، کارایی: ۵۹٪ رسم و بزرگ‌نمایی</value></data>
