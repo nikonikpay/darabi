@@ -83,6 +83,16 @@ public class GardenRenderHardwareTests
         Check(r, $"garden-nis-{name}");
     }
 
+    [Theory, InlineData("off"), InlineData("sharpen")]
+    public void The_ray_traced_garden_finished_by_NIS_is_drawn_to_look_at(string name)
+    {
+        if (NoGpu || !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!);
+        var g = new GardenGpu(s, GardenScene.Embedded); var nis = NisMode.Parse(name);
+        using var r = new GardenRaster(s, g, W, H, [], 3, true, nis, W, H);
+        Look(r, $"garden-rays-nis-{name}", Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR"));
+    }
+
     [Theory, InlineData(1u), InlineData(3u)]
     public void The_garden_with_ray_tracing_on_is_a_stable_picture(uint load)
     {
