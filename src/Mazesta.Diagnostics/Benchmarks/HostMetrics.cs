@@ -15,15 +15,15 @@ public static class HostMetrics
     public static void AddCpu(List<BenchmarkMetric> metrics, TestExecutionRequest request, DateTimeOffset from, DateTimeOffset to)
     {
         metrics.AddFirst(request, HardwareKind.Cpu, from, to, "Bench_Cpu_Clock", Unit.MegaHertz, false, null, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage);
-        metrics.AddFirst(request, HardwareKind.Cpu, from, to, "Bench_Cpu_ClockPeak", Unit.MegaHertz, true, null, SensorRole.CpuEffectiveClock, SensorRole.CpuCoreClock);
+        metrics.AddFirst(request, HardwareKind.Cpu, from, to, "Bench_Cpu_ClockPeak", Unit.MegaHertz, true, null, SensorRole.CpuCoreClock, SensorRole.CpuEffectiveClock);
         bool IsP(SensorDefinition s) => s.Name.StartsWith("P-Core", StringComparison.Ordinal);
         bool IsE(SensorDefinition s) => s.Name.StartsWith("E-Core", StringComparison.Ordinal);
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, from, to, "Bench_Cpu_PClock", Unit.MegaHertz, sensor: IsP);
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, from, to, "Bench_Cpu_PClockMax", Unit.MegaHertz, peak: true, sensor: IsP);
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, from, to, "Bench_Cpu_EClock", Unit.MegaHertz, sensor: IsE);
         metrics.AddSensor(request, HardwareKind.Cpu, SensorRole.CpuCoreClock, from, to, "Bench_Cpu_EClockMax", Unit.MegaHertz, peak: true, sensor: IsE);
-        // A Ryzen's CCDs are told apart by the cores that share a level-3 cache; each one's cores are the monitor's "Core #n" (n counted from 1, in Windows' order).
-        var groups = CpuTopology.CacheGroups; var cores = CpuTopology.Cores;
+        // A Ryzen's CCDs are told apart by the cores that share a level-3 cache (two caches make one CCD up to Zen 2); each one's cores are the monitor's "Core #n" (n counted from 1, in Windows' order).
+        var groups = CpuTopology.CcdGroups; var cores = CpuTopology.Cores;
         if (groups.Count is > 1 and <= MaxCcds && metrics.All(m => m.Key != "Bench_Cpu_PClock"))
             for (int g = 0; g < groups.Count; g++)
             {
@@ -45,7 +45,7 @@ public static class HostMetrics
     /// of no single core, and for a processor with one cache for all its cores (every Intel one, and a Ryzen of one CCD).</summary>
     public static int? CcdOfCore(string sensorName)
     {
-        var groups = CpuTopology.CacheGroups;
+        var groups = CpuTopology.CcdGroups;
         if (groups.Count is < 2 or > MaxCcds || CoreNumber.Match(sensorName) is not { Success: true } m) return null;
         int index = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) - 1;
         var core = CpuTopology.Cores.FirstOrDefault(c => c.Index == index);

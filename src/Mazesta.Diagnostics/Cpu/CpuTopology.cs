@@ -77,6 +77,39 @@ public static class CpuTopology
         finally { Marshal.FreeHGlobal(buffer); }
     }
 
+    private static readonly Lazy<IReadOnlyList<(ushort Group, ulong Mask)>> Ccds = new(() => MergeComplexes(CacheGroups, Cores, IsZen1Or2()));
+    /// <summary>The logical processors of each CCD (the chiplet a Ryzen's cores sit on, at most eight physical cores). Up to Zen 2 a CCD holds two core complexes that
+    /// each share a level-3 cache (a 3950X reports four caches of four cores for its two CCDs), so those are joined in pairs; from Zen 3 the cache is the CCD's.</summary>
+    public static IReadOnlyList<(ushort Group, ulong Mask)> CcdGroups => Ccds.Value;
+
+    internal static IReadOnlyList<(ushort Group, ulong Mask)> MergeComplexes(IReadOnlyList<(ushort Group, ulong Mask)> caches, IReadOnlyList<CpuCore> cores, bool pairs)
+    {
+        if (!pairs || caches.Count < 2) return caches;
+        int CoresIn((ushort Group, ulong Mask) c) => cores.Count(k => k.Group == c.Group && (k.Mask & c.Mask) != 0);
+        var merged = new List<(ushort Group, ulong Mask)>();
+        for (int i = 0; i < caches.Count; i++)
+        {
+            var c = caches[i];
+            if (i + 1 < caches.Count && caches[i + 1].Group == c.Group && CoresIn(c) <= 4 && CoresIn(caches[i + 1]) <= 4 && CoresIn(c) + CoresIn(caches[i + 1]) <= 8) { merged.Add((c.Group, c.Mask | caches[i + 1].Mask)); i++; }
+            else merged.Add(c);
+        }
+        return merged;
+    }
+
+    /// <summary>Family 17h (Zen, Zen+ and Zen 2) of an AMD processor, whose CCD holds two level-3 caches.</summary>
+    private static bool IsZen1Or2()
+    {
+        try
+        {
+            if (!System.Runtime.Intrinsics.X86.X86Base.IsSupported) return false;
+            var (_, ebx, ecx, edx) = System.Runtime.Intrinsics.X86.X86Base.CpuId(0, 0);
+            if (ebx != 0x68747541 || edx != 0x69746E65 || ecx != 0x444D4163) return false;   // "AuthenticAMD"
+            int eax = System.Runtime.Intrinsics.X86.X86Base.CpuId(1, 0).Eax, family = (eax >> 8) & 0xF;
+            return (family == 0xF ? family + ((eax >> 20) & 0xFF) : family) == 0x17;
+        }
+        catch { return false; }
+    }
+
     /// <summary>When Windows cannot say: every logical processor of group 0 as its own core, which is still a valid place to pin a thread.</summary>
     private static List<CpuCore> Fallback() => [.. Enumerable.Range(0, Math.Min(64, Environment.ProcessorCount)).Select(i => new CpuCore(i, 0, 1UL << i, 0))];
 
