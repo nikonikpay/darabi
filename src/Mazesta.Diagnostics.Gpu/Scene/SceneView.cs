@@ -11,7 +11,7 @@ internal sealed class SceneView : IDisposable
     public GardenRaster Renderer => _renderer;
     public string Work { get; }
 
-    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, int smoothing = 0)
+    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, WeatherLevel? weather = null)
     {
         _s = s;
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);
@@ -26,7 +26,7 @@ internal sealed class SceneView : IDisposable
         _swap = swap1.QueryInterface<IDXGISwapChain3>();
         _back = [_swap.GetBuffer<ID3D12Resource>(0), _swap.GetBuffer<ID3D12Resource>(1)];
         Overlay = new SceneOverlay(s, _back, height);
-        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, smoothing);
+        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, weather);
         var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced); _renderer = raster;
         Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps"
             + (rayTraced ? $" · ray-traced shadows ({raster.Level.ShadowTaps} a light) and reflections" : $" · shadows {raster.Level.ShadowSize}")
@@ -38,7 +38,7 @@ internal sealed class SceneView : IDisposable
     public void Present(float time)
     {
         int index = (int)_swap.CurrentBackBufferIndex;
-        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(l, index, _renderer.Width, _renderer.Height); });
+        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(l, index, _renderer.OutWidth, _renderer.OutHeight); });
         _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();
     }
 
@@ -47,7 +47,7 @@ internal sealed class SceneView : IDisposable
     public void DrawFrame(float time) { _index = (int)_swap.CurrentBackBufferIndex; _s.Run(l => _renderer.Draw(l, time, _index)); }
     public void ShowFrame()
     {
-        _s.Run(l => Overlay.Draw(l, _index, _renderer.Width, _renderer.Height));
+        _s.Run(l => Overlay.Draw(l, _index, _renderer.OutWidth, _renderer.OutHeight));
         _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();
     }
     private int _index;

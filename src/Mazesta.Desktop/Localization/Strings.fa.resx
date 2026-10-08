@@ -2555,7 +2555,7 @@
   <data name="Test_Break_Banner" xml:space="preserve"><value>جلسهٔ تست قبلی تمام نشد؛ صفحهٔ تست‌ها نشان می‌دهد کدام تست در حال اجرا بود و چرا متوقف شد.</value></data>
   <data name="Bench_Storage_Mixed" xml:space="preserve"><value>ترکیبی مثل ویندوز (۷۰/۳۰، ۴ تا ۶۴ کیلوبایت، Q4)</value></data>
   <data name="Bench_Storage_MixedIops" xml:space="preserve"><value>IOPS ترکیبی</value></data>
-  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم صدک ۹۹</value></data>
+  <data name="Bench_Gpu_Scene_P99" xml:space="preserve"><value>زمان فریم در ۱٪ کندترین فریم‌ها (P99)</value></data>
   <data name="Nav_Checkup" xml:space="preserve"><value>عیب‌یابی هوشمند</value></data>
   <data name="Checkup_Lede" xml:space="preserve"><value>آیا این سیستم درست کار می‌کند؟ از روی اندازه‌گیری‌های خودش قضاوت می‌شود: یک تست کوتاه از هر قطعه و تنظیمات فعلی سیستم.</value></data>
   <data name="Checkup_Run" xml:space="preserve"><value>اجرای عیب‌یابی</value></data>
@@ -3259,6 +3259,7 @@
   <data name="Bench_Scene_ScoreCpu" xml:space="preserve"><value>امتیاز پردازنده</value></data>
   <data name="Bench_Scene_ScoreRam" xml:space="preserve"><value>امتیاز رم</value></data>
   <data name="Bench_Scene_GpuFrame" xml:space="preserve"><value>زمان کارت گرافیک در هر فریم</value></data>
+  <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>زمان شبیه‌سازی آب‌وهوا در هر فریم (باران و برگ؛ روی همه هسته‌ها)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>زمان پردازنده برای آماده‌کردن هر فریم</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>گلوگاه (طرف طولانی‌تر هر فریم)</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>بیشترین فرکانس گرافیک</value></data>
@@ -3319,7 +3320,6 @@
   <data name="Overlay_CcdClock6" xml:space="preserve"><value>فرکانس CCD 6</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
-  <data name="Test_Option_Smoothing" xml:space="preserve"><value>نرم‌سازی مش (تقسیم مثلث‌ها)</value></data>
-  <data name="Test_Smooth_1" xml:space="preserve"><value>نرم، ۴ برابر مثلث</value></data>
-  <data name="Test_Smooth_2" xml:space="preserve"><value>نرم، ۱۶ برابر مثلث</value></data>
+  <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
+  <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، هوای ریزتر، شبکهٔ ۲۳۳ مگابایتی</value></data>
 </root>

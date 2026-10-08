@@ -22,7 +22,7 @@ internal sealed unsafe class GardenGpu
     public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind);
     /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>. Moving: some of them
     /// are placed anew every frame (the logo, the sphere, the droplets).</summary>
-    public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts, bool Moving);
+    public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts, bool Moving, bool Weather = false);
 
     /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
     public const uint JetDroplets = 520, SpillDroplets = 12 * 26;
@@ -52,6 +52,10 @@ internal sealed unsafe class GardenGpu
     /// <summary>The plants the wind bends where they stand (<see cref="GardenScene.Sway"/>).</summary>
     public int[] Swaying { get; }
     public Draw[] Draws { get; }
+    /// <summary>How many instances are the weather's (<see cref="GardenWeather"/>: the last of <see cref="Instances"/>), and how many come before them - the ones the ray tracer's top-level structure holds.</summary>
+    public int WeatherInstances { get; } public int RayInstances { get; }
+    /// <summary>The weather's simulation, when the scene has it.</summary>
+    public GardenWeather? Weather { get; }
     public GardenMaterial[] Materials { get; }
     public Light[] PointLights { get; }
     /// <summary>How many of the lamps the rasteriser gives a shadow cube (<see cref="Light.Shadow"/>: which, from 1): its point
@@ -95,11 +99,11 @@ internal sealed unsafe class GardenGpu
     public ID3D12Resource Backdrop { get; } public Vector4 BackdropRange { get; }
     private readonly int _textureMips;
 
-    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, int smoothing = 0)
+    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, WeatherLevel? weather = null)
     {
         const GardenScene.Mode mode = GardenScene.Mode.Raster;   // the file's Direct3D scene: its ray-traced one lent only its night rig of lamps
         ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
-        var meshes = (smoothing > 0 ? scene.Meshes.Select(m => MeshSmoother.Subdivide(m, smoothing)) : scene.Meshes).ToList(); var materials = scene.Materials.ToList();
+        var meshes = scene.Meshes.ToList(); var materials = scene.Materials.ToList();
         var chosen = scene.Instances.Where(i => (i.Mask & (uint)mode) != 0).ToArray();
         if (Fountain is not null)
         {
@@ -146,6 +150,21 @@ internal sealed unsafe class GardenGpu
             int logo = Array.FindIndex(chosen, i => (i.Flags & GardenScene.LogoFlag) != 0);
             if (logo >= 0) { chosen[logo].Mesh = (uint)meshes.Count; meshes.Add(FromModel(custom, meshes[(int)scene.Instances.First(i => (i.Flags & GardenScene.LogoFlag) != 0).Mesh])); ModelName = custom.Name; }
         }
+        if (weather is { } level)
+        {   // the weather (GardenWeather): rain streaks, their splashes, leaves of three colours, twigs - each a mover placed by the processor, after everything else so they come last
+            var still0 = still with { Flags = GardenScene.MoverFlag | GardenScene.WeatherFlag };
+            void Body(GardenMaterial material, Func<uint, GardenMesh> shape, int count)
+            {
+                materials.Add(material); meshes.Add(shape((uint)materials.Count - 1));
+                chosen = [.. chosen, .. Enumerable.Repeat(still0 with { Mesh = (uint)meshes.Count - 1 }, count)];
+            }
+            Body(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.82f, 0.88f, 0.95f), Alpha = 0.4f, Roughness = 1 }, Streak, level.Rain);
+            Body(new GardenMaterial { Kind = GardenMaterialKind.Smoke, Texture = -1, NormalTexture = -1, Base = new(0.9f, 0.94f, 1f), Alpha = 0.5f, Roughness = 1 }, Ball, level.Splashes);
+            Vector3[] leafColours = [new(0.20f, 0.36f, 0.07f), new(0.46f, 0.42f, 0.08f), new(0.50f, 0.25f, 0.06f)];
+            foreach (var colour in leafColours)
+                Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = colour, Alpha = 1, Roughness = 0.65f, Pattern = new(0, 0, 0, 0.12f) }, Leaf, level.LeavesPerKind);
+            Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = new(0.17f, 0.11f, 0.07f), Alpha = 1, Roughness = 0.85f, Pattern = new(0, 0, 0, 0.1f) }, Twig, level.Twigs);
+        }
         Materials = [.. materials];
 
         // every mesh's vertices and indices, end to end
@@ -164,10 +183,13 @@ internal sealed unsafe class GardenGpu
         var kinds = new List<(Life, int)>();
         foreach (var grouped in life.GroupBy(x => x.Mesh).OrderBy(x => x.Key)) kinds.AddRange(grouped.Select(x => (x.Kind, x.Number)));
         _movers = [.. kinds];
-        for (uint k = 0, m = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.MoverFlag) != 0) Instances[k].Index = m++;
-        MoverBuffer = s.Buffer((ulong)Math.Max(1, _movers.Length) * 48, HeapType.Upload, ResourceStates.GenericRead);
+        for (uint k = 0, m = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.MoverFlag) != 0 && (Instances[k].Flags & GardenScene.WeatherFlag) == 0) Instances[k].Index = m++;
+        for (uint k = 0, m = (uint)_movers.Length; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.WeatherFlag) != 0) Instances[k].Index = m++;   // (the weather's numbers follow the small life's)
+        WeatherInstances = Instances.Count(i => (i.Flags & GardenScene.WeatherFlag) != 0); RayInstances = Instances.Length - WeatherInstances;
+        if (WeatherInstances > 0 && Instances[RayInstances].Flags is var wf && (wf & GardenScene.WeatherFlag) == 0) throw new InvalidOperationException("The weather's instances are not the last.");
+        MoverBuffer = s.Buffer((ulong)(_movers.Length + WeatherInstances) * 48 + 48, HeapType.Upload, ResourceStates.GenericRead);
         LogoInstance = Array.FindIndex(Instances, i => (i.Flags & GardenScene.LogoFlag) != 0);
-        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => (Instances[k].Flags & (7 | GardenScene.MoverFlag)) != 0)];
+        Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => (Instances[k].Flags & (7 | GardenScene.MoverFlag)) != 0 && (Instances[k].Flags & GardenScene.WeatherFlag) == 0)];
         Swaying = [.. Enumerable.Range(0, Instances.Length).Where(k => GardenScene.Sway(Instances[k].Flags) > 0)];
         var draws = new List<Draw>();
         for (int k = 0; k < order.Length;)
@@ -176,10 +198,19 @@ internal sealed unsafe class GardenGpu
             var mesh = meshes[m];
             draws.Add(new Draw(m, (uint)k, (uint)n, baseVertex[m], (uint)mesh.VertexCount, mesh.Centre, mesh.Extent,
                 [.. mesh.Submeshes.Select(sub => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))],
-                order.Skip(k).Take(n).Any(i => (i.Flags & (7 | GardenScene.MoverFlag)) != 0)));
+                order.Skip(k).Take(n).Any(i => (i.Flags & (7 | GardenScene.MoverFlag)) != 0), (order[k].Flags & GardenScene.WeatherFlag) != 0));
             Triangles += (long)mesh.Indices.Length / 3 * n; k += n;
         }
         Draws = [.. draws];
+        if (WeatherInstances > 0)
+        {
+            // where the weather meets the world: the pool's plan and surface, and the crowns of foliage the leaves and twigs come from
+            var water = Draws.Where(d => !d.Moving && d.Parts.Any(p => p.Kind == GardenMaterialKind.Water)).SelectMany(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => Bounds(d, i))).ToArray();
+            var pool = water.Length == 0 ? default : new Vector4(water.Min(b => b.Centre.X - b.Radius), water.Min(b => b.Centre.Z - b.Radius), water.Max(b => b.Centre.X + b.Radius), water.Max(b => b.Centre.Z + b.Radius));
+            var crowns = Draws.Where(d => !d.Moving && d.Parts.Any(p => p.Kind == GardenMaterialKind.Cutout)).SelectMany(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => Bounds(d, i)))
+                .Where(b => b.Centre.Y > 1.6f && b.Radius is > 0.25f and < 7f).Select(b => new Vector4(b.Centre, b.Radius)).ToArray();
+            Weather = new GardenWeather(weather!.Value, GardenVoxels.For(scene, weather.Value.Cell), WaterLevel, pool, crowns);
+        }
         InstanceBuffer = s.Upload(Instances, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
         MaterialBuffer = s.Upload(Materials, ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
@@ -236,14 +267,16 @@ internal sealed unsafe class GardenGpu
 
     /// <summary>Sets what moves of itself for the frame at <paramref name="time"/>: the movers' places for the rasteriser, and the
     /// lit fireflies among the lamps. A renderer calls it before it draws (the frame before has been drawn by then).</summary>
-    public void Update(float time)
+    public void Update(float time, bool live = true)
     {
-        var rows = MoverBuffer.Map<Vector4>(0, Math.Max(1, _movers.Length) * 3);
+        Weather?.Advance(time, live);   // (on every core, before the buffer is opened)
+        var rows = MoverBuffer.Map<Vector4>(0, (Math.Max(1, _movers.Length) + WeatherInstances) * 3);
         for (int k = 0; k < _movers.Length; k++)
         {
             var m = Mover(k, time);
             rows[k * 3] = new(m.M11, m.M21, m.M31, m.M41); rows[k * 3 + 1] = new(m.M12, m.M22, m.M32, m.M42); rows[k * 3 + 2] = new(m.M13, m.M23, m.M33, m.M43);
         }
+        if (Weather is { } weather) weather.Rows.CopyTo(rows[(_movers.Length * 3)..]);
         MoverBuffer.Unmap(0);
         float lamps = Day(time).Lamps;
         for (int k = 0; k < LitFireflies; k++)
@@ -285,7 +318,7 @@ internal sealed unsafe class GardenGpu
         _grid.AsSpan().CopyTo(LightGridBuffer.Map<uint>(0, _grid.Length)); LightGridBuffer.Unmap(0);
     }
 
-    private static float H(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return (x >> 8) * (1f / 16777216f); }
+    internal static float H(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return (x >> 8) * (1f / 16777216f); }
 
     /// <summary>A place over one of the first <paramref name="beds"/> beds, picked by <paramref name="seed"/>: what a firefly or a butterfly keeps near.</summary>
     private static Vector3 Home(uint seed, float low, float high, int beds)
@@ -463,6 +496,46 @@ internal sealed unsafe class GardenGpu
             path[k] = (from + v0 * t - new Vector3(0, 0.5f * gravity * t * t, 0), MathF.Max(radius * MathF.Sqrt(v0.Length() / v.Length()), 0.009f));
         }
         return path;
+    }
+
+    /// <summary>A mesh from its points, normals and triangles, quantised the way the vertex buffer holds them.</summary>
+    private static GardenMesh Solid(Vector3[] pos, Vector3[] normal, uint[] indices, uint material)
+    {
+        Vector3 lo = pos.Aggregate(new Vector3(float.MaxValue), Vector3.Min), hi = pos.Aggregate(new Vector3(float.MinValue), Vector3.Max);
+        Vector3 centre = (lo + hi) / 2, extent = Vector3.Max((hi - lo) / 2, new Vector3(1e-4f));
+        var bytes = new byte[pos.Length * 16];
+        for (int i = 0; i < pos.Length; i++)
+        {
+            var q = (pos[i] - centre) / extent * 32767; var span = bytes.AsSpan(i * 16);
+            MemoryMarshal.Write(span, (short)MathF.Round(q.X)); MemoryMarshal.Write(span[2..], (short)MathF.Round(q.Y)); MemoryMarshal.Write(span[4..], (short)MathF.Round(q.Z));
+            var n = Vector3.Normalize(normal[i]); span[8] = (byte)(sbyte)MathF.Round(n.X * 127); span[9] = (byte)(sbyte)MathF.Round(n.Y * 127); span[10] = (byte)(sbyte)MathF.Round(n.Z * 127);
+        }
+        return new GardenMesh(centre, extent, bytes, indices, [new GardenSubmesh(0, (uint)indices.Length, material)]);
+    }
+
+    /// <summary>A raindrop as the eye sees it, a streak: a thin spindle along y, 40 cm long and 1 cm across (the renderers stretch and turn it along the drop's way).</summary>
+    private static GardenMesh Streak(uint material)
+    {
+        Vector3[] pos = [new(0.008f, 0, 0), new(0, 0, 0.008f), new(-0.008f, 0, 0), new(0, 0, -0.008f), new(0, 0.2f, 0), new(0, -0.2f, 0)];
+        return Solid(pos, [.. pos.Select(p => new Vector3(p.X / 0.008f, p.Y / 0.2f, p.Z / 0.008f))],
+            [4, 0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 5, 1, 0, 5, 2, 1, 5, 3, 2, 5, 0, 3], material);
+    }
+
+    /// <summary>A leaf lying in the xz plane, 15 cm from tip to stalk and a little cupped about its midrib.</summary>
+    private static GardenMesh Leaf(uint material)
+    {
+        Vector2[] outline = [new(0, -0.075f), new(0.026f, -0.045f), new(0.036f, -0.005f), new(0.029f, 0.032f), new(0.012f, 0.062f), new(0, 0.078f), new(-0.012f, 0.062f), new(-0.029f, 0.032f), new(-0.036f, -0.005f), new(-0.026f, -0.045f)];
+        var pos = new Vector3[outline.Length + 1]; var normal = new Vector3[pos.Length];
+        for (int i = 0; i < outline.Length; i++) { pos[i] = new(outline[i].X, MathF.Abs(outline[i].X) * 0.12f, outline[i].Y); normal[i] = new(-MathF.Sign(outline[i].X) * 0.12f, 1, 0); }
+        pos[^1] = Vector3.Zero; normal[^1] = Vector3.UnitY;
+        var indices = new List<uint>(); for (uint k = 0; k < outline.Length; k++) indices.AddRange([(uint)outline.Length, k, (k + 1) % (uint)outline.Length]);
+        return Solid(pos, normal, [.. indices], material);
+    }
+
+    /// <summary>A twig: a thin bent stick 22 cm long, with a short shoot off it.</summary>
+    private static GardenMesh Twig(uint material)
+    {
+        return Tube([(new Vector3(0, 0, -0.11f), 0.0065f), (new Vector3(0.01f, 0.004f, -0.05f), 0.0055f), (new Vector3(0.012f, 0.006f, 0.01f), 0.0045f), (new Vector3(0.004f, 0.002f, 0.07f), 0.0035f), (new Vector3(-0.006f, 0, 0.11f), 0.0025f)], material);
     }
 
     /// <summary>A tube of eight sides round a centre line: a stream of water's mesh.</summary>

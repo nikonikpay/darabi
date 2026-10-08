@@ -32,6 +32,9 @@ public sealed class GardenScene
     /// <summary>A small thing alive in the garden - a firefly, a butterfly's wing, a puff of steam (those are not in the file either:
     /// <see cref="GardenGpu"/> adds them, and says where each is at a moment).</summary>
     public const uint MoverFlag = 16;
+    /// <summary>A body of the weather (rain, a splash, a leaf, a twig: <see cref="GardenWeather"/>): a mover too, placed by the processor every frame, but not part of
+    /// what rays see - the ray tracer's top-level structure stops before them.</summary>
+    public const uint WeatherFlag = 32;
     /// <summary>Bits 8 to 15 of an instance's flags: how far the wind bends it, in thousandths of a metre sideways for every metre above
     /// where it stands (a plant; 0 for everything else). <see cref="GardenGpu.Wind"/> says which way and when.</summary>
     public const int SwayShift = 8;

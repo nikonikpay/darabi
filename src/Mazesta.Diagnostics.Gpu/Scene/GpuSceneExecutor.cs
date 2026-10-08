@@ -18,7 +18,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", SmoothingOption = "smoothing";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", WeatherOption = "weather";
     /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
     /// test's window shows and hides it while it runs. It is laid over the finished frame and is outside what a benchmark times.</summary>
     internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
@@ -27,10 +27,11 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1)")]);
     /// <summary>The window covers the screen with no border (the frame is still drawn at the resolution chosen and shown scaled to the screen): on unless switched off.</summary>
     internal static readonly TestOption FullScreen = new(FullScreenOption, "Test_Option_FullScreen", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
-    /// <summary>Smooth subdivision of the garden's meshes when the scene is loaded (<see cref="MeshSmoother"/>): off, or each triangle made four (or sixteen) with the curved
-    /// surfaces rounded. It loads the card with far more geometry and fills its memory with it; the picture is the same garden with the faceting gone from what is round.</summary>
-    internal static readonly TestOption Smoothing = new(SmoothingOption, "Test_Option_Smoothing", TestOptionKind.Choice, "off",
-        () => [new("off", "Test_RayTracing_Off", true, "the garden's own meshes"), new("1", "Test_Smooth_1", true, "meshes smoothed, 4× the triangles"), new("2", "Test_Smooth_2", true, "meshes smoothed, 16× the triangles")]);
+    /// <summary>The garden's weather (<see cref="GardenWeather"/>): rain, gusts that lift leaves and twigs out of the crowns and carry them, simulated on every core of the processor each frame, in air that is a fluid going round the hall; the plants sway in it.
+    /// On unless switched off; it loads the processor and the memory (the grids of solids and of air), not the card.</summary>
+    internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "on",
+        () => [new("off", "Test_RayTracing_Off", true, "no rain, no wind-blown leaves"), new("on", "Test_Switch_On", true, "rain, gusts, leaves and twigs, the air a fluid on every core, plants swaying (20,000 bodies, 29 MB of solids, 29 MB of air)"),
+               new("high", "Test_Weather_High", true, "three times the bodies, a finer air (98 MB) and 233 MB of solids: the memory and every core set the speed")]);
     /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>
     internal static string SizeLabel(string text) => "⁦" + text + "⁩";
     internal static IReadOnlyList<OptionChoice> Sizes() => [new("1280x720", SizeLabel("1280 × 720 (HD)")), new("1920x1080", SizeLabel("1920 × 1080 (Full HD)")), new("2560x1440", SizeLabel("2560 × 1440 (2K)")), new("3840x2160", SizeLabel("3840 × 2160 (4K)"))];
@@ -42,7 +43,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Smoothing, FullScreen, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Weather, FullScreen, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -86,7 +87,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         using var session = new D3D12Session(device);
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (screenSize) (w, h) = (window.Width, window.Height);
-        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, int.TryParse(options.Get(SmoothingOption), out int smooth) ? Math.Clamp(smooth, 0, MeshSmoother.MaxLevel) : 0);
+        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, WeatherLevel.Parse(options.Get(WeatherOption)));
         string work = renderer.Work;
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";
@@ -191,6 +192,19 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
 
     /// <summary>The readout's lines: the card under test, its memory, the processor and the RAM, each with what the monitor read of it in the last
     /// seconds. A figure that was not read is left out, a part with none has no line: nothing is shown that was not measured.</summary>
+    /// <summary>The fastest core's clock over the last few seconds, as Task Manager's speed shows it: an average over every thread (most of them idle) says nothing about what the cores that work run at.</summary>
+    private static SceneOverlay.Figure? HighestCoreClock(PollingEngine? engine, HardwareNode? cpu, DateTimeOffset now)
+    {
+        if (engine is null || cpu is null) return null;
+        int recent = engine.History.SecondsSinceEpoch(now) - 5; double best = 0;
+        foreach (var s in cpu.Sensors.Where(s => s.Role == SensorRole.CpuCoreClock))
+        {
+            var raw = engine.History.GetRaw(s.Id);
+            for (int i = raw.Values.Length - 1; i >= 0 && raw.Seconds[i] >= recent; i--) if (!float.IsNaN(raw.Values[i])) { best = Math.Max(best, raw.Values[i]); break; }
+        }
+        return best > 0 ? new(best.ToString("F0", CultureInfo.InvariantCulture), "MHz") : null;
+    }
+
     internal static IReadOnlyList<SceneOverlay.Row> Rows(PollingEngine? engine, HardwareNode? gpu, DateTimeOffset now, MemoryFacts? ram = null)
     {
         var cpu = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null); var ramNode = engine?.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Memory && n.ParentId is null);
@@ -210,7 +224,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "°C HOT", SensorRole.GpuHotSpotTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "% FAN", SensorRole.GpuFanPercent));
         Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "MHz", SensorRole.GpuCoreClock));
         Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),
-            One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
+            HighestCoreClock(engine, cpu, now) ?? One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
         // A Ryzen's CCDs, each with the clock of its cores (the cores that share a level-3 cache), where the processor has more than one.
         if (cpu is not null && engine is not null)
         {
