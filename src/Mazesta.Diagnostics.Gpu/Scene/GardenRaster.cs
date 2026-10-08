@@ -492,6 +492,29 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         return [.. Enumerable.Range(1, _marks.Count - 1).Select(i => (_marks[i], (t[i] - t[i - 1]) / hz * 1000))];
     }
 
+    /// <summary>What every pass reads, bound on a list (each new list starts with nothing bound).</summary>
+    private void Bind(ID3D12GraphicsCommandList4 l)
+    {
+        l.SetGraphicsRootSignature(_root); l.SetDescriptorHeaps(_srv);
+        l.SetGraphicsRootShaderResourceView(2, G.InstanceBuffer.GPUVirtualAddress);
+        l.SetGraphicsRootShaderResourceView(3, G.MaterialBuffer.GPUVirtualAddress);
+        l.SetGraphicsRootShaderResourceView(4, G.LightBuffer.GPUVirtualAddress);
+        l.SetGraphicsRootShaderResourceView(5, G.MoverBuffer.GPUVirtualAddress);
+        l.SetGraphicsRootShaderResourceView(6, G.LightGridBuffer.GPUVirtualAddress);
+        if (_accel is not null)
+        {
+            l.SetGraphicsRootShaderResourceView(7, _accel.Address); l.SetGraphicsRootShaderResourceView(8, G.MeshInfoBuffer.GPUVirtualAddress); l.SetGraphicsRootShaderResourceView(9, G.SubmeshInfoBuffer.GPUVirtualAddress);
+            l.SetGraphicsRootShaderResourceView(10, G.VertexBuffer.GPUVirtualAddress); l.SetGraphicsRootShaderResourceView(11, G.IndexBuffer.GPUVirtualAddress);
+        }
+        l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+        l.IASetVertexBuffers(0, new VertexBufferView(G.VertexBuffer.GPUVirtualAddress, (uint)G.VertexBuffer.Description.Width, 16));
+        l.IASetIndexBuffer(new IndexBufferView(G.IndexBuffer.GPUVirtualAddress, (uint)G.IndexBuffer.Description.Width, Format.R32_UInt));
+        l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
+        // the views are bound from the start: the depth passes read the leaves' textures through them (and nothing they are drawing into)
+        l.SetGraphicsRootDescriptorTable(Views, _srv.GetGPUDescriptorHandleForHeapStart());
+        l.SetGraphicsRootDescriptorTable(Views + 2, _srv.GetGPUDescriptorHandleForHeapStart().Offset(LampView, _srvSize));
+    }
+
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
         _marks.Clear();
@@ -536,26 +559,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         }
 
         Mark(l, "start");
-        l.SetGraphicsRootSignature(_root); l.SetDescriptorHeaps(_srv);
-        l.SetGraphicsRootShaderResourceView(2, G.InstanceBuffer.GPUVirtualAddress);
-        l.SetGraphicsRootShaderResourceView(3, G.MaterialBuffer.GPUVirtualAddress);
-        l.SetGraphicsRootShaderResourceView(4, G.LightBuffer.GPUVirtualAddress);
-        l.SetGraphicsRootShaderResourceView(5, G.MoverBuffer.GPUVirtualAddress);
-        l.SetGraphicsRootShaderResourceView(6, G.LightGridBuffer.GPUVirtualAddress);
-        if (_accel is not null)
-        {
-            _accel.Build(l, time); Mark(l, "ray-tracing structure");
-            l.SetGraphicsRootShaderResourceView(7, _accel.Address); l.SetGraphicsRootShaderResourceView(8, G.MeshInfoBuffer.GPUVirtualAddress); l.SetGraphicsRootShaderResourceView(9, G.SubmeshInfoBuffer.GPUVirtualAddress);
-            l.SetGraphicsRootShaderResourceView(10, G.VertexBuffer.GPUVirtualAddress); l.SetGraphicsRootShaderResourceView(11, G.IndexBuffer.GPUVirtualAddress);
-        }
-        l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-        l.IASetVertexBuffers(0, new VertexBufferView(G.VertexBuffer.GPUVirtualAddress, (uint)G.VertexBuffer.Description.Width, 16));
-        l.IASetIndexBuffer(new IndexBufferView(G.IndexBuffer.GPUVirtualAddress, (uint)G.IndexBuffer.Description.Width, Format.R32_UInt));
-        l.SetGraphicsRootConstantBufferView(1, _constants.GPUVirtualAddress);
-        // the views are bound from the start: the depth passes read the leaves' textures through them (and nothing they are drawing into)
-        l.SetGraphicsRootDescriptorTable(Views, _srv.GetGPUDescriptorHandleForHeapStart());
-        l.SetGraphicsRootDescriptorTable(Views + 2, _srv.GetGPUDescriptorHandleForHeapStart().Offset(LampView, _srvSize));
-
+        if (_accel is not null) { _accel.Build(l, time); Mark(l, "ray-tracing structure"); }
+        Bind(l);
         if (!_onceDrawn)
         {   // what is drawn once: where the sky stands open over the still scene (its depth from straight above), and the lamps' shadow cubes
             static bool Still(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout;
@@ -587,7 +592,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // else the next face in turn - twelve frames on, the pictures are of the light as it is by then
         Surroundings(l, first, live && _roundsDrawn ? [_roundNext++ % (Rounds.Length * 6)] : Enumerable.Range(0, Rounds.Length * 6)); _roundsDrawn = live;
         Mark(l, "surroundings (one face)");
-        DrawFrame(l, target, frame);
+        if (Chunked) { l = S.Handoff(); Bind(l); }   // the card starts on the maps now; the frame itself is recorded meanwhile
+        l = DrawFrame(l, target, frame);
         if (Profile && _queries is not null) l.ResolveQueryData(_queries, QueryType.Timestamp, 0, (uint)_marks.Count, _stamps!, 0);
     }
 
@@ -634,7 +640,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     }
 
     /// <summary>The frame itself, once its maps are drawn: the pool's mirror image, the depth and the occlusion, the light, the lens.</summary>
-    private void DrawFrame(ID3D12GraphicsCommandList4 l, int target, GardenFrame frame)
+    private ID3D12GraphicsCommandList4 DrawFrame(ID3D12GraphicsCommandList4 l, int target, GardenFrame frame)
     {
         static bool Casts(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout;
         static bool Solid(GardenMaterialKind k) => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive;
@@ -699,6 +705,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         }
 
         Mark(l, "ambient occlusion (+ray shade)");
+        if (Chunked) { l = S.Handoff(); Bind(l); }
         // 4. the frame's light
         var rtv = _samples > 1 ? Rtv(Targets.Length + 1) : Rtv(Targets.Length + 3);
         if (_samples == 1) l.ResourceBarrierTransition(_light, ResourceStates.PixelShaderResource, ResourceStates.RenderTarget);
@@ -736,6 +743,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         Mark(l, "glow");
         Full(_lens, Targets[target], Rtv(target), Width, Height, 0);
         Mark(l, "lens");
+        return l;
     }
 
     /// <summary>The part of the mirror image's picture the pool's water can be seen in (null: none of it). With a corner of the pool
@@ -803,6 +811,8 @@ internal abstract class GardenRenderer : IDisposable
     /// <summary>The given targets, then the off-screen one.</summary>
     protected ID3D12Resource[] Targets { get; }
     public GardenGpu Scene => G;
+    /// <summary>The processor's share of the last frame drawn through the session (recording the commands), for the timing check.</summary>
+    public double LastRecordSeconds => S.LastRecordSeconds;
 
     /// <summary>The size of the finished picture (the targets' and the capture's): the window's, which is the drawing's own unless the frame is scaled up to it.</summary>
     public int OutWidth { get; } public int OutHeight { get; }
@@ -820,7 +830,13 @@ internal abstract class GardenRenderer : IDisposable
 
     /// <summary>Draws the frame at <paramref name="time"/> into target <paramref name="target"/>, as one of the frames being shown
     /// one after another (the ray tracer adds each one's light to what it has gathered from those before).</summary>
-    public void Draw(ID3D12GraphicsCommandList4 l, float time, int target) => DrawScene(l, time, target, live: true);
+    public void Draw(ID3D12GraphicsCommandList4 l, float time, int target)
+    {
+        Chunked = true; try { DrawScene(l, time, target, live: true); } finally { Chunked = false; }
+    }
+    /// <summary>While a shown frame is recorded: it is sent to the card in pieces (<see cref="D3D12Session.Handoff"/>), so after this the session's
+    /// <see cref="D3D12Session.List"/>, not the list passed in, is the one to go on with.</summary>
+    protected bool Chunked { get; private set; }
     /// <summary><paramref name="live"/>: the frame follows the one drawn before it, and may build on it. A frame that does not is a
     /// pure function of its time, and leaves nothing behind for the next.</summary>
     protected abstract void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live);
@@ -828,12 +844,12 @@ internal abstract class GardenRenderer : IDisposable
     /// <summary>The frame at <paramref name="time"/>, drawn off screen and read back: RGBA8 pixels, rows of <see cref="Width"/>.
     /// On its own (the check frames: the same time is the same bits, whatever was drawn before), or with <paramref name="live"/>
     /// as the next of the frames being shown.</summary>
-    public uint[] Capture(float time, bool live = false)
+    public uint[] Capture(float time, bool live = false, bool chunked = false)
     {
         int own = Targets.Length - 1; uint pitch = ((uint)OutWidth * 4 + 255) & ~255u;
         var raw = S.Read((int)(pitch / 4 * OutHeight), (l, readback) =>
         {
-            DrawScene(l, time, own, live);
+            if (chunked) { Draw(l, time, own); l = S.List; } else DrawScene(l, time, own, live);   // (chunked: the shown frames' way, in pieces)
             l.ResourceBarrierTransition(Targets[own], ResourceStates.Common, ResourceStates.CopySource);
             l.CopyTextureRegion(new TextureCopyLocation(readback, new PlacedSubresourceFootPrint { Footprint = new SubresourceFootPrint(Format.R8G8B8A8_UNorm, (uint)OutWidth, (uint)OutHeight, 1, pitch) }), 0, 0, 0, new TextureCopyLocation(Targets[own], 0));
             l.ResourceBarrierTransition(Targets[own], ResourceStates.CopySource, ResourceStates.Common);

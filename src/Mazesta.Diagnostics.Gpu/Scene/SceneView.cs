@@ -38,9 +38,9 @@ internal sealed class SceneView : IDisposable
     public void Present(float time)
     {
         int index = (int)_swap.CurrentBackBufferIndex;
-        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(l, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false);
+        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(_s.List, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false);
+        _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();   // queued behind the frame: shown the moment the card has drawn it, not after the processor has also finished waiting
         Overlap(time);
-        _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();
     }
 
     /// <summary>The benchmark's two halves of <see cref="Present"/>: the scene drawn into the next back buffer on its own (the part that is timed),

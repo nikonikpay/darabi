@@ -70,6 +70,33 @@ public class GardenRenderHardwareTests
         using var f = File.Create(to); volume.Write(f);
     }
 
+    /// <summary>With MAZESTA_RENDER_TIME set: the frame rate of the loop the test window runs (draw, show, repeat; no checks between), which is what the card's busy share comes from.</summary>
+    [Theory, InlineData(false), InlineData(true)]
+    public void The_shown_loop_frame_rate_is_written_when_asked(bool rays)
+    {
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is not { Length: > 0 } || Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is not { Length: > 0 } dir || NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!); using var w = new TestWindow("frame rate", 1920, 1080, false);
+        using var v = new SceneView(s, w, 1920, 1080, rays, 3, null, null);
+        var sw = System.Diagnostics.Stopwatch.StartNew(); long n = 0; double from = 0;
+        while (sw.Elapsed.TotalSeconds < 8) { w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds); if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; } else n++; }
+        File.AppendAllText(Path.Combine(dir, "timing.txt"), FormattableString.Invariant($"shown loop rays={rays}: {n / (sw.Elapsed.TotalSeconds - from):F1} FPS, {(sw.Elapsed.TotalSeconds - from) * 1000 / n:F2} ms a frame") + Environment.NewLine);
+    }
+
+    /// <summary>A frame sent to the card in pieces (as the test window does, so the card works while the rest is recorded) is the same bits as the same frame in one list.</summary>
+    [Theory, InlineData(1u, false), InlineData(3u, false), InlineData(1u, true), InlineData(3u, true)]
+    public void A_frame_recorded_in_pieces_is_the_same_picture(uint load, bool rays)
+    {
+        if (NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!);
+        var g = new GardenGpu(s, GardenScene.Embedded);
+        using var r = new GardenRaster(s, g, W, H, [], load, rayTraced: rays);
+        foreach (float t in new[] { 1.234f, 40f, 100f })
+        {
+            var whole = r.Capture(t); var pieces = r.Capture(t, chunked: true);
+            Assert.True(whole.AsSpan().SequenceEqual(pieces), $"the frame at {t} s differs when recorded in pieces");
+        }
+    }
+
     private static void Check(GardenRenderer r, string name)
     {
         var a = r.Capture(1.234f); var b = r.Capture(1.234f);
@@ -106,9 +133,9 @@ public class GardenRenderHardwareTests
         // MAZESTA_RENDER_TIME: also how long a frame takes, round the whole walk, each drawn as one of the frames being shown (off screen and read back: slower than the test's own window)
         if (dir is { Length: > 0 } && Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is { Length: > 0 })
         {
-            const int n = 96; var sw = System.Diagnostics.Stopwatch.StartNew(); var parts = new double[12];
-            for (int k = 0; k < n; k++) { var one = System.Diagnostics.Stopwatch.StartNew(); r.Capture(k * GardenCamera.Loop / n, live: true); parts[k * 12 / n] += one.Elapsed.TotalMilliseconds * 12 / n; }
-            File.AppendAllText(Path.Combine(dir, "timing.txt"), $"{name} {r.Width}x{r.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms a frame, {n} frames round the walk (its twelfths: {string.Join(", ", parts.Select(p => p.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)))})" + Environment.NewLine);
+            const int n = 96; var sw = System.Diagnostics.Stopwatch.StartNew(); var parts = new double[12]; double record = 0;
+            for (int k = 0; k < n; k++) { var one = System.Diagnostics.Stopwatch.StartNew(); r.Capture(k * GardenCamera.Loop / n, live: true); record += r.LastRecordSeconds * 1000 / n; parts[k * 12 / n] += one.Elapsed.TotalMilliseconds * 12 / n; }
+            File.AppendAllText(Path.Combine(dir, "timing.txt"), $"{name} {r.Width}x{r.Height}: {sw.Elapsed.TotalMilliseconds / n:F2} ms a frame ({record:F2} ms of it the processor recording), {n} frames round the walk (its twelfths: {string.Join(", ", parts.Select(p => p.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)))})" + Environment.NewLine);
         }
     }
 }

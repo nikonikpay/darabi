@@ -10,9 +10,13 @@ internal sealed unsafe class D3D12Session : IDisposable
 {
     public ID3D12Device5 Device { get; }
     public ID3D12CommandQueue Queue { get; }
-    public ID3D12GraphicsCommandList4 List { get; }
+    /// <summary>The list being recorded or last recorded (a few take turns, see <see cref="Handoff"/>).</summary>
+    public ID3D12GraphicsCommandList4 List => _lists[_cur];
     public string AdapterName { get; }
-    private readonly ID3D12CommandAllocator _allocator; private readonly ID3D12Fence _fence; private ulong _fenceValue;
+    private readonly ID3D12CommandAllocator[] _allocators = new ID3D12CommandAllocator[Chunks]; private readonly ID3D12GraphicsCommandList4[] _lists = new ID3D12GraphicsCommandList4[Chunks]; private int _cur;
+    /// <summary>The most lists one recording may be cut into: each has an allocator of its own, because one still running on the card cannot be reset.</summary>
+    public const int Chunks = 3;
+    private readonly ID3D12Fence _fence; private ulong _fenceValue;
     private readonly List<IDisposable> _owned = [];
 
     public D3D12Session(GraphicsDevice device)
@@ -22,8 +26,7 @@ internal sealed unsafe class D3D12Session : IDisposable
         InteropServices.GetID3D12Device(device, &iid, &pointer);   // every DXR-capable Windows 10/11 has ID3D12Device5
         Device = new ID3D12Device5((nint)pointer);
         Queue = Device.CreateCommandQueue(CommandListType.Direct);
-        _allocator = Device.CreateCommandAllocator(CommandListType.Direct);
-        List = Device.CreateCommandList<ID3D12GraphicsCommandList4>(CommandListType.Direct, _allocator); List.Close();   // created recording; Record resets it
+        for (int i = 0; i < Chunks; i++) { _allocators[i] = Device.CreateCommandAllocator(CommandListType.Direct); _lists[i] = Device.CreateCommandList<ID3D12GraphicsCommandList4>(CommandListType.Direct, _allocators[i]); _lists[i].Close(); }   // created recording; Record resets it
         _fence = Device.CreateFence();
     }
 
@@ -64,7 +67,15 @@ internal sealed unsafe class D3D12Session : IDisposable
     /// <summary>Records into the (reset) command list and closes it; <see cref="Submit"/> may then run it any number of times.</summary>
     public void Record(Action<ID3D12GraphicsCommandList4> record)
     {
-        Wait(); _allocator.Reset(); List.Reset(_allocator); record(List); List.Close();
+        Wait(); _allocators[_cur].Reset(); List.Reset(_allocators[_cur]); record(List); List.Close();
+    }
+
+    /// <summary>Inside a <see cref="Record"/>: sends what is recorded so far to the card at once and goes on in the other list, so the card
+    /// works on the first passes while the processor records the rest (it would otherwise sit idle for the whole recording). Returns the list to go on with;
+    /// what the caller bound on the old one (root signature, heaps, views) is not bound on it.</summary>
+    public ID3D12GraphicsCommandList4 Handoff()
+    {
+        List.Close(); Queue.ExecuteCommandList(List); _cur = (_cur + 1) % Chunks; _allocators[_cur].Reset(); List.Reset(_allocators[_cur]); return List;
     }
 
     /// <summary>Records once and runs it once.</summary>
@@ -128,7 +139,7 @@ internal sealed unsafe class D3D12Session : IDisposable
     {
         try { Wait(); } catch (Exception e) when (e is SharpGen.Runtime.SharpGenException) { }   // a lost device: release anyway
         for (int i = _owned.Count - 1; i >= 0; i--) _owned[i].Dispose();
-        List.Dispose(); _allocator.Dispose(); _fence.Dispose(); Queue.Dispose(); Device.Dispose();
+        foreach (var l in _lists) l.Dispose(); foreach (var a in _allocators) a.Dispose(); _fence.Dispose(); Queue.Dispose(); Device.Dispose();
     }
 }
 
