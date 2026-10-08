@@ -28,9 +28,11 @@ export function show(f, boot) {
       h("header", { class: "upd-head" }, h("span", { class: "upd-mark fail-mark" }, icon("bug")),
         h("div", {}, h("h2", { class: "upd-title", id: "fail-title" }, t("Fail_Title")), h("p", { class: "sup-sub" }, t("Fail_Intro")))),
       h("div", { class: "fail-body" }, list, advice, h("p", { class: "fail-support" }, icon("phone"), h("span", {}, t("Fail_Support")))),
+      // "Understood" closes it (the host tells the page once, when the run is over); the way to the support desk is a small button apart.
       h("div", { class: "btn-row" },
-        h("button", { class: "btn primary", type: "button", onclick: () => { close(); openSupport(boot); } }, icon("phone"), t("Fail_Contact")),
-        exportBtn, h("button", { class: "btn", type: "button", onclick: close }, t("Fail_Close")))));
+        h("button", { class: "btn primary", type: "button", onclick: close }, icon("check"), t("Fail_Understood")),
+        exportBtn, h("span", { class: "grow" }),
+        h("button", { class: "btn quiet", type: "button", onclick: () => { close(); openSupport(boot); } }, icon("phone"), t("Fail_Contact")))));
   dialog.addEventListener("close", () => { dialog?.remove(); dialog = null; });
   document.body.append(dialog); dialog.showModal();
 }

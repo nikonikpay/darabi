@@ -141,11 +141,12 @@ function renderBand(info) {
 }
 function setPause(p) { const b = document.getElementById("pause"); if (b) b.textContent = t(p ? "Status_Resume" : "Status_Pause"); }
 
-function banner(text, link) {
+// `closed` runs when the person closes it: a notice about the last session must not come back at every start.
+function banner(text, link, closed) {
   if (!text) return;
   const el = h("div", { class: "banner", role: "status" }, h("span", { class: "grow" }, text),
     link ? h("button", { class: "btn", onclick: () => call("app.openLink", { key: link }) }, t("Banner_InstallPawnIo")) : null,
-    h("button", { class: "btn quiet", onclick: () => el.remove(), "aria-label": "close" }, icon("x")));
+    h("button", { class: "btn quiet", onclick: () => { el.remove(); closed?.(); }, "aria-label": "close" }, icon("x")));
   stage.before(el); el.style.gridColumn = "2";
   app.style.gridTemplateRows = "auto 1fr auto"; index.style.gridRow = asst.style.gridRow = "1 / 4"; stage.style.gridRow = "2"; band.style.gridRow = "3";
 }
@@ -156,7 +157,7 @@ async function start() {
   setStrings(info.strings, info.rtl, info.language);
   setUnits(info.units);
   renderIndex(info); renderBand(info);
-  if (info.banner) banner(info.banner);
+  if (info.banner) banner(info.banner, null, () => call("app.dismissBreak").catch(() => {}));
   // The assistant's column: loaded after the strings, apart from the pages (it imports the shell back for go()).
   import("./assistant.js").then((m) => m.mountAssistant(app, asst)).catch((e) => report(String(e && e.stack || e)));
   on("provider", (p) => {

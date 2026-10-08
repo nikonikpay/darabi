@@ -925,6 +925,7 @@
   <data name="Fail_Support" xml:space="preserve"><value>If it happens again after this, contact Mazesta support and send them the diagnostic file; they will look at it with you.</value></data>
   <data name="Fail_Contact" xml:space="preserve"><value>Contact support</value></data>
   <data name="Fail_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Fail_Understood" xml:space="preserve"><value>Understood</value></data>
   <data name="Support_Button" xml:space="preserve"><value>Sales and support</value></data>
   <data name="Support_Title" xml:space="preserve"><value>Talk to Mazesta</value></data>
   <data name="Support_Sub" xml:space="preserve"><value>The support and sales teams are glad to help.</value></data>

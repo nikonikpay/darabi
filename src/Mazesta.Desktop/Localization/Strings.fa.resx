@@ -925,6 +925,7 @@
   <data name="Fail_Support" xml:space="preserve"><value>اگر بعد از این هم تکرار شد، با پشتیبانی مازستا تماس بگیرید و فایل عیب‌یابی را برایشان بفرستید تا همراه شما بررسی کنند.</value></data>
   <data name="Fail_Contact" xml:space="preserve"><value>تماس با پشتیبانی</value></data>
   <data name="Fail_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Fail_Understood" xml:space="preserve"><value>متوجه شدم</value></data>
   <data name="Support_Button" xml:space="preserve"><value>ارتباط با پشتیبانی و فروش</value></data>
   <data name="Support_Title" xml:space="preserve"><value>ارتباط با مازستا</value></data>
   <data name="Support_Sub" xml:space="preserve"><value>واحد پشتیبانی و واحد فروش مازستا آمادهٔ کمک به شما هستند.</value></data>

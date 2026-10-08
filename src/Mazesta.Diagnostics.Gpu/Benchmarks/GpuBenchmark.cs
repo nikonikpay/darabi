@@ -17,15 +17,20 @@ internal static class GpuFault
     public enum Kind { Lost, Wrong, Unsupported, Cancelled, Internal }
     // DXGI_ERROR_DEVICE_REMOVED, _HUNG, _RESET, DRIVER_INTERNAL_ERROR
     private static readonly int[] LostCodes = [unchecked((int)0x887A0005), unchecked((int)0x887A0006), unchecked((int)0x887A0007), unchecked((int)0x887A0020)];
-    public static Kind Of(Exception e) => e switch
+    public static Kind Of(Exception e)
     {
-        OperationCanceledException => Kind.Cancelled,
-        GpuUnsupportedException => Kind.Unsupported,
-        GpuLostException => Kind.Lost,
-        GpuWrongResultException => Kind.Wrong,
-        SharpGen.Runtime.SharpGenException s when LostCodes.Contains(s.HResult) => Kind.Lost,
-        _ => Kind.Internal,
-    };
+        var kind = e switch
+        {
+            OperationCanceledException => Kind.Cancelled,
+            GpuUnsupportedException => Kind.Unsupported,
+            GpuLostException => Kind.Lost,
+            GpuWrongResultException => Kind.Wrong,
+            SharpGen.Runtime.SharpGenException s when LostCodes.Contains(s.HResult) => Kind.Lost,
+            _ => Kind.Internal,
+        };
+        if (kind == Kind.Lost) GpuDevices.Invalidate();   // the card will be opened afresh for the next run
+        return kind;
+    }
 }
 
 /// <summary>What the three GPU benchmarks share: picking the adapter, running on a worker thread, turning a lost device into
