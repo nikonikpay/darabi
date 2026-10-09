@@ -2,10 +2,10 @@ using System.Diagnostics; using ComputeSharp; using Mazesta.Diagnostics.Gpu.Benc
 namespace Mazesta.Diagnostics.Gpu.Tuning;
 
 /// <summary>
-/// The tuner's third load: the benchmark's own Persian garden (Direct3D 12, 1080p, the heavy quality) drawn from one fixed camera and one fixed
-/// moment, frame after frame with no v-sync. A game's load, not a stress test's: the card runs into its boost the way it does in use, where the
+/// The tuner's third load: the benchmark's own Persian garden (Direct3D 12, 1080p, the heavy quality) drawn from one fixed camera in one fixed light (the water, the fountain, the wind and the wings
+/// move on the clock), frame after frame with no v-sync. A game's load, not a stress test's: the card runs into its boost the way it does in use, where the
 /// hash chain of <see cref="ComputeGpuLoad"/> holds it at the power limit well under its boost clock. The score is the frame rate, and with a still
-/// camera it is the same picture every frame, so two profiles are comparable by it (and by the temperature and power read beside it). A frame drawn
+/// camera the view is the same every frame and the motion repeats over seconds, so two profiles are comparable by it (and by the temperature and power read beside it). A frame drawn
 /// before and after the run at one moment must be the same picture, or the card computed wrongly. With <c>rayTraced</c> the frame is the DXR 1.1 one (shadows and reflections by rays).
 /// </summary>
 internal static class SceneGpuLoad
@@ -25,6 +25,12 @@ internal static class SceneGpuLoad
 
     private static LoadRunResult RunOnThread(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct)
     {
+        GardenCamera.Pinned = 0;   // the camera and the light stay put; the water, the fountain, the wind and the wings move with the clock
+        try { return Draw(device, duration, settle, rayTraced, ct); } finally { GardenCamera.Pinned = null; }
+    }
+
+    private static LoadRunResult Draw(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct)
+    {
         using var session = new D3D12Session(device, 2);
         using var window = new TestWindow("Mazesta — tuning load", Width, Height, false);
         using var view = new SceneView(session, window, Width, Height, rayTraced, 3, null, null);
@@ -37,7 +43,7 @@ internal static class SceneGpuLoad
         {
             ct.ThrowIfCancellationRequested();
             if (!window.Pump()) throw new OperationCanceledException("The tuning window was closed.");
-            view.Present(0); frames++;
+            view.Present((float)clock.Elapsed.TotalSeconds); frames++;
             if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else counted++; }
         }
         view.Drain();

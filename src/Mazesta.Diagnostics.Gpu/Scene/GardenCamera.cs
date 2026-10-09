@@ -50,9 +50,14 @@ public static class GardenCamera
     /// <summary>For the render checks: one view to draw every moment from, instead of the walk's (null: the walk).</summary>
     internal static (Vector3 Eye, Vector3 Target)? Fixed { get; set; }
 
+    /// <summary>The moment the camera and the day are held at (null: they follow the time). The tuning scene pins them so every frame is drawn from one place
+    /// in one light while the water, the fountain, the wind and the rest go on moving. A plain static, not per thread: the ray-traced scene is placed on every core.</summary>
+    internal static float? Pinned { get; set; }
+
     public static (Vector3 Eye, Vector3 Target) At(float time)
     {
         if (Fixed is { } view) return view;
+        time = Pinned ?? time;
         float t = (time % Loop + Loop) % Loop / Loop * Keys.Length;
         int i = (int)t; float f = t - i;
         f = f * f * (3 - 2 * f) * 0.35f + f * 0.65f;   // a touch of ease at each key, never a stop

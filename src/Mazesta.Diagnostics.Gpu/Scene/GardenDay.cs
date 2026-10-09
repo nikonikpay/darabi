@@ -69,6 +69,7 @@ public readonly record struct GardenDay(Vector3 Key, Vector3 KeyColor, bool Moon
     /// <paramref name="sunColor"/> (what it has a hand above the horizon) and whose moon stands at <paramref name="moon"/>.</summary>
     public static GardenDay At(float time, Vector3 sun, Vector3 sunColor, Vector3 moon, Vector3 moonColor)
     {
+        time = GardenCamera.Pinned ?? time;
         float s = SunAt(time), length = Sunset - Sunrise;
         float night = s > 1 ? Smooth((s - 1) * length / Twilight) : s < 0 ? Smooth(-s * length / Twilight) : 0;
         var dir = SunDirection(s, sun.X < 0 ? -1 : 1); float degrees = MathF.Asin(dir.Y) * 180 / MathF.PI;
