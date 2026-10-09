@@ -3352,4 +3352,13 @@
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس {0}</value></data>
   <data name="Tuning_Factory" xml:space="preserve"><value>کارخانه، اندازه‌گیری‌شده زیر بار کامل: کلاک پایدار {0}، بالاترین کلاک {1}؛ توان میانگین {2} (حداکثر {3})؛ ولتاژ هسته {4}. جست‌وجو از بالاترین کلاکی که کارت رسیده شروع می‌کند، نه از کلاکی که زیر سقف توان نگه داشته است.</value></data>
   <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) در حالت کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Tuning_SceneTest" xml:space="preserve"><value>تست صحنه</value></data>
+  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>صحنهٔ باغ را ۴۰ ثانیه از یک دوربین ثابت روی کارت با تنظیمات فعلی اجرا می‌کند</value></data>
+  <data name="Tuning_SceneTest_Clear" xml:space="preserve"><value>پاک کردن</value></data>
+  <data name="Tuning_SceneTest_Title" xml:space="preserve"><value>تست صحنه: مقایسهٔ تنظیمات</value></data>
+  <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>هر فریم همان تصویر است: یک پروفایل اعمال کنید، تست را اجرا کنید، تنظیم را عوض کنید و دوباره اجرا کنید</value></data>
+  <data name="Tuning_SceneTest_Running" xml:space="preserve"><value>تست صحنه</value></data>
+  <data name="Tuning_SceneTest_First" xml:space="preserve"><value>اولین تست</value></data>
+  <data name="Tuning_SceneTest_Empty" xml:space="preserve"><value>هنوز تستی نیست. هر تست نرخ فریم، کلاک، توان و دما و تغییر نسبت به تست قبلی را نشان می‌دهد.</value></data>
+  <data name="Tuning_Load_Scene" xml:space="preserve"><value>صحنهٔ باغ</value></data>
 </root>

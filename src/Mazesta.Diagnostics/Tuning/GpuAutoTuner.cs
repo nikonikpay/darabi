@@ -24,6 +24,10 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
 
     public Task<AutoTuneOutcome> RunAsync(IAutoTuneSearch search, CancellationToken ct) => Task.Run(() => Run(search, ct), CancellationToken.None);
 
+    /// <summary>One run of a load on the card as it is now - nothing applied, nothing reset: what the settings the technician has put on it do under the load.</summary>
+    public Task<(LoadMeasurement Measurement, string? Error)> MeasureCurrentAsync(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct)
+        => Task.Run(() => Measure(1, new TuneStep(TuneStepKind.Baseline, device.ReadCurrent(), kind, duration, settle), ct), CancellationToken.None);
+
     private AutoTuneOutcome Run(IAutoTuneSearch search, CancellationToken ct)
     {
         int number = 0;

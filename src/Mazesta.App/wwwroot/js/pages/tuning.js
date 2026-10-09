@@ -169,6 +169,9 @@ export function mount(el) {
   const autoU = h("button", { class: "btn go", "data-a": "autoundervolt", onclick: () => risky("auto", "autoUndervolt") }, t("Tuning_AutoUndervolt"));
   const autoP = h("button", { class: "btn primary", "data-a": "autooverclockplus", onclick: () => risky("auto", "autoOverclockPlus") }, t("Tuning_AutoOverclockPlus"));
   const autoO = h("button", { class: "btn primary", "data-a": "autooverclock", onclick: () => risky("auto", "autoOverclock") }, t("Tuning_AutoOverclock"));
+  const sceneBtn = h("button", { class: "btn", title: t("Tuning_SceneTest_Hint"), onclick: () => exec("sceneTest") }, t("Tuning_SceneTest"));
+  const sceneClear = h("button", { class: "btn", onclick: () => exec("clearScene") }, t("Tuning_SceneTest_Clear"));
+  const sceneList = h("div", {});
   const cancel = h("button", { class: "btn stop", onclick: () => exec("cancel") }, icon("stop"), t("Tuning_Cancel"));
 
   el.append(
@@ -193,6 +196,7 @@ export function mount(el) {
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO),
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclockPlus_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclockPlus_Desc")), autoP)),
           running, result, log] }),
+      box({ kind: "Gpu", ico: "chart", title: t("Tuning_SceneTest_Title"), sub: t("Tuning_SceneTest_Sub"), i: 3, a: "scene", actions: h("div", { class: "toolbar" }, sceneBtn, sceneClear), body: [sceneList] }),
       box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, a: "profiles", body: profiles })),
     h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },
       box({ kind: "Memory", title: t("Tuning_Memory"), sub: t("Tuning_Memory_Sub"), i: 4, a: "memory",
@@ -237,6 +241,10 @@ export function mount(el) {
         h("span", {}, h("b", {}, l.kind), "  ", h("span", { class: "caption" }, l.settings)),
         h("span", { class: `pill ${l.clean ? "pass" : "fail"}` }, l.clean ? t("Tuning_Log_Clean") : l.problem), h("span", { class: "res" }, l.result))));
     }
+    sceneBtn.disabled = x.busy; sceneClear.hidden = !(x.sceneTests || []).length;
+    sceneList.replaceChildren(...((x.sceneTests || []).length ? x.sceneTests.map((r, i) => h("div", { class: "logline" }, h("span", { class: "st" }, fa(i + 1)),
+      h("span", {}, h("b", {}, r.settings), "  ", h("span", { class: "caption lat" }, r.result)), h("span", { class: `pill ${r.clean ? "pass" : "fail"}` }, r.clean ? (r.change || t("Tuning_SceneTest_First")) : r.problem)))
+      : [h("p", { class: "caption" }, t("Tuning_SceneTest_Empty"))]));
     const pk = JSON.stringify(x.profiles);
     if (pk !== shownProfiles) {
       shownProfiles = pk;

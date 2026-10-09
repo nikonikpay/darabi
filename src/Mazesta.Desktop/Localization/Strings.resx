@@ -3352,4 +3352,13 @@ Cancel: stop.</value></data>
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>Overclock Plus {0}</value></data>
   <data name="Tuning_Factory" xml:space="preserve"><value>Factory, as measured under full load: held {0}, reached {1}; drew {2} on average ({3} at most); core voltage {4}. A search starts from the highest clock the card reached, not from the one it held while running into its power limit.</value></data>
   <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at stock: {0}  →  tuned: {1}</value></data>
+  <data name="Tuning_SceneTest" xml:space="preserve"><value>Scene test</value></data>
+  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>Draws the garden scene from one fixed camera for 40 seconds on the card as it is now</value></data>
+  <data name="Tuning_SceneTest_Clear" xml:space="preserve"><value>Clear</value></data>
+  <data name="Tuning_SceneTest_Title" xml:space="preserve"><value>Scene test: compare settings</value></data>
+  <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>The same picture every frame: apply a profile, run the test, change it, run it again</value></data>
+  <data name="Tuning_SceneTest_Running" xml:space="preserve"><value>Scene test</value></data>
+  <data name="Tuning_SceneTest_First" xml:space="preserve"><value>first test</value></data>
+  <data name="Tuning_SceneTest_Empty" xml:space="preserve"><value>No test yet. Each one shows the frame rate, clock, power and temperature, and the change since the one before.</value></data>
+  <data name="Tuning_Load_Scene" xml:space="preserve"><value>Garden scene</value></data>
 </root>

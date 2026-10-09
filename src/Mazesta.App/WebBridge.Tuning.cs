@@ -28,11 +28,12 @@ public sealed partial class WebBridge
             },
             curve = t.Curve?.Select(p => new { clock = p.ClockMHz, volt = p.VoltageV }), curveInfo = t.CurveInfo, curveEstimate = t.CurveEstimate, curveStatus = t.CurveStatus,
             busy = t.IsTuning, percent = t.AutoPercent, stepTitle = t.AutoStepTitle, stepSettings = t.AutoStepSettings, stepLoad = t.AutoStepLoad, result = t.AutoResult,
+            sceneTests = t.SceneTests.Select(r => new { settings = r.Settings, result = r.Result, change = r.Change, clean = r.Clean, problem = r.Problem }),
             log = t.AutoLog.Select(l => new { step = l.Step, kind = l.Kind, settings = l.Settings, result = l.Result, clean = l.Clean, problem = l.Problem }),
             profiles = t.Profiles.Select((p, i) => new { index = i, name = p.Name, kind = p.KindValue.ToString(), kindText = p.Kind, created = p.Created, summary = p.Summary, evidence = p.Evidence, startup = p.Name == t.StartupProfile }),
             memory = t.Memory.Select(m => new { label = m.Label, value = m.Value }),
         };
-        Mirror("tuning", t, State, t.AutoLog, t.Profiles);
+        Mirror("tuning", t, State, t.AutoLog, t.Profiles, t.SceneTests);
         foreach (var tile in new[] { t.LiveCore, t.LiveMemory, t.LiveVoltage, t.LiveTemperature, t.LivePower, t.LiveFan }) tile.PropertyChanged += (_, _) => PushSoon("tuning", State);
 
         Method("tuning.state", _ => State());
@@ -73,6 +74,8 @@ public sealed partial class WebBridge
                 case "autoUndervolt": if (t.AutoUndervoltCommand.CanExecute(null)) await t.AutoUndervoltCommand.ExecuteAsync(null); break;
                 case "autoOverclock": if (t.AutoOverclockCommand.CanExecute(null)) await t.AutoOverclockCommand.ExecuteAsync(null); break;
                 case "autoOverclockPlus": if (t.AutoOverclockPlusCommand.CanExecute(null)) await t.AutoOverclockPlusCommand.ExecuteAsync(null); break;
+                case "sceneTest": if (t.SceneTestCommand.CanExecute(null)) await t.SceneTestCommand.ExecuteAsync(null); break;
+                case "clearScene": t.ClearSceneTestsCommand.Execute(null); break;
                 case "cancel": if (t.CancelAutoCommand.CanExecute(null)) t.CancelAutoCommand.Execute(null); break;
                 case "firmware": t.RestartToFirmwareCommand.Execute(null); break;
                 default: throw new ArgumentException("unknown command");

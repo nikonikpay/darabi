@@ -19,6 +19,9 @@ public sealed record GpuProfileRow(GpuProfile Profile)
 /// <summary>One finished step of an automatic search, in parts, so the page can lay it out right to left with each Latin part in its own box.</summary>
 public sealed record AutoLogRow(int Step, string Kind, string Settings, string Result, bool Clean, string? Problem);
 
+/// <summary>One scene test: the card's settings at the time, what it did in the garden scene from its fixed camera, and how that differs from the test before.</summary>
+public sealed record SceneTestRow(string Settings, string Result, string? Change, bool Clean, string? Problem);
+
 /// <summary>A big live number on the card's header: what it is, and the value with its unit or the not-available text.</summary>
 public sealed partial class LiveTile(string label) : ObservableObject
 {
@@ -96,7 +99,7 @@ public sealed partial class TuningViewModel : ObservableObject
     public int ClockMax => L?.MaxLockMHz ?? 3000;
 
     [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(ResetCommand), nameof(AutoUndervoltCommand), nameof(AutoOverclockCommand), nameof(AutoOverclockPlusCommand), nameof(CancelAutoCommand),
-        nameof(ApplyProfileCommand), nameof(ScanCurveCommand))]
+        nameof(ApplyProfileCommand), nameof(ScanCurveCommand), nameof(SceneTestCommand))]
     private bool _isTuning;
     [ObservableProperty] private double _autoPercent;
     // The step in progress, in parts: its title is Persian, its settings Latin; the page lays them out so neither scrambles the other.
@@ -106,6 +109,9 @@ public sealed partial class TuningViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasAutoResult))] private string _autoResult = "";
     public bool HasAutoResult => AutoResult.Length > 0;
     public ObservableCollection<AutoLogRow> AutoLog { get; } = [];
+    /// <summary>The scene tests of this session, newest last: the same picture every frame, so the frame rate, clock, power and temperature of two settings compare.</summary>
+    public ObservableCollection<SceneTestRow> SceneTests { get; } = [];
+    private LoadMeasurement? _lastScene;
     public ObservableCollection<GpuProfileRow> Profiles { get; } = [];
     public bool HasProfiles => Profiles.Count > 0;
 
@@ -370,6 +376,33 @@ public sealed partial class TuningViewModel : ObservableObject
             ? (saved.Settings, saved.Baseline) : (null, null);
 
     [RelayCommand(CanExecute = nameof(IsTuning))] private void CancelAuto() => _cts?.Cancel();
+
+    private static readonly TimeSpan SceneTestLength = TimeSpan.FromSeconds(40), SceneTestSettle = TimeSpan.FromSeconds(12);
+
+    /// <summary>Runs the garden scene from its fixed camera on the card as it is now (whatever has been applied) and keeps the figures beside those of the earlier
+    /// tests: change the profile, run it again, and see what the frame rate, the temperature and the power did.</summary>
+    [RelayCommand(CanExecute = nameof(CanChange))]
+    private async Task SceneTest()
+    {
+        if (!TryEnter(out var lease)) return;
+        using var held = lease;
+        var device = Device!;
+        IsTuning = true; AutoPercent = 0; Status = ""; AutoStepTitle = Loc.Get("Tuning_SceneTest_Running"); AutoStepSettings = Summarize(device.ReadCurrent()); AutoStepLoad = Loc.Get("Tuning_Load_Scene");
+        _cts = new CancellationTokenSource();
+        var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id), voltage: _voltage);
+        tuner.Progress += p => _dispatch(() => AutoPercent = p.Fraction * 100);
+        LoadMeasurement m; string? error;
+        try { (m, error) = await tuner.MeasureCurrentAsync(GpuLoadKind.Scene, SceneTestLength, SceneTestSettle, _cts.Token).ConfigureAwait(true); }
+        catch (OperationCanceledException) { Status = Loc.Get("Tuning_Out_Cancelled"); return; }
+        finally { IsTuning = false; AutoPercent = 0; AutoStepTitle = AutoStepSettings = AutoStepLoad = ""; }
+        string settings = Summarize(device.ReadCurrent()), result = Describe(m, GpuLoadKind.Scene); string? change = null;
+        if (m.Clean && error is null && _lastScene is { } before && before.Throughput > 0)
+            change = Ltr($"{(m.Throughput / before.Throughput - 1) * 100:+0.0;-0.0}% FPS" + (m.AverageTemperatureC is { } t && before.AverageTemperatureC is { } bt ? $" · {t - bt:+0.0;-0.0} °C" : "") + (m.AveragePowerW is { } w && before.AveragePowerW is { } bw ? $" · {w - bw:+0;-0} W" : ""));
+        SceneTests.Add(new(settings, result, change, m.Clean && error is null, m.Clean && error is null ? null : Loc.Get(m.DeviceLost ? "Tuning_Lost" : "Tuning_Errors") + (error is { } e ? $" ({e})" : "")));
+        if (m.Clean && error is null) _lastScene = m;
+    }
+
+    [RelayCommand] private void ClearSceneTests() { SceneTests.Clear(); _lastScene = null; }
 
     private async Task RunAuto(IAutoTuneSearch search, GpuProfileKind kind)
     {
