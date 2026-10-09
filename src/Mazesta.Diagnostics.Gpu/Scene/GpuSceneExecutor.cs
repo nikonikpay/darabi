@@ -158,7 +158,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                 $"load level {load}: {work}",
                 $"frames={frames}", $"{frames / Math.Max(0.001, total.Elapsed.TotalSeconds):F1} FPS average", minFps < double.MaxValue ? $"{minFps:F1} FPS lowest half-second" : null, $"check frames={checks}",
                 firstError.Length > 0 ? firstError : null, model.ModelProblem,
-                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("measured GPU load", "%"),
+                SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU power", " W", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU temperature", "°C", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU hot spot", "°C", includeMax: true),
@@ -227,7 +227,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         }
         var rows = new List<SceneOverlay.Row>();
         void Add(string name, uint hue, params SceneOverlay.Figure?[] figures) { var f = figures.OfType<SceneOverlay.Figure>().ToList(); if (f.Count > 0) rows.Add(new(name, hue, f)); }
-        Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "°C HOT", SensorRole.GpuHotSpotTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "% FAN", SensorRole.GpuFanPercent));
+        Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "°C HOT", SensorRole.GpuHotSpotTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "% FAN", SensorRole.GpuFanPercent));
         Add("CLK", SceneOverlay.GpuHue, One(gpu, "MHz", SensorRole.GpuCoreClock), One(gpu, "MHz MEM", SensorRole.GpuMemoryClock));   // the graphics card's core and memory clocks
         Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp));
         Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),

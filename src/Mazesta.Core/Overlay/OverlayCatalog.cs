@@ -55,7 +55,7 @@ public static class OverlayCatalog
         new("gpu.temp", OverlayPart.Gpu, "Overlay_Temp", [SensorRole.GpuCoreTemp], FixedMax: Percent),
         new("gpu.hotspot", OverlayPart.Gpu, "Overlay_HotSpot", [SensorRole.GpuHotSpotTemp], FixedMax: Percent),
         new("gpu.vramtemp", OverlayPart.Gpu, "Overlay_VramTemp", [SensorRole.GpuVramTemp], FixedMax: Percent),
-        new("gpu.load", OverlayPart.Gpu, "Overlay_Load", [SensorRole.GpuLoadD3D3D, SensorRole.GpuLoad3D], FixedMax: Percent),
+        new("gpu.load", OverlayPart.Gpu, "Overlay_Load", [SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D], FixedMax: Percent),
         new("gpu.clock", OverlayPart.Gpu, "Overlay_Clock", [SensorRole.GpuCoreClock]),
         new("gpu.memclock", OverlayPart.Gpu, "Overlay_VramClock", [SensorRole.GpuMemoryClock]),
         new("gpu.power", OverlayPart.Gpu, "Overlay_Power", [SensorRole.GpuPower]),

@@ -103,7 +103,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         double gops = dispatches * (double)Threads * Rounds * 6 / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e9;
         return SensorEvidence.Join($"GPU {profile} compute stress on {device.Name}", $"dispatches={dispatches}", $"{gops:F0} Gop/s integer",
             $"verified {checkedResults:N0} of {dispatches * (double)Threads:N0} thread results through chained dispatches (a sample, not every thread)",
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoad3D, started, finished, card, null)?.Format("measured GPU load", "%"),
+            SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, card, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, card, null)?.Format("GPU core", "°C", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, card, null)?.Format("GPU hot spot", "°C", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, card, null)?.Format("GPU power", " W", includeMax: true));

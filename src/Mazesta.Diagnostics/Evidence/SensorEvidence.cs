@@ -41,6 +41,14 @@ public static class SensorEvidence
         return null;
     }
 
+    /// <summary><see cref="Read"/> for the first of <paramref name="roles"/> that has readings, narrowed to one device's nodes. The GPU's load is the graphics driver's own figure
+    /// first and Windows' 3D-engine counter (what Task Manager shows) only where the driver gives none.</summary>
+    public static SensorStat? ReadFirstOf(PollingEngine? engine, HardwareKind kind, DateTimeOffset from, DateTimeOffset to, Func<HardwareNode, bool>? node, params SensorRole[] roles)
+    {
+        foreach (var role in roles) if (Read(engine, kind, role, from, to, node, null) is { } s) return s;
+        return null;
+    }
+
     /// <summary>The CPU's own temperature: the package sensor on Intel, Tctl/Tdie on AMD (which has no "package" sensor).</summary>
     public static SensorStat? CpuTemperature(PollingEngine? engine, DateTimeOffset from, DateTimeOffset to)
         => ReadFirst(engine, HardwareKind.Cpu, from, to, SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp);
