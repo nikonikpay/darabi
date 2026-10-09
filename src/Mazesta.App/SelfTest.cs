@@ -5,6 +5,7 @@ namespace Mazesta.App;
 /// <summary>
 /// <c>Mazesta.exe --selftest=undervolt|overclock|plus|scene|scenert</c>: runs that tuning feature on the real card with nobody at the screen and writes every step and the
 /// outcome to <c>logs/selftest-&lt;kind&gt;.txt</c>. It only measures - the finding is not applied (see <see cref="TuningViewModel.SelfTest"/>). It opens no port and takes no input.
+/// <c>--selftest=report</c> sends the usage statistics not sent yet, as the Settings button does, and writes whether the site took them.
 /// <c>--selftest=tests[N][:id,id]</c> runs every test this machine can (or just the listed ones), N seconds each (15 by default), and writes what each result's page would show: its figures and lines, a line
 /// that is still the executor's English marked <c>[LATIN]</c>.
 /// </summary>
@@ -21,6 +22,13 @@ internal static class SelfTest
         {
             File.WriteAllText(file, "");
             if (kind.StartsWith("tests", StringComparison.Ordinal)) { await RunTests(kind, services, ui, Say); Say("DONE"); return; }
+            if (kind == "report")
+            {
+                // What the Settings button does for the statistics: send everything not sent yet, switch or no switch, and say whether the site took it.
+                var log = services.GetRequiredService<Mazesta.Desktop.Services.UsageRecorder>().Log;
+                int waiting = log.Unsent(100000).Count; bool sent = Program.Uploader is { } up && await up.SendAsync(force: true);
+                Say($"{waiting} events were waiting; sent = {sent}; still unsent: {log.Unsent(100000).Count}"); Say("DONE"); return;
+            }
             TuningViewModel.SelfTest = true;
             await Task.Delay(TimeSpan.FromSeconds(25));   // the sensor scan has found the card's voltage by then
             var t = await Ui(ui, () => services.GetRequiredService<TuningViewModel>());

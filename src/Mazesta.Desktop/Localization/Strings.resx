@@ -3427,4 +3427,5 @@ Cancel: stop.</value></data>
   <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>The driver would not give more graphics memory after {0} buffers; the part it gave was tested</value></data>
   <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>The statistics were sent and the troubleshooting file is ready; its folder is open.</value></data>
   <data name="Settings_Report_Button" xml:space="preserve"><value>Pressing this sends the anonymous statistics now, even if the automatic sending is off, and makes the troubleshooting file.</value></data>
+  <data name="Tuning_Legend" xml:space="preserve"><value>In every measured line: the clock the card held under the load (↑ the highest it touched), then its average voltage, average power, average core temperature, the hottest hot-spot (HOT) and the score. Before the arrow is the factory card, after it the tuned one. These are measurements, not settings: the setting is the core offset, the cap (the most the clock may go to) and the power limit written above them.</value></data>
 </root>

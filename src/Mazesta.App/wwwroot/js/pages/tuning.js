@@ -226,7 +226,7 @@ export function mount(el) {
           h("div", { class: "h3", style: { marginTop: "14px" } }, t("Tuning_Rules_Apps")), rulesList,
           h("div", { class: "toolbar", style: { marginTop: "10px", flexWrap: "wrap" } }, loadPrograms, programFind, programSel, addPicked),
           h("div", { class: "toolbar", style: { flexWrap: "wrap" } }, h("span", { class: "caption" }, t("Tuning_Rules_Exe")), exeBox, addTyped)] }),
-      box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, a: "profiles", body: profiles })),
+      box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, a: "profiles", body: [h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Tuning_Legend")), profiles] })),
     h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },
       box({ kind: "Memory", title: t("Tuning_Memory"), sub: t("Tuning_Memory_Sub"), i: 4, a: "memory",
         actions: h("button", { class: "btn stop", onclick: () => exec("firmware") }, t("Tuning_RestartToFirmware")),
