@@ -44,6 +44,9 @@ public sealed class AppConfig : IVersionedDocument
     public bool OverlayVisible { get; set; }
     /// <summary>TopLeft, TopRight, BottomLeft or BottomRight of the primary screen.</summary>
     public string OverlayCorner { get; set; } = "TopLeft";
+    /// <summary>Where the overlay was put with the mouse (Alt+M), in screen pixels; null: it sits in <see cref="OverlayCorner"/>. Choosing a corner clears it.</summary>
+    public int? OverlayX { get; set; }
+    public int? OverlayY { get; set; }
     /// <summary>What the overlay shows, in order, each with its chart on or off (ids from OverlayCatalog). Null in older files: the game preset.</summary>
     public List<Mazesta.Core.Overlay.OverlayChoice>? OverlayItems { get; set; }
     /// <summary>The preset the items came from ("game", "render", "troubleshoot"), or "custom" once they were changed by hand.</summary>

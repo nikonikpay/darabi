@@ -10,6 +10,8 @@ public static class OverlaySignals
 {
     public const string Toggle = @"Local\Mazesta.Overlay.Toggle";
     public const string Shown = @"Local\Mazesta.Overlay.Shown";
+    /// <summary>Set by the tray (its Alt+M) to put the overlay in, or out of, the mode where the mouse moves and resizes it.</summary>
+    public const string Move = @"Local\Mazesta.Overlay.Move";
     public const string Argument = "--overlay";
     /// <summary>Kept set by the app while a benchmark runs: the tray puts its own sensor checks off, so a second reader of the hardware does not
     /// take time from the run.</summary>

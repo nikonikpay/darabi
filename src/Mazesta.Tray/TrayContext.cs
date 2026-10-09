@@ -18,7 +18,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(); private readonly HealthAlerts _rules;
     private readonly HashSet<string> _drivesAnnounced = [];
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
-    private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
+    private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking;
 
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
@@ -51,6 +51,7 @@ internal sealed class TrayContext : ApplicationContext
         // The GPU profile a little after sign-in, once the driver has settled.
         _gpuAtStart.Tick += async (_, _) => { _gpuAtStart.Stop(); _gpu.ApplyAtStart(); _fans.ApplyAtStart(); await _rgb.ApplyAtStartAsync(); Memory.Release(); };
         _gpuAtStart.Start();
+        _keys = new OverlayKeys(ToggleOverlay, MoveOverlay);
     }
 
     /// <summary>The app is running a benchmark: a scheduled check waits a minute and asks again (one asked for from the menu still runs).</summary>
@@ -71,6 +72,13 @@ internal sealed class TrayContext : ApplicationContext
     private void ToggleOverlay()
     {
         if (EventWaitHandle.TryOpenExisting(OverlaySignals.Toggle, out var toggle)) { using (toggle) toggle.Set(); return; }
+        StartApp(OverlaySignals.Argument);
+    }
+
+    /// <summary>Alt+M: the running app puts the overlay in the mode where the mouse moves and resizes it; with no app running it is started for the overlay alone.</summary>
+    private void MoveOverlay()
+    {
+        if (EventWaitHandle.TryOpenExisting(OverlaySignals.Move, out var move)) { using (move) move.Set(); return; }
         StartApp(OverlaySignals.Argument);
     }
 
@@ -172,7 +180,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _keys?.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }

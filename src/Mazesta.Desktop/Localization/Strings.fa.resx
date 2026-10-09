@@ -839,7 +839,7 @@
   <data name="Web_Overlay_PingTarget" xml:space="preserve"><value>پینگ به</value></data>
   <data name="Web_Overlay_PingTarget_Hint" xml:space="preserve"><value>آدرس یا نامی که پینگ، اتلاف بسته (packet loss) و جیتر نسبت به آن اندازه‌گیری می‌شود: هر ثانیه یک echo، فقط وقتی اورلی روی صفحه است. اتلاف و جیتر از ۳۰ echo آخر حساب می‌شود.</value></data>
   <data name="Overlay_Toggle" xml:space="preserve"><value>نمایش نمودارها</value></data>
-  <data name="Overlay_ToggleHint" xml:space="preserve"><value>نمایش یا پنهان کردن اورلی روی صفحه (Ctrl+Shift+O، داخل بازی هم کار می‌کند)</value></data>
+  <data name="Overlay_ToggleHint" xml:space="preserve"><value>نمایش یا پنهان کردن اورلی روی صفحه (Alt+O، داخل بازی هم کار می‌کند)</value></data>
   <data name="Overlay_Title" xml:space="preserve"><value>نمایش نمودارها روی صفحه</value></data>
   <data name="Overlay_Note" xml:space="preserve"><value>یک پنل کوچک همیشه‌رو با دما، بار، فرکانس و توان GPU و CPU، رم و شبکه و نمودار یک‌دقیقه‌ای بار و دما. ماوس از رویش رد می‌شود. روی بازی در حالت Borderless یا پنجره‌ای دیده می‌شود، نه در تمام‌صفحه‌ی انحصاری (Exclusive). نرخ فریم (FPS) نشان داده نمی‌شود، چون برنامه آن را اندازه نمی‌گیرد.</value></data>
   <data name="Overlay_Corner" xml:space="preserve"><value>گوشه‌ی صفحه</value></data>
@@ -3375,4 +3375,5 @@
   <data name="Tuning_Rules_Exe" xml:space="preserve"><value>یا نام فایل برنامه را بنویسید:</value></data>
   <data name="Tuning_Rules_BadExe" xml:space="preserve"><value>این نام فایل برنامه نیست (باید به .exe ختم شود).</value></data>
   <data name="Tuning_Rules_NotSaved" xml:space="preserve"><value>پروفایل‌های خودکار ذخیره نشد: {0}</value></data>
+  <data name="Web_Overlay_MoveHint" xml:space="preserve"><value>Alt+M: اورلی را بکشید تا جابه‌جا شود؛ چرخ ماوس یا گوشهٔ آن اندازه را تعیین می‌کند؛ برای پایان دوباره Alt+M.</value></data>
 </root>

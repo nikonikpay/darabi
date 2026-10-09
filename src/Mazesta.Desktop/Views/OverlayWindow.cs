@@ -12,6 +12,13 @@ public sealed class OverlayWindow : Form
     private const int WsExLayered = 0x80000, WsExTransparent = 0x20, WsExToolWindow = 0x80, WsExNoActivate = 0x08000000, WsExTopmost = 0x8;
     private OverlayViewModel _vm; private readonly bool _rtl;
     private string _corner = "TopLeft";
+    private int? _x, _y; private bool _editing, _resizing; private Point _grab; private double _startScale; private int _startWidth, _width, _height; private long _lastResize;
+    private const int GripSize = 28;
+    /// <summary>The overlay was put down somewhere with the mouse (screen pixels).</summary>
+    public event Action<int, int>? Placed;
+    /// <summary>The mouse asks for another size (the wheel, or the corner pulled): the scale it would have.</summary>
+    public event Action<double>? Resized;
+    public bool Editing => _editing;
 
     public OverlayWindow(OverlayViewModel vm, bool rtl)
     {
@@ -38,6 +45,62 @@ public sealed class OverlayWindow : Form
     /// <summary>TopLeft, TopRight, BottomLeft or BottomRight of the primary screen, a little in from its edges.</summary>
     public void SetCorner(string corner) { _corner = corner; Redraw(); }
 
+    /// <summary>A place chosen with the mouse, or null to sit in the corner again.</summary>
+    public void SetPlace(int? x, int? y) { _x = x; _y = y; Redraw(); }
+
+    /// <summary>In this mode the mouse reaches the overlay: drag it to move it, the wheel or the corner grip sets its size. Out of it the mouse goes through again.</summary>
+    public void SetEditing(bool on)
+    {
+        if (_editing == on || !IsHandleCreated) return;
+        _editing = on; _resizing = false;
+        if (on && (_x is null || _y is null)) { _x = Left; _y = Top; }   // it stays where it is: the mode does not move it
+        int style = GetWindowLong(Handle, GwlExStyle);
+        SetWindowLong(Handle, GwlExStyle, on ? style & ~WsExTransparent : style | WsExTransparent);
+        Cursor = on ? Cursors.SizeAll : Cursors.Default;
+        Redraw();
+    }
+
+    private bool InGrip(Point p) => p.X >= _width - GripSize && p.Y >= _height - GripSize;
+
+    protected override void OnMouseDown(MouseEventArgs e)
+    {
+        base.OnMouseDown(e);
+        if (!_editing || e.Button != MouseButtons.Left) return;
+        if (InGrip(e.Location)) { _resizing = true; _startScale = _vm.Scale; _startWidth = Math.Max(1, _width); } else _grab = e.Location;
+        Capture = true;
+    }
+
+    protected override void OnMouseMove(MouseEventArgs e)
+    {
+        base.OnMouseMove(e);
+        if (!_editing) return;
+        if (!Capture) { Cursor = InGrip(e.Location) ? Cursors.SizeNWSE : Cursors.SizeAll; return; }
+        if (_resizing)
+        {
+            // Pulled by the corner: the width follows the pointer; the picture is made again at most a dozen times a second.
+            long now = Environment.TickCount64; if (now - _lastResize < 80) return; _lastResize = now;
+            Resized?.Invoke(Math.Clamp(_startScale * (MousePosition.X - Left) / _startWidth, 0.7, 1.6));
+            return;
+        }
+        _x = MousePosition.X - _grab.X; _y = MousePosition.Y - _grab.Y;
+        SetWindowPos(Handle, 0, _x.Value, _y.Value, 0, 0, SwpNoSize | SwpNoActivate | SwpNoOwnerZOrder);
+    }
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        base.OnMouseUp(e);
+        if (!_editing || !Capture) return;
+        Capture = false;
+        if (_resizing) { _resizing = false; Resized?.Invoke(Math.Clamp(_startScale * (MousePosition.X - Left) / _startWidth, 0.7, 1.6)); }
+        else if (_x is { } x && _y is { } y) Placed?.Invoke(x, y);
+    }
+
+    protected override void OnMouseWheel(MouseEventArgs e)
+    {
+        base.OnMouseWheel(e);
+        if (_editing) Resized?.Invoke(Math.Clamp(Math.Round(_vm.Scale + Math.Sign(e.Delta) * 0.05, 2), 0.7, 1.6));
+    }
+
     public new void Show() { if (!Visible) base.Show(); Redraw(); }
 
     private void OnUpdated() { if (Visible) Redraw(); }
@@ -51,6 +114,22 @@ public sealed class OverlayWindow : Form
         int margin = (int)Math.Round(14 * dpi);
         int x = _corner.EndsWith("Right", StringComparison.Ordinal) ? area.Right - bmp.Width - margin : area.Left + margin;
         int y = _corner.StartsWith("Bottom", StringComparison.Ordinal) ? area.Bottom - bmp.Height - margin : area.Top + margin;
+        if (_x is { } px && _y is { } py)
+        {
+            // Where the mouse put it, kept on the screens there are now (a monitor that was unplugged must not leave it out of reach).
+            var all = SystemInformation.VirtualScreen;
+            x = Math.Clamp(px, all.Left, Math.Max(all.Left, all.Right - bmp.Width)); y = Math.Clamp(py, all.Top, Math.Max(all.Top, all.Bottom - bmp.Height));
+        }
+        _width = bmp.Width; _height = bmp.Height;
+        if (_editing)
+        {
+            // The mode shows itself: a faint wash over the whole picture (so the mouse reaches all of it, not just the letters), a dashed edge and the size grip.
+            using var g = Graphics.FromImage(bmp);
+            using (var wash = new SolidBrush(Color.FromArgb(40, 0xFD, 0xD4, 0x00))) g.FillRectangle(wash, 0, 0, bmp.Width, bmp.Height);
+            using (var edge = new Pen(Color.FromArgb(0xFD, 0xD4, 0x00), 2) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash }) g.DrawRectangle(edge, 1, 1, bmp.Width - 3, bmp.Height - 3);
+            using var grip = new SolidBrush(Color.FromArgb(0xFD, 0xD4, 0x00));
+            g.FillPolygon(grip, [new Point(bmp.Width - 2, bmp.Height - GripSize + 8), new Point(bmp.Width - 2, bmp.Height - 2), new Point(bmp.Width - GripSize + 8, bmp.Height - 2)]);
+        }
         Present(bmp, x, y);
     }
 
@@ -75,6 +154,9 @@ public sealed class OverlayWindow : Form
     [DllImport("user32.dll", SetLastError = true)] private static extern bool UpdateLayeredWindow(nint hwnd, nint hdcDst, ref POINT pptDst, ref SIZE psize, nint hdcSrc, ref POINT pptSrc, int crKey, ref BLENDFUNCTION pblend, int dwFlags);
     private static readonly nint HwndTopmost = -1; private const uint SwpNoSize = 0x1, SwpNoMove = 0x2, SwpNoActivate = 0x10, SwpNoOwnerZOrder = 0x200;
     [DllImport("user32.dll", SetLastError = true)] private static extern bool SetWindowPos(nint hwnd, nint after, int x, int y, int cx, int cy, uint flags);
+    private const int GwlExStyle = -20;
+    [DllImport("user32.dll")] private static extern int GetWindowLong(nint hwnd, int index);
+    [DllImport("user32.dll")] private static extern int SetWindowLong(nint hwnd, int index, int value);
     [DllImport("user32.dll")] private static extern nint GetDC(nint hwnd);
     [DllImport("user32.dll")] private static extern int ReleaseDC(nint hwnd, nint hdc);
     [DllImport("gdi32.dll")] private static extern nint CreateCompatibleDC(nint hdc);

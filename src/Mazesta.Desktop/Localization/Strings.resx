@@ -839,7 +839,7 @@
   <data name="Web_Overlay_PingTarget" xml:space="preserve"><value>Ping to</value></data>
   <data name="Web_Overlay_PingTarget_Hint" xml:space="preserve"><value>The address or name the ping, packet loss and jitter are measured to: one echo a second while the overlay is on screen. Loss and jitter are over the last 30 echoes.</value></data>
   <data name="Overlay_Toggle" xml:space="preserve"><value>Overlay</value></data>
-  <data name="Overlay_ToggleHint" xml:space="preserve"><value>Show or hide the on-screen overlay (Ctrl+Shift+O, also inside a game)</value></data>
+  <data name="Overlay_ToggleHint" xml:space="preserve"><value>Show or hide the on-screen overlay (Alt+O, also inside a game)</value></data>
   <data name="Overlay_Title" xml:space="preserve"><value>On-screen overlay</value></data>
   <data name="Overlay_Note" xml:space="preserve"><value>A small always-on-top panel with GPU and CPU temperatures, load, clocks and power, RAM and network, and a one-minute load and temperature trend. The mouse passes through it. It shows over games in borderless or windowed mode, not in exclusive full screen. Frame rate (FPS) is not shown: the app does not measure it.</value></data>
   <data name="Overlay_Corner" xml:space="preserve"><value>Corner of the screen</value></data>
@@ -3375,4 +3375,5 @@ Cancel: stop.</value></data>
   <data name="Tuning_Rules_Exe" xml:space="preserve"><value>or type the program's file name:</value></data>
   <data name="Tuning_Rules_BadExe" xml:space="preserve"><value>That is not a program's file name (it ends in .exe).</value></data>
   <data name="Tuning_Rules_NotSaved" xml:space="preserve"><value>The automatic profiles could not be saved: {0}</value></data>
+  <data name="Web_Overlay_MoveHint" xml:space="preserve"><value>Alt+M: drag the overlay to move it; the mouse wheel or its corner sets the size; Alt+M again to finish.</value></data>
 </root>

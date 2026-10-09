@@ -11,13 +11,17 @@ namespace Mazesta.Desktop.Services;
 /// </summary>
 public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null, IPingSource? ping = null) : IDisposable
 {
-    public const string HotkeyText = "Ctrl+Shift+O";
+    public const string HotkeyText = "Alt+O", MoveHotkeyText = "Alt+M";
     public static readonly string[] Corners = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"];
-    private const int HotkeyId = 0x4D5A, WmHotkey = 0x0312, ModControl = 0x2, ModShift = 0x4, ModNoRepeat = 0x4000, VkO = 0x4F;
+    // Alt+O shows or hides it, Alt+M puts it in the mode where the mouse moves and resizes it; Ctrl+Shift+O, the shortcut of the earlier releases, still works.
+    private const int HotkeyId = 0x4D5A, AltOId = 0x4D5B, AltMId = 0x4D5C, WmHotkey = 0x0312, ModAlt = 0x1, ModControl = 0x2, ModShift = 0x4, ModNoRepeat = 0x4000, VkO = 0x4F, VkM = 0x4D;
     private OverlayWindow? _window; private OverlayViewModel? _vm; private HotkeyWindow? _source;
 
     public bool IsVisible => _window?.Visible == true;
     public event Action<bool>? VisibilityChanged;
+    /// <summary>The overlay was moved or resized with the mouse and the mode has ended: the place is in the settings, to be saved.</summary>
+    public event Action? PlaceChanged;
+    public bool Editing => _window?.Editing == true;
     /// <summary>Raised after each poll the overlay showed, with what it showed (the web page mirrors it in its preview).</summary>
     public event Action<OverlayViewModel>? Updated;
     public IFrameRateSource? FrameSource => frames;
@@ -131,37 +135,54 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         {
             if (engine.Hardware.Count == 0) return;   // the hardware scan has not finished: there is nothing to show yet
             _vm ??= Create();
-            _window ??= new OverlayWindow(_vm, Loc.IsRtl);
+            if (_window is null)
+            {
+                _window = new OverlayWindow(_vm, Loc.IsRtl);
+                _window.Placed += (x, y) => { config.OverlayX = x; config.OverlayY = y; };
+                _window.Resized += scale => { SetAppearance(config.OverlayOpacity, scale); PlaceChanged?.Invoke(); };
+            }
+            _window.SetPlace(config.OverlayX, config.OverlayY);
             _vm.SetActive(true); _window.SetCorner(Corners.Contains(config.OverlayCorner) ? config.OverlayCorner : Corners[0]); _window.Show();
         }
-        else { _vm?.SetActive(false); _window?.Hide(); }
+        else { _window?.SetEditing(false); _vm?.SetActive(false); _window?.Hide(); }
         if (config.OverlayRefresh > 0) Pace(visible);
         config.OverlayVisible = visible;
         VisibilityChanged?.Invoke(visible);
     }
 
-    public void SetCorner(string corner) { if (!Corners.Contains(corner)) return; config.OverlayCorner = corner; _window?.SetCorner(corner); }
+    public void SetCorner(string corner) { if (!Corners.Contains(corner)) return; config.OverlayCorner = corner; config.OverlayX = config.OverlayY = null; _window?.SetPlace(null, null); _window?.SetCorner(corner); }
+
+    /// <summary>Alt+M: shows the overlay if it is hidden and puts it in the mode where the mouse moves and resizes it; again, out of it, keeping the place.</summary>
+    public void ToggleMove()
+    {
+        if (!IsVisible) { SetVisible(true); if (!IsVisible) return; }
+        bool on = _window is { Editing: false };
+        _window!.SetEditing(on);
+        if (!on) PlaceChanged?.Invoke();
+    }
 
     /// <summary>Registers the global shortcut on a hidden message-only window of its own, so it works with or without the main window. It can
     /// fail when another program already holds it; the overlay still works from its button and the tray, so that is only logged by the caller.</summary>
     public bool RegisterHotkey()
     {
         if (_source is not null) return true;
-        _source = new HotkeyWindow(Toggle);
-        return RegisterHotKey(_source.Handle, HotkeyId, ModControl | ModShift | ModNoRepeat, VkO);
+        _source = new HotkeyWindow(id => { if (id == AltMId) ToggleMove(); else Toggle(); });
+        bool old = RegisterHotKey(_source.Handle, HotkeyId, ModControl | ModShift | ModNoRepeat, VkO);
+        RegisterHotKey(_source.Handle, AltMId, ModAlt | ModNoRepeat, VkM);   // (when the tray holds a shortcut, it signals the app: see OverlaySignals)
+        return RegisterHotKey(_source.Handle, AltOId, ModAlt | ModNoRepeat, VkO) || old;
     }
 
     /// <summary>A message-only window (no screen presence) that receives the shortcut.</summary>
     private sealed class HotkeyWindow : NativeWindow
     {
-        private readonly Action _pressed;
-        public HotkeyWindow(Action pressed) { _pressed = pressed; CreateHandle(new CreateParams { Caption = "Mazesta overlay hotkey", Parent = -3 /* HWND_MESSAGE */ }); }
-        protected override void WndProc(ref Message m) { if (m.Msg == WmHotkey && m.WParam == HotkeyId) { _pressed(); return; } base.WndProc(ref m); }
+        private readonly Action<int> _pressed;
+        public HotkeyWindow(Action<int> pressed) { _pressed = pressed; CreateHandle(new CreateParams { Caption = "Mazesta overlay hotkey", Parent = -3 /* HWND_MESSAGE */ }); }
+        protected override void WndProc(ref Message m) { if (m.Msg == WmHotkey && (int)m.WParam is HotkeyId or AltOId or AltMId) { _pressed((int)m.WParam); return; } base.WndProc(ref m); }
     }
 
     public void Dispose()
     {
-        if (_source is not null) { UnregisterHotKey(_source.Handle, HotkeyId); _source.DestroyHandle(); }
+        if (_source is not null) { foreach (int id in new[] { HotkeyId, AltOId, AltMId }) UnregisterHotKey(_source.Handle, id); _source.DestroyHandle(); }
         _window?.Close(); _window?.Dispose(); _vm?.Dispose();
     }
 

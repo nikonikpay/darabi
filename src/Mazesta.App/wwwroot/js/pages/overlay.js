@@ -67,7 +67,7 @@ export function mount(el) {
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Overlay")), h("p", { class: "page-lede" }, t("Web_Overlay_Lede")))),
     h("section", { class: "ov-bar" },
-      h("label", { class: "ov-show" }, show, h("span", {}, h("b", {}, t("Web_Overlay_Show")), h("small", {}, t("Web_Overlay_Hotkey"), " ", hotkey))),
+      h("label", { class: "ov-show" }, show, h("span", {}, h("b", {}, t("Web_Overlay_Show")), h("small", {}, t("Web_Overlay_Hotkey"), " ", hotkey), h("small", {}, t("Web_Overlay_MoveHint")))),
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Layout")), layouts),
       h("label", { class: "ov-ctl" }, h("span", {}, t("Overlay_Corner")), corner),
       h("div", { class: "ov-ctl" }, h("span", {}, t("Web_Overlay_Size")), sizes),

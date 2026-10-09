@@ -25,7 +25,7 @@ internal sealed class Program : ApplicationContext
     /// <summary>Ends the app the way closing it from its window does (the update hands over to the new release this way).</summary>
     internal static void Shutdown() => Application.Exit();
 
-    private EventWaitHandle? _activate, _toggle, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait;
+    private EventWaitHandle? _activate, _toggle, _move, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait, _moveWait;
     private ServiceProvider? _services;
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
     private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans;
@@ -113,11 +113,14 @@ internal sealed class Program : ApplicationContext
         Recorder = new HardwareDiagnosticsRecorder(engine, paths.LogsDir, $"Mazesta Web {version}", lf.CreateLogger("Hardware"));
 
         _overlay = _services.GetRequiredService<OverlayService>();
-        if (!_overlay.RegisterHotkey()) log.LogWarning("The overlay shortcut {Hotkey} is held by another program", OverlayService.HotkeyText);
+        if (!_overlay.RegisterHotkey()) log.LogInformation("The overlay shortcut {Hotkey} is held by another program (the tray, when it runs, passes it on)", OverlayService.HotkeyText);
         _shown = new EventWaitHandle(false, EventResetMode.ManualReset, OverlaySignals.Shown);
         _overlay.VisibilityChanged += OnOverlayVisibility;
         _toggle = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Toggle);
         _toggleWait = ThreadPool.RegisterWaitForSingleObject(_toggle, (_, _) => _ui.BeginInvoke(ToggleFromTray), null, Timeout.Infinite, false);
+        _move = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Move);
+        _moveWait = ThreadPool.RegisterWaitForSingleObject(_move, (_, _) => _ui.BeginInvoke(() => _overlay?.ToggleMove()), null, Timeout.Infinite, false);
+        _overlay.PlaceChanged += () => _store!.Save(config);
 
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
@@ -218,7 +221,7 @@ internal sealed class Program : ApplicationContext
     private void End()
     {
         _activateWait?.Unregister(null); _activate?.Dispose();
-        _toggleWait?.Unregister(null); _toggle?.Dispose(); _shown?.Dispose();
+        _toggleWait?.Unregister(null); _toggle?.Dispose(); _moveWait?.Unregister(null); _move?.Dispose(); _shown?.Dispose();
         if (_config is not null) _store?.Save(_config);   // the overlay's last state, when the app ended from the tray with no window to save it
         _fans?.Dispose(); Recorder?.Dispose();
         if (_services is not null) { _services.GetRequiredService<PollingEngine>().Dispose(); _services.Dispose(); }

@@ -18,7 +18,7 @@ public sealed partial class WebBridge
             return new
             {
                 visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
-                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, layout = _config.OverlayLayout, bare = _config.OverlayBare, english = _config.OverlayEnglish,
+                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, moveHotkey = OverlayService.MoveHotkeyText, editing = overlay.Editing, layout = _config.OverlayLayout, bare = _config.OverlayBare, english = _config.OverlayEnglish,
                 refresh = _config.OverlayRefresh, refreshChoices = MonitoringOptions.OverlayRefreshSeconds,
                 userPresets = (_config.OverlayUserPresets ?? []).OrderBy(p => p.Key).Select(p => new { id = "user:" + p.Key, name = p.Key, count = p.Value.Count }),
                 frameProblem = overlay.FrameSource?.Problem, pingTarget = overlay.PingSource?.Target,
@@ -38,6 +38,8 @@ public sealed partial class WebBridge
             };
         }
         void Save() { _store.Save(_config); PushSoon("overlayState", State); }
+        void OnPlaced() => PushSoon("overlayState", State);
+        overlay.PlaceChanged += OnPlaced; _cleanup.Add(() => overlay.PlaceChanged -= OnPlaced);
 
         Method("overlay.state", _ => State());
         Method("overlay.set", p =>
