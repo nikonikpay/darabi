@@ -766,7 +766,7 @@
   <data name="Tuning_Out_NoCoreOffset" xml:space="preserve"><value>این کارت یا درایور کنترل آفست هسته ندارد.</value></data>
   <data name="Tuning_Out_ConfirmFailed" xml:space="preserve"><value>هیچ تنظیمی از اجرای طولانی تأیید سربلند بیرون نیامد. چیزی ذخیره نشد.</value></data>
   <data name="Tuning_Out_SlowerThanStock" xml:space="preserve"><value>تنظیم پایدار از حالت کارخانه کندتر بود و نگه داشته نشد.</value></data>
-  <data name="Tuning_Out_UndervoltFound" xml:space="preserve"><value>آندرولت پیدا شد: همان فرکانس و کارایی حالت کارخانه با توان یا دمای کمتر.</value></data>
+  <data name="Tuning_Out_UndervoltFound" xml:space="preserve"><value>آندرولت پیدا شد: کارت همان بالاترین کلاک را با ولتاژ کمتر نگه می‌دارد، با عملکرد برابر یا بهتر و توان یا حرارت کمتر.</value></data>
   <data name="Tuning_Out_NoSaving" xml:space="preserve"><value>آفست پایدار پیدا شد اما توان یا دما را به‌طور قابل‌اندازه‌گیری کم نکرد و نگه داشته نشد.</value></data>
   <data name="Tuning_Out_NoStableOffset" xml:space="preserve"><value>حتی اولین قدم آفست ناپایدار بود؛ این کارت در فرکانس کارخانه حاشیه‌ای برای آندرولت ندارد.</value></data>
   <data name="Tuning_Out_OverclockFound" xml:space="preserve"><value>اورکلاک پیدا شد: به‌طور قابل‌اندازه‌گیری سریع‌تر از حالت کارخانه، بدون مصرف توان بیشتر.</value></data>
@@ -801,7 +801,7 @@
   <data name="Tuning_Curve_TooFew" xml:space="preserve"><value>کارت به فرکانس‌های متفاوت کافی نرسید (به احتمال زیاد محدودیت توان یا دما)؛ منحنی ذخیره نشد.</value></data>
   <data name="Tuning_Auto_StepTitle" xml:space="preserve"><value>قدم {0} · {1}</value></data>
   <data name="Tuning_AutoUndervolt_Title" xml:space="preserve"><value>خنک‌تر و کم‌مصرف‌تر</value></data>
-  <data name="Tuning_AutoUndervolt_Desc" xml:space="preserve"><value>همان کارایی کارخانه با ولتاژ کمتر؛ فقط وقتی نگه داشته می‌شود که توان یا دما به‌طور قابل‌اندازه‌گیری کم شود.</value></data>
+  <data name="Tuning_AutoUndervolt_Desc" xml:space="preserve"><value>کارت همان بالاترین کلاکی را که در حالت کارخانه می‌رسد با ولتاژ کمتر نگه می‌دارد؛ فقط وقتی نگه داشته می‌شود که توان یا دما به‌طور اندازه‌گیری‌شده کم شود (یا امتیاز بالا برود) و عملکرد از دست نرود، و بالای منحنی هم با بار سبک آزمایش می‌شود.</value></data>
   <data name="Tuning_AutoOverclock_Title" xml:space="preserve"><value>سریع‌تر</value></data>
   <data name="Tuning_AutoOverclock_Desc" xml:space="preserve"><value>از نتیجهٔ آندرولت شروع می‌کند و فرکانس هسته و حافظه را بالا می‌برد؛ فقط وقتی نگه داشته می‌شود که امتیاز اندازه‌گیری‌شده بالا برود.</value></data>
   <data name="Tuning_Log_Clean" xml:space="preserve"><value>درست</value></data>

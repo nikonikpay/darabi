@@ -78,6 +78,29 @@ public class AutoTuneTests
         Assert.Equal([285, 255, 225], confirms);
     }
 
+    [Fact] public void Undervolt_keeps_the_factory_top_clock_not_the_one_held_at_the_power_limit()
+    {
+        // Holds 1665 under the heavy load, reaches 1965 lightly. The cap is the top clock; offsets only count if the held clock is kept and the top is reached.
+        var (outcome, steps) = Drive(new UndervoltSearch(Limits, Options), step => step.Kind == TuneStepKind.Baseline ? M(1665, 350) with { PeakClockMHz = 1965 }
+            : step.Load == GpuLoadKind.Memory ? M(1965, 200) : M(1665, 330 - 0.1 * step.Settings.CoreOffsetMHz, errors: step.Settings.CoreOffsetMHz > 150 ? 2 : 0));
+        Assert.All(steps.Skip(1), s => Assert.Equal(1965, s.Settings.MaxClockMHz));
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(1965, outcome.Settings!.MaxClockMHz);
+        Assert.Equal(GpuLoadKind.Memory, steps[^1].Load);   // the top of the curve is tested with the load that gets there
+    }
+
+    [Fact] public void An_undervolt_that_cannot_reach_the_top_clock_lightly_is_stepped_down()
+    {
+        var (outcome, _) = Drive(new UndervoltSearch(Limits, Options), step => step.Kind == TuneStepKind.Baseline ? M(1665, 350) with { PeakClockMHz = 1965 }
+            : step.Load == GpuLoadKind.Memory ? M(step.Settings.CoreOffsetMHz > 100 ? 1800 : 1965, 200) : M(1665, 320, errors: step.Settings.CoreOffsetMHz > 150 ? 2 : 0));
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.True(outcome.Settings!.CoreOffsetMHz <= 100);
+    }
+
+    [Fact] public void An_undervolt_that_runs_faster_at_the_same_power_limit_counts()
+    {
+        var (outcome, _) = Drive(new UndervoltSearch(Limits, Options), step => step.Kind == TuneStepKind.Baseline ? M(1665, 350) : M(1665, 350, throughput: 105));
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
+    }
+
     [Fact] public void No_core_offset_control_means_unsupported()
     {
         var (outcome, _) = Drive(new UndervoltSearch(Limits with { CoreOffsetMin = 0, CoreOffsetMax = 0 }, Options), _ => M(1905, 340));

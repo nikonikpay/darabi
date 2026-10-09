@@ -86,16 +86,19 @@ public interface IAutoTuneSearch
 }
 
 /// <summary>
-/// Automatic undervolt: keep the clock the card sustains at stock under full load, and find the largest core offset (a lower voltage for that
-/// same clock) that still computes correctly and still holds the clock. The winner, backed off by a safety margin, is confirmed with a run as
-/// long as the baseline; it is kept only when that run measured less power or a lower temperature than stock at the same performance.
+/// Automatic undervolt: keep the card's top clock - the highest it reaches at stock, not the lower one it holds while running into its power
+/// limit - and find the largest core offset (a lower voltage for that same clock) that still computes correctly and still holds at least the
+/// clock the card held at stock. The winner, backed off by a safety margin, is confirmed with a run as long as the baseline, and then with a
+/// light load that lets the card reach its top clock (a heavy load never gets there, so it cannot test the top of the curve). It is kept only when
+/// it measured less power, a lower temperature or a higher score than stock without losing performance. A cap at the held clock would only be a
+/// performance limit that is cooler because it is slower.
 /// </summary>
 public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions options) : IAutoTuneSearch
 {
-    private enum Phase { Baseline, Probe, Confirm, Done }
+    private enum Phase { Baseline, Probe, Confirm, ConfirmTop, Done }
     private Phase _phase = Phase.Baseline;
-    private LoadMeasurement? _baseline;
-    private int _target, _lastGood, _candidate, _confirmTries;
+    private LoadMeasurement? _baseline, _confirmed;
+    private int _target, _held, _lastGood, _candidate, _confirmTries;
     private TuneStep? _pending;
     public AutoTuneOutcome? Outcome { get; private set; }
     public LoadMeasurement? Baseline => _baseline;
@@ -108,6 +111,7 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
             Phase.Baseline => new(TuneStepKind.Baseline, GpuTuningSettings.Stock, GpuLoadKind.Compute, options.BaselineDuration, options.LongSettle),
             Phase.Probe => new(TuneStepKind.Probe, At(_lastGood + options.CoreOffsetStep), GpuLoadKind.Compute, options.ProbeDuration, options.ProbeSettle),
             Phase.Confirm => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Compute, options.ConfirmDuration, options.LongSettle),
+            Phase.ConfirmTop => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Memory, options.ProbeDuration, options.ProbeSettle),
             _ => null
         };
         return _pending;
@@ -127,7 +131,8 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
                 if (!m.Clean) { Finish(AutoTuneVerdict.Failed, "Tuning_Out_StockUnstable"); return; }
                 if (m.MedianClockMHz is not { } clock || m.AveragePowerW is null) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoTelemetry"); return; }
                 if (!limits.HasCoreOffset || OffsetCeiling < options.CoreOffsetStep) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoCoreOffset"); return; }
-                _target = (int)(clock / options.ClockBinMHz) * options.ClockBinMHz;
+                _held = (int)(clock / options.ClockBinMHz) * options.ClockBinMHz;
+                _target = (int)(Math.Max(clock, m.PeakClockMHz ?? 0) / options.ClockBinMHz) * options.ClockBinMHz;
                 _phase = Phase.Probe;
                 return;
             case Phase.Probe:
@@ -141,19 +146,31 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
                     StartConfirm(_candidate - options.CoreOffsetStep);
                     return;
                 }
-                var b = _baseline!;
-                bool samePerformance = m.Throughput >= b.Throughput * (1 - options.ThroughputNoisePercent / 100);
-                bool savesPower = m.AveragePowerW is { } p && p <= b.AveragePowerW!.Value * (1 - options.MinPowerSavingPercent / 100);
-                bool cooler = m.AverageTemperatureC is { } t && b.AverageTemperatureC is { } bt && t <= bt - options.MinTemperatureDropC;
-                if (!samePerformance) Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_SlowerThanStock", m);
-                else if (savesPower || cooler) Finish(AutoTuneVerdict.Improved, "Tuning_Out_UndervoltFound", m, step.Settings);
-                else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoSaving", m);
+                _confirmed = m; _phase = Phase.ConfirmTop;
+                return;
+            case Phase.ConfirmTop:
+                // The top of the curve: with the light load the card reaches its top clock (as at stock), cleanly. A lowered voltage that fails here is
+                // one a game or a light workload would meet, though the heavy load never did.
+                if (!m.Clean || m.MedianClockMHz is not { } top || top < _target - 2 * options.ClockBinMHz)
+                {
+                    if (++_confirmTries >= 3) { Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_ConfirmFailed"); return; }
+                    StartConfirm(_candidate - options.CoreOffsetStep);
+                    return;
+                }
+                var c = _confirmed!; var b = _baseline!;
+                bool samePerformance = c.Throughput >= b.Throughput * (1 - options.ThroughputNoisePercent / 100);
+                bool faster = c.Throughput >= b.Throughput * (1 + options.MinGainPercent / 100);
+                bool savesPower = c.AveragePowerW is { } p && p <= b.AveragePowerW!.Value * (1 - options.MinPowerSavingPercent / 100);
+                bool cooler = c.AverageTemperatureC is { } t && b.AverageTemperatureC is { } bt && t <= bt - options.MinTemperatureDropC;
+                if (!samePerformance) Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_SlowerThanStock", c);
+                else if (savesPower || cooler || faster) Finish(AutoTuneVerdict.Improved, "Tuning_Out_UndervoltFound", c, At(_candidate));
+                else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoSaving", c);
                 return;
         }
     }
 
-    /// <summary>Stable at the target: nothing computed wrongly, the driver did not reset, and the card still reached the clock it held at stock.</summary>
-    private bool Holds(LoadMeasurement m) => m.Clean && m.MedianClockMHz is { } c && c >= _target - 2 * options.ClockBinMHz;
+    /// <summary>Stable: nothing computed wrongly, the driver did not reset, and the card still reached the clock it held at stock.</summary>
+    private bool Holds(LoadMeasurement m) => m.Clean && m.MedianClockMHz is { } c && c >= _held - 2 * options.ClockBinMHz;
 
     private void StartConfirm(int offset)
     {

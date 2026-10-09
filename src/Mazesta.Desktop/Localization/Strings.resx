@@ -766,7 +766,7 @@
   <data name="Tuning_Out_NoCoreOffset" xml:space="preserve"><value>This card or driver has no core offset control.</value></data>
   <data name="Tuning_Out_ConfirmFailed" xml:space="preserve"><value>No setting passed the long confirmation run. Nothing was saved.</value></data>
   <data name="Tuning_Out_SlowerThanStock" xml:space="preserve"><value>The stable setting ran slower than stock, so it was not kept.</value></data>
-  <data name="Tuning_Out_UndervoltFound" xml:space="preserve"><value>Undervolt found: same clock and performance as stock with less power or heat.</value></data>
+  <data name="Tuning_Out_UndervoltFound" xml:space="preserve"><value>Undervolt found: the card keeps its top clock at a lower voltage, with the same or better performance and less power or heat.</value></data>
   <data name="Tuning_Out_NoSaving" xml:space="preserve"><value>A stable offset was found, but it did not measurably lower power or temperature, so it was not kept.</value></data>
   <data name="Tuning_Out_NoStableOffset" xml:space="preserve"><value>Even the first offset step was unstable; this card has no undervolt margin at its stock clock.</value></data>
   <data name="Tuning_Out_OverclockFound" xml:space="preserve"><value>Overclock found: measurably faster than stock without drawing more power.</value></data>
@@ -801,7 +801,7 @@
   <data name="Tuning_Curve_TooFew" xml:space="preserve"><value>The card did not reach enough distinct clocks (most likely power or temperature limited); no curve was saved.</value></data>
   <data name="Tuning_Auto_StepTitle" xml:space="preserve"><value>Step {0} · {1}</value></data>
   <data name="Tuning_AutoUndervolt_Title" xml:space="preserve"><value>Cooler and more efficient</value></data>
-  <data name="Tuning_AutoUndervolt_Desc" xml:space="preserve"><value>Stock performance at a lower voltage; kept only when power or temperature measurably drops.</value></data>
+  <data name="Tuning_AutoUndervolt_Desc" xml:space="preserve"><value>The card keeps the top clock it reaches at stock, at a lower voltage; kept only when power or temperature measurably drops (or the score rises) with no performance lost, and the top of the curve is tested with a light load too.</value></data>
   <data name="Tuning_AutoOverclock_Title" xml:space="preserve"><value>Faster</value></data>
   <data name="Tuning_AutoOverclock_Desc" xml:space="preserve"><value>Starts from the undervolt and raises the core and memory clocks; kept only when the measured score rises.</value></data>
   <data name="Tuning_Log_Clean" xml:space="preserve"><value>correct</value></data>
