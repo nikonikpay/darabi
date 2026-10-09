@@ -19,7 +19,7 @@ public static class GpuDevices
                 {
                     var list = GraphicsDevice.EnumerateDevices().Where(d => d.IsHardwareAccelerated).ToList();
                     foreach (var d in list) d.DeviceLost += (_, _) => Invalidate();
-                    s_adapters = list; s_stale = false;
+                    s_adapters = list; s_stale = list.Count == 0;   // an empty answer (the driver is still coming back from a reset) is not kept: the next call asks again
                 }
                 return s_adapters;
             }
@@ -43,7 +43,13 @@ public static class GpuDevices
 
     /// <summary>The chosen adapter; with no choice, the one with the most dedicated memory (the discrete GPU on a machine that also has an iGPU). Null when there is none.</summary>
     public static GraphicsDevice? Resolve(string key)
-        => key.Length == 0 ? Adapters.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault() : Adapters.FirstOrDefault(d => KeyOf(d) == key);
+    {
+        var all = Adapters;
+        if (key.Length == 0) return all.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
+        // A card's LUID changes when the driver resets it, so a choice made before the reset names the same card by its name only.
+        string name = key.Split('|')[0];
+        return all.FirstOrDefault(d => KeyOf(d) == key) ?? all.Where(d => d.Name == name).OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
+    }
 
     private static string KeyOf(GraphicsDevice d) => $"{d.Name}|{d.Luid}";
 

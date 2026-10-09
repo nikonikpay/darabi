@@ -212,7 +212,8 @@ public sealed partial class WebBridge
         if (System() is null) { engine.SnapshotPublished += OnSnapshot; _cleanup.Add(() => engine.SnapshotPublished -= OnSnapshot); }
 
         BenchmarkRowViewModel Row(System.Text.Json.JsonElement p) => bench.Rows.FirstOrDefault(r => r.Benchmark.Definition.Id.Value == Str(p, "id")) ?? throw new ArgumentException("unknown benchmark");
-        Method("bench.state", _ => State());
+        // What a machine can run is asked again when the page opens: a card that came back from a driver reset must not stay "not runnable here" until the app is restarted.
+        Method("bench.state", _ => { if (!bench.IsRunning) foreach (var r in bench.Rows) r.RefreshAvailability(); return State(); });
         // The whole comparison list of a row (it can hold thousands of models; the page shows it a page at a time and searches it). Details of an
         // entry are not in it: bench.detail brings one entry's when it is opened.
         Method("bench.peers", p =>

@@ -50,7 +50,7 @@ public sealed class GpuRenderExecutor : ITestExecutor, ITestAvailability
             while (clock.Elapsed.TotalSeconds < request.DurationSeconds);
         }
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, frames, clock, request, started)); }
-        catch (Exception ex) { return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"GPU error during rendering: {ex.GetType().Name}: {ex.Message}"); }
+        catch (Exception ex) { GpuDevices.Invalidate(); return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"GPU error during rendering: {ex.GetType().Name}: {ex.Message}"); }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
         return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, frames, clock, request, started));
     }

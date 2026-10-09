@@ -28,7 +28,8 @@ internal static class GpuFault
             SharpGen.Runtime.SharpGenException s when LostCodes.Contains(s.HResult) => Kind.Lost,
             _ => Kind.Internal,
         };
-        if (kind == Kind.Lost) GpuDevices.Invalidate();   // the card will be opened afresh for the next run
+        // A run that ended in a lost device - or in an error nobody can tell from one: the driver's own codes for it vary - leaves the card to be opened afresh for the next run.
+        if (kind is Kind.Lost or Kind.Internal) GpuDevices.Invalidate();
         return kind;
     }
 }

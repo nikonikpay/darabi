@@ -61,7 +61,7 @@ public sealed partial class WebBridge
         checkupService.Changed += OnChecked; _cleanup.Add(() => checkupService.Changed -= OnChecked);
         foreach (var o in tests.Rows.SelectMany(r => r.Options)) o.PropertyChanged += (_, _) => PushSoon("tests", State);   // the rows' options are not in a collection the mirror sees
 
-        Method("tests.state", _ => State());
+        Method("tests.state", _ => { if (!tests.IsRunning) foreach (var r in tests.Rows) r.RefreshAvailability(); return State(); });   // (asked again: a card back from a driver reset is runnable again)
         Method("tests.set", p =>
         {
             var row = tests.Rows.FirstOrDefault(r => r.Definition.Id.Value == Str(p, "id")) ?? throw new ArgumentException("unknown test");

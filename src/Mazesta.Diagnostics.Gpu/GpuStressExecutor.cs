@@ -89,6 +89,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, dispatches, checkedResults, clock, request, started)); }
         catch (Exception ex)
         {
+            GpuDevices.Invalidate();   // the card is opened afresh for the next run
             // A device that is removed or reset mid-run (driver timeout, overheating, PSU) is exactly the failure this test exists to provoke.
             return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"GPU error during the run: {ex.GetType().Name}: {ex.Message}");
         }

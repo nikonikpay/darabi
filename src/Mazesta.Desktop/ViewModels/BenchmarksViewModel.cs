@@ -81,7 +81,7 @@ public sealed partial class BenchmarksViewModel : ObservableObject, IDisposable
     private BenchmarkRowViewModel? Row(TestId id) => Rows.FirstOrDefault(r => r.Benchmark.Definition.Id == id);   // null: another page's benchmark
     private void OnRowChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) { if (e.PropertyName == nameof(BenchmarkRowViewModel.IsSelected)) RunSelectedCommand.NotifyCanExecuteChanged(); }
     private void OnProgress(TestId id, double fraction) => _dispatch(() => { if (Row(id) is { } row) row.PercentComplete = fraction * 100; });
-    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { if (Row(run.Definition.Id) is { } row) { Show(row, run.Result); row.IsActive = false; } IsRunning = _runner.IsBusy; });
+    private void OnFinished(RecordedBenchmark run) => _dispatch(() => { if (Row(run.Definition.Id) is { } row) { Show(row, run.Result); row.IsActive = false; } IsRunning = _runner.IsBusy; if (!IsRunning) foreach (var r in Rows) r.RefreshAvailability(); });
     private void OnQueueAdvanced(TestId id, int index, int count) => _dispatch(() =>
     {
         QueueText = Loc.Format("Bench_Queue_Position", index + 1, count);
