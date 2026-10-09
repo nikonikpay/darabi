@@ -3410,4 +3410,8 @@ Cancel: stop.</value></data>
   <data name="Settings_Report_Title" xml:space="preserve"><value>Reports and troubleshooting</value></data>
   <data name="Settings_Report_Sub" xml:space="preserve"><value>What the app sends by itself and what you can export</value></data>
   <data name="Settings_Report_Diff" xml:space="preserve"><value>Two different things. The usage statistics below are recorded and sent by themselves, anonymously, only while the switch is on. The troubleshooting file is made only when you press its button, stays on this computer and is sent only if you choose to send it.</value></data>
+  <data name="Detail_L_CpuEffClock" xml:space="preserve"><value>Processor effective clock</value></data>
+  <data name="Detail_W_NoGpu" xml:space="preserve"><value>No DirectX 12 hardware graphics card is available.</value></data>
+  <data name="Detail_Gpu_Lost" xml:space="preserve"><value>The graphics card was lost during the test (the driver reported: device removed, {0})</value></data>
+  <data name="Detail_Mem_HeldHalf" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, each untouched for half the run</value></data>
 </root>

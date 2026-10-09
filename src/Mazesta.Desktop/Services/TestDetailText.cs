@@ -14,7 +14,7 @@ public static partial class TestDetailText
     private static readonly Dictionary<string, string> Labels = new(StringComparer.Ordinal)
     {
         ["GPU load"] = "Detail_L_GpuLoad", ["CPU load"] = "Detail_L_CpuLoad", ["GPU core"] = "Detail_L_GpuCore", ["GPU temperature"] = "Detail_L_GpuCore", ["GPU hot spot"] = "Detail_L_GpuHotSpot",
-        ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
+        ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["average effective clock"] = "Detail_L_CpuEffClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
     };
     private static readonly Dictionary<string, string> Counts = new(StringComparer.Ordinal)
     {
@@ -49,6 +49,7 @@ public static partial class TestDetailText
         R(@"Windows did not report drive health: (.+)", "Detail_W_SmartFailed", tail: 1),
         R(@"no internet connection", "Detail_W_NoInternet"),
         R(@"The driver refused to allocate any VRAM buffer\.", "Detail_W_NoVramBuffer"),
+        R(@"No DirectX 12 hardware GPU is available\.", "Detail_W_NoGpu"),
         R(@"No LAN partner was given: start the LAN partner on another computer and enter its address\.", "Detail_W_NoLanPartner"),
         R(@"The LAN test needs at least 3 seconds\.", "Detail_W_LanShort"),
         R(@"The CPU does not support '(.+)'\.", "Detail_W_CpuLacks"),
@@ -101,6 +102,7 @@ public static partial class TestDetailText
         R(@"held (\d+) MiB as all ones, then all zeros, untouched for (.+?) - shorter than the (\d+) s a leaking cell needs to show", "Detail_Mem_HeldShort", m => [G(m, 1), Seconds(G(m, 2)), G(m, 3)]),
         R(@"held (\d+) MiB as all ones, then all zeros, untouched for (.+?)", "Detail_Mem_Held", m => [G(m, 1), Seconds(G(m, 2))]),
         R(@"run it longer for a result", "Detail_Mem_RunLonger"),
+        R(@"held (\d+) MiB as all ones, then all zeros, each untouched for half the run", "Detail_Mem_HeldHalf"),
         R(@"(\d+) of (\d+) blocks locked in RAM", "Detail_Mem_Locked"),
         R(@"(\d+) of (\d+) blocks locked in RAM - Windows would not lock the rest, so they may have been paged out while waiting and their result says nothing about the RAM", "Detail_Mem_LockedSome"),
         R(@"first mismatch in buffer block (\d+) \(offset (\d+) MiB\) (?:during|while verifying) '(.+)'", "Detail_Mem_Mismatch"),
@@ -143,7 +145,8 @@ public static partial class TestDetailText
         R(@"([\d,.]+) MPixel/s \(Mazesta's own scene, not a commercial score\)", "Detail_Gpu_MPixel"),
         R(@"VRAM pattern test on (.+)", "Detail_Gpu_Vram"),
         R(@"tested=(\d+) MiB in (\d+) buffers", "Detail_Gpu_VramTested"),
-        R(@"GPU error during (?:the run|rendering|the VRAM test): (.+)", "Detail_Gpu_Error", tail: 1),
+        R(@"GPU error during (?:the run|rendering|the VRAM test|the visual test): The GPU was lost during the run \(device removed: (.+)\)\.", "Detail_Gpu_Lost"),
+        R(@"GPU error during (?:the run|rendering|the VRAM test|the visual test): (.+)", "Detail_Gpu_Error", tail: 1),
         R(@"(DirectX Raytracing|Direct3D 12 \+ ray tracing|Direct3D 12) Persian garden drawn at (\d+)x(\d+) \(window (\d+)x(\d+)\) on (.+)", "Detail_Gpu_Scene"),
         R(@"([\d,]+) triangles in ([\d,]+) objects, centre model '(.+)'", "Detail_Gpu_SceneModel"),
         R(@"ray traced: camera ray, a shadow ray to the moon and to each of (\d+) lamps in reach, reflections and refraction up to 4 bounces", "Detail_Gpu_SceneRays"),
