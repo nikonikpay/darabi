@@ -3353,7 +3353,7 @@
   <data name="Tuning_Factory" xml:space="preserve"><value>کارخانه، اندازه‌گیری‌شده زیر بار کامل: کلاک پایدار {0}، بالاترین کلاک {1}؛ توان میانگین {2} (حداکثر {3})؛ ولتاژ هسته {4}. جست‌وجو از بالاترین کلاکی که کارت رسیده شروع می‌کند، نه از کلاکی که زیر سقف توان نگه داشته است.</value></data>
   <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) در حالت کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
   <data name="Tuning_SceneTest" xml:space="preserve"><value>تست صحنه</value></data>
-  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>صحنهٔ باغ را ۴۰ ثانیه از یک دوربین ثابت روی کارت با تنظیمات فعلی اجرا می‌کند</value></data>
+  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>صحنهٔ باغ را از یک دوربین ثابت و به‌مدت زمان تعیین‌شده روی کارتی که الان تنظیم است می‌کشد</value></data>
   <data name="Tuning_SceneTest_Clear" xml:space="preserve"><value>پاک کردن</value></data>
   <data name="Tuning_SceneTest_Title" xml:space="preserve"><value>تست صحنه: مقایسهٔ تنظیمات</value></data>
   <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>هر فریم همان تصویر است: یک پروفایل اعمال کنید، تست را اجرا کنید، تنظیم را عوض کنید و دوباره اجرا کنید</value></data>
@@ -3383,4 +3383,31 @@
   <data name="Settings_Usage_Switch" xml:space="preserve"><value>ارسال آمار استفادهٔ ناشناس</value></data>
   <data name="Settings_Usage_Open" xml:space="preserve"><value>نمایش فایل لاگ</value></data>
   <data name="Settings_Usage_NoLog" xml:space="preserve"><value>هنوز چیزی ثبت نشده است.</value></data>
+  <data name="Tuning_SceneTest_Seconds" xml:space="preserve"><value>زمان (ثانیه)</value></data>
+  <data name="Tuning_SceneTest_RtHint" xml:space="preserve"><value>تصویر ردیابی پرتو (DXR 1.1) را می‌کشد؛ کارت باید آن را پشتیبانی کند</value></data>
+  <data name="Tuning_SceneTest_RtTag" xml:space="preserve"><value>ردیابی پرتو</value></data>
+  <data name="Tuning_Load_SceneRt" xml:space="preserve"><value>صحنهٔ باغ (ردیابی پرتو)</value></data>
+  <data name="Detail_L_GpuClock" xml:space="preserve"><value>فرکانس هستهٔ کارت گرافیک</value></data>
+  <data name="Detail_L_GpuMemClock" xml:space="preserve"><value>فرکانس حافظهٔ کارت گرافیک</value></data>
+  <data name="Detail_Fig_Max" xml:space="preserve"><value>{0} (بیشترین)</value></data>
+  <data name="Detail_Fig_Avg" xml:space="preserve"><value>{0} (میانگین)</value></data>
+  <data name="Detail_Fig_Note" xml:space="preserve"><value>میانگین {0} {1} · {2} نمونه</value></data>
+  <data name="Detail_Fig_FpsAvg" xml:space="preserve"><value>سرعت فریم (میانگین)</value></data>
+  <data name="Detail_Fig_FpsLow" xml:space="preserve"><value>سرعت فریم (کندترین نیم‌ثانیه)</value></data>
+  <data name="Detail_Cpu_ClockPeak" xml:space="preserve"><value>فرکانس پردازنده، بیشترین: {0} MHz</value></data>
+  <data name="Detail_Cpu_ClockAvg" xml:space="preserve"><value>فرکانس پردازنده، میانگین: {0} MHz</value></data>
+  <data name="Detail_Cpu_LoadAvg" xml:space="preserve"><value>بار پردازنده، میانگین: {0} %</value></data>
+  <data name="Detail_Cpu_PowerPeak" xml:space="preserve"><value>توان پردازنده، بیشترین: {0} W</value></data>
+  <data name="Detail_Ram_Speed" xml:space="preserve"><value>سرعت رم: {0} MT/s</value></data>
+  <data name="Detail_Ram_Cas" xml:space="preserve"><value>تأخیر CAS رم (پروفایل همین سرعت): {0} CL</value></data>
+  <data name="Detail_Footprint" xml:space="preserve"><value>بار خود مازستا: پردازنده به‌طور میانگین با {0} هسته مشغول بود (بیشترین {1}؛ {2} % کل پردازنده)، رم به‌طور میانگین {3} مگابایت (بیشترین {4} مگابایت)</value></data>
+  <data name="Detail_Gpu_SceneLoadLine" xml:space="preserve"><value>سطح بار {0}: {1}</value></data>
+  <data name="Detail_Work_Tri" xml:space="preserve"><value>{0} میلیون مثلث در {1} شیء، {2} چراغ</value></data>
+  <data name="Detail_Work_RtShadows" xml:space="preserve"><value>سایه و بازتاب با ردیابی پرتو ({0} پرتو برای هر چراغ)</value></data>
+  <data name="Detail_Work_Shadows" xml:space="preserve"><value>نقشهٔ سایه {0}</value></data>
+  <data name="Detail_Work_Msaa" xml:space="preserve"><value>MSAA {0}x</value></data>
+  <data name="Detail_Work_Pool" xml:space="preserve"><value>بازتاب استخر 1/{0}</value></data>
+  <data name="Settings_Report_Title" xml:space="preserve"><value>گزارش و عیب‌یابی</value></data>
+  <data name="Settings_Report_Sub" xml:space="preserve"><value>آنچه برنامه خودش می‌فرستد و آنچه می‌توانید خروجی بگیرید</value></data>
+  <data name="Settings_Report_Diff" xml:space="preserve"><value>دو چیزِ جدا. آمار استفاده خودکار و ناشناس ثبت و ارسال می‌شود و فقط تا وقتی کلیدش روشن است. فایل عیب‌یابی فقط با فشردن دکمه‌اش ساخته می‌شود، روی همین کامپیوتر می‌ماند و فقط اگر خودتان بفرستید ارسال می‌شود.</value></data>
 </root>

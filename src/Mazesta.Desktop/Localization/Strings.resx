@@ -3353,7 +3353,7 @@ Cancel: stop.</value></data>
   <data name="Tuning_Factory" xml:space="preserve"><value>Factory, as measured under full load: held {0}, reached {1}; drew {2} on average ({3} at most); core voltage {4}. A search starts from the highest clock the card reached, not from the one it held while running into its power limit.</value></data>
   <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at stock: {0}  →  tuned: {1}</value></data>
   <data name="Tuning_SceneTest" xml:space="preserve"><value>Scene test</value></data>
-  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>Draws the garden scene from one fixed camera for 40 seconds on the card as it is now</value></data>
+  <data name="Tuning_SceneTest_Hint" xml:space="preserve"><value>Draws the garden scene from one fixed camera, for the time set, on the card as it is now</value></data>
   <data name="Tuning_SceneTest_Clear" xml:space="preserve"><value>Clear</value></data>
   <data name="Tuning_SceneTest_Title" xml:space="preserve"><value>Scene test: compare settings</value></data>
   <data name="Tuning_SceneTest_Sub" xml:space="preserve"><value>The same picture every frame: apply a profile, run the test, change it, run it again</value></data>
@@ -3383,4 +3383,31 @@ Cancel: stop.</value></data>
   <data name="Settings_Usage_Switch" xml:space="preserve"><value>Send anonymous usage statistics</value></data>
   <data name="Settings_Usage_Open" xml:space="preserve"><value>Show the log</value></data>
   <data name="Settings_Usage_NoLog" xml:space="preserve"><value>Nothing has been logged yet.</value></data>
+  <data name="Tuning_SceneTest_Seconds" xml:space="preserve"><value>Time (seconds)</value></data>
+  <data name="Tuning_SceneTest_RtHint" xml:space="preserve"><value>Draws the ray-traced picture (DXR 1.1); the card must support it</value></data>
+  <data name="Tuning_SceneTest_RtTag" xml:space="preserve"><value>ray tracing</value></data>
+  <data name="Tuning_Load_SceneRt" xml:space="preserve"><value>Garden scene (ray tracing)</value></data>
+  <data name="Detail_L_GpuClock" xml:space="preserve"><value>Graphics card core clock</value></data>
+  <data name="Detail_L_GpuMemClock" xml:space="preserve"><value>Graphics card memory clock</value></data>
+  <data name="Detail_Fig_Max" xml:space="preserve"><value>{0} (highest)</value></data>
+  <data name="Detail_Fig_Avg" xml:space="preserve"><value>{0} (average)</value></data>
+  <data name="Detail_Fig_Note" xml:space="preserve"><value>average {0} {1} · {2} samples</value></data>
+  <data name="Detail_Fig_FpsAvg" xml:space="preserve"><value>Frame rate (average)</value></data>
+  <data name="Detail_Fig_FpsLow" xml:space="preserve"><value>Frame rate (lowest half second)</value></data>
+  <data name="Detail_Cpu_ClockPeak" xml:space="preserve"><value>Processor clock, highest: {0} MHz</value></data>
+  <data name="Detail_Cpu_ClockAvg" xml:space="preserve"><value>Processor clock, average: {0} MHz</value></data>
+  <data name="Detail_Cpu_LoadAvg" xml:space="preserve"><value>Processor load, average: {0} %</value></data>
+  <data name="Detail_Cpu_PowerPeak" xml:space="preserve"><value>Processor power, highest: {0} W</value></data>
+  <data name="Detail_Ram_Speed" xml:space="preserve"><value>RAM speed: {0} MT/s</value></data>
+  <data name="Detail_Ram_Cas" xml:space="preserve"><value>RAM CAS latency (the profile at that speed): {0} CL</value></data>
+  <data name="Detail_Footprint" xml:space="preserve"><value>Mazesta's own load: the processor was busy with {0} cores on average (highest {1}; {2} % of the whole processor), RAM {3} MB on average (highest {4} MB)</value></data>
+  <data name="Detail_Gpu_SceneLoadLine" xml:space="preserve"><value>Load level {0}: {1}</value></data>
+  <data name="Detail_Work_Tri" xml:space="preserve"><value>{0} million triangles in {1} objects, {2} lamps</value></data>
+  <data name="Detail_Work_RtShadows" xml:space="preserve"><value>ray-traced shadows ({0} per light) and reflections</value></data>
+  <data name="Detail_Work_Shadows" xml:space="preserve"><value>shadow map {0}</value></data>
+  <data name="Detail_Work_Msaa" xml:space="preserve"><value>MSAA {0}×</value></data>
+  <data name="Detail_Work_Pool" xml:space="preserve"><value>pool reflection 1/{0}</value></data>
+  <data name="Settings_Report_Title" xml:space="preserve"><value>Reports and troubleshooting</value></data>
+  <data name="Settings_Report_Sub" xml:space="preserve"><value>What the app sends by itself and what you can export</value></data>
+  <data name="Settings_Report_Diff" xml:space="preserve"><value>Two different things. The usage statistics below are recorded and sent by themselves, anonymously, only while the switch is on. The troubleshooting file is made only when you press its button, stays on this computer and is sent only if you choose to send it.</value></data>
 </root>

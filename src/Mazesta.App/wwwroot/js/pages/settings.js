@@ -36,17 +36,20 @@ export function mount(el) {
         body: [h("dl", { class: "kv" }, row(t("Settings_Language"), select("language")), row(t("Settings_FastInterval"), input("interval")), row(t("Settings_StorageInterval"), input("storageInterval")),
           nameRow, row(t("Settings_RenderMode"), select("renderMode"))),
         h("div", { class: "btn-row" }, h("button", { class: "btn primary", onclick: () => call("settings.exec", { cmd: "save" }) }, t("Settings_Save"))), message] }),
-      box({ kind: "Storage", ico: "bug", title: t("Web_Diag_Title"), sub: t("Web_Diag_Sub"), i: 1,
-        body: boot.staff ? [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs]
-          : [h("p", { class: "caption" }, t("Web_Diag_Note_Client")), h("div", { class: "btn-row" }, exportBtn)] }),
+      // One box for what the app can tell about this machine: the statistics it sends by itself (anonymous, one switch) and the troubleshooting file you export by hand.
+      box({ kind: "Storage", ico: "bug", title: t("Settings_Report_Title"), sub: t("Settings_Report_Sub"), i: 1,
+        body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Settings_Report_Diff")),
+          h("h3", { class: "h3", style: { fontSize: "16px", fontWeight: 900 } }, t("Settings_Usage_Title")),
+          h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Usage_Note")), h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Usage_Sent")),
+          h("label", { class: "ov-show" }, usage, h("span", {}, h("b", {}, t("Settings_Usage_Switch")))),
+          h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openUsageLog" }).catch((e) => toast(String(e.message || e), "fail")) }, t("Settings_Usage_Open"))), usageLog,
+          h("h3", { class: "h3", style: { fontSize: "16px", fontWeight: 900, marginTop: "26px" } }, t("Web_Diag_Title")),
+          ...(boot.staff ? [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs]
+            : [h("p", { class: "caption" }, t("Web_Diag_Note_Client")), h("div", { class: "btn-row" }, exportBtn)])] }),
       box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 2,
         body: [h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth")), row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert"))),
         h("div", { class: "btn-row" }, enableTray, disableTray), h("p", { class: "note" }, trayStatus)] }),
-      box({ kind: "Network", ico: "chart", title: t("Settings_Usage_Title"), sub: t("Settings_Usage_Sub"), i: 3,
-        body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Settings_Usage_Note")), h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Usage_Sent")),
-          h("label", { class: "ov-show" }, usage, h("span", {}, h("b", {}, t("Settings_Usage_Switch")))),
-          h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openUsageLog" }).catch((e) => toast(String(e.message || e), "fail")) }, t("Settings_Usage_Open"))), usageLog] }),
-      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 4,
+      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 3,
         body: [folder, h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), h("p", { class: "note" }, version)] })));
   let built = false;
   function update(s) {
