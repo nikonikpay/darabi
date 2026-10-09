@@ -3350,4 +3350,5 @@
   <data name="Tuning_Out_NoPowerLimit" xml:space="preserve"><value>درایور این کارت حد توانی برای بالا بردن نمی‌دهد، پس اورکلاک پلاس چیزی بالاتر از سقف کارخانه ندارد.</value></data>
   <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس</value></data>
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس {0}</value></data>
+  <data name="Tuning_Factory" xml:space="preserve"><value>کارخانه، اندازه‌گیری‌شده زیر بار کامل: کلاک پایدار {0}، بالاترین کلاک {1}؛ توان میانگین {2} (حداکثر {3})؛ ولتاژ هسته {4}. جست‌وجو از بالاترین کلاکی که کارت رسیده شروع می‌کند، نه از کلاکی که زیر سقف توان نگه داشته است.</value></data>
 </root>

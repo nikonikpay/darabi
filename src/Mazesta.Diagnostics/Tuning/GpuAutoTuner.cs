@@ -16,7 +16,7 @@ public sealed record AutoTuneStepLog(int StepNumber, TuneStep Step, LoadMeasurem
 /// run that takes the machine down is known on the next start. Whatever happens - finished, cancelled, a driver reset, an exception - the card is
 /// put back to stock at the end: a found profile is applied only when the technician chooses to.
 /// </summary>
-public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<GpuTuningSettings?> journal, TimeSpan? sampleInterval = null)
+public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<GpuTuningSettings?> journal, TimeSpan? sampleInterval = null, Func<(DateTimeOffset At, double Volts)?>? voltage = null)
 {
     private readonly TimeSpan _interval = sampleInterval ?? TimeSpan.FromMilliseconds(500);
     public event Action<AutoTuneProgress>? Progress;
@@ -54,14 +54,20 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
 
     private (LoadMeasurement, string?) Measure(int number, TuneStep step, CancellationToken ct)
     {
-        var samples = new List<GpuTelemetry>(); var clock = Stopwatch.StartNew();
+        var samples = new List<GpuTelemetry>(); var volts = new List<double>(); var clock = Stopwatch.StartNew();
+        var settled = DateTimeOffset.UtcNow + step.Settle; DateTimeOffset lastVolt = default;
         using var done = new CancellationTokenSource();
         var sampler = Task.Run(() =>
         {
             while (!done.IsCancellationRequested)
             {
                 var t = device.ReadTelemetry();
-                if (clock.Elapsed >= step.Settle) lock (samples) samples.Add(t);
+                if (clock.Elapsed >= step.Settle)
+                {
+                    lock (samples) samples.Add(t);
+                    // The monitor reads the voltage about once a second: a reading from before the card settled is not this step's, and each counts once.
+                    if (voltage?.Invoke() is { } v && v.At >= settled && v.At != lastVolt) { lastVolt = v.At; lock (samples) volts.Add(v.Volts); }
+                }
                 Progress?.Invoke(new(number, step, Math.Clamp(clock.Elapsed / step.Duration, 0, 1), t));
                 done.Token.WaitHandle.WaitOne(_interval);
             }
@@ -69,6 +75,6 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
         LoadRunResult result;
         try { result = load.Run(step.Load, step.Duration, step.Settle, ct); }
         finally { done.Cancel(); sampler.Wait(CancellationToken.None); }
-        lock (samples) return (LoadMeasurement.From(samples, result.Throughput, result.Errors, result.DeviceLost), result.Error);
+        lock (samples) return (LoadMeasurement.From(samples, result.Throughput, result.Errors, result.DeviceLost, volts), result.Error);
     }
 }

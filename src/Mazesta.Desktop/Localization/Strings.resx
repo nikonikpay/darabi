@@ -3350,4 +3350,5 @@ Cancel: stop.</value></data>
   <data name="Tuning_Out_NoPowerLimit" xml:space="preserve"><value>This card's driver gives no power limit to raise, so Overclock Plus has nothing above the factory ceiling to use.</value></data>
   <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>Overclock Plus</value></data>
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>Overclock Plus {0}</value></data>
+  <data name="Tuning_Factory" xml:space="preserve"><value>Factory, as measured under full load: held {0}, reached {1}; drew {2} on average ({3} at most); core voltage {4}. A search starts from the highest clock the card reached, not from the one it held while running into its power limit.</value></data>
 </root>

@@ -131,6 +131,22 @@ public class AutoTuneTests
         Assert.True(outcome.Settings.MaxClockMHz > 2000);
     }
 
+    [Fact] public void Overclock_starts_from_the_highest_clock_the_card_reached_not_the_one_it_held()
+    {
+        // A factory-overclocked card holds 1665 under the load's power limit but reaches 1965: capping it at 1695 would take boost away.
+        var stock = M(1665, 340, throughput: 100) with { PeakClockMHz = 1965 };
+        var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, null, null), step => stock);
+        Assert.All(steps.Where(s => s.Kind == TuneStepKind.Probe), s => Assert.True(s.Settings.MaxClockMHz >= 1995));
+        Assert.Null(outcome.Settings?.MaxClockMHz);   // nothing found above the factory top: no cap that would sit below it
+    }
+
+    [Fact] public void Measurement_keeps_the_peak_clock_and_power_and_the_average_voltage()
+    {
+        var t = DateTimeOffset.UnixEpoch;
+        var m = LoadMeasurement.From([new(t, 1665, null, 60, 340, null), new(t, 1965, null, 62, 349, null)], 10, 0, false, [0.9, 1.0]);
+        Assert.Equal(1965, m.PeakClockMHz); Assert.Equal(349, m.PeakPowerW); Assert.Equal(0.95, m.AverageVoltageV!.Value, 3);
+    }
+
     [Fact] public void Overclock_plus_stops_at_the_temperature_ceiling_and_needs_a_power_limit_to_raise()
     {
         var (hot, _) = Drive(new OverclockSearch(Limits, AutoTuneOptions.Plus(), new(0, 0, 1905, null, null), M(1905, 300, throughput: 100), plus: true), step => M(step.Settings.MaxClockMHz ?? 1905, 330, temp: 90, throughput: 110));

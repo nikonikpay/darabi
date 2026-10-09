@@ -8,8 +8,11 @@ public enum TuneStepKind { Baseline, Probe, Confirm }
 public sealed record TuneStep(TuneStepKind Kind, GpuTuningSettings Settings, GpuLoadKind Load, TimeSpan Duration, TimeSpan Settle);
 
 /// <summary>What a run measured. <see cref="Throughput"/> is the load's own score (integer Gop/s for compute, GB/s for memory);
-/// <see cref="Errors"/> counts results the GPU computed wrongly; <see cref="DeviceLost"/> is a driver reset or a removed device during the run.</summary>
-public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowerW, double? AverageTemperatureC, double? MaxTemperatureC, double Throughput, long Errors, bool DeviceLost)
+/// <see cref="Errors"/> counts results the GPU computed wrongly; <see cref="DeviceLost"/> is a driver reset or a removed device during the run.
+/// The median clock is what the card <i>holds</i> under this load (a heavy one runs into the power limit); the peak is the highest it reached, which on
+/// a factory-overclocked card is far above the held one - it is the card's real boost, so a search must not take the held clock for the factory clock.</summary>
+public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowerW, double? AverageTemperatureC, double? MaxTemperatureC, double Throughput, long Errors, bool DeviceLost,
+    double? PeakClockMHz = null, double? PeakPowerW = null, double? AverageVoltageV = null)
 {
     public bool Clean => Errors == 0 && !DeviceLost;
 
@@ -18,7 +21,7 @@ public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowe
     /// look faster than it is.</summary>
     public const int CurrentLoadVersion = 2;
 
-    public static LoadMeasurement From(IReadOnlyList<GpuTelemetry> samples, double throughput, long errors, bool deviceLost)
+    public static LoadMeasurement From(IReadOnlyList<GpuTelemetry> samples, double throughput, long errors, bool deviceLost, IReadOnlyList<double>? volts = null)
     {
         static double? Median(IEnumerable<double?> values)
         {
@@ -28,7 +31,8 @@ public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowe
         static double? Average(IEnumerable<double?> values) { var v = values.OfType<double>().ToArray(); return v.Length == 0 ? null : v.Average(); }
         static double? Max(IEnumerable<double?> values) { var v = values.OfType<double>().ToArray(); return v.Length == 0 ? null : v.Max(); }
         return new(Median(samples.Select(s => s.CoreClockMHz)), Average(samples.Select(s => s.PowerW)), Average(samples.Select(s => s.TemperatureC)),
-            Max(samples.Select(s => s.TemperatureC)), throughput, errors, deviceLost);
+            Max(samples.Select(s => s.TemperatureC)), throughput, errors, deviceLost, Max(samples.Select(s => s.CoreClockMHz)), Max(samples.Select(s => s.PowerW)),
+            volts is { Count: > 0 } ? volts.Average() : null);
     }
 }
 
@@ -174,7 +178,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
 {
     private enum Phase { Baseline, Core, MemoryBaseline, Memory, Confirm, ConfirmMemory, Done }
     private readonly GpuTuningLimits _limits; private readonly AutoTuneOptions _options;
-    private readonly bool _plus; private readonly int? _power;
+    private readonly bool _plus, _fromCap; private readonly int? _power;
     private Phase _phase;
     private LoadMeasurement? _baseline, _memoryBaseline, _confirmed;
     private int _offset, _startClock, _clock, _bestClock, _memory, _bestMemory, _confirmTries;
@@ -188,7 +192,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
     /// <see cref="AutoTuneOptions.PlusMaxTemperatureC"/> instead of by the power the card drew at stock. Needs a card with a power limit to raise.</param>
     public OverclockSearch(GpuTuningLimits limits, AutoTuneOptions options, GpuTuningSettings? start, LoadMeasurement? baseline, bool plus = false)
     {
-        _limits = limits; _options = options; _baseline = baseline; _plus = plus;
+        _limits = limits; _options = options; _baseline = baseline; _plus = plus; _fromCap = start?.MaxClockMHz is not null;
         if (plus && limits.HasPowerLimit) _power = limits.PowerLimitMaxW;
         if (plus && _power is null) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoPowerLimit"); return; }
         _offset = start?.CoreOffsetMHz ?? 0;
@@ -199,7 +203,9 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     private int ClockCeiling => Math.Min(_limits.MaxLockMHz, _startClock + _options.MaxClockRaise);
     private int MemoryCeiling => Math.Min(_limits.MemoryOffsetMax, _options.MaxMemoryOffset);
-    private GpuTuningSettings At(int clock, int memory) => new(_offset, memory, clock, _power, null);
+    /// <summary>A cap is set only above the clock the search started from (or on top of an undervolt's own cap): at the card's factory top it would only
+    /// take away boost it already has when the load is lighter.</summary>
+    private GpuTuningSettings At(int clock, int memory) => new(_offset, memory, clock > _startClock || _fromCap ? clock : null, _power, null);
     /// <summary>Whether a step stayed inside what the search allows: no more power than stock drew (+2 %), or - Plus - than the raised limit, and, Plus, a cool enough card.</summary>
     private bool InBudget(LoadMeasurement m)
         => _plus ? m.AveragePowerW is { } pw && pw <= _power!.Value && (m.MaxTemperatureC ?? 0) <= _options.PlusMaxTemperatureC
@@ -222,7 +228,8 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     private void BeginCore(LoadMeasurement baseline)
     {
-        if (_startClock == 0 && baseline.MedianClockMHz is { } c) _startClock = (int)(c / _options.ClockBinMHz) * _options.ClockBinMHz;
+        // The factory clock is the highest the card reached at stock, not the one it held while running into the power limit.
+        if (_startClock == 0 && baseline.MedianClockMHz is { } c) _startClock = (int)(Math.Max(c, baseline.PeakClockMHz ?? 0) / _options.ClockBinMHz) * _options.ClockBinMHz;
         _clock = _bestClock = _startClock; _bestClockSeen = baseline.MedianClockMHz ?? 0;
         _phase = _clock + _options.ClockStep <= ClockCeiling ? Phase.Core : Phase.MemoryBaseline;
     }
