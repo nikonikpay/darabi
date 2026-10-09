@@ -132,6 +132,7 @@ internal sealed class Program : ApplicationContext
         _activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
         _activateWait = ThreadPool.RegisterWaitForSingleObject(_activate, (_, _) => _ui.BeginInvoke(ShowMain), null, Timeout.Infinite, false);
         engine.Start();
+        if (SelfTest.Requested() is { } selfTest) SelfTest.Run(selfTest, _services, paths, _ui, log);
         if (!overlayOnly && config.TrayWithApp) StartTray(log);
         if (!overlayOnly) RegisterTrayAtLogon(log);
     }

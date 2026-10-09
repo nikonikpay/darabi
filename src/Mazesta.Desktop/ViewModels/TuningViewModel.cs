@@ -186,11 +186,14 @@ public sealed partial class TuningViewModel : ObservableObject
     /// <summary>The graphics cards NVML does not cover (AMD, Intel), named so the technician knows why they are not offered.</summary>
     public string OtherGpus { get; private set; } = "";
 
+    /// <summary>Set by <c>--selftest=</c>: nobody is at the screen, so the start of a search is confirmed and everything else (applying the finding, deleting) is declined - the run only measures.</summary>
+    public static bool SelfTest { get; set; }
+
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
         Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null, Action<string, System.Text.Json.Nodes.JsonObject?>? usage = null)
     {
         _startupFile = startupFile; _gate = gate; _rulesFile = rulesFile; _usage = usage; LoadRules();
-        _provider = provider; _store = store; _doc = store.Load().Value; _confirm = confirm; _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
+        _provider = provider; _store = store; _doc = store.Load().Value; _confirm = text => SelfTest ? text == Loc.Get("Tuning_ConfirmAuto") : confirm(text); _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
         _voltageFor = voltageFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
         Profiles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasProfiles));
