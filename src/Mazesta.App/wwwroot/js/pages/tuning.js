@@ -138,7 +138,7 @@ export function mount(el) {
     const send = () => set("curve", "", { core: String(offset), cap: String(cap) });
     if (final) send(); else sendTimer = setTimeout(send, 90);
   });
-  const curveInfo = h("p", { class: "caption" }), estimate = h("div", { class: "estimate", hidden: true }), curveStatus = h("p", { class: "h3", style: { marginTop: "12px" } });
+  const curveInfo = h("p", { class: "caption", style: { whiteSpace: "pre-line" } }), estimate = h("div", { class: "estimate", hidden: true }), curveStatus = h("p", { class: "h3", style: { marginTop: "12px" } });
   const scan = h("button", { class: "btn", title: t("Tuning_Curve_Scan_Hint"), onclick: () => exec("scanCurve") }, t("Tuning_Curve_Scan"));
 
   // Manual controls: a slider and an exact field per setting, and a switch for the settings that are off unless turned on.
@@ -223,8 +223,10 @@ export function mount(el) {
     el.querySelector("#tStatus").textContent = x.status || "";
     el.querySelector("#tApply").disabled = el.querySelector("#tReset").disabled = x.busy;
     editor.set({ stock: x.curve, offset: form.coreValue, cap: form.capValue, liveClock: x.liveClock, liveVolt: x.liveVolt, limits: L, locked: x.busy });
-    curveInfo.textContent = x.curveInfo || ""; estimate.hidden = !x.curveEstimate; estimate.textContent = x.curveEstimate || ""; curveStatus.textContent = x.curveStatus || "";
-    scan.disabled = autoU.disabled = autoO.disabled = x.busy; cancel.disabled = !x.busy;
+    // The chart draws the core's curve only; what a profile sets besides it (memory, power) is said beside it, so a profile that moves only those is not mistaken for stock.
+    const extra = [form.memory ? `${t("Tuning_Label_MemoryOffset")} ${form.memory > 0 ? "+" : ""}${form.memory} MHz` : null, form.setPower ? `${t("Tuning_Label_PowerLimit")} ${form.power} W` : null].filter(Boolean).join(" · ");
+    curveInfo.textContent = [x.curveInfo, extra].filter(Boolean).join("\n"); estimate.hidden = !x.curveEstimate; estimate.textContent = x.curveEstimate || ""; curveStatus.textContent = x.curveStatus || "";
+    scan.disabled = autoU.disabled = autoO.disabled = autoP.disabled = x.busy;   // (Overclock Plus too: a second search started mid-run would fight the first over the card) cancel.disabled = !x.busy;
     running.hidden = !x.busy;
     running.replaceChildren(h("div", { class: "toolbar" }, h("span", { class: "h3" }, x.stepTitle || x.curveStatus || ""), x.stepLoad ? h("span", { class: "pill run" }, x.stepLoad) : null, h("span", { class: "caption" }, x.stepSettings || "")),
       h("div", { class: "progress" }, h("i", { style: { "--p": (x.percent || 0) / 100 } })));
