@@ -288,7 +288,7 @@ function compare(mine, theirs, two) {
   const cell = (x, win = false, g = null) => h("td", { class: `num ${win ? "win" : ""}` }, x?.value ?? "—", win && g ? gainTag(g) : null);
   const group = (key, list, open = false) => {
     if (!list.length) return null;
-    return h("details", { class: "cmp-group", open: open || null }, h("summary", {}, t(key)),
+    return h("details", { class: `cmp-group ${key.startsWith("Web_Detail_") ? "p-" + key.slice(11).toLowerCase() : ""}`, open: open || null }, h("summary", {}, t(key)),
       h("table", { class: "cmp" }, h("tbody", {}, list.map(([n, ...xs]) => {
         const g = two ? gain(xs[0], xs[1]) : null;
         return h("tr", {}, h("th", {}, n), xs.map((x, i) => cell(x, g?.win === i, g)));

@@ -1213,6 +1213,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .cmp-head .big td.num { font: 750 17px var(--lat); font-stretch: 80%; color: var(--hue, var(--yellow)); }
 .cmp-group > summary, .rec-more > summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--paper-2); padding: 4px 0; }
 .cmp-group > summary:hover, .rec-more > summary:hover { color: var(--paper); }
+/* a part's own figures wear that part's colour (GPU violet, CPU blue, RAM cyan), as everywhere else in the app */
+.cmp-group.p-gpu, .cmp-group.p-cpu, .cmp-group.p-ram { border-inline-start: 3px solid var(--hue); padding-inline-start: 8px; }
+.cmp-group.p-gpu > summary, .cmp-group.p-cpu > summary, .cmp-group.p-ram > summary { color: var(--hue); }
 .cmp td.win { color: var(--hue, var(--yellow)); }
 .gain { display: inline-block; margin-inline-start: 8px; padding: 0 7px; border-radius: 99px; font: 750 11px/1.6 var(--lat); background: color-mix(in srgb, var(--hue, var(--yellow)) 16%, transparent); color: var(--hue, var(--yellow)); }
 .run-more > .cmp-group { margin: 4px 0; }
