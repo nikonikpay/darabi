@@ -117,7 +117,7 @@ public sealed partial class TuningViewModel : ObservableObject
     private LoadMeasurement? _lastScene;
 
     // The automatic profiles: the tray follows these (see GpuAutoSwitch); here they are only chosen and kept.
-    private readonly string? _rulesFile;
+    private readonly string? _rulesFile; private readonly Action<string, System.Text.Json.Nodes.JsonObject?>? _usage;
     /// <summary>The profile for a full-screen game; empty: the card is left as it is during games.</summary>
     [ObservableProperty] private string _gameProfile = "";
     public ObservableCollection<GpuRuleRow> Rules { get; } = [];
@@ -187,9 +187,9 @@ public sealed partial class TuningViewModel : ObservableObject
     public string OtherGpus { get; private set; } = "";
 
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
-        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null)
+        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null, Action<string, System.Text.Json.Nodes.JsonObject?>? usage = null)
     {
-        _startupFile = startupFile; _gate = gate; _rulesFile = rulesFile; LoadRules();
+        _startupFile = startupFile; _gate = gate; _rulesFile = rulesFile; _usage = usage; LoadRules();
         _provider = provider; _store = store; _doc = store.Load().Value; _confirm = confirm; _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
         _voltageFor = voltageFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
@@ -280,7 +280,7 @@ public sealed partial class TuningViewModel : ObservableObject
     private bool CanChange() => Device is not null && !IsTuning;
 
     [RelayCommand(CanExecute = nameof(CanChange))]
-    private void Apply() { if (FormSettings() is { } s) Report(Device!.Apply(s), "Tuning_Applied"); }
+    private void Apply() { if (FormSettings() is { } s && Report(Device!.Apply(s), "Tuning_Applied")) _usage?.Invoke("tuning.apply", Services.UsageData.Settings(s)); }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
     private void Reset() { if (Report(Device!.Reset(), "Tuning_ResetDone")) SetStartup(null); OnDeviceChanged(Device); }
@@ -295,7 +295,7 @@ public sealed partial class TuningViewModel : ObservableObject
     }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
-    private void ApplyProfile(GpuProfileRow row) { if (Report(Device!.Apply(row.Profile.Settings), "Tuning_Applied")) SetStartup(row.Name); Fill(row.Profile.Settings); }
+    private void ApplyProfile(GpuProfileRow row) { if (Report(Device!.Apply(row.Profile.Settings), "Tuning_Applied")) { SetStartup(row.Name); _usage?.Invoke("tuning.apply", Services.UsageData.Settings(row.Profile.Settings)); } Fill(row.Profile.Settings); }
 
     /// <summary>Puts a profile's settings on the form (and so on the curve) without sending them to the card.</summary>
     [RelayCommand] private void LoadProfile(GpuProfileRow row) { Fill(row.Profile.Settings); Status = Loc.Format("Tuning_ProfileLoaded", row.Name); }
@@ -432,6 +432,7 @@ public sealed partial class TuningViewModel : ObservableObject
             change = Ltr($"{(m.Throughput / before.Throughput - 1) * 100:+0.0;-0.0}% FPS" + (m.AverageTemperatureC is { } t && before.AverageTemperatureC is { } bt ? $" · {t - bt:+0.0;-0.0} °C" : "") + (m.AveragePowerW is { } w && before.AveragePowerW is { } bw ? $" · {w - bw:+0;-0} W" : ""));
         SceneTests.Add(new(settings, result, change, m.Clean && error is null, m.Clean && error is null ? null : Loc.Get(m.DeviceLost ? "Tuning_Lost" : "Tuning_Errors") + (error is { } e ? $" ({e})" : "")));
         if (m.Clean && error is null) _lastScene = m;
+        _usage?.Invoke("tuning.scene", Services.UsageData.Scene(device.Name, device.ReadCurrent(), m, SceneTests[^1].Problem));
     }
 
     [RelayCommand] private void ClearSceneTests() { SceneTests.Clear(); _lastScene = null; }
@@ -456,6 +457,7 @@ public sealed partial class TuningViewModel : ObservableObject
         try { outcome = await tuner.RunAsync(search, _cts.Token).ConfigureAwait(true); }
         finally { IsTuning = false; AutoPercent = 100; AutoStepTitle = AutoStepSettings = AutoStepLoad = ""; }
         AutoResult = Loc.Get(outcome.ReasonKey) + (outcome.Detail is { } d ? $" ({d})" : "");
+        _usage?.Invoke("tuning.auto", Services.UsageData.Auto(kind.ToString(), device.Name, outcome));
         if (outcome.Baseline is { PeakClockMHz: not null } f) AutoResult += "\n" + Loc.Format("Tuning_Factory", Ltr(Fmt(f.MedianClockMHz, " MHz")), Ltr(Fmt(f.PeakClockMHz, " MHz")), Ltr(Fmt(f.AveragePowerW, " W")), Ltr(Fmt(f.PeakPowerW, " W")), Ltr(f.AverageVoltageV is { } v ? $"{v:F3} V" : "—"));
         if (outcome.Baseline is { } b && outcome.Tuned is { } t) AutoResult += "\n" + Loc.Format("Tuning_Evidence", Describe(b), Describe(t));
         if (outcome.SceneBaseline is { } sb) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Scene", Describe(sb, GpuLoadKind.Scene), outcome.SceneTuned is { } st ? Describe(st, GpuLoadKind.Scene) : "—");

@@ -3376,4 +3376,11 @@ Cancel: stop.</value></data>
   <data name="Tuning_Rules_BadExe" xml:space="preserve"><value>That is not a program's file name (it ends in .exe).</value></data>
   <data name="Tuning_Rules_NotSaved" xml:space="preserve"><value>The automatic profiles could not be saved: {0}</value></data>
   <data name="Web_Overlay_MoveHint" xml:space="preserve"><value>Alt+M: drag the overlay to move it; the mouse wheel or its corner sets the size; Alt+M again to finish.</value></data>
+  <data name="Settings_Usage_Title" xml:space="preserve"><value>Usage statistics</value></data>
+  <data name="Settings_Usage_Sub" xml:space="preserve"><value>Anonymous, to improve the program</value></data>
+  <data name="Settings_Usage_Note" xml:space="preserve"><value>No personal information is sent from your computer. Only what concerns this program is sent, to improve how it works. You can turn it off here whenever you like; it is on by default.</value></data>
+  <data name="Settings_Usage_Sent" xml:space="preserve"><value>What is sent: which tests and benchmarks ran and their scores; the results of undervolt and overclock (temperature, power, clock, whether it worked and, if not, why); the names of the parts (processor, graphics card, amount of RAM, Windows version); how often the assistant is used (a count - never what you ask it); and a random number made when the program was installed, so installations can be counted. Never: your name, the computer's name, files, folders, addresses, or anything you typed. The same lines are kept in the log below, so you can read them.</value></data>
+  <data name="Settings_Usage_Switch" xml:space="preserve"><value>Send anonymous usage statistics</value></data>
+  <data name="Settings_Usage_Open" xml:space="preserve"><value>Show the log</value></data>
+  <data name="Settings_Usage_NoLog" xml:space="preserve"><value>Nothing has been logged yet.</value></data>
 </root>

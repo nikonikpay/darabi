@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت: خلاصه گزارش‌های آزمون برای چاپ روی کیس‌های سرویسی، نتایج بنچمارک خود برنامه و فهرست‌های مقایسه، اشتراک‌گذاری نتیجه بنچمارک کاربران، و انتشار نسخه تازه برنامه. داده‌ها در فایل نگه داشته می‌شوند، نه در پایگاه داده وردپرس.
- * Version: 1.10.0
+ * Version: 1.11.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -18,6 +18,7 @@ if (!defined('ABSPATH')) { exit; }
  *   POST reports                a report's one-page summary (key)          -> kept, listed and printed in the dashboard
  *   POST bench/runs             benchmark runs (key; or without one into the review queue when the shop allows it)
  *   POST share                  a user's latest benchmark results (no key) -> a page of their own, with a link to pass on
+ *   POST usage                  anonymous usage statistics (no key; the app's settings switch, on by default): a random install id, part names and events - counted in the dashboard's "آمار استفاده" tab
  *   GET  bench/index, benchdb/* the comparison lists built from the approved runs, one file per benchmark, version and settings; each says whether it is of an old workload
  *        (a newer version of the benchmark has approved runs: its numbers are not comparable with today's). A shared result of an old benchmark or app version carries a notice on its page.
  *   POST release/chunk, commit  the signed update folder (release key)     -> written to /mazesta/ in the site's root, where the app reads it
@@ -29,7 +30,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class Mazesta_Connect
 {
-    const VERSION = '1.10.0';
+    const VERSION = '1.11.0';
     const NS = 'mazesta/v1';
     const MAX_HTML = 800000;
     const MAX_FULL = 3000000;
@@ -160,6 +161,7 @@ final class Mazesta_Connect
         register_rest_route(self::NS, '/reports/(?P<id>[A-Za-z0-9-]{8,64})', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_get'), 'permission_callback' => array(__CLASS__, 'need_read_key')));
         register_rest_route(self::NS, '/featured', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_featured'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/usage', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_usage'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/pair/start', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_start'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/pair/claim', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_claim'), 'permission_callback' => $open));
@@ -622,6 +624,127 @@ final class Mazesta_Connect
         }
         $lists = ($trusted && ($added > 0 || $marked > 0)) ? self::rebuild() : null;
         return self::fresh(array('added' => $added, 'known' => $known, 'rejected' => $bad, 'pending' => !$trusted, 'marked' => $marked, 'lists' => $lists));
+    }
+
+    /* ---------- anonymous usage statistics ---------- */
+
+    private static function usage_file($ym) { return self::dir() . '/usage-' . $ym . '.log.php'; }
+
+    /**
+     * What the app's "send anonymous usage statistics" switch sends (on by default; the app says in plain words what is in it). No key: anybody can send, so it is
+     * bounded - sixty posts an hour from one address, two hundred events a post, a few kilobytes an event - and only plain figures and short names are kept. The
+     * sender's address is used for that count only and is never stored. An installation is its random id, nothing else; its parts' names are kept beside it.
+     */
+    public static function rest_usage($req)
+    {
+        if (!self::allowed('usage', 60)) { return new WP_Error('mazesta_busy', 'Too many posts from this address; try again in an hour.', array('status' => 429)); }
+        $body = json_decode((string) $req->get_body(), true);
+        if (!is_array($body) || !isset($body['install']) || !preg_match('/^[a-f0-9]{32}$/', (string) $body['install'])) { return new WP_Error('mazesta_usage', 'Not understood.', array('status' => 400)); }
+        $id = (string) $body['install']; $now = gmdate('c'); $ym = gmdate('Y-m');
+        $events = isset($body['events']) && is_array($body['events']) ? array_slice($body['events'], 0, 200) : array();
+        $m = isset($body['machine']) && is_array($body['machine']) ? $body['machine'] : array();
+        $machine = array(
+            'cpu' => self::text(isset($m['cpu']) ? $m['cpu'] : '', 120), 'os' => self::text(isset($m['os']) ? $m['os'] : '', 120),
+            'ramGb' => isset($m['ramGb']) && is_numeric($m['ramGb']) ? (int) $m['ramGb'] : null,
+            'gpus' => array(),
+        );
+        if (isset($m['gpus']) && is_array($m['gpus'])) { foreach (array_slice($m['gpus'], 0, 4) as $g) { $machine['gpus'][] = self::text($g, 120); } }
+        $lines = array();
+        foreach ($events as $e) {
+            if (!is_array($e) || !isset($e['k']) || !preg_match('/^[a-z]{2,12}(\.[a-z]{2,12}){0,2}$/', (string) $e['k'])) { continue; }
+            $d = isset($e['d']) && is_array($e['d']) ? $e['d'] : array();
+            $j = wp_json_encode($d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($j === false || strlen($j) > 6000) { continue; }
+            $at = isset($e['at']) && is_string($e['at']) && preg_match('/^\d{4}-\d{2}-\d{2}T[\d:.]+/', $e['at']) ? substr($e['at'], 0, 33) : $now;
+            $lines[] = wp_json_encode(array('i' => $id, 'at' => $at, 'k' => (string) $e['k'], 'd' => $d), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        self::locked(function () use ($id, $now, $ym, $machine, $body, $lines) {
+            $in = self::read('installs');
+            if (!isset($in[$id])) { if (count($in) >= 200000) { return; } $in[$id] = array('first' => $now, 'n' => 0); }
+            $in[$id]['last'] = $now; $in[$id]['n'] += count($lines); $in[$id]['machine'] = $machine;
+            $in[$id]['app'] = self::text(isset($body['app']) ? $body['app'] : '', 20); $in[$id]['edition'] = self::text(isset($body['edition']) ? $body['edition'] : '', 12);
+            $in[$id]['lang'] = self::text(isset($body['language']) ? $body['language'] : '', 8);
+            self::write('installs', $in);
+            if ($lines && self::ensure()) {
+                $f = self::usage_file($ym);
+                @file_put_contents($f, (is_file($f) ? '' : self::GUARD) . implode("\n", $lines) . "\n", FILE_APPEND | LOCK_EX);
+            }
+        });
+        return self::fresh(array('accepted' => count($lines)));
+    }
+
+    /** The event lines of the last two months, as arrays (at most 150,000: the page is a summary, not an export). */
+    private static function usage_events()
+    {
+        $out = array();
+        foreach (array(gmdate('Y-m'), gmdate('Y-m', strtotime('-1 month'))) as $ym) {
+            $f = self::usage_file($ym);
+            if (!is_readable($f)) { continue; }
+            $h = fopen($f, 'r'); if (!$h) { continue; }
+            fgets($h);   // the guard line
+            while (($line = fgets($h)) !== false && count($out) < 150000) { $e = json_decode($line, true); if (is_array($e) && isset($e['k'])) { $out[] = $e; } }
+            fclose($h);
+        }
+        return $out;
+    }
+
+    private static function tab_usage()
+    {
+        $in = self::read('installs'); $events = self::usage_events();
+        $week = gmdate('c', strtotime('-7 days')); $month = gmdate('c', strtotime('-30 days'));
+        $act7 = 0; $act30 = 0; $versions = array(); $gpus = array(); $cpus = array(); $ram = array(); $editions = array();
+        foreach ($in as $row) {
+            if (!empty($row['last']) && strcmp($row['last'], $week) >= 0) { $act7++; }
+            if (!empty($row['last']) && strcmp($row['last'], $month) >= 0) { $act30++; }
+            $v = isset($row['app']) ? $row['app'] : '?'; $versions[$v] = (isset($versions[$v]) ? $versions[$v] : 0) + 1;
+            $ed = isset($row['edition']) ? $row['edition'] : '?'; $editions[$ed] = (isset($editions[$ed]) ? $editions[$ed] : 0) + 1;
+            $mm = isset($row['machine']) ? $row['machine'] : array();
+            foreach ((isset($mm['gpus']) ? $mm['gpus'] : array()) as $g) { if ($g !== '') { $gpus[$g] = (isset($gpus[$g]) ? $gpus[$g] : 0) + 1; } }
+            if (!empty($mm['cpu'])) { $cpus[$mm['cpu']] = (isset($cpus[$mm['cpu']]) ? $cpus[$mm['cpu']] : 0) + 1; }
+            if (!empty($mm['ramGb'])) { $r = (string) $mm['ramGb']; $ram[$r] = (isset($ram[$r]) ? $ram[$r] : 0) + 1; }
+        }
+        $kinds = array(); $benchRuns = array(); $tests = array(); $tune = array(); $reasons = array(); $drops = array('temp' => array(), 'power' => array()); $scene = 0; $ai = 0;
+        foreach ($events as $e) {
+            $k = $e['k']; $d = isset($e['d']) && is_array($e['d']) ? $e['d'] : array();
+            $kinds[$k] = (isset($kinds[$k]) ? $kinds[$k] : 0) + 1;
+            if ($k === 'bench.run') { $b = isset($d['benchmark']) ? (string) $d['benchmark'] : '?'; $s = isset($d['status']) ? (string) $d['status'] : '?'; $benchRuns[$b][$s] = (isset($benchRuns[$b][$s]) ? $benchRuns[$b][$s] : 0) + 1; }
+            elseif ($k === 'test.run') { $t = isset($d['test']) ? (string) $d['test'] : '?'; $o = isset($d['outcome']) ? (string) $d['outcome'] : '?'; $tests[$t][$o] = (isset($tests[$t][$o]) ? $tests[$t][$o] : 0) + 1; }
+            elseif ($k === 'tuning.auto') {
+                $kind = isset($d['kind']) ? (string) $d['kind'] : '?'; $verdict = isset($d['verdict']) ? (string) $d['verdict'] : '?';
+                $tune[$kind][$verdict] = (isset($tune[$kind][$verdict]) ? $tune[$kind][$verdict] : 0) + 1;
+                if ($verdict !== 'Improved') { $why = (isset($d['reason']) ? (string) $d['reason'] : '?') . (!empty($d['detail']) ? ' — ' . mb_substr((string) $d['detail'], 0, 90) : ''); $reasons[$why] = (isset($reasons[$why]) ? $reasons[$why] : 0) + 1; }
+                elseif ($kind === 'Undervolt' && isset($d['stock']['tempC'], $d['tuned']['tempC'], $d['stock']['powerW'], $d['tuned']['powerW'])) {
+                    $drops['temp'][] = $d['stock']['tempC'] - $d['tuned']['tempC']; $drops['power'][] = $d['stock']['powerW'] - $d['tuned']['powerW'];
+                }
+            }
+            elseif ($k === 'tuning.scene') { $scene++; }
+            elseif ($k === 'ai.ask') { $ai++; }
+        }
+        $table = function ($title, $rows, $cols = array('نام', 'تعداد')) {
+            arsort($rows); echo '<h3>' . esc_html($title) . '</h3><table class="widefat striped" style="max-width:760px"><thead><tr><th>' . esc_html($cols[0]) . '</th><th>' . esc_html($cols[1]) . '</th></tr></thead><tbody>';
+            if (!$rows) { echo '<tr><td colspan="2">هنوز داده‌ای نیست.</td></tr>'; }
+            foreach (array_slice($rows, 0, 25, true) as $n => $c) { echo '<tr><td dir="auto">' . esc_html((string) $n) . '</td><td>' . esc_html(number_format_i18n($c)) . '</td></tr>'; }
+            echo '</tbody></table>';
+        };
+        $nested = function ($title, $rows) {
+            echo '<h3>' . esc_html($title) . '</h3><table class="widefat striped" style="max-width:900px"><thead><tr><th>مورد</th><th>نتیجه‌ها</th></tr></thead><tbody>';
+            if (!$rows) { echo '<tr><td colspan="2">هنوز داده‌ای نیست.</td></tr>'; }
+            foreach ($rows as $n => $parts) { arsort($parts); $t = array(); foreach ($parts as $p => $c) { $t[] = $p . ': ' . $c; } echo '<tr><td dir="ltr" style="text-align:right">' . esc_html((string) $n) . '</td><td dir="auto">' . esc_html(implode(' · ', $t)) . '</td></tr>'; }
+            echo '</tbody></table>';
+        };
+        $avg = function ($a) { return $a ? round(array_sum($a) / count($a), 1) : '—'; };
+        echo '<p class="description" style="max-width:90ch">آمار ناشناس: هر نصب فقط یک شناسهٔ تصادفی دارد؛ نام کاربر، نام کامپیوتر، فایل و آدرس ذخیره نمی‌شود. رویدادها فقط دو ماه اخیر را می‌شمارند (' . esc_html(number_format_i18n(count($events))) . ' رویداد).</p>';
+        echo '<h3>نصب‌ها</h3><table class="widefat" style="max-width:520px"><tbody>'
+            . '<tr><td>کل نصب‌های شناخته‌شده</td><td><strong>' . esc_html(number_format_i18n(count($in))) . '</strong></td></tr>'
+            . '<tr><td>فعال در ۷ روز اخیر</td><td>' . esc_html(number_format_i18n($act7)) . '</td></tr><tr><td>فعال در ۳۰ روز اخیر</td><td>' . esc_html(number_format_i18n($act30)) . '</td></tr>'
+            . '<tr><td>استفاده از دستیار هوشمند (پرسش‌ها)</td><td>' . esc_html(number_format_i18n($ai)) . '</td></tr><tr><td>تست صحنه (مقایسهٔ پروفایل‌ها)</td><td>' . esc_html(number_format_i18n($scene)) . '</td></tr></tbody></table>';
+        $table('نسخه‌های برنامه', $versions, array('نسخه', 'نصب')); $table('نسخه (شرکتی/کاربران)', $editions, array('نوع', 'نصب'));
+        $table('کارت‌های گرافیک', $gpus, array('مدل', 'نصب')); $table('پردازنده‌ها', $cpus, array('مدل', 'نصب')); $table('حافظهٔ رم (گیگابایت)', $ram, array('مقدار', 'نصب'));
+        $nested('بنچمارک‌ها (اجراها بر حسب وضعیت)', $benchRuns); $nested('تست‌ها (اجراها بر حسب نتیجه)', $tests);
+        $nested('آندرولت و اورکلاک خودکار', $tune);
+        echo '<p>میانگین کاهش دما با آندرولت موفق: <strong>' . esc_html((string) $avg($drops['temp'])) . ' °C</strong> · میانگین کاهش توان: <strong>' . esc_html((string) $avg($drops['power'])) . ' W</strong> (' . esc_html((string) count($drops['temp'])) . ' مورد)</p>';
+        $table('دلیل ناموفق بودن (آندرولت و اورکلاک)', $reasons, array('دلیل', 'تعداد'));
+        $table('رویدادها بر حسب نوع', $kinds, array('نوع', 'تعداد'));
     }
 
     /**
@@ -1097,7 +1220,7 @@ final class Mazesta_Connect
     {
         if (!self::can()) { wp_die('اجازه دیدن این صفحه را ندارید.', '', array('response' => 403)); }
         $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'reports';
-        $tabs = array('reports' => 'گزارش‌ها', 'bench' => 'بنچمارک‌ها', 'shares' => 'نتایج کاربران', 'settings' => 'تنظیمات و انتشار');
+        $tabs = array('reports' => 'گزارش‌ها', 'bench' => 'بنچمارک‌ها', 'shares' => 'نتایج کاربران', 'usage' => 'آمار استفاده', 'settings' => 'تنظیمات و انتشار');
         if (!isset($tabs[$tab])) { $tab = 'reports'; }
         echo '<div class="wrap"><h1>Mazesta Connect</h1><h2 class="nav-tab-wrapper">';
         foreach ($tabs as $k => $label) {
@@ -1107,7 +1230,7 @@ final class Mazesta_Connect
         if (!self::ensure()) { echo '<div class="notice notice-error"><p>پوشه داده‌ها ساخته نشد: <code dir="ltr">' . esc_html(self::dir()) . '</code>. دسترسی نوشتن wp-content را بررسی کنید.</p></div>'; }
         if (!empty($_GET['pair'])) { self::pair_panel(strtolower(self::arg('pair'))); }
         if (!empty($_GET['msg'])) { echo '<div class="notice notice-success is-dismissible"><p>انجام شد.</p></div>'; }
-        if ($tab === 'reports') { self::tab_reports(); } elseif ($tab === 'bench') { self::tab_bench(); } elseif ($tab === 'shares') { self::tab_shares(); } else { self::tab_settings(); }
+        if ($tab === 'reports') { self::tab_reports(); } elseif ($tab === 'bench') { self::tab_bench(); } elseif ($tab === 'shares') { self::tab_shares(); } elseif ($tab === 'usage') { self::tab_usage(); } else { self::tab_settings(); }
         echo '</div>';
     }
 

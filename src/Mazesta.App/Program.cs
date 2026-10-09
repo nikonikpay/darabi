@@ -25,7 +25,7 @@ internal sealed class Program : ApplicationContext
     /// <summary>Ends the app the way closing it from its window does (the update hands over to the new release this way).</summary>
     internal static void Shutdown() => Application.Exit();
 
-    private EventWaitHandle? _activate, _toggle, _move, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait, _moveWait;
+    private UsageUploader? _usageUploader; private EventWaitHandle? _activate, _toggle, _move, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait, _moveWait;
     private ServiceProvider? _services;
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
     private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans;
@@ -122,6 +122,10 @@ internal sealed class Program : ApplicationContext
         _moveWait = ThreadPool.RegisterWaitForSingleObject(_move, (_, _) => _ui.BeginInvoke(() => _overlay?.ToggleMove()), null, Timeout.Infinite, false);
         _overlay.PlaceChanged += () => _store!.Save(config);
 
+        // What the app does is kept in the usage log; with the setting on (the default) it is sent, anonymously, a few minutes after start and every ten minutes (see UsageUploader).
+        var usage = _services.GetRequiredService<UsageRecorder>();
+        usage.Record("app.start", new System.Text.Json.Nodes.JsonObject { ["version"] = version, ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = config.Language, ["overlayOnly"] = overlayOnly });
+        _usageUploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
         else ShowMain();
@@ -223,6 +227,7 @@ internal sealed class Program : ApplicationContext
         _activateWait?.Unregister(null); _activate?.Dispose();
         _toggleWait?.Unregister(null); _toggle?.Dispose(); _moveWait?.Unregister(null); _move?.Dispose(); _shown?.Dispose();
         if (_config is not null) _store?.Save(_config);   // the overlay's last state, when the app ended from the tray with no window to save it
+        _usageUploader?.SendAsync().Wait(TimeSpan.FromSeconds(4)); _usageUploader?.Dispose();   // what is left is sent on the way out, if the site answers quickly
         _fans?.Dispose(); Recorder?.Dispose();
         if (_services is not null) { _services.GetRequiredService<PollingEngine>().Dispose(); _services.Dispose(); }
         LogProvider?.Dispose();

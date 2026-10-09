@@ -3376,4 +3376,11 @@
   <data name="Tuning_Rules_BadExe" xml:space="preserve"><value>این نام فایل برنامه نیست (باید به .exe ختم شود).</value></data>
   <data name="Tuning_Rules_NotSaved" xml:space="preserve"><value>پروفایل‌های خودکار ذخیره نشد: {0}</value></data>
   <data name="Web_Overlay_MoveHint" xml:space="preserve"><value>Alt+M: اورلی را بکشید تا جابه‌جا شود؛ چرخ ماوس یا گوشهٔ آن اندازه را تعیین می‌کند؛ برای پایان دوباره Alt+M.</value></data>
+  <data name="Settings_Usage_Title" xml:space="preserve"><value>آمار استفاده</value></data>
+  <data name="Settings_Usage_Sub" xml:space="preserve"><value>ناشناس، برای بهتر شدن برنامه</value></data>
+  <data name="Settings_Usage_Note" xml:space="preserve"><value>هیچ اطلاعات شخصی از سیستم شما ارسال نمی‌شود. فقط اطلاعات مربوط به همین نرم‌افزار برای بهبود عملکردش ارسال می‌شود، و هر وقت بخواهید می‌توانید اینجا غیرفعالش کنید. به‌صورت پیش‌فرض فعال است.</value></data>
+  <data name="Settings_Usage_Sent" xml:space="preserve"><value>آنچه ارسال می‌شود: کدام تست‌ها و بنچمارک‌ها اجرا شده و چه امتیازی گرفته‌اند؛ نتیجهٔ آندرولت و اورکلاک (دما، توان، کلاک، موفق بودن یا نبودن و در صورت شکست دلیلش)؛ نام قطعات (پردازنده، کارت گرافیک، مقدار رم، نسخهٔ ویندوز)؛ تعداد دفعات استفاده از دستیار هوشمند (فقط شمارش، نه سؤال‌های شما)؛ و یک عدد تصادفی که هنگام نصب ساخته می‌شود تا تعداد نصب‌ها شمرده شود. هرگز: نام شما، نام کامپیوتر، فایل‌ها، پوشه‌ها، آدرس‌ها یا چیزی که تایپ کرده‌اید. همین خط‌ها در فایل لاگ زیر نگه داشته می‌شود تا خودتان بخوانید.</value></data>
+  <data name="Settings_Usage_Switch" xml:space="preserve"><value>ارسال آمار استفادهٔ ناشناس</value></data>
+  <data name="Settings_Usage_Open" xml:space="preserve"><value>نمایش فایل لاگ</value></data>
+  <data name="Settings_Usage_NoLog" xml:space="preserve"><value>هنوز چیزی ثبت نشده است.</value></data>
 </root>

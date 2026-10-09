@@ -434,7 +434,7 @@ public sealed partial class WebBridge
             {
                 case "start": await Start(); break;
                 case "stop": startCts?.Cancel(); pending?.Decision.TrySetResult(null); StopServer(); break;
-                case "send": await Send(Str(p, "text")); break;
+                case "send": _sp.GetRequiredService<Mazesta.Desktop.Services.UsageRecorder>().Record("ai.ask", new System.Text.Json.Nodes.JsonObject { ["model"] = chosen ?? "", ["newChat"] = chat is null }); await Send(Str(p, "text")); break;   // (a count and the model: never the question)
                 case "cancel": pending?.Decision.TrySetResult(null); replyCts?.Cancel(); break;
                 case "confirm": if (pending is { } c) c.Decision.TrySetResult(Kept(p, c.Items.Count)); break;
                 case "new": if (!generating) chat = null; break;

@@ -1,0 +1,11 @@
+# Anonymous usage statistics
+
+**What it is.** The app keeps a log of what it does in `Data/logs/usage.jsonl` (one JSON line per event) and - with *Settings › Usage statistics* on, which is the default - sends the lines not yet sent to the shop's site (`POST mazesta/v1/usage`, no key) a few minutes after start, every ten minutes, and when the app ends. The switch is the owner's: off means nothing is sent and nothing runs; the local log is still written (it is the user's own record, and it is what they can read to see what would be sent).
+
+**What is in it.** `app.start` (version, edition, language) · `test.run` (test id, outcome, seconds, errors) · `bench.run` (benchmark id, status, seconds, its metrics, its options with the card by name) · `tuning.auto` (undervolt / overclock / overclock plus: verdict, reason key, detail, settings found, and the stock and tuned measurements: clock, peak clock, power, temperature, voltage, score; the scene and memory figures) · `tuning.scene` (the scene test) · `tuning.apply` · `ai.ask` (the model id and whether it opened a chat - **never the question or the answer**). With each post: the installation's random id (`Data/config/usage.json`, made at first use, tied to nothing), the app version, the edition and language, and the parts' names: processor, graphics cards, RAM in GB, Windows version.
+
+**What is never in it.** The user's name, the computer's name, files, folders, addresses, serial numbers, MAC addresses, anything typed. A value that was not measured is left out, not sent as zero.
+
+**On the site** (Mazesta Connect 1.11, tab *آمار استفاده*): installs (total, active in 7 and 30 days), versions, graphics cards, processors, RAM, benchmark and test runs by status, undervolt/overclock results by kind with the reasons they failed and the average temperature and power saved, assistant use. The sender's address is used only to limit a post count (sixty an hour) and is not stored. Events are kept in monthly files in `wp-content/mazesta-connect-data/`; the dashboard reads the last two months.
+
+**Code.** `Mazesta.Persistence/UsageLog.cs` (the file, the id, the sent mark) · `Mazesta.Desktop/Services/UsageRecorder.cs` (what is recorded; `UsageData` builds each event) · `Mazesta.App/UsageUploader.cs` (the sender) · the plugin's `rest_usage`.

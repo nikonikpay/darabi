@@ -44,6 +44,8 @@ public static class Bootstrapper
         s.AddSingleton(sp => new Services.BenchmarkBreakWatch(sp.GetRequiredService<Mazesta.Diagnostics.Benchmarks.BenchmarkRunner>(), paths.SessionsDir, new WindowsBreakEventSource(), lf.CreateLogger("Benchmarks")));
         s.AddSingleton<Services.CheckupService>();
         s.AddSingleton<Services.ReportService>();
+        s.AddSingleton(sp => new UsageLog(sp.GetRequiredService<AppPaths>()));
+        s.AddSingleton<Services.UsageRecorder>();
         s.AddSingleton<IFrameRateSource>(_ => new FrameRateMonitor(lf.CreateLogger("FrameRate")));
         s.AddSingleton<IPingSource>(sp => new PingMonitor(() => sp.GetRequiredService<AppConfig>().OverlayPingTarget));
         s.AddSingleton<Services.OverlayService>();
@@ -69,11 +71,12 @@ public static class Bootstrapper
             // It is looked for when first asked and again until it is there: the page can be opened before the first sensor scan has listed the card,
             // and a sensor not found then would stay missing for the whole session ("the voltage sensor could not be read").
             name => { LatestReading? found = null; return () => (found ??= LatestReading.Find(sp.GetRequiredService<PollingEngine>(), Mazesta.Core.Hardware.HardwareKind.Gpu, name, Mazesta.Core.Hardware.SensorRole.GpuVoltage))?.Value; },
-            startupFile: GpuStartup.FileIn(paths), gate: sp.GetRequiredService<WorkloadGate>(), rulesFile: GpuRulesFile.FileIn(paths)));
+            startupFile: GpuStartup.FileIn(paths), gate: sp.GetRequiredService<WorkloadGate>(), rulesFile: GpuRulesFile.FileIn(paths), usage: sp.GetRequiredService<Services.UsageRecorder>().Record));
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), UiDispatcher.Post));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
         var provider = s.BuildServiceProvider();
         provider.GetRequiredService<Services.CheckupService>();   // constructed now, before the pages, so it judges a run before anyone asks about it
+        provider.GetRequiredService<Services.UsageRecorder>();   // likewise: it must hear the first run
         provider.GetRequiredService<Services.ReportService>();   // constructed now so it is already listening when the first test run starts
         return provider;
     }

@@ -25,6 +25,8 @@ public sealed class AppConfig : IVersionedDocument
     public WindowPlacement? MainWindow { get; set; }
     public List<ChartWindowConfig> ChartWindows { get; set; } = [];
     /// <summary>The tray monitor starts together with the app; "turn the tray off" in the settings switches this off. Absent in older files, so on.</summary>
+    /// <summary>Send anonymous usage statistics to the shop's site (what is in <c>Data/logs/usage.jsonl</c>: tests, benchmark figures, tuning results - nothing personal). On unless the user switches it off in the settings.</summary>
+    public bool UsageReport { get; set; } = true;
     public bool TrayWithApp { get; set; } = true;
     /// <summary>The users' edition has already decided whether the tray starts with Windows: it registers that on its first start (the default is on),
     /// and from then on only the settings page changes it. Absent in older files, so the first start after the update does it once.</summary>

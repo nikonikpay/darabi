@@ -23,6 +23,9 @@ export function mount(el) {
   } }, icon("bug"), t("Web_Diag_Export"));
   const enableTray = h("button", { class: "btn go", onclick: () => call("settings.exec", { cmd: "enableTray" }) }, t("Settings_Tray_Enable"));
   const disableTray = h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "disableTray" }) }, t("Settings_Tray_Disable"));
+  // Anonymous usage statistics: on by default, said first in plain words, off with one switch.
+  const usage = h("input", { type: "checkbox", class: "switch", "aria-label": t("Settings_Usage_Switch"), onchange: (e) => set("usageReport", e.target.checked) });
+  const usageLog = h("span", { class: "lat caption" });
   const folder = h("span", { class: "lat caption" }), version = h("span", { class: "lat caption" });
   // The users' edition: the name their shared benchmark results go under (empty: the one name every unnamed user gets). Mazesta's own
   // copies share under the company's name, so they have no such field.
@@ -39,7 +42,11 @@ export function mount(el) {
       box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 2,
         body: [h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth")), row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert"))),
         h("div", { class: "btn-row" }, enableTray, disableTray), h("p", { class: "note" }, trayStatus)] }),
-      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 3,
+      box({ kind: "Network", ico: "chart", title: t("Settings_Usage_Title"), sub: t("Settings_Usage_Sub"), i: 3,
+        body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Settings_Usage_Note")), h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Usage_Sent")),
+          h("label", { class: "ov-show" }, usage, h("span", {}, h("b", {}, t("Settings_Usage_Switch")))),
+          h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openUsageLog" }).catch((e) => toast(String(e.message || e), "fail")) }, t("Settings_Usage_Open"))), usageLog] }),
+      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 4,
         body: [folder, h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), h("p", { class: "note" }, version)] })));
   let built = false;
   function update(s) {
@@ -52,6 +59,7 @@ export function mount(el) {
     for (const k of ["interval", "storageInterval", "displayName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert"]) if (f[k]) setField(f[k], s[k]);
     message.textContent = s.message || ""; trayStatus.textContent = s.trayStatus || "";
     enableTray.disabled = !s.canEnableTray; disableTray.disabled = !s.canDisableTray;
+    usage.checked = !!s.usageReport; usageLog.textContent = s.usageLog || "";
     folder.textContent = s.dataFolder; version.textContent = `${s.mode} · v${s.version}`;
   }
   call("settings.state").then(update);
