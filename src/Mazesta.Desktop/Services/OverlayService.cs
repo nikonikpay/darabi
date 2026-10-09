@@ -71,7 +71,7 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
 
     /// <summary>The overlay's own pace: while it is shown the sensors are read every <paramref name="seconds"/> (0: at the app's own interval);
     /// hidden, the monitor goes back to the interval of the Settings page. Only the monitor's allowed intervals are taken.</summary>
-    public void SetRefresh(double seconds) { config.OverlayRefresh = MonitoringOptions.OverlayRefreshSeconds.Contains(seconds) ? seconds : 0; Pace(config.OverlayVisible); }
+    public void SetRefresh(double seconds) { config.OverlayRefreshChosen = true; config.OverlayRefresh = MonitoringOptions.OverlayRefreshSeconds.Contains(seconds) ? seconds : 0; Pace(config.OverlayVisible); }
     private void Pace(bool shown)
     {
         var interval = TimeSpan.FromSeconds(shown && config.OverlayRefresh > 0 ? config.OverlayRefresh : config.FastIntervalSeconds);

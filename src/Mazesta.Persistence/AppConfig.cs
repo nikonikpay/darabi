@@ -63,7 +63,10 @@ public sealed class AppConfig : IVersionedDocument
     /// <summary>The address (or name) the overlay's ping, packet loss and jitter are measured to. Absent in older files: Google's resolver.</summary>
     public string OverlayPingTarget { get; set; } = "8.8.8.8";
     /// <summary>How often the sensors are read while the overlay is shown, in seconds (0.5, 1, 2 or 5); 0: as often as the app reads them anyway. Older files, which had no choice of their own: 2.</summary>
-    public double OverlayRefresh { get; set; } = 2;
+    public double OverlayRefresh { get => OverlayRefreshChosen || _refresh != 2 ? _refresh : 0.5; set => _refresh = value; }
+    private double _refresh = 0.5;
+    /// <summary>The person has picked the overlay's refresh themselves. Until then the old default of 2 s that older files carry reads as the half second the overlay now starts with.</summary>
+    public bool OverlayRefreshChosen { get; set; }
     /// <summary>The services the game mode stops (see <see cref="Mazesta.Core.Gaming.GameBoost"/>); null takes its defaults.</summary>
     public List<string>? GameModeServices { get; set; }
     /// <summary>What each service was before the game mode stopped it; not empty means the mode is on, and switching it off puts these back.</summary>

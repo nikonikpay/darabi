@@ -18,7 +18,13 @@ public sealed class OverlayWindow : Form
         _vm = vm; _rtl = rtl;
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; StartPosition = FormStartPosition.Manual; TopMost = true; Text = "Mazesta Overlay";
         vm.Updated += OnUpdated;
+        // Another topmost window (a game, the test's full-screen window) that was raised after this one sits above it: "topmost" is an order among the topmost
+        // windows, and the last one raised is the front one. So while shown the overlay raises itself again, without taking focus.
+        _raise = new System.Windows.Forms.Timer { Interval = 400 }; _raise.Tick += (_, _) => Raise();
     }
+    private readonly System.Windows.Forms.Timer _raise;
+    private void Raise() { if (IsHandleCreated && Visible) SetWindowPos(Handle, HwndTopmost, 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoActivate | SwpNoOwnerZOrder); }
+    protected override void OnVisibleChanged(EventArgs e) { base.OnVisibleChanged(e); _raise.Enabled = Visible; if (Visible) Raise(); }
 
     protected override CreateParams CreateParams
     {
@@ -61,12 +67,14 @@ public sealed class OverlayWindow : Form
         finally { SelectObject(mem, old); DeleteObject(hbmp); DeleteDC(mem); _ = ReleaseDC(0, screen); }
     }
 
-    protected override void Dispose(bool disposing) { if (disposing) _vm.Updated -= OnUpdated; base.Dispose(disposing); }
+    protected override void Dispose(bool disposing) { if (disposing) { _vm.Updated -= OnUpdated; _raise.Dispose(); } base.Dispose(disposing); }
 
     [StructLayout(LayoutKind.Sequential)] private struct POINT(int x, int y) { public int X = x, Y = y; }
     [StructLayout(LayoutKind.Sequential)] private struct SIZE(int cx, int cy) { public int Cx = cx, Cy = cy; }
     [StructLayout(LayoutKind.Sequential, Pack = 1)] private struct BLENDFUNCTION { public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat; }
     [DllImport("user32.dll", SetLastError = true)] private static extern bool UpdateLayeredWindow(nint hwnd, nint hdcDst, ref POINT pptDst, ref SIZE psize, nint hdcSrc, ref POINT pptSrc, int crKey, ref BLENDFUNCTION pblend, int dwFlags);
+    private static readonly nint HwndTopmost = -1; private const uint SwpNoSize = 0x1, SwpNoMove = 0x2, SwpNoActivate = 0x10, SwpNoOwnerZOrder = 0x200;
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool SetWindowPos(nint hwnd, nint after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern nint GetDC(nint hwnd);
     [DllImport("user32.dll")] private static extern int ReleaseDC(nint hwnd, nint hdc);
     [DllImport("gdi32.dll")] private static extern nint CreateCompatibleDC(nint hdc);
