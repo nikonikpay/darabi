@@ -193,7 +193,7 @@ public sealed partial class TuningViewModel : ObservableObject
         Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null, Action<string, System.Text.Json.Nodes.JsonObject?>? usage = null, Func<string, Func<(DateTimeOffset At, double Celsius)?>>? hotSpotFor = null)
     {
         _startupFile = startupFile; _gate = gate; _rulesFile = rulesFile; _usage = usage; LoadRules();
-        _provider = provider; _store = store; _doc = store.Load().Value; _confirm = text => SelfTest ? text == Loc.Get("Tuning_ConfirmAuto") : confirm(text); _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
+        _provider = provider; _store = store; _doc = store.Load().Value; _confirm = text => SelfTest ? text == Loc.Get("Tuning_ConfirmAuto") || text == Loc.Get("Tuning_ConfirmPlus") : confirm(text); _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
         _voltageFor = voltageFor ?? (_ => () => null); _hotSpotFor = hotSpotFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
         Profiles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasProfiles));
@@ -391,7 +391,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!_confirm(Loc.Get("Tuning_ConfirmAuto"))) return Task.CompletedTask;
         var device = Device!;
         var (start, baseline) = OverclockStart(_doc.Profiles, device.Id, _lastUndervolt);
-        return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions(), start, baseline), GpuProfileKind.Overclock, start is not null);
+        return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions { RayTraceScene = _load(device).SupportsRayTracing }, start, baseline), GpuProfileKind.Overclock, start is not null);
     }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
@@ -400,7 +400,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!_confirm(Loc.Get("Tuning_ConfirmPlus"))) return Task.CompletedTask;
         var device = Device!;
         var (start, baseline) = OverclockStart(_doc.Profiles, device.Id, _lastUndervolt);
-        return RunAuto(new OverclockSearch(device.Limits, AutoTuneOptions.Plus(), start, baseline, plus: true), GpuProfileKind.OverclockPlus, start is not null);
+        return RunAuto(new OverclockSearch(device.Limits, AutoTuneOptions.Plus() with { RayTraceScene = _load(device).SupportsRayTracing }, start, baseline, plus: true), GpuProfileKind.OverclockPlus, start is not null);
     }
 
     /// <summary>Where an automatic overclock starts: this session's undervolt of the card, else its newest saved undervolt whose stock measurement
@@ -458,9 +458,9 @@ public sealed partial class TuningViewModel : ObservableObject
         {
             AutoPercent = p.Fraction * 100;
             AutoStepTitle = Loc.Format("Tuning_Auto_StepTitle", p.StepNumber, Loc.Get("Tuning_Step_" + p.Step.Kind));
-            AutoStepSettings = Summarize(p.Step.Settings); AutoStepLoad = Loc.Get("Tuning_Load_" + p.Step.Load);
+            AutoStepSettings = StepSettings(p.Step); AutoStepLoad = Loc.Get("Tuning_Load_" + p.Step.Load);
         });
-        tuner.StepFinished += s => _dispatch(() => AutoLog.Add(new(s.StepNumber, Loc.Get("Tuning_Step_" + s.Step.Kind), Summarize(s.Step.Settings), Describe(s.Measurement, s.Step.Load),
+        tuner.StepFinished += s => _dispatch(() => AutoLog.Add(new(s.StepNumber, Loc.Get("Tuning_Step_" + s.Step.Kind), StepSettings(s.Step), Describe(s.Measurement, s.Step.Load),
             s.Measurement.Clean, s.Measurement.Clean && s.Error is null ? null : Loc.Get(s.Measurement.DeviceLost ? "Tuning_Lost" : "Tuning_Errors") + (s.Error is { } e ? $" ({e})" : ""))));
         AutoTuneOutcome outcome;
         try { outcome = await tuner.RunAsync(search, _cts.Token).ConfigureAwait(true); }
@@ -478,6 +478,8 @@ public sealed partial class TuningViewModel : ObservableObject
         AutoResult += "\n" + Loc.Format("Tuning_ProfileSaved", name);
         if (_confirm(Loc.Format("Tuning_ConfirmApplyFound", name, Summarize(found)))) { if (Report(device.Apply(found), "Tuning_Applied")) SetStartup(name); Fill(found); }
     }
+
+    private static string StepSettings(TuneStep s) => Summarize(s.Settings) + (s.RayTraced && s.Load == GpuLoadKind.Scene ? " · " + Loc.Get("Tuning_SceneTest_RtTag") : "");
 
     private Action<GpuTuningSettings?> Journal(string gpuId) => settings =>
     {

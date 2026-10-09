@@ -55,6 +55,11 @@ public sealed record AutoTuneOptions
     /// <summary>How far the chosen setting is backed off from the last stable one, so a card that passed at the edge is not left there.</summary>
     public int SafetyMarginMHz { get; init; } = 15;
     public int ClockStep { get; init; } = 30;
+    /// <summary>The overclock's 3D-scene steps draw the ray-traced picture (DXR 1.1): it loads the RT and tensor cores as well as the shaders, which is where a clock that
+    /// passed the raster scene and the compute load still crashes the driver in a game. The caller sets it only for a card that can do it.</summary>
+    public bool RayTraceScene { get; init; }
+    /// <summary>The scene run that confirms an overclock: longer than a probe, because a marginal clock can hold for half a minute and fail in the second.</summary>
+    public TimeSpan SceneConfirmDuration { get; init; } = TimeSpan.FromSeconds(120);
     public int MaxClockRaise { get; init; } = 300;
     public int MemoryOffsetStep { get; init; } = 200;
     public int MaxMemoryOffset { get; init; } = 1500;
@@ -68,7 +73,7 @@ public sealed record AutoTuneOptions
     /// <summary>"Overclock Plus" keeps going while the hottest second of a step stays under this, whatever power it draws (up to the driver's own power limit).</summary>
     public double PlusMaxTemperatureC { get; init; } = 84;
     /// <summary>The options of an Overclock Plus search: a longer reach for the core clock and finer, longer memory steps.</summary>
-    public static AutoTuneOptions Plus() => new() { MaxClockRaise = 450, MemoryOffsetStep = 100, MaxMemoryOffset = 2000 };
+    public static AutoTuneOptions Plus() => new() { MaxClockRaise = 450, MemoryOffsetStep = 100, MaxMemoryOffset = 2000, SafetyMarginMHz = 30 };
 }
 
 public enum AutoTuneVerdict { Improved, NoImprovement, Unsupported, Failed, Cancelled }
@@ -240,12 +245,12 @@ public sealed class OverclockSearch : IAutoTuneSearch
         _pending = _phase switch
         {
             Phase.Baseline => new(TuneStepKind.Baseline, GpuTuningSettings.Stock, GpuLoadKind.Compute, _options.BaselineDuration, _options.LongSettle),
-            Phase.Boost => new(TuneStepKind.Baseline, new(_offset, 0, _fromCap ? _startClock : null, _power, null), GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle),
-            Phase.Core => new(TuneStepKind.Probe, At(_clock + _options.ClockStep, 0), _boost is null ? GpuLoadKind.Compute : GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.Boost => new(TuneStepKind.Baseline, new(_offset, 0, _fromCap ? _startClock : null, _power, null), GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle, _options.RayTraceScene),
+            Phase.Core => new(TuneStepKind.Probe, At(_clock + _options.ClockStep, 0), _boost is null ? GpuLoadKind.Compute : GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle, _boost is not null && _options.RayTraceScene),
             Phase.MemoryBaseline => new(TuneStepKind.Baseline, At(_bestClock, 0), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             Phase.Memory => new(TuneStepKind.Probe, At(_bestClock, _memory + _options.MemoryOffsetStep), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             Phase.Confirm => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Compute, _options.ConfirmDuration, _options.LongSettle),
-            Phase.ConfirmScene => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.ConfirmScene => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Scene, _options.SceneConfirmDuration, _options.ProbeSettle, _options.RayTraceScene),
             Phase.ConfirmMemory => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             _ => null
         };

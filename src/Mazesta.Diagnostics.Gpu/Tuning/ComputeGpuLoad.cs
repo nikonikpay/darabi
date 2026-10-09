@@ -24,6 +24,8 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
 
     public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct) => Run(kind, duration, settle, false, ct);
 
+    public bool SupportsRayTracing { get { try { return Device() is { } d && GpuFeatures.SupportsInlineRayTracing(d); } catch (Exception) { return false; } } }
+
     public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct)
     {
         var device = Device();

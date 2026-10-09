@@ -10,6 +10,8 @@ public interface IGpuLoad
     LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct);
     /// <summary>The scene load with its ray-traced mode (DXR 1.1) chosen; a load that has no such mode runs as it always did.</summary>
     LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct) => Run(kind, duration, settle, ct);
+    /// <summary>Whether the card can draw the ray-traced scene (DXR 1.1). A search asks before it makes its scene steps ray-traced, since a card that cannot would score them zero.</summary>
+    bool SupportsRayTracing => false;
 }
 
 public sealed record AutoTuneProgress(int StepNumber, TuneStep Step, double Fraction, GpuTelemetry Latest);
@@ -31,7 +33,7 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
 
     /// <summary>One run of a load on the card as it is now - nothing applied, nothing reset: what the settings the technician has put on it do under the load.</summary>
     public Task<(LoadMeasurement Measurement, string? Error)> MeasureCurrentAsync(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct, bool rayTraced = false)
-        => Task.Run(() => Measure(1, new TuneStep(TuneStepKind.Baseline, device.ReadCurrent(), kind, duration, settle, rayTraced), ct), CancellationToken.None);
+        => Task.Run(() => { var r = Measure(1, new TuneStep(TuneStepKind.Baseline, device.ReadCurrent(), kind, duration, settle, rayTraced), ct); if (r.Item1.DeviceLost) Recover(); return r; }, CancellationToken.None);
 
     private AutoTuneOutcome Run(IAutoTuneSearch search, CancellationToken ct)
     {
@@ -50,7 +52,7 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
                     return new(AutoTuneVerdict.Unsupported, "Tuning_Out_ApplyRefused", null, null, null, Detail: refused);
                 }
                 var (measurement, error) = Measure(number, step, ct);
-                if (measurement.DeviceLost) device.Reset();   // the driver has usually dropped the settings already; this makes sure of it
+                if (measurement.DeviceLost) { Recover(); device.Reset(); }   // the driver has usually dropped the settings already; this makes sure of it
                 journal(null);
                 StepFinished?.Invoke(new(number, step, measurement, error));
                 search.Report(measurement);
@@ -59,6 +61,17 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
         }
         catch (OperationCanceledException) { return new(AutoTuneVerdict.Cancelled, "Tuning_Out_Cancelled", null, null, null); }
         finally { device.Reset(); journal(null); }
+    }
+
+    /// <summary>After a driver reset the card takes a few seconds to come back and its old handle may be dead: asks for a new one until it reports a clock again (at most 20 s), so the next step - and the page - find the card.</summary>
+    internal void Recover()
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            device.Refresh();
+            if (device.ReadTelemetry().CoreClockMHz is not null) return;
+            Thread.Sleep(1000);
+        }
     }
 
     private (LoadMeasurement, string?) Measure(int number, TuneStep step, CancellationToken ct)
