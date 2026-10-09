@@ -170,6 +170,14 @@ public class AutoTuneTests
         Assert.Equal(1965, m.PeakClockMHz); Assert.Equal(349, m.PeakPowerW); Assert.Equal(0.95, m.AverageVoltageV!.Value, 3);
     }
 
+    [Fact] public void Measurement_keeps_the_hottest_and_the_average_hot_spot_and_none_when_it_was_not_read()
+    {
+        var t = DateTimeOffset.UnixEpoch; var samples = new GpuTelemetry[] { new(t, 1665, null, 60, 340, null) };
+        var m = LoadMeasurement.From(samples, 10, 0, false, null, [70, 80]);
+        Assert.Equal(80, m.MaxHotSpotC); Assert.Equal(75, m.AverageHotSpotC);
+        Assert.Null(LoadMeasurement.From(samples, 10, 0, false).MaxHotSpotC);
+    }
+
     [Fact] public void An_overclock_counts_when_the_scene_runs_faster_though_the_stress_test_is_power_bound()
     {
         // Held at the power limit the stress test never sees the clock cap; the garden scene, a game's load, does: more clock, more frames.

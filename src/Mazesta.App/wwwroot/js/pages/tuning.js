@@ -171,6 +171,10 @@ export function mount(el) {
   const autoO = h("button", { class: "btn primary", "data-a": "autooverclock", onclick: () => risky("auto", "autoOverclock") }, t("Tuning_AutoOverclock"));
   const sceneBtn = h("button", { class: "btn", title: t("Tuning_SceneTest_Hint"), onclick: () => exec("sceneTest") }, t("Tuning_SceneTest"));
   const sceneClear = h("button", { class: "btn", onclick: () => exec("clearScene") }, t("Tuning_SceneTest_Clear"));
+  // How long the scene test runs and whether it draws the ray-traced picture; both are the view model's, so a reopened page shows what was set.
+  const sceneSecs = h("input", { class: "field num", type: "number", min: 20, max: 600, step: 10, style: { width: "84px" }, "aria-label": t("Tuning_SceneTest_Seconds"), onchange: (e) => set("sceneSeconds", e.target.value) });
+  const sceneRt = h("input", { type: "checkbox", class: "switch", onchange: (e) => set("sceneRt", e.target.checked) });
+  const sceneOpts = h("div", { class: "toolbar" }, h("label", {}, t("Tuning_SceneTest_Seconds"), " ", sceneSecs), h("label", { title: t("Tuning_SceneTest_RtHint") }, sceneRt, " ", t("Test_Option_RayTracing")));
   const sceneList = h("div", {});
   // Automatic profiles: which saved profile goes with a game and with each listed program (the tray follows them).
   const rule = (op, extra = {}) => call("tuning.rules", { op, ...extra });
@@ -215,7 +219,7 @@ export function mount(el) {
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO),
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclockPlus_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclockPlus_Desc")), autoP)),
           running, result, log] }),
-      box({ kind: "Gpu", ico: "chart", title: t("Tuning_SceneTest_Title"), sub: t("Tuning_SceneTest_Sub"), i: 3, a: "scene", actions: h("div", { class: "toolbar" }, sceneBtn, sceneClear), body: [sceneList] }),
+      box({ kind: "Gpu", ico: "chart", title: t("Tuning_SceneTest_Title"), sub: t("Tuning_SceneTest_Sub"), i: 3, a: "scene", actions: h("div", { class: "toolbar" }, sceneOpts, sceneBtn, sceneClear), body: [sceneList] }),
       box({ kind: "Power", ico: "bolt", title: t("Tuning_Rules_Title"), sub: t("Tuning_Rules_Sub"), i: 3, a: "rules",
         body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Tuning_Rules_Note")),
           h("div", { class: "toolbar" }, h("b", {}, t("Tuning_Rules_Game")), gameSel),
@@ -267,6 +271,7 @@ export function mount(el) {
         h("span", { class: `pill ${l.clean ? "pass" : "fail"}` }, l.clean ? t("Tuning_Log_Clean") : l.problem), h("span", { class: "res" }, l.result))));
     }
     sceneBtn.disabled = x.busy; sceneClear.hidden = !(x.sceneTests || []).length;
+    sceneSecs.disabled = sceneRt.disabled = x.busy; if (document.activeElement !== sceneSecs) sceneSecs.value = x.sceneSeconds; sceneRt.checked = !!x.sceneRt;
     sceneList.replaceChildren(...((x.sceneTests || []).length ? x.sceneTests.map((r, i) => h("div", { class: "logline" }, h("span", { class: "st" }, fa(i + 1)),
       h("span", {}, h("b", {}, r.settings), "  ", h("span", { class: "caption lat" }, r.result)), h("span", { class: `pill ${r.clean ? "pass" : "fail"}` }, r.clean ? (r.change || t("Tuning_SceneTest_First")) : r.problem)))
       : [h("p", { class: "caption" }, t("Tuning_SceneTest_Empty"))]));

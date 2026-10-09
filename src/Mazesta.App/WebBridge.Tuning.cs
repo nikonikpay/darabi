@@ -29,6 +29,7 @@ public sealed partial class WebBridge
             curve = t.Curve?.Select(p => new { clock = p.ClockMHz, volt = p.VoltageV }), curveInfo = t.CurveInfo, curveEstimate = t.CurveEstimate, curveStatus = t.CurveStatus,
             busy = t.IsTuning, percent = t.AutoPercent, stepTitle = t.AutoStepTitle, stepSettings = t.AutoStepSettings, stepLoad = t.AutoStepLoad, result = t.AutoResult,
             rules = new { game = t.GameProfile, apps = t.Rules.Select(r => new { exe = r.Exe, name = r.Name, profile = r.Profile }) },
+            sceneSeconds = t.SceneSeconds, sceneRt = t.SceneRayTracing,
             sceneTests = t.SceneTests.Select(r => new { settings = r.Settings, result = r.Result, change = r.Change, clean = r.Clean, problem = r.Problem }),
             log = t.AutoLog.Select(l => new { step = l.Step, kind = l.Kind, settings = l.Settings, result = l.Result, clean = l.Clean, problem = l.Problem }),
             profiles = t.Profiles.Select((p, i) => new { index = i, name = p.Name, kind = p.KindValue.ToString(), kindText = p.Kind, created = p.Created, summary = p.Summary, evidence = p.Evidence, startup = p.Name == t.StartupProfile }),
@@ -68,6 +69,8 @@ public sealed partial class WebBridge
                 case "manualFan": t.ManualFan = Bool(p, "value"); break;
                 case "fan": t.FanPercent = v; break;
                 case "profileName": t.ProfileName = v; break;
+                case "sceneSeconds": t.SceneSeconds = Int(); break;
+                case "sceneRt": t.SceneRayTracing = Bool(p, "value"); break;
                 // The curve editor sets offset and cap together, as one gesture.
                 case "curve": t.CoreOffset = Str(p, "core"); if (int.TryParse(Str(p, "cap"), out int cap)) t.CapValue = cap; break;
                 default: throw new ArgumentException("unknown field");

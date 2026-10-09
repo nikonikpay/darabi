@@ -5,7 +5,12 @@ namespace Mazesta.Diagnostics.Tuning;
 public sealed record LoadRunResult(double Throughput, long Errors, bool DeviceLost, string? Error);
 
 /// <summary>A GPU load the tuner can run for a while. <paramref name="settle"/> is warm-up the score must not include.</summary>
-public interface IGpuLoad { LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct); }
+public interface IGpuLoad
+{
+    LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct);
+    /// <summary>The scene load with its ray-traced mode (DXR 1.1) chosen; a load that has no such mode runs as it always did.</summary>
+    LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct) => Run(kind, duration, settle, ct);
+}
 
 public sealed record AutoTuneProgress(int StepNumber, TuneStep Step, double Fraction, GpuTelemetry Latest);
 public sealed record AutoTuneStepLog(int StepNumber, TuneStep Step, LoadMeasurement Measurement, string? Error);
@@ -16,7 +21,7 @@ public sealed record AutoTuneStepLog(int StepNumber, TuneStep Step, LoadMeasurem
 /// run that takes the machine down is known on the next start. Whatever happens - finished, cancelled, a driver reset, an exception - the card is
 /// put back to stock at the end: a found profile is applied only when the technician chooses to.
 /// </summary>
-public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<GpuTuningSettings?> journal, TimeSpan? sampleInterval = null, Func<(DateTimeOffset At, double Volts)?>? voltage = null)
+public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<GpuTuningSettings?> journal, TimeSpan? sampleInterval = null, Func<(DateTimeOffset At, double Volts)?>? voltage = null, Func<(DateTimeOffset At, double Celsius)?>? hotSpot = null)
 {
     private readonly TimeSpan _interval = sampleInterval ?? TimeSpan.FromMilliseconds(500);
     public event Action<AutoTuneProgress>? Progress;
@@ -25,8 +30,8 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
     public Task<AutoTuneOutcome> RunAsync(IAutoTuneSearch search, CancellationToken ct) => Task.Run(() => Run(search, ct), CancellationToken.None);
 
     /// <summary>One run of a load on the card as it is now - nothing applied, nothing reset: what the settings the technician has put on it do under the load.</summary>
-    public Task<(LoadMeasurement Measurement, string? Error)> MeasureCurrentAsync(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct)
-        => Task.Run(() => Measure(1, new TuneStep(TuneStepKind.Baseline, device.ReadCurrent(), kind, duration, settle), ct), CancellationToken.None);
+    public Task<(LoadMeasurement Measurement, string? Error)> MeasureCurrentAsync(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct, bool rayTraced = false)
+        => Task.Run(() => Measure(1, new TuneStep(TuneStepKind.Baseline, device.ReadCurrent(), kind, duration, settle, rayTraced), ct), CancellationToken.None);
 
     private AutoTuneOutcome Run(IAutoTuneSearch search, CancellationToken ct)
     {
@@ -58,8 +63,8 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
 
     private (LoadMeasurement, string?) Measure(int number, TuneStep step, CancellationToken ct)
     {
-        var samples = new List<GpuTelemetry>(); var volts = new List<double>(); var clock = Stopwatch.StartNew();
-        var settled = DateTimeOffset.UtcNow + step.Settle; DateTimeOffset lastVolt = default;
+        var samples = new List<GpuTelemetry>(); var volts = new List<double>(); var hot = new List<double>(); var clock = Stopwatch.StartNew();
+        var settled = DateTimeOffset.UtcNow + step.Settle; DateTimeOffset lastVolt = default, lastHot = default;
         using var done = new CancellationTokenSource();
         var sampler = Task.Run(() =>
         {
@@ -71,14 +76,15 @@ public sealed class GpuAutoTuner(IGpuTuningDevice device, IGpuLoad load, Action<
                     lock (samples) samples.Add(t);
                     // The monitor reads the voltage about once a second: a reading from before the card settled is not this step's, and each counts once.
                     if (voltage?.Invoke() is { } v && v.At >= settled && v.At != lastVolt) { lastVolt = v.At; lock (samples) volts.Add(v.Volts); }
+                    if (hotSpot?.Invoke() is { } h && h.At >= settled && h.At != lastHot) { lastHot = h.At; lock (samples) hot.Add(h.Celsius); }
                 }
                 Progress?.Invoke(new(number, step, Math.Clamp(clock.Elapsed / step.Duration, 0, 1), t));
                 done.Token.WaitHandle.WaitOne(_interval);
             }
         }, CancellationToken.None);
         LoadRunResult result;
-        try { result = load.Run(step.Load, step.Duration, step.Settle, ct); }
+        try { result = load.Run(step.Load, step.Duration, step.Settle, step.RayTraced, ct); }
         finally { done.Cancel(); sampler.Wait(CancellationToken.None); }
-        lock (samples) return (LoadMeasurement.From(samples, result.Throughput, result.Errors, result.DeviceLost, volts), result.Error);
+        lock (samples) return (LoadMeasurement.From(samples, result.Throughput, result.Errors, result.DeviceLost, volts, hot), result.Error);
     }
 }

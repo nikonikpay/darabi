@@ -45,7 +45,7 @@ public static class UsageData
         if (m is null) return null;
         var o = new JsonObject { ["errors"] = m.Errors, ["deviceLost"] = m.DeviceLost };
         Put(o, "clockMHz", m.MedianClockMHz); Put(o, "peakClockMHz", m.PeakClockMHz); Put(o, "powerW", m.AveragePowerW); Put(o, "tempC", m.AverageTemperatureC);
-        Put(o, "maxTempC", m.MaxTemperatureC); Put(o, "volts", m.AverageVoltageV, 3); Put(o, "score", m.Throughput);
+        Put(o, "maxTempC", m.MaxTemperatureC); Put(o, "hotSpotC", m.MaxHotSpotC); Put(o, "volts", m.AverageVoltageV, 3); Put(o, "score", m.Throughput);
         return o;
     }
 

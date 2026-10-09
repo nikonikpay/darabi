@@ -22,11 +22,13 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
             ?? adapters.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
     }
 
-    public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct)
+    public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct) => Run(kind, duration, settle, false, ct);
+
+    public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct)
     {
         var device = Device();
         if (device is null) return new(0, 0, true, GpuDevices.NoGpu);
-        try { return kind switch { GpuLoadKind.Compute => Compute(device, duration, settle, ct), GpuLoadKind.Scene => SceneGpuLoad.Run(device, duration, settle, ct), _ => Memory(device, duration, settle, ct) }; }
+        try { return kind switch { GpuLoadKind.Compute => Compute(device, duration, settle, ct), GpuLoadKind.Scene => SceneGpuLoad.Run(device, duration, settle, rayTraced, ct), _ => Memory(device, duration, settle, ct) }; }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return new(0, 0, true, $"{ex.GetType().Name}: {ex.Message}"); }
     }

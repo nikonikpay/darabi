@@ -7,14 +7,14 @@ public enum TuneStepKind { Baseline, Probe, Confirm }
 
 /// <summary>One run the automatic search asks for: these settings, this load, this long. The first <see cref="Settle"/> of it is warm-up and is
 /// left out of the measurement, so a step is judged on the card's settled behaviour, not on the moment the clocks changed.</summary>
-public sealed record TuneStep(TuneStepKind Kind, GpuTuningSettings Settings, GpuLoadKind Load, TimeSpan Duration, TimeSpan Settle);
+public sealed record TuneStep(TuneStepKind Kind, GpuTuningSettings Settings, GpuLoadKind Load, TimeSpan Duration, TimeSpan Settle, bool RayTraced = false);
 
 /// <summary>What a run measured. <see cref="Throughput"/> is the load's own score (integer Gop/s for compute, GB/s for memory);
 /// <see cref="Errors"/> counts results the GPU computed wrongly; <see cref="DeviceLost"/> is a driver reset or a removed device during the run.
 /// The median clock is what the card <i>holds</i> under this load (a heavy one runs into the power limit); the peak is the highest it reached, which on
 /// a factory-overclocked card is far above the held one - it is the card's real boost, so a search must not take the held clock for the factory clock.</summary>
 public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowerW, double? AverageTemperatureC, double? MaxTemperatureC, double Throughput, long Errors, bool DeviceLost,
-    double? PeakClockMHz = null, double? PeakPowerW = null, double? AverageVoltageV = null)
+    double? PeakClockMHz = null, double? PeakPowerW = null, double? AverageVoltageV = null, double? MaxHotSpotC = null, double? AverageHotSpotC = null)
 {
     public bool Clean => Errors == 0 && !DeviceLost;
 
@@ -23,7 +23,7 @@ public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowe
     /// look faster than it is.</summary>
     public const int CurrentLoadVersion = 2;
 
-    public static LoadMeasurement From(IReadOnlyList<GpuTelemetry> samples, double throughput, long errors, bool deviceLost, IReadOnlyList<double>? volts = null)
+    public static LoadMeasurement From(IReadOnlyList<GpuTelemetry> samples, double throughput, long errors, bool deviceLost, IReadOnlyList<double>? volts = null, IReadOnlyList<double>? hotSpots = null)
     {
         static double? Median(IEnumerable<double?> values)
         {
@@ -34,7 +34,7 @@ public sealed record LoadMeasurement(double? MedianClockMHz, double? AveragePowe
         static double? Max(IEnumerable<double?> values) { var v = values.OfType<double>().ToArray(); return v.Length == 0 ? null : v.Max(); }
         return new(Median(samples.Select(s => s.CoreClockMHz)), Average(samples.Select(s => s.PowerW)), Average(samples.Select(s => s.TemperatureC)),
             Max(samples.Select(s => s.TemperatureC)), throughput, errors, deviceLost, Max(samples.Select(s => s.CoreClockMHz)), Max(samples.Select(s => s.PowerW)),
-            volts is { Count: > 0 } ? volts.Average() : null);
+            volts is { Count: > 0 } ? volts.Average() : null, hotSpots is { Count: > 0 } ? hotSpots.Max() : null, hotSpots is { Count: > 0 } ? hotSpots.Average() : null);
     }
 }
 

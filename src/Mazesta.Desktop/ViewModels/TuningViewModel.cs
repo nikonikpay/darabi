@@ -44,9 +44,9 @@ public sealed partial class TuningViewModel : ObservableObject
 {
     private readonly IGpuTuningProvider _provider; private readonly JsonStore<GpuProfileDocument> _store; private readonly GpuProfileDocument _doc;
     private readonly Func<string, bool> _confirm; private readonly Action _restartToFirmware; private readonly Func<Action, object> _dispatch;
-    private readonly Func<IGpuTuningDevice, IGpuLoad> _load; private readonly Func<string, Func<(DateTimeOffset At, double Volts)?>> _voltageFor;
+    private readonly Func<IGpuTuningDevice, IGpuLoad> _load; private readonly Func<string, Func<(DateTimeOffset At, double Volts)?>> _voltageFor; private readonly Func<string, Func<(DateTimeOffset At, double Celsius)?>> _hotSpotFor;
     private readonly Timer? _timer;   // once a second while the page is shown; its tick goes to the UI thread
-    private CancellationTokenSource? _cts; private Func<(DateTimeOffset At, double Volts)?> _voltage = () => null;
+    private CancellationTokenSource? _cts; private Func<(DateTimeOffset At, double Volts)?> _voltage = () => null; private Func<(DateTimeOffset At, double Celsius)?> _hotSpot = () => null;
     private (string GpuId, GpuTuningSettings Settings, LoadMeasurement Baseline)? _lastUndervolt;
 
     public IReadOnlyList<IGpuTuningDevice> Devices => _provider.Devices;
@@ -114,7 +114,7 @@ public sealed partial class TuningViewModel : ObservableObject
     public ObservableCollection<AutoLogRow> AutoLog { get; } = [];
     /// <summary>The scene tests of this session, newest last: the same picture every frame, so the frame rate, clock, power and temperature of two settings compare.</summary>
     public ObservableCollection<SceneTestRow> SceneTests { get; } = [];
-    private LoadMeasurement? _lastScene;
+    private LoadMeasurement? _lastScene; private bool _lastSceneRt;
 
     // The automatic profiles: the tray follows these (see GpuAutoSwitch); here they are only chosen and kept.
     private readonly string? _rulesFile; private readonly Action<string, System.Text.Json.Nodes.JsonObject?>? _usage;
@@ -190,11 +190,11 @@ public sealed partial class TuningViewModel : ObservableObject
     public static bool SelfTest { get; set; }
 
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
-        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null, Action<string, System.Text.Json.Nodes.JsonObject?>? usage = null)
+        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null, Action<string, System.Text.Json.Nodes.JsonObject?>? usage = null, Func<string, Func<(DateTimeOffset At, double Celsius)?>>? hotSpotFor = null)
     {
         _startupFile = startupFile; _gate = gate; _rulesFile = rulesFile; _usage = usage; LoadRules();
         _provider = provider; _store = store; _doc = store.Load().Value; _confirm = text => SelfTest ? text == Loc.Get("Tuning_ConfirmAuto") : confirm(text); _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
-        _voltageFor = voltageFor ?? (_ => () => null);
+        _voltageFor = voltageFor ?? (_ => () => null); _hotSpotFor = hotSpotFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";
         Profiles.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasProfiles));
         Device = Devices.FirstOrDefault();
@@ -209,7 +209,7 @@ public sealed partial class TuningViewModel : ObservableObject
     partial void OnDeviceChanged(IGpuTuningDevice? value)
     {
         if (value is null) return;
-        _voltage = _voltageFor(value.Name);
+        _voltage = _voltageFor(value.Name); _hotSpot = _hotSpotFor(value.Name);
         var now = value.ReadCurrent(); var l = value.Limits;
         CoreOffset = Num(now.CoreOffsetMHz); MemoryOffset = Num(now.MemoryOffsetMHz);
         LockClock = false; MaxClock = l.MaxClockMHz is { } m ? Num(m) : "";
@@ -412,7 +412,12 @@ public sealed partial class TuningViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(IsTuning))] private void CancelAuto() => _cts?.Cancel();
 
-    private static readonly TimeSpan SceneTestLength = TimeSpan.FromSeconds(40), SceneTestSettle = TimeSpan.FromSeconds(12);
+    public const int SceneSecondsMin = 20, SceneSecondsMax = 600;
+    private static readonly TimeSpan SceneTestSettle = TimeSpan.FromSeconds(12);
+    /// <summary>How long the scene test runs, in seconds (the first 12 are warm-up and not counted), and whether it draws the ray-traced (DXR 1.1) picture.</summary>
+    [ObservableProperty] private int _sceneSeconds = 40;
+    [ObservableProperty] private bool _sceneRayTracing;
+    partial void OnSceneSecondsChanged(int value) { int fit = Math.Clamp(value, SceneSecondsMin, SceneSecondsMax); if (fit != value) SceneSeconds = fit; }
 
     /// <summary>Runs the garden scene from its fixed camera on the card as it is now (whatever has been applied) and keeps the figures beside those of the earlier
     /// tests: change the profile, run it again, and see what the frame rate, the temperature and the power did.</summary>
@@ -422,19 +427,19 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!TryEnter(out var lease)) return;
         using var held = lease;
         var device = Device!;
-        IsTuning = true; AutoPercent = 0; Status = ""; AutoStepTitle = Loc.Get("Tuning_SceneTest_Running"); AutoStepSettings = Summarize(device.ReadCurrent()); AutoStepLoad = Loc.Get("Tuning_Load_Scene");
-        _cts = new CancellationTokenSource();
-        var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id), voltage: _voltage);
+        IsTuning = true; AutoPercent = 0; Status = ""; AutoStepTitle = Loc.Get("Tuning_SceneTest_Running"); AutoStepSettings = Summarize(device.ReadCurrent()); AutoStepLoad = Loc.Get(SceneRayTracing ? "Tuning_Load_SceneRt" : "Tuning_Load_Scene");
+        _cts = new CancellationTokenSource(); bool rayTraced = SceneRayTracing; var length = TimeSpan.FromSeconds(Math.Clamp(SceneSeconds, SceneSecondsMin, SceneSecondsMax));
+        var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id), voltage: _voltage, hotSpot: _hotSpot);
         tuner.Progress += p => _dispatch(() => AutoPercent = p.Fraction * 100);
         LoadMeasurement m; string? error;
-        try { (m, error) = await tuner.MeasureCurrentAsync(GpuLoadKind.Scene, SceneTestLength, SceneTestSettle, _cts.Token).ConfigureAwait(true); }
+        try { (m, error) = await tuner.MeasureCurrentAsync(GpuLoadKind.Scene, length, SceneTestSettle, _cts.Token, rayTraced).ConfigureAwait(true); }
         catch (OperationCanceledException) { Status = Loc.Get("Tuning_Out_Cancelled"); return; }
         finally { IsTuning = false; AutoPercent = 0; AutoStepTitle = AutoStepSettings = AutoStepLoad = ""; }
-        string settings = Summarize(device.ReadCurrent()), result = Describe(m, GpuLoadKind.Scene); string? change = null;
-        if (m.Clean && error is null && _lastScene is { } before && before.Throughput > 0)
+        string settings = Summarize(device.ReadCurrent()) + (rayTraced ? " · " + Loc.Get("Tuning_SceneTest_RtTag") : ""), result = Describe(m, GpuLoadKind.Scene); string? change = null;
+        if (m.Clean && error is null && _lastScene is { } before && before.Throughput > 0 && _lastSceneRt == rayTraced)
             change = Ltr($"{(m.Throughput / before.Throughput - 1) * 100:+0.0;-0.0}% FPS" + (m.AverageTemperatureC is { } t && before.AverageTemperatureC is { } bt ? $" · {t - bt:+0.0;-0.0} °C" : "") + (m.AveragePowerW is { } w && before.AveragePowerW is { } bw ? $" · {w - bw:+0;-0} W" : ""));
         SceneTests.Add(new(settings, result, change, m.Clean && error is null, m.Clean && error is null ? null : Loc.Get(m.DeviceLost ? "Tuning_Lost" : "Tuning_Errors") + (error is { } e ? $" ({e})" : "")));
-        if (m.Clean && error is null) _lastScene = m;
+        if (m.Clean && error is null) { _lastScene = m; _lastSceneRt = rayTraced; }
         _usage?.Invoke("tuning.scene", Services.UsageData.Scene(device.Name, device.ReadCurrent(), m, SceneTests[^1].Problem));
     }
 
@@ -447,7 +452,7 @@ public sealed partial class TuningViewModel : ObservableObject
         var device = Device!;
         IsTuning = true; AutoLog.Clear(); AutoResult = ""; AutoPercent = 0; Status = "";
         _cts = new CancellationTokenSource();
-        var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id), voltage: _voltage);
+        var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id), voltage: _voltage, hotSpot: _hotSpot);
         tuner.Progress += p => _dispatch(() =>
         {
             AutoPercent = p.Fraction * 100;
@@ -503,7 +508,8 @@ public sealed partial class TuningViewModel : ObservableObject
         static string V(double? v, string unit) => Fmt(v, unit);
         string peak = m.PeakClockMHz is { } pk && m.MedianClockMHz is { } md && pk >= md + 15 ? $" (↑{pk:F0})" : "", volt = m.AverageVoltageV is { } vv ? $" · {vv:F3} V" : "";
         string score = load switch { GpuLoadKind.Compute => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " Gop/s", GpuLoadKind.Scene => m.Throughput.ToString("F1", CultureInfo.InvariantCulture) + " FPS", _ => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " GB/s" };
-        return Ltr($"{V(m.MedianClockMHz, " MHz")}{peak}{volt} · {V(m.AveragePowerW, " W")} · {V(m.AverageTemperatureC, " °C")} · {score}");
+        string hot = m.MaxHotSpotC is { } hs ? $" · HOT {hs:F0} °C" : "";
+        return Ltr($"{V(m.MedianClockMHz, " MHz")}{peak}{volt} · {V(m.AveragePowerW, " W")} · {V(m.AverageTemperatureC, " °C")}{hot} · {score}");
     }
 
     /// <summary>At start-up: a journal left behind means an automatic search never came back from the setting it names (a freeze, a reboot, the app
