@@ -95,7 +95,7 @@ public sealed partial class TuningViewModel : ObservableObject
     public int FanMin => L?.FanMinPercent ?? 0; public int FanMax => L?.FanMaxPercent ?? 100;
     public int ClockMax => L?.MaxLockMHz ?? 3000;
 
-    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(ResetCommand), nameof(AutoUndervoltCommand), nameof(AutoOverclockCommand), nameof(CancelAutoCommand),
+    [ObservableProperty, NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(ResetCommand), nameof(AutoUndervoltCommand), nameof(AutoOverclockCommand), nameof(AutoOverclockPlusCommand), nameof(CancelAutoCommand),
         nameof(ApplyProfileCommand), nameof(ScanCurveCommand))]
     private bool _isTuning;
     [ObservableProperty] private double _autoPercent;
@@ -353,6 +353,15 @@ public sealed partial class TuningViewModel : ObservableObject
         return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions(), start, baseline), GpuProfileKind.Overclock);
     }
 
+    [RelayCommand(CanExecute = nameof(CanChange))]
+    private Task AutoOverclockPlus()
+    {
+        if (!_confirm(Loc.Get("Tuning_ConfirmPlus"))) return Task.CompletedTask;
+        var device = Device!;
+        var (start, baseline) = OverclockStart(_doc.Profiles, device.Id, _lastUndervolt);
+        return RunAuto(new OverclockSearch(device.Limits, AutoTuneOptions.Plus(), start, baseline, plus: true), GpuProfileKind.OverclockPlus);
+    }
+
     /// <summary>Where an automatic overclock starts: this session's undervolt of the card, else its newest saved undervolt whose stock measurement
     /// came from the current load (an older, lighter load's score would make any new run look faster), else stock - measured first.</summary>
     internal static (GpuTuningSettings? Start, LoadMeasurement? Baseline) OverclockStart(IEnumerable<GpuProfile> profiles, string gpuId, (string GpuId, GpuTuningSettings Settings, LoadMeasurement Baseline)? session)
@@ -386,7 +395,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (outcome.MemoryBaseline is { } mb && outcome.MemoryTuned is { } mt) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Memory", Describe(mb, GpuLoadKind.Memory), Describe(mt, GpuLoadKind.Memory));
         if (outcome is not { Verdict: AutoTuneVerdict.Improved, Settings: { } found }) return;
         if (kind == GpuProfileKind.Undervolt) _lastUndervolt = (device.Id, found, outcome.Baseline!);
-        string name = Loc.Format(kind == GpuProfileKind.Undervolt ? "Tuning_DefaultName_Undervolt" : "Tuning_DefaultName_Overclock", DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+        string name = Loc.Format(kind == GpuProfileKind.Undervolt ? "Tuning_DefaultName_Undervolt" : kind == GpuProfileKind.OverclockPlus ? "Tuning_DefaultName_OverclockPlus" : "Tuning_DefaultName_Overclock", DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
         AddProfile(new(name, kind, device.Id, device.Name, found, DateTimeOffset.Now, outcome.Baseline, outcome.Tuned, LoadMeasurement.CurrentLoadVersion));
         AutoResult += "\n" + Loc.Format("Tuning_ProfileSaved", name);
         if (_confirm(Loc.Format("Tuning_ConfirmApplyFound", name, Summarize(found)))) { if (Report(device.Apply(found), "Tuning_Applied")) SetStartup(name); Fill(found); }

@@ -3343,4 +3343,11 @@
   <data name="Trace_Cpu_Clock" xml:space="preserve"><value>کلاک CPU</value></data>
   <data name="Trace_Cpu_Power" xml:space="preserve"><value>توان CPU</value></data>
   <data name="Trace_Ram_Load" xml:space="preserve"><value>بار RAM</value></data>
+  <data name="Tuning_AutoOverclockPlus" xml:space="preserve"><value>اورکلاک خودکار پلاس</value></data>
+  <data name="Tuning_AutoOverclockPlus_Title" xml:space="preserve"><value>سریع‌تر، بالاتر از توان کارخانه</value></data>
+  <data name="Tuning_AutoOverclockPlus_Desc" xml:space="preserve"><value>حد توان کارت را تا بیشترین مقداری که درایور اجازه می‌دهد بالا می‌برد، سپس کلاک هسته (تا ۴۵۰ مگاهرتز) و آفست حافظه را با گام‌های ریزتر بالا می‌برد، تا وقتی کارت درست حساب می‌کند و زیر ۸۴ درجه است؛ فقط وقتی نگه داشته می‌شود که امتیاز اندازه‌گیری‌شده بالا برود. توان و دمای بیشتری از حالت کارخانه می‌گیرد.</value></data>
+  <data name="Tuning_ConfirmPlus" xml:space="preserve"><value>اورکلاک پلاس حد توان کارت را به بیشترین مقدار درایور می‌برد و ۲۰ تا ۳۰ دقیقه کلاک‌های بالاتر از کارخانه را آزمایش می‌کند. کارت توان و دمای بیشتری از حالت کارخانه خواهد داشت. چیزی نگه داشته نمی‌شود مگر اینکه سریع‌تر و درست اندازه‌گیری شود؛ با ریبوت یا ریست درایور کارت به حالت کارخانه برمی‌گردد. بازی‌ها را ببندید و کارتان را ذخیره کنید. ادامه می‌دهید؟</value></data>
+  <data name="Tuning_Out_NoPowerLimit" xml:space="preserve"><value>درایور این کارت حد توانی برای بالا بردن نمی‌دهد، پس اورکلاک پلاس چیزی بالاتر از سقف کارخانه ندارد.</value></data>
+  <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس</value></data>
+  <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>اورکلاک پلاس {0}</value></data>
 </root>

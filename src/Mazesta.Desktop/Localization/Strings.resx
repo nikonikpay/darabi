@@ -3343,4 +3343,11 @@ Cancel: stop.</value></data>
   <data name="Trace_Cpu_Clock" xml:space="preserve"><value>CPU clock</value></data>
   <data name="Trace_Cpu_Power" xml:space="preserve"><value>CPU power</value></data>
   <data name="Trace_Ram_Load" xml:space="preserve"><value>RAM load</value></data>
+  <data name="Tuning_AutoOverclockPlus" xml:space="preserve"><value>Automatic overclock Plus</value></data>
+  <data name="Tuning_AutoOverclockPlus_Title" xml:space="preserve"><value>Faster, above the factory power</value></data>
+  <data name="Tuning_AutoOverclockPlus_Desc" xml:space="preserve"><value>Raises the card's power limit to the most its driver allows, then raises the core clock (up to 450 MHz) and the memory offset in finer steps while the card stays correct and under 84 °C; kept only when the measured score rises. Draws more power and runs hotter than stock.</value></data>
+  <data name="Tuning_ConfirmPlus" xml:space="preserve"><value>Overclock Plus raises the card's power limit to the driver's maximum and tests clocks above stock for 20-30 minutes. The card will draw more power and run hotter than at stock. Nothing is kept unless it measures faster and correct; a reboot or driver reset puts the card back to stock. Close games and save your work. Continue?</value></data>
+  <data name="Tuning_Out_NoPowerLimit" xml:space="preserve"><value>This card's driver gives no power limit to raise, so Overclock Plus has nothing above the factory ceiling to use.</value></data>
+  <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>Overclock Plus</value></data>
+  <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>Overclock Plus {0}</value></data>
 </root>

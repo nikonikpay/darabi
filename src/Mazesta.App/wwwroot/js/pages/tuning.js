@@ -167,6 +167,7 @@ export function mount(el) {
   const result = h("p", { class: "h3", style: { whiteSpace: "pre-line", marginTop: "16px" } });
   const log = h("div", {}), profiles = h("div", {}), memory = h("dl", { class: "kv" });
   const autoU = h("button", { class: "btn go", "data-a": "autoundervolt", onclick: () => risky("auto", "autoUndervolt") }, t("Tuning_AutoUndervolt"));
+  const autoP = h("button", { class: "btn primary", "data-a": "autooverclockplus", onclick: () => risky("auto", "autoOverclockPlus") }, t("Tuning_AutoOverclockPlus"));
   const autoO = h("button", { class: "btn primary", "data-a": "autooverclock", onclick: () => risky("auto", "autoOverclock") }, t("Tuning_AutoOverclock"));
   const cancel = h("button", { class: "btn stop", onclick: () => exec("cancel") }, icon("stop"), t("Tuning_Cancel"));
 
@@ -189,7 +190,8 @@ export function mount(el) {
         body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Tuning_Auto_Note")),
           h("div", { class: "auto-pair" },
             h("div", {}, h("div", { class: "h3" }, t("Tuning_AutoUndervolt_Title")), h("p", { class: "caption" }, t("Tuning_AutoUndervolt_Desc")), autoU),
-            h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO)),
+            h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO),
+            h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclockPlus_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclockPlus_Desc")), autoP)),
           running, result, log] }),
       box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, a: "profiles", body: profiles })),
     h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },

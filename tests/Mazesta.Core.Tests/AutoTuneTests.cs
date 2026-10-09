@@ -119,6 +119,26 @@ public class AutoTuneTests
         Assert.Equal(AutoTuneVerdict.NoImprovement, outcome.Verdict);
     }
 
+    [Fact] public void Overclock_plus_raises_the_power_limit_and_may_draw_more_than_stock()
+    {
+        var start = new GpuTuningSettings(0, 0, 1905, null, null);
+        var (outcome, steps) = Drive(new OverclockSearch(Limits, AutoTuneOptions.Plus(), start, M(1905, 300, throughput: 190.5), plus: true), step => step.Load == GpuLoadKind.Memory
+            ? M(step.Settings.MaxClockMHz ?? 1905, 340, throughput: 800 + step.Settings.MemoryOffsetMHz * 0.1, errors: step.Settings.MemoryOffsetMHz > 1000 ? 1 : 0)
+            : M(step.Settings.MaxClockMHz!.Value, 350, throughput: step.Settings.MaxClockMHz!.Value / 10.0, errors: step.Settings.MaxClockMHz > 2100 ? 1 : 0));   // 350 W: above stock's 300, under the 365 limit
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
+        Assert.All(steps.Where(s => s.Kind != TuneStepKind.Baseline), s => Assert.Equal(365, s.Settings.PowerLimitW));
+        Assert.Equal(365, outcome.Settings!.PowerLimitW);
+        Assert.True(outcome.Settings.MaxClockMHz > 2000);
+    }
+
+    [Fact] public void Overclock_plus_stops_at_the_temperature_ceiling_and_needs_a_power_limit_to_raise()
+    {
+        var (hot, _) = Drive(new OverclockSearch(Limits, AutoTuneOptions.Plus(), new(0, 0, 1905, null, null), M(1905, 300, throughput: 100), plus: true), step => M(step.Settings.MaxClockMHz ?? 1905, 330, temp: 90, throughput: 110));
+        Assert.Equal(AutoTuneVerdict.NoImprovement, hot.Verdict);
+        var (none, steps) = Drive(new OverclockSearch(Limits with { PowerLimitMinW = null, PowerLimitMaxW = null }, AutoTuneOptions.Plus(), null, null, plus: true), _ => M(1905, 300));
+        Assert.Equal(AutoTuneVerdict.Unsupported, none.Verdict); Assert.Empty(steps);
+    }
+
     [Fact] public void Overclock_without_a_baseline_measures_stock_first()
     {
         var (_, steps) = Drive(new OverclockSearch(Limits, Options, null, null), Overclockable(2000, 400));

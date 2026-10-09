@@ -59,6 +59,10 @@ public sealed record AutoTuneOptions
     public double MinGainPercent { get; init; } = 1;
     /// <summary>Tuned throughput may drop this much below stock and still count as "the same performance" - run-to-run noise.</summary>
     public double ThroughputNoisePercent { get; init; } = 2;
+    /// <summary>"Overclock Plus" keeps going while the hottest second of a step stays under this, whatever power it draws (up to the driver's own power limit).</summary>
+    public double PlusMaxTemperatureC { get; init; } = 84;
+    /// <summary>The options of an Overclock Plus search: a longer reach for the core clock and finer, longer memory steps.</summary>
+    public static AutoTuneOptions Plus() => new() { MaxClockRaise = 450, MemoryOffsetStep = 100, MaxMemoryOffset = 2000 };
 }
 
 public enum AutoTuneVerdict { Improved, NoImprovement, Unsupported, Failed, Cancelled }
@@ -170,6 +174,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
 {
     private enum Phase { Baseline, Core, MemoryBaseline, Memory, Confirm, ConfirmMemory, Done }
     private readonly GpuTuningLimits _limits; private readonly AutoTuneOptions _options;
+    private readonly bool _plus; private readonly int? _power;
     private Phase _phase;
     private LoadMeasurement? _baseline, _memoryBaseline, _confirmed;
     private int _offset, _startClock, _clock, _bestClock, _memory, _bestMemory, _confirmTries;
@@ -179,9 +184,13 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     /// <param name="start">The undervolt to build on (its offset and clock cap), or null to start from the stock clock with no offset.</param>
     /// <param name="baseline">Stock measured earlier in this session (the undervolt's baseline); null to measure it first.</param>
-    public OverclockSearch(GpuTuningLimits limits, AutoTuneOptions options, GpuTuningSettings? start, LoadMeasurement? baseline)
+    /// <param name="plus">Above the factory ceiling: the power limit is raised to the most the driver allows and the search is bound by that limit and by
+    /// <see cref="AutoTuneOptions.PlusMaxTemperatureC"/> instead of by the power the card drew at stock. Needs a card with a power limit to raise.</param>
+    public OverclockSearch(GpuTuningLimits limits, AutoTuneOptions options, GpuTuningSettings? start, LoadMeasurement? baseline, bool plus = false)
     {
-        _limits = limits; _options = options; _baseline = baseline;
+        _limits = limits; _options = options; _baseline = baseline; _plus = plus;
+        if (plus && limits.HasPowerLimit) _power = limits.PowerLimitMaxW;
+        if (plus && _power is null) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoPowerLimit"); return; }
         _offset = start?.CoreOffsetMHz ?? 0;
         if (start?.MaxClockMHz is { } clock) _startClock = clock;
         _phase = baseline is null || _startClock == 0 ? Phase.Baseline : Phase.Core;
@@ -190,7 +199,11 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     private int ClockCeiling => Math.Min(_limits.MaxLockMHz, _startClock + _options.MaxClockRaise);
     private int MemoryCeiling => Math.Min(_limits.MemoryOffsetMax, _options.MaxMemoryOffset);
-    private GpuTuningSettings At(int clock, int memory) => new(_offset, memory, clock, null, null);
+    private GpuTuningSettings At(int clock, int memory) => new(_offset, memory, clock, _power, null);
+    /// <summary>Whether a step stayed inside what the search allows: no more power than stock drew (+2 %), or - Plus - than the raised limit, and, Plus, a cool enough card.</summary>
+    private bool InBudget(LoadMeasurement m)
+        => _plus ? m.AveragePowerW is { } pw && pw <= _power!.Value && (m.MaxTemperatureC ?? 0) <= _options.PlusMaxTemperatureC
+        : m.AveragePowerW is { } p && p <= _baseline!.AveragePowerW!.Value * 1.02;
 
     public TuneStep? Next()
     {
@@ -229,8 +242,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
             case Phase.Core:
                 int tried = step.Settings.MaxClockMHz!.Value;
                 bool faster = m.MedianClockMHz is { } c && c >= _bestClockSeen + _options.ClockBinMHz / 2.0;
-                bool withinPower = m.AveragePowerW is { } p && p <= _baseline!.AveragePowerW!.Value * 1.02;
-                if (m.Clean && faster && withinPower)
+                if (m.Clean && faster && InBudget(m))
                 {
                     _clock = tried; _bestClockSeen = m.MedianClockMHz!.Value;
                     if (_clock + _options.ClockStep <= ClockCeiling) return;
@@ -256,7 +268,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
                 _phase = Phase.Confirm;
                 return;
             case Phase.Confirm:
-                if (!m.Clean || !(m.AveragePowerW <= _baseline!.AveragePowerW * 1.02)) { Retry(); return; }
+                if (!m.Clean || !InBudget(m)) { Retry(); return; }
                 _confirmed = m;
                 _phase = _bestMemory > 0 ? Phase.ConfirmMemory : Phase.Done;
                 if (_phase == Phase.Done) Judge(null);
@@ -284,6 +296,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
         bool computeGain = c.Throughput >= b.Throughput * (1 + _options.MinGainPercent / 100);
         bool memoryGain = memory is not null && _memoryBaseline is { Clean: true } mb && memory.Throughput >= mb.Throughput * (1 + _options.MinGainPercent / 100);
         var settings = At(_bestClock, _bestMemory);
+        if (_plus && !settings.PowerLimitW.HasValue) { Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoGain", c, null, memory); return; }
         if (computeGain || memoryGain) Finish(AutoTuneVerdict.Improved, "Tuning_Out_OverclockFound", c, settings, memory);
         else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoGain", c, null, memory);
     }

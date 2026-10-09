@@ -72,6 +72,7 @@ public sealed partial class WebBridge
                 case "scanCurve": if (t.ScanCurveCommand.CanExecute(null)) await t.ScanCurveCommand.ExecuteAsync(null); break;
                 case "autoUndervolt": if (t.AutoUndervoltCommand.CanExecute(null)) await t.AutoUndervoltCommand.ExecuteAsync(null); break;
                 case "autoOverclock": if (t.AutoOverclockCommand.CanExecute(null)) await t.AutoOverclockCommand.ExecuteAsync(null); break;
+                case "autoOverclockPlus": if (t.AutoOverclockPlusCommand.CanExecute(null)) await t.AutoOverclockPlusCommand.ExecuteAsync(null); break;
                 case "cancel": if (t.CancelAutoCommand.CanExecute(null)) t.CancelAutoCommand.Execute(null); break;
                 case "firmware": t.RestartToFirmwareCommand.Execute(null); break;
                 default: throw new ArgumentException("unknown command");

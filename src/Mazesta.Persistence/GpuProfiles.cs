@@ -1,7 +1,7 @@
 using Mazesta.Core.Tuning;
 namespace Mazesta.Persistence;
 
-public enum GpuProfileKind { Manual, Undervolt, Overclock }
+public enum GpuProfileKind { Manual, Undervolt, Overclock, OverclockPlus }
 
 /// <summary>A saved set of GPU settings. <see cref="GpuId"/> ties it to the card it was made on: the app is portable and travels between customers'
 /// machines, and a profile found stable on one card says nothing about another - even of the same model. The measurements are the evidence an
