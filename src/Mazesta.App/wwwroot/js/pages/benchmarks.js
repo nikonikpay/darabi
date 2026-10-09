@@ -122,7 +122,7 @@ export function benchList(component = null) {
           n.detail ? h("p", { class: "detail" }, n.detail) : null);
       }
       const recKey = JSON.stringify([r.best, r.compared]);
-      if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean)); }
+      if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean), r.best || r.compared ? h("button", { class: "btn quiet", type: "button", onclick: () => lastRun(r) }, icon("chart"), t("Bench_Chart")) : null); }
       // A run in progress keeps the last standing on screen (the host sends none while the row runs).
       const peerKey = JSON.stringify(r.peers);
       // What this run showed about the machine (the checkup), the ones that need action first; kept on screen while a new run is under way.
@@ -276,8 +276,8 @@ function youRow(p, rank) {
 
 // One run in full, or two side by side (this system and another): the result, then the conditions measured during the run, the other numbers
 // it measured, the part's specifications and the system's, each group folding so the list stays readable. A value one side lacks is a dash.
-function compare(mine, theirs, two) {
-  const sides = two ? [mine, theirs] : [mine];
+function compare(mine, theirs, two, more = []) {
+  const sides = two ? [mine, theirs, ...more] : [mine], pair = sides.length === 2;
   if (!sides.some(Boolean)) return h("p", { class: "rec-none" }, t("Web_Detail_None"));
   // Each row is a figure's name and, per side, its value (with the number behind it where the page can compare it); two sides get the quicker one marked.
   const rows = (pick) => {
@@ -290,13 +290,13 @@ function compare(mine, theirs, two) {
     if (!list.length) return null;
     return h("details", { class: `cmp-group ${key.startsWith("Web_Detail_") ? "p-" + key.slice(11).toLowerCase() : ""}`, open: open || null }, h("summary", {}, t(key)),
       h("table", { class: "cmp" }, h("tbody", {}, list.map(([n, ...xs]) => {
-        const g = two ? gain(xs[0], xs[1]) : null;
+        const g = pair ? gain(xs[0], xs[1]) : null;
         return h("tr", {}, h("th", {}, n), xs.map((x, i) => cell(x, g?.win === i, g)));
       }))));
   };
-  const head = h("table", { class: "cmp cmp-head" }, h("thead", {}, h("tr", {}, h("th", {}), sides.map((s, i) => h("th", {}, two ? t(i ? "Web_Detail_That" : "Web_Detail_This") : t("Web_Detail_Result"))))),
+  const head = h("table", { class: "cmp cmp-head" }, h("thead", {}, h("tr", {}, h("th", {}), sides.map((s, i) => h("th", {}, s?.label ?? (two ? t(i ? "Web_Detail_That" : "Web_Detail_This") : t("Web_Detail_Result")))))),
     h("tbody", {}, (() => {
-      const g = two ? gain(mine && { raw: mine.raw, hb: mine.hb }, theirs && { raw: theirs.raw, hb: theirs.hb }) : null;
+      const g = pair ? gain(mine && { raw: mine.raw, hb: mine.hb }, theirs && { raw: theirs.raw, hb: theirs.hb }) : null;
       return h("tr", { class: "big" }, h("th", {}, t("Web_Detail_Result")), sides.map((s, i) => h("td", { class: `num big ${g?.win === i ? "win" : ""}` }, s?.value ?? "—", g?.win === i ? gainTag(g) : null)));
     })(),
       h("tr", {}, h("th", {}, t("Web_Detail_Date")), sides.map((s) => h("td", { class: "lat" }, s?.at ?? "—"))),
@@ -367,9 +367,10 @@ async function allPeers(r) {
 async function history(r) {
   const runs = await call("bench.history", { id: r.id });
   const staff = !!boot.staff;
-  const cols = ["Web_Runs_Date", "Web_Runs_Machine", "Web_Runs_Part", "Web_Runs_Value", "Web_Runs_Oc", ...(staff ? ["Web_Runs_Featured"] : [])];
+  const cols = ["Web_Runs_Pick", "Web_Runs_Date", "Web_Runs_Machine", "Web_Runs_Part", "Web_Runs_Value", "Web_Runs_Oc", ...(staff ? ["Web_Runs_Featured"] : [])];
   const mark = (x, patch) => call("bench.mark", { id: r.id, run: x.id, ...patch });
-  const body = [];
+  const body = [], picked = new Set();
+  const cmpBtn = h("button", { class: "btn", type: "button", disabled: true, onclick: () => compareRuns(r, runs.filter((x) => picked.has(x.id))) }, icon("chart"), t("Web_Runs_Compare"));
   if (runs && runs.length) {
     const tbody = h("tbody", {});
     for (const x of runs) {
@@ -377,8 +378,12 @@ async function history(r) {
         onclick: async (e) => { e.stopPropagation(); x.featured = !x.featured; star.classList.toggle("on", x.featured); star.setAttribute("aria-pressed", String(x.featured)); await mark(x, { featured: x.featured }); } }, icon("star"));
       const oc = h("input", { type: "checkbox", class: "check", "aria-label": t("Web_Runs_Oc"), onclick: (e) => e.stopPropagation(), onchange: async (e) => { x.detail.oc = e.target.checked; await mark(x, { oc: e.target.checked }); } });
       oc.checked = !!x.detail?.oc; oc.disabled = !staff;
+      const pick = h("input", { type: "checkbox", class: "check", "aria-label": t("Web_Runs_Pick"), onclick: (e) => e.stopPropagation(), onchange: (e) => {
+        if (e.target.checked) picked.add(x.id); else picked.delete(x.id);
+        if (picked.size > 4) { picked.delete(x.id); e.target.checked = false; toast(t("Web_Runs_CompareMax"), "fail"); }
+        cmpBtn.disabled = picked.size < 2; } });
       const tr = h("tr", { class: "openable", tabIndex: 0, title: t("Web_Detail_Open") },
-        h("td", { class: "lat" }, x.at), h("td", { class: "lat" }, x.machine), h("td", { class: "lat" }, x.part), h("td", { class: "num" }, x.value), h("td", {}, oc), staff ? h("td", {}, star) : null);
+        h("td", {}, pick), h("td", { class: "lat" }, x.at), h("td", { class: "lat" }, x.machine), h("td", { class: "lat" }, x.part), h("td", { class: "num" }, x.value), h("td", {}, oc), staff ? h("td", {}, star) : null);
       let open = null;
       const toggle = () => {
         if (open) { open.remove(); open = null; return; }
@@ -391,9 +396,92 @@ async function history(r) {
       tr.addEventListener("keydown", (e) => { if (e.target === tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggle(); } });
       tbody.append(tr);
     }
-    body.push(staff ? h("p", { class: "note" }, t("Web_Runs_MarkHint")) : null, h("div", { class: "runs-wrap" }, h("table", { class: "runs" }, h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, t(c))))), tbody)));
+    body.push(staff ? h("p", { class: "note" }, t("Web_Runs_MarkHint")) : null, h("p", { class: "note" }, t("Web_Runs_CompareHint")), h("div", { class: "runs-wrap" }, h("table", { class: "runs" }, h("thead", {}, h("tr", {}, cols.map((c) => h("th", {}, t(c))))), tbody)));
   } else body.push(h("p", { class: "rec-none" }, t("Web_Runs_Empty")));
-  sheet(r.name, t(staff ? "Web_Runs_Note" : "Web_Runs_Note_Client"), [...body, staff ? h("div", { class: "btn-row" }, h("button", { class: "btn", type: "button", onclick: () => call("bench.exec", { cmd: "openRuns" }) }, icon("folder"), t("Web_Runs_Folder"))) : null]);
+  sheet(r.name, t(staff ? "Web_Runs_Note" : "Web_Runs_Note_Client"), [...body, h("div", { class: "btn-row" }, cmpBtn, staff ? h("button", { class: "btn", type: "button", onclick: () => call("bench.exec", { cmd: "openRuns" }) }, icon("folder"), t("Web_Runs_Folder")) : null)]);
+}
+
+// The lines of a chart, one per measured quantity: a line wears its part's hue (the other lines of the part a step lighter), a chip in the
+// legend shows or hides it, and the pointer reads every shown line's value at that second. Each line has its own scale (0 to its largest
+// value, a percentage to 100) so a clock and a load can share the picture; a comparison of runs shares one scale instead.
+const PART_HUE = { Gpu: "--c-gpu", Cpu: "--c-cpu", Ram: "--c-ram" };
+const SVGNS = "http://www.w3.org/2000/svg";
+function chart(lines, shared = false) {
+  const W = 760, H = 240, L = 8, R = 8, T = 10, B = 22, n = Math.max(...lines.map((l) => l.values.length)), on = new Set(lines.map((l) => l.id));
+  const ns = (tag, a) => { const e = document.createElementNS(SVGNS, tag); for (const k in a) e.setAttribute(k, a[k]); return e; };
+  const svg = ns("svg", { viewBox: `0 0 ${W} ${H}`, class: "trace", role: "img" });
+  const wrap = h("div", { class: "trace-wrap" }), tip = h("div", { class: "trace-tip", hidden: true }), legend = h("div", { class: "chips trace-legend", role: "group" });
+  const x = (i) => L + (n < 2 ? 0 : i / (n - 1)) * (W - L - R);
+  const maxOf = (l) => Math.max(...l.values.filter((v) => v !== null && v !== undefined), 0);
+  const sharedTop = shared ? Math.max(...lines.map(maxOf), 1) : 1;
+  const top = (l) => shared ? sharedTop : l.unit === "%" ? 100 : maxOf(l) || 1;
+  const y = (l, v) => T + (1 - v / top(l)) * (H - T - B);
+  const cursor = ns("line", { class: "cur", y1: T, y2: H - B, visibility: "hidden" });
+  function paint() {
+    svg.replaceChildren();
+    for (let g = 0; g <= 4; g++) svg.append(ns("line", { class: "grid", x1: L, x2: W - R, y1: T + g * (H - T - B) / 4, y2: T + g * (H - T - B) / 4 }));
+    const step = Math.max(1, Math.ceil(n / 8));
+    for (let i = 0; i < n; i += step) { const tx = ns("text", { class: "ax", x: x(i), y: H - 6, "text-anchor": i === 0 ? "start" : "middle" }); tx.textContent = `${i}s`; svg.append(tx); }
+    for (const l of lines) {
+      if (!on.has(l.id)) continue;
+      let d = "", pen = false;
+      l.values.forEach((v, i) => { if (v === null || v === undefined) { pen = false; return; } d += `${pen ? "L" : "M"}${x(i).toFixed(1)} ${y(l, v).toFixed(1)}`; pen = true; });
+      svg.append(ns("path", { d, class: "ln", stroke: l.color }));
+    }
+    svg.append(cursor);
+  }
+  for (const l of lines) {
+    const vals = l.values.filter((v) => v !== null && v !== undefined), avg = vals.length ? vals.reduce((a, c) => a + c, 0) / vals.length : 0;
+    const chip = h("button", { class: "chip on", type: "button", onclick: () => { if (on.has(l.id)) on.delete(l.id); else on.add(l.id); chip.classList.toggle("on", on.has(l.id)); paint(); } },
+      h("i", { class: "sw", style: { background: l.color } }), l.label, h("span", { class: "lat" }, ` ${avg.toFixed(0)} ${l.unit}`));
+    legend.append(chip);
+  }
+  svg.addEventListener("pointermove", (e) => {
+    const r = svg.getBoundingClientRect(), i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) / r.width * W - L) / (W - L - R) * (n - 1))));
+    cursor.setAttribute("x1", x(i)); cursor.setAttribute("x2", x(i)); cursor.setAttribute("visibility", "visible");
+    tip.hidden = false; tip.style.left = `${Math.min(70, (x(i) / W) * 100)}%`;
+    tip.replaceChildren(h("b", { class: "lat" }, `${i}s`), ...lines.filter((l) => on.has(l.id) && l.values[i] !== null && l.values[i] !== undefined)
+      .map((l) => h("div", {}, h("i", { class: "sw", style: { background: l.color } }), l.label, " ", h("span", { class: "lat" }, `${l.values[i]} ${l.unit}`))));
+  });
+  svg.addEventListener("pointerleave", () => { tip.hidden = true; cursor.setAttribute("visibility", "hidden"); });
+  paint(); wrap.append(svg, tip);
+  return h("div", { class: "trace-box" }, wrap, legend);
+}
+
+// A part's lines in the part's hue, each next one of the same part a step lighter.
+function traceLines(trace) {
+  const seen = {};
+  return (trace || []).map((s) => {
+    const k = seen[s.part] = (seen[s.part] ?? -1) + 1;
+    return { id: s.key, label: s.name, unit: s.unit, values: s.values, color: `color-mix(in oklab, var(${PART_HUE[s.part] || "--c-gpu"}) ${100 - k * 22}%, white)` };
+  });
+}
+
+// The latest run of a row in full: the chart of what the monitor read during it, then every number (the row keeps only a summary).
+async function lastRun(r) {
+  const d = await call("bench.last", { id: r.id });
+  if (!d) { toast(t("Web_Detail_None"), "fail"); return; }
+  const lines = traceLines(d.trace);
+  sheet(r.name, `${d.machine} · ${d.at}`, [h("div", { class: "trace-head" }, h("b", { class: "num big" }, d.value), h("span", { class: "caption lat" }, d.part)),
+    lines.length ? chart(lines) : h("p", { class: "rec-none" }, t("Web_Chart_NoTrace")), compare(d.detail, null, false)]);
+}
+
+// Two to four logged runs (from any machine this copy has logged) side by side: their figures in columns and, for the quantity picked, their lines on one scale.
+function compareRuns(r, picked) {
+  const hues = ["var(--c-gpu)", "var(--c-cpu)", "var(--c-ram)", "#e0b040"];
+  const runs = picked.map((x, i) => ({ ...x, label: `${x.machine} · ${x.at.slice(0, 10)}`, color: hues[i] }));
+  const keys = [];
+  for (const x of runs) for (const s of x.trace || []) if (!keys.includes(s.key)) keys.push(s.key);
+  const holder = h("div", {});
+  const chips = h("div", { class: "chips", role: "group" }, keys.map((k) => h("button", { class: "chip", type: "button", "data-k": k, onclick: () => show(k) }, runs.flatMap((x) => x.trace || []).find((s) => s.key === k).name)));
+  function show(k) {
+    for (const c of chips.children) c.classList.toggle("on", c.dataset.k === k);
+    const lines = runs.map((x) => { const s = (x.trace || []).find((q) => q.key === k); return s && { id: x.id, label: x.label, unit: s.unit, values: s.values, color: x.color }; }).filter(Boolean);
+    holder.replaceChildren(lines.length ? chart(lines, true) : h("p", { class: "rec-none" }, t("Web_Chart_NoTrace")));
+  }
+  const side = (x) => ({ ...x.detail, label: x.label });
+  sheet(r.name, t("Web_Runs_Compare"), [keys.length ? chips : h("p", { class: "rec-none" }, t("Web_Chart_NoTrace")), holder, compare(side(runs[0]), side(runs[1]), true, runs.slice(2).map(side))]);
+  if (keys.length) show(keys[0]);
 }
 
 export function mount(el) {

@@ -1579,3 +1579,11 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .fail-dialog .btn-row { flex-wrap: wrap; }
 .fail-dialog .btn-row .btn.primary { flex: none; }
 .fail-list li.fail-more { border-color: var(--rule); background: transparent; }
+
+/* Charts of a run: lines in the part's hue, chips as the legend. */
+.trace-box { margin: 10px 0 14px; } .trace-wrap { position: relative; } .trace { width: 100%; height: auto; display: block; touch-action: none; }
+.trace .grid { stroke: var(--rule-2); stroke-width: 1; } .trace .ax { fill: var(--paper-3, currentColor); font: 10px Archivo, sans-serif; opacity: .7; } .trace .cur { stroke: var(--paper); stroke-width: 1; opacity: .5; }
+.trace .ln { fill: none; stroke-width: 2; stroke-linejoin: round; } .trace-legend { margin-top: 8px; } .trace-legend .chip { opacity: .45; } .trace-legend .chip.on { opacity: 1; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 6px; vertical-align: middle; }
+.trace-tip { position: absolute; top: 4px; padding: 6px 8px; border: 1px solid var(--rule-2); border-radius: var(--r-ctl); background: var(--ink); font-size: 12px; pointer-events: none; direction: ltr; }
+.trace-head { display: flex; align-items: baseline; gap: 12px; }

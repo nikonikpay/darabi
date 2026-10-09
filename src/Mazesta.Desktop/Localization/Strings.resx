@@ -3329,4 +3329,18 @@ Cancel: stop.</value></data>
   <data name="Test_Frames_One" xml:space="preserve"><value>One frame (each is finished before the next)</value></data>
   <data name="Test_Frames_Two" xml:space="preserve"><value>Two frames (the next is prepared while the card draws this one)</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>Weather detail: three times the bodies, finer air, a 233 MB grid</value></data>
+  <data name="Bench_Chart" xml:space="preserve"><value>Chart and full result</value></data>
+  <data name="Web_Chart_NoTrace" xml:space="preserve"><value>No per-second readings were kept for this run (it was made before they were recorded, or the machine reports none).</value></data>
+  <data name="Web_Runs_Pick" xml:space="preserve"><value>Compare</value></data>
+  <data name="Web_Runs_Compare" xml:space="preserve"><value>Compare selected runs</value></data>
+  <data name="Web_Runs_CompareHint" xml:space="preserve"><value>Tick two to four runs (from any machine this copy has recorded) to see them side by side.</value></data>
+  <data name="Web_Runs_CompareMax" xml:space="preserve"><value>At most four runs can be compared.</value></data>
+  <data name="Trace_Gpu_Load" xml:space="preserve"><value>GPU load</value></data>
+  <data name="Trace_Gpu_Clock" xml:space="preserve"><value>GPU clock</value></data>
+  <data name="Trace_Gpu_Temp" xml:space="preserve"><value>GPU temperature</value></data>
+  <data name="Trace_Gpu_Power" xml:space="preserve"><value>GPU power</value></data>
+  <data name="Trace_Cpu_Load" xml:space="preserve"><value>CPU load</value></data>
+  <data name="Trace_Cpu_Clock" xml:space="preserve"><value>CPU clock</value></data>
+  <data name="Trace_Cpu_Power" xml:space="preserve"><value>CPU power</value></data>
+  <data name="Trace_Ram_Load" xml:space="preserve"><value>RAM load</value></data>
 </root>

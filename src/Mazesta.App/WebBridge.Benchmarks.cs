@@ -110,7 +110,7 @@ public sealed partial class WebBridge
                         runs.Of(table).Where(x => x.System == s.Hash && x.Overclocked == overclocked).Select(x => x.Value), h.HigherIsBetter, c.Current.Unit);
                     var details = await DetailsOf(h.Part, part, options);
                     runs.Append(new BenchmarkRun(Guid.NewGuid().ToString("N"), c.Current.At, run.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(run.Definition.Id.Value, options), BenchmarkPeers.PartName(part),
-                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details]));
+                        s.Hash, Environment.MachineName, s.Name, c.Current.Value, c.Current.Unit, app, c.Current.Metrics, overclocked, [.. run.Result.Setup ?? [], .. details], BenchmarkTrace.Capture(engine, run.Result.StartedAt, run.Result.FinishedAt)));
                     memo.Clear(); PushSoon("bench", State);
                 }
                 catch (Exception e) { _log.LogWarning(e, "Benchmark run not logged for comparison"); }
@@ -253,8 +253,16 @@ public sealed partial class WebBridge
             return runs.Of(Table(r, h)).Take(500).Select(x => new
             {
                 id = x.Id, at = x.At.ToLocalTime().ToString("yyyy/MM/dd HH:mm", Loc.Culture), machine = x.Machine, part = x.Part, value = Units.FormatMeasured(x.Value, x.Unit), app = x.App,
-                featured = marks.GetValueOrDefault(x.Id)?.Featured ?? false, note = marks.GetValueOrDefault(x.Id)?.Note, detail = Detail(x.Value, x.Unit, x.Overclocked, x.At, x.Metrics, x.Details),
+                featured = marks.GetValueOrDefault(x.Id)?.Featured ?? false, note = marks.GetValueOrDefault(x.Id)?.Note, detail = Detail(x.Value, x.Unit, x.Overclocked, x.At, x.Metrics, x.Details), trace = TraceJson(x.Trace),
             });
+        });
+        // This system's latest logged run of a row, in full with its trace: the chart and the full result open from the row.
+        Method("bench.last", p =>
+        {
+            var r = Row(p);
+            if (Headline(r) is not { } h || MyLast(Table(r, h)) is not { } x) return null;
+            return new { id = x.Id, at = x.At.ToLocalTime().ToString("yyyy/MM/dd HH:mm", Loc.Culture), machine = x.Machine, part = x.Part, value = Units.FormatMeasured(x.Value, x.Unit),
+                detail = Detail(x.Value, x.Unit, x.Overclocked, x.At, x.Metrics, x.Details), trace = TraceJson(x.Trace) };
         });
         // The shop's word on a logged run: featured (a reference result on every copy once published) and overclocked.
         Method("bench.mark", p =>
@@ -335,6 +343,8 @@ public sealed partial class WebBridge
         system = (details ?? []).Where(d => d.Group == BenchmarkDetails.SystemGroup).Select(SpecJson),
         run = (details ?? []).Where(d => d.Group == BenchmarkDetails.RunGroup).Select(SpecJson),
     };
+    private static object? TraceJson(IReadOnlyList<TraceSeries>? trace)
+        => trace is null ? null : trace.Select(s => new { key = s.Key, name = Loc.Get(s.Key), part = s.Part, unit = s.Unit, values = s.Values });
     private static object SpecJson(SpecItem s) => new { name = Loc.Get(s.Key), value = s.Value };
 
     /// <summary>The GPU a run chose (the option holds "name|LUID"), or the one it runs on by default.</summary>

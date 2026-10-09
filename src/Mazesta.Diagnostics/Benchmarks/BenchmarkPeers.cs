@@ -8,7 +8,7 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// own files and never go into the lists.
 /// </summary>
 public sealed record BenchmarkRun(string Id, DateTimeOffset At, string Benchmark, int Version, string Settings, string Part, string System, string Machine, string Spec,
-    double Value, string Unit, string? App = null, IReadOnlyList<BenchmarkMetric>? Metrics = null, bool Overclocked = false, IReadOnlyList<SpecItem>? Details = null)
+    double Value, string Unit, string? App = null, IReadOnlyList<BenchmarkMetric>? Metrics = null, bool Overclocked = false, IReadOnlyList<SpecItem>? Details = null, IReadOnlyList<TraceSeries>? Trace = null)
 {
     [JsonIgnore] public string Table => BenchmarkPeers.TableKey(Benchmark, Version, Settings);
 }

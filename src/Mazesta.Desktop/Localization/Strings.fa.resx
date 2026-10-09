@@ -3329,4 +3329,18 @@
   <data name="Test_Frames_One" xml:space="preserve"><value>یک فریم (هر فریم تمام می‌شود، بعد فریم بعدی)</value></data>
   <data name="Test_Frames_Two" xml:space="preserve"><value>دو فریم (فریم بعدی آماده می‌شود تا کارت فریم فعلی را می‌کشد)</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، هوای ریزتر، شبکهٔ ۲۳۳ مگابایتی</value></data>
+  <data name="Bench_Chart" xml:space="preserve"><value>نمودار و نتیجهٔ کامل</value></data>
+  <data name="Web_Chart_NoTrace" xml:space="preserve"><value>برای این اجرا اندازه‌گیری ثانیه‌به‌ثانیه نگه داشته نشده (قبل از ثبت آن اجرا شده یا دستگاه آن را گزارش نمی‌کند).</value></data>
+  <data name="Web_Runs_Pick" xml:space="preserve"><value>مقایسه</value></data>
+  <data name="Web_Runs_Compare" xml:space="preserve"><value>مقایسهٔ اجراهای انتخاب‌شده</value></data>
+  <data name="Web_Runs_CompareHint" xml:space="preserve"><value>دو تا چهار اجرا را (از هر سیستمی که این نسخه ثبت کرده) علامت بزنید تا کنار هم دیده شوند.</value></data>
+  <data name="Web_Runs_CompareMax" xml:space="preserve"><value>حداکثر چهار اجرا را می‌شود مقایسه کرد.</value></data>
+  <data name="Trace_Gpu_Load" xml:space="preserve"><value>بار GPU</value></data>
+  <data name="Trace_Gpu_Clock" xml:space="preserve"><value>کلاک GPU</value></data>
+  <data name="Trace_Gpu_Temp" xml:space="preserve"><value>دمای GPU</value></data>
+  <data name="Trace_Gpu_Power" xml:space="preserve"><value>توان GPU</value></data>
+  <data name="Trace_Cpu_Load" xml:space="preserve"><value>بار CPU</value></data>
+  <data name="Trace_Cpu_Clock" xml:space="preserve"><value>کلاک CPU</value></data>
+  <data name="Trace_Cpu_Power" xml:space="preserve"><value>توان CPU</value></data>
+  <data name="Trace_Ram_Load" xml:space="preserve"><value>بار RAM</value></data>
 </root>
