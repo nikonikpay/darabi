@@ -62,8 +62,10 @@ public static class BenchmarkDetails
     }
 
     /// <summary><paramref name="vramBytes"/> is the card's own total (the monitor reads it; Windows' WMI caps it at 4 GB), or null.</summary>
-    public static IEnumerable<SpecItem> Gpu(GpuInfo? gpu, double? vramBytes)
+    public static IEnumerable<SpecItem> Gpu(GpuInfo? gpu, double? vramBytes, int discrete = 0)
     {
+        // one card runs a GPU test; the others (an integrated GPU never counts, nor does a card the test cannot open) are named only as the cards present
+        if (discrete > 0) yield return new(PartGroup, "Spec_GpuCount", discrete > 1 ? Inv($"1 / {discrete}") : "1");
         if (vramBytes is > 0 and var v) yield return new(PartGroup, "Spec_Vram", Size(v));
         if (Text(gpu?.DriverVersion) is { } driver) yield return new(PartGroup, "Spec_Driver", driver);
     }

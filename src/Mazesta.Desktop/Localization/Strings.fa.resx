@@ -1477,6 +1477,7 @@
   <data name="Spec_RatedClock" xml:space="preserve"><value>فرکانس اسمی (طبق ویندوز)</value></data>
   <data name="Spec_Socket" xml:space="preserve"><value>سوکت</value></data>
   <data name="Spec_Vram" xml:space="preserve"><value>حافظه گرافیک</value></data>
+  <data name="Spec_GpuCount" xml:space="preserve"><value>کارت‌های گرافیک شرکت‌کننده (از میان کارت‌های موجود)</value></data>
   <data name="Spec_Driver" xml:space="preserve"><value>نسخه درایور</value></data>
   <data name="Spec_Memory" xml:space="preserve"><value>رم</value></data>
   <data name="Spec_Modules" xml:space="preserve"><value>ماژول‌های رم</value></data>

@@ -69,7 +69,7 @@ public sealed partial class WebBridge
             IEnumerable<SpecItem> own = part switch
             {
                 PeerPart.Cpu => BenchmarkDetails.Cpu(inv.Cpu, CpuTopology.Cores),
-                PeerPart.Gpu => BenchmarkDetails.Gpu(inv.Gpus.FirstOrDefault(g => Same(g.Name, partName)), VramBytes(engine, partName)),
+                PeerPart.Gpu => BenchmarkDetails.Gpu(inv.Gpus.FirstOrDefault(g => Same(g.Name, partName)), VramBytes(engine, partName), GpuDevices.Discrete),
                 PeerPart.Memory => BenchmarkDetails.Memory(inv),
                 PeerPart.Drive => BenchmarkDetails.Drive(inv.Storage.FirstOrDefault(d => Same(d.FriendlyName, partName))),
                 _ => [],

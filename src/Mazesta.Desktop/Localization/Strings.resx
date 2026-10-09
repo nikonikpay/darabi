@@ -1477,6 +1477,7 @@ The update services stopped and disabled</value></data>
   <data name="Spec_RatedClock" xml:space="preserve"><value>Rated clock (as Windows reports it)</value></data>
   <data name="Spec_Socket" xml:space="preserve"><value>Socket</value></data>
   <data name="Spec_Vram" xml:space="preserve"><value>Video memory</value></data>
+  <data name="Spec_GpuCount" xml:space="preserve"><value>Graphics cards used (of those present)</value></data>
   <data name="Spec_Driver" xml:space="preserve"><value>Driver version</value></data>
   <data name="Spec_Memory" xml:space="preserve"><value>Memory</value></data>
   <data name="Spec_Modules" xml:space="preserve"><value>Memory modules</value></data>

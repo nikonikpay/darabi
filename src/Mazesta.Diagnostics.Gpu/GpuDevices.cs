@@ -33,6 +33,9 @@ public static class GpuDevices
     public static IReadOnlyList<OptionChoice> Choices()
         => Adapters.OrderByDescending(d => d.DedicatedMemorySize).Select(d => new OptionChoice(KeyOf(d), $"{d.Name} ({d.DedicatedMemorySize >> 30} GB)")).ToList();
 
+    /// <summary>The cards that could take part in a test: the hardware adapters with memory of their own, so neither the processor's integrated graphics nor a software adapter. One of them runs a test.</summary>
+    public static int Discrete => Adapters.Count(d => d.DedicatedMemorySize >= 512L << 20);
+
     public const string NoGpu = "No DirectX 12 hardware GPU is available.";
 
     /// <summary>The adapter a test or benchmark request chose through <see cref="Option"/>.</summary>
