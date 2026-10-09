@@ -82,6 +82,7 @@ public sealed class CpuIntegerExecutor : ITestExecutor
         string detail = SensorEvidence.Join($"integer load (multiply, 64-bit divide, shift, rotate, xor, branch) on {threads} threads, every block checked against a precomputed checksum",
             $"blocks={blocks}", $"{Gops(blocks, total.Elapsed.TotalSeconds):F1} Gop/s (integer)", coverage.Describe(CpuTopology.Cores), firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished)?.Format("CPU core clock", " MHz", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));

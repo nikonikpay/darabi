@@ -79,6 +79,7 @@ public sealed class CpuHashExecutor : ITestExecutor
         string detail = SensorEvidence.Join($"SHA-256 and Deflate round trip on {threads} threads (SHA extensions: {(System.Runtime.Intrinsics.X86.X86Base.IsSupported && (System.Runtime.Intrinsics.X86.X86Base.CpuId(7, 0).Ebx & (1 << 29)) != 0 ? "yes" : "no")}), every block checked against a precomputed hash",
             $"blocks={blocks}", $"{MBps(blocks, total.Elapsed.TotalSeconds):F0} MB/s of input", coverage.Describe(CpuTopology.Cores), size > 0 ? $"compressed to {size * 100.0 / Bytes:F1}%" : null, firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished)?.Format("CPU core clock", " MHz", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));

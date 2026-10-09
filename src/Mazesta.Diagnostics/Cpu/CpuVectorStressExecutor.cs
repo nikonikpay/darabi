@@ -120,6 +120,7 @@ public sealed class CpuVectorStressExecutor : ITestExecutor, ITestAvailability
         string detail = SensorEvidence.Join($"vector FMA stress, {width switch { Width.Avx512 => "AVX-512", Width.Avx2 => "AVX2 + FMA", _ => "SSE2" }}, {threads} threads, every lane checked against a scalar reference",
             $"blocks={blocks}", $"{gflops:F0} GFLOPS (FP64)", coverage.Describe(CpuTopology.Cores), errors > 0 ? $"{errors} block(s) computed a wrong result; errors per lane {string.Join(" ", laneErrors.Select((e, l) => $"{l}:{e}"))}; {firstError}" : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished)?.Format("CPU core clock", " MHz", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuEffectiveClockAverage, started, finished)?.Format("average effective clock", " MHz"),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);

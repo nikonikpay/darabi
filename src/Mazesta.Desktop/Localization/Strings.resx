@@ -709,7 +709,7 @@
   <data name="Tuning_Kind_Undervolt" xml:space="preserve"><value>Undervolt</value></data>
   <data name="Tuning_Kind_Overclock" xml:space="preserve"><value>Overclock</value></data>
   <data name="Tuning_Evidence" xml:space="preserve"><value>Stock: {0}  →  tuned: {1}</value></data>
-  <data name="Tuning_Evidence_Memory" xml:space="preserve"><value>Memory at stock: {0}  →  tuned: {1}</value></data>
+  <data name="Tuning_Evidence_Memory" xml:space="preserve"><value>Memory without the memory raise: {0}  →  tuned: {1}</value></data>
   <data name="Tuning_Range_Core" xml:space="preserve"><value>core offset {0}</value></data>
   <data name="Tuning_Range_NoCore" xml:space="preserve"><value>no core offset control</value></data>
   <data name="Tuning_Range_Memory" xml:space="preserve"><value>memory offset {0}</value></data>
@@ -2978,7 +2978,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} of {1} blocks were locked in RAM; Windows would not lock the rest, so they may have gone to disk while waiting and their result says nothing about the RAM</value></data>
   <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>First mismatch in buffer block {0} (at {1} MiB) with the pattern “{2}”</value></data>
   <data name="Detail_Mem_Offsets" xml:space="preserve"><value>Errors are placed by position in the test's own buffer, not by physical address or slot</value></data>
-  <data name="Detail_Mem_Passes" xml:space="preserve"><value>Passes: {0} of {1} patterns</value></data>
+  <data name="Detail_Mem_Passes" xml:space="preserve"><value>Passes: {0} over {1} rotating patterns</value></data>
   <data name="Detail_Mem_PassesShort" xml:space="preserve"><value>Passes: {0} of {1} patterns (not every pattern ran; a longer run covers them all)</value></data>
   <data name="Detail_Mem_Pattern" xml:space="preserve"><value>Memory pattern test</value></data>
   <data name="Detail_Mem_RunLonger" xml:space="preserve"><value>Run it longer for a result</value></data>
@@ -3414,4 +3414,14 @@ Cancel: stop.</value></data>
   <data name="Detail_W_NoGpu" xml:space="preserve"><value>No DirectX 12 hardware graphics card is available.</value></data>
   <data name="Detail_Gpu_Lost" xml:space="preserve"><value>The graphics card was lost during the test (the driver reported: device removed, {0})</value></data>
   <data name="Detail_Mem_HeldHalf" xml:space="preserve"><value>{0} MiB was held as all ones, then all zeros, each untouched for half the run</value></data>
+  <data name="Detail_L_CpuCoreClock" xml:space="preserve"><value>Processor core clock</value></data>
+  <data name="Detail_Cpu_PeakCoreClock" xml:space="preserve"><value>Highest core clock: {0} MHz</value></data>
+  <data name="Detail_Ai_Method" xml:space="preserve"><value>DirectML matrix multiply {0}x{0}x{0} (GEMM for FP32 and FP16, integer matmul for INT8), DirectML feature level {1}</value></data>
+  <data name="Detail_Gpu_On" xml:space="preserve"><value>on {0}</value></data>
+  <data name="Detail_Ai_Numbers" xml:space="preserve"><value>{0} (Mazesta's own DirectML matrix multiply, not a commercial score)</value></data>
+  <data name="Detail_W_StorageRoom" xml:space="preserve"><value>Only {0} MiB are free: the test file ({1} MiB) plus a 1 GiB margin does not fit.</value></data>
+  <data name="Detail_Net_Https" xml:space="preserve"><value>HTTPS to {0}, {1} parallel streams, {2} s down then {3} s up</value></data>
+  <data name="Detail_Net_IcmpEchoes" xml:space="preserve"><value>ICMP to {0} ({1} echoes)</value></data>
+  <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} MB moved</value></data>
+  <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at the starting settings: {0}  →  tuned: {1}</value></data>
 </root>

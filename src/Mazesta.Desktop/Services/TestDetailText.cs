@@ -14,7 +14,7 @@ public static partial class TestDetailText
     private static readonly Dictionary<string, string> Labels = new(StringComparer.Ordinal)
     {
         ["GPU load"] = "Detail_L_GpuLoad", ["CPU load"] = "Detail_L_CpuLoad", ["GPU core"] = "Detail_L_GpuCore", ["GPU temperature"] = "Detail_L_GpuCore", ["GPU hot spot"] = "Detail_L_GpuHotSpot",
-        ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["average effective clock"] = "Detail_L_CpuEffClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
+        ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["average effective clock"] = "Detail_L_CpuEffClock", ["CPU core clock"] = "Detail_L_CpuCoreClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
     };
     private static readonly Dictionary<string, string> Counts = new(StringComparer.Ordinal)
     {
@@ -50,6 +50,7 @@ public static partial class TestDetailText
         R(@"no internet connection", "Detail_W_NoInternet"),
         R(@"The driver refused to allocate any VRAM buffer\.", "Detail_W_NoVramBuffer"),
         R(@"No DirectX 12 hardware GPU is available\.", "Detail_W_NoGpu"),
+        R(@"(\d+) MiB free; the test file \((\d+) MiB\) plus a 1 GiB margin does not fit\.", "Detail_W_StorageRoom"),
         R(@"No LAN partner was given: start the LAN partner on another computer and enter its address\.", "Detail_W_NoLanPartner"),
         R(@"The LAN test needs at least 3 seconds\.", "Detail_W_LanShort"),
         R(@"The CPU does not support '(.+)'\.", "Detail_W_CpuLacks"),
@@ -157,6 +158,7 @@ public static partial class TestDetailText
         R(@"([\d,.]+) FPS lowest half-second", "Detail_Gpu_FpsLow"),
         R(@"the test window was closed before the time was up", "Detail_Gpu_WindowClosed"),
         // ——— what the processor and the RAM did during a graphics run, and what Mazesta itself cost ———
+        R(@"peak core clock ([\d.]+) MHz", "Detail_Cpu_PeakCoreClock"),
         R(@"CPU clock peak ([\d.]+) MHz", "Detail_Cpu_ClockPeak"),
         R(@"CPU clock avg ([\d.]+) MHz", "Detail_Cpu_ClockAvg"),
         R(@"CPU load avg ([\d.]+) %", "Detail_Cpu_LoadAvg"),
@@ -164,6 +166,13 @@ public static partial class TestDetailText
         R(@"RAM speed (\d+) MT/s", "Detail_Ram_Speed"),
         R(@"RAM CAS latency \(profile at that speed\) (\d+) CL", "Detail_Ram_Cas"),
         R(@"Mazesta's own load: processor ([\d.]+) cores busy on average \(peak ([\d.]+); (\d+) % of the whole processor\), RAM (\d+) MB on average \(peak (\d+) MB\)", "Detail_Footprint"),
+        // ——— the AI test and the internet-speed test ———
+        R(@"DirectML (\d+)x\d+x\d+ matrix multiply \(GEMM for FP32/FP16, integer matmul for INT8\), DirectML feature level (\S+)", "Detail_Ai_Method"),
+        R(@"((?:Fp32|Fp16|Int8) [\d.]+ (?:TFLOPS|TOPS)(?:, (?:Fp32|Fp16|Int8) [\d.]+ (?:TFLOPS|TOPS))*) \(Mazesta's DirectML matrix multiply, not a commercial score\)", "Detail_Ai_Numbers", m => [G(m, 1).Replace("Fp", "FP", StringComparison.Ordinal).Replace("Int8", "INT8", StringComparison.Ordinal)]),
+        R(@"on ((?:NVIDIA|AMD|Radeon|Intel|GeForce|Arc) .+)", "Detail_Gpu_On"),
+        R(@"HTTPS to (\S+), (\d+) parallel streams, (\d+) s down then (\d+) s up", "Detail_Net_Https"),
+        R(@"ICMP to (\S+) \((\d+) echoes\)", "Detail_Net_IcmpEchoes"),
+        R(@"(\d+) MB transferred", "Detail_Net_Transferred"),
         // ——— Windows' own tools ———
         R(@"(sfc\.exe|dism\.exe) (.+): (Healthy|Repaired|Damaged|Unknown) \(exit code (-?\d+)\)", "Detail_Win_Tool", m => [G(m, 1), G(m, 2), Loc.Get("Detail_Win_" + G(m, 3)), G(m, 4)]),
     ]);
@@ -173,7 +182,7 @@ public static partial class TestDetailText
     public sealed record DetailView(IReadOnlyList<DetailFigure> Figures, IReadOnlyList<DetailLine> Lines);
 
     /// <summary>The order the key figures stand in: the heat, clock and power of the part under test first, then the frame rate, then the rest.</summary>
-    private static readonly string[] FigureOrder = ["GPU temperature", "GPU core", "GPU hot spot", "GPU clock", "GPU power", "GPU load", "fps avg", "fps low", "GPU memory clock", "CPU temperature", "CPU package power", "CPU load", "VRAM in use"];
+    private static readonly string[] FigureOrder = ["GPU temperature", "GPU core", "GPU hot spot", "GPU clock", "GPU power", "GPU load", "fps avg", "fps low", "GPU memory clock", "CPU temperature", "CPU core clock", "CPU package power", "CPU load", "VRAM in use"];
 
     /// <summary>The detail as the page shows it: the figures that matter (a measured highest or average) apart, and every other line as <see cref="Lines"/> words it.</summary>
     public static DetailView View(string? detail)
@@ -284,7 +293,7 @@ public static partial class TestDetailText
     /// <summary>An internet-speed number's name as the benchmark shows it ("score_gaming" is the metric Bench_Net_Score_Gaming), or null when there is none.</summary>
     private static string? NetName(string lower)
     {
-        string key = "Bench_Net_" + string.Join("_", lower.Split('_').Select(w => w.Length == 0 ? w : char.ToUpperInvariant(w[0]) + w[1..]));
+        string key = "Bench_Net_" + (lower switch { "loadedping" => "LoadedPing", "dataused" => "DataUsed", _ => string.Join("_", lower.Split('_').Select(w => w.Length == 0 ? w : char.ToUpperInvariant(w[0]) + w[1..])) });
         return Loc.Get(key) is var name && name != key ? name : null;
     }
 

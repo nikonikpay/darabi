@@ -5,7 +5,7 @@ namespace Mazesta.App;
 /// <summary>
 /// <c>Mazesta.exe --selftest=undervolt|overclock|plus|scene|scenert</c>: runs that tuning feature on the real card with nobody at the screen and writes every step and the
 /// outcome to <c>logs/selftest-&lt;kind&gt;.txt</c>. It only measures - the finding is not applied (see <see cref="TuningViewModel.SelfTest"/>). It opens no port and takes no input.
-/// <c>--selftest=tests[N]</c> runs every test this machine can, N seconds each (15 by default), and writes what each result's page would show: its figures and lines, a line
+/// <c>--selftest=tests[N][:id,id]</c> runs every test this machine can (or just the listed ones), N seconds each (15 by default), and writes what each result's page would show: its figures and lines, a line
 /// that is still the executor's English marked <c>[LATIN]</c>.
 /// </summary>
 internal static class SelfTest
@@ -15,7 +15,7 @@ internal static class SelfTest
 
     public static void Run(string kind, IServiceProvider services, AppPaths paths, UiDispatcher ui, ILogger log) => _ = Task.Run(async () =>
     {
-        string file = Path.Combine(paths.LogsDir, $"selftest-{kind}.txt");
+        string file = Path.Combine(paths.LogsDir, $"selftest-{kind.Replace(':', '-').Replace(',', '+')}.txt");   // (a colon would name a stream of another file)
         void Say(string line) { try { File.AppendAllText(file, $"{DateTime.Now:HH:mm:ss}  {line}{Environment.NewLine}"); } catch (IOException) { } }
         try
         {
@@ -51,12 +51,15 @@ internal static class SelfTest
     private static async Task RunTests(string kind, IServiceProvider services, UiDispatcher ui, Action<string> say)
     {
         await Task.Delay(TimeSpan.FromSeconds(25));   // the sensor scan has listed the parts by then
-        string seconds = int.TryParse(kind[5..], out int n) && n > 0 ? n.ToString(System.Globalization.CultureInfo.InvariantCulture) : "15";
+        string[] only = kind.Contains(':') ? kind[(kind.IndexOf(':') + 1)..].Split(',') : [];   // tests15:gpu.vram,gpu.render - just these
+        string count = kind.Contains(':') ? kind[5..kind.IndexOf(':')] : kind[5..];
+        string seconds = int.TryParse(count, out int n) && n > 0 ? n.ToString(System.Globalization.CultureInfo.InvariantCulture) : "15";
         var center = await Ui(ui, () => services.GetRequiredService<Func<TestCenterViewModel>>()());
         var chosen = await Ui(ui, () =>
         {
             foreach (var r in center.Rows) r.RefreshAvailability();
             center.SelectAllCommand.Execute(null);
+            if (only.Length > 0) foreach (var r in center.Rows) r.IsSelected &= only.Contains(r.Definition.Id.Value);
             foreach (var r in center.Rows.Where(r => r.IsSelected)) r.DurationText = seconds;
             _ = center.StartCommand.ExecuteAsync(null);
             return center.Rows.Where(r => r.IsSelected).Select(r => r.Definition.Id.Value).ToList();
@@ -64,7 +67,7 @@ internal static class SelfTest
         say($"{chosen.Count} tests, {seconds} s each: {string.Join(", ", chosen)}");
         await Task.Delay(TimeSpan.FromSeconds(5));
         while (await Ui(ui, () => center.IsRunning)) await Task.Delay(TimeSpan.FromSeconds(2));
-        foreach (var row in await Ui(ui, () => center.Rows.ToList()))
+        foreach (var row in await Ui(ui, () => center.Rows.Where(r => chosen.Contains(r.Definition.Id.Value)).ToList()))
         {
             var (id, name, outcome, errors, detail, advice) = await Ui(ui, () => (row.Definition.Id.Value, row.Name, row.Outcome, row.ErrorCount, row.Detail, row.Advice));
             say($"=== {id} | {outcome} | errors {errors} | {name}");

@@ -156,6 +156,7 @@ public sealed class CpuFftExecutor(Memory.IMemoryProbe? probe = null) : ITestExe
         string detail = SensorEvidence.Join($"radix-2 complex FFT, N={Small} and N={Large}, {threads} threads" + (threads < Environment.ProcessorCount ? $" of {Environment.ProcessorCount} (free RAM held {threads} workers of {WorkerBytes >> 20} MiB)" : "") + $"; checked against a direct DFT (relative error {dft:G2}), an inverse round trip and Parseval, then bit for bit",
             $"transforms={transforms}", coverage.Describe(CpuTopology.Cores), $"{flops / Math.Max(0.001, total.Elapsed.TotalSeconds) / 1e9:F1} GFLOPS (5·N·log2 N)", firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished)?.Format("CPU core clock", " MHz", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, errors, detail);
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));

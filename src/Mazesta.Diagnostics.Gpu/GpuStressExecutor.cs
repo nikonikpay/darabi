@@ -106,7 +106,9 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
             SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, card, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, card, null)?.Format("GPU core", "°C", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, card, null)?.Format("GPU hot spot", "°C", includeMax: true),
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, card, null)?.Format("GPU power", " W", includeMax: true));
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, card, null)?.Format("GPU power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, card, null)?.Format("GPU clock", " MHz", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, card, null)?.Format("GPU memory clock", " MHz", includeMax: true));
     }
 
     /// <summary>Recomputes <see cref="SamplesPerBatch"/> random threads through all <paramref name="dispatches"/> of a batch on the CPU cores and

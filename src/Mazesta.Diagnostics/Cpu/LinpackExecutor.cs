@@ -120,6 +120,7 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
         return SensorEvidence.Join($"Linpack (LU with partial pivoting), n={n} ({8L * n * n >> 20} MiB), {Environment.ProcessorCount} threads", filled.Length > 0 ? filled : null, $"iterations={iterations}",
             iterations > 0 ? $"{gflops:F1} GFLOPS" : null, iterations > 0 ? $"worst scaled residual {residual:G3} (bound 16)" : null, firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished)?.Format("CPU core clock", " MHz", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
     }
 

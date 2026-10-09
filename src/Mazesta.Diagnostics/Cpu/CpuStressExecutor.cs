@@ -134,6 +134,7 @@ public sealed class CpuStressExecutor : ITestExecutor
             coverage.Describe(CpuTopology.Cores), firstError.Length > 0 ? firstError : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuTotalLoad, started, finished)?.Format("measured CPU load", "%"),
             SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuPackagePower, started, finished)?.Format("CPU package power", " W", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Cpu, SensorRole.CpuCoreClock, started, finished)?.Format("CPU core clock", " MHz", includeMax: true),
             SensorEvidence.CpuTemperature(request.Engine, started, finished)?.Format("CPU temperature", "°C", includeMax: true));
         if (ct.IsCancellationRequested) return new(Definition.Id, TestOutcome.Cancelled, started, finished, wrong, detail);
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));

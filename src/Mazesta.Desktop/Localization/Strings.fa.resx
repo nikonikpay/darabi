@@ -709,7 +709,7 @@
   <data name="Tuning_Kind_Undervolt" xml:space="preserve"><value>آندرولت</value></data>
   <data name="Tuning_Kind_Overclock" xml:space="preserve"><value>اورکلاک</value></data>
   <data name="Tuning_Evidence" xml:space="preserve"><value>کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
-  <data name="Tuning_Evidence_Memory" xml:space="preserve"><value>حافظه در حالت کارخانه: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Tuning_Evidence_Memory" xml:space="preserve"><value>حافظه بدون افزایش حافظه: {0}  ←  تنظیم‌شده: {1}</value></data>
   <data name="Tuning_Range_Core" xml:space="preserve"><value>آفست هسته {0}</value></data>
   <data name="Tuning_Range_NoCore" xml:space="preserve"><value>کنترل آفست هسته ندارد</value></data>
   <data name="Tuning_Range_Memory" xml:space="preserve"><value>آفست حافظه {0}</value></data>
@@ -2978,7 +2978,7 @@
   <data name="Detail_Mem_LockedSome" xml:space="preserve"><value>{0} بلوک از {1} بلوک در رم قفل شد؛ ویندوز بقیه را قفل نکرد، پس شاید حین انتظار به دیسک رفته باشند و نتیجهٔ آن‌ها چیزی دربارهٔ رم نمی‌گوید</value></data>
   <data name="Detail_Mem_Mismatch" xml:space="preserve"><value>اولین ناهمخوانی در بلوک {0} بافر (موقعیت {1} MiB) با الگوی «{2}»</value></data>
   <data name="Detail_Mem_Offsets" xml:space="preserve"><value>جای خطا با موقعیت در بافر خود آزمون گفته می‌شود، نه نشانی فیزیکی یا شکاف رم</value></data>
-  <data name="Detail_Mem_Passes" xml:space="preserve"><value>گذرها: {0} از {1} الگو</value></data>
+  <data name="Detail_Mem_Passes" xml:space="preserve"><value>گذرها: {0} (روی {1} الگوی در گردش)</value></data>
   <data name="Detail_Mem_PassesShort" xml:space="preserve"><value>گذرها: {0} از {1} الگو (همهٔ الگوها اجرا نشد؛ اجرای طولانی‌تر همه را می‌پوشاند)</value></data>
   <data name="Detail_Mem_Pattern" xml:space="preserve"><value>آزمون الگویی حافظه</value></data>
   <data name="Detail_Mem_RunLonger" xml:space="preserve"><value>برای گرفتن نتیجه، طولانی‌تر اجرا کنید</value></data>
@@ -3414,4 +3414,14 @@
   <data name="Detail_W_NoGpu" xml:space="preserve"><value>هیچ کارت گرافیک سخت‌افزاری با DirectX 12 در دسترس نیست.</value></data>
   <data name="Detail_Gpu_Lost" xml:space="preserve"><value>کارت گرافیک وسط تست از دست رفت (گزارش درایور: دستگاه حذف شد، {0})</value></data>
   <data name="Detail_Mem_HeldHalf" xml:space="preserve"><value>{0} MiB یک بار تمام‌یک و یک بار تمام‌صفر نگه داشته شد، هر بار نیمی از زمان تست دست‌نخورده</value></data>
+  <data name="Detail_L_CpuCoreClock" xml:space="preserve"><value>فرکانس هسته‌های پردازنده</value></data>
+  <data name="Detail_Cpu_PeakCoreClock" xml:space="preserve"><value>بیشترین فرکانس هسته: {0} MHz</value></data>
+  <data name="Detail_Ai_Method" xml:space="preserve"><value>ضرب ماتریس DirectML به اندازهٔ {0}x{0}x{0} (GEMM برای FP32 و FP16، ضرب ماتریس صحیح برای INT8)، سطح قابلیت DirectML: {1}</value></data>
+  <data name="Detail_Gpu_On" xml:space="preserve"><value>روی {0}</value></data>
+  <data name="Detail_Ai_Numbers" xml:space="preserve"><value>{0} (ضرب ماتریس DirectML خود مازستا، نه امتیاز برنامه‌های تجاری)</value></data>
+  <data name="Detail_W_StorageRoom" xml:space="preserve"><value>فقط {0} MiB جای خالی است: فایل آزمون ({1} MiB) به‌علاوهٔ حاشیهٔ یک گیگابایتی جا نمی‌شود.</value></data>
+  <data name="Detail_Net_Https" xml:space="preserve"><value>HTTPS به {0} با {1} جریان هم‌زمان، {2} ثانیه دانلود و بعد {3} ثانیه آپلود</value></data>
+  <data name="Detail_Net_IcmpEchoes" xml:space="preserve"><value>پینگ (ICMP) به {0} ({1} درخواست)</value></data>
+  <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} مگابایت داده جابه‌جا شد</value></data>
+  <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) با تنظیمات نقطهٔ شروع: {0}  ←  تنظیم‌شده: {1}</value></data>
 </root>

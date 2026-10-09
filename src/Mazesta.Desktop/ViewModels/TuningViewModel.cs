@@ -391,7 +391,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!_confirm(Loc.Get("Tuning_ConfirmAuto"))) return Task.CompletedTask;
         var device = Device!;
         var (start, baseline) = OverclockStart(_doc.Profiles, device.Id, _lastUndervolt);
-        return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions(), start, baseline), GpuProfileKind.Overclock);
+        return RunAuto(new OverclockSearch(device.Limits, new AutoTuneOptions(), start, baseline), GpuProfileKind.Overclock, start is not null);
     }
 
     [RelayCommand(CanExecute = nameof(CanChange))]
@@ -400,7 +400,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!_confirm(Loc.Get("Tuning_ConfirmPlus"))) return Task.CompletedTask;
         var device = Device!;
         var (start, baseline) = OverclockStart(_doc.Profiles, device.Id, _lastUndervolt);
-        return RunAuto(new OverclockSearch(device.Limits, AutoTuneOptions.Plus(), start, baseline, plus: true), GpuProfileKind.OverclockPlus);
+        return RunAuto(new OverclockSearch(device.Limits, AutoTuneOptions.Plus(), start, baseline, plus: true), GpuProfileKind.OverclockPlus, start is not null);
     }
 
     /// <summary>Where an automatic overclock starts: this session's undervolt of the card, else its newest saved undervolt whose stock measurement
@@ -445,7 +445,8 @@ public sealed partial class TuningViewModel : ObservableObject
 
     [RelayCommand] private void ClearSceneTests() { SceneTests.Clear(); _lastScene = null; }
 
-    private async Task RunAuto(IAutoTuneSearch search, GpuProfileKind kind)
+    /// <param name="fromProfile">The search starts from a saved undervolt, so its 3D-scene baseline is that profile, not stock.</param>
+    private async Task RunAuto(IAutoTuneSearch search, GpuProfileKind kind, bool fromProfile = false)
     {
         if (!TryEnter(out var lease)) return;
         using var held = lease;
@@ -468,7 +469,7 @@ public sealed partial class TuningViewModel : ObservableObject
         _usage?.Invoke("tuning.auto", Services.UsageData.Auto(kind.ToString(), device.Name, outcome));
         if (outcome.Baseline is { PeakClockMHz: not null } f) AutoResult += "\n" + Loc.Format("Tuning_Factory", Ltr(Fmt(f.MedianClockMHz, " MHz")), Ltr(Fmt(f.PeakClockMHz, " MHz")), Ltr(Fmt(f.AveragePowerW, " W")), Ltr(Fmt(f.PeakPowerW, " W")), Ltr(f.AverageVoltageV is { } v ? $"{v:F3} V" : "—"));
         if (outcome.Baseline is { } b && outcome.Tuned is { } t) AutoResult += "\n" + Loc.Format("Tuning_Evidence", Describe(b), Describe(t));
-        if (outcome.SceneBaseline is { } sb) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Scene", Describe(sb, GpuLoadKind.Scene), outcome.SceneTuned is { } st ? Describe(st, GpuLoadKind.Scene) : "—");
+        if (outcome.SceneBaseline is { } sb) AutoResult += "\n" + Loc.Format(fromProfile ? "Tuning_Evidence_SceneStart" : "Tuning_Evidence_Scene", Describe(sb, GpuLoadKind.Scene), outcome.SceneTuned is { } st ? Describe(st, GpuLoadKind.Scene) : "—");
         if (outcome.MemoryBaseline is { } mb && outcome.MemoryTuned is { } mt) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Memory", Describe(mb, GpuLoadKind.Memory), Describe(mt, GpuLoadKind.Memory));
         if (outcome is not { Verdict: AutoTuneVerdict.Improved, Settings: { } found }) return;
         if (kind == GpuProfileKind.Undervolt) _lastUndervolt = (device.Id, found, outcome.Baseline!);
