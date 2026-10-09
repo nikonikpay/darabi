@@ -158,7 +158,7 @@ export function mount(el) {
     slider("core", "Tuning_Label_CoreOffset", "MHz", null, 15), slider("memory", "Tuning_Label_MemoryOffset", "MHz", null, 50),
     slider("maxClock", "Tuning_Label_MaxClock", "MHz", "lockClock", 15), slider("power", "Tuning_Label_PowerLimit", "W", "setPower"), slider("fan", "Tuning_Label_Fan", "%", "manualFan"),
     h("div", { class: "toolbar", style: { marginTop: "18px" } },
-      h("button", { class: "btn primary", id: "tApply", onclick: () => risky("manual", "apply") }, t("Tuning_Apply")), h("button", { class: "btn stop", id: "tReset", onclick: () => exec("reset") }, t("Tuning_Reset"))),
+      h("button", { class: "btn primary", id: "tApply", onclick: () => exec("apply") }, t("Tuning_Apply")), h("button", { class: "btn stop", id: "tReset", onclick: () => exec("reset") }, t("Tuning_Reset"))),
     h("div", { class: "toolbar" }, (f.profileName = h("input", { class: "field", placeholder: t("Tuning_ProfileNameHint"), style: { flex: 1 }, oninput: (e) => set("profileName", e.target.value) })),
       h("button", { class: "btn", onclick: () => exec("saveProfile") }, t("Tuning_SaveProfile"))),
     h("p", { class: "h3", id: "tStatus" }));
@@ -297,7 +297,7 @@ export function mount(el) {
         h("span", {}, h("b", {}, p.name), "  ", h("span", { class: "caption lat" }, p.created), p.startup ? [" ", h("span", { class: "pill pass", title: t("Tuning_Startup_Hint") }, t("Tuning_Startup"))] : null),
         h("div", { class: "acts", style: { gridColumn: 3, gridRow: "1 / 3" } },
           h("button", { class: "btn", title: t("Tuning_LoadProfile_Hint"), onclick: () => exec("loadProfile", { index: String(p.index) }) }, t("Tuning_LoadProfile")),
-          h("button", { class: "btn primary", onclick: () => risky("manual", "applyProfile", { index: String(p.index) }) }, t("Tuning_Apply")),
+          h("button", { class: "btn primary", onclick: () => exec("applyProfile", { index: String(p.index) }) }, t("Tuning_Apply")),
           h("button", { class: "btn stop", onclick: () => exec("deleteProfile", { index: String(p.index) }) }, t("Tuning_Delete"))),
         h("span", { class: "sum", style: { gridColumn: 2 } }, p.summary, p.evidence ? h("br") : null, p.evidence)))
         : [h("p", { class: "caption" }, t("Tuning_Profiles_Empty"))]));
