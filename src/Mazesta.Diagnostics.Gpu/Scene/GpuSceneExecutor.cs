@@ -18,7 +18,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", WeatherOption = "weather";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", WeatherOption = "weather", FramesOption = "frames";
     /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
     /// test's window shows and hides it while it runs. It is laid over the finished frame and is outside what a benchmark times.</summary>
     internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
@@ -32,6 +32,12 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "off",
         () => [new("off", "Test_RayTracing_Off", true, "no rain, no wind-blown leaves"), new("on", "Test_Switch_On", true, "rain, gusts, leaves and twigs, the air a fluid on every core, plants swaying (20,000 bodies, 29 MB of solids, 29 MB of air)"),
                new("high", "Test_Weather_High", true, "three times the bodies, a finer air (98 MB) and 233 MB of solids: the memory and every core set the speed")]);
+    /// <summary>How many frames are in flight at once: one is drawn and waited for before the next is prepared (the processor's share of a frame, a millisecond or two, is time the card is idle); two lets the processor prepare
+    /// the next frame while the card draws this one, so the card is never idle - what a game does. The scene is the same; the frame rate, and how busy the card is kept, are what differ.</summary>
+    internal static readonly TestOption Frames = new(FramesOption, "Test_Option_Frames", TestOptionKind.Choice, "1",
+        () => [new("1", "Test_Frames_One", true, "each frame is finished before the next is prepared"), new("2", "Test_Frames_Two", true, "the next frame is prepared while the card draws this one (what a game does)")]);
+    /// <summary>The frames in flight a choice means.</summary>
+    internal static int FramesOf(string choice) => choice == "2" ? 2 : 1;
     /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>
     internal static string SizeLabel(string text) => "⁦" + text + "⁩";
     internal static IReadOnlyList<OptionChoice> Sizes() => [new("1280x720", SizeLabel("1280 × 720 (HD)")), new("1920x1080", SizeLabel("1920 × 1080 (Full HD)")), new("2560x1440", SizeLabel("2560 × 1440 (2K)")), new("3840x2160", SizeLabel("3840 × 2160 (4K)"))];
@@ -43,7 +49,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Weather, FullScreen, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Weather, Frames, FullScreen, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -84,7 +90,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         var (w, h) = screenSize ? (0, 0) : ParseSize(res);
         uint load = (uint)Math.Clamp(int.TryParse(options.Get(LoadOption), out int l) ? l : 3, 1, 4);
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12", level = LoadNames[load - 1];
-        using var session = new D3D12Session(device);
+        using var session = new D3D12Session(device, FramesOf(options.Get(FramesOption)));
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (screenSize) (w, h) = (window.Width, window.Height);
         using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, WeatherLevel.Parse(options.Get(WeatherOption)));
@@ -93,10 +99,11 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";
         var gpu = GpuNode(request.Engine, session.AdapterName); var ram = facts?.Invoke();
         renderer.Overlay.Visible = options.Get(OverlayOption) != "off";
+        using var pace0 = new SceneSensorPace(request.Engine, renderer.Overlay.Visible);
 
-        long frames = 0, checks = 0, errors = 0; ulong? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
+        long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
-        var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0; var pace = new FramePace(); var frameClock = new Stopwatch();
+        var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0; var pace = new FramePace(); long lastShown = Stopwatch.GetTimestamp();
         ShowReadout(0);
         try
         {
@@ -107,13 +114,12 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                 if (window.OverlayKey()) { renderer.Overlay.Visible = !renderer.Overlay.Visible; ShowReadout(0); }
                 if (reference is null || lastCheck.Elapsed.TotalSeconds >= CheckSeconds)
                 {
-                    ulong sum = renderer.CheckFrame(CheckTime); checks++; lastCheck.Restart();
+                    var sum = renderer.CheckFrame(CheckTime); checks++; lastCheck.Restart(); lastShown = Stopwatch.GetTimestamp();   // (a check frame between two is not a stutter)
                     if (reference is null) reference = sum;
-                    else if (sum != reference) { errors++; if (firstError.Length == 0) firstError = $"check frame {checks} differs from the first one (same scene, same moment)"; }
+                    else if (!SceneView.Same(sum, reference)) { errors++; if (firstError.Length == 0) firstError = $"check frame {checks} differs from the first one (same scene, same moment)"; }
                 }
-                frameClock.Restart();
                 renderer.Present((float)total.Elapsed.TotalSeconds);
-                pace.Frame(frameClock.Elapsed.TotalSeconds);   // the frame's own drawing, as the benchmark counts it: a check frame between two is not a stutter
+                long now = Stopwatch.GetTimestamp(); pace.Frame(Stopwatch.GetElapsedTime(lastShown, now).TotalSeconds); lastShown = now;   // the gap from one shown frame to the next, as the benchmark counts it
                 frames++; updateFrames++;
                 if (updateClock.Elapsed.TotalSeconds >= 0.5)
                 {
@@ -129,7 +135,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe()); }
         if (closed) return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, SensorEvidence.Join("the test window was closed before the time was up", Describe()));
         // One last check, so the end of the run is verified too.
-        if (reference is { } r && renderer.CheckFrame(CheckTime) != r) { errors++; if (firstError.Length == 0) firstError = "the final check frame differs from the first one"; }
+        if (reference is { } r && !SceneView.Same(renderer.CheckFrame(CheckTime), r)) { errors++; if (firstError.Length == 0) firstError = "the final check frame differs from the first one"; }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
         return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe());
 
@@ -222,7 +228,8 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         var rows = new List<SceneOverlay.Row>();
         void Add(string name, uint hue, params SceneOverlay.Figure?[] figures) { var f = figures.OfType<SceneOverlay.Figure>().ToList(); if (f.Count > 0) rows.Add(new(name, hue, f)); }
         Add("GPU", SceneOverlay.GpuHue, One(gpu, "%", SensorRole.GpuLoad3D), One(gpu, "°C", SensorRole.GpuCoreTemp), One(gpu, "°C HOT", SensorRole.GpuHotSpotTemp), One(gpu, "W", SensorRole.GpuPower), One(gpu, "% FAN", SensorRole.GpuFanPercent));
-        Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp), One(gpu, "MHz", SensorRole.GpuCoreClock));
+        Add("CLK", SceneOverlay.GpuHue, One(gpu, "MHz", SensorRole.GpuCoreClock), One(gpu, "MHz MEM", SensorRole.GpuMemoryClock));   // the graphics card's core and memory clocks
+        Add("VRAM", SceneOverlay.GpuHue, Used(gpu, SensorRole.GpuVramUsed, SensorRole.GpuVramTotal, SensorRole.GpuVramFree), One(gpu, "°C", SensorRole.GpuVramTemp));
         Add("CPU", SceneOverlay.CpuHue, One(cpu, "%", SensorRole.CpuTotalLoad), One(cpu, "°C", SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCcdMaxTemp), One(cpu, "W", SensorRole.CpuPackagePower),
             HighestCoreClock(engine, cpu, now) ?? One(cpu, "MHz", SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
         // A Ryzen's CCDs, each with the clock of its cores (the cores that share a level-3 cache), where the processor has more than one.

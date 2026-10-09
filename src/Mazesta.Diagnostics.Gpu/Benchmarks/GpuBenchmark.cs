@@ -37,7 +37,7 @@ internal static class GpuFault
 /// Failed and a missing feature into Unsupported, and adding the GPU's own clock, power and temperature for the run.</summary>
 internal static class GpuBenchmark
 {
-    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body, (int Width, int Height)? resolution = null, bool ownThread = false)
+    public static Task<BenchmarkResult> RunAsync(TestDefinition spec, TestExecutionRequest request, Func<D3D12Session, (List<BenchmarkMetric> Metrics, string Detail)> body, (int Width, int Height)? resolution = null, bool ownThread = false, int frames = 1)
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(BenchmarkResult.Unsupported(spec.Id, started, "Duration must be positive."));
@@ -56,7 +56,7 @@ internal static class GpuBenchmark
         {
             try
             {
-                using var session = new D3D12Session(device);
+                using var session = new D3D12Session(device, frames);
                 var (metrics, detail) = body(session);
                 var finished = request.Clock.UtcNow;
                 var node = Node(request, session.AdapterName);

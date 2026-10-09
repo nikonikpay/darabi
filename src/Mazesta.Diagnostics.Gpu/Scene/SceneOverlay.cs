@@ -22,11 +22,11 @@ internal sealed unsafe class SceneOverlay : IDisposable
 
     public const uint Game = 0xFDD400, GpuHue = 0x5BE37D, CpuHue = 0x5AA9FF, RamHue = 0xC08CFF, LowHue = 0xFF8A3D;
     private const uint Label = 0xC3C7CC, Faint = 0x8A9097, White = 0xFFFFFF, Fail = 0xFF4D4D, Rule = 0x2A2D31, Well = 0x101214;
-    private const int MaxRows = 5;
+    private const int MaxRows = 6;
 
     private readonly D3D12Session _s; private readonly ID3D12Resource[] _targets;
     private readonly ID3D12RootSignature _root; private readonly ID3D12PipelineState _pipeline; private readonly ID3D12DescriptorHeap _rtvHeap; private readonly uint _rtvSize;
-    private readonly ID3D12Resource _pixels; private readonly Canvas _c;
+    private readonly ID3D12Resource _pixels; private readonly Canvas _c; private readonly ulong _slotBytes; private readonly bool[] _fresh;
     private readonly int _width, _height, _u, _margin; private int _used;
 
     /// <summary>Whether the readout is laid over the frames (hidden, it costs nothing at all).</summary>
@@ -50,8 +50,10 @@ internal sealed unsafe class SceneOverlay : IDisposable
             RasterizerState = RasterizerDescription.CullNone, SampleMask = uint.MaxValue, PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
             RenderTargetFormats = [Format.R8G8B8A8_UNorm], SampleDescription = SampleDescription.Default
         }));
-        // Read straight from an upload buffer: a few hundred KB, rewritten twice a second while the GPU is idle (every submission is waited for).
-        _pixels = s.Buffer((ulong)_width * (ulong)_height * 4, HeapType.Upload, ResourceStates.GenericRead);
+        // Read straight from an upload buffer: a few hundred KB, rewritten twice a second. Each frame slot has a copy (the card may still be reading the one before),
+        // written when that slot's frame is recorded and the picture has changed since it was last written there.
+        _slotBytes = ((ulong)_width * (ulong)_height * 4 + 255) & ~255ul; _fresh = new bool[s.Frames];
+        _pixels = s.Buffer(_slotBytes * (ulong)s.Frames, HeapType.Upload, ResourceStates.GenericRead);
         _rtvHeap = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)targets.Length, DescriptorHeapFlags.None, 0)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
         for (int i = 0; i < targets.Length; i++) s.Device.CreateRenderTargetView(targets[i], null, _rtvHeap.GetCPUDescriptorHandleForHeapStart().Offset(i, _rtvSize));
@@ -114,7 +116,7 @@ internal sealed unsafe class SceneOverlay : IDisposable
         _c.Text(x0, y, x0 + mw, y + FootHeight, mode, Faint, u * 13 / 20, 400);
         _c.Text(x0 + mw, y, x1, y + FootHeight, r.Status, r.Failing ? Fail : Label, u * 13 / 20, r.Failing ? 700 : 400);
         _c.Flush();
-        _c.Pixels.CopyTo(_pixels.Map<byte>(0, _width * _height * 4)); _pixels.Unmap(0);
+        Array.Fill(_fresh, true);   // (copied to each slot's buffer when a frame of that slot is recorded)
     }
 
     private int GraphHeight => _u * 2;
@@ -139,6 +141,12 @@ internal sealed unsafe class SceneOverlay : IDisposable
     public void Draw(ID3D12GraphicsCommandList4 l, int index, int targetWidth, int targetHeight)
     {
         if (!Visible) return;
+        int slot = _s.Slot;
+        if (_fresh[slot])
+        {
+            _fresh[slot] = false; int at = (int)_slotBytes * slot;
+            _c.Pixels.CopyTo(_pixels.Map<byte>(0, at + _width * _height * 4)[at..]); _pixels.Unmap(0);
+        }
         int left = Math.Max(0, Math.Min(_margin * 2, targetWidth - _width)), top = Math.Max(0, Math.Min(_margin * 2, targetHeight - _used));
         int w = Math.Min(_width, targetWidth - left), h = Math.Min(_used, targetHeight - top);
         var target = _targets[index];
@@ -147,7 +155,7 @@ internal sealed unsafe class SceneOverlay : IDisposable
         l.SetGraphicsRootSignature(_root); l.SetPipelineState(_pipeline); l.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         l.RSSetViewport(left, top, w, h); l.RSSetScissorRect(targetWidth, targetHeight);   // the viewport alone bounds the box
         l.SetGraphicsRoot32BitConstants(0, new Box((uint)left, (uint)top, (uint)_width, (uint)_height), 0);
-        l.SetGraphicsRootShaderResourceView(1, _pixels.GPUVirtualAddress);
+        l.SetGraphicsRootShaderResourceView(1, _pixels.GPUVirtualAddress + _slotBytes * (ulong)slot);
         l.DrawInstanced(3, 1, 0, 0);
         l.ResourceBarrierTransition(target, ResourceStates.RenderTarget, ResourceStates.Present);
     }

@@ -17,7 +17,7 @@ internal sealed unsafe class GardenAccel
 
     private readonly GardenGpu _g; private readonly ID3D12Resource _tlas, _tlasScratch, _instances;
     private readonly ulong[] _blas; private readonly byte[] _masks; private readonly Matrix4x4[] _dequant;
-    private readonly BuildRaytracingAccelerationStructureInputs _tlasInputs;
+    private readonly BuildRaytracingAccelerationStructureInputs _tlasInputs; private readonly ulong _instanceBytes;
 
     public GardenAccel(D3D12Session s, GardenGpu g)
     {
@@ -58,8 +58,9 @@ internal sealed unsafe class GardenAccel
         }
         foreach (var (d, _, result, _) in inputs) _blas[d.Mesh] = results.GPUVirtualAddress + result;
 
-        _instances = s.Buffer((ulong)g.Instances.Length * 64, HeapType.Upload, ResourceStates.GenericRead);
-        WriteInstances(0, all: true);
+        _instanceBytes = ((ulong)g.Instances.Length * 64 + 255) & ~255ul;   // (a copy of the instances for each frame slot: the card builds the structure of one frame while the processor writes the next one's)
+        _instances = s.Buffer(_instanceBytes * (ulong)s.Frames, HeapType.Upload, ResourceStates.GenericRead);
+        for (int slot = 0; slot < s.Frames; slot++) WriteInstances(0, all: true, slot);
         _tlasInputs = new BuildRaytracingAccelerationStructureInputs
         {
             Type = RaytracingAccelerationStructureType.TopLevel, Flags = RaytracingAccelerationStructureBuildFlags.PreferFastTrace, Layout = ElementsLayout.Array,
@@ -77,17 +78,20 @@ internal sealed unsafe class GardenAccel
 
     /// <summary>The scene as it stands at <paramref name="time"/>: what moves is placed anew (the frame before has been drawn by
     /// then: every submission is waited for) and the top-level structure built again.</summary>
-    public void Build(ID3D12GraphicsCommandList4 l, float time)
+    public void Build(ID3D12GraphicsCommandList4 l, float time, int slot = 0)
     {
-        if (_g.Moving.Length + _g.Swaying.Length > 0) WriteInstances(time, all: false);
-        l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, _tlasInputs, 0, _tlasScratch.GPUVirtualAddress));
+        if (_g.Moving.Length + _g.Swaying.Length > 0) WriteInstances(time, all: false, slot);
+        var inputs = _tlasInputs; inputs.InstanceDescriptions = _instances.GPUVirtualAddress + _instanceBytes * (ulong)slot;
+        l.ResourceBarrierUnorderedAccessView(_tlas); l.ResourceBarrierUnorderedAccessView(_tlasScratch);   // (the frame before may still be reading the structure, or building in the scratch)
+        l.BuildRaytracingAccelerationStructure(new BuildRaytracingAccelerationStructureDescription(_tlas.GPUVirtualAddress, inputs, 0, _tlasScratch.GPUVirtualAddress));
         l.ResourceBarrierUnorderedAccessView(_tlas);
     }
 
     /// <summary>The TLAS instances: every one at first, afterwards only those that move.</summary>
-    private void WriteInstances(float time, bool all)
+    private void WriteInstances(float time, bool all, int slot)
     {
-        var span = _instances.Map<InstanceDesc>(0, _g.Instances.Length);
+        int per = (int)(_instanceBytes / 64);
+        var span = _instances.Map<InstanceDesc>(0, per * (slot + 1))[(per * slot)..];
         int[] ids = all ? [.. Enumerable.Range(0, _g.RayInstances)] : _moving ??= [.. _g.Moving.Concat(_g.Swaying)];
         fixed (InstanceDesc* first = span)
         {

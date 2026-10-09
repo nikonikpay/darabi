@@ -18,15 +18,15 @@ internal sealed class SceneView : IDisposable
         _tearing = factory.PresentAllowTearing;
         var desc = new SwapChainDescription1
         {
-            Width = (uint)width, Height = (uint)height, Format = Format.R8G8B8A8_UNorm, BufferUsage = Usage.RenderTargetOutput, BufferCount = 2, Scaling = Scaling.Stretch,
+            Width = (uint)width, Height = (uint)height, Format = Format.R8G8B8A8_UNorm, BufferUsage = Usage.RenderTargetOutput, BufferCount = (uint)(s.Frames + 1), Scaling = Scaling.Stretch,
             SwapEffect = SwapEffect.FlipDiscard, AlphaMode = AlphaMode.Ignore, SampleDescription = SampleDescription.Default, Flags = _tearing ? SwapChainFlags.AllowTearing : SwapChainFlags.None
         };
         using var swap1 = factory.CreateSwapChainForHwnd(s.Queue, w.Handle, desc);
         factory.MakeWindowAssociation(w.Handle, WindowAssociationFlags.IgnoreAltEnter);
         _swap = swap1.QueryInterface<IDXGISwapChain3>();
-        _back = [_swap.GetBuffer<ID3D12Resource>(0), _swap.GetBuffer<ID3D12Resource>(1)];
+        _back = [.. Enumerable.Range(0, s.Frames + 1).Select(i => _swap.GetBuffer<ID3D12Resource>((uint)i))];   // (one more than the frames in flight: a picture being shown is not one being drawn)
         Overlay = new SceneOverlay(s, _back, height);
-        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, weather);
+        var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, weather, s.Frames);
         var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced); _renderer = raster;
         Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps"
             + (rayTraced ? $" · ray-traced shadows ({raster.Level.ShadowTaps} a light) and reflections" : $" · shadows {raster.Level.ShadowSize}")
@@ -34,38 +34,37 @@ internal sealed class SceneView : IDisposable
     }
 
     /// <summary>Draws the scene at <paramref name="time"/> into the next back buffer, lays the readout over it and shows it, as fast as the
-    /// GPU goes (no v-sync).</summary>
+    /// GPU goes (no v-sync). With one frame in flight it returns when the card has drawn it; with two, as soon as it is queued (the next call waits for the frame before that).
+    /// The card's own time for each frame is kept (<see cref="D3D12Session.GpuSeconds"/>), and so is the processor's (<see cref="D3D12Session.LastRecordSeconds"/>).</summary>
     public void Present(float time)
     {
         int index = (int)_swap.CurrentBackBufferIndex;
         Garden.Weather?.Follow(time);   // (stepped beside the frame, not in the card's way)
-        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(_s.List, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false);
+        _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(_s.List, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false, timed: true);
         _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();   // queued behind the frame: shown the moment the card has drawn it, not after the processor has also finished waiting
-        _s.Finish();
+        if (_s.Frames == 1) _s.Finish(); else _s.NextSlot();
     }
 
-    /// <summary>The benchmark's two halves of <see cref="Present"/>: the scene drawn into the next back buffer on its own (the part that is timed),
-    /// then the readout laid over it and the picture shown (not timed).</summary>
-    public void DrawFrame(float time) { _index = (int)_swap.CurrentBackBufferIndex; _s.Run(l => _renderer.Draw(l, time, _index), wait: false); Overlap(time); }
-    /// <summary>While the card draws the frame, the processor steps the weather for the next one (a guess: as far on as this one came after the last),
-    /// so the card is not left idle for the simulation; then waits for the card.</summary>
-    private void Overlap(float time)
-    {
-        Garden.Weather?.Prefetch(time + Math.Clamp(time - _last, 0.001f, 0.1f)); _last = time; _s.Finish();
-    }
-    private float _last;
-    public void ShowFrame()
-    {
-        _s.Run(l => Overlay.Draw(l, _index, _renderer.OutWidth, _renderer.OutHeight));
-        _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();
-    }
-    private int _index;
+    /// <summary>Waits for every frame still being drawn (the run is over, or a check frame is to be drawn).</summary>
+    public void Drain() => _s.Finish();
 
-    /// <summary>Draws the scene at a fixed moment off screen and returns a hash of the exact bits of the picture.</summary>
-    public ulong CheckFrame(float time)
+    private const int Blocks = 16;
+    /// <summary>Draws the scene at a fixed moment off screen and returns the picture boxed down to 16 x 16 mean colours. A hash of the exact bits would call a frame wrong for a handful of edge pixels that the frames in
+    /// flight leave a few levels apart (the amortised shadow and surroundings pictures are caught at another step); a corrupt frame moves whole blocks, which <see cref="Same"/> sees.</summary>
+    public float[] CheckFrame(float time)
     {
-        ulong h = 1469598103934665603UL; foreach (uint p in _renderer.Capture(time)) h = (h ^ p) * 1099511628211UL; return h;
+        Drain();
+        var px = _renderer.Capture(time); int w = _renderer.OutWidth, h = _renderer.OutHeight; var sum = new double[Blocks * Blocks * 3]; var count = new int[Blocks * Blocks];
+        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+        {
+            uint p = px[y * w + x]; int b = y * Blocks / h * Blocks + x * Blocks / w; count[b]++;
+            sum[b * 3] += p & 255; sum[b * 3 + 1] += (p >> 8) & 255; sum[b * 3 + 2] += (p >> 16) & 255;
+        }
+        var mean = new float[sum.Length]; for (int i = 0; i < mean.Length; i++) mean[i] = (float)(sum[i] / Math.Max(1, count[i / 3]));
+        return mean;
     }
+    /// <summary>Whether two check frames are the same picture: no block's mean colour is more than 2 of 255 levels apart.</summary>
+    public static bool Same(float[] a, float[] b) { for (int i = 0; i < a.Length; i++) if (Math.Abs(a[i] - b[i]) > 2f) return false; return true; }
 
     public void Dispose() { Garden.Weather?.Stop(); _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
 }

@@ -3263,6 +3263,8 @@ Cancel: stop.</value></data>
   <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>Weather simulation per frame (rain, leaves; on every core)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>Processor's time per frame (preparing the frame)</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>Held back by (the longer side of a frame)</value></data>
+  <data name="Bench_Set_Frames" xml:space="preserve"><value>Frames in flight</value></data>
+  <data name="Bench_Scene_GpuBusy" xml:space="preserve"><value>Share of the run the card was drawing</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>GPU clock, highest</value></data>
   <data name="Bench_Gpu_MemClockMax" xml:space="preserve"><value>GPU memory clock, highest</value></data>
   <data name="Bench_Gpu_LoadMax" xml:space="preserve"><value>GPU load, highest</value></data>
@@ -3322,5 +3324,8 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>CCD 7 clock</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
+  <data name="Test_Option_Frames" xml:space="preserve"><value>Frames in flight</value></data>
+  <data name="Test_Frames_One" xml:space="preserve"><value>One frame (each is finished before the next)</value></data>
+  <data name="Test_Frames_Two" xml:space="preserve"><value>Two frames (the next is prepared while the card draws this one)</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>Weather detail: three times the bodies, finer air, a 233 MB grid</value></data>
 </root>

@@ -3263,6 +3263,8 @@
   <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>زمان شبیه‌سازی آب‌وهوا در هر فریم (باران و برگ؛ روی همه هسته‌ها)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>زمان پردازنده برای آماده‌کردن هر فریم</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>گلوگاه (طرف طولانی‌تر هر فریم)</value></data>
+  <data name="Bench_Set_Frames" xml:space="preserve"><value>فریم‌های هم‌زمان در اجرا</value></data>
+  <data name="Bench_Scene_GpuBusy" xml:space="preserve"><value>بخشی از اجرا که کارت مشغول رسم بود</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>بیشترین فرکانس گرافیک</value></data>
   <data name="Bench_Gpu_MemClockMax" xml:space="preserve"><value>بیشترین کلاک حافظه گرافیک</value></data>
   <data name="Bench_Gpu_LoadMax" xml:space="preserve"><value>بیشترین بار گرافیک</value></data>
@@ -3322,5 +3324,8 @@
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
+  <data name="Test_Option_Frames" xml:space="preserve"><value>فریم‌های هم‌زمان</value></data>
+  <data name="Test_Frames_One" xml:space="preserve"><value>یک فریم (هر فریم تمام می‌شود، بعد فریم بعدی)</value></data>
+  <data name="Test_Frames_Two" xml:space="preserve"><value>دو فریم (فریم بعدی آماده می‌شود تا کارت فریم فعلی را می‌کشد)</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، هوای ریزتر، شبکهٔ ۲۳۳ مگابایتی</value></data>
 </root>

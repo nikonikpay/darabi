@@ -75,11 +75,17 @@ public class GardenRenderHardwareTests
     public void The_shown_loop_frame_rate_is_written_when_asked(bool rays)
     {
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_TIME") is not { Length: > 0 } || Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is not { Length: > 0 } dir || NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
-        using var s = new D3D12Session(GpuDevices.Resolve("")!); int W2 = int.Parse(Environment.GetEnvironmentVariable("MAZESTA_W") ?? "1920"), H2 = W2 * 9 / 16; using var w = new TestWindow("frame rate", W2, H2, Environment.GetEnvironmentVariable("MAZESTA_FULL") is { Length: > 0 });
-        using var v = new SceneView(s, w, W2, H2, rays, 3, null, null, Environment.GetEnvironmentVariable("MAZESTA_WEATHER") == "off" ? null : WeatherLevel.Standard);
-        var sw = System.Diagnostics.Stopwatch.StartNew(); long n = 0; double from = 0;
-        while (sw.Elapsed.TotalSeconds < (Environment.GetEnvironmentVariable("MAZESTA_FULL") is null ? 8 : 20)) { w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds + float.Parse(Environment.GetEnvironmentVariable("MAZESTA_T0") ?? "0")); if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; } else n++; }
-        File.AppendAllText(Path.Combine(dir, "timing.txt"), FormattableString.Invariant($"shown loop rays={rays}: {n / (sw.Elapsed.TotalSeconds - from):F1} FPS, {(sw.Elapsed.TotalSeconds - from) * 1000 / n:F2} ms a frame") + Environment.NewLine);
+        int frames = int.Parse(Environment.GetEnvironmentVariable("MAZESTA_FRAMES") ?? "1");
+        using var s = new D3D12Session(GpuDevices.Resolve("")!, frames); int W2 = int.Parse(Environment.GetEnvironmentVariable("MAZESTA_W") ?? "1920"), H2 = W2 * 9 / 16; using var w = new TestWindow("frame rate", W2, H2, Environment.GetEnvironmentVariable("MAZESTA_FULL") is { Length: > 0 });
+        using var v = new SceneView(s, w, W2, H2, rays, 3, null, null, Environment.GetEnvironmentVariable("MAZESTA_WEATHER") == "on" ? WeatherLevel.Standard : null);
+        var sw = System.Diagnostics.Stopwatch.StartNew(); long n = 0; double from = 0, gpu0 = 0, cpu = 0; long gpuN0 = 0;
+        while (sw.Elapsed.TotalSeconds < (Environment.GetEnvironmentVariable("MAZESTA_FULL") is null ? 8 : 20))
+        {
+            w.Pump(); v.Present((float)sw.Elapsed.TotalSeconds + float.Parse(Environment.GetEnvironmentVariable("MAZESTA_T0") ?? "0"));
+            if (sw.Elapsed.TotalSeconds < 2) { n = 0; from = sw.Elapsed.TotalSeconds; gpu0 = s.GpuSeconds; gpuN0 = s.GpuFrames; cpu = 0; } else { n++; cpu += s.LastRecordSeconds; }
+        }
+        double wall = sw.Elapsed.TotalSeconds - from; v.Drain(); double gpu = (s.GpuSeconds - gpu0) / Math.Max(1, s.GpuFrames - gpuN0);
+        File.AppendAllText(Path.Combine(dir, "timing.txt"), FormattableString.Invariant($"shown loop rays={rays} frames={frames}: {n / wall:F1} FPS, {wall * 1000 / n:F2} ms a frame; card {gpu * 1000:F2} ms ({gpu * n / wall * 100:F1} % busy), processor {cpu * 1000 / n:F2} ms") + Environment.NewLine);
     }
 
     /// <summary>The frames shown one after another, sent to the card in pieces (as the test window does, so the card works while the rest is recorded), are the same picture (to the few pixels two runs of shown frames differ by) as the
@@ -98,6 +104,83 @@ public class GardenRenderHardwareTests
             Assert.True(d < W * H / 50, $"the frame at {times[k]} s differs when recorded in pieces: {d} pixels, rows {y0}-{y1} of {H}");   // (two runs of the same shown frames differ by up to a percent themselves: the frames build on each other; a piece that draws nothing leaves all of them)
         }
         Assert.False(whole[0].AsSpan().SequenceEqual(whole[2]), "the picture does not change with time");
+    }
+
+    /// <summary>With two frames in flight (the processor writing one frame's constants, movers, lamps and instances while the card still reads the one before) the frames shown one after another are the same
+    /// pictures as with one: a buffer the two frames shared would show as a wrong or flickering picture here. The frames far apart in time, so one that draws nothing cannot pass.</summary>
+    [Theory, InlineData(1u, false), InlineData(3u, false), InlineData(1u, true), InlineData(3u, true)]
+    public void Two_frames_in_flight_are_the_same_pictures_as_one(uint load, bool rays)
+    {
+        if (NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
+        float[] times = [.. Enumerable.Range(0, 18).Select(k => 1f + k * 7.5f)]; var shown = new List<uint[]>[2];   // (far apart: the lamps, the movers, the fountain and the light differ from one frame to the next, so a buffer the two share shows)
+        for (int mode = 0; mode < 2; mode++)
+        {
+            using var s = new D3D12Session(GpuDevices.Resolve("")!, mode + 1); var g = new GardenGpu(s, GardenScene.Embedded, frames: s.Frames);
+            using var r = new GardenRaster(s, g, W, H, [], load, rayTraced: rays); var check = r.Capture(1.234f); shown[mode] = [];
+            // every frame is copied out inside its own commands and left running: with two frames in flight the next is being recorded (its constants, movers, lamps and instances written) while this one is drawn
+            var pending = new List<Func<uint[]>>();
+            foreach (float t in times) { var keep = r.DrawLiveAndKeep(t); if (mode == 0) shown[mode].Add(keep()); else pending.Add(keep); }
+            if (mode == 1) { foreach (var keep in pending) shown[mode].Add(keep.Invoke()); }
+            var later = r.Capture(1.234f); int off = 0; for (int i = 0; i < check.Length; i++) if (check[i] != later[i]) off++;
+            Assert.True(Near(check, later, W, H), $"with {s.Frames} in flight the check frame after {times.Length} shown frames differs from the one before them in {off} pixels");
+        }
+        for (int k = 0; k < shown[0].Count; k++)
+        {
+            int d = 0; for (int i = 0; i < shown[0][k].Length; i++) if (shown[0][k][i] != shown[1][k][i]) d++;
+            Assert.True(d < W * H / 50, $"picture {k} differs with two frames in flight: {d} of {W * H} pixels");
+        }
+    }
+
+    /// <summary>A check frame is the same bits whichever frame slot it is drawn in (a slot's own copy of a buffer that holds something the frame needs but was never written would show here).</summary>
+    [Theory, InlineData(1u, false), InlineData(3u, false), InlineData(3u, true)]
+    public void A_check_frame_is_the_same_bits_in_every_slot(uint load, bool rays)
+    {
+        if (NoGpu || (rays && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!))) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!, 2); var g = new GardenGpu(s, GardenScene.Embedded, frames: 2);
+        using var r = new GardenRaster(s, g, W, H, [], load, rayTraced: rays);
+        var first = r.Capture(1.234f);
+        for (int k = 0; k < 4; k++)
+        {
+            s.NextSlot(); var again = r.Capture(1.234f);
+            int d = 0; for (int i = 0; i < first.Length; i++) if (first[i] != again[i]) d++;
+            Assert.True(d == 0, $"the check frame drawn in slot {s.Slot} (try {k}) differs from the first one in {d} of {first.Length} pixels");
+        }
+    }
+
+    /// <summary>Boxed down to 16 x 16 mean colours, as the benchmark's check frame is: no block more than 2 of 255 levels from its twin.</summary>
+    private static bool Near(uint[] a, uint[] b, int w, int h)
+    {
+        var sum = new double[16 * 16 * 3 * 2]; for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) { int bk = (y * 16 / h * 16 + x * 16 / w) * 3; for (int c = 0; c < 3; c++) { sum[bk + c] += a[y * w + x] >> c * 8 & 255; sum[768 + bk + c] += b[y * w + x] >> c * 8 & 255; } }
+        return Enumerable.Range(0, 768).All(k => Math.Abs(sum[k] - sum[768 + k]) / (w * h / 256.0) <= 2);
+    }
+
+    /// <summary>The check frame drawn after frames were shown one after another, with either number of frames in flight, is the picture drawn before them (what the benchmark and the visual test rely on).</summary>
+    [Theory, InlineData(1, false), InlineData(2, false), InlineData(2, true)]
+    public void The_check_frame_after_shown_frames_is_the_one_before_them(int frames, bool overlay)
+    {
+        if (NoGpu) return;
+        int wide = 960, high = 540;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!, frames); using var w = new TestWindow("check", wide, high, false);
+        using var v = new SceneView(s, w, wide, high, false, 3, null, null, null); v.Overlay.Visible = overlay;
+        var before = v.Renderer.Capture(1.234f); var clock = System.Diagnostics.Stopwatch.StartNew(); long shown = 0;
+        while (clock.Elapsed.TotalSeconds < 2) { w.Pump(); shown++; v.Present((float)clock.Elapsed.TotalSeconds); }
+        v.Drain();
+        Assert.True(Near(before, v.Renderer.Capture(1.234f), wide, high), $"after {shown} shown frames the check frame is another picture than the one before them");
+    }
+
+    /// <summary>After many frames run one behind the other (in flight, two at a time) a check frame is still the bits of the first one.</summary>
+    [Theory, InlineData(1, 1u), InlineData(2, 1u), InlineData(2, 3u)]
+    public void Many_frames_in_flight_leave_the_check_frame_alone(int frames, uint load)
+    {
+        if (NoGpu) return;
+        using var s = new D3D12Session(GpuDevices.Resolve("")!, frames); var g = new GardenGpu(s, GardenScene.Embedded, frames: frames);
+        // three render targets in turn, as a swap chain's buffers are
+        var targets = Enumerable.Range(0, 3).Select(_ => s.Device.CreateCommittedResource(Vortice.Direct3D12.HeapType.Default, Vortice.Direct3D12.ResourceDescription.Texture2D(Vortice.DXGI.Format.R8G8B8A8_UNorm, (uint)W, (uint)H, 1, 1, flags: Vortice.Direct3D12.ResourceFlags.AllowRenderTarget),
+            Vortice.Direct3D12.ResourceStates.Common, new Vortice.Direct3D12.ClearValue(Vortice.DXGI.Format.R8G8B8A8_UNorm, new Vortice.Mathematics.Color4(0, 0, 0, 1)))).ToArray();
+        using var r = new GardenRaster(s, g, W, H, targets, load); var check = r.Capture(1.234f);
+        for (int k = 0; k < 300; k++) { float t = k / 120f; int to = k % 3; s.Run(l => r.Draw(l, t, to), wait: false, timed: true); s.NextSlot(); }
+        s.Finish(); var later = r.Capture(1.234f); int off = 0; for (int i = 0; i < check.Length; i++) if (check[i] != later[i]) off++;
+        Assert.True(Near(check, later, W, H), $"with {frames} in flight the check frame after 300 frames differs from the one before them in {off} pixels");
     }
 
     private static void Check(GardenRenderer r, string name)

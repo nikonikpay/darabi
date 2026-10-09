@@ -22,7 +22,7 @@ public static class BenchmarkDetails
         "Bench_Gpu_Clock", "Bench_Gpu_MemClock", "Bench_Gpu_Load", "Bench_Gpu_Power", "Bench_Gpu_Voltage", "Bench_Gpu_TempAvg", "Bench_Gpu_TempMax", "Bench_Gpu_HotSpotMax",
         "Bench_Gpu_VramTempMax", "Bench_Gpu_Fan",
         "Bench_Gpu_ClockMax", "Bench_Gpu_MemClockMax", "Bench_Gpu_LoadMax", "Bench_Gpu_PowerMax", "Bench_Gpu_VramUsedMax",
-        "Bench_Cpu_PClockMax", "Bench_Cpu_EClockMax", "Bench_Cpu_Load", "Bench_Cpu_LoadMax", "Bench_Cpu_PowerMax",
+        "Bench_Cpu_PClockMax", "Bench_Cpu_EClockMax", "Bench_Cpu_Load", "Bench_Cpu_LoadMax", "Bench_Cpu_PowerMax", "Bench_Scene_GpuBusy",
     };
     /// <summary>A measured condition of the run, not a result of its work: the listed keys, the RAM's figures (its use, speed and CL; the bandwidth and
     /// latency of the quick probe are conditions of the score they make), and a CCD's clock.</summary>
