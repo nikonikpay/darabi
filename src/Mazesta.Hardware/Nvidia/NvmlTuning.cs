@@ -19,7 +19,7 @@ public sealed class NvmlTuningProvider(ILogger log) : IGpuTuningProvider
         if (Nvml.nvmlDeviceGetCount_v2(out uint count) != Nvml.Success || count == 0) return ([], "Tuning_Unavailable_NoNvidia", null);
         var devices = new List<IGpuTuningDevice>();
         for (uint i = 0; i < count; i++)
-            if (Nvml.nvmlDeviceGetHandleByIndex_v2(i, out var handle) == Nvml.Success) devices.Add(new NvmlTuningDevice(handle));
+            if (Nvml.nvmlDeviceGetHandleByIndex_v2(i, out var handle) == Nvml.Success) devices.Add(new NvmlTuningDevice(handle, i));
         foreach (var d in devices) log.LogInformation("GPU tuning: {Name} {Id} limits {Limits}", d.Name, d.Id, d.Limits);
         return (devices, null, null);
     }
@@ -33,14 +33,14 @@ public sealed class NvmlTuningProvider(ILogger log) : IGpuTuningProvider
 internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
 {
     public IReadOnlyList<VfPoint>? ReadStockCurve() => NvApiCurve.ReadStock(Name);
-    private readonly IntPtr _h; private readonly int[] _pstates;
+    private IntPtr _h; private readonly uint _index; private readonly int[] _pstates;
     public string Id { get; }
     public string Name { get; }
     public GpuTuningLimits Limits { get; }
 
-    public NvmlTuningDevice(IntPtr handle)
+    public NvmlTuningDevice(IntPtr handle, uint index)
     {
-        _h = handle;
+        _h = handle; _index = index;
         Name = Nvml.Text(b => Nvml.nvmlDeviceGetName(_h, b, (uint)b.Length)) ?? "NVIDIA GPU";
         Id = Nvml.Text(b => Nvml.nvmlDeviceGetUUID(_h, b, (uint)b.Length)) ?? Name;
         var states = new int[16];
@@ -65,6 +65,9 @@ internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
         var info = new Nvml.ClockOffset { Version = Nvml.ClockOffsetVersion, Type = type, Pstate = _pstates.Min() };
         return Nvml.Call(() => Nvml.nvmlDeviceGetClockOffsets(_h, ref info)) == Nvml.Success ? info : null;
     }
+
+    /// <summary>The driver comes back from a reset with new handles: asks for this card's by its place in the driver's list, until the driver answers.</summary>
+    public void Refresh() { if (Nvml.nvmlDeviceGetHandleByIndex_v2(_index, out var handle) == Nvml.Success) _h = handle; }
 
     public GpuTelemetry ReadTelemetry()
     {

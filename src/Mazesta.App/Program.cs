@@ -36,6 +36,8 @@ internal sealed class Program : ApplicationContext
     [STAThread]
     private static int Main(string[] args)
     {
+        // One load of the tuner, in a process of its own (see ChildProcessGpuLoad): no window, no services, no single-instance check.
+        if (args.Length == 7 && args[0] == Mazesta.Diagnostics.Gpu.Tuning.ChildProcessGpuLoad.Argument) return Mazesta.Diagnostics.Gpu.Tuning.ChildProcessGpuLoad.RunChild(args);
         Mazesta.Core.Overlay.OverlayCatalog.CcdOfCore = Mazesta.Diagnostics.Benchmarks.HostMetrics.CcdOfCore;   // the overlay's per-CCD clocks need the processor's cache layout, which only the app can read
         // Uninstall, started from Installed apps for a copy the setup installed: it has its own dialogs and needs none of the app's services.
         if (args.Length == 1 && args[0] == Uninstaller.Argument) { Application.EnableVisualStyles(); return Uninstaller.Run(); }

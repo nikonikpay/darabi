@@ -81,6 +81,13 @@ public sealed class MainWindow : Form
             };
             // The page shows its own loading card from its first paint, so the native one goes as soon as the page has drawn.
             core.DOMContentLoaded += (_, _) => { _view.Visible = true; _loading.Stop(); _loading.Visible = false; };
+            // A graphics-driver reset takes the page's own GPU process down with it (a white or frozen page): the page is loaded again and the bridge, which lives in this process, answers it afresh.
+            core.ProcessFailed += (_, a) =>
+            {
+                if (a.ProcessFailedKind is not (CoreWebView2ProcessFailedKind.GpuProcessExited or CoreWebView2ProcessFailedKind.RenderProcessExited or CoreWebView2ProcessFailedKind.RenderProcessUnresponsive)) return;
+                _log.LogWarning("WebView2 process failed ({Kind}); the page is reloaded", a.ProcessFailedKind);
+                core.Reload();
+            };
             _bridge = new WebBridge(core, _services, _paths, _config, _store, _configCorrupt, this, _log);
             core.Navigate($"https://{Host}/index.html");
         }

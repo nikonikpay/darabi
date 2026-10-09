@@ -65,6 +65,8 @@ public interface IGpuTuningDevice
     GpuTuningSettings ReadCurrent();
     TuningApplyResult Apply(GpuTuningSettings settings);
     TuningApplyResult Reset();
+    /// <summary>Takes the card up again after the driver reset (a crash under load): the handle it held may be dead. A device with no such state has nothing to do.</summary>
+    void Refresh() { }
 }
 
 /// <summary>A card whose driver gives its stock voltage/frequency curve outright, with nothing put under load.</summary>

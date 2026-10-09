@@ -66,7 +66,7 @@ public static class Bootstrapper
         s.AddSingleton(sp => new ViewModels.TuningViewModel(tuning, tuningStore, sp.GetRequiredService<InventoryCache>(),
             text => Ask(text, Localization.Loc.Get("Nav_Tuning"), System.Windows.Forms.MessageBoxIcon.Warning),
             () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("shutdown.exe", "/r /fw /t 0") { UseShellExecute = false, CreateNoWindow = true }),
-            UiDispatcher.Post, device => new Mazesta.Diagnostics.Gpu.Tuning.ComputeGpuLoad(device.Name), recovered,
+            UiDispatcher.Post, device => new Mazesta.Diagnostics.Gpu.Tuning.ChildProcessGpuLoad(device.Name), recovered,
             // The core voltage comes from the sensor monitor (NVML has no voltage reading); the reading lives as long as the page's view model, i.e. the session.
             // It is looked for when first asked and again until it is there: the page can be opened before the first sensor scan has listed the card,
             // and a sensor not found then would stay missing for the whole session ("the voltage sensor could not be read").
