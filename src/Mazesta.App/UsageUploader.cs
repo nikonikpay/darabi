@@ -34,20 +34,22 @@ internal sealed class UsageUploader : IDisposable
         return m;
     }
 
-    public async Task SendAsync()
+    /// <summary>Sends what is not sent yet. <paramref name="force"/> is the user's own request (the report button): it sends even with the automatic switch off.
+    /// Returns whether nothing is left unsent (false: the site did not take it, or another send was running).</summary>
+    public async Task<bool> SendAsync(bool force = false)
     {
-        if (!_config.UsageReport || Interlocked.Exchange(ref _sending, 1) == 1) return;
+        if (!(force || _config.UsageReport) || Interlocked.Exchange(ref _sending, 1) == 1) return false;
         try
         {
-            while (_config.UsageReport)
+            while (force || _config.UsageReport)
             {
                 var lines = _log.Unsent(PerRequest);
-                if (lines.Count == 0) return;
+                if (lines.Count == 0) return true;
                 var body = new JsonObject { ["install"] = _log.InstallId, ["app"] = _version, ["edition"] = _edition, ["language"] = _config.Language, ["machine"] = await MachineAsync().ConfigureAwait(false),
                     ["events"] = new JsonArray([.. lines.Select(l => JsonNode.Parse(l.Json)!)]) };
                 await _site.SendUsageAsync(body.ToJsonString(), CancellationToken.None).ConfigureAwait(false);
                 _log.MarkSent(lines[^1].Seq);
-                if (lines.Count < PerRequest) return;
+                if (lines.Count < PerRequest) return true;
             }
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or SiteException or System.Text.Json.JsonException or IOException)
@@ -55,6 +57,7 @@ internal sealed class UsageUploader : IDisposable
             _logger.LogDebug("Usage statistics not sent now: {Message}", e.Message);
         }
         finally { Interlocked.Exchange(ref _sending, 0); }
+        return false;
     }
 
     public void Dispose() => _timer.Dispose();

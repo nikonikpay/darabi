@@ -1032,8 +1032,8 @@
   <data name="Settings_Tray_Health" xml:space="preserve"><value>بررسی سلامت دیسک‌ها (دقیقه)</value></data>
   <data name="Web_Diag_Title" xml:space="preserve"><value>لاگ عیب‌یابی</value></data>
   <data name="Web_Diag_Note" xml:space="preserve"><value>آنچه برنامه روی این سیستم نتوانست بخواند: سنسورهای شناسایی‌نشده، مقادیر اصلی که یک قطعه ندارد و خطاها. همه را در یک فایل خروجی بگیرید و برگردانید تا برنامه برای این سیستم کامل شود.</value></data>
-  <data name="Web_Diag_Export" xml:space="preserve"><value>خروجی گرفتن از لاگ عیب‌یابی</value></data>
-  <data name="Web_Diag_Exported" xml:space="preserve"><value>فایل عیب‌یابی آماده شد و پوشه‌اش باز شد.</value></data>
+  <data name="Web_Diag_Export" xml:space="preserve"><value>ارسال گزارش من و خروجی فایل عیب‌یابی</value></data>
+  <data name="Web_Diag_Exported" xml:space="preserve"><value>فایل عیب‌یابی آماده شد و پوشه‌اش باز شد. آمار الان ارسال نشد (اینترنت نیست؟)؛ دوباره تلاش می‌شود.</value></data>
   <data name="Web_Diag_None" xml:space="preserve"><value>تا این لحظه چیزی روی این سیستم کم نیست.</value></data>
   <data name="Web_Diag_More" xml:space="preserve"><value>و {0} مورد دیگر در فایل</value></data>
   <data name="Notify_Health_Title" xml:space="preserve"><value>مازستا: سلامت سیستم</value></data>
@@ -3409,7 +3409,7 @@
   <data name="Detail_Work_Pool" xml:space="preserve"><value>بازتاب استخر 1/{0}</value></data>
   <data name="Settings_Report_Title" xml:space="preserve"><value>گزارش و عیب‌یابی</value></data>
   <data name="Settings_Report_Sub" xml:space="preserve"><value>آنچه برنامه خودش می‌فرستد و آنچه می‌توانید خروجی بگیرید</value></data>
-  <data name="Settings_Report_Diff" xml:space="preserve"><value>دو چیزِ جدا. آمار استفاده خودکار و ناشناس ثبت و ارسال می‌شود و فقط تا وقتی کلیدش روشن است. فایل عیب‌یابی فقط با فشردن دکمه‌اش ساخته می‌شود، روی همین کامپیوتر می‌ماند و فقط اگر خودتان بفرستید ارسال می‌شود.</value></data>
+  <data name="Settings_Report_Diff" xml:space="preserve"><value>یک دکمه هر دو کار را می‌کند: آمار استفادهٔ ناشناسِ ارسال‌نشده را می‌فرستد و یک فایل عیب‌یابی می‌سازد (آنچه برنامه روی این کامپیوتر نتوانست بخواند، خطاهایش و تازه‌ترین گزارش‌ها) که تا خودتان نفرستید روی همین کامپیوتر می‌ماند. کلید بالا فقط تعیین می‌کند آمار خودکار هم ارسال شود یا نه.</value></data>
   <data name="Detail_L_CpuEffClock" xml:space="preserve"><value>فرکانس مؤثر پردازنده</value></data>
   <data name="Detail_W_NoGpu" xml:space="preserve"><value>هیچ کارت گرافیک سخت‌افزاری با DirectX 12 در دسترس نیست.</value></data>
   <data name="Detail_Gpu_Lost" xml:space="preserve"><value>کارت گرافیک وسط تست از دست رفت (گزارش درایور: دستگاه حذف شد، {0})</value></data>
@@ -3425,4 +3425,6 @@
   <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} مگابایت داده جابه‌جا شد</value></data>
   <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) با تنظیمات نقطهٔ شروع: {0}  ←  تنظیم‌شده: {1}</value></data>
   <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>درایور بعد از {0} بافر حافظهٔ گرافیک بیشتری نداد؛ همان بخشی که داد آزمایش شد</value></data>
+  <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>آمار ارسال شد و فایل عیب‌یابی آماده است؛ پوشه‌اش باز شد.</value></data>
+  <data name="Settings_Report_Button" xml:space="preserve"><value>با این دکمه آمار ناشناس همین حالا ارسال می‌شود، حتی اگر ارسال خودکار خاموش باشد، و فایل عیب‌یابی ساخته می‌شود.</value></data>
 </root>

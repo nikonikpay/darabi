@@ -19,6 +19,7 @@ internal sealed class Program : ApplicationContext
     /// <summary>The first polls' hardware report (Data/logs/hardware-report.txt) and the log it goes to, for the diagnostics export.</summary>
     internal static HardwareDiagnosticsRecorder? Recorder { get; private set; }
     internal static RollingFileLoggerProvider? LogProvider { get; private set; }
+    internal static UsageUploader? Uploader { get; private set; }
     /// <summary>Started by the update that has just put this release in place (the page says so once).</summary>
     private static bool JustUpdated { get; set; }
     internal static bool TakeJustUpdated() { bool b = JustUpdated; JustUpdated = false; return b; }
@@ -125,7 +126,7 @@ internal sealed class Program : ApplicationContext
         // What the app does is kept in the usage log; with the setting on (the default) it is sent, anonymously, a few minutes after start and every ten minutes (see UsageUploader).
         var usage = _services.GetRequiredService<UsageRecorder>();
         usage.Record("app.start", new System.Text.Json.Nodes.JsonObject { ["version"] = version, ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = config.Language, ["overlayOnly"] = overlayOnly });
-        _usageUploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
+        _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
         else ShowMain();

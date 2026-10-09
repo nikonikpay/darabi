@@ -1032,8 +1032,8 @@
   <data name="Settings_Tray_Health" xml:space="preserve"><value>Drive health check (minutes)</value></data>
   <data name="Web_Diag_Title" xml:space="preserve"><value>Diagnostic log</value></data>
   <data name="Web_Diag_Note" xml:space="preserve"><value>What this machine did not let the app read: sensors with no role, key readings a part lacks, errors. Export it as one file and bring it back so the app can learn this machine.</value></data>
-  <data name="Web_Diag_Export" xml:space="preserve"><value>Export diagnostic log</value></data>
-  <data name="Web_Diag_Exported" xml:space="preserve"><value>The diagnostic file is ready; its folder is open.</value></data>
+  <data name="Web_Diag_Export" xml:space="preserve"><value>Send my report and export the troubleshooting file</value></data>
+  <data name="Web_Diag_Exported" xml:space="preserve"><value>The troubleshooting file is ready and its folder is open. The statistics could not be sent now (no internet?); they will be tried again.</value></data>
   <data name="Web_Diag_None" xml:space="preserve"><value>Nothing missing so far on this machine.</value></data>
   <data name="Web_Diag_More" xml:space="preserve"><value>and {0} more in the file</value></data>
   <data name="Notify_Health_Title" xml:space="preserve"><value>Mazesta: system health</value></data>
@@ -3409,7 +3409,7 @@ Cancel: stop.</value></data>
   <data name="Detail_Work_Pool" xml:space="preserve"><value>pool reflection 1/{0}</value></data>
   <data name="Settings_Report_Title" xml:space="preserve"><value>Reports and troubleshooting</value></data>
   <data name="Settings_Report_Sub" xml:space="preserve"><value>What the app sends by itself and what you can export</value></data>
-  <data name="Settings_Report_Diff" xml:space="preserve"><value>Two different things. The usage statistics below are recorded and sent by themselves, anonymously, only while the switch is on. The troubleshooting file is made only when you press its button, stays on this computer and is sent only if you choose to send it.</value></data>
+  <data name="Settings_Report_Diff" xml:space="preserve"><value>One press does both: it sends the anonymous usage statistics not sent yet, and makes one troubleshooting file (what the app could not read on this computer, its errors, the newest reports) that stays on this computer until you send it yourself. The switch above only decides whether the statistics also go by themselves.</value></data>
   <data name="Detail_L_CpuEffClock" xml:space="preserve"><value>Processor effective clock</value></data>
   <data name="Detail_W_NoGpu" xml:space="preserve"><value>No DirectX 12 hardware graphics card is available.</value></data>
   <data name="Detail_Gpu_Lost" xml:space="preserve"><value>The graphics card was lost during the test (the driver reported: device removed, {0})</value></data>
@@ -3425,4 +3425,6 @@ Cancel: stop.</value></data>
   <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} MB moved</value></data>
   <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at the starting settings: {0}  →  tuned: {1}</value></data>
   <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>The driver would not give more graphics memory after {0} buffers; the part it gave was tested</value></data>
+  <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>The statistics were sent and the troubleshooting file is ready; its folder is open.</value></data>
+  <data name="Settings_Report_Button" xml:space="preserve"><value>Pressing this sends the anonymous statistics now, even if the automatic sending is off, and makes the troubleshooting file.</value></data>
 </root>

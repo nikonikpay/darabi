@@ -16,10 +16,11 @@ public sealed partial class WebBridge
             return new { findings, notes, logs = _paths.LogsDir, polled = Program.Recorder is not null };
         });
 
-        // One zip to bring back: the app's logs (every failed test and benchmark with its reason), the newest reports, the hardware report, the inventory as text, the settings and the tray's checks. Nothing is sent
-        // anywhere; the folder opens with the file selected.
+        // One press, two things: the anonymous usage statistics not sent yet go to the site now (even with the automatic sending off - the user asked), and one zip is made to bring back: the app's logs
+        // (every failed test and benchmark with its reason), the newest reports, the hardware report, the inventory as text, the settings and the tray's checks. The zip is not sent; the folder opens with it selected.
         MethodAsync("diag.export", async _ =>
         {
+            bool sent = Program.Uploader is { } up && await up.SendAsync(force: true).ConfigureAwait(true);
             Program.Recorder?.Write();
             Program.LogProvider?.Flush();
             HardwareInventory? inv = null;
@@ -47,7 +48,7 @@ public sealed partial class WebBridge
             }).ConfigureAwait(true);
             _log.LogInformation("Diagnostics exported to {Zip}", zip);
             Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{zip}\"") { UseShellExecute = true })?.Dispose();
-            return zip;
+            return new { zip, sent };
         });
 
         // The page's own errors go to the same log as the host's.

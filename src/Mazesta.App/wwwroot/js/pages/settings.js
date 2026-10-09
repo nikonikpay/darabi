@@ -19,7 +19,7 @@ export function mount(el) {
   const logs = h("span", { class: "lat caption" });
   const exportBtn = h("button", { class: "btn primary", onclick: async () => {
     exportBtn.disabled = true;
-    try { await call("diag.export"); toast(t("Web_Diag_Exported")); } catch (e) { toast(String(e.message || e), "fail"); } finally { exportBtn.disabled = false; }
+    try { const r = await call("diag.export"); toast(t(r?.sent ? "Web_Diag_ExportedSent" : "Web_Diag_Exported")); } catch (e) { toast(String(e.message || e), "fail"); } finally { exportBtn.disabled = false; }
   } }, icon("bug"), t("Web_Diag_Export"));
   const enableTray = h("button", { class: "btn go", onclick: () => call("settings.exec", { cmd: "enableTray" }) }, t("Settings_Tray_Enable"));
   const disableTray = h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "disableTray" }) }, t("Settings_Tray_Disable"));
@@ -44,6 +44,7 @@ export function mount(el) {
           h("label", { class: "ov-show" }, usage, h("span", {}, h("b", {}, t("Settings_Usage_Switch")))),
           h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openUsageLog" }).catch((e) => toast(String(e.message || e), "fail")) }, t("Settings_Usage_Open"))), usageLog,
           h("h3", { class: "h3", style: { fontSize: "16px", fontWeight: 900, marginTop: "26px" } }, t("Web_Diag_Title")),
+          h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Report_Button")),
           ...(boot.staff ? [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs]
             : [h("p", { class: "caption" }, t("Web_Diag_Note_Client")), h("div", { class: "btn-row" }, exportBtn)])] }),
       box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 2,
