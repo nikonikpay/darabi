@@ -67,7 +67,7 @@ public class GpuAutoTunerTests
     [Fact] public async Task Cancelling_puts_the_card_back_to_stock()
     {
         var card = new FakeCard(); using var cts = new CancellationTokenSource();
-        var load = new FakeLoad(card, 1000, run => { if (run == 2) cts.Cancel(); });   // cancelled during the first probe, with an offset applied
+        var load = new FakeLoad(card, 1000, run => { if (run == 3) cts.Cancel(); });   // (run 2 is the scene at stock) cancelled during the first probe, with an offset applied
         var outcome = await new GpuAutoTuner(card, load, _ => { }, TimeSpan.FromMilliseconds(5)).RunAsync(new UndervoltSearch(card.Limits, Quick), cts.Token);
         Assert.Equal(AutoTuneVerdict.Cancelled, outcome.Verdict); Assert.Equal(30, card.Applied[^1].CoreOffsetMHz); Assert.True(card.Current.IsStock);
     }

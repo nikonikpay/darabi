@@ -3351,4 +3351,5 @@ Cancel: stop.</value></data>
   <data name="Tuning_Kind_OverclockPlus" xml:space="preserve"><value>Overclock Plus</value></data>
   <data name="Tuning_DefaultName_OverclockPlus" xml:space="preserve"><value>Overclock Plus {0}</value></data>
   <data name="Tuning_Factory" xml:space="preserve"><value>Factory, as measured under full load: held {0}, reached {1}; drew {2} on average ({3} at most); core voltage {4}. A search starts from the highest clock the card reached, not from the one it held while running into its power limit.</value></data>
+  <data name="Tuning_Evidence_Scene" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at stock: {0}  →  tuned: {1}</value></data>
 </root>

@@ -1,6 +1,8 @@
 namespace Mazesta.Core.Tuning;
 
-public enum GpuLoadKind { Compute, Memory }
+/// <summary>Compute: the hash chain (stability, held clock at the power limit). Memory: VRAM bandwidth. Scene: the benchmark's garden from one fixed camera, in frames a second - a
+/// game's load, where the card reaches its real boost clock.</summary>
+public enum GpuLoadKind { Compute, Memory, Scene }
 public enum TuneStepKind { Baseline, Probe, Confirm }
 
 /// <summary>One run the automatic search asks for: these settings, this load, this long. The first <see cref="Settle"/> of it is warm-up and is
@@ -74,7 +76,7 @@ public enum AutoTuneVerdict { Improved, NoImprovement, Unsupported, Failed, Canc
 /// <summary>How a search ended. <see cref="Settings"/> is set only for <see cref="AutoTuneVerdict.Improved"/>; the reason is a resource key with
 /// its argument. The measurements are what the verdict rests on and are shown to the technician next to it.</summary>
 public sealed record AutoTuneOutcome(AutoTuneVerdict Verdict, string ReasonKey, GpuTuningSettings? Settings, LoadMeasurement? Baseline, LoadMeasurement? Tuned,
-    LoadMeasurement? MemoryBaseline = null, LoadMeasurement? MemoryTuned = null, string? Detail = null);
+    LoadMeasurement? MemoryBaseline = null, LoadMeasurement? MemoryTuned = null, string? Detail = null, LoadMeasurement? SceneBaseline = null, LoadMeasurement? SceneTuned = null);
 
 /// <summary>A search as a sequence of steps: the runner asks <see cref="Next"/> for a step, runs it, and hands the measurement to <see cref="Report"/>,
 /// until <see cref="Next"/> returns null and <see cref="Outcome"/> is set. Kept free of any GPU so every decision is unit-testable.</summary>
@@ -95,9 +97,9 @@ public interface IAutoTuneSearch
 /// </summary>
 public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions options) : IAutoTuneSearch
 {
-    private enum Phase { Baseline, Probe, Confirm, ConfirmTop, Done }
+    private enum Phase { Baseline, Boost, Probe, Confirm, ConfirmTop, Done }
     private Phase _phase = Phase.Baseline;
-    private LoadMeasurement? _baseline, _confirmed;
+    private LoadMeasurement? _baseline, _confirmed, _boost;
     private int _target, _held, _lastGood, _candidate, _confirmTries;
     private TuneStep? _pending;
     public AutoTuneOutcome? Outcome { get; private set; }
@@ -109,9 +111,10 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
         _pending = _phase switch
         {
             Phase.Baseline => new(TuneStepKind.Baseline, GpuTuningSettings.Stock, GpuLoadKind.Compute, options.BaselineDuration, options.LongSettle),
+            Phase.Boost => new(TuneStepKind.Baseline, GpuTuningSettings.Stock, GpuLoadKind.Scene, options.ProbeDuration, options.ProbeSettle),
             Phase.Probe => new(TuneStepKind.Probe, At(_lastGood + options.CoreOffsetStep), GpuLoadKind.Compute, options.ProbeDuration, options.ProbeSettle),
             Phase.Confirm => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Compute, options.ConfirmDuration, options.LongSettle),
-            Phase.ConfirmTop => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Memory, options.ProbeDuration, options.ProbeSettle),
+            Phase.ConfirmTop => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Scene, options.ProbeDuration, options.ProbeSettle),
             _ => null
         };
         return _pending;
@@ -133,6 +136,11 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
                 if (!limits.HasCoreOffset || OffsetCeiling < options.CoreOffsetStep) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoCoreOffset"); return; }
                 _held = (int)(clock / options.ClockBinMHz) * options.ClockBinMHz;
                 _target = (int)(Math.Max(clock, m.PeakClockMHz ?? 0) / options.ClockBinMHz) * options.ClockBinMHz;
+                _phase = Phase.Boost;
+                return;
+            case Phase.Boost:
+                // The card under a game's load, not the stress test's: this is where its real boost clock shows. A scene that could not run leaves the stress test's figures.
+                if (m.Clean && m.MedianClockMHz is not null) { _boost = m; _target = Math.Max(_target, (int)(Math.Max(m.MedianClockMHz.Value, m.PeakClockMHz ?? 0) / options.ClockBinMHz) * options.ClockBinMHz); }
                 _phase = Phase.Probe;
                 return;
             case Phase.Probe:
@@ -151,7 +159,7 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
             case Phase.ConfirmTop:
                 // The top of the curve: with the light load the card reaches its top clock (as at stock), cleanly. A lowered voltage that fails here is
                 // one a game or a light workload would meet, though the heavy load never did.
-                if (!m.Clean || m.MedianClockMHz is not { } top || top < _target - 2 * options.ClockBinMHz)
+                if (!m.Clean || m.MedianClockMHz is not { } top || top < (_boost?.MedianClockMHz ?? _target) - 2 * options.ClockBinMHz || (_boost is { } sb && m.Throughput < sb.Throughput * (1 - options.ThroughputNoisePercent / 100)))
                 {
                     if (++_confirmTries >= 3) { Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_ConfirmFailed"); return; }
                     StartConfirm(_candidate - options.CoreOffsetStep);
@@ -163,8 +171,8 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
                 bool savesPower = c.AveragePowerW is { } p && p <= b.AveragePowerW!.Value * (1 - options.MinPowerSavingPercent / 100);
                 bool cooler = c.AverageTemperatureC is { } t && b.AverageTemperatureC is { } bt && t <= bt - options.MinTemperatureDropC;
                 if (!samePerformance) Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_SlowerThanStock", c);
-                else if (savesPower || cooler || faster) Finish(AutoTuneVerdict.Improved, "Tuning_Out_UndervoltFound", c, At(_candidate));
-                else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoSaving", c);
+                else if (savesPower || cooler || faster) Finish(AutoTuneVerdict.Improved, "Tuning_Out_UndervoltFound", c, At(_candidate), m);
+                else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoSaving", c, null, m);
                 return;
         }
     }
@@ -178,10 +186,10 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
         _candidate = offset; _phase = Phase.Confirm;
     }
 
-    private void Finish(AutoTuneVerdict verdict, string key, LoadMeasurement? tuned = null, GpuTuningSettings? settings = null)
+    private void Finish(AutoTuneVerdict verdict, string key, LoadMeasurement? tuned = null, GpuTuningSettings? settings = null, LoadMeasurement? scene = null)
     {
         _phase = Phase.Done;
-        Outcome = new(verdict, key, verdict == AutoTuneVerdict.Improved ? settings : null, _baseline, tuned);
+        Outcome = new(verdict, key, verdict == AutoTuneVerdict.Improved ? settings : null, _baseline, tuned, SceneBaseline: _boost, SceneTuned: scene);
     }
 }
 
@@ -193,11 +201,11 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
 /// </summary>
 public sealed class OverclockSearch : IAutoTuneSearch
 {
-    private enum Phase { Baseline, Core, MemoryBaseline, Memory, Confirm, ConfirmMemory, Done }
+    private enum Phase { Baseline, Boost, Core, MemoryBaseline, Memory, Confirm, ConfirmScene, ConfirmMemory, Done }
     private readonly GpuTuningLimits _limits; private readonly AutoTuneOptions _options;
     private readonly bool _plus, _fromCap; private readonly int? _power;
     private Phase _phase;
-    private LoadMeasurement? _baseline, _memoryBaseline, _confirmed;
+    private LoadMeasurement? _baseline, _memoryBaseline, _confirmed, _boost, _confirmedScene;
     private int _offset, _startClock, _clock, _bestClock, _memory, _bestMemory, _confirmTries;
     private double _bestClockSeen, _bestBandwidth;
     private TuneStep? _pending;
@@ -214,8 +222,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
         if (plus && _power is null) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoPowerLimit"); return; }
         _offset = start?.CoreOffsetMHz ?? 0;
         if (start?.MaxClockMHz is { } clock) _startClock = clock;
-        _phase = baseline is null || _startClock == 0 ? Phase.Baseline : Phase.Core;
-        if (_phase == Phase.Core) BeginCore(baseline!);
+        _phase = baseline is null || _startClock == 0 ? Phase.Baseline : Phase.Boost;
     }
 
     private int ClockCeiling => Math.Min(_limits.MaxLockMHz, _startClock + _options.MaxClockRaise);
@@ -233,10 +240,12 @@ public sealed class OverclockSearch : IAutoTuneSearch
         _pending = _phase switch
         {
             Phase.Baseline => new(TuneStepKind.Baseline, GpuTuningSettings.Stock, GpuLoadKind.Compute, _options.BaselineDuration, _options.LongSettle),
-            Phase.Core => new(TuneStepKind.Probe, At(_clock + _options.ClockStep, 0), GpuLoadKind.Compute, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.Boost => new(TuneStepKind.Baseline, new(_offset, 0, _fromCap ? _startClock : null, _power, null), GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.Core => new(TuneStepKind.Probe, At(_clock + _options.ClockStep, 0), _boost is null ? GpuLoadKind.Compute : GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle),
             Phase.MemoryBaseline => new(TuneStepKind.Baseline, At(_bestClock, 0), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             Phase.Memory => new(TuneStepKind.Probe, At(_bestClock, _memory + _options.MemoryOffsetStep), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             Phase.Confirm => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Compute, _options.ConfirmDuration, _options.LongSettle),
+            Phase.ConfirmScene => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle),
             Phase.ConfirmMemory => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             _ => null
         };
@@ -245,9 +254,9 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     private void BeginCore(LoadMeasurement baseline)
     {
-        // The factory clock is the highest the card reached at stock, not the one it held while running into the power limit.
-        if (_startClock == 0 && baseline.MedianClockMHz is { } c) _startClock = (int)(Math.Max(c, baseline.PeakClockMHz ?? 0) / _options.ClockBinMHz) * _options.ClockBinMHz;
-        _clock = _bestClock = _startClock; _bestClockSeen = baseline.MedianClockMHz ?? 0;
+        // The factory clock is the highest the card reached at stock - under the stress test or the game's load - not the one it held while running into the power limit.
+        if (_startClock == 0 && baseline.MedianClockMHz is { } c) _startClock = (int)(Math.Max(c, Math.Max(baseline.PeakClockMHz ?? 0, Math.Max(_boost?.MedianClockMHz ?? 0, _boost?.PeakClockMHz ?? 0))) / _options.ClockBinMHz) * _options.ClockBinMHz;
+        _clock = _bestClock = _startClock; _bestClockSeen = (_boost ?? baseline).MedianClockMHz ?? 0;
         _phase = _clock + _options.ClockStep <= ClockCeiling ? Phase.Core : Phase.MemoryBaseline;
     }
 
@@ -261,7 +270,12 @@ public sealed class OverclockSearch : IAutoTuneSearch
                 _baseline = m;
                 if (!m.Clean) { Finish(AutoTuneVerdict.Failed, "Tuning_Out_StockUnstable"); return; }
                 if (m.MedianClockMHz is null || m.AveragePowerW is null) { Finish(AutoTuneVerdict.Unsupported, "Tuning_Out_NoTelemetry"); return; }
-                BeginCore(m);
+                _phase = Phase.Boost;
+                return;
+            case Phase.Boost:
+                // The reference the clock raise is judged against: the card under a game's load. Without it (the scene could not run) the stress test's figures stand in.
+                if (m.Clean && m.MedianClockMHz is not null) _boost = m;
+                BeginCore(_baseline!);
                 return;
             case Phase.Core:
                 int tried = step.Settings.MaxClockMHz!.Value;
@@ -294,6 +308,12 @@ public sealed class OverclockSearch : IAutoTuneSearch
             case Phase.Confirm:
                 if (!m.Clean || !InBudget(m)) { Retry(); return; }
                 _confirmed = m;
+                _phase = _boost is not null ? Phase.ConfirmScene : _bestMemory > 0 ? Phase.ConfirmMemory : Phase.Done;
+                if (_phase == Phase.Done) Judge(null);
+                return;
+            case Phase.ConfirmScene:
+                if (!m.Clean) { Retry(); return; }
+                _confirmedScene = m;
                 _phase = _bestMemory > 0 ? Phase.ConfirmMemory : Phase.Done;
                 if (_phase == Phase.Done) Judge(null);
                 return;
@@ -318,16 +338,17 @@ public sealed class OverclockSearch : IAutoTuneSearch
     {
         var b = _baseline!; var c = _confirmed!;
         bool computeGain = c.Throughput >= b.Throughput * (1 + _options.MinGainPercent / 100);
+        bool sceneGain = _boost is { } sb && _confirmedScene is { } sc && sc.Throughput >= sb.Throughput * (1 + _options.MinGainPercent / 100);
         bool memoryGain = memory is not null && _memoryBaseline is { Clean: true } mb && memory.Throughput >= mb.Throughput * (1 + _options.MinGainPercent / 100);
         var settings = At(_bestClock, _bestMemory);
         if (_plus && !settings.PowerLimitW.HasValue) { Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoGain", c, null, memory); return; }
-        if (computeGain || memoryGain) Finish(AutoTuneVerdict.Improved, "Tuning_Out_OverclockFound", c, settings, memory);
+        if (computeGain || memoryGain || sceneGain) Finish(AutoTuneVerdict.Improved, "Tuning_Out_OverclockFound", c, settings, memory);
         else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoGain", c, null, memory);
     }
 
     private void Finish(AutoTuneVerdict verdict, string key, LoadMeasurement? tuned = null, GpuTuningSettings? settings = null, LoadMeasurement? memory = null)
     {
         _phase = Phase.Done;
-        Outcome = new(verdict, key, verdict == AutoTuneVerdict.Improved ? settings : null, _baseline, tuned, _memoryBaseline, memory);
+        Outcome = new(verdict, key, verdict == AutoTuneVerdict.Improved ? settings : null, _baseline, tuned, _memoryBaseline, memory, SceneBaseline: _boost, SceneTuned: _confirmedScene);
     }
 }

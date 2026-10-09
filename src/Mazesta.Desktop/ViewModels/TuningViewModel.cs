@@ -393,6 +393,7 @@ public sealed partial class TuningViewModel : ObservableObject
         AutoResult = Loc.Get(outcome.ReasonKey) + (outcome.Detail is { } d ? $" ({d})" : "");
         if (outcome.Baseline is { PeakClockMHz: not null } f) AutoResult += "\n" + Loc.Format("Tuning_Factory", Ltr(Fmt(f.MedianClockMHz, " MHz")), Ltr(Fmt(f.PeakClockMHz, " MHz")), Ltr(Fmt(f.AveragePowerW, " W")), Ltr(Fmt(f.PeakPowerW, " W")), Ltr(f.AverageVoltageV is { } v ? $"{v:F3} V" : "—"));
         if (outcome.Baseline is { } b && outcome.Tuned is { } t) AutoResult += "\n" + Loc.Format("Tuning_Evidence", Describe(b), Describe(t));
+        if (outcome.SceneBaseline is { } sb) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Scene", Describe(sb, GpuLoadKind.Scene), outcome.SceneTuned is { } st ? Describe(st, GpuLoadKind.Scene) : "—");
         if (outcome.MemoryBaseline is { } mb && outcome.MemoryTuned is { } mt) AutoResult += "\n" + Loc.Format("Tuning_Evidence_Memory", Describe(mb, GpuLoadKind.Memory), Describe(mt, GpuLoadKind.Memory));
         if (outcome is not { Verdict: AutoTuneVerdict.Improved, Settings: { } found }) return;
         if (kind == GpuProfileKind.Undervolt) _lastUndervolt = (device.Id, found, outcome.Baseline!);
@@ -431,7 +432,7 @@ public sealed partial class TuningViewModel : ObservableObject
     {
         static string V(double? v, string unit) => Fmt(v, unit);
         string peak = m.PeakClockMHz is { } pk && m.MedianClockMHz is { } md && pk >= md + 15 ? $" (↑{pk:F0})" : "", volt = m.AverageVoltageV is { } vv ? $" · {vv:F3} V" : "";
-        string score = load == GpuLoadKind.Compute ? m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " Gop/s" : m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " GB/s";
+        string score = load switch { GpuLoadKind.Compute => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " Gop/s", GpuLoadKind.Scene => m.Throughput.ToString("F1", CultureInfo.InvariantCulture) + " FPS", _ => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " GB/s" };
         return Ltr($"{V(m.MedianClockMHz, " MHz")}{peak}{volt} · {V(m.AveragePowerW, " W")} · {V(m.AverageTemperatureC, " °C")} · {score}");
     }
 

@@ -26,7 +26,7 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
     {
         var device = Device();
         if (device is null) return new(0, 0, true, GpuDevices.NoGpu);
-        try { return kind == GpuLoadKind.Compute ? Compute(device, duration, settle, ct) : Memory(device, duration, settle, ct); }
+        try { return kind switch { GpuLoadKind.Compute => Compute(device, duration, settle, ct), GpuLoadKind.Scene => SceneGpuLoad.Run(device, duration, settle, ct), _ => Memory(device, duration, settle, ct) }; }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { return new(0, 0, true, $"{ex.GetType().Name}: {ex.Message}"); }
     }
