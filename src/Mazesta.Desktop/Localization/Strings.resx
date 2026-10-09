@@ -3361,4 +3361,18 @@ Cancel: stop.</value></data>
   <data name="Tuning_SceneTest_First" xml:space="preserve"><value>first test</value></data>
   <data name="Tuning_SceneTest_Empty" xml:space="preserve"><value>No test yet. Each one shows the frame rate, clock, power and temperature, and the change since the one before.</value></data>
   <data name="Tuning_Load_Scene" xml:space="preserve"><value>Garden scene</value></data>
+  <data name="Tuning_Rules_Title" xml:space="preserve"><value>Automatic profiles</value></data>
+  <data name="Tuning_Rules_Sub" xml:space="preserve"><value>A game or a graphics program starts, its profile is applied</value></data>
+  <data name="Tuning_Rules_Note" xml:space="preserve"><value>The tray applies these (it starts with Windows): a saved profile for any full-screen game, and one for each program you list - Lumion, Chaos Vantage, D5 Render, 3ds Max... When none of them is in use the card goes back to its start-up profile. Nothing is applied while a search or a benchmark is running.</value></data>
+  <data name="Tuning_Rules_Game" xml:space="preserve"><value>When a game is running (full screen):</value></data>
+  <data name="Tuning_Rules_None" xml:space="preserve"><value>— leave as it is —</value></data>
+  <data name="Tuning_Rules_Apps" xml:space="preserve"><value>When one of these programs is in use:</value></data>
+  <data name="Tuning_Rules_Empty" xml:space="preserve"><value>No program listed yet. Save a profile first, then add the programs below.</value></data>
+  <data name="Tuning_Rules_Pick" xml:space="preserve"><value>Choose from the installed programs</value></data>
+  <data name="Tuning_Rules_Loading" xml:space="preserve"><value>Reading…</value></data>
+  <data name="Tuning_Rules_Search" xml:space="preserve"><value>Search the list</value></data>
+  <data name="Tuning_Rules_Add" xml:space="preserve"><value>Add</value></data>
+  <data name="Tuning_Rules_Exe" xml:space="preserve"><value>or type the program's file name:</value></data>
+  <data name="Tuning_Rules_BadExe" xml:space="preserve"><value>That is not a program's file name (it ends in .exe).</value></data>
+  <data name="Tuning_Rules_NotSaved" xml:space="preserve"><value>The automatic profiles could not be saved: {0}</value></data>
 </root>

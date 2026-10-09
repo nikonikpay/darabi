@@ -3361,4 +3361,18 @@
   <data name="Tuning_SceneTest_First" xml:space="preserve"><value>اولین تست</value></data>
   <data name="Tuning_SceneTest_Empty" xml:space="preserve"><value>هنوز تستی نیست. هر تست نرخ فریم، کلاک، توان و دما و تغییر نسبت به تست قبلی را نشان می‌دهد.</value></data>
   <data name="Tuning_Load_Scene" xml:space="preserve"><value>صحنهٔ باغ</value></data>
+  <data name="Tuning_Rules_Title" xml:space="preserve"><value>پروفایل خودکار</value></data>
+  <data name="Tuning_Rules_Sub" xml:space="preserve"><value>با شروع بازی یا نرم‌افزار گرافیکی، پروفایل آن اعمال می‌شود</value></data>
+  <data name="Tuning_Rules_Note" xml:space="preserve"><value>این‌ها را برنامهٔ کنار ساعت (که با ویندوز بالا می‌آید) اعمال می‌کند: یک پروفایل ذخیره‌شده برای هر بازی تمام‌صفحه و یکی برای هر برنامه‌ای که در فهرست می‌گذارید، مثل Lumion، Chaos Vantage، D5 Render و 3ds Max. وقتی هیچ‌کدام در حال استفاده نیست کارت به پروفایل شروعش برمی‌گردد. هنگام جست‌وجوی خودکار یا بنچمارک چیزی اعمال نمی‌شود.</value></data>
+  <data name="Tuning_Rules_Game" xml:space="preserve"><value>وقتی بازی (تمام‌صفحه) اجراست:</value></data>
+  <data name="Tuning_Rules_None" xml:space="preserve"><value>— بدون تغییر —</value></data>
+  <data name="Tuning_Rules_Apps" xml:space="preserve"><value>وقتی یکی از این برنامه‌ها در حال استفاده است:</value></data>
+  <data name="Tuning_Rules_Empty" xml:space="preserve"><value>هنوز برنامه‌ای در فهرست نیست. اول یک پروفایل ذخیره کنید، بعد برنامه‌ها را پایین اضافه کنید.</value></data>
+  <data name="Tuning_Rules_Pick" xml:space="preserve"><value>انتخاب از برنامه‌های نصب‌شده</value></data>
+  <data name="Tuning_Rules_Loading" xml:space="preserve"><value>در حال خواندن…</value></data>
+  <data name="Tuning_Rules_Search" xml:space="preserve"><value>جست‌وجو در فهرست</value></data>
+  <data name="Tuning_Rules_Add" xml:space="preserve"><value>افزودن</value></data>
+  <data name="Tuning_Rules_Exe" xml:space="preserve"><value>یا نام فایل برنامه را بنویسید:</value></data>
+  <data name="Tuning_Rules_BadExe" xml:space="preserve"><value>این نام فایل برنامه نیست (باید به .exe ختم شود).</value></data>
+  <data name="Tuning_Rules_NotSaved" xml:space="preserve"><value>پروفایل‌های خودکار ذخیره نشد: {0}</value></data>
 </root>

@@ -18,7 +18,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(); private readonly HealthAlerts _rules;
     private readonly HashSet<string> _drivesAnnounced = [];
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
-    private readonly GpuProfilesMenu _gpu; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
+    private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking;
 
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
@@ -34,6 +34,7 @@ internal sealed class TrayContext : ApplicationContext
         _checkNow = new ToolStripMenuItem(TrayText.CheckNow, null, async (_, _) => await CheckAllAsync());
         _overlay = new ToolStripMenuItem(TrayText.Overlay, null, (_, _) => ToggleOverlay());
         _gpu = new GpuProfilesMenu(paths, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
+        _auto = new GpuAutoSwitch(paths, _gpu, Benchmarking);
         _rgb = new RgbMenu(paths, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
         _fans = new FanMenu(paths, StartApp, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
         menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, new ToolStripSeparator(),
@@ -171,7 +172,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }

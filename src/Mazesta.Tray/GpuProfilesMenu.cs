@@ -74,5 +74,25 @@ internal sealed class GpuProfilesMenu
         }
     }
 
+    /// <summary>Puts each card in the saved profile named <paramref name="profileName"/>, or - null - back in its own start-up profile (stock when it has none). A card
+    /// the profile is not saved for is left as it is. Not while a tuning search is half done. A failure is a notification; so is a change, briefly.</summary>
+    public void ApplyRule(string? profileName)
+    {
+        var doc = GpuStartup.ReadProfiles(_profilesFile);
+        if (doc?.Journal is not null) return;
+        IReadOnlyList<IGpuTuningDevice> devices;
+        try { devices = Devices(); }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException) { return; }
+        foreach (var device in devices)
+        {
+            string? target = profileName ?? GpuStartup.For(_startupFile, device.Id);
+            var profile = target is null ? null : doc?.Profiles.FirstOrDefault(p => p.GpuId == device.Id && p.Name == target);
+            if (profileName is not null && profile is null) continue;
+            var result = profile is null ? device.Reset() : device.Apply(profile.Settings);
+            if (!result.Ok) _notify(TrayText.ProfileFailed(profile?.Name ?? TrayText.Stock, Problems(result)), ToolTipIcon.Error);
+            else _notify(TrayText.RuleApplied(profile?.Name ?? TrayText.Stock, device.Name), ToolTipIcon.Info);
+        }
+    }
+
     private static string Problems(TuningApplyResult r) => string.Join("، ", r.Steps.Where(s => !s.Ok).Select(s => s.Error ?? s.SettingKey));
 }

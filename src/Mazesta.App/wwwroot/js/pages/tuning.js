@@ -172,6 +172,25 @@ export function mount(el) {
   const sceneBtn = h("button", { class: "btn", title: t("Tuning_SceneTest_Hint"), onclick: () => exec("sceneTest") }, t("Tuning_SceneTest"));
   const sceneClear = h("button", { class: "btn", onclick: () => exec("clearScene") }, t("Tuning_SceneTest_Clear"));
   const sceneList = h("div", {});
+  // Automatic profiles: which saved profile goes with a game and with each listed program (the tray follows them).
+  const rule = (op, extra = {}) => call("tuning.rules", { op, ...extra });
+  const gameSel = h("select", { class: "field", onchange: (e) => rule("game", { profile: e.target.value }) });
+  const rulesList = h("div", {}), programSel = h("select", { class: "field", hidden: true }), programFind = h("input", { class: "field", placeholder: t("Tuning_Rules_Search"), hidden: true });
+  const exeBox = h("input", { class: "field lat", placeholder: "Lumion.exe", style: { maxWidth: "220px" } });
+  let programs = [], profileNames = [];
+  const fillPrograms = () => {
+    const q = programFind.value.trim().toLowerCase();
+    programSel.replaceChildren(...programs.filter((p) => !q || p.name.toLowerCase().includes(q) || p.exe.toLowerCase().includes(q)).map((p) => h("option", { value: p.exe, "data-name": p.name }, `${p.name}  ·  ${p.exe}`)));
+  };
+  programFind.addEventListener("input", fillPrograms);
+  const loadPrograms = h("button", { class: "btn", onclick: (e) => {
+    const b = e.currentTarget; b.disabled = true; b.textContent = t("Tuning_Rules_Loading");
+    call("tuning.programs").then((list) => { programs = list; fillPrograms(); programSel.hidden = programFind.hidden = false; })
+      .finally(() => { b.disabled = false; b.textContent = t("Tuning_Rules_Pick"); });
+  } }, t("Tuning_Rules_Pick"));
+  const addRule = (exe, name) => { if (exe && profileNames.length) { rule("add", { exe, name: name || exe, profile: profileNames[0] }); exeBox.value = ""; } };
+  const addPicked = h("button", { class: "btn primary", onclick: () => { const o = programSel.selectedOptions[0]; if (o) addRule(o.value, o.dataset.name); } }, t("Tuning_Rules_Add"));
+  const addTyped = h("button", { class: "btn", onclick: () => addRule(exeBox.value.trim(), "") }, t("Tuning_Rules_Add"));
   const cancel = h("button", { class: "btn stop", onclick: () => exec("cancel") }, icon("stop"), t("Tuning_Cancel"));
 
   el.append(
@@ -197,13 +216,19 @@ export function mount(el) {
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclockPlus_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclockPlus_Desc")), autoP)),
           running, result, log] }),
       box({ kind: "Gpu", ico: "chart", title: t("Tuning_SceneTest_Title"), sub: t("Tuning_SceneTest_Sub"), i: 3, a: "scene", actions: h("div", { class: "toolbar" }, sceneBtn, sceneClear), body: [sceneList] }),
+      box({ kind: "Power", ico: "bolt", title: t("Tuning_Rules_Title"), sub: t("Tuning_Rules_Sub"), i: 3, a: "rules",
+        body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Tuning_Rules_Note")),
+          h("div", { class: "toolbar" }, h("b", {}, t("Tuning_Rules_Game")), gameSel),
+          h("div", { class: "h3", style: { marginTop: "14px" } }, t("Tuning_Rules_Apps")), rulesList,
+          h("div", { class: "toolbar", style: { marginTop: "10px", flexWrap: "wrap" } }, loadPrograms, programFind, programSel, addPicked),
+          h("div", { class: "toolbar", style: { flexWrap: "wrap" } }, h("span", { class: "caption" }, t("Tuning_Rules_Exe")), exeBox, addTyped)] }),
       box({ kind: "System", ico: "doc", title: t("Tuning_Profiles"), sub: t("Tuning_Profiles_Note"), i: 3, a: "profiles", body: profiles })),
     h("div", { class: "panels", style: { gridTemplateColumns: "1fr" } },
       box({ kind: "Memory", title: t("Tuning_Memory"), sub: t("Tuning_Memory_Sub"), i: 4, a: "memory",
         actions: h("button", { class: "btn stop", onclick: () => exec("firmware") }, t("Tuning_RestartToFirmware")),
         body: [memory, h("p", { class: "note" }, t("Tuning_Memory_Note"))] })));
 
-  let shownLog = -1, shownProfiles = "";
+  let shownLog = -1, shownProfiles = "", shownRules = "";
   function update(x) {
     unavailable.hidden = !x.unavailable; unavailable.textContent = x.unavailable || "";
     el.querySelector(".has-device").hidden = !x.hasDevice;
@@ -245,6 +270,20 @@ export function mount(el) {
     sceneList.replaceChildren(...((x.sceneTests || []).length ? x.sceneTests.map((r, i) => h("div", { class: "logline" }, h("span", { class: "st" }, fa(i + 1)),
       h("span", {}, h("b", {}, r.settings), "  ", h("span", { class: "caption lat" }, r.result)), h("span", { class: `pill ${r.clean ? "pass" : "fail"}` }, r.clean ? (r.change || t("Tuning_SceneTest_First")) : r.problem)))
       : [h("p", { class: "caption" }, t("Tuning_SceneTest_Empty"))]));
+    // The rules' pickers are rebuilt only when what they show changes: this runs every second, and a list rebuilt under an open dropdown would close it.
+    profileNames = [...new Set(x.profiles.map((p) => p.name))];
+    const rk = JSON.stringify([x.rules, profileNames]);
+    if (rk !== shownRules) {
+      shownRules = rk;
+      const opts = (cur) => [h("option", { value: "" }, t("Tuning_Rules_None")), ...profileNames.map((n) => h("option", { value: n }, n))].map((o) => { o.selected = o.value === cur; return o; });
+      gameSel.replaceChildren(...opts(x.rules.game)); gameSel.value = x.rules.game;
+      rulesList.replaceChildren(...(x.rules.apps.length ? x.rules.apps.map((a) => {
+        const sel = h("select", { class: "field", onchange: (e) => rule("profile", { exe: a.exe, profile: e.target.value }) }, ...profileNames.map((n) => h("option", { value: n }, n)));
+        if (!profileNames.includes(a.profile)) sel.prepend(h("option", { value: a.profile }, a.profile)); sel.value = a.profile;
+        return h("div", { class: "toolbar", style: { padding: "4px 0" } }, h("b", {}, a.name), h("span", { class: "caption lat" }, a.exe), sel,
+          h("button", { class: "btn stop", onclick: () => rule("remove", { exe: a.exe }) }, t("Tuning_Delete")));
+      }) : [h("p", { class: "caption" }, t("Tuning_Rules_Empty"))]));
+    }
     const pk = JSON.stringify(x.profiles);
     if (pk !== shownProfiles) {
       shownProfiles = pk;

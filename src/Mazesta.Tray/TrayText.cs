@@ -51,8 +51,9 @@ internal static class TrayText
     public const string NoNvidia = "کارت گرافیک NVIDIA پیدا نشد";
     public const string NoProfiles = "هنوز پروفایلی ذخیره نشده (صفحه‌ی اورکلاک و آندرولت)";
     public const string JournalFound = "یک تنظیم خودکار کارت گرافیک در برنامه نیمه‌کاره مانده است؛ پروفایل هنگام ورود اعمال نشد. برنامه‌ی مازستا را باز کنید.";
-    public static string Kind(GpuProfileKind k) => k switch { GpuProfileKind.Undervolt => "آندرولت", GpuProfileKind.Overclock => "اورکلاک", _ => "دستی" };
+    public static string Kind(GpuProfileKind k) => k switch { GpuProfileKind.Undervolt => "آندرولت", GpuProfileKind.Overclock => "اورکلاک", GpuProfileKind.OverclockPlus => "اورکلاک پلاس", _ => "دستی" };
     public static string ProfileApplied(string name, string gpu) => $"«{name}» روی {gpu} اعمال شد و هنگام ورود به ویندوز هم اعمال می‌شود.";
+    public static string RuleApplied(string name, string gpu) => $"پروفایل «{name}» روی {gpu} اعمال شد.";
     public static string ProfileFailed(string name, string why) => $"«{name}» اعمال نشد: {why}";
     public static string ProfileNotKept(string why) => $"پروفایل اعمال شد ولی برای ورود بعدی ذخیره نشد: {why}";
     public static string ProfileMissing(string name) => $"پروفایل «{name}» دیگر وجود ندارد؛ کارت در حالت کارخانه ماند.";

@@ -20,6 +20,9 @@ public sealed record GpuProfileRow(GpuProfile Profile)
 public sealed record AutoLogRow(int Step, string Kind, string Settings, string Result, bool Clean, string? Problem);
 
 /// <summary>One scene test: the card's settings at the time, what it did in the garden scene from its fixed camera, and how that differs from the test before.</summary>
+/// <summary>A listed program and the saved profile the card is put in while it is the program in use.</summary>
+public sealed record GpuRuleRow(string Exe, string Name, string Profile);
+
 public sealed record SceneTestRow(string Settings, string Result, string? Change, bool Clean, string? Problem);
 
 /// <summary>A big live number on the card's header: what it is, and the value with its unit or the not-available text.</summary>
@@ -112,6 +115,35 @@ public sealed partial class TuningViewModel : ObservableObject
     /// <summary>The scene tests of this session, newest last: the same picture every frame, so the frame rate, clock, power and temperature of two settings compare.</summary>
     public ObservableCollection<SceneTestRow> SceneTests { get; } = [];
     private LoadMeasurement? _lastScene;
+
+    // The automatic profiles: the tray follows these (see GpuAutoSwitch); here they are only chosen and kept.
+    private readonly string? _rulesFile;
+    /// <summary>The profile for a full-screen game; empty: the card is left as it is during games.</summary>
+    [ObservableProperty] private string _gameProfile = "";
+    public ObservableCollection<GpuRuleRow> Rules { get; } = [];
+
+    private void SaveRules()
+    {
+        if (_rulesFile is null) return;
+        try { GpuRulesFile.Write(_rulesFile, new(GameProfile.Length == 0 ? null : GameProfile, [.. Rules.Select(r => new GpuAppRule(r.Exe, r.Name, r.Profile))])); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Status = Loc.Format("Tuning_Rules_NotSaved", e.Message); }
+    }
+    public void SetGameProfile(string name) { GameProfile = name; SaveRules(); }
+    public void AddRule(string exe, string name, string profile)
+    {
+        string? file = GpuAutoRules.ExeName(exe);
+        if (file is null) { Status = Loc.Get("Tuning_Rules_BadExe"); return; }
+        Rules.Where(r => string.Equals(r.Exe, file, StringComparison.OrdinalIgnoreCase)).ToList().ForEach(r => Rules.Remove(r));
+        Rules.Add(new(file, string.IsNullOrWhiteSpace(name) ? file : name.Trim(), profile)); SaveRules();
+    }
+    public void RemoveRule(string exe) { if (Rules.FirstOrDefault(r => r.Exe == exe) is { } r) { Rules.Remove(r); SaveRules(); } }
+    public void SetRuleProfile(string exe, string profile) { if (Rules.FirstOrDefault(r => r.Exe == exe) is { } r) { Rules[Rules.IndexOf(r)] = r with { Profile = profile }; SaveRules(); } }
+    private void LoadRules()
+    {
+        if (_rulesFile is null) return;
+        var rules = GpuRulesFile.Read(_rulesFile);
+        GameProfile = rules.GameProfile ?? ""; foreach (var a in rules.Apps) Rules.Add(new(a.Exe, a.Name, a.Profile));
+    }
     public ObservableCollection<GpuProfileRow> Profiles { get; } = [];
     public bool HasProfiles => Profiles.Count > 0;
 
@@ -155,9 +187,9 @@ public sealed partial class TuningViewModel : ObservableObject
     public string OtherGpus { get; private set; } = "";
 
     public TuningViewModel(IGpuTuningProvider provider, JsonStore<GpuProfileDocument> store, InventoryCache inventory, Func<string, bool> confirm, Action restartToFirmware,
-        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null)
+        Func<Action, object> dispatch, Func<IGpuTuningDevice, IGpuLoad> load, string? recovered, Func<string, Func<(DateTimeOffset At, double Volts)?>>? voltageFor = null, bool withTimer = true, string? startupFile = null, WorkloadGate? gate = null, string? rulesFile = null)
     {
-        _startupFile = startupFile; _gate = gate;
+        _startupFile = startupFile; _gate = gate; _rulesFile = rulesFile; LoadRules();
         _provider = provider; _store = store; _doc = store.Load().Value; _confirm = confirm; _restartToFirmware = restartToFirmware; _dispatch = dispatch; _load = load;
         _voltageFor = voltageFor ?? (_ => () => null);
         Unavailable = provider.UnavailableReasonKey is { } key ? Loc.Get(key) + (provider.UnavailableDetail is { } d ? $" ({d})" : "") : "";

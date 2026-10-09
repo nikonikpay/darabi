@@ -69,7 +69,7 @@ public static class Bootstrapper
             // It is looked for when first asked and again until it is there: the page can be opened before the first sensor scan has listed the card,
             // and a sensor not found then would stay missing for the whole session ("the voltage sensor could not be read").
             name => { LatestReading? found = null; return () => (found ??= LatestReading.Find(sp.GetRequiredService<PollingEngine>(), Mazesta.Core.Hardware.HardwareKind.Gpu, name, Mazesta.Core.Hardware.SensorRole.GpuVoltage))?.Value; },
-            startupFile: GpuStartup.FileIn(paths), gate: sp.GetRequiredService<WorkloadGate>()));
+            startupFile: GpuStartup.FileIn(paths), gate: sp.GetRequiredService<WorkloadGate>(), rulesFile: GpuRulesFile.FileIn(paths)));
         AddViewModelFactory(s, sp => new ViewModels.SystemInfoViewModel(sp.GetRequiredService<InventoryCache>(), UiDispatcher.Post));
         AddViewModelFactory(s, sp => new ViewModels.SettingsViewModel(sp.GetRequiredService<AppConfig>(), sp.GetRequiredService<JsonStore<AppConfig>>(), sp.GetRequiredService<AppPaths>(), sp.GetRequiredService<PollingEngine>(), sp.GetRequiredService<MonitoringOptions>(), dir => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir) { UseShellExecute = true }), sp.GetRequiredService<Services.ITrayController>(), sp.GetRequiredService<Services.OverlayService>()));
         var provider = s.BuildServiceProvider();

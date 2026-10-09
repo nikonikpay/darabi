@@ -200,7 +200,7 @@ const tuning = () => ({
   hasDevice: true, unavailable: "", devices: ["NVIDIA GeForce RTX 3090"], device: 0, name: "NVIDIA GeForce RTX 3090",
   ranges: "آفست هسته ‎-1000..1000 MHz‎   ·   آفست حافظه ‎-2000..6000 MHz‎   ·   توان ‎100..365 W‎ (پیش‌فرض ‎350 W‎)   ·   ۲ فن، ‎30..100 %‎", otherGpus: "", status: "",
   live: [["Tuning_Live_Core", "1695 MHz"], ["Tuning_Live_Memory", "9751 MHz"], ["Tuning_Live_Voltage", "0.743 V"], ["Tuning_Live_Temperature", "55 °C"], ["Tuning_Live_Power", "136 W"], ["Tuning_Live_Fan", "30 %"]].map(([k, v]) => ({ label: strings[k], value: v })),
-  liveClock: 1695, liveVolt: 0.743, form,
+  liveClock: 1695, liveVolt: 0.743, form, sceneTests: [], rules: { game: "بازی شب", apps: [{ exe: "Lumion.exe", name: "Lumion", profile: "آندرولت 2026-09-27 01:40" }] },
   limits: { hasCore: true, hasMemory: true, hasPower: true, hasFan: true, coreMin: -1000, coreMax: 1000, memoryMin: -2000, memoryMax: 6000, powerMin: 100, powerMax: 365, fanMin: 30, fanMax: 100, clockMax: 3100, clockMin: 300 },
   curve: CURVE.map(([clock, volt]) => ({ clock, volt })), curveInfo: "۱۸ نقطهٔ اندازه‌گیری‌شده · ‎0.725–1.025 V‎ · تا ‎1995 MHz‎ · اندازه‌گیری ‎2026-09-27 01:36‎",
   curveEstimate: "برآورد از نقاط اندازه‌گیری‌شده: در ‎1905 MHz‎ حدود ‎0.875 V‎ (کارخانه: ‎0.954 V‎)", curveStatus: "",

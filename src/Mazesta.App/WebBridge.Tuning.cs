@@ -28,15 +28,30 @@ public sealed partial class WebBridge
             },
             curve = t.Curve?.Select(p => new { clock = p.ClockMHz, volt = p.VoltageV }), curveInfo = t.CurveInfo, curveEstimate = t.CurveEstimate, curveStatus = t.CurveStatus,
             busy = t.IsTuning, percent = t.AutoPercent, stepTitle = t.AutoStepTitle, stepSettings = t.AutoStepSettings, stepLoad = t.AutoStepLoad, result = t.AutoResult,
+            rules = new { game = t.GameProfile, apps = t.Rules.Select(r => new { exe = r.Exe, name = r.Name, profile = r.Profile }) },
             sceneTests = t.SceneTests.Select(r => new { settings = r.Settings, result = r.Result, change = r.Change, clean = r.Clean, problem = r.Problem }),
             log = t.AutoLog.Select(l => new { step = l.Step, kind = l.Kind, settings = l.Settings, result = l.Result, clean = l.Clean, problem = l.Problem }),
             profiles = t.Profiles.Select((p, i) => new { index = i, name = p.Name, kind = p.KindValue.ToString(), kindText = p.Kind, created = p.Created, summary = p.Summary, evidence = p.Evidence, startup = p.Name == t.StartupProfile }),
             memory = t.Memory.Select(m => new { label = m.Label, value = m.Value }),
         };
-        Mirror("tuning", t, State, t.AutoLog, t.Profiles, t.SceneTests);
+        Mirror("tuning", t, State, t.AutoLog, t.Profiles, t.SceneTests, t.Rules);
         foreach (var tile in new[] { t.LiveCore, t.LiveMemory, t.LiveVoltage, t.LiveTemperature, t.LivePower, t.LiveFan }) tile.PropertyChanged += (_, _) => PushSoon("tuning", State);
 
         Method("tuning.state", _ => State());
+        // The programs Windows lists as installed, for the picker; read on demand (the registry walk takes a moment).
+        MethodAsync("tuning.programs", async _ => (await Task.Run(Mazesta.Desktop.Services.InstalledPrograms.Read)).Select(p => new { name = p.Name, exe = p.Exe }));
+        Method("tuning.rules", p =>
+        {
+            switch (Str(p, "op"))
+            {
+                case "game": t.SetGameProfile(Str(p, "profile")); break;
+                case "add": t.AddRule(Str(p, "exe"), Str(p, "name"), Str(p, "profile")); break;
+                case "remove": t.RemoveRule(Str(p, "exe")); break;
+                case "profile": t.SetRuleProfile(Str(p, "exe"), Str(p, "profile")); break;
+                default: throw new ArgumentException("unknown rule operation");
+            }
+            return null;
+        });
         Method("tuning.visible", p => { t.SetVisible(Bool(p, "value")); return null; });
         Method("tuning.set", p =>
         {
