@@ -10,6 +10,8 @@ dotnet test  Mazesta.sln -c Release --no-build --filter "Category!=Hardware"
 ```
 - `TreatWarningsAsErrors` is on: a warning is a failed build. Packages are versioned centrally in `Directory.Packages.props`.
 - Tests marked `Category=Hardware` need the real machine, admin rights and drivers. Do not run or change them unless the task says so.
+- **Always test for real, not only with unit tests.** A change to anything that touches hardware or the UI (GPU tuning, benchmarks, tests, overlay, tray, sensors, the web pages) is not done until it has been run on the owner's machine: start the published app (it elevates), drive the feature, read the result, and report what was measured. Say plainly what could not be run. Unit tests alone never count as verification of hardware behaviour.
+- **Close whatever is in the way yourself.** If a running program blocks the work (an old `Mazesta`/`MazestaTray` instance, a game, a renderer, an overclock or monitoring tool, a locked file), close it without asking, then carry on. The owner is usually away from the computer. Never close system processes, and never delete user data (`Data`).
 - Do **not** change the Desktop or Web target framework to a `net10.0-windows10.0.xxxxx` version (it pulls a 23 MB WinRT projection). Keep `net10.0-windows`.
 
 ## Layers (dependencies point down only)
