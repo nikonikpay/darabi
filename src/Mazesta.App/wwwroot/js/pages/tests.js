@@ -78,15 +78,15 @@ export function mount(el) {
       return { o, input, el: h("label", {}, o.label, input) };
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), pill = h("span", { class: "pill none" });
-    const error = h("div", { class: "error", hidden: true }), detail = h("div", { class: "detail", hidden: true }), errs = h("span", { class: "caption lat" });
+    const error = h("div", { class: "error", hidden: true }), detail = h("div", { class: "detail", hidden: true }), figs = h("div", { class: "metrics figs", hidden: true }), errs = h("span", { class: "caption lat" });
     const unavailable = h("div", { class: "unavailable", hidden: true }), advice = h("div", { class: "advice", hidden: true }), finds = h("details", { class: "row-checkup rec-more", hidden: true });
     const row = h("div", { class: "q-row", style: { "--i": i } },
       h("span", { class: "step" }, fa(String(i + 1).padStart(2, "0"))), check, h("span", { class: "name" }, r.name),
       h("div", { class: "ctrls" }, dur.el, rep, cnt),
       opts.length ? h("div", { class: "extra" }, opts.map((x) => x.el)) : null,
-      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, detail, advice, finds);
+      h("div", { class: "state" }, bar, h("span", {}, status, " ", errs), pill), unavailable, error, figs, detail, advice, finds);
     into.append(row);
-    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, detail, errs, unavailable, advice, finds });
+    rows.set(r.id, { row, check, dur, rep, cnt, opts, bar, status, pill, error, figs, detail, errs, unavailable, advice, finds });
   }
   function update(s) {
     if (!rows.size) build(s);
@@ -118,6 +118,10 @@ export function mount(el) {
       x.row.classList.toggle("active", r.outcome === "Running");
       x.error.hidden = !r.error; x.error.textContent = r.error || "";
       // The detail as separate lines: the worded ones in the page's direction, an untranslated one left to right, so the two never mix in a line.
+      // The measured figures that matter (highest temperature, hot spot, clock, power, load, frame rate) stand first and larger, in the benchmark's own style.
+      const fKey = JSON.stringify(r.figures || []);
+      if (fKey !== x.lastFigs) { x.lastFigs = fKey; x.figs.hidden = !r.figures?.length;
+        x.figs.replaceChildren(...(r.figures || []).map((g) => h("div", { class: "metric", title: g.note || "" }, h("div", { class: "v" }, g.value), h("div", { class: "n" }, g.name)))); }
       const dKey = r.detail || "";
       if (dKey !== x.lastDetail) { x.lastDetail = dKey; x.detail.hidden = !r.detail; x.detail.replaceChildren(...(r.detailLines?.length ? r.detailLines.map((l) => h("div", { class: l.lat ? "dl lat" : "dl" }, l.text)) : [r.detail || ""])); }
       x.advice.hidden = !r.advice; x.advice.textContent = r.advice || "";

@@ -42,6 +42,7 @@ public sealed partial class WebBridge
         var checks = new Dictionary<string, object[]>();
         void ReadChecks() { checks = checkupService.TestRuns().Where(c => c.Findings.Count > 0).ToDictionary(c => c.Id, c => c.Findings.Select(FindingJson).ToArray()); }
         ReadChecks();
+        static Desktop.Services.TestDetailText.DetailView View(string? detail) => Desktop.Services.TestDetailText.View(detail);
         object State() => new
         {
             running = tests.IsRunning, together = tests.Together, current = Current(), profileNote = tests.ProfileNote,
@@ -51,7 +52,7 @@ public sealed partial class WebBridge
             {
                 id = r.Definition.Id.Value, name = r.Name, selected = r.IsSelected, duration = r.DurationText, repeat = r.Repeat.ToString(), count = r.RepeatCountText,
                 options = r.Options.Select(Option), error = r.ValidationError, outcome = r.Outcome.ToString(), outcomeText = r.OutcomeText,
-                percent = r.PercentComplete, status = r.StatusText, errors = r.HasErrors ? r.ErrorsText : null, detail = r.Detail, detailLines = Desktop.Services.TestDetailText.Lines(r.Detail).Select(l => new { text = l.Text, lat = l.Latin }), advice = r.Advice, unavailable = r.UnavailableText,
+                percent = r.PercentComplete, status = r.StatusText, errors = r.HasErrors ? r.ErrorsText : null, detail = r.Detail, figures = View(r.Detail).Figures.Select(f => new { name = f.Name, value = f.Value, note = f.Note }), detailLines = View(r.Detail).Lines.Select(l => new { text = l.Text, lat = l.Latin }), advice = r.Advice, unavailable = r.UnavailableText,
                 // What the monitor's record of this test's last run says about the part it loaded (the diagnosis' rules), once the session has ended.
                 checkup = !tests.IsRunning && checks.TryGetValue(r.Definition.Id.Value, out var found) && r.Outcome is not (TestOutcome.NotRun or TestOutcome.Running) ? found : null,
             }),

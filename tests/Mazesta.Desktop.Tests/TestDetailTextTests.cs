@@ -48,4 +48,24 @@ public class TestDetailTextTests
         Assert.Equal([true, false, true], lines.Select(l => l.Latin)); Assert.Equal("radix-2 complex FFT, N=1024", lines[0].Text); Assert.Equal("something new avg 3.0 kPa (n=2)", lines[2].Text);
         Assert.Empty(TestDetailText.Lines(null)); Assert.Empty(TestDetailText.Lines("  "));
     }
+    // The garden scene test as the owner's RTX 3090 run wrote it: every part is worded, and the heat, clock, power and load stand apart as figures, the hot spot among them.
+    private const string Scene = "Direct3D 12 + ray tracing Persian garden drawn at 1920x1080 (window 2560x1440) on NVIDIA GeForce RTX 3090; 9,497,180 triangles in 20,524 objects, centre model 'Mazesta logo'; load level 3: 9.50 M triangles · 20,524 objects · 59 lamps · ray-traced shadows (2 a light) and reflections · MSAA 4×; frames=658; 32.8 FPS average; 26.6 FPS lowest half-second; check frames=7; measured GPU load avg 82.9% (n=44); GPU power avg 216.1 W max 244.6 W (n=44); GPU temperature avg 63.9°C max 67.0°C (n=44); GPU hot spot avg 76.8°C max 80.2°C (n=44); GPU clock avg 1850.5 MHz max 1875.0 MHz (n=44); GPU memory clock avg 9752.0 MHz max 9752.0 MHz (n=44); CPU clock peak 4500 MHz; CPU clock avg 339 MHz; CPU load avg 9 %; CPU power peak 87 W; RAM speed 2133 MT/s; RAM CAS latency (profile at that speed) 15 CL; Mazesta's own load: processor 0.4 cores busy on average (peak 3.9; 1 % of the whole processor), RAM 1872 MB on average (peak 1901 MB)";
+
+    [Fact] public void A_scene_result_has_no_untranslated_line_and_its_key_figures_come_first_with_the_highest_values()
+    {
+        var view = TestDetailText.View(Scene);
+        Assert.All(view.Lines, l => Assert.False(l.Latin, l.Text));
+        Assert.Equal(["67.0 °C", "80.2 °C", "1875.0 MHz", "244.6 W", "82.9 %", "32.8 FPS", "26.6 FPS", "9752.0 MHz"], view.Figures.Select(f => f.Value));
+        Assert.Equal(Loc.Format("Detail_Fig_Max", Loc.Get("Detail_L_GpuHotSpot")), view.Figures[1].Name);
+        Assert.Equal(Loc.Format("Detail_Fig_Note", "76.8", "°C", "44"), view.Figures[1].Note);
+        Assert.Contains(view.Lines, l => l.Text == Loc.Format("Detail_Cpu_ClockPeak", "4500"));
+        Assert.DoesNotContain(view.Lines, l => l.Text.Contains("M triangles"));
+    }
+
+    [Fact] public void A_detail_without_stats_has_no_figures_and_the_same_lines_as_before()
+    {
+        var view = TestDetailText.View("RAM pattern test; tested=1,024 MiB");
+        Assert.Empty(view.Figures); Assert.Equal(TestDetailText.Lines("RAM pattern test; tested=1,024 MiB").Select(l => l.Text), view.Lines.Select(l => l.Text));
+        Assert.Empty(TestDetailText.View(null).Figures);
+    }
 }

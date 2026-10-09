@@ -14,7 +14,7 @@ public static partial class TestDetailText
     private static readonly Dictionary<string, string> Labels = new(StringComparer.Ordinal)
     {
         ["GPU load"] = "Detail_L_GpuLoad", ["CPU load"] = "Detail_L_CpuLoad", ["GPU core"] = "Detail_L_GpuCore", ["GPU temperature"] = "Detail_L_GpuCore", ["GPU hot spot"] = "Detail_L_GpuHotSpot",
-        ["GPU power"] = "Detail_L_GpuPower", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
+        ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
     };
     private static readonly Dictionary<string, string> Counts = new(StringComparer.Ordinal)
     {
@@ -148,13 +148,60 @@ public static partial class TestDetailText
         R(@"([\d,]+) triangles in ([\d,]+) objects, centre model '(.+)'", "Detail_Gpu_SceneModel"),
         R(@"ray traced: camera ray, a shadow ray to the moon and to each of (\d+) lamps in reach, reflections and refraction up to 4 bounces", "Detail_Gpu_SceneRays"),
         R(@"ray traced: camera ray, a shadow ray to the sun or the moon and to each of (\d+) lamps in reach once they are lit, reflections and refraction up to 4 bounces", "Detail_Gpu_SceneRaysDay"),
+        R(@"load level (\d+): ([\d.]+) M triangles · ([\d,]+) objects · (\d+) lamps · (?:ray-traced shadows \((\d+) a light\) and reflections|shadows (\d+))(?: · MSAA (\d+)×)?(?: · pool reflection 1/(\d+))?", "Detail_Gpu_SceneLoadLine", m => [G(m, 1), SceneWork(m)]),
         R(@"load level (\d+): (.+)", "Detail_Gpu_SceneLoad", tail: 2),
         R(@"([\d,.]+) FPS average", "Detail_Gpu_FpsAvg"),
         R(@"([\d,.]+) FPS lowest half-second", "Detail_Gpu_FpsLow"),
         R(@"the test window was closed before the time was up", "Detail_Gpu_WindowClosed"),
+        // ——— what the processor and the RAM did during a graphics run, and what Mazesta itself cost ———
+        R(@"CPU clock peak ([\d.]+) MHz", "Detail_Cpu_ClockPeak"),
+        R(@"CPU clock avg ([\d.]+) MHz", "Detail_Cpu_ClockAvg"),
+        R(@"CPU load avg ([\d.]+) %", "Detail_Cpu_LoadAvg"),
+        R(@"CPU power peak ([\d.]+) W", "Detail_Cpu_PowerPeak"),
+        R(@"RAM speed (\d+) MT/s", "Detail_Ram_Speed"),
+        R(@"RAM CAS latency \(profile at that speed\) (\d+) CL", "Detail_Ram_Cas"),
+        R(@"Mazesta's own load: processor ([\d.]+) cores busy on average \(peak ([\d.]+); (\d+) % of the whole processor\), RAM (\d+) MB on average \(peak (\d+) MB\)", "Detail_Footprint"),
         // ——— Windows' own tools ———
         R(@"(sfc\.exe|dism\.exe) (.+): (Healthy|Repaired|Damaged|Unknown) \(exit code (-?\d+)\)", "Detail_Win_Tool", m => [G(m, 1), G(m, 2), Loc.Get("Detail_Win_" + G(m, 3)), G(m, 4)]),
     ]);
+
+    /// <summary>A key measured figure of a run, for the big numbers at the top of a result: what it is, its value with the unit, and a note (the average beside a highest).</summary>
+    public sealed record DetailFigure(string Name, string Value, string? Note);
+    public sealed record DetailView(IReadOnlyList<DetailFigure> Figures, IReadOnlyList<DetailLine> Lines);
+
+    /// <summary>The order the key figures stand in: the heat, clock and power of the part under test first, then the frame rate, then the rest.</summary>
+    private static readonly string[] FigureOrder = ["GPU temperature", "GPU core", "GPU hot spot", "GPU clock", "GPU power", "GPU load", "fps avg", "fps low", "GPU memory clock", "CPU temperature", "CPU package power", "CPU load", "VRAM in use"];
+
+    /// <summary>The detail as the page shows it: the figures that matter (a measured highest or average) apart, and every other line as <see cref="Lines"/> words it.</summary>
+    public static DetailView View(string? detail)
+    {
+        if (string.IsNullOrWhiteSpace(detail)) return new([], []);
+        string all = detail.Trim();
+        if (Whole.Value.Any(r => r.Pattern.IsMatch(all))) return new([], Lines(detail));
+        var figures = new List<(int Rank, DetailFigure Figure)>(); var lines = new List<DetailLine>();
+        foreach (var part in Split(all)) { if (Figure(part) is { } f) figures.Add(f); else lines.AddRange(Line(part)); }
+        return new([.. figures.OrderBy(f => f.Rank).Select(f => f.Figure)], lines);
+    }
+
+    private static (int, DetailFigure)? Figure(string part)
+    {
+        if (Stat().Match(part) is { Success: true } s && Labels.TryGetValue(s.Groups[1].Value, out var label) && Array.IndexOf(FigureOrder, s.Groups[1].Value) is var rank and >= 0)
+        {
+            string unit = s.Groups[3].Value.Trim(); bool max = s.Groups[4].Success;
+            return (rank, new(Loc.Format(max ? "Detail_Fig_Max" : "Detail_Fig_Avg", Loc.Get(label)), $"{(max ? s.Groups[4].Value : s.Groups[2].Value)} {unit}", max ? Loc.Format("Detail_Fig_Note", s.Groups[2].Value, unit, s.Groups[5].Value) : null));
+        }
+        if (FpsAverage().Match(part) is { Success: true } a) return (Array.IndexOf(FigureOrder, "fps avg"), new(Loc.Get("Detail_Fig_FpsAvg"), a.Groups[1].Value + " FPS", null));
+        if (FpsLowest().Match(part) is { Success: true } l) return (Array.IndexOf(FigureOrder, "fps low"), new(Loc.Get("Detail_Fig_FpsLow"), l.Groups[1].Value + " FPS", null));
+        return null;
+    }
+
+    private static string SceneWork(Match m)
+    {
+        var parts = new List<string> { Loc.Format("Detail_Work_Tri", G(m, 2), G(m, 3), G(m, 4)), G(m, 5).Length > 0 ? Loc.Format("Detail_Work_RtShadows", G(m, 5)) : Loc.Format("Detail_Work_Shadows", G(m, 6)) };
+        if (G(m, 7).Length > 0) parts.Add(Loc.Format("Detail_Work_Msaa", G(m, 7)));
+        if (G(m, 8).Length > 0) parts.Add(Loc.Format("Detail_Work_Pool", G(m, 8)));
+        return string.Join(Loc.Get("Detail_ListComma"), parts);
+    }
 
     public static IReadOnlyList<DetailLine> Lines(string? detail)
     {
@@ -238,11 +285,13 @@ public static partial class TestDetailText
         return Loc.Get(key) is var name && name != key ? name : null;
     }
 
-    [GeneratedRegex(@"^(?:measured )?([A-Za-z ]+?) avg ([\d.]+)(%|°C| W| MB) (?:max ([\d.]+)(?:%|°C| W| MB) )?\(n=(\d+)\)$")] private static partial Regex Stat();
+    [GeneratedRegex(@"^(?:measured )?([A-Za-z ]+?) avg ([\d.]+)(%|°C| W| MB| MHz) (?:max ([\d.]+)(?:%|°C| W| MB| MHz) )?\(n=(\d+)\)$")] private static partial Regex Stat();
     [GeneratedRegex(@"^([a-z]+(?: [a-z]+)?)=([\d,]+)$")] private static partial Regex Count();
     [GeneratedRegex(@"^GPU (Steady|Variable|Pulse) compute stress on (.+)$")] private static partial Regex GpuStress();
     [GeneratedRegex(@"^verified ([\d,]+) of ([\d,]+) thread results through chained dispatches \(a sample, not every thread\)$")] private static partial Regex Verified();
     [GeneratedRegex(@"^([\d,.]+) frame/s$")] private static partial Regex FrameRate();
+    [GeneratedRegex(@"^([\d,.]+) FPS average$")] private static partial Regex FpsAverage();
+    [GeneratedRegex(@"^([\d,.]+) FPS lowest half-second$")] private static partial Regex FpsLowest();
     [GeneratedRegex(@"^(CPU|GPU) \[(\w+)\]: (.+)$")] private static partial Regex Half();
     [GeneratedRegex(@"^NVMe health log during the test: (.+)$")] private static partial Regex NvmeDuring();
     [GeneratedRegex(@"^([a-z_]+) ([\d,.]+) ?(\S*)$")] private static partial Regex NetMetric();
