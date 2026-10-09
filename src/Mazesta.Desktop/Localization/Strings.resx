@@ -3424,4 +3424,5 @@ Cancel: stop.</value></data>
   <data name="Detail_Net_IcmpEchoes" xml:space="preserve"><value>ICMP to {0} ({1} echoes)</value></data>
   <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} MB moved</value></data>
   <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>In the 3D scene (a game's load, fixed camera) at the starting settings: {0}  →  tuned: {1}</value></data>
+  <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>The driver would not give more graphics memory after {0} buffers; the part it gave was tested</value></data>
 </root>

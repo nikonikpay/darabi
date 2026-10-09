@@ -44,7 +44,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
 
     private static TestRunResult Run(TestExecutionRequest request, GraphicsDevice device, long budget, DateTimeOffset started, CancellationToken ct)
     {
-        var buffers = new List<ReadWriteBuffer<uint>>(); long errors = 0; uint passes = 0;
+        var buffers = new List<ReadWriteBuffer<uint>>(); long errors = 0; uint passes = 0; bool refused = false;
         var clock = Stopwatch.StartNew();
         try
         {
@@ -53,7 +53,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
             {
                 ct.ThrowIfCancellationRequested();
                 try { buffers.Add(device.AllocateReadWriteBuffer<uint>(ChunkElements)); }
-                catch (Exception) when (buffers.Count > 0) { break; }   // the driver refused more: test what was granted
+                catch (Exception) when (buffers.Count > 0) { refused = true; break; }   // the driver refused more: test what was granted
                 Dispatch(device, buffers[^1], counter, buffers.Count - 1, 0, verify: false);
             }
             if (buffers.Count == 0) return TestRunResult.Unsupported(Definition.Id, started, "The driver refused to allocate any VRAM buffer.");
@@ -74,11 +74,12 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
             while (timed.Elapsed < duration);
             for (int b = 0; b < buffers.Count; b++) errors += Verify(device, buffers[b], counter, b, passes);
         }
-        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, request, started)); }
+        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, request, started, refused)); }
         catch (Exception ex) { return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"GPU error during the VRAM test: {ex.GetType().Name}: {ex.Message}"); }
-        finally { foreach (var b in buffers) b.Dispose(); }
+        // ComputeSharp 3.2 returns a descriptor twice after a refused allocation, so its pool throws on the last return - with the memory already freed; the finished run is not a crash.
+        finally { foreach (var b in buffers) { try { b.Dispose(); } catch (InvalidOperationException) { } } }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, request, started));
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, request, started, refused));
     }
 
     private static void Dispatch(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
@@ -92,7 +93,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
         return bad[0];
     }
 
-    private static string Describe(GraphicsDevice device, int chunks, uint passes, TestExecutionRequest request, DateTimeOffset started)
-        => SensorEvidence.Join($"VRAM pattern test on {device.Name}", $"tested={chunks * (ChunkBytes >> 20)} MiB in {chunks} buffers", $"passes={passes}",
+    private static string Describe(GraphicsDevice device, int chunks, uint passes, TestExecutionRequest request, DateTimeOffset started, bool refused)
+        => SensorEvidence.Join($"VRAM pattern test on {device.Name}", $"tested={chunks * (ChunkBytes >> 20)} MiB in {chunks} buffers", $"passes={passes}", refused ? $"the driver refused more VRAM after {chunks} buffers (the part it granted was tested)" : null,
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramUsed, started, request.Clock.UtcNow, GpuDevices.SensorNode(request.Engine, device.Name), null)?.Format("VRAM in use", " MB", includeMax: true));
 }

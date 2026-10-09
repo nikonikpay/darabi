@@ -146,6 +146,7 @@ public static partial class TestDetailText
         R(@"([\d,.]+) MPixel/s \(Mazesta's own scene, not a commercial score\)", "Detail_Gpu_MPixel"),
         R(@"VRAM pattern test on (.+)", "Detail_Gpu_Vram"),
         R(@"tested=(\d+) MiB in (\d+) buffers", "Detail_Gpu_VramTested"),
+        R(@"the driver refused more VRAM after (\d+) buffers \(the part it granted was tested\)", "Detail_Gpu_VramRefused"),
         R(@"GPU error during (?:the run|rendering|the VRAM test|the visual test): The GPU was lost during the run \(device removed: (.+)\)\.", "Detail_Gpu_Lost"),
         R(@"GPU error during (?:the run|rendering|the VRAM test|the visual test): (.+)", "Detail_Gpu_Error", tail: 1),
         R(@"(DirectX Raytracing|Direct3D 12 \+ ray tracing|Direct3D 12) Persian garden drawn at (\d+)x(\d+) \(window (\d+)x(\d+)\) on (.+)", "Detail_Gpu_Scene"),

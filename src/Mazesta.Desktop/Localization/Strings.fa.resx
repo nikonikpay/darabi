@@ -3424,4 +3424,5 @@
   <data name="Detail_Net_IcmpEchoes" xml:space="preserve"><value>پینگ (ICMP) به {0} ({1} درخواست)</value></data>
   <data name="Detail_Net_Transferred" xml:space="preserve"><value>{0} مگابایت داده جابه‌جا شد</value></data>
   <data name="Tuning_Evidence_SceneStart" xml:space="preserve"><value>در صحنهٔ سه‌بعدی (بار بازی، دوربین ثابت) با تنظیمات نقطهٔ شروع: {0}  ←  تنظیم‌شده: {1}</value></data>
+  <data name="Detail_Gpu_VramRefused" xml:space="preserve"><value>درایور بعد از {0} بافر حافظهٔ گرافیک بیشتری نداد؛ همان بخشی که داد آزمایش شد</value></data>
 </root>

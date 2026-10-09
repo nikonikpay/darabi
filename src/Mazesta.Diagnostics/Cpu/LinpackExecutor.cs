@@ -70,7 +70,7 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
         string filled = mode == "single" ? "" : $"memory filled: {systems.Count} systems, {8L * n * n * systems.Count >> 20} MiB ({label})";
         if (mode != "single") request.Note("Log_Linpack_Fill", null, systems.Count, 8L * n * n * systems.Count >> 20, label);
         try { return Run(request, n, systems, piv, b, x, filled, started, ct); }
-        finally { systems.Clear(); GC.Collect(); }   // gigabytes, given back now and not at the collector's leisure
+        finally { systems.Clear(); GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true); }   // gigabytes, given back to Windows now and not at the collector's leisure: a plain collection leaves them committed and the graphics card's next allocations are refused
     }
 
     private static TestRunResult Run(TestExecutionRequest request, int n, List<double[]> systems, int[] piv, double[] b, double[] x, string filled, DateTimeOffset started, CancellationToken ct)
