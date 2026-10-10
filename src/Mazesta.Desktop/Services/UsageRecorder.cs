@@ -1,4 +1,4 @@
-using System.Text.Json.Nodes; using Mazesta.Core.Tuning; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Persistence;
+using System.Text.Json.Nodes; using Mazesta.Core.Hardware; using Mazesta.Core.Tuning; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Evidence; using Mazesta.Monitoring; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Persistence;
 namespace Mazesta.Desktop.Services;
 
 /// <summary>
@@ -9,11 +9,30 @@ namespace Mazesta.Desktop.Services;
 public sealed class UsageRecorder
 {
     private readonly UsageLog _log;
-    public UsageRecorder(UsageLog log, TestEngine tests, BenchmarkRunner benchmarks)
+    public UsageRecorder(UsageLog log, TestEngine tests, BenchmarkRunner benchmarks, PollingEngine monitor)
     {
         _log = log;
-        tests.TestCompleted += (id, r) => Record("test.run", UsageData.Test(id.Value, r));
-        benchmarks.Finished += run => Record("bench.run", UsageData.Bench(run));
+        tests.TestCompleted += (id, r) => { var o = UsageData.Test(id.Value, r); AddSensors(o, monitor, r.StartedAt, r.FinishedAt); Record("test.run", o); };
+        benchmarks.Finished += run => { var o = UsageData.Bench(run); AddSensors(o, monitor, run.Result.StartedAt, run.Result.FinishedAt); Record("bench.run", o); };
+    }
+
+    /// <summary>What the machine itself measured over the run's own time (processor and card: temperature, clock, power; average and peak), left out where it reported none.</summary>
+    private static void AddSensors(JsonObject o, PollingEngine monitor, DateTimeOffset from, DateTimeOffset? to)
+    {
+        if (to is not { } end) return;
+        var s = new JsonObject();
+        void Put(string key, SensorStat? v) { if (v is { } x && double.IsFinite(x.Average)) { s[key] = Math.Round(x.Average, 1); s[key + "Max"] = Math.Round(x.Max, 1); } }
+        try
+        {
+            Put("cpuTemp", SensorEvidence.CpuTemperature(monitor, from, end));
+            Put("cpuClock", SensorEvidence.ReadFirst(monitor, HardwareKind.Cpu, from, end, SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage));
+            Put("cpuPower", SensorEvidence.Read(monitor, HardwareKind.Cpu, SensorRole.CpuPackagePower, from, end));
+            Put("gpuTemp", SensorEvidence.Read(monitor, HardwareKind.Gpu, SensorRole.GpuCoreTemp, from, end));
+            Put("gpuClock", SensorEvidence.Read(monitor, HardwareKind.Gpu, SensorRole.GpuCoreClock, from, end));
+            Put("gpuPower", SensorEvidence.Read(monitor, HardwareKind.Gpu, SensorRole.GpuPower, from, end));
+        }
+        catch (InvalidOperationException) { }   // the sensor list changed while it was read: the event goes without them
+        if (s.Count > 0) o["sensors"] = s;
     }
     public UsageLog Log => _log;
     public void Record(string kind, JsonObject? data = null) => _log.Append(kind, data);

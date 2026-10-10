@@ -27,8 +27,15 @@ internal sealed class UsageUploader : IDisposable
         var m = new JsonObject();
         static string? Name(string? raw) => string.IsNullOrWhiteSpace(raw) ? null : raw.Trim();
         if (Name(inv.Cpu?.Name) is { } cpu) m["cpu"] = cpu;
+        if (inv.Cpu is { } c) { if (c.PhysicalCores is { } pc) m["cores"] = pc; if (c.LogicalProcessors is { } lp) m["threads"] = lp; }
         var gpus = inv.Gpus.Select(g => Name(g.Name)).OfType<string>().ToArray();
         if (gpus.Length > 0) m["gpus"] = new JsonArray([.. gpus.Select(g => (JsonNode)g)]);
+        if (inv.Gpus.FirstOrDefault(g => g.DriverVersion is not null)?.DriverVersion is { } drv) m["gpuDriver"] = drv;
+        if (Name(inv.Motherboard?.Product) is { } board) m["board"] = $"{Name(inv.Motherboard?.Manufacturer)} {board}".Trim();
+        var mods = inv.MemoryModules.Where(x => x.CapacityBytes > 0).Select(x => $"{Math.Round(x.CapacityBytes!.Value / 1073741824.0)} GB {x.TypeName} {x.ConfiguredSpeedMts ?? x.SpeedMts} MT/s".Replace("  ", " ").Trim()).ToArray();
+        if (mods.Length > 0) m["ramModules"] = new JsonArray([.. mods.Select(x => (JsonNode)x)]);   // (no part numbers or serials)
+        var disks = inv.Storage.Where(d => Name(d.FriendlyName) is not null).Select(d => $"{Name(d.FriendlyName)} {(d.SizeBytes is { } z ? Math.Round(z / 1e9) + " GB" : "")} {d.MediaType}".Trim()).ToArray();
+        if (disks.Length > 0) m["storage"] = new JsonArray([.. disks.Select(x => (JsonNode)x)]);
         if (inv.TotalPhysicalMemoryBytes is { } b) m["ramGb"] = Math.Round(b / 1073741824.0);
         if (inv.Os is { } os) { m["os"] = $"{os.Caption} {os.Version}".Trim(); }
         return m;
