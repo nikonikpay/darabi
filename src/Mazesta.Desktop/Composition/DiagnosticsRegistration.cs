@@ -39,6 +39,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, LinpackExecutor>();
         s.AddSingleton<ITestExecutor, CpuVectorStressExecutor>();
         s.AddSingleton<ITestExecutor, CpuFftExecutor>();
+        s.AddSingleton<ITestExecutor>(sp => CpuCycleExecutor.Standard(sp.GetRequiredService<IMemoryProbe>()));
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, MemorySequenceExecutor>();
         s.AddSingleton<ITestExecutor, MemoryBitFadeExecutor>();

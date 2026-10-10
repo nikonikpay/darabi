@@ -3447,4 +3447,13 @@ Cancel: stop.</value></data>
   <data name="Log_MemSeq_Start" xml:space="preserve"><value>Preset '{0}' on {1} MiB of free RAM.</value></data>
   <data name="Log_MemSeq_Round" xml:space="preserve"><value>Round {0} finished; {1} checks so far, {2} wrong word(s).</value></data>
   <data name="Log_MemSeq_Errors" xml:space="preserve"><value>The check after '{0}' found {1} wrong word(s) ({2} wrong bit(s)).</value></data>
+  <data name="Test_Cpu_Cycle" xml:space="preserve"><value>CPU · Preset cycle (SSE, AVX2, AVX-512, FFT, Linpack, swinging load)</value></data>
+  <data name="Test_Option_CpuPreset" xml:space="preserve"><value>Preset</value></data>
+  <data name="Test_CpuPreset_full" xml:space="preserve"><value>Full: every instruction width, FFT, Linpack, mixed load</value></data>
+  <data name="Test_CpuPreset_instructions" xml:space="preserve"><value>Instruction sets: SSE, AVX2, AVX-512 in turn</value></data>
+  <data name="Test_CpuPreset_transient" xml:space="preserve"><value>Transient: swinging load and single-core boost (undervolt, curve offsets)</value></data>
+  <data name="Test_CpuPreset_custom" xml:space="preserve"><value>Custom stages</value></data>
+  <data name="Test_Option_CpuStages" xml:space="preserve"><value>Stages (test:option=value, e.g. cpu.vector:width=avx2 cpu.fft)</value></data>
+  <data name="Log_CpuCycle_Stage" xml:space="preserve"><value>Round {0}, stage {1} of {2}: {3} for {4} s.</value></data>
+  <data name="Log_CpuCycle_Skipped" xml:space="preserve"><value>Stage {0} skipped: this CPU cannot run it ({1}).</value></data>
 </root>

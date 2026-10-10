@@ -3447,4 +3447,13 @@
   <data name="Log_MemSeq_Start" xml:space="preserve"><value>پیش‌تنظیم «{0}» روی {1} مگابایت رم آزاد.</value></data>
   <data name="Log_MemSeq_Round" xml:space="preserve"><value>دور {0} تمام شد؛ تا این لحظه {1} بررسی و {2} کلمهٔ نادرست.</value></data>
   <data name="Log_MemSeq_Errors" xml:space="preserve"><value>بررسی بعد از «{0}» {1} کلمهٔ نادرست پیدا کرد ({2} بیت نادرست).</value></data>
+  <data name="Test_Cpu_Cycle" xml:space="preserve"><value>پردازنده · چرخهٔ پیش‌تنظیم (SSE، AVX2، AVX-512، FFT، لینپک، بار نوسانی)</value></data>
+  <data name="Test_Option_CpuPreset" xml:space="preserve"><value>پیش‌تنظیم</value></data>
+  <data name="Test_CpuPreset_full" xml:space="preserve"><value>کامل: همهٔ دستورالعمل‌ها، FFT، لینپک، بار ترکیبی</value></data>
+  <data name="Test_CpuPreset_instructions" xml:space="preserve"><value>دستورالعمل‌ها: SSE، AVX2 و AVX-512 به نوبت</value></data>
+  <data name="Test_CpuPreset_transient" xml:space="preserve"><value>گذرا: بار نوسانی و بوست تک‌هسته (آندرولت و Curve Optimizer)</value></data>
+  <data name="Test_CpuPreset_custom" xml:space="preserve"><value>مرحله‌های دلخواه</value></data>
+  <data name="Test_Option_CpuStages" xml:space="preserve"><value>مرحله‌ها (test:option=value، مثلاً cpu.vector:width=avx2 cpu.fft)</value></data>
+  <data name="Log_CpuCycle_Stage" xml:space="preserve"><value>دور {0}، مرحلهٔ {1} از {2}: {3} به مدت {4} ثانیه.</value></data>
+  <data name="Log_CpuCycle_Skipped" xml:space="preserve"><value>مرحلهٔ {0} رد شد: این پردازنده آن را اجرا نمی‌کند ({1}).</value></data>
 </root>
