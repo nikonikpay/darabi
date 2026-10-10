@@ -95,7 +95,7 @@ final class MZC_Import
         if ($id) { return $id; }
         $id = self::mapped($db, 'c', 0);
         if ($id) { return $id; }
-        $db->insert(self::t('customers'), array('name' => 'مشتری نامشخص (پایگاه قدیمی)', 'created' => gmdate('Y-m-d H:i:s'), 'updated' => gmdate('Y-m-d H:i:s')));
+        $db->insert(self::t('customers'), array('grp' => 'customer', 'name' => 'مشتری نامشخص (پایگاه قدیمی)', 'created' => gmdate('Y-m-d H:i:s'), 'updated' => gmdate('Y-m-d H:i:s')));
         $id = (int) $db->insert_id; self::remember($db, 'c', 0, $id);
         return $id;
     }
@@ -106,13 +106,18 @@ final class MZC_Import
         $now = gmdate('Y-m-d H:i:s');
         switch ($r['t']) {
             case 'customer':
-                if (self::mapped($db, 'c', $r['old'])) { return false; }
+                if ($id = self::mapped($db, 'c', $r['old'])) {   // a re-run still brings the group of a customer imported before groups existed
+                    if (isset($r['group']) && $r['group'] !== 'customer' && isset(MZC_Crm::$groups[$r['group']])) { $db->update(self::t('customers'), array('grp' => $r['group']), array('id' => $id, 'grp' => 'customer')); }
+                    return false;
+                }
                 $m = MZC_Crm::mobile($r['mobile']); $m2 = MZC_Crm::mobile($r['mobile2']); $name = self::s($r['name'], 190);
                 if ($name === '') { $name = $m ?: 'بدون نام'; }
-                if ($m && ($ex = $db->get_row($db->prepare('SELECT id, name, notes, mobile2 FROM `' . self::t('customers') . '` WHERE mobile = %s', $m), ARRAY_A))) {
+                if ($m && ($ex = $db->get_row($db->prepare('SELECT id, name, notes, mobile2, grp FROM `' . self::t('customers') . '` WHERE mobile = %s', $m), ARRAY_A))) {
                     $upd = array();
                     if ($name !== $ex['name'] && strpos((string) $ex['notes'], $name) === false) { $upd['notes'] = trim($ex['notes'] . "\nنام دیگر در پایگاه قدیمی: " . $name); }
                     if ($m2 && !$ex['mobile2']) { $upd['mobile2'] = $m2; }
+                    $g = isset($r['group']) && isset(MZC_Crm::$groups[$r['group']]) ? $r['group'] : 'customer';
+                    if ($g !== 'customer' && in_array($ex['grp'], array(null, '', 'customer', 'general'), true)) { $upd['grp'] = $g; }
                     if ($upd) { $db->update(self::t('customers'), $upd, array('id' => (int) $ex['id'])); }
                     self::remember($db, 'c', $r['old'], $ex['id']);
                     return true;
@@ -120,7 +125,7 @@ final class MZC_Import
                 if ($m2 === $m) { $m2 = ''; }
                 $ok = $db->insert(self::t('customers'), array('name' => $name, 'mobile' => $m ?: null, 'mobile2' => $m2 ?: null, 'phone2' => null, 'phone' => self::nz(self::s($r['phone'], 80)),
                     'national_id' => self::nz(self::s($r['national_id'], 20)), 'email' => self::nz(self::s($r['email'], 190)), 'address' => self::nz(self::s($r['address'], 1000)), 'notes' => self::nz(self::s($r['notes'], 4000)),
-                    'old_id' => (int) $r['old'], 'created' => self::ts($r['created']), 'updated' => $now));
+                    'old_id' => (int) $r['old'], 'grp' => isset($r['group']) && isset(MZC_Crm::$groups[$r['group']]) ? $r['group'] : 'customer', 'created' => self::ts($r['created']), 'updated' => $now));
                 if (!$ok) { return $db->last_error; }
                 self::remember($db, 'c', $r['old'], $db->insert_id);
                 return true;

@@ -113,6 +113,12 @@ def main(out):
     props = collections.defaultdict(list)
     for link3, par, val in q("SELECT Link3,Parameter,Value_ FROM CustomerProperty WHERE Value_ IS NOT NULL AND LTRIM(RTRIM(Value_))<>''"):
         props[link3].append((par, val.strip()))
+    # the old CRM's customer groups (customers, agents, staff, ...); a few customers sit in two, the more specific one wins
+    GROUPS = [('نمایندگان', 'agent'), ('پرسنل', 'staff'), ('انبار ها', 'store'), ('پیک و باربری', 'courier'), ('گارانتی ها', 'warranty'), ('مشتریان بالقوه', 'lead'), ('عمومی', 'general'), ('مشتریان', 'customer')]
+    have = collections.defaultdict(set)
+    for cc, gn in q('SELECT customer_code, group_name FROM Tcustomer_group'):
+        have[cc].add(re.sub(r'\s+', ' ', (gn or '')).strip())
+    def group_of(cc): return next((slug for label, slug in GROUPS if label in have.get(cc, ())), 'customer')
     n_cust = 0
     for code, name, comment, created in q('SELECT code,Name,comment,CreateDate FROM Tcustomer ORDER BY code'):
         p = props.get(code, []); mob = []; phones = []; email = nid = addr = ''
@@ -127,7 +133,7 @@ def main(out):
             elif par == 'آدرس': addr = addr or val
         d = re.match(r'(\d{2})/(\d{2})/(\d{4}) (\d{2}):(\d{2})', created or '')
         lines.append({'t': 'customer', 'old': code, 'name': re.sub(r'\s+', ' ', name or '').strip(), 'mobile': mob[0] if mob else '', 'mobile2': mob[1] if len(mob) > 1 else '', 'phone': ' / '.join(phones)[:60],
-                      'national_id': nid[:20], 'email': email[:190], 'address': addr, 'notes': (comment or '').strip(), 'created': f'{d[3]}-{d[1]}-{d[2]} {d[4]}:{d[5]}:00' if d else None})
+                      'national_id': nid[:20], 'email': email[:190], 'address': addr, 'notes': (comment or '').strip(), 'group': group_of(code), 'created': f'{d[3]}-{d[1]}-{d[2]} {d[4]}:{d[5]}:00' if d else None})
         n_cust += 1
 
     # assembled systems (form 1)

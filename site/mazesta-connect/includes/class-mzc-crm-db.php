@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 4;
+    const SCHEMA = 5;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -109,7 +109,7 @@ final class MZC_Crm_Db
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)
         $cols = array(
-            'customers' => array('mobile2' => 'VARCHAR(20) NULL', 'old_id' => 'INT NULL', 'phone' => 'VARCHAR(80) NULL'),
+            'customers' => array('mobile2' => 'VARCHAR(20) NULL', 'old_id' => 'INT NULL', 'phone' => 'VARCHAR(80) NULL', 'grp' => 'VARCHAR(12) NULL'),
             'builds' => array('delivered' => 'TINYINT NOT NULL DEFAULT 0', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
             'build_parts' => array('has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'qc' => 'TINYINT NOT NULL DEFAULT 0'),
             'jobs' => array('due_at' => 'DATE NULL', 'is_mazesta' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'discount' => 'BIGINT NOT NULL DEFAULT 0', 'paid' => 'BIGINT NOT NULL DEFAULT 0',

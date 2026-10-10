@@ -13,6 +13,9 @@ final class MZC_Crm
 
     public static $categories = array('cpu' => 'پردازنده', 'motherboard' => 'مادربرد', 'ram' => 'رم', 'gpu' => 'کارت گرافیک', 'ssd' => 'SSD / NVMe', 'hdd' => 'هارد', 'psu' => 'پاور',
         'case' => 'کیس', 'cooler' => 'خنک‌کننده', 'fan' => 'فن', 'monitor' => 'مانیتور', 'other' => 'سایر');
+    /** The old CRM's customer groups (shop customers, agents, staff, ...). */
+    public static $groups = array('customer' => 'مشتری', 'lead' => 'مشتری بالقوه', 'agent' => 'نماینده', 'general' => 'عمومی', 'warranty' => 'گارانتی', 'staff' => 'پرسنل', 'store' => 'انبار', 'courier' => 'پیک و باربری');
+
     public static $statuses = array('received' => 'پذیرش شد', 'diagnosing' => 'در حال بررسی', 'waiting_part' => 'منتظر قطعه', 'ready' => 'آماده تحویل', 'delivered' => 'تحویل شد', 'cancelled' => 'لغو شد');
 
     public static function boot()
@@ -86,11 +89,12 @@ final class MZC_Crm
     }
 
     /** A page of customers (search in name, mobile, national id), newest first, with how many systems and jobs each has. */
-    public static function customers($q, $page, $per = 30)
+    public static function customers($q, $page, $per = 30, $grp = '')
     {
         $db = self::db(); if (!$db) { return array(array(), 0); }
         $c = self::t('customers'); $where = '1=1'; $args = array();
         if ($q !== '') { $like = '%' . $db->esc_like(self::digits($q)) . '%'; $likeq = '%' . $db->esc_like($q) . '%'; $where = '(name LIKE %s OR mobile LIKE %s OR mobile2 LIKE %s OR national_id LIKE %s OR phone LIKE %s)'; $args = array($likeq, $like, $like, $like, $like); }
+        if ($grp !== '' && isset(self::$groups[$grp])) { $where = '(' . $where . ') AND grp = %s'; $args[] = $grp; }
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) FROM `$c` WHERE $where", $args) : "SELECT COUNT(*) FROM `$c`");
         $sql = "SELECT c.*, (SELECT COUNT(*) FROM `" . self::t('builds') . "` b WHERE b.customer_id = c.id) AS builds, (SELECT COUNT(*) FROM `" . self::t('jobs') . "` j WHERE j.customer_id = c.id) AS jobs
             FROM `$c` c WHERE " . str_replace(array('name', 'mobile2', 'mobile', 'national_id', 'phone'), array('c.name', 'c.mobile2', 'c.mobile', 'c.national_id', 'c.phone'), $where) . ' ORDER BY c.id DESC LIMIT %d OFFSET %d';
@@ -111,8 +115,9 @@ final class MZC_Crm
         $m2 = self::mobile(isset($extra['mobile2']) ? $extra['mobile2'] : '');
         $row = array('name' => $name, 'mobile' => $m === '' ? null : $m, 'mobile2' => $m2 === '' || $m2 === $m ? null : $m2, 'phone' => isset($extra['phone']) ? $extra['phone'] : null, 'phone2' => isset($extra['phone2']) ? $extra['phone2'] : null, 'national_id' => isset($extra['national_id']) ? $extra['national_id'] : null,
             'email' => isset($extra['email']) ? $extra['email'] : null, 'address' => isset($extra['address']) ? $extra['address'] : null, 'notes' => isset($extra['notes']) ? $extra['notes'] : null, 'updated' => self::now());
+        if (isset($extra['grp']) && isset(self::$groups[$extra['grp']])) { $row['grp'] = $extra['grp']; }
         if ($id) { $ok = $db->update($t, $row, array('id' => (int) $id)); return $ok === false ? 'ذخیره نشد: ' . $db->last_error : (int) $id; }
-        $row['created'] = self::now();
+        $row['created'] = self::now(); if (!isset($row['grp'])) { $row['grp'] = 'customer'; }
         return $db->insert($t, $row) ? (int) $db->insert_id : 'ذخیره نشد: ' . $db->last_error;
     }
 
@@ -293,7 +298,7 @@ final class MZC_Crm
         MZC_Admin::guard('customer_save');
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $r = self::save_customer($id, self::post('name', 190), self::post('mobile', 30), array('mobile2' => self::post('mobile2', 30), 'phone' => self::post('phone', 80) ?: null, 'phone2' => null, 'national_id' => self::post('national_id', 20) ?: null,
-            'email' => sanitize_email(self::post('email', 190)) ?: null, 'address' => self::post_long('address', 1000) ?: null, 'notes' => self::post_long('notes') ?: null));
+            'email' => sanitize_email(self::post('email', 190)) ?: null, 'address' => self::post_long('address', 1000) ?: null, 'notes' => self::post_long('notes') ?: null, 'grp' => self::post('grp', 12)));
         if (!is_int($r)) { MZC_Admin::back('mzc-customers', 'err:' . $r, $id ? array('view' => $id) : array('add' => 1)); }
         MZC_Admin::back('mzc-customers', 'ok:مشتری ثبت شد.', array('view' => $r));
     }

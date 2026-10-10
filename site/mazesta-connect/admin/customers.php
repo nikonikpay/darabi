@@ -10,6 +10,7 @@ $form = function ($c) {
     $v = function ($k) use ($c) { return $c && isset($c[$k]) ? esc_attr((string) $c[$k]) : ''; };
     echo MZC_Admin::form_open('customer_save', 'class="mzc-form"') . ($c ? '<input type="hidden" name="id" value="' . (int) $c['id'] . '">' : '') . '<div class="mzc-fields">'
         . '<label>نام و نام خانوادگی<input type="text" name="name" value="' . $v('name') . '" maxlength="190" required></label>'
+        . '<label>گروه<select name="grp">' . implode('', array_map(function ($k, $l) use ($c) { return '<option value="' . esc_attr($k) . '"' . selected($c && isset($c['grp']) ? $c['grp'] : 'customer', $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$groups), MZC_Crm::$groups)) . '</select></label>'
         . '<label>موبایل<input type="text" name="mobile" dir="ltr" value="' . $v('mobile') . '" placeholder="09121234567"><small>ورود مشتری به پورتال با همین شماره است.</small></label>'
         . '<label>موبایل دوم<input type="text" name="mobile2" dir="ltr" value="' . $v('mobile2') . '"></label>'
         . '<label>تلفن ثابت<input type="text" name="phone" dir="ltr" value="' . $v('phone') . '"></label>'
@@ -66,13 +67,14 @@ if ($view) {
 
 $q = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
-list($rows, $total) = MZC_Crm::customers($q, $paged, $per);
+$grp = isset($_GET['grp']) ? sanitize_key(wp_unslash($_GET['grp'])) : '';
+list($rows, $total) = MZC_Crm::customers($q, $paged, $per, $grp);
 echo '<div class="mzc-title"><h2>مشتریان</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-customers', array('add' => 1))) . '">+ مشتری تازه</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-customers"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام، موبایل یا کد ملی" style="min-width:260px"><button class="mzc-btn primary">جستجو</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' مشتری</span></form>';
-echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>نام</th><th>موبایل</th><th class="n">سیستم</th><th class="n">سرویس</th><th>ثبت</th></tr></thead><tbody>';
-if (!$rows) { echo '<tr><td class="empty" colspan="5">مشتری‌ای پیدا نشد.</td></tr>'; }
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-customers"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام، موبایل یا کد ملی" style="min-width:260px"><select name="grp" onchange="this.form.submit()"><option value="">همهٔ گروه‌ها</option>' . implode('', array_map(function ($k, $l) use ($grp) { return '<option value="' . esc_attr($k) . '"' . selected($grp, $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$groups), MZC_Crm::$groups)) . '</select><button class="mzc-btn primary">جستجو</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' مشتری</span></form>';
+echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>نام</th><th>گروه</th><th>موبایل</th><th class="n">سیستم</th><th class="n">سرویس</th><th>ثبت</th></tr></thead><tbody>';
+if (!$rows) { echo '<tr><td class="empty" colspan="6">مشتری‌ای پیدا نشد.</td></tr>'; }
 foreach ($rows as $c) {
     $link = MZC_Admin::url('mzc-customers', array('view' => (int) $c['id']));
-    echo '<tr class="click" data-href="' . esc_url($link) . '"><td dir="auto"><a href="' . esc_url($link) . '"><strong>' . esc_html($c['name']) . '</strong></a></td><td class="num">' . esc_html($c['mobile']) . '</td><td class="n">' . MZC_Admin::num($c['builds']) . '</td><td class="n">' . MZC_Admin::num($c['jobs']) . '</td><td>' . MZC_Admin::when(strtotime($c['created'] . ' UTC')) . '</td></tr>';
+    echo '<tr class="click" data-href="' . esc_url($link) . '"><td dir="auto"><a href="' . esc_url($link) . '"><strong>' . esc_html($c['name']) . '</strong></a></td><td>' . esc_html(isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : MZC_Crm::$groups['customer']) . '</td><td class="num">' . esc_html($c['mobile']) . '</td><td class="n">' . MZC_Admin::num($c['builds']) . '</td><td class="n">' . MZC_Admin::num($c['jobs']) . '</td><td>' . MZC_Admin::when(strtotime($c['created'] . ' UTC')) . '</td></tr>';
 }
 echo '</tbody></table></div></div>' . MZC_Admin::pager($total, $per, $paged);

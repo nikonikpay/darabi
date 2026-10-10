@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت و سامانه مشتریان: گزارش‌های آزمون، بنچمارک‌ها، آمار و مشخصات سیستم‌ها، پیام به سیستم‌ها، سیستم‌های نو و سرویس‌ها (CRM روی پایگاه داده جداگانه) و پورتال مشتری با ورود پیامکی.
- * Version: 2.1.0
+ * Version: 2.1.1
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) { exit; }
 
-define('MZC_VERSION', '2.1.0');
+define('MZC_VERSION', '2.1.1');
 define('MZC_FILE', __FILE__);
 define('MZC_DIR', plugin_dir_path(__FILE__));
 define('MZC_URL', plugin_dir_url(__FILE__));
