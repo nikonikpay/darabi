@@ -1,8 +1,11 @@
 namespace Mazesta.Core.Tuning;
 
 /// <summary>Compute: the hash chain (stability, held clock at the power limit). Memory: VRAM bandwidth. Scene: the benchmark's garden from one fixed camera, in frames a second - a
-/// game's load, where the card reaches its real boost clock.</summary>
-public enum GpuLoadKind { Compute, Memory, Scene }
+/// game's load, where the card reaches its real boost clock. Transient: the same scene in bursts from idle - 30 ms to 4 s of full load after 20 ms to 8 s of
+/// nothing, with every CPU core loaded during each burst - the jump a click in a game engine's editor makes (Unreal compiling shaders on all cores and drawing at
+/// once): the card leaves its idle clock and voltage in one step and the power supply sees the CPU's and the card's surge together. A setting that holds
+/// a steady load can still fail there, and a weak power supply trips there.</summary>
+public enum GpuLoadKind { Compute, Memory, Scene, Transient }
 public enum TuneStepKind { Baseline, Probe, Confirm }
 
 /// <summary>One run the automatic search asks for: these settings, this load, this long. The first <see cref="Settle"/> of it is warm-up and is
@@ -54,15 +57,19 @@ public sealed record AutoTuneOptions
     public int MaxCoreOffset { get; init; } = 300;
     /// <summary>How far the chosen setting is backed off from the last stable one, so a card that passed at the edge is not left there.</summary>
     public int SafetyMarginMHz { get; init; } = 15;
+    /// <summary>The overclock's own margin, wider: a clock that held a two-minute scene can still fail in a game's first seconds (Unreal's editor did).</summary>
+    public int OverclockMarginMHz { get; init; } = 30;
+    /// <summary>The last confirmation of every search: bursts from idle (see <see cref="GpuLoadKind.Transient"/>).</summary>
+    public TimeSpan TransientDuration { get; init; } = TimeSpan.FromSeconds(60);
     public int ClockStep { get; init; } = 30;
     /// <summary>The overclock's 3D-scene steps draw the ray-traced picture (DXR 1.1): it loads the RT and tensor cores as well as the shaders, which is where a clock that
     /// passed the raster scene and the compute load still crashes the driver in a game. The caller sets it only for a card that can do it.</summary>
     public bool RayTraceScene { get; init; }
     /// <summary>The scene run that confirms an overclock: longer than a probe, because a marginal clock can hold for half a minute and fail in the second.</summary>
     public TimeSpan SceneConfirmDuration { get; init; } = TimeSpan.FromSeconds(120);
-    public int MaxClockRaise { get; init; } = 300;
+    public int MaxClockRaise { get; init; } = 240;
     public int MemoryOffsetStep { get; init; } = 200;
-    public int MaxMemoryOffset { get; init; } = 1500;
+    public int MaxMemoryOffset { get; init; } = 1200;
     /// <summary>An undervolt is only kept when it saves at least this much power, or at least <see cref="MinTemperatureDropC"/> of temperature.</summary>
     public double MinPowerSavingPercent { get; init; } = 2;
     public double MinTemperatureDropC { get; init; } = 1;
@@ -73,7 +80,7 @@ public sealed record AutoTuneOptions
     /// <summary>"Overclock Plus" keeps going while the hottest second of a step stays under this, whatever power it draws (up to the driver's own power limit).</summary>
     public double PlusMaxTemperatureC { get; init; } = 84;
     /// <summary>The options of an Overclock Plus search: a longer reach for the core clock and finer, longer memory steps.</summary>
-    public static AutoTuneOptions Plus() => new() { MaxClockRaise = 450, MemoryOffsetStep = 100, MaxMemoryOffset = 2000, SafetyMarginMHz = 30 };
+    public static AutoTuneOptions Plus() => new() { MaxClockRaise = 360, MemoryOffsetStep = 100, MaxMemoryOffset = 1600, SafetyMarginMHz = 30, OverclockMarginMHz = 45 };
 }
 
 public enum AutoTuneVerdict { Improved, NoImprovement, Unsupported, Failed, Cancelled }
@@ -102,9 +109,9 @@ public interface IAutoTuneSearch
 /// </summary>
 public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions options) : IAutoTuneSearch
 {
-    private enum Phase { Baseline, Boost, Probe, Confirm, ConfirmTop, Done }
+    private enum Phase { Baseline, Boost, Probe, Confirm, ConfirmTop, ConfirmTransient, Done }
     private Phase _phase = Phase.Baseline;
-    private LoadMeasurement? _baseline, _confirmed, _boost;
+    private LoadMeasurement? _baseline, _confirmed, _boost, _top;
     private int _target, _held, _lastGood, _candidate, _confirmTries;
     private TuneStep? _pending;
     public AutoTuneOutcome? Outcome { get; private set; }
@@ -120,6 +127,7 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
             Phase.Probe => new(TuneStepKind.Probe, At(_lastGood + options.CoreOffsetStep), GpuLoadKind.Compute, options.ProbeDuration, options.ProbeSettle),
             Phase.Confirm => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Compute, options.ConfirmDuration, options.LongSettle),
             Phase.ConfirmTop => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Scene, options.ProbeDuration, options.ProbeSettle),
+            Phase.ConfirmTransient => new(TuneStepKind.Confirm, At(_candidate), GpuLoadKind.Transient, options.TransientDuration, options.ProbeSettle),
             _ => null
         };
         return _pending;
@@ -170,14 +178,24 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
                     StartConfirm(_candidate - options.CoreOffsetStep);
                     return;
                 }
+                _top = m; _phase = Phase.ConfirmTransient;
+                return;
+            case Phase.ConfirmTransient:
+                // The lowered voltage as the card jumps from idle to full load: an undervolt is most often caught out on that step, not under a steady load.
+                if (!m.Clean)
+                {
+                    if (++_confirmTries >= 3) { Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_ConfirmFailed"); return; }
+                    StartConfirm(_candidate - options.CoreOffsetStep);
+                    return;
+                }
                 var c = _confirmed!; var b = _baseline!;
                 bool samePerformance = c.Throughput >= b.Throughput * (1 - options.ThroughputNoisePercent / 100);
                 bool faster = c.Throughput >= b.Throughput * (1 + options.MinGainPercent / 100);
                 bool savesPower = c.AveragePowerW is { } p && p <= b.AveragePowerW!.Value * (1 - options.MinPowerSavingPercent / 100);
                 bool cooler = c.AverageTemperatureC is { } t && b.AverageTemperatureC is { } bt && t <= bt - options.MinTemperatureDropC;
                 if (!samePerformance) Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_SlowerThanStock", c);
-                else if (savesPower || cooler || faster) Finish(AutoTuneVerdict.Improved, "Tuning_Out_UndervoltFound", c, At(_candidate), m);
-                else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoSaving", c, null, m);
+                else if (savesPower || cooler || faster) Finish(AutoTuneVerdict.Improved, "Tuning_Out_UndervoltFound", c, At(_candidate), _top);
+                else Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_NoSaving", c, null, _top);
                 return;
         }
     }
@@ -199,18 +217,21 @@ public sealed class UndervoltSearch(GpuTuningLimits limits, AutoTuneOptions opti
 }
 
 /// <summary>
-/// Automatic overclock, started from an undervolt (or from the stock clock): raise the clock cap bin by bin while the card stays correct,
-/// actually runs faster, and draws no more power than it did at stock; then raise the memory offset while the measured memory bandwidth keeps
-/// rising (GDDR6X corrects its own errors by retrying, so an unstable memory clock shows as <i>lower</i> bandwidth long before it shows as wrong
-/// data). Each part is backed off one step, the result is confirmed, and it is kept only when it measurably beats stock.
+/// Automatic overclock, started from an undervolt (or from stock): raise the clock while the card stays correct, actually runs faster, and draws no
+/// more power than it did at stock; then raise the memory offset while the measured memory bandwidth keeps rising (GDDR6X corrects its own errors
+/// by retrying, so an unstable memory clock shows as <i>lower</i> bandwidth long before it shows as wrong data). From an undervolt the clock is raised
+/// by its cap: the undervolt's offset already lifted the whole curve and the cap held it at the factory top. From stock it is raised by the core
+/// offset: a cap above the factory top changes nothing - the card never runs past the top of its own voltage/frequency curve, the curve has to be
+/// moved (a cap alone made a profile that said "applied" and ran exactly as stock). Each part is backed off a margin, the result is confirmed - last
+/// of all in bursts from idle - and it is kept only when it measurably beats stock.
 /// </summary>
 public sealed class OverclockSearch : IAutoTuneSearch
 {
-    private enum Phase { Baseline, Boost, Core, MemoryBaseline, Memory, Confirm, ConfirmScene, ConfirmMemory, Done }
+    private enum Phase { Baseline, Boost, Core, MemoryBaseline, Memory, Confirm, ConfirmScene, ConfirmMemory, ConfirmTransient, Done }
     private readonly GpuTuningLimits _limits; private readonly AutoTuneOptions _options;
     private readonly bool _plus, _fromCap; private readonly int? _power;
     private Phase _phase;
-    private LoadMeasurement? _baseline, _memoryBaseline, _confirmed, _boost, _confirmedScene;
+    private LoadMeasurement? _baseline, _memoryBaseline, _confirmed, _boost, _confirmedScene, _confirmedMemory;
     private int _offset, _startClock, _clock, _bestClock, _memory, _bestMemory, _confirmTries;
     private double _bestClockSeen, _bestBandwidth;
     private TuneStep? _pending;
@@ -230,11 +251,12 @@ public sealed class OverclockSearch : IAutoTuneSearch
         _phase = baseline is null || _startClock == 0 ? Phase.Baseline : Phase.Boost;
     }
 
-    private int ClockCeiling => Math.Min(_limits.MaxLockMHz, _startClock + _options.MaxClockRaise);
+    private int ClockCeiling => _fromCap ? Math.Min(_limits.MaxLockMHz, _startClock + _options.MaxClockRaise)
+        : _limits.HasCoreOffset ? _startClock + Math.Min(_options.MaxClockRaise, _limits.CoreOffsetMax - _offset) : _startClock;
     private int MemoryCeiling => Math.Min(_limits.MemoryOffsetMax, _options.MaxMemoryOffset);
-    /// <summary>A cap is set only above the clock the search started from (or on top of an undervolt's own cap): at the card's factory top it would only
-    /// take away boost it already has when the load is lighter.</summary>
-    private GpuTuningSettings At(int clock, int memory) => new(_offset, memory, clock > _startClock || _fromCap ? clock : null, _power, null);
+    /// <summary>The settings that make the card's top clock <paramref name="clock"/>: the undervolt's offset under a raised cap, or - from stock - the
+    /// curve moved up by the difference, with no cap (one at the factory top would only take away boost the card has when the load is lighter).</summary>
+    private GpuTuningSettings At(int clock, int memory) => _fromCap ? new(_offset, memory, clock, _power, null) : new(_offset + clock - _startClock, memory, null, _power, null);
     /// <summary>Whether a step stayed inside what the search allows: no more power than stock drew (+2 %), or - Plus - than the raised limit, and, Plus, a cool enough card.</summary>
     private bool InBudget(LoadMeasurement m)
         => _plus ? m.AveragePowerW is { } pw && pw <= _power!.Value && (m.MaxTemperatureC ?? 0) <= _options.PlusMaxTemperatureC
@@ -242,6 +264,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     public TuneStep? Next()
     {
+        var best = At(_bestClock, _bestMemory);
         _pending = _phase switch
         {
             Phase.Baseline => new(TuneStepKind.Baseline, GpuTuningSettings.Stock, GpuLoadKind.Compute, _options.BaselineDuration, _options.LongSettle),
@@ -249,9 +272,10 @@ public sealed class OverclockSearch : IAutoTuneSearch
             Phase.Core => new(TuneStepKind.Probe, At(_clock + _options.ClockStep, 0), _boost is null ? GpuLoadKind.Compute : GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle, _boost is not null && _options.RayTraceScene),
             Phase.MemoryBaseline => new(TuneStepKind.Baseline, At(_bestClock, 0), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             Phase.Memory => new(TuneStepKind.Probe, At(_bestClock, _memory + _options.MemoryOffsetStep), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
-            Phase.Confirm => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Compute, _options.ConfirmDuration, _options.LongSettle),
-            Phase.ConfirmScene => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Scene, _options.SceneConfirmDuration, _options.ProbeSettle, _options.RayTraceScene),
-            Phase.ConfirmMemory => new(TuneStepKind.Confirm, At(_bestClock, _bestMemory), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.Confirm => new(TuneStepKind.Confirm, best, GpuLoadKind.Compute, _options.ConfirmDuration, _options.LongSettle),
+            Phase.ConfirmScene => new(TuneStepKind.Confirm, best, GpuLoadKind.Scene, _options.SceneConfirmDuration, _options.ProbeSettle, _options.RayTraceScene),
+            Phase.ConfirmMemory => new(TuneStepKind.Confirm, best, GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.ConfirmTransient => new(TuneStepKind.Confirm, best, GpuLoadKind.Transient, _options.TransientDuration, _options.ProbeSettle, _options.RayTraceScene),
             _ => null
         };
         return _pending;
@@ -267,7 +291,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     public void Report(LoadMeasurement m)
     {
-        var step = _pending ?? throw new InvalidOperationException("Report without a step.");
+        _ = _pending ?? throw new InvalidOperationException("Report without a step.");
         _pending = null;
         switch (_phase)
         {
@@ -283,15 +307,15 @@ public sealed class OverclockSearch : IAutoTuneSearch
                 BeginCore(_baseline!);
                 return;
             case Phase.Core:
-                int tried = step.Settings.MaxClockMHz!.Value;
+                int tried = _clock + _options.ClockStep;
                 bool faster = m.MedianClockMHz is { } c && c >= _bestClockSeen + _options.ClockBinMHz / 2.0;
                 if (m.Clean && faster && InBudget(m))
                 {
                     _clock = tried; _bestClockSeen = m.MedianClockMHz!.Value;
                     if (_clock + _options.ClockStep <= ClockCeiling) return;
                 }
-                // A clean step that did not run faster hit the power or temperature limit: the card cannot use a higher cap, so nothing is backed off.
-                _bestClock = _clock > _startClock && !m.Clean ? Math.Max(_startClock, _clock - _options.SafetyMarginMHz) : _clock;
+                // Backed off whatever ended the climb: a clock that passed a 40-second probe at the edge is not one to leave a customer's card at.
+                _bestClock = Math.Max(_startClock, _clock - _options.OverclockMarginMHz);
                 _phase = Phase.MemoryBaseline;
                 if (!_limits.HasMemoryOffset || MemoryCeiling < _options.MemoryOffsetStep) _phase = Phase.Confirm;
                 return;
@@ -303,28 +327,29 @@ public sealed class OverclockSearch : IAutoTuneSearch
             case Phase.Memory:
                 if (m.Clean && m.Throughput >= _bestBandwidth * 1.005)
                 {
-                    _memory = step.Settings.MemoryOffsetMHz; _bestBandwidth = m.Throughput;
+                    _memory += _options.MemoryOffsetStep; _bestBandwidth = m.Throughput;
                     if (_memory + _options.MemoryOffsetStep <= MemoryCeiling) return;
-                    _bestMemory = _memory;
                 }
-                else _bestMemory = Math.Max(0, _memory - _options.MemoryOffsetStep);   // the last gain may already have been near the edge
+                _bestMemory = Math.Max(0, _memory - _options.MemoryOffsetStep);   // the last gain may already have been near the edge
                 _phase = Phase.Confirm;
                 return;
             case Phase.Confirm:
                 if (!m.Clean || !InBudget(m)) { Retry(); return; }
                 _confirmed = m;
-                _phase = _boost is not null ? Phase.ConfirmScene : _bestMemory > 0 ? Phase.ConfirmMemory : Phase.Done;
-                if (_phase == Phase.Done) Judge(null);
+                _phase = _boost is not null ? Phase.ConfirmScene : _bestMemory > 0 ? Phase.ConfirmMemory : Phase.ConfirmTransient;
                 return;
             case Phase.ConfirmScene:
                 if (!m.Clean) { Retry(); return; }
                 _confirmedScene = m;
-                _phase = _bestMemory > 0 ? Phase.ConfirmMemory : Phase.Done;
-                if (_phase == Phase.Done) Judge(null);
+                _phase = _bestMemory > 0 ? Phase.ConfirmMemory : Phase.ConfirmTransient;
                 return;
             case Phase.ConfirmMemory:
                 if (!m.Clean) { Retry(); return; }
-                Judge(m);
+                _confirmedMemory = m; _phase = Phase.ConfirmTransient;
+                return;
+            case Phase.ConfirmTransient:
+                if (!m.Clean) { Retry(); return; }
+                Judge(_confirmedMemory);
                 return;
         }
     }
@@ -336,7 +361,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
         if (_bestMemory > 0) _bestMemory = 0;
         else if (_bestClock > _startClock) _bestClock = Math.Max(_startClock, _bestClock - _options.ClockStep);
         else { Finish(AutoTuneVerdict.NoImprovement, "Tuning_Out_ConfirmFailed"); return; }
-        _phase = Phase.Confirm;
+        _confirmedScene = _confirmedMemory = null; _phase = Phase.Confirm;
     }
 
     private void Judge(LoadMeasurement? memory)

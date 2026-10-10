@@ -174,7 +174,9 @@ export function mount(el) {
   // How long the scene test runs and whether it draws the ray-traced picture; both are the view model's, so a reopened page shows what was set.
   const sceneSecs = h("input", { class: "field num", type: "number", min: 20, max: 600, step: 10, style: { width: "84px" }, "aria-label": t("Tuning_SceneTest_Seconds"), onchange: (e) => set("sceneSeconds", e.target.value) });
   const sceneRt = h("input", { type: "checkbox", class: "switch", onchange: (e) => set("sceneRt", e.target.checked) });
-  const sceneOpts = h("div", { class: "toolbar" }, h("label", {}, t("Tuning_SceneTest_Seconds"), " ", sceneSecs), h("label", { title: t("Tuning_SceneTest_RtHint") }, sceneRt, " ", t("Test_Option_RayTracing")));
+  const sceneBursts = h("input", { type: "checkbox", class: "switch", onchange: (e) => set("sceneBursts", e.target.checked) });
+  const sceneOpts = h("div", { class: "toolbar" }, h("label", {}, t("Tuning_SceneTest_Seconds"), " ", sceneSecs), h("label", { title: t("Tuning_SceneTest_RtHint") }, sceneRt, " ", t("Test_Option_RayTracing")),
+    h("label", { title: t("Tuning_SceneTest_BurstsHint") }, sceneBursts, " ", t("Tuning_SceneTest_Bursts")));
   const sceneList = h("div", {});
   // Automatic profiles: which saved profile goes with a game and with each listed program (the tray follows them).
   const rule = (op, extra = {}) => call("tuning.rules", { op, ...extra });
@@ -271,7 +273,7 @@ export function mount(el) {
         h("span", { class: `pill ${l.clean ? "pass" : "fail"}` }, l.clean ? t("Tuning_Log_Clean") : l.problem), h("span", { class: "res" }, l.result))));
     }
     sceneBtn.disabled = x.busy; sceneClear.hidden = !(x.sceneTests || []).length;
-    sceneSecs.disabled = sceneRt.disabled = x.busy; if (document.activeElement !== sceneSecs) sceneSecs.value = x.sceneSeconds; sceneRt.checked = !!x.sceneRt;
+    sceneSecs.disabled = sceneRt.disabled = sceneBursts.disabled = x.busy; if (document.activeElement !== sceneSecs) sceneSecs.value = x.sceneSeconds; sceneRt.checked = !!x.sceneRt; sceneBursts.checked = !!x.sceneBursts;
     sceneList.replaceChildren(...((x.sceneTests || []).length ? x.sceneTests.map((r, i) => h("div", { class: "logline" }, h("span", { class: "st" }, fa(i + 1)),
       h("span", {}, h("b", {}, r.settings), "  ", h("span", { class: "caption lat" }, r.result)), h("span", { class: `pill ${r.clean ? "pass" : "fail"}` }, r.clean ? (r.change || t("Tuning_SceneTest_First")) : r.problem)))
       : [h("p", { class: "caption" }, t("Tuning_SceneTest_Empty"))]));

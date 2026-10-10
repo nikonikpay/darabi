@@ -3481,4 +3481,8 @@
   <data name="Test_GpuPreset_memory" xml:space="preserve"><value>حافظه: VRAM بین بارهای گرم‌کننده</value></data>
   <data name="Test_GpuPreset_custom" xml:space="preserve"><value>مرحله‌های دلخواه</value></data>
   <data name="Test_Option_GpuStages" xml:space="preserve"><value>مرحله‌ها (test:option=value، مثلاً gpu.pulse:pulseMs=100,gapMs=400 gpu.vram)</value></data>
+  <data name="Tuning_Load_Transient" xml:space="preserve"><value>صحنه باغ به‌صورت جهشی از حالت بیکار، همراه با بار روی همه هسته‌های CPU</value></data>
+  <data name="Tuning_SceneTest_Bursts" xml:space="preserve"><value>جهش بار مثل موتور بازی (Unreal)</value></data>
+  <data name="Tuning_SceneTest_BurstsHint" xml:space="preserve"><value>صحنه به‌صورت جهش‌های ۳۰ میلی‌ثانیه تا ۴ ثانیه، بعد از ۲۰ میلی‌ثانیه تا ۸ ثانیه بیکاری، و در هر جهش همه هسته‌های CPU هم زیر بار می‌روند؛ همان پرشی که با یک کلیک در ادیتور Unreal پیش می‌آید (کامپایل شیدرها روی همه هسته‌ها هم‌زمان با رندر کارت). تنظیمی که در صحنه ثابت سالم می‌ماند ممکن است اینجا خطا بدهد، و پاور ضعیف هم اینجا قطع می‌کند.</value></data>
+  <data name="Tuning_SceneTest_BurstsTag" xml:space="preserve"><value>جهشی</value></data>
 </root>

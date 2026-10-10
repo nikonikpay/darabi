@@ -114,7 +114,7 @@ public sealed partial class TuningViewModel : ObservableObject
     public ObservableCollection<AutoLogRow> AutoLog { get; } = [];
     /// <summary>The scene tests of this session, newest last: the same picture every frame, so the frame rate, clock, power and temperature of two settings compare.</summary>
     public ObservableCollection<SceneTestRow> SceneTests { get; } = [];
-    private LoadMeasurement? _lastScene; private bool _lastSceneRt;
+    private LoadMeasurement? _lastScene; private bool _lastSceneRt, _lastSceneBursts;
 
     // The automatic profiles: the tray follows these (see GpuAutoSwitch); here they are only chosen and kept.
     private readonly string? _rulesFile; private readonly Action<string, System.Text.Json.Nodes.JsonObject?>? _usage;
@@ -212,7 +212,7 @@ public sealed partial class TuningViewModel : ObservableObject
         _voltage = _voltageFor(value.Name); _hotSpot = _hotSpotFor(value.Name);
         var now = value.ReadCurrent(); var l = value.Limits;
         CoreOffset = Num(now.CoreOffsetMHz); MemoryOffset = Num(now.MemoryOffsetMHz);
-        LockClock = false; MaxClock = l.MaxClockMHz is { } m ? Num(m) : "";
+        LockClock = now.MaxClockMHz is not null; MaxClock = (now.MaxClockMHz ?? l.MaxClockMHz) is { } m ? Num(m) : "";
         SetPower = now.PowerLimitW is not null; PowerLimit = Num(now.PowerLimitW ?? l.PowerLimitDefaultW ?? 0);
         ManualFan = now.FanPercent is not null; FanPercent = Num(now.FanPercent ?? 60);
         LoadProfiles();
@@ -417,6 +417,8 @@ public sealed partial class TuningViewModel : ObservableObject
     /// <summary>How long the scene test runs, in seconds (the first 12 are warm-up and not counted), and whether it draws the ray-traced (DXR 1.1) picture.</summary>
     [ObservableProperty] private int _sceneSeconds = 40;
     [ObservableProperty] private bool _sceneRayTracing;
+    /// <summary>The scene in bursts from idle with every CPU core loaded during each burst (<see cref="GpuLoadKind.Transient"/>): what a game engine's editor does on a click.</summary>
+    [ObservableProperty] private bool _sceneBursts;
     partial void OnSceneSecondsChanged(int value) { int fit = Math.Clamp(value, SceneSecondsMin, SceneSecondsMax); if (fit != value) SceneSeconds = fit; }
 
     /// <summary>Runs the garden scene from its fixed camera on the card as it is now (whatever has been applied) and keeps the figures beside those of the earlier
@@ -427,19 +429,21 @@ public sealed partial class TuningViewModel : ObservableObject
         if (!TryEnter(out var lease)) return;
         using var held = lease;
         var device = Device!;
-        IsTuning = true; AutoPercent = 0; Status = ""; AutoStepTitle = Loc.Get("Tuning_SceneTest_Running"); AutoStepSettings = Summarize(device.ReadCurrent()); AutoStepLoad = Loc.Get(SceneRayTracing ? "Tuning_Load_SceneRt" : "Tuning_Load_Scene");
-        _cts = new CancellationTokenSource(); bool rayTraced = SceneRayTracing; var length = TimeSpan.FromSeconds(Math.Clamp(SceneSeconds, SceneSecondsMin, SceneSecondsMax));
+        bool rayTraced = SceneRayTracing, bursts = SceneBursts; var kind = bursts ? GpuLoadKind.Transient : GpuLoadKind.Scene;
+        IsTuning = true; AutoPercent = 0; Status = ""; AutoStepTitle = Loc.Get("Tuning_SceneTest_Running"); AutoStepSettings = Summarize(device.ReadCurrent());
+        AutoStepLoad = Loc.Get(bursts ? "Tuning_Load_Transient" : rayTraced ? "Tuning_Load_SceneRt" : "Tuning_Load_Scene");
+        _cts = new CancellationTokenSource(); var length = TimeSpan.FromSeconds(Math.Clamp(SceneSeconds, SceneSecondsMin, SceneSecondsMax));
         var tuner = new GpuAutoTuner(device, _load(device), Journal(device.Id), voltage: _voltage, hotSpot: _hotSpot);
         tuner.Progress += p => _dispatch(() => AutoPercent = p.Fraction * 100);
         LoadMeasurement m; string? error;
-        try { (m, error) = await tuner.MeasureCurrentAsync(GpuLoadKind.Scene, length, SceneTestSettle, _cts.Token, rayTraced).ConfigureAwait(true); }
+        try { (m, error) = await tuner.MeasureCurrentAsync(kind, length, SceneTestSettle, _cts.Token, rayTraced).ConfigureAwait(true); }
         catch (OperationCanceledException) { Status = Loc.Get("Tuning_Out_Cancelled"); return; }
         finally { IsTuning = false; AutoPercent = 0; AutoStepTitle = AutoStepSettings = AutoStepLoad = ""; }
-        string settings = Summarize(device.ReadCurrent()) + (rayTraced ? " · " + Loc.Get("Tuning_SceneTest_RtTag") : ""), result = Describe(m, GpuLoadKind.Scene); string? change = null;
-        if (m.Clean && error is null && _lastScene is { } before && before.Throughput > 0 && _lastSceneRt == rayTraced)
+        string settings = Summarize(device.ReadCurrent()) + (rayTraced ? " · " + Loc.Get("Tuning_SceneTest_RtTag") : "") + (bursts ? " · " + Loc.Get("Tuning_SceneTest_BurstsTag") : ""), result = Describe(m, kind); string? change = null;
+        if (m.Clean && error is null && _lastScene is { } before && before.Throughput > 0 && _lastSceneRt == rayTraced && _lastSceneBursts == bursts)
             change = Ltr($"{(m.Throughput / before.Throughput - 1) * 100:+0.0;-0.0}% FPS" + (m.AverageTemperatureC is { } t && before.AverageTemperatureC is { } bt ? $" · {t - bt:+0.0;-0.0} °C" : "") + (m.AveragePowerW is { } w && before.AveragePowerW is { } bw ? $" · {w - bw:+0;-0} W" : ""));
         SceneTests.Add(new(settings, result, change, m.Clean && error is null, m.Clean && error is null ? null : Loc.Get(m.DeviceLost ? "Tuning_Lost" : "Tuning_Errors") + (error is { } e ? $" ({e})" : "")));
-        if (m.Clean && error is null) { _lastScene = m; _lastSceneRt = rayTraced; }
+        if (m.Clean && error is null) { _lastScene = m; _lastSceneRt = rayTraced; _lastSceneBursts = bursts; }
         _usage?.Invoke("tuning.scene", Services.UsageData.Scene(device.Name, device.ReadCurrent(), m, SceneTests[^1].Problem));
     }
 
@@ -479,7 +483,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (_confirm(Loc.Format("Tuning_ConfirmApplyFound", name, Summarize(found)))) { if (Report(device.Apply(found), "Tuning_Applied")) SetStartup(name); Fill(found); }
     }
 
-    private static string StepSettings(TuneStep s) => Summarize(s.Settings) + (s.RayTraced && s.Load == GpuLoadKind.Scene ? " · " + Loc.Get("Tuning_SceneTest_RtTag") : "");
+    private static string StepSettings(TuneStep s) => Summarize(s.Settings) + (s.RayTraced && s.Load is GpuLoadKind.Scene or GpuLoadKind.Transient ? " · " + Loc.Get("Tuning_SceneTest_RtTag") : "");
 
     private Action<GpuTuningSettings?> Journal(string gpuId) => settings =>
     {
@@ -510,7 +514,7 @@ public sealed partial class TuningViewModel : ObservableObject
     {
         static string V(double? v, string unit) => Fmt(v, unit);
         string peak = m.PeakClockMHz is { } pk && m.MedianClockMHz is { } md && pk >= md + 15 ? $" (↑{pk:F0})" : "", volt = m.AverageVoltageV is { } vv ? $" · {vv:F3} V" : "";
-        string score = load switch { GpuLoadKind.Compute => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " Gop/s", GpuLoadKind.Scene => m.Throughput.ToString("F1", CultureInfo.InvariantCulture) + " FPS", _ => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " GB/s" };
+        string score = load switch { GpuLoadKind.Compute => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " Gop/s", GpuLoadKind.Scene or GpuLoadKind.Transient => m.Throughput.ToString("F1", CultureInfo.InvariantCulture) + " FPS", _ => m.Throughput.ToString("F0", CultureInfo.InvariantCulture) + " GB/s" };
         string hot = m.MaxHotSpotC is { } hs ? $" · HOT {hs:F0} °C" : "";
         return Ltr($"{V(m.MedianClockMHz, " MHz")}{peak}{volt} · {V(m.AveragePowerW, " W")} · {V(m.AverageTemperatureC, " °C")}{hot} · {score}");
     }

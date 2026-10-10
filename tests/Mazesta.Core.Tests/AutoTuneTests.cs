@@ -85,7 +85,8 @@ public class AutoTuneTests
             : M(1665, 330 - 0.1 * step.Settings.CoreOffsetMHz, errors: step.Settings.CoreOffsetMHz > 150 ? 2 : 0));
         Assert.All(steps.Skip(2), s => Assert.Equal(1965, s.Settings.MaxClockMHz));
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(1965, outcome.Settings!.MaxClockMHz);
-        Assert.Equal(GpuLoadKind.Scene, steps[^1].Load);   // the top of the curve is tested with the load that gets there
+        Assert.Equal(GpuLoadKind.Scene, steps[^2].Load);   // the top of the curve is tested with the load that gets there
+        Assert.Equal(GpuLoadKind.Transient, steps[^1].Load);   // and last, the jump from idle to it
     }
 
     [Fact] public void An_undervolt_that_cannot_reach_the_top_clock_lightly_is_stepped_down()
@@ -107,10 +108,10 @@ public class AutoTuneTests
         Assert.Equal(AutoTuneVerdict.Unsupported, outcome.Verdict);
     }
 
-    /// <summary>Clock rises 30 MHz per step until <paramref name="stableTo"/>; throughput follows the clock; power stays under stock.</summary>
+    /// <summary>A card whose top clock is 1905 MHz: a cap above an undervolt's offset sets it, an offset moves it. Stable until <paramref name="stableTo"/>; throughput follows the clock; power stays under stock.</summary>
     private static Func<TuneStep, LoadMeasurement> Overclockable(int stableTo, int memoryStableTo) => step =>
     {
-        int clock = step.Settings.MaxClockMHz ?? 1905;
+        int clock = step.Settings.MaxClockMHz ?? 1905 + step.Settings.CoreOffsetMHz;
         if (step.Load == GpuLoadKind.Memory) return M(clock, 300, throughput: 800 + step.Settings.MemoryOffsetMHz * 0.1, errors: step.Settings.MemoryOffsetMHz > memoryStableTo ? 1 : 0);
         return M(clock, step.Kind == TuneStepKind.Baseline ? 340 : 320, throughput: clock / 10.0, errors: clock > stableTo ? 1 : 0);
     };
@@ -121,7 +122,7 @@ public class AutoTuneTests
         var (outcome, steps) = Drive(new OverclockSearch(Limits, Options, start, M(1905, 340, throughput: 190.5)), Overclockable(stableTo: 2025, memoryStableTo: 800));
         Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
         Assert.Equal(135, outcome.Settings!.CoreOffsetMHz);                      // the undervolt's offset is kept
-        Assert.Equal(2025 - Options.SafetyMarginMHz, outcome.Settings.MaxClockMHz);
+        Assert.Equal(2025 - Options.OverclockMarginMHz, outcome.Settings.MaxClockMHz);
         Assert.Equal(600, outcome.Settings.MemoryOffsetMHz);                     // +800 was the last gain, backed off one step
         Assert.DoesNotContain(steps, s => s.Kind == TuneStepKind.Baseline && s.Load == GpuLoadKind.Compute);   // stock was already measured
     }
@@ -131,7 +132,7 @@ public class AutoTuneTests
         // A power-limited card: the cap goes up but the clock stays at 1950.
         var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, new(90, 0, 1905, null, null), M(1905, 340, throughput: 100)),
             step => M(Math.Min(step.Settings.MaxClockMHz ?? 1905, 1950), 330, throughput: 103));
-        Assert.Equal(1965, outcome.Settings!.MaxClockMHz);                       // the lowest cap that reached 1950; 1995 gained nothing
+        Assert.Equal(1935, outcome.Settings!.MaxClockMHz);                       // 1965 was the lowest cap that reached 1950 (1995 gained nothing), less the margin
         Assert.Equal(3, steps.Count(s => s.Kind == TuneStepKind.Probe));
     }
 
@@ -144,7 +145,7 @@ public class AutoTuneTests
 
     [Fact] public void Overclock_plus_raises_the_power_limit_and_may_draw_more_than_stock()
     {
-        var start = new GpuTuningSettings(0, 0, 1905, null, null);
+        var start = new GpuTuningSettings(120, 0, 1905, null, null);
         var (outcome, steps) = Drive(new OverclockSearch(Limits, AutoTuneOptions.Plus(), start, M(1905, 300, throughput: 190.5), plus: true), step => step.Load == GpuLoadKind.Memory
             ? M(step.Settings.MaxClockMHz ?? 1905, 340, throughput: 800 + step.Settings.MemoryOffsetMHz * 0.1, errors: step.Settings.MemoryOffsetMHz > 1000 ? 1 : 0)
             : M(step.Settings.MaxClockMHz!.Value, 350, throughput: step.Settings.MaxClockMHz!.Value / 10.0, errors: step.Settings.MaxClockMHz > 2100 ? 1 : 0));   // 350 W: above stock's 300, under the 365 limit
@@ -159,8 +160,8 @@ public class AutoTuneTests
         // A factory-overclocked card holds 1665 under the load's power limit but reaches 1965: capping it at 1695 would take boost away.
         var stock = M(1665, 340, throughput: 100) with { PeakClockMHz = 1965 };
         var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, null, null), step => stock);
-        Assert.All(steps.Where(s => s.Kind == TuneStepKind.Probe), s => Assert.True(s.Settings.MaxClockMHz >= 1995));
-        Assert.Null(outcome.Settings?.MaxClockMHz);   // nothing found above the factory top: no cap that would sit below it
+        Assert.All(steps.Where(s => s.Kind == TuneStepKind.Probe), s => { Assert.True(s.Settings.CoreOffsetMHz >= 30); Assert.Null(s.Settings.MaxClockMHz); });
+        Assert.Null(outcome.Settings);   // nothing found above the factory top
     }
 
     [Fact] public void Measurement_keeps_the_peak_clock_and_power_and_the_average_voltage()
@@ -182,10 +183,12 @@ public class AutoTuneTests
     {
         // Held at the power limit the stress test never sees the clock cap; the garden scene, a game's load, does: more clock, more frames.
         var stock = M(1665, 340, throughput: 100) with { PeakClockMHz = 1965 };
+        static int Top(TuneStep s) => Math.Min(1965 + s.Settings.CoreOffsetMHz, 2025);   // the offset moves the curve; the card has no more in it past 2025
         var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, null, null),
-            step => step.Load == GpuLoadKind.Scene ? M(Math.Min(step.Settings.MaxClockMHz ?? 1965, 2025), 300, throughput: 60 + (Math.Min(step.Settings.MaxClockMHz ?? 1965, 2025) - 1965) / 10.0) : stock);
-        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(2025, outcome.Settings!.MaxClockMHz);
-        Assert.Equal(GpuLoadKind.Scene, steps[^1].Load);
+            step => step.Load is GpuLoadKind.Scene or GpuLoadKind.Transient ? M(Top(step), 300, throughput: 60 + (Top(step) - 1965) / 10.0) : stock);
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
+        Assert.Equal(new GpuTuningSettings(60 - Options.OverclockMarginMHz, 0, null, null, null), outcome.Settings);   // from stock: an offset, no cap
+        Assert.Equal(GpuLoadKind.Transient, steps[^1].Load);
     }
 
     [Fact] public void Overclock_plus_stops_at_the_temperature_ceiling_and_needs_a_power_limit_to_raise()
@@ -200,7 +203,16 @@ public class AutoTuneTests
     {
         var (_, steps) = Drive(new OverclockSearch(Limits, Options, null, null), Overclockable(2000, 400));
         Assert.Equal(TuneStepKind.Baseline, steps[0].Kind); Assert.True(steps[0].Settings.IsStock);
-        Assert.Equal(GpuLoadKind.Scene, steps[1].Load); Assert.Equal(1905 + Options.ClockStep, steps[2].Settings.MaxClockMHz);
+        Assert.Equal(GpuLoadKind.Scene, steps[1].Load); Assert.Equal(Options.ClockStep, steps[2].Settings.CoreOffsetMHz); Assert.Null(steps[2].Settings.MaxClockMHz);
+    }
+
+    [Fact] public void An_overclock_that_fails_only_in_bursts_from_idle_is_stepped_down()
+    {
+        var card = Overclockable(stableTo: 2025, memoryStableTo: 0);
+        var (outcome, steps) = Drive(new OverclockSearch(Limits with { MemoryOffsetMax = 0, MemoryOffsetMin = 0 }, Options, null, null),
+            step => step.Load == GpuLoadKind.Transient && step.Settings.CoreOffsetMHz > 60 ? card(step) with { DeviceLost = true } : card(step));
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict); Assert.Equal(60, outcome.Settings!.CoreOffsetMHz);
+        Assert.Equal(2, steps.Count(s => s.Load == GpuLoadKind.Transient));
     }
 
     [Fact] public void Limits_refuse_values_outside_the_driver_range_instead_of_clamping()

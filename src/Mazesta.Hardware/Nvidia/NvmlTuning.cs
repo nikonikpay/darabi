@@ -86,7 +86,8 @@ internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
         int? powerW = Limits.PowerLimitDefaultW is { } def && Nvml.Call(() => Nvml.nvmlDeviceGetPowerManagementLimit(_h, out limit)) == Nvml.Success && (int)(limit / 1000) != def ? (int)(limit / 1000) : null;
         int? fanPercent = Limits.FanCount > 0 && Nvml.Call(() => Nvml.nvmlDeviceGetFanControlPolicy_v2(_h, 0, out policy)) == Nvml.Success && policy == Nvml.FanPolicyManual
             && Nvml.Call(() => Nvml.nvmlDeviceGetFanSpeed_v2(_h, 0, out fan)) == Nvml.Success ? (int)fan : null;
-        return new(Offset(Nvml.ClockGraphics)?.OffsetMHz ?? 0, Offset(Nvml.ClockMemory)?.OffsetMHz ?? 0, null, powerW, fanPercent);
+        // NVML has no way to read a clock lock back: the cap is the one this process set, else unknown (shown as none).
+        return new(Offset(Nvml.ClockGraphics)?.OffsetMHz ?? 0, Offset(Nvml.ClockMemory)?.OffsetMHz ?? 0, _cap, powerW, fanPercent);
     }
 
     public TuningApplyResult Apply(GpuTuningSettings s) => Apply(s, reset: false);
@@ -95,7 +96,7 @@ internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
     /// cannot know what the old one left behind. A part the driver does not support cannot have been changed, so its refusal is not a failure here.</summary>
     public TuningApplyResult Reset() => new([.. Apply(GpuTuningSettings.Stock, reset: true).Steps.Where(s => s.Ok || !s.Unsupported)]);
 
-    private bool _locked;
+    private int? _cap;
 
     /// <summary>Only the parts that differ from the driver default, or that this process changed, are sent: a card that refuses one control
     /// (a laptop GPU without fan control, say) must not make every apply look failed.</summary>
@@ -105,13 +106,14 @@ internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
         var steps = new List<TuningStepResult>();
         if (Limits.PowerLimitDefaultW is { } def && (reset || s.PowerLimitW is not null || current!.PowerLimitW is not null))
             steps.Add(Step("Tuning_PowerLimit", () => Nvml.nvmlDeviceSetPowerManagementLimit(_h, (uint)((s.PowerLimitW ?? def) * 1000))));
-        // The cap goes on before a raised offset takes effect, so the card never runs the new curve up to its old maximum clock in between.
-        if (reset || s.MaxClockMHz is not null || _locked)
-        {
-            var lockStep = Step("Tuning_MaxClock", () => s.MaxClockMHz is { } cap ? Nvml.nvmlDeviceSetGpuLockedClocks(_h, 0, (uint)cap) : Nvml.nvmlDeviceResetGpuLockedClocks(_h));
-            if (lockStep.Ok) _locked = s.MaxClockMHz is not null;
-            steps.Add(lockStep);
-        }
+        // The cap goes on before a raised offset takes effect, so the card never runs the new curve up to its old maximum clock in between. A profile
+        // without one still clears the lock: another process (the tray, the app before a restart) may have left a cap this one cannot read back,
+        // and a stale cap under a new offset is a profile that "applied" and still runs at the old clock. That clearing is only reported when it
+        // was known to matter.
+        bool hadCap = _cap is not null;
+        var lockStep = Step("Tuning_MaxClock", () => s.MaxClockMHz is { } cap ? Nvml.nvmlDeviceSetGpuLockedClocks(_h, 0, (uint)cap) : Nvml.nvmlDeviceResetGpuLockedClocks(_h));
+        if (lockStep.Ok) _cap = s.MaxClockMHz;
+        if (reset || s.MaxClockMHz is not null || hadCap) steps.Add(lockStep);
         if (reset || s.CoreOffsetMHz != current!.CoreOffsetMHz) steps.Add(Step("Tuning_CoreOffset", () => SetOffset(Nvml.ClockGraphics, s.CoreOffsetMHz)));
         if (reset || s.MemoryOffsetMHz != current!.MemoryOffsetMHz) steps.Add(Step("Tuning_MemoryOffset", () => SetOffset(Nvml.ClockMemory, s.MemoryOffsetMHz)));
         if (reset || s.FanPercent is not null || current!.FanPercent is not null)
