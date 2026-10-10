@@ -69,13 +69,17 @@ export function mount(el) {
     const rep = h("select", { class: "field", onchange: (e) => set("repeat", e.target.value) }, s.repeatModes.map((m) => h("option", { value: m.value }, m.label)));
     const cnt = h("input", { class: "field lat short", inputmode: "numeric", oninput: (e) => set("count", e.target.value) });
     const opts = r.options.map((o) => {
-      // a choice between off and on is a switch
+      // a choice between off and on is a switch; a list of steps or stages (a preset's "custom") gets room to be read and typed
+      const steps = o.kind === "Text" && (o.key === "sequence" || o.key === "stages");
       const input = o.choices && o.choices.map((c) => c.value).join() === "off,on"
         ? h("input", { type: "checkbox", class: "switch", onchange: (e) => set("option", e.target.checked ? "on" : "off", { key: o.key }) })
         : o.choices
         ? h("select", { class: "field", onchange: (e) => set("option", e.target.value, { key: o.key }) }, o.choices.map((c) => h("option", { value: c.value }, c.label)))
+        : steps
+        ? h("textarea", { class: "field lat steps", rows: 3, spellcheck: false, oninput: (e) => set("option", e.target.value, { key: o.key }) })
         : h("input", { class: "field lat", style: { width: "110px" }, oninput: (e) => set("option", e.target.value, { key: o.key }) });
-      return { o, input, el: h("label", {}, o.label, input) };
+      // A test's preset is its first choice, so it is offered in the plain list too; the rest of its options wait for "Advanced".
+      return { o, input, el: h("label", { class: o.key === "preset" ? "primary" : steps ? "wide" : null }, o.label, input) };
     });
     const bar = h("div", { class: "progress" }, h("i")), status = h("span", { class: "caption" }), pill = h("span", { class: "pill none" });
     const error = h("div", { class: "error", hidden: true }), detail = h("div", { class: "detail", hidden: true }), figs = h("div", { class: "metrics figs", hidden: true }), errs = h("span", { class: "caption lat" });
@@ -90,7 +94,8 @@ export function mount(el) {
   }
   function update(s) {
     if (!rows.size) build(s);
-    if (!profiles.childElementCount) profiles.append(...s.profiles.map((p) => h("button", { class: "btn quiet", type: "button", onclick: () => call("tests.exec", { cmd: "profile", id: p.id }) }, p.name)));
+    if (!profiles.childElementCount) profiles.append(...s.profiles.map((p) => h("button", { class: "btn chip", type: "button", onclick: () => call("tests.exec", { cmd: "profile", id: p.id }) },
+      p.name, p.minutes ? h("span", { class: "chip-len" }, t("Web_Minutes", p.minutes)) : null)));   // (no "·" before it: in Persian it reads as a zero)
     for (const b of profiles.children) b.disabled = s.running;
     profileNote.hidden = !s.profileNote; profileNote.textContent = s.profileNote || "";
     start.disabled = !s.canStart; cancel.disabled = !s.running; watch.hidden = !s.running;

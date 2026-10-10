@@ -494,6 +494,12 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .q-row .extra { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; }
 .q-row .extra label { font-size: 12px; color: var(--paper-3); display: inline-flex; gap: 8px; align-items: center; }
 .q-row .extra label[hidden] { display: none; }
+.q-row .extra label.primary { color: var(--paper-2); }
+.q-row .extra label.primary .field { min-width: min(100%, 300px); }
+/* A preset's custom steps: the whole width, a few lines, left to right like any code. */
+.q-row .extra label.wide { flex-basis: 100%; flex-direction: column; align-items: stretch; gap: 4px; }
+.q-row .extra textarea.steps { width: 100%; min-height: 58px; resize: vertical; font: 12.5px/1.5 var(--lat); direction: ltr; text-align: left; }
+.groups.simple .q-row .extra { grid-column: 3 / -1; grid-row: 2; }
 .q-row .row-checkup { grid-column: 3 / -1; }
 .groups.simple .q-row .row-checkup { display: none; }
 .q-row .state { grid-column: 3 / -1; display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; }
@@ -514,9 +520,19 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .dock { position: sticky; bottom: 12px; background: var(--ink-3); border: 1px solid var(--rule-2); border-top: 2px solid var(--yellow); border-radius: var(--r-panel); padding: 10px 14px; display: flex; gap: 12px; align-items: center;
   margin-top: 22px; z-index: 4; box-shadow: 0 12px 24px -12px rgb(0 0 0 / 0.8); }
 .dock .grow { flex: 1; }
+/* A narrow window: the dock's controls go onto a second line instead of squeezing a label into a column of single words. */
+.dock { flex-wrap: wrap; row-gap: 8px; }
+.dock > label, .dock .oc-toggle { white-space: nowrap; }
+/* A short window (a laptop, 768 px or less): tighter rows and group heads, so more of the list shows above the dock. */
+@media (max-height: 800px) {
+  .groups > .group > .panel-head { padding-block: 8px; }
+  .q-row { padding: 10px 0 8px; }
+  .groups.simple .q-row { padding: 6px 0 5px; }
+  .dock { padding: 7px 12px; bottom: 8px; }
+}
 /* The plain test list: one line a test (tick, name, verdict); its controls and the account of its result show with "Advanced". */
 .groups.simple .q-row { grid-template-columns: 44px 24px minmax(0, 1fr) auto; padding: 9px 0 8px; }
-.groups.simple .q-row .ctrls, .groups.simple .q-row .extra, .groups.simple .q-row .detail, .groups.simple .q-row .advice, .groups.simple .q-row .error, .groups.simple .q-row .state > span:not(.pill) { display: none; }
+.groups.simple .q-row .ctrls, .groups.simple .q-row .extra:not(:has(> label.primary:not([hidden]))), .groups.simple .q-row .extra > label:not(.primary), .groups.simple .q-row .detail, .groups.simple .q-row .advice, .groups.simple .q-row .error, .groups.simple .q-row .state > span:not(.pill) { display: none; }
 .groups.simple .q-row .state { grid-column: 4; grid-row: 1; display: flex; align-items: center; gap: 12px; }
 .groups.simple .q-row .state .progress { width: 120px; }
 .groups.simple .q-row:not(.active) .state .progress { display: none; }
@@ -573,9 +589,12 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .q-row .advice { grid-column: 1 / -1; margin-top: 6px; padding: 8px 12px; border-inline-start: 3px solid var(--warn); background: color-mix(in oklab, var(--warn) 8%, transparent);
   border-radius: 3px; font-size: 12.5px; line-height: 1.7; white-space: pre-line; }
 
-/* ———— Test profiles: a row of ready-made selections above the list ———— */
+/* ———— Test profiles: a row of ready-made selections above the list, each a chip with its length ———— */
 .profile-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .profiles { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn.chip { border: 1px solid var(--rule-2); background: var(--ink-2); color: var(--paper); padding: 5px 12px; font-size: 13px; border-radius: 999px; }
+.btn.chip:hover:not(:disabled) { border-color: var(--yellow); background: var(--ink-3); }
+.btn.chip .chip-len { margin-inline-start: 8px; padding: 1px 7px; border-radius: 999px; background: var(--ink-4); color: var(--paper-2); font-size: 11.5px; }
 .profile-note { margin: 0 0 12px; max-width: 900px; }
 
 /* ———— Live test panel (top of Monitoring): the test under way in its part's hue, and the log of what it is doing ———— */

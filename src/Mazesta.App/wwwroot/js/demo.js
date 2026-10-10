@@ -63,16 +63,21 @@ function seed() {   // ten minutes of history so the chart has something to draw
 const demoVm = () => ({ ramMb: 65536, managed: true, pending: null, inUse: [{ path: "C:\\pagefile.sys", sizeMb: 9728, usedMb: 412, peakMb: 1880 }], settings: [],
   drives: [{ name: "C:", label: "", freeMb: 312000, totalMb: 952000 }, { name: "D:", label: "Data", freeMb: 1210000, totalMb: 1907000 }] });
 const DEMO_HOSTS = "# Copyright (c) 1993-2009 Microsoft Corp.\n#\n# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.\n\n127.0.0.1       localhost\n::1             localhost\n";
-const TESTS = ["Test_Cpu_Matrix", "Test_Memory_Pattern", "Test_Storage_Sequential", "Test_Storage_Random4k", "Test_Network_Latency", "Test_Gpu_Steady", "Test_Gpu_Variable", "Test_Gpu_Pulse", "Test_Gpu_Vram", "Test_Gpu_Render", "Test_Power_Combined", "Test_Windows_Sfc", "Test_Windows_Dism", "Test_Storage_Smart"];
+const TESTS = ["Test_Cpu_Matrix", "Test_Memory_Pattern", "Test_Storage_Sequential", "Test_Cpu_Cycle", "Test_Memory_Sequence", "Test_Gpu_Cycle", "Test_Storage_Daily", "Test_System_Daily", "Test_Storage_Random4k", "Test_Network_Latency", "Test_Gpu_Steady", "Test_Gpu_Variable", "Test_Gpu_Pulse", "Test_Gpu_Vram", "Test_Gpu_Render", "Test_Power_Combined", "Test_Windows_Sfc", "Test_Windows_Dism", "Test_Storage_Smart"];
+// The presets of the cycle tests, as the host sends them (prefix of the choice's string key, values).
+const PRESETS = { Test_Cpu_Cycle: ["Test_CpuPreset_", ["full", "instructions", "transient", "custom"]], Test_Memory_Sequence: ["Test_MemPreset_", ["heat", "quick", "extreme", "spike", "margin", "custom"]],
+  Test_Gpu_Cycle: ["Test_GpuPreset_", ["full", "transient", "memory", "custom"]] };
 const OUT = ["Passed", "Passed", "Running", "NotRun"];
 // A running session for the live monitor: test 3 of 6 (storage), and the log lines such a run writes.
 const tests = () => ({
   running: true, canStart: false, incomplete: null, blocked: null, profileNote: null,
-  profiles: ["Quick", "Standard", "Deep", "Transient", "OsStorage"].map((k) => ({ id: k.toLowerCase(), name: strings[`Profile_${k}`] })),
+  profiles: [["Quick", 6], ["Standard", 75], ["Deep", 265], ["Transient", 55], ["Everyday", 105], ["OsStorage", 30]].map(([k, m]) => ({ id: k.toLowerCase(), name: strings[`Profile_${k}`], minutes: m })),
   current: { id: "storage.sequential", name: strings.Test_Storage_Sequential, index: 3, total: 6, percent: 0.46, status: strings.Test_Status_Running, outcome: "Running", outcomeText: strings.Test_Outcome_Running, startedAt: T0 - 27000 },
   repeatModes: ["Once", "Count", "Unlimited"].map((m) => ({ value: m, label: strings[`Test_Repeat_${m}`] })),
   rows: TESTS.map((k, i) => ({ id: k, name: strings[k], selected: i < 6, duration: "60", repeat: "Once", count: "1",
-    options: i === 1 ? [{ key: "mb", label: strings.Test_Option_MemoryMb, kind: "Integer", value: "0", choices: null }] : i === 2 ? [{ key: "drive", label: strings.Test_Option_Drive, kind: "Choice", value: "C:\\", choices: [{ value: "C:\\", label: "C:\\ (Samsung SSD 980 PRO)" }, { value: "D:\\", label: "D:\\ (WDC WD20PURZ)" }] }] : [],
+    options: PRESETS[k] ? [{ key: "preset", label: strings.Test_Option_Preset, kind: "Choice", value: PRESETS[k][1][0], choices: PRESETS[k][1].map((v) => ({ value: v, label: strings[`${PRESETS[k][0]}${v}`] })) }]
+      : k === "Test_System_Daily" ? [{ key: "cycleMinutes", label: strings.Test_Option_CycleMinutes, kind: "Integer", value: "60", choices: null }]
+      : i === 1 ? [{ key: "mb", label: strings.Test_Option_MemoryMb, kind: "Integer", value: "0", choices: null }] : i === 2 ? [{ key: "drive", label: strings.Test_Option_Drive, kind: "Choice", value: "C:\\", choices: [{ value: "C:\\", label: "C:\\ (Samsung SSD 980 PRO)" }, { value: "D:\\", label: "D:\\ (WDC WD20PURZ)" }] }] : [],
     error: null, outcome: i < 3 ? OUT[i] : "NotRun", outcomeText: strings[`Test_Outcome_${i < 3 ? OUT[i] : "NotRun"}`], percent: i < 2 ? 1 : i === 2 ? 0.46 : 0,
     status: i === 2 ? strings.Test_Status_Running : "", errors: null, detail: i === 0 ? "matrix 256x256 FP64 on 32 threads; measured CPU load avg 99.6 % (min 98.1); package 142 W max; Tctl 81.4 °C max" : null })),
 });
