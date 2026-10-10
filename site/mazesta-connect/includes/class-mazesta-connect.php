@@ -191,6 +191,7 @@ final class Mazesta_Connect
     {
         $res = new WP_REST_Response($data, $status);
         $res->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $res->header('X-Content-Type-Options', 'nosniff');
         $res->header('X-LiteSpeed-Cache-Control', 'no-cache');
         return $res;
     }
@@ -943,6 +944,7 @@ final class Mazesta_Connect
         header('X-Robots-Tag: noindex, nofollow');
         header('X-LiteSpeed-Cache-Control: no-cache');
         header('Content-Security-Policy: ' . $csp);
+        header('X-Frame-Options: DENY'); header('X-Content-Type-Options: nosniff'); header('Referrer-Policy: no-referrer');
     }
 
     private static function show_report($id, $print)

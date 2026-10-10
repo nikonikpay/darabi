@@ -35,4 +35,24 @@
     var c = e.target.getAttribute && e.target.getAttribute('data-mzc-confirm');
     if (c && !window.confirm(c)) e.preventDefault();
   });
+
+  /* the old-data import: asks the server for one small step at a time until it says it is done */
+  var imp = document.getElementById('mzc-imp');
+  if (imp) {
+    var bar = imp.querySelector('.mzc-bar i'), txt = document.getElementById('mzc-imp-text'), go = document.getElementById('mzc-imp-go');
+    var show = function (r) {
+      bar.style.width = r.pct + '%';
+      var c = r.counts || {}, parts = Object.keys(c).map(function (k) { return k + ': ' + c[k]; });
+      txt.textContent = r.lines + ' رکورد — ' + (parts.join(' · ') || '…') + (r.skipped ? ' — ردشده (قبلاً بوده): ' + r.skipped : '') + (r.errors && r.errors.length ? ' — خطا: ' + r.errors.join(' | ') : '');
+    };
+    var step = function () {
+      var fd = new FormData(); fd.append('action', 'mzc_import_step'); fd.append('n', imp.getAttribute('data-nonce'));
+      fetch(imp.getAttribute('data-url'), { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
+        if (r.error) { txt.textContent = r.error; if (go) go.disabled = false; return; }
+        show(r);
+        if (r.done) { txt.textContent += ' — تمام شد.'; if (go) go.remove(); } else { step(); }
+      }).catch(function () { txt.textContent = 'ارتباط قطع شد؛ دوباره «شروع واردسازی» را بزنید (از همان‌جا ادامه می‌دهد).'; if (go) go.disabled = false; });
+    };
+    if (go) go.addEventListener('click', function () { go.disabled = true; step(); });
+  }
 })();

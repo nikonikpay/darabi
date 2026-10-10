@@ -15,7 +15,7 @@ final class MZC_Sms
         return $s + array('driver' => '', 'key' => '', 'sender' => '', 'template' => '', 'url' => '', 'method' => 'GET', 'body' => '', 'text' => 'کد ورود شما به سامانهٔ مازستا: {code}');
     }
 
-    public static function configured() { $s = self::settings(); return $s['driver'] === 'kavenegar' ? $s['key'] !== '' : ($s['driver'] === 'url' && $s['url'] !== ''); }
+    public static function configured() { $s = self::settings(); return $s['driver'] === 'kavenegar' ? $s['key'] !== '' : ($s['driver'] === 'melipayamak' ? $s['key'] !== '' && !empty($s['user']) : ($s['driver'] === 'url' && $s['url'] !== '')); }
 
     private static function api_key($s) { $raw = base64_decode((string) $s['key'], true); return $raw === false || strlen($raw) < 17 ? '' : (string) openssl_decrypt(substr($raw, 16), 'aes-256-cbc', hash('sha256', 'mzc|' . wp_salt('auth'), true), OPENSSL_RAW_DATA, substr($raw, 0, 16)); }
 
@@ -34,12 +34,27 @@ final class MZC_Sms
             if (!is_array($j) || !isset($j['return']['status']) || (int) $j['return']['status'] !== 200) { return 'کاوه‌نگار نپذیرفت' . (isset($j['return']['message']) ? ': ' . $j['return']['message'] : '.'); }
             return true;
         }
+        if ($s['driver'] === 'melipayamak') {
+            // Melipayamak's REST service: with a shared-service (pattern) number the code goes through BaseServiceNumber, otherwise a plain message is sent from the line.
+            $pass = self::api_key($s); if ($pass === '' || empty($s['user'])) { return 'نام کاربری یا گذرواژهٔ ملی‌پیامک ذخیره نشده است.'; }
+            $base = 'https://rest.payamak-panel.com/api/SendSMS/';
+            if ($s['template'] !== '' && $code !== '') { $res = wp_remote_post($base . 'BaseServiceNumber', $args + array('body' => array('username' => $s['user'], 'password' => $pass, 'text' => $code, 'to' => $mobile, 'bodyId' => $s['template']))); }
+            else {
+                if ($s['sender'] === '') { return 'شمارهٔ خط ارسال‌کنندهٔ ملی‌پیامک وارد نشده است.'; }
+                $res = wp_remote_post($base . 'SendSMS', $args + array('body' => array('username' => $s['user'], 'password' => $pass, 'to' => $mobile, 'from' => $s['sender'], 'text' => $text, 'isFlash' => 'false')));
+            }
+            if (is_wp_error($res)) { return 'ارتباط با ملی‌پیامک برقرار نشد: ' . $res->get_error_message(); }
+            $j = json_decode((string) wp_remote_retrieve_body($res), true);
+            // RetStatus 1 = accepted; the Value is the record id (a short negative number or text means a refusal).
+            if (!is_array($j) || !isset($j['RetStatus']) || (int) $j['RetStatus'] !== 1) { return 'ملی‌پیامک نپذیرفت' . (is_array($j) && isset($j['StrRetStatus']) ? ': ' . $j['StrRetStatus'] : '.'); }
+            return true;
+        }
         if ($s['driver'] === 'url' && $s['url'] !== '') {
             $fill = function ($t, $enc) use ($mobile, $text, $code) { return strtr($t, array('{mobile}' => $enc ? rawurlencode($mobile) : $mobile, '{message}' => $enc ? rawurlencode($text) : $text, '{code}' => $enc ? rawurlencode($code) : $code)); };
             $url = $fill($s['url'], true);
             if (!preg_match('#^https://#i', $url)) { return 'نشانی درگاه باید با https:// شروع شود.'; }
-            if ($s['method'] === 'POST') { $res = wp_remote_post($url, $args + array('body' => $fill($s['body'], false), 'headers' => array('Content-Type' => strpos(ltrim($s['body']), '{') === 0 ? 'application/json' : 'application/x-www-form-urlencoded'))); }
-            else { $res = wp_remote_get($url, $args); }
+            if ($s['method'] === 'POST') { $res = wp_safe_remote_post($url, $args + array('body' => $fill($s['body'], false), 'headers' => array('Content-Type' => strpos(ltrim($s['body']), '{') === 0 ? 'application/json' : 'application/x-www-form-urlencoded'))); }
+            else { $res = wp_safe_remote_get($url, $args); }   // the safe calls refuse addresses inside the server's own network
             if (is_wp_error($res)) { return 'ارتباط با درگاه برقرار نشد: ' . $res->get_error_message(); }
             $st = (int) wp_remote_retrieve_response_code($res);
             return $st >= 200 && $st < 300 ? true : 'درگاه با کد ' . $st . ' پاسخ داد.';
@@ -55,9 +70,9 @@ final class MZC_Sms
         Mazesta_Connect::locked(function () use ($p) {
             $c = Mazesta_Connect::read('config'); $old = isset($c['sms']) && is_array($c['sms']) ? $c['sms'] : array();
             $key = isset($_POST['key']) ? trim((string) wp_unslash($_POST['key'])) : '';
-            $driver = in_array($p('driver', 12), array('kavenegar', 'url'), true) ? $p('driver', 12) : '';
+            $driver = in_array($p('driver', 12), array('kavenegar', 'melipayamak', 'url'), true) ? $p('driver', 12) : '';
             $text = isset($_POST['text']) ? mb_substr(trim(sanitize_textarea_field(wp_unslash($_POST['text']))), 0, 300) : '';
-            $c['sms'] = array('driver' => $driver, 'key' => $key !== '' ? MZC_Crm_Db::seal($key) : (isset($old['key']) ? $old['key'] : ''), 'sender' => $p('sender', 30), 'template' => $p('template', 60),
+            $c['sms'] = array('driver' => $driver, 'key' => $key !== '' ? MZC_Crm_Db::seal($key) : (isset($old['key']) ? $old['key'] : ''), 'user' => $p('user', 60), 'sender' => $p('sender', 30), 'template' => $p('template', 60),
                 'url' => esc_url_raw($p('url', 500)), 'method' => $p('method', 4) === 'POST' ? 'POST' : 'GET', 'body' => isset($_POST['body']) ? mb_substr(trim((string) wp_unslash($_POST['body'])), 0, 1000) : '', 'text' => $text !== '' ? $text : 'کد ورود شما: {code}');
             Mazesta_Connect::write('config', $c);
         });
