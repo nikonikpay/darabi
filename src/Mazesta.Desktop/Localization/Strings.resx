@@ -3456,4 +3456,14 @@ Cancel: stop.</value></data>
   <data name="Test_Option_CpuStages" xml:space="preserve"><value>Stages (test:option=value, e.g. cpu.vector:width=avx2 cpu.fft)</value></data>
   <data name="Log_CpuCycle_Stage" xml:space="preserve"><value>Round {0}, stage {1} of {2}: {3} for {4} s.</value></data>
   <data name="Log_CpuCycle_Skipped" xml:space="preserve"><value>Stage {0} skipped: this CPU cannot run it ({1}).</value></data>
+  <data name="Test_System_Daily" xml:space="preserve"><value>System · Everyday use (light work, bursts, idle; faults that full load does not show)</value></data>
+  <data name="Test_Option_CycleMinutes" xml:space="preserve"><value>One cycle (minutes)</value></data>
+  <data name="Test_Daily_Phase_Bursts" xml:space="preserve"><value>Short bursts on one core at a time</value></data>
+  <data name="Test_Daily_Phase_Idle" xml:space="preserve"><value>Idle, woken now and then</value></data>
+  <data name="Test_Daily_Phase_Light" xml:space="preserve"><value>Light load (browser, office)</value></data>
+  <data name="Test_Daily_Phase_Spikes" xml:space="preserve"><value>All cores at once, then nothing</value></data>
+  <data name="Test_Daily_Phase_Everyday" xml:space="preserve"><value>Everyday tasks (compress, sort, JSON)</value></data>
+  <data name="Log_Daily_Phase" xml:space="preserve"><value>Cycle {0}: {1} for {2} s.</value></data>
+  <data name="Log_Daily_Cycle" xml:space="preserve"><value>{0} whole cycle(s) done; {1} wrong result(s) so far.</value></data>
+  <data name="Log_Daily_Error" xml:space="preserve"><value>Wrong result in '{0}': {1}.</value></data>
 </root>

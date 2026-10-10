@@ -3456,4 +3456,14 @@
   <data name="Test_Option_CpuStages" xml:space="preserve"><value>مرحله‌ها (test:option=value، مثلاً cpu.vector:width=avx2 cpu.fft)</value></data>
   <data name="Log_CpuCycle_Stage" xml:space="preserve"><value>دور {0}، مرحلهٔ {1} از {2}: {3} به مدت {4} ثانیه.</value></data>
   <data name="Log_CpuCycle_Skipped" xml:space="preserve"><value>مرحلهٔ {0} رد شد: این پردازنده آن را اجرا نمی‌کند ({1}).</value></data>
+  <data name="Test_System_Daily" xml:space="preserve"><value>سیستم · کار روزمره (کار سبک، ضربه‌های کوتاه، بیکاری؛ ایرادهایی که زیر بار سنگین دیده نمی‌شوند)</value></data>
+  <data name="Test_Option_CycleMinutes" xml:space="preserve"><value>طول هر دور (دقیقه)</value></data>
+  <data name="Test_Daily_Phase_Bursts" xml:space="preserve"><value>ضربه‌های کوتاه روی یک هسته در هر نوبت</value></data>
+  <data name="Test_Daily_Phase_Idle" xml:space="preserve"><value>بیکاری، با بیدار شدن گاه‌به‌گاه</value></data>
+  <data name="Test_Daily_Phase_Light" xml:space="preserve"><value>بار سبک (مرورگر، کار اداری)</value></data>
+  <data name="Test_Daily_Phase_Spikes" xml:space="preserve"><value>همهٔ هسته‌ها با هم، سپس هیچ</value></data>
+  <data name="Test_Daily_Phase_Everyday" xml:space="preserve"><value>کارهای روزمره (فشرده‌سازی، مرتب‌سازی، JSON)</value></data>
+  <data name="Log_Daily_Phase" xml:space="preserve"><value>دور {0}: {1} به مدت {2} ثانیه.</value></data>
+  <data name="Log_Daily_Cycle" xml:space="preserve"><value>{0} دور کامل انجام شد؛ تا این لحظه {1} نتیجهٔ نادرست.</value></data>
+  <data name="Log_Daily_Error" xml:space="preserve"><value>نتیجهٔ نادرست در «{0}»: {1}.</value></data>
 </root>
