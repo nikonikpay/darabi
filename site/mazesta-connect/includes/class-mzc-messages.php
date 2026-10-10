@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) { exit; }
 
 /**
- * Messages from the shop to the systems that run the app. The app asks (no key, only its random installation id) every fifteen minutes: GET mazesta/v1/messages?install=ID&after=N
+ * Messages from the shop to the systems that run the app. The app asks (no key, only its random installation id) every eight hours (three times a day at most): GET mazesta/v1/messages?install=ID&after=N
  * answers what was sent to every system or to that one with an id above N, and the app shows each as a Windows notification and keeps it on its "System messages" page.
  * The store is a file like the plugin's other data; a message to every system reaches the ones that ask later too, for ninety days.
  * What the app has already fetched is its 'after' of the next call: that is how the page here knows which systems have it.
@@ -81,7 +81,7 @@ final class MZC_Messages
             $all[$next] = array('id' => $next, 'title' => $title, 'body' => $body, 'link' => $link !== '' ? $link : null, 'to' => $to, 'created' => gmdate('c'), 'by' => get_current_user_id());
             Mazesta_Connect::write('messages', $all);
         });
-        MZC_Admin::back('mzc-messages', 'ok:پیام ثبت شد؛ سیستم‌ها در چند دقیقهٔ آینده (تا ۱۵ دقیقه) آن را می‌گیرند.');
+        MZC_Admin::back('mzc-messages', 'ok:پیام ثبت شد؛ هر سیستم در نوبت بعدی پرسش خود (روزی حداکثر سه بار) آن را می‌گیرد.');
     }
 
     public static function act_delete()

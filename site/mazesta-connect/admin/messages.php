@@ -8,7 +8,7 @@ $to = isset($_GET['to']) && isset($installs[(string) $_GET['to']]) ? (string) $_
 uasort($installs, function ($a, $b) { return strcmp((string) (isset($b['last']) ? $b['last'] : ''), (string) (isset($a['last']) ? $a['last'] : '')); });
 
 echo '<div class="mzc-title"><h2>پیام به سیستم‌ها</h2></div>';
-echo '<p class="muted" style="max-width:90ch">پیام در برنامهٔ هر سیستم به شکل اعلان ویندوز می‌آید و در بخش «پیام‌های سیستم» برنامه می‌ماند تا کاربر بعداً دوباره بخواند. برنامه هر ۱۵ دقیقه می‌پرسد و فقط سیستم‌هایی پیام می‌گیرند که برنامه‌شان باز است و ارسال آمار ناشناس در تنظیماتشان روشن است.</p>';
+echo '<p class="muted" style="max-width:90ch">پیام در برنامهٔ هر سیستم به شکل اعلان ویندوز می‌آید و در بخش «پیام‌های سیستم» برنامه می‌ماند تا کاربر بعداً دوباره بخواند. برنامه یک دقیقه پس از باز شدن و بعد هر ۸ ساعت (روزی حداکثر سه بار) می‌پرسد و فقط سیستم‌هایی پیام می‌گیرند که برنامه‌شان باز است و ارسال آمار ناشناس در تنظیماتشان روشن است.</p>';
 
 echo '<div class="mzc-panel"><header><h3>پیام تازه</h3></header><div class="body">' . MZC_Admin::form_open('message_send', 'class="mzc-form"') . '<div class="mzc-fields">'
     . '<label class="wide">عنوان<input type="text" name="title" maxlength="120" required></label>'

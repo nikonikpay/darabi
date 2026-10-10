@@ -10,4 +10,4 @@
 
 **Code.** `Mazesta.Persistence/UsageLog.cs` (the file, the id, the sent mark) · `Mazesta.Desktop/Services/UsageRecorder.cs` (what is recorded; `UsageData` builds each event) · `Mazesta.App/UsageUploader.cs` (the sender) · the plugin's `rest_usage`.
 
-**Messages back to the app.** The same random id is used to ask the site for messages (`GET mazesta/v1/messages`, every fifteen minutes, only while the statistics switch is on): see `Mazesta.App/MessageInbox.cs` and the plugin's `class-mzc-messages.php`. Nothing but the id and the number of the newest message held goes out.
+**Messages back to the app.** The same random id is used to ask the site for messages (`GET mazesta/v1/messages`, every eight hours, three times a day at most, only while the statistics switch is on): see `Mazesta.App/MessageInbox.cs` and the plugin's `class-mzc-messages.php`. Nothing but the id and the number of the newest message held goes out.

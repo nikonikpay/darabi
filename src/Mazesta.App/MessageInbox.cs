@@ -6,7 +6,7 @@ namespace Mazesta.App;
 public sealed record ShopMessage(long Id, string Title, string Body, string? Link, DateTimeOffset At, bool Read);
 
 /// <summary>
-/// The shop's messages to this computer ("system messages"): asks the site every fifteen minutes (and a minute after start) for what was sent to every installation or to this
+/// The shop's messages to this computer ("system messages"): asks the site every eight hours - three times a day at most while it keeps running - (and a minute after start) for what was sent to every installation or to this
 /// one - the installation's random id is all that is said, no key - keeps them in <c>Data/config/messages.json</c> so they can be read again later, and tells the app about the
 /// new ones (a notification). Like the usage statistics it runs only while the setting for them is on; a failure is tried again later and never shown.
 /// </summary>
@@ -25,7 +25,7 @@ internal sealed class MessageInbox : IDisposable
     {
         _file = Path.Combine(configDir, "messages.json"); _log = log; _config = config; _site = site; _logger = logger;
         (_after, _items) = Load();
-        _timer = new(_ => _ = PollAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(15));
+        _timer = new(_ => _ = PollAsync(), null, TimeSpan.FromMinutes(1), TimeSpan.FromHours(8));
     }
 
     public IReadOnlyList<ShopMessage> List() { lock (_gate) return [.. _items.OrderByDescending(m => m.At)]; }
