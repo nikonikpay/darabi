@@ -105,7 +105,8 @@ th{{background:#f5f7fa;font-size:12.5px;color:#4a5566}}
 .advice{{margin-top:6px;padding:6px 10px;border-inline-start:3px solid #f0cf8a;background:#fff8e6;font-size:12.5px;line-height:1.7}}
 .badge{{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12.5px;font-weight:700}}
 .badge.Passed{{background:#e7f6ec;color:#146c2e}} .badge.Good{{background:#e7f6ec;color:#146c2e}} .badge.Problem{{background:#fdecec;color:#a11a1a}} .badge.Attention{{background:#fff4dc;color:#8a5a00}} .badge.Note{{background:#eef1f5;color:#4a5566}} .badge.Failed{{background:#fdecec;color:#a11a1a}} .badge.Cancelled,.badge.NotRun,.badge.Unsupported,.badge.Error,.badge.Inconclusive{{background:#fff4dc;color:#8a5a00}}
-pre{{margin:6px 0 0;white-space:pre-wrap;word-break:break-word;background:#f5f7fa;border:1px solid #e3e7ee;border-radius:6px;padding:7px 9px;direction:ltr;text-align:left;font:12px/1.5 Consolas,'Segoe UI',monospace}}
+table.bm{{table-layout:fixed}} table.bm td{{overflow-wrap:anywhere}}
+pre{{margin:6px 0 0;overflow-wrap:anywhere;white-space:pre-wrap;word-break:break-word;background:#f5f7fa;border:1px solid #e3e7ee;border-radius:6px;padding:7px 9px;direction:ltr;text-align:left;font:12px/1.5 Consolas,'Segoe UI',monospace}}
 .test{{page-break-inside:avoid}} .charts{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}} .chart{{border:1px solid #e3e7ee;border-radius:8px;padding:8px 10px;page-break-inside:avoid}}
 .chart h4{{margin:0 0 2px;font-size:13px}} .chart small{{color:#5b6675}} svg{{width:100%;height:auto;display:block;direction:ltr}}
 footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6675;font-size:12px}}
@@ -189,7 +190,7 @@ footer{{margin-top:28px;padding-top:12px;border-top:1px solid #e3e7ee;color:#5b6
     private static void Benchmarks(StringBuilder b, SessionReport r, ReportText w)
     {
         if (r.Benchmarks is not { Count: > 0 }) return;
-        b.Append("<h2>").Append(w.Benchmarks).Append("</h2><table><thead><tr><th>").Append(w.Name).Append("</th><th>").Append(w.Metric).Append("</th><th>").Append(w.Value).Append("</th></tr></thead><tbody>");
+        b.Append("<h2>").Append(w.Benchmarks).Append("</h2><table class=\"bm\"><colgroup><col style=\"width:38%\"><col style=\"width:38%\"><col style=\"width:24%\"></colgroup><thead><tr><th>").Append(w.Name).Append("</th><th>").Append(w.Metric).Append("</th><th>").Append(w.Value).Append("</th></tr></thead><tbody>");
         foreach (var bm in r.Benchmarks)
         {
             b.Append("<tr class=\"test\"><td rowspan=\"").Append(Math.Max(1, bm.Metrics.Count)).Append("\"><b>").Append(E(bm.Name)).Append("</b><br><small>").Append(w.MeasuredAt).Append(": ").Append(Lt(ReportFormat.Stamp(bm.FinishedAt))).Append("</small>");
