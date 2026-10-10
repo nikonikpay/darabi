@@ -24,7 +24,7 @@ public sealed class NvidiaRunProbe : IDisposable
         _timer = new Timer(_ => Sample(), null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
-    /// <summary>Starts sampling the card named <paramref name="gpuName"/> (the only NVIDIA card when there is one), or null.</summary>
+    /// <summary>Starts sampling the card named <paramref name="gpuName"/> (the only NVIDIA card when there is one and the name is an NVIDIA one), or null.</summary>
     public static NvidiaRunProbe? Start(string? gpuName)
     {
         try
@@ -33,7 +33,8 @@ public sealed class NvidiaRunProbe : IDisposable
             var found = new List<(IntPtr Device, string Name)>();
             for (uint i = 0; i < count; i++)
                 if (Nvml.nvmlDeviceGetHandleByIndex_v2(i, out var d) == Nvml.Success) found.Add((d, Nvml.Text(b => Nvml.nvmlDeviceGetName(d, b, (uint)b.Length)) ?? ""));
-            var pick = found.Count == 1 ? found[0] : found.FirstOrDefault(f => gpuName is not null && Norm(f.Name) == Norm(gpuName));
+            // The only NVIDIA card stands in for its own name only: a run on an AMD or Intel adapter is not credited with the NVIDIA card's link and throttling.
+            var pick = found.Count == 1 && (gpuName is null || Norm(gpuName).Contains("NVIDIA", StringComparison.Ordinal)) ? found[0] : found.FirstOrDefault(f => gpuName is not null && Norm(f.Name) == Norm(gpuName));
             return pick.Device == IntPtr.Zero ? null : new NvidiaRunProbe(pick.Device);
         }
         catch (DllNotFoundException) { return null; }

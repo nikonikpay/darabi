@@ -27,7 +27,7 @@ internal sealed class TrayContext : ApplicationContext
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
-        _intervals = intervals; _logFile = logFile; _rules = new(3, intervals.CpuAlertC, intervals.GpuAlertC);
+        _intervals = intervals; _logFile = logFile; _rules = new(3, intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz);
         Checks = TrayCheckLog.Read(logFile);
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
         var open = new ToolStripMenuItem(TrayText.OpenApp, null, (_, _) => OpenApp()) { Font = new Font(menu.Font, FontStyle.Bold) };
@@ -94,7 +94,7 @@ internal sealed class TrayContext : ApplicationContext
         TrayCheck check;
         try
         {
-            var sample = await Task.Run(TakeSample);
+            var sample = await Within(Task.Run(TakeSample), TimeSpan.FromMinutes(3));
             var now = DateTimeOffset.UtcNow;
             var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
             check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
@@ -112,7 +112,7 @@ internal sealed class TrayContext : ApplicationContext
         TrayCheck check;
         try
         {
-            var drives = (await Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()))
+            var drives = (await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2)))
                 .Select(d => new TrayDrive(d.Name, d.Status, d.WearPercent, d.TemperatureC, DriveAttention.Needs(d))).ToList();
             var problems = drives.Where(d => d.NeedsAttention).Select(TrayText.DriveProblem).ToList();
             // A drive's problem is announced once; it is announced again only after it has cleared and come back.
@@ -125,6 +125,12 @@ internal sealed class TrayContext : ApplicationContext
         End(check);
         Schedule(_health, TimeSpan.FromMinutes(_intervals.HealthMinutes));
     }
+
+    /// <summary>The work, or a timeout once <paramref name="limit"/> has passed: a sensor open or a WMI query that never returns is reported as a failed
+    /// check and the next one runs on time, instead of the tray waiting on it for good with every later check held back behind it. The stuck work is left
+    /// to finish (or not) on its own thread.</summary>
+    private static async Task<T> Within<T>(Task<T> work, TimeSpan limit)
+        => await Task.WhenAny(work, Task.Delay(limit)) == work ? await work : throw new TimeoutException($"no answer in {limit.TotalMinutes:0} min");
 
     private void Begin() { _checking = true; _checkNow.Enabled = false; Changed?.Invoke(); }
 

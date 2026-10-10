@@ -18,7 +18,8 @@ public sealed record CpuSpec(string Model, HardwareVendor Vendor, string? Segmen
 /// </summary>
 public static partial class CpuSpecs
 {
-    [GeneratedRegex(@"\b(i[3579])-(\d{3,5}[A-Z]{0,3})\b", RegexOptions.IgnoreCase)] private static partial Regex IntelCore();
+    [GeneratedRegex(@"\b(i[3579])-(\d{3,5}[A-Z]{0,3}\d?)\b", RegexOptions.IgnoreCase)] private static partial Regex IntelCore();   // the digit: laptop chips such as i7-1165G7
+    [GeneratedRegex(@"\bCore\s+([3579])\s+(\d{3}[A-Z]{0,2})\b", RegexOptions.IgnoreCase)] private static partial Regex IntelCoreSeries();
     [GeneratedRegex(@"\bUltra\s+(X?[3579])\s+(\d{3}[A-Z]{0,2})\b", RegexOptions.IgnoreCase)] private static partial Regex IntelUltra();
     [GeneratedRegex(@"\bRyzen\s+([3579])\s+(PRO\s+)?(\d{4}[A-Z0-9]{0,4})\b", RegexOptions.IgnoreCase)] private static partial Regex Ryzen();
 
@@ -37,6 +38,7 @@ public static partial class CpuSpecs
         string s = name.Replace("(R)", " ", StringComparison.OrdinalIgnoreCase).Replace("(TM)", " ", StringComparison.OrdinalIgnoreCase).Replace("®", " ").Replace("™", " ");
         if (IntelUltra().Match(s) is { Success: true } u) return $"ULTRA {u.Groups[1].Value} {u.Groups[2].Value}".ToUpperInvariant();
         if (IntelCore().Match(s) is { Success: true } i) return $"{i.Groups[1].Value}-{i.Groups[2].Value}".ToUpperInvariant();
+        if (IntelCoreSeries().Match(s) is { Success: true } c) return $"CORE {c.Groups[1].Value} {c.Groups[2].Value}".ToUpperInvariant();
         if (Ryzen().Match(s) is { Success: true } r) return $"RYZEN {r.Groups[1].Value} {(r.Groups[2].Success ? "PRO " : "")}{r.Groups[3].Value}".ToUpperInvariant();
         return null;
     }

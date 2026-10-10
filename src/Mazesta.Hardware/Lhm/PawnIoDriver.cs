@@ -36,6 +36,16 @@ public static class PawnIoDriver
         if (!File.Exists(setupPath)) { log.LogWarning("PawnIO is not installed and {Setup} is missing; CPU sensors will be empty", setupPath); return PawnIoInstallResult.SetupMissing; }
         string hash; using (var fs = File.OpenRead(setupPath)) hash = Convert.ToHexString(SHA256.HashData(fs));
         if (!hash.Equals(SetupSha256, StringComparison.OrdinalIgnoreCase)) { log.LogError("{Setup} has hash {Hash}, not the official {Expected}; not running it", setupPath, hash, SetupSha256); return PawnIoInstallResult.SetupTampered; }
+        // A setup that Windows blocks (the driver blocklist, Smart App Control) fails the same way every time: it is tried once a day, not at every start and every tray check.
+        string marker = Path.Combine(Path.GetTempPath(), "mazesta-pawnio-failed");
+        if (File.Exists(marker) && DateTime.UtcNow - File.GetLastWriteTimeUtc(marker) < TimeSpan.FromDays(1)) { log.LogWarning("PawnIO setup failed less than a day ago; not retried yet"); return PawnIoInstallResult.Failed; }
+        var result = Install(setupPath, log);
+        try { if (result == PawnIoInstallResult.Installed) File.Delete(marker); else File.WriteAllText(marker, DateTime.UtcNow.ToString("O")); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        return result;
+    }
+
+    private static PawnIoInstallResult Install(string setupPath, ILogger log)
+    {
         try
         {
             log.LogInformation("PawnIO is not installed; installing it silently from {Setup}", setupPath);

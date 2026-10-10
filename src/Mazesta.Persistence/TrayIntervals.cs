@@ -5,7 +5,7 @@ namespace Mazesta.Persistence;
 /// Desktop app, and going through <see cref="JsonStore{T}"/> could migrate and rewrite the file, or move a damaged one aside, under the
 /// app's feet. A missing, unreadable or non-positive value falls back to the <see cref="AppConfig"/> default - a zero interval would throw in the timer.
 /// The alert thresholds are read here too, as the tray reads nothing else of the file.</summary>
-public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int WatchSeconds, int HealthMinutes, int CpuAlertC = 95, int GpuAlertC = 95)
+public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int WatchSeconds, int HealthMinutes, int CpuAlertC = 100, int GpuAlertC = 95)
 {
     public static TrayIntervals Read(string configFile)
     {

@@ -162,6 +162,8 @@ public class CpuSpecTests
     [InlineData("AMD Ryzen 9 7950X 16-Core Processor", "RYZEN 9 7950X")]
     [InlineData("AMD Ryzen 5 PRO 3400G with Radeon Vega Graphics", "RYZEN 5 PRO 3400G")]
     [InlineData("AMD Ryzen 7 5800X3D 8-Core Processor", "RYZEN 7 5800X3D")]
+    [InlineData("11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz", "I7-1165G7")]
+    [InlineData("Intel(R) Core(TM) 7 150U", "CORE 7 150U")]
     public void The_model_number_is_read_from_the_name_windows_gives(string name, string key) => Assert.Equal(key, CpuSpecs.Key(name));
     [Fact] public void A_name_without_a_model_number_finds_nothing() { Assert.Null(CpuSpecs.Key("Intel(R) Pentium(R) CPU G4560")); Assert.Null(CpuSpecs.Find(null)); }
 

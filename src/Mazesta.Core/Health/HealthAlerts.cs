@@ -13,10 +13,12 @@ public sealed record HealthSample(double? CpuTempC, double? GpuTempC, double? Cp
 /// <c>requiredSamples</c> consecutive samples before it fires, fires again at most every <see cref="RepeatAfter"/>
 /// while it stays true, and re-arms only after a clear recovery margin (hysteresis), so a reading bouncing on the
 /// threshold does not spam. <see cref="IsWatching"/> tells the host to sample faster while a rule is building up. The overheat thresholds are the
-/// user's (the tray's settings, 60 to 105 °C); each clears 5 °C below its threshold.
+/// user's (the tray's settings, 60 to 105 °C); each clears 5 °C below its threshold. The throttle rule is a full load under 2 GHz, or - when the CPU's
+/// base clock is known - under three quarters of it: a low-power laptop chip (an N100's base is 800 MHz) runs all-core under 2 GHz by design, which is not throttling.
 /// </summary>
-public sealed class HealthAlerts(int requiredSamples = 3, double cpuAlertC = HealthAlerts.OverheatC, double gpuAlertC = HealthAlerts.OverheatC)
+public sealed class HealthAlerts(int requiredSamples = 3, double cpuAlertC = HealthAlerts.OverheatC, double gpuAlertC = HealthAlerts.OverheatC, double? cpuBaseMhz = null)
 {
+    private readonly double _throttleMhz = cpuBaseMhz is > 0 and { } b ? Math.Min(ThrottleClockMhz, b * 0.75) : ThrottleClockMhz;
     public const double MinAlertC = 60, MaxAlertC = 105, ClearMarginC = 5;
     public const double OverheatC = 95, OverheatRecoveredC = 90, ThrottleLoadPercent = 98, ThrottleLoadRecoveredPercent = 95, ThrottleClockMhz = 2000, ThrottleClockRecoveredMhz = 2200;
     public static readonly TimeSpan RepeatAfter = TimeSpan.FromMinutes(15);
@@ -33,8 +35,8 @@ public sealed class HealthAlerts(int requiredSamples = 3, double cpuAlertC = Hea
         var alerts = new List<HealthAlert>();
         Step(HealthAlertKind.CpuOverheat, s.CpuTempC is { } c ? c > cpuAlertC : null, s.CpuTempC < cpuAlertC - ClearMarginC, s.CpuTempC ?? 0);
         Step(HealthAlertKind.GpuOverheat, s.GpuTempC is { } g ? g > gpuAlertC : null, s.GpuTempC < gpuAlertC - ClearMarginC, s.GpuTempC ?? 0);
-        bool? throttling = s.CpuLoadPercent is { } load && s.CpuClockMhz is { } clock ? load >= ThrottleLoadPercent && clock < ThrottleClockMhz : null;
-        bool recovered = s.CpuLoadPercent is < ThrottleLoadRecoveredPercent || s.CpuClockMhz is >= ThrottleClockRecoveredMhz;
+        bool? throttling = s.CpuLoadPercent is { } load && s.CpuClockMhz is { } clock ? load >= ThrottleLoadPercent && clock < _throttleMhz : null;
+        bool recovered = s.CpuLoadPercent is < ThrottleLoadRecoveredPercent || s.CpuClockMhz >= _throttleMhz * (ThrottleClockRecoveredMhz / ThrottleClockMhz);
         Step(HealthAlertKind.CpuThrottle, throttling, recovered, s.CpuClockMhz ?? 0);
         return alerts;
 

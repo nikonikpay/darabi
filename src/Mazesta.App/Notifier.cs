@@ -14,7 +14,7 @@ public sealed class Notifier : IDisposable
 {
     private readonly MainWindow _window; private readonly PollingEngine _engine; private readonly TestEngine _tests; private readonly IReadOnlyList<ITestExecutor> _executors;
     private readonly Action<string, string> _toast; private readonly ILogger _log;
-    private HealthAlerts _alerts = new(); private (int Cpu, int Gpu) _limits = (95, 95);
+    private HealthAlerts _alerts = new(); private (int Cpu, int Gpu) _limits;   // (0, 0): the first snapshot builds the rules with the settings and the base clock
     /// <summary>The user's thresholds (the tray's settings, also set by the assistant); read at each snapshot, so a change applies at once.</summary>
     public Func<(int Cpu, int Gpu)>? Limits { get; set; }
     private Forms.NotifyIcon? _icon; private Forms.Timer? _hide;
@@ -28,7 +28,7 @@ public sealed class Notifier : IDisposable
 
     private void OnSnapshot(SensorSnapshot s)
     {
-        if (Limits?.Invoke() is { } l && l != _limits) { _limits = l; _alerts = new(3, l.Cpu, l.Gpu); }
+        if (Limits?.Invoke() is { } l && l != _limits) { _limits = l; _alerts = new(3, l.Cpu, l.Gpu, Mazesta.Hardware.Wmi.CpuBaseClock.Mhz); }
         foreach (var a in _alerts.Evaluate(HealthSampler.From(_engine.Hardware, s.Readings), s.Timestamp))
             Tell(Loc.Get("Notify_Health_Title"), a.Kind switch
             {
