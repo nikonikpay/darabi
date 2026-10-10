@@ -24,7 +24,11 @@ internal static class PrintText
     {
         SheetLayout.A5 => T("A5 عمودی", "A5 portrait"),
         SheetLayout.A4Landscape => T("A4 افقی (یک برگه)", "A4 landscape (one sheet)"),
-        _ => T("A4 افقی (دو برگه کنار هم)", "A4 landscape (two sheets side by side)"),
+        SheetLayout.A4LandscapeTwice => T("A4 افقی (دو برگه کنار هم)", "A4 landscape (two sheets side by side)"),
+        SheetLayout.A4Turned => T("A4 عمودی، طرح چرخیده به پهنا (یک برگه)", "A4 portrait, sheet turned across the width (one)"),
+        SheetLayout.A4TurnedTwice => T("A4 عمودی، طرح چرخیده به پهنا (دو برگه)", "A4 portrait, sheet turned across the width (two)"),
+        SheetLayout.A4TurnedBack => T("A4 عمودی، چرخش به سمت دیگر (یک برگه)", "A4 portrait, turned the other way (one)"),
+        _ => T("A4 عمودی، چرخش به سمت دیگر (دو برگه)", "A4 portrait, turned the other way (two)"),
     };
     public static string NoService => T("بدون شماره", "no number");
     public static string Loading => T("در حال دریافت…", "Loading…");
