@@ -283,6 +283,8 @@ const fansState = () => ({ supported: true, error: null, floor: 20, pumpFloor: 6
   channels: FAN_NAMES.map(([name, rpm], i) => { const s = fanSet[`f${i}`] || { mode: "auto", manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] };
     return { id: `f${i}`, name, boardName: name, kind: i === 0 ? "cpu" : "case", wired: true, part: "Nuvoton NCT6798D", percent: s.mode === "manual" ? s.manual : 42 + i * 3, rpm, held: s.mode !== "auto", mode: s.mode, manual: s.manual, source: s.source, points: s.points, min: 20, max: 100 }; }) });
 
+const msgs = [{ id: 2, title: "تخفیف ویژهٔ کارت‌های گرافیک", body: "این هفته روی کارت‌های سری RTX 40 تخفیف ویژه داریم. برای دیدن فهرست روی دکمه بزنید.", link: "https://www.dfmrendering.com/shop/", at: "2026-10-10T08:30:00Z", read: false },
+  { id: 1, title: "به‌روزرسانی درایور", body: "درایور تازهٔ کارت گرافیک منتشر شد؛ از بخش درایورها بررسی کنید.", link: null, at: "2026-10-05T10:00:00Z", read: true }];
 export async function call(m, p, emit) {
   emitRef = emit;
   strings ??= await (await fetch("js/demo-strings.json")).json();
@@ -370,6 +372,8 @@ export async function call(m, p, emit) {
     case "checkup.setup": await new Promise((r) => setTimeout(r, 400)); return DEMO_FINDINGS.setup();
     case "checkup.run": return false;
     case "app.quiet": return false;
+    case "messages.state": case "messages.read": return { unread: msgs.filter((m) => !m.read).length, items: msgs };
+    case "messages.open": return null;
     case "upd.state": case "upd.check": return { current: "0.10.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),
       latest: { version: "0.10.1", size: 134217728, date: "2026/10/06", notes: "+ به‌روزرسانی با یک کلیک، همراه با فهرست تغییرات\n+ نور RGB بی‌پنجره، ذخیره‌شده و قابل کنترل از Tray\n+ پروفایل فن برای همه‌ی فن‌ها\n~ «نمایش نمودارها»: چیدمان فشرده و عنوان‌های انگلیسی\n~ پمپ AIO هرگز زیر ۶۰٪ نمی‌رود\n! رفع گیر کردن صفحه‌ی RGB روی «در حال اتصال»\n! رفع نوشته‌ی ناخوانا کنار منوی کناری" },
       data: { lists: 9, downloaded: 2, published: "2026/09/29 13:50", syncedAt: "2026/09/29 14:10" } };
