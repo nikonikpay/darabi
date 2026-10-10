@@ -1,0 +1,1299 @@
+<?php
+if (!defined('ABSPATH')) { exit; }
+
+/**
+ * Everything the desktop app says to the site goes through this plugin's REST routes (namespace mazesta/v1):
+ *   GET  status                 is the plugin there, and is this key the shop's
+ *   POST pair/start, pair/claim connects a copy of the app without typing the key: a manager signed in to the site approves the request
+ *   POST reports                a report's one-page summary (key)          -> kept, listed and printed in the dashboard
+ *   POST bench/runs             benchmark runs (key; or without one into the review queue when the shop allows it)
+ *   POST share                  a user's latest benchmark results (no key) -> a page of their own, with a link to pass on
+ *   POST usage                  anonymous usage statistics (no key; the app's settings switch, on by default): a random install id, part names and events - counted in the dashboard's "آمار استفاده" tab
+ *   GET  bench/index, benchdb/* the comparison lists built from the approved runs, one file per benchmark, version and settings; each says whether it is of an old workload
+ *        (a newer version of the benchmark has approved runs: its numbers are not comparable with today's). A shared result of an old benchmark or app version carries a notice on its page.
+ *   POST release/chunk, commit  the signed update folder (release key)     -> written to /mazesta/ in the site's root, where the app reads it
+ * The lists are built the way the app builds them (BenchmarkPeers.Aggregate): one row per part model, the median of each system's best run.
+ *
+ * Nothing is kept in WordPress' database: no table, no option, no role change. The data is files in wp-content/mazesta-connect-data. Every
+ * file there that is not public begins with a line of PHP that ends the request, so asking the web server for it returns nothing, whatever
+ * the server makes of the folder's .htaccess.
+ */
+final class Mazesta_Connect
+{
+    const VERSION = MZC_VERSION;
+    const NS = 'mazesta/v1';
+    const MAX_HTML = 800000;
+    const MAX_FULL = 3000000;
+    const MAX_RUNS = 500;
+    const MAX_SHARES = 5000;
+    const GUARD = "<?php exit; ?>\n";
+
+    public static function boot()
+    {
+        add_action('rest_api_init', array(__CLASS__, 'routes'));
+        add_action('init', array(__CLASS__, 'public_pages'));
+        foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'share_delete', 'settings', 'rebuild') as $a) {
+            add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
+        }
+    }
+
+    /* ---------- storage: files, never the database ---------- */
+
+    public static function dir() { return WP_CONTENT_DIR . '/mazesta-connect-data'; }
+
+    public static function ensure()
+    {
+        $d = self::dir();
+        if (is_dir($d . '/benchdb')) { return true; }
+        if (!wp_mkdir_p($d . '/benchdb')) { return false; }
+        @file_put_contents($d . '/.htaccess', "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+        @file_put_contents($d . '/index.php', "<?php // nothing here\n");
+        return true;
+    }
+
+    public static function file($name) { return self::dir() . '/' . $name . '.php'; }
+
+    /** A data file's content after its guard line, or null when there is none. */
+    public static function raw($name)
+    {
+        $f = self::file($name);
+        if (!is_readable($f)) { return null; }
+        $s = (string) file_get_contents($f);
+        return strncmp($s, self::GUARD, strlen(self::GUARD)) === 0 ? substr($s, strlen(self::GUARD)) : null;
+    }
+
+    public static function read($name, $default = array())
+    {
+        $s = self::raw($name);
+        $v = $s === null ? null : json_decode($s, true);
+        return is_array($v) ? $v : $default;
+    }
+
+    public static function put($name, $text)
+    {
+        if (!self::ensure()) { return false; }
+        $f = self::file($name); $tmp = $f . '.' . bin2hex(random_bytes(4)) . '.tmp';
+        if (file_put_contents($tmp, self::GUARD . $text) === false) { return false; }
+        if (!@rename($tmp, $f)) { @unlink($tmp); return false; }
+        return true;
+    }
+
+    public static function write($name, $data)
+    {
+        $json = wp_json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $json !== false && self::put($name, $json);
+    }
+
+    public static function remove($name) { $f = self::file($name); if (is_file($f)) { @unlink($f); } }
+
+    /** Runs $work while holding the data folder's lock, so two uploads at once do not write over each other. */
+    public static function locked($work)
+    {
+        if (!self::ensure()) { return $work(); }
+        $h = @fopen(self::dir() . '/.lock', 'c');
+        if ($h) { flock($h, LOCK_EX); }
+        try { return $work(); }
+        finally { if ($h) { flock($h, LOCK_UN); fclose($h); } }
+    }
+
+    private static function new_key() { return 'mz_' . bin2hex(random_bytes(24)); }
+
+    /** The settings and the two keys; made on first use. */
+    public static function config()
+    {
+        static $c = null;
+        if ($c !== null) { return $c; }
+        $c = self::read('config', array());
+        if (empty($c['key']) || empty($c['releaseKey']) || empty($c['readKey'])) {
+            $c = self::locked(function () {
+                $c = self::read('config', array());
+                if (empty($c['key'])) { $c['key'] = self::new_key(); }
+                if (empty($c['releaseKey'])) { $c['releaseKey'] = self::new_key(); }
+                if (empty($c['readKey'])) { $c['readKey'] = self::new_key(); }
+                $c += array('openUploads' => false, 'publicLinks' => false, 'sharing' => true);
+                self::write('config', $c);
+                return $c;
+            });
+        }
+        $c += array('openUploads' => false, 'publicLinks' => false, 'sharing' => true);
+        return $c;
+    }
+
+    public static function can() { return current_user_can('manage_woocommerce') || current_user_can('manage_options'); }
+
+    /** At most $max calls an hour from one address, counted in a file. */
+    public static function allowed($bucket, $max)
+    {
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+        $slot = $bucket . ':' . md5($ip); $hour = (int) floor(time() / 3600);
+        return self::locked(function () use ($slot, $hour, $max) {
+            $r = self::read('rate', array());
+            if (!isset($r['hour']) || (int) $r['hour'] !== $hour) { $r = array('hour' => $hour, 'n' => array()); }
+            $n = isset($r['n'][$slot]) ? (int) $r['n'][$slot] : 0;
+            if ($n >= $max) { return false; }
+            $r['n'][$slot] = $n + 1;
+            self::write('rate', $r);
+            return true;
+        });
+    }
+
+    /* ---------- REST ---------- */
+
+    public static function routes()
+    {
+        $open = '__return_true';
+        register_rest_route(self::NS, '/status', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_status'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/reports', array(
+            array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_report'), 'permission_callback' => array(__CLASS__, 'need_key')),
+            array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_list'), 'permission_callback' => array(__CLASS__, 'need_read_key')),
+        ));
+        register_rest_route(self::NS, '/reports/(?P<id>[A-Za-z0-9-]{8,64})', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_report_get'), 'permission_callback' => array(__CLASS__, 'need_read_key')));
+        register_rest_route(self::NS, '/featured', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_featured'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/usage', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_usage'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/pair/start', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_start'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/pair/claim', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_claim'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/bench/index', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_index'), 'permission_callback' => $open));
+        // No @ in this pattern: WordPress wraps a route in @…@ to match it, and one inside ends the pattern early.
+        register_rest_route(self::NS, '/benchdb/(?P<file>[A-Za-z0-9][A-Za-z0-9._=-]*\.json)', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_list'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/release/chunk', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_chunk'), 'permission_callback' => array(__CLASS__, 'need_release_key')));
+        register_rest_route(self::NS, '/release/commit', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_commit'), 'permission_callback' => array(__CLASS__, 'need_release_key')));
+    }
+
+    private static function key_state($req, $which = 'key')
+    {
+        $given = (string) $req->get_header('x_mazesta_key');
+        if ($given === '') { return 'missing'; }
+        $c = self::config();
+        $want = isset($c[$which]) ? (string) $c[$which] : '';
+        return $want !== '' && hash_equals($want, $given) ? 'ok' : 'wrong';
+    }
+
+    public static function need_key($req)
+    {
+        return self::key_state($req) === 'ok' ? true : new WP_Error('mazesta_key', 'The site key is missing or wrong.', array('status' => 401));
+    }
+
+    /** The reading key (the print program on the secretary's computer) or the site key: both may read the reports, only the site key may send them. */
+    public static function need_read_key($req)
+    {
+        return self::key_state($req, 'readKey') === 'ok' || self::key_state($req) === 'ok' ? true : new WP_Error('mazesta_key', 'The key is missing or wrong.', array('status' => 401));
+    }
+
+    public static function need_release_key($req)
+    {
+        return self::key_state($req, 'releaseKey') === 'ok' ? true : new WP_Error('mazesta_key', 'The release key is missing or wrong.', array('status' => 401));
+    }
+
+    /** Answers that must never come from a cache (the page cache also caches REST answers). */
+    public static function fresh($data, $status = 200)
+    {
+        $res = new WP_REST_Response($data, $status);
+        $res->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $res->header('X-LiteSpeed-Cache-Control', 'no-cache');
+        return $res;
+    }
+
+    /** The shop's products on special sale now (WooCommerce's own "on sale" flag), for the app's dashboard. Public data only; the Store API of this site answers 500, hence this. */
+    public static function rest_featured($req)
+    {
+        $out = array();
+        if (function_exists('wc_get_product_ids_on_sale')) {
+            foreach (array_slice((array) wc_get_product_ids_on_sale(), 0, 30) as $id) {
+                $p = wc_get_product($id);
+                if (!$p || $p->get_status() !== 'publish' || !$p->is_in_stock()) { continue; }
+                $img = $p->get_image_id() ? wp_get_attachment_image_url($p->get_image_id(), 'medium_large') : '';
+                $out[] = array('id' => (int) $id, 'title' => wp_strip_all_tags($p->get_name()), 'summary' => wp_strip_all_tags($p->get_short_description()), 'link' => get_permalink($id), 'image' => $img ? $img : null);
+            }
+        }
+        return rest_ensure_response($out);
+    }
+
+    public static function rest_status($req)
+    {
+        $key = self::key_state($req); $c = self::config();
+        $out = array('name' => 'Mazesta Connect', 'version' => self::VERSION, 'key' => $key, 'openUploads' => !empty($c['openUploads']), 'sharing' => !empty($c['sharing']),
+            'benchmarkVersions' => (object) self::latest_versions(), 'appVersion' => self::latest_app());
+        if ($key === 'ok') {
+            $approved = 0; $pending = 0;
+            foreach (self::read('runs') as $r) { if (!empty($r['status'])) { $approved++; } else { $pending++; } }
+            $out['reports'] = count(self::read('reports')); $out['runs'] = $approved; $out['pending'] = $pending;
+        }
+        return self::fresh($out);
+    }
+
+    /* ---------- connecting a copy of the app without typing the key ---------- */
+
+    const PAIR_SECONDS = 600;
+
+    /** The requests still open (younger than ten minutes); older ones are dropped. */
+    private static function pairs()
+    {
+        $now = time(); $out = array();
+        foreach (self::read('pairs') as $id => $p) { if (isset($p['created']) && $now - (int) $p['created'] < self::PAIR_SECONDS) { $out[$id] = $p; } }
+        return $out;
+    }
+
+    /**
+     * A copy of the app asks to be connected. It keeps a random secret to itself and sends only the secret's SHA-256 ($id); the answer is the
+     * dashboard page where someone signed in to the site with the right to manage the shop sees the request (the computer's name and a short
+     * code the app shows too) and approves it. Nothing is given out here.
+     */
+    public static function rest_pair_start($req)
+    {
+        if (!self::allowed('pair', 10)) { return new WP_Error('mazesta_busy', 'Too many requests from this address; try again in an hour.', array('status' => 429)); }
+        $p = $req->get_json_params();
+        $id = isset($p['id']) && is_string($p['id']) ? strtolower($p['id']) : '';
+        if (!preg_match('/^[0-9a-f]{64}$/', $id)) { return new WP_Error('mazesta_pair', 'Not a valid request.', array('status' => 400)); }
+        $name = self::text(isset($p['name']) ? $p['name'] : '', 60);
+        $ok = self::locked(function () use ($id, $name) {
+            $all = self::pairs();
+            if (count($all) >= 50 && !isset($all[$id])) { return false; }
+            $all[$id] = array('created' => time(), 'name' => $name, 'approved' => false);
+            return self::write('pairs', $all);
+        });
+        if (!$ok) { return new WP_Error('mazesta_busy', 'Too many open requests; try again in a few minutes.', array('status' => 429)); }
+        return self::fresh(array('url' => admin_url('admin.php?page=mazesta-connect&pair=' . $id), 'code' => strtoupper(substr($id, 0, 6)), 'seconds' => self::PAIR_SECONDS));
+    }
+
+    /** The app asks whether its request was approved, proving it is the one that asked by giving the secret. The key is handed over once; the request is then gone. */
+    public static function rest_pair_claim($req)
+    {
+        if (!self::allowed('claim', 600)) { return new WP_Error('mazesta_busy', 'Too many requests from this address.', array('status' => 429)); }
+        $p = $req->get_json_params();
+        $secret = isset($p['secret']) && is_string($p['secret']) ? $p['secret'] : '';
+        if (!preg_match('/^[0-9a-f]{64}$/', $secret)) { return new WP_Error('mazesta_pair', 'Not a valid request.', array('status' => 400)); }
+        $id = hash('sha256', $secret);
+        $state = self::locked(function () use ($id) {
+            $all = self::pairs();
+            if (!isset($all[$id])) { return 'gone'; }
+            if (empty($all[$id]['approved'])) { return 'waiting'; }
+            unset($all[$id]); self::write('pairs', $all);
+            return 'ok';
+        });
+        if ($state !== 'ok') { return self::fresh(array('state' => $state)); }
+        $c = self::config();
+        return self::fresh(array('state' => 'ok', 'key' => (string) $c['key']));
+    }
+
+    public static function act_pair_approve()
+    {
+        self::guard('pair_approve');
+        $id = self::arg('id'); $yes = empty($_GET['no']);
+        self::locked(function () use ($id, $yes) {
+            $all = self::pairs();
+            if (isset($all[$id])) { if ($yes) { $all[$id]['approved'] = true; } else { unset($all[$id]); } self::write('pairs', $all); }
+        });
+        self::back('settings', $yes ? 'paired' : 'refused');
+    }
+
+    /** The request named in the address, for the signed-in manager to approve or refuse. */
+    public static function pair_panel($id)
+    {
+        $all = self::pairs();
+        if (!preg_match('/^[0-9a-f]{64}$/', $id) || !isset($all[$id])) {
+            echo '<div class="notice notice-warning"><p>این درخواست اتصال پیدا نشد یا مهلت ده‌دقیقه‌ای آن گذشته است. در برنامه دوباره «اتصال با ورود به سایت» را بزنید.</p></div>';
+            return;
+        }
+        $p = $all[$id];
+        echo '<div class="notice notice-info" style="padding:14px 18px"><h2 style="margin-top:0">یک نسخه از برنامه Mazesta Test می‌خواهد به سایت وصل شود</h2>'
+            . '<p>نام سیستم: <strong dir="ltr">' . esc_html($p['name'] !== '' ? $p['name'] : '—') . '</strong> · کد: <strong dir="ltr" style="font-size:18px;letter-spacing:2px">' . esc_html(strtoupper(substr($id, 0, 6))) . '</strong></p>'
+            . '<p>فقط وقتی تأیید کنید که همین کد را الان در برنامه خودتان می‌بینید. با تأیید، کلید سایت به آن برنامه داده می‌شود و می‌تواند گزارش و نتیجه بنچمارک بفرستد.</p>';
+        if (!empty($p['approved'])) { echo '<p><strong>تأیید شده است؛ برنامه تا چند ثانیه دیگر وصل می‌شود.</strong></p>'; }
+        else {
+            echo '<p>' . self::post_link('pair_approve', array('id' => $id), 'تأیید و اتصال', 'button button-primary') . ' ' . self::post_link('pair_approve', array('id' => $id, 'no' => 1), 'رد کردن', 'button') . '</p>';
+        }
+        echo '</div>';
+    }
+
+    /** A time as ISO 8601 in UTC; now when it does not read as one. */
+    public static function when($iso)
+    {
+        $ts = is_string($iso) ? strtotime($iso) : false;
+        return gmdate('Y-m-d\TH:i:s\Z', $ts ? $ts : time());
+    }
+
+    public static function clip($s, $n) { return is_string($s) ? mb_substr(trim(wp_strip_all_tags($s)), 0, $n) : ''; }
+
+    public static function rest_report($req)
+    {
+        $p = $req->get_json_params();
+        $id = isset($p['id']) ? (string) $p['id'] : '';
+        $html = isset($p['html']) ? (string) $p['html'] : '';
+        $full = isset($p['full']) ? (string) $p['full'] : '';   // the whole report, beside its one-page summary (optional: older apps send the summary only)
+        if (!preg_match('/^[A-Za-z0-9-]{8,64}$/', $id)) { return new WP_Error('mazesta_report', 'The report id is not valid.', array('status' => 400)); }
+        if ($html === '' || strlen($html) > self::MAX_HTML) { return new WP_Error('mazesta_report', 'The summary is missing or too large.', array('status' => 400)); }
+        // The page is kept as it came; it is only ever sent out under a policy that lets nothing in it run (see show_report). A "<?php" in it
+        // would be read by PHP only if the file were run, which its first line prevents.
+        $row = array(
+            'title' => self::clip(isset($p['title']) ? $p['title'] : '', 255),
+            'machine' => self::clip(isset($p['machine']) ? $p['machine'] : '', 190),
+            'service' => self::clip(isset($p['service']) ? $p['service'] : '', 190),
+            'device' => self::clip(isset($p['device']) ? $p['device'] : '', 190),   // the maker and model Windows names (System Information), as the app read it
+            'laptop' => !empty($p['laptop']) ? '1' : '',
+            'notes' => self::clip(isset($p['notes']) ? $p['notes'] : '', 4000),   // the work done on the computer, as the technician wrote it
+            'verdict' => self::clip(isset($p['verdict']) ? $p['verdict'] : '', 40),
+            'kind' => self::clip(isset($p['kind']) ? $p['kind'] : '', 40),
+            'summary' => self::clip(isset($p['summary']) ? $p['summary'] : '', 2000),
+            'app' => self::clip(isset($p['appVersion']) ? $p['appVersion'] : '', 40),
+            'created' => self::when(isset($p['created']) ? $p['created'] : null),
+            'received' => self::when(null),
+        );
+        if (strlen($full) > self::MAX_FULL) { $full = ''; }
+        $done = self::locked(function () use ($id, $row, $html, $full) {
+            $all = self::read('reports');
+            $had = isset($all[$id]);
+            $row['token'] = $had && !empty($all[$id]['token']) ? $all[$id]['token'] : bin2hex(random_bytes(16));
+            if (!self::put('report-' . $id, $html)) { return null; }
+            if ($full !== '') { if (!self::put('report-' . $id . '-full', $full)) { return null; } } else { self::remove('report-' . $id . '-full'); }
+            $all[$id] = $row;
+            return self::write('reports', $all) ? array($had, $row['token']) : null;
+        });
+        if ($done === null) { return new WP_Error('mazesta_report', 'The report could not be saved.', array('status' => 500)); }
+        $c = self::config();
+        return self::fresh(array(
+            'id' => $id, 'updated' => $done[0],
+            'url' => admin_url('admin-post.php?action=mzc_report&id=' . $id),
+            'link' => !empty($c['publicLinks']) ? home_url('/?mazesta_report=' . $done[1]) : null,
+        ));
+    }
+
+    /** The reports kept here, newest first (what the print program lists): who and what each is about, never the page itself. */
+    public static function rest_report_list($req)
+    {
+        $rows = array();
+        foreach (self::read('reports') as $id => $r) {
+            $rows[] = array(
+                'id' => (string) $id, 'service' => isset($r['service']) ? (string) $r['service'] : '', 'title' => isset($r['title']) ? (string) $r['title'] : '',
+                'machine' => isset($r['machine']) ? (string) $r['machine'] : '', 'device' => isset($r['device']) ? (string) $r['device'] : '', 'laptop' => !empty($r['laptop']),
+                'notes' => isset($r['notes']) ? (string) $r['notes'] : '', 'kind' => isset($r['kind']) ? (string) $r['kind'] : '', 'verdict' => isset($r['verdict']) ? (string) $r['verdict'] : '',
+                'summary' => isset($r['summary']) ? (string) $r['summary'] : '', 'created' => isset($r['created']) ? (string) $r['created'] : '', 'received' => isset($r['received']) ? (string) $r['received'] : '',
+            );
+        }
+        usort($rows, function ($a, $b) { return strcmp($b['received'], $a['received']); });
+        return self::fresh(array('reports' => array_slice($rows, 0, 500)));
+    }
+
+    /** One report's summary page, as it was sent; the print program shows it in a page that lets nothing in it run. */
+    public static function rest_report_get($req)
+    {
+        $id = (string) $req['id'];
+        $html = preg_match('/^[A-Za-z0-9-]{8,64}$/', $id) ? self::raw('report-' . $id) : null;
+        if ($html === null) { return new WP_Error('mazesta_report', 'The report was not found.', array('status' => 404)); }
+        return self::fresh(array('id' => $id, 'html' => $html));
+    }
+
+    /** A run as the app logs it, or false when it is not one. */
+    /** The benchmarks' names as the app shows them, for the ones known when this was written; the app sends its own with its runs. */
+    private static $bench_names = array(
+        'bench.cpu.multi' => 'پردازنده — چندرشته (همه رشته‌ها)', 'bench.cpu.single' => 'پردازنده — تک‌رشته', 'bench.memory' => 'پهنای‌باند حافظه',
+        'bench.storage' => 'ذخیره‌سازی (ترتیبی و تصادفی، بدون کش)', 'bench.gpu.d3d' => 'گرافیک — رندر Direct3D 12', 'bench.gpu.rt' => 'گرافیک — ری‌تریسینگ (DXR)',
+        'bench.gpu.ai' => 'گرافیک — هوش مصنوعی (DirectML)', 'bench.gpu.scene.d3d' => 'گرافیک — باغ ایرانی (Direct3D 12)', 'bench.gpu.scene.rt' => 'گرافیک — باغ ایرانی با ری‌تریسینگ (DXR)',
+        'bench.ai.llm' => 'مدل زبانی هوش مصنوعی (llama.cpp)', 'bench.network.internet' => 'شبکه — سرعت اینترنت',
+    );
+
+    public static function bench_name($id)
+    {
+        static $sent = null;
+        if ($sent === null) { $sent = self::read('names'); }
+        if (isset($sent[$id]) && is_string($sent[$id]) && $sent[$id] !== '') { return $sent[$id]; }
+        return isset(self::$bench_names[$id]) ? self::$bench_names[$id] : $id;
+    }
+
+    /** The names the app sent with its runs (a benchmark's id and a short plain text each), kept for the pages here. */
+    private static function keep_names($names)
+    {
+        $clean = array();
+        foreach ($names as $id => $name) {
+            if (!is_string($id) || !preg_match('/^[A-Za-z0-9._-]{1,80}$/', $id)) { continue; }
+            $name = self::text($name, 80);
+            if ($name !== '') { $clean[$id] = $name; }
+            if (count($clean) >= 100) { break; }
+        }
+        if (!$clean) { return; }
+        self::locked(function () use ($clean) {
+            $all = self::read('names'); $next = array_slice(array_merge($all, $clean), -200, null, true);
+            if ($next !== $all) { self::write('names', $next); }
+        });
+    }
+
+    /* ---------- old versions ---------- */
+
+    /** The newest workload version of each benchmark among the approved runs (written at every rebuild): what "current" means for the notices below. */
+    private static function latest_versions()
+    {
+        static $latest = null;
+        if ($latest === null) {
+            $latest = self::read('latest'); if (!is_array($latest)) { $latest = array(); }
+            if (!$latest) {   // before the first rebuild of this version of the plugin: from the approved runs themselves
+                foreach (self::read('runs') as $row) {
+                    if (!empty($row['status']) && isset($row['table']) && preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $row['table'], $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
+                }
+            }
+        }
+        return $latest;
+    }
+
+    /** Whether a result of this benchmark at this workload version is of an old one: a newer version of the benchmark has approved runs. */
+    private static function is_old($benchmark, $version)
+    {
+        $l = self::latest_versions();
+        return isset($l[$benchmark]) && (int) $version < (int) $l[$benchmark];
+    }
+
+    /** The app version the shop has published (the release folder's manifest), or null. */
+    private static function latest_app()
+    {
+        $f = self::release_dir() . '/update.json';
+        $m = is_readable($f) ? json_decode((string) file_get_contents($f), true) : null;
+        return is_array($m) && isset($m['app']['version']) && is_string($m['app']['version']) && preg_match('/^\d+(\.\d+){1,3}$/', $m['app']['version']) ? $m['app']['version'] : null;
+    }
+
+    /** Whether an app version a result came from is older than the published one. */
+    private static function old_app($version)
+    {
+        $latest = self::latest_app();
+        return $latest !== null && is_string($version) && preg_match('/^\d+(\.\d+){1,3}/', $version) && version_compare($version, $latest, '<');
+    }
+
+    /**
+     * A list's key ("bench.storage@1|fileMb=1024") as a manager reads it: the benchmark's name and its settings in words, and the key itself
+     * small underneath (the number after @ is the workload's version: a list starts over when the benchmark's work changes). HTML, escaped.
+     */
+    private static function list_label($table)
+    {
+        $table = (string) $table;
+        if (!preg_match('/^([A-Za-z0-9._-]+)@(\d+)(?:\|(.*))?$/', $table, $m)) { return '<span dir="ltr">' . esc_html($table) . '</span>'; }
+        $label = esc_html(self::bench_name($m[1]));
+        if (self::is_old($m[1], (int) $m[2])) { $label .= ' <span style="background:#b32d2e;color:#fff;border-radius:3px;padding:0 6px;font-size:11px">نسخه قدیمی بنچمارک</span>'; }
+        if (isset($m[3]) && $m[3] !== '') {
+            $words = array();
+            foreach (explode('|', $m[3]) as $pair) {
+                if (preg_match('/^fileMb=(\d+)$/', $pair, $f)) { $words[] = 'فایل ' . number_format_i18n((int) $f[1]) . ' مگابایتی'; }
+                elseif (preg_match('/^resolution=(\d+)x(\d+)$/', $pair, $f)) { $words[] = 'رزولوشن ' . (int) $f[1] . '×' . (int) $f[2]; }
+                elseif (preg_match('/^quality=(\d)$/', $pair, $f)) { $words[] = self::quality_words($m[1], (int) $f[1]); }
+                else { $words[] = $pair; }
+            }
+            $label .= ' · ' . esc_html(implode('، ', $words));
+        }
+        return $label . '<br><small dir="ltr" style="color:#787c82">' . esc_html($table) . '</small>';
+    }
+
+    /** The garden benchmarks' quality setting in words: the rasteriser's load level, or the ray tracer's rays a pixel. */
+    private static function quality_words($benchmark, $q)
+    {
+        if ($benchmark === 'bench.gpu.scene.rt') { return 'کیفیت: ' . $q . ' پرتو در هر پیکسل'; }
+        $names = array(1 => 'سبک', 2 => 'متوسط', 3 => 'سنگین', 4 => 'بسیار سنگین');
+        return 'کیفیت: ' . (isset($names[$q]) ? $names[$q] : $q);
+    }
+
+    public static function valid_run($run)
+    {
+        return is_object($run) && isset($run->id, $run->benchmark, $run->part, $run->system, $run->value, $run->unit)
+            && is_string($run->id) && preg_match('/^[A-Za-z0-9-]{8,64}$/', $run->id) && is_string($run->benchmark) && preg_match('/^[A-Za-z0-9._-]{1,80}$/', $run->benchmark)
+            && is_string($run->part) && trim($run->part) !== '' && is_string($run->system) && is_string($run->unit)
+            && (is_int($run->value) || is_float($run->value)) && $run->value > 0 && is_finite((float) $run->value);
+    }
+
+    /** A short plain text from outside: control characters and angle brackets removed, cut to $n. Anything that is not text is empty. */
+    public static function text($v, $n)
+    {
+        if (!is_string($v)) { return ''; }
+        $s = preg_replace('/[\x00-\x1F\x7F<>]/u', '', $v);   // null when it is not valid UTF-8
+        return is_string($s) ? mb_substr(trim($s), 0, $n) : '';
+    }
+
+    /**
+     * A run rebuilt from the fields the app writes, each checked for its type, range and length. Nothing else in the request is kept, so
+     * what is stored and later sent out in the lists holds only these fields. Null when it is not a run.
+     */
+    private static function clean_run($run, $trusted)
+    {
+        if (!self::valid_run($run) || !preg_match('/^[A-Za-z0-9+\/=_-]{8,128}$/', $run->system)) { return null; }
+        $part = self::text($run->part, 120); $unit = self::text($run->unit, 20);
+        if ($part === '' || $unit === '' || (float) $run->value > 1.0e15) { return null; }
+        $o = new stdClass();
+        $o->id = $run->id; $o->at = self::when(isset($run->at) ? $run->at : null); $o->benchmark = $run->benchmark;
+        $o->version = isset($run->version) && is_int($run->version) && $run->version > 0 && $run->version < 100000 ? $run->version : 1;
+        $o->settings = self::text(isset($run->settings) ? $run->settings : '', 160);
+        $o->part = $part; $o->system = $run->system;
+        $o->machine = $trusted ? self::text(isset($run->machine) ? $run->machine : '', 80) : '';   // a stranger's computer name is not ours to keep
+        $o->spec = $trusted ? self::text(isset($run->spec) ? $run->spec : '', 300) : $part;
+        $o->value = (float) $run->value; $o->unit = $unit;
+        $app = self::text(isset($run->app) ? $run->app : '', 40);
+        if ($app !== '') { $o->app = $app; }
+        if (isset($run->metrics) && is_array($run->metrics)) {
+            $o->metrics = array();
+            foreach (array_slice($run->metrics, 0, 24) as $m) {
+                if (!is_object($m) || !isset($m->key, $m->value) || !(is_int($m->value) || is_float($m->value)) || !is_finite((float) $m->value)) { continue; }
+                $key = self::text($m->key, 60);
+                if ($key === '') { continue; }
+                $x = new stdClass(); $x->key = $key; $x->value = (float) $m->value; $x->unit = self::text(isset($m->unit) ? $m->unit : '', 20);
+                $o->metrics[] = $x;
+            }
+        }
+        $o->overclocked = isset($run->overclocked) && $run->overclocked === true;
+        if (isset($run->details) && is_array($run->details)) {
+            $o->details = array();
+            foreach (array_slice($run->details, 0, 80) as $d) {
+                if (!is_object($d)) { continue; }
+                $x = new stdClass(); $x->group = self::text(isset($d->group) ? $d->group : '', 60); $x->key = self::text(isset($d->key) ? $d->key : '', 80); $x->value = self::text(isset($d->value) ? $d->value : '', 200);
+                if ($x->key !== '') { $o->details[] = $x; }
+            }
+        }
+        return $o;
+    }
+
+    /** Adds the runs not yet held (each once, by its id): approved when they came with the shop's key, else waiting for review. */
+    private static function add_runs($runs, $higher, $trusted)
+    {
+        return self::locked(function () use ($runs, $higher, $trusted) {
+            $all = self::read('runs'); $added = 0; $known = 0; $bad = 0;
+            foreach ($runs as $raw) {
+                $run = self::clean_run($raw, $trusted);
+                if ($run === null) { $bad++; continue; }
+                $table = $run->benchmark . '@' . $run->version . ($run->settings !== '' ? '|' . $run->settings : '');
+                if (isset($all[$run->id])) { $known++; continue; }
+                $json = wp_json_encode($run, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                if ($json === false || strlen($json) > 20000) { $bad++; continue; }
+                $all[$run->id] = array(
+                    'table' => $table, 'part' => $run->part, 'value' => $run->value, 'unit' => $run->unit,
+                    'higher' => !(isset($higher[$run->benchmark]) && !$higher[$run->benchmark]), 'status' => $trusted ? 1 : 0, 'featured' => false, 'oc' => null, 'note' => '', 'markAt' => null,
+                    'runAt' => $run->at, 'received' => self::when(null), 'json' => $json,
+                );
+                $added++;
+            }
+            if ($added > 0) { self::write('runs', $all); }
+            return array($added, $known, $bad);
+        });
+    }
+
+    private static function runs_of($req)
+    {
+        if (strlen($req->get_body()) > 2000000) { return new WP_Error('mazesta_runs', 'The request is too large.', array('status' => 413)); }
+        $body = json_decode($req->get_body());   // objects stay objects, so a run goes back out as it came in
+        if (!is_object($body) || !isset($body->runs) || !is_array($body->runs)) { return new WP_Error('mazesta_runs', 'No runs in the request.', array('status' => 400)); }
+        if (count($body->runs) > self::MAX_RUNS) { return new WP_Error('mazesta_runs', 'Too many runs in one request.', array('status' => 413)); }
+        return $body;
+    }
+
+    public static function rest_runs($req)
+    {
+        $key = self::key_state($req); $c = self::config();
+        $trusted = $key === 'ok';
+        if (!$trusted) {
+            if ($key === 'wrong' || empty($c['openUploads'])) { return new WP_Error('mazesta_key', 'The site key is missing or wrong.', array('status' => 401)); }
+            if (!self::allowed('runs', 20)) { return new WP_Error('mazesta_busy', 'Too many uploads from this address; try again in an hour.', array('status' => 429)); }
+        }
+        $body = self::runs_of($req);
+        if (is_wp_error($body)) { return $body; }
+        $higher = isset($body->higher) && is_object($body->higher) ? (array) $body->higher : array();
+        list($added, $known, $bad) = self::add_runs($body->runs, $higher, $trusted);
+        if ($trusted && isset($body->names) && is_object($body->names)) { self::keep_names((array) $body->names); }
+        // Mazesta's own marks (featured, overclocked) come with its runs; for a run marked on two copies the later mark wins.
+        $marked = 0;
+        if ($trusted && isset($body->marks) && is_object($body->marks)) {
+            $marks = (array) $body->marks;
+            $marked = self::locked(function () use ($marks) {
+                $all = self::read('runs'); $n = 0;
+                foreach ($marks as $id => $m) {
+                    if (!is_object($m) || !isset($all[(string) $id])) { continue; }
+                    $at = self::when(isset($m->at) ? $m->at : null);
+                    if (!empty($all[$id]['markAt']) && strcmp((string) $all[$id]['markAt'], $at) >= 0) { continue; }
+                    $all[$id]['featured'] = !empty($m->featured);
+                    $all[$id]['oc'] = isset($m->overclocked) && is_bool($m->overclocked) ? $m->overclocked : null;
+                    $all[$id]['note'] = isset($m->note) && is_string($m->note) ? mb_substr($m->note, 0, 190) : '';
+                    $all[$id]['markAt'] = $at;
+                    $n++;
+                }
+                if ($n > 0) { self::write('runs', $all); }
+                return $n;
+            });
+        }
+        $lists = ($trusted && ($added > 0 || $marked > 0)) ? self::rebuild() : null;
+        return self::fresh(array('added' => $added, 'known' => $known, 'rejected' => $bad, 'pending' => !$trusted, 'marked' => $marked, 'lists' => $lists));
+    }
+
+    /* ---------- anonymous usage statistics ---------- */
+
+    public static function usage_file($ym) { return self::dir() . '/usage-' . $ym . '.log.php'; }
+
+    /**
+     * What the app's "send anonymous usage statistics" switch sends (on by default; the app says in plain words what is in it). No key: anybody can send, so it is
+     * bounded - sixty posts an hour from one address, two hundred events a post, a few kilobytes an event - and only plain figures and short names are kept. The
+     * sender's address is used for that count only and is never stored. An installation is its random id, nothing else; its parts' names are kept beside it.
+     */
+    public static function rest_usage($req)
+    {
+        if (!self::allowed('usage', 60)) { return new WP_Error('mazesta_busy', 'Too many posts from this address; try again in an hour.', array('status' => 429)); }
+        $body = json_decode((string) $req->get_body(), true);
+        if (!is_array($body) || !isset($body['install']) || !preg_match('/^[a-f0-9]{32}$/', (string) $body['install'])) { return new WP_Error('mazesta_usage', 'Not understood.', array('status' => 400)); }
+        $id = (string) $body['install']; $now = gmdate('c'); $ym = gmdate('Y-m');
+        $events = isset($body['events']) && is_array($body['events']) ? array_slice($body['events'], 0, 200) : array();
+        $m = isset($body['machine']) && is_array($body['machine']) ? $body['machine'] : array();
+        $machine = array(
+            'cpu' => self::text(isset($m['cpu']) ? $m['cpu'] : '', 120), 'os' => self::text(isset($m['os']) ? $m['os'] : '', 120),
+            'ramGb' => isset($m['ramGb']) && is_numeric($m['ramGb']) ? (int) $m['ramGb'] : null,
+            'gpus' => array(),
+        );
+        if (isset($m['gpus']) && is_array($m['gpus'])) { foreach (array_slice($m['gpus'], 0, 4) as $g) { $machine['gpus'][] = self::text($g, 120); } }
+        foreach (array('cores', 'threads') as $n) { if (isset($m[$n]) && is_numeric($m[$n])) { $machine[$n] = (int) $m[$n]; } }
+        foreach (array('gpuDriver' => 40, 'board' => 120) as $n => $max) { if (isset($m[$n])) { $machine[$n] = self::text($m[$n], $max); } }
+        foreach (array('ramModules', 'storage') as $n) {
+            if (isset($m[$n]) && is_array($m[$n])) { $machine[$n] = array(); foreach (array_slice($m[$n], 0, 12) as $x) { $machine[$n][] = self::text($x, 120); } }
+        }
+        $lines = array();
+        foreach ($events as $e) {
+            if (!is_array($e) || !isset($e['k']) || !preg_match('/^[a-z]{2,12}(\.[a-z]{2,12}){0,2}$/', (string) $e['k'])) { continue; }
+            $d = isset($e['d']) && is_array($e['d']) ? $e['d'] : array();
+            $j = wp_json_encode($d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($j === false || strlen($j) > 6000) { continue; }
+            $at = isset($e['at']) && is_string($e['at']) && preg_match('/^\d{4}-\d{2}-\d{2}T[\d:.]+/', $e['at']) ? substr($e['at'], 0, 33) : $now;
+            $lines[] = wp_json_encode(array('i' => $id, 'at' => $at, 'k' => (string) $e['k'], 'd' => $d), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        self::locked(function () use ($id, $now, $ym, $machine, $body, $lines) {
+            $in = self::read('installs');
+            if (!isset($in[$id])) { if (count($in) >= 200000) { return; } $in[$id] = array('first' => $now, 'n' => 0); }
+            $in[$id]['last'] = $now; $in[$id]['n'] += count($lines); $in[$id]['machine'] = $machine;
+            $in[$id]['app'] = self::text(isset($body['app']) ? $body['app'] : '', 20); $in[$id]['edition'] = self::text(isset($body['edition']) ? $body['edition'] : '', 12);
+            $in[$id]['lang'] = self::text(isset($body['language']) ? $body['language'] : '', 8);
+            self::write('installs', $in);
+            if ($lines && self::ensure()) {
+                $f = self::usage_file($ym);
+                @file_put_contents($f, (is_file($f) ? '' : self::GUARD) . implode("\n", $lines) . "\n", FILE_APPEND | LOCK_EX);
+            }
+        });
+        return self::fresh(array('accepted' => count($lines)));
+    }
+
+    /** The event lines of the last two months, as arrays (at most 150,000: the page is a summary, not an export). */
+    public static function usage_events()
+    {
+        $out = array();
+        foreach (array(gmdate('Y-m'), gmdate('Y-m', strtotime('-1 month'))) as $ym) {
+            $f = self::usage_file($ym);
+            if (!is_readable($f)) { continue; }
+            $h = fopen($f, 'r'); if (!$h) { continue; }
+            fgets($h);   // the guard line
+            while (($line = fgets($h)) !== false && count($out) < 150000) { $e = json_decode($line, true); if (is_array($e) && isset($e['k'])) { $out[] = $e; } }
+            fclose($h);
+        }
+        return $out;
+    }
+
+    /**
+     * A user's latest results, to pass on: kept as a page of its own under a link. Only numbers and short plain texts are taken (no HTML).
+     * A computer has one page: sharing again replaces it and keeps its link. The runs also wait in the review queue when the shop takes
+     * uploads without a key.
+     */
+    public static function rest_share($req)
+    {
+        $c = self::config();
+        if (empty($c['sharing'])) { return new WP_Error('mazesta_share', 'Sharing is switched off on the site.', array('status' => 403)); }
+        if (!self::allowed('share', 30)) { return new WP_Error('mazesta_busy', 'Too many uploads from this address; try again in an hour.', array('status' => 429)); }
+        $body = self::runs_of($req);
+        if (is_wp_error($body)) { return $body; }
+        if (count($body->runs) > 60) { return new WP_Error('mazesta_runs', 'Too many runs in one request.', array('status' => 413)); }
+        $names = isset($body->names) && is_object($body->names) ? (array) $body->names : array();
+        $rows = array(); $system = '';
+        foreach ($body->runs as $raw) {
+            $run = self::clean_run($raw, false);
+            if ($run === null) { continue; }
+            if ($system === '') { $system = $run->system; }
+            $name = self::text(isset($names[$run->benchmark]) ? $names[$run->benchmark] : '', 80);
+            $rows[] = array(
+                'benchmark' => $run->benchmark, 'name' => $name !== '' ? $name : $run->benchmark, 'settings' => $run->settings, 'value' => $run->value, 'unit' => $run->unit,
+                'part' => self::part_name($run->part), 'at' => $run->at, 'version' => $run->version,
+            );
+        }
+        if (!$rows) { return new WP_Error('mazesta_runs', 'No valid runs in the request.', array('status' => 400)); }
+        $m = isset($body->machine) && is_object($body->machine) ? $body->machine : new stdClass();
+        $share = array(
+            'created' => self::when(null), 'app' => self::text(isset($body->appVersion) ? $body->appVersion : '', 40),
+            'owner' => self::text(isset($m->name) ? $m->name : '', 40),
+            'cpu' => self::text(isset($m->cpu) ? $m->cpu : '', 120), 'gpu' => self::text(isset($m->gpu) ? $m->gpu : '', 120), 'os' => self::text(isset($m->os) ? $m->os : '', 120),
+            'ramGb' => isset($m->ramGb) && (is_int($m->ramGb) || is_float($m->ramGb)) && $m->ramGb > 0 && $m->ramGb < 100000 ? (float) $m->ramGb : null,
+            'rows' => $rows,
+        );
+        $who = substr(hash('sha256', $system), 0, 24);
+        $token = self::locked(function () use ($who, $share) {
+            $index = self::read('shares');
+            $token = isset($index[$who]['token']) ? (string) $index[$who]['token'] : bin2hex(random_bytes(12));
+            if (!self::write('share-' . $token, $share)) { return null; }
+            $index[$who] = array('token' => $token, 'created' => $share['created'], 'owner' => $share['owner'], 'cpu' => $share['cpu'], 'gpu' => $share['gpu'], 'rows' => count($share['rows']));
+            // The oldest pages go when there are too many.
+            if (count($index) > self::MAX_SHARES) {
+                uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
+                foreach (array_slice($index, self::MAX_SHARES, null, true) as $k => $old) { self::remove('share-' . $old['token']); unset($index[$k]); }
+            }
+            return self::write('shares', $index) ? $token : null;
+        });
+        if ($token === null) { return new WP_Error('mazesta_share', 'The results could not be saved.', array('status' => 500)); }
+        $queued = 0;
+        if (!empty($c['openUploads'])) {
+            $higher = isset($body->higher) && is_object($body->higher) ? (array) $body->higher : array();
+            list($queued) = self::add_runs($body->runs, $higher, false);
+        }
+        return self::fresh(array('link' => home_url('/?mazesta_share=' . $token), 'rows' => count($rows), 'queued' => $queued));
+    }
+
+    /* ---------- the comparison lists ---------- */
+
+    private static function db_dir() { return self::dir() . '/benchdb'; }
+
+    /** A part's name as the lists group it (BenchmarkPeers.PartName): vendor marks and CPU tails removed, spaces collapsed. */
+    private static function part_name($raw)
+    {
+        $s = preg_replace('/\((R|TM|C)\)|®|™/iu', ' ', (string) $raw);
+        $s = preg_replace('/(\s+CPU)?\s+@\s+[\d.]+\s*GHz$|\s+\d+-Core\s+Processor$|\s+Processor$/iu', '', trim(preg_replace('/\s+/u', ' ', $s)));
+        return trim(preg_replace('/\s+/u', ' ', $s));
+    }
+
+    /** The list's file name (BenchmarkPeers.FileName): the settings folded into a short hash. */
+    private static function file_name($table)
+    {
+        $bar = strpos($table, '|');
+        if ($bar === false) { return str_replace('@', '-v', $table) . '.json'; }
+        return str_replace('@', '-v', substr($table, 0, $bar)) . '-' . substr(hash('sha256', substr($table, $bar + 1)), 0, 10) . '.json';
+    }
+
+    private static function sample($run, $oc)
+    {
+        $s = array('value' => $run->value, 'overclocked' => $oc, 'at' => isset($run->at) ? $run->at : null);
+        if (isset($run->metrics)) { $s['metrics'] = $run->metrics; }
+        if (isset($run->details)) { $s['details'] = $run->details; }
+        return $s;
+    }
+
+    /** Builds every list from the approved runs and writes them, with index.json (name, size, SHA-256 of each). Returns how many lists there are. */
+    public static function rebuild()
+    {
+        if (!self::ensure()) { return 0; }
+        $dir = self::db_dir();
+        $tables = array();
+        foreach (self::read('runs') as $row) {
+            if (empty($row['status']) || !isset($row['json'], $row['table'])) { continue; }
+            $run = json_decode((string) $row['json']);
+            if (!is_object($run) || !isset($run->value, $run->part, $run->system, $run->unit)) { continue; }
+            $oc = isset($row['oc']) && $row['oc'] !== null ? (bool) $row['oc'] : !empty($run->overclocked);
+            $tables[$row['table']][] = array('run' => $run, 'oc' => $oc, 'higher' => !isset($row['higher']) || $row['higher'], 'featured' => !empty($row['featured']), 'note' => isset($row['note']) ? (string) $row['note'] : '', 'ts' => isset($run->at) ? (int) strtotime($run->at) : 0);
+        }
+        // the newest version of each benchmark that has approved runs: a list of an older one is marked, so whoever shows it can say it is old
+        $latest = array();
+        foreach (array_keys($tables) as $key) {
+            if (preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $key, $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
+        }
+        self::write('latest', $latest);
+        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        $files = array(); $built = gmdate('Y-m-d\TH:i:s\Z');
+        foreach ($tables as $key => $list) {
+            $first = $list[0]; $higher = $first['higher'];
+            $units = array();
+            foreach ($list as $x) { $u = $x['run']->unit; $units[$u] = isset($units[$u]) ? $units[$u] + 1 : 1; }
+            arsort($units); $unit = (string) key($units);
+            $parts = array(); $featured = array();
+            foreach ($list as $x) {
+                if ($x['run']->unit !== $unit) { continue; }
+                $name = self::part_name($x['run']->part);
+                if ($name === '') { continue; }
+                $parts[mb_strtoupper($name) . "\x01" . ($x['oc'] ? '1' : '0')][] = $x;
+                if ($x['featured']) {
+                    $f = array('id' => $x['run']->id, 'part' => $name) + self::sample($x['run'], $x['oc']);
+                    if ($x['note'] !== '') { $f['note'] = $x['note']; }
+                    $featured[] = $f;
+                }
+            }
+            $entries = array();
+            foreach ($parts as $group) {
+                $best = array();   // each system once, with its best run
+                foreach ($group as $x) {
+                    $sys = (string) $x['run']->system; $v = (float) $x['run']->value;
+                    if (!isset($best[$sys]) || ($higher ? $v > (float) $best[$sys]['run']->value : $v < (float) $best[$sys]['run']->value)) { $best[$sys] = $x; }
+                }
+                $per = array_values($best);
+                usort($per, function ($a, $b) { return (float) $a['run']->value <=> (float) $b['run']->value; });
+                $n = count($per);
+                $median = $n % 2 === 1 ? (float) $per[intdiv($n, 2)]['run']->value : ((float) $per[intdiv($n, 2) - 1]['run']->value + (float) $per[intdiv($n, 2)]['run']->value) / 2;
+                $near = $per[0];
+                foreach ($per as $x) { if (abs((float) $x['run']->value - $median) < abs((float) $near['run']->value - $median)) { $near = $x; } }
+                $last = $group[0];
+                foreach ($group as $x) { if ($x['ts'] > $last['ts']) { $last = $x; } }
+                $entries[] = array(
+                    'part' => self::part_name($group[0]['run']->part), 'median' => $median, 'best' => (float) ($higher ? $per[$n - 1]['run']->value : $per[0]['run']->value),
+                    'systems' => $n, 'runs' => count($group), 'last' => isset($last['run']->at) ? $last['run']->at : $built, 'overclocked' => $group[0]['oc'],
+                    'sample' => self::sample($near['run'], $near['oc']),
+                    // The model's systems one by one, best first (the entry is their median); a very common model keeps its best 200.
+                    'members' => array_map(function ($x) use ($built) { return array('value' => (float) $x['run']->value, 'at' => isset($x['run']->at) ? $x['run']->at : $built); }, array_slice($higher ? array_reverse($per) : $per, 0, 200)),
+                );
+            }
+            if (!$entries) { continue; }
+            usort($entries, function ($a, $b) use ($higher) {
+                if ($a['median'] != $b['median']) { return $higher ? $b['median'] <=> $a['median'] : $a['median'] <=> $b['median']; }
+                return strcasecmp($a['part'], $b['part']);
+            });
+            usort($featured, function ($a, $b) use ($higher) { return $higher ? $b['value'] <=> $a['value'] : $a['value'] <=> $b['value']; });
+            $r = $first['run'];
+            $version = isset($r->version) ? (int) $r->version : 1; $newest = isset($latest[$r->benchmark]) ? $latest[$r->benchmark] : $version;
+            $json = wp_json_encode(array(
+                'key' => $key, 'benchmark' => $r->benchmark, 'version' => $version, 'settings' => isset($r->settings) ? (string) $r->settings : '',
+                'latestVersion' => $newest, 'outdated' => $version < $newest,
+                'unit' => $unit, 'higherIsBetter' => $higher, 'built' => $built, 'entries' => $entries, 'featured' => $featured,
+            ), $flags);
+            $name = self::file_name($key);
+            if ($json === false || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._@=-]*\.json$/', $name)) { continue; }
+            if (file_put_contents($dir . '/' . $name . '.tmp', $json) === false || !rename($dir . '/' . $name . '.tmp', $dir . '/' . $name)) { continue; }
+            $files[$name] = array('file' => 'benchdb/' . $name, 'size' => strlen($json), 'sha256' => hash('sha256', $json), 'benchmark' => $r->benchmark, 'version' => $version, 'latestVersion' => $newest, 'outdated' => $version < $newest);
+        }
+        $have = glob($dir . '/*.json');
+        foreach (is_array($have) ? $have : array() as $f) {
+            $b = basename($f);
+            if ($b !== 'index.json' && !isset($files[$b])) { @unlink($f); }
+        }
+        ksort($files);
+        file_put_contents($dir . '/index.json', wp_json_encode(array('built' => $built, 'files' => array_values($files)), $flags));
+        return count($files);
+    }
+
+    public static function rest_index()
+    {
+        $f = self::db_dir() . '/index.json';
+        $index = is_readable($f) ? json_decode((string) file_get_contents($f), true) : null;
+        return self::fresh(is_array($index) ? $index : array('built' => null, 'files' => array()));
+    }
+
+    /** A list is sent byte for byte as it was written: the app checks its size and SHA-256 against the index. */
+    public static function rest_list($req)
+    {
+        $name = basename((string) $req['file']);
+        $f = self::db_dir() . '/' . $name;
+        if ($name === 'index.json' || !is_readable($f)) { return new WP_Error('mazesta_list', 'No such list.', array('status' => 404)); }
+        nocache_headers();
+        header('Content-Type: application/json; charset=utf-8');
+        header('X-LiteSpeed-Cache-Control: no-cache');
+        header('Content-Length: ' . filesize($f));
+        readfile($f);
+        exit;
+    }
+
+    /* ---------- the app's release (the signed update folder) ---------- */
+
+    private static function release_dir() { return ABSPATH . 'mazesta'; }
+    private static function release_name($name) { return is_string($name) && preg_match('/^(MazestaUpdate-\d+\.\d+\.\d+\.zip|update\.json|update\.json\.sig|benchdb\/[A-Za-z0-9][A-Za-z0-9._@=-]*\.json)$/', $name); }
+
+    /** One piece of a release file, appended at its offset into /mazesta/.incoming; a piece at 0 starts the file over. */
+    public static function rest_chunk($req)
+    {
+        $name = (string) $req->get_param('name'); $offset = (int) $req->get_param('offset');
+        if (!self::release_name($name) || $offset < 0) { return new WP_Error('mazesta_release', 'Not a release file name.', array('status' => 400)); }
+        $dir = self::release_dir() . '/.incoming';
+        if (!wp_mkdir_p($dir)) { return new WP_Error('mazesta_release', 'The update folder cannot be written.', array('status' => 500)); }
+        $file = $dir . '/' . $name;
+        if (!wp_mkdir_p(dirname($file))) { return new WP_Error('mazesta_release', 'The update folder cannot be written.', array('status' => 500)); }
+        $have = $offset === 0 ? 0 : (is_file($file) ? filesize($file) : -1);
+        if ($have !== $offset) { return self::fresh(array('error' => 'offset', 'have' => max(0, (int) $have)), 409); }
+        $body = $req->get_body();
+        if ($body === '' || file_put_contents($file, $body, $offset === 0 ? 0 : FILE_APPEND) === false) { return new WP_Error('mazesta_release', 'The piece could not be written.', array('status' => 500)); }
+        clearstatcache(true, $file);
+        return self::fresh(array('have' => filesize($file)));
+    }
+
+    /** Checks every uploaded file's size and SHA-256, then puts them in place: the zip first, update.json and its signature last. */
+    public static function rest_commit($req)
+    {
+        $p = $req->get_json_params();
+        $want = isset($p['files']) && is_array($p['files']) ? $p['files'] : array();
+        $dir = self::release_dir(); $in = $dir . '/.incoming';
+        $names = array();
+        foreach ($want as $f) {
+            $name = isset($f['name']) ? $f['name'] : '';
+            if (!self::release_name($name) || !is_file($in . '/' . $name)) { return new WP_Error('mazesta_release', 'A file is missing: ' . sanitize_text_field((string) $name), array('status' => 400)); }
+            if (!isset($f['size'], $f['sha256']) || filesize($in . '/' . $name) !== (int) $f['size'] || !hash_equals(strtolower((string) $f['sha256']), (string) hash_file('sha256', $in . '/' . $name))) {
+                return new WP_Error('mazesta_release', 'A file arrived damaged: ' . $name, array('status' => 400));
+            }
+            $names[] = $name;
+        }
+        if (!in_array('update.json', $names, true) || !in_array('update.json.sig', $names, true)) { return new WP_Error('mazesta_release', 'update.json and its signature are required.', array('status' => 400)); }
+        usort($names, function ($a, $b) {
+            $ua = substr($a, 0, 6) === 'update' ? 1 : 0; $ub = substr($b, 0, 6) === 'update' ? 1 : 0;
+            return $ua !== $ub ? $ua - $ub : strcmp($a, $b);
+        });
+        foreach ($names as $name) {
+            if (!wp_mkdir_p(dirname($dir . '/' . $name)) || !rename($in . '/' . $name, $dir . '/' . $name)) { return new WP_Error('mazesta_release', 'Could not put ' . $name . ' in place.', array('status' => 500)); }
+        }
+        // The zip the manifest offers stays; older ones go.
+        $manifest = json_decode((string) file_get_contents($dir . '/update.json'), true);
+        $keep = is_array($manifest) && isset($manifest['app']['file']) ? (string) $manifest['app']['file'] : '';
+        $zips = glob($dir . '/MazestaUpdate-*.zip');
+        foreach (is_array($zips) ? $zips : array() as $zip) { if (basename($zip) !== $keep) { @unlink($zip); } }
+        // The same for the signed comparison lists: the ones the manifest no longer names go.
+        $listed = array();
+        if (is_array($manifest) && isset($manifest['data']) && is_array($manifest['data'])) { foreach ($manifest['data'] as $d) { if (isset($d['file'])) { $listed[(string) $d['file']] = true; } } }
+        $lists = glob($dir . '/benchdb/*.json');
+        foreach (is_array($lists) ? $lists : array() as $list) { if (!isset($listed['benchdb/' . basename($list)])) { @unlink($list); } }
+        return self::fresh(array('ok' => true, 'version' => is_array($manifest) && isset($manifest['app']['version']) ? $manifest['app']['version'] : null));
+    }
+
+    /* ---------- pages: a report, a shared result ---------- */
+
+    public static function page_headers($csp)
+    {
+        nocache_headers();
+        header('Content-Type: text/html; charset=utf-8');
+        header('X-Robots-Tag: noindex, nofollow');
+        header('X-LiteSpeed-Cache-Control: no-cache');
+        header('Content-Security-Policy: ' . $csp);
+    }
+
+    private static function show_report($id, $print)
+    {
+        $id = (string) $id;
+        $ok = preg_match('/^[A-Za-z0-9-]{8,64}$/', $id);
+        // The summary by default; ?view=full is the whole report, when the app sent it.
+        $full = $ok && isset($_GET['view']) && $_GET['view'] === 'full' ? self::raw('report-' . $id . '-full') : null;
+        $html = $full !== null ? $full : ($ok ? self::raw('report-' . $id) : null);
+        if ($html === null) { wp_die('گزارش پیدا نشد.', '', array('response' => 404)); }
+        $has_full = $ok && is_file(self::file('report-' . $id . '-full'));
+        $nonce = bin2hex(random_bytes(12));
+        // The page came from outside: nothing in it may run or load. Only the print button's script, named by its nonce, runs.
+        self::page_headers("default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:; script-src 'nonce-" . $nonce . "'");
+        $html = preg_replace('/<meta\s+http-equiv="Content-Security-Policy"[^>]*>/i', '', $html);
+        $tabs = '';
+        if ($has_full) {
+            $tabs = '<a class="' . ($full === null ? 'on' : '') . '" href="' . esc_url(add_query_arg(array('view' => false, 'print' => false))) . '">خلاصه گزارش</a>'
+                . '<a class="' . ($full !== null ? 'on' : '') . '" href="' . esc_url(add_query_arg(array('view' => 'full', 'print' => false))) . '">گزارش کامل</a>';
+        }
+        $bar = '<style>.mzc-bar{position:fixed;top:8px;left:8px;z-index:9;display:flex;gap:6px;font:14px Tahoma,sans-serif}.mzc-bar button,.mzc-bar a{padding:8px 18px;border:0;border-radius:6px;background:#0b6;color:#fff;cursor:pointer;text-decoration:none}.mzc-bar a{background:#e9e9e4;color:#222}.mzc-bar a.on{background:#222;color:#fff}@media print{.mzc-bar{display:none}}</style>'
+            . '<div class="mzc-bar">' . $tabs . '<button id="mzc-print" type="button">چاپ</button></div>'
+            . '<script nonce="' . $nonce . '">document.getElementById("mzc-print").addEventListener("click",function(){window.print()});' . ($print ? 'window.addEventListener("load",function(){window.print()});' : '') . '</script>';
+        echo stripos($html, '</body>') !== false ? preg_replace('/<\/body>/i', $bar . '</body>', $html, 1) : $html . $bar;
+        exit;
+    }
+
+    public static function act_report()
+    {
+        if (!self::can()) { wp_die('اجازه دیدن گزارش‌ها را ندارید.', '', array('response' => 403)); }
+        self::show_report(isset($_GET['id']) ? (string) $_GET['id'] : '', !empty($_GET['print']));
+    }
+
+    public static function number($v)
+    {
+        $v = (float) $v;
+        return rtrim(rtrim(number_format($v, abs($v) >= 100 ? 0 : 2, '.', ','), '0'), '.');
+    }
+
+    /** A user's shared results, drawn by the site from the numbers it kept (no HTML came from outside). */
+    private static function show_share($token)
+    {
+        $s = preg_match('/^[0-9a-f]{24}$/', (string) $token) ? self::read('share-' . $token, null) : null;
+        if (!is_array($s) || empty($s['rows'])) { wp_die('این نتیجه پیدا نشد.', '', array('response' => 404)); }
+        self::page_headers("default-src 'none'; style-src 'unsafe-inline'");
+        $e = 'esc_html';
+        $spec = array();
+        $owner = isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا';
+        if ($s['cpu'] !== '') { $spec[] = array('پردازنده', $s['cpu']); }
+        if ($s['gpu'] !== '') { $spec[] = array('کارت گرافیک', $s['gpu']); }
+        if (!empty($s['ramGb'])) { $spec[] = array('حافظه', self::number($s['ramGb']) . ' GB'); }
+        if ($s['os'] !== '') { $spec[] = array('سیستم‌عامل', $s['os']); }
+        echo '<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
+            . '<title>نتایج بنچمارک Mazesta Test</title><style>'
+            . 'body{margin:0;background:#0e1012;color:#e8eaed;font:15px/1.8 Tahoma,Vazirmatn,sans-serif}main{max-width:820px;margin:0 auto;padding:28px 16px}'
+            . 'h1{font-size:22px;margin:0 0 4px}h1 b{color:#fdd400}.sub{color:#8a9097;margin:0 0 20px}.box{background:#16191c;border:1px solid #262a2f;border-radius:10px;padding:14px 18px;margin:0 0 16px}'
+            . 'dl{display:grid;grid-template-columns:auto 1fr;gap:2px 16px;margin:0}dt{color:#8a9097}dd{margin:0;direction:ltr;text-align:right;unicode-bidi:isolate}'
+            . 'table{width:100%;border-collapse:collapse}th,td{padding:9px 8px;border-bottom:1px solid #262a2f;text-align:right}th{color:#8a9097;font-weight:normal;font-size:13px}'
+            . '.n{direction:ltr;unicode-bidi:isolate;font-weight:bold;color:#fff;white-space:nowrap}.n small{color:#fdd400;font-weight:normal}.p{direction:ltr;unicode-bidi:isolate;color:#c3c7cc;font-size:13px}'
+            . '.warn{background:#2a1a12;border-color:#7a3a1a;color:#f0c8a0}.warn p{margin:6px 0 0}.old{background:#7a3a1a;color:#fff;border-radius:3px;padding:0 6px;font-size:11px;white-space:nowrap}'
+            . 'footer{color:#8a9097;font-size:13px;margin-top:18px}a{color:#fdd400}'
+            . '</style></head><body><main><h1>نتایج بنچمارک <b>Mazesta Test</b></h1><p class="sub">' . $e($owner) . ' · ثبت‌شده در ' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($s['created'])), 'Y/m/d H:i')) . '</p>';
+        if ($spec) {
+            echo '<div class="box"><dl>';
+            foreach ($spec as $row) { echo '<dt>' . $e($row[0]) . '</dt><dd>' . $e($row[1]) . '</dd>'; }
+            echo '</dl></div>';
+        }
+        $stale = 0;
+        foreach ($s['rows'] as $r) { if (isset($r['version']) && self::is_old($r['benchmark'], $r['version'])) { $stale++; } }
+        $old_app = !empty($s['app']) && self::old_app($s['app']) ? $s['app'] : '';
+        if ($stale > 0 || $old_app !== '') {
+            echo '<div class="box warn"><strong>این نتایج با نسخه قدیمی برنامه گرفته شده‌اند.</strong>';
+            if ($stale > 0) { echo '<p>' . $e($stale === 1 ? 'یکی از بنچمارک‌های این صفحه' : $stale . ' بنچمارک این صفحه') . ' (با برچسب «نسخه قدیمی») با کار قدیمی‌تر برنامه اندازه‌گرفته شده است؛ صحنه یا روش امتیازدهی بعد از آن عوض شده و عددش با نتیجه‌های امروز قابل مقایسه نیست.</p>'; }
+            if ($old_app !== '') { echo '<p>این نتایج را نسخه <span dir="ltr">' . $e($old_app) . '</span> برنامه گرفته؛ آخرین نسخه <span dir="ltr">' . $e((string) self::latest_app()) . '</span> است.</p>'; }
+            echo '<p>بهتر است Mazesta Test را از بخش به‌روزرسانی داخل خودش به‌روز کنید و بنچمارک را دوباره اجرا کنید.</p></div>';
+        }
+        echo '<div class="box"><table><thead><tr><th>بنچمارک</th><th>نتیجه</th><th>قطعه</th><th>تاریخ اجرا</th></tr></thead><tbody>';
+        foreach ($s['rows'] as $r) {
+            echo '<tr><td>' . $e($r['name']) . (isset($r['version']) && self::is_old($r['benchmark'], $r['version']) ? ' <span class="old">نسخه قدیمی</span>' : '') . ($r['settings'] !== '' ? ' <span class="p">' . $e($r['settings']) . '</span>' : '') . '</td><td class="n">' . $e(self::number($r['value'])) . ' <small>' . $e($r['unit']) . '</small></td>'
+                . '<td class="p">' . $e($r['part']) . '</td><td>' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($r['at'])), 'Y/m/d')) . '</td></tr>';
+        }
+        echo '</tbody></table></div><footer>این اعداد را برنامه Mazesta Test روی همین سیستم اندازه گرفته و کاربر آن فرستاده است. <a href="' . esc_url(home_url('/')) . '">' . $e(get_bloginfo('name')) . '</a></footer></main></body></html>';
+        exit;
+    }
+
+    /** A shared result by its link; and a report by its link (a 128-bit random token), for a colleague without an account, only while the shop has switched links on. */
+    public static function public_pages()
+    {
+        if (!empty($_GET['mazesta_share'])) { self::show_share((string) $_GET['mazesta_share']); }
+        if (empty($_GET['mazesta_report'])) { return; }
+        $token = (string) $_GET['mazesta_report']; $c = self::config();
+        $id = null;
+        if (!empty($c['publicLinks']) && preg_match('/^[0-9a-f]{32}$/', $token)) {
+            foreach (self::read('reports') as $rid => $r) { if (isset($r['token']) && hash_equals((string) $r['token'], $token)) { $id = (string) $rid; break; } }
+        }
+        if ($id === null) { wp_die('گزارش پیدا نشد.', '', array('response' => 404)); }
+        self::show_report($id, !empty($_GET['print']));
+    }
+
+    /* ---------- dashboard ---------- */
+
+    public static function guard($action)
+    {
+        if (!self::can()) { wp_die('اجازه این کار را ندارید.', '', array('response' => 403)); }
+        check_admin_referer('mzc_' . $action);
+    }
+
+    public static function back($tab, $msg = '')
+    {
+        wp_safe_redirect(add_query_arg(array('page' => 'mazesta-connect', 'tab' => $tab, 'msg' => $msg), admin_url('admin.php')));
+        exit;
+    }
+
+    public static function post_link($action, $args, $label, $class = 'button button-small', $confirm = '')
+    {
+        $url = wp_nonce_url(add_query_arg(array('action' => 'mzc_' . $action) + $args, admin_url('admin-post.php')), 'mzc_' . $action);
+        return '<a class="' . esc_attr($class) . '" href="' . esc_url($url) . '"' . ($confirm !== '' ? ' onclick="return confirm(\'' . esc_js($confirm) . '\')"' : '') . '>' . esc_html($label) . '</a>';
+    }
+
+    public static function arg($name) { return isset($_GET[$name]) ? sanitize_text_field(wp_unslash($_GET[$name])) : ''; }
+
+    public static function act_report_delete()
+    {
+        self::guard('report_delete');
+        $id = self::arg('id');
+        if (preg_match('/^[A-Za-z0-9-]{8,64}$/', $id)) {
+            self::locked(function () use ($id) { $all = self::read('reports'); unset($all[$id]); self::write('reports', $all); self::remove('report-' . $id); self::remove('report-' . $id . '-full'); });
+        }
+        self::back('reports', 'deleted');
+    }
+
+    /** Changes the runs under the lock with $change(&$all) and builds the lists again. */
+    private static function change_runs($change)
+    {
+        self::locked(function () use ($change) { $all = self::read('runs'); $change($all); self::write('runs', $all); });
+        self::rebuild();
+    }
+
+    public static function act_run_approve()
+    {
+        self::guard('run_approve');
+        $id = self::arg('id'); $every = !empty($_GET['all']);
+        self::change_runs(function (&$all) use ($id, $every) {
+            foreach ($all as $k => $r) { if ($every || (string) $k === $id) { $all[$k]['status'] = 1; } }
+        });
+        self::back('bench', 'approved');
+    }
+
+    public static function act_run_delete()
+    {
+        self::guard('run_delete');
+        $id = self::arg('id');
+        self::change_runs(function (&$all) use ($id) { unset($all[$id]); });
+        self::back('bench', 'deleted');
+    }
+
+    public static function act_run_feature()
+    {
+        self::guard('run_feature');
+        $id = self::arg('id'); $on = empty($_GET['off']);
+        self::change_runs(function (&$all) use ($id, $on) {
+            if (isset($all[$id])) { $all[$id]['featured'] = $on; $all[$id]['markAt'] = self::when(null); }
+        });
+        self::back('bench', 'saved');
+    }
+
+    public static function act_share_delete()
+    {
+        self::guard('share_delete');
+        $token = self::arg('token');
+        self::locked(function () use ($token) {
+            $index = self::read('shares');
+            foreach ($index as $k => $s) { if (isset($s['token']) && (string) $s['token'] === $token) { self::remove('share-' . $s['token']); unset($index[$k]); } }
+            self::write('shares', $index);
+        });
+        self::back('shares', 'deleted');
+    }
+
+    public static function act_rebuild()
+    {
+        self::guard('rebuild');
+        self::rebuild();
+        self::back('bench', 'rebuilt');
+    }
+
+    public static function act_settings()
+    {
+        self::guard('settings');
+        if (!current_user_can('manage_options')) { wp_die('فقط مدیر سایت می‌تواند تنظیمات را عوض کند.', '', array('response' => 403)); }
+        self::config();
+        self::locked(function () {
+            $c = self::read('config');
+            $c['openUploads'] = !empty($_POST['open_uploads']); $c['publicLinks'] = !empty($_POST['public_links']); $c['sharing'] = !empty($_POST['sharing']);
+            if (!empty($_POST['new_key'])) { $c['key'] = self::new_key(); }
+            if (!empty($_POST['new_release_key'])) { $c['releaseKey'] = self::new_key(); }
+            if (!empty($_POST['new_read_key'])) { $c['readKey'] = self::new_key(); }
+            self::write('config', $c);
+        });
+        self::back('settings', 'saved');
+    }
+
+    public static function local($iso) { return esc_html(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime((string) $iso)), 'Y/m/d H:i')); }
+
+    public static function page()
+    {
+        if (!self::can()) { wp_die('اجازه دیدن این صفحه را ندارید.', '', array('response' => 403)); }
+        $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'reports';
+        $tabs = array('reports' => 'گزارش‌ها', 'bench' => 'بنچمارک‌ها', 'shares' => 'نتایج کاربران', 'settings' => 'تنظیمات و انتشار');
+        if (!isset($tabs[$tab])) { $tab = 'reports'; }
+        MZC_Admin::open('mazesta-connect', 'گزارش‌ها و بنچمارک‌ها');
+        echo '<h2 class="nav-tab-wrapper">';
+        foreach ($tabs as $k => $label) {
+            echo '<a class="nav-tab' . ($k === $tab ? ' nav-tab-active' : '') . '" href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=' . $k)) . '">' . esc_html($label) . '</a>';
+        }
+        echo '</h2>';
+        if (!empty($_GET['pair'])) { self::pair_panel(strtolower(self::arg('pair'))); }
+        if (!empty($_GET['msg'])) { echo '<div class="notice notice-success is-dismissible"><p>انجام شد.</p></div>'; }
+        if ($tab === 'reports') { self::tab_reports(); } elseif ($tab === 'bench') { self::tab_bench(); } elseif ($tab === 'shares') { self::tab_shares(); } else { self::tab_settings(); }
+        MZC_Admin::close();
+    }
+
+    private static function tab_reports()
+    {
+        $s = self::arg('s'); $c = self::config();
+        $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
+        $rows = self::read('reports');
+        if ($s !== '') {
+            $rows = array_filter($rows, function ($r) use ($s) {
+                foreach (array('title', 'machine', 'service', 'summary', 'device', 'notes') as $f) { if (isset($r[$f]) && mb_stripos((string) $r[$f], $s) !== false) { return true; } }
+                return false;
+            });
+        }
+        uasort($rows, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
+        $total = count($rows);
+        $rows = array_slice($rows, ($paged - 1) * $per, $per, true);
+        $links = !empty($c['publicLinks']);
+        $verdicts = array('Passed' => 'سالم', 'Failed' => 'ایراد دارد', 'Incomplete' => 'ناقص', '' => 'بنچمارک');
+        echo '<form method="get" style="margin:12px 0"><input type="hidden" name="page" value="mazesta-connect"><input type="hidden" name="tab" value="reports">'
+            . '<input type="search" name="s" value="' . esc_attr($s) . '" placeholder="شماره سرویس، مدل دستگاه، سیستم، توضیحات…"> <button class="button">جستجو</button> <span class="description">' . esc_html(number_format_i18n($total)) . ' گزارش</span></form>';
+        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>شماره سرویس</th><th>مدل دستگاه</th><th>سیستم</th><th>نتیجه</th><th>خلاصه</th><th></th></tr></thead><tbody>';
+        if (!$rows) { echo '<tr><td colspan="7">هنوز گزارشی از برنامه نرسیده است. در برنامه: گزارش‌ها › ارسال به سایت.</td></tr>'; }
+        foreach ($rows as $id => $r) {
+            $view = admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode((string) $id));
+            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" style="text-align:right">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['machine']) . '</td>'
+                . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td style="white-space:nowrap">'
+                . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">خلاصه</a> '
+                . (is_file(self::file('report-' . $id . '-full')) ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')
+                . ($links && !empty($r['token']) ? '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_report=' . $r['token'])) . '">پیوند</a> ' : '')
+                . self::post_link('report_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این گزارش از سایت پاک شود؟') . '</td></tr>';
+        }
+        echo '</tbody></table>';
+        $pages = (int) ceil($total / $per);
+        if ($pages > 1) {
+            echo '<div class="tablenav"><div class="tablenav-pages">' . paginate_links(array('base' => add_query_arg('paged', '%#%'), 'format' => '', 'current' => $paged, 'total' => $pages)) . '</div></div>';
+        }
+    }
+
+    private static function value_text($r) { return esc_html(self::number($r['value']) . ' ' . $r['unit']); }
+
+    private static function tab_bench()
+    {
+        $all = self::read('runs');
+        $pending = array(); $lists = array(); $approved = 0;
+        foreach ($all as $id => $r) {
+            if (empty($r['status'])) { if (count($pending) < 200) { $pending[$id] = $r; } continue; }
+            $approved++;
+            $t = (string) $r['table'];
+            if (!isset($lists[$t])) { $lists[$t] = array('runs' => 0, 'parts' => array(), 'last' => ''); }
+            $lists[$t]['runs']++; $lists[$t]['parts'][$r['part']] = true;
+            if (strcmp((string) $r['received'], $lists[$t]['last']) > 0) { $lists[$t]['last'] = (string) $r['received']; }
+        }
+        ksort($lists);
+        echo '<p>' . esc_html(number_format_i18n($approved)) . ' اجرای تأییدشده در ' . esc_html(number_format_i18n(count($lists))) . ' فهرست. '
+            . self::post_link('rebuild', array(), 'ساخت دوباره فهرست‌ها') . '</p>';
+        echo '<p class="description">این‌جا فقط نتایجی است که خود برنامه Mazesta Test اندازه گرفته و فرستاده است؛ هیچ عددی دستی یا نمونه وارد نمی‌شود.</p>';
+        echo '<h3>در انتظار بررسی (' . esc_html(number_format_i18n(count($pending))) . ')</h3>';
+        if ($pending) {
+            echo '<p>' . self::post_link('run_approve', array('all' => 1), 'تأیید همه', 'button button-primary', 'همه اجراهای در انتظار وارد فهرست‌ها شوند؟') . '</p>';
+            echo '<table class="widefat striped"><thead><tr><th>بنچمارک</th><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
+            foreach ($pending as $id => $r) {
+                echo '<tr><td>' . self::list_label($r['table']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
+                    . self::post_link('run_approve', array('id' => (string) $id), 'تأیید', 'button button-small button-primary') . ' ' . self::post_link('run_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این اجرا پاک شود؟') . '</td></tr>';
+            }
+            echo '</tbody></table>';
+        } else { echo '<p class="description">چیزی در انتظار نیست. اجراهایی که با کلید سایت (از نسخه مازستایی برنامه) می‌رسند مستقیم وارد فهرست می‌شوند.</p>'; }
+        echo '<h3>فهرست‌ها</h3><p class="description">هر بنچمارک یک فهرست مقایسه دارد (و اگر تنظیمی مثل اندازه فایل داشته باشد، برای هر تنظیم یک فهرست). روی نام فهرست بزنید تا اجراهایش را ببینید و نتیجه مرجع انتخاب کنید. نوشته کوچک زیر هر نام، شناسه فنی همان فهرست در برنامه است.</p>'
+            . '<table class="widefat striped"><thead><tr><th>بنچمارک (فهرست)</th><th>تعداد مدل قطعه</th><th>تعداد اجرا</th><th>آخرین دریافت</th></tr></thead><tbody>';
+        if (!$lists) { echo '<tr><td colspan="4">هنوز اجرایی بارگذاری نشده است. در برنامه: بنچمارک › ارسال نتایج به سایت.</td></tr>'; }
+        foreach ($lists as $t => $l) {
+            echo '<tr><td><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . self::list_label($t) . '</a></td><td>' . count($l['parts']) . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
+        }
+        echo '</tbody></table>';
+        $key = self::arg('list');
+        if ($key !== '') {
+            $runs = array_filter($all, function ($r) use ($key) { return !empty($r['status']) && (string) $r['table'] === $key; });
+            uasort($runs, function ($a, $b) { return (float) $b['value'] <=> (float) $a['value']; });
+            echo '<h3>' . self::list_label($key) . '</h3><p class="description">«نتیجه مرجع» (★) اجرایی است که مازستا تأیید می‌کند نتیجه درست این مدل در این بنچمارک است. مدلی که نتیجه مرجع داشته باشد در برنامه با <strong>میانه نتایج مرجعش</strong> نشان داده می‌شود (با برچسب «مرجع»)؛ مدلی که ندارد با میانه همه سیستم‌هایش. نتیجه مرجع را فقط از همین‌جا یا از نسخه مازستایی برنامه می‌توان انتخاب کرد؛ کاربران نمی‌توانند.</p><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
+            foreach (array_slice($runs, 0, 500, true) as $id => $r) {
+                $star = !empty($r['featured']);
+                echo '<tr><td dir="ltr" style="text-align:right">' . ($star ? '★ ' : '') . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
+                    . self::post_link('run_feature', $star ? array('id' => (string) $id, 'off' => 1) : array('id' => (string) $id), $star ? 'برداشتن از مرجع' : 'انتخاب به‌عنوان نتیجه مرجع') . ' '
+                    . self::post_link('run_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این اجرا پاک شود؟') . '</td></tr>';
+            }
+            echo '</tbody></table>';
+        }
+    }
+
+    private static function tab_shares()
+    {
+        $index = self::read('shares');
+        uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
+        echo '<p class="description">نتیجه‌هایی که کاربران از برنامه با «اشتراک‌گذاری آخرین نتیجه» فرستاده‌اند. هر سیستم یک صفحه دارد و با فرستادن دوباره همان صفحه تازه می‌شود.</p>';
+        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
+        if (!$index) { echo '<tr><td colspan="6">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
+        foreach (array_slice($index, 0, 300, true) as $s) {
+            echo '<tr><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['cpu']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
+                . '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_share=' . $s['token'])) . '">دیدن</a> '
+                . self::post_link('share_delete', array('token' => (string) $s['token']), 'حذف', 'button button-small', 'این صفحه پاک شود؟') . '</td></tr>';
+        }
+        echo '</tbody></table>';
+    }
+
+    private static function tab_settings()
+    {
+        $admin = current_user_can('manage_options'); $c = self::config();
+        $dir = self::release_dir(); $manifest = is_readable($dir . '/update.json') ? json_decode((string) file_get_contents($dir . '/update.json'), true) : null;
+        echo '<h3>نسخه منتشرشده برنامه</h3>';
+        if (is_array($manifest) && isset($manifest['app']['version'])) {
+            $zip = $dir . '/' . basename((string) $manifest['app']['file']);
+            echo '<p>نسخه <strong dir="ltr">' . esc_html($manifest['app']['version']) . '</strong>، ' . esc_html(size_format((int) $manifest['app']['size'])) . '، فایل <code dir="ltr">' . esc_html($manifest['app']['file']) . '</code> '
+                . (is_file($zip) ? '✔' : '<strong style="color:#b32d2e">روی سایت نیست</strong>') . ' ' . (is_file($dir . '/update.json.sig') ? '' : '<strong style="color:#b32d2e">امضا (update.json.sig) نیست</strong>') . '</p>';
+        } else {
+            echo '<p>هنوز نسخه‌ای منتشر نشده است. روی سیستم مازستا: <code dir="ltr">pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload</code></p>';
+        }
+        echo '<p class="description">برنامه‌ها این نشانی را می‌خوانند: <code dir="ltr">' . esc_html(home_url('/mazesta/update.json')) . '</code> — این پوشه را از کش مستثنا کنید.</p>';
+        echo '<p class="description">داده‌های این افزونه در پایگاه داده وردپرس نیست؛ در این پوشه است: <code dir="ltr">' . esc_html(self::dir()) . '</code> (برای پشتیبان‌گیری همین پوشه را نگه دارید).</p>';
+        if (!$admin) { return; }
+        echo '<h3>کلیدها و تنظیمات</h3><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_settings">';
+        wp_nonce_field('mzc_settings');
+        echo '<table class="form-table"><tr><th>کلید سایت</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['key']) . '</code><p class="description">در نسخه مازستایی برنامه: به‌روزرسانی برنامه › اتصال به سایت مازستا. روی هر سیستمی که باید گزارش بفرستد یک بار وارد می‌شود و با پوشه Data برنامه جابه‌جا می‌شود.</p>'
+            . '<label><input type="checkbox" name="new_key" value="1"> کلید تازه بساز (کلید قبلی از کار می‌افتد)</label></td></tr>'
+            . '<tr><th>کلید انتشار</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['releaseKey']) . '</code><p class="description">فقط روی سیستمی که نسخه تازه برنامه را منتشر می‌کند (فایل <code dir="ltr">G:\\Mazesta-Keys\\site-release-key.txt</code>). به کسی ندهید.</p>'
+            . '<label><input type="checkbox" name="new_release_key" value="1"> کلید تازه بساز</label></td></tr>'
+            . '<tr><th>کلید خواندن گزارش‌ها</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['readKey']) . '</code><p class="description">برای برنامه چاپ گزارش‌ها روی سیستم منشی: فقط می‌تواند فهرست گزارش‌ها را بخواند و خلاصه‌شان را ببیند، چیزی نمی‌فرستد.</p>'
+            . '<label><input type="checkbox" name="new_read_key" value="1"> کلید تازه بساز</label></td></tr>'
+            . '<tr><th>اشتراک‌گذاری کاربران</th><td><label><input type="checkbox" name="sharing" value="1"' . checked(!empty($c['sharing']), true, false) . '> کاربران بتوانند آخرین نتیجه بنچمارکشان را بدون کلید بفرستند و پیوند صفحه آن را بگیرند</label></td></tr>'
+            . '<tr><th>بارگذاری بدون کلید</th><td><label><input type="checkbox" name="open_uploads" value="1"' . checked(!empty($c['openUploads']), true, false) . '> نتیجه کاربران بدون کلید به صف بررسی فهرست‌های مقایسه هم برود (بعد از تأیید شما وارد فهرست می‌شود)</label></td></tr>'
+            . '<tr><th>پیوند گزارش</th><td><label><input type="checkbox" name="public_links" value="1"' . checked(!empty($c['publicLinks']), true, false) . '> هر گزارش با پیوند خودش بدون ورود به سایت هم باز شود (هر کس پیوند را داشته باشد گزارش را می‌بیند)</label></td></tr></table>';
+        submit_button('ذخیره');
+        echo '</form>';
+    }
+}
+
+Mazesta_Connect::boot();

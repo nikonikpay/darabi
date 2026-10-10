@@ -1,0 +1,24 @@
+/* The customer's page. Scoped to #mzc-portal so the theme's own styles are left alone. */
+.mzc-portal { --ink: #14181f; --muted: #667085; --line: #e4e7ec; --brand: #f5b800; direction: rtl; text-align: right; color: var(--ink); max-width: 860px; margin: 0 auto; line-height: 1.8; font-size: 15px; }
+.mzc-portal * { box-sizing: border-box; }
+.mzc-portal .mzcp-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 0 0 16px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
+.mzc-portal h2 { margin: 0 0 6px; font-size: 20px; } .mzc-portal .mzcp-h { margin: 22px 0 10px; font-size: 17px; }
+.mzc-portal .mzcp-sub { color: var(--muted); margin: 0 0 12px; }
+.mzc-portal input { display: block; width: 100%; max-width: 320px; padding: 11px 14px; border: 1px solid #d0d5dd; border-radius: 10px; font-size: 18px; letter-spacing: 1px; text-align: center; margin: 8px 0 12px; background: #fff; color: var(--ink); }
+.mzc-portal input:focus { outline: 2px solid #fcd34d; border-color: var(--brand); }
+.mzc-portal .mzcp-btn { background: var(--brand); color: #3d2f00; border: 0; border-radius: 10px; padding: 11px 24px; font: inherit; font-weight: 700; cursor: pointer; }
+.mzc-portal .mzcp-btn:disabled { opacity: .6; cursor: wait; }
+.mzc-portal .mzcp-link { background: none; border: 0; color: #175cd3; cursor: pointer; font: inherit; padding: 4px 8px; text-decoration: underline; }
+.mzc-portal .mzcp-msg { color: #b42318; min-height: 1.6em; margin: 8px 0 0; }
+.mzc-portal .mzcp-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; } .mzc-portal .mzcp-top h2 { margin: 0; }
+.mzc-portal .mzcp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; } .mzc-portal .mzcp-row strong { font-size: 16px; }
+.mzc-portal .mzcp-pill { display: inline-block; padding: 1px 10px; border-radius: 99px; background: #f2f4f7; color: #475467; font-size: 13px; }
+.mzc-portal .st-delivered { background: #e7f6ec; color: #067647; } .mzc-portal .st-ready { background: #e8f0fe; color: #175cd3; } .mzc-portal .st-cancelled { background: #fdecea; color: #b42318; }
+.mzc-portal .st-received, .mzc-portal .st-diagnosing, .mzc-portal .st-waiting_part { background: #fff4e5; color: #93370d; }
+.mzc-portal .mzcp-scroll { overflow-x: auto; margin: 8px 0; }
+.mzc-portal .mzcp-table { width: 100%; border-collapse: collapse; font-size: 14px; } .mzc-portal .mzcp-table th { text-align: right; color: var(--muted); font-weight: 600; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.mzc-portal .mzcp-table td { padding: 7px 10px; border-bottom: 1px solid #f2f4f7; } .mzc-portal .mzcp-lat { direction: ltr; text-align: left; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+.mzc-portal .mzcp-kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 14px; margin: 0 0 8px; } .mzc-portal .mzcp-kv dt { color: var(--muted); } .mzc-portal .mzcp-kv dd { margin: 0; white-space: pre-wrap; }
+.mzc-portal .mzcp-total { font-weight: 700; margin: 6px 0; }
+.mzc-portal .mzcp-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; } .mzc-portal .mzcp-photos img { width: 150px; height: 110px; max-width: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); margin: 0; padding: 0; background: #f2f4f7; }
+@media (max-width: 560px) { .mzc-portal .mzcp-kv { grid-template-columns: 1fr; } .mzc-portal .mzcp-card { padding: 14px; } }
