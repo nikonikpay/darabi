@@ -35,11 +35,16 @@ export function mount(el) {
     catch (e) { toast(String(e.message || e), "fail"); }
   };
   call("tweaks.state").then((x) => showWu(x.update)).catch(() => {});
+  // The shop's messages: one button among the others, with the count of the unread ones (no new row, so the panels below stay where they are).
+  const unread = h("span", { class: "pill warn", hidden: true });
+  const showUnread = (n) => { unread.hidden = !n; unread.textContent = fa(n || 0); };
+  showUnread(boot.unread);
+  const offMessages = on("messages", (s) => showUnread(s.unread));
   const status = h("section", { class: "plane status-card enter" },
     h("div", { class: "status-text" }, h("span", { class: "status-kicker" }, t("Web_Dash_Live"), h("span", { class: "status-date" }, date)), verdict, machine),
     h("div", { class: "quick" },
       action("", "check", "Web_Dash_Checkup", () => go("checkup")), action("p-gpu", "trophy", "Web_Dash_Bench", () => go("benchmarks")),
-      action("p-game", "update", "Web_Dash_Updates", toggleWu, wu), action("p-board", "board", "Web_Dash_Info", () => go("system"))));
+      action("p-game", "update", "Web_Dash_Updates", toggleWu, wu), action("p-board", "board", "Web_Dash_Info", () => go("system")), action("p-msg", "mail", "Web_Dash_Messages", () => go("messages"), unread)));
   // Each temperature with its part's load beside it and as the bar, like the overlay; memory used, its load, and the total under it.
   // The adapter the internet goes through, as the network page shows it; the first connected one without it.
   const net = [...nets].sort((a, b) => netRank(a) - netRank(b))[0];
@@ -196,7 +201,7 @@ export function mount(el) {
   load();
   const offFresh = on("hardwareFresh", () => { if (cached) load(); });
   el.classList.add("dash-page");
-  return () => { off(); offFresh(); };
+  return () => { off(); offFresh(); offMessages(); };
 }
 
 // A product from the shop's site: one on special sale when there is one, else a random one ("product": any, "system": one of its ready-built computers). The host turns its HTML into plain text and

@@ -69,6 +69,10 @@ public sealed class SiteClient(Uri api, HttpClient http)
     /// <summary>The anonymous usage statistics (see <see cref="Mazesta.Persistence.UsageLog"/>), sent with no key: the installation's random id, the app's version, the parts' names and the events.</summary>
     public async Task SendUsageAsync(string body, CancellationToken ct) => await SendAsync(HttpMethod.Post, "usage", null, body, ct).ConfigureAwait(false);
 
+    /// <summary>The shop's messages for this installation (its random id; no key): those sent to every system and to this one, newer than <paramref name="after"/>. Raw JSON: {"messages":[{id,title,body,link,created}]}.</summary>
+    public async Task<string> MessagesAsync(string install, long after, CancellationToken ct)
+        => await SendAsync(HttpMethod.Get, $"messages?install={Uri.EscapeDataString(install)}&after={after}&t=" + Nonce(), null, null, ct).ConfigureAwait(false);
+
     /// <summary>A user's latest results (one run per benchmark, at most <see cref="RunsPerShare"/>), sent without a key to become a page of
     /// their own on the site. <paramref name="names"/> are the benchmarks' names as the app shows them.</summary>
     public async Task<SiteShareReceipt> ShareAsync(IReadOnlyList<JsonNode> runs, IReadOnlyDictionary<string, string> names, IReadOnlyDictionary<string, bool> higher, SiteMachine machine, string appVersion, CancellationToken ct)

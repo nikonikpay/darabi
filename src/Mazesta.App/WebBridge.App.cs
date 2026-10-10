@@ -5,6 +5,7 @@ namespace Mazesta.App;
 
 public sealed partial class WebBridge
 {
+    private Notifier? _notifier;
     /// <summary>The shop links the page may open; the page names one, it never supplies an address.</summary>
     private static readonly Dictionary<string, string> Links = new()
     {
@@ -59,7 +60,7 @@ public sealed partial class WebBridge
         void OnState(EngineState s) => Push("engine", new { paused = s == EngineState.Paused, failed = s == EngineState.Failed });
         engine.Provider.StatusChanged += OnStatus; engine.StateChanged += OnState;
         _cleanup.Add(() => { engine.Provider.StatusChanged -= OnStatus; engine.StateChanged -= OnState; });
-        var notifier = new Notifier(_window, engine, _sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(),
+        var notifier = _notifier = new Notifier(_window, engine, _sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(),
             (text, kind) => Push("toast", new { text, kind }), _log);
         notifier.Limits = () => (_config.TrayCpuAlertC, _config.TrayGpuAlertC);
         _cleanup.Add(notifier.Dispose);

@@ -53,7 +53,7 @@ public sealed class Notifier : IDisposable
     }
 
     /// <summary>A notification when the window is not in front, a page toast when it is. Always on the UI thread.</summary>
-    private void Tell(string title, string text, bool error)
+    internal void Tell(string title, string text, bool error = false)
     {
         _log.LogWarning("Notified: {Title}: {Text}", title, text);
         _window.Dispatcher.BeginInvoke(() =>

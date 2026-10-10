@@ -3428,4 +3428,11 @@ Cancel: stop.</value></data>
   <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>The statistics were sent and the troubleshooting file is ready; its folder is open.</value></data>
   <data name="Settings_Report_Button" xml:space="preserve"><value>Pressing this sends the anonymous statistics now, even if the automatic sending is off, and makes the troubleshooting file.</value></data>
   <data name="Tuning_Legend" xml:space="preserve"><value>In every measured line: the clock the card held under the load (↑ the highest it touched), then its average voltage, average power, average core temperature, the hottest hot-spot (HOT) and the score. Before the arrow is the factory card, after it the tuned one. These are measurements, not settings: the setting is the core offset, the cap (the most the clock may go to) and the power limit written above them.</value></data>
+  <data name="Nav_Messages" xml:space="preserve"><value>System messages</value></data>
+  <data name="Web_Dash_Messages" xml:space="preserve"><value>Messages</value></data>
+  <data name="Msg_Title" xml:space="preserve"><value>Messages from the shop</value></data>
+  <data name="Msg_Sub" xml:space="preserve"><value>What the shop sent to this computer or to every system; kept here so you can read it again.</value></data>
+  <data name="Msg_Empty" xml:space="preserve"><value>No messages yet.</value></data>
+  <data name="Msg_Open" xml:space="preserve"><value>Open the link</value></data>
+  <data name="Msg_ReadAll" xml:space="preserve"><value>Mark all as read</value></data>
 </root>

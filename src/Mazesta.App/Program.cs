@@ -20,6 +20,7 @@ internal sealed class Program : ApplicationContext
     internal static HardwareDiagnosticsRecorder? Recorder { get; private set; }
     internal static RollingFileLoggerProvider? LogProvider { get; private set; }
     internal static UsageUploader? Uploader { get; private set; }
+    internal static MessageInbox? Inbox { get; private set; }
     /// <summary>Started by the update that has just put this release in place (the page says so once).</summary>
     private static bool JustUpdated { get; set; }
     internal static bool TakeJustUpdated() { bool b = JustUpdated; JustUpdated = false; return b; }
@@ -129,6 +130,7 @@ internal sealed class Program : ApplicationContext
         var usage = _services.GetRequiredService<UsageRecorder>();
         usage.Record("app.start", new System.Text.Json.Nodes.JsonObject { ["version"] = version, ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = config.Language, ["overlayOnly"] = overlayOnly });
         _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
+        Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log);
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
         else ShowMain();
@@ -231,7 +233,7 @@ internal sealed class Program : ApplicationContext
         _activateWait?.Unregister(null); _activate?.Dispose();
         _toggleWait?.Unregister(null); _toggle?.Dispose(); _moveWait?.Unregister(null); _move?.Dispose(); _shown?.Dispose();
         if (_config is not null) _store?.Save(_config);   // the overlay's last state, when the app ended from the tray with no window to save it
-        _usageUploader?.SendAsync().Wait(TimeSpan.FromSeconds(4)); _usageUploader?.Dispose();   // what is left is sent on the way out, if the site answers quickly
+        _usageUploader?.SendAsync().Wait(TimeSpan.FromSeconds(4)); _usageUploader?.Dispose(); Inbox?.Dispose();   // what is left is sent on the way out, if the site answers quickly
         _fans?.Dispose(); Recorder?.Dispose();
         if (_services is not null) { _services.GetRequiredService<PollingEngine>().Dispose(); _services.Dispose(); }
         LogProvider?.Dispose();

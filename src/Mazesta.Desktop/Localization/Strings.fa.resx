@@ -3428,4 +3428,11 @@
   <data name="Web_Diag_ExportedSent" xml:space="preserve"><value>آمار ارسال شد و فایل عیب‌یابی آماده است؛ پوشه‌اش باز شد.</value></data>
   <data name="Settings_Report_Button" xml:space="preserve"><value>با این دکمه آمار ناشناس همین حالا ارسال می‌شود، حتی اگر ارسال خودکار خاموش باشد، و فایل عیب‌یابی ساخته می‌شود.</value></data>
   <data name="Tuning_Legend" xml:space="preserve"><value>در هر خط اندازه‌گیری: اول فرکانسی که کارت زیر بار نگه داشت (↑ بالاترین فرکانسی که لحظه‌ای رسید)، بعد ولتاژ میانگین، توان میانگین، دمای میانگین هسته، داغ‌ترین نقطه (HOT) و امتیاز. قبل از فلش کارتِ کارخانه است و بعد از آن کارتِ تنظیم‌شده. این‌ها اندازه‌گیری‌اند نه تنظیم: تنظیم همان آفست هسته، سقف (بیشترین فرکانسی که اجازه دارد برسد) و حد توان است که بالای آن‌ها نوشته شده.</value></data>
+  <data name="Nav_Messages" xml:space="preserve"><value>پیام‌های سیستم</value></data>
+  <data name="Web_Dash_Messages" xml:space="preserve"><value>پیام‌ها</value></data>
+  <data name="Msg_Title" xml:space="preserve"><value>پیام‌های مجموعه</value></data>
+  <data name="Msg_Sub" xml:space="preserve"><value>آنچه مجموعه برای این سیستم یا برای همهٔ سیستم‌ها فرستاده؛ اینجا می‌ماند تا بعداً دوباره بخوانید.</value></data>
+  <data name="Msg_Empty" xml:space="preserve"><value>هنوز پیامی نرسیده است.</value></data>
+  <data name="Msg_Open" xml:space="preserve"><value>باز کردن پیوند</value></data>
+  <data name="Msg_ReadAll" xml:space="preserve"><value>همه خوانده شد</value></data>
 </root>

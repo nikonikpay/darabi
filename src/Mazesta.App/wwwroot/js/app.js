@@ -32,6 +32,7 @@ export const PAGES = [
   { id: "updates", key: "Nav_Updates", load: () => import("./pages/updates.js") },
   { id: "drivers", key: "Nav_Drivers", load: () => import("./pages/drivers.js") },
   { id: "reports", key: "Nav_Reports", load: () => import("./pages/reports.js") },
+  { id: "messages", key: "Nav_Messages", load: () => import("./pages/messages.js") },
   { id: "settings", key: "Nav_Settings", load: () => import("./pages/settings.js") },
   { id: "appupdate", key: "Nav_AppUpdate", load: () => import("./pages/appupdate.js") },
 ];
@@ -50,6 +51,7 @@ export const FAMILIES = [
   { key: "Nav_Group_Lights", icon: "bolt", pages: ["lights", "fans"] },
   { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates", "drivers"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
+  { key: "Nav_Messages", icon: "mail", pages: ["messages"], badge: "messages" },
   { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
 ];
 const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", lights: "bulb", fans: "fan", tools: "wrench", tweaks: "layers", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
@@ -176,6 +178,9 @@ async function start() {
   // A new release on the site marks the settings entry (the app update page is there); the host checks once, a while after start-up.
   const mark = (u) => index.querySelector(`a[data-family="${FAMILIES.length - 1}"]`)?.classList.toggle("has-update", ["Available", "Ready"].includes(u?.state));
   on("upd", mark); call("upd.state").then(mark).catch(() => {});
+  // The shop's messages: the entry is marked while one is unread (the dashboard's button shows the count).
+  const unread = (s) => { boot.unread = s.unread; index.querySelector(`a[data-family="${FAMILIES.findIndex((f) => f.pages.includes("messages"))}"]`)?.classList.toggle("has-update", s.unread > 0); };
+  on("messages", unread); call("messages.state").then(unread).catch(() => {});
   if (info.updated) toast(t("AppUpd_Done", info.version));
   import("./failures.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   import("./updatenotice.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
