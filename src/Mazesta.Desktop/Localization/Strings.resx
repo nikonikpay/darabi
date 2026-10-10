@@ -3448,7 +3448,7 @@ Cancel: stop.</value></data>
   <data name="Log_MemSeq_Round" xml:space="preserve"><value>Round {0} finished; {1} checks so far, {2} wrong word(s).</value></data>
   <data name="Log_MemSeq_Errors" xml:space="preserve"><value>The check after '{0}' found {1} wrong word(s) ({2} wrong bit(s)).</value></data>
   <data name="Test_Cpu_Cycle" xml:space="preserve"><value>CPU · Preset cycle (SSE, AVX2, AVX-512, FFT, Linpack, swinging load)</value></data>
-  <data name="Test_Option_CpuPreset" xml:space="preserve"><value>Preset</value></data>
+  <data name="Test_Option_Preset" xml:space="preserve"><value>Preset</value></data>
   <data name="Test_CpuPreset_full" xml:space="preserve"><value>Full: every instruction width, FFT, Linpack, mixed load</value></data>
   <data name="Test_CpuPreset_instructions" xml:space="preserve"><value>Instruction sets: SSE, AVX2, AVX-512 in turn</value></data>
   <data name="Test_CpuPreset_transient" xml:space="preserve"><value>Transient: swinging load and single-core boost (undervolt, curve offsets)</value></data>
@@ -3475,4 +3475,10 @@ Cancel: stop.</value></data>
   <data name="Log_StorageDaily_Done" xml:space="preserve"><value>Round {0} done: {1} checked requests, P99 {2} ms, {3} stall(s) over a second, {4} error(s).</value></data>
   <data name="Profile_Everyday" xml:space="preserve"><value>Everyday use</value></data>
   <data name="Profile_Everyday_Note" xml:space="preserve"><value>About two hours: light work, bursts, idle and wake-ups on the processor, the RAM sequence and the drive in everyday use. For a machine that passes the stress tests and still freezes or restarts at the desk.</value></data>
+  <data name="Test_Gpu_Cycle" xml:space="preserve"><value>GPU · Preset cycle (steady, swinging and pulsed load, VRAM, 3-D scene)</value></data>
+  <data name="Test_GpuPreset_full" xml:space="preserve"><value>Full: every kind of load once per round</value></data>
+  <data name="Test_GpuPreset_transient" xml:space="preserve"><value>Transient: load steps at three beats (power supply, 12V-2x6 contact)</value></data>
+  <data name="Test_GpuPreset_memory" xml:space="preserve"><value>Memory: VRAM between heating loads</value></data>
+  <data name="Test_GpuPreset_custom" xml:space="preserve"><value>Custom stages</value></data>
+  <data name="Test_Option_GpuStages" xml:space="preserve"><value>Stages (test:option=value, e.g. gpu.pulse:pulseMs=100,gapMs=400 gpu.vram)</value></data>
 </root>

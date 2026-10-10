@@ -1,13 +1,13 @@
 using Xunit; using Mazesta.Diagnostics.Cpu; using Mazesta.Diagnostics.Tests.Fakes;
 namespace Mazesta.Diagnostics.Tests;
 
-public class CpuCycleTests
+public class StageCycleTests
 {
     private static readonly DateTimeOffset T0 = new(2026, 10, 10, 0, 0, 0, TimeSpan.Zero);
     private static readonly TestDefinition Vector = new(new TestId("cpu.vector"), "Test_Cpu_Vector", 60, [new TestOption("width", "x", TestOptionKind.Text, "auto")]);
     private static readonly TestDefinition Fft = new(new TestId("cpu.fft"), "Test_Cpu_Fft", 60);
 
-    private static (CpuCycleExecutor Cycle, List<string> Seen) Make(Func<TestExecutionRequest, TestOutcome> vector)
+    private static (StageCycleExecutor Cycle, List<string> Seen) Make(Func<TestExecutionRequest, TestOutcome> vector)
     {
         var seen = new List<string>();
         var tests = new ITestExecutor[]
@@ -15,11 +15,11 @@ public class CpuCycleTests
             new FakeTestExecutor(Vector, (r, _) => { string w = r.Options!.Get("width"); seen.Add($"vector:{w}:{r.DurationSeconds}"); var o = vector(r); return Task.FromResult(new TestRunResult(Vector.Id, o, T0, T0, o == TestOutcome.Failed ? 3 : 0, $"width {w}")); }),
             new FakeTestExecutor(Fft, (r, _) => { seen.Add($"fft:{r.DurationSeconds}"); return Task.FromResult(new TestRunResult(Fft.Id, TestOutcome.Passed, T0, T0, 0, "fft")); }),
         }.ToDictionary(t => t.Definition.Id.Value);
-        return (new CpuCycleExecutor(tests), seen);
+        return (new StageCycleExecutor(CpuCycle.Definition, CpuCycle.Presets, tests), seen);
     }
 
-    private static TestOptions Custom(string stages, int stageSeconds) => new(CpuCycleExecutor.Definition, new Dictionary<string, string>
-        { [CpuCycleExecutor.PresetOption] = CpuCycleExecutor.Custom, [CpuCycleExecutor.StagesOption] = stages, [CpuCycleExecutor.StageSecondsOption] = stageSeconds.ToString() });
+    private static TestOptions Custom(string stages, int stageSeconds) => new(CpuCycle.Definition, new Dictionary<string, string>
+        { [StageCycleExecutor.PresetOption] = StageCycleExecutor.Custom, [StageCycleExecutor.StagesOption] = stages, [StageCycleExecutor.StageSecondsOption] = stageSeconds.ToString() });
 
     [Fact] public async Task Stages_go_round_with_their_own_options_until_the_time_is_up()
     {
@@ -46,13 +46,23 @@ public class CpuCycleTests
 
     [Theory] [InlineData("cpu.gpu")] [InlineData("cpu.vector:depth=3")] [InlineData("cpu.vector:width")] [InlineData("cpu.cycle")] [InlineData("")]
     public void Stages_that_cannot_be_read_are_refused(string text)
-        => Assert.Throws<FormatException>(() => CpuCycleExecutor.Parse(text, new Dictionary<string, ITestExecutor> { ["cpu.vector"] = new FakeTestExecutor(Vector, (_, _) => null!) }));
+        => Assert.Throws<FormatException>(() => StageCycleExecutor.Parse(text, new Dictionary<string, ITestExecutor> { ["cpu.vector"] = new FakeTestExecutor(Vector, (_, _) => null!) }, "cpu.cycle"));
 
     [Fact] public void Every_preset_names_real_tests_and_options()
     {
         var tests = new ITestExecutor[] { new CpuStressExecutor(), new CpuCoreCycleExecutor([]), new LinpackExecutor(new Memory.Win32MemoryProbe()), new CpuVectorStressExecutor(), new CpuFftExecutor() }.ToDictionary(t => t.Definition.Id.Value);
-        foreach (var p in CpuCycleExecutor.Presets.Values) Assert.NotEmpty(CpuCycleExecutor.Parse(p, tests));
+        foreach (var p in CpuCycle.Presets.Values) Assert.NotEmpty(StageCycleExecutor.Parse(p, tests, "cpu.cycle"));
     }
 
-    [Fact] public void Every_stage_gets_at_least_one_turn_in_a_short_run() { Assert.Equal(10, CpuCycleExecutor.StageSeconds(120, 60, 6)); Assert.Equal(120, CpuCycleExecutor.StageSeconds(120, 3600, 6)); }
+    [Fact] public void Every_stage_gets_at_least_one_turn_in_a_short_run() { Assert.Equal(10, StageCycleExecutor.StageSeconds(120, 60, 6)); Assert.Equal(120, StageCycleExecutor.StageSeconds(120, 3600, 6)); }
+
+    [Fact] public async Task A_cycle_option_such_as_the_gpu_is_handed_to_every_stage_that_has_it()
+    {
+        var gpuOpt = new TestOption("gpu", "x", TestOptionKind.Text, "");
+        var steady = new TestDefinition(new TestId("gpu.steady"), "s", 60, [gpuOpt]); var seen = new List<string>();
+        var tests = new Dictionary<string, ITestExecutor> { ["gpu.steady"] = new FakeTestExecutor(steady, (r, _) => { seen.Add(r.Options!.Get("gpu")); return Task.FromResult(new TestRunResult(steady.Id, TestOutcome.Passed, T0, T0, 0, null)); }) };
+        var def = new TestDefinition(new TestId("gpu.cycle"), "c", 60, StageCycleExecutor.Options(new Dictionary<string, string> { ["one"] = "gpu.steady" }, "k_", "k", gpuOpt));
+        await new StageCycleExecutor(def, new Dictionary<string, string> { ["one"] = "gpu.steady" }, tests).RunAsync(new(10, new FakeClock(T0), null, null, new TestOptions(def, new Dictionary<string, string> { ["gpu"] = "card-2" })), CancellationToken.None);
+        Assert.All(seen, g => Assert.Equal("card-2", g)); Assert.NotEmpty(seen);
+    }
 }

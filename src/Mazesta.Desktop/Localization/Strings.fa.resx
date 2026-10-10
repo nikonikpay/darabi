@@ -3448,7 +3448,7 @@
   <data name="Log_MemSeq_Round" xml:space="preserve"><value>دور {0} تمام شد؛ تا این لحظه {1} بررسی و {2} کلمهٔ نادرست.</value></data>
   <data name="Log_MemSeq_Errors" xml:space="preserve"><value>بررسی بعد از «{0}» {1} کلمهٔ نادرست پیدا کرد ({2} بیت نادرست).</value></data>
   <data name="Test_Cpu_Cycle" xml:space="preserve"><value>پردازنده · چرخهٔ پیش‌تنظیم (SSE، AVX2، AVX-512، FFT، لینپک، بار نوسانی)</value></data>
-  <data name="Test_Option_CpuPreset" xml:space="preserve"><value>پیش‌تنظیم</value></data>
+  <data name="Test_Option_Preset" xml:space="preserve"><value>پیش‌تنظیم</value></data>
   <data name="Test_CpuPreset_full" xml:space="preserve"><value>کامل: همهٔ دستورالعمل‌ها، FFT، لینپک، بار ترکیبی</value></data>
   <data name="Test_CpuPreset_instructions" xml:space="preserve"><value>دستورالعمل‌ها: SSE، AVX2 و AVX-512 به نوبت</value></data>
   <data name="Test_CpuPreset_transient" xml:space="preserve"><value>گذرا: بار نوسانی و بوست تک‌هسته (آندرولت و Curve Optimizer)</value></data>
@@ -3475,4 +3475,10 @@
   <data name="Log_StorageDaily_Done" xml:space="preserve"><value>دور {0} تمام شد: {1} درخواست بررسی‌شده، P99 برابر {2} میلی‌ثانیه، {3} توقف بیش از یک ثانیه، {4} خطا.</value></data>
   <data name="Profile_Everyday" xml:space="preserve"><value>کار روزمره</value></data>
   <data name="Profile_Everyday_Note" xml:space="preserve"><value>حدود دو ساعت: کار سبک، ضربه‌های کوتاه، بیکاری و بیدار شدن روی پردازنده، تست ترتیبی رم و دیسک در کار روزمره. برای سیستمی که تست‌های سنگین را رد می‌کند (بی‌خطا می‌گذراند) ولی موقع کار هنگ می‌کند یا ری‌استارت می‌شود.</value></data>
+  <data name="Test_Gpu_Cycle" xml:space="preserve"><value>کارت گرافیک · چرخهٔ پیش‌تنظیم (بار ثابت، نوسانی و ضربه‌ای، حافظهٔ VRAM، صحنهٔ سه‌بعدی)</value></data>
+  <data name="Test_GpuPreset_full" xml:space="preserve"><value>کامل: هر نوع بار یک بار در هر دور</value></data>
+  <data name="Test_GpuPreset_transient" xml:space="preserve"><value>گذرا: پله‌های بار با سه ریتم (منبع تغذیه، اتصال 12V-2x6)</value></data>
+  <data name="Test_GpuPreset_memory" xml:space="preserve"><value>حافظه: VRAM بین بارهای گرم‌کننده</value></data>
+  <data name="Test_GpuPreset_custom" xml:space="preserve"><value>مرحله‌های دلخواه</value></data>
+  <data name="Test_Option_GpuStages" xml:space="preserve"><value>مرحله‌ها (test:option=value، مثلاً gpu.pulse:pulseMs=100,gapMs=400 gpu.vram)</value></data>
 </root>

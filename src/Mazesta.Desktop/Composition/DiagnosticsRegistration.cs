@@ -39,7 +39,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, LinpackExecutor>();
         s.AddSingleton<ITestExecutor, CpuVectorStressExecutor>();
         s.AddSingleton<ITestExecutor, CpuFftExecutor>();
-        s.AddSingleton<ITestExecutor>(sp => CpuCycleExecutor.Standard(sp.GetRequiredService<IMemoryProbe>()));
+        s.AddSingleton<ITestExecutor>(sp => CpuCycle.Standard(sp.GetRequiredService<IMemoryProbe>()));
         s.AddSingleton<ITestExecutor, MemoryPatternExecutor>();
         s.AddSingleton<ITestExecutor, MemorySequenceExecutor>();
         s.AddSingleton<ITestExecutor, MemoryBitFadeExecutor>();
@@ -50,6 +50,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor, GpuAiExecutor>();
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor>();
+        s.AddSingleton<ITestExecutor>(sp => GpuCycle.Standard(sp.GetService<Mazesta.Core.Inventory.MemoryFactsSource>()));
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
         s.AddSingleton<ITestExecutor, StorageDailyExecutor>();
