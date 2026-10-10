@@ -16,10 +16,11 @@ public static class WmiDriveHealthParser
 {
     public static IReadOnlyList<DriveHealth> Parse(IReadOnlyList<(IReadOnlyDictionary<string, object?> Row, IReadOnlyDictionary<string, object?>? Related)> rows) => [.. rows.Select(x =>
     {
-        var (d, c) = x; bool hdd = N(d, "MediaType") == 3;
+        var (d, c) = x; bool solid = N(d, "MediaType") == 4 || N(d, "BusType") == 17;
         return new DriveHealth(S(d, "FriendlyName") ?? "?", S(d, "SerialNumber"),
             N(d, "HealthStatus") switch { 0 => "Healthy", 1 => "Warning", 2 => "Unhealthy", null => null, _ => "Unknown" },
-            hdd ? null : (int?)N(c, "Wear"),                            // an HDD has no wear counter; Windows reports 0 for it
+            // Only a drive known to be flash has a wear counter: an HDD - or one Windows lists as "unspecified" behind RAID or VMD - reports 0, which would read as 100 % life.
+            solid ? (int?)N(c, "Wear") : null,
             Positive(c, "Temperature"), Positive(c, "TemperatureMax"),  // 0 °C means "not reported", never a running drive's temperature
             N(c, "ReadErrorsUncorrected"), N(c, "WriteErrorsUncorrected"), N(c, "PowerOnHours"),
             N(d, "BusType") switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 3 => "ATA", null => null, var b => $"Bus {b}" });

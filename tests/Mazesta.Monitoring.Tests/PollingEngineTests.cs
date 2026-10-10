@@ -76,7 +76,16 @@ public class PollingEngineTests
     [Fact] public void Provider_exception_outside_contract_fails_engine_not_process()
     {
         var (e, p, _, log) = Build(); e.PrepareForManualTicks(); p.OnPoll = _ => throw new InvalidOperationException("bug");
+        for (int i = 1; i < PollingEngine.MaxFailures; i++) { Assert.Null(e.TickOnce()); Assert.Equal(EngineState.Running, e.State); }   // a passing fault does not end monitoring
         Assert.Null(e.TickOnce()); Assert.Equal(EngineState.Failed, e.State); Assert.Contains(log.Snapshot(), x => x.Key == PollingEngine.KeyEngineFailed);
+    }
+    [Fact] public void A_poll_that_works_again_clears_the_failures()
+    {
+        var (e, p, _, _) = Build(); e.PrepareForManualTicks(); bool fail = true; p.OnPollSideEffect = () => { if (fail) throw new InvalidOperationException("reset"); };
+        for (int i = 1; i < PollingEngine.MaxFailures; i++) e.TickOnce();
+        fail = false; Assert.NotNull(e.TickOnce());
+        fail = true; for (int i = 1; i < PollingEngine.MaxFailures; i++) e.TickOnce();
+        Assert.Equal(EngineState.Running, e.State);
     }
     [Fact] public void Real_thread_publishes_and_stop_disposes_provider()
     {

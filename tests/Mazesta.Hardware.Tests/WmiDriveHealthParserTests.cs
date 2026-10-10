@@ -11,7 +11,9 @@ public class WmiDriveHealthParserTests
             (Row(("FriendlyName", "MSI M390 1TB"), ("SerialNumber", "S1 "), ("MediaType", (ushort)4), ("HealthStatus", (ushort)0)),
              Row(("Wear", (byte)3), ("Temperature", (byte)38), ("TemperatureMax", (byte)61), ("ReadErrorsUncorrected", 0UL), ("WriteErrorsUncorrected", 0UL), ("PowerOnHours", 1234U))),
             (Row(("FriendlyName", "WDC HDD"), ("MediaType", (ushort)3), ("HealthStatus", (ushort)1)), Row(("Wear", (byte)0), ("Temperature", (byte)0))),
-            (Row(("FriendlyName", "USB stick"), ("HealthStatus", (ushort)5)), null)]);
+            (Row(("FriendlyName", "USB stick"), ("HealthStatus", (ushort)5)), null),
+            (Row(("FriendlyName", "Disk behind VMD"), ("MediaType", (ushort)0), ("BusType", (ushort)8)), Row(("Wear", (byte)0)))]);
+        Assert.Null(parsed[3].WearPercent);   // not known to be flash: its 0 is not "100 % life"
         Assert.Equal(new Mazesta.Core.Providers.DriveHealth("MSI M390 1TB", "S1", "Healthy", 3, 38, 61, 0, 0, 1234), parsed[0]);
         Assert.Equal(("Warning", (int?)null, (double?)null), (parsed[1].Status, parsed[1].WearPercent, parsed[1].TemperatureC));   // HDD wear and 0 °C are "not reported"
         Assert.Equal("Unknown", parsed[2].Status); Assert.Null(parsed[2].PowerOnHours);

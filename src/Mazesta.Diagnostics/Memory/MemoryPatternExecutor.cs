@@ -20,7 +20,10 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     internal static long Budget(MemoryStatus status, int requestedMb)
     {
         long reserve = Math.Max(2L << 30, status.TotalBytes / 10);
-        long budget = Math.Max(0, status.AvailableBytes - reserve);
+        // Free RAM, but never more than Windows will still let programs commit: with no page file (or a small one) memory others reserved and did not
+        // touch counts against the commit limit, not against free RAM, and taking it all makes every other program's allocations fail.
+        long free = status.AvailableCommitBytes > 0 ? Math.Min(status.AvailableBytes, status.AvailableCommitBytes) : status.AvailableBytes;
+        long budget = Math.Max(0, free - reserve);
         return requestedMb > 0 ? Math.Min(budget, (long)requestedMb << 20) : budget;
     }
 

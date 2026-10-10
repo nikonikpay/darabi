@@ -31,24 +31,28 @@ public static class GpuDevices
     public static TestOption Option { get; } = new(OptionKey, "Test_Option_Gpu", TestOptionKind.Choice, "", Choices);
 
     public static IReadOnlyList<OptionChoice> Choices()
-        => Adapters.OrderByDescending(d => d.DedicatedMemorySize).Select(d => new OptionChoice(KeyOf(d), $"{d.Name} ({d.DedicatedMemorySize >> 30} GB)")).ToList();
+        => Ranked(Adapters).Select(d => new OptionChoice(KeyOf(d), $"{d.Name} ({d.DedicatedMemorySize >> 30} GB)")).ToList();
 
     /// <summary>The cards that could take part in a test: the hardware adapters with memory of their own, so neither the processor's integrated graphics nor a software adapter. One of them runs a test.</summary>
-    public static int Discrete => Adapters.Count(d => d.DedicatedMemorySize >= 512L << 20);
+    public static int Discrete => Adapters.Count(d => !IsIntegrated(d) && d.DedicatedMemorySize >= 512L << 20);
+
+    public static bool IsIntegrated(GraphicsDevice d) => GpuKind.Integrated(d.Name, GpuFeatures.UnifiedMemory(d));
+    /// <summary>Cards before the processor's own graphics, then by memory: the discrete GPU of a hybrid laptop first, whatever share of RAM the APU was given.</summary>
+    public static IEnumerable<GraphicsDevice> Ranked(IEnumerable<GraphicsDevice> adapters) => adapters.OrderBy(IsIntegrated).ThenByDescending(d => d.DedicatedMemorySize);
 
     public const string NoGpu = "No DirectX 12 hardware GPU is available.";
 
     /// <summary>The adapter a test or benchmark request chose through <see cref="Option"/>.</summary>
     public static GraphicsDevice? Resolve(TestExecutionRequest request, TestDefinition definition) => Resolve((request.Options ?? TestOptions.None(definition)).Get(OptionKey));
 
-    /// <summary>The chosen adapter; with no choice, the one with the most dedicated memory (the discrete GPU on a machine that also has an iGPU). Null when there is none.</summary>
+    /// <summary>The chosen adapter; with no choice, the first of <see cref="Ranked"/> (the discrete GPU on a machine that also has an iGPU). Null when there is none.</summary>
     public static GraphicsDevice? Resolve(string key)
     {
         var all = Adapters;
-        if (key.Length == 0) return all.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
+        if (key.Length == 0) return Ranked(all).FirstOrDefault();
         // A card's LUID changes when the driver resets it, so a choice made before the reset names the same card by its name only.
         string name = key.Split('|')[0];
-        return all.FirstOrDefault(d => KeyOf(d) == key) ?? all.Where(d => d.Name == name).OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
+        return all.FirstOrDefault(d => KeyOf(d) == key) ?? Ranked(all.Where(d => d.Name == name)).FirstOrDefault();
     }
 
     private static string KeyOf(GraphicsDevice d) => $"{d.Name}|{d.Luid}";

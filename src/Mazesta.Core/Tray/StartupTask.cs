@@ -10,9 +10,29 @@ public static class StartupTask
 {
     public const string TaskName = "MazestaTray";
 
-    /// <summary>schtasks needs the /TR value quoted, and if the executable's own path has spaces
-    /// (the default install path does), the inner path needs its own escaped quotes too.</summary>
-    public static string RegisterArguments(string exePath) => $"/Create /TN \"{TaskName}\" /TR \"\\\"{exePath}\\\"\" /SC ONLOGON /RL HIGHEST /F";
+    /// <summary>Registers the task from <see cref="TaskXml"/> written to <paramref name="xmlPath"/>.</summary>
+    public static string RegisterArguments(string xmlPath) => $"/Create /TN \"{TaskName}\" /XML \"{xmlPath}\" /F";
+
+    /// <summary>The task as Task Scheduler XML (save it as UTF-16): at <paramref name="user"/>'s logon, highest privileges. Not the plain
+    /// <c>/SC ONLOGON</c> line, whose defaults are "start only on AC power", "stop when on battery" and a 72-hour limit: on a laptop the tray
+    /// did not start on battery and was killed when the charger came out, and everywhere it was killed after three days.</summary>
+    public static string TaskXml(string exePath, string user) => $"""
+        <?xml version="1.0" encoding="UTF-16"?>
+        <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+          <Triggers><LogonTrigger><Enabled>true</Enabled><UserId>{Escape(user)}</UserId></LogonTrigger></Triggers>
+          <Principals><Principal id="Author"><UserId>{Escape(user)}</UserId><LogonType>InteractiveToken</LogonType><RunLevel>HighestAvailable</RunLevel></Principal></Principals>
+          <Settings>
+            <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+            <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+            <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+            <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+            <Priority>7</Priority>
+          </Settings>
+          <Actions Context="Author"><Exec><Command>{Escape(exePath)}</Command></Exec></Actions>
+        </Task>
+        """;
+
+    private static string Escape(string s) => System.Security.SecurityElement.Escape(s);
 
     public static string QueryArguments() => $"/Query /TN \"{TaskName}\" /FO LIST";
 

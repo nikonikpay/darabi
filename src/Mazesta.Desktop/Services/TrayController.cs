@@ -32,7 +32,14 @@ public sealed class TrayController : ITrayController
         if (!File.Exists(ExePath)) return Loc.Get("Settings_Tray_ExeNotFound");
         try
         {
-            var (code, output) = RunSchtasks(StartupTask.RegisterArguments(ExePath));
+            string xml = Path.Combine(Path.GetTempPath(), $"mazesta-tray-task-{Guid.NewGuid():N}.xml");
+            int code; string output;
+            try
+            {
+                File.WriteAllText(xml, StartupTask.TaskXml(ExePath, $"{Environment.UserDomainName}\\{Environment.UserName}"), System.Text.Encoding.Unicode);
+                (code, output) = RunSchtasks(StartupTask.RegisterArguments(xml));
+            }
+            finally { try { File.Delete(xml); } catch (IOException) { } }
             if (code != 0) return output.Trim();
             return IsRunning() ? null : Start();
         }

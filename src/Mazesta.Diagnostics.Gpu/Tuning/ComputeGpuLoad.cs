@@ -14,12 +14,12 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
     /// submissions is a few percent of the time, short enough that cancelling answers within a quarter second.</summary>
     private static readonly TimeSpan BatchTarget = TimeSpan.FromMilliseconds(250);
 
-    /// <summary>The DirectX adapter with the tuned card's name; the largest one when no name matches (a renamed card, a driver that words it differently).</summary>
+    /// <summary>The DirectX adapter with the tuned card's name; the first card (not the processor's graphics) when no name matches (a renamed card, a driver that words it differently).</summary>
     private GraphicsDevice? Device()
     {
         var adapters = GraphicsDevice.EnumerateDevices().Where(d => d.IsHardwareAccelerated).ToList();
         return adapters.FirstOrDefault(d => string.Equals(d.Name.Trim(), gpuName.Trim(), StringComparison.OrdinalIgnoreCase))
-            ?? adapters.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
+            ?? GpuDevices.Ranked(adapters).FirstOrDefault();
     }
 
     public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct) => Run(kind, duration, settle, false, ct);

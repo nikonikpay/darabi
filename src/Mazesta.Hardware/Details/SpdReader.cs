@@ -23,23 +23,27 @@ internal static class SpdReader
                     try { detector = new SPDDetector(bus, address); } catch (Exception) { continue; }
                     if (!detector.IsValid || detector.Accessor is not { } spd) continue;
                     int slot = address - 0x50;
-                    string? part = Clean(spd.ModulePartNumber()), maker = Clean(spd.GetModuleManufacturerString()), dram = Clean(spd.GetDRAMManufacturerString());
-                    if (detector.SPDMemoryType == SPDMemoryType.SPD_DDR4_SDRAM)
-                    {
-                        var bytes = new byte[512];
-                        for (ushort i = 0; i < bytes.Length; i++) bytes[i] = spd.At(i);
-                        spd.At(0);   // back to page 0, where every other reader of this bus expects it
-                        modules.Add(Ddr4Spd.Decode(slot, bytes, part, maker, dram));
-                    }
-                    else if (detector.SPDMemoryType == SPDMemoryType.SPD_DDR5_SDRAM && Ddr5(slot, spd, part, maker, dram) is { } ddr5) modules.Add(ddr5);
-                    else
-                    {
-                        float size = spd.GetCapacity();
-                        modules.Add(new(slot, Type(detector.SPDMemoryType), part, maker, dram, size > 0 ? (int)size : null, null, null, null, null, null, null, [], [], null));
-                    }
+                    // One module that reads badly (a glitch on the bus, a module the toolkit takes for another type) loses its own details, not every module's.
+                    try { modules.Add(Module(slot, detector, spd)); }
+                    catch (Exception e) when (e is IOException or InvalidOperationException or IndexOutOfRangeException or ArgumentException) { }
                 }
             return modules;
         }
+    }
+
+    private static SpdModule Module(int slot, SPDDetector detector, SPDAccessor spd)
+    {
+        string? part = Clean(spd.ModulePartNumber()), maker = Clean(spd.GetModuleManufacturerString()), dram = Clean(spd.GetDRAMManufacturerString());
+        if (detector.SPDMemoryType == SPDMemoryType.SPD_DDR4_SDRAM)
+        {
+            var bytes = new byte[512];
+            for (ushort i = 0; i < bytes.Length; i++) bytes[i] = spd.At(i);
+            spd.At(0);   // back to page 0, where every other reader of this bus expects it
+            return Ddr4Spd.Decode(slot, bytes, part, maker, dram);
+        }
+        if (detector.SPDMemoryType == SPDMemoryType.SPD_DDR5_SDRAM && Ddr5(slot, spd, part, maker, dram) is { } ddr5) return ddr5;
+        float size = spd.GetCapacity();
+        return new(slot, Type(detector.SPDMemoryType), part, maker, dram, size > 0 ? (int)size : null, null, null, null, null, null, null, [], [], null);
     }
 
     /// <summary>A DDR5 module: only the parts of its 1024 bytes that are decoded are read (the base block, the organisation and the XMP block),

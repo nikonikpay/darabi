@@ -8,6 +8,8 @@ public sealed class PollingEngine : IDisposable
     private readonly Dictionary<HardwareId, DateTimeOffset> _nextDue = []; private readonly object _lock = new();
     private readonly ManualResetEventSlim _wake = new(false); private Thread? _thread; private volatile bool _stopRequested; private bool _providerStarted;
     private bool _disposed;
+    public const int MaxFailures = 5;
+    private int _failures;
     private long _sequence; private DateTimeOffset _lastOverrunLog = DateTimeOffset.MinValue; private volatile EngineState _state = EngineState.Stopped;
     public ISensorProvider Provider { get; } public HistoryStore History { get; } public SensorStatistics Statistics { get; }
     public TimeSpan FastInterval { get; private set; }
@@ -92,9 +94,10 @@ public sealed class PollingEngine : IDisposable
     {
         if (State != EngineState.Running) return null;
         SensorSnapshot snapshot;
+        try { EnsureProviderStarted(); }
+        catch (Exception ex) { _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString()); State = EngineState.Failed; return null; }
         try
         {
-            EnsureProviderStarted();
             var now = _clock.UtcNow; var due = new HashSet<HardwareId>(); var skipped = _skipped;
             lock (_lock)
                 foreach (var n in Hardware)
@@ -114,7 +117,15 @@ public sealed class PollingEngine : IDisposable
             snapshot = new SensorSnapshot(Interlocked.Increment(ref _sequence), after, readings, result.NodeStatus);
             History.Append(snapshot); Statistics.Apply(snapshot);
         }
-        catch (Exception ex) { _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString()); State = EngineState.Failed; return null; }
+        catch (Exception ex)
+        {
+            // One bad poll (a driver resetting under NVML, a device going away mid-read) must not end live monitoring, history and the fan curves
+            // until the app restarts: the engine keeps polling, and gives up only when the provider fails over and over.
+            _events.Log(EventLevel.Error, KeyEngineFailed, ex.ToString());
+            if (++_failures >= MaxFailures) State = EngineState.Failed;
+            return null;
+        }
+        _failures = 0;
         try { SnapshotPublished?.Invoke(snapshot); }
         catch (Exception ex) { _events.Log(EventLevel.Error, KeySubscriberFailed, ex.ToString()); }
         return snapshot;
