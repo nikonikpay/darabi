@@ -3485,4 +3485,11 @@ Cancel: stop.</value></data>
   <data name="Tuning_SceneTest_Bursts" xml:space="preserve"><value>Bursts like a game engine (Unreal)</value></data>
   <data name="Tuning_SceneTest_BurstsHint" xml:space="preserve"><value>The scene in bursts of 30 ms to 4 s after 20 ms to 8 s of nothing, with every CPU core loaded during each burst: the jump a click in Unreal's editor makes (shaders compiled on all cores while the card draws). A setting that holds a steady scene can still fail here, and a weak power supply trips here.</value></data>
   <data name="Tuning_SceneTest_BurstsTag" xml:space="preserve"><value>bursts</value></data>
+  <data name="Bench_7z" xml:space="preserve"><value>7-Zip (compression)</value></data>
+  <data name="Bench_7z_Threads" xml:space="preserve"><value>Threads</value></data>
+  <data name="Bench_7z_Threads_All" xml:space="preserve"><value>All threads</value></data>
+  <data name="Bench_7z_Threads_One" xml:space="preserve"><value>One thread</value></data>
+  <data name="Bench_7z_Total" xml:space="preserve"><value>7-Zip total rating</value></data>
+  <data name="Bench_7z_Compress" xml:space="preserve"><value>Compression rating</value></data>
+  <data name="Bench_7z_Decompress" xml:space="preserve"><value>Decompression rating</value></data>
 </root>

@@ -3485,4 +3485,11 @@
   <data name="Tuning_SceneTest_Bursts" xml:space="preserve"><value>جهش بار مثل موتور بازی (Unreal)</value></data>
   <data name="Tuning_SceneTest_BurstsHint" xml:space="preserve"><value>صحنه به‌صورت جهش‌های ۳۰ میلی‌ثانیه تا ۴ ثانیه، بعد از ۲۰ میلی‌ثانیه تا ۸ ثانیه بیکاری، و در هر جهش همه هسته‌های CPU هم زیر بار می‌روند؛ همان پرشی که با یک کلیک در ادیتور Unreal پیش می‌آید (کامپایل شیدرها روی همه هسته‌ها هم‌زمان با رندر کارت). تنظیمی که در صحنه ثابت سالم می‌ماند ممکن است اینجا خطا بدهد، و پاور ضعیف هم اینجا قطع می‌کند.</value></data>
   <data name="Tuning_SceneTest_BurstsTag" xml:space="preserve"><value>جهشی</value></data>
+  <data name="Bench_7z" xml:space="preserve"><value>7-Zip (فشرده‌سازی)</value></data>
+  <data name="Bench_7z_Threads" xml:space="preserve"><value>تعداد رشته‌ها</value></data>
+  <data name="Bench_7z_Threads_All" xml:space="preserve"><value>همه رشته‌ها</value></data>
+  <data name="Bench_7z_Threads_One" xml:space="preserve"><value>یک رشته</value></data>
+  <data name="Bench_7z_Total" xml:space="preserve"><value>امتیاز کل 7-Zip</value></data>
+  <data name="Bench_7z_Compress" xml:space="preserve"><value>امتیاز فشرده‌سازی</value></data>
+  <data name="Bench_7z_Decompress" xml:space="preserve"><value>امتیاز بازگشایی</value></data>
 </root>
