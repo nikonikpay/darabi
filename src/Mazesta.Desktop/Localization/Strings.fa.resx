@@ -3435,4 +3435,16 @@
   <data name="Msg_Empty" xml:space="preserve"><value>هنوز پیامی نرسیده است.</value></data>
   <data name="Msg_Open" xml:space="preserve"><value>باز کردن پیوند</value></data>
   <data name="Msg_ReadAll" xml:space="preserve"><value>همه خوانده شد</value></data>
+  <data name="Test_Memory_Sequence" xml:space="preserve"><value>رم · تست ترتیبی (پیش‌تنظیم: گرما، سخت، ضربه‌ای، حاشیه)</value></data>
+  <data name="Test_Option_MemPreset" xml:space="preserve"><value>پیش‌تنظیم</value></data>
+  <data name="Test_MemPreset_quick" xml:space="preserve"><value>سریع: هر مرحله یک بار</value></data>
+  <data name="Test_MemPreset_extreme" xml:space="preserve"><value>سخت: رفت‌وبرگشت زیاد بین هر بررسی (شبیه TM5 Extreme1)</value></data>
+  <data name="Test_MemPreset_heat" xml:space="preserve"><value>گرما: بیشترین نوشتن، داغ کردن DDR5 (پیشنهادی)</value></data>
+  <data name="Test_MemPreset_spike" xml:space="preserve"><value>ضربه‌ای: بار کامل و بیکاری به نوبت (کنترلر حافظه)</value></data>
+  <data name="Test_MemPreset_margin" xml:space="preserve"><value>حاشیه: تغییر الگو، معکوس‌سازی، مکث کوتاه</value></data>
+  <data name="Test_MemPreset_custom" xml:space="preserve"><value>ترتیب دلخواه</value></data>
+  <data name="Test_Option_MemSequence" xml:space="preserve"><value>مرحله‌ها (fill، arith، invert، flip، mirror، read، idle، check، loop N { … })</value></data>
+  <data name="Log_MemSeq_Start" xml:space="preserve"><value>پیش‌تنظیم «{0}» روی {1} مگابایت رم آزاد.</value></data>
+  <data name="Log_MemSeq_Round" xml:space="preserve"><value>دور {0} تمام شد؛ تا این لحظه {1} بررسی و {2} کلمهٔ نادرست.</value></data>
+  <data name="Log_MemSeq_Errors" xml:space="preserve"><value>بررسی بعد از «{0}» {1} کلمهٔ نادرست پیدا کرد ({2} بیت نادرست).</value></data>
 </root>
