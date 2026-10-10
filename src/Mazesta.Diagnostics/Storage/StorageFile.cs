@@ -13,7 +13,7 @@ internal sealed class StorageFile : IDisposable
     public const int Block = 1 << 20, Sector = 4096;
     private const FileOptions NoBuffering = (FileOptions)0x20000000;
     private const long FreeSpaceMargin = 1L << 30;   // never fill a customer's disk to the brim
-    private const int MinMb = 16, MaxMb = 16384;
+    private const int MinMb = 16, MaxMb = 65536;   // 64 GiB: a sustained write has to outlast a large SLC cache
 
     private readonly SafeFileHandle _handle;
     public long Length { get; }

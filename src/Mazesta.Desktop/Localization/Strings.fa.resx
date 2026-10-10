@@ -3492,4 +3492,7 @@
   <data name="Bench_7z_Total" xml:space="preserve"><value>امتیاز کل 7-Zip</value></data>
   <data name="Bench_7z_Compress" xml:space="preserve"><value>امتیاز فشرده‌سازی</value></data>
   <data name="Bench_7z_Decompress" xml:space="preserve"><value>امتیاز بازگشایی</value></data>
+  <data name="Test_Storage_Sustained" xml:space="preserve"><value>دیسک · نوشتن طولانی (کش نوشتن / SLC: سرعت کجا و تا چه حد افت می‌کند؛ همه بررسی‌شده)</value></data>
+  <data name="Log_StorageSustained_Done" xml:space="preserve"><value>سرعت بخش‌های اول {0:F0} MB/s؛ بعد از {1} گیگابایت به {2:F0} MB/s افت کرد؛ کندترین بخش {3:F0} MB/s.</value></data>
+  <data name="Log_StorageSustained_Short" xml:space="preserve"><value>زمان پس از نوشتن {0} از {1} مگابایت تمام شد؛ فقط همان مقدار نوشته‌شده خوانده و بررسی می‌شود.</value></data>
 </root>

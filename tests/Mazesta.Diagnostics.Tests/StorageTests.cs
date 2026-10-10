@@ -31,6 +31,18 @@ public class StorageTests : IDisposable
         Assert.Equal(TestOutcome.Passed, result.Outcome); Assert.Equal(0, result.ErrorCount); Assert.Contains("everyday drive use", result.Detail);
         Assert.Empty(Directory.GetFileSystemEntries(_dir));
     }
+    [Fact] public async Task Sustained_write_reads_every_byte_back()
+    {
+        var result = await new StorageSustainedExecutor().RunAsync(Request(StorageSustainedExecutor.Spec, _dir, 512, seconds: 30), CancellationToken.None);
+        Assert.Equal(TestOutcome.Passed, result.Outcome); Assert.Contains("sustained sequential write of 512 MiB", result.Detail);
+        Assert.Empty(Directory.GetFileSystemEntries(_dir));
+    }
+    [Fact] public void Sustained_write_finds_where_the_cache_ran_out()
+    {
+        var (first, at, after, slowest) = StorageSustainedExecutor.Analyse([3000, 3100, 2900, 3000, 900, 950, 300, 880, 900]);   // four 256 MiB slices fast, then QLC speed
+        Assert.Equal(3000, first); Assert.Equal(1.0, at); Assert.Equal(900, after); Assert.Equal(300, slowest);
+        Assert.Null(StorageSustainedExecutor.Analyse([2000, 1900, 300, 2000, 2100]).CacheEndGiB);   // one slow slice is a hiccup, not the end of the cache
+    }
     [Fact] public void Everyday_use_copy_and_small_files_read_back_clean_and_are_deleted()
     {
         using var buffer = new Mazesta.Diagnostics.Memory.NativeBlock(1 << 20);

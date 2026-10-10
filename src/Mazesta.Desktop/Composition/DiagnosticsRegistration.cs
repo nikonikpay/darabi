@@ -52,6 +52,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor>();
         s.AddSingleton<ITestExecutor>(sp => GpuCycle.Standard(sp.GetService<Mazesta.Core.Inventory.MemoryFactsSource>()));
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
+        s.AddSingleton<ITestExecutor, StorageSustainedExecutor>();
         s.AddSingleton<ITestExecutor, StorageRandom4kExecutor>();
         s.AddSingleton<ITestExecutor, StorageDailyExecutor>();
         s.AddSingleton<ITestExecutor>(new PowerExecutor(new CpuMatrixStressExecutor(), new GpuStressExecutor(GpuStressProfile.Steady)));
