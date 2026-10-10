@@ -118,7 +118,7 @@ final class MZC_Portal
                 $parts[] = array('category' => isset(MZC_Crm::$categories[$p['category']]) ? MZC_Crm::$categories[$p['category']] : $p['category'], 'model' => $p['model'], 'serial' => $p['serial'], 'vendor' => $p['vendor'],
                     'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null, 'until' => $until ? MZC_Crm::jdate($until) : null, 'left' => $left, 'warranty' => (bool) $p['has_warranty']);
             }
-            $outB[] = array('title' => $b['title'], 'date' => $b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '', 'invoice' => $b['invoice_no'], 'service' => $b['service_no'], 'delivered' => (bool) $b['delivered'], 'parts' => $parts,
+            $outB[] = array('title' => $b['title'], 'date' => $b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '', 'invoice' => $b['invoice_no'], 'service' => $b['service_no'], 'delivered' => (bool) $b['delivered'], 'status' => isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : '', 'parts' => $parts,
                 'report' => $link($b['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $b['photos']));
         }
         $outJ = array();

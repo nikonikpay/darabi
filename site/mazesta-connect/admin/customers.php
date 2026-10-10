@@ -53,6 +53,20 @@ if ($view) {
             . '<span dir="auto">' . esc_html(mb_substr((string) $j['complaint'], 0, 140)) . '</span> <span class="muted">· ' . esc_html(MZC_Crm::money($j['total'])) . '</span></div>';
     }
     echo '</div></div>';
+    list($ships) = MZC_Ships::ships('', '', 0, 1, 50, $view);
+    echo '<div class="mzc-panel"><header><h3>ارسال به گارانتی (' . count($ships) . ')</h3><a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-ships', array('add' => 1, 'customer' => $view))) . '">+ ارسال تازه</a></header><div class="body"><div class="mzc-timeline">';
+    if (!$ships) { echo '<p class="muted">قطعه‌ای از این مشتری به گارانتی نرفته است.</p>'; }
+    foreach ($ships as $sh) {
+        echo '<div class="mzc-item"><div class="top"><strong dir="auto">' . esc_html($sh['part_name']) . '</strong>' . ($sh['vendor_name'] ? MZC_Admin::pill($sh['vendor_name']) : '') . ($sh['sent_at'] ? MZC_Admin::pill(MZC_Crm::jdate($sh['sent_at'])) : '')
+            . ($sh['received_at'] ? MZC_Admin::pill('برگشت', 'ok') : MZC_Admin::pill('در گارانتی', 'warn')) . '<a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-ships', array('edit' => (int) $sh['id']))) . '">باز کردن</a></div></div>';
+    }
+    echo '</div></div></div>';
+    $acc = MZC_Site::accounts_for($c);
+    if ($acc) {
+        echo '<div class="mzc-panel"><header><h3>حساب در سایت</h3></header><div class="body"><div class="mzc-timeline">';
+        foreach ($acc as $a) { echo '<div class="mzc-item"><div class="top"><strong dir="auto">' . esc_html($a['name']) . '</strong>' . MZC_Admin::pill($a['email']) . '<a class="mzc-btn sm" href="' . esc_url($a['url']) . '">پروفایل</a></div></div>'; }
+        echo '</div></div></div>';
+    }
     if ($forms) {
         echo '<div class="mzc-panel"><header><h3>فرم‌های دیگر (' . count($forms) . ')</h3></header><div class="body"><div class="mzc-timeline">';
         foreach ($forms as $f) {
@@ -69,12 +83,20 @@ $q = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
 $grp = isset($_GET['grp']) ? sanitize_key(wp_unslash($_GET['grp'])) : '';
 list($rows, $total) = MZC_Crm::customers($q, $paged, $per, $grp);
+$linkOf = function ($c) { return MZC_Admin::url('mzc-customers', array('view' => (int) $c['id'])); };
+$defs = array(
+    'name' => array('نام', 1, function ($c) use ($linkOf) { return '<a dir="auto" href="' . esc_url($linkOf($c)) . '"><strong>' . esc_html($c['name']) . '</strong></a>'; }),
+    'grp' => array('گروه', 1, function ($c) { return esc_html(isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : MZC_Crm::$groups['customer']); }),
+    'mobile' => array('موبایل', 1, function ($c) { return '<span class="num">' . esc_html($c['mobile']) . '</span>'; }),
+    'builds' => array('سیستم', 1, function ($c) { return MZC_Admin::num($c['builds']); }, 'n'),
+    'jobs' => array('سرویس', 1, function ($c) { return MZC_Admin::num($c['jobs']); }, 'n'),
+    'created' => array('ثبت', 1, function ($c) { return MZC_Admin::when(strtotime($c['created'] . ' UTC')); }),
+    'mobile2' => array('موبایل دوم', 0, function ($c) { return '<span class="num">' . esc_html($c['mobile2']) . '</span>'; }),
+    'phone' => array('تلفن', 0, function ($c) { return '<span class="num">' . esc_html($c['phone']) . '</span>'; }),
+    'national_id' => array('کد ملی', 0, function ($c) { return '<span class="num">' . esc_html($c['national_id']) . '</span>'; }),
+);
 echo '<div class="mzc-title"><h2>مشتریان</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-customers', array('add' => 1))) . '">+ مشتری تازه</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-customers"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام، موبایل یا کد ملی" style="min-width:260px"><select name="grp" onchange="this.form.submit()"><option value="">همهٔ گروه‌ها</option>' . implode('', array_map(function ($k, $l) use ($grp) { return '<option value="' . esc_attr($k) . '"' . selected($grp, $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$groups), MZC_Crm::$groups)) . '</select><button class="mzc-btn primary">جستجو</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' مشتری</span></form>';
-echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>نام</th><th>گروه</th><th>موبایل</th><th class="n">سیستم</th><th class="n">سرویس</th><th>ثبت</th></tr></thead><tbody>';
-if (!$rows) { echo '<tr><td class="empty" colspan="6">مشتری‌ای پیدا نشد.</td></tr>'; }
-foreach ($rows as $c) {
-    $link = MZC_Admin::url('mzc-customers', array('view' => (int) $c['id']));
-    echo '<tr class="click" data-href="' . esc_url($link) . '"><td dir="auto"><a href="' . esc_url($link) . '"><strong>' . esc_html($c['name']) . '</strong></a></td><td>' . esc_html(isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : MZC_Crm::$groups['customer']) . '</td><td class="num">' . esc_html($c['mobile']) . '</td><td class="n">' . MZC_Admin::num($c['builds']) . '</td><td class="n">' . MZC_Admin::num($c['jobs']) . '</td><td>' . MZC_Admin::when(strtotime($c['created'] . ' UTC')) . '</td></tr>';
-}
-echo '</tbody></table></div></div>' . MZC_Admin::pager($total, $per, $paged);
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-customers"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام، موبایل یا کد ملی" style="min-width:260px"><select name="grp" onchange="this.form.submit()"><option value="">همهٔ گروه‌ها</option>'
+    . implode('', array_map(function ($k, $l) use ($grp) { return '<option value="' . esc_attr($k) . '"' . selected($grp, $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$groups), MZC_Crm::$groups))
+    . '</select><button class="mzc-btn primary">جستجو</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' مشتری</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-customers', $defs) . '</span></form>';
+echo MZC_Admin::table('mzc-customers', $defs, $rows, $linkOf, 'مشتری‌ای پیدا نشد.') . MZC_Admin::pager($total, $per, $paged);

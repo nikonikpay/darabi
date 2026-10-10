@@ -6,7 +6,7 @@ final class MZC_Admin
 {
     private static $pages = array(
         'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-messages' => array('پیام‌ها', 'messages'),
-        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'),
+        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'),
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
 
@@ -15,6 +15,7 @@ final class MZC_Admin
         add_action('admin_menu', array(__CLASS__, 'menu'));
         add_action('admin_enqueue_scripts', array(__CLASS__, 'assets'));
         add_action('admin_post_mzc_system_note', array(__CLASS__, 'act_system_note'));
+        add_action('admin_post_mzc_cols_save', array(__CLASS__, 'act_cols_save'));
         MZC_Crm::boot();
     }
 
@@ -147,6 +148,66 @@ final class MZC_Admin
     }
 
     /** The CRM pages need the second database; says what is missing and returns false when it is not ready. */
+    /* ---------- list tables with columns the user chooses (which ones, in what order; kept per user) ---------- */
+
+    /** The keys of the columns to show: the user's saved choice (only keys the page still has), else the page's defaults. $defs = key => array(label, default?, cell callback, class). */
+    public static function cols($page, $defs)
+    {
+        $saved = get_user_meta(get_current_user_id(), 'mzc_cols_' . $page, true); $keys = array();
+        if (is_array($saved)) { foreach ($saved as $k) { if (is_string($k) && isset($defs[$k]) && !in_array($k, $keys, true)) { $keys[] = $k; } } }
+        if (!$keys) { foreach ($defs as $k => $d) { if (!empty($d[1])) { $keys[] = $k; } } }
+        return $keys;
+    }
+
+    /** The "columns" menu above a list: a tick and a position number for each column. */
+    public static function cols_ui($page, $defs)
+    {
+        $cur = self::cols($page, $defs); $order = array_merge($cur, array_diff(array_keys($defs), $cur));
+        $o = '<details class="mzc-cols"><summary class="mzc-btn sm">ستون‌ها</summary>' . self::form_open('cols_save') . '<input type="hidden" name="page_slug" value="' . esc_attr($page) . '"><div class="list">';
+        foreach ($order as $i => $k) {
+            $o .= '<div class="row"><label><input type="checkbox" name="show[' . esc_attr($k) . ']" value="1"' . checked(in_array($k, $cur, true), true, false) . '> ' . esc_html($defs[$k][0]) . '</label>'
+                . '<input type="number" name="ord[' . esc_attr($k) . ']" value="' . (int) ($i + 1) . '" min="1" max="99" aria-label="ترتیب"></div>';
+        }
+        return $o . '</div><p><button class="mzc-btn primary sm">ذخیره</button> <button class="mzc-btn sm" name="reset" value="1">پیش‌فرض</button></p></form></details>';
+    }
+
+    public static function act_cols_save()
+    {
+        self::guard('cols_save');
+        $page = isset($_POST['page_slug']) ? sanitize_key(wp_unslash($_POST['page_slug'])) : '';
+        if (!isset(self::$pages[$page])) { wp_die('صفحه نامعتبر است.', '', array('response' => 400)); }
+        $meta = 'mzc_cols_' . $page; $uid = get_current_user_id();
+        if (!empty($_POST['reset'])) { delete_user_meta($uid, $meta); self::back($page, 'ok:ستون‌ها به حالت پیش‌فرض برگشت.'); }
+        $show = isset($_POST['show']) && is_array($_POST['show']) ? array_keys($_POST['show']) : array();
+        $ord = isset($_POST['ord']) && is_array($_POST['ord']) ? $_POST['ord'] : array(); $keys = array();
+        foreach ($show as $k) { $k = sanitize_key((string) $k); if ($k !== '' && strlen($k) <= 24) { $keys[$k] = isset($ord[$k]) ? (int) $ord[$k] : 50; } }
+        asort($keys);
+        if ($keys) { update_user_meta($uid, $meta, array_slice(array_keys($keys), 0, 20)); self::back($page, 'ok:ستون‌ها ذخیره شد.'); }
+        self::back($page, 'err:دست‌کم یک ستون را نگه دارید.');
+    }
+
+    /** The table of a list page. A cell callback returns escaped HTML; $link($row) is where a click on the row goes. */
+    public static function table($page, $defs, $rows, $link, $empty)
+    {
+        $keys = self::cols($page, $defs);
+        $o = '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr>';
+        foreach ($keys as $k) { $o .= '<th' . (!empty($defs[$k][3]) ? ' class="' . esc_attr($defs[$k][3]) . '"' : '') . '>' . esc_html($defs[$k][0]) . '</th>'; }
+        $o .= '</tr></thead><tbody>';
+        if (!$rows) { $o .= '<tr><td class="empty" colspan="' . count($keys) . '">' . esc_html($empty) . '</td></tr>'; }
+        foreach ($rows as $r) {
+            $o .= '<tr class="click" data-href="' . esc_url($link($r)) . '">';
+            foreach ($keys as $k) { $o .= '<td' . (!empty($defs[$k][3]) ? ' class="' . esc_attr($defs[$k][3]) . '"' : '') . '>' . call_user_func($defs[$k][2], $r) . '</td>'; }
+            $o .= '</tr>';
+        }
+        return $o . '</tbody></table></div></div>';
+    }
+
+    /** A link to the app's report for a list cell (opens in a tab; the row itself does not follow the click). */
+    public static function report_link($id)
+    {
+        return $id ? '<a href="' . esc_url(admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode((string) $id))) . '" target="_blank" rel="noopener" onclick="event.stopPropagation()">گزارش</a>' : '<span class="muted">—</span>';
+    }
+
     public static function need_crm()
     {
         if (MZC_Crm_Db::ready()) { return true; }

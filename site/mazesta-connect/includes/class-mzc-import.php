@@ -38,7 +38,7 @@ final class MZC_Import
         $f = isset($_FILES['old']) ? $_FILES['old'] : null;
         if (!$f || $f['error'] !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) { MZC_Admin::back('mzc-settings', 'err:فایل بارگذاری نشد (حجم مجاز هاست را بررسی کنید).'); }
         $raw = file_get_contents($f['tmp_name']);
-        $txt = is_string($raw) && substr($raw, 0, 2) === "\x1f\x8b" ? @gzdecode($raw) : false;
+        $txt = is_string($raw) && substr($raw, 0, 2) === "\x1f\x8b" ? @gzdecode($raw, self::MAX_BYTES + 1) : false;   // the length limit stops a small file that unpacks to gigabytes
         if (!is_string($txt) || $txt === '' || strlen($txt) > self::MAX_BYTES || strpos($txt, '{"t":"customer"') !== 0) { MZC_Admin::back('mzc-settings', 'err:این فایل خروجی export_old_crm.py نیست.'); }
         if (!Mazesta_Connect::ensure() || file_put_contents(self::file(), $txt) === false) { MZC_Admin::back('mzc-settings', 'err:فایل در پوشهٔ داده‌ها ذخیره نشد.'); }
         self::save_state(array('offset' => 0, 'size' => strlen($txt), 'lines' => 0, 'counts' => new stdClass(), 'skipped' => 0, 'errors' => array(), 'done' => false, 'at' => gmdate('Y-m-d H:i:s')));
@@ -89,6 +89,28 @@ final class MZC_Import
     private static function json($v) { return empty($v) ? null : wp_json_encode($v, JSON_UNESCAPED_UNICODE); }
 
     /** The customer a record belongs to; one stand-in customer takes the records whose customer was deleted in the old database. */
+    /** The old "send to warranty" form: its sections hold the part, the shop it went to, the dates and the answers. */
+    private static function ship($db, $r)
+    {
+        if ($db->get_var($db->prepare('SELECT id FROM `' . self::t('shipments') . '` WHERE old_id = %d', (int) $r['old']))) { return false; }
+        $g = function ($sec, $field) use ($r) {
+            foreach ((array) $r['data'] as $s) { if (isset($s['s'], $s['r']) && $s['s'] === $sec && isset($s['r'][$field]) && is_scalar($s['r'][$field])) { return trim((string) $s['r'][$field]); } }
+            return '';
+        };
+        $date = function ($v) { return preg_match('~^(\d{2})/(\d{2})/(\d{4})$~', (string) $v, $m) && checkdate((int) $m[1], (int) $m[2], (int) $m[3]) ? $m[3] . '-' . $m[1] . '-' . $m[2] : null; };   // the old form wrote mm/dd/yyyy
+        $vendor = preg_replace('/\s*\(\s*تعمیرکار\s*\)\s*/u', '', $g('توضیحات ارسال', 'نام تعمیرگاه یا گارانتی'));
+        $repair = mb_strpos($g('توضیحات ارسال', 'نام تعمیرگاه یا گارانتی'), 'تعمیرکار') !== false;
+        $part = $g('قطعات ارسالی', 'نام و مدل قطعه') ?: self::s($r['title'], 190);
+        $cust = $r['cust'] ? self::owner($db, $r['cust']) : null;
+        $ok = $db->insert(self::t('shipments'), array('vendor_id' => $vendor !== '' ? MZC_Ships::vendor_id($vendor, $repair ? 'repair' : 'warranty') : null, 'part_name' => self::s($part ?: '—', 190), 'serial' => self::nz(self::s($g('قطعات ارسالی', 'سریال قطعه'), 120)),
+            'problem' => self::nz(self::s($g('توضیحات ارسال', 'توضیحات'), 4000)), 'sent_at' => $date($g('توضیحات ارسال', 'تاریخ')) ?: self::d($r['at']), 'tracking' => self::nz(self::s($g('توضیحات ارسال', 'شماره پیگیری'), 80)),
+            'vendor_reply' => self::nz(self::s($g('توضیحات ارسال', 'نتیجه تماس با گارانتی :'), 4000)), 'received_at' => $date($g('توضیحات دریافت قطعه', 'تاریخ')), 'fix_notes' => self::nz(self::s($g('توضیحات دریافت قطعه', 'توضیحات'), 4000)),
+            'back_part' => self::nz(self::s($g('قطعات دریافتی', 'نام و مدل قطعه'), 190)), 'back_serial' => self::nz(self::s($g('قطعات دریافتی', 'سریال قطعه'), 120)), 'shelf' => self::nz(self::s($g('پنل', 'موقعیت قطعه در دفتر'), 60)),
+            'picked_up' => $g('پنل', 'قطعه تحویل گرفته شد') === '1' ? 1 : 0, 'owner' => $cust ? 'customer' : 'mazesta', 'customer_id' => $cust ?: null, 'ref' => self::nz(self::s($g('مشخصات مالک قطعات', 'مربوط به فاکتور :') ?: $r['ref'], 60)),
+            'customer_reply' => self::nz(self::s($g('هماهنگی با مشتری', 'نتیجه تماس با مشتری'), 4000)), 'old_id' => (int) $r['old'], 'created' => self::ts($r['created']), 'updated' => self::ts($r['created'])));
+        return $ok ? true : $db->last_error;
+    }
+
     private static function owner($db, $old)
     {
         $id = $old ? self::mapped($db, 'c', $old) : 0;
@@ -166,6 +188,7 @@ final class MZC_Import
                 return true;
 
             case 'form':
+                if ($r['kind'] === 'warranty') { return self::ship($db, $r); }
                 if ($db->get_var($db->prepare('SELECT id FROM `' . self::t('forms') . '` WHERE kind = %s AND old_id = %d', self::s($r['kind'], 12), (int) $r['old']))) { return false; }
                 $ok = $db->insert(self::t('forms'), array('customer_id' => $r['cust'] ? self::owner($db, $r['cust']) : null, 'kind' => self::s($r['kind'], 12), 'ref' => self::nz(self::s($r['ref'], 60)), 'no' => self::nz(self::s($r['no'], 40)),
                     'at' => self::d($r['at']), 'title' => self::nz(self::s($r['title'])), 'data' => self::json($r['data']), 'old_id' => (int) $r['old'], 'created' => self::ts($r['created'])));

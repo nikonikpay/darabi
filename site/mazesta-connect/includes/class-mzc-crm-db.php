@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 5;
+    const SCHEMA = 6;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -106,11 +106,17 @@ final class MZC_Crm_Db
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('forms')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, customer_id BIGINT UNSIGNED NULL, kind VARCHAR(12) NOT NULL, ref VARCHAR(60) NULL, no VARCHAR(40) NULL,
                 at DATE NULL, title VARCHAR(255) NULL, data LONGTEXT NULL, old_id INT NULL, created DATETIME NOT NULL, KEY customer_id (customer_id), KEY kind (kind, ref), KEY old_id (old_id)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oldmap')}` (kind VARCHAR(10) NOT NULL, old_id INT NOT NULL, new_id BIGINT UNSIGNED NOT NULL, PRIMARY KEY (kind, old_id)) $engine";
+        // schema 6: where the shop sends faulty parts (warranty companies and repair shops) and what came back
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('vendors')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, kind VARCHAR(10) NOT NULL DEFAULT 'warranty', phone VARCHAR(60) NULL, notes VARCHAR(255) NULL, UNIQUE KEY name (name)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('shipments')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, vendor_id BIGINT UNSIGNED NULL, part_name VARCHAR(190) NOT NULL, serial VARCHAR(120) NULL, problem TEXT NULL,
+                sent_at DATE NULL, tracking VARCHAR(80) NULL, vendor_reply TEXT NULL, received_at DATE NULL, fix_notes TEXT NULL, back_part VARCHAR(190) NULL, back_serial VARCHAR(120) NULL, shelf VARCHAR(60) NULL, picked_up TINYINT NOT NULL DEFAULT 0,
+                owner VARCHAR(10) NOT NULL DEFAULT 'mazesta', customer_id BIGINT UNSIGNED NULL, job_id BIGINT UNSIGNED NULL, ref VARCHAR(60) NULL, customer_reply TEXT NULL, old_id INT NULL, created DATETIME NOT NULL, updated DATETIME NOT NULL,
+                KEY vendor_id (vendor_id), KEY customer_id (customer_id), KEY job_id (job_id), KEY sent_at (sent_at), KEY old_id (old_id), KEY serial (serial)) $engine";
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)
         $cols = array(
             'customers' => array('mobile2' => 'VARCHAR(20) NULL', 'old_id' => 'INT NULL', 'phone' => 'VARCHAR(80) NULL', 'grp' => 'VARCHAR(12) NULL'),
-            'builds' => array('delivered' => 'TINYINT NOT NULL DEFAULT 0', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
+            'builds' => array('status' => "VARCHAR(12) NOT NULL DEFAULT 'delivered'", 'delivered' => 'TINYINT NOT NULL DEFAULT 0', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
             'build_parts' => array('has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'qc' => 'TINYINT NOT NULL DEFAULT 0'),
             'jobs' => array('due_at' => 'DATE NULL', 'is_mazesta' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'discount' => 'BIGINT NOT NULL DEFAULT 0', 'paid' => 'BIGINT NOT NULL DEFAULT 0',
                 'invoice_no' => 'VARCHAR(60) NULL', 'service_done' => 'TINYINT NOT NULL DEFAULT 0', 'ship' => 'TEXT NULL', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),

@@ -79,3 +79,10 @@
 .mzc-bar{height:10px;border-radius:6px;background:rgba(127,127,127,.2);overflow:hidden;max-width:520px}.mzc-bar i{display:block;height:100%;background:#2563eb;transition:width .3s}
 
 .mzc label.chk{display:flex;align-items:center;gap:6px;flex-direction:row}.mzc .mzc-row label.chk{white-space:nowrap}.mzc-more{margin-top:14px}.mzc-more summary{cursor:pointer;font-weight:600}
+
+.mzc-cols { position: relative; }
+.mzc-cols summary { cursor: pointer; list-style: none; display: inline-block; }
+.mzc-cols[open] > form { position: absolute; z-index: 20; inset-inline-end: 0; margin-top: 6px; background: #fff; border: 1px solid #d5dbe4; border-radius: 8px; padding: 10px 12px; min-width: 240px; box-shadow: 0 6px 24px rgba(0,0,0,.12); }
+.mzc-cols .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.mzc-cols .row input[type=number] { width: 56px; }
+.mzc-bar-actions { display: flex; gap: 8px; align-items: center; margin-inline-start: auto; }

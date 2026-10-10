@@ -53,8 +53,8 @@ final class MZC_Sms
             $fill = function ($t, $enc) use ($mobile, $text, $code) { return strtr($t, array('{mobile}' => $enc ? rawurlencode($mobile) : $mobile, '{message}' => $enc ? rawurlencode($text) : $text, '{code}' => $enc ? rawurlencode($code) : $code)); };
             $url = $fill($s['url'], true);
             if (!preg_match('#^https://#i', $url)) { return 'نشانی درگاه باید با https:// شروع شود.'; }
-            if ($s['method'] === 'POST') { $res = wp_remote_post($url, $args + array('body' => $fill($s['body'], false), 'headers' => array('Content-Type' => strpos(ltrim($s['body']), '{') === 0 ? 'application/json' : 'application/x-www-form-urlencoded'))); }
-            else { $res = wp_remote_get($url, $args); }
+            if ($s['method'] === 'POST') { $res = wp_safe_remote_post($url, $args + array('body' => $fill($s['body'], false), 'headers' => array('Content-Type' => strpos(ltrim($s['body']), '{') === 0 ? 'application/json' : 'application/x-www-form-urlencoded'))); }
+            else { $res = wp_safe_remote_get($url, $args); }   // the safe calls refuse addresses inside the server's own network
             if (is_wp_error($res)) { return 'ارتباط با درگاه برقرار نشد: ' . $res->get_error_message(); }
             $st = (int) wp_remote_retrieve_response_code($res);
             return $st >= 200 && $st < 300 ? true : 'درگاه با کد ' . $st . ' پاسخ داد.';

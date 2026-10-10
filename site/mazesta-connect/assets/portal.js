@@ -67,7 +67,7 @@
       add(root, el('h3', 'mzcp-h', 'سیستم‌های خریداری‌شده'));
       if (!me.builds.length) add(root, el('p', 'mzcp-sub', 'هنوز سیستمی برای شما ثبت نشده است.'));
       me.builds.forEach(function (b) {
-        var c = el('div', 'mzcp-card'), head = el('div', 'mzcp-row'); add(head, el('strong', '', b.title), b.date ? el('span', 'mzcp-pill', b.date) : null, b.invoice ? el('span', 'mzcp-pill', 'فاکتور ' + b.invoice) : null);
+        var c = el('div', 'mzcp-card'), head = el('div', 'mzcp-row'); add(head, el('strong', '', b.title), b.date ? el('span', 'mzcp-pill', b.date) : null, b.invoice ? el('span', 'mzcp-pill', 'فاکتور ' + b.invoice) : null, b.status ? el('span', 'mzcp-pill', b.status) : null);
         add(c, head);
         if (b.parts.length) {
           var t = el('table', 'mzcp-table'), hd = el('tr'); ['قطعه', 'مدل', 'سریال', 'گارانتی'].forEach(function (x) { hd.appendChild(el('th', '', x)); }); t.appendChild(hd);

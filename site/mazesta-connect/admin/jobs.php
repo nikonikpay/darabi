@@ -18,7 +18,8 @@ if ($add || $edit) {
     echo '<div class="mzc-panel"><div class="body">' . MZC_Admin::form_open('job_save', 'class="mzc-form" enctype="multipart/form-data"') . ($j ? '<input type="hidden" name="id" value="' . (int) $j['id'] . '">' : '') . '<div class="mzc-fields">'
         . MZC_Admin::customer_picker($customer)
         . '<label>دستگاه<input type="text" name="device" value="' . $v('device') . '" maxlength="190" placeholder="مثلاً کیس رندر / لپ‌تاپ ایسوس"></label>'
-        . '<label>شمارهٔ سرویس<input type="text" name="service_no" value="' . $v('service_no') . '" dir="ltr" maxlength="40"></label>'
+        . ($j ? '<label>شمارهٔ سرویس<input type="text" name="service_no" value="' . $v('service_no') . '" dir="ltr" maxlength="40"></label>'
+            : '<label>شمارهٔ سرویس<input type="text" value="خودکار؛ بعد از ثبت داده می‌شود" disabled><small>از ادامهٔ شماره‌های قبلی (R-…) شماره‌گذاری می‌شود.</small></label>')
         . '<label>تاریخ پذیرش<input type="date" name="received_at" value="' . ($j ? $v('received_at') : esc_attr(gmdate('Y-m-d'))) . '"></label>'
         . '<label>وضعیت<select name="status">';
     foreach (MZC_Crm::$statuses as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($j ? $j['status'] : 'received', $k, false) . '>' . esc_html($l) . '</option>'; }
@@ -110,15 +111,23 @@ $q = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
 $st = isset($_GET['st']) ? sanitize_key($_GET['st']) : '';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
 list($rows, $total) = MZC_Crm::jobs($q, $st, $paged, $per);
+$linkOf = function ($j) { return MZC_Admin::url('mzc-jobs', array('view' => (int) $j['id'])); };
+$defs = array(
+    'service_no' => array('شمارهٔ سرویس', 1, function ($j) use ($linkOf) { return '<a class="num" href="' . esc_url($linkOf($j)) . '"><strong>' . esc_html($j['service_no'] ?: '—') . '</strong></a>'; }),
+    'customer' => array('نام مشتری', 1, function ($j) { return '<span dir="auto">' . esc_html($j['customer_name']) . '</span>'; }),
+    'status' => array('وضعیت', 1, function ($j) use ($pillOf) { return $pillOf($j['status']); }),
+    'received' => array('تاریخ دریافت', 1, function ($j) { return esc_html($j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '—'); }),
+    'total' => array('هزینه', 1, function ($j) { return esc_html(number_format((int) $j['total'])); }, 'n'),
+    'report' => array('گزارش', 1, function ($j) { return MZC_Admin::report_link($j['report_id']); }),
+    'mobile' => array('موبایل', 0, function ($j) { return '<span class="num">' . esc_html($j['customer_mobile']) . '</span>'; }),
+    'device' => array('دستگاه', 0, function ($j) { return '<span dir="auto">' . esc_html($j['device'] ?: '—') . '</span>'; }),
+    'complaint' => array('مشکل', 0, function ($j) { return '<span dir="auto">' . esc_html(mb_substr((string) $j['complaint'], 0, 90)) . '</span>'; }),
+    'invoice' => array('شمارهٔ فاکتور', 0, function ($j) { return '<span class="num">' . esc_html($j['invoice_no'] ?: '—') . '</span>'; }),
+    'due' => array('موعد تحویل', 0, function ($j) { return esc_html($j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '—'); }),
+    'closed' => array('تاریخ تحویل', 0, function ($j) { return esc_html($j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '—'); }),
+);
 echo '<div class="mzc-title"><h2>سرویس‌ها</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('add' => 1))) . '">+ پذیرش سرویس</a></div>';
 echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-jobs"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، دستگاه، مشکل، نام یا موبایل مشتری" style="min-width:320px"><select name="st"><option value="">همهٔ وضعیت‌ها</option>';
 foreach (MZC_Crm::$statuses as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($st, $k, false) . '>' . esc_html($l) . '</option>'; }
-echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' سرویس</span></form>';
-echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>پذیرش</th><th>دستگاه</th><th>مشتری</th><th>شمارهٔ سرویس</th><th>وضعیت</th><th class="n">هزینه</th></tr></thead><tbody>';
-if (!$rows) { echo '<tr><td class="empty" colspan="6">سرویسی پیدا نشد.</td></tr>'; }
-foreach ($rows as $j) {
-    $link = MZC_Admin::url('mzc-jobs', array('view' => (int) $j['id']));
-    echo '<tr class="click" data-href="' . esc_url($link) . '"><td>' . esc_html($j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '—') . '</td><td dir="auto"><a href="' . esc_url($link) . '"><strong>' . esc_html($j['device'] ?: 'سرویس') . '</strong></a><br><span class="muted" dir="auto">' . esc_html(mb_substr((string) $j['complaint'], 0, 90)) . '</span></td>'
-        . '<td dir="auto">' . esc_html($j['customer_name']) . ' <span class="num muted">' . esc_html($j['customer_mobile']) . '</span></td><td class="num">' . esc_html($j['service_no'] ?: '—') . '</td><td>' . $pillOf($j['status']) . '</td><td class="n">' . esc_html(number_format((int) $j['total'])) . '</td></tr>';
-}
-echo '</tbody></table></div></div>' . MZC_Admin::pager($total, $per, $paged);
+echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' سرویس</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-jobs', $defs) . '</span></form>';
+echo MZC_Admin::table('mzc-jobs', $defs, $rows, $linkOf, 'سرویسی پیدا نشد.') . MZC_Admin::pager($total, $per, $paged);

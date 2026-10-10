@@ -21,7 +21,7 @@ if ($add || $edit) {
         . '<label>شمارهٔ فاکتور (سیستم حسابداری)<input type="text" name="invoice_no" value="' . $v('invoice_no') . '" dir="ltr" maxlength="60"></label>'
         . '<label>تاریخ فروش<input type="date" name="sold_at" value="' . $v('sold_at') . '"></label>'
         . MZC_Admin::report_select($b ? $b['report_id'] : '', $b ? (string) $b['service_no'] : '')
-        . '<label class="chk"><input type="checkbox" name="delivered" value="1"' . checked($b ? (int) $b['delivered'] : 0, 1, false) . '> تحویل مشتری شد</label><label class="wide">یادداشت داخلی<textarea name="notes" rows="2">' . esc_textarea($b ? (string) $b['notes'] : '') . '</textarea></label></div>';
+        . '<label>وضعیت<select name="status">' . implode('', array_map(function ($k, $l) use ($b) { return '<option value="' . esc_attr($k) . '"' . selected($b ? $b['status'] : 'queue', $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$build_statuses), MZC_Crm::$build_statuses)) . '</select></label><label class="wide">یادداشت داخلی<textarea name="notes" rows="2">' . esc_textarea($b ? (string) $b['notes'] : '') . '</textarea></label></div>';
     echo '<div class="mzc-field"><span>قطعات (مدل، سریال و گارانتی هر قطعه)</span><div class="mzc-rows" id="mzc-parts" data-next="' . ($b ? count($b['parts']) : 0) . '">';
     $row = function ($n, $p) {
         $o = '<div class="mzc-row"><select name="parts[' . $n . '][category]">';
@@ -50,7 +50,7 @@ if ($view) {
     echo '<div class="mzc-grid2"><div class="mzc-panel"><header><h3>مشخصات</h3></header><div class="body"><dl class="mzc-kv"><dt>مشتری</dt><dd>' . ($c ? '<a href="' . esc_url(MZC_Admin::url('mzc-customers', array('view' => (int) $c['id']))) . '">' . esc_html($c['name']) . '</a> <span class="num muted">' . esc_html($c['mobile']) . '</span>' : '—') . '</dd>'
         . '<dt>تاریخ فروش</dt><dd>' . esc_html($b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '—') . '</dd><dt>شمارهٔ فاکتور</dt><dd class="num">' . esc_html($b['invoice_no'] ?: '—') . '</dd><dt>شمارهٔ سرویس</dt><dd class="num">' . esc_html($b['service_no'] ?: '—') . '</dd>'
         . '<dt>گزارش تست</dt><dd>' . ($b['report_id'] ? '<a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode($b['report_id']))) . '">خلاصهٔ گزارش</a> · <a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&view=full&id=' . rawurlencode($b['report_id']))) . '">گزارش کامل</a>' : '—') . '</dd>'
-        . '<dt>وضعیت</dt><dd>' . ($b['delivered'] ? MZC_Admin::pill('تحویل شد', 'ok') : MZC_Admin::pill('تحویل نشده', 'warn')) . '</dd><dt>یادداشت داخلی</dt><dd dir="auto">' . nl2br(esc_html((string) $b['notes'])) . '</dd></dl></div></div>';
+        . '<dt>وضعیت</dt><dd>' . MZC_Admin::pill(isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : $b['status'], $b['status'] === 'delivered' ? 'ok' : ($b['status'] === 'tested' ? 'info' : 'warn')) . '</dd><dt>یادداشت داخلی</dt><dd dir="auto">' . nl2br(esc_html((string) $b['notes'])) . '</dd></dl></div></div>';
     echo '<div class="mzc-panel"><header><h3>عکس‌ها</h3></header><div class="body">';
     if (!$b['photos']) { echo '<p class="muted">عکسی ثبت نشده است.</p>'; }
     echo '<div class="mzc-photos">'; foreach ($b['photos'] as $p) { $src = admin_url('admin-post.php?action=mzc_photo&id=' . (int) $p['id']); echo '<figure><a target="_blank" href="' . esc_url($src) . '"><img loading="lazy" src="' . esc_url($src) . '" alt=""></a></figure>'; }
@@ -67,16 +67,25 @@ if ($view) {
 }
 
 $q = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
+$st = isset($_GET['st']) ? sanitize_key($_GET['st']) : '';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
-list($rows, $total) = MZC_Crm::builds($q, $paged, $per);
+list($rows, $total) = MZC_Crm::builds($q, $paged, $per, 0, $st);
+$linkOf = function ($b) { return MZC_Admin::url('mzc-builds', array('view' => (int) $b['id'])); };
+$pillOf = function ($s) { return MZC_Admin::pill(isset(MZC_Crm::$build_statuses[$s]) ? MZC_Crm::$build_statuses[$s] : $s, $s === 'delivered' ? 'ok' : ($s === 'tested' ? 'info' : 'warn')); };
+$defs = array(
+    'invoice' => array('شمارهٔ فاکتور', 1, function ($b) use ($linkOf) { return '<a class="num" href="' . esc_url($linkOf($b)) . '"><strong>' . esc_html($b['invoice_no'] ?: '—') . '</strong></a>'; }),
+    'customer' => array('نام مشتری', 1, function ($b) { return '<span dir="auto">' . esc_html($b['customer_name']) . '</span>'; }),
+    'status' => array('وضعیت', 1, function ($b) use ($pillOf) { return $pillOf($b['status']); }),
+    'created' => array('تاریخ ثبت', 1, function ($b) { return esc_html(MZC_Crm::jdate(substr((string) $b['created'], 0, 10))); }),
+    'report' => array('گزارش', 1, function ($b) { return MZC_Admin::report_link($b['report_id']); }),
+    'title' => array('سیستم', 0, function ($b) { return '<span dir="auto">' . esc_html($b['title']) . '</span>'; }),
+    'mobile' => array('موبایل', 0, function ($b) { return '<span class="num">' . esc_html($b['customer_mobile']) . '</span>'; }),
+    'sold' => array('تاریخ فروش', 0, function ($b) { return esc_html($b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '—'); }),
+    'service_no' => array('شمارهٔ سرویس', 0, function ($b) { return '<span class="num">' . esc_html($b['service_no'] ?: '—') . '</span>'; }),
+    'parts' => array('قطعه', 0, function ($b) { return MZC_Admin::num($b['parts']); }, 'n'),
+);
 echo '<div class="mzc-title"><h2>سیستم‌های نو</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-builds', array('add' => 1))) . '">+ ثبت سیستم نو</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-builds"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، فاکتور، سریال قطعه، نام یا موبایل مشتری" style="min-width:340px"><button class="mzc-btn primary">جستجو</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' سیستم</span></form>';
-echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>تاریخ فروش</th><th>سیستم</th><th>مشتری</th><th>فاکتور</th><th>شمارهٔ سرویس</th><th class="n">قطعه</th><th>گزارش</th></tr></thead><tbody>';
-if (!$rows) { echo '<tr><td class="empty" colspan="7">سیستمی پیدا نشد.</td></tr>'; }
-foreach ($rows as $b) {
-    $link = MZC_Admin::url('mzc-builds', array('view' => (int) $b['id']));
-    echo '<tr class="click" data-href="' . esc_url($link) . '"><td>' . esc_html($b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '—') . '</td><td dir="auto"><a href="' . esc_url($link) . '"><strong>' . esc_html($b['title']) . '</strong></a></td>'
-        . '<td dir="auto">' . esc_html($b['customer_name']) . ' <span class="num muted">' . esc_html($b['customer_mobile']) . '</span></td><td class="num">' . esc_html($b['invoice_no'] ?: '—') . '</td><td class="num">' . esc_html($b['service_no'] ?: '—') . '</td>'
-        . '<td class="n">' . MZC_Admin::num($b['parts']) . '</td><td>' . ($b['report_id'] ? MZC_Admin::pill('دارد', 'ok') : '—') . '</td></tr>';
-}
-echo '</tbody></table></div></div>' . MZC_Admin::pager($total, $per, $paged);
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-builds"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، فاکتور، سریال قطعه، نام یا موبایل مشتری" style="min-width:340px"><select name="st"><option value="">همهٔ وضعیت‌ها</option>';
+foreach (MZC_Crm::$build_statuses as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($st, $k, false) . '>' . esc_html($l) . '</option>'; }
+echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' سیستم</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-builds', $defs) . '</span></form>';
+echo MZC_Admin::table('mzc-builds', $defs, $rows, $linkOf, 'سیستمی پیدا نشد.') . MZC_Admin::pager($total, $per, $paged);

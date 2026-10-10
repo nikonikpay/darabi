@@ -31,6 +31,8 @@ if ($ready) {
             . (empty($imp['done']) ? '<p><button type="button" class="mzc-btn primary" id="mzc-imp-go">شروع واردسازی</button></p>' : '') . '</div>';
     }
     echo '</div></div>';
+    echo '<div class="mzc-panel"><header><h3>پاک کردن اطلاعات CRM</h3></header><div class="body"><p class="muted" style="max-width:90ch">در دورهٔ آزمایش: همهٔ مشتریان، سیستم‌ها، سرویس‌ها، فرم‌ها، عکس‌ها و ارسال‌های گارانتی پاک می‌شود تا واردسازی از نو انجام شود. تنظیمات و اتصال پایگاه داده می‌ماند. این کار برگشت‌پذیر نیست.</p>'
+        . MZC_Admin::form_open('db_wipe', 'class="mzc-filter" onsubmit="return confirm(\'همهٔ اطلاعات CRM پاک شود؟\')"') . '<input type="text" name="confirm" placeholder="کلمهٔ «پاک‌کن» را بنویسید" autocomplete="off"><button class="mzc-btn danger">پاک کردن همه</button></form></div></div>';
 }
 
 echo '<div class="mzc-panel"><header><h3>پیامک (ورود مشتری به پورتال)</h3>' . (MZC_Sms::configured() ? MZC_Admin::pill('فعال', 'ok') : MZC_Admin::pill('غیرفعال', 'warn')) . '</header><div class="body">'
