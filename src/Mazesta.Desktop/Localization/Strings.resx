@@ -3466,4 +3466,13 @@ Cancel: stop.</value></data>
   <data name="Log_Daily_Phase" xml:space="preserve"><value>Cycle {0}: {1} for {2} s.</value></data>
   <data name="Log_Daily_Cycle" xml:space="preserve"><value>{0} whole cycle(s) done; {1} wrong result(s) so far.</value></data>
   <data name="Log_Daily_Error" xml:space="preserve"><value>Wrong result in '{0}': {1}.</value></data>
+  <data name="Test_Storage_Daily" xml:space="preserve"><value>Storage · Everyday use (mixed requests with pauses, copy, small files, wake from idle; all checked)</value></data>
+  <data name="Test_StorageDaily_Mixed" xml:space="preserve"><value>mixed requests with pauses</value></data>
+  <data name="Test_StorageDaily_Copy" xml:space="preserve"><value>copying a 128 MiB file</value></data>
+  <data name="Test_StorageDaily_Small" xml:space="preserve"><value>200 small files</value></data>
+  <data name="Test_StorageDaily_Idle" xml:space="preserve"><value>idle, then a read that wakes the drive</value></data>
+  <data name="Log_StorageDaily_Round" xml:space="preserve"><value>Round {0}: {1}.</value></data>
+  <data name="Log_StorageDaily_Done" xml:space="preserve"><value>Round {0} done: {1} checked requests, P99 {2} ms, {3} stall(s) over a second, {4} error(s).</value></data>
+  <data name="Profile_Everyday" xml:space="preserve"><value>Everyday use</value></data>
+  <data name="Profile_Everyday_Note" xml:space="preserve"><value>About two hours: light work, bursts, idle and wake-ups on the processor, the RAM sequence and the drive in everyday use. For a machine that passes the stress tests and still freezes or restarts at the desk.</value></data>
 </root>

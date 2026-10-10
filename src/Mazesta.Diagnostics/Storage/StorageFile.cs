@@ -17,8 +17,10 @@ internal sealed class StorageFile : IDisposable
 
     private readonly SafeFileHandle _handle;
     public long Length { get; }
+    /// <summary>The folder the file is in, for a test that also works through the file system there.</summary>
+    public string Folder { get; }
 
-    private StorageFile(SafeFileHandle handle, long length) { _handle = handle; Length = length; }
+    private StorageFile(SafeFileHandle handle, long length, string folder) { _handle = handle; Length = length; Folder = folder; }
 
     /// <summary>Why a file-size option cannot be used, or null when it can.</summary>
     public static string? CheckSizeMb(int mb) => mb is < MinMb or > MaxMb ? $"The test file must be between {MinMb} MiB and {MaxMb >> 10} GiB." : null;
@@ -36,8 +38,11 @@ internal sealed class StorageFile : IDisposable
         if (free < length + FreeSpaceMargin) throw new StorageUnavailableException($"{free >> 20} MiB free; the test file ({length >> 20} MiB) plus a 1 GiB margin does not fit.");
         string path = Path.Combine(root, $".mazesta-test-{Guid.NewGuid():N}.tmp");
         var handle = File.OpenHandle(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, (asynchronous ? FileOptions.Asynchronous : 0) | (writeThrough ? FileOptions.WriteThrough : 0) | FileOptions.DeleteOnClose | NoBuffering, length);
-        return new(handle, length);
+        return new(handle, length, root);
     }
+
+    /// <summary>An existing file opened unbuffered for reading, so what is read comes from the drive, not from Windows' cache.</summary>
+    public static StorageFile OpenRead(string path) { var h = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, NoBuffering); return new(h, RandomAccess.GetLength(h), Path.GetDirectoryName(path)!); }
 
     public void Write(ReadOnlySpan<byte> data, long offset) => RandomAccess.Write(_handle, data, offset);
     public int Read(Span<byte> buffer, long offset) => RandomAccess.Read(_handle, buffer, offset);

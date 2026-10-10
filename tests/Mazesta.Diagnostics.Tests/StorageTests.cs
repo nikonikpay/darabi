@@ -25,6 +25,19 @@ public class StorageTests : IDisposable
         Assert.Equal(TestOutcome.Passed, result.Outcome); Assert.Contains("IOPS", result.Detail);
         Assert.Empty(Leftovers());
     }
+    [Fact] public async Task Everyday_use_checks_its_mixed_requests_and_leaves_nothing_behind()
+    {
+        var result = await new StorageDailyExecutor().RunAsync(Request(StorageDailyExecutor.Spec, _dir, 16, seconds: 2), CancellationToken.None);
+        Assert.Equal(TestOutcome.Passed, result.Outcome); Assert.Equal(0, result.ErrorCount); Assert.Contains("everyday drive use", result.Detail);
+        Assert.Empty(Directory.GetFileSystemEntries(_dir));
+    }
+    [Fact] public void Everyday_use_copy_and_small_files_read_back_clean_and_are_deleted()
+    {
+        using var buffer = new Mazesta.Diagnostics.Memory.NativeBlock(1 << 20);
+        Assert.Equal(0, StorageDailyExecutor.Copy(_dir, buffer, 3, CancellationToken.None));
+        Assert.Equal(0, StorageDailyExecutor.Small(_dir, new Random(1), CancellationToken.None));
+        Assert.Empty(Directory.GetFileSystemEntries(_dir));
+    }
     [Fact] public async Task A_missing_folder_is_Unsupported_not_a_failing_drive()
     {
         var result = await new StorageSequentialExecutor().RunAsync(Request(StorageSequentialExecutor.Spec, Path.Combine(_dir, "nope"), 32), CancellationToken.None);

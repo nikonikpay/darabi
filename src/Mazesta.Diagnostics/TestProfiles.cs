@@ -25,6 +25,9 @@ public static class TestProfiles
              new("windows.dism", 300), new("windows.sfc", 900), new("storage.smart", 5)]),
         new("transient", "Profile_Transient", "Profile_Transient_Note",
             [new("cpu.singlecore", 1200), new("cpu.vector", 300), new("gpu.variable", 600), new("gpu.pulse", 600), new("power.combined", 600)]),
+        // A working day's changes of state instead of full load: for the machine that passes every stress test and still crashes at the desk.
+        new("everyday", "Profile_Everyday", "Profile_Everyday_Note",
+            [new("system.daily", 3600), new("memory.sequence", 900), new("storage.daily", 1800), new("storage.smart", 5)]),
         new("osstorage", "Profile_OsStorage", "Profile_OsStorage_Note",
             [new("storage.sequential", 300), new("storage.random4k", 300), new("storage.smart", 5), new("windows.dism", 300), new("windows.sfc", 900)]),
     ];
