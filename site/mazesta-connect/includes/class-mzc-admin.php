@@ -82,6 +82,18 @@ final class MZC_Admin
         return '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" ' . $extra . '><input type="hidden" name="action" value="mzc_' . esc_attr($action) . '">' . wp_nonce_field('mzc_' . $action, '_wpnonce', true, false);
     }
 
+    /** The sections of an imported form that have no column of their own (checklists, benchmarks, software ...) as a folded list. */
+    public static function more($more, $title = 'جزئیات فرم قدیمی')
+    {
+        if (!$more || !is_array($more)) { return ''; }
+        $o = '<details class="mzc-more"><summary>' . esc_html($title) . '</summary><dl class="mzc-kv">';
+        foreach ($more as $sec) {
+            if (empty($sec['r'])) { continue; }
+            foreach ($sec['r'] as $k => $v) { $o .= '<dt>' . esc_html($k) . '</dt><dd dir="auto">' . nl2br(esc_html(is_array($v) ? implode('، ', $v) : (string) $v)) . '</dd>'; }
+        }
+        return $o . '</dl></details>';
+    }
+
     public static function pill($text, $kind = '') { return '<span class="mzc-pill ' . esc_attr($kind) . '">' . esc_html($text) . '</span>'; }
 
     /** "1405/07/18 14:32" in the site's time zone. */

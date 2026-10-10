@@ -10,8 +10,9 @@ $form = function ($c) {
     $v = function ($k) use ($c) { return $c && isset($c[$k]) ? esc_attr((string) $c[$k]) : ''; };
     echo MZC_Admin::form_open('customer_save', 'class="mzc-form"') . ($c ? '<input type="hidden" name="id" value="' . (int) $c['id'] . '">' : '') . '<div class="mzc-fields">'
         . '<label>نام و نام خانوادگی<input type="text" name="name" value="' . $v('name') . '" maxlength="190" required></label>'
-        . '<label>موبایل<input type="text" name="mobile" dir="ltr" value="' . $v('mobile') . '" placeholder="09121234567" required><small>ورود مشتری به پورتال با همین شماره است.</small></label>'
-        . '<label>تلفن دیگر<input type="text" name="phone2" dir="ltr" value="' . $v('phone2') . '"></label>'
+        . '<label>موبایل<input type="text" name="mobile" dir="ltr" value="' . $v('mobile') . '" placeholder="09121234567"><small>ورود مشتری به پورتال با همین شماره است.</small></label>'
+        . '<label>موبایل دوم<input type="text" name="mobile2" dir="ltr" value="' . $v('mobile2') . '"></label>'
+        . '<label>تلفن ثابت<input type="text" name="phone" dir="ltr" value="' . $v('phone') . '"></label>'
         . '<label>کد ملی<input type="text" name="national_id" dir="ltr" value="' . $v('national_id') . '" maxlength="20"></label>'
         . '<label>ایمیل<input type="email" name="email" dir="ltr" value="' . $v('email') . '"></label>'
         . '<label class="wide">نشانی<textarea name="address" rows="2">' . esc_textarea($c && isset($c['address']) ? (string) $c['address'] : '') . '</textarea></label>'
@@ -30,7 +31,8 @@ if ($view) {
     $c = MZC_Crm::customer($view);
     if (!$c) { echo '<div class="mzc-notice err">مشتری پیدا نشد.</div>'; return; }
     list($builds, $jobs) = MZC_Crm::history($view);
-    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-customers')) . '">‹ مشتریان</a><h2 dir="auto">' . esc_html($c['name']) . '</h2><span class="num muted">' . esc_html($c['mobile']) . '</span></div><div class="mzc-actions">'
+    $forms = MZC_Crm::forms_of($view);
+    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-customers')) . '">‹ مشتریان</a><h2 dir="auto">' . esc_html($c['name']) . '</h2><span class="num muted">' . esc_html(trim($c['mobile'] . ' ' . $c['mobile2'] . ' ' . $c['phone'])) . '</span></div><div class="mzc-actions">'
         . '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-builds', array('add' => 1, 'customer' => $view))) . '">ثبت سیستم نو</a>'
         . '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('add' => 1, 'customer' => $view))) . '">ثبت سرویس</a>'
         . '<a class="mzc-btn danger" href="' . esc_url(MZC_Admin::post_url('customer_delete', array('id' => $view))) . '" onclick="return confirm(\'این مشتری پاک شود؟\')">حذف مشتری</a></div></div>';
@@ -49,7 +51,16 @@ if ($view) {
             . ($j['received_at'] ? MZC_Admin::pill(MZC_Crm::jdate($j['received_at'])) : '') . ($j['service_no'] ? MZC_Admin::pill('سرویس ' . $j['service_no']) : '') . '<a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('view' => (int) $j['id']))) . '">باز کردن</a></div>'
             . '<span dir="auto">' . esc_html(mb_substr((string) $j['complaint'], 0, 140)) . '</span> <span class="muted">· ' . esc_html(MZC_Crm::money($j['total'])) . '</span></div>';
     }
-    echo '</div></div></div></div></div>';
+    echo '</div></div>';
+    if ($forms) {
+        echo '<div class="mzc-panel"><header><h3>فرم‌های دیگر (' . count($forms) . ')</h3></header><div class="body"><div class="mzc-timeline">';
+        foreach ($forms as $f) {
+            echo '<div class="mzc-item"><div class="top"><strong dir="auto">' . esc_html(isset(MZC_Crm::$form_kinds[$f['kind']]) ? MZC_Crm::$form_kinds[$f['kind']] : $f['kind']) . '</strong>' . ($f['at'] ? MZC_Admin::pill(MZC_Crm::jdate($f['at'])) : '')
+                . ($f['ref'] ? MZC_Admin::pill('فاکتور ' . $f['ref'], 'info') : '') . '</div>' . ($f['title'] ? '<span dir="auto">' . esc_html($f['title']) . '</span>' : '') . MZC_Admin::more($f['more'], 'جزئیات') . '</div>';
+        }
+        echo '</div></div></div>';
+    }
+    echo '</div></div>';
     return;
 }
 

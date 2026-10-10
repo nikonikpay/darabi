@@ -82,7 +82,7 @@ final class MZC_Crm
     public static function customer_by_mobile($mobile)
     {
         $db = self::db(); if (!$db) { return null; }
-        return $db->get_row($db->prepare('SELECT * FROM `' . self::t('customers') . '` WHERE mobile = %s', $mobile), ARRAY_A);
+        return $db->get_row($db->prepare('SELECT * FROM `' . self::t('customers') . '` WHERE mobile = %s OR mobile2 = %s ORDER BY (mobile = %s) DESC LIMIT 1', $mobile, $mobile, $mobile), ARRAY_A);
     }
 
     /** A page of customers (search in name, mobile, national id), newest first, with how many systems and jobs each has. */
@@ -90,10 +90,10 @@ final class MZC_Crm
     {
         $db = self::db(); if (!$db) { return array(array(), 0); }
         $c = self::t('customers'); $where = '1=1'; $args = array();
-        if ($q !== '') { $like = '%' . $db->esc_like(self::digits($q)) . '%'; $likeq = '%' . $db->esc_like($q) . '%'; $where = '(name LIKE %s OR mobile LIKE %s OR national_id LIKE %s OR phone2 LIKE %s)'; $args = array($likeq, $like, $like, $like); }
+        if ($q !== '') { $like = '%' . $db->esc_like(self::digits($q)) . '%'; $likeq = '%' . $db->esc_like($q) . '%'; $where = '(name LIKE %s OR mobile LIKE %s OR mobile2 LIKE %s OR national_id LIKE %s OR phone LIKE %s)'; $args = array($likeq, $like, $like, $like, $like); }
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) FROM `$c` WHERE $where", $args) : "SELECT COUNT(*) FROM `$c`");
         $sql = "SELECT c.*, (SELECT COUNT(*) FROM `" . self::t('builds') . "` b WHERE b.customer_id = c.id) AS builds, (SELECT COUNT(*) FROM `" . self::t('jobs') . "` j WHERE j.customer_id = c.id) AS jobs
-            FROM `$c` c WHERE " . str_replace(array('name', 'mobile', 'national_id', 'phone2'), array('c.name', 'c.mobile', 'c.national_id', 'c.phone2'), $where) . ' ORDER BY c.id DESC LIMIT %d OFFSET %d';
+            FROM `$c` c WHERE " . str_replace(array('name', 'mobile2', 'mobile', 'national_id', 'phone'), array('c.name', 'c.mobile2', 'c.mobile', 'c.national_id', 'c.phone'), $where) . ' ORDER BY c.id DESC LIMIT %d OFFSET %d';
         $rows = $db->get_results($db->prepare($sql, array_merge($args, array((int) $per, (int) (($page - 1) * $per)))), ARRAY_A);
         return array($rows ? $rows : array(), $total);
     }
@@ -104,11 +104,12 @@ final class MZC_Crm
         $db = self::db(); if (!$db) { return MZC_Crm_Db::error(); }
         $m = self::mobile($mobile);
         if ($name === '') { return 'نام مشتری را بنویسید.'; }
-        if ($m === '') { return 'شمارهٔ موبایل درست نیست (مثل 09121234567).'; }
+        if ($m === '' && trim((string) $mobile) !== '') { return 'شمارهٔ موبایل درست نیست (مثل 09121234567).'; }
         $t = self::t('customers');
-        $dup = $db->get_var($db->prepare("SELECT id FROM `$t` WHERE mobile = %s AND id <> %d", $m, (int) $id));
+        $dup = $m === '' ? null : $db->get_var($db->prepare("SELECT id FROM `$t` WHERE mobile = %s AND id <> %d", $m, (int) $id));
         if ($dup) { return 'مشتری دیگری با این شمارهٔ موبایل ثبت شده است.'; }
-        $row = array('name' => $name, 'mobile' => $m, 'phone2' => isset($extra['phone2']) ? $extra['phone2'] : null, 'national_id' => isset($extra['national_id']) ? $extra['national_id'] : null,
+        $m2 = self::mobile(isset($extra['mobile2']) ? $extra['mobile2'] : '');
+        $row = array('name' => $name, 'mobile' => $m === '' ? null : $m, 'mobile2' => $m2 === '' || $m2 === $m ? null : $m2, 'phone' => isset($extra['phone']) ? $extra['phone'] : null, 'phone2' => isset($extra['phone2']) ? $extra['phone2'] : null, 'national_id' => isset($extra['national_id']) ? $extra['national_id'] : null,
             'email' => isset($extra['email']) ? $extra['email'] : null, 'address' => isset($extra['address']) ? $extra['address'] : null, 'notes' => isset($extra['notes']) ? $extra['notes'] : null, 'updated' => self::now());
         if ($id) { $ok = $db->update($t, $row, array('id' => (int) $id)); return $ok === false ? 'ذخیره نشد: ' . $db->last_error : (int) $id; }
         $row['created'] = self::now();
@@ -135,6 +136,7 @@ final class MZC_Crm
         if (!$b) { return null; }
         $b['parts'] = $db->get_results($db->prepare('SELECT * FROM `' . self::t('build_parts') . '` WHERE build_id = %d ORDER BY id', (int) $id), ARRAY_A) ?: array();
         $b['photos'] = self::photos('build', $id);
+        $b['more'] = !empty($b['data']) ? json_decode($b['data'], true) : array();
         return $b;
     }
 
@@ -164,6 +166,7 @@ final class MZC_Crm
             $row = array();
             foreach ($fields as $f => $kind) {
                 $v = isset($r[$f]) ? (is_string($r[$f]) ? trim($r[$f]) : '') : '';
+                if ($kind === 'flag') { $row[$f] = !empty($r[$f]) ? 1 : 0; continue; }
                 if ($kind === 'int') { $v = self::digits($v); $row[$f] = $v === '' ? null : (int) preg_replace('/[^\d]/', '', $v); }
                 elseif ($kind === 'cat') { $row[$f] = isset(self::$categories[$v]) ? $v : 'other'; }
                 else { $row[$f] = $v === '' ? null : mb_substr(sanitize_text_field($v), 0, $kind); }
@@ -183,11 +186,11 @@ final class MZC_Crm
         $title = self::post('title', 190);
         if ($title === '') { $title = 'سیستم نو'; }
         $row = array('customer_id' => $cid, 'service_no' => self::post('service_no', 40) ?: null, 'invoice_no' => self::post('invoice_no', 60) ?: null, 'title' => $title, 'sold_at' => self::date('sold_at'),
-            'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
+            'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'delivered' => empty($_POST['delivered']) ? 0 : 1, 'updated' => self::now());
         $t = self::t('builds');
         if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } }
         else { $row['created'] = self::now(); if (!$db->insert($t, $row)) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } $id = (int) $db->insert_id; }
-        $parts = self::posted_parts('parts', array('category' => 'cat', 'model' => 190, 'serial' => 120, 'warranty_months' => 'int', 'vendor' => 120, 'note' => 255));
+        $parts = self::posted_parts('parts', array('category' => 'cat', 'model' => 190, 'serial' => 120, 'warranty_months' => 'int', 'vendor' => 120, 'note' => 255, 'has_warranty' => 'flag', 'has_box' => 'flag', 'qc' => 'flag'));
         $db->delete(self::t('build_parts'), array('build_id' => $id));
         foreach ($parts as $p) { if ($p['model'] === null) { continue; } $p['build_id'] = $id; $db->insert(self::t('build_parts'), $p); }
         $bad = self::add_photos('build', $id);
@@ -209,7 +212,12 @@ final class MZC_Crm
         $db = self::db(); if (!$db) { return null; }
         $j = $db->get_row($db->prepare('SELECT * FROM `' . self::t('jobs') . '` WHERE id = %d', (int) $id), ARRAY_A);
         if (!$j) { return null; }
-        $j['parts'] = $db->get_results($db->prepare('SELECT * FROM `' . self::t('job_parts') . '` WHERE job_id = %d ORDER BY id', (int) $id), ARRAY_A) ?: array();
+        $all = $db->get_results($db->prepare('SELECT * FROM `' . self::t('job_parts') . '` WHERE job_id = %d ORDER BY id', (int) $id), ARRAY_A) ?: array();
+        $j['parts'] = array_values(array_filter($all, function ($p) { return $p['kind'] !== 'in'; }));      // added parts (they are charged)
+        $j['recv'] = array_values(array_filter($all, function ($p) { return $p['kind'] === 'in'; }));       // parts the customer brought
+        $j['pays'] = $db->get_results($db->prepare('SELECT * FROM `' . self::t('job_pays') . '` WHERE job_id = %d ORDER BY id', (int) $id), ARRAY_A) ?: array();
+        $j['shipping'] = !empty($j['ship']) ? json_decode($j['ship'], true) : array();
+        $j['more'] = !empty($j['data']) ? json_decode($j['data'], true) : array();
         $j['photos'] = self::photos('job', $id);
         $j['total'] = self::job_total($j);
         return $j;
@@ -217,7 +225,7 @@ final class MZC_Crm
 
     public static function job_total($j)
     {
-        $sum = (int) $j['labor_price'];
+        $sum = (int) $j['labor_price'] - (int) $j['discount'];
         foreach ($j['parts'] as $p) { $sum += (int) $p['qty'] * (int) $p['unit_price']; }
         return $sum;
     }
@@ -235,7 +243,7 @@ final class MZC_Crm
         }
         $from = "FROM `$j` j JOIN `$c` c ON c.id = j.customer_id WHERE " . implode(' AND ', $where);
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) $from", $args) : "SELECT COUNT(*) $from");
-        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
+        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
             array_merge($args, array((int) $per, (int) (($page - 1) * $per)))), ARRAY_A);
         return array($rows ? $rows : array(), $total);
     }
@@ -251,14 +259,21 @@ final class MZC_Crm
         $closed = self::date('closed_at'); if ($status === 'delivered' && $closed === null) { $closed = gmdate('Y-m-d'); }
         $labor = (int) preg_replace('/[^\d]/', '', self::digits(self::post('labor_price', 15)));
         $row = array('customer_id' => $cid, 'service_no' => self::post('service_no', 40) ?: null, 'device' => self::post('device', 190) ?: null, 'received_at' => self::date('received_at') ?: gmdate('Y-m-d'),
-            'closed_at' => $closed, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
+            'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
+            'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
         $t = self::t('jobs');
         if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $db->last_error); } }
         else { $row['created'] = self::now(); if (!$db->insert($t, $row)) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $db->last_error); } $id = (int) $db->insert_id; }
-        $parts = self::posted_parts('parts', array('name' => 190, 'qty' => 'int', 'unit_price' => 'int', 'serial' => 120, 'warranty_months' => 'int', 'note' => 255));
         $db->delete(self::t('job_parts'), array('job_id' => $id));
-        foreach ($parts as $p) { if ($p['name'] === null) { continue; } $p['qty'] = max(1, (int) $p['qty']); $p['unit_price'] = (int) $p['unit_price']; $p['job_id'] = $id; $db->insert(self::t('job_parts'), $p); }
+        foreach (array('add' => 'parts', 'in' => 'recv') as $kind => $field) {
+            foreach (self::posted_parts($field, array('name' => 190, 'qty' => 'int', 'unit_price' => 'int', 'serial' => 120, 'warranty_months' => 'int', 'note' => 255, 'has_box' => 'flag', 'has_warranty' => 'flag')) as $p) {
+                if ($p['name'] === null) { continue; }
+                $p['qty'] = max(1, (int) $p['qty']); $p['unit_price'] = $kind === 'in' ? 0 : (int) $p['unit_price']; $p['job_id'] = $id; $p['kind'] = $kind; $db->insert(self::t('job_parts'), $p);
+            }
+        }
+        $db->delete(self::t('job_pays'), array('job_id' => $id));
+        foreach (self::posted_parts('pays', array('amount' => 'int', 'account' => 120, 'tx' => 80, 'holder' => 120)) as $p) { if (!$p['amount']) { continue; } $p['job_id'] = $id; $db->insert(self::t('job_pays'), $p); }
         $bad = self::add_photos('job', $id);
         MZC_Admin::back('mzc-jobs', 'ok:ثبت شد.' . ($bad ? ' (' . $bad . ')' : ''), array('view' => $id));
     }
@@ -267,7 +282,7 @@ final class MZC_Crm
     {
         MZC_Admin::guard('job_delete');
         $db = self::db(); $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        if ($db && $id) { self::delete_photos('job', $id); $db->delete(self::t('job_parts'), array('job_id' => $id)); $db->delete(self::t('jobs'), array('id' => $id)); }
+        if ($db && $id) { self::delete_photos('job', $id); $db->delete(self::t('job_parts'), array('job_id' => $id)); $db->delete(self::t('job_pays'), array('job_id' => $id)); $db->delete(self::t('jobs'), array('id' => $id)); }
         MZC_Admin::back('mzc-jobs', 'ok:سرویس پاک شد.');
     }
 
@@ -277,7 +292,7 @@ final class MZC_Crm
     {
         MZC_Admin::guard('customer_save');
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
-        $r = self::save_customer($id, self::post('name', 190), self::post('mobile', 30), array('phone2' => self::post('phone2', 30) ?: null, 'national_id' => self::post('national_id', 20) ?: null,
+        $r = self::save_customer($id, self::post('name', 190), self::post('mobile', 30), array('mobile2' => self::post('mobile2', 30), 'phone' => self::post('phone', 80) ?: null, 'phone2' => null, 'national_id' => self::post('national_id', 20) ?: null,
             'email' => sanitize_email(self::post('email', 190)) ?: null, 'address' => self::post_long('address', 1000) ?: null, 'notes' => self::post_long('notes') ?: null));
         if (!is_int($r)) { MZC_Admin::back('mzc-customers', 'err:' . $r, $id ? array('view' => $id) : array('add' => 1)); }
         MZC_Admin::back('mzc-customers', 'ok:مشتری ثبت شد.', array('view' => $r));
@@ -304,6 +319,17 @@ final class MZC_Crm
         foreach ((array) $db->get_col($db->prepare('SELECT id FROM `' . self::t('jobs') . '` WHERE customer_id = %d ORDER BY COALESCE(received_at, DATE(created)) DESC, id DESC', (int) $customerId)) as $id) { $jobs[] = self::job($id); }
         return array($builds, $jobs);
     }
+
+    /** The customer's other forms (tests, warranty parts, hand-overs ...), newest first. */
+    public static function forms_of($customerId)
+    {
+        $db = self::db(); if (!$db) { return array(); }
+        $rows = $db->get_results($db->prepare('SELECT * FROM `' . self::t('forms') . '` WHERE customer_id = %d ORDER BY COALESCE(at, DATE(created)) DESC, id DESC', (int) $customerId), ARRAY_A) ?: array();
+        foreach ($rows as &$r) { $r['more'] = !empty($r['data']) ? json_decode($r['data'], true) : array(); }
+        return $rows;
+    }
+
+    public static $form_kinds = array('test' => 'تست سیستم', 'warranty' => 'قطعهٔ گارانتی / تعمیرگاه', 'handover' => 'تحویل و دریافت کالا', 'online' => 'خدمات آنلاین', 'solution' => 'راه‌حل');
 
     /* ---------- photos: files in the plugin's data folder (not in the media library), the names in the CRM database ---------- */
 

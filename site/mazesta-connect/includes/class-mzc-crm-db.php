@@ -8,14 +8,16 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 3;
+    const SCHEMA = 4;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
+    private static $cfg = null;
 
     public static function settings()
     {
-        $c = Mazesta_Connect::config();
-        $x = isset($c['crm']) && is_array($c['crm']) ? $c['crm'] : array();
+        // read from the file (not the request-wide cache of config()): save() writes it and install() runs in the same request
+        if (self::$cfg === null) { $c = Mazesta_Connect::read('config'); self::$cfg = isset($c['crm']) && is_array($c['crm']) ? $c['crm'] : array(); }
+        $x = self::$cfg;
         return $x + array('host' => 'localhost', 'name' => '', 'user' => '', 'pass' => '', 'prefix' => 'mz_');
     }
 
@@ -98,7 +100,27 @@ final class MZC_Crm_Db
             "CREATE TABLE IF NOT EXISTS `{$t('sessions')}` (token_hash CHAR(64) NOT NULL PRIMARY KEY, customer_id BIGINT UNSIGNED NOT NULL, expires DATETIME NOT NULL, created DATETIME NOT NULL, KEY customer_id (customer_id)) $engine",
             "CREATE TABLE IF NOT EXISTS `{$t('meta')}` (k VARCHAR(40) NOT NULL PRIMARY KEY, v TEXT NULL) $engine",
         );
+        // schema 4 (the shop's real forms): more columns, payments, the other forms, and the map the old-database import keeps
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('job_pays')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, job_id BIGINT UNSIGNED NOT NULL, amount BIGINT NOT NULL DEFAULT 0, account VARCHAR(120) NULL,
+                tx VARCHAR(80) NULL, holder VARCHAR(120) NULL, paid_at DATE NULL, KEY job_id (job_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('forms')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, customer_id BIGINT UNSIGNED NULL, kind VARCHAR(12) NOT NULL, ref VARCHAR(60) NULL, no VARCHAR(40) NULL,
+                at DATE NULL, title VARCHAR(255) NULL, data LONGTEXT NULL, old_id INT NULL, created DATETIME NOT NULL, KEY customer_id (customer_id), KEY kind (kind, ref), KEY old_id (old_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oldmap')}` (kind VARCHAR(10) NOT NULL, old_id INT NOT NULL, new_id BIGINT UNSIGNED NOT NULL, PRIMARY KEY (kind, old_id)) $engine";
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
+        // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)
+        $cols = array(
+            'customers' => array('mobile2' => 'VARCHAR(20) NULL', 'old_id' => 'INT NULL', 'phone' => 'VARCHAR(80) NULL'),
+            'builds' => array('delivered' => 'TINYINT NOT NULL DEFAULT 0', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
+            'build_parts' => array('has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'qc' => 'TINYINT NOT NULL DEFAULT 0'),
+            'jobs' => array('due_at' => 'DATE NULL', 'is_mazesta' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'discount' => 'BIGINT NOT NULL DEFAULT 0', 'paid' => 'BIGINT NOT NULL DEFAULT 0',
+                'invoice_no' => 'VARCHAR(60) NULL', 'service_done' => 'TINYINT NOT NULL DEFAULT 0', 'ship' => 'TEXT NULL', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
+            'job_parts' => array('kind' => "VARCHAR(4) NOT NULL DEFAULT 'add'", 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0'),
+        );
+        foreach ($cols as $tb => $list) {
+            $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
+            foreach ($list as $c => $def) { if (!in_array($c, $have, true) && $db->query('ALTER TABLE `' . $t($tb) . "` ADD COLUMN `$c` $def") === false) { return 'به‌روزرسانی جدول ناموفق بود: ' . $db->last_error; } }
+        }
+        $db->query('ALTER TABLE `' . $t('customers') . '` MODIFY mobile VARCHAR(20) NULL');
         $db->query($db->prepare("REPLACE INTO `{$t('meta')}` (k, v) VALUES ('schema', %s)", (string) self::SCHEMA));
         return '';
     }
@@ -106,7 +128,10 @@ final class MZC_Crm_Db
     public static function ready()
     {
         $db = self::db(); if (!$db) { return false; }
-        return (bool) $db->get_var($db->prepare('SHOW TABLES LIKE %s', $db->esc_like(self::t('customers'))));
+        if (!$db->get_var($db->prepare('SHOW TABLES LIKE %s', $db->esc_like(self::t('customers'))))) { return false; }
+        // a database made by an older plugin is brought up to date the first time a page asks
+        if ((int) $db->get_var('SELECT v FROM `' . self::t('meta') . "` WHERE k = 'schema'") < self::SCHEMA) { return self::install() === ''; }
+        return true;
     }
 
     /** Saves the connection (the password is left as it was when the field is empty); returns an error text or ''. */
@@ -122,7 +147,7 @@ final class MZC_Crm_Db
             $c['crm'] = array('host' => $host, 'name' => $name, 'user' => $user, 'pass' => self::seal($pass), 'prefix' => $prefix);
             Mazesta_Connect::write('config', $c);
         });
-        self::$db = false;
+        self::$db = false; self::$cfg = null;
         return '';
     }
 }

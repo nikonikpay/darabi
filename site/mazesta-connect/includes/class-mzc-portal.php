@@ -116,18 +116,19 @@ final class MZC_Portal
             foreach ($b['parts'] as $p) {
                 list($until, $left) = MZC_Crm::warranty($b['sold_at'], $p['warranty_months']);
                 $parts[] = array('category' => isset(MZC_Crm::$categories[$p['category']]) ? MZC_Crm::$categories[$p['category']] : $p['category'], 'model' => $p['model'], 'serial' => $p['serial'], 'vendor' => $p['vendor'],
-                    'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null, 'until' => $until ? MZC_Crm::jdate($until) : null, 'left' => $left);
+                    'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null, 'until' => $until ? MZC_Crm::jdate($until) : null, 'left' => $left, 'warranty' => (bool) $p['has_warranty']);
             }
-            $outB[] = array('title' => $b['title'], 'date' => $b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '', 'invoice' => $b['invoice_no'], 'service' => $b['service_no'], 'parts' => $parts,
+            $outB[] = array('title' => $b['title'], 'date' => $b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '', 'invoice' => $b['invoice_no'], 'service' => $b['service_no'], 'delivered' => (bool) $b['delivered'], 'parts' => $parts,
                 'report' => $link($b['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $b['photos']));
         }
         $outJ = array();
         foreach ($jobs as $j) {
             $parts = array();
-            foreach ($j['parts'] as $p) { $parts[] = array('name' => $p['name'], 'qty' => (int) $p['qty'], 'price' => (int) $p['unit_price'], 'serial' => $p['serial'], 'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null); }
-            $outJ[] = array('service' => $j['service_no'], 'device' => $j['device'], 'received' => $j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '', 'closed' => $j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '',
+            foreach ($j['parts'] as $p) { $parts[] = array('name' => $p['name'], 'qty' => (int) $p['qty'], 'price' => (int) $p['unit_price'], 'serial' => $p['serial'], 'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null, 'warranty' => (bool) $p['has_warranty']); }
+            $recv = array(); foreach ($j['recv'] as $p) { $recv[] = array('name' => $p['name'], 'serial' => $p['serial']); }
+            $paid = 0; foreach ($j['pays'] as $p) { $paid += (int) $p['amount']; }            $outJ[] = array('service' => $j['service_no'], 'device' => $j['device'], 'received' => $j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '', 'closed' => $j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '',
                 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : $j['status'], 'complaint' => $j['complaint'], 'work' => $j['work_done'],
-                'labor' => (int) $j['labor_price'], 'total' => (int) $j['total'], 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
+                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'total' => (int) $j['total'], 'paid' => max($paid, (int) $j['paid']), 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
         }
         return self::ok(array('name' => $c['name'], 'builds' => $outB, 'jobs' => $outJ));
     }

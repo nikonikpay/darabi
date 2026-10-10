@@ -75,3 +75,7 @@
 .mzc .nav-tab-wrapper { border-bottom: 1px solid var(--line); margin: 0 0 16px; padding: 0; display: flex; gap: 4px; } .mzc .nav-tab { border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); font-weight: 600; margin: 0; padding: 9px 14px; }
 .mzc .nav-tab-active, .mzc .nav-tab:hover { color: var(--ink); border-bottom-color: var(--brand); background: transparent; }
 .mzc .widefat { border-radius: 10px; border: 1px solid var(--line); overflow: hidden; box-shadow: none; } .mzc .widefat th { background: #fbfbfc; color: var(--muted); font-size: 12px; } .mzc .widefat td, .mzc .widefat th { padding: 9px 12px; }
+
+.mzc-bar{height:10px;border-radius:6px;background:rgba(127,127,127,.2);overflow:hidden;max-width:520px}.mzc-bar i{display:block;height:100%;background:#2563eb;transition:width .3s}
+
+.mzc label.chk{display:flex;align-items:center;gap:6px;flex-direction:row}.mzc .mzc-row label.chk{white-space:nowrap}.mzc-more{margin-top:14px}.mzc-more summary{cursor:pointer;font-weight:600}
