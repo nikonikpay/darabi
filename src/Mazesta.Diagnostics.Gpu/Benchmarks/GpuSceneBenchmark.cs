@@ -15,7 +15,7 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// </summary>
 public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryProbe? memory = null) : IBenchmark, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", QualityOption = "quality", DefaultResolution = "1920x1080";
+    public const string ResolutionOption = "resolution", QualityOption = "quality", DefaultResolution = "2560x1440";   // as 3DMark Time Spy: at Full HD the frame is the triangles' cost, and cards far apart in shader power come out close
     // The frame is drawn at the chosen size even where the screen is smaller (the window then shows it scaled down), so 4K can be measured on any monitor.
     private static readonly TestOption Resolution = new(ResolutionOption, "Test_Option_Resolution", TestOptionKind.Choice, DefaultResolution,
         GpuSceneExecutor.Sizes);
