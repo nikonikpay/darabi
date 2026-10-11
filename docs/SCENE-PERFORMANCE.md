@@ -119,3 +119,12 @@ Still to do, in the order of what each gives the scaling:
   Poly Haven) - exported at `TEX = 2048`. That costs scene-file size (the app embeds it) and video memory (the texture array is one
   size: about 0.5 GB at 2048).
 - A temporal pass (TAA) in place of MSAA 4x, which would also smooth the air's grain.
+
+## Reference run: RTX 5070 (2026-10-12, commit 483244a, benchmark v40)
+
+Kept so the same build can be compared on another card (RTX 3090 next).
+
+- Profile (`MAZESTA_PROFILE=1`, 1080p, heavy quality, raster): about 13.7-14.0 ms GPU per frame (13.3 before LOD, 11.2 with the popping distance-following LOD).
+- Real-app `--selftest=scene`, factory mode: 2902 MHz, 1.090 V, 198 W, 68 C (hot 79 C), **71.8 FPS**, clean=True (90.0 with popping LOD, 75.6 before any LOD).
+- Real-app `--selftest=scenert` (ray tracing): 2932 MHz, 134 W, 60 C (hot 68 C), **40.9 FPS**, clean=True.
+- Driver 32.0.16.1062.
