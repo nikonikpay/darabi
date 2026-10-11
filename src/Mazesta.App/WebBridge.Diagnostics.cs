@@ -37,6 +37,7 @@ public sealed partial class WebBridge
                 if (Directory.Exists(_paths.ReportsDir))
                     foreach (var d in new DirectoryInfo(_paths.ReportsDir).EnumerateDirectories().OrderByDescending(x => x.Name).Take(5))
                         foreach (var n in new[] { "report.json", "report.txt" }) Add(archive, Path.Combine(d.FullName, n), $"reports/{d.Name}/{n}");
+                WindowsEvidence.AddTo(archive);   // not only the app: Windows' own crash events, error reports and dumps
                 using (var w = new StreamWriter(archive.CreateEntry("about.txt").Open()))
                     w.Write($"Mazesta {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3)} ({(Staff ? "Admin" : "Client")}){Environment.NewLine}{Environment.OSVersion} {(Environment.Is64BitOperatingSystem ? "x64" : "x86")}{Environment.NewLine}{Environment.MachineName}{Environment.NewLine}{DateTime.Now:yyyy-MM-dd HH:mm:ss}{Environment.NewLine}");
                 if (inv is not null)

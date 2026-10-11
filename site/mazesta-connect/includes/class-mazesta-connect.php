@@ -32,7 +32,7 @@ final class Mazesta_Connect
     {
         add_action('rest_api_init', array(__CLASS__, 'routes'));
         add_action('init', array(__CLASS__, 'public_pages'));
-        foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'share_delete', 'settings', 'rebuild') as $a) {
+        foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'share_delete', 'share_add', 'settings', 'rebuild') as $a) {
             add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
         }
     }
@@ -1111,6 +1111,30 @@ final class Mazesta_Connect
         self::back('bench', 'saved');
     }
 
+    /** The ticked users' results go straight into the comparison lists (as approved runs, no review): the numbers are the ones the app sent with its share. */
+    public static function act_share_add()
+    {
+        self::guard('share_add');
+        $tokens = isset($_POST['tokens']) && is_array($_POST['tokens']) ? array_slice(array_map('sanitize_text_field', wp_unslash($_POST['tokens'])), 0, 300) : array();
+        $known = self::read('runs'); $higher = array();
+        foreach ($known as $r) { $o = json_decode($r['json']); if (is_object($o)) { $higher[$o->benchmark] = !empty($r['higher']); } }
+        $runs = array();
+        foreach ($tokens as $t) {
+            $sh = preg_match('/^[0-9a-f]{24}$/', $t) ? self::read('share-' . $t, null) : null;
+            if (!is_array($sh) || empty($sh['rows'])) { continue; }
+            foreach ($sh['rows'] as $i => $row) {
+                $o = new stdClass();
+                $o->id = 'sh' . substr(md5($t . $sh['created'] . $i), 0, 20); $o->system = 'share' . $t; $o->at = $row['at']; $o->benchmark = $row['benchmark']; $o->version = (int) $row['version'];
+                $o->settings = $row['settings']; $o->part = $row['part']; $o->spec = $row['part']; $o->value = (float) $row['value']; $o->unit = $row['unit'];
+                if (!empty($sh['app'])) { $o->app = $sh['app']; }
+                $runs[] = $o;
+            }
+        }
+        list($added) = self::add_runs($runs, $higher, true);
+        if ($added > 0) { self::rebuild(); }
+        self::back('shares', $added > 0 ? 'saved' : 'nothing');
+    }
+
     public static function act_share_delete()
     {
         self::guard('share_delete');
@@ -1257,14 +1281,16 @@ final class Mazesta_Connect
         $index = self::read('shares');
         uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
         echo '<p class="description">نتیجه‌هایی که کاربران از برنامه با «اشتراک‌گذاری آخرین نتیجه» فرستاده‌اند. هر سیستم یک صفحه دارد و با فرستادن دوباره همان صفحه تازه می‌شود.</p>';
-        echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
-        if (!$index) { echo '<tr><td colspan="6">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_share_add">'; wp_nonce_field('mzc_share_add');
+        echo '<p><button class="button button-primary" onclick="return confirm(\'نتیجه‌های انتخاب‌شده در لیست بنچمارک‌ها بروند؟\')">افزودن انتخاب‌شده‌ها به لیست بنچمارک‌ها</button> <label><input type="checkbox" onclick="var t=this;document.querySelectorAll(\'.mzc-pick\').forEach(function(c){c.checked=t.checked})"> همه</label></p>';
+        echo '<table class="widefat striped"><thead><tr><th></th><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
+        if (!$index) { echo '<tr><td colspan="7">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
         foreach (array_slice($index, 0, 300, true) as $s) {
-            echo '<tr><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['cpu']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
+            echo '<tr><td><input type="checkbox" class="mzc-pick" name="tokens[]" value="' . esc_attr($s['token']) . '"></td><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['cpu']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
                 . '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_share=' . $s['token'])) . '">دیدن</a> '
                 . self::post_link('share_delete', array('token' => (string) $s['token']), 'حذف', 'button button-small', 'این صفحه پاک شود؟') . '</td></tr>';
         }
-        echo '</tbody></table>';
+        echo '</tbody></table></form>';
     }
 
     private static function tab_settings()
