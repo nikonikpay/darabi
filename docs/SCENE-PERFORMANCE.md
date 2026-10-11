@@ -128,3 +128,14 @@ Kept so the same build can be compared on another card (RTX 3090 next).
 - Real-app `--selftest=scene`, factory mode: 2902 MHz, 1.090 V, 198 W, 68 C (hot 79 C), **71.8 FPS**, clean=True (90.0 with popping LOD, 75.6 before any LOD).
 - Real-app `--selftest=scenert` (ray tracing): 2932 MHz, 134 W, 60 C (hot 68 C), **40.9 FPS**, clean=True.
 - Driver 32.0.16.1062.
+
+## Same build on an RTX 3090 (2026-10-12, commit 0dd9294, driver 32.0.16.1062)
+
+| | RTX 5070 | RTX 3090 |
+|---|---|---|
+| Profile, raster, 1080p heavy (GPU ms) | 13.7-14.0 | **11.3** (pool reflection 2.1, depth prepass 1.8, main pass 4.7) |
+| `--selftest=scene` FPS | 71.8 (2902 MHz, 198 W) | **87.4** (1785 MHz, 349 W = power limit, hot 88 C) |
+| Profile, ray tracing (GPU ms) | - | 28.7 (main pass 22.6 = 79 %) |
+| `--selftest=scenert` FPS | **40.9** (134 W) | 28.3 (1920 MHz, 273 W) |
+
+Both clean=True. Raster favours the 3090 (more SMs/ROPs, 936 GB/s vs 672 GB/s); ray tracing favours the 5070 (newer RT cores). No code difference between the runs: the gap is the hardware.
