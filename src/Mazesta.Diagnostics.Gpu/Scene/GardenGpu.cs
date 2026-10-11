@@ -724,7 +724,7 @@ internal struct GardenFrame
     public Vector3 CamForward; public uint Bounces;
     public uint Width, Height, Pitch, Mode;
     public Vector4 Logo;
-    public uint Samples, Pad0, Pad1, Pad2;
+    public uint Samples, AirSteps, Pad1, Pad2;
     public Vector4 Backdrop;
     public Matrix4x4 SkyViewProj;
     public Vector4 Fountain, Fountain2, Ambience, Lens, Post, Grid, Grid2;

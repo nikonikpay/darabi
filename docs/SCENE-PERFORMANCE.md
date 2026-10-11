@@ -70,3 +70,34 @@ not in the ray tracer's top-level structure, so a ray-traced frame does not refl
 ## NVIDIA Image Scaling (removed)
 
 NIS was tried as the frame's last step and removed (2026-10-08): its sharpener lifted the ray-traced reflections' and the leaves' grain as much as the detail. The frame is the lens's picture.
+
+## Why fast cards came out close, and what v38 changed (2026-10-11)
+
+An RTX 5090 has 2.9x an RTX 3090's shader arithmetic (105 vs 36 TFLOPS), 1.9x its memory bandwidth and about 2.2x its triangle
+setup (11 raster engines at ~2.4 GHz against 7 at ~1.7). Reviews measure it about 2.1x faster at 4K. The garden at Full HD gave
+it much less, because the frame was mostly triangles: 9.47 M of them in the Direct3D scene, 41 % smaller than 1 cm² (measured from
+`garden.mzscene`), most of them leaf cards, drawn up to six times a frame. Triangle setup scales least between generations, and a
+triangle a pixel or smaller shades its whole 2x2 quad, so the card's arithmetic is not what sets the time.
+
+3DMark's tests are built the other way round (the 3DMark Technical Guide): Time Spy at 2560x1440 with 13-14 M triangles but 50-80 M
+pixel-shader and ~30 M compute invocations a frame; Time Spy Extreme keeps the geometry and raises the pixel and compute work 2-4x at
+4K; Steel Nomad (4K, volumetric sky, fog and lights) separates the 5090 from the 4090 most (+53 %, against +34 % in Time Spy). The
+work that grows with a card's power is per pixel: volumetric light, many lights, ambient occlusion, reflections, ray marching.
+
+v38:
+- **2560x1440 by default** (as Time Spy).
+- **The courtyard's air** (`Air` in GardenRaster.hlsl): every pixel marches its eye ray through the courtyard's shadow map, 0 / 12 /
+  24 / 48 steps at quality 1-4, so the sun stands in the haze as beams; the hall's shafts take as many steps. Per-pixel work, as in a
+  game's volumetric light.
+- **Rough surfaces keep their energy**: the light GGX loses between microfacets is put back (Fdez-Agüera, JCGT 2019).
+
+Still to do, in the order of what each gives the scaling:
+- **Level of detail for the leaf cards** (above): the triangles are still the frame's largest cost. Decimated meshes for the plants
+  beyond a few metres would have to come from Blender (`export_garden.py` already simplifies; a second, coarser mesh per plant and a
+  distance to switch at).
+- **Materials**: the shading is already metal-roughness PBR (GGX, Smith, Schlick, split-sum, normal maps with AO and metalness), but
+  94 of 121 materials have no texture at all and the rest are 512 or 1024 texels as JPEG. Real-looking surfaces need texture sets of
+  2048 (base colour, normal, roughness/AO/metal) on the stone, plaster, wood and tiles - from the .blend's own or CC0 sets (ambientCG,
+  Poly Haven) - exported at `TEX = 2048`. That costs scene-file size (the app embeds it) and video memory (the texture array is one
+  size: about 0.5 GB at 2048).
+- A temporal pass (TAA) in place of MSAA 4x, which would also smooth the air's grain.

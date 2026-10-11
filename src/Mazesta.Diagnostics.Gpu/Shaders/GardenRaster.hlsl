@@ -566,7 +566,7 @@ float3 Shafts(SkyOut i, int2 px)
     float3 a = (low - Eye) * inv, b = (high - Eye) * inv, t0 = min(a, b), t1 = max(a, b);
     float from = max(max(t0.x, t0.y), max(t0.z, 0)), to = min(min(t1.x, t1.y), min(t1.z, ViewDistance(px) / dot(dir, CamForward)));
     if (to <= from) return 0;
-    const int steps = 14; float step = (to - from) / steps, lit = 0; float3 sum = 0, start = Eye + dir * (from + step * frac(Turn(i.Position.xy) * 0.159155));
+    int steps = max(14, (int)AirSteps); float step = (to - from) / steps, lit = 0; float3 sum = 0, start = Eye + dir * (from + step * frac(Turn(i.Position.xy) * 0.159155));
     [loop] for (int k = 0; k < steps; k++)
     {
         float3 p = start + dir * (step * k); float4 s = mul(HallViewProj, float4(p, 1)); float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
@@ -575,6 +575,29 @@ float3 Shafts(SkyOut i, int2 px)
     }
     float toward = dot(dir, SunDir), phase = 0.6 + 1.6 * pow(saturate(toward * 0.5 + 0.5), 4);   // dust throws most of it on, toward an eye that looks into the beam
     return sum * step * SunColor * 0.0075 * phase * saturate(SunDir.y * 3.2);   // (a sun on the horizon lights the whole room's air: held back, or the room is all haze)
+}
+
+// The courtyard's own air in the key light: the haze over a sunlit garden is lit where the sun reaches it and dark in the shade of the
+// walls, the cypresses and the hall, so the light stands in the air as beams between the trees and under the arcade - most of all
+// looking toward the sun, the way fine droplets and dust throw light on (Henyey-Greenstein, g 0.55). Along the eye's ray, as far as
+// what it meets and no farther than across the courtyard, the courtyard's shadow map is looked up at AirSteps points (the load level's
+// number: the work grows with the pixels and the steps, as a game's volumetric light does); the hall's air is Shafts'. Moist air
+// lies low: it thins with height above the paving.
+float3 Air(SkyOut i, int2 px)
+{
+    if (SunOn <= 0 || AirSteps == 0) return 0;
+    float3 dir = normalize(CamForward + CamRight * i.Ndc.x * TanHalfFovY * Aspect + CamUp * i.Ndc.y * TanHalfFovY);
+    float to = min(ViewDistance(px) / dot(dir, CamForward), 70), step = to / AirSteps, start = step * frac(Turn(i.Position.xy) * 0.159155), lit = 0;
+    [loop] for (uint k = 0; k < AirSteps; k++)
+    {
+        float3 p = Eye + dir * (start + step * k);
+        if (InHall(p)) continue;
+        float4 s = mul(ShadowViewProj, float4(p, 1)); float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
+        float open = any(uv < 0) || any(uv > 1) ? 1 : ShadowMap.SampleCmpLevelZero(ShadowSampler, uv, s.z - 0.0005);
+        lit += open * exp(-max(p.y, 0) * 0.3);
+    }
+    const float g = 0.55; float phase = (1 - g * g) / pow(1 + g * g - 2 * g * dot(dir, SunDir), 1.5);   // (times 4 pi: 1 on average over all directions)
+    return lit * step * SunColor * 0.0006 * phase * saturate(SunDir.y * 5);   // (a sun on the horizon lights all the air there is: held back)
 }
 
 // The frame through the lens: each pixel gathers, from a disc of taps as wide as the most blur, the pixels whose own blur reaches
@@ -601,7 +624,7 @@ float4 LensPS(SkyOut i) : SV_Target
         float3 own = Unpack(LensA.Load(int3(px, 0)).rgb), round = (Unpack(LensA.Load(int3(px + int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px + int2(0, 1), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(0, 1), 0)).rgb)) * 0.25;
         c = max(c + clamp(own - round, -0.5 * own, 0.5 * own) * 0.45 * (1 - saturate(Blur(ViewDistance(px)))), 0);
     }
-    c += Shafts(i, px);
+    c += Shafts(i, px) + Air(i, px);
     c += LensB.SampleLevel(Clamp, LensUv(i), 0).rgb * Post.x;
     return float4(Finished(c, uint2(px)), 1);
 }
