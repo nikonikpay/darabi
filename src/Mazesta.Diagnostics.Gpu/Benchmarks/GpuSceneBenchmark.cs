@@ -8,9 +8,11 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// options (rasterisation); the ray-traced one has a single setting, 4 rays a pixel, like the visual test, and only the resolution to choose.
 /// The camera walks the garden at the test's own pace (a walk is <see cref="GardenCamera.Loop"/> seconds, by the clock: the default length), and a run
 /// lasts the time asked for, from the gate on. Only a run of whole walks draws the route every card is compared on: a shorter or longer one reports
-/// its frame rate under a name of its own ("part of the walk"), which is kept neither as the machine's record nor in the comparison list. Only the drawing of each frame is timed: showing it in the window and the readout over it are not. Reported: the average frame rate, the 1 % low (the
-/// frame rate of the average of the slowest hundredth of frames, as CapFrameX and most reviews define it) and the 99th-percentile frame
-/// time (the other common definition: 99 % of frames were quicker). The check frames are drawn before and after the timed run, never in it. A frame drawn before the run and again after it at the same moment must be the same
+/// its frame rate under a name of its own ("part of the walk"), which is kept neither as the machine's record nor in the comparison list.
+/// It runs exactly as the visual test does - frame after frame, shown at once, the readout over it, nothing waited for between them (with the frames in flight the option says) - the way a game or
+/// 3DMark runs, so the card is as busy in it as in the test. What is timed is the whole loop: the frame rate is the frames over the time they took, the 1 % low (the frame rate of the average of the slowest hundredth of frames, as CapFrameX and most reviews
+/// define it) and the 99th-percentile frame time (the other common definition) are of the gaps between one shown frame and the next. The graphics score is of the card's own time for a frame, read from
+/// GPU timestamps (a processor that is slow to prepare a frame lowers the frame rate, not this score); the CPU score is of the processor's own time to prepare and record one. The check frames are drawn before and after the timed run, never in it. A frame drawn before the run and again after it at the same moment must be the same
 /// bits, or the run failed. Mazesta's own scene - not comparable with other programs' or games' scores. Closing the window cancels the run.
 /// </summary>
 public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryProbe? memory = null) : IBenchmark, ITestAvailability
@@ -24,13 +26,15 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
                new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")], When: GpuSceneExecutor.RayTracingOption + "=off");
     /// <summary>Ray tracing starts on where the card has DXR 1.1, off otherwise.</summary>
     private static readonly TestOption RayTracing = GpuSceneExecutor.RayTracing with { Preferred = () => GpuFeatures.RayTracingAvailability(TestOptions.None(Scene!)) is null ? "on" : "off" };
-    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop, [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.Weather, GpuSceneExecutor.FullScreen, GpuSceneExecutor.Overlay]);
+    public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop,
+        [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.Weather, GpuSceneExecutor.Frames, GpuSceneExecutor.FullScreen, GpuSceneExecutor.Overlay]);
     public TestDefinition Definition => Scene;
     public HardwareKind Component => HardwareKind.Gpu;
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(GpuSceneExecutor.RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
     private const float Step = 1 / 30f, CheckTime = 1.234f;
 
-    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct) => GpuBenchmark.RunAsync(Definition, request, s => Run(s, request, ct), ownThread: true);
+    public Task<BenchmarkResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
+        => GpuBenchmark.RunAsync(Definition, request, s => Run(s, request, ct), ownThread: true, frames: GpuSceneExecutor.FramesOf((request.Options ?? TestOptions.None(Definition)).Get(GpuSceneExecutor.FramesOption)));
 
     /// <summary>The RAM's Triad bandwidth and latency in a few seconds, with the window kept alive (its messages answered) so it is not marked as not responding.</summary>
     private static (double Triad, double Latency)? MeasureRam(TestWindow window, IMemoryProbe memory, CancellationToken ct)
@@ -58,44 +62,46 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         var renderer = view.Renderer; var garden = view.Garden;
         var gpu = GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName);
         view.Overlay.Visible = options.Get(GpuSceneExecutor.OverlayOption) != "off";
+        using var sensors = new SceneSensorPace(request.Engine, view.Overlay.Visible);
         var ram = facts?.Invoke();   // what the RAM runs at, for the readout and the result (null where it is not known)
         var before = view.CheckFrame(CheckTime);
-        for (int i = 0; i < 3; i++) { view.DrawFrame(i * Step); view.ShowFrame(); }   // warm-up: first-use costs are not measured
+        for (int i = 0; i < 3; i++) view.Present(i * Step);   // warm-up: first-use costs are not measured
+        view.Drain();
 
         // The camera follows the clock, as in the visual test, so the walk looks the same however fast the card is; the run lasts whole walks, so
-        // every card draws the same route. The time counted is each frame's drawing alone, so the readout, the picture shown, the check frame and
-        // the progress report are outside it.
+        // every card draws the same route. What is counted is the frames and the time between them, as the visual test shows them.
         double runSeconds = Math.Max(10, request.DurationSeconds), walks = runSeconds / GardenCamera.Loop; bool whole = Math.Abs(walks - Math.Round(walks)) < 0.01;
-        var hostFrom = request.Clock.UtcNow; double cpuSeconds = 0, gpuSeconds = 0, simSeconds = 0;
-        var times = new List<double>(); var total = Stopwatch.StartNew(); var frame = new Stopwatch(); int n = 0;
+        var hostFrom = request.Clock.UtcNow; double cpuSeconds = 0, simSeconds = 0; double gpuBefore = s.GpuSeconds; long gpuFramesBefore = s.GpuFrames;
+        var times = new List<double>(); int n = 0;
         var tick = Stopwatch.StartNew(); double tickTime = 0; int tickFrames = 0; double lowestHalfSecond = double.MaxValue; var pace = new FramePace();
+        var total = Stopwatch.StartNew(); long lastShown = Stopwatch.GetTimestamp();
         ShowReadout(0, 0);
         while (total.Elapsed.TotalSeconds < runSeconds)
         {
             ct.ThrowIfCancellationRequested();
             if (!window.Pump()) throw new OperationCanceledException("The benchmark window was closed.");
-            if (window.OverlayKey()) { view.Overlay.Visible = !view.Overlay.Visible; ShowReadout(0, n > 0 ? n / times.Sum() : 0); }
-            float t = (float)total.Elapsed.TotalSeconds; n++;
-            frame.Restart();
-            view.DrawFrame(t);   // every submission is waited for: the time is the frame's own
-            frame.Stop(); cpuSeconds += s.LastRecordSeconds; simSeconds += (garden.Weather?.LastSeconds ?? 0); gpuSeconds += s.LastSubmitSeconds; times.Add(frame.Elapsed.TotalSeconds); tickTime += frame.Elapsed.TotalSeconds; tickFrames++; pace.Frame(frame.Elapsed.TotalSeconds);
-            view.ShowFrame();
+            if (window.OverlayKey()) { view.Overlay.Visible = !view.Overlay.Visible; ShowReadout(0, n / Math.Max(1e-3, total.Elapsed.TotalSeconds)); }
+            view.Present((float)total.Elapsed.TotalSeconds); n++;
+            long now = Stopwatch.GetTimestamp(); double gap = Stopwatch.GetElapsedTime(lastShown, now).TotalSeconds; lastShown = now;
+            cpuSeconds += s.LastRecordSeconds; simSeconds += garden.Weather?.LastSeconds ?? 0; times.Add(gap); tickTime += gap; tickFrames++; pace.Frame(gap);
             if (tick.Elapsed.TotalSeconds >= 0.5)
             {
                 double fps = tickFrames / tickTime;
                 if (total.Elapsed.TotalSeconds > 2) lowestHalfSecond = Math.Min(lowestHalfSecond, fps);
                 window.Title = $"Mazesta — {mode} — benchmark — {fps:F0} FPS — {Math.Max(0, (int)(runSeconds - total.Elapsed.TotalSeconds))} s";
-                pace.Sample(fps); ShowReadout(fps, n / times.Sum());
+                pace.Sample(fps); ShowReadout(fps, n / total.Elapsed.TotalSeconds);
                 tickTime = 0; tickFrames = 0; tick.Restart();
                 request.Report(Math.Min(1, total.Elapsed.TotalSeconds / runSeconds));
             }
         }
+        view.Drain();   // the frames still being drawn finish, and their timestamps are in
+        double wall = total.Elapsed.TotalSeconds;
         var hostTo = request.Clock.UtcNow;
         // The RAM's own speed in a few seconds, after the timed run (the window is kept alive meanwhile): the score's third part.
         (double Triad, double Latency)? probe = whole && memory is not null ? MeasureRam(window, memory, ct) : null;
-        if (view.CheckFrame(CheckTime) != before)
+        if (!SceneView.Same(view.CheckFrame(CheckTime), before))
             throw new GpuWrongResultException("The check frame drawn after the run differs from the one drawn before it (same scene, same moment): the GPU computed wrongly under load.");
-        double average = n / times.Sum();
+        double average = n / wall;
         var sorted = times.Order().ToArray();
         var slowest = sorted.TakeLast(Math.Max(1, sorted.Length / 100)).Average();
         double p99 = sorted[Math.Min(sorted.Length - 1, (int)Math.Ceiling(sorted.Length * 0.99) - 1)];
@@ -104,8 +110,11 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
             ? $"Direct3D 12 with DXR 1.1 ray tracing, quality {quality}: {r.Level.ShadowTaps} shadow ray{(r.Level.ShadowTaps == 1 ? "" : "s")} a pixel to the sun or the moon and one to each lit lamp in reach, ray-traced reflections, ambient occlusion {r.Level.OcclusionTaps} taps, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame"
             : $"Direct3D 12, quality {quality}: shadow map {r.Level.ShadowSize}, ambient occlusion {r.Level.OcclusionTaps} taps, pool reflection 1/{r.Level.ReflectionDivisor}, MSAA {r.Samples}x; {garden.Triangles / 1e6:F2} M triangles a frame";
         var metrics = new List<BenchmarkMetric>();
-        double cpuFrame = cpuSeconds / n, gpuFrame = gpuSeconds / n;   // the processor's recording and the card's time to finish, per frame
-        var setup = new List<SpecItem>();
+        // The card's own time per frame is what its timestamps say (from its first command of a frame to its last: the gaps while it waited for the processor are not in it); the processor's is what it
+        // took to prepare and record one. Without timestamps the card's share cannot be told apart from the rest, so it is the whole frame's.
+        long gpuFrames = s.GpuFrames - gpuFramesBefore; bool stamped = gpuFrames >= n / 2 && gpuFrames > 0;
+        double gpuTotal = s.GpuSeconds - gpuBefore, gpuFrame = stamped ? gpuTotal / gpuFrames : wall / n, cpuFrame = cpuSeconds / n;
+        var setup = new List<SpecItem> { new(BenchmarkDetails.RunGroup, "Bench_Set_Frames", s.Frames == 1 ? "1" : "2") };
         if (whole)
         {
             double graphics = SceneScore.Graphics(1 / gpuFrame), cpu = SceneScore.Cpu(1 / cpuFrame);
@@ -123,12 +132,13 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         }
         metrics.AddRange([new(whole ? "Bench_Gpu_Scene_Fps" : "Bench_Gpu_Scene_FpsPart", average, "FPS"), new("Bench_Gpu_Scene_Low", 1 / slowest, "FPS"), new("Bench_Gpu_Scene_P99", p99 * 1000, "ms"),
             new("Bench_Scene_GpuFrame", gpuFrame * 1000, "ms"), new("Bench_Scene_CpuFrame", cpuFrame * 1000, "ms")]);
-        if (garden.Weather is { } weather) metrics.Add(new("Bench_Scene_SimFrame", simSeconds / n * 1000, "ms"));
+        if (stamped) metrics.Add(new("Bench_Scene_GpuBusy", Math.Min(100, gpuTotal / wall * 100), "%"));   // how much of the run the card was drawing (a condition of the run: the frame rate says how fast, this says how fully)
+        if (garden.Weather is not null) metrics.Add(new("Bench_Scene_SimFrame", simSeconds / n * 1000, "ms"));
         HostMetrics.AddCpu(metrics, request, hostFrom, hostTo); HostMetrics.AddRam(metrics, request, hostFrom, hostTo, ram);
         if (probe is { } pr) metrics.AddRange([new("Bench_Ram_Bandwidth", pr.Triad, "GB/s"), new("Bench_Ram_Latency", pr.Latency, "ns")]);
         s.Setup.AddRange(setup);
         return (metrics,
-            $"Persian garden in a window at {width}x{height}, {n} frames: " + (whole ? $"{walks:F0} walk{(Math.Round(walks) == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" : $"the first {runSeconds:F0} s of the {GardenCamera.Loop:F0} s walk of the garden (not the whole route: not compared with other runs)") + $"; {how}; {garden.Instances.Length:N0} objects" + (garden.Weather is { } w2 ? $"; weather on {GardenWeather.Threads} threads: {w2.Level.Rain:N0} raindrops, {w2.Level.Leaves:N0} leaves, {w2.Level.Twigs:N0} twigs, a {w2.VoxelBytes / 1048576.0:F0} MB grid of solids" : ""));
+            $"Persian garden in a window at {width}x{height}, {n} frames, {s.Frames} in flight: " + (whole ? $"{walks:F0} walk{(Math.Round(walks) == 1 ? "" : "s")} of the garden at walking pace, {runSeconds:F0} s" : $"the first {runSeconds:F0} s of the {GardenCamera.Loop:F0} s walk of the garden (not the whole route: not compared with other runs)") + $"; {how}; {garden.Instances.Length:N0} objects" + (garden.Weather is { } w2 ? $"; weather on {GardenWeather.Threads} threads: {w2.Level.Rain:N0} raindrops, {w2.Level.Leaves:N0} leaves, {w2.Level.Twigs:N0} twigs, a {w2.VoxelBytes / 1048576.0:F0} MB grid of solids" : ""));
 
         // The readout shows only what was measured: a sensor this card does not report (or has not reported in the last seconds) is left out.
         void ShowReadout(double fps, double mean)

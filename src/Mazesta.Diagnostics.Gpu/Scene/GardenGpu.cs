@@ -38,9 +38,15 @@ internal sealed unsafe class GardenGpu
     private enum Life : byte { Firefly, WingRight, WingLeft, Steam }
     /// <summary>What each mover is and which of its kind, by the number its instance carries (<see cref="Instance.Index"/>).</summary>
     private readonly (Life Kind, int Number)[] _movers = [];
-    private readonly int _firstFirefly = -1;
-    /// <summary>The movers' places for the frame being drawn (three rows of a 3x4 matrix each), for the rasteriser's vertex shader.</summary>
+    private readonly int _firstFirefly = -1, _litFireflies;
+    /// <summary>The movers' places for the frame being drawn (three rows of a 3x4 matrix each), for the rasteriser's vertex shader. With frames in flight there is a copy of it
+    /// (and of the lamps' buffers) for each frame slot, so the processor writing one frame's is never the card reading another's; <see cref="MoverAddress"/> says where a slot's is.</summary>
     public ID3D12Resource MoverBuffer { get; }
+    private readonly ulong _moverBytes, _lightBytes, _gridBytes;
+    private static ulong Aligned(ulong n) => (n + 255) & ~255ul;
+    public ulong MoverAddress(int slot) => MoverBuffer.GPUVirtualAddress + (ulong)slot * _moverBytes;
+    public ulong LightAddress(int slot) => LightBuffer.GPUVirtualAddress + (ulong)slot * _lightBytes;
+    public ulong GridAddress(int slot) => LightGridBuffer.GPUVirtualAddress + (ulong)slot * _gridBytes;
     /// <summary>The main pool's surface.</summary>
     public float WaterLevel { get; }
     public GardenFountain? Fountain { get; }
@@ -99,7 +105,7 @@ internal sealed unsafe class GardenGpu
     public ID3D12Resource Backdrop { get; } public Vector4 BackdropRange { get; }
     private readonly int _textureMips;
 
-    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, WeatherLevel? weather = null)
+    public GardenGpu(D3D12Session s, GardenScene scene, SceneModel? custom = null, string? customProblem = null, WeatherLevel? weather = null, int frames = 1)
     {
         const GardenScene.Mode mode = GardenScene.Mode.Raster;   // the file's Direct3D scene: its ray-traced one lent only its night rig of lamps
         ModelProblem = customProblem; WaterLevel = scene.WaterLevel; Fountain = scene.Fountain; LightVolume = scene.Light;
@@ -134,6 +140,7 @@ internal sealed unsafe class GardenGpu
             materials.Add(material); meshes.Add(shape((uint)materials.Count - 1));
             for (int k = 0; k < count; k++) { life.Add((meshes.Count - 1, kind, first + k)); chosen = [.. chosen, still with { Mesh = (uint)meshes.Count - 1 }]; }
         }
+        _litFireflies = LitFireflies;
         Add(new GardenMaterial { Kind = GardenMaterialKind.Emissive, Texture = -1, NormalTexture = -1, Base = new(0.5f, 0.6f, 0.1f), Alpha = 1, Roughness = 0.6f, Emission = new(7f, 10f, 1.6f) }, Ball, Life.Firefly, 0, Fireflies);
         Vector3[] wings = [new(0.85f, 0.36f, 0.06f), new(0.92f, 0.9f, 0.8f), new(0.25f, 0.42f, 0.85f), new(0.9f, 0.75f, 0.12f)];
         for (int c = 0; c < wings.Length; c++)
@@ -187,7 +194,8 @@ internal sealed unsafe class GardenGpu
         for (uint k = 0, m = (uint)_movers.Length; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.WeatherFlag) != 0) Instances[k].Index = m++;   // (the weather's numbers follow the small life's)
         WeatherInstances = Instances.Count(i => (i.Flags & GardenScene.WeatherFlag) != 0); RayInstances = Instances.Length - WeatherInstances;
         if (WeatherInstances > 0 && Instances[RayInstances].Flags is var wf && (wf & GardenScene.WeatherFlag) == 0) throw new InvalidOperationException("The weather's instances are not the last.");
-        MoverBuffer = s.Buffer((ulong)(_movers.Length + WeatherInstances) * 48 + 48, HeapType.Upload, ResourceStates.GenericRead);
+        _moverBytes = Aligned((ulong)(_movers.Length + WeatherInstances) * 48 + 48);
+        MoverBuffer = s.Buffer(_moverBytes * (ulong)Math.Max(1, frames), HeapType.Upload, ResourceStates.GenericRead);
         LogoInstance = Array.FindIndex(Instances, i => (i.Flags & GardenScene.LogoFlag) != 0);
         Moving = [.. Enumerable.Range(0, Instances.Length).Where(k => (Instances[k].Flags & (7 | GardenScene.MoverFlag)) != 0 && (Instances[k].Flags & GardenScene.WeatherFlag) == 0)];
         Swaying = [.. Enumerable.Range(0, Instances.Length).Where(k => GardenScene.Sway(Instances[k].Flags) > 0)];
@@ -239,13 +247,15 @@ internal sealed unsafe class GardenGpu
         }
         // the fireflies that are lights: a hand's breadth of green glow each, moved and dimmed with the firefly every frame (Update)
         _firstFirefly = points.Count;
-        for (int k = 0; k < LitFireflies; k++) points.Add(new Light { Kind = (uint)GardenLightKind.Point, Direction = -Vector3.UnitY, Range = 1.7f, Radius = 0.05f, CosOuter = -2, CosInner = -1 });
+        for (int k = 0; k < _litFireflies; k++) points.Add(new Light { Kind = (uint)GardenLightKind.Point, Direction = -Vector3.UnitY, Range = 1.7f, Radius = 0.05f, CosOuter = -2, CosInner = -1 });
         PointLights = [.. points];
-        LightBuffer = s.Buffer((ulong)PointLights.Length * 64, HeapType.Upload, ResourceStates.GenericRead);
+        _lightBytes = Aligned((ulong)PointLights.Length * 64);
+        LightBuffer = s.Buffer(_lightBytes * (ulong)Math.Max(1, frames), HeapType.Upload, ResourceStates.GenericRead);
         var (_, hallLow, hallHigh) = GardenRaster.Rounds[1];
         _hallLamp = [.. PointLights.Select((p, k) => k < _firstFirefly && p.Position.X > hallLow.X && p.Position.Y > hallLow.Y && p.Position.Z > hallLow.Z && p.Position.X < hallHigh.X && p.Position.Y < hallHigh.Y && p.Position.Z < hallHigh.Z)];
         _grid = new uint[GridX * GridZ * (2 + PointLights.Length)];
-        LightGridBuffer = s.Buffer((ulong)_grid.Length * 4, HeapType.Upload, ResourceStates.GenericRead);
+        _gridBytes = Aligned((ulong)_grid.Length * 4);
+        LightGridBuffer = s.Buffer(_gridBytes * (ulong)Math.Max(1, frames), HeapType.Upload, ResourceStates.GenericRead);
         Update(0);
 
         // for the ray tracer: where each mesh's vertices and each submesh's indices start
@@ -267,10 +277,11 @@ internal sealed unsafe class GardenGpu
 
     /// <summary>Sets what moves of itself for the frame at <paramref name="time"/>: the movers' places for the rasteriser, and the
     /// lit fireflies among the lamps. A renderer calls it before it draws (the frame before has been drawn by then).</summary>
-    public void Update(float time, bool live = true)
+    public void Update(float time, bool live = true, int slot = 0)
     {
         Weather?.Advance(time, live);   // (on every core, before the buffer is opened)
-        var rows = MoverBuffer.Map<Vector4>(0, (Math.Max(1, _movers.Length) + WeatherInstances) * 3);
+        int perSlot = (int)(_moverBytes / 16);
+        var rows = MoverBuffer.Map<Vector4>(0, perSlot * (slot + 1))[(perSlot * slot)..];
         for (int k = 0; k < _movers.Length; k++)
         {
             var m = Mover(k, time);
@@ -279,18 +290,18 @@ internal sealed unsafe class GardenGpu
         if (Weather is { } weather) weather.Rows.CopyTo(rows[(_movers.Length * 3)..]);
         MoverBuffer.Unmap(0);
         float lamps = Day(time).Lamps;
-        for (int k = 0; k < LitFireflies; k++)
+        for (int k = 0; k < _litFireflies; k++)
         {
             var (at, glow) = Firefly(k, time);
             PointLights[_firstFirefly + k].Position = at; PointLights[_firstFirefly + k].Color = new Vector3(0.45f, 0.75f, 0.12f) * (0.11f * glow * lamps);
         }
-        Lamps(lamps, HallLit(Day(time)));
+        Lamps(lamps, HallLit(Day(time)), slot);
     }
 
     /// <summary>Lights the lamps: the garden's as far as <paramref name="garden"/> says (0 to 1: they are lit at dusk one after
     /// another, each at its own moment, and put out at dawn), the hall's own as far as <paramref name="hall"/> does; and lists, for
     /// each square of the garden's plan, the lit lamps whose light can reach it (a spot lamp's is the ball round its cone).</summary>
-    public void Lamps(float garden, float hall)
+    public void Lamps(float garden, float hall, int slot = 0)
     {
         int cells = GridX * GridZ, stride = PointLights.Length;
         for (int c = 0; c < cells; c++) { _grid[c * 2] = (uint)(cells * 2 + c * stride); _grid[c * 2 + 1] = 0; }
@@ -314,8 +325,9 @@ internal sealed unsafe class GardenGpu
                     int c = z * GridX + x; _grid[cells * 2 + c * stride + (int)_grid[c * 2 + 1]++] = (uint)k;
                 }
         }
-        PointLights.AsSpan().CopyTo(LightBuffer.Map<Light>(0, PointLights.Length)); LightBuffer.Unmap(0);
-        _grid.AsSpan().CopyTo(LightGridBuffer.Map<uint>(0, _grid.Length)); LightGridBuffer.Unmap(0);
+        int lightAt = (int)(_lightBytes / 64) * slot, gridAt = (int)(_gridBytes / 4) * slot;
+        PointLights.AsSpan().CopyTo(LightBuffer.Map<Light>(0, lightAt + PointLights.Length)[lightAt..]); LightBuffer.Unmap(0);
+        _grid.AsSpan().CopyTo(LightGridBuffer.Map<uint>(0, gridAt + _grid.Length)[gridAt..]); LightGridBuffer.Unmap(0);
     }
 
     internal static float H(uint x) { x ^= x >> 16; x *= 0x7feb352d; x ^= x >> 15; x *= 0x846ca68b; x ^= x >> 16; return (x >> 8) * (1f / 16777216f); }

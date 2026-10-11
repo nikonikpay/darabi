@@ -14,9 +14,11 @@
 // stained panes, whose colour it takes) and to every lit lamp in reach, and a ray along what the water, glass, metal and polished
 // stone mirror, lit where it lands. The courtyard's shadow map, the lamps' shadow cubes and the pool's second drawing are then not made.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
+// The tables of views are DATA_VOLATILE: the frame draws into pictures that the same tables list (the pool's mirror image, the faces of the surroundings, the occlusion and the depth, the hall's tint). With the
+// default (DATA_STATIC_WHILE_SET_AT_EXECUTE) the data behind a bound view may not change before the draw, the card is free to have read it early, and the frames come out different when two are in flight.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), SRV(t18), SRV(t19), SRV(t20), SRV(t21), SRV(t22), SRV(t23), " \
-           "DescriptorTable(SRV(t3, numDescriptors=7)), DescriptorTable(SRV(t10, numDescriptors=2)), DescriptorTable(SRV(t12, numDescriptors=5)), " \
+           "DescriptorTable(SRV(t3, numDescriptors=7, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t10, numDescriptors=2, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t12, numDescriptors=5, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=16), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
