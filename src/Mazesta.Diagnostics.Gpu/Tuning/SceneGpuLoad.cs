@@ -35,7 +35,7 @@ internal static class SceneGpuLoad
     /// voltage). The score is frames per second of burst; an error is a check frame, drawn after each long rest, that is not the picture drawn before the run.</summary>
     private static LoadRunResult Bursts(GraphicsDevice device, TimeSpan duration, bool rayTraced, CancellationToken ct)
     {
-        using var session = new D3D12Session(device, 2);
+        using var session = new D3D12Session(device);
         using var window = new TestWindow("Mazesta — tuning load", Width, Height, false);
         using var view = new SceneView(session, window, Width, Height, rayTraced, 3, null, null);
         using var cpu = new CpuBursts();
@@ -47,7 +47,7 @@ internal static class SceneGpuLoad
         {
             bool longRest = rng.Next(5) == 0;
             Rest(longRest ? rng.Next(3000, 8001) : rng.Next(20, 601));
-            if (longRest) { if (!SceneView.Same(view.CheckFrame(CheckTime), before)) errors++; }   // the first frame after the jump, checked
+            if (longRest) { if (!(view.CheckFrame(CheckTime) == before)) errors++; }   // the first frame after the jump, checked
             double burstMs = rng.Next(4) == 0 ? rng.Next(1000, 4001) : rng.Next(30, 401); var start = clock.Elapsed;
             cpu.On();
             try
@@ -58,12 +58,12 @@ internal static class SceneGpuLoad
                     if (!window.Pump()) throw new OperationCanceledException("The tuning window was closed.");
                     view.Present((float)clock.Elapsed.TotalSeconds); frames++;
                 }
-                view.Drain();   // the card really goes idle in the rest, not still working through queued frames
+                // the card really goes idle in the rest, not still working through queued frames
             }
             finally { cpu.Off(); }
             burstSeconds += (clock.Elapsed - start).TotalSeconds;
         }
-        if (!SceneView.Same(view.CheckFrame(CheckTime), before)) errors++;
+        if (!(view.CheckFrame(CheckTime) == before)) errors++;
         return new(frames / Math.Max(0.001, burstSeconds), errors, false, null);
     }
 
@@ -93,13 +93,12 @@ internal static class SceneGpuLoad
 
     private static LoadRunResult Draw(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct)
     {
-        using var session = new D3D12Session(device, 2);
+        using var session = new D3D12Session(device);
         using var window = new TestWindow("Mazesta — tuning load", Width, Height, false);
         using var view = new SceneView(session, window, Width, Height, rayTraced, 3, null, null);
         view.Overlay.Visible = false;
         var before = view.CheckFrame(CheckTime);
         for (int i = 0; i < 3; i++) view.Present(0);
-        view.Drain();
         long frames = 0, counted = 0; var clock = Stopwatch.StartNew(); TimeSpan countedFrom = default;
         while (clock.Elapsed < duration)
         {
@@ -108,8 +107,7 @@ internal static class SceneGpuLoad
             view.Present((float)clock.Elapsed.TotalSeconds); frames++;
             if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else counted++; }
         }
-        view.Drain();
-        long errors = SceneView.Same(view.CheckFrame(CheckTime), before) ? 0 : 1;
+        long errors = (view.CheckFrame(CheckTime) == before) ? 0 : 1;
         return new(counted / Math.Max(0.001, (clock.Elapsed - countedFrom).TotalSeconds), errors, false, null);
     }
 }
