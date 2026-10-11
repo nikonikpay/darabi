@@ -564,7 +564,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         }
 
         Mark(l, "start");
-        if (_accel is not null) { _accel.Build(l, time, S.Slot); Mark(l, "ray-tracing structure"); }
+        if (_accel is not null) { _accel.Build(l, time, S.Slot); Mark(l, "ray-tracing structure"); if (Chunked) l = S.Handoff(); }   // (the structure is built in a submission of its own: with the passes that read it in the same list an RTX 50 card hung within the third frame - device removed, TDR)
         Bind(l);
         if (!_onceDrawn)
         {   // what is drawn once: where the sky stands open over the still scene (its depth from straight above), and the lamps' shadow cubes
