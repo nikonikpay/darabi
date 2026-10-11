@@ -19,10 +19,12 @@ internal sealed unsafe class GardenGpu
     [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Shadow, Lit; }
     [StructLayout(LayoutKind.Sequential)] public struct MeshInfo { public Vector3 Centre; public uint FirstSubmesh; public Vector3 Extent; public uint BaseVertex; }
     [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, Pad; }
-    public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind);
+    public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind, GardenChunks.Chunk[]? Chunks = null);
     /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>. Moving: some of them
     /// are placed anew every frame (the logo, the sphere, the droplets).</summary>
-    public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts, bool Moving, bool Weather = false);
+    public sealed record Draw(int Mesh, uint FirstInstance, uint InstanceCount, int BaseVertex, uint VertexCount, Vector3 Centre, Vector3 Extent, Part[] Parts, bool Moving, bool Weather = false, DrawLod[]? Lods = null, float LeafSize = 0);
+    /// <summary>A coarser mesh of a plant for the camera's passes far from it (<see cref="GardenLod"/>): its own vertices, box and parts, drawn with the instances of the whole mesh.</summary>
+    public sealed record DrawLod(int BaseVertex, Vector3 Centre, Vector3 Extent, Part[] Parts, int Triangles);
 
     /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
     public const uint JetDroplets = 520, SpillDroplets = 12 * 26;
@@ -173,6 +175,26 @@ internal sealed unsafe class GardenGpu
             Body(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = new(0.17f, 0.11f, 0.07f), Alpha = 1, Roughness = 0.85f, Pattern = new(0, 0, 0, 0.1f) }, Twig, level.Twigs);
         }
         Materials = [.. materials];
+        // levels of detail for the plants that stand still: more meshes at the end of the list, which no instance names (the camera's passes draw them in place of the whole mesh)
+        var lodOf = new Dictionary<int, (int[] Ids, float Leaf)>();
+        {
+            var movable = chosen.Where(i => (i.Flags & (7 | GardenScene.MoverFlag | GardenScene.WeatherFlag)) != 0).Select(i => (int)i.Mesh).ToHashSet();
+            var candidates = chosen.Select(i => (int)i.Mesh).Distinct().Where(m => !movable.Contains(m) && m < scene.Meshes.Count).ToArray();
+            var made = new GardenLod.Result?[candidates.Length];
+            Parallel.For(0, candidates.Length, k => made[k] = GardenLod.Build(meshes[candidates[k]], m => scene.Materials[(int)m].Kind == GardenMaterialKind.Cutout));
+            for (int k = 0; k < candidates.Length; k++)
+                if (made[k] is { } r) { lodOf[candidates[k]] = ([.. r.Levels.Select(l => { meshes.Add(l); return meshes.Count - 1; })], r.LeafSize); }
+        }
+
+        // big solid meshes of a few instances cut into runs a camera can pick from (GardenChunks): their triangles put in order of where they lie
+        var chunked = new Dictionary<int, Dictionary<int, GardenChunks.Chunk[]>>();
+        {
+            var counts = chosen.GroupBy(i => (int)i.Mesh).ToDictionary(x => x.Key, x => x.Count());
+            for (int m = 0; m < scene.Meshes.Count; m++)
+                if (counts.TryGetValue(m, out int n) && n <= 8 && !chosen.Any(i => i.Mesh == m && (i.Flags & (7 | GardenScene.MoverFlag | GardenScene.WeatherFlag)) != 0)
+                    && GardenChunks.Split(meshes[m], mat => materials[(int)mat].Kind is GardenMaterialKind.Flat or GardenMaterialKind.Brick) is { } split)
+                { meshes[m] = split.Mesh; chunked[m] = split.Chunks; }
+        }
 
         // every mesh's vertices and indices, end to end
         var baseVertex = new int[meshes.Count]; var baseIndex = new uint[meshes.Count]; long vbytes = 0, icount = 0;
@@ -183,7 +205,15 @@ internal sealed unsafe class GardenGpu
         s.Fill(IndexBuffer, d => { int at = 0; foreach (var m in meshes) { MemoryMarshal.AsBytes(m.Indices.AsSpan()).CopyTo(d[at..]); at += m.Indices.Length * 4; } }, ResourceStates.IndexBuffer | ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
         // instances grouped by mesh, in the file's order within a mesh
-        var order = chosen.Select((inst, k) => (inst, k)).OrderBy(x => x.inst.Mesh).ThenBy(x => x.k).Select(x => x.inst).ToArray();
+        // (what stands still is kept in runs of neighbours: a camera's view takes in a part of the garden, and draws it in few calls)
+        static bool Still(GardenInstance i) => (i.Flags & (7 | GardenScene.MoverFlag | GardenScene.WeatherFlag)) == 0;
+        static ulong Morton(GardenInstance i)
+        {
+            static ulong Spread(uint v) { ulong x = v & 0x1FFFFF; x = (x | x << 32) & 0x1F00000000FFFF; x = (x | x << 16) & 0x1F0000FF0000FF; x = (x | x << 8) & 0x100F00F00F00F00F; x = (x | x << 4) & 0x10C30C30C30C30C3; return (x | x << 2) & 0x1249249249249249; }
+            static uint Q(float v, float lo) => (uint)Math.Clamp((v - lo) * 8, 0, 2097151);
+            return Spread(Q(i.Row0.W, -80)) | Spread(Q(i.Row1.W, -10)) << 1 | Spread(Q(i.Row2.W, -80)) << 2;
+        }
+        var order = chosen.Select((inst, k) => (inst, k)).OrderBy(x => x.inst.Mesh).ThenBy(x => Still(x.inst) ? Morton(x.inst) : (ulong)x.k).Select(x => x.inst).ToArray();
         Instances = [.. order.Select(i => new Instance { Row0 = i.Row0, Row1 = i.Row1, Row2 = i.Row2, Mesh = i.Mesh, Mask = i.Mask, Flags = i.Flags })];
         for (uint k = 0, d = 0; k < Instances.Length; k++) if ((Instances[k].Flags & GardenScene.DropletFlag) != 0) Instances[k].Index = d++;
         // the movers are numbered as they come (grouped by mesh, in the order they were added within one): which is which is kept beside
@@ -205,8 +235,11 @@ internal sealed unsafe class GardenGpu
             int m = (int)order[k].Mesh, n = 0; while (k + n < order.Length && order[k + n].Mesh == m) n++;
             var mesh = meshes[m];
             draws.Add(new Draw(m, (uint)k, (uint)n, baseVertex[m], (uint)mesh.VertexCount, mesh.Centre, mesh.Extent,
-                [.. mesh.Submeshes.Select(sub => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))],
-                order.Skip(k).Take(n).Any(i => (i.Flags & (7 | GardenScene.MoverFlag)) != 0), (order[k].Flags & GardenScene.WeatherFlag) != 0));
+                [.. mesh.Submeshes.Select((sub, si) => new Part(baseIndex[m] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind,
+                    chunked.TryGetValue(m, out var byPart) && byPart.TryGetValue(si, out var cs) ? [.. cs.Select(c => c with { Start = c.Start + baseIndex[m] + sub.IndexStart })] : null))],
+                order.Skip(k).Take(n).Any(i => (i.Flags & (7 | GardenScene.MoverFlag)) != 0), (order[k].Flags & GardenScene.WeatherFlag) != 0,
+                lodOf.TryGetValue(m, out var lod) ? [.. lod.Ids.Select(id => new DrawLod(baseVertex[id], meshes[id].Centre, meshes[id].Extent,
+                    [.. meshes[id].Submeshes.Select(sub => new Part(baseIndex[id] + sub.IndexStart, sub.IndexCount, sub.Material, materials[(int)sub.Material].Kind))], meshes[id].Indices.Length / 3))] : null, lodOf.TryGetValue(m, out lod) ? lod.Leaf : 0));
             Triangles += (long)mesh.Indices.Length / 3 * n; k += n;
         }
         Draws = [.. draws];

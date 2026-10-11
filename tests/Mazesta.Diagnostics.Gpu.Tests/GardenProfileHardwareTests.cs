@@ -12,11 +12,13 @@ public class GardenProfileHardwareTests(ITestOutputHelper o)
         if (rt && !GpuFeatures.SupportsInlineRayTracing(GpuDevices.Resolve("")!)) return;
         var g = new GardenGpu(s, GardenScene.Embedded);
         using var r = new GardenRaster(s, g, 1920, 1080, [], 3, rt) { Profile = true };
-        for (int i = 0; i < 5; i++) s.Run(l => r.Draw(l, i / 30f, r.OwnTarget));
-        var sums = new Dictionary<string, double>(); var order = new List<string>(); int n = 0; var sw = System.Diagnostics.Stopwatch.StartNew();
-        while (sw.Elapsed.TotalSeconds < 6) { float t = (float)sw.Elapsed.TotalSeconds; s.Run(l => r.Draw(l, t, r.OwnTarget)); foreach (var (name, ms) in r.PassTimes()) { if (!sums.ContainsKey(name)) { sums[name] = 0; order.Add(name); } sums[name] += ms; } n++; }
-        o.WriteLine($"rt={rt} {n} frames, total {sums.Values.Sum() / n:F2} ms");
-        foreach (var name in order) o.WriteLine($"   {name,-36} {sums[name] / n,6:F2} ms  {100 * sums[name] / sums.Values.Sum(),4:F1} %");
+        for (int i = 0; i < 5; i++) s.Run(l => r.Draw(l, i / 30f + (float.TryParse(Environment.GetEnvironmentVariable("MAZESTA_PROFILE_T0"), out var u0) ? u0 : 0), r.OwnTarget));
+        var sums = new Dictionary<string, double>(); var calls = new Dictionary<string, long>(); var tris = new Dictionary<string, long>(); var order = new List<string>(); int n = 0; var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (sw.Elapsed.TotalSeconds < 6) { float t = (float)sw.Elapsed.TotalSeconds + (float.TryParse(Environment.GetEnvironmentVariable("MAZESTA_PROFILE_T0"), out var t0) ? t0 : 0); s.Run(l => r.Draw(l, t, r.OwnTarget)); foreach (var (name, ms, c, tr) in r.PassTimes()) { if (!sums.ContainsKey(name)) { sums[name] = 0; calls[name] = 0; tris[name] = 0; order.Add(name); } sums[name] += ms; calls[name] += c; tris[name] += tr; } n++; }
+        var names = g.Draws.SelectMany(d => new[] { (d.BaseVertex, $"mesh {d.Mesh} x{d.InstanceCount} ({d.Parts.Sum(p => p.IndexCount) / 3} tris)") }.Concat((d.Lods ?? []).Select((l, k) => (l.BaseVertex, $"mesh {d.Mesh} LOD{k + 1}")))).ToDictionary(x => x.Item1, x => x.Item2);
+        foreach (var (b, t) in r.ByBase.OrderByDescending(x => x.Value).Take(40)) o.WriteLine($"      {t / (double)n / 1e6,6:F2} M/frame  {names.GetValueOrDefault(b, "?")}");
+        o.WriteLine($"rt={rt} {n} frames in {sw.Elapsed.TotalSeconds:F1} s, gpu total {sums.Values.Sum() / n:F2} ms, whole frame {sw.Elapsed.TotalMilliseconds / n:F2} ms");
+        foreach (var name in order) o.WriteLine($"   {name,-36} {sums[name] / n,6:F2} ms  {100 * sums[name] / sums.Values.Sum(),4:F1} %  {calls[name] / n,6} draws {tris[name] / n / 1e6,7:F2} M tris");
     }
 }
 

@@ -31,7 +31,7 @@ renderer; what makes it slow is not a bug but how much geometry it draws, how ma
 | instancing (one draw for all copies of a mesh) | yes | yes |
 | frustum culling of what the camera cannot see | only the lamps' and surroundings' passes | the camera's passes too (v31), the mirror pass to the part of the picture the pool shows (v32); the picture is bit for bit the same (a render check) |
 | one depth prepass, reused | two (one for the occlusion, one for MSAA) | one: the MSAA prepass's nearest sample is the occlusion's depth (v32, -1.7 ms) |
-| level of detail (cheaper meshes far away) | none | **none: the largest remaining gain** |
+| level of detail (cheaper meshes far away) | none | **v40: leaf cards thinned and grown at distance** (`GardenLod`, below) |
 | occlusion culling (not drawing what stands behind a wall) | none | none |
 | cascaded or fitted shadow maps | one 4096 map for the whole courtyard (1.6 cm a texel over 66 m) | unchanged |
 | GPU-driven rendering / mesh shaders (the card culls and picks) | no | no |
@@ -90,6 +90,22 @@ v38:
   24 / 48 steps at quality 1-4, so the sun stands in the haze as beams; the hall's shafts take as many steps. Per-pixel work, as in a
   game's volumetric light.
 - **Rough surfaces keep their energy**: the light GGX loses between microfacets is put back (Fdez-Agüera, JCGT 2019).
+
+v40 (measured on an RTX 5070, 1080p, quality 3, the walk's first six seconds; `MAZESTA_PROFILE=1 ... GardenProfile`, which now also prints draw calls and
+triangles a pass):
+- **Levels of detail for plants** (`GardenLod`, made when the scene loads, no Blender needed): a mesh's cut-out leaf cards are cut into their loose pieces; a level
+  keeps a half, a quarter or an eighth of the small ones (picked by a hash, so each level holds the one before) and grows each kept one about its centre by the square root
+  of what was dropped, so the foliage keeps its coverage. A camera pass draws the coarsest level whose triangles are at most 0.25 to a pixel of the plant's
+  picture (and whose leaves stay under 120 px); the pool's mirror image goes three levels coarser still, the hall's shadow map one, the pictures of the surroundings
+  (the probes) one. Stonework, trunks and branches are not thinned. The picture differs from the whole meshes' at 2.4/255 on average where trees fill the frame
+  (nothing in the sky or the architecture).
+- **Big solid meshes in runs** (`GardenChunks`): a single instance of 20,000 triangles or more (the balustrade, carved walls, the hall's shell) has its
+  triangles put in Morton order and cut into runs of 2,048, each with a ball; a camera draws only the runs it sees (the hall: -40 % of the frame's triangles).
+- Instances inside a mesh are kept in Morton order, and what a view draws is worked out once a frame per view (not once per pass), in fewer, longer runs.
+- Result: frame (GPU, no weather) 13.3 -> 11.0 ms outdoors and 7.3 -> 6.9 ms in the hall; triangles a frame (all passes) 34 M -> 28 M outdoors;
+  the hall's shadow map 6.6 -> 4.6 M triangles. Not thinned: the small solid plants (the potted flowers, 4 M triangles a frame): they are 180-230 triangles each
+  and have no loose pieces to thin; they would need whole instances dropped in blocks (a share of each block, the rest grown).
+- The pool's mirror image (2.5 ms, a fifth of the frame) is pixel work (every leaf layer shaded, no prepass), not triangles: fewer triangles hardly changed it.
 
 Still to do, in the order of what each gives the scaling:
 - **Level of detail for the leaf cards** (above): the triangles are still the frame's largest cost. Decimated meshes for the plants

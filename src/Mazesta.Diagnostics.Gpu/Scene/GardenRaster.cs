@@ -50,7 +50,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private readonly ID3D12Resource _shadowMap, _hallShadow, _hallTint, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light, _lamps, _volume, _round, _roundDepth;
     private readonly ID3D12Resource? _volumeStaging; private readonly float[] _mixed = []; private readonly uint _volumePitch; private readonly ulong _volumeBytes;
     /// <summary>The stained panes' draws, and for each face of the pictures of the surroundings the still instances it can see, in runs of neighbours.</summary>
-    private readonly (GardenGpu.Draw Draw, GardenGpu.Part Part)[] _stained; private readonly (GardenGpu.Draw Draw, uint First, uint Count)[][] _roundRuns;
+    private readonly (GardenGpu.Draw Draw, GardenGpu.Part Part)[] _stained; private readonly (GardenGpu.Draw Draw, uint First, uint Count, int Level)[][] _roundRuns;
     private int _roundNext; private bool _roundsDrawn;
     /// <summary>What casts shadows: each such draw with its instances' bounds as they were placed (a ball's centre and radius).</summary>
     private readonly (GardenGpu.Draw Draw, (Vector3 Centre, float Radius)[] Bounds)[] _casters;
@@ -250,24 +250,31 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // the ball each instance's picture can reach, for the camera's passes: where it stands, grown by the lean of a plant in the wind (every point is pushed sideways
         // by up to twice its sway times its height) and a margin for the water's ripples
         _viewBounds = [.. g.Draws.Select(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => { var (c, r) = g.Bounds(d, i); return (c, r * (1 + 4 * GardenScene.Sway(g.Instances[i].Flags)) + 0.5f); }).ToArray())];
+        _whole = [.. g.Draws.Select(d => d.Parts.Sum(p => (int)p.IndexCount) / 3)];
+        _drawIndex = new Dictionary<GardenGpu.Draw, int>(ReferenceEqualityComparer.Instance); for (int i = 0; i < g.Draws.Length; i++) _drawIndex[g.Draws[i]] = i;
+        _leaf = [.. g.Draws.Select(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => d.LeafSize * Scale(g.Instances[i])).ToArray())];
         _stained = [.. g.Draws.SelectMany(d => d.Parts.Where(p => g.Materials[p.Material].LightTint > 0).Select(p => (d, p)))];
         // what each face of the pictures of the surroundings can see of the still scene: an instance inside its pyramid, or touching it
-        _roundRuns = new (GardenGpu.Draw, uint, uint)[Rounds.Length * 6][];
+        _roundRuns = new (GardenGpu.Draw, uint, uint, int)[Rounds.Length * 6][];
         for (int k = 0; k < _roundRuns.Length; k++)
         {
-            var from = Rounds[k / 6].From; int axis = k % 6 / 2; float sign = k % 2 == 0 ? 1 : -1; var runs = new List<(GardenGpu.Draw, uint, uint)>();
+            var from = Rounds[k / 6].From; int axis = k % 6 / 2; float sign = k % 2 == 0 ? 1 : -1; var runs = new List<(GardenGpu.Draw, uint, uint, int)>(); var probe = UseLod ? new LodView(from, 2f / RoundSize, 1) : (LodView?)null;
             bool Seen((Vector3 Centre, float Radius) b)
             {
                 var c = b.Centre - from; float along = (axis == 0 ? c.X : axis == 1 ? c.Y : c.Z) * sign + b.Radius * 1.4143f;
                 return axis switch { 0 => along >= MathF.Abs(c.Y) && along >= MathF.Abs(c.Z), 1 => along >= MathF.Abs(c.X) && along >= MathF.Abs(c.Z), _ => along >= MathF.Abs(c.X) && along >= MathF.Abs(c.Y) };
             }
-            foreach (var d in g.Draws.Where(d => !d.Moving))
+            for (int di = 0; di < g.Draws.Length; di++)
+            {
+                var d = g.Draws[di]; if (d.Moving) continue;
+                int Level(uint i) => probe is { } p ? LevelOf(di, (int)i, p) : 0;
                 for (uint i = 0; i < d.InstanceCount;)
-                {
+                {   // (the pictures of the surroundings are small and blurred over: the plants in them are drawn as the level a camera at the probe would draw, one coarser)
                     if (!Seen(g.Bounds(d, (int)(d.FirstInstance + i)))) { i++; continue; }
-                    uint n = 1; while (i + n < d.InstanceCount && Seen(g.Bounds(d, (int)(d.FirstInstance + i + n)))) n++;
-                    runs.Add((d, d.FirstInstance + i, n)); i += n;
+                    int level = Level(i); uint n = 1; while (i + n < d.InstanceCount && Seen(g.Bounds(d, (int)(d.FirstInstance + i + n))) && Level(i + n) == level) n++;
+                    runs.Add((d, d.FirstInstance + i, n, level)); i += n;
                 }
+            }
             _roundRuns[k] = [.. runs];
         }
     }
@@ -355,15 +362,18 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     }
     private static uint Sub(int face, int mip) => (uint)(face * RoundMips + mip);
 
-    private static void Runs(ID3D12GraphicsCommandList4 l, (GardenGpu.Draw Draw, uint First, uint Count)[] runs, Func<GardenMaterialKind, bool> kinds)
+    private void Runs(ID3D12GraphicsCommandList4 l, (GardenGpu.Draw Draw, uint First, uint Count, int Level)[] runs, Func<GardenMaterialKind, bool> kinds)
     {
-        foreach (var (d, first, count) in runs)
-            foreach (var p in d.Parts)
+        foreach (var (d, first, count, level) in runs)
+        {
+            var (parts, baseVertex, centre, extent) = Pick(d, level);
+            foreach (var p in parts)
             {
                 if (!kinds(p.Kind)) continue;
-                l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = first, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
-                l.DrawIndexedInstanced(p.IndexCount, count, p.IndexStart, d.BaseVertex, 0);
+                l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = first, Material = p.Material, Centre = centre, Extent = extent }, 0);
+                Indexed(l, p.IndexCount, count, p.IndexStart, baseVertex);
             }
+        }
     }
 
     /// <summary>The six views of a lamp's shadow cube, in the order Direct3D keeps a cube's faces (+x, -x, +y, -y, +z, -z): ninety
@@ -408,7 +418,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
                         {
                             if (p.Kind is not (GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Cutout)) continue;
                             l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + (uint)k, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
-                            l.DrawIndexedInstanced(p.IndexCount, (uint)n, p.IndexStart, d.BaseVertex, 0);
+                            Indexed(l, p.IndexCount, (uint)n, p.IndexStart, d.BaseVertex);
                         }
                         k += n;
                     }
@@ -484,18 +494,24 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     /// <summary>With this on, each pass of a frame ends in a GPU timestamp, and <see cref="PassTimes"/> says how long each took.</summary>
     internal bool Profile { get; set; }
     private ID3D12QueryHeap? _queries; private ID3D12Resource? _stamps; private readonly List<string> _marks = [];
+    internal readonly Dictionary<int, long> ByBase = [];
+    private long _calls, _tris; private readonly List<(long Calls, long Tris)> _counts = [];
+    private void Indexed(ID3D12GraphicsCommandList4 l, uint indexCount, uint instances, uint indexStart, int baseVertex)
+    {
+        _calls++; _tris += (long)(indexCount / 3) * instances; if (Profile) { ByBase.TryGetValue(baseVertex, out long t0); ByBase[baseVertex] = t0 + (long)(indexCount / 3) * instances; } l.DrawIndexedInstanced(indexCount, instances, indexStart, baseVertex, 0);
+    }
     private void Mark(ID3D12GraphicsCommandList4 l, string name)
     {
         if (!Profile) return;
         if (_queries is null) { _queries = S.Own(S.Device.CreateQueryHeap<ID3D12QueryHeap>(new QueryHeapDescription(QueryHeapType.Timestamp, 64, 0))); _stamps = S.Own(S.Device.CreateCommittedResource(HeapType.Readback, ResourceDescription.Buffer(64 * 8), ResourceStates.CopyDest)); }
-        l.EndQuery(_queries, QueryType.Timestamp, (uint)_marks.Count); _marks.Add(name);
+        l.EndQuery(_queries, QueryType.Timestamp, (uint)_marks.Count); _marks.Add(name); _counts.Add((_calls, _tris));
     }
     /// <summary>The passes of the last frame drawn, in order, with the time each took on the card (each is what lies between two timestamps).</summary>
-    internal (string Name, double Ms)[] PassTimes()
+    internal (string Name, double Ms, long Calls, long Triangles)[] PassTimes()
     {
         if (_stamps is null || _marks.Count < 2) return [];
         var t = _stamps.Map<ulong>(0, _marks.Count).ToArray(); _stamps.Unmap(0); S.Queue.GetTimestampFrequency(out ulong frequency); double hz = frequency;
-        return [.. Enumerable.Range(1, _marks.Count - 1).Select(i => (_marks[i], (t[i] - t[i - 1]) / hz * 1000))];
+        return [.. Enumerable.Range(1, _marks.Count - 1).Select(i => (_marks[i], (t[i] - t[i - 1]) / hz * 1000, _counts[i].Calls - _counts[i - 1].Calls, _counts[i].Tris - _counts[i - 1].Tris))];
     }
 
     /// <summary>What every pass reads, bound on a list (each new list starts with nothing bound).</summary>
@@ -523,9 +539,10 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
     protected override void DrawScene(ID3D12GraphicsCommandList4 l, float time, int target, bool live)
     {
-        _marks.Clear();
+        _marks.Clear(); _counts.Clear(); _calls = _tris = 0;
         var day = G.Day(time); G.Update(time, live, S.Slot);
         var frame = GardenFrame.For(G, time, Width, Height);
+        _visible.Clear(); _mainLod = UseLod ? new LodView(frame.Eye, 2 * frame.TanHalfFovY / Height, 0) : null;
         // The key light crosses the sky slowly: of the frames shown one after another its shadow maps are drawn anew only every few
         // (the frames between are lit through the maps as they were last drawn) - the courtyard's every other frame, or every sixth
         // while the walk is in the hall; the hall's own every frame from the terrace on, every sixth from down the garden. A frame
@@ -588,7 +605,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         {
             l.ResourceBarrierTransition(_shadowMap, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
             l.ClearDepthStencilView(Dsv(1), ClearFlags.Depth, 1, 0); l.OMSetRenderTargets([], Dsv(1));
-            Geometry(l, Casts, G.CastsShadow);
+            Geometry(l, Casts, G.CastsShadow, lod: _mainLod);
             l.ResourceBarrierTransition(_shadowMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
         }
         Mark(l, "sun shadow map");
@@ -613,6 +630,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // of all that casts shadows, only what stands in the light's way to the hall: inside its view's square, or touching it
         foreach (var (d, bounds) in _casters)
         {
+            int di = _drawIndex[d];
+            int Level(int k) => !d.Moving && _mainLod is { } lod ? LevelOf(di, k, lod with { Bias = lod.Bias + 1 }) : 0;   // (a plant far from the camera casts the shadow of a coarser level)
             bool Reaches((Vector3 Centre, float Radius) b)
             {
                 var c = Vector4.Transform(new Vector4(b.Centre, 1), frame.HallViewProj); float r = b.Radius / HallRadius;
@@ -621,12 +640,13 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             for (int k = 0; k < bounds.Length;)
             {
                 if (!d.Moving && !Reaches(bounds[k])) { k++; continue; }
-                int n = 1; while (k + n < bounds.Length && (d.Moving || Reaches(bounds[k + n]))) n++;
-                foreach (var p in d.Parts)
+                int level = Level(k), n = 1; while (k + n < bounds.Length && (d.Moving || (Reaches(bounds[k + n]) && Level(k + n) == level))) n++;
+                var (parts, baseVertex, centre, extent) = Pick(d, level);
+                foreach (var p in parts)
                 {
                     if (!Casts(p.Kind)) continue;
-                    l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + (uint)k, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
-                    l.DrawIndexedInstanced(p.IndexCount, (uint)n, p.IndexStart, d.BaseVertex, 0);
+                    l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + (uint)k, Material = p.Material, Centre = centre, Extent = extent }, 0);
+                    Indexed(l, p.IndexCount, (uint)n, p.IndexStart, baseVertex);
                 }
                 k += n;
             }
@@ -638,7 +658,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         foreach (var (d, p) in _stained)
         {
             l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
-            l.DrawIndexedInstanced(p.IndexCount, d.InstanceCount, p.IndexStart, d.BaseVertex, 0);
+            Indexed(l, p.IndexCount, d.InstanceCount, p.IndexStart, d.BaseVertex);
         }
         l.ResourceBarrierTransition(_hallTint, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
         l.SetGraphicsRootConstantBufferView(1, Cb());
@@ -659,7 +679,8 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.RSSetViewport(0, 0, _reflW, _reflH); l.RSSetScissorRect(seen);
             // the mirror image is only wanted where the pool shows (the scissor): what is outside that part of the picture is not drawn at all
             var window = new Vector4(seen.Left * 2f / _reflW - 1, 1 - seen.Bottom * 2f / _reflH, seen.Right * 2f / _reflW - 1, 1 - seen.Top * 2f / _reflH);
-            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: true, frame.Mirrored().ViewProj, window: window);
+            var mirror = frame.Mirrored();
+            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: true, mirror.ViewProj, window: window, lod: UseLod ? new LodView(mirror.Eye, 2 * mirror.TanHalfFovY / _reflH, ReflectionBias) : null);
             l.ResourceBarrierTransition(_reflection, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
             l.SetGraphicsRootConstantBufferView(1, Cb());
         }
@@ -674,7 +695,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         {
             l.SetGraphicsRootConstantBufferView(1, Cb());
             l.ClearDepthStencilView(Dsv(0), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets([], Dsv(0));
-            l.SetPipelineState(_before); Geometry(l, Solid, null, frame.ViewProj); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout, null, frame.ViewProj);
+            l.SetPipelineState(_before); Geometry(l, Solid, null, frame.ViewProj, null, _mainLod); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout, null, frame.ViewProj, null, _mainLod);
             Mark(l, "depth prepass (MSAA)");
             l.ResourceBarrierTransition(_depth, ResourceStates.DepthWrite, ResourceStates.ResolveSource);
             l.ResourceBarrierTransition(_sceneDepth, ResourceStates.PixelShaderResource, ResourceStates.ResolveDest);
@@ -688,7 +709,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.SetGraphicsRootConstantBufferView(1, Cb(2));
             l.ResourceBarrierTransition(_sceneDepth, ResourceStates.PixelShaderResource, ResourceStates.DepthWrite);
             l.ClearDepthStencilView(Dsv(5), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets([], Dsv(5));
-            l.SetPipelineState(_depthOnly); Geometry(l, Casts, null, frame.ViewProj);
+            l.SetPipelineState(_depthOnly); Geometry(l, Casts, null, frame.ViewProj, null, _mainLod);
             l.ResourceBarrierTransition(_sceneDepth, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
             Mark(l, "depth for occlusion");
         }
@@ -719,11 +740,11 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         if (!prepassed)
         {
             l.ClearDepthStencilView(Dsv(0), ClearFlags.Depth, 0, 0); l.OMSetRenderTargets([], Dsv(0));
-            l.SetPipelineState(_before); Geometry(l, Solid, null, frame.ViewProj); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout, null, frame.ViewProj);
+            l.SetPipelineState(_before); Geometry(l, Solid, null, frame.ViewProj, null, _mainLod); l.SetPipelineState(_beforeLeaves); Geometry(l, k => k is GardenMaterialKind.Cutout, null, frame.ViewProj, null, _mainLod);
             Mark(l, "depth prepass");
         }
         l.OMSetRenderTargets(rtv, Dsv(0));
-        Pass(l, _sky, _opaque, _cutout, _transparent, skipWater: false, frame.ViewProj);
+        Pass(l, _sky, _opaque, _cutout, _transparent, skipWater: false, frame.ViewProj, lod: _mainLod);
         Mark(l, "main colour pass");
         if (_samples > 1)
         {
@@ -770,39 +791,98 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         return new((int)((x0 * 0.5f + 0.5f) * _reflW), (int)((0.5f - y1 * 0.5f) * _reflH), (int)MathF.Ceiling((x1 * 0.5f + 0.5f) * _reflW), (int)MathF.Ceiling((0.5f - y0 * 0.5f) * _reflH));
     }
 
-    private void Pass(ID3D12GraphicsCommandList4 l, ID3D12PipelineState sky, ID3D12PipelineState opaque, ID3D12PipelineState cutout, ID3D12PipelineState transparent, bool skipWater, Matrix4x4 view, bool still = false, Vector4? window = null)
+    private void Pass(ID3D12GraphicsCommandList4 l, ID3D12PipelineState sky, ID3D12PipelineState opaque, ID3D12PipelineState cutout, ID3D12PipelineState transparent, bool skipWater, Matrix4x4 view, bool still = false, Vector4? window = null, LodView? lod = null)
     {
         Func<GardenGpu.Draw, bool>? which = still ? d => !d.Moving : null;
         l.SetPipelineState(sky); l.DrawInstanced(3, 1, 0, 0);
-        l.SetPipelineState(opaque); Geometry(l, k => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive, which, view, window);
-        l.SetPipelineState(cutout); Geometry(l, k => k is GardenMaterialKind.Cutout, which, view, window);
-        l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass or GardenMaterialKind.Smoke || (k is GardenMaterialKind.Water && !skipWater), which, view, window);
+        l.SetPipelineState(opaque); Geometry(l, k => k is GardenMaterialKind.Flat or GardenMaterialKind.Brick or GardenMaterialKind.Emissive, which, view, window, lod);
+        l.SetPipelineState(cutout); Geometry(l, k => k is GardenMaterialKind.Cutout, which, view, window, lod);
+        l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass or GardenMaterialKind.Smoke || (k is GardenMaterialKind.Water && !skipWater), which, view, window, lod);
     }
 
-    /// <summary>The draws of the kinds wanted. With <paramref name="view"/> (a camera's view-projection) only the instances inside what it sees, in runs of neighbours; what moves is always drawn.</summary>
-    private void Geometry(ID3D12GraphicsCommandList4 l, Func<GardenMaterialKind, bool> kinds, Func<GardenGpu.Draw, bool>? which = null, Matrix4x4? view = null, Vector4? window = null)
+    /// <summary>What picks a plant's level of detail: where the eye is, how wide a pixel is a metre away (twice the tangent of half the field of view over the picture's height), and
+    /// how many levels coarser than the size alone says (the mirror image is distorted by the ripples and needs less).</summary>
+    private readonly record struct LodView(Vector3 Eye, float Pixel, int Bias);
+    /// <summary>How many triangles a pixel of a plant's picture may have (of its bounding ball's disc, half of which the plant fills) before a coarser level is drawn in place of the whole mesh;
+    /// and how large a leaf of a level may be, in pixels - past that the leaves would be seen.</summary>
+    private const float TrianglesPerPixel = 0.25f, LeafPixels = 120;
+    /// <summary>Whether the camera's passes draw plants far away as <see cref="GardenGpu.DrawLod"/>s; the render checks turn it off to compare.</summary>
+    internal static bool UseLod = true;
+    private const int ReflectionBias = 3;
+    private LodView? _mainLod;
+    /// <summary>For each draw's instances, the size of a leaf of it in the world.</summary>
+    private readonly float[][] _leaf;
+    private static float Scale(GardenGpu.Instance i) => MathF.Sqrt(MathF.Max(new Vector3(i.Row0.X, i.Row1.X, i.Row2.X).LengthSquared(), MathF.Max(new Vector3(i.Row0.Y, i.Row1.Y, i.Row2.Y).LengthSquared(), new Vector3(i.Row0.Z, i.Row1.Z, i.Row2.Z).LengthSquared())));
+
+    /// <summary>What a camera's passes draw, worked out once for each view in a frame: runs of neighbouring instances of a draw that are in view and of one level of detail (0: the
+    /// whole mesh).</summary>
+    private readonly Dictionary<(Matrix4x4?, Vector4?, LodView?), (int Draw, uint First, uint Count, int Level)[]> _visible = [];
+    /// <summary>Which level of detail (0: the whole mesh) instance <paramref name="k"/> of draw <paramref name="di"/> is drawn as, seen through <paramref name="lod"/>: the coarsest whose triangles are no more than
+    /// <see cref="TrianglesPerPixel"/> to a pixel of the plant's picture, and whose leaves are not seen as such.</summary>
+    private int LevelOf(int di, int k, LodView lod)
     {
+        var d = G.Draws[di]; if (d.Lods is not { Length: > 0 }) return 0;
+        var (c, r) = _viewBounds[di][k]; float dist = MathF.Max(0.1f, Vector3.Distance(c, lod.Eye) - r), px = dist * lod.Pixel;
+        float disc = 0.5f * MathF.PI * r * r / (px * px), leaf = _leaf[di][k] / px;
+        int dense = 0; while (dense < d.Lods.Length && (dense == 0 ? _whole[di] : d.Lods[dense - 1].Triangles) > TrianglesPerPixel * disc) dense++;
+        int fits = leaf <= 0 ? d.Lods.Length : (int)MathF.Floor(2 * MathF.Log2(LeafPixels / leaf));
+        return Math.Clamp(Math.Min(dense, fits) + lod.Bias, 0, d.Lods.Length);
+    }
+    private int[] _whole = [];
+    private readonly Dictionary<GardenGpu.Draw, int> _drawIndex;
+    private static (GardenGpu.Part[] Parts, int BaseVertex, Vector3 Centre, Vector3 Extent) Pick(GardenGpu.Draw d, int level) =>
+        level > 0 ? (d.Lods![level - 1].Parts, d.Lods[level - 1].BaseVertex, d.Lods[level - 1].Centre, d.Lods[level - 1].Extent) : (d.Parts, d.BaseVertex, d.Centre, d.Extent);
+
+    private (int Draw, uint First, uint Count, int Level)[] Visible(Matrix4x4? view, Vector4? window, LodView? lod)
+    {
+        if (_visible.TryGetValue((view, window, lod), out var known)) return known;
         var planes = ViewCulling && view is { } m ? ViewPlanes(m, window) : null;
+        var runs = new List<(int, uint, uint, int)>();
         for (int di = 0; di < G.Draws.Length; di++)
         {
             var d = G.Draws[di];
-            if (which is not null && !which(d)) continue;
-            var bounds = _viewBounds[di];
-            for (uint k = 0; k < d.InstanceCount;)
+            if (d.Moving) { runs.Add((di, 0, d.InstanceCount, 0)); continue; }
+            var bounds = _viewBounds[di]; bool levels = lod is not null && d.Lods is { Length: > 0 }; int open = -1, level = 0;
+            for (uint k = 0; k < d.InstanceCount; k++)
             {
-                uint n = d.InstanceCount;
-                if (planes is not null && !d.Moving)
-                {
-                    if (!InView(planes, bounds[k])) { k++; continue; }
-                    n = 1; while (k + n < d.InstanceCount && InView(planes, bounds[k + n])) n++;
+                int at = 0;
+                if (planes is not null && !InView(planes, bounds[k])) at = -1;
+                else if (levels) at = LevelOf(di, (int)k, lod!.Value);
+                if (open >= 0 && (at < 0 || at != level)) { runs.Add((di, (uint)open, k - (uint)open, level)); open = -1; }
+                if (at >= 0 && open < 0) { open = (int)k; level = at; }
+            }
+            if (open >= 0) runs.Add((di, (uint)open, d.InstanceCount - (uint)open, level));
+        }
+        return _visible[(view, window, lod)] = [.. runs];
+    }
+
+    /// <summary>The draws of the kinds wanted. With <paramref name="view"/> (a camera's view-projection) only the instances inside what it sees, in runs of neighbours; what moves is always drawn.
+    /// With <paramref name="lod"/> the plants far from the eye are drawn as their coarser levels.</summary>
+    private void Geometry(ID3D12GraphicsCommandList4 l, Func<GardenMaterialKind, bool> kinds, Func<GardenGpu.Draw, bool>? which = null, Matrix4x4? view = null, Vector4? window = null, LodView? lod = null)
+    {
+        Vector4[]? planes = null;
+        foreach (var (di, first, count, level) in Visible(view, window, lod))
+        {
+            var d = G.Draws[di];
+            if (which is not null && !which(d)) continue;
+            var (parts, baseVertex, centre, extent) = Pick(d, level);
+            foreach (var p in parts)
+            {
+                if (!kinds(p.Kind)) continue;
+                l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + first, Material = p.Material, Centre = centre, Extent = extent }, 0);
+                if (p.Chunks is { } chunks && count == 1 && level == 0 && ViewCulling && view is { } v)
+                {   // one big instance: only the runs of it the view takes in (neighbouring runs go in one call)
+                    planes ??= ViewPlanes(v, window); var inst = G.Instances[(int)(d.FirstInstance + first)]; float scale = Scale(inst); uint from = 0, length = 0;
+                    foreach (var c in chunks)
+                    {
+                        var at = new Vector3(inst.Row0.X * c.Centre.X + inst.Row0.Y * c.Centre.Y + inst.Row0.Z * c.Centre.Z + inst.Row0.W, inst.Row1.X * c.Centre.X + inst.Row1.Y * c.Centre.Y + inst.Row1.Z * c.Centre.Z + inst.Row1.W, inst.Row2.X * c.Centre.X + inst.Row2.Y * c.Centre.Y + inst.Row2.Z * c.Centre.Z + inst.Row2.W);
+                        if (!InView(planes, (at, c.Radius * scale + 0.05f))) { if (length > 0) { Indexed(l, length, 1, from, baseVertex); length = 0; } continue; }
+                        if (length == 0) from = c.Start;
+                        length += c.Count;
+                    }
+                    if (length > 0) Indexed(l, length, 1, from, baseVertex);
                 }
-                foreach (var p in d.Parts)
-                {
-                    if (!kinds(p.Kind)) continue;
-                    l.SetGraphicsRoot32BitConstants(0, new DrawConstants { InstanceBase = d.FirstInstance + k, Material = p.Material, Centre = d.Centre, Extent = d.Extent }, 0);
-                    l.DrawIndexedInstanced(p.IndexCount, n, p.IndexStart, d.BaseVertex, 0);
-                }
-                k += n;
+                else Indexed(l, p.IndexCount, count, p.IndexStart, baseVertex);
             }
         }
     }
