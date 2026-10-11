@@ -107,11 +107,12 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
     { foreach (var hw in roots) { DisableSensorHistory(hw); DisableSensorHistoryTree(hw.SubHardware); } }
 
     /// <summary>The board's fan outputs the driver can write (a Super I/O or embedded controller output with a software control), each with the speed of the fan on the same
-    /// number when the chip reads one. Graphics cards' fans are not listed: they have their own tuning.</summary>
+    /// number when the chip reads one. A desktop card's fans are not listed (they have their own tuning); on a laptop they are, because a laptop's fans are often driven
+    /// through its graphics chip's cooler interface, the one Fan Control and the makers' own apps use, and the board lists none.</summary>
     public IReadOnlyList<FanChannel> Fans()
     {
         var list = new List<FanChannel>();
-        foreach (var n in _nodes.Where(n => n.Mapped.Node.Kind == HardwareKind.Motherboard))
+        foreach (var n in _nodes.Where(Controllable))
             foreach (var c in n.Mapped.Sensors.Where(s => s.Source.SensorType == SensorType.Control && s.Source.Control is not null))
             {
                 var fan = n.Mapped.Sensors.FirstOrDefault(s => s.Source.SensorType == SensorType.Fan && s.Source.Index == c.Source.Index);
@@ -123,7 +124,8 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         return list;
     }
 
-    private IControl? ControlOf(string id) => _nodes.Where(n => n.Mapped.Node.Kind == HardwareKind.Motherboard).SelectMany(n => n.Mapped.Sensors)
+    private bool Controllable(NodeState n) => n.Mapped.Node.Kind == HardwareKind.Motherboard || n.Mapped.Node.Kind == HardwareKind.Gpu && PowerSource.HasBattery.Value;
+    private IControl? ControlOf(string id) => _nodes.Where(Controllable).SelectMany(n => n.Mapped.Sensors)
         .FirstOrDefault(s => s.Source.SensorType == SensorType.Control && s.Source.Identifier.ToString() == id)?.Source.Control;
 
     public bool SetManual(string id, double percent)
