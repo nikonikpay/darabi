@@ -826,7 +826,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         float disc = 0.5f * MathF.PI * r * r / (px * px), leaf = _leaf[di][k] / px;
         int dense = 0; while (dense < d.Lods.Length && (dense == 0 ? _whole[di] : d.Lods[dense - 1].Triangles) > TrianglesPerPixel * disc) dense++;
         int fits = leaf <= 0 ? d.Lods.Length : (int)MathF.Floor(2 * MathF.Log2(LeafPixels / leaf));
-        return Math.Clamp(Math.Min(dense, fits) + lod.Bias, 0, d.Lods.Length);
+        // (never near the eye - a shrub that changes its leaves two metres away is seen to - and farther out only a level at a time: 12, 25 and 45 m)
+        float centre = Vector3.Distance(c, lod.Eye); int far = centre < 12 ? 0 : centre < 25 ? 1 : centre < 45 ? 2 : 3;
+        return Math.Clamp(Math.Min(Math.Min(dense, fits) + (centre < 8 ? 0 : lod.Bias), far + lod.Bias), 0, d.Lods.Length) is var level && centre < 12 ? 0 : level;
     }
     private int[] _whole = [];
     private readonly Dictionary<GardenGpu.Draw, int> _drawIndex;
