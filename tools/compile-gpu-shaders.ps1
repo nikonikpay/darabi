@@ -2,6 +2,7 @@
 # (Microsoft.Direct3D.DXC, fetched once into obj\dxc), so a machine without the SDK can compile them too.
 # The .cso files are committed and embedded by Mazesta.Diagnostics.Gpu, so building the app does not need the SDK;
 # run this only after changing a .hlsl file.
+# On Linux (no Windows): tools/compile-gpu-shaders.py does the same jobs with the Linux build of the same compiler.
 $ErrorActionPreference = 'Stop'
 $dxc = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\dxc.exe" -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
 if (-not $dxc) {
