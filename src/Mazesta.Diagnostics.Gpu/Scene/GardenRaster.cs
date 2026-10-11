@@ -18,13 +18,14 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 internal sealed unsafe class GardenRaster : GardenRenderer
 {
     [StructLayout(LayoutKind.Sequential)] private struct DrawConstants { public uint InstanceBase, Material, Pad0, Pad1; public Vector3 Centre; public float Pad2; public Vector3 Extent; public float Pad3; }
-    public readonly record struct Settings(int ShadowSize, int ShadowTaps, int Samples, int ReflectionDivisor, int OcclusionTaps, int LensTaps)
+    public readonly record struct Settings(int ShadowSize, int ShadowTaps, int Samples, int ReflectionDivisor, int OcclusionTaps, int LensTaps, int AirSteps)
     {
         /// <summary>Per load level 1..4: light, medium, heavy, extreme. The shadow map is as fine at every level: the sun is low, its
-        /// shadows long, and all but the moving things' share of it is drawn once.</summary>
+        /// shadows long, and all but the moving things' share of it is drawn once. The air's steps (the key light in the courtyard's haze,
+        /// GardenRaster.hlsl's Air) are work for every pixel: what a faster card has more of, as in a game's volumetric light.</summary>
         public static Settings ForLoad(uint load) => load switch
         {
-            1 => new(4096, 1, 1, 0, 8, 8), 2 => new(4096, 1, 2, 2, 10, 12), 3 => new(4096, 2, 4, 1, 14, 16), _ => new(4096, 3, 8, 1, 20, 28)
+            1 => new(4096, 1, 1, 0, 8, 8, 0), 2 => new(4096, 1, 2, 2, 10, 12, 12), 3 => new(4096, 2, 4, 1, 14, 16, 24), _ => new(4096, 3, 8, 1, 20, 28, 48)
         };
     }
 
@@ -529,7 +530,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         if (drawKey) _keyView = SunShadowMatrix(day.Key);
         if (drawHall) _hallView = HallShadowMatrix(day.Key);
         frame.ShadowViewProj = _keyView; frame.HallViewProj = _hallView; frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
-        frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps;
+        frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps; frame.AirSteps = RayTraced ? 0u : (uint)_set.AirSteps;   // (with rays the courtyard has no shadow map to look the air up in)
         if (G.LightVolume is { } volume) { frame.Grid = new(volume.Origin, volume.Spacing); frame.Grid2 = new(volume.X, volume.Y, volume.Z, 1); }
         frame.Round0 = new(Rounds[0].From, RoundMips); frame.Round0Low = new(Rounds[0].Low, 0); frame.Round0High = new(Rounds[0].High, 0);
         frame.Round1 = new(Rounds[1].From, RoundMips);

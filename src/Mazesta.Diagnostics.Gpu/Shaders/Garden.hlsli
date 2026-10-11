@@ -19,7 +19,7 @@ cbuffer Frame : register(b1)
     float3 CamForward; uint Bounces;
     uint Width; uint Height; uint Pitch; uint Mode;   // Mode 1: the frame, 2: the light volume's baker
     float4 Logo;                          // the logo's turn toward the camera (cos, sin), its float (lift): GardenGpu.LogoMotion; and how much it glows of itself
-    uint Samples; uint3 FramePad;         // the frame's samples a pixel (MSAA)
+    uint Samples; uint AirSteps; uint2 FramePad;   // the frame's samples a pixel (MSAA); the points along each eye ray at which the lens pass looks up the key light in the air (0: the courtyard's air is not drawn)
     float4 Backdrop;                      // the mountains round the horizon: the heights they cover as tangents (low, high), and 1 when they are there
     float4x4 SkyViewProj;                 // rasteriser: the view straight down over the courtyard (what stands between a point and the open sky)
     float4 Fountain;                      // the fountain's nozzle, and the radius of the water in its bowl
@@ -314,6 +314,17 @@ float3 Haze(float3 c, float3 p)
 // What a stained pane passes: its own hue at full strength (clear glass passes nearly everything).
 float3 StainTint(Material m) { return m.Base / max(max(m.Base.r, m.Base.g), max(m.Base.b, 1e-3)) * 0.9; }
 
+// Karis' fit to the split-sum integral: how much a surface of this roughness seen at this angle mirrors, as a scale and an offset of f0.
+float2 EnvSplit(float roughness, float nv)
+{
+    float4 r = roughness * float4(-1, -0.0275, -0.572, 0.022) + float4(1, 0.0425, 1.04, -0.04);
+    return float2(-1.04, 1.04) * (min(r.x * r.x, exp2(-9.28 * nv)) * r.x + r.y) + r.zw;
+}
+
+// The light a rough surface's microfacets throw onto one another before it leaves: a one-bounce GGX loses it, so rough metal and rough
+// stone look darker than they are (by up to a third). Put back as Fdez-Agüera does (JCGT 2019), from the same split sum: 1 + f0 (1/E - 1).
+float3 Rebounds(float3 f0, float roughness, float nv) { float2 ab = EnvSplit(roughness, nv); return 1 + f0 * (1 / max(ab.x + ab.y, 0.05) - 1); }
+
 // Radiance leaving a surface lit by one light of irradiance E from direction l - the metal-roughness model: a GGX highlight with
 // Smith's height-correlated shadowing and Schlick's Fresnel, over Lambert's diffuse for what the surface does not mirror (a metal: nothing).
 float3 Brdf(Surface s, float3 v, float3 l, float3 e)
@@ -325,17 +336,15 @@ float3 Brdf(Surface s, float3 v, float3 l, float3 e)
     float vis = 0.5 / (nl * sqrt(nv * nv * (1 - a2) + a2) + nv * sqrt(nl * nl * (1 - a2) + a2));
     float3 f0 = lerp(0.04, s.Albedo, s.Metallic);
     float3 f = f0 + (1 - f0) * pow(1 - saturate(dot(h, v)), 5);
-    return e * nl * ((1 - f * s.Sheen) * (1 - s.Metallic) * s.Albedo / Pi + f * min(d * vis, 60) * s.Sheen);
+    return e * nl * ((1 - f * s.Sheen) * (1 - s.Metallic) * s.Albedo / Pi + f * min(d * vis, 60) * s.Sheen * Rebounds(f0, s.Roughness, nv));
 }
 
 // How much of its surroundings a surface mirrors, over all the directions its roughness spreads the mirror image across
 // (Karis' fit to the split-sum integral): f0 scaled and offset by the angle it is seen at.
 float3 EnvBrdf(Surface s, float3 v)
 {
-    float nv = saturate(dot(s.Normal, v)); float3 f0 = lerp(0.04, s.Albedo, s.Metallic);
-    float4 r = s.Roughness * float4(-1, -0.0275, -0.572, 0.022) + float4(1, 0.0425, 1.04, -0.04);
-    float2 ab = float2(-1.04, 1.04) * (min(r.x * r.x, exp2(-9.28 * nv)) * r.x + r.y) + r.zw;
-    return (f0 * ab.x + ab.y) * s.Sheen;
+    float nv = saturate(dot(s.Normal, v)); float3 f0 = lerp(0.04, s.Albedo, s.Metallic); float2 ab = EnvSplit(s.Roughness, nv);
+    return (f0 * ab.x + ab.y) * s.Sheen * Rebounds(f0, s.Roughness, nv);
 }
 
 // How brightly lamp k burns just now: as far as it is lit, and a flame is never still - a lantern's or a sconce's light wavers a
