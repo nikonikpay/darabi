@@ -11,8 +11,7 @@ public sealed record SpecCard(string Title, IReadOnlyList<SpecRow> Rows, InfoTab
 /// <summary>
 /// Each part's full specification for its page, grouped into cards (the part, its caches or connection, its firmware…), from the inventory and the
 /// details read from Windows, the drivers and the parts themselves. A value that was not read is left out of the card rather than shown as a
-/// guess; a card whose part was not found says so in one row. Model-database facts (process node, TDP, codename) are not shown: nothing here
-/// looks a model up.
+/// guess; a card whose part was not found says so in one row. The units, process and platform come from <see cref="GpuFacts"/>/<see cref="CpuFacts"/> (derived or published, labelled so); TDP and codename are not shown.
 /// </summary>
 public static class PartSpecs
 {
@@ -61,6 +60,12 @@ public static class PartSpecs
         Add(main, "Spec_Microcode", d?.Microcode is { } mc ? $"0x{mc:X}" : null, more: true);
         Add(main, "Spec_BusClock", d?.BusClockMhz, more: true, suffix: "MHz");
         var cards = new List<SpecCard> { new(Loc.Get("Dashboard_Cpu"), main) };
+        if (CpuFacts.For(c.Name) is { } plat)
+        {
+            var rows = new List<SpecRow>();
+            Add(rows, "Spec_Microarchitecture", plat.Microarchitecture); Add(rows, "Spec_Process", plat.Process); Add(rows, "Spec_CpuPcie", plat.Pcie); Add(rows, "Spec_CpuMemory", plat.Memory);
+            cards.Add(new(Loc.Get("Spec_CpuPlatform"), rows, Note: Loc.Get("Spec_Facts_Note")));
+        }
         if (d is { Caches.Count: > 0 })
         {
             var caches = d.Caches.Select(x => new SpecRow(Loc.Format("Spec_CacheLevel", x.Level, x.Kind == "Unified" ? "" : Loc.Get("Spec_Cache_" + x.Kind)).Trim(), $"{x.Count} × {Size(x.SizeBytes)}")).ToList();
@@ -115,6 +120,13 @@ public static class PartSpecs
         Add(firmware, "Spec_MaxMemoryClock", d?.MaxMemoryClockMhz, suffix: "MHz");
         Add(firmware, "Spec_PowerLimit", d?.PowerDefaultW is { } def ? d.PowerMaxW is { } max && max != def ? $"{def} W (max {max} W)" : $"{def} W" : null);
         var cards = new List<SpecCard> { new(title, main) };
+        if (GpuFacts.For(g.Name, d?.ComputeCapability, d?.Cores) is { } u)
+        {
+            var rows = new List<SpecRow>();
+            Add(rows, "Spec_ComputeUnits", u.ComputeUnits); Add(rows, "Spec_GpuCores", d?.Cores is null ? u.Shaders : null); Add(rows, "Spec_Tmus", u.Tmus); Add(rows, "Spec_Rops", u.Rops);
+            Add(rows, "Spec_RtCores", u.RtCores); Add(rows, "Spec_AiCores", u.AiCores); Add(rows, "Spec_Process", u.Process);
+            if (rows.Count > 0) cards.Add(new(Loc.Get("Spec_GpuUnits"), rows, Note: Loc.Get("Spec_Facts_Note")));
+        }
         if (link.Count > 0) cards.Add(new(Loc.Get("Spec_Connection"), link, Note: Loc.Get("Spec_Link_Note")));
         if (firmware.Count > 0) cards.Add(new(Loc.Get("Spec_DriverFirmware"), firmware));
         return cards;

@@ -1607,6 +1607,18 @@ The update services stopped and disabled</value></data>
   <data name="Spec_BoardVendor" xml:space="preserve"><value>Board maker</value></data>
   <data name="Spec_Architecture" xml:space="preserve"><value>Architecture</value></data>
   <data name="Spec_GpuCores" xml:space="preserve"><value>Shader (CUDA) cores</value></data>
+  <data name="Spec_ComputeUnits" xml:space="preserve"><value>Compute units (SM / CU / Xe core)</value></data>
+  <data name="Spec_Tmus" xml:space="preserve"><value>Texture units (TMUs)</value></data>
+  <data name="Spec_Rops" xml:space="preserve"><value>Render outputs (ROPs)</value></data>
+  <data name="Spec_RtCores" xml:space="preserve"><value>Ray-tracing cores</value></data>
+  <data name="Spec_AiCores" xml:space="preserve"><value>Tensor / AI cores</value></data>
+  <data name="Spec_Process" xml:space="preserve"><value>Process node</value></data>
+  <data name="Spec_GpuUnits" xml:space="preserve"><value>Processing units</value></data>
+  <data name="Spec_CpuPlatform" xml:space="preserve"><value>Platform</value></data>
+  <data name="Spec_Microarchitecture" xml:space="preserve"><value>Microarchitecture</value></data>
+  <data name="Spec_CpuPcie" xml:space="preserve"><value>PCIe from the CPU</value></data>
+  <data name="Spec_CpuMemory" xml:space="preserve"><value>Memory support</value></data>
+  <data name="Spec_Facts_Note" xml:space="preserve"><value>Not measured: derived from the architecture the driver reports, or from the maker's published specification of this exact model. A model not in the table shows no row rather than a neighbour's figures.</value></data>
   <data name="Spec_BusWidth" xml:space="preserve"><value>Memory bus</value></data>
   <data name="Spec_Subsystem" xml:space="preserve"><value>PCI subsystem (vendor:device)</value></data>
   <data name="Spec_ComputeCapability" xml:space="preserve"><value>Compute capability</value></data>

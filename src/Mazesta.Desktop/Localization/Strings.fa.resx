@@ -1607,6 +1607,18 @@
   <data name="Spec_BoardVendor" xml:space="preserve"><value>سازندهٔ کارت</value></data>
   <data name="Spec_Architecture" xml:space="preserve"><value>معماری</value></data>
   <data name="Spec_GpuCores" xml:space="preserve"><value>هسته‌های پردازشی (CUDA)</value></data>
+  <data name="Spec_ComputeUnits" xml:space="preserve"><value>واحدهای محاسباتی (SM / CU / Xe)</value></data>
+  <data name="Spec_Tmus" xml:space="preserve"><value>واحدهای بافت (TMU)</value></data>
+  <data name="Spec_Rops" xml:space="preserve"><value>واحدهای خروجی تصویر (ROP)</value></data>
+  <data name="Spec_RtCores" xml:space="preserve"><value>هسته‌های ردیابی پرتو</value></data>
+  <data name="Spec_AiCores" xml:space="preserve"><value>هسته‌های Tensor / هوش مصنوعی</value></data>
+  <data name="Spec_Process" xml:space="preserve"><value>فناوری ساخت</value></data>
+  <data name="Spec_GpuUnits" xml:space="preserve"><value>واحدهای پردازشی</value></data>
+  <data name="Spec_CpuPlatform" xml:space="preserve"><value>پلتفرم</value></data>
+  <data name="Spec_Microarchitecture" xml:space="preserve"><value>معماری</value></data>
+  <data name="Spec_CpuPcie" xml:space="preserve"><value>PCIe از سمت CPU</value></data>
+  <data name="Spec_CpuMemory" xml:space="preserve"><value>حافظهٔ پشتیبانی‌شده</value></data>
+  <data name="Spec_Facts_Note" xml:space="preserve"><value>اندازه‌گیری نشده: از معماری گزارش‌شده توسط درایور یا مشخصات منتشرشدهٔ سازنده برای همین مدل به دست آمده. مدلی که در جدول نباشد ردیف نشان نمی‌دهد، نه عدد مدل مشابه.</value></data>
   <data name="Spec_BusWidth" xml:space="preserve"><value>پهنای باس حافظه</value></data>
   <data name="Spec_Subsystem" xml:space="preserve"><value>زیرسیستم PCI</value></data>
   <data name="Spec_ComputeCapability" xml:space="preserve"><value>Compute capability</value></data>
