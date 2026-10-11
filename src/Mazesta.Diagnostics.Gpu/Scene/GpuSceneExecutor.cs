@@ -49,7 +49,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)]), RayTracingPreferred, Weather, Frames, FullScreen, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)], When: RayTracingOption + "=off"), RayTracingPreferred, Weather, Frames, FullScreen, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -88,7 +88,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         var custom = SceneModel.LoadCustom(out string? modelProblem);
         string res = options.Get(ResolutionOption); bool screenSize = res == "fullscreen" /* an older saved choice: the screen's own size */, full = screenSize || options.Get(FullScreenOption) == "on", rayTraced = options.Get(RayTracingOption) == "on";
         var (w, h) = screenSize ? (0, 0) : ParseSize(res);
-        uint load = (uint)Math.Clamp(int.TryParse(options.Get(LoadOption), out int l) ? l : 3, 1, 4);
+        uint load = rayTraced ? 3 : (uint)Math.Clamp(int.TryParse(options.Get(LoadOption), out int l) ? l : 3, 1, 4);   // the load level is for the rasterised garden and is not offered with rays (as in the benchmark)
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12", level = LoadNames[load - 1];
         using var session = new D3D12Session(device, FramesOf(options.Get(FramesOption)));
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
