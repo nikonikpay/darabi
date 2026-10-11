@@ -250,15 +250,14 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         // the ball each instance's picture can reach, for the camera's passes: where it stands, grown by the lean of a plant in the wind (every point is pushed sideways
         // by up to twice its sway times its height) and a margin for the water's ripples
         _viewBounds = [.. g.Draws.Select(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => { var (c, r) = g.Bounds(d, i); return (c, r * (1 + 4 * GardenScene.Sway(g.Instances[i].Flags)) + 0.5f); }).ToArray())];
-        _whole = [.. g.Draws.Select(d => d.Parts.Sum(p => (int)p.IndexCount) / 3)];
         _drawIndex = new Dictionary<GardenGpu.Draw, int>(ReferenceEqualityComparer.Instance); for (int i = 0; i < g.Draws.Length; i++) _drawIndex[g.Draws[i]] = i;
-        _leaf = [.. g.Draws.Select(d => Enumerable.Range((int)d.FirstInstance, (int)d.InstanceCount).Select(i => d.LeafSize * Scale(g.Instances[i])).ToArray())];
+        if (UseLod) _level = LevelsOnTheWalk(g);
         _stained = [.. g.Draws.SelectMany(d => d.Parts.Where(p => g.Materials[p.Material].LightTint > 0).Select(p => (d, p)))];
         // what each face of the pictures of the surroundings can see of the still scene: an instance inside its pyramid, or touching it
         _roundRuns = new (GardenGpu.Draw, uint, uint, int)[Rounds.Length * 6][];
         for (int k = 0; k < _roundRuns.Length; k++)
         {
-            var from = Rounds[k / 6].From; int axis = k % 6 / 2; float sign = k % 2 == 0 ? 1 : -1; var runs = new List<(GardenGpu.Draw, uint, uint, int)>(); var probe = UseLod ? new LodView(from, 2f / RoundSize, 1) : (LodView?)null;
+            var from = Rounds[k / 6].From; int axis = k % 6 / 2; float sign = k % 2 == 0 ? 1 : -1; var runs = new List<(GardenGpu.Draw, uint, uint, int)>(); var probe = UseLod ? new LodView(from, 1) : (LodView?)null;
             bool Seen((Vector3 Centre, float Radius) b)
             {
                 var c = b.Centre - from; float along = (axis == 0 ? c.X : axis == 1 ? c.Y : c.Z) * sign + b.Radius * 1.4143f;
@@ -542,7 +541,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         _marks.Clear(); _counts.Clear(); _calls = _tris = 0;
         var day = G.Day(time); G.Update(time, live, S.Slot);
         var frame = GardenFrame.For(G, time, Width, Height);
-        _visible.Clear(); _mainLod = UseLod ? new LodView(frame.Eye, 2 * frame.TanHalfFovY / Height, 0) : null;
+        _visible.Clear(); _mainLod = UseLod ? new LodView(null, 0) : null;
         // The key light crosses the sky slowly: of the frames shown one after another its shadow maps are drawn anew only every few
         // (the frames between are lit through the maps as they were last drawn) - the courtyard's every other frame, or every sixth
         // while the walk is in the hall; the hall's own every frame from the terrace on, every sixth from down the garden. A frame
@@ -680,7 +679,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             // the mirror image is only wanted where the pool shows (the scissor): what is outside that part of the picture is not drawn at all
             var window = new Vector4(seen.Left * 2f / _reflW - 1, 1 - seen.Bottom * 2f / _reflH, seen.Right * 2f / _reflW - 1, 1 - seen.Top * 2f / _reflH);
             var mirror = frame.Mirrored();
-            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: true, mirror.ViewProj, window: window, lod: UseLod ? new LodView(mirror.Eye, 2 * mirror.TanHalfFovY / _reflH, ReflectionBias) : null);
+            Pass(l, _skyR, _opaqueR, _cutoutR, _transparentR, skipWater: true, mirror.ViewProj, window: window, lod: UseLod ? new LodView(mirror.Eye, ReflectionBias) : null);
             l.ResourceBarrierTransition(_reflection, ResourceStates.RenderTarget, ResourceStates.PixelShaderResource);
             l.SetGraphicsRootConstantBufferView(1, Cb());
         }
@@ -800,37 +799,39 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         l.SetPipelineState(transparent); Geometry(l, k => k is GardenMaterialKind.Glass or GardenMaterialKind.Smoke || (k is GardenMaterialKind.Water && !skipWater), which, view, window, lod);
     }
 
-    /// <summary>What picks a plant's level of detail: where the eye is, how wide a pixel is a metre away (twice the tangent of half the field of view over the picture's height), and
-    /// how many levels coarser than the size alone says (the mirror image is distorted by the ripples and needs less).</summary>
-    private readonly record struct LodView(Vector3 Eye, float Pixel, int Bias);
-    /// <summary>How many triangles a pixel of a plant's picture may have (of its bounding ball's disc, half of which the plant fills) before a coarser level is drawn in place of the whole mesh;
-    /// and how large a leaf of a level may be, in pixels - past that the leaves would be seen.</summary>
-    private const float TrianglesPerPixel = 0.25f, LeafPixels = 120;
+    /// <summary>What a pass adds to a plant's own level of detail (see <see cref="LevelsOnTheWalk"/>): how many levels coarser it draws what is already thinned (the mirror image is distorted by the ripples and needs less).</summary>
+    private readonly record struct LodView(Vector3? Eye, int Bias);
     /// <summary>Whether the camera's passes draw plants far away as <see cref="GardenGpu.DrawLod"/>s; the render checks turn it off to compare.</summary>
     internal static bool UseLod = true;
     private const int ReflectionBias = 3;
     private LodView? _mainLod;
-    /// <summary>For each draw's instances, the size of a leaf of it in the world.</summary>
-    private readonly float[][] _leaf;
     private static float Scale(GardenGpu.Instance i) => MathF.Sqrt(MathF.Max(new Vector3(i.Row0.X, i.Row1.X, i.Row2.X).LengthSquared(), MathF.Max(new Vector3(i.Row0.Y, i.Row1.Y, i.Row2.Y).LengthSquared(), new Vector3(i.Row0.Z, i.Row1.Z, i.Row2.Z).LengthSquared())));
 
     /// <summary>What a camera's passes draw, worked out once for each view in a frame: runs of neighbouring instances of a draw that are in view and of one level of detail (0: the
     /// whole mesh).</summary>
     private readonly Dictionary<(Matrix4x4?, Vector4?, LodView?), (int Draw, uint First, uint Count, int Level)[]> _visible = [];
-    /// <summary>Which level of detail (0: the whole mesh) instance <paramref name="k"/> of draw <paramref name="di"/> is drawn as, seen through <paramref name="lod"/>: the coarsest whose triangles are no more than
-    /// <see cref="TrianglesPerPixel"/> to a pixel of the plant's picture, and whose leaves are not seen as such.</summary>
+    /// <summary>Which level of detail (0: the whole mesh) instance <paramref name="k"/> of draw <paramref name="di"/> is drawn as: its own, which the camera's passes keep, and in the pictures of the mirror and the surroundings also what the distance from their eye says, all of it <paramref name="lod"/>'s bias coarser if thinned at all.</summary>
     private int LevelOf(int di, int k, LodView lod)
     {
-        var d = G.Draws[di]; if (d.Lods is not { Length: > 0 }) return 0;
-        var (c, r) = _viewBounds[di][k]; float dist = MathF.Max(0.1f, Vector3.Distance(c, lod.Eye) - r), px = dist * lod.Pixel;
-        float disc = 0.5f * MathF.PI * r * r / (px * px), leaf = _leaf[di][k] / px;
-        int dense = 0; while (dense < d.Lods.Length && (dense == 0 ? _whole[di] : d.Lods[dense - 1].Triangles) > TrianglesPerPixel * disc) dense++;
-        int fits = leaf <= 0 ? d.Lods.Length : (int)MathF.Floor(2 * MathF.Log2(LeafPixels / leaf));
-        // (never near the eye - a shrub that changes its leaves two metres away is seen to - and farther out only a level at a time: 12, 25 and 45 m)
-        float centre = Vector3.Distance(c, lod.Eye); int far = centre < 12 ? 0 : centre < 25 ? 1 : centre < 45 ? 2 : 3;
-        return Math.Clamp(Math.Min(Math.Min(dense, fits) + (centre < 8 ? 0 : lod.Bias), far + lod.Bias), 0, d.Lods.Length) is var level && centre < 12 ? 0 : level;
+        if (G.Draws[di].Lods is not { Length: > 0 } lods) return 0;
+        int b = _level[di][k];
+        if (lod.Eye is { } eye) { float centre = Vector3.Distance(_viewBounds[di][k].Centre, eye); b = Math.Max(b, centre < 12 ? 0 : centre < 25 ? 1 : centre < 45 ? 2 : 3); }   // (only the pictures that are blurred over - the mirror's, the probes' - follow their eye)
+        return b > 0 ? Math.Min(b + lod.Bias, lods.Length) : 0;
     }
-    private int[] _whole = [];
+    /// <summary>A plant's level of detail is its own and does not change with the camera (a level that follows the eye is seen to change): it is set by where the plant stands: within the walls and near the walk (12 m), whole; farther from the walk
+    /// one level coarser at 12, 24 and 48 m; and past the walls always thinned, a level more at 6 and 16 m beyond them (fewer leaves, each wider).</summary>
+    private int[][] LevelsOnTheWalk(GardenGpu g)
+    {
+        var walk = Enumerable.Range(0, (int)(GardenCamera.Loop * 2)).Select(i => GardenCamera.Walk(i / 2f).Eye).ToArray();
+        return [.. g.Draws.Select((d, di) => Enumerable.Range(0, (int)d.InstanceCount).Select(k =>
+        {
+            if (d.Lods is not { Length: > 0 } || d.Moving) return 0;
+            var c = _viewBounds[di][k].Centre; float centre = walk.Min(e => Vector3.Distance(c, e));
+            float beyond = MathF.Max(MathF.Max(-14.5f - c.X, c.X - 14.5f), MathF.Max(-34f - c.Z, c.Z - 9f));   // metres past the courtyard's walls (the baker's grid is just inside them), under 0 within
+            return Math.Max(beyond <= 0 ? 0 : beyond < 6 ? 1 : beyond < 16 ? 2 : 3, centre < 12 ? 0 : centre < 24 ? 1 : centre < 48 ? 2 : 3);
+        }).ToArray())];
+    }
+    private int[][] _level = [];
     private readonly Dictionary<GardenGpu.Draw, int> _drawIndex;
     private static (GardenGpu.Part[] Parts, int BaseVertex, Vector3 Centre, Vector3 Extent) Pick(GardenGpu.Draw d, int level) =>
         level > 0 ? (d.Lods![level - 1].Parts, d.Lods[level - 1].BaseVertex, d.Lods[level - 1].Centre, d.Lods[level - 1].Extent) : (d.Parts, d.BaseVertex, d.Centre, d.Extent);

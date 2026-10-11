@@ -95,16 +95,18 @@ v40 (measured on an RTX 5070, 1080p, quality 3, the walk's first six seconds; `M
 triangles a pass):
 - **Levels of detail for plants** (`GardenLod`, made when the scene loads, no Blender needed): a mesh's cut-out leaf cards are cut into their loose pieces; a level
   keeps a half, a quarter or an eighth of the small ones (picked by a hash, so each level holds the one before) and grows each kept one about its centre by the square root
-  of what was dropped, so the foliage keeps its coverage. A camera pass draws the coarsest level whose triangles are at most 0.25 to a pixel of the plant's
-  picture (and whose leaves stay under 120 px); the pool's mirror image goes three levels coarser still, the hall's shadow map one, the pictures of the surroundings
-  (the probes) one. Stonework, trunks and branches are not thinned. The picture differs from the whole meshes' at 2.4/255 on average where trees fill the frame
+  of what was dropped, so the foliage keeps its coverage. A plant's level is **its own and never follows the camera** (a level chosen by the eye's distance was seen to change
+  leaves as the camera moved, even with steps at 12, 25 and 45 m): within the walls and within 12 m of the walk it is whole; a plant farther from the walk is one level coarser at
+  12, 24 and 48 m; one past the courtyard's walls is always thinned (a level at the wall, one more 6 m and 16 m beyond). Only the pictures that are blurred over also follow
+  their eye: the pool's mirror image (three levels coarser still, beyond 12 m of the mirrored eye) and the pictures of the surroundings (one). Stonework, trunks and branches are not thinned. The picture differs from the whole meshes' at 2.4/255 on average where trees fill the frame
   (nothing in the sky or the architecture).
 - **Big solid meshes in runs** (`GardenChunks`): a single instance of 20,000 triangles or more (the balustrade, carved walls, the hall's shell) has its
   triangles put in Morton order and cut into runs of 2,048, each with a ball; a camera draws only the runs it sees (the hall: -40 % of the frame's triangles).
 - Instances inside a mesh are kept in Morton order, and what a view draws is worked out once a frame per view (not once per pass), in fewer, longer runs.
-- Result: frame (GPU, no weather) 13.3 -> 11.0 ms outdoors and 7.3 -> 6.9 ms in the hall; triangles a frame (all passes) 34 M -> 28 M outdoors;
+- Result with levels following the eye (dropped): frame (GPU, no weather) 13.3 -> 11.0 ms outdoors and 7.3 -> 6.9 ms in the hall; triangles a frame (all passes) 34 M -> 28 M outdoors;
   the hall's shadow map 6.6 -> 4.6 M triangles. Not thinned: the small solid plants (the potted flowers, 4 M triangles a frame): they are 180-230 triangles each
   and have no loose pieces to thin; they would need whole instances dropped in blocks (a share of each block, the rest grown).
+- With the levels fixed to the plant, as it is now: 13.3 -> about 13.7 ms outdoors (the walk comes within 12 m of nearly every plant, so only about 35 stand thinned, the trees beyond the walls; the gain is the mirror's and the big meshes' runs). Stability was chosen over the 2.5 ms.
 - The pool's mirror image (2.5 ms, a fifth of the frame) is pixel work (every leaf layer shaded, no prepass), not triangles: fewer triangles hardly changed it.
 
 Still to do, in the order of what each gives the scaling:

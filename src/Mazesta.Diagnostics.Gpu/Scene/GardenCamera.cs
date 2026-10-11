@@ -57,7 +57,12 @@ public static class GardenCamera
     public static (Vector3 Eye, Vector3 Target) At(float time)
     {
         if (Fixed is { } view) return view;
-        time = Pinned ?? time;
+        return Walk(Pinned ?? time);
+    }
+
+    /// <summary>Where the eye is on the walk at <paramref name="time"/>, whatever is fixed or pinned.</summary>
+    internal static (Vector3 Eye, Vector3 Target) Walk(float time)
+    {
         float t = (time % Loop + Loop) % Loop / Loop * Keys.Length;
         int i = (int)t; float f = t - i;
         f = f * f * (3 - 2 * f) * 0.35f + f * 0.65f;   // a touch of ease at each key, never a stop
