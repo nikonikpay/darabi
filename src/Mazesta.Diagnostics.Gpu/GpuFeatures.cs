@@ -17,16 +17,6 @@ public static class GpuFeatures
 
     public static bool SupportsInlineRayTracing(GraphicsDevice device) => RayTracingTier(device) >= RaytracingTier.Tier1_1;
 
-    private static readonly ConcurrentDictionary<string, bool> Umas = new();
-    /// <summary>Whether the adapter shares the system's memory (unified memory architecture): the processor's own graphics.</summary>
-    public static unsafe bool UnifiedMemory(GraphicsDevice device) => Umas.GetOrAdd($"{device.Name}|{device.Luid}", _ =>
-    {
-        Guid iid = typeof(ID3D12Device).GUID; void* pointer;
-        InteropServices.GetID3D12Device(device, &iid, &pointer);
-        using var d3d = new ID3D12Device((nint)pointer);
-        return d3d.CheckFeatureSupport<FeatureDataArchitecture>(Feature.Architecture).Uma;
-    });
-
     /// <summary>For the programs page: whether the card named runs Direct3D 12 in hardware and traces rays in hardware (DXR), as its own device
     /// says. The adapter is the one of that name, else the only one there is; several and none of that name, or a device that can not be asked,
     /// is "unknown" (null), never another card's answer; no hardware adapter at all is "no".</summary>

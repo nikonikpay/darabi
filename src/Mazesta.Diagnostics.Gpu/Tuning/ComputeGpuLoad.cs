@@ -19,7 +19,7 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
     {
         var adapters = GraphicsDevice.EnumerateDevices().Where(d => d.IsHardwareAccelerated).ToList();
         return adapters.FirstOrDefault(d => string.Equals(d.Name.Trim(), gpuName.Trim(), StringComparison.OrdinalIgnoreCase))
-            ?? GpuDevices.Ranked(adapters).FirstOrDefault();
+            ?? adapters.OrderByDescending(d => d.DedicatedMemorySize).FirstOrDefault();
     }
 
     public LoadRunResult Run(GpuLoadKind kind, TimeSpan duration, TimeSpan settle, CancellationToken ct) => Run(kind, duration, settle, false, ct);
