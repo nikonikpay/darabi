@@ -91,3 +91,14 @@ public class HotkeyTests
         Assert.Equal("game", OverlayCatalog.NextPreset("user:gone", [], false)); Assert.Equal("game", OverlayCatalog.NextPreset("troubleshoot", [], false));
     }
 }
+
+public class SsdAlertTests
+{
+    [Fact] public void A_drive_over_its_limit_for_the_hold_warns_with_no_load_condition()
+    {
+        var t0 = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero); var h = new HealthAlerts(TimeSpan.FromMinutes(5), ssdAlertC: 70);
+        Assert.Empty(h.Evaluate(new(null, null, null, null, SsdTempC: 75), t0));
+        Assert.Equal(HealthAlertKind.SsdOverheat, Assert.Single(h.Evaluate(new(null, null, null, null, SsdTempC: 75), t0.AddMinutes(5))).Kind);
+        Assert.Empty(new HealthAlerts(TimeSpan.FromMinutes(1), ssdAlertC: 70).Evaluate(new(null, null, null, null, SsdTempC: 65), t0));
+    }
+}

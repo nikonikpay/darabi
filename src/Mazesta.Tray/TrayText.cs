@@ -29,6 +29,7 @@ internal static class TrayText
         HealthAlertKind.CpuOverheat => $"دمای پردازنده زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",
         HealthAlertKind.GpuOverheat => $"دمای (میانگین) کارت گرافیک زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",
         HealthAlertKind.GpuHotSpotOverheat => $"دمای نقطه‌ی داغ کارت گرافیک زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",
+        HealthAlertKind.SsdOverheat => $"دمای SSD به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. جریان هوای اطراف آن (و هیت‌سینک) را بررسی کنید.",
         HealthAlertKind.CpuThrottle => $"فرکانس پردازنده در بار کامل به {Num(a.Value, "0")} مگاهرتز افت کرده است. دما و محدودیت توان را بررسی کنید.",
         _ => a.Kind.ToString()
     };

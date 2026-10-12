@@ -14,9 +14,9 @@ public sealed class Notifier : IDisposable
 {
     private readonly MainWindow _window; private readonly PollingEngine _engine; private readonly TestEngine _tests; private readonly IReadOnlyList<ITestExecutor> _executors;
     private readonly Action<string, string> _toast; private readonly ILogger _log;
-    private HealthAlerts _alerts = new(); private (int Cpu, int Gpu, int HotSpot, int HoldMinutes) _limits;   // (0, 0): the first snapshot builds the rules with the settings and the base clock
+    private HealthAlerts _alerts = new(); private (int Cpu, int Gpu, int HotSpot, int HoldMinutes, int Ssd) _limits;   // (0, 0): the first snapshot builds the rules with the settings and the base clock
     /// <summary>The user's thresholds (the tray's settings, also set by the assistant); read at each snapshot, so a change applies at once.</summary>
-    public Func<(int Cpu, int Gpu, int HotSpot, int HoldMinutes)>? Limits { get; set; }
+    public Func<(int Cpu, int Gpu, int HotSpot, int HoldMinutes, int Ssd)>? Limits { get; set; }
     private Forms.NotifyIcon? _icon; private Forms.Timer? _hide;
     private ProviderState _lastProvider = ProviderState.Ready;
 
@@ -28,12 +28,13 @@ public sealed class Notifier : IDisposable
 
     private void OnSnapshot(SensorSnapshot s)
     {
-        if (Limits?.Invoke() is { } l && l != _limits) { _limits = l; _alerts = new(TimeSpan.FromMinutes(l.HoldMinutes), l.Cpu, l.Gpu, Mazesta.Hardware.Wmi.CpuBaseClock.Mhz, l.HotSpot); }
+        if (Limits?.Invoke() is { } l && l != _limits) { _limits = l; _alerts = new(TimeSpan.FromMinutes(l.HoldMinutes), l.Cpu, l.Gpu, Mazesta.Hardware.Wmi.CpuBaseClock.Mhz, l.HotSpot, l.Ssd); }
         foreach (var a in _alerts.Evaluate(HealthSampler.From(_engine.Hardware, s.Readings), s.Timestamp))
             Tell(Loc.Get("Notify_Health_Title"), a.Kind switch
             {
                 HealthAlertKind.CpuOverheat => Loc.Format("Notify_CpuOverheat", Math.Round(a.Value)),
                 HealthAlertKind.GpuOverheat => Loc.Format("Notify_GpuOverheat", Math.Round(a.Value)),
+                HealthAlertKind.SsdOverheat => Loc.Format("Notify_SsdOverheat", Math.Round(a.Value)),
                 HealthAlertKind.GpuHotSpotOverheat => Loc.Format("Notify_GpuHotSpotOverheat", Math.Round(a.Value)),
                 _ => Loc.Format("Notify_CpuThrottle", Math.Round(a.Value)),
             }, error: true);

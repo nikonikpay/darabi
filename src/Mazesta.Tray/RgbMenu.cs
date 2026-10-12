@@ -20,11 +20,28 @@ internal sealed class RgbMenu : IDisposable
         Menu = new ToolStripMenuItem(TrayText.Lights);
         Menu.DropDownItems.AddRange([_dark, new ToolStripMenuItem(TrayText.LightsApply, null, async (_, _) => await ApplyAsync(userAsked: true))]);
         Menu.DropDownOpening += (_, _) => { var s = RgbSceneStore.Read(_paths); _dark.Checked = s.Dark; Menu.Enabled = _session.Exe is not null; };
-        SystemEvents.PowerModeChanged += OnPower;
+        SystemEvents.PowerModeChanged += OnPower; SystemEvents.SessionEnding += OnEnding;
     }
+
+    /// <summary>Going to sleep or shutting down: what the user chose for the lights (put them out, or put the scene on so they stay lit) is done first. Windows waits only a few
+    /// seconds for this, so it is a best effort; "leave" does nothing.</summary>
+    private void AtPowerEnd()
+    {
+        var scene = RgbSceneStore.Read(_paths);
+        string mode = RgbScene.NormalPowerEnd(scene.PowerEnd);
+        if (mode == RgbScene.Leave || _busy) return;
+        scene.Dark = mode == RgbScene.Off; scene.Enabled = true;   // applied but not saved: the scene itself is untouched
+        _busy = true;
+        try { Task.Run(async () => { if (await _session.ConnectAsync(true, scene.StopMakers, scene, CancellationToken.None) == RgbConnect.Connected) await _session.ApplyAsync(scene, CancellationToken.None); }).Wait(TimeSpan.FromSeconds(4)); }
+        catch (Exception e) when (e is AggregateException or System.Net.Sockets.SocketException or IOException or InvalidOperationException) { }
+        finally { _busy = false; }
+    }
+
+    private void OnEnding(object? sender, SessionEndingEventArgs e) => AtPowerEnd();
 
     private void OnPower(object? sender, PowerModeChangedEventArgs e)
     {
+        if (e.Mode == PowerModes.Suspend) { AtPowerEnd(); return; }
         if (e.Mode != PowerModes.Resume) return;
         var t = new System.Windows.Forms.Timer { Interval = 8000 };
         t.Tick += async (_, _) => { t.Stop(); t.Dispose(); await ApplyAsync(userAsked: false); };
@@ -65,7 +82,7 @@ internal sealed class RgbMenu : IDisposable
     /// <summary>The tray ends: the server it started is ended too, unless the app is running and may be using it.</summary>
     public void Dispose()
     {
-        SystemEvents.PowerModeChanged -= OnPower;
+        SystemEvents.PowerModeChanged -= OnPower; SystemEvents.SessionEnding -= OnEnding;
         var app = System.Diagnostics.Process.GetProcessesByName("Mazesta").Concat(System.Diagnostics.Process.GetProcessesByName("Mazesta-Admin")).ToArray(); bool appRuns = app.Length > 0; foreach (var p in app) p.Dispose();
         _session.Release(leaveRunning: appRuns); _session.Client.Dispose();
     }

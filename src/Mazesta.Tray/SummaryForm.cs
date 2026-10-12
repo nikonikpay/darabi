@@ -96,7 +96,7 @@ internal sealed class SummaryForm : Form
         // The recent checks, newest first; a problem or a failed check is red and says what it was.
         Heading(g, TrayText.Recent, Yellow, null, ref y, w, pad);
         if (checks.Count == 0) Write(g, TrayText.NoChecks, _body, Paper3, new Rectangle(pad, y, w - 2 * pad, bodyH));
-        int bottom = _canvas.ClientSize.Height - S(8), timeW = S(48), whatW = S(72), textW = w - 2 * pad - timeW - whatW - S(8);
+        int bottom = _canvas.ClientSize.Height - S(8), timeW = S(48), whatW = Math.Max(TextRenderer.MeasureText(g, TrayText.Health, _small).Width, TextRenderer.MeasureText(g, TrayText.Temps, _small).Width) + S(14), textW = w - 2 * pad - timeW - whatW - S(8);
         foreach (var c in checks.Reverse())
         {
             string what = c.Kind == "health" ? TrayText.Health : TrayText.Temps;

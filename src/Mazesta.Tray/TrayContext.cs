@@ -28,7 +28,7 @@ internal sealed class TrayContext : ApplicationContext
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
-        _intervals = intervals; _logFile = logFile; _rules = new(TimeSpan.FromMinutes(intervals.HoldMinutes), intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz, intervals.GpuHotSpotAlertC);
+        _intervals = intervals; _logFile = logFile; _rules = new(TimeSpan.FromMinutes(intervals.HoldMinutes), intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz, intervals.GpuHotSpotAlertC, intervals.SsdAlertC);
         // The RAM warning comes once a day: the last time it came is kept beside the check log, so a restart of the tray does not make it come again.
         _memory = new(intervals.RamAlertPercent, TimeSpan.FromMinutes(intervals.RamHoldMinutes)); _ramFile = Path.Combine(Path.GetDirectoryName(logFile) ?? "", "ram-alert.txt");
         try { if (DateTimeOffset.TryParse(File.ReadAllText(_ramFile), null, System.Globalization.DateTimeStyles.RoundtripKind, out var last)) _memory.LastFired = last; } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }

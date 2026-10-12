@@ -17,6 +17,8 @@ export function mount(el) {
   let state = null;
   const msg = h("p", { class: "msg" }), makers = h("p", { class: "note", hidden: true });
   const keep = h("input", { type: "checkbox", class: "switch", "aria-label": t("Rgb_Keep") });
+  // What the lights do at sleep and shutdown (the background monitor carries it out).
+  const powerEnd = h("select", { class: "field", "aria-label": t("Rgb_PowerEnd"), onchange: (e) => run("rgb.powerEnd", { value: e.target.value }) }, ...["leave", "off", "on"].map((v) => h("option", { value: v }, t("Rgb_PowerEnd_" + v))));
   const start = h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.start", { keepMakers: keep.checked }) }, icon("bolt"), t("Rgb_Connect"));
   const release = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("stop"), t("Rgb_Release"));
   const dark = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("stop"), t("Rgb_Dark_Off"));
@@ -45,7 +47,7 @@ export function mount(el) {
   }
 
   function show(s) {
-    state = s;
+    state = s; powerEnd.value = s.powerEnd || "leave";
     start.hidden = s.connected || s.connecting; release.hidden = !s.connected && !(s.makers || []).length; dark.hidden = !s.connected; dark.lastChild.textContent = t(s.dark ? "Rgb_Dark_On" : "Rgb_Dark_Off");
     clearTimeout(poll); if (s.connecting && alive) poll = setTimeout(() => alive && run("rgb.state", undefined, true), 2000);   // the first search runs on its own: ask again until it is done
     msg.className = `msg ${s.error ? "fail" : ""}`; msg.textContent = s.error || (s.connecting ? t("Rgb_Connecting") : !s.found && !s.connected ? t("Rgb_NotFound") : s.connected && !s.devices.length ? t("Rgb_Empty") : "");
@@ -102,7 +104,7 @@ export function mount(el) {
     h("div", { class: "panels two" },
       box({ cls: "p-tool", ico: "bolt", title: t("Rgb_Title"), sub: t("Rgb_Sub"), a: "rgb", i: 0,
         body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Rgb_Note")), makers,
-          h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("div", { class: "btn-row" }, start, dark, release), msg] }),
+          h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("p", { class: "caption", style: { marginTop: 0 } }, t("Rgb_PowerEnd_Note")), h("div", { class: "btn-row" }, start, dark, release), msg] }),
       box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] })),
     h("h2", { class: "tools-sec-title" }, t("Rgb_Devices")), list);
   run("rgb.state");

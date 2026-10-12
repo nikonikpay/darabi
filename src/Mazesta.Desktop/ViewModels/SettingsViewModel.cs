@@ -6,7 +6,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public string[] Languages => ["en", "fa"];
     public string[] RenderModes => ["auto", "software"];
     [ObservableProperty] private string _language; [ObservableProperty] private string _renderMode; [ObservableProperty] private string _fastIntervalText; [ObservableProperty] private string _storageIntervalText; [ObservableProperty] private string _displayName; [ObservableProperty] private string _message = "";
-    [ObservableProperty] private string _trayFirstCheckText; [ObservableProperty] private string _trayIdleText; [ObservableProperty] private string _trayWatchText; [ObservableProperty] private string _trayHealthText; [ObservableProperty] private string _trayCpuAlertText; [ObservableProperty] private string _trayGpuAlertText; [ObservableProperty] private string _trayGpuHotSpotAlertText; [ObservableProperty] private string _trayHoldText; [ObservableProperty] private string _trayRamAlertText; [ObservableProperty] private string _trayRamHoldText; [ObservableProperty] private string _trayRamCheckText;
+    [ObservableProperty] private string _trayFirstCheckText; [ObservableProperty] private string _trayIdleText; [ObservableProperty] private string _trayWatchText; [ObservableProperty] private string _trayHealthText; [ObservableProperty] private string _trayCpuAlertText; [ObservableProperty] private string _trayGpuAlertText; [ObservableProperty] private string _trayGpuHotSpotAlertText; [ObservableProperty] private string _traySsdAlertText; [ObservableProperty] private string _trayHoldText; [ObservableProperty] private string _trayRamAlertText; [ObservableProperty] private string _trayRamHoldText; [ObservableProperty] private string _trayRamCheckText;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CanEnableTray), nameof(CanDisableTray))] private TrayState _trayState = new(false, false);
     [ObservableProperty] private string _trayStatusText = Loc.Get("Settings_Tray_Checking");
     /// <summary>Completes when the first tray query has finished (it runs schtasks, so it is off the UI thread).</summary>
@@ -34,7 +34,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _language = config.Language; _renderMode = config.RenderMode; _fastIntervalText = config.FastIntervalSeconds.ToString(); _storageIntervalText = config.StorageIntervalSeconds.ToString(); _displayName = config.DisplayName;
         _trayFirstCheckText = config.TrayFirstCheckSeconds.ToString(); _trayIdleText = config.TrayIdleIntervalMinutes.ToString(); _trayWatchText = config.TrayWatchIntervalSeconds.ToString(); _trayHealthText = config.TrayHealthIntervalMinutes.ToString();
         _trayCpuAlertText = config.TrayCpuAlertC.ToString(); _trayGpuAlertText = config.TrayGpuAlertC.ToString();
-        _trayGpuHotSpotAlertText = config.TrayGpuHotSpotAlertC.ToString(); _trayHoldText = config.TrayHoldMinutes.ToString(); _trayRamAlertText = config.TrayRamAlertPercent.ToString(); _trayRamHoldText = config.TrayRamHoldMinutes.ToString(); _trayRamCheckText = config.TrayRamCheckMinutes.ToString();
+        _trayGpuHotSpotAlertText = config.TrayGpuHotSpotAlertC.ToString(); _traySsdAlertText = config.TraySsdAlertC.ToString(); _trayHoldText = config.TrayHoldMinutes.ToString(); _trayRamAlertText = config.TrayRamAlertPercent.ToString(); _trayRamHoldText = config.TrayRamHoldMinutes.ToString(); _trayRamCheckText = config.TrayRamCheckMinutes.ToString();
         DataFolder = paths.DataRoot; ModeText = Loc.Get("Settings_Mode_Portable");
         TrayLoaded = RefreshTrayAsync();
     }
@@ -60,13 +60,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         if (!TryValidateTray(out int trayFirst, out int trayIdle, out int trayWatch, out int trayHealth, out error)) { Message = error; return; }
         if (!TryRange(TrayCpuAlertText, 60, 105, out int cpuAlert) || !TryRange(TrayGpuAlertText, 60, 105, out int gpuAlert)) { Message = Loc.Get("Settings_Invalid_Alert"); return; }
         if (!TryRange(TrayGpuHotSpotAlertText, 60, 105, out int hotSpotAlert)) { Message = Loc.Get("Settings_Invalid_Alert"); return; }
+        if (!TryRange(TraySsdAlertText, 40, 105, out int ssdAlert)) { Message = Loc.Get("Settings_Invalid_Ssd"); return; }
         if (!TryRange(TrayHoldText, 1, 120, out int hold) || !TryRange(TrayRamHoldText, 1, 120, out int ramHold) || !TryRange(TrayRamCheckText, 1, 60, out int ramCheck)) { Message = Loc.Get("Settings_Invalid_Interval"); return; }
         if (!TryRange(TrayRamAlertText, 50, 99, out int ramAlert)) { Message = Loc.Get("Settings_Invalid_Percent"); return; }
         bool restartNeeded = _config.Language != Language || _config.RenderMode != RenderMode;
-        bool trayChanged = (_config.TrayFirstCheckSeconds, _config.TrayIdleIntervalMinutes, _config.TrayWatchIntervalSeconds, _config.TrayHealthIntervalMinutes, _config.TrayCpuAlertC, _config.TrayGpuAlertC, _config.TrayGpuHotSpotAlertC, _config.TrayHoldMinutes, _config.TrayRamAlertPercent, _config.TrayRamHoldMinutes, _config.TrayRamCheckMinutes) != (trayFirst, trayIdle, trayWatch, trayHealth, cpuAlert, gpuAlert, hotSpotAlert, hold, ramAlert, ramHold, ramCheck);
+        bool trayChanged = (_config.TrayFirstCheckSeconds, _config.TrayIdleIntervalMinutes, _config.TrayWatchIntervalSeconds, _config.TrayHealthIntervalMinutes, _config.TrayCpuAlertC, _config.TrayGpuAlertC, _config.TrayGpuHotSpotAlertC, _config.TrayHoldMinutes, _config.TrayRamAlertPercent, _config.TrayRamHoldMinutes, _config.TrayRamCheckMinutes, _config.TraySsdAlertC) != (trayFirst, trayIdle, trayWatch, trayHealth, cpuAlert, gpuAlert, hotSpotAlert, hold, ramAlert, ramHold, ramCheck, ssdAlert);
         _config.Language = Language; _config.RenderMode = RenderMode; _config.FastIntervalSeconds = fast; _config.StorageIntervalSeconds = storage; _config.DisplayName = DisplayName.Trim() is var name && name.Length > AppConfig.MaxDisplayName ? name[..AppConfig.MaxDisplayName] : name;
         _config.TrayFirstCheckSeconds = trayFirst; _config.TrayIdleIntervalMinutes = trayIdle; _config.TrayWatchIntervalSeconds = trayWatch; _config.TrayHealthIntervalMinutes = trayHealth;
-        _config.TrayCpuAlertC = cpuAlert; _config.TrayGpuAlertC = gpuAlert; _config.TrayGpuHotSpotAlertC = hotSpotAlert; _config.TrayHoldMinutes = hold;
+        _config.TrayCpuAlertC = cpuAlert; _config.TrayGpuAlertC = gpuAlert; _config.TrayGpuHotSpotAlertC = hotSpotAlert; _config.TrayHoldMinutes = hold; _config.TraySsdAlertC = ssdAlert;
         _config.TrayRamAlertPercent = ramAlert; _config.TrayRamHoldMinutes = ramHold; _config.TrayRamCheckMinutes = ramCheck;
         bool storageChanged = _options.StorageInterval != TimeSpan.FromSeconds(storage);
         _options.StorageInterval = TimeSpan.FromSeconds(storage); if (_engine.FastInterval != TimeSpan.FromSeconds(fast)) _engine.SetFastInterval(TimeSpan.FromSeconds(fast));

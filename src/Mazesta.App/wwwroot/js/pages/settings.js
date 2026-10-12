@@ -55,7 +55,7 @@ export function mount(el) {
           h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupSchedule")),
           h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth"))),
           h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupTemp")), h("p", { class: "caption set-note" }, t("Settings_Tray_TempNote")),
-          h("dl", { class: "kv" }, row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert")), row(t("Settings_Tray_GpuHotSpot"), input("trayGpuHotSpot")), row(t("Settings_Tray_Hold"), input("trayHold"))),
+          h("dl", { class: "kv" }, row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert")), row(t("Settings_Tray_GpuHotSpot"), input("trayGpuHotSpot")), row(t("Settings_Tray_SsdAlert"), input("traySsd")), row(t("Settings_Tray_Hold"), input("trayHold"))),
           h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupRam")), h("p", { class: "caption set-note" }, t("Settings_Tray_RamNote")),
           h("dl", { class: "kv" }, row(t("Settings_Tray_RamAlert"), input("trayRamAlert")), row(t("Settings_Tray_RamHold"), input("trayRamHold")), row(t("Settings_Tray_RamCheck"), input("trayRamCheck"))),
           h("div", { class: "btn-row" }, h("button", { class: "btn primary", onclick: () => call("settings.exec", { cmd: "save" }) }, t("Settings_Save"))), trayMessage] }),
@@ -84,7 +84,7 @@ export function mount(el) {
       built = true;
     }
     f.language.value = s.language; f.renderMode.value = s.renderMode;
-    for (const k of ["interval", "storageInterval", "displayName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert", "trayGpuHotSpot", "trayHold", "trayRamAlert", "trayRamHold", "trayRamCheck"]) if (f[k]) setField(f[k], s[k]);
+    for (const k of ["interval", "storageInterval", "displayName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert", "trayGpuHotSpot", "traySsd", "trayHold", "trayRamAlert", "trayRamHold", "trayRamCheck"]) if (f[k]) setField(f[k], s[k]);
     message.textContent = s.message || ""; trayMessage.textContent = s.message || ""; trayStatus.textContent = s.trayStatus || "";
     enableTray.disabled = !s.canEnableTray; disableTray.disabled = !s.canDisableTray;
     usage.checked = !!s.usageReport; usageLog.textContent = s.usageLog || "";

@@ -26,7 +26,7 @@ public sealed partial class WebBridge
 
         object State(string? error = null) => new
         {
-            found = session.Exe is not null, connected = client.Connected, enabled = scene.Enabled, dark = scene.Dark, error,
+            found = session.Exe is not null, connected = client.Connected, enabled = scene.Enabled, dark = scene.Dark, powerEnd = RgbScene.NormalPowerEnd(scene.PowerEnd), error,
             connecting = Volatile.Read(ref starting) != 0,   // also while the devices are still being scanned after the socket is up
             makers = conflicts.StoppedNow,   // the makers' programs stopped for now, to be put back by "let go"
             running = client.Connected ? Array.Empty<string>() : conflicts.Running(),
@@ -156,6 +156,8 @@ public sealed partial class WebBridge
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
             return State();
         }));
+        // What the lights do when the PC sleeps or shuts down; the tray carries it out (it is the one process that is always there).
+        MethodAsync("rgb.powerEnd", p => Guard(() => { scene.PowerEnd = RgbScene.NormalPowerEnd(p.TryGetProperty("value", out var v) ? v.GetString() : null); Save(); return Task.FromResult<object?>(State()); }));
         MethodAsync("rgb.dark", p => Guard(async () =>
         {
             if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));

@@ -16,6 +16,10 @@ public sealed class RgbScene
     public bool StopMakers { get; set; } = true;
     /// <summary>Every light is switched off (from the tray's menu or the page) while the scene itself is kept, to be brought back by switching on.</summary>
     public bool Dark { get; set; }
+    /// <summary>What the lights do when the PC goes to sleep or shuts down: "leave" (as they are; the board decides), "off" (the tray puts them out first) or "on" (the tray puts the scene on first, so they stay lit).</summary>
+    public string PowerEnd { get; set; } = Leave;
+    public const string Leave = "leave", Off = "off", On = "on";
+    public static string NormalPowerEnd(string? v) => v is Off or On ? v : Leave;
     public RgbLook? All { get; set; }
     public Dictionary<string, RgbLook> Devices { get; set; } = [];
     public Dictionary<string, int> Zones { get; set; } = [];

@@ -3567,4 +3567,12 @@ Cancel: stop.</value></data>
   <data name="Settings_Keys_Reset" xml:space="preserve"><value>Back to the defaults</value></data>
   <data name="Bench_Set_Adapter" xml:space="preserve"><value>Network device</value></data>
   <data name="Bench_Set_AdapterLink" xml:space="preserve"><value>Connection</value></data>
+  <data name="Settings_Tray_SsdAlert" xml:space="preserve"><value>SSD / drive warning from (°C)</value></data>
+  <data name="Settings_Invalid_Ssd" xml:space="preserve"><value>The drive warning temperature must be a whole number from 40 to 105.</value></data>
+  <data name="Notify_SsdOverheat" xml:space="preserve"><value>A drive reached {0} °C and stayed there. Check the airflow around it (and its heatsink).</value></data>
+  <data name="Rgb_PowerEnd" xml:space="preserve"><value>When the PC sleeps or shuts down</value></data>
+  <data name="Rgb_PowerEnd_leave" xml:space="preserve"><value>Leave the lights as they are</value></data>
+  <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>Turn the lights off</value></data>
+  <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>Keep the lights on</value></data>
+  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>Carried out by the background monitor, which must be running; Windows gives it only a few seconds, so on a slow lighting server it can miss.</value></data>
 </root>

@@ -18,6 +18,6 @@ public static class HealthSampler
 
         return new(Max(SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp), Max(SensorRole.GpuCoreTemp),
                    First(SensorRole.CpuTotalLoad), First(SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage), Max(SensorRole.GpuHotSpotTemp),
-                   Max(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D, SensorRole.GpuLoadCompute));
+                   Max(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D, SensorRole.GpuLoadCompute), Max(SensorRole.StorageTemp));
     }
 }

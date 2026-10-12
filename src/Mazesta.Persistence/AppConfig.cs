@@ -45,6 +45,8 @@ public sealed class AppConfig : IVersionedDocument
     public int TrayGpuAlertC { get; set; } = 90;
     /// <summary>The graphics card's hot spot temperature.</summary>
     public int TrayGpuHotSpotAlertC { get; set; } = 98;
+    /// <summary>The hottest drive's temperature (°C) above which the tray warns (after the same hold).</summary>
+    public int TraySsdAlertC { get; set; } = 70;
     /// <summary>How long (minutes) a part must stay over its temperature at full load before the tray warns.</summary>
     public int TrayHoldMinutes { get; set; } = 10;
     /// <summary>RAM in use (percent) from which the tray warns, once it has stayed there for <see cref="TrayRamHoldMinutes"/>; at most once a day.</summary>

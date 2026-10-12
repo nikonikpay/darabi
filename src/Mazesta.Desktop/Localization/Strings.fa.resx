@@ -3567,4 +3567,12 @@
   <data name="Settings_Keys_Reset" xml:space="preserve"><value>بازگشت به پیش‌فرض</value></data>
   <data name="Bench_Set_Adapter" xml:space="preserve"><value>مدل دستگاه شبکه</value></data>
   <data name="Bench_Set_AdapterLink" xml:space="preserve"><value>اتصال</value></data>
+  <data name="Settings_Tray_SsdAlert" xml:space="preserve"><value>هشدار دمای SSD و دیسک‌ها از (°C)</value></data>
+  <data name="Settings_Invalid_Ssd" xml:space="preserve"><value>دمای هشدار SSD باید عددی صحیح از ۴۰ تا ۱۰۵ باشد.</value></data>
+  <data name="Notify_SsdOverheat" xml:space="preserve"><value>دمای یکی از SSD/دیسک‌ها به {0} درجه رسید و همان‌جا ماند. جریان هوا و هیت‌سینک آن را بررسی کنید.</value></data>
+  <data name="Rgb_PowerEnd" xml:space="preserve"><value>هنگام خواب یا خاموش شدن کامپیوتر</value></data>
+  <data name="Rgb_PowerEnd_leave" xml:space="preserve"><value>نورها را دست نزن (بُرد تصمیم می‌گیرد)</value></data>
+  <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>نورها خاموش شوند</value></data>
+  <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>نورها روشن بمانند</value></data>
+  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>این کار را پایشگر پس‌زمینه انجام می‌دهد و باید روشن باشد؛ ویندوز فقط چند ثانیه فرصت می‌دهد، پس اگر سرور نورپردازی کند باشد ممکن است به‌موقع نرسد.</value></data>
 </root>

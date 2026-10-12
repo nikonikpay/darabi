@@ -1,12 +1,12 @@
 namespace Mazesta.Core.Health;
 
-public enum HealthAlertKind { CpuOverheat, GpuOverheat, CpuThrottle, GpuHotSpotOverheat }
+public enum HealthAlertKind { CpuOverheat, GpuOverheat, CpuThrottle, GpuHotSpotOverheat, SsdOverheat }
 
 /// <summary>An alert as data; the UI layer words it (in the user's language). <see cref="Value"/> is °C for the overheat kinds and MHz for a throttle.</summary>
 public sealed record HealthAlert(HealthAlertKind Kind, double Value, DateTimeOffset Time);
 
 /// <summary>What the rules look at, read from one poll. A member is null when the machine has no such sensor - a rule never runs on a guess.</summary>
-public sealed record HealthSample(double? CpuTempC, double? GpuTempC, double? CpuLoadPercent, double? CpuClockMhz, double? GpuHotSpotC = null, double? GpuLoadPercent = null);
+public sealed record HealthSample(double? CpuTempC, double? GpuTempC, double? CpuLoadPercent, double? CpuClockMhz, double? GpuHotSpotC = null, double? GpuLoadPercent = null, double? SsdTempC = null);
 
 /// <summary>
 /// The tray monitor's rules, kept out of the tray process so they are unit-testable. An overheat rule counts only while the part is at full load
@@ -17,10 +17,10 @@ public sealed record HealthSample(double? CpuTempC, double? GpuTempC, double? Cp
 /// The throttle rule is a full load under 2 GHz, or - when the CPU's base clock is known - under three quarters of it: a low-power laptop chip (an N100's base
 /// is 800 MHz) runs all-core under 2 GHz by design, which is not throttling.
 /// </summary>
-public sealed class HealthAlerts(TimeSpan? hold = null, double cpuAlertC = HealthAlerts.CpuDefaultC, double gpuAlertC = HealthAlerts.GpuDefaultC, double? cpuBaseMhz = null, double gpuHotSpotAlertC = HealthAlerts.GpuHotSpotDefaultC)
+public sealed class HealthAlerts(TimeSpan? hold = null, double cpuAlertC = HealthAlerts.CpuDefaultC, double gpuAlertC = HealthAlerts.GpuDefaultC, double? cpuBaseMhz = null, double gpuHotSpotAlertC = HealthAlerts.GpuHotSpotDefaultC, double ssdAlertC = HealthAlerts.SsdDefaultC)
 {
     private readonly double _throttleMhz = cpuBaseMhz is > 0 and { } b ? Math.Min(ThrottleClockMhz, b * 0.75) : ThrottleClockMhz;
-    public const double MinAlertC = 60, MaxAlertC = 105, ClearMarginC = 5, CpuDefaultC = 98, GpuDefaultC = 90, GpuHotSpotDefaultC = 98, FullLoadPercent = 90;
+    public const double MinAlertC = 60, MaxAlertC = 105, ClearMarginC = 5, CpuDefaultC = 98, GpuDefaultC = 90, GpuHotSpotDefaultC = 98, SsdDefaultC = 70, FullLoadPercent = 90;
     public const double ThrottleLoadPercent = 98, ThrottleLoadRecoveredPercent = 95, ThrottleClockMhz = 2000, ThrottleClockRecoveredMhz = 2200;
     public static readonly TimeSpan RepeatAfter = TimeSpan.FromMinutes(15), DefaultHold = TimeSpan.FromMinutes(10), ThrottleHold = TimeSpan.FromMinutes(2);
 
@@ -38,6 +38,8 @@ public sealed class HealthAlerts(TimeSpan? hold = null, double cpuAlertC = Healt
         Step(HealthAlertKind.CpuOverheat, s.CpuTempC is { } c && cpuFull is { } cf ? c > cpuAlertC && cf : null, s.CpuTempC < cpuAlertC - ClearMarginC, s.CpuTempC ?? 0, _hold);
         Step(HealthAlertKind.GpuOverheat, s.GpuTempC is { } g && gpuFull is { } gf ? g > gpuAlertC && gf : null, s.GpuTempC < gpuAlertC - ClearMarginC, s.GpuTempC ?? 0, _hold);
         Step(HealthAlertKind.GpuHotSpotOverheat, s.GpuHotSpotC is { } hs && gpuFull is { } hf ? hs > gpuHotSpotAlertC && hf : null, s.GpuHotSpotC < gpuHotSpotAlertC - ClearMarginC, s.GpuHotSpotC ?? 0, _hold);
+        // A drive heats whatever the processors do (a copy, a sleeping fan): no load condition, only the time over the limit.
+        Step(HealthAlertKind.SsdOverheat, s.SsdTempC is { } ssd ? ssd > ssdAlertC : null, s.SsdTempC < ssdAlertC - ClearMarginC, s.SsdTempC ?? 0, _hold);
         bool? throttling = s.CpuLoadPercent is { } load && s.CpuClockMhz is { } clock ? load >= ThrottleLoadPercent && clock < _throttleMhz : null;
         bool recovered = s.CpuLoadPercent is < ThrottleLoadRecoveredPercent || s.CpuClockMhz >= _throttleMhz * (ThrottleClockRecoveredMhz / ThrottleClockMhz);
         Step(HealthAlertKind.CpuThrottle, throttling, recovered, s.CpuClockMhz ?? 0, _hold < ThrottleHold ? _hold : ThrottleHold);
