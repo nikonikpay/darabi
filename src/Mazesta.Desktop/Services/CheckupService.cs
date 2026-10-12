@@ -31,6 +31,9 @@ public sealed class CheckupService
 
     /// <summary>A run was judged, or its standing among other systems arrived. Raised on a worker thread.</summary>
     public event Action? Changed;
+    /// <summary>A test session has ended and been judged: every test's result and each judged part (processor, graphics card).</summary>
+    public event Action<SessionJudgment>? SessionJudged;
+    public sealed record SessionJudgment(IReadOnlyList<TestRunResult> Results, IReadOnlyList<PartJudgment> Parts, IReadOnlyList<QueuedTest> Queue);
 
     public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log, TestEngine? tests = null)
     {
@@ -53,9 +56,10 @@ public sealed class CheckupService
         TestWatch? watch; List<TestRunResult> done; IReadOnlyList<QueuedTest> queue;
         lock (_lock) { watch = _sessionWatch; _sessionWatch = null; done = [.. _sessionDone]; queue = _sessionQueue; }
         if (watch is null) return;
+        IReadOnlyList<PartJudgment> parts = [];
         try
         {
-            var parts = watch.Judge(done);
+            parts = watch.Judge(done);
             var checks = done.Select(r => new TestCheck(r.Id.Value, queue.FirstOrDefault(q => q.Definition.Id == r.Id)?.Definition.NameKey ?? r.Id.Value, r.FinishedAt ?? r.StartedAt, r.Outcome,
                 parts.Select(p => p.ByTest?.GetValueOrDefault(r.Id.Value)).FirstOrDefault(f => f is not null) ?? [])).ToList();
             lock (_lock) _tests = checks;
@@ -64,6 +68,7 @@ public sealed class CheckupService
         catch (Exception e) { _log.LogWarning(e, "Checkup of the test session failed"); }
         finally { watch.Dispose(); }
         Changed?.Invoke();
+        if (done.Count > 0) SessionJudged?.Invoke(new(done, parts, queue));
     }
 
     /// <summary>The tests of the last test session of this run of the app, each with how it ended and what its measurements say, in the order they ran.</summary>

@@ -60,6 +60,8 @@ public sealed partial class WebBridge
         Mirror("tests", tests, State, tests.Rows);
         void OnChecked() { ReadChecks(); PushSoon("tests", State); }
         checkupService.Changed += OnChecked; _cleanup.Add(() => checkupService.Changed -= OnChecked);
+        void OnJudged(Desktop.Services.CheckupService.SessionJudgment j) => Push("testdone", SessionVerdict(j));
+        checkupService.SessionJudged += OnJudged; _cleanup.Add(() => checkupService.SessionJudged -= OnJudged);
         foreach (var o in tests.Rows.SelectMany(r => r.Options)) o.PropertyChanged += (_, _) => PushSoon("tests", State);   // the rows' options are not in a collection the mirror sees
 
         Method("tests.state", _ => { if (!tests.IsRunning) foreach (var r in tests.Rows) r.RefreshAvailability(); return State(); });   // (asked again: a card back from a driver reset is runnable again)
@@ -106,5 +108,31 @@ public sealed partial class WebBridge
     {
         var o = options.FirstOrDefault(x => x.Option.Key == key) ?? throw new ArgumentException("unknown option");
         if (o.IsChoice) o.SelectedChoice = o.Choices.FirstOrDefault(c => c.Value == value); else o.Text = value;
+    }
+
+    /// <summary>What the page's end-of-session window says: per part (processor, memory, graphics card, drives, the rest) how many of its tests passed,
+    /// what failed, its hottest reading and load where they were judged, and the diagnosis' findings, with a level the worst of them sets.</summary>
+    private static object SessionVerdict(Desktop.Services.CheckupService.SessionJudgment j)
+    {
+        static string PartOf(string id) => id.Split('.')[0] switch { "cpu" => "Cpu", "memory" => "Memory", "gpu" => "Gpu", "storage" => "Storage", _ => "System" };
+        string Name(TestId id) => j.Queue.FirstOrDefault(q => q.Definition.Id == id)?.Definition.NameKey is { } k ? Loc.Get(k) : id.Value;
+        var parts = j.Results.GroupBy(r => PartOf(r.Id.Value)).OrderBy(g => Array.IndexOf(new[] { "Cpu", "Memory", "Gpu", "Storage", "System" }, g.Key)).Select(g =>
+        {
+            var judged = j.Parts.FirstOrDefault(p => p.Part.ToString() == g.Key);
+            var findings = judged?.Findings ?? [];
+            int passed = g.Count(r => r.Outcome == TestOutcome.Passed), failed = g.Count(r => r.Outcome is TestOutcome.Failed or TestOutcome.Error);
+            bool unsure = g.Any(r => r.Outcome is TestOutcome.Inconclusive or TestOutcome.Cancelled or TestOutcome.Unsupported);
+            string level = failed > 0 || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Problem) ? "Problem"
+                : unsure || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Attention) ? "Attention" : "Good";
+            return new
+            {
+                // The sentence about heat and clocks only when the monitor's record of them was judged (a run too short, or no sensors: only the tests' word).
+                part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed, failed, total = g.Count(), errors = g.Sum(r => r.ErrorCount),
+                tempMax = judged?.TempMaxC, load = judged?.LoadPercent,
+                tests = g.Select(r => new { name = Name(r.Id), outcome = r.Outcome.ToString(), outcomeText = Loc.Get("Test_Outcome_" + r.Outcome) }),
+                findings = findings.Select(FindingJson),
+            };
+        }).ToList();
+        return new { parts, level = parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good" };
     }
 }

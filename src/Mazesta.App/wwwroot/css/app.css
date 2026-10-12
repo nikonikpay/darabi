@@ -1633,3 +1633,21 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .set-group { font-size: 16px; font-weight: 900; margin: 22px 0 8px; padding-top: 14px; border-top: 1px solid var(--line, rgba(128,128,128,.25)); }
 .set-group:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
 .set-note { max-width: 90ch; margin: 0 0 10px; }
+/* The end-of-session window: a card per part, its verdict in a sentence, the figures behind it, what needs a look and what was found right. */
+.done-dialog { width: min(680px, calc(100vw - 32px)); }
+.done-mark.pass { background: var(--pass); color: #fff; } .done-mark.warn { background: var(--warn); color: #111; } .done-mark.fail { background: var(--fail); color: #fff; }
+.done-body { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0; }
+.done-part { padding: 12px 14px; border: 1px solid var(--rule); border-inline-start: 3px solid var(--hue, var(--rule-2)); border-radius: var(--r-ctl); background: var(--ink-3); display: grid; gap: 8px; }
+.done-head { display: flex; align-items: center; gap: 10px; }
+.done-head .ico svg { width: 20px; height: 20px; stroke: var(--hue, var(--paper-2)); stroke-width: 2; }
+.done-head h3 { margin: 0; font-size: 14.5px; } .done-head small { display: block; color: var(--paper-3); font-size: 11.5px; }
+.done-say { margin: 0; font-size: 13px; line-height: 1.85; color: var(--paper-2); }
+.done-figs { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.done-figs div { display: grid; } .done-figs b { font-size: 16px; } .done-figs span { font-size: 11.5px; color: var(--paper-3); }
+.done-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12.5px; line-height: 1.7; }
+.done-list li { display: flex; gap: 8px; align-items: flex-start; }
+.done-list svg { flex: none; width: 14px; height: 14px; margin-top: 4px; stroke-width: 2.4; }
+.done-list li.pass svg { stroke: var(--pass); } .done-list li.warn svg { stroke: var(--warn); } .done-list li.fail svg { stroke: var(--fail); }
+.done-list.ok { color: var(--paper-2); }
+.done-more summary { cursor: pointer; font-size: 12px; color: var(--paper-3); }
+.done-more[open] { display: grid; gap: 8px; }

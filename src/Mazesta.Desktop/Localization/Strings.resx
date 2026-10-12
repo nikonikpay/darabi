@@ -3627,4 +3627,35 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdTemp6" xml:space="preserve"><value>CCD 6 temp</value></data>
   <data name="Overlay_CcdTemp7" xml:space="preserve"><value>CCD 7 temp</value></data>
   <data name="Overlay_CcdTemp8" xml:space="preserve"><value>CCD 8 temp</value></data>
+  <data name="Done_Title" xml:space="preserve"><value>The tests are finished</value></data>
+  <data name="Done_Overall_Good" xml:space="preserve"><value>Every part passed its tests and nothing needs fixing.</value></data>
+  <data name="Done_Overall_Attention" xml:space="preserve"><value>The parts work, but a few things are worth a look.</value></data>
+  <data name="Done_Overall_Problem" xml:space="preserve"><value>A problem was found. The part with a red mark needs attention.</value></data>
+  <data name="Done_Level_Good" xml:space="preserve"><value>Healthy</value></data>
+  <data name="Done_Level_Attention" xml:space="preserve"><value>Worth a look</value></data>
+  <data name="Done_Level_Problem" xml:space="preserve"><value>Problem</value></data>
+  <data name="Done_Tests" xml:space="preserve"><value>tests passed</value></data>
+  <data name="Done_TempMax" xml:space="preserve"><value>highest temperature</value></data>
+  <data name="Done_Load" xml:space="preserve"><value>load reached</value></data>
+  <data name="Done_Errors" xml:space="preserve"><value>errors</value></data>
+  <data name="Done_Details" xml:space="preserve"><value>Details of what was checked</value></data>
+  <data name="Done_Summary" xml:space="preserve"><value>Report summary</value></data>
+  <data name="Done_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Done_NoReport" xml:space="preserve"><value>The report is still being saved; try again in a moment.</value></data>
+  <data name="Done_Cpu_Good" xml:space="preserve"><value>The processor computed every result correctly under full load, and its temperature, clock and power stayed where they should for this model.</value></data>
+  <data name="Done_Cpu_Attention" xml:space="preserve"><value>The processor computed correctly, but something in how it ran (heat, clock or power) is worth a look; see the points below.</value></data>
+  <data name="Done_Cpu_Problem" xml:space="preserve"><value>The processor made errors or did not finish a test. This can come from overheating, an unstable overclock or undervolt, or a fault; see the points below.</value></data>
+  <data name="Done_Memory_Good" xml:space="preserve"><value>The memory held every pattern written to it without a single error.</value></data>
+  <data name="Done_Memory_Attention" xml:space="preserve"><value>No memory errors were seen, but not every memory test ran to the end, so the result is not complete.</value></data>
+  <data name="Done_Memory_Problem" xml:space="preserve"><value>The memory gave back wrong data. A faulty module, a loose module, or memory settings (XMP/EXPO) set too fast are the usual causes.</value></data>
+  <data name="Done_Gpu_Good" xml:space="preserve"><value>The graphics card computed and drew correctly under load, and its core, hot spot and memory temperatures and its clocks were normal.</value></data>
+  <data name="Done_Gpu_Attention" xml:space="preserve"><value>The graphics card worked correctly, but its heat or clocks are worth a look; see the points below.</value></data>
+  <data name="Done_Gpu_Problem" xml:space="preserve"><value>The graphics card made errors, lost the driver, or ran too hot. See the points below.</value></data>
+  <data name="Done_Storage_Good" xml:space="preserve"><value>The drives read back everything written to them, at a normal speed.</value></data>
+  <data name="Done_Storage_Attention" xml:space="preserve"><value>The drives worked, but one test did not finish or did not run.</value></data>
+  <data name="Done_Storage_Problem" xml:space="preserve"><value>A drive returned wrong data, failed a check, or reported a health problem.</value></data>
+  <data name="Done_System_Good" xml:space="preserve"><value>The other checks (power, Windows, network) passed.</value></data>
+  <data name="Done_System_Attention" xml:space="preserve"><value>Some of the other checks did not finish or could not run here.</value></data>
+  <data name="Done_System_Problem" xml:space="preserve"><value>One of the other checks (power, Windows, network) failed.</value></data>
+  <data name="Done_Passed_Good" xml:space="preserve"><value>Every test of this part passed.</value></data>
 </root>

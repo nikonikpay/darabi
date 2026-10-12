@@ -3627,4 +3627,35 @@
   <data name="Overlay_CcdTemp6" xml:space="preserve"><value>دمای CCD 6</value></data>
   <data name="Overlay_CcdTemp7" xml:space="preserve"><value>دمای CCD 7</value></data>
   <data name="Overlay_CcdTemp8" xml:space="preserve"><value>دمای CCD 8</value></data>
+  <data name="Done_Title" xml:space="preserve"><value>آزمون‌ها تمام شد</value></data>
+  <data name="Done_Overall_Good" xml:space="preserve"><value>همهٔ قطعه‌ها آزمون‌ها را با موفقیت گذراندند و چیزی نیاز به رسیدگی ندارد.</value></data>
+  <data name="Done_Overall_Attention" xml:space="preserve"><value>قطعه‌ها کار می‌کنند، ولی چند مورد ارزش بررسی دارد.</value></data>
+  <data name="Done_Overall_Problem" xml:space="preserve"><value>مشکلی پیدا شد؛ قطعه‌ای که علامت قرمز دارد نیاز به رسیدگی دارد.</value></data>
+  <data name="Done_Level_Good" xml:space="preserve"><value>سالم</value></data>
+  <data name="Done_Level_Attention" xml:space="preserve"><value>نیاز به بررسی</value></data>
+  <data name="Done_Level_Problem" xml:space="preserve"><value>مشکل دارد</value></data>
+  <data name="Done_Tests" xml:space="preserve"><value>آزمون موفق</value></data>
+  <data name="Done_TempMax" xml:space="preserve"><value>بیشترین دما</value></data>
+  <data name="Done_Load" xml:space="preserve"><value>بار رسیده</value></data>
+  <data name="Done_Errors" xml:space="preserve"><value>خطا</value></data>
+  <data name="Done_Details" xml:space="preserve"><value>جزئیات موارد بررسی‌شده</value></data>
+  <data name="Done_Summary" xml:space="preserve"><value>خلاصهٔ گزارش</value></data>
+  <data name="Done_Close" xml:space="preserve"><value>بستن</value></data>
+  <data name="Done_NoReport" xml:space="preserve"><value>گزارش هنوز در حال ذخیره است؛ چند لحظه دیگر دوباره امتحان کنید.</value></data>
+  <data name="Done_Cpu_Good" xml:space="preserve"><value>پردازنده زیر بار کامل همهٔ نتیجه‌ها را درست حساب کرد و دما، فرکانس و توان آن در محدودهٔ مناسب این مدل ماند.</value></data>
+  <data name="Done_Cpu_Attention" xml:space="preserve"><value>پردازنده درست محاسبه کرد، ولی چیزی در نحوهٔ کارش (دما، فرکانس یا توان) ارزش بررسی دارد؛ موارد زیر را ببینید.</value></data>
+  <data name="Done_Cpu_Problem" xml:space="preserve"><value>پردازنده خطا داشت یا آزمونی را تمام نکرد. علت می‌تواند داغ شدن، اورکلاک یا اندرولت ناپایدار، یا خرابی باشد؛ موارد زیر را ببینید.</value></data>
+  <data name="Done_Memory_Good" xml:space="preserve"><value>حافظهٔ رم همهٔ الگوهایی که روی آن نوشته شد را بدون حتی یک خطا نگه داشت.</value></data>
+  <data name="Done_Memory_Attention" xml:space="preserve"><value>خطایی در رم دیده نشد، ولی همهٔ آزمون‌های رم تا آخر اجرا نشدند و نتیجه کامل نیست.</value></data>
+  <data name="Done_Memory_Problem" xml:space="preserve"><value>رم داده‌ای را اشتباه برگرداند. معمولاً علت ماژول معیوب، ماژولی که درست جا نیفتاده، یا تنظیمات سرعت رم (XMP/EXPO) بیش از حد سریع است.</value></data>
+  <data name="Done_Gpu_Good" xml:space="preserve"><value>کارت گرافیک زیر بار درست محاسبه و رندر کرد و دمای هسته، هات‌اسپات و حافظه و فرکانس‌هایش عادی بود.</value></data>
+  <data name="Done_Gpu_Attention" xml:space="preserve"><value>کارت گرافیک درست کار کرد، ولی دما یا فرکانس‌های آن ارزش بررسی دارد؛ موارد زیر را ببینید.</value></data>
+  <data name="Done_Gpu_Problem" xml:space="preserve"><value>کارت گرافیک خطا داشت، درایور آن قطع شد، یا بیش از حد داغ شد. موارد زیر را ببینید.</value></data>
+  <data name="Done_Storage_Good" xml:space="preserve"><value>درایوها هر چیزی که روی آنها نوشته شد را درست و با سرعت عادی برگرداندند.</value></data>
+  <data name="Done_Storage_Attention" xml:space="preserve"><value>درایوها کار کردند، ولی یکی از آزمون‌ها تمام نشد یا اجرا نشد.</value></data>
+  <data name="Done_Storage_Problem" xml:space="preserve"><value>یکی از درایوها داده را اشتباه برگرداند، در بررسی رد شد، یا مشکل سلامت گزارش کرد.</value></data>
+  <data name="Done_System_Good" xml:space="preserve"><value>بقیهٔ بررسی‌ها (منبع تغذیه، ویندوز، شبکه) موفق بودند.</value></data>
+  <data name="Done_System_Attention" xml:space="preserve"><value>بعضی از بررسی‌های دیگر تمام نشدند یا اینجا قابل اجرا نبودند.</value></data>
+  <data name="Done_System_Problem" xml:space="preserve"><value>یکی از بررسی‌های دیگر (منبع تغذیه، ویندوز، شبکه) رد شد.</value></data>
+  <data name="Done_Passed_Good" xml:space="preserve"><value>همهٔ آزمون‌های این قطعه موفق بودند.</value></data>
 </root>

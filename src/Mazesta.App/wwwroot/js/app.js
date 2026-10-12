@@ -186,6 +186,7 @@ async function start() {
   on("messages", unread); call("messages.state").then(unread).catch(() => {});
   if (info.updated) toast(t("AppUpd_Done", info.version));
   import("./failures.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
+  import("./testdone.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   import("./updatenotice.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   // The pages read the hardware list once; they wait until the sensor scan has settled, as the WPF edition does.
   if (await call("app.navReady")) whenReady();
