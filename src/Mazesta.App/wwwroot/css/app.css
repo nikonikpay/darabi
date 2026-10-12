@@ -95,6 +95,15 @@ input, select, textarea, button { font: inherit; color: inherit; caret-color: va
 .nav-toggle { margin-inline-start: auto; }
 
 /* The index: plain rows; the open family is lit (text full strength, a raised plate) and marked by a yellow notch at its start edge. */
+.index-search { position: relative; margin: 0 4px 12px; }
+.index-search > svg { position: absolute; inset-inline-start: 10px; top: 11px; width: 16px; height: 16px; stroke: var(--paper-3); fill: none; stroke-width: 1.75; pointer-events: none; }
+.index-search .field { width: 100%; padding-inline-start: 34px; }
+.search-list { position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 30; list-style: none; margin: 0; padding: 4px; background: var(--ink-2); border: 1px solid var(--rule); border-radius: var(--r-ctl); box-shadow: 0 10px 30px rgb(0 0 0 / .4); max-height: 60vh; overflow: auto; }
+.search-list li { display: flex; flex-direction: column; gap: 1px; padding: 7px 10px; border-radius: var(--r-ctl); cursor: pointer; font-size: 13px; color: var(--paper); }
+.search-list li small { color: var(--paper-3); font-size: 11px; }
+.search-list li[aria-selected="true"], .search-list li:hover { background: var(--ink-3); }
+.search-list li.none { color: var(--paper-3); cursor: default; }
+.app[data-nav="mini"] .index-search { display: none; }
 .index-list { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 1px; }
 .index-list a { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: var(--r-ctl); color: var(--paper-2);
   text-decoration: none; position: relative; transition: color var(--fast), background var(--fast); white-space: nowrap; }
@@ -968,7 +977,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .panel-body { margin-top: 14px; min-width: 0; }
 .panel-body > .caption:first-child { margin-top: 0; }
 .panels.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); }
-.panels.flow { display: block; columns: 2 460px; column-gap: 14px; }
+.panels.flow { display: block; columns: 2 380px; column-gap: 14px; }
+.panels.flow > .panel.wide { column-span: all; }
 .panels.flow > .panel { break-inside: avoid; margin-bottom: 14px; }
 .panel .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--ink); }
 .panel .btn.primary:hover:not(:disabled) { background: var(--paper); border-color: var(--paper); }

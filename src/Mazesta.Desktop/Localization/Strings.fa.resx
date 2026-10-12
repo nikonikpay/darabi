@@ -514,7 +514,7 @@
   <data name="Reports_Verdict_Failed" xml:space="preserve"><value>نیازمند بررسی</value></data>
   <data name="Reports_Verdict_Incomplete" xml:space="preserve"><value>ناقص</value></data>
   <data name="Nav_SystemInfo" xml:space="preserve"><value>اطلاعات سیستم</value></data>
-  <data name="SystemInfo_Device" xml:space="preserve"><value>دستگاه (مدل فروش)</value></data>
+  <data name="SystemInfo_Device" xml:space="preserve"><value>دستگاه (ثبت‌شده در بایوس)</value></data>
   <data name="SystemInfo_Model" xml:space="preserve"><value>مدل</value></data>
   <data name="SystemInfo_Family" xml:space="preserve"><value>خانواده</value></data>
   <data name="SystemInfo_DeviceKind" xml:space="preserve"><value>نوع</value></data>
@@ -1676,6 +1676,9 @@
   <data name="Spec_NoSpd" xml:space="preserve"><value>SPD ماژول‌ها خوانده نشد (درایور سنسور لازم است)، پس پروفایل‌ها نمایش داده نمی‌شوند.</value></data>
   <data name="Spec_SpdSlot" xml:space="preserve"><value>SPD شکاف {0}</value></data>
   <data name="Spec_PartNumber" xml:space="preserve"><value>پارت‌نامبر</value></data>
+  <data name="Spec_Cl" xml:space="preserve"><value>تأخیر CAS (CL)</value></data>
+  <data name="Spec_ClTimings" xml:space="preserve"><value>تایمینگ CL-RCD-RP-RAS (پروفایل ماژول در همین فرکانس)</value></data>
+  <data name="Spec_BankGroups" xml:space="preserve"><value>تعداد بانک‌گروپ</value></data>
   <data name="Spec_Ranks" xml:space="preserve"><value>تعداد رنک</value></data>
   <data name="Spec_DramMaker" xml:space="preserve"><value>سازندهٔ چیپ‌ها</value></data>
   <data name="Spec_Organisation" xml:space="preserve"><value>ساختار چیپ‌ها</value></data>
@@ -1714,17 +1717,18 @@
   <data name="Bench_Mem_StreamTriad" xml:space="preserve"><value>STREAM Triad (همهٔ رشته‌ها)</value></data>
   <data name="Test_IncompleteSession_Detail" xml:space="preserve"><value>نشست قبلی در آزمون {0} از {1} ({2}، حدود {3}٪ انجام‌شده) قطع شد. آزمون‌های تمام‌شده پیش از آن: {4}. علت قطع (کرش، ریستارت یا قطع برق) بدون شاهد معلوم نیست.</value></data>
   <data name="Test_IncompleteSession_NoneFinished" xml:space="preserve"><value>هیچ‌کدام</value></data>
+  <data name="Test_DurationAll" xml:space="preserve"><value>زمان همهٔ آزمون‌ها</value></data>
+  <data name="Nav_Search" xml:space="preserve"><value>جستجو…</value></data>
+  <data name="Nav_Search_None" xml:space="preserve"><value>چیزی پیدا نشد</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>پروفایل‌ها:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>بررسی سریع</value></data>
-  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۵ دقیقه: یک بار کوتاه برای هر قطعه و بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه و بیشتر الگوهای RAM پوشش داده نمی‌شوند.</value></data>
-  <data name="Profile_Standard" xml:space="preserve"><value>استاندارد تعمیرگاه</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۲۰ دقیقه: هر کدام سه دقیقه بار روی CPU، RAM، گرافیک، حافظهٔ تصویر و آزمون توان، سپس درایو و بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه و بیشتر الگوهای RAM پوشش داده نمی‌شوند.</value></data>
+  <data name="Profile_Standard" xml:space="preserve"><value>پیش‌فرض مازستا</value></data>
   <data name="Profile_Standard_Note" xml:space="preserve"><value>حدود یک ساعت: هر قطعه یک بار زیر بار واقعی، با زمان کافی برای همهٔ الگوهای RAM در بیشتر سیستم‌ها، همهٔ هسته‌ها به نوبت و آزمون توان ترکیبی.</value></data>
-  <data name="Profile_Deep" xml:space="preserve"><value>عمیق</value></data>
-  <data name="Profile_Deep_Note" xml:space="preserve"><value>چند ساعت: همهٔ آزمون‌ها با مدت طولانی، چند دور کامل روی RAM و بررسی‌های خود ویندوز. برای سیستمی که ایرادش زود خودش را نشان نمی‌دهد.</value></data>
   <data name="Profile_Transient" xml:space="preserve"><value>ناپایداری گذرا</value></data>
   <data name="Profile_Transient_Note" xml:space="preserve"><value>باری که مدام تغییر می‌کند: هسته‌ها تک‌تک داخل و خارج از بوست، پله و پالس روی GPU، CPU و GPU با هم. برای کرش در بار سبک، هنگام بازی یا در حالت بیکار.</value></data>
   <data name="Profile_OsStorage" xml:space="preserve"><value>درایو ویندوز</value></data>
-  <data name="Profile_OsStorage_Note" xml:space="preserve"><value>آزمون‌های خود درایو، SMART و بررسی فایل‌های ویندوز. در گزینه‌های آزمون ذخیره‌سازی، درایو ویندوز را انتخاب کنید؛ آزمون‌ها فقط از یک فایل تازه در فضای خالی استفاده می‌کنند، نه داده‌های درایو.</value></data>
+  <data name="Profile_OsStorage_Note" xml:space="preserve"><value>حدود ۱۰ دقیقه: آزمون‌های خود درایو، SMART و بررسی فایل‌های ویندوز (SFC و DISM هر قدر لازم باشد کار می‌کنند). در گزینه‌های آزمون ذخیره‌سازی درایو ویندوز را انتخاب کنید؛ آزمون‌ها فقط از یک فایل تازه در فضای خالی استفاده می‌کنند، نه داده‌های درایو.</value></data>
   <data name="Advice_Cpu" xml:space="preserve"><value>مشاهده: CPU زیر بار نتیجهٔ نادرست محاسبه کرد.
 علت‌های محتمل: اورکلاک، آندرولت یا Curve Optimizer ناپایدار؛ ولتاژ ناکافی یا VRM ضعیف؛ دمای زیاد؛ RAM ناپایدار (بار ماتریسی و Linpack از حافظه هم استفاده می‌کنند).
 آزمایش بعدی: BIOS را به تنظیمات پیش‌فرض برگردانید و تکرار کنید؛ دما را در گزارش ببینید؛ آزمون تک‌هسته‌ای را برای پیدا کردن هسته اجرا کنید؛ RAM را جداگانه آزمون کنید.</value></data>
@@ -3517,7 +3521,7 @@
   <data name="Log_StorageDaily_Round" xml:space="preserve"><value>دور {0}: {1}.</value></data>
   <data name="Log_StorageDaily_Done" xml:space="preserve"><value>دور {0} تمام شد: {1} درخواست بررسی‌شده، P99 برابر {2} میلی‌ثانیه، {3} توقف بیش از یک ثانیه، {4} خطا.</value></data>
   <data name="Profile_Everyday" xml:space="preserve"><value>کار روزمره</value></data>
-  <data name="Profile_Everyday_Note" xml:space="preserve"><value>حدود دو ساعت: کار سبک، ضربه‌های کوتاه، بیکاری و بیدار شدن روی پردازنده، تست ترتیبی رم و دیسک در کار روزمره. برای سیستمی که تست‌های سنگین را رد می‌کند (بی‌خطا می‌گذراند) ولی موقع کار هنگ می‌کند یا ری‌استارت می‌شود.</value></data>
+  <data name="Profile_Everyday_Note" xml:space="preserve"><value>کمتر از یک ساعت: پردازنده و کارت گرافیک در باری که مدام عوض می‌شود (چرخهٔ «گذرا»)، کار سبک، ضربه‌های کوتاه، بیکاری و بیدار شدن، توالی «اسپایک» روی RAM و دیسک در کار روزمره. برای سیستمی که تست‌های سنگین را بی‌خطا می‌گذراند ولی موقع کار هنگ می‌کند یا ری‌استارت می‌شود.</value></data>
   <data name="Test_Gpu_Cycle" xml:space="preserve"><value>کارت گرافیک · چرخهٔ پیش‌تنظیم (بار ثابت، نوسانی و ضربه‌ای، حافظهٔ VRAM، صحنهٔ سه‌بعدی)</value></data>
   <data name="Test_GpuPreset_full" xml:space="preserve"><value>کامل: هر نوع بار یک بار در هر دور</value></data>
   <data name="Test_GpuPreset_transient" xml:space="preserve"><value>گذرا: پله‌های بار با سه ریتم (منبع تغذیه، اتصال 12V-2x6)</value></data>

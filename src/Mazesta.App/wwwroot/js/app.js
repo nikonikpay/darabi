@@ -6,6 +6,7 @@ import { setUnits } from "./format.js";
 import { loadHardware } from "./store.js";
 import { h, clear, icon, toast } from "./ui.js";
 import { LOGO_VIEWBOX, LOGO_PATHS } from "./logo.js";
+import { searchBox } from "./search.js";
 
 export const PAGES = [
   { id: "dashboard", key: "Nav_Dashboard", load: () => import("./pages/dashboard.js") },
@@ -113,6 +114,7 @@ function renderIndex(info) {
   const toggle = h("button", { class: "icon-btn nav-toggle", type: "button", title: t("Nav_Collapse"), "aria-label": t("Nav_Collapse"), onclick: () => setNav(app.dataset.nav !== "mini") }, icon("menu"));
   index.append(
     h("div", { class: "brand" }, h("img", { src: "img/logo.png", alt: "" }), h("div", {}, h("div", { class: "brand-word" }, logo()), h("div", { class: "brand-sub" }, "TEST SUITE")), toggle),
+    searchBox(PAGES, go),
     h("ul", { class: "index-list" }, FAMILIES.map((f, i) => [
       i === 2 || i === 6 ? h("li", { class: "sep", role: "presentation" }) : null,
       h("li", {}, h("a", { href: `#/${lastInFamily.get(f) || f.pages[0]}`, "data-family": i, title: `${t(f.key)} · Ctrl+${i + 1}`,

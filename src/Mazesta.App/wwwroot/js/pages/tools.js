@@ -51,7 +51,7 @@ export function mount(el) {
 
   // Three sections, by what people come for: the connection and games first (DNS is what is asked for most), then repair and clean-up, then
   // the settings that change how Windows starts and uses memory.
-  const section = (key, ...boxes) => h("section", { class: "tools-sec" }, h("h2", { class: "tools-sec-title" }, t(key)), h("div", { class: "panels two" }, boxes));
+  const section = (key, ...boxes) => h("section", { class: "tools-sec" }, h("h2", { class: "tools-sec-title" }, t(key)), h("div", { class: "panels flow" }, boxes));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
     section("Tools_Sec_Network", dnsBox(0), netfixBox(0), ...gaming.boxes, gameBoostBox(3)),
     section("Tools_Sec_Repair",
