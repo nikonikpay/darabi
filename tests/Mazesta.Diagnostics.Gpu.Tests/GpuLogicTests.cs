@@ -66,3 +66,15 @@ public class GpuLogicTests
         Assert.NotEqual(VramPattern.Expected(3, 7), VramPattern.Expected(3, 15));   // the scramble changes from round to round
     }
 }
+
+public class VideoFormatTests
+{
+    [Fact] public void A_clip_name_reads_as_its_form() => Assert.Equal(new Benchmarks.VideoFormat("av1", 2160, 10, 420), Benchmarks.VideoFormat.Parse("av1-2160p-10b-420"));
+    [Fact] public void Other_names_are_not_forms() { Assert.Null(Benchmarks.VideoFormat.Parse("av1-2160p-10b-444")); Assert.Null(Benchmarks.VideoFormat.Parse("readme")); }
+    [Fact] public void Every_embedded_clip_is_a_form()
+    {
+        Assert.Equal(18, Benchmarks.VideoFormat.Clips.Count);
+        Assert.Contains(Benchmarks.VideoFormat.Clips, c => c.Format == new Benchmarks.VideoFormat("vp9", 2160, 10, 420));
+        Assert.Equal("Bench_Gpu_Video_DecHevc", new Benchmarks.VideoFormat("hevc", 2160, 8, 420).MetricKey(encode: false));
+    }
+}

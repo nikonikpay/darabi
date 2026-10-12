@@ -62,6 +62,8 @@ internal static partial class Mf
         FrameSize = new("1652c33d-d6b2-4012-b834-72030849a37d"), FrameRate = new("c459a2e8-3d2c-4e44-b132-fee5156c7bb0"), PixelAspect = new("c6376a1e-8d0a-4027-be45-6d9a0ad39bb6"),
         InterlaceMode = new("e2724bb8-e676-4806-b4b2-a8d6efb44ccd"), Video = new("73646976-0000-0010-8000-00aa00389b71"),
         H264 = new("34363248-0000-0010-8000-00aa00389b71"), Hevc = new("43564548-0000-0010-8000-00aa00389b71"), Av1 = new("31305641-0000-0010-8000-00aa00389b71"), Nv12 = new("3231564e-0000-0010-8000-00aa00389b71"),
+        Vp9 = new("30395056-0000-0010-8000-00aa00389b71"), P010 = new("30313050-0000-0010-8000-00aa00389b71"), Yuy2 = new("32595559-0000-0010-8000-00aa00389b71"), Y210 = new("30313259-0000-0010-8000-00aa00389b71"),
+        Mpeg2Profile = new("ad76a80b-2d5c-4e0b-b375-64e520137036"),
         EnableHardwareTransforms = new("a634a91c-822b-41b9-a494-4de4643612b0"), SinkD3dManager = new("ec822da2-e1e9-4b29-a0d8-563c719f5269"), SourceD3dManager = new("ec822da2-e1e9-4b29-a0d8-563c719f5269"),
         FriendlyName = new("314ffbae-5b41-4c95-9c19-4e7d586face3"), VideoEncoder = new("f79eac7d-e545-4387-bdee-d647d7bde42a");
     private const uint Hardware = 0x4, SortAndFilter = 0x40;
@@ -110,6 +112,27 @@ internal static partial class Mf
     }
 
     private static readonly StrategyBasedComWrappers Wrappers = new();
+    private static readonly Guid DxgiBuffer = new("e7174cfa-1c9e-48b1-8866-626226bfc258");
+
+    /// <summary>Whether a decoded frame is a Direct3D surface (IMFDXGIBuffer): the card decoded it. Windows' software decoders give memory buffers.</summary>
+    public static bool OnCard(nint sample)
+    {
+        if (Wrappers.GetOrCreateObjectForComInstance(sample, CreateObjectFlags.UniqueInstance) is not IMFSample s) return false;
+        try
+        {
+            s.GetBufferByIndex(0, out var buffer);
+            try
+            {
+                if (!ComWrappers.TryGetComInstance(buffer, out nint raw)) return false;
+                bool card = Marshal.QueryInterface(raw, in DxgiBuffer, out nint dxgi) == 0;
+                if (card) Marshal.Release(dxgi);
+                Marshal.Release(raw);
+                return card;
+            }
+            finally { Release(buffer); }
+        }
+        finally { Release(s); }
+    }
 
     /// <summary>A Direct3D 11 device on the adapter (video support on), wrapped in the manager Media Foundation takes it through.</summary>
     public static unsafe IMFDXGIDeviceManager DeviceManager(nint adapter, out nint device)

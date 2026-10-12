@@ -602,13 +602,13 @@
   <data name="Bench_Gpu_Fill" xml:space="preserve"><value>نرخ پر کردن پیکسل (با ترکیب رنگ)</value></data>
   <data name="Bench_Gpu_Rt_Fps" xml:space="preserve"><value>نرخ فریم ری‌تریسینگ (2560x1440)</value></data>
   <data name="Bench_Gpu_Rt_Rays" xml:space="preserve"><value>تعداد پرتو در ثانیه</value></data>
-  <data name="Bench_Gpu_Video" xml:space="preserve"><value>گرافیک — انکود و دکود ویدیو</value></data>
-  <data name="Bench_Gpu_Video_EncH264" xml:space="preserve"><value>انکود H.264 (۴K)</value></data>
-  <data name="Bench_Gpu_Video_EncHevc" xml:space="preserve"><value>انکود HEVC (۴K)</value></data>
-  <data name="Bench_Gpu_Video_EncAv1" xml:space="preserve"><value>انکود AV1 (۴K)</value></data>
-  <data name="Bench_Gpu_Video_DecH264" xml:space="preserve"><value>دکود H.264 (۴K)</value></data>
-  <data name="Bench_Gpu_Video_DecHevc" xml:space="preserve"><value>دکود HEVC (۴K)</value></data>
-  <data name="Bench_Gpu_Video_DecAv1" xml:space="preserve"><value>دکود AV1 (۴K)</value></data>
+  <data name="Bench_Gpu_Video" xml:space="preserve"><value>گرافیک — دکود و انکود ویدیو (H.264، HEVC، VP9، AV1)</value></data>
+  <data name="Bench_Gpu_Video_EncH264" xml:space="preserve"><value>انکود H.264 (4K، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_EncHevc" xml:space="preserve"><value>انکود HEVC (4K، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_EncAv1" xml:space="preserve"><value>انکود AV1 (4K، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_DecH264" xml:space="preserve"><value>دکود H.264 (4K، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_DecHevc" xml:space="preserve"><value>دکود HEVC (4K، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_DecAv1" xml:space="preserve"><value>دکود AV1 (4K، 8 بیت، 4:2:0)</value></data>
   <data name="Bench_Gpu_Ai_Fp32" xml:space="preserve"><value>FP32 (دقت کامل)</value></data>
   <data name="Bench_Gpu_Ai_Fp16" xml:space="preserve"><value>FP16 (نیم‌دقت)</value></data>
   <data name="Bench_Gpu_Ai_Int8" xml:space="preserve"><value>INT8 (کوانتیزه)</value></data>
@@ -3586,4 +3586,35 @@
   <data name="Check_GpuVramOk_Text" xml:space="preserve"><value>زیر بار، چیپ‌های حافظه خیلی پایین‌تر از دمایی ماندند که کارت در آن کندشان می‌کند.</value></data>
   <data name="Check_M_VramTempMax" xml:space="preserve"><value>بیشترین دمای VRAM</value></data>
   <data name="Check_M_VramTempMedian" xml:space="preserve"><value>دمای معمول VRAM</value></data>
+  <data name="Bench_Gpu_Video_Dec_av1_1080p_8b_420" xml:space="preserve"><value>دکود AV1 (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_av1_2160p_10b_420" xml:space="preserve"><value>دکود AV1 (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_av1_4320p_10b_420" xml:space="preserve"><value>دکود AV1 (8K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_1080p_8b_420" xml:space="preserve"><value>دکود H.264 (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_2160p_10b_420" xml:space="preserve"><value>دکود H.264 (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_2160p_10b_422" xml:space="preserve"><value>دکود H.264 (4K، 10 بیت، 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_2160p_8b_422" xml:space="preserve"><value>دکود H.264 (4K، 8 بیت، 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_1080p_8b_420" xml:space="preserve"><value>دکود HEVC (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_2160p_10b_420" xml:space="preserve"><value>دکود HEVC (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_2160p_10b_422" xml:space="preserve"><value>دکود HEVC (4K، 10 بیت، 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_2160p_8b_422" xml:space="preserve"><value>دکود HEVC (4K، 8 بیت، 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_4320p_10b_420" xml:space="preserve"><value>دکود HEVC (8K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_vp9_1080p_8b_420" xml:space="preserve"><value>دکود VP9 (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_vp9_2160p_10b_420" xml:space="preserve"><value>دکود VP9 (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_vp9_2160p_8b_420" xml:space="preserve"><value>دکود VP9 (4K، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_h264_1080p_8b_420" xml:space="preserve"><value>انکود H.264 (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_hevc_1080p_8b_420" xml:space="preserve"><value>انکود HEVC (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_hevc_2160p_10b_420" xml:space="preserve"><value>انکود HEVC (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_av1_1080p_8b_420" xml:space="preserve"><value>انکود AV1 (1080p، 8 بیت، 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_av1_2160p_10b_420" xml:space="preserve"><value>انکود AV1 (4K، 10 بیت، 4:2:0)</value></data>
+  <data name="Test_Gpu_VideoDecode" xml:space="preserve"><value>کارت گرافیک · دکود ویدیو (H.264، HEVC، VP9، AV1؛ 1080p تا 8K؛ 8 و 10 بیت؛ 4:2:0 و 4:2:2)</value></data>
+  <data name="Test_Gpu_VideoEncode" xml:space="preserve"><value>کارت گرافیک · انکود ویدیو (H.264، HEVC، AV1؛ 1080p و 4K؛ 8 و 10 بیت)</value></data>
+  <data name="Detail_Vid_Path" xml:space="preserve"><value>دکود و انکود روی موتور ویدیوی کارت از مسیر ویندوز (Media Foundation، DXVA)</value></data>
+  <data name="Detail_Vid_Decoded" xml:space="preserve"><value>دکود {0}: {1} فریم در ثانیه؛ در هر دور همهٔ {2} فریم سالم برگشت</value></data>
+  <data name="Detail_Vid_Software" xml:space="preserve"><value>دکود {0}: کارت دیکودری برای آن ندارد (ویندوز با پردازنده دکود کرد؛ حساب نشد)</value></data>
+  <data name="Detail_Vid_NoDecoder" xml:space="preserve"><value>دکود {0}: روی این کارت پشتیبانی نمی‌شود (یا افزونهٔ این کدک در ویندوز نصب نیست)</value></data>
+  <data name="Detail_Vid_DecodeShort" xml:space="preserve"><value>دکود {0}: در {1} دور کمتر از {2} فریم برگشت</value></data>
+  <data name="Detail_Vid_Encoded" xml:space="preserve"><value>انکود {0}: {1} فریم در ثانیه؛ هر {2} فریم با پخش دوبارهٔ فایل بررسی شد ({3})</value></data>
+  <data name="Detail_Vid_NoEncoder" xml:space="preserve"><value>انکود {0}: کارت انکودر سخت‌افزاری برای آن ندارد</value></data>
+  <data name="Detail_Vid_EncodeFailed" xml:space="preserve"><value>انکود {0}: روی این کارت پشتیبانی نمی‌شود</value></data>
+  <data name="Detail_Vid_EncodeShort" xml:space="preserve"><value>انکود {0}: {1} فریم انکود شد ولی فقط {2} فریم برگشت</value></data>
 </root>

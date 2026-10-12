@@ -91,6 +91,16 @@ public static partial class TestDetailText
         R(@"([\d,.]+) GFLOPS( \(.+\))?", "Detail_Rate_Gflops"),
         R(@"([\d,.]+) Gop/s \(?integer\)?", "Detail_Gops"),
         R(@"([\d,.]+) MB/s of input", "Detail_Rate_Input"),
+        // ——— video ———
+        R(@"Media Foundation hardware video \(DXVA, Direct3D 11\)", "Detail_Vid_Path"),
+        R(@"(.+) decode: ([\d.]+) fps, every pass all (\d+) frames", "Detail_Vid_Decoded"),
+        R(@"(.+) decode: decoded by the processor, not the card \(the card has no decoder for it\)", "Detail_Vid_Software"),
+        R(@"(.+) decode: not supported here \((.+)\)", "Detail_Vid_NoDecoder", m => [G(m, 1)], tail: 2),
+        R(@"(.+) decode: (\d+) pass\(es\) gave fewer than (\d+) frames", "Detail_Vid_DecodeShort"),
+        R(@"(.+) encode: ([\d.]+) fps, (\d+) frames verified by playing them back \((.+)\)", "Detail_Vid_Encoded"),
+        R(@"(.+) encode: no hardware encoder", "Detail_Vid_NoEncoder"),
+        R(@"(.+) encode: not measured \((.+)\)", "Detail_Vid_EncodeFailed", m => [G(m, 1)], tail: 2),
+        R(@"(.+) encode: (\d+) frames encoded but (\d+) came back", "Detail_Vid_EncodeShort"),
         // ——— memory ———
         R(@"RAM pattern test", "Detail_Mem_Pattern"),
         R(@"tested=(\d+) MiB", "Detail_Mem_Tested"),

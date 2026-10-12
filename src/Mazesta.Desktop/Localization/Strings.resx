@@ -602,13 +602,13 @@
   <data name="Bench_Gpu_Fill" xml:space="preserve"><value>Pixel fill rate (blended)</value></data>
   <data name="Bench_Gpu_Rt_Fps" xml:space="preserve"><value>Ray-traced frame rate (2560x1440)</value></data>
   <data name="Bench_Gpu_Rt_Rays" xml:space="preserve"><value>Rays traced per second</value></data>
-  <data name="Bench_Gpu_Video" xml:space="preserve"><value>Graphics — video encode and decode</value></data>
-  <data name="Bench_Gpu_Video_EncH264" xml:space="preserve"><value>H.264 encode (4K)</value></data>
-  <data name="Bench_Gpu_Video_EncHevc" xml:space="preserve"><value>HEVC encode (4K)</value></data>
-  <data name="Bench_Gpu_Video_EncAv1" xml:space="preserve"><value>AV1 encode (4K)</value></data>
-  <data name="Bench_Gpu_Video_DecH264" xml:space="preserve"><value>H.264 decode (4K)</value></data>
-  <data name="Bench_Gpu_Video_DecHevc" xml:space="preserve"><value>HEVC decode (4K)</value></data>
-  <data name="Bench_Gpu_Video_DecAv1" xml:space="preserve"><value>AV1 decode (4K)</value></data>
+  <data name="Bench_Gpu_Video" xml:space="preserve"><value>Graphics — video decode and encode (H.264, HEVC, VP9, AV1)</value></data>
+  <data name="Bench_Gpu_Video_EncH264" xml:space="preserve"><value>Encode H.264 (4K, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_EncHevc" xml:space="preserve"><value>Encode HEVC (4K, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_EncAv1" xml:space="preserve"><value>Encode AV1 (4K, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_DecH264" xml:space="preserve"><value>Decode H.264 (4K, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_DecHevc" xml:space="preserve"><value>Decode HEVC (4K, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_DecAv1" xml:space="preserve"><value>Decode AV1 (4K, 8-bit, 4:2:0)</value></data>
   <data name="Bench_Gpu_Ai_Fp32" xml:space="preserve"><value>FP32 (full precision)</value></data>
   <data name="Bench_Gpu_Ai_Fp16" xml:space="preserve"><value>FP16 (half precision)</value></data>
   <data name="Bench_Gpu_Ai_Int8" xml:space="preserve"><value>INT8 (quantised)</value></data>
@@ -3586,4 +3586,35 @@ Cancel: stop.</value></data>
   <data name="Check_GpuVramOk_Text" xml:space="preserve"><value>Under load the memory chips stayed well below the temperature at which the card slows them.</value></data>
   <data name="Check_M_VramTempMax" xml:space="preserve"><value>Highest VRAM temperature</value></data>
   <data name="Check_M_VramTempMedian" xml:space="preserve"><value>Typical VRAM temperature</value></data>
+  <data name="Bench_Gpu_Video_Dec_av1_1080p_8b_420" xml:space="preserve"><value>Decode AV1 (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_av1_2160p_10b_420" xml:space="preserve"><value>Decode AV1 (4K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_av1_4320p_10b_420" xml:space="preserve"><value>Decode AV1 (8K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_1080p_8b_420" xml:space="preserve"><value>Decode H.264 (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_2160p_10b_420" xml:space="preserve"><value>Decode H.264 (4K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_2160p_10b_422" xml:space="preserve"><value>Decode H.264 (4K, 10-bit, 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_h264_2160p_8b_422" xml:space="preserve"><value>Decode H.264 (4K, 8-bit, 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_1080p_8b_420" xml:space="preserve"><value>Decode HEVC (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_2160p_10b_420" xml:space="preserve"><value>Decode HEVC (4K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_2160p_10b_422" xml:space="preserve"><value>Decode HEVC (4K, 10-bit, 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_2160p_8b_422" xml:space="preserve"><value>Decode HEVC (4K, 8-bit, 4:2:2)</value></data>
+  <data name="Bench_Gpu_Video_Dec_hevc_4320p_10b_420" xml:space="preserve"><value>Decode HEVC (8K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_vp9_1080p_8b_420" xml:space="preserve"><value>Decode VP9 (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_vp9_2160p_10b_420" xml:space="preserve"><value>Decode VP9 (4K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Dec_vp9_2160p_8b_420" xml:space="preserve"><value>Decode VP9 (4K, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_h264_1080p_8b_420" xml:space="preserve"><value>Encode H.264 (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_hevc_1080p_8b_420" xml:space="preserve"><value>Encode HEVC (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_hevc_2160p_10b_420" xml:space="preserve"><value>Encode HEVC (4K, 10-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_av1_1080p_8b_420" xml:space="preserve"><value>Encode AV1 (1080p, 8-bit, 4:2:0)</value></data>
+  <data name="Bench_Gpu_Video_Enc_av1_2160p_10b_420" xml:space="preserve"><value>Encode AV1 (4K, 10-bit, 4:2:0)</value></data>
+  <data name="Test_Gpu_VideoDecode" xml:space="preserve"><value>GPU · video decode (H.264, HEVC, VP9, AV1; 1080p to 8K; 8/10-bit; 4:2:0/4:2:2)</value></data>
+  <data name="Test_Gpu_VideoEncode" xml:space="preserve"><value>GPU · video encode (H.264, HEVC, AV1; 1080p and 4K; 8/10-bit)</value></data>
+  <data name="Detail_Vid_Path" xml:space="preserve"><value>Decoded and encoded on the card's video engine through Windows (Media Foundation, DXVA)</value></data>
+  <data name="Detail_Vid_Decoded" xml:space="preserve"><value>Decode {0}: {1} frames a second; every pass gave back all {2} frames</value></data>
+  <data name="Detail_Vid_Software" xml:space="preserve"><value>Decode {0}: the card has no decoder for it (Windows decoded it on the processor; not counted)</value></data>
+  <data name="Detail_Vid_NoDecoder" xml:space="preserve"><value>Decode {0}: not supported on this card (or the codec's Windows extension is not installed)</value></data>
+  <data name="Detail_Vid_DecodeShort" xml:space="preserve"><value>Decode {0}: {1} pass(es) gave back fewer than {2} frames</value></data>
+  <data name="Detail_Vid_Encoded" xml:space="preserve"><value>Encode {0}: {1} frames a second; all {2} frames checked by playing the file back ({3})</value></data>
+  <data name="Detail_Vid_NoEncoder" xml:space="preserve"><value>Encode {0}: the card has no hardware encoder for it</value></data>
+  <data name="Detail_Vid_EncodeFailed" xml:space="preserve"><value>Encode {0}: not supported on this card</value></data>
+  <data name="Detail_Vid_EncodeShort" xml:space="preserve"><value>Encode {0}: {1} frames encoded but only {2} came back</value></data>
 </root>

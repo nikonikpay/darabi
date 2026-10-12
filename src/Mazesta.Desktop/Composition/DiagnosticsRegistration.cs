@@ -49,6 +49,8 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<ITestExecutor, GpuVramExecutor>();
         s.AddSingleton<ITestExecutor, GpuRenderExecutor>();
         s.AddSingleton<ITestExecutor, GpuAiExecutor>();
+        s.AddSingleton<ITestExecutor>(new GpuVideoExecutor(Mazesta.Diagnostics.Gpu.Benchmarks.VideoWork.Decode));
+        s.AddSingleton<ITestExecutor>(new GpuVideoExecutor(Mazesta.Diagnostics.Gpu.Benchmarks.VideoWork.Encode));
         s.AddSingleton<ITestExecutor, Mazesta.Diagnostics.Gpu.Scene.GpuSceneExecutor>();
         s.AddSingleton<ITestExecutor>(sp => GpuCycle.Standard(sp.GetService<Mazesta.Core.Inventory.MemoryFactsSource>()));
         s.AddSingleton<ITestExecutor, StorageSequentialExecutor>();
