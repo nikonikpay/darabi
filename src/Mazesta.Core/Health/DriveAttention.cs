@@ -7,6 +7,16 @@ namespace Mazesta.Core.Health;
 /// (a healthy Plextor M7V reads 46), so they are reported as evidence only; NVMe's error count is defined by the standard.</summary>
 public static class DriveAttention
 {
+    public const int WatchBelow = 80, FailBelow = 50;
+
+    /// <summary>Windows' verdict, made stricter by the life left: below 80 % a healthy drive reads «Warning», below 50 % «Unhealthy» (Windows keeps saying «Healthy» for an SSD whose wear counter is spent).</summary>
+    public static string? Verdict(string? status, int? wearPercent) => HealthPercent(wearPercent) switch
+    {
+        < FailBelow => "Unhealthy",
+        < WatchBelow when status is "Healthy" or null => "Warning",
+        _ => status,
+    };
+
     public static bool Needs(DriveHealth d) => d.Status is "Warning" or "Unhealthy" || (d.BusType == "NVMe" && (d.ReadErrorsUncorrected > 0 || d.WriteErrorsUncorrected > 0));
 
     /// <summary>Life left, from the drive's own wear counter (100 − used); null for a drive without one (an HDD), never guessed.</summary>

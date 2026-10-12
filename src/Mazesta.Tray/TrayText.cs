@@ -73,9 +73,13 @@ internal static class TrayText
     public static string ProfileNotKept(string why) => $"پروفایل اعمال شد ولی برای ورود بعدی ذخیره نشد: {why}";
     public static string ProfileMissing(string name) => $"پروفایل «{name}» دیگر وجود ندارد؛ کارت در حالت کارخانه ماند.";
 
-    public static string DriveProblem(TrayDrive d) => d.Status is "Warning" or "Unhealthy"
-        ? $"دیسک {d.Name}: ویندوز از روی SMART آن را «{Status(d.Status)}» گزارش کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید."
-        : $"دیسک {d.Name}: خطای اصلاح‌نشده‌ی خواندن یا نوشتن ثبت کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید.";
+    public static string DriveProblem(TrayDrive d) => DriveAttention.HealthPercent(d.WearPercent) is { } p && p < DriveAttention.WatchBelow
+        ? $"دیسک {DriveName(d)}: سلامت آن به {p}٪ رسیده است ({(p < DriveAttention.FailBelow ? "خراب یا نزدیک به پایان عمر" : "رو به کاهش")}). از اطلاعات آن نسخه‌ی پشتیبان بگیرید."
+        : d.Status is "Warning" or "Unhealthy"
+        ? $"دیسک {DriveName(d)}: ویندوز از روی SMART آن را «{Status(d.Status)}» گزارش کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید."
+        : $"دیسک {DriveName(d)}: خطای اصلاح‌نشده‌ی خواندن یا نوشتن ثبت کرده است. از اطلاعات آن نسخه‌ی پشتیبان بگیرید.";
+
+    public static string DriveName(TrayDrive d) => d.Letters is null ? d.Name : $"{d.Name} ({d.Letters})";
 
     public static string Status(string? status) => status switch
     {

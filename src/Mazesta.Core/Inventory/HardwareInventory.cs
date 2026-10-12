@@ -17,7 +17,7 @@ public sealed record ComputerInfo(string? Manufacturer, string? Model, string? F
 public sealed record BiosInfo(string? Vendor, string? Version, DateTime? ReleaseDate, string? SmbiosVersion);
 /// <summary><see cref="WearPercent"/> is the drive's own wear counter (life used), null where it has none (an HDD).</summary>
 public sealed record StorageDeviceInfo(string? FriendlyName, string? SerialNumber, string? MediaType, string? BusType, long? SizeBytes, string? FirmwareVersion, string? HealthStatus,
-    int? WearPercent = null);
+    int? WearPercent = null, string? Letters = null);
 public sealed record NetworkAdapterInfo(string? Name, string? MacAddress, IReadOnlyList<string> IpAddresses, long? LinkSpeedBps, bool IsUp);
 public sealed record OsInfo(string? Caption, string? Version, string? BuildNumber, string? Architecture);
 public sealed record HardwareInventory(

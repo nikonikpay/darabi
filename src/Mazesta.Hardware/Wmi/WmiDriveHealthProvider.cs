@@ -13,7 +13,7 @@ public sealed class WmiDriveHealthProvider(IWmiQuery query) : IDriveHealthProvid
         var rows = query.QueryWithRelated(Storage, "SELECT * FROM MSFT_PhysicalDisk WHERE BusType <> 7 OR BusType IS NULL", "MSFT_StorageReliabilityCounter");
         var drives = WmiDriveHealthParser.Parse(rows);
         var smart = SmartBlobs();
-        var taken = new HashSet<int>();
+        var taken = new HashSet<int>(); var letters = DriveModels.Letters(query);
         return [.. drives.Select((d, i) =>
         {
             // The drive's own figures beat Windows' counter (which reads 0 on many NVMe drives): the NVMe log's "percentage used", and the bad-sector attributes.
@@ -23,7 +23,7 @@ public sealed class WmiDriveHealthProvider(IWmiQuery query) : IDriveHealthProvid
             int? sectors = null;
             for (int k = 0; k < smart.Count && sectors is null; k++)
                 if (!taken.Contains(k) && WmiDriveHealthParser.Same(smart[k].Prod, d.Name)) { taken.Add(k); sectors = SmartHealth.FromAttributes(smart[k].Raw); }
-            return d with { WearPercent = SmartHealth.Wear(used, sectors) };
+            return d with { WearPercent = SmartHealth.Wear(used, sectors), Letters = rows[i].Row.GetValueOrDefault("DeviceId") is { } did && letters.TryGetValue(Convert.ToString(did, System.Globalization.CultureInfo.InvariantCulture) ?? "", out var l) ? l : null };
         })];
     }
 

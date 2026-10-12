@@ -55,7 +55,7 @@ internal static class WmiInventoryParser
         I(r, "HealthStatus") switch { 0 => "Healthy", 1 => "Warning", 2 => "Unhealthy", null => null, _ => "Unknown" })).ToList();
     /// <summary>Adds each drive's wear, matched by serial number, else by name.</summary>
     public static IReadOnlyList<StorageDeviceInfo> WithWear(IReadOnlyList<StorageDeviceInfo> disks, IReadOnlyList<DriveHealth> health) => disks.Select(d =>
-        (health.FirstOrDefault(h => h.Serial is not null && h.Serial == d.SerialNumber) ?? health.FirstOrDefault(h => h.Name == d.FriendlyName)) is { WearPercent: { } wear } ? d with { WearPercent = wear } : d).ToList();
+        (health.FirstOrDefault(h => h.Serial is not null && h.Serial == d.SerialNumber) ?? health.FirstOrDefault(h => h.Name == d.FriendlyName)) is { } h ? d with { WearPercent = h.WearPercent ?? d.WearPercent, Letters = h.Letters } : d).ToList();
     public static IReadOnlyList<NetworkAdapterInfo> Adapters(IReadOnlyList<IReadOnlyDictionary<string, object?>> adapters, IReadOnlyList<IReadOnlyDictionary<string, object?>> configs)
     {
         var ips = configs.Where(c => L(c, "InterfaceIndex") is not null).ToDictionary(c => L(c, "InterfaceIndex")!.Value, c => c.TryGetValue("IPAddress", out var v) && v is string[] a ? a : []);

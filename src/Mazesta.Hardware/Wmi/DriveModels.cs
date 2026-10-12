@@ -16,6 +16,19 @@ public static class DriveModels
         catch (Exception e) when (e is ManagementException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException) { return null; }
     }
 
+    /// <summary>The drive letters on each physical disk, by disk number: "C: D:"; a disk with no lettered partition is absent.</summary>
+    public static Dictionary<string, string> Letters(IWmiQuery query)
+    {
+        try
+        {
+            return query.Query(Storage, "SELECT DiskNumber,DriveLetter FROM MSFT_Partition")
+                .Where(p => p.GetValueOrDefault("DriveLetter") is { } l && Convert.ToInt32(l, CultureInfo.InvariantCulture) > 32)
+                .GroupBy(p => Convert.ToString(p.GetValueOrDefault("DiskNumber"), CultureInfo.InvariantCulture) ?? "")
+                .ToDictionary(g => g.Key, g => string.Join(" ", g.Select(p => char.ToUpperInvariant(Convert.ToChar(p["DriveLetter"], CultureInfo.InvariantCulture)) + ":").Distinct().Order()));
+        }
+        catch (Exception e) when (e is ManagementException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException or InvalidCastException or FormatException) { return []; }
+    }
+
     internal static string? Match(IReadOnlyList<IReadOnlyDictionary<string, object?>> partitions, IReadOnlyList<IReadOnlyDictionary<string, object?>> disks, string root)
     {
         if (root.Length == 0) return null;

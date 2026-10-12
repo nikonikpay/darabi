@@ -86,8 +86,8 @@ internal sealed class SummaryForm : Form
         {
             var status = TrayText.DriveHealth(d) + (d.TemperatureC is { } t ? $" · {TrayText.Num(t, "0")}°C" : "");
             int statusW = S(170);
-            Write(g, d.Name, _body, Paper, new Rectangle(pad + statusW + S(8), y, w - 2 * pad - statusW - S(8), bodyH), latin: true);
-            Write(g, status, _body, d.NeedsAttention ? Fail : d.Status == "Healthy" ? Pass : Paper2, new Rectangle(pad, y, statusW, bodyH), alignFar: true);
+            Write(g, TrayText.DriveName(d), _body, Paper, new Rectangle(pad + statusW + S(8), y, w - 2 * pad - statusW - S(8), bodyH), latin: true);
+            Write(g, status, _body, d.NeedsAttention ? Fail : d.Status == "Warning" ? Yellow : d.Status == "Healthy" ? Pass : Paper2, new Rectangle(pad, y, statusW, bodyH), alignFar: true);
             y += bodyH + S(4);
             using var rule = new Pen(Rule); g.DrawLine(rule, pad, y - S(2), w - pad, y - S(2));
         }

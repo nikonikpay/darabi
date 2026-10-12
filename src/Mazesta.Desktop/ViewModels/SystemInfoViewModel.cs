@@ -124,7 +124,7 @@ public sealed partial class SystemInfoViewModel : ObservableObject
 
     private static IReadOnlyList<InfoRow> StorageRows(StorageDeviceInfo d) =>
     [
-        new(Loc.Get("SystemInfo_Name"), Show(d.FriendlyName)),
+        new(Loc.Get("SystemInfo_Name"), Show(d.FriendlyName) + (d.Letters is null ? "" : $" ({d.Letters})")),
         new(Loc.Get("SystemInfo_MediaType"), Show(d.MediaType)),
         new(Loc.Get("SystemInfo_BusType"), Show(d.BusType)),
         new(Loc.Get("SystemInfo_Size"), ShowBytes(d.SizeBytes, 1e9)),
@@ -137,6 +137,7 @@ public sealed partial class SystemInfoViewModel : ObservableObject
     public static string DriveHealth(string? status, int? wearPercent)
     {
         if (status is null) return Loc.Get("Value_NotAvailable");
+        status = Core.Health.DriveAttention.Verdict(status, wearPercent);
         string name = Loc.Get(status is "Healthy" or "Warning" or "Unhealthy" ? "Drive_Health_" + status : "Drive_Health_Unknown");
         return Core.Health.DriveAttention.HealthPercent(wearPercent) is { } p ? Loc.Format("Drive_Health_Percent", name, p) : name;
     }

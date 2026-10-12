@@ -56,7 +56,7 @@ public class SceneScoreTests
         var facts = MemoryFacts.From(inv, [spd])!;
         Assert.Equal((6000, 30, "XMP 1", "DDR5"), (facts.SpeedMts, facts.CasLatency, facts.Profile, facts.Type));
         var byHand = MemoryFacts.From(inv with { MemoryModules = [modules[0] with { ConfiguredSpeedMts = 5800 }] }, [spd])!;
-        Assert.Equal(5800, byHand.SpeedMts); Assert.Null(byHand.CasLatency);   // no profile runs at 5800: the latency is not guessed
+        Assert.Equal(5800, byHand.SpeedMts); Assert.Equal((30, "XMP 1 @ 6000 MT/s"), (byHand.CasLatency, byHand.Profile));   // no profile runs at 5800: the nearest one is named with its own speed
         Assert.Null(MemoryFacts.From(HardwareInventory.Empty, []));
     }
 }

@@ -156,8 +156,9 @@ export function mount(el) {
     const shares = drives.map((d) => percentOf(pick(d, "StorageUsedSpace")));
     const rows = drives.map((d, k) => {
       const temp = pick(d, "StorageTemp"), tv = h("span", {}), hv = h("span", { class: "health" }), num = h("span", {}), bar = h("i", {}), full = h("span", { class: "full-mark", hidden: true }, icon("alert"), t("Web_Dash_DriveFull"));
-      driveHealth.set(d.name.trim().toLowerCase(), hv);
-      const row = h("div", { class: "unit-row" }, h("span", { class: "nm", title: d.name }, d.name), h("span", { class: "vals" }, hv, tv),
+      const nm = h("span", { class: "nm", title: d.name }, d.name);
+      driveHealth.set(d.name.trim().toLowerCase(), { hv, nm });
+      const row = h("div", { class: "unit-row" }, nm, h("span", { class: "vals" }, hv, tv),
         h("div", { class: "meter" }, h("div", { class: "row" }, h("span", {}, t("Web_Dash_UsedSpace"), full), num), h("div", { class: "bar", role: "presentation" }, bar)));
       updates.push(() => {
         tv.replaceChildren(val(temp ? fmt(value(temp.id), temp.unit) : null));
@@ -194,8 +195,8 @@ export function mount(el) {
     inv.board.replaceChildren(i.board || "");
     inv.bios.replaceChildren(val(i.bios, "lat")); inv.os.replaceChildren(val(i.os, "lat"));
     for (const d of i.drives || []) {
-      const el = d.name && driveHealth.get(d.name.trim().toLowerCase());
-      if (el) { el.textContent = d.health; el.dataset.status = d.status || ""; }
+      const e = d.name && driveHealth.get(d.name.trim().toLowerCase());
+      if (e) { e.hv.textContent = d.health; e.hv.dataset.status = d.status || ""; if (d.letters && !e.nm.querySelector("small")) e.nm.append(" ", h("small", { class: "lat" }, `(${d.letters})`)); }
     }
   });
   load();

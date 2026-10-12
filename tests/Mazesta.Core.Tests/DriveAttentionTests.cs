@@ -20,4 +20,10 @@ public class DriveAttentionTests
     {
         Assert.Equal(97, DriveAttention.HealthPercent(3)); Assert.Equal(0, DriveAttention.HealthPercent(120)); Assert.Null(DriveAttention.HealthPercent(null));
     }
+    [Fact] public void A_spent_wear_counter_is_failing_whatever_windows_says_and_a_low_one_is_a_warning()
+    {
+        Assert.Equal("Unhealthy", DriveAttention.Verdict("Healthy", 100)); Assert.Equal("Warning", DriveAttention.Verdict("Healthy", 30)); Assert.Equal("Healthy", DriveAttention.Verdict("Healthy", 10));
+        Assert.Equal("Healthy", DriveAttention.Verdict("Healthy", null));
+        
+    }
 }

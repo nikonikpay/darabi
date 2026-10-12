@@ -113,11 +113,11 @@ internal sealed class TrayContext : ApplicationContext
         try
         {
             var drives = (await Within(Task.Run(() => new WmiDriveHealthProvider(new WmiQuery()).Read()), TimeSpan.FromMinutes(2)))
-                .Select(d => new TrayDrive(d.Name, d.Status, d.WearPercent, d.TemperatureC, DriveAttention.Needs(d))).ToList();
-            var problems = drives.Where(d => d.NeedsAttention).Select(TrayText.DriveProblem).ToList();
+                .Select(d => new TrayDrive(d.Name, DriveAttention.Verdict(d.Status, d.WearPercent), d.WearPercent, d.TemperatureC, DriveAttention.Needs(d) || DriveAttention.Verdict(d.Status, d.WearPercent) == "Unhealthy", d.Letters)).ToList();
+            var problems = drives.Where(d => d.NeedsAttention || d.Status == "Warning").Select(TrayText.DriveProblem).ToList();
             // A drive's problem is announced once; it is announced again only after it has cleared and come back.
             foreach (var d in drives)
-                if (!d.NeedsAttention) _drivesAnnounced.Remove(d.Name);
+                if (!d.NeedsAttention && d.Status != "Warning") _drivesAnnounced.Remove(d.Name);
                 else if (_drivesAnnounced.Add(d.Name)) Notify(TrayText.DriveProblem(d));
             check = new(DateTimeOffset.UtcNow, "health", null, null, drives, problems, null);
         }

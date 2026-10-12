@@ -231,7 +231,7 @@ public static class PartSpecs
     private static SpecCard Drive(StorageDeviceInfo s, DriveDetails? d, int? number)
     {
         var rows = new List<SpecRow>();
-        Add(rows, "SystemInfo_Name", s.FriendlyName);
+        Add(rows, "SystemInfo_Name", s.FriendlyName is null ? null : s.FriendlyName + (s.Letters is null ? "" : $" ({s.Letters})"));
         Add(rows, "SystemInfo_MediaType", s.MediaType);
         Add(rows, "SystemInfo_BusType", s.BusType);
         Add(rows, "Spec_LinkNow", Link(d?.Link?.CurrentGen, d?.Link?.CurrentWidth));
