@@ -20,7 +20,7 @@ public sealed partial class WebBridge
     private static readonly IReadOnlyDictionary<string, string> AssistantBenchmarks = new Dictionary<string, string>
     {
         ["cpu_single"] = "bench.cpu.single", ["cpu_multi"] = "bench.cpu.multi", ["memory"] = "bench.memory", ["storage"] = "bench.storage",
-        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_ai"] = "bench.gpu.ai", ["network"] = "bench.network.internet",
+        ["gpu_rt"] = "bench.gpu.rt", ["gpu_scene"] = "bench.gpu.scene.d3d", ["gpu_ai"] = "bench.gpu.ai", ["gpu_video"] = "bench.gpu.video", ["network"] = "bench.network.internet",
     };
 
     /// <summary>The pages the assistant may open (the page's own ids, from <see cref="AppGuide"/>) and the controls it may point at on them.</summary>

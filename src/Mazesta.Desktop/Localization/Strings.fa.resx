@@ -602,6 +602,13 @@
   <data name="Bench_Gpu_Fill" xml:space="preserve"><value>نرخ پر کردن پیکسل (با ترکیب رنگ)</value></data>
   <data name="Bench_Gpu_Rt_Fps" xml:space="preserve"><value>نرخ فریم ری‌تریسینگ (2560x1440)</value></data>
   <data name="Bench_Gpu_Rt_Rays" xml:space="preserve"><value>تعداد پرتو در ثانیه</value></data>
+  <data name="Bench_Gpu_Video" xml:space="preserve"><value>گرافیک — انکود و دکود ویدیو</value></data>
+  <data name="Bench_Gpu_Video_EncH264" xml:space="preserve"><value>انکود H.264 (۴K)</value></data>
+  <data name="Bench_Gpu_Video_EncHevc" xml:space="preserve"><value>انکود HEVC (۴K)</value></data>
+  <data name="Bench_Gpu_Video_EncAv1" xml:space="preserve"><value>انکود AV1 (۴K)</value></data>
+  <data name="Bench_Gpu_Video_DecH264" xml:space="preserve"><value>دکود H.264 (۴K)</value></data>
+  <data name="Bench_Gpu_Video_DecHevc" xml:space="preserve"><value>دکود HEVC (۴K)</value></data>
+  <data name="Bench_Gpu_Video_DecAv1" xml:space="preserve"><value>دکود AV1 (۴K)</value></data>
   <data name="Bench_Gpu_Ai_Fp32" xml:space="preserve"><value>FP32 (دقت کامل)</value></data>
   <data name="Bench_Gpu_Ai_Fp16" xml:space="preserve"><value>FP16 (نیم‌دقت)</value></data>
   <data name="Bench_Gpu_Ai_Int8" xml:space="preserve"><value>INT8 (کوانتیزه)</value></data>

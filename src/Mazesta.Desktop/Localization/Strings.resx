@@ -602,6 +602,13 @@
   <data name="Bench_Gpu_Fill" xml:space="preserve"><value>Pixel fill rate (blended)</value></data>
   <data name="Bench_Gpu_Rt_Fps" xml:space="preserve"><value>Ray-traced frame rate (2560x1440)</value></data>
   <data name="Bench_Gpu_Rt_Rays" xml:space="preserve"><value>Rays traced per second</value></data>
+  <data name="Bench_Gpu_Video" xml:space="preserve"><value>Graphics — video encode and decode</value></data>
+  <data name="Bench_Gpu_Video_EncH264" xml:space="preserve"><value>H.264 encode (4K)</value></data>
+  <data name="Bench_Gpu_Video_EncHevc" xml:space="preserve"><value>HEVC encode (4K)</value></data>
+  <data name="Bench_Gpu_Video_EncAv1" xml:space="preserve"><value>AV1 encode (4K)</value></data>
+  <data name="Bench_Gpu_Video_DecH264" xml:space="preserve"><value>H.264 decode (4K)</value></data>
+  <data name="Bench_Gpu_Video_DecHevc" xml:space="preserve"><value>HEVC decode (4K)</value></data>
+  <data name="Bench_Gpu_Video_DecAv1" xml:space="preserve"><value>AV1 decode (4K)</value></data>
   <data name="Bench_Gpu_Ai_Fp32" xml:space="preserve"><value>FP32 (full precision)</value></data>
   <data name="Bench_Gpu_Ai_Fp16" xml:space="preserve"><value>FP16 (half precision)</value></data>
   <data name="Bench_Gpu_Ai_Int8" xml:space="preserve"><value>INT8 (quantised)</value></data>

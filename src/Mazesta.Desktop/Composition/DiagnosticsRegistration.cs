@@ -77,6 +77,7 @@ internal static class DiagnosticsRegistration
         s.AddSingleton<IBenchmark, GpuSceneBenchmark>();
         s.AddSingleton<IBenchmark, GpuRayTracingBenchmark>();
         s.AddSingleton<IBenchmark, GpuAiBenchmark>();
+        s.AddSingleton<IBenchmark, GpuVideoBenchmark>();
         s.AddSingleton<IBenchmark, StorageBenchmark>();
         s.AddSingleton<IBenchmark>(new InternetSpeedBenchmark());
         // Singleton for the same reason as the engine below: a benchmark keeps running, and its result stays, while the page is closed.

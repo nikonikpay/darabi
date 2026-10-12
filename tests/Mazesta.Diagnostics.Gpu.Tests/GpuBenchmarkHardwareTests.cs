@@ -10,7 +10,7 @@ public class GpuBenchmarkHardwareTests(ITestOutputHelper output)
 
     private async Task<BenchmarkResult> Run(IBenchmark benchmark)
     {
-        var result = await benchmark.RunAsync(new TestExecutionRequest(3, new SystemClock(), null, null, TestOptions.None(benchmark.Definition)), CancellationToken.None);
+        var result = await benchmark.RunAsync(new TestExecutionRequest(int.TryParse(Environment.GetEnvironmentVariable("MAZESTA_BENCH_SECONDS"), out int secs) ? secs : 3, new SystemClock(), null, null, TestOptions.None(benchmark.Definition)), CancellationToken.None);
         output.WriteLine($"{result.Status}: {string.Join(", ", result.Metrics.Select(m => $"{m.Key}={m.Value:F2} {m.Unit}"))}\n{result.Detail}");
         Assert.True(result.Status is BenchmarkStatus.Completed or BenchmarkStatus.Unsupported, result.Detail);
         if (result.Status == BenchmarkStatus.Completed) Assert.All(result.Metrics, m => Assert.True(m.Value > 0, m.Key));
@@ -19,6 +19,7 @@ public class GpuBenchmarkHardwareTests(ITestOutputHelper output)
     }
 
     [Fact] public async Task Ray_tracing_measures_frames_and_rays_or_is_unsupported() => await Run(new GpuRayTracingBenchmark());
+    [Fact] public async Task Video_encodes_and_decodes_on_the_card_or_is_unsupported() => await Run(new GpuVideoBenchmark());
     [Fact] public async Task Ai_measures_every_precision_the_gpu_supports() => await Run(new GpuAiBenchmark());
     [Fact] public async Task The_garden_measures_its_frame_rate_and_1_percent_low() { if (!NoGpu) Assert.Equal(2, (await Run(new GpuSceneBenchmark())).Metrics.Count(m => m.Unit == "FPS")); }
     /// <summary>The garden's benchmark runs with one frame in flight and with two, and says how busy it kept the card (taken from GPU timestamps); with two it keeps it busier. With MAZESTA_BENCH_SECONDS the run is that long
