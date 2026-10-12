@@ -23,3 +23,18 @@ public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int W
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException) { return defaults; }
     }
 }
+
+/// <summary>The overlay's shortcuts, read straight from appconfig.json for the tray (read-only, like <see cref="TrayIntervals"/>); a missing, damaged or clashing setting gives the defaults.</summary>
+public static class OverlayKeysFile
+{
+    public static Mazesta.Core.Tray.OverlayHotkeys Read(string configFile)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(configFile)); var root = doc.RootElement; var d = new AppConfig();
+            string Get(string name, string fallback) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? fallback : fallback;
+            return new Mazesta.Core.Tray.OverlayHotkeys(Get("overlayKeyToggle", d.OverlayKeyToggle), Get("overlayKeyMove", d.OverlayKeyMove), Get("overlayKeyLayout", d.OverlayKeyLayout), Get("overlayKeyPreset", d.OverlayKeyPreset)).Valid();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException) { return new(); }
+    }
+}

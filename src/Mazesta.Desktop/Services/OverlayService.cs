@@ -9,12 +9,20 @@ namespace Mazesta.Desktop.Services;
 /// tray runs, after the main window is closed (the app then lives on for the overlay alone; see Mazesta.App's App).
 /// What it shows (items, charts, preset), its opacity and size come from the settings; changing them rebuilds the view model in place.
 /// </summary>
-public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null, IPingSource? ping = null) : IDisposable
+public sealed class OverlayService(PollingEngine engine, AppConfig config, IFrameRateSource? frames = null, IPingSource? ping = null, Core.Inventory.MemoryFactsSource? memory = null) : IDisposable
 {
-    public const string HotkeyText = "Alt+O", MoveHotkeyText = "Alt+M";
+    /// <summary>The overlay's shortcuts as set (a setting that is not usable, or two the same, gives the defaults).</summary>
+    public Core.Tray.OverlayHotkeys Keys => new Core.Tray.OverlayHotkeys(config.OverlayKeyToggle, config.OverlayKeyMove, config.OverlayKeyLayout, config.OverlayKeyPreset).Valid();
+    public string HotkeyText => Keys.Toggle;
+    public string MoveHotkeyText => Keys.Move;
+    // What the RAM runs at: read once, off the UI thread (it asks the modules), and shown once it is there.
+    private Task<Core.Inventory.MemoryFacts?>? _facts;
+    /// <summary>The text of a fixed fact the overlay can show (the RAM's speed), or null while it is not known.</summary>
+    public string? StaticText(string id) => id == "ram.speed" && Facts()?.SpeedMts is { } mts ? $"{mts} MT/s" : null;
+    private Core.Inventory.MemoryFacts? Facts() { _facts ??= Task.Run(() => memory?.Invoke()); return _facts.IsCompletedSuccessfully ? _facts.Result : null; }
     public static readonly string[] Corners = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"];
     // Alt+O shows or hides it, Alt+M puts it in the mode where the mouse moves and resizes it; Ctrl+Shift+O, the shortcut of the earlier releases, still works.
-    private const int HotkeyId = 0x4D5A, AltOId = 0x4D5B, AltMId = 0x4D5C, WmHotkey = 0x0312, ModAlt = 0x1, ModControl = 0x2, ModShift = 0x4, ModNoRepeat = 0x4000, VkO = 0x4F, VkM = 0x4D;
+    private const int HotkeyId = 0x4D5A, AltOId = 0x4D5B, AltMId = 0x4D5C, LayoutId = 0x4D5D, PresetId = 0x4D5E, WmHotkey = 0x0312, ModAlt = 0x1, ModControl = 0x2, ModShift = 0x4, ModNoRepeat = 0x4000, VkO = 0x4F, VkM = 0x4D;
     private OverlayWindow? _window; private OverlayViewModel? _vm; private HotkeyWindow? _source;
 
     public bool IsVisible => _window?.Visible == true;
@@ -61,6 +69,8 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
     /// <summary>New items (from a preset or by hand): kept in the settings and shown at once if the overlay is up.</summary>
     public void Configure(IReadOnlyList<OverlayChoice> items, string preset)
     {
+        // The hand-picked set is kept when the overlay goes to another one, so a shortcut (or a preset button) never throws it away.
+        if (config.OverlayPreset == "custom" && preset != "custom") config.OverlayCustomItems = [.. Items];
         config.OverlayItems = [.. items]; config.OverlayPreset = preset;
         Rebuild();
     }
@@ -99,12 +109,24 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         if (config.OverlayPreset == "user:" + name) config.OverlayPreset = "custom";
     }
 
+    /// <summary>The overlay's next layout (list, columns, compact, line, and round again); the new one's name is returned.</summary>
+    public string CycleLayout() { string next = Layouts[(Array.IndexOf(Layouts, config.OverlayLayout) + 1) % Layouts.Length]; SetLayout(next); return next; }
+
+    /// <summary>The overlay's next set of items: the three ready-made ones, the user's own saved ones, then their hand-picked set when one is kept. Returns the preset's id.</summary>
+    public string CyclePreset()
+    {
+        string next = OverlayCatalog.NextPreset(config.OverlayPreset, (config.OverlayUserPresets ?? []).Keys, config.OverlayCustomItems is { Count: > 0 } || config.OverlayPreset == "custom");
+        var items = next == "custom" ? config.OverlayCustomItems : next.StartsWith("user:", StringComparison.Ordinal) ? config.OverlayUserPresets?.GetValueOrDefault(next[5..]) : OverlayCatalog.Presets.GetValueOrDefault(next);
+        if (items is { Count: > 0 }) Configure(items, next);
+        return next;
+    }
+
     public static readonly string[] Layouts = OverlayViewModel.Layouts;
     public void SetLayout(string layout) { if (!Layouts.Contains(layout)) return; config.OverlayLayout = layout; Rebuild(); }
 
     private OverlayViewModel Create()
     {
-        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping, config.OverlayEnglish) { Bare = config.OverlayBare };
+        var vm = new OverlayViewModel(engine, UiDispatcher.Post, Items, frames, config.OverlayOpacity, config.OverlayScale, config.OverlayLayout, ping, config.OverlayEnglish, Facts) { Bare = config.OverlayBare };
         vm.Updated += () => Updated?.Invoke(vm);
         return vm;
     }
@@ -161,28 +183,46 @@ public sealed class OverlayService(PollingEngine engine, AppConfig config, IFram
         if (!on) PlaceChanged?.Invoke();
     }
 
-    /// <summary>Registers the global shortcut on a hidden message-only window of its own, so it works with or without the main window. It can
-    /// fail when another program already holds it; the overlay still works from its button and the tray, so that is only logged by the caller.</summary>
+    /// <summary>Registers the global shortcuts (the settings' four, and Ctrl+Shift+O of the earliest releases) on a hidden message-only window of its own, so they work with or without
+    /// the main window. A key another program already holds is not registered (the overlay still works from its button and the tray, so the caller only logs it); false when the
+    /// show-or-hide key could not be had.</summary>
     public bool RegisterHotkey()
     {
-        if (_source is not null) return true;
-        _source = new HotkeyWindow(id => { if (id == AltMId) ToggleMove(); else Toggle(); });
+        _source ??= new HotkeyWindow(id => { switch (id) { case AltMId: ToggleMove(); break; case LayoutId: CycleLayout(); Saved?.Invoke(); break; case PresetId: CyclePreset(); Saved?.Invoke(); break; default: Toggle(); break; } });
+        foreach (int id in new[] { HotkeyId, AltOId, AltMId, LayoutId, PresetId }) UnregisterHotKey(_source.Handle, id);
+        var k = Keys.Parsed();
         bool old = RegisterHotKey(_source.Handle, HotkeyId, ModControl | ModShift | ModNoRepeat, VkO);
-        RegisterHotKey(_source.Handle, AltMId, ModAlt | ModNoRepeat, VkM);   // (when the tray holds a shortcut, it signals the app: see OverlaySignals)
-        return RegisterHotKey(_source.Handle, AltOId, ModAlt | ModNoRepeat, VkO) || old;
+        RegisterHotKey(_source.Handle, AltMId, k[1].Modifiers | ModNoRepeat, k[1].VirtualKey);   // (when the tray holds a shortcut, it signals the app: see OverlaySignals)
+        RegisterHotKey(_source.Handle, LayoutId, k[2].Modifiers | ModNoRepeat, k[2].VirtualKey); RegisterHotKey(_source.Handle, PresetId, k[3].Modifiers | ModNoRepeat, k[3].VirtualKey);
+        return RegisterHotKey(_source.Handle, AltOId, k[0].Modifiers | ModNoRepeat, k[0].VirtualKey) || old;
     }
 
-    /// <summary>A message-only window (no screen presence) that receives the shortcut.</summary>
+    /// <summary>The layout or the set changed by a shortcut: the settings are to be saved (the page shows the change too).</summary>
+    public event Action? Saved;
+
+    /// <summary>One shortcut changed on the settings page: false (and nothing changed) when the text is not a usable shortcut or another of the four already has it.</summary>
+    public bool SetKey(string which, string text)
+    {
+        if (Core.Tray.Hotkey.Normalize(text) is not { } key) return false;
+        var now = Keys;
+        var next = which switch { "toggle" => now with { Toggle = key }, "move" => now with { Move = key }, "layout" => now with { Layout = key }, "preset" => now with { Preset = key }, _ => null };
+        if (next is null || next.Valid() != next) return false;
+        (config.OverlayKeyToggle, config.OverlayKeyMove, config.OverlayKeyLayout, config.OverlayKeyPreset) = (next.Toggle, next.Move, next.Layout, next.Preset);
+        if (_source is not null) RegisterHotkey();
+        return true;
+    }
+
+    /// <summary>A message-only window (no screen presence) that receives the shortcuts.</summary>
     private sealed class HotkeyWindow : NativeWindow
     {
         private readonly Action<int> _pressed;
         public HotkeyWindow(Action<int> pressed) { _pressed = pressed; CreateHandle(new CreateParams { Caption = "Mazesta overlay hotkey", Parent = -3 /* HWND_MESSAGE */ }); }
-        protected override void WndProc(ref Message m) { if (m.Msg == WmHotkey && (int)m.WParam is HotkeyId or AltOId or AltMId) { _pressed((int)m.WParam); return; } base.WndProc(ref m); }
+        protected override void WndProc(ref Message m) { if (m.Msg == WmHotkey && (int)m.WParam is HotkeyId or AltOId or AltMId or LayoutId or PresetId) { _pressed((int)m.WParam); return; } base.WndProc(ref m); }
     }
 
     public void Dispose()
     {
-        if (_source is not null) { foreach (int id in new[] { HotkeyId, AltOId, AltMId }) UnregisterHotKey(_source.Handle, id); _source.DestroyHandle(); }
+        if (_source is not null) { foreach (int id in new[] { HotkeyId, AltOId, AltMId, LayoutId, PresetId }) UnregisterHotKey(_source.Handle, id); _source.DestroyHandle(); }
         _window?.Close(); _window?.Dispose(); _vm?.Dispose();
     }
 

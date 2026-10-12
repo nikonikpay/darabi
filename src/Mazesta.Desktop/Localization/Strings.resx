@@ -3555,4 +3555,14 @@ Cancel: stop.</value></data>
   <data name="Settings_Tray_RamCheck" xml:space="preserve"><value>Read the memory in use every (minutes)</value></data>
   <data name="Settings_Invalid_Percent" xml:space="preserve"><value>A percentage must be a whole number from 50 to 99.</value></data>
   <data name="Notify_GpuHotSpotOverheat" xml:space="preserve"><value>The graphics card's hot spot reached {0} °C at full load and stayed there. Check the cooling and airflow.</value></data>
+  <data name="Overlay_RamSpeed" xml:space="preserve"><value>Speed</value></data>
+  <data name="Settings_Keys_Bad" xml:space="preserve"><value>That is not a usable shortcut (it needs Alt, Ctrl or Win with a letter, digit or F-key), or another overlay shortcut already uses it.</value></data>
+  <data name="Settings_Keys_Title" xml:space="preserve"><value>Overlay shortcuts</value></data>
+  <data name="Settings_Keys_Sub" xml:space="preserve"><value>Work from anywhere, also inside a game</value></data>
+  <data name="Settings_Keys_Note" xml:space="preserve"><value>Click a box and press the keys you want. A shortcut needs Alt, Ctrl or Win together with a letter, a digit or an F key. The overlay works with the app open or only with the background monitor running.</value></data>
+  <data name="Settings_Keys_Toggle" xml:space="preserve"><value>Show or hide the overlay</value></data>
+  <data name="Settings_Keys_Move" xml:space="preserve"><value>Move and resize it with the mouse</value></data>
+  <data name="Settings_Keys_Layout" xml:space="preserve"><value>Next layout (one column, two columns, compact, strip)</value></data>
+  <data name="Settings_Keys_Preset" xml:space="preserve"><value>Next set (game, render, troubleshooting, your own)</value></data>
+  <data name="Settings_Keys_Reset" xml:space="preserve"><value>Back to the defaults</value></data>
 </root>

@@ -16,6 +16,8 @@ public sealed record OverlayItem(string Id, OverlayPart Part, string LabelKey, S
 {
     /// <summary>Measured by the app itself, not read from a sensor: the frame rate, or the link's ping, loss and jitter.</summary>
     public bool IsMeasured => Roles.Length == 0;
+    /// <summary>A fixed fact of the machine that is not a sensor (the speed the RAM runs at): the app reads it once and the item shows it.</summary>
+    public bool IsStatic { get; init; }
     public bool IsFrameItem => IsMeasured && Part == OverlayPart.Gaming;
     public bool IsPingItem => IsMeasured && Part == OverlayPart.Network;
     /// <summary>The one device an item is pinned to (a drive's own read rate), by hardware id; null reads the whole part.</summary>
@@ -81,6 +83,7 @@ public static class OverlayCatalog
         new("ram.used", OverlayPart.Memory, "Overlay_Used", [SensorRole.RamUsed]),
         new("ram.load", OverlayPart.Memory, "Overlay_Load", [SensorRole.RamLoad], FixedMax: Percent),
         new("ram.temp", OverlayPart.Memory, "Overlay_Temp", [SensorRole.DimmTemp], OverlayAggregate.Max, Percent),
+        new("ram.speed", OverlayPart.Memory, "Overlay_RamSpeed", []) { IsStatic = true },
 
         new("storage.temp", OverlayPart.Storage, "Overlay_HotDrive", [SensorRole.StorageTemp], OverlayAggregate.Max, Percent),
         new("storage.read", OverlayPart.Storage, "Overlay_Read", [SensorRole.StorageReadRate], OverlayAggregate.Sum),
@@ -114,13 +117,25 @@ public static class OverlayCatalog
     {
         // Playing: the frame rate first and charted with its session average, lowest and highest, then what limits it, then the link an online
         // game depends on: ping, packet loss, jitter and the traffic now.
-        ["game"] = Choices("fps:c low1 low01 fps.avg fps.min fps.max frametime:c gpu.temp gpu.hotspot gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.clock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.maxthread ram.used net.ping net.loss net.jitter net.down net.up"),
+        ["game"] = Choices("fps:c low1 low01 fps.avg fps.min fps.max frametime:c gpu.temp gpu.hotspot gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.clock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.maxthread ram.used ram.speed net.ping net.loss net.jitter net.down net.up"),
         // Rendering: how busy and how hot the processors stay over a long job, memory, and the drive being written.
         ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram gpu.vramload gpu.vramtemp ram.used:c ram.load storage.read storage.write storage.activity"),
         // Troubleshooting: every temperature, clock, voltage and fan that tells a throttling or failing part.
         ["troubleshoot"] = Choices("cpu.load cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.voltage cpu.fan gpu.load gpu.temp:c gpu.hotspot gpu.vram gpu.vramload gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp storage.read storage.write storage.activity"),
     };
     public const string DefaultPreset = "game";
+    /// <summary>The ready-made sets in the order the shortcut walks them.</summary>
+    public static readonly IReadOnlyList<string> PresetOrder = ["game", "render", "troubleshoot"];
+
+    /// <summary>The set after <paramref name="current"/> in the walk: the three ready-made sets, then each of the user's own (by name), then their hand-picked set when
+    /// one is kept; after the last, the first again. A current set not in the walk (it was deleted) goes to the first.</summary>
+    public static string NextPreset(string current, IEnumerable<string> userNames, bool hasCustom)
+    {
+        var walk = PresetOrder.Concat(userNames.Order(StringComparer.CurrentCultureIgnoreCase).Select(n => "user:" + n)).ToList();
+        if (hasCustom) walk.Add("custom");
+        int at = walk.IndexOf(current);
+        return walk[(at + 1) % walk.Count];
+    }
 
     private static OverlayChoice[] Choices(string spec) => [.. spec.Split(' ').Select(s => s.EndsWith(":c", StringComparison.Ordinal) ? new OverlayChoice(s[..^2], true) : new OverlayChoice(s, false))];
 

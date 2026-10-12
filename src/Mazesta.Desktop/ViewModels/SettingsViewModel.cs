@@ -19,7 +19,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly Services.OverlayService? _overlay;
     public IReadOnlyList<OverlayCornerChoice> OverlayCorners { get; } = [.. Services.OverlayService.Corners.Select(c => new OverlayCornerChoice(c, Loc.Get("Overlay_Corner_" + c)))];
     public bool HasOverlay => _overlay is not null;
-    public string OverlayHotkey => Services.OverlayService.HotkeyText;
+    public string OverlayHotkey => _overlay?.HotkeyText ?? "";
     /// <summary>Applied at once, like the overlay's own shortcut; saved with the other settings when the app closes.</summary>
     public OverlayCornerChoice? OverlayCorner
     {

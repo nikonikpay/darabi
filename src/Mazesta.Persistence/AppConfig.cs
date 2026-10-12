@@ -63,6 +63,13 @@ public sealed class AppConfig : IVersionedDocument
     public List<Mazesta.Core.Overlay.OverlayChoice>? OverlayItems { get; set; }
     /// <summary>The preset the items came from ("game", "render", "troubleshoot"), or "custom" once they were changed by hand.</summary>
     public string OverlayPreset { get; set; } = Mazesta.Core.Overlay.OverlayCatalog.DefaultPreset;
+    /// <summary>The overlay's global shortcuts (see Hotkey): show or hide, move and resize, the next layout, the next set of items. A setting that is not usable falls back to the defaults.</summary>
+    public string OverlayKeyToggle { get; set; } = "Alt+O";
+    public string OverlayKeyMove { get; set; } = "Alt+M";
+    public string OverlayKeyLayout { get; set; } = "Alt+U";
+    public string OverlayKeyPreset { get; set; } = "Alt+P";
+    /// <summary>The user's own hand-picked set, kept when the shortcut (or a preset button) takes the overlay to another set, so cycling never throws it away.</summary>
+    public List<Mazesta.Core.Overlay.OverlayChoice>? OverlayCustomItems { get; set; }
     /// <summary>The overlay panel's opacity, 0.5 to 1.</summary>
     public double OverlayOpacity { get; set; } = 0.9;
     /// <summary>The overlay without any background: only the text, outlined, in colour. Absent in older files, so off.</summary>

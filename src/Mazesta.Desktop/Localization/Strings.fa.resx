@@ -3555,4 +3555,14 @@
   <data name="Settings_Tray_RamCheck" xml:space="preserve"><value>خواندن رمِ پُر هر (دقیقه)</value></data>
   <data name="Settings_Invalid_Percent" xml:space="preserve"><value>درصد باید عددی صحیح از ۵۰ تا ۹۹ باشد.</value></data>
   <data name="Notify_GpuHotSpotOverheat" xml:space="preserve"><value>دمای نقطهٔ داغ کارت گرافیک زیر بار کامل به {0} درجه رسید و همان‌جا ماند. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
+  <data name="Overlay_RamSpeed" xml:space="preserve"><value>فرکانس</value></data>
+  <data name="Settings_Keys_Bad" xml:space="preserve"><value>این میان‌بر قابل استفاده نیست (باید Alt یا Ctrl یا Win همراه یک حرف، عدد یا کلید F باشد) یا یکی از میان‌برهای دیگر نمایش‌گر از آن استفاده می‌کند.</value></data>
+  <data name="Settings_Keys_Title" xml:space="preserve"><value>میان‌برهای نمایش‌گر روی صفحه</value></data>
+  <data name="Settings_Keys_Sub" xml:space="preserve"><value>از هر جا کار می‌کنند، داخل بازی هم</value></data>
+  <data name="Settings_Keys_Note" xml:space="preserve"><value>روی یک کادر کلیک کنید و کلیدهای دلخواه را بزنید. میان‌بر باید Alt یا Ctrl یا Win را همراه یک حرف، عدد یا کلید F داشته باشد. نمایش‌گر هم با برنامهٔ باز کار می‌کند و هم وقتی فقط پایشگر پس‌زمینه روشن است.</value></data>
+  <data name="Settings_Keys_Toggle" xml:space="preserve"><value>نمایش یا پنهان‌کردن نمایش‌گر</value></data>
+  <data name="Settings_Keys_Move" xml:space="preserve"><value>جابه‌جایی و تغییر اندازه با ماوس</value></data>
+  <data name="Settings_Keys_Layout" xml:space="preserve"><value>حالت نمایش بعدی (تک‌ستونه، دوستونه، خلاصه، نواری)</value></data>
+  <data name="Settings_Keys_Preset" xml:space="preserve"><value>مجموعهٔ بعدی (بازی، رندر، عیب‌یابی، مجموعه‌های خودتان)</value></data>
+  <data name="Settings_Keys_Reset" xml:space="preserve"><value>بازگشت به پیش‌فرض</value></data>
 </root>

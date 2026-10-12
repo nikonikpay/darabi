@@ -1,4 +1,4 @@
-using Mazesta.Core.Health; using Xunit;
+using Mazesta.Core.Health; using Mazesta.Core.Overlay; using Mazesta.Core.Tray; using Xunit;
 namespace Mazesta.Core.Tests;
 
 public class HealthAlertsTests
@@ -54,4 +54,40 @@ public class MemoryPressureTests
     [Fact] public void The_next_day_it_can_announce_again() { var m = new MemoryPressure(90, Min) { LastFired = T0 }; m.Evaluate(95, T0.AddDays(2)); Assert.True(m.Evaluate(95, T0.AddDays(2) + 2 * Min)); }
     [Fact] public void A_reading_bouncing_just_under_the_line_does_not_reset_the_hold() { var m = new MemoryPressure(90, 5 * Min); m.Evaluate(91, T0); m.Evaluate(89, T0 + 2 * Min); Assert.True(m.Evaluate(91, T0 + 5 * Min)); }
     [Fact] public void A_missing_reading_changes_nothing() { var m = new MemoryPressure(90, Min); Assert.False(m.Evaluate(null, T0)); Assert.False(m.IsWatching); }
+}
+
+public class OverlayNamesTests
+{
+    [Theory]
+    [InlineData("NVIDIA GeForce RTX 5070", "RTX 5070")]
+    [InlineData("AMD Ryzen 9 9950X3D 16-Core Processor", "Ryzen 9 9950X3D")]
+    [InlineData("Intel(R) Core(TM) i9-14900K", "Core i9-14900K")]
+    [InlineData("13th Gen Intel(R) Core(TM) i7-13700H", "13th Gen Intel Core i7-13700H")]
+    [InlineData("AMD Radeon RX 7900 XTX", "Radeon RX 7900 XTX")]
+    [InlineData("Samsung SSD 990 PRO 4TB", "Samsung SSD 990 PRO 4TB")]
+    [InlineData("Processor", "Processor")]
+    public void A_makers_long_name_is_trimmed_and_never_emptied(string name, string expected) => Assert.Equal(expected, OverlayNames.Short(name));
+}
+
+public class HotkeyTests
+{
+    [Theory]
+    [InlineData("Alt+U", "Alt+U")] [InlineData("ctrl+shift+f9", "Ctrl+Shift+F9")] [InlineData("Win+Alt+PageUp", "Alt+Win+PageUp")] [InlineData(" Alt + 7 ", "Alt+7")]
+    public void A_usable_shortcut_is_normalised(string text, string expected) => Assert.Equal(expected, Hotkey.Normalize(text));
+    [Theory]
+    [InlineData("")] [InlineData("U")] [InlineData("Shift+U")] [InlineData("Alt")] [InlineData("Alt+U+P")] [InlineData("Alt+Enter")] [InlineData("Alt+F25")]
+    public void A_shortcut_without_alt_ctrl_or_win_or_without_one_known_key_is_refused(string text) => Assert.Null(Hotkey.TryParse(text));
+    [Fact] public void The_overlay_keys_fall_back_to_the_defaults_when_one_is_bad_or_two_clash()
+    {
+        Assert.Equal(new OverlayHotkeys(), new OverlayHotkeys("Alt+O", "Alt+M", "x", "Alt+P").Valid());
+        Assert.Equal(new OverlayHotkeys(), new OverlayHotkeys("Alt+O", "Alt+M", "Alt+O", "Alt+P").Valid());
+        Assert.Equal("Ctrl+Alt+U", new OverlayHotkeys("Alt+O", "Alt+M", "alt+ctrl+u", "Alt+P").Valid().Layout);
+    }
+    [Fact] public void The_presets_are_walked_in_order_and_back_to_the_first()
+    {
+        string[] mine = ["zeta", "Alpha"];
+        Assert.Equal("render", OverlayCatalog.NextPreset("game", mine, false)); Assert.Equal("user:Alpha", OverlayCatalog.NextPreset("troubleshoot", mine, false));
+        Assert.Equal("custom", OverlayCatalog.NextPreset("user:zeta", mine, true)); Assert.Equal("game", OverlayCatalog.NextPreset("custom", mine, true));
+        Assert.Equal("game", OverlayCatalog.NextPreset("user:gone", [], false)); Assert.Equal("game", OverlayCatalog.NextPreset("troubleshoot", [], false));
+    }
 }

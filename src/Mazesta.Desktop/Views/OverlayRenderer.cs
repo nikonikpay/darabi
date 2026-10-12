@@ -132,7 +132,7 @@ public static class OverlayRenderer
         foreach (var s in vm.Blocks)
         {
             var chip = Chip(m, s.Title);
-            need = Math.Max(need, chip.Width + 18 + (s.Subtitle.Length > 0 ? 40 : 0));
+            need = Math.Max(need, chip.Width + 18 + (s.Subtitle.Length > 0 ? Math.Min(Text(m, s.Subtitle, NumFace, CaptionSize, FontStyle.Bold).Width + 8, 190) : 0));
             foreach (var row in s.Rows)
             {
                 float l = Text(m, row.Label, TextFace, LabelSize, LabelStyle, rtl).Width, n = Text(m, row.Number, NumFace, 15.5f, FontStyle.Bold).Width + (row.UnitText.Length > 0 ? 3 + Text(m, row.UnitText, NumFace, UnitSize, FontStyle.Bold).Width : 0);

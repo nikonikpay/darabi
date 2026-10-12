@@ -27,7 +27,7 @@ internal sealed class Program : ApplicationContext
     /// <summary>Ends the app the way closing it from its window does (the update hands over to the new release this way).</summary>
     internal static void Shutdown() => Application.Exit();
 
-    private UsageUploader? _usageUploader; private EventWaitHandle? _activate, _toggle, _move, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait, _moveWait;
+    private UsageUploader? _usageUploader; private EventWaitHandle? _activate, _toggle, _move, _layout, _preset, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait, _moveWait, _layoutWait, _presetWait;
     private ServiceProvider? _services;
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
     private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans;
@@ -117,13 +117,19 @@ internal sealed class Program : ApplicationContext
         Recorder = new HardwareDiagnosticsRecorder(engine, paths.LogsDir, $"Mazesta Web {version}", lf.CreateLogger("Hardware"));
 
         _overlay = _services.GetRequiredService<OverlayService>();
-        if (!_overlay.RegisterHotkey()) log.LogInformation("The overlay shortcut {Hotkey} is held by another program (the tray, when it runs, passes it on)", OverlayService.HotkeyText);
+        if (!_overlay.RegisterHotkey()) log.LogInformation("The overlay shortcut {Hotkey} is held by another program (the tray, when it runs, passes it on)", _overlay.HotkeyText);
         _shown = new EventWaitHandle(false, EventResetMode.ManualReset, OverlaySignals.Shown);
         _overlay.VisibilityChanged += OnOverlayVisibility;
         _toggle = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Toggle);
         _toggleWait = ThreadPool.RegisterWaitForSingleObject(_toggle, (_, _) => _ui.BeginInvoke(ToggleFromTray), null, Timeout.Infinite, false);
         _move = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Move);
         _moveWait = ThreadPool.RegisterWaitForSingleObject(_move, (_, _) => _ui.BeginInvoke(() => _overlay?.ToggleMove()), null, Timeout.Infinite, false);
+        // The tray's layout and set shortcuts reach the app the same way; the app's own shortcuts save the change.
+        _layout = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Layout);
+        _layoutWait = ThreadPool.RegisterWaitForSingleObject(_layout, (_, _) => _ui.BeginInvoke(() => { _overlay?.CycleLayout(); _store!.Save(config); }), null, Timeout.Infinite, false);
+        _preset = new EventWaitHandle(false, EventResetMode.AutoReset, OverlaySignals.Preset);
+        _presetWait = ThreadPool.RegisterWaitForSingleObject(_preset, (_, _) => _ui.BeginInvoke(() => { _overlay?.CyclePreset(); _store!.Save(config); }), null, Timeout.Infinite, false);
+        _overlay.Saved += () => _store!.Save(config);
         _overlay.PlaceChanged += () => _store!.Save(config);
 
         // What the app does is kept in the usage log; with the setting on (the default) it is sent, anonymously, a few minutes after start and every ten minutes (see UsageUploader).
@@ -231,7 +237,7 @@ internal sealed class Program : ApplicationContext
     private void End()
     {
         _activateWait?.Unregister(null); _activate?.Dispose();
-        _toggleWait?.Unregister(null); _toggle?.Dispose(); _moveWait?.Unregister(null); _move?.Dispose(); _shown?.Dispose();
+        _toggleWait?.Unregister(null); _toggle?.Dispose(); _moveWait?.Unregister(null); _move?.Dispose(); _layoutWait?.Unregister(null); _layout?.Dispose(); _presetWait?.Unregister(null); _preset?.Dispose(); _shown?.Dispose();
         if (_config is not null) _store?.Save(_config);   // the overlay's last state, when the app ended from the tray with no window to save it
         _usageUploader?.SendAsync().Wait(TimeSpan.FromSeconds(4)); _usageUploader?.Dispose(); Inbox?.Dispose();   // what is left is sent on the way out, if the site answers quickly
         _fans?.Dispose(); Recorder?.Dispose();

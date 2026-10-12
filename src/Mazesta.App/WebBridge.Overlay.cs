@@ -18,7 +18,7 @@ public sealed partial class WebBridge
             return new
             {
                 visible = overlay.IsVisible, corner = _config.OverlayCorner, corners = OverlayService.Corners.Select(c => new { value = c, label = Loc.Get("Overlay_Corner_" + c) }),
-                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = OverlayService.HotkeyText, moveHotkey = OverlayService.MoveHotkeyText, editing = overlay.Editing, layout = _config.OverlayLayout, bare = _config.OverlayBare, english = _config.OverlayEnglish,
+                opacity = _config.OverlayOpacity, scale = _config.OverlayScale, preset = _config.OverlayPreset, hotkey = overlay.HotkeyText, moveHotkey = overlay.MoveHotkeyText, keys = new { toggle = overlay.Keys.Toggle, move = overlay.Keys.Move, layout = overlay.Keys.Layout, preset = overlay.Keys.Preset }, editing = overlay.Editing, layout = _config.OverlayLayout, bare = _config.OverlayBare, english = _config.OverlayEnglish,
                 refresh = _config.OverlayRefresh, refreshChoices = MonitoringOptions.OverlayRefreshSeconds,
                 userPresets = (_config.OverlayUserPresets ?? []).OrderBy(p => p.Key).Select(p => new { id = "user:" + p.Key, name = p.Key, count = p.Value.Count }),
                 frameProblem = overlay.FrameSource?.Problem, pingTarget = overlay.PingSource?.Target,
@@ -30,7 +30,7 @@ public sealed partial class WebBridge
                     var choice = chosen.FirstOrDefault(c => c.Id == i.Id);
                     return new
                     {
-                        id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), labelEn = Loc.GetEnglish(i.LabelKey), frame = i.IsMeasured, available = i.IsMeasured || sensors.Count > 0,
+                        id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), labelEn = Loc.GetEnglish(i.LabelKey), frame = i.IsMeasured && !i.IsStatic, fixedText = i.IsStatic ? overlay.StaticText(i.Id) : null, available = i.IsMeasured || sensors.Count > 0,
                         on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Of is not null ? "Share" : i.Aggregate.ToString(), max = i.FixedMax, sensors = sensors.Select(s => s.Id.Value),
                         device = i.Device, deviceName = i.Device is null ? null : engine.Hardware.FirstOrDefault(n => n.Id.Value == i.Device)?.Name,
                     };
@@ -38,6 +38,7 @@ public sealed partial class WebBridge
             };
         }
         void Save() { _store.Save(_config); PushSoon("overlayState", State); }
+        overlay.Saved += Save; _cleanup.Add(() => overlay.Saved -= Save);
         void OnPlaced() => PushSoon("overlayState", State);
         overlay.PlaceChanged += OnPlaced; _cleanup.Add(() => overlay.PlaceChanged -= OnPlaced);
 
@@ -54,6 +55,11 @@ public sealed partial class WebBridge
                 case "english": overlay.SetEnglish(Bool(p, "value")); break;
                 case "layout": overlay.SetLayout(Str(p, "value")); break;
                 case "refresh": overlay.SetRefresh(Num(p, "value") ?? 0); break;
+                // A shortcut chosen on the settings page: refused when it is not usable or another one already has it; the tray (which holds the same keys when the app is shut) restarts to pick it up.
+                case "key.toggle" or "key.move" or "key.layout" or "key.preset":
+                    if (!overlay.SetKey(Str(p, "field")[4..], Str(p, "value"))) throw new ArgumentException(Loc.Get("Settings_Keys_Bad"));
+                    var tray = _sp.GetRequiredService<ITrayController>(); _ = Task.Run(() => { if (tray.Query().Running) tray.Restart(); });
+                    break;
                 // The address the ping goes to: an IPv4 address or a name. The echoes restart towards it when the overlay is next shown.
                 case "pingTarget":
                     {

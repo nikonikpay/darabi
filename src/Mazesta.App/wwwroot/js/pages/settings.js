@@ -29,6 +29,19 @@ export function mount(el) {
   const folder = h("span", { class: "lat caption" }), version = h("span", { class: "lat caption" });
   // The users' edition: the name their shared benchmark results go under (empty: the one name every unnamed user gets). Mazesta's own
   // copies share under the company's name, so they have no such field.
+  // The overlay's global shortcuts: click a box and press the keys wanted (Alt, Ctrl or Win with a letter, digit or F-key). The app and the tray both hold them.
+  const keyBoxes = {};
+  const KEYS = [["toggle", "Settings_Keys_Toggle"], ["move", "Settings_Keys_Move"], ["layout", "Settings_Keys_Layout"], ["preset", "Settings_Keys_Preset"]];
+  const DEFAULT_KEYS = { toggle: "Alt+O", move: "Alt+M", layout: "Alt+U", preset: "Alt+P" };
+  const keyName = (e) => /^Key[A-Z]$/.test(e.code) ? e.code[3] : /^Digit\d$/.test(e.code) ? e.code[5] : /^F\d{1,2}$/.test(e.code) ? e.code : ["Insert", "Delete", "Home", "End", "PageUp", "PageDown"].includes(e.code) ? e.code : null;
+  const setKey = (name, value) => call("overlay.set", { field: "key." + name, value }).then(() => call("overlay.state").then(showKeys)).catch((x) => { toast(String(x.message || x), "fail"); call("overlay.state").then(showKeys); });
+  for (const [name] of KEYS) keyBoxes[name] = h("input", { class: "field lat key-capture", readonly: "", "aria-label": name, onkeydown: (e) => {
+    if (e.key === "Tab") return;
+    e.preventDefault();
+    const key = keyName(e); if (!key) return;
+    setKey(name, [e.ctrlKey && "Ctrl", e.altKey && "Alt", e.shiftKey && "Shift", e.metaKey && "Win"].filter(Boolean).concat(key).join("+"));
+  } });
+  const showKeys = (s) => { if (s?.keys) for (const [name] of KEYS) if (document.activeElement !== keyBoxes[name] || keyBoxes[name].value !== s.keys[name]) keyBoxes[name].value = s.keys[name]; };
   const nameRow = boot.staff ? [] : row(t("Settings_DisplayName"), [input("displayName", "field"), h("small", { class: "caption", style: { display: "block", textAlign: "start" } }, t("Settings_DisplayName_Hint"))]);
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Settings")))),
     h("div", { class: "panels flow", style: { marginTop: 0 } },
@@ -57,7 +70,11 @@ export function mount(el) {
           h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Report_Button")),
           ...(boot.staff ? [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs]
             : [h("p", { class: "caption" }, t("Web_Diag_Note_Client")), h("div", { class: "btn-row" }, exportBtn)])] }),
-      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 3,
+      box({ kind: "Gpu", ico: "clock", title: t("Settings_Keys_Title"), sub: t("Settings_Keys_Sub"), i: 3,
+        body: [h("p", { class: "caption set-note" }, t("Settings_Keys_Note")),
+          h("dl", { class: "kv" }, ...KEYS.map(([name, label]) => row(t(label), keyBoxes[name]))),
+          h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: async () => { for (const [name] of KEYS) { try { await call("overlay.set", { field: "key." + name, value: DEFAULT_KEYS[name] }); } catch { /* one that is taken stays; the rest still go back */ } } call("overlay.state").then(showKeys); } }, t("Settings_Keys_Reset")))] }),
+      box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 4,
         body: [folder, h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), h("p", { class: "note" }, version)] })));
   let built = false;
   function update(s) {
@@ -73,7 +90,7 @@ export function mount(el) {
     usage.checked = !!s.usageReport; usageLog.textContent = s.usageLog || "";
     folder.textContent = s.dataFolder; version.textContent = `${s.mode} · v${s.version}`;
   }
-  call("settings.state").then(update);
+  call("settings.state").then(update); call("overlay.state").then(showKeys);
   call("diag.state").then((d) => {
     if (!d) return;
     findings.replaceChildren(...(d.findings.length ? d.findings.slice(0, 12).map((x) => h("li", { class: "lat" }, x)) : [h("li", { class: "ok" }, t(d.polled ? "Web_Diag_None" : "Web_Diag_Waiting"))]));
@@ -82,5 +99,6 @@ export function mount(el) {
     notes.replaceChildren(...(d.notes || []).map((x) => h("li", { class: "lat" }, x)));
     logs.textContent = d.logs;
   });
-  return on("settings", update);
+  const offKeys = on("overlayState", showKeys), offSettings = on("settings", update);
+  return () => { offKeys?.(); offSettings?.(); };
 }

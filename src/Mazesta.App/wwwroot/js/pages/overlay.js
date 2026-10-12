@@ -188,6 +188,7 @@ export function mount(el) {
 
   // ——— Values: sensor items from the snapshots, frame items from what the overlay measured ———
   function current(it) {
+    if (it.id === "ram.speed") return it.fixedText ? { v: 0, text: it.fixedText } : null;   // what the RAM is set to run at: a fact, not a sensor
     if (it.frame) {
       const v = frames && { fps: frames.fps, low1: frames.low1, low01: frames.low01, frametime: frames.frametime, "fps.avg": frames.avg, "fps.min": frames.min, "fps.max": frames.max,
         "net.ping": frames.ping, "net.loss": frames.loss, "net.jitter": frames.jitter }[it.id];

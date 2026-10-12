@@ -68,7 +68,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         [OverlayPart.Gaming] = ("GAME", "#FDD400"), [OverlayPart.Gpu] = ("GPU", "#B38BFF"), [OverlayPart.Cpu] = ("CPU", "#5BA8FF"),
         [OverlayPart.Memory] = ("RAM", "#35D0E0"), [OverlayPart.Storage] = ("DISK", "#FF9A4D"), [OverlayPart.Network] = ("NET", "#FF78B9"),
     };
-    private readonly PollingEngine _engine; private readonly Func<Action, object> _dispatch; private readonly IFrameRateSource? _frames; private readonly IPingSource? _ping;
+    private readonly PollingEngine _engine; private readonly Func<Action, object> _dispatch; private readonly IFrameRateSource? _frames; private readonly IPingSource? _ping; private readonly Func<Core.Inventory.MemoryFacts?>? _memory;
     // Only the sensors the overlay shows are kept from each snapshot (a snapshot holds every sensor of the machine, often several hundred).
     private readonly Dictionary<SensorId, double?> _latest = [];
     private readonly HashSet<SensorId> _wanted;
@@ -129,9 +129,9 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     public event Action? Updated;
 
     public OverlayViewModel(PollingEngine engine, Func<Action, object> dispatch, IReadOnlyList<OverlayChoice>? items = null, IFrameRateSource? frames = null, double opacity = 0.9, double scale = 1, string layout = "list",
-        IPingSource? ping = null, bool english = false)
+        IPingSource? ping = null, bool english = false, Func<Core.Inventory.MemoryFacts?>? memory = null)
     {
-        English = english;
+        English = english; _memory = memory;
         _engine = engine; _dispatch = dispatch; _frames = frames; _ping = ping;
         Opacity = Math.Clamp(opacity, 0.5, 1); Scale = Math.Clamp(scale, 0.7, 1.6); Layout = Layouts.Contains(layout) ? layout : Layouts[0];
         Sections = Build(engine.Hardware, items ?? OverlayCatalog.Presets[OverlayCatalog.DefaultPreset], english);
@@ -172,11 +172,28 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
                 var (title, hue) = Look[item.Part];
                 section = new OverlaySection(item.Part, title, hue, item.Device);
                 if (item.Device is not null) section.Subtitle = hardware.FirstOrDefault(n => n.Id.Value == item.Device)?.Name ?? "";
+                else section.Subtitle = PartName(item.Part, hardware, sensors);
                 sections.Add(section);
             }
             section.Rows.Add(new(item, english ? Loc.GetEnglish(item.LabelKey) : Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : item.Of is not null ? Unit.Percent : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
         }
         return sections;
+    }
+
+    /// <summary>The name of the part a block shows, for the top of the block: the processor's, the graphics card's, the one drive's or adapter's it reads (a block over several drives or adapters has no single name).
+    /// The memory's comes with the facts of the modules (see <see cref="Apply"/>); the game block names the program being measured.</summary>
+    private static string PartName(OverlayPart part, IReadOnlyList<HardwareNode> hardware, IReadOnlyList<SensorDefinition> sensors)
+    {
+        if (part is OverlayPart.Gaming or OverlayPart.Memory || sensors.Count == 0) return "";
+        var owners = sensors.Select(s => s.Hardware).Distinct().Select(id => Root(hardware, id)).Distinct().ToList();
+        return owners.Count == 1 && owners[0] is { } node ? OverlayNames.Short(node.Name) : "";
+    }
+
+    private static HardwareNode? Root(IReadOnlyList<HardwareNode> hardware, HardwareId id)
+    {
+        var node = hardware.FirstOrDefault(n => n.Id == id);
+        while (node?.ParentId is { } parent && hardware.FirstOrDefault(n => n.Id == parent) is { } up) node = up;
+        return node;
     }
 
     private void OnSnapshot(SensorSnapshot snapshot) { if (_active) _dispatch(() => Apply(snapshot)); }
@@ -190,9 +207,10 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         foreach (var section in Sections)
         {
             if (section.Part == OverlayPart.Gaming) { section.Subtitle = Frames?.App ?? ""; HeroApp = section.Subtitle; }
+            else if (section.Part == OverlayPart.Memory) section.Subtitle = _memory?.Invoke()?.Type ?? "";
             foreach (var row in section.Rows)
             {
-                double? v = row.Item.IsFrameItem ? FrameValue(row.Id, Frames) : row.Item.IsPingItem ? PingValue(row.Id, Ping)
+                double? v = row.Item.IsStatic ? StaticValue(row.Id) : row.Item.IsFrameItem ? FrameValue(row.Id, Frames) : row.Item.IsPingItem ? PingValue(row.Id, Ping)
                     : row.Item.Of is not null ? Share(_latest.GetValueOrDefault(row.Sensors[0]), _latest.GetValueOrDefault(row.Sensors[1]))
                     : OverlayCatalog.Combine(row.Item.Aggregate, row.Sensors.Select(id => _latest.GetValueOrDefault(id)));
                 row.Value = v is { } x ? Text(row, x) : Missing;
@@ -211,6 +229,9 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
         }
         Updated?.Invoke();
     }
+
+    /// <summary>What the machine is, not what it does: the speed the RAM is set to run at (the app read it once from the modules); null until known, then the dash.</summary>
+    private double? StaticValue(string id) => id == "ram.speed" ? _memory?.Invoke()?.SpeedMts : null;
 
     private double? FrameValue(string id, FrameRateReading? f) => id switch
     {
@@ -237,7 +258,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
     internal static double? Share(double? part, double? whole) => part is { } p && whole is > 0 ? Math.Clamp(p / whole.Value * 100, 0, 100) : null;
     internal static double? PingValue(string id, PingReading? p) => id switch { "net.ping" => p?.PingMs, "net.loss" => p?.LossPercent, "net.jitter" => p?.JitterMs, _ => null };
     internal static string FormatPing(string id, double v) => id == "net.loss" ? v.ToString("F0", CultureInfo.InvariantCulture) + " %" : v.ToString(id == "net.jitter" ? "F1" : "F0", CultureInfo.InvariantCulture) + " ms";
-    private static string Text(OverlayRow row, double v) => row.Item.IsFrameItem ? FormatFrame(row.Id, v) : row.Item.IsPingItem ? FormatPing(row.Id, v) : Format(v, row.Unit);
+    private static string Text(OverlayRow row, double v) => row.Item.IsStatic ? v.ToString("F0", CultureInfo.InvariantCulture) + " MT/s" : row.Item.IsFrameItem ? FormatFrame(row.Id, v) : row.Item.IsPingItem ? FormatPing(row.Id, v) : Format(v, row.Unit);
 
     internal static string FormatFrame(string id, double v) => id == "frametime" ? v.ToString("F1", CultureInfo.InvariantCulture) + " ms" : v.ToString("F0", CultureInfo.InvariantCulture) + " FPS";
 

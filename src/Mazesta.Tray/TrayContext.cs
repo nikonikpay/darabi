@@ -58,7 +58,7 @@ internal sealed class TrayContext : ApplicationContext
         // The GPU profile a little after sign-in, once the driver has settled.
         _gpuAtStart.Tick += async (_, _) => { _gpuAtStart.Stop(); _gpu.ApplyAtStart(); _fans.ApplyAtStart(); await _rgb.ApplyAtStartAsync(); Memory.Release(); };
         _gpuAtStart.Start();
-        _keys = new OverlayKeys(ToggleOverlay, MoveOverlay);
+        _keys = new OverlayKeys(OverlayKeysFile.Read(paths.ConfigFile), ToggleOverlay, MoveOverlay, () => SignalApp(OverlaySignals.Layout), () => SignalApp(OverlaySignals.Preset));
     }
 
     /// <summary>The app is running a benchmark: a scheduled check waits a minute and asks again (one asked for from the menu still runs).</summary>
@@ -82,7 +82,10 @@ internal sealed class TrayContext : ApplicationContext
         StartApp(OverlaySignals.Argument);
     }
 
-    /// <summary>Alt+M: the running app puts the overlay in the mode where the mouse moves and resizes it; with no app running it is started for the overlay alone.</summary>
+    /// <summary>A shortcut that only changes how the overlay looks: told to the running app; with no app running nothing is started for it (there is no overlay to change).</summary>
+    private static void SignalApp(string name) { if (EventWaitHandle.TryOpenExisting(name, out var e)) using (e) e.Set(); }
+
+    /// <summary>The move shortcut (Alt+M by default): the running app puts the overlay in the mode where the mouse moves and resizes it; with no app running it is started for the overlay alone.</summary>
     private void MoveOverlay()
     {
         if (EventWaitHandle.TryOpenExisting(OverlaySignals.Move, out var move)) { using (move) move.Set(); return; }
