@@ -21,7 +21,10 @@ public sealed record MemoryFacts(string? Type, int? SpeedMts, int? CasLatency, s
         int? speed = modules.Select(m => m.ConfiguredSpeedMts).FirstOrDefault(s => s is > 0) ?? modules.Select(m => m.SpeedMts).FirstOrDefault(s => s is > 0);
         string? type = modules.Select(m => m.TypeName).FirstOrDefault(t => t is not null) ?? spd.FirstOrDefault()?.MemoryType;
         var profile = spd.Count > 0 ? Ddr4Spd.Matching(spd[0], speed) : null;
-        return speed is null && profile is null && type is null ? null : new(type, speed, profile?.Cl, profile?.Name)
+        string? profileName = profile?.Name;
+        // A speed set by hand matches no profile: the nearest one's latency is still shown, named with its own speed so it is not mistaken for the running one.
+        if (profile is null && speed is { } mts && spd.Count > 0 && spd[0].Xmp.Concat(spd[0].Jedec).OrderBy(p => Math.Abs(p.SpeedMts - mts)).FirstOrDefault() is { } near) { profile = near; profileName = $"{near.Name} @ {near.SpeedMts} MT/s"; }
+        return speed is null && profile is null && type is null ? null : new(type, speed, profile?.Cl, profileName)
         {
             Timings = profile is null ? null : $"{profile.Cl}-{profile.Trcd}-{profile.Trp}-{profile.Tras}", Ranks = spd.FirstOrDefault()?.Ranks ?? modules.Select(m => m.Ranks).FirstOrDefault(r => r > 0),
             Chips = spd.FirstOrDefault()?.DramManufacturer, BankGroups = spd.FirstOrDefault()?.BankGroups is > 0 and var bg ? bg : null,
