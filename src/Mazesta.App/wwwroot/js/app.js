@@ -108,9 +108,9 @@ function setNav(mini) { app.dataset.nav = mini ? "mini" : ""; try { localStorage
 
 function renderIndex(info) {
   clear(index);
-  // Until the viewer picks, a narrow window starts with the narrow bar, so the page keeps its room on a small screen.
+  // Until the viewer picks, the bar is open (the search and the page names show); only their own choice narrows it.
   let kept = null; try { kept = localStorage.getItem("mazesta.nav"); } catch { /* default */ }
-  app.dataset.nav = (kept ?? (innerWidth < 1200 ? "mini" : "")) === "mini" ? "mini" : "";
+  app.dataset.nav = kept === "mini" ? "mini" : "";
   const toggle = h("button", { class: "icon-btn nav-toggle", type: "button", title: t("Nav_Collapse"), "aria-label": t("Nav_Collapse"), onclick: () => setNav(app.dataset.nav !== "mini") }, icon("menu"));
   index.append(
     h("div", { class: "brand" }, h("img", { src: "img/logo.png", alt: "" }), h("div", {}, h("div", { class: "brand-word" }, logo()), h("div", { class: "brand-sub" }, "TEST SUITE")), toggle),
