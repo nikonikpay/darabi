@@ -44,6 +44,47 @@ public static class PawnIoDriver
         return result;
     }
 
+    /// <summary>Programs that read the same CPU registers or the Ryzen's SMU through a driver of their own and can leave them unreadable for a second reader (or crash holding them); named in the log when the CPU sensors come back empty.</summary>
+    private static readonly string[] Competing = ["HWiNFO64", "HWiNFO32", "AMD Ryzen Master", "AMDRyzenMasterDriver", "ArmouryCrate.Service", "AsusCertService", "iCUE", "MSIAfterburner", "CPUZ_x64", "CPU-Z", "OCCT", "RTSS"];
+
+    /// <summary>The driver's state, written for the log when the CPU sensors read nothing: the service (installed, running, stopped), its version, and which tools that might be in the way are running.</summary>
+    public static string Describe()
+    {
+        string service = ServiceState();
+        string version = ""; try { using var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64); using var k = hklm.OpenSubKey(UninstallKey); version = k?.GetValue("DisplayVersion") as string ?? ""; } catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException) { }
+        var running = Competing.Where(n => { var p = Process.GetProcessesByName(n); foreach (var x in p) x.Dispose(); return p.Length > 0; }).ToList();
+        return $"PawnIO service: {service}; version: {(version.Length > 0 ? version : "unknown")}; tools that may hold the CPU registers: {(running.Count > 0 ? string.Join(", ", running) : "none running")}";
+    }
+
+    /// <summary>"RUNNING", "STOPPED" … from <c>sc query</c>, or "unknown"; the state of a driver is not in the registry.</summary>
+    private static string ServiceState()
+    {
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo("sc.exe", "query PawnIO") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true });
+            if (p is null) return "unknown";
+            string text = p.StandardOutput.ReadToEnd(); p.WaitForExit(5000);
+            foreach (var state in new[] { "RUNNING", "STOPPED", "START_PENDING", "STOP_PENDING" }) if (text.Contains(state, StringComparison.Ordinal)) return state;
+            return text.Contains("1060", StringComparison.Ordinal) ? "not installed" : "unknown";
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or IOException) { return "unknown"; }
+    }
+
+    /// <summary>Starts the driver's service when it is installed but stopped (Windows can leave it so after a failed start); true when it was stopped and is now running.</summary>
+    public static bool StartIfStopped(ILogger log)
+    {
+        if (ServiceState() != "STOPPED") return false;
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo("sc.exe", "start PawnIO") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true });
+            p?.WaitForExit(10000);
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { log.LogWarning(e, "The PawnIO service could not be started"); return false; }
+        bool running = ServiceState() == "RUNNING";
+        log.LogInformation("The PawnIO service was stopped; started it: {Running}", running);
+        return running;
+    }
+
     private static PawnIoInstallResult Install(string setupPath, ILogger log)
     {
         try

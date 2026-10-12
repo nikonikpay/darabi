@@ -6,23 +6,23 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
     public const string ReasonPawnIoMissing = "Provider.PawnIoMissing", ReasonNotElevated = "Provider.NotElevated", ReasonOpenFailed = "Provider.OpenFailed", ReasonNoHardware = "Provider.NoHardware", ReasonCpuSensorsUnread = "Provider.CpuSensorsUnread";
     private sealed class NodeState(MappedNode mapped) { public MappedNode Mapped = mapped; public DateTimeOffset? LastOk; public string? Failure; public DateTimeOffset? FailingSince; public int ConsecutiveFailures; }
     private readonly ILhmComputer _computer; private readonly Func<bool> _pawnIo, _elevated; private readonly IClock _clock; private readonly ILogger _log;
-    private readonly Action? _beforeOpen;
+    private readonly Action? _beforeOpen; private readonly Func<string>? _describe; private readonly Func<bool>? _restart;
     private readonly LhmHardwareMapper _mapper; private readonly List<NodeState> _nodes = [];
-    private ProviderStatus _status = ProviderStatus.NotStarted; private bool _historyWarned;
+    private ProviderStatus _status = ProviderStatus.NotStarted; private bool _historyWarned, _retried;
     public string Name => "LibreHardwareMonitor";
     public ProviderStatus Status { get => _status; private set { _status = value; StatusChanged?.Invoke(value); } }
     public event Action<ProviderStatus>? StatusChanged;
     public IReadOnlyList<HardwareNode> Hardware { get; private set; } = [];
 
-    public LibreHardwareMonitorProvider(ILhmComputer computer, Func<bool> isPawnIoInstalled, Func<bool> isElevated, Func<IHardware, string?> storageSerialResolver, IClock clock, ILogger<LibreHardwareMonitorProvider> logger, Action? beforeOpen = null)
-    { _computer = computer; _pawnIo = isPawnIoInstalled; _elevated = isElevated; _clock = clock; _log = logger; _beforeOpen = beforeOpen; _mapper = new LhmHardwareMapper(storageSerialResolver); }
+    public LibreHardwareMonitorProvider(ILhmComputer computer, Func<bool> isPawnIoInstalled, Func<bool> isElevated, Func<IHardware, string?> storageSerialResolver, IClock clock, ILogger<LibreHardwareMonitorProvider> logger, Action? beforeOpen = null, Func<string>? describeDriver = null, Func<bool>? restartDriver = null)
+    { _describe = describeDriver; _restart = restartDriver; _computer = computer; _pawnIo = isPawnIoInstalled; _elevated = isElevated; _clock = clock; _log = logger; _beforeOpen = beforeOpen; _mapper = new LhmHardwareMapper(storageSerialResolver); }
 
     public static LibreHardwareMonitorProvider CreateDefault(IClock clock, ILoggerFactory loggerFactory)
     {
         var log = loggerFactory.CreateLogger<LibreHardwareMonitorProvider>();
         // LHM loads its PawnIO modules inside Open(), so the driver has to be in place before it.
         return new(new LhmComputerAdapter(), PawnIoDriver.IsInstalled, IsProcessElevated,
-            hw => (hw as StorageDevice)?.Storage?.SerialNumber, clock, log, () => PawnIoDriver.EnsureInstalled(IsProcessElevated(), log));
+            hw => (hw as StorageDevice)?.Storage?.SerialNumber, clock, log, () => PawnIoDriver.EnsureInstalled(IsProcessElevated(), log), PawnIoDriver.Describe, () => PawnIoDriver.StartIfStopped(log));
     }
     private static bool IsProcessElevated() { using var id = WindowsIdentity.GetCurrent(); return new WindowsPrincipal(id).IsInRole(WindowsBuiltInRole.Administrator); }
 
@@ -48,7 +48,13 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         // so the customer is told sensors may be missing rather than being promised a clean run.
         if (!Probe(_elevated, "elevation")) Status = ProviderStatus.Degraded(ReasonNotElevated, "Process is not elevated; CPU and motherboard sensors are unavailable.", count);
         else if (!HasCpuMsrEvidence() && !Probe(_pawnIo, "PawnIO driver")) Status = ProviderStatus.Degraded(ReasonPawnIoMissing, "PawnIO driver is not installed; CPU MSR sensors are unavailable.", count);
-        else if (!HasCpuMsrEvidence() && HasCpuTemperatureSensors()) Status = ProviderStatus.Degraded(ReasonCpuSensorsUnread, "PawnIO is installed but no CPU temperature reads (driver blocked or not started).", count);
+        else if (!HasCpuMsrEvidence() && HasCpuTemperatureSensors())
+        {
+            // Said once in the log with what is known about the driver, so a report from a machine this happens on says why; a stopped service is started and the sensors opened once more.
+            try { _log.LogWarning("CPU sensors read nothing: {Driver}", _describe?.Invoke() ?? "no driver details"); } catch (Exception e) when (e is InvalidOperationException or IOException) { }
+            if (!_retried && _restart is not null && Probe(_restart, "PawnIO restart")) { _retried = true; try { _computer.Close(); } catch (Exception ex) { _log.LogWarning(ex, "LHM close failed"); } _nodes.Clear(); Start(); return; }
+            Status = ProviderStatus.Degraded(ReasonCpuSensorsUnread, "PawnIO is installed but no CPU temperature reads (driver blocked or not started).", count);
+        }
         else if (count == 0) Status = ProviderStatus.Degraded(ReasonNoHardware, "LHM returned no sensors.", 0);
         else Status = ProviderStatus.Ready(count);
     }

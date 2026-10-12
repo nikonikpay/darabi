@@ -122,7 +122,7 @@
     <value>Sensor library failed to start.</value>
   </data>
   <data name="Provider.CpuSensorsUnread" xml:space="preserve">
-    <value>PawnIO is installed but the CPU temperature does not read. The driver may be blocked (Windows security) or waiting for a restart; restart Windows and try again.</value>
+    <value>PawnIO is installed but the CPU temperature does not read. The driver may be blocked (Windows security) or waiting for a restart; restart Windows and try again. If a tool such as HWiNFO, Ryzen Master, Armoury Crate or iCUE is open, close it and open Mazesta again; the exact cause is written in the troubleshooting report (the log).</value>
   </data>
   <data name="Provider.NoHardware" xml:space="preserve">
     <value>No sensors were found.</value>
