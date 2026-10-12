@@ -58,7 +58,7 @@ public sealed partial class WebBridge
             PeerPart.Cpu => s.Cpu,
             PeerPart.Gpu => GpuName(options),
             PeerPart.Drive => StorageExecutor.TargetOf(options.GetValueOrDefault(StorageExecutor.DriveOption) ?? "") is { } target ? await Task.Run(() => DriveModels.Of(wmi, target)).ConfigureAwait(true) : null,
-            PeerPart.Memory => BenchmarkDetails.MemorySummary(await inventory.GetAsync().ConfigureAwait(true)) is { } ram ? $"{ram} · {BenchmarkPeers.PartName(s.Cpu)}" : null,
+            PeerPart.Memory => BenchmarkDetails.MemorySummary(await inventory.GetAsync().ConfigureAwait(true), await Task.Run(() => _sp.GetService<Mazesta.Core.Inventory.MemoryFactsSource>()?.Invoke()).ConfigureAwait(true)) is { } ram ? $"{ram} · {BenchmarkPeers.PartName(s.Cpu)}" : null,
             _ => null,
         };
         // The measured part's specifications and the rest of the machine, as read now (the inventory is read once and kept).
@@ -70,7 +70,7 @@ public sealed partial class WebBridge
             {
                 PeerPart.Cpu => BenchmarkDetails.Cpu(inv.Cpu, CpuTopology.Cores),
                 PeerPart.Gpu => BenchmarkDetails.Gpu(inv.Gpus.FirstOrDefault(g => Same(g.Name, partName)), VramBytes(engine, partName), GpuDevices.Discrete),
-                PeerPart.Memory => BenchmarkDetails.Memory(inv),
+                PeerPart.Memory => BenchmarkDetails.Memory(inv, await Task.Run(() => _sp.GetService<Mazesta.Core.Inventory.MemoryFactsSource>()?.Invoke()).ConfigureAwait(true)),
                 PeerPart.Drive => BenchmarkDetails.Drive(inv.Storage.FirstOrDefault(d => Same(d.FriendlyName, partName))),
                 _ => [],
             };

@@ -9,13 +9,23 @@ namespace Mazesta.Core.Inventory;
 /// <param name="Type">DDR4, DDR5 …; <paramref name="Profile"/> the matching profile's name ("XMP 1", "JEDEC 4800").</param>
 public sealed record MemoryFacts(string? Type, int? SpeedMts, int? CasLatency, string? Profile)
 {
+    /// <summary>What the first module's own SPD says besides the latency: the profile's CL-RCD-RP-RAS, the ranks, the maker of the DRAM chips (Samsung, SK hynix, Micron …) and the bank groups. Left out when not read.</summary>
+    public string? Timings { get; init; }
+    public int? Ranks { get; init; }
+    public string? Chips { get; init; }
+    public int? BankGroups { get; init; }
+
     public static MemoryFacts? From(HardwareInventory inventory, IReadOnlyList<SpdModule> spd)
     {
         var modules = inventory.MemoryModules;
         int? speed = modules.Select(m => m.ConfiguredSpeedMts).FirstOrDefault(s => s is > 0) ?? modules.Select(m => m.SpeedMts).FirstOrDefault(s => s is > 0);
         string? type = modules.Select(m => m.TypeName).FirstOrDefault(t => t is not null) ?? spd.FirstOrDefault()?.MemoryType;
         var profile = spd.Count > 0 ? Ddr4Spd.Matching(spd[0], speed) : null;
-        return speed is null && profile is null && type is null ? null : new(type, speed, profile?.Cl, profile?.Name);
+        return speed is null && profile is null && type is null ? null : new(type, speed, profile?.Cl, profile?.Name)
+        {
+            Timings = profile is null ? null : $"{profile.Cl}-{profile.Trcd}-{profile.Trp}-{profile.Tras}", Ranks = spd.FirstOrDefault()?.Ranks ?? modules.Select(m => m.Ranks).FirstOrDefault(r => r > 0),
+            Chips = spd.FirstOrDefault()?.DramManufacturer, BankGroups = spd.FirstOrDefault()?.BankGroups is > 0 and var bg ? bg : null,
+        };
     }
 }
 

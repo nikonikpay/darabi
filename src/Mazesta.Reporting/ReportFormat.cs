@@ -9,11 +9,12 @@ internal static class ReportFormat
     public static string Duration(double seconds) => seconds >= 60 ? $"{(int)(seconds / 60)}m {seconds % 60:F0}s" : $"{seconds:F0}s";
     public static string Value(double v, SensorSummary s) => Units.FormatMeasured(v, s.Unit, 1);
 
+    private static bool Filler(string? s) => Mazesta.Core.Inventory.Placeholder.Is(s);
+
     /// <summary>The maker and model the machine is sold under ("LENOVO 82JU"); null when Windows gave neither or only a placeholder a board maker leaves in.</summary>
     public static string? DeviceName(HardwareInventory m)
     {
         if (m.Computer is not { } c) return null;
-        static bool Filler(string? s) => string.IsNullOrWhiteSpace(s) || s.Contains("O.E.M.", StringComparison.OrdinalIgnoreCase) || s.Contains("To be filled", StringComparison.OrdinalIgnoreCase) || s.Contains("System Product Name", StringComparison.OrdinalIgnoreCase) || s.Contains("Default string", StringComparison.OrdinalIgnoreCase);
         string text = $"{(Filler(c.Manufacturer) ? "" : c.Manufacturer)} {(Filler(c.Model) ? "" : c.Model)}".Trim();
         // Lenovo and others give a product code as the model ("82XB") and the name people know as the family ("Yoga Slim 7"): both are shown.
         if (!Filler(c.Family) && !text.Contains(c.Family!.Trim(), StringComparison.OrdinalIgnoreCase)) text = $"{text} ({c.Family.Trim()})".Trim();

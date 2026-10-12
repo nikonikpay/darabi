@@ -74,12 +74,15 @@ public sealed partial class SystemInfoViewModel : ObservableObject
         new(Loc.Get("SystemInfo_DeviceId"), Show(g.PnpDeviceId)),
     ];
 
+    /// <summary>The placeholder a board maker leaves in the BIOS is not a value: it is shown as not available.</summary>
+    private static string? Real(string? s) => Mazesta.Core.Inventory.Placeholder.Is(s) ? null : s;
+
     private static IReadOnlyList<InfoRow> DeviceRows(ComputerInfo c) =>
     [
-        new(Loc.Get("SystemInfo_Manufacturer"), Show(c.Manufacturer)),
-        new(Loc.Get("SystemInfo_Model"), Show(c.Model)),
-        new(Loc.Get("SystemInfo_Family"), Show(c.Family)),
-        new(Loc.Get("SystemInfo_Serial"), Show(c.SerialNumber)),
+        new(Loc.Get("SystemInfo_Manufacturer"), Show(Real(c.Manufacturer))),
+        new(Loc.Get("SystemInfo_Model"), Show(Real(c.Model))),
+        new(Loc.Get("SystemInfo_Family"), Show(Real(c.Family))),
+        new(Loc.Get("SystemInfo_Serial"), Show(Real(c.SerialNumber))),
         new(Loc.Get("SystemInfo_DeviceKind"), c.IsPortable is { } p ? Loc.Get(p ? "SystemInfo_Laptop" : "SystemInfo_Desktop") : Loc.Get("Value_NotAvailable")),
     ];
 

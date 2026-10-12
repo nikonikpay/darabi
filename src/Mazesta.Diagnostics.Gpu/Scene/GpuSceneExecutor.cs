@@ -34,7 +34,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                new("high", "Test_Weather_High", true, "three times the bodies, a finer air (98 MB) and 233 MB of solids: the memory and every core set the speed")]);
     /// <summary>How many frames are in flight at once: one is drawn and waited for before the next is prepared (the processor's share of a frame, a millisecond or two, is time the card is idle); two lets the processor prepare
     /// the next frame while the card draws this one, so the card is never idle - what a game does. The scene is the same; the frame rate, and how busy the card is kept, are what differ.</summary>
-    internal static readonly TestOption Frames = new(FramesOption, "Test_Option_Frames", TestOptionKind.Choice, "1",
+    internal static readonly TestOption Frames = new(FramesOption, "Test_Option_Frames", TestOptionKind.Choice, "2",
         () => [new("1", "Test_Frames_One", true, "each frame is finished before the next is prepared"), new("2", "Test_Frames_Two", true, "the next frame is prepared while the card draws this one (what a game does)")]);
     /// <summary>The frames in flight a choice means.</summary>
     internal static int FramesOf(string choice) => choice == "2" ? 2 : 1;

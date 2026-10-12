@@ -15,7 +15,7 @@ export function card(c, i) {
   return h("div", { class: "col spec-card", style: { "--i": i } }, h("div", { class: "col-head" }, h("span", { class: "h3" }, c.title)),
     main.length ? rows(main) : null,
     c.table ? h("div", { class: "spec-table-wrap" }, h("table", { class: "table spec-table" },
-      h("thead", {}, h("tr", {}, c.table.headers.map((x) => h("th", {}, x)))),
+      h("thead", {}, h("tr", {}, c.table.headers.map((x, j) => h("th", { class: j ? "lat" : "" }, x)))),
       h("tbody", {}, c.table.rows.map((r, k) => h("tr", { class: k === c.table.highlight ? "on" : "" }, r.map((x, j) => h("td", { class: j ? "lat" : "lat nm" }, x))))))) : null,
     more.length ? h("details", { class: "spec-more" }, h("summary", {}, t("Spec_More"), h("span", { class: "lat caption" }, `(${more.length})`)), rows(more)) : null,
     c.note ? h("p", { class: "caption spec-note" }, c.note) : null);
