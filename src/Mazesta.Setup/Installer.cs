@@ -42,6 +42,21 @@ internal static class Installer
 
     public static bool IsRunning() => Process.GetProcessesByName("Mazesta").Length + Process.GetProcessesByName("MazestaTray").Length > 0;
 
+    /// <summary>Closes the app, its tray and the OpenRGB it started (their files are what the setup replaces); false if one would not close. Setup runs elevated, so the app's own elevated copy can be ended too.</summary>
+    public static bool CloseRunning()
+    {
+        foreach (var name in new[] { "Mazesta", "MazestaTray", "OpenRGB" })
+            foreach (var p in Process.GetProcessesByName(name))
+                using (p)
+                    try
+                    {
+                        if (name == "OpenRGB" && (p.MainModule?.FileName ?? "").IndexOf("Mazesta", StringComparison.OrdinalIgnoreCase) < 0) continue;   // a user's own OpenRGB stays
+                        if (!p.CloseMainWindow() || !p.WaitForExit(4000)) { p.Kill(); p.WaitForExit(5000); }
+                    }
+                    catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException) { }
+        return !IsRunning();
+    }
+
     public static void Install(string folder, bool desktop, bool foreign, IProgress<(int Percent, string Text)> progress)
     {
         folder = Path.GetFullPath(folder);

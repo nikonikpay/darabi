@@ -175,7 +175,7 @@ internal sealed class SetupForm : Form
         if (!Installer.HasPayload) { Fail_(SetupText.NoPayload); return; }
         var state = Installer.Check(_folder);
         if (state == Installer.FolderState.Bad) { Fail_(SetupText.BadFolder); return; }
-        if (Installer.IsRunning()) { Fail_(SetupText.Running); return; }
+        if (Installer.IsRunning() && !await Task.Run(Installer.CloseRunning)) { Fail_(SetupText.Running); return; }
         bool foreign = state == Installer.FolderState.Foreign;
         if (foreign && MessageBox.Show(this, SetupText.NotEmptyAsk, SetupText.Title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2,
                 SetupText.English ? 0 : MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign) != DialogResult.Yes) return;
