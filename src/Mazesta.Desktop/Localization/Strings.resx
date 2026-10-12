@@ -1619,6 +1619,30 @@ The update services stopped and disabled</value></data>
   <data name="Spec_CpuPcie" xml:space="preserve"><value>PCIe from the CPU</value></data>
   <data name="Spec_CpuMemory" xml:space="preserve"><value>Memory support</value></data>
   <data name="Spec_Facts_Note" xml:space="preserve"><value>Not measured: derived from the architecture the driver reports, or from the maker's published specification of this exact model. A model not in the table shows no row rather than a neighbour's figures.</value></data>
+  <data name="Spec_GpuChip" xml:space="preserve"><value>Graphics chip</value></data>
+  <data name="Spec_Transistors" xml:space="preserve"><value>Transistors</value></data>
+  <data name="Spec_DieSize" xml:space="preserve"><value>Die size</value></data>
+  <data name="Spec_Density" xml:space="preserve"><value>Density</value></data>
+  <data name="Spec_L2Cache" xml:space="preserve"><value>L2 cache</value></data>
+  <data name="Spec_GpuMemoryType" xml:space="preserve"><value>Memory type</value></data>
+  <data name="Spec_Bandwidth" xml:space="preserve"><value>Memory bandwidth</value></data>
+  <data name="Spec_MemoryEffective" xml:space="preserve"><value>Memory data rate</value></data>
+  <data name="Spec_BoostClock" xml:space="preserve"><value>Highest core clock</value></data>
+  <data name="Spec_PixelRate" xml:space="preserve"><value>Pixel rate</value></data>
+  <data name="Spec_TextureRate" xml:space="preserve"><value>Texture rate</value></data>
+  <data name="Spec_Fp32" xml:space="preserve"><value>FP32 (float)</value></data>
+  <data name="Spec_Fp16" xml:space="preserve"><value>FP16 (half)</value></data>
+  <data name="Spec_Fp64" xml:space="preserve"><value>FP64 (double)</value></data>
+  <data name="Spec_Nvenc" xml:space="preserve"><value>NVENC (video encoders)</value></data>
+  <data name="Spec_Nvdec" xml:space="preserve"><value>NVDEC (video decoders)</value></data>
+  <data name="Spec_Av1" xml:space="preserve"><value>AV1 video</value></data>
+  <data name="Spec_Encode" xml:space="preserve"><value>encode</value></data>
+  <data name="Spec_Decode" xml:space="preserve"><value>decode</value></data>
+  <data name="Spec_Dlss" xml:space="preserve"><value>DLSS features</value></data>
+  <data name="Spec_GpuRenderMemory" xml:space="preserve"><value>Rendering, memory and video</value></data>
+  <data name="Spec_GpuSystem" xml:space="preserve"><value>Connection, driver and power</value></data>
+  <data name="Spec_Theory_Note" xml:space="preserve"><value>Theoretical rates are computed at the card's highest reported core clock ({0} MHz), not measured.</value></data>
+  <data name="Spec_HybridCores" xml:space="preserve"><value>Performance + efficiency cores</value></data>
   <data name="Spec_BusWidth" xml:space="preserve"><value>Memory bus</value></data>
   <data name="Spec_Subsystem" xml:space="preserve"><value>PCI subsystem (vendor:device)</value></data>
   <data name="Spec_ComputeCapability" xml:space="preserve"><value>Compute capability</value></data>

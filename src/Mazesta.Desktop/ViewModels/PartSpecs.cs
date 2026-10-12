@@ -50,22 +50,22 @@ public static class PartSpecs
     private static IReadOnlyList<SpecCard> Cpu(CpuInfo? c, CpuDetails? d)
     {
         if (c is null) return [Missing("Dashboard_Cpu")];
-        var main = new List<SpecRow>();
+        // Three cards: the processor (identity, cores, platform), its caches, and what it can do.
+        var main = new List<SpecRow>(); var plat = CpuFacts.For(c.Name);
         Add(main, "SystemInfo_Name", c.Name);
         Add(main, "SystemInfo_Vendor", c.Vendor == HardwareVendor.Unknown ? null : c.Vendor.ToString());
+        Add(main, "Spec_Microarchitecture", plat?.Microarchitecture);
+        Add(main, "Spec_Process", plat?.Process);
         Add(main, "Spec_CoresThreads", c.PhysicalCores is { } p && c.LogicalProcessors is { } l ? $"{p} / {l}" : null);
+        Add(main, "Spec_HybridCores", d?.Hybrid is { } hy ? $"{hy.Performance} P + {hy.Efficiency} E" : null);
         Add(main, "Spec_BaseClock", d?.BaseClockMhz ?? c.MaxClockMhz, suffix: "MHz");
         Add(main, "SystemInfo_Socket", c.Socket);
+        Add(main, "Spec_CpuPcie", plat?.Pcie);
+        Add(main, "Spec_CpuMemory", plat?.Memory);
         Add(main, "Spec_FamilyModel", Identifier(d?.Identifier), more: true);
         Add(main, "Spec_Microcode", d?.Microcode is { } mc ? $"0x{mc:X}" : null, more: true);
         Add(main, "Spec_BusClock", d?.BusClockMhz, more: true, suffix: "MHz");
-        var cards = new List<SpecCard> { new(Loc.Get("Dashboard_Cpu"), main) };
-        if (CpuFacts.For(c.Name) is { } plat)
-        {
-            var rows = new List<SpecRow>();
-            Add(rows, "Spec_Microarchitecture", plat.Microarchitecture); Add(rows, "Spec_Process", plat.Process); Add(rows, "Spec_CpuPcie", plat.Pcie); Add(rows, "Spec_CpuMemory", plat.Memory);
-            cards.Add(new(Loc.Get("Spec_CpuPlatform"), rows, Note: Loc.Get("Spec_Facts_Note")));
-        }
+        var cards = new List<SpecCard> { new(Loc.Get("Dashboard_Cpu"), main, Note: plat is null ? null : Loc.Get("Spec_Facts_Note")) };
         if (d is { Caches.Count: > 0 })
         {
             var caches = d.Caches.Select(x => new SpecRow(Loc.Format("Spec_CacheLevel", x.Level, x.Kind == "Unified" ? "" : Loc.Get("Spec_Cache_" + x.Kind)).Trim(), $"{x.Count} × {Size(x.SizeBytes)}")).ToList();
@@ -97,40 +97,75 @@ public static class PartSpecs
     private static IReadOnlyList<SpecCard> Gpu(GpuInfo g, GpuDetails? d, int? number)
     {
         string title = number is { } n ? Loc.Format("SystemInfo_GpuN", n) : Loc.Get("Dashboard_Gpu");
+        var u = GpuFacts.For(g.Name, d?.ComputeCapability, d?.Cores); var chip = GpuFacts.ChipOf(g.Name); var video = GpuFacts.VideoOf(g.Name, d?.ComputeCapability);
+        // 1: the chip and what it is built from.
         var main = new List<SpecRow>();
         Add(main, "SystemInfo_Name", g.Name);
         Add(main, "Spec_BoardVendor", d?.BoardVendor);
-        Add(main, "SystemInfo_Vram", g.AdapterRamBytes is { } ram ? Gb(ram) : null);
+        Add(main, "Spec_GpuChip", chip?.Name);
         Add(main, "Spec_Architecture", d?.Architecture);
-        Add(main, "Spec_GpuCores", d?.Cores);
-        Add(main, "Spec_BusWidth", d?.BusWidthBits, suffix: "bit");
-        Add(main, "Spec_Subsystem", d?.SubsystemId, more: true);
+        Add(main, "Spec_Process", u?.Process);
+        Add(main, "Spec_Transistors", chip?.TransistorsBillion, suffix: "B");
+        Add(main, "Spec_DieSize", chip?.DieMm2, suffix: "mm²");
+        Add(main, "Spec_Density", chip is null ? null : (chip.TransistorsBillion * 1000 / chip.DieMm2).ToString("F1", CultureInfo.InvariantCulture), more: true, suffix: "M / mm²");
         Add(main, "Spec_ComputeCapability", d?.ComputeCapability, more: true);
-        var link = new List<SpecRow>();
-        Add(link, "Spec_LinkNow", Link(d?.Link?.CurrentGen, d?.Link?.CurrentWidth));
-        Add(link, "Spec_LinkMax", Link(d?.Link?.MaxGen, d?.Link?.MaxWidth));
-        if (d?.Bar1Bytes is { } bar && g.AdapterRamBytes is { } vram)
-            Add(link, "Spec_ResizableBar", bar >= vram / 2 ? Loc.Format("Spec_Rebar_On", Size(bar)) : bar <= 512L << 20 ? Loc.Format("Spec_Rebar_Off", Size(bar)) : $"BAR1 {Size(bar)}");
-        Add(link, "Spec_PciBus", d?.PciBusId, more: true);
-        Add(link, "SystemInfo_DeviceId", g.PnpDeviceId, more: true);
-        var firmware = new List<SpecRow>();
-        Add(firmware, "SystemInfo_Driver", g.DriverVersion);
-        Add(firmware, "Spec_Vbios", d?.Vbios);
-        Add(firmware, "Spec_MaxCoreClock", d?.MaxCoreClockMhz, suffix: "MHz");
-        Add(firmware, "Spec_MaxMemoryClock", d?.MaxMemoryClockMhz, suffix: "MHz");
-        Add(firmware, "Spec_PowerLimit", d?.PowerDefaultW is { } def ? d.PowerMaxW is { } max && max != def ? $"{def} W (max {max} W)" : $"{def} W" : null);
-        var cards = new List<SpecCard> { new(title, main) };
-        if (GpuFacts.For(g.Name, d?.ComputeCapability, d?.Cores) is { } u)
+        Add(main, "Spec_Subsystem", d?.SubsystemId, more: true);
+        // 2: the units, the memory, what that comes to at the card's highest clock, and the video engines.
+        var units = new List<SpecRow>();
+        Add(units, "Spec_ComputeUnits", u?.ComputeUnits);
+        Add(units, "Spec_GpuCores", d?.Cores ?? u?.Shaders);
+        Add(units, "Spec_Tmus", u?.Tmus); Add(units, "Spec_Rops", u?.Rops); Add(units, "Spec_RtCores", u?.RtCores); Add(units, "Spec_AiCores", u?.AiCores);
+        Add(units, "SystemInfo_Vram", g.AdapterRamBytes is { } ram ? Gb(ram) : null);
+        Add(units, "Spec_GpuMemoryType", chip?.Memory);
+        Add(units, "Spec_BusWidth", d?.BusWidthBits, suffix: "bit");
+        double? effectiveGbps = d?.MaxMemoryClockMhz is { } mem ? mem * 2 / 1000.0 : null;   // NVML reports the memory clock at half the data rate of every GDDR generation
+        Add(units, "Spec_Bandwidth", effectiveGbps is { } gbps && d?.BusWidthBits is { } bus ? (gbps * bus / 8).ToString("F1", CultureInfo.InvariantCulture) : null, suffix: "GB/s");
+        Add(units, "Spec_L2Cache", chip?.L2Mb, suffix: "MB");
+        Add(units, "Spec_MemoryEffective", effectiveGbps?.ToString("F1", CultureInfo.InvariantCulture), more: true, suffix: "Gbps");
+        if (d?.MaxCoreClockMhz is { } mhz)
         {
-            var rows = new List<SpecRow>();
-            Add(rows, "Spec_ComputeUnits", u.ComputeUnits); Add(rows, "Spec_GpuCores", d?.Cores is null ? u.Shaders : null); Add(rows, "Spec_Tmus", u.Tmus); Add(rows, "Spec_Rops", u.Rops);
-            Add(rows, "Spec_RtCores", u.RtCores); Add(rows, "Spec_AiCores", u.AiCores); Add(rows, "Spec_Process", u.Process);
-            if (rows.Count > 0) cards.Add(new(Loc.Get("Spec_GpuUnits"), rows, Note: Loc.Get("Spec_Facts_Note")));
+            Add(units, "Spec_BoostClock", mhz, suffix: "MHz");
+            if (u?.Rops is { } rops) Add(units, "Spec_PixelRate", (rops * mhz / 1000.0).ToString("F1", CultureInfo.InvariantCulture), more: true, suffix: "GPixel/s");
+            if (u?.Tmus is { } tmus) Add(units, "Spec_TextureRate", (tmus * mhz / 1000.0).ToString("F1", CultureInfo.InvariantCulture), more: true, suffix: "GTexel/s");
+            if ((d.Cores ?? u?.Shaders) is { } sh && d.ComputeCapability is { } cc && FpRatios(cc) is { } r)
+            {
+                double fp32 = 2.0 * sh * mhz / 1e6;
+                Add(units, "Spec_Fp32", fp32.ToString("F2", CultureInfo.InvariantCulture), suffix: "TFLOPS");
+                Add(units, "Spec_Fp16", (fp32 * r.Fp16).ToString("F2", CultureInfo.InvariantCulture), more: true, suffix: "TFLOPS");
+                Add(units, "Spec_Fp64", (fp32 * r.Fp64 * 1000).ToString("F1", CultureInfo.InvariantCulture), more: true, suffix: "GFLOPS");
+            }
         }
-        if (link.Count > 0) cards.Add(new(Loc.Get("Spec_Connection"), link, Note: Loc.Get("Spec_Link_Note")));
-        if (firmware.Count > 0) cards.Add(new(Loc.Get("Spec_DriverFirmware"), firmware));
+        if (video is not null)
+        {
+            Add(units, "Spec_Nvenc", Engines(video.NvencCount, video.NvencGen)); Add(units, "Spec_Nvdec", Engines(video.NvdecCount, video.NvdecGen));
+            Add(units, "Spec_Av1", $"{Loc.Get("Spec_Encode")}: {YesNo(video.Av1Encode)} · {Loc.Get("Spec_Decode")}: {YesNo(video.Av1Decode)}", more: true);
+        }
+        if (d?.ComputeCapability is { } c2 && g.Name?.Contains("RTX", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            var dlss = new List<string> { "Super Resolution", "DLAA", "Ray Reconstruction" };
+            if (c2 is "8.9" or "12.0") dlss.Add("Frame Generation"); if (c2 == "12.0") dlss.Add("Multi Frame Generation");
+            Add(units, "Spec_Dlss", string.Join(", ", dlss), more: true);
+        }
+        // 3: the connection, the driver and the power.
+        var system = new List<SpecRow>();
+        Add(system, "Spec_LinkNow", Link(d?.Link?.CurrentGen, d?.Link?.CurrentWidth));
+        Add(system, "Spec_LinkMax", Link(d?.Link?.MaxGen, d?.Link?.MaxWidth));
+        if (d?.Bar1Bytes is { } bar && g.AdapterRamBytes is { } vram)
+            Add(system, "Spec_ResizableBar", bar >= vram / 2 ? Loc.Format("Spec_Rebar_On", Size(bar)) : bar <= 512L << 20 ? Loc.Format("Spec_Rebar_Off", Size(bar)) : $"BAR1 {Size(bar)}");
+        Add(system, "SystemInfo_Driver", g.DriverVersion);
+        Add(system, "Spec_PowerLimit", d?.PowerDefaultW is { } def ? d.PowerMaxW is { } max && max != def ? $"{def} W (max {max} W)" : $"{def} W" : null);
+        Add(system, "Spec_Vbios", d?.Vbios, more: true);
+        Add(system, "Spec_MaxMemoryClock", d?.MaxMemoryClockMhz, more: true, suffix: "MHz");
+        Add(system, "Spec_PciBus", d?.PciBusId, more: true);
+        Add(system, "SystemInfo_DeviceId", g.PnpDeviceId, more: true);
+        var cards = new List<SpecCard> { new(title, main, Note: u is null && chip is null ? null : Loc.Get("Spec_Facts_Note")), new(Loc.Get("Spec_GpuRenderMemory"), units, Note: d?.MaxCoreClockMhz is { } clock ? Loc.Format("Spec_Theory_Note", clock) : null) };
+        if (system.Count > 0) cards.Add(new(Loc.Get("Spec_GpuSystem"), system, Note: Loc.Get("Spec_Link_Note")));
         return cards;
     }
+
+    private static string? Engines(int? count, string generation) => count is { } n ? $"{n} × {generation}" : generation;
+    /// <summary>FP16 and FP64 rates against FP32 by CUDA architecture: Turing runs FP16 at twice and FP64 at 1/32 of FP32, Ampere, Ada and Blackwell FP16 at the same and FP64 at 1/64.</summary>
+    private static (double Fp16, double Fp64)? FpRatios(string computeCapability) => computeCapability switch { "7.5" => (2, 1.0 / 32), "8.6" or "8.9" or "12.0" => (1, 1.0 / 64), _ => null };
 
     /// <summary>"PCIe 4.0 x16 (16 GT/s)".</summary>
     internal static string? Link(int? gen, int? width)

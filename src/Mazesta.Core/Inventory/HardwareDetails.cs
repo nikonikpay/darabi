@@ -6,7 +6,10 @@ public sealed record CacheInfo(int Level, string Kind, long SizeBytes, int Count
 /// <summary>What Windows and the CPU itself report beyond the basic inventory: the caches, the family/model/stepping, the microcode Windows
 /// loaded, and the instruction sets the runtime found usable. Nothing is looked up by model name.</summary>
 public sealed record CpuDetails(string? Identifier, uint? Microcode, int? BaseClockMhz, int? BusClockMhz, IReadOnlyList<CacheInfo> Caches,
-    IReadOnlyList<string> InstructionSets, bool? VirtualizationEnabled, bool? Slat);
+    IReadOnlyList<string> InstructionSets, bool? VirtualizationEnabled, bool? Slat, HybridCores? Hybrid = null);
+
+/// <summary>A processor with cores of two kinds (Intel's performance and efficiency cores) as Windows' efficiency classes show them; null for one kind.</summary>
+public sealed record HybridCores(int Performance, int Efficiency);
 
 /// <summary>A PCI Express link as the device reports it: generation (1 = 2.5 GT/s … 5 = 32 GT/s) and lanes, now and at most. "Now" is the
 /// moment of reading: a card at idle may drop to a lower generation to save power.</summary>

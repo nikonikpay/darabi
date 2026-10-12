@@ -5,6 +5,12 @@ namespace Mazesta.Core.Inventory;
 /// and core count the driver reports (NVIDIA), or taken from the maker's published specification of that exact model.</summary>
 public sealed record GpuUnits(int? ComputeUnits, int? Shaders, int? Tmus, int? Rops, int? RtCores, int? AiCores, string? Process);
 
+/// <summary>The chip and board of one NVIDIA model as NVIDIA publishes it: the die, its size, the second-level cache and the memory type.</summary>
+public sealed record GpuChip(string Name, double TransistorsBillion, int DieMm2, double L2Mb, string Memory);
+
+/// <summary>The video engines of a card: how many of each (null when the count was not published for the model), their generation, and AV1.</summary>
+public sealed record GpuVideo(int? NvencCount, string NvencGen, int? NvdecCount, string NvdecGen, bool Av1Encode, bool Av1Decode);
+
 /// <summary>A CPU family's platform as its maker publishes it. A model not in a listed family gets nothing, never a neighbour's figures.</summary>
 public sealed record CpuPlatform(string Microarchitecture, string Process, string Pcie, string Memory);
 
@@ -24,6 +30,28 @@ public static class GpuFacts
         ["RTX3050"] = 32, ["RTX3060"] = 48, ["RTX3060TI"] = 80, ["RTX3070"] = 96, ["RTX3070TI"] = 96, ["RTX3080"] = 96, ["RTX3080TI"] = 112, ["RTX3090"] = 112, ["RTX3090TI"] = 112,
         ["RTX4060"] = 48, ["RTX4060TI"] = 48, ["RTX4070"] = 64, ["RTX4070SUPER"] = 80, ["RTX4070TI"] = 80, ["RTX4070TISUPER"] = 96, ["RTX4080"] = 112, ["RTX4080SUPER"] = 112, ["RTX4090"] = 176,
         ["RTX5060"] = 48, ["RTX5060TI"] = 48, ["RTX5070"] = 64, ["RTX5070TI"] = 96, ["RTX5080"] = 112, ["RTX5090"] = 176,
+    };
+    private static GpuChip C(string chip, double billions, int die, double l2, string memory) => new(chip, billions, die, l2, memory);
+    // Published figures of the models whose die is one and the same in every sold version; a model sold on several dies (RTX 3060, 3060 Ti, 4070) is left out.
+    private static readonly Dictionary<string, GpuChip> Chips = new()
+    {
+        ["RTX2060SUPER"] = C("TU106", 10.8, 445, 4, "GDDR6"), ["RTX2070"] = C("TU106", 10.8, 445, 4, "GDDR6"), ["RTX2070SUPER"] = C("TU104", 13.6, 545, 4, "GDDR6"),
+        ["RTX2080"] = C("TU104", 13.6, 545, 4, "GDDR6"), ["RTX2080SUPER"] = C("TU104", 13.6, 545, 4, "GDDR6"), ["RTX2080TI"] = C("TU102", 18.6, 754, 5.5, "GDDR6"),
+        ["RTX3070"] = C("GA104", 17.4, 392, 4, "GDDR6"), ["RTX3070TI"] = C("GA104", 17.4, 392, 4, "GDDR6X"), ["RTX3080"] = C("GA102", 28.3, 628, 5, "GDDR6X"),
+        ["RTX3080TI"] = C("GA102", 28.3, 628, 6, "GDDR6X"), ["RTX3090"] = C("GA102", 28.3, 628, 6, "GDDR6X"), ["RTX3090TI"] = C("GA102", 28.3, 628, 6, "GDDR6X"),
+        ["RTX4060"] = C("AD107", 18.9, 159, 24, "GDDR6"), ["RTX4060TI"] = C("AD106", 22.9, 188, 32, "GDDR6"), ["RTX4070SUPER"] = C("AD104", 35.8, 295, 48, "GDDR6X"),
+        ["RTX4070TI"] = C("AD104", 35.8, 295, 48, "GDDR6X"), ["RTX4070TISUPER"] = C("AD103", 45.9, 379, 48, "GDDR6X"), ["RTX4080"] = C("AD103", 45.9, 379, 64, "GDDR6X"),
+        ["RTX4080SUPER"] = C("AD103", 45.9, 379, 64, "GDDR6X"), ["RTX4090"] = C("AD102", 76.3, 609, 72, "GDDR6X"),
+        ["RTX5060"] = C("GB206", 21.9, 181, 32, "GDDR7"), ["RTX5060TI"] = C("GB206", 21.9, 181, 32, "GDDR7"), ["RTX5070"] = C("GB205", 31.1, 263, 48, "GDDR7"),
+        ["RTX5070TI"] = C("GB203", 45.6, 378, 48, "GDDR7"), ["RTX5080"] = C("GB203", 45.6, 378, 64, "GDDR7"), ["RTX5090"] = C("GB202", 92.2, 750, 88, "GDDR7"),
+    };
+    // How many video engines a model has, from NVIDIA's own pages (the engines' generation follows from the architecture and is not in this table).
+    private static readonly Dictionary<string, (int Nvenc, int? Nvdec)> VideoCounts = new()
+    {
+        ["RTX5090"] = (3, 2), ["RTX5080"] = (2, 2), ["RTX5070TI"] = (2, 1), ["RTX5070"] = (1, 1), ["RTX5060TI"] = (1, 1), ["RTX5060"] = (1, 1),
+        ["RTX4090"] = (2, 2), ["RTX4080"] = (2, null), ["RTX4080SUPER"] = (2, null), ["RTX4070"] = (1, 1),
+        ["RTX3090"] = (1, 1), ["RTX3090TI"] = (1, 1), ["RTX3080"] = (1, 1), ["RTX3080TI"] = (1, 1), ["RTX3070"] = (1, 1), ["RTX3070TI"] = (1, 1), ["RTX3060"] = (1, 1), ["RTX3060TI"] = (1, 1), ["RTX3050"] = (1, 1),
+        ["RTX2080TI"] = (1, 1), ["RTX2080"] = (1, 1), ["RTX2080SUPER"] = (1, null), ["RTX2070"] = (1, null), ["RTX2070SUPER"] = (1, null), ["RTX2060"] = (1, null), ["RTX2060SUPER"] = (1, null),
     };
     private static GpuUnits A(int shaders, int tmu, int rop, int rt, string process, int ai = 0) => new(shaders / 64, shaders, tmu, rop, rt == 0 ? null : rt, ai == 0 ? null : ai, process);
     private static GpuUnits X(int xe, int rop, int xmxPerXe, string process) => new(xe, xe * 128, xe * 8, rop, xe, xe * xmxPerXe, process);
@@ -45,6 +73,22 @@ public static class GpuFacts
     /// <summary>"NVIDIA GeForce RTX 4070 Ti SUPER" → "RTX4070TISUPER": brand words dropped, so a laptop part ("…Laptop GPU") never equals a desktop key.</summary>
     internal static string Key(string? name)
         => Regex.Replace(Regex.Replace(name ?? "", @"\(R\)|\(TM\)|\b(NVIDIA|GEFORCE|AMD|RADEON|INTEL|GRAPHICS)\b", "", RegexOptions.IgnoreCase), "[^A-Za-z0-9]", "").ToUpperInvariant();
+
+    public static GpuChip? ChipOf(string? name) => Chips.GetValueOrDefault(Key(name));
+
+    /// <summary>NVIDIA's video engines: the generations come from the architecture (RTX 20: 7th/4th, 30: 7th/5th, 40: 8th/5th, 50: 9th/6th), the counts only for models NVIDIA lists. GTX 16 cards mix generations by version and are left out.</summary>
+    public static GpuVideo? VideoOf(string? name, string? computeCapability)
+    {
+        string key = Key(name); var counts = VideoCounts.TryGetValue(key, out var c) ? c : ((int, int?)?)null;
+        return computeCapability switch
+        {
+            "7.5" when key.StartsWith("RTX", StringComparison.Ordinal) => new(counts?.Item1, "7th Gen", counts?.Item2, "4th Gen", false, false),
+            "8.6" => new(counts?.Item1, "7th Gen", counts?.Item2, "5th Gen", false, true),
+            "8.9" => new(counts?.Item1, "8th Gen", counts?.Item2, "5th Gen", true, true),
+            "12.0" => new(counts?.Item1, "9th Gen", counts?.Item2, "6th Gen", true, true),
+            _ => null,
+        };
+    }
 
     public static GpuUnits? For(string? name, string? computeCapability, int? cores)
     {

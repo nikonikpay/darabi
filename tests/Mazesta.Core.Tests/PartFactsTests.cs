@@ -32,4 +32,13 @@ public class PartFactsTests
         Assert.Null(CpuFacts.For("12th Gen Intel(R) Core(TM) i7-12700H"));
         Assert.Null(CpuFacts.For("Intel(R) Core(TM) i7-1185G7"));
     }
+    [Fact] public void Chip_and_video_engines_come_from_the_model_and_architecture()
+    {
+        var c = GpuFacts.ChipOf("NVIDIA GeForce RTX 3090")!; Assert.Equal(("GA102", 28.3, 628, 6.0, "GDDR6X"), (c.Name, c.TransistorsBillion, c.DieMm2, c.L2Mb, c.Memory));
+        Assert.Null(GpuFacts.ChipOf("NVIDIA GeForce RTX 3060"));   // sold on two dies: no guess
+        var v = GpuFacts.VideoOf("NVIDIA GeForce RTX 5090", "12.0")!; Assert.Equal((3, "9th Gen", 2, "6th Gen", true, true), (v.NvencCount, v.NvencGen, v.NvdecCount, v.NvdecGen, v.Av1Encode, v.Av1Decode));
+        var old = GpuFacts.VideoOf("NVIDIA GeForce RTX 3090", "8.6")!; Assert.False(old.Av1Encode); Assert.True(old.Av1Decode);
+        Assert.Null(GpuFacts.VideoOf("NVIDIA GeForce GTX 1660 SUPER", "7.5"));
+        Assert.Null(GpuFacts.VideoOf("NVIDIA GeForce RTX 4070 Ti", "8.9")!.NvencCount);   // count not published for it
+    }
 }

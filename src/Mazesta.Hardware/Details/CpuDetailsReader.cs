@@ -17,7 +17,7 @@ internal static class CpuDetailsReader
             identifier = (key?.GetValue("Identifier") as string)?.Trim();
             microcode = Microcode(key?.GetValue("Update Revision") as byte[]);
         }
-        return new(identifier, microcode, baseClockMhz, busClockMhz, Caches(), InstructionSets(), virtualization, slat);
+        return new(identifier, microcode, baseClockMhz, busClockMhz, Caches(), InstructionSets(), virtualization, slat, Hybrid());
     }
 
     /// <summary>The revision in "Update Revision": AMD keeps it in the first four bytes, Intel in the last four of eight.</summary>
@@ -54,6 +54,24 @@ internal static class CpuDetailsReader
         finally { Marshal.FreeHGlobal(buffer); }
     }
 
+    /// <summary>Cores by Windows' efficiency class (RelationProcessorCore: Flags 1, EfficiencyClass 1): where there is more than one class the highest is the performance cores.</summary>
+    internal static HybridCores? Hybrid()
+    {
+        uint length = 0;
+        GetLogicalProcessorInformationEx(RelationProcessorCore, IntPtr.Zero, ref length);
+        if (length == 0) return null;
+        var buffer = Marshal.AllocHGlobal((int)length);
+        try
+        {
+            if (!GetLogicalProcessorInformationEx(RelationProcessorCore, buffer, ref length)) return null;
+            var classes = new List<byte>();
+            for (int offset = 0; offset < length;) { classes.Add(Marshal.ReadByte(buffer + offset, 9)); offset += Marshal.ReadInt32(buffer + offset, 4); }
+            byte top = classes.Count == 0 ? (byte)0 : classes.Max();
+            return classes.Distinct().Count() > 1 ? new(classes.Count(c => c == top), classes.Count(c => c != top)) : null;
+        }
+        finally { Marshal.FreeHGlobal(buffer); }
+    }
+
     private static IReadOnlyList<string> InstructionSets()
     {
         var sets = new List<string>();
@@ -67,6 +85,6 @@ internal static class CpuDetailsReader
         return sets;
     }
 
-    private const int RelationCache = 2;
+    private const int RelationCache = 2, RelationProcessorCore = 0;
     [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetLogicalProcessorInformationEx(int relationship, IntPtr buffer, ref uint length);
 }

@@ -1619,6 +1619,30 @@
   <data name="Spec_CpuPcie" xml:space="preserve"><value>PCIe از سمت CPU</value></data>
   <data name="Spec_CpuMemory" xml:space="preserve"><value>حافظهٔ پشتیبانی‌شده</value></data>
   <data name="Spec_Facts_Note" xml:space="preserve"><value>اندازه‌گیری نشده: از معماری گزارش‌شده توسط درایور یا مشخصات منتشرشدهٔ سازنده برای همین مدل به دست آمده. مدلی که در جدول نباشد ردیف نشان نمی‌دهد، نه عدد مدل مشابه.</value></data>
+  <data name="Spec_GpuChip" xml:space="preserve"><value>تراشهٔ گرافیکی</value></data>
+  <data name="Spec_Transistors" xml:space="preserve"><value>ترانزیستورها</value></data>
+  <data name="Spec_DieSize" xml:space="preserve"><value>اندازهٔ دای</value></data>
+  <data name="Spec_Density" xml:space="preserve"><value>چگالی</value></data>
+  <data name="Spec_L2Cache" xml:space="preserve"><value>حافظهٔ نهان L2</value></data>
+  <data name="Spec_GpuMemoryType" xml:space="preserve"><value>نوع حافظه</value></data>
+  <data name="Spec_Bandwidth" xml:space="preserve"><value>پهنای باند حافظه</value></data>
+  <data name="Spec_MemoryEffective" xml:space="preserve"><value>نرخ داده حافظه</value></data>
+  <data name="Spec_BoostClock" xml:space="preserve"><value>بالاترین کلاک هسته</value></data>
+  <data name="Spec_PixelRate" xml:space="preserve"><value>نرخ پیکسل</value></data>
+  <data name="Spec_TextureRate" xml:space="preserve"><value>نرخ بافت</value></data>
+  <data name="Spec_Fp32" xml:space="preserve"><value>FP32 (اعشاری)</value></data>
+  <data name="Spec_Fp16" xml:space="preserve"><value>FP16 (نیم‌دقت)</value></data>
+  <data name="Spec_Fp64" xml:space="preserve"><value>FP64 (دوبرابردقت)</value></data>
+  <data name="Spec_Nvenc" xml:space="preserve"><value>NVENC (انکودر ویدیو)</value></data>
+  <data name="Spec_Nvdec" xml:space="preserve"><value>NVDEC (دکودر ویدیو)</value></data>
+  <data name="Spec_Av1" xml:space="preserve"><value>ویدیوی AV1</value></data>
+  <data name="Spec_Encode" xml:space="preserve"><value>انکود</value></data>
+  <data name="Spec_Decode" xml:space="preserve"><value>دکود</value></data>
+  <data name="Spec_Dlss" xml:space="preserve"><value>قابلیت‌های DLSS</value></data>
+  <data name="Spec_GpuRenderMemory" xml:space="preserve"><value>رندر، حافظه و ویدیو</value></data>
+  <data name="Spec_GpuSystem" xml:space="preserve"><value>اتصال، درایور و توان</value></data>
+  <data name="Spec_Theory_Note" xml:space="preserve"><value>نرخ‌های نظری با بالاترین کلاک هسته‌ای که کارت گزارش می‌دهد ({0} مگاهرتز) محاسبه شده‌اند، اندازه‌گیری نشده‌اند.</value></data>
+  <data name="Spec_HybridCores" xml:space="preserve"><value>هسته‌های کارایی + بازده</value></data>
   <data name="Spec_BusWidth" xml:space="preserve"><value>پهنای باس حافظه</value></data>
   <data name="Spec_Subsystem" xml:space="preserve"><value>زیرسیستم PCI</value></data>
   <data name="Spec_ComputeCapability" xml:space="preserve"><value>Compute capability</value></data>
