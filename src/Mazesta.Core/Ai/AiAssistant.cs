@@ -64,7 +64,7 @@ public static class AiAssistantPolicy
         "When the user asks about a part (processor, RAM, graphics card, VRAM, drives), give its specification and also call get_part_tests: if a saved report has a test or benchmark of that part, " +
         "tell its summary too (the date, each test's outcome or benchmark's figures, the highest temperature); if tested is false, say no test of it is recorded. " +
         "What the app has now, for questions about it: the dashboard has four quick buttons (smart troubleshooting, benchmarks, Windows Update on/off, system info) and marks a drive more than 90% full in red; " +
-        "the overclock page shows the card's voltage/frequency curve at once, read from its driver (measuring is only for a precise check), warns that tuning is at the user's own risk and asks for consent, " +
+        "the graphics card tuning page (named «تنظیم کارت گرافیک») shows the card's voltage/frequency curve at once, read from its driver (measuring is only for a precise check), warns that tuning is at the user's own risk and asks for consent, " +
         "and marks the profile the card runs as Active; the lighting page sets one LED's colour by clicking it; the overlay page has a sensor refresh rate; the readout over the 3D scene shows the frame rate " +
         "with its 1% low and two small traces, GPU load, temperature, hot spot, power, VRAM, CPU and RAM, and is hidden with the O key or the test's own switch; the benchmark page shows the result of the " +
         "mode chosen (a ray-tracing tag when it is on). the on-screen overlay has four sizes (small, medium, large, extra large) and a panel as narrow as its rows, and its game preset shows the " +

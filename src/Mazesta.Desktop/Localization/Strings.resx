@@ -97,9 +97,7 @@
   <data name="Nav_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="Placeholder_Body" xml:space="preserve">
-    <value>This section is built in a later phase. Nothing here is simulated.</value>
-  </data>
+  <data name="Placeholder_Body" xml:space="preserve"><value>There is nothing to show in this section.</value></data>
   <data name="Status_Provider_Ready" xml:space="preserve">
     <value>Sensors: ready ({0} sensors)</value>
   </data>
@@ -626,8 +624,8 @@
   <data name="Bench_Net_Score_Streaming" xml:space="preserve"><value>Streaming score (Cloudflare scale)</value></data>
   <data name="Bench_Net_Score_Gaming" xml:space="preserve"><value>Gaming score (Cloudflare scale)</value></data>
   <data name="Bench_Net_Score_Calls" xml:space="preserve"><value>Video calls score (Cloudflare scale)</value></data>
-  <data name="Component_Note_Cpu" xml:space="preserve"><value>The processor: what it is, its live sensors, and its single-thread and all-thread benchmarks. Stress tests are on the Tests page; overclocking and undervolting come in phase 2.</value></data>
-  <data name="Component_Note_Gpu" xml:space="preserve"><value>The graphics card: what it is, its live sensors, and its Direct3D, ray-tracing and AI benchmarks. Stress and VRAM tests are on the Tests page; overclocking and undervolting come in phase 2.</value></data>
+  <data name="Component_Note_Cpu" xml:space="preserve"><value>The processor: what it is, its live sensors, and its single-thread and all-thread benchmarks. Stress tests are on the Tests page.</value></data>
+  <data name="Component_Note_Gpu" xml:space="preserve"><value>The graphics card: what it is, its live sensors, and its Direct3D, ray-tracing and AI benchmarks. Stress and VRAM tests are on the Tests page; overclocking and undervolting are on the Graphics card tuning page.</value></data>
   <data name="Component_Note_Storage" xml:space="preserve"><value>The drives: what Windows reports about them (including its health status), their live sensors and SMART values as the drive reports them, and the speed benchmark. Read/write tests that verify the data are on the Tests page.</value></data>
   <data name="Component_Note_Network" xml:space="preserve"><value>The network adapters, their live traffic, and the internet speed test. The speed test exchanges data with speed.cloudflare.com only when you press Run; the amount of data is shown with the result.</value></data>
   <data name="Component_NoSensors" xml:space="preserve"><value>No sensor of this kind was found on this machine.</value></data>
@@ -657,7 +655,7 @@
   <data name="Tools_Result_Repaired" xml:space="preserve"><value>Finished: problems were found and repaired.</value></data>
   <data name="Tools_Result_Damaged" xml:space="preserve"><value>Finished: problems were found that could not be repaired.</value></data>
   <data name="Tools_Result_Unknown" xml:space="preserve"><value>Finished, but the result could not be read; see the output below.</value></data>
-  <data name="Gaming_Note" xml:space="preserve"><value>The Windows power plan, switched here and reversible, and the state of Game Mode and hardware-accelerated GPU scheduling, changed in Windows' own settings. GPU overclocking and undervolting are on the Overclock &amp; undervolt page; an FPS overlay is not offered.</value></data>
+  <data name="Gaming_Note" xml:space="preserve"><value>The Windows power plan, switched here and reversible, and the state of Game Mode and hardware-accelerated GPU scheduling, changed in Windows' own settings. Overclocking and undervolting of the graphics card are on the Graphics card tuning page; the frame rate (FPS) is shown by the on-screen overlay.</value></data>
   <data name="Gaming_PowerPlan" xml:space="preserve"><value>Power plan</value></data>
   <data name="Gaming_Active" xml:space="preserve"><value>Active</value></data>
   <data name="Gaming_Activate" xml:space="preserve"><value>Activate</value></data>
@@ -710,7 +708,7 @@
   <data name="Tuning_Profiles_Note" xml:space="preserve"><value>A profile is only offered on the card it was made on. Applying it lasts until the next restart.</value></data>
   <data name="Tuning_Delete" xml:space="preserve"><value>Delete</value></data>
   <data name="Tuning_Memory" xml:space="preserve"><value>Memory profile (XMP / DOCP / EXPO)</value></data>
-  <data name="Tuning_Memory_Note" xml:space="preserve"><value>XMP, DOCP and EXPO are picked by the BIOS while it trains the memory at power-on; Windows has no standard interface to switch them, and no board maker publishes one for desktop boards. It is changed in BIOS setup, which this button restarts straight into (UEFI machines).</value></data>
+  <data name="Tuning_Memory_Note" xml:space="preserve"><value>XMP, DOCP and EXPO memory profiles are set in the BIOS and cannot be switched from Windows. This button restarts the computer straight into BIOS setup (UEFI computers only).</value></data>
   <data name="Tuning_RestartToFirmware" xml:space="preserve"><value>Restart into BIOS setup</value></data>
   <data name="Tuning_Kind_Manual" xml:space="preserve"><value>Manual</value></data>
   <data name="Tuning_Kind_Undervolt" xml:space="preserve"><value>Undervolt</value></data>
@@ -752,7 +750,7 @@
   <data name="Tuning_Sum_Power" xml:space="preserve"><value>power {0}</value></data>
   <data name="Tuning_Sum_Fan" xml:space="preserve"><value>fan {0}</value></data>
   <data name="Tuning_ConfirmFirmware" xml:space="preserve"><value>The PC restarts now, straight into BIOS setup. Save your work first. Continue?</value></data>
-  <data name="Tuning_OtherGpus" xml:space="preserve"><value>Not tunable here yet: {0}. AMD cards need AMD's ADLX library and Intel Arc cards Intel's IGCL; neither is built in.</value></data>
+  <data name="Tuning_OtherGpus" xml:space="preserve"><value>Not tunable here: {0}. Graphics card tuning works on NVIDIA cards only.</value></data>
   <data name="Tuning_Memory_Speeds" xml:space="preserve"><value>configured {0} · module per SMBIOS {1}</value></data>
   <data name="Tuning_Recovered" xml:space="preserve"><value>An automatic GPU tuning run did not finish (it was trying {0}, started {1}) – the PC probably froze or restarted. The card has been put back to stock.</value></data>
   <data name="Tuning_RecoveredNoReset" xml:space="preserve"><value>An automatic GPU tuning run did not finish (it was trying {0}, started {1}). The card could not be reset from here; restart the PC to be sure it runs at stock.</value></data>
@@ -766,7 +764,7 @@
   <data name="Tuning_CoreOffset" xml:space="preserve"><value>Core offset</value></data>
   <data name="Tuning_MemoryOffset" xml:space="preserve"><value>Memory offset</value></data>
   <data name="Tuning_Fan" xml:space="preserve"><value>Fan</value></data>
-  <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>No NVIDIA graphics card with its driver was found. GPU tuning currently works on NVIDIA cards only.</value></data>
+  <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>No NVIDIA graphics card with its driver was found. Graphics card tuning works on NVIDIA cards only.</value></data>
   <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>NVIDIA's management library could not be opened</value></data>
   <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>The card already made errors at stock settings. It was not tuned – run the GPU tests first.</value></data>
   <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>The driver does not report this card's clock or power, so a result could not be measured.</value></data>
@@ -800,7 +798,7 @@
   <data name="Tuning_Curve_Scanning" xml:space="preserve"><value>Measuring the curve…</value></data>
   <data name="Tuning_Curve_Step" xml:space="preserve"><value>Measuring the curve: point {0} of {1} · cap {2}</value></data>
   <data name="Tuning_Curve_Done" xml:space="preserve"><value>The curve was measured and saved. The card is back to stock.</value></data>
-  <data name="Tuning_Curve_DoneDriver" xml:space="preserve"><value>The curve was measured and saved, and the card is back to stock. The chart keeps the driver's own table, which is complete; a measurement under load cannot go below the voltage the card holds while working, so its low points pile up there.</value></data>
+  <data name="Tuning_Curve_DoneDriver" xml:space="preserve"><value>The curve was measured and saved, and the card is back to stock. The chart keeps the driver's own complete curve, because a measurement under load cannot reach the lowest voltages.</value></data>
   <data name="Tuning_ConfirmCurve" xml:space="preserve"><value>Measuring the curve loads the graphics card for about a minute and a half and caps its clock step by step. The card's current settings are removed, and at the end it is back at stock. Start?</value></data>
   <data name="Tuning_Curve_ApplyRefused" xml:space="preserve"><value>The driver refused the clock cap; the curve cannot be measured</value></data>
   <data name="Tuning_Curve_Lost" xml:space="preserve"><value>The driver reset during the scan. The card is back to stock.</value></data>
@@ -848,7 +846,7 @@
   <data name="Overlay_Toggle" xml:space="preserve"><value>Overlay</value></data>
   <data name="Overlay_ToggleHint" xml:space="preserve"><value>Show or hide the on-screen overlay (Alt+O, also inside a game)</value></data>
   <data name="Overlay_Title" xml:space="preserve"><value>On-screen overlay</value></data>
-  <data name="Overlay_Note" xml:space="preserve"><value>A small always-on-top panel with GPU and CPU temperatures, load, clocks and power, RAM and network, and a one-minute load and temperature trend. The mouse passes through it. It shows over games in borderless or windowed mode, not in exclusive full screen. Frame rate (FPS) is not shown: the app does not measure it.</value></data>
+  <data name="Overlay_Note" xml:space="preserve"><value>A small always-on-top panel with GPU and CPU temperatures, load, clocks and power, RAM and network, the frame rate (FPS) of the game in front, and a one-minute load and temperature trend. The mouse passes through it. It shows over games in borderless or windowed mode, not in exclusive full screen.</value></data>
   <data name="Overlay_Corner" xml:space="preserve"><value>Corner of the screen</value></data>
   <data name="Overlay_Corner_TopLeft" xml:space="preserve"><value>Top left</value></data>
   <data name="Overlay_Corner_TopRight" xml:space="preserve"><value>Top right</value></data>
@@ -1038,7 +1036,7 @@
   <data name="Web_Overlay_FrameProblem" xml:space="preserve"><value>The frame rate cannot be measured on this system: {0}</value></data>
   <data name="Settings_Tray_Health" xml:space="preserve"><value>Drive health check every (minutes; 1440 = daily)</value></data>
   <data name="Web_Diag_Title" xml:space="preserve"><value>Diagnostic log</value></data>
-  <data name="Web_Diag_Note" xml:space="preserve"><value>What this machine did not let the app read: sensors with no role, key readings a part lacks, errors. Export it as one file and bring it back so the app can learn this machine.</value></data>
+  <data name="Web_Diag_Note" xml:space="preserve"><value>What the app could not read on this machine: sensors with no role, key readings a part lacks, and errors. Export it as one file and send it to Mazesta so that support for this machine can be improved.</value></data>
   <data name="Web_Diag_Export" xml:space="preserve"><value>Send my report and export the troubleshooting file</value></data>
   <data name="Web_Diag_Exported" xml:space="preserve"><value>The troubleshooting file is ready and its folder is open. The statistics could not be sent now (no internet?); they will be tried again.</value></data>
   <data name="Web_Diag_None" xml:space="preserve"><value>Nothing missing so far on this machine.</value></data>
@@ -1058,7 +1056,7 @@
   <data name="Tools_State_Off" xml:space="preserve"><value>Off</value></data>
   <data name="Tools_State_Default" xml:space="preserve"><value>Windows default</value></data>
   <data name="Tools_Hib_Title" xml:space="preserve"><value>Hibernation and Fast Startup</value></data>
-  <data name="Tools_Hib_Sub" xml:space="preserve"><value>powercfg /hibernate</value></data>
+  <data name="Tools_Hib_Sub" xml:space="preserve"><value>Windows' hibernation and fast start-up</value></data>
   <data name="Tools_Hib_Hibernate" xml:space="preserve"><value>Hibernation</value></data>
   <data name="Tools_Hib_FastStartup" xml:space="preserve"><value>Fast Startup</value></data>
   <data name="Tools_Hib_Off" xml:space="preserve"><value>Turn both off</value></data>
@@ -1254,7 +1252,7 @@
   <data name="Tweaks_Action" xml:space="preserve"><value>One-off</value></data>
   <data name="Tweaks_Restart" xml:space="preserve"><value>Takes effect after a restart or sign-out</value></data>
   <data name="Tweaks_ConfirmAdvanced" xml:space="preserve"><value>Some ticked tweaks are advanced. Read their notes first. Run them?</value></data>
-  <data name="Tweaks_Note" xml:space="preserve"><value>Tick a restore point first on a customer's machine.</value></data>
+  <data name="Tweaks_Note" xml:space="preserve"><value>Tick “Create a restore point” first, so the changes can be undone.</value></data>
   <data name="Tweak_RestorePoint" xml:space="preserve"><value>Create a restore point</value></data>
   <data name="Tweak_RestorePoint_Note" xml:space="preserve"><value>Turns System Restore on for the Windows drive and saves a point to go back to. Runs first.</value></data>
   <data name="Tweak_TempFiles" xml:space="preserve"><value>Remove temporary files</value></data>
@@ -1625,7 +1623,7 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Microarchitecture" xml:space="preserve"><value>Microarchitecture</value></data>
   <data name="Spec_CpuPcie" xml:space="preserve"><value>PCIe from the CPU</value></data>
   <data name="Spec_CpuMemory" xml:space="preserve"><value>Memory support</value></data>
-  <data name="Spec_Facts_Note" xml:space="preserve"><value>Not measured: derived from the architecture the driver reports, or from the maker's published specification of this exact model. A model not in the table shows no row rather than a neighbour's figures.</value></data>
+  <data name="Spec_Facts_Note" xml:space="preserve"><value>Not measured: taken from the architecture the driver reports, or from the maker's published specification for this exact model. Figures not known for this model are left out.</value></data>
   <data name="Spec_GpuChip" xml:space="preserve"><value>Graphics chip</value></data>
   <data name="Spec_Transistors" xml:space="preserve"><value>Transistors</value></data>
   <data name="Spec_DieSize" xml:space="preserve"><value>Die size</value></data>
@@ -1688,7 +1686,7 @@ The update services stopped and disabled</value></data>
   <data name="Spec_Speed" xml:space="preserve"><value>Speed</value></data>
   <data name="Spec_Timings" xml:space="preserve"><value>Timings</value></data>
   <data name="Spec_Profile_Note" xml:space="preserve"><value>Read from the module's SPD. The highlighted profile is the one with the speed the memory runs at now; the timings in use are not read.</value></data>
-  <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>{0} profiles are not decoded in this version.</value></data>
+  <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>The app cannot read {0} profiles.</value></data>
   <data name="Spec_PowerOnHours" xml:space="preserve"><value>Power-on hours</value></data>
   <data name="Spec_Temperature" xml:space="preserve"><value>Temperature</value></data>
   <data name="Spec_Wear" xml:space="preserve"><value>Wear (life used)</value></data>
@@ -2185,8 +2183,8 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Board_IntelPage" xml:space="preserve"><value>Intel chipset page</value></data>
   <data name="Drivers_Board_Nothing" xml:space="preserve"><value>No driver packages were found for this board from its makers.</value></data>
   <data name="Drivers_Board_Note" xml:space="preserve"><value>The versions come from ASUS's support site for this model, AMD's chipset page and Intel's driver data. A version is called newer only when it can be compared with the installed one part by part; a package's own number beside a driver's number is shown as not comparable.</value></data>
-  <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>Only ASUS lets a program read its board pages; MSI, Gigabyte and ASRock refuse it. For those boards the chipset (AMD) and Intel's Wi-Fi, Bluetooth and Ethernet drivers are checked here, and the board maker's page opens with the button for the rest.</value></data>
-  <data name="Drivers_Board_IntelChipsetNote" xml:space="preserve"><value>Intel's chipset driver (Chipset INF Utility) cannot be read by a program: Intel's site refuses it. Its page opens with the button; the board maker's page also lists it.</value></data>
+  <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>For MSI, Gigabyte and ASRock boards the app cannot check the maker's own driver list. The AMD chipset driver and Intel's Wi-Fi, Bluetooth and network drivers are checked here; for the rest, open the board maker's page with the button.</value></data>
+  <data name="Drivers_Board_IntelChipsetNote" xml:space="preserve"><value>The app cannot check the version of Intel's chipset driver (Chipset INF Utility). Open its page with the button; the board maker's page lists it too.</value></data>
   <data name="Drivers_Board_Timeout" xml:space="preserve"><value>no answer within 40 seconds</value></data>
   <data name="Drivers_Board_AsusUnknown" xml:space="preserve"><value>ASUS does not list the model "{0}"</value></data>
   <data name="Drivers_Board_AmdNoVersion" xml:space="preserve"><value>AMD's page did not show a chipset version</value></data>
@@ -2239,7 +2237,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Wu_Sub" xml:space="preserve"><value>Microsoft's signed drivers for this computer</value></data>
   <data name="Drivers_Wu_Search" xml:space="preserve"><value>Search</value></data>
   <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>Search again</value></data>
-  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>Asking Windows Update… this takes a few minutes (five here, on a fast connection).</value></data>
+  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>Asking Windows Update… this can take several minutes.</value></data>
   <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} driver(s) not installed yet ({1}). Tick the ones to install.</value></data>
   <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update has no new driver for this computer ({0}).</value></data>
   <data name="Drivers_Wu_Install" xml:space="preserve"><value>Install the ticked ({0})</value></data>
@@ -2343,7 +2341,7 @@ What I do not do: run any other command in Windows, change files, or install pro
   <data name="WinCmd_bitlockerstatus_What" xml:space="preserve"><value>Shows which drives BitLocker encrypts or is waiting to turn on (the lock on a drive's icon in This PC is usually this). It changes nothing.</value></data>
   <data name="WinCmd_bitlockeroff" xml:space="preserve"><value>Turning BitLocker off for a drive (decrypting it)</value></data>
   <data name="WinCmd_bitlockeroff_What" xml:space="preserve"><value>Decrypts drive D: (put your drive's letter in place of D:). The drive must be unlocked. It runs in the background and can take hours on a large drive; manage-bde -status shows how far it is, and the lock goes when it ends.</value></data>
-  <data name="WinCmd_bitlockeroff_Warn" xml:space="preserve"><value>The drive's protection is removed. If the computer is a customer's, ask them first; on a laptop keep it on the charger until it ends.</value></data>
+  <data name="WinCmd_bitlockeroff_Warn" xml:space="preserve"><value>The drive's protection is removed. If the computer is not yours, ask its owner first; on a laptop keep it on the charger until it ends.</value></data>
   <data name="WinCmd_flushdns" xml:space="preserve"><value>Clearing the DNS cache</value></data>
   <data name="WinCmd_flushdns_What" xml:space="preserve"><value>Empties Windows' memory of DNS names: for a site that does not open after the DNS was changed.</value></data>
   <data name="WinCmd_ipconfig" xml:space="preserve"><value>Network addresses (IP, DNS, MAC)</value></data>
@@ -2377,7 +2375,7 @@ What I do not do: run any other command in Windows, change files, or install pro
   <data name="WinCmd_tempclean_What" xml:space="preserve"><value>Deletes the files in the current user's Temp folder; files in use are skipped.</value></data>
   <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>What is deleted does not go to the Recycle Bin and can not be brought back. Disk Cleanup, on the Windows tools page, is the safer way.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the overclock page".</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the graphics card tuning page".</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>A test or benchmark is running; start the assistant after it.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>Read: machine summary</value></data>
@@ -2661,7 +2659,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_RamAtJedec" xml:space="preserve"><value>Memory runs at its standard speed</value></data>
   <data name="Check_RamAtJedec_Text" xml:space="preserve"><value>The memory runs at the modules' fastest standard (JEDEC) speed; they carry no faster profile.</value></data>
   <data name="Check_RamProfileUnread" xml:space="preserve"><value>The memory's rated speed was not read</value></data>
-  <data name="Check_RamProfileUnread_Text" xml:space="preserve"><value>This version does not read the rated speed of DDR5 modules yet, so whether XMP or EXPO is on is not judged. Compare the speed in the BIOS with the one on the modules' label.</value></data>
+  <data name="Check_RamProfileUnread_Text" xml:space="preserve"><value>The app cannot read the rated speed of DDR5 modules, so whether XMP or EXPO is on was not judged. Compare the speed in the BIOS with the one on the modules' label.</value></data>
   <data name="Check_RamSingleChannel" xml:space="preserve"><value>One memory module: single channel</value></data>
   <data name="Check_RamSingleChannel_Text" xml:space="preserve"><value>With one module the memory runs in a single channel, at half the bandwidth of two. Games and integrated graphics suffer most. A second identical module fixes it.</value></data>
   <data name="Check_RamSameChannel" xml:space="preserve"><value>Modules in the same channel</value></data>
@@ -3138,7 +3136,7 @@ Cancel: stop.</value></data>
   <data name="Assist_Checkup_Change" xml:space="preserve"><value>{0}% against the best earlier result</value></data>
   <data name="Assist_Checkup_NotDone" xml:space="preserve"><value>These did not finish, so they are not a pass and nothing is concluded from them: {0}</value></data>
   <data name="Assist_Checkup_Declined" xml:space="preserve"><value>Nothing was run: the diagnosis was not confirmed.</value></data>
-  <data name="Assist_Checkup_Page" xml:space="preserve"><value>Every finding with its numbers is on the Diagnosis page, which is open beside the chat.</value></data>
+  <data name="Assist_Checkup_Page" xml:space="preserve"><value>Every finding with its numbers is on the Checkup page, which is open beside the chat.</value></data>
   <data name="Assist_Part_Head" xml:space="preserve"><value>Last recorded test of this part ({0}, {1}):</value></data>
   <data name="Assist_Part_Temp" xml:space="preserve"><value>The highest temperature it reached then: {0} °C.</value></data>
   <data name="Assist_Tool_run_checkup" xml:space="preserve"><value>Asked to run: smart diagnosis</value></data>

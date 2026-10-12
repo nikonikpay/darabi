@@ -68,7 +68,7 @@ internal static class TrayText
     public const string Reading = "در حال خواندن…";
     public const string Stock = "حالت کارخانه (بدون تغییر)";
     public const string NoNvidia = "کارت گرافیک NVIDIA پیدا نشد";
-    public const string NoProfiles = "هنوز پروفایلی ذخیره نشده (صفحه‌ی اورکلاک و آندرولت)";
+    public const string NoProfiles = "هنوز پروفایلی ذخیره نشده (صفحهٔ «تنظیم کارت گرافیک»)";
     public const string JournalFound = "یک تنظیم خودکار کارت گرافیک در برنامه نیمه‌کاره مانده است؛ پروفایل هنگام ورود اعمال نشد. برنامه‌ی مازستا را باز کنید.";
     public static string Kind(GpuProfileKind k) => k switch { GpuProfileKind.Undervolt => "آندرولت", GpuProfileKind.Overclock => "اورکلاک", GpuProfileKind.OverclockPlus => "اورکلاک پلاس", _ => "دستی" };
     public static string ProfileApplied(string name, string gpu) => $"«{name}» روی {gpu} اعمال شد و هنگام ورود به ویندوز هم اعمال می‌شود.";

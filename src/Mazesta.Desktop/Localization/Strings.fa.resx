@@ -97,9 +97,7 @@
   <data name="Nav_Settings" xml:space="preserve">
     <value>تنظیمات</value>
   </data>
-  <data name="Placeholder_Body" xml:space="preserve">
-    <value>این بخش در مرحله بعدی ساخته می‌شود. هیچ‌چیز در اینجا شبیه‌سازی نشده است.</value>
-  </data>
+  <data name="Placeholder_Body" xml:space="preserve"><value>در این بخش چیزی برای نمایش نیست.</value></data>
   <data name="Status_Provider_Ready" xml:space="preserve">
     <value>سنسورها: آماده ({0} سنسور)</value>
   </data>
@@ -626,8 +624,8 @@
   <data name="Bench_Net_Score_Streaming" xml:space="preserve"><value>امتیاز استریم و ویدئو (مقیاس Cloudflare)</value></data>
   <data name="Bench_Net_Score_Gaming" xml:space="preserve"><value>امتیاز گیمینگ (مقیاس Cloudflare)</value></data>
   <data name="Bench_Net_Score_Calls" xml:space="preserve"><value>امتیاز تماس تصویری (مقیاس Cloudflare)</value></data>
-  <data name="Component_Note_Cpu" xml:space="preserve"><value>پردازنده: مشخصات، سنسورهای زنده و بنچمارک تک‌رشته و چندرشته. تست‌های فشار در صفحه‌ی تست‌ها هستند؛ اورکلاک و اندرولت در مرحله‌ی دوم اضافه می‌شود.</value></data>
-  <data name="Component_Note_Gpu" xml:space="preserve"><value>کارت گرافیک: مشخصات، سنسورهای زنده و بنچمارک‌های Direct3D، ری‌تریسینگ و هوش مصنوعی. تست‌های فشار و VRAM در صفحه‌ی تست‌ها هستند؛ اورکلاک و اندرولت در مرحله‌ی دوم اضافه می‌شود.</value></data>
+  <data name="Component_Note_Cpu" xml:space="preserve"><value>پردازنده: مشخصات، سنسورهای زنده و بنچمارک تک‌رشته و چندرشته. تست‌های فشار در صفحه‌ی تست‌ها هستند.</value></data>
+  <data name="Component_Note_Gpu" xml:space="preserve"><value>کارت گرافیک: مشخصات، سنسورهای زنده و بنچمارک‌های Direct3D، ری‌تریسینگ و هوش مصنوعی. تست‌های فشار و VRAM در صفحه‌ی تست‌ها هستند و اورکلاک و آندرولت در صفحه‌ی «تنظیم کارت گرافیک».</value></data>
   <data name="Component_Note_Storage" xml:space="preserve"><value>درایوها: آنچه ویندوز گزارش می‌کند (از جمله وضعیت سلامت)، سنسورهای زنده و مقادیر SMART همان‌طور که درایو گزارش می‌دهد، و بنچمارک سرعت. تست‌های خواندن/نوشتن که صحت داده را بررسی می‌کنند در صفحه‌ی تست‌ها هستند.</value></data>
   <data name="Component_Note_Network" xml:space="preserve"><value>کارت‌های شبکه، ترافیک زنده و تست سرعت اینترنت. تست سرعت فقط وقتی «اجرا» را بزنید با speed.cloudflare.com داده رد و بدل می‌کند و حجم داده همراه نتیجه نمایش داده می‌شود.</value></data>
   <data name="Component_NoSensors" xml:space="preserve"><value>سنسوری از این نوع روی این دستگاه پیدا نشد.</value></data>
@@ -657,7 +655,7 @@
   <data name="Tools_Result_Repaired" xml:space="preserve"><value>تمام شد: مشکلاتی پیدا و ترمیم شد.</value></data>
   <data name="Tools_Result_Damaged" xml:space="preserve"><value>تمام شد: مشکلاتی پیدا شد که ترمیم نشد.</value></data>
   <data name="Tools_Result_Unknown" xml:space="preserve"><value>تمام شد، اما نتیجه خوانده نشد؛ خروجی زیر را ببینید.</value></data>
-  <data name="Gaming_Note" xml:space="preserve"><value>پلن مصرف انرژی ویندوز (از همین‌جا قابل تغییر و برگشت‌پذیر) و وضعیت Game Mode و زمان‌بندی سخت‌افزاری GPU (تغییر در تنظیمات خود ویندوز). اورکلاک و آندرولت کارت گرافیک در صفحهٔ «اورکلاک و آندرولت» است؛ نمایش FPS ارائه نمی‌شود.</value></data>
+  <data name="Gaming_Note" xml:space="preserve"><value>پلن مصرف انرژی ویندوز (از همین‌جا قابل تغییر و برگشت‌پذیر) و وضعیت Game Mode و زمان‌بندی سخت‌افزاری GPU (تغییر در تنظیمات خود ویندوز). اورکلاک و آندرولت کارت گرافیک در صفحهٔ «تنظیم کارت گرافیک» است و نرخ فریم (FPS) را «نمایش نمودارها روی صفحه» نشان می‌دهد.</value></data>
   <data name="Gaming_PowerPlan" xml:space="preserve"><value>پلن مصرف انرژی</value></data>
   <data name="Gaming_Active" xml:space="preserve"><value>فعال</value></data>
   <data name="Gaming_Activate" xml:space="preserve"><value>فعال کن</value></data>
@@ -710,7 +708,7 @@
   <data name="Tuning_Profiles_Note" xml:space="preserve"><value>هر پروفایل فقط برای همان کارتی که روی آن ساخته شده نمایش داده می‌شود. اعمال آن تا ری‌استارت بعدی باقی می‌ماند.</value></data>
   <data name="Tuning_Delete" xml:space="preserve"><value>حذف</value></data>
   <data name="Tuning_Memory" xml:space="preserve"><value>پروفایل رم (XMP / DOCP / EXPO)</value></data>
-  <data name="Tuning_Memory_Note" xml:space="preserve"><value>XMP، DOCP و EXPO را بایوس هنگام روشن‌شدن و آموزش حافظه انتخاب می‌کند؛ ویندوز رابط استانداردی برای تغییر آن ندارد و سازندگان مادربرد دسکتاپ هم رابطی منتشر نکرده‌اند. تغییر آن در تنظیمات بایوس انجام می‌شود که این دکمه سیستم را مستقیم به آن ری‌استارت می‌کند (در سیستم‌های UEFI).</value></data>
+  <data name="Tuning_Memory_Note" xml:space="preserve"><value>پروفایل‌های حافظهٔ XMP، DOCP و EXPO در بایوس تنظیم می‌شوند و از داخل ویندوز قابل تغییر نیستند. این دکمه سیستم را ری‌استارت می‌کند و مستقیم به تنظیمات بایوس می‌برد (فقط در سیستم‌های UEFI).</value></data>
   <data name="Tuning_RestartToFirmware" xml:space="preserve"><value>ری‌استارت و ورود به بایوس</value></data>
   <data name="Tuning_Kind_Manual" xml:space="preserve"><value>دستی</value></data>
   <data name="Tuning_Kind_Undervolt" xml:space="preserve"><value>آندرولت</value></data>
@@ -752,7 +750,7 @@
   <data name="Tuning_Sum_Power" xml:space="preserve"><value>توان {0}</value></data>
   <data name="Tuning_Sum_Fan" xml:space="preserve"><value>فن {0}</value></data>
   <data name="Tuning_ConfirmFirmware" xml:space="preserve"><value>سیستم همین الان ری‌استارت می‌شود و مستقیم وارد تنظیمات بایوس می‌شود. اول کارهایتان را ذخیره کنید. ادامه می‌دهید؟</value></data>
-  <data name="Tuning_OtherGpus" xml:space="preserve"><value>فعلاً از این‌جا قابل تنظیم نیست: {0}. کارت‌های AMD به کتابخانهٔ ADLX شرکت AMD و کارت‌های Intel Arc به IGCL اینتل نیاز دارند که هنوز اضافه نشده‌اند.</value></data>
+  <data name="Tuning_OtherGpus" xml:space="preserve"><value>از این‌جا قابل تنظیم نیست: {0}. تنظیم کارت گرافیک فقط روی کارت‌های NVIDIA کار می‌کند.</value></data>
   <data name="Tuning_Memory_Speeds" xml:space="preserve"><value>تنظیم‌شده {0} · ماژول طبق SMBIOS {1}</value></data>
   <data name="Tuning_Recovered" xml:space="preserve"><value>یک اجرای تنظیم خودکار کارت گرافیک تمام نشد (در حال آزمایش {0}، شروع {1}) – احتمالاً سیستم هنگ کرده یا ری‌استارت شده است. کارت به حالت کارخانه برگردانده شد.</value></data>
   <data name="Tuning_RecoveredNoReset" xml:space="preserve"><value>یک اجرای تنظیم خودکار کارت گرافیک تمام نشد (در حال آزمایش {0}، شروع {1}). کارت از این‌جا ری‌ست نشد؛ برای اطمینان از حالت کارخانه سیستم را ری‌استارت کنید.</value></data>
@@ -766,7 +764,7 @@
   <data name="Tuning_CoreOffset" xml:space="preserve"><value>آفست هسته</value></data>
   <data name="Tuning_MemoryOffset" xml:space="preserve"><value>آفست حافظه</value></data>
   <data name="Tuning_Fan" xml:space="preserve"><value>فن</value></data>
-  <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA با درایور آن پیدا نشد. تنظیم کارت گرافیک فعلاً فقط روی کارت‌های NVIDIA کار می‌کند.</value></data>
+  <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA با درایور آن پیدا نشد. تنظیم کارت گرافیک فقط روی کارت‌های NVIDIA کار می‌کند.</value></data>
   <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>کتابخانهٔ مدیریتی NVIDIA باز نشد</value></data>
   <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>کارت در همان حالت کارخانه خطا داد. تنظیم انجام نشد – ابتدا تست‌های کارت گرافیک را اجرا کنید.</value></data>
   <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>درایور فرکانس یا توان این کارت را گزارش نمی‌کند، پس نتیجه قابل اندازه‌گیری نبود.</value></data>
@@ -800,7 +798,7 @@
   <data name="Tuning_Curve_Scanning" xml:space="preserve"><value>در حال اندازه‌گیری منحنی…</value></data>
   <data name="Tuning_Curve_Step" xml:space="preserve"><value>اندازه‌گیری منحنی: نقطهٔ {0} از {1} · سقف {2}</value></data>
   <data name="Tuning_Curve_Done" xml:space="preserve"><value>منحنی اندازه‌گیری و ذخیره شد. کارت به حالت کارخانه برگشت.</value></data>
-  <data name="Tuning_Curve_DoneDriver" xml:space="preserve"><value>منحنی اندازه‌گیری و ذخیره شد و کارت به حالت کارخانه برگشت. نمودار همان جدول خود درایور را نگه می‌دارد که کامل است؛ اندازه‌گیری زیر بار نمی‌تواند از ولتاژی که کارت هنگام کار نگه می‌دارد پایین‌تر برود و نقطه‌های پایین آن روی هم می‌افتند.</value></data>
+  <data name="Tuning_Curve_DoneDriver" xml:space="preserve"><value>منحنی اندازه‌گیری و ذخیره شد و کارت به حالت کارخانه برگشت. نمودار همان منحنی کامل خود درایور را نگه می‌دارد، چون اندازه‌گیری زیر بار به پایین‌ترین ولتاژها نمی‌رسد.</value></data>
   <data name="Tuning_ConfirmCurve" xml:space="preserve"><value>اندازه‌گیری منحنی حدود یک و نیم دقیقه کارت گرافیک را زیر بار می‌برد و فرکانس آن را قدم‌به‌قدم محدود می‌کند. تنظیمات فعلی کارت برداشته می‌شود و در پایان کارت به حالت کارخانه برمی‌گردد. شروع شود؟</value></data>
   <data name="Tuning_Curve_ApplyRefused" xml:space="preserve"><value>درایور سقف فرکانس را نپذیرفت؛ منحنی قابل اندازه‌گیری نیست</value></data>
   <data name="Tuning_Curve_Lost" xml:space="preserve"><value>درایور حین اندازه‌گیری ری‌ست شد. کارت به حالت کارخانه برگشت.</value></data>
@@ -848,7 +846,7 @@
   <data name="Overlay_Toggle" xml:space="preserve"><value>نمایش نمودارها</value></data>
   <data name="Overlay_ToggleHint" xml:space="preserve"><value>نمایش یا پنهان کردن اورلی روی صفحه (Alt+O، داخل بازی هم کار می‌کند)</value></data>
   <data name="Overlay_Title" xml:space="preserve"><value>نمایش نمودارها روی صفحه</value></data>
-  <data name="Overlay_Note" xml:space="preserve"><value>یک پنل کوچک همیشه‌رو با دما، بار، فرکانس و توان GPU و CPU، رم و شبکه و نمودار یک‌دقیقه‌ای بار و دما. ماوس از رویش رد می‌شود. روی بازی در حالت Borderless یا پنجره‌ای دیده می‌شود، نه در تمام‌صفحه‌ی انحصاری (Exclusive). نرخ فریم (FPS) نشان داده نمی‌شود، چون برنامه آن را اندازه نمی‌گیرد.</value></data>
+  <data name="Overlay_Note" xml:space="preserve"><value>یک پنل کوچک همیشه‌رو با دما، بار، فرکانس و توان GPU و CPU، رم و شبکه، نرخ فریم (FPS) بازی‌ای که جلوی صفحه است و نمودار یک‌دقیقه‌ای بار و دما. ماوس از رویش رد می‌شود. روی بازی در حالت Borderless یا پنجره‌ای دیده می‌شود، نه در تمام‌صفحه‌ی انحصاری (Exclusive).</value></data>
   <data name="Overlay_Corner" xml:space="preserve"><value>گوشه‌ی صفحه</value></data>
   <data name="Overlay_Corner_TopLeft" xml:space="preserve"><value>بالا چپ</value></data>
   <data name="Overlay_Corner_TopRight" xml:space="preserve"><value>بالا راست</value></data>
@@ -1038,7 +1036,7 @@
   <data name="Web_Overlay_FrameProblem" xml:space="preserve"><value>نرخ فریم روی این سیستم اندازه‌گیری نمی‌شود: {0}</value></data>
   <data name="Settings_Tray_Health" xml:space="preserve"><value>بررسی سلامت دیسک‌ها هر (دقیقه؛ ۱۴۴۰ = روزی یک بار)</value></data>
   <data name="Web_Diag_Title" xml:space="preserve"><value>لاگ عیب‌یابی</value></data>
-  <data name="Web_Diag_Note" xml:space="preserve"><value>آنچه برنامه روی این سیستم نتوانست بخواند: سنسورهای شناسایی‌نشده، مقادیر اصلی که یک قطعه ندارد و خطاها. همه را در یک فایل خروجی بگیرید و برگردانید تا برنامه برای این سیستم کامل شود.</value></data>
+  <data name="Web_Diag_Note" xml:space="preserve"><value>آنچه برنامه روی این سیستم نتوانست بخواند: سنسورهای شناسایی‌نشده، مقادیر اصلی که یک قطعه ندارد و خطاها. همه را در یک فایل خروجی بگیرید و برای مازستا بفرستید تا پشتیبانی برنامه از این سیستم بهتر شود.</value></data>
   <data name="Web_Diag_Export" xml:space="preserve"><value>ارسال گزارش من و خروجی فایل عیب‌یابی</value></data>
   <data name="Web_Diag_Exported" xml:space="preserve"><value>فایل عیب‌یابی آماده شد و پوشه‌اش باز شد. آمار الان ارسال نشد (اینترنت نیست؟)؛ دوباره تلاش می‌شود.</value></data>
   <data name="Web_Diag_None" xml:space="preserve"><value>تا این لحظه چیزی روی این سیستم کم نیست.</value></data>
@@ -1058,7 +1056,7 @@
   <data name="Tools_State_Off" xml:space="preserve"><value>خاموش</value></data>
   <data name="Tools_State_Default" xml:space="preserve"><value>پیش‌فرض ویندوز</value></data>
   <data name="Tools_Hib_Title" xml:space="preserve"><value>هایبرنیت و Fast Startup</value></data>
-  <data name="Tools_Hib_Sub" xml:space="preserve"><value>powercfg /hibernate</value></data>
+  <data name="Tools_Hib_Sub" xml:space="preserve"><value>هایبرنیت و راه‌اندازی سریع ویندوز</value></data>
   <data name="Tools_Hib_Hibernate" xml:space="preserve"><value>هایبرنیت</value></data>
   <data name="Tools_Hib_FastStartup" xml:space="preserve"><value>Fast Startup</value></data>
   <data name="Tools_Hib_Off" xml:space="preserve"><value>خاموش کردن هر دو</value></data>
@@ -1254,7 +1252,7 @@
   <data name="Tweaks_Action" xml:space="preserve"><value>یک‌باره</value></data>
   <data name="Tweaks_Restart" xml:space="preserve"><value>بعد از ری‌استارت یا خروج از حساب اعمال می‌شود</value></data>
   <data name="Tweaks_ConfirmAdvanced" xml:space="preserve"><value>بعضی از موارد انتخاب‌شده پیشرفته هستند. اول توضیحشان را بخوانید. اجرا شوند؟</value></data>
-  <data name="Tweaks_Note" xml:space="preserve"><value>روی سیستم مشتری، اول «ساخت نقطه‌ی بازگشت» را تیک بزنید.</value></data>
+  <data name="Tweaks_Note" xml:space="preserve"><value>اول «ساخت نقطه‌ی بازگشت» را تیک بزنید تا بشود تغییرات را برگرداند.</value></data>
   <data name="Tweak_RestorePoint" xml:space="preserve"><value>ساخت نقطه‌ی بازگشت (Restore Point)</value></data>
   <data name="Tweak_RestorePoint_Note" xml:space="preserve"><value>بازیابی سیستم را برای درایو ویندوز روشن می‌کند و یک نقطه‌ی بازگشت می‌سازد. اول از همه اجرا می‌شود.</value></data>
   <data name="Tweak_TempFiles" xml:space="preserve"><value>حذف فایل‌های موقت</value></data>
@@ -1434,7 +1432,7 @@
   <data name="AppUpd_Step_Download" xml:space="preserve"><value>در حال دانلود به‌روزرسانی</value></data>
   <data name="AppUpd_Size" xml:space="preserve"><value>{0} مگابایت · {1}</value></data>
   <data name="AppUpd_Checked" xml:space="preserve"><value>آخرین بررسی: {0}</value></data>
-  <data name="AppUpd_Done" xml:space="preserve"><value>مزستا به نسخه {0} به‌روز شد.</value></data>
+  <data name="AppUpd_Done" xml:space="preserve"><value>مازستا به نسخهٔ {0} به‌روز شد.</value></data>
   <data name="AppUpd_Data_Title" xml:space="preserve"><value>فهرست‌های مقایسه بنچمارک</value></data>
   <data name="AppUpd_Data_Sub" xml:space="preserve"><value>نتایج سیستم‌های دیگر که مازستا جمع کرده است</value></data>
   <data name="AppUpd_Data_Lists" xml:space="preserve"><value>{0} فهرست روی این کامپیوتر.</value></data>
@@ -1625,7 +1623,7 @@
   <data name="Spec_Microarchitecture" xml:space="preserve"><value>معماری</value></data>
   <data name="Spec_CpuPcie" xml:space="preserve"><value>PCIe از سمت CPU</value></data>
   <data name="Spec_CpuMemory" xml:space="preserve"><value>حافظهٔ پشتیبانی‌شده</value></data>
-  <data name="Spec_Facts_Note" xml:space="preserve"><value>اندازه‌گیری نشده: از معماری گزارش‌شده توسط درایور یا مشخصات منتشرشدهٔ سازنده برای همین مدل به دست آمده. مدلی که در جدول نباشد ردیف نشان نمی‌دهد، نه عدد مدل مشابه.</value></data>
+  <data name="Spec_Facts_Note" xml:space="preserve"><value>اندازه‌گیری نشده: از معماری گزارش‌شده توسط درایور یا مشخصات منتشرشدهٔ سازنده برای همین مدل به دست آمده. عددهایی که برای این مدل معلوم نیست نمایش داده نمی‌شوند.</value></data>
   <data name="Spec_GpuChip" xml:space="preserve"><value>تراشهٔ گرافیکی</value></data>
   <data name="Spec_Transistors" xml:space="preserve"><value>ترانزیستورها</value></data>
   <data name="Spec_DieSize" xml:space="preserve"><value>اندازهٔ دای</value></data>
@@ -1688,7 +1686,7 @@
   <data name="Spec_Speed" xml:space="preserve"><value>سرعت</value></data>
   <data name="Spec_Timings" xml:space="preserve"><value>تایمینگ</value></data>
   <data name="Spec_Profile_Note" xml:space="preserve"><value>از SPD خود ماژول خوانده شده. پروفایل مشخص‌شده همانی است که سرعتش با سرعت فعلی رم یکی است؛ تایمینگ در حال استفاده خوانده نمی‌شود.</value></data>
-  <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>پروفایل‌های {0} در این نسخه رمزگشایی نمی‌شوند.</value></data>
+  <data name="Spec_SpdNotDecoded" xml:space="preserve"><value>برنامه نمی‌تواند پروفایل‌های {0} را بخواند.</value></data>
   <data name="Spec_PowerOnHours" xml:space="preserve"><value>ساعات روشن بودن</value></data>
   <data name="Spec_Temperature" xml:space="preserve"><value>دما</value></data>
   <data name="Spec_Wear" xml:space="preserve"><value>فرسایش (عمر مصرف‌شده)</value></data>
@@ -2185,8 +2183,8 @@
   <data name="Drivers_Board_IntelPage" xml:space="preserve"><value>صفحهٔ چیپست Intel</value></data>
   <data name="Drivers_Board_Nothing" xml:space="preserve"><value>از سازنده‌ها بستهٔ درایوری برای این مادربرد پیدا نشد.</value></data>
   <data name="Drivers_Board_Note" xml:space="preserve"><value>نسخه‌ها از سایت پشتیبانی ASUS برای همین مدل، صفحهٔ چیپست AMD و دادهٔ درایور Intel گرفته می‌شوند. فقط وقتی نسخه‌ای «جدیدتر» نامیده می‌شود که بخش‌به‌بخش با نسخهٔ نصب‌شده قابل مقایسه باشد. اگر شمارهٔ بسته با شمارهٔ درایور فرق کند، «قابل مقایسه نیست» نشان داده می‌شود.</value></data>
-  <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>فقط ASUS اجازه می‌دهد برنامه صفحهٔ مادربرد را بخواند و MSI، Gigabyte و ASRock این را نمی‌پذیرند. برای این مادربردها چیپست AMD و درایورهای Wi-Fi، بلوتوث و شبکهٔ Intel همین‌جا بررسی می‌شوند و برای بقیه، صفحهٔ سازندهٔ مادربرد با دکمه باز می‌شود.</value></data>
-  <data name="Drivers_Board_IntelChipsetNote" xml:space="preserve"><value>درایور چیپست Intel (Chipset INF Utility) را برنامه نمی‌تواند بخواند، چون سایت Intel اجازه نمی‌دهد. صفحه‌اش با دکمه باز می‌شود و صفحهٔ سازندهٔ مادربرد هم آن را دارد.</value></data>
+  <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>برای مادربردهای MSI، Gigabyte و ASRock برنامه نمی‌تواند فهرست درایورهای خود سازنده را بررسی کند. درایور چیپست AMD و درایورهای Wi-Fi، بلوتوث و شبکهٔ Intel همین‌جا بررسی می‌شوند؛ برای بقیه، صفحهٔ سازندهٔ مادربرد را با دکمه باز کنید.</value></data>
+  <data name="Drivers_Board_IntelChipsetNote" xml:space="preserve"><value>برنامه نمی‌تواند نسخهٔ درایور چیپست Intel (Chipset INF Utility) را بررسی کند. صفحه‌اش را با دکمه باز کنید؛ صفحهٔ سازندهٔ مادربرد هم آن را دارد.</value></data>
   <data name="Drivers_Board_Timeout" xml:space="preserve"><value>در ۴۰ ثانیه جوابی نیامد</value></data>
   <data name="Drivers_Board_AsusUnknown" xml:space="preserve"><value>ASUS مدل «{0}» را ندارد</value></data>
   <data name="Drivers_Board_AmdNoVersion" xml:space="preserve"><value>صفحهٔ AMD نسخهٔ چیپست را نشان نداد</value></data>
@@ -2239,7 +2237,7 @@
   <data name="Drivers_Wu_Sub" xml:space="preserve"><value>درایورهای امضاشدهٔ مایکروسافت برای این سیستم</value></data>
   <data name="Drivers_Wu_Search" xml:space="preserve"><value>جستجو</value></data>
   <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>جستجوی دوباره</value></data>
-  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>در حال پرسیدن از Windows Update… چند دقیقه طول می‌کشد (روی همین سیستم با اینترنت سریع، پنج دقیقه).</value></data>
+  <data name="Drivers_Wu_Searching" xml:space="preserve"><value>در حال پرسیدن از Windows Update… ممکن است چند دقیقه طول بکشد.</value></data>
   <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} درایور هنوز نصب نشده ({1}). موردهایی را که می‌خواهید نصب شوند تیک بزنید.</value></data>
   <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update درایور جدیدی برای این سیستم ندارد ({0}).</value></data>
   <data name="Drivers_Wu_Install" xml:space="preserve"><value>نصب موارد تیک‌خورده ({0})</value></data>
@@ -2343,7 +2341,7 @@
   <data name="WinCmd_bitlockerstatus_What" xml:space="preserve"><value>نشان می‌دهد کدام درایو با BitLocker رمزگذاری شده یا منتظر فعال‌سازی است (علامت قفل روی آیکن درایو در This PC معمولاً همین است). چیزی را تغییر نمی‌دهد.</value></data>
   <data name="WinCmd_bitlockeroff" xml:space="preserve"><value>برداشتن BitLocker از یک درایو (رمزگشایی)</value></data>
   <data name="WinCmd_bitlockeroff_What" xml:space="preserve"><value>رمزگذاری درایو D: را برمی‌دارد (به‌جای D: حرف درایو خودتان را بگذارید). درایو باید باز (Unlock) باشد. در پس‌زمینه انجام می‌شود و روی درایو بزرگ ممکن است ساعت‌ها طول بکشد؛ پیشرفتش با manage-bde -status دیده می‌شود و وقتی تمام شد قفل برداشته می‌شود.</value></data>
-  <data name="WinCmd_bitlockeroff_Warn" xml:space="preserve"><value>حفاظت درایو برداشته می‌شود. اگر سیستم مال مشتری است، اول از او بپرسید؛ لپ‌تاپ را تا پایان کار به شارژر وصل نگه دارید.</value></data>
+  <data name="WinCmd_bitlockeroff_Warn" xml:space="preserve"><value>حفاظت درایو برداشته می‌شود. اگر سیستم مال شما نیست، اول از صاحبش بپرسید؛ لپ‌تاپ را تا پایان کار به شارژر وصل نگه دارید.</value></data>
   <data name="WinCmd_flushdns" xml:space="preserve"><value>پاک کردن کش DNS</value></data>
   <data name="WinCmd_flushdns_What" xml:space="preserve"><value>حافظهٔ موقت نام‌های DNS ویندوز را خالی می‌کند؛ برای وقتی که سایتی بعد از عوض کردن DNS باز نمی‌شود.</value></data>
   <data name="WinCmd_ipconfig" xml:space="preserve"><value>نشانی‌های شبکه (IP، DNS، MAC)</value></data>
@@ -2377,7 +2375,7 @@
   <data name="WinCmd_tempclean_What" xml:space="preserve"><value>فایل‌های پوشهٔ Temp کاربر فعلی را پاک می‌کند؛ فایل‌هایی که در حال استفاده‌اند رد می‌شوند.</value></data>
   <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>پاک‌شده‌ها به سطل بازیافت نمی‌روند و برنمی‌گردند. «پاکسازی دیسک» در صفحهٔ ابزارهای ویندوز راه امن‌تری است.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ اورکلاک».</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ تنظیم کارت گرافیک».</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>خواند: مشخصات سیستم</value></data>
@@ -2661,7 +2659,7 @@
   <data name="Check_RamAtJedec" xml:space="preserve"><value>رم با سرعت استاندارد کار می‌کند</value></data>
   <data name="Check_RamAtJedec_Text" xml:space="preserve"><value>رم با سریع‌ترین سرعت استاندارد (JEDEC) ماژول‌ها کار می‌کند؛ ماژول‌ها پروفایل سریع‌تری ندارند.</value></data>
   <data name="Check_RamProfileUnread" xml:space="preserve"><value>سرعت اسمی رم خوانده نشد</value></data>
-  <data name="Check_RamProfileUnread_Text" xml:space="preserve"><value>این نسخه هنوز سرعت اسمی ماژول‌های DDR5 را نمی‌خواند، پس روشن بودن XMP یا EXPO قضاوت نشد. سرعت داخل بایوس را با سرعتی که روی برچسب ماژول‌ها نوشته شده مقایسه کنید.</value></data>
+  <data name="Check_RamProfileUnread_Text" xml:space="preserve"><value>برنامه سرعت اسمی ماژول‌های DDR5 را نمی‌خواند، پس روشن بودن XMP یا EXPO قضاوت نشد. سرعت داخل بایوس را با سرعتی که روی برچسب ماژول‌ها نوشته شده مقایسه کنید.</value></data>
   <data name="Check_RamSingleChannel" xml:space="preserve"><value>یک ماژول رم: تک‌کاناله</value></data>
   <data name="Check_RamSingleChannel_Text" xml:space="preserve"><value>با یک ماژول، رم تک‌کاناله و با نصف پهنای باند حالت دوکاناله کار می‌کند. بازی‌ها و گرافیک مجتمع بیشترین افت را دارند. یک ماژول دوم مشابه این را درست می‌کند.</value></data>
   <data name="Check_RamSameChannel" xml:space="preserve"><value>ماژول‌ها در یک کانال</value></data>
