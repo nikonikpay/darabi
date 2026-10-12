@@ -89,7 +89,7 @@ public class CpuWorkloadTests
     {
         const long G = 1L << 30;
         Assert.Equal(64, CpuFftExecutor.Workers(new(64 * G, 60 * G), 64));
-        Assert.Equal(1, CpuFftExecutor.Workers(new(16 * G, 2 * G + 50 * (1L << 20)), 64));   // above the 2 GiB reserve: room for one
+        Assert.Equal(1, CpuFftExecutor.Workers(new(16 * G, 3 * G / 2 + 50 * (1L << 20)), 64));   // above the 1.5 GiB reserve: room for one
         Assert.Equal(0, CpuFftExecutor.Workers(new(16 * G, G), 64));
         var r = await new CpuFftExecutor(new Probe(16 * G, G)).RunAsync(new(2, new FakeClock(T0), null, null), CancellationToken.None);
         Assert.Equal(TestOutcome.Unsupported, r.Outcome);
