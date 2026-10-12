@@ -1,4 +1,4 @@
-using Mazesta.Core.Providers;
+using Mazesta.Core.Health; using Mazesta.Core.Providers; using Mazesta.Hardware.Details;
 namespace Mazesta.Hardware.Wmi;
 
 /// <summary>Drive health from Windows Storage Management: MSFT_PhysicalDisk (the health verdict, which Windows derives from the drive's own SMART
@@ -9,7 +9,36 @@ public sealed class WmiDriveHealthProvider(IWmiQuery query) : IDriveHealthProvid
 {
     private const string Storage = @"root\Microsoft\Windows\Storage";
     public IReadOnlyList<DriveHealth> Read()
-        => WmiDriveHealthParser.Parse(query.QueryWithRelated(Storage, "SELECT * FROM MSFT_PhysicalDisk WHERE BusType <> 7 OR BusType IS NULL", "MSFT_StorageReliabilityCounter"));
+    {
+        var rows = query.QueryWithRelated(Storage, "SELECT * FROM MSFT_PhysicalDisk WHERE BusType <> 7 OR BusType IS NULL", "MSFT_StorageReliabilityCounter");
+        var drives = WmiDriveHealthParser.Parse(rows);
+        var smart = SmartBlobs();
+        var taken = new HashSet<int>();
+        return [.. drives.Select((d, i) =>
+        {
+            // The drive's own figures beat Windows' counter (which reads 0 on many NVMe drives): the NVMe log's "percentage used", and the bad-sector attributes.
+            int? used = d.WearPercent;
+            if (d.BusType == "NVMe" && rows[i].Row.GetValueOrDefault("DeviceId") is { } id && int.TryParse(Convert.ToString(id, System.Globalization.CultureInfo.InvariantCulture), out int number)
+                && NvmeHealthReader.ReadLog(number) is { } log) used = log.PercentageUsed;
+            int? sectors = null;
+            for (int k = 0; k < smart.Count && sectors is null; k++)
+                if (!taken.Contains(k) && WmiDriveHealthParser.Same(smart[k].Prod, d.Name)) { taken.Add(k); sectors = SmartHealth.FromAttributes(smart[k].Raw); }
+            return d with { WearPercent = SmartHealth.Wear(used, sectors) };
+        })];
+    }
+
+    /// <summary>Each ATA drive's SMART attributes (administrator only; a drive Windows does not expose them for - NVMe, USB - is simply absent).</summary>
+    private List<(string Prod, IReadOnlyDictionary<int, ulong> Raw)> SmartBlobs()
+    {
+        var list = new List<(string, IReadOnlyDictionary<int, ulong>)>();
+        try
+        {
+            foreach (var r in query.Query(@"root\wmi", "SELECT InstanceName, VendorSpecific FROM MSStorageDriver_ATAPISmartData"))
+                if (r.GetValueOrDefault("InstanceName") is string name && r.GetValueOrDefault("VendorSpecific") is byte[] blob) list.Add((name, SmartHealth.Parse(blob)));
+        }
+        catch (Exception) { }   // no SMART access: the drive keeps what Windows reports
+        return list;
+    }
 }
 
 public static class WmiDriveHealthParser
@@ -25,6 +54,15 @@ public static class WmiDriveHealthParser
             N(c, "ReadErrorsUncorrected"), N(c, "WriteErrorsUncorrected"), N(c, "PowerOnHours"),
             N(d, "BusType") switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 3 => "ATA", null => null, var b => $"Bus {b}" });
     })];
+
+    /// <summary>Whether a SMART instance name ("SCSI\Disk&amp;Ven_WDC&amp;Prod_WD10EZRX-00A3KB0\...") is the drive of that friendly name ("WDC WD10EZRX-00A3KB0").</summary>
+    public static bool Same(string instance, string friendly)
+    {
+        static string Key(string x) => new([.. x.Where(char.IsLetterOrDigit).Select(char.ToUpperInvariant)]);
+        int at = instance.IndexOf("Prod_", StringComparison.OrdinalIgnoreCase); if (at < 0) return false;
+        string prod = instance[(at + 5)..]; int end = prod.IndexOfAny(['\\', '&']); if (end >= 0) prod = prod[..end];
+        return Key(prod).Length > 3 && Key(friendly).EndsWith(Key(prod));
+    }
 
     private static string? S(IReadOnlyDictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) && v is string s && !string.IsNullOrWhiteSpace(s) ? s.Trim() : null;
     private static long? N(IReadOnlyDictionary<string, object?>? r, string k) => r is not null && r.TryGetValue(k, out var v) && v is not null ? Convert.ToInt64(v, System.Globalization.CultureInfo.InvariantCulture) : null;

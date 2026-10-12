@@ -253,7 +253,7 @@ public static class PartSpecs
             Add(rows, "Spec_NvmePowerCycles", nv.PowerCycles, more: true);
             Add(rows, "Spec_NvmeErrorLog", nv.ErrorLogEntries, more: true);
         }
-        Add(rows, "Spec_Wear", d?.WearPercent, more: true, suffix: "%");
+        Add(rows, "Spec_Wear", s.MediaType == "HDD" ? null : d?.WearPercent, more: true, suffix: "%");
         Add(rows, "Spec_UncorrectedErrors", d?.ReadErrorsUncorrected is null && d?.WriteErrorsUncorrected is null ? null : $"{d?.ReadErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"} / {d?.WriteErrorsUncorrected?.ToString(CultureInfo.InvariantCulture) ?? "-"}", more: true);
         Add(rows, "Spec_LinkMax", Link(d?.Link?.MaxGen, d?.Link?.MaxWidth), more: true);
         Add(rows, "SystemInfo_Firmware", s.FirmwareVersion, more: true);

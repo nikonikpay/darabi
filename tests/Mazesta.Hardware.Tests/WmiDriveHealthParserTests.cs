@@ -47,4 +47,5 @@ public class WmiPageFileTests
         Assert.True(p.SystemManaged); Assert.Equal((@"C:\pagefile.sys", 16384L, 120L, 900L), (p.Files[0].Path, p.Files[0].AllocatedMb, p.Files[0].CurrentMb, p.Files[0].PeakMb));
     }
     [Fact] [Trait("Category", "Hardware")] public void This_machines_page_file_reads() => Assert.NotNull(WmiPageFile.Read(new WmiQuery()).SystemManaged);
+    [Fact] public void A_smart_instance_name_matches_the_drives_friendly_name() { Assert.True(WmiDriveHealthParser.Same(@"SCSI\Disk&Ven_WDC&Prod_WD10EZRX-00A3KB0&df55e28&0&000000_0", "WDC WD10EZRX-00A3KB0")); Assert.False(WmiDriveHealthParser.Same(@"SCSI\Disk&Ven_WDC&Prod_WD20PURZ-85AKKY0&1", "WDC WD10EZRX-00A3KB0")); }
 }
