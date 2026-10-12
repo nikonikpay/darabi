@@ -70,7 +70,9 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         try
         {
             using var buffer = device.AllocateReadWriteBuffer<uint>(Threads);
-            var host = new uint[Threads];
+            // Two read-back copies: one batch is checked on the processor while the next is already on the card, so the card is never left waiting for the check.
+            var hosts = new[] { new uint[Threads], new uint[Threads] }; int copy = 0; Task<long>? pending = null;
+            long Drain() { long wrong = pending?.Result ?? 0; pending = null; return wrong; }
             while (clock.Elapsed.TotalSeconds < request.DurationSeconds)
             {
                 ct.ThrowIfCancellationRequested();
@@ -81,15 +83,16 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
                     uint seed = unchecked((uint)(++batches * 2654435761u)); int count = sizer.Count; var batchStart = clock.Elapsed;
                     using (var context = device.CreateComputeContext())
                         for (int d = 0; d < count; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed, d > 0 ? 1 : 0)); if (d + 1 < count) context.Barrier(buffer); }
-                    buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
+                    var host = hosts[copy ^= 1]; buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
                     dispatches += count;
-                    errors += CheckSample(host, random, seed, count); checkedResults += (long)SamplesPerBatch * count;
+                    errors += Drain(); int batchCount = count; uint batchSeed = seed; pending = Task.Run(() => CheckSample(host, random, batchSeed, batchCount)); checkedResults += (long)SamplesPerBatch * count;
                     sizer.Record(clock.Elapsed - batchStart, BatchTarget(profile, busy));
                 }
                 Report(request, clock);
                 if (pacer.Due()) request.Note("Log_Gpu_Progress", null, dispatches, dispatches * (double)Threads * Rounds * 6 / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e9, checkedResults, errors);
                 if (clock.Elapsed - frameStart < frame) ct.WaitHandle.WaitOne(frame - (clock.Elapsed - frameStart));   // the idle part of the frame; wakes at once on cancel
             }
+            errors += Drain();
         }
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, dispatches, checkedResults, clock, request, started)); }
         catch (Exception ex)

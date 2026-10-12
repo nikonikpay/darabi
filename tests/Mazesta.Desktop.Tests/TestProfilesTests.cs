@@ -53,6 +53,21 @@ public class TestProfilesTests
         finally { Directory.Delete(dir, true); }
     }
 
+    [Fact] public void Everyday_selects_the_daily_test_and_sets_the_cycles_to_their_transient_preset()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "mazesta-everyday-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(dir);
+        try
+        {
+            ITestExecutor[] executors = [new Stub(Mazesta.Diagnostics.Cpu.DailyUseExecutor.Definition), new Stub(Mazesta.Diagnostics.Cpu.CpuCycle.Definition)];
+            var engine = new TestEngine(executors, new JsonStore<TestSessionCheckpoint>(Path.Combine(dir, "cp.json"), new SchemaMigrator([]), TestSessionCheckpoint.CurrentSchemaVersion, NullLogger.Instance), new Clock());
+            using var vm = new TestCenterViewModel(engine, executors, a => { a(); return null!; });
+            vm.ApplyProfile("everyday");
+            Assert.True(vm.Rows[0].IsSelected); Assert.True(vm.Rows[1].IsSelected);
+            Assert.Equal("transient", vm.Rows[1].Options.Single(o => o.Option.Key == "preset").SelectedChoice?.Value);
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
     /// <summary>Holds until every lane has started, so a pass proves they overlapped; then notes the order the tests ended in.</summary>
     private sealed class Meeting(TestDefinition d, Barrier? all, List<string> ended) : ITestExecutor
     {

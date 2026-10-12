@@ -978,7 +978,6 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .panel-body > .caption:first-child { margin-top: 0; }
 .panels.two { grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr)); }
 .panels.flow { display: block; columns: 2 380px; column-gap: 14px; }
-.panels.flow > .panel.wide { column-span: all; }
 .panels.flow > .panel { break-inside: avoid; margin-bottom: 14px; }
 .panel .btn.primary { background: var(--hue); border-color: var(--hue); color: var(--ink); }
 .panel .btn.primary:hover:not(:disabled) { background: var(--paper); border-color: var(--paper); }
