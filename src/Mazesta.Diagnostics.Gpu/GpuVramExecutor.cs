@@ -66,11 +66,13 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                 ct.ThrowIfCancellationRequested();
                 counter.CopyFrom([0]);
                 using (var context = device.CreateComputeContext())
-                    for (int b = 0; b < buffers.Count; b++)
-                    {
-                        context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes, verify: true)); context.Barrier(buffers[b]);
-                        context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes + 1, verify: false)); context.Barrier(buffers[b]);
-                    }
+                {
+                    // The buffers are independent: all are read first with no wait between them, then all rewritten, so the memory is never drained between two buffers.
+                    for (int b = 0; b < buffers.Count; b++) { context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes, verify: true)); }
+                    for (int b = 0; b < buffers.Count; b++) context.Barrier(buffers[b]);
+                    for (int b = 0; b < buffers.Count; b++) context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes + 1, verify: false));
+                    for (int b = 0; b < buffers.Count; b++) context.Barrier(buffers[b]);
+                }
                 counter.CopyTo(bad); errors += bad[0]; moved += 2L * buffers.Count * ChunkBytes;
                 passes++;
                 request.Note("Log_Vram_Pass", $"on the GPU, for every cell: if (cell ≠ pattern[p]) errors++ (atomic);  then write pattern[p+1]   pattern {passes % VramPattern.Kinds}: {VramPattern.Names[passes % VramPattern.Kinds]}", passes, errors);

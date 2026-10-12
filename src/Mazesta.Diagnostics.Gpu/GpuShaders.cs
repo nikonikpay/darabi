@@ -62,7 +62,7 @@ internal static class GpuHash
 /// a lone 1 and a lone 0), an address pattern written in stride order (thread i writes cell i·K mod n, K odd: every cell once, far from where its
 /// neighbours are written, so an address line that is stuck or shorted puts data in the wrong cell), and a pass-seeded scramble.
 /// </summary>
-[ThreadGroupSize(DefaultThreadGroupSizes.XY)]
+[ThreadGroupSize(128, 1, 1)]   // a row of 128 consecutive cells per group: the default 8x8 group touched only 8 consecutive cells per row and left most of each memory transaction unused
 [GeneratedComputeShaderDescriptor]
 internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> errors, int width, uint pass, uint baseIndex, int verify, uint mask) : IComputeShader
 {
@@ -71,15 +71,15 @@ internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer,
         uint i = (uint)(ThreadIds.Y * width + ThreadIds.X);
         uint kind = pass % 8u;
         // The cell this thread handles: its own, except when the stride pattern is written (mask = cells - 1, a power of two minus one).
-        uint cell = verify == 0 && kind == 6u ? (i * 40503u) & mask : i;
+        uint cell = verify == 0 && kind == 6u ? ((((i >> 5) * 40503u) << 5) | (i & 31u)) & mask : i;   // scattered by 32-cell blocks (128 B): still every cell once, but a warp writes whole sectors
         uint index = cell + baseIndex;
-        uint mixed = index * 2654435761u;
-        mixed ^= mixed >> 15;
-        uint walk = 1u << (int)((index + pass / 8u) & 31u);
-        uint scramble = (index ^ (pass * 0x9E3779B9u)) * 0x85EBCA6Bu;
-        scramble ^= scramble >> 13;
-        uint expected = kind == 0u ? mixed : kind == 1u ? ~mixed : kind == 2u ? 0xAAAAAAAAu : kind == 3u ? 0x55555555u
-            : kind == 4u ? walk : kind == 5u ? ~walk : kind == 6u ? mixed ^ 0x0F0F0F0Fu : scramble;
+        // Only the pass's own pattern is computed (kind is the same for every thread): the shader is memory-bound, not busy with all eight at once.
+        uint expected;
+        if (kind == 2u) expected = 0xAAAAAAAAu;
+        else if (kind == 3u) expected = 0x55555555u;
+        else if (kind == 4u || kind == 5u) { uint walk = 1u << (int)((index + pass / 8u) & 31u); expected = kind == 4u ? walk : ~walk; }
+        else if (kind == 7u) { uint scramble = (index ^ (pass * 0x9E3779B9u)) * 0x85EBCA6Bu; expected = scramble ^ (scramble >> 13); }
+        else { uint mixed = index * 2654435761u; mixed ^= mixed >> 15; expected = kind == 0u ? mixed : kind == 1u ? ~mixed : mixed ^ 0x0F0F0F0Fu; }
         if (verify == 0) buffer[(int)cell] = expected;
         else if (buffer[(int)cell] != expected) Hlsl.InterlockedAdd(ref errors[0], 1);
     }
@@ -101,7 +101,7 @@ internal static class VramPattern
     }
 
     /// <summary>The cell thread <paramref name="thread"/> writes in the stride pass (40503 is odd, so over a power-of-two buffer every cell is hit once).</summary>
-    public static uint StrideCell(uint thread, uint mask) => unchecked(thread * 40503u) & mask;
+    public static uint StrideCell(uint thread, uint mask) => unchecked((((thread >> 5) * 40503u) << 5) | (thread & 31u)) & mask;
 }
 
 /// <summary>A fixed scene of 25 spheres traced with four reflection bounces per pixel - a real 3-D-style
