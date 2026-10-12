@@ -3662,4 +3662,5 @@
   <data name="Done_System_Attention" xml:space="preserve"><value>بعضی از بررسی‌های دیگر تمام نشدند یا اینجا قابل اجرا نبودند.</value></data>
   <data name="Done_System_Problem" xml:space="preserve"><value>یکی از بررسی‌های دیگر (منبع تغذیه، ویندوز، شبکه) رد شد.</value></data>
   <data name="Done_Passed_Good" xml:space="preserve"><value>همهٔ آزمون‌های این قطعه موفق بودند.</value></data>
+  <data name="Test_GpuPreset_all" xml:space="preserve"><value>همه‌چیز، یکی‌یکی (محاسبه، پله‌های توان، VRAM، سه‌بعدی، هوش مصنوعی، دیکود و انکود ویدیو)</value></data>
 </root>

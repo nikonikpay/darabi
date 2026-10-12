@@ -3662,4 +3662,5 @@ Cancel: stop.</value></data>
   <data name="Done_System_Attention" xml:space="preserve"><value>Some of the other checks did not finish or could not run here.</value></data>
   <data name="Done_System_Problem" xml:space="preserve"><value>One of the other checks (power, Windows, network) failed.</value></data>
   <data name="Done_Passed_Good" xml:space="preserve"><value>Every test of this part passed.</value></data>
+  <data name="Test_GpuPreset_all" xml:space="preserve"><value>Everything, one by one (compute, power steps, VRAM, 3D, AI, video decode and encode)</value></data>
 </root>
