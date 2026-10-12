@@ -65,6 +65,13 @@ public class GpuCheckTests
     private static GpuRunTrace Run(GpuThrottleCounts? r = null, GpuLink? link = null, Func<int, double>? core = null, Func<int, double>? spot = null, HardwareVendor vendor = HardwareVendor.Nvidia)
         => new("RTX", vendor, S(_ => 99), core is null ? null : S(core), spot is null ? null : S(spot), S(_ => 350), r, link);
 
+    [Fact] public void Hot_vram_is_judged_by_its_own_sensor()
+    {
+        GpuRunTrace V(double t) => new("RTX", HardwareVendor.Nvidia, S(_ => 99), null, null, S(_ => 350), null, null, VramTemp: S(_ => t));
+        Assert.Contains(GpuCheck.Evaluate(V(106)), x => x.Code == FindingCode.GpuVramHot && x.Level == FindingLevel.Problem);
+        Assert.Contains(GpuCheck.Evaluate(V(98)), x => x.Code == FindingCode.GpuVramWarm);
+        Assert.Contains(GpuCheck.Evaluate(V(86)), x => x.Code == FindingCode.GpuVramOk);
+    }
     [Fact] public void A_power_brake_is_a_problem() => Assert.Contains(GpuCheck.Evaluate(Run(new(60, 0, 0, 10, 0, 10, 88, 350))), x => x.Code == FindingCode.GpuPowerBrake && x.Level == FindingLevel.Problem);
     [Fact] public void A_brief_general_slowdown_is_not_a_fault() => Assert.DoesNotContain(GpuCheck.Evaluate(Run(new(60, 0, 0, 2, 0, 0, 88, 350))), x => x.Code == FindingCode.GpuHwSlowdown);
     [Fact] public void Running_at_the_power_limit_is_only_noted()

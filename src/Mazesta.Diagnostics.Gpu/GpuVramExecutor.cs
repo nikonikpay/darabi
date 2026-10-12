@@ -20,13 +20,13 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
     internal const int Width = 4096, ChunkElements = 64 << 20;   // 256 MiB per buffer
     private const long ChunkBytes = ChunkElements * 4L;
 
-    /// <summary>What may be used: 90 % of the free VRAM minus a 512 MiB margin for the display and other apps; without a live free-VRAM reading, 60 % of the dedicated memory.
-    /// Never more than 90 % of what Windows lets this process keep resident on the card (<paramref name="residentBytes"/>, DXGI's budget), past which it would move
+    /// <summary>What may be used: 95 % of the free VRAM minus a 384 MiB margin for the display and other apps; without a live free-VRAM reading, 80 % of the dedicated memory.
+    /// Never more than 95 % of what Windows lets this process keep resident on the card (<paramref name="residentBytes"/>, DXGI's budget), past which it would move
     /// the test's buffers out to system RAM.</summary>
     internal static long Budget(double? freeVramMb, long dedicatedBytes, int requestedMb = 0, long? residentBytes = null)
     {
-        long budget = Math.Max(0, freeVramMb is { } free ? (long)(free * 1024 * 1024 * 0.9) - (512L << 20) : (long)(dedicatedBytes * 0.6));
-        if (residentBytes is { } resident) budget = Math.Min(budget, (long)(resident * 0.9));
+        long budget = Math.Max(0, freeVramMb is { } free ? (long)(free * 1024 * 1024 * 0.95) - (384L << 20) : (long)(dedicatedBytes * 0.8));
+        if (residentBytes is { } resident) budget = Math.Min(budget, (long)(resident * 0.95));
         return requestedMb > 0 ? Math.Min(budget, (long)requestedMb << 20) : budget;
     }
 
@@ -44,7 +44,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
 
     private static TestRunResult Run(TestExecutionRequest request, GraphicsDevice device, long budget, DateTimeOffset started, CancellationToken ct)
     {
-        var buffers = new List<ReadWriteBuffer<uint>>(); long errors = 0; uint passes = 0; bool refused = false;
+        var buffers = new List<ReadWriteBuffer<uint>>(); long errors = 0; uint passes = 0; bool refused = false; double? bandwidth = null;
         var clock = Stopwatch.StartNew();
         try
         {
@@ -57,33 +57,41 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                 Dispatch(device, buffers[^1], counter, buffers.Count - 1, 0, verify: false);
             }
             if (buffers.Count == 0) return TestRunResult.Unsupported(Definition.Id, started, "The driver refused to allocate any VRAM buffer.");
-            request.Note("Log_Vram_Allocated", "budget = 0.9 × free VRAM (this card's sensor) − 512 MiB, else 0.6 × dedicated;  256 MiB per buffer", (long)buffers.Count * (ChunkBytes >> 20), device.Name, buffers.Count);
-            var duration = TimeSpan.FromSeconds(request.DurationSeconds); var timed = Stopwatch.StartNew();
+            request.Note("Log_Vram_Allocated", "budget = 0.95 × free VRAM (this card's sensor) − 384 MiB, else 0.8 × dedicated;  256 MiB per buffer", (long)buffers.Count * (ChunkBytes >> 20), device.Name, buffers.Count);
+            var duration = TimeSpan.FromSeconds(request.DurationSeconds); var timed = Stopwatch.StartNew(); long moved = 0; var bad = new int[1];
+            // A whole pass (every buffer verified, then rewritten) goes to the card in one submission and the error count is read back once:
+            // waiting for the CPU after every buffer left the memory idle between them, so it ran cooler than under a game or FurMark.
             do
             {
-                for (int b = 0; b < buffers.Count; b++)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    errors += Verify(device, buffers[b], counter, b, passes);
-                    Dispatch(device, buffers[b], counter, b, passes + 1, verify: false);
-                }
+                ct.ThrowIfCancellationRequested();
+                counter.CopyFrom([0]);
+                using (var context = device.CreateComputeContext())
+                    for (int b = 0; b < buffers.Count; b++)
+                    {
+                        context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes, verify: true)); context.Barrier(buffers[b]);
+                        context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes + 1, verify: false)); context.Barrier(buffers[b]);
+                    }
+                counter.CopyTo(bad); errors += bad[0]; moved += 2L * buffers.Count * ChunkBytes;
                 passes++;
                 request.Note("Log_Vram_Pass", $"on the GPU, for every cell: if (cell ≠ pattern[p]) errors++ (atomic);  then write pattern[p+1]   pattern {passes % VramPattern.Kinds}: {VramPattern.Names[passes % VramPattern.Kinds]}", passes, errors);
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(timed.Elapsed / duration, 0, 1), "Test_Status_Running"));
             }
             while (timed.Elapsed < duration);
+            bandwidth = moved / Math.Max(0.001, timed.Elapsed.TotalSeconds) / 1e9;
             for (int b = 0; b < buffers.Count; b++) errors += Verify(device, buffers[b], counter, b, passes);
         }
-        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, request, started, refused)); }
+        catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, bandwidth, request, started, refused)); }
         catch (Exception ex) { return new(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"GPU error during the VRAM test: {ex.GetType().Name}: {ex.Message}"); }
         // ComputeSharp 3.2 returns a descriptor twice after a refused allocation, so its pool throws on the last return - with the memory already freed; the finished run is not a crash.
         finally { foreach (var b in buffers) { try { b.Dispose(); } catch (InvalidOperationException) { } } }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, request, started, refused));
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(device, buffers.Count, passes, bandwidth, request, started, refused));
     }
 
+    private static VramPatternShader Shader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
+        => new(buffer, counter, Width, pass, (uint)chunk * (uint)ChunkElements, verify ? 1 : 0, ChunkElements - 1);
     private static void Dispatch(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
-        => device.For(Width, ChunkElements / Width, new VramPatternShader(buffer, counter, Width, pass, (uint)chunk * (uint)ChunkElements, verify ? 1 : 0, ChunkElements - 1));
+        => device.For(Width, ChunkElements / Width, Shader(buffer, counter, chunk, pass, verify));
 
     private static long Verify(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass)
     {
@@ -93,7 +101,14 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
         return bad[0];
     }
 
-    private static string Describe(GraphicsDevice device, int chunks, uint passes, TestExecutionRequest request, DateTimeOffset started, bool refused)
-        => SensorEvidence.Join($"VRAM pattern test on {device.Name}", $"tested={chunks * (ChunkBytes >> 20)} MiB in {chunks} buffers", $"passes={passes}", refused ? $"the driver refused more VRAM after {chunks} buffers (the part it granted was tested)" : null,
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramUsed, started, request.Clock.UtcNow, GpuDevices.SensorNode(request.Engine, device.Name), null)?.Format("VRAM in use", " MB", includeMax: true));
+    private static string Describe(GraphicsDevice device, int chunks, uint passes, double? bandwidth, TestExecutionRequest request, DateTimeOffset started, bool refused)
+    {
+        var finished = request.Clock.UtcNow; var card = GpuDevices.SensorNode(request.Engine, device.Name);
+        return SensorEvidence.Join($"VRAM pattern test on {device.Name}", $"tested={chunks * (ChunkBytes >> 20)} MiB in {chunks} buffers", $"passes={passes}",
+            bandwidth is { } gb ? $"{gb:F0} GB/s" : null, refused ? $"the driver refused more VRAM after {chunks} buffers (the part it granted was tested)" : null,
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramTemp, started, finished, card, null)?.Format("VRAM temperature", "°C", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, card, null)?.Format("GPU memory clock", " MHz", includeMax: true),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuLoadMemoryController, started, finished, card, null)?.Format("memory controller load", "%"),
+            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramUsed, started, finished, card, null)?.Format("VRAM in use", " MB", includeMax: true));
+    }
 }

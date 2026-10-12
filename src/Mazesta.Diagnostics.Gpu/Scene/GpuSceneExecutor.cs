@@ -162,6 +162,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU power", " W", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU temperature", "°C", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU hot spot", "°C", includeMax: true),
+                SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramTemp, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("VRAM temperature", "°C", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU clock", " MHz", includeMax: true),
                 SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuMemoryClock, started, finished, GpuDevices.SensorNode(request.Engine, session.AdapterName), null)?.Format("GPU memory clock", " MHz", includeMax: true),
                 string.Join("; ", HostMetrics.Evidence(request, started, finished, ram)));

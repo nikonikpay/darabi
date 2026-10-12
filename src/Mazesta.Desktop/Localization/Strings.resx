@@ -3575,4 +3575,15 @@ Cancel: stop.</value></data>
   <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>Turn the lights off</value></data>
   <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>Keep the lights on</value></data>
   <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>Carried out by the background monitor, which must be running; Windows gives it only a few seconds, so on a slow lighting server it can miss.</value></data>
+  <data name="Detail_L_VramTemp" xml:space="preserve"><value>VRAM temperature</value></data>
+  <data name="Detail_L_MemCtrlLoad" xml:space="preserve"><value>Memory controller load</value></data>
+  <data name="Detail_Fig_Bandwidth" xml:space="preserve"><value>Measured bandwidth</value></data>
+  <data name="Check_GpuVramHot" xml:space="preserve"><value>Graphics memory too hot</value></data>
+  <data name="Check_GpuVramHot_Text" xml:space="preserve"><value>Under load the memory chips reached the temperature at which the card slows its memory clock (GDDR6X about 110 °C). Usually the thermal pads on the memory have dried or lost contact, or the case airflow is poor; new pads (and a backplate pad on cards with memory on the back) bring it down.</value></data>
+  <data name="Check_GpuVramWarm" xml:space="preserve"><value>Graphics memory warm</value></data>
+  <data name="Check_GpuVramWarm_Text" xml:space="preserve"><value>The memory chips ran warmer than they should under load, though still below the point where the card slows them. Check the case airflow; on an older card the memory pads may be drying.</value></data>
+  <data name="Check_GpuVramOk" xml:space="preserve"><value>Graphics memory temperature is fine</value></data>
+  <data name="Check_GpuVramOk_Text" xml:space="preserve"><value>Under load the memory chips stayed well below the temperature at which the card slows them.</value></data>
+  <data name="Check_M_VramTempMax" xml:space="preserve"><value>Highest VRAM temperature</value></data>
+  <data name="Check_M_VramTempMedian" xml:space="preserve"><value>Typical VRAM temperature</value></data>
 </root>

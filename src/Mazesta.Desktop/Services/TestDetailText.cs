@@ -15,6 +15,7 @@ public static partial class TestDetailText
     {
         ["GPU load"] = "Detail_L_GpuLoad", ["CPU load"] = "Detail_L_CpuLoad", ["GPU core"] = "Detail_L_GpuCore", ["GPU temperature"] = "Detail_L_GpuCore", ["GPU hot spot"] = "Detail_L_GpuHotSpot",
         ["GPU power"] = "Detail_L_GpuPower", ["GPU clock"] = "Detail_L_GpuClock", ["average effective clock"] = "Detail_L_CpuEffClock", ["CPU core clock"] = "Detail_L_CpuCoreClock", ["GPU memory clock"] = "Detail_L_GpuMemClock", ["CPU package power"] = "Detail_L_CpuPower", ["CPU temperature"] = "Detail_L_CpuTemp", ["VRAM in use"] = "Detail_L_VramUsed",
+        ["VRAM temperature"] = "Detail_L_VramTemp", ["memory controller load"] = "Detail_L_MemCtrlLoad",
     };
     private static readonly Dictionary<string, string> Counts = new(StringComparer.Ordinal)
     {
@@ -183,7 +184,7 @@ public static partial class TestDetailText
     public sealed record DetailView(IReadOnlyList<DetailFigure> Figures, IReadOnlyList<DetailLine> Lines);
 
     /// <summary>The order the key figures stand in: the heat, clock and power of the part under test first, then the frame rate, then the rest.</summary>
-    private static readonly string[] FigureOrder = ["GPU temperature", "GPU core", "GPU hot spot", "GPU clock", "GPU power", "GPU load", "fps avg", "fps low", "GPU memory clock", "CPU temperature", "CPU core clock", "CPU package power", "CPU load", "VRAM in use"];
+    private static readonly string[] FigureOrder = ["GPU temperature", "GPU core", "GPU hot spot", "VRAM temperature", "GPU clock", "GPU power", "GPU load", "fps avg", "fps low", "bandwidth", "GPU memory clock", "memory controller load", "CPU temperature", "CPU core clock", "CPU package power", "CPU load", "VRAM in use"];
 
     /// <summary>The detail as the page shows it: the figures that matter (a measured highest or average) apart, and every other line as <see cref="Lines"/> words it.</summary>
     public static DetailView View(string? detail)
@@ -205,6 +206,7 @@ public static partial class TestDetailText
         }
         if (FpsAverage().Match(part) is { Success: true } a) return (Array.IndexOf(FigureOrder, "fps avg"), new(Loc.Get("Detail_Fig_FpsAvg"), a.Groups[1].Value + " FPS", null));
         if (FpsLowest().Match(part) is { Success: true } l) return (Array.IndexOf(FigureOrder, "fps low"), new(Loc.Get("Detail_Fig_FpsLow"), l.Groups[1].Value + " FPS", null));
+        if (Bandwidth().Match(part) is { Success: true } b) return (Array.IndexOf(FigureOrder, "bandwidth"), new(Loc.Get("Detail_Fig_Bandwidth"), b.Groups[1].Value + " GB/s", null));
         return null;
     }
 
@@ -305,6 +307,7 @@ public static partial class TestDetailText
     [GeneratedRegex(@"^([\d,.]+) frame/s$")] private static partial Regex FrameRate();
     [GeneratedRegex(@"^([\d,.]+) FPS average$")] private static partial Regex FpsAverage();
     [GeneratedRegex(@"^([\d,.]+) FPS lowest half-second$")] private static partial Regex FpsLowest();
+    [GeneratedRegex(@"^([\d,.]+) GB/s$")] private static partial Regex Bandwidth();
     [GeneratedRegex(@"^(CPU|GPU) \[(\w+)\]: (.+)$")] private static partial Regex Half();
     [GeneratedRegex(@"^NVMe health log during the test: (.+)$")] private static partial Regex NvmeDuring();
     [GeneratedRegex(@"^([a-z_]+) ([\d,.]+) ?(\S*)$")] private static partial Regex NetMetric();

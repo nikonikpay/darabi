@@ -60,7 +60,7 @@ internal static class CheckupTraces
         var vendor = nodes.FirstOrDefault(n => n.ParentId is null)?.Vendor ?? nodes.FirstOrDefault()?.Vendor ?? HardwareVendor.Unknown;
         // The errors the link added while the run lasted: the last total read in it less the first.
         double? added = Combine(engine, sensors.Where(s => s.Role == SensorRole.GpuPcieErrorTotal).Take(1), a, b, v => v.First()) is { Count: >= 2 } e ? Math.Max(0, e.V[^1] - e.V[0]) : null;
-        return new(name, vendor, First(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D), First(SensorRole.GpuCoreTemp), First(SensorRole.GpuHotSpotTemp), First(SensorRole.GpuPower), throttle, link, added);
+        return new(name, vendor, First(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D), First(SensorRole.GpuCoreTemp), First(SensorRole.GpuHotSpotTemp), First(SensorRole.GpuPower), throttle, link, added, First(SensorRole.GpuVramTemp));
     }
 
     private static Series? Combine(PollingEngine engine, IEnumerable<SensorDefinition> sensors, int from, int to, Func<List<double>, double> merge)

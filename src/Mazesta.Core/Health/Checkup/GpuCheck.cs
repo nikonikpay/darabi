@@ -12,7 +12,7 @@ public sealed record GpuLink(int? Gen, int? Width, int? CardGen, int? CardWidth,
 
 /// <summary>What was measured on one card while a GPU benchmark ran.</summary>
 public sealed record GpuRunTrace(string? Name, HardwareVendor Vendor, Series? Load, Series? CoreTemp, Series? HotSpot, Series? Power, GpuThrottleCounts? Throttle, GpuLink? Link,
-    double? PcieErrorsAdded = null);
+    double? PcieErrorsAdded = null, Series? VramTemp = null);
 
 /// <summary>A card's PCI Express error counters as its driver keeps them since the computer started: the sum of the link's error kinds and the
 /// fatal ones among them. Null where the driver does not keep the counter.</summary>
@@ -28,6 +28,9 @@ public static class GpuCheck
     /// <summary>A hot spot this far above the core under load usually means dried paste or a cooler not pressing evenly. NVIDIA cards run about
     /// 10-20 °C apart; AMD's larger dies run wider, so they are held to a looser line.</summary>
     public const double HotspotGapNvidia = 25, HotspotGapOther = 30;
+    /// <summary>The memory chips' own sensor under load: GDDR6X slows itself near 110 °C and GDDR6 is rated to about 95-105 °C, so from 96 °C the
+    /// pads or the airflow over the memory need a look, and from 104 °C the card is about to cut its memory clock (or already does).</summary>
+    public const double VramWarm = 96, VramHot = 104;
 
     public static IReadOnlyList<Finding> Evaluate(GpuRunTrace run)
     {
@@ -64,6 +67,12 @@ public static class GpuCheck
                 if (gap >= (run.Vendor == HardwareVendor.Nvidia ? HotspotGapNvidia : HotspotGapOther))
                     Add(FindingCode.GpuHotspotGap, FindingLevel.Attention, [M("Check_M_HotspotGap", gap, Celsius), M("Check_M_TempMax", core.Max(), Celsius), M("Check_M_HotspotMax", spot.Max(), Celsius)]);
             }
+        }
+
+        if (loaded(run.VramTemp) is { Count: >= 5 } vram)
+        {
+            double top = vram.Max(); Measure[] m = [M("Check_M_VramTempMax", top, Celsius), M("Check_M_VramTempMedian", vram.Median(), Celsius)];
+            Add(top >= VramHot ? FindingCode.GpuVramHot : top >= VramWarm ? FindingCode.GpuVramWarm : FindingCode.GpuVramOk, top >= VramHot ? FindingLevel.Problem : top >= VramWarm ? FindingLevel.Attention : FindingLevel.Good, m);
         }
 
         if (run.Link is { } link) Link(link, Add);

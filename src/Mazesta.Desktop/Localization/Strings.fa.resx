@@ -3575,4 +3575,15 @@
   <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>نورها خاموش شوند</value></data>
   <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>نورها روشن بمانند</value></data>
   <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>این کار را پایشگر پس‌زمینه انجام می‌دهد و باید روشن باشد؛ ویندوز فقط چند ثانیه فرصت می‌دهد، پس اگر سرور نورپردازی کند باشد ممکن است به‌موقع نرسد.</value></data>
+  <data name="Detail_L_VramTemp" xml:space="preserve"><value>دمای حافظهٔ کارت گرافیک (VRAM)</value></data>
+  <data name="Detail_L_MemCtrlLoad" xml:space="preserve"><value>بار کنترلر حافظهٔ کارت گرافیک</value></data>
+  <data name="Detail_Fig_Bandwidth" xml:space="preserve"><value>پهنای باند اندازه‌گیری‌شده</value></data>
+  <data name="Check_GpuVramHot" xml:space="preserve"><value>حافظهٔ کارت گرافیک (VRAM) خیلی داغ است</value></data>
+  <data name="Check_GpuVramHot_Text" xml:space="preserve"><value>زیر بار، چیپ‌های حافظه به دمایی رسیدند که کارت در آن فرکانس حافظه را پایین می‌آورد (GDDR6X حدود ۱۱۰ درجه). معمولاً پدهای حرارتی روی حافظه خشک شده یا تماسشان کم شده، یا جریان هوای کیس کافی نیست؛ تعویض پدها (و پد پشت بک‌پلیت در کارت‌هایی که حافظه پشت برد دارند) دما را پایین می‌آورد.</value></data>
+  <data name="Check_GpuVramWarm" xml:space="preserve"><value>حافظهٔ کارت گرافیک (VRAM) گرم است</value></data>
+  <data name="Check_GpuVramWarm_Text" xml:space="preserve"><value>چیپ‌های حافظه زیر بار گرم‌تر از حد مطلوب کار کردند، ولی هنوز به نقطه‌ای که کارت کندشان کند نرسیدند. جریان هوای کیس را بررسی کنید؛ در کارت‌های قدیمی‌تر ممکن است پدهای حافظه در حال خشک شدن باشند.</value></data>
+  <data name="Check_GpuVramOk" xml:space="preserve"><value>دمای حافظهٔ کارت گرافیک خوب است</value></data>
+  <data name="Check_GpuVramOk_Text" xml:space="preserve"><value>زیر بار، چیپ‌های حافظه خیلی پایین‌تر از دمایی ماندند که کارت در آن کندشان می‌کند.</value></data>
+  <data name="Check_M_VramTempMax" xml:space="preserve"><value>بیشترین دمای VRAM</value></data>
+  <data name="Check_M_VramTempMedian" xml:space="preserve"><value>دمای معمول VRAM</value></data>
 </root>

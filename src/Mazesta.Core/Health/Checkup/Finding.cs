@@ -13,7 +13,7 @@ public enum FindingCode
     CpuNotFullyLoaded, CpuStuckLowClock, CpuBelowBaseClock, CpuAtTjMax, CpuNearTjMax, CpuHeldAtCeiling, CpuHotSteady, CpuHeatOk, CpuPowerStep,
     PowerPlanCap, PowerPlanNoBoost, PowerOnBattery, PowerPlanOk,
     RamXmpOff, RamXmpOn, RamBelowJedec, RamAtJedec, RamProfileUnread, RamSingleChannel, RamSameChannel, RamMixed,
-    GpuPowerBrake, GpuHwThermal, GpuHwSlowdown, GpuThermalSlowdown, GpuPowerLimited, GpuHeatOk, GpuHotspotGap,
+    GpuPowerBrake, GpuHwThermal, GpuHwSlowdown, GpuThermalSlowdown, GpuPowerLimited, GpuHeatOk, GpuHotspotGap, GpuVramHot, GpuVramWarm, GpuVramOk,
     GpuLinkNarrow, GpuLinkSlowGen, GpuSlotNarrow, GpuSlotOlderGen, GpuLinkOk,
     DriveLinkNarrow, DriveSlotLimited,
     BenchBelowPeers, BenchWithPeers, BenchFewPeers,
