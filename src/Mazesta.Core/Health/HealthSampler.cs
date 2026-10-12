@@ -17,6 +17,7 @@ public static class HealthSampler
         double? First(params SensorRole[] roles) { foreach (var role in roles) if (Values(role) is var v && v.Any()) return v.First(); return null; }
 
         return new(Max(SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp), Max(SensorRole.GpuCoreTemp),
-                   First(SensorRole.CpuTotalLoad), First(SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage), Max(SensorRole.GpuHotSpotTemp));
+                   First(SensorRole.CpuTotalLoad), First(SensorRole.CpuEffectiveClockAverage, SensorRole.CpuCoreClockAverage), Max(SensorRole.GpuHotSpotTemp),
+                   Max(SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D, SensorRole.GpuLoadCompute));
     }
 }

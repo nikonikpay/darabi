@@ -1628,3 +1628,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .msg-item.unread { border-color: var(--yellow); }
 .msg-item header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
 .msg-item p { margin: 0; line-height: 1.7; }
+
+/* settings: groups inside one box */
+.set-group { font-size: 16px; font-weight: 900; margin: 22px 0 8px; padding-top: 14px; border-top: 1px solid var(--line, rgba(128,128,128,.25)); }
+.set-group:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.set-note { max-width: 90ch; margin: 0 0 10px; }

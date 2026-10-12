@@ -24,6 +24,12 @@ public class AppConfigMigrationTests
         var migrated = new SchemaMigrator(AppConfig.Migrations).Migrate(doc, 3, out var steps);
         Assert.Equal(1, steps); Assert.Equal(3, (int)migrated["schemaVersion"]!); Assert.Equal("x", (string)migrated["shopName"]!);
         var config = migrated.Deserialize<AppConfig>(JsonStore<AppConfig>.Options)!;
-        Assert.Equal((20, 10, 30), (config.TrayFirstCheckSeconds, config.TrayIdleIntervalMinutes, config.TrayWatchIntervalSeconds));
+        Assert.Equal((20, 60, 60), (config.TrayFirstCheckSeconds, config.TrayIdleIntervalMinutes, config.TrayWatchIntervalSeconds));
+    }
+    [Fact] public void V3_moves_the_old_default_tray_schedule_to_the_new_one_but_keeps_a_chosen_value()
+    {
+        var doc = JsonNode.Parse("""{"schemaVersion":3,"trayIdleIntervalMinutes":10,"trayWatchIntervalSeconds":30,"trayHealthIntervalMinutes":15,"trayCpuAlertC":100,"trayGpuAlertC":88}""")!.AsObject();
+        var o = new SchemaMigrator(AppConfig.Migrations).Migrate(doc, 4, out var steps);
+        Assert.Equal(1, steps); Assert.Equal((60, 60, 15, 98, 88), ((int)o["trayIdleIntervalMinutes"]!, (int)o["trayWatchIntervalSeconds"]!, (int)o["trayHealthIntervalMinutes"]!, (int)o["trayCpuAlertC"]!, (int)o["trayGpuAlertC"]!));
     }
 }

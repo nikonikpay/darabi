@@ -62,7 +62,7 @@ public sealed partial class WebBridge
         _cleanup.Add(() => { engine.Provider.StatusChanged -= OnStatus; engine.StateChanged -= OnState; });
         var notifier = _notifier = new Notifier(_window, engine, _sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(),
             (text, kind) => Push("toast", new { text, kind }), _log);
-        notifier.Limits = () => (_config.TrayCpuAlertC, _config.TrayGpuAlertC);
+        notifier.Limits = () => (_config.TrayCpuAlertC, _config.TrayGpuAlertC, _config.TrayGpuHotSpotAlertC, _config.TrayHoldMinutes);
         _cleanup.Add(notifier.Dispose);
         var failures = new FailureWatch(_sp.GetRequiredService<Diagnostics.TestEngine>(), _sp.GetRequiredService<Diagnostics.Benchmarks.BenchmarkRunner>(), _sp.GetRequiredService<IEnumerable<Diagnostics.ITestExecutor>>(), _log, f => Push("testfail", f));
         _cleanup.Add(failures.Dispose);

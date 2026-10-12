@@ -4,8 +4,8 @@ public sealed record WindowPlacement(double Left, double Top, double Width, doub
 public sealed record ChartWindowConfig(string SensorId, WindowPlacement? Placement, int WindowMinutes);
 public sealed class AppConfig : IVersionedDocument
 {
-    public const int CurrentSchemaVersion = 3;
-    public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2(), new Migration2To3()];
+    public const int CurrentSchemaVersion = 4;
+    public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2(), new Migration2To3(), new Migration3To4()];
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public string Language { get; set; } = "fa";
     /// <summary>"auto" lets WPF use the GPU; "software" draws the whole UI on the CPU - for a machine whose graphics driver cannot be trusted (a repair shop meets those), where the window otherwise comes up blank.</summary>
@@ -34,14 +34,24 @@ public sealed class AppConfig : IVersionedDocument
     /// <summary>Delay before the tray's first health check after sign-in, so it never runs during it.</summary>
     public int TrayFirstCheckSeconds { get; set; } = 20;
     /// <summary>How often the tray checks while nothing is wrong.</summary>
-    public int TrayIdleIntervalMinutes { get; set; } = 10;
+    public int TrayIdleIntervalMinutes { get; set; } = 60;
     /// <summary>How often the tray checks while a health rule is building towards an alert (HealthAlerts.IsWatching).</summary>
-    public int TrayWatchIntervalSeconds { get; set; } = 30;
+    public int TrayWatchIntervalSeconds { get; set; } = 60;
     /// <summary>How often the tray reads the drives' health (SMART / Windows' verdict, wear, uncorrected errors). Absent in older files, so 30.</summary>
-    public int TrayHealthIntervalMinutes { get; set; } = 30;
-    /// <summary>The processor's and the graphics card's temperature (°C) above which the tray and the app warn. Absent in older files, so 95.</summary>
-    public int TrayCpuAlertC { get; set; } = 100;   // Ryzen 7000/9000 hold 95 °C by design under a long load, Intel 13th/14th gen K chips 100
-    public int TrayGpuAlertC { get; set; } = 95;
+    public int TrayHealthIntervalMinutes { get; set; } = 1440;
+    /// <summary>The processor's and the graphics card's temperature (°C) above which the tray and the app warn. Absent in older files, so the defaults below.</summary>
+    public int TrayCpuAlertC { get; set; } = 98;   // Ryzen 7000/9000 hold 95 °C by design under a long load, Intel 13th/14th gen K chips 100
+    /// <summary>The graphics card's average (core) temperature.</summary>
+    public int TrayGpuAlertC { get; set; } = 90;
+    /// <summary>The graphics card's hot spot temperature.</summary>
+    public int TrayGpuHotSpotAlertC { get; set; } = 98;
+    /// <summary>How long (minutes) a part must stay over its temperature at full load before the tray warns.</summary>
+    public int TrayHoldMinutes { get; set; } = 10;
+    /// <summary>RAM in use (percent) from which the tray warns, once it has stayed there for <see cref="TrayRamHoldMinutes"/>; at most once a day.</summary>
+    public int TrayRamAlertPercent { get; set; } = 90;
+    public int TrayRamHoldMinutes { get; set; } = 5;
+    /// <summary>How often the tray reads the RAM in use (minutes); a cheap read, no sensor driver involved.</summary>
+    public int TrayRamCheckMinutes { get; set; } = 1;
     /// <summary>The on-screen overlay was on when the app last closed: it comes back on at start. Absent in older files, so off.</summary>
     public bool OverlayVisible { get; set; }
     /// <summary>TopLeft, TopRight, BottomLeft or BottomRight of the primary screen.</summary>
@@ -105,4 +115,17 @@ public sealed class Migration2To3 : IMigration
 {
     public int From => 2;
     public JsonObject Apply(JsonObject d) => (JsonObject)d.DeepClone();
+}
+/// <summary>The tray's checks were every 10 minutes (30 s while a rule built up) and the drives every 30; the new defaults are hourly, a minute while watching,
+/// and daily. A value still equal to the old default moves to the new one; anything a person chose is kept.</summary>
+public sealed class Migration3To4 : IMigration
+{
+    public int From => 3;
+    public JsonObject Apply(JsonObject d)
+    {
+        var o = (JsonObject)d.DeepClone();
+        void Move(string key, int old, int now) { if (o[key] is JsonValue v && v.TryGetValue<int>(out int n) && n == old) o[key] = now; }
+        Move("trayIdleIntervalMinutes", 10, 60); Move("trayWatchIntervalSeconds", 30, 60); Move("trayHealthIntervalMinutes", 30, 1440); Move("trayCpuAlertC", 100, 98); Move("trayGpuAlertC", 95, 90);
+        return o;
+    }
 }

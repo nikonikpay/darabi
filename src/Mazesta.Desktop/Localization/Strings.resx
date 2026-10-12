@@ -558,8 +558,8 @@
   <data name="Value_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
   <data name="Settings_Tray_Section" xml:space="preserve"><value>Background monitor</value></data>
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>First check delay (seconds)</value></data>
-  <data name="Settings_Tray_Idle" xml:space="preserve"><value>Idle check interval (minutes)</value></data>
-  <data name="Settings_Tray_Watch" xml:space="preserve"><value>Watch check interval (seconds)</value></data>
+  <data name="Settings_Tray_Idle" xml:space="preserve"><value>Temperature check every (minutes)</value></data>
+  <data name="Settings_Tray_Watch" xml:space="preserve"><value>While a part is hot, check every (seconds)</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>Enable</value></data>
   <data name="Settings_Tray_Disable" xml:space="preserve"><value>Disable</value></data>
   <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>The background monitor's file was not found next to this app. Install the app again.</value></data>
@@ -1036,7 +1036,7 @@
   <data name="Web_Overlay_Agg_Sum" xml:space="preserve"><value>total</value></data>
   <data name="Web_Overlay_Empty" xml:space="preserve"><value>Nothing is chosen. Pick a preset or turn items on.</value></data>
   <data name="Web_Overlay_FrameProblem" xml:space="preserve"><value>The frame rate cannot be measured on this system: {0}</value></data>
-  <data name="Settings_Tray_Health" xml:space="preserve"><value>Drive health check (minutes)</value></data>
+  <data name="Settings_Tray_Health" xml:space="preserve"><value>Drive health check every (minutes; 1440 = daily)</value></data>
   <data name="Web_Diag_Title" xml:space="preserve"><value>Diagnostic log</value></data>
   <data name="Web_Diag_Note" xml:space="preserve"><value>What this machine did not let the app read: sensors with no role, key readings a part lacks, errors. Export it as one file and bring it back so the app can learn this machine.</value></data>
   <data name="Web_Diag_Export" xml:space="preserve"><value>Send my report and export the troubleshooting file</value></data>
@@ -1044,8 +1044,8 @@
   <data name="Web_Diag_None" xml:space="preserve"><value>Nothing missing so far on this machine.</value></data>
   <data name="Web_Diag_More" xml:space="preserve"><value>and {0} more in the file</value></data>
   <data name="Notify_Health_Title" xml:space="preserve"><value>Mazesta: system health</value></data>
-  <data name="Notify_CpuOverheat" xml:space="preserve"><value>The CPU reached {0} °C. Check the cooling and airflow.</value></data>
-  <data name="Notify_GpuOverheat" xml:space="preserve"><value>The graphics card reached {0} °C. Check the cooling and airflow.</value></data>
+  <data name="Notify_CpuOverheat" xml:space="preserve"><value>The CPU reached {0} °C at full load and stayed there. Check the cooling and airflow.</value></data>
+  <data name="Notify_GpuOverheat" xml:space="preserve"><value>The graphics card reached {0} °C at full load and stayed there. Check the cooling and airflow.</value></data>
   <data name="Notify_CpuThrottle" xml:space="preserve"><value>Under full load the CPU clock fell to {0} MHz. Check its temperature and power limits.</value></data>
   <data name="Notify_Sensors_Title" xml:space="preserve"><value>Mazesta: sensors</value></data>
   <data name="Notify_ProviderFailed" xml:space="preserve"><value>The sensors cannot be read. Readings are not available until this is fixed; see the banner in the app.</value></data>
@@ -2274,8 +2274,8 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Code_52" xml:space="preserve"><value>Its driver's signature is not trusted (code 52)</value></data>
   <data name="Drivers_Code_Other" xml:space="preserve"><value>Problem code {0}</value></data>
   <data name="Assist_Tool_check_drivers" xml:space="preserve"><value>Drivers</value></data>
-  <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>Warn when the processor passes (°C)</value></data>
-  <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>Warn when the graphics card passes (°C)</value></data>
+  <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>Processor warning from (°C)</value></data>
+  <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>Graphics card (average / core) warning from (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>A warning temperature must be a whole number from 60 to 105.</value></data>
   <data name="Assist_Help" xml:space="preserve"><value>What I can do:
 - This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).
@@ -3542,4 +3542,17 @@ Cancel: stop.</value></data>
   <data name="Test_Storage_Sustained" xml:space="preserve"><value>Storage · Sustained write (write cache / SLC: where the speed falls and to what; all checked)</value></data>
   <data name="Log_StorageSustained_Done" xml:space="preserve"><value>First slices {0:F0} MB/s; the speed fell after {1} GiB to {2:F0} MB/s; slowest slice {3:F0} MB/s.</value></data>
   <data name="Log_StorageSustained_Short" xml:space="preserve"><value>The time ran out after {0} of {1} MiB: only what was written is read back and judged.</value></data>
+  <data name="Settings_Tray_GroupState" xml:space="preserve"><value>Status</value></data>
+  <data name="Settings_Tray_GroupSchedule" xml:space="preserve"><value>Schedule of the checks</value></data>
+  <data name="Settings_Tray_GroupTemp" xml:space="preserve"><value>Temperature warnings</value></data>
+  <data name="Settings_Tray_GroupRam" xml:space="preserve"><value>Memory warning</value></data>
+  <data name="Settings_Tray_TempNote" xml:space="preserve"><value>A processor or graphics card is warned about only while it is at full load (90 % or more) and has stayed over its temperature for the time set here. Between checks the monitor sleeps; it watches closely only while a part is that hot.</value></data>
+  <data name="Settings_Tray_RamNote" xml:space="preserve"><value>Memory in use is read cheaply; a warning comes when it stays over the limit for the time set here, and at most once a day.</value></data>
+  <data name="Settings_Tray_GpuHotSpot" xml:space="preserve"><value>Graphics card hot spot warning from (°C)</value></data>
+  <data name="Settings_Tray_Hold" xml:space="preserve"><value>Stay that hot for (minutes) before warning</value></data>
+  <data name="Settings_Tray_RamAlert" xml:space="preserve"><value>Warn when memory in use passes (%)</value></data>
+  <data name="Settings_Tray_RamHold" xml:space="preserve"><value>Stay over it for (minutes) before warning</value></data>
+  <data name="Settings_Tray_RamCheck" xml:space="preserve"><value>Read the memory in use every (minutes)</value></data>
+  <data name="Settings_Invalid_Percent" xml:space="preserve"><value>A percentage must be a whole number from 50 to 99.</value></data>
+  <data name="Notify_GpuHotSpotOverheat" xml:space="preserve"><value>The graphics card's hot spot reached {0} °C at full load and stayed there. Check the cooling and airflow.</value></data>
 </root>

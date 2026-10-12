@@ -13,7 +13,7 @@ export function mount(el) {
   const input = (field, cls = "field lat short") => (f[field] = h("input", { class: cls, oninput: (e) => set(field, e.target.value) }));
   const select = (field) => (f[field] = h("select", { class: "field", onchange: (e) => set(field, e.target.value) }));
   const row = (label, control) => [h("dt", {}, label), h("dd", { style: { textAlign: "left" } }, control)];
-  const message = h("p", { class: "msg" });
+  const message = h("p", { class: "msg" }), trayMessage = h("p", { class: "msg" });
   const trayStatus = h("span", {});
   const findings = h("ul", { class: "findings" }), notes = h("ul", { class: "findings notes" }), notesHead = h("p", { class: "note", hidden: true }, h("b", {}, t("Web_Diag_NotesTitle")), " ", t("Web_Diag_NotesNote"));
   const logs = h("span", { class: "lat caption" });
@@ -36,8 +36,18 @@ export function mount(el) {
         body: [h("dl", { class: "kv" }, row(t("Settings_Language"), select("language")), row(t("Settings_FastInterval"), input("interval")), row(t("Settings_StorageInterval"), input("storageInterval")),
           nameRow, row(t("Settings_RenderMode"), select("renderMode"))),
         h("div", { class: "btn-row" }, h("button", { class: "btn primary", onclick: () => call("settings.exec", { cmd: "save" }) }, t("Settings_Save"))), message] }),
+      // The background monitor: its state first, then when it checks, then what it warns about; one Save for the whole box.
+      box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 1,
+        body: [h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupState")), h("p", { class: "note" }, trayStatus), h("div", { class: "btn-row" }, enableTray, disableTray),
+          h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupSchedule")),
+          h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth"))),
+          h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupTemp")), h("p", { class: "caption set-note" }, t("Settings_Tray_TempNote")),
+          h("dl", { class: "kv" }, row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert")), row(t("Settings_Tray_GpuHotSpot"), input("trayGpuHotSpot")), row(t("Settings_Tray_Hold"), input("trayHold"))),
+          h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupRam")), h("p", { class: "caption set-note" }, t("Settings_Tray_RamNote")),
+          h("dl", { class: "kv" }, row(t("Settings_Tray_RamAlert"), input("trayRamAlert")), row(t("Settings_Tray_RamHold"), input("trayRamHold")), row(t("Settings_Tray_RamCheck"), input("trayRamCheck"))),
+          h("div", { class: "btn-row" }, h("button", { class: "btn primary", onclick: () => call("settings.exec", { cmd: "save" }) }, t("Settings_Save"))), trayMessage] }),
       // One box for what the app can tell about this machine: the statistics it sends by itself (anonymous, one switch) and the troubleshooting file you export by hand.
-      box({ kind: "Storage", ico: "bug", title: t("Settings_Report_Title"), sub: t("Settings_Report_Sub"), i: 1,
+      box({ kind: "Storage", ico: "bug", title: t("Settings_Report_Title"), sub: t("Settings_Report_Sub"), i: 2,
         body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Settings_Report_Diff")),
           h("h3", { class: "h3", style: { fontSize: "16px", fontWeight: 900 } }, t("Settings_Usage_Title")),
           h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Usage_Note")), h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Usage_Sent")),
@@ -47,9 +57,6 @@ export function mount(el) {
           h("p", { class: "caption", style: { maxWidth: "90ch" } }, t("Settings_Report_Button")),
           ...(boot.staff ? [h("p", { class: "caption" }, t("Web_Diag_Note")), findings, notesHead, notes, h("div", { class: "btn-row" }, exportBtn), logs]
             : [h("p", { class: "caption" }, t("Web_Diag_Note_Client")), h("div", { class: "btn-row" }, exportBtn)])] }),
-      box({ kind: "Memory", ico: "clock", title: t("Settings_Tray_Section"), sub: t("Web_Settings_Tray_Sub"), i: 2,
-        body: [h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth")), row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert"))),
-        h("div", { class: "btn-row" }, enableTray, disableTray), h("p", { class: "note" }, trayStatus)] }),
       box({ kind: "Motherboard", ico: "folder", title: t("Settings_DataFolder"), i: 3,
         body: [folder, h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "openFolder" }) }, t("Settings_OpenFolder"))), h("p", { class: "note" }, version)] })));
   let built = false;
@@ -60,8 +67,8 @@ export function mount(el) {
       built = true;
     }
     f.language.value = s.language; f.renderMode.value = s.renderMode;
-    for (const k of ["interval", "storageInterval", "displayName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert"]) if (f[k]) setField(f[k], s[k]);
-    message.textContent = s.message || ""; trayStatus.textContent = s.trayStatus || "";
+    for (const k of ["interval", "storageInterval", "displayName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert", "trayGpuHotSpot", "trayHold", "trayRamAlert", "trayRamHold", "trayRamCheck"]) if (f[k]) setField(f[k], s[k]);
+    message.textContent = s.message || ""; trayMessage.textContent = s.message || ""; trayStatus.textContent = s.trayStatus || "";
     enableTray.disabled = !s.canEnableTray; disableTray.disabled = !s.canDisableTray;
     usage.checked = !!s.usageReport; usageLog.textContent = s.usageLog || "";
     folder.textContent = s.dataFolder; version.textContent = `${s.mode} · v${s.version}`;

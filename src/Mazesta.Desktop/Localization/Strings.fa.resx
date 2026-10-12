@@ -558,8 +558,8 @@
   <data name="Value_Disconnected" xml:space="preserve"><value>قطع</value></data>
   <data name="Settings_Tray_Section" xml:space="preserve"><value>پایشگر پس‌زمینه</value></data>
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>تأخیر اولین بررسی (ثانیه)</value></data>
-  <data name="Settings_Tray_Idle" xml:space="preserve"><value>بازهٔ بررسی در حالت عادی (دقیقه)</value></data>
-  <data name="Settings_Tray_Watch" xml:space="preserve"><value>بازهٔ بررسی در حالت هشدار (ثانیه)</value></data>
+  <data name="Settings_Tray_Idle" xml:space="preserve"><value>بررسی دما هر (دقیقه)</value></data>
+  <data name="Settings_Tray_Watch" xml:space="preserve"><value>وقتی قطعه‌ای داغ است، بررسی هر (ثانیه)</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>فعال‌سازی</value></data>
   <data name="Settings_Tray_Disable" xml:space="preserve"><value>غیرفعال‌سازی</value></data>
   <data name="Settings_Tray_ExeNotFound" xml:space="preserve"><value>فایل پایشگر پس‌زمینه کنار این برنامه پیدا نشد. برنامه را دوباره نصب کنید.</value></data>
@@ -1036,7 +1036,7 @@
   <data name="Web_Overlay_Agg_Sum" xml:space="preserve"><value>مجموع</value></data>
   <data name="Web_Overlay_Empty" xml:space="preserve"><value>موردی انتخاب نشده است. یک حالت آماده انتخاب کنید یا موردها را روشن کنید.</value></data>
   <data name="Web_Overlay_FrameProblem" xml:space="preserve"><value>نرخ فریم روی این سیستم اندازه‌گیری نمی‌شود: {0}</value></data>
-  <data name="Settings_Tray_Health" xml:space="preserve"><value>بررسی سلامت دیسک‌ها (دقیقه)</value></data>
+  <data name="Settings_Tray_Health" xml:space="preserve"><value>بررسی سلامت دیسک‌ها هر (دقیقه؛ ۱۴۴۰ = روزی یک بار)</value></data>
   <data name="Web_Diag_Title" xml:space="preserve"><value>لاگ عیب‌یابی</value></data>
   <data name="Web_Diag_Note" xml:space="preserve"><value>آنچه برنامه روی این سیستم نتوانست بخواند: سنسورهای شناسایی‌نشده، مقادیر اصلی که یک قطعه ندارد و خطاها. همه را در یک فایل خروجی بگیرید و برگردانید تا برنامه برای این سیستم کامل شود.</value></data>
   <data name="Web_Diag_Export" xml:space="preserve"><value>ارسال گزارش من و خروجی فایل عیب‌یابی</value></data>
@@ -1044,8 +1044,8 @@
   <data name="Web_Diag_None" xml:space="preserve"><value>تا این لحظه چیزی روی این سیستم کم نیست.</value></data>
   <data name="Web_Diag_More" xml:space="preserve"><value>و {0} مورد دیگر در فایل</value></data>
   <data name="Notify_Health_Title" xml:space="preserve"><value>مازستا: سلامت سیستم</value></data>
-  <data name="Notify_CpuOverheat" xml:space="preserve"><value>دمای پردازنده به {0} درجه رسید. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
-  <data name="Notify_GpuOverheat" xml:space="preserve"><value>دمای کارت گرافیک به {0} درجه رسید. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
+  <data name="Notify_CpuOverheat" xml:space="preserve"><value>دمای پردازنده زیر بار کامل به {0} درجه رسید و همان‌جا ماند. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
+  <data name="Notify_GpuOverheat" xml:space="preserve"><value>دمای کارت گرافیک زیر بار کامل به {0} درجه رسید و همان‌جا ماند. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
   <data name="Notify_CpuThrottle" xml:space="preserve"><value>فرکانس پردازنده در بار کامل به {0} مگاهرتز افت کرد. دما و محدودیت توان را بررسی کنید.</value></data>
   <data name="Notify_Sensors_Title" xml:space="preserve"><value>مازستا: سنسورها</value></data>
   <data name="Notify_ProviderFailed" xml:space="preserve"><value>سنسورها خوانده نمی‌شوند. تا رفع مشکل، مقادیر در دسترس نیست؛ پیام بالای برنامه را ببینید.</value></data>
@@ -2275,7 +2275,7 @@
   <data name="Drivers_Code_Other" xml:space="preserve"><value>کد مشکل {0}</value></data>
   <data name="Assist_Tool_check_drivers" xml:space="preserve"><value>درایورها</value></data>
   <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>هشدار دمای پردازنده از (°C)</value></data>
-  <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>هشدار دمای کارت گرافیک از (°C)</value></data>
+  <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>هشدار دمای میانگین (هستهٔ) کارت گرافیک از (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>دمای هشدار باید عددی صحیح از ۶۰ تا ۱۰۵ باشد.</value></data>
   <data name="Assist_Help" xml:space="preserve"><value>این کارها را می‌توانم انجام بدهم:
 - این سیستم: مشخصات قطعه‌ها، دما و سنسورهای همین لحظه، تاریخچهٔ بنچمارک‌ها و خلاصهٔ گزارش‌های ذخیره‌شده (و فایل PDF آن‌ها).
@@ -3542,4 +3542,17 @@
   <data name="Test_Storage_Sustained" xml:space="preserve"><value>دیسک · نوشتن طولانی (کش نوشتن / SLC: سرعت کجا و تا چه حد افت می‌کند؛ همه بررسی‌شده)</value></data>
   <data name="Log_StorageSustained_Done" xml:space="preserve"><value>سرعت بخش‌های اول {0:F0} MB/s؛ بعد از {1} گیگابایت به {2:F0} MB/s افت کرد؛ کندترین بخش {3:F0} MB/s.</value></data>
   <data name="Log_StorageSustained_Short" xml:space="preserve"><value>زمان پس از نوشتن {0} از {1} مگابایت تمام شد؛ فقط همان مقدار نوشته‌شده خوانده و بررسی می‌شود.</value></data>
+  <data name="Settings_Tray_GroupState" xml:space="preserve"><value>وضعیت</value></data>
+  <data name="Settings_Tray_GroupSchedule" xml:space="preserve"><value>زمان‌بندی بررسی‌ها</value></data>
+  <data name="Settings_Tray_GroupTemp" xml:space="preserve"><value>هشدار دما</value></data>
+  <data name="Settings_Tray_GroupRam" xml:space="preserve"><value>هشدار پر شدن رم</value></data>
+  <data name="Settings_Tray_TempNote" xml:space="preserve"><value>پردازنده یا کارت گرافیک فقط وقتی هشدار می‌گیرند که زیر بار کامل (۹۰٪ یا بیشتر) باشند و به اندازهٔ زمان تنظیم‌شده همان‌جا بمانند. بین بررسی‌ها پایشگر خواب است و فقط وقتی قطعه‌ای تا این حد داغ شد از نزدیک مراقب می‌ماند.</value></data>
+  <data name="Settings_Tray_RamNote" xml:space="preserve"><value>میزان رم پُر با یک خواندن سبک بررسی می‌شود؛ وقتی به اندازهٔ زمان تنظیم‌شده بالاتر از حد بماند هشدار می‌آید، و روزی فقط یک بار.</value></data>
+  <data name="Settings_Tray_GpuHotSpot" xml:space="preserve"><value>هشدار دمای نقطهٔ داغ کارت گرافیک از (°C)</value></data>
+  <data name="Settings_Tray_Hold" xml:space="preserve"><value>ماندن در آن دما تا هشدار (دقیقه)</value></data>
+  <data name="Settings_Tray_RamAlert" xml:space="preserve"><value>هشدار وقتی رمِ پُر از (٪) بیشتر شد</value></data>
+  <data name="Settings_Tray_RamHold" xml:space="preserve"><value>ماندن بالای آن حد تا هشدار (دقیقه)</value></data>
+  <data name="Settings_Tray_RamCheck" xml:space="preserve"><value>خواندن رمِ پُر هر (دقیقه)</value></data>
+  <data name="Settings_Invalid_Percent" xml:space="preserve"><value>درصد باید عددی صحیح از ۵۰ تا ۹۹ باشد.</value></data>
+  <data name="Notify_GpuHotSpotOverheat" xml:space="preserve"><value>دمای نقطهٔ داغ کارت گرافیک زیر بار کامل به {0} درجه رسید و همان‌جا ماند. خنک‌کننده و جریان هوا را بررسی کنید.</value></data>
 </root>

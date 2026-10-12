@@ -5,17 +5,19 @@ namespace Mazesta.Persistence;
 /// Desktop app, and going through <see cref="JsonStore{T}"/> could migrate and rewrite the file, or move a damaged one aside, under the
 /// app's feet. A missing, unreadable or non-positive value falls back to the <see cref="AppConfig"/> default - a zero interval would throw in the timer.
 /// The alert thresholds are read here too, as the tray reads nothing else of the file.</summary>
-public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int WatchSeconds, int HealthMinutes, int CpuAlertC = 100, int GpuAlertC = 95)
+public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int WatchSeconds, int HealthMinutes, int CpuAlertC = 98, int GpuAlertC = 90, int GpuHotSpotAlertC = 98, int HoldMinutes = 10, int RamAlertPercent = 90, int RamHoldMinutes = 5, int RamCheckMinutes = 1)
 {
     public static TrayIntervals Read(string configFile)
     {
-        var d = new AppConfig(); var defaults = new TrayIntervals(d.TrayFirstCheckSeconds, d.TrayIdleIntervalMinutes, d.TrayWatchIntervalSeconds, d.TrayHealthIntervalMinutes, d.TrayCpuAlertC, d.TrayGpuAlertC);
+        var d = new AppConfig(); var defaults = new TrayIntervals(d.TrayFirstCheckSeconds, d.TrayIdleIntervalMinutes, d.TrayWatchIntervalSeconds, d.TrayHealthIntervalMinutes, d.TrayCpuAlertC, d.TrayGpuAlertC, d.TrayGpuHotSpotAlertC, d.TrayHoldMinutes, d.TrayRamAlertPercent, d.TrayRamHoldMinutes, d.TrayRamCheckMinutes);
         try
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(configFile)); var root = doc.RootElement;
             int Get(string name, int fallback) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) && n > 0 ? n : fallback;
             return new(Get("trayFirstCheckSeconds", defaults.FirstCheckSeconds), Get("trayIdleIntervalMinutes", defaults.IdleMinutes), Get("trayWatchIntervalSeconds", defaults.WatchSeconds),
-                Get("trayHealthIntervalMinutes", defaults.HealthMinutes), Alert("trayCpuAlertC", defaults.CpuAlertC), Alert("trayGpuAlertC", defaults.GpuAlertC));
+                Get("trayHealthIntervalMinutes", defaults.HealthMinutes), Alert("trayCpuAlertC", defaults.CpuAlertC), Alert("trayGpuAlertC", defaults.GpuAlertC), Alert("trayGpuHotSpotAlertC", defaults.GpuHotSpotAlertC),
+                Get("trayHoldMinutes", defaults.HoldMinutes), Get("trayRamAlertPercent", defaults.RamAlertPercent) is var rp && rp is >= 50 and <= 99 ? rp : defaults.RamAlertPercent,
+                Get("trayRamHoldMinutes", defaults.RamHoldMinutes), Get("trayRamCheckMinutes", defaults.RamCheckMinutes));
             int Alert(string name, int fallback) => Get(name, fallback) is var n && n is >= 60 and <= 105 ? n : fallback;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException) { return defaults; }

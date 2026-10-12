@@ -26,11 +26,14 @@ internal static class TrayText
 
     public static string Alert(HealthAlert a) => a.Kind switch
     {
-        HealthAlertKind.CpuOverheat => $"دمای پردازنده به {Num(a.Value, "0.#")}°C رسیده است. تهویه و خنک‌کننده را بررسی کنید.",
-        HealthAlertKind.GpuOverheat => $"دمای کارت گرافیک به {Num(a.Value, "0.#")}°C رسیده است. تهویه و خنک‌کننده را بررسی کنید.",
+        HealthAlertKind.CpuOverheat => $"دمای پردازنده زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",
+        HealthAlertKind.GpuOverheat => $"دمای (میانگین) کارت گرافیک زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",
+        HealthAlertKind.GpuHotSpotOverheat => $"دمای نقطه‌ی داغ کارت گرافیک زیر بار کامل به {Num(a.Value, "0.#")}°C رسیده و مدتی همان‌جا مانده است. تهویه و خنک‌کننده را بررسی کنید.",
         HealthAlertKind.CpuThrottle => $"فرکانس پردازنده در بار کامل به {Num(a.Value, "0")} مگاهرتز افت کرده است. دما و محدودیت توان را بررسی کنید.",
         _ => a.Kind.ToString()
     };
+
+    public static string MemoryFull(double percent) => $"حافظه‌ی رم {Num(percent, "0")}٪ پر شده است و چند دقیقه است همین‌طور مانده. سیستم کند می‌شود و ممکن است برنامه‌هایتان از کار بیفتند؛ برنامه‌های اضافه را ببندید.";
 
     public const string HotSpot = "نقطه‌ی داغ";
 

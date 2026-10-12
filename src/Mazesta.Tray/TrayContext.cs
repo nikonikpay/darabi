@@ -4,8 +4,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Mazesta.Tray;
 
 /// <summary>
-/// The tray icon and its two schedules. Temperatures are read every <see cref="TrayIntervals.IdleMinutes"/> (every <see cref="TrayIntervals.WatchSeconds"/>
-/// while a rule is building towards an alert, so a real problem is confirmed in minutes); the drives' health every <see cref="TrayIntervals.HealthMinutes"/>.
+/// The tray icon and its three schedules. Temperatures are read every <see cref="TrayIntervals.IdleMinutes"/> (hourly by default; every <see cref="TrayIntervals.WatchSeconds"/>
+/// while a part is hot at full load, until it has stayed so for the hold or cooled); the drives' health every <see cref="TrayIntervals.HealthMinutes"/> (daily by default);
+/// the RAM in use every <see cref="TrayIntervals.RamCheckMinutes"/> (a plain Windows call, no sensor driver).
 /// Idle cost is two sleeping timers and an icon: the sensor provider (the heavy part) exists only during a check. Every check is kept in
 /// <see cref="TrayCheckLog"/>; a problem is announced as a Windows notification. Double-clicking the icon opens the summary window.
 /// The menu also turns the app's on-screen overlay on and off (the app keeps it up after its window closes while the tray runs; see
@@ -15,7 +16,7 @@ internal sealed class TrayContext : ApplicationContext
 {
     private static readonly TimeSpan Busy = TimeSpan.FromSeconds(20);
     private readonly TrayIntervals _intervals; private readonly string _logFile;
-    private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(); private readonly HealthAlerts _rules;
+    private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(), _ram = new(); private readonly HealthAlerts _rules; private readonly MemoryPressure _memory; private readonly string _ramFile;
     private readonly HashSet<string> _drivesAnnounced = [];
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
     private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly PowerTimerMenu _power; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
@@ -27,7 +28,10 @@ internal sealed class TrayContext : ApplicationContext
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
-        _intervals = intervals; _logFile = logFile; _rules = new(3, intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz);
+        _intervals = intervals; _logFile = logFile; _rules = new(TimeSpan.FromMinutes(intervals.HoldMinutes), intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz, intervals.GpuHotSpotAlertC);
+        // The RAM warning comes once a day: the last time it came is kept beside the check log, so a restart of the tray does not make it come again.
+        _memory = new(intervals.RamAlertPercent, TimeSpan.FromMinutes(intervals.RamHoldMinutes)); _ramFile = Path.Combine(Path.GetDirectoryName(logFile) ?? "", "ram-alert.txt");
+        try { if (DateTimeOffset.TryParse(File.ReadAllText(_ramFile), null, System.Globalization.DateTimeStyles.RoundtripKind, out var last)) _memory.LastFired = last; } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         Checks = TrayCheckLog.Read(logFile);
         var menu = new ContextMenuStrip { RightToLeft = RightToLeft.Yes, ShowImageMargin = false };
         var open = new ToolStripMenuItem(TrayText.OpenApp, null, (_, _) => OpenApp()) { Font = new Font(menu.Font, FontStyle.Bold) };
@@ -47,6 +51,8 @@ internal sealed class TrayContext : ApplicationContext
         Refresh();
         _temps.Tick += async (_, _) => { if (Benchmarking()) Schedule(_temps, TimeSpan.FromMinutes(1)); else await CheckTempsAsync(); };
         _health.Tick += async (_, _) => { if (Benchmarking()) Schedule(_health, TimeSpan.FromMinutes(1)); else await CheckHealthAsync(); };
+        _ram.Tick += (_, _) => CheckMemory();
+        Schedule(_ram, TimeSpan.FromSeconds(intervals.FirstCheckSeconds + 20));
         // The first checks come shortly after sign-in, not during it, and not both at once.
         Schedule(_temps, TimeSpan.FromSeconds(intervals.FirstCheckSeconds)); Schedule(_health, TimeSpan.FromSeconds(intervals.FirstCheckSeconds + 40));
         // The GPU profile a little after sign-in, once the driver has settled.
@@ -84,6 +90,18 @@ internal sealed class TrayContext : ApplicationContext
     }
 
     private static void Schedule(System.Windows.Forms.Timer timer, TimeSpan after) { timer.Stop(); timer.Interval = (int)Math.Clamp(after.TotalMilliseconds, 1000, int.MaxValue); timer.Start(); }
+
+    /// <summary>A plain read of the RAM in use; a warning is a notification only (it is not a check of the log). A benchmark's own load is not a problem, so it waits.</summary>
+    private void CheckMemory()
+    {
+        double? used = Benchmarking() ? null : MemoryLoad.UsedPercent();
+        if (_memory.Evaluate(used, DateTimeOffset.UtcNow) && used is { } p)
+        {
+            Notify(TrayText.MemoryFull(p));
+            try { File.WriteAllText(_ramFile, _memory.LastFired!.Value.ToString("O")); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        }
+        Schedule(_ram, TimeSpan.FromMinutes(_memory.IsWatching ? 1 : _intervals.RamCheckMinutes));
+    }
 
     public async Task CheckAllAsync() { await CheckTempsAsync(); await CheckHealthAsync(); }
 
@@ -187,7 +205,7 @@ internal sealed class TrayContext : ApplicationContext
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _power.Dispose(); _keys?.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _power.Dispose(); _keys?.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }

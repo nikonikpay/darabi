@@ -40,5 +40,5 @@ public class SettingsViewModelTests : IDisposable
         vm.TrayIdleText = "15"; vm.SaveCommand.Execute(null); Assert.Equal(1, tray.Restarts);
     }
     [Fact] public void Tray_intervals_out_of_range_are_rejected()
-    { var (vm, cfg, _, _, _) = Build(); vm.TrayWatchText = "1"; vm.SaveCommand.Execute(null); Assert.Equal(30, cfg.TrayWatchIntervalSeconds); Assert.Equal(Mazesta.Desktop.Localization.Loc.Get("Settings_Invalid_Interval"), vm.Message); }
+    { var (vm, cfg, _, _, _) = Build(); vm.TrayWatchText = "1"; vm.SaveCommand.Execute(null); Assert.Equal(60, cfg.TrayWatchIntervalSeconds); Assert.Equal(Mazesta.Desktop.Localization.Loc.Get("Settings_Invalid_Interval"), vm.Message); }
 }
