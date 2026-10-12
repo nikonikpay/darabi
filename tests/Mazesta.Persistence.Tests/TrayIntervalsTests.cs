@@ -17,4 +17,6 @@ public class TrayIntervalsTests : IDisposable
     { File.WriteAllText(File_, "{ not json"); Assert.Equal(new TrayIntervals(20, 60, 60, 1440), TrayIntervals.Read(File_)); Assert.Equal("{ not json", File.ReadAllText(File_)); Assert.Empty(Directory.GetFiles(_dir, "*.corrupt-*")); }
     [Fact] public void An_old_schema_file_is_not_migrated_or_rewritten_by_reading()
     { const string v2 = """{"schemaVersion":2,"language":"fa"}"""; File.WriteAllText(File_, v2); TrayIntervals.Read(File_); Assert.Equal(v2, File.ReadAllText(File_)); }
+    [Fact] public void An_unmigrated_file_still_holding_the_old_defaults_follows_the_new_schedule_but_keeps_what_a_person_chose()
+    { File.WriteAllText(File_, """{"schemaVersion":3,"trayIdleIntervalMinutes":10,"trayWatchIntervalSeconds":45,"trayHealthIntervalMinutes":30,"trayCpuAlertC":100}"""); var t = TrayIntervals.Read(File_); Assert.Equal((60, 45, 1440, 98), (t.IdleMinutes, t.WatchSeconds, t.HealthMinutes, t.CpuAlertC)); }
 }

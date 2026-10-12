@@ -13,7 +13,10 @@ public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int W
         try
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(configFile)); var root = doc.RootElement;
-            int Get(string name, int fallback) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) && n > 0 ? n : fallback;
+            // A file the app has not yet migrated (schema 3) still holds the old defaults; the tray treats those as unset, so a first start before the app has run already follows the new schedule.
+            bool unmigrated = root.TryGetProperty("schemaVersion", out var sv) && sv.TryGetInt32(out int version) && version < 4;
+            var oldDefaults = new Dictionary<string, int> { ["trayIdleIntervalMinutes"] = 10, ["trayWatchIntervalSeconds"] = 30, ["trayHealthIntervalMinutes"] = 30, ["trayCpuAlertC"] = 100, ["trayGpuAlertC"] = 95 };
+            int Get(string name, int fallback) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) && n > 0 && !(unmigrated && oldDefaults.TryGetValue(name, out int old) && old == n) ? n : fallback;
             return new(Get("trayFirstCheckSeconds", defaults.FirstCheckSeconds), Get("trayIdleIntervalMinutes", defaults.IdleMinutes), Get("trayWatchIntervalSeconds", defaults.WatchSeconds),
                 Get("trayHealthIntervalMinutes", defaults.HealthMinutes), Alert("trayCpuAlertC", defaults.CpuAlertC), Alert("trayGpuAlertC", defaults.GpuAlertC), Alert("trayGpuHotSpotAlertC", defaults.GpuHotSpotAlertC),
                 Get("trayHoldMinutes", defaults.HoldMinutes), Get("trayRamAlertPercent", defaults.RamAlertPercent) is var rp && rp is >= 50 and <= 99 ? rp : defaults.RamAlertPercent,
