@@ -3565,4 +3565,6 @@ Cancel: stop.</value></data>
   <data name="Settings_Keys_Layout" xml:space="preserve"><value>Next layout (one column, two columns, compact, strip)</value></data>
   <data name="Settings_Keys_Preset" xml:space="preserve"><value>Next set (game, render, troubleshooting, your own)</value></data>
   <data name="Settings_Keys_Reset" xml:space="preserve"><value>Back to the defaults</value></data>
+  <data name="Bench_Set_Adapter" xml:space="preserve"><value>Network device</value></data>
+  <data name="Bench_Set_AdapterLink" xml:space="preserve"><value>Connection</value></data>
 </root>

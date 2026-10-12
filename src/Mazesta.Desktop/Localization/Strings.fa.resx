@@ -3565,4 +3565,6 @@
   <data name="Settings_Keys_Layout" xml:space="preserve"><value>حالت نمایش بعدی (تک‌ستونه، دوستونه، خلاصه، نواری)</value></data>
   <data name="Settings_Keys_Preset" xml:space="preserve"><value>مجموعهٔ بعدی (بازی، رندر، عیب‌یابی، مجموعه‌های خودتان)</value></data>
   <data name="Settings_Keys_Reset" xml:space="preserve"><value>بازگشت به پیش‌فرض</value></data>
+  <data name="Bench_Set_Adapter" xml:space="preserve"><value>مدل دستگاه شبکه</value></data>
+  <data name="Bench_Set_AdapterLink" xml:space="preserve"><value>اتصال</value></data>
 </root>

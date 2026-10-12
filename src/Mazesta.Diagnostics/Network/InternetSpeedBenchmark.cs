@@ -7,7 +7,7 @@ namespace Mazesta.Diagnostics.Network;
 /// starts this benchmark, and the data moved is reported with the result. Without a connection it is Unsupported, with numbers left
 /// out rather than zero; the other benchmarks never depend on it.
 /// </summary>
-public sealed class InternetSpeedBenchmark(HttpMessageHandler? transport = null, Func<IPAddress, TimeSpan, CancellationToken, Task<long?>>? echo = null) : IBenchmark
+public sealed class InternetSpeedBenchmark(HttpMessageHandler? transport = null, Func<IPAddress, TimeSpan, CancellationToken, Task<long?>>? echo = null, Func<AdapterInfo?>? adapter = null) : IBenchmark
 {
     public const string Server = "speed.cloudflare.com";
     public static readonly TestDefinition Spec = new(new TestId("bench.network.internet"), "Bench_Net_Internet", 30);
@@ -47,8 +47,15 @@ public sealed class InternetSpeedBenchmark(HttpMessageHandler? transport = null,
             if (score.Gaming is { } gm) metrics.Add(new("Bench_Net_Score_Gaming", gm, "/5"));
             if (score.VideoCalls is { } vc) metrics.Add(new("Bench_Net_Score_Calls", vc, "/5"));
             metrics.Add(new("Bench_Net_DataUsed", (downBytes + upBytes) / 1e6, "MB"));
+            // The device the line was measured through: its model beside the result, so a result is never anonymous about what it went through.
+            List<SpecItem> setup = [];
+            if ((adapter ?? InternetAdapter.Primary)() is { } card)
+            {
+                setup.Add(new(BenchmarkDetails.RunGroup, "Bench_Set_Adapter", card.Model));
+                setup.Add(new(BenchmarkDetails.RunGroup, "Bench_Set_AdapterLink", card.LinkMbps is { } mbps ? $"{card.Kind} · {(mbps >= 1000 && mbps % 1000 == 0 ? $"{mbps / 1000} Gbps" : $"{mbps} Mbps")}" : card.Kind));
+            }
             return new(Spec.Id, BenchmarkStatus.Completed, started, request.Clock.UtcNow, metrics,
-                $"HTTPS to {Server}, {Streams} parallel streams, {phase:0} s down then {phase:0} s up; ICMP to {PingTarget} ({sent} echoes); {(downBytes + upBytes) / 1e6:F0} MB transferred; links: {string.Join(", ", NetworkLatencyExecutor.ActiveAdapters())}");
+                $"HTTPS to {Server}, {Streams} parallel streams, {phase:0} s down then {phase:0} s up; ICMP to {PingTarget} ({sent} echoes); {(downBytes + upBytes) / 1e6:F0} MB transferred; links: {string.Join(", ", NetworkLatencyExecutor.ActiveAdapters())}", setup);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { return BenchmarkResult.Cancelled(Spec.Id, started, request.Clock.UtcNow); }
     }

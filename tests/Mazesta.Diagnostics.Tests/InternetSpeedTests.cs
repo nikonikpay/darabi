@@ -29,6 +29,15 @@ public class InternetSpeedTests
         Assert.Equal(0, r.Metrics.Single(m => m.Key == "Bench_Net_Loss").Value);
         Assert.All(server.Hosts, h => Assert.Equal(InternetSpeedBenchmark.Server, h));
     }
+    [Fact] public async Task The_result_names_the_network_device_the_line_went_through()
+    {
+        var card = new Mazesta.Diagnostics.Network.AdapterInfo("Ethernet", "Realtek PCIe 2.5GbE Family Controller", 2500, "Ethernet");
+        var r = await new InternetSpeedBenchmark(new FakeServer(true), (_, _, _) => Task.FromResult<long?>(12), () => card).RunAsync(Request(), CancellationToken.None);
+        Assert.Equal("Realtek PCIe 2.5GbE Family Controller", r.Setup!.Single(x => x.Key == "Bench_Set_Adapter").Value);
+        Assert.Equal("Ethernet · 2500 Mbps", r.Setup!.Single(x => x.Key == "Bench_Set_AdapterLink").Value);
+        var none = await new InternetSpeedBenchmark(new FakeServer(true), (_, _, _) => Task.FromResult<long?>(12), () => null).RunAsync(Request(), CancellationToken.None);
+        Assert.DoesNotContain(none.Setup!, x => x.Key == "Bench_Set_Adapter");   // no adapter known: nothing is made up
+    }
     [Fact] public async Task Without_a_connection_it_is_Unsupported_with_no_numbers()
     {
         var r = await new InternetSpeedBenchmark(new FakeServer(reachable: false), (_, _, _) => Task.FromResult<long?>(null)).RunAsync(Request(), CancellationToken.None);
