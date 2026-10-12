@@ -3617,4 +3617,14 @@
   <data name="Detail_Vid_NoEncoder" xml:space="preserve"><value>انکود {0}: کارت انکودر سخت‌افزاری برای آن ندارد</value></data>
   <data name="Detail_Vid_EncodeFailed" xml:space="preserve"><value>انکود {0}: روی این کارت پشتیبانی نمی‌شود</value></data>
   <data name="Detail_Vid_EncodeShort" xml:space="preserve"><value>انکود {0}: {1} فریم انکود شد ولی فقط {2} فریم برگشت</value></data>
+  <data name="Web_Overlay_AllSensors" xml:space="preserve"><value>همهٔ سنسورهای این قطعه</value></data>
+  <data name="Overlay_Tctl" xml:space="preserve"><value>Tctl/Tdie</value></data>
+  <data name="Overlay_CcdTemp1" xml:space="preserve"><value>دمای CCD 1</value></data>
+  <data name="Overlay_CcdTemp2" xml:space="preserve"><value>دمای CCD 2</value></data>
+  <data name="Overlay_CcdTemp3" xml:space="preserve"><value>دمای CCD 3</value></data>
+  <data name="Overlay_CcdTemp4" xml:space="preserve"><value>دمای CCD 4</value></data>
+  <data name="Overlay_CcdTemp5" xml:space="preserve"><value>دمای CCD 5</value></data>
+  <data name="Overlay_CcdTemp6" xml:space="preserve"><value>دمای CCD 6</value></data>
+  <data name="Overlay_CcdTemp7" xml:space="preserve"><value>دمای CCD 7</value></data>
+  <data name="Overlay_CcdTemp8" xml:space="preserve"><value>دمای CCD 8</value></data>
 </root>

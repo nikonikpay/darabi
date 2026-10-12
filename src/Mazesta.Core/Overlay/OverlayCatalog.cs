@@ -15,7 +15,10 @@ public enum OverlayAggregate { First, Max, Sum, Average }
 public sealed record OverlayItem(string Id, OverlayPart Part, string LabelKey, SensorRole[] Roles, OverlayAggregate Aggregate = OverlayAggregate.First, double? FixedMax = null)
 {
     /// <summary>Measured by the app itself, not read from a sensor: the frame rate, or the link's ping, loss and jitter.</summary>
-    public bool IsMeasured => Roles.Length == 0;
+    public bool IsMeasured => Roles.Length == 0 && SensorId is null;
+    /// <summary>One sensor of the machine by its id (any of the processor's or the graphics card's sensors the monitoring page lists), not a role;
+    /// its label is the sensor's own name.</summary>
+    public string? SensorId { get; init; }
     /// <summary>A fixed fact of the machine that is not a sensor (the speed the RAM runs at): the app reads it once and the item shows it.</summary>
     public bool IsStatic { get; init; }
     public bool IsFrameItem => IsMeasured && Part == OverlayPart.Gaming;
@@ -75,10 +78,12 @@ public static class OverlayCatalog
         new("cpu.pclock", OverlayPart.Cpu, "Overlay_PClock", [SensorRole.CpuCoreClock], OverlayAggregate.Average) { NamePrefix = "P-Core" },
         new("cpu.eclock", OverlayPart.Cpu, "Overlay_EClock", [SensorRole.CpuCoreClock], OverlayAggregate.Average) { NamePrefix = "E-Core" },
         .. Enumerable.Range(1, MaxCcds).Select(n => new OverlayItem($"cpu.ccd{n}", OverlayPart.Cpu, $"Overlay_CcdClock{n}", [SensorRole.CpuCoreClock], OverlayAggregate.Average) { Ccd = n }),
+        .. Enumerable.Range(1, MaxCcds).Select(n => new OverlayItem($"cpu.ccdtemp{n}", OverlayPart.Cpu, $"Overlay_CcdTemp{n}", [SensorRole.CpuCcdTemp], FixedMax: Percent) { NamePrefix = $"CCD{n} " }),
         new("cpu.maxclock", OverlayPart.Cpu, "Overlay_MaxClock", [SensorRole.CpuEffectiveClock, SensorRole.CpuCoreClock], OverlayAggregate.Max),
         new("cpu.power", OverlayPart.Cpu, "Overlay_Power", [SensorRole.CpuPackagePower]),
         new("cpu.voltage", OverlayPart.Cpu, "Overlay_Voltage", [SensorRole.CpuVcore]),
         new("cpu.fan", OverlayPart.Cpu, "Overlay_FanRpm", [SensorRole.CpuFan]),
+        new("cpu.tctl", OverlayPart.Cpu, "Overlay_Tctl", [SensorRole.CpuTctlTdie], FixedMax: Percent),
 
         new("ram.used", OverlayPart.Memory, "Overlay_Used", [SensorRole.RamUsed]),
         new("ram.load", OverlayPart.Memory, "Overlay_Load", [SensorRole.RamLoad], FixedMax: Percent),
@@ -100,9 +105,22 @@ public static class OverlayCatalog
 
     public static string Pinned(string baseId, string device) => $"{baseId}@{device}";
 
+    /// <summary>The id of one sensor as an item: "s:Cpu:/amdcpu/0/temperature/2".</summary>
+    public static string OfSensor(OverlayPart part, string sensorId) => $"s:{part}:{sensorId}";
+
+    /// <summary>Every sensor of the processor and the graphics card as an item of its own, so anything the monitoring page shows can be put on the overlay.</summary>
+    public static IReadOnlyList<OverlayItem> ForSensors(IReadOnlyList<HardwareNode> hardware)
+        => [.. hardware.Where(n => n.Kind is HardwareKind.Cpu or HardwareKind.Gpu).SelectMany(n => n.Sensors)
+            .Select(s => Find(OfSensor(hardware.First(n => n.Id == s.Hardware).Kind == HardwareKind.Cpu ? OverlayPart.Cpu : OverlayPart.Gpu, s.Id.Value))!)];
+
     /// <summary>A catalog item by id; "base@device" is that item pinned to one device (read on that device only).</summary>
     public static OverlayItem? Find(string id)
     {
+        if (id.StartsWith("s:", StringComparison.Ordinal))
+        {
+            var p = id.Split(':', 3);
+            return p.Length == 3 && p[2].Length > 0 && Enum.TryParse<OverlayPart>(p[1], out var part) && part is OverlayPart.Cpu or OverlayPart.Gpu ? new(id, part, "", []) { SensorId = p[2] } : null;
+        }
         int at = id.IndexOf('@', StringComparison.Ordinal);
         if (at < 0) return All.FirstOrDefault(i => i.Id == id);
         var item = All.FirstOrDefault(i => i.Id == id[..at]);
@@ -117,11 +135,14 @@ public static class OverlayCatalog
     {
         // Playing: the frame rate first and charted with its session average, lowest and highest, then what limits it, then the link an online
         // game depends on: ping, packet loss, jitter and the traffic now.
-        ["game"] = Choices("fps:c low1 low01 fps.avg fps.min fps.max frametime:c gpu.temp gpu.hotspot gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.clock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.maxthread ram.used ram.speed net.ping net.loss net.jitter net.down net.up"),
+        ["game"] = Choices("fps:c low1 low01 fps.avg fps.min fps.max frametime:c gpu.temp gpu.hotspot gpu.vramtemp gpu.load gpu.clock gpu.vram gpu.power cpu.temp cpu.load cpu.clock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.maxthread ram.used ram.speed net.ping net.loss net.jitter net.down net.up"),
         // Rendering: how busy and how hot the processors stay over a long job, memory, and the drive being written.
         ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram gpu.vramload gpu.vramtemp ram.used:c ram.load storage.read storage.write storage.activity"),
-        // Troubleshooting: every temperature, clock, voltage and fan that tells a throttling or failing part.
-        ["troubleshoot"] = Choices("cpu.load cpu.temp:c cpu.hotcore cpu.clock cpu.maxclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.voltage cpu.fan gpu.load gpu.temp:c gpu.hotspot gpu.vram gpu.vramload gpu.vramtemp gpu.clock gpu.power gpu.voltage gpu.fanrpm ram.load storage.temp storage.read storage.write storage.activity"),
+        // Troubleshooting: everything the processor, graphics card, memory and drives report - every temperature (each CCD's too), clock,
+        // voltage, power and fan that tells a throttling or failing part. Items a machine has no sensor for are simply not drawn.
+        ["troubleshoot"] = Choices("cpu.load cpu.temp:c cpu.hotcore:c cpu.tctl cpu.ccdtemp1 cpu.ccdtemp2 cpu.ccdtemp3 cpu.ccdtemp4 cpu.ccdtemp5 cpu.ccdtemp6 cpu.ccdtemp7 cpu.ccdtemp8 cpu.clock cpu.maxclock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.voltage cpu.maxthread cpu.fan " +
+            "gpu.load gpu.temp:c gpu.hotspot gpu.vramtemp gpu.vram gpu.vramload gpu.clock gpu.memclock gpu.power gpu.voltage gpu.fan gpu.fanrpm " +
+            "ram.load ram.temp ram.speed ram.used storage.temp storage.read storage.write storage.activity"),
     };
     public const string DefaultPreset = "game";
     /// <summary>The ready-made sets in the order the shortcut walks them.</summary>
@@ -145,6 +166,7 @@ public static class OverlayCatalog
     public static IReadOnlyList<SensorDefinition> Resolve(OverlayItem item, IReadOnlyList<HardwareNode> hardware, Func<HardwareNode, bool>? include = null)
     {
         if (item.IsMeasured) return [];
+        if (item.SensorId is { } id) return [.. hardware.SelectMany(n => n.Sensors).Where(s => s.Id.Value == id).Take(1)];
         bool Named(SensorDefinition s) => (item.NamePrefix is null || s.Name.StartsWith(item.NamePrefix, StringComparison.Ordinal)) && (item.Ccd is null || CcdOfCore(s.Name) == item.Ccd);
         var kind = item.Part switch { OverlayPart.Gpu => HardwareKind.Gpu, OverlayPart.Cpu => HardwareKind.Cpu, OverlayPart.Memory => HardwareKind.Memory, OverlayPart.Storage => HardwareKind.Storage, _ => HardwareKind.Network };
         var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (item.Device is null ? include?.Invoke(n) ?? true : n.Id.Value == item.Device))

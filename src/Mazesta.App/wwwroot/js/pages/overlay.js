@@ -122,7 +122,7 @@ export function mount(el) {
   function renderItems(s) {
     groups.replaceChildren(); rowEls.clear();
     PARTS.forEach((kind, i) => {
-      const items = s.items.filter((x) => x.part === kind && !x.device);
+      const items = s.items.filter((x) => x.part === kind && !x.device && !x.sensor), sensors = s.items.filter((x) => x.part === kind && x.sensor);
       const drives = blocksOf(s.items.filter((x) => x.part === kind && x.device));
       if (!items.length && !drives.length) return;
       const p = part(kind), all = s.items.filter((x) => x.part === kind);
@@ -130,6 +130,9 @@ export function mount(el) {
         h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(p.icon)), h("div", { class: "ttl" }, h("h3", { class: "panel-title" }, t(p.key))),
           h("span", { class: "group-count" }, t("Web_Group_Count", all.length, all.filter((x) => x.on).length))),
         h("div", { class: "ov-list" }, items.map(itemRow)),
+        // Every sensor the monitoring page lists for this part, each as an item of its own (folded: a processor has dozens).
+        sensors.length ? h("details", { class: "ov-drive ov-sensors", open: sensors.some((x) => x.on) }, h("summary", { class: "ov-drive-name" }, t("Web_Overlay_AllSensors"), " ", h("span", { class: "lat" }, `(${sensors.length})`)),
+          h("div", { class: "ov-list" }, sensors.map(itemRow))) : null,
         drives.map((d) => h("div", { class: "ov-drive" }, h("div", { class: "ov-drive-name lat" }, icon("drive"), d.deviceName || d.device), h("div", { class: "ov-list" }, d.items.map(itemRow))))));
     });
   }

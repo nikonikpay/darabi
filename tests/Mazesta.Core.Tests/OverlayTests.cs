@@ -27,6 +27,16 @@ public class OverlayTests
         Assert.Empty(OverlayCatalog.Resolve(OverlayCatalog.Find("fps")!, [a, b]));
         Assert.Single(OverlayCatalog.Resolve(OverlayCatalog.Find("storage.temp")!, [a, b], n => n.Name != "hdd"));
     }
+    [Fact] public void Every_processor_and_graphics_sensor_is_an_item_of_its_own()
+    {
+        var hw = new[] { Node("/amdcpu/0", HardwareKind.Cpu, ("CCD1 (Tdie)", SensorRole.CpuCcdTemp), ("CCD2 (Tdie)", SensorRole.CpuCcdTemp)), Node("/hdd/0", HardwareKind.Storage, ("Temperature", SensorRole.StorageTemp)) };
+        var items = OverlayCatalog.ForSensors(hw);
+        Assert.Equal(2, items.Count);
+        var again = OverlayCatalog.Find(items[1].Id)!;
+        Assert.Equal("CCD2 (Tdie)", Assert.Single(OverlayCatalog.Resolve(again, hw)).Name);
+        Assert.Null(OverlayCatalog.Find("s:Storage:/hdd/0/0"));
+        Assert.Equal("CCD2 (Tdie)", Assert.Single(OverlayCatalog.Resolve(OverlayCatalog.Find("cpu.ccdtemp2")!, hw)).Name);
+    }
     [Fact] public void Combine_never_invents_a_value()
     {
         Assert.Null(OverlayCatalog.Combine(OverlayAggregate.Sum, [null, null]));

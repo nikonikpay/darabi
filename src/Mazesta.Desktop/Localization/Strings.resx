@@ -3617,4 +3617,14 @@ Cancel: stop.</value></data>
   <data name="Detail_Vid_NoEncoder" xml:space="preserve"><value>Encode {0}: the card has no hardware encoder for it</value></data>
   <data name="Detail_Vid_EncodeFailed" xml:space="preserve"><value>Encode {0}: not supported on this card</value></data>
   <data name="Detail_Vid_EncodeShort" xml:space="preserve"><value>Encode {0}: {1} frames encoded but only {2} came back</value></data>
+  <data name="Web_Overlay_AllSensors" xml:space="preserve"><value>Every sensor of this part</value></data>
+  <data name="Overlay_Tctl" xml:space="preserve"><value>Tctl/Tdie</value></data>
+  <data name="Overlay_CcdTemp1" xml:space="preserve"><value>CCD 1 temp</value></data>
+  <data name="Overlay_CcdTemp2" xml:space="preserve"><value>CCD 2 temp</value></data>
+  <data name="Overlay_CcdTemp3" xml:space="preserve"><value>CCD 3 temp</value></data>
+  <data name="Overlay_CcdTemp4" xml:space="preserve"><value>CCD 4 temp</value></data>
+  <data name="Overlay_CcdTemp5" xml:space="preserve"><value>CCD 5 temp</value></data>
+  <data name="Overlay_CcdTemp6" xml:space="preserve"><value>CCD 6 temp</value></data>
+  <data name="Overlay_CcdTemp7" xml:space="preserve"><value>CCD 7 temp</value></data>
+  <data name="Overlay_CcdTemp8" xml:space="preserve"><value>CCD 8 temp</value></data>
 </root>

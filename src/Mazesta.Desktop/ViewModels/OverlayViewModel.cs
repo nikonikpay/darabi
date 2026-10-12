@@ -175,7 +175,7 @@ public sealed partial class OverlayViewModel : ObservableObject, IDisposable
                 else section.Subtitle = PartName(item.Part, hardware, sensors);
                 sections.Add(section);
             }
-            section.Rows.Add(new(item, english ? Loc.GetEnglish(item.LabelKey) : Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : item.Of is not null ? Unit.Percent : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
+            section.Rows.Add(new(item, item.SensorId is not null ? sensors[0].Name : english ? Loc.GetEnglish(item.LabelKey) : Loc.Get(item.LabelKey), item.IsMeasured ? Unit.None : item.Of is not null ? Unit.Percent : sensors[0].Unit, [.. sensors.Select(s => s.Id)], choice.Chart, section.Hue));
         }
         return sections;
     }

@@ -24,13 +24,13 @@ public sealed partial class WebBridge
                 frameProblem = overlay.FrameSource?.Problem, pingTarget = overlay.PingSource?.Target,
                 presets = OverlayCatalog.Presets.Select(p => new { id = p.Key, count = p.Value.Count }),
                 order = chosen.Select(c => c.Id),
-                items = OverlayCatalog.All.Concat(OverlayCatalog.ForDrives(engine.Hardware)).Select(i =>
+                items = OverlayCatalog.All.Concat(OverlayCatalog.ForDrives(engine.Hardware)).Concat(OverlayCatalog.ForSensors(engine.Hardware)).Select(i =>
                 {
                     var sensors = OverlayCatalog.Resolve(i, engine.Hardware, Include);
                     var choice = chosen.FirstOrDefault(c => c.Id == i.Id);
                     return new
                     {
-                        id = i.Id, part = i.Part.ToString(), label = Loc.Get(i.LabelKey), labelEn = Loc.GetEnglish(i.LabelKey), frame = i.IsMeasured && !i.IsStatic, fixedText = i.IsStatic ? overlay.StaticText(i.Id) : null, available = i.IsMeasured || sensors.Count > 0,
+                        id = i.Id, part = i.Part.ToString(), label = i.SensorId is null ? Loc.Get(i.LabelKey) : sensors.FirstOrDefault()?.Name ?? i.SensorId, labelEn = i.SensorId is null ? Loc.GetEnglish(i.LabelKey) : sensors.FirstOrDefault()?.Name ?? i.SensorId, sensor = i.SensorId is not null, frame = i.IsMeasured && !i.IsStatic, fixedText = i.IsStatic ? overlay.StaticText(i.Id) : null, available = i.IsMeasured || sensors.Count > 0,
                         on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Of is not null ? "Share" : i.Aggregate.ToString(), max = i.FixedMax, sensors = sensors.Select(s => s.Id.Value),
                         device = i.Device, deviceName = i.Device is null ? null : engine.Hardware.FirstOrDefault(n => n.Id.Value == i.Device)?.Name,
                     };
