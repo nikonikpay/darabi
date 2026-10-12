@@ -585,9 +585,9 @@ public sealed partial class WebBridge
                 }),
             new("run_benchmark", "Runs real benchmarks, after the user confirmed all of them at once on the page, one after another, and returns each one's number, the best " +
                 "earlier result of this computer and the change against it (positive change is better, negative is slower than the best kept). About a minute each. " +
-                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu_rt (ray tracing), gpu_scene (3D scene; its ray-tracing switch is set on the page), gpu_ai (AI compute), " +
+                "Benchmarks: cpu_single, cpu_multi, memory, storage, gpu_rt (ray tracing), gpu_scene (3D scene; its ray-tracing switch is set on the page), gpu_ai (AI compute), gpu_video (video decode and encode, about two minutes), " +
                 "network (internet speed), or all. Name them all in one call. For a trend over time use get_benchmark_history.",
-                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu_rt","gpu_scene","gpu_ai","network"]}}},"required":["benchmarks"]}""",
+                """{"type":"object","properties":{"benchmarks":{"type":"array","items":{"type":"string","enum":["all","cpu_single","cpu_multi","memory","storage","gpu_rt","gpu_scene","gpu_ai","gpu_video","network"]}}},"required":["benchmarks"]}""",
                 async (a, ct) =>
                 {
                     var keys = Texts(a, "benchmarks").Append(Text(a, "benchmark") ?? "").Where(k => k.Length > 0).Distinct().ToList();

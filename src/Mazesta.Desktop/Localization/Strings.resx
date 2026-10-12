@@ -683,7 +683,7 @@
   <data name="Bench_Status_Failed" xml:space="preserve"><value>Failed</value></data>
   <data name="Bench_Status_Error" xml:space="preserve"><value>Program error — says nothing about the part</value></data>
   <data name="Settings_Tray_Checking" xml:space="preserve"><value>Checking the background monitor…</value></data>
-  <data name="Nav_Tuning" xml:space="preserve"><value>Overclock &amp; undervolt</value></data>
+  <data name="Nav_Tuning" xml:space="preserve"><value>Graphics card tuning</value></data>
   <data name="Tuning_Note" xml:space="preserve"><value>Overclock, undervolt, power limit and fan of the graphics card. Every setting is temporary: a restart or a driver reset puts the card back to factory settings. Values outside the range the card's driver allows are refused.</value></data>
   <data name="Tuning_Manual" xml:space="preserve"><value>Manual settings</value></data>
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>NVIDIA's public interface does not set a voltage directly. An undervolt is a positive core offset together with a clock cap: the offset lifts the voltage/frequency curve, the cap keeps the clock where it was, so the card reaches that clock at a lower voltage. An overclock is a higher cap (or no cap) with an offset.</value></data>
@@ -2277,16 +2277,20 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Settings_Tray_CpuAlert" xml:space="preserve"><value>Processor warning from (°C)</value></data>
   <data name="Settings_Tray_GpuAlert" xml:space="preserve"><value>Graphics card (average / core) warning from (°C)</value></data>
   <data name="Settings_Invalid_Alert" xml:space="preserve"><value>A warning temperature must be a whole number from 60 to 105.</value></data>
-  <data name="Assist_Help" xml:space="preserve"><value>What I can do:
-- This computer: its parts, the temperatures and sensors right now, the benchmark history and a summary of the saved reports (and their PDF).
+  <data name="Assist_Help" xml:space="preserve"><value>What I can do (ask in Persian or English):
+- This computer: its parts and full specification, the temperatures and sensors right now, the benchmark history, and the saved reports (their summary and PDF).
 - Smart diagnosis: say "diagnose my system" and I run a short test of each part (about eight minutes, after you confirm) and tell you what it found, failed tests and problems first.
 - When you ask about a part (processor, RAM, graphics card, drives) I give its specification and, if a test of it was recorded, that test's summary.
-- Tests and benchmarks: run the processor, RAM, drive, network and graphics card tests and the benchmarks (I ask on the page before anything starts); find the fastest DNS.
-- Test settings: say them in words, such as "CPU test with variable load, 100% for 20 seconds then 0% for 10", "core by core with 4 cores at a time" or "Linpack with physical and virtual memory"; and "turn on the advanced view of the tests" shows every test's settings and full result.
-- Professional programs: whether Lumion, V-Ray, Revit and others run on this computer, and at which level.
-- This app: open any page and point at the control for a task; turn the overlay and the background monitor on or off, and set the temperature the tray warns at ("tell me when the CPU passes 85").
-- Windows: open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer, BitLocker and the sound and display settings; give checked commands (sfc, DISM, chkdsk, ipconfig, manage-bde…) with what they do and their warning, and run the ones that only read after you agree.
-- Drivers: whether the graphics card's driver is the newest (for NVIDIA both Game Ready and Studio, and which suits the installed programs) and which devices have no working driver; installing is on the Drivers page, with a button and a confirmation.
+- Tests: processor (stress, Linpack, core by core, FFT, vector), RAM (patterns over nearly all of it, bit fade), drives (speed, SMART, sustained write), graphics card (stress, VRAM with its bandwidth and temperature, 3D scene, AI), video decode and encode (H.264, HEVC, VP9, AV1; 1080p to 8K; 8/10-bit; 4:2:0/4:2:2), power, network. When they end, a window sums up each part's health. I ask on the page before anything starts.
+- Test settings in words, such as "CPU test with variable load, 100% for 20 seconds then 0% for 10", "core by core with 4 cores at a time" or "5 minutes each"; "turn on the advanced view of the tests" shows every setting and the full result.
+- Benchmarks: processor, 7-Zip, memory and its latency, the Iranian-garden 3D scene (normal and ray-traced), ray tracing, AI compute, video, drives, internet speed; compared with other computers with the same parts.
+- Graphics card tuning: automatic undervolt and overclock, the voltage curve, power limit, the card's fan and saved profiles (shown on the page; you start them).
+- On-screen overlay: frame rate with 1% and 0.1% lows, temperatures (VRAM and each CCD too), clocks, power, fans, ping; ready-made sets (game, render, troubleshooting) and any single sensor; turn it on or off.
+- Fans, RGB lighting, the background tray monitor and its temperature warnings ("tell me when the CPU passes 85").
+- Hands-on checks: screen pixels, keyboard, mouse, speakers, microphone, laptop battery health.
+- Windows: DNS (and the fastest one), power plan, Game Mode, game boost, the internet troubleshooter, blue screens and their causes, SFC/DISM repair, tweaks, Windows Update, virtual memory, hosts; open windows such as This PC, Device Manager, Task Manager, Disk Management, Services, Event Viewer and BitLocker; give checked commands (sfc, DISM, chkdsk, ipconfig…) and run the ones that only read, after you agree.
+- Drivers: whether the graphics card's driver is the newest (NVIDIA Game Ready or Studio, whichever suits your programs) and which devices have no working driver; installing is on the Drivers page.
+- Programs and games: whether Lumion, V-Ray, Revit, games and local AI models run on this computer, and at which level.
 What I do not do: run any other command in Windows, change files, or install programs.</value></data>
   <data name="Assist_Tray_On" xml:space="preserve"><value>The background monitor is on: by the Windows clock it checks the temperatures every {0} minutes and the drives' health every {1} minutes, and tells a problem with a Windows notification; it also starts with Windows. It warns above {2} °C for the processor and {3} °C for the graphics card.</value></data>
   <data name="Assist_Tray_Off" xml:space="preserve"><value>The background monitor is off and no longer starts with Windows.</value></data>
