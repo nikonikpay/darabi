@@ -1,4 +1,4 @@
-using Mazesta.Core.Time; using Mazesta.Diagnostics.Evidence; using Mazesta.Diagnostics.Whea; using Mazesta.Monitoring; using Mazesta.Persistence;
+using Mazesta.Core.Health; using Mazesta.Core.Hardware; using Mazesta.Core.Time; using Mazesta.Diagnostics.Evidence; using Mazesta.Diagnostics.Whea; using Mazesta.Monitoring; using Mazesta.Persistence;
 namespace Mazesta.Diagnostics;
 
 public enum TestEngineState { Idle, Running, Stopped }
@@ -20,6 +20,11 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     public event Action<TestId, TestProgress>? TestProgressChanged;
     /// <summary>An exception that escaped an executor, whole (type, message, stack), for the app's log: the result keeps only its message.</summary>
     public event Action<TestId, Exception>? Crashed;
+    /// <summary>The temperature guard stopped the session (see <see cref="ThermalGuard"/>): which reading, and the tests running at that moment.</summary>
+    public event Action<ThermalTrip, IReadOnlyList<TestId>>? ThermalStopped;
+    /// <summary>What stopped the last session, or null when the guard did not.</summary>
+    public ThermalTrip? LastTrip { get; private set; }
+    private readonly HashSet<TestId> _active = [];
     /// <summary>Every line of the live log as it is written, on the thread that wrote it (the engine's or a test's worker).</summary>
     public event Action<TestLogEntry>? Logged;
 
@@ -62,7 +67,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
 
     /// <param name="together">Runs the processor's, the memory's and the graphics card's tests side by side (one lane per part), as a machine at
     /// work loads them, then the other tests one by one in the queue's order. With one lane or none it is the plain queue.</param>
-    public async Task RunAsync(IReadOnlyList<QueuedTest> queue, CancellationToken external = default, bool together = false)
+    public async Task RunAsync(IReadOnlyList<QueuedTest> queue, CancellationToken external = default, bool together = false, ThermalLimits? thermal = null)
     {
         if (queue.Count == 0) throw new ArgumentException("Queue is empty.", nameof(queue));
         if (State == TestEngineState.Running) throw new InvalidOperationException("A queue is already running.");
@@ -71,7 +76,23 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         _cts = CancellationTokenSource.CreateLinkedTokenSource(external);   // before Running, so a Cancel that follows the state change always finds it
         var ct = _cts.Token;
         lock (_logLock) _log.Clear();
+        LastTrip = null; lock (_active) _active.Clear();
         SetState(TestEngineState.Running); SessionStarted?.Invoke(queue);
+        var guard = thermal is null || liveEngine is null ? null : new ThermalGuard(thermal);
+        int tripped = 0;
+        void OnSnapshot(SensorSnapshot snap)
+        {
+            var h = HealthSampler.From(liveEngine!.Hardware, snap.Readings);
+            if (guard!.Evaluate(new(h.CpuTempC, h.CpuHottestCoreC, h.GpuTempC, h.GpuHotSpotC, h.GpuVramC, h.SsdTempC), snap.Timestamp) is not { } trip || Interlocked.Exchange(ref tripped, 1) == 1) return;
+            LastTrip = trip;
+            TestId[] running; lock (_active) running = [.. _active];
+            string? lane = trip.Sensor switch { ThermalSensor.Drive => "storage", ThermalSensor.CpuPackage or ThermalSensor.CpuHottestCore => "cpu", _ => "gpu" };
+            var named = running.Where(r => r.Value.StartsWith(lane + ".", StringComparison.Ordinal)).ToList() is { Count: > 0 } own ? own : running.ToList();
+            Emit(named.Count > 0 ? named[0] : null, TestLogLevel.Error, trip.Sustained ? "Log_Thermal_Held" : "Log_Thermal_Over", null, "@Thermal_" + trip.Sensor, Math.Round(trip.ValueC), Math.Round(trip.LimitC), (int)Math.Round(thermal!.Hold.TotalMinutes));
+            ThermalStopped?.Invoke(trip, running);
+            _cts?.Cancel();
+        }
+        if (guard is not null) liveEngine!.SnapshotPublished += OnSnapshot;
         Emit(null, TestLogLevel.Info, "Log_Session_Start", null, queue.Count);
         bool reachedEnd = false;
         var saving = new object();   // lanes share the checkpoint
@@ -79,6 +100,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
         {
             var item = queue[i];
             lock (saving) { checkpoint.CurrentIndex = i; checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint); }
+            lock (_active) _active.Add(item.Definition.Id);
             TestStarted?.Invoke(item.Definition.Id);
             string? options = item.Options is { Count: > 0 } o ? string.Join(", ", o.Where(x => x.Value.Length > 0).Select(x => $"{x.Key}={x.Value}")) : null;
             Emit(item.Definition.Id, TestLogLevel.Info, "Log_Test_Start", string.IsNullOrEmpty(options) ? null : options, i + 1, queue.Count, "@" + item.Definition.NameKey, item.DurationSeconds);
@@ -90,6 +112,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             }
             Emit(item.Definition.Id, result.Outcome switch { TestOutcome.Passed => TestLogLevel.Info, TestOutcome.Failed => TestLogLevel.Error, _ => TestLogLevel.Warning },
                 "Log_Test_End", result.Detail, "@" + item.Definition.NameKey, "@Test_Outcome_" + result.Outcome, result.ErrorCount);
+            lock (_active) _active.Remove(item.Definition.Id);
             TestCompleted?.Invoke(item.Definition.Id, result);
         }
         try
@@ -113,6 +136,7 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             // the loop leaves the checkpoint at the item it was on, so the next start says the session broke off there instead of hiding it.
             if (reachedEnd) { checkpoint.CurrentIndex = queue.Count; checkpoint.Completed = true; }
             checkpoint.LastUpdatedAt = clock.UtcNow; checkpoints.Save(checkpoint);
+            if (guard is not null) liveEngine!.SnapshotPublished -= OnSnapshot;
             _cts.Dispose(); _cts = null;
             SetState(TestEngineState.Stopped);
         }
@@ -165,6 +189,8 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
             if (single.Outcome is TestOutcome.Cancelled or TestOutcome.Unsupported or TestOutcome.Error) break;
         }
         while (item.Repeat switch { RepeatMode.Once => false, RepeatMode.Count => iteration < item.RepeatCount, RepeatMode.Unlimited => true, _ => false });
+        if (LastTrip is { } stop && total!.Outcome == TestOutcome.Cancelled)
+            total = total with { Detail = SensorEvidence.Join(total.Detail, $"stopped by the temperature guard: {stop.Sensor} reached {stop.ValueC:F0} °C ({(stop.Sustained ? $"limit {stop.LimitC:F0} °C held" : $"ceiling {stop.LimitC:F0} °C")})") };
         if (total!.Outcome is not (TestOutcome.Unsupported or TestOutcome.Error) && footprint.Stop().Describe() is { } load) total = total with { Detail = SensorEvidence.Join(total.Detail, load) };
         return WithNvmeLog(WithStorageEvents(WithHardwareErrors(total!, started), started), nvmeBefore);
     }

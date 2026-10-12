@@ -44,11 +44,14 @@ export function mount(el) {
   // Side by side: the processor's, the memory's and the graphics card's tests load the machine together, as real work does.
   const togetherBox = h("input", { type: "checkbox", class: "switch", "aria-label": t("Test_Together"), onchange: (e) => call("tests.exec", { cmd: "together", value: e.target.checked }) });
   const together = h("label", { class: "run-follow", title: t("Test_Together_Hint") }, togetherBox, t("Test_Together"));
+  // Stop the session when a part overheats: the limits are the settings' (tray) ones, so the hint reads them from the host.
+  const thermalBox = h("input", { type: "checkbox", class: "switch", "aria-label": t("Test_Thermal"), onchange: (e) => call("tests.exec", { cmd: "thermal", value: e.target.checked }) });
+  const thermal = h("label", { class: "run-follow", "data-a": "tests-thermal" }, thermalBox, t("Test_Thermal"));
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede"))),
       h("label", { class: "run-follow adv-toggle", title: t("Web_Tests_Advanced_Hint"), "data-a": "tests-advanced" }, advBox, t("Web_Tests_Advanced"))),
     notice, blocked, h("div", { class: "profile-bar" }, h("span", { class: "caption" }, t("Profile_Title")), profiles), profileNote, list,
-    h("div", { class: "dock" }, start, cancel, watch, together, h("span", { class: "grow" }),
+    h("div", { class: "dock" }, start, cancel, watch, together, thermal, h("span", { class: "grow" }),
       // One length for every test at once (each can still be changed after); the box goes back to its title so it can be picked again.
       h("select", { class: "field", "aria-label": t("Test_DurationAll"), title: t("Test_DurationAll"), onchange: (e) => { if (e.target.value) call("tests.exec", { cmd: "durationAll", value: e.target.value }); e.target.value = ""; } },
         h("option", { value: "" }, t("Test_DurationAll")), [1, 3, 5, 10, 15, 30, 60].map((m) => h("option", { value: String(m * 60) }, t("Web_Minutes", m)))),
@@ -103,6 +106,8 @@ export function mount(el) {
     profileNote.hidden = !s.profileNote; profileNote.textContent = s.profileNote || "";
     start.disabled = !s.canStart; cancel.disabled = !s.running; watch.hidden = !s.running;
     togetherBox.checked = !!s.together; togetherBox.disabled = s.running;
+    thermalBox.checked = !!s.thermalStop; thermalBox.disabled = s.running;
+    if (s.thermalLimits) thermal.title = t("Test_Thermal_Hint", s.thermalLimits.cpu, s.thermalLimits.gpu, s.thermalLimits.hotspot, s.thermalLimits.vram, s.thermalLimits.drive, s.thermalLimits.minutes);
     const livePage = s.current ? pageOfRun(s.current) : "monitoring";
     watch.href = `#/${livePage}`;
     // The tested part's page once the first test is under way (its page is known only then).

@@ -22,7 +22,8 @@ function card(p) {
   const pt = part(p.part), lvl = LEVEL[p.level] || "warn";
   const figs = [
     [t("Done_Tests"), `${fa(p.passed)} / ${fa(p.total)}`],
-    p.tempMax != null ? [t("Done_TempMax"), `${fa(Math.round(p.tempMax))} °C`] : null,
+    // Every temperature the session reached on the part (core and hot spot, VRAM, the hottest core, the drive); the one figure when the host sent none.
+    ...(p.temps?.length ? p.temps.map((x) => [t(x.key), `${fa(Math.round(x.value))} °C`]) : [p.tempMax != null ? [t("Done_TempMax"), `${fa(Math.round(p.tempMax))} °C`] : null]),
     p.load != null ? [t("Done_Load"), `${fa(Math.round(p.load))}%`] : null,
     p.errors > 0 ? [t("Done_Errors"), fa(p.errors)] : null,
   ].filter(Boolean);
@@ -56,10 +57,14 @@ export function show(s) {
     } catch (x) { toast(String(x.message || x), "fail"); } finally { if (dialog) e.currentTarget.disabled = false; }
   } }, icon("doc"), t("Done_Summary"));
   const lvl = LEVEL[s.level] || "warn";
+  // A session the temperature guard stopped: which reading, how hot, in which test.
+  const tr = s.trip, trip = tr ? h("div", { class: "done-trip", role: "alert" }, icon("alert"),
+    h("span", {}, t(tr.sustained ? "Done_Thermal_Held" : "Done_Thermal_Over", t(tr.sensor), fa(tr.value), fa(tr.limit), fa(tr.minutes), tr.tests.length ? tr.tests.join(" + ") : "-"))) : null;
   dialog = h("dialog", { class: "upd-dialog done-dialog", "aria-labelledby": "done-title" },
     h("div", { class: "upd-box" },
       h("header", { class: "upd-head" }, h("span", { class: `upd-mark done-mark ${lvl}` }, icon(s.level === "Good" ? "check" : "alert")),
         h("div", {}, h("h2", { class: "upd-title", id: "done-title" }, t("Done_Title")), h("p", { class: "sup-sub" }, t(`Done_Overall_${s.level}`)))),
+      trip,
       h("div", { class: "done-body" }, s.parts.map(card)),
       h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: close }, icon("check"), t("Done_Close")), summary)));
   dialog.addEventListener("close", () => { dialog?.remove(); dialog = null; });

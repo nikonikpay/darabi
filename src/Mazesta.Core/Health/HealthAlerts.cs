@@ -6,7 +6,7 @@ public enum HealthAlertKind { CpuOverheat, GpuOverheat, CpuThrottle, GpuHotSpotO
 public sealed record HealthAlert(HealthAlertKind Kind, double Value, DateTimeOffset Time);
 
 /// <summary>What the rules look at, read from one poll. A member is null when the machine has no such sensor - a rule never runs on a guess.</summary>
-public sealed record HealthSample(double? CpuTempC, double? GpuTempC, double? CpuLoadPercent, double? CpuClockMhz, double? GpuHotSpotC = null, double? GpuLoadPercent = null, double? SsdTempC = null);
+public sealed record HealthSample(double? CpuTempC, double? GpuTempC, double? CpuLoadPercent, double? CpuClockMhz, double? GpuHotSpotC = null, double? GpuLoadPercent = null, double? SsdTempC = null, double? GpuVramC = null, double? CpuHottestCoreC = null);
 
 /// <summary>
 /// The tray monitor's rules, kept out of the tray process so they are unit-testable. An overheat rule counts only while the part is at full load

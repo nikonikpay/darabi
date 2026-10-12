@@ -59,9 +59,16 @@ internal static class SelfTest
     private static async Task RunTests(string kind, IServiceProvider services, UiDispatcher ui, Action<string> say)
     {
         await Task.Delay(TimeSpan.FromSeconds(25));   // the sensor scan has listed the parts by then
+        // tests180:gpu.vram@thermal=85 - the temperature guard on, with the VRAM limit at 85 C held for one minute (the other limits are the defaults).
+        int? guardVram = null; if (kind.IndexOf("@thermal=", StringComparison.Ordinal) is var at and >= 0) { guardVram = int.Parse(kind[(at + 9)..], System.Globalization.CultureInfo.InvariantCulture); kind = kind[..at]; }
         string[] only = kind.Contains(':') ? kind[(kind.IndexOf(':') + 1)..].Split(',') : [];   // tests15:gpu.vram,gpu.render - just these
         string count = kind.Contains(':') ? kind[5..kind.IndexOf(':')] : kind[5..];
         string seconds = int.TryParse(count, out int n) && n > 0 ? n.ToString(System.Globalization.CultureInfo.InvariantCulture) : "15";
+        services.GetRequiredService<Mazesta.Desktop.Services.CheckupService>().SessionJudged += j =>
+        {
+            if (j.Trip is { } t) say($"THERMAL STOP: {t.Sensor} {t.ValueC:F0} C, {(t.Sustained ? "held at the limit " : "over the ceiling ")}{t.LimitC:F0} C, running: {string.Join(", ", (j.TripTests ?? []).Select(x => x.Value))}");
+            foreach (var p in j.Parts) say($"POPUP {p.Part} {p.Name}: " + string.Join(", ", p.Temps?.Select(x => $"{x.Key} {x.C:F0} C") ?? []));
+        };
         var center = await Ui(ui, () => services.GetRequiredService<Func<TestCenterViewModel>>()());
         var chosen = await Ui(ui, () =>
         {
@@ -69,6 +76,7 @@ internal static class SelfTest
             center.SelectAllCommand.Execute(null);
             if (only.Length > 0) foreach (var r in center.Rows) r.IsSelected &= only.Contains(r.Definition.Id.Value);
             foreach (var r in center.Rows.Where(r => r.IsSelected)) r.DurationText = seconds;
+            if (guardVram is { } vram) { center.ThermalStop = true; center.ThermalLimits = () => new(98, 90, 98, vram, 70, TimeSpan.FromMinutes(1)); }
             _ = center.StartCommand.ExecuteAsync(null);
             return center.Rows.Where(r => r.IsSelected).Select(r => r.Definition.Id.Value).ToList();
         });

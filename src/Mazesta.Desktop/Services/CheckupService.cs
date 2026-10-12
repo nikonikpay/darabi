@@ -1,4 +1,4 @@
-using Mazesta.Core.Hardware; using Mazesta.Core.Health.Checkup; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Diagnostics;
+using Mazesta.Core.Hardware; using Mazesta.Core.Health.Checkup; using Mazesta.Core.Inventory; using Mazesta.Desktop.Composition; using Mazesta.Diagnostics; using Mazesta.Diagnostics.Evidence;
 using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu; using Mazesta.Hardware.Details; using Mazesta.Hardware.Nvidia; using Mazesta.Monitoring;
 using Microsoft.Extensions.Logging;
 namespace Mazesta.Desktop.Services;
@@ -27,19 +27,19 @@ public sealed class CheckupService
     private readonly Dictionary<string, CheckupRun> _runs = [];
     private readonly Dictionary<BenchmarkResult, TaskCompletionSource> _settled = new(ReferenceEqualityComparer.Instance);
     private NvidiaRunProbe? _probe; private bool? _onBattery;
-    private TestWatch? _sessionWatch; private IReadOnlyList<QueuedTest> _sessionQueue = []; private readonly List<TestRunResult> _sessionDone = []; private IReadOnlyList<TestCheck> _tests = [];
+    private Mazesta.Core.Health.ThermalTrip? _trip; private IReadOnlyList<TestId>? _tripTests; private TestWatch? _sessionWatch; private IReadOnlyList<QueuedTest> _sessionQueue = []; private readonly List<TestRunResult> _sessionDone = []; private IReadOnlyList<TestCheck> _tests = [];
 
     /// <summary>A run was judged, or its standing among other systems arrived. Raised on a worker thread.</summary>
     public event Action? Changed;
     /// <summary>A test session has ended and been judged: every test's result and each judged part (processor, graphics card).</summary>
     public event Action<SessionJudgment>? SessionJudged;
-    public sealed record SessionJudgment(IReadOnlyList<TestRunResult> Results, IReadOnlyList<PartJudgment> Parts, IReadOnlyList<QueuedTest> Queue);
+    public sealed record SessionJudgment(IReadOnlyList<TestRunResult> Results, IReadOnlyList<PartJudgment> Parts, IReadOnlyList<QueuedTest> Queue, Mazesta.Core.Health.ThermalTrip? Trip = null, IReadOnlyList<TestId>? TripTests = null);
 
     public CheckupService(BenchmarkRunner runner, PollingEngine engine, InventoryCache inventory, HardwareDetailsCache details, Mazesta.Core.Providers.IDriveHealthProvider drives, ILogger<CheckupService> log, TestEngine? tests = null)
     {
         _engine = engine; _inventory = inventory; _details = details; _drives = drives; _log = log;
         runner.Started += OnStarted; runner.Finished += OnFinished;
-        if (tests is not null) { tests.SessionStarted += OnTestsStarted; tests.TestCompleted += OnTestDone; tests.StateChanged += OnTestsState; }
+        if (tests is not null) { tests.SessionStarted += OnTestsStarted; tests.TestCompleted += OnTestDone; tests.StateChanged += OnTestsState; tests.ThermalStopped += (trip, ids) => { lock (_lock) { _trip = trip; _tripTests = ids; } }; }
     }
 
     // ——— Every test session is judged as it ends: the diagnosis is made from the Tests page's own tests, whoever started them ———
@@ -47,14 +47,14 @@ public sealed class CheckupService
     {
         string? gpu = queue.FirstOrDefault(q => q.Definition.Id.Value.StartsWith("gpu.", StringComparison.Ordinal)) is { } g ? GpuName(g.Options ?? new Dictionary<string, string>()) : null;
         var watch = WatchTests(gpu);
-        lock (_lock) { _sessionWatch?.Dispose(); _sessionWatch = watch; _sessionQueue = queue; _sessionDone.Clear(); }
+        lock (_lock) { _sessionWatch?.Dispose(); _sessionWatch = watch; _sessionQueue = queue; _sessionDone.Clear(); _trip = null; _tripTests = null; }
     }
     private void OnTestDone(TestId id, TestRunResult result) { lock (_lock) { _sessionDone.RemoveAll(r => r.Id == id); _sessionDone.Add(result); } }   // (a repeated test: its last run)
     private void OnTestsState(TestEngineState state)
     {
         if (state == TestEngineState.Running) return;
-        TestWatch? watch; List<TestRunResult> done; IReadOnlyList<QueuedTest> queue;
-        lock (_lock) { watch = _sessionWatch; _sessionWatch = null; done = [.. _sessionDone]; queue = _sessionQueue; }
+        TestWatch? watch; List<TestRunResult> done; IReadOnlyList<QueuedTest> queue; Mazesta.Core.Health.ThermalTrip? trip; IReadOnlyList<TestId>? tripTests;
+        lock (_lock) { watch = _sessionWatch; _sessionWatch = null; done = [.. _sessionDone]; queue = _sessionQueue; trip = _trip; tripTests = _tripTests; }
         if (watch is null) return;
         IReadOnlyList<PartJudgment> parts = [];
         try
@@ -68,7 +68,7 @@ public sealed class CheckupService
         catch (Exception e) { _log.LogWarning(e, "Checkup of the test session failed"); }
         finally { watch.Dispose(); }
         Changed?.Invoke();
-        if (done.Count > 0) SessionJudged?.Invoke(new(done, parts, queue));
+        if (done.Count > 0) SessionJudged?.Invoke(new(done, parts, queue, trip, tripTests));
     }
 
     /// <summary>The tests of the last test session of this run of the app, each with how it ended and what its measurements say, in the order they ran.</summary>
@@ -159,7 +159,10 @@ public sealed class CheckupService
 
     /// <summary>What a part did while its tests ran, from the monitor's record: its hottest reading, its median load over the tests that load it
     /// fully (null when none of them ran or it has no such sensor), and the checkup's findings over those tests.</summary>
-    public sealed record PartJudgment(HardwareKind Part, string? Name, double? TempMaxC, double? LoadPercent, IReadOnlyList<Finding> Findings, IReadOnlyDictionary<string, IReadOnlyList<Finding>>? ByTest = null)
+    /// <summary>One temperature the session reached on a part: a resource key naming the sensor and the hottest reading of it over the tests.</summary>
+    public sealed record TempFigure(string Key, double C);
+
+    public sealed record PartJudgment(HardwareKind Part, string? Name, double? TempMaxC, double? LoadPercent, IReadOnlyList<Finding> Findings, IReadOnlyDictionary<string, IReadOnlyList<Finding>>? ByTest = null, IReadOnlyList<TempFigure>? Temps = null)
     {
         public bool? FullyLoaded => LoadPercent is { } l ? l >= FullLoadPercent : null;
     }
@@ -181,8 +184,43 @@ public sealed class CheckupService
                 if (ran.Where(r => r.Id.Value.StartsWith("gpu.", StringComparison.Ordinal)).ToList() is { Count: > 0 } gpuRuns) parts.Add(owner.JudgeGpu(gpuRuns, gpuName, probed));
             }
             catch (Exception e) { owner._log.LogWarning(e, "Checkup of a test run failed"); }
-            return parts;
+            return owner.WithTemps(parts, results, gpuName);
         }
+    }
+
+    /// <summary>The highest reading of each temperature of a part over every test that ran on it - a test cut short by the temperature guard too, so the heat that stopped it is shown.</summary>
+    private IReadOnlyList<PartJudgment> WithTemps(IReadOnlyList<PartJudgment> parts, IReadOnlyList<TestRunResult> results, string? gpuName)
+    {
+        var list = parts.ToList();
+        IReadOnlyList<TempFigure> Figures(string prefix, HardwareKind kind, Func<HardwareNode, bool>? node, params (string Key, SensorRole[] Roles)[] sensors)
+        {
+            var runs = results.Where(r => r.Id.Value.StartsWith(prefix, StringComparison.Ordinal) && r.Outcome is not (TestOutcome.Unsupported or TestOutcome.NotRun) && r.FinishedAt is not null).ToList();
+            var figures = new List<TempFigure>();
+            foreach (var (key, roles) in sensors)
+            {
+                var max = runs.Select(r => SensorEvidence.ReadFirstOf(_engine, kind, r.StartedAt, r.FinishedAt!.Value, node, roles)?.Max).Where(m => m is not null).ToList();
+                if (max.Count > 0) figures.Add(new(key, max.Max()!.Value));
+            }
+            return figures;
+        }
+        void Put(HardwareKind kind, string? name, IReadOnlyList<TempFigure> figures)
+        {
+            if (figures.Count == 0) return;
+            int i = list.FindIndex(p => p.Part == kind);
+            if (i >= 0) list[i] = list[i] with { Temps = figures };
+            else list.Add(new(kind, name, null, null, [], null, figures));
+        }
+        try
+        {
+            var cpu = _inventory.IsLoaded ? _inventory.GetAsync().Result.Cpu : null;
+            Put(HardwareKind.Cpu, (cpu?.Name ?? _engine.Hardware.FirstOrDefault(n => n.Kind == HardwareKind.Cpu && n.ParentId is null)?.Name)?.Trim(), Figures("cpu.", HardwareKind.Cpu, null,
+                ("Done_Temp_CpuPackage", [SensorRole.CpuPackageTemp, SensorRole.CpuTctlTdie, SensorRole.CpuCoreTemp]), ("Done_Temp_CpuCore", [SensorRole.CpuCoreTemp, SensorRole.CpuCcdTemp])));
+            Put(HardwareKind.Gpu, gpuName, Figures("gpu.", HardwareKind.Gpu, GpuDevices.SensorNode(_engine, gpuName ?? ""),
+                ("Done_Temp_GpuCore", [SensorRole.GpuCoreTemp]), ("Done_Temp_GpuHotSpot", [SensorRole.GpuHotSpotTemp]), ("Done_Temp_GpuVram", [SensorRole.GpuVramTemp])));
+            Put(HardwareKind.Storage, null, Figures("storage.", HardwareKind.Storage, null, ("Done_Temp_Drive", [SensorRole.StorageTemp])));
+        }
+        catch (Exception e) { _log.LogWarning(e, "Reading the session's temperatures failed"); }
+        return list;
     }
 
     private PartJudgment JudgeCpu(IReadOnlyList<TestRunResult> runs, bool? onBattery)

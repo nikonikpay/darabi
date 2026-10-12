@@ -26,6 +26,9 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
     public TestQueueRowViewModel? CurrentRow => CurrentIndex >= 0 && CurrentIndex < RunQueue.Count ? RowFor(RunQueue[CurrentIndex]) : null;
     /// <summary>Runs the processor's, the memory's and the graphics card's tests side by side instead of one by one (<see cref="TestEngine.LaneOf"/>).</summary>
     [ObservableProperty] private bool _together;
+    /// <summary>Stop the session when a part reaches its ceiling or stays at its limit for the hold (see <see cref="Core.Health.ThermalGuard"/>); the limits are the settings'.</summary>
+    [ObservableProperty] private bool _thermalStop;
+    public Func<Core.Health.ThermalLimits>? ThermalLimits { get; set; }
     /// <summary>The tests under way now, in the queue's order: several only in a run <see cref="Together"/>.</summary>
     public IReadOnlyList<TestQueueRowViewModel> RunningRows => [.. RunQueue.Select(RowFor).OfType<TestQueueRowViewModel>().Where(r => r.Outcome == TestOutcome.Running)];
 
@@ -106,7 +109,7 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
         // The last session's queue is forgotten first: until the engine reports this one, its last test (the drives' SMART check) would read as the current one.
         RunQueue = []; CurrentIndex = -1; CurrentStartedAt = null;
         IsRunning = true;   // immediately, so a double-click cannot start twice before StateChanged is dispatched
-        try { await _engine.RunAsync(queue, together: Together); }
+        try { await _engine.RunAsync(queue, together: Together, thermal: ThermalStop ? ThermalLimits?.Invoke() : null); }
         catch (WorkloadBusyException e) { IsRunning = false; BlockedMessage = Loc.Get($"Workload_Busy_{e.Holder}"); }
     }
     private bool CanStart() => !IsRunning && Rows.Any(r => r.IsSelected);

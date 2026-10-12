@@ -10,6 +10,7 @@ public sealed partial class WebBridge
         // One Test Center for the session (the engine is a singleton): the page is rebuilt on every visit, its state is not.
         var tests = _testVm = _sp.GetRequiredService<Func<TestCenterViewModel>>()();
         _cleanup.Add(tests.Dispose);
+        tests.ThermalLimits = () => new(_config.TrayCpuAlertC, _config.TrayGpuAlertC, _config.TrayGpuHotSpotAlertC, _config.TrayVramAlertC, _config.TraySsdAlertC, TimeSpan.FromMinutes(Math.Max(1, _config.TrayHoldMinutes)));
         var engine = _sp.GetRequiredService<TestEngine>();
         // The live monitor's "now": which test of the queue is running, how far it is, and since when.
         // Side by side, "now" is every test under way: their names together, and the progress of the one furthest behind.
@@ -45,7 +46,7 @@ public sealed partial class WebBridge
         static Desktop.Services.TestDetailText.DetailView View(string? detail) => Desktop.Services.TestDetailText.View(detail);
         object State() => new
         {
-            running = tests.IsRunning, together = tests.Together, current = Current(), profileNote = tests.ProfileNote,
+            running = tests.IsRunning, together = tests.Together, thermalStop = tests.ThermalStop, thermalLimits = new { cpu = _config.TrayCpuAlertC, gpu = _config.TrayGpuAlertC, hotspot = _config.TrayGpuHotSpotAlertC, vram = _config.TrayVramAlertC, drive = _config.TraySsdAlertC, minutes = _config.TrayHoldMinutes }, current = Current(), profileNote = tests.ProfileNote,
             profiles = TestProfiles.All.Select(p => new { id = p.Id, name = Loc.Get(p.NameKey), minutes = (int)Math.Round(p.Tests.Sum(x => x.Seconds) / 60.0) }), canStart = tests.StartCommand.CanExecute(null), incomplete = tests.IncompleteSessionMessage, blocked = tests.BlockedMessage,
             repeatModes = TestQueueRowViewModel.RepeatModes.Select(m => new { value = m.ToString(), label = Loc.Get($"Test_Repeat_{m}") }),
             rows = tests.Rows.Select(r => new
@@ -91,6 +92,7 @@ public sealed partial class WebBridge
                 case "clear": tests.ClearSelectionCommand.Execute(null); break;
                 case "dismissIncomplete": tests.DismissIncompleteSessionCommand.Execute(null); break;
                 case "together": if (!tests.IsRunning) tests.Together = Bool(p, "value"); break;
+                case "thermal": if (!tests.IsRunning) tests.ThermalStop = Bool(p, "value"); break;
                 case "profile": if (!tests.IsRunning) tests.ApplyProfile(Str(p, "id")); break;
                 default: throw new ArgumentException("unknown command");
             }
@@ -112,7 +114,7 @@ public sealed partial class WebBridge
 
     /// <summary>What the page's end-of-session window says: per part (processor, memory, graphics card, drives, the rest) how many of its tests passed,
     /// what failed, its hottest reading and load where they were judged, and the diagnosis' findings, with a level the worst of them sets.</summary>
-    private static object SessionVerdict(Desktop.Services.CheckupService.SessionJudgment j)
+    private object SessionVerdict(Desktop.Services.CheckupService.SessionJudgment j)
     {
         static string PartOf(string id) => id.Split('.')[0] switch { "cpu" => "Cpu", "memory" => "Memory", "gpu" => "Gpu", "storage" => "Storage", _ => "System" };
         string Name(TestId id) => j.Queue.FirstOrDefault(q => q.Definition.Id == id)?.Definition.NameKey is { } k ? Loc.Get(k) : id.Value;
@@ -122,17 +124,23 @@ public sealed partial class WebBridge
             var findings = judged?.Findings ?? [];
             int passed = g.Count(r => r.Outcome == TestOutcome.Passed), failed = g.Count(r => r.Outcome is TestOutcome.Failed or TestOutcome.Error);
             bool unsure = g.Any(r => r.Outcome is TestOutcome.Inconclusive or TestOutcome.Cancelled or TestOutcome.Unsupported);
-            string level = failed > 0 || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Problem) ? "Problem"
+            bool stopped = j.Trip is { } tr && PartOf(tr.Sensor switch { Mazesta.Core.Health.ThermalSensor.Drive => "storage.", Mazesta.Core.Health.ThermalSensor.CpuPackage or Mazesta.Core.Health.ThermalSensor.CpuHottestCore => "cpu.", _ => "gpu." }) == g.Key;
+            string level = failed > 0 || stopped || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Problem) ? "Problem"
                 : unsure || findings.Any(f => f.Level == Mazesta.Core.Health.Checkup.FindingLevel.Attention) ? "Attention" : "Good";
             return new
             {
                 // The sentence about heat and clocks only when the monitor's record of them was judged (a run too short, or no sensors: only the tests' word).
                 part = g.Key, level, name = judged?.Name, say = level == "Good" && g.Key is "Cpu" or "Gpu" && judged is null ? "Done_Passed_Good" : $"Done_{g.Key}_{level}", passed, failed, total = g.Count(), errors = g.Sum(r => r.ErrorCount),
-                tempMax = judged?.TempMaxC, load = judged?.LoadPercent,
+                tempMax = judged?.TempMaxC, load = judged?.LoadPercent, temps = judged?.Temps?.Select(x => new { key = x.Key, value = x.C }),
                 tests = g.Select(r => new { name = Name(r.Id), outcome = r.Outcome.ToString(), outcomeText = Loc.Get("Test_Outcome_" + r.Outcome) }),
                 findings = findings.Select(FindingJson),
             };
         }).ToList();
-        return new { parts, level = parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good" };
+        object? trip = j.Trip is { } t ? new
+        {
+            sensor = "Thermal_" + t.Sensor, value = Math.Round(t.ValueC), limit = Math.Round(t.LimitC), sustained = t.Sustained, minutes = Math.Max(1, _config.TrayHoldMinutes),
+            tests = (j.TripTests ?? []).Select(Name),
+        } : null;
+        return new { trip, parts, level = trip is not null || parts.Any(p => p.level == "Problem") ? "Problem" : parts.Any(p => p.level == "Attention") ? "Attention" : "Good" };
     }
 }

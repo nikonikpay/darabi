@@ -1536,6 +1536,24 @@ The update services stopped and disabled</value></data>
   <data name="Log_Session_Together" xml:space="preserve"><value>Side by side: {0} parts are loaded at once; each part's tests run one after another.</value></data>
   <data name="Test_Together" xml:space="preserve"><value>Run together</value></data>
   <data name="Test_Together_Hint" xml:space="preserve"><value>The processor's, the memory's and the graphics card's tests run at the same time (each part's own tests one after another). Drive, network and Windows tests run afterwards, one by one.</value></data>
+  <data name="Test_Thermal" xml:space="preserve"><value>Stop if a part overheats</value></data>
+  <data name="Test_Thermal_Hint" xml:space="preserve"><value>Stops the whole session and says which part, how hot and in which test, when a reading reaches its ceiling (105 °C; VRAM 110 °C; drive 85 °C) or stays at or above its limit for {5} minutes. Limits (settings, tray): processor {0} °C, graphics card {1} °C, hot spot {2} °C, VRAM {3} °C, drive {4} °C.</value></data>
+  <data name="Log_Thermal_Over" xml:space="preserve"><value>{0} reached {1} °C, the ceiling for it ({2} °C): the session is stopping.</value></data>
+  <data name="Log_Thermal_Held" xml:space="preserve"><value>{0} stayed at or above {2} °C for {3} minutes (now {1} °C): the session is stopping.</value></data>
+  <data name="Thermal_CpuPackage" xml:space="preserve"><value>Processor temperature</value></data>
+  <data name="Thermal_CpuHottestCore" xml:space="preserve"><value>Hottest processor core</value></data>
+  <data name="Thermal_GpuCore" xml:space="preserve"><value>Graphics card temperature</value></data>
+  <data name="Thermal_GpuHotSpot" xml:space="preserve"><value>Graphics card hot spot</value></data>
+  <data name="Thermal_GpuVram" xml:space="preserve"><value>Graphics card memory (VRAM)</value></data>
+  <data name="Thermal_Drive" xml:space="preserve"><value>Hottest drive</value></data>
+  <data name="Done_Thermal_Over" xml:space="preserve"><value>Test stopped: {0} reached {1} °C, over its ceiling of {2} °C. Running at that moment: {4}.</value></data>
+  <data name="Done_Thermal_Held" xml:space="preserve"><value>Test stopped: {0} stayed at or above {2} °C for {3} minutes and reached {1} °C. Running at that moment: {4}.</value></data>
+  <data name="Done_Temp_CpuPackage" xml:space="preserve"><value>processor temperature</value></data>
+  <data name="Done_Temp_CpuCore" xml:space="preserve"><value>hottest core</value></data>
+  <data name="Done_Temp_GpuCore" xml:space="preserve"><value>graphics core</value></data>
+  <data name="Done_Temp_GpuHotSpot" xml:space="preserve"><value>hot spot</value></data>
+  <data name="Done_Temp_GpuVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="Done_Temp_Drive" xml:space="preserve"><value>hottest drive</value></data>
   <data name="Log_Session_End" xml:space="preserve"><value>Every test in the queue has ended.</value></data>
   <data name="Log_Cancel_Requested" xml:space="preserve"><value>Cancel requested: the running test is stopping.</value></data>
   <data name="Log_Test_Start" xml:space="preserve"><value>Test {0} of {1}: {2}, for {3} s.</value></data>

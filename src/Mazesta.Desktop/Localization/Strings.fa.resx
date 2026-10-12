@@ -1536,6 +1536,24 @@
   <data name="Log_Session_Together" xml:space="preserve"><value>اجرای هم‌زمان: {0} قطعه با هم زیر بار می‌روند؛ آزمون‌های هر قطعه پشت سر هم اجرا می‌شود.</value></data>
   <data name="Test_Together" xml:space="preserve"><value>اجرای هم‌زمان</value></data>
   <data name="Test_Together_Hint" xml:space="preserve"><value>آزمون‌های پردازنده، حافظه و کارت گرافیک هم‌زمان اجرا می‌شوند (آزمون‌های هر قطعه پشت سر هم). آزمون‌های دیسک، شبکه و ویندوز بعد از آن‌ها، یکی‌یکی اجرا می‌شوند.</value></data>
+  <data name="Test_Thermal" xml:space="preserve"><value>توقف هنگام داغ شدن قطعه</value></data>
+  <data name="Test_Thermal_Hint" xml:space="preserve"><value>وقتی دمای یک قطعه به سقفش برسد (۱۰۵ درجه؛ VRAM ‏۱۱۰؛ دیسک ۸۵) یا {5} دقیقه در حد دمایی خودش یا بالاتر بماند، کل جلسه متوقف می‌شود و می‌گوید کدام قطعه، چند درجه و در کدام آزمون. حدها (تنظیمات، سینی): پردازنده {0} درجه، کارت گرافیک {1}، نقطهٔ داغ {2}، VRAM ‏{3}، دیسک {4}.</value></data>
+  <data name="Log_Thermal_Over" xml:space="preserve"><value>{0} به {1} درجه رسید، سقف مجاز آن ({2} درجه): جلسه متوقف می‌شود.</value></data>
+  <data name="Log_Thermal_Held" xml:space="preserve"><value>{0} به مدت {3} دقیقه در {2} درجه یا بالاتر ماند (اکنون {1} درجه): جلسه متوقف می‌شود.</value></data>
+  <data name="Thermal_CpuPackage" xml:space="preserve"><value>دمای پردازنده</value></data>
+  <data name="Thermal_CpuHottestCore" xml:space="preserve"><value>داغ‌ترین هستهٔ پردازنده</value></data>
+  <data name="Thermal_GpuCore" xml:space="preserve"><value>دمای کارت گرافیک</value></data>
+  <data name="Thermal_GpuHotSpot" xml:space="preserve"><value>نقطهٔ داغ کارت گرافیک</value></data>
+  <data name="Thermal_GpuVram" xml:space="preserve"><value>حافظهٔ کارت گرافیک (VRAM)</value></data>
+  <data name="Thermal_Drive" xml:space="preserve"><value>داغ‌ترین دیسک</value></data>
+  <data name="Done_Thermal_Over" xml:space="preserve"><value>آزمون متوقف شد: {0} به {1} درجه رسید و از سقف خود ({2} درجه) گذشت. در آن لحظه در حال اجرا: {4}.</value></data>
+  <data name="Done_Thermal_Held" xml:space="preserve"><value>آزمون متوقف شد: {0} به مدت {3} دقیقه در {2} درجه یا بالاتر ماند و به {1} درجه رسید. در آن لحظه در حال اجرا: {4}.</value></data>
+  <data name="Done_Temp_CpuPackage" xml:space="preserve"><value>دمای پردازنده</value></data>
+  <data name="Done_Temp_CpuCore" xml:space="preserve"><value>داغ‌ترین هسته</value></data>
+  <data name="Done_Temp_GpuCore" xml:space="preserve"><value>هستهٔ گرافیک</value></data>
+  <data name="Done_Temp_GpuHotSpot" xml:space="preserve"><value>نقطهٔ داغ</value></data>
+  <data name="Done_Temp_GpuVram" xml:space="preserve"><value>VRAM</value></data>
+  <data name="Done_Temp_Drive" xml:space="preserve"><value>داغ‌ترین دیسک</value></data>
   <data name="Log_Session_End" xml:space="preserve"><value>همهٔ آزمون‌های صف به پایان رسید.</value></data>
   <data name="Log_Cancel_Requested" xml:space="preserve"><value>درخواست لغو ثبت شد؛ آزمون در حال اجرا متوقف می‌شود.</value></data>
   <data name="Log_Test_Start" xml:space="preserve"><value>آزمون {0} از {1}: {2}، به مدت {3} ثانیه.</value></data>

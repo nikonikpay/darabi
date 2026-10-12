@@ -45,6 +45,8 @@ public sealed class AppConfig : IVersionedDocument
     public int TrayGpuAlertC { get; set; } = 90;
     /// <summary>The graphics card's hot spot temperature.</summary>
     public int TrayGpuHotSpotAlertC { get; set; } = 98;
+    /// <summary>The graphics card's memory (VRAM) temperature at which a test that has "stop when a part overheats" on counts the hold; absent in older files, so 100.</summary>
+    public int TrayVramAlertC { get; set; } = 100;
     /// <summary>The hottest drive's temperature (°C) above which the tray warns (after the same hold).</summary>
     public int TraySsdAlertC { get; set; } = 70;
     /// <summary>How long (minutes) a part must stay over its temperature at full load before the tray warns.</summary>
