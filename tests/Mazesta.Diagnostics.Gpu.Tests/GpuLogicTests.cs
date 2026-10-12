@@ -37,11 +37,11 @@ public class GpuLogicTests
     [Fact] public void Vram_budget_follows_the_live_free_vram_reading_and_keeps_a_margin_for_the_display()
     {
         long gib = 1L << 30;
-        Assert.Equal((long)(20480d * 1024 * 1024 * 0.95) - (384L << 20), GpuVramExecutor.Budget(20 * 1024, 24 * gib));   // 20 GB free: 95 % minus 384 MiB
-        Assert.Equal(0, GpuVramExecutor.Budget(300, 24 * gib));                                                            // nearly full: nothing safe to test
+        Assert.Equal((long)(20480d * 1024 * 1024 * 0.98) - (128L << 20), GpuVramExecutor.Budget(20 * 1024, 24 * gib));   // 20 GB free: 98 % minus 128 MiB
+        Assert.Equal(0, GpuVramExecutor.Budget(100, 24 * gib));                                                            // nearly full: nothing safe to test
         Assert.Equal((long)(8 * gib * 0.8), GpuVramExecutor.Budget(null, 8 * gib));                                        // no sensor: 80 % of the dedicated memory
         Assert.Equal(1024L << 20, GpuVramExecutor.Budget(20 * 1024, 24 * gib, requestedMb: 1024));                          // a request can only lower it
-        Assert.Equal((long)(4 * gib * 0.95), GpuVramExecutor.Budget(20 * 1024, 24 * gib, residentBytes: 4 * gib));          // Windows' resident budget caps it
+        Assert.Equal((long)(4 * gib * 0.98), GpuVramExecutor.Budget(20 * 1024, 24 * gib, residentBytes: 4 * gib));          // Windows' resident budget caps it
     }
     [Fact] public void The_cpu_reference_of_the_vram_pattern_rotates_four_patterns()
     {

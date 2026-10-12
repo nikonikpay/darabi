@@ -18,15 +18,16 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
     public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
 
     internal const int Width = 4096, ChunkElements = 64 << 20;   // 256 MiB per buffer
-    private const long ChunkBytes = ChunkElements * 4L;
+    // The test itself uses 64 MiB buffers so the card can be filled to within ~200 MiB of its budget, like a stress tool that fills until the driver says no.
+    private const int TestElements = 16 << 20; private const long ChunkBytes = TestElements * 4L;
 
-    /// <summary>What may be used: 95 % of the free VRAM minus a 384 MiB margin for the display and other apps; without a live free-VRAM reading, 80 % of the dedicated memory.
-    /// Never more than 95 % of what Windows lets this process keep resident on the card (<paramref name="residentBytes"/>, DXGI's budget), past which it would move
+    /// <summary>What may be used: 98 % of the free VRAM minus a 128 MiB margin for the display and other apps; without a live free-VRAM reading, 80 % of the dedicated memory.
+    /// Never more than 98 % of what Windows lets this process keep resident on the card (<paramref name="residentBytes"/>, DXGI's budget), past which it would move
     /// the test's buffers out to system RAM.</summary>
     internal static long Budget(double? freeVramMb, long dedicatedBytes, int requestedMb = 0, long? residentBytes = null)
     {
-        long budget = Math.Max(0, freeVramMb is { } free ? (long)(free * 1024 * 1024 * 0.95) - (384L << 20) : (long)(dedicatedBytes * 0.8));
-        if (residentBytes is { } resident) budget = Math.Min(budget, (long)(resident * 0.95));
+        long budget = Math.Max(0, freeVramMb is { } free ? (long)(free * 1024 * 1024 * 0.98) - (128L << 20) : (long)(dedicatedBytes * 0.8));
+        if (residentBytes is { } resident) budget = Math.Min(budget, (long)(resident * 0.98));
         return requestedMb > 0 ? Math.Min(budget, (long)requestedMb << 20) : budget;
     }
 
@@ -52,12 +53,12 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
             for (long allocated = 0; allocated + ChunkBytes <= budget; allocated += ChunkBytes)
             {
                 ct.ThrowIfCancellationRequested();
-                try { buffers.Add(device.AllocateReadWriteBuffer<uint>(ChunkElements)); }
+                try { buffers.Add(device.AllocateReadWriteBuffer<uint>(TestElements)); }
                 catch (Exception) when (buffers.Count > 0) { refused = true; break; }   // the driver refused more: test what was granted
                 Dispatch(device, buffers[^1], counter, buffers.Count - 1, 0, verify: false);
             }
             if (buffers.Count == 0) return TestRunResult.Unsupported(Definition.Id, started, "The driver refused to allocate any VRAM buffer.");
-            request.Note("Log_Vram_Allocated", "budget = 0.95 × free VRAM (this card's sensor) − 384 MiB, else 0.8 × dedicated;  256 MiB per buffer", (long)buffers.Count * (ChunkBytes >> 20), device.Name, buffers.Count);
+            request.Note("Log_Vram_Allocated", "budget = 0.98 × free VRAM (this card's sensor) − 128 MiB, else 0.8 × dedicated;  64 MiB per buffer", (long)buffers.Count * (ChunkBytes >> 20), device.Name, buffers.Count);
             var duration = TimeSpan.FromSeconds(request.DurationSeconds); var timed = Stopwatch.StartNew(); long moved = 0; var bad = new int[1];
             // A whole pass (every buffer verified, then rewritten) goes to the card in one submission and the error count is read back once:
             // waiting for the CPU after every buffer left the memory idle between them, so it ran cooler than under a game or FurMark.
@@ -68,9 +69,9 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                 using (var context = device.CreateComputeContext())
                 {
                     // The buffers are independent: all are read first with no wait between them, then all rewritten, so the memory is never drained between two buffers.
-                    for (int b = 0; b < buffers.Count; b++) { context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes, verify: true)); }
+                    for (int b = 0; b < buffers.Count; b++) { context.For(Width, TestElements / Width, Shader(buffers[b], counter, b, passes, verify: true)); }
                     for (int b = 0; b < buffers.Count; b++) context.Barrier(buffers[b]);
-                    for (int b = 0; b < buffers.Count; b++) context.For(Width, ChunkElements / Width, Shader(buffers[b], counter, b, passes + 1, verify: false));
+                    for (int b = 0; b < buffers.Count; b++) context.For(Width, TestElements / Width, Shader(buffers[b], counter, b, passes + 1, verify: false));
                     for (int b = 0; b < buffers.Count; b++) context.Barrier(buffers[b]);
                 }
                 counter.CopyTo(bad); errors += bad[0]; moved += 2L * buffers.Count * ChunkBytes;
@@ -91,9 +92,9 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
     }
 
     private static VramPatternShader Shader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
-        => new(buffer, counter, Width, pass, (uint)chunk * (uint)ChunkElements, verify ? 1 : 0, ChunkElements - 1);
+        => new(buffer, counter, Width, pass, (uint)chunk * (uint)TestElements, verify ? 1 : 0, TestElements - 1);
     private static void Dispatch(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
-        => device.For(Width, ChunkElements / Width, Shader(buffer, counter, chunk, pass, verify));
+        => device.For(Width, TestElements / Width, Shader(buffer, counter, chunk, pass, verify));
 
     private static long Verify(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass)
     {
