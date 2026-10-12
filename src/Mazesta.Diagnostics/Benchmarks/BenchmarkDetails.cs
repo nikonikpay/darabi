@@ -70,9 +70,15 @@ public static class BenchmarkDetails
         if (Text(gpu?.DriverVersion) is { } driver) yield return new(PartGroup, "Spec_Driver", driver);
     }
 
-    public static IEnumerable<SpecItem> Memory(HardwareInventory inv)
+    public static IEnumerable<SpecItem> Memory(HardwareInventory inv, MemoryFacts? facts = null)
     {
-        if (MemorySummary(inv) is { } ram) yield return new(PartGroup, "Spec_Memory", ram);
+        if (MemorySummary(inv, facts) is { } ram) yield return new(PartGroup, "Spec_Memory", ram);
+        // The module's own figures, with the abbreviations the memory world uses (CL, tRCD, tRP, tRAS stay in English, left to right); a figure the SPD did not give is left out.
+        if (facts?.CasLatency is { } cl) yield return new(PartGroup, "Spec_Cl", Inv($"CL{cl}"));
+        if (facts?.Timings is { } timings) yield return new(PartGroup, "Spec_ClTimings", timings + (facts.Profile is { } profile ? $" ({profile})" : ""));
+        if (facts?.Ranks is > 0 and var ranks) yield return new(PartGroup, "Spec_Ranks", Inv($"{ranks}"));
+        if (Text(facts?.Chips) is { } chips) yield return new(PartGroup, "Spec_DramMaker", chips);
+        if (facts?.BankGroups is > 0 and var banks) yield return new(PartGroup, "Spec_BankGroups", Inv($"{banks}"));
         var parts = inv.MemoryModules.Where(m => m.CapacityBytes > 0).GroupBy(m => string.Join(" ", new[] { Text(m.Manufacturer), Text(m.PartNumber) }.OfType<string>()))
             .Where(g => g.Key.Length > 0).Select(g => g.Count() > 1 ? Inv($"{g.Key} ×{g.Count()}") : g.Key).ToList();
         if (parts.Count > 0) yield return new(PartGroup, "Spec_Modules", string.Join(" + ", parts));
@@ -98,14 +104,14 @@ public static class BenchmarkDetails
     }
 
     /// <summary>The installed memory as the modules report it: "32 GB (2×16 GB) 6000 MT/s". Null when the modules cannot be read.</summary>
-    public static string? MemorySummary(HardwareInventory inv)
+    public static string? MemorySummary(HardwareInventory inv, MemoryFacts? facts = null)
     {
         var modules = inv.MemoryModules.Where(m => m.CapacityBytes > 0).ToList();
         if (modules.Count == 0) return null;
         long total = modules.Sum(m => m.CapacityBytes!.Value) >> 30;
         string sizes = string.Join(" + ", modules.GroupBy(m => m.CapacityBytes!.Value >> 30).OrderByDescending(g => g.Key).Select(g => $"{g.Count()}×{g.Key} GB"));
         int speed = modules.Select(m => m.ConfiguredSpeedMts ?? m.SpeedMts ?? 0).Where(v => v > 0).DefaultIfEmpty(0).Min();
-        return Inv($"{total} GB ({sizes})") + (speed > 0 ? Inv($" {speed} MT/s") : "");
+        return Inv($"{total} GB ({sizes})") + (speed > 0 ? Inv($" {speed} MT/s") : "") + (facts?.CasLatency is { } cl ? Inv($" CL{cl}") : "");
     }
 
     private static string Size(double bytes, bool decimalUnits = false)

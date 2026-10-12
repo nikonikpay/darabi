@@ -18,7 +18,13 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
     internal static readonly ulong[] Expected = [9064527581815777477UL, 10314864045855360163UL, 10710372662706872264UL, 1936444054680412613UL];
     private readonly int _threadCount;
 
-    public CpuMatrixStressExecutor(int? threadCount = null) => _threadCount = threadCount is > 0 ? threadCount.Value : Environment.ProcessorCount;
+    private readonly ThreadPriority _priority;
+
+    /// <param name="priority">Below normal when the load runs beside another test (the power test): the card's feeding thread must always get a core, or the card idles while the processor is flat out.</param>
+    public CpuMatrixStressExecutor(int? threadCount = null, ThreadPriority priority = ThreadPriority.Normal)
+    {
+        _threadCount = threadCount is > 0 ? threadCount.Value : Environment.ProcessorCount; _priority = priority;
+    }
 
     /// <summary>Set k's two input matrices, the same on every run and every machine (Random with a seed is stable across .NET versions).</summary>
     internal static (double[,] A, double[,] B) Inputs(int set)
@@ -57,7 +63,14 @@ public sealed class CpuMatrixStressExecutor : ITestExecutor
         }
 
         var workers = new Task[_threadCount];
-        for (int t = 0; t < _threadCount; t++) { int worker = t; workers[t] = Task.Run(() => RunWorker(worker)); }
+        for (int t = 0; t < _threadCount; t++)
+        {
+            int worker = t;
+            if (_priority == ThreadPriority.Normal) { workers[t] = Task.Run(() => RunWorker(worker)); continue; }
+            var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);   // a thread of its own: a pool thread's priority is not ours to lower
+            new Thread(() => { try { RunWorker(worker); done.SetResult(); } catch (Exception e) { done.SetException(e); } }) { IsBackground = true, Priority = _priority, Name = "Mazesta CPU load" }.Start();
+            workers[t] = done.Task;
+        }
         var allDone = Task.WhenAll(workers);
         while (!allDone.IsCompleted)
         {

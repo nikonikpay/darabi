@@ -54,7 +54,12 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         if (device is null) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, GpuDevices.NoGpu));
         int pulse = profile == GpuStressProfile.Pulse ? options.GetInt(PulseMsOption) : 0, gap = profile == GpuStressProfile.Pulse ? options.GetInt(GapMsOption) : 0;
         if (profile == GpuStressProfile.Pulse && (pulse < 1 || gap < 1)) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Pulse and gap lengths must be positive."));
-        return Task.Run(() => Run(request, device, pulse, gap, started, ct), CancellationToken.None);
+        return Task.Run(() =>
+        {
+            // The thread that feeds the card runs above the processor's own load (the power test), so the card never waits for a core.
+            var thread = Thread.CurrentThread; var before = thread.Priority; thread.Priority = ThreadPriority.AboveNormal;
+            try { return Run(request, device, pulse, gap, started, ct); } finally { thread.Priority = before; }
+        }, CancellationToken.None);
     }
 
     private TestRunResult Run(TestExecutionRequest request, GraphicsDevice device, int pulseMs, int gapMs, DateTimeOffset started, CancellationToken ct)
