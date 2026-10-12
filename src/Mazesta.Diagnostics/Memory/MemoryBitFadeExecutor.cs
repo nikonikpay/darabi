@@ -21,7 +21,7 @@ public sealed class MemoryBitFadeExecutor(IMemoryProbe probe) : ITestExecutor
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
-        long budget = MemoryPatternExecutor.Budget(probe.Read(), (request.Options ?? TestOptions.None(Definition)).GetInt(MemoryPatternExecutor.SizeOption));
+        long budget = MemoryPatternExecutor.Budget(probe.FreeUp(), (request.Options ?? TestOptions.None(Definition)).GetInt(MemoryPatternExecutor.SizeOption));
         if (budget < BlockBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of free RAM is available above the OS reserve; at least {BlockBytes >> 20} MiB is needed."));
         return Task.Run(() => Run(request, budget, started, ct), CancellationToken.None);
     }

@@ -35,7 +35,7 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
         IReadOnlyList<MemorySequence.Step> steps;
         try { steps = SequenceOf(options); }
         catch (FormatException e) { return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"The sequence cannot be read: {e.Message}")); }
-        long budget = MemoryPatternExecutor.Budget(probe.Read(), options.GetInt(MemoryPatternExecutor.SizeOption));
+        long budget = MemoryPatternExecutor.Budget(probe.FreeUp(), options.GetInt(MemoryPatternExecutor.SizeOption));
         if (budget < BlockBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of free RAM is available above the OS reserve; at least {BlockBytes >> 20} MiB is needed."));
         return Task.Run(() => new Run(request, options.Get(PresetOption), steps, budget, started, ct).Go(), CancellationToken.None);
     }

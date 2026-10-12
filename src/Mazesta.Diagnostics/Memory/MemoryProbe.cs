@@ -6,7 +6,13 @@ public readonly record struct MemoryStatus(long TotalBytes, long AvailableBytes,
 
 /// <summary>How much RAM the machine has and how much is free right now - a fact the RAM test must ask the
 /// OS for (spec §10: "ظرفیت آزاد را خودکار تشخیص دهد"), and the seam that keeps it testable.</summary>
-public interface IMemoryProbe { MemoryStatus Read(); }
+public interface IMemoryProbe
+{
+    MemoryStatus Read();
+    /// <summary>Makes room before a RAM test and says what is free then: the other programs' working sets are trimmed (their pages move to the
+    /// page file and come back when used; nothing is closed, nothing is lost), so the test reaches more of the RAM.</summary>
+    MemoryStatus FreeUp() => Read();
+}
 
 public sealed class Win32MemoryProbe : IMemoryProbe
 {
@@ -23,6 +29,25 @@ public sealed class Win32MemoryProbe : IMemoryProbe
         if (!GlobalMemoryStatusEx(ref m)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
         return new((long)m.TotalPhys, (long)m.AvailPhys, (long)m.AvailPageFile);
     }
+
+    public MemoryStatus FreeUp()
+    {
+        int self = Environment.ProcessId;
+        foreach (var p in System.Diagnostics.Process.GetProcesses())
+            using (p)
+            {
+                if (p.Id is 0 or 4 || p.Id == self) continue;   // idle, System, this app (the test's own memory is not taken yet)
+                nint h = OpenProcess(QuerySetQuota, false, p.Id);
+                if (h == 0) continue;   // protected processes refuse: left as they are
+                EmptyWorkingSet(h); CloseHandle(h);
+            }
+        Thread.Sleep(1000);   // the trimmed pages are written out and counted as available
+        return Read();
+    }
+    private const uint QuerySetQuota = 0x1000 | 0x0100;   // PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_SET_QUOTA
+    [DllImport("kernel32.dll")] private static extern nint OpenProcess(uint access, bool inherit, int id);
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(nint handle);
+    [DllImport("kernel32.dll", EntryPoint = "K32EmptyWorkingSet")] private static extern bool EmptyWorkingSet(nint process);
 }
 
 /// <summary>One block of native memory. Native rather than a managed array so a multi-gigabyte test does not

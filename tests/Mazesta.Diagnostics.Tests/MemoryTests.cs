@@ -27,16 +27,16 @@ public class MemoryTests
         Assert.True(MemoryPatterns.CountMismatches(a, MemoryPatterns.RandomPass, 2) > 4000);
     }
 
-    [Fact] public void Budget_leaves_the_larger_of_2_gib_and_a_tenth_of_ram_for_the_os()
+    [Fact] public void Budget_leaves_the_larger_of_1_5_gib_and_a_24th_of_ram_for_the_os()
     {
-        Assert.Equal(60 * GiB - (64 * GiB) / 10, MemoryPatternExecutor.Budget(new(64 * GiB, 60 * GiB), 0));   // a tenth of 64 GiB beats 2 GiB
-        Assert.Equal(1 * GiB, MemoryPatternExecutor.Budget(new(16 * GiB, 3 * GiB), 0));                         // 2 GiB beats a tenth of 16 GiB
+        Assert.Equal(60 * GiB - (64 * GiB) / 24, MemoryPatternExecutor.Budget(new(64 * GiB, 60 * GiB), 0));   // a 24th of 64 GiB beats 1.5 GiB
+        Assert.Equal(3 * GiB / 2, MemoryPatternExecutor.Budget(new(16 * GiB, 3 * GiB), 0));                     // 1.5 GiB beats a 24th of 16 GiB
         Assert.Equal(0, MemoryPatternExecutor.Budget(new(16 * GiB, 1 * GiB), 0));                               // nothing above the reserve
     }
     [Fact] public void A_requested_size_can_only_lower_the_budget()
     {
         Assert.Equal(512L << 20, MemoryPatternExecutor.Budget(new(64 * GiB, 60 * GiB), 512));
-        Assert.Equal(1 * GiB, MemoryPatternExecutor.Budget(new(16 * GiB, 3 * GiB), 900_000));
+        Assert.Equal(3 * GiB / 2, MemoryPatternExecutor.Budget(new(16 * GiB, 3 * GiB), 900_000));
     }
 
     private static TestExecutionRequest Request(int seconds, int sizeMb) =>
@@ -59,7 +59,7 @@ public class MemoryTests
     }
     [Fact] public async Task Too_little_free_ram_is_Unsupported_not_a_pass()
     {
-        var result = await new MemoryPatternExecutor(new FixedProbe(8 * GiB, 2 * GiB)).RunAsync(Request(1, 0), CancellationToken.None);
+        var result = await new MemoryPatternExecutor(new FixedProbe(8 * GiB, 1 * GiB)).RunAsync(Request(1, 0), CancellationToken.None);
         Assert.Equal(TestOutcome.Unsupported, result.Outcome);
     }
     [Fact] public async Task Cancelling_reports_Cancelled()

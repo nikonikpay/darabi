@@ -5,7 +5,8 @@ namespace Mazesta.Diagnostics.Memory;
 /// RAM test (spec §10): allocates the free memory it may use, then repeatedly verifies the previous pass's
 /// pattern over <b>every allocated byte</b> and overwrites it with the next one. A read-back difference is a
 /// counted error, not an exception - the run keeps going so the technician sees how bad it is. Memory the OS
-/// needs to stay alive is never taken: the reserve is the larger of 2 GiB and a tenth of installed RAM.
+/// needs to stay alive is never taken: the reserve is the larger of 1.5 GiB and a 24th of installed RAM. Before it measures what is free,
+/// the other programs' working sets are trimmed (<see cref="IMemoryProbe.FreeUp"/>): their pages go to the page file, nothing is closed.
 /// </summary>
 public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
 {
@@ -19,7 +20,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     /// <summary>What the test may take: the free RAM above the OS reserve, or less if the technician asked for less.</summary>
     internal static long Budget(MemoryStatus status, int requestedMb)
     {
-        long reserve = Math.Max(2L << 30, status.TotalBytes / 10);
+        long reserve = Math.Max(3L << 29, status.TotalBytes / 24);
         // Free RAM, but never more than Windows will still let programs commit: with no page file (or a small one) memory others reserved and did not
         // touch counts against the commit limit, not against free RAM, and taking it all makes every other program's allocations fail.
         long free = status.AvailableCommitBytes > 0 ? Math.Min(status.AvailableBytes, status.AvailableCommitBytes) : status.AvailableBytes;
@@ -31,7 +32,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
     {
         var started = request.Clock.UtcNow;
         if (request.DurationSeconds <= 0) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, "Duration must be positive."));
-        long budget = Budget(probe.Read(), (request.Options ?? TestOptions.None(Definition)).GetInt(SizeOption));
+        long budget = Budget(probe.FreeUp(), (request.Options ?? TestOptions.None(Definition)).GetInt(SizeOption));
         if (budget < BlockBytes) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, $"Only {budget >> 20} MiB of free RAM is available above the OS reserve; at least {BlockBytes >> 20} MiB is needed."));
         return Task.Run(() => Run(request, budget, started, ct), CancellationToken.None);
     }
@@ -50,7 +51,7 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
                 MemoryPatterns.Fill(block.Span, 0, blocks.Count - 1);   // commits the pages before anything is timed
                 request.Progress?.Invoke(new TestProgress(0, "Test_Status_Allocating"));
             }
-            request.Note("Log_Mem_Allocated", "reserve = max(2 GiB, RAM / 10);  budget = free RAM − reserve", (long)blocks.Count * BlockBytes >> 20, blocks.Count);
+            request.Note("Log_Mem_Allocated", "other programs' working sets trimmed;  reserve = max(1.5 GiB, RAM / 24);  budget = free RAM − reserve", (long)blocks.Count * BlockBytes >> 20, blocks.Count);
             var duration = TimeSpan.FromSeconds(request.DurationSeconds);
             timed.Restart();
             do
