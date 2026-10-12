@@ -85,6 +85,7 @@ public sealed partial class WebBridge
                 case "start": if (tests.StartCommand.CanExecute(null)) await tests.StartCommand.ExecuteAsync(null); break;
                 case "cancel": if (tests.CancelCommand.CanExecute(null)) tests.CancelCommand.Execute(null); break;
                 case "selectAll": tests.SelectAllCommand.Execute(null); break;
+                case "durationAll": if (!tests.IsRunning) tests.SetAllDurations(Str(p, "value")); break;
                 case "clear": tests.ClearSelectionCommand.Execute(null); break;
                 case "dismissIncomplete": tests.DismissIncompleteSessionCommand.Execute(null); break;
                 case "together": if (!tests.IsRunning) tests.Together = Bool(p, "value"); break;

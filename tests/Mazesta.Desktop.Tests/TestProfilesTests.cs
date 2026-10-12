@@ -14,6 +14,21 @@ public class TestProfilesTests
         Assert.All(TestProfiles.All.SelectMany(p => p.Tests), t => { Assert.Contains(t.TestId, ids); Assert.True(t.Seconds > 0); });
     }
 
+    [Fact] public void Quick_runs_each_test_three_minutes_and_has_power_and_video_memory_but_no_network_test()
+    {
+        var quick = TestProfiles.All.Single(p => p.Id == "quick").Tests;
+        Assert.All(quick.Where(t => t.TestId != "storage.smart"), t => Assert.True(t.Seconds >= 180));
+        Assert.Contains(quick, t => t.TestId == "power.combined"); Assert.Contains(quick, t => t.TestId == "gpu.vram"); Assert.DoesNotContain(quick, t => t.TestId.StartsWith("network."));
+        Assert.DoesNotContain(TestProfiles.All, p => p.Id == "deep");
+    }
+
+    [Fact] public void Everyday_and_the_Windows_drive_profile_stay_within_their_hours()
+    {
+        Assert.InRange(TestProfiles.All.Single(p => p.Id == "everyday").Tests.Sum(t => t.Seconds), 1, 3600);
+        Assert.InRange(TestProfiles.All.Single(p => p.Id == "osstorage").Tests.Sum(t => t.Seconds), 570, 630);
+        Assert.All(TestProfiles.All.SelectMany(p => p.Tests).Where(t => t.Options is not null), t => Assert.True(t.Options!.ContainsKey("preset")));
+    }
+
     private sealed class Stub(TestDefinition d) : ITestExecutor
     {
         public TestDefinition Definition { get; } = d;
@@ -32,7 +47,7 @@ public class TestProfilesTests
             vm.Rows[2].IsSelected = true;   // chosen before: a profile replaces the selection
             vm.ApplyProfile("quick");
             Assert.Equal([true, true, false], vm.Rows.Select(r => r.IsSelected));
-            Assert.Equal(["60", "120"], vm.Rows.Take(2).Select(r => r.DurationText));
+            Assert.Equal(["180", "180"], vm.Rows.Take(2).Select(r => r.DurationText));
             Assert.NotNull(vm.ProfileNote);
         }
         finally { Directory.Delete(dir, true); }

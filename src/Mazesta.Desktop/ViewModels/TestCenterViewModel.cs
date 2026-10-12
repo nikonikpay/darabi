@@ -124,9 +124,14 @@ public sealed partial class TestCenterViewModel : ObservableObject, IDisposable
             row.IsSelected = entry is not null && row.IsAvailable;
             if (entry is null) continue;
             row.DurationText = entry.Seconds.ToString(System.Globalization.CultureInfo.InvariantCulture); row.Repeat = RepeatMode.Once;
+            foreach (var (key, value) in entry.Options ?? new Dictionary<string, string>())
+                if (row.Options.FirstOrDefault(o => o.Option.Key == key) is { } o) { if (o.IsChoice) o.SelectedChoice = o.Choices.FirstOrDefault(c => c.Value == value) ?? o.SelectedChoice; else o.Text = value; }
         }
         ProfileNote = Loc.Get(profile.NoteKey);
     }
+
+    /// <summary>One length (whole seconds, as text) for every test; each row can still be changed afterwards.</summary>
+    public void SetAllDurations(string seconds) { foreach (var row in Rows) row.DurationText = seconds; }
 
     [RelayCommand] private void SelectAll() { foreach (var row in Rows.Where(r => r.IsAvailable)) row.IsSelected = true; }
     [RelayCommand] private void ClearSelection() { foreach (var row in Rows) row.IsSelected = false; }
