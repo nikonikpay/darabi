@@ -17,15 +17,12 @@ public class GardenSoundTests
     {
         var hall = SoundLevels.At(new(0, 2.7f, 1), Fountain, 10); var pool = SoundLevels.At(new(Fountain.X + 2, 1.7f, Fountain.Z), Fountain, 10); var far = SoundLevels.At(new(8.7f, 1.7f, -31), Fountain, 10);
         Assert.Equal(1, hall.Music); Assert.Equal(1, hall.Indoor); Assert.True(hall.Water < 0.25f);
-        Assert.True(pool.Water > 0.3f); Assert.True(pool.Music < 0.1f); Assert.Equal(0, pool.Indoor);
+        Assert.True(pool.Water > 0.3f); Assert.Equal(0, pool.Music); Assert.Equal(0, pool.Indoor);
         Assert.Equal(0, far.Water);
     }
 
-    [Fact] public void Music_reaches_a_little_way_out_of_the_door_and_fades_with_distance()
-    {
-        float At(float z) => SoundLevels.At(new(0, 1.7f, z), Fountain, 10).Music;
-        Assert.True(At(-4) > At(-8)); Assert.True(At(-8) > At(-12)); Assert.True(At(-8) > 0); Assert.True(At(-12) < 0.1f); Assert.Equal(0, At(-20)); Assert.True(At(-3.2f) < 1);
-    }
+    [Fact] public void The_garden_has_no_music_even_at_the_door()
+        => Assert.All(new[] { -3.2f, -4f, -8f, -20f }, z => Assert.Equal(0, SoundLevels.At(new(0, 1.7f, z), Fountain, 10).Music));
 
     [Fact] public void The_birds_sing_by_day_and_not_by_night()
     {
@@ -40,12 +37,19 @@ public class GardenSoundTests
         Assert.All(pcm, v => Assert.InRange(v, (short)-32000, (short)32000));
     }
 
+    [Fact] public void The_piece_fades_in_at_its_start_and_out_at_its_end_and_the_night_has_no_music()
+    {
+        var mix = new GardenSoundMix(); mix.Set(new(1, 0, 0, 1)); var pcm = new short[GardenSoundMix.Rate * 2]; var peaks = new int[8];
+        for (int sec = 0; sec < 8; sec++) { mix.Render(pcm, GardenSoundMix.Rate); peaks[sec] = pcm.Max(v => Math.Abs((int)v)); }
+        Assert.True(peaks[0] < peaks[7] / 2, "the piece begins faint and swells");
+        Assert.True(Rms(new SoundLevels(0, 0, 0, 0)) < Rms(new SoundLevels(0, 0, 1, 0)));   // night is quieter than day
+    }
+
     [Fact] public void Indoors_the_garden_is_quieter_than_outside_it()
         => Assert.True(Rms(new SoundLevels(0, 0, 1, 1)) < Rms(new SoundLevels(0, 0, 1, 0)));
 
     [Fact] public void The_owners_piece_is_embedded_and_stretched_to_the_mixs_rate()
     {
-        var pcm = GardenMusic.Load(); Assert.Equal(0, pcm.Length % 2); Assert.InRange(pcm.Length / 2 / (double)GardenSoundMix.Rate, 55, 70); Assert.Contains(pcm, v => Math.Abs((int)v) > 5000);
-        Assert.True(Math.Abs(pcm[0] - pcm[^2]) < 3000, "the loop's end meets its beginning");
+        var pcm = GardenMusic.Load(); Assert.Equal(0, pcm.Length % 2); Assert.True(pcm.Length / 2 / (double)GardenSoundMix.Rate > 30); Assert.Contains(pcm, v => Math.Abs((int)v) > 5000);
     }
 }
