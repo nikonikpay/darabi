@@ -21,15 +21,12 @@ internal sealed record SoundLevels(float Music, float Water, float Day, float In
 }
 
 /// <summary>
-/// The garden's sound, made as it is played (no recording is shipped, so none is anyone's to license): a breeze, birds by day and crickets by night, the fountain's water that grows as the listener nears it, and, in the hall, a plucked
-/// string instrument playing slowly in the Shur mode (the scale of Iranian classical music, with its quarter-tone second) over a drone. The string is a Karplus-Strong model, which is what a plucked string does. Stereo, 48 kHz.
+/// The garden's sound, made as it is played (the hall's music is the owner's own piece): a breeze, birds by day and crickets by night, the fountain's water that grows as the listener nears it, and, in the hall, the hall's music, played from the embedded recording. Stereo, 48 kHz.
 /// The levels are set from another thread (<see cref="Set"/>) and glide, so crossing the door is a fade, not a click.
 /// </summary>
 internal sealed class GardenSoundMix(int seed = 7)
 {
     public const int Rate = 48000;
-    private const float Tonic = 293.66f;                                   // D4
-    private static readonly float[] Shur = [0, 150, 300, 500, 700, 800, 1000];   // cents above the tonic: D, E half-flat, F, G, A, B flat, C
 
     private volatile SoundLevels _target = new(0, 0, 1, 0);
     private SoundLevels _now = new(0, 0, 1, 0);
@@ -39,66 +36,11 @@ internal sealed class GardenSoundMix(int seed = 7)
 
     public void Set(SoundLevels levels) => _target = levels;
 
+    /// <summary>The owner's own piece for the hall (<see cref="GardenMusic"/>), as stereo samples at <see cref="Rate"/>.</summary>
+    private readonly short[] _clip = GardenMusic.Load(); private int _clipFrame; private float _muffleL, _muffleR;
 
     private float White() { _rng ^= _rng << 13; _rng ^= _rng >> 17; _rng ^= _rng << 5; return _rng / 2147483648f - 1; }
     private float Unit() => (White() + 1) / 2;
-
-    // ——— the plucked string ———
-    private sealed class Pluck { public float[] Line = []; public int At, Length; public float Gain; public bool Live; }
-    private readonly Pluck[] _strings = [new(), new(), new(), new(), new(), new(), new(), new()]; private int _nextString;
-    private void Strike(float hz, float gain) { Pick(hz, gain * 0.6f); Pick(hz * 1.0017f, gain * 0.6f); }   // a santur's note is two strings struck by one mallet, a hair apart
-    private void Pick(float hz, float gain)
-    {
-        var s = _strings[_nextString++ % _strings.Length]; int n = Math.Max(8, (int)(Rate / hz));
-        if (s.Line.Length < n) s.Line = new float[n];
-        float prev = 0; for (int i = 0; i < n; i++) { prev = prev * 0.3f + White() * 0.7f; s.Line[i] = prev; }   // a soft burst of noise: the pick
-        s.At = 0; s.Length = n; s.Gain = gain; s.Live = true;
-    }
-    private float Strings()
-    {
-        float sum = 0;
-        foreach (var s in _strings)
-        {
-            if (!s.Live) continue;
-            int next = (s.At + 1) % s.Length; float y = s.Line[s.At];
-            s.Line[s.At] = (y + s.Line[next]) * 0.4994f;   // the string loses a little at every round: higher partials fastest
-            s.At = next; sum += y * s.Gain; s.Gain *= 0.99998f; if (s.Gain < 0.0008f) s.Live = false;
-        }
-        return sum;
-    }
-
-    // ——— the tombak: a pattern of deep 'dom' and bright 'tak' and 'ka' strokes, a sixteenth every 0.12 s ———
-    private const string Zarb = "D.t.k.t.D.k.t.k.";   // one bar of sixteen steps; D = dom, t = tak, k = ka
-    private int _zarbStep; private long _zarbNext; private float _domAge = 9, _takAge = 9, _takGain, _takPhase, _domPhase;
-    private float Tombak()
-    {
-        if (_sample >= _zarbNext)
-        {
-            char c = Zarb[_zarbStep++ % Zarb.Length]; _zarbNext = _sample + Rate * 12 / 100;
-            if (c == 'D') { _domAge = 0; _domPhase = 0; } else if (c is 't' or 'k') { _takAge = 0; _takGain = c == 't' ? 1 : 0.5f; }
-        }
-        float v = 0;
-        if (_domAge < 0.5f) { _domPhase += (150 - 70 * MathF.Min(1, _domAge * 8)) / Rate; v += MathF.Sin(MathF.Tau * _domPhase) * MathF.Exp(-_domAge * 9) * 0.5f; _domAge += 1f / Rate; }
-        if (_takAge < 0.12f) { _takPhase = (_takPhase + 1900f / Rate) % 1; v += (White() * 0.5f + MathF.Sin(MathF.Tau * _takPhase) * 0.5f) * MathF.Exp(-_takAge * 45) * 0.22f * _takGain; _takAge += 1f / Rate; }
-        return v;
-    }
-
-    // ——— the player: phrases of an eighth-note pulse that walk the mode and come home to the tonic ———
-    private int _degree = 4, _notesLeft = 0, _rizLeft; private long _nextNote, _nextRiz;
-    private float Hz(int degree) { int octave = (int)MathF.Floor(degree / (float)Shur.Length), step = ((degree % Shur.Length) + Shur.Length) % Shur.Length; return Tonic * MathF.Pow(2, (Shur[step] / 1200f) + octave); }
-    private void Play()
-    {
-        const int Pulse = Rate * 36 / 100;   // 0.36 s
-        if (_rizLeft > 0 && _sample >= _nextRiz) { Strike(Hz(_degree), 0.30f); _rizLeft--; _nextRiz = _sample + Rate * 9 / 100; }
-        if (_sample < _nextNote) return;
-        if (_notesLeft <= 0) { _notesLeft = 7 + (int)(Unit() * 6); _nextNote = _sample + Rate * (1 + (long)(Unit() * 2)); _degree = 4; return; }   // a breath between phrases
-        _notesLeft--;
-        if (_notesLeft == 0) { _degree = 0; Strike(Hz(0), 0.45f); _rizLeft = 4; _nextRiz = _sample + Rate * 9 / 100; _nextNote = _sample + Pulse * 4; return; }   // the phrase ends on the tonic, trembled
-        float r = Unit(); _degree = Math.Clamp(_degree + (r < 0.35f ? -1 : r < 0.7f ? 1 : r < 0.85f ? -2 : 2), -3, 9);
-        Strike(Hz(_degree), 0.22f + Unit() * 0.15f);
-        if (Unit() < 0.2f) { _rizLeft = 3; _nextRiz = _sample + Rate * 9 / 100; }
-        _nextNote = _sample + Pulse * (Unit() < 0.3f ? 2 : 1);
-    }
 
     // ——— birds and crickets ———
     private float _birdHz, _birdSweep, _birdAge, _birdLength, _birdPhase, _birdPan; private int _birdRepeats; private long _nextBird; private float _cricketPhase, _cricketBeat;
@@ -132,8 +74,6 @@ internal sealed class GardenSoundMix(int seed = 7)
     }
 
     // ——— the whole ———
-    private readonly float[] _room = new float[Rate * 53 / 1000]; private int _roomAt;
-    private float _droneLow, _droneFifth;
 
     /// <summary>Fills <paramref name="stereo"/> (left, right, left...; <paramref name="frames"/> of them) with the next of the soundscape.</summary>
     public void Render(Span<short> stereo, int frames)
@@ -150,11 +90,12 @@ internal sealed class GardenSoundMix(int seed = 7)
             float water = Water() * _now.Water * 0.5f;
             float left = wind + water + bird * (0.5f - _birdPan * 0.4f) + cricket, right = wind + water + bird * (0.5f + _birdPan * 0.4f) + cricket;
             float music = 0, musicR = 0;
+            _clipFrame = (_clipFrame + 1) % (_clip.Length / 2);   // it goes on while nobody listens, like a radio left on in the house
             if (_now.Music > 0.002f)
             {
-                Play(); _droneLow = (_droneLow + Tonic / 2 / Rate) % 1; _droneFifth = (_droneFifth + Tonic * 0.75f / Rate) % 1;
-                float dry = Strings() * 0.35f + Tombak() + (MathF.Sin(MathF.Tau * _droneLow) + 0.5f * MathF.Sin(MathF.Tau * _droneFifth)) * 0.02f, wet = _room[_roomAt]; _room[_roomAt] = dry + wet * 0.55f; _roomAt = (_roomAt + 1) % _room.Length;
-                music = musicR = (dry + wet * 0.35f) * _now.Music * 0.55f;
+                float k = 0.08f + 0.92f * _now.Music;   // through the wall only the low notes come; the nearer the door the brighter
+                _muffleL += (_clip[_clipFrame * 2] / 32768f - _muffleL) * k; _muffleR += (_clip[_clipFrame * 2 + 1] / 32768f - _muffleR) * k;
+                music = _muffleL * _now.Music * 1.2f; musicR = _muffleR * _now.Music * 1.2f;
             }
             stereo[i * 2] = Out(left + music); stereo[i * 2 + 1] = Out(right + musicR);
         }

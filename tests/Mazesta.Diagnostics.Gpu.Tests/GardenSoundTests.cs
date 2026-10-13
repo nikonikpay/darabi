@@ -42,4 +42,9 @@ public class GardenSoundTests
 
     [Fact] public void Indoors_the_garden_is_quieter_than_outside_it()
         => Assert.True(Rms(new SoundLevels(0, 0, 1, 1)) < Rms(new SoundLevels(0, 0, 1, 0)));
+
+    [Fact] public void The_owners_piece_is_embedded_and_stretched_to_the_mixs_rate()
+    {
+        var pcm = GardenMusic.Load(); Assert.Equal(0, pcm.Length % 2); Assert.InRange(pcm.Length / 2 / (double)GardenSoundMix.Rate, 60, 70); Assert.Contains(pcm, v => Math.Abs((int)v) > 5000);
+    }
 }
