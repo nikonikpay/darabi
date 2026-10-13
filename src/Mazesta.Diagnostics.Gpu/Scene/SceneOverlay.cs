@@ -61,7 +61,11 @@ internal sealed unsafe class SceneOverlay : IDisposable
 
     private int RowHeight => _u * 29 / 20;
 
-    public void Update(Readout r)
+    private readonly object _gate = new();
+    /// <summary>Lays the readout out (the renderer's thread need not be the one that calls: drawing the text takes milliseconds, which a frame would show as a stutter).</summary>
+    public void Update(Readout r) { lock (_gate) Compose(r); }
+
+    private void Compose(Readout r)
     {
         if (!Visible) return;
         int u = _u, x0 = _margin, x1 = _width - _margin, y = _margin;
@@ -141,14 +145,18 @@ internal sealed unsafe class SceneOverlay : IDisposable
     public void Draw(ID3D12GraphicsCommandList4 l, int index, int targetWidth, int targetHeight)
     {
         if (!Visible) return;
-        int slot = _s.Slot;
-        if (_fresh[slot])
+        int slot = _s.Slot, used;
+        lock (_gate)
         {
-            _fresh[slot] = false; int at = (int)_slotBytes * slot;
-            _c.Pixels.CopyTo(_pixels.Map<byte>(0, at + _width * _height * 4)[at..]); _pixels.Unmap(0);
+            used = _used;
+            if (_fresh[slot])
+            {
+                _fresh[slot] = false; int at = (int)_slotBytes * slot;
+                _c.Pixels.CopyTo(_pixels.Map<byte>(0, at + _width * _height * 4)[at..]); _pixels.Unmap(0);
+            }
         }
-        int left = Math.Max(0, Math.Min(_margin * 2, targetWidth - _width)), top = Math.Max(0, Math.Min(_margin * 2, targetHeight - _used));
-        int w = Math.Min(_width, targetWidth - left), h = Math.Min(_used, targetHeight - top);
+        int left = Math.Max(0, Math.Min(_margin * 2, targetWidth - _width)), top = Math.Max(0, Math.Min(_margin * 2, targetHeight - used));
+        int w = Math.Min(_width, targetWidth - left), h = Math.Min(used, targetHeight - top);
         var target = _targets[index];
         l.ResourceBarrierTransition(target, ResourceStates.Present, ResourceStates.RenderTarget);
         l.OMSetRenderTargets(_rtvHeap.GetCPUDescriptorHandleForHeapStart().Offset(index, _rtvSize));

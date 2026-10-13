@@ -1,35 +1,41 @@
+using NLayer;
 namespace Mazesta.Diagnostics.Gpu.Scene;
 
-/// <summary>The hall's music: the owner's own piece (<c>garden-music.wav</c>, 16-bit mono, 32 kHz, embedded), made into stereo samples at the mix's rate.</summary>
+/// <summary>The hall's music: the owner's own piece (<c>garden-music.mp3</c>, embedded as it is), decoded once into stereo samples at the mix's rate, its silent ends cut off and its end faded into its beginning so the loop has no gap.</summary>
 internal static class GardenMusic
 {
+    private const float Quiet = 0.004f, Overlap = 1.5f;   // below this (of full scale) is silence; seconds the end and the beginning are blended over
+
     public static short[] Load()
     {
-        using var stream = typeof(GardenMusic).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.garden-music.wav") ?? throw new InvalidOperationException("garden-music.wav is not embedded");
-        using var memory = new MemoryStream(); stream.CopyTo(memory); return Parse(memory.ToArray());
+        using var stream = typeof(GardenMusic).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.garden-music.mp3") ?? throw new InvalidOperationException("garden-music.mp3 is not embedded");
+        return Decode(stream);
     }
 
-    /// <summary>The samples of a 16-bit mono PCM wave file, stretched (linearly) to <see cref="GardenSoundMix.Rate"/> and doubled to left and right.</summary>
-    internal static short[] Parse(byte[] file)
+    internal static short[] Decode(Stream mp3)
     {
-        int rate = 0, at = 12;
-        while (at + 8 <= file.Length)
+        using var file = new MpegFile(mp3); int rate = file.SampleRate, channels = file.Channels; var all = new List<float>(); var chunk = new float[8192]; int got;
+        while ((got = file.ReadSamples(chunk, 0, chunk.Length)) > 0) for (int i = 0; i < got; i++) all.Add(chunk[i]);
+        int frames = all.Count / channels; if (frames < 2) throw new InvalidDataException("no sample data");
+        float Of(int frame, int side) => all[frame * channels + Math.Min(side, channels - 1)];
+        int first = 0, last = frames - 1;
+        while (first < last && Math.Abs(Of(first, 0)) < Quiet && Math.Abs(Of(first, 1)) < Quiet) first++;
+        while (last > first && Math.Abs(Of(last, 0)) < Quiet && Math.Abs(Of(last, 1)) < Quiet) last--;
+        int length = (int)((long)(last - first + 1) * GardenSoundMix.Rate / rate), blend = Math.Min((int)(Overlap * GardenSoundMix.Rate), length / 4); var pcm = new float[length * 2];
+        for (int i = 0; i < length; i++)
         {
-            uint id = BitConverter.ToUInt32(file, at); int size = BitConverter.ToInt32(file, at + 4), body = at + 8;
-            if (id == 0x20746D66) { if (BitConverter.ToUInt16(file, body) != 1 || BitConverter.ToUInt16(file, body + 2) != 1 || BitConverter.ToUInt16(file, body + 14) != 16) throw new InvalidDataException("not 16-bit mono PCM"); rate = BitConverter.ToInt32(file, body + 4); }   // "fmt "
-            else if (id == 0x61746164 && rate > 0)   // "data"
-            {
-                var src = new short[size / 2]; Buffer.BlockCopy(file, body, src, 0, src.Length * 2);
-                int frames = (int)((long)src.Length * GardenSoundMix.Rate / rate); var pcm = new short[frames * 2];
-                for (int i = 0; i < frames; i++)
-                {
-                    double p = (double)i * rate / GardenSoundMix.Rate; int j = (int)p; double f = p - j; short a = src[Math.Min(j, src.Length - 1)], b = src[Math.Min(j + 1, src.Length - 1)];
-                    pcm[i * 2] = pcm[i * 2 + 1] = (short)(a + (b - a) * f);
-                }
-                return pcm;
-            }
-            at = body + size + (size & 1);
+            double p = first + (double)i * rate / GardenSoundMix.Rate; int j = (int)p; double f = p - j; int k = Math.Min(j + 1, frames - 1); j = Math.Min(j, frames - 1);
+            for (int s = 0; s < 2; s++) pcm[i * 2 + s] = (float)(Of(j, s) + (Of(k, s) - Of(j, s)) * f);
         }
-        throw new InvalidDataException("no sample data");
+        // the loop is the piece without its last `blend` frames, its head being the old head faded into those frames
+        int loop = length - blend; var result = new short[loop * 2];
+        for (int i = 0; i < loop; i++)
+            for (int s = 0; s < 2; s++)
+            {
+                float v = pcm[i * 2 + s];
+                if (i < blend) { float a = (float)i / blend; v = v * MathF.Sin(a * MathF.PI / 2) + pcm[(loop + i) * 2 + s] * MathF.Cos(a * MathF.PI / 2); }
+                result[i * 2 + s] = (short)(Math.Clamp(v, -1f, 1f) * 32767);
+            }
+        return result;
     }
 }

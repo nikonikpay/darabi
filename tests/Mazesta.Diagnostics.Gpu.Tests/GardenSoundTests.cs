@@ -45,6 +45,7 @@ public class GardenSoundTests
 
     [Fact] public void The_owners_piece_is_embedded_and_stretched_to_the_mixs_rate()
     {
-        var pcm = GardenMusic.Load(); Assert.Equal(0, pcm.Length % 2); Assert.InRange(pcm.Length / 2 / (double)GardenSoundMix.Rate, 60, 70); Assert.Contains(pcm, v => Math.Abs((int)v) > 5000);
+        var pcm = GardenMusic.Load(); Assert.Equal(0, pcm.Length % 2); Assert.InRange(pcm.Length / 2 / (double)GardenSoundMix.Rate, 55, 70); Assert.Contains(pcm, v => Math.Abs((int)v) > 5000);
+        Assert.True(Math.Abs(pcm[0] - pcm[^2]) < 3000, "the loop's end meets its beginning");
     }
 }

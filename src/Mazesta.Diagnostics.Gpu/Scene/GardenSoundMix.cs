@@ -21,7 +21,7 @@ internal sealed record SoundLevels(float Music, float Water, float Day, float In
 }
 
 /// <summary>
-/// The garden's sound, made as it is played (the hall's music is the owner's own piece): a breeze, birds by day and crickets by night, the fountain's water that grows as the listener nears it, and, in the hall, the hall's music, played from the embedded recording. Stereo, 48 kHz.
+/// The garden's sound, made as it is played (the hall's music is the owner's own piece): a breeze, birds by day and crickets by night, the fountain's water that grows as the listener nears it, and, in the hall, the hall's music, played from the embedded piece. Stereo, 48 kHz.
 /// The levels are set from another thread (<see cref="Set"/>) and glide, so crossing the door is a fade, not a click.
 /// </summary>
 internal sealed class GardenSoundMix(int seed = 7)
@@ -29,9 +29,9 @@ internal sealed class GardenSoundMix(int seed = 7)
     public const int Rate = 48000;
 
     private volatile SoundLevels _target = new(0, 0, 1, 0);
-    private SoundLevels _now = new(0, 0, 1, 0);
+    private float _music, _water, _day = 1, _indoor;   // the levels as they glide (fields, not a record: a new one per sample is 48 000 objects a second for the collector)
     private uint _rng = (uint)seed * 2654435761u | 1;
-    private float _brown, _hp, _lp, _gust;
+    private float _brown, _gust;
     private long _sample;
 
     public void Set(SoundLevels levels) => _target = levels;
@@ -63,14 +63,13 @@ internal sealed class GardenSoundMix(int seed = 7)
         _cricketPhase = (_cricketPhase + 4600f / Rate) % 1; return MathF.Sin(MathF.Tau * _cricketPhase) * gate * chirp * 0.02f;
     }
 
-    // ——— the water: a band of noise that never repeats, rising and falling, and the odd drop ———
+    // ——— the water: the odd drop falling in the basin ———
     private float _dropHz, _dropAge = 9;
     private float Water()
     {
-        float w = White(); _lp += (w - _lp) * 0.5f; _hp += (_lp - _hp) * 0.08f;
         if (_dropAge > 1 && Unit() < 0.00015f) { _dropHz = 1300 + Unit() * 2600; _dropAge = 0; }
         float drop = _dropAge < 1 ? MathF.Sin(MathF.Tau * _dropHz * _dropAge * 0.05f) * MathF.Exp(-_dropAge * 6) * 0.35f : 0; _dropAge += 1f / (Rate * 0.05f);
-        return (_lp - _hp) * 0.04f + drop;   // the plink of drops in the basin and a whisper of spray, no rushing
+        return drop;   // only the plink of drops in the basin: any steady noise sounds like a waterfall
     }
 
     // ——— the whole ———
@@ -82,20 +81,20 @@ internal sealed class GardenSoundMix(int seed = 7)
         for (int i = 0; i < frames; i++, _sample++)
         {
             const float Glide = 1f / (Rate * 0.4f);
-            _now = new(_now.Music + (goal.Music - _now.Music) * Glide * 4, _now.Water + (goal.Water - _now.Water) * Glide * 4, _now.Day + (goal.Day - _now.Day) * Glide * 4, _now.Indoor + (goal.Indoor - _now.Indoor) * Glide * 4);
-            float outdoors = 1 - _now.Indoor * 0.85f;
+            _music += (goal.Music - _music) * Glide * 4; _water += (goal.Water - _water) * Glide * 4; _day += (goal.Day - _day) * Glide * 4; _indoor += (goal.Indoor - _indoor) * Glide * 4;
+            float outdoors = 1 - _indoor * 0.85f;
             _brown = _brown * 0.998f + White() * 0.02f; _gust += (White() - _gust) * 0.00002f;
             float wind = _brown * (0.5f + 2.2f * MathF.Abs(_gust)) * 0.9f * outdoors;
-            float bird = Bird() * _now.Day * outdoors * 2, cricket = Crickets() * (1 - _now.Day) * outdoors;
-            float water = Water() * _now.Water * 0.5f;
+            float bird = Bird() * _day * outdoors * 2, cricket = Crickets() * (1 - _day) * outdoors;
+            float water = Water() * _water * 0.5f;
             float left = wind + water + bird * (0.5f - _birdPan * 0.4f) + cricket, right = wind + water + bird * (0.5f + _birdPan * 0.4f) + cricket;
             float music = 0, musicR = 0;
-            _clipFrame = (_clipFrame + 1) % (_clip.Length / 2);   // it goes on while nobody listens, like a radio left on in the house
-            if (_now.Music > 0.002f)
+            if (_music > 0.002f)
             {
-                float k = 0.08f + 0.92f * _now.Music;   // through the wall only the low notes come; the nearer the door the brighter
+                _clipFrame = (_clipFrame + 1) % (_clip.Length / 2);   // it starts from its beginning when the listener first comes near, and waits where it was while nobody listens
+                float k = 0.08f + 0.92f * _music;   // through the wall only the low notes come; the nearer the door the brighter
                 _muffleL += (_clip[_clipFrame * 2] / 32768f - _muffleL) * k; _muffleR += (_clip[_clipFrame * 2 + 1] / 32768f - _muffleR) * k;
-                music = _muffleL * _now.Music * 1.2f; musicR = _muffleR * _now.Music * 1.2f;
+                music = _muffleL * _music * 1.2f; musicR = _muffleR * _music * 1.2f;
             }
             stereo[i * 2] = Out(left + music); stereo[i * 2 + 1] = Out(right + musicR);
         }

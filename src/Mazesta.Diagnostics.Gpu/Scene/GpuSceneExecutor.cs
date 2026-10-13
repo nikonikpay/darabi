@@ -56,7 +56,8 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
 
-    private const int CheckSeconds = 3; private const float CheckTime = 1.234f;
+    // a check frame is drawn on its own, read back and compared, and the frame after it redraws the surroundings: at every 3 s it was a stutter
+    private const int CheckSeconds = 20; private const float CheckTime = 1.234f;
 
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
     {
@@ -106,6 +107,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         long frames = 0, checks = 0, errors = 0; float[]? reference = null; string firstError = ""; bool closed = false; double minFps = double.MaxValue;
         var total = Stopwatch.StartNew(); var duration = TimeSpan.FromSeconds(request.DurationSeconds);
         var lastCheck = Stopwatch.StartNew(); var updateClock = Stopwatch.StartNew(); long updateFrames = 0; var pace = new FramePace(); long lastShown = Stopwatch.GetTimestamp();
+        int refreshing = 0;   // 1 while the readout is being laid out on another thread
         ShowReadout(0);
         try
         {
@@ -128,13 +130,14 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                     double fps = updateFrames / updateClock.Elapsed.TotalSeconds;
                     if (total.Elapsed.TotalSeconds > 2) minFps = Math.Min(minFps, fps);   // the first moments include start-up, not the card's pace
                     window.Title = $"Mazesta — {mode} — {fps:F0} FPS — {(int)(duration - total.Elapsed).TotalSeconds} s";
-                    pace.Sample(fps); ShowReadout(fps);
+                    pace.Sample(fps); ShowReadout(fps, background: true);
                     updateFrames = 0; updateClock.Restart();
                     request.Progress?.Invoke(new TestProgress(Math.Clamp(total.Elapsed / duration, 0, 1), "Test_Status_Running"));
                 }
             }
         }
         catch (OperationCanceledException) { return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe()); }
+        finally { while (Volatile.Read(ref refreshing) == 1) Thread.Sleep(1); }   // (the renderer is disposed on leaving: the readout is not left being drawn)
         if (closed) return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, SensorEvidence.Join("the test window was closed before the time was up", Describe()));
         // One last check, so the end of the run is verified too.
         if (reference is { } r && !SceneView.Same(renderer.CheckFrame(CheckTime), r)) { errors++; if (firstError.Length == 0) firstError = "the final check frame differs from the first one"; }
@@ -142,15 +145,16 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe());
 
         // The readout shows only what was measured: a sensor this card does not report (or has not reported in the last seconds) is left out.
-        void ShowReadout(double fps)
+        void ShowReadout(double fps, bool background = false)
         {
-            double average = frames / Math.Max(0.001, total.Elapsed.TotalSeconds);
-            var now = request.Clock.UtcNow;
-            bool running = frames > 0;
-            renderer.Overlay.Update(new(
-                $"{(rayTraced ? "D3D12 + RT" : "D3D12")} · {level}", running && fps > 0 ? fps : null, running ? average : null, minFps < double.MaxValue ? minFps : null, pace.Low, pace.Fps, pace.Lows, Rows(request.Engine, gpu, now, ram),
-                $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""),
-                $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · errors {errors}", errors > 0));
+            // what the readout shows is read here, on the frame's thread; laying it out takes milliseconds (the text is drawn by the processor), which on a frame is a stutter, so a refresh goes to another thread
+            double average = frames / Math.Max(0.001, total.Elapsed.TotalSeconds); var now = request.Clock.UtcNow; bool running = frames > 0;
+            double? low = pace.Low, min = minFps < double.MaxValue ? minFps : null; float[] fpsTrace = [.. pace.Fps], lowTrace = [.. pace.Lows];
+            string size = $"{w} × {h}" + (window.Width != w || window.Height != h ? $" → {window.Width} × {window.Height}" : ""), status = $"{(int)total.Elapsed.TotalSeconds}/{request.DurationSeconds} s · errors {errors}"; bool failing = errors > 0;
+            void Lay() => renderer.Overlay.Update(new($"{(rayTraced ? "D3D12 + RT" : "D3D12")} · {level}", running && fps > 0 ? fps : null, running ? average : null, min, low, fpsTrace, lowTrace, Rows(request.Engine, gpu, now, ram), size, status, failing));
+            if (!background) { Lay(); return; }
+            if (Interlocked.Exchange(ref refreshing, 1) == 1) return;   // the last one is still being laid out: this one is skipped, the next comes in half a second
+            Task.Run(() => { try { Lay(); } catch (Exception) { } finally { Volatile.Write(ref refreshing, 0); } });   // a failed refresh leaves the last readout in place
         }
 
         string Describe()

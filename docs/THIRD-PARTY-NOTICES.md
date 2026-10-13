@@ -21,6 +21,7 @@ under which licence, and by which project in this repository.
 | ComputeSharp (+ ComputeSharp.Core) | 3.2.0 | MIT | `Mazesta.Diagnostics.Gpu` | DirectX 12 compute shaders for the GPU tests (stress, VRAM, render). Copyright Sergio Pedri. https://github.com/Sergio0694/ComputeSharp |
 | Microsoft.Web.WebView2 | 1.0.2903.40 | BSD-3-Clause-style Microsoft licence (the package's LICENSE.txt) | `Mazesta.Desktop`, `Mazesta.App` | Prints report HTML to PDF with the WebView2 runtime installed in Windows (offline, scripts off), and draws the whole interface of the web edition from its local `wwwroot` folder. The runtime itself is part of Windows and not shipped. |
 | System.Diagnostics.EventLog | 10.0.x | MIT | `Mazesta.Diagnostics` | Reads WHEA hardware-error events for the post-test check. © Microsoft Corporation. |
+| NLayer | 1.16.0 | MIT | `Mazesta.Diagnostics.Gpu` | Decodes the MP3 of the garden hall's music (managed, no native code). Copyright Mark Heath and contributors. https://github.com/naudio/NLayer |
 | Vortice.Direct3D12, Vortice.DirectML (+ Vortice.DXGI, Vortice.DirectX, Vortice.Mathematics 2.1.0) | 3.8.3 | MIT | `Mazesta.Diagnostics.Gpu` | Raw Direct3D 12 and DirectML bindings for the GPU benchmarks ComputeSharp cannot express: rasterisation, DXR inline ray tracing and DirectML matrix multiplies. Copyright Amer Koleci. https://github.com/amerkoleci/Vortice.Windows . Referenced with `ExcludeAssets="build;buildMultitargeting;native"`: the package's own DirectML.dll (~18 MB) is not shipped; the copy in Windows (System32) is used. |
 | SharpGen.Runtime, SharpGen.Runtime.COM | 2.4.2-beta | MIT | `Mazesta.Diagnostics.Gpu` (transitive, via Vortice) | COM interop runtime of the Vortice bindings. |
 | llama.cpp (llama-bench and its ggml/Vulkan/CPU libraries) | build b11265, `llama-b11265-bin-win-vulkan-x64.zip` | MIT (the package's LICENSE files; bundles libomp under the LLVM licence, LICENSE-LLVM-OpenMP) | `Mazesta.Diagnostics` (AI models page) | **Not bundled.** Downloaded only when the user presses Download on the AI page, from the project's GitHub release, pinned by size and SHA-256 (`AiCatalog.Runtime`), unpacked to `Data/ai/runtime`. Copyright the ggml authors. https://github.com/ggml-org/llama.cpp |
@@ -49,7 +50,7 @@ library is used. No telemetry, analytics or crash-reporting SDK is included.
   notice/attribution, which this file provides.
 - **MPL-2.0** (BlackSharp.Core): as above - consumed as an unmodified NuGet
   binary.
-- **MIT** (System.Management, Microsoft.Extensions.\*, CommunityToolkit.Mvvm, Vortice.\*, SharpGen.Runtime\*):
+- **MIT** (System.Management, Microsoft.Extensions.\*, CommunityToolkit.Mvvm, Vortice.\*, SharpGen.Runtime\*, NLayer):
   permissive, requires only notice/attribution, which this file provides.
 - **PawnIO**: the official, signed, unmodified setup is redistributed in `Redist/`
   and installed by the app when the driver is missing. Its redistribution terms

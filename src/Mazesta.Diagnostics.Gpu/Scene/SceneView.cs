@@ -56,11 +56,14 @@ internal sealed class SceneView : IDisposable
     {
         Drain();
         var px = _renderer.Capture(time); int w = _renderer.OutWidth, h = _renderer.OutHeight; var sum = new double[Blocks * Blocks * 3]; var count = new int[Blocks * Blocks];
-        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+        Parallel.For(0, Blocks, row =>   // (a band of blocks each: they share no cell, and on the whole picture a single thread was a stutter of its own)
         {
-            uint p = px[y * w + x]; int b = y * Blocks / h * Blocks + x * Blocks / w; count[b]++;
-            sum[b * 3] += p & 255; sum[b * 3 + 1] += (p >> 8) & 255; sum[b * 3 + 2] += (p >> 16) & 255;
-        }
+            for (int y = 0; y < h; y++) if (y * Blocks / h == row) for (int x = 0; x < w; x++)
+            {
+                uint p = px[y * w + x]; int b = row * Blocks + x * Blocks / w; count[b]++;
+                sum[b * 3] += p & 255; sum[b * 3 + 1] += (p >> 8) & 255; sum[b * 3 + 2] += (p >> 16) & 255;
+            }
+        });
         var mean = new float[sum.Length]; for (int i = 0; i < mean.Length; i++) mean[i] = (float)(sum[i] / Math.Max(1, count[i / 3]));
         return mean;
     }
