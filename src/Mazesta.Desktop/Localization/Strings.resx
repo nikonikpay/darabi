@@ -1220,6 +1220,73 @@
   <data name="Web_Dash_Live" xml:space="preserve"><value>Live system status</value></data>
   <data name="Nav_Group_Windows" xml:space="preserve"><value>Windows &amp; games</value></data>
   <data name="Nav_Tweaks" xml:space="preserve"><value>Tweaks</value></data>
+  <data name="Nav_Shield" xml:space="preserve"><value>Firewall and antivirus</value></data>
+  <data name="Shield_Title" xml:space="preserve"><value>Mazesta - Firewall and antivirus</value></data>
+  <data name="Shield_Lede" xml:space="preserve"><value>Stop a program from reaching the internet, or keep a file or folder out of the antivirus scans. Pick the file: the change is made and then checked.</value></data>
+  <data name="Shield_Tab_Firewall" xml:space="preserve"><value>Firewall</value></data>
+  <data name="Shield_Tab_Av" xml:space="preserve"><value>Antivirus</value></data>
+  <data name="Shield_Fw_Title" xml:space="preserve"><value>Block a program</value></data>
+  <data name="Shield_Fw_Sub" xml:space="preserve"><value>In the Windows firewall, incoming and outgoing</value></data>
+  <data name="Shield_Fw_Pick" xml:space="preserve"><value>Choose a program file…</value></data>
+  <data name="Shield_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Shield_Fw_Or" xml:space="preserve"><value>Or choose it from the programs running now:</value></data>
+  <data name="Shield_Fw_Search" xml:space="preserve"><value>Search by name or folder</value></data>
+  <data name="Shield_Fw_NoRunning" xml:space="preserve"><value>No program found.</value></data>
+  <data name="Shield_Block" xml:space="preserve"><value>Block</value></data>
+  <data name="Shield_Is_Blocked" xml:space="preserve"><value>Blocked</value></data>
+  <data name="Shield_Blocked" xml:space="preserve"><value>Blocked programs</value></data>
+  <data name="Shield_Blocked_Sub" xml:space="preserve"><value>Made from here; the rules are named Mazesta Test</value></data>
+  <data name="Shield_None_Blocked" xml:space="preserve"><value>No program is blocked from here.</value></data>
+  <data name="Shield_Both" xml:space="preserve"><value>Incoming and outgoing</value></data>
+  <data name="Shield_In" xml:space="preserve"><value>Incoming only</value></data>
+  <data name="Shield_Out" xml:space="preserve"><value>Outgoing only</value></data>
+  <data name="Shield_Unblock" xml:space="preserve"><value>Unblock</value></data>
+  <data name="Shield_Fw_Unknown" xml:space="preserve"><value>The firewall&apos;s state could not be read.</value></data>
+  <data name="Shield_Fw_On" xml:space="preserve"><value>Windows Firewall is on</value></data>
+  <data name="Shield_Fw_Off" xml:space="preserve"><value>Windows Firewall is off for: {0}. A block does nothing there.</value></data>
+  <data name="Shield_Av_Title" xml:space="preserve"><value>Leave out of antivirus scans</value></data>
+  <data name="Shield_Av_Sub" xml:space="preserve"><value>Files and folders Windows Defender does not scan</value></data>
+  <data name="Shield_Av_File" xml:space="preserve"><value>Choose a file…</value></data>
+  <data name="Shield_Av_Folder" xml:space="preserve"><value>Choose a folder…</value></data>
+  <data name="Shield_Av_Warn" xml:space="preserve"><value>Only leave out what you trust: a file or folder on this list is not checked for viruses.</value></data>
+  <data name="Shield_Av_List" xml:space="preserve"><value>Left out of the scans</value></data>
+  <data name="Shield_Av_List_Sub" xml:space="preserve"><value>Windows Defender&apos;s exclusion list</value></data>
+  <data name="Shield_Av_None" xml:space="preserve"><value>Nothing is left out.</value></data>
+  <data name="Shield_Av_Unknown" xml:space="preserve"><value>The list could not be read.</value></data>
+  <data name="Shield_Unexclude" xml:space="preserve"><value>Remove</value></data>
+  <data name="Shield_Kind_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="Shield_Kind_File" xml:space="preserve"><value>File</value></data>
+  <data name="Shield_Kind_Gone" xml:space="preserve"><value>Not found</value></data>
+  <data name="Shield_Av_NoDefender" xml:space="preserve"><value>Windows Defender cannot be asked on this computer (another antivirus may have taken its place).</value></data>
+  <data name="Shield_Av_On" xml:space="preserve"><value>Windows Defender is protecting this computer</value></data>
+  <data name="Shield_Av_RealOff" xml:space="preserve"><value>Windows Defender&apos;s real-time protection is off</value></data>
+  <data name="Shield_Av_Other" xml:space="preserve"><value>{0} is the antivirus that protects this computer. This list is Windows Defender&apos;s: {0} does not use it, so leave the file out in {0} itself.</value></data>
+  <data name="Shield_Av_Tamper" xml:space="preserve"><value>Tamper Protection is on: Windows may refuse a change made outside its own settings. Every change is checked afterwards.</value></data>
+  <data name="Shield_Done_Block" xml:space="preserve"><value>{0} is blocked in the Windows firewall (incoming and outgoing).</value></data>
+  <data name="Shield_Done_Unblock" xml:space="preserve"><value>{0} is unblocked.</value></data>
+  <data name="Shield_Done_Exclude" xml:space="preserve"><value>{0} is left out of Windows Defender&apos;s scans.</value></data>
+  <data name="Shield_Done_Unexclude" xml:space="preserve"><value>{0} is scanned again.</value></data>
+  <data name="Shield_Menu_Title" xml:space="preserve"><value>Right-click menu</value></data>
+  <data name="Shield_Menu_Sub" xml:space="preserve"><value>Do the same from Explorer, without opening the app</value></data>
+  <data name="Shield_Menu_Fw" xml:space="preserve"><value>Add “Block in firewall” to the menu of programs (.exe)</value></data>
+  <data name="Shield_Menu_Av" xml:space="preserve"><value>Add “Exclude from antivirus” to the menu of folders</value></data>
+  <data name="Shield_Menu_Note" xml:space="preserve"><value>On Windows 11 they are under “Show more options”. Windows asks for permission each time, as the change needs an administrator.</value></data>
+  <data name="Shield_Menu_Failed" xml:space="preserve"><value>The menu was not changed: {0}</value></data>
+  <data name="Shield_Menu_FwLabel" xml:space="preserve"><value>Block in firewall (Mazesta)</value></data>
+  <data name="Shield_Menu_AvLabel" xml:space="preserve"><value>Exclude from antivirus (Mazesta)</value></data>
+  <data name="Shield_Err_NotFullPath" xml:space="preserve"><value>That is not the full path of a file or folder on this computer.</value></data>
+  <data name="Shield_Err_NotExe" xml:space="preserve"><value>A firewall rule needs a program: a file that ends in .exe.</value></data>
+  <data name="Shield_Err_Missing" xml:space="preserve"><value>That file or folder is not there.</value></data>
+  <data name="Shield_Err_NotAccepted" xml:space="preserve"><value>Windows did not take the change (a policy or Tamper Protection may refuse it). {0}</value></data>
+  <data name="Shield_Err_Failed" xml:space="preserve"><value>It failed: {0}</value></data>
+  <data name="Shield_Confirm_System" xml:space="preserve"><value>{0} is inside Windows&apos; own folder. Blocking a program of the system can break Windows. Block it anyway?</value></data>
+  <data name="Shield_Confirm_Broad" xml:space="preserve"><value>{0} is a very wide place (a whole drive or a main folder). Leaving it out of the scans leaves the computer unguarded. Do it anyway?</value></data>
+  <data name="Shield_Confirm_System_Page" xml:space="preserve"><value>This program is inside Windows&apos; own folder. Blocking a program of the system can break Windows. Block it anyway?</value></data>
+  <data name="Shield_Confirm_Broad_Page" xml:space="preserve"><value>This is a very wide place (a whole drive or a main folder). Leaving it out of the scans leaves the computer unguarded. Do it anyway?</value></data>
+  <data name="Shield_Pick_File" xml:space="preserve"><value>Choose a file</value></data>
+  <data name="Shield_Pick_Folder" xml:space="preserve"><value>Choose a folder</value></data>
+  <data name="Shield_Pick_ExeFilter" xml:space="preserve"><value>Programs (*.exe)</value></data>
+  <data name="Shield_Pick_AnyFilter" xml:space="preserve"><value>All files</value></data>
   <data name="Nav_Updates" xml:space="preserve"><value>Windows Update</value></data>
   <data name="Tweaks_Lede" xml:space="preserve"><value>Settings and clean-ups of Windows. Tick what to change and run it; every row shows what Windows has now, read again after each change.</value></data>
   <data name="Tweaks_Presets" xml:space="preserve"><value>Recommended selections</value></data>
@@ -3198,7 +3265,27 @@ Cancel: stop.</value></data>
   <data name="Rgb_Speed" xml:space="preserve"><value>Speed</value></data>
   <data name="Rgb_Brightness" xml:space="preserve"><value>Brightness</value></data>
   <data name="Rgb_Effect" xml:space="preserve"><value>Effect</value></data>
-  <data name="Rgb_Effect_Note" xml:space="preserve"><value>An effect is chosen by its name: each device that has it switches to it, and a device that does not is left as it is.</value></data>
+  <data name="Rgb_Effect_Note" xml:space="preserve"><value>The effects at the top work on every device: one that has the effect runs it itself, one that has not is driven by the app (the app or the tray must be running). The effects of the devices themselves reach only the devices that have them.</value></data>
+  <data name="Rgb_Palettes" xml:space="preserve"><value>Colour spectra</value></data>
+  <data name="Rgb_Palette_sunset" xml:space="preserve"><value>Sunset</value></data>
+  <data name="Rgb_Palette_fire" xml:space="preserve"><value>Fire</value></data>
+  <data name="Rgb_Palette_ocean" xml:space="preserve"><value>Ocean</value></data>
+  <data name="Rgb_Palette_ice" xml:space="preserve"><value>Ice</value></data>
+  <data name="Rgb_Palette_forest" xml:space="preserve"><value>Forest</value></data>
+  <data name="Rgb_Palette_aurora" xml:space="preserve"><value>Aurora</value></data>
+  <data name="Rgb_Palette_neon" xml:space="preserve"><value>Neon</value></data>
+  <data name="Rgb_Palette_candy" xml:space="preserve"><value>Candy</value></data>
+  <data name="Rgb_Palette_royal" xml:space="preserve"><value>Royal</value></data>
+  <data name="Rgb_Palette_lava" xml:space="preserve"><value>Lava</value></data>
+  <data name="Rgb_Fx_Static" xml:space="preserve"><value>Static colour</value></data>
+  <data name="Rgb_Fx_Breathing" xml:space="preserve"><value>Breathing</value></data>
+  <data name="Rgb_Fx_Rainbow" xml:space="preserve"><value>Rainbow</value></data>
+  <data name="Rgb_Fx_Cycle" xml:space="preserve"><value>Colour cycle</value></data>
+  <data name="Rgb_Fx_Flash" xml:space="preserve"><value>Flashing</value></data>
+  <data name="Rgb_Fx_Group" xml:space="preserve"><value>Effects for every device</value></data>
+  <data name="Rgb_Fx_Own" xml:space="preserve"><value>Effects of the devices themselves</value></data>
+  <data name="Rgb_Report" xml:space="preserve"><value>{0}: {1} device(s) run it themselves, {2} are driven by the app.</value></data>
+  <data name="Rgb_Report_Skipped" xml:space="preserve"><value>Not possible on: {0}.</value></data>
   <data name="Rgb_All_Sub" xml:space="preserve"><value>one colour or one effect for every device</value></data>
   <data name="Rgb_Devices" xml:space="preserve"><value>Devices</value></data>
   <data name="Rgb_Zones" xml:space="preserve"><value>Outputs</value></data>
@@ -3594,7 +3681,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_PowerEnd_leave" xml:space="preserve"><value>Leave the lights as they are</value></data>
   <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>Turn the lights off</value></data>
   <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>Keep the lights on</value></data>
-  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>Carried out by the background monitor, which must be running; Windows gives it only a few seconds, so on a slow lighting server it can miss.</value></data>
+  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>Carried out by the background monitor, which must be running; it keeps the lights' server ready for it. Before the lights are put out, how they were is written down and put back when the PC wakes or starts, even when no scene is switched on. Windows gives only a few seconds, so on a slow server it can miss.</value></data>
   <data name="Detail_L_VramTemp" xml:space="preserve"><value>VRAM temperature</value></data>
   <data name="Detail_L_MemCtrlLoad" xml:space="preserve"><value>Memory controller load</value></data>
   <data name="Detail_Fig_Bandwidth" xml:space="preserve"><value>Measured bandwidth</value></data>

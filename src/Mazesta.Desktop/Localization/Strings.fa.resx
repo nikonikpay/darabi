@@ -1220,6 +1220,73 @@
   <data name="Web_Dash_Live" xml:space="preserve"><value>وضعیت زنده‌ی سیستم</value></data>
   <data name="Nav_Group_Windows" xml:space="preserve"><value>ویندوز و بازی</value></data>
   <data name="Nav_Tweaks" xml:space="preserve"><value>ترفندهای ویندوز</value></data>
+  <data name="Nav_Shield" xml:space="preserve"><value>فایروال و آنتی‌ویروس</value></data>
+  <data name="Shield_Title" xml:space="preserve"><value>مازستا - فایروال و آنتی‌ویروس</value></data>
+  <data name="Shield_Lede" xml:space="preserve"><value>جلوی اتصال یک برنامه به اینترنت را بگیرید، یا یک فایل یا پوشه را از اسکن آنتی‌ویروس کنار بگذارید. فایل را انتخاب کنید؛ تغییر انجام می‌شود و بعد درستی‌اش بررسی می‌شود.</value></data>
+  <data name="Shield_Tab_Firewall" xml:space="preserve"><value>فایروال</value></data>
+  <data name="Shield_Tab_Av" xml:space="preserve"><value>آنتی‌ویروس</value></data>
+  <data name="Shield_Fw_Title" xml:space="preserve"><value>مسدود کردن یک برنامه</value></data>
+  <data name="Shield_Fw_Sub" xml:space="preserve"><value>در فایروال ویندوز، ورودی و خروجی</value></data>
+  <data name="Shield_Fw_Pick" xml:space="preserve"><value>انتخاب فایل برنامه…</value></data>
+  <data name="Shield_Refresh" xml:space="preserve"><value>تازه‌سازی</value></data>
+  <data name="Shield_Fw_Or" xml:space="preserve"><value>یا از برنامه‌هایی که الان اجرا هستند انتخاب کنید:</value></data>
+  <data name="Shield_Fw_Search" xml:space="preserve"><value>جست‌وجو با نام یا پوشه</value></data>
+  <data name="Shield_Fw_NoRunning" xml:space="preserve"><value>برنامه‌ای پیدا نشد.</value></data>
+  <data name="Shield_Block" xml:space="preserve"><value>مسدود کن</value></data>
+  <data name="Shield_Is_Blocked" xml:space="preserve"><value>مسدود است</value></data>
+  <data name="Shield_Blocked" xml:space="preserve"><value>برنامه‌های مسدودشده</value></data>
+  <data name="Shield_Blocked_Sub" xml:space="preserve"><value>از همین‌جا ساخته شده؛ نام قانون‌ها با «Mazesta Test» شروع می‌شود</value></data>
+  <data name="Shield_None_Blocked" xml:space="preserve"><value>هیچ برنامه‌ای از اینجا مسدود نشده است.</value></data>
+  <data name="Shield_Both" xml:space="preserve"><value>ورودی و خروجی</value></data>
+  <data name="Shield_In" xml:space="preserve"><value>فقط ورودی</value></data>
+  <data name="Shield_Out" xml:space="preserve"><value>فقط خروجی</value></data>
+  <data name="Shield_Unblock" xml:space="preserve"><value>باز کن</value></data>
+  <data name="Shield_Fw_Unknown" xml:space="preserve"><value>وضعیت فایروال خوانده نشد.</value></data>
+  <data name="Shield_Fw_On" xml:space="preserve"><value>فایروال ویندوز روشن است</value></data>
+  <data name="Shield_Fw_Off" xml:space="preserve"><value>فایروال ویندوز برای {0} خاموش است؛ مسدودسازی آنجا اثری ندارد.</value></data>
+  <data name="Shield_Av_Title" xml:space="preserve"><value>کنار گذاشتن از اسکن آنتی‌ویروس</value></data>
+  <data name="Shield_Av_Sub" xml:space="preserve"><value>فایل‌ها و پوشه‌هایی که Windows Defender اسکن نمی‌کند</value></data>
+  <data name="Shield_Av_File" xml:space="preserve"><value>انتخاب فایل…</value></data>
+  <data name="Shield_Av_Folder" xml:space="preserve"><value>انتخاب پوشه…</value></data>
+  <data name="Shield_Av_Warn" xml:space="preserve"><value>فقط چیزی را کنار بگذارید که به آن اعتماد دارید؛ فایل یا پوشه‌ی این فهرست برای ویروس بررسی نمی‌شود.</value></data>
+  <data name="Shield_Av_List" xml:space="preserve"><value>کنار گذاشته‌شده از اسکن</value></data>
+  <data name="Shield_Av_List_Sub" xml:space="preserve"><value>فهرست استثناهای Windows Defender</value></data>
+  <data name="Shield_Av_None" xml:space="preserve"><value>چیزی کنار گذاشته نشده است.</value></data>
+  <data name="Shield_Av_Unknown" xml:space="preserve"><value>فهرست خوانده نشد.</value></data>
+  <data name="Shield_Unexclude" xml:space="preserve"><value>حذف از فهرست</value></data>
+  <data name="Shield_Kind_Folder" xml:space="preserve"><value>پوشه</value></data>
+  <data name="Shield_Kind_File" xml:space="preserve"><value>فایل</value></data>
+  <data name="Shield_Kind_Gone" xml:space="preserve"><value>پیدا نشد</value></data>
+  <data name="Shield_Av_NoDefender" xml:space="preserve"><value>این کامپیوتر به Windows Defender پاسخ نمی‌دهد (شاید آنتی‌ویروس دیگری جایش را گرفته است).</value></data>
+  <data name="Shield_Av_On" xml:space="preserve"><value>Windows Defender از این کامپیوتر محافظت می‌کند</value></data>
+  <data name="Shield_Av_RealOff" xml:space="preserve"><value>محافظت لحظه‌ای Windows Defender خاموش است</value></data>
+  <data name="Shield_Av_Other" xml:space="preserve"><value>{0} آنتی‌ویروسی است که از این کامپیوتر محافظت می‌کند. این فهرست مال Windows Defender است و {0} از آن استفاده نمی‌کند؛ استثنا را در خودِ {0} بگذارید.</value></data>
+  <data name="Shield_Av_Tamper" xml:space="preserve"><value>Tamper Protection روشن است؛ ممکن است ویندوز تغییری را که از بیرون تنظیمات خودش می‌آید نپذیرد. هر تغییر بعد از انجام بررسی می‌شود.</value></data>
+  <data name="Shield_Done_Block" xml:space="preserve"><value>{0} در فایروال ویندوز مسدود شد (ورودی و خروجی).</value></data>
+  <data name="Shield_Done_Unblock" xml:space="preserve"><value>{0} از حالت مسدود درآمد.</value></data>
+  <data name="Shield_Done_Exclude" xml:space="preserve"><value>{0} از اسکن Windows Defender کنار گذاشته شد.</value></data>
+  <data name="Shield_Done_Unexclude" xml:space="preserve"><value>{0} دوباره اسکن می‌شود.</value></data>
+  <data name="Shield_Menu_Title" xml:space="preserve"><value>منوی کلیک راست</value></data>
+  <data name="Shield_Menu_Sub" xml:space="preserve"><value>همین کار را از اکسپلورر انجام دهید، بدون باز کردن برنامه</value></data>
+  <data name="Shield_Menu_Fw" xml:space="preserve"><value>افزودن «بلاک در فایروال» به منوی برنامه‌ها (.exe)</value></data>
+  <data name="Shield_Menu_Av" xml:space="preserve"><value>افزودن «استثنا در آنتی‌ویروس» به منوی پوشه‌ها</value></data>
+  <data name="Shield_Menu_Note" xml:space="preserve"><value>در ویندوز ۱۱ زیر «Show more options» هستند. چون این تغییر دسترسی مدیر می‌خواهد، ویندوز هر بار اجازه می‌پرسد.</value></data>
+  <data name="Shield_Menu_Failed" xml:space="preserve"><value>منو تغییر نکرد: {0}</value></data>
+  <data name="Shield_Menu_FwLabel" xml:space="preserve"><value>بلاک در فایروال (مازستا)</value></data>
+  <data name="Shield_Menu_AvLabel" xml:space="preserve"><value>استثنا در آنتی‌ویروس (مازستا)</value></data>
+  <data name="Shield_Err_NotFullPath" xml:space="preserve"><value>این مسیر کامل یک فایل یا پوشه‌ی این کامپیوتر نیست.</value></data>
+  <data name="Shield_Err_NotExe" xml:space="preserve"><value>برای فایروال باید یک برنامه (فایلی که با .exe تمام می‌شود) انتخاب شود.</value></data>
+  <data name="Shield_Err_Missing" xml:space="preserve"><value>این فایل یا پوشه وجود ندارد.</value></data>
+  <data name="Shield_Err_NotAccepted" xml:space="preserve"><value>ویندوز تغییر را نپذیرفت (ممکن است یک سیاست امنیتی یا Tamper Protection جلویش را بگیرد). {0}</value></data>
+  <data name="Shield_Err_Failed" xml:space="preserve"><value>انجام نشد: {0}</value></data>
+  <data name="Shield_Confirm_System" xml:space="preserve"><value>{0} داخل پوشه‌ی خود ویندوز است. مسدود کردن برنامه‌های سیستم ممکن است ویندوز را خراب کند. با این حال مسدود شود؟</value></data>
+  <data name="Shield_Confirm_Broad" xml:space="preserve"><value>{0} جای بسیار گسترده‌ای است (یک درایو یا پوشه‌ی اصلی). کنار گذاشتنش از اسکن، کامپیوتر را بی‌محافظ می‌کند. با این حال انجام شود؟</value></data>
+  <data name="Shield_Confirm_System_Page" xml:space="preserve"><value>این برنامه داخل پوشه‌ی خود ویندوز است. مسدود کردن برنامه‌های سیستم ممکن است ویندوز را خراب کند. با این حال مسدود شود؟</value></data>
+  <data name="Shield_Confirm_Broad_Page" xml:space="preserve"><value>این جای بسیار گسترده‌ای است (یک درایو یا پوشه‌ی اصلی). کنار گذاشتنش از اسکن، کامپیوتر را بی‌محافظ می‌کند. با این حال انجام شود؟</value></data>
+  <data name="Shield_Pick_File" xml:space="preserve"><value>انتخاب فایل</value></data>
+  <data name="Shield_Pick_Folder" xml:space="preserve"><value>انتخاب پوشه</value></data>
+  <data name="Shield_Pick_ExeFilter" xml:space="preserve"><value>برنامه‌ها (*.exe)</value></data>
+  <data name="Shield_Pick_AnyFilter" xml:space="preserve"><value>همه‌ی فایل‌ها</value></data>
   <data name="Nav_Updates" xml:space="preserve"><value>به‌روزرسانی ویندوز</value></data>
   <data name="Tweaks_Lede" xml:space="preserve"><value>تنظیمات و بهینه‌سازی‌های ویندوز. موارد را تیک بزنید و اجرا کنید؛ هر ردیف وضعیت فعلی ویندوز را نشان می‌دهد که بعد از هر تغییر دوباره خوانده می‌شود.</value></data>
   <data name="Tweaks_Presets" xml:space="preserve"><value>انتخاب‌های پیشنهادی</value></data>
@@ -3198,7 +3265,27 @@
   <data name="Rgb_Speed" xml:space="preserve"><value>سرعت</value></data>
   <data name="Rgb_Brightness" xml:space="preserve"><value>روشنایی</value></data>
   <data name="Rgb_Effect" xml:space="preserve"><value>افکت</value></data>
-  <data name="Rgb_Effect_Note" xml:space="preserve"><value>افکت با نامش انتخاب می‌شود: هر دستگاهی که آن را دارد به آن می‌رود و دستگاهی که ندارد همان‌طور می‌ماند.</value></data>
+  <data name="Rgb_Effect_Note" xml:space="preserve"><value>افکت‌های بالای فهرست روی همهٔ دستگاه‌ها جواب می‌دهند: دستگاهی که افکت را دارد خودش اجرا می‌کند و دستگاهی که ندارد را برنامه فریم‌به‌فریم می‌راند (برنامه یا پایشگر باید روشن باشد). افکت‌های خود دستگاه‌ها فقط به دستگاه‌هایی می‌رسد که آن را دارند.</value></data>
+  <data name="Rgb_Palettes" xml:space="preserve"><value>طیف‌های رنگی</value></data>
+  <data name="Rgb_Palette_sunset" xml:space="preserve"><value>غروب</value></data>
+  <data name="Rgb_Palette_fire" xml:space="preserve"><value>آتش</value></data>
+  <data name="Rgb_Palette_ocean" xml:space="preserve"><value>اقیانوس</value></data>
+  <data name="Rgb_Palette_ice" xml:space="preserve"><value>یخ</value></data>
+  <data name="Rgb_Palette_forest" xml:space="preserve"><value>جنگل</value></data>
+  <data name="Rgb_Palette_aurora" xml:space="preserve"><value>شفق قطبی</value></data>
+  <data name="Rgb_Palette_neon" xml:space="preserve"><value>نئون</value></data>
+  <data name="Rgb_Palette_candy" xml:space="preserve"><value>آب‌نبات</value></data>
+  <data name="Rgb_Palette_royal" xml:space="preserve"><value>سلطنتی</value></data>
+  <data name="Rgb_Palette_lava" xml:space="preserve"><value>گدازه</value></data>
+  <data name="Rgb_Fx_Static" xml:space="preserve"><value>رنگ ثابت</value></data>
+  <data name="Rgb_Fx_Breathing" xml:space="preserve"><value>تنفسی</value></data>
+  <data name="Rgb_Fx_Rainbow" xml:space="preserve"><value>رنگین‌کمان</value></data>
+  <data name="Rgb_Fx_Cycle" xml:space="preserve"><value>چرخش رنگ</value></data>
+  <data name="Rgb_Fx_Flash" xml:space="preserve"><value>چشمک‌زن</value></data>
+  <data name="Rgb_Fx_Group" xml:space="preserve"><value>افکت‌های همگانی (برای همه دستگاه‌ها)</value></data>
+  <data name="Rgb_Fx_Own" xml:space="preserve"><value>افکت‌های خود دستگاه‌ها</value></data>
+  <data name="Rgb_Report" xml:space="preserve"><value>{0}: روی {1} دستگاه خودِ دستگاه اجرا می‌کند و روی {2} دستگاه را برنامه شبیه‌سازی می‌کند.</value></data>
+  <data name="Rgb_Report_Skipped" xml:space="preserve"><value>روی این‌ها ممکن نبود: {0}.</value></data>
   <data name="Rgb_All_Sub" xml:space="preserve"><value>یک رنگ یا یک افکت برای همه‌ی دستگاه‌ها</value></data>
   <data name="Rgb_Devices" xml:space="preserve"><value>دستگاه‌ها</value></data>
   <data name="Rgb_Zones" xml:space="preserve"><value>خروجی‌ها</value></data>
@@ -3594,7 +3681,7 @@
   <data name="Rgb_PowerEnd_leave" xml:space="preserve"><value>نورها را دست نزن (بُرد تصمیم می‌گیرد)</value></data>
   <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>نورها خاموش شوند</value></data>
   <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>نورها روشن بمانند</value></data>
-  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>این کار را پایشگر پس‌زمینه انجام می‌دهد و باید روشن باشد؛ ویندوز فقط چند ثانیه فرصت می‌دهد، پس اگر سرور نورپردازی کند باشد ممکن است به‌موقع نرسد.</value></data>
+  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>این کار را پایشگر پس‌زمینه انجام می‌دهد و باید روشن باشد؛ سرور نورپردازی را برای همین آماده نگه می‌دارد. پیش از خاموش‌کردن نورها، حالتشان نوشته می‌شود و هنگام بیدارشدن یا روشن‌شدن کامپیوتر دوباره برمی‌گردد، حتی اگر صحنه‌ای روشن نباشد. ویندوز فقط چند ثانیه فرصت می‌دهد، پس اگر سرور کند باشد ممکن است به‌موقع نرسد.</value></data>
   <data name="Detail_L_VramTemp" xml:space="preserve"><value>دمای حافظهٔ کارت گرافیک (VRAM)</value></data>
   <data name="Detail_L_MemCtrlLoad" xml:space="preserve"><value>بار کنترلر حافظهٔ کارت گرافیک</value></data>
   <data name="Detail_Fig_Bandwidth" xml:space="preserve"><value>پهنای باند اندازه‌گیری‌شده</value></data>

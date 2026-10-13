@@ -5,6 +5,8 @@ namespace Mazesta.App;
 /// <summary>
 /// <c>Mazesta.exe --selftest=undervolt|overclock|plus|scene|scenert</c>: runs that tuning feature on the real card with nobody at the screen and writes every step and the
 /// outcome to <c>logs/selftest-&lt;kind&gt;.txt</c>. It only measures - the finding is not applied (see <see cref="TuningViewModel.SelfTest"/>). It opens no port and takes no input.
+/// <c>--selftest=shield</c> blocks a copy of the program in the firewall and leaves a folder out of Defender's scans, reads both back and removes them (see <see cref="SelfTestShield"/>).
+/// <c>--selftest=lights</c> puts the lights out and back from the note, ends and starts their server as a wake does, and runs the effects and a spectrum on every device (see <see cref="SelfTestLights"/>).
 /// <c>--selftest=report</c> sends the usage statistics not sent yet, as the Settings button does, and writes whether the site took them.
 /// <c>--selftest=tests[N][:id,id]</c> runs every test this machine can (or just the listed ones), N seconds each (15 by default), and writes what each result's page would show: its figures and lines, a line
 /// that is still the executor's English marked <c>[LATIN]</c>.
@@ -22,6 +24,8 @@ internal static class SelfTest
         {
             File.WriteAllText(file, "");
             if (kind.StartsWith("tests", StringComparison.Ordinal)) { await RunTests(kind, services, ui, Say); Say("DONE"); return; }
+            if (kind == "shield") { await SelfTestShield.RunAsync(Say); Say("DONE"); return; }
+            if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")
             {
                 // What the Settings button does for the statistics: send everything not sent yet, switch or no switch, and say whether the site took it.

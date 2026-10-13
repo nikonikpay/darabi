@@ -96,6 +96,48 @@ public sealed class OpenRgbClient : IDisposable
         finally { _gate.Release(); }
     }
 
+
+    /// <summary>The device with this index, or null.</summary>
+    public RgbDevice? Device(int device) => _devices.FirstOrDefault(d => d.Index == device);
+
+    /// <summary>Whether the device has a mode that takes a colour for each LED (what an effect driven by the app needs).</summary>
+    public bool HasPerLed(int device) => Device(device) is { LedCount: > 0 } d && d.Modes.Any(m => m.PerLed);
+
+    /// <summary>Puts a device in its mode with a colour for each LED ("Direct" when it has one), so the frames that follow show as sent. False when it has none.</summary>
+    public async Task<bool> EnterDirectAsync(int device, CancellationToken ct)
+    {
+        var d = Device(device); if (d is null) return false;
+        var mode = Named(d, "Direct") is { PerLed: true } direct ? direct : d.Modes.FirstOrDefault(m => m.PerLed);
+        if (mode is null || d.LedCount <= 0) return false;
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try { await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(d.Modes.ToList().IndexOf(mode), mode, _version), ct).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+        return true;
+    }
+
+    /// <summary>One frame: the colours of the LEDs, in the mode the device is in (see <see cref="EnterDirectAsync"/>). Short lists are filled with the last colour, long ones cut.</summary>
+    public async Task PushLedsAsync(int device, IReadOnlyList<RgbColor> colors, CancellationToken ct)
+    {
+        var d = Device(device); if (d is null || colors.Count == 0) return;
+        var all = Enumerable.Range(0, d.LedCount).Select(i => colors[Math.Min(i, colors.Count - 1)]).ToList();
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try { await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+    }
+
+    /// <summary>Sends a mode exactly as given (its own speed, brightness, direction and colours), and the LEDs' colours after it when the mode takes one for each.</summary>
+    public async Task RestoreModeAsync(int device, RgbMode mode, IReadOnlyList<RgbColor>? leds, CancellationToken ct)
+    {
+        var d = Find(device); int index = d.Modes.ToList().FindIndex(m => m.Name == mode.Name); if (index < 0) throw new ArgumentOutOfRangeException(nameof(mode));
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(index, mode, _version), ct).ConfigureAwait(false);
+            if (mode.PerLed && leds is { Count: > 0 }) await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(Enumerable.Range(0, d.LedCount).Select(i => leds[Math.Min(i, leds.Count - 1)]).ToList()), ct).ConfigureAwait(false);
+        }
+        finally { _gate.Release(); }
+    }
+
     private RgbDevice Find(int device) => _devices.FirstOrDefault(d => d.Index == device) ?? throw new InvalidOperationException("That device is not in the list; refresh it.");
     private static RgbMode? Named(RgbDevice d, string name) => d.Modes.FirstOrDefault(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 

@@ -29,14 +29,25 @@ export function mount(el) {
   const allColor = h("input", { type: "color", class: "rgb-color", value: "#ff0000", "aria-label": t("Rgb_Color") });
   const allMode = h("select", { class: "field", "aria-label": t("Rgb_Effect") }, h("option", { value: "" }, t("Rgb_Mode_Keep")));
   const allSpeed = range("Rgb_Speed", 60), allBright = range("Rgb_Brightness", 100);
+  // The colour spectra: a click picks one for the next apply (a second click on the same one lets it go). Laid along a strip it is a gradient; an effect that moves goes through its colours.
+  let palette = null; const paletteBtns = [];
+  const paletteChips = (setPalette) => h("div", { class: "rgb-palettes", role: "group", "aria-label": t("Rgb_Palettes") }, (state?.palettes || []).map((p) => {
+    const b = h("button", { class: "rgb-pal", type: "button", style: { background: `linear-gradient(90deg, ${p.colors.join(", ")})` }, title: t("Rgb_Palette_" + p.id), "aria-label": t("Rgb_Palette_" + p.id), "aria-pressed": String(palette === p.id),
+      onclick: () => { palette = palette === p.id ? null : p.id; setPalette(palette); for (const x of paletteBtns) x.setAttribute("aria-pressed", String(x.dataset.id === palette)); } });
+    b.dataset.id = p.id; paletteBtns.push(b); return b;
+  }));
+  const effectOptions = (s) => [h("option", { value: "" }, t("Rgb_Mode_Keep")), ...(s.effects || []).map((e) => h("option", { value: e }, t("Rgb_Fx_" + e))),
+    s.modeNames.length ? h("optgroup", { label: t("Rgb_Fx_Own") }, s.modeNames.map((n) => h("option", { value: n }, n))) : null];
   const swatches = (setColor) => h("div", { class: "rgb-swatches", role: "group", "aria-label": t("Rgb_Color") }, PALETTE.map((c) =>
     h("button", { class: "rgb-sw", type: "button", style: { background: c }, title: c, "aria-label": c, onclick: () => setColor(c) })));
+  const allPalettes = h("div", { class: "rgb-pal-wrap" });
   const allBody = h("div", { class: "rgb-all-body", hidden: true },
     h("div", { class: "rgb-row" }, h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), allColor), swatches((c) => { allColor.value = c; }),
       h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Effect")), allMode)),
     h("div", { class: "rgb-row" }, allSpeed.el, allBright.el),
+    allPalettes,
     h("div", { class: "btn-row" },
-      h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, color: allColor.value, ...(allMode.value ? { modeName: allMode.value, speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, t("Rgb_ApplyAll")),
+      h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, color: allColor.value, ...(palette ? { palette } : {}), ...(allMode.value ? { modeName: allMode.value, speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, t("Rgb_ApplyAll")),
       h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: -1, color: "" }) }, t("Rgb_OffAll"))),
     h("p", { class: "note" }, t("Rgb_Effect_Note")));
 
@@ -54,22 +65,40 @@ export function mount(el) {
     const shown = s.makers?.length ? t("Rgb_Makers_Stopped", s.makers.join("، ")) : s.running?.length ? t("Rgb_Makers_Running", s.running.join("، ")) : "";
     makers.hidden = !shown; makers.textContent = shown;
     allBody.hidden = !s.devices.length;
-    const was = allMode.value; allMode.replaceChildren(h("option", { value: "" }, t("Rgb_Mode_Keep")), ...s.modeNames.map((n) => h("option", { value: n }, n))); allMode.value = s.modeNames.includes(was) ? was : "";
+    const was = allMode.value; allMode.replaceChildren(...effectOptions(s).filter(Boolean)); allMode.value = [...allMode.querySelectorAll("option")].some((o) => o.value === was) ? was : "";
+    paletteBtns.length = 0; allPalettes.replaceChildren(h("span", { class: "rgb-pal-label" }, t("Rgb_Palettes")), paletteChips(() => {}));
     list.replaceChildren(...s.devices.map(card));
+    if (!s.error && s.report) msg.textContent = reportText(s.report);
+  }
+
+  function reportText(r) {
+    const name = (s) => (state?.effects || []).includes(s) ? t("Rgb_Fx_" + s) : s;
+    const parts = [t("Rgb_Report", name(r.effect), r.native, r.simulated)];
+    if (r.skipped?.length) parts.push(t("Rgb_Report_Skipped", r.skipped.join("، ")));
+    return r.effect ? parts.join(" ") : "";
   }
 
   function card(d) {
     const mine = ui.get(d.index) || { color: d.color || "#ffffff", mode: "", speed: null, bright: null }; ui.set(d.index, mine);
     const pick = h("input", { type: "color", class: "rgb-color", value: mine.color, "aria-label": t("Rgb_Color"), oninput: (e) => { mine.color = e.target.value; } });
     const mode = h("select", { class: "field", "aria-label": t("Rgb_Mode"), onchange: () => { mine.mode = mode.value; sync(); } },
-      h("option", { value: "" }, t("Rgb_Mode_Keep")), d.modes.map((m) => h("option", { value: m.index }, m.name)));
+      h("option", { value: "" }, t("Rgb_Mode_Keep")), d.modes.map((m) => h("option", { value: m.index }, m.name)),
+      h("optgroup", { label: t("Rgb_Fx_Group") }, (state?.effects || []).map((e) => h("option", { value: "fx:" + e }, t("Rgb_Fx_" + e)))));
     mode.value = mine.mode;
     const speed = range("Rgb_Speed", mine.speed ?? 60), bright = range("Rgb_Brightness", mine.bright ?? 100);
     speed.el.querySelector("input").addEventListener("change", () => { mine.speed = speed.value(); }); bright.el.querySelector("input").addEventListener("change", () => { mine.bright = bright.value(); });
-    const current = () => d.modes.find((m) => String(m.index) === mode.value);
+    const fx = () => mode.value.startsWith("fx:") ? mode.value.slice(3) : "";
+    const current = () => fx() ? { color: true, speed: true, brightness: true } : d.modes.find((m) => String(m.index) === mode.value);
     function sync() { const m = current(); pick.disabled = !!m && !m.color; speed.el.hidden = !m?.speed; bright.el.hidden = !m?.brightness; }
     sync();
-    const go = () => run("rgb.set", mode.value === "" ? { device: d.index, color: pick.value } : { device: d.index, color: pick.value, mode: Number(mode.value), ...(current()?.speed ? { speed: speed.value() } : {}), ...(current()?.brightness ? { brightness: bright.value() } : {}) });
+    let own = null;   // this card's spectrum
+    const go = () => run("rgb.set", mode.value === "" ? { device: d.index, color: pick.value, ...(own ? { palette: own } : {}) }
+      : { device: d.index, color: pick.value, ...(own ? { palette: own } : {}), ...(fx() ? { modeName: fx() } : { mode: Number(mode.value) }), ...(current()?.speed ? { speed: speed.value() } : {}), ...(current()?.brightness ? { brightness: bright.value() } : {}) });
+    const chips = h("div", { class: "rgb-palettes", role: "group", "aria-label": t("Rgb_Palettes") }, (state?.palettes || []).map((p) => {
+      const b = h("button", { class: "rgb-pal", type: "button", style: { background: `linear-gradient(90deg, ${p.colors.join(", ")})` }, title: t("Rgb_Palette_" + p.id), "aria-label": t("Rgb_Palette_" + p.id), "aria-pressed": "false",
+        onclick: () => { own = own === p.id ? null : p.id; for (const x of chips.children) x.setAttribute("aria-pressed", String(x.dataset.id === own)); } });
+      b.dataset.id = p.id; return b;
+    }));
     // The LEDs as they are lit. Where the device takes a colour for each LED, an LED is a button: it opens the colour picker for that one alone.
     const one = h("input", { type: "color", class: "rgb-one", tabindex: "-1", "aria-hidden": "true" }); let oneLed = -1;
     one.addEventListener("change", () => { if (oneLed >= 0) run("rgb.led", { device: d.index, led: oneLed, color: one.value }); });
@@ -82,7 +111,7 @@ export function mount(el) {
       zones.some((z) => z.resizable && z.leds === 0) ? h("p", { class: "note" }, t("Rgb_Zone_Hint")) : null) : null;
     return box({ cls: HUE[d.kind] || "p-tool", ico: ICON[d.kind] || "bolt", title: d.name, sub: [t(`Rgb_Kind_${d.kind}`), d.vendor, d.leds ? t("Rgb_Leds", d.leds) : ""].filter(Boolean).join(" · "), extra: "rgb-card", a: "rgb",
       body: [strip, d.perLed ? h("p", { class: "note rgb-led-hint" }, t("Rgb_Led_Hint")) : null, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Mode")), mode), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), pick)),
-        swatches((c) => { pick.value = c; mine.color = c; }), h("div", { class: "rgb-row" }, speed.el, bright.el),
+        swatches((c) => { pick.value = c; mine.color = c; }), chips, h("div", { class: "rgb-row" }, speed.el, bright.el),
         h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: go }, t("Rgb_Apply")), h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: d.index, color: "" }) }, t("Rgb_Off"))), zoneRows] });
   }
 

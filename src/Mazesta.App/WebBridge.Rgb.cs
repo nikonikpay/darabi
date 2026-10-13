@@ -19,7 +19,7 @@ public sealed partial class WebBridge
     private void RegisterRgb()
     {
         var session = new RgbSession(AppContext.BaseDirectory, Path.Combine(_paths.DataRoot, "openrgb"), _log); var client = session.Client; var conflicts = session.Conflicts;
-        var scene = RgbSceneStore.Read(_paths); int busy = 0, starting = 0;   // busy: a call is being served; starting: the server is being brought up (not the same: a state call is busy too)
+        var scene = RgbSceneStore.Read(_paths); int busy = 0, starting = 0; object? report = null;   // busy: a call is being served; starting: the server is being brought up (not the same: a state call is busy too)
         void Save() { try { RgbSceneStore.Write(_paths, scene); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the lights' scene"); } }
         static bool TrayRuns() { var p = Process.GetProcessesByName(OverlaySignals.TrayProcess); foreach (var x in p) x.Dispose(); return p.Length > 0; }
         _cleanup.Add(() => session.Release(leaveRunning: scene.Enabled && TrayRuns()));
@@ -30,7 +30,8 @@ public sealed partial class WebBridge
             connecting = Volatile.Read(ref starting) != 0,   // also while the devices are still being scanned after the socket is up
             makers = conflicts.StoppedNow,   // the makers' programs stopped for now, to be put back by "let go"
             running = client.Connected ? Array.Empty<string>() : conflicts.Running(),
-            modeNames = client.Devices.SelectMany(d => d.Modes.Select(m => m.Name)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            modeNames = client.Devices.SelectMany(d => d.Modes.Select(m => m.Name)).Where(n => !RgbEffects.Covered(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+            effects = RgbEffects.All, palettes = RgbPalettes.All.Select(p => new { id = p.Id, colors = p.Colors }), report = Interlocked.Exchange(ref report, null), simulated = session.Runner.Count,
             devices = client.Devices.Select(d => new
             {
                 index = d.Index, kind = d.Kind.ToString(), name = d.Name, vendor = d.Vendor, location = d.Location, leds = d.LedCount, active = d.ActiveMode,
@@ -89,17 +90,28 @@ public sealed partial class WebBridge
                 finally { Volatile.Write(ref busy, 0); }
             });
         }
-        // The lights forget their colours when the PC sleeps: the scene is put back when it wakes (a while after, once the devices are up again).
+        // The lights forget their colours when the PC sleeps, and the server's handles into them go dead: when it wakes the lights' server is started afresh (the tray does that when it
+        // runs: this side then only connects to its new one) and the scene is put on again, once more a while later in case a device was still coming up.
         PowerModeChangedEventHandler wake = (_, e) =>
         {
             if (e.Mode != PowerModes.Resume || !scene.Enabled) return;
             _ = Task.Run(async () =>
             {
-                await Task.Delay(8000).ConfigureAwait(false);
-                if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
-                try { if (client.Connected) await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(false); }
-                catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidDataException or OperationCanceledException) { client.Disconnect(); }
-                finally { Volatile.Write(ref busy, 0); }
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    await Task.Delay(pass == 0 ? (TrayRuns() ? 20000 : 8000) : 25000).ConfigureAwait(false);
+                    if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) continue;
+                    try
+                    {
+                        RgbConnect r;
+                        if (pass == 0 && !TrayRuns()) r = await session.RecoverAsync(scene, CancellationToken.None).ConfigureAwait(false);
+                        else { if (pass == 0) client.Disconnect(); r = await session.ConnectAsync(true, scene.StopMakers, scene, CancellationToken.None).ConfigureAwait(false); }
+                        if (r == RgbConnect.Connected) await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(false);
+                        _log.LogInformation("The lights after waking (pass {Pass}): {Result}, {Count} effect(s) run by the app", pass, r, session.Runner.Count);
+                    }
+                    catch (Exception ex) when (ex is System.Net.Sockets.SocketException or IOException or InvalidDataException or OperationCanceledException or InvalidOperationException) { _log.LogWarning(ex, "The lights after waking: failed"); client.Disconnect(); }
+                    finally { Volatile.Write(ref busy, 0); }
+                }
             });
         };
         SystemEvents.PowerModeChanged += wake; _cleanup.Add(() => SystemEvents.PowerModeChanged -= wake);
@@ -121,22 +133,33 @@ public sealed partial class WebBridge
             int? speed = p.TryGetProperty("speed", out var sv) && sv.TryGetInt32(out var si) ? si : null, bright = p.TryGetProperty("brightness", out var bv) && bv.TryGetInt32(out var bi) ? bi : null;
             string hex = Str(p, "color"); var color = RgbColor.Parse(hex);
             if (hex.Length > 0 && color is null) throw new ArgumentException("color");
-            var targets = device < 0 ? client.Devices.ToList() : client.Devices.Where(d => d.Index == device).ToList(); var failed = new List<string>(); int skipped = 0;
+            string palette = Str(p, "palette"); if (palette.Length > 0 && RgbPalettes.Find(palette) is null) throw new ArgumentException("palette");
+            var targets = device < 0 ? client.Devices.ToList() : client.Devices.Where(d => d.Index == device).ToList(); var failed = new List<string>(); var skipped = new List<string>(); int native = 0, simulated = 0, still = 0;
+            string asked = modeName;
             foreach (var d in targets)
             {
                 try
                 {
-                    // For everything at once the effect is named (its number differs by device); a device without it is left as it is.
+                    // For everything at once the effect is named (its number differs by device); one that has not got it is driven by the app, or left as it is when it cannot be.
                     string name = modeName.Length > 0 ? modeName : mode is { } index && index >= 0 && index < d.Modes.Count ? d.Modes[index].Name : "";
-                    var look = new RgbLook(hex.Length > 0 ? hex : null, name.Length > 0 ? name : null, speed, bright, Off: hex.Length == 0 && name.Length == 0);
-                    if (!await session.ApplyLookAsync(d.Index, look, CancellationToken.None).ConfigureAwait(true)) { skipped++; continue; }
+                    if (asked.Length == 0) asked = name;
+                    var look = new RgbLook(hex.Length > 0 ? hex : null, name.Length > 0 ? name : null, speed, bright, Off: hex.Length == 0 && name.Length == 0 && palette.Length == 0, Palette: palette.Length > 0 ? palette : null);
+                    switch (await session.ApplyLookAsync(d.Index, look, CancellationToken.None).ConfigureAwait(true))
+                    {
+                        case RgbHow.Skipped: skipped.Add(d.Name); continue;
+                        case RgbHow.Native: native++; break;
+                        case RgbHow.Simulated: simulated++; break;
+                        default: still++; break;
+                    }
                     if (device >= 0) scene.Devices[RgbScene.DeviceKey(d.Vendor, d.Name, d.Location)] = look;
                 }
                 catch (NotSupportedException e) { failed.Add(e.Message); }
             }
-            if (device < 0 && skipped < targets.Count) { scene.All = new RgbLook(hex.Length > 0 ? hex : null, modeName.Length > 0 ? modeName : null, speed, bright, Off: hex.Length == 0 && modeName.Length == 0); scene.Devices.Clear(); }
+            if (device < 0 && skipped.Count < targets.Count) { scene.All = new RgbLook(hex.Length > 0 ? hex : null, modeName.Length > 0 ? modeName : null, speed, bright, Off: hex.Length == 0 && modeName.Length == 0 && palette.Length == 0, Palette: palette.Length > 0 ? palette : null); scene.Devices.Clear(); }
             scene.Dark = false; Save();
-            _log.LogInformation("RGB set: device {Device}, mode {Mode}{Name}, colour {Color}; refused: {Refused}, without the mode: {Skipped}", device, mode, modeName, hex.Length > 0 ? hex : "off", failed.Count, skipped);
+            session.Runner.Start();
+            report = new { effect = asked, native, simulated, still, skipped };
+            _log.LogInformation("RGB set: device {Device}, mode {Mode}{Name}, colour {Color}, palette {Palette}; own effect: {Native}, run by the app: {Simulated}, refused: {Refused}, left as they were: {Skipped}", device, mode, modeName, hex.Length > 0 ? hex : "off", palette, native, simulated, failed.Count, string.Join(", ", skipped));
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
             return State(failed.Count > 0 ? string.Join(" ", failed) : null);
         }));

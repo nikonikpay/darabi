@@ -31,5 +31,23 @@ public static class RgbSceneStore
         string tmp = file + ".tmp"; File.WriteAllText(tmp, JsonSerializer.Serialize(scene, Json)); File.Move(tmp, file, overwrite: true);
     }
 
+
+    public static string SnapshotFile(AppPaths paths) => Path.Combine(paths.ConfigDir, "rgb-before-off.json");
+
+    /// <summary>How the lights were before the app put them out at sleep or shutdown, or null when nothing is waiting to be put back.</summary>
+    public static RgbSnapshot? ReadSnapshot(AppPaths paths)
+    {
+        try { string file = SnapshotFile(paths); return File.Exists(file) ? JsonSerializer.Deserialize<RgbSnapshot>(File.ReadAllText(file), Json) : null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or NotSupportedException) { return null; }
+    }
+
+    public static void WriteSnapshot(AppPaths paths, RgbSnapshot snap)
+    {
+        string file = SnapshotFile(paths); Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        string tmp = file + ".tmp"; File.WriteAllText(tmp, JsonSerializer.Serialize(snap, Json)); File.Move(tmp, file, overwrite: true);
+    }
+
+    public static void ClearSnapshot(AppPaths paths) { try { File.Delete(SnapshotFile(paths)); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } }
+
     private static RgbScene Fixed(RgbScene s) { s.Devices ??= []; s.Zones ??= []; return s; }
 }
