@@ -133,7 +133,7 @@ float3 Radiance(float3 origin, float3 dir, inout uint seed)
         {
             float f = 0.04 + 0.96 * pow(1 - saturate(dot(s.Normal, v)), 5);
             color += weight * (s.Emission + f * Glance(h.P + s.Normal * 0.01, reflect(dir, s.Normal), 400, seed, false));
-            weight *= (1 - f) * lerp(1, StainTint(m), 0.8) * (m.Alpha < 1 ? m.Alpha + 0.4 : 1);
+            weight *= (1 - f) * lerp(1, StainTint(m), 0.8) * (m.Alpha < 1 ? saturate(m.Alpha + 0.65) : 1);
             origin = h.P + dir * 0.01; continue;   // thin glass: straight on
         }
 

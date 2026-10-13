@@ -47,6 +47,8 @@ BIG_TEXTURES = ("V8_", "CV5_", "Big_Old_Gates", "carpet", "galicho", "V12_User_P
 # Materials Blender builds from layered shaders that have no one Principled node to read, or whose colours are a node group's
 # own inputs: what they are, said here (the pots: the middle of the group's two clay colours).
 AS_GLASS = ("Multicoated glass",)
+STAINED_ALPHA = 0.35   # how much of the colour a pane puts over what is behind it (the raster's glass: its own colour at this density); v22's panes were about 0.55
+REFRACTS = ("Vaso flores", "V13_Cut_Crystal")   # the vases and the crystal: glass the ray tracer bends the view through (the Pattern's last value, 1)
 STAINED = "V7_Stained_"   # the orsi's coloured panes: the ray tracer colours the light that passes through them
 # Stone the .blend shades with noise alone and gives no coordinates of its own: it takes another material's texture and relief, laid by
 # world position (so many repeats a metre) and tinted to its own colour.
@@ -162,10 +164,17 @@ def normal_map(sock, depth=0):
         return next((r for r in (normal_map(i, depth + 1) for i in n.inputs if i.type == 'VECTOR') if r), None)
     return None
 
+GENERIC_ALBEDO = "Surface_Albedo_Microvariation"   # v22 multiplies the procedural colour with this near-white packed image: the colour is the material, the image is not a texture
+# v22 names its one-value packed images after the value: V13_Roughness_0.96_Mineral, V13_Metallic_1.0
+PACKED_VALUE = re.compile(r'^V13_(Roughness|Metallic)_([0-9.]+)')
+def packed_value(img, kind):
+    m = PACKED_VALUE.match(img[0].name) if img else None
+    return float(m.group(2)) if m and m.group(1) == kind else None
+
 def upstream_image(sock, colour=False):
     """The first image texture feeding a socket and which of its outputs; for a base colour, the first that is a colour image
     (a mix with an occlusion or a mask map puts those on the same socket)."""
-    found = images_feeding(sock)
+    found = [f for f in images_feeding(sock) if GENERIC_ALBEDO not in f[0].name]
     if colour: found = [f for f in found if f[0].colorspace_settings.name == 'sRGB'] or found
     return found[0] if found else None
 
@@ -216,6 +225,14 @@ def uv_scale(node):
         if n.bl_idname != 'NodeReroute': break
         sock = n.inputs[0]
     return (1.0, 1.0)
+
+BOXED = {}   # material name -> repeats a metre: what v22 lays by box projection of the object's own coordinates (the upholstery and cushions), written into the mesh's UVs by pack()
+def box_scale(node):
+    """The repeats a metre of an image laid by box projection through a Mapping node from Object coordinates (v22's fabrics); None for any other way of laying it."""
+    if node.projection != 'BOX' or not node.inputs['Vector'].is_linked: return None
+    n = node.inputs['Vector'].links[0].from_node
+    if n.bl_idname != 'ShaderNodeMapping' or not n.inputs['Vector'].is_linked or n.inputs['Vector'].links[0].from_socket.name != 'Object': return None
+    return float(n.inputs['Scale'].default_value[0])
 
 def uv_turn(node):
     """How many quarter turns the Mapping node before an image gives the mesh's coordinates (a rug's picture laid across it): 0 to 3;
@@ -381,6 +398,8 @@ def material_for(mat):
         rec['base'] = tuple(bc.default_value[:3]); rec['rough'] = float(p.inputs['Roughness'].default_value); rec['metal'] = float(p.inputs['Metallic'].default_value)
         rough_img = upstream_image(p.inputs['Roughness']); metal_img = upstream_image(p.inputs['Metallic'])
         if p.inputs['Roughness'].is_linked: rec['rough'] = 0.6
+        if (v := packed_value(rough_img, 'Roughness')) is not None: rec['rough'] = v; rough_img = None   # a packed one-value image: the value is the material's
+        if (v := packed_value(metal_img, 'Metallic')) is not None: rec['metal'] = v; metal_img = None
         if bc.is_linked and not upstream_image(bc): rec['base'] = flat_colour(bc) or rec['base']
         rec['trans'] = float(p.inputs['Transmission Weight'].default_value)
         es = float(p.inputs['Emission Strength'].default_value); ec = p.inputs['Emission Color'].default_value
@@ -399,6 +418,7 @@ def material_for(mat):
             turn = uv_turn(img[3]) if img and not bump else 0   # (a normal map would have its directions turned as well: none that is turned has one worth it)
             rec['tex'] = texture_for(img[0] if img else None, alpha, grade_ops(bc) if img else (), (rough_img[0], rough_img[2]) if rough_img else rec['rough'], size, Q_FINE if name.startswith(FINE) else Q_COLOUR, turn)
             if img: rec['base'] = tint(bc); rec['pattern'] = (*uv_scale(img[3]), 0, 0)
+            if img and (bs := box_scale(img[3])): BOXED[name] = bs
             if alpha: rec['kind'] = K_CUTOUT
             if alpha and not name.startswith('carpet'): rec['base'] = tuple(c * LEAF_ALBEDO for c in rec['base'])
             occlusion = next((f[0] for f in images_feeding(bc) if f[0].colorspace_settings.name != 'sRGB' and (not alpha or f[0] != alpha[0])), None)
@@ -406,7 +426,7 @@ def material_for(mat):
                 rec['normal'] = normal_texture_for(bump[0], size, bump[1], occlusion, (metal_img[0], metal_img[2]) if metal_img else rec['metal'])
         base = re.sub(r'\.\d{3}$', '', name)   # an appended copy of a material is named "....001"
         if base in AS_SAID: rec.update(AS_SAID[base])
-        if base.startswith(STAINED) and p: rec.update(tex=-1, normal=-1, base=tuple(p.inputs['Base Color'].default_value[:3]))   # v22 gives the panes a flat-colour packed texture: the glass is that colour, as before
+        if base.startswith(STAINED) and p: rec.update(tex=-1, normal=-1, alpha=STAINED_ALPHA, base=tuple(p.inputs['Base Color'].default_value[:3]))   # v22 gives the panes a flat-colour packed texture: the glass is that colour, as before
         if base in AS_GLASS: rec.update(kind=K_GLASS, base=(0.9, 0.95, 0.95), metal=0.0, rough=0.05, trans=1.0)
         elif base.endswith('Water'): rec['kind'] = K_WATER
         elif rec['trans'] > 0.5 or base.endswith('Foam'): rec['kind'] = K_GLASS
@@ -420,6 +440,7 @@ def material_for(mat):
             rec.update(tex=like['tex'], normal=like['normal'], base=tuple(float(c / max(m, 1e-3)) for c, m in zip(rec['base'], lin)), pattern=(1.0, 1.0, LAID_LIKE[base][1], 0.0))
         if base in ALBEDO_SCALE: rec['base'] = tuple(c * ALBEDO_SCALE[base] for c in rec['base'])
         if rec['kind'] == K_FLAT and rec['tex'] < 0: rec['pattern'] = (0.0, 0.0, 0.0, next((v for k, v in MOTTLE.items() if base.startswith(k)), 0.0))
+    if rec['kind'] == K_GLASS and re.sub(r'\.\d{3}$', '', name).startswith(REFRACTS): rec['pattern'] = (0.0, 0.0, 0.0, 1.0)   # solid glass: with rays it refracts and mirrors for real
     material_index[name] = len(materials); materials.append(rec)
     return material_index[name]
 
@@ -589,6 +610,13 @@ def pack(me, slots):
     uv = np.zeros((len(me.loops), 2), np.float32)
     if me.uv_layers.active: t = np.empty(len(me.loops) * 2, np.float32); me.uv_layers.active.data.foreach_get("uv", t); uv = t.reshape(-1, 2)
     p = co[lv[loops]][:, [0, 2, 1]]; nrm = cn[loops][:, [0, 2, 1]]; tuv = uv[loops]
+    boxed = {m: BOXED[slots[m].name] for m in np.unique(mat) if m < len(slots) and slots[m] and slots[m].name in BOXED}
+    if boxed:   # laid like Blender's box projection: by the face's own main axis, from the object's coordinates, so many repeats a metre
+        c = co[lv[loops]].reshape(-1, 3, 3); axis = np.abs(np.cross(c[:, 1] - c[:, 0], c[:, 2] - c[:, 0])).argmax(axis=1)
+        flat = np.where((axis == 2)[:, None, None], c[..., [0, 1]], np.where((axis == 0)[:, None, None], c[..., [1, 2]], c[..., [0, 2]]))
+        tuv = tuv.reshape(-1, 3, 2).copy()
+        for m, scale in boxed.items(): tuv[mat == m] = flat[mat == m] * scale
+        tuv = tuv.reshape(-1, 2)
     lo, hi = p.min(axis=0), p.max(axis=0); centre = (lo + hi) / 2; extent = np.maximum((hi - lo) / 2, 1e-4)
     q = np.clip(np.round((p - centre) / extent * 32767), -32767, 32767).astype(np.int16)
     nn = nrm / np.maximum(np.linalg.norm(nrm, axis=1, keepdims=True), 1e-8)

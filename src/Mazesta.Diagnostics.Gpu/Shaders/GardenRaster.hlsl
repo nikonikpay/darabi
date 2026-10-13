@@ -326,6 +326,27 @@ float3 Reflected(float3 p, float3 n, float3 r)
     }
     return c + Pictured(h.P, reflect(r, s.Normal), s.Roughness, 1) * EnvBrdf(s, v);
 }
+
+// What the eye sees through solid glass (a vase, crystal), entered at p where the surface faces the eye along n: the ray is bent at every glass
+// surface it meets (the wall, the water in it, the wall again - by 1.5 going in and coming out) until it reaches what is not glass, which is lit
+// as a mirror image is; light that cannot get out of the glass is mirrored back in, as it is in life.
+float3 SeenThrough(float3 p, float3 n, float3 v)
+{
+    float3 d = refract(-v, n, 1 / 1.5), tint = 1, o = p - n * 0.004;
+    if (!any(d)) d = reflect(-v, n);
+    [loop] for (uint k = 0; k < 5; k++)
+    {
+        Hit h; if (!Trace(o, d, 300, MaskVisible, h)) return tint * Sky(d);
+        Material m = Materials[h.Material];
+        if (m.Kind != KGlass) return tint * Reflected(o, d, d);
+        bool entering = dot(h.N, d) < 0; float3 nh = entering ? h.N : -h.N;
+        float3 bent = refract(d, nh, entering ? 1 / 1.5 : 1.5);
+        tint *= lerp(1, m.Base, 0.35);
+        d = any(bent) ? bent : reflect(d, nh);
+        o = h.P + d * 0.004;
+    }
+    return tint * Sky(d);
+}
 #endif
 
 // What a surface mirrors along r: the picture of its surroundings - or, with ray tracing, for a surface smooth enough to show a
@@ -481,6 +502,16 @@ float4 TransparentPS(VOut i) : SV_Target
         float a = fresnel + (1 - fresnel) * density;
         return float4(Pack((reflected * fresnel + body * (1 - fresnel) * density) / a), a);
     }
+#ifdef RT
+    if (m.Kind == KGlass && m.Pattern.w > 0 && (Flags & 8))
+    {   // solid glass with rays: where it stands in front of another surface of the same glass the front one is the picture (the others are seen through it)
+        Hit ahead; float3 toward = normalize(i.World - Eye);
+        if (Trace(Eye, toward, length(i.World - Eye) - 0.01, MaskVisible, ahead) && Materials[ahead.Material].Kind == KGlass) discard;
+        float fr = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
+        float3 mirror = Reflected(i.World, n, reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
+        return float4(Pack(mirror * fr + SeenThrough(i.World, n, v) * (1 - fr)), 1);
+    }
+#endif
     // glass: the sky's mirror image on it and the sun's glint, over its own colour - a stained pane lets through about half of what
     // is behind it, in its colour; clear glass nearly all
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
