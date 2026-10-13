@@ -34,25 +34,24 @@ internal sealed class GardenSoundMix(int seed = 7)
     private volatile SoundLevels _target = new(0, 0, 1, 0);
     private SoundLevels _now = new(0, 0, 1, 0);
     private uint _rng = (uint)seed * 2654435761u | 1;
-    private float _brown, _hp, _lp, _flow, _flowSlow, _gust;
+    private float _brown, _hp, _lp, _gust;
     private long _sample;
 
     public void Set(SoundLevels levels) => _target = levels;
 
-    /// <summary>The recording the hall plays (stereo, 48 kHz, see <see cref="GardenMusic"/>), or null: the hall then plays the synthesised string instead.</summary>
-    private readonly short[]? _clip = GardenMusic.Load(); private int _clipFrame; private float _muffleL, _muffleR;
 
     private float White() { _rng ^= _rng << 13; _rng ^= _rng >> 17; _rng ^= _rng << 5; return _rng / 2147483648f - 1; }
     private float Unit() => (White() + 1) / 2;
 
     // ——— the plucked string ———
     private sealed class Pluck { public float[] Line = []; public int At, Length; public float Gain; public bool Live; }
-    private readonly Pluck[] _strings = [new(), new(), new(), new()]; private int _nextString;
-    private void Strike(float hz, float gain)
+    private readonly Pluck[] _strings = [new(), new(), new(), new(), new(), new(), new(), new()]; private int _nextString;
+    private void Strike(float hz, float gain) { Pick(hz, gain * 0.6f); Pick(hz * 1.0017f, gain * 0.6f); }   // a santur's note is two strings struck by one mallet, a hair apart
+    private void Pick(float hz, float gain)
     {
         var s = _strings[_nextString++ % _strings.Length]; int n = Math.Max(8, (int)(Rate / hz));
         if (s.Line.Length < n) s.Line = new float[n];
-        float prev = 0; for (int i = 0; i < n; i++) { prev = prev * 0.5f + White() * 0.5f; s.Line[i] = prev; }   // a soft burst of noise: the pick
+        float prev = 0; for (int i = 0; i < n; i++) { prev = prev * 0.3f + White() * 0.7f; s.Line[i] = prev; }   // a soft burst of noise: the pick
         s.At = 0; s.Length = n; s.Gain = gain; s.Live = true;
     }
     private float Strings()
@@ -62,10 +61,26 @@ internal sealed class GardenSoundMix(int seed = 7)
         {
             if (!s.Live) continue;
             int next = (s.At + 1) % s.Length; float y = s.Line[s.At];
-            s.Line[s.At] = (y + s.Line[next]) * 0.4985f;   // the string loses a little at every round: higher partials fastest
-            s.At = next; sum += y * s.Gain; s.Gain *= 0.99997f; if (s.Gain < 0.0008f) s.Live = false;
+            s.Line[s.At] = (y + s.Line[next]) * 0.4994f;   // the string loses a little at every round: higher partials fastest
+            s.At = next; sum += y * s.Gain; s.Gain *= 0.99998f; if (s.Gain < 0.0008f) s.Live = false;
         }
         return sum;
+    }
+
+    // ——— the tombak: a pattern of deep 'dom' and bright 'tak' and 'ka' strokes, a sixteenth every 0.12 s ———
+    private const string Zarb = "D.t.k.t.D.k.t.k.";   // one bar of sixteen steps; D = dom, t = tak, k = ka
+    private int _zarbStep; private long _zarbNext; private float _domAge = 9, _takAge = 9, _takGain, _takPhase, _domPhase;
+    private float Tombak()
+    {
+        if (_sample >= _zarbNext)
+        {
+            char c = Zarb[_zarbStep++ % Zarb.Length]; _zarbNext = _sample + Rate * 12 / 100;
+            if (c == 'D') { _domAge = 0; _domPhase = 0; } else if (c is 't' or 'k') { _takAge = 0; _takGain = c == 't' ? 1 : 0.5f; }
+        }
+        float v = 0;
+        if (_domAge < 0.5f) { _domPhase += (150 - 70 * MathF.Min(1, _domAge * 8)) / Rate; v += MathF.Sin(MathF.Tau * _domPhase) * MathF.Exp(-_domAge * 9) * 0.5f; _domAge += 1f / Rate; }
+        if (_takAge < 0.12f) { _takPhase = (_takPhase + 1900f / Rate) % 1; v += (White() * 0.5f + MathF.Sin(MathF.Tau * _takPhase) * 0.5f) * MathF.Exp(-_takAge * 45) * 0.22f * _takGain; _takAge += 1f / Rate; }
+        return v;
     }
 
     // ——— the player: phrases of an eighth-note pulse that walk the mode and come home to the tonic ———
@@ -110,12 +125,10 @@ internal sealed class GardenSoundMix(int seed = 7)
     private float _dropHz, _dropAge = 9;
     private float Water()
     {
-        float w = White(); _lp += (w - _lp) * 0.42f; _hp += (_lp - _hp) * 0.06f; float band = _lp - _hp;
-        _flow += (White() - _flow) * 0.0004f; _flowSlow += (White() - _flowSlow) * 0.00004f;
-        float v = band * (0.25f + 0.15f * MathF.Abs(_flow) + 0.1f * MathF.Abs(_flowSlow));   // a pond's trickle, not a fall
-        if (_dropAge > 1 && Unit() < 0.00025f) { _dropHz = 1300 + Unit() * 2600; _dropAge = 0; }
+        float w = White(); _lp += (w - _lp) * 0.5f; _hp += (_lp - _hp) * 0.08f;
+        if (_dropAge > 1 && Unit() < 0.00015f) { _dropHz = 1300 + Unit() * 2600; _dropAge = 0; }
         float drop = _dropAge < 1 ? MathF.Sin(MathF.Tau * _dropHz * _dropAge * 0.05f) * MathF.Exp(-_dropAge * 6) * 0.35f : 0; _dropAge += 1f / (Rate * 0.05f);
-        return v * 0.6f + drop;
+        return (_lp - _hp) * 0.04f + drop;   // the plink of drops in the basin and a whisper of spray, no rushing
     }
 
     // ——— the whole ———
@@ -137,21 +150,11 @@ internal sealed class GardenSoundMix(int seed = 7)
             float water = Water() * _now.Water * 0.5f;
             float left = wind + water + bird * (0.5f - _birdPan * 0.4f) + cricket, right = wind + water + bird * (0.5f + _birdPan * 0.4f) + cricket;
             float music = 0, musicR = 0;
-            if (_clip is { } clip)
-            {
-                _clipFrame = (_clipFrame + 1) % (clip.Length / 2);   // it goes on while nobody listens, like a radio left on in the house
-                if (_now.Music > 0.002f)
-                {
-                    float k = 0.08f + 0.92f * _now.Music;   // through the wall only the low notes come; the nearer the door the brighter
-                    _muffleL += (clip[_clipFrame * 2] / 32768f - _muffleL) * k; _muffleR += (clip[_clipFrame * 2 + 1] / 32768f - _muffleR) * k;
-                    music = _muffleL * _now.Music * 1.7f; musicR = _muffleR * _now.Music * 1.7f;
-                }
-            }
-            else if (_now.Music > 0.002f)
+            if (_now.Music > 0.002f)
             {
                 Play(); _droneLow = (_droneLow + Tonic / 2 / Rate) % 1; _droneFifth = (_droneFifth + Tonic * 0.75f / Rate) % 1;
-                float dry = Strings() * 0.5f + (MathF.Sin(MathF.Tau * _droneLow) + 0.5f * MathF.Sin(MathF.Tau * _droneFifth)) * 0.02f, wet = _room[_roomAt]; _room[_roomAt] = dry + wet * 0.55f; _roomAt = (_roomAt + 1) % _room.Length;
-                music = musicR = (dry + wet * 0.35f) * _now.Music * 0.6f;
+                float dry = Strings() * 0.35f + Tombak() + (MathF.Sin(MathF.Tau * _droneLow) + 0.5f * MathF.Sin(MathF.Tau * _droneFifth)) * 0.02f, wet = _room[_roomAt]; _room[_roomAt] = dry + wet * 0.55f; _roomAt = (_roomAt + 1) % _room.Length;
+                music = musicR = (dry + wet * 0.35f) * _now.Music * 0.55f;
             }
             stereo[i * 2] = Out(left + music); stereo[i * 2 + 1] = Out(right + musicR);
         }

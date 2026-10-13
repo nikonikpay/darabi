@@ -42,10 +42,4 @@ public class GardenSoundTests
 
     [Fact] public void Indoors_the_garden_is_quieter_than_outside_it()
         => Assert.True(Rms(new SoundLevels(0, 0, 1, 1)) < Rms(new SoundLevels(0, 0, 1, 0)));
-
-    [Fact] public void A_wave_file_is_taken_only_when_it_is_16_bit_stereo_48k()
-    {
-        byte[] Wav(int rate, int channels) { using var m = new MemoryStream(); using var w = new BinaryWriter(m); w.Write("RIFF"u8.ToArray()); w.Write(44); w.Write("WAVEfmt "u8.ToArray()); w.Write(16); w.Write((short)1); w.Write((short)channels); w.Write(rate); w.Write(rate * 4); w.Write((short)4); w.Write((short)16); w.Write("data"u8.ToArray()); w.Write(8); w.Write(new byte[8]); return m.ToArray(); }
-        Assert.Equal(4, GardenMusic.Parse(Wav(48000, 2))!.Length); Assert.Null(GardenMusic.Parse(Wav(44100, 2))); Assert.Null(GardenMusic.Parse(Wav(48000, 1))); Assert.Null(GardenMusic.Parse([1, 2, 3]));
-    }
 }
