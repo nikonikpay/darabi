@@ -42,6 +42,8 @@ internal sealed class Program : ApplicationContext
         Mazesta.Core.Overlay.OverlayCatalog.CcdOfCore = Mazesta.Diagnostics.Benchmarks.HostMetrics.CcdOfCore;   // the overlay's per-CCD clocks need the processor's cache layout, which only the app can read
         // Uninstall, started from Installed apps for a copy the setup installed: it has its own dialogs and needs none of the app's services.
         if (args.Length == 1 && args[0] == Uninstaller.Argument) { Application.EnableVisualStyles(); return Uninstaller.Run(); }
+        // Explorer's right-click entries (block a program in the firewall, exclude a folder from the antivirus): one change, one box, no window of the app.
+        if (ShieldCli.Is(args)) return ShieldCli.Run(args, ConfiguredLanguage());
         // A downloaded release, started by the running app to put itself in place: no window, no services; see AppUpdater.Apply.
         s_single = new Mutex(true, @"Global\Mazesta.Test.SingleInstance", out s_first);
         if (args.Length == 3 && args[0] == AppUpdater.ApplyArgument && int.TryParse(args[2], out int pid))
@@ -70,6 +72,17 @@ internal sealed class Program : ApplicationContext
         return 0;
     }
 
+    /// <summary>The language the user chose, read from the config file alone (no store, no services): the right-click actions speak it. Persian when nothing says otherwise.</summary>
+    private static string ConfiguredLanguage()
+    {
+        try
+        {
+            string file = Path.Combine(DetectPaths(out _).ConfigDir, "appconfig.json");
+            if (File.Exists(file)) { using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(file)); if (doc.RootElement.TryGetProperty("language", out var l) && l.GetString() is { Length: > 0 } code) return code; }
+        }
+        catch (Exception e) when (e is IOException or System.Text.Json.JsonException or UnauthorizedAccessException) { }
+        return "fa";
+    }
     /// <summary>A copy with <c>flash.json</c> beside it runs from a flash drive on a customer's PC: it takes the installed copy's Data (found through ClientData) and the shop's key from that file, which is never written into the customer's files.</summary>
     private static AppPaths DetectPaths(out string key)
     {

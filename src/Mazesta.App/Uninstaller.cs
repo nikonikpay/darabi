@@ -44,6 +44,7 @@ internal static class Uninstaller
             try { File.Delete(Path.Combine(Environment.GetFolderPath(desktop), ShortcutName + ".lnk")); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         foreach (var programs in new[] { Environment.SpecialFolder.CommonPrograms, Environment.SpecialFolder.Programs })
             try { Directory.Delete(Path.Combine(Environment.GetFolderPath(programs), ShortcutName), true); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        Mazesta.Diagnostics.Windows.ShieldShellMenu.RemoveAll();   // the right-click entries the app added for this user
         try { hive.DeleteSubKeyTree(UninstallKey, false); } catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException) { }
 
         // Deleted after this process ends. Only the program folder's own contents are removed, and the data only when the user said so.

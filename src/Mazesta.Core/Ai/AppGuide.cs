@@ -90,6 +90,7 @@ public static class AppGuide
         T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null, "hosts", "هاست", "فایل هاست"),
         T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null, "پاکسازی دیسک", "پاک سازی دیسک", "disk cleanup"),
         P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable", "ترفند", "ترفندها", "ترفند ویندوز", "تنظیمات ویندوز", "بهینه سازی ویندوز", "tweaks"),
+        P("shield", "Nav_Shield", "firewall and antivirus: block a program in the Windows firewall (incoming and outgoing), leave a file or folder out of Windows Defender's scans, and put both in Explorer's right-click menu", "فایروال", "دیوار آتش", "آنتی ویروس", "آنتی‌ویروس", "دیفندر", "بلاک برنامه", "بلاک کردن برنامه", "استثنا آنتی ویروس", "اکسکلود", "firewall", "defender", "antivirus", "exclusion", "block program"),
         P("drivers", "Nav_Drivers", "drivers: the graphics card's driver against NVIDIA's newest (Game Ready or Studio, suggested from the installed programs), the drivers Windows Update offers, and the devices without a working driver; download and install each with a button",
             "درایور", "درایورها", "درایور ها", "اپدیت درایور", "آپدیت درایور", "به روزرسانی درایور", "driver", "drivers", "game ready", "studio driver"),
         P("updates", "Nav_Updates", "Windows Update: default, recommended (deferred) or off", "اپدیت ویندوز", "آپدیت ویندوز", "به روزرسانی ویندوز", "بروزرسانی ویندوز", "windows update"),

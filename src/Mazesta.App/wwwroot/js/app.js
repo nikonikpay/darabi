@@ -30,6 +30,7 @@ export const PAGES = [
   { id: "fans", key: "Nav_Fans", load: () => import("./pages/fans.js") },
   { id: "tools", key: "Nav_WindowsTools", load: () => import("./pages/tools.js") },
   { id: "tweaks", key: "Nav_Tweaks", load: () => import("./pages/tweaks.js") },
+  { id: "shield", key: "Nav_Shield", load: () => import("./pages/shield.js") },
   { id: "updates", key: "Nav_Updates", load: () => import("./pages/updates.js") },
   { id: "drivers", key: "Nav_Drivers", load: () => import("./pages/drivers.js") },
   { id: "reports", key: "Nav_Reports", load: () => import("./pages/reports.js") },
@@ -50,12 +51,12 @@ export const FAMILIES = [
   { key: "Nav_Overlay", icon: "overlay", pages: ["overlay"] },
   { key: "Nav_Tuning", icon: "sliders", pages: ["tuning"] },
   { key: "Nav_Group_Lights", icon: "bolt", pages: ["lights", "fans"] },
-  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "updates", "drivers"] },
+  { key: "Nav_Group_Windows", icon: "win", pages: ["tools", "tweaks", "shield", "updates", "drivers"] },
   { key: "Nav_Reports", icon: "doc", pages: ["reports"] },
   { key: "Nav_Messages", icon: "mail", pages: ["messages"], badge: "messages" },
   { key: "Nav_Settings", icon: "gear", pages: ["settings", "appupdate"] },
 ];
-const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", lights: "bulb", fans: "fan", tools: "wrench", tweaks: "layers", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
+const TAB_ICON = { monitoring: "pulse", ram: "ram", tests: "flask", benchmarks: "trophy", checkup: "check", ai: "chat", apps: "apps", games: "gamepad", checks: "eye", system: "board", cpu: "cpu", gpu: "gpu", storage: "drive", network: "net", overlay: "overlay", tuning: "sliders", lights: "bulb", fans: "fan", tools: "wrench", tweaks: "layers", shield: "shield", updates: "update", drivers: "board", settings: "gear", appupdate: "update" };
 const familyOf = (id) => FAMILIES.find((f) => f.pages.includes(id)) || FAMILIES[0];
 const lastInFamily = new Map();   // the page last open in each family, so its entry returns there
 
