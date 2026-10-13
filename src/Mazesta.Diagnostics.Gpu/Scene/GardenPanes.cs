@@ -11,6 +11,9 @@ internal static class GardenPanes
     /// <summary>How far each end of a pane grows (metres): a little more than half of the 0.076 m gap between two rows, so neighbours overlap under the rail.</summary>
     internal const float Grow = 0.05f;
 
+    /// <summary>And how far each side grows (the pane's width): the panes stand a finger short of the wooden stiles on both sides, and the gap showed the room behind.</summary>
+    internal const float GrowSide = 0.03f;
+
     /// <summary>The mesh with its panes lengthened (the same mesh when it has none).</summary>
     internal static GardenMesh Close(GardenMesh mesh, GardenMaterial[] materials, out int panes)
     {
@@ -51,9 +54,12 @@ internal static class GardenPanes
             var d = hi - lo;   // a pane: thin one way, tall (up) and as wide as a pane is; the stars and strips of the lattice are smaller than this
             if (!(d.Z < 0.03f && d.Y > 0.3f && d.Y < 2.5f && d.X > 0.15f && d.X < 2.5f) && !(d.X < 0.03f && d.Y > 0.3f && d.Y < 2.5f && d.Z > 0.15f && d.Z < 2.5f)) continue;
             panes++;
+            bool thinZ = d.Z < 0.03f;   // the slab's thin way: its width runs along the other horizontal axis
             foreach (int root in members) foreach (int v in faceVertices[root])
             {
                 if (MathF.Abs(pos[v].Y - lo.Y) < Slack) pos[v].Y = lo.Y - Grow; else if (MathF.Abs(pos[v].Y - hi.Y) < Slack) pos[v].Y = hi.Y + Grow;
+                if (thinZ) { if (MathF.Abs(pos[v].X - lo.X) < Slack) pos[v].X = lo.X - GrowSide; else if (MathF.Abs(pos[v].X - hi.X) < Slack) pos[v].X = hi.X + GrowSide; }
+                else { if (MathF.Abs(pos[v].Z - lo.Z) < Slack) pos[v].Z = lo.Z - GrowSide; else if (MathF.Abs(pos[v].Z - hi.Z) < Slack) pos[v].Z = hi.Z + GrowSide; }
             }
         }
         return panes == 0 ? mesh : Requantise(mesh, pos);

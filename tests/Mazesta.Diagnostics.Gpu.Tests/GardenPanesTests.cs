@@ -37,8 +37,8 @@ public class GardenPanesTests
         var mesh = Slabs((new(0, 2.128f, -3.115f), new(0.385f, 2.765f, -3.107f)));
         var closed = GardenPanes.Close(mesh, Tinted, out int panes); var (lo, hi) = Height(closed);
         Assert.Equal(1, panes); Assert.Equal(2.128f - GardenPanes.Grow, lo, 3); Assert.Equal(2.765f + GardenPanes.Grow, hi, 3);
-        // width and thickness are as they were
-        var xs = Enumerable.Range(0, closed.VertexCount).Select(i => closed.Position(i).X).ToArray(); Assert.Equal(0.385f, xs.Max() - xs.Min(), 3);
+        // the width grows at both sides by GrowSide; the thickness is as it was
+        var xs = Enumerable.Range(0, closed.VertexCount).Select(i => closed.Position(i).X).ToArray(); Assert.Equal(0.385f + 2 * GardenPanes.GrowSide, xs.Max() - xs.Min(), 3);
     }
 
     [Fact] public void Two_rows_with_a_gap_between_them_meet_under_the_rail_and_a_small_star_is_left_alone()

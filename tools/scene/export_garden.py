@@ -31,6 +31,7 @@
 import bpy, bmesh, numpy as np, struct, gzip, math, os, io, re, tempfile
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath), "..", "Mazesta"))
+import runpy; runpy.run_path(os.path.join(REPO, "tools", "scene", "owner_fixes_v24.py"))   # in-memory touches of the owner's file (never saved)
 OUT = os.environ.get("MAZESTA_SCENE_OUT") or os.path.join(REPO, "src", "Mazesta.Diagnostics.Gpu", "Scene", "garden.mzscene")
 SCENES = (("Garden_Raster", 1), ("Garden_RT", 2))
 TEX, SMALL = 1024, 512
@@ -48,7 +49,7 @@ BIG_TEXTURES = ("V8_", "CV5_", "Big_Old_Gates", "carpet", "galicho", "V12_User_P
 # own inputs: what they are, said here (the pots: the middle of the group's two clay colours).
 AS_GLASS = ("Multicoated glass",)
 STAINED_ALPHA = 0.35   # how much of the colour a pane puts over what is behind it (the raster's glass: its own colour at this density); v22's panes were about 0.55
-REFRACTS = ("Vaso flores", "V13_Cut_Crystal")   # the vases and the crystal: glass the ray tracer bends the view through (the Pattern's last value, 1)
+REFRACTS = ("Vaso flores", "V13_Cut_Crystal", "V12_Thin_Tea_Glass")   # the vases and the crystal: glass the ray tracer bends the view through (the Pattern's last value, 1)
 STAINED = "V7_Stained_"   # the orsi's coloured panes: the ray tracer colours the light that passes through them
 # Stone the .blend shades with noise alone and gives no coordinates of its own: it takes another material's texture and relief, laid by
 # world position (so many repeats a metre) and tinted to its own colour.

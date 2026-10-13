@@ -310,21 +310,34 @@ float3 Pictured(float3 p, float3 r, float roughness, float open)
 // key light and the lamps in reach (a shadow ray each), and - in place of a mirror image of its own - the picture of its surroundings.
 float3 Reflected(float3 p, float3 n, float3 r)
 {
-    Hit h; if (!Trace(p + n * 0.012, r, 300, MaskVisible, h)) return Sky(r);
-    Material m = Materials[h.Material]; float3 v = -r; Surface s = SurfaceAt(h, v);
-    if (m.Kind == KWater) return lerp(m.Base * Bounced(h.P, float3(0, 1, 0), 1) * 0.5, Sky(reflect(r, float3(0, 1, 0))), 0.3);
-    if (m.Kind == KGlass) return m.Base * (Bounced(h.P, s.Normal, 1) + Bounced(h.P, -s.Normal, 1)) * 0.5 + s.Emission + Pictured(h.P, reflect(r, s.Normal), 0.03, 1) * 0.08;
-    float3 c = s.Albedo * Bounced(h.P, s.Normal, 1) * (1 - s.Metallic) * s.Occlusion + s.Emission, o = h.P + s.Normal * 0.012;
-    if (SunOn > 0 && dot(s.Normal, SunDir) > 0 && !Occluded(o, SunDir, 300)) c += Brdf(s, v, SunDir, SunColor * KeyTint(h.P));
-    uint2 lamps = LampsAt(h.P);
-    [loop] for (uint j = 0; j < lamps.y; j++)
+    // Solid glass (a vase, a tumbler) met on the way is looked through, as SeenThrough does for the eye - bent at each surface, a little of the room mirrored on it - so a vase
+    // in a mirror is glass there too, not a tinted solid.
+    float3 tint = 1, glints = 0, o = p + n * 0.012, d = r;
+    [loop] for (uint k = 0; k < 5; k++)
     {
-        uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, h.P, l, d) * LampLit(L, k);
-        if (max(e.r, max(e.g, e.b)) <= 0.01 || dot(s.Normal, l) <= 0) continue;
-        if (L.Range >= 2 && Occluded(o, l, max(0.01, d - 0.05))) continue;
-        c += Brdf(s, v, l, e);
+        Hit h; if (!Trace(o, d, 300, MaskVisible, h)) return glints + tint * Sky(d);
+        Material m = Materials[h.Material]; float3 v = -d; Surface s = SurfaceAt(h, v);
+        if (m.Kind == KGlass && m.Pattern.w > 0)
+        {
+            bool entering = dot(h.N, d) < 0; float3 nh = entering ? h.N : -h.N; float fr = 0.04 + 0.96 * pow(1 - saturate(dot(nh, v)), 5);
+            glints += tint * fr * Pictured(h.P, reflect(d, nh), 0.03, 1) * 0.5; tint *= (1 - fr) * lerp(1, m.Base, 0.35);
+            float3 bent = refract(d, nh, entering ? 1 / 1.5 : 1.5); d = any(bent) ? bent : reflect(d, nh); o = h.P + d * 0.004; continue;
+        }
+        if (m.Kind == KWater) return glints + tint * lerp(m.Base * Bounced(h.P, float3(0, 1, 0), 1) * 0.5, Sky(reflect(d, float3(0, 1, 0))), 0.3);
+        if (m.Kind == KGlass) return glints + tint * (m.Base * (Bounced(h.P, s.Normal, 1) + Bounced(h.P, -s.Normal, 1)) * 0.5 + s.Emission + Pictured(h.P, reflect(d, s.Normal), 0.03, 1) * 0.08);
+        float3 c = s.Albedo * Bounced(h.P, s.Normal, 1) * (1 - s.Metallic) * s.Occlusion + s.Emission, q = h.P + s.Normal * 0.012;
+        if (SunOn > 0 && dot(s.Normal, SunDir) > 0 && !Occluded(q, SunDir, 300)) c += Brdf(s, v, SunDir, SunColor * KeyTint(h.P));
+        uint2 lamps = LampsAt(h.P);
+        [loop] for (uint j = 0; j < lamps.y; j++)
+        {
+            uint li = LightGrid[lamps.x + j]; Light L = Lights[li]; float3 l; float dist; float3 e = LightAt(L, h.P, l, dist) * LampLit(L, li);
+            if (max(e.r, max(e.g, e.b)) <= 0.01 || dot(s.Normal, l) <= 0) continue;
+            if (L.Range >= 2 && Occluded(q, l, max(0.01, dist - 0.05))) continue;
+            c += Brdf(s, v, l, e);
+        }
+        return glints + tint * (c + Pictured(h.P, reflect(d, s.Normal), s.Roughness, 1) * EnvBrdf(s, v));
     }
-    return c + Pictured(h.P, reflect(r, s.Normal), s.Roughness, 1) * EnvBrdf(s, v);
+    return glints + tint * Sky(d);
 }
 
 // What the eye sees through solid glass (a vase, crystal), entered at p where the surface faces the eye along n: the ray is bent at every glass
