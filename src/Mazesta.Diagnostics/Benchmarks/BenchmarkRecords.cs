@@ -74,7 +74,7 @@ public sealed class BenchmarkRecords
     };
     /// <summary>Options that do not change what is measured (the readout over the garden): they are in no key, so a run with it hidden is the same record and the same list.
     /// The frames in flight are in the key (one frame is its own list, two - the default - the old one), so a result says which it was run with.</summary>
-    private static readonly HashSet<string> NotTheWork = new(StringComparer.Ordinal) { "overlay", "fullscreen" };
+    private static readonly HashSet<string> NotTheWork = new(StringComparer.Ordinal) { "overlay", "fullscreen", "sound" };
     public static IReadOnlyDictionary<string, string>? Effective(string benchmarkId, IReadOnlyDictionary<string, string>? options)
     {
         if (options is null) return null;

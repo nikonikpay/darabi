@@ -3479,6 +3479,7 @@
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>فرکانس CCD 7</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>فرکانس CCD 8</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>آب‌وهوا (باران، برگ‌های بادبرده)</value></data>
+  <data name="Test_Option_Sound" xml:space="preserve"><value>صدا (پرندگان، آب و موسیقی سنتی ایرانی)</value></data>
   <data name="Test_Option_Frames" xml:space="preserve"><value>فریم‌های هم‌زمان</value></data>
   <data name="Test_Frames_One" xml:space="preserve"><value>یک فریم (هر فریم تمام می‌شود، بعد فریم بعدی)</value></data>
   <data name="Test_Frames_Two" xml:space="preserve"><value>دو فریم (فریم بعدی آماده می‌شود تا کارت فریم فعلی را می‌کشد)</value></data>

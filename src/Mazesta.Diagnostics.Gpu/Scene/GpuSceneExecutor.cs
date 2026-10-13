@@ -18,7 +18,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// </summary>
 public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExecutor, ITestAvailability
 {
-    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", WeatherOption = "weather", FramesOption = "frames";
+    public const string ResolutionOption = "resolution", LoadOption = "load", RayTracingOption = "raytracing", OverlayOption = "overlay", FullScreenOption = "fullscreen", WeatherOption = "weather", FramesOption = "frames", SoundOption = "sound";
     /// <summary>The readout over the scene (frame rate, the card, its memory, the processor, the RAM): on unless switched off here; the O key in the
     /// test's window shows and hides it while it runs. It is laid over the finished frame and is outside what a benchmark times.</summary>
     internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
@@ -36,6 +36,8 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     /// the next frame while the card draws this one, so the card is never idle - what a game does. The scene is the same; the frame rate, and how busy the card is kept, are what differ.</summary>
     internal static readonly TestOption Frames = new(FramesOption, "Test_Option_Frames", TestOptionKind.Choice, "2",
         () => [new("1", "Test_Frames_One", true, "each frame is finished before the next is prepared"), new("2", "Test_Frames_Two", true, "the next frame is prepared while the card draws this one (what a game does)")]);
+    /// <summary>The garden's sound (<see cref="GardenSound"/>): birds, a breeze and the fountain's water in the garden, a plucked string in the Iranian Shur mode in the hall. The visual test has it on; the benchmark off, since mixing it takes a little of a core.</summary>
+    internal static readonly TestOption Sound = new(SoundOption, "Test_Option_Sound", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>The frames in flight a choice means.</summary>
     internal static int FramesOf(string choice) => choice == "2" ? 2 : 1;
     /// <summary>A size as the page shows it: width first. Isolated left to right, so a right-to-left page does not turn "2560 × 1440" into "1440 × 2560".</summary>
@@ -49,7 +51,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)], When: RayTracingOption + "=off"), RayTracingPreferred, Weather, Frames, FullScreen, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)], When: RayTracingOption + "=off"), RayTracingPreferred, Weather, Frames, FullScreen, Sound, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -93,7 +95,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         using var session = new D3D12Session(device, FramesOf(options.Get(FramesOption)));
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (screenSize) (w, h) = (window.Width, window.Height);
-        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, WeatherLevel.Parse(options.Get(WeatherOption)));
+        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, WeatherLevel.Parse(options.Get(WeatherOption)), options.Get(SoundOption) != "off");
         string work = renderer.Work;
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";

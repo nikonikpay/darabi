@@ -26,8 +26,10 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
                new("3", "Test_GpuLoad_Heavy", true, "shadows 4096 · MSAA 4× · pool reflection 1/1"), new("4", "Test_GpuLoad_Extreme", true, "shadows 4096 (3 taps) · MSAA 8× · pool reflection 1/1")], When: GpuSceneExecutor.RayTracingOption + "=off");
     /// <summary>Ray tracing starts on where the card has DXR 1.1, off otherwise.</summary>
     private static readonly TestOption RayTracing = GpuSceneExecutor.RayTracing with { Preferred = () => GpuFeatures.RayTracingAvailability(TestOptions.None(Scene!)) is null ? "on" : "off" };
+    /// <summary>The garden's sound, off in a benchmark unless asked for (mixing it takes a little of a core).</summary>
+    private static readonly TestOption SoundOff = GpuSceneExecutor.Sound with { Default = "off" };
     public static readonly TestDefinition Scene = new(new TestId("bench.gpu.scene.d3d"), "Bench_Gpu_SceneD3D", (int)GardenCamera.Loop,
-        [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.Weather, GpuSceneExecutor.Frames, GpuSceneExecutor.FullScreen, GpuSceneExecutor.Overlay]);
+        [GpuDevices.Option, Resolution, RasterQuality, RayTracing, GpuSceneExecutor.Weather, GpuSceneExecutor.Frames, GpuSceneExecutor.FullScreen, SoundOff, GpuSceneExecutor.Overlay]);
     public TestDefinition Definition => Scene;
     public HardwareKind Component => HardwareKind.Gpu;
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(GpuSceneExecutor.RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -58,7 +60,7 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         uint load = (uint)Math.Clamp(quality, 1, 4);
         string mode = rayTraced ? "Direct3D 12 + ray tracing" : "Direct3D 12";
         using var window = new TestWindow($"Mazesta — {mode} — benchmark", width, height, options.Get(GpuSceneExecutor.FullScreenOption) == "on");
-        using var view = new SceneView(s, window, width, height, rayTraced, load, null, null, WeatherLevel.Parse(options.Get(GpuSceneExecutor.WeatherOption)));
+        using var view = new SceneView(s, window, width, height, rayTraced, load, null, null, WeatherLevel.Parse(options.Get(GpuSceneExecutor.WeatherOption)), options.Get(GpuSceneExecutor.SoundOption) == "on");
         var renderer = view.Renderer; var garden = view.Garden;
         var gpu = GpuSceneExecutor.GpuNode(request.Engine, s.AdapterName);
         view.Overlay.Visible = options.Get(GpuSceneExecutor.OverlayOption) != "off";

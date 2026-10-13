@@ -5,13 +5,13 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 internal sealed class SceneView : IDisposable
 {
     private readonly IDXGISwapChain3 _swap; private readonly ID3D12Resource[] _back; private readonly bool _tearing; private readonly D3D12Session _s;
-    private readonly GardenRaster _renderer;
+    private readonly GardenRaster _renderer; private readonly GardenSound? _sound;
     public SceneOverlay Overlay { get; }
     public GardenGpu Garden => _renderer.Scene;
     public GardenRaster Renderer => _renderer;
     public string Work { get; }
 
-    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, WeatherLevel? weather = null)
+    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, WeatherLevel? weather = null, bool sound = false)
     {
         _s = s;
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);
@@ -27,6 +27,7 @@ internal sealed class SceneView : IDisposable
         _back = [.. Enumerable.Range(0, s.Frames + 1).Select(i => _swap.GetBuffer<ID3D12Resource>((uint)i))];   // (one more than the frames in flight: a picture being shown is not one being drawn)
         Overlay = new SceneOverlay(s, _back, height);
         var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, weather, s.Frames);
+        if (sound) _sound = new GardenSound(garden.Fountain?.Nozzle);
         var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced); _renderer = raster;
         Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps"
             + (rayTraced ? $" · ray-traced shadows ({raster.Level.ShadowTaps} a light) and reflections" : $" · shadows {raster.Level.ShadowSize}")
@@ -38,7 +39,7 @@ internal sealed class SceneView : IDisposable
     /// The card's own time for each frame is kept (<see cref="D3D12Session.GpuSeconds"/>), and so is the processor's (<see cref="D3D12Session.LastRecordSeconds"/>).</summary>
     public void Present(float time)
     {
-        int index = (int)_swap.CurrentBackBufferIndex;
+        int index = (int)_swap.CurrentBackBufferIndex; _sound?.Listen(GardenCamera.At(time).Eye, time);
         Garden.Weather?.Follow(time);   // (stepped beside the frame, not in the card's way)
         _s.Run(l => { _renderer.Draw(l, time, index); Overlay.Draw(_s.List, index, _renderer.OutWidth, _renderer.OutHeight); }, wait: false, timed: true);
         _swap.Present(0, _tearing ? PresentFlags.AllowTearing : PresentFlags.None).CheckError();   // queued behind the frame: shown the moment the card has drawn it, not after the processor has also finished waiting
@@ -71,5 +72,5 @@ internal sealed class SceneView : IDisposable
     public void Dispose()
     {
         try { Drain(); } catch (Exception e) when (e is SharpGen.Runtime.SharpGenException or Benchmarks.GpuLostException) { }   // a lost device: release anyway
-        Garden.Weather?.Stop(); _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
+        _sound?.Dispose(); Garden.Weather?.Stop(); _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
 }

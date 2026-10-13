@@ -3479,6 +3479,7 @@ Cancel: stop.</value></data>
   <data name="Overlay_CcdClock7" xml:space="preserve"><value>CCD 7 clock</value></data>
   <data name="Overlay_CcdClock8" xml:space="preserve"><value>CCD 8 clock</value></data>
   <data name="Test_Option_Weather" xml:space="preserve"><value>Weather (rain, wind-blown leaves)</value></data>
+  <data name="Test_Option_Sound" xml:space="preserve"><value>Sound (birds, water and Persian music)</value></data>
   <data name="Test_Option_Frames" xml:space="preserve"><value>Frames in flight</value></data>
   <data name="Test_Frames_One" xml:space="preserve"><value>One frame (each is finished before the next)</value></data>
   <data name="Test_Frames_Two" xml:space="preserve"><value>Two frames (the next is prepared while the card draws this one)</value></data>
