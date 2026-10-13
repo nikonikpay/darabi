@@ -99,5 +99,5 @@ public class TestProfilesTests
     }
 
     [Fact] public void Only_the_processor_memory_and_graphics_tests_have_a_lane()
-        => Assert.Equal(["cpu", "memory", "gpu", null, null, null, null], new[] { "cpu.fft", "memory.bitfade", "gpu.scene.rt", "storage.smart", "network.speed", "power.combined", "windows.sfc" }.Select(x => TestEngine.LaneOf(new TestId(x))));
+        => Assert.Equal(["cpu", "memory", "gpu", "gpu.vram", null, null, null, null], new[] { "cpu.fft", "memory.bitfade", "gpu.steady", "gpu.vram", "storage.smart", "network.speed", "power.combined", "windows.sfc" }.Select(x => TestEngine.LaneOf(new TestId(x))));
 }

@@ -62,8 +62,9 @@ public sealed class TestEngine(IEnumerable<ITestExecutor> executors, JsonStore<T
     }
 
     /// <summary>The part a load test keeps busy (cpu, memory, gpu), or null for a test that needs the machine to itself (drives, network, the
-    /// combined power test, Windows' checks). In a run "together" each part's tests go one after another while the parts run side by side.</summary>
-    public static string? LaneOf(TestId id) => id.Value.Split('.')[0] is "cpu" or "memory" or "gpu" ? id.Value.Split('.')[0] : null;
+    /// combined power test, Windows' checks). In a run "together" each part's tests go one after another while the parts run side by side.
+    /// The card's video memory is a lane of its own: filling it while the cores are kept busy is the very point of running them together.</summary>
+    public static string? LaneOf(TestId id) => id.Value == "gpu.vram" ? "gpu.vram" : id.Value.Split('.')[0] is "cpu" or "memory" or "gpu" ? id.Value.Split('.')[0] : null;
 
     /// <param name="together">Runs the processor's, the memory's and the graphics card's tests side by side (one lane per part), as a machine at
     /// work loads them, then the other tests one by one in the queue's order. With one lane or none it is the plain queue.</param>
