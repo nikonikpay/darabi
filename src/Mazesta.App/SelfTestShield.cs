@@ -15,13 +15,14 @@ internal static class SelfTestShield
         try
         {
             var fw = await tools.FirewallAsync(default); say($"firewall: {(fw is null ? "not read" : string.Join(", ", fw.Profiles.Select(p => $"{p.Profile}={(p.On ? "on" : "off")}")))}; already blocked from here: {fw?.Blocked.Count}");
+            say($"blocked in Windows now (every maker): {fw?.Blocked.Count}, made by others: {fw?.Blocked.Count(b => !b.Ours)}; first: {string.Join("; ", (fw?.Blocked ?? []).Take(8).Select(b => $"{b.Name} in={b.Inbound} out={b.Outbound} ours={b.Ours}"))}");
             var block = await tools.BlockAsync(exe, false, default); say($"block: {block.Problem} {block.Detail}");
             var after = await tools.FirewallAsync(default); var mine = after?.Blocked.FirstOrDefault(b => b.Path.Equals(exe, StringComparison.OrdinalIgnoreCase));
             say($"listed: {(mine is null ? "NO" : $"yes, in={mine.Inbound} out={mine.Outbound}")}");
             var again = await tools.BlockAsync(exe, false, default); say($"block again: {again.Problem}; rules for it: {(await tools.FirewallAsync(default))?.Blocked.Count(b => b.Path.Equals(exe, StringComparison.OrdinalIgnoreCase))} entry");
             var un = await tools.UnblockAsync(exe, default); say($"unblock: {un.Problem}; still listed: {(await tools.FirewallAsync(default))?.Blocked.Any(b => b.Path.Equals(exe, StringComparison.OrdinalIgnoreCase))}");
 
-            var av = await tools.AvAsync(default); say($"antivirus: defender={av?.Defender} realtime={av?.RealTime} tamper={av?.Tamper} products=[{string.Join("; ", av?.Products.Select(p => $"{p.Name}:{(p.On ? "on" : "off")}") ?? [])}] exclusions={av?.Exclusions.Count}");
+            var av = await tools.AvAsync(default); say($"antivirus: defender={av?.Defender} realtime={av?.RealTime} tamper={av?.Tamper} products=[{string.Join("; ", av?.Products.Select(p => $"{p.Name}:{(p.On ? "on" : "off")}") ?? [])}] exclusions={av?.Exclusions.Count} behaviour={av?.Behavior} stopped={av?.Stopped} restoreTask={av?.RestoreAtStart} policy={av?.Policy}");
             var ex = await tools.ExcludeAsync(dir, false, default); say($"exclude folder: {ex.Problem} {ex.Detail}");
             var listed = (await tools.AvAsync(default))?.Exclusions.Any(e => e.TrimEnd((char)92).Equals(dir, StringComparison.OrdinalIgnoreCase)); say($"listed: {listed}");
             var gone = await tools.UnexcludeAsync(dir, default); say($"remove exclusion: {gone.Problem}; still listed: {(await tools.AvAsync(default))?.Exclusions.Any(e => e.TrimEnd((char)92).Equals(dir, StringComparison.OrdinalIgnoreCase))}");

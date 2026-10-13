@@ -281,7 +281,7 @@ const RGB_DEVICES = () => [
     { index: 1, name: "Addressable Header 1", leds: 0, min: 0, max: 120, resizable: true }, { index: 2, name: "Addressable Header 2", leds: 0, min: 0, max: 120, resizable: true }],
     modes: [rgbMode(0, "Direct", true), rgbMode(1, "Static", true), rgbMode(2, "Rainbow Wave", false, true, true), rgbMode(3, "Breathing", true, true, true)] },
 ];
-let rgbReport = false; const shieldMenu = { firewall: false, antivirus: true };
+let rgbReport = false; const shieldMenu = { firewall: true, antivirus: true }; const shieldState = { fwOn: false, avStopped: false };
 const PALETTES = [["sunset", ["#ff512f", "#f09819", "#dd2476"]], ["fire", ["#ff0000", "#ff7a00", "#ffd400"]], ["ocean", ["#00e5ff", "#0072ff", "#0a2fff"]], ["ice", ["#e0f7ff", "#00b4ff", "#2979ff"]], ["forest", ["#00e676", "#00a651", "#b8e000"]], ["aurora", ["#00e676", "#00e5ff", "#8e44ff"]], ["neon", ["#ff00cc", "#3333ff", "#00f0ff"]], ["candy", ["#ff2bd6", "#ffd1f0", "#8ee8ff"]], ["royal", ["#8e44ff", "#2979ff", "#ffd400"]], ["lava", ["#ff0000", "#7a00ff", "#ff7a00"]]].map(([id, colors]) => ({ id, colors }));
 const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Comet", "Meteor"] : [], effects: ["Static", "Breathing", "Rainbow", "Cycle", "Flash"], report: rgbOn && rgbReport ? { effect: "Rainbow", native: 2, simulated: 2, skipped: [] } : null, palettes: PALETTES, devices: rgbOn ? RGB_DEVICES().map((d) => ({ ...d, perLed: d.leds > 0 })) : [] });
 const FAN_NAMES = [["CPU Fan", 1180], ["Chassis Fan #1", 760], ["Chassis Fan #2", 690]];
@@ -390,15 +390,19 @@ export async function call(m, p, emit) {
     case "rgb.release": rgbOn = false; rgbMakers = []; return rgbState();
     case "rgb.set": rgbReport = true; return rgbState();
     case "rgb.zone": case "rgb.led": return rgbState();
-    case "shield.firewall": return { ok: true, profiles: [{ name: "Domain", on: true }, { name: "Private", on: true }, { name: "Public", on: false }],
-      blocked: [{ path: "C:\\Games\\Foo\\foo.exe", name: "foo.exe", inbound: true, outbound: true }, { path: "D:\\Tools\\updater.exe", name: "updater.exe", inbound: false, outbound: true }] };
-    case "shield.av": return { ok: true, defender: true, realTime: true, tamper: true, other: null, products: [{ name: "Windows Defender", on: true }],
+    case "shield.firewall": return { ok: true, profiles: [{ name: "Domain", on: true }, { name: "Private", on: true }, { name: "Public", on: shieldState.fwOn }],
+      blocked: [{ path: "C:\\Games\\Foo\\foo.exe", name: "foo.exe", inbound: true, outbound: true }, { path: "D:\\Tools\\updater.exe", name: "updater.exe", inbound: false, outbound: true }, { path: "C:/Program Files/Vendor/agent.exe", name: "agent.exe", inbound: false, outbound: true, ours: false }].map((b) => ({ ours: true, ...b })) };
+    case "shield.av": return { ok: true, defender: true, realTime: !shieldState.avStopped, stopped: shieldState.avStopped, restore: true, policy: false, tamper: true, other: null, products: [{ name: "Windows Defender", on: true }],
       exclusions: [{ path: "D:\\Renders", folder: true, exists: true }, { path: "C:\\Tools\\keygen-test.exe", folder: false, exists: true }, { path: "E:\\Old", folder: true, exists: false }] };
     case "shield.processes": return [["Chrome", "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", 14], ["Steam", "C:\\Program Files (x86)\\Steam\\steam.exe", 1], ["Discord", "C:\\Users\\Saeed\\AppData\\Local\\Discord\\app-1.0.9\\Discord.exe", 5],
       ["Blender", "C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe", 1], ["foo", "C:\\Games\\Foo\\foo.exe", 1]].map(([name, path, count]) => ({ name: name + ".exe", path, count }));
     case "shield.menu": return { firewall: shieldMenu.firewall, antivirus: shieldMenu.antivirus };
     case "shield.menuSet": shieldMenu[p.kind === "firewall" ? "firewall" : "antivirus"] = !!p.on; return { ...shieldMenu };
     case "shield.pick": return { path: p.kind === "folder" ? "D:\\Projects\\Renders" : "C:\\Games\\Demo\\demo.exe" };
+    case "shield.fwSwitch": shieldState.fwOn = !!p.on; return { ok: true };
+    case "shield.avStop": return p.permanent ? { ok: false, security: true, error: "Tamper Protection" } : (shieldState.avStopped = true, { ok: true });
+    case "shield.avStart": shieldState.avStopped = false; return { ok: true };
+    case "shield.openSecurity": return { ok: true };
     case "shield.block": case "shield.unblock": case "shield.exclude": case "shield.unexclude": return { ok: true };
     case "fans.state": return fansState();
     case "fans.set": fanSet[p.id] = { ...(fanSet[p.id] || { manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] }), mode: p.mode, ...(p.percent != null ? { manual: p.percent } : {}), ...(p.source ? { source: p.source } : {}), ...(p.points ? { points: p.points } : {}) }; return fansState();

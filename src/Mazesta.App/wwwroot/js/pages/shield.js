@@ -1,6 +1,8 @@
 // Firewall and antivirus, kept simple: two tabs. The firewall tab blocks a program (a file picked, or one of the programs running now) in both directions in the Windows firewall and
 // lists what was blocked from here, each with an unblock button. The antivirus tab leaves a file or folder out of Windows Defender's scans and lists the exclusions. Below, two switches
-// put the same two actions in Explorer's right-click menu. Nothing is shown as done that Windows did not take: the host reads every change back before it answers.
+// put the same two actions in Explorer's right-click menu. The firewall tab also lists every program blocked in Windows now (also what others blocked) and switches the firewall off and on;
+// the antivirus tab stops all of Defender's guards, until the next start of the computer or for good.
+//  Nothing is shown as done that Windows did not take: the host reads every change back before it answers.
 import { call } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
@@ -21,12 +23,18 @@ export function mount(el) {
   const pickFile = h("button", { class: "btn primary", type: "button", onclick: () => pick("file", (p) => exclude(p)) }, icon("doc"), t("Shield_Av_File"));
   const pickFolder = h("button", { class: "btn primary", type: "button", onclick: () => pick("folder", (p) => exclude(p)) }, icon("folder"), t("Shield_Av_Folder"));
 
+  const fwSwitch = h("button", { class: "btn", type: "button", onclick: () => fwSwitchNow() }), fwSwitchNote = h("p", { class: "note" });
+  const avOffTemp = h("button", { class: "btn", type: "button", onclick: () => avStop(false) }, t("Shield_Av_Off_Temp")), avOffPerm = h("button", { class: "btn", type: "button", onclick: () => avStop(true) }, t("Shield_Av_Off_Perm"));
+  const avOn = h("button", { class: "btn primary", type: "button", onclick: () => avStart() }, t("Shield_Av_On_Btn")), avCtlNote = h("p", { class: "note" });
+
   const fwView = h("div", { class: "sh-view" }, fwStatus,
+    box({ cls: "p-caution", ico: "stop", title: t("Shield_Fw_Ctl_Title"), sub: t("Shield_Fw_Ctl_Sub"), i: 0, a: "shield-fw-switch", body: [h("div", { class: "btn-row" }, fwSwitch), fwSwitchNote] }),
     h("div", { class: "panels two" },
       box({ cls: "p-tool", ico: "shield", title: t("Shield_Fw_Title"), sub: t("Shield_Fw_Sub"), i: 0, a: "shield-block",
         body: [h("div", { class: "btn-row" }, pickExe, reload), h("p", { class: "note" }, t("Shield_Fw_Or")), search, runningList] }),
       box({ cls: "p-caution", ico: "stop", title: t("Shield_Blocked"), sub: t("Shield_Blocked_Sub"), i: 1, a: "shield-blocked", body: blockedList })));
   const avView = h("div", { class: "sh-view", hidden: true }, avStatus, avNote,
+    box({ cls: "p-caution", ico: "stop", title: t("Shield_Av_Ctl_Title"), sub: t("Shield_Av_Ctl_Sub"), i: 0, a: "shield-av-off", body: [h("div", { class: "btn-row" }, avOffTemp, avOffPerm, avOn), avCtlNote, h("p", { class: "note" }, t("Shield_Av_Ctl_Note"))] }),
     h("div", { class: "panels two" },
       box({ cls: "p-tool", ico: "shield", title: t("Shield_Av_Title"), sub: t("Shield_Av_Sub"), i: 0, a: "shield-exclude",
         body: [h("div", { class: "btn-row" }, pickFile, pickFolder), h("p", { class: "note" }, t("Shield_Av_Warn"))] }),
@@ -55,8 +63,11 @@ export function mount(el) {
 
   function drawBlocked() {
     const rows = blocked.map((b) => row(b.name, b.path, h("span", { class: "sh-tail" },
+      b.ours === false ? h("span", { class: "pill none", title: t("Shield_Other_Rule") }, t("Shield_Other_Rule")) : null,
       h("span", { class: `pill ${b.inbound && b.outbound ? "pass" : "warn"}` }, t(b.inbound && b.outbound ? "Shield_Both" : b.inbound ? "Shield_In" : "Shield_Out")),
-      h("button", { class: "btn", type: "button", disabled: busy, onclick: () => unblock(b.path) }, t("Shield_Unblock")))));
+      h("button", { class: "btn", type: "button", disabled: busy, onclick: () => { if (b.ours !== false || confirm(`${t("Shield_Confirm_Other")}
+
+${b.path}`)) unblock(b.path); } }, t("Shield_Unblock")))));
     blockedList.replaceChildren(...(rows.length ? rows : [empty("Shield_None_Blocked")]));
   }
 
@@ -75,6 +86,11 @@ export function mount(el) {
     }
     if (!av?.ok) avStatus.replaceChildren(h("span", { class: "pill none" }, t("Shield_Av_Unknown")));
     else avStatus.replaceChildren(!av.defender ? h("span", { class: "pill warn" }, t("Shield_Av_NoDefender")) : h("span", { class: `pill ${av.realTime ? "pass" : "warn"}` }, t(av.realTime ? "Shield_Av_On" : "Shield_Av_RealOff")));
+    const fwOff = !!fw && fw.profiles.some((p) => !p.on);
+    fwSwitch.hidden = !fw; fwSwitch.className = `btn ${fwOff ? "primary" : ""}`; fwSwitch.textContent = t(fwOff ? "Shield_Fw_TurnOn" : "Shield_Fw_TurnOff");
+    const on = !!av?.ok && av.defender && av.stopped;
+    avOffTemp.hidden = avOffPerm.hidden = !av?.ok || !av.defender || on; avOn.hidden = !on;
+    avCtlNote.hidden = !on; avCtlNote.textContent = on ? t(av.policy || !av.restore ? "Shield_Av_Ctl_Perm" : "Shield_Av_Ctl_Pending") : "";
     const notes = [];
     if (av?.ok && av.other) notes.push(t("Shield_Av_Other", av.other));
     if (av?.ok && av.tamper) notes.push(t("Shield_Av_Tamper"));
@@ -106,6 +122,24 @@ export function mount(el) {
     if (!r.ok && r.ask && confirm(`${r.confirm}\n\n${path}`)) r = await call(method, { path, force: true });
     finish(r, doneKey, name);
   }
+  // The firewall and antivirus switches: asked first when the computer is left unguarded, then read back from Windows by the host.
+  const fwSwitchNow = () => guard(async () => {
+    const on = !!fw && fw.profiles.some((p) => !p.on);
+    if (!on && !confirm(t("Shield_Ask_FwOff"))) return;
+    const r = await call("shield.fwSwitch", { on }); if (r.ok) toast(t(on ? "Shield_Done_FwOn" : "Shield_Done_FwOff"), "ok"); else toast(r.error, "fail");
+    await loadFirewall();
+  });
+  const avStop = (permanent) => guard(async () => {
+    if (!confirm(t(permanent ? "Shield_Ask_AvOffPerm" : "Shield_Ask_AvOff"))) return;
+    const r = await call("shield.avStop", { permanent });
+    if (r.ok) toast(t(permanent ? "Shield_Done_AvOffPerm" : "Shield_Done_AvOff"), "ok");
+    else if (r.security && confirm(`${r.error}
+
+${t("Shield_Open_Security")}`)) await call("shield.openSecurity");
+    else if (!r.security) toast(r.error, "fail");
+    await loadAv();
+  });
+  const avStart = () => guard(async () => { const r = await call("shield.avStart"); if (r.ok) toast(t("Shield_Done_AvOn"), "ok"); else toast(r.error, "fail"); await loadAv(); });
   async function pick(kind, then) { if (busy) return; const r = await call("shield.pick", { kind }); if (r?.path) then(r.path); }
 
   async function menu(kind, input) {

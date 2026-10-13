@@ -7,11 +7,35 @@ namespace Mazesta.App;
 /// </summary>
 internal static class ShieldCli
 {
-    public static bool Is(string[] args) => args.Length == 2 && args[0] is ShieldShellMenu.FirewallArgument or ShieldShellMenu.AntivirusArgument;
+    /// <summary>What the tray's menu starts: <c>--av-stop</c> (the antivirus off until the computer restarts), <c>--fw-off</c>, <c>--fw-on</c>.</summary>
+    public const string AvStopArgument = "--av-stop", FirewallOffArgument = "--fw-off", FirewallOnArgument = "--fw-on";
+
+    public static bool Is(string[] args) => args.Length == 2 && args[0] is ShieldShellMenu.FirewallArgument or ShieldShellMenu.AntivirusArgument || args.Length == 1 && args[0] is AvStopArgument or FirewallOffArgument or FirewallOnArgument;
+
+    /// <summary>Windows Security's page of the Defender settings, where Tamper Protection is switched off by hand: no program may do it.</summary>
+    public static void OpenSecurity()
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("windowsdefender://threatsettings") { UseShellExecute = true })?.Dispose(); }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
+    }
+
+    private static int Protection(string argument)
+    {
+        var tools = new ShieldTools(new ProcessCommandRunner()); string title = Loc.Get("Shield_Title");
+        bool firewall = argument != AvStopArgument, on = argument == FirewallOnArgument;
+        if (!on && MessageBox.Show(Loc.Get(firewall ? "Shield_Ask_FwOff" : "Shield_Ask_AvOff"), title, MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return 1;
+        var r = firewall ? tools.FirewallSwitchAsync(on, default).GetAwaiter().GetResult() : tools.AvStopAsync(permanent: false, default).GetAwaiter().GetResult();
+        if (r.Ok) { MessageBox.Show(Loc.Get(firewall ? (on ? "Shield_Done_FwOn" : "Shield_Done_FwOff") : "Shield_Done_AvOff"), title, MessageBoxButtons.OK, MessageBoxIcon.Information); return 0; }
+        bool tamper = !firewall && r.Problem == ShieldProblem.NotAccepted; string why = tamper ? Loc.Get("Shield_Err_AvTamper") : Problem(r);
+        if (tamper && MessageBox.Show(why + Environment.NewLine + Environment.NewLine + Loc.Get("Shield_Open_Security"), title, MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes) OpenSecurity();
+        else if (!tamper) MessageBox.Show(why, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return 1;
+    }
 
     public static int Run(string[] args, string language)
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); Application.EnableVisualStyles(); Loc.SetLanguage(language);
+        if (args.Length == 1) return Protection(args[0]);
         bool firewall = args[0] == ShieldShellMenu.FirewallArgument; string path = args[1]; var tools = new ShieldTools(new ProcessCommandRunner());
         var result = firewall ? tools.BlockAsync(path, allowSystem: false, default).GetAwaiter().GetResult() : tools.ExcludeAsync(path, allowBroad: false, default).GetAwaiter().GetResult();
         if (result.Problem is ShieldProblem.SystemFolder or ShieldProblem.TooBroad)

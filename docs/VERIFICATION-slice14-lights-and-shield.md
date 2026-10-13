@@ -40,3 +40,12 @@ Not run: an actual sleep and wake of the computer (the PC was not put to sleep w
 ## Texture size
 
 Measured by exporting the garden again with every texture 2048 x 2048 (see the commit message of the lights change).
+
+## Second round: right-click menu, every blocked program, antivirus and firewall switches
+
+Run on the owner's machine (`--selftest=shield`, then the app started by it):
+- The firewall list now shows every enabled blocking rule that names a program, not only this app's: 23 programs (Adobe, Crimson Desert and others, outgoing only), all marked "made by others".
+- Block, block again, unblock, exclude, remove exclusion and the too-broad refusal all passed again; Defender reads: real-time on, behaviour monitoring on, Tamper Protection on, no restore task, no policy.
+- The two right-click entries are now written at the app's first start (they were behind a switch that began off, which is why "Show more options" showed nothing); read back from `HKCU\Software\Classes\exefile\shell\MazestaFirewallBlock` and `Directory\shell\MazestaAvExclude`.
+
+Not run, on purpose or for lack of means: turning the real antivirus or firewall off (it changes the owner's security; the scripts, the read-back and the refusal path are covered by unit tests with a stand-in Windows only); the start-up task that puts the antivirus back after a restart (never created for real; a restart was not made); the tray menu entries and the `--av-stop` / `--fw-off` / `--fw-on` boxes (built, not clicked); the entries in Windows 11's "Show more options" menu itself (only the registry was read).

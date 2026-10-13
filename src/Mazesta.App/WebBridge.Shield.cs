@@ -14,9 +14,16 @@ public sealed partial class WebBridge
         var tools = new ShieldTools(_sp.GetRequiredService<ICommandRunner>()); string exe = Environment.ProcessPath ?? "";
         string Label(bool firewall) => Loc.Get(firewall ? "Shield_Menu_FwLabel" : "Shield_Menu_AvLabel");
 
+        // Both entries are there from the first start (the owner never found them behind a switch that began off); a switch turned off stays off, which the marker file remembers.
+        string decided = Path.Combine(_paths.ConfigDir, "shield-menu-set.txt");
         // An entry made by another copy of the app, or in another language, is made again for this one: it always starts the program that is running.
         object Menu()
         {
+            if (!File.Exists(decided))
+            {
+                try { foreach (bool fw in new[] { true, false }) ShieldShellMenu.Set(fw, true, exe, Label(fw)); Directory.CreateDirectory(_paths.ConfigDir); File.WriteAllText(decided, "1"); }
+                catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException or IOException) { _log.LogWarning(e, "The right-click entries were not added"); }
+            }
             foreach (bool fw in new[] { true, false })
                 if (ShieldShellMenu.Registered(fw) is not null && !ShieldShellMenu.IsCurrent(fw, exe, Label(fw))) ShieldShellMenu.Set(fw, true, exe, Label(fw));
             return new { firewall = ShieldShellMenu.Registered(true) is not null, antivirus = ShieldShellMenu.Registered(false) is not null };
@@ -28,10 +35,11 @@ public sealed partial class WebBridge
         };
 
         Method("shield.menu", _ => Menu());
+        Menu();   // the entries exist from the first start, whether or not the page is ever opened
         Method("shield.menuSet", p =>
         {
             bool fw = Str(p, "kind") == "firewall", on = Bool(p, "on");
-            try { ShieldShellMenu.Set(fw, on, exe, Label(fw)); }
+            try { ShieldShellMenu.Set(fw, on, exe, Label(fw)); Directory.CreateDirectory(_paths.ConfigDir); File.WriteAllText(decided, "1"); }
             catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException or IOException) { _log.LogWarning(e, "The right-click entry was not changed"); return new { error = e.Message }; }
             _log.LogInformation("Right-click entry {Kind}: {State}", fw ? "firewall" : "antivirus", on ? "added" : "removed"); return Menu();
         });
@@ -39,14 +47,14 @@ public sealed partial class WebBridge
         MethodAsync("shield.firewall", async _ =>
         {
             var s = await tools.FirewallAsync(CancellationToken.None).ConfigureAwait(true);
-            return s is null ? new { ok = false } : (object)new { ok = true, profiles = s.Profiles.Select(x => new { name = x.Profile, on = x.On }), blocked = s.Blocked.Select(b => new { path = b.Path, name = b.Name, inbound = b.Inbound, outbound = b.Outbound }) };
+            return s is null ? new { ok = false } : (object)new { ok = true, profiles = s.Profiles.Select(x => new { name = x.Profile, on = x.On }), blocked = s.Blocked.Select(b => new { path = b.Path, name = b.Name, inbound = b.Inbound, outbound = b.Outbound, ours = b.Ours }) };
         });
         MethodAsync("shield.av", async _ =>
         {
             var s = await tools.AvAsync(CancellationToken.None).ConfigureAwait(true);
             return s is null ? new { ok = false } : (object)new
             {
-                ok = true, defender = s.Defender, realTime = s.RealTime, tamper = s.Tamper, other = s.Other, products = s.Products.Select(x => new { name = x.Name, on = x.On }),
+                ok = true, defender = s.Defender, realTime = s.RealTime, stopped = s.Stopped, restore = s.RestoreAtStart, policy = s.Policy, tamper = s.Tamper, other = s.Other, products = s.Products.Select(x => new { name = x.Name, on = x.On }),
                 exclusions = s.Exclusions.Select(x => new { path = x, folder = Directory.Exists(x), exists = Directory.Exists(x) || File.Exists(x) }),
             };
         });
@@ -95,6 +103,24 @@ public sealed partial class WebBridge
             var r = await tools.UnblockAsync(Str(p, "path"), CancellationToken.None).ConfigureAwait(true);
             _log.LogInformation("Firewall unblock {Path}: {Result} {Detail}", Str(p, "path"), r.Problem, r.Detail); return Answer(r);
         });
+        // The firewall and the antivirus switched off and on. The page asks the user first; the answer says what Windows really did (Tamper Protection refuses without an error).
+        MethodAsync("shield.fwSwitch", async p =>
+        {
+            bool on = Bool(p, "on"); var r = await tools.FirewallSwitchAsync(on, CancellationToken.None).ConfigureAwait(true);
+            _log.LogWarning("Firewall switched {State}: {Result} {Detail}", on ? "on" : "off", r.Problem, r.Detail); return Answer(r);
+        });
+        MethodAsync("shield.avStop", async p =>
+        {
+            bool permanent = Bool(p, "permanent"); var r = await tools.AvStopAsync(permanent, CancellationToken.None).ConfigureAwait(true);
+            _log.LogWarning("Antivirus stopped ({Kind}): {Result} {Detail}", permanent ? "for good" : "until restart", r.Problem, r.Detail);
+            return r.Problem == ShieldProblem.NotAccepted ? new { ok = false, ask = false, error = Loc.Get("Shield_Err_AvTamper"), security = true } : Answer(r);
+        });
+        MethodAsync("shield.avStart", async _ =>
+        {
+            var r = await tools.AvStartAsync(CancellationToken.None).ConfigureAwait(true); _log.LogWarning("Antivirus started: {Result} {Detail}", r.Problem, r.Detail); return Answer(r);
+        });
+        Method("shield.openSecurity", _ => { ShieldCli.OpenSecurity(); return new { ok = true }; });
+
         MethodAsync("shield.exclude", async p =>
         {
             var r = await tools.ExcludeAsync(Str(p, "path"), Bool(p, "force"), CancellationToken.None).ConfigureAwait(true);

@@ -42,7 +42,7 @@ internal sealed class TrayContext : ApplicationContext
         _auto = new GpuAutoSwitch(paths, _gpu, Benchmarking);
         _rgb = new RgbMenu(paths, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
         _fans = new FanMenu(paths, StartApp, (text, kind) => _icon!.ShowBalloonTip(kind == ToolTipIcon.Info ? 5000 : 15000, TrayText.Title, text, kind));
-        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, new ToolStripSeparator(),
+        menu.Items.AddRange([open, new ToolStripMenuItem(TrayText.Summary, null, (_, _) => ShowSummary()), _checkNow, new ToolStripSeparator(), _overlay, _gpu.Menu, _fans.Menu, _rgb.Menu, _power.Menu, ProtectionMenu(), new ToolStripSeparator(),
             _status, new ToolStripSeparator(), new ToolStripMenuItem(TrayText.Exit, null, (_, _) => ExitThread())]);
         menu.Opening += (_, _) => _overlay.Checked = OverlayShown();
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
@@ -182,6 +182,15 @@ internal sealed class TrayContext : ApplicationContext
         // Opened after a while, the summary reads fresh temperatures rather than showing an old check as if it were now.
         var temps = Checks.LastOrDefault(c => c.Kind == "temps");
         if (!_checking && (temps is null || DateTimeOffset.UtcNow - temps.Time > TimeSpan.FromMinutes(2))) _ = CheckTempsAsync();
+    }
+
+    /// <summary>The antivirus off until the next restart, and the firewall off or on. The app does it (it asks first, then says what Windows did), so the tray carries none of that code.</summary>
+    private ToolStripMenuItem ProtectionMenu()
+    {
+        var menu = new ToolStripMenuItem(TrayText.Protection);
+        menu.DropDownItems.AddRange([new ToolStripMenuItem(TrayText.AvOff, null, (_, _) => StartApp("--av-stop")), new ToolStripMenuItem(TrayText.FirewallOff, null, (_, _) => StartApp("--fw-off")),
+            new ToolStripMenuItem(TrayText.FirewallOn, null, (_, _) => StartApp("--fw-on"))]);
+        return menu;
     }
 
     /// <summary>Starts the app next to the tray. A running app brings its window forward instead of starting twice.</summary>

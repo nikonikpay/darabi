@@ -1235,7 +1235,7 @@
   <data name="Shield_Block" xml:space="preserve"><value>مسدود کن</value></data>
   <data name="Shield_Is_Blocked" xml:space="preserve"><value>مسدود است</value></data>
   <data name="Shield_Blocked" xml:space="preserve"><value>برنامه‌های مسدودشده</value></data>
-  <data name="Shield_Blocked_Sub" xml:space="preserve"><value>از همین‌جا ساخته شده؛ نام قانون‌ها با «Mazesta Test» شروع می‌شود</value></data>
+  <data name="Shield_Blocked_Sub" xml:space="preserve"><value>هر برنامه‌ای که الان در فایروال ویندوز مسدود است، حتی آنچه برنامه‌های دیگر مسدود کرده‌اند</value></data>
   <data name="Shield_None_Blocked" xml:space="preserve"><value>هیچ برنامه‌ای از اینجا مسدود نشده است.</value></data>
   <data name="Shield_Both" xml:space="preserve"><value>ورودی و خروجی</value></data>
   <data name="Shield_In" xml:space="preserve"><value>فقط ورودی</value></data>
@@ -1270,7 +1270,7 @@
   <data name="Shield_Menu_Sub" xml:space="preserve"><value>همین کار را از اکسپلورر انجام دهید، بدون باز کردن برنامه</value></data>
   <data name="Shield_Menu_Fw" xml:space="preserve"><value>افزودن «بلاک در فایروال» به منوی برنامه‌ها (.exe)</value></data>
   <data name="Shield_Menu_Av" xml:space="preserve"><value>افزودن «استثنا در آنتی‌ویروس» به منوی پوشه‌ها</value></data>
-  <data name="Shield_Menu_Note" xml:space="preserve"><value>در ویندوز ۱۱ زیر «Show more options» هستند. چون این تغییر دسترسی مدیر می‌خواهد، ویندوز هر بار اجازه می‌پرسد.</value></data>
+  <data name="Shield_Menu_Note" xml:space="preserve"><value>هر دو گزینه به‌صورت پیش‌فرض اضافه شده‌اند. در ویندوز ۱۱ زیر «Show more options» هستند. ویندوز هر بار اجازه می‌پرسد، چون این تغییر مدیر لازم دارد.</value></data>
   <data name="Shield_Menu_Failed" xml:space="preserve"><value>منو تغییر نکرد: {0}</value></data>
   <data name="Shield_Menu_FwLabel" xml:space="preserve"><value>بلاک در فایروال (مازستا)</value></data>
   <data name="Shield_Menu_AvLabel" xml:space="preserve"><value>استثنا در آنتی‌ویروس (مازستا)</value></data>
@@ -3766,4 +3766,29 @@
   <data name="Done_System_Problem" xml:space="preserve"><value>یکی از بررسی‌های دیگر (منبع تغذیه، ویندوز، شبکه) رد شد.</value></data>
   <data name="Done_Passed_Good" xml:space="preserve"><value>همهٔ آزمون‌های این قطعه موفق بودند.</value></data>
   <data name="Test_GpuPreset_all" xml:space="preserve"><value>همه‌چیز، یکی‌یکی (محاسبه، پله‌های توان، VRAM، سه‌بعدی، هوش مصنوعی، دیکود و انکود ویدیو)</value></data>
+  <data name="Shield_Ask_AvOff" xml:space="preserve"><value>آنتی‌ویروس تا ری‌استارت بعدی کامپیوتر خاموش شود؟ تا آن موقع هیچ چیز از کامپیوتر محافظت نمی‌کند؛ فایل یا سایتی را که به آن اعتماد ندارید باز نکنید.</value></data>
+  <data name="Shield_Ask_AvOffPerm" xml:space="preserve"><value>آنتی‌ویروس برای همیشه خاموش شود؟ حتی بعد از ری‌استارت هم خاموش می‌ماند تا از همین‌جا روشنش کنید. تا آن موقع هیچ چیز از کامپیوتر محافظت نمی‌کند.</value></data>
+  <data name="Shield_Ask_FwOff" xml:space="preserve"><value>فایروال ویندوز خاموش شود؟ برنامه‌ها آن‌وقت بدون هیچ بررسی به کامپیوتر و شبکه دسترسی دارند.</value></data>
+  <data name="Shield_Done_AvOff" xml:space="preserve"><value>آنتی‌ویروس خاموش شد. با ری‌استارت کامپیوتر خودش دوباره روشن می‌شود.</value></data>
+  <data name="Shield_Done_AvOffPerm" xml:space="preserve"><value>آنتی‌ویروس برای همیشه خاموش شد. هر وقت خواستید از همین‌جا روشنش کنید.</value></data>
+  <data name="Shield_Done_AvOn" xml:space="preserve"><value>آنتی‌ویروس دوباره روشن شد.</value></data>
+  <data name="Shield_Done_FwOff" xml:space="preserve"><value>فایروال ویندوز خاموش شد (هر سه نوع شبکه).</value></data>
+  <data name="Shield_Done_FwOn" xml:space="preserve"><value>فایروال ویندوز روشن شد (هر سه نوع شبکه).</value></data>
+  <data name="Shield_Err_AvTamper" xml:space="preserve"><value>ویندوز اجازه نداد آنتی‌ویروس خاموش شود: Tamper Protection روشن است و هیچ برنامه‌ای حق خاموش کردنش را ندارد. خودتان آن را در Windows Security خاموش کنید (Virus &amp; threat protection ← Manage settings ← Tamper Protection) و دوباره امتحان کنید.</value></data>
+  <data name="Shield_Open_Security" xml:space="preserve"><value>Windows Security همین حالا باز شود؟</value></data>
+  <data name="Shield_Open_SecurityBtn" xml:space="preserve"><value>باز کردن Windows Security</value></data>
+  <data name="Shield_Av_Ctl_Title" xml:space="preserve"><value>خاموش کردن آنتی‌ویروس</value></data>
+  <data name="Shield_Av_Ctl_Sub" xml:space="preserve"><value>همه‌ی محافظ‌های Defender، نه فقط محافظت زنده</value></data>
+  <data name="Shield_Av_Off_Temp" xml:space="preserve"><value>خاموش تا ری‌استارت</value></data>
+  <data name="Shield_Av_Off_Perm" xml:space="preserve"><value>خاموش برای همیشه</value></data>
+  <data name="Shield_Av_On_Btn" xml:space="preserve"><value>روشن کردن آنتی‌ویروس</value></data>
+  <data name="Shield_Av_Ctl_Note" xml:space="preserve"><value>تا ری‌استارت: با روشن شدن بعدی کامپیوتر یک وظیفه‌ی خود ویندوز همه‌چیز را دوباره روشن می‌کند. برای همیشه: تا وقتی دکمه‌ی روشن کردن را نزنید خاموش می‌ماند. در ویندوز ۱۱ فقط وقتی کار می‌کند که Tamper Protection خاموش باشد؛ اگر ویندوز نپذیرد برنامه همین را می‌گوید.</value></data>
+  <data name="Shield_Av_Ctl_Pending" xml:space="preserve"><value>الان خاموش است و با روشن شدن بعدی کامپیوتر خودش دوباره روشن می‌شود.</value></data>
+  <data name="Shield_Av_Ctl_Perm" xml:space="preserve"><value>برای همیشه خاموش است: بعد از ری‌استارت هم خاموش می‌ماند.</value></data>
+  <data name="Shield_Fw_Ctl_Title" xml:space="preserve"><value>خاموش یا روشن کردن فایروال</value></data>
+  <data name="Shield_Fw_Ctl_Sub" xml:space="preserve"><value>هر سه نوع شبکه با هم (دامنه، خصوصی، عمومی)</value></data>
+  <data name="Shield_Fw_TurnOff" xml:space="preserve"><value>خاموش کردن فایروال</value></data>
+  <data name="Shield_Fw_TurnOn" xml:space="preserve"><value>روشن کردن فایروال</value></data>
+  <data name="Shield_Other_Rule" xml:space="preserve"><value>ساخته‌ی ویندوز یا برنامه‌ای دیگر</value></data>
+  <data name="Shield_Confirm_Other" xml:space="preserve"><value>این مسدودسازی را این برنامه نساخته (ویندوز، خود برنامه یا خودتان ساخته‌اید). برداشته شود تا برنامه دیگر مسدود نباشد؟</value></data>
 </root>

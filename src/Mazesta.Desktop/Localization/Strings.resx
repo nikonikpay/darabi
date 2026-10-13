@@ -1235,7 +1235,7 @@
   <data name="Shield_Block" xml:space="preserve"><value>Block</value></data>
   <data name="Shield_Is_Blocked" xml:space="preserve"><value>Blocked</value></data>
   <data name="Shield_Blocked" xml:space="preserve"><value>Blocked programs</value></data>
-  <data name="Shield_Blocked_Sub" xml:space="preserve"><value>Made from here; the rules are named Mazesta Test</value></data>
+  <data name="Shield_Blocked_Sub" xml:space="preserve"><value>Every program blocked in the Windows firewall now, also what other programs blocked</value></data>
   <data name="Shield_None_Blocked" xml:space="preserve"><value>No program is blocked from here.</value></data>
   <data name="Shield_Both" xml:space="preserve"><value>Incoming and outgoing</value></data>
   <data name="Shield_In" xml:space="preserve"><value>Incoming only</value></data>
@@ -1270,7 +1270,7 @@
   <data name="Shield_Menu_Sub" xml:space="preserve"><value>Do the same from Explorer, without opening the app</value></data>
   <data name="Shield_Menu_Fw" xml:space="preserve"><value>Add “Block in firewall” to the menu of programs (.exe)</value></data>
   <data name="Shield_Menu_Av" xml:space="preserve"><value>Add “Exclude from antivirus” to the menu of folders</value></data>
-  <data name="Shield_Menu_Note" xml:space="preserve"><value>On Windows 11 they are under “Show more options”. Windows asks for permission each time, as the change needs an administrator.</value></data>
+  <data name="Shield_Menu_Note" xml:space="preserve"><value>Both entries are added by default. On Windows 11 they are under “Show more options”. Windows asks for permission each time, as the change needs an administrator.</value></data>
   <data name="Shield_Menu_Failed" xml:space="preserve"><value>The menu was not changed: {0}</value></data>
   <data name="Shield_Menu_FwLabel" xml:space="preserve"><value>Block in firewall (Mazesta)</value></data>
   <data name="Shield_Menu_AvLabel" xml:space="preserve"><value>Exclude from antivirus (Mazesta)</value></data>
@@ -3766,4 +3766,29 @@ Cancel: stop.</value></data>
   <data name="Done_System_Problem" xml:space="preserve"><value>One of the other checks (power, Windows, network) failed.</value></data>
   <data name="Done_Passed_Good" xml:space="preserve"><value>Every test of this part passed.</value></data>
   <data name="Test_GpuPreset_all" xml:space="preserve"><value>Everything, one by one (compute, power steps, VRAM, 3D, AI, video decode and encode)</value></data>
+  <data name="Shield_Ask_AvOff" xml:space="preserve"><value>Turn the antivirus off until the computer restarts? Nothing guards the computer meanwhile, so do not open files or sites you do not trust.</value></data>
+  <data name="Shield_Ask_AvOffPerm" xml:space="preserve"><value>Turn the antivirus off for good? It stays off, also after a restart, until you turn it on here. Nothing guards the computer meanwhile.</value></data>
+  <data name="Shield_Ask_FwOff" xml:space="preserve"><value>Turn the Windows firewall off? Programs can then reach the computer and the network without any check.</value></data>
+  <data name="Shield_Done_AvOff" xml:space="preserve"><value>The antivirus is off. It turns itself on again when the computer restarts.</value></data>
+  <data name="Shield_Done_AvOffPerm" xml:space="preserve"><value>The antivirus is off for good. Turn it on here when you want it back.</value></data>
+  <data name="Shield_Done_AvOn" xml:space="preserve"><value>The antivirus is on again.</value></data>
+  <data name="Shield_Done_FwOff" xml:space="preserve"><value>The Windows firewall is off (all three profiles).</value></data>
+  <data name="Shield_Done_FwOn" xml:space="preserve"><value>The Windows firewall is on (all three profiles).</value></data>
+  <data name="Shield_Err_AvTamper" xml:space="preserve"><value>Windows did not let the antivirus be turned off: Tamper Protection is on, and no program may switch it off. Turn it off yourself in Windows Security (Virus &amp; threat protection → Manage settings → Tamper Protection), then try again.</value></data>
+  <data name="Shield_Open_Security" xml:space="preserve"><value>Open Windows Security now?</value></data>
+  <data name="Shield_Open_SecurityBtn" xml:space="preserve"><value>Open Windows Security</value></data>
+  <data name="Shield_Av_Ctl_Title" xml:space="preserve"><value>Turn the antivirus off</value></data>
+  <data name="Shield_Av_Ctl_Sub" xml:space="preserve"><value>All of Defender's guards, not only real-time protection</value></data>
+  <data name="Shield_Av_Off_Temp" xml:space="preserve"><value>Off until restart</value></data>
+  <data name="Shield_Av_Off_Perm" xml:space="preserve"><value>Off for good</value></data>
+  <data name="Shield_Av_On_Btn" xml:space="preserve"><value>Turn the antivirus on</value></data>
+  <data name="Shield_Av_Ctl_Note" xml:space="preserve"><value>Until restart: a task of Windows turns everything on again at the next start of the computer. For good: it stays off until you press the button to turn it on. On Windows 11 this works only when Tamper Protection is off, and the app says so if Windows refuses.</value></data>
+  <data name="Shield_Av_Ctl_Pending" xml:space="preserve"><value>It is off now and turns itself on again at the next start of the computer.</value></data>
+  <data name="Shield_Av_Ctl_Perm" xml:space="preserve"><value>It is off for good: it stays off after a restart.</value></data>
+  <data name="Shield_Fw_Ctl_Title" xml:space="preserve"><value>Turn the firewall off or on</value></data>
+  <data name="Shield_Fw_Ctl_Sub" xml:space="preserve"><value>All three kinds of network at once (domain, private, public)</value></data>
+  <data name="Shield_Fw_TurnOff" xml:space="preserve"><value>Turn the firewall off</value></data>
+  <data name="Shield_Fw_TurnOn" xml:space="preserve"><value>Turn the firewall on</value></data>
+  <data name="Shield_Other_Rule" xml:space="preserve"><value>Made by Windows or another program</value></data>
+  <data name="Shield_Confirm_Other" xml:space="preserve"><value>This block was not made by this app (Windows, the program itself or you made it). Remove it, so the program is no longer blocked?</value></data>
 </root>

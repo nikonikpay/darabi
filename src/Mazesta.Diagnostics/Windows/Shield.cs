@@ -4,12 +4,14 @@ namespace Mazesta.Diagnostics.Windows;
 public enum ShieldProblem { None, NotFullPath, NotExe, Missing, SystemFolder, TooBroad, NotAccepted, Failed }
 public sealed record ShieldResult(ShieldProblem Problem, string? Detail = null) { public bool Ok => Problem == ShieldProblem.None; }
 
-/// <summary>A program the app has blocked in the Windows firewall: the rules it made for it, by direction.</summary>
-public sealed record BlockedProgram(string Path, string Name, bool Inbound, bool Outbound);
+/// <summary>A program blocked in the Windows firewall, by direction. <see cref="Ours"/>: the rules are the pair this app made; false: Windows, the program's own installer or the user made them.</summary>
+public sealed record BlockedProgram(string Path, string Name, bool Inbound, bool Outbound, bool Ours = true);
 public sealed record AvProduct(string Name, bool On);
 /// <summary>What is known of the antivirus: Windows Defender's state, every product Windows' security centre lists and Defender's exclusions. <see cref="Defender"/> false: Defender cannot be asked.</summary>
-public sealed record AvState(bool Defender, bool RealTime, bool? Tamper, IReadOnlyList<AvProduct> Products, IReadOnlyList<string> Exclusions)
+public sealed record AvState(bool Defender, bool RealTime, bool? Tamper, IReadOnlyList<AvProduct> Products, IReadOnlyList<string> Exclusions, bool? Behavior = null, bool RestoreAtStart = false, bool Policy = false)
 {
+    /// <summary>Defender is there and its real-time guard is not running.</summary>
+    public bool Stopped => Defender && !RealTime;
     /// <summary>The product that actually guards the computer when it is not Windows Defender: Defender's exclusions do not apply to it.</summary>
     public string? Other => Products.FirstOrDefault(p => p.On && !p.Name.Contains("Defender", StringComparison.OrdinalIgnoreCase))?.Name;
 }
@@ -67,7 +69,7 @@ public static class ShieldPaths
 /// </summary>
 public sealed class ShieldTools(ICommandRunner runner)
 {
-    public const string RuleGroup = "Mazesta Test", Marker = "MZJSON:";
+    public const string RuleGroup = "Mazesta Test", Marker = "MZJSON:", RestoreTask = "MazestaAvRestore", RulePrefix = "MazestaBlock-";
     private static readonly string Ps = @"WindowsPowerShell\v1.0\powershell.exe";
 
     /// <summary>The script's text for a path: the path travels as base64 and is decoded inside, so no character of it can be taken for PowerShell's own syntax.</summary>
@@ -79,10 +81,12 @@ public sealed class ShieldTools(ICommandRunner runner)
         + $"foreach($d in 'Inbound','Outbound'){{ $r=\"MazestaBlock-$id-$d\"; Get-NetFirewallRule -Name $r -ErrorAction SilentlyContinue | Remove-NetFirewallRule; "
         + $"New-NetFirewallRule -Name $r -DisplayName \"Mazesta Test: block $n ($d)\" -Group '{RuleGroup}' -Direction $d -Action Block -Program $p -Profile Any -Enabled True | Out-Null }}";
 
-    internal static string UnblockScript(string path) => Prologue + $"$id='{ShieldPaths.RuleId(path)}'; foreach($d in 'Inbound','Outbound'){{ Get-NetFirewallRule -Name \"MazestaBlock-$id-$d\" -ErrorAction SilentlyContinue | Remove-NetFirewallRule }}";
+    // The pair this app made, and any other blocking rule of the same program (the list shows them all, so the button has to take them all away).
+    internal static string UnblockScript(string path) => Prologue + $"$p={PathLiteral(path)}; $id='{ShieldPaths.RuleId(path)}'; foreach($d in 'Inbound','Outbound'){{ Get-NetFirewallRule -Name \"MazestaBlock-$id-$d\" -ErrorAction SilentlyContinue | Remove-NetFirewallRule }}; "
+        + "Get-NetFirewallRule -Action Block -ErrorAction SilentlyContinue | ForEach-Object { $a=$_ | Get-NetFirewallApplicationFilter; if([Environment]::ExpandEnvironmentVariables([string]$a.Program) -ieq $p){ $_ | Remove-NetFirewallRule } }";
 
     internal const string FirewallScript = Prologue
-        + "$rows=@(Get-NetFirewallRule -Group '" + RuleGroup + "' -ErrorAction SilentlyContinue | ForEach-Object { $a=$_ | Get-NetFirewallApplicationFilter; [pscustomobject]@{ n=$_.Name; d=[string]$_.Direction; e=[string]$_.Enabled; a=[string]$_.Action; p=[string]$a.Program } }); "
+        + "$rows=@(Get-NetFirewallRule -Action Block -Enabled True -ErrorAction SilentlyContinue | ForEach-Object { $a=$_ | Get-NetFirewallApplicationFilter; [pscustomobject]@{ n=$_.Name; d=[string]$_.Direction; e=[string]$_.Enabled; a=[string]$_.Action; p=[Environment]::ExpandEnvironmentVariables([string]$a.Program) } }); "
         + "$prof=@(Get-NetFirewallProfile | ForEach-Object { [pscustomobject]@{ n=[string]$_.Name; e=[string]$_.Enabled } }); "
         + "Write-Output ('" + Marker + "' + (ConvertTo-Json -Compress -Depth 4 -InputObject ([pscustomobject]@{ rules=$rows; profiles=$prof })))";
 
@@ -90,7 +94,8 @@ public sealed class ShieldTools(ICommandRunner runner)
         + "$mp=Get-MpComputerStatus; $pref=Get-MpPreference; "
         + "$av=@(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct | ForEach-Object { [pscustomobject]@{ n=[string]$_.displayName; on=((([int]$_.productState) -band 0xF000) -eq 0x1000) } }); "
         + "$ex=@($pref.ExclusionPath | Where-Object { $_ }); "
-        + "Write-Output ('" + Marker + "' + (ConvertTo-Json -Compress -Depth 4 -InputObject ([pscustomobject]@{ defender=[bool]$mp; real=[bool]$mp.RealTimeProtectionEnabled; tamper=$mp.IsTamperProtected; products=$av; exclusions=$ex })))";
+        + "$task=[bool](Get-ScheduledTask -TaskName '" + RestoreTask + "'); $pol=((Get-ItemProperty 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows Defender' -Name DisableAntiSpyware).DisableAntiSpyware -eq 1); "
+        + "Write-Output ('" + Marker + "' + (ConvertTo-Json -Compress -Depth 4 -InputObject ([pscustomobject]@{ defender=[bool]$mp; real=[bool]$mp.RealTimeProtectionEnabled; tamper=$mp.IsTamperProtected; behav=$mp.BehaviorMonitorEnabled; restore=$task; policy=$pol; products=$av; exclusions=$ex })))";
 
     internal static string ExcludeScript(string path, bool add) => Prologue + $"$p={PathLiteral(path)}; " + (add ? "Add-MpPreference -ExclusionPath $p" : "Remove-MpPreference -ExclusionPath $p");
 
@@ -115,14 +120,14 @@ public sealed class ShieldTools(ICommandRunner runner)
         {
             using var doc = JsonDocument.Parse(json); var root = doc.RootElement;
             var profiles = Items(root, "profiles").Select(p => (Str(p, "n"), Str(p, "e").Equals("True", StringComparison.OrdinalIgnoreCase))).ToList();
-            var byPath = new Dictionary<string, (bool In, bool Out)>(StringComparer.OrdinalIgnoreCase);
+            var byPath = new Dictionary<string, (bool In, bool Out, bool Ours)>(StringComparer.OrdinalIgnoreCase);
             foreach (var r in Items(root, "rules"))
             {
-                string program = Str(r, "p"); if (program.Length == 0 || !Str(r, "a").Equals("Block", StringComparison.OrdinalIgnoreCase) || !Str(r, "e").Equals("True", StringComparison.OrdinalIgnoreCase)) continue;
+                string program = Str(r, "p"); if (!program.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || !Str(r, "a").Equals("Block", StringComparison.OrdinalIgnoreCase) || !Str(r, "e").Equals("True", StringComparison.OrdinalIgnoreCase)) continue;
                 var was = byPath.GetValueOrDefault(program); bool inbound = Str(r, "d").Equals("Inbound", StringComparison.OrdinalIgnoreCase);
-                byPath[program] = (was.In || inbound, was.Out || !inbound);
+                byPath[program] = (was.In || inbound, was.Out || !inbound, was.Ours || Str(r, "n").StartsWith(RulePrefix, StringComparison.Ordinal));
             }
-            return new FirewallState(profiles, [.. byPath.Select(kv => new BlockedProgram(kv.Key, System.IO.Path.GetFileName(kv.Key), kv.Value.In, kv.Value.Out)).OrderBy(b => b.Name, StringComparer.CurrentCultureIgnoreCase)]);
+            return new FirewallState(profiles, [.. byPath.Select(kv => new BlockedProgram(kv.Key, System.IO.Path.GetFileName(kv.Key), kv.Value.In, kv.Value.Out, kv.Value.Ours)).OrderBy(b => b.Name, StringComparer.CurrentCultureIgnoreCase)]);
         }
         catch (JsonException) { return null; }
     }
@@ -161,7 +166,9 @@ public sealed class ShieldTools(ICommandRunner runner)
             bool? tamper = root.TryGetProperty("tamper", out var tp) && tp.ValueKind is JsonValueKind.True or JsonValueKind.False ? tp.ValueKind == JsonValueKind.True : null;
             var products = Items(root, "products").Select(p => new AvProduct(Str(p, "n"), p.TryGetProperty("on", out var on) && on.ValueKind == JsonValueKind.True)).Where(p => p.Name.Length > 0).ToList();
             var exclusions = Items(root, "exclusions").Select(e => e.ValueKind == JsonValueKind.String ? e.GetString() ?? "" : "").Where(e => e.Length > 0).ToList();
-            return new AvState(defender, real, tamper, products, exclusions);
+            bool? behavior = root.TryGetProperty("behav", out var bh) && bh.ValueKind is JsonValueKind.True or JsonValueKind.False ? bh.ValueKind == JsonValueKind.True : null;
+            bool restore = root.TryGetProperty("restore", out var rs) && rs.ValueKind == JsonValueKind.True, policy = root.TryGetProperty("policy", out var po) && po.ValueKind == JsonValueKind.True;
+            return new AvState(defender, real, tamper, products, exclusions, behavior, restore, policy);
         }
         catch (JsonException) { return null; }
     }
@@ -180,6 +187,73 @@ public sealed class ShieldTools(ICommandRunner runner)
         var now = await AvAsync(ct).ConfigureAwait(false);
         bool has = now?.Exclusions.Any(e => e.TrimEnd('\\').Equals(full!.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)) == true;
         return has == add ? new(ShieldProblem.None) : new(ShieldProblem.NotAccepted, r.Text);
+    }
+
+    // ---- The firewall switched off and on, and the antivirus stopped and started. ----
+
+    private const string DefenderPolicy = @"HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender", RealTimePolicy = DefenderPolicy + @"\Real-Time Protection";
+    private static readonly string[] RealTimePolicyValues = ["DisableRealtimeMonitoring", "DisableBehaviorMonitoring", "DisableOnAccessProtection", "DisableScanOnRealtimeEnable", "DisableIOAVProtection"];
+
+    internal static string FirewallSwitchScript(bool on) => Prologue + $"Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled {(on ? "True" : "False")}";
+
+    /// <summary>Every guard Defender runs while the computer is used, off or on. Real-time protection alone leaves the others running, and on Windows 11 it also switches itself back on.</summary>
+    private static string GuardsScript(bool off)
+    {
+        string v = off ? "$true" : "$false";
+        return $"Set-MpPreference -DisableRealtimeMonitoring {v} -DisableBehaviorMonitoring {v} -DisableIOAVProtection {v} -DisableScriptScanning {v} -DisableBlockAtFirstSeen {v} -DisableIntrusionPreventionSystem {v}; ";
+    }
+
+    private static string PolicyOffScript() => $"New-Item -Path '{RealTimePolicy}' -Force | Out-Null; Set-ItemProperty -Path '{DefenderPolicy}' -Name DisableAntiSpyware -Type DWord -Value 1; "
+        + string.Concat(RealTimePolicyValues.Select(n => $"Set-ItemProperty -Path '{RealTimePolicy}' -Name {n} -Type DWord -Value 1; "));
+
+    private static string PolicyOnScript() => $"Remove-ItemProperty -Path '{DefenderPolicy}' -Name DisableAntiSpyware -ErrorAction SilentlyContinue; "
+        + string.Concat(RealTimePolicyValues.Select(n => $"Remove-ItemProperty -Path '{RealTimePolicy}' -Name {n} -ErrorAction SilentlyContinue; "));
+
+    private static string Unregister => $"Unregister-ScheduledTask -TaskName '{RestoreTask}' -Confirm:$false -ErrorAction SilentlyContinue; ";
+
+    /// <summary>What the start-up task runs as the system: put everything back, try again for two minutes while Defender wakes, and only then end the task.</summary>
+    internal static string RestoreAtStartScript() => "$ErrorActionPreference='SilentlyContinue'; for($i=0;$i -lt 6;$i++){ " + GuardsScript(false) + PolicyOnScript() + "Start-Sleep 5; if((Get-MpComputerStatus).RealTimeProtectionEnabled){ " + Unregister + "break }; Start-Sleep 15 }";
+
+    internal static string StopScript(bool permanent)
+    {
+        string task = permanent ? Unregister   // an earlier "until restart" must not undo a stop that is meant to stay
+            : $"$enc='{Convert.ToBase64String(Encoding.Unicode.GetBytes(RestoreAtStartScript()))}'; $act=New-ScheduledTaskAction -Execute 'powershell.exe' -Argument ('-NoProfile -NonInteractive -WindowStyle Hidden -EncodedCommand '+$enc); "
+              + $"Register-ScheduledTask -TaskName '{RestoreTask}' -Action $act -Trigger (New-ScheduledTaskTrigger -AtStartup) -Principal (New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest) -Force | Out-Null; ";
+        return Prologue + task + (permanent ? PolicyOffScript() : PolicyOnScript()) + GuardsScript(true);
+    }
+
+    internal static string StartScript() => Prologue + GuardsScript(false) + PolicyOnScript() + Unregister;
+
+    /// <summary>Switches the firewall's three profiles, and reads them back.</summary>
+    public async Task<ShieldResult> FirewallSwitchAsync(bool on, CancellationToken ct)
+    {
+        var r = await RunAsync(FirewallSwitchScript(on), ct).ConfigureAwait(false);
+        if (r.Code != 0) return new(ShieldProblem.Failed, r.Text);
+        var now = await FirewallAsync(ct).ConfigureAwait(false);
+        return now is not null && now.Profiles.Count > 0 && now.Profiles.All(p => p.On == on) ? new(ShieldProblem.None) : new(ShieldProblem.NotAccepted, r.Text);
+    }
+
+    /// <summary>
+    /// Stops all of Defender's guards. <paramref name="permanent"/> false: a task of the system puts them back at the next start of the computer. Windows with Tamper Protection on refuses
+    /// without an error, so the state is read back and the answer says whether it took (<see cref="ShieldProblem.NotAccepted"/>: it did not).
+    /// </summary>
+    public async Task<ShieldResult> AvStopAsync(bool permanent, CancellationToken ct)
+    {
+        var before = await AvAsync(ct).ConfigureAwait(false);
+        if (before is null || !before.Defender) return new(ShieldProblem.Failed, "Windows Defender cannot be asked.");
+        var r = await RunAsync(StopScript(permanent), ct).ConfigureAwait(false);
+        var now = await AvAsync(ct).ConfigureAwait(false);
+        if (now?.Stopped == true) return new(ShieldProblem.None);
+        if (!permanent) await RunAsync(Prologue + Unregister, ct).ConfigureAwait(false);   // nothing was stopped, so nothing is to be put back
+        return r.Code != 0 && now?.Tamper != true ? new(ShieldProblem.Failed, r.Text) : new(ShieldProblem.NotAccepted, r.Text);
+    }
+
+    public async Task<ShieldResult> AvStartAsync(CancellationToken ct)
+    {
+        var r = await RunAsync(StartScript(), ct).ConfigureAwait(false);
+        var now = await AvAsync(ct).ConfigureAwait(false);
+        if (now is { Defender: true, RealTime: true, RestoreAtStart: false, Policy: false }) return new(ShieldProblem.None);
+        return new(r.Code != 0 ? ShieldProblem.Failed : ShieldProblem.NotAccepted, r.Text);
     }
 
     private static IEnumerable<JsonElement> Items(JsonElement root, string name)

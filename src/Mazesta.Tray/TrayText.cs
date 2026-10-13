@@ -50,6 +50,10 @@ internal static class TrayText
     public const string LightsOn = "نورها با تنظیمات ذخیره‌شده روشن شدند.";
     public const string LightsNoProgram = "OpenRGB کنار مازستا پیدا نشد.";
     public const string LightsNoServer = "سرور نورپردازی بالا نیامد.";
+    public const string Protection = "محافظت ویندوز";
+    public const string AvOff = "خاموش کردن آنتی‌ویروس (تا ری‌استارت)";
+    public const string FirewallOff = "خاموش کردن فایروال";
+    public const string FirewallOn = "روشن کردن فایروال";
     public const string PowerTimer = "خواب یا خاموشی زمان‌دار";
     public const string PowerCancel = "لغو";
     public const string PowerCustom = "زمان دلخواه…";
