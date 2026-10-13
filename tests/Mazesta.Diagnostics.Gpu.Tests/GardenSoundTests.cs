@@ -21,8 +21,13 @@ public class GardenSoundTests
         Assert.Equal(0, far.Water);
     }
 
-    [Fact] public void The_garden_has_no_music_even_at_the_door()
-        => Assert.All(new[] { -3.2f, -4f, -8f, -20f }, z => Assert.Equal(0, SoundLevels.At(new(0, 1.7f, z), Fountain, 10).Music));
+    [Fact] public void Music_comes_faintly_before_the_door_and_is_gone_by_the_pool()
+    {
+        float At(float z) => SoundLevels.At(new(0, 1.7f, z), Fountain, 10).Music;
+        Assert.True(At(-4) > At(-8)); Assert.True(At(-8) > At(-12) || At(-12) == 0); Assert.True(At(-8) > 0); Assert.True(At(-3.2f) < 1); Assert.Equal(1, At(-2)); Assert.Equal(0, At(-15)); Assert.Equal(0, At(-19));
+    }
+
+    [Fact] public void In_the_hall_there_is_only_the_music() => Assert.Equal(0, Rms(new SoundLevels(0, 0, 1, 1)));
 
     [Fact] public void The_birds_sing_by_day_and_not_by_night()
     {

@@ -4,17 +4,19 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>Where the listener stands, as the mix needs it: how much of the hall's music, of the fountain's water and of the day's birds reaches the ear (each 0 to 1), and whether the ear is indoors.</summary>
 internal sealed record SoundLevels(float Music, float Water, float Day, float Indoor)
 {
-    private const float HallFront = -3.15f, HallHalfWidth = 9.4f, WaterReach = 6f;
+    private const float HallFront = -3.15f, HallHalfWidth = 9.4f, MusicReach = 11f, WaterReach = 6f;
 
-    /// <summary>The levels at <paramref name="eye"/> at the walk's <paramref name="time"/>: the hall (behind its front wall, z over -3.15) is where the music is and the garden's sounds are shut out; in the garden there is
-    /// no music: the fountain's water is heard only within 6 m of the pool, and the birds sing while the sun is up (crickets take over after).</summary>
+    /// <summary>The levels at <paramref name="eye"/> at the walk's <paramref name="time"/>: the hall (behind its front wall, z over -3.15) is where the music is and the garden's sounds are shut out; in the garden the music is
+    /// faint from the foot of the stairs, rises to the door and is gone 11 m from the hall (the pool's edge): the fountain's water is heard only within 6 m of the pool, and the birds sing while the sun is up (crickets take over after).</summary>
     public static SoundLevels At(Vector3 eye, Vector3? fountain, float time)
     {
         bool inside = MathF.Abs(eye.X) < HallHalfWidth && eye.Z > HallFront;
+        float outside = inside ? 0 : MathF.Max(0, HallFront - eye.Z) + MathF.Max(0, MathF.Abs(eye.X) - HallHalfWidth);   // metres from the hall
+        float music = inside ? 1 : 0.45f * MathF.Pow(MathF.Max(0, 1 - outside / MusicReach), 2f);
         float water = 0;
         if (fountain is { } f) { float d = MathF.Sqrt((eye.X - f.X) * (eye.X - f.X) + (eye.Z - f.Z) * (eye.Z - f.Z)); water = MathF.Pow(MathF.Max(0, 1 - d / WaterReach), 2f) * (inside ? 0.1f : 1); }
         float sun = GardenDay.SunAt(time), day = Math.Clamp(MathF.Min(sun, 1 - sun) * 8, 0, 1);
-        return new(inside ? 1 : 0, water, day, inside ? 1 : 0);
+        return new(music, water, day, inside ? 1 : 0);
     }
 }
 
@@ -29,7 +31,7 @@ internal sealed class GardenSoundMix(int seed = 7)
     private volatile SoundLevels _target = new(0, 0, 1, 0);
     private float _music, _water, _day = 1, _indoor;   // the levels as they glide (fields, not a record: a new one per sample is 48 000 objects a second for the collector)
     private uint _rng = (uint)seed * 2654435761u | 1;
-    private float _brown, _gust, _lp, _hp;
+    private float _lp, _hp, _leaf, _leafGate, _leafLp; private long _nextRustle;
     private long _sample;
 
     public void Set(SoundLevels levels) => _target = levels;
@@ -61,6 +63,14 @@ internal sealed class GardenSoundMix(int seed = 7)
         _cricketPhase = (_cricketPhase + 4600f / Rate) % 1; return MathF.Sin(MathF.Tau * _cricketPhase) * gate * chirp * 0.02f;
     }
 
+    // ——— leaves: a soft rustle now and then, not a steady rush ———
+    private float Rustle()
+    {
+        if (_sample >= _nextRustle) { _leafGate = 1; _nextRustle = _sample + (long)(Rate * (4 + Unit() * 8)); }
+        _leafGate = MathF.Max(0, _leafGate - 1f / (Rate * 1.8f)); _leafLp += (White() - _leafLp) * 0.35f; _leaf += (_leafLp - _leaf) * 0.5f;
+        return _leaf * _leafGate * _leafGate * 0.05f;
+    }
+
     // ——— the water: the fountain's steady pour and the odd drop falling in the basin ———
     private float _dropHz, _dropAge = 9;
     private float Water()
@@ -81,9 +91,8 @@ internal sealed class GardenSoundMix(int seed = 7)
         {
             const float Glide = 1f / (Rate * 0.4f);
             _music += (goal.Music - _music) * Glide * 4; _water += (goal.Water - _water) * Glide * 4; _day += (goal.Day - _day) * Glide * 4; _indoor += (goal.Indoor - _indoor) * Glide * 4;
-            float outdoors = 1 - _indoor * 0.85f;
-            _brown = _brown * 0.998f + White() * 0.02f; _gust += (White() - _gust) * 0.00002f;
-            float wind = _brown * (0.5f + 2.2f * MathF.Abs(_gust)) * 0.9f * outdoors * (0.12f + 0.88f * _day);   // leaves stir by day; the night is still
+            float outdoors = 1 - _indoor;   // in the hall there is only the music
+            float wind = Rustle() * _day * outdoors;   // leaves stir now and then by day; the night is still
             float bird = Bird() * _day * outdoors * 2, cricket = Crickets() * (1 - _day) * outdoors;
             float water = Water() * _water * 0.5f;
             float left = wind + water + bird * (0.5f - _birdPan * 0.4f) + cricket, right = wind + water + bird * (0.5f + _birdPan * 0.4f) + cricket;
