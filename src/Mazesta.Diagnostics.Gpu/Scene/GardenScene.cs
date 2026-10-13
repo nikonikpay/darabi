@@ -148,6 +148,7 @@ public sealed class GardenScene
                 if (sub.Material >= materials.Length || sub.IndexStart + sub.IndexCount > mesh.Indices.Length) throw new InvalidDataException("A submesh is out of range.");
             foreach (uint ix in mesh.Indices) if (ix >= vc) throw new InvalidDataException("An index is out of range.");
         }
+        for (int i = 0; i < meshes.Count; i++) meshes[i] = GardenPanes.Close(meshes[i], materials, out _);   // the stained panes reach their frames
         foreach (var m in materials) if (m.Texture >= nTex || m.NormalTexture >= nTex) throw new InvalidDataException($"A material refers to texture {Math.Max(m.Texture, m.NormalTexture)} of {nTex}.");
         return new GardenScene { TextureSize = size, Textures = textures, Materials = materials, Meshes = meshes, Instances = instances, Lights = lights, RasterCamera = rasterCam, RayCamera = rayCam, Backdrop = backdrop, WaterLevel = waterLevel, Fountain = fountain, Stamp = stamp };
     }

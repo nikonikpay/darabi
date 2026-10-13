@@ -3418,7 +3418,7 @@ Cancel: stop.</value></data>
   <data name="Bench_Scene_SimFrame" xml:space="preserve"><value>Weather simulation per frame (rain, leaves; on every core)</value></data>
   <data name="Bench_Scene_CpuFrame" xml:space="preserve"><value>Processor's time per frame (preparing the frame)</value></data>
   <data name="Bench_Set_Limit" xml:space="preserve"><value>Held back by (the longer side of a frame)</value></data>
-  <data name="Bench_Set_Frames" xml:space="preserve"><value>Frames in flight</value></data>
+  <data name="Bench_Set_Frames" xml:space="preserve"><value>Frame mode (frames in flight)</value></data>
   <data name="Bench_Scene_GpuBusy" xml:space="preserve"><value>Share of the run the card was drawing</value></data>
   <data name="Bench_Gpu_ClockMax" xml:space="preserve"><value>GPU clock, highest</value></data>
   <data name="Bench_Gpu_MemClockMax" xml:space="preserve"><value>GPU memory clock, highest</value></data>

@@ -114,7 +114,7 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         // took to prepare and record one. Without timestamps the card's share cannot be told apart from the rest, so it is the whole frame's.
         long gpuFrames = s.GpuFrames - gpuFramesBefore; bool stamped = gpuFrames >= n / 2 && gpuFrames > 0;
         double gpuTotal = s.GpuSeconds - gpuBefore, gpuFrame = stamped ? gpuTotal / gpuFrames : wall / n, cpuFrame = cpuSeconds / n;
-        var setup = new List<SpecItem> { new(BenchmarkDetails.RunGroup, "Bench_Set_Frames", s.Frames == 1 ? "1" : "2") };
+        var setup = new List<SpecItem> { new(BenchmarkDetails.RunGroup, "Bench_Set_Frames", s.Frames == 1 ? "1 · single frame" : "2 · two frames") };
         if (whole)
         {
             double graphics = SceneScore.Graphics(1 / gpuFrame), cpu = SceneScore.Cpu(1 / cpuFrame);
