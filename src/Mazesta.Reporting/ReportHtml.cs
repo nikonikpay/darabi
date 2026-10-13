@@ -104,7 +104,7 @@ th{{background:#f5f7fa;font-size:12.5px;color:#4a5566}}
 .measures{{margin-top:6px;color:#4a5566;font-size:12.5px}}
 .advice{{margin-top:6px;padding:6px 10px;border-inline-start:3px solid #f0cf8a;background:#fff8e6;font-size:12.5px;line-height:1.7}}
 .badge{{display:inline-block;padding:1px 10px;border-radius:99px;font-size:12.5px;font-weight:700}}
-.badge.Passed{{background:#e7f6ec;color:#146c2e}} .badge.Good{{background:#e7f6ec;color:#146c2e}} .badge.Problem{{background:#fdecec;color:#a11a1a}} .badge.Attention{{background:#fff4dc;color:#8a5a00}} .badge.Note{{background:#eef1f5;color:#4a5566}} .badge.Failed{{background:#fdecec;color:#a11a1a}} .badge.Cancelled,.badge.NotRun,.badge.Unsupported,.badge.Error,.badge.Inconclusive{{background:#fff4dc;color:#8a5a00}}
+.badge.Passed{{background:#e7f6ec;color:#146c2e}} .badge.Good{{background:#e7f6ec;color:#146c2e}} .badge.Problem{{background:#fdecec;color:#a11a1a}} .badge.Attention{{background:#fff4dc;color:#8a5a00}} .badge.Note{{background:#eef1f5;color:#4a5566}} .badge.Failed{{background:#fdecec;color:#a11a1a}} .badge.Cancelled,.badge.NotRun{{background:#eceff3;color:#5b6573}} .badge.Unsupported,.badge.Unsupported,.badge.Error,.badge.Inconclusive{{background:#fff4dc;color:#8a5a00}}
 table.bm{{table-layout:fixed}} table.bm td{{overflow-wrap:anywhere}}
 pre{{margin:6px 0 0;overflow-wrap:anywhere;white-space:pre-wrap;word-break:break-word;background:#f5f7fa;border:1px solid #e3e7ee;border-radius:6px;padding:7px 9px;direction:ltr;text-align:left;font:12px/1.5 Consolas,'Segoe UI',monospace}}
 .test{{page-break-inside:avoid}} .charts{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}} .chart{{border:1px solid #e3e7ee;border-radius:8px;padding:8px 10px;page-break-inside:avoid}}

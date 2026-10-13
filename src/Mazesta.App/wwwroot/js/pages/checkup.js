@@ -20,7 +20,7 @@ export function findingCard(f) {
     f.source ? h("p", { class: "caption finding-src", title: f.source }, t("Check_Source", new URL(f.source).host)) : null);
 }
 
-const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "warn", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
+const OUTCOME = { Passed: "pass", Failed: "fail", Cancelled: "none", Unsupported: "warn", Error: "warn", Inconclusive: "warn", Running: "run", NotRun: "none" };
 
 export function mount(el) {
   const run = h("button", { class: "btn go", "data-a": "run", onclick: async () => { run.disabled = true; if (!(await call("checkup.run"))) run.disabled = false; } }, icon("play"), t("Checkup_Run"));

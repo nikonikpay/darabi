@@ -322,7 +322,7 @@
     <value>ناموفق</value>
   </data>
   <data name="Test_Outcome_Cancelled" xml:space="preserve">
-    <value>لغوشده</value>
+    <value>لغو شد</value>
   </data>
   <data name="Test_Outcome_Unsupported" xml:space="preserve">
     <value>پشتیبانی نشده</value>
