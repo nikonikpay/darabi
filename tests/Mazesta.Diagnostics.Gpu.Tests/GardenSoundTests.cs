@@ -47,7 +47,7 @@ public class GardenSoundTests
         var mix = new GardenSoundMix(); mix.Set(new(1, 0, 0, 1)); var pcm = new short[GardenSoundMix.Rate * 2]; var peaks = new int[8];
         for (int sec = 0; sec < 8; sec++) { mix.Render(pcm, GardenSoundMix.Rate); peaks[sec] = pcm.Max(v => Math.Abs((int)v)); }
         Assert.True(peaks[0] < peaks[7] / 2, "the piece begins faint and swells");
-        Assert.True(Rms(new SoundLevels(0, 0, 0, 0)) < Rms(new SoundLevels(0, 0, 1, 0)));   // night is quieter than day
+        Assert.InRange(Rms(new SoundLevels(0, 0, 0, 0)), 0.003, 0.5);   // the night has its own recording
     }
 
     [Fact] public void Indoors_the_garden_is_quieter_than_outside_it()
@@ -63,6 +63,6 @@ public class GardenSoundTests
         var pcm = GardenMusic.Load("garden-ambience.mp3"); Assert.True(pcm.Length / 2 / (double)GardenSoundMix.Rate > 120);
         var mix = new GardenSoundMix(); mix.Set(new(0, 0, 1, 0)); var buf = new short[GardenSoundMix.Rate * 2]; int max = 0;
         for (int sec = 0; sec < 5; sec++) { mix.Render(buf, GardenSoundMix.Rate); max = Math.Max(max, buf.Max(v => Math.Abs((int)v))); }
-        Assert.InRange(max, 50, 30000);
+        Assert.InRange(max, 50, 30000); Assert.True(GardenMusic.Load("garden-night.mp3").Length / 2 / (double)GardenSoundMix.Rate > 30);
     }
 }

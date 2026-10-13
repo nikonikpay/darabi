@@ -21,7 +21,7 @@ internal sealed record SoundLevels(float Music, float Water, float Day, float In
 }
 
 /// <summary>
-/// The garden's sound, made as it is played (the hall's music is the owner's own piece): the owner's recording of birds and leaves by day, crickets and the quiet by night, the fountain's water that grows as the listener nears it, and, in the hall only, the owner's piece (faded in at its start and out at its end). Stereo, 48 kHz.
+/// The garden's sound, made as it is played (the hall's music is the owner's own piece): the owner's recording of birds and leaves by day, the owner's recording of crickets by night, the fountain's water that grows as the listener nears it, and, in the hall only, the owner's piece (faded in at its start and out at its end). Stereo, 48 kHz.
 /// The levels are set from another thread (<see cref="Set"/>) and glide, so crossing the door is a fade, not a click.
 /// </summary>
 internal sealed class GardenSoundMix(int seed = 7)
@@ -42,26 +42,20 @@ internal sealed class GardenSoundMix(int seed = 7)
     private float White() { _rng ^= _rng << 13; _rng ^= _rng >> 17; _rng ^= _rng << 5; return _rng / 2147483648f - 1; }
     private float Unit() => (White() + 1) / 2;
 
-    // ——— crickets ———
-    private float _cricketPhase, _cricketBeat;
-    private float Crickets()
-    {
-        _cricketBeat = (_cricketBeat + 1f / Rate) % 990; float t = _cricketBeat % 6, gate = MathF.Sin(MathF.Tau * 28 * t) > 0.2f ? 1 : 0;
-        // a courtyard, not a forest: a short burst of three chirps every six seconds, and every third burst is left out
-        float chirp = (int)(_cricketBeat / 6) % 3 != 0 && t < 0.7f && MathF.Sin(MathF.Tau * 4.3f * t) > 0.1f ? 1 : 0;
-        _cricketPhase = (_cricketPhase + 4600f / Rate) % 1; return MathF.Sin(MathF.Tau * _cricketPhase) * gate * chirp * 0.02f;
-    }
-
     // ——— the garden by day: the owner's recording of birds and leaves, looped (its end is crossfaded into its start); it is decoded on first use ———
-    private short[]? _ambience; private int _ambFrame; private const int AmbCross = Rate * 3;
-    private (float L, float R) Ambience()
+    private Loop? _day_, _night_;
+    private sealed class Loop(string file)
     {
-        _ambience ??= GardenMusic.Load("garden-ambience.mp3"); int n = _ambience.Length / 2;
-        float l = _ambience[_ambFrame * 2] / 32768f, r = _ambience[_ambFrame * 2 + 1] / 32768f;
-        int tail = _ambFrame - (n - AmbCross);
-        if (tail >= 0) { float k = tail / (float)AmbCross, a = MathF.Cos(k * MathF.PI / 2), b = MathF.Sin(k * MathF.PI / 2); l = l * a + _ambience[tail * 2] / 32768f * b; r = r * a + _ambience[tail * 2 + 1] / 32768f * b; }
-        if (++_ambFrame >= n) _ambFrame = AmbCross;   // the crossfade has played the first AmbCross frames of the start already
-        return (l, r);
+        private const int Cross = Rate * 3; private short[]? _pcm; private int _at;
+        /// <summary>The next stereo frame of the recording; its end is crossfaded into its start so the loop has no seam. Decoded on first use.</summary>
+        public (float L, float R) Next()
+        {
+            _pcm ??= GardenMusic.Load(file); int n = _pcm.Length / 2, tail = _at - (n - Cross);
+            float l = _pcm[_at * 2] / 32768f, r = _pcm[_at * 2 + 1] / 32768f;
+            if (tail >= 0) { float k = tail / (float)Cross, a = MathF.Cos(k * MathF.PI / 2), b = MathF.Sin(k * MathF.PI / 2); l = l * a + _pcm[tail * 2] / 32768f * b; r = r * a + _pcm[tail * 2 + 1] / 32768f * b; }
+            if (++_at >= n) _at = Cross;   // the crossfade has played the first Cross frames of the start already
+            return (l, r);
+        }
     }
 
     // ——— the water: the fountain's steady pour and the odd drop falling in the basin ———
@@ -85,11 +79,11 @@ internal sealed class GardenSoundMix(int seed = 7)
             const float Glide = 1f / (Rate * 0.4f);
             _music += (goal.Music - _music) * Glide * 4; _water += (goal.Water - _water) * Glide * 4; _day += (goal.Day - _day) * Glide * 4; _indoor += (goal.Indoor - _indoor) * Glide * 4;
             float outdoors = 1 - _indoor;   // in the hall there is only the music
-            float by = _day * outdoors, ambL = 0, ambR = 0;   // the recording of birds and leaves is only the day's, outdoors
-            if (by > 0.002f) { var (l, r) = Ambience(); ambL = l * by * 1.5f; ambR = r * by * 1.5f; }
-            float cricket = Crickets() * (1 - _day) * outdoors;
+            float by = _day * outdoors, bn = (1 - _day) * outdoors, ambL = 0, ambR = 0;   // by day the recording of birds and leaves, by night the one of crickets: outdoors only
+            if (by > 0.002f) { var (l, r) = (_day_ ??= new("garden-ambience.mp3")).Next(); ambL = l * by * 1.5f; ambR = r * by * 1.5f; }
+            if (bn > 0.002f) { var (l, r) = (_night_ ??= new("garden-night.mp3")).Next(); ambL += l * bn; ambR += r * bn; }
             float water = Water() * _water * 0.5f;
-            float left = ambL + water + cricket, right = ambR + water + cricket;
+            float left = ambL + water, right = ambR + water;
             float music = 0, musicR = 0;
             if (_music > 0.002f)
             {
