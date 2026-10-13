@@ -1,4 +1,4 @@
-# Exports the courtyard scene (Mazesta-Art/courtyard-v22-ours.blend, made by tools/scene/prepare_courtyard_v22.py from the owner's v22; before that courtyard-v12.blend: DFM_Courtyard_V12 as the app's two scenes, made by tools/scene/prepare_courtyard_v12.py)
+# Exports the courtyard scene (Mazesta-Art/courtyard-v24-ours.blend, made by tools/scene/prepare_courtyard_v24.py from v22-ours; before that courtyard-v22-ours.blend, made by tools/scene/prepare_courtyard_v22.py from the owner's v22; before that courtyard-v12.blend: DFM_Courtyard_V12 as the app's two scenes, made by tools/scene/prepare_courtyard_v12.py)
 # to the file the visual GPU tests draw: src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
 #   blender --background ../Mazesta-Art/courtyard-v12.blend --python tools/scene/export_garden.py
 # (it also runs from Blender's Text Editor with the .blend open).
@@ -43,7 +43,7 @@ FINE = ("V12_User_Painting",)
 ALBEDO_SCALE = {"V8_Limestone": 0.8, "V8_Carved_Pale_Limestone": 0.85, "V8_Granular_Garden_Loam": 0.6}
 # the materials whose textures are kept at TEX: the ones the walk passes within arm's reach, or tiled over metres - the building, the
 # gate, the rugs, the paintings, and the samovar and the tea set on the hall's counter
-BIG_TEXTURES = ("V8_", "CV5_", "Big_Old_Gates", "carpet", "galicho", "V12_User_Painting", "main", "curvly_ha", "tea_set_01")
+BIG_TEXTURES = ("V8_", "CV5_", "Big_Old_Gates", "carpet", "galicho", "V12_User_Painting", "main", "curvly_ha", "tea_set_01", "V24_Old_Books")
 # Materials Blender builds from layered shaders that have no one Principled node to read, or whose colours are a node group's
 # own inputs: what they are, said here (the pots: the middle of the group's two clay colours).
 AS_GLASS = ("Multicoated glass",)
@@ -440,6 +440,7 @@ def material_for(mat):
             rec.update(tex=like['tex'], normal=like['normal'], base=tuple(float(c / max(m, 1e-3)) for c, m in zip(rec['base'], lin)), pattern=(1.0, 1.0, LAID_LIKE[base][1], 0.0))
         if base in ALBEDO_SCALE: rec['base'] = tuple(c * ALBEDO_SCALE[base] for c in rec['base'])
         if rec['kind'] == K_FLAT and rec['tex'] < 0: rec['pattern'] = (0.0, 0.0, 0.0, next((v for k, v in MOTTLE.items() if base.startswith(k)), 0.0))
+    if name.startswith('V24_Butterfly') and rec['tex'] >= 0: rec['pattern'] = (*rec['pattern'][:3], 7.5)   # GardenScene.ButterflyMark: the program finds the wings' texture by it
     if rec['kind'] == K_GLASS and re.sub(r'\.\d{3}$', '', name).startswith(REFRACTS): rec['pattern'] = (0.0, 0.0, 0.0, 1.0)   # solid glass: with rays it refracts and mirrors for real
     material_index[name] = len(materials); materials.append(rec)
     return material_index[name]

@@ -139,11 +139,14 @@ internal sealed unsafe class GardenGpu
         _litFireflies = LitFireflies;
         Add(new GardenMaterial { Kind = GardenMaterialKind.Emissive, Texture = -1, NormalTexture = -1, Base = new(0.5f, 0.6f, 0.1f), Alpha = 1, Roughness = 0.6f, Emission = new(7f, 10f, 1.6f) }, Ball, Life.Firefly, 0, Fireflies);
         Vector3[] wings = [new(0.85f, 0.36f, 0.06f), new(0.92f, 0.9f, 0.8f), new(0.25f, 0.42f, 0.85f), new(0.9f, 0.75f, 0.12f)];
+        // the wings' painted atlas (four wings, one a colour), which the scene file carries on a hidden plane (GardenScene.ButterflyMark); without it they are plain colours
+        int painted = scene.Materials.ToList().FindIndex(m => m.Kind == GardenMaterialKind.Cutout && m.Pattern.W == GardenScene.ButterflyMark);
         for (int c = 0; c < wings.Length; c++)
         {   // butterflies of four colours, a wing of each colour's mesh for every fourth butterfly's two sides
             int each = (Butterflies + wings.Length - 1 - c) / wings.Length;
-            materials.Add(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = wings[c], Alpha = 1, Roughness = 0.7f, Pattern = new(0, 0, 0, 0.01f) });
-            meshes.Add(Wing((uint)materials.Count - 1));
+            if (painted >= 0) { var m = scene.Materials[painted]; m.Pattern = new(1, 1, 0, 0); m.Roughness = 0.7f; materials.Add(m); }
+            else materials.Add(new GardenMaterial { Kind = GardenMaterialKind.Flat, Texture = -1, NormalTexture = -1, Base = wings[c], Alpha = 1, Roughness = 0.7f, Pattern = new(0, 0, 0, 0.01f) });
+            meshes.Add(Wing((uint)materials.Count - 1, painted >= 0 ? c : -1));
             for (int k = 0; k < each; k++)
                 foreach (var side in (Life[])[Life.WingRight, Life.WingLeft]) { life.Add((meshes.Count - 1, side, c + k * wings.Length)); chosen = [.. chosen, still with { Mesh = (uint)meshes.Count - 1 }]; }
         }
@@ -597,7 +600,7 @@ internal sealed unsafe class GardenGpu
 
     /// <summary>A butterfly's right wing, lying flat (its body's line along z, the wing out along +x): seven triangles round its root,
     /// a fore wing and a hind wing in one, five centimetres out.</summary>
-    private static GardenMesh Wing(uint material)
+    private static GardenMesh Wing(uint material, int painted)
     {
         Vector2[] outline = [new(0, 0), new(0, 0.022f), new(0.03f, 0.04f), new(0.05f, 0.03f), new(0.046f, 0.008f), new(0.03f, -0.004f), new(0.036f, -0.026f), new(0.018f, -0.034f), new(0, -0.02f)];
         var extent = new Vector3(0.05f, 0.001f, 0.04f); var bytes = new byte[outline.Length * 16];
@@ -605,6 +608,11 @@ internal sealed unsafe class GardenGpu
         {
             var span = bytes.AsSpan(i * 16);
             MemoryMarshal.Write(span, (short)MathF.Round(outline[i].X / extent.X * 32767)); MemoryMarshal.Write(span[4..], (short)MathF.Round(outline[i].Y / extent.Z * 32767)); span[9] = 127;
+            if (painted >= 0)
+            {   // the wing's own drawing in its quarter of the atlas (2 x 2): x along the wing, y along the body
+                float u = (painted % 2 + outline[i].X / extent.X) / 2, v = 1 - (painted / 2 + 1 - (outline[i].Y + 0.034f) / 0.074f) / 2;
+                MemoryMarshal.Write(span[12..], (Half)u); MemoryMarshal.Write(span[14..], (Half)v);
+            }
         }
         var indices = new List<uint>(); for (uint k = 1; k + 1 < outline.Length; k++) indices.AddRange([0, k, k + 1]);
         return new GardenMesh(Vector3.Zero, extent, bytes, [.. indices], [new GardenSubmesh(0, (uint)indices.Count, material)]);
