@@ -4,17 +4,17 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>Where the listener stands, as the mix needs it: how much of the hall's music, of the fountain's water and of the day's birds reaches the ear (each 0 to 1), and whether the ear is indoors.</summary>
 internal sealed record SoundLevels(float Music, float Water, float Day, float Indoor)
 {
-    private const float HallFront = -3.15f, HallHalfWidth = 9.4f, MusicReach = 10f, WaterReach = 14f;
+    private const float HallFront = -3.15f, HallHalfWidth = 9.4f, MusicReach = 12f, WaterReach = 6f;
 
     /// <summary>The levels at <paramref name="eye"/> at the walk's <paramref name="time"/>: the hall (behind its front wall, z over -3.15) is where the music is and the garden's sounds are shut out; in the garden the music
-    /// reaches through the door and windows a few metres out, the water's sound falls away over 14 m from the fountain, and the birds sing while the sun is up (crickets take over after).</summary>
+    /// is faint from the foot of the stairs and swells to the door (12 m out), the fountain's trickle is heard only within 6 m of the pool, and the birds sing while the sun is up (crickets take over after).</summary>
     public static SoundLevels At(Vector3 eye, Vector3? fountain, float time)
     {
         bool inside = MathF.Abs(eye.X) < HallHalfWidth && eye.Z > HallFront;
         float outside = inside ? 0 : MathF.Max(0, HallFront - eye.Z) + MathF.Max(0, MathF.Abs(eye.X) - HallHalfWidth);   // metres from the hall
-        float music = inside ? 1 : 0.45f * MathF.Pow(MathF.Max(0, 1 - outside / MusicReach), 2);
+        float music = inside ? 1 : 0.9f * MathF.Pow(MathF.Max(0, 1 - outside / MusicReach), 2.2f);
         float water = 0;
-        if (fountain is { } f) { float d = MathF.Sqrt((eye.X - f.X) * (eye.X - f.X) + (eye.Z - f.Z) * (eye.Z - f.Z)); water = MathF.Pow(MathF.Max(0, 1 - d / WaterReach), 1.5f) * (inside ? 0.2f : 1); }
+        if (fountain is { } f) { float d = MathF.Sqrt((eye.X - f.X) * (eye.X - f.X) + (eye.Z - f.Z) * (eye.Z - f.Z)); water = MathF.Pow(MathF.Max(0, 1 - d / WaterReach), 2f) * (inside ? 0.1f : 1); }
         float sun = GardenDay.SunAt(time), day = Math.Clamp(MathF.Min(sun, 1 - sun) * 8, 0, 1);
         return new(music, water, day, inside ? 1 : 0);
     }
@@ -38,6 +38,9 @@ internal sealed class GardenSoundMix(int seed = 7)
     private long _sample;
 
     public void Set(SoundLevels levels) => _target = levels;
+
+    /// <summary>The recording the hall plays (stereo, 48 kHz, see <see cref="GardenMusic"/>), or null: the hall then plays the synthesised string instead.</summary>
+    private readonly short[]? _clip = GardenMusic.Load(); private int _clipFrame; private float _muffleL, _muffleR;
 
     private float White() { _rng ^= _rng << 13; _rng ^= _rng >> 17; _rng ^= _rng << 5; return _rng / 2147483648f - 1; }
     private float Unit() => (White() + 1) / 2;
@@ -97,8 +100,10 @@ internal sealed class GardenSoundMix(int seed = 7)
     }
     private float Crickets()
     {
-        _cricketBeat = (_cricketBeat + 1f / Rate) % 1000; float gate = MathF.Sin(MathF.Tau * 28 * _cricketBeat) > 0.2f ? 1 : 0, chirp = MathF.Sin(MathF.Tau * 1.3f * _cricketBeat) > 0.1f ? 1 : 0;
-        _cricketPhase += 4600f / Rate; return MathF.Sin(MathF.Tau * _cricketPhase) * gate * chirp * 0.035f;
+        _cricketBeat = (_cricketBeat + 1f / Rate) % 990; float t = _cricketBeat % 6, gate = MathF.Sin(MathF.Tau * 28 * t) > 0.2f ? 1 : 0;
+        // a courtyard, not a forest: a short burst of three chirps every six seconds, and every third burst is left out
+        float chirp = (int)(_cricketBeat / 6) % 3 != 0 && t < 0.7f && MathF.Sin(MathF.Tau * 4.3f * t) > 0.1f ? 1 : 0;
+        _cricketPhase = (_cricketPhase + 4600f / Rate) % 1; return MathF.Sin(MathF.Tau * _cricketPhase) * gate * chirp * 0.02f;
     }
 
     // ——— the water: a band of noise that never repeats, rising and falling, and the odd drop ———
@@ -107,10 +112,10 @@ internal sealed class GardenSoundMix(int seed = 7)
     {
         float w = White(); _lp += (w - _lp) * 0.42f; _hp += (_lp - _hp) * 0.06f; float band = _lp - _hp;
         _flow += (White() - _flow) * 0.0004f; _flowSlow += (White() - _flowSlow) * 0.00004f;
-        float v = band * (0.75f + 1.6f * _flow + 1.2f * _flowSlow);
+        float v = band * (0.25f + 0.15f * MathF.Abs(_flow) + 0.1f * MathF.Abs(_flowSlow));   // a pond's trickle, not a fall
         if (_dropAge > 1 && Unit() < 0.00025f) { _dropHz = 1300 + Unit() * 2600; _dropAge = 0; }
         float drop = _dropAge < 1 ? MathF.Sin(MathF.Tau * _dropHz * _dropAge * 0.05f) * MathF.Exp(-_dropAge * 6) * 0.35f : 0; _dropAge += 1f / (Rate * 0.05f);
-        return v * 1.1f + drop;
+        return v * 0.6f + drop;
     }
 
     // ——— the whole ———
@@ -129,16 +134,26 @@ internal sealed class GardenSoundMix(int seed = 7)
             _brown = _brown * 0.998f + White() * 0.02f; _gust += (White() - _gust) * 0.00002f;
             float wind = _brown * (0.5f + 2.2f * MathF.Abs(_gust)) * 0.9f * outdoors;
             float bird = Bird() * _now.Day * outdoors * 2, cricket = Crickets() * (1 - _now.Day) * outdoors;
-            float water = Water() * _now.Water * 0.9f;
+            float water = Water() * _now.Water * 0.5f;
             float left = wind + water + bird * (0.5f - _birdPan * 0.4f) + cricket, right = wind + water + bird * (0.5f + _birdPan * 0.4f) + cricket;
-            float music = 0;
-            if (_now.Music > 0.002f)
+            float music = 0, musicR = 0;
+            if (_clip is { } clip)
+            {
+                _clipFrame = (_clipFrame + 1) % (clip.Length / 2);   // it goes on while nobody listens, like a radio left on in the house
+                if (_now.Music > 0.002f)
+                {
+                    float k = 0.08f + 0.92f * _now.Music;   // through the wall only the low notes come; the nearer the door the brighter
+                    _muffleL += (clip[_clipFrame * 2] / 32768f - _muffleL) * k; _muffleR += (clip[_clipFrame * 2 + 1] / 32768f - _muffleR) * k;
+                    music = _muffleL * _now.Music * 1.7f; musicR = _muffleR * _now.Music * 1.7f;
+                }
+            }
+            else if (_now.Music > 0.002f)
             {
                 Play(); _droneLow = (_droneLow + Tonic / 2 / Rate) % 1; _droneFifth = (_droneFifth + Tonic * 0.75f / Rate) % 1;
                 float dry = Strings() * 0.5f + (MathF.Sin(MathF.Tau * _droneLow) + 0.5f * MathF.Sin(MathF.Tau * _droneFifth)) * 0.02f, wet = _room[_roomAt]; _room[_roomAt] = dry + wet * 0.55f; _roomAt = (_roomAt + 1) % _room.Length;
-                music = (dry + wet * 0.35f) * _now.Music * 0.6f;
+                music = musicR = (dry + wet * 0.35f) * _now.Music * 0.6f;
             }
-            stereo[i * 2] = Out(left + music); stereo[i * 2 + 1] = Out(right + music);
+            stereo[i * 2] = Out(left + music); stereo[i * 2 + 1] = Out(right + musicR);
         }
     }
 
