@@ -60,7 +60,7 @@ PER_MESH_BUDGET = 400_000       # a mesh placed thousands of times (ivy leaves, 
 KEEP_DETAIL = ("V7_", "V8_", "CV4_Walls", "CV5_PoolDetails", "V10_Persian", "V9_Fountain", "V12_")   # the building: its carving, lattices and plasterwork are what is looked at
 # The heaviest meshes, simplified to what the walk can tell apart: the orsi's lattices and the door's panels, which it passes within
 # arm's reach, keep most of their carving; the windcatchers' is on the roof, never nearer than 12 m; the furniture is seen from a step away.
-BUDGET = {"V7_Orsi_V7_Walnut": 260_000, "V7_OpenDoor_V7_Walnut": 80_000, "V8_Carved_Windcatchers_V8_Carved_Pale_Limestone": 140_000,
+BUDGET = {"V7_Orsi_V7_Walnut": 260_000, "V13_Orsi_Inner_Carved_Walnut_Frame": 200_000, "V7_OpenDoor_V7_Walnut": 80_000, "V8_Carved_Windcatchers_V8_Carved_Pale_Limestone": 140_000,
           "V9_SOURCE_Armchair": 18_000, "V9_SOURCE_Chair": 16_000, "V9_SOURCE_Sofa": 18_000, "V10_Living_Climbers_V9_Living_Vine_Stems": 40_000,
           # (the orsi's stained panes are left as they are: simplified, a pane no longer filled its frame)
           # the lanterns round the pool: their cage is filigree, and six of them stand at the walk's elbow
@@ -610,6 +610,11 @@ def pack(me, slots):
     uv = np.zeros((len(me.loops), 2), np.float32)
     if me.uv_layers.active: t = np.empty(len(me.loops) * 2, np.float32); me.uv_layers.active.data.foreach_get("uv", t); uv = t.reshape(-1, 2)
     p = co[lv[loops]][:, [0, 2, 1]]; nrm = cn[loops][:, [0, 2, 1]]; tuv = uv[loops]
+    for m in np.unique(mat):   # a material that reads its own UV map (a UV Map node) is laid by that map, not the active one: the rugs' full-size map v14
+        node = next((nd for nd in slots[m].node_tree.nodes if nd.type == 'UVMAP' and nd.uv_map in me.uv_layers), None) if m < len(slots) and slots[m] and slots[m].use_nodes and slots[m].node_tree else None
+        if node is None or me.uv_layers[node.uv_map] == me.uv_layers.active: continue
+        t = np.empty(len(me.loops) * 2, np.float32); me.uv_layers[node.uv_map].data.foreach_get("uv", t)
+        tuv = tuv.reshape(-1, 3, 2).copy(); tuv[mat == m] = t.reshape(-1, 2)[loops.reshape(-1, 3)[mat == m]]; tuv = tuv.reshape(-1, 2)
     boxed = {m: BOXED[slots[m].name] for m in np.unique(mat) if m < len(slots) and slots[m] and slots[m].name in BOXED}
     if boxed:   # laid like Blender's box projection: by the face's own main axis, from the object's coordinates, so many repeats a metre
         c = co[lv[loops]].reshape(-1, 3, 3); axis = np.abs(np.cross(c[:, 1] - c[:, 0], c[:, 2] - c[:, 0])).argmax(axis=1)
