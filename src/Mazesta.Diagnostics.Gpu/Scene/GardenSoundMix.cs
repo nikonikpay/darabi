@@ -21,7 +21,7 @@ internal sealed record SoundLevels(float Music, float Water, float Day, float In
 }
 
 /// <summary>
-/// The garden's sound, made as it is played (the hall's music is the owner's own piece): a soft rustle of leaves and birds by day, crickets and the quiet by night, the fountain's water that grows as the listener nears it, and, in the hall only, the owner's piece (faded in at its start and out at its end). Stereo, 48 kHz.
+/// The garden's sound, made as it is played (the hall's music is the owner's own piece): the owner's recording of birds and leaves by day, crickets and the quiet by night, the fountain's water that grows as the listener nears it, and, in the hall only, the owner's piece (faded in at its start and out at its end). Stereo, 48 kHz.
 /// The levels are set from another thread (<see cref="Set"/>) and glide, so crossing the door is a fade, not a click.
 /// </summary>
 internal sealed class GardenSoundMix(int seed = 7)
@@ -31,7 +31,7 @@ internal sealed class GardenSoundMix(int seed = 7)
     private volatile SoundLevels _target = new(0, 0, 1, 0);
     private float _music, _water, _day = 1, _indoor;   // the levels as they glide (fields, not a record: a new one per sample is 48 000 objects a second for the collector)
     private uint _rng = (uint)seed * 2654435761u | 1;
-    private float _lp, _hp, _leaf, _leafGate, _leafLp; private long _nextRustle;
+    private float _lp, _hp;
     private long _sample;
 
     public void Set(SoundLevels levels) => _target = levels;
@@ -42,19 +42,8 @@ internal sealed class GardenSoundMix(int seed = 7)
     private float White() { _rng ^= _rng << 13; _rng ^= _rng >> 17; _rng ^= _rng << 5; return _rng / 2147483648f - 1; }
     private float Unit() => (White() + 1) / 2;
 
-    // ——— birds and crickets ———
-    private float _birdHz, _birdSweep, _birdAge, _birdLength, _birdPhase, _birdPan; private int _birdRepeats; private long _nextBird; private float _cricketPhase, _cricketBeat;
-    private float Bird()
-    {
-        if (_birdAge >= _birdLength)
-        {
-            if (_birdRepeats > 0) { _birdRepeats--; _birdAge = 0; }
-            else if (_sample >= _nextBird) { _birdHz = 2200 + Unit() * 3000; _birdSweep = (Unit() - 0.4f) * 3000; _birdLength = 0.05f + Unit() * 0.12f; _birdRepeats = (int)(Unit() * 4); _birdAge = 0; _birdPan = Unit() * 2 - 1; _nextBird = _sample + (long)(Rate * (0.6 + Unit() * 3.5)); }
-            else return 0;
-        }
-        float t = _birdAge / _birdLength, hz = _birdHz + _birdSweep * t; _birdPhase += hz / Rate; _birdAge += 1f / Rate;
-        return MathF.Sin(MathF.Tau * _birdPhase) * MathF.Sin(MathF.PI * t) * 0.10f;
-    }
+    // ——— crickets ———
+    private float _cricketPhase, _cricketBeat;
     private float Crickets()
     {
         _cricketBeat = (_cricketBeat + 1f / Rate) % 990; float t = _cricketBeat % 6, gate = MathF.Sin(MathF.Tau * 28 * t) > 0.2f ? 1 : 0;
@@ -63,12 +52,16 @@ internal sealed class GardenSoundMix(int seed = 7)
         _cricketPhase = (_cricketPhase + 4600f / Rate) % 1; return MathF.Sin(MathF.Tau * _cricketPhase) * gate * chirp * 0.02f;
     }
 
-    // ——— leaves: a soft rustle now and then, not a steady rush ———
-    private float Rustle()
+    // ——— the garden by day: the owner's recording of birds and leaves, looped (its end is crossfaded into its start); it is decoded on first use ———
+    private short[]? _ambience; private int _ambFrame; private const int AmbCross = Rate * 3;
+    private (float L, float R) Ambience()
     {
-        if (_sample >= _nextRustle) { _leafGate = 1; _nextRustle = _sample + (long)(Rate * (4 + Unit() * 8)); }
-        _leafGate = MathF.Max(0, _leafGate - 1f / (Rate * 1.8f)); _leafLp += (White() - _leafLp) * 0.35f; _leaf += (_leafLp - _leaf) * 0.5f;
-        return _leaf * _leafGate * _leafGate * 0.05f;
+        _ambience ??= GardenMusic.Load("garden-ambience.mp3"); int n = _ambience.Length / 2;
+        float l = _ambience[_ambFrame * 2] / 32768f, r = _ambience[_ambFrame * 2 + 1] / 32768f;
+        int tail = _ambFrame - (n - AmbCross);
+        if (tail >= 0) { float k = tail / (float)AmbCross, a = MathF.Cos(k * MathF.PI / 2), b = MathF.Sin(k * MathF.PI / 2); l = l * a + _ambience[tail * 2] / 32768f * b; r = r * a + _ambience[tail * 2 + 1] / 32768f * b; }
+        if (++_ambFrame >= n) _ambFrame = AmbCross;   // the crossfade has played the first AmbCross frames of the start already
+        return (l, r);
     }
 
     // ——— the water: the fountain's steady pour and the odd drop falling in the basin ———
@@ -92,10 +85,11 @@ internal sealed class GardenSoundMix(int seed = 7)
             const float Glide = 1f / (Rate * 0.4f);
             _music += (goal.Music - _music) * Glide * 4; _water += (goal.Water - _water) * Glide * 4; _day += (goal.Day - _day) * Glide * 4; _indoor += (goal.Indoor - _indoor) * Glide * 4;
             float outdoors = 1 - _indoor;   // in the hall there is only the music
-            float wind = Rustle() * _day * outdoors;   // leaves stir now and then by day; the night is still
-            float bird = Bird() * _day * outdoors * 2, cricket = Crickets() * (1 - _day) * outdoors;
+            float by = _day * outdoors, ambL = 0, ambR = 0;   // the recording of birds and leaves is only the day's, outdoors
+            if (by > 0.002f) { var (l, r) = Ambience(); ambL = l * by * 1.5f; ambR = r * by * 1.5f; }
+            float cricket = Crickets() * (1 - _day) * outdoors;
             float water = Water() * _water * 0.5f;
-            float left = wind + water + bird * (0.5f - _birdPan * 0.4f) + cricket, right = wind + water + bird * (0.5f + _birdPan * 0.4f) + cricket;
+            float left = ambL + water + cricket, right = ambR + water + cricket;
             float music = 0, musicR = 0;
             if (_music > 0.002f)
             {

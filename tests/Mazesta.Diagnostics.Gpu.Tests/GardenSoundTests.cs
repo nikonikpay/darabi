@@ -57,4 +57,12 @@ public class GardenSoundTests
     {
         var pcm = GardenMusic.Load(); Assert.Equal(0, pcm.Length % 2); Assert.True(pcm.Length / 2 / (double)GardenSoundMix.Rate > 30); Assert.Contains(pcm, v => Math.Abs((int)v) > 5000);
     }
+
+    [Fact] public void The_day_is_the_owners_recording_of_birds_and_leaves_and_it_loops_without_a_jump()
+    {
+        var pcm = GardenMusic.Load("garden-ambience.mp3"); Assert.True(pcm.Length / 2 / (double)GardenSoundMix.Rate > 120);
+        var mix = new GardenSoundMix(); mix.Set(new(0, 0, 1, 0)); var buf = new short[GardenSoundMix.Rate * 2]; int max = 0;
+        for (int sec = 0; sec < 5; sec++) { mix.Render(buf, GardenSoundMix.Rate); max = Math.Max(max, buf.Max(v => Math.Abs((int)v))); }
+        Assert.InRange(max, 50, 30000);
+    }
 }

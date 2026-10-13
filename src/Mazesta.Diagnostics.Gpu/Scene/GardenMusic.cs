@@ -4,9 +4,9 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// <summary>The hall's music: the owner's own piece (<c>garden-music.mp3</c>, embedded as it is), decoded once into stereo samples at the mix's rate. It is not edited; the mix fades its start and its end.</summary>
 internal static class GardenMusic
 {
-    public static short[] Load()
+    public static short[] Load(string file = "garden-music.mp3")
     {
-        using var stream = typeof(GardenMusic).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene.garden-music.mp3") ?? throw new InvalidOperationException("garden-music.mp3 is not embedded");
+        using var stream = typeof(GardenMusic).Assembly.GetManifestResourceStream("Mazesta.Diagnostics.Gpu.Scene." + file) ?? throw new InvalidOperationException(file + " is not embedded");
         return Decode(stream);
     }
 

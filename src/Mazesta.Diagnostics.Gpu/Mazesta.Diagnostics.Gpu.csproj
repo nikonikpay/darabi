@@ -25,6 +25,7 @@
     <!-- The streams the video decode test plays, made by tools/make-video-clips.sh. -->
     <EmbeddedResource Include="Benchmarks/Video/*.mp4" LogicalName="Mazesta.Diagnostics.Gpu.Video.%(Filename).mp4" />
     <EmbeddedResource Include="Scene/garden-music.mp3" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden-music.mp3" />
+    <EmbeddedResource Include="Scene/garden-ambience.mp3" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden-ambience.mp3" />
     <EmbeddedResource Include="Scene/garden.mzscene" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.mzscene" />
     <!-- The light bounced round that garden, worked out for the Direct3D test by the ray tracer (Scene/GardenLightVolume.cs). -->
     <EmbeddedResource Include="Scene/garden.light" LogicalName="Mazesta.Diagnostics.Gpu.Scene.garden.light" Condition="Exists('Scene/garden.light')" />
