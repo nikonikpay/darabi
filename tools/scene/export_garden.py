@@ -1,4 +1,4 @@
-# Exports the courtyard scene (Mazesta-Art/courtyard-v12.blend: the owner's DFM_Courtyard_V12 as the app's two scenes, made by tools/scene/prepare_courtyard_v12.py)
+# Exports the courtyard scene (Mazesta-Art/courtyard-v22-ours.blend, made by tools/scene/prepare_courtyard_v22.py from the owner's v22; before that courtyard-v12.blend: DFM_Courtyard_V12 as the app's two scenes, made by tools/scene/prepare_courtyard_v12.py)
 # to the file the visual GPU tests draw: src/Mazesta.Diagnostics.Gpu/Scene/garden.mzscene. Best run in a Blender of its own, so an open window is left alone:
 #   blender --background ../Mazesta-Art/courtyard-v12.blend --python tools/scene/export_garden.py
 # (it also runs from Blender's Text Editor with the .blend open).
@@ -88,6 +88,8 @@ LEAVES_ONLY = ("V9_SOURCE_Shrub",)     # plants drawn without their wood: the sh
 # The small-leaved trees and the shrubs are modelled leaf for leaf at life size: a leaf of theirs is under a pixel from across the
 # garden at 1080p, and the crown then looks bald, a sprinkle of dots on bare twigs. Each of their leaves is grown about its own
 # middle by this much (more than half as large again; the owner asked for it), so the crowns read as full.
+# The six broadleaf trees in the beds by the pool (the ones not in the exterior belt) - the owner asked for 30 % fewer leaves, the ones left 30 % larger.
+POOL_LEAF_KEEP, POOL_LEAF_BIGGER = 0.7, 1.3
 LEAF_GROW = {"V10_SOURCE_Broadleaf": 1.7, "V10_SOURCE_Broadleaf~far": 1.6, "V9_SOURCE_Shrub": 1.7, "V10_SOURCE_Alpine": 1.5}
 # A mesh that is one large plain piece and many small fine ones (a rug and its tassels): simplified whole, the large piece would lose
 # its shape and its texture's place to pay for the small ones. It is kept as it is, and only the rest is simplified.
@@ -404,11 +406,13 @@ def material_for(mat):
                 rec['normal'] = normal_texture_for(bump[0], size, bump[1], occlusion, (metal_img[0], metal_img[2]) if metal_img else rec['metal'])
         base = re.sub(r'\.\d{3}$', '', name)   # an appended copy of a material is named "....001"
         if base in AS_SAID: rec.update(AS_SAID[base])
+        if base.startswith(STAINED) and p: rec.update(tex=-1, normal=-1, base=tuple(p.inputs['Base Color'].default_value[:3]))   # v22 gives the panes a flat-colour packed texture: the glass is that colour, as before
         if base in AS_GLASS: rec.update(kind=K_GLASS, base=(0.9, 0.95, 0.95), metal=0.0, rough=0.05, trans=1.0)
         elif base.endswith('Water'): rec['kind'] = K_WATER
         elif rec['trans'] > 0.5 or base.endswith('Foam'): rec['kind'] = K_GLASS
         elif max(rec['emit']) > 0.5 and rec['kind'] == K_FLAT: rec['kind'] = K_EMISSIVE
         if base.endswith('Foam'): rec['alpha'] = 0.5
+        if rec['kind'] != K_FLAT: rec['normal'] = -1   # glass, water and glow are drawn without relief: v22's panes and vase water carry a bump the renderer would not read as one
         if base.startswith(STAINED) and rec['kind'] == K_GLASS and max(rec['base']) - min(rec['base']) > 0.2: rec['light_tint'] = 1.0
         if base in LAID_LIKE and rec['tex'] < 0:
             like = materials[material_for(bpy.data.materials[LAID_LIKE[base][0]])]; mean = textures[like['tex']][0][..., :3].mean(axis=(0, 1))
@@ -502,6 +506,10 @@ def grown(me, by):
     middle = np.stack([np.bincount(piece, co[:, a], n) for a in range(3)], axis=1) / np.maximum(np.bincount(piece, minlength=n), 1)[:, None]
     me.vertices.foreach_set("co", (middle[piece] + (co - middle[piece]) * by).astype(np.float32).ravel()); me.update()
 
+def fewer(me, keep):
+    """Leaves left out evenly through the mesh until keep of them stay; the rest are not grown to make up the area."""
+    piece, n = islands(me); k = np.arange(n); without(me, ~(np.floor((k + 1) * keep) > np.floor(k * keep))[piece])
+
 def pruned(me, most):
     """Keeps the largest pieces of the mesh, as many as come to most triangles: of a tree's wood, the trunk and the boughs; the twigs
     go (collapsing edges cannot take a closed twig below a few triangles, and a tree has thousands). Pieces of one size are kept
@@ -550,6 +558,7 @@ def plant(me, slots, target, name):
                 if leaf: thinned(part, share / left)
                 else: pruned(part, share)
             if leaf and name in LEAF_GROW: grown(part, LEAF_GROW[name])
+            if leaf and name == "V10_SOURCE_Broadleaf": fewer(part, POOL_LEAF_KEEP); grown(part, POOL_LEAF_BIGGER)
         after = measure(part).get(m, (0, 0.0))
         print("PLANT", name, slots[m].name if m < len(slots) and slots[m] else None, "triangles", tris, "->", after[0], "area", round(area, 2), "->", round(after[1], 2))
         whole.from_mesh(part); bpy.data.meshes.remove(part)
