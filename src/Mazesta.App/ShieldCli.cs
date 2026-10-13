@@ -19,6 +19,13 @@ internal static class ShieldCli
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
     }
 
+    /// <summary>The program a shortcut points to (empty when it points to nothing the shell can name, which the block then refuses as "not a program").</summary>
+    private static string ShortcutTarget(string lnk)
+    {
+        try { dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!; return (string)shell.CreateShortcut(lnk).TargetPath; }
+        catch (Exception e) when (e is System.Runtime.InteropServices.COMException or NullReferenceException or Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { return ""; }
+    }
+
     private static int Protection(string argument)
     {
         var tools = new ShieldTools(new ProcessCommandRunner()); string title = Loc.Get("Shield_Title");
@@ -36,7 +43,7 @@ internal static class ShieldCli
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); Application.EnableVisualStyles(); Loc.SetLanguage(language);
         if (args.Length == 1) return Protection(args[0]);
-        bool firewall = args[0] == ShieldShellMenu.FirewallArgument; string path = args[1]; var tools = new ShieldTools(new ProcessCommandRunner());
+        bool firewall = args[0] == ShieldShellMenu.FirewallArgument; string path = args[1].EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? ShortcutTarget(args[1]) : args[1]; var tools = new ShieldTools(new ProcessCommandRunner());
         var result = firewall ? tools.BlockAsync(path, allowSystem: false, default).GetAwaiter().GetResult() : tools.ExcludeAsync(path, allowBroad: false, default).GetAwaiter().GetResult();
         if (result.Problem is ShieldProblem.SystemFolder or ShieldProblem.TooBroad)
         {
