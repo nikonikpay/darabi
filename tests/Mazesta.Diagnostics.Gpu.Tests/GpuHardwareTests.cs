@@ -63,6 +63,19 @@ public class GpuHardwareTests
         Assert.Equal(TestOutcome.Cancelled, result.Outcome); Assert.True(sw.Elapsed.TotalSeconds < 5);
     }
 
+    [Fact] public async Task A_cancelled_gpu_test_leaves_the_card_available_for_the_next_one()
+    {
+        if (NoGpu) return;
+        foreach (var (test, def) in new (ITestExecutor, TestDefinition)[] { (new GpuStressExecutor(GpuStressProfile.Steady), GpuStressExecutor.Steady), (new GpuVramExecutor(), GpuVramExecutor.Definition), (new GpuRenderExecutor(), GpuRenderExecutor.Definition) })
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(700));
+            var result = await test.RunAsync(Request(def, 60), cts.Token);
+            Assert.Equal(TestOutcome.Cancelled, result.Outcome);
+            var options = new TestOptions(def, new Dictionary<string, string>());
+            Assert.Null(GpuFeatures.GpuAvailability(options)); Assert.NotNull(GpuDevices.Resolve(""));
+        }
+    }
+
     [Fact] public void Windows_reports_a_resident_budget_for_the_card_that_is_not_more_than_its_memory()
     {
         var device = GpuDevices.Resolve("")!;

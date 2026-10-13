@@ -66,5 +66,10 @@ internal sealed class SceneView : IDisposable
     /// <summary>Whether two check frames are the same picture: no block's mean colour is more than 2 of 255 levels apart.</summary>
     public static bool Same(float[] a, float[] b) { for (int i = 0; i < a.Length; i++) if (Math.Abs(a[i] - b[i]) > 2f) return false; return true; }
 
-    public void Dispose() { Garden.Weather?.Stop(); _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
+    /// <summary>Waits for the card first: a run stopped between two frames (Cancel, the window closed) still has one or two on the card, and freeing the
+    /// scene's memory under them is a page fault the driver answers by resetting the card, which then vanishes from DirectX until the program restarts.</summary>
+    public void Dispose()
+    {
+        try { Drain(); } catch (Exception e) when (e is SharpGen.Runtime.SharpGenException or Benchmarks.GpuLostException) { }   // a lost device: release anyway
+        Garden.Weather?.Stop(); _renderer.Dispose(); Overlay.Dispose(); foreach (var b in _back) b.Dispose(); _swap.Dispose(); }
 }

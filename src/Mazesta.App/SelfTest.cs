@@ -61,6 +61,8 @@ internal static class SelfTest
         await Task.Delay(TimeSpan.FromSeconds(25));   // the sensor scan has listed the parts by then
         // tests180:gpu.vram@thermal=85 - the temperature guard on, with the VRAM limit at 85 C held for one minute (the other limits are the defaults).
         int? guardVram = null; if (kind.IndexOf("@thermal=", StringComparison.Ordinal) is var at and >= 0) { guardVram = int.Parse(kind[(at + 9)..], System.Globalization.CultureInfo.InvariantCulture); kind = kind[..at]; }
+        // tests60:gpu.steady@cancel=8 - cancelled after 8 s; then the page's own question (is each test still available?) is asked for half a minute.
+        int? cancelAfter = null; if (kind.IndexOf("@cancel=", StringComparison.Ordinal) is var cut and >= 0) { cancelAfter = int.Parse(kind[(cut + 8)..], System.Globalization.CultureInfo.InvariantCulture); kind = kind[..cut]; }
         string[] only = kind.Contains(':') ? kind[(kind.IndexOf(':') + 1)..].Split(',') : [];   // tests15:gpu.vram,gpu.render - just these
         string count = kind.Contains(':') ? kind[5..kind.IndexOf(':')] : kind[5..];
         string seconds = int.TryParse(count, out int n) && n > 0 ? n.ToString(System.Globalization.CultureInfo.InvariantCulture) : "15";
@@ -81,6 +83,16 @@ internal static class SelfTest
             return center.Rows.Where(r => r.IsSelected).Select(r => r.Definition.Id.Value).ToList();
         });
         say($"{chosen.Count} tests, {seconds} s each: {string.Join(", ", chosen)}");
+        if (cancelAfter is { } stopAt)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(stopAt)); await Ui(ui, () => { center.CancelCommand.Execute(null); return 0; });
+            for (int i = 0; i < 15; i++)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2));
+                var seen = await Ui(ui, () => { bool running = center.IsRunning; if (!running) foreach (var r in center.Rows) r.RefreshAvailability(); return (running, string.Join(" | ", center.Rows.Where(r => r.Definition.Id.Value.StartsWith("gpu.", StringComparison.Ordinal)).Select(r => $"{r.Definition.Id.Value}:{r.UnavailableText ?? "ok"}"))); });
+                say($"after cancel +{(i + 1) * 2} s: running={seen.running} {seen.Item2}");
+            }
+        }
         await Task.Delay(TimeSpan.FromSeconds(5));
         while (await Ui(ui, () => center.IsRunning)) await Task.Delay(TimeSpan.FromSeconds(2));
         foreach (var row in await Ui(ui, () => center.Rows.Where(r => chosen.Contains(r.Definition.Id.Value)).ToList()))

@@ -1,4 +1,4 @@
-using Xunit; using Xunit.Abstractions; using Mazesta.Core.Time; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu; using Mazesta.Diagnostics.Gpu.Benchmarks;
+using Xunit; using Xunit.Abstractions; using Mazesta.Core.Time; using Mazesta.Diagnostics.Benchmarks; using Mazesta.Diagnostics.Gpu; using Mazesta.Diagnostics.Gpu.Benchmarks; using Mazesta.Diagnostics.Gpu.Scene;
 namespace Mazesta.Diagnostics.Gpu.Tests;
 
 /// <summary>Runs the GPU benchmarks for a few seconds on the real GPU (Category=Hardware). Each must either measure
@@ -16,6 +16,21 @@ public class GpuBenchmarkHardwareTests(ITestOutputHelper output)
         if (result.Status == BenchmarkStatus.Completed) Assert.All(result.Metrics, m => Assert.True(m.Value > 0, m.Key));
         else Assert.Empty(result.Metrics);
         return result;
+    }
+
+    [Fact] public async Task A_cancelled_benchmark_or_scene_leaves_the_card_available_for_the_next_run()
+    {
+        if (NoGpu) return;
+        async Task Check(string what, Func<CancellationToken, Task<bool>> run)
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            Assert.True(await run(cts.Token), what + " was not cancelled");
+            for (int i = 0; i < 3; i++) { Assert.Null(GpuFeatures.GpuAvailability(TestOptions.None(GpuSceneExecutor.Scene))); Assert.NotNull(GpuDevices.Resolve("")); await Task.Delay(300); }
+        }
+        var clock = new SystemClock();
+        foreach (IBenchmark b in new IBenchmark[] { new GpuSceneBenchmark(), new GpuRayTracingBenchmark(), new GpuAiBenchmark(), new GpuVideoBenchmark() })
+            await Check(b.GetType().Name, async ct => (await b.RunAsync(new TestExecutionRequest(60, clock, null, null, TestOptions.None(b.Definition)), ct)).Status == BenchmarkStatus.Cancelled);
+        await Check("scene test", async ct => (await new GpuSceneExecutor().RunAsync(new TestExecutionRequest(60, clock, null, null, TestOptions.None(GpuSceneExecutor.Scene)), ct)).Outcome == TestOutcome.Cancelled);
     }
 
     [Fact] public async Task Ray_tracing_measures_frames_and_rays_or_is_unsupported() => await Run(new GpuRayTracingBenchmark());
