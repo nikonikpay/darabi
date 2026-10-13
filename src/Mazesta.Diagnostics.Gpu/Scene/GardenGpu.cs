@@ -7,7 +7,7 @@ namespace Mazesta.Diagnostics.Gpu.Scene;
 /// mesh (so each mesh is one instanced draw per material), the materials, the lights, the textures (base colours and normal maps) as one
 /// BC3 texture array, and the mountains round the horizon. What moves is placed here for both renderers, as a function of the time alone:
 /// the logo (turning to the camera), the ray-traced scene's mirror sphere (gliding round the pool) and the fountain's water, which
-/// this class adds to the scene: the column the jet rises as and a stream falling from each lobe of the bowl's rim (still shapes of
+/// this class adds to the scene: the column the jet rises as (a still shape of
 /// running water), and droplets, each on a flight of its own that ends where it meets the bowl or the pool (<see cref="Droplet"/>).
 /// It also adds what is alive in the garden (<see cref="Mover"/>): butterflies over the beds by day, fireflies by night - some of
 /// them lights, which the leaves round them catch - and the steam of the samovar on the hall's tea counter.
@@ -27,7 +27,7 @@ internal sealed unsafe class GardenGpu
     public sealed record DrawLod(int BaseVertex, Vector3 Centre, Vector3 Extent, Part[] Parts, int Triangles);
 
     /// <summary>The fountain's droplets: those of the jet, and those that spill from the bowl's rim (so many from each of its twelve lobes).</summary>
-    public const uint JetDroplets = 520, SpillDroplets = 12 * 26;
+    public const uint JetDroplets = 520, SpillDroplets = 12 * 90;
     /// <summary>The garden's small life: fireflies (the first <see cref="LitFireflies"/> of them are lights as well), butterflies
     /// (two wings each), and the puffs of steam the samovar on the tea counter gives off.</summary>
     public const int Fireflies = 140, LitFireflies = 16, Butterflies = 24, SteamPuffs = 14;
@@ -120,18 +120,12 @@ internal sealed unsafe class GardenGpu
             meshes.Add(Ball((uint)materials.Count - 1));
             var droplet = new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Flags = GardenScene.DropletFlag, Row0 = new(1, 0, 0, 0), Row1 = new(0, 1, 0, 0), Row2 = new(0, 0, 1, 0) };
             chosen = [.. chosen, .. Enumerable.Repeat(droplet, (int)(JetDroplets + SpillDroplets))];
-            // and its steady water, of the pool's own: the column the jet rises as, and a stream falling from each of the rim's twelve lobes
+            // and its steady water, of the pool's own: the column the jet rises as
             int water = materials.FindIndex(m => m.Kind == GardenMaterialKind.Water);
             if (water >= 0)
             {
                 meshes.Add(Tube(JetColumn(Fountain), (uint)water));
                 chosen = [.. chosen, new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Row0 = new(1, 0, 0, 0), Row1 = new(0, 1, 0, 0), Row2 = new(0, 0, 1, 0) }];
-                meshes.Add(Tube(SpillStream(Fountain, WaterLevel), (uint)water));
-                for (int k = 0; k < 12; k++)
-                {
-                    float a = (k + 0.5f) / 12 * 2 * MathF.PI, c = MathF.Cos(a), s2 = MathF.Sin(a);   // about the fountain's axis, out through lobe k
-                    chosen = [.. chosen, new GardenInstance { Mesh = (uint)meshes.Count - 1, Mask = (uint)mode, Row0 = new(c, 0, -s2, Fountain.Nozzle.X), Row1 = new(0, 1, 0, 0), Row2 = new(s2, 0, c, Fountain.Nozzle.Z) }];
-                }
             }
         }
         // the garden's small life: every one a mover, placed anew each frame (Mover)
@@ -526,21 +520,6 @@ internal sealed unsafe class GardenGpu
         }
         path.Add((f.Nozzle + new Vector3(0, height + 0.05f, 0), 0.016f));   // closing over at its top
         return [.. path];
-    }
-
-    /// <summary>The water running over one lobe of the bowl's rim, in the fountain's own frame (its axis through the origin, the
-    /// stream leaving along +x): the centre line and radius of its fall from the rim to the pool's surface, at the spilling droplets'
-    /// mean speed - a parabola, thinning as it quickens.</summary>
-    public static (Vector3 At, float Radius)[] SpillStream(GardenFountain f, float waterLevel)
-    {
-        const float gravity = 9.81f, radius = 0.024f; var from = new Vector3(f.RimRadius, f.BowlLevel + 0.03f, 0); var v0 = new Vector3(0.42f, -0.2f, 0);
-        float end = (v0.Y + MathF.Sqrt(v0.Y * v0.Y + 2 * gravity * (from.Y - waterLevel))) / gravity; var path = new (Vector3, float)[16];
-        for (int k = 0; k < path.Length; k++)
-        {
-            float t = end * k / (path.Length - 1); var v = v0 - new Vector3(0, gravity * t, 0);
-            path[k] = (from + v0 * t - new Vector3(0, 0.5f * gravity * t * t, 0), MathF.Max(radius * MathF.Sqrt(v0.Length() / v.Length()), 0.009f));
-        }
-        return path;
     }
 
     /// <summary>A mesh from its points, normals and triangles, quantised the way the vertex buffer holds them.</summary>
