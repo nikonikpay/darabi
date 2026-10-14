@@ -170,7 +170,8 @@ public static class OverlayCatalog
         bool Named(SensorDefinition s) => (item.NamePrefix is null || s.Name.StartsWith(item.NamePrefix, StringComparison.Ordinal)) && (item.Ccd is null || CcdOfCore(s.Name) == item.Ccd);
         var kind = item.Part switch { OverlayPart.Gpu => HardwareKind.Gpu, OverlayPart.Cpu => HardwareKind.Cpu, OverlayPart.Memory => HardwareKind.Memory, OverlayPart.Storage => HardwareKind.Storage, _ => HardwareKind.Network };
         var nodes = hardware.Where(n => n.ParentId is null && n.Kind == kind && (item.Device is null ? include?.Invoke(n) ?? true : n.Id.Value == item.Device))
-            .OrderByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuCoreTemp)).ToList();
+            .OrderByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuHotSpotTemp)) // the discrete card: a Ryzen's Radeon iGPU has a core temperature but no hot spot, and must not win the temperature item
+            .ThenByDescending(n => kind == HardwareKind.Gpu && n.Sensors.Any(s => s.Role == SensorRole.GpuCoreTemp)).ToList();
         if (item.Of is { } whole)
         {
             foreach (var n in nodes)

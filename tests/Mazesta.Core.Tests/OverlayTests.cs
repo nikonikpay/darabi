@@ -19,6 +19,13 @@ public class OverlayTests
         var load = OverlayCatalog.Resolve(OverlayCatalog.Find("gpu.load")!, [igpu, dgpu]);
         Assert.Equal("dgpu/1", Assert.Single(load).Id.Value);
     }
+    [Fact] public void A_ryzens_radeon_igpu_with_a_core_temperature_does_not_take_the_temperature_from_the_card_that_has_the_hot_spot()
+    {
+        var igpu = Node("igpu", HardwareKind.Gpu, ("Core", SensorRole.GpuCoreTemp));
+        var dgpu = Node("dgpu", HardwareKind.Gpu, ("Core", SensorRole.GpuCoreTemp), ("Hot", SensorRole.GpuHotSpotTemp));
+        Assert.Equal("dgpu/0", Assert.Single(OverlayCatalog.Resolve(OverlayCatalog.Find("gpu.temp")!, [igpu, dgpu])).Id.Value);
+        Assert.Equal("dgpu/1", Assert.Single(OverlayCatalog.Resolve(OverlayCatalog.Find("gpu.hotspot")!, [igpu, dgpu])).Id.Value);
+    }
     [Fact] public void Max_and_sum_read_the_role_on_every_device_and_a_missing_role_is_unavailable()
     {
         var a = Node("nvme", HardwareKind.Storage, ("T", SensorRole.StorageTemp)); var b = Node("hdd", HardwareKind.Storage, ("T", SensorRole.StorageTemp));

@@ -28,9 +28,12 @@ public sealed partial class WebBridge
                 {
                     var sensors = OverlayCatalog.Resolve(i, engine.Hardware, Include);
                     var choice = chosen.FirstOrDefault(c => c.Id == i.Id);
+                    // With two graphics devices (a Ryzen's Radeon iGPU and the card) both list "GPU Core": say which device each sensor is on.
+                    string? owner = i.SensorId is not null && i.Part == OverlayPart.Gpu && engine.Hardware.Count(n => n.Kind == HardwareKind.Gpu && n.ParentId is null) > 1
+                        ? engine.Hardware.FirstOrDefault(n => n.Sensors.Any(s => s.Id.Value == i.SensorId))?.Name : null;
                     return new
                     {
-                        id = i.Id, part = i.Part.ToString(), label = i.SensorId is null ? Loc.Get(i.LabelKey) : sensors.FirstOrDefault()?.Name ?? i.SensorId, labelEn = i.SensorId is null ? Loc.GetEnglish(i.LabelKey) : sensors.FirstOrDefault()?.Name ?? i.SensorId, sensor = i.SensorId is not null, frame = i.IsMeasured && !i.IsStatic, fixedText = i.IsStatic ? overlay.StaticText(i.Id) : null, available = i.IsMeasured || sensors.Count > 0,
+                        id = i.Id, part = i.Part.ToString(), label = i.SensorId is null ? Loc.Get(i.LabelKey) : (sensors.FirstOrDefault()?.Name ?? i.SensorId) + (owner is null ? "" : " · " + owner), labelEn = i.SensorId is null ? Loc.GetEnglish(i.LabelKey) : (sensors.FirstOrDefault()?.Name ?? i.SensorId) + (owner is null ? "" : " · " + owner), sensor = i.SensorId is not null, frame = i.IsMeasured && !i.IsStatic, fixedText = i.IsStatic ? overlay.StaticText(i.Id) : null, available = i.IsMeasured || sensors.Count > 0,
                         on = choice is not null, chart = choice?.Chart ?? false, aggregate = i.Of is not null ? "Share" : i.Aggregate.ToString(), max = i.FixedMax, sensors = sensors.Select(s => s.Id.Value),
                         device = i.Device, deviceName = i.Device is null ? null : engine.Hardware.FirstOrDefault(n => n.Id.Value == i.Device)?.Name,
                     };
