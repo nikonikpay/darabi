@@ -8,6 +8,8 @@ namespace Mazesta.Diagnostics.Gpu.Benchmarks;
 /// metacommands where the driver has them, so tensor/matrix cores are used when the GPU has them; the numbers are therefore
 /// what an AI application on this machine would get, not the chip's theoretical peak. A precision the GPU or the installed
 /// DirectML cannot run is left out and named in the detail. DirectML is the copy that ships with Windows (System32).
+/// After each level's timed loop the product is read back and a seeded sample of it checked against the CPU (<see cref="MatMulCheck"/>),
+/// outside the timing; a wrong entry is the card's fault (<see cref="GpuWrongResultException"/>).
 /// </summary>
 public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
 {
@@ -35,7 +37,8 @@ public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
         try { dml = s.Own(DML.DMLCreateDevice(s.Device, CreateDeviceFlags.None)); }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or SharpGen.Runtime.SharpGenException) { throw new GpuUnsupportedException($"DirectML is not available on this Windows installation ({e.Message})."); }
 
-        List<BenchmarkMetric> metrics = []; List<string> skipped = [];
+        List<BenchmarkMetric> metrics = []; List<string> skipped = [], checkedLevels = [];
+        int seed = Random.Shared.Next(); var entries = MatMulCheck.Sample((int)Size, seed);
         double seconds = request.DurationSeconds / (double)Levels.Length;
         for (int i = 0; i < Levels.Length; i++)
         {
@@ -45,16 +48,18 @@ public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
             if (missing is not null) { skipped.Add(missing); continue; }
             int index = i;
             using (s.Scope())   // each level's matrices are freed before the next level allocates its own
-                metrics.Add(new(level.Key, Measure(s, dml, level, seconds, p => request.Report((index + p) / Levels.Length), ct) * OpsPerMultiply / 1e12, level.Unit));
+                metrics.Add(new(level.Key, Measure(s, dml, level, seconds, entries, p => request.Report((index + p) / Levels.Length), ct) * OpsPerMultiply / 1e12, level.Unit));
+            checkedLevels.Add(level.Name);
         }
         if (metrics.Count == 0) throw new GpuUnsupportedException("DirectML cannot run a matrix multiply at any precision on this GPU: " + string.Join("; ", skipped));
         return (metrics, $"DirectML {Size}x{Size}x{Size} matrix multiply (GEMM for FP32/FP16, integer matmul for INT8), DirectML feature level {dml.HighestFeatureLevel}"
+            + $"; result checked against the CPU on a sample, not in full: {entries.Count} of {Size * Size} entries (one whole row and {MatMulCheck.Scattered} scattered, seed {seed}) at {string.Join(", ", checkedLevels)}, integers exact and floats within the rounding bound"
             + (skipped.Count > 0 ? "; not measured: " + string.Join("; ", skipped) : ""));
     }
 
     /// <summary>Multiplies per second at one precision. Inputs hold random values (an all-zero matrix would let some GPUs idle
     /// their multipliers and inflate the result); consecutive multiplies are separated by a barrier, as layers of a network are.</summary>
-    private static double Measure(D3D12Session s, IDMLDevice dml, Level level, double seconds, Action<double> progress, CancellationToken ct)
+    private static double Measure(D3D12Session s, IDMLDevice dml, Level level, double seconds, List<(int, int)> entries, Action<double> progress, CancellationToken ct)
     {
         var a = Tensor(level.Input, Size); var b = Tensor(level.Input, Size); var output = Tensor(level.Output, Size); var zeroPoint = Tensor(TensorDataType.Int8, 1);
         IOperatorDescription description = level.Integer
@@ -65,12 +70,14 @@ public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
         using var compiled = dml.CompileOperator(op, level.Input == TensorDataType.Float16 ? ExecutionFlags.AllowHalfPrecisionComputation : ExecutionFlags.None);
         using var initializer = dml.CreateOperatorInitializer([compiled]);
 
-        ID3D12Resource Random(BufferTensorDescription t, int seed)
+        // The inputs are kept on the CPU too, for the check of the product.
+        ID3D12Resource Random(BufferTensorDescription t, int seed, out byte[] values)
         {
             var buffer = s.Buffer(t.TotalTensorSizeInBytes, HeapType.Default, ResourceStates.CopyDest, ResourceFlags.AllowUnorderedAccess);
-            s.Fill(buffer, destination => FillRandom(destination, level.Input, seed), ResourceStates.UnorderedAccess); return buffer;
+            var bytes = values = new byte[t.TotalTensorSizeInBytes]; FillRandom(bytes, level.Input, seed);
+            s.Fill(buffer, destination => bytes.CopyTo(destination), ResourceStates.UnorderedAccess); return buffer;
         }
-        var bufferA = Random(a, 1); var bufferB = Random(b, 2); var bufferOut = s.UavBuffer(output.TotalTensorSizeInBytes);
+        var bufferA = Random(a, 1, out var valuesA); var bufferB = Random(b, 2, out var valuesB); var bufferOut = s.UavBuffer(output.TotalTensorSizeInBytes);
         // Optional inputs cannot be left unbound through Vortice, so they get zero buffers: GEMM's C (Alpha*A*B + Beta*C, with Beta = 0 - one
         // extra read per multiply, well under 1% of the work) and the INT8 zero points (0: plain symmetric int8, as quantised models use).
         (BufferTensorDescription Tensor, ID3D12Resource Buffer)[] operands = level.Integer
@@ -95,11 +102,18 @@ public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
         if (execTemp is not null) table.BindTemporaryResource(Bind(execTemp));
         if (persistent is not null) table.BindPersistentResource(Bind(persistent));
 
-        return s.Measure((l, count) =>
+        double rate = s.Measure((l, count) =>
         {
             l.SetDescriptorHeaps(heap);
             for (int i = 0; i < count; i++) { recorder.RecordDispatch(l, compiled, table); l.ResourceBarrierUnorderedAccessView(bufferOut); }
         }, seconds, progress, ct);
+
+        // Beta = 0, so the buffer holds the last multiply's product alone.
+        ulong outBytes = output.TotalTensorSizeInBytes;
+        uint[] product = s.Read((int)(outBytes / 4), (l, readback) => { l.ResourceBarrierTransition(bufferOut, ResourceStates.UnorderedAccess, ResourceStates.CopySource); l.CopyBufferRegion(readback, 0, bufferOut, 0, outBytes); });
+        if (MatMulCheck.FirstWrong(level.Input, valuesA, valuesB, MemoryMarshal.AsBytes(product.AsSpan()), (int)Size, entries) is { } wrong)
+            throw new GpuWrongResultException($"the {level.Name} matrix multiply came out wrong at {wrong}");
+        return rate;
     }
 
     private static BufferTensorDescription Tensor(TensorDataType type, uint size)

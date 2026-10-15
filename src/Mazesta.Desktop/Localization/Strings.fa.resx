@@ -3585,6 +3585,7 @@
   <data name="Detail_L_CpuCoreClock" xml:space="preserve"><value>فرکانس هسته‌های پردازنده</value></data>
   <data name="Detail_Cpu_PeakCoreClock" xml:space="preserve"><value>بیشترین فرکانس هسته: {0} MHz</value></data>
   <data name="Detail_Ai_Method" xml:space="preserve"><value>ضرب ماتریس DirectML به اندازهٔ {0}x{0}x{0} (GEMM برای FP32 و FP16، ضرب ماتریس صحیح برای INT8)، سطح قابلیت DirectML: {1}</value></data>
+  <data name="Detail_Ai_Checked" xml:space="preserve"><value>نتیجه روی یک نمونه (نه همهٔ آن) با محاسبهٔ پردازنده سنجیده شد: {0} درایه از {1} (یک سطر کامل و {2} درایهٔ پراکنده، بذر {3}) در {4}؛ عددهای صحیح دقیقاً برابر و عددهای اعشاری در حد خطای گرد کردن</value></data>
   <data name="Detail_Gpu_On" xml:space="preserve"><value>روی {0}</value></data>
   <data name="Detail_Ai_Numbers" xml:space="preserve"><value>{0} (ضرب ماتریس DirectML خود مازستا، نه امتیاز برنامه‌های تجاری)</value></data>
   <data name="Detail_W_StorageRoom" xml:space="preserve"><value>فقط {0} MiB جای خالی است: فایل آزمون ({1} MiB) به‌علاوهٔ حاشیهٔ یک گیگابایتی جا نمی‌شود.</value></data>

@@ -181,6 +181,7 @@ public static partial class TestDetailText
         // ——— the AI test and the internet-speed test ———
         R(@"DirectML (\d+)x\d+x\d+ matrix multiply \(GEMM for FP32/FP16, integer matmul for INT8\), DirectML feature level (\S+)", "Detail_Ai_Method"),
         R(@"((?:Fp32|Fp16|Int8) [\d.]+ (?:TFLOPS|TOPS)(?:, (?:Fp32|Fp16|Int8) [\d.]+ (?:TFLOPS|TOPS))*) \(Mazesta's DirectML matrix multiply, not a commercial score\)", "Detail_Ai_Numbers", m => [G(m, 1).Replace("Fp", "FP", StringComparison.Ordinal).Replace("Int8", "INT8", StringComparison.Ordinal)]),
+        R(@"result checked against the CPU on a sample, not in full: (\d+) of (\d+) entries \(one whole row and (\d+) scattered, seed (\d+)\) at ((?:FP32|FP16|INT8)(?:, (?:FP32|FP16|INT8))*), integers exact and floats within the rounding bound", "Detail_Ai_Checked"),
         R(@"on ((?:NVIDIA|AMD|Radeon|Intel|GeForce|Arc) .+)", "Detail_Gpu_On"),
         R(@"HTTPS to (\S+), (\d+) parallel streams, (\d+) s down then (\d+) s up", "Detail_Net_Https"),
         R(@"ICMP to (\S+) \((\d+) echoes\)", "Detail_Net_IcmpEchoes"),

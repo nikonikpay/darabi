@@ -3,8 +3,8 @@ namespace Mazesta.Diagnostics.Gpu;
 
 /// <summary>
 /// The GPU's AI compute as a test: the benchmark's DirectML matrix multiplies at FP32, FP16 and INT8 (the work Windows AI applications hand the
-/// card), run for the time asked. It passes when every precision the card supports ran to the end without the device being lost, and says what
-/// each measured; the measured GPU load is the evidence that the card was really worked. A card (or DirectML) that cannot run any precision is
+/// card), run for the time asked. It passes when every precision the card supports ran to the end without the device being lost and a seeded
+/// sample of each product matched a CPU reference (a wrong entry is Failed), and says what each measured and what was checked. A card (or DirectML) that cannot run any precision is
 /// Unsupported, never a pass. The same work is the Benchmarks page's AI benchmark, where its rates are compared with other systems.
 /// </summary>
 public sealed class GpuAiExecutor : ITestExecutor, ITestAvailability

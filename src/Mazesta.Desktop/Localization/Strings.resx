@@ -3585,6 +3585,7 @@ Cancel: stop.</value></data>
   <data name="Detail_L_CpuCoreClock" xml:space="preserve"><value>Processor core clock</value></data>
   <data name="Detail_Cpu_PeakCoreClock" xml:space="preserve"><value>Highest core clock: {0} MHz</value></data>
   <data name="Detail_Ai_Method" xml:space="preserve"><value>DirectML matrix multiply {0}x{0}x{0} (GEMM for FP32 and FP16, integer matmul for INT8), DirectML feature level {1}</value></data>
+  <data name="Detail_Ai_Checked" xml:space="preserve"><value>Result checked against the CPU on a sample, not in full: {0} of {1} entries (one whole row and {2} scattered, seed {3}) at {4}; integers match exactly, floats within the rounding bound</value></data>
   <data name="Detail_Gpu_On" xml:space="preserve"><value>on {0}</value></data>
   <data name="Detail_Ai_Numbers" xml:space="preserve"><value>{0} (Mazesta's own DirectML matrix multiply, not a commercial score)</value></data>
   <data name="Detail_W_StorageRoom" xml:space="preserve"><value>Only {0} MiB are free: the test file ({1} MiB) plus a 1 GiB margin does not fit.</value></data>

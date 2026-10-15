@@ -68,4 +68,11 @@ public class TestDetailTextTests
         Assert.Empty(view.Figures); Assert.Equal(TestDetailText.Lines("RAM pattern test; tested=1,024 MiB").Select(l => l.Text), view.Lines.Select(l => l.Text));
         Assert.Empty(TestDetailText.View(null).Figures);
     }
+
+    // The gpu.ai check line of the owner's RTX 3090 run: said in the user's language with the same numbers, not left as English.
+    [Fact] public void The_ai_test_s_result_check_is_worded()
+    {
+        var line = Assert.Single(TestDetailText.Lines("result checked against the CPU on a sample, not in full: 4352 of 16777216 entries (one whole row and 256 scattered, seed 1875899229) at FP32, FP16, INT8, integers exact and floats within the rounding bound"));
+        Assert.False(line.Latin); Assert.Equal(Loc.Format("Detail_Ai_Checked", "4352", "16777216", "256", "1875899229", "FP32, FP16, INT8"), line.Text);
+    }
 }
