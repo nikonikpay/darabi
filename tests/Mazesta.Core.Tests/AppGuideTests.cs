@@ -12,6 +12,17 @@ public class AppGuideTests
         Assert.Equal(page, r.Place!.Page); Assert.Equal(target, r.Place.Target);
     }
 
+    [Fact] public void Scan_windows_goes_to_the_repair_tool_and_opens_no_windows_window()
+    {
+        foreach (var t in new[] { "ویندوز رو اسکن کن", "ویندوز را اسکن کن", "اسکن ویندوز" }) { var r = R(t); Assert.True(r.Intent == AiIntent.Navigate && r.Place is { Page: "tools", Target: "repair" }, $"{t}: {r.Intent} {r.Place?.Page}/{r.Place?.Target}"); }
+    }
+    [Fact] public void Bitlocker_status_is_read_per_drive()
+    {
+        var d = WindowsActions.BitLockerDrives(string.Join((char)10, "Volume C: [Windows]", "    Conversion Status:    Fully Encrypted", "    Protection Status:    Protection On", "", "Volume D: [Data]", "    Conversion Status:    Fully Decrypted", "    Protection Status:    Protection Off", ""));
+        Assert.Equal([("C:", true, "Fully Encrypted"), ("D:", false, "Fully Decrypted")], d);
+        Assert.Empty(WindowsActions.BitLockerDrives("درایو C"));
+    }
+
     [Fact] public void Diagnose_the_system_runs_the_smart_diagnosis_itself_while_a_bare_name_only_opens_its_page()
     {
         foreach (var t in new[] { "سیستم رو عیب یابی کن", "عیب‌یابی هوشمند انجام بده", "چکاپ بگیر", "سیستمم رو چک کن", "کامپیوتر رو بررسی کن", "عیب یابی هوشمند رو اجرا کن", "diagnose my system", "run the smart diagnosis" })

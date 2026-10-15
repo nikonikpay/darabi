@@ -444,7 +444,8 @@ public sealed partial class WebBridge
                     var (code, output) = await RunCommand(run.File, Environment.ExpandEnvironmentVariables(run.Args), ct).ConfigureAwait(false);
                     string? file = c.Id == "battery" ? Environment.ExpandEnvironmentVariables("%TEMP%\\battery-report.html") : null;
                     if (file is not null && File.Exists(file)) offerFile(file); else file = null;
-                    return Json(new { command = c.Command, exitCode = code, output = Cut(output.Trim(), 6000), path = file });
+                    var drives = c.Id == "bitlockerstatus" ? WindowsActions.BitLockerDrives(output).Select(d => new { drive = d.Volume, bitlocker = d.Protected ? "on" : "off", d.Conversion }).ToList() : null;
+                    return Json(new { command = c.Command, exitCode = code, drives, output = Cut(output.Trim(), drives is { Count: > 0 } ? 800 : 6000), path = file });
                 }),
             new("check_drivers", "The graphics card's installed driver against its maker's newest (for NVIDIA both Game Ready and Studio, and which one the installed " +
                 "programs suit), and the devices Windows has no working driver for. Installing is done by the user on the Drivers page, which open_page opens.",

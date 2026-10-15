@@ -84,7 +84,7 @@ public static class AppGuide
         T("tools", "dns", "Dns_Title", "switch the DNS server, or test them all and pick the fastest", null, "dns", "دی ان اس", "دیاناس", "دی ان اس جامپر", "dns jumper"),
         T("tools", "power", "Gaming_PowerPlan", "Windows power plans (High, Ultimate Performance)", null, "پلن انرژی", "پاور پلن", "برق", "power plan", "ultimate performance"),
         T("tools", "gamemode", "Gaming_GameMode", "Game Mode and hardware GPU scheduling (HAGS)", null, "گیم مود", "game mode", "hags", "بازی"),
-        T("tools", "repair", "Tools_Repair", "Windows' own repair: SFC and DISM", "Assist_Hint_Repair", "sfc", "dism", "تعمیر ویندوز", "تعمیر", "repair"),
+        T("tools", "repair", "Tools_Repair", "Windows' own repair: SFC and DISM", "Assist_Hint_Repair", "sfc", "dism", "تعمیر ویندوز", "تعمیر", "repair", "اسکن ویندوز", "ویندوز رو اسکن", "ویندوز را اسکن", "اسکن فایل های ویندوز", "اسکن سیستم", "scan windows", "scannow"),
         T("tools", "hibernate", "Tools_Hib_Title", "hibernation and Fast Startup on or off", null, "هایبرنیت", "هایبرنت", "fast startup", "فست استارتاپ", "hibernate"),
         T("tools", "vm", "Tools_Vm_Title", "virtual memory (the page file)", null, "حافظه مجازی", "پیج فایل", "page file", "pagefile", "virtual memory"),
         T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null, "hosts", "هاست", "فایل هاست"),

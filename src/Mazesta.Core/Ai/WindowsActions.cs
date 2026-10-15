@@ -70,6 +70,21 @@ public static class WindowsActions
         C("tempclean", "del /q /f /s %TEMP%\\*", true, null, false, "فایلهای temp", "فایل های temp", "فایلهای موقت", "فایل های موقت", "temp", "تمپ"),
     ];
 
+    /// <summary>The drives in the output of <c>manage-bde -status</c> (English Windows): each with whether BitLocker protects it now, so the answer names each drive
+    /// as on or off instead of leaving the model to read the table; empty when the output is in another language.</summary>
+    public static IReadOnlyList<(string Volume, bool Protected, string Conversion)> BitLockerDrives(string output)
+    {
+        var list = new List<(string, bool, string)>(); string? vol = null; string conv = "";
+        foreach (var raw in output.Split((char)10))
+        {
+            string line = raw.Trim();
+            if (line.StartsWith("Volume ", StringComparison.Ordinal) && line.Length > 8 && line[8] == ':') { vol = line[7..9]; conv = ""; }
+            else if (line.StartsWith("Conversion Status:", StringComparison.Ordinal)) conv = line[18..].Trim();
+            else if (vol is not null && line.StartsWith("Protection Status:", StringComparison.Ordinal)) { list.Add((vol, line.Contains("Protection On", StringComparison.Ordinal), conv)); vol = null; }
+        }
+        return list;
+    }
+
     public static WinPlace? Place(string id) => Places.FirstOrDefault(p => p.Id == id);
     public static WinCommand? Command(string id) => Commands.FirstOrDefault(c => c.Id == id);
 
