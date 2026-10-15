@@ -2461,7 +2461,7 @@
   <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>پاک‌شده‌ها به سطل بازیافت نمی‌روند و برنمی‌گردند. «پاکسازی دیسک» در صفحهٔ ابزارهای ویندوز راه امن‌تری است.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ تنظیم کارت گرافیک».</value></data>
-  <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. چیپ‌های زیر هر جواب نشان می‌دهند کدام داده را خوانده؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
+  <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. زیر هر پاسخ نوشته می‌شود برای آن کدام ابزار یا داده را خوانده است؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>خواند: مشخصات سیستم</value></data>
   <data name="Assist_Tool_get_sensors" xml:space="preserve"><value>خواند: سنسورهای زنده</value></data>

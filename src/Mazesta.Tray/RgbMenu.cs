@@ -85,7 +85,7 @@ internal sealed class RgbMenu : IDisposable
         Log("resume");
         // The devices are not up at once, and an old connection into them is dead: the lights' server is started afresh a few seconds after the wake, and what is to be shown is
         // put on again a while later in case a device was still coming up the first time.
-        After(8000, () => BackAsync(recover: true, final: false)); After(30000, () => BackAsync(recover: false, final: true));
+        After(8000, () => BackAsync(recover: true, final: false)); After(30000, () => BackAsync(recover: false, final: false)); After(75000, () => BackAsync(recover: false, final: true));
     }
 
     private static void After(int ms, Func<Task> work)
@@ -96,30 +96,38 @@ internal sealed class RgbMenu : IDisposable
     }
 
     /// <summary>At sign-in: the scene back on, when the user left it switched on, and whatever the lights were before they were put out at the last shutdown. Silent when it works.</summary>
-    public Task ApplyAtStartAsync() => BackAsync(recover: false, final: true);
+    /// <summary>The devices of a cold boot can still be coming up when the tray starts: a try that did not reach them is made again after a while, three times at most.</summary>
+    public async Task ApplyAtStartAsync()
+    {
+        foreach (int wait in new[] { 0, 20000, 60000 })
+        {
+            if (wait > 0) await Task.Delay(wait);
+            if (await BackAsync(recover: false, final: true)) return;
+        }
+    }
 
     /// <summary>The lights back after a sleep or at the start: the scene when it is switched on, else the note of how they were. With <paramref name="recover"/> the server is started afresh.</summary>
-    private async Task BackAsync(bool recover, bool final, bool force = false)
+    private async Task<bool> BackAsync(bool recover, bool final, bool force = false)
     {
         var scene = RgbSceneStore.Read(_paths); var snap = RgbSceneStore.ReadSnapshot(_paths); bool app = AppRuns();
         string end = RgbScene.NormalPowerEnd(scene.PowerEnd);
-        if (!scene.Enabled && snap is null && end == RgbScene.Leave) return;
-        if (app && scene.Enabled && !force) { Log($"back: the app brings the scene back (recover {recover})"); return; }
-        if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) { Log("back: busy, skipped"); return; }
+        if (!scene.Enabled && snap is null && end == RgbScene.Leave) return true;
+        if (app && scene.Enabled && !force) { Log($"back: the app brings the scene back (recover {recover})"); return true; }
+        if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) { Log("back: busy, skipped"); return false; }
         _stale.Cancel(); _stale = new CancellationTokenSource(); var ct = _stale.Token;
         try
         {
             // Not enabled: no maker's program is stopped for it, and the connection is only held so the lights can be put out at the next sleep.
             bool stopMakers = scene.Enabled && scene.StopMakers;
             var r = recover && !app ? await _session.RecoverAsync(scene, ct) : await _session.ConnectAsync(true, stopMakers, scene, ct);
-            if (r != RgbConnect.Connected) { Log($"back: not connected ({r})"); return; }
+            if (r != RgbConnect.Connected) { Log($"back: not connected ({r})"); return false; }
             if (scene.Enabled) { if (_session.ZonesDefaulted) RgbSceneStore.Write(_paths, scene); await _session.ApplyAsync(scene, ct); Log($"back: scene applied, {_session.Runner.Count} effect(s) run by the app"); }
-            else if (snap is not null) { int n = await _session.RestoreAsync(snap, ct); Log($"back: {n} device(s) put back from the note"); }
+            else if (snap is not null) { int n = await _session.RestoreAsync(snap, ct); Log($"back: {n} device(s) put back from the note"); if (n == 0) return false; }   // none reached: the note stays for the next try
             if (snap is not null && final) RgbSceneStore.ClearSnapshot(_paths);
-            UpdateWatch();
+            UpdateWatch(); return true;
         }
         catch (Exception e) when (e is System.Net.Sockets.SocketException or IOException or InvalidDataException or OperationCanceledException or InvalidOperationException)
-        { Log($"back: {e.GetType().Name} {e.Message}"); _session.Client.Disconnect(); }
+        { Log($"back: {e.GetType().Name} {e.Message}"); _session.Client.Disconnect(); return false; }
         finally { Volatile.Write(ref _busy, 0); }
     }
 

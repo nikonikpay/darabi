@@ -2461,7 +2461,7 @@ What I do not do: run any other command in Windows, change files, or install pro
   <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>What is deleted does not go to the Recycle Bin and can not be brought back. Disk Cleanup, on the Windows tools page, is the safer way.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
   <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the graphics card tuning page".</value></data>
-  <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. The chips under an answer show which data it read; check numbers against the Monitoring page.</value></data>
+  <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. Under each answer the labels name the tool or data it read; check numbers against the Monitoring page.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>A test or benchmark is running; start the assistant after it.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>Read: machine summary</value></data>
   <data name="Assist_Tool_get_sensors" xml:space="preserve"><value>Read: live sensors</value></data>
