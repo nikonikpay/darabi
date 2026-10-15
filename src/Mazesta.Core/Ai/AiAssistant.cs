@@ -21,7 +21,7 @@ public static class AiAssistantPolicy
     public const int HistoryChars = 4000;
     public const int MaxReplyTokens = 700;
     /// <summary>The server's context: the conversation, the tools' definitions and their results (see <c>AiAgent.MaxResultChars</c>) share it.</summary>
-    public const int ServerContext = 6144;
+    public const int ServerContext = 12288;
 
     public static AiAssistantChoice Decide(AiMachine pc)
     {

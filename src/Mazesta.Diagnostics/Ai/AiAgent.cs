@@ -80,7 +80,7 @@ public static class AiAgent
     private static JsonArray Fit(JsonArray messages)
     {
         int Size(JsonNode? m) => m?["content"]?.GetValue<string>().Length ?? 0;
-        while (messages.Sum(Size) > MaxMessageChars)
+        while (messages.Where(m => m?["role"]?.GetValue<string>() != "system").Sum(Size) > MaxMessageChars)
         {
             var big = messages.Where(m => m?["role"]?.GetValue<string>() == "tool" && Size(m) > 200).OrderByDescending(Size).FirstOrDefault();
             if (big is null) break;
