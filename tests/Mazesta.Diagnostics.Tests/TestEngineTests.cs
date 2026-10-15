@@ -281,4 +281,13 @@ public class TestEngineTests : IDisposable
         var cp = new TestEngine([], store, new FakeClock(T0)).FindIncompleteSession()!;
         Assert.Equal("old", cp.SessionId); Assert.Empty(cp.Finished); Assert.Equal(2, cp.SchemaVersion);
     }
+
+    [Fact] public async Task Errors_found_before_a_cancel_keep_the_test_Failed()
+    {
+        var e1 = new FakeTestExecutor(Def1, (r, ct) => Task.FromResult(new TestRunResult(Def1.Id, TestOutcome.Cancelled, r.Clock.UtcNow, r.Clock.UtcNow, 2, "2 wrong words")));
+        var engine = new TestEngine([e1], Store(), new FakeClock(T0));
+        TestRunResult? result = null; engine.TestCompleted += (_, r) => result = r;
+        await engine.RunAsync([Once(Def1, 5)], CancellationToken.None);
+        Assert.Equal(TestOutcome.Failed, result!.Outcome); Assert.Equal(2, result.ErrorCount); Assert.Contains("stopped before its time was up", result.Detail);
+    }
 }

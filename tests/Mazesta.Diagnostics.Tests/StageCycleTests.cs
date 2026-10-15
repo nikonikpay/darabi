@@ -65,4 +65,11 @@ public class StageCycleTests
         await new StageCycleExecutor(def, new Dictionary<string, string> { ["one"] = "gpu.steady" }, tests).RunAsync(new(10, new FakeClock(T0), null, null, new TestOptions(def, new Dictionary<string, string> { ["gpu"] = "card-2" })), CancellationToken.None);
         Assert.All(seen, g => Assert.Equal("card-2", g)); Assert.NotEmpty(seen);
     }
+
+    [Fact] public async Task A_stage_the_time_ran_out_before_is_inconclusive_not_a_pass()
+    {
+        var (cycle, seen) = Make(_ => TestOutcome.Passed);
+        var r = await cycle.RunAsync(new(1, new FakeClock(T0), null, null, Custom("cpu.vector cpu.fft", 10)), CancellationToken.None);
+        Assert.Equal(["vector:auto:1"], seen); Assert.Equal(TestOutcome.Inconclusive, r.Outcome); Assert.Contains("cpu.fft: not reached", r.Detail);
+    }
 }

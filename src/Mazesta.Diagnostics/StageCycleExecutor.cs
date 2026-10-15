@@ -6,7 +6,8 @@ namespace Mazesta.Diagnostics;
 /// one of the existing tests with its options, run for its share of the time with its own verification, and the stages go round until the
 /// time is up. A part that is stable in one stage and not another (SSE and not AVX2, a steady load and not a swinging one) shows in one run,
 /// and the account says which stage it failed in. A stage the part cannot run (AVX-512 on most desktop chips) is skipped and said, never
-/// counted as a pass or a fault; when no stage could run the whole test is Unsupported. An option of the cycle itself other than its preset,
+/// counted as a pass or a fault; when no stage could run the whole test is Unsupported. A stage the time ran out before is not a pass either:
+/// a clean run that left one unreached is Inconclusive (a shorter stage length, or fewer stages, fits them all). An option of the cycle itself other than its preset,
 /// stages and stage length (the GPU to use) is handed to every stage that has an option of that key and does not set it.
 /// </summary>
 public sealed class StageCycleExecutor(TestDefinition definition, IReadOnlyDictionary<string, string> presets, IReadOnlyDictionary<string, ITestExecutor> tests) : ITestExecutor
@@ -107,7 +108,8 @@ public sealed class StageCycleExecutor(TestDefinition definition, IReadOnlyDicti
         }
         if (results.All(r => r is null)) return TestRunResult.Unsupported(definition.Id, started, $"No stage could run on this CPU: {string.Join("; ", stages)}.");
         var worst = results.Where(r => r is not null).Aggregate((a, b) => a!.Combine(b!))!;
-        return Result(worst.Outcome == TestOutcome.Error ? TestOutcome.Error : worst.Outcome);
+        bool unreached = stages.Where((_, i) => !skipped.Contains(i) && results[i] is null).Any();
+        return Result(worst.Outcome == TestOutcome.Passed && unreached ? TestOutcome.Inconclusive : worst.Outcome);
 
         TestRunResult Result(TestOutcome outcome)
         {

@@ -14,6 +14,8 @@ namespace Mazesta.Diagnostics.Cpu;
 /// filled with matrices; or "Physical and virtual", past the RAM into the page file. One system of the whole size would take hours to solve
 /// once, and a run that ends before its first check proves nothing: the memory is filled with systems of <see cref="FillSize"/> instead, all
 /// written at the start and then solved and checked one after another, round and round, so every part of it is worked and verified in turn.
+/// A system waiting its turn holds the matrix the seed makes, so it is compared with that before it is solved (a value that changed while it
+/// waited is a RAM error); a clean run that did not reach every system is Inconclusive, the memory it held was not all verified.
 /// </summary>
 public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
 {
@@ -85,13 +87,14 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
             {
                 ct.ThrowIfCancellationRequested();
                 var a = systems[(int)(iterations % systems.Count)];
-                Generate(a, n); GenerateRhs(b);
+                long changed = Regenerate(a, n); GenerateRhs(b);
+                if (changed > 0) { errors += changed; if (firstError.Length == 0) firstError = $"iteration {iterations + 1}: {changed} value(s) of a matrix held in RAM changed while it waited its turn"; request.NoteError("Log_Wrong_Result", $"iteration {iterations + 1}: {changed} held matrix value(s) ≠ seed"); }
                 var solve = Stopwatch.StartNew();
                 bool regular = Factor(a, n, piv, ct, Progress);
                 if (regular) { b.CopyTo(x, 0); Solve(a, n, piv, x); }
                 solve.Stop();
                 iterations++;
-                if (!regular) { errors++; firstError = firstError.Length > 0 ? firstError : $"iteration {iterations}: a zero pivot - the factorisation broke down"; continue; }
+                if (!regular) { Generate(a, n); errors++; firstError = firstError.Length > 0 ? firstError : $"iteration {iterations}: a zero pivot - the factorisation broke down"; continue; }
                 bestGflops = Math.Max(bestGflops, (2.0 / 3 * n * (double)n * n + 2.0 * n * n) / solve.Elapsed.TotalSeconds / 1e9);
 
                 Generate(a, n);   // the LU overwrote A: the residual is taken against the original matrix, rebuilt from the seed
@@ -111,7 +114,9 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
             return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError, filled));
         }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError, filled));
+        var outcome = errors > 0 ? TestOutcome.Failed : iterations < systems.Count ? TestOutcome.Inconclusive : TestOutcome.Passed;
+        if (outcome == TestOutcome.Inconclusive) filled += $"; incomplete: {iterations} of the {systems.Count} systems were solved and verified";
+        return new(Definition.Id, outcome, started, request.Clock.UtcNow, errors, Describe(request, started, n, iterations, bestGflops, worstResidual, firstError, filled));
     }
 
     private static string Describe(TestExecutionRequest request, DateTimeOffset started, int n, long iterations, double gflops, double residual, string firstError, string filled)
@@ -132,6 +137,19 @@ public sealed class LinpackExecutor(IMemoryProbe memory) : ITestExecutor
         ulong s = Seed ^ (ulong)i * 0x9E3779B97F4A7C15UL; var row = a.AsSpan(i * n, n);
         for (int j = 0; j < n; j++) row[j] = Next(ref s);
     });
+
+    /// <summary>Writes the seed's matrix back over <paramref name="a"/> and returns how many values differed from it, bit for bit.</summary>
+    internal static long Regenerate(double[] a, int n)
+    {
+        long changed = 0;
+        Parallel.For(0, n, i =>
+        {
+            ulong s = Seed ^ (ulong)i * 0x9E3779B97F4A7C15UL; var row = a.AsSpan(i * n, n); long bad = 0;
+            for (int j = 0; j < n; j++) { double v = Next(ref s); if (BitConverter.DoubleToUInt64Bits(row[j]) != BitConverter.DoubleToUInt64Bits(v)) { bad++; row[j] = v; } }
+            if (bad > 0) Interlocked.Add(ref changed, bad);
+        });
+        return changed;
+    }
 
     internal static void GenerateRhs(double[] b) { ulong s = ~Seed; for (int i = 0; i < b.Length; i++) b[i] = Next(ref s); }
 

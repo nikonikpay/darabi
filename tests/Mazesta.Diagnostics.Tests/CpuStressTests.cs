@@ -55,11 +55,19 @@ public class CpuStressTests
         Assert.True(small.Count >= 1 && 8L * small.N * small.N <= GiB >> 2);
     }
 
+    [Fact] public void A_held_linpack_matrix_that_changed_while_it_waited_is_counted_and_restored()
+    {
+        const int n = 64; var a = new double[n * n]; LinpackExecutor.Generate(a, n);
+        Assert.Equal(0, LinpackExecutor.Regenerate(a, n));
+        a[100] = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(a[100]) ^ 1); a[n * n - 1] = 0;   // one flipped bit, one lost value
+        Assert.Equal(2, LinpackExecutor.Regenerate(a, n)); Assert.Equal(0, LinpackExecutor.Regenerate(a, n));
+    }
+
     [Fact] public async Task Linpack_fills_memory_and_says_how_much()
     {
-        var r = await new LinpackExecutor(new FixedProbe(2L << 30, (1L << 30) + (64L << 20))).RunAsync(new(1, new FakeClock(T0), null, null,
+        var r = await new LinpackExecutor(new FixedProbe(2L << 30, (1L << 30) + (64L << 20))).RunAsync(new(4, new FakeClock(T0), null, null,
             new TestOptions(LinpackExecutor.Definition, new Dictionary<string, string> { [LinpackExecutor.SizeOption] = "512" })), CancellationToken.None);   // 64 MiB to fill with 2 MiB systems
-        Assert.Equal(TestOutcome.Passed, r.Outcome); Assert.Contains("memory filled: 32 systems, 64 MiB (Physical only)", r.Detail);
+        Assert.True(r.Outcome == TestOutcome.Passed, r.Detail); Assert.Contains("memory filled: 32 systems, 64 MiB (Physical only)", r.Detail);
     }
 
     // ——— the full-load test ———
