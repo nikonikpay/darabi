@@ -1805,7 +1805,7 @@
   <data name="Nav_Search_None" xml:space="preserve"><value>چیزی پیدا نشد</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>پروفایل‌ها:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>بررسی سریع</value></data>
-  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۲۰ دقیقه: هر کدام سه دقیقه بار روی CPU، RAM، گرافیک، حافظهٔ تصویر و آزمون توان، سپس درایو و بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه و بیشتر الگوهای RAM پوشش داده نمی‌شوند.</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۲۳ دقیقه: هر کدام سه دقیقه بار روی CPU، گرافیک، حافظهٔ تصویر و آزمون توان، پنج دقیقه RAM (هر الگو یک بار)، سپس درایو و بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه پوشش داده نمی‌شوند.</value></data>
   <data name="Profile_Standard" xml:space="preserve"><value>پیش‌فرض مازستا</value></data>
   <data name="Profile_Standard_Note" xml:space="preserve"><value>حدود یک ساعت: هر قطعه یک بار زیر بار واقعی، با زمان کافی برای همهٔ الگوهای RAM در بیشتر سیستم‌ها، همهٔ هسته‌ها به نوبت و آزمون توان ترکیبی.</value></data>
   <data name="Profile_Transient" xml:space="preserve"><value>ناپایداری گذرا</value></data>

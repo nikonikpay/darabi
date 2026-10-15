@@ -1805,7 +1805,7 @@ The update services stopped and disabled</value></data>
   <data name="Nav_Search_None" xml:space="preserve"><value>Nothing found</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>Profiles:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>Quick check</value></data>
-  <data name="Profile_Quick_Note" xml:space="preserve"><value>About 20 minutes: three minutes each of CPU, RAM, graphics load, video memory and the power test, then the drive and the SMART check. A first look only - intermittent faults and most RAM patterns are not covered.</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>About 23 minutes: three minutes each of CPU, graphics load, video memory and the power test, five of RAM (every pattern once), then the drive and the SMART check. A first look only - intermittent faults are not covered.</value></data>
   <data name="Profile_Standard" xml:space="preserve"><value>Mazesta default</value></data>
   <data name="Profile_Standard_Note" xml:space="preserve"><value>About an hour: every part under a real load once, with enough RAM time for every pattern on most machines, every core in turn, and the combined power test.</value></data>
   <data name="Profile_Transient" xml:space="preserve"><value>Transient instability</value></data>

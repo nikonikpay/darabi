@@ -15,8 +15,9 @@ public static class TestProfiles
     public static IReadOnlyList<TestProfile> All { get; } =
     [
         // Three minutes each: a shorter load heats nothing, and the power test and the video memory are what a quick look most often misses.
+        // The RAM five: on 64 GB every pattern and algorithm takes about 3.5 minutes, and a run short of them is Inconclusive.
         new("quick", "Profile_Quick", "Profile_Quick_Note",
-            [new("cpu.stress", 180), new("memory.pattern", 180), new("gpu.steady", 180), new("gpu.vram", 180), new("power.combined", 180), new("storage.sequential", 180), new("storage.smart", 5)]),
+            [new("cpu.stress", 180), new("memory.pattern", 300), new("gpu.steady", 180), new("gpu.vram", 180), new("power.combined", 180), new("storage.sequential", 180), new("storage.smart", 5)]),
         new("standard", "Profile_Standard", "Profile_Standard_Note",
             [new("cpu.stress", 300), new("cpu.vector", 300), new("cpu.linpack", 300), new("cpu.singlecore", 600), new("memory.pattern", 900), new("memory.sequence", 600),
              new("gpu.steady", 300), new("gpu.vram", 300), new("gpu.scene.d3d", 120), new("storage.sequential", 60), new("storage.random4k", 60),

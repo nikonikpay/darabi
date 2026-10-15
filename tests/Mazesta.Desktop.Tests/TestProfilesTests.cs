@@ -47,7 +47,7 @@ public class TestProfilesTests
             vm.Rows[2].IsSelected = true;   // chosen before: a profile replaces the selection
             vm.ApplyProfile("quick");
             Assert.Equal([true, true, false], vm.Rows.Select(r => r.IsSelected));
-            Assert.Equal(["180", "180"], vm.Rows.Take(2).Select(r => r.DurationText));
+            Assert.Equal(["180", "300"], vm.Rows.Take(2).Select(r => r.DurationText));   // the RAM test gets the time all its patterns take
             Assert.NotNull(vm.ProfileNote);
         }
         finally { Directory.Delete(dir, true); }
