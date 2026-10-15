@@ -58,6 +58,14 @@ public class AiAgentTests
         Assert.True(model.Seen[1].Length < AiAgent.MaxResultChars + 600);
     }
 
+    [Fact] public async Task Several_big_results_together_are_shrunk_to_fit_the_servers_context()
+    {
+        var big = new AiTool("big", "d", """{"type":"object"}""", (_, _) => Task.FromResult("{\"rows\":[" + string.Join(",", Enumerable.Range(0, 400).Select(i => $"\"item {i}\"")) + "]}"));
+        var model = new Script(new("", [.. Enumerable.Range(0, 4).Select(i => new ToolCall("c" + i, "big", "{}"))]), new("done", []));
+        await AiAgent.RunAsync(model, "s", [new("user", "scan windows")], [big], _ => { }, _ => { }, default);
+        int chars = JsonNode.Parse(model.Seen[1])!.AsArray().Sum(m => m!["content"]!.GetValue<string>().Length); Assert.True(chars < AiAgent.MaxMessageChars + 400, chars.ToString());
+    }
+
     [Fact] public async Task The_page_gets_the_full_result_and_one_turn_runs_a_few_calls_at_most()
     {
         var big = new AiTool("big", "d", """{"type":"object"}""", (_, _) => Task.FromResult(new string('x', 9000)));

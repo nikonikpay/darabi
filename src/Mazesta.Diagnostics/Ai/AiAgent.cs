@@ -39,18 +39,18 @@ public static class AiAgent
         if (first is { Count: > 0 })
         {
             await CallAsync(first).ConfigureAwait(false);
-            if ((await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false)).Text.Trim().Length == 0)
-                await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false);
+            if ((await model.CompleteAsync(Fit(messages), null, false, onText, ct).ConfigureAwait(false)).Text.Trim().Length == 0)
+                await model.CompleteAsync(Fit(messages), null, false, onText, ct).ConfigureAwait(false);
             return;
         }
         for (int round = 0; ; round++)
         {
             // After the last round the tools are withdrawn, so the turn has to be an answer.
-            var reply = await model.CompleteAsync(messages, round < MaxRounds ? defs : null, mustAct && round == 0, onText, ct).ConfigureAwait(false);
+            var reply = await model.CompleteAsync(Fit(messages), round < MaxRounds ? defs : null, mustAct && round == 0, onText, ct).ConfigureAwait(false);
             // A turn after tools that says nothing (Qwen3.5 4B did, after reading the machine): asked once more with the tools withdrawn, so it answers.
             if (reply.Calls.Count == 0 && reply.Text.Trim().Length == 0 && round > 0 && round < MaxRounds)
             {
-                await model.CompleteAsync(messages, null, false, onText, ct).ConfigureAwait(false);
+                await model.CompleteAsync(Fit(messages), null, false, onText, ct).ConfigureAwait(false);
                 return;
             }
             if (reply.Calls.Count == 0 || round >= MaxRounds) return;
@@ -70,6 +70,23 @@ public static class AiAgent
                 messages.Add(new JsonObject { ["role"] = "tool", ["tool_call_id"] = c.Id, ["content"] = Mazesta.Core.Ai.AiJson.Shrink(result, MaxResultChars) });
             }
         }
+    }
+
+    /// <summary>The most the messages may hold (characters) so that with the tools' definitions and the reply they fit the server's context; a scan that
+    /// calls several tools would otherwise overflow it and the server answers 400.</summary>
+    public const int MaxMessageChars = 7000;
+
+    /// <summary>Shrinks the biggest tool results (as whole JSON) until the messages fit <see cref="MaxMessageChars"/>; the page keeps the full results.</summary>
+    private static JsonArray Fit(JsonArray messages)
+    {
+        int Size(JsonNode? m) => m?["content"]?.GetValue<string>().Length ?? 0;
+        while (messages.Sum(Size) > MaxMessageChars)
+        {
+            var big = messages.Where(m => m?["role"]?.GetValue<string>() == "tool" && Size(m) > 200).OrderByDescending(Size).FirstOrDefault();
+            if (big is null) break;
+            big["content"] = Mazesta.Core.Ai.AiJson.Shrink(big["content"]!.GetValue<string>(), Math.Max(200, Size(big) / 2));
+        }
+        return messages;
     }
 
     private static JsonObject Message(string role, string text) => new() { ["role"] = role, ["content"] = text };

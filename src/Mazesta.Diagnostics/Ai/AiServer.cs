@@ -78,7 +78,7 @@ public sealed class AiServer(AiFiles files, HttpClient http) : IChatModel, IDisp
         if (tools is { Count: > 0 }) { body["tools"] = JsonNode.Parse(tools.ToJsonString()); if (mustCallTool) body["tool_choice"] = "required"; }
         using var request = new HttpRequestMessage(HttpMethod.Post, $"http://127.0.0.1:{_port}/v1/chat/completions") { Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json") };
         using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode) { string why = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false); throw new HttpRequestException($"{(int)response.StatusCode}: {(why.Length > 300 ? why[..300] : why)}"); }
         using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false), Encoding.UTF8);
         var text = new StringBuilder(); var calls = new SortedDictionary<int, (string Id, string Name, StringBuilder Args)>();
         while (await reader.ReadLineAsync(ct).ConfigureAwait(false) is { } line)
