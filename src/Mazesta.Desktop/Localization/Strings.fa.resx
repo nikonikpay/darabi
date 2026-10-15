@@ -3408,6 +3408,15 @@
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>این تست‌ها ناموفق بودند: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>روی هر LED کلیک کنید تا فقط رنگ همان یکی عوض شود.</value></data>
+  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>درایور این کارت فقط یک ناحیهٔ رنگ برای کل کارت می‌دهد؛ پس همهٔ LEDهای کارت با هم یک رنگ می‌گیرند و کنترل جداگانهٔ هر LED در دسترس نیست.</value></data>
+  <data name="Rgb_Animate_Note" xml:space="preserve"><value>طیف را روی LEDها می‌چرخاند یا رنگ تکی را نفس‌کشان می‌کند. سبک است: چند بستهٔ کوچک در ثانیه.</value></data>
+  <data name="Rgb_Animate" xml:space="preserve"><value>متحرک (رنگ‌ها حرکت کنند)</value></data>
+  <data name="Rgb_Harm_mono" xml:space="preserve"><value>سایه‌های همین رنگ</value></data>
+  <data name="Rgb_Harm_triad" xml:space="preserve"><value>سه‌رنگ متعادل</value></data>
+  <data name="Rgb_Harm_complement" xml:space="preserve"><value>رنگ مقابل</value></data>
+  <data name="Rgb_Harm_analogous" xml:space="preserve"><value>رنگ‌های مجاور</value></data>
+  <data name="Rgb_Harmony" xml:space="preserve"><value>رنگ‌های هماهنگ با این رنگ</value></data>
+  <data name="Rgb_Hue" xml:space="preserve"><value>انتخاب سریع رنگ (طیف)</value></data>
   <data name="Test_Option_FullScreen" xml:space="preserve"><value>تمام‌صفحه</value></data>
   <data name="Test_Gpu_Ai" xml:space="preserve"><value>GPU · هوش مصنوعی (DirectML: FP32، FP16، INT8)</value></data>
   <data name="Bench_Scene_Score" xml:space="preserve"><value>امتیاز کل صحنه سه‌بعدی مازستا</value></data>

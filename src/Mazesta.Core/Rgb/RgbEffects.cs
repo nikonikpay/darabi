@@ -52,7 +52,15 @@ public static class RgbPalettes
         new("lava", ["#ff0000", "#7a00ff", "#ff7a00"]),
     ];
 
-    public static RgbPalette? Find(string? id) => All.FirstOrDefault(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+    /// <summary>A named palette, or one the page made from a colour the user chose ("custom:#rrggbb,#rrggbb,...": two to six colours, as in the harmony chips).</summary>
+    public static RgbPalette? Find(string? id)
+    {
+        if (id is { } c && c.StartsWith("custom:", StringComparison.OrdinalIgnoreCase))
+        {
+            var colors = c[7..].Split(','); return colors.Length is >= 2 and <= 6 && colors.All(x => System.Text.RegularExpressions.Regex.IsMatch(x, "^#[0-9a-fA-F]{6}$")) ? new(c, colors) : null;
+        }
+        return All.FirstOrDefault(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+    }
 }
 
 /// <summary>How the lights were before the app put them out at sleep or shutdown, kept in <c>rgb-before-off.json</c> until they are put back: the app and the lights'

@@ -44,4 +44,10 @@ public class RgbEffectTests
         foreach (var p in RgbPalettes.All) { Assert.True(p.Colors.Count >= 2, p.Id); Assert.All(p.Colors, c => Assert.NotNull(RgbColor.Parse(c))); }
         Assert.Equal(RgbPalettes.All.Count, RgbPalettes.All.Select(p => p.Id).Distinct().Count());
     }
+
+    [Fact] public void A_spectrum_made_from_a_chosen_colour_is_taken_only_when_it_is_well_formed()
+    {
+        Assert.Equal(3, RgbPalettes.Find("custom:#ff0000,#00ff00,#0000ff")!.Colors.Count);
+        Assert.Null(RgbPalettes.Find("custom:#ff0000")); Assert.Null(RgbPalettes.Find("custom:#ff0000,red")); Assert.Null(RgbPalettes.Find("custom:#111111,#222222,#333333,#444444,#555555,#666666,#777777"));
+    }
 }

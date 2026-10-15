@@ -104,7 +104,7 @@ public class OpenRgbTests
         }
         await done;
         var ids = got.Select(g => g.Id).ToList();
-        Assert.Equal([OpenRgbProtocol.SetClientName, OpenRgbProtocol.RequestProtocolVersion, OpenRgbProtocol.RequestControllerCount, OpenRgbProtocol.RequestControllerData, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.UpdateLeds], ids);
+        Assert.Equal([OpenRgbProtocol.SetClientName, OpenRgbProtocol.RequestProtocolVersion, OpenRgbProtocol.RequestControllerCount, OpenRgbProtocol.RequestControllerData, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.UpdateLeds], ids);
         var leds = got[^1].Body; Assert.Equal(4, BinaryPrimitives.ReadUInt16LittleEndian(leds.AsSpan(4))); Assert.Equal([255, 0, 0, 0], leds[6..10]);
     }
 
@@ -117,7 +117,7 @@ public class OpenRgbTests
             await client.SetLedsAsync(0, [new RgbColor(255, 0, 0), new RgbColor(0, 255, 0), new RgbColor(0, 0, 255)], default);   // the device has four LEDs
         }
         await done;
-        Assert.Equal([OpenRgbProtocol.UpdateMode, OpenRgbProtocol.UpdateLeds], got.Select(g => g.Id).TakeLast(2));
+        Assert.Equal([OpenRgbProtocol.UpdateMode, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.UpdateLeds], got.Select(g => g.Id).TakeLast(3));
         var leds = got[^1].Body; Assert.Equal(4, BinaryPrimitives.ReadUInt16LittleEndian(leds.AsSpan(4)));
         Assert.Equal([255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 0], leds[6..22]);
     }

@@ -52,6 +52,15 @@ internal static class SelfTestLights
         await Task.Delay(500); await session.Client.RefreshAsync(CancellationToken.None);
         foreach (var d in session.Client.Devices) if (d.Colors.Count > 1) say($"  [{d.Index}] first {d.Colors[0].Hex} last {d.Colors[^1].Hex}");
 
+        // 4b. A spectrum made from one chosen colour ("custom:"), on all at once, how long it takes; then it moving for 10 s, and what that costs in processor time.
+        var watch2 = System.Diagnostics.Stopwatch.StartNew(); const string custom = "custom:#ff0000,#ffd400,#00e5ff";
+        foreach (var d in session.Client.Devices.ToList()) await session.ApplyLookAsync(d.Index, new RgbLook("#ff0000", Palette: custom), CancellationToken.None);
+        say($"custom spectrum on all {session.Client.Devices.Count}: {watch2.Elapsed.TotalSeconds:F2} s");
+        await session.Client.RefreshAsync(CancellationToken.None); foreach (var d in session.Client.Devices) if (d.Colors.Count > 1) say($"  [{d.Index}] first {d.Colors[0].Hex} last {d.Colors[^1].Hex}");
+        foreach (var d in session.Client.Devices.ToList()) await session.ApplyLookAsync(d.Index, new RgbLook("#ff0000", RgbEffects.Rainbow, 60, 100, Palette: custom), CancellationToken.None);
+        session.Runner.Start(); var me = System.Diagnostics.Process.GetCurrentProcess(); var cpu0 = me.TotalProcessorTime; await Task.Delay(10000); me.Refresh();
+        say($"moving spectrum on {session.Runner.Count} device(s): {(me.TotalProcessorTime - cpu0).TotalMilliseconds / 100:F1} % of one core over 10 s (this process)");
+
         // 5. As it was.
         session.Runner.Stop(); session.Runner.Clear(); int restored = await session.RestoreAsync(snap, CancellationToken.None);
         say($"the lights put back as they were: {restored} device(s)");

@@ -69,6 +69,9 @@ public sealed class OpenRgbClient : IDisposable
         try
         {
             await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(d.Modes.ToList().IndexOf(mode), mode, _version), ct).ConfigureAwait(false);
+            await Task.Delay(SettleMs, ct).ConfigureAwait(false);
+            await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false);
+            await Task.Delay(SettleMs, ct).ConfigureAwait(false);   // sent once more: a controller still taking the mode change (a memory stick coming out of its own effect) kept the colours it had
             await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(all), ct).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
@@ -143,6 +146,9 @@ public sealed class OpenRgbClient : IDisposable
 
     private static uint Scale(uint min, uint max, int percent) => max <= min ? min : min + (uint)Math.Round((max - min) * Math.Clamp(percent, 0, 100) / 100.0);
 
+    /// <summary>The wait between a device's mode change and the colours after it, and before they are sent again.</summary>
+    private const int SettleMs = 100;
+
     private async Task SendModeAsync(RgbDevice d, RgbMode mode, RgbColor? color, CancellationToken ct, int? speedPercent = null, int? brightnessPercent = null)
     {
         var send = mode;
@@ -156,8 +162,14 @@ public sealed class OpenRgbClient : IDisposable
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, OpenRgbProtocol.Mode(d.Modes.ToList().IndexOf(mode), send, _version), ct).ConfigureAwait(false);
-            if (color is { } leds && mode.PerLed) await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, OpenRgbProtocol.Leds(Enumerable.Repeat(leds, Math.Max(d.LedCount, 1)).ToList()), ct).ConfigureAwait(false);
+            var packet = OpenRgbProtocol.Mode(d.Modes.ToList().IndexOf(mode), send, _version);
+            await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, packet, ct).ConfigureAwait(false);
+            if (color is { } leds && mode.PerLed)
+            {
+                var all = OpenRgbProtocol.Leds(Enumerable.Repeat(leds, Math.Max(d.LedCount, 1)).ToList());
+                for (int k = 0; k < 2; k++) { await Task.Delay(SettleMs, ct).ConfigureAwait(false); await SendAsync(d.Index, OpenRgbProtocol.UpdateLeds, all, ct).ConfigureAwait(false); }
+            }
+            else { await Task.Delay(SettleMs, ct).ConfigureAwait(false); await SendAsync(d.Index, OpenRgbProtocol.UpdateMode, packet, ct).ConfigureAwait(false); }
         }
         finally { _gate.Release(); }
     }

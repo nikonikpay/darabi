@@ -12,6 +12,24 @@ const ICON = { Motherboard: "board", Memory: "ram", Graphics: "gpu", Cooler: "fa
 const HUE = { Motherboard: "p-board", Memory: "p-ram", Graphics: "p-gpu", Cooler: "p-cpu", Storage: "p-storage", Strip: "p-net" };
 const PALETTE = ["#ff0000", "#ff7a00", "#ffd400", "#00e676", "#00e5ff", "#2979ff", "#8e44ff", "#ff2bd6", "#ffffff"];
 
+// Colours that go together, worked out from the one the user picked (hue turned on the wheel): next to it, across from it, a triad, and shades of it.
+function toHsl(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let hh = 0; if (d) hh = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: hh * 60, s: d ? d / (1 - Math.abs(2 * l - 1)) : 0, l };
+}
+function fromHsl(h, s, l) {
+  h = ((h % 360) + 360) % 360; const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return "#" + [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+}
+function harmonies(hex) {
+  const { h, s, l } = toHsl(hex), bright = Math.max(s, 0.85), mid = Math.min(Math.max(l, 0.4), 0.6);
+  return [["analogous", [fromHsl(h - 35, bright, mid), hex, fromHsl(h + 35, bright, mid)]], ["complement", [hex, fromHsl(h + 180, bright, mid)]],
+    ["triad", [hex, fromHsl(h + 120, bright, mid), fromHsl(h + 240, bright, mid)]], ["mono", [fromHsl(h, bright, 0.3), fromHsl(h, bright, 0.5), fromHsl(h, bright, 0.75)]]];
+}
+// The first LED that is lit: what the card's colour starts as (a card that began dark must not offer black, which would switch the part off).
+const lit = (d) => (d.colors || []).find((c) => /^#[0-9a-f]{6}$/i.test(c) && c.toLowerCase() !== "#000000");
+
 export function mount(el) {
   const ui = new Map();   // what is chosen on each card, kept while the cards are drawn again
   let state = null;
@@ -33,21 +51,33 @@ export function mount(el) {
   let palette = null; const paletteBtns = [];
   const paletteChips = (setPalette) => h("div", { class: "rgb-palettes", role: "group", "aria-label": t("Rgb_Palettes") }, (state?.palettes || []).map((p) => {
     const b = h("button", { class: "rgb-pal", type: "button", style: { background: `linear-gradient(90deg, ${p.colors.join(", ")})` }, title: t("Rgb_Palette_" + p.id), "aria-label": t("Rgb_Palette_" + p.id), "aria-pressed": String(palette === p.id),
-      onclick: () => { palette = palette === p.id ? null : p.id; setPalette(palette); for (const x of paletteBtns) x.setAttribute("aria-pressed", String(x.dataset.id === palette)); } });
+      onclick: () => { palette = palette === p.id ? null : p.id; setPalette(palette); for (const x of paletteBtns) x.setAttribute("aria-pressed", String(x.dataset.id === palette)); allHarmony?.draw(); } });
     b.dataset.id = p.id; paletteBtns.push(b); return b;
   }));
   const effectOptions = (s) => [h("option", { value: "" }, t("Rgb_Mode_Keep")), ...(s.effects || []).map((e) => h("option", { value: e }, t("Rgb_Fx_" + e))),
     s.modeNames.length ? h("optgroup", { label: t("Rgb_Fx_Own") }, s.modeNames.map((n) => h("option", { value: n }, n))) : null];
   const swatches = (setColor) => h("div", { class: "rgb-swatches", role: "group", "aria-label": t("Rgb_Color") }, PALETTE.map((c) =>
-    h("button", { class: "rgb-sw", type: "button", style: { background: c }, title: c, "aria-label": c, onclick: () => setColor(c) })));
-  const allPalettes = h("div", { class: "rgb-pal-wrap" });
+    h("button", { class: "rgb-sw", type: "button", style: { background: c }, title: c, "aria-label": c, onclick: () => setColor(c) })),
+    h("input", { type: "range", class: "rgb-hue", min: 0, max: 360, value: 0, title: t("Rgb_Hue"), "aria-label": t("Rgb_Hue"), oninput: (e) => setColor(fromHsl(Number(e.target.value), 1, 0.5)) }));
+  // Matching colours for the colour chosen now: a click makes them the spectrum for the next apply (a second click lets it go). Drawn again when the colour changes.
+  const harmony = (getColor, getPalette, setPalette) => {
+    const row = h("div", { class: "rgb-palettes rgb-harmony", role: "group", "aria-label": t("Rgb_Harmony") });
+    const draw = () => row.replaceChildren(h("span", { class: "rgb-pal-label" }, t("Rgb_Harmony")), ...harmonies(getColor()).map(([id, colors]) => {
+      const value = "custom:" + colors.join(","), b = h("button", { class: "rgb-pal", type: "button", style: { background: colors.length > 1 ? `linear-gradient(90deg, ${colors.join(", ")})` : colors[0] }, title: t("Rgb_Harm_" + id), "aria-label": t("Rgb_Harm_" + id), "aria-pressed": String(getPalette() === value),
+        onclick: () => { setPalette(getPalette() === value ? null : value); draw(); } }); return b; }));
+    draw(); return { el: row, draw };
+  };
+  const animate = () => { const box = h("input", { type: "checkbox", class: "switch", "aria-label": t("Rgb_Animate") }); return { box, el: h("label", { class: "rgb-keep", title: t("Rgb_Animate_Note") }, box, t("Rgb_Animate")) }; };
+  const allPalettes = h("div", { class: "rgb-pal-wrap" }), allAnim = animate();
+  const allHarmony = harmony(() => allColor.value, () => palette, (v) => { palette = v; for (const x of paletteBtns) x.setAttribute("aria-pressed", String(x.dataset.id === palette)); });
+  allColor.addEventListener("input", () => allHarmony.draw());
   const allBody = h("div", { class: "rgb-all-body", hidden: true },
-    h("div", { class: "rgb-row" }, h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), allColor), swatches((c) => { allColor.value = c; }),
+    h("div", { class: "rgb-row" }, h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), allColor), swatches((c) => { allColor.value = c; allHarmony.draw(); }),
       h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Effect")), allMode)),
     h("div", { class: "rgb-row" }, allSpeed.el, allBright.el),
-    allPalettes,
+    allPalettes, allHarmony.el, allAnim.el,
     h("div", { class: "btn-row" },
-      h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, color: allColor.value, ...(palette ? { palette } : {}), ...(allMode.value ? { modeName: allMode.value, speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, t("Rgb_ApplyAll")),
+      h("button", { class: "btn primary", type: "button", onclick: () => { const fx = allMode.value || (allAnim.box.checked ? (palette ? "Rainbow" : "Breathing") : ""); run("rgb.set", { device: -1, color: allColor.value, ...(palette ? { palette } : {}), ...(fx ? { modeName: fx, speed: allSpeed.value(), brightness: allBright.value() } : {}) }); } }, t("Rgb_ApplyAll")),
       h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: -1, color: "" }) }, t("Rgb_OffAll"))),
     h("p", { class: "note" }, t("Rgb_Effect_Note")));
 
@@ -79,8 +109,9 @@ export function mount(el) {
   }
 
   function card(d) {
-    const mine = ui.get(d.index) || { color: d.color || "#ffffff", mode: "", speed: null, bright: null }; ui.set(d.index, mine);
-    const pick = h("input", { type: "color", class: "rgb-color", value: mine.color, "aria-label": t("Rgb_Color"), oninput: (e) => { mine.color = e.target.value; } });
+    const mine = ui.get(d.index) || { color: lit(d) || "#ff0000", mode: "", speed: null, bright: null, touched: false }; ui.set(d.index, mine);
+    if (!mine.touched) mine.color = lit(d) || mine.color;   // follows the lights until the user picks a colour of their own
+    const pick = h("input", { type: "color", class: "rgb-color", value: mine.color, "aria-label": t("Rgb_Color"), oninput: (e) => { mine.color = e.target.value; mine.touched = true; harm.draw(); } });
     const mode = h("select", { class: "field", "aria-label": t("Rgb_Mode"), onchange: () => { mine.mode = mode.value; sync(); } },
       h("option", { value: "" }, t("Rgb_Mode_Keep")), d.modes.map((m) => h("option", { value: m.index }, m.name)),
       h("optgroup", { label: t("Rgb_Fx_Group") }, (state?.effects || []).map((e) => h("option", { value: "fx:" + e }, t("Rgb_Fx_" + e)))));
@@ -92,11 +123,12 @@ export function mount(el) {
     function sync() { const m = current(); pick.disabled = !!m && !m.color; speed.el.hidden = !m?.speed; bright.el.hidden = !m?.brightness; }
     sync();
     let own = null;   // this card's spectrum
-    const go = () => run("rgb.set", mode.value === "" ? { device: d.index, color: pick.value, ...(own ? { palette: own } : {}) }
+    const harm = harmony(() => pick.value, () => own, (v) => { own = v; for (const x of chips.children) x.setAttribute("aria-pressed", String(x.dataset.id === own)); }), anim = animate();
+    const go = () => run("rgb.set", mode.value === "" ? { device: d.index, color: pick.value, ...(own ? { palette: own } : {}), ...(anim.box.checked ? { modeName: own ? "Rainbow" : "Breathing" } : {}) }
       : { device: d.index, color: pick.value, ...(own ? { palette: own } : {}), ...(fx() ? { modeName: fx() } : { mode: Number(mode.value) }), ...(current()?.speed ? { speed: speed.value() } : {}), ...(current()?.brightness ? { brightness: bright.value() } : {}) });
     const chips = h("div", { class: "rgb-palettes", role: "group", "aria-label": t("Rgb_Palettes") }, (state?.palettes || []).map((p) => {
       const b = h("button", { class: "rgb-pal", type: "button", style: { background: `linear-gradient(90deg, ${p.colors.join(", ")})` }, title: t("Rgb_Palette_" + p.id), "aria-label": t("Rgb_Palette_" + p.id), "aria-pressed": "false",
-        onclick: () => { own = own === p.id ? null : p.id; for (const x of chips.children) x.setAttribute("aria-pressed", String(x.dataset.id === own)); } });
+        onclick: () => { own = own === p.id ? null : p.id; for (const x of chips.children) x.setAttribute("aria-pressed", String(x.dataset.id === own)); harm.draw(); } });
       b.dataset.id = p.id; return b;
     }));
     // The LEDs as they are lit. Where the device takes a colour for each LED, an LED is a button: it opens the colour picker for that one alone.
@@ -111,7 +143,8 @@ export function mount(el) {
       zones.some((z) => z.resizable && z.leds === 0) ? h("p", { class: "note" }, t("Rgb_Zone_Hint")) : null) : null;
     return box({ cls: HUE[d.kind] || "p-tool", ico: ICON[d.kind] || "bolt", title: d.name, sub: [t(`Rgb_Kind_${d.kind}`), d.vendor, d.leds ? t("Rgb_Leds", d.leds) : ""].filter(Boolean).join(" · "), extra: "rgb-card", a: "rgb",
       body: [strip, d.perLed ? h("p", { class: "note rgb-led-hint" }, t("Rgb_Led_Hint")) : null, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Mode")), mode), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), pick)),
-        swatches((c) => { pick.value = c; mine.color = c; }), chips, h("div", { class: "rgb-row" }, speed.el, bright.el),
+        swatches((c) => { pick.value = c; mine.color = c; mine.touched = true; harm.draw(); }), chips, harm.el, anim.el, h("div", { class: "rgb-row" }, speed.el, bright.el),
+        d.kind === "Graphics" && d.leds <= 1 ? h("p", { class: "note" }, t("Rgb_Gpu_OneZone")) : null,
         h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: go }, t("Rgb_Apply")), h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: d.index, color: "" }) }, t("Rgb_Off"))), zoneRows] });
   }
 
