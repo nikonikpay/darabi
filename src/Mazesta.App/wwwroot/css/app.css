@@ -1555,7 +1555,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rgb-sw:hover, .rgb-sw:focus-visible { transform: scale(1.18); border-color: var(--paper); outline: none; }
 .rgb-hue { -webkit-appearance: none; appearance: none; inline-size: 120px; block-size: 14px; border-radius: 7px; cursor: pointer; background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); border: 2px solid rgb(255 255 255 / 0.18); }
 .rgb-hue::-webkit-slider-thumb { -webkit-appearance: none; inline-size: 10px; block-size: 18px; border-radius: 4px; background: var(--paper, #fff); border: 1px solid rgb(0 0 0 / 0.5); }
-.rgb-harmony { align-items: center; }
+.rgb-harmony { align-items: center; } .rgb-harmony .rgb-pal-label, .rgb-pal-wrap .rgb-pal-label { flex-basis: 100%; color: var(--ink-2); font-weight: 600; }
 .rgb-pal-wrap { display: grid; gap: 6px; margin-top: 12px; } .rgb-pal-label { font-size: var(--fs-sm, 0.85rem); color: var(--ink-3, inherit); }
 .rgb-palettes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; } .rgb-pal-wrap .rgb-palettes { margin-top: 0; }
 .rgb-pal { inline-size: 64px; block-size: 24px; border-radius: 12px; border: 2px solid rgb(255 255 255 / 0.18); cursor: pointer; padding: 0; transition: transform var(--fast) var(--ease), border-color var(--fast); }
