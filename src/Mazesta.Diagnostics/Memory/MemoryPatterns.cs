@@ -64,7 +64,8 @@ internal static class MemoryPatterns
     public static string Name(Algorithm a) => a switch { Algorithm.MovingInversions => "moving inversions", Algorithm.BlockMove => "block move", _ => "stride" };
 
     /// <summary>Moving inversions: fill with <paramref name="basePattern"/>; walk up, checking each word and writing its complement; walk down, checking
-    /// the complement and writing the pattern back. A cell that a write to a neighbour disturbs, or that holds a bit only in one direction, shows.
+    /// the complement and writing the pattern back, then read the pattern once more, so the last write is verified too. A cell that a write to a
+    /// neighbour disturbs, or that holds a bit only in one direction, shows.
     /// <paramref name="between"/> lets a test disturb the memory between the two walks.</summary>
     public static long MovingInversions(Span<byte> block, ulong basePattern, SpanAction? between = null)
     {
@@ -73,6 +74,7 @@ internal static class MemoryPatterns
         for (int i = 0; i < w.Length; i++) { bad += WordDiff(w[i], basePattern); w[i] = ~basePattern; }
         between?.Invoke(w);
         for (int i = w.Length - 1; i >= 0; i--) { bad += WordDiff(w[i], ~basePattern); w[i] = basePattern; }
+        for (int i = 0; i < w.Length; i++) bad += WordDiff(w[i], basePattern);
         return bad;
     }
 

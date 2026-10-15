@@ -51,4 +51,25 @@ public class MemorySequenceTests
         var result = await new MemorySequenceExecutor(new FixedProbe(64L << 30, 60L << 30)).RunAsync(new(2, new FakeClock(T0), null, null, options), CancellationToken.None);
         Assert.Equal(TestOutcome.Unsupported, result.Outcome); Assert.Contains("never checks", result.Detail);
     }
+
+    private static Task<TestRunResult> RunCustom(string sequence, int seconds) => new MemorySequenceExecutor(new FixedProbe(64L << 30, 60L << 30)).RunAsync(new(seconds, new FakeClock(T0), null, null,
+        new TestOptions(MemorySequenceExecutor.Definition, new Dictionary<string, string> { [MemorySequenceExecutor.PresetOption] = Custom, [MemorySequenceExecutor.SequenceOption] = sequence, [MemoryPatternExecutor.SizeOption] = "64" })), CancellationToken.None);
+
+    // The audit's cases: each passed before, with nothing or not everything checked.
+    [Theory]
+    [InlineData("idle 2000; check", "nothing was checked")]             // the time ran out in the idle: no check at all
+    [InlineData("fill random; check; idle 2000; check", "3 of 4 steps")] // the check after the idle never ran
+    [InlineData("check; arith 1000000", "1 of 2 steps")]                 // the last sweep was cut short: no round, no pass
+    public async Task A_run_that_did_not_reach_every_step_is_inconclusive_not_a_pass(string sequence, string said)
+    {
+        var r = await RunCustom(sequence, 1);
+        Assert.Equal(TestOutcome.Inconclusive, r.Outcome); Assert.Contains("rounds=0", r.Detail); Assert.Contains(said, r.Detail);
+    }
+
+    [Fact] public async Task Data_a_fill_would_overwrite_is_checked_first()
+    {
+        var d = (await RunCustom("fill random; fill simple; check", 1)).Detail!;
+        long rounds = long.Parse(System.Text.RegularExpressions.Regex.Match(d, @"rounds=(\d+)").Groups[1].Value), checks = long.Parse(System.Text.RegularExpressions.Regex.Match(d, @"(\d+) checks").Groups[1].Value);
+        Assert.True(rounds > 0 && checks >= 2 * rounds, d);   // the one before the second fill, and the step's own
+    }
 }

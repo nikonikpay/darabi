@@ -7,6 +7,8 @@ namespace Mazesta.Diagnostics.Memory;
 /// Extreme sweeps many times between checks (TestMem5's Extreme1), Heat writes as fast as the RAM takes (DDR5 heats up and its margin shrinks),
 /// Spike swings between flat out and idle (the memory controller and its supply), Margin mixes pattern changes, inversions and short breaks.
 /// "Custom" runs a sequence the technician typed. A wrong word is a counted error naming the step it was found after; the run goes on.
+/// A clean run passes only when every step of the sequence ran to its end at least once and something was checked: a run that ended before
+/// that (an idle the time ran out in, a sweep cut short) is Inconclusive. Data a fill would overwrite unchecked is checked first.
 /// The memory reserve and the block size are the pattern test's.
 /// </summary>
 public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
@@ -49,6 +51,7 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
         private TimeSpan _duration;
         private long _errors, _bits, _sweeps, _checks, _rounds; private ulong _fills, _sink;
         private bool _dirty; private string _firstError = ""; private TimeSpan? _firstRound;
+        private readonly HashSet<MemorySequence.Step> _done = new(ReferenceEqualityComparer.Instance);   // every step (by place in the sequence) that ran to its end
 
         public TestRunResult Go()
         {
@@ -74,13 +77,16 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
                 while (_timed.Elapsed < _duration);
                 if (_dirty) Check("end of run");   // the last steps are checked too
             }
-            catch (OperationCanceledException) { return Result(TestOutcome.Cancelled); }
+            catch (OperationCanceledException) { return Result(_errors > 0 ? TestOutcome.Failed : TestOutcome.Cancelled); }
             finally { foreach (var b in _blocks) b.Dispose(); }
             request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-            return Result(_errors > 0 ? TestOutcome.Failed : TestOutcome.Passed);
+            return Result(_errors > 0 ? TestOutcome.Failed : Complete ? TestOutcome.Passed : TestOutcome.Inconclusive);
         }
 
         private Span<ulong> Words(int i) => System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ulong>(_blocks[i].Span);
+
+        private bool Complete => _checks > 0 && Leaves(steps).All(_done.Contains);
+        private static IEnumerable<MemorySequence.Step> Leaves(IReadOnlyList<MemorySequence.Step> list) => list.SelectMany(s => s.Body is { } b ? Leaves(b) : [s]);
 
         /// <summary>Runs the steps once; false when the time ran out part way (the round is not counted).</summary>
         private bool RunSteps(IReadOnlyList<MemorySequence.Step> list)
@@ -93,20 +99,23 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
                 {
                     case MemorySequence.Op.Loop: for (int r = 0; r < s.Count; r++) if (!RunSteps(s.Body!)) return false; break;
                     case MemorySequence.Op.Check: Check(s.ToString()); break;
-                    case MemorySequence.Op.Idle: ct.WaitHandle.WaitOne(s.Count); break;
-                    default: Sweep(s); break;
+                    case MemorySequence.Op.Idle: ct.WaitHandle.WaitOne(s.Count); ct.ThrowIfCancellationRequested(); break;
+                    default: if (!Sweep(s)) return false; break;
                 }
+                if (s.Op != MemorySequence.Op.Loop) _done.Add(s);
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(_timed.Elapsed / _duration, 0, 1), "Test_Status_Running"));
             }
             return true;
         }
 
-        private void Sweep(MemorySequence.Step s)
+        /// <summary>The step's passes; false when the time ran out before the last of them.</summary>
+        private bool Sweep(MemorySequence.Step s)
         {
+            if (s.Op == MemorySequence.Op.Fill && _dirty) Check($"before '{s}'");   // a fill overwrites the data: what is there is checked first, or a fault in it is lost
             var (a, b) = MemorySequence.ArithConstants(s); ulong seed = s.Op == MemorySequence.Op.Fill ? ++_fills : 0;
             for (int pass = 0; pass < s.Count; pass++)
             {
-                if (_timed.Elapsed >= _duration) break;   // the expectation follows each finished pass, so a step may stop between any two
+                if (_timed.Elapsed >= _duration) { _dirty |= pass > 0; return false; }   // the expectation follows each finished pass, so a step may stop between any two
                 long sink = 0;
                 Parallel.For(0, _blocks.Count, _parallel, () => new ulong[1024], (i, _, scratch) =>
                 {
@@ -131,7 +140,7 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
                     case MemorySequence.Op.Mirror: _expected.Mirrored(s.Chunk); break;
                 }
             }
-            _dirty = true;
+            _dirty = true; return true;
         }
 
         private void Check(string after)
@@ -155,6 +164,7 @@ public sealed class MemorySequenceExecutor(IMemoryProbe probe) : ITestExecutor
             double gbps = _sweeps * (double)_blocks.Count * BlockBytes / 1e9 / Math.Max(0.001, _timed.Elapsed.TotalSeconds);
             string detail = $"RAM sequence test, preset '{preset}'; tested={(long)_blocks.Count * BlockBytes >> 20} MiB; rounds={_rounds}"
                 + (_firstRound is { } r ? $" (one round {r.TotalSeconds:0} s)" : " (the first round did not finish; a longer run covers every step)")
+                + (Complete ? "" : $"; incomplete: {Leaves(steps).Count(_done.Contains)} of {Leaves(steps).Count()} steps ran to their end{(_checks == 0 ? ", nothing was checked" : "")}")
                 + $"; {_sweeps} sweeps, {_checks} checks, ~{gbps:F1} GB/s of sweeps; {_errors} wrong word(s), {_bits} wrong bit(s); "
                 + "covers only the RAM Windows let the test have, addressed by buffer offset, not physical address or slot"
                 + (_firstError.Length > 0 ? $"; {_firstError}" : "") + (_sink == 0x5EED ? "." : "");   // the read steps' result is used, so they are not optimised away

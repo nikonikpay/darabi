@@ -45,8 +45,8 @@ public class MemoryTests
     [Fact] public async Task A_real_short_run_over_128_mib_verifies_every_pass_and_passes()
     {
         var exec = new MemoryPatternExecutor(new FixedProbe(64 * GiB, 60 * GiB));
-        var result = await exec.RunAsync(Request(1, 128), CancellationToken.None);
-        Assert.Equal(TestOutcome.Passed, result.Outcome); Assert.Equal(0, result.ErrorCount);
+        var result = await exec.RunAsync(Request(4, 128), CancellationToken.None);   // long enough for all 23 patterns, or it is Inconclusive
+        Assert.True(result.Outcome == TestOutcome.Passed, result.Detail); Assert.Equal(0, result.ErrorCount);
         Assert.Contains("tested=128 MiB", result.Detail);
     }
     [Fact] public async Task Bit_fade_holds_both_patterns_and_a_hold_too_short_to_show_fading_is_not_a_pass()
@@ -90,5 +90,12 @@ public class MemoryTests
         var block = new byte[1 << 16];
         Assert.Equal(0, MemoryPatterns.Stride(block, 7, 2));
         Assert.Equal(8, MemoryPatterns.Stride(block, 7, 2, w => w[1000] = ~w[1000]));             // every byte of one word
+    }
+
+    [Fact] public void A_pattern_run_is_complete_only_when_every_pattern_was_verified_and_every_algorithm_ran()
+    {
+        Assert.True(MemoryPatternExecutor.Complete(MemoryPatterns.Count - 1, [1, 1, 1]));
+        Assert.False(MemoryPatternExecutor.Complete(MemoryPatterns.Count - 2, [1, 1, 1]));   // the audit's 8 of 23 patterns was a pass
+        Assert.False(MemoryPatternExecutor.Complete(100, [0, 4, 4]));                         // moving inversions never ran
     }
 }

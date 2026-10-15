@@ -7,6 +7,7 @@ namespace Mazesta.Diagnostics.Memory;
 /// counted error, not an exception - the run keeps going so the technician sees how bad it is. Memory the OS
 /// needs to stay alive is never taken: the reserve is the larger of 1.5 GiB and a 24th of installed RAM. Before it measures what is free,
 /// the other programs' working sets are trimmed (<see cref="IMemoryProbe.FreeUp"/>): their pages go to the page file, nothing is closed.
+/// A clean run passes only when every pattern was verified and every algorithm ran; a run too short for that is Inconclusive.
 /// </summary>
 public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
 {
@@ -93,19 +94,22 @@ public sealed class MemoryPatternExecutor(IMemoryProbe probe) : ITestExecutor
             while (timed.Elapsed < duration);
             // One last verification, so the final pass's own pattern is checked too.
             Parallel.For(0, blocks.Count, new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Environment.ProcessorCount },
-                i => { long bad = MemoryPatterns.CountMismatches(blocks[i].Span, (int)passes, i); if (bad > 0) Interlocked.Add(ref errors, bad); });
+                i => { long bad = MemoryPatterns.CountMismatches(blocks[i].Span, (int)passes, i); if (bad > 0) { Interlocked.Add(ref errors, bad); if (firstError.Length == 0) firstError = $"first mismatch in buffer block {i} (offset {(long)i * BlockBytes >> 20} MiB) in the last verification of '{MemoryPatterns.Name((int)passes)}'"; } });
         }
         catch (OperationCanceledException)
         {
-            return new(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
+            return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
         }
         finally { foreach (var b in blocks) b.Dispose(); }
         request.Progress?.Invoke(new TestProgress(1, "Test_Status_Running"));
-        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
+        return new(Definition.Id, errors > 0 ? TestOutcome.Failed : Complete(passes, algorithmsRun) ? TestOutcome.Passed : TestOutcome.Inconclusive, started, request.Clock.UtcNow, errors, Describe(blocks.Count, passes, bytesTouched, timed, firstError, algorithmsRun));
     }
 
+    /// <summary>Every pattern verified (pattern 0 is written at allocation, the last one by the final verification) and every algorithm run.</summary>
+    internal static bool Complete(long passes, int[] algorithms) => passes + 1 >= MemoryPatterns.Count && algorithms.All(n => n > 0);
+
     private static string Describe(int blocks, long passes, long bytesTouched, Stopwatch sw, string firstError, int[] algorithms)
-        => $"RAM pattern test; tested={(long)blocks * BlockBytes >> 20} MiB; passes={passes} of {MemoryPatterns.Count} patterns{(passes < MemoryPatterns.Count ? " (not every pattern ran; a longer run covers them all)" : "")}; "
+        => $"RAM pattern test; tested={(long)blocks * BlockBytes >> 20} MiB; passes={passes} of {MemoryPatterns.Count} patterns{(Complete(passes, algorithms) ? "" : " (incomplete: not every pattern and algorithm ran; a longer run covers them all)")}; "
          + $"moving inversions ×{algorithms[0]}, block move ×{algorithms[1]}, stride ×{algorithms[2]}; "
          + $"{bytesTouched / 1e9 / Math.Max(0.001, sw.Elapsed.TotalSeconds):F1} GB/s; covers only the RAM Windows let the test have, addressed by buffer offset, not physical address or slot"
          + (firstError.Length > 0 ? $"; {firstError}" : "");
