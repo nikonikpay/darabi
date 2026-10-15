@@ -3484,6 +3484,10 @@ Cancel: stop.</value></data>
   <data name="Test_Frames_One" xml:space="preserve"><value>One frame (each is finished before the next)</value></data>
   <data name="Test_Frames_Two" xml:space="preserve"><value>Two frames (the next is prepared while the card draws this one)</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>Weather detail: three times the bodies, finer air, a 233 MB grid</value></data>
+  <data name="Test_Option_Smoothing" xml:space="preserve"><value>Edge smoothing</value></data>
+  <data name="Test_Smooth_Auto" xml:space="preserve"><value>Automatic (light when the level has no MSAA)</value></data>
+  <data name="Test_Smooth_Light" xml:space="preserve"><value>Light: only the edges, most of all far off</value></data>
+  <data name="Test_Smooth_Standard" xml:space="preserve"><value>Standard (FXAA-style)</value></data>
   <data name="Bench_Chart" xml:space="preserve"><value>Chart and full result</value></data>
   <data name="Web_Chart_NoTrace" xml:space="preserve"><value>No per-second readings were kept for this run (it was made before they were recorded, or the machine reports none).</value></data>
   <data name="Web_Runs_Pick" xml:space="preserve"><value>Compare</value></data>

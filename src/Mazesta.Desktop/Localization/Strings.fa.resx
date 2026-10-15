@@ -3484,6 +3484,10 @@
   <data name="Test_Frames_One" xml:space="preserve"><value>یک فریم (هر فریم تمام می‌شود، بعد فریم بعدی)</value></data>
   <data name="Test_Frames_Two" xml:space="preserve"><value>دو فریم (فریم بعدی آماده می‌شود تا کارت فریم فعلی را می‌کشد)</value></data>
   <data name="Test_Weather_High" xml:space="preserve"><value>جزئیات زیاد: سه برابر ذرات، هوای ریزتر، شبکهٔ ۲۳۳ مگابایتی</value></data>
+  <data name="Test_Option_Smoothing" xml:space="preserve"><value>هموارسازی لبه‌ها</value></data>
+  <data name="Test_Smooth_Auto" xml:space="preserve"><value>خودکار (سبک، وقتی سطح MSAA ندارد)</value></data>
+  <data name="Test_Smooth_Light" xml:space="preserve"><value>سبک: فقط لبه‌ها، بیشتر لبه‌های دور</value></data>
+  <data name="Test_Smooth_Standard" xml:space="preserve"><value>استاندارد (شبیه FXAA)</value></data>
   <data name="Bench_Chart" xml:space="preserve"><value>نمودار و نتیجهٔ کامل</value></data>
   <data name="Web_Chart_NoTrace" xml:space="preserve"><value>برای این اجرا اندازه‌گیری ثانیه‌به‌ثانیه نگه داشته نشده (قبل از ثبت آن اجرا شده یا دستگاه آن را گزارش نمی‌کند).</value></data>
   <data name="Web_Runs_Pick" xml:space="preserve"><value>مقایسه</value></data>

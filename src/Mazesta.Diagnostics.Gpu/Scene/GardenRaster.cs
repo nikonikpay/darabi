@@ -42,7 +42,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     ];
     /// <summary>The frame's light before the lens: ten bits a colour (GardenRaster.hlsl's Pack). The glow: floats.</summary>
     private const Format Light = Format.R10G10B10A2_UNorm, GlowFormat = Format.R11G11B10_Float;
-    private readonly Settings _set; private readonly int _samples;
+    private readonly Settings _set; private readonly int _samples, _smooth;   // _smooth: the lens's edge smoothing, 0 off, 1 light, 2 standard (GardenRaster.hlsl Smoothed)
     private readonly ID3D12RootSignature _root;
     private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown, _tint, _before, _beforeLeaves;
     /// <summary>With rays: how much of the key light each pixel of the frame sees (GardenRaster.hlsl's SunShadePS), and that picture smoothed.</summary>
@@ -66,9 +66,9 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
     /// <summary><paramref name="rayTraced"/>: on a GPU with DirectX Raytracing 1.1, shadows and mirror images are found with rays
     /// (GardenRaster.hlsl compiled with RT) - the courtyard's shadow map, the lamps' cubes and the pool's second drawing are not made.</summary>
-    public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load, bool rayTraced = false) : base(s, g, width, height, targets)
+    public GardenRaster(D3D12Session s, GardenGpu g, int width, int height, ID3D12Resource[] targets, uint load, bool rayTraced = false, int smooth = 0) : base(s, g, width, height, targets)
     {
-        _set = Settings.ForLoad(load); if (rayTraced) { _set = _set with { ReflectionDivisor = 0 }; _accel = new GardenAccel(s, g); }
+        _smooth = smooth; _set = Settings.ForLoad(load); if (rayTraced) { _set = _set with { ReflectionDivisor = 0 }; _accel = new GardenAccel(s, g); }
         _samples = SupportedSamples(s, _set.Samples);
         byte[] vs = D3D12Session.Shader("GardenMainVS");
         _root = s.Own(s.Device.CreateRootSignature(vs));
@@ -551,7 +551,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         if (drawKey) _keyView = SunShadowMatrix(day.Key);
         if (drawHall) _hallView = HallShadowMatrix(day.Key);
         frame.ShadowViewProj = _keyView; frame.HallViewProj = _hallView; frame.ShadowTexel = 1f / _set.ShadowSize; frame.ShadowTaps = (uint)_set.ShadowTaps;
-        frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps; frame.AirSteps = RayTraced ? 0u : (uint)_set.AirSteps;   // (with rays the courtyard has no shadow map to look the air up in)
+        frame.SkyViewProj = _skyViewProj; frame.Ambience = new(1, _set.OcclusionTaps, GardenFrame.Near, 0); frame.Lens.W = _set.LensTaps; frame.Post.Y = _smooth; frame.AirSteps = RayTraced ? 0u : (uint)_set.AirSteps;   // (with rays the courtyard has no shadow map to look the air up in)
         if (G.LightVolume is { } volume) { frame.Grid = new(volume.Origin, volume.Spacing); frame.Grid2 = new(volume.X, volume.Y, volume.Z, 1); }
         frame.Round0 = new(Rounds[0].From, RoundMips); frame.Round0Low = new(Rounds[0].Low, 0); frame.Round0High = new(Rounds[0].High, 0);
         frame.Round1 = new(Rounds[1].From, RoundMips);

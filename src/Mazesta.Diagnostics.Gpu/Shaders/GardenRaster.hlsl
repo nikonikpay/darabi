@@ -644,12 +644,44 @@ float3 Air(SkyOut i, int2 px)
     return lit * step * SunColor * 0.0006 * phase * saturate(SunDir.y * 5);   // (a sun on the horizon lights all the air there is: held back)
 }
 
+// Smoothing of the frame's edges (not MSAA: one pass of the lens, no extra target). Post.y: 1 light, 2 standard. The edge is found in the picture as it will be shown
+// (the tone curve's own compression, so a bright sky does not make every pixel an edge); thin things far off are met with a lower threshold, since they
+// are what shimmers. Light blends an edge pixel with the mean of its four neighbours; standard also looks at the corners for the edge's direction and
+// blends with the neighbour across it. Edge is how much was blended (the lens does not sharpen those pixels again).
+float3 Squash(float3 c) { return c / (1 + c); }
+float3 Unsquash(float3 c) { return c / max(1 - c, 0.001); }
+float SquashLuma(float3 c) { return dot(Squash(c), float3(0.299, 0.587, 0.114)); }
+float3 Smoothed(int2 px, float3 m, out float edge)
+{
+    edge = 0; if (Post.y < 0.5) return m;
+    int2 hi2 = int2(ViewSize) - 1;
+    float3 n = Unpack(LensA.Load(int3(clamp(px + int2(0, -1), 0, hi2), 0)).rgb), s = Unpack(LensA.Load(int3(clamp(px + int2(0, 1), 0, hi2), 0)).rgb);
+    float3 e = Unpack(LensA.Load(int3(clamp(px + int2(1, 0), 0, hi2), 0)).rgb), w = Unpack(LensA.Load(int3(clamp(px + int2(-1, 0), 0, hi2), 0)).rgb);
+    float lm = SquashLuma(m), ln = SquashLuma(n), ls = SquashLuma(s), le = SquashLuma(e), lw = SquashLuma(w);
+    float top = max(lm, max(max(ln, ls), max(le, lw))), range = top - min(lm, min(min(ln, ls), min(le, lw)));
+    float far = saturate(ViewDistance(px) / 40), thresh = max(0.03, top * 0.1) * lerp(1, 0.5, far);
+    if (range < thresh) return m;
+    float sub = saturate(abs((ln + ls + le + lw) * 0.25 - lm) / max(range, 1e-4)), amount = lerp(0.35, 0.6, far) * sub * (2 - sub);
+    float3 other = (Squash(n) + Squash(s) + Squash(e) + Squash(w)) * 0.25;
+    if (Post.y > 1.5)
+    {
+        float3 nw = Unpack(LensA.Load(int3(clamp(px + int2(-1, -1), 0, hi2), 0)).rgb), ne = Unpack(LensA.Load(int3(clamp(px + int2(1, -1), 0, hi2), 0)).rgb);
+        float3 sw = Unpack(LensA.Load(int3(clamp(px + int2(-1, 1), 0, hi2), 0)).rgb), se = Unpack(LensA.Load(int3(clamp(px + int2(1, 1), 0, hi2), 0)).rgb);
+        float a = SquashLuma(nw), b = SquashLuma(ne), d = SquashLuma(sw), f = SquashLuma(se);
+        float horizontal = abs(a + b - 2 * ln) + 2 * abs(ln + ls - 2 * lm) + abs(d + f - 2 * ls), vertical = abs(a + d - 2 * lw) + 2 * abs(lw + le - 2 * lm) + abs(b + f - 2 * le);
+        float3 toward = horizontal >= vertical ? (abs(ln - lm) >= abs(ls - lm) ? n : s) : (abs(lw - lm) >= abs(le - lm) ? w : e);
+        other = lerp(other, Squash(toward), 0.7); amount = max(amount, 0.5 * saturate(range / (thresh * 3)));
+    }
+    edge = amount;
+    return Unsquash(lerp(Squash(m), other, amount));
+}
+
 // The frame through the lens: each pixel gathers, from a disc of taps as wide as the most blur, the pixels whose own blur reaches
 // it (what lies behind a pixel in focus does not spill over it); the glow is added; the tone curve makes the picture.
 float4 LensPS(SkyOut i) : SV_Target
 {
     int2 px = int2(i.Position.xy);
-    float3 c = Unpack(LensA.Load(int3(px, 0)).rgb); int taps = (int)Lens.w;
+    float3 c = Unpack(LensA.Load(int3(px, 0)).rgb); int taps = (int)Lens.w; float edge; c = Smoothed(px, c, edge);
     if (taps > 0)
     {
         float z0 = ViewDistance(px), b0 = Blur(z0), a = Turn(i.Position.xy), n = 1;
@@ -666,7 +698,7 @@ float4 LensPS(SkyOut i) : SV_Target
         // what the lens holds in focus it draws crisply: each such pixel is set off a little against the mean of its four neighbours
         // (never by more than half of itself, so a bright edge gets no dark rim)
         float3 own = Unpack(LensA.Load(int3(px, 0)).rgb), round = (Unpack(LensA.Load(int3(px + int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px + int2(0, 1), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(0, 1), 0)).rgb)) * 0.25;
-        c = max(c + clamp(own - round, -0.5 * own, 0.5 * own) * 0.45 * (1 - saturate(Blur(ViewDistance(px)))), 0);
+        c = max(c + clamp(own - round, -0.5 * own, 0.5 * own) * 0.45 * (1 - saturate(Blur(ViewDistance(px)))) * (1 - edge), 0);
     }
     c += Shafts(i, px) + Air(i, px);
     c += LensB.SampleLevel(Clamp, LensUv(i), 0).rgb * Post.x;

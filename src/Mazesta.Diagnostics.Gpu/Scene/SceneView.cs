@@ -11,7 +11,7 @@ internal sealed class SceneView : IDisposable
     public GardenRaster Renderer => _renderer;
     public string Work { get; }
 
-    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, WeatherLevel? weather = null, bool sound = false)
+    public SceneView(D3D12Session s, TestWindow w, int width, int height, bool rayTraced, uint load, SceneModel? custom, string? customProblem, WeatherLevel? weather = null, bool sound = false, int smooth = 0)
     {
         _s = s;
         using var factory = DXGI.CreateDXGIFactory2<IDXGIFactory5>(false);
@@ -28,10 +28,10 @@ internal sealed class SceneView : IDisposable
         Overlay = new SceneOverlay(s, _back, height);
         var garden = new GardenGpu(s, GardenScene.Embedded, custom, customProblem, weather, s.Frames);
         if (sound) _sound = new GardenSound(garden.Fountain?.Nozzle);
-        var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced); _renderer = raster;
+        var raster = new GardenRaster(s, garden, width, height, _back, load, rayTraced, smooth); _renderer = raster;
         Work = $"{garden.Triangles / 1e6:F2} M triangles · {garden.Instances.Length:N0} objects · {garden.PointLights.Length} lamps"
             + (rayTraced ? $" · ray-traced shadows ({raster.Level.ShadowTaps} a light) and reflections" : $" · shadows {raster.Level.ShadowSize}")
-            + (raster.Samples > 1 ? $" · MSAA {raster.Samples}×" : "") + (raster.Level.ReflectionDivisor > 0 ? $" · pool reflection 1/{raster.Level.ReflectionDivisor}" : "");
+            + (raster.Samples > 1 ? $" · MSAA {raster.Samples}×" : "") + (smooth > 0 ? $" · smoothing {(smooth > 1 ? "standard" : "light")}" : "") + (raster.Level.ReflectionDivisor > 0 ? $" · pool reflection 1/{raster.Level.ReflectionDivisor}" : "");
     }
 
     /// <summary>Draws the scene at <paramref name="time"/> into the next back buffer, lays the readout over it and shows it, as fast as the
