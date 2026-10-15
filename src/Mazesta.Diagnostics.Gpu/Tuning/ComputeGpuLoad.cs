@@ -61,23 +61,24 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
         var buffers = new List<ReadWriteBuffer<uint>>(); long errors = 0, bytes = 0; uint pass = 0; var clock = Stopwatch.StartNew(); TimeSpan countedFrom = default;
         try
         {
-            using var counter = device.AllocateReadWriteBuffer<int>(1);
+            const int MaxPasses = 256;   // one counter per pass and buffer (2^26 cells, no overflow); one for all wrapped round when the memory was wrong everywhere
+            using var counter = device.AllocateReadWriteBuffer<int>(MaxPasses * MemoryChunks);
             for (int b = 0; b < MemoryChunks; b++) { buffers.Add(device.AllocateReadWriteBuffer<uint>(GpuVramExecutor.ChunkElements)); Write(device, buffers[b], counter, b, 0); }
             // Several verify-and-rewrite passes per submission, the error count read back once: waiting after every chunk left the memory idle between them.
-            var sizer = new BatchSizer(initial: 1, max: 256); var bad = new int[1]; const int W = GpuVramExecutor.Width, H = GpuVramExecutor.ChunkElements / GpuVramExecutor.Width;
+            var sizer = new BatchSizer(initial: 1, max: MaxPasses); var bad = new int[counter.Length]; var zeros = new int[counter.Length]; const int W = GpuVramExecutor.Width, H = GpuVramExecutor.ChunkElements / GpuVramExecutor.Width;
             while (clock.Elapsed < duration)
             {
                 ct.ThrowIfCancellationRequested();
                 int passes = sizer.Count; var batchStart = clock.Elapsed;
-                counter.CopyFrom([0]);
+                counter.CopyFrom(zeros);
                 using (var context = device.CreateComputeContext())
                     for (int p = 0; p < passes; p++, pass++)
                         for (int b = 0; b < buffers.Count; b++)
                         {
-                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass, Base(b), 1, Mask)); context.Barrier(buffers[b]);
-                            context.For(W, H, new VramPatternShader(buffers[b], counter, W, pass + 1, Base(b), 0, Mask)); context.Barrier(buffers[b]);
+                            context.For(W, H, new VramPatternShader(buffers[b], counter, p * MemoryChunks + b, W, pass, Base(b), 1, Mask)); context.Barrier(buffers[b]);
+                            context.For(W, H, new VramPatternShader(buffers[b], counter, 0, W, pass + 1, Base(b), 0, Mask)); context.Barrier(buffers[b]);
                         }
-                counter.CopyTo(bad); errors += bad[0];
+                counter.CopyTo(bad); errors += GpuVramExecutor.Total(bad);
                 sizer.Record(clock.Elapsed - batchStart, BatchTarget);
                 if (clock.Elapsed >= settle) { if (countedFrom == TimeSpan.Zero) countedFrom = clock.Elapsed; else bytes += 2L * passes * buffers.Count * GpuVramExecutor.ChunkElements * 4; }
             }
@@ -90,5 +91,5 @@ public sealed class ComputeGpuLoad(string gpuName) : IGpuLoad
     private static uint Base(int chunk) => (uint)chunk * (uint)GpuVramExecutor.ChunkElements;
     private const uint Mask = GpuVramExecutor.ChunkElements - 1;
     private static void Write(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass)
-        => device.For(GpuVramExecutor.Width, GpuVramExecutor.ChunkElements / GpuVramExecutor.Width, new VramPatternShader(buffer, counter, GpuVramExecutor.Width, pass, Base(chunk), 0, Mask));
+        => device.For(GpuVramExecutor.Width, GpuVramExecutor.ChunkElements / GpuVramExecutor.Width, new VramPatternShader(buffer, counter, 0, GpuVramExecutor.Width, pass, Base(chunk), 0, Mask));
 }

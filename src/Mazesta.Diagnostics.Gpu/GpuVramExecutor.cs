@@ -49,7 +49,9 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
         var clock = Stopwatch.StartNew();
         try
         {
-            using var counter = device.AllocateReadWriteBuffer<int>(1);
+            // One error counter per buffer: a buffer has 2^24 cells, so its count cannot overflow, where one counter for a whole card that is
+            // wrong everywhere (2^32 cells on a 16 GB card) would wrap round - possibly to zero or below, a fault read as a clean pass.
+            using var counter = device.AllocateReadWriteBuffer<int>((int)Math.Max(1, budget / ChunkBytes));
             for (long allocated = 0; allocated + ChunkBytes <= budget; allocated += ChunkBytes)
             {
                 ct.ThrowIfCancellationRequested();
@@ -59,13 +61,13 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
             }
             if (buffers.Count == 0) return TestRunResult.Unsupported(Definition.Id, started, "The driver refused to allocate any VRAM buffer.");
             request.Note("Log_Vram_Allocated", "budget = 0.98 × free VRAM (this card's sensor) − 128 MiB, else 0.8 × dedicated;  64 MiB per buffer", (long)buffers.Count * (ChunkBytes >> 20), device.Name, buffers.Count);
-            var duration = TimeSpan.FromSeconds(request.DurationSeconds); var timed = Stopwatch.StartNew(); long moved = 0; var bad = new int[1];
+            var duration = TimeSpan.FromSeconds(request.DurationSeconds); var timed = Stopwatch.StartNew(); long moved = 0; var bad = new int[counter.Length]; var zeros = new int[counter.Length];
             // A whole pass (every buffer verified, then rewritten) goes to the card in one submission and the error count is read back once:
             // waiting for the CPU after every buffer left the memory idle between them, so it ran cooler than under a game or FurMark.
             do
             {
                 ct.ThrowIfCancellationRequested();
-                counter.CopyFrom([0]);
+                counter.CopyFrom(zeros);
                 using (var context = device.CreateComputeContext())
                 {
                     // The buffers are independent: all are read first with no wait between them, then all rewritten, so the memory is never drained between two buffers.
@@ -74,7 +76,7 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
                     for (int b = 0; b < buffers.Count; b++) context.For(Width, TestElements / Width, Shader(buffers[b], counter, b, passes + 1, verify: false));
                     for (int b = 0; b < buffers.Count; b++) context.Barrier(buffers[b]);
                 }
-                counter.CopyTo(bad); errors += bad[0]; moved += 2L * buffers.Count * ChunkBytes;
+                counter.CopyTo(bad); errors += Total(bad); moved += 2L * buffers.Count * ChunkBytes;
                 passes++;
                 request.Note("Log_Vram_Pass", $"on the GPU, for every cell: if (cell ≠ pattern[p]) errors++ (atomic);  then write pattern[p+1]   pattern {passes % VramPattern.Kinds}: {VramPattern.Names[passes % VramPattern.Kinds]}", passes, errors);
                 request.Progress?.Invoke(new TestProgress(Math.Clamp(timed.Elapsed / duration, 0, 1), "Test_Status_Running"));
@@ -92,16 +94,19 @@ public sealed class GpuVramExecutor : ITestExecutor, ITestAvailability
     }
 
     private static VramPatternShader Shader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
-        => new(buffer, counter, Width, pass, (uint)chunk * (uint)TestElements, verify ? 1 : 0, TestElements - 1);
+        => new(buffer, counter, chunk, Width, pass, (uint)chunk * (uint)TestElements, verify ? 1 : 0, TestElements - 1);
+
+    /// <summary>The per-buffer counts added up in 64 bits.</summary>
+    internal static long Total(ReadOnlySpan<int> counts) { long sum = 0; foreach (int c in counts) sum += c; return sum; }
     private static void Dispatch(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass, bool verify)
         => device.For(Width, TestElements / Width, Shader(buffer, counter, chunk, pass, verify));
 
     private static long Verify(GraphicsDevice device, ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> counter, int chunk, uint pass)
     {
-        counter.CopyFrom([0]);
+        counter.CopyFrom(new int[counter.Length]);
         Dispatch(device, buffer, counter, chunk, pass, verify: true);
-        var bad = new int[1]; counter.CopyTo(bad);   // the copy waits for the verification dispatch
-        return bad[0];
+        var bad = new int[counter.Length]; counter.CopyTo(bad);   // the copy waits for the verification dispatch
+        return bad[chunk];
     }
 
     private static string Describe(GraphicsDevice device, int chunks, uint passes, double? bandwidth, TestExecutionRequest request, DateTimeOffset started, bool refused)

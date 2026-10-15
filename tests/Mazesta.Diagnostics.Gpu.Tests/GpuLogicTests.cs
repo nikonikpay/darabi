@@ -78,3 +78,9 @@ public class VideoFormatTests
         Assert.Equal("Bench_Gpu_Video_DecHevc", new Benchmarks.VideoFormat("hevc", 2160, 8, 420).MetricKey(encode: false));
     }
 }
+
+public class VramCountTests
+{
+    // A card wrong in every cell: one 32-bit counter for all of it wrapped round (possibly to 0 or below, read as a pass); per-buffer counts add up in 64 bits.
+    [Fact] public void Per_buffer_error_counts_add_up_past_32_bits() => Assert.Equal((1L << 32) + 1, GpuVramExecutor.Total([int.MaxValue, int.MaxValue, 3]));
+}

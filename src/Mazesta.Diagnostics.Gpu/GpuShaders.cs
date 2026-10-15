@@ -64,7 +64,7 @@ internal static class GpuHash
 /// </summary>
 [ThreadGroupSize(128, 1, 1)]   // a row of 128 consecutive cells per group: the default 8x8 group touched only 8 consecutive cells per row and left most of each memory transaction unused
 [GeneratedComputeShaderDescriptor]
-internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> errors, int width, uint pass, uint baseIndex, int verify, uint mask) : IComputeShader
+internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer, ReadWriteBuffer<int> errors, int slot, int width, uint pass, uint baseIndex, int verify, uint mask) : IComputeShader
 {
     public void Execute()
     {
@@ -81,7 +81,7 @@ internal readonly partial struct VramPatternShader(ReadWriteBuffer<uint> buffer,
         else if (kind == 7u) { uint scramble = (index ^ (pass * 0x9E3779B9u)) * 0x85EBCA6Bu; expected = scramble ^ (scramble >> 13); }
         else { uint mixed = index * 2654435761u; mixed ^= mixed >> 15; expected = kind == 0u ? mixed : kind == 1u ? ~mixed : mixed ^ 0x0F0F0F0Fu; }
         if (verify == 0) buffer[(int)cell] = expected;
-        else if (buffer[(int)cell] != expected) Hlsl.InterlockedAdd(ref errors[0], 1);
+        else if (buffer[(int)cell] != expected) Hlsl.InterlockedAdd(ref errors[slot], 1);   // this buffer's own counter (see GpuVramExecutor)
     }
 }
 
