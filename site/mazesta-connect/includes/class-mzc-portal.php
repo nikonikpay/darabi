@@ -92,7 +92,7 @@ final class MZC_Portal
     private static function customer_of($token)
     {
         $db = MZC_Crm_Db::db(); if (!$db || !is_string($token) || !preg_match('/^[a-f0-9]{64}$/', $token)) { return 0; }
-        return (int) $db->get_var($db->prepare('SELECT customer_id FROM `' . MZC_Crm_Db::t('sessions') . '` WHERE token_hash = %s AND expires > %s', self::hash($token), self::now()));
+        return (int) $db->get_var($db->prepare('SELECT customer_id FROM `' . MZC_Crm_Db::t('sessions') . '` WHERE token_hash = %s AND expires > %s AND customer_id > 0', self::hash($token), self::now()));
     }
 
     public static function rest_logout($req)

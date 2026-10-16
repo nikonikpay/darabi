@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت و سامانه مشتریان: گزارش‌های آزمون، بنچمارک‌ها، آمار و مشخصات سیستم‌ها، پیام به سیستم‌ها، سیستم‌های نو و سرویس‌ها (CRM روی پایگاه داده جداگانه) و پورتال مشتری با ورود پیامکی.
- * Version: 2.3.0
+ * Version: 2.4.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) { exit; }
 
-define('MZC_VERSION', '2.3.0');
+define('MZC_VERSION', '2.4.0');
 define('MZC_FILE', __FILE__);
 define('MZC_DIR', plugin_dir_path(__FILE__));
 define('MZC_URL', plugin_dir_url(__FILE__));
@@ -27,16 +27,18 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-site.php         what is shared with the rest of the site: the news for the app, the site accounts of a customer
  *   includes/class-mzc-import.php       brings the old CRM's data in (file made by site/tools/export_old_crm.py)
  *   includes/class-mzc-sms.php          the SMS sender for the portal's login codes
+ *   includes/class-mzc-staff.php        the shop's people: roles, per-area levels, the apps' login (user name + password -> token)
  *   includes/class-mzc-portal.php       the customer's page ([mazesta_portal]) and its REST routes
  *   includes/class-mzc-admin.php        menus and the shared admin shell; admin/*.php are the pages; assets/ the styles and scripts
  */
-foreach (array('mazesta-connect', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-portal', 'mzc-admin') as $mzc_file) {
+foreach (array('mazesta-connect', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-portal', 'mzc-staff', 'mzc-admin') as $mzc_file) {
     require_once MZC_DIR . 'includes/class-' . $mzc_file . '.php';
 }
 
 Mazesta_Connect::boot();
 MZC_Messages::boot();
 MZC_Portal::boot();
+MZC_Staff::boot();
 MZC_Import::boot();
 MZC_Ships::boot();
 MZC_Site::boot();

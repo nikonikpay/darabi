@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 6;
+    const SCHEMA = 7;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -120,6 +120,7 @@ final class MZC_Crm_Db
             'build_parts' => array('has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'qc' => 'TINYINT NOT NULL DEFAULT 0'),
             'jobs' => array('due_at' => 'DATE NULL', 'is_mazesta' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'discount' => 'BIGINT NOT NULL DEFAULT 0', 'paid' => 'BIGINT NOT NULL DEFAULT 0',
                 'invoice_no' => 'VARCHAR(60) NULL', 'service_done' => 'TINYINT NOT NULL DEFAULT 0', 'ship' => 'TEXT NULL', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
+            'sessions' => array('user_id' => 'BIGINT UNSIGNED NULL', 'device' => 'VARCHAR(80) NULL'),   // schema 7: the staff apps' sessions (user_id) share the customers' table
             'job_parts' => array('kind' => "VARCHAR(4) NOT NULL DEFAULT 'add'", 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0'),
         );
         foreach ($cols as $tb => $list) {
