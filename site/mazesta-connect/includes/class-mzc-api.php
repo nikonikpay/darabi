@@ -47,6 +47,7 @@ final class MZC_Api
     private static function now() { return gmdate('Y-m-d H:i:s'); }
     private static function t($n) { return MZC_Crm_Db::t($n); }
     private static function cfg() { $c = Mazesta_Connect::read('config'); $x = isset($c['staffCfg']) && is_array($c['staffCfg']) ? $c['staffCfg'] : array(); return $x + array('receipt' => self::RECEIPT_TEXT, 'portalUrl' => '', 'labels' => array()); }
+    private static function per($req) { $n = (int) $req->get_param('per'); return $n > 0 ? min(50, $n) : self::PER; }
     private static function page($req) { return max(1, (int) $req->get_param('page')); }
     private static function jd($ymd) { return $ymd ? MZC_Crm::jdate($ymd) : ''; }
 
@@ -135,8 +136,8 @@ final class MZC_Api
     public static function rest_customers($req)
     {
         $a = MZC_Staff::auth($req, 'customers', 1); if ($a instanceof WP_REST_Response) { return $a; }
-        $pg = self::page($req); list($rows, $total) = MZC_Crm::customers(trim((string) $req->get_param('q')), $pg, self::PER, (string) $req->get_param('group'));
-        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::PER, 'items' => array_map(function ($c) { return self::customer_out($c) + array('builds' => (int) $c['builds'], 'jobs' => (int) $c['jobs']); }, $rows)));
+        $pg = self::page($req); list($rows, $total) = MZC_Crm::customers(trim((string) $req->get_param('q')), $pg, self::per($req), (string) $req->get_param('group'));
+        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::per($req), 'items' => array_map(function ($c) { return self::customer_out($c) + array('builds' => (int) $c['builds'], 'jobs' => (int) $c['jobs']); }, $rows)));
     }
 
     public static function rest_customer($req)
@@ -152,8 +153,8 @@ final class MZC_Api
     public static function rest_builds($req)
     {
         $a = MZC_Staff::auth($req, 'builds', 1); if ($a instanceof WP_REST_Response) { return $a; }
-        $pg = self::page($req); list($rows, $total) = MZC_Crm::builds(trim((string) $req->get_param('q')), $pg, self::PER, 0, (string) $req->get_param('status'));
-        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::PER, 'items' => array_map(function ($b) { return self::build_out($b, false); }, $rows)));
+        $pg = self::page($req); list($rows, $total) = MZC_Crm::builds(trim((string) $req->get_param('q')), $pg, self::per($req), 0, (string) $req->get_param('status'));
+        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::per($req), 'items' => array_map(function ($b) { return self::build_out($b, false); }, $rows)));
     }
 
     public static function rest_build($req)
@@ -168,9 +169,9 @@ final class MZC_Api
     public static function rest_jobs($req)
     {
         $a = MZC_Staff::auth($req, 'jobs', 1); if ($a instanceof WP_REST_Response) { return $a; }
-        $pg = self::page($req); list($rows, $total) = MZC_Crm::jobs(trim((string) $req->get_param('q')), (string) $req->get_param('status'), $pg, self::PER);
+        $pg = self::page($req); list($rows, $total) = MZC_Crm::jobs(trim((string) $req->get_param('q')), (string) $req->get_param('status'), $pg, self::per($req));
         $money = self::money_seen($a);
-        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::PER, 'items' => array_map(function ($j) use ($money) { return self::job_out($j, false, $money); }, $rows)));
+        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::per($req), 'items' => array_map(function ($j) use ($money) { return self::job_out($j, false, $money); }, $rows)));
     }
 
     public static function rest_job($req)

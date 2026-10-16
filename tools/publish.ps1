@@ -4,7 +4,7 @@
 #   artifacts\Mazesta-Client   the users' edition (none of those)
 #   artifacts\Mazesta-Setup    MazestaTestSetup.exe: the users' installer (carries the users' edition; Start menu, desktop, Installed apps)
 #   artifacts\Mazesta-Flash    the technician's flash-drive copy: Mazesta's edition alone (no tray), with the shop's key, working on the installed copy's Data
-#   artifacts\Mazesta-Print    MazestaPrint.exe: the secretary's program (lists the site's reports by service number, prints their summary)
+#   artifacts\Mazesta-Desk     MazestaDesk.exe: the staff program (secretary, assembly, test, warehouse, service: own sign-in, customers, new computers, services, labels, receipts)
 # For each folder it
 #   1. refuses while the app or MazestaTray is running from it (its files are locked, and deleting around a running app is how its data was
 #      lost on 2026-09-26);
@@ -24,7 +24,7 @@ param(
     [string]$Output = "artifacts/Mazesta-Admin",
     [string]$ClientOutput = "artifacts/Mazesta-Client",
     [string]$SetupOutput = "artifacts/Mazesta-Setup",
-    [string]$PrintOutput = "artifacts/Mazesta-Print",
+    [string]$DeskOutput = "artifacts/Mazesta-Desk",
     [string]$FlashOutput = "artifacts/Mazesta-Flash",
     [string]$BackupRoot = (Join-Path (Split-Path $PSScriptRoot -Parent) "../Mazesta-Data-Backups"),
     [int]$Keep = 20
@@ -77,7 +77,7 @@ foreach ($e in $editions) {
 }
 foreach ($e in $editions) { Publish-Edition $e[0] $e[1] }
 
-# The two small programs that are not the app. The print program is one self-contained exe and keeps its Data (its key) like the app does.
+# The two small programs that are not the app. The staff program is one self-contained exe (its wwwroot folder beside it) and keeps its Data (its sign-in) like the app does.
 $flags = "-c", "Release", "-r", "win-x64", "--self-contained", "true", "-p:PublishSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
          "-p:EnableCompressionInSingleFile=true", "-p:DebugType=none", "-p:DebugSymbols=false", "-p:GenerateDocumentationFile=false"
 function Clear-Output([string]$Folder) {
@@ -86,15 +86,15 @@ function Clear-Output([string]$Folder) {
     return $t
 }
 
-$print = [IO.Path]::GetFullPath((Join-Path $repo $PrintOutput))
-$running = Get-Process MazestaPrint -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($print, [StringComparison]::OrdinalIgnoreCase) }
-if ($running) { Write-Warning "MazestaPrint is running from $print; it was not republished." }   # checked before anything is deleted: a running exe is locked
+$desk = [IO.Path]::GetFullPath((Join-Path $repo $DeskOutput))
+$running = Get-Process MazestaDesk -ErrorAction SilentlyContinue | Where-Object { -not $_.Path -or $_.Path.StartsWith($desk, [StringComparison]::OrdinalIgnoreCase) }
+if ($running) { Write-Warning "MazestaDesk is running from $desk; it was not republished." }   # checked before anything is deleted: a running exe is locked
 else {
-    $print = Clear-Output $PrintOutput
-    dotnet publish src/Mazesta.Print @flags -o $print
-    if ($LASTEXITCODE -ne 0) { throw "publishing the print program failed ($LASTEXITCODE)." }
-    Get-ChildItem $print -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
-    Write-Host "Ready (print): $(Join-Path $print 'MazestaPrint.exe')"
+    $desk = Clear-Output $DeskOutput
+    dotnet publish src/Mazesta.Desk @flags -o $desk
+    if ($LASTEXITCODE -ne 0) { throw "publishing the staff program failed ($LASTEXITCODE)." }
+    Get-ChildItem $desk -File | Where-Object { $_.Extension -in ".xml", ".json", ".pdb" } | Remove-Item -Force
+    Write-Host "Ready (desk): $(Join-Path $desk 'MazestaDesk.exe')"
 }
 
 # The installer carries the users' edition just built (everything in its folder but Data) as a zip.

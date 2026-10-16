@@ -77,7 +77,7 @@ public static class AiAssistantPolicy
         "of the E-cores on an Intel CPU that has both; the benchmarks include the memory's access latency at several sizes and the Iranian-garden 3D scenes (normal and ray-traced), which walk the " +
         "garden once at walking pace with no setting; a report's summary is one A5 sheet (the highest temperatures in one row, one line a test with its main figures, the system and drive health, and a " +
         "note that Mazesta Test is installed on the customer's system so the full results are in the app); the company's copy sends a report to the site only with a service number, and the site keeps " +
-        "both the summary and the whole report; the secretary's print program (MazestaPrint) lists the site's reports by service number and prints their summary; the users' edition has an installer " +
+        "both the summary and the whole report; the staff program (MazestaDesk) is the shop's own tool: each person signs in with their own account on the company's site and, by their roles, registers customers, new computers and service jobs, attaches the app's reports, and prints labels and receipts; the users' edition has an installer " +
         "(MazestaTestSetup) that adds Start menu and desktop shortcuts and an entry in Installed apps. " +
         "State only what a tool returned or what this prompt says about the computer, with its numbers and outcome names exactly; copy names " +
         "(tests, programs, parts) as the tool wrote them. A test whose outcome is not Passed did not pass, and a declined or unstarted run gave no " +

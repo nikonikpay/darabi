@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The shop's staff program (secretary, assembly, test, warehouse, service): a person signs in with their own user name and password, and sees and does only what the roles
+       set on the site's "کاربران و دسترسی" page allow. The window is one WebView2 showing the pages in wwwroot; every call to the site goes through the C# side
+       (SiteSession), which holds the token - the page never sees it - and refuses any address except the site's /mazesta/v1/staff/ routes. Portable: its sign-in is kept in Data next to the exe. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>MazestaDesk</AssemblyName>
+    <RootNamespace>Mazesta.Desk</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Mazesta.Desktop\Assets\mazesta.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en;fa</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot" />
+  </ItemGroup>
+</Project>
