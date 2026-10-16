@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 7;
+    const SCHEMA = 8;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -112,6 +112,9 @@ final class MZC_Crm_Db
                 sent_at DATE NULL, tracking VARCHAR(80) NULL, vendor_reply TEXT NULL, received_at DATE NULL, fix_notes TEXT NULL, back_part VARCHAR(190) NULL, back_serial VARCHAR(120) NULL, shelf VARCHAR(60) NULL, picked_up TINYINT NOT NULL DEFAULT 0,
                 owner VARCHAR(10) NOT NULL DEFAULT 'mazesta', customer_id BIGINT UNSIGNED NULL, job_id BIGINT UNSIGNED NULL, ref VARCHAR(60) NULL, customer_reply TEXT NULL, old_id INT NULL, created DATETIME NOT NULL, updated DATETIME NOT NULL,
                 KEY vendor_id (vendor_id), KEY customer_id (customer_id), KEY job_id (job_id), KEY sent_at (sent_at), KEY old_id (old_id), KEY serial (serial)) $engine";
+        // schema 8: who changed what (the staff apps' writes)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('audit')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, who VARCHAR(120) NOT NULL, action VARCHAR(12) NOT NULL, entity VARCHAR(12) NOT NULL,
+                entity_id BIGINT UNSIGNED NOT NULL DEFAULT 0, note VARCHAR(255) NULL, at DATETIME NOT NULL, KEY entity (entity, entity_id, action, at), KEY at (at)) $engine";
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)
         $cols = array(

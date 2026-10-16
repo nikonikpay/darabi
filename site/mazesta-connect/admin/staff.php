@@ -64,3 +64,34 @@ echo '</div></div>';
 
 echo '<div class="mzc-panel"><header><h3>نشانی برای برنامه‌ها</h3></header><div class="body"><p>برنامه‌ها با نام کاربری و گذرواژه به این نشانی وارد می‌شوند: <code class="lat">' . esc_html(rest_url(Mazesta_Connect::NS . '/staff/login')) . '</code></p>'
     . '<p class="muted">این مسیر نباید کش شود و سایت باید روی https باشد، وگرنه گذرواژه بی‌رمز می‌رود. هر ورود اشتباه شمرده می‌شود: شش بار اشتباه، آن نام کاربری را ۱۵ دقیقه قفل می‌کند.</p></div></div>';
+
+/* ---- receipt SMS and the case label ---- */
+$cf = Mazesta_Connect::read('config'); $cf = (isset($cf['staffCfg']) && is_array($cf['staffCfg']) ? $cf['staffCfg'] : array()) + array('receipt' => MZC_Api::RECEIPT_TEXT, 'portalUrl' => '', 'labels' => array());
+echo '<div class="mzc-panel"><header><h3>رسید پیامکی و برچسب</h3></header><div class="body">'
+    . '<p class="muted" style="max-width:90ch">پیامک رسید را منشی از برنامه برای هر پذیرش می‌فرستد (برای هر پرونده در روز حداکثر سه بار). برچسب هم همان چیزی است که روی کیس و درِ کیس چاپ می‌شود؛ فیلدها را از اینجا انتخاب و مرتب کنید تا همهٔ برنامه‌ها یکسان چاپ کنند.</p>'
+    . MZC_Admin::form_open('staff_cfg_save', 'class="mzc-form"') . '<div class="mzc-fields">'
+    . '<label class="wide">متن پیامک رسید<input type="text" name="receipt" maxlength="300" value="' . esc_attr($cf['receipt']) . '"><small>{no} شمارهٔ پذیرش، {name} نام مشتری، {url} نشانی پیگیری.</small></label>'
+    . '<label class="wide">نشانی پیگیری برای مشتری (برگهٔ پورتال)<input type="url" name="portalUrl" dir="ltr" value="' . esc_attr($cf['portalUrl']) . '" placeholder="https://…/crm"></label></div>';
+foreach (array('job' => 'برچسب سرویس (دستگاه پذیرش‌شده)', 'build' => 'برچسب سیستم نو') as $kind => $title) {
+    $labels = $cf['labels']; $chosen = isset($labels[$kind]) && is_array($labels[$kind]) ? $labels[$kind] : MZC_Api::$label_default[$kind];
+    $all = MZC_Api::$label_fields[$kind]; $order = array_merge(array_values(array_intersect($chosen, array_keys($all))), array_diff(array_keys($all), $chosen));
+    echo '<h4>' . esc_html($title) . '</h4><div class="mzc-cols"><div class="list">';
+    foreach ($order as $i => $k) {
+        echo '<div class="row"><label><input type="checkbox" name="label[' . $kind . '][' . esc_attr($k) . ']" value="1"' . checked(in_array($k, $chosen, true), true, false) . '> ' . esc_html($all[$k]) . '</label>'
+            . '<input type="number" name="lord[' . $kind . '][' . esc_attr($k) . ']" value="' . (int) ($i + 1) . '" min="1" max="99" aria-label="ترتیب"></div>';
+    }
+    echo '</div></div>';
+}
+echo '<p><button class="mzc-btn primary">ذخیره</button></p></form></div></div>';
+
+/* ---- audit ---- */
+$db = MZC_Crm_Db::db();
+$rows = $db && MZC_Crm_Db::ready() ? $db->get_results('SELECT * FROM `' . MZC_Crm_Db::t('audit') . '` ORDER BY id DESC LIMIT 60', ARRAY_A) : array();
+$what = array('create' => 'ثبت', 'update' => 'ویرایش', 'status' => 'تغییر وضعیت', 'report' => 'گزارش تست', 'sms' => 'پیامک'); $ent = array('customer' => 'مشتری', 'build' => 'سیستم', 'job' => 'سرویس');
+echo '<div class="mzc-panel"><header><h3>آخرین تغییرها</h3></header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>زمان</th><th>چه کسی</th><th>کار</th><th>مورد</th><th>توضیح</th></tr></thead><tbody>';
+if (!$rows) { echo '<tr><td class="empty" colspan="5">هنوز تغییری از برنامه‌ها ثبت نشده است.</td></tr>'; }
+foreach ((array) $rows as $r) {
+    echo '<tr><td>' . MZC_Admin::when(strtotime($r['at'] . ' UTC')) . '</td><td dir="auto">' . esc_html($r['who']) . '</td><td>' . esc_html(isset($what[$r['action']]) ? $what[$r['action']] : $r['action']) . '</td><td>'
+        . esc_html((isset($ent[$r['entity']]) ? $ent[$r['entity']] : $r['entity']) . ' #' . $r['entity_id']) . '</td><td dir="auto">' . esc_html((string) $r['note']) . '</td></tr>';
+}
+echo '</tbody></table></div></div>';

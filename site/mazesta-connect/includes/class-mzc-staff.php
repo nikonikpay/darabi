@@ -37,7 +37,7 @@ final class MZC_Staff
     {
         add_action('rest_api_init', array(__CLASS__, 'routes'));
         add_action('admin_init', array(__CLASS__, 'keep_out'));
-        foreach (array('staff_save', 'staff_roles_save') as $a) { add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a)); }
+        foreach (array('staff_save', 'staff_roles_save', 'staff_cfg_save') as $a) { add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a)); }
     }
 
     public static function routes()
@@ -206,6 +206,24 @@ final class MZC_Staff
         }
         self::save_roles($keep);
         MZC_Admin::back('mzc-staff', 'ok:نقش‌ها ذخیره شد. تغییر دسترسی از درخواست بعدی هر کاربر اعمال می‌شود.');
+    }
+
+    /** The receipt SMS text, the page the customer follows their case on, and which fields each label prints. */
+    public static function act_staff_cfg_save()
+    {
+        MZC_Admin::guard('staff_cfg_save', 'manage_options');
+        $labels = array();
+        foreach (MZC_Api::$label_fields as $kind => $f) {
+            $want = isset($_POST['label'][$kind]) && is_array($_POST['label'][$kind]) ? array_keys($_POST['label'][$kind]) : array();
+            $ord = isset($_POST['lord'][$kind]) && is_array($_POST['lord'][$kind]) ? $_POST['lord'][$kind] : array(); $keys = array();
+            foreach ($want as $k) { $k = sanitize_key((string) $k); if (isset($f[$k])) { $keys[$k] = isset($ord[$k]) ? (int) $ord[$k] : 50; } }
+            asort($keys); $labels[$kind] = $keys ? array_keys($keys) : MZC_Api::$label_default[$kind];
+        }
+        $text = isset($_POST['receipt']) ? mb_substr(trim(sanitize_textarea_field(wp_unslash($_POST['receipt']))), 0, 300) : '';
+        $url = isset($_POST['portalUrl']) ? esc_url_raw(trim((string) wp_unslash($_POST['portalUrl']))) : '';
+        Mazesta_Connect::config();
+        Mazesta_Connect::locked(function () use ($labels, $text, $url) { $c = Mazesta_Connect::read('config'); $c['staffCfg'] = array('receipt' => $text !== '' ? $text : MZC_Api::RECEIPT_TEXT, 'portalUrl' => $url, 'labels' => $labels); Mazesta_Connect::write('config', $c); });
+        MZC_Admin::back('mzc-staff', 'ok:تنظیم رسید و برچسب ذخیره شد.');
     }
 
     public static function act_staff_save()

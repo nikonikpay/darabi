@@ -28,10 +28,11 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-import.php       brings the old CRM's data in (file made by site/tools/export_old_crm.py)
  *   includes/class-mzc-sms.php          the SMS sender for the portal's login codes
  *   includes/class-mzc-staff.php        the shop's people: roles, per-area levels, the apps' login (user name + password -> token)
+ *   includes/class-mzc-api.php          what the staff apps read and write (customers, builds, jobs, reports, receipt SMS, labels), checked per area
  *   includes/class-mzc-portal.php       the customer's page ([mazesta_portal]) and its REST routes
  *   includes/class-mzc-admin.php        menus and the shared admin shell; admin/*.php are the pages; assets/ the styles and scripts
  */
-foreach (array('mazesta-connect', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-portal', 'mzc-staff', 'mzc-admin') as $mzc_file) {
+foreach (array('mazesta-connect', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-admin') as $mzc_file) {
     require_once MZC_DIR . 'includes/class-' . $mzc_file . '.php';
 }
 
@@ -39,6 +40,7 @@ Mazesta_Connect::boot();
 MZC_Messages::boot();
 MZC_Portal::boot();
 MZC_Staff::boot();
+MZC_Api::boot();
 MZC_Import::boot();
 MZC_Ships::boot();
 MZC_Site::boot();
