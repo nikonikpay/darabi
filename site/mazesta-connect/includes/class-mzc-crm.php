@@ -13,6 +13,8 @@ final class MZC_Crm
 
     public static $categories = array('cpu' => 'پردازنده', 'motherboard' => 'مادربرد', 'ram' => 'رم', 'gpu' => 'کارت گرافیک', 'ssd' => 'SSD / NVMe', 'hdd' => 'هارد', 'psu' => 'پاور',
         'case' => 'کیس', 'cooler' => 'خنک‌کننده', 'fan' => 'فن', 'monitor' => 'مانیتور', 'other' => 'سایر');
+    /** What a new computer or a service job is about (the forms' "device" choice). */
+    public static $device_types = array('system' => 'سیستم', 'laptop' => 'لپ‌تاپ', 'part' => 'قطعه', 'other' => 'سایر');
     /** The old CRM's customer groups (shop customers, agents, staff, ...). */
     public static $groups = array('customer' => 'مشتری', 'lead' => 'مشتری بالقوه', 'agent' => 'نماینده', 'general' => 'عمومی', 'warranty' => 'گارانتی', 'staff' => 'پرسنل', 'store' => 'انبار', 'courier' => 'پیک و باربری');
 
@@ -62,6 +64,44 @@ final class MZC_Crm
         $jm = $days < 186 ? 1 + (int) ($days / 31) : 7 + (int) (($days - 186) / 30);
         $jd = 1 + ($days < 186 ? $days % 31 : ($days - 186) % 30);
         return sprintf('%04d/%02d/%02d', $jy, $jm, $jd);
+    }
+
+    /** A typed date - Y-m-d or Y/m/d, Gregorian or Persian (a year below 1700 is read as Persian), Persian digits allowed - as Gregorian Y-m-d, or null. */
+    public static function gdate($s)
+    {
+        if (!preg_match('/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/', trim(self::digits((string) $s)), $m)) { return null; }
+        list(, $y, $mo, $d) = array_map('intval', $m);
+        if ($y < 1700) {
+            if ($mo < 1 || $mo > 12 || $d < 1 || $d > 31) { return null; }
+            $jy = $y + 1595; $days = -355668 + 365 * $jy + (int) ($jy / 33) * 8 + (int) ((($jy % 33) + 3) / 4) + $d + ($mo < 7 ? ($mo - 1) * 31 : ($mo - 7) * 30 + 186);
+            $y = 400 * (int) ($days / 146097); $days %= 146097;
+            if ($days > 36524) { $days--; $y += 100 * (int) ($days / 36524); $days %= 36524; if ($days >= 365) { $days++; } }
+            $y += 4 * (int) ($days / 1461); $days %= 1461;
+            if ($days > 365) { $y += (int) (($days - 1) / 365); $days = ($days - 1) % 365; }
+            $d = $days + 1; $len = array(31, ($y % 4 === 0 && $y % 100 !== 0) || $y % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
+            for ($mo = 1; $mo <= 12 && $d > $len[$mo - 1]; $mo++) { $d -= $len[$mo - 1]; }
+        }
+        return checkdate($mo, $d, $y) ? sprintf('%04d-%02d-%02d', $y, $mo, $d) : null;
+    }
+
+    /** The links to a record's photos and videos (the shop keeps them in a Telegram channel): https addresses only, at most 30. */
+    public static function media_list($v)
+    {
+        $out = array();
+        foreach (is_array($v) ? $v : preg_split('/[\s,]+/', (string) $v) as $u) {
+            $u = is_string($u) ? trim($u) : '';
+            if ($u !== '' && strlen($u) <= 300 && preg_match('#^https://[^\s<>"\']+$#i', $u) && !in_array($u, $out, true)) { $out[] = $u; }
+        }
+        return array_slice($out, 0, 30);
+    }
+
+    /** The id of the new computer ($kind 'build') or service ('job') a number names: its invoice number or service number ("1289", "R-1289"). 0 when none or when it is ambiguous. */
+    public static function find_number($kind, $no)
+    {
+        $db = self::db(); $no = trim(self::digits((string) $no)); if (!$db || $no === '') { return 0; }
+        $t = self::t($kind === 'build' ? 'builds' : 'jobs'); $r = ctype_digit($no) ? 'R-' . $no : $no;
+        $ids = $db->get_col($db->prepare("SELECT id FROM `$t` WHERE invoice_no = %s OR service_no = %s OR service_no = %s LIMIT 2", $no, $no, $r));
+        return count($ids) === 1 ? (int) $ids[0] : 0;
     }
 
     public static function money($n) { return number_format((int) $n) . ' تومان'; }
@@ -176,6 +216,7 @@ final class MZC_Crm
             foreach ($fields as $f => $kind) {
                 $v = isset($r[$f]) ? (is_string($r[$f]) ? trim($r[$f]) : '') : '';
                 if ($kind === 'flag') { $row[$f] = !empty($r[$f]) ? 1 : 0; continue; }
+                if ($kind === 'id') { $row[$f] = (int) $v > 0 ? (int) $v : null; continue; }
                 if ($kind === 'int') { $v = self::digits($v); $row[$f] = $v === '' ? null : (int) preg_replace('/[^\d]/', '', $v); }
                 elseif ($kind === 'cat') { $row[$f] = isset(self::$categories[$v]) ? $v : 'other'; }
                 else { $row[$f] = $v === '' ? null : mb_substr(sanitize_text_field($v), 0, $kind); }
@@ -195,12 +236,20 @@ final class MZC_Crm
         $title = self::post('title', 190);
         if ($title === '') { $title = 'سیستم نو'; }
         $bst = isset($_POST['status']) && isset(self::$build_statuses[$_POST['status']]) ? (string) $_POST['status'] : 'queue';
-        $row = array('customer_id' => $cid, 'service_no' => self::post('service_no', 40) ?: null, 'invoice_no' => self::post('invoice_no', 60) ?: null, 'title' => $title, 'sold_at' => self::date('sold_at'),
+        $inv = self::digits(self::post('invoice_no', 60));
+        // a new computer is known by its invoice number (no service number of its own any more); the old ones keep theirs
+        if ($inv === '' && !$id) { MZC_Admin::back('mzc-builds', 'err:شمارهٔ فاکتور را بنویسید؛ سیستم نو با شمارهٔ فاکتور شناخته می‌شود.', array('add' => 1)); }
+        $dup = $inv === '' || !empty($_POST['force']) ? 0 : (int) $db->get_var($db->prepare('SELECT id FROM `' . self::t('builds') . '` WHERE invoice_no = %s AND id <> %d LIMIT 1', $inv, $id));
+        if ($dup) { MZC_Admin::back('mzc-builds', 'err:شمارهٔ فاکتور ' . $inv . ' قبلاً برای سیستم دیگری ثبت شده است (شمارهٔ ' . $dup . ').', $id ? array('edit' => $id) : array('add' => 1)); }
+        $dt = isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : 'system';
+        $row = array('customer_id' => $cid, 'invoice_no' => $inv ?: null, 'device_type' => $dt, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'title' => $title, 'sold_at' => self::date('sold_at'),
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'status' => $bst, 'delivered' => $bst === 'delivered' ? 1 : 0, 'updated' => self::now());
         $t = self::t('builds');
         if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } }
         else { $row['created'] = self::now(); if (!$db->insert($t, $row)) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } $id = (int) $db->insert_id; }
-        $parts = self::posted_parts('parts', array('category' => 'cat', 'model' => 190, 'serial' => 120, 'warranty_months' => 'int', 'vendor' => 120, 'note' => 255, 'has_warranty' => 'flag', 'has_box' => 'flag', 'qc' => 'flag'));
+        if ($id && self::post('service_no', 40) !== '') { $row['service_no'] = self::post('service_no', 40); }
+        $parts = MZC_Stock::link_parts(self::posted_parts('parts', array('product_id' => 'id', 'category' => 'cat', 'model' => 190, 'serial' => 120, 'warranty_months' => 'int', 'sell_price' => 'int', 'buy_price' => 'int', 'vendor' => 120, 'note' => 255, 'has_warranty' => 'flag', 'has_box' => 'flag', 'qc' => 'flag')),
+            'model', array('sell_price' => 'sell_price', 'buy_price' => 'buy_price'));
         $db->delete(self::t('build_parts'), array('build_id' => $id));
         foreach ($parts as $p) { if ($p['model'] === null) { continue; } $p['build_id'] = $id; $db->insert(self::t('build_parts'), $p); }
         $bad = self::add_photos('build', $id);
@@ -276,7 +325,8 @@ final class MZC_Crm
         $status = isset($_POST['status'], self::$statuses[$_POST['status']]) ? (string) $_POST['status'] : 'received';
         $closed = self::date('closed_at'); if ($status === 'delivered' && $closed === null) { $closed = gmdate('Y-m-d'); }
         $labor = (int) preg_replace('/[^\d]/', '', self::digits(self::post('labor_price', 15)));
-        $row = array('customer_id' => $cid, 'service_no' => $id ? (self::post('service_no', 40) ?: null) : null, 'device' => self::post('device', 190) ?: null, 'received_at' => self::date('received_at') ?: gmdate('Y-m-d'),
+        $row = array('customer_id' => $cid, 'service_no' => $id ? (self::post('service_no', 40) ?: null) : null, 'device' => self::post('device', 190) ?: null,
+            'device_type' => isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : null, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'received_at' => self::date('received_at') ?: gmdate('Y-m-d'),
             'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
             'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
@@ -291,7 +341,10 @@ final class MZC_Crm
         }
         $db->delete(self::t('job_parts'), array('job_id' => $id));
         foreach (array('add' => 'parts', 'in' => 'recv') as $kind => $field) {
-            foreach (self::posted_parts($field, array('name' => 190, 'qty' => 'int', 'unit_price' => 'int', 'serial' => 120, 'warranty_months' => 'int', 'note' => 255, 'has_box' => 'flag', 'has_warranty' => 'flag')) as $p) {
+            $rows = self::posted_parts($field, array('product_id' => 'id', 'name' => 190, 'qty' => 'int', 'unit_price' => 'int', 'buy_price' => 'int', 'serial' => 120, 'warranty_months' => 'int', 'note' => 255, 'has_box' => 'flag', 'has_warranty' => 'flag'));
+            // a part the customer brought is not the shop's stock
+            $rows = $kind === 'in' ? array_map(function ($p) { $p['product_id'] = null; $p['buy_price'] = null; return $p; }, $rows) : MZC_Stock::link_parts($rows, 'name', array('unit_price' => 'sell_price', 'buy_price' => 'buy_price'));
+            foreach ($rows as $p) {
                 if ($p['name'] === null) { continue; }
                 $p['qty'] = max(1, (int) $p['qty']); $p['unit_price'] = $kind === 'in' ? 0 : (int) $p['unit_price']; $p['job_id'] = $id; $p['kind'] = $kind; $db->insert(self::t('job_parts'), $p);
             }
@@ -470,7 +523,7 @@ final class MZC_Crm
         $db = self::db(); if (!$db) { MZC_Admin::back('mzc-settings', 'err:' . MZC_Crm_Db::error()); }
         if (self::post('confirm', 20) !== 'پاک‌کن') { MZC_Admin::back('mzc-settings', 'err:برای پاک کردن، کلمهٔ «پاک‌کن» را دقیق بنویسید.'); }
         foreach ((array) $db->get_col('SELECT file FROM `' . self::t('photos') . '`') as $f) { if (preg_match('/^[a-f0-9]{32}\.(jpg|png|webp)$/', (string) $f)) { @unlink(self::photo_dir() . '/' . $f . '.dat'); } }
-        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
+        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
         $db->query('DELETE FROM `' . self::t('meta') . "` WHERE k = 'import'");
         MZC_Admin::back('mzc-settings', 'ok:همهٔ اطلاعات CRM پاک شد؛ فایل واردسازی را دوباره بارگذاری کنید.');
     }

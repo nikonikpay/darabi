@@ -15,7 +15,7 @@ final class MZC_Ships
     private static function db() { return MZC_Crm_Db::db(); }
     private static function t($n) { return MZC_Crm_Db::t($n); }
 
-    public static $kinds = array('warranty' => 'گارانتی', 'repair' => 'تعمیرگاه');
+    public static $kinds = array('warranty' => 'گارانتی', 'repair' => 'تعمیرگاه', 'supplier' => 'فروشنده');
 
     public static function vendors()
     {

@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 8;
+    const SCHEMA = 9;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -115,6 +115,16 @@ final class MZC_Crm_Db
         // schema 8: who changed what (the staff apps' writes)
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('audit')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, who VARCHAR(120) NOT NULL, action VARCHAR(12) NOT NULL, entity VARCHAR(12) NOT NULL,
                 entity_id BIGINT UNSIGNED NOT NULL DEFAULT 0, note VARCHAR(255) NULL, at DATETIME NOT NULL, KEY entity (entity, entity_id, action, at), KEY at (at)) $engine";
+        // schema 9: the stock (products), purchase invoices from suppliers (vendors of kind 'supplier') and their lines, and the AI apps' OAuth sign-in
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('products')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, name VARCHAR(190) NOT NULL, category VARCHAR(40) NOT NULL DEFAULT 'other', brand VARCHAR(80) NULL, sku VARCHAR(120) NULL,
+                buy_price BIGINT NULL, sell_price BIGINT NULL, warranty_months SMALLINT NULL, notes VARCHAR(255) NULL, created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY name (name), KEY sku (sku), KEY category (category)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('purchases')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, vendor_id BIGINT UNSIGNED NULL, invoice_no VARCHAR(60) NULL, bought_at DATE NULL, notes TEXT NULL,
+                created DATETIME NOT NULL, updated DATETIME NOT NULL, KEY vendor_id (vendor_id), KEY invoice_no (invoice_no), KEY bought_at (bought_at)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('purchase_items')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, purchase_id BIGINT UNSIGNED NOT NULL, product_id BIGINT UNSIGNED NOT NULL, qty INT NOT NULL DEFAULT 1,
+                unit_cost BIGINT NOT NULL DEFAULT 0, serials TEXT NULL, KEY purchase_id (purchase_id), KEY product_id (product_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oauth_clients')}` (client_id CHAR(32) NOT NULL PRIMARY KEY, secret_hash CHAR(64) NULL, name VARCHAR(120) NOT NULL, redirect_uris TEXT NOT NULL, created DATETIME NOT NULL) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oauth_codes')}` (code_hash CHAR(64) NOT NULL PRIMARY KEY, client_id CHAR(32) NOT NULL, user_id BIGINT UNSIGNED NOT NULL, redirect_uri TEXT NOT NULL, challenge VARCHAR(128) NOT NULL, expires DATETIME NOT NULL) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oauth_refresh')}` (token_hash CHAR(64) NOT NULL PRIMARY KEY, client_id CHAR(32) NOT NULL, user_id BIGINT UNSIGNED NOT NULL, expires DATETIME NOT NULL, created DATETIME NOT NULL, KEY user_id (user_id)) $engine";
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)
         $cols = array(
@@ -124,11 +134,19 @@ final class MZC_Crm_Db
             'jobs' => array('due_at' => 'DATE NULL', 'is_mazesta' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'discount' => 'BIGINT NOT NULL DEFAULT 0', 'paid' => 'BIGINT NOT NULL DEFAULT 0',
                 'invoice_no' => 'VARCHAR(60) NULL', 'service_done' => 'TINYINT NOT NULL DEFAULT 0', 'ship' => 'TEXT NULL', 'data' => 'LONGTEXT NULL', 'old_id' => 'INT NULL'),
             'sessions' => array('user_id' => 'BIGINT UNSIGNED NULL', 'device' => 'VARCHAR(80) NULL'),   // schema 7: the staff apps' sessions (user_id) share the customers' table
-            'job_parts' => array('kind' => "VARCHAR(4) NOT NULL DEFAULT 'add'", 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0'),
+            'job_parts' => array('kind' => "VARCHAR(4) NOT NULL DEFAULT 'add'", 'has_box' => 'TINYINT NOT NULL DEFAULT 0', 'has_warranty' => 'TINYINT NOT NULL DEFAULT 0', 'product_id' => 'BIGINT UNSIGNED NULL', 'buy_price' => 'BIGINT NULL'),
         );
+        // schema 9: what kind of device a record is, its photos and videos in the shop's Telegram channel (links), and the stock product a part came from with its prices
+        $cols['builds'] += array('device_type' => "VARCHAR(10) NOT NULL DEFAULT 'system'", 'media' => 'TEXT NULL');
+        $cols['jobs'] += array('device_type' => 'VARCHAR(10) NULL', 'media' => 'TEXT NULL');
+        $cols['build_parts'] += array('product_id' => 'BIGINT UNSIGNED NULL', 'buy_price' => 'BIGINT NULL', 'sell_price' => 'BIGINT NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
-            foreach ($list as $c => $def) { if (!in_array($c, $have, true) && $db->query('ALTER TABLE `' . $t($tb) . "` ADD COLUMN `$c` $def") === false) { return 'به‌روزرسانی جدول ناموفق بود: ' . $db->last_error; } }
+            foreach ($list as $c => $def) {
+                if (in_array($c, $have, true)) { continue; }
+                if ($db->query('ALTER TABLE `' . $t($tb) . "` ADD COLUMN `$c` $def") === false) { return 'به‌روزرسانی جدول ناموفق بود: ' . $db->last_error; }
+                if ($c === 'product_id') { $db->query('ALTER TABLE `' . $t($tb) . '` ADD KEY product_id (product_id)'); }
+            }
         }
         $db->query('ALTER TABLE `' . $t('customers') . '` MODIFY mobile VARCHAR(20) NULL');
         $db->query($db->prepare("REPLACE INTO `{$t('meta')}` (k, v) VALUES ('schema', %s)", (string) self::SCHEMA));

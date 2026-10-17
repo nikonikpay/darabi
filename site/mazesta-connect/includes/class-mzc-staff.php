@@ -17,7 +17,7 @@ final class MZC_Staff
     /** The areas a level is given for. */
     public static $areas = array(
         'customers' => 'مشتریان', 'builds' => 'سیستم‌های نو (فروش و اسمبل)', 'jobs' => 'سرویس‌ها', 'tests' => 'گزارش و نتیجهٔ تست',
-        'ships' => 'ارسال به گارانتی و انبار', 'payments' => 'قیمت‌ها و پرداخت‌ها', 'sms' => 'فرستادن پیامک',
+        'ships' => 'ارسال به گارانتی', 'stock' => 'انبار، کالاها و فاکتور خرید', 'payments' => 'قیمت‌ها و پرداخت‌ها', 'sms' => 'فرستادن پیامک',
     );
     public static $levels = array(0 => 'ندارد', 1 => 'دیدن', 2 => 'دیدن و ویرایش');
 
@@ -25,11 +25,11 @@ final class MZC_Staff
     public static function default_roles()
     {
         return array(
-            'reception' => array('label' => 'منشی', 'p' => array('customers' => 2, 'builds' => 2, 'jobs' => 2, 'tests' => 1, 'ships' => 1, 'payments' => 2, 'sms' => 2)),
-            'assembly' => array('label' => 'اسمبل', 'p' => array('customers' => 1, 'builds' => 2, 'jobs' => 1, 'tests' => 2)),
+            'reception' => array('label' => 'منشی', 'p' => array('customers' => 2, 'builds' => 2, 'jobs' => 2, 'tests' => 1, 'ships' => 1, 'stock' => 1, 'payments' => 2, 'sms' => 2)),
+            'assembly' => array('label' => 'اسمبل', 'p' => array('customers' => 1, 'builds' => 2, 'jobs' => 1, 'tests' => 2, 'stock' => 1)),
             'test' => array('label' => 'تست', 'p' => array('customers' => 1, 'builds' => 1, 'jobs' => 1, 'tests' => 2)),
-            'warehouse' => array('label' => 'انبار', 'p' => array('builds' => 1, 'jobs' => 1, 'ships' => 2)),
-            'service' => array('label' => 'سرویس', 'p' => array('customers' => 1, 'jobs' => 2, 'tests' => 2, 'ships' => 2)),
+            'warehouse' => array('label' => 'انبار', 'p' => array('builds' => 1, 'jobs' => 1, 'ships' => 2, 'stock' => 2)),
+            'service' => array('label' => 'سرویس', 'p' => array('customers' => 1, 'jobs' => 2, 'tests' => 2, 'ships' => 2, 'stock' => 1)),
         );
     }
 
@@ -77,14 +77,18 @@ final class MZC_Staff
     public static function roles()
     {
         $c = Mazesta_Connect::read('config');
-        return isset($c['staffRoles']) && is_array($c['staffRoles']) ? self::clean_roles($c['staffRoles']) : self::default_roles();
+        if (!isset($c['staffRoles']) || !is_array($c['staffRoles'])) { return self::default_roles(); }
+        $roles = self::clean_roles($c['staffRoles']);
+        // roles saved before the stock area existed (2.5.0) get its default level for the built-in roles, until the page saves them again
+        if (empty($c['staffRolesStock'])) { foreach (self::default_roles() as $k => $r) { if (isset($roles[$k], $r['p']['stock']) && !isset($roles[$k]['p']['stock'])) { $roles[$k]['p']['stock'] = $r['p']['stock']; } } }
+        return $roles;
     }
 
     public static function save_roles($roles)
     {
         $roles = self::clean_roles($roles);
         Mazesta_Connect::config();
-        Mazesta_Connect::locked(function () use ($roles) { $c = Mazesta_Connect::read('config'); $c['staffRoles'] = $roles; Mazesta_Connect::write('config', $c); });
+        Mazesta_Connect::locked(function () use ($roles) { $c = Mazesta_Connect::read('config'); $c['staffRoles'] = $roles; $c['staffRolesStock'] = 1; Mazesta_Connect::write('config', $c); });
     }
 
     /** What the user's record says: array(roles => keys, on => bool). */
@@ -142,19 +146,37 @@ final class MZC_Staff
         $login = is_array($p) && isset($p['username']) ? trim((string) $p['username']) : '';
         $pass = is_array($p) && isset($p['password']) ? (string) $p['password'] : '';
         if ($login === '' || $pass === '' || strlen($login) > 100 || strlen($pass) > 200) { return self::fail('نام کاربری و گذرواژه را بنویسید.'); }
-        // six wrong tries on one name lock that name for fifteen minutes, whoever tries (the per-address limit above does not stop one name being guessed from many addresses)
+        $u = self::check_login($login, $pass);
+        if (!($u instanceof WP_User)) { return self::fail($u[0], $u[1]); }
+        $token = self::new_session($u->ID, is_array($p) && isset($p['device']) ? (string) $p['device'] : '', self::SESSION_DAYS);
+        if ($token === '') { return self::fail('سامانه فعلاً در دسترس نیست.', 503); }
+        return self::ok(array('token' => $token, 'days' => self::SESSION_DAYS) + self::summary($u));
+    }
+
+    /**
+     * The staff member a user name and password belong to, or array(error text, HTTP status). Six wrong tries on one name lock that name for fifteen minutes, whoever tries
+     * (a per-address limit does not stop one name being guessed from many addresses); a right password of a person with no right in the CRM is refused too.
+     */
+    public static function check_login($login, $pass)
+    {
         $lock = 'mzc_lock_' . md5(strtolower($login)); $n = (int) get_transient($lock);
-        if ($n >= 6) { return self::fail('چند بار گذرواژه غلط بود؛ ۱۵ دقیقه دیگر دوباره امتحان کنید.', 429); }
+        if ($n >= 6) { return array('چند بار گذرواژه غلط بود؛ ۱۵ دقیقه دیگر دوباره امتحان کنید.', 429); }
         $u = wp_authenticate($login, $pass);
-        if (is_wp_error($u) || !($u instanceof WP_User)) { set_transient($lock, $n + 1, 900); return self::fail('نام کاربری یا گذرواژه درست نیست.', 401); }
-        $perms = self::perms_of($u->ID);
-        if (!array_filter($perms)) { return self::fail('این حساب دسترسی به برنامه ندارد؛ از مدیر بخواهید دسترسی بدهد.', 403); }
+        if (is_wp_error($u) || !($u instanceof WP_User)) { set_transient($lock, $n + 1, 900); return array('نام کاربری یا گذرواژه درست نیست.', 401); }
+        if (!array_filter(self::perms_of($u->ID))) { return array('این حساب دسترسی به برنامه ندارد؛ از مدیر بخواهید دسترسی بدهد.', 403); }
         delete_transient($lock);
+        return $u;
+    }
+
+    /** A new app session (the token goes back to the app once; only its hash is kept). */
+    public static function new_session($uid, $device, $days)
+    {
+        $db = MZC_Crm_Db::db(); if (!$db) { return ''; }
         $db->query($db->prepare('DELETE FROM `' . MZC_Crm_Db::t('sessions') . '` WHERE expires < %s', self::now()));
         $token = bin2hex(random_bytes(32));
-        $db->insert(MZC_Crm_Db::t('sessions'), array('token_hash' => self::hash($token), 'customer_id' => 0, 'user_id' => (int) $u->ID, 'device' => Mazesta_Connect::clip(is_array($p) && isset($p['device']) ? (string) $p['device'] : '', 80),
-            'expires' => gmdate('Y-m-d H:i:s', time() + self::SESSION_DAYS * 86400), 'created' => self::now()));
-        return self::ok(array('token' => $token, 'days' => self::SESSION_DAYS) + self::summary($u));
+        $ok = $db->insert(MZC_Crm_Db::t('sessions'), array('token_hash' => self::hash($token), 'customer_id' => 0, 'user_id' => (int) $uid, 'device' => Mazesta_Connect::clip((string) $device, 80),
+            'expires' => gmdate('Y-m-d H:i:s', time() + (int) round($days * 86400)), 'created' => self::now()));
+        return $ok ? $token : '';
     }
 
     /**
@@ -185,10 +207,10 @@ final class MZC_Staff
         return self::ok(array('ok' => true));
     }
 
-    /** Ends every app session of a user (switched off, or the password changed). */
+    /** Ends every app session of a user (switched off, or the password changed), the AI apps' sign-ins with them. */
     public static function end_sessions($uid)
     {
-        $db = MZC_Crm_Db::db(); if ($db) { $db->delete(MZC_Crm_Db::t('sessions'), array('user_id' => (int) $uid)); }
+        $db = MZC_Crm_Db::db(); if ($db) { $db->delete(MZC_Crm_Db::t('sessions'), array('user_id' => (int) $uid)); $db->delete(MZC_Crm_Db::t('oauth_refresh'), array('user_id' => (int) $uid)); }
     }
 
     /* ---------- the page's actions ---------- */

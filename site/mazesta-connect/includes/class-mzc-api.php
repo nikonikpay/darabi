@@ -2,7 +2,8 @@
 if (!defined('ABSPATH')) { exit; }
 
 /**
- * What the staff apps (desktop, Android) read and write: customers, new computers (builds), service jobs, the app's test reports, the SMS receipt and the case label.
+ * What the staff apps (desktop, Android) and the AI apps (through MZC_Mcp) read and write: customers, new computers (builds), service jobs, the stock and the purchase invoices,
+ * the app's test reports, the SMS receipt and the case label.
  * Every route checks the signed-in person's level for the area it touches (see MZC_Staff::auth) - the apps only hide what the server would refuse anyway. Nothing here deletes
  * a record (that stays a site-administrator job on the plugin's pages), and every change is written to the audit table with who made it.
  * A record carries its `updated` stamp; a save that names a stamp which is no longer the current one is refused with 409 (somebody else saved first), so two desks never overwrite each other unseen.
@@ -14,9 +15,9 @@ final class MZC_Api
     /** The label fields each kind of record can print (key => caption); which of them a label shows is set on the Users and access page. */
     public static $label_fields = array(
         'job' => array('service_no' => 'شمارهٔ سرویس', 'customer' => 'نام مشتری', 'mobile' => 'موبایل', 'device' => 'دستگاه', 'received' => 'تاریخ پذیرش', 'due' => 'تاریخ قول', 'invoice' => 'شمارهٔ فاکتور', 'complaint' => 'مشکل', 'status' => 'وضعیت'),
-        'build' => array('service_no' => 'شمارهٔ سرویس', 'customer' => 'نام مشتری', 'mobile' => 'موبایل', 'title' => 'عنوان سیستم', 'invoice' => 'شمارهٔ فاکتور', 'sold' => 'تاریخ فروش', 'status' => 'وضعیت'),
+        'build' => array('invoice' => 'شمارهٔ فاکتور', 'customer' => 'نام مشتری', 'mobile' => 'موبایل', 'title' => 'عنوان سیستم', 'service_no' => 'شمارهٔ سرویس (سیستم‌های قدیمی)', 'sold' => 'تاریخ فروش', 'status' => 'وضعیت'),
     );
-    public static $label_default = array('job' => array('service_no', 'customer', 'mobile', 'device', 'received'), 'build' => array('service_no', 'customer', 'title', 'invoice'));
+    public static $label_default = array('job' => array('service_no', 'customer', 'mobile', 'device', 'received'), 'build' => array('invoice', 'customer', 'title'));
     const RECEIPT_TEXT = 'مشتری گرامی، دستگاه شما با شمارهٔ پذیرش {no} در مازستا ثبت شد. {url}';
 
     public static function boot() { add_action('rest_api_init', array(__CLASS__, 'routes')); }
@@ -30,6 +31,9 @@ final class MZC_Api
             array('/staff/jobs', 'GET', 'jobs'), array('/staff/jobs/(?P<id>\d+)', 'GET', 'job'), array('/staff/jobs', 'POST', 'job_save'), array('/staff/jobs/status', 'POST', 'job_status'),
             array('/staff/reports', 'GET', 'reports'), array('/staff/reports/(?P<id>[A-Za-z0-9-]{8,64})', 'GET', 'report'), array('/staff/attach', 'POST', 'attach'),
             array('/staff/sms/receipt', 'POST', 'receipt'), array('/staff/label/(?P<kind>job|build)/(?P<id>\d+)', 'GET', 'label'),
+            array('/staff/products', 'GET', 'products'), array('/staff/products/(?P<id>\d+)', 'GET', 'product'), array('/staff/products', 'POST', 'product_save'),
+            array('/staff/suppliers', 'GET', 'suppliers'), array('/staff/suppliers', 'POST', 'supplier_save'),
+            array('/staff/purchases', 'GET', 'purchases'), array('/staff/purchases/(?P<id>\d+)', 'GET', 'purchase'), array('/staff/purchases', 'POST', 'purchase_save'), array('/staff/serial', 'GET', 'serial'),
         );
         foreach ($r as $x) { register_rest_route(Mazesta_Connect::NS, $x[0], array('methods' => $x[1], 'callback' => array(__CLASS__, 'rest_' . $x[2]), 'permission_callback' => '__return_true')); }
     }
@@ -42,7 +46,7 @@ final class MZC_Api
     private static function s($p, $k, $max = 255) { return isset($p[$k]) && is_string($p[$k]) ? mb_substr(trim(wp_strip_all_tags($p[$k])), 0, $max) : ''; }
     private static function n($p, $k) { $v = isset($p[$k]) && (is_string($p[$k]) || is_numeric($p[$k])) ? MZC_Crm::digits((string) $p[$k]) : ''; return (int) preg_replace('/[^\d]/', '', $v); }
     private static function opt_n($p, $k) { return isset($p[$k]) && $p[$k] !== '' && $p[$k] !== null ? self::n($p, $k) : null; }
-    private static function d($p, $k) { $v = MZC_Crm::digits(self::s($p, $k, 10)); return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : null; }
+    private static function d($p, $k) { return MZC_Crm::gdate(self::s($p, $k, 10)); }   // Persian dates (1405/07/25) are taken too: the AI apps pass what people say
     private static function flag($p, $k) { return !empty($p[$k]) ? 1 : 0; }
     private static function now() { return gmdate('Y-m-d H:i:s'); }
     private static function t($n) { return MZC_Crm_Db::t($n); }
@@ -59,6 +63,11 @@ final class MZC_Api
     }
 
     private static function money_seen($a) { return MZC_Staff::can($a['id'], 'payments', 1); }
+    /** Buy prices (what the shop paid): the people who see the money, and the warehouse who enters the purchase invoices. */
+    private static function cost_seen($a) { return self::money_seen($a) || MZC_Staff::can($a['id'], 'stock', 2); }
+    private static function cost_edit($a) { return MZC_Staff::can($a['id'], 'payments', 2) || MZC_Staff::can($a['id'], 'stock', 2); }
+    private static function media_out($v) { return MZC_Crm::media_list((string) $v); }
+    private static function dtype($k) { return isset(MZC_Crm::$device_types[$k]) ? MZC_Crm::$device_types[$k] : ''; }
 
     /* ---------- how records are sent out ---------- */
 
@@ -68,32 +77,39 @@ final class MZC_Api
             'address' => (string) $c['address'], 'notes' => (string) $c['notes'], 'group' => (string) $c['grp'], 'groupText' => isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : '', 'updated' => $c['updated']);
     }
 
-    private static function build_out($b, $full)
+    private static function build_out($b, $full, $a = null)
     {
-        $o = array('id' => (int) $b['id'], 'service_no' => (string) $b['service_no'], 'invoice_no' => (string) $b['invoice_no'], 'title' => $b['title'], 'status' => $b['status'], 'statusText' => isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : '',
+        $o = array('id' => (int) $b['id'], 'number' => (string) ($b['invoice_no'] ?: $b['service_no']), 'service_no' => (string) $b['service_no'], 'invoice_no' => (string) $b['invoice_no'], 'title' => $b['title'],
+            'device_type' => (string) $b['device_type'], 'deviceText' => self::dtype($b['device_type']), 'status' => $b['status'], 'statusText' => isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : '',
             'customer_id' => (int) $b['customer_id'], 'sold_at' => (string) $b['sold_at'], 'sold_at_j' => self::jd($b['sold_at']), 'report_id' => (string) $b['report_id'], 'updated' => $b['updated']);
         if (isset($b['customer_name'])) { $o['customer_name'] = $b['customer_name']; $o['customer_mobile'] = (string) $b['customer_mobile']; $o['parts_count'] = (int) $b['parts']; }
         if ($full) {
-            $o['notes'] = (string) $b['notes']; $o['parts'] = array();
-            foreach ($b['parts'] as $p) { $o['parts'][] = array('category' => $p['category'], 'model' => $p['model'], 'serial' => (string) $p['serial'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'vendor' => (string) $p['vendor'], 'note' => (string) $p['note'],
-                'has_warranty' => (bool) $p['has_warranty'], 'has_box' => (bool) $p['has_box'], 'qc' => (bool) $p['qc']); }
+            $o['notes'] = (string) $b['notes']; $o['media'] = self::media_out($b['media']); $o['parts'] = array();
+            $money = $a && self::money_seen($a); $cost = $a && self::cost_seen($a);
+            foreach ($b['parts'] as $p) {
+                $r = array('product_id' => $p['product_id'] === null ? null : (int) $p['product_id'], 'category' => $p['category'], 'model' => $p['model'], 'serial' => (string) $p['serial'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'vendor' => (string) $p['vendor'], 'note' => (string) $p['note'],
+                    'has_warranty' => (bool) $p['has_warranty'], 'has_box' => (bool) $p['has_box'], 'qc' => (bool) $p['qc']);
+                if ($money) { $r['sell_price'] = $p['sell_price'] === null ? null : (int) $p['sell_price']; }
+                if ($cost) { $r['buy_price'] = $p['buy_price'] === null ? null : (int) $p['buy_price']; }
+                $o['parts'][] = $r;
+            }
             $o['photos'] = count($b['photos']);
         }
         return $o;
     }
 
-    private static function job_out($j, $full, $money)
+    private static function job_out($j, $full, $money, $cost = false)
     {
-        $o = array('id' => (int) $j['id'], 'service_no' => (string) $j['service_no'], 'device' => (string) $j['device'], 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : '',
+        $o = array('id' => (int) $j['id'], 'number' => (string) $j['service_no'], 'service_no' => (string) $j['service_no'], 'device' => (string) $j['device'], 'device_type' => (string) $j['device_type'], 'deviceText' => self::dtype($j['device_type']), 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : '',
             'customer_id' => (int) $j['customer_id'], 'received_at' => (string) $j['received_at'], 'received_at_j' => self::jd($j['received_at']), 'closed_at' => (string) $j['closed_at'], 'due_at' => (string) $j['due_at'], 'due_at_j' => self::jd($j['due_at']),
             'invoice_no' => (string) $j['invoice_no'], 'report_id' => (string) $j['report_id'], 'updated' => $j['updated']);
         if (isset($j['customer_name'])) { $o['customer_name'] = $j['customer_name']; $o['customer_mobile'] = (string) $j['customer_mobile']; }
         if ($money && isset($j['total'])) { $o['total'] = (int) $j['total']; }
         if ($full) {
-            $o += array('complaint' => (string) $j['complaint'], 'work_done' => (string) $j['work_done'], 'notes' => (string) $j['notes'], 'is_mazesta' => (bool) $j['is_mazesta'], 'has_warranty' => (bool) $j['has_warranty'], 'photos' => count($j['photos']));
-            $map = function ($rows) use ($money) {
+            $o += array('complaint' => (string) $j['complaint'], 'work_done' => (string) $j['work_done'], 'notes' => (string) $j['notes'], 'is_mazesta' => (bool) $j['is_mazesta'], 'has_warranty' => (bool) $j['has_warranty'], 'photos' => count($j['photos']), 'media' => self::media_out($j['media']));
+            $map = function ($rows) use ($money, $cost) {
                 $out = array();
-                foreach ($rows as $p) { $r = array('name' => $p['name'], 'qty' => (int) $p['qty'], 'serial' => (string) $p['serial'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'note' => (string) $p['note'], 'has_box' => (bool) $p['has_box'], 'has_warranty' => (bool) $p['has_warranty']); if ($money) { $r['unit_price'] = (int) $p['unit_price']; } $out[] = $r; }
+                foreach ($rows as $p) { $r = array('product_id' => $p['product_id'] === null ? null : (int) $p['product_id'], 'name' => $p['name'], 'qty' => (int) $p['qty'], 'serial' => (string) $p['serial'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'note' => (string) $p['note'], 'has_box' => (bool) $p['has_box'], 'has_warranty' => (bool) $p['has_warranty']); if ($money) { $r['unit_price'] = (int) $p['unit_price']; } if ($cost && $p['kind'] !== 'in') { $r['buy_price'] = $p['buy_price'] === null ? null : (int) $p['buy_price']; } $out[] = $r; }
                 return $out;
             };
             $o['parts'] = $map($j['parts']); $o['recv'] = $map($j['recv']);
@@ -112,7 +128,7 @@ final class MZC_Api
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $c = self::cfg(); $labels = array();
         foreach (self::$label_fields as $kind => $f) { $labels[$kind] = array('fields' => $f, 'chosen' => self::label_keys($kind, $c)); }
-        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)));
+        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)));
     }
 
     private static function label_keys($kind, $c)
@@ -161,7 +177,7 @@ final class MZC_Api
     {
         $a = MZC_Staff::auth($req, 'builds', 1); if ($a instanceof WP_REST_Response) { return $a; }
         $b = MZC_Crm::build((int) $req['id']); if (!$b) { return self::fail('سیستم پیدا نشد.', 404); }
-        $c = MZC_Crm::customer($b['customer_id']); $o = self::build_out($b, true);
+        $c = MZC_Crm::customer($b['customer_id']); $o = self::build_out($b, true, $a);
         if ($c) { $o['customer_name'] = $c['name']; $o['customer_mobile'] = (string) $c['mobile']; }
         return self::ok($o);
     }
@@ -178,7 +194,7 @@ final class MZC_Api
     {
         $a = MZC_Staff::auth($req, 'jobs', 1); if ($a instanceof WP_REST_Response) { return $a; }
         $j = MZC_Crm::job((int) $req['id']); if (!$j) { return self::fail('سرویس پیدا نشد.', 404); }
-        $c = MZC_Crm::customer($j['customer_id']); $o = self::job_out($j, true, self::money_seen($a));
+        $c = MZC_Crm::customer($j['customer_id']); $o = self::job_out($j, true, self::money_seen($a), self::cost_seen($a));
         if ($c) { $o['customer_name'] = $c['name']; $o['customer_mobile'] = (string) $c['mobile']; }
         return self::ok($o);
     }
@@ -233,51 +249,57 @@ final class MZC_Api
         $db = MZC_Crm::db(); $p = self::body($req); $id = self::n($p, 'id'); $old = null;
         if ($id) {
             $old = MZC_Crm::build($id); if (!$old) { return self::fail('سیستم پیدا نشد.', 404); }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سیستم در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::build_out($old, true))); }
+            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سیستم در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::build_out($old, true, $a))); }
         }
         $cid = $id && empty($p['customer_id']) && empty($p['c_mobile']) ? (int) $old['customer_id'] : self::customer_for($p, $a);
         if ($cid instanceof WP_REST_Response) { return $cid; }
         $title = self::s($p, 'title', 190) ?: ($old ? $old['title'] : 'سیستم نو');
         $st = isset($p['status']) && isset(MZC_Crm::$build_statuses[$p['status']]) ? (string) $p['status'] : ($old ? $old['status'] : 'queue');
-        $inv = self::s($p, 'invoice_no', 60);
+        $inv = MZC_Crm::digits(self::s($p, 'invoice_no', 60));
+        // a new computer is known by its invoice number; the old ones keep their service numbers
+        if ($inv === '' && !$old) { return self::fail('شمارهٔ فاکتور را بنویسید؛ سیستم نو با شمارهٔ فاکتور شناخته می‌شود.', 422); }
         if ($inv !== '' && empty($p['force'])) {
             $dup = $db->get_row($db->prepare('SELECT id, service_no FROM `' . self::t('builds') . '` WHERE invoice_no = %s AND id <> %d LIMIT 1', $inv, $id), ARRAY_A);
-            if ($dup) { return self::fail('شمارهٔ فاکتور ' . $inv . ' قبلاً برای سیستم ' . $dup['service_no'] . ' ثبت شده است.', 409, array('duplicate' => array('id' => (int) $dup['id'], 'service_no' => (string) $dup['service_no']))); }
+            if ($dup) { return self::fail('شمارهٔ فاکتور ' . $inv . ' قبلاً برای سیستم دیگری (' . ($dup['service_no'] ?: '#' . $dup['id']) . ') ثبت شده است.', 409, array('duplicate' => array('id' => (int) $dup['id'], 'service_no' => (string) $dup['service_no']))); }
         }
         $rid = self::s($p, 'report_id', 64);
         $row = array('customer_id' => $cid, 'invoice_no' => $inv !== '' ? $inv : ($old ? $old['invoice_no'] : null), 'title' => $title, 'sold_at' => array_key_exists('sold_at', $p) ? self::d($p, 'sold_at') : ($old ? $old['sold_at'] : gmdate('Y-m-d')),
-            'notes' => array_key_exists('notes', $p) ? self::s($p, 'notes', 4000) : ($old ? $old['notes'] : ''), 'status' => $st, 'delivered' => $st === 'delivered' ? 1 : 0, 'updated' => self::now());
+            'notes' => array_key_exists('notes', $p) ? self::s($p, 'notes', 4000) : ($old ? $old['notes'] : ''), 'status' => $st, 'delivered' => $st === 'delivered' ? 1 : 0, 'updated' => self::now(),
+            'device_type' => isset($p['device_type'], MZC_Crm::$device_types[$p['device_type']]) ? (string) $p['device_type'] : ($old ? $old['device_type'] : 'system'),
+            'media' => array_key_exists('media', $p) ? (implode("\n", MZC_Crm::media_list($p['media'])) ?: null) : ($old ? $old['media'] : null));
         if ($rid !== '' && preg_match('/^[A-Za-z0-9-]{8,64}$/', $rid) && MZC_Staff::can($a['id'], 'tests', 2)) { $row['report_id'] = $rid; }
+        // prices: a person without the right keeps what the row had (matched by model), else the product's price
+        $pay = MZC_Staff::can($a['id'], 'payments', 2); $ce = self::cost_edit($a); $was = array();
+        if ($old) { foreach ($old['parts'] as $x) { if (!isset($was[$x['model']])) { $was[$x['model']] = $x; } } }
         $parts = null;
         if (isset($p['parts']) && is_array($p['parts'])) {
             $parts = array();
             foreach ($p['parts'] as $x) {
-                if (!is_array($x) || self::s($x, 'model', 190) === '') { continue; }
+                if (!is_array($x) || (self::s($x, 'model', 190) === '' && !self::n($x, 'product_id'))) { continue; }   // a row picked from the stock may leave the name to the product
                 $cat = isset($x['category'], MZC_Crm::$categories[$x['category']]) ? $x['category'] : 'other'; $m = self::opt_n($x, 'warranty_months');
-                $parts[] = array('category' => $cat, 'model' => self::s($x, 'model', 190), 'serial' => self::s($x, 'serial', 120) ?: null, 'warranty_months' => $m, 'vendor' => self::s($x, 'vendor', 120) ?: null, 'note' => self::s($x, 'note', 255) ?: null,
-                    'has_warranty' => array_key_exists('has_warranty', $x) ? self::flag($x, 'has_warranty') : ($m ? 1 : 0), 'has_box' => self::flag($x, 'has_box'), 'qc' => self::flag($x, 'qc'));
+                $model = self::s($x, 'model', 190); $w = isset($was[$model]) ? $was[$model] : null;
+                $parts[] = array('product_id' => self::n($x, 'product_id') ?: null, 'category' => $cat, 'model' => $model, 'serial' => self::s($x, 'serial', 120) ?: null, 'warranty_months' => $m, 'vendor' => self::s($x, 'vendor', 120) ?: null, 'note' => self::s($x, 'note', 255) ?: null,
+                    'has_warranty' => array_key_exists('has_warranty', $x) ? self::flag($x, 'has_warranty') : ($m ? 1 : 0), 'has_box' => self::flag($x, 'has_box'), 'qc' => self::flag($x, 'qc'),
+                    'sell_price' => $pay ? self::opt_n($x, 'sell_price') : ($w ? $w['sell_price'] : null), 'buy_price' => $ce ? self::opt_n($x, 'buy_price') : ($w ? $w['buy_price'] : null));
             }
+            $parts = MZC_Stock::link_parts($parts, 'model', array('sell_price' => 'sell_price', 'buy_price' => 'buy_price'));
         }
         $t = self::t('builds'); self::begin($db); $ok = true;
         if ($id) { $ok = $db->update($t, $row, array('id' => $id)) !== false; }
-        else {
-            $row['created'] = self::now(); $row['service_no'] = self::s($p, 'service_no', 40) ?: null;
-            $ins = function ($no) use ($db, $t, &$row) { if ($row['service_no'] === null) { $row['service_no'] = $no; } return $db->insert($t, $row) ? (int) $db->insert_id : 0; };
-            $id = self::with_number($db, $ins); $ok = $id > 0;
-        }
+        else { $row['created'] = self::now(); $row['service_no'] = self::s($p, 'service_no', 40) ?: null; $ok = (bool) $db->insert($t, $row); $id = (int) $db->insert_id; }
         if ($ok && $parts !== null) {
             $db->delete(self::t('build_parts'), array('build_id' => $id));
             foreach ($parts as $x) { $x['build_id'] = $id; if (!$db->insert(self::t('build_parts'), $x)) { $ok = false; break; } }
         }
         if (!self::end($db, $ok)) { return self::fail('ذخیره نشد: ' . $db->last_error, 500); }
-        $b = MZC_Crm::build($id); $out = self::build_out($b, true);
-        self::log($a, $old ? 'update' : 'create', 'build', $id, (string) $b['service_no']);
+        $b = MZC_Crm::build($id); $out = self::build_out($b, true, $a);
+        self::log($a, $old ? 'update' : 'create', 'build', $id, (string) ($b['invoice_no'] ?: $b['service_no']));
         // a serial already on another system: said, not refused (a part can legitimately come back and be sold again)
         $warn = array();
         foreach ($b['parts'] as $x) {
             if ($x['serial'] === null || $x['serial'] === '') { continue; }
             $o = $db->get_row($db->prepare('SELECT b.id, b.service_no FROM `' . self::t('build_parts') . '` p JOIN `' . $t . '` b ON b.id = p.build_id WHERE p.serial = %s AND p.build_id <> %d LIMIT 1', $x['serial'], $id), ARRAY_A);
-            if ($o) { $warn[] = 'سریال ' . $x['serial'] . ' روی سیستم ' . $o['service_no'] . ' هم ثبت شده است.'; }
+            if ($o) { $warn[] = 'سریال ' . $x['serial'] . ' روی سیستم ' . ($o['service_no'] ?: '#' . $o['id']) . ' هم ثبت شده است.'; }
         }
         $out['warnings'] = $warn;
         return self::ok($out, $old ? 200 : 201);
@@ -303,7 +325,7 @@ final class MZC_Api
         $db = MZC_Crm::db(); $p = self::body($req); $id = self::n($p, 'id'); $old = null; $pay = MZC_Staff::can($a['id'], 'payments', 2);
         if ($id) {
             $old = MZC_Crm::job($id); if (!$old) { return self::fail('سرویس پیدا نشد.', 404); }
-            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سرویس در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($old, true, self::money_seen($a)))); }
+            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سرویس در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($old, true, self::money_seen($a), self::cost_seen($a)))); }
         }
         $cid = $id && empty($p['customer_id']) && empty($p['c_mobile']) ? (int) $old['customer_id'] : self::customer_for($p, $a);
         if ($cid instanceof WP_REST_Response) { return $cid; }
@@ -311,6 +333,8 @@ final class MZC_Api
         $closed = array_key_exists('closed_at', $p) ? self::d($p, 'closed_at') : ($old ? $old['closed_at'] : null);
         if ($st === 'delivered' && $closed === null) { $closed = gmdate('Y-m-d'); }
         $row = array('customer_id' => $cid, 'device' => array_key_exists('device', $p) ? (self::s($p, 'device', 190) ?: null) : ($old ? $old['device'] : null),
+            'device_type' => isset($p['device_type'], MZC_Crm::$device_types[$p['device_type']]) ? (string) $p['device_type'] : ($old ? $old['device_type'] : null),
+            'media' => array_key_exists('media', $p) ? (implode("\n", MZC_Crm::media_list($p['media'])) ?: null) : ($old ? $old['media'] : null),
             'received_at' => array_key_exists('received_at', $p) ? (self::d($p, 'received_at') ?: gmdate('Y-m-d')) : ($old ? $old['received_at'] : gmdate('Y-m-d')), 'closed_at' => $closed,
             'due_at' => array_key_exists('due_at', $p) ? self::d($p, 'due_at') : ($old ? $old['due_at'] : null), 'invoice_no' => array_key_exists('invoice_no', $p) ? (self::s($p, 'invoice_no', 60) ?: null) : ($old ? $old['invoice_no'] : null),
             'is_mazesta' => array_key_exists('is_mazesta', $p) ? self::flag($p, 'is_mazesta') : ($old ? (int) $old['is_mazesta'] : 0), 'has_warranty' => array_key_exists('has_warranty', $p) ? self::flag($p, 'has_warranty') : ($old ? (int) $old['has_warranty'] : 0),
@@ -321,18 +345,21 @@ final class MZC_Api
         } elseif (!$old) { $row += array('labor_price' => 0, 'discount' => 0, 'paid' => 0); }
         $rid = self::s($p, 'report_id', 64);
         if ($rid !== '' && preg_match('/^[A-Za-z0-9-]{8,64}$/', $rid) && MZC_Staff::can($a['id'], 'tests', 2)) { $row['report_id'] = $rid; }
-        // part lists: a list not sent stays as it was. Without the right on prices a part keeps the price it had (matched by name), a new part is free.
-        $price = array(); if ($old) { foreach ($old['parts'] as $x) { if (!isset($price[$x['name']])) { $price[$x['name']] = (int) $x['unit_price']; } } }
+        // part lists: a list not sent stays as it was. Without the right on prices a part keeps the price it had (matched by name), a new one gets its product's price (or none).
+        $price = array(); $cost = array(); $ce = self::cost_edit($a);
+        if ($old) { foreach ($old['parts'] as $x) { if (!isset($price[$x['name']])) { $price[$x['name']] = (int) $x['unit_price']; $cost[$x['name']] = $x['buy_price']; } } }
         $lists = array();
         foreach (array('add' => 'parts', 'in' => 'recv') as $kind => $field) {
             if (!isset($p[$field]) || !is_array($p[$field])) { continue; }
             $lists[$kind] = array();
             foreach ($p[$field] as $x) {
-                if (!is_array($x) || self::s($x, 'name', 190) === '') { continue; }
-                $name = self::s($x, 'name', 190); $unit = $kind === 'in' ? 0 : ($pay ? self::n($x, 'unit_price') : (isset($price[$name]) ? $price[$name] : 0));
-                $lists[$kind][] = array('name' => $name, 'qty' => max(1, self::n($x, 'qty')), 'unit_price' => $unit, 'serial' => self::s($x, 'serial', 120) ?: null, 'warranty_months' => self::opt_n($x, 'warranty_months'), 'note' => self::s($x, 'note', 255) ?: null,
-                    'has_box' => self::flag($x, 'has_box'), 'has_warranty' => self::flag($x, 'has_warranty'), 'kind' => $kind);
+                if (!is_array($x) || (self::s($x, 'name', 190) === '' && ($kind === 'in' || !self::n($x, 'product_id')))) { continue; }
+                $name = self::s($x, 'name', 190); $unit = $kind === 'in' ? 0 : ($pay ? self::opt_n($x, 'unit_price') : (isset($price[$name]) ? $price[$name] : null));
+                $lists[$kind][] = array('product_id' => $kind === 'in' ? null : (self::n($x, 'product_id') ?: null), 'name' => $name, 'qty' => max(1, self::n($x, 'qty')), 'unit_price' => $unit, 'serial' => self::s($x, 'serial', 120) ?: null, 'warranty_months' => self::opt_n($x, 'warranty_months'), 'note' => self::s($x, 'note', 255) ?: null,
+                    'has_box' => self::flag($x, 'has_box'), 'has_warranty' => self::flag($x, 'has_warranty'), 'kind' => $kind, 'buy_price' => $kind === 'in' ? null : ($ce ? self::opt_n($x, 'buy_price') : (isset($cost[$name]) ? $cost[$name] : null)));
             }
+            if ($kind === 'add') { $lists[$kind] = MZC_Stock::link_parts($lists[$kind], 'name', array('unit_price' => 'sell_price', 'buy_price' => 'buy_price')); }
+            foreach ($lists[$kind] as &$x) { $x['unit_price'] = (int) $x['unit_price']; } unset($x);
         }
         $pays = null;
         if ($pay && isset($p['pays']) && is_array($p['pays'])) { $pays = array(); foreach ($p['pays'] as $x) { if (is_array($x) && self::n($x, 'amount')) { $pays[] = array('amount' => self::n($x, 'amount'), 'account' => self::s($x, 'account', 120) ?: null, 'tx' => self::s($x, 'tx', 80) ?: null, 'holder' => self::s($x, 'holder', 120) ?: null); } } }
@@ -349,7 +376,7 @@ final class MZC_Api
         if (!self::end($db, $ok)) { return self::fail('ذخیره نشد: ' . $db->last_error, 500); }
         $j = MZC_Crm::job($id);
         self::log($a, $old ? 'update' : 'create', 'job', $id, (string) $j['service_no']);
-        return self::ok(self::job_out($j, true, self::money_seen($a)), $old ? 200 : 201);
+        return self::ok(self::job_out($j, true, self::money_seen($a), self::cost_seen($a)), $old ? 200 : 201);
     }
 
     public static function rest_job_status($req)
@@ -364,6 +391,151 @@ final class MZC_Api
         $db->update(self::t('jobs'), $row, array('id' => $id));
         self::log($a, 'status', 'job', $id, $j['status'] . ' → ' . $st);
         return self::ok(self::job_out(MZC_Crm::job($id), false, self::money_seen($a)));
+    }
+
+    /* ---------- stock: products, suppliers, purchase invoices, serial numbers ---------- */
+
+    /** Products are seen by the stock people and by whoever fills a computer's or a service's parts (the forms pick from them). */
+    private static function stock_auth($req, $need = 1)
+    {
+        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        if ($need === 1 && (MZC_Staff::can($a['id'], 'stock', 1) || MZC_Staff::can($a['id'], 'builds', 2) || MZC_Staff::can($a['id'], 'jobs', 2))) { return $a; }
+        return MZC_Staff::can($a['id'], 'stock', $need) ? $a : self::fail('دسترسی این کار را ندارید.', 403);
+    }
+
+    private static function product_out($p, $a)
+    {
+        $o = array('id' => (int) $p['id'], 'name' => $p['name'], 'category' => $p['category'], 'categoryText' => isset(MZC_Crm::$categories[$p['category']]) ? MZC_Crm::$categories[$p['category']] : '', 'brand' => (string) $p['brand'], 'sku' => (string) $p['sku'],
+            'sell_price' => $p['sell_price'] === null ? null : (int) $p['sell_price'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'notes' => (string) $p['notes'], 'stock' => isset($p['stock']) ? (int) $p['stock'] : null, 'updated' => $p['updated']);
+        if (self::cost_seen($a)) { $o['buy_price'] = $p['buy_price'] === null ? null : (int) $p['buy_price']; }
+        return $o;
+    }
+
+    public static function rest_products($req)
+    {
+        $a = self::stock_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $pg = self::page($req); list($rows, $total) = MZC_Stock::products(trim((string) $req->get_param('q')), $pg, self::per($req), (string) $req->get_param('category'), (bool) $req->get_param('instock'));
+        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::per($req), 'items' => array_map(function ($p) use ($a) { return self::product_out($p, $a); }, $rows)));
+    }
+
+    /** One product with where it came from and where it went (the purchase side needs the stock area; prices follow the money rights). */
+    public static function rest_product($req)
+    {
+        $a = self::stock_auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $r = MZC_Stock::report((int) $req['id']); if (!$r) { return self::fail('کالا پیدا نشد.', 404); }
+        $cost = self::cost_seen($a); $money = self::money_seen($a); $out = array('product' => self::product_out($r['product'], $a), 'bought' => array(), 'used' => array(), 'totals' => array('bought' => $r['totals']['bought'], 'used' => $r['totals']['used'], 'stock' => $r['totals']['stock']));
+        if (MZC_Staff::can($a['id'], 'stock', 1)) {
+            foreach ($r['bought'] as $x) { $o = array('purchase_id' => (int) $x['purchase_id'], 'invoice_no' => (string) $x['invoice_no'], 'bought_at' => (string) $x['bought_at'], 'bought_at_j' => self::jd($x['bought_at']), 'vendor_id' => (int) $x['vendor_id'], 'vendor_name' => (string) $x['vendor_name'], 'qty' => (int) $x['qty'], 'serials' => array_values(array_filter(explode("\n", (string) $x['serials'])))); if ($cost) { $o['unit_cost'] = (int) $x['unit_cost']; } $out['bought'][] = $o; }
+            if ($cost) { $out['totals']['spent'] = $r['totals']['spent']; }
+        }
+        foreach ($r['used'] as $x) {
+            if (!MZC_Staff::can($a['id'], $x['kind'] === 'build' ? 'builds' : 'jobs', 1)) { continue; }
+            $o = array('kind' => $x['kind'], 'id' => (int) $x['id'], 'number' => (string) $x['number'], 'customer_id' => (int) $x['customer_id'], 'customer_name' => $x['customer_name'], 'at' => (string) $x['at'], 'at_j' => self::jd($x['at']), 'qty' => (int) $x['qty'], 'serial' => (string) $x['serial']);
+            if ($money) { $o['price'] = $x['price'] === null ? null : (int) $x['price']; } if ($cost) { $o['cost'] = $x['cost'] === null ? null : (int) $x['cost']; }
+            $out['used'][] = $o;
+        }
+        if ($money) { $out['totals']['sold'] = $r['totals']['sold']; }
+        return self::ok($out);
+    }
+
+    public static function rest_product_save($req)
+    {
+        $a = self::stock_auth($req, 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $p = self::body($req); $id = self::n($p, 'id'); $d = array();
+        if ($id) {
+            $old = MZC_Stock::product($id); if (!$old) { return self::fail('کالا پیدا نشد.', 404); }
+            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این کالا در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::product_out($old, $a))); }
+        }
+        foreach (array('name', 'category', 'brand', 'sku', 'notes', 'warranty_months', 'sell_price') as $k) { if (array_key_exists($k, $p)) { $d[$k] = is_scalar($p[$k]) || $p[$k] === null ? (string) $p[$k] : ''; } }
+        if (array_key_exists('buy_price', $p) && self::cost_edit($a)) { $d['buy_price'] = is_scalar($p['buy_price']) ? (string) $p['buy_price'] : ''; }
+        $r = MZC_Stock::save_product($id, $d);
+        if (!is_int($r)) { return self::fail($r, 422); }
+        self::log($a, $id ? 'update' : 'create', 'product', $r, Mazesta_Connect::clip(isset($d['name']) ? $d['name'] : '', 120));
+        return self::ok(self::product_out(MZC_Stock::product($r), $a), $id ? 200 : 201);
+    }
+
+    public static function rest_suppliers($req)
+    {
+        $a = MZC_Staff::auth($req, 'stock', 1); if ($a instanceof WP_REST_Response) { return $a; }
+        $kinds = MZC_Ships::$kinds;
+        return self::ok(array('items' => array_map(function ($v) use ($kinds) { return array('id' => (int) $v['id'], 'name' => $v['name'], 'kind' => $v['kind'], 'kindText' => isset($kinds[$v['kind']]) ? $kinds[$v['kind']] : '', 'phone' => (string) $v['phone'], 'notes' => (string) $v['notes'],
+            'purchases' => (int) $v['purchases'], 'last_at' => (string) $v['last_at'], 'last_at_j' => self::jd($v['last_at'])); }, MZC_Stock::suppliers())));
+    }
+
+    public static function rest_supplier_save($req)
+    {
+        $a = MZC_Staff::auth($req, 'stock', 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $p = self::body($req); $id = self::n($p, 'id');
+        $r = MZC_Stock::save_supplier($id, array('name' => self::s($p, 'name', 120), 'kind' => self::s($p, 'kind', 10) ?: 'supplier', 'phone' => self::s($p, 'phone', 60), 'notes' => self::s($p, 'notes', 255)));
+        if (!is_int($r)) { return self::fail($r, 422); }
+        self::log($a, $id ? 'update' : 'create', 'vendor', $r, self::s($p, 'name', 120));
+        return self::ok(array('id' => $r, 'name' => self::s($p, 'name', 120)), $id ? 200 : 201);
+    }
+
+    private static function purchase_out($u, $a, $full)
+    {
+        $cost = self::cost_seen($a);
+        $o = array('id' => (int) $u['id'], 'vendor_id' => (int) $u['vendor_id'], 'vendor_name' => (string) $u['vendor_name'], 'invoice_no' => (string) $u['invoice_no'], 'bought_at' => (string) $u['bought_at'], 'bought_at_j' => self::jd($u['bought_at']), 'notes' => (string) $u['notes'], 'updated' => $u['updated']);
+        if (isset($u['line_count'])) { $o['lines'] = (int) $u['line_count']; }
+        if ($cost && isset($u['total'])) { $o['total'] = (int) $u['total']; }
+        if ($full) {
+            $o['items'] = array();
+            foreach ($u['items'] as $i) { $x = array('product_id' => (int) $i['product_id'], 'name' => (string) $i['product_name'], 'category' => (string) $i['category'], 'qty' => (int) $i['qty'], 'serials' => $i['serial_list']); if ($cost) { $x['unit_cost'] = (int) $i['unit_cost']; } $o['items'][] = $x; }
+        }
+        return $o;
+    }
+
+    public static function rest_purchases($req)
+    {
+        $a = MZC_Staff::auth($req, 'stock', 1); if ($a instanceof WP_REST_Response) { return $a; }
+        $pg = self::page($req); list($rows, $total) = MZC_Stock::purchases(trim((string) $req->get_param('q')), (int) $req->get_param('vendor'), $pg, self::per($req));
+        return self::ok(array('total' => $total, 'page' => $pg, 'per' => self::per($req), 'items' => array_map(function ($u) use ($a) { return self::purchase_out($u, $a, false); }, $rows)));
+    }
+
+    public static function rest_purchase($req)
+    {
+        $a = MZC_Staff::auth($req, 'stock', 1); if ($a instanceof WP_REST_Response) { return $a; }
+        $u = MZC_Stock::purchase((int) $req['id']); if (!$u) { return self::fail('فاکتور خرید پیدا نشد.', 404); }
+        return self::ok(self::purchase_out($u, $a, true));
+    }
+
+    /** A purchase invoice; the costs on it are what entering it is for, so it needs the stock area's edit right (which also lets a person see buy prices). */
+    public static function rest_purchase_save($req)
+    {
+        $a = MZC_Staff::auth($req, 'stock', 2); if ($a instanceof WP_REST_Response) { return $a; }
+        $p = self::body($req); $id = self::n($p, 'id');
+        if ($id) {
+            $old = MZC_Stock::purchase($id); if (!$old) { return self::fail('فاکتور خرید پیدا نشد.', 404); }
+            if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این فاکتور در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::purchase_out($old, $a, true))); }
+        }
+        $items = array();
+        foreach (isset($p['items']) && is_array($p['items']) ? $p['items'] : array() as $x) {
+            if (!is_array($x)) { continue; }
+            $items[] = array('product_id' => self::n($x, 'product_id'), 'name' => self::s($x, 'name', 190), 'category' => self::s($x, 'category', 40), 'qty' => self::n($x, 'qty'), 'unit_cost' => self::n($x, 'unit_cost'),
+                'sell_price' => self::opt_n($x, 'sell_price'), 'serials' => isset($x['serials']) && is_array($x['serials']) ? array_map('strval', array_filter($x['serials'], 'is_scalar')) : self::s($x, 'serials', 20000));
+        }
+        $r = MZC_Stock::save_purchase($id, array('vendor_id' => self::n($p, 'vendor_id'), 'vendor_name' => self::s($p, 'vendor_name', 120), 'invoice_no' => self::s($p, 'invoice_no', 60), 'bought_at' => self::d($p, 'bought_at'),
+            'notes' => self::s($p, 'notes', 2000), 'force' => !empty($p['force']), 'items' => $items));
+        if (is_array($r)) { return self::fail('این فروشنده فاکتوری با همین شماره دارد.', 409, array('duplicate' => array('id' => $r['duplicate']))); }
+        if (!is_int($r)) { return self::fail($r, 422); }
+        $u = MZC_Stock::purchase($r);
+        self::log($a, $id ? 'update' : 'create', 'purchase', $r, trim($u['vendor_name'] . ' ' . $u['invoice_no']));
+        return self::ok(self::purchase_out($u, $a, true), $id ? 200 : 201);
+    }
+
+    /** Where a serial number has been (bought, in a computer, in a service, sent to warranty), each part only to those who may see that area. */
+    public static function rest_serial($req)
+    {
+        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $q = trim((string) $req->get_param('q')); if (mb_strlen($q) < 3) { return self::fail('دست‌کم سه نویسه از سریال را بنویسید.'); }
+        $t = MZC_Stock::trace($q); $cost = self::cost_seen($a);
+        foreach ($t as &$rows) { foreach ($rows as &$x) { foreach (array('id', 'product_id', 'purchase_id', 'unit_cost') as $k) { if (isset($x[$k])) { $x[$k] = (int) $x[$k]; } } } unset($x); } unset($rows);
+        $out = array('bought' => array(), 'builds' => array(), 'jobs' => array(), 'ships' => array());
+        if (MZC_Staff::can($a['id'], 'stock', 1)) { foreach ($t['bought'] as $x) { if (!$cost) { unset($x['unit_cost']); } $out['bought'][] = $x; } }
+        if (MZC_Staff::can($a['id'], 'builds', 1)) { $out['builds'] = $t['builds']; }
+        if (MZC_Staff::can($a['id'], 'jobs', 1)) { $out['jobs'] = $t['jobs']; }
+        if (MZC_Staff::can($a['id'], 'ships', 1)) { $out['ships'] = $t['ships']; }
+        return self::ok($out);
     }
 
     /* ---------- test reports ---------- */
@@ -424,7 +596,8 @@ final class MZC_Api
         $n = (int) $db->get_var($db->prepare('SELECT COUNT(*) FROM `' . self::t('audit') . "` WHERE action = 'sms' AND entity = %s AND entity_id = %d AND at > %s", $kind, $id, gmdate('Y-m-d H:i:s', time() - 86400)));
         if ($n >= 3) { return self::fail('امروز سه پیامک برای این پرونده فرستاده شده است.', 429); }
         $cf = self::cfg();
-        $text = trim(strtr((string) $cf['receipt'], array('{no}' => (string) $rec['service_no'], '{name}' => $c['name'], '{url}' => (string) $cf['portalUrl'])));
+        $no = $kind === 'build' && $rec['invoice_no'] ? (string) $rec['invoice_no'] : (string) $rec['service_no'];
+        $text = trim(strtr((string) $cf['receipt'], array('{no}' => $no, '{name}' => $c['name'], '{url}' => (string) $cf['portalUrl'])));
         $r = MZC_Sms::send($m, $text, '');
         if ($r !== true) { return self::fail('پیامک فرستاده نشد: ' . $r, 502); }
         self::log($a, 'sms', $kind, $id, $m);
@@ -440,6 +613,7 @@ final class MZC_Api
         if ($kind === 'build') { $val += array('title' => $rec['title'], 'sold' => self::jd($rec['sold_at'])); }
         else { $val += array('device' => (string) $rec['device'], 'received' => self::jd($rec['received_at']), 'due' => self::jd($rec['due_at']), 'complaint' => mb_substr((string) $rec['complaint'], 0, 140)); }
         foreach ($keys as $k) { $lines[] = array('key' => $k, 'label' => self::$label_fields[$kind][$k], 'value' => isset($val[$k]) ? $val[$k] : ''); }
-        return self::ok(array('kind' => $kind, 'id' => (int) $rec['id'], 'number' => (string) $rec['service_no'], 'qr' => (string) $rec['service_no'], 'lines' => $lines));
+        $no = $kind === 'build' && $rec['invoice_no'] ? (string) $rec['invoice_no'] : (string) $rec['service_no'];
+        return self::ok(array('kind' => $kind, 'id' => (int) $rec['id'], 'number' => $no, 'qr' => $no, 'lines' => $lines));
     }
 }

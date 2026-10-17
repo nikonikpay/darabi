@@ -27,6 +27,13 @@ echo '<tr><td><input type="text" name="new_label" maxlength="40" placeholder="ن
 foreach (MZC_Staff::$areas as $a => $l) { echo '<td>' . $lv('new_p[' . $a . ']', 0) . '</td>'; }
 echo '<td></td></tr></tbody></table></div><p><button class="mzc-btn primary">ذخیرهٔ نقش‌ها</button></p></form></div></div>';
 
+/* ---- the AI apps ---- */
+echo '<div class="mzc-panel"><header><h3>اتصال ChatGPT و Claude (MCP)</h3></header><div class="body"><p style="max-width:95ch">هر کارمند می‌تواند ChatGPT یا Claude خودش را به CRM وصل کند و به آن بگوید سیستم، سرویس، فاکتور خرید یا کالا ثبت کند یا آمار بدهد. هوش مصنوعی همیشه <b>با دسترسی همان کارمند</b> کار می‌کند و هر تغییرش با نام او در گزارش تغییرات ثبت می‌شود. فرم‌ها مثل قبل کار می‌کنند.</p>'
+    . '<p>نشانی سرور MCP: <code class="lat" style="user-select:all">' . esc_html(MZC_Oauth::resource()) . '</code></p>'
+    . '<ul style="max-width:95ch;list-style:disc;padding-inline-start:1.4em"><li><b>ChatGPT</b>: Settings ‹ Apps &amp; Connectors ‹ Advanced settings ‹ Developer mode را روشن کنید، بعد Create / Add a custom connector، نشانی بالا را بدهید و احراز هویت را OAuth بگذارید.</li>'
+    . '<li><b>Claude</b>: Settings ‹ Connectors ‹ Add custom connector و همین نشانی.</li><li>بعد از افزودن، صفحهٔ ورود همین سایت باز می‌شود؛ کارمند با نام کاربری و گذرواژهٔ خودش وارد می‌شود.</li>'
+    . '<li>برای قطع اتصال یک نفر، حسابش را خاموش کنید یا گذرواژه‌اش را عوض کنید.</li></ul></div></div>';
+
 /* ---- people ---- */
 $roleBoxes = function ($have) use ($roles) {
     $o = '';
@@ -43,7 +50,7 @@ echo '<div class="mzc-panel"><header><h3>کاربر تازه</h3></header><div c
     . '<div class="mzc-field wide"><span>نقش‌ها</span><div>' . $roleBoxes(array()) . '</div></div></div>'
     . '<p><button class="mzc-btn primary">افزودن</button></p></form></div></div>';
 
-$users = MZC_Staff::users();
+$users = MZC_Staff::users(); $ai = MZC_Oauth::connected();
 echo '<div class="mzc-panel"><header><h3>کاربران</h3></header><div class="body">';
 if (!$users) { echo '<p class="muted">هنوز کاربری تعریف نشده است.</p>'; }
 foreach ($users as $u) {
@@ -51,7 +58,7 @@ foreach ($users as $u) {
     $chips = '';
     foreach ($p as $a => $v) { if ($v > 0) { $chips .= MZC_Admin::pill(MZC_Staff::$areas[$a] . ': ' . MZC_Staff::$levels[$v], $v > 1 ? 'ok' : '') . ' '; } }
     echo '<details class="mzc-more" style="margin-bottom:.6em"><summary><strong dir="auto">' . esc_html($u->display_name !== '' ? $u->display_name : $u->user_login) . '</strong> <span class="lat muted">' . esc_html($u->user_login) . '</span> '
-        . ($rec['on'] || $adm ? MZC_Admin::pill($adm ? 'مدیر سایت' : 'فعال', 'ok') : MZC_Admin::pill('خاموش', 'bad')) . '</summary>'
+        . ($rec['on'] || $adm ? MZC_Admin::pill($adm ? 'مدیر سایت' : 'فعال', 'ok') : MZC_Admin::pill('خاموش', 'bad')) . (isset($ai[$u->ID]) ? ' ' . MZC_Admin::pill('وصل به ' . implode('، ', $ai[$u->ID]), 'info') : '') . '</summary>'
         . '<p>' . ($chips !== '' ? $chips : '<span class="muted">هیچ دسترسی‌ای ندارد.</span>') . '</p>'
         . MZC_Admin::form_open('staff_save', 'class="mzc-form"') . '<input type="hidden" name="uid" value="' . (int) $u->ID . '"><div class="mzc-fields">'
         . '<label>نام نمایشی<input type="text" name="display_name" maxlength="80" value="' . esc_attr($u->display_name) . '"></label>'

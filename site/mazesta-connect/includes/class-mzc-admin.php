@@ -6,7 +6,7 @@ final class MZC_Admin
 {
     private static $pages = array(
         'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-messages' => array('پیام‌ها', 'messages'),
-        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
+        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
 
@@ -253,6 +253,36 @@ final class MZC_Admin
         $out = '<label class="wide">گزارش تست برنامه<select name="report_id"><option value="">— بدون گزارش —</option>';
         foreach ($opts as $id => $o) { $out .= '<option value="' . esc_attr($id) . '"' . selected($selected, $id, false) . '>' . esc_html(($o['match'] ? '★ ' : '') . $o['label']) . '</option>'; }
         return $out . '</select><small>گزارش‌هایی که با «ارسال به سایت» از برنامه رسیده‌اند. ★ یعنی شمارهٔ سرویسش با شمارهٔ این فرم یکی است.</small></label>';
+    }
+
+    /** The stock products a part row can be picked from (an <input list="mzc-products">); admin.js fills the row's product id, category and prices from the chosen one. */
+    public static function product_list()
+    {
+        $o = '<datalist id="mzc-products">';
+        foreach (MZC_Stock::options() as $p) {
+            $o .= '<option value="' . esc_attr($p['name']) . '" data-id="' . (int) $p['id'] . '" data-cat="' . esc_attr($p['category']) . '" data-sell="' . esc_attr($p['sell_price']) . '" data-buy="' . esc_attr($p['buy_price']) . '" data-w="' . esc_attr($p['warranty_months']) . '">'
+                . esc_html('موجودی ' . (int) $p['stock'] . ($p['sell_price'] !== null ? ' — ' . number_format((int) $p['sell_price']) . ' تومان' : '')) . '</option>';
+        }
+        return $o . '</datalist>';
+    }
+
+    /** The device-type choice and the Telegram links of a build or job form. */
+    public static function device_select($cur, $none = false)
+    {
+        $o = '<label>نوع دستگاه<select name="device_type">' . ($none ? '<option value="">—</option>' : '');
+        foreach (MZC_Crm::$device_types as $k => $l) { $o .= '<option value="' . esc_attr($k) . '"' . selected((string) $cur, $k, false) . '>' . esc_html($l) . '</option>'; }
+        return $o . '</select></label>';
+    }
+
+    public static function media_field($media)
+    {
+        return '<label class="wide">لینک عکس‌ها و فیلم‌ها در تلگرام<textarea name="media" rows="2" dir="ltr" placeholder="https://t.me/…  (هر لینک در یک خط)">' . esc_textarea((string) $media) . '</textarea><small>پست‌های کانال تلگرام همین سیستم یا سرویس.</small></label>';
+    }
+
+    public static function media_links($media)
+    {
+        $l = MZC_Crm::media_list((string) $media);
+        return $l ? implode(' · ', array_map(function ($u, $i) { return '<a href="' . esc_url($u) . '" target="_blank" rel="noopener noreferrer">لینک ' . ($i + 1) . '</a>'; }, $l, array_keys($l))) : '—';
     }
 
     public static function photos_block($photos)

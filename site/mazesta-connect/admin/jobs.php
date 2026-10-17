@@ -17,6 +17,7 @@ if ($add || $edit) {
     echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-jobs')) . '">‹ سرویس‌ها</a><h2>' . ($j ? 'ویرایش سرویس' : 'پذیرش سرویس تازه') . '</h2></div></div>';
     echo '<div class="mzc-panel"><div class="body">' . MZC_Admin::form_open('job_save', 'class="mzc-form" enctype="multipart/form-data"') . ($j ? '<input type="hidden" name="id" value="' . (int) $j['id'] . '">' : '') . '<div class="mzc-fields">'
         . MZC_Admin::customer_picker($customer)
+        . MZC_Admin::device_select($j ? $j['device_type'] : 'system', (bool) $j)
         . '<label>دستگاه<input type="text" name="device" value="' . $v('device') . '" maxlength="190" placeholder="مثلاً کیس رندر / لپ‌تاپ ایسوس"></label>'
         . ($j ? '<label>شمارهٔ سرویس<input type="text" name="service_no" value="' . $v('service_no') . '" dir="ltr" maxlength="40"></label>'
             : '<label>شمارهٔ سرویس<input type="text" value="خودکار؛ بعد از ثبت داده می‌شود" disabled><small>از ادامهٔ شماره‌های قبلی (R-…) شماره‌گذاری می‌شود.</small></label>')
@@ -34,16 +35,16 @@ if ($add || $edit) {
         . '<label>تخفیف (تومان)<input type="text" name="discount" value="' . $v('discount') . '" dir="ltr" inputmode="numeric"></label>'
         . '<label>پیش‌پرداخت / پرداخت‌شده (تومان)<input type="text" name="paid" value="' . $v('paid') . '" dir="ltr" inputmode="numeric"><small>پرداخت‌های جداگانه را پایین ثبت کنید.</small></label>'
         . MZC_Admin::report_select($j ? $j['report_id'] : '', $j ? (string) $j['service_no'] : '')
-        . '<label class="wide">یادداشت داخلی<textarea name="notes" rows="2">' . esc_textarea($j ? (string) $j['notes'] : '') . '</textarea></label></div>';
-    echo '<div class="mzc-field"><span>قطعات اضافه‌شده (نام، تعداد، قیمت واحد)</span><div class="mzc-rows" id="mzc-parts" data-next="' . ($j ? count($j['parts']) : 0) . '">';
+        . '<label class="wide">یادداشت داخلی<textarea name="notes" rows="2">' . esc_textarea($j ? (string) $j['notes'] : '') . '</textarea></label>' . MZC_Admin::media_field($j ? $j['media'] : '') . '</div>';
+    echo '<div class="mzc-field"><span>قطعات اضافه‌شده (از انبار انتخاب کنید؛ تعداد، قیمت فروش و خرید)</span><div class="mzc-rows" id="mzc-parts" data-next="' . ($j ? count($j['parts']) : 0) . '">';
     $row = function ($n, $p) {
-        return '<div class="mzc-row"><input type="text" name="parts[' . $n . '][name]" value="' . esc_attr($p['name']) . '" placeholder="نام قطعه" maxlength="190"><input type="number" name="parts[' . $n . '][qty]" value="' . esc_attr($p['qty']) . '" placeholder="تعداد" min="1">'
-            . '<input type="text" name="parts[' . $n . '][unit_price]" value="' . esc_attr($p['unit_price']) . '" placeholder="قیمت واحد (تومان)" dir="ltr" inputmode="numeric"><input type="text" name="parts[' . $n . '][serial]" value="' . esc_attr($p['serial']) . '" placeholder="سریال" dir="ltr" maxlength="120">'
-            . '<input type="number" name="parts[' . $n . '][warranty_months]" value="' . esc_attr($p['warranty_months']) . '" placeholder="گارانتی (ماه)" min="0" max="120"><button type="button" class="mzc-btn sm danger x" data-mzc-remove>حذف</button></div>';
+        return '<div class="mzc-row" data-mzc-part><input type="hidden" name="parts[' . $n . '][product_id]" value="' . esc_attr($p['product_id']) . '" data-f="pid"><input type="text" name="parts[' . $n . '][name]" value="' . esc_attr($p['name']) . '" placeholder="نام قطعه (از انبار)" maxlength="190" list="mzc-products" data-f="name"><input type="number" name="parts[' . $n . '][qty]" value="' . esc_attr($p['qty']) . '" placeholder="تعداد" min="1">'
+            . '<input type="text" name="parts[' . $n . '][unit_price]" value="' . esc_attr($p['unit_price']) . '" placeholder="قیمت فروش واحد (تومان)" dir="ltr" inputmode="numeric" data-f="sell"><input type="text" name="parts[' . $n . '][buy_price]" value="' . esc_attr($p['buy_price']) . '" placeholder="قیمت خرید" dir="ltr" inputmode="numeric" data-f="buy"><input type="text" name="parts[' . $n . '][serial]" value="' . esc_attr($p['serial']) . '" placeholder="سریال" dir="ltr" maxlength="120">'
+            . '<input type="number" name="parts[' . $n . '][warranty_months]" value="' . esc_attr($p['warranty_months']) . '" placeholder="گارانتی (ماه)" min="0" max="120" data-f="w"><button type="button" class="mzc-btn sm danger x" data-mzc-remove>حذف</button></div>';
     };
     if ($j) { foreach ($j['parts'] as $n => $p) { echo $row($n, $p); } }
-    echo '</div><template id="mzc-parts-tpl">' . str_replace('[0]', '[__N__]', $row(0, array('name' => '', 'qty' => 1, 'unit_price' => '', 'serial' => '', 'warranty_months' => ''))) . '</template>';
-    echo '<p><button type="button" class="mzc-btn" data-mzc-add="mzc-parts">+ قطعهٔ تازه</button></p></div>';
+    echo '</div><template id="mzc-parts-tpl">' . str_replace('[0]', '[__N__]', $row(0, array('product_id' => '', 'name' => '', 'qty' => 1, 'unit_price' => '', 'buy_price' => '', 'serial' => '', 'warranty_months' => ''))) . '</template>';
+    echo '<p><button type="button" class="mzc-btn" data-mzc-add="mzc-parts">+ قطعهٔ تازه</button></p></div>' . MZC_Admin::product_list();
     $rrow = function ($n, $p) {
         return '<div class="mzc-row"><input type="text" name="recv[' . $n . '][name]" value="' . esc_attr($p['name']) . '" placeholder="نام قطعه" maxlength="190"><input type="text" name="recv[' . $n . '][serial]" value="' . esc_attr($p['serial']) . '" placeholder="سریال" dir="ltr" maxlength="120">'
             . '<input type="text" name="recv[' . $n . '][note]" value="' . esc_attr($p['note']) . '" placeholder="توضیح / مشکل ظاهری" maxlength="255"><label class="chk"><input type="checkbox" name="recv[' . $n . '][has_box]" value="1"' . checked((int) $p['has_box'], 1, false) . '> جعبه</label>'
@@ -73,17 +74,17 @@ if ($view) {
         . '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('edit' => $view))) . '">ویرایش</a>'
         . '<a class="mzc-btn danger" href="' . esc_url(MZC_Admin::post_url('job_delete', array('id' => $view))) . '" onclick="return confirm(\'این سرویس پاک شود؟\')">حذف</a></div></div>';
     echo '<div class="mzc-grid2"><div class="mzc-panel"><header><h3>مشخصات</h3></header><div class="body"><dl class="mzc-kv"><dt>مشتری</dt><dd>' . ($c ? '<a href="' . esc_url(MZC_Admin::url('mzc-customers', array('view' => (int) $c['id']))) . '">' . esc_html($c['name']) . '</a> <span class="num muted">' . esc_html($c['mobile']) . '</span>' : '—') . '</dd>'
-        . '<dt>شمارهٔ سرویس</dt><dd class="num">' . esc_html($j['service_no'] ?: '—') . '</dd><dt>تاریخ پذیرش</dt><dd>' . esc_html($j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '—') . '</dd><dt>تاریخ تحویل</dt><dd>' . esc_html($j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '—') . '</dd><dt>موعد تحویل</dt><dd>' . esc_html($j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '—') . '</dd><dt>فاکتور</dt><dd class="num">' . esc_html($j['invoice_no'] ?: '—') . '</dd>'
+        . '<dt>شمارهٔ سرویس</dt><dd class="num">' . esc_html($j['service_no'] ?: '—') . '</dd><dt>نوع دستگاه</dt><dd>' . esc_html(isset(MZC_Crm::$device_types[(string) $j['device_type']]) ? MZC_Crm::$device_types[$j['device_type']] : '—') . '</dd><dt>تاریخ پذیرش</dt><dd>' . esc_html($j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '—') . '</dd><dt>تاریخ تحویل</dt><dd>' . esc_html($j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '—') . '</dd><dt>موعد تحویل</dt><dd>' . esc_html($j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '—') . '</dd><dt>فاکتور</dt><dd class="num">' . esc_html($j['invoice_no'] ?: '—') . '</dd>'
         . '<dt>درخواست مشتری</dt><dd dir="auto">' . nl2br(esc_html((string) $j['complaint'])) . '</dd><dt>کارهای انجام‌شده</dt><dd dir="auto">' . nl2br(esc_html((string) $j['work_done'])) . '</dd>'
         . '<dt>گزارش تست</dt><dd>' . ($j['report_id'] ? '<a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode($j['report_id']))) . '">خلاصهٔ گزارش</a> · <a target="_blank" href="' . esc_url(admin_url('admin-post.php?action=mzc_report&view=full&id=' . rawurlencode($j['report_id']))) . '">گزارش کامل</a>' : '—') . '</dd>'
-        . '<dt>یادداشت داخلی</dt><dd dir="auto">' . nl2br(esc_html((string) $j['notes'])) . '</dd></dl></div></div>';
+        . '<dt>یادداشت داخلی</dt><dd dir="auto">' . nl2br(esc_html((string) $j['notes'])) . '</dd><dt>عکس و فیلم (تلگرام)</dt><dd>' . MZC_Admin::media_links($j['media']) . '</dd></dl></div></div>';
     echo '<div class="mzc-panel"><header><h3>عکس‌ها</h3></header><div class="body">';
     if (!$j['photos']) { echo '<p class="muted">عکسی ثبت نشده است.</p>'; }
     echo '<div class="mzc-photos">'; foreach ($j['photos'] as $p) { $src = admin_url('admin-post.php?action=mzc_photo&id=' . (int) $p['id']); echo '<figure><a target="_blank" href="' . esc_url($src) . '"><img loading="lazy" src="' . esc_url($src) . '" alt=""></a></figure>'; }
     echo '</div></div></div></div>';
     echo '<div class="mzc-panel"><header><h3>قطعات و هزینه</h3></header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>قطعه</th><th>سریال</th><th class="n">تعداد</th><th class="n">قیمت واحد</th><th class="n">جمع</th></tr></thead><tbody>';
     if (!$j['parts']) { echo '<tr><td class="empty" colspan="5">قطعه‌ای اضافه نشده است.</td></tr>'; }
-    foreach ($j['parts'] as $p) { echo '<tr><td dir="auto">' . esc_html($p['name']) . ($p['warranty_months'] ? ' ' . MZC_Admin::pill('گارانتی ' . (int) $p['warranty_months'] . ' ماه') : ($p['has_warranty'] ? ' ' . MZC_Admin::pill('گارانتی') : '')) . ($p['has_box'] ? ' ' . MZC_Admin::pill('جعبه') : '') . '</td><td class="num">' . esc_html($p['serial'] ?: '—') . '</td><td class="n">' . MZC_Admin::num($p['qty']) . '</td><td class="n">' . esc_html(number_format((int) $p['unit_price'])) . '</td><td class="n">' . esc_html(number_format((int) $p['qty'] * (int) $p['unit_price'])) . '</td></tr>'; }
+    foreach ($j['parts'] as $p) { echo '<tr><td dir="auto">' . ($p['product_id'] ? '<a href="' . esc_url(MZC_Admin::url('mzc-stock', array('view' => (int) $p['product_id']))) . '">' . esc_html($p['name']) . '</a>' : esc_html($p['name'])) . ($p['warranty_months'] ? ' ' . MZC_Admin::pill('گارانتی ' . (int) $p['warranty_months'] . ' ماه') : ($p['has_warranty'] ? ' ' . MZC_Admin::pill('گارانتی') : '')) . ($p['has_box'] ? ' ' . MZC_Admin::pill('جعبه') : '') . '</td><td class="num">' . esc_html($p['serial'] ?: '—') . '</td><td class="n">' . MZC_Admin::num($p['qty']) . '</td><td class="n">' . esc_html(number_format((int) $p['unit_price'])) . '</td><td class="n">' . esc_html(number_format((int) $p['qty'] * (int) $p['unit_price'])) . '</td></tr>'; }
     echo '<tr><td colspan="4"><strong>اجرت</strong></td><td class="n">' . esc_html(number_format((int) $j['labor_price'])) . '</td></tr>'
         . ((int) $j['discount'] ? '<tr><td colspan="4"><strong>تخفیف</strong></td><td class="n">- ' . esc_html(number_format((int) $j['discount'])) . '</td></tr>' : '')
         . '<tr><td colspan="4"><strong>جمع کل</strong></td><td class="n"><strong>' . esc_html(MZC_Crm::money($j['total'])) . '</strong></td></tr></tbody></table></div></div>';
@@ -121,6 +122,7 @@ $defs = array(
     'report' => array('گزارش', 1, function ($j) { return MZC_Admin::report_link($j['report_id']); }),
     'mobile' => array('موبایل', 0, function ($j) { return '<span class="num">' . esc_html($j['customer_mobile']) . '</span>'; }),
     'device' => array('دستگاه', 0, function ($j) { return '<span dir="auto">' . esc_html($j['device'] ?: '—') . '</span>'; }),
+    'dtype' => array('نوع دستگاه', 0, function ($j) { return esc_html(isset(MZC_Crm::$device_types[(string) $j['device_type']]) ? MZC_Crm::$device_types[$j['device_type']] : '—'); }),
     'complaint' => array('مشکل', 0, function ($j) { return '<span dir="auto">' . esc_html(mb_substr((string) $j['complaint'], 0, 90)) . '</span>'; }),
     'invoice' => array('شمارهٔ فاکتور', 0, function ($j) { return '<span class="num">' . esc_html($j['invoice_no'] ?: '—') . '</span>'; }),
     'due' => array('موعد تحویل', 0, function ($j) { return esc_html($j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '—'); }),

@@ -26,6 +26,17 @@
     if (!list) return;
     list.querySelectorAll('label').forEach(function (l) { l.style.display = l.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
   });
+  /* a part row picked from the stock (<input list="mzc-products">): the product id, and the category and prices the row has not been given yet */
+  document.addEventListener('input', function (e) {
+    var inp = e.target, row = inp.closest && inp.closest('[data-mzc-part]');
+    if (!row || inp.getAttribute('data-f') !== 'name') return;
+    var opt = null, list = document.getElementById('mzc-products');
+    if (list) { for (var i = 0; i < list.options.length; i++) { if (list.options[i].value === inp.value) { opt = list.options[i]; break; } } }
+    var f = function (k) { return row.querySelector('[data-f="' + k + '"]'); }, set = function (k, v, always) { var el = f(k); if (el && v != null && v !== '' && (always || !el.value)) el.value = v; };
+    if (f('pid')) f('pid').value = opt ? opt.getAttribute('data-id') : '';
+    if (!opt) return;
+    set('cat', opt.getAttribute('data-cat'), true); set('sell', opt.getAttribute('data-sell')); set('buy', opt.getAttribute('data-buy')); set('w', opt.getAttribute('data-w'));
+  });
   document.addEventListener('change', function (e) {
     var t = e.target.closest('[data-mzc-target]');
     if (!t) return;
