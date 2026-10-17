@@ -2496,8 +2496,8 @@
     "semantic_hash": "232828e4b78edb13ca6ce400119eebf6"
   },
   "docs/CHECKUP.md": {
-    "mtime": 1790770760.0777514,
-    "seen": 1791017325.2801354,
+    "mtime": 1791291323.7380152,
+    "seen": 1792274426.3242211,
     "ast_hash": "c8bbe8c9a560fd0544c8cc6211ca3c9d",
     "semantic_hash": "c8bbe8c9a560fd0544c8cc6211ca3c9d"
   },
@@ -2544,10 +2544,10 @@
     "semantic_hash": "9482e4b9f25abd1249efa51f02cce466"
   },
   "docs/UPDATES.md": {
-    "mtime": 1792263434.9063745,
-    "seen": 1792264358.640036,
-    "ast_hash": "1e9c222d6b282ff9e3b1c0490edb9d11",
-    "semantic_hash": "1e9c222d6b282ff9e3b1c0490edb9d11"
+    "mtime": 1792274236.7524717,
+    "seen": 1792274426.3242404,
+    "ast_hash": "749a0bbba3ce70a19c2fe815a3729670",
+    "semantic_hash": ""
   },
   "docs/VERIFICATION-slice1.md": {
     "mtime": 1791291323.7480497,
@@ -2610,14 +2610,14 @@
     "semantic_hash": "f62cb6c969aa2b4539cbbda4e69cc6a5"
   },
   "docs/superpowers/plans/2026-09-12-mazesta-slice1-sensors-monitoring.md": {
-    "mtime": 1790585573.355603,
-    "seen": 1791017325.2802036,
+    "mtime": 1789675152.0563347,
+    "seen": 1792274426.324259,
     "ast_hash": "b5d3d1995e5476c564bbcab7f9305894",
     "semantic_hash": "b5d3d1995e5476c564bbcab7f9305894"
   },
   "docs/superpowers/specs/2026-09-12-mazesta-slice1-sensors-monitoring-design.md": {
-    "mtime": 1790585573.3567996,
-    "seen": 1791017325.2802057,
+    "mtime": 1789675152.0563347,
+    "seen": 1792274426.32426,
     "ast_hash": "fdb5c453e64ae9db509b9090f9d1c97d",
     "semantic_hash": "fdb5c453e64ae9db509b9090f9d1c97d"
   },
@@ -2634,50 +2634,50 @@
     "semantic_hash": "88c89880458fa484c62ab28937159e2e"
   },
   ".impeccable/review/desktop.png": {
-    "mtime": 1790585748.0522313,
-    "seen": 1791017325.2802246,
+    "mtime": 1790529990.0312998,
+    "seen": 1792274426.3242757,
     "ast_hash": "d54a8c5627467ec8bd800cf0d0266889",
     "semantic_hash": "d54a8c5627467ec8bd800cf0d0266889"
   },
   ".impeccable/review/gpu.png": {
-    "mtime": 1790585748.0542455,
-    "seen": 1791017325.2802265,
+    "mtime": 1790529966.1055493,
+    "seen": 1792274426.3242767,
     "ast_hash": "e65923eded6eb61f1c607f369041f721",
     "semantic_hash": "e65923eded6eb61f1c607f369041f721"
   },
   ".impeccable/review/monitoring.png": {
-    "mtime": 1790585748.0562654,
-    "seen": 1791017325.2802293,
+    "mtime": 1790529827.641535,
+    "seen": 1792274426.324278,
     "ast_hash": "3f62b2e6b925443efc6c827857dbdd2b",
     "semantic_hash": "3f62b2e6b925443efc6c827857dbdd2b"
   },
   ".impeccable/review/reports.png": {
-    "mtime": 1790585748.0577846,
-    "seen": 1791017325.2802315,
+    "mtime": 1790529835.8158424,
+    "seen": 1792274426.3242793,
     "ast_hash": "58755aa9120ce69f5e69962372591304",
     "semantic_hash": "58755aa9120ce69f5e69962372591304"
   },
   ".impeccable/review/tests.png": {
-    "mtime": 1790585748.059304,
-    "seen": 1791017325.2802334,
+    "mtime": 1790529830.3456676,
+    "seen": 1792274426.3242803,
     "ast_hash": "202bb04ce6440fa07ec064c81a7db987",
     "semantic_hash": "202bb04ce6440fa07ec064c81a7db987"
   },
   ".impeccable/review/tuning.png": {
-    "mtime": 1790585748.0614028,
-    "seen": 1791017325.2802365,
+    "mtime": 1790529833.1095397,
+    "seen": 1792274426.3242817,
     "ast_hash": "fac15fcdb37ecc2fa4820e1df625bb88",
     "semantic_hash": "fac15fcdb37ecc2fa4820e1df625bb88"
   },
   ".impeccable/review/user-1024.png": {
-    "mtime": 1790585748.06276,
-    "seen": 1791017325.2802393,
+    "mtime": 1790529992.8324587,
+    "seen": 1792274426.3242826,
     "ast_hash": "52bfc63f666411291bced35d4cc41332",
     "semantic_hash": "52bfc63f666411291bced35d4cc41332"
   },
   "src/Mazesta.Desktop/Assets/mazesta-logo.png": {
-    "mtime": 1790585748.1321645,
-    "seen": 1791017325.2802427,
+    "mtime": 1790612678.9705768,
+    "seen": 1792274426.3243012,
     "ast_hash": "2678ac3764a9c6ba7c674f3a287200ba",
     "semantic_hash": "2678ac3764a9c6ba7c674f3a287200ba"
   },
@@ -2748,10 +2748,10 @@
     "semantic_hash": "6d26468110cd3d88e4933416a922e019"
   },
   "site/mazesta-connect/mazesta-connect.php": {
-    "mtime": 1792262163.6883783,
-    "seen": 1792264358.6387382,
-    "ast_hash": "ade6ddef298697f0d94297814b3532fa",
-    "semantic_hash": "ade6ddef298697f0d94297814b3532fa"
+    "mtime": 1792273345.3224883,
+    "seen": 1792274426.3231428,
+    "ast_hash": "76fcb0abb2f334f494e905a91b32b10b",
+    "semantic_hash": ""
   },
   "src/Mazesta.Core/Inventory/Ddr5Spd.cs": {
     "mtime": 1791136126.8527179,
@@ -3666,10 +3666,10 @@
     "semantic_hash": "4d7f31540f6991314e83ee765c83f813"
   },
   "site/mazesta-connect/admin/builds.php": {
-    "mtime": 1792262646.550797,
-    "seen": 1792264358.6386874,
-    "ast_hash": "c64e1e811fa45aac4d09efd7f84b1093",
-    "semantic_hash": "c64e1e811fa45aac4d09efd7f84b1093"
+    "mtime": 1792273419.4918823,
+    "seen": 1792274426.3230872,
+    "ast_hash": "d40a1d4181b6005c167f29ea61fbc725",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/admin/customers.php": {
     "mtime": 1791667339.5043476,
@@ -3684,10 +3684,10 @@
     "semantic_hash": "4fac9ee908173aa34f3e57be1ae32890"
   },
   "site/mazesta-connect/admin/jobs.php": {
-    "mtime": 1792262683.5655508,
-    "seen": 1792264358.6386936,
-    "ast_hash": "449ffac6aa2792635524f165cf86a6f5",
-    "semantic_hash": "449ffac6aa2792635524f165cf86a6f5"
+    "mtime": 1792273450.83419,
+    "seen": 1792274426.3230925,
+    "ast_hash": "67f2e86454f31e2a312a6f2af69de954",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/admin/messages.php": {
     "mtime": 1791651679.0326812,
@@ -3702,10 +3702,10 @@
     "semantic_hash": "ebfba6e4bf33f25dd26c6de1b3bc4dfe"
   },
   "site/mazesta-connect/admin/settings.php": {
-    "mtime": 1791667339.5043476,
-    "seen": 1791872782.301799,
-    "ast_hash": "4869d963ebee80888e92e9e19411ace4",
-    "semantic_hash": "4869d963ebee80888e92e9e19411ace4"
+    "mtime": 1792273501.0134194,
+    "seen": 1792274426.3231013,
+    "ast_hash": "d1ce56e97b99aacf105eff6c7ca33068",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/admin/ships.php": {
     "mtime": 1791667265.0182521,
@@ -3720,16 +3720,16 @@
     "semantic_hash": "8abc7de113ff77e8929553d40e63a328"
   },
   "site/mazesta-connect/assets/admin.js": {
-    "mtime": 1792262646.5492795,
-    "seen": 1792264358.6387093,
-    "ast_hash": "ec450845f3ab3e57d2e0d529e8a6edb6",
-    "semantic_hash": "ec450845f3ab3e57d2e0d529e8a6edb6"
+    "mtime": 1792274035.8043928,
+    "seen": 1792274426.3231096,
+    "ast_hash": "1a8b394416eed1dae48b9f7450dfe8f2",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/assets/portal.js": {
-    "mtime": 1791667395.581098,
-    "seen": 1791872782.301804,
-    "ast_hash": "917c9d9d77157eb2db6354385050cc1d",
-    "semantic_hash": "917c9d9d77157eb2db6354385050cc1d"
+    "mtime": 1792273580.4276261,
+    "seen": 1792274426.323111,
+    "ast_hash": "cfc851d494942018501f9509c5c7d8de",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mazesta-connect.php": {
     "mtime": 1791715353.182372,
@@ -3738,22 +3738,22 @@
     "semantic_hash": "0d43a3d5df434a65f5fb6e4c5cef6ec9"
   },
   "site/mazesta-connect/includes/class-mzc-admin.php": {
-    "mtime": 1792262646.5492795,
-    "seen": 1792264358.6387146,
-    "ast_hash": "3a7049c6b4a4c9fe6aee293ba802e3c2",
-    "semantic_hash": "3a7049c6b4a4c9fe6aee293ba802e3c2"
+    "mtime": 1792273405.684579,
+    "seen": 1792274426.3231153,
+    "ast_hash": "0c30452f2c659660a70926dc961afd58",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-crm-db.php": {
-    "mtime": 1792261822.6838078,
-    "seen": 1792264358.638717,
-    "ast_hash": "69ca6d7e2e736385abf9bfe35d427d0e",
-    "semantic_hash": "69ca6d7e2e736385abf9bfe35d427d0e"
+    "mtime": 1792273199.044623,
+    "seen": 1792274426.3231192,
+    "ast_hash": "2b3403a9f36d4d2ad2fd1d53f63fc081",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-crm.php": {
-    "mtime": 1792262120.6632628,
-    "seen": 1792264358.6387181,
-    "ast_hash": "b8a72a8425ef09d3b9606bc311d7ede6",
-    "semantic_hash": "b8a72a8425ef09d3b9606bc311d7ede6"
+    "mtime": 1792273501.0921457,
+    "seen": 1792274426.3231204,
+    "ast_hash": "2643637b96bcd4d64c7406a67d6529ad",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-import.php": {
     "mtime": 1791667386.224416,
@@ -3768,10 +3768,10 @@
     "semantic_hash": "eb876cc86992fec17817935873d2ab53"
   },
   "site/mazesta-connect/includes/class-mzc-portal.php": {
-    "mtime": 1792185261.6263075,
-    "seen": 1792261115.1245468,
-    "ast_hash": "f73c7b64e8d7ba7656206b5c0e2dab8c",
-    "semantic_hash": "f73c7b64e8d7ba7656206b5c0e2dab8c"
+    "mtime": 1792273552.880831,
+    "seen": 1792274426.3231282,
+    "ast_hash": "77b68d83724210bb8a75a917dcfdc616",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-ships.php": {
     "mtime": 1792262163.6887608,
@@ -4416,10 +4416,10 @@
     "semantic_hash": "438e9f482d8bbd692e7726712df99a91"
   },
   "site/mazesta-connect/includes/class-mzc-api.php": {
-    "mtime": 1792262999.7254817,
-    "seen": 1792264358.638716,
-    "ast_hash": "3e8980c272027f8c4e30b12324005e61",
-    "semantic_hash": "3e8980c272027f8c4e30b12324005e61"
+    "mtime": 1792273381.279414,
+    "seen": 1792274426.3231173,
+    "ast_hash": "000144bfbe46e59ca0786b8326fc7318",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-staff.php": {
     "mtime": 1792263434.8201015,
@@ -4494,10 +4494,10 @@
     "semantic_hash": "d3eeff5d7f894c2b75ce92abc2cac732"
   },
   "src/Mazesta.Desk/wwwroot/js/app.js": {
-    "mtime": 1792263260.957965,
-    "seen": 1792264358.63914,
-    "ast_hash": "c00e1e7ff686ea38c692ce9020ec10e4",
-    "semantic_hash": "c00e1e7ff686ea38c692ce9020ec10e4"
+    "mtime": 1792273767.6350808,
+    "seen": 1792274426.3234327,
+    "ast_hash": "9834c3b9e5db1477d8e8ba508c3d2c76",
+    "semantic_hash": ""
   },
   "src/Mazesta.Desk/wwwroot/js/bridge.js": {
     "mtime": 1792190102.7359746,
@@ -4512,10 +4512,10 @@
     "semantic_hash": "6e6189e2b177b3d014321edad68fd73c"
   },
   "src/Mazesta.Desk/wwwroot/js/selftest.js": {
-    "mtime": 1792263293.243701,
-    "seen": 1792264358.6391466,
-    "ast_hash": "56b7769e3b2a14029daeb504d79969d0",
-    "semantic_hash": "56b7769e3b2a14029daeb504d79969d0"
+    "mtime": 1792274360.377261,
+    "seen": 1792274426.3234367,
+    "ast_hash": "a40bec061f03288d48d66c882c0df328",
+    "semantic_hash": ""
   },
   "src/Mazesta.Desk/wwwroot/js/ui.js": {
     "mtime": 1792190102.7755284,
@@ -4776,21 +4776,33 @@
     "semantic_hash": "1c7e5340887f7c10e1dab96e2fc6e707"
   },
   "site/mazesta-connect/includes/class-mzc-mcp.php": {
-    "mtime": 1792262999.7239757,
-    "seen": 1792264358.6387212,
-    "ast_hash": "31ec92e7ef058d52cca2c00dafa14981",
-    "semantic_hash": "31ec92e7ef058d52cca2c00dafa14981"
+    "mtime": 1792273633.9661505,
+    "seen": 1792274426.323124,
+    "ast_hash": "fef42df8b6822b695abfd13a4399c580",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-oauth.php": {
-    "mtime": 1792262365.7348316,
-    "seen": 1792264358.6387248,
-    "ast_hash": "efe3e6feec75cea62ff242662f906f89",
-    "semantic_hash": "efe3e6feec75cea62ff242662f906f89"
+    "mtime": 1792264922.304598,
+    "seen": 1792274426.323127,
+    "ast_hash": "32ee815a03593668eaf714bc1e988e08",
+    "semantic_hash": ""
   },
   "site/mazesta-connect/includes/class-mzc-stock.php": {
     "mtime": 1792261986.0394664,
     "seen": 1792264358.638735,
     "ast_hash": "e28f83c13a75ece9c22431efbecc8b46",
     "semantic_hash": "e28f83c13a75ece9c22431efbecc8b46"
+  },
+  "site/mazesta-connect/admin/report.php": {
+    "mtime": 1792273488.4454582,
+    "seen": 1792274426.3230999,
+    "ast_hash": "f0a922ece94c47b5e5431bf20f1eb0fa",
+    "semantic_hash": ""
+  },
+  "site/mazesta-connect/includes/class-mzc-report.php": {
+    "mtime": 1792273345.3240664,
+    "seen": 1792274426.3231297,
+    "ast_hash": "e694831bac9783a2d43c54be8066386e",
+    "semantic_hash": ""
   }
 }
