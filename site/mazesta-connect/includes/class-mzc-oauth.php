@@ -28,8 +28,10 @@ final class MZC_Oauth
         register_rest_route(Mazesta_Connect::NS, '/oauth/token', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_token'), 'permission_callback' => $open));
     }
 
-    public static function issuer() { return rtrim(home_url(), '/'); }
+    // Path-bearing issuer and resource metadata (RFC 8414 §3, RFC 9728 §3.1): another MCP plugin may own the site-root /.well-known/oauth-* documents (Easy MCP AI does on dfmrendering.com).
+    public static function issuer() { return rtrim(home_url(), '/') . '/mazesta'; }
     public static function resource() { return rest_url(Mazesta_Connect::NS . '/mcp'); }
+    public static function resource_metadata() { return rtrim(home_url(), '/') . '/.well-known/oauth-protected-resource' . (string) parse_url(self::resource(), PHP_URL_PATH); }
     private static function t($n) { return MZC_Crm_Db::t($n); }
     private static function hash($s) { return hash_hmac('sha256', (string) $s, wp_salt('auth') . '|oauth'); }
     private static function now() { return gmdate('Y-m-d H:i:s'); }

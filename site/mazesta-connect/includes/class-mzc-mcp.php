@@ -29,7 +29,7 @@ final class MZC_Mcp
     private static function unauthorized()
     {
         $r = Mazesta_Connect::fresh(array('error' => 'invalid_token', 'error_description' => 'Sign in first.'), 401);
-        $r->header('WWW-Authenticate', 'Bearer realm="mazesta", resource_metadata="' . MZC_Oauth::issuer() . '/.well-known/oauth-protected-resource"');
+        $r->header('WWW-Authenticate', 'Bearer realm="mazesta", resource_metadata="' . MZC_Oauth::resource_metadata() . '"');
         return $r;
     }
 
