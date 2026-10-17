@@ -25,10 +25,71 @@ final class MZC_Crm
 
     public static function boot()
     {
-        foreach (array('customer_save', 'customer_delete', 'build_save', 'build_delete', 'job_save', 'job_delete', 'photo_delete', 'db_wipe', 'db_save', 'db_install', 'sms_save', 'sms_test') as $a) {
+        foreach (array('customer_save', 'customer_delete', 'build_save', 'build_delete', 'job_save', 'job_delete', 'photo_delete', 'db_wipe', 'db_save', 'db_install', 'sms_save', 'sms_test', 'soft_save') as $a) {
             add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
         }
         add_action('admin_post_mzc_photo', array(__CLASS__, 'act_photo'));
+        add_action('wp_ajax_mzc_customer_find', array(__CLASS__, 'ajax_customer_find'));
+    }
+
+    /** The forms' customer boxes ask this as one types a name or a mobile number: the closest customers (any of their numbers matches). */
+    public static function ajax_customer_find()
+    {
+        if (!Mazesta_Connect::can() || !check_ajax_referer('mzc_customer_find', 'n', false)) { wp_send_json(array('items' => array()), 403); }
+        $q = isset($_GET['q']) ? trim(sanitize_text_field(wp_unslash($_GET['q']))) : '';
+        list($rows) = mb_strlen($q) >= 2 ? self::customers($q, 1, 8) : array(array());
+        wp_send_json(array('items' => array_map(function ($c) { return array('id' => (int) $c['id'], 'name' => $c['name'], 'mobiles' => array_values(array_filter(array((string) $c['mobile'], (string) $c['mobile2']))), 'phone' => (string) $c['phone']); }, $rows)));
+    }
+
+    /* ---------- the programs a customer asks for (both forms, and the customer's own page) ---------- */
+
+    /** What the forms suggest as one types a program's name; any other name is taken as well. The shop edits the list on the settings page. */
+    const SOFTWARE = "Windows 11 Pro\nWindows 10 Pro\nMicrosoft Office 2021\nMicrosoft Office 365\nAdobe Photoshop\nAdobe Illustrator\nAdobe Premiere Pro\nAdobe After Effects\nAdobe Acrobat\nAutodesk 3ds Max\nAutodesk AutoCAD\nAutodesk Revit\nAutodesk Maya\nSketchUp\nLumion\nV-Ray\nCorona Renderer\nD5 Render\nEnscape\nTwinmotion\nCinema 4D\nBlender\nRhino\nUnreal Engine\nSolidWorks\nCATIA\nMATLAB\nVisual Studio\nPython\nWinRAR\n7-Zip\nGoogle Chrome\nMozilla Firefox\nVLC\nK-Lite Codec Pack\nInternet Download Manager\nTelegram Desktop\nAnyDesk\nSteam\nEpic Games Launcher\nNVIDIA App\nMSI Afterburner\nESET NOD32\nKaspersky";
+
+    public static function software_catalog()
+    {
+        $db = self::db(); $v = $db ? $db->get_var('SELECT v FROM `' . self::t('meta') . "` WHERE k = 'software'") : null;
+        return array_values(array_unique(array_filter(array_map('trim', explode("\n", $v === null ? self::SOFTWARE : (string) $v)))));
+    }
+
+    public static function save_software_catalog($text)
+    {
+        $db = self::db(); if (!$db) { return; }
+        $list = array_slice(array_values(array_unique(array_filter(array_map(function ($x) { return mb_substr(trim($x), 0, 80); }, preg_split('/[\r\n]+/', (string) $text))))), 0, 500);
+        $db->query($db->prepare('REPLACE INTO `' . self::t('meta') . "` (k, v) VALUES ('software', %s)", implode("\n", $list)));
+    }
+
+    /** A record's requested programs as stored (JSON): rows of (name, installed?), the customer's own words, and when the customer last saved it on their page. */
+    public static function soft_out($json)
+    {
+        $d = is_string($json) && $json !== '' ? json_decode($json, true) : null; $d = is_array($d) ? $d : array();
+        $items = array();
+        foreach (isset($d['items']) && is_array($d['items']) ? $d['items'] : array() as $x) { if (is_array($x) && isset($x['name']) && is_string($x['name'])) { $items[] = array('name' => $x['name'], 'done' => !empty($x['done'])); } }
+        return array('items' => $items, 'note' => isset($d['note']) && is_string($d['note']) ? $d['note'] : '', 'by_customer' => isset($d['by_customer']) && is_string($d['by_customer']) ? $d['by_customer'] : '');
+    }
+
+    /** The JSON to store from rows (array(name, done) or plain names) and a note; null when both are empty. $byCustomer: when the customer saved it (else kept from $old). */
+    public static function soft_in($rows, $note, $old = null, $byCustomer = '')
+    {
+        $items = array(); $seen = array();
+        foreach (is_array($rows) ? $rows : array() as $x) {
+            $n = is_array($x) ? (isset($x['name']) && is_string($x['name']) ? $x['name'] : '') : (is_string($x) ? $x : '');
+            $n = mb_substr(trim(wp_strip_all_tags($n)), 0, 80); $k = mb_strtolower($n);
+            if ($n === '' || isset($seen[$k])) { continue; }
+            $seen[$k] = 1; $items[] = array('name' => $n, 'done' => is_array($x) && !empty($x['done']));
+            if (count($items) >= 60) { break; }
+        }
+        $note = mb_substr(trim(sanitize_textarea_field((string) $note)), 0, 2000);
+        $was = self::soft_out($old); $by = $byCustomer !== '' ? $byCustomer : $was['by_customer'];
+        return $items || $note !== '' ? wp_json_encode(array('items' => $items, 'note' => $note, 'by_customer' => $by), JSON_UNESCAPED_UNICODE) : null;
+    }
+
+    /** A new computer's name in the lists: its graphics card, else its processor (the form no longer asks for a title). */
+    public static function build_title($parts)
+    {
+        $pick = function ($cat) use ($parts) { foreach ($parts as $p) { if (isset($p['category'], $p['model']) && $p['category'] === $cat && $p['model'] !== null && $p['model'] !== '') { return $p['model']; } } return ''; };
+        $m = $pick('gpu') ?: $pick('cpu');
+        return $m !== '' ? mb_substr('سیستم ' . $m, 0, 190) : 'سیستم نو';
     }
 
     /* ---------- small helpers ---------- */
@@ -172,7 +233,7 @@ final class MZC_Crm
         $mobile = self::mobile(self::post('c_mobile', 30));
         if ($mobile === '') { return 'یک مشتری انتخاب کنید یا شمارهٔ موبایل او را بنویسید.'; }
         if ($c = self::customer_by_mobile($mobile)) { return (int) $c['id']; }
-        return self::save_customer(0, self::post('c_name', 190), $mobile);
+        return self::save_customer(0, self::post('c_name', 190), $mobile, array('mobile2' => self::post('c_mobile2', 30)));
     }
 
     /* ---------- builds (new computers) ---------- */
@@ -196,8 +257,8 @@ final class MZC_Crm
         if ($status !== '' && isset(self::$build_statuses[$status])) { $where[] = 'b.status = %s'; $args[] = $status; }
         if ($q !== '') {
             $l = '%' . $db->esc_like($q) . '%';
-            $where[] = "(b.service_no LIKE %s OR b.invoice_no LIKE %s OR b.title LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR EXISTS (SELECT 1 FROM `" . self::t('build_parts') . "` p WHERE p.build_id = b.id AND (p.serial LIKE %s OR p.model LIKE %s)))";
-            array_push($args, $l, $l, $l, $l, '%' . $db->esc_like(self::digits($q)) . '%', $l, $l);
+            $where[] = "(b.service_no LIKE %s OR b.invoice_no LIKE %s OR b.title LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s OR EXISTS (SELECT 1 FROM `" . self::t('build_parts') . "` p WHERE p.build_id = b.id AND (p.serial LIKE %s OR p.model LIKE %s)))";
+            $d = '%' . $db->esc_like(self::digits($q)) . '%'; array_push($args, $l, $l, $l, $l, $d, $d, $l, $l);
         }
         $w = implode(' AND ', $where);
         $from = "FROM `$b` b JOIN `$c` c ON c.id = b.customer_id WHERE $w";
@@ -226,6 +287,9 @@ final class MZC_Crm
         return $out;
     }
 
+    /** The software rows of a posted form (soft[n][name], soft[n][done]). */
+    private static function posted_soft() { return isset($_POST['soft']) && is_array($_POST['soft']) ? wp_unslash($_POST['soft']) : array(); }
+
     public static function act_build_save()
     {
         MZC_Admin::guard('build_save');
@@ -233,27 +297,23 @@ final class MZC_Crm
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
         $cid = self::customer_of_form();
         if (!is_int($cid)) { MZC_Admin::back('mzc-builds', 'err:' . $cid, $id ? array('edit' => $id) : array('add' => 1)); }
-        $title = self::post('title', 190);
-        if ($title === '') { $title = 'سیستم نو'; }
         $bst = isset($_POST['status']) && isset(self::$build_statuses[$_POST['status']]) ? (string) $_POST['status'] : 'queue';
         $inv = self::digits(self::post('invoice_no', 60));
         // a new computer is known by its invoice number (no service number of its own any more); the old ones keep theirs
         if ($inv === '' && !$id) { MZC_Admin::back('mzc-builds', 'err:شمارهٔ فاکتور را بنویسید؛ سیستم نو با شمارهٔ فاکتور شناخته می‌شود.', array('add' => 1)); }
         $dup = $inv === '' || !empty($_POST['force']) ? 0 : (int) $db->get_var($db->prepare('SELECT id FROM `' . self::t('builds') . '` WHERE invoice_no = %s AND id <> %d LIMIT 1', $inv, $id));
         if ($dup) { MZC_Admin::back('mzc-builds', 'err:شمارهٔ فاکتور ' . $inv . ' قبلاً برای سیستم دیگری ثبت شده است (شمارهٔ ' . $dup . ').', $id ? array('edit' => $id) : array('add' => 1)); }
-        $dt = isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : 'system';
-        $row = array('customer_id' => $cid, 'invoice_no' => $inv ?: null, 'device_type' => $dt, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'title' => $title, 'sold_at' => self::date('sold_at'),
+        $parts = MZC_Stock::link_parts(self::posted_parts('parts', array('product_id' => 'id', 'category' => 'cat', 'model' => 190, 'serial' => 120, 'warranty_months' => 'int', 'sell_price' => 'int', 'buy_price' => 'int', 'vendor' => 120, 'note' => 255, 'has_warranty' => 'flag', 'has_box' => 'flag', 'qc' => 'flag')),
+            'model', array('sell_price' => 'sell_price', 'buy_price' => 'buy_price'));
+        $was = $id ? $db->get_var($db->prepare('SELECT soft FROM `' . self::t('builds') . '` WHERE id = %d', $id)) : null;
+        $row = array('customer_id' => $cid, 'invoice_no' => $inv ?: null, 'title' => self::build_title($parts), 'sold_at' => self::date('sold_at'), 'soft' => self::soft_in(self::posted_soft(), self::post_long('soft_note', 2000), $was),
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'status' => $bst, 'delivered' => $bst === 'delivered' ? 1 : 0, 'updated' => self::now());
         $t = self::t('builds');
         if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } }
         else { $row['created'] = self::now(); if (!$db->insert($t, $row)) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } $id = (int) $db->insert_id; }
-        if ($id && self::post('service_no', 40) !== '') { $row['service_no'] = self::post('service_no', 40); }
-        $parts = MZC_Stock::link_parts(self::posted_parts('parts', array('product_id' => 'id', 'category' => 'cat', 'model' => 190, 'serial' => 120, 'warranty_months' => 'int', 'sell_price' => 'int', 'buy_price' => 'int', 'vendor' => 120, 'note' => 255, 'has_warranty' => 'flag', 'has_box' => 'flag', 'qc' => 'flag')),
-            'model', array('sell_price' => 'sell_price', 'buy_price' => 'buy_price'));
         $db->delete(self::t('build_parts'), array('build_id' => $id));
         foreach ($parts as $p) { if ($p['model'] === null) { continue; } $p['build_id'] = $id; $db->insert(self::t('build_parts'), $p); }
-        $bad = self::add_photos('build', $id);
-        MZC_Admin::back('mzc-builds', 'ok:ثبت شد.' . ($bad ? ' (' . $bad . ')' : ''), array('view' => $id));
+        MZC_Admin::back('mzc-builds', 'ok:ثبت شد.', array('view' => $id));
     }
 
     public static function act_build_delete()
@@ -282,9 +342,10 @@ final class MZC_Crm
         return $j;
     }
 
+    /** What the customer pays: parts + labour + the costs the shop paid out for this job - discount (the old form's «هزینهٔ نهایی»). */
     public static function job_total($j)
     {
-        $sum = (int) $j['labor_price'] - (int) $j['discount'];
+        $sum = (int) $j['labor_price'] + (int) $j['paid'] - (int) $j['discount'];
         foreach ($j['parts'] as $p) { $sum += (int) $p['qty'] * (int) $p['unit_price']; }
         return $sum;
     }
@@ -297,12 +358,13 @@ final class MZC_Crm
         if ($status !== '' && isset(self::$statuses[$status])) { $where[] = 'j.status = %s'; $args[] = $status; }
         if ($q !== '') {
             $l = '%' . $db->esc_like($q) . '%';
-            $where[] = '(j.service_no LIKE %s OR j.device LIKE %s OR j.complaint LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s)';
-            array_push($args, $l, $l, $l, $l, '%' . $db->esc_like(self::digits($q)) . '%');
+            $d = '%' . $db->esc_like(self::digits($q)) . '%';
+            $where[] = '(j.service_no LIKE %s OR j.device LIKE %s OR j.device_serial LIKE %s OR j.complaint LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s)';
+            array_push($args, $l, $l, $l, $l, $l, $d, $d);
         }
         $from = "FROM `$j` j JOIN `$c` c ON c.id = j.customer_id WHERE " . implode(' AND ', $where);
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) $from", $args) : "SELECT COUNT(*) $from");
-        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
+        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price + j.paid - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
             array_merge($args, array((int) $per, (int) (($page - 1) * $per)))), ARRAY_A);
         return array($rows ? $rows : array(), $total);
     }
@@ -325,13 +387,14 @@ final class MZC_Crm
         $status = isset($_POST['status'], self::$statuses[$_POST['status']]) ? (string) $_POST['status'] : 'received';
         $closed = self::date('closed_at'); if ($status === 'delivered' && $closed === null) { $closed = gmdate('Y-m-d'); }
         $labor = (int) preg_replace('/[^\d]/', '', self::digits(self::post('labor_price', 15)));
-        $row = array('customer_id' => $cid, 'service_no' => $id ? (self::post('service_no', 40) ?: null) : null, 'device' => self::post('device', 190) ?: null,
+        $was = $id ? $db->get_var($db->prepare('SELECT soft FROM `' . self::t('jobs') . '` WHERE id = %d', $id)) : null;
+        $row = array('customer_id' => $cid, 'device' => self::post('device', 190) ?: null, 'device_serial' => self::post('device_serial', 120) ?: null, 'paid_note' => self::post('paid_note', 255) ?: null,
+            'soft' => self::soft_in(self::posted_soft(), self::post_long('soft_note', 2000), $was),
             'device_type' => isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : null, 'media' => implode("\n", self::media_list(isset($_POST['media']) ? wp_unslash($_POST['media']) : '')) ?: null, 'received_at' => self::date('received_at') ?: gmdate('Y-m-d'),
             'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
             'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
         $t = self::t('jobs');
-        if ($id && $row['service_no'] === null) { unset($row['service_no']); }   // an edit that leaves the number empty keeps it
         if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $db->last_error); } }
         else {
             $row['created'] = self::now(); $lock = $db->get_var("SELECT GET_LOCK('" . self::t('svc') . "', 5)");   // two desks saving at once must not get the same number
@@ -533,6 +596,13 @@ final class MZC_Crm
         MZC_Admin::guard('db_install', 'manage_options');
         $e = MZC_Crm_Db::install();
         MZC_Admin::back('mzc-settings', $e === '' ? 'ok:جدول‌ها بررسی و آماده شد.' : 'err:' . $e);
+    }
+
+    public static function act_soft_save()
+    {
+        MZC_Admin::guard('soft_save');
+        self::save_software_catalog(isset($_POST['software']) ? sanitize_textarea_field(wp_unslash($_POST['software'])) : '');
+        MZC_Admin::back('mzc-settings', 'ok:فهرست نرم‌افزارها ذخیره شد.');
     }
 
     public static function act_sms_save() { MZC_Sms::act_save(); }

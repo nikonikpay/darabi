@@ -55,3 +55,8 @@ echo '</div></div>';
 
 echo '<div class="mzc-panel"><header><h3>پورتال مشتری</h3></header><div class="body"><p>یک برگهٔ تازه در وردپرس بسازید و فقط این کد کوتاه را در آن بگذارید: <code>[mazesta_portal]</code></p>'
     . '<p class="muted">برگه را از کش مستثنا نکنید لازم نیست (خودش ثابت است و داده‌ها با درخواست جداگانه می‌آیند)، ولی مسیر <code>/wp-json/mazesta/v1/portal/</code> نباید کش شود.</p></div></div>';
+
+if (MZC_Crm_Db::ready()) {
+    echo '<div class="mzc-panel"><header><h3>فهرست نرم‌افزارها</h3></header><div class="body"><p class="muted" style="max-width:90ch">فرم‌های سیستم نو و سرویس، و صفحهٔ مشتری، هنگام نوشتن نام نرم‌افزار از این فهرست پیشنهاد می‌دهند. نامی که در فهرست نیست هم پذیرفته می‌شود. هر نرم‌افزار در یک خط.</p>'
+        . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="software" rows="10" dir="ltr" style="width:100%;max-width:520px">' . esc_textarea(implode("\n", MZC_Crm::software_catalog())) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ فهرست</button></p></form></div></div>';
+}

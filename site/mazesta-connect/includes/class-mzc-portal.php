@@ -26,6 +26,7 @@ final class MZC_Portal
         register_rest_route(Mazesta_Connect::NS, '/portal/code', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_code'), 'permission_callback' => $open));
         register_rest_route(Mazesta_Connect::NS, '/portal/verify', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_verify'), 'permission_callback' => $open));
         register_rest_route(Mazesta_Connect::NS, '/portal/me', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_me'), 'permission_callback' => $open));
+        register_rest_route(Mazesta_Connect::NS, '/portal/software', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_software'), 'permission_callback' => $open));
         register_rest_route(Mazesta_Connect::NS, '/portal/logout', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_logout'), 'permission_callback' => $open));
     }
 
@@ -102,6 +103,28 @@ final class MZC_Portal
         return self::ok(array('ok' => true));
     }
 
+    /** Whether the customer may still change a record's programs: until the computer is handed over / the service is closed. */
+    private static function soft_open($kind, $status) { return $kind === 'build' ? $status !== 'delivered' : !in_array($status, array('delivered', 'cancelled'), true); }
+
+    /** The customer fills in the programs they want on one of their own open records (named by its invoice or service number); the shop's "installed" marks are kept. */
+    public static function rest_software($req)
+    {
+        $cid = self::customer_of((string) $req->get_header('x_mzc_token'));
+        if (!$cid) { return self::fail('نشست شما تمام شده؛ دوباره وارد شوید.', 401); }
+        $p = $req->get_json_params(); $p = is_array($p) ? $p : array();
+        $kind = isset($p['kind']) && $p['kind'] === 'build' ? 'build' : 'job'; $no = isset($p['number']) && is_scalar($p['number']) ? trim(MZC_Crm::digits((string) $p['number'])) : '';
+        $db = MZC_Crm_Db::db(); if (!$db || $no === '') { return self::fail('شماره را بنویسید.'); }
+        $tb = MZC_Crm_Db::t($kind === 'build' ? 'builds' : 'jobs');
+        // only among this customer's own records: a number of somebody else's is "not found", the same as a wrong number
+        $rec = $db->get_row($db->prepare("SELECT id, status, soft FROM `$tb` WHERE customer_id = %d AND (invoice_no = %s OR service_no = %s OR service_no = %s) ORDER BY id DESC LIMIT 1", $cid, $no, $no, ctype_digit($no) ? 'R-' . $no : $no), ARRAY_A);
+        if (!$rec) { return self::fail('پرونده‌ای با این شماره برای شما پیدا نشد.', 404); }
+        if (!self::soft_open($kind, $rec['status'])) { return self::fail('این پرونده بسته شده است؛ برای تغییر با فروشگاه تماس بگیرید.', 409); }
+        $done = array(); foreach (MZC_Crm::soft_out($rec['soft'])['items'] as $x) { $done[mb_strtolower($x['name'])] = $x['done']; }
+        $rows = array(); foreach (isset($p['items']) && is_array($p['items']) ? $p['items'] : array() as $n) { if (is_string($n)) { $rows[] = array('name' => $n, 'done' => !empty($done[mb_strtolower(trim($n))])); } }
+        $db->update($tb, array('soft' => MZC_Crm::soft_in($rows, isset($p['note']) && is_string($p['note']) ? $p['note'] : '', $rec['soft'], gmdate('Y-m-d H:i:s')), 'updated' => self::now()), array('id' => (int) $rec['id']));
+        return self::ok(array('ok' => true, 'software' => MZC_Crm::soft_out($db->get_var($db->prepare("SELECT soft FROM `$tb` WHERE id = %d", (int) $rec['id'])))));
+    }
+
     public static function rest_me($req)
     {
         $cid = self::customer_of((string) $req->get_header('x_mzc_token'));
@@ -118,7 +141,7 @@ final class MZC_Portal
                 $parts[] = array('category' => isset(MZC_Crm::$categories[$p['category']]) ? MZC_Crm::$categories[$p['category']] : $p['category'], 'model' => $p['model'], 'serial' => $p['serial'], 'vendor' => $p['vendor'],
                     'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null, 'until' => $until ? MZC_Crm::jdate($until) : null, 'left' => $left, 'warranty' => (bool) $p['has_warranty']);
             }
-            $outB[] = array('title' => $b['title'], 'date' => $b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '', 'invoice' => $b['invoice_no'], 'service' => $b['service_no'], 'delivered' => (bool) $b['delivered'], 'status' => isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : '', 'parts' => $parts,
+            $outB[] = array('kind' => 'build', 'number' => (string) ($b['invoice_no'] ?: $b['service_no']), 'software' => MZC_Crm::soft_out($b['soft']), 'soft_open' => self::soft_open('build', $b['status']), 'title' => $b['title'], 'date' => $b['sold_at'] ? MZC_Crm::jdate($b['sold_at']) : '', 'invoice' => $b['invoice_no'], 'service' => $b['service_no'], 'delivered' => (bool) $b['delivered'], 'status' => isset(MZC_Crm::$build_statuses[$b['status']]) ? MZC_Crm::$build_statuses[$b['status']] : '', 'parts' => $parts,
                 'report' => $link($b['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $b['photos']));
         }
         $outJ = array();
@@ -126,11 +149,12 @@ final class MZC_Portal
             $parts = array();
             foreach ($j['parts'] as $p) { $parts[] = array('name' => $p['name'], 'qty' => (int) $p['qty'], 'price' => (int) $p['unit_price'], 'serial' => $p['serial'], 'months' => $p['warranty_months'] !== null ? (int) $p['warranty_months'] : null, 'warranty' => (bool) $p['has_warranty']); }
             $recv = array(); foreach ($j['recv'] as $p) { $recv[] = array('name' => $p['name'], 'serial' => $p['serial']); }
-            $paid = 0; foreach ($j['pays'] as $p) { $paid += (int) $p['amount']; }            $outJ[] = array('service' => $j['service_no'], 'device' => $j['device'], 'received' => $j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '', 'closed' => $j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '',
+            $paid = 0; foreach ($j['pays'] as $p) { $paid += (int) $p['amount']; }
+            $outJ[] = array('kind' => 'job', 'number' => (string) $j['service_no'], 'software' => MZC_Crm::soft_out($j['soft']), 'soft_open' => self::soft_open('job', $j['status']), 'service' => $j['service_no'], 'device' => $j['device'], 'received' => $j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '', 'closed' => $j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '',
                 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : $j['status'], 'complaint' => $j['complaint'], 'work' => $j['work_done'],
-                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'total' => (int) $j['total'], 'paid' => max($paid, (int) $j['paid']), 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
+                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'other' => (int) $j['paid'], 'total' => (int) $j['total'], 'paid' => $paid, 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
         }
-        return self::ok(array('name' => $c['name'], 'builds' => $outB, 'jobs' => $outJ));
+        return self::ok(array('name' => $c['name'], 'builds' => $outB, 'jobs' => $outJ, 'catalog' => MZC_Crm::software_catalog()));
     }
 
     /** ?mzc_portal_photo=ID with the token in a header (the page fetches it and shows the bytes), only for a photo of the token's own customer. */

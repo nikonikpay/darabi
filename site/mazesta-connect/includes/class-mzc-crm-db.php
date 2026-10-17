@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 9;
+    const SCHEMA = 10;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -140,6 +140,9 @@ final class MZC_Crm_Db
         $cols['builds'] += array('device_type' => "VARCHAR(10) NOT NULL DEFAULT 'system'", 'media' => 'TEXT NULL');
         $cols['jobs'] += array('device_type' => 'VARCHAR(10) NULL', 'media' => 'TEXT NULL');
         $cols['build_parts'] += array('product_id' => 'BIGINT UNSIGNED NULL', 'buy_price' => 'BIGINT NULL', 'sell_price' => 'BIGINT NULL');
+        // schema 10: the programs the customer wants installed (JSON, see MZC_Crm::soft_out), a laptop's serial number, and what the shop's own paid-out costs of a service were for
+        $cols['builds'] += array('soft' => 'TEXT NULL');
+        $cols['jobs'] += array('soft' => 'TEXT NULL', 'device_serial' => 'VARCHAR(120) NULL', 'paid_note' => 'VARCHAR(255) NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {

@@ -27,14 +27,28 @@ window.deskSelfTest = async (server, user, pass) => {
     location.hash = '#/customer/new'; const cf = await wait(() => document.querySelector('form.panel input[name=name]') && document.querySelector('form.panel'));
     set(cf.querySelector('input[name=name]'), 'مشتری خودآزمون'); set(cf.querySelector('input[name=mobile]'), '۰۹' + mobile.slice(2).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d])); submit(cf);
     const cid = await wait(() => (location.hash.match(/#\/customer\/(\d+)/) || [])[1]); ok('customer saved (Persian digits accepted)', !!cid, 'id=' + cid);
-    // a service for them
-    location.hash = '#/job/new?cid=' + cid; const jf = await wait(() => document.querySelector('form.panel input[name=device]') && document.querySelector('form.panel'));
-    set(jf.querySelector('input[name=device]'), 'لپ‌تاپ آزمون'); set(jf.querySelector('textarea[name=complaint]'), 'خودآزمون: صفحه‌نمایش نمی‌آید'); submit(jf);
+    // a service for them: the customer found by typing part of their number, a laptop with its serial, the money, a program to install
+    location.hash = '#/job/new'; const jf = await wait(() => document.querySelector('form.panel input[name=c_name]') && document.querySelector('form.panel'));
+    set(jf.querySelector('input[name=c_mobile]'), mobile.slice(-6));
+    const opt = await wait(() => [...jf.querySelectorAll('.cpick .opt')].find(o => o.textContent.includes(mobile))); ok('typing part of the mobile suggests the customer', !!opt);
+    if (opt) opt.click(); ok('customer chosen from the suggestions', !!(await wait(() => jf.querySelector('.cpick .chosen'))));
+    const dt = jf.querySelector('select[name=device_type]'), devBox = jf.querySelector('input[name=device_serial]').closest('.two');
+    ok('model and serial hidden for a computer case', devBox.style.display === 'none'); dt.value = 'laptop'; dt.dispatchEvent(new Event('change')); ok('model and serial shown for a laptop', devBox.style.display === '');
+    set(jf.querySelector('input[name=device]'), 'لپ‌تاپ آزمون'); set(jf.querySelector('input[name=device_serial]'), 'SN-' + mobile); set(jf.querySelector('textarea[name=complaint]'), 'خودآزمون: صفحه‌نمایش نمی‌آید');
+    if (can('payments', 2)) {
+      set(jf.querySelector('input[name=labor]'), '1000000'); set(jf.querySelector('input[name=paid]'), '300000'); set(jf.querySelector('input[name=discount]'), '100000'); set(jf.querySelector('input[name=paid_note]'), 'پیک');
+      const tot = [...jf.querySelectorAll('.sum.big b')][0]; ok('final sum = services + paid-out - discount', tot && tot.textContent === money(1200000), tot && tot.textContent);
+    }
+    const softBox = [...jf.querySelectorAll('.wide')].find(d => d.querySelector('datalist#softlist')); [...softBox.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
+    set(softBox.querySelector('input[name=name]'), 'Blender'); ok('the software box suggests from the shop list', softBox.querySelector('input[name=name]').getAttribute('list') === 'softlist' && softBox.querySelectorAll('datalist option').length > 10);
+    submit(jf);
     const jid = await wait(() => (location.hash.match(/#\/job\/(\d+)/) || [])[1]); ok('service saved', !!jid, 'id=' + jid);
     const offer = await wait(() => [...document.querySelectorAll('.modal h3')].find(x => x.textContent === 'پذیرش ثبت شد')); ok('print offer after a new service', !!offer);
     document.querySelectorAll('.backdrop').forEach(b => b.remove());
     await wait(() => document.querySelector('h2') && /R-\d+/.test(document.querySelector('h2').textContent)); const no = (document.querySelector('h2').textContent.match(/R-\d+/) || [])[0];
     ok('service number shown', !!no, no);
+    const gj = await GET('staff/jobs/' + jid);
+    ok('service saved with laptop serial, software and money', gj.device_serial === 'SN-' + mobile && gj.software.length === 1 && gj.software[0].name === 'Blender' && (!can('payments') || (gj.paid === 300000 && gj.paid_note === 'پیک' && gj.total === 1200000)), JSON.stringify({ s: gj.device_serial, sw: gj.software, t: gj.total }));
     // label
     await printLabel('job', +jid); const lab = await wait(() => document.querySelector('.modal .label'));
     ok('label preview has the number and a QR', !!lab && lab.textContent.includes(no) && !!lab.querySelector('svg'));
@@ -50,26 +64,30 @@ window.deskSelfTest = async (server, user, pass) => {
       location.hash = '#/purchase/new'; const pf = await wait(() => document.querySelector('form.panel input[name=vendor_name]') && document.querySelector('form.panel'));
       set(pf.querySelector('input[name=vendor_name]'), 'فروشندهٔ خودآزمون'); set(pf.querySelector('input[name=invoice_no]'), 'P-' + stamp);
       [...pf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
-      set(pf.querySelector('.rows input[name=name]'), pname); pf.querySelector('.rows select[name=category]').value = 'ssd';
+      set(pf.querySelector('.rows input[name=name]'), pname); pf.querySelector('.rows select[name=category]').value = 'gpu';
       set(pf.querySelector('.rows input[name=qty]'), '۲'); set(pf.querySelector('.rows input[name=unit_cost]'), '1500000'); set(pf.querySelector('.rows input[name=serials]'), 'SA-' + stamp + ', SB-' + stamp); submit(pf);
       const uid = await wait(() => (location.hash.match(/#\/purchase\/(\d+)/) || [])[1]); ok('purchase invoice saved on its screen', !!uid, 'id=' + uid);
       const pr = await GET('staff/products' + qs({ q: pname })); pid = pr.items.length ? pr.items[0].id : 0;
       ok('its product is in the stock with 2', pr.items.length === 1 && pr.items[0].stock === 2, JSON.stringify(pr.items));
     }
     // a new computer (known by its invoice number) with a part - picked from the stock when there is one
-    location.hash = '#/build/new?cid=' + cid; const bf = await wait(() => document.querySelector('form.panel input[name=title]') && document.querySelector('form.panel'));
+    location.hash = '#/build/new?cid=' + cid; const bf = await wait(() => document.querySelector('form.panel datalist#softlist') && !document.querySelector('form.panel input[name=device]') && document.querySelector('form.panel'));   // the system form: software box, no device box
     if (!bf) throw new Error('build page did not appear: ' + document.querySelector('#main').innerText.slice(0, 300) + ' @' + location.hash);
-    set(bf.querySelector('input[name=title]'), 'سیستم خودآزمون'); set(bf.querySelector('input[name=invoice_no]'), '۹' + stamp.slice(-6).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]));
-    bf.querySelector('select[name=device_type]').value = 'laptop'; [...bf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
-    const row = bf.querySelector('.rows tbody tr');
+    ok('the system form has no title, device type or Telegram field', !bf.querySelector('input[name=title], select[name=device_type], textarea[name=media]'));
+    set(bf.querySelector('input[name=invoice_no]'), '۹' + stamp.slice(-6).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]));
+    [...bf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
+    const row = bf.querySelector('.rows tbody tr'); row.querySelector('select[name=category]').value = 'gpu';
     set(row.querySelector('input[name=model]'), pid ? pname : 'قطعهٔ آزمون');
     if (pid) ok('typing the product name picks it from the stock', !!(await wait(() => row.dataset.pid === String(pid))), 'pid=' + row.dataset.pid);
     set(row.querySelector('input[name=serial]'), 'SA-' + stamp); set(row.querySelector('input[name=warranty_months]'), '۱۲'); submit(bf);
     const bid = await wait(() => (location.hash.match(/#\/build\/(\d+)/) || [])[1]); ok('new computer saved with a part', !!bid, 'id=' + bid);
     const got = await GET('staff/builds/' + bid);
-    ok('saved by its invoice number (no service number), device type kept', got.invoice_no === '9' + stamp.slice(-6) && got.service_no === '' && got.number === got.invoice_no && got.device_type === 'laptop', JSON.stringify({ n: got.number, s: got.service_no, d: got.device_type }));
+    ok('saved by its invoice number (no service number), named after its graphics card', got.invoice_no === '9' + stamp.slice(-6) && got.service_no === '' && got.number === got.invoice_no && got.title === 'سیستم ' + got.parts[0].model, JSON.stringify({ n: got.number, s: got.service_no, t: got.title }));
     ok('the part came back with its warranty', got.parts.length === 1 && got.parts[0].warranty_months === 12 && (!pid || got.parts[0].product_id === pid), JSON.stringify(got.parts));
     if (pid) { const pr = await GET('staff/products/' + pid); ok('the stock went down and the product knows where it went', pr.totals.stock === 1 && pr.used.length === 1 && pr.used[0].id === +bid, JSON.stringify(pr.totals)); }
+    // the period report
+    location.hash = '#/stats'; const rep = await wait(() => [...document.querySelectorAll('#main h3')].find(x => x.textContent.startsWith('سرویس‌ها')) && document.querySelector('#main .cards'));
+    ok('report page shows the cards of the period', !!rep && /\d/.test(rep.textContent), rep ? rep.textContent.slice(0, 80) : '');
     // permissions seen by this person
     ok('screens follow the permissions (nav items = areas with at least view)', document.querySelectorAll('aside nav a').length === NAV.filter(n => n[2]()).length);
     await bridge.logout(); const s = await bridge.session(); ok('sign-out clears the token', s.data && s.data.signedIn === false);

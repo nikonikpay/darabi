@@ -55,6 +55,52 @@
   }
   function kv(dl, k, v) { if (v === null || v === undefined || v === '') return; add(dl, el('dt', '', k), el('dd', '', v)); }
 
+  /* the programs the customer wants on a system or service that is still open: they open it by its invoice or service number, pick names from the shop's list as they type
+     (or write one that is not on it), and add their request in words */
+  function softForm(me) {
+    var open = me.builds.concat(me.jobs).filter(function (r) { return r.soft_open && r.number; });
+    if (!open.length) return null;
+    var card = el('div', 'mzcp-card'), dl = document.createElement('datalist'); dl.id = 'mzcp-soft';
+    (me.catalog || []).forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+    var num = el('input'); num.type = 'text'; num.dir = 'ltr'; num.placeholder = 'شمارهٔ فاکتور یا سرویس'; num.inputMode = 'numeric';
+    var go = el('button', 'mzcp-btn', 'باز کردن فرم'), quick = el('div', 'mzcp-row'), box = el('div'), msg = el('p', 'mzcp-msg');
+    open.forEach(function (r) { var b = el('button', 'mzcp-link', (r.kind === 'build' ? 'سیستم ' : 'سرویس ') + r.number); b.addEventListener('click', function () { num.value = r.number; show(); }); quick.appendChild(b); });
+    add(card, el('h3', '', 'نرم‌افزارهایی که می‌خواهید نصب شود'), el('p', 'mzcp-sub', 'شمارهٔ فاکتور سیستم یا شمارهٔ سرویس را وارد کنید (یا یکی را انتخاب کنید) و نرم‌افزارها را بنویسید.'), num, go, quick, msg, box, dl);
+    function show() {
+      msg.textContent = ''; box.textContent = '';
+      var v = num.value.replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).trim().toUpperCase();
+      var r = open.filter(function (x) { return x.number.toUpperCase() === v || x.number.toUpperCase() === 'R-' + v; })[0];
+      if (!r) { msg.textContent = 'پرونده‌ای باز با این شماره برای شما پیدا نشد.'; return; }
+      var names = r.software.items.map(function (x) { return x.name; }), chips = el('div', 'mzcp-row');
+      var draw = function () {
+        chips.textContent = '';
+        names.forEach(function (n, i) { var c = el('span', 'mzcp-pill', n + ' '), x = el('button', 'mzcp-link', '×'); x.setAttribute('aria-label', 'حذف ' + n); x.addEventListener('click', function () { names.splice(i, 1); draw(); }); c.appendChild(x); chips.appendChild(c); });
+        if (!names.length) chips.appendChild(el('span', 'mzcp-sub', 'هنوز نرم‌افزاری انتخاب نشده است.'));
+      };
+      var inp = el('input'); inp.type = 'text'; inp.setAttribute('list', 'mzcp-soft'); inp.placeholder = 'نام نرم‌افزار را بنویسید…'; inp.dir = 'auto'; inp.autocomplete = 'off';
+      var addB = el('button', 'mzcp-btn', 'افزودن');
+      var push = function () { var n = inp.value.trim(); if (n && !names.some(function (x) { return x.toLowerCase() === n.toLowerCase(); })) { names.push(n); draw(); } inp.value = ''; inp.focus(); };
+      addB.addEventListener('click', push); inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); push(); } });
+      var note = el('textarea'); note.rows = 3; note.placeholder = 'درخواست‌های نرم‌افزاری دیگر (نسخهٔ خاص، زبان، تنظیمات …)'; note.value = r.software.note || '';
+      var save = el('button', 'mzcp-btn', 'ذخیره'), done = el('p', 'mzcp-msg');
+      save.addEventListener('click', function () {
+        save.disabled = true; done.textContent = '';
+        api('software', { kind: r.kind, number: r.number, items: names, note: note.value }).then(function (x) { r.software = x.software; done.textContent = 'ذخیره شد. سپاس!'; save.disabled = false; })
+          .catch(function (e) { done.textContent = e.message; save.disabled = false; });
+      });
+      draw();
+      add(box, el('p', 'mzcp-sub', (r.kind === 'build' ? 'سیستم ' : 'سرویس ') + r.number + ' — اگر نرم‌افزار در فهرست نیست، نامش را کامل بنویسید.'), chips, inp, addB, note, save, done);
+      inp.focus();
+    }
+    go.addEventListener('click', show); num.addEventListener('keydown', function (e) { if (e.key === 'Enter') show(); });
+    return card;
+  }
+  function softList(s) {
+    if (!s || (!s.items.length && !s.note)) return null;
+    var p = el('p', 'mzcp-sub', 'نرم‌افزارها: ' + s.items.map(function (x) { return x.name + (x.done ? ' ✓' : ''); }).join('، ') + (s.note ? ' — ' + s.note : ''));
+    return p;
+  }
+
   function history_() {
     var card = shell('سوابق من');
     card.firstChild.textContent = 'در حال دریافت…';
@@ -63,6 +109,7 @@
       var top = el('div', 'mzcp-top'); add(top, el('h2', '', 'سلام ' + me.name), el('button', 'mzcp-link', 'خروج'));
       top.lastChild.addEventListener('click', function () { api('logout', {}).catch(function () {}).then(function () { token = ''; try { window.sessionStorage.removeItem(KEY); } catch (e) { } login(); }); });
       root.appendChild(top);
+      add(root, softForm(me));
 
       add(root, el('h3', 'mzcp-h', 'سیستم‌های خریداری‌شده'));
       if (!me.builds.length) add(root, el('p', 'mzcp-sub', 'هنوز سیستمی برای شما ثبت نشده است.'));
@@ -80,6 +127,7 @@
           });
           add(c, el('div', 'mzcp-scroll', null)).lastChild.appendChild(t);
         }
+        add(c, softList(b.software));
         if (b.report) { var a = el('a', 'mzcp-link', 'گزارش تست سیستم'); a.href = b.report; a.target = '_blank'; a.rel = 'noopener'; add(c, a); }
         add(c, photos(b.photos)); root.appendChild(c);
       });
@@ -92,15 +140,17 @@
         add(c, head);
         var dl = el('dl', 'mzcp-kv'); kv(dl, 'تاریخ پذیرش', j.received); kv(dl, 'موعد تحویل', j.due); kv(dl, 'تاریخ تحویل', j.closed); kv(dl, 'شمارهٔ فاکتور', j.invoice);
         if (j.recv && j.recv.length) kv(dl, 'قطعات تحویل‌گرفته‌شده', j.recv.map(function (x) { return x.name + (x.serial ? ' (' + x.serial + ')' : ''); }).join('، ')); kv(dl, 'درخواست شما', j.complaint); kv(dl, 'کارهای انجام‌شده', j.work); add(c, dl);
-        if (j.parts.length || j.labor) {
+        if (j.parts.length || j.labor || j.other) {
           var t = el('table', 'mzcp-table'), hd = el('tr'); ['قطعه / کار', 'تعداد', 'قیمت واحد', 'جمع'].forEach(function (x) { hd.appendChild(el('th', '', x)); }); t.appendChild(hd);
           j.parts.forEach(function (p) { var r = el('tr'); [p.name + (p.months ? ' (گارانتی ' + p.months + ' ماه)' : ''), p.qty.toLocaleString('fa-IR'), money(p.price), money(p.qty * p.price)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); });
-          if (j.labor) { var r = el('tr'); ['اجرت', '', '', money(j.labor)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); }
+          if (j.other) { var ro = el('tr'); ['سایر هزینه‌ها', '', '', money(j.other)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); ro.appendChild(td); }); t.appendChild(ro); }
+          if (j.labor) { var r = el('tr'); ['هزینهٔ خدمات', '', '', money(j.labor)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); }
           add(c, el('div', 'mzcp-scroll', null)).lastChild.appendChild(t);
           if (j.discount) add(c, el('p', 'mzcp-sub', 'تخفیف: ' + money(j.discount)));
           add(c, el('p', 'mzcp-total', 'جمع کل: ' + money(j.total)));
           if (j.paid) add(c, el('p', 'mzcp-sub', 'پرداخت‌شده: ' + money(j.paid) + (j.total > j.paid ? ' — مانده: ' + money(j.total - j.paid) : '')));
         }
+        add(c, softList(j.software));
         if (j.report) { var a = el('a', 'mzcp-link', 'گزارش تست'); a.href = j.report; a.target = '_blank'; a.rel = 'noopener'; add(c, a); }
         add(c, photos(j.photos)); root.appendChild(c);
       });

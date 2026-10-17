@@ -68,18 +68,20 @@ final class MZC_Mcp
             $all = self::defs(); if (!isset($all[$name])) { return self::error($id, -32602, 'Unknown tool: ' . $name); }
             try { list($status, $data) = call_user_func($all[$name][3], $args, $token); }
             catch (Throwable $e) { $status = 500; $data = array('error' => 'Internal error: ' . $e->getMessage()); }
-            $isErr = $status >= 400;
+            $isErr = $status >= 400; if (!$isErr) { $data = self::lean($data); }
             $rest = is_array($data) ? array_diff_key($data, array('error' => 1)) : array();   // e.g. the duplicate record, the candidates, the current version
             $text = $isErr ? (is_array($data) && isset($data['error']) ? (string) $data['error'] : 'Error ' . $status) . ($rest ? ' ' . wp_json_encode($rest, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : '')
                 : wp_json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $res = array('content' => array(array('type' => 'text', 'text' => $text)), 'isError' => $isErr);
-            if (!$isErr && is_array($data) && $data && array_keys($data) !== range(0, count($data) - 1)) { $res['structuredContent'] = $data; }
-            return self::result($id, $res);
+            // no structuredContent: it repeated the whole answer next to the text and doubled what the model reads
+            return self::result($id, array('content' => array(array('type' => 'text', 'text' => $text)), 'isError' => $isErr));
         }
         if ($method === 'resources/list') { return self::result($id, array('resources' => array())); }
         if ($method === 'prompts/list') { return self::result($id, array('prompts' => array())); }
         return self::error($id, -32601, 'Method not found: ' . $method);
     }
+
+    /** Rows per page of the list tools: the model asks for the next page when it needs it. */
+    const PER = 10;
 
     const INSTRUCTIONS = "This is the CRM of Mazesta, a computer shop in Iran (Persian data; prices in toman). You act for the signed-in staff member and can do only what their role allows.\n"
         . "Records: customers; 'systems' = new computers the shop built and sold (known by the accounting INVOICE number, plus the buyer's name; older ones also have a service number R-n); "
@@ -87,8 +89,26 @@ final class MZC_Mcp
         . "When someone names a system or service by a number (e.g. \"1289\"), pass it as `number`. Before changing a record, read it (get_system / get_service) so you keep what is there. "
         . "To add parts to a system use add_parts (keeps the existing ones). Pick parts from the stock: search find_products and pass product_id, so prices and stock follow. "
         . "If the user sends photos of part labels or boxes, read the model and serial number from them and fill the fields; ask when a value is unreadable - never guess serials. "
-        . "Dates: YYYY-MM-DD, Gregorian or Persian (1405/07/25). Photos/videos live in the shop's Telegram channel: store their post links in `media`. "
+        . "Dates: YYYY-MM-DD, Gregorian or Persian (1405/07/25); answers give Persian dates (*_j). Lists come 10 per page with `total`: ask for the next page only when needed. "
+        . "A service's money: labor_price = what we charge for the work, paid = costs the shop paid out for this job (charged to the customer, not profit; paid_note says for what), discount, parts; total = parts + labor + paid - discount. "
+        . "For money and counts over a period (profit, how many services/systems, best sellers) call `stats` instead of paging through lists. "
+        . "`software` = the programs the customer wants installed (name, done); `software_note` = their request in words. "
         . "Confirm with the user before saving anything you inferred rather than were told.";
+
+    /** An answer as the model reads it: no empty values, no edit stamps, the Persian date only where both are sent, and a list's number only once (fewer tokens, same facts). */
+    private static function lean($v)
+    {
+        if (!is_array($v)) { return $v; }
+        $assoc = $v && array_keys($v) !== range(0, count($v) - 1); $out = array();
+        foreach ($v as $k => $x) {
+            if ($assoc && ($k === 'updated' || $k === 'deviceText' || (is_string($k) && isset($v[$k . '_j'])))) { continue; }
+            if ($assoc && ($k === 'service_no' || $k === 'invoice_no') && isset($v['number']) && $x === $v['number']) { continue; }
+            $x = self::lean($x);
+            if ($x === null || $x === '' || $x === array()) { continue; }
+            if ($assoc) { $out[$k] = $x; } else { $out[] = $x; }
+        }
+        return $out;
+    }
 
     /* ---------- tools ---------- */
 
@@ -152,6 +172,8 @@ final class MZC_Mcp
         $num = array('type' => 'string', 'description' => 'Invoice number or service number as people say it (e.g. "1289" or "R-3579").');
         $dtype = array('type' => 'string', 'enum' => array_keys(MZC_Crm::$device_types), 'description' => 'system / laptop / part / other.');
         $media = array('type' => 'array', 'items' => $str, 'description' => 'https links to the photos/videos (Telegram channel posts). Replaces the list.');
+        $soft = array('software' => array('type' => 'array', 'description' => 'Programs to install; replaces the list.', 'items' => self::obj(array('name' => $str, 'done' => array('type' => 'boolean', 'description' => 'Installed and runs.')), array('name'))),
+            'software_note' => array('type' => 'string', 'description' => 'The customer\'s software requests in words.'));
         $cats = array('type' => 'string', 'enum' => array_keys(MZC_Crm::$categories));
         $bpart = self::obj(array('product_id' => array('type' => 'integer', 'description' => 'From find_products; sets the price and takes it out of stock.'), 'category' => $cats, 'model' => $str, 'serial' => $str, 'warranty_months' => $int,
             'sell_price' => $money, 'buy_price' => $money, 'vendor' => array('type' => 'string', 'description' => 'Warranty company.'), 'note' => $str, 'has_box' => $bool, 'qc' => $bool), array('model'));
@@ -168,7 +190,7 @@ final class MZC_Mcp
                     return array(200, $d);
                 }),
             'list_customers' => array('List or search customers.', self::obj(array('query' => $str, 'group' => $str, 'page' => $page)), true,
-                function ($a, $t) { return self::api('customers', $t, 'GET', self::only($a, array('query' => 'q', 'group' => 'group', 'page' => 'page'))); }),
+                function ($a, $t) { return self::api('customers', $t, 'GET', self::only($a, array('query' => 'q', 'group' => 'group', 'page' => 'page')) + array('per' => self::PER)); }),
             'get_customer' => array('One customer with their systems and services.', self::obj(array('id' => $int), array('id')), true,
                 function ($a, $t) { return self::api('customer', $t, 'GET', array(), array(), array('id' => (int) $a['id'])); }),
             'save_customer' => array('Create (no id) or update a customer (fields left out keep their value).', self::obj(array('id' => $int, 'name' => $str, 'mobile' => $str, 'mobile2' => $str, 'phone' => $str, 'national_id' => $str, 'email' => $str, 'address' => $str, 'notes' => $str, 'group' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$groups)))), false,
@@ -177,28 +199,28 @@ final class MZC_Mcp
                     return self::api('customer_save', $t, 'POST', array(), $a);
                 }),
             'list_systems' => array('List new computers (sales). Statuses: ' . implode(', ', array_keys(MZC_Crm::$build_statuses)) . '.', self::obj(array('query' => $str, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$build_statuses)), 'page' => $page)), true,
-                function ($a, $t) { return self::api('builds', $t, 'GET', self::only($a, array('query' => 'q', 'status' => 'status', 'page' => 'page'))); }),
+                function ($a, $t) { return self::api('builds', $t, 'GET', self::only($a, array('query' => 'q', 'status' => 'status', 'page' => 'page')) + array('per' => self::PER)); }),
             'get_system' => array('One new computer with its parts, by id or by its invoice / service number.', self::obj(array('id' => $int, 'number' => $num)), true,
                 function ($a, $t) { $id = self::rid('build', $a); return $id ? self::api('build', $t, 'GET', array(), array(), array('id' => $id)) : self::not_found('System', $a); }),
             'save_system' => array('Register a new computer (needs the invoice number and the customer) or update one (id or number). `parts` replaces the part list; `add_parts` appends to it. A serial already used elsewhere comes back as a warning.',
-                self::obj($cust + array('id' => $int, 'number' => $num, 'invoice_no' => $str, 'title' => $str, 'device_type' => $dtype, 'sold_at' => $date, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$build_statuses)), 'notes' => $str, 'media' => $media,
+                self::obj($cust + $soft + array('id' => $int, 'number' => $num, 'invoice_no' => $str, 'sold_at' => $date, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$build_statuses)), 'notes' => $str,
                     'parts' => array('type' => 'array', 'items' => $bpart), 'add_parts' => array('type' => 'array', 'items' => $bpart), 'force' => array('type' => 'boolean', 'description' => 'Save although the invoice number is already used (only when the user confirms).'))), false,
                 function ($a, $t) { return self::save_record('build', $a, $t); }),
             'set_system_status' => array('Move a new computer to another step.', self::obj(array('id' => $int, 'number' => $num, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$build_statuses))), array('status')), false,
                 function ($a, $t) { $id = self::rid('build', $a); return $id ? self::api('build_status', $t, 'POST', array(), array('id' => $id, 'status' => $a['status'])) : self::not_found('System', $a); }),
             'list_services' => array('List service jobs. Statuses: ' . implode(', ', array_keys(MZC_Crm::$statuses)) . '.', self::obj(array('query' => $str, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$statuses)), 'page' => $page)), true,
-                function ($a, $t) { return self::api('jobs', $t, 'GET', self::only($a, array('query' => 'q', 'status' => 'status', 'page' => 'page'))); }),
+                function ($a, $t) { return self::api('jobs', $t, 'GET', self::only($a, array('query' => 'q', 'status' => 'status', 'page' => 'page')) + array('per' => self::PER)); }),
             'get_service' => array('One service job with parts and payments, by id or service number.', self::obj(array('id' => $int, 'number' => $num)), true,
                 function ($a, $t) { $id = self::rid('job', $a); return $id ? self::api('job', $t, 'GET', array(), array(), array('id' => $id)) : self::not_found('Service', $a); }),
             'save_service' => array('Receive a new service job (gets the next service number) or update one. `parts` = parts the shop added (replaces), `add_parts` appends, `recv` = what the customer handed in.',
-                self::obj($cust + array('id' => $int, 'number' => $num, 'device' => array('type' => 'string', 'description' => 'What it is, e.g. "ASUS laptop".'), 'device_type' => $dtype, 'complaint' => $str, 'work_done' => $str, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$statuses)),
-                    'received_at' => $date, 'due_at' => $date, 'invoice_no' => $str, 'is_mazesta' => $bool, 'has_warranty' => $bool, 'labor_price' => $money, 'discount' => $money, 'paid' => $money, 'notes' => $str, 'media' => $media,
+                self::obj($cust + $soft + array('id' => $int, 'number' => $num, 'device' => array('type' => 'string', 'description' => 'A laptop\'s or part\'s model, e.g. "ASUS TUF F15".'), 'device_serial' => $str, 'device_type' => $dtype, 'complaint' => $str, 'work_done' => $str, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$statuses)),
+                    'received_at' => $date, 'due_at' => $date, 'invoice_no' => $str, 'is_mazesta' => $bool, 'has_warranty' => $bool, 'labor_price' => $money, 'discount' => $money, 'paid' => array('type' => 'integer', 'description' => 'Toman the shop paid out for this job (courier, outside repair ...).'), 'paid_note' => $str, 'notes' => $str, 'media' => $media,
                     'parts' => array('type' => 'array', 'items' => $jpart), 'add_parts' => array('type' => 'array', 'items' => $jpart), 'recv' => array('type' => 'array', 'items' => self::obj(array('name' => $str, 'serial' => $str, 'note' => $str, 'has_box' => $bool), array('name'))))), false,
                 function ($a, $t) { return self::save_record('job', $a, $t); }),
             'set_service_status' => array('Move a service job to another status.', self::obj(array('id' => $int, 'number' => $num, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Crm::$statuses))), array('status')), false,
                 function ($a, $t) { $id = self::rid('job', $a); return $id ? self::api('job_status', $t, 'POST', array(), array('id' => $id, 'status' => $a['status'])) : self::not_found('Service', $a); }),
             'find_products' => array('Search the stock (name, brand, part number) with stock count and prices.', self::obj(array('query' => $str, 'category' => $cats, 'in_stock' => $bool, 'page' => $page)), true,
-                function ($a, $t) { return self::api('products', $t, 'GET', self::only($a, array('query' => 'q', 'category' => 'category', 'in_stock' => 'instock', 'page' => 'page'))); }),
+                function ($a, $t) { return self::api('products', $t, 'GET', self::only($a, array('query' => 'q', 'category' => 'category', 'in_stock' => 'instock', 'page' => 'page')) + array('per' => self::PER)); }),
             'product_report' => array('A product\'s history: which suppliers it was bought from, when, how many and at what cost; which customers it went to (system or service), when and at what price; the stock now.', self::obj(array('id' => $int, 'query' => array('type' => 'string', 'description' => 'A name to find the product when the id is not known.'))), true,
                 function ($a, $t) {
                     $id = isset($a['id']) ? (int) $a['id'] : 0;
@@ -215,13 +237,16 @@ final class MZC_Mcp
                     return self::api('supplier_save', $t, 'POST', array(), $a);
                 }),
             'list_purchases' => array('List purchase invoices (search by invoice number, supplier, product or serial).', self::obj(array('query' => $str, 'supplier_id' => $int, 'page' => $page)), true,
-                function ($a, $t) { return self::api('purchases', $t, 'GET', self::only($a, array('query' => 'q', 'supplier_id' => 'vendor', 'page' => 'page'))); }),
+                function ($a, $t) { return self::api('purchases', $t, 'GET', self::only($a, array('query' => 'q', 'supplier_id' => 'vendor', 'page' => 'page')) + array('per' => self::PER)); }),
             'get_purchase' => array('One purchase invoice with its lines.', self::obj(array('id' => $int), array('id')), true,
                 function ($a, $t) { return self::api('purchase', $t, 'GET', array(), array(), array('id' => (int) $a['id'])); }),
             'save_purchase' => array('Enter (no id) or replace a supplier\'s purchase invoice. Each line names a product by product_id, or by name (+category) - an unknown name becomes a new product. Serial numbers: one per unit.',
                 self::obj(array('id' => $int, 'supplier_id' => $int, 'supplier_name' => array('type' => 'string', 'description' => 'When the supplier is not in list_suppliers (becomes a new one).'), 'invoice_no' => $str, 'bought_at' => $date, 'notes' => $str, 'force' => $bool,
                     'items' => array('type' => 'array', 'items' => self::obj(array('product_id' => $int, 'name' => $str, 'category' => $cats, 'qty' => $int, 'unit_cost' => $money, 'sell_price' => array('type' => 'integer', 'description' => 'Optional new selling price of the product.'), 'serials' => array('type' => 'array', 'items' => $str)), array('qty')))), array('items')), false,
                 function ($a, $t) { $b = $a; if (isset($a['supplier_id'])) { $b['vendor_id'] = $a['supplier_id']; } if (isset($a['supplier_name'])) { $b['vendor_name'] = $a['supplier_name']; } return self::api('purchase_save', $t, 'POST', array(), $b); }),
+            'stats' => array('Money and counts of a period: services (by day received: count per status, labor, parts, paid-out costs, discount, total, received, profit) and new computers (by day sold: count, sales, cost, profit), month by month, and the best-selling parts. Default: this Persian month.',
+                self::obj(array('period' => array('type' => 'string', 'enum' => array('month', 'last', 'd30', 'year'), 'description' => 'this month, last month, last 30 days, this year (Persian calendar).'), 'from' => $date, 'to' => $date)), true,
+                function ($a, $t) { $r = self::api('stats', $t, 'GET', self::only($a, array('period' => 'period', 'from' => 'from', 'to' => 'to'))); if (isset($r[1]['periods'])) { unset($r[1]['periods']); } return $r; }),
             'trace_serial' => array('Where a serial number has been: bought on which invoice from whom, in which system or service, sent to which warranty company.', self::obj(array('serial' => $str), array('serial')), true,
                 function ($a, $t) { return self::api('serial', $t, 'GET', array('q' => (string) $a['serial'])); }),
             'list_test_reports' => array('The Mazesta Test app\'s reports sent to the site (newest first); those of the given service number first.', self::obj(array('query' => $str, 'number' => $str)), true,

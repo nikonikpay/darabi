@@ -86,3 +86,9 @@
 .mzc-cols .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 3px 0; }
 .mzc-cols .row input[type=number] { width: 56px; }
 .mzc-bar-actions { display: flex; gap: 8px; align-items: center; margin-inline-start: auto; }
+/* the form's customer search, and the service form's sums */
+.mzc-cres { display: flex; flex-direction: column; gap: 4px; max-width: 520px; margin-top: 6px; }
+.mzc-copt { text-align: start; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; font: inherit; }
+.mzc-copt:hover, .mzc-copt:focus-visible { border-color: var(--info); }
+.mzc-cpicked { margin-top: 6px; display: flex; gap: 8px; align-items: center; }
+.mzc-sum { display: flex; flex-direction: column; gap: 2px; } .mzc-sum span { color: var(--muted); font-size: 12px; } .mzc-sum b { font-size: 16px; } .mzc-sum.big b { font-size: 20px; }

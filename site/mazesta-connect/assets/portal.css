@@ -22,3 +22,5 @@
 .mzc-portal .mzcp-total { font-weight: 700; margin: 6px 0; }
 .mzc-portal .mzcp-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; } .mzc-portal .mzcp-photos img { width: 150px; height: 110px; max-width: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); margin: 0; padding: 0; background: #f2f4f7; }
 @media (max-width: 560px) { .mzc-portal .mzcp-kv { grid-template-columns: 1fr; } .mzc-portal .mzcp-card { padding: 14px; } }
+.mzc-portal textarea { width: 100%; box-sizing: border-box; margin: 8px 0; font: inherit; padding: 8px; border-radius: 8px; border: 1px solid #ccd; }
+.mzc-portal .mzcp-row .mzcp-link { margin-inline-end: 8px; }

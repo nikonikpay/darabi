@@ -6,7 +6,7 @@ final class MZC_Admin
 {
     private static $pages = array(
         'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-messages' => array('پیام‌ها', 'messages'),
-        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
+        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-report' => array('گزارش مالی و آمار', 'report'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
 
@@ -243,8 +243,37 @@ final class MZC_Admin
             return '<input type="hidden" name="customer_id" value="' . (int) $customer['id'] . '"><div class="mzc-field wide"><span>مشتری</span><div><strong>' . esc_html($customer['name']) . '</strong> <span class="num muted">' . esc_html($customer['mobile']) . '</span> '
                 . '<a href="' . esc_url(self::url('mzc-customers', array('view' => (int) $customer['id']))) . '">پروندهٔ مشتری</a></div></div>';
         }
-        return '<label>موبایل مشتری<input type="text" name="c_mobile" dir="ltr" placeholder="09121234567" value="' . esc_attr($prefill) . '" required><small>اگر این شماره ثبت شده باشد همان مشتری انتخاب می‌شود.</small></label>'
-            . '<label>نام مشتری<input type="text" name="c_name" maxlength="190"><small>فقط برای مشتری تازه لازم است.</small></label>';
+        // admin.js searches as one types the name or a number (any of the customer's numbers) and offers the closest customers; picking one fills customer_id
+        return '<div class="mzc-field wide mzc-cfind" data-mzc-cfind="' . esc_url(admin_url('admin-ajax.php?action=mzc_customer_find&n=' . wp_create_nonce('mzc_customer_find'))) . '"><input type="hidden" name="customer_id" value="">'
+            . '<div class="mzc-fields"><label>نام مشتری<input type="text" name="c_name" maxlength="190" autocomplete="off" data-mzc-cq><small>با نوشتن نام یا موبایل، مشتری‌های ثبت‌شده پیشنهاد می‌شوند.</small></label>'
+            . '<label>موبایل مشتری<input type="text" name="c_mobile" dir="ltr" placeholder="09121234567" value="' . esc_attr($prefill) . '" autocomplete="off" data-mzc-cq required></label>'
+            . '<label>موبایل دوم (اختیاری)<input type="text" name="c_mobile2" dir="ltr" autocomplete="off"></label></div>'
+            . '<div class="mzc-cres" hidden></div><div class="mzc-cpicked" hidden></div></div>';
+    }
+
+    /** The programs the customer wants installed (rows picked from the shop's list or typed freely) and their own request in words. */
+    public static function soft_block($json)
+    {
+        $s = MZC_Crm::soft_out($json);
+        $row = function ($n, $x) {
+            return '<div class="mzc-row"><input type="text" name="soft[' . $n . '][name]" value="' . esc_attr($x['name']) . '" placeholder="نام نرم‌افزار (از فهرست یا نام تازه)" maxlength="80" list="mzc-soft" dir="auto">'
+                . '<label class="chk"><input type="checkbox" name="soft[' . $n . '][done]" value="1"' . checked(!empty($x['done']), true, false) . '> نصب و اجرا شد</label><button type="button" class="mzc-btn sm danger x" data-mzc-remove>حذف</button></div>';
+        };
+        $o = '<div class="mzc-field wide"><span>نرم‌افزارهای درخواستی مشتری' . ($s['by_customer'] !== '' ? ' ' . self::pill('مشتری خودش پر کرده: ' . MZC_Crm::jdate($s['by_customer']), 'info') : '') . '</span><div class="mzc-rows" id="mzc-soft-rows" data-next="' . count($s['items']) . '">';
+        foreach ($s['items'] as $n => $x) { $o .= $row($n, $x); }
+        $o .= '</div><template id="mzc-soft-rows-tpl">' . str_replace('[0]', '[__N__]', $row(0, array('name' => '', 'done' => false))) . '</template><p><button type="button" class="mzc-btn" data-mzc-add="mzc-soft-rows">+ نرم‌افزار</button> <small class="muted">اگر در فهرست نیست، نامش را کامل بنویسید.</small></p>'
+            . '<label>درخواست‌های نرم‌افزاری (توضیح)<textarea name="soft_note" rows="2" dir="auto">' . esc_textarea($s['note']) . '</textarea></label><datalist id="mzc-soft">';
+        foreach (MZC_Crm::software_catalog() as $n) { $o .= '<option value="' . esc_attr($n) . '">'; }
+        return $o . '</datalist></div>';
+    }
+
+    public static function soft_view($json)
+    {
+        $s = MZC_Crm::soft_out($json);
+        if (!$s['items'] && $s['note'] === '') { return ''; }
+        $o = '<div class="mzc-panel"><header><h3>نرم‌افزارهای درخواستی</h3>' . ($s['by_customer'] !== '' ? self::pill('مشتری خودش پر کرده: ' . MZC_Crm::jdate($s['by_customer']), 'info') : '') . '</header><div class="body"><p>';
+        foreach ($s['items'] as $x) { $o .= self::pill($x['name'] . ($x['done'] ? ' ✓' : ''), $x['done'] ? 'ok' : '') . ' '; }
+        return $o . '</p>' . ($s['note'] !== '' ? '<p dir="auto">' . nl2br(esc_html($s['note'])) . '</p>' : '') . '</div></div>';
     }
 
     public static function report_select($selected, $service = '')
