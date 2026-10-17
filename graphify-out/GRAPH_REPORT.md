@@ -1,351 +1,351 @@
 # Graph Report - Mazesta  (2026-10-17)
 
 ## Corpus Check
-- 135 files · ~721,292 words
+- 19 files · ~738,929 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 11970 nodes · 26544 edges · 586 communities (339 shown, 247 thin omitted)
-- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 1743 edges (avg confidence: 0.83)
-- Token cost: 202,834 input · 0 output
+- 12157 nodes · 26867 edges · 575 communities (337 shown, 238 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 1837 edges (avg confidence: 0.83)
+- Token cost: 110,654 input · 0 output
 
 ## Community Hubs (Navigation)
-- GPU Tuning Page Model
 - App Host and Bridge Imports
+- GPU Tuning Page Model
 - Connect Plugin Messages and SMS
-- Diagnostics Namespaces
-- GPU Scene and AI Namespaces
+- Hardware Providers
 - Board Sensor Roles
 - Garden Scene Simulation
-- AI Assistant Server
-- Web Bridge Methods
 - Garden Mesh Loading
-- Page UI and i18n Helpers
-- D3D12 Benchmarks
-- Core Hardware Namespaces
-- NVML Interop
-- Desktop Services Namespaces
-- GPU Auto-Tune Search
-- GPU Tuning Settings
-- Overlay Catalog
-- Software Catalog
-- Staff API
-- Linpack CPU Stress
-- Hardware Providers
-- Storage Test
-- Overlay Page Model
+- Diagnostics Namespaces
+- AI Assistant Server
 - Connect Admin Pages
-- Dashboard and Monitoring Pages
+- Page UI and i18n Helpers
+- Staff API
+- GPU Auto-Tune Search
+- NVML Interop
+- D3D12 Benchmarks
 - Garden Rasterizer
-- Benchmark Peers
-- Checkup Service
+- Software Catalog
+- Garden Renderer
+- CRM Database and Portal
+- GPU Scene and AI Namespaces
+- Dashboard and Monitoring Pages
+- Diagnostics Namespaces (2)
+- BenchmarkResult cluster
+- MemoryTests cluster
+- Overlay Page Model
+- Storage Test
+- AiFiles cluster
 - Game Boost Services
+- Web Bridge Methods
 - Benchmark and Test Pages
-- Windows Diagnostics Imports
+- GPU Tuning Settings
+- App Host and Bridge Imports (2)
+- Checkup Service
+- Report Summary
 - App Config Model
 - Checkup Finding Codes
 - Internet Speed Test
+- LAN Test
 - App Screenshots
-- Report Summary
+- MazestaDesk Pages
 - Test Detail Text
 - Frame Rate Monitor
 - Overlay Service and Hotkeys
 - OpenRGB Protocol
-- Benchmark Records
-- CRM Database and Portal
-- Checkup Rule Tests
-- Garden Renderer
-- CRM and SMS Settings
+- RgbMenu cluster
+- RegisterTweaks cluster
+- WebBridge cluster
+- BenchmarkRunner cluster
 - Overlay Renderer
-- CPU Core Cycling
-- Polling Engine
-- Tray Canvas Drawing
-- Benchmark Details
-- Sensor Units
-- GPU Run Trace
-- DDR5 SPD Decoding
+- Overlay Catalog
 - Tray Program Startup
-- Battery and WMI Reader
-- MazestaDesk Pages
-- Daily Use Test
 - Hardware Details Cache
-- CPU FFT Workload
-- RGB Sessions and Scenes
-- WMI Hardware Inventory
-- Tray Health Checks
-- GPU AI Benchmark
+- Benchmark Records
+- system_net cluster
+- GpuRules cluster
+- Checkup Rule Tests
+- DDR5 SPD Decoding
+- Polling Engine
+- BenchmarkTests cluster
+- Benchmark Details
+- Daily Use Test
+- CRM and SMS Settings
 - LibreHardwareMonitor Provider
+- Get cluster
+- PartSpecs cluster
 - Overlay Window
-- Garden Light Baking
 - Garden Export Script
 - Garden Weather
+- FakeSensorProvider cluster
 - Benchmarks Page Model
-- GPU V/F Curve
-- LAN Test
-- History Store
+- VfCurveScanner cluster
+- GpuFeatures cluster
+- Mazesta.Core.Tuning cluster
+- GpuVideoBenchmark cluster
+- Tray Health Checks
+- NativeBlock cluster
 - App Shell and Search
 - t cluster
 - SensorKind cluster
-- IMFAttributes cluster
-- WebBridge cluster
-- TestCenterViewModel cluster
-- StoredReport cluster
-- GpuVideoBenchmark cluster
-- RegisterNetRepair cluster
-- SensorId cluster
-- Finding cluster
-- TestQueueRowViewModel cluster
-- GpuSceneExecutor cluster
-- SiteClient cluster
-- Compare cluster
-- SetupText cluster
-- IGpuTuningDevice cluster
-- TestWindow cluster
-- ReportsViewModel cluster
-- MemoryTests cluster
-- TestEngine cluster
-- NativeBlock cluster
-- icon cluster
-- TuningViewModelTests cluster
-- TestEngineTests cluster
-- Mazesta.Core.Tuning cluster
-- FakeHardware cluster
-- SettingsViewModel cluster
-- SystemInfoViewModel cluster
-- HardwareKind cluster
-- VfCurveScanner cluster
-- BenchmarkTests cluster
-- system_net cluster
-- AddDiagnostics cluster
+- WMI Hardware Inventory
 - Build cluster
-- GardenSoundMix cluster
-- Classify cluster
-- MZC_Stats cluster
-- toast cluster
-- Client cluster
+- TuningViewModelTests cluster
+- GPU V/F Curve
+- TestCenterViewModel cluster
 - RegisterSystem cluster
+- SensorId cluster
+- Benchmark Peers
+- StorageTests cluster
+- MemorySequence cluster
+- GpuSceneExecutor cluster
+- TestQueueRowViewModel cluster
+- Compare cluster
+- StoredReport cluster
+- RegisterNetRepair cluster
+- SetupText cluster
+- TestWindow cluster
+- History Store
+- GpuAutoTuner cluster
+- TestEngine cluster
+- TestExecutionRequest cluster
+- icon cluster
+- HardwareKind cluster
+- TestEngineTests cluster
+- SessionReport cluster
+- Tray Canvas Drawing
+- IGpuTuningDevice cluster
+- CPU Core Cycling
+- FakeHardware cluster
+- GardenSceneTests cluster
+- Sensor Units
+- PingMonitor cluster
+- Benchmark Peers (2)
+- AiAssistantTests cluster
+- AddDiagnostics cluster
+- SettingsViewModel cluster
+- FanController cluster
+- RegisterNetRepair cluster (2)
+- toast cluster
+- Finding cluster
+- Overlay Catalog (2)
+- Build cluster (2)
 - Mazesta.sln cluster
 - demo.js cluster
-- AutoTuneOptions cluster
+- NetworkLatencyExecutor cluster
+- RunAsync cluster
 - Run cluster
-- OpenRgbClient cluster
-- TestExecutionRequest cluster
-- FanController cluster
-- RegisterTweaks cluster
+- ReportsViewModel cluster
+- AppUpdater cluster
 - Judge cluster
 - BoardDrivers cluster
-- FakeSensorProvider cluster
-- SessionReport cluster
+- SystemInfoViewModel cluster
+- IMFAttributes cluster
+- GPU AI Benchmark
 - HardwareDetailsReader cluster
-- PingMonitor cluster
-- BenchmarkRunner cluster
-- FakeClock cluster
-- Run cluster
+- OpenRgbClient cluster
+- CPU FFT Workload
+- Run cluster (2)
 - GpuStressExecutor cluster
 - Decode cluster
-- SceneView cluster
-- GardenSceneTests cluster
+- Garden Light Baking
+- RunAsync cluster (2)
+- Client cluster
+- SiteClient cluster
 - FakeSensor cluster
-- AppUpdater cluster
 - ThermalSensor cluster
 - ReportService cluster
-- BenchmarkResult cluster
-- NetworkLatencyExecutor cluster
-- FakeRunner cluster
-- RunAsync cluster
 - AppGuideTests cluster
-- AiAssistantTests cluster
+- SensorStatistics cluster
 - prepare_courtyard_v12.py cluster
-- RunAsync cluster
-- UsageLog cluster
-- AiFiles cluster
-- Build cluster
+- WmiQuery cluster
+- GardenSoundMix cluster
+- RegisterShield cluster
+- CpuSpecTests cluster
+- Battery and WMI Reader
+- DriveHealth cluster
 - CpuVectorStressExecutor cluster
 - ReportOutcome cluster
 - TestProfilesTests cluster
-- MainWindow cluster
-- Slice 1 Design: Solution Skeleton + Sens cluster
+- RgbEffectRunner cluster
 - AppGuide cluster
-- OverlaySection cluster
-- PartSpecs cluster
+- BoundedEventLog cluster
+- RunAsync cluster (3)
 - BenchmarkPeersTests cluster
 - material_for cluster
 - OpenRgbTests cluster
+- LibreHardwareMonitorProviderTests cluster
 - SceneScore cluster
-- FrameRateReading cluster
+- UsageLog cluster
+- GPU Run Trace
 - GamingViewModel cluster
 - List cluster
-- MemoryPatterns cluster
-- GpuFeatures cluster
-- AppPaths (portable vs LocalAppData cluster
+- MemoryBenchmark cluster
+- SceneView cluster
 - RollingFileLoggerProvider cluster
-- RgbMenu cluster
+- TestOptions cluster
 - DnsBench cluster
+- MZC_Stats cluster
 - Fit cluster
 - AiIntent cluster
-- MemoryBenchmark cluster
+- Hotkey cluster
+- FakeClock cluster
+- FakeRunner cluster
+- CpuDetails cluster
+- Linpack CPU Stress
+- Build cluster (3)
 - SevenZipBenchmark cluster
-- DriveHealth cluster
-- GardenLightVolume cluster
-- StorageTests cluster
-- IRegistryAccess cluster
+- MCP Server Tools
+- Visit cluster
+- AppPaths cluster
 - FanProfiles cluster
 - TwoGpus cluster
-- LibreHardwareMonitorProviderTests cluster
+- FakeWindows cluster
 - AppConfig.cs cluster
-- ITestExecutor cluster
 - MediaFoundation.cs cluster
-- Visit cluster
-- CpuSpecTests cluster
+- CPU FFT Workload (2)
 - GpuFacts cluster
 - TrayController cluster
-- WindowsToolsViewModel cluster
-- StageCycleTests cluster
-- AssistantTools cluster
+- IBenchmark cluster
+- LhmComputerAdapter cluster
 - Write cluster
 - Installer cluster
 - MemorySequenceTests cluster
-- TestOptions cluster
 - Notifier cluster
-- SummaryForm cluster
-- ShieldTests cluster
+- SceneOverlay cluster
+- OAuth 2.1 Authorization
+- RgbSnapshotDevice cluster
+- AutoTuneOptions cluster
+- WindowsToolsViewModel cluster
+- GardenLightVolume cluster
 - PollingEngineTests cluster
 - NvidiaPcieSensors cluster
 - From cluster
 - SetupForm cluster
+- GPU Tuning Settings (2)
 - GardenWind cluster
+- Read cluster
 - RegisterDrivers cluster
 - ShopFeed cluster
-- Get cluster
 - MemoryFacts cluster
 - IMFSample cluster
-- GpuVramExecutor cluster
-- RgbEffectRunner cluster
-- BoundedEventLog cluster
+- ReportTests cluster
 - WheaTests cluster
+- AssistantTools cluster
+- Garden Light Baking (2)
 - export_old_crm.py cluster
+- TrayText cluster
 - MZC_Import cluster
+- CPU Core Cycling (2)
 - TestOptionViewModel cluster
+- DriveAttentionTests cluster
+- GPU Run Trace (2)
 - Evaluate cluster
-- Read cluster
-- Hotkey cluster
-- WriteHtml cluster
-- StorageBenchmark cluster
 - MatMulCheckTests cluster
 - SceneModel cluster
 - TestSessionCheckpoint cluster
-- JsonStore cluster
 - SmartCheckTests cluster
-- AGENTS.md (AI agent guide cluster
-- WmiQuery cluster
+- Core Hardware Namespaces
 - CpuSpecs cluster
 - GardenSound cluster
-- SceneOverlay cluster
-- AppPaths cluster
+- jobs.php cluster
 - mount cluster
 - ReleasesAsync cluster
 - FindingHint cluster
-- RgbSnapshotDevice cluster
 - PowerTimerMenu cluster
-- GpuAutoTuner cluster
-- Run cluster
-- RunAsync cluster
-- Read cluster
+- OverlaySection cluster
+- Run cluster (3)
+- Fact cluster
+- ITestExecutor cluster
+- StageCycleTests cluster
 - THIRD-PARTY-NOTICES.md cluster
 - GpuProfileDocument cluster
-- MemorySequence cluster
-- jobs.php cluster
-- RegisterShield cluster
+- SummaryForm cluster
+- MCP JSON-RPC Endpoint
 - Apply cluster
 - HealthAlerts cluster
+- SystemInfoViewModelTests cluster
 - TestOutcome cluster
-- IBenchmark cluster
-- Fact cluster
+- Classify cluster
 - Runner cluster
+- ShieldTests cluster
 - Frame cluster
-- SensorStatistics cluster
-- CrashRecord cluster
-- ComputeGpuLoad cluster
-- DevBoxFixture cluster
-- Fact cluster
+- MainWindow cluster
+- Slice 1 Design: Solution Skeleton + Sens cluster
+- Fact cluster (2)
+- CRM Database and Portal (2)
 - ChartWindow cluster
 - WindowsActions cluster
+- BugCheckCatalog cluster
 - SiteSession cluster
+- Linpack CPU Stress (3)
+- GpuVramExecutor cluster
 - GardenVoxels cluster
+- TestExecutionRequest cluster (2)
 - WmiInventoryParserTests cluster
 - GpuStartup cluster
-- Gate cluster
+- WriteHtml cluster
 - InstallAsync cluster
+- GpuRenderExecutor cluster
 - GpuBenchmarkHardwareTests cluster
-- UiDispatcher cluster
 - NavigateTwiceAndDrop cluster
+- builds.php cluster
+- Run cluster (4)
+- RGB Sessions and Scenes
 - Clean cluster
-- SystemInfoViewModelTests cluster
 - DeskRulesTests cluster
+- GPU AI Benchmark (2)
 - MemoryBitFadeExecutor cluster
+- JsonStore cluster
 - SensorRoleMap cluster
 - Resolve cluster
-- SyncAsync cluster
-- GpuHardwareTests cluster
-- ReportTests cluster
+- Read cluster (2)
 - Slice 2 Design Spec (Test Engine cluster
-- TrayText cluster
+- ComputeGpuLoad cluster
 - Workload cluster
-- builds.php cluster
+- UiDispatcher cluster
 - MessageInbox cluster
-- Run cluster
 - lights.js cluster
 - CrashCause cluster
 - Sum cluster
+- Read cluster (3)
 - PowerSchedule cluster
-- GpuLoadKind cluster
 - Mazesta.Desk/wwwroot/js/ui.js cluster
-- Read cluster
+- Read cluster (4)
 - JsonObject cluster
 - FailureKind cluster
-- GpuRenderExecutor cluster
-- StorageDailyExecutor cluster
-- ShieldTools cluster
 - PawnIoInstallResult cluster
-- UpdateTests cluster
-- Fact cluster
+- SyncAsync cluster
+- Fact cluster (3)
+- GpuHardwareTests cluster
+- SessionBreakTests cluster
 - MainForm cluster
 - FrontsAt cluster
-- Run cluster
-- Main cluster
+- SiteClient cluster (2)
+- Run cluster (5)
 - RunFootprint cluster
 - ships.php cluster
-- FailureWatch cluster
-- BugCheckCatalog cluster
+- Connect Admin Pages (2)
 - apps.js cluster
 - testrun.js cluster
-- DriveAttentionTests cluster
-- MemoryPressure cluster
-- CpuDetails cluster
-- IsVisibleEnough cluster
-- GpuVideoExecutor cluster
-- Since cluster
-- Read cluster
-- Match cluster
-- ReportText cluster
-- LhmComputerAdapter cluster
-- Build cluster
-- AiTests cluster
-- LanPeerServer cluster
-- RgbConflicts cluster
-- Expected cluster
-- List cluster
 - BugCheckTests cluster
-- ProviderStatus cluster
+- MemoryPressure cluster
+- IsVisibleEnough cluster
+- Since cluster
+- Read cluster (5)
+- Match cluster
+- UpdateTests cluster
+- CrashRecord cluster
+- AGENTS.md (AI agent guide cluster
+- RgbConflicts cluster
+- List cluster (2)
 - Choose cluster
 - PersianDigitsTests cluster
 - AiChat cluster
-- ICommandRunner cluster
-- ParseFirewall cluster
-- Create cluster
 - ReportFormat cluster
+- FrameRateReading cluster
 - texture_for cluster
-- FakeWindows cluster
 - compile-gpu-shaders.py cluster
 - Slice 10 Verification (Yellow Redesign cluster
 - make_v24_textures.py cluster
@@ -355,68 +355,61 @@
 - ai.js cluster
 - DriversTests cluster
 - SmartHealth cluster
-- Phase cluster
-- GpuDevices cluster
-- Build cluster
-- Build cluster
+- ParseFirewall cluster
+- Build cluster (4)
+- JsonStore cluster (2)
 - UpdateManifest cluster
 - JsonStoreTests cluster
-- Mazesta Connect WordPress plugin cluster
 - FileInfo cluster
 - Hardening plan cluster
-- Slice 1 Implementation Plan (Skeleton +  cluster
+- AppPaths (portable vs LocalAppData cluster
+- Slice 1 Design: Solution Skeleton + Sens cluster (2)
+- AGENTS.md (AI agent guide cluster (2)
+- Mazesta Connect WordPress plugin cluster
 - OverlayKeys cluster
-- RegisterAi cluster
+- Create cluster
 - build cluster
 - AiText cluster
 - Advise cluster
 - Integrated cluster
-- GpuRules cluster
-- Read cluster
 - FanMenu cluster
-- Read cluster
+- Read cluster (6)
 - HardwareErrorEvent cluster
 - Checkup (smart troubleshooting tab cluster
 - Mazesta.Desktop (app layer cluster
-- GpuAutoSwitch cluster
 - DevNodes cluster
 - GardenCrew cluster
 - Module cluster
-- Apply cluster
-- RunAsync cluster
-- mount cluster
+- RunAsync cluster (4)
+- mount cluster (2)
 - Score cluster
-- Decide cluster
-- Read cluster
-- ITrayController cluster
-- PartName cluster
-- Run cluster
 - IMFSinkWriter cluster
+- GpuVideoExecutor cluster
 - For cluster
-- PartSpecsTests cluster
 - FakeTestExecutor cluster
 - cpu-specs/build.ps cluster
-- SessionBreakTests cluster
-- GpuShaders.cs cluster
+- MainWindow cluster (2)
+- Windows Diagnostics Imports
+- Slice 1 Implementation Plan (Skeleton +  cluster
+- Mazesta Connect WordPress plugin cluster (2)
+- Classify cluster (2)
 - UpdateState cluster
-- CpuBenchmark cluster
 - Reference cluster
 - GardenLightVolumeTests cluster
 - Op cluster
 - FakeLhmComputer cluster
 - SensorNameCatalogTests cluster
+- StoredReport cluster (2)
 - Why the 3-D scene is heavy (9.5M triangl cluster
+- AppPaths (portable vs LocalAppData cluster (2)
+- GpuShaders.cs cluster
+- IMFAttributes cluster (2)
 - GardenCamera cluster
-- GardenDay cluster
-- Passes cluster
-- NetVerdict cluster
 - HardwareFingerprint cluster
-- NvmeHealthReader cluster
 - OpenRgbHost cluster
+- Apply cluster (2)
 - ResourceParityTests cluster
-- Registry cluster
 - SensorNameCatalog cluster
-- CpuCoverage cluster
 - RowState cluster
 - IsVirtualBinding cluster
 - PciVendors cluster
@@ -424,61 +417,54 @@
 - Parse cluster
 - _this cluster
 - SingleInstance cluster
-- ChildProcessGpuLoad cluster
-- TestLogEntry cluster
+- Tray Canvas Drawing (2)
 - TestProfiles cluster
 - GardenWindTests cluster
-- Parse_or_query_failure_degrades_only_tha cluster
 - Bench test gear design system cluster
 - Mazesta.Hardware cluster
 - LibreHardwareMonitorProvider cluster
-- Loc cluster
+- AGENTS.md (AI agent guide cluster (3)
 - MZC_Site cluster
 - WindowsEvidence cluster
 - families.js cluster
-- AiCatalog cluster
 - BoardPart cluster
 - Pattern cluster
 - RequestFocus cluster
 - UsageLogTests cluster
 - Tuning research cluster
 - FixedStorageEvents cluster
+- Main cluster
 - ClientData cluster
 - SystemParametersInfo cluster
+- Main cluster (2)
 - BENCH cluster
 - groupPanel cluster
 - curveEditor cluster
-- Short cluster
-- IClock cluster
-- Describe cluster
 - TestEngineState cluster
-- BenchmarkStatus cluster
+- Benchmark Records (2)
 - Phase cluster
-- Standard cluster
-- LatestReading cluster
-- LoadOutcome cluster
 - SceneModelTests cluster
 - Persian-first localization and RTL cluster
 - Hardware matrix cluster
+- THIRD-PARTY-NOTICES.md cluster (2)
+- AppPaths (portable vs LocalAppData cluster (3)
+- GardenSoundMix cluster (2)
 - PRODUCT.md cluster
-- MazestaCompany cluster
-- BatchSizer cluster
+- FrameRateReading cluster (2)
 - Life cluster
 - Mode cluster
 - WeatherLevel cluster
+- RegisterTweaks cluster (2)
 - RgbConnect cluster
-- RgbHow cluster
 - UpdateSigning cluster
 - SetProcessWorkingSetSize cluster
-- FakeClock cluster
 - jpeg cluster
 - Mazesta.App (WebView2 host cluster
 - Mazesta Test product landing page cluster
 - InstalledPrograms cluster
-- CheckpointV1ToV cluster
+- GpuVramExecutor cluster (2)
 - Reply cluster
-- SiteReportItem cluster
-- Main cluster
+- Main cluster (3)
 - VRAM test heavier load (GpuVramExecutor cluster
 - RGB_DEVICES cluster
 - A_network_package_installs_its_own_drive cluster
@@ -505,11 +491,11 @@
 3. `icon()` - 127 edges
 4. `TuningViewModel` - 122 edges
 5. `Mazesta.Core.Hardware` - 121 edges
-6. `Mazesta_Connect` - 109 edges
-7. `SensorRole` - 106 edges
-8. `GardenGpu` - 106 edges
-9. `call()` - 93 edges
-10. `PollingEngine` - 90 edges
+6. `SensorRole` - 106 edges
+7. `GardenGpu` - 106 edges
+8. `Mazesta_Connect` - 105 edges
+9. `MZC_Crm` - 95 edges
+10. `call()` - 93 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Portable app (Data next to exe)` --semantically_similar_to--> `Portable Data folder`  [INFERRED] [semantically similar]
@@ -518,1384 +504,1377 @@
   DESIGN.md → .impeccable/brief-web.md
 - `Main web UI shell (index.html)` --conceptually_related_to--> `Microsoft.Web.WebView2`  [INFERRED]
   src/Mazesta.App/wwwroot/index.html → docs/THIRD-PARTY-NOTICES.md
-- `HistoryStoreTests` --references--> `SensorId`  [EXTRACTED]
-  tests/Mazesta.Monitoring.Tests/HistoryStoreTests.cs → src/Mazesta.Core/Hardware/SensorId.cs
-- `Card` --implements--> `IGpuTuningDevice`  [EXTRACTED]
-  tests/Mazesta.Desktop.Tests/TuningViewModelTests.cs → src/Mazesta.Core/Tuning/GpuTuning.cs
+- `MazestaDesk index.html (RTL shell, CSP)` --implements--> `MazestaDesk.exe (staff program)`  [INFERRED]
+  src/Mazesta.Desk/wwwroot/index.html → docs/UPDATES.md
+- `Gate` --references--> `HardwareKind`  [EXTRACTED]
+  tests/Mazesta.Desktop.Tests/BenchmarkQueueTests.cs → src/Mazesta.Core/Hardware/HardwareKind.cs
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
+- **Outputs of tools/publish.ps1** — docs_build_publish_ps1, docs_build_mazestatestsetup, docs_build_flash_edition, docs_build_mazestaprint, docs_updates_mazestadesk [EXTRACTED 0.95]
 - **Visual laws of the web edition design** — design_md_part_hues, design_md_state_laws, design_md_typography, design_md_hatch_not_available [EXTRACTED 1.00]
+- **Benchmark comparison list build** — docs_updates_benchmark_runs_jsonl, docs_updates_bench_archive, docs_updates_benchmark_peers, docs_updates_benchmark_comparison_lists, docs_updates_featured_results, docs_updates_overclock_flag [EXTRACTED 1.00]
+- **Signed release pipeline** — tools_release, docs_updates_signing_key, docs_updates_update_json, docs_updates_site_mazesta_folder, docs_updates_update_key_cs, docs_updates_persistence_updates [EXTRACTED 1.00]
+- **Staff access surface (desk, MCP, API, roles)** — docs_updates_mazestadesk, docs_updates_mcp_server, docs_updates_staff_api, docs_updates_staff_roles, docs_updates_oauth_2_1 [EXTRACTED 1.00]
 - **Test engine execution flow with evidence-backed outcomes** — docs_superpowers_specs_2026_09_18_mazesta_slice2_test_engine_design_testengine, docs_superpowers_specs_2026_09_18_mazesta_slice2_test_engine_design_itestexecutor, docs_superpowers_specs_2026_09_18_mazesta_slice2_test_engine_design_cpumatrixstressexecutor, docs_superpowers_specs_2026_09_18_mazesta_slice2_test_engine_design_describemeasuredload, docs_superpowers_specs_2026_09_18_mazesta_slice2_test_engine_design_crashcheckpoint, docs_superpowers_specs_2026_09_18_mazesta_slice2_test_engine_design_testoutcome [EXTRACTED 1.00]
+- **CAD and structural engineering app logos** — src_mazesta_app_wwwroot_img_apps_csiamerica_csi_logo, src_mazesta_app_wwwroot_img_apps_graphisoft_graphisoft_logo, src_mazesta_app_wwwroot_img_apps_rhino3d_rhino_logo, src_mazesta_app_wwwroot_img_apps_sketchup_sketchup_logo, src_mazesta_app_wwwroot_img_apps_tekla_tekla_logo [INFERRED 0.75]
+- **Rendering and visualization app logos** — src_mazesta_app_wwwroot_img_apps_d5render_d5_render_logo, src_mazesta_app_wwwroot_img_apps_lumion_lumion_logo, src_mazesta_app_wwwroot_img_apps_twinmotion_twinmotion_logo, src_mazesta_app_wwwroot_img_apps_unrealengine_unreal_engine_logo, src_mazesta_app_wwwroot_img_apps_blender_blender_logo, src_mazesta_app_wwwroot_img_apps_maxon_maxon_logo [INFERRED 0.75]
 - **Scene benchmark scoring and cost docs** — docs_benchmark_score_scenescore, docs_scene_performance_whyheavy, docs_scene_editing_fa_scenefiles [INFERRED 0.75]
 - **GPU automatic tuning stack** — docs_verification_slice9_gpu_tuning_gpuautotuner, docs_verification_slice9_gpu_tuning_nvmltuning, docs_verification_slice10_yellow_redesign_computegpuload, docs_verification_slice10_yellow_redesign_batchsizer, docs_verification_slice10_yellow_redesign_loadversion, docs_verification_slice9_gpu_tuning_crashjournal [INFERRED 0.85]
 - **Slice 1 Sensor-to-Chart Monitoring Pipeline** — docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_isensorprovider, docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_lhmprovider, docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_readingvalidator, docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_pollingengine, docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_historystore, docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_sensorstatistics, docs_superpowers_specs_2026_09_12_mazesta_slice1_sensors_monitoring_design_timeserieschart [INFERRED 0.85]
 - **Yellow hero panel with registration marks used as each page's headline block** — impeccable_review_desktop_last_full_test_hero, impeccable_review_gpu_live_metrics_hero, impeccable_review_reports_customer_summary_report_hero [INFERRED 0.85]
 - **Mazesta web UI review screenshots sharing one shell (sidebar, status bar, sample-data preview)** — impeccable_review_desktop_dashboard_screenshot, impeccable_review_gpu_gpu_page_screenshot, impeccable_review_monitoring_monitoring_page_screenshot, impeccable_review_reports_reports_page_screenshot, impeccable_review_tests_tests_page_screenshot, impeccable_review_tuning_tuning_page_screenshot, impeccable_review_user_1024_dashboard_screenshot [INFERRED 0.95]
 - **Sensor table (now/min/avg/max) paired with a history chart of the selected row** — impeccable_review_monitoring_sensor_table, impeccable_review_monitoring_core_tctl_tdie_history_chart, impeccable_review_gpu_sensor_table, impeccable_review_gpu_gpu_core_history_chart [INFERRED 0.95]
-- **Signed self-update release pipeline** — tools_release, tools_publish_release, docs_updates_signed_update_manifest, docs_updates_update_signing_key, docs_updates_appupdater [EXTRACTED 0.95]
-- **Outputs of tools/publish.ps1** — docs_build_publish_ps1, docs_build_mazestatestsetup, docs_build_flash_edition, docs_build_mazestaprint, docs_updates_mazestadesk [EXTRACTED 0.95]
-- **Benchmark comparison list system** — docs_updates_benchmarkpeers, docs_updates_benchmark_comparison_lists, docs_updates_benchmarkrecords_headlines, tools_release [EXTRACTED 0.95]
-- **Rendering and visualization app logos** — src_mazesta_app_wwwroot_img_apps_d5render_d5_render_logo, src_mazesta_app_wwwroot_img_apps_lumion_lumion_logo, src_mazesta_app_wwwroot_img_apps_twinmotion_twinmotion_logo, src_mazesta_app_wwwroot_img_apps_unrealengine_unreal_engine_logo, src_mazesta_app_wwwroot_img_apps_blender_blender_logo, src_mazesta_app_wwwroot_img_apps_maxon_maxon_logo [INFERRED 0.75]
-- **CAD and structural engineering app logos** — src_mazesta_app_wwwroot_img_apps_csiamerica_csi_logo, src_mazesta_app_wwwroot_img_apps_graphisoft_graphisoft_logo, src_mazesta_app_wwwroot_img_apps_rhino3d_rhino_logo, src_mazesta_app_wwwroot_img_apps_sketchup_sketchup_logo, src_mazesta_app_wwwroot_img_apps_tekla_tekla_logo [INFERRED 0.75]
 
-## Communities (586 total, 247 thin omitted)
+## Communities (575 total, 238 thin omitted)
 
-### Community 0 - "GPU Tuning Page Model"
+### Community 0 - "App Host and Bridge Imports"
+Cohesion: 0.05
+Nodes (12): Mazesta.Monitoring.Tests.Fakes, Mazesta.Desktop.Localization, Mazesta.Diagnostics, Mazesta.Monitoring, Mazesta.Desktop.Services, Mazesta.Desktop.Tests, Mazesta.Desktop.Composition, Mazesta.Desktop.Views (+4 more)
+
+### Community 1 - "GPU Tuning Page Model"
 Cohesion: 0.03
 Nodes (55): AutoLogRow, GpuProfileRow, Created, Evidence, Kind, KindValue, Name, Summary (+47 more)
 
-### Community 1 - "App Host and Bridge Imports"
-Cohesion: 0.06
-Nodes (9): Mazesta.Desktop.Localization, Mazesta.Desk, Mazesta.Desktop.Composition, Mazesta.Core.Fans, Mazesta.App, Mazesta.Persistence, UpdateKey, WebBridge (+1 more)
-
 ### Community 2 - "Connect Plugin Messages and SMS"
 Cohesion: 0.02
-Nodes (7): {closure#11}(), Mazesta_Connect, {closure#2}(), {closure#3}(), {closure#4}(), {closure#2}(), {closure#3}()
+Nodes (9): {closure#11}(), Mazesta_Connect, {closure#2}(), {closure#3}(), {closure#4}(), MZC_Messages, {closure#2}(), {closure#3}() (+1 more)
 
-### Community 3 - "Diagnostics Namespaces"
-Cohesion: 0.04
-Nodes (11): Mazesta.Diagnostics.Tests.Fakes, Mazesta.Setup, Mazesta.Diagnostics.Gpu.Tuning, Mazesta.Diagnostics.Tests, Mazesta.Diagnostics.Ai, Mazesta.Diagnostics.Benchmarks, Mazesta.Diagnostics.Storage, Mazesta.Diagnostics.Cpu (+3 more)
+### Community 3 - "Hardware Providers"
+Cohesion: 0.03
+Nodes (18): Mazesta.Core.Health.Checkup, Mazesta.Hardware.Details, Mazesta.Hardware.Tests.Fakes, Mazesta.Hardware.Lhm, Mazesta.Core.Time, Mazesta.Hardware.Tests, Mazesta.Monitoring.Tests, Mazesta.Core.Crashes (+10 more)
 
-### Community 4 - "GPU Scene and AI Namespaces"
-Cohesion: 0.05
-Nodes (11): Mazesta.Core.Windows, Mazesta.Diagnostics.Gpu.Tests, Mazesta.Persistence.Tests, Mazesta.Core.Ai, Mazesta.Diagnostics.Gpu.Scene, Mazesta.Desk.Tests, Mazesta.Diagnostics.Gpu.Benchmarks, Mazesta.Core.Software (+3 more)
-
-### Community 5 - "Board Sensor Roles"
+### Community 4 - "Board Sensor Roles"
 Cohesion: 0.02
 Nodes (90): SensorRole, BoardFan, BoardFanControl, BoardTemp, BoardVoltage, ChipsetTemp, CpuBusClock, CpuCcdAverageTemp (+82 more)
 
-### Community 6 - "Garden Scene Simulation"
+### Community 5 - "Garden Scene Simulation"
 Cohesion: 0.04
-Nodes (44): Draw, DrawLod, GardenGpu, Backdrop, BackdropRange, Draws, Fountain, IndexBuffer (+36 more)
+Nodes (43): Draw, GardenGpu, Backdrop, BackdropRange, Draws, Fountain, IndexBuffer, InstanceBuffer (+35 more)
 
-### Community 7 - "AI Assistant Server"
+### Community 6 - "Garden Mesh Loading"
+Cohesion: 0.04
+Nodes (38): GardenLod, Result, GardenPanes, GardenBackdrop, GardenInstance, GardenLight, GardenLightKind, Point (+30 more)
+
+### Community 7 - "Diagnostics Namespaces"
+Cohesion: 0.05
+Nodes (11): Mazesta.Core.Tests, Mazesta.Core.Windows, Mazesta.Core.Tray, Mazesta.Diagnostics.Tests.Fakes, Mazesta.Core.Overlay, Mazesta.Diagnostics.Tests, Mazesta.Diagnostics.Ai, Mazesta.Core.Health (+3 more)
+
+### Community 8 - "AI Assistant Server"
 Cohesion: 0.06
 Nodes (19): AiAgent, AiTool, AiServer, IsRunning, LastUse, Model, CallDelta, ChatReply (+11 more)
 
-### Community 9 - "Garden Mesh Loading"
-Cohesion: 0.05
-Nodes (35): GardenPanes, GardenBackdrop, GardenInstance, GardenLight, GardenLightKind, Point, Spot, Sun (+27 more)
+### Community 9 - "Connect Admin Pages"
+Cohesion: 0.03
+Nodes (15): {closure#1}(), {closure#10}(), {closure#4}(), {closure#8}(), {closure#9}(), {closure#2}(), {closure#3}(), {closure#6}() (+7 more)
 
 ### Community 10 - "Page UI and i18n Helpers"
 Cohesion: 0.09
 Nodes (51): boot, call(), emit(), listeners, on(), pending, box(), byPart() (+43 more)
 
-### Community 11 - "D3D12 Benchmarks"
-Cohesion: 0.05
-Nodes (22): D3D12Session, AdapterName, Device, Frames, GpuFrames, GpuSeconds, LastGpuSeconds, LastRecordSeconds (+14 more)
-
-### Community 12 - "Core Hardware Namespaces"
-Cohesion: 0.05
-Nodes (13): Mazesta.Core.Tests, Mazesta.Core.Health.Checkup, Mazesta.Reporting, Mazesta.Core.Health, Mazesta.Reporting.Tests, Mazesta.Monitoring, Mazesta.Core.Time, Mazesta.Core.Inventory (+5 more)
+### Community 12 - "GPU Auto-Tune Search"
+Cohesion: 0.07
+Nodes (27): LoadMeasurement, Clean, OverclockSearch, ClockCeiling, MemoryCeiling, Outcome, Phase, Baseline (+19 more)
 
 ### Community 13 - "NVML Interop"
 Cohesion: 0.08
 Nodes (10): Bar1Memory, ClockOffset, FieldValue, Nvml, Utilization, NvmlCard, NvmlDetails, NvmlPcieCounters (+2 more)
 
-### Community 14 - "Desktop Services Namespaces"
-Cohesion: 0.06
-Nodes (10): Mazesta.Core.Tray, Mazesta.Monitoring.Tests.Fakes, Mazesta.Core.Overlay, Mazesta.Diagnostics, Mazesta.Core.Text, Mazesta.Desktop.Services, Mazesta.Desktop.Tests, Mazesta.Desktop.Views (+2 more)
+### Community 14 - "D3D12 Benchmarks"
+Cohesion: 0.05
+Nodes (21): D3D12Session, AdapterName, Device, Frames, GpuFrames, GpuSeconds, LastGpuSeconds, LastRecordSeconds (+13 more)
 
-### Community 15 - "GPU Auto-Tune Search"
+### Community 15 - "Garden Rasterizer"
 Cohesion: 0.08
-Nodes (24): AutoTuneVerdict, Cancelled, Failed, Improved, NoImprovement, Unsupported, LoadMeasurement, Clean (+16 more)
+Nodes (11): DrawLod, GardenFrame, DrawConstants, GardenRaster, Level, Profile, RayTraced, Samples (+3 more)
 
-### Community 16 - "GPU Tuning Settings"
-Cohesion: 0.04
-Nodes (35): GpuTelemetry, GpuTuningLimits, HasCoreOffset, HasFanControl, HasMemoryOffset, HasPowerLimit, MaxLockMHz, GpuTuningSettings (+27 more)
-
-### Community 17 - "Overlay Catalog"
-Cohesion: 0.06
-Nodes (21): OverlayAggregate, Average, First, Max, Sum, OverlayCatalog, CcdOfCore, OverlayChoice (+13 more)
-
-### Community 18 - "Software Catalog"
+### Community 16 - "Software Catalog"
 Cohesion: 0.07
 Nodes (34): GpuMaker, Amd, Intel, None, Nvidia, Other, SoftApp, SoftCategory (+26 more)
 
-### Community 20 - "Linpack CPU Stress"
-Cohesion: 0.07
-Nodes (4): LinpackExecutor, Definition, CpuStressTests, FixedProbe
+### Community 17 - "Garden Renderer"
+Cohesion: 0.06
+Nodes (23): GardenRenderer, Chunked, Height, LastRecordSeconds, OutHeight, OutWidth, OwnTarget, Scene (+15 more)
 
-### Community 21 - "Hardware Providers"
-Cohesion: 0.05
-Nodes (9): Mazesta.Hardware.Details, Mazesta.Hardware.Tests.Fakes, Mazesta.Hardware.Lhm, Mazesta.Hardware.Tests, Mazesta.Hardware.Nvidia, Mazesta.Hardware.Wmi, Mazesta.Core.Providers, CpuBaseClock (+1 more)
+### Community 19 - "GPU Scene and AI Namespaces"
+Cohesion: 0.08
+Nodes (4): Mazesta.Diagnostics.Gpu.Tests, Mazesta.Diagnostics.Gpu.Scene, Mazesta.Diagnostics.Gpu.Benchmarks, SceneSensorPace
 
-### Community 22 - "Storage Test"
-Cohesion: 0.05
-Nodes (15): LatencyHistogram, Count, MaxMs, MeanMs, StorageExecutor, Definition, StorageRandom4kExecutor, Definition (+7 more)
-
-### Community 23 - "Overlay Page Model"
-Cohesion: 0.04
-Nodes (39): OverlayRow, HasBar, HasChart, Hue, Id, Item, Label, Sensors (+31 more)
-
-### Community 24 - "Connect Admin Pages"
-Cohesion: 0.03
-Nodes (7): {closure#1}(), {closure#10}(), {closure#4}(), {closure#8}(), {closure#9}(), MZC_Admin, MZC_Ships
-
-### Community 25 - "Dashboard and Monitoring Pages"
+### Community 20 - "Dashboard and Monitoring Pages"
 Cohesion: 0.09
 Nodes (54): start(), chartCard(), RANGES, DECIMALS, fmt(), setUnits(), symbols, setStrings() (+46 more)
 
-### Community 26 - "Garden Rasterizer"
-Cohesion: 0.09
-Nodes (9): GardenFrame, DrawConstants, GardenRaster, Level, RayTraced, Samples, TintRtv, LodView (+1 more)
-
-### Community 27 - "Benchmark Peers"
-Cohesion: 0.09
-Nodes (22): BenchmarkMark, BenchmarkMarks, File_, BenchmarkPeers, BenchmarkRun, Table, BenchmarkRunLog, Folder (+14 more)
-
-### Community 28 - "Checkup Service"
+### Community 21 - "Diagnostics Namespaces (2)"
 Cohesion: 0.06
-Nodes (11): CheckupRun, All, CheckupService, PartJudgment, FullyLoaded, SessionJudgment, TempFigure, TestCheck (+3 more)
+Nodes (10): Mazesta.Setup, Mazesta.Diagnostics.Benchmarks, Mazesta.Diagnostics.Storage, Mazesta.Diagnostics.Cpu, Mazesta.Diagnostics.Memory, Mazesta.Diagnostics.Evidence, Mazesta.Diagnostics.Gpu, BatchSizer (+2 more)
 
-### Community 29 - "Game Boost Services"
+### Community 22 - "BenchmarkResult cluster"
+Cohesion: 0.06
+Nodes (10): LlamaBenchmark, Component, Definition, LlamaBenchResult, BenchmarkMetric, BenchmarkRequestExtensions, BenchmarkResult, StorageBenchmark (+2 more)
+
+### Community 23 - "MemoryTests cluster"
+Cohesion: 0.06
+Nodes (9): MemoryPatternExecutor, Definition, Algorithm, BlockMove, MovingInversions, Stride, MemoryPatterns, FixedProbe (+1 more)
+
+### Community 24 - "Overlay Page Model"
+Cohesion: 0.04
+Nodes (37): OverlayRow, HasBar, HasChart, Hue, Id, Item, Label, Sensors (+29 more)
+
+### Community 25 - "Storage Test"
+Cohesion: 0.05
+Nodes (15): LatencyHistogram, Count, MaxMs, MeanMs, StorageExecutor, Definition, StorageRandom4kExecutor, Definition (+7 more)
+
+### Community 26 - "AiFiles cluster"
+Cohesion: 0.06
+Nodes (19): AiTransfer, AiCatalog, Models, Runtime, AiModel, AiRuntime, AiFiles, BenchExe (+11 more)
+
+### Community 27 - "Game Boost Services"
 Cohesion: 0.07
 Nodes (19): GameBoost, Catalog, Defaults, GameService, GameServiceGroup, Background, Network, IServiceControl (+11 more)
 
-### Community 30 - "Benchmark and Test Pages"
+### Community 29 - "Benchmark and Test Pages"
 Cohesion: 0.09
 Nodes (57): addPeer(), allPeers(), paint(), benchList(), addRow(), build(), update(), chart() (+49 more)
 
-### Community 31 - "Windows Diagnostics Imports"
+### Community 30 - "GPU Tuning Settings"
 Cohesion: 0.05
-Nodes (6): Mazesta.Core.Drivers, Mazesta.Diagnostics.Drivers, Mazesta.Core.Gaming, Mazesta.Persistence.Updates, Mazesta.Diagnostics.Windows, Program
+Nodes (28): GpuTelemetry, GpuTuningLimits, HasCoreOffset, HasFanControl, HasMemoryOffset, HasPowerLimit, MaxLockMHz, GpuTuningSettings (+20 more)
 
-### Community 32 - "App Config Model"
+### Community 31 - "App Host and Bridge Imports (2)"
+Cohesion: 0.06
+Nodes (8): Mazesta.Persistence.Tests, Mazesta.Core.Text, Mazesta.Desk, Mazesta.Core.Fans, Mazesta.Desk.Tests, Mazesta.Persistence.Updates, Mazesta.Persistence, Program
+
+### Community 32 - "Checkup Service"
+Cohesion: 0.06
+Nodes (10): CheckupRun, All, CheckupService, PartJudgment, FullyLoaded, SessionJudgment, TempFigure, TestCheck (+2 more)
+
+### Community 33 - "Report Summary"
+Cohesion: 0.08
+Nodes (17): HeatPart, Board, Cpu, Drive, Gpu, GpuHotSpot, GpuMemory, PartPeak (+9 more)
+
+### Community 34 - "App Config Model"
 Cohesion: 0.04
 Nodes (52): AppConfig, ChartWindows, DisplayName, ExpandedGroups, FastIntervalSeconds, GameModeSaved, GameModeServices, Language (+44 more)
 
-### Community 33 - "Checkup Finding Codes"
+### Community 35 - "Checkup Finding Codes"
 Cohesion: 0.04
 Nodes (56): FindingCode, BenchAsBefore, BenchBelowPeers, BenchFewPeers, BenchSlowerThanBefore, BenchWithPeers, CpuAtTjMax, CpuBelowBaseClock (+48 more)
 
-### Community 34 - "Internet Speed Test"
+### Community 36 - "Internet Speed Test"
 Cohesion: 0.06
 Nodes (10): AdapterInfo, ConnectedAdapters, InternetAdapter, CountingContent, InternetSpeedBenchmark, Component, Definition, FakeServer (+2 more)
 
-### Community 35 - "App Screenshots"
+### Community 37 - "LAN Test"
+Cohesion: 0.06
+Nodes (13): LanExecutor, Definition, LanMode, Echo, Receive, Send, LanPattern, Position (+5 more)
+
+### Community 38 - "App Screenshots"
 Cohesion: 0.06
 Nodes (51): AMD Ryzen 9 3950X (CPU shown in sample data), Browser preview notice: sample data, not this system, Component summary cards row: CPU, GPU, RAM, Storage, Network with details links, Large CPU temperature readout (50 C, min/avg/max since monitoring start), Dashboard page screenshot (desktop width, dark theme, RTL), Large GPU temperature readout (53 C, min/avg/max since monitoring start), Yellow hero panel: last full test, all tests passed, Mazesta TEST SUITE logo (yellow disc and wordmark) (+43 more)
 
-### Community 36 - "Report Summary"
-Cohesion: 0.08
-Nodes (16): HeatPart, Board, Cpu, Drive, Gpu, GpuHotSpot, GpuMemory, PartPeak (+8 more)
+### Community 39 - "MazestaDesk Pages"
+Cohesion: 0.14
+Nodes (53): api(), ApiError, buildsTable(), can(), clickRow(), customerPicker(), drawShell(), enter() (+45 more)
 
-### Community 37 - "Test Detail Text"
+### Community 40 - "Test Detail Text"
 Cohesion: 0.09
 Nodes (6): DetailFigure, DetailLine, DetailView, Rule, TestDetailText, TestDetailTextTests
 
-### Community 38 - "Frame Rate Monitor"
+### Community 41 - "Frame Rate Monitor"
 Cohesion: 0.09
 Nodes (10): EventTrace, EventTraceHeader, EventTraceLogfile, FrameRateMonitor, IsRunning, Problem, ProcessEntry32, SystemTime (+2 more)
 
-### Community 39 - "Overlay Service and Hotkeys"
+### Community 42 - "Overlay Service and Hotkeys"
 Cohesion: 0.06
 Nodes (11): HotkeyWindow, OverlayService, Current, Editing, FrameSource, HotkeyText, IsVisible, Items (+3 more)
 
-### Community 40 - "OpenRGB Protocol"
+### Community 43 - "OpenRGB Protocol"
 Cohesion: 0.06
 Nodes (31): OpenRgbProtocol, Reader, RgbColor, Hex, RgbDevice, RgbKind, Case, Cooler (+23 more)
 
-### Community 41 - "Benchmark Records"
-Cohesion: 0.09
-Nodes (12): BenchmarkComparison, BenchmarkRecord, BenchmarkRecords, HeadlineMetric, PeerPart, Cpu, Drive, Gpu (+4 more)
-
-### Community 43 - "Checkup Rule Tests"
-Cohesion: 0.11
-Nodes (3): CpuCheckTests, GpuCheckTests, PlatformAndPeerCheckTests
-
-### Community 44 - "Garden Renderer"
-Cohesion: 0.09
-Nodes (16): GardenRenderer, Chunked, Height, LastRecordSeconds, OutHeight, OutWidth, OwnTarget, Scene (+8 more)
-
-### Community 47 - "CPU Core Cycling"
-Cohesion: 0.07
-Nodes (12): CpuCoreCycleExecutor, Definition, Slot, CpuCore, FirstThreadMask, Threads, CpuTopology, CacheGroups (+4 more)
-
-### Community 48 - "Polling Engine"
-Cohesion: 0.06
-Nodes (13): EngineState, Failed, Paused, Running, Stopped, PollingEngine, FastInterval, Hardware (+5 more)
-
-### Community 49 - "Tray Canvas Drawing"
-Cohesion: 0.11
-Nodes (6): BitmapInfo, Canvas, Pixels, Extent, Rect, SceneOverlayTests
-
-### Community 50 - "Benchmark Details"
-Cohesion: 0.09
-Nodes (4): BenchmarkDetails, SpecItem, BenchmarkTrace, TraceSeries
-
-### Community 51 - "Sensor Units"
-Cohesion: 0.06
-Nodes (23): Unit, Ampere, BytesPerSecond, Celsius, Decibel, Gigabyte, Hertz, LitersPerHour (+15 more)
-
-### Community 52 - "GPU Run Trace"
+### Community 44 - "RgbMenu cluster"
 Cohesion: 0.08
-Nodes (8): Series, Count, GpuCheck, GpuLink, GpuPcieErrors, GpuRunTrace, GpuThrottleCounts, CheckupTraces
+Nodes (9): RgbSession, Client, Conflicts, Exe, Port, Runner, ZonesDefaulted, RgbMenu (+1 more)
 
-### Community 53 - "DDR5 SPD Decoding"
-Cohesion: 0.11
-Nodes (6): Ddr4Spd, MemoryProfile, SpdModule, Ddr5Spd, Ddr4SpdTests, Ddr5SpdTests
+### Community 45 - "RegisterTweaks cluster"
+Cohesion: 0.09
+Nodes (19): DnsChoice, IRegistryAccess, RegValue, TempFiles, Tweak, CanUndo, TweakCatalog, TweakCommand (+11 more)
 
-### Community 54 - "Tray Program Startup"
+### Community 46 - "WebBridge cluster"
+Cohesion: 0.05
+Nodes (9): WebBridge, Activity, Confirmation, SystemId, PeerDb, UsageRecorder, Log, TuningRecovery (+1 more)
+
+### Community 47 - "BenchmarkRunner cluster"
+Cohesion: 0.08
+Nodes (13): BenchmarkJob, BenchmarkRunner, Benchmarks, BlockedBy, InQueue, IsBusy, Running, RecordedBenchmark (+5 more)
+
+### Community 49 - "Overlay Catalog"
+Cohesion: 0.06
+Nodes (26): OverlayAggregate, Average, First, Max, Sum, OverlayCatalog, CcdOfCore, OverlayChoice (+18 more)
+
+### Community 50 - "Tray Program Startup"
 Cohesion: 0.07
 Nodes (6): Program, Inbox, JustUpdated, LogProvider, Recorder, Uploader
 
-### Community 55 - "Battery and WMI Reader"
+### Community 51 - "Hardware Details Cache"
+Cohesion: 0.09
+Nodes (18): CacheInfo, CpuDetails, DriveDetails, GpuDetails, HardwareDetails, HybridCores, NicDetails, PciLinkInfo (+10 more)
+
+### Community 52 - "Benchmark Records"
+Cohesion: 0.11
+Nodes (6): BenchmarkComparison, BenchmarkRecord, BenchmarkRecords, HeadlineMetric, SystemRecords, BenchmarkRecordsTests
+
+### Community 53 - "system_net cluster"
+Cohesion: 0.08
+Nodes (5): Mazesta.Hardware.Rgb, Mazesta.Core.Rgb, Mazesta.Core.Gaming, Mazesta.Diagnostics.Network, Mazesta.Diagnostics.Windows
+
+### Community 54 - "GpuRules cluster"
 Cohesion: 0.07
-Nodes (13): BatteryDrain, BatteryInfo, ChargePercent, HealthPercent, LostMwh, BatteryReader, IWmiQuery, PageFileInfo (+5 more)
+Nodes (9): GpuAppRule, GpuAutoRules, GpuRules, IsEmpty, InstalledProgram, InstalledPrograms, GpuRulesFile, GpuAutoSwitch (+1 more)
 
-### Community 56 - "MazestaDesk Pages"
-Cohesion: 0.15
-Nodes (43): api(), ApiError, buildsTable(), can(), clickRow(), customerPicker(), drawShell(), enter() (+35 more)
+### Community 55 - "Checkup Rule Tests"
+Cohesion: 0.12
+Nodes (3): CpuCheckTests, GpuCheckTests, PlatformAndPeerCheckTests
 
-### Community 57 - "Daily Use Test"
+### Community 56 - "DDR5 SPD Decoding"
+Cohesion: 0.11
+Nodes (6): Ddr4Spd, MemoryProfile, SpdModule, Ddr5Spd, Ddr4SpdTests, Ddr5SpdTests
+
+### Community 57 - "Polling Engine"
+Cohesion: 0.06
+Nodes (13): EngineState, Failed, Paused, Running, Stopped, PollingEngine, FastInterval, Hardware (+5 more)
+
+### Community 58 - "BenchmarkTests cluster"
+Cohesion: 0.09
+Nodes (10): CpuBenchmark, Component, Definition, BenchmarkTests, FixedProbe, Scripted, Component, Definition (+2 more)
+
+### Community 59 - "Benchmark Details"
+Cohesion: 0.10
+Nodes (4): BenchmarkDetails, SpecItem, BenchmarkTrace, TraceSeries
+
+### Community 60 - "Daily Use Test"
 Cohesion: 0.10
 Nodes (7): DailyUseExecutor, Definition, Item, Run, Percent, TimeUp, DailyUseTests
 
-### Community 58 - "Hardware Details Cache"
-Cohesion: 0.10
-Nodes (15): DriveDetails, GpuDetails, HardwareDetails, NicDetails, PciLinkInfo, PciSlotLink, PlatformSecurity, HardwareDetailsCache (+7 more)
-
-### Community 59 - "CPU FFT Workload"
-Cohesion: 0.09
-Nodes (8): CpuFftExecutor, Definition, Plan, Cos, N, Sin, CpuWorkloadTests, Probe
-
-### Community 60 - "RGB Sessions and Scenes"
-Cohesion: 0.09
-Nodes (17): SelfTestLights, RgbLook, RgbScene, All, Dark, Devices, Enabled, PowerEnd (+9 more)
-
-### Community 61 - "WMI Hardware Inventory"
-Cohesion: 0.14
-Nodes (13): BiosInfo, ComputerInfo, CpuInfo, GpuInfo, HardwareInventory, MemoryModuleInfo, Ecc, TypeName (+5 more)
-
-### Community 62 - "Tray Health Checks"
-Cohesion: 0.08
-Nodes (3): TrayContext, Checks, IsChecking
-
-### Community 63 - "GPU AI Benchmark"
-Cohesion: 0.06
-Nodes (9): GpuAiBenchmark, Component, Definition, Level, Integer, Output, Unit, GpuAiExecutor (+1 more)
-
-### Community 64 - "LibreHardwareMonitor Provider"
+### Community 62 - "LibreHardwareMonitor Provider"
 Cohesion: 0.07
 Nodes (5): LibreHardwareMonitorProvider, Hardware, Name, Status, NodeState
+
+### Community 63 - "Get cluster"
+Cohesion: 0.12
+Nodes (7): AssistantReplies, Loc, Culture, IsRtl, PdfExporter, ProviderText, ProviderTextTests
+
+### Community 64 - "PartSpecs cluster"
+Cohesion: 0.13
+Nodes (6): InfoTable, PartSpecs, Na, SpecCard, SpecRow, PartSpecsTests
 
 ### Community 65 - "Overlay Window"
 Cohesion: 0.09
 Nodes (7): BLENDFUNCTION, OverlayWindow, CreateParams, Editing, ShowWithoutActivation, POINT, SIZE
 
-### Community 66 - "Garden Light Baking"
-Cohesion: 0.06
-Nodes (18): List, GardenAccel, Address, InstanceDesc, Chunk, GardenChunks, Part, GardenLightTracer (+10 more)
-
-### Community 67 - "Garden Export Script"
+### Community 66 - "Garden Export Script"
 Cohesion: 0.08
 Nodes (18): backdrop(), collapsed(), depsgraph_of(), features(), fewer(), grown(), islands(), matrix_rows() (+10 more)
 
-### Community 68 - "Garden Weather"
+### Community 67 - "Garden Weather"
 Cohesion: 0.09
 Nodes (16): GardenWeather, Bodies, CollideSeconds, Count, Field, FieldBytes, LastSeconds, Leaves (+8 more)
+
+### Community 68 - "FakeSensorProvider cluster"
+Cohesion: 0.06
+Nodes (19): ProviderState, Degraded, Failed, NotStarted, Ready, Starting, ProviderStatus, SensorReading (+11 more)
 
 ### Community 69 - "Benchmarks Page Model"
 Cohesion: 0.07
 Nodes (11): BenchmarkRowViewModel, Benchmark, HasDetail, HasOptions, IsAvailable, Metrics, Name, Options (+3 more)
 
-### Community 70 - "GPU V/F Curve"
-Cohesion: 0.11
-Nodes (7): VfCurve, VfPoint, VfScanProgress, NvApiCurve, VfCurveTests, NvApiCurveTests, NvmlTuningHardwareTests
-
-### Community 71 - "LAN Test"
+### Community 70 - "VfCurveScanner cluster"
 Cohesion: 0.08
-Nodes (9): LanExecutor, Definition, LanMode, Echo, Receive, Send, LanPattern, Position (+1 more)
+Nodes (13): IGpuLoad, SupportsRayTracing, VfCurveScanner, VfScanOptions, Duration, SampleInterval, Settle, StepMHz (+5 more)
 
-### Community 72 - "History Store"
-Cohesion: 0.10
-Nodes (11): SensorSnapshot, HistoryStore, Epoch, EstimatedBytes, MinuteCapacity, RawCapacity, MinuteSeries, Series (+3 more)
+### Community 71 - "GpuFeatures cluster"
+Cohesion: 0.06
+Nodes (5): GpuDevices, Adapters, Discrete, Option, GpuFeatures
 
-### Community 73 - "App Shell and Search"
+### Community 72 - "Mazesta.Core.Tuning cluster"
+Cohesion: 0.06
+Nodes (7): Mazesta.Diagnostics.Gpu.Tuning, Mazesta.Tray, Mazesta.Diagnostics.Tuning, Mazesta.Core.Tuning, AppArgs, MemoryLoad, Status
+
+### Community 73 - "GpuVideoBenchmark cluster"
+Cohesion: 0.07
+Nodes (17): Decoded, GpuVideoBenchmark, Component, Definition, VideoWork, Both, Decode, Encode (+9 more)
+
+### Community 74 - "Tray Health Checks"
+Cohesion: 0.08
+Nodes (3): TrayContext, Checks, IsChecking
+
+### Community 75 - "NativeBlock cluster"
+Cohesion: 0.08
+Nodes (12): Buffers, Mixed, Seq, Small, IMemoryProbe, Manager, MemoryStatus, MemoryStatusEx (+4 more)
+
+### Community 76 - "App Shell and Search"
 Cohesion: 0.08
 Nodes (37): Chart window shell (chart.html), css/app.css, Main web UI shell (index.html), app, asst, band, banner(), bootCard() (+29 more)
 
-### Community 74 - "t cluster"
+### Community 77 - "t cluster"
 Cohesion: 0.12
 Nodes (40): t(), battery(), poll(), show(), card(), CHECK_TARGET, display(), start() (+32 more)
 
-### Community 75 - "SensorKind cluster"
+### Community 78 - "SensorKind cluster"
 Cohesion: 0.05
 Nodes (31): DataQuality, Invalid, Missing, Ok, Stale, ReadingValidator, SensorKind, Clock (+23 more)
 
-### Community 76 - "IMFAttributes cluster"
-Cohesion: 0.08
-Nodes (3): IMFAttributes, IMFSourceReader, MFCreateSourceReaderFromURL()
+### Community 79 - "WMI Hardware Inventory"
+Cohesion: 0.15
+Nodes (12): BiosInfo, ComputerInfo, GpuInfo, HardwareInventory, MemoryModuleInfo, Ecc, TypeName, MotherboardInfo (+4 more)
 
-### Community 77 - "WebBridge cluster"
-Cohesion: 0.06
-Nodes (6): WebBridge, Activity, Confirmation, SystemId, PeerDb, Name
+### Community 80 - "Build cluster"
+Cohesion: 0.10
+Nodes (11): FrameRateReading, IFrameRateSource, Problem, Frames, Problem, FakeFrames, Problem, OverlayShareTests (+3 more)
 
-### Community 78 - "TestCenterViewModel cluster"
+### Community 81 - "TuningViewModelTests cluster"
+Cohesion: 0.10
+Nodes (16): IGpuTuningProvider, Devices, UnavailableDetail, UnavailableReasonKey, Card, Applied, Id, Limits (+8 more)
+
+### Community 82 - "GPU V/F Curve"
+Cohesion: 0.11
+Nodes (6): VfCurve, VfPoint, NvApiCurve, VfCurveTests, NvApiCurveTests, NvmlTuningHardwareTests
+
+### Community 83 - "TestCenterViewModel cluster"
 Cohesion: 0.07
 Nodes (8): TestCenterViewModel, CurrentRow, CurrentStartedAt, HasIncompleteSession, Rows, RunningRows, RunQueue, ThermalLimits
 
-### Community 79 - "StoredReport cluster"
-Cohesion: 0.12
-Nodes (9): ReportPlainText, ReportStore, StoredReport, HtmlPath, JsonPath, PdfPath, SummaryPath, TextPath (+1 more)
+### Community 84 - "RegisterSystem cluster"
+Cohesion: 0.08
+Nodes (13): PageFileMode, Custom, None, SystemManaged, PageFilePlan, HostsFile, Line, PageFileInfo (+5 more)
 
-### Community 80 - "GpuVideoBenchmark cluster"
-Cohesion: 0.07
-Nodes (14): Decoded, GpuVideoBenchmark, Component, Definition, VideoFormat, Clips, CodecName, Encodes (+6 more)
-
-### Community 81 - "RegisterNetRepair cluster"
+### Community 85 - "SensorId cluster"
 Cohesion: 0.13
-Nodes (9): NetCheck, NetCheckResult, Failed, Ok, Skipped, NetRepair, ProxySettings, HasData (+1 more)
-
-### Community 82 - "SensorId cluster"
-Cohesion: 0.14
 Nodes (8): SensorId, Hardware, HardwareDiagnosticsRecorder, ReportFile, HardwareDiagnosticsReport, SensorTally, HardwareDiagnosticsNotesTests, HardwareDiagnosticsTests
 
-### Community 83 - "Finding cluster"
+### Community 86 - "Benchmark Peers"
 Cohesion: 0.10
-Nodes (12): CpuCheck, CpuRunTrace, DriveCheck, Finding, Measure, Measures, PeerCheck, DriveLink (+4 more)
+Nodes (14): BenchmarkPeers, Marks, FeaturedRun, PeerEntry, Key, References, PeerGap, Equal (+6 more)
 
-### Community 84 - "TestQueueRowViewModel cluster"
+### Community 87 - "StorageTests cluster"
+Cohesion: 0.09
+Nodes (5): StorageDailyExecutor, Definition, StorageSustainedExecutor, Definition, StorageTests
+
+### Community 88 - "MemorySequence cluster"
+Cohesion: 0.09
+Nodes (5): Expected, Fill, Seed, MemorySequence, Step
+
+### Community 89 - "GpuSceneExecutor cluster"
+Cohesion: 0.09
+Nodes (4): GpuSceneExecutor, Definition, Figure, SceneOptionsTests
+
+### Community 90 - "TestQueueRowViewModel cluster"
 Cohesion: 0.08
 Nodes (26): TestQueueRowViewModel, Definition, ErrorsText, HasDetail, HasErrors, HasOptions, HasValidationError, IsAvailable (+18 more)
 
-### Community 85 - "GpuSceneExecutor cluster"
-Cohesion: 0.10
-Nodes (3): GpuSceneExecutor, Definition, SceneOptionsTests
-
-### Community 86 - "SiteClient cluster"
-Cohesion: 0.14
-Nodes (10): ReportPage, SiteClient, Api, SiteMachine, SitePairClaim, SitePairing, SiteReportReceipt, SiteRunsReceipt (+2 more)
-
-### Community 87 - "Compare cluster"
+### Community 91 - "Compare cluster"
 Cohesion: 0.14
 Nodes (11): BenchmarkDelta, MachineMismatch, Cpu, Motherboard, ServiceNumber, Storage, Measured, ReportComparison (+3 more)
 
-### Community 88 - "SetupText cluster"
+### Community 92 - "StoredReport cluster"
+Cohesion: 0.12
+Nodes (11): ReportPlainText, ReportStore, StoredReport, HtmlPath, JsonPath, PdfPath, SummaryPath, TextPath (+3 more)
+
+### Community 93 - "RegisterNetRepair cluster"
+Cohesion: 0.08
+Nodes (19): NetCheck, NetCheckResult, Failed, Ok, Skipped, NetVerdict, Connected, DnsFails (+11 more)
+
+### Community 94 - "SetupText cluster"
 Cohesion: 0.05
 Nodes (36): SetupText, Accept, Admin, Back, BadFolder, Browse, Cancel, Copying (+28 more)
 
-### Community 89 - "IGpuTuningDevice cluster"
-Cohesion: 0.08
-Nodes (10): IGpuTuningDevice, Id, Limits, Name, NvmlTuningProvider, Devices, UnavailableDetail, UnavailableReasonKey (+2 more)
-
-### Community 90 - "TestWindow cluster"
+### Community 95 - "TestWindow cluster"
 Cohesion: 0.12
 Nodes (8): Msg, Rect, TestWindow, Handle, Height, Title, Width, WndClassEx
 
-### Community 91 - "ReportsViewModel cluster"
+### Community 96 - "History Store"
+Cohesion: 0.12
+Nodes (11): HistoryStore, Epoch, EstimatedBytes, MinuteCapacity, RawCapacity, MinuteSeries, RawSeries, Series (+3 more)
+
+### Community 97 - "GpuAutoTuner cluster"
 Cohesion: 0.09
-Nodes (10): PdfExporter, ReportRowViewModel, Badge, Report, Summary, Title, VerdictText, ReportsViewModel (+2 more)
+Nodes (19): AutoTuneOutcome, AutoTuneVerdict, Cancelled, Failed, Improved, NoImprovement, Unsupported, GpuLoadKind (+11 more)
 
-### Community 92 - "MemoryTests cluster"
-Cohesion: 0.10
-Nodes (4): MemoryPatternExecutor, Definition, FixedProbe, MemoryTests
-
-### Community 94 - "NativeBlock cluster"
+### Community 99 - "TestExecutionRequest cluster"
 Cohesion: 0.09
-Nodes (8): IMemoryProbe, Manager, MemoryStatus, MemoryStatusEx, NativeBlock, Length, Memory, Win32MemoryProbe
+Nodes (3): FailureWatch, TestId, TestRunResult
 
-### Community 95 - "icon cluster"
+### Community 100 - "icon cluster"
 Cohesion: 0.13
 Nodes (30): go(), mountAssistant(), evidence(), picker(), progress(), render(), renderActivity(), renderChat() (+22 more)
 
-### Community 96 - "TuningViewModelTests cluster"
-Cohesion: 0.12
-Nodes (16): IGpuTuningProvider, Devices, UnavailableDetail, UnavailableReasonKey, Card, Applied, Id, Limits (+8 more)
-
-### Community 98 - "Mazesta.Core.Tuning cluster"
-Cohesion: 0.07
-Nodes (6): Mazesta.Tray, Mazesta.Diagnostics.Tuning, Mazesta.Core.Tuning, AppArgs, MemoryLoad, Status
-
-### Community 99 - "FakeHardware cluster"
-Cohesion: 0.11
-Nodes (9): FakeHardware, HardwareType, Identifier, Name, Parent, Properties, Sensors, SubHardware (+1 more)
-
-### Community 100 - "SettingsViewModel cluster"
-Cohesion: 0.09
-Nodes (15): OverlayCornerChoice, SettingsViewModel, CanDisableTray, CanEnableTray, DataFolder, HasOverlay, Languages, ModeText (+7 more)
-
-### Community 101 - "SystemInfoViewModel cluster"
-Cohesion: 0.16
-Nodes (5): InfoRow, InfoSection, SystemInfoViewModel, Loaded, Sections
-
-### Community 102 - "HardwareKind cluster"
+### Community 101 - "HardwareKind cluster"
 Cohesion: 0.11
 Nodes (14): HardwareId, HardwareKind, Cooler, Cpu, Gpu, Memory, Motherboard, Network (+6 more)
 
-### Community 103 - "VfCurveScanner cluster"
-Cohesion: 0.10
-Nodes (12): IGpuLoad, SupportsRayTracing, VfCurveScanner, VfScanOptions, Duration, SampleInterval, Settle, StepMHz (+4 more)
+### Community 103 - "SessionReport cluster"
+Cohesion: 0.12
+Nodes (19): BenchmarkEntry, BenchmarkMetricEntry, FindingEntry, FindingMeasure, ReportCounts, ReportKind, Benchmark, TestSession (+11 more)
 
-### Community 104 - "BenchmarkTests cluster"
-Cohesion: 0.13
-Nodes (5): BenchmarkTests, FixedProbe, Scripted, Component, Definition
+### Community 104 - "Tray Canvas Drawing"
+Cohesion: 0.16
+Nodes (5): BitmapInfo, Canvas, Pixels, Extent, Rect
 
-### Community 105 - "system_net cluster"
+### Community 105 - "IGpuTuningDevice cluster"
+Cohesion: 0.08
+Nodes (10): IGpuTuningDevice, Id, Limits, Name, NvmlTuningProvider, Devices, UnavailableDetail, UnavailableReasonKey (+2 more)
+
+### Community 106 - "CPU Core Cycling"
+Cohesion: 0.09
+Nodes (11): CpuCoverage, ProcessorNumber, CpuCore, FirstThreadMask, Threads, CpuTopology, CacheGroups, CcdGroups (+3 more)
+
+### Community 107 - "FakeHardware cluster"
 Cohesion: 0.11
-Nodes (4): Mazesta.Hardware.Rgb, Mazesta.Core.Rgb, Mazesta.Core.Crashes, Mazesta.Diagnostics.Network
+Nodes (9): FakeHardware, HardwareType, Identifier, Name, Parent, Properties, Sensors, SubHardware (+1 more)
 
-### Community 108 - "GardenSoundMix cluster"
-Cohesion: 0.13
-Nodes (5): GardenMusic, GardenSoundMix, Loop, SoundLevels, GardenSoundTests
+### Community 109 - "Sensor Units"
+Cohesion: 0.08
+Nodes (22): Unit, Ampere, BytesPerSecond, Celsius, Decibel, Gigabyte, Hertz, LitersPerHour (+14 more)
 
-### Community 109 - "Classify cluster"
-Cohesion: 0.10
-Nodes (16): BenchmarkBreakWatch, Message, Mark, BreakCause, AppClosed, AppCrashed, BlueScreen, PowerLoss (+8 more)
+### Community 110 - "PingMonitor cluster"
+Cohesion: 0.09
+Nodes (10): PingReading, PingWindow, Ping, IPingSource, Target, PingMonitor, Target, PingWindowTests (+2 more)
 
-### Community 110 - "MZC_Stats cluster"
-Cohesion: 0.06
-Nodes (6): {closure#2}(), {closure#4}(), {closure#8}(), {closure#9}(), MZC_Messages, MZC_Stats
+### Community 111 - "Benchmark Peers (2)"
+Cohesion: 0.14
+Nodes (9): BenchmarkMark, BenchmarkMarks, File_, BenchmarkRun, Table, BenchmarkRunLog, Folder, PeerDatabase (+1 more)
 
-### Community 111 - "toast cluster"
+### Community 112 - "AiAssistantTests cluster"
+Cohesion: 0.09
+Nodes (10): AiAssistantChoice, AiAssistantPolicy, AiAssistantStatus, Available, LittleVram, NoGpu, NoRoom, MazestaCompany (+2 more)
+
+### Community 114 - "SettingsViewModel cluster"
+Cohesion: 0.09
+Nodes (15): OverlayCornerChoice, SettingsViewModel, CanDisableTray, CanEnableTray, DataFolder, HasOverlay, Languages, ModeText (+7 more)
+
+### Community 115 - "FanController cluster"
+Cohesion: 0.14
+Nodes (5): FanController, Active, Builtin, Current, Profile
+
+### Community 116 - "RegisterNetRepair cluster (2)"
+Cohesion: 0.14
+Nodes (5): CommandResult, ICommandRunner, ProcessCommandRunner, NetRepair, HibernateStatus
+
+### Community 117 - "toast cluster"
 Cohesion: 0.11
 Nodes (30): lanPanel(), render(), mount(), saveSet(), mount(), notesEditor(), send(), update() (+22 more)
 
-### Community 112 - "Client cluster"
-Cohesion: 0.14
-Nodes (6): SiteException, Status, SiteReport, FakeSite, Seen, SiteClientTests
+### Community 118 - "Finding cluster"
+Cohesion: 0.12
+Nodes (11): CpuCheck, CpuRunTrace, Finding, Measure, Measures, PeerCheck, DriveLink, PlatformCheck (+3 more)
 
-### Community 113 - "RegisterSystem cluster"
-Cohesion: 0.09
-Nodes (10): PageFileMode, Custom, None, SystemManaged, PageFilePlan, HibernateStatus, HostsFile, Line (+2 more)
-
-### Community 114 - "Mazesta.sln cluster"
+### Community 121 - "Mazesta.sln cluster"
 Cohesion: 0.07
 Nodes (29): ComputeSharp, Microsoft.NET.Test.Sdk, Microsoft.Web.WebView2, NLayer, Vortice.Direct3D12, Vortice.DirectML, xunit, xunit.runner.visualstudio (+21 more)
 
-### Community 115 - "demo.js cluster"
+### Community 122 - "demo.js cluster"
 Cohesion: 0.06
 Nodes (29): BASE, CORES, CURVE, DEMO_FINDINGS, DEMO_LOG, DEMO_SPECS, demoBattery, demoSite (+21 more)
 
-### Community 116 - "AutoTuneOptions cluster"
-Cohesion: 0.08
-Nodes (25): AutoTuneOptions, BaselineDuration, ClockBinMHz, ClockStep, ConfirmDuration, CoreOffsetStep, LongSettle, MaxClockRaise (+17 more)
+### Community 123 - "NetworkLatencyExecutor cluster"
+Cohesion: 0.11
+Nodes (4): NetworkLatencyExecutor, Definition, LogPacer, NetworkTests
 
-### Community 117 - "Run cluster"
+### Community 124 - "RunAsync cluster"
+Cohesion: 0.11
+Nodes (11): InternetSpeedExecutor, Definition, DismScanExecutor, Definition, SfcExecutor, Definition, FakeRunner, Calls (+3 more)
+
+### Community 125 - "Run cluster"
 Cohesion: 0.11
 Nodes (4): MemorySequenceExecutor, Definition, Run, Complete
 
-### Community 118 - "OpenRgbClient cluster"
-Cohesion: 0.20
-Nodes (3): OpenRgbClient, Connected, Devices
+### Community 126 - "ReportsViewModel cluster"
+Cohesion: 0.09
+Nodes (11): ReportRowViewModel, Badge, Report, Summary, Title, VerdictText, ReportsViewModel, IsEmpty (+3 more)
 
-### Community 119 - "TestExecutionRequest cluster"
-Cohesion: 0.10
-Nodes (5): TestExecutionRequest, TestLog, TestId, TestProgress, TestRunResult
+### Community 127 - "AppUpdater cluster"
+Cohesion: 0.08
+Nodes (13): AppUpdater, CheckedAt, Current, DataBusy, DataDownloaded, DataLists, DataSyncedAt, Error (+5 more)
 
-### Community 120 - "FanController cluster"
-Cohesion: 0.15
-Nodes (5): FanController, Active, Builtin, Current, Profile
-
-### Community 121 - "RegisterTweaks cluster"
-Cohesion: 0.11
-Nodes (16): DnsChoice, RegValue, TempFiles, Tweak, CanUndo, TweakCatalog, TweakCommand, TweakGroup (+8 more)
-
-### Community 122 - "Judge cluster"
+### Community 128 - "Judge cluster"
 Cohesion: 0.12
 Nodes (18): AiGenBlock, LittleVram, NeedsNvidia, NoGpu, AiGenCatalog, Models, AiGenFit, Full (+10 more)
 
-### Community 123 - "BoardDrivers cluster"
+### Community 129 - "BoardDrivers cluster"
 Cohesion: 0.13
 Nodes (4): BoardDevice, BoardDrivers, BoardItem, BoardPackage
 
-### Community 124 - "FakeSensorProvider cluster"
-Cohesion: 0.08
-Nodes (13): SensorReading, ISensorProvider, Hardware, Name, Status, PollRequest, PollResult, FakeSensorProvider (+5 more)
+### Community 130 - "SystemInfoViewModel cluster"
+Cohesion: 0.18
+Nodes (5): InfoRow, InfoSection, SystemInfoViewModel, Loaded, Sections
 
-### Community 125 - "SessionReport cluster"
-Cohesion: 0.15
-Nodes (13): ReportJson, BenchmarkEntry, BenchmarkMetricEntry, FindingEntry, FindingMeasure, ReportCounts, SensorSummary, SessionReport (+5 more)
+### Community 132 - "GPU AI Benchmark"
+Cohesion: 0.09
+Nodes (7): GpuAiBenchmark, Component, Definition, Level, Integer, Output, Unit
 
-### Community 126 - "HardwareDetailsReader cluster"
+### Community 133 - "HardwareDetailsReader cluster"
 Cohesion: 0.14
 Nodes (3): HardwareDetailsReader, DevPropKey, PciDevice
 
-### Community 127 - "PingMonitor cluster"
-Cohesion: 0.11
-Nodes (8): PingReading, PingWindow, Ping, IPingSource, Target, PingMonitor, Target, PingWindowTests
+### Community 134 - "OpenRgbClient cluster"
+Cohesion: 0.20
+Nodes (3): OpenRgbClient, Connected, Devices
 
-### Community 128 - "BenchmarkRunner cluster"
-Cohesion: 0.13
-Nodes (8): BenchmarkJob, BenchmarkRunner, Benchmarks, BlockedBy, InQueue, IsBusy, Running, RecordedBenchmark
-
-### Community 129 - "FakeClock cluster"
+### Community 135 - "CPU FFT Workload"
 Cohesion: 0.12
-Nodes (5): CpuMatrixStressExecutor, Definition, CpuMatrixStressExecutorTests, FakeClock, UtcNow
+Nodes (4): CpuIntegerExecutor, Definition, CpuWorkloadTests, Probe
 
-### Community 130 - "Run cluster"
+### Community 136 - "Run cluster (2)"
 Cohesion: 0.09
 Nodes (7): GpuSceneBenchmark, Component, Definition, FramePace, Fps, Low, Lows
 
-### Community 131 - "GpuStressExecutor cluster"
+### Community 137 - "GpuStressExecutor cluster"
 Cohesion: 0.10
 Nodes (8): GpuStressExecutor, Definition, GpuStressProfile, Pulse, Steady, Variable, PowerExecutor, Definition
 
-### Community 132 - "Decode cluster"
+### Community 138 - "Decode cluster"
 Cohesion: 0.12
 Nodes (6): Bc3, Bits, Component, Jpeg, Table, TextureCodecTests
 
-### Community 133 - "SceneView cluster"
-Cohesion: 0.13
-Nodes (8): SceneView, Garden, Overlay, Renderer, Work, CpuBursts, SceneGpuLoad, LoadRunResult
+### Community 139 - "Garden Light Baking"
+Cohesion: 0.09
+Nodes (15): List, Chunk, GardenChunks, GardenDay, SkyLight, Part, GardenLightBaker, GardenMaterialKind (+7 more)
 
-### Community 135 - "FakeSensor cluster"
+### Community 140 - "RunAsync cluster (2)"
+Cohesion: 0.09
+Nodes (13): GpuBenchmark, GpuFault, GpuLostException, GpuUnsupportedException, GpuWrongResultException, Kind, Cancelled, Internal (+5 more)
+
+### Community 141 - "Client cluster"
+Cohesion: 0.15
+Nodes (4): SiteReport, FakeSite, Seen, SiteClientTests
+
+### Community 142 - "SiteClient cluster"
+Cohesion: 0.19
+Nodes (3): ReportPage, SiteClient, Api
+
+### Community 143 - "FakeSensor cluster"
 Cohesion: 0.07
 Nodes (14): FakeSensor, Control, Hardware, Identifier, Index, IsDefaultHidden, Max, Min (+6 more)
 
-### Community 137 - "AppUpdater cluster"
-Cohesion: 0.09
-Nodes (13): AppUpdater, CheckedAt, Current, DataBusy, DataDownloaded, DataLists, DataSyncedAt, Error (+5 more)
-
-### Community 138 - "ThermalSensor cluster"
+### Community 145 - "ThermalSensor cluster"
 Cohesion: 0.13
 Nodes (12): ThermalGuard, ThermalLimits, ThermalSample, ThermalSensor, CpuHottestCore, CpuPackage, Drive, GpuCore (+4 more)
 
-### Community 139 - "ReportService cluster"
+### Community 146 - "ReportService cluster"
 Cohesion: 0.10
-Nodes (10): ReportService, AppVersion, Brand, BrowserDataDir, OwnReportsDirectory, SourceData, Store, UsingOwnSource (+2 more)
+Nodes (9): ReportService, AppVersion, Brand, BrowserDataDir, OwnReportsDirectory, SourceData, Store, UsingOwnSource (+1 more)
 
-### Community 140 - "BenchmarkResult cluster"
-Cohesion: 0.13
-Nodes (5): LlamaBenchmark, Component, Definition, LlamaBenchResult, BenchmarkResult
+### Community 148 - "SensorStatistics cluster"
+Cohesion: 0.12
+Nodes (7): SensorSnapshot, LatestReading, Value, Acc, SensorStatistics, SensorStats, SensorStatisticsTests
 
-### Community 141 - "NetworkLatencyExecutor cluster"
-Cohesion: 0.13
-Nodes (3): NetworkLatencyExecutor, Definition, NetworkTests
-
-### Community 142 - "FakeRunner cluster"
-Cohesion: 0.17
-Nodes (7): TweakEngine, FakeRegistry, Values, TweaksTests, FakeRunner, Calls, Throw
-
-### Community 143 - "RunAsync cluster"
-Cohesion: 0.10
-Nodes (9): DismScanExecutor, Definition, WindowsHealth, Damaged, Healthy, Repaired, Unknown, WindowsTool (+1 more)
-
-### Community 145 - "AiAssistantTests cluster"
-Cohesion: 0.11
-Nodes (8): AiAssistantChoice, AiAssistantPolicy, AiAssistantStatus, Available, LittleVram, NoGpu, NoRoom, AiAssistantTests
-
-### Community 146 - "prepare_courtyard_v12.py cluster"
+### Community 149 - "prepare_courtyard_v12.py cluster"
 Cohesion: 0.10
 Nodes (8): box(), boxes(), inst(), planter(), tube(), family(), move(), roots()
 
-### Community 147 - "RunAsync cluster"
-Cohesion: 0.09
-Nodes (12): GpuBenchmark, GpuFault, GpuLostException, GpuUnsupportedException, GpuWrongResultException, Kind, Cancelled, Internal (+4 more)
+### Community 150 - "WmiQuery cluster"
+Cohesion: 0.11
+Nodes (4): WmiInventoryProvider, WmiQuery, CheckupHardwareTests, DevBoxHardwareTests
 
-### Community 148 - "UsageLog cluster"
+### Community 151 - "GardenSoundMix cluster"
+Cohesion: 0.16
+Nodes (4): GardenSoundMix, Loop, SoundLevels, GardenSoundTests
+
+### Community 152 - "RegisterShield cluster"
+Cohesion: 0.24
+Nodes (4): ShieldResult, Ok, ShieldTools, Unregister
+
+### Community 153 - "CpuSpecTests cluster"
+Cohesion: 0.12
+Nodes (6): FindingLevel, Attention, Good, Note, Problem, CpuSpecTests
+
+### Community 154 - "Battery and WMI Reader"
+Cohesion: 0.12
+Nodes (8): BatteryDrain, BatteryInfo, ChargePercent, HealthPercent, LostMwh, BatteryReader, BatteryReaderTests, Fake
+
+### Community 155 - "DriveHealth cluster"
 Cohesion: 0.10
-Nodes (9): UsageUploader, UsageRecorder, Log, UsageLine, UsageLog, File, InstallId, StateFile (+1 more)
+Nodes (9): INvmeHealthSource, NvmeDriveHealth, NvmeHealthLog, BytesRead, BytesWritten, Warnings, SmartCheckExecutor, Definition (+1 more)
 
-### Community 149 - "AiFiles cluster"
-Cohesion: 0.14
-Nodes (9): AiModel, AiFiles, BenchExe, HasRuntime, ModelsDir, Root, RuntimeDir, ServerExe (+1 more)
-
-### Community 150 - "Build cluster"
-Cohesion: 0.15
-Nodes (6): FakeFrames, Problem, FakePing, Target, OverlayShareTests, OverlayViewModelTests
-
-### Community 151 - "CpuVectorStressExecutor cluster"
+### Community 156 - "CpuVectorStressExecutor cluster"
 Cohesion: 0.13
 Nodes (6): CpuVectorStressExecutor, Definition, Width, Avx2, Avx512, Sse
 
-### Community 152 - "ReportOutcome cluster"
+### Community 157 - "ReportOutcome cluster"
 Cohesion: 0.12
 Nodes (12): PartHistory, PartTestLine, PartTestSummary, ReportOutcome, Cancelled, Error, Failed, Inconclusive (+4 more)
 
-### Community 153 - "TestProfilesTests cluster"
+### Community 158 - "TestProfilesTests cluster"
 Cohesion: 0.12
 Nodes (7): Clock, UtcNow, Meeting, Definition, Stub, Definition, TestProfilesTests
 
-### Community 154 - "MainWindow cluster"
-Cohesion: 0.08
-Nodes (6): LoadingPanel, MainWindow, Dispatcher, InFront, WebEnvironment, Canvas
+### Community 159 - "RgbEffectRunner cluster"
+Cohesion: 0.09
+Nodes (11): OwnedSince, RgbEffectRunner, Count, Running, Yield, RgbJob, RgbHow, Native (+3 more)
 
-### Community 155 - "Slice 1 Design: Solution Skeleton + Sens cluster"
-Cohesion: 0.17
-Nodes (27): Tasks 15-21: Desktop Shell, HelpTip, Monitoring, Charts, Dashboard, Settings, Robustness, Tasks 2-4: Core Model, Validator and Utilities, Tasks 5-8: Hardware Interfaces, Role Map, LHM Provider, WMI Inventory, Tasks 9-12: Statistics, HistoryStore, EventLog, PollingEngine, Slice 1 Design: Solution Skeleton + Sensors and Monitoring, Core Model (HardwareNode, SensorDefinition, SensorReading, SensorSnapshot), Dashboard Page, EventLog (bounded ring) (+19 more)
-
-### Community 156 - "AppGuide cluster"
+### Community 160 - "AppGuide cluster"
 Cohesion: 0.15
 Nodes (8): AiRoute, All, Seconds, Together, Total, AppGuide, Places, AppPlace
 
-### Community 157 - "OverlaySection cluster"
-Cohesion: 0.09
-Nodes (16): OverlayPart, Cpu, Gaming, Gpu, Memory, Network, Storage, OverlaySection (+8 more)
+### Community 161 - "BoundedEventLog cluster"
+Cohesion: 0.12
+Nodes (14): IClock, UtcNow, SystemClock, UtcNow, BoundedEventLog, EventEntry, EventLevel, Error (+6 more)
 
-### Community 158 - "PartSpecs cluster"
-Cohesion: 0.21
-Nodes (5): InfoTable, PartSpecs, Na, SpecCard, SpecRow
+### Community 162 - "RunAsync cluster (3)"
+Cohesion: 0.11
+Nodes (7): WindowsHealth, Damaged, Healthy, Repaired, Unknown, WindowsTool, Oem
 
-### Community 160 - "material_for cluster"
+### Community 164 - "material_for cluster"
 Cohesion: 0.08
 Nodes (15): box_scale(), flat_colour(), grade_ops(), images_feeding(), material_for(), mix_alpha(), normal_map(), packed_value() (+7 more)
 
-### Community 162 - "SceneScore cluster"
+### Community 166 - "LibreHardwareMonitorProviderTests cluster"
+Cohesion: 0.20
+Nodes (4): PollRequest, FixedClock, UtcNow, LibreHardwareMonitorProviderTests
+
+### Community 167 - "SceneScore cluster"
 Cohesion: 0.11
 Nodes (6): Limit, Balanced, Cpu, Graphics, SceneScore, SceneScoreTests
 
-### Community 163 - "FrameRateReading cluster"
-Cohesion: 0.09
-Nodes (11): FrameRateReading, FrameTimeStats, IFrameRateSource, Problem, Frames, Problem, SequenceFrames, Problem (+3 more)
+### Community 168 - "UsageLog cluster"
+Cohesion: 0.11
+Nodes (7): UsageUploader, UsageLine, UsageLog, File, InstallId, StateFile, UsageState
 
-### Community 164 - "GamingViewModel cluster"
+### Community 169 - "GPU Run Trace"
+Cohesion: 0.14
+Nodes (5): GpuLink, GpuPcieErrors, GpuRunTrace, GpuThrottleCounts, CheckupTraces
+
+### Community 170 - "GamingViewModel cluster"
 Cohesion: 0.11
 Nodes (11): GamingViewModel, GameMode, GpuScheduling, HasUltimate, Loaded, Plans, PowerPlanRow, IsActive (+3 more)
 
-### Community 165 - "List cluster"
+### Community 171 - "List cluster"
 Cohesion: 0.21
 Nodes (3): AiChatInfo, AiChats, AiChatsTests
 
-### Community 166 - "MemoryPatterns cluster"
-Cohesion: 0.14
-Nodes (5): Algorithm, BlockMove, MovingInversions, Stride, MemoryPatterns
+### Community 172 - "MemoryBenchmark cluster"
+Cohesion: 0.13
+Nodes (7): MemoryBenchmark, Component, Definition, StreamResult, A, B, Random
 
-### Community 168 - "AppPaths (portable vs LocalAppData cluster"
-Cohesion: 0.10
-Nodes (25): Tasks 13-14: AppPaths, JsonStore, SchemaMigrator, RollingFileLogger, AppConfig, AppPaths (portable vs LocalAppData), JsonStore and SchemaMigrator (atomic, versioned), Slice 12 Verification (Web v2), Benchmark Records Comparison, Browser Preview Demo Host, Hardware Diagnostics Report (hardware-report.txt) (+17 more)
+### Community 173 - "SceneView cluster"
+Cohesion: 0.15
+Nodes (5): ChildProcessGpuLoad, SupportsRayTracing, CpuBursts, SceneGpuLoad, LoadRunResult
 
-### Community 169 - "RollingFileLoggerProvider cluster"
+### Community 174 - "RollingFileLoggerProvider cluster"
 Cohesion: 0.14
 Nodes (3): FileLogger, RollingFileLoggerProvider, RollingFileLoggerTests
 
-### Community 171 - "DnsBench cluster"
+### Community 175 - "TestOptions cluster"
+Cohesion: 0.12
+Nodes (5): ITestAvailability, TestAvailability, Unavailability, TestOptions, TestOptionsTests
+
+### Community 176 - "DnsBench cluster"
 Cohesion: 0.14
 Nodes (4): DnsBench, DnsScore, Reliable, DnsBenchTests
 
-### Community 172 - "Fit cluster"
+### Community 177 - "MZC_Stats cluster"
+Cohesion: 0.08
+Nodes (5): {closure#2}(), {closure#4}(), {closure#8}(), {closure#9}(), MZC_Stats
+
+### Community 178 - "Fit cluster"
 Cohesion: 0.16
 Nodes (9): AiFit, AiFitMode, Cpu, Gpu, Split, TooBig, AiFitter, AiMachine (+1 more)
 
-### Community 173 - "AiIntent cluster"
+### Community 179 - "AiIntent cluster"
 Cohesion: 0.08
 Nodes (26): AiIntent, Alert, Benchmarks, Checkup, Crashes, Dns, Drivers, Games (+18 more)
 
-### Community 174 - "MemoryBenchmark cluster"
-Cohesion: 0.14
-Nodes (6): MemoryBenchmark, Component, Definition, StreamResult, A, B
+### Community 180 - "Hotkey cluster"
+Cohesion: 0.12
+Nodes (6): OverlayNames, Hotkey, OverlayHotkeys, OverlayKeysFile, HotkeyTests, OverlayNamesTests
 
-### Community 175 - "SevenZipBenchmark cluster"
+### Community 181 - "FakeClock cluster"
+Cohesion: 0.14
+Nodes (3): CpuMatrixStressExecutor, Definition, CpuMatrixStressExecutorTests
+
+### Community 182 - "FakeRunner cluster"
+Cohesion: 0.21
+Nodes (4): TweakEngine, FakeRegistry, Values, TweaksTests
+
+### Community 183 - "CpuDetails cluster"
+Cohesion: 0.11
+Nodes (4): CpuDetailsReader, IWmiQuery, FakeWmiQuery, WmiInventoryProviderTests
+
+### Community 185 - "Build cluster (3)"
+Cohesion: 0.14
+Nodes (4): ITrayController, TrayState, FakeTray, SettingsViewModelTests
+
+### Community 186 - "SevenZipBenchmark cluster"
 Cohesion: 0.11
 Nodes (4): SevenZipBenchmark, Component, Definition, SevenZipBenchmarkTests
 
-### Community 176 - "DriveHealth cluster"
-Cohesion: 0.11
-Nodes (10): DriveHealth, IDriveHealthProvider, INvmeHealthSource, NvmeDriveHealth, NvmeHealthLog, BytesRead, BytesWritten, Warnings (+2 more)
-
-### Community 177 - "GardenLightVolume cluster"
-Cohesion: 0.11
-Nodes (10): GardenLightVolume, Origin, Parts, SceneStamp, Spacing, Suns, TexelFloats, X (+2 more)
-
-### Community 178 - "StorageTests cluster"
-Cohesion: 0.14
-Nodes (3): StorageSustainedExecutor, Definition, StorageTests
-
-### Community 179 - "IRegistryAccess cluster"
-Cohesion: 0.16
-Nodes (8): IRegistryAccess, UpdateProfile, Custom, Default, Disabled, Recommended, UpdateProfiles, WindowsRegistry
-
-### Community 180 - "FanProfiles cluster"
-Cohesion: 0.11
-Nodes (13): FanLabel, Kind, Name, FanProfiles, Active, Custom, Labels, FanSetting (+5 more)
-
-### Community 181 - "TwoGpus cluster"
-Cohesion: 0.13
-Nodes (8): Clock, UtcNow, GpuSensorNodeTests, TwoGpus, Hardware, Name, Nodes, Status
-
-### Community 182 - "LibreHardwareMonitorProviderTests cluster"
-Cohesion: 0.24
-Nodes (3): FixedClock, UtcNow, LibreHardwareMonitorProviderTests
-
-### Community 183 - "AppConfig.cs cluster"
-Cohesion: 0.12
-Nodes (11): ChartWindowConfig, Migration0To1, From, Migration1To2, From, Migration2To3, From, Migration3To4 (+3 more)
-
-### Community 184 - "ITestExecutor cluster"
-Cohesion: 0.12
-Nodes (5): InternetSpeedExecutor, Definition, Stage, StageCycleExecutor, Definition
-
-### Community 185 - "MediaFoundation.cs cluster"
-Cohesion: 0.16
-Nodes (16): Check(), CoTaskMemFree(), D3D11CreateDevice(), DeviceManager(), HardwareEncoder(), IMFDXGIDeviceManager, TypeInfo, MFCreateAttributes() (+8 more)
-
-### Community 186 - "Visit cluster"
+### Community 188 - "Visit cluster"
 Cohesion: 0.13
 Nodes (8): HardwareVendor, Amd, Intel, Nvidia, Unknown, LhmHardwareMapper, MappedNode, MappedSensor
 
-### Community 187 - "CpuSpecTests cluster"
-Cohesion: 0.15
-Nodes (6): FindingLevel, Attention, Good, Note, Problem, CpuSpecTests
+### Community 189 - "AppPaths cluster"
+Cohesion: 0.08
+Nodes (16): AppPaths, BenchDbDir, BenchSiteDir, CacheDir, ConfigDir, ConfigFile, DataRoot, Flash (+8 more)
 
-### Community 188 - "GpuFacts cluster"
+### Community 190 - "FanProfiles cluster"
+Cohesion: 0.11
+Nodes (13): FanLabel, Kind, Name, FanProfiles, Active, Custom, Labels, FanSetting (+5 more)
+
+### Community 191 - "TwoGpus cluster"
+Cohesion: 0.13
+Nodes (8): Clock, UtcNow, GpuSensorNodeTests, TwoGpus, Hardware, Name, Nodes, Status
+
+### Community 192 - "FakeWindows cluster"
+Cohesion: 0.14
+Nodes (3): FakeWindows, ShieldTests, Windows
+
+### Community 193 - "AppConfig.cs cluster"
+Cohesion: 0.12
+Nodes (11): ChartWindowConfig, Migration0To1, From, Migration1To2, From, Migration2To3, From, Migration3To4 (+3 more)
+
+### Community 194 - "MediaFoundation.cs cluster"
+Cohesion: 0.16
+Nodes (16): Check(), CoTaskMemFree(), D3D11CreateDevice(), DeviceManager(), HardwareEncoder(), IMFDXGIDeviceManager, TypeInfo, MFCreateAttributes() (+8 more)
+
+### Community 195 - "CPU FFT Workload (2)"
+Cohesion: 0.15
+Nodes (6): CpuFftExecutor, Definition, Plan, Cos, N, Sin
+
+### Community 196 - "GpuFacts cluster"
 Cohesion: 0.17
 Nodes (7): CpuFacts, CpuPlatform, GpuChip, GpuFacts, GpuUnits, GpuVideo, PartFactsTests
 
-### Community 189 - "TrayController cluster"
+### Community 197 - "TrayController cluster"
 Cohesion: 0.17
 Nodes (4): StartupTask, TrayController, ExePath, StartupTaskTests
 
-### Community 190 - "WindowsToolsViewModel cluster"
-Cohesion: 0.14
-Nodes (3): WindowsToolsViewModel, Output, PageFile
+### Community 198 - "IBenchmark cluster"
+Cohesion: 0.15
+Nodes (13): BenchmarkStatus, Cancelled, Completed, Error, Failed, Unsupported, IBenchmark, Component (+5 more)
 
-### Community 194 - "Installer cluster"
+### Community 200 - "LhmComputerAdapter cluster"
+Cohesion: 0.09
+Nodes (8): ILhmComputer, Hardware, LhmComputerAdapter, Hardware, DevBoxFixture, Last, Polls, Provider
+
+### Community 202 - "Installer cluster"
 Cohesion: 0.11
 Nodes (10): FolderState, Bad, Foreign, Free, Ours, Installer, DefaultFolder, HasPayload (+2 more)
 
-### Community 196 - "TestOptions cluster"
-Cohesion: 0.15
-Nodes (5): ITestAvailability, TestAvailability, Unavailability, TestOptions, TestOptionsTests
+### Community 205 - "SceneOverlay cluster"
+Cohesion: 0.11
+Nodes (9): File, Box, Readout, Row, SceneOverlay, FootHeight, GraphHeight, RowHeight (+1 more)
 
-### Community 199 - "ShieldTests cluster"
+### Community 207 - "RgbSnapshotDevice cluster"
 Cohesion: 0.13
-Nodes (12): ShieldPaths, ShieldProblem, Failed, Missing, None, NotAccepted, NotExe, NotFullPath (+4 more)
+Nodes (12): RgbEffects, RgbPalette, RgbPalettes, RgbSnapshot, Devices, RgbSnapshotDevice, Brightness, Direction (+4 more)
 
-### Community 201 - "NvidiaPcieSensors cluster"
+### Community 208 - "AutoTuneOptions cluster"
+Cohesion: 0.09
+Nodes (23): AutoTuneOptions, BaselineDuration, ClockBinMHz, ClockStep, ConfirmDuration, CoreOffsetStep, LongSettle, MaxClockRaise (+15 more)
+
+### Community 209 - "WindowsToolsViewModel cluster"
+Cohesion: 0.15
+Nodes (3): WindowsToolsViewModel, Output, PageFile
+
+### Community 210 - "GardenLightVolume cluster"
+Cohesion: 0.12
+Nodes (10): GardenLightVolume, Origin, Parts, SceneStamp, Spacing, Suns, TexelFloats, X (+2 more)
+
+### Community 212 - "NvidiaPcieSensors cluster"
 Cohesion: 0.13
 Nodes (7): FanChannel, IFanControlSource, Attached, NvidiaPcieSensors, Hardware, Name, Status
 
-### Community 202 - "From cluster"
+### Community 213 - "From cluster"
 Cohesion: 0.15
 Nodes (3): HealthSampler, SensorId, HealthSamplerTests
 
-### Community 204 - "GardenWind cluster"
+### Community 215 - "GPU Tuning Settings (2)"
+Cohesion: 0.13
+Nodes (9): FakeCard, Applied, Current, Id, Limits, Reads, Resets, FakeLoad (+1 more)
+
+### Community 216 - "GardenWind cluster"
 Cohesion: 0.11
 Nodes (13): GardenWind, Bytes, Cell, Cells, Crew, LastSeconds, Origin, SolidCells (+5 more)
 
-### Community 205 - "RegisterDrivers cluster"
+### Community 218 - "RegisterDrivers cluster"
 Cohesion: 0.19
 Nodes (4): DriverBoard, DriverGpu, BoardDriverService, Setup
 
-### Community 208 - "MemoryFacts cluster"
+### Community 220 - "MemoryFacts cluster"
 Cohesion: 0.14
 Nodes (6): MemoryFacts, BankGroups, Chips, Ranks, Timings, HostMetrics
 
-### Community 209 - "IMFSample cluster"
+### Community 221 - "IMFSample cluster"
 Cohesion: 0.10
 Nodes (3): IMFMediaBuffer, IMFSample, MFCreateMemoryBuffer()
 
-### Community 211 - "RgbEffectRunner cluster"
+### Community 225 - "Garden Light Baking (2)"
 Cohesion: 0.11
-Nodes (5): RgbEffectRunner, Count, Running, Yield, RgbJob
+Nodes (5): GardenAccel, Address, InstanceDesc, GardenLightTracer, Pass
 
-### Community 212 - "BoundedEventLog cluster"
-Cohesion: 0.16
-Nodes (10): BoundedEventLog, EventEntry, EventLevel, Error, Info, Warning, IEventLog, Clock (+2 more)
-
-### Community 214 - "export_old_crm.py cluster"
+### Community 226 - "export_old_crm.py cluster"
 Cohesion: 0.17
 Nodes (13): category(), digits(), dt(), extra(), get(), has(), iso_date(), load_forms() (+5 more)
 
-### Community 216 - "TestOptionViewModel cluster"
+### Community 229 - "CPU Core Cycling (2)"
+Cohesion: 0.16
+Nodes (3): CpuCoreCycleExecutor, Definition, Slot
+
+### Community 230 - "TestOptionViewModel cluster"
 Cohesion: 0.12
 Nodes (14): TestOptionViewModel, Choices, IsChoice, IsFreeText, IsValid, Label, Option, Value (+6 more)
 
-### Community 218 - "Read cluster"
-Cohesion: 0.19
-Nodes (4): RgbSnapshot, Devices, RgbSceneStore, RgbSceneStoreTests
+### Community 231 - "DriveAttentionTests cluster"
+Cohesion: 0.18
+Nodes (4): DriveCheck, DriveAttention, DriveHealth, DriveAttentionTests
 
-### Community 219 - "Hotkey cluster"
+### Community 232 - "GPU Run Trace (2)"
 Cohesion: 0.14
-Nodes (5): Hotkey, OverlayHotkeys, OverlayKeysFile, HotkeyTests, OverlayNamesTests
+Nodes (3): Series, Count, GpuCheck
 
-### Community 220 - "WriteHtml cluster"
-Cohesion: 0.13
-Nodes (5): MazestaLogo, SpecRow, SpecSection, SpecSheet, SpecSheetTests
-
-### Community 221 - "StorageBenchmark cluster"
-Cohesion: 0.14
-Nodes (7): Buffers, Mixed, Seq, Small, StorageBenchmark, Component, Definition
-
-### Community 223 - "SceneModel cluster"
+### Community 235 - "SceneModel cluster"
 Cohesion: 0.16
 Nodes (7): SceneModel, CustomPath, Name, Triangles, Vertices, SceneVertex, SvgPath
 
-### Community 224 - "TestSessionCheckpoint cluster"
+### Community 236 - "TestSessionCheckpoint cluster"
 Cohesion: 0.10
 Nodes (18): CheckpointResult, ErrorCount, Outcome, TestId, TestSessionCheckpoint, Completed, CurrentIndex, CurrentIteration (+10 more)
 
-### Community 225 - "JsonStore cluster"
-Cohesion: 0.13
-Nodes (6): JsonStore, ForDisk, IMigration, From, SchemaMigrator, GpuProfileDocumentTests
-
-### Community 226 - "SmartCheckTests cluster"
+### Community 237 - "SmartCheckTests cluster"
 Cohesion: 0.19
 Nodes (3): Drives, Nvme, SmartCheckTests
 
-### Community 227 - "AGENTS.md (AI agent guide cluster"
-Cohesion: 0.14
-Nodes (16): AGENTS.md (AI agent guide), Two editions: Mazesta (staff) and Client, BUILD.md (how to build), Data folder backup (Mazesta-Data-Backups), Flash edition (Mazesta-Flash, technician USB), MazestaPrint (secretary print program), MazestaTestSetup.exe installer, tools/publish.ps1 (build everything) (+8 more)
+### Community 238 - "Core Hardware Namespaces"
+Cohesion: 0.17
+Nodes (4): Mazesta.Reporting, Mazesta.Reporting.Tests, Mazesta.Core.Inventory, Placeholder
 
-### Community 228 - "WmiQuery cluster"
-Cohesion: 0.15
-Nodes (3): WmiInventoryProvider, WmiQuery, CheckupHardwareTests
-
-### Community 229 - "CpuSpecs cluster"
+### Community 239 - "CpuSpecs cluster"
 Cohesion: 0.18
 Nodes (5): CpuSpec, CpuSpecs, Count, ReadOn, Row
 
-### Community 230 - "GardenSound cluster"
+### Community 240 - "GardenSound cluster"
 Cohesion: 0.15
 Nodes (4): GardenSound, WaveFormat, WaveHeader, GardenSoundDeviceTests
 
-### Community 231 - "SceneOverlay cluster"
-Cohesion: 0.11
-Nodes (10): File, Box, Figure, Readout, Row, SceneOverlay, FootHeight, GraphHeight (+2 more)
-
-### Community 232 - "AppPaths cluster"
+### Community 241 - "jobs.php cluster"
 Cohesion: 0.10
-Nodes (14): AppPaths, BenchDbDir, BenchSiteDir, CacheDir, ConfigDir, ConfigFile, DataRoot, Flash (+6 more)
+Nodes (6): {closure#1}(), {closure#10}(), {closure#12}(), {closure#18}(), {closure#19}(), {closure#6}()
 
-### Community 233 - "mount cluster"
+### Community 242 - "mount cluster"
 Cohesion: 0.23
 Nodes (20): blocksOf(), mount(), arrows(), current(), dropAt(), fill(), frameChart(), itemRow() (+12 more)
 
-### Community 234 - "ReleasesAsync cluster"
+### Community 243 - "ReleasesAsync cluster"
 Cohesion: 0.17
 Nodes (4): NvidiaDrivers, NvidiaProduct, NvidiaRelease, NvidiaDriverService
 
-### Community 235 - "FindingHint cluster"
+### Community 244 - "FindingHint cluster"
 Cohesion: 0.13
 Nodes (11): FindingHint, HotterThanPeers, LessPowerThanPeers, LowerClockThanPeers, None, OnBattery, PowerAboveSpec, PowerAtBaseSpec (+3 more)
 
-### Community 236 - "RgbSnapshotDevice cluster"
-Cohesion: 0.14
-Nodes (10): RgbEffects, RgbPalette, RgbPalettes, RgbSnapshotDevice, Brightness, Direction, Leds, Mode (+2 more)
-
-### Community 237 - "PowerTimerMenu cluster"
+### Community 245 - "PowerTimerMenu cluster"
 Cohesion: 0.14
 Nodes (5): PowerAction, Shutdown, Sleep, PowerTimerMenu, Menu
 
-### Community 238 - "GpuAutoTuner cluster"
-Cohesion: 0.20
-Nodes (4): AutoTuneOutcome, IAutoTuneSearch, Outcome, GpuAutoTuner
+### Community 246 - "OverlaySection cluster"
+Cohesion: 0.13
+Nodes (9): OverlaySection, Device, Hue, HueEdge, HueTint, Part, Rows, Title (+1 more)
 
-### Community 239 - "Run cluster"
+### Community 247 - "Run cluster (3)"
 Cohesion: 0.14
 Nodes (3): CpuCycle, CpuStressExecutor, Definition
 
-### Community 240 - "RunAsync cluster"
-Cohesion: 0.19
-Nodes (4): SfcExecutor, Definition, WindowsToolsHardwareTests, WindowsToolsTests
+### Community 248 - "Fact cluster"
+Cohesion: 0.18
+Nodes (3): VramPattern, GpuLogicTests, VideoFormatTests
 
-### Community 241 - "Read cluster"
-Cohesion: 0.16
-Nodes (6): TrayCheck, IsProblem, TrayCheckLog, TrayDrive, TrayCheckLogTests, File_
+### Community 249 - "ITestExecutor cluster"
+Cohesion: 0.14
+Nodes (3): Stage, StageCycleExecutor, Definition
 
-### Community 242 - "THIRD-PARTY-NOTICES.md cluster"
-Cohesion: 0.12
-Nodes (17): Unattended --selftest runs, WPF edition retired / WPF removed, ComputeSharp (DX12 compute), Courtyard scene 3-D models (BlenderKit), LibreHardwareMonitorLib (MPL-2.0), OpenRGB 1.0 (separate process, GPL-2.0), PawnIO kernel driver, Vortice.Direct3D12 / DirectML bindings (+9 more)
+### Community 251 - "THIRD-PARTY-NOTICES.md cluster"
+Cohesion: 0.13
+Nodes (15): AGENTS.md (AI agent guide), Unattended --selftest runs, Two editions: Mazesta (staff) and Client, WebBridge (fixed JSON bridge), WPF edition retired / WPF removed, ComputeSharp (DX12 compute), Courtyard scene 3-D models (BlenderKit), OpenRGB 1.0 (separate process, GPL-2.0) (+7 more)
 
-### Community 243 - "GpuProfileDocument cluster"
+### Community 252 - "GpuProfileDocument cluster"
 Cohesion: 0.14
 Nodes (13): GpuCurve, GpuProfile, GpuProfileDocument, Curves, Journal, Profiles, SchemaVersion, GpuProfileKind (+5 more)
 
-### Community 245 - "jobs.php cluster"
-Cohesion: 0.11
-Nodes (6): {closure#1}(), {closure#10}(), {closure#12}(), {closure#17}(), {closure#18}(), {closure#6}()
-
-### Community 247 - "Apply cluster"
+### Community 255 - "Apply cluster"
 Cohesion: 0.25
 Nodes (3): NodeStatus, StaleDetector, StaleDetectorTests
 
-### Community 248 - "HealthAlerts cluster"
+### Community 256 - "HealthAlerts cluster"
 Cohesion: 0.14
 Nodes (12): HealthAlert, HealthAlertKind, CpuOverheat, CpuThrottle, GpuHotSpotOverheat, GpuOverheat, SsdOverheat, HealthAlerts (+4 more)
 
-### Community 249 - "TestOutcome cluster"
+### Community 257 - "SystemInfoViewModelTests cluster"
+Cohesion: 0.16
+Nodes (4): CpuInfo, IInventoryProvider, Inv, SystemInfoViewModelTests
+
+### Community 258 - "TestOutcome cluster"
 Cohesion: 0.15
 Nodes (11): TestAdvice, TestOutcome, Cancelled, Error, Failed, Inconclusive, NotRun, Passed (+3 more)
 
-### Community 250 - "IBenchmark cluster"
-Cohesion: 0.22
-Nodes (8): BenchmarkMetric, IBenchmark, Component, Definition, BenchmarksViewModelTests, Fake, Component, Definition
-
-### Community 251 - "Fact cluster"
+### Community 259 - "Classify cluster"
 Cohesion: 0.18
-Nodes (3): GpuLogicTests, VideoFormatTests, VramCountTests
+Nodes (12): BreakCause, AppClosed, AppCrashed, BlueScreen, PowerLoss, Restarted, BreakEvent, IBreakEventSource (+4 more)
 
-### Community 252 - "Runner cluster"
+### Community 260 - "Runner cluster"
 Cohesion: 0.15
 Nodes (5): GamingStatus, NoWmi, Runner, Calls, WindowsPagesTests
 
-### Community 254 - "SensorStatistics cluster"
-Cohesion: 0.23
-Nodes (4): Acc, SensorStatistics, SensorStats, SensorStatisticsTests
+### Community 261 - "ShieldTests cluster"
+Cohesion: 0.15
+Nodes (10): ShieldPaths, ShieldProblem, Failed, Missing, None, NotAccepted, NotExe, NotFullPath (+2 more)
 
-### Community 255 - "CrashRecord cluster"
-Cohesion: 0.14
-Nodes (5): Mazesta.Diagnostics.Crashes, CrashRecord, PowerLoss, CrashHistory, CrashReader
+### Community 263 - "MainWindow cluster"
+Cohesion: 0.12
+Nodes (4): MainWindow, Dispatcher, InFront, WebEnvironment
 
-### Community 256 - "ComputeGpuLoad cluster"
-Cohesion: 0.23
-Nodes (3): VramPatternShader, ComputeGpuLoad, SupportsRayTracing
+### Community 264 - "Slice 1 Design: Solution Skeleton + Sens cluster"
+Cohesion: 0.24
+Nodes (16): Tasks 2-4: Core Model, Validator and Utilities, Tasks 5-8: Hardware Interfaces, Role Map, LHM Provider, WMI Inventory, Slice 1 Design: Solution Skeleton + Sensors and Monitoring, Core Model (HardwareNode, SensorDefinition, SensorReading, SensorSnapshot), Dashboard Page, Provider Fallback Summary, ISensorProvider, Allowed Project References (+8 more)
 
-### Community 257 - "DevBoxFixture cluster"
-Cohesion: 0.16
-Nodes (5): DevBoxFixture, Last, Polls, Provider, DevBoxHardwareTests
-
-### Community 258 - "Fact cluster"
+### Community 265 - "Fact cluster (2)"
 Cohesion: 0.14
 Nodes (4): Fake, WmiDriveHealthHardwareTests, WmiDriveHealthParserTests, WmiPageFileTests
 
-### Community 260 - "WindowsActions cluster"
+### Community 268 - "WindowsActions cluster"
 Cohesion: 0.20
 Nodes (5): WinCommand, WindowsActions, Commands, Places, WinPlace
 
-### Community 261 - "SiteSession cluster"
+### Community 269 - "BugCheckCatalog cluster"
+Cohesion: 0.19
+Nodes (4): BugCheckCatalog, All, BugCheckInfo, CrashRecord
+
+### Community 270 - "SiteSession cluster"
 Cohesion: 0.21
 Nodes (3): SiteSession, Server, SignedIn
 
-### Community 262 - "GardenVoxels cluster"
+### Community 273 - "GardenVoxels cluster"
 Cohesion: 0.16
 Nodes (8): GardenVoxels, Bytes, Cell, Filled, Origin, X, Y, Z
 
-### Community 264 - "GpuStartup cluster"
+### Community 274 - "TestExecutionRequest cluster (2)"
+Cohesion: 0.14
+Nodes (8): TestExecutionRequest, TestLog, TestLogEntry, TestLogLevel, Error, Info, Step, Warning
+
+### Community 276 - "GpuStartup cluster"
 Cohesion: 0.16
 Nodes (4): GpuStartup, GpuStartupChoice, GpuStartupTests, File1
 
-### Community 265 - "Gate cluster"
-Cohesion: 0.19
-Nodes (5): BenchmarkQueueTests, Now, Gate, Component, Definition
+### Community 277 - "WriteHtml cluster"
+Cohesion: 0.15
+Nodes (5): MazestaLogo, SpecRow, SpecSection, SpecSheet, SpecSheetTests
 
-### Community 266 - "InstallAsync cluster"
+### Community 278 - "InstallAsync cluster"
 Cohesion: 0.18
 Nodes (4): DriverInstallResult, Succeeded, DriverUpdate, WindowsDriverUpdates
 
-### Community 268 - "UiDispatcher cluster"
-Cohesion: 0.16
-Nodes (4): Operation, UiDispatcher, Current, Owner
+### Community 282 - "builds.php cluster"
+Cohesion: 0.12
+Nodes (6): {closure#10}(), {closure#13}(), {closure#16}(), {closure#4}(), {closure#5}(), {closure#9}()
 
-### Community 270 - "Clean cluster"
+### Community 284 - "RGB Sessions and Scenes"
+Cohesion: 0.13
+Nodes (10): SelfTestLights, RgbLook, RgbScene, All, Dark, Devices, Enabled, PowerEnd (+2 more)
+
+### Community 285 - "Clean cluster"
 Cohesion: 0.26
 Nodes (3): FanCurve, FanPoint, FanCurveTests
 
-### Community 271 - "SystemInfoViewModelTests cluster"
-Cohesion: 0.18
-Nodes (3): IInventoryProvider, Inv, SystemInfoViewModelTests
+### Community 287 - "GPU AI Benchmark (2)"
+Cohesion: 0.12
+Nodes (3): GpuAiExecutor, Definition, GpuCycle
 
-### Community 276 - "SyncAsync cluster"
-Cohesion: 0.19
-Nodes (5): DataSync, Result, UpdateClient, Folder, UpdateRejectedException
+### Community 289 - "JsonStore cluster"
+Cohesion: 0.14
+Nodes (6): CheckpointV1ToV2, From, IMigration, From, SchemaMigrator, GpuProfileDocumentTests
 
-### Community 279 - "Slice 2 Design Spec (Test Engine cluster"
+### Community 292 - "Read cluster (2)"
+Cohesion: 0.20
+Nodes (5): TrayCheck, IsProblem, TrayDrive, TrayCheckLogTests, File_
+
+### Community 293 - "Slice 2 Design Spec (Test Engine cluster"
 Cohesion: 0.23
 Nodes (14): Phase 1 Slice Roadmap, Slice 2 Design Spec (Test Engine), CpuMatrixStressExecutor, Crash Checkpoint (test-checkpoint.json), DescribeMeasuredLoad, ITestExecutor, Repeat Modes (Once/Count/Unlimited), TestCenterViewModel (+6 more)
 
-### Community 281 - "Workload cluster"
+### Community 295 - "Workload cluster"
 Cohesion: 0.17
 Nodes (10): Lease, Workload, Benchmark, Drivers, Tests, Tuning, WorkloadBusyException, Holder (+2 more)
 
-### Community 282 - "builds.php cluster"
-Cohesion: 0.12
-Nodes (6): {closure#10}(), {closure#13}(), {closure#15}(), {closure#4}(), {closure#5}(), {closure#9}()
+### Community 296 - "UiDispatcher cluster"
+Cohesion: 0.17
+Nodes (4): Operation, UiDispatcher, Current, Owner
 
-### Community 283 - "MessageInbox cluster"
+### Community 297 - "MessageInbox cluster"
 Cohesion: 0.18
 Nodes (3): MessageInbox, Unread, ShopMessage
 
-### Community 285 - "lights.js cluster"
+### Community 298 - "lights.js cluster"
 Cohesion: 0.22
 Nodes (14): fromHsl(), harmonies(), HUE, ICON, lit(), mount(), card(), range() (+6 more)
 
-### Community 286 - "CrashCause cluster"
+### Community 299 - "CrashCause cluster"
 Cohesion: 0.12
 Nodes (16): CrashCause, Bios, Cpu, Device, Driver, Gpu, GpuDriver, Heat (+8 more)
 
-### Community 287 - "Sum cluster"
+### Community 300 - "Sum cluster"
 Cohesion: 0.27
 Nodes (4): PowerPart, PowerTotal, PowerTotals, PowerTotalTests
 
-### Community 289 - "GpuLoadKind cluster"
-Cohesion: 0.12
-Nodes (5): GpuLoadKind, Compute, Memory, Scene, Transient
+### Community 301 - "Read cluster (3)"
+Cohesion: 0.22
+Nodes (3): IDriveHealthProvider, WmiDriveHealthParser, WmiDriveHealthProvider
 
-### Community 290 - "Mazesta.Desk/wwwroot/js/ui.js cluster"
+### Community 303 - "Mazesta.Desk/wwwroot/js/ui.js cluster"
 Cohesion: 0.20
 Nodes (9): area(), ask(), check(), field(), h(), modal(), select(), text() (+1 more)
 
-### Community 293 - "FailureKind cluster"
+### Community 306 - "FailureKind cluster"
 Cohesion: 0.14
 Nodes (11): FailureAdvice, FailureKind, Cpu, Gpu, GpuDriver, Memory, Network, Storage (+3 more)
 
-### Community 297 - "PawnIoInstallResult cluster"
+### Community 307 - "PawnIoInstallResult cluster"
 Cohesion: 0.19
 Nodes (9): PawnIoDriver, SetupPath, PawnIoInstallResult, AlreadyInstalled, Failed, Installed, NotElevated, SetupMissing (+1 more)
 
-### Community 305 - "ships.php cluster"
+### Community 308 - "SyncAsync cluster"
+Cohesion: 0.21
+Nodes (4): DataSync, Result, UpdateClient, Folder
+
+### Community 314 - "SiteClient cluster (2)"
+Cohesion: 0.13
+Nodes (11): ReportList, SiteException, Status, SiteMachine, SitePairClaim, SitePairing, SiteReportItem, SiteReportReceipt (+3 more)
+
+### Community 317 - "ships.php cluster"
 Cohesion: 0.13
 Nodes (4): {closure#10}(), {closure#3}(), {closure#8}(), {closure#9}()
 
-### Community 307 - "BugCheckCatalog cluster"
-Cohesion: 0.24
-Nodes (3): BugCheckCatalog, All, BugCheckInfo
-
-### Community 308 - "apps.js cluster"
+### Community 319 - "apps.js cluster"
 Cohesion: 0.27
 Nodes (13): appIcon(), gb(), lat(), LEVEL, levelPill(), mount(), mountList(), card() (+5 more)
 
-### Community 309 - "testrun.js cluster"
+### Community 320 - "testrun.js cluster"
 Cohesion: 0.24
 Nodes (14): OUTCOME, partOfId(), keep(), KINDS, PAGE_OF, pageOfRun(), pageOfTest(), partOfRun() (+6 more)
 
-### Community 311 - "MemoryPressure cluster"
+### Community 322 - "MemoryPressure cluster"
 Cohesion: 0.23
 Nodes (4): MemoryPressure, IsWatching, LastFired, MemoryPressureTests
 
-### Community 312 - "CpuDetails cluster"
-Cohesion: 0.23
-Nodes (4): CacheInfo, CpuDetails, HybridCores, CpuDetailsReader
-
-### Community 314 - "GpuVideoExecutor cluster"
-Cohesion: 0.13
-Nodes (6): VideoWork, Both, Decode, Encode, GpuVideoExecutor, Definition
-
-### Community 315 - "Since cluster"
+### Community 324 - "Since cluster"
 Cohesion: 0.25
 Nodes (3): IStorageEventSource, StorageEvent, StorageEventSource
 
-### Community 318 - "ReportText cluster"
-Cohesion: 0.13
-Nodes (10): ReportText, IsRtl, Language, ReportKind, Benchmark, TestSession, ReportVerdict, Failed (+2 more)
-
-### Community 319 - "LhmComputerAdapter cluster"
-Cohesion: 0.15
-Nodes (4): ILhmComputer, Hardware, LhmComputerAdapter, Hardware
-
-### Community 321 - "AiTests cluster"
+### Community 328 - "CrashRecord cluster"
 Cohesion: 0.18
-Nodes (3): AiTests, FileServer, Ranges
+Nodes (4): Mazesta.Diagnostics.Crashes, PowerLoss, CrashHistory, CrashReader
 
-### Community 322 - "LanPeerServer cluster"
+### Community 329 - "AGENTS.md (AI agent guide cluster"
 Cohesion: 0.18
-Nodes (4): LanPeerServer, BoundPort, Magic, Sessions
+Nodes (9): BUILD.md (how to build), Data folder backup (Mazesta-Data-Backups), Flash edition (Mazesta-Flash, technician USB), MazestaPrint (secretary print program), MazestaTestSetup.exe installer, tools/publish.ps1 (build everything), UPDATES.md (app self-update, site plugin, benchmark lists), App self-update (from 0.7.0) (+1 more)
 
-### Community 323 - "RgbConflicts cluster"
+### Community 330 - "RgbConflicts cluster"
 Cohesion: 0.21
 Nodes (4): Maker, RgbConflicts, StoppedNow, Stopped
 
-### Community 324 - "Expected cluster"
-Cohesion: 0.18
-Nodes (3): Expected, Fill, Seed
-
-### Community 325 - "List cluster"
+### Community 331 - "List cluster (2)"
 Cohesion: 0.25
 Nodes (3): AiJson, List, AiJsonTests
 
-### Community 327 - "ProviderStatus cluster"
-Cohesion: 0.16
-Nodes (7): ProviderState, Degraded, Failed, NotStarted, Ready, Starting, ProviderStatus
-
-### Community 328 - "Choose cluster"
+### Community 332 - "Choose cluster"
 Cohesion: 0.18
 Nodes (7): FrameLink, Busiest, ChildWindow, Descendant, Foreground, FrameTarget, Frames
 
-### Community 330 - "AiChat cluster"
+### Community 334 - "AiChat cluster"
 Cohesion: 0.16
 Nodes (11): AiChat, Created, Id, Messages, Title, Updated, AiChatMessage, Role (+3 more)
 
-### Community 331 - "ICommandRunner cluster"
-Cohesion: 0.25
-Nodes (3): CommandResult, ICommandRunner, ProcessCommandRunner
+### Community 336 - "FrameRateReading cluster"
+Cohesion: 0.15
+Nodes (5): Frames, Problem, ViewLoadTests, FakeClock, UtcNow
 
-### Community 332 - "ParseFirewall cluster"
-Cohesion: 0.20
-Nodes (6): AvProduct, AvState, Other, Stopped, BlockedProgram, FirewallState
-
-### Community 335 - "texture_for cluster"
+### Community 337 - "texture_for cluster"
 Cohesion: 0.14
 Nodes (8): bleed(), grade(), hsv_shift(), hsv_to_rgb(), image_pixels(), normal_texture_for(), texture_for(), turned()
 
-### Community 337 - "compile-gpu-shaders.py cluster"
+### Community 338 - "compile-gpu-shaders.py cluster"
 Cohesion: 0.22
 Nodes (5): blob(), Buf, compile(), inline(), method()
 
-### Community 338 - "Slice 10 Verification (Yellow Redesign cluster"
+### Community 339 - "Slice 10 Verification (Yellow Redesign cluster"
 Cohesion: 0.23
 Nodes (13): Slice 10 Verification (Yellow Redesign), BatchSizer (~250 ms GPU submissions), Benchmark Queue, ComputeGpuLoad, Customer Summary (A5 page), Profile LoadVersion, On-screen Overlay Panel, V/F Curve Editor and Curve Scanner (+5 more)
 
-### Community 339 - "make_v24_textures.py cluster"
+### Community 340 - "make_v24_textures.py cluster"
 Cohesion: 0.29
 Nodes (8): cover(), gold(), leather(), noise(), pages(), spine(), to_px(), wing()
 
-### Community 340 - "portal.js cluster"
+### Community 341 - "portal.js cluster"
 Cohesion: 0.47
 Nodes (12): add(), api(), code(), go(), el(), history_(), kv(), login() (+4 more)
 
-### Community 341 - "call cluster"
+### Community 342 - "call cluster"
 Cohesion: 0.17
 Nodes (13): call(), demoAi(), demoApps(), demoGame(), demoGen(), demoVm(), fansState(), reading() (+5 more)
 
-### Community 342 - "demo-overlay.js cluster"
+### Community 343 - "demo-overlay.js cluster"
 Cohesion: 0.19
 Nodes (12): CATALOG, chosen, drives(), frames(), HUNDRED, overlay(), parse(), PER_DRIVE (+4 more)
 
-### Community 343 - "ai.js cluster"
+### Community 344 - "ai.js cluster"
 Cohesion: 0.28
 Nodes (12): FIT, GEN_FIT, GEN_ICON, lat(), mount(), card(), measured(), progress() (+4 more)
 
-### Community 346 - "Phase cluster"
-Cohesion: 0.15
-Nodes (13): Phase, Baseline, Boost, Confirm, ConfirmMemory, ConfirmScene, ConfirmTop, ConfirmTransient (+5 more)
+### Community 347 - "ParseFirewall cluster"
+Cohesion: 0.22
+Nodes (6): AvProduct, AvState, Other, Stopped, BlockedProgram, FirewallState
 
-### Community 347 - "GpuDevices cluster"
-Cohesion: 0.23
-Nodes (4): GpuDevices, Adapters, Discrete, Option
-
-### Community 348 - "Build cluster"
-Cohesion: 0.23
-Nodes (3): GardenLod, Result, GardenLodTests
-
-### Community 349 - "Build cluster"
+### Community 348 - "Build cluster (4)"
 Cohesion: 0.21
 Nodes (4): MonitoringOptions, FastInterval, StorageInterval, OverlayCompactTests
+
+### Community 349 - "JsonStore cluster (2)"
+Cohesion: 0.17
+Nodes (8): JsonStore, ForDisk, LoadOutcome, Corrupt, Defaulted, Loaded, Migrated, LoadResult
 
 ### Community 350 - "UpdateManifest cluster"
 Cohesion: 0.23
 Nodes (4): AppRelease, Package, UpdateFile, UpdateManifest
 
-### Community 352 - "Mazesta Connect WordPress plugin cluster"
-Cohesion: 0.18
-Nodes (12): WebBridge (fixed JSON bridge), qrcode-generator 1.4.4 (qrcode.js), Separate CRM database (mz_* tables), Customer portal ([mazesta_portal], SMS OTP), Mazesta Connect WordPress plugin, MazestaDesk.exe (staff program), Old CRM import (export_old_crm.py), Site pairing without typing key (pair/start, pair/claim) (+4 more)
-
-### Community 353 - "FileInfo cluster"
+### Community 352 - "FileInfo cluster"
 Cohesion: 0.27
 Nodes (3): Authenticode, Data, FileInfo
 
-### Community 354 - "Hardening plan cluster"
+### Community 353 - "Hardening plan cluster"
 Cohesion: 0.17
 Nodes (11): Capability matrix (automatic vs needs a person), Hardening plan, G-04 AI models page (GGUF via llama.cpp), H-01 TestOutcome.Error (program error is not a hardware fault), H-02 TestOutcome.Inconclusive, H-08 GPU sensors of tested card only, stale readings rejected, H-10 Benchmark record versioning, Live test monitor (+3 more)
 
-### Community 355 - "Slice 1 Implementation Plan (Skeleton +  cluster"
-Cohesion: 0.18
-Nodes (9): Slice 1 Implementation Plan (Skeleton + Sensors and Monitoring), Planned File Structure, Additive Deviations from the Spec (PollResult, extra roles, asInvoker Debug manifest), Task 1: Solution Skeleton and Build Configuration, Task 22: Hardware Tests, Idle Measurements, Publish, Slice Documentation, Tech Stack (.NET 10, WPF, LibreHardwareMonitorLib 0.9.6, xUnit), Slice 1 Acceptance Criteria, Allowed Project References (+1 more)
+### Community 354 - "AppPaths (portable vs LocalAppData cluster"
+Cohesion: 0.20
+Nodes (12): Tasks 13-14: AppPaths, JsonStore, SchemaMigrator, RollingFileLogger, AppConfig, AppPaths (portable vs LocalAppData), JsonStore and SchemaMigrator (atomic, versioned), Slice 6 Verification (Benchmarks), BenchmarkRunner (session singleton), GPU Benchmarks (D3D12, DXR, DirectML), Storage Benchmark (CrystalDiskMark method) (+4 more)
 
-### Community 357 - "RegisterAi cluster"
+### Community 355 - "Slice 1 Design: Solution Skeleton + Sens cluster (2)"
 Cohesion: 0.27
-Nodes (3): AiTransfer, AiMeasurement, AiResults
+Nodes (12): Tasks 15-21: Desktop Shell, HelpTip, Monitoring, Charts, Dashboard, Settings, Robustness, Tasks 9-12: Statistics, HistoryStore, EventLog, PollingEngine, EventLog (bounded ring), HelpTip Persian Help Mechanism, HistoryStore (raw and minute ring buffers), Localization and RTL (Strings.resx / Strings.fa.resx, Vazirmatn), Monitoring Page (grouped virtualised grid), MonitoringFocus (+4 more)
 
-### Community 358 - "build cluster"
+### Community 356 - "AGENTS.md (AI agent guide cluster (2)"
+Cohesion: 0.17
+Nodes (11): Bench run archive (G:\Mazesta-BenchArchive), Benchmark runs log (Data\benchmarks\runs\*.jsonl, marks.json), Featured (starred) results, tools/Mazesta.Release (keygen, site), src/Mazesta.Persistence/Updates (manifest, signature, verified download, rollback), Site release key (site-release-key.txt), Release notes format (+ ~ ! markers), Update-signing private key (mazesta-update-private.pem) (+3 more)
+
+### Community 357 - "Mazesta Connect WordPress plugin cluster"
+Cohesion: 0.20
+Nodes (12): Separate CRM database (mz_* tables), Customer portal [mazesta_portal], Mazesta Connect WordPress plugin, News endpoint GET /news, Old CRM import (export_old_crm.py, old-crm.jsonl.gz), Purchase invoice, Share last result (mazesta_share token page), Serial trace (+4 more)
+
+### Community 361 - "build cluster"
 Cohesion: 0.27
 Nodes (12): curveEditor(), draw(), move(), mount(), build(), choose(), identify(), send() (+4 more)
 
-### Community 360 - "Advise cluster"
+### Community 363 - "Advise cluster"
 Cohesion: 0.23
 Nodes (5): DriverAdvice, DriverAdviceResult, NvidiaLine, GameReady, Studio
 
-### Community 362 - "GpuRules cluster"
-Cohesion: 0.20
-Nodes (4): GpuAppRule, GpuRules, IsEmpty, GpuRulesFile
-
-### Community 365 - "Read cluster"
+### Community 366 - "Read cluster (6)"
 Cohesion: 0.38
 Nodes (3): TrayIntervals, TrayIntervalsTests, File_
 
-### Community 366 - "HardwareErrorEvent cluster"
+### Community 367 - "HardwareErrorEvent cluster"
 Cohesion: 0.31
 Nodes (4): Mazesta.Diagnostics.Whea, HardwareErrorEvent, IHardwareErrorSource, WheaErrorSource
 
-### Community 367 - "Checkup (smart troubleshooting tab cluster"
+### Community 368 - "Checkup (smart troubleshooting tab cluster"
 Cohesion: 0.18
 Nodes (11): Mazesta.Core, Checkup (smart troubleshooting tab), CpuCheck, CpuSpecs (maker's figures, cpu-specs.json), Finding Levels (Good, Note, Attention, Problem), GpuCheck, MemoryCheck, NvidiaRunProbe (NVML clock event reasons) (+3 more)
 
-### Community 368 - "Mazesta.Desktop (app layer cluster"
+### Community 369 - "Mazesta.Desktop (app layer cluster"
 Cohesion: 0.20
 Nodes (11): Mazesta.Desktop (app layer), Mazesta.Diagnostics (TestEngine, benchmarks), Mazesta.Diagnostics.Gpu (D3D12, DXR, DirectML), Mazesta.Monitoring (PollingEngine, HistoryStore), Mazesta.Persistence, Mazesta.Reporting, Portable Data folder, SensorEvidence (+3 more)
 
-### Community 375 - "mount cluster"
+### Community 374 - "mount cluster (2)"
 Cohesion: 0.27
 Nodes (9): mount(), applyVm(), loadHosts(), mb(), saveHosts(), setHibernate(), showPower(), showVm() (+1 more)
 
-### Community 376 - "Score cluster"
+### Community 375 - "Score cluster"
 Cohesion: 0.38
 Nodes (3): InternetQuality, InternetScores, InternetQualityTests
 
-### Community 378 - "Read cluster"
-Cohesion: 0.20
-Nodes (3): GpuAutoRules, InstalledProgram, InstalledPrograms
-
-### Community 379 - "ITrayController cluster"
-Cohesion: 0.22
-Nodes (3): ITrayController, TrayState, FakeTray
-
-### Community 385 - "FakeTestExecutor cluster"
+### Community 379 - "FakeTestExecutor cluster"
 Cohesion: 0.25
 Nodes (3): FakeTestExecutor, CallCount, Definition
 
-### Community 386 - "cpu-specs/build.ps cluster"
+### Community 380 - "cpu-specs/build.ps cluster"
 Cohesion: 0.25
 Nodes (5): CPU Specs Table Builder README, amd-raw.json (amd.com), cpu-specs.json, Health Checkup, intel-raw.json (Intel ARK)
 
-### Community 388 - "GpuShaders.cs cluster"
-Cohesion: 0.24
-Nodes (3): HashStressShader, RayTraceShader, VramPattern
+### Community 383 - "Slice 1 Implementation Plan (Skeleton +  cluster"
+Cohesion: 0.22
+Nodes (8): Slice 1 Implementation Plan (Skeleton + Sensors and Monitoring), Planned File Structure, Additive Deviations from the Spec (PollResult, extra roles, asInvoker Debug manifest), Task 1: Solution Skeleton and Build Configuration, Task 22: Hardware Tests, Idle Measurements, Publish, Slice Documentation, Tech Stack (.NET 10, WPF, LibreHardwareMonitorLib 0.9.6, xUnit), Slice 1 Acceptance Criteria, Performance Targets (<80 MB, <1 % CPU, <3 s)
 
-### Community 390 - "UpdateState cluster"
+### Community 384 - "Mazesta Connect WordPress plugin cluster (2)"
+Cohesion: 0.22
+Nodes (10): qrcode-generator 1.4.4 (qrcode.js), MazestaDesk.exe (staff program), MCP server for ChatGPT / Claude, OAuth 2.1 with PKCE and dynamic registration, Pairing by site sign-in (pair/start, pair/claim), Automatic service number R-n, Site key (mz_ + 48 hex), Staff API (/staff/...) (+2 more)
+
+### Community 385 - "Classify cluster (2)"
+Cohesion: 0.24
+Nodes (3): BenchmarkBreakWatch, Message, Mark
+
+### Community 386 - "UpdateState cluster"
 Cohesion: 0.20
 Nodes (9): UpdateState, Available, Checking, Downloading, Failed, Idle, Installing, Ready (+1 more)
 
-### Community 391 - "CpuBenchmark cluster"
-Cohesion: 0.29
-Nodes (3): CpuBenchmark, Component, Definition
-
-### Community 394 - "Op cluster"
+### Community 389 - "Op cluster"
 Cohesion: 0.20
 Nodes (10): Op, Arith, Check, Fill, Flip, Idle, Invert, Loop (+2 more)
 
-### Community 395 - "FakeLhmComputer cluster"
+### Community 390 - "FakeLhmComputer cluster"
 Cohesion: 0.20
 Nodes (3): FakeLhmComputer, Hardware, Roots
 
-### Community 397 - "Why the 3-D scene is heavy (9.5M triangl cluster"
+### Community 393 - "Why the 3-D scene is heavy (9.5M triangl cluster"
 Cohesion: 0.22
 Nodes (8): Graphics score = fps_gpu x 100, Overall score: weighted harmonic mean 0.75/0.15/0.10, RAM score probe (STREAM Triad + pointer chase), 3-D scene benchmark scoring (SceneScore), 3-D scene files and editing workflow (Blender to garden.mzscene), HLSL shaders compiled with compile-gpu-shaders.ps1, Frustum culling and game-style techniques, Why the 3-D scene is heavy (9.5M triangles)
 
-### Community 398 - "GardenCamera cluster"
+### Community 394 - "AppPaths (portable vs LocalAppData cluster (2)"
+Cohesion: 0.22
+Nodes (9): Slice 12 Verification (Web v2), Benchmark Records Comparison, Browser Preview Demo Host, Hardware Diagnostics Report (hardware-report.txt), Before/After Report Comparison, Slice 8 Verification (Design and Phase 1 Finish), Service Number, Final SMART Re-check (+1 more)
+
+### Community 395 - "GpuShaders.cs cluster"
+Cohesion: 0.33
+Nodes (3): HashStressShader, RayTraceShader, VramPatternShader
+
+### Community 397 - "GardenCamera cluster"
 Cohesion: 0.36
 Nodes (4): GardenCamera, Fixed, KeyFrames, Pinned
 
-### Community 401 - "NetVerdict cluster"
-Cohesion: 0.22
-Nodes (9): NetVerdict, Connected, DnsFails, NoAdapter, NoAddress, NoGateway, NoInternet, ProxyFails (+1 more)
-
-### Community 412 - "FrameRateSession cluster"
+### Community 407 - "FrameRateSession cluster"
 Cohesion: 0.29
 Nodes (5): FrameRateSession, Average, Max, Min, Samples
 
-### Community 417 - "TestLogEntry cluster"
-Cohesion: 0.25
-Nodes (6): TestLogEntry, TestLogLevel, Error, Info, Step, Warning
-
-### Community 418 - "TestProfiles cluster"
+### Community 412 - "TestProfiles cluster"
 Cohesion: 0.39
 Nodes (4): ProfileTest, TestProfile, TestProfiles, All
 
-### Community 421 - "Bench test gear design system cluster"
+### Community 414 - "Bench test gear design system cluster"
 Cohesion: 0.29
 Nodes (7): Bench test gear design system, Hatch for not-measured values, Part channel colours, State colour laws (pass/fail/warn), Vazirmatn and Archivo typography, Tehran modernist poster direction (earlier brief), Tehran modernist poster direction (surface contract)
 
-### Community 422 - "Mazesta.Hardware cluster"
+### Community 415 - "Mazesta.Hardware cluster"
 Cohesion: 0.29
 Nodes (7): Mazesta.Hardware, Mazesta.Tray (Mazesta Monitor), Fan/pump identification by 8s full-speed probe, PhoenixGuardian competitor review, RGB scene via OpenRGB server, Signed manifest self-update, WmiInventoryProvider
 
-### Community 423 - "LibreHardwareMonitorProvider cluster"
+### Community 416 - "LibreHardwareMonitorProvider cluster"
 Cohesion: 0.29
 Nodes (7): Administrator requirement for MSR sensors, Persian user guide, LibreHardwareMonitorProvider, ReadingValidator (zero is not a reading), Provider status decision table, CPU undervolt/PL via PawnIO not done yet, PawnIO driver
 
-### Community 424 - "Loc cluster"
+### Community 417 - "AGENTS.md (AI agent guide cluster (3)"
 Cohesion: 0.29
-Nodes (3): Loc, Culture, IsRtl
+Nodes (6): Benchmark comparison lists (benchdb), BenchmarkPeers (Aggregate, WithReferences), BenchmarkRecords.Effective, BenchmarkRecords.Headlines version, Overclock flag (separate list row), Reference result (median of references)
 
-### Community 427 - "families.js cluster"
+### Community 421 - "families.js cluster"
 Cohesion: 0.48
 Nodes (6): families(), famKey(), GENERIC, gist(), keyOf(), numbered()
 
-### Community 428 - "AiCatalog cluster"
-Cohesion: 0.33
-Nodes (4): AiCatalog, Models, Runtime, AiRuntime
-
-### Community 429 - "BoardPart cluster"
+### Community 422 - "BoardPart cluster"
 Cohesion: 0.29
 Nodes (7): BoardPart, Audio, Bios, Bluetooth, Chipset, Lan, Wireless
 
-### Community 430 - "Pattern cluster"
+### Community 423 - "Pattern cluster"
 Cohesion: 0.29
 Nodes (7): Pattern, Checker, Ones, Simple, Walk0, Walk1, Zeros
 
-### Community 431 - "RequestFocus cluster"
+### Community 424 - "RequestFocus cluster"
 Cohesion: 0.38
 Nodes (3): FocusRequest, MonitoringFocus, MonitoringFocusTests
 
-### Community 433 - "Tuning research cluster"
+### Community 426 - "Tuning research cluster"
 Cohesion: 0.40
 Nodes (4): Automatic tuning search (Mazesta.Core.Tuning), Tuning research, XMP/DOCP/EXPO set only in BIOS, GPU tuning NVIDIA-only via NVML
 
-### Community 437 - "BENCH cluster"
+### Community 432 - "BENCH cluster"
 Cohesion: 0.33
 Nodes (6): BENCH, demoDetail(), demoGap(), demoLast(), demoPeers(), spec()
 
-### Community 438 - "groupPanel cluster"
+### Community 433 - "groupPanel cluster"
 Cohesion: 0.53
 Nodes (6): groupPanel(), setShut(), sync(), keepShut(), shutKey(), shutSet()
 
-### Community 439 - "curveEditor cluster"
+### Community 434 - "curveEditor cluster"
 Cohesion: 0.47
 Nodes (6): clockAt(), curveEditor(), axes(), draw(), pin(), s()
 
-### Community 441 - "IClock cluster"
-Cohesion: 0.47
-Nodes (4): IClock, UtcNow, SystemClock, UtcNow
-
-### Community 443 - "TestEngineState cluster"
+### Community 435 - "TestEngineState cluster"
 Cohesion: 0.33
 Nodes (4): TestEngineState, Idle, Running, Stopped
 
-### Community 444 - "BenchmarkStatus cluster"
+### Community 436 - "Benchmark Records (2)"
 Cohesion: 0.33
-Nodes (6): BenchmarkStatus, Cancelled, Completed, Error, Failed, Unsupported
+Nodes (6): PeerPart, Cpu, Drive, Gpu, Memory, None
 
-### Community 445 - "Phase cluster"
+### Community 437 - "Phase cluster"
 Cohesion: 0.33
 Nodes (6): Phase, Bursts, Everyday, Idle, Light, Spikes
 
-### Community 448 - "LoadOutcome cluster"
-Cohesion: 0.33
-Nodes (6): LoadOutcome, Corrupt, Defaulted, Loaded, Migrated, LoadResult
-
-### Community 450 - "Persian-first localization and RTL cluster"
+### Community 439 - "Persian-first localization and RTL cluster"
 Cohesion: 0.50
 Nodes (5): Persian-first localization and RTL, Archivo font (Latin values), Vazirmatn font (Persian text), Archivo-OFL.txt (SIL OFL 1.1), Vazirmatn-OFL.txt (SIL OFL 1.1)
 
-### Community 451 - "Hardware matrix cluster"
+### Community 440 - "Hardware matrix cluster"
 Cohesion: 0.40
 Nodes (5): Dev box (i9-14900K, RTX 4090/3090, Z790), Hardware matrix, HWiNFO cross-check (±2 °C), Sensors LHM 0.9.6 does not expose, NVMe serial vs WMI NGUID mismatch
 
-### Community 456 - "Life cluster"
+### Community 441 - "THIRD-PARTY-NOTICES.md cluster (2)"
+Cohesion: 0.40
+Nodes (5): LibreHardwareMonitorLib (MPL-2.0), PawnIO kernel driver, Slice 1 verification record, Slice 13 web v3 verification, System-changing tools not applied (unit-tested only)
+
+### Community 442 - "AppPaths (portable vs LocalAppData cluster (3)"
+Cohesion: 0.60
+Nodes (4): Slice 3 Verification (Tray and Tests), Mazesta.Core.Health.HealthAlerts, ReportService, Tray Monitor (Mazesta.Tray)
+
+### Community 447 - "Life cluster"
 Cohesion: 0.40
 Nodes (5): Life, Firefly, Steam, WingLeft, WingRight
 
-### Community 457 - "Mode cluster"
+### Community 448 - "Mode cluster"
 Cohesion: 0.40
 Nodes (5): Mode, Floating, Flying, Gone, Resting
 
-### Community 458 - "WeatherLevel cluster"
+### Community 449 - "WeatherLevel cluster"
 Cohesion: 0.40
 Nodes (4): WeatherLevel, Bodies, Count, Leaves
 
-### Community 459 - "RgbConnect cluster"
+### Community 450 - "RegisterTweaks cluster (2)"
+Cohesion: 0.40
+Nodes (5): TweakState, Applied, NotApplied, Partial, Unknown
+
+### Community 451 - "RgbConnect cluster"
 Cohesion: 0.40
 Nodes (5): RgbConnect, Connected, NoServer, NotConnected, NotFound
 
-### Community 460 - "RgbHow cluster"
-Cohesion: 0.40
-Nodes (5): RgbHow, Native, Simulated, Skipped, Static
-
-### Community 464 - "jpeg cluster"
+### Community 454 - "jpeg cluster"
 Cohesion: 0.50
 Nodes (3): jpeg(), texture_parts(), plane()
 
-### Community 465 - "Mazesta.App (WebView2 host cluster"
+### Community 455 - "Mazesta.App (WebView2 host cluster"
 Cohesion: 0.50
 Nodes (4): Mazesta.App (WebView2 host), WebBridge (JSON bridge page to machine), WPF edition retired (tag wpf-edition-final), CheckupService
 
-### Community 467 - "Mazesta Test product landing page cluster"
+### Community 456 - "Mazesta Test product landing page cluster"
 Cohesion: 0.50
 Nodes (4): Release notes (Persian), Home dashboard widget page, Mazesta Test product landing page, Landing features: sensors, health test, benchmark, GPU tuning, fans/RGB, gaming, AI assistant, reports
 
-### Community 470 - "Reply cluster"
+### Community 459 - "Reply cluster"
 Cohesion: 0.50
 Nodes (4): Reply, NotOurs, Resolved, Wrong
 
-### Community 473 - "VRAM test heavier load (GpuVramExecutor cluster"
+### Community 462 - "VRAM test heavier load (GpuVramExecutor cluster"
 Cohesion: 0.67
 Nodes (3): Handoff 2026-10-12: Linux-built work awaiting real-machine runs, VRAM temperature diagnosis (Attention 96, Problem 104 C), VRAM test heavier load (GpuVramExecutor)
 
-### Community 476 - "RGB_DEVICES cluster"
+### Community 465 - "RGB_DEVICES cluster"
 Cohesion: 0.67
 Nodes (3): RGB_DEVICES(), rgbMode(), rgbState()
 
@@ -1906,13 +1885,13 @@ Nodes (3): RGB_DEVICES(), rgbMode(), rgbState()
   .impeccable/review/user-1024.png · relation: conceptually_related_to
 - `Numbered test queue: CPU matrix load, RAM data patterns, disk sequential write/read verify, disk random 4K, network latency/packet loss/jitter` → `Automatic tuning section (stepwise offset search under load with safety margin; text partly cut off)`  [AMBIGUOUS]
   .impeccable/review/tuning.png · relation: conceptually_related_to
-- `BUILD.md (how to build)` → `MazestaPrint (secretary print program)`  [AMBIGUOUS]
+- `MazestaPrint (secretary print program)` → `BUILD.md (how to build)`  [AMBIGUOUS]
   docs/BUILD.md · relation: references
 
 ## Knowledge Gaps
-- **1780 isolated node(s):** `UpdateKey`, `OverlaySignals`, `ClockOffset`, `Utilization`, `ReportPage` (+1775 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4181 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **247 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1794 isolated node(s):** `UpdateKey`, `OverlayCornerChoice`, `Line`, `ClockOffset`, `Utilization` (+1789 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 4287 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **238 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
@@ -1923,11 +1902,11 @@ _Questions this graph is uniquely positioned to answer:_
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
 - **What is the exact relationship between `Numbered test queue: CPU matrix load, RAM data patterns, disk sequential write/read verify, disk random 4K, network latency/packet loss/jitter` and `Automatic tuning section (stepwise offset search under load with safety margin; text partly cut off)`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **What is the exact relationship between `BUILD.md (how to build)` and `MazestaPrint (secretary print program)`?**
+- **What is the exact relationship between `MazestaPrint (secretary print program)` and `BUILD.md (how to build)`?**
   _Edge tagged AMBIGUOUS (relation: references) - confidence is low._
-- **Why does `PollingEngine` connect `Polling Engine` to `BenchmarkRunner cluster`, `ChartWindow cluster`, `GPU Scene and AI Namespaces`, `Web Bridge Methods`, `ReportService cluster`, `D3D12 Benchmarks`, `Hardware Providers`, `Build cluster`, `Overlay Page Model`, `Checkup Service`, `Read cluster`, `Overlay Service and Hotkeys`, `Benchmark Details`, `GPU Run Trace`, `TwoGpus cluster`, `Hardware Details Cache`, `LatestReading cluster`, `Build cluster`, `Notifier cluster`, `PollingEngineTests cluster`, `WebBridge cluster`, `MemoryFacts cluster`, `SensorId cluster`, `Build cluster`, `SettingsViewModel cluster`, `RegisterAi cluster`, `SystemInfoViewModel cluster`, `AppPaths cluster`, `AddDiagnostics cluster`, `Build cluster`, `TestExecutionRequest cluster`, `FanController cluster`?**
-  _High betweenness centrality (0.070) - this node is a cross-community bridge._
-- **Why does `Mazesta.Core.Hardware` connect `Core Hardware Namespaces` to `App Host and Bridge Imports`, `Diagnostics Namespaces`, `GPU Scene and AI Namespaces`, `Board Sensor Roles`, `NVML Interop`, `Desktop Services Namespaces`, `RunAsync cluster`, `Hardware Providers`, `IsVirtualBinding cluster`, `Sum cluster`, `Windows Diagnostics Imports`, `Sensor Units`, `GPU Run Trace`, `Visit cluster`, `WMI Hardware Inventory`, `ProviderStatus cluster`, `History Store`, `SensorKind cluster`, `SensorId cluster`, `Finding cluster`, `HardwareKind cluster`, `system_net cluster`, `Apply cluster`, `FakeSensorProvider cluster`, `SensorStatistics cluster`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
-- **Why does `CheckupService` connect `Checkup Service` to `Diagnostics Namespaces`, `Web Bridge Methods`, `ThermalSensor cluster`, `ReportService cluster`, `DriveHealth cluster`, `Polling Engine`, `Benchmark Details`, `GPU Run Trace`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `App self-update (from 0.7.0)` connect `AGENTS.md (AI agent guide cluster` to `App Host and Bridge Imports`, `Page UI and i18n Helpers`, `AGENTS.md (AI agent guide cluster (2)`?**
+  _High betweenness centrality (0.088) - this node is a cross-community bridge._
+- **Why does `PollingEngine` connect `Polling Engine` to `Hardware Providers`, `ChartWindow cluster`, `ReportService cluster`, `GPU Scene and AI Namespaces`, `TestExecutionRequest cluster (2)`, `SensorStatistics cluster`, `Overlay Page Model`, `AiFiles cluster`, `Web Bridge Methods`, `RgbEffectRunner cluster`, `Checkup Service`, `GPU Run Trace`, `Overlay Service and Hotkeys`, `WebBridge cluster`, `BenchmarkRunner cluster`, `Read cluster (4)`, `Hardware Details Cache`, `Build cluster (3)`, `Benchmark Details`, `TwoGpus cluster`, `PartSpecs cluster`, `Notifier cluster`, `Build cluster`, `FrameRateReading cluster`, `PollingEngineTests cluster`, `SensorId cluster`, `MemoryFacts cluster`, `Build cluster (4)`, `AddDiagnostics cluster`, `SettingsViewModel cluster`, `FanController cluster`, `Build cluster (2)`?**
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+- **Why does `Mazesta.Core.Hardware` connect `Hardware Providers` to `App Host and Bridge Imports`, `Board Sensor Roles`, `Diagnostics Namespaces`, `RunAsync cluster (2)`, `NVML Interop`, `GPU Scene and AI Namespaces`, `SensorStatistics cluster`, `IsVirtualBinding cluster`, `Diagnostics Namespaces (2)`, `App Host and Bridge Imports (2)`, `GPU Run Trace`, `Sum cluster`, `system_net cluster`, `Visit cluster`, `FakeSensorProvider cluster`, `SensorKind cluster`, `WMI Hardware Inventory`, `SensorId cluster`, `History Store`, `HardwareKind cluster`, `Sensor Units`, `Core Hardware Namespaces`, `Finding cluster`, `Apply cluster`?**
+  _High betweenness centrality (0.048) - this node is a cross-community bridge._
