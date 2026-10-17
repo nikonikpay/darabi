@@ -20,7 +20,7 @@ const prefs = {
 };
 
 /* ---------- shell and routing ---------- */
-const NAV = [['#/', 'خانه', () => true], ['#/customers', 'مشتری‌ها', () => can('customers')], ['#/builds', 'سیستم‌های نو', () => can('builds')], ['#/jobs', 'سرویس‌ها', () => can('jobs')], ['#/reports', 'گزارش‌های تست', () => can('tests')]];
+const NAV = [['#/', 'خانه', () => true], ['#/customers', 'مشتری‌ها', () => can('customers')], ['#/builds', 'سیستم‌های نو', () => can('builds')], ['#/jobs', 'سرویس‌ها', () => can('jobs')], ['#/stock', 'انبار و کالاها', () => can('stock')], ['#/purchases', 'فاکتورهای خرید', () => can('stock')], ['#/reports', 'گزارش‌های تست', () => can('tests')]];
 
 function showLogin(msg) {
   const app = clear($('#app')); document.body.classList.remove('in');
@@ -56,7 +56,7 @@ async function globalFind(q) {
   if (q.length < 2) return;
   try {
     const r = await GET('staff/find' + qs({ q }));
-    const exact = [...r.jobs.map(x => ['job', x]), ...r.builds.map(x => ['build', x])].filter(([, x]) => x.service_no.toLowerCase() === q.toLowerCase());
+    const exact = [...r.jobs.map(x => ['job', x]), ...r.builds.map(x => ['build', x])].filter(([, x]) => [x.service_no, x.number].some(n => n && n.toLowerCase() === q.toLowerCase()));
     if (exact.length === 1) { $('#gsearch').value = ''; location.hash = '#/' + exact[0][0] + '/' + exact[0][1].id; return; }
     if (!exact.length && r.customers.length === 1 && !r.jobs.length && !r.builds.length) { $('#gsearch').value = ''; location.hash = '#/customer/' + r.customers[0].id; return; }
     location.hash = '#/find' + qs({ q });
@@ -67,6 +67,7 @@ function parseHash() { const raw = location.hash.replace(/^#/, '') || '/'; const
 
 const routes = [
   [/^\/$/, () => viewHome()], [/^\/find$/, (m, q) => viewFind(q)], [/^\/customers$/, (m, q) => viewCustomers(q)], [/^\/customer\/(new|\d+)$/, (m, q) => viewCustomer(m[1], q)],
+  [/^\/stock$/, (m, q) => viewStock(q)], [/^\/product\/(new|\d+)$/, (m, q) => viewProduct(m[1], q)], [/^\/purchases$/, (m, q) => viewPurchases(q)], [/^\/purchase\/(new|\d+)$/, (m, q) => viewPurchase(m[1], q)],
   [/^\/builds$/, (m, q) => viewList('build', q)], [/^\/jobs$/, (m, q) => viewList('job', q)], [/^\/build\/(new|\d+)$/, (m, q) => viewBuild(m[1], q)], [/^\/job\/(new|\d+)$/, (m, q) => viewJob(m[1], q)], [/^\/reports$/, (m, q) => viewReports(q)],
 ];
 async function route() {
@@ -121,10 +122,17 @@ async function viewFind(q) {
   if (r.customers.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'مشتریان'), table(['نام', 'موبایل'], r.customers.map(c => clickRow('#/customer/' + c.id, [c.name, h('span', { class: 'lat' }, c.mobile)])))));
   if (r.builds.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سیستم‌های نو'), buildsTable(r.builds)));
   if (r.jobs.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سرویس‌ها'), jobsTable(r.jobs)));
-  if (!r.customers.length && !r.builds.length && !r.jobs.length) out.append(h('p', { class: 'muted' }, 'چیزی پیدا نشد.'));
+  const sq = q.get('q') || ''; let tr = null;
+  if (sq.length >= 3) { try { tr = await GET('staff/serial' + qs({ q: sq })); } catch (e) { } }
+  const trace = tr ? [...tr.bought.map(x => clickRow('#/purchase/' + x.purchase_id, ['خرید', h('span', { class: 'lat' }, x.serial), x.product_name, (x.vendor_name || '') + ' — ' + (x.invoice_no || '')])),
+    ...tr.builds.map(x => clickRow('#/build/' + x.id, ['سیستم نو', h('span', { class: 'lat' }, x.serial), x.model, x.customer_name + ' — ' + (x.invoice_no || x.service_no || '')])),
+    ...tr.jobs.map(x => clickRow('#/job/' + x.id, [x.kind === 'in' ? 'قطعهٔ مشتری' : 'سرویس', h('span', { class: 'lat' }, x.serial), x.part, x.customer_name + ' — ' + x.service_no])),
+    ...tr.ships.map(x => h('tr', {}, h('td', {}, 'گارانتی'), h('td', {}, h('span', { class: 'lat' }, x.serial)), h('td', {}, x.part_name), h('td', {}, x.vendor_name || '')))] : [];
+  if (trace.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'ردیابی سریال'), table(['کجا', 'سریال', 'قطعه', 'پرونده'], trace)));
+  if (!r.customers.length && !r.builds.length && !r.jobs.length && !trace.length) out.append(h('p', { class: 'muted' }, 'چیزی پیدا نشد.'));
   return out;
 }
-const buildsTable = rows => table(['شماره', 'مشتری', 'سیستم', 'فاکتور', 'وضعیت', 'تاریخ'], rows.map(b => clickRow('#/build/' + b.id, [h('b', { class: 'lat' }, b.service_no), b.customer_name || '', b.title, h('span', { class: 'lat' }, b.invoice_no), pill(b.statusText, statusKind(b.status)), h('span', { class: 'lat' }, b.sold_at_j)])));
+const buildsTable = rows => table(['فاکتور', 'مشتری', 'سیستم', 'نوع', 'وضعیت', 'تاریخ'], rows.map(b => clickRow('#/build/' + b.id, [h('b', { class: 'lat' }, b.number), b.customer_name || '', b.title, b.deviceText || '', pill(b.statusText, statusKind(b.status)), h('span', { class: 'lat' }, b.sold_at_j)])));
 const jobsTable = rows => table(['شماره', 'مشتری', 'دستگاه', 'وضعیت', 'پذیرش', 'مبلغ'], rows.map(j => clickRow('#/job/' + j.id, [h('b', { class: 'lat' }, j.service_no), j.customer_name || '', j.device, pill(j.statusText, statusKind(j.status)), h('span', { class: 'lat' }, j.received_at_j), j.total != null ? money(j.total) : ''])));
 
 async function viewList(kind, q) {
@@ -187,41 +195,72 @@ function customerPicker(cur, locked) {
 
 /* ---------- editable row lists (parts, payments) ---------- */
 function rowsEditor(cols, rows, o) {
-  o = o || {}; const body = h('tbody'), ro = !!o.readOnly;
+  o = o || {}; const body = h('tbody'), ro = !!o.readOnly, picks = cols.some(c => c.type === 'product');
   const add = r => {
-    const cells = cols.map(c => {
+    const tr = h('tr', { 'data-pid': r && r.product_id ? r.product_id : '' });
+    cols.forEach(c => {
       const v = r ? r[c.k] : (c.def == null ? '' : c.def);
-      const inp = c.type === 'select' ? select(c.k, c.opts, v || c.def, { disabled: ro }) : c.type === 'check' ? h('input', { type: 'checkbox', name: c.k, checked: !!v, disabled: ro }) :
-        h('input', { type: c.type === 'num' ? 'text' : 'text', inputmode: c.type === 'num' ? 'numeric' : null, name: c.k, value: v == null ? '' : v, dir: c.ltr || c.type === 'num' ? 'ltr' : null, readOnly: ro || c.readOnly, 'aria-label': c.label });
-      return h('td', { class: c.type === 'check' ? 'c' : '' }, inp);
+      const inp = c.type === 'product' ? productInput(c, v, tr, ro) : c.type === 'select' ? select(c.k, c.opts, v || c.def, { disabled: ro }) : c.type === 'check' ? h('input', { type: 'checkbox', name: c.k, checked: !!v, disabled: ro }) :
+        h('input', { type: 'text', inputmode: c.type === 'num' ? 'numeric' : null, name: c.k, value: v == null ? '' : v, dir: c.ltr || c.type === 'num' ? 'ltr' : null, readOnly: ro || c.readOnly, 'aria-label': c.label });
+      tr.append(h('td', { class: c.type === 'check' ? 'c' : '' }, inp));
     });
-    const tr = h('tr', {}, cells, ro ? null : h('td', { class: 'c' }, h('button', { type: 'button', class: 'x', 'aria-label': 'حذف ردیف', onclick: () => { tr.remove(); o.onchange && o.onchange(); } }, '×')));
+    if (!ro) tr.append(h('td', { class: 'c' }, h('button', { type: 'button', class: 'x', 'aria-label': 'حذف ردیف', onclick: () => { tr.remove(); o.onchange && o.onchange(); } }, '×')));
     if (o.onchange) tr.addEventListener('input', o.onchange); body.append(tr);
   };
   (rows || []).forEach(add);
   const el = h('div', { class: 'tablewrap rows' }, h('table', {}, h('thead', {}, h('tr', {}, cols.map(c => h('th', {}, c.label)), ro ? null : h('th', {}))), body), ro ? null : h('button', { type: 'button', class: 'btn sm', onclick: () => add(null) }, '+ ردیف'));
-  const get = () => [...body.children].map(tr => { const r = {}; cols.forEach((c, i) => { const i2 = tr.children[i].firstChild; r[c.k] = c.type === 'check' ? i2.checked : i2.value; }); return r; });
+  const get = () => [...body.children].map(tr => { const r = {}; cols.forEach((c, i) => { const i2 = tr.children[i].firstChild; r[c.k] = c.type === 'check' ? i2.checked : i2.value; }); if (picks) r.product_id = +tr.dataset.pid || null; return r; });
   return { el, get };
 }
 
+/** The name box of a part row that picks from the stock: it suggests the site's products as one types; the chosen one's id rides on the row, and the row's empty fields
+ *  named in c.fill (row field: product field) are filled from it (c.always: even when not empty). Typing a name that is not a product leaves the row free (no stock link). */
+function productInput(c, v, tr, ro) {
+  const dl = h('datalist', { id: 'pl' + Math.random().toString(36).slice(2) }), found = new Map();
+  const inp = h('input', { type: 'text', name: c.k, value: v == null ? '' : v, list: dl.id, readOnly: ro, 'aria-label': c.label, placeholder: 'از انبار…', autocomplete: 'off' });
+  const pick = () => {
+    const p = found.get(inp.value.trim()); tr.dataset.pid = p ? p.id : '';
+    if (!p) return;
+    const put = (map, always) => Object.entries(map || {}).forEach(([k, pk]) => { const el = tr.querySelector(`[name="${k}"]`); if (el && p[pk] != null && (always || !el.value)) el.value = p[pk]; });
+    put(c.always, true); put(c.fill, false); tr.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  inp.addEventListener('input', debounce(async () => {
+    const q = inp.value.trim(); if (found.has(q)) return pick();
+    tr.dataset.pid = ''; if (q.length < 2) return;
+    try {
+      const r = await GET('staff/products' + qs({ q, per: 15 })); clear(dl); found.clear();
+      r.items.forEach(p => { found.set(p.name, p); dl.append(h('option', { value: p.name }, 'موجودی ' + p.stock + (p.sell_price != null ? ' — ' + money(p.sell_price) : ''))); });
+      if (found.has(inp.value.trim())) pick();
+    } catch (e) { }
+  }, 250));
+  return [inp, dl];
+}
+
+const mediaBox = (links, ro) => area('media', (links || []).join('\n'), { readOnly: ro, dir: 'ltr', rows: 2, placeholder: 'https://t.me/…  (هر لینک در یک خط)' });
+const mediaOf = el => el.value.split(/\s+/).filter(Boolean);
+const mediaLinks = links => (links || []).length ? h('div', { class: 'row' }, links.map((u, i) => h('a', { href: u, target: '_blank', rel: 'noopener' }, 'لینک ' + (i + 1)))) : null;
+const priceNum = r => { for (const k of ['sell_price', 'buy_price', 'unit_price', 'unit_cost', 'qty', 'warranty_months']) if (k in r) r[k] = digits(r[k]).replace(/[^\d]/g, ''); return r; };
+
 /* ---------- build (a new computer) ---------- */
 async function viewBuild(id, q) {
-  const isNew = id === 'new'; let b = { title: '', invoice_no: '', sold_at: today(), status: 'queue', notes: '', parts: [], report_id: '' }, cust = null;
+  const isNew = id === 'new'; let b = { title: '', invoice_no: '', sold_at: today(), status: 'queue', notes: '', parts: [], report_id: '', device_type: 'system', media: [] }, cust = null;
   if (!isNew) { b = await GET('staff/builds/' + id); cust = { id: b.customer_id, name: b.customer_name, mobile: b.customer_mobile }; }
   else if (q.get('cid')) { const r = await GET('staff/customers/' + q.get('cid')); cust = r.customer; }
   const ro = !can('builds', 2), picker = customerPicker(cust, !isNew);
-  const f = { title: text('title', b.title, { readOnly: ro, placeholder: 'مثلاً: سیستم گیمینگ ۵۶۰۰ / ۳۰۶۰' }), invoice: text('invoice_no', b.invoice_no, { readOnly: ro, dir: 'ltr' }), sold: h('input', { type: 'date', name: 'sold_at', value: b.sold_at, readOnly: ro }),
+  const f = { title: text('title', b.title, { readOnly: ro, placeholder: 'مثلاً: سیستم گیمینگ ۵۶۰۰ / ۳۰۶۰' }), invoice: text('invoice_no', b.invoice_no, { readOnly: ro, dir: 'ltr', required: isNew }), sold: h('input', { type: 'date', name: 'sold_at', value: b.sold_at, readOnly: ro }),
+    dtype: select('device_type', S.cfg.deviceTypes || {}, b.device_type || 'system', { disabled: ro }), media: mediaBox(b.media, ro),
     status: select('status', S.cfg.buildStatuses, b.status, { disabled: ro && !(can('tests', 2) && can('builds')) }), notes: area('notes', b.notes, { readOnly: ro }) };
   const cat = Object.assign({}, S.cfg.categories);
-  const parts = rowsEditor([{ k: 'category', label: 'نوع', type: 'select', opts: cat, def: 'other' }, { k: 'model', label: 'مدل' }, { k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' },
-    { k: 'vendor', label: 'تأمین‌کننده / گارانتی' }, { k: 'has_box', label: 'جعبه', type: 'check' }, { k: 'qc', label: 'تست شد', type: 'check' }], b.parts, { readOnly: ro });
+  const parts = rowsEditor([{ k: 'category', label: 'نوع', type: 'select', opts: cat, def: 'other' }, { k: 'model', label: 'مدل (از انبار)', type: 'product', always: { category: 'category' }, fill: { sell_price: 'sell_price', buy_price: 'buy_price', warranty_months: 'warranty_months' } },
+    { k: 'serial', label: 'سریال', ltr: true }].concat(can('payments') ? [{ k: 'sell_price', label: 'قیمت فروش', type: 'num', readOnly: !can('payments', 2) }] : []).concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', readOnly: !S.cfg.costEdit }] : [])
+    .concat([{ k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }, { k: 'vendor', label: 'تأمین‌کننده / گارانتی' }, { k: 'has_box', label: 'جعبه', type: 'check' }, { k: 'qc', label: 'تست شد', type: 'check' }]), b.parts, { readOnly: ro });
   let force = false;
   const save = async e => {
     e.preventDefault(); const bad = picker.error(); if (bad) return toast(bad, 'err');
-    const body = Object.assign({ id: isNew ? 0 : b.id, updated: b.updated, title: f.title.value, invoice_no: digits(f.invoice.value), sold_at: f.sold.value, status: f.status.value, notes: f.notes.value, force }, picker.body());
-    if (isNew || can('builds', 2)) body.parts = parts.get().map(p => Object.assign(p, { warranty_months: digits(p.warranty_months) }));
+    const body = Object.assign({ id: isNew ? 0 : b.id, updated: b.updated, title: f.title.value, invoice_no: digits(f.invoice.value), sold_at: f.sold.value, status: f.status.value, notes: f.notes.value, device_type: f.dtype.value, media: mediaOf(f.media), force }, picker.body());
+    if (isNew || can('builds', 2)) body.parts = parts.get().map(priceNum);
     try {
-      const r = await POST('staff/builds', body); toast(isNew ? 'ثبت شد: ' + r.service_no : 'ذخیره شد.'); (r.warnings || []).forEach(w => toast(w, 'err'));
+      const r = await POST('staff/builds', body); toast(isNew ? 'ثبت شد: فاکتور ' + r.number : 'ذخیره شد.'); (r.warnings || []).forEach(w => toast(w, 'err'));
       if (isNew) location.hash = '#/build/' + r.id; else route();
     } catch (err) {
       if (err.status === 409 && err.data && err.data.duplicate) { if (await ask(err.message + ' با همین شماره ثبت شود؟', 'ثبت کن')) { force = true; save(e); } } else if (err.status === 409) { toast(err.message, 'err'); if (await ask('رکورد را دوباره بارگذاری کنم؟ (تغییرات این صفحه از بین می‌رود)', 'بارگذاری')) route(); } else fail(err);
@@ -229,33 +268,34 @@ async function viewBuild(id, q) {
   };
   const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => printLabel('build', b.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('build', b.id) }, 'پیامک رسید'),
     can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('build', b) }, b.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null);
-  return h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.service_no}`, actions),
-    h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('عنوان سیستم', f.title), field('شمارهٔ فاکتور حسابداری', f.invoice, 'به شمارهٔ فاکتور برای پیدا کردن سریع'), field('تاریخ فروش', f.sold), field('وضعیت', f.status),
-      isNew ? null : field('شمارهٔ سرویس', h('input', { value: b.service_no, readOnly: true, dir: 'ltr' })), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el),
-      field('یادداشت', f.notes, '', 'wide'), ro && !(can('tests', 2) && can('builds')) ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
+  return h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.number}`, actions),
+    h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('عنوان سیستم', f.title), field('نوع دستگاه', f.dtype), field('شمارهٔ فاکتور حسابداری', f.invoice, 'سیستم نو با شمارهٔ فاکتور و نام خریدار شناخته می‌شود'), field('تاریخ فروش', f.sold), field('وضعیت', f.status),
+      b.service_no ? field('شمارهٔ سرویس (قدیمی)', h('input', { value: b.service_no, readOnly: true, dir: 'ltr' })) : null, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el),
+      field('لینک عکس و فیلم در تلگرام', f.media, '', 'wide'), mediaLinks(b.media), field('یادداشت', f.notes, '', 'wide'), ro && !(can('tests', 2) && can('builds')) ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
 }
 
 /* ---------- job (a service) ---------- */
 async function viewJob(id, q) {
-  const isNew = id === 'new'; let j = { device: '', complaint: '', work_done: '', status: 'received', received_at: today(), due_at: '', invoice_no: '', notes: '', parts: [], recv: [], pays: [], labor_price: 0, discount: 0, paid: 0, is_mazesta: false, has_warranty: false }, cust = null;
+  const isNew = id === 'new'; let j = { device: '', device_type: '', media: [], complaint: '', work_done: '', status: 'received', received_at: today(), due_at: '', invoice_no: '', notes: '', parts: [], recv: [], pays: [], labor_price: 0, discount: 0, paid: 0, is_mazesta: false, has_warranty: false }, cust = null;
   if (!isNew) { j = await GET('staff/jobs/' + id); cust = { id: j.customer_id, name: j.customer_name, mobile: j.customer_mobile }; }
   else if (q.get('cid')) { const r = await GET('staff/customers/' + q.get('cid')); cust = r.customer; }
   const ro = !can('jobs', 2), money1 = can('payments'), money2 = can('payments', 2), picker = customerPicker(cust, !isNew);
   const sum = h('b', { class: 'lat' }, ''), recalc = () => {
     const n = v => +digits(v).replace(/[^\d]/g, '') || 0; let t = n(f.labor.value) - n(f.discount.value);
     parts.get().forEach(p => { t += (n(p.qty) || 1) * n(p.unit_price); }); sum.textContent = money(t); };
-  const f = { device: text('device', j.device, { readOnly: ro }), complaint: area('complaint', j.complaint, { readOnly: ro, rows: 3 }), work: area('work_done', j.work_done, { rows: 3, readOnly: ro }), status: select('status', S.cfg.jobStatuses, j.status, { disabled: ro }),
+  const f = { device: text('device', j.device, { readOnly: ro }), dtype: select('device_type', Object.assign({ '': '—' }, S.cfg.deviceTypes || {}), j.device_type || '', { disabled: ro }), media: mediaBox(j.media, ro), complaint: area('complaint', j.complaint, { readOnly: ro, rows: 3 }), work: area('work_done', j.work_done, { rows: 3, readOnly: ro }), status: select('status', S.cfg.jobStatuses, j.status, { disabled: ro }),
     recv: h('input', { type: 'date', value: j.received_at || today(), readOnly: ro }), due: h('input', { type: 'date', value: j.due_at || '', readOnly: ro }), invoice: text('invoice_no', j.invoice_no, { dir: 'ltr', readOnly: ro }),
     labor: text('labor', j.labor_price || '', { dir: 'ltr', readOnly: !money2, oninput: () => recalc() }), discount: text('discount', j.discount || '', { dir: 'ltr', readOnly: !money2, oninput: () => recalc() }), paid: text('paid', j.paid || '', { dir: 'ltr', readOnly: !money2 }),
     notes: area('notes', j.notes, { readOnly: ro }), maz: check('is_mazesta', j.is_mazesta, 'دستگاه از مازستا خریداری شده'), war: check('has_warranty', j.has_warranty, 'در گارانتی') };
-  const partCols = [{ k: 'name', label: 'قطعهٔ اضافه‌شده' }, { k: 'qty', label: 'تعداد', type: 'num', def: 1 }].concat(money1 ? [{ k: 'unit_price', label: 'قیمت واحد', type: 'num', readOnly: !money2 }] : []).concat([{ k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }]);
+  const partCols = [{ k: 'name', label: 'قطعهٔ اضافه‌شده (از انبار)', type: 'product', fill: { unit_price: 'sell_price', buy_price: 'buy_price', warranty_months: 'warranty_months' } }, { k: 'qty', label: 'تعداد', type: 'num', def: 1 }]
+    .concat(money1 ? [{ k: 'unit_price', label: 'قیمت واحد', type: 'num', readOnly: !money2 }] : []).concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', readOnly: !S.cfg.costEdit }] : []).concat([{ k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }]);
   const parts = rowsEditor(partCols, j.parts, { readOnly: ro, onchange: recalc });
   const recv = rowsEditor([{ k: 'name', label: 'قطعه / لوازمی که مشتری آورده' }, { k: 'serial', label: 'سریال', ltr: true }, { k: 'has_box', label: 'جعبه', type: 'check' }], j.recv, { readOnly: ro });
   const pays = money1 ? rowsEditor([{ k: 'amount', label: 'مبلغ', type: 'num' }, { k: 'account', label: 'حساب / کارت' }, { k: 'tx', label: 'شمارهٔ پیگیری', ltr: true }, { k: 'holder', label: 'صاحب کارت' }], j.pays, { readOnly: !money2 }) : null;
-  const fixNum = r => Object.assign(r, { qty: digits(r.qty), unit_price: digits(r.unit_price), warranty_months: digits(r.warranty_months) });
+  const fixNum = priceNum;
   const save = async e => {
     e.preventDefault(); const bad = picker.error(); if (bad) return toast(bad, 'err');
-    const body = Object.assign({ id: isNew ? 0 : j.id, updated: j.updated, device: f.device.value, complaint: f.complaint.value, work_done: f.work.value, status: f.status.value, received_at: f.recv.value, due_at: f.due.value, invoice_no: digits(f.invoice.value), notes: f.notes.value,
+    const body = Object.assign({ id: isNew ? 0 : j.id, updated: j.updated, device: f.device.value, device_type: f.dtype.value, media: mediaOf(f.media), complaint: f.complaint.value, work_done: f.work.value, status: f.status.value, received_at: f.recv.value, due_at: f.due.value, invoice_no: digits(f.invoice.value), notes: f.notes.value,
       is_mazesta: $('input', f.maz).checked, has_warranty: $('input', f.war).checked, parts: parts.get().map(fixNum), recv: recv.get() }, picker.body());
     if (money2) { Object.assign(body, { labor_price: digits(f.labor.value), discount: digits(f.discount.value), paid: digits(f.paid.value), pays: pays.get().map(p => Object.assign(p, { amount: digits(p.amount) })) }); }
     try { const r = await POST('staff/jobs', body); toast(isNew ? 'ثبت شد: ' + r.service_no : 'ذخیره شد.'); if (isNew) { S.after = () => offerPrint(r); location.hash = '#/job/' + r.id; } else route(); }
@@ -264,11 +304,11 @@ async function viewJob(id, q) {
   const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => printLabel('job', j.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => printReceipt(j) }, 'چاپ رسید'),
     h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('job', j.id) }, 'پیامک رسید'), can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('job', j) }, j.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null);
   const el = h('div', {}, title(isNew ? 'پذیرش سرویس' : `سرویس ${j.service_no}`, actions),
-    h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('دستگاه', f.device, 'مثلاً: لپ‌تاپ ایسوس / کیس / کارت گرافیک'), field('وضعیت', f.status), field('تاریخ پذیرش', f.recv), field('تاریخ قول تحویل', f.due), field('شمارهٔ فاکتور', f.invoice),
+    h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('نوع دستگاه', f.dtype), field('دستگاه', f.device, 'مثلاً: لپ‌تاپ ایسوس / کیس / کارت گرافیک'), field('وضعیت', f.status), field('تاریخ پذیرش', f.recv), field('تاریخ قول تحویل', f.due), field('شمارهٔ فاکتور', f.invoice),
       h('div', { class: 'checks' }, f.maz, f.war), field('مشکل اعلام‌شده', f.complaint, '', 'wide'), field('کار انجام‌شده', f.work, '', 'wide'),
       h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'لوازمی که مشتری تحویل داده'), recv.el), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات اضافه‌شده'), parts.el),
       money1 ? h('div', { class: 'wide money' }, field('اجرت', f.labor), field('تخفیف', f.discount), field('پرداخت‌شده', f.paid), h('div', { class: 'total' }, 'جمع: ', sum), pays ? h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'پرداخت‌ها'), pays.el) : null) : null,
-      field('یادداشت داخلی', f.notes, '', 'wide'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
+      field('لینک عکس و فیلم در تلگرام', f.media, '', 'wide'), mediaLinks(j.media), field('یادداشت داخلی', f.notes, '', 'wide'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
   recalc(); return el;
 }
 function offerPrint(job) {
@@ -310,12 +350,12 @@ function printReceipt(j) {
 
 /* ---------- test reports ---------- */
 async function reportDialog(kind, rec) {
-  modal('گزارش تست ' + rec.service_no, async (body, close) => {
+  modal('گزارش تست ' + (rec.number || rec.service_no), async (body, close) => {
     const list = h('div', { class: 'results tall' }), view = h('div', { class: 'rview' }, h('p', { class: 'muted' }, 'گزارشی را انتخاب کنید.'));
     const load = async (qv) => {
       clear(list).append(h('small', { class: 'muted' }, '…'));
       try {
-        const r = await GET('staff/reports' + qs({ service: rec.service_no, q: qv })); clear(list);
+        const r = await GET('staff/reports' + qs({ service: rec.number || rec.service_no, q: qv })); clear(list);
         if (!r.items.length) list.append(h('small', { class: 'muted' }, 'گزارشی پیدا نشد.'));
         r.items.forEach(x => list.append(h('button', { type: 'button', class: 'opt' + (x.id === rec.report_id ? ' on' : ''), onclick: () => show(x) }, x.match ? '★ ' : '', h('b', { class: 'lat' }, x.service || '—'), ' ', x.device || x.machine, h('small', { class: 'muted' }, ' ' + (x.created || '').slice(0, 10) + ' · ' + x.verdict))));
       } catch (e) { fail(e); }
@@ -337,6 +377,73 @@ async function viewReports(q) {
   const r = await GET('staff/reports' + qs({ q: q.get('q') })); const view = h('div', { class: 'rview' }, h('p', { class: 'muted' }, 'گزارشی را انتخاب کنید.'));
   const list = h('div', { class: 'results tall' }, r.items.map(x => h('button', { class: 'opt', onclick: async () => { try { const d = await GET('staff/reports/' + x.id); clear(view).append(h('iframe', { sandbox: '', srcdoc: d.html, title: 'گزارش' })); } catch (e) { fail(e); } } }, h('b', { class: 'lat' }, x.service || '—'), ' ', x.device || x.machine, h('small', { class: 'muted' }, ' ' + (x.created || '').slice(0, 10) + ' · ' + x.verdict))));
   return h('div', {}, title('گزارش‌های تست'), filterBar(q, '#/reports', null, 'شمارهٔ سرویس، دستگاه…'), h('div', { class: 'split panel' }, list, view));
+}
+
+/* ---------- stock: products, their history, purchase invoices ---------- */
+const stockPill = n => pill(n + ' عدد', n > 0 ? 'ok' : n < 0 ? 'bad' : '');
+async function viewStock(q) {
+  const page = Math.max(1, +q.get('page') || 1), r = await GET('staff/products' + qs({ q: q.get('q'), instock: q.get('instock'), page }));
+  const hrefOf = p => { const x = new URLSearchParams(q); x.set('page', p); return '#/stock?' + x; };
+  const only = h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: q.get('instock') === '1', onchange: e => { const x = new URLSearchParams(q); if (e.target.checked) x.set('instock', '1'); else x.delete('instock'); x.delete('page'); location.hash = '#/stock?' + x; } }), 'فقط موجودها');
+  return h('div', {}, title('انبار و کالاها', can('stock', 2) ? h('a', { class: 'btn', href: '#/purchase/new' }, '+ فاکتور خرید') : null, can('stock', 2) ? h('a', { class: 'btn primary', href: '#/product/new' }, '+ کالا') : null),
+    h('div', { class: 'row' }, filterBar(q, '#/stock', null, 'نام، برند، پارت‌نامبر…'), only),
+    table(['کالا', 'دسته', 'موجودی', 'قیمت فروش'].concat(S.cfg.costSeen ? ['قیمت خرید'] : []), r.items.map(p => clickRow('#/product/' + p.id, [p.name, p.categoryText, stockPill(p.stock), money(p.sell_price)].concat(S.cfg.costSeen ? [money(p.buy_price)] : [])))),
+    pager(r.total, r.per, page, hrefOf));
+}
+
+async function viewProduct(id) {
+  const isNew = id === 'new'; let r = { product: { name: '', category: 'other', brand: '', sku: '', sell_price: null, buy_price: null, warranty_months: null, notes: '' }, bought: [], used: [], totals: null };
+  if (!isNew) r = await GET('staff/products/' + id);
+  const p = r.product, ro = !can('stock', 2), f = {
+    name: text('name', p.name, { readOnly: ro, required: true }), category: select('category', S.cfg.categories, p.category, { disabled: ro }), brand: text('brand', p.brand, { readOnly: ro }), sku: text('sku', p.sku, { readOnly: ro, dir: 'ltr' }),
+    sell: text('sell_price', p.sell_price, { readOnly: ro, dir: 'ltr' }), buy: S.cfg.costSeen ? text('buy_price', p.buy_price, { readOnly: ro || !S.cfg.costEdit, dir: 'ltr' }) : null, w: text('warranty_months', p.warranty_months, { readOnly: ro, dir: 'ltr' }), notes: text('notes', p.notes, { readOnly: ro }) };
+  const save = async e => {
+    e.preventDefault();
+    const body = { id: isNew ? 0 : p.id, updated: p.updated, name: f.name.value, category: f.category.value, brand: f.brand.value, sku: f.sku.value, sell_price: digits(f.sell.value), warranty_months: digits(f.w.value), notes: f.notes.value };
+    if (f.buy && S.cfg.costEdit) body.buy_price = digits(f.buy.value);
+    try { const s = await POST('staff/products', body); toast('ذخیره شد.'); if (isNew) location.hash = '#/product/' + s.id; else route(); } catch (err) { fail(err); }
+  };
+  const out = h('div', {}, title(isNew ? 'کالای تازه' : p.name, !isNew && can('stock', 2) ? h('a', { class: 'btn', href: '#/purchase/new?pid=' + p.id }, '+ خرید این کالا') : null),
+    r.totals ? h('div', { class: 'cards' }, [['موجودی', stockPill(r.totals.stock)], ['خریده‌شده', r.totals.bought], ['به‌کاررفته', r.totals.used]].concat(r.totals.spent != null ? [['جمع خرید', money(r.totals.spent)]] : []).concat(r.totals.sold != null ? [['جمع فروش', money(r.totals.sold)]] : [])
+      .map(([l, v]) => h('div', { class: 'card' }, h('b', {}, v), h('span', {}, l)))) : null,
+    h('form', { class: 'panel grid', onsubmit: save }, field('نام کالا', f.name, '', 'wide'), field('دسته', f.category), field('برند', f.brand), field('پارت‌نامبر / بارکد', f.sku), field('قیمت فروش', f.sell), f.buy ? field('قیمت خرید', f.buy, 'با هر فاکتور خرید به‌روز می‌شود') : null,
+      field('گارانتی (ماه)', f.w), field('یادداشت', f.notes, '', 'wide'), h('p', { class: 'muted wide' }, 'موجودی دستی وارد نمی‌شود: از فاکتورهای خرید و قطعه‌های به‌کاررفته حساب می‌شود.'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
+  if (r.bought.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'از کجا خریده‌ایم'), table(['تاریخ', 'فروشنده', 'فاکتور', 'تعداد', 'قیمت واحد', 'سریال‌ها'],
+    r.bought.map(x => clickRow('#/purchase/' + x.purchase_id, [h('span', { class: 'lat' }, x.bought_at_j), x.vendor_name, h('span', { class: 'lat' }, x.invoice_no), x.qty, x.unit_cost != null ? money(x.unit_cost) : '—', h('span', { class: 'lat' }, x.serials.join(', '))])))));
+  if (!isNew) out.append(h('section', { class: 'panel' }, h('h3', {}, 'به چه کسی رفته'), table(['تاریخ', 'مشتری', 'پرونده', 'تعداد', 'قیمت', 'سریال'],
+    r.used.map(x => clickRow('#/' + x.kind + '/' + x.id, [h('span', { class: 'lat' }, x.at_j), x.customer_name, (x.kind === 'build' ? 'سیستم ' : 'سرویس ') + x.number, x.qty, x.price != null ? money(x.price) : '—', h('span', { class: 'lat' }, x.serial)])), 'هنوز جایی به کار نرفته است.')));
+  return out;
+}
+
+async function viewPurchases(q) {
+  const page = Math.max(1, +q.get('page') || 1), r = await GET('staff/purchases' + qs({ q: q.get('q'), vendor: q.get('vendor'), page }));
+  const hrefOf = p => { const x = new URLSearchParams(q); x.set('page', p); return '#/purchases?' + x; };
+  return h('div', {}, title('فاکتورهای خرید', can('stock', 2) ? h('a', { class: 'btn primary', href: '#/purchase/new' }, '+ فاکتور خرید') : null), filterBar(q, '#/purchases', null, 'شمارهٔ فاکتور، فروشنده، کالا یا سریال…'),
+    table(['تاریخ', 'فروشنده', 'شمارهٔ فاکتور', 'ردیف'].concat(S.cfg.costSeen ? ['جمع'] : []), r.items.map(u => clickRow('#/purchase/' + u.id, [h('span', { class: 'lat' }, u.bought_at_j), u.vendor_name, h('span', { class: 'lat' }, u.invoice_no), u.lines].concat(S.cfg.costSeen ? [money(u.total)] : [])))),
+    pager(r.total, r.per, page, hrefOf));
+}
+
+async function viewPurchase(id, q) {
+  const isNew = id === 'new'; let u = { vendor_id: 0, invoice_no: '', bought_at: today(), notes: '', items: [] };
+  if (!isNew) u = await GET('staff/purchases/' + id);
+  else if (q.get('pid')) { const r = await GET('staff/products/' + q.get('pid')); u.items = [{ product_id: r.product.id, name: r.product.name, category: r.product.category, qty: 1, unit_cost: r.product.buy_price, serials: [] }]; }
+  const ro = !can('stock', 2), sup = await GET('staff/suppliers');
+  const vendor = select('vendor_id', Object.assign({ 0: '— انتخاب کنید —' }, Object.fromEntries(sup.items.map(v => [v.id, v.name + (v.kind !== 'supplier' ? ' (' + v.kindText + ')' : '')]))), u.vendor_id, { disabled: ro });
+  const f = { vendor, vnew: text('vendor_name', '', { readOnly: ro, placeholder: 'اگر در فهرست نیست' }), invoice: text('invoice_no', u.invoice_no, { readOnly: ro, dir: 'ltr' }), date: h('input', { type: 'date', value: u.bought_at || today(), readOnly: ro }), notes: area('notes', u.notes, { readOnly: ro, rows: 2 }) };
+  const items = rowsEditor([{ k: 'name', label: 'کالا (از انبار یا نام تازه)', type: 'product', always: { category: 'category' }, fill: { unit_cost: 'buy_price' } }, { k: 'category', label: 'دسته', type: 'select', opts: S.cfg.categories, def: 'other' },
+    { k: 'qty', label: 'تعداد', type: 'num', def: 1 }, { k: 'unit_cost', label: 'قیمت خرید واحد', type: 'num' }, { k: 'sell_price', label: 'قیمت فروش تازه', type: 'num' }, { k: 'serials', label: 'سریال‌ها (با , جدا)', ltr: true }],
+    u.items.map(x => Object.assign({}, x, { serials: (x.serials || []).join(', ') })), { readOnly: ro });
+  let force = false;
+  const save = async e => {
+    e.preventDefault();
+    const body = { id: isNew ? 0 : u.id, updated: u.updated, vendor_id: +f.vendor.value || 0, vendor_name: f.vnew.value, invoice_no: digits(f.invoice.value), bought_at: f.date.value, notes: f.notes.value, force, items: items.get().map(priceNum) };
+    try { const r = await POST('staff/purchases', body); toast('فاکتور خرید ثبت شد.'); if (isNew) location.hash = '#/purchase/' + r.id; else route(); }
+    catch (err) { if (err.status === 409 && err.data && err.data.duplicate) { if (await ask(err.message + ' باز هم ثبت شود؟', 'ثبت کن')) { force = true; save(e); } } else fail(err); }
+  };
+  return h('div', {}, title(isNew ? 'فاکتور خرید تازه' : 'فاکتور خرید ' + (u.invoice_no || '#' + u.id)),
+    h('form', { class: 'panel grid', onsubmit: save }, field('فروشنده', f.vendor), field('یا فروشندهٔ تازه', f.vnew), field('شمارهٔ فاکتور خرید', f.invoice), field('تاریخ خرید', f.date),
+      h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'کالاها'), items.el), field('یادداشت', f.notes, '', 'wide'), u.total != null ? h('div', { class: 'wide total' }, 'جمع: ', h('b', {}, money(u.total))) : null,
+      ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
 }
 
 /* ---------- settings ---------- */

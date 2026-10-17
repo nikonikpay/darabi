@@ -1,5 +1,6 @@
 // Unattended run (MainForm.RunSelfTestAsync, MazestaDesk.exe --selftest with MAZESTA_DESK_SELFTEST="server|user|password"): drives the real screens through the real
-// bridge against a real site and returns a text report. Creates one customer, one service and one new computer on that site - use a test site.
+// bridge against a real site and returns a text report. Creates one customer, one service and one new computer on that site (with stock rights also a purchase invoice
+// and a product) - use a test site.
 window.deskSelfTest = async (server, user, pass) => {
   const log = []; let bad = 0;
   const ok = (name, cond, extra) => { if (!cond) bad++; log.push((cond ? 'PASS ' : 'FAIL ') + name + (extra ? '  ' + extra : '')); };
@@ -43,13 +44,32 @@ window.deskSelfTest = async (server, user, pass) => {
     location.hash = '#/'; await wait(() => document.querySelector('.cards'));   // away from the record first: the scan must be what opens it
     set(document.getElementById('gsearch'), no); document.getElementById('gsearch').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     ok('typing/scanning the number opens the service', !!(await wait(() => location.hash === '#/job/' + jid)));
-    // a new computer with a part
+    // with stock rights: a purchase invoice entered on its screen brings a new product into the stock
+    const stamp = String(Date.now()), pname = 'کالای خودآزمون ' + stamp; let pid = 0;
+    if (can('stock', 2)) {
+      location.hash = '#/purchase/new'; const pf = await wait(() => document.querySelector('form.panel input[name=vendor_name]') && document.querySelector('form.panel'));
+      set(pf.querySelector('input[name=vendor_name]'), 'فروشندهٔ خودآزمون'); set(pf.querySelector('input[name=invoice_no]'), 'P-' + stamp);
+      [...pf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
+      set(pf.querySelector('.rows input[name=name]'), pname); pf.querySelector('.rows select[name=category]').value = 'ssd';
+      set(pf.querySelector('.rows input[name=qty]'), '۲'); set(pf.querySelector('.rows input[name=unit_cost]'), '1500000'); set(pf.querySelector('.rows input[name=serials]'), 'SA-' + stamp + ', SB-' + stamp); submit(pf);
+      const uid = await wait(() => (location.hash.match(/#\/purchase\/(\d+)/) || [])[1]); ok('purchase invoice saved on its screen', !!uid, 'id=' + uid);
+      const pr = await GET('staff/products' + qs({ q: pname })); pid = pr.items.length ? pr.items[0].id : 0;
+      ok('its product is in the stock with 2', pr.items.length === 1 && pr.items[0].stock === 2, JSON.stringify(pr.items));
+    }
+    // a new computer (known by its invoice number) with a part - picked from the stock when there is one
     location.hash = '#/build/new?cid=' + cid; const bf = await wait(() => document.querySelector('form.panel input[name=title]') && document.querySelector('form.panel'));
     if (!bf) throw new Error('build page did not appear: ' + document.querySelector('#main').innerText.slice(0, 300) + ' @' + location.hash);
-    set(bf.querySelector('input[name=title]'), 'سیستم خودآزمون'); [...bf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
-    set(bf.querySelector('.rows input[name=model]'), 'قطعهٔ آزمون'); set(bf.querySelector('.rows input[name=serial]'), 'ST-' + Date.now()); set(bf.querySelector('.rows input[name=warranty_months]'), '۱۲'); submit(bf);
+    set(bf.querySelector('input[name=title]'), 'سیستم خودآزمون'); set(bf.querySelector('input[name=invoice_no]'), '۹' + stamp.slice(-6).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]));
+    bf.querySelector('select[name=device_type]').value = 'laptop'; [...bf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
+    const row = bf.querySelector('.rows tbody tr');
+    set(row.querySelector('input[name=model]'), pid ? pname : 'قطعهٔ آزمون');
+    if (pid) ok('typing the product name picks it from the stock', !!(await wait(() => row.dataset.pid === String(pid))), 'pid=' + row.dataset.pid);
+    set(row.querySelector('input[name=serial]'), 'SA-' + stamp); set(row.querySelector('input[name=warranty_months]'), '۱۲'); submit(bf);
     const bid = await wait(() => (location.hash.match(/#\/build\/(\d+)/) || [])[1]); ok('new computer saved with a part', !!bid, 'id=' + bid);
-    const got = await GET('staff/builds/' + bid); ok('the part came back with its warranty', got.parts.length === 1 && got.parts[0].warranty_months === 12 && /^R-\d+$/.test(got.service_no), JSON.stringify(got.parts));
+    const got = await GET('staff/builds/' + bid);
+    ok('saved by its invoice number (no service number), device type kept', got.invoice_no === '9' + stamp.slice(-6) && got.service_no === '' && got.number === got.invoice_no && got.device_type === 'laptop', JSON.stringify({ n: got.number, s: got.service_no, d: got.device_type }));
+    ok('the part came back with its warranty', got.parts.length === 1 && got.parts[0].warranty_months === 12 && (!pid || got.parts[0].product_id === pid), JSON.stringify(got.parts));
+    if (pid) { const pr = await GET('staff/products/' + pid); ok('the stock went down and the product knows where it went', pr.totals.stock === 1 && pr.used.length === 1 && pr.used[0].id === +bid, JSON.stringify(pr.totals)); }
     // permissions seen by this person
     ok('screens follow the permissions (nav items = areas with at least view)', document.querySelectorAll('aside nav a').length === NAV.filter(n => n[2]()).length);
     await bridge.logout(); const s = await bridge.session(); ok('sign-out clears the token', s.data && s.data.signedIn === false);
