@@ -70,8 +70,9 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         try
         {
             using var buffer = device.AllocateReadWriteBuffer<uint>(Threads);
-            // Two read-back copies: one batch is checked on the processor while the next is already on the card, so the card is never left waiting for the check.
-            var hosts = new[] { new uint[Threads], new uint[Threads] }; int copy = 0; Task<long>? pending = null;
+            // Two read-back copies: one batch is checked on the processor while the next is already on the card. The card never waits for a check: a batch
+            // that ends while the last check still runs is not checked (the processor is slow, or busy with another program), and goes on to the next one.
+            var hosts = new[] { new uint[Threads], new uint[Threads] }; int checking = 1; Task<long>? pending = null;
             long Drain() { long wrong = pending?.Result ?? 0; pending = null; return wrong; }
             while (clock.Elapsed.TotalSeconds < request.DurationSeconds)
             {
@@ -83,9 +84,10 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
                     uint seed = unchecked((uint)(++batches * 2654435761u)); int count = sizer.Count; var batchStart = clock.Elapsed;
                     using (var context = device.CreateComputeContext())
                         for (int d = 0; d < count; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed, d > 0 ? 1 : 0)); if (d + 1 < count) context.Barrier(buffer); }
-                    var host = hosts[copy ^= 1]; buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
+                    if (pending is { IsCompleted: true }) errors += Drain();
+                    var host = hosts[pending is null ? checking ^= 1 : checking ^ 1]; buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
                     dispatches += count;
-                    errors += Drain(); int batchCount = count; uint batchSeed = seed; pending = Task.Run(() => CheckSample(host, random, batchSeed, batchCount)); checkedResults += (long)SamplesPerBatch * count;
+                    if (pending is null) { int batchCount = count; uint batchSeed = seed; pending = Task.Run(() => CheckSample(host, random, batchSeed, batchCount)); checkedResults += (long)SamplesPerBatch * count; }
                     sizer.Record(clock.Elapsed - batchStart, BatchTarget(profile, busy));
                 }
                 Report(request, clock);
