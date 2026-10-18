@@ -20,7 +20,7 @@ const prefs = {
 };
 
 /* ---------- shell and routing ---------- */
-const NAV = [['#/', 'خانه', () => true], ['#/customers', 'مشتری‌ها', () => can('customers')], ['#/builds', 'سیستم‌های نو', () => can('builds')], ['#/jobs', 'سرویس‌ها', () => can('jobs')], ['#/stock', 'انبار و کالاها', () => can('stock')], ['#/purchases', 'فاکتورهای خرید', () => can('stock')], ['#/stats', 'گزارش مالی و آمار', () => can('jobs') || can('builds')], ['#/reports', 'گزارش‌های تست', () => can('tests')]];
+const NAV = [['#/', 'خانه', () => true], ['#/customers', 'مشتری‌ها', () => can('customers')], ['#/builds', 'سیستم‌های نو', () => can('builds')], ['#/jobs', 'سرویس‌ها', () => can('jobs')], ['#/stock', 'انبار و کالاها', () => can('stock')], ['#/purchases', 'فاکتورهای خرید', () => can('stock')], ['#/stats', 'گزارش مالی و آمار', () => can('reports') && (can('jobs') || can('builds'))], ['#/reports', 'گزارش‌های تست', () => can('tests')]];
 
 function showLogin(msg) {
   const app = clear($('#app')); document.body.classList.remove('in');
@@ -315,7 +315,7 @@ async function viewJob(id, q) {
     .concat(money1 ? [{ k: 'unit_price', label: 'قیمت واحد', type: 'num', readOnly: !money2 }] : []).concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', readOnly: !S.cfg.costEdit }] : []).concat([{ k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }]);
   const parts = rowsEditor(partCols, j.parts, { readOnly: ro, onchange: recalc });
   const recv = rowsEditor([{ k: 'name', label: 'قطعه / لوازمی که مشتری آورده' }, { k: 'serial', label: 'سریال', ltr: true }, { k: 'has_box', label: 'جعبه', type: 'check' }], j.recv, { readOnly: ro });
-  const pays = money1 ? rowsEditor([{ k: 'amount', label: 'مبلغ واریزی', type: 'num' }, { k: 'account', label: 'واریز به حساب' }, { k: 'tx', label: 'شمارهٔ تراکنش', ltr: true }, { k: 'holder', label: 'صاحب حساب' }], j.pays, { readOnly: !money2 }) : null;
+  const pays = money1 ? rowsEditor([{ k: 'amount', label: 'مبلغ واریزی', type: 'num' }, { k: 'account', label: 'واریز به حساب', list: 'acclist' }, { k: 'tx', label: 'شمارهٔ تراکنش', ltr: true }, { k: 'holder', label: 'صاحب حساب' }], j.pays, { readOnly: !money2 }) : null;
   const save = async e => {
     e.preventDefault(); const bad = picker.error(); if (bad) return toast(bad, 'err');
     const body = Object.assign({ id: isNew ? 0 : j.id, updated: j.updated, device: f.device.value, device_serial: f.serial.value, device_type: f.dtype.value, media: mediaOf(f.media), complaint: f.complaint.value, work_done: f.work.value, status: f.status.value, received_at: f.recv.value, due_at: f.due.value,
@@ -329,7 +329,7 @@ async function viewJob(id, q) {
   const costs = money1 ? h('div', { class: 'wide money' }, h('h3', { class: 'wide' }, 'هزینه‌ها'), field('هزینهٔ خدمات', f.labor), field('تخفیف', f.discount), field('هزینه‌های پرداخت‌شده', f.paid, 'خرجی که خودمان برای این سرویس دادیم؛ مشتری نمی‌بیند و از سود خدمات کم می‌شود'), field('توضیحات هزینهٔ پرداخت‌شده', f.paidNote),
     h('div', { class: 'sum' }, h('span', {}, 'هزینهٔ قطعات'), out.parts), h('div', { class: 'sum big' }, h('span', {}, 'هزینهٔ نهایی (از مشتری)'), out.total), h('div', { class: 'sum' }, h('span', {}, 'سود خدمات'), out.svc),
     S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود قطعات'), out.profit) : null, field('شمارهٔ فاکتور', f.invoice),
-    pays ? h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'پرداخت‌های مشتری'), pays.el) : null) : field('شمارهٔ فاکتور', f.invoice);
+    pays ? h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'پرداخت‌های مشتری'), pays.el, h('datalist', { id: 'acclist' }, (S.cfg.accounts || []).map(n => h('option', { value: n })))) : null) : field('شمارهٔ فاکتور', f.invoice);
   const el = h('div', {}, title(isNew ? 'پذیرش سرویس' : `سرویس ${j.service_no}`, actions),
     h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('نوع دستگاه', f.dtype), field('وضعیت', f.status), field('تاریخ پذیرش', f.recv), field('تاریخ قول تحویل', f.due), devBox,
       h('div', { class: 'checks' }, f.maz, f.war), field('مشکل اعلام‌شده', f.complaint, '', 'wide'), field('کار انجام‌شده', f.work, '', 'wide'),

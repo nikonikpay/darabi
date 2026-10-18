@@ -46,17 +46,18 @@ final class MZC_Crm
     /** What the forms suggest as one types a program's name; any other name is taken as well. The shop edits the list on the settings page. */
     const SOFTWARE = "Windows 11 Pro\nWindows 10 Pro\nMicrosoft Office 2021\nMicrosoft Office 365\nAdobe Photoshop\nAdobe Illustrator\nAdobe Premiere Pro\nAdobe After Effects\nAdobe Acrobat\nAutodesk 3ds Max\nAutodesk AutoCAD\nAutodesk Revit\nAutodesk Maya\nSketchUp\nLumion\nV-Ray\nCorona Renderer\nD5 Render\nEnscape\nTwinmotion\nCinema 4D\nBlender\nRhino\nUnreal Engine\nSolidWorks\nCATIA\nMATLAB\nVisual Studio\nPython\nWinRAR\n7-Zip\nGoogle Chrome\nMozilla Firefox\nVLC\nK-Lite Codec Pack\nInternet Download Manager\nTelegram Desktop\nAnyDesk\nSteam\nEpic Games Launcher\nNVIDIA App\nMSI Afterburner\nESET NOD32\nKaspersky";
 
-    public static function software_catalog()
+    /** A list the forms suggest from: 'software' (the programs) or 'accounts' (where customers pay: POS, cards, accounts). */
+    public static function software_catalog($k = 'software')
     {
-        $db = self::db(); $v = $db ? $db->get_var('SELECT v FROM `' . self::t('meta') . "` WHERE k = 'software'") : null;
-        return array_values(array_unique(array_filter(array_map('trim', explode("\n", $v === null ? self::SOFTWARE : (string) $v)))));
+        $db = self::db(); $v = $db ? $db->get_var($db->prepare('SELECT v FROM `' . self::t('meta') . '` WHERE k = %s', $k)) : null;
+        return array_values(array_unique(array_filter(array_map('trim', explode("\n", $v === null ? ($k === 'software' ? self::SOFTWARE : '') : (string) $v)))));
     }
 
-    public static function save_software_catalog($text)
+    public static function save_software_catalog($text, $k = 'software')
     {
         $db = self::db(); if (!$db) { return; }
         $list = array_slice(array_values(array_unique(array_filter(array_map(function ($x) { return mb_substr(trim($x), 0, 80); }, preg_split('/[\r\n]+/', (string) $text))))), 0, 500);
-        $db->query($db->prepare('REPLACE INTO `' . self::t('meta') . "` (k, v) VALUES ('software', %s)", implode("\n", $list)));
+        $db->query($db->prepare('REPLACE INTO `' . self::t('meta') . '` (k, v) VALUES (%s, %s)', $k, implode("\n", $list)));
     }
 
     /** A record's requested programs as stored (JSON): rows of (name, installed?), the customer's own words, and when the customer last saved it on their page. */
@@ -629,8 +630,9 @@ final class MZC_Crm
     public static function act_soft_save()
     {
         MZC_Admin::guard('soft_save');
-        self::save_software_catalog(isset($_POST['software']) ? sanitize_textarea_field(wp_unslash($_POST['software'])) : '');
-        MZC_Admin::back('mzc-settings', 'ok:فهرست نرم‌افزارها ذخیره شد.');
+        $k = isset($_POST['accounts']) ? 'accounts' : 'software';
+        self::save_software_catalog(isset($_POST[$k]) ? sanitize_textarea_field(wp_unslash($_POST[$k])) : '', $k);
+        MZC_Admin::back('mzc-settings', $k === 'accounts' ? 'ok:فهرست حساب‌ها ذخیره شد.' : 'ok:فهرست نرم‌افزارها ذخیره شد.');
     }
 
     public static function act_sms_save() { MZC_Sms::act_save(); }

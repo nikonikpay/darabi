@@ -62,10 +62,11 @@ final class MZC_Mcp
                 'serverInfo' => array('name' => 'mazesta-crm', 'title' => 'Mazesta CRM', 'version' => MZC_VERSION), 'instructions' => self::INSTRUCTIONS));
         }
         if ($method === 'ping') { return self::result($id, new stdClass()); }
-        if ($method === 'tools/list') { return self::result($id, array('tools' => self::tools())); }
+        if ($method === 'tools/list') { return self::result($id, array('tools' => self::tools($token))); }
         if ($method === 'tools/call') {
             $name = isset($params['name']) ? (string) $params['name'] : ''; $args = isset($params['arguments']) && is_array($params['arguments']) ? $params['arguments'] : array();
             $all = self::defs(); if (!isset($all[$name])) { return self::error($id, -32602, 'Unknown tool: ' . $name); }
+            if (!self::allowed($name, self::perms($token))) { return self::result($id, array('content' => array(array('type' => 'text', 'text' => 'دسترسی این کار را ندارید. (Not allowed for this person\'s role; the shop\'s manager can give it on the site.)')), 'isError' => true)); }
             try { list($status, $data) = call_user_func($all[$name][3], $args, $token); }
             catch (Throwable $e) { $status = 500; $data = array('error' => 'Internal error: ' . $e->getMessage()); }
             $isErr = $status >= 400; if (!$isErr) { $data = self::lean($data); }
@@ -256,10 +257,34 @@ final class MZC_Mcp
         );
     }
 
-    private static function tools()
+    /** The area and level each tool needs (the API checks again; this keeps tools the person may not use out of the model's sight). Tools not listed need only a sign-in. */
+    private static $need = array(
+        'list_customers' => array('customers', 1), 'get_customer' => array('customers', 1), 'save_customer' => array('customers', 2),
+        'list_systems' => array('builds', 1), 'get_system' => array('builds', 1), 'save_system' => array('builds', 2), 'set_system_status' => array('builds', 1),
+        'list_services' => array('jobs', 1), 'get_service' => array('jobs', 1), 'save_service' => array('jobs', 2), 'set_service_status' => array('jobs', 2),
+        'save_product' => array('stock', 2), 'list_suppliers' => array('stock', 1), 'save_supplier' => array('stock', 2),
+        'list_purchases' => array('stock', 1), 'get_purchase' => array('stock', 1), 'save_purchase' => array('stock', 2),
+        'stats' => array('reports', 1), 'list_test_reports' => array('tests', 1), 'attach_test_report' => array('tests', 2),
+    );
+
+    /** The signed-in person's level per area (empty when the token is no longer good). */
+    private static function perms($token)
     {
-        $out = array();
-        foreach (self::defs() as $name => $d) { $out[] = array('name' => $name, 'description' => $d[0], 'inputSchema' => $d[1], 'annotations' => array('readOnlyHint' => $d[2], 'destructiveHint' => false, 'openWorldHint' => false)); }
+        $a = MZC_Staff::auth(self::request('GET', array(), array(), $token));
+        return $a instanceof WP_REST_Response ? array() : MZC_Staff::perms_of($a['id']);
+    }
+
+    private static function allowed($name, $perms)
+    {
+        if (!isset(self::$need[$name])) { return (bool) array_filter($perms); }
+        list($area, $lvl) = self::$need[$name];
+        return isset($perms[$area]) && $perms[$area] >= $lvl;
+    }
+
+    private static function tools($token)
+    {
+        $out = array(); $perms = self::perms($token);
+        foreach (self::defs() as $name => $d) { if (!self::allowed($name, $perms)) { continue; } $out[] = array('name' => $name, 'description' => $d[0], 'inputSchema' => $d[1], 'annotations' => array('readOnlyHint' => $d[2], 'destructiveHint' => false, 'openWorldHint' => false)); }
         return $out;
     }
 

@@ -61,12 +61,13 @@ if ($add || $edit) {
         . '<div class="mzc-sum big"><span>هزینهٔ نهایی (از مشتری)</span><b data-o="total">۰</b></div><div class="mzc-sum"><span>سود قطعات (فروش − خرید)</span><b data-o="profit">۰</b></div>'
         . '<label>شمارهٔ فاکتور (حسابداری)<input type="text" name="invoice_no" value="' . $v('invoice_no') . '" dir="ltr" maxlength="60"></label></div></div>';
     $prow = function ($n, $p) {
-        return '<div class="mzc-row"><input type="text" name="pays[' . $n . '][amount]" value="' . esc_attr($p['amount']) . '" placeholder="مبلغ واریزی (تومان)" dir="ltr" inputmode="numeric"><input type="text" name="pays[' . $n . '][account]" value="' . esc_attr($p['account']) . '" placeholder="واریز به حساب (پوز، کارت ...)" maxlength="120">'
+        return '<div class="mzc-row"><input type="text" name="pays[' . $n . '][amount]" value="' . esc_attr($p['amount']) . '" placeholder="مبلغ واریزی (تومان)" dir="ltr" inputmode="numeric"><input type="text" name="pays[' . $n . '][account]" value="' . esc_attr($p['account']) . '" placeholder="واریز به حساب (پوز، کارت ...)" maxlength="120" list="mzc-accounts" autocomplete="off">'
             . '<input type="text" name="pays[' . $n . '][tx]" value="' . esc_attr($p['tx']) . '" placeholder="شمارهٔ تراکنش" dir="ltr" maxlength="80"><input type="text" name="pays[' . $n . '][holder]" value="' . esc_attr($p['holder']) . '" placeholder="نام صاحب حساب" maxlength="120"><button type="button" class="mzc-btn sm danger x" data-mzc-remove>حذف</button></div>';
     };
     echo '<div class="mzc-field"><span>پرداخت‌های مشتری (مبلغ واریزی، حساب، شمارهٔ تراکنش)</span><div class="mzc-rows" id="mzc-pays" data-next="' . ($j ? count($j['pays']) : 0) . '">';
     if ($j) { foreach ($j['pays'] as $n => $p) { echo $prow($n, $p); } }
-    echo '</div><template id="mzc-pays-tpl">' . str_replace('[0]', '[__N__]', $prow(0, array('amount' => '', 'account' => '', 'tx' => '', 'holder' => ''))) . '</template><p><button type="button" class="mzc-btn" data-mzc-add="mzc-pays">+ پرداخت</button></p></div>';
+    echo '</div><datalist id="mzc-accounts">'; foreach (MZC_Crm::software_catalog('accounts') as $n) { echo '<option value="' . esc_attr($n) . '">'; }
+    echo '</datalist><template id="mzc-pays-tpl">' . str_replace('[0]', '[__N__]', $prow(0, array('amount' => '', 'account' => '', 'tx' => '', 'holder' => ''))) . '</template><p><button type="button" class="mzc-btn" data-mzc-add="mzc-pays">+ پرداخت</button></p></div>';
     echo MZC_Admin::photos_block($j ? $j['photos'] : array());
     echo '<p><button class="mzc-btn primary">ذخیره</button></p></form></div></div>';
     return;

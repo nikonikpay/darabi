@@ -138,7 +138,7 @@ final class MZC_Api
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $c = self::cfg(); $labels = array();
         foreach (self::$label_fields as $kind => $f) { $labels[$kind] = array('fields' => $f, 'chosen' => self::label_keys($kind, $c)); }
-        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'software' => MZC_Crm::software_catalog(), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)));
+        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)));
     }
 
     private static function label_keys($kind, $c)
@@ -558,7 +558,7 @@ final class MZC_Api
     /** ?from=&to= (Gregorian or Persian dates; default this Persian month) or ?period=month|last|d30|year. Each part only for those who may see it. */
     public static function rest_stats($req)
     {
-        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $a = MZC_Staff::auth($req, 'reports', 1); if ($a instanceof WP_REST_Response) { return $a; }
         $jobs = MZC_Staff::can($a['id'], 'jobs', 1); $builds = MZC_Staff::can($a['id'], 'builds', 1);
         if (!$jobs && !$builds) { return self::fail('دسترسی این کار را ندارید.', 403); }
         $per = MZC_Report::periods(); $k = (string) $req->get_param('period'); $def = isset($per[$k]) ? $per[$k] : $per['month'];

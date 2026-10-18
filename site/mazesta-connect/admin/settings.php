@@ -60,3 +60,7 @@ if (MZC_Crm_Db::ready()) {
     echo '<div class="mzc-panel"><header><h3>فهرست نرم‌افزارها</h3></header><div class="body"><p class="muted" style="max-width:90ch">فرم‌های سیستم نو و سرویس، و صفحهٔ مشتری، هنگام نوشتن نام نرم‌افزار از این فهرست پیشنهاد می‌دهند. نامی که در فهرست نیست هم پذیرفته می‌شود. هر نرم‌افزار در یک خط.</p>'
         . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="software" rows="10" dir="ltr" style="width:100%;max-width:520px">' . esc_textarea(implode("\n", MZC_Crm::software_catalog())) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ فهرست</button></p></form></div></div>';
 }
+if (MZC_Crm_Db::ready()) {
+    echo '<div class="mzc-panel"><header><h3>حساب‌های واریز</h3></header><div class="body"><p class="muted" style="max-width:90ch">در «پرداخت‌های مشتری» خانهٔ «واریز به حساب» این‌ها را پیشنهاد می‌دهد (پوز، کارت، شماره حساب ...)؛ هر نوشتهٔ دیگری هم پذیرفته می‌شود. هر حساب در یک خط.</p>'
+        . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="accounts" rows="6" dir="auto" style="width:100%;max-width:520px">' . esc_textarea(implode("\n", MZC_Crm::software_catalog('accounts'))) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ حساب‌ها</button></p></form></div></div>';
+}

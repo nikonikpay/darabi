@@ -17,7 +17,7 @@ final class MZC_Staff
     /** The areas a level is given for. */
     public static $areas = array(
         'customers' => 'مشتریان', 'builds' => 'سیستم‌های نو (فروش و اسمبل)', 'jobs' => 'سرویس‌ها', 'tests' => 'گزارش و نتیجهٔ تست',
-        'ships' => 'ارسال به گارانتی', 'stock' => 'انبار، کالاها و فاکتور خرید', 'payments' => 'قیمت‌ها و پرداخت‌ها', 'sms' => 'فرستادن پیامک',
+        'ships' => 'ارسال به گارانتی', 'stock' => 'انبار، کالاها و فاکتور خرید', 'payments' => 'قیمت‌ها و پرداخت‌ها', 'reports' => 'آمار و گزارش مالی', 'sms' => 'فرستادن پیامک',
     );
     public static $levels = array(0 => 'ندارد', 1 => 'دیدن', 2 => 'دیدن و ویرایش');
 

@@ -42,6 +42,8 @@ window.deskSelfTest = async (server, user, pass) => {
       set(jf.querySelector('input[name=labor]'), '1000000'); set(jf.querySelector('input[name=paid]'), '300000'); set(jf.querySelector('input[name=discount]'), '100000'); set(jf.querySelector('input[name=paid_note]'), 'پیک');
       const tot = jf.querySelector('.sum.big b'), sp = [...jf.querySelectorAll('.sum')].find(x => x.textContent.startsWith('سود خدمات'));
       ok('customer pays services - discount (paid-out not on the bill); services profit = services - discount - paid-out', tot && tot.textContent === money(900000) && sp && sp.querySelector('b').textContent === money(600000), (tot && tot.textContent) + ' / ' + (sp && sp.textContent));
+      const payBox = [...jf.querySelectorAll('.wide')].find(d => d.querySelector('datalist#acclist')); [...payBox.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
+      ok('the payment account suggests the site\'s accounts and takes any text', payBox.querySelector('input[name=account]').getAttribute('list') === 'acclist' && payBox.querySelectorAll('datalist option').length === (S.cfg.accounts || []).length, (S.cfg.accounts || []).join(' / '));
     }
     const softBox = [...jf.querySelectorAll('.wide')].find(d => d.querySelector('datalist#softlist')); [...softBox.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
     set(softBox.querySelector('input[name=name]'), 'Blender'); ok('the software box suggests from the shop list', softBox.querySelector('input[name=name]').getAttribute('list') === 'softlist' && softBox.querySelectorAll('datalist option').length > 10);
