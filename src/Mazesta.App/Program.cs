@@ -106,6 +106,7 @@ internal sealed class Program : ApplicationContext
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
+    private Action? _startOnline;
     private void Start(bool overlayOnly, bool background)
     {
         // The UI thread's message-loop context, set now so the dispatcher can post to it from the start (before any window exists).
@@ -149,8 +150,10 @@ internal sealed class Program : ApplicationContext
         // What the app does is kept in the usage log; with the setting on (the default) it is sent, anonymously, a few minutes after start and every ten minutes (see UsageUploader).
         var usage = _services.GetRequiredService<UsageRecorder>();
         usage.Record("app.start", new System.Text.Json.Nodes.JsonObject { ["version"] = version, ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = config.Language, ["overlayOnly"] = overlayOnly });
-        _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
-        Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log);
+        // The overlay alone talks to no site: the uploader and the inbox (and their timers) start with the window, if it ever opens.
+        _startOnline = () => { _startOnline = null; _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
+            Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log); };
+        if (!overlayOnly) _startOnline();
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
         else ShowMain();
@@ -193,6 +196,7 @@ internal sealed class Program : ApplicationContext
     private void ShowMain()
     {
         if (_main is not null) { _main.BringForward(); return; }
+        _startOnline?.Invoke();
         var window = new MainWindow(_services!, _paths!, _config!, _store!, _configCorrupt, _log!, _ui!);
         _configCorrupt = false;   // said once
         WindowPlacementRestore.Apply(window, _config!.MainWindow);

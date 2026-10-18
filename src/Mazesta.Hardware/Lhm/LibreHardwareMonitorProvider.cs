@@ -32,7 +32,7 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         try { _beforeOpen?.Invoke(); }
         catch (Exception ex) { _log.LogWarning(ex, "Preparing the sensor driver failed; continuing without it"); }
         _log.LogInformation("Sensor start: driver ready after {Ms} ms", clock.ElapsedMilliseconds);
-        try { _computer.Open(); _log.LogInformation("Sensor start: hardware opened after {Ms} ms", clock.ElapsedMilliseconds); if (_computer.StorageSkipped) _log.LogWarning("Sensor start: the drives did not answer within 3 s (a USB drive still being recognised?); drives are left out of this run"); }
+        try { _computer.Open(); _log.LogInformation("Sensor start: hardware opened after {Ms} ms", clock.ElapsedMilliseconds); _drivesLate = _computer.StorageSkipped; if (_drivesLate) _log.LogWarning("Sensor start: the drives did not answer within 10 s (a USB drive still being recognised?); they join when they answer"); }
         catch (Exception ex) { _log.LogError(ex, "LHM open failed"); Status = ProviderStatus.Failed(ReasonOpenFailed, ex.Message); return; }
         try
         {
@@ -148,8 +148,21 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         catch (Exception ex) { _log.LogWarning(ex, "Giving fan output {Id} back failed", id); return false; }
     }
 
+    private bool _drivesLate;
+    /// <summary>Drives whose opening outlasted the start's wait, added once it has returned (the engine reads <see cref="Hardware"/> afresh every tick).</summary>
+    private void JoinLateDrives()
+    {
+        _drivesLate = false;
+        var known = _nodes.Select(n => n.Mapped.Source).ToHashSet();
+        var added = _computer.Hardware.Where(h => !known.Contains(h)).ToList();
+        try { PrimeSensors(added); DisableSensorHistoryTree(added); foreach (var m in _mapper.Map(added)) _nodes.Add(new NodeState(m)); Hardware = _nodes.Select(n => n.Mapped.Node).ToList(); }
+        catch (Exception ex) { _log.LogWarning(ex, "Late drives could not be added"); return; }
+        _log.LogInformation("Sensor start: {Count} late drive(s) joined", added.Count);
+    }
+
     public PollResult Poll(PollRequest request)
     {
+        if (_drivesLate && !_computer.StorageSkipped) JoinLateDrives();
         if (_nodes.Count == 0) return PollResult.Empty;
         foreach (var n in _nodes)
         {
