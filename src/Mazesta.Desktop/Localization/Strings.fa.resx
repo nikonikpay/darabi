@@ -556,6 +556,7 @@
   <data name="Value_Disconnected" xml:space="preserve"><value>قطع</value></data>
   <data name="Settings_Tray_Section" xml:space="preserve"><value>پایشگر پس‌زمینه</value></data>
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>تأخیر اولین بررسی (ثانیه)</value></data>
+  <data name="Settings_Tray_SkipGames" xml:space="preserve"><value>وقتی بازی تمام‌صفحه باز است دما بررسی نشود</value></data>
   <data name="Settings_Tray_Idle" xml:space="preserve"><value>بررسی دما هر (دقیقه)</value></data>
   <data name="Settings_Tray_Watch" xml:space="preserve"><value>وقتی قطعه‌ای داغ است، بررسی هر (ثانیه)</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>فعال‌سازی</value></data>

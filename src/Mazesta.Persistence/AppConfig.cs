@@ -4,8 +4,8 @@ public sealed record WindowPlacement(double Left, double Top, double Width, doub
 public sealed record ChartWindowConfig(string SensorId, WindowPlacement? Placement, int WindowMinutes);
 public sealed class AppConfig : IVersionedDocument
 {
-    public const int CurrentSchemaVersion = 4;
-    public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2(), new Migration2To3(), new Migration3To4()];
+    public const int CurrentSchemaVersion = 5;
+    public static IReadOnlyList<IMigration> Migrations { get; } = [new Migration0To1(), new Migration1To2(), new Migration2To3(), new Migration3To4(), new Migration4To5()];
     public int SchemaVersion { get; set; } = CurrentSchemaVersion;
     public string Language { get; set; } = "fa";
     /// <summary>"auto" lets WPF use the GPU; "software" draws the whole UI on the CPU - for a machine whose graphics driver cannot be trusted (a repair shop meets those), where the window otherwise comes up blank.</summary>
@@ -34,7 +34,9 @@ public sealed class AppConfig : IVersionedDocument
     /// <summary>Delay before the tray's first health check after sign-in, so it never runs during it.</summary>
     public int TrayFirstCheckSeconds { get; set; } = 20;
     /// <summary>How often the tray checks while nothing is wrong.</summary>
-    public int TrayIdleIntervalMinutes { get; set; } = 60;
+    public int TrayIdleIntervalMinutes { get; set; } = 10;
+    /// <summary>The tray puts its temperature check off while a game (a full-screen program) is in front.</summary>
+    public bool TraySkipInGames { get; set; }
     /// <summary>How often the tray checks while a health rule is building towards an alert (HealthAlerts.IsWatching).</summary>
     public int TrayWatchIntervalSeconds { get; set; } = 60;
     /// <summary>How often the tray reads the drives' health (SMART / Windows' verdict, wear, uncorrected errors). Absent in older files, so 30.</summary>
@@ -139,4 +141,10 @@ public sealed class Migration3To4 : IMigration
         Move("trayIdleIntervalMinutes", 10, 60); Move("trayWatchIntervalSeconds", 30, 60); Move("trayHealthIntervalMinutes", 30, 1440); Move("trayCpuAlertC", 100, 98); Move("trayGpuAlertC", 95, 90);
         return o;
     }
+}
+/// <summary>The tray keeps its sensors open, so its temperature check is cheap: every 10 minutes instead of hourly. An hour still set (the old default) moves to 10.</summary>
+public sealed class Migration4To5 : IMigration
+{
+    public int From => 4;
+    public JsonObject Apply(JsonObject d) { var o = (JsonObject)d.DeepClone(); if (o["trayIdleIntervalMinutes"] is JsonValue v && v.TryGetValue<int>(out int n) && n == 60) o["trayIdleIntervalMinutes"] = 10; return o; }
 }

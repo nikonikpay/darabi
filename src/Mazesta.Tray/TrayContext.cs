@@ -21,8 +21,7 @@ internal sealed class TrayContext : ApplicationContext
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
     private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly PowerTimerMenu _power; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking;
-    private const int LiveSeconds = 15;
-    private LibreHardwareMonitorProvider? _sensors; private readonly object _sensorLock = new(); private TrayCheck? _live; private DateTimeOffset _lastKept;
+    private LibreHardwareMonitorProvider? _sensors; private readonly object _sensorLock = new(); private readonly string _configFile;
 
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
     public bool IsChecking => _checking;
@@ -30,7 +29,7 @@ internal sealed class TrayContext : ApplicationContext
 
     public TrayContext(TrayIntervals intervals, string logFile, AppPaths paths)
     {
-        _intervals = intervals; _logFile = logFile; _rules = new(TimeSpan.FromMinutes(intervals.HoldMinutes), intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz, intervals.GpuHotSpotAlertC, intervals.SsdAlertC);
+        _intervals = intervals; _logFile = logFile; _configFile = paths.ConfigFile; _rules = new(TimeSpan.FromMinutes(intervals.HoldMinutes), intervals.CpuAlertC, intervals.GpuAlertC, CpuBaseClock.Mhz, intervals.GpuHotSpotAlertC, intervals.SsdAlertC);
         // The RAM warning comes once a day: the last time it came is kept beside the check log, so a restart of the tray does not make it come again.
         _memory = new(intervals.RamAlertPercent, TimeSpan.FromMinutes(intervals.RamHoldMinutes)); _ramFile = Path.Combine(Path.GetDirectoryName(logFile) ?? "", "ram-alert.txt");
         try { if (DateTimeOffset.TryParse(File.ReadAllText(_ramFile), null, System.Globalization.DateTimeStyles.RoundtripKind, out var last)) _memory.LastFired = last; } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
@@ -51,7 +50,7 @@ internal sealed class TrayContext : ApplicationContext
         _icon.DoubleClick += (_, _) => ShowSummary();
         _icon.BalloonTipClicked += (_, _) => ShowSummary();
         Refresh();
-        _temps.Tick += async (_, _) => { if (Benchmarking()) Schedule(_temps, TimeSpan.FromMinutes(1)); else await CheckTempsAsync(); };
+        _temps.Tick += async (_, _) => { if (Benchmarking() || TrayIntervals.SkipInGames(_configFile) && GpuAutoSwitch.GameInFront()) Schedule(_temps, TimeSpan.FromMinutes(1)); else await CheckTempsAsync(); };
         _health.Tick += async (_, _) => { if (Benchmarking()) Schedule(_health, TimeSpan.FromMinutes(1)); else await CheckHealthAsync(); };
         _ram.Tick += (_, _) => CheckMemory();
         Schedule(_ram, TimeSpan.FromSeconds(intervals.FirstCheckSeconds + 20));
@@ -110,8 +109,6 @@ internal sealed class TrayContext : ApplicationContext
 
     public async Task CheckAllAsync() { await CheckTempsAsync(); await CheckHealthAsync(); }
 
-    /// <summary>Temperatures are read every <see cref="LiveSeconds"/> (the sensors stay open); the log keeps one check per idle period, and every one with an
-    /// alert or an error, so it still reaches back days.</summary>
     private async Task CheckTempsAsync()
     {
         if (_checking) { Schedule(_temps, Busy); return; }
@@ -128,11 +125,8 @@ internal sealed class TrayContext : ApplicationContext
             }
         }
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "temps", null, null, [], [], e.Message); }
-        if (check is not null) _live = check;
-        bool keep = check is not null && (check.Error is not null || check.Problems.Count > 0 || _summary is { IsDisposed: false } || check.Time - _lastKept >= TimeSpan.FromMinutes(_intervals.IdleMinutes));
-        if (keep) _lastKept = check!.Time;
-        End(keep ? check : null);
-        Schedule(_temps, TimeSpan.FromSeconds(LiveSeconds));
+        End(check);
+        Schedule(_temps, _rules.IsWatching ? TimeSpan.FromSeconds(_intervals.WatchSeconds) : TimeSpan.FromMinutes(_intervals.IdleMinutes));
     }
 
     private async Task CheckHealthAsync()
@@ -176,7 +170,7 @@ internal sealed class TrayContext : ApplicationContext
 
     private void Refresh()
     {
-        var temps = _live is { Error: null } ? _live : Checks.LastOrDefault(c => c.Kind == "temps" && c.Error is null);
+        var temps = Checks.LastOrDefault(c => c.Kind == "temps" && c.Error is null);
         var last = Checks.LastOrDefault();
         _status.Text = TrayText.Status(last?.Time, last?.Error is { } e ? $"{TrayText.CheckFailed}: {e}" : null);
         _icon.Text = TrayText.Tooltip(temps);

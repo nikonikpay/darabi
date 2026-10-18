@@ -16,7 +16,9 @@ public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int W
             // A file the app has not yet migrated (schema 3) still holds the old defaults; the tray treats those as unset, so a first start before the app has run already follows the new schedule.
             bool unmigrated = root.TryGetProperty("schemaVersion", out var sv) && sv.TryGetInt32(out int version) && version < 4;
             var oldDefaults = new Dictionary<string, int> { ["trayIdleIntervalMinutes"] = 10, ["trayWatchIntervalSeconds"] = 30, ["trayHealthIntervalMinutes"] = 30, ["trayCpuAlertC"] = 100, ["trayGpuAlertC"] = 95 };
-            int Get(string name, int fallback) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) && n > 0 && !(unmigrated && oldDefaults.TryGetValue(name, out int old) && old == n) ? n : fallback;
+            bool before5 = root.TryGetProperty("schemaVersion", out var sv5) && sv5.TryGetInt32(out int v5) && v5 < 5;   // the hourly check of schema 4 is now every 10 minutes
+            int Get(string name, int fallback) => root.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n) && n > 0 && !(unmigrated && oldDefaults.TryGetValue(name, out int old) && old == n)
+                && !(before5 && name == "trayIdleIntervalMinutes" && n == 60) ? n : fallback;
             return new(Get("trayFirstCheckSeconds", defaults.FirstCheckSeconds), Get("trayIdleIntervalMinutes", defaults.IdleMinutes), Get("trayWatchIntervalSeconds", defaults.WatchSeconds),
                 Get("trayHealthIntervalMinutes", defaults.HealthMinutes), Alert("trayCpuAlertC", defaults.CpuAlertC), Alert("trayGpuAlertC", defaults.GpuAlertC), Alert("trayGpuHotSpotAlertC", defaults.GpuHotSpotAlertC),
                 Get("trayHoldMinutes", defaults.HoldMinutes), Get("trayRamAlertPercent", defaults.RamAlertPercent) is var rp && rp is >= 50 and <= 99 ? rp : defaults.RamAlertPercent,
@@ -24,6 +26,13 @@ public sealed record TrayIntervals(int FirstCheckSeconds, int IdleMinutes, int W
             int Alert(string name, int fallback) => Get(name, fallback) is var n && n is >= 60 and <= 105 ? n : fallback;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException) { return defaults; }
+    }
+
+    /// <summary>The switch read afresh at each check, so turning it on or off in the settings needs no restart of the tray.</summary>
+    public static bool SkipInGames(string configFile)
+    {
+        try { using var doc = JsonDocument.Parse(File.ReadAllText(configFile)); return doc.RootElement.TryGetProperty("traySkipInGames", out var v) && v.ValueKind == JsonValueKind.True; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { return false; }
     }
 }
 

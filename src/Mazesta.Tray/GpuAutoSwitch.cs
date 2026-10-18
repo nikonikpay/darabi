@@ -48,11 +48,21 @@ internal sealed class GpuAutoSwitch : IDisposable
             if (pid != 0) using (var p = Process.GetProcessById((int)pid)) front = p.ProcessName.ToLowerInvariant() + ".exe";
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
-        bool game = SHQueryUserNotificationState(out int state) == 0 && state is 2 or 3 && front is not null && front != "explorer.exe";   // busy (a full-screen program) or a Direct3D full-screen one
+        bool game = FullScreen() && front is not null && front != "explorer.exe";
         string? want = GpuAutoRules.Decide(_rules, running, front, game);
         if (_known && want == _applied) return;
         _known = true; _applied = want;
         _gpu.ApplyRule(want);
+    }
+
+    /// <summary>Windows says a full-screen program is in front: busy (a full-screen window) or a Direct3D full-screen one.</summary>
+    private static bool FullScreen() => SHQueryUserNotificationState(out int state) == 0 && state is 2 or 3;
+    /// <summary>A game (a full-screen program other than the desktop) is in front.</summary>
+    internal static bool GameInFront()
+    {
+        if (!FullScreen()) return false;
+        try { GetWindowThreadProcessId(GetForegroundWindow(), out uint pid); if (pid == 0) return false; using var p = Process.GetProcessById((int)pid); return !p.ProcessName.Equals("explorer", StringComparison.OrdinalIgnoreCase); }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { return false; }
     }
 
     public void Dispose() { _timer.Dispose(); _debounce.Dispose(); _watch?.Dispose(); }

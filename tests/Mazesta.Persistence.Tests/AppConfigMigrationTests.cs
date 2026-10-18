@@ -24,7 +24,13 @@ public class AppConfigMigrationTests
         var migrated = new SchemaMigrator(AppConfig.Migrations).Migrate(doc, 3, out var steps);
         Assert.Equal(1, steps); Assert.Equal(3, (int)migrated["schemaVersion"]!); Assert.Equal("x", (string)migrated["shopName"]!);
         var config = migrated.Deserialize<AppConfig>(JsonStore<AppConfig>.Options)!;
-        Assert.Equal((20, 60, 60), (config.TrayFirstCheckSeconds, config.TrayIdleIntervalMinutes, config.TrayWatchIntervalSeconds));
+        Assert.Equal((20, 10, 60), (config.TrayFirstCheckSeconds, config.TrayIdleIntervalMinutes, config.TrayWatchIntervalSeconds));
+    }
+    [Fact] public void V4_moves_the_hourly_tray_check_to_ten_minutes_but_keeps_a_chosen_value()
+    {
+        var m = new SchemaMigrator(AppConfig.Migrations);
+        Assert.Equal(10, (int)m.Migrate(JsonNode.Parse("""{"schemaVersion":4,"trayIdleIntervalMinutes":60}""")!.AsObject(), 5, out _)["trayIdleIntervalMinutes"]!);
+        Assert.Equal(30, (int)m.Migrate(JsonNode.Parse("""{"schemaVersion":4,"trayIdleIntervalMinutes":30}""")!.AsObject(), 5, out _)["trayIdleIntervalMinutes"]!);
     }
     [Fact] public void V3_moves_the_old_default_tray_schedule_to_the_new_one_but_keeps_a_chosen_value()
     {

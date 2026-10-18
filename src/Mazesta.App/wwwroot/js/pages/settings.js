@@ -25,6 +25,7 @@ export function mount(el) {
   const disableTray = h("button", { class: "btn", onclick: () => call("settings.exec", { cmd: "disableTray" }) }, t("Settings_Tray_Disable"));
   // Anonymous usage statistics: on by default, said first in plain words, off with one switch.
   const usage = h("input", { type: "checkbox", class: "switch", "aria-label": t("Settings_Usage_Switch"), onchange: (e) => set("usageReport", e.target.checked) });
+  const skipGames = h("input", { type: "checkbox", class: "switch", "aria-label": t("Settings_Tray_SkipGames"), onchange: (e) => set("traySkipInGames", e.target.checked) });
   const usageLog = h("span", { class: "lat caption" });
   const folder = h("span", { class: "lat caption" }), version = h("span", { class: "lat caption" });
   // The users' edition: the name their shared benchmark results go under (empty: the one name every unnamed user gets). Mazesta's own
@@ -54,6 +55,7 @@ export function mount(el) {
         body: [h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupState")), h("p", { class: "note" }, trayStatus), h("div", { class: "btn-row" }, enableTray, disableTray),
           h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupSchedule")),
           h("dl", { class: "kv" }, row(t("Settings_Tray_FirstCheck"), input("trayFirst")), row(t("Settings_Tray_Idle"), input("trayIdle")), row(t("Settings_Tray_Watch"), input("trayWatch")), row(t("Settings_Tray_Health"), input("trayHealth"))),
+          h("label", { class: "ov-show" }, skipGames, h("span", {}, h("b", {}, t("Settings_Tray_SkipGames")))),
           h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupTemp")), h("p", { class: "caption set-note" }, t("Settings_Tray_TempNote")),
           h("dl", { class: "kv" }, row(t("Settings_Tray_CpuAlert"), input("trayCpuAlert")), row(t("Settings_Tray_GpuAlert"), input("trayGpuAlert")), row(t("Settings_Tray_GpuHotSpot"), input("trayGpuHotSpot")), row(t("Settings_Tray_SsdAlert"), input("traySsd")), row(t("Settings_Tray_Hold"), input("trayHold"))),
           h("h3", { class: "h3 set-group" }, t("Settings_Tray_GroupRam")), h("p", { class: "caption set-note" }, t("Settings_Tray_RamNote")),
@@ -87,7 +89,7 @@ export function mount(el) {
     for (const k of ["interval", "storageInterval", "displayName", "trayFirst", "trayIdle", "trayWatch", "trayHealth", "trayCpuAlert", "trayGpuAlert", "trayGpuHotSpot", "traySsd", "trayHold", "trayRamAlert", "trayRamHold", "trayRamCheck"]) if (f[k]) setField(f[k], s[k]);
     message.textContent = s.message || ""; trayMessage.textContent = s.message || ""; trayStatus.textContent = s.trayStatus || "";
     enableTray.disabled = !s.canEnableTray; disableTray.disabled = !s.canDisableTray;
-    usage.checked = !!s.usageReport; usageLog.textContent = s.usageLog || "";
+    skipGames.checked = !!s.traySkipInGames; usage.checked = !!s.usageReport; usageLog.textContent = s.usageLog || "";
     folder.textContent = s.dataFolder; version.textContent = `${s.mode} · v${s.version}`;
   }
   call("settings.state").then(update); call("overlay.state").then(showKeys);

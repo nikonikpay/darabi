@@ -556,6 +556,7 @@
   <data name="Value_Disconnected" xml:space="preserve"><value>Disconnected</value></data>
   <data name="Settings_Tray_Section" xml:space="preserve"><value>Background monitor</value></data>
   <data name="Settings_Tray_FirstCheck" xml:space="preserve"><value>First check delay (seconds)</value></data>
+  <data name="Settings_Tray_SkipGames" xml:space="preserve"><value>Do not check temperatures while a game is full screen</value></data>
   <data name="Settings_Tray_Idle" xml:space="preserve"><value>Temperature check every (minutes)</value></data>
   <data name="Settings_Tray_Watch" xml:space="preserve"><value>While a part is hot, check every (seconds)</value></data>
   <data name="Settings_Tray_Enable" xml:space="preserve"><value>Enable</value></data>
