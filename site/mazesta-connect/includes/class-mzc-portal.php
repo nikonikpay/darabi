@@ -152,7 +152,7 @@ final class MZC_Portal
             $paid = 0; foreach ($j['pays'] as $p) { $paid += (int) $p['amount']; }
             $outJ[] = array('kind' => 'job', 'number' => (string) $j['service_no'], 'software' => MZC_Crm::soft_out($j['soft']), 'soft_open' => self::soft_open('job', $j['status']), 'service' => $j['service_no'], 'device' => $j['device'], 'received' => $j['received_at'] ? MZC_Crm::jdate($j['received_at']) : '', 'closed' => $j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '',
                 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : $j['status'], 'complaint' => $j['complaint'], 'work' => $j['work_done'],
-                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'other' => (int) $j['paid'], 'total' => (int) $j['total'], 'paid' => $paid, 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
+                'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'total' => (int) $j['total'], 'paid' => $paid, 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
         }
         return self::ok(array('name' => $c['name'], 'builds' => $outB, 'jobs' => $outJ, 'catalog' => MZC_Crm::software_catalog()));
     }

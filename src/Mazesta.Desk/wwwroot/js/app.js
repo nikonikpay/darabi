@@ -119,7 +119,7 @@ async function viewHome() {
 /* ---------- find, lists ---------- */
 async function viewFind(q) {
   const r = await GET('staff/find' + qs({ q: q.get('q') || '' })); const out = h('div', {}, title(`نتیجهٔ «${q.get('q')}»`));
-  if (r.customers.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'مشتریان'), table(['نام', 'موبایل'], r.customers.map(c => clickRow('#/customer/' + c.id, [c.name, h('span', { class: 'lat' }, c.mobile)])))));
+  if (r.customers.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'مشتریان'), table(['نام', 'موبایل'], r.customers.map(c => clickRow('#/customer/' + c.id, [c.name, h('span', { class: 'lat' }, (c.mobiles || [c.mobile]).join(' · '))])))));
   if (r.builds.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سیستم‌های نو'), buildsTable(r.builds)));
   if (r.jobs.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سرویس‌ها'), jobsTable(r.jobs)));
   const sq = q.get('q') || ''; let tr = null;
@@ -156,13 +156,14 @@ async function viewCustomer(id, q) {
   if (!isNew) { const r = await GET('staff/customers/' + id); c = r.customer; builds = r.builds; jobs = r.jobs; }
   const ro = !can('customers', 2), f = {};
   const mk = (k, label, o) => (f[k] = text(k, c[k], Object.assign({ readOnly: ro }, o)));
+  const mobs = rowsEditor([{ k: 'number', label: 'شمارهٔ موبایل', ltr: true }], (c.mobiles && c.mobiles.length ? c.mobiles : [c.mobile || '']).map(number => ({ number })), { readOnly: ro });
   f.group = select('group', S.cfg.groups, c.group || 'customer', { disabled: ro }); f.address = area('address', c.address, { readOnly: ro }); f.notes = area('notes', c.notes, { readOnly: ro });
   const form = h('form', { class: 'panel grid', onsubmit: async e => {
     e.preventDefault();
-    const body = { id: isNew ? 0 : c.id, updated: c.updated }; for (const k of ['name', 'mobile', 'mobile2', 'phone', 'national_id', 'email', 'address', 'notes', 'group']) body[k] = f[k].value;
+    const body = { id: isNew ? 0 : c.id, updated: c.updated, mobiles: mobs.get().map(r => digits(r.number).trim()).filter(Boolean) }; for (const k of ['name', 'phone', 'national_id', 'email', 'address', 'notes', 'group']) body[k] = f[k].value;
     try { const s = await POST('staff/customers', body); toast('ذخیره شد.'); location.hash = '#/customer/' + s.id; if (!isNew) route(); } catch (err) { fail(err); }
   } },
-    field('نام', mk('name', '', { required: true })), field('موبایل', mk('mobile', '', { dir: 'ltr' })), field('موبایل دوم', mk('mobile2', '', { dir: 'ltr' })), field('تلفن', mk('phone', '', { dir: 'ltr' })), field('کد ملی', mk('national_id', '', { dir: 'ltr' })),
+    field('نام', mk('name', '', { required: true })), h('div', { class: 'field' }, h('span', {}, 'موبایل‌ها'), mobs.el, h('small', {}, 'اولی شمارهٔ اصلی و پیامک است؛ مشتری با هر کدام وارد صفحه‌اش می‌شود')), field('تلفن', mk('phone', '', { dir: 'ltr' })), field('کد ملی', mk('national_id', '', { dir: 'ltr' })),
     field('ایمیل', mk('email', '', { dir: 'ltr' })), field('گروه', f.group), field('آدرس', f.address, '', 'wide'), field('یادداشت', f.notes, '', 'wide'),
     ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره')));
   const out = h('div', {}, title(isNew ? 'مشتری تازه' : c.name,
@@ -183,14 +184,14 @@ function customerPicker(cur, locked) {
     const my = ++seq; clear(res); if (!look || v.length < 2) return;
     try {
       const r = await GET('staff/customers' + qs({ q: v, per: 8 })); if (my !== seq) return;
-      r.items.forEach(c => res.append(h('button', { type: 'button', class: 'opt', onclick: () => { sel = c; draw(); } }, h('b', {}, c.name), ' ', h('span', { class: 'lat muted' }, [c.mobile, c.mobile2, c.phone].filter(Boolean).join(' · ')))));
+      r.items.forEach(c => res.append(h('button', { type: 'button', class: 'opt', onclick: () => { sel = c; draw(); } }, h('b', {}, c.name), ' ', h('span', { class: 'lat muted' }, (c.mobiles || [c.mobile, c.mobile2]).concat(c.phone ? [c.phone] : []).filter(Boolean).join(' · ')))));
       if (!r.items.length) res.append(h('small', { class: 'muted' }, 'مشتری با این مشخصات ثبت نشده؛ با ذخیره، مشتری تازه ساخته می‌شود.'));
     } catch (e) { fail(e); }
   }, 250);
   [name, mobile].forEach(i => i.addEventListener('input', () => find(digits(i.value).trim())));
   const draw = () => {
     clear(box); clear(res);
-    if (sel) { box.append(h('div', { class: 'chosen' }, h('b', {}, sel.name), ' ', h('span', { class: 'lat muted' }, [sel.mobile, sel.mobile2].filter(Boolean).join(' · ')), ' ', h('a', { href: '#/customer/' + sel.id }, 'پرونده'), locked ? null : h('button', { type: 'button', class: 'link', onclick: () => { sel = null; draw(); setTimeout(() => name.focus(), 0); } }, 'تغییر'))); return; }
+    if (sel) { box.append(h('div', { class: 'chosen' }, h('b', {}, sel.name), ' ', h('span', { class: 'lat muted' }, (sel.mobiles || [sel.mobile, sel.mobile2]).filter(Boolean).join(' · ')), ' ', h('a', { href: '#/customer/' + sel.id }, 'پرونده'), locked ? null : h('button', { type: 'button', class: 'link', onclick: () => { sel = null; draw(); setTimeout(() => name.focus(), 0); } }, 'تغییر'))); return; }
     box.append(h('div', { class: 'three' }, field('نام مشتری', name), field('موبایل', mobile), field('موبایل دوم', mobile2, 'اختیاری')), res);
   };
   draw();
@@ -292,14 +293,14 @@ async function viewJob(id, q) {
   if (!isNew) { j = await GET('staff/jobs/' + id); cust = { id: j.customer_id, name: j.customer_name, mobile: j.customer_mobile }; }
   else if (q.get('cid')) { const r = await GET('staff/customers/' + q.get('cid')); cust = r.customer; }
   const ro = !can('jobs', 2), money1 = can('payments'), money2 = can('payments', 2), picker = customerPicker(cust, !isNew), soft = softEditor(j, ro);
-  // the money as on the shop's old form: services, the costs we paid out (kept apart: charged to the customer but not profit), parts, discount, and the sums
+  // the money: the customer pays parts + services - discount; the costs we paid out are ours (the customer never sees them) and only lower the services' profit
   const out = { parts: h('b', { class: 'lat' }), svc: h('b', { class: 'lat' }), total: h('b', { class: 'lat' }), profit: h('b', { class: 'lat' }) };
   const recalc = () => {
     if (!money1) return;
     const n = v => +digits(v).replace(/[^\d]/g, '') || 0; let p = 0, c = 0;
     parts.get().forEach(x => { const qn = n(x.qty) || 1; p += qn * n(x.unit_price); c += qn * n(x.buy_price); });
-    const svc = n(f.labor.value) + n(f.paid.value);
-    out.parts.textContent = money(p); out.svc.textContent = money(svc); out.total.textContent = money(p + svc - n(f.discount.value)); out.profit.textContent = money(n(f.labor.value) - n(f.discount.value) + p - c);
+    const lab = n(f.labor.value) - n(f.discount.value);
+    out.parts.textContent = money(p); out.svc.textContent = money(lab - n(f.paid.value)); out.total.textContent = money(p + lab); out.profit.textContent = money(p - c);
   };
   const f = { device: text('device', j.device, { readOnly: ro, placeholder: 'مثلاً: ASUS TUF F15' }), serial: text('device_serial', j.device_serial, { readOnly: ro, dir: 'ltr' }), dtype: select('device_type', S.cfg.deviceTypes || {}, j.device_type || 'system', { disabled: ro }),
     media: mediaBox(j.media, ro), complaint: area('complaint', j.complaint, { readOnly: ro, rows: 3 }), work: area('work_done', j.work_done, { rows: 3, readOnly: ro }), status: select('status', S.cfg.jobStatuses, j.status, { disabled: ro }),
@@ -325,9 +326,9 @@ async function viewJob(id, q) {
   };
   const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => printLabel('job', j.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => printReceipt(j) }, 'چاپ رسید'),
     h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('job', j.id) }, 'پیامک رسید'), can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('job', j) }, j.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null);
-  const costs = money1 ? h('div', { class: 'wide money' }, h('h3', { class: 'wide' }, 'هزینه‌ها'), field('هزینهٔ خدمات', f.labor), field('تخفیف', f.discount), field('هزینه‌های پرداخت‌شده', f.paid, 'خرجی که خودمان برای این سرویس دادیم؛ به مشتری حساب می‌شود ولی سود نیست'), field('توضیحات هزینهٔ پرداخت‌شده', f.paidNote),
-    h('div', { class: 'sum' }, h('span', {}, 'هزینهٔ قطعات'), out.parts), h('div', { class: 'sum' }, h('span', {}, 'خدمات + پرداختی‌ها'), out.svc), h('div', { class: 'sum big' }, h('span', {}, 'هزینهٔ نهایی'), out.total),
-    S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود'), out.profit) : null, field('شمارهٔ فاکتور', f.invoice),
+  const costs = money1 ? h('div', { class: 'wide money' }, h('h3', { class: 'wide' }, 'هزینه‌ها'), field('هزینهٔ خدمات', f.labor), field('تخفیف', f.discount), field('هزینه‌های پرداخت‌شده', f.paid, 'خرجی که خودمان برای این سرویس دادیم؛ مشتری نمی‌بیند و از سود خدمات کم می‌شود'), field('توضیحات هزینهٔ پرداخت‌شده', f.paidNote),
+    h('div', { class: 'sum' }, h('span', {}, 'هزینهٔ قطعات'), out.parts), h('div', { class: 'sum big' }, h('span', {}, 'هزینهٔ نهایی (از مشتری)'), out.total), h('div', { class: 'sum' }, h('span', {}, 'سود خدمات'), out.svc),
+    S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود قطعات'), out.profit) : null, field('شمارهٔ فاکتور', f.invoice),
     pays ? h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'پرداخت‌های مشتری'), pays.el) : null) : field('شمارهٔ فاکتور', f.invoice);
   const el = h('div', {}, title(isNew ? 'پذیرش سرویس' : `سرویس ${j.service_no}`, actions),
     h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('نوع دستگاه', f.dtype), field('وضعیت', f.status), field('تاریخ پذیرش', f.recv), field('تاریخ قول تحویل', f.due), devBox,
@@ -387,14 +388,15 @@ async function viewStats(q) {
   const J = r.jobs, B = r.builds;
   if (J) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سرویس‌ها (بر اساس تاریخ پذیرش)'), h('div', { class: 'cards' }, [card('تعداد', J.count), J.total != null ? card('هزینهٔ نهایی', m(J.total)) : null, J.received != null ? card('دریافت‌شده', m(J.received), J.total > J.received ? 'مانده ' + m(J.total - J.received) : '') : null,
     J.labor != null ? card('هزینهٔ خدمات', m(J.labor)) : null, J.parts_sell != null ? card('فروش قطعات', m(J.parts_sell)) : null, J.paid_out != null ? card('هزینه‌های پرداخت‌شده', m(J.paid_out)) : null, J.discount != null ? card('تخفیف', m(J.discount)) : null,
-    J.parts_buy != null ? card('خرید قطعات', m(J.parts_buy)) : null, J.profit != null ? card('سود', m(J.profit), miss(J.missing_cost)) : null]), counts(J.by_status, S.cfg.jobStatuses)));
+    J.parts_buy != null ? card('خرید قطعات', m(J.parts_buy)) : null, J.service_profit != null ? card('سود خدمات', m(J.service_profit)) : null, J.parts_profit != null ? card('سود قطعات', m(J.parts_profit), miss(J.missing_cost)) : null]), counts(J.by_status, S.cfg.jobStatuses)));
   if (B) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سیستم‌های نو (بر اساس تاریخ فروش)'), h('div', { class: 'cards' }, [card('تعداد', B.count), B.sell != null ? card('فروش', m(B.sell), B.missing_price ? B.missing_price + ' قطعه قیمت فروش ندارد' : '') : null,
-    B.buy != null ? card('خرید قطعات', m(B.buy)) : null, B.profit != null ? card('سود', m(B.profit), miss(B.missing_cost)) : null]), counts(B.by_status, S.cfg.buildStatuses)));
+    B.buy != null ? card('خرید قطعات', m(B.buy)) : null, B.profit != null ? card('سود قطعات', m(B.profit), miss(B.missing_cost)) : null]), counts(B.by_status, S.cfg.buildStatuses)));
+  if (r.sum) out.append(h('section', { class: 'panel' }, h('h3', {}, 'جمع سود این بازه'), h('div', { class: 'cards' }, card('سود خدمات', m(r.sum.service_profit)), card('سود قطعات (سرویس و سیستم نو)', m(r.sum.parts_profit), [miss(r.sum.missing_cost), r.sum.missing_price ? r.sum.missing_price + ' قطعه قیمت فروش ندارد' : ''].filter(Boolean).join(' · ')), card('سود کل', m(r.sum.profit)))));
   const mo = r.months; const hasMoney = mo.some(x => x.jobs_total != null || x.builds_sell != null);
   out.append(h('section', { class: 'panel' }, h('h3', {}, 'ماه به ماه'), table(['ماه'].concat(J ? ['سرویس'] : [], J && hasMoney ? ['مبلغ سرویس‌ها'] : [], J && mo.some(x => x.jobs_profit != null) ? ['سود سرویس‌ها'] : [], B ? ['سیستم نو'] : [], B && hasMoney ? ['فروش سیستم‌ها'] : [], B && mo.some(x => x.builds_profit != null) ? ['سود سیستم‌ها'] : []),
     mo.map(x => h('tr', {}, [x.month, x.jobs, m(x.jobs_total), m(x.jobs_profit), x.builds, m(x.builds_sell), m(x.builds_profit)].filter((v, i) => [true, !!J, J && hasMoney, J && x.jobs_profit != null, !!B, B && hasMoney, B && x.builds_profit != null][i]).map(v => h('td', { class: 'lat' }, v == null ? '—' : v)))), 'در این بازه چیزی ثبت نشده است.')));
   if (r.top.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'پرفروش‌ترین قطعات'), table(['قطعه', 'تعداد'].concat(r.top[0].revenue != null ? ['مبلغ فروش'] : []), r.top.map(x => h('tr', {}, h('td', {}, x.name), h('td', {}, x.qty), x.revenue != null ? h('td', { class: 'lat' }, m(x.revenue)) : null)))));
-  out.append(h('p', { class: 'muted' }, 'سود سرویس = هزینهٔ خدمات − تخفیف + (فروش − خرید قطعات)؛ هزینه‌های پرداخت‌شده به مشتری حساب می‌شوند و سود نیستند. سود سیستم نو = فروش قطعات − خرید آن‌ها. اگر قطعه‌ای قیمت خرید نداشته باشد، سود «ناقص» است و سود واقعی کمتر است.'));
+  out.append(h('p', { class: 'muted' }, 'مشتری فقط خدمات و قطعات (منهای تخفیف) را می‌پردازد. سود خدمات = هزینهٔ خدمات − تخفیف − هزینه‌های پرداخت‌شده. سود قطعات = فروش − خرید، در سرویس‌ها و سیستم‌های نو. اگر قطعه‌ای قیمت خرید نداشته باشد، سود قطعات «ناقص» است و سود واقعی کمتر است.'));
   return out;
 }
 

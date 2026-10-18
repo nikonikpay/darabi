@@ -83,7 +83,7 @@ final class MZC_Api
 
     private static function customer_out($c)
     {
-        return array('id' => (int) $c['id'], 'name' => $c['name'], 'mobile' => (string) $c['mobile'], 'mobile2' => (string) $c['mobile2'], 'phone' => (string) $c['phone'], 'national_id' => (string) $c['national_id'], 'email' => (string) $c['email'],
+        return array('id' => (int) $c['id'], 'name' => $c['name'], 'mobile' => (string) $c['mobile'], 'mobile2' => (string) $c['mobile2'], 'mobiles' => MZC_Crm::mobiles_of($c), 'phone' => (string) $c['phone'], 'national_id' => (string) $c['national_id'], 'email' => (string) $c['email'],
             'address' => (string) $c['address'], 'notes' => (string) $c['notes'], 'group' => (string) $c['grp'], 'groupText' => isset(MZC_Crm::$groups[$c['grp']]) ? MZC_Crm::$groups[$c['grp']] : '', 'updated' => $c['updated']);
     }
 
@@ -235,7 +235,9 @@ final class MZC_Api
             if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این مشتری در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::customer_out($old))); }
         }
         $nid = self::s($p, 'national_id', 20); $email = self::s($p, 'email', 190);
-        $r = MZC_Crm::save_customer($id, self::s($p, 'name', 190), self::s($p, 'mobile', 30), array('mobile2' => self::s($p, 'mobile2', 30), 'phone' => self::s($p, 'phone', 80) ?: null, 'national_id' => $nid ?: null,
+        // `mobiles` (every number, the main one first) wins over mobile/mobile2 when sent
+        $more = isset($p['mobiles']) && is_array($p['mobiles']) ? array('mobiles' => array_map(function ($x) { return is_scalar($x) ? mb_substr((string) $x, 0, 30) : ''; }, $p['mobiles'])) : array();
+        $r = MZC_Crm::save_customer($id, self::s($p, 'name', 190), self::s($p, 'mobile', 30), $more + array('mobile2' => self::s($p, 'mobile2', 30), 'phone' => self::s($p, 'phone', 80) ?: null, 'national_id' => $nid ?: null,
             'email' => $email !== '' && is_email($email) ? $email : null, 'address' => self::s($p, 'address', 1000) ?: null, 'notes' => self::s($p, 'notes', 4000) ?: null, 'grp' => self::s($p, 'group', 12)));
         if (!is_int($r)) { return self::fail($r, 422); }
         self::log($a, $id ? 'update' : 'create', 'customer', $r);

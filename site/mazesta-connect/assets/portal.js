@@ -140,10 +140,9 @@
         add(c, head);
         var dl = el('dl', 'mzcp-kv'); kv(dl, 'تاریخ پذیرش', j.received); kv(dl, 'موعد تحویل', j.due); kv(dl, 'تاریخ تحویل', j.closed); kv(dl, 'شمارهٔ فاکتور', j.invoice);
         if (j.recv && j.recv.length) kv(dl, 'قطعات تحویل‌گرفته‌شده', j.recv.map(function (x) { return x.name + (x.serial ? ' (' + x.serial + ')' : ''); }).join('، ')); kv(dl, 'درخواست شما', j.complaint); kv(dl, 'کارهای انجام‌شده', j.work); add(c, dl);
-        if (j.parts.length || j.labor || j.other) {
+        if (j.parts.length || j.labor) {
           var t = el('table', 'mzcp-table'), hd = el('tr'); ['قطعه / کار', 'تعداد', 'قیمت واحد', 'جمع'].forEach(function (x) { hd.appendChild(el('th', '', x)); }); t.appendChild(hd);
           j.parts.forEach(function (p) { var r = el('tr'); [p.name + (p.months ? ' (گارانتی ' + p.months + ' ماه)' : ''), p.qty.toLocaleString('fa-IR'), money(p.price), money(p.qty * p.price)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); });
-          if (j.other) { var ro = el('tr'); ['سایر هزینه‌ها', '', '', money(j.other)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); ro.appendChild(td); }); t.appendChild(ro); }
           if (j.labor) { var r = el('tr'); ['هزینهٔ خدمات', '', '', money(j.labor)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); }
           add(c, el('div', 'mzcp-scroll', null)).lastChild.appendChild(t);
           if (j.discount) add(c, el('p', 'mzcp-sub', 'تخفیف: ' + money(j.discount)));

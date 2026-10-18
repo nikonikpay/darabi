@@ -6,13 +6,19 @@ if (!MZC_Admin::need_crm()) { return; }
 $view = isset($_GET['view']) ? (int) $_GET['view'] : 0;
 $add = !empty($_GET['add']);
 
-$form = function ($c) {
+/** Any number of mobile numbers: the first is the main one (SMS); the customer signs in to their page with any of them. */
+$mobiles = function ($c) {
+    $row = function ($n) { return '<div class="mzc-row"><input type="text" name="mobiles[]" dir="ltr" value="' . esc_attr($n) . '" placeholder="09121234567" inputmode="tel"><button type="button" class="mzc-btn sm danger x" data-mzc-remove>حذف</button></div>'; };
+    $list = $c ? MZC_Crm::mobiles_of($c) : array(); if (!$list) { $list = array(''); }
+    return '<div class="mzc-field wide"><span>موبایل‌ها (اولی شمارهٔ اصلی و پیامک است؛ ورود مشتری به پورتال با هر کدام)</span><div class="mzc-rows" id="mzc-mob" data-next="' . count($list) . '">' . implode('', array_map($row, $list))
+        . '</div><template id="mzc-mob-tpl">' . $row('') . '</template><p><button type="button" class="mzc-btn sm" data-mzc-add="mzc-mob">+ موبایل</button></p></div>';
+};
+$form = function ($c) use ($mobiles) {
     $v = function ($k) use ($c) { return $c && isset($c[$k]) ? esc_attr((string) $c[$k]) : ''; };
     echo MZC_Admin::form_open('customer_save', 'class="mzc-form"') . ($c ? '<input type="hidden" name="id" value="' . (int) $c['id'] . '">' : '') . '<div class="mzc-fields">'
         . '<label>نام و نام خانوادگی<input type="text" name="name" value="' . $v('name') . '" maxlength="190" required></label>'
         . '<label>گروه<select name="grp">' . implode('', array_map(function ($k, $l) use ($c) { return '<option value="' . esc_attr($k) . '"' . selected($c && isset($c['grp']) ? $c['grp'] : 'customer', $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$groups), MZC_Crm::$groups)) . '</select></label>'
-        . '<label>موبایل<input type="text" name="mobile" dir="ltr" value="' . $v('mobile') . '" placeholder="09121234567"><small>ورود مشتری به پورتال با همین شماره است.</small></label>'
-        . '<label>موبایل دوم<input type="text" name="mobile2" dir="ltr" value="' . $v('mobile2') . '"></label>'
+        . $mobiles($c)
         . '<label>تلفن ثابت<input type="text" name="phone" dir="ltr" value="' . $v('phone') . '"></label>'
         . '<label>کد ملی<input type="text" name="national_id" dir="ltr" value="' . $v('national_id') . '" maxlength="20"></label>'
         . '<label>ایمیل<input type="email" name="email" dir="ltr" value="' . $v('email') . '"></label>'
@@ -33,7 +39,7 @@ if ($view) {
     if (!$c) { echo '<div class="mzc-notice err">مشتری پیدا نشد.</div>'; return; }
     list($builds, $jobs) = MZC_Crm::history($view);
     $forms = MZC_Crm::forms_of($view);
-    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-customers')) . '">‹ مشتریان</a><h2 dir="auto">' . esc_html($c['name']) . '</h2><span class="num muted">' . esc_html(trim($c['mobile'] . ' ' . $c['mobile2'] . ' ' . $c['phone'])) . '</span></div><div class="mzc-actions">'
+    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-customers')) . '">‹ مشتریان</a><h2 dir="auto">' . esc_html($c['name']) . '</h2><span class="num muted">' . esc_html(trim(implode(' · ', MZC_Crm::mobiles_of($c)) . ' ' . $c['phone'])) . '</span></div><div class="mzc-actions">'
         . '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-builds', array('add' => 1, 'customer' => $view))) . '">ثبت سیستم نو</a>'
         . '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('add' => 1, 'customer' => $view))) . '">ثبت سرویس</a>'
         . '<a class="mzc-btn danger" href="' . esc_url(MZC_Admin::post_url('customer_delete', array('id' => $view))) . '" onclick="return confirm(\'این مشتری پاک شود؟\')">حذف مشتری</a></div></div>';

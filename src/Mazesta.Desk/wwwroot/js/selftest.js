@@ -25,8 +25,11 @@ window.deskSelfTest = async (server, user, pass) => {
     // a customer
     const mobile = '0912' + String(Math.floor(1000000 + Math.random() * 8999999));
     location.hash = '#/customer/new'; const cf = await wait(() => document.querySelector('form.panel input[name=name]') && document.querySelector('form.panel'));
-    set(cf.querySelector('input[name=name]'), 'مشتری خودآزمون'); set(cf.querySelector('input[name=mobile]'), '۰۹' + mobile.slice(2).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d])); submit(cf);
+    set(cf.querySelector('input[name=name]'), 'مشتری خودآزمون'); set(cf.querySelector('.rows input[name=number]'), '۰۹' + mobile.slice(2).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]));
+    const extra = ['0935' + mobile.slice(4), '0990' + mobile.slice(4)]; extra.forEach(x => { [...cf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click(); set([...cf.querySelectorAll('.rows input[name=number]')].pop(), x); }); submit(cf);
     const cid = await wait(() => (location.hash.match(/#\/customer\/(\d+)/) || [])[1]); ok('customer saved (Persian digits accepted)', !!cid, 'id=' + cid);
+    const gc = cid ? await GET('staff/customers/' + cid) : null; ok('three mobile numbers kept, the first as the main one', gc && JSON.stringify(gc.customer.mobiles) === JSON.stringify([mobile].concat(extra)) && gc.customer.mobile === mobile, gc && JSON.stringify(gc.customer.mobiles));
+    const fc = await GET('staff/customers' + qs({ q: extra[1].slice(-7) })); ok('found by the third number', fc.items.some(x => String(x.id) === cid));
     // a service for them: the customer found by typing part of their number, a laptop with its serial, the money, a program to install
     location.hash = '#/job/new'; const jf = await wait(() => document.querySelector('form.panel input[name=c_name]') && document.querySelector('form.panel'));
     set(jf.querySelector('input[name=c_mobile]'), mobile.slice(-6));
@@ -37,7 +40,8 @@ window.deskSelfTest = async (server, user, pass) => {
     set(jf.querySelector('input[name=device]'), 'لپ‌تاپ آزمون'); set(jf.querySelector('input[name=device_serial]'), 'SN-' + mobile); set(jf.querySelector('textarea[name=complaint]'), 'خودآزمون: صفحه‌نمایش نمی‌آید');
     if (can('payments', 2)) {
       set(jf.querySelector('input[name=labor]'), '1000000'); set(jf.querySelector('input[name=paid]'), '300000'); set(jf.querySelector('input[name=discount]'), '100000'); set(jf.querySelector('input[name=paid_note]'), 'پیک');
-      const tot = [...jf.querySelectorAll('.sum.big b')][0]; ok('final sum = services + paid-out - discount', tot && tot.textContent === money(1200000), tot && tot.textContent);
+      const tot = jf.querySelector('.sum.big b'), sp = [...jf.querySelectorAll('.sum')].find(x => x.textContent.startsWith('سود خدمات'));
+      ok('customer pays services - discount (paid-out not on the bill); services profit = services - discount - paid-out', tot && tot.textContent === money(900000) && sp && sp.querySelector('b').textContent === money(600000), (tot && tot.textContent) + ' / ' + (sp && sp.textContent));
     }
     const softBox = [...jf.querySelectorAll('.wide')].find(d => d.querySelector('datalist#softlist')); [...softBox.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
     set(softBox.querySelector('input[name=name]'), 'Blender'); ok('the software box suggests from the shop list', softBox.querySelector('input[name=name]').getAttribute('list') === 'softlist' && softBox.querySelectorAll('datalist option').length > 10);
@@ -48,7 +52,7 @@ window.deskSelfTest = async (server, user, pass) => {
     await wait(() => document.querySelector('h2') && /R-\d+/.test(document.querySelector('h2').textContent)); const no = (document.querySelector('h2').textContent.match(/R-\d+/) || [])[0];
     ok('service number shown', !!no, no);
     const gj = await GET('staff/jobs/' + jid);
-    ok('service saved with laptop serial, software and money', gj.device_serial === 'SN-' + mobile && gj.software.length === 1 && gj.software[0].name === 'Blender' && (!can('payments') || (gj.paid === 300000 && gj.paid_note === 'پیک' && gj.total === 1200000)), JSON.stringify({ s: gj.device_serial, sw: gj.software, t: gj.total }));
+    ok('service saved with laptop serial, software and money', gj.device_serial === 'SN-' + mobile && gj.software.length === 1 && gj.software[0].name === 'Blender' && (!can('payments') || (gj.paid === 300000 && gj.paid_note === 'پیک' && gj.total === 900000)), JSON.stringify({ s: gj.device_serial, sw: gj.software, t: gj.total }));
     // label
     await printLabel('job', +jid); const lab = await wait(() => document.querySelector('.modal .label'));
     ok('label preview has the number and a QR', !!lab && lab.textContent.includes(no) && !!lab.querySelector('svg'));

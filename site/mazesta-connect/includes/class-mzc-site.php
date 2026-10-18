@@ -37,8 +37,8 @@ final class MZC_Site
     {
         if (!current_user_can('list_users')) { return array(); }
         $nums = array();
-        foreach (array('mobile', 'mobile2') as $k) {
-            $m = isset($customer[$k]) ? preg_replace('/\D/', '', (string) $customer[$k]) : '';
+        foreach (MZC_Crm::mobiles_of($customer) as $m) {
+            $m = preg_replace('/\D/', '', $m);
             if (strlen($m) === 11 && $m[0] === '0') { array_push($nums, $m, substr($m, 1), '98' . substr($m, 1), '+98' . substr($m, 1)); }
         }
         if (!$nums) { return array(); }

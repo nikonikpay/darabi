@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 10;
+    const SCHEMA = 11;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -143,6 +143,8 @@ final class MZC_Crm_Db
         // schema 10: the programs the customer wants installed (JSON, see MZC_Crm::soft_out), a laptop's serial number, and what the shop's own paid-out costs of a service were for
         $cols['builds'] += array('soft' => 'TEXT NULL');
         $cols['jobs'] += array('soft' => 'TEXT NULL', 'device_serial' => 'VARCHAR(120) NULL', 'paid_note' => 'VARCHAR(255) NULL');
+        // schema 11: a customer's third mobile number onward, one per line (the first two stay in mobile and mobile2)
+        $cols['customers'] += array('mobiles' => 'TEXT NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {

@@ -81,7 +81,7 @@
   var devShow = function () { var sys = dtype.value === 'system'; document.querySelectorAll('[data-mzc-dev]').forEach(function (l) { l.style.display = sys ? 'none' : ''; }); };
   if (dtype && document.querySelector('[data-mzc-dev]')) { dtype.addEventListener('change', devShow); devShow(); }
 
-  /* the service's money, worked out as one types: parts, services + paid-out costs, the final sum and the profit */
+  /* the service's money, worked out as one types: parts, the customer's final sum (parts + services - discount), the services' profit (minus what we paid out) and the parts' profit */
   var money = document.querySelector('[data-mzc-money]');
   if (money) {
     var n = function (v) { v = String(v || '').replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).replace(/[^\d]/g, ''); return v ? parseInt(v, 10) : 0; };
@@ -92,9 +92,8 @@
         var q = r.querySelector('[name$="[qty]"]'), u = r.querySelector('[name$="[unit_price]"]'), b = r.querySelector('[name$="[buy_price]"]'), qty = Math.max(1, n(q && q.value));
         parts += qty * n(u && u.value); cost += qty * n(b && b.value);
       });
-      var svc = g('labor') + g('paid'), total = parts + svc - g('discount');
-      money.querySelector('[data-o="parts"]').textContent = fmt(parts); money.querySelector('[data-o="svc"]').textContent = fmt(svc);
-      money.querySelector('[data-o="total"]').textContent = fmt(total) + ' تومان'; money.querySelector('[data-o="profit"]').textContent = fmt(g('labor') - g('discount') + parts - cost);
+      money.querySelector('[data-o="parts"]').textContent = fmt(parts); money.querySelector('[data-o="svc"]').textContent = fmt(g('labor') - g('discount') - g('paid'));
+      money.querySelector('[data-o="total"]').textContent = fmt(parts + g('labor') - g('discount')) + ' تومان'; money.querySelector('[data-o="profit"]').textContent = fmt(parts - cost);
     };
     document.addEventListener('input', function (e) { if (e.target.closest('[data-mzc-money], #mzc-parts')) calc(); });
     document.addEventListener('click', function (e) { if (e.target.closest('[data-mzc-remove], [data-mzc-add]')) setTimeout(calc, 0); });

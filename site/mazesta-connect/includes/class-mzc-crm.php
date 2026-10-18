@@ -38,7 +38,7 @@ final class MZC_Crm
         if (!Mazesta_Connect::can() || !check_ajax_referer('mzc_customer_find', 'n', false)) { wp_send_json(array('items' => array()), 403); }
         $q = isset($_GET['q']) ? trim(sanitize_text_field(wp_unslash($_GET['q']))) : '';
         list($rows) = mb_strlen($q) >= 2 ? self::customers($q, 1, 8) : array(array());
-        wp_send_json(array('items' => array_map(function ($c) { return array('id' => (int) $c['id'], 'name' => $c['name'], 'mobiles' => array_values(array_filter(array((string) $c['mobile'], (string) $c['mobile2']))), 'phone' => (string) $c['phone']); }, $rows)));
+        wp_send_json(array('items' => array_map(function ($c) { return array('id' => (int) $c['id'], 'name' => $c['name'], 'mobiles' => self::mobiles_of($c), 'phone' => (string) $c['phone']); }, $rows)));
     }
 
     /* ---------- the programs a customer asks for (both forms, and the customer's own page) ---------- */
@@ -186,10 +186,20 @@ final class MZC_Crm
         return $db->get_row($db->prepare('SELECT * FROM `' . self::t('customers') . '` WHERE id = %d', (int) $id), ARRAY_A);
     }
 
+    /** Every mobile number of a customer, the main one first: mobile, mobile2, then the third onward (the `mobiles` column, one per line). */
+    public static function mobiles_of($c)
+    {
+        return array_values(array_unique(array_filter(array_merge(array((string) $c['mobile'], (string) $c['mobile2']), explode("\n", isset($c['mobiles']) ? (string) $c['mobiles'] : '')))));
+    }
+
+    /** The SQL that finds a customer having $n among any of their numbers (with its argument appended to $args). */
+    private static function has_mobile_sql($n, &$args) { array_push($args, $n, $n, '%' . "\n" . $n . "\n" . '%'); return "(mobile = %s OR mobile2 = %s OR CONCAT('\n', COALESCE(mobiles, ''), '\n') LIKE %s)"; }
+
     public static function customer_by_mobile($mobile)
     {
         $db = self::db(); if (!$db) { return null; }
-        return $db->get_row($db->prepare('SELECT * FROM `' . self::t('customers') . '` WHERE mobile = %s OR mobile2 = %s ORDER BY (mobile = %s) DESC LIMIT 1', $mobile, $mobile, $mobile), ARRAY_A);
+        $args = array(); $w = self::has_mobile_sql($mobile, $args); $args[] = $mobile;
+        return $db->get_row($db->prepare('SELECT * FROM `' . self::t('customers') . "` WHERE $w ORDER BY (mobile = %s) DESC LIMIT 1", $args), ARRAY_A);
     }
 
     /** A page of customers (search in name, mobile, national id), newest first, with how many systems and jobs each has. */
@@ -197,7 +207,7 @@ final class MZC_Crm
     {
         $db = self::db(); if (!$db) { return array(array(), 0); }
         $c = self::t('customers'); $where = '1=1'; $args = array();
-        if ($q !== '') { $like = '%' . $db->esc_like(self::digits($q)) . '%'; $likeq = '%' . $db->esc_like($q) . '%'; $where = '(c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s OR c.national_id LIKE %s OR c.phone LIKE %s)'; $args = array($likeq, $like, $like, $like, $like); }
+        if ($q !== '') { $like = '%' . $db->esc_like(self::digits($q)) . '%'; $likeq = '%' . $db->esc_like($q) . '%'; $where = '(c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s OR c.mobiles LIKE %s OR c.national_id LIKE %s OR c.phone LIKE %s)'; $args = array($likeq, $like, $like, $like, $like, $like); }
         if ($grp !== '' && isset(self::$groups[$grp])) { $where = '(' . $where . ') AND c.grp = %s'; $args[] = $grp; }
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) FROM `$c` c WHERE $where", $args) : "SELECT COUNT(*) FROM `$c`");
         $sql = "SELECT c.*, (SELECT COUNT(*) FROM `" . self::t('builds') . "` b WHERE b.customer_id = c.id) AS builds, (SELECT COUNT(*) FROM `" . self::t('jobs') . "` j WHERE j.customer_id = c.id) AS jobs
@@ -206,20 +216,37 @@ final class MZC_Crm
         return array($rows ? $rows : array(), $total);
     }
 
-    /** Creates or updates a customer from the posted fields. Returns the id, or a string with the error. */
+    /** Creates or updates a customer from the posted fields. Returns the id, or a string with the error.
+     *  $extra['mobiles'] (a list, the main number first) sets every mobile number at once; without it $mobile and $extra['mobile2'] set the first two and the rest stay. */
     public static function save_customer($id, $name, $mobile, $extra = array())
     {
         $db = self::db(); if (!$db) { return MZC_Crm_Db::error(); }
+        $more = null;
+        if (isset($extra['mobiles']) && is_array($extra['mobiles'])) {
+            $list = array();
+            foreach ($extra['mobiles'] as $x) {
+                $x = trim((string) $x); if ($x === '') { continue; }
+                $n = self::mobile($x); if ($n === '') { return 'شمارهٔ موبایل «' . $x . '» درست نیست (مثل 09121234567).'; }
+                if (!in_array($n, $list, true)) { $list[] = $n; }
+            }
+            $mobile = isset($list[0]) ? $list[0] : ''; $extra['mobile2'] = isset($list[1]) ? $list[1] : ''; $more = array_slice($list, 2, 20);
+        }
         $m = self::mobile($mobile);
         if ($name === '') { return 'نام مشتری را بنویسید.'; }
         if ($m === '' && trim((string) $mobile) !== '') { return 'شمارهٔ موبایل درست نیست (مثل 09121234567).'; }
         $t = self::t('customers');
-        $dup = $m === '' ? null : $db->get_var($db->prepare("SELECT id FROM `$t` WHERE mobile = %s AND id <> %d", $m, (int) $id));
-        if ($dup) { return 'مشتری دیگری با این شمارهٔ موبایل ثبت شده است.'; }
         $m2 = self::mobile(isset($extra['mobile2']) ? $extra['mobile2'] : '');
+        // a number this customer did not have yet may not belong to somebody else (numbers already on the record never block a save: the old data has some shared ones)
+        $had = $id && ($old = self::customer($id)) ? self::mobiles_of($old) : array();
+        foreach (array_merge(array($m, $m2), (array) $more) as $n) {
+            if ($n === '' || in_array($n, $had, true)) { continue; }
+            $args = array(); $w = self::has_mobile_sql($n, $args); $args[] = (int) $id;
+            if ($db->get_var($db->prepare("SELECT id FROM `$t` WHERE $w AND id <> %d LIMIT 1", $args))) { return 'مشتری دیگری با شمارهٔ ' . $n . ' ثبت شده است.'; }
+        }
         $row = array('name' => $name, 'mobile' => $m === '' ? null : $m, 'mobile2' => $m2 === '' || $m2 === $m ? null : $m2, 'phone' => isset($extra['phone']) ? $extra['phone'] : null, 'phone2' => isset($extra['phone2']) ? $extra['phone2'] : null, 'national_id' => isset($extra['national_id']) ? $extra['national_id'] : null,
             'email' => isset($extra['email']) ? $extra['email'] : null, 'address' => isset($extra['address']) ? $extra['address'] : null, 'notes' => isset($extra['notes']) ? $extra['notes'] : null, 'updated' => self::now());
         if (isset($extra['grp']) && isset(self::$groups[$extra['grp']])) { $row['grp'] = $extra['grp']; }
+        if ($more !== null) { $row['mobiles'] = $more ? implode("\n", $more) : null; }
         if ($id) { $ok = $db->update($t, $row, array('id' => (int) $id)); return $ok === false ? 'ذخیره نشد: ' . $db->last_error : (int) $id; }
         $row['created'] = self::now(); if (!isset($row['grp'])) { $row['grp'] = 'customer'; }
         return $db->insert($t, $row) ? (int) $db->insert_id : 'ذخیره نشد: ' . $db->last_error;
@@ -257,8 +284,8 @@ final class MZC_Crm
         if ($status !== '' && isset(self::$build_statuses[$status])) { $where[] = 'b.status = %s'; $args[] = $status; }
         if ($q !== '') {
             $l = '%' . $db->esc_like($q) . '%';
-            $where[] = "(b.service_no LIKE %s OR b.invoice_no LIKE %s OR b.title LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s OR EXISTS (SELECT 1 FROM `" . self::t('build_parts') . "` p WHERE p.build_id = b.id AND (p.serial LIKE %s OR p.model LIKE %s)))";
-            $d = '%' . $db->esc_like(self::digits($q)) . '%'; array_push($args, $l, $l, $l, $l, $d, $d, $l, $l);
+            $where[] = "(b.service_no LIKE %s OR b.invoice_no LIKE %s OR b.title LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s OR c.mobiles LIKE %s OR EXISTS (SELECT 1 FROM `" . self::t('build_parts') . "` p WHERE p.build_id = b.id AND (p.serial LIKE %s OR p.model LIKE %s)))";
+            $d = '%' . $db->esc_like(self::digits($q)) . '%'; array_push($args, $l, $l, $l, $l, $d, $d, $d, $l, $l);
         }
         $w = implode(' AND ', $where);
         $from = "FROM `$b` b JOIN `$c` c ON c.id = b.customer_id WHERE $w";
@@ -342,10 +369,10 @@ final class MZC_Crm
         return $j;
     }
 
-    /** What the customer pays: parts + labour + the costs the shop paid out for this job - discount (the old form's «هزینهٔ نهایی»). */
+    /** What the customer pays: parts + services - discount. The costs the shop paid out for the job (`paid`) are the shop's own: they lower the service's profit, never the customer's bill. */
     public static function job_total($j)
     {
-        $sum = (int) $j['labor_price'] + (int) $j['paid'] - (int) $j['discount'];
+        $sum = (int) $j['labor_price'] - (int) $j['discount'];
         foreach ($j['parts'] as $p) { $sum += (int) $p['qty'] * (int) $p['unit_price']; }
         return $sum;
     }
@@ -359,12 +386,12 @@ final class MZC_Crm
         if ($q !== '') {
             $l = '%' . $db->esc_like($q) . '%';
             $d = '%' . $db->esc_like(self::digits($q)) . '%';
-            $where[] = '(j.service_no LIKE %s OR j.device LIKE %s OR j.device_serial LIKE %s OR j.complaint LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s)';
-            array_push($args, $l, $l, $l, $l, $l, $d, $d);
+            $where[] = '(j.service_no LIKE %s OR j.device LIKE %s OR j.device_serial LIKE %s OR j.complaint LIKE %s OR c.name LIKE %s OR c.mobile LIKE %s OR c.mobile2 LIKE %s OR c.mobiles LIKE %s)';
+            array_push($args, $l, $l, $l, $l, $l, $d, $d, $d);
         }
         $from = "FROM `$j` j JOIN `$c` c ON c.id = j.customer_id WHERE " . implode(' AND ', $where);
         $total = (int) $db->get_var($args ? $db->prepare("SELECT COUNT(*) $from", $args) : "SELECT COUNT(*) $from");
-        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price + j.paid - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
+        $rows = $db->get_results($db->prepare("SELECT j.*, c.name AS customer_name, c.mobile AS customer_mobile, j.labor_price - j.discount + COALESCE((SELECT SUM(p.qty * p.unit_price) FROM `" . self::t('job_parts') . "` p WHERE p.job_id = j.id AND p.kind <> 'in'), 0) AS total $from ORDER BY j.id DESC LIMIT %d OFFSET %d",
             array_merge($args, array((int) $per, (int) (($page - 1) * $per)))), ARRAY_A);
         return array($rows ? $rows : array(), $total);
     }
@@ -432,7 +459,8 @@ final class MZC_Crm
     {
         MZC_Admin::guard('customer_save');
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
-        $r = self::save_customer($id, self::post('name', 190), self::post('mobile', 30), array('mobile2' => self::post('mobile2', 30), 'phone' => self::post('phone', 80) ?: null, 'phone2' => null, 'national_id' => self::post('national_id', 20) ?: null,
+        $mob = isset($_POST['mobiles']) && is_array($_POST['mobiles']) ? array_map(function ($x) { return Mazesta_Connect::clip((string) $x, 30); }, wp_unslash($_POST['mobiles'])) : array();
+        $r = self::save_customer($id, self::post('name', 190), '', array('mobiles' => $mob, 'phone' => self::post('phone', 80) ?: null, 'phone2' => null, 'national_id' => self::post('national_id', 20) ?: null,
             'email' => sanitize_email(self::post('email', 190)) ?: null, 'address' => self::post_long('address', 1000) ?: null, 'notes' => self::post_long('notes') ?: null, 'grp' => self::post('grp', 12)));
         if (!is_int($r)) { MZC_Admin::back('mzc-customers', 'err:' . $r, $id ? array('view' => $id) : array('add' => 1)); }
         MZC_Admin::back('mzc-customers', 'ok:مشتری ثبت شد.', array('view' => $r));

@@ -55,10 +55,10 @@ if ($add || $edit) {
     echo '<div class="mzc-field wide"><span>هزینه‌ها</span><div class="mzc-fields" data-mzc-money>'
         . '<label>هزینهٔ خدمات (تومان)<input type="text" name="labor_price" value="' . $v('labor_price') . '" dir="ltr" inputmode="numeric" data-m="labor"></label>'
         . '<label>تخفیف (تومان)<input type="text" name="discount" value="' . $v('discount') . '" dir="ltr" inputmode="numeric" data-m="discount"></label>'
-        . '<label>هزینه‌های پرداخت‌شده (تومان)<input type="text" name="paid" value="' . $v('paid') . '" dir="ltr" inputmode="numeric" data-m="paid"><small>خرجی که خودمان برای این سرویس دادیم (پیک، تعمیرگاه بیرون ...)؛ به مشتری حساب می‌شود ولی سود نیست.</small></label>'
+        . '<label>هزینه‌های پرداخت‌شده (تومان)<input type="text" name="paid" value="' . $v('paid') . '" dir="ltr" inputmode="numeric" data-m="paid"><small>خرجی که خودمان برای این سرویس دادیم (پیک، تعمیرگاه بیرون ...)؛ مشتری آن را نمی‌بیند و از سود خدمات کم می‌شود.</small></label>'
         . '<label>توضیحات هزینهٔ پرداخت‌شده<input type="text" name="paid_note" value="' . $v('paid_note') . '" maxlength="255"></label>'
-        . '<div class="mzc-sum"><span>هزینهٔ قطعات</span><b data-o="parts">۰</b></div><div class="mzc-sum"><span>خدمات + پرداختی‌ها</span><b data-o="svc">۰</b></div>'
-        . '<div class="mzc-sum big"><span>هزینهٔ نهایی</span><b data-o="total">۰</b></div><div class="mzc-sum"><span>سود (بدون هزینه‌های پرداخت‌شده و قیمت خرید قطعات)</span><b data-o="profit">۰</b></div>'
+        . '<div class="mzc-sum"><span>هزینهٔ قطعات</span><b data-o="parts">۰</b></div><div class="mzc-sum"><span>سود خدمات (خدمات − تخفیف − پرداخت‌شده)</span><b data-o="svc">۰</b></div>'
+        . '<div class="mzc-sum big"><span>هزینهٔ نهایی (از مشتری)</span><b data-o="total">۰</b></div><div class="mzc-sum"><span>سود قطعات (فروش − خرید)</span><b data-o="profit">۰</b></div>'
         . '<label>شمارهٔ فاکتور (حسابداری)<input type="text" name="invoice_no" value="' . $v('invoice_no') . '" dir="ltr" maxlength="60"></label></div></div>';
     $prow = function ($n, $p) {
         return '<div class="mzc-row"><input type="text" name="pays[' . $n . '][amount]" value="' . esc_attr($p['amount']) . '" placeholder="مبلغ واریزی (تومان)" dir="ltr" inputmode="numeric"><input type="text" name="pays[' . $n . '][account]" value="' . esc_attr($p['account']) . '" placeholder="واریز به حساب (پوز، کارت ...)" maxlength="120">'
@@ -92,9 +92,10 @@ if ($view) {
     if (!$j['parts']) { echo '<tr><td class="empty" colspan="5">قطعه‌ای اضافه نشده است.</td></tr>'; }
     foreach ($j['parts'] as $p) { echo '<tr><td dir="auto">' . ($p['product_id'] ? '<a href="' . esc_url(MZC_Admin::url('mzc-stock', array('view' => (int) $p['product_id']))) . '">' . esc_html($p['name']) . '</a>' : esc_html($p['name'])) . ($p['warranty_months'] ? ' ' . MZC_Admin::pill('گارانتی ' . (int) $p['warranty_months'] . ' ماه') : ($p['has_warranty'] ? ' ' . MZC_Admin::pill('گارانتی') : '')) . ($p['has_box'] ? ' ' . MZC_Admin::pill('جعبه') : '') . '</td><td class="num">' . esc_html($p['serial'] ?: '—') . '</td><td class="n">' . MZC_Admin::num($p['qty']) . '</td><td class="n">' . esc_html(number_format((int) $p['unit_price'])) . '</td><td class="n">' . esc_html(number_format((int) $p['qty'] * (int) $p['unit_price'])) . '</td></tr>'; }
     echo '<tr><td colspan="4"><strong>هزینهٔ خدمات</strong></td><td class="n">' . esc_html(number_format((int) $j['labor_price'])) . '</td></tr>'
-        . ((int) $j['paid'] ? '<tr><td colspan="4"><strong>هزینه‌های پرداخت‌شده</strong>' . ($j['paid_note'] ? ' <span class="muted" dir="auto">' . esc_html($j['paid_note']) . '</span>' : '') . '</td><td class="n">' . esc_html(number_format((int) $j['paid'])) . '</td></tr>' : '')
         . ((int) $j['discount'] ? '<tr><td colspan="4"><strong>تخفیف</strong></td><td class="n">- ' . esc_html(number_format((int) $j['discount'])) . '</td></tr>' : '')
-        . '<tr><td colspan="4"><strong>هزینهٔ نهایی</strong></td><td class="n"><strong>' . esc_html(MZC_Crm::money($j['total'])) . '</strong></td></tr></tbody></table></div></div>';
+        . '<tr><td colspan="4"><strong>هزینهٔ نهایی</strong></td><td class="n"><strong>' . esc_html(MZC_Crm::money($j['total'])) . '</strong></td></tr>'
+        . ((int) $j['paid'] ? '<tr class="muted"><td colspan="4">هزینه‌های پرداخت‌شده (خرج خودمان، مشتری نمی‌بیند)' . ($j['paid_note'] ? ' — <span dir="auto">' . esc_html($j['paid_note']) . '</span>' : '') . '</td><td class="n">' . esc_html(number_format((int) $j['paid'])) . '</td></tr>' : '')
+        . '</tbody></table></div></div>';
     $paidSum = 0; foreach ($j['pays'] as $p) { $paidSum += (int) $p['amount']; }
     if ($j['pays']) {
         echo '<div class="mzc-panel"><header><h3>پرداخت‌ها</h3>' . MZC_Admin::pill('جمع: ' . MZC_Crm::money($paidSum), $paidSum >= (int) $j['total'] ? 'ok' : 'warn') . '</header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>حساب</th><th>تراکنش</th><th>صاحب حساب</th><th class="n">مبلغ</th></tr></thead><tbody>';

@@ -3,8 +3,9 @@ if (!defined('ABSPATH')) { exit; }
 
 /**
  * The money and the counts of a period: services by the day they were received, new computers by the day they were sold (or registered).
- * A service's price to the customer is parts + labour + the costs the shop paid out for it - discount; its profit leaves out what was paid out and what the parts cost.
- * A computer's sale is the sum of its parts' selling prices, its profit that minus their buying prices. A part without a buying price is counted (missing_cost), never
+ * A service's price to the customer is parts + services - discount. Its profit comes in two parts: the services' profit (services - discount - the costs the shop paid
+ * out for the job, which the customer never sees) and the parts' profit (selling - buying prices). A computer's sale is the sum of its parts' selling prices, its profit
+ * that minus their buying prices (parts' profit too). A part without a buying price is counted (missing_cost), never
  * taken as free: the page says the profit is incomplete instead of showing a profit that is too high. Shown on the plugin's report page, the staff apps and the MCP tool.
  */
 final class MZC_Report
@@ -44,7 +45,7 @@ final class MZC_Report
                 (SELECT COUNT(*) FROM `$bp` p WHERE p.build_id = b.id AND p.sell_price IS NULL) AS noprice
             FROM `" . self::t('builds') . "` b WHERE COALESCE(b.sold_at, DATE(b.created)) BETWEEN %s AND %s", $from, $to), ARRAY_A) ?: array();
 
-        $J = array('count' => 0, 'by_status' => array(), 'labor' => 0, 'paid_out' => 0, 'discount' => 0, 'parts_sell' => 0, 'parts_buy' => 0, 'total' => 0, 'received' => 0, 'profit' => 0, 'missing_cost' => 0);
+        $J = array('count' => 0, 'by_status' => array(), 'labor' => 0, 'paid_out' => 0, 'discount' => 0, 'parts_sell' => 0, 'parts_buy' => 0, 'total' => 0, 'received' => 0, 'service_profit' => 0, 'parts_profit' => 0, 'profit' => 0, 'missing_cost' => 0);
         $B = array('count' => 0, 'by_status' => array(), 'sell' => 0, 'buy' => 0, 'profit' => 0, 'missing_cost' => 0, 'missing_price' => 0);
         $months = array();
         $month = function ($at) use (&$months) {
@@ -53,8 +54,9 @@ final class MZC_Report
             return $k;
         };
         foreach ($jobs as $r) {
-            $total = (int) $r['labor_price'] + (int) $r['paid'] - (int) $r['discount'] + (int) $r['sell'];
-            $profit = (int) $r['labor_price'] - (int) $r['discount'] + (int) $r['sell'] - (int) $r['buy'];
+            $total = (int) $r['labor_price'] - (int) $r['discount'] + (int) $r['sell'];
+            $svc = (int) $r['labor_price'] - (int) $r['discount'] - (int) $r['paid']; $pp = (int) $r['sell'] - (int) $r['buy']; $profit = $svc + $pp;
+            $J['service_profit'] += $svc; $J['parts_profit'] += $pp;
             $J['count']++; $J['by_status'][$r['status']] = (isset($J['by_status'][$r['status']]) ? $J['by_status'][$r['status']] : 0) + 1;
             $J['labor'] += (int) $r['labor_price']; $J['paid_out'] += (int) $r['paid']; $J['discount'] += (int) $r['discount']; $J['parts_sell'] += (int) $r['sell']; $J['parts_buy'] += (int) $r['buy'];
             $J['total'] += $total; $J['received'] += (int) $r['got']; $J['profit'] += $profit; $J['missing_cost'] += (int) $r['nocost'];
@@ -74,7 +76,8 @@ final class MZC_Report
             ) x GROUP BY name ORDER BY revenue DESC, qty DESC LIMIT 10", $from, $to, $from, $to), ARRAY_A) ?: array();
         foreach ($top as &$x) { $x['qty'] = (int) $x['qty']; $x['revenue'] = (int) $x['revenue']; } unset($x);
 
-        return array('from' => $from, 'to' => $to, 'from_j' => MZC_Crm::jdate($from), 'to_j' => MZC_Crm::jdate($to), 'jobs' => $J, 'builds' => $B, 'months' => array_values($months), 'top' => $top);
+        $sum = array('service_profit' => $J['service_profit'], 'parts_profit' => $J['parts_profit'] + $B['profit'], 'profit' => $J['profit'] + $B['profit'], 'missing_cost' => $J['missing_cost'] + $B['missing_cost'], 'missing_price' => $B['missing_price']);
+        return array('from' => $from, 'to' => $to, 'sum' => $sum, 'from_j' => MZC_Crm::jdate($from), 'to_j' => MZC_Crm::jdate($to), 'jobs' => $J, 'builds' => $B, 'months' => array_values($months), 'top' => $top);
     }
 
     /** $r with only what a person may see: counts per area they can view; money with 'payments'; buying costs and profit with the cost right as well. */
@@ -85,7 +88,8 @@ final class MZC_Report
             if (!$cost) { foreach ($costKeys as $k) { unset($x[$k]); } }
             return $x;
         };
-        $r['jobs'] = $jobs ? $keep($r['jobs'], array('labor', 'paid_out', 'discount', 'parts_sell', 'total', 'received', 'profit', 'parts_buy', 'missing_cost'), array('parts_buy', 'profit', 'missing_cost')) : null;
+        $r['jobs'] = $jobs ? $keep($r['jobs'], array('labor', 'paid_out', 'discount', 'parts_sell', 'total', 'received', 'service_profit', 'parts_profit', 'profit', 'parts_buy', 'missing_cost'), array('parts_buy', 'service_profit', 'parts_profit', 'profit', 'missing_cost', 'paid_out')) : null;
+        $r['sum'] = $jobs && $builds && $money && $cost ? $r['sum'] : null;   // the totals mix both areas and the costs
         $r['builds'] = $builds ? $keep($r['builds'], array('sell', 'buy', 'profit', 'missing_cost', 'missing_price'), array('buy', 'profit', 'missing_cost')) : null;
         foreach ($r['months'] as &$m) {
             if (!$jobs) { unset($m['jobs'], $m['jobs_total'], $m['jobs_profit']); } if (!$builds) { unset($m['builds'], $m['builds_sell'], $m['builds_profit']); }
