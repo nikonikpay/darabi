@@ -67,6 +67,7 @@ internal sealed class Program : ApplicationContext
         Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         using var app = new Program();
+        Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;   // the overlay is drawn here; it must keep up while other programs load every core
         try { app.Start(overlayOnly, background); Application.Run(app); }
         finally { app.End(); }
         return 0;

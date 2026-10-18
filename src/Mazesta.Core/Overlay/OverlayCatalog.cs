@@ -81,7 +81,8 @@ public static class OverlayCatalog
         .. Enumerable.Range(1, MaxCcds).Select(n => new OverlayItem($"cpu.ccdtemp{n}", OverlayPart.Cpu, $"Overlay_CcdTemp{n}", [SensorRole.CpuCcdTemp], FixedMax: Percent) { NamePrefix = $"CCD{n} " }),
         new("cpu.maxclock", OverlayPart.Cpu, "Overlay_MaxClock", [SensorRole.CpuEffectiveClock, SensorRole.CpuCoreClock], OverlayAggregate.Max),
         new("cpu.power", OverlayPart.Cpu, "Overlay_Power", [SensorRole.CpuPackagePower]),
-        new("cpu.voltage", OverlayPart.Cpu, "Overlay_Voltage", [SensorRole.CpuVcore]),
+        // A Ryzen's highest core VID first: the SVI2 telemetry LHM reads on mobile Ryzens is stuck or far too high (1.55 V on a 5900HS), the VID follows the load.
+        new("cpu.voltage", OverlayPart.Cpu, "Overlay_Voltage", [SensorRole.CpuCoreVid, SensorRole.CpuVcore], OverlayAggregate.Max),
         new("cpu.fan", OverlayPart.Cpu, "Overlay_FanRpm", [SensorRole.CpuFan]),
         new("cpu.tctl", OverlayPart.Cpu, "Overlay_Tctl", [SensorRole.CpuTctlTdie], FixedMax: Percent),
 
@@ -140,9 +141,9 @@ public static class OverlayCatalog
         ["render"] = Choices("cpu.load:c cpu.temp:c cpu.clock cpu.power gpu.load:c gpu.temp gpu.power gpu.vram gpu.vramload gpu.vramtemp ram.used:c ram.load storage.read storage.write storage.activity"),
         // Troubleshooting: everything the processor, graphics card, memory and drives report - every temperature (each CCD's too), clock,
         // voltage, power and fan that tells a throttling or failing part. Items a machine has no sensor for are simply not drawn.
-        ["troubleshoot"] = Choices("cpu.load cpu.temp:c cpu.hotcore:c cpu.tctl cpu.ccdtemp1 cpu.ccdtemp2 cpu.ccdtemp3 cpu.ccdtemp4 cpu.ccdtemp5 cpu.ccdtemp6 cpu.ccdtemp7 cpu.ccdtemp8 cpu.clock cpu.maxclock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.voltage cpu.maxthread cpu.fan " +
-            "gpu.load gpu.temp:c gpu.hotspot gpu.vramtemp gpu.vram gpu.vramload gpu.clock gpu.memclock gpu.power gpu.voltage gpu.fan gpu.fanrpm " +
-            "ram.load ram.temp ram.speed ram.used storage.temp storage.read storage.write storage.activity"),
+        ["troubleshoot"] = Choices("cpu.load cpu.temp:c cpu.hotcore:c cpu.tctl:c cpu.ccdtemp1:c cpu.ccdtemp2:c cpu.ccdtemp3:c cpu.ccdtemp4:c cpu.ccdtemp5:c cpu.ccdtemp6:c cpu.ccdtemp7:c cpu.ccdtemp8:c cpu.clock cpu.maxclock cpu.pclock cpu.eclock cpu.ccd1 cpu.ccd2 cpu.ccd3 cpu.ccd4 cpu.ccd5 cpu.ccd6 cpu.ccd7 cpu.ccd8 cpu.power cpu.voltage cpu.maxthread cpu.fan " +
+            "gpu.load gpu.temp:c gpu.hotspot:c gpu.vramtemp:c gpu.vram gpu.vramload gpu.clock gpu.memclock gpu.power gpu.voltage gpu.fan gpu.fanrpm " +
+            "ram.load ram.temp:c ram.speed ram.used storage.temp:c storage.read storage.write storage.activity"),
     };
     public const string DefaultPreset = "game";
     /// <summary>The ready-made sets in the order the shortcut walks them.</summary>

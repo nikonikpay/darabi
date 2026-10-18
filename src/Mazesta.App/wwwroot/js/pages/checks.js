@@ -25,13 +25,20 @@ const WIDE = { Backspace: 2, Tab: 1.5, Backslash: 1.5, CapsLock: 1.8, Enter: 2.2
 const SCREENS = ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#808080", "linear-gradient(90deg, #000, #fff)", "repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 2px 2px"];
 
 const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Battery: "battery" };
+// The technician's calls are kept (they were lost on leaving the page), so what was checked stays marked.
+const VERDICTS = "mazesta.checks";
+const verdicts = () => { try { return JSON.parse(localStorage.getItem(VERDICTS)) || {}; } catch { return {}; } };
 function card(key, ico, body) {
   const verdict = h("div", { class: "chk-verdict" });
   let state = "";
-  const pick = (v) => { state = state === v ? "" : v; ok.classList.toggle("on", state === "ok"); bad.classList.toggle("on", state === "bad"); };
+  const pick = (v) => {
+    state = state === v ? "" : v; ok.classList.toggle("on", state === "ok"); bad.classList.toggle("on", state === "bad");
+    const all = verdicts(); if (state) all[key] = state; else delete all[key]; try { localStorage.setItem(VERDICTS, JSON.stringify(all)); } catch { /* not kept */ }
+  };
   const ok = h("button", { class: "btn quiet chk-ok", onclick: () => pick("ok") }, icon("check"), t("Checks_Ok"));
   const bad = h("button", { class: "btn quiet chk-bad", onclick: () => pick("bad") }, icon("alert"), t("Checks_Problem"));
   verdict.append(h("span", { class: "caption" }, t("Checks_YourCall")), ok, bad);
+  if (verdicts()[key]) pick(verdicts()[key]);
   return h("section", { class: "panel chk", "data-a": CHECK_TARGET[key] }, h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(ico)),
     h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, t(`Checks_${key}`)), h("div", { class: "panel-sub fa" }, t(`Checks_${key}_Sub`)))), body, verdict);
 }
@@ -81,9 +88,24 @@ function keyboard(cleanup) {
     h("div", { class: "kb-wrap" }, board)));
 }
 
+// A picker of the sound devices of one kind ("audioinput", "audiooutput"); the first entry is Windows' default. Names show once the microphone was allowed.
+function devicePicker(kind, cleanup, onchange) {
+  const sel = h("select", { class: "field", "aria-label": t(kind === "audioinput" ? "Checks_Mic_Input" : "Checks_Speakers_Output"), onchange: () => onchange(sel.value) });
+  const fill = async () => {
+    const keep = sel.value, list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === kind && d.deviceId !== "default" && d.deviceId !== "communications");
+    sel.replaceChildren(h("option", { value: "" }, t("Checks_DefaultDevice")), ...list.map((d, i) => h("option", { value: d.deviceId }, d.label || `${t("Checks_Device")} ${i + 1}`)));
+    sel.value = list.some((d) => d.deviceId === keep) ? keep : "";
+  };
+  fill().catch(() => {});
+  navigator.mediaDevices.addEventListener("devicechange", fill); cleanup.push(() => navigator.mediaDevices.removeEventListener("devicechange", fill));
+  sel.refill = fill;
+  return sel;
+}
+
 function speakers(cleanup) {
-  let ctx = null, playing = null;
-  const audio = () => (ctx ||= new AudioContext());
+  let ctx = null, playing = null, sink = "";
+  const audio = () => { if (!ctx) { ctx = new AudioContext(); if (sink) ctx.setSinkId(sink).catch(() => {}); } return ctx; };
+  const output = devicePicker("audiooutput", cleanup, (id) => { sink = id; stop(); ctx?.setSinkId(id).catch(() => {}); });
   const stop = () => { try { playing?.stop(); } catch { /* already stopped */ } playing = null; };
   cleanup.push(() => { stop(); ctx?.close(); });
   // A tone panned hard left, right or centre; the sweep runs 20 Hz to 20 kHz to find a rattle or a dead range.
@@ -96,6 +118,7 @@ function speakers(cleanup) {
     osc.connect(gain).connect(panner).connect(a.destination); osc.start(now); osc.stop(now + len); playing = osc;
   }
   return card("Speakers", "bolt", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Speakers_Text")),
+    h("div", { class: "btn-row" }, h("span", { class: "caption" }, t("Checks_Speakers_Output")), output),
     h("div", { class: "btn-row" },
       h("button", { class: "btn", onclick: () => tone(-1) }, t("Checks_Left")), h("button", { class: "btn", onclick: () => tone(0) }, t("Checks_Both")),
       h("button", { class: "btn", onclick: () => tone(1) }, t("Checks_Right")), h("button", { class: "btn", onclick: () => tone(0, true) }, t("Checks_Sweep")),
@@ -104,13 +127,15 @@ function speakers(cleanup) {
 
 function microphone(cleanup) {
   const bar = h("div", { class: "progress chk-level" }, h("i")), peak = h("span", { class: "lat" }, "-"), status = h("p", { class: "caption" });
-  let stream = null, ctx = null, raf = 0, top = 0;
+  let stream = null, ctx = null, raf = 0, top = 0, input = "";
+  const pickerSel = devicePicker("audioinput", cleanup, (id) => { input = id; if (stream) start(); });
   const stop = () => { cancelAnimationFrame(raf); stream?.getTracks().forEach((x) => x.stop()); ctx?.close(); stream = ctx = null; bar.firstChild.style.setProperty("--p", 0); };
   cleanup.push(stop);
   async function start() {
     stop(); top = 0;
-    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: input ? { exact: input } : undefined, echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
     catch (e) { status.textContent = t("Checks_Mic_Denied", e.name || String(e)); return; }
+    pickerSel.refill().catch(() => {});   // the names come with the permission
     const track = stream.getAudioTracks()[0]; status.textContent = t("Checks_Mic_Device", track?.label || "-");
     ctx = new AudioContext(); const an = ctx.createAnalyser(); an.fftSize = 2048; ctx.createMediaStreamSource(stream).connect(an);
     const buf = new Float32Array(an.fftSize);
@@ -123,6 +148,7 @@ function microphone(cleanup) {
     tick();
   }
   return card("Mic", "chat", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Mic_Text")),
+    h("div", { class: "btn-row" }, h("span", { class: "caption" }, t("Checks_Mic_Input")), pickerSel),
     h("div", { class: "btn-row" }, h("button", { class: "btn go", onclick: start }, icon("play"), t("Checks_Mic_Start")), h("button", { class: "btn quiet", onclick: stop }, icon("stop"), t("Checks_Stop")),
       h("span", { class: "grow" }), peak), bar, status));
 }

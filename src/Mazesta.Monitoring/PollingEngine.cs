@@ -27,7 +27,8 @@ public sealed class PollingEngine : IDisposable
         {
             if (_thread is { IsAlive: true }) return;
             _stopRequested = false; State = EngineState.Running;
-            _thread = new Thread(Loop) { Name = "Mazesta.Polling", IsBackground = true }; _thread.Start();
+            // Above normal: a renderer or Cinebench loading every core at normal priority starved the reads, and the overlay showed dashes for half a minute.
+            _thread = new Thread(Loop) { Name = "Mazesta.Polling", IsBackground = true, Priority = ThreadPriority.AboveNormal }; _thread.Start();
         }
     }
     public void Stop()

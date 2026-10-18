@@ -2628,6 +2628,10 @@
   <data name="Checks_Mic_Start" xml:space="preserve"><value>شروع گوش دادن</value></data>
   <data name="Checks_Mic_Denied" xml:space="preserve"><value>میکروفون باز نشد ({0}): یا وصل نیست یا تنظیمات حریم خصوصی ویندوز جلوی آن را گرفته است.</value></data>
   <data name="Checks_Mic_Device" xml:space="preserve"><value>در حال گوش دادن به: {0}</value></data>
+  <data name="Checks_Mic_Input" xml:space="preserve"><value>میکروفن</value></data>
+  <data name="Checks_Speakers_Output" xml:space="preserve"><value>خروجی صدا</value></data>
+  <data name="Checks_DefaultDevice" xml:space="preserve"><value>پیش‌فرض ویندوز</value></data>
+  <data name="Checks_Device" xml:space="preserve"><value>دستگاه</value></data>
   <data name="Checks_Battery" xml:space="preserve"><value>باتری</value></data>
   <data name="Checks_Battery_Sub" xml:space="preserve"><value>سلامت باتری و آزمون تخلیه</value></data>
   <data name="Checks_Battery_Text" xml:space="preserve"><value>کنترلر خود باتری می‌گوید وقتی نو بود چقدر ظرفیت داشت و الان در حالت پر چقدر دارد؛ نسبت این دو، سلامت باتری است. برای آزمون تخلیه شارژر را جدا کنید، «شروع» را بزنید و مثل همیشه با لپ‌تاپ کار کنید: برنامه انرژی‌ای را که از باتری خارج می‌شود اندازه می‌گیرد. هرچه آزمون طولانی‌تر باشد عدد دقیق‌تر است.</value></data>

@@ -32,7 +32,7 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         try { _beforeOpen?.Invoke(); }
         catch (Exception ex) { _log.LogWarning(ex, "Preparing the sensor driver failed; continuing without it"); }
         _log.LogInformation("Sensor start: driver ready after {Ms} ms", clock.ElapsedMilliseconds);
-        try { _computer.Open(); _log.LogInformation("Sensor start: hardware opened after {Ms} ms", clock.ElapsedMilliseconds); }
+        try { _computer.Open(); _log.LogInformation("Sensor start: hardware opened after {Ms} ms", clock.ElapsedMilliseconds); if (_computer.StorageSkipped) _log.LogWarning("Sensor start: the drives did not answer within 3 s (a USB drive still being recognised?); drives are left out of this run"); }
         catch (Exception ex) { _log.LogError(ex, "LHM open failed"); Status = ProviderStatus.Failed(ReasonOpenFailed, ex.Message); return; }
         try
         {

@@ -2628,6 +2628,10 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Mic_Start" xml:space="preserve"><value>Start listening</value></data>
   <data name="Checks_Mic_Denied" xml:space="preserve"><value>The microphone could not be opened ({0}): none connected, or Windows' privacy settings block it.</value></data>
   <data name="Checks_Mic_Device" xml:space="preserve"><value>Listening to: {0}</value></data>
+  <data name="Checks_Mic_Input" xml:space="preserve"><value>Microphone</value></data>
+  <data name="Checks_Speakers_Output" xml:space="preserve"><value>Output</value></data>
+  <data name="Checks_DefaultDevice" xml:space="preserve"><value>Windows default</value></data>
+  <data name="Checks_Device" xml:space="preserve"><value>Device</value></data>
   <data name="Checks_Battery" xml:space="preserve"><value>Battery</value></data>
   <data name="Checks_Battery_Sub" xml:space="preserve"><value>its health and a drain test</value></data>
   <data name="Checks_Battery_Text" xml:space="preserve"><value>The battery&apos;s own controller reports what it held when new and what it holds now when full; their ratio is its health. For the drain test unplug the charger, press Start and use the laptop as usual: the app measures the energy that leaves the battery. The longer it runs, the more exact the figure.</value></data>
