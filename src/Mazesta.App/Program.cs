@@ -159,6 +159,10 @@ internal sealed class Program : ApplicationContext
         else ShowMain();
         _activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
         _activateWait = ThreadPool.RegisterWaitForSingleObject(_activate, (_, _) => _ui.BeginInvoke(ShowMain), null, Timeout.Infinite, false);
+        // The tray reads the temperatures from here while the app runs, instead of opening the hardware a second time (see HealthShare).
+        var shared = DateTimeOffset.MinValue;
+        engine.SnapshotPublished += s => { if (s.Timestamp - shared < TimeSpan.FromSeconds(5)) return; shared = s.Timestamp;
+            try { HealthShare.Publish(Mazesta.Core.Health.HealthSampler.From(engine.Hardware, s.Readings)); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } };
         engine.Start();
         if (SelfTest.Requested() is { } selfTest) SelfTest.Run(selfTest, _services, paths, _ui, log);
         if (!overlayOnly && config.TrayWithApp) StartTray(log);

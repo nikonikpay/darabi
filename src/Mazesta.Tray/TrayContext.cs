@@ -21,6 +21,8 @@ internal sealed class TrayContext : ApplicationContext
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
     private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly PowerTimerMenu _power; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking;
+    private const int LiveSeconds = 15;
+    private LibreHardwareMonitorProvider? _sensors; private readonly object _sensorLock = new(); private TrayCheck? _live; private DateTimeOffset _lastKept;
 
     public IReadOnlyList<TrayCheck> Checks { get; private set; }
     public bool IsChecking => _checking;
@@ -108,22 +110,29 @@ internal sealed class TrayContext : ApplicationContext
 
     public async Task CheckAllAsync() { await CheckTempsAsync(); await CheckHealthAsync(); }
 
+    /// <summary>Temperatures are read every <see cref="LiveSeconds"/> (the sensors stay open); the log keeps one check per idle period, and every one with an
+    /// alert or an error, so it still reaches back days.</summary>
     private async Task CheckTempsAsync()
     {
         if (_checking) { Schedule(_temps, Busy); return; }
         Begin(); _temps.Stop();
-        TrayCheck check;
+        TrayCheck? check = null;
         try
         {
-            var sample = await Within(Task.Run(TakeSample), TimeSpan.FromMinutes(3));
-            var now = DateTimeOffset.UtcNow;
-            var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
-            check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
-            foreach (var a in alerts) Notify(a);
+            if (await Within(Task.Run(TakeSample), TimeSpan.FromMinutes(3)) is { } sample)
+            {
+                var now = DateTimeOffset.UtcNow;
+                var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
+                check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
+                foreach (var a in alerts) Notify(a);
+            }
         }
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "temps", null, null, [], [], e.Message); }
-        End(check);
-        Schedule(_temps, _rules.IsWatching ? TimeSpan.FromSeconds(_intervals.WatchSeconds) : TimeSpan.FromMinutes(_intervals.IdleMinutes));
+        if (check is not null) _live = check;
+        bool keep = check is not null && (check.Error is not null || check.Problems.Count > 0 || _summary is { IsDisposed: false } || check.Time - _lastKept >= TimeSpan.FromMinutes(_intervals.IdleMinutes));
+        if (keep) _lastKept = check!.Time;
+        End(keep ? check : null);
+        Schedule(_temps, TimeSpan.FromSeconds(LiveSeconds));
     }
 
     private async Task CheckHealthAsync()
@@ -155,10 +164,11 @@ internal sealed class TrayContext : ApplicationContext
 
     private void Begin() { _checking = true; _checkNow.Enabled = false; Changed?.Invoke(); }
 
-    private void End(TrayCheck check)
+    private void End(TrayCheck? check)
     {
-        try { Checks = TrayCheckLog.Append(_logFile, check); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Checks = [.. Checks.TakeLast(TrayCheckLog.Keep - 1), check]; }
+        if (check is not null)
+            try { Checks = TrayCheckLog.Append(_logFile, check); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Checks = [.. Checks.TakeLast(TrayCheckLog.Keep - 1), check]; }
         _checking = false; _checkNow.Enabled = true;
         Refresh(); Changed?.Invoke();
         Memory.Release();
@@ -166,7 +176,7 @@ internal sealed class TrayContext : ApplicationContext
 
     private void Refresh()
     {
-        var temps = Checks.LastOrDefault(c => c.Kind == "temps" && c.Error is null);
+        var temps = _live is { Error: null } ? _live : Checks.LastOrDefault(c => c.Kind == "temps" && c.Error is null);
         var last = Checks.LastOrDefault();
         _status.Text = TrayText.Status(last?.Time, last?.Error is { } e ? $"{TrayText.CheckFailed}: {e}" : null);
         _icon.Text = TrayText.Tooltip(temps);
@@ -204,20 +214,31 @@ internal sealed class TrayContext : ApplicationContext
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { _icon.ShowBalloonTip(8000, TrayText.Title, e.Message, ToolTipIcon.Error); }
     }
 
-    /// <summary>Opens the provider, polls twice (load and clocks are deltas, so the first poll reads zero), and disposes it.</summary>
-    private static HealthSample TakeSample()
+    /// <summary>While the app runs, its own reading (it reads the hardware anyway; the tray's sensors are closed so there is one reader, not two); null
+    /// when it has none fresh. Otherwise the tray's sensors, opened once and kept: a new provider is polled twice (load and clocks are deltas, so its first
+    /// poll reads zero). A read still stuck from before is not waited for (null).</summary>
+    private HealthSample? TakeSample()
     {
-        using var provider = LibreHardwareMonitorProvider.CreateDefault(new SystemClock(), NullLoggerFactory.Instance);
-        provider.Start();
-        var all = provider.Hardware.Select(n => n.Id).ToHashSet();
-        provider.Poll(new PollRequest(DateTimeOffset.UtcNow, all)); Thread.Sleep(1000);
-        var result = provider.Poll(new PollRequest(DateTimeOffset.UtcNow, all));
-        return HealthSampler.From(provider.Hardware, result.Readings);
+        if (!Monitor.TryEnter(_sensorLock)) return null;
+        try
+        {
+            if (AppRuns()) { CloseSensors(); return HealthShare.Read(TimeSpan.FromSeconds(30)); }
+            bool fresh = _sensors is null;
+            if (_sensors is null) { _sensors = LibreHardwareMonitorProvider.CreateDefault(new SystemClock(), NullLoggerFactory.Instance); _sensors.Start(); }
+            var all = _sensors.Hardware.Select(n => n.Id).ToHashSet();
+            if (fresh) { _sensors.Poll(new PollRequest(DateTimeOffset.UtcNow, all)); Thread.Sleep(1000); }
+            var result = _sensors.Poll(new PollRequest(DateTimeOffset.UtcNow, all));
+            return HealthSampler.From(_sensors.Hardware, result.Readings);
+        }
+        finally { Monitor.Exit(_sensorLock); }
     }
+
+    private void CloseSensors() { _sensors?.Dispose(); _sensors = null; }
+    private static bool AppRuns() { if (!EventWaitHandle.TryOpenExisting(OverlaySignals.Toggle, out var e)) return false; e.Dispose(); return true; }
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _power.Dispose(); _keys?.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); _icon.Visible = false; _icon.Dispose(); }
+        if (disposing) { _power.Dispose(); _keys?.Dispose(); _auto.Dispose(); _rgb.Dispose(); _temps.Dispose(); _health.Dispose(); _ram.Dispose(); _gpuAtStart.Dispose(); _summary?.Dispose(); lock (_sensorLock) CloseSensors(); _icon.Visible = false; _icon.Dispose(); }
         base.Dispose(disposing);
     }
 }
