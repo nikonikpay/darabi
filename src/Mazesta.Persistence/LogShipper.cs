@@ -1,12 +1,12 @@
 using System.Text; using System.Text.Json; using System.Text.Json.Nodes;
-namespace Mazesta.App;
+namespace Mazesta.Persistence;
 
 /// <summary>
 /// The app's own log (Data/logs/mazesta-web-*.log) and Windows' crash records of Mazesta, sent with the usage statistics (same switch) so a problem on a computer
 /// whose user never sends a diagnostics file can still be found. Only what was not sent yet, a piece at a time; the profile folder's path and the computer's
 /// name are taken out first. Where it got to is kept in Data/config/logsend.json, and a piece is marked sent only after the site took it.
 /// </summary>
-internal sealed class LogShipper(string logsDir, string configDir)
+public sealed class LogShipper(string logsDir, string configDir)
 {
     private const int MaxBytes = 192 * 1024;
     private string StateFile => Path.Combine(configDir, "logsend.json");
@@ -33,7 +33,7 @@ internal sealed class LogShipper(string logsDir, string configDir)
             if (fs.Length <= from) { if (f != files[^1]) continue; file = f; offset = end = Math.Min(from, fs.Length); break; }
             fs.Position = from; var buf = new byte[(int)Math.Min(MaxBytes, fs.Length - from)]; fs.ReadExactly(buf);
             int cut = Array.LastIndexOf(buf, (byte)'\n') + 1; if (cut == 0) { file = f; offset = end = from; break; }   // only half a line so far: next time
-            file = f; offset = from; end = from + cut; text = Scrub(Encoding.UTF8.GetString(buf, 0, cut)); break;
+            file = f; offset = from; end = from + cut; text = Scrub(Encoding.UTF8.GetString(buf, 0, cut).TrimStart('﻿')); break;
         }
         var (crashes, newest) = Crashes(st.Wer);
         if (text.Length == 0 && crashes.Count == 0) { if (file != st.File || end != st.Offset) Save(st with { File = file, Offset = end }); return null; }
@@ -41,7 +41,7 @@ internal sealed class LogShipper(string logsDir, string configDir)
     }
 
     /// <summary>The paths under the user's profile and the computer's name, taken out of the text.</summary>
-    internal static string Scrub(string text)
+    public static string Scrub(string text)
     {
         string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), machine = Environment.MachineName;
         if (profile.Length > 3) text = text.Replace(profile, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);

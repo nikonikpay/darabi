@@ -67,7 +67,7 @@ internal sealed class UsageUploader : IDisposable
         return false;
     }
 
-    /// <summary>The app's log and its crash records not sent yet (see <see cref="LogShipper"/>), a piece a call while there are more.</summary>
+    /// <summary>The app's log and its crash records not sent yet (see <see cref="Mazesta.Persistence.LogShipper"/>), a piece a call while there are more.</summary>
     private async Task<bool> SendLogsAsync()
     {
         for (int i = 0; i < 20 && _logs.Next() is { } p; i++)
