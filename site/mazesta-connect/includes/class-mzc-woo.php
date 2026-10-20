@@ -146,13 +146,16 @@ final class MZC_Woo
         return $id;
     }
 
-    /** The order's customer in the CRM: the same mobile, else the same site account, else a new customer (who is also linked to that account). */
+    /**
+     * The order's customer in the CRM: the one already linked to the buyer's site account, else the same mobile, else a new customer linked to that account.
+     * A typed billing phone proves nothing, so an existing customer is never linked to a site account by it (an order with somebody else's number only lands on their record).
+     */
     private static function customer_of($o)
     {
         $db = MZC_Crm_Db::db(); $m = MZC_Crm::mobile((string) $o->get_billing_phone()); $uid = (int) $o->get_customer_id();
-        $c = $m !== '' ? MZC_Crm::customer_by_mobile($m) : null;
-        if (!$c && $uid) { $c = $db->get_row($db->prepare('SELECT * FROM `' . MZC_Crm_Db::t('customers') . '` WHERE wp_user_id = %d LIMIT 1', $uid), ARRAY_A); }
-        if ($c) { if ($uid && !$c['wp_user_id']) { $db->update(MZC_Crm_Db::t('customers'), array('wp_user_id' => $uid), array('id' => (int) $c['id'])); } return (int) $c['id']; }
+        $c = $uid ? $db->get_row($db->prepare('SELECT * FROM `' . MZC_Crm_Db::t('customers') . '` WHERE wp_user_id = %d LIMIT 1', $uid), ARRAY_A) : null;
+        if (!$c && $m !== '') { $c = MZC_Crm::customer_by_mobile($m); }
+        if ($c) { return (int) $c['id']; }
         $name = trim($o->get_billing_first_name() . ' ' . $o->get_billing_last_name()) ?: 'مشتری سایت';
         $addr = trim(implode('، ', array_filter(array($o->get_billing_state(), $o->get_billing_city(), $o->get_billing_address_1(), $o->get_billing_address_2()))));
         $id = MZC_Crm::save_customer(0, Mazesta_Connect::clip($name, 190), $m, array('email' => sanitize_email($o->get_billing_email()) ?: null, 'address' => $addr !== '' ? $addr : null, 'notes' => 'از سفارش سایت'));

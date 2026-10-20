@@ -65,13 +65,20 @@ final class MZC_Oauth
 
     /* ---------- dynamic client registration (RFC 7591) ---------- */
 
-    /** Only https addresses (or the PC itself, for desktop clients), no fragment: where the code is sent back to. */
+    /** The AI apps whose sign-in may receive a code (a domain or any of its subdomains). Anyone can register a client, so an open list would let a look-alike page collect a staff member's access. */
+    const REDIRECT_HOSTS = array('chatgpt.com', 'openai.com', 'claude.ai', 'claude.com', 'anthropic.com');
+
+    /** https to one of the AI apps above (more via the filter mzc_oauth_redirect_hosts), or http on the PC itself (desktop clients); no fragment. */
     private static function redirect_ok($u)
     {
         if (!is_string($u) || strlen($u) > 500 || strpos($u, '#') !== false) { return false; }
         $p = parse_url($u);
         if (!$p || empty($p['scheme']) || empty($p['host'])) { return false; }
-        return $p['scheme'] === 'https' || ($p['scheme'] === 'http' && in_array($p['host'], array('localhost', '127.0.0.1', '[::1]'), true));
+        $h = strtolower($p['host']);
+        if ($p['scheme'] === 'http') { return in_array($h, array('localhost', '127.0.0.1', '[::1]'), true); }
+        if ($p['scheme'] !== 'https') { return false; }
+        foreach ((array) apply_filters('mzc_oauth_redirect_hosts', self::REDIRECT_HOSTS) as $ok) { $ok = strtolower((string) $ok); if ($h === $ok || substr($h, -strlen($ok) - 1) === '.' . $ok) { return true; } }
+        return false;
     }
 
     public static function rest_register($req)
@@ -81,7 +88,7 @@ final class MZC_Oauth
         $p = $req->get_json_params(); $p = is_array($p) ? $p : array();
         $uris = isset($p['redirect_uris']) && is_array($p['redirect_uris']) ? array_values(array_unique(array_filter($p['redirect_uris'], 'is_string'))) : array();
         if (!$uris || count($uris) > 10) { return self::err('invalid_redirect_uri', 'redirect_uris is required (at most 10).'); }
-        foreach ($uris as $u) { if (!self::redirect_ok($u)) { return self::err('invalid_redirect_uri', 'Only https redirect addresses (or http on localhost) are accepted: ' . $u); } }
+        foreach ($uris as $u) { if (!self::redirect_ok($u)) { return self::err('invalid_redirect_uri', 'Only the sign-in addresses of ChatGPT / Claude (https) or http on localhost are accepted: ' . $u); } }
         $method = isset($p['token_endpoint_auth_method']) && in_array($p['token_endpoint_auth_method'], array('client_secret_post', 'client_secret_basic'), true) ? $p['token_endpoint_auth_method'] : 'none';
         $name = Mazesta_Connect::clip(isset($p['client_name']) && is_string($p['client_name']) ? $p['client_name'] : '', 120);
         $id = bin2hex(random_bytes(16)); $secret = $method === 'none' ? '' : bin2hex(random_bytes(24));
@@ -112,8 +119,8 @@ final class MZC_Oauth
         $db = MZC_Crm_Db::db();
         if (!$db || !MZC_Crm_Db::ready()) { self::page('سامانه فعلاً در دسترس نیست', '<p>پایگاه دادهٔ CRM آماده نیست؛ بعداً دوباره امتحان کنید.</p>'); }
         $c = self::client($q['client_id']);
-        // a wrong client or address is shown here, never sent anywhere (it could be anyone's address)
-        if (!$c || !in_array($q['redirect_uri'], $c['uris'], true)) { self::page('درخواست نامعتبر', '<p>برنامه‌ای که شما را به اینجا فرستاده ثبت نشده یا نشانی برگشتش درست نیست. اتصال را در همان برنامه از نو بسازید.</p>'); }
+        // a wrong client or address is shown here, never sent anywhere (it could be anyone's address); the address is checked again for clients registered before the list existed
+        if (!$c || !in_array($q['redirect_uri'], $c['uris'], true) || !self::redirect_ok($q['redirect_uri'])) { self::page('درخواست نامعتبر', '<p>برنامه‌ای که شما را به اینجا فرستاده ثبت نشده یا نشانی برگشتش درست نیست. اتصال را در همان برنامه از نو بسازید.</p>'); }
         $back = function ($args) use ($q) { wp_redirect($q['redirect_uri'] . (strpos($q['redirect_uri'], '?') === false ? '?' : '&') . http_build_query($args + ($q['state'] !== '' ? array('state' => $q['state']) : array()) + array('iss' => self::issuer())), 302); exit; };
         if ($q['response_type'] !== 'code') { $back(array('error' => 'unsupported_response_type')); }
         if ($q['code_challenge_method'] !== 'S256' || !preg_match('/^[A-Za-z0-9_-]{43,128}$/', $q['code_challenge'])) { $back(array('error' => 'invalid_request', 'error_description' => 'PKCE with S256 is required.')); }

@@ -336,11 +336,15 @@ final class MZC_Crm
         $was = $id ? $db->get_var($db->prepare('SELECT soft FROM `' . self::t('builds') . '` WHERE id = %d', $id)) : null;
         $row = array('customer_id' => $cid, 'invoice_no' => $inv ?: null, 'title' => self::build_title($parts), 'sold_at' => self::date('sold_at'), 'soft' => self::soft_in(self::posted_soft(), self::post_long('soft_note', 2000), $was),
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'status' => $bst, 'delivered' => $bst === 'delivered' ? 1 : 0, 'updated' => self::now());
-        $t = self::t('builds');
-        if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } }
-        else { $row['created'] = self::now(); if (!$db->insert($t, $row)) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $db->last_error); } $id = (int) $db->insert_id; }
-        $db->delete(self::t('build_parts'), array('build_id' => $id));
-        foreach ($parts as $p) { if ($p['model'] === null) { continue; } $p['build_id'] = $id; $db->insert(self::t('build_parts'), $p); }
+        $t = self::t('builds'); $was = $id;
+        // all or nothing: a part that fails to save must not leave the computer with half its parts
+        $db->query('START TRANSACTION');
+        if ($id) { $ok = $db->update($t, $row, array('id' => $id)) !== false; }
+        else { $row['created'] = self::now(); $ok = (bool) $db->insert($t, $row); $id = (int) $db->insert_id; }
+        if ($ok) { $ok = $db->delete(self::t('build_parts'), array('build_id' => $id)) !== false; }
+        foreach ($parts as $p) { if (!$ok) { break; } if ($p['model'] === null) { continue; } $p['build_id'] = $id; $ok = (bool) $db->insert(self::t('build_parts'), $p); }
+        $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
+        if (!$ok) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
         MZC_Admin::back('mzc-builds', 'ok:ثبت شد.', array('view' => $id));
     }
 
@@ -422,26 +426,27 @@ final class MZC_Crm
             'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
             'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
-        $t = self::t('jobs');
-        if ($id) { if ($db->update($t, $row, array('id' => $id)) === false) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $db->last_error); } }
-        else {
-            $row['created'] = self::now(); $lock = $db->get_var("SELECT GET_LOCK('" . self::t('svc') . "', 5)");   // two desks saving at once must not get the same number
-            $row['service_no'] = self::next_service_no($db);
-            $ok = $db->insert($t, $row); $new = (int) $db->insert_id; if ($lock) { $db->query("DO RELEASE_LOCK('" . self::t('svc') . "')"); }
-            if (!$ok) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $db->last_error); } $id = $new;
-        }
-        $db->delete(self::t('job_parts'), array('job_id' => $id));
+        $t = self::t('jobs'); $was = $id;
+        // all or nothing, as on the build form; the lock keeps two desks from taking the same service number
+        $lock = $id ? null : $db->get_var("SELECT GET_LOCK('" . self::t('svc') . "', 5)");
+        $db->query('START TRANSACTION');
+        if ($id) { $ok = $db->update($t, $row, array('id' => $id)) !== false; }
+        else { $row['created'] = self::now(); $row['service_no'] = self::next_service_no($db); $ok = (bool) $db->insert($t, $row); $id = (int) $db->insert_id; }
+        if ($ok) { $ok = $db->delete(self::t('job_parts'), array('job_id' => $id)) !== false; }
         foreach (array('add' => 'parts', 'in' => 'recv') as $kind => $field) {
             $rows = self::posted_parts($field, array('product_id' => 'id', 'name' => 190, 'qty' => 'int', 'unit_price' => 'int', 'buy_price' => 'int', 'serial' => 120, 'warranty_months' => 'int', 'note' => 255, 'has_box' => 'flag', 'has_warranty' => 'flag'));
             // a part the customer brought is not the shop's stock
             $rows = $kind === 'in' ? array_map(function ($p) { $p['product_id'] = null; $p['buy_price'] = null; return $p; }, $rows) : MZC_Stock::link_parts($rows, 'name', array('unit_price' => 'sell_price', 'buy_price' => 'buy_price'));
             foreach ($rows as $p) {
-                if ($p['name'] === null) { continue; }
-                $p['qty'] = max(1, (int) $p['qty']); $p['unit_price'] = $kind === 'in' ? 0 : (int) $p['unit_price']; $p['job_id'] = $id; $p['kind'] = $kind; $db->insert(self::t('job_parts'), $p);
+                if (!$ok) { break; } if ($p['name'] === null) { continue; }
+                $p['qty'] = max(1, (int) $p['qty']); $p['unit_price'] = $kind === 'in' ? 0 : (int) $p['unit_price']; $p['job_id'] = $id; $p['kind'] = $kind; $ok = (bool) $db->insert(self::t('job_parts'), $p);
             }
         }
-        $db->delete(self::t('job_pays'), array('job_id' => $id));
-        foreach (self::posted_parts('pays', array('amount' => 'int', 'account' => 120, 'tx' => 80, 'holder' => 120)) as $p) { if (!$p['amount']) { continue; } $p['job_id'] = $id; $db->insert(self::t('job_pays'), $p); }
+        if ($ok) { $ok = $db->delete(self::t('job_pays'), array('job_id' => $id)) !== false; }
+        foreach (self::posted_parts('pays', array('amount' => 'int', 'account' => 120, 'tx' => 80, 'holder' => 120)) as $p) { if (!$ok) { break; } if (!$p['amount']) { continue; } $p['job_id'] = $id; $ok = (bool) $db->insert(self::t('job_pays'), $p); }
+        $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
+        if ($lock) { $db->query("DO RELEASE_LOCK('" . self::t('svc') . "')"); }
+        if (!$ok) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
         $bad = self::add_photos('job', $id);
         MZC_Admin::back('mzc-jobs', 'ok:ثبت شد.' . ($bad ? ' (' . $bad . ')' : ''), array('view' => $id));
     }
