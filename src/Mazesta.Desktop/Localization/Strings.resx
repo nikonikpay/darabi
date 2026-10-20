@@ -1081,14 +1081,13 @@
   <data name="Tools_Vm_Free" xml:space="preserve"><value>free</value></data>
   <data name="Tools_Vm_Apply" xml:space="preserve"><value>Apply</value></data>
   <data name="Tools_Vm_Windows" xml:space="preserve"><value>Windows' dialog</value></data>
-  <data name="Tools_Vm_Limit" xml:space="preserve"><value>Installed memory {0} MB. The maximum can be up to {1} MB (three times the memory).</value></data>
+  <data name="Tools_Vm_Limit" xml:space="preserve"><value>Installed memory {0} MB. The maximum size is not limited.</value></data>
   <data name="Tools_Vm_Pending" xml:space="preserve"><value>Set to {0}: takes effect after a restart.</value></data>
   <data name="Tools_Vm_Done" xml:space="preserve"><value>Saved. Restart the computer for it to take effect.</value></data>
   <data name="Tools_Vm_Failed" xml:space="preserve"><value>Windows did not save it: {0}</value></data>
   <data name="Tools_Vm_Error_Drive" xml:space="preserve"><value>Pick a drive.</value></data>
   <data name="Tools_Vm_Error_Initial" xml:space="preserve"><value>The initial size has to be at least 16 MB.</value></data>
   <data name="Tools_Vm_Error_Order" xml:space="preserve"><value>The maximum size cannot be smaller than the initial size.</value></data>
-  <data name="Tools_Vm_Error_Max" xml:space="preserve"><value>The maximum size can be at most {0} MB.</value></data>
   <data name="Tools_Vm_Error_Space" xml:space="preserve"><value>The drive does not have that much free space.</value></data>
   <data name="Tools_Hosts_Title" xml:space="preserve"><value>Hosts file</value></data>
   <data name="Tools_Hosts_Sub" xml:space="preserve"><value>Names Windows resolves before asking DNS</value></data>
@@ -3552,7 +3551,7 @@ Cancel: stop.</value></data>
   <data name="Settings_Usage_Title" xml:space="preserve"><value>Usage statistics</value></data>
   <data name="Settings_Usage_Sub" xml:space="preserve"><value>Anonymous, to improve the program</value></data>
   <data name="Settings_Usage_Note" xml:space="preserve"><value>No personal information is sent from your computer. Only what concerns this program is sent, to improve how it works. You can turn it off here whenever you like; it is on by default.</value></data>
-  <data name="Settings_Usage_Sent" xml:space="preserve"><value>What is sent: which tests and benchmarks ran and their scores; the results of undervolt and overclock (temperature, power, clock, whether it worked and, if not, why); the names of the parts (processor, graphics card, amount of RAM, Windows version); how often the assistant is used (a count - never what you ask it); and a random number made when the program was installed, so installations can be counted. Never: your name, the computer's name, files, folders, addresses, or anything you typed. The same lines are kept in the log below, so you can read them.</value></data>
+  <data name="Settings_Usage_Sent" xml:space="preserve"><value>What is sent: which tests and benchmarks ran and their scores; the results of undervolt and overclock (temperature, power, clock, whether it worked and, if not, why); the names of the parts (processor, graphics card, amount of RAM, Windows version); how often the assistant is used (a count - never what you ask it); the program's own log (what it did and its errors, with your profile folder and the computer's name taken out) and Windows' records of the program's crashes, so a problem can be found without you sending anything; and a random number made when the program was installed, so installations can be counted. Never: your name, the computer's name, your files, addresses, or anything you typed. The same lines are kept in the log below, so you can read them.</value></data>
   <data name="Settings_Usage_Switch" xml:space="preserve"><value>Send anonymous usage statistics</value></data>
   <data name="Settings_Usage_Open" xml:space="preserve"><value>Show the log</value></data>
   <data name="Settings_Usage_NoLog" xml:space="preserve"><value>Nothing has been logged yet.</value></data>

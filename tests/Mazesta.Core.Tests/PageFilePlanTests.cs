@@ -10,7 +10,7 @@ public class PageFilePlanTests
     [InlineData(PageFileMode.Custom, "D:", 0, 0, null)]                       // Windows picks the size on D:
     [InlineData(PageFileMode.Custom, "C:", 8, 2048, "Tools_Vm_Error_Initial")]
     [InlineData(PageFileMode.Custom, "C:", 4096, 2048, "Tools_Vm_Error_Order")]
-    [InlineData(PageFileMode.Custom, "C:", 4096, 49153, "Tools_Vm_Error_Max")]   // 3 × 16 GB
+    [InlineData(PageFileMode.Custom, "C:", 4096, 262144, null)]                // above 3 × RAM: allowed
     [InlineData(PageFileMode.Custom, "C:", 60000, 49152, "Tools_Vm_Error_Order")]
     [InlineData(PageFileMode.Custom, "C:", 4096, 8192, null)]
     public void Plans_are_checked_as_windows_checks_them(PageFileMode mode, string? drive, long initial, long maximum, string? problem)

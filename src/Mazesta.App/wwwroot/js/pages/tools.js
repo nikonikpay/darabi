@@ -105,7 +105,7 @@ export function mount(el) {
     if (!v.inUse.length) rows.push([t("Tools_PageFile"), t("Tools_PageFile_None")]);
     vmInUse.replaceChildren(...rows.flatMap(([k, x]) => [h("dt", {}, k), h("dd", {}, x)]));
     vmPending.hidden = !v.pending; vmPending.replaceChildren(icon("refresh"), t("Tools_Vm_Pending", v.pending || ""));
-    vmLimit.textContent = t("Tools_Vm_Limit", fa(v.ramMb), fa(Math.max(v.ramMb * 3, 4096)));
+    vmLimit.textContent = t("Tools_Vm_Limit", fa(v.ramMb));
     if (keepForm) return;
     drive.replaceChildren(...v.drives.map((d) => h("option", { value: d.name }, `${d.name} ${d.label ? `(${d.label}) ` : ""}— ${fa(Math.round(d.freeMb / 1024))} GB ${t("Tools_Vm_Free")}`)));
     // The form starts from what Windows will use after the next restart: its own setting if there is one.

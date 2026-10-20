@@ -10,8 +10,8 @@ public sealed record PageFilePlan(PageFileMode Mode, string? Drive = null, long 
 {
     public const long MinimumMb = 16;
 
-    /// <summary>Why the plan cannot be applied (a Strings key), or null. The maximum is limited to three times the installed memory (or 4 GB when
-    /// that is less), and the initial size has to fit on the drive.</summary>
+    /// <summary>Why the plan cannot be applied (a Strings key), or null. The maximum is not capped: Windows' dialog allows three times the memory, but some programs need more and the registry takes it;
+    /// the initial size has to fit on the drive.</summary>
     public string? Problem(long ramMb, long? driveFreeMb)
     {
         if (Mode != PageFileMode.Custom) return null;
@@ -19,7 +19,6 @@ public sealed record PageFilePlan(PageFileMode Mode, string? Drive = null, long 
         if (InitialMb == 0 && MaximumMb == 0) return null;
         if (InitialMb < MinimumMb) return "Tools_Vm_Error_Initial";
         if (MaximumMb < InitialMb) return "Tools_Vm_Error_Order";
-        if (MaximumMb > Math.Max(ramMb * 3, 4096)) return "Tools_Vm_Error_Max";
         if (driveFreeMb is { } free && InitialMb > free) return "Tools_Vm_Error_Space";
         return null;
     }

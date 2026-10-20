@@ -1081,14 +1081,13 @@
   <data name="Tools_Vm_Free" xml:space="preserve"><value>آزاد</value></data>
   <data name="Tools_Vm_Apply" xml:space="preserve"><value>اعمال</value></data>
   <data name="Tools_Vm_Windows" xml:space="preserve"><value>پنجره‌ی ویندوز</value></data>
-  <data name="Tools_Vm_Limit" xml:space="preserve"><value>رم نصب‌شده {0} مگابایت. بیشینه تا {1} مگابایت (سه برابر رم) مجاز است.</value></data>
+  <data name="Tools_Vm_Limit" xml:space="preserve"><value>رم نصب‌شده {0} مگابایت. برای اندازهٔ بیشینه محدودیتی گذاشته نشده است.</value></data>
   <data name="Tools_Vm_Pending" xml:space="preserve"><value>روی {0} تنظیم شد: بعد از ری‌استارت اعمال می‌شود.</value></data>
   <data name="Tools_Vm_Done" xml:space="preserve"><value>ذخیره شد. برای اعمال، کامپیوتر را ری‌استارت کنید.</value></data>
   <data name="Tools_Vm_Failed" xml:space="preserve"><value>ویندوز تنظیم را ذخیره نکرد: {0}</value></data>
   <data name="Tools_Vm_Error_Drive" xml:space="preserve"><value>یک درایو انتخاب کنید.</value></data>
   <data name="Tools_Vm_Error_Initial" xml:space="preserve"><value>اندازه‌ی اولیه باید دست‌کم ۱۶ مگابایت باشد.</value></data>
   <data name="Tools_Vm_Error_Order" xml:space="preserve"><value>اندازه‌ی بیشینه نمی‌تواند از اندازه‌ی اولیه کمتر باشد.</value></data>
-  <data name="Tools_Vm_Error_Max" xml:space="preserve"><value>اندازه‌ی بیشینه حداکثر {0} مگابایت می‌تواند باشد.</value></data>
   <data name="Tools_Vm_Error_Space" xml:space="preserve"><value>درایو این مقدار فضای آزاد ندارد.</value></data>
   <data name="Tools_Hosts_Title" xml:space="preserve"><value>فایل hosts</value></data>
   <data name="Tools_Hosts_Sub" xml:space="preserve"><value>نام‌هایی که ویندوز قبل از DNS از این فایل می‌خواند</value></data>
@@ -3552,7 +3551,7 @@
   <data name="Settings_Usage_Title" xml:space="preserve"><value>آمار استفاده</value></data>
   <data name="Settings_Usage_Sub" xml:space="preserve"><value>ناشناس، برای بهتر شدن برنامه</value></data>
   <data name="Settings_Usage_Note" xml:space="preserve"><value>هیچ اطلاعات شخصی از سیستم شما ارسال نمی‌شود. فقط اطلاعات مربوط به همین نرم‌افزار برای بهبود عملکردش ارسال می‌شود، و هر وقت بخواهید می‌توانید اینجا غیرفعالش کنید. به‌صورت پیش‌فرض فعال است.</value></data>
-  <data name="Settings_Usage_Sent" xml:space="preserve"><value>آنچه ارسال می‌شود: کدام تست‌ها و بنچمارک‌ها اجرا شده و چه امتیازی گرفته‌اند؛ نتیجهٔ آندرولت و اورکلاک (دما، توان، کلاک، موفق بودن یا نبودن و در صورت شکست دلیلش)؛ نام قطعات (پردازنده، کارت گرافیک، مقدار رم، نسخهٔ ویندوز)؛ تعداد دفعات استفاده از دستیار هوشمند (فقط شمارش، نه سؤال‌های شما)؛ و یک عدد تصادفی که هنگام نصب ساخته می‌شود تا تعداد نصب‌ها شمرده شود. هرگز: نام شما، نام کامپیوتر، فایل‌ها، پوشه‌ها، آدرس‌ها یا چیزی که تایپ کرده‌اید. همین خط‌ها در فایل لاگ زیر نگه داشته می‌شود تا خودتان بخوانید.</value></data>
+  <data name="Settings_Usage_Sent" xml:space="preserve"><value>آنچه ارسال می‌شود: کدام تست‌ها و بنچمارک‌ها اجرا شده و چه امتیازی گرفته‌اند؛ نتیجهٔ آندرولت و اورکلاک (دما، توان، کلاک، موفق بودن یا نبودن و در صورت شکست دلیلش)؛ نام قطعات (پردازنده، کارت گرافیک، مقدار رم، نسخهٔ ویندوز)؛ تعداد دفعات استفاده از دستیار هوشمند (فقط شمارش، نه سؤال‌های شما)؛ لاگ خود برنامه (کارهایی که کرده و خطاهایش، با حذف مسیر پوشهٔ کاربری و نام کامپیوتر) و سابقهٔ بسته‌شدن ناگهانی برنامه در ویندوز، تا اگر مشکلی پیش آمد بدون ارسال دستی شما پیدا شود؛ و یک عدد تصادفی که هنگام نصب ساخته می‌شود تا تعداد نصب‌ها شمرده شود. هرگز: نام شما، نام کامپیوتر، فایل‌های شما، آدرس‌ها یا چیزی که تایپ کرده‌اید. همین خط‌ها در فایل لاگ زیر نگه داشته می‌شود تا خودتان بخوانید.</value></data>
   <data name="Settings_Usage_Switch" xml:space="preserve"><value>ارسال آمار استفادهٔ ناشناس</value></data>
   <data name="Settings_Usage_Open" xml:space="preserve"><value>نمایش فایل لاگ</value></data>
   <data name="Settings_Usage_NoLog" xml:space="preserve"><value>هنوز چیزی ثبت نشده است.</value></data>

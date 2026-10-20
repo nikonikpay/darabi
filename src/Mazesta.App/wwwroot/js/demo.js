@@ -308,7 +308,7 @@ export async function call(m, p, emit) {
       notes: ["Storage 'Samsung Portable SSD T7': 'Composite Temperature' reads 0 all the time: the device does not report it (a drive behind a USB bridge gives no temperature)"], polled: true, logs: "D:\\Mazesta-Test\\Data\\logs" };
     case "sys.state": return { power: { hibernate: true, fastStartup: true }, vm: demoVm(), hosts: { path: "C:\\Windows\\System32\\drivers\\etc\\hosts", backup: true } };
     case "sys.hibernate": await new Promise((r) => setTimeout(r, 500)); return { power: { hibernate: p.on, fastStartup: p.on }, error: null };
-    case "sys.pagefile": await new Promise((r) => setTimeout(r, 500)); return p.mode === "custom" && +p.maximum > 196608 ? { error: strings.Tools_Vm_Error_Max.replace("{0}", "196608"), vm: demoVm() } : { vm: { ...demoVm(), pending: p.mode === "custom" ? `${p.drive} ${p.initial}–${p.maximum} MB` : strings.Tools_Vm_Managed } };
+    case "sys.pagefile": await new Promise((r) => setTimeout(r, 500)); return { vm: { ...demoVm(), pending: p.mode === "custom" ? `${p.drive} ${p.initial}–${p.maximum} MB` : strings.Tools_Vm_Managed } };
     case "hosts.read": return { path: "C:\\Windows\\System32\\drivers\\etc\\hosts", text: DEMO_HOSTS, entries: 2, problems: [], backup: true };
     case "hosts.save": await new Promise((r) => setTimeout(r, 300)); return /^[^#\s]+\s*$/m.test(p.text) && !p.force ? { saved: false, problems: [{ line: 3, text: "10.0.0.5", problem: "name" }] } : { saved: true, problems: [] };
     case "hosts.backup": return { text: DEMO_HOSTS };

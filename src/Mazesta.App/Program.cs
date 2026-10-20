@@ -151,7 +151,7 @@ internal sealed class Program : ApplicationContext
         var usage = _services.GetRequiredService<UsageRecorder>();
         usage.Record("app.start", new System.Text.Json.Nodes.JsonObject { ["version"] = version, ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = config.Language, ["overlayOnly"] = overlayOnly });
         // The overlay alone talks to no site: the uploader and the inbox (and their timers) start with the window, if it ever opens.
-        _startOnline = () => { _startOnline = null; _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log);
+        _startOnline = () => { _startOnline = null; _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log, new LogShipper(paths.LogsDir, paths.ConfigDir));
             Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log); };
         if (!overlayOnly) _startOnline();
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);

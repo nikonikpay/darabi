@@ -50,7 +50,7 @@ public sealed partial class WebBridge
             string drive = Str(p, "drive");
             var plan = new PageFilePlan(mode, drive.Length > 0 ? drive : null, initial, maximum);
             long? free = DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady && d.Name.StartsWith(drive, StringComparison.OrdinalIgnoreCase) && drive.Length > 0)?.AvailableFreeSpace / (1024 * 1024);
-            if (plan.Problem(ramMb, free) is { } key) return new { error = Loc.Format(key, Math.Max(ramMb * 3, 4096)), vm = VmState() };
+            if (plan.Problem(ramMb, free) is { } key) return new { error = Loc.Get(key), vm = VmState() };
             try { await Task.Run(() => WmiPageFileWriter.Apply(plan)).ConfigureAwait(true); }
             catch (Exception e) when (e is System.Management.ManagementException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
             {

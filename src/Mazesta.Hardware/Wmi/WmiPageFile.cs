@@ -46,7 +46,7 @@ public static class WmiPageFileWriter
         using var cls = new System.Management.ManagementClass(scope, new System.Management.ManagementPath("Win32_PageFileSetting"), null);
         using var setting = cls.CreateInstance();
         setting["Name"] = plan.Drive![..1] + @":\pagefile.sys";
-        setting["InitialSize"] = (uint)plan.InitialMb; setting["MaximumSize"] = (uint)plan.MaximumMb;
+        setting["InitialSize"] = checked((uint)plan.InitialMb); setting["MaximumSize"] = checked((uint)plan.MaximumMb);   // (no cap of our own: a size past what WMI holds throws, not wraps)
         setting.Put(new System.Management.PutOptions { Type = System.Management.PutType.CreateOnly });
     }
 }

@@ -68,6 +68,8 @@ public sealed class SiteClient(Uri api, HttpClient http)
 
     /// <summary>The anonymous usage statistics (see <see cref="Mazesta.Persistence.UsageLog"/>), sent with no key: the installation's random id, the app's version, the parts' names and the events.</summary>
     public async Task SendUsageAsync(string body, CancellationToken ct) => await SendAsync(HttpMethod.Post, "usage", null, body, ct).ConfigureAwait(false);
+    /// <summary>A piece of the app's own log and its crash records (sent with the usage statistics, same switch): {install, app, file, text, crashes}.</summary>
+    public async Task SendLogsAsync(string body, CancellationToken ct) => await SendAsync(HttpMethod.Post, "logs", null, body, ct).ConfigureAwait(false);
 
     /// <summary>The shop's messages for this installation (its random id; no key): those sent to every system and to this one, newer than <paramref name="after"/>. Raw JSON: {"messages":[{id,title,body,link,created}]}.</summary>
     public async Task<string> MessagesAsync(string install, long after, CancellationToken ct)
