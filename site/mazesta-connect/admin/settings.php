@@ -64,3 +64,24 @@ if (MZC_Crm_Db::ready()) {
     echo '<div class="mzc-panel"><header><h3>حساب‌های واریز</h3></header><div class="body"><p class="muted" style="max-width:90ch">در «پرداخت‌های مشتری» خانهٔ «واریز به حساب» این‌ها را پیشنهاد می‌دهد (پوز، کارت، شماره حساب ...)؛ هر نوشتهٔ دیگری هم پذیرفته می‌شود. هر حساب در یک خط.</p>'
         . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="accounts" rows="6" dir="auto" style="width:100%;max-width:520px">' . esc_textarea(implode("\n", MZC_Crm::software_catalog('accounts'))) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ حساب‌ها</button></p></form></div></div>';
 }
+if (MZC_Crm_Db::ready()) {
+    $as = MZC_Acc::settings(); $ws = MZC_Woo::settings(); $woo = class_exists('WooCommerce');
+    echo '<div class="mzc-panel"><header><h3>حسابداری و فروشگاه سایت</h3>' . ($woo ? ($ws['on'] ? MZC_Admin::pill('همگام با ووکامرس', 'ok') : MZC_Admin::pill('همگام‌سازی خاموش', 'warn')) : MZC_Admin::pill('ووکامرس فعال نیست')) . '</header><div class="body">'
+        . MZC_Admin::form_open('acc_save', 'class="mzc-form"') . '<div class="mzc-fields">'
+        . '<label>اولین شمارهٔ فاکتور فروش<input type="text" name="start" dir="ltr" value="' . esc_attr($as['start']) . '"><small>شماره از بزرگ‌ترینِ همین عدد، فاکتورهای قبلی و شمارهٔ فاکتور سیستم‌های نو ادامه پیدا می‌کند (برای ادامهٔ شماره‌های برنامهٔ حسابداری قبلی).</small></label>'
+        . '<label>مالیات بر ارزش افزوده (٪)<input type="text" name="tax" dir="ltr" value="' . esc_attr($as['tax']) . '"><small>پیش‌فرض فاکتورهای تازه؛ در هر فاکتور عوض می‌شود. ۰ یعنی بدون مالیات.</small></label>'
+        . '<label>یادآوری چک (روز پیش از سررسید)<input type="number" name="remind" min="0" max="60" value="' . (int) $as['remind'] . '"><small>برنامه و این صفحه‌ها نشان می‌دهند و روزی یک ایمیل به مدیر سایت می‌رود.</small></label>'
+        . '<label>نام فروشگاه روی فاکتور<input type="text" name="shop" value="' . esc_attr($as['shop']) . '" maxlength="120"></label><label>تلفن روی فاکتور<input type="text" name="phone" dir="ltr" value="' . esc_attr($as['phone']) . '" maxlength="60"></label>'
+        . '<label class="wide">نشانی روی فاکتور<input type="text" name="address" value="' . esc_attr($as['address']) . '" maxlength="255"></label><label class="wide">متن پایین فاکتور<input type="text" name="foot" value="' . esc_attr($as['foot']) . '" maxlength="300"></label>'
+        . '<label class="wide">سرفصل‌های هزینه (هر خط یکی)<textarea name="expenses" rows="5">' . esc_textarea($as['expenses']) . '</textarea></label>'
+        . '<label class="chk wide"><input type="checkbox" name="woo_on" value="1"' . checked(!empty($ws['on']), true, false) . ($woo ? '' : ' disabled') . '> قیمت فروش و موجودی کالاهای وصل‌شده با محصولات سایت همگام شود (قیمت از هر دو طرف؛ موجودی از انبار)</label>'
+        . '<label class="chk wide"><input type="checkbox" name="woo_orders" value="1"' . checked(!empty($ws['orders']), true, false) . ($woo ? '' : ' disabled') . '> سفارش‌های پرداخت‌شدهٔ سایت فاکتور فروش مشتری شوند (مشتری با موبایل پیدا یا ساخته می‌شود)</label>'
+        . '<label>ضریب قیمت سایت<input type="text" name="woo_factor" dir="ltr" value="' . esc_attr($ws['factor']) . '" placeholder="' . esc_attr($woo ? (string) MZC_Woo::factor() : '1') . '"><small>قیمت سایت = قیمت انبار (تومان) × این عدد. خالی: از واحد پول فروشگاه (ریال ۱۰، تومان ۱).</small></label>'
+        . '</div><p><button class="mzc-btn primary">ذخیره</button></p></form>';
+    if ($woo) {
+        echo '<div class="mzc-actions"><a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_link')) . '">وصل کردن با پارت‌نامبر (SKU)</a><a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_import')) . '" onclick="return confirm(\'برای هر محصول سادهٔ سایت که وصل نیست کالای انبار ساخته شود؟\')">آوردن محصولات سایت به انبار</a>'
+            . '<a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_push')) . '">فرستادن قیمت و موجودی همه به سایت</a><a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_orders')) . '">آوردن ۲۰۰ سفارش پرداخت‌شدهٔ اخیر</a></div>'
+            . '<p class="muted" style="max-width:90ch">موجودی را انبار حساب می‌کند (خرید منهای فروش)؛ عددی که در سایت دستی عوض شود در همگام‌سازی بعدی (هر ۱۵ دقیقه یا با هر تغییر) برمی‌گردد. قیمت فروش از هر طرف عوض شود طرف دیگر هم عوض می‌شود. هر کالا را در صفحهٔ کالا هم می‌شود دستی به محصول سایت وصل کرد.</p>';
+    }
+    echo '</div></div>';
+}

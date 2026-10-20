@@ -94,7 +94,10 @@ final class MZC_Mcp
         . "A service's money: labor_price = what we charge for the work, discount, parts (sell and buy prices); total (what the customer pays) = parts + labor - discount. paid = what the shop itself paid out for the job (courier, outside repair; paid_note says for what): the customer never sees it, it only lowers the service profit (labor - discount - paid); parts profit = sell - buy. "
         . "For money and counts over a period (profit, how many services/systems, best sellers) call `stats` instead of paging through lists. "
         . "`software` = the programs the customer wants installed (name, done); `software_note` = their request in words. "
-        . "Confirm with the user before saving anything you inferred rather than were told.";
+        . "Accounting: an invoice is made as a DRAFT (save_invoice), then invoice_action finalize gives it its number - a final invoice never changes (void it, or copy it to a return). "
+        . "Ready-made invoices are kind=template: list_invoices kind=template, then invoice_action copy to_kind=sale (today's prices) and edit the draft. A proforma (پیش‌فاکتور) copies to a sale the same way. "
+        . "Money received or paid is save_payment; cheques are save_cheque / list_cheques (due=soon for the reminder); customer_account shows a customer's balance. "
+        . "Confirm with the user before saving anything you inferred rather than were told, and always before finalize or void.";
 
     /** An answer as the model reads it: no empty values, no edit stamps, the Persian date only where both are sent, and a list's number only once (fewer tokens, same facts). */
     private static function lean($v)
@@ -125,7 +128,7 @@ final class MZC_Mcp
     /** Runs one staff API handler; array(status, data). */
     private static function api($fn, $token, $method = 'GET', $query = array(), $body = array(), $url = array())
     {
-        $res = call_user_func(array('MZC_Api', 'rest_' . $fn), self::request($method, $query, $body, $token, $url));
+        $res = call_user_func(array(method_exists('MZC_Api', 'rest_' . $fn) ? 'MZC_Api' : 'MZC_Acc_Api', 'rest_' . $fn), self::request($method, $query, $body, $token, $url));
         return array($res->status, $res->data);
     }
 
@@ -179,6 +182,7 @@ final class MZC_Mcp
         $bpart = self::obj(array('product_id' => array('type' => 'integer', 'description' => 'From find_products; sets the price and takes it out of stock.'), 'category' => $cats, 'model' => $str, 'serial' => $str, 'warranty_months' => $int,
             'sell_price' => $money, 'buy_price' => $money, 'vendor' => array('type' => 'string', 'description' => 'Warranty company.'), 'note' => $str, 'has_box' => $bool, 'qc' => $bool), array('model'));
         $jpart = self::obj(array('product_id' => $int, 'name' => $str, 'qty' => $int, 'unit_price' => $money, 'buy_price' => $money, 'serial' => $str, 'warranty_months' => $int, 'note' => $str), array('name'));
+        $ikind = array('type' => 'string', 'enum' => array_keys(MZC_Acc::$kinds), 'description' => 'sale, return, proforma, template (ready-made invoice).');
         $cust = array('customer_id' => $int, 'customer_mobile' => array('type' => 'string', 'description' => 'Finds the customer, or makes a new one with customer_name.'), 'customer_name' => $str);
         return array(
             'whoami' => array('Who is signed in and what their role lets them do (levels per area: 0 none, 1 view, 2 edit).', self::obj(array()), true,
@@ -254,7 +258,46 @@ final class MZC_Mcp
                 function ($a, $t) { return self::api('reports', $t, 'GET', self::only($a, array('query' => 'q', 'number' => 'service'))); }),
             'attach_test_report' => array('Attach a test report to a system or a service (empty report_id removes it).', self::obj(array('kind' => array('type' => 'string', 'enum' => array('build', 'job')), 'id' => $int, 'number' => $num, 'report_id' => $str), array('kind', 'report_id')), false,
                 function ($a, $t) { $id = self::rid($a['kind'] === 'build' ? 'build' : 'job', $a); return $id ? self::api('attach', $t, 'POST', array(), array('kind' => $a['kind'], 'id' => $id, 'report_id' => (string) $a['report_id'])) : self::not_found('Record', $a); }),
+            // ---- accounting ----
+            'list_invoices' => array('List sales invoices, returns and proformas (kind), or the ready-made invoice templates (kind=template). Search by number, customer, product or serial.', self::obj(array('kind' => $ikind, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Acc::$statuses)), 'query' => $str, 'customer_id' => $int, 'from' => $date, 'to' => $date, 'page' => $page)), true,
+                function ($a, $t) { return self::api('invoices', $t, 'GET', self::only($a, array('kind' => 'kind', 'status' => 'status', 'query' => 'q', 'customer_id' => 'customer', 'from' => 'from', 'to' => 'to', 'page' => 'page')) + array('per' => self::PER)); }),
+            'get_invoice' => array('One invoice with its lines and payments, by id, or by its number and kind (default sale).', self::obj(array('id' => $int, 'number' => $int, 'kind' => $ikind)), true,
+                function ($a, $t) { $id = self::iid($a); return $id ? self::api('invoice', $t, 'GET', array(), array(), array('id' => $id)) : self::not_found('Invoice', $a); }),
+            'save_invoice' => array('Make (no id) or change a DRAFT invoice, proforma or template. A final invoice cannot change (void it or make a return). Lines name stock products by product_id (find_products) so price, cost and stock follow; free lines (assembly, Windows install) need name and unit_price. `items` replaces all lines. Then call invoice_action finalize to give it a number.',
+                self::obj($cust + array('id' => $int, 'kind' => $ikind, 'title' => array('type' => 'string', 'description' => 'Template name, or a short description.'), 'at' => $date, 'valid_until' => $date, 'discount' => $money, 'tax_pct' => array('type' => 'number', 'description' => 'VAT percent; default from settings.'), 'notes' => $str,
+                    'items' => array('type' => 'array', 'items' => self::obj(array('product_id' => $int, 'name' => $str, 'qty' => $int, 'unit_price' => $money, 'serials' => array('type' => 'array', 'items' => $str), 'warranty_months' => $int)))), array()), false,
+                function ($a, $t) { $b = $a; if (isset($a['customer_mobile'])) { $b['c_mobile'] = $a['customer_mobile']; } if (isset($a['customer_name'])) { $b['c_name'] = $a['customer_name']; } if (!empty($a['id'])) { list($st, $d) = self::api('invoice', $t, 'GET', array(), array(), array('id' => (int) $a['id'])); if ($st >= 400) { return array($st, $d); } } return self::api('invoice_save', $t, 'POST', array(), $b); }),
+            'invoice_action' => array('finalize: a draft sale/return gets its number and moves the stock (make_build: also queue a new computer for assembly from its parts). void: cancel a final invoice or a proforma (reason needed). copy: a new draft of `to_kind` from this one (template or proforma -> sale, sale -> return or template).',
+                self::obj(array('id' => $int, 'number' => $int, 'kind' => $ikind, 'action' => array('type' => 'string', 'enum' => array('finalize', 'void', 'copy')), 'make_build' => $bool, 'reason' => $str, 'to_kind' => $ikind, 'customer_id' => $int), array('action')), false,
+                function ($a, $t) {
+                    $id = self::iid($a); if (!$id) { return self::not_found('Invoice', $a); }
+                    if ($a['action'] === 'copy') { return self::api('copy', $t, 'POST', array(), array('id' => $id, 'kind' => isset($a['to_kind']) ? $a['to_kind'] : 'sale', 'customer_id' => isset($a['customer_id']) ? (int) $a['customer_id'] : 0)); }
+                    return self::api($a['action'] === 'void' ? 'void' : 'finalize', $t, 'POST', array(), array('id' => $id, 'make_build' => !empty($a['make_build']), 'reason' => isset($a['reason']) ? (string) $a['reason'] : ''));
+                }),
+            'save_payment' => array('Record money: direction in (received: a customer\'s deposit, set customer_id and invoice_id if it pays one) or out (paid: to a supplier vendor_id, back to a customer, or an expense with category and no party). method cheque needs cheque {no, bank, due_at}.',
+                self::obj(array('id' => $int, 'direction' => array('type' => 'string', 'enum' => array('in', 'out')), 'amount' => $money, 'method' => array('type' => 'string', 'enum' => array_keys(MZC_Acc::$methods)), 'account' => array('type' => 'string', 'description' => 'Which cash box / bank account / POS.'), 'at' => $date,
+                    'customer_id' => $int, 'vendor_id' => $int, 'invoice_id' => $int, 'purchase_id' => $int, 'category' => array('type' => 'string', 'description' => 'Expense heading: ' . implode('، ', MZC_Acc::expense_heads())), 'tx' => $str, 'notes' => $str,
+                    'cheque' => self::obj(array('no' => $str, 'bank' => $str, 'due_at' => $date))), array('amount')), false,
+                function ($a, $t) { return self::api('payment_save', $t, 'POST', array(), $a); }),
+            'list_payments' => array('Payments received and paid (filter by customer, supplier, invoice, direction, method, account, expense=true for expenses only, dates).', self::obj(array('customer_id' => $int, 'vendor_id' => $int, 'invoice_id' => $int, 'direction' => array('type' => 'string', 'enum' => array('in', 'out')), 'method' => $str, 'account' => $str, 'expense' => $bool, 'from' => $date, 'to' => $date, 'query' => $str, 'page' => $page)), true,
+                function ($a, $t) { return self::api('payments', $t, 'GET', self::only($a, array('customer_id' => 'customer', 'vendor_id' => 'vendor', 'invoice_id' => 'invoice', 'direction' => 'direction', 'method' => 'method', 'account' => 'account', 'expense' => 'expense', 'from' => 'from', 'to' => 'to', 'query' => 'q', 'page' => 'page')) + array('per' => self::PER)); }),
+            'list_cheques' => array('Cheques received (direction in) and written by the shop (out). due=soon: pending ones due within the reminder days; due=late: pending and past due.', self::obj(array('due' => array('type' => 'string', 'enum' => array('soon', 'late')), 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Acc::$cheque_statuses)), 'direction' => array('type' => 'string', 'enum' => array('in', 'out')), 'query' => $str, 'page' => $page)), true,
+                function ($a, $t) { return self::api('cheques', $t, 'GET', self::only($a, array('due' => 'due', 'status' => 'status', 'direction' => 'direction', 'query' => 'q', 'page' => 'page')) + array('per' => self::PER)); }),
+            'save_cheque' => array('Enter a cheque or change one (e.g. status cleared / bounced). pay=true also records it as a payment of that customer or supplier.', self::obj(array('id' => $int, 'direction' => array('type' => 'string', 'enum' => array('in', 'out')), 'no' => $str, 'bank' => $str, 'amount' => $money, 'issued_at' => $date, 'due_at' => $date, 'customer_id' => $int, 'vendor_id' => $int, 'party' => $str, 'status' => array('type' => 'string', 'enum' => array_keys(MZC_Acc::$cheque_statuses)), 'notes' => $str, 'pay' => $bool)), false,
+                function ($a, $t) { return self::api('cheque_save', $t, 'POST', array(), $a); }),
+            'customer_account' => array('A customer\'s account: running balance (positive = they owe), every invoice and proforma, payments and cheques.', self::obj(array('customer_id' => $int), array('customer_id')), true,
+                function ($a, $t) { return self::api('customer_account', $t, 'GET', array(), array(), array('id' => (int) $a['customer_id'])); }),
+            'accounting_summary' => array('The money of a period: sales, returns, profit, money in/out by method, expenses by heading; and now: account balances, cheques due soon, the customers who owe most.', self::obj(array('period' => array('type' => 'string', 'enum' => array('month', 'last', 'd30', 'year')), 'from' => $date, 'to' => $date)), true,
+                function ($a, $t) { $r = self::api('summary', $t, 'GET', self::only($a, array('period' => 'period', 'from' => 'from', 'to' => 'to'))); if (isset($r[1]['periods'])) { unset($r[1]['periods']); } return $r; }),
         );
+    }
+
+    /** The invoice a tool names: `id`, or `number` of `kind` (default sale). 0 when not found. */
+    private static function iid($a)
+    {
+        if (!empty($a['id'])) { return (int) $a['id']; }
+        if (empty($a['number'])) { return 0; }
+        $db = MZC_Crm_Db::db(); return $db ? (int) $db->get_var($db->prepare('SELECT id FROM `' . MZC_Crm_Db::t('invoices') . '` WHERE kind = %s AND no = %d', isset($a['kind'], MZC_Acc::$kinds[$a['kind']]) ? $a['kind'] : 'sale', (int) MZC_Crm::digits((string) $a['number']))) : 0;
     }
 
     /** The area and level each tool needs (the API checks again; this keeps tools the person may not use out of the model's sight). Tools not listed need only a sign-in. */
@@ -265,6 +308,8 @@ final class MZC_Mcp
         'save_product' => array('stock', 2), 'list_suppliers' => array('stock', 1), 'save_supplier' => array('stock', 2),
         'list_purchases' => array('stock', 1), 'get_purchase' => array('stock', 1), 'save_purchase' => array('stock', 2),
         'stats' => array('reports', 1), 'list_test_reports' => array('tests', 1), 'attach_test_report' => array('tests', 2),
+        'list_invoices' => array('accounting', 1), 'get_invoice' => array('accounting', 1), 'save_invoice' => array('accounting', 2), 'invoice_action' => array('accounting', 2), 'list_payments' => array('accounting', 1),
+        'save_payment' => array('payments', 2), 'list_cheques' => array('accounting', 1), 'save_cheque' => array('accounting', 2), 'customer_account' => array('payments', 1), 'accounting_summary' => array('accounting', 1),
     );
 
     /** The signed-in person's level per area (empty when the token is no longer good). */

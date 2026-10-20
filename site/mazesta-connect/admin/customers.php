@@ -67,6 +67,20 @@ if ($view) {
             . ($sh['received_at'] ? MZC_Admin::pill('برگشت', 'ok') : MZC_Admin::pill('در گارانتی', 'warn')) . '<a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-ships', array('edit' => (int) $sh['id']))) . '">باز کردن</a></div></div>';
     }
     echo '</div></div></div>';
+    // the customer's money: every invoice and payment, and the running balance (services count once they are ready or delivered)
+    $led = MZC_Acc::ledger($view); list($invs) = MZC_Acc::invoices(array('customer' => $view), 1, 100);
+    echo '<div class="mzc-panel"><header><h3>حساب مشتری</h3>' . MZC_Admin::pill(($led['balance'] > 0 ? 'بدهکار ' : ($led['balance'] < 0 ? 'بستانکار ' : 'تسویه ')) . number_format(abs($led['balance'])) . ' تومان', $led['balance'] > 0 ? 'warn' : 'ok') . '</header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>تاریخ</th><th>شرح</th><th class="n">بدهکار</th><th class="n">بستانکار</th><th class="n">مانده</th></tr></thead><tbody>';
+    if (!$led['rows']) { echo '<tr><td class="empty" colspan="5">گردش مالی ثبت نشده است.</td></tr>'; }
+    foreach ($led['rows'] as $r) {
+        $href = $r['ref'] === 'invoice' ? MZC_Admin::url('mzc-acc', array('view' => $r['id'])) : ($r['ref'] === 'job' ? MZC_Admin::url('mzc-jobs', array('view' => $r['id'])) : MZC_Admin::url('mzc-acc', array('tab' => 'payments', 'customer' => $view)));
+        echo '<tr class="click' . (!empty($r['dead']) ? ' muted' : '') . '" data-href="' . esc_url($href) . '"><td>' . esc_html($r['at'] ? MZC_Crm::jdate($r['at']) : '—') . '</td><td>' . esc_html($r['text']) . '</td><td class="n">' . ($r['debit'] ? MZC_Admin::num($r['debit']) : '') . '</td><td class="n">' . ($r['credit'] ? MZC_Admin::num($r['credit']) : '') . '</td><td class="n">' . MZC_Admin::num($r['balance']) . '</td></tr>';
+    }
+    echo '</tbody></table></div></div>';
+    if ($invs) {
+        echo '<div class="mzc-panel"><header><h3>فاکتورها و پیش‌فاکتورها (' . count($invs) . ')</h3></header><div class="body"><div class="mzc-timeline">';
+        foreach ($invs as $v) { echo '<div class="mzc-item"><div class="top"><strong>' . esc_html(MZC_Acc::$kinds[$v['kind']] . ' ' . ($v['no'] ?: '(پیش‌نویس)')) . '</strong>' . MZC_Admin::pill(MZC_Acc::$statuses[$v['status']], $v['status'] === 'final' ? 'ok' : ($v['status'] === 'void' ? 'bad' : 'warn')) . ($v['at'] ? MZC_Admin::pill(MZC_Crm::jdate($v['at'])) : '') . MZC_Admin::pill(number_format((int) $v['total']) . ' تومان') . ($v['wc_order_id'] ? MZC_Admin::pill('سفارش سایت', 'info') : '') . '<a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-acc', array('view' => (int) $v['id']))) . '">باز کردن</a></div></div>'; }
+        echo '</div></div></div>';
+    }
     $acc = MZC_Site::accounts_for($c);
     if ($acc) {
         echo '<div class="mzc-panel"><header><h3>حساب در سایت</h3></header><div class="body"><div class="mzc-timeline">';

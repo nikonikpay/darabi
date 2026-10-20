@@ -6,7 +6,7 @@ final class MZC_Admin
 {
     private static $pages = array(
         'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-tuning' => array('آندرولت و اورکلاک', 'tuning'), 'mzc-messages' => array('پیام‌ها', 'messages'),
-        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-report' => array('گزارش مالی و آمار', 'report'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
+        'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-acc' => array('حسابداری', 'acc'), 'mzc-report' => array('گزارش مالی و آمار', 'report'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
 

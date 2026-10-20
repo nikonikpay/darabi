@@ -18,6 +18,7 @@ final class MZC_Staff
     public static $areas = array(
         'customers' => 'مشتریان', 'builds' => 'سیستم‌های نو (فروش و اسمبل)', 'jobs' => 'سرویس‌ها', 'tests' => 'گزارش و نتیجهٔ تست',
         'ships' => 'ارسال به گارانتی', 'stock' => 'انبار، کالاها و فاکتور خرید', 'payments' => 'قیمت‌ها و پرداخت‌ها', 'reports' => 'آمار و گزارش مالی', 'sms' => 'فرستادن پیامک',
+        'accounting' => 'حسابداری (فاکتور فروش، پیش‌فاکتور، دریافت و پرداخت، چک)',
     );
     public static $levels = array(0 => 'ندارد', 1 => 'دیدن', 2 => 'دیدن و ویرایش');
 
@@ -30,6 +31,7 @@ final class MZC_Staff
             'test' => array('label' => 'تست', 'p' => array('customers' => 1, 'builds' => 1, 'jobs' => 1, 'tests' => 2)),
             'warehouse' => array('label' => 'انبار', 'p' => array('builds' => 1, 'jobs' => 1, 'ships' => 2, 'stock' => 2)),
             'service' => array('label' => 'سرویس', 'p' => array('customers' => 1, 'jobs' => 2, 'tests' => 2, 'ships' => 2, 'stock' => 1)),
+            'accountant' => array('label' => 'حسابدار', 'p' => array('customers' => 2, 'builds' => 1, 'jobs' => 1, 'stock' => 2, 'payments' => 2, 'reports' => 1, 'accounting' => 2)),
         );
     }
 
@@ -81,6 +83,8 @@ final class MZC_Staff
         $roles = self::clean_roles($c['staffRoles']);
         // roles saved before the stock area existed (2.5.0) get its default level for the built-in roles, until the page saves them again
         if (empty($c['staffRolesStock'])) { foreach (self::default_roles() as $k => $r) { if (isset($roles[$k], $r['p']['stock']) && !isset($roles[$k]['p']['stock'])) { $roles[$k]['p']['stock'] = $r['p']['stock']; } } }
+        // roles saved before the accounting (2.9.0) get the accountant role, until the page saves them again (nobody else gets the new area by itself)
+        if (empty($c['staffRolesAcc']) && !isset($roles['accountant'])) { $d = self::default_roles(); $roles['accountant'] = $d['accountant']; }
         return $roles;
     }
 
@@ -88,7 +92,7 @@ final class MZC_Staff
     {
         $roles = self::clean_roles($roles);
         Mazesta_Connect::config();
-        Mazesta_Connect::locked(function () use ($roles) { $c = Mazesta_Connect::read('config'); $c['staffRoles'] = $roles; $c['staffRolesStock'] = 1; Mazesta_Connect::write('config', $c); });
+        Mazesta_Connect::locked(function () use ($roles) { $c = Mazesta_Connect::read('config'); $c['staffRoles'] = $roles; $c['staffRolesStock'] = 1; $c['staffRolesAcc'] = 1; Mazesta_Connect::write('config', $c); });
     }
 
     /** What the user's record says: array(roles => keys, on => bool). */

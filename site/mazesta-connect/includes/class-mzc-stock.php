@@ -22,7 +22,9 @@ final class MZC_Stock
     public static function stock_sql()
     {
         return '(COALESCE((SELECT SUM(i.qty) FROM `' . self::t('purchase_items') . '` i WHERE i.product_id = p.id), 0) - (SELECT COUNT(*) FROM `' . self::t('build_parts') . '` x WHERE x.product_id = p.id)'
-            . ' - COALESCE((SELECT SUM(y.qty) FROM `' . self::t('job_parts') . "` y WHERE y.product_id = p.id AND y.kind <> 'in'), 0))";
+            . ' - COALESCE((SELECT SUM(y.qty) FROM `' . self::t('job_parts') . "` y WHERE y.product_id = p.id AND y.kind <> 'in'), 0)"
+            // final sales out, final returns back in - but not on an invoice of a new computer, whose parts above already count
+            . " - COALESCE((SELECT SUM(CASE v.kind WHEN 'return' THEN -s.qty ELSE s.qty END) FROM `" . self::t('invoice_items') . '` s JOIN `' . self::t('invoices') . "` v ON v.id = s.invoice_id WHERE s.product_id = p.id AND v.status = 'final' AND v.kind IN ('sale','return') AND v.build_id IS NULL), 0))";
     }
 
     /* ---------- products ---------- */
@@ -67,9 +69,16 @@ final class MZC_Stock
         if (array_key_exists('category', $d) || !$old) { $row['category'] = isset($d['category'], MZC_Crm::$categories[$d['category']]) ? $d['category'] : ($old ? $old['category'] : 'other'); }
         foreach (array('brand' => 80, 'sku' => 120, 'notes' => 255) as $k => $max) { if (array_key_exists($k, $d)) { $row[$k] = Mazesta_Connect::clip((string) $d[$k], $max) ?: null; } }
         foreach (array('buy_price', 'sell_price', 'warranty_months') as $k) { if (array_key_exists($k, $d)) { $row[$k] = self::money_in($d[$k]); } }
-        if ($id) { return $db->update(self::t('products'), $row, array('id' => (int) $id)) === false ? 'ذخیره نشد: ' . $db->last_error : (int) $id; }
-        $row['created'] = self::now();
-        return $db->insert(self::t('products'), $row) ? (int) $db->insert_id : 'ذخیره نشد: ' . $db->last_error;
+        if (array_key_exists('wc_id', $d)) {   // the site (WooCommerce) product this one is kept in step with
+            $w = (int) self::money_in($d['wc_id']);
+            if ($w && $db->get_var($db->prepare('SELECT id FROM `' . self::t('products') . '` WHERE wc_id = %d AND id <> %d', $w, (int) $id))) { return 'این محصول سایت به کالای دیگری وصل است.'; }
+            $row['wc_id'] = $w ?: null;
+        }
+        if ($id) { $ok = $db->update(self::t('products'), $row, array('id' => (int) $id)) !== false; }
+        else { $row['created'] = self::now(); $ok = (bool) $db->insert(self::t('products'), $row); $id = (int) $db->insert_id; }
+        if (!$ok) { return 'ذخیره نشد: ' . $db->last_error; }
+        MZC_Woo::touch(array($id));
+        return (int) $id;
     }
 
     /** A product a form names: by id, else by exact name, else (with $create) a new one. Returns the row or null. */
@@ -102,7 +111,9 @@ final class MZC_Stock
             . self::t('build_parts') . '` x JOIN `' . self::t('builds') . '` b ON b.id = x.build_id JOIN `' . self::t('customers') . '` c ON c.id = b.customer_id WHERE x.product_id = %d', (int) $id), ARRAY_A) ?: array();
         $j = $db->get_results($db->prepare("SELECT 'job' AS kind, j.id, j.service_no AS number, c.id AS customer_id, c.name AS customer_name, COALESCE(j.received_at, DATE(j.created)) AS at, y.qty, y.unit_price AS price, y.buy_price AS cost, y.serial FROM `"
             . self::t('job_parts') . '` y JOIN `' . self::t('jobs') . '` j ON j.id = y.job_id JOIN `' . self::t('customers') . "` c ON c.id = j.customer_id WHERE y.product_id = %d AND y.kind <> 'in'", (int) $id), ARRAY_A) ?: array();
-        $used = array_merge($b, $j);
+        $s = $db->get_results($db->prepare("SELECT 'invoice' AS kind, v.id, CAST(v.no AS CHAR) AS number, c.id AS customer_id, c.name AS customer_name, v.at, CASE v.kind WHEN 'return' THEN -s.qty ELSE s.qty END AS qty, s.unit_price AS price, s.buy_price AS cost, s.serials AS serial FROM `"
+            . self::t('invoice_items') . '` s JOIN `' . self::t('invoices') . '` v ON v.id = s.invoice_id JOIN `' . self::t('customers') . "` c ON c.id = v.customer_id WHERE s.product_id = %d AND v.status = 'final' AND v.kind IN ('sale','return') AND v.build_id IS NULL", (int) $id), ARRAY_A) ?: array();
+        $used = array_merge($b, $j, $s);
         usort($used, function ($x, $y) { return strcmp((string) $y['at'], (string) $x['at']); });
         $sum = function ($rows, $f) { $s = 0; foreach ($rows as $r) { $s += $f($r); } return $s; };
         return array('product' => $p, 'bought' => $bought, 'used' => $used, 'totals' => array(
@@ -203,6 +214,7 @@ final class MZC_Stock
         if (!$items) { return 'دست‌کم یک کالا در فاکتور بنویسید.'; }
         $date = isset($d['bought_at']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $d['bought_at']) ? (string) $d['bought_at'] : gmdate('Y-m-d');
         $row = array('vendor_id' => $vid, 'invoice_no' => $inv !== '' ? $inv : null, 'bought_at' => $date, 'notes' => isset($d['notes']) ? mb_substr(trim(wp_strip_all_tags((string) $d['notes'])), 0, 2000) : null, 'updated' => self::now());
+        $before = $id ? ($db->get_col($db->prepare('SELECT product_id FROM `' . self::t('purchase_items') . '` WHERE purchase_id = %d', (int) $id)) ?: array()) : array();   // their counts change too
         $db->query('START TRANSACTION'); $ok = true; $err = '';
         if ($id) { $ok = $db->update(self::t('purchases'), $row, array('id' => (int) $id)) !== false; }
         else { $row['created'] = self::now(); $ok = (bool) $db->insert(self::t('purchases'), $row); $id = (int) $db->insert_id; }
@@ -215,8 +227,9 @@ final class MZC_Stock
             $upd = array('buy_price' => $x['unit_cost'], 'updated' => self::now()); if ($x['sell'] !== null) { $upd['sell_price'] = $x['sell']; }
             if ($ok) { $db->update(self::t('products'), $upd, array('id' => (int) $p['id'])); }
         }
-        $db->query($ok ? 'COMMIT' : 'ROLLBACK');
-        return $ok ? (int) $id : ($err !== '' ? $err : 'ذخیره نشد: ' . $db->last_error);
+        $dberr = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
+        if ($ok) { MZC_Woo::touch(array_merge($before, $db->get_col($db->prepare('SELECT product_id FROM `' . self::t('purchase_items') . '` WHERE purchase_id = %d', (int) $id)) ?: array())); }
+        return $ok ? (int) $id : ($err !== '' ? $err : 'ذخیره نشد: ' . $dberr);
     }
 
     /** Where a serial number has been: bought on which invoice, put in which computer or service, sent to which warranty company. */
@@ -244,6 +257,7 @@ final class MZC_Stock
         foreach ($rows as &$r) {
             $p = self::resolve(isset($r['product_id']) ? (int) $r['product_id'] : 0, isset($r[$name]) ? $r[$name] : '');
             $r['product_id'] = $p ? (int) $p['id'] : null;
+            if ($p) { MZC_Woo::touch(array($p['id'])); }   // a part removed from a form moves no hook: the 15-minute sync puts that count right
             if (!$p) { continue; }
             if (empty($r[$name])) { $r[$name] = $p['name']; }
             foreach ($prices as $f => $pf) { if (!isset($r[$f]) || $r[$f] === null || $r[$f] === '') { $r[$f] = $p[$pf] === null ? null : (int) $p[$pf]; } }
@@ -258,7 +272,7 @@ final class MZC_Stock
     {
         MZC_Admin::guard('product_save');
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0; $d = array();
-        foreach (array('name', 'category', 'brand', 'sku', 'buy_price', 'sell_price', 'warranty_months', 'notes') as $k) { if (isset($_POST[$k])) { $d[$k] = wp_unslash($_POST[$k]); } }
+        foreach (array('name', 'category', 'brand', 'sku', 'buy_price', 'sell_price', 'warranty_months', 'notes', 'wc_id') as $k) { if (isset($_POST[$k])) { $d[$k] = wp_unslash($_POST[$k]); } }
         $r = self::save_product($id, $d);
         if (!is_int($r)) { MZC_Admin::back('mzc-stock', 'err:' . $r, $id ? array('edit' => $id) : array('add' => 1)); }
         MZC_Admin::back('mzc-stock', 'ok:کالا ذخیره شد.', array('view' => $r));

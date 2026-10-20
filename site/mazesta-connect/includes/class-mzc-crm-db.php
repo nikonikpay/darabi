@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 12;
+    const SCHEMA = 13;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -148,6 +148,24 @@ final class MZC_Crm_Db
                 value DOUBLE NOT NULL, unit VARCHAR(20) NOT NULL, part VARCHAR(120) NOT NULL, at DATETIME NOT NULL, version INT NOT NULL DEFAULT 1, PRIMARY KEY (token, pos)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('pairs')}` (id CHAR(64) NOT NULL PRIMARY KEY, name VARCHAR(60) NOT NULL DEFAULT '', approved TINYINT NOT NULL DEFAULT 0, created INT UNSIGNED NOT NULL, KEY created (created)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('limits')}` (slot VARCHAR(80) NOT NULL, win INT UNSIGNED NOT NULL, n INT UNSIGNED NOT NULL DEFAULT 0, PRIMARY KEY (slot, win), KEY win (win)) $engine";
+        // schema 13: the accounting. One table of documents (sales and return invoices, proformas, and the ready-made templates), their lines, the money that came in or went out
+        // (from a customer, to a supplier, or an expense) and the cheques received and written. A line's buy_price is the cost when sold, so a later purchase does not change old profit.
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('invoices')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, kind VARCHAR(10) NOT NULL, no BIGINT UNSIGNED NULL, status VARCHAR(8) NOT NULL DEFAULT 'draft',
+                customer_id BIGINT UNSIGNED NULL, title VARCHAR(190) NULL, at DATE NULL, valid_until DATE NULL, build_id BIGINT UNSIGNED NULL, ref_id BIGINT UNSIGNED NULL, wc_order_id BIGINT UNSIGNED NULL,
+                subtotal BIGINT NOT NULL DEFAULT 0, discount BIGINT NOT NULL DEFAULT 0, tax_pct DECIMAL(5,2) NOT NULL DEFAULT 0, tax BIGINT NOT NULL DEFAULT 0, total BIGINT NOT NULL DEFAULT 0,
+                notes TEXT NULL, void_reason VARCHAR(255) NULL, created_by BIGINT UNSIGNED NOT NULL DEFAULT 0, created DATETIME NOT NULL, updated DATETIME NOT NULL,
+                UNIQUE KEY kind_no (kind, no), UNIQUE KEY wc_order_id (wc_order_id), KEY customer_id (customer_id), KEY kind_status (kind, status, at), KEY build_id (build_id), KEY ref_id (ref_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('invoice_items')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, invoice_id BIGINT UNSIGNED NOT NULL, product_id BIGINT UNSIGNED NULL, category VARCHAR(40) NOT NULL DEFAULT 'other',
+                name VARCHAR(190) NOT NULL, qty INT NOT NULL DEFAULT 1, unit_price BIGINT NOT NULL DEFAULT 0, buy_price BIGINT NULL, serials TEXT NULL, warranty_months SMALLINT NULL,
+                KEY invoice_id (invoice_id), KEY product_id (product_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('cheques')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, direction CHAR(3) NOT NULL, no VARCHAR(40) NOT NULL, bank VARCHAR(80) NULL, account VARCHAR(120) NULL,
+                amount BIGINT NOT NULL, issued_at DATE NULL, due_at DATE NOT NULL, customer_id BIGINT UNSIGNED NULL, vendor_id BIGINT UNSIGNED NULL, party VARCHAR(190) NULL, status VARCHAR(10) NOT NULL DEFAULT 'pending',
+                notes VARCHAR(255) NULL, created_by BIGINT UNSIGNED NOT NULL DEFAULT 0, created DATETIME NOT NULL, updated DATETIME NOT NULL,
+                KEY due (status, due_at), KEY customer_id (customer_id), KEY vendor_id (vendor_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('payments')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, direction CHAR(3) NOT NULL, amount BIGINT NOT NULL, method VARCHAR(10) NOT NULL DEFAULT 'cash',
+                account VARCHAR(120) NULL, at DATE NOT NULL, customer_id BIGINT UNSIGNED NULL, vendor_id BIGINT UNSIGNED NULL, invoice_id BIGINT UNSIGNED NULL, purchase_id BIGINT UNSIGNED NULL, cheque_id BIGINT UNSIGNED NULL,
+                category VARCHAR(60) NULL, tx VARCHAR(80) NULL, notes VARCHAR(255) NULL, created_by BIGINT UNSIGNED NOT NULL DEFAULT 0, created DATETIME NOT NULL, updated DATETIME NOT NULL,
+                KEY customer_id (customer_id), KEY vendor_id (vendor_id), KEY invoice_id (invoice_id), KEY cheque_id (cheque_id), KEY at (at)) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }
@@ -170,12 +188,15 @@ final class MZC_Crm_Db
         $cols['jobs'] += array('soft' => 'TEXT NULL', 'device_serial' => 'VARCHAR(120) NULL', 'paid_note' => 'VARCHAR(255) NULL');
         // schema 11: a customer's third mobile number onward, one per line (the first two stay in mobile and mobile2)
         $cols['customers'] += array('mobiles' => 'TEXT NULL');
+        // schema 13: the customer's account on the site (WooCommerce) and the site product a stock product is kept in step with
+        $cols['customers'] += array('wp_user_id' => 'BIGINT UNSIGNED NULL');
+        $cols['products'] = array('wc_id' => 'BIGINT UNSIGNED NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {
                 if (in_array($c, $have, true)) { continue; }
                 if ($db->query('ALTER TABLE `' . $t($tb) . "` ADD COLUMN `$c` $def") === false) { return 'به‌روزرسانی جدول ناموفق بود: ' . $db->last_error; }
-                if ($c === 'product_id') { $db->query('ALTER TABLE `' . $t($tb) . '` ADD KEY product_id (product_id)'); }
+                if (in_array($c, array('product_id', 'wp_user_id', 'wc_id'), true)) { $db->query('ALTER TABLE `' . $t($tb) . "` ADD KEY `$c` (`$c`)"); }
             }
         }
         $db->query('ALTER TABLE `' . $t('customers') . '` MODIFY mobile VARCHAR(20) NULL');

@@ -613,7 +613,7 @@ final class MZC_Crm
         $db = self::db(); if (!$db) { MZC_Admin::back('mzc-settings', 'err:' . MZC_Crm_Db::error()); }
         if (self::post('confirm', 20) !== 'پاک‌کن') { MZC_Admin::back('mzc-settings', 'err:برای پاک کردن، کلمهٔ «پاک‌کن» را دقیق بنویسید.'); }
         foreach ((array) $db->get_col('SELECT file FROM `' . self::t('photos') . '`') as $f) { if (preg_match('/^[a-f0-9]{32}\.(jpg|png|webp)$/', (string) $f)) { @unlink(self::photo_dir() . '/' . $f . '.dat'); } }
-        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
+        foreach (array('customers', 'builds', 'build_parts', 'jobs', 'job_parts', 'job_pays', 'forms', 'shipments', 'vendors', 'oldmap', 'photos', 'otps', 'sessions', 'products', 'purchases', 'purchase_items', 'invoices', 'invoice_items', 'payments', 'cheques') as $tb) { $db->query('TRUNCATE TABLE `' . self::t($tb) . '`'); }
         $db->query('DELETE FROM `' . self::t('meta') . "` WHERE k = 'import'");
         MZC_Admin::back('mzc-settings', 'ok:همهٔ اطلاعات CRM پاک شد؛ فایل واردسازی را دوباره بارگذاری کنید.');
     }

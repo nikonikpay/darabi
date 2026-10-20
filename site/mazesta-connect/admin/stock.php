@@ -22,7 +22,8 @@ if ($add || $edit) {
         . '<label>قیمت خرید (تومان)<input type="text" name="buy_price" value="' . $v('buy_price') . '" dir="ltr" inputmode="numeric"><small>با هر فاکتور خرید به آخرین قیمت خرید عوض می‌شود.</small></label>'
         . '<label>قیمت فروش (تومان)<input type="text" name="sell_price" value="' . $v('sell_price') . '" dir="ltr" inputmode="numeric"><small>در فرم‌ها خودکار پر می‌شود.</small></label>'
         . '<label>گارانتی (ماه)<input type="number" name="warranty_months" value="' . $v('warranty_months') . '" min="0" max="120"></label>'
-        . '<label class="wide">یادداشت<input type="text" name="notes" value="' . $v('notes') . '" maxlength="255"></label></div>'
+        . '<label class="wide">یادداشت<input type="text" name="notes" value="' . $v('notes') . '" maxlength="255"></label>'
+        . (class_exists('WooCommerce') ? '<label>شناسهٔ محصول سایت (ووکامرس)<input type="text" name="wc_id" value="' . ($p && $p['wc_id'] ? (int) $p['wc_id'] : '') . '" dir="ltr" inputmode="numeric"><small>شمارهٔ محصول در فهرست محصولات سایت؛ قیمت و موجودی با آن همگام می‌شود. خالی: وصل نیست.</small></label>' : '') . '</div>'
         . '<p class="muted">موجودی را دستی وارد نکنید: از فاکتورهای خرید و قطعه‌های به‌کاررفته در سیستم‌ها و سرویس‌ها حساب می‌شود.</p>'
         . '<p><button class="mzc-btn primary">ذخیره</button></p></form></div></div>';
     return;
@@ -31,12 +32,13 @@ if ($add || $edit) {
 if ($view) {
     $r = MZC_Stock::report($view);
     if (!$r) { echo '<div class="mzc-notice err">کالا پیدا نشد.</div>'; return; }
-    $p = $r['product']; $tt = $r['totals'];
+    $p = $r['product']; $tt = $r['totals']; $site = MZC_Woo::site_product($p['wc_id']);
     echo '<div class="mzc-title"><div>' . $back . '<h2 dir="auto">' . esc_html($p['name']) . '</h2></div><div class="mzc-actions"><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-stock', array('edit' => $view))) . '">ویرایش</a>'
         . '<a class="mzc-btn" href="' . esc_url(MZC_Admin::url('mzc-purchases', array('add' => 1, 'product' => $view))) . '">+ خرید این کالا</a>'
         . '<a class="mzc-btn danger" href="' . esc_url(MZC_Admin::post_url('product_delete', array('id' => $view))) . '" onclick="return confirm(\'این کالا پاک شود؟\')">حذف</a></div></div>';
     echo '<div class="mzc-cards"><div class="mzc-card"><span>موجودی</span><b>' . $stockPill($tt['stock']) . '</b></div><div class="mzc-card"><span>خریده‌شده</span><b class="num">' . (int) $tt['bought'] . '</b></div><div class="mzc-card"><span>به‌کاررفته / فروخته</span><b class="num">' . (int) $tt['used'] . '</b></div>'
         . '<div class="mzc-card"><span>قیمت خرید / فروش</span><b class="num">' . esc_html($p['buy_price'] === null ? '—' : number_format((int) $p['buy_price'])) . ' / ' . esc_html($p['sell_price'] === null ? '—' : number_format((int) $p['sell_price'])) . '</b></div>'
+        . ($site ? '<div class="mzc-card"><span>محصول سایت</span><b><a href="' . esc_url($site['url']) . '">' . esc_html($site['name']) . '</a></b><small class="num">' . esc_html($site['price'] . ' / ' . (string) $site['stock']) . '</small></div>' : '')
         . '<div class="mzc-card"><span>جمع خرید / جمع فروش</span><b class="num">' . esc_html(number_format($tt['spent'])) . ' / ' . esc_html(number_format($tt['sold'])) . '</b></div></div>';
     echo '<div class="mzc-panel"><header><h3>از کجا خریده‌ایم</h3></header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>تاریخ</th><th>فروشنده</th><th>شمارهٔ فاکتور</th><th class="n">تعداد</th><th class="n">قیمت واحد</th><th>سریال‌ها</th></tr></thead><tbody>';
     if (!$r['bought']) { echo '<tr><td class="empty" colspan="6">در هیچ فاکتور خریدی نیامده است.</td></tr>'; }
@@ -48,8 +50,8 @@ if ($view) {
     echo '<div class="mzc-panel"><header><h3>به چه کسی رفته</h3></header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>تاریخ</th><th>مشتری</th><th>پرونده</th><th class="n">تعداد</th><th class="n">قیمت فروش</th><th class="n">قیمت خرید</th><th>سریال</th></tr></thead><tbody>';
     if (!$r['used']) { echo '<tr><td class="empty" colspan="7">هنوز در هیچ سیستم یا سرویسی به کار نرفته است.</td></tr>'; }
     foreach ($r['used'] as $x) {
-        $link = $x['kind'] === 'build' ? MZC_Admin::url('mzc-builds', array('view' => (int) $x['id'])) : MZC_Admin::url('mzc-jobs', array('view' => (int) $x['id']));
-        echo '<tr class="click" data-href="' . esc_url($link) . '"><td>' . esc_html($x['at'] ? MZC_Crm::jdate($x['at']) : '—') . '</td><td dir="auto">' . esc_html($x['customer_name']) . '</td><td>' . ($x['kind'] === 'build' ? 'سیستم نو ' : 'سرویس ') . '<span class="num">' . esc_html($x['number'] ?: '#' . $x['id']) . '</span></td>'
+        $link = MZC_Admin::url(array('build' => 'mzc-builds', 'job' => 'mzc-jobs', 'invoice' => 'mzc-acc')[$x['kind']], array('view' => (int) $x['id']));
+        echo '<tr class="click" data-href="' . esc_url($link) . '"><td>' . esc_html($x['at'] ? MZC_Crm::jdate($x['at']) : '—') . '</td><td dir="auto">' . esc_html($x['customer_name']) . '</td><td>' . array('build' => 'سیستم نو ', 'job' => 'سرویس ', 'invoice' => 'فاکتور ')[$x['kind']] . '<span class="num">' . esc_html($x['number'] ?: '#' . $x['id']) . '</span></td>'
             . '<td class="n">' . MZC_Admin::num($x['qty']) . '</td><td class="n">' . MZC_Admin::num($x['price']) . '</td><td class="n">' . MZC_Admin::num($x['cost']) . '</td><td class="num">' . esc_html($x['serial'] ?: '—') . '</td></tr>';
     }
     echo '</tbody></table></div></div>';

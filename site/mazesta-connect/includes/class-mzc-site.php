@@ -41,11 +41,12 @@ final class MZC_Site
             $m = preg_replace('/\D/', '', $m);
             if (strlen($m) === 11 && $m[0] === '0') { array_push($nums, $m, substr($m, 1), '98' . substr($m, 1), '+98' . substr($m, 1)); }
         }
-        if (!$nums) { return array(); }
-        $users = get_users(array('number' => 3, 'fields' => array('ID', 'display_name', 'user_email'), 'meta_query' => array('relation' => 'OR',
-            array('key' => 'billing_phone', 'value' => $nums, 'compare' => 'IN'), array('key' => 'digits_phone', 'value' => $nums, 'compare' => 'IN')), 'search' => '', 'orderby' => 'ID'));
-        $out = array();
-        foreach ($users as $u) { $out[] = array('name' => $u->display_name, 'email' => $u->user_email, 'url' => get_edit_user_link((int) $u->ID)); }
+        $users = $nums ? get_users(array('number' => 3, 'fields' => array('ID', 'display_name', 'user_email'), 'meta_query' => array('relation' => 'OR',
+            array('key' => 'billing_phone', 'value' => $nums, 'compare' => 'IN'), array('key' => 'digits_phone', 'value' => $nums, 'compare' => 'IN')), 'search' => '', 'orderby' => 'ID')) : array();
+        // the account a site order linked to this customer (see MZC_Woo), first
+        if (!empty($customer['wp_user_id']) && ($u = get_userdata((int) $customer['wp_user_id']))) { array_unshift($users, $u); }
+        $out = array(); $seen = array();
+        foreach ($users as $u) { if (isset($seen[$u->ID])) { continue; } $seen[$u->ID] = 1; $out[] = array('name' => $u->display_name, 'email' => $u->user_email, 'url' => get_edit_user_link((int) $u->ID)); }
         return $out;
     }
 }
