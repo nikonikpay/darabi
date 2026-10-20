@@ -585,10 +585,8 @@ final class MZC_Crm
     /** The reports the app sent, newest first, for a dropdown; those whose service number is $service come first. */
     public static function report_options($service = '')
     {
-        $rows = Mazesta_Connect::read('reports');
-        uasort($rows, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
         $out = array();
-        foreach (array_slice($rows, 0, 300, true) as $id => $r) {
+        foreach (Mazesta_Connect::reports('', 300)[0] as $id => $r) {
             $label = trim(($r['service'] !== '' ? $r['service'] . ' — ' : '') . ($r['device'] !== '' ? $r['device'] : $r['machine']) . ' — ' . gmdate('Y/m/d', (int) strtotime($r['created'])));
             $out[(string) $id] = array('label' => $label, 'match' => $service !== '' && $r['service'] === $service);
         }

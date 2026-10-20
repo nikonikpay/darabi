@@ -14,9 +14,12 @@ if (!defined('ABSPATH')) { exit; }
  *   POST release/chunk, commit  the signed update folder (release key)     -> written to /mazesta/ in the site's root, where the app reads it
  * The lists are built the way the app builds them (BenchmarkPeers.Aggregate): one row per part model, the median of each system's best run.
  *
- * Nothing is kept in WordPress' database: no table, no option, no role change. The data is files in wp-content/mazesta-connect-data. Every
- * file there that is not public begins with a line of PHP that ends the request, so asking the web server for it returns nothing, whatever
- * the server makes of the folder's .htaccess.
+ * Nothing is kept in WordPress' database: no table, no option, no role change. The data is in the CRM's own database (MZC_Crm_Db; a table per
+ * kind: bench_runs, bench_names, shares, share_rows, pairs, limits, and MZC_Stats' and MZC_Messages' tables). Files in wp-content/mazesta-connect-data:
+ * config.php (the keys and that database's connection, which cannot be kept in the database it opens), the test reports (reports.php, report-*.php:
+ * the shop wants them as uploaded files) and the built comparison lists (benchdb/). Each .php there begins with a line of PHP that ends the request,
+ * so asking the web server for it returns nothing.
+ * Until the CRM's database is set up on the settings page, whatever needs it answers 503.
  */
 final class Mazesta_Connect
 {
@@ -37,7 +40,14 @@ final class Mazesta_Connect
         }
     }
 
-    /* ---------- storage: files (the usage statistics are in MZC_Stats' tables) ---------- */
+    /* ---------- storage: the CRM's database; config.php is the one data file ---------- */
+
+    /** The CRM database's wpdb once its tables are there, else null. */
+    public static function db() { return MZC_Crm_Db::ready() ? MZC_Crm_Db::db() : null; }
+    public static function t($n) { return MZC_Crm_Db::t($n); }
+    public static function no_db() { return new WP_Error('mazesta_db', 'The site database is not reachable; try again later.', array('status' => 503)); }
+    /** A DATETIME (UTC) as ISO 8601, the form the pages and the app read. */
+    public static function iso($dt) { return $dt ? str_replace(' ', 'T', (string) $dt) . 'Z' : ''; }
 
     public static function dir() { return WP_CONTENT_DIR . '/mazesta-connect-data'; }
 
@@ -78,13 +88,13 @@ final class Mazesta_Connect
         return true;
     }
 
+    public static function remove($name) { $f = self::file($name); if (is_file($f)) { @unlink($f); } }
+
     public static function write($name, $data)
     {
         $json = wp_json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         return $json !== false && self::put($name, $json);
     }
-
-    public static function remove($name) { $f = self::file($name); if (is_file($f)) { @unlink($f); } }
 
     /** Runs $work while holding the data folder's lock, so two uploads at once do not write over each other. */
     public static function locked($work)
@@ -121,21 +131,27 @@ final class Mazesta_Connect
 
     public static function can() { return current_user_can('manage_woocommerce') || current_user_can('manage_options'); }
 
-    /** At most $max calls an hour from one address, counted in a file. */
+    /** At most $max calls an hour from one address. */
     public static function allowed($bucket, $max)
     {
         $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
-        $slot = $bucket . ':' . md5($ip); $hour = (int) floor(time() / 3600);
-        return self::locked(function () use ($slot, $hour, $max) {
-            $r = self::read('rate', array());
-            if (!isset($r['hour']) || (int) $r['hour'] !== $hour) { $r = array('hour' => $hour, 'n' => array()); }
-            $n = isset($r['n'][$slot]) ? (int) $r['n'][$slot] : 0;
-            if ($n >= $max) { return false; }
-            $r['n'][$slot] = $n + 1;
-            self::write('rate', $r);
-            return true;
-        });
+        return self::hit($bucket . ':' . md5($ip)) <= $max;
     }
+
+    /**
+     * A counter of the current window of $per seconds (the limits table): $add is added, the count returned. Without the database nothing is counted (0): what the
+     * counter guards needs the database too and answers 503 then.
+     */
+    public static function hit($slot, $per = 3600, $add = 1)
+    {
+        $db = self::db(); if (!$db) { return 0; }
+        $tb = self::t('limits'); $win = ((int) floor(time() / $per) + 1) * $per;   // the window's end, so windows of any length are cleared alike
+        if ($add) { $db->query($db->prepare("INSERT INTO `$tb` (slot, win, n) VALUES (%s, %d, %d) ON DUPLICATE KEY UPDATE n = n + %d", $slot, $win, $add, $add)); }
+        if (mt_rand(1, 200) === 1) { $db->query($db->prepare("DELETE FROM `$tb` WHERE win < %d LIMIT 5000", time())); }
+        return (int) $db->get_var($db->prepare("SELECT n FROM `$tb` WHERE slot = %s AND win = %d", $slot, $win));
+    }
+
+    public static function unhit($slot) { $db = self::db(); if ($db) { $db->delete(self::t('limits'), array('slot' => $slot)); } }
 
     /* ---------- REST ---------- */
 
@@ -217,10 +233,9 @@ final class Mazesta_Connect
         $key = self::key_state($req); $c = self::config();
         $out = array('name' => 'Mazesta Connect', 'version' => self::VERSION, 'key' => $key, 'openUploads' => !empty($c['openUploads']), 'sharing' => !empty($c['sharing']),
             'benchmarkVersions' => (object) self::latest_versions(), 'appVersion' => self::latest_app());
-        if ($key === 'ok') {
-            $approved = 0; $pending = 0;
-            foreach (self::read('runs') as $r) { if (!empty($r['status'])) { $approved++; } else { $pending++; } }
-            $out['reports'] = count(self::read('reports')); $out['runs'] = $approved; $out['pending'] = $pending;
+        if ($key === 'ok' && ($db = self::db())) {
+            $n = $db->get_row('SELECT SUM(approved = 1) AS a, SUM(approved = 0) AS p FROM `' . self::t('bench_runs') . '`', ARRAY_A);
+            $out['reports'] = count(self::read('reports')); $out['runs'] = (int) $n['a']; $out['pending'] = (int) $n['p'];
         }
         return self::fresh($out);
     }
@@ -229,12 +244,11 @@ final class Mazesta_Connect
 
     const PAIR_SECONDS = 600;
 
-    /** The requests still open (younger than ten minutes); older ones are dropped. */
-    private static function pairs()
+    /** An open request (younger than ten minutes) by its id, or null. */
+    private static function pair($id)
     {
-        $now = time(); $out = array();
-        foreach (self::read('pairs') as $id => $p) { if (isset($p['created']) && $now - (int) $p['created'] < self::PAIR_SECONDS) { $out[$id] = $p; } }
-        return $out;
+        $db = self::db(); if (!$db) { return null; }
+        return $db->get_row($db->prepare('SELECT * FROM `' . self::t('pairs') . '` WHERE id = %s AND created > %d', $id, time() - self::PAIR_SECONDS), ARRAY_A);
     }
 
     /**
@@ -249,12 +263,10 @@ final class Mazesta_Connect
         $id = isset($p['id']) && is_string($p['id']) ? strtolower($p['id']) : '';
         if (!preg_match('/^[0-9a-f]{64}$/', $id)) { return new WP_Error('mazesta_pair', 'Not a valid request.', array('status' => 400)); }
         $name = self::text(isset($p['name']) ? $p['name'] : '', 60);
-        $ok = self::locked(function () use ($id, $name) {
-            $all = self::pairs();
-            if (count($all) >= 50 && !isset($all[$id])) { return false; }
-            $all[$id] = array('created' => time(), 'name' => $name, 'approved' => false);
-            return self::write('pairs', $all);
-        });
+        $db = self::db(); if (!$db) { return self::no_db(); }
+        $tb = self::t('pairs'); $db->query($db->prepare("DELETE FROM `$tb` WHERE created <= %d", time() - self::PAIR_SECONDS));
+        $ok = (int) $db->get_var("SELECT COUNT(*) FROM `$tb`") < 50 || self::pair($id);
+        if ($ok) { $db->replace($tb, array('id' => $id, 'name' => $name, 'approved' => 0, 'created' => time())); }
         if (!$ok) { return new WP_Error('mazesta_busy', 'Too many open requests; try again in a few minutes.', array('status' => 429)); }
         return self::fresh(array('url' => admin_url('admin.php?page=mazesta-connect&pair=' . $id), 'code' => strtoupper(substr($id, 0, 6)), 'seconds' => self::PAIR_SECONDS));
     }
@@ -267,13 +279,9 @@ final class Mazesta_Connect
         $secret = isset($p['secret']) && is_string($p['secret']) ? $p['secret'] : '';
         if (!preg_match('/^[0-9a-f]{64}$/', $secret)) { return new WP_Error('mazesta_pair', 'Not a valid request.', array('status' => 400)); }
         $id = hash('sha256', $secret);
-        $state = self::locked(function () use ($id) {
-            $all = self::pairs();
-            if (!isset($all[$id])) { return 'gone'; }
-            if (empty($all[$id]['approved'])) { return 'waiting'; }
-            unset($all[$id]); self::write('pairs', $all);
-            return 'ok';
-        });
+        $p = self::pair($id);
+        // the delete is what hands the key over: of two claims at once only the one that deleted the row gets it
+        $state = !$p ? 'gone' : (empty($p['approved']) ? 'waiting' : (self::db()->delete(self::t('pairs'), array('id' => $id)) ? 'ok' : 'gone'));
         if ($state !== 'ok') { return self::fresh(array('state' => $state)); }
         $c = self::config();
         return self::fresh(array('state' => 'ok', 'key' => (string) $c['key']));
@@ -283,22 +291,18 @@ final class Mazesta_Connect
     {
         self::guard('pair_approve');
         $id = self::arg('id'); $yes = empty($_GET['no']);
-        self::locked(function () use ($id, $yes) {
-            $all = self::pairs();
-            if (isset($all[$id])) { if ($yes) { $all[$id]['approved'] = true; } else { unset($all[$id]); } self::write('pairs', $all); }
-        });
+        if (self::pair($id)) { if ($yes) { self::db()->update(self::t('pairs'), array('approved' => 1), array('id' => $id)); } else { self::db()->delete(self::t('pairs'), array('id' => $id)); } }
         self::back('settings', $yes ? 'paired' : 'refused');
     }
 
     /** The request named in the address, for the signed-in manager to approve or refuse. */
     public static function pair_panel($id)
     {
-        $all = self::pairs();
-        if (!preg_match('/^[0-9a-f]{64}$/', $id) || !isset($all[$id])) {
+        $p = preg_match('/^[0-9a-f]{64}$/', $id) ? self::pair($id) : null;
+        if (!$p) {
             echo '<div class="notice notice-warning"><p>این درخواست اتصال پیدا نشد یا مهلت ده‌دقیقه‌ای آن گذشته است. در برنامه دوباره «اتصال با ورود به سایت» را بزنید.</p></div>';
             return;
         }
-        $p = $all[$id];
         echo '<div class="notice notice-info" style="padding:14px 18px"><h2 style="margin-top:0">یک نسخه از برنامه Mazesta Test می‌خواهد به سایت وصل شود</h2>'
             . '<p>نام سیستم: <strong dir="ltr">' . esc_html($p['name'] !== '' ? $p['name'] : '—') . '</strong> · کد: <strong dir="ltr" style="font-size:18px;letter-spacing:2px">' . esc_html(strtoupper(substr($id, 0, 6))) . '</strong></p>'
             . '<p>فقط وقتی تأیید کنید که همین کد را الان در برنامه خودتان می‌بینید. با تأیید، کلید سایت به آن برنامه داده می‌شود و می‌تواند گزارش و نتیجه بنچمارک بفرستد.</p>';
@@ -365,23 +369,57 @@ final class Mazesta_Connect
     public static function rest_report_list($req)
     {
         $rows = array();
-        foreach (self::read('reports') as $id => $r) {
-            $rows[] = array(
-                'id' => (string) $id, 'service' => isset($r['service']) ? (string) $r['service'] : '', 'title' => isset($r['title']) ? (string) $r['title'] : '',
-                'machine' => isset($r['machine']) ? (string) $r['machine'] : '', 'device' => isset($r['device']) ? (string) $r['device'] : '', 'laptop' => !empty($r['laptop']),
-                'notes' => isset($r['notes']) ? (string) $r['notes'] : '', 'kind' => isset($r['kind']) ? (string) $r['kind'] : '', 'verdict' => isset($r['verdict']) ? (string) $r['verdict'] : '',
-                'summary' => isset($r['summary']) ? (string) $r['summary'] : '', 'created' => isset($r['created']) ? (string) $r['created'] : '', 'received' => isset($r['received']) ? (string) $r['received'] : '',
-            );
+        foreach (self::reports('', 500, 0, 'received')[0] as $r) {
+            $rows[] = array('id' => $r['id'], 'service' => $r['service'], 'title' => $r['title'], 'machine' => $r['machine'], 'device' => $r['device'], 'laptop' => !empty($r['laptop']),
+                'notes' => $r['notes'], 'kind' => $r['kind'], 'verdict' => $r['verdict'], 'summary' => $r['summary'], 'created' => $r['created'], 'received' => $r['received']);
         }
-        usort($rows, function ($a, $b) { return strcmp($b['received'], $a['received']); });
-        return self::fresh(array('reports' => array_slice($rows, 0, 500)));
+        return self::fresh(array('reports' => $rows));
+    }
+
+    /**
+     * The reports stay files (the shop's choice: the app uploads them to the site as before, not into a database): reports.php is the list, report-ID.php the
+     * one-page summary and report-ID-full.php the whole report. Newest first (by 'created' or 'received'), without their pages: array(rows keyed by id, total), each
+     * row with its id, has_full and the fields the app sent. $s: words looked for in the service number, title, system, device, summary and notes.
+     */
+    public static function reports($s = '', $limit = 30, $offset = 0, $order = 'created')
+    {
+        $rows = self::read('reports'); $s = trim((string) $s); $by = $order === 'received' ? 'received' : 'created';
+        if ($s !== '') {
+            $rows = array_filter($rows, function ($r) use ($s) {
+                foreach (array('title', 'machine', 'service', 'summary', 'device', 'notes') as $f) { if (isset($r[$f]) && mb_stripos((string) $r[$f], $s) !== false) { return true; } }
+                return false;
+            });
+        }
+        uasort($rows, function ($a, $b) use ($by) { return strcmp((string) $b[$by], (string) $a[$by]); });
+        $out = array(); foreach (array_slice($rows, $offset, $limit, true) as $id => $r) { $out[(string) $id] = self::report_shape((string) $id, $r); }
+        return array($out, count($rows));
+    }
+
+    private static function report_shape($id, $r)
+    {
+        $r += array('title' => '', 'machine' => '', 'service' => '', 'device' => '', 'laptop' => '', 'notes' => '', 'verdict' => '', 'kind' => '', 'summary' => '', 'app' => '', 'created' => '', 'received' => '', 'token' => '');
+        return array('id' => $id, 'has_full' => is_file(self::file('report-' . $id . '-full'))) + $r;
+    }
+
+    /** One report without its pages (see reports()), or null. */
+    public static function report($id)
+    {
+        if (!preg_match('/^[A-Za-z0-9-]{8,64}$/', (string) $id)) { return null; }
+        $all = self::read('reports');
+        return isset($all[$id]) ? self::report_shape((string) $id, $all[$id]) : null;
+    }
+
+    /** A report's page as the app sent it: the one-page summary, or with $full the whole report (null when there is none). */
+    public static function report_html($id, $full = false)
+    {
+        return preg_match('/^[A-Za-z0-9-]{8,64}$/', (string) $id) ? self::raw('report-' . $id . ($full ? '-full' : '')) : null;
     }
 
     /** One report's summary page, as it was sent; the print program shows it in a page that lets nothing in it run. */
     public static function rest_report_get($req)
     {
         $id = (string) $req['id'];
-        $html = preg_match('/^[A-Za-z0-9-]{8,64}$/', $id) ? self::raw('report-' . $id) : null;
+        $html = self::report_html($id);
         if ($html === null) { return new WP_Error('mazesta_report', 'The report was not found.', array('status' => 404)); }
         return self::fresh(array('id' => $id, 'html' => $html));
     }
@@ -398,7 +436,8 @@ final class Mazesta_Connect
     public static function bench_name($id)
     {
         static $sent = null;
-        if ($sent === null) { $sent = self::read('names'); }
+        if ($sent === null) { $db = self::db(); $sent = $db ? (array) $db->get_results('SELECT id, name FROM `' . self::t('bench_names') . '`', OBJECT_K) : array(); }
+        if (isset($sent[$id]) && is_object($sent[$id])) { return $sent[$id]->name; }
         if (isset($sent[$id]) && is_string($sent[$id]) && $sent[$id] !== '') { return $sent[$id]; }
         return isset(self::$bench_names[$id]) ? self::$bench_names[$id] : $id;
     }
@@ -413,11 +452,9 @@ final class Mazesta_Connect
             if ($name !== '') { $clean[$id] = $name; }
             if (count($clean) >= 100) { break; }
         }
-        if (!$clean) { return; }
-        self::locked(function () use ($clean) {
-            $all = self::read('names'); $next = array_slice(array_merge($all, $clean), -200, null, true);
-            if ($next !== $all) { self::write('names', $next); }
-        });
+        $db = self::db(); if (!$clean || !$db) { return; }
+        $vals = array(); foreach ($clean as $id => $name) { $vals[] = $db->prepare('(%s, %s)', $id, $name); }
+        $db->query('INSERT INTO `' . self::t('bench_names') . '` (id, name) VALUES ' . implode(',', $vals) . ' ON DUPLICATE KEY UPDATE name = VALUES(name)');
     }
 
     /* ---------- old versions ---------- */
@@ -427,11 +464,9 @@ final class Mazesta_Connect
     {
         static $latest = null;
         if ($latest === null) {
-            $latest = self::read('latest'); if (!is_array($latest)) { $latest = array(); }
-            if (!$latest) {   // before the first rebuild of this version of the plugin: from the approved runs themselves
-                foreach (self::read('runs') as $row) {
-                    if (!empty($row['status']) && isset($row['table']) && preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $row['table'], $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
-                }
+            $latest = array(); $db = self::db();
+            foreach ($db ? (array) $db->get_col('SELECT DISTINCT list FROM `' . self::t('bench_runs') . '` WHERE approved = 1') : array() as $list) {
+                if (preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $list, $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
             }
         }
         return $latest;
@@ -550,25 +585,20 @@ final class Mazesta_Connect
     /** Adds the runs not yet held (each once, by its id): approved when they came with the shop's key, else waiting for review. */
     private static function add_runs($runs, $higher, $trusted)
     {
-        return self::locked(function () use ($runs, $higher, $trusted) {
-            $all = self::read('runs'); $added = 0; $known = 0; $bad = 0;
-            foreach ($runs as $raw) {
-                $run = self::clean_run($raw, $trusted);
-                if ($run === null) { $bad++; continue; }
-                $table = $run->benchmark . '@' . $run->version . ($run->settings !== '' ? '|' . $run->settings : '');
-                if (isset($all[$run->id])) { $known++; continue; }
-                $json = wp_json_encode($run, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                if ($json === false || strlen($json) > 20000) { $bad++; continue; }
-                $all[$run->id] = array(
-                    'table' => $table, 'part' => $run->part, 'value' => $run->value, 'unit' => $run->unit,
-                    'higher' => !(isset($higher[$run->benchmark]) && !$higher[$run->benchmark]), 'status' => $trusted ? 1 : 0, 'featured' => false, 'oc' => null, 'note' => '', 'markAt' => null,
-                    'runAt' => $run->at, 'received' => self::when(null), 'json' => $json,
-                );
-                $added++;
-            }
-            if ($added > 0) { self::write('runs', $all); }
-            return array($added, $known, $bad);
-        });
+        $db = self::db(); $added = 0; $known = 0; $bad = 0;
+        if (!$db) { return array(0, 0, count($runs)); }
+        foreach ($runs as $raw) {
+            $run = self::clean_run($raw, $trusted);
+            if ($run === null) { $bad++; continue; }
+            $table = $run->benchmark . '@' . $run->version . ($run->settings !== '' ? '|' . $run->settings : '');
+            $json = wp_json_encode($run, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($json === false || strlen($json) > 20000 || strlen($table) > 255) { $bad++; continue; }
+            // each run once, by its id: INSERT IGNORE says which were new
+            $n = $db->query($db->prepare('INSERT IGNORE INTO `' . self::t('bench_runs') . '` (id, list, part, value, unit, higher, approved, run_at, received, run) VALUES (%s, %s, %s, %f, %s, %d, %d, %s, %s, %s)',
+                $run->id, $table, $run->part, $run->value, $run->unit, !(isset($higher[$run->benchmark]) && !$higher[$run->benchmark]) ? 1 : 0, $trusted ? 1 : 0, MZC_Stats::dt($run->at), gmdate('Y-m-d H:i:s'), $json));
+            if ($n) { $added++; } else { $known++; }
+        }
+        return array($added, $known, $bad);
     }
 
     private static function runs_of($req)
@@ -590,6 +620,7 @@ final class Mazesta_Connect
         }
         $body = self::runs_of($req);
         if (is_wp_error($body)) { return $body; }
+        if (!self::db()) { return self::no_db(); }
         $higher = isset($body->higher) && is_object($body->higher) ? (array) $body->higher : array();
         list($added, $known, $bad) = self::add_runs($body->runs, $higher, $trusted);
         if ($trusted && isset($body->names) && is_object($body->names)) { self::keep_names((array) $body->names); }
@@ -597,21 +628,13 @@ final class Mazesta_Connect
         $marked = 0;
         if ($trusted && isset($body->marks) && is_object($body->marks)) {
             $marks = (array) $body->marks;
-            $marked = self::locked(function () use ($marks) {
-                $all = self::read('runs'); $n = 0;
-                foreach ($marks as $id => $m) {
-                    if (!is_object($m) || !isset($all[(string) $id])) { continue; }
-                    $at = self::when(isset($m->at) ? $m->at : null);
-                    if (!empty($all[$id]['markAt']) && strcmp((string) $all[$id]['markAt'], $at) >= 0) { continue; }
-                    $all[$id]['featured'] = !empty($m->featured);
-                    $all[$id]['oc'] = isset($m->overclocked) && is_bool($m->overclocked) ? $m->overclocked : null;
-                    $all[$id]['note'] = isset($m->note) && is_string($m->note) ? mb_substr($m->note, 0, 190) : '';
-                    $all[$id]['markAt'] = $at;
-                    $n++;
-                }
-                if ($n > 0) { self::write('runs', $all); }
-                return $n;
-            });
+            $db = self::db();
+            foreach ($db ? $marks : array() as $id => $m) {
+                if (!is_object($m)) { continue; }
+                $oc = isset($m->overclocked) && is_bool($m->overclocked) ? ($m->overclocked ? '1' : '0') : 'NULL';
+                $marked += (int) $db->query($db->prepare('UPDATE `' . self::t('bench_runs') . "` SET featured = %d, oc = $oc, note = %s, mark_at = %s WHERE id = %s AND (mark_at IS NULL OR mark_at < %s)",
+                    !empty($m->featured) ? 1 : 0, isset($m->note) && is_string($m->note) ? mb_substr($m->note, 0, 190) : '', $at = MZC_Stats::dt(isset($m->at) ? $m->at : ''), (string) $id, $at));
+            }
         }
         $lists = ($trusted && ($added > 0 || $marked > 0)) ? self::rebuild() : null;
         return self::fresh(array('added' => $added, 'known' => $known, 'rejected' => $bad, 'pending' => !$trusted, 'marked' => $marked, 'lists' => $lists));
@@ -654,9 +677,9 @@ final class Mazesta_Connect
             $at = isset($e['at']) && is_string($e['at']) && preg_match('/^\d{4}-\d{2}-\d{2}T[\d:.]+/', $e['at']) ? substr($e['at'], 0, 33) : $now;
             $lines[] = array('i' => $id, 'at' => $at, 'k' => (string) $e['k'], 'd' => $d);
         }
-        MZC_Stats::record($id, $machine, self::text(isset($body['app']) ? $body['app'] : '', 20), self::text(isset($body['edition']) ? $body['edition'] : '', 12),
+        $ok = MZC_Stats::record($id, $machine, self::text(isset($body['app']) ? $body['app'] : '', 20), self::text(isset($body['edition']) ? $body['edition'] : '', 12),
             self::text(isset($body['language']) ? $body['language'] : '', 8), $lines);
-        return self::fresh(array('accepted' => count($lines)));
+        return $ok ? self::fresh(array('accepted' => count($lines))) : self::no_db();
     }
 
     /** A piece of the app's own log and Windows' crash records of it (the app takes the user's folder and the computer's name out first). Only a system that sends statistics. */
@@ -673,6 +696,7 @@ final class Mazesta_Connect
             if ($x) { $crashes[] = $x; }
         }
         if ($text === '' && !$crashes) { return self::fresh(array('accepted' => 0)); }
+        if (!MZC_Stats::ready()) { return self::no_db(); }
         $file = isset($body['file']) && preg_match('/^[A-Za-z0-9._-]{1,40}$/', (string) $body['file']) ? (string) $body['file'] : '';
         $ok = MZC_Stats::add_log((string) $body['install'], self::text(isset($body['app']) ? $body['app'] : '', 20), $file, wp_check_invalid_utf8($text, true), $crashes);
         return $ok ? self::fresh(array('accepted' => 1)) : new WP_Error('mazesta_logs', 'Unknown system: send the statistics first.', array('status' => 404));
@@ -713,18 +737,18 @@ final class Mazesta_Connect
             'rows' => $rows,
         );
         $who = substr(hash('sha256', $system), 0, 24);
-        $token = self::locked(function () use ($who, $share) {
-            $index = self::read('shares');
-            $token = isset($index[$who]['token']) ? (string) $index[$who]['token'] : bin2hex(random_bytes(12));
-            if (!self::write('share-' . $token, $share)) { return null; }
-            $index[$who] = array('token' => $token, 'created' => $share['created'], 'owner' => $share['owner'], 'cpu' => $share['cpu'], 'gpu' => $share['gpu'], 'rows' => count($share['rows']));
-            // The oldest pages go when there are too many.
-            if (count($index) > self::MAX_SHARES) {
-                uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
-                foreach (array_slice($index, self::MAX_SHARES, null, true) as $k => $old) { self::remove('share-' . $old['token']); unset($index[$k]); }
-            }
-            return self::write('shares', $index) ? $token : null;
-        });
+        $db = self::db(); if (!$db) { return self::no_db(); }
+        $token = $db->get_var($db->prepare('SELECT token FROM `' . self::t('shares') . '` WHERE who = %s', $who));
+        if ($token === null) { $token = bin2hex(random_bytes(12)); }
+        $ok = $db->replace(self::t('shares'), array('token' => $token, 'who' => $who, 'created' => MZC_Stats::dt($share['created']), 'app' => $share['app'], 'owner' => $share['owner'], 'cpu' => $share['cpu'], 'gpu' => $share['gpu'], 'os' => $share['os'], 'ram_gb' => $share['ramGb']));
+        $db->delete(self::t('share_rows'), array('token' => $token));
+        $vals = array();
+        foreach ($share['rows'] as $i => $r) { $vals[] = $db->prepare('(%s, %d, %s, %s, %s, %f, %s, %s, %s, %d)', $token, $i, $r['benchmark'], self::text($r['name'], 80), $r['settings'], $r['value'], $r['unit'], $r['part'], MZC_Stats::dt($r['at']), $r['version']); }
+        if ($ok && !$db->query('INSERT INTO `' . self::t('share_rows') . '` (token, pos, benchmark, name, settings, value, unit, part, at, version) VALUES ' . implode(',', $vals))) { $ok = false; }
+        // the oldest pages go when there are too many
+        $over = (int) $db->get_var('SELECT COUNT(*) FROM `' . self::t('shares') . '`') - self::MAX_SHARES;
+        if ($over > 0) { foreach ((array) $db->get_col($db->prepare('SELECT token FROM `' . self::t('shares') . '` ORDER BY created LIMIT %d', $over)) as $old) { self::drop_share($old); } }
+        if (!$ok) { $token = null; }
         if ($token === null) { return new WP_Error('mazesta_share', 'The results could not be saved.', array('status' => 500)); }
         $queued = 0;
         if (!empty($c['openUploads'])) {
@@ -768,19 +792,18 @@ final class Mazesta_Connect
         if (!self::ensure()) { return 0; }
         $dir = self::db_dir();
         $tables = array();
-        foreach (self::read('runs') as $row) {
-            if (empty($row['status']) || !isset($row['json'], $row['table'])) { continue; }
-            $run = json_decode((string) $row['json']);
+        $db = self::db(); if (!$db) { return 0; }
+        foreach ((array) $db->get_results('SELECT list, higher, featured, oc, note, run FROM `' . self::t('bench_runs') . '` WHERE approved = 1', ARRAY_A) as $row) {
+            $run = json_decode((string) $row['run']);
             if (!is_object($run) || !isset($run->value, $run->part, $run->system, $run->unit)) { continue; }
-            $oc = isset($row['oc']) && $row['oc'] !== null ? (bool) $row['oc'] : !empty($run->overclocked);
-            $tables[$row['table']][] = array('run' => $run, 'oc' => $oc, 'higher' => !isset($row['higher']) || $row['higher'], 'featured' => !empty($row['featured']), 'note' => isset($row['note']) ? (string) $row['note'] : '', 'ts' => isset($run->at) ? (int) strtotime($run->at) : 0);
+            $oc = $row['oc'] !== null ? (bool) $row['oc'] : !empty($run->overclocked);
+            $tables[$row['list']][] = array('run' => $run, 'oc' => $oc, 'higher' => (bool) $row['higher'], 'featured' => (bool) $row['featured'], 'note' => (string) $row['note'], 'ts' => isset($run->at) ? (int) strtotime($run->at) : 0);
         }
         // the newest version of each benchmark that has approved runs: a list of an older one is marked, so whoever shows it can say it is old
         $latest = array();
         foreach (array_keys($tables) as $key) {
             if (preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $key, $mm)) { $latest[$mm[1]] = max(isset($latest[$mm[1]]) ? $latest[$mm[1]] : 0, (int) $mm[2]); }
         }
-        self::write('latest', $latest);
         $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
         $files = array(); $built = gmdate('Y-m-d\TH:i:s\Z');
         foreach ($tables as $key => $list) {
@@ -947,10 +970,10 @@ final class Mazesta_Connect
         $id = (string) $id;
         $ok = preg_match('/^[A-Za-z0-9-]{8,64}$/', $id);
         // The summary by default; ?view=full is the whole report, when the app sent it.
-        $full = $ok && isset($_GET['view']) && $_GET['view'] === 'full' ? self::raw('report-' . $id . '-full') : null;
-        $html = $full !== null ? $full : ($ok ? self::raw('report-' . $id) : null);
+        $full = $ok && isset($_GET['view']) && $_GET['view'] === 'full' ? self::report_html($id, true) : null;
+        $html = $full !== null ? $full : ($ok ? self::report_html($id) : null);
         if ($html === null) { wp_die('گزارش پیدا نشد.', '', array('response' => 404)); }
-        $has_full = $ok && is_file(self::file('report-' . $id . '-full'));
+        $r = self::report($id); $has_full = $r && $r['has_full'];
         $nonce = bin2hex(random_bytes(12));
         // The page came from outside: nothing in it may run or load. Only the print button's script, named by its nonce, runs.
         self::page_headers("default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:; script-src 'nonce-" . $nonce . "'");
@@ -979,10 +1002,22 @@ final class Mazesta_Connect
         return rtrim(rtrim(number_format($v, abs($v) >= 100 ? 0 : 2, '.', ','), '0'), '.');
     }
 
+    /** A shared page as it was kept (created, app, owner, cpu, gpu, os, ramGb, rows), or null. */
+    private static function share($token)
+    {
+        $db = self::db(); if (!$db || !preg_match('/^[0-9a-f]{24}$/', (string) $token)) { return null; }
+        $s = $db->get_row($db->prepare('SELECT * FROM `' . self::t('shares') . '` WHERE token = %s', $token), ARRAY_A); if (!$s) { return null; }
+        $rows = (array) $db->get_results($db->prepare('SELECT benchmark, name, settings, value, unit, part, at, version FROM `' . self::t('share_rows') . '` WHERE token = %s ORDER BY pos', $token), ARRAY_A);
+        foreach ($rows as &$r) { $r['value'] = (float) $r['value']; $r['version'] = (int) $r['version']; $r['at'] = self::iso($r['at']); } unset($r);
+        return array('created' => self::iso($s['created']), 'app' => $s['app'], 'owner' => $s['owner'], 'cpu' => $s['cpu'], 'gpu' => $s['gpu'], 'os' => $s['os'], 'ramGb' => $s['ram_gb'] !== null ? (float) $s['ram_gb'] : null, 'rows' => $rows);
+    }
+
+    private static function drop_share($token) { $db = self::db(); if ($db) { $db->delete(self::t('share_rows'), array('token' => $token)); $db->delete(self::t('shares'), array('token' => $token)); } }
+
     /** A user's shared results, drawn by the site from the numbers it kept (no HTML came from outside). */
     private static function show_share($token)
     {
-        $s = preg_match('/^[0-9a-f]{24}$/', (string) $token) ? self::read('share-' . $token, null) : null;
+        $s = self::share($token);
         if (!is_array($s) || empty($s['rows'])) { wp_die('این نتیجه پیدا نشد.', '', array('response' => 404)); }
         self::page_headers("default-src 'none'; style-src 'unsafe-inline'");
         $e = 'esc_html';
@@ -1071,38 +1106,33 @@ final class Mazesta_Connect
         self::back('reports', 'deleted');
     }
 
-    /** Changes the runs under the lock with $change(&$all) and builds the lists again. */
-    private static function change_runs($change)
+    /** Runs $sql (an UPDATE or DELETE of bench_runs, with %s for the run's id when $id is given) and builds the lists again. */
+    private static function change_runs($sql, $id = null)
     {
-        self::locked(function () use ($change) { $all = self::read('runs'); $change($all); self::write('runs', $all); });
+        $db = self::db(); if (!$db) { return; }
+        $db->query($id === null ? $sql : $db->prepare($sql, $id));
         self::rebuild();
     }
 
     public static function act_run_approve()
     {
         self::guard('run_approve');
-        $id = self::arg('id'); $every = !empty($_GET['all']);
-        self::change_runs(function (&$all) use ($id, $every) {
-            foreach ($all as $k => $r) { if ($every || (string) $k === $id) { $all[$k]['status'] = 1; } }
-        });
+        $id = self::arg('id'); $tb = self::t('bench_runs');
+        if (!empty($_GET['all'])) { self::change_runs("UPDATE `$tb` SET approved = 1 WHERE approved = 0"); } else { self::change_runs("UPDATE `$tb` SET approved = 1 WHERE id = %s", $id); }
         self::back('bench', 'approved');
     }
 
     public static function act_run_delete()
     {
         self::guard('run_delete');
-        $id = self::arg('id');
-        self::change_runs(function (&$all) use ($id) { unset($all[$id]); });
+        self::change_runs('DELETE FROM `' . self::t('bench_runs') . '` WHERE id = %s', self::arg('id'));
         self::back('bench', 'deleted');
     }
 
     public static function act_run_feature()
     {
         self::guard('run_feature');
-        $id = self::arg('id'); $on = empty($_GET['off']);
-        self::change_runs(function (&$all) use ($id, $on) {
-            if (isset($all[$id])) { $all[$id]['featured'] = $on; $all[$id]['markAt'] = self::when(null); }
-        });
+        self::change_runs('UPDATE `' . self::t('bench_runs') . '` SET featured = ' . (empty($_GET['off']) ? 1 : 0) . ", mark_at = '" . gmdate('Y-m-d H:i:s') . "' WHERE id = %s", self::arg('id'));
         self::back('bench', 'saved');
     }
 
@@ -1111,11 +1141,11 @@ final class Mazesta_Connect
     {
         self::guard('share_add');
         $tokens = isset($_POST['tokens']) && is_array($_POST['tokens']) ? array_slice(array_map('sanitize_text_field', wp_unslash($_POST['tokens'])), 0, 300) : array();
-        $known = self::read('runs'); $higher = array();
-        foreach ($known as $r) { $o = json_decode($r['json']); if (is_object($o)) { $higher[$o->benchmark] = !empty($r['higher']); } }
+        $db = self::db(); $higher = array();
+        foreach ($db ? (array) $db->get_results('SELECT DISTINCT list, higher FROM `' . self::t('bench_runs') . '`', ARRAY_A) : array() as $r) { $higher[strtok($r['list'], '@')] = (bool) $r['higher']; }
         $runs = array();
         foreach ($tokens as $t) {
-            $sh = preg_match('/^[0-9a-f]{24}$/', $t) ? self::read('share-' . $t, null) : null;
+            $sh = self::share($t);
             if (!is_array($sh) || empty($sh['rows'])) { continue; }
             foreach ($sh['rows'] as $i => $row) {
                 $o = new stdClass();
@@ -1134,11 +1164,7 @@ final class Mazesta_Connect
     {
         self::guard('share_delete');
         $token = self::arg('token');
-        self::locked(function () use ($token) {
-            $index = self::read('shares');
-            foreach ($index as $k => $s) { if (isset($s['token']) && (string) $s['token'] === $token) { self::remove('share-' . $s['token']); unset($index[$k]); } }
-            self::write('shares', $index);
-        });
+        if (preg_match('/^[0-9a-f]{24}$/', $token)) { self::drop_share($token); }
         self::back('shares', 'deleted');
     }
 
@@ -1189,16 +1215,7 @@ final class Mazesta_Connect
     {
         $s = self::arg('s'); $c = self::config();
         $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
-        $rows = self::read('reports');
-        if ($s !== '') {
-            $rows = array_filter($rows, function ($r) use ($s) {
-                foreach (array('title', 'machine', 'service', 'summary', 'device', 'notes') as $f) { if (isset($r[$f]) && mb_stripos((string) $r[$f], $s) !== false) { return true; } }
-                return false;
-            });
-        }
-        uasort($rows, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
-        $total = count($rows);
-        $rows = array_slice($rows, ($paged - 1) * $per, $per, true);
+        list($rows, $total) = self::reports($s, $per, ($paged - 1) * $per);
         $links = !empty($c['publicLinks']);
         $verdicts = array('Passed' => 'سالم', 'Failed' => 'ایراد دارد', 'Incomplete' => 'ناقص', '' => 'بنچمارک');
         echo '<form method="get" style="margin:12px 0"><input type="hidden" name="page" value="mazesta-connect"><input type="hidden" name="tab" value="reports">'
@@ -1210,7 +1227,7 @@ final class Mazesta_Connect
             echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" style="text-align:right">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['machine']) . '</td>'
                 . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td style="white-space:nowrap">'
                 . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">خلاصه</a> '
-                . (is_file(self::file('report-' . $id . '-full')) ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')
+                . ($r['has_full'] ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')
                 . ($links && !empty($r['token']) ? '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_report=' . $r['token'])) . '">پیوند</a> ' : '')
                 . self::post_link('report_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این گزارش از سایت پاک شود؟') . '</td></tr>';
         }
@@ -1225,17 +1242,13 @@ final class Mazesta_Connect
 
     private static function tab_bench()
     {
-        $all = self::read('runs');
-        $pending = array(); $lists = array(); $approved = 0;
-        foreach ($all as $id => $r) {
-            if (empty($r['status'])) { if (count($pending) < 200) { $pending[$id] = $r; } continue; }
-            $approved++;
-            $t = (string) $r['table'];
-            if (!isset($lists[$t])) { $lists[$t] = array('runs' => 0, 'parts' => array(), 'last' => ''); }
-            $lists[$t]['runs']++; $lists[$t]['parts'][$r['part']] = true;
-            if (strcmp((string) $r['received'], $lists[$t]['last']) > 0) { $lists[$t]['last'] = (string) $r['received']; }
+        $db = self::db(); if (!$db) { echo '<p>' . esc_html(MZC_Crm_Db::error() ?: 'پایگاه دادهٔ CRM آماده نیست.') . '</p>'; return; }
+        $tb = self::t('bench_runs'); $cols = 'id, list AS `table`, part, value, unit, featured, run_at AS runAt, received';
+        $pending = array(); foreach ((array) $db->get_results("SELECT $cols FROM `$tb` WHERE approved = 0 ORDER BY received DESC LIMIT 200", ARRAY_A) as $r) { $pending[$r['id']] = $r; }
+        $lists = array(); $approved = 0;
+        foreach ((array) $db->get_results("SELECT list, COUNT(*) AS runs, COUNT(DISTINCT part) AS parts, MAX(received) AS last FROM `$tb` WHERE approved = 1 GROUP BY list ORDER BY list", ARRAY_A) as $l) {
+            $lists[$l['list']] = array('runs' => (int) $l['runs'], 'parts' => (int) $l['parts'], 'last' => $l['last']); $approved += (int) $l['runs'];
         }
-        ksort($lists);
         echo '<p>' . esc_html(number_format_i18n($approved)) . ' اجرای تأییدشده در ' . esc_html(number_format_i18n(count($lists))) . ' فهرست. '
             . self::post_link('rebuild', array(), 'ساخت دوباره فهرست‌ها') . '</p>';
         echo '<p class="description">این‌جا فقط نتایجی است که خود برنامه Mazesta Test اندازه گرفته و فرستاده است؛ هیچ عددی دستی یا نمونه وارد نمی‌شود.</p>';
@@ -1253,13 +1266,12 @@ final class Mazesta_Connect
             . '<table class="widefat striped"><thead><tr><th>بنچمارک (فهرست)</th><th>تعداد مدل قطعه</th><th>تعداد اجرا</th><th>آخرین دریافت</th></tr></thead><tbody>';
         if (!$lists) { echo '<tr><td colspan="4">هنوز اجرایی بارگذاری نشده است. در برنامه: بنچمارک › ارسال نتایج به سایت.</td></tr>'; }
         foreach ($lists as $t => $l) {
-            echo '<tr><td><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . self::list_label($t) . '</a></td><td>' . count($l['parts']) . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
+            echo '<tr><td><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . self::list_label($t) . '</a></td><td>' . $l['parts'] . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
         }
         echo '</tbody></table>';
         $key = self::arg('list');
         if ($key !== '') {
-            $runs = array_filter($all, function ($r) use ($key) { return !empty($r['status']) && (string) $r['table'] === $key; });
-            uasort($runs, function ($a, $b) { return (float) $b['value'] <=> (float) $a['value']; });
+            $runs = array(); foreach ((array) $db->get_results($db->prepare("SELECT $cols FROM `$tb` WHERE approved = 1 AND list = %s ORDER BY value DESC LIMIT 500", $key), ARRAY_A) as $r) { $runs[$r['id']] = $r; }
             echo '<h3>' . self::list_label($key) . '</h3><p class="description">«نتیجه مرجع» (★) اجرایی است که مازستا تأیید می‌کند نتیجه درست این مدل در این بنچمارک است. مدلی که نتیجه مرجع داشته باشد در برنامه با <strong>میانه نتایج مرجعش</strong> نشان داده می‌شود (با برچسب «مرجع»)؛ مدلی که ندارد با میانه همه سیستم‌هایش. نتیجه مرجع را فقط از همین‌جا یا از نسخه مازستایی برنامه می‌توان انتخاب کرد؛ کاربران نمی‌توانند.</p><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
             foreach (array_slice($runs, 0, 500, true) as $id => $r) {
                 $star = !empty($r['featured']);
@@ -1273,8 +1285,8 @@ final class Mazesta_Connect
 
     private static function tab_shares()
     {
-        $index = self::read('shares');
-        uasort($index, function ($a, $b) { return strcmp((string) $b['created'], (string) $a['created']); });
+        $db = self::db(); $tb = self::t('shares');
+        $index = $db ? (array) $db->get_results("SELECT s.token, s.created, s.owner, s.cpu, s.gpu, (SELECT COUNT(*) FROM `" . self::t('share_rows') . "` r WHERE r.token = s.token) AS `rows` FROM `$tb` s ORDER BY s.created DESC LIMIT 300", ARRAY_A) : array();
         echo '<p class="description">نتیجه‌هایی که کاربران از برنامه با «اشتراک‌گذاری آخرین نتیجه» فرستاده‌اند. هر سیستم یک صفحه دارد و با فرستادن دوباره همان صفحه تازه می‌شود.</p>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_share_add">'; wp_nonce_field('mzc_share_add');
         echo '<p><button class="button button-primary" onclick="return confirm(\'نتیجه‌های انتخاب‌شده در لیست بنچمارک‌ها بروند؟\')">افزودن انتخاب‌شده‌ها به لیست بنچمارک‌ها</button> <label><input type="checkbox" onclick="var t=this;document.querySelectorAll(\'.mzc-pick\').forEach(function(c){c.checked=t.checked})"> همه</label></p>';
@@ -1301,7 +1313,8 @@ final class Mazesta_Connect
             echo '<p>هنوز نسخه‌ای منتشر نشده است. روی سیستم مازستا: <code dir="ltr">pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload</code></p>';
         }
         echo '<p class="description">برنامه‌ها این نشانی را می‌خوانند: <code dir="ltr">' . esc_html(home_url('/mazesta/update.json')) . '</code> — این پوشه را از کش مستثنا کنید.</p>';
-        echo '<p class="description">داده‌های این افزونه در پایگاه داده وردپرس نیست؛ در این پوشه است: <code dir="ltr">' . esc_html(self::dir()) . '</code> (برای پشتیبان‌گیری همین پوشه را نگه دارید).</p>';
+        echo '<p class="description">داده‌های این افزونه در پایگاه داده وردپرس نیست؛ همه در پایگاه دادهٔ CRM است (هر بخش جدول خودش، پیشوند <code dir="ltr">' . esc_html(MZC_Crm_Db::prefix()) . '</code>). فقط کلیدها و اتصال همان پایگاه داده در این پوشه است: <code dir="ltr">' . esc_html(self::dir()) . '</code> (برای پشتیبان‌گیری، از آن پایگاه داده و این پوشه نسخه بگیرید).</p>'
+            . (self::db() ? '' : '<p><strong style="color:#b32d2e">' . esc_html(MZC_Crm_Db::error() ?: 'پایگاه دادهٔ CRM آماده نیست.') . ' تا وقتی تنظیم نشود، گزارش‌ها، بنچمارک‌ها، آمار و پیام‌ها ذخیره نمی‌شوند.</strong></p>');
         if (!$admin) { return; }
         echo '<h3>کلیدها و تنظیمات</h3><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_settings">';
         wp_nonce_field('mzc_settings');

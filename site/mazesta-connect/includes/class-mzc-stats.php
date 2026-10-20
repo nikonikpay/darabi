@@ -2,17 +2,15 @@
 if (!defined('ABSPATH')) { exit; }
 
 /**
- * What the app's anonymous usage statistics say, kept in WordPress' own database (not the CRM's; three tables of their own, prefix + 'mzc_'):
- *   systems - one row per random installation id: the parts' names the app sent, a lower-case 'hw' text of them all for the hardware search, the version, the note
+ * What the app's anonymous usage statistics say, kept in the CRM's database (MZC_Crm_Db makes the tables; never in WordPress' own):
+ *   systems       - one row per random installation id: the parts' names the app sent, a lower-case 'hw' text of them all for the hardware search, the version, the note
  *             written here, and 'ack' (the newest message the system has fetched);
- *   events  - one row per event (what ran, how it ended, the card) with its figures as JSON; indexed by time, system, kind and card, so a page reads only its own rows;
- *   logs    - pieces of the app's own log and Windows' crash records of it (sent with the statistics), kept 90 days.
- * Until schema 1 the same data lived in files (installs.php, acks.php, usage-YYYY-MM.log.php); migrate() moves them in once and leaves the files as they were.
+ *   system_events - one row per event (what ran, how it ended, the card) with its figures as JSON; indexed by time, system, kind and card, so a page reads only its own rows;
+ *   system_logs   - pieces of the app's own log and Windows' crash records of it (sent with the statistics), kept 90 days.
  * Nothing here is invented: a figure the app did not send stays empty.
  */
 final class MZC_Stats
 {
-    const SCHEMA = 1;
     const LOG_DAYS = 90;
     private static $labels = null;
 
@@ -26,57 +24,11 @@ final class MZC_Stats
 
     /* ---------- storage ---------- */
 
-    public static function t($n) { global $wpdb; return $wpdb->prefix . 'mzc_' . $n; }
-
-    /** Makes the tables (and moves the old files in) when the schema mark is older than SCHEMA. Cheap when it is current: one option read. */
-    public static function ready()
-    {
-        if ((int) get_option('mzc_stats_schema', 0) >= self::SCHEMA) { return true; }
-        global $wpdb;
-        $c = $wpdb->get_charset_collate();
-        $sql = array(
-            "CREATE TABLE IF NOT EXISTS `" . self::t('systems') . "` (id CHAR(32) NOT NULL PRIMARY KEY, first_at DATETIME NOT NULL, last_at DATETIME NOT NULL, n INT UNSIGNED NOT NULL DEFAULT 0,
-                app VARCHAR(20) NULL, edition VARCHAR(12) NULL, lang VARCHAR(8) NULL, note VARCHAR(300) NULL, cpu VARCHAR(120) NULL, gpus VARCHAR(500) NULL, ram_gb SMALLINT NULL,
-                os VARCHAR(120) NULL, hw TEXT NULL, machine TEXT NULL, ack INT UNSIGNED NOT NULL DEFAULT 0, KEY last_at (last_at), KEY first_at (first_at), KEY n (n)) $c",
-            "CREATE TABLE IF NOT EXISTS `" . self::t('events') . "` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, sys CHAR(32) NOT NULL, at DATETIME NOT NULL, kind VARCHAR(16) NOT NULL,
-                item VARCHAR(64) NULL, gpu VARCHAR(120) NULL, d MEDIUMTEXT NULL, KEY at (at), KEY sys (sys, at), KEY kind (kind, at), KEY gpu (gpu(60), kind)) $c",
-            "CREATE TABLE IF NOT EXISTS `" . self::t('logs') . "` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, sys CHAR(32) NOT NULL, at DATETIME NOT NULL, app VARCHAR(20) NULL,
-                file VARCHAR(40) NULL, body MEDIUMTEXT NULL, crashes TEXT NULL, KEY sys (sys, at), KEY at (at)) $c",
-        );
-        foreach ($sql as $q) { if ($wpdb->query($q) === false) { return false; } }
-        self::migrate();
-        update_option('mzc_stats_schema', self::SCHEMA, true);
-        return true;
-    }
-
-    /** The files of before schema 1, read into the tables once (rows already there are kept). */
-    private static function migrate()
-    {
-        global $wpdb;
-        if (function_exists('set_time_limit')) { @set_time_limit(600); }
-        $acks = Mazesta_Connect::read('acks');
-        foreach (Mazesta_Connect::read('installs') as $id => $i) {
-            if (!preg_match('/^[a-f0-9]{32}$/', (string) $id) || !is_array($i)) { continue; }
-            $row = self::system_row(isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array()) + array(
-                'id' => $id, 'first_at' => self::dt(isset($i['first']) ? $i['first'] : ''), 'last_at' => self::dt(isset($i['last']) ? $i['last'] : ''), 'n' => isset($i['n']) ? (int) $i['n'] : 0,
-                'app' => isset($i['app']) ? $i['app'] : null, 'edition' => isset($i['edition']) ? $i['edition'] : null, 'lang' => isset($i['lang']) ? $i['lang'] : null,
-                'note' => isset($i['note']) ? $i['note'] : null, 'ack' => isset($acks[$id]) ? (int) $acks[$id] : 0);
-            if (!$wpdb->get_var($wpdb->prepare('SELECT 1 FROM `' . self::t('systems') . '` WHERE id = %s', $id))) { $wpdb->insert(self::t('systems'), $row); }
-        }
-        if ((int) $wpdb->get_var('SELECT COUNT(*) FROM `' . self::t('events') . '`') > 0) { return; }
-        foreach (glob(Mazesta_Connect::dir() . '/usage-*.log.php') ?: array() as $f) {
-            $h = fopen($f, 'r'); if (!$h) { continue; }
-            fgets($h);   // the guard line
-            $batch = array();
-            while (($line = fgets($h)) !== false) {
-                $e = json_decode($line, true);
-                if (is_array($e) && isset($e['k'], $e['i'])) { $batch[] = $e; }
-                if (count($batch) >= 500) { self::insert_events($batch); $batch = array(); }
-            }
-            fclose($h);
-            if ($batch) { self::insert_events($batch); }
-        }
-    }
+    private static $map = array('systems' => 'systems', 'events' => 'system_events', 'logs' => 'system_logs');
+    public static function t($n) { return MZC_Crm_Db::t(self::$map[$n]); }
+    private static function db() { return MZC_Crm_Db::db(); }
+    /** The CRM database is there and up to date (its install() makes these tables too). */
+    public static function ready() { return MZC_Crm_Db::ready(); }
 
     /** An ISO time as the database's UTC DATETIME (now when it is not one). */
     public static function dt($iso) { $t = strtotime((string) $iso); return gmdate('Y-m-d H:i:s', $t ? $t : time()); }
@@ -95,7 +47,7 @@ final class MZC_Stats
     /** Event rows ({i, at, k, d}) into the table, a multi-row INSERT at a time; the card and the item are copied out of d for the indexes. */
     public static function insert_events($events)
     {
-        global $wpdb;
+        $wpdb = self::db();
         $vals = array();
         foreach ($events as $e) {
             $d = isset($e['d']) && is_array($e['d']) ? $e['d'] : array(); $k = (string) $e['k'];
@@ -110,7 +62,7 @@ final class MZC_Stats
     /** What the app sent (see Mazesta_Connect::rest_usage): the system's row made or brought up to date, its events added. */
     public static function record($id, $machine, $app, $edition, $lang, $events)
     {
-        global $wpdb; if (!self::ready()) { return; }
+        $wpdb = self::db(); if (!self::ready()) { return false; }
         $now = gmdate('Y-m-d H:i:s');
         $row = self::system_row($machine) + array('last_at' => $now, 'app' => $app, 'edition' => $edition, 'lang' => $lang);
         $row = array('id' => $id, 'first_at' => $now, 'n' => count($events)) + $row;
@@ -118,12 +70,13 @@ final class MZC_Stats
         foreach ($row as $k => $v) { $vals[] = $v === null ? 'NULL' : $wpdb->prepare('%s', $v); if (!in_array($k, array('id', 'first_at', 'n'), true)) { $upd[] = "`$k` = VALUES(`$k`)"; } }
         $wpdb->query('INSERT INTO `' . self::t('systems') . '` (`' . implode('`, `', array_keys($row)) . '`) VALUES (' . implode(', ', $vals) . ') ON DUPLICATE KEY UPDATE ' . implode(', ', $upd));
         self::insert_events($events);
+        return true;
     }
 
     /** A piece of a system's log and its crash records; logs older than LOG_DAYS go now and then. */
     public static function add_log($id, $app, $file, $body, $crashes)
     {
-        global $wpdb; if (!self::ready()) { return false; }
+        $wpdb = self::db(); if (!self::ready()) { return false; }
         if (!$wpdb->get_var($wpdb->prepare('SELECT 1 FROM `' . self::t('systems') . '` WHERE id = %s', $id))) { return false; }   // only systems that sent statistics
         $wpdb->insert(self::t('logs'), array('sys' => $id, 'at' => gmdate('Y-m-d H:i:s'), 'app' => $app, 'file' => $file, 'body' => $body, 'crashes' => $crashes ? wp_json_encode($crashes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null));
         if (mt_rand(1, 50) === 1) { $wpdb->query($wpdb->prepare('DELETE FROM `' . self::t('logs') . '` WHERE at < %s LIMIT 5000', gmdate('Y-m-d H:i:s', time() - self::LOG_DAYS * 86400))); }
@@ -132,7 +85,7 @@ final class MZC_Stats
 
     public static function logs($id, $limit = 30)
     {
-        global $wpdb; if (!self::ready()) { return array(); }
+        $wpdb = self::db(); if (!self::ready()) { return array(); }
         return $wpdb->get_results($wpdb->prepare('SELECT at, app, file, body, crashes FROM `' . self::t('logs') . '` WHERE sys = %s ORDER BY id DESC LIMIT %d', $id, $limit), ARRAY_A) ?: array();
     }
 
@@ -146,7 +99,7 @@ final class MZC_Stats
 
     public static function install($id)
     {
-        global $wpdb; if (!self::ready() || !preg_match('/^[a-f0-9]{32}$/', (string) $id)) { return null; }
+        $wpdb = self::db(); if (!self::ready() || !preg_match('/^[a-f0-9]{32}$/', (string) $id)) { return null; }
         $r = $wpdb->get_row($wpdb->prepare('SELECT * FROM `' . self::t('systems') . '` WHERE id = %s', $id), ARRAY_A);
         return $r ? self::shape($r) : null;
     }
@@ -154,7 +107,7 @@ final class MZC_Stats
     /** The WHERE of a hardware search: every word must be in the parts' names (or the note); empty: every system. */
     public static function where($q)
     {
-        global $wpdb; $w = array('1=1');
+        $wpdb = self::db(); $w = array('1=1');
         foreach (preg_split('/\s+/u', mb_strtolower(trim((string) $q)), -1, PREG_SPLIT_NO_EMPTY) as $word) {
             $like = '%' . $wpdb->esc_like($word) . '%';
             $w[] = $wpdb->prepare('(hw LIKE %s OR note LIKE %s OR id LIKE %s)', $like, $like, $wpdb->esc_like($word) . '%');
@@ -165,7 +118,7 @@ final class MZC_Stats
     /** Systems matching a search, newest activity first (or 'first', 'n'): array(rows keyed by id, total). */
     public static function systems($q = '', $order = 'last', $limit = 30, $offset = 0)
     {
-        global $wpdb; if (!self::ready()) { return array(array(), 0); }
+        $wpdb = self::db(); if (!self::ready()) { return array(array(), 0); }
         $w = self::where($q); $by = $order === 'first' ? 'first_at DESC' : ($order === 'n' ? 'n DESC' : 'last_at DESC');
         $rows = $wpdb->get_results($wpdb->prepare('SELECT * FROM `' . self::t('systems') . "` WHERE $w ORDER BY $by LIMIT %d OFFSET %d", $limit, $offset), ARRAY_A) ?: array();
         $out = array(); foreach ($rows as $r) { $out[$r['id']] = self::shape($r); }
@@ -175,14 +128,14 @@ final class MZC_Stats
     /** Whether a system is in a search's group (a message to a group is matched when the system asks). */
     public static function matches($id, $q)
     {
-        global $wpdb; if (!self::ready()) { return false; }
+        $wpdb = self::db(); if (!self::ready()) { return false; }
         return (bool) $wpdb->get_var($wpdb->prepare('SELECT 1 FROM `' . self::t('systems') . '` WHERE id = %s AND ' . self::where($q), $id));
     }
 
     /** The short labels of a few systems (for a table of events), by id. */
     public static function names($ids)
     {
-        global $wpdb; $ids = array_values(array_unique(array_filter($ids, function ($x) { return preg_match('/^[a-f0-9]{32}$/', (string) $x); })));
+        $wpdb = self::db(); $ids = array_values(array_unique(array_filter($ids, function ($x) { return preg_match('/^[a-f0-9]{32}$/', (string) $x); })));
         if (!$ids || !self::ready()) { return array(); }
         $rows = $wpdb->get_results('SELECT * FROM `' . self::t('systems') . "` WHERE id IN ('" . implode("','", $ids) . "')", ARRAY_A) ?: array();
         $out = array(); foreach ($rows as $r) { $out[$r['id']] = self::shape($r); }
@@ -191,33 +144,33 @@ final class MZC_Stats
 
     public static function set_note($id, $note)
     {
-        global $wpdb; if (self::ready()) { $wpdb->update(self::t('systems'), array('note' => $note), array('id' => $id)); }
+        $wpdb = self::db(); if (self::ready()) { $wpdb->update(self::t('systems'), array('note' => $note), array('id' => $id)); }
     }
 
     /** Remembers the newest message a system holds (only when it moved: the usual call writes nothing). */
     public static function ack($id, $after)
     {
-        global $wpdb; if (!self::ready()) { return; }
+        $wpdb = self::db(); if (!self::ready()) { return; }
         $wpdb->query($wpdb->prepare('UPDATE `' . self::t('systems') . '` SET ack = %d WHERE id = %s AND ack < %d', $after, $id, $after));
     }
 
     /** Counts of systems by a column (cpu, ram_gb, app, gpus), biggest first. */
     public static function count_by($col, $top = 8)
     {
-        global $wpdb; if (!self::ready() || !in_array($col, array('cpu', 'ram_gb', 'app', 'gpus'), true)) { return array(); }
+        $wpdb = self::db(); if (!self::ready() || !in_array($col, array('cpu', 'ram_gb', 'app', 'gpus'), true)) { return array(); }
         return $wpdb->get_results("SELECT `$col` AS v, COUNT(*) AS n FROM `" . self::t('systems') . "` WHERE `$col` IS NOT NULL AND `$col` <> '' GROUP BY `$col` ORDER BY n DESC LIMIT " . (int) $top, ARRAY_A) ?: array();
     }
 
     public static function count_systems($since = 0)
     {
-        global $wpdb; if (!self::ready()) { return 0; }
+        $wpdb = self::db(); if (!self::ready()) { return 0; }
         return (int) ($since ? $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM `' . self::t('systems') . '` WHERE last_at >= %s', gmdate('Y-m-d H:i:s', $since))) : $wpdb->get_var('SELECT COUNT(*) FROM `' . self::t('systems') . '`'));
     }
 
     /** Messages delivered: how many systems (all, or a group's) hold message $id. */
     public static function delivered($id, $q = null)
     {
-        global $wpdb; if (!self::ready()) { return array(0, 0); }
+        $wpdb = self::db(); if (!self::ready()) { return array(0, 0); }
         $w = $q === null ? '1=1' : self::where($q);
         $r = $wpdb->get_row($wpdb->prepare('SELECT SUM(ack >= %d) AS got, COUNT(*) AS n FROM `' . self::t('systems') . "` WHERE $w", $id), ARRAY_A);
         return array((int) $r['got'], (int) $r['n']);
@@ -229,7 +182,7 @@ final class MZC_Stats
      */
     public static function events($f = array(), $count = false)
     {
-        global $wpdb; if (!self::ready()) { return array(array(), 0); }
+        $wpdb = self::db(); if (!self::ready()) { return array(array(), 0); }
         $w = array('1=1');
         if (!empty($f['since'])) { $w[] = $wpdb->prepare('at >= %s', gmdate('Y-m-d H:i:s', (int) $f['since'])); }
         if (!empty($f['sys'])) { $w[] = $wpdb->prepare('sys = %s', $f['sys']); }
@@ -249,7 +202,7 @@ final class MZC_Stats
     /** The cards that ran an automatic undervolt / overclock, with how many runs each. */
     public static function tuned_gpus()
     {
-        global $wpdb; if (!self::ready()) { return array(); }
+        $wpdb = self::db(); if (!self::ready()) { return array(); }
         return $wpdb->get_results("SELECT gpu, COUNT(*) AS n, COUNT(DISTINCT sys) AS systems FROM `" . self::t('events') . "` WHERE kind = 'tuning.auto' AND gpu <> '' GROUP BY gpu ORDER BY n DESC", ARRAY_A) ?: array();
     }
 

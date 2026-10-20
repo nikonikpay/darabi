@@ -575,14 +575,10 @@ final class MZC_Api
     public static function rest_reports($req)
     {
         $a = MZC_Staff::auth($req, 'tests', 1); if ($a instanceof WP_REST_Response) { return $a; }
-        $svc = trim((string) $req->get_param('service')); $q = mb_strtolower(trim((string) $req->get_param('q'))); $rows = Mazesta_Connect::read('reports'); $out = array();
-        uasort($rows, function ($x, $y) { return strcmp((string) $y['created'], (string) $x['created']); });
-        foreach ($rows as $id => $r) {
-            $hay = mb_strtolower($r['service'] . ' ' . $r['device'] . ' ' . $r['machine'] . ' ' . $r['title']);
-            if ($q !== '' && mb_strpos($hay, $q) === false) { continue; }
+        $svc = trim((string) $req->get_param('service')); $q = mb_strtolower(trim((string) $req->get_param('q'))); $out = array();
+        foreach (Mazesta_Connect::reports($q, 100)[0] as $id => $r) {
             $out[] = array('id' => (string) $id, 'service' => (string) $r['service'], 'device' => (string) $r['device'], 'machine' => (string) $r['machine'], 'title' => (string) $r['title'], 'verdict' => (string) $r['verdict'],
                 'summary' => (string) $r['summary'], 'created' => (string) $r['created'], 'match' => $svc !== '' && $r['service'] === $svc);
-            if (count($out) >= 100) { break; }
         }
         usort($out, function ($x, $y) { return (int) $y['match'] <=> (int) $x['match']; });
         return self::ok(array('items' => $out));
@@ -592,9 +588,8 @@ final class MZC_Api
     {
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         if (!MZC_Staff::can($a['id'], 'tests', 1) && !MZC_Staff::can($a['id'], 'builds', 1) && !MZC_Staff::can($a['id'], 'jobs', 1)) { return self::fail('دسترسی این کار را ندارید.', 403); }
-        $id = (string) $req['id']; $rows = Mazesta_Connect::read('reports'); $html = Mazesta_Connect::raw('report-' . $id);
-        if (!isset($rows[$id]) || $html === null) { return self::fail('گزارش پیدا نشد.', 404); }
-        $r = $rows[$id];
+        $id = (string) $req['id']; $r = Mazesta_Connect::report($id); $html = $r ? Mazesta_Connect::report_html($id) : null;
+        if (!$r || $html === null) { return self::fail('گزارش پیدا نشد.', 404); }
         return self::ok(array('id' => $id, 'service' => (string) $r['service'], 'device' => (string) $r['device'], 'machine' => (string) $r['machine'], 'title' => (string) $r['title'], 'verdict' => (string) $r['verdict'], 'summary' => (string) $r['summary'],
             'notes' => (string) $r['notes'], 'created' => (string) $r['created'], 'html' => $html));
     }
@@ -604,8 +599,7 @@ final class MZC_Api
         $a = MZC_Staff::auth($req, 'tests', 2); if ($a instanceof WP_REST_Response) { return $a; }
         $p = self::body($req); $kind = isset($p['kind']) && $p['kind'] === 'build' ? 'build' : 'job'; $id = self::n($p, 'id'); $rid = self::s($p, 'report_id', 64);
         if (!MZC_Staff::can($a['id'], $kind === 'build' ? 'builds' : 'jobs', 1)) { return self::fail('دسترسی این کار را ندارید.', 403); }
-        $reports = Mazesta_Connect::read('reports');
-        if ($rid !== '' && !isset($reports[$rid])) { return self::fail('این گزارش روی سایت نیست.', 404); }
+        if ($rid !== '' && !Mazesta_Connect::report($rid)) { return self::fail('این گزارش روی سایت نیست.', 404); }
         $db = MZC_Crm::db(); $tb = self::t($kind === 'build' ? 'builds' : 'jobs');
         if (!$id || !$db->get_var($db->prepare("SELECT id FROM `$tb` WHERE id = %d", $id))) { return self::fail('پرونده پیدا نشد.', 404); }
         $db->update($tb, array('report_id' => $rid !== '' ? $rid : null, 'updated' => self::now()), array('id' => $id));

@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 11;
+    const SCHEMA = 12;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -125,7 +125,32 @@ final class MZC_Crm_Db
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oauth_clients')}` (client_id CHAR(32) NOT NULL PRIMARY KEY, secret_hash CHAR(64) NULL, name VARCHAR(120) NOT NULL, redirect_uris TEXT NOT NULL, created DATETIME NOT NULL) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oauth_codes')}` (code_hash CHAR(64) NOT NULL PRIMARY KEY, client_id CHAR(32) NOT NULL, user_id BIGINT UNSIGNED NOT NULL, redirect_uri TEXT NOT NULL, challenge VARCHAR(128) NOT NULL, expires DATETIME NOT NULL) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('oauth_refresh')}` (token_hash CHAR(64) NOT NULL PRIMARY KEY, client_id CHAR(32) NOT NULL, user_id BIGINT UNSIGNED NOT NULL, expires DATETIME NOT NULL, created DATETIME NOT NULL, KEY user_id (user_id)) $engine";
+        // schema 12: the rest of the plugin's data, here too (until 2.7 it was files in wp-content and three tables in WordPress' database), a table per kind:
+        // the systems that send statistics, their events and logs; messages to them and the chosen systems of each; benchmark runs and the
+        // benchmarks' names; users' shared results and their rows; the app's pairing requests; the per-address and per-login counters
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('systems')}` (id CHAR(32) NOT NULL PRIMARY KEY, first_at DATETIME NOT NULL, last_at DATETIME NOT NULL, n INT UNSIGNED NOT NULL DEFAULT 0,
+                app VARCHAR(20) NULL, edition VARCHAR(12) NULL, lang VARCHAR(8) NULL, note VARCHAR(300) NULL, cpu VARCHAR(120) NULL, gpus VARCHAR(500) NULL, ram_gb SMALLINT NULL,
+                os VARCHAR(120) NULL, hw TEXT NULL, machine TEXT NULL, ack INT UNSIGNED NOT NULL DEFAULT 0, KEY last_at (last_at), KEY first_at (first_at), KEY n (n)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('system_events')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, sys CHAR(32) NOT NULL, at DATETIME NOT NULL, kind VARCHAR(16) NOT NULL,
+                item VARCHAR(64) NULL, gpu VARCHAR(120) NULL, d MEDIUMTEXT NULL, KEY at (at), KEY sys (sys, at), KEY kind (kind, at), KEY gpu (gpu(60), kind)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('system_logs')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, sys CHAR(32) NOT NULL, at DATETIME NOT NULL, app VARCHAR(20) NULL,
+                file VARCHAR(40) NULL, body MEDIUMTEXT NULL, crashes TEXT NULL, KEY sys (sys, at), KEY at (at)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('messages')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, title VARCHAR(120) NOT NULL, body TEXT NULL, link VARCHAR(255) NULL,
+                target VARCHAR(5) NOT NULL DEFAULT 'all', grp VARCHAR(120) NULL, created DATETIME NOT NULL, by_user BIGINT UNSIGNED NOT NULL DEFAULT 0, KEY created (created)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('message_systems')}` (message_id BIGINT UNSIGNED NOT NULL, sys CHAR(32) NOT NULL, PRIMARY KEY (message_id, sys), KEY sys (sys)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('bench_runs')}` (id VARCHAR(64) NOT NULL PRIMARY KEY, list VARCHAR(255) NOT NULL, part VARCHAR(120) NOT NULL, value DOUBLE NOT NULL, unit VARCHAR(20) NOT NULL,
+                higher TINYINT NOT NULL DEFAULT 1, approved TINYINT NOT NULL DEFAULT 0, featured TINYINT NOT NULL DEFAULT 0, oc TINYINT NULL, note VARCHAR(190) NOT NULL DEFAULT '', mark_at DATETIME NULL,
+                run_at DATETIME NOT NULL, received DATETIME NOT NULL, run MEDIUMTEXT NOT NULL, KEY list (approved, list(190)), KEY received (received)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('bench_names')}` (id VARCHAR(80) NOT NULL PRIMARY KEY, name VARCHAR(80) NOT NULL) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('shares')}` (token CHAR(24) NOT NULL PRIMARY KEY, who CHAR(24) NOT NULL, created DATETIME NOT NULL, app VARCHAR(40) NOT NULL DEFAULT '', owner VARCHAR(40) NOT NULL DEFAULT '',
+                cpu VARCHAR(120) NOT NULL DEFAULT '', gpu VARCHAR(120) NOT NULL DEFAULT '', os VARCHAR(120) NOT NULL DEFAULT '', ram_gb DOUBLE NULL, UNIQUE KEY who (who), KEY created (created)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('share_rows')}` (token CHAR(24) NOT NULL, pos SMALLINT NOT NULL, benchmark VARCHAR(80) NOT NULL, name VARCHAR(80) NOT NULL, settings VARCHAR(160) NOT NULL DEFAULT '',
+                value DOUBLE NOT NULL, unit VARCHAR(20) NOT NULL, part VARCHAR(120) NOT NULL, at DATETIME NOT NULL, version INT NOT NULL DEFAULT 1, PRIMARY KEY (token, pos)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('pairs')}` (id CHAR(64) NOT NULL PRIMARY KEY, name VARCHAR(60) NOT NULL DEFAULT '', approved TINYINT NOT NULL DEFAULT 0, created INT UNSIGNED NOT NULL, KEY created (created)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('limits')}` (slot VARCHAR(80) NOT NULL, win INT UNSIGNED NOT NULL, n INT UNSIGNED NOT NULL DEFAULT 0, PRIMARY KEY (slot, win), KEY win (win)) $engine";
+        $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
+        if ($before < 12) { self::forget_old(); }
         // columns added after schema 3 (and the customer's mobile may now be empty: the old database has customers without one)
         $cols = array(
             'customers' => array('mobile2' => 'VARCHAR(20) NULL', 'old_id' => 'INT NULL', 'phone' => 'VARCHAR(80) NULL', 'grp' => 'VARCHAR(12) NULL'),
@@ -158,7 +183,31 @@ final class MZC_Crm_Db
         return '';
     }
 
+    /**
+     * Until 2.7 the plugin's own data was files in wp-content/mazesta-connect-data and three tables in WordPress' database. The shop's word was that all of it was
+     * test data: it is deleted, not moved, once the tables above exist. config.php (the keys, and this database's own connection), the test reports (kept as
+     * files on purpose) and an old-CRM import waiting to run stay; the comparison lists are built again from the (now empty) runs.
+     */
+    private static function forget_old()
+    {
+        global $wpdb;
+        foreach (array('systems', 'events', 'logs') as $n) { $wpdb->query('DROP TABLE IF EXISTS `' . $wpdb->prefix . 'mzc_' . $n . '`'); }
+        delete_option('mzc_stats_schema');
+        $dir = Mazesta_Connect::dir();
+        foreach (array_merge(glob($dir . '/*.php') ?: array(), glob($dir . '/*.tmp') ?: array(), glob($dir . '/benchdb/*.json') ?: array()) as $f) {
+            $b = basename($f);   // the reports stay: they are files on purpose
+            if (!in_array($b, array('config.php', 'index.php', 'reports.php'), true) && strncmp($b, 'report-', 7) !== 0) { @unlink($f); }
+        }
+    }
+
+    /** The database is reachable and its tables are current (an older layout is brought up to date the first time). Asked once a request. */
     public static function ready()
+    {
+        static $ok = null;
+        return $ok !== null ? $ok : ($ok = self::check());
+    }
+
+    private static function check()
     {
         $db = self::db(); if (!$db) { return false; }
         if (!$db->get_var($db->prepare('SHOW TABLES LIKE %s', $db->esc_like(self::t('customers'))))) { return false; }

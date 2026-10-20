@@ -4,7 +4,8 @@ if (!defined('ABSPATH')) { exit; }
 /**
  * Messages from the shop to the systems that run the app. The app asks (no key, only its random installation id) every eight hours (three times a day at most): GET mazesta/v1/messages?install=ID&after=N
  * answers what was sent to every system or to that one with an id above N, and the app shows each as a Windows notification and keeps it on its "System messages" page.
- * The store is a file like the plugin's other data; a message to every system reaches the ones that ask later too, for ninety days.
+ * Kept in the CRM's database: 'messages' (target 'all', 'group' with its hardware search in grp, or 'some') and 'message_systems' (the chosen systems of a 'some');
+ * a message to every system or to a group reaches the ones that ask later too, for ninety days.
  * What the app has already fetched is its 'after' of the next call: that is how the page here knows which systems have it.
  */
 final class MZC_Messages
@@ -24,16 +25,30 @@ final class MZC_Messages
         register_rest_route(Mazesta_Connect::NS, '/messages', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_get'), 'permission_callback' => '__return_true'));
     }
 
-    public static function all() { $m = Mazesta_Connect::read('messages'); krsort($m); return $m; }
+    /** The messages of the last ninety days, newest first, each with 'to': 'all', array('q' => search) or the chosen ids. */
+    public static function all($after = 0)
+    {
+        $db = Mazesta_Connect::db(); if (!$db) { return array(); }
+        $rows = (array) $db->get_results($db->prepare('SELECT * FROM `' . Mazesta_Connect::t('messages') . '` WHERE id > %d AND created >= %s ORDER BY id DESC LIMIT %d', $after, gmdate('Y-m-d H:i:s', strtotime('-' . self::KEEP_DAYS . ' days')), self::MAX), ARRAY_A);
+        $some = array(); foreach ($rows as $r) { if ($r['target'] === 'some') { $some[] = (int) $r['id']; } }
+        $chosen = array();
+        if ($some) { foreach ((array) $db->get_results('SELECT message_id, sys FROM `' . Mazesta_Connect::t('message_systems') . '` WHERE message_id IN (' . implode(',', $some) . ')', ARRAY_A) as $x) { $chosen[$x['message_id']][] = $x['sys']; } }
+        $out = array();
+        foreach ($rows as $r) {
+            $to = $r['target'] === 'group' ? array('q' => $r['grp']) : ($r['target'] === 'some' ? (isset($chosen[$r['id']]) ? $chosen[$r['id']] : array()) : 'all');
+            $out[(int) $r['id']] = array('id' => (int) $r['id'], 'title' => $r['title'], 'body' => (string) $r['body'], 'link' => $r['link'], 'to' => $to, 'created' => Mazesta_Connect::iso($r['created']), 'by' => (int) $r['by_user']);
+        }
+        return $out;
+    }
 
     public static function rest_get($req)
     {
         $id = (string) $req->get_param('install'); $after = (int) $req->get_param('after');
         if (!preg_match('/^[a-f0-9]{32}$/', $id)) { return new WP_Error('mazesta_msg', 'Not understood.', array('status' => 400)); }
         if (!Mazesta_Connect::allowed('msg', 240)) { return new WP_Error('mazesta_busy', 'Too many calls from this address; try again in an hour.', array('status' => 429)); }
+        if (!Mazesta_Connect::db()) { return Mazesta_Connect::no_db(); }
         $out = array();
-        foreach (Mazesta_Connect::read('messages') as $m) {
-            if ((int) $m['id'] <= $after) { continue; }
+        foreach (self::all($after) as $m) {
             if (!self::for_system($m, $id)) { continue; }
             $out[] = array('id' => (int) $m['id'], 'title' => $m['title'], 'body' => $m['body'], 'link' => $m['link'], 'created' => $m['created']);
         }
@@ -80,17 +95,12 @@ final class MZC_Messages
             if (!$to) { MZC_Admin::back('mzc-messages', 'err:هیچ سیستمی انتخاب نشده است.'); }
         }
         if ($title === '' && $body === '') { MZC_Admin::back('mzc-messages', 'err:عنوان یا متن پیام را بنویسید.'); }
-        Mazesta_Connect::locked(function () use ($title, $body, $link, $to) {
-            $all = Mazesta_Connect::read('messages');
-            $cut = gmdate('c', strtotime('-' . self::KEEP_DAYS . ' days'));
-            foreach ($all as $k => $m) { if (strcmp((string) $m['created'], $cut) < 0) { unset($all[$k]); } }
-            $seq = Mazesta_Connect::read('msgseq'); $next = (isset($seq['n']) ? (int) $seq['n'] : 0) + 1;   // an id is never reused, not even after the newest message was deleted
-            foreach ($all as $m) { $next = max($next, (int) $m['id'] + 1); }
-            Mazesta_Connect::write('msgseq', array('n' => $next));
-            if (count($all) >= self::MAX) { ksort($all); array_shift($all); }
-            $all[$next] = array('id' => $next, 'title' => $title, 'body' => $body, 'link' => $link !== '' ? $link : null, 'to' => $to, 'created' => gmdate('c'), 'by' => get_current_user_id());
-            Mazesta_Connect::write('messages', $all);
-        });
+        $db = Mazesta_Connect::db(); if (!$db) { MZC_Admin::back('mzc-messages', 'err:' . (MZC_Crm_Db::error() ?: 'پایگاه دادهٔ CRM آماده نیست.')); }
+        // the id is AUTO_INCREMENT: never reused, not even after the newest message was deleted (the app keeps the highest id it holds)
+        $ok = $db->insert(Mazesta_Connect::t('messages'), array('title' => $title, 'body' => $body, 'link' => $link !== '' ? $link : null, 'target' => $to === 'all' ? 'all' : (isset($to['q']) ? 'group' : 'some'),
+            'grp' => isset($to['q']) ? $to['q'] : null, 'created' => gmdate('Y-m-d H:i:s'), 'by_user' => get_current_user_id()));
+        if (!$ok) { MZC_Admin::back('mzc-messages', 'err:پیام ذخیره نشد: ' . $db->last_error); }
+        if (is_array($to) && !isset($to['q'])) { $mid = (int) $db->insert_id; foreach ($to as $sid) { $db->insert(Mazesta_Connect::t('message_systems'), array('message_id' => $mid, 'sys' => $sid)); } }
         MZC_Admin::back('mzc-messages', 'ok:پیام ثبت شد؛ هر سیستم در نوبت بعدی پرسش خود (روزی حداکثر سه بار) آن را می‌گیرد.');
     }
 
@@ -98,7 +108,7 @@ final class MZC_Messages
     {
         MZC_Admin::guard('message_delete');
         $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-        Mazesta_Connect::locked(function () use ($id) { $all = Mazesta_Connect::read('messages'); unset($all[$id]); Mazesta_Connect::write('messages', $all); });
+        if ($db = Mazesta_Connect::db()) { $db->delete(Mazesta_Connect::t('message_systems'), array('message_id' => $id)); $db->delete(Mazesta_Connect::t('messages'), array('id' => $id)); }
         MZC_Admin::back('mzc-messages', 'ok:پیام پاک شد (سیستم‌هایی که قبلاً گرفته‌اند نسخهٔ خودشان را دارند).');
     }
 }

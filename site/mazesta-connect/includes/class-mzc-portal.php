@@ -131,8 +131,8 @@ final class MZC_Portal
         if (!$cid) { return self::fail('نشست شما تمام شده؛ دوباره وارد شوید.', 401); }
         $c = MZC_Crm::customer($cid);
         list($builds, $jobs) = MZC_Crm::history($cid);
-        $reports = Mazesta_Connect::read('reports'); $public = !empty(Mazesta_Connect::config()['publicLinks']);
-        $link = function ($rid) use ($reports, $public) { return $public && $rid && isset($reports[$rid]['token']) ? home_url('/?mazesta_report=' . $reports[$rid]['token']) : null; };
+        $public = !empty(Mazesta_Connect::config()['publicLinks']);
+        $link = function ($rid) use ($public) { $r = $public && $rid ? Mazesta_Connect::report($rid) : null; return $r ? home_url('/?mazesta_report=' . $r['token']) : null; };
         $outB = array();
         foreach ($builds as $b) {
             $parts = array();

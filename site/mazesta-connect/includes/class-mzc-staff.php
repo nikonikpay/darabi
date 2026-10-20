@@ -159,12 +159,12 @@ final class MZC_Staff
      */
     public static function check_login($login, $pass)
     {
-        $lock = 'mzc_lock_' . md5(strtolower($login)); $n = (int) get_transient($lock);
+        $lock = 'login:' . md5(strtolower($login)); $n = Mazesta_Connect::hit($lock, 900, 0);
         if ($n >= 6) { return array('چند بار گذرواژه غلط بود؛ ۱۵ دقیقه دیگر دوباره امتحان کنید.', 429); }
         $u = wp_authenticate($login, $pass);
-        if (is_wp_error($u) || !($u instanceof WP_User)) { set_transient($lock, $n + 1, 900); return array('نام کاربری یا گذرواژه درست نیست.', 401); }
+        if (is_wp_error($u) || !($u instanceof WP_User)) { Mazesta_Connect::hit($lock, 900); return array('نام کاربری یا گذرواژه درست نیست.', 401); }
         if (!array_filter(self::perms_of($u->ID))) { return array('این حساب دسترسی به برنامه ندارد؛ از مدیر بخواهید دسترسی بدهد.', 403); }
-        delete_transient($lock);
+        Mazesta_Connect::unhit($lock);
         return $u;
     }
 
