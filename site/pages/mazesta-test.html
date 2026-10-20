@@ -47,6 +47,7 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
 #mzt .scale{height:4px;margin-top:9px;background:var(--well);position:relative;border-radius:1px;overflow:hidden}
 #mzt .scale::before{content:"";position:absolute;inset:0;background:var(--hue);transform:scaleX(var(--p,0));transform-origin:right}
 #mzt .scale::after{content:"";position:absolute;inset:0;background:var(--ticks)}
+#mzt .spark{width:100%;height:22px;margin-top:7px;direction:ltr;overflow:visible}#mzt .spark .ar{fill:var(--hue);opacity:.14}#mzt .spark .ln{fill:none;stroke:var(--hue);stroke-width:1.6;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 #mzt .tile .ft{font-size:11.5px;color:var(--paper-3);margin-top:7px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #mzt .note{font-size:12px;color:var(--paper-3);margin-top:12px;line-height:1.7}
 
@@ -261,9 +262,9 @@ width:100vw;margin-inline-start:calc(50% - 50vw);background:var(--ink);color:var
       <div class="tile" style="--hue:var(--ram);--i:2"><div class="tl"><span>حافظه</span><span class="num">RAM</span></div><div class="ro"><span data-j="18.4,0.2,1">18.4</span><i>GB</i></div><div class="scale" style="--p:.57"></div><div class="ft">از <span class="num">32 GB</span></div></div>
       <div class="tile" style="--hue:var(--sto);--i:3"><div class="tl"><span>ذخیره‌سازی</span><span class="num">SSD</span></div><div class="ro"><span>41</span><i>°C</i></div><div class="scale" style="--p:.08"></div><div class="ft">عمر مصرف‌شده <span class="num">8%</span></div></div>
       <div class="tile" style="--hue:var(--net);--i:4"><div class="tl"><span>شبکه</span><span class="num">LAN</span></div><div class="ro"><span data-j="23.6,4,1">23.6</span><i>MB/s</i></div><div class="scale" style="--p:.24"></div><div class="ft">دانلود</div></div>
-      <div class="tile" style="--hue:var(--gpu);--i:5"><div class="tl"><span>نقطه‌ی داغ</span><span class="num">GPU</span></div><div class="ro na">در دسترس نیست</div><div class="scale"></div><div class="ft">این کارت سنسورش را ندارد</div></div>
+      <div class="tile" style="--hue:var(--yellow);--i:5"><div class="tl"><span>نرخ فریم</span><span class="num">FPS</span></div><div class="ro"><span data-hf>142</span><i>FPS</i></div><svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"><path class="ar"/><path class="ln"/></svg><div class="ft">میانگین <span class="num" data-ha>141</span></div></div>
     </div>
-    <p class="note">همه‌ی بخش‌های این صفحه نمونه‌ی زنده‌ی رابط برنامه‌اند و می‌شود با آن‌ها کار کرد؛ اعدادشان نمونه است. در خود برنامه، چیزی که اندازه گرفته نشده مثل خانه‌ی آخر هاشور می‌خورد و هیچ‌وقت صفر یا عدد ساختگی جایش نمی‌نشیند.</p>
+    <p class="note">همه‌ی بخش‌های این صفحه نمونه‌ی زنده‌ی رابط برنامه‌اند و می‌شود با آن‌ها کار کرد؛ اعدادشان نمونه است. در خود برنامه، چیزی که اندازه گرفته نشده «در دسترس نیست» نشان داده می‌شود و هیچ‌وقت صفر یا عدد ساختگی جایش نمی‌نشیند.</p>
   </div>
 </div></header>
 
@@ -744,9 +745,14 @@ auto(P,5,cyc(P,'[data-r]'));
 setInterval(function(){if(document.hidden)return;AU.forEach(function(d){if(d.dead)return;if(!d.vis)return;if(d.hold)return;d.c++;if(d.c>=d.per){d.c=0;d.fn(d.n++)}})},1000);
 }}
 
+/* the hero's frame-rate tile: a short history drawn as a line */
+var HF=[],hi;for(hi=0;hi<30;hi++)HF.push(141+Math.sin(hi/3)*7+rnd(5));
+function hdraw(){var d='',sum=0;HF.forEach(function(v,k){sum+=v;d+=(k?'L':'M')+(k*100/29).toFixed(1)+' '+(24-(clamp(v,110,170)-110)/60*22).toFixed(1)});var g=$('#mzt .spark');if(!g)return;$('.ln',g).setAttribute('d',d);$('.ar',g).setAttribute('d',d+'L100 26L0 26Z');$('[data-hf]').textContent=Math.round(HF[29]);$('[data-ha]').textContent=Math.round(sum/30)}
+hdraw();
 /* one slow tick keeps the readings alive while the page is on screen */
 if(!still)setInterval(function(){if(document.hidden)return;
 $$('[data-j]').forEach(function(e){var a=e.getAttribute('data-j').split(',');e.textContent=(+a[0]+rnd(+a[1])).toFixed(+a[2])});
+var hl=HF[29]+(141-HF[29])*.25+rnd(9);if(Math.random()<.07)hl-=18;HF.shift();HF.push(clamp(hl,112,168));hdraw();
 Object.keys(S).forEach(function(k){var s=S[k];s.p.shift();s.p.push(clamp(s.p[58]+rnd(s.a),s.b-s.a*4,s.b+s.a*4))});mdraw();
 var f=$('[data-fps]',OV);if(f){fps=Math.round(clamp(fps+rnd(4),132,156));f.textContent=fps;$('[data-ft]',OV).textContent=(1000/fps).toFixed(1)}
 },1500);
