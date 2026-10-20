@@ -19,7 +19,7 @@ internal static class SceneGpuLoad
         if (rayTraced && !GpuFeatures.SupportsInlineRayTracing(device)) return new(0, 0, false, $"{device.Name} reports ray-tracing tier {GpuFeatures.RayTracingTier(device)}; DXR 1.1 (inline ray tracing) is required.");
         LoadRunResult? result = null; Exception? fault = null;
         // The window, its messages and the drawing share one thread, as in the tests.
-        var thread = new Thread(() => { try { result = RunOnThread(device, duration, settle, rayTraced, ct, bursts); } catch (Exception e) { fault = e; } }) { IsBackground = true, Name = "Mazesta tuning scene" };
+        var thread = new Thread(() => { try { result = RunOnThread(device, duration, settle, rayTraced, ct, bursts); } catch (Exception e) { fault = e; } }, GpuDevices.RenderStack) { IsBackground = true, Name = "Mazesta tuning scene" };
         thread.SetApartmentState(ApartmentState.STA); thread.Start(); thread.Join();
         if (fault is OperationCanceledException) throw fault;
         return fault is not null ? new(0, 0, true, $"{fault.GetType().Name}: {fault.Message}") : result!;

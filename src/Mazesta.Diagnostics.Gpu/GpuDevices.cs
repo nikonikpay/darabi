@@ -41,6 +41,8 @@ public static class GpuDevices
     public static IEnumerable<GraphicsDevice> Ranked(IEnumerable<GraphicsDevice> adapters) => adapters.OrderBy(IsIntegrated).ThenByDescending(d => d.DedicatedMemorySize);
 
     public const string NoGpu = "No DirectX 12 hardware GPU is available.";
+    /// <summary>Stack for a thread that creates pipelines: drivers compile shaders on the caller's thread, and NVIDIA's compiler failed fast on the default 1.5 MB with the ray-traced garden (a 4090 laptop; the likely cause, not proven).</summary>
+    public const int RenderStack = 64 << 20;
 
     /// <summary>The adapter a test or benchmark request chose through <see cref="Option"/>.</summary>
     public static GraphicsDevice? Resolve(TestExecutionRequest request, TestDefinition definition) => Resolve((request.Options ?? TestOptions.None(definition)).Get(OptionKey));

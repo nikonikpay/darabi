@@ -85,7 +85,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
                     _ => TestRunResult.Error(id, started, now, e),   // a window, a shader or a file: the program's fault, not the card's
                 });
             }
-        }) { IsBackground = true, Name = "Mazesta GPU scene" };
+        }, GpuDevices.RenderStack) { IsBackground = true, Name = "Mazesta GPU scene" };
         thread.SetApartmentState(ApartmentState.STA); thread.Start();
         return done.Task;
     }

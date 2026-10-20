@@ -49,7 +49,8 @@ internal static class GpuBenchmark
         {
             if (!ownThread) return Task.Run(work, CancellationToken.None);
             var done = new TaskCompletionSource<BenchmarkResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var thread = new Thread(() => done.SetResult(work())) { IsBackground = true, Name = "Mazesta GPU benchmark" };
+            // A big stack: the driver compiles the scene's shaders on this thread, and the ray-traced one failed fast inside NVIDIA's compiler (nvwgf2umx) on a 4090 laptop.
+            var thread = new Thread(() => done.SetResult(work()), GpuDevices.RenderStack) { IsBackground = true, Name = "Mazesta GPU benchmark" };
             thread.SetApartmentState(ApartmentState.STA); thread.Start();
             return done.Task;
         };
