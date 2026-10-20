@@ -41,6 +41,7 @@
     var t = e.target.closest('[data-mzc-target]');
     if (!t) return;
     var some = document.getElementById('mzc-some'); if (some) some.style.display = t.value === 'some' ? '' : 'none';
+    var grp = document.getElementById('mzc-group'); if (grp) grp.style.display = t.value === 'group' ? '' : 'none';
   });
   /* the form's customer: typing a name or a number lists the closest customers (any of their numbers); picking one fills customer_id, typing on clears it again */
   var cbox = document.querySelector('[data-mzc-cfind]');

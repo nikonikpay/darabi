@@ -37,7 +37,7 @@ final class Mazesta_Connect
         }
     }
 
-    /* ---------- storage: files, never the database ---------- */
+    /* ---------- storage: files (the usage statistics are in MZC_Stats' tables) ---------- */
 
     public static function dir() { return WP_CONTENT_DIR . '/mazesta-connect-data'; }
 
@@ -151,6 +151,7 @@ final class Mazesta_Connect
         register_rest_route(self::NS, '/featured', array('methods' => 'GET', 'callback' => array(__CLASS__, 'rest_featured'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/bench/runs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_runs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/usage', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_usage'), 'permission_callback' => $open));
+        register_rest_route(self::NS, '/logs', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_logs'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/share', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_share'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/pair/start', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_start'), 'permission_callback' => $open));
         register_rest_route(self::NS, '/pair/claim', array('methods' => 'POST', 'callback' => array(__CLASS__, 'rest_pair_claim'), 'permission_callback' => $open));
@@ -630,7 +631,7 @@ final class Mazesta_Connect
         if (!self::allowed('usage', 60)) { return new WP_Error('mazesta_busy', 'Too many posts from this address; try again in an hour.', array('status' => 429)); }
         $body = json_decode((string) $req->get_body(), true);
         if (!is_array($body) || !isset($body['install']) || !preg_match('/^[a-f0-9]{32}$/', (string) $body['install'])) { return new WP_Error('mazesta_usage', 'Not understood.', array('status' => 400)); }
-        $id = (string) $body['install']; $now = gmdate('c'); $ym = gmdate('Y-m');
+        $id = (string) $body['install']; $now = gmdate('c');
         $events = isset($body['events']) && is_array($body['events']) ? array_slice($body['events'], 0, 200) : array();
         $m = isset($body['machine']) && is_array($body['machine']) ? $body['machine'] : array();
         $machine = array(
@@ -651,36 +652,30 @@ final class Mazesta_Connect
             $j = wp_json_encode($d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if ($j === false || strlen($j) > 6000) { continue; }
             $at = isset($e['at']) && is_string($e['at']) && preg_match('/^\d{4}-\d{2}-\d{2}T[\d:.]+/', $e['at']) ? substr($e['at'], 0, 33) : $now;
-            $lines[] = wp_json_encode(array('i' => $id, 'at' => $at, 'k' => (string) $e['k'], 'd' => $d), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $lines[] = array('i' => $id, 'at' => $at, 'k' => (string) $e['k'], 'd' => $d);
         }
-        self::locked(function () use ($id, $now, $ym, $machine, $body, $lines) {
-            $in = self::read('installs');
-            if (!isset($in[$id])) { if (count($in) >= 200000) { return; } $in[$id] = array('first' => $now, 'n' => 0); }
-            $in[$id]['last'] = $now; $in[$id]['n'] += count($lines); $in[$id]['machine'] = $machine;
-            $in[$id]['app'] = self::text(isset($body['app']) ? $body['app'] : '', 20); $in[$id]['edition'] = self::text(isset($body['edition']) ? $body['edition'] : '', 12);
-            $in[$id]['lang'] = self::text(isset($body['language']) ? $body['language'] : '', 8);
-            self::write('installs', $in);
-            if ($lines && self::ensure()) {
-                $f = self::usage_file($ym);
-                @file_put_contents($f, (is_file($f) ? '' : self::GUARD) . implode("\n", $lines) . "\n", FILE_APPEND | LOCK_EX);
-            }
-        });
+        MZC_Stats::record($id, $machine, self::text(isset($body['app']) ? $body['app'] : '', 20), self::text(isset($body['edition']) ? $body['edition'] : '', 12),
+            self::text(isset($body['language']) ? $body['language'] : '', 8), $lines);
         return self::fresh(array('accepted' => count($lines)));
     }
 
-    /** The event lines of the last two months, as arrays (at most 150,000: the page is a summary, not an export). */
-    public static function usage_events()
+    /** A piece of the app's own log and Windows' crash records of it (the app takes the user's folder and the computer's name out first). Only a system that sends statistics. */
+    public static function rest_logs($req)
     {
-        $out = array();
-        foreach (array(gmdate('Y-m'), gmdate('Y-m', strtotime('-1 month'))) as $ym) {
-            $f = self::usage_file($ym);
-            if (!is_readable($f)) { continue; }
-            $h = fopen($f, 'r'); if (!$h) { continue; }
-            fgets($h);   // the guard line
-            while (($line = fgets($h)) !== false && count($out) < 150000) { $e = json_decode($line, true); if (is_array($e) && isset($e['k'])) { $out[] = $e; } }
-            fclose($h);
+        if (!self::allowed('logs', 60)) { return new WP_Error('mazesta_busy', 'Too many posts from this address; try again in an hour.', array('status' => 429)); }
+        $body = json_decode((string) $req->get_body(), true);
+        if (!is_array($body) || !isset($body['install']) || !preg_match('/^[a-f0-9]{32}$/', (string) $body['install'])) { return new WP_Error('mazesta_logs', 'Not understood.', array('status' => 400)); }
+        $text = isset($body['text']) && is_string($body['text']) ? substr($body['text'], 0, 262144) : '';
+        $crashes = array();
+        foreach (isset($body['crashes']) && is_array($body['crashes']) ? array_slice($body['crashes'], 0, 20) : array() as $c) {
+            if (!is_array($c)) { continue; } $x = array();
+            foreach ($c as $k => $v) { if (preg_match('/^(at|sig\d{1,2})$/', (string) $k) && is_scalar($v)) { $x[$k] = self::text((string) $v, 200); } }
+            if ($x) { $crashes[] = $x; }
         }
-        return $out;
+        if ($text === '' && !$crashes) { return self::fresh(array('accepted' => 0)); }
+        $file = isset($body['file']) && preg_match('/^[A-Za-z0-9._-]{1,40}$/', (string) $body['file']) ? (string) $body['file'] : '';
+        $ok = MZC_Stats::add_log((string) $body['install'], self::text(isset($body['app']) ? $body['app'] : '', 20), $file, wp_check_invalid_utf8($text, true), $crashes);
+        return $ok ? self::fresh(array('accepted' => 1)) : new WP_Error('mazesta_logs', 'Unknown system: send the statistics first.', array('status' => 404));
     }
 
     /**

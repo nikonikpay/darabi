@@ -2,11 +2,10 @@
 if (!defined('ABSPATH')) { exit; }
 /** The systems that run the app: a list with a short summary each, and one page per system with its full specification and what it did. */
 
-$installs = MZC_Stats::installs();
 $sys = isset($_GET['sys']) ? sanitize_text_field(wp_unslash($_GET['sys'])) : '';
 
-if ($sys !== '' && isset($installs[$sys])) {
-    $i = $installs[$sys]; $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array();
+if ($sys !== '' && ($i = MZC_Stats::install($sys))) {
+    $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array();
     $last = !empty($i['last']) ? strtotime($i['last']) : 0; $first = !empty($i['first']) ? strtotime($i['first']) : 0;
     $kv = function ($k, $v) { if ($v === null || $v === '' || $v === array()) { return; } echo '<dt>' . esc_html($k) . '</dt><dd dir="auto">' . (is_array($v) ? implode('<br>', array_map('esc_html', $v)) : esc_html((string) $v)) . '</dd>'; };
 
@@ -34,33 +33,36 @@ if ($sys !== '' && isset($installs[$sys])) {
     echo '</dl>' . MZC_Admin::form_open('system_note', 'style="margin-top:14px"') . '<input type="hidden" name="id" value="' . esc_attr($sys) . '"><div class="mzc-field"><span>یادداشت شما دربارهٔ این سیستم</span>'
         . '<input type="text" name="note" maxlength="300" value="' . esc_attr(isset($i['note']) ? $i['note'] : '') . '" placeholder="مثلاً: سیستم آقای احمدی، کیس شمارهٔ ۱۲"></div><p><button class="mzc-btn">ذخیرهٔ یادداشت</button></p></form></div></div></div>';
 
-    $rows = array();
-    foreach (MZC_Stats::events(2) as $e) { if ($e['i'] === $sys && $e['k'] !== 'app.start') { $rows[] = MZC_Stats::row($e); } }
-    echo '<div class="mzc-panel"><header><h3>آخرین رویدادهای این سیستم</h3><span class="muted">' . esc_html(number_format_i18n(count($rows))) . ' رویداد (دو ماه اخیر)</span></header><div class="body flush">' . MZC_Admin::events_table(array_slice($rows, 0, 40), false) . '</div></div>';
+    list($evs, $evn) = MZC_Stats::events(array('sys' => $sys, 'not' => 'app.start', 'limit' => 40), true);
+    $rows = array_map(array('MZC_Stats', 'row'), $evs);
+    echo '<div class="mzc-panel"><header><h3>آخرین رویدادهای این سیستم</h3><span class="muted">' . esc_html(number_format_i18n($evn)) . ' رویداد</span></header><div class="body flush">' . MZC_Admin::events_table($rows, false) . '</div></div>';
+
+    // the app's own log and its crashes, as the system sent them (newest first)
+    $logs = MZC_Stats::logs($sys);
+    echo '<div class="mzc-panel"><header><h3>لاگ برنامه و کرش‌ها</h3><span class="muted">' . esc_html(MZC_Stats::LOG_DAYS) . ' روز اخیر؛ مسیر پوشهٔ کاربر و نام کامپیوتر را خود برنامه حذف می‌کند</span></header><div class="body">';
+    if (!$logs) { echo '<p class="muted">هنوز لاگی نرسیده است (فقط نسخه‌های تازه‌تر برنامه، با ارسال آمار روشن، لاگ می‌فرستند).</p>'; }
+    foreach ($logs as $l) {
+        $cr = json_decode((string) $l['crashes'], true); $cr = is_array($cr) ? $cr : array();
+        echo '<details class="mzc-details"><summary>' . MZC_Admin::when(strtotime($l['at'] . ' UTC')) . ' · <span class="num">' . esc_html($l['file'] . ' · ' . $l['app']) . '</span>'
+            . ($cr ? ' ' . MZC_Admin::pill(count($cr) . ' کرش', 'bad') : '') . '</summary>';
+        foreach ($cr as $c) { echo '<pre dir="ltr">' . esc_html(wp_json_encode($c, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)) . '</pre>'; }
+        echo '<pre dir="ltr" style="max-height:420px;overflow:auto">' . esc_html((string) $l['body']) . '</pre></details>';
+    }
+    echo '</div></div>';
     return;
 }
 
 $q = isset($_GET['s']) ? sanitize_text_field(wp_unslash($_GET['s'])) : '';
 $order = isset($_GET['o']) ? sanitize_key($_GET['o']) : 'last';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 30;
-$list = array();
-foreach ($installs as $id => $i) {
-    $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array();
-    $hay = implode(' ', array(MZC_Stats::label($i), isset($m['cpu']) ? $m['cpu'] : '', implode(' ', isset($m['gpus']) ? (array) $m['gpus'] : array()), isset($i['note']) ? $i['note'] : '', isset($m['board']) ? $m['board'] : ''));
-    if ($q === '' || mb_stripos($hay, $q) !== false) { $list[$id] = $i; }
-}
-uasort($list, function ($a, $b) use ($order) {
-    if ($order === 'n') { return (int) (isset($b['n']) ? $b['n'] : 0) <=> (int) (isset($a['n']) ? $a['n'] : 0); }
-    return strcmp((string) ($order === 'first' ? (isset($b['first']) ? $b['first'] : '') : (isset($b['last']) ? $b['last'] : '')), (string) ($order === 'first' ? (isset($a['first']) ? $a['first'] : '') : (isset($a['last']) ? $a['last'] : '')));
-});
-$total = count($list);
+list($list, $total) = MZC_Stats::systems($q, $order, $per, ($paged - 1) * $per);
 
 echo '<div class="mzc-title"><h2>سیستم‌ها</h2><span class="muted">' . esc_html(number_format_i18n($total)) . ' سیستم</span></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-systems"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="جستجو: کارت گرافیک، پردازنده، مادربرد، یادداشت…"><select name="o">'
-    . '<option value="last"' . selected($order, 'last', false) . '>آخرین فعالیت</option><option value="first"' . selected($order, 'first', false) . '>تازه‌ترین نصب</option><option value="n"' . selected($order, 'n', false) . '>بیشترین رویداد</option></select><button class="mzc-btn primary">اعمال</button></form>';
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-systems"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="جستجوی سخت‌افزار: مثلاً 3060، 5900HS، 32 GB، B550، یادداشت… (چند کلمه = همه با هم)"><select name="o">'
+    . '<option value="last"' . selected($order, 'last', false) . '>آخرین فعالیت</option><option value="first"' . selected($order, 'first', false) . '>تازه‌ترین نصب</option><option value="n"' . selected($order, 'n', false) . '>بیشترین رویداد</option></select><button class="mzc-btn primary">اعمال</button>' . ($q !== '' && $total ? ' <a class="mzc-btn" href="' . esc_url(MZC_Admin::url('mzc-messages', array('group' => $q))) . '">پیام به این ' . esc_html(number_format_i18n($total)) . ' سیستم</a>' : '') . '</form>';
 echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>سیستم</th><th>پردازنده</th><th>کارت گرافیک</th><th class="n">رم</th><th>ویندوز</th><th>نسخه</th><th class="n">رویداد</th><th>آخرین فعالیت</th><th></th></tr></thead><tbody>';
-if (!$list) { echo '<tr><td class="empty" colspan="9">' . ($installs ? 'سیستمی با این جستجو پیدا نشد.' : 'هنوز هیچ سیستمی آمار نفرستاده است.') . '</td></tr>'; }
-foreach (array_slice($list, ($paged - 1) * $per, $per, true) as $id => $i) {
+if (!$list) { echo '<tr><td class="empty" colspan="9">' . ($q !== '' ? 'سیستمی با این جستجو پیدا نشد.' : 'هنوز هیچ سیستمی آمار نفرستاده است.') . '</td></tr>'; }
+foreach ($list as $id => $i) {
     $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array(); $last = !empty($i['last']) ? strtotime($i['last']) : 0;
     $link = MZC_Admin::url('mzc-systems', array('sys' => $id));
     echo '<tr class="click" data-href="' . esc_url($link) . '"><td dir="auto"><a href="' . esc_url($link) . '"><strong>' . esc_html(!empty($i['note']) ? $i['note'] : substr($id, 0, 8)) . '</strong></a>' . (!empty($i['note']) ? '<br><span class="muted num">' . esc_html(substr($id, 0, 8)) . '</span>' : '') . '</td>'

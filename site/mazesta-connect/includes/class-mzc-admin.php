@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) { exit; }
 final class MZC_Admin
 {
     private static $pages = array(
-        'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-messages' => array('پیام‌ها', 'messages'),
+        'mzc-overview' => array('نمای کلی', 'overview'), 'mzc-systems' => array('سیستم‌ها', 'systems'), 'mzc-events' => array('رویدادها', 'events'), 'mzc-tuning' => array('آندرولت و اورکلاک', 'tuning'), 'mzc-messages' => array('پیام‌ها', 'messages'),
         'mzc-customers' => array('مشتریان', 'customers'), 'mzc-builds' => array('سیستم‌های نو', 'builds'), 'mzc-jobs' => array('سرویس‌ها', 'jobs'), 'mzc-report' => array('گزارش مالی و آمار', 'report'), 'mzc-stock' => array('انبار و کالاها', 'stock'), 'mzc-purchases' => array('فاکتورهای خرید', 'purchases'), 'mzc-ships' => array('ارسال به گارانتی', 'ships'), 'mzc-staff' => array('کاربران و دسترسی', 'staff'),
         'mazesta-connect' => array('گزارش‌ها و بنچمارک', null), 'mzc-settings' => array('تنظیمات', 'settings'),
     );
@@ -143,7 +143,7 @@ final class MZC_Admin
         self::guard('system_note');
         $id = isset($_POST['id']) ? (string) wp_unslash($_POST['id']) : '';
         $note = Mazesta_Connect::clip(isset($_POST['note']) ? wp_unslash($_POST['note']) : '', 300);
-        Mazesta_Connect::locked(function () use ($id, $note) { $in = Mazesta_Connect::read('installs'); if (isset($in[$id])) { $in[$id]['note'] = $note; Mazesta_Connect::write('installs', $in); } });
+        MZC_Stats::set_note($id, $note);
         self::back('mzc-systems', 'ok:یادداشت ذخیره شد.', array('sys' => $id));
     }
 
@@ -221,6 +221,7 @@ final class MZC_Admin
     {
         $out = '<div class="mzc-scroll"><table class="mzc-table"><thead><tr><th>زمان</th>' . ($withSystem ? '<th>سیستم</th>' : '') . '<th>نوع</th><th>مورد</th><th>نتیجه</th><th>کارت گرافیک</th><th class="n">دما CPU / GPU</th><th class="n">فرکانس CPU / GPU</th><th class="n">FPS</th><th class="n">امتیاز / توان</th><th>توضیح</th></tr></thead><tbody>';
         if (!$rows) { $out .= '<tr><td class="empty" colspan="' . ($withSystem ? 11 : 10) . '">رویدادی پیدا نشد.</td></tr>'; }
+        if ($withSystem && !$installs) { $installs = MZC_Stats::names(array_column($rows, 'id')); }
         $t = function ($v, $u) { return $v === null ? '—' : '<span class="num">' . esc_html(round($v) . $u) . '</span>'; };
         foreach ($rows as $r) {
             $pill = $r['result'] === '' ? '' : self::pill($r['result'], $r['ok'] === true ? 'ok' : ($r['ok'] === false ? 'bad' : ''));

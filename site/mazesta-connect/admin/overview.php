@@ -4,11 +4,8 @@ if (!defined('ABSPATH')) { exit; }
 
 $days = isset($_GET['days']) ? max(1, min(60, (int) $_GET['days'])) : 30;
 $since = time() - $days * 86400;
-$installs = MZC_Stats::installs();
-$rows = array();
-foreach (MZC_Stats::events(2) as $e) { if ($e['ts'] >= $since) { $rows[] = MZC_Stats::row($e); } }
-
-$active = 0; foreach ($installs as $i) { if (!empty($i['last']) && strtotime($i['last']) >= $since) { $active++; } }
+$rows = array_map(array('MZC_Stats', 'row'), MZC_Stats::events(array('since' => $since, 'not' => 'app.start', 'limit' => 100000))[0]);
+$active = MZC_Stats::count_systems($since);
 $by = array('bench.run' => 0, 'test.run' => 0, 'tuning.auto' => 0, 'tuning.scene' => 0);
 foreach ($rows as $r) { if (isset($by[$r['kind']])) { $by[$r['kind']]++; } }
 
@@ -18,7 +15,7 @@ echo '</select></form></div>';
 
 echo '<div class="mzc-cards">';
 $kpi = function ($k, $v, $s = '') { echo '<div class="mzc-card mzc-kpi"><div class="k">' . esc_html($k) . '</div><div class="v">' . $v . '</div><div class="s">' . esc_html($s) . '</div></div>'; };
-$kpi('سیستم‌های شناخته‌شده', MZC_Admin::num(count($installs)), 'فعال در این بازه: ' . number_format_i18n($active));
+$kpi('سیستم‌های شناخته‌شده', MZC_Admin::num(MZC_Stats::count_systems()), 'فعال در این بازه: ' . number_format_i18n($active));
 $kpi('بنچمارک‌ها', MZC_Admin::num($by['bench.run']), 'اجرا در این بازه');
 $kpi('تست‌ها', MZC_Admin::num($by['test.run']), 'اجرا در این بازه');
 $kpi('آندرولت / اورکلاک', MZC_Admin::num($by['tuning.auto']), 'جست‌وجوی خودکار');
@@ -26,13 +23,14 @@ $kpi('تست صحنه', MZC_Admin::num($by['tuning.scene']), 'مقایسهٔ پ�
 echo '</div>';
 
 // ---- what the systems are
-$list = array_values($installs);
 echo '<div class="mzc-grid2">';
 $box = function ($title, $rowsx) { echo '<div class="mzc-panel"><header><h3>' . esc_html($title) . '</h3></header><div class="body">' . MZC_Admin::bars($rowsx) . '</div></div>'; };
-$box('کارت‌های گرافیک', MZC_Stats::tally($list, function ($i) { return isset($i['machine']['gpus']) ? array_map(array('MZC_Stats', 'short'), (array) $i['machine']['gpus']) : array(); }));
-$box('پردازنده‌ها', MZC_Stats::tally($list, function ($i) { return isset($i['machine']['cpu']) ? array(MZC_Stats::short($i['machine']['cpu'])) : array(); }));
-$box('حافظهٔ رم (گیگابایت)', MZC_Stats::tally($list, function ($i) { return isset($i['machine']['ramGb']) ? array($i['machine']['ramGb'] . ' GB') : array(); }, 6));
-$box('نسخهٔ برنامه', MZC_Stats::tally($list, function ($i) { return isset($i['app']) && $i['app'] !== '' ? array($i['app']) : array(); }, 6));
+// counted in the database; a system with two cards (a laptop's two) counts for each
+$by_col = function ($col, $top, $fmt) { $c = array(); foreach (MZC_Stats::count_by($col, $top) as $r) { foreach ($fmt($r['v']) as $v) { $c[$v] = (isset($c[$v]) ? $c[$v] : 0) + (int) $r['n']; } } arsort($c); return array_slice($c, 0, 8, true); };
+$box('کارت‌های گرافیک', $by_col('gpus', 200, function ($v) { return array_map(array('MZC_Stats', 'short'), explode(' | ', $v)); }));
+$box('پردازنده‌ها', $by_col('cpu', 60, function ($v) { return array(MZC_Stats::short($v)); }));
+$box('حافظهٔ رم (گیگابایت)', $by_col('ram_gb', 6, function ($v) { return array($v . ' GB'); }));
+$box('نسخهٔ برنامه', $by_col('app', 6, function ($v) { return array($v); }));
 echo '</div>';
 
 // ---- tests and benchmarks, one line each
@@ -82,5 +80,5 @@ echo '<div class="mzc-panel"><header><h3>چرا ناموفق بود</h3></header
 
 // ---- the latest events
 echo '<div class="mzc-panel"><header><h3>آخرین رویدادها</h3><a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-events')) . '">همهٔ رویدادها</a></header><div class="body flush">'
-    . MZC_Admin::events_table(array_slice(array_values(array_filter($rows, function ($r) { return $r['kind'] !== 'app.start'; })), 0, 12), true, $installs) . '</div></div>';
-echo '<p class="muted">آمار ناشناس است: هر سیستم فقط یک شناسهٔ تصادفی دارد؛ نام کاربر، نام کامپیوتر، سریال و آدرس شبکه ذخیره نمی‌شود. رویدادها دو ماه اخیر خوانده می‌شود.</p>';
+    . MZC_Admin::events_table(array_slice(array_values(array_filter($rows, function ($r) { return $r['kind'] !== 'app.start'; })), 0, 12), true) . '</div></div>';
+echo '<p class="muted">آمار ناشناس است: هر سیستم فقط یک شناسهٔ تصادفی دارد؛ نام کاربر، نام کامپیوتر، سریال و آدرس شبکه ذخیره نمی‌شود. رویدادهای بازهٔ انتخاب‌شده از پایگاه داده خوانده می‌شود. برای نتیجهٔ هر کارت گرافیک در آندرولت و اورکلاک، صفحهٔ «آندرولت و اورکلاک» را ببینید.</p>';

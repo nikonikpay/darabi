@@ -34,25 +34,30 @@ final class MZC_Messages
         $out = array();
         foreach (Mazesta_Connect::read('messages') as $m) {
             if ((int) $m['id'] <= $after) { continue; }
-            if ($m['to'] !== 'all' && !(is_array($m['to']) && in_array($id, $m['to'], true))) { continue; }
+            if (!self::for_system($m, $id)) { continue; }
             $out[] = array('id' => (int) $m['id'], 'title' => $m['title'], 'body' => $m['body'], 'link' => $m['link'], 'created' => $m['created']);
         }
         usort($out, function ($a, $b) { return $a['id'] <=> $b['id']; });
         // The 'after' a system sends is the newest message it holds: remembered only when it moved, so the usual call writes nothing.
-        $acks = Mazesta_Connect::read('acks');
-        if ($after > 0 && (!isset($acks[$id]) || (int) $acks[$id] < $after) && isset(MZC_Stats::installs()[$id])) {
-            Mazesta_Connect::locked(function () use ($id, $after) { $a = Mazesta_Connect::read('acks'); if (!isset($a[$id]) || (int) $a[$id] < $after) { $a[$id] = $after; Mazesta_Connect::write('acks', $a); } });
-        }
+        if ($after > 0) { MZC_Stats::ack($id, $after); }
         return Mazesta_Connect::fresh(array('messages' => array_slice($out, 0, 20)));
     }
 
-    /** How many of the targeted systems have fetched this message: array(delivered, targeted). */
-    public static function delivery($m, $installs, $acks)
+    /** Whether a message is for a system: every system, a group (a hardware search, matched when the system asks, so a system that joins later gets it too) or chosen ids. */
+    public static function for_system($m, $id)
     {
-        $targets = $m['to'] === 'all' ? array_keys($installs) : (array) $m['to'];
-        $got = 0;
-        foreach ($targets as $t) { if (isset($acks[$t]) && (int) $acks[$t] >= (int) $m['id']) { $got++; } }
-        return array($got, count($targets));
+        if ($m['to'] === 'all') { return true; }
+        if (is_array($m['to']) && isset($m['to']['q'])) { return MZC_Stats::matches($id, $m['to']['q']); }
+        return is_array($m['to']) && in_array($id, $m['to'], true);
+    }
+
+    /** How many of the targeted systems have fetched this message: array(delivered, targeted). */
+    public static function delivery($m)
+    {
+        if ($m['to'] === 'all') { return MZC_Stats::delivered((int) $m['id']); }
+        if (isset($m['to']['q'])) { return MZC_Stats::delivered((int) $m['id'], $m['to']['q']); }
+        $got = 0; foreach (MZC_Stats::names((array) $m['to']) as $s) { if ($s['ack'] >= (int) $m['id']) { $got++; } }
+        return array($got, count((array) $m['to']));
     }
 
     public static function act_send()
@@ -62,11 +67,16 @@ final class MZC_Messages
         $body = Mazesta_Connect::clip(isset($_POST['body']) ? wp_unslash($_POST['body']) : '', 2000);
         $link = isset($_POST['link']) ? esc_url_raw(trim((string) wp_unslash($_POST['link']))) : '';
         if ($link !== '' && !preg_match('#^https://(www\.)?dfmrendering\.com(/|$)#i', $link)) { $link = ''; }   // the app only opens the shop's own pages
-        $installs = MZC_Stats::installs();
-        $to = 'all';
-        if (isset($_POST['target']) && $_POST['target'] === 'some') {
-            $to = array();
-            foreach ((array) (isset($_POST['systems']) ? wp_unslash($_POST['systems']) : array()) as $sid) { if (is_string($sid) && isset($installs[$sid])) { $to[] = $sid; } }
+        $to = 'all'; $target = isset($_POST['target']) ? (string) $_POST['target'] : 'all';
+        if ($target === 'group') {
+            $q = Mazesta_Connect::clip(isset($_POST['group']) ? wp_unslash($_POST['group']) : '', 120);
+            if ($q === '') { MZC_Admin::back('mzc-messages', 'err:برای گروه، عبارت سخت‌افزار (مثلاً 3060) را بنویسید.'); }
+            list(, $n) = MZC_Stats::systems($q, 'last', 1);
+            if (!$n) { MZC_Admin::back('mzc-messages', 'err:هیچ سیستمی با «' . $q . '» پیدا نشد.'); }
+            $to = array('q' => $q);
+        } elseif ($target === 'some') {
+            $to = array(); $ids = array_filter((array) (isset($_POST['systems']) ? wp_unslash($_POST['systems']) : array()), 'is_string');
+            foreach (array_keys(MZC_Stats::names($ids)) as $sid) { $to[] = $sid; }
             if (!$to) { MZC_Admin::back('mzc-messages', 'err:هیچ سیستمی انتخاب نشده است.'); }
         }
         if ($title === '' && $body === '') { MZC_Admin::back('mzc-messages', 'err:عنوان یا متن پیام را بنویسید.'); }
