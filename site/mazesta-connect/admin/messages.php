@@ -9,19 +9,19 @@ if ($to !== '' && !isset($installs[$to])) { $installs = MZC_Stats::names(array($
 $mode = $to !== '' ? 'some' : ($group !== '' ? 'group' : 'all');
 
 echo '<div class="mzc-title"><h2>پیام به سیستم‌ها</h2></div>';
-echo '<p class="muted" style="max-width:90ch">پیام در برنامهٔ هر سیستم به شکل اعلان ویندوز می‌آید و در بخش «پیام‌های سیستم» برنامه می‌ماند تا کاربر بعداً دوباره بخواند. برنامه یک دقیقه پس از باز شدن و بعد هر ۸ ساعت (روزی حداکثر سه بار) می‌پرسد و فقط سیستم‌هایی پیام می‌گیرند که برنامه‌شان باز است و ارسال آمار ناشناس در تنظیماتشان روشن است.</p>';
+echo '<p class="muted mzc-prose">پیام در برنامهٔ هر سیستم به شکل اعلان ویندوز می‌آید و در بخش «پیام‌های سیستم» برنامه می‌ماند تا کاربر بعداً دوباره بخواند. برنامه یک دقیقه پس از باز شدن و بعد هر ۸ ساعت (روزی حداکثر سه بار) می‌پرسد و فقط سیستم‌هایی پیام می‌گیرند که برنامه‌شان باز است و ارسال آمار ناشناس در تنظیماتشان روشن است.</p>';
 
 echo '<div class="mzc-panel"><header><h3>پیام تازه</h3></header><div class="body">' . MZC_Admin::form_open('message_send', 'class="mzc-form"') . '<div class="mzc-fields">'
     . '<label class="wide">عنوان<input type="text" name="title" maxlength="120" required></label>'
     . '<label class="wide">متن پیام<textarea name="body" maxlength="2000" rows="4"></textarea></label>'
     . '<label class="wide">پیوند (اختیاری، فقط صفحه‌های dfmrendering.com)<input type="url" name="link" dir="ltr" placeholder="https://www.dfmrendering.com/…"></label>'
-    . '<div class="mzc-field wide"><span>گیرنده</span><div><label style="display:inline-flex;gap:6px;font-weight:400"><input type="radio" name="target" value="all" data-mzc-target' . checked($mode, 'all', false) . '> همهٔ سیستم‌ها (' . esc_html(number_format_i18n(MZC_Stats::count_systems())) . ')</label> &nbsp; '
-    . '<label style="display:inline-flex;gap:6px;font-weight:400"><input type="radio" name="target" value="group" data-mzc-target' . checked($mode, 'group', false) . '> گروهی بر اساس سخت‌افزار</label> &nbsp; '
-    . '<label style="display:inline-flex;gap:6px;font-weight:400"><input type="radio" name="target" value="some" data-mzc-target' . checked($mode, 'some', false) . '> فقط سیستم‌های انتخابی</label></div></div></div>'
-    . '<div id="mzc-group" class="mzc-field" style="' . ($mode === 'group' ? '' : 'display:none') . '"><span>هر سیستمی که این کلمه‌ها در مشخصاتش باشد (کارت گرافیک، پردازنده، رم، مادربرد، ویندوز، درایور…)؛ سیستمی که بعداً به این گروه بپیوندد هم پیام را می‌گیرد</span>'
-    . '<input type="text" name="group" maxlength="120" value="' . esc_attr($group) . '" placeholder="مثلاً: 3060 یا 4090 laptop یا 5900HS" style="max-width:420px"> '
+    . '<div class="mzc-field wide"><span>گیرنده</span><div><label class="mzc-radio"><input type="radio" name="target" value="all" data-mzc-target' . checked($mode, 'all', false) . '> همهٔ سیستم‌ها (' . esc_html(number_format_i18n(MZC_Stats::count_systems())) . ')</label> &nbsp; '
+    . '<label class="mzc-radio"><input type="radio" name="target" value="group" data-mzc-target' . checked($mode, 'group', false) . '> گروهی بر اساس سخت‌افزار</label> &nbsp; '
+    . '<label class="mzc-radio"><input type="radio" name="target" value="some" data-mzc-target' . checked($mode, 'some', false) . '> فقط سیستم‌های انتخابی</label></div></div></div>'
+    . '<div id="mzc-group" class="mzc-field" ' . ($mode === 'group' ? '' : 'hidden') . '><span>هر سیستمی که این کلمه‌ها در مشخصاتش باشد (کارت گرافیک، پردازنده، رم، مادربرد، ویندوز، درایور…)؛ سیستمی که بعداً به این گروه بپیوندد هم پیام را می‌گیرد</span>'
+    . '<input type="text" name="group" maxlength="120" value="' . esc_attr($group) . '" placeholder="مثلاً: 3060 یا 4090 laptop یا 5900HS" class="mzc-w420"> '
     . ($group !== '' ? '<span class="muted">' . esc_html(number_format_i18n(MZC_Stats::systems($group, 'last', 1)[1])) . ' سیستم الان در این گروه است</span>' : '') . '</div>'
-    . '<div id="mzc-some" style="' . ($mode === 'some' ? '' : 'display:none') . '"><input type="search" data-mzc-filter="mzc-picks" placeholder="جستجوی سیستم…" style="margin-bottom:6px;width:100%;max-width:420px"><div class="mzc-picks" id="mzc-picks">';
+    . '<div id="mzc-some" ' . ($mode === 'some' ? '' : 'hidden') . '><input type="search" data-mzc-filter="mzc-picks" placeholder="جستجوی سیستم…" class="mzc-w420 mzc-mb6"><div class="mzc-picks" id="mzc-picks">';
 foreach ($installs as $id => $i) {
     echo '<label><input type="checkbox" name="systems[]" value="' . esc_attr($id) . '"' . checked($to, $id, false) . '> <span dir="auto">' . esc_html((!empty($i['note']) ? $i['note'] . ' — ' : '') . MZC_Stats::label($i)) . '</span> <span class="muted num">' . esc_html(substr($id, 0, 6)) . '</span></label>';
 }

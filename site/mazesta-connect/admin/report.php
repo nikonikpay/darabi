@@ -13,7 +13,7 @@ $r = MZC_Report::build($from, $to);
 $m = function ($n) { return esc_html(number_format((int) $n)); };
 $card = function ($label, $value, $note = '') { return '<div class="mzc-card mzc-kpi"><div class="k">' . esc_html($label) . '</div><div class="v num">' . $value . '</div>' . ($note !== '' ? '<div class="s">' . $note . '</div>' : '') . '</div>'; };
 
-echo '<div class="mzc-title"><h2>گزارش مالی و آمار</h2><span class="muted">' . esc_html($r['from_j'] . ' تا ' . $r['to_j']) . '</span></div>';
+echo '<div class="mzc-title"><h2>گزارش مالی و آمار</h2><span class="muted">' . esc_html($r['from_j'] . ' تا ' . $r['to_j']) . ' ' . MZC_Admin::pill('مبالغ به تومان') . '</span></div>';
 echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-report">';
 foreach ($per as $pk => $p) { echo '<a class="mzc-btn' . ($pk === $k ? ' primary' : '') . '" href="' . esc_url(MZC_Admin::url('mzc-report', array('p' => $pk))) . '">' . esc_html($p[0]) . '</a>'; }
 echo '<label>از <input type="text" name="from" value="' . esc_attr($r['from_j']) . '" dir="ltr" size="10" placeholder="1405/07/01"></label><label>تا <input type="text" name="to" value="' . esc_attr($r['to_j']) . '" dir="ltr" size="10"></label><button class="mzc-btn primary">نمایش</button>'

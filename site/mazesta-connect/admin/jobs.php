@@ -138,7 +138,7 @@ $defs = array(
     'closed' => array('تاریخ تحویل', 0, function ($j) { return esc_html($j['closed_at'] ? MZC_Crm::jdate($j['closed_at']) : '—'); }),
 );
 echo '<div class="mzc-title"><h2>سرویس‌ها</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-jobs', array('add' => 1))) . '">+ پذیرش سرویس</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-jobs"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، دستگاه، مشکل، نام یا موبایل مشتری" style="min-width:320px"><select name="st"><option value="">همهٔ وضعیت‌ها</option>';
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-jobs"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، دستگاه، مشکل، نام یا موبایل مشتری" class="mzc-search"><select name="st"><option value="">همهٔ وضعیت‌ها</option>';
 foreach (MZC_Crm::$statuses as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($st, $k, false) . '>' . esc_html($l) . '</option>'; }
 echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' سرویس</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-jobs', $defs) . '</span></form>';
 echo MZC_Admin::table('mzc-jobs', $defs, $rows, $linkOf, 'سرویسی پیدا نشد.') . MZC_Admin::pager($total, $per, $paged);

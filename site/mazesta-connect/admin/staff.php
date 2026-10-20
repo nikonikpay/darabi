@@ -14,7 +14,7 @@ $lv = function ($name, $cur) {
 
 /* ---- roles ---- */
 echo '<div class="mzc-panel"><header><h3>نقش‌ها</h3></header><div class="body">'
-    . '<p class="muted" style="max-width:90ch">برای هر نقش مشخص کنید در هر بخش چه کاری می‌تواند بکند. به هر کاربر می‌توانید چند نقش بدهید (مثلاً منشی و اسمبل)؛ در هر بخش بالاترین سطحِ نقش‌هایش به او می‌رسد. اگر نقش یا بخشی را «ندارد» بگذارید، آن بخش در برنامه برای او دیده نمی‌شود.</p>'
+    . '<p class="muted mzc-prose">برای هر نقش مشخص کنید در هر بخش چه کاری می‌تواند بکند. به هر کاربر می‌توانید چند نقش بدهید (مثلاً منشی و اسمبل)؛ در هر بخش بالاترین سطحِ نقش‌هایش به او می‌رسد. اگر نقش یا بخشی را «ندارد» بگذارید، آن بخش در برنامه برای او دیده نمی‌شود.</p>'
     . MZC_Admin::form_open('staff_roles_save', 'class="mzc-form"') . '<div class="mzc-scroll"><table class="mzc-table"><thead><tr><th>نقش</th>';
 foreach (MZC_Staff::$areas as $a => $l) { echo '<th>' . esc_html($l) . '</th>'; }
 echo '<th>حذف</th></tr></thead><tbody>';
@@ -28,21 +28,21 @@ foreach (MZC_Staff::$areas as $a => $l) { echo '<td>' . $lv('new_p[' . $a . ']',
 echo '<td></td></tr></tbody></table></div><p><button class="mzc-btn primary">ذخیرهٔ نقش‌ها</button></p></form></div></div>';
 
 /* ---- the AI apps ---- */
-echo '<div class="mzc-panel"><header><h3>اتصال ChatGPT و Claude (MCP)</h3></header><div class="body"><p style="max-width:95ch">هر کارمند می‌تواند ChatGPT یا Claude خودش را به CRM وصل کند و به آن بگوید سیستم، سرویس، فاکتور خرید یا کالا ثبت کند یا آمار بدهد. هوش مصنوعی همیشه <b>با دسترسی همان کارمند</b> کار می‌کند و هر تغییرش با نام او در گزارش تغییرات ثبت می‌شود. فرم‌ها مثل قبل کار می‌کنند.</p>'
-    . '<p>نشانی سرور MCP: <code class="lat" style="user-select:all">' . esc_html(MZC_Oauth::resource()) . '</code></p>'
-    . '<ul style="max-width:95ch;list-style:disc;padding-inline-start:1.4em"><li><b>ChatGPT</b>: Settings ‹ Apps &amp; Connectors ‹ Advanced settings ‹ Developer mode را روشن کنید، بعد Create / Add a custom connector، نشانی بالا را بدهید و احراز هویت را OAuth بگذارید.</li>'
+echo '<div class="mzc-panel"><header><h3>اتصال ChatGPT و Claude (MCP)</h3></header><div class="body"><p class="mzc-prose">هر کارمند می‌تواند ChatGPT یا Claude خودش را به CRM وصل کند و به آن بگوید سیستم، سرویس، فاکتور خرید یا کالا ثبت کند یا آمار بدهد. هوش مصنوعی همیشه <b>با دسترسی همان کارمند</b> کار می‌کند و هر تغییرش با نام او در گزارش تغییرات ثبت می‌شود. فرم‌ها مثل قبل کار می‌کنند.</p>'
+    . '<p>نشانی سرور MCP: <code class="lat mzc-copy">' . esc_html(MZC_Oauth::resource()) . '</code></p>'
+    . '<ul class="mzc-prose mzc-list"><li><b>ChatGPT</b>: Settings ‹ Apps &amp; Connectors ‹ Advanced settings ‹ Developer mode را روشن کنید، بعد Create / Add a custom connector، نشانی بالا را بدهید و احراز هویت را OAuth بگذارید.</li>'
     . '<li><b>Claude</b>: Settings ‹ Connectors ‹ Add custom connector و همین نشانی.</li><li>بعد از افزودن، صفحهٔ ورود همین سایت باز می‌شود؛ کارمند با نام کاربری و گذرواژهٔ خودش وارد می‌شود.</li>'
     . '<li>برای قطع اتصال یک نفر، حسابش را خاموش کنید یا گذرواژه‌اش را عوض کنید.</li></ul></div></div>';
 
 /* ---- people ---- */
 $roleBoxes = function ($have) use ($roles) {
     $o = '';
-    foreach ($roles as $k => $r) { $o .= '<label style="display:inline-block;margin-inline-end:.8em"><input type="checkbox" name="roles[' . esc_attr($k) . ']" value="1"' . checked(in_array($k, $have, true), true, false) . '> ' . esc_html($r['label']) . '</label>'; }
+    foreach ($roles as $k => $r) { $o .= '<label class="mzc-inline-chk"><input type="checkbox" name="roles[' . esc_attr($k) . ']" value="1"' . checked(in_array($k, $have, true), true, false) . '> ' . esc_html($r['label']) . '</label>'; }
     return $o !== '' ? $o : '<span class="muted">اول یک نقش بسازید.</span>';
 };
 
 echo '<div class="mzc-panel"><header><h3>کاربر تازه</h3></header><div class="body">'
-    . '<p class="muted" style="max-width:90ch">کاربر یک حساب وردپرس است که فقط برای برنامه‌ها کار می‌کند و به پیشخوان سایت راه ندارد. اگر نام کاربریِ یک حساب موجود را بنویسید، همان حساب نقش می‌گیرد و گذرواژه‌اش عوض نمی‌شود (مگر گذرواژهٔ تازه بنویسید).</p>'
+    . '<p class="muted mzc-prose">کاربر یک حساب وردپرس است که فقط برای برنامه‌ها کار می‌کند و به پیشخوان سایت راه ندارد. اگر نام کاربریِ یک حساب موجود را بنویسید، همان حساب نقش می‌گیرد و گذرواژه‌اش عوض نمی‌شود (مگر گذرواژهٔ تازه بنویسید).</p>'
     . MZC_Admin::form_open('staff_save', 'class="mzc-form"') . '<div class="mzc-fields">'
     . '<label>نام کاربری (لاتین)<input type="text" name="username" dir="ltr" required autocomplete="off"></label>'
     . '<label>نام نمایشی<input type="text" name="display_name" maxlength="80"></label>'
@@ -57,7 +57,7 @@ foreach ($users as $u) {
     $rec = MZC_Staff::record($u->ID); $p = MZC_Staff::perms_of($u->ID); $adm = MZC_Staff::is_admin($u->ID);
     $chips = '';
     foreach ($p as $a => $v) { if ($v > 0) { $chips .= MZC_Admin::pill(MZC_Staff::$areas[$a] . ': ' . MZC_Staff::$levels[$v], $v > 1 ? 'ok' : '') . ' '; } }
-    echo '<details class="mzc-more" style="margin-bottom:.6em"><summary><strong dir="auto">' . esc_html($u->display_name !== '' ? $u->display_name : $u->user_login) . '</strong> <span class="lat muted">' . esc_html($u->user_login) . '</span> '
+    echo '<details class="mzc-more mzc-mb6"><summary><strong dir="auto">' . esc_html($u->display_name !== '' ? $u->display_name : $u->user_login) . '</strong> <span class="lat muted">' . esc_html($u->user_login) . '</span> '
         . ($rec['on'] || $adm ? MZC_Admin::pill($adm ? 'مدیر سایت' : 'فعال', 'ok') : MZC_Admin::pill('خاموش', 'bad')) . (isset($ai[$u->ID]) ? ' ' . MZC_Admin::pill('وصل به ' . implode('، ', $ai[$u->ID]), 'info') : '') . '</summary>'
         . '<p>' . ($chips !== '' ? $chips : '<span class="muted">هیچ دسترسی‌ای ندارد.</span>') . '</p>'
         . MZC_Admin::form_open('staff_save', 'class="mzc-form"') . '<input type="hidden" name="uid" value="' . (int) $u->ID . '"><div class="mzc-fields">'
@@ -75,7 +75,7 @@ echo '<div class="mzc-panel"><header><h3>نشانی برای برنامه‌ها
 /* ---- receipt SMS and the case label ---- */
 $cf = Mazesta_Connect::read('config'); $cf = (isset($cf['staffCfg']) && is_array($cf['staffCfg']) ? $cf['staffCfg'] : array()) + array('receipt' => MZC_Api::RECEIPT_TEXT, 'portalUrl' => '', 'labels' => array());
 echo '<div class="mzc-panel"><header><h3>رسید پیامکی و برچسب</h3></header><div class="body">'
-    . '<p class="muted" style="max-width:90ch">پیامک رسید را منشی از برنامه برای هر پذیرش می‌فرستد (برای هر پرونده در روز حداکثر سه بار). برچسب هم همان چیزی است که روی کیس و درِ کیس چاپ می‌شود؛ فیلدها را از اینجا انتخاب و مرتب کنید تا همهٔ برنامه‌ها یکسان چاپ کنند.</p>'
+    . '<p class="muted mzc-prose">پیامک رسید را منشی از برنامه برای هر پذیرش می‌فرستد (برای هر پرونده در روز حداکثر سه بار). برچسب هم همان چیزی است که روی کیس و درِ کیس چاپ می‌شود؛ فیلدها را از اینجا انتخاب و مرتب کنید تا همهٔ برنامه‌ها یکسان چاپ کنند.</p>'
     . MZC_Admin::form_open('staff_cfg_save', 'class="mzc-form"') . '<div class="mzc-fields">'
     . '<label class="wide">متن پیامک رسید<input type="text" name="receipt" maxlength="300" value="' . esc_attr($cf['receipt']) . '"><small>{no} شمارهٔ پذیرش، {name} نام مشتری، {url} نشانی پیگیری.</small></label>'
     . '<label class="wide">نشانی پیگیری برای مشتری (برگهٔ پورتال)<input type="url" name="portalUrl" dir="ltr" value="' . esc_attr($cf['portalUrl']) . '" placeholder="https://…/crm"></label></div>';

@@ -14,7 +14,7 @@
     return fetch(API + path, { method: method || (body ? 'POST' : 'GET'), headers: h, body: body ? JSON.stringify(body) : undefined, credentials: 'omit', cache: 'no-store' })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) { var e = new Error(j && j.error || j && j.message || 'خطا'); e.status = r.status; throw e; } return j; }); });
   }
-  function shell(title, sub) { root.textContent = ''; var card = el('div', 'mzcp-card'); add(card, el('h2', '', title), sub ? el('p', 'mzcp-sub', sub) : null); root.appendChild(card); return card; }
+  function shell(title, sub) { root.textContent = ''; var card = el('div', 'mzcp-card mzcp-auth'); add(card, el('span', 'mzcp-mark', 'M')); add(card, el('h2', '', title), sub ? el('p', 'mzcp-sub', sub) : null); root.appendChild(card); return card; }
 
   function login() {
     var card = shell('سوابق من در مازستا', 'شمارهٔ موبایلی که نزد ما ثبت است را وارد کنید؛ کد ورود را با پیامک می‌فرستیم.');
@@ -101,58 +101,99 @@
     return p;
   }
 
+  function table(heads, rows) {
+    var t = el('table', 'mzcp-table'), th = el('thead'), hr = el('tr'), tb = el('tbody');
+    heads.forEach(function (x) { var c = el('th', '', x); c.scope = 'col'; hr.appendChild(c); }); add(t, add(th, hr), tb);
+    rows.forEach(function (cells) { var r = el('tr'); cells.forEach(function (x, i) { var td = el('td', x && x.cls || '', x && x.text !== undefined ? x.text : x); td.setAttribute('data-label', heads[i]); r.appendChild(td); }); tb.appendChild(r); });
+    return add(el('div', 'mzcp-scroll'), t);
+  }
+  function link(text, href) { var a = el('a', 'mzcp-btn ghost', text); a.href = href; a.target = '_blank'; a.rel = 'noopener'; return a; }
+  function stat(label, value, note, tone) { return add(el('div', 'mzcp-stat' + (tone ? ' ' + tone : '')), el('span', 'k', label), el('b', '', value), note ? el('small', '', note) : null); }
+
+  /* where a service is now: the stages in order, the current one marked (a cancelled service shows its status only) */
+  function stepper(j, statuses) {
+    var keys = Object.keys(statuses).filter(function (k) { return k !== 'cancelled'; }), at = keys.indexOf(j.status);
+    if (at < 0) return null;
+    var ol = el('ol', 'mzcp-steps'); ol.setAttribute('aria-label', 'مراحل سرویس');
+    keys.forEach(function (k, i) { var li = el('li', i < at ? 'done' : i === at ? 'now' : '', statuses[k]); if (i === at) li.setAttribute('aria-current', 'step'); ol.appendChild(li); });
+    return ol;
+  }
+
+  function buildCard(b) {
+    var c = el('article', 'mzcp-card'), head = el('header', 'mzcp-card-head');
+    add(head, add(el('div'), el('h3', '', b.title || 'سیستم'), add(el('div', 'mzcp-meta'), b.invoice ? el('span', '', 'فاکتور ' + b.invoice) : null, b.date ? el('span', '', b.date) : null)), b.status ? el('span', 'mzcp-pill', b.status) : null);
+    add(c, head);
+    if (b.parts.length) add(c, table(['قطعه', 'مدل', 'سریال', 'گارانتی'], b.parts.map(function (p) {
+      var w = { text: '—' };
+      if (p.until) w = p.left < 0 ? { text: 'تمام شد (' + p.until + ')', cls: 'mzcp-off' } : { text: p.left.toLocaleString('fa-IR') + ' روز مانده', cls: 'mzcp-on' };
+      else if (p.months) w = { text: p.months + ' ماه' }; else if (p.warranty) w = { text: 'دارد' };
+      return [p.category, p.model, { text: p.serial || '—', cls: 'mzcp-lat' }, w];
+    })));
+    add(c, softList(b.software), b.report ? add(el('div', 'mzcp-actions'), link('گزارش تست سیستم', b.report)) : null, photos(b.photos));
+    return c;
+  }
+
+  function jobCard(j, statuses) {
+    var c = el('article', 'mzcp-card'), head = el('header', 'mzcp-card-head');
+    add(head, add(el('div'), el('h3', '', j.device || 'سرویس'), add(el('div', 'mzcp-meta'), j.service ? el('span', '', 'سرویس ' + j.service) : null, j.received ? el('span', '', 'پذیرش ' + j.received) : null)), el('span', 'mzcp-pill st-' + j.status, j.statusText));
+    add(c, head, stepper(j, statuses));
+    var body = el('div', 'mzcp-split'), dl = el('dl', 'mzcp-kv');
+    kv(dl, 'موعد تحویل', j.due); kv(dl, 'تاریخ تحویل', j.closed); kv(dl, 'شمارهٔ فاکتور', j.invoice);
+    if (j.recv && j.recv.length) kv(dl, 'وسایل تحویل‌گرفته', j.recv.map(function (x) { return x.name + (x.serial ? ' (' + x.serial + ')' : ''); }).join('، '));
+    kv(dl, 'درخواست شما', j.complaint); kv(dl, 'کارهای انجام‌شده', j.work);
+    add(body, dl.children.length ? dl : null);
+    if (j.parts.length || j.labor) {
+      var bill = el('div', 'mzcp-bill'), rows = j.parts.map(function (p) { return [p.name + (p.months ? ' (گارانتی ' + p.months + ' ماه)' : ''), p.qty.toLocaleString('fa-IR'), money(p.price), money(p.qty * p.price)]; });
+      if (j.labor) rows.push(['هزینهٔ خدمات', '', '', money(j.labor)]);
+      var sums = el('dl', 'mzcp-sums'); if (j.discount) kv(sums, 'تخفیف', money(j.discount)); kv(sums, 'جمع کل', money(j.total)); if (j.paid) kv(sums, 'پرداخت‌شده', money(j.paid));
+      if (j.total > j.paid) { kv(sums, 'مانده', money(j.total - j.paid)); sums.lastChild.className = sums.lastChild.previousSibling.className = 'due'; }
+      add(bill, table(['قطعه / کار', 'تعداد', 'قیمت واحد', 'جمع'], rows), sums); add(body, bill);
+    }
+    add(c, body.children.length ? body : null, softList(j.software), j.report ? add(el('div', 'mzcp-actions'), link('گزارش تست', j.report)) : null, photos(j.photos));
+    return c;
+  }
+
+  function empty(text) { return add(el('div', 'mzcp-empty'), el('p', '', text)); }
+
   function history_() {
-    var card = shell('سوابق من');
-    card.firstChild.textContent = 'در حال دریافت…';
+    var card = shell('سوابق من', 'در حال دریافت…');
+    card.setAttribute('aria-busy', 'true');
     api('me').then(function (me) {
       root.textContent = '';
-      var top = el('div', 'mzcp-top'); add(top, el('h2', '', 'سلام ' + me.name), el('button', 'mzcp-link', 'خروج'));
-      top.lastChild.addEventListener('click', function () { api('logout', {}).catch(function () {}).then(function () { token = ''; try { window.sessionStorage.removeItem(KEY); } catch (e) { } login(); }); });
-      root.appendChild(top);
-      add(root, softForm(me));
+      var open = me.jobs.filter(function (j) { return j.status !== 'delivered' && j.status !== 'cancelled'; });
+      var due = me.jobs.reduce(function (s, j) { return s + Math.max(0, j.total - j.paid); }, 0);
+      var live = me.builds.reduce(function (s, b) { return s + b.parts.filter(function (p) { return p.until && p.left >= 0; }).length; }, 0);
 
-      add(root, el('h3', 'mzcp-h', 'سیستم‌های خریداری‌شده'));
-      if (!me.builds.length) add(root, el('p', 'mzcp-sub', 'هنوز سیستمی برای شما ثبت نشده است.'));
-      me.builds.forEach(function (b) {
-        var c = el('div', 'mzcp-card'), head = el('div', 'mzcp-row'); add(head, el('strong', '', b.title), b.date ? el('span', 'mzcp-pill', b.date) : null, b.invoice ? el('span', 'mzcp-pill', 'فاکتور ' + b.invoice) : null, b.status ? el('span', 'mzcp-pill', b.status) : null);
-        add(c, head);
-        if (b.parts.length) {
-          var t = el('table', 'mzcp-table'), hd = el('tr'); ['قطعه', 'مدل', 'سریال', 'گارانتی'].forEach(function (x) { hd.appendChild(el('th', '', x)); }); t.appendChild(hd);
-          b.parts.forEach(function (p) {
-            var r = el('tr'), w = '—';
-            if (p.until) w = (p.left < 0 ? 'تمام شده در ' : 'تا ') + p.until + (p.left >= 0 ? ' (' + p.left.toLocaleString('fa-IR') + ' روز مانده)' : '');
-            else if (p.months) w = p.months + ' ماه'; else if (p.warranty) w = 'دارد';
-            [p.category, p.model, p.serial || '—', w].forEach(function (x, i) { var td = el('td', i === 2 ? 'mzcp-lat' : '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); });
-            t.appendChild(r);
-          });
-          add(c, el('div', 'mzcp-scroll', null)).lastChild.appendChild(t);
-        }
-        add(c, softList(b.software));
-        if (b.report) { var a = el('a', 'mzcp-link', 'گزارش تست سیستم'); a.href = b.report; a.target = '_blank'; a.rel = 'noopener'; add(c, a); }
-        add(c, photos(b.photos)); root.appendChild(c);
-      });
+      var who = el('header', 'mzcp-profile'), out = el('button', 'mzcp-btn ghost', 'خروج');
+      add(who, el('span', 'mzcp-avatar', (me.name || '؟').trim().charAt(0)), add(el('div', 'mzcp-who'), el('h2', '', me.name), me.mobile ? el('span', 'mzcp-lat', me.mobile) : null), out);
+      out.addEventListener('click', function () { api('logout', {}).catch(function () {}).then(function () { token = ''; try { window.sessionStorage.removeItem(KEY); } catch (e) { } login(); }); });
 
-      add(root, el('h3', 'mzcp-h', 'سرویس‌ها'));
-      if (!me.jobs.length) add(root, el('p', 'mzcp-sub', 'هنوز سرویسی برای شما ثبت نشده است.'));
-      me.jobs.forEach(function (j) {
-        var c = el('div', 'mzcp-card'), head = el('div', 'mzcp-row');
-        add(head, el('strong', '', j.device || 'سرویس'), el('span', 'mzcp-pill st-' + j.status, j.statusText), j.service ? el('span', 'mzcp-pill', 'شمارهٔ سرویس ' + j.service) : null);
-        add(c, head);
-        var dl = el('dl', 'mzcp-kv'); kv(dl, 'تاریخ پذیرش', j.received); kv(dl, 'موعد تحویل', j.due); kv(dl, 'تاریخ تحویل', j.closed); kv(dl, 'شمارهٔ فاکتور', j.invoice);
-        if (j.recv && j.recv.length) kv(dl, 'قطعات تحویل‌گرفته‌شده', j.recv.map(function (x) { return x.name + (x.serial ? ' (' + x.serial + ')' : ''); }).join('، ')); kv(dl, 'درخواست شما', j.complaint); kv(dl, 'کارهای انجام‌شده', j.work); add(c, dl);
-        if (j.parts.length || j.labor) {
-          var t = el('table', 'mzcp-table'), hd = el('tr'); ['قطعه / کار', 'تعداد', 'قیمت واحد', 'جمع'].forEach(function (x) { hd.appendChild(el('th', '', x)); }); t.appendChild(hd);
-          j.parts.forEach(function (p) { var r = el('tr'); [p.name + (p.months ? ' (گارانتی ' + p.months + ' ماه)' : ''), p.qty.toLocaleString('fa-IR'), money(p.price), money(p.qty * p.price)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); });
-          if (j.labor) { var r = el('tr'); ['هزینهٔ خدمات', '', '', money(j.labor)].forEach(function (x, i) { var td = el('td', '', x); td.setAttribute('data-label', hd.children[i].textContent); r.appendChild(td); }); t.appendChild(r); }
-          add(c, el('div', 'mzcp-scroll', null)).lastChild.appendChild(t);
-          if (j.discount) add(c, el('p', 'mzcp-sub', 'تخفیف: ' + money(j.discount)));
-          add(c, el('p', 'mzcp-total', 'جمع کل: ' + money(j.total)));
-          if (j.paid) add(c, el('p', 'mzcp-sub', 'پرداخت‌شده: ' + money(j.paid) + (j.total > j.paid ? ' — مانده: ' + money(j.total - j.paid) : '')));
-        }
-        add(c, softList(j.software));
-        if (j.report) { var a = el('a', 'mzcp-link', 'گزارش تست'); a.href = j.report; a.target = '_blank'; a.rel = 'noopener'; add(c, a); }
-        add(c, photos(j.photos)); root.appendChild(c);
+      var stats = add(el('section', 'mzcp-stats'), stat('سیستم‌های خریداری‌شده', me.builds.length.toLocaleString('fa-IR')), stat('سرویس در جریان', open.length.toLocaleString('fa-IR'), open.length ? open[0].statusText : 'همه تحویل شده'),
+        stat('مانده پرداخت', due ? money(due) : 'تسویه', null, due ? 'due' : 'ok'), stat('قطعه با گارانتی فعال', live.toLocaleString('fa-IR')));
+      stats.setAttribute('aria-label', 'خلاصه');
+
+      // tabs: systems, services, and the software form when something is still open
+      var soft = softForm(me), tabs = [['jobs', 'سرویس‌ها', me.jobs.length], ['builds', 'سیستم‌ها', me.builds.length]].concat(soft ? [['soft', 'نرم‌افزار', null]] : []);
+      var bar = el('div', 'mzcp-tabs'), panes = {}, btns = [];
+      bar.setAttribute('role', 'tablist');
+      var pick = function (k, focus) {
+        btns.forEach(function (b) { var on = b.dataset.k === k; b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; if (on && focus) b.focus(); });
+        Object.keys(panes).forEach(function (x) { panes[x].hidden = x !== k; });
+      };
+      tabs.forEach(function (t, i) {
+        var b = el('button', '', t[1]); b.type = 'button'; b.id = 'mzcp-tab-' + t[0]; b.dataset.k = t[0]; b.setAttribute('role', 'tab'); b.setAttribute('aria-controls', 'mzcp-pane-' + t[0]);
+        if (t[2] !== null) add(b, el('span', 'n', t[2].toLocaleString('fa-IR')));
+        b.addEventListener('click', function () { pick(t[0]); });
+        b.addEventListener('keydown', function (e) { var d = e.key === 'ArrowLeft' ? 1 : e.key === 'ArrowRight' ? -1 : 0; if (d) { e.preventDefault(); pick(tabs[(i + d + tabs.length) % tabs.length][0], true); } });
+        btns.push(b); bar.appendChild(b);
+        var p = el('section', 'mzcp-pane'); p.id = 'mzcp-pane-' + t[0]; p.setAttribute('role', 'tabpanel'); p.setAttribute('aria-labelledby', b.id); panes[t[0]] = p;
       });
+      if (me.jobs.length) me.jobs.forEach(function (j) { panes.jobs.appendChild(jobCard(j, me.statuses || {})); }); else panes.jobs.appendChild(empty('هنوز سرویسی برای شما ثبت نشده است.'));
+      if (me.builds.length) me.builds.forEach(function (b) { panes.builds.appendChild(buildCard(b)); }); else panes.builds.appendChild(empty('هنوز سیستمی برای شما ثبت نشده است.'));
+      if (soft) panes.soft.appendChild(soft);
+
+      add(root, who, stats, bar); tabs.forEach(function (t) { root.appendChild(panes[t[0]]); });
+      pick(open.length || !me.builds.length ? 'jobs' : 'builds');
     }).catch(function (e) {
       if (e.status === 401) { token = ''; try { window.sessionStorage.removeItem(KEY); } catch (x) { } login(); } else { var c = shell('خطا', e.message); add(c, el('button', 'mzcp-btn', 'تلاش دوباره')).lastChild.addEventListener('click', history_); }
     });

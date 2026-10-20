@@ -303,8 +303,8 @@ final class Mazesta_Connect
             echo '<div class="notice notice-warning"><p>این درخواست اتصال پیدا نشد یا مهلت ده‌دقیقه‌ای آن گذشته است. در برنامه دوباره «اتصال با ورود به سایت» را بزنید.</p></div>';
             return;
         }
-        echo '<div class="notice notice-info" style="padding:14px 18px"><h2 style="margin-top:0">یک نسخه از برنامه Mazesta Test می‌خواهد به سایت وصل شود</h2>'
-            . '<p>نام سیستم: <strong dir="ltr">' . esc_html($p['name'] !== '' ? $p['name'] : '—') . '</strong> · کد: <strong dir="ltr" style="font-size:18px;letter-spacing:2px">' . esc_html(strtoupper(substr($id, 0, 6))) . '</strong></p>'
+        echo '<div class="notice notice-info mzc-pair"><h2 class="mzc-mt0">یک نسخه از برنامه Mazesta Test می‌خواهد به سایت وصل شود</h2>'
+            . '<p>نام سیستم: <strong dir="ltr">' . esc_html($p['name'] !== '' ? $p['name'] : '—') . '</strong> · کد: <strong dir="ltr" class="mzc-code-big">' . esc_html(strtoupper(substr($id, 0, 6))) . '</strong></p>'
             . '<p>فقط وقتی تأیید کنید که همین کد را الان در برنامه خودتان می‌بینید. با تأیید، کلید سایت به آن برنامه داده می‌شود و می‌تواند گزارش و نتیجه بنچمارک بفرستد.</p>';
         if (!empty($p['approved'])) { echo '<p><strong>تأیید شده است؛ برنامه تا چند ثانیه دیگر وصل می‌شود.</strong></p>'; }
         else {
@@ -503,7 +503,7 @@ final class Mazesta_Connect
         $table = (string) $table;
         if (!preg_match('/^([A-Za-z0-9._-]+)@(\d+)(?:\|(.*))?$/', $table, $m)) { return '<span dir="ltr">' . esc_html($table) . '</span>'; }
         $label = esc_html(self::bench_name($m[1]));
-        if (self::is_old($m[1], (int) $m[2])) { $label .= ' <span style="background:#b32d2e;color:#fff;border-radius:3px;padding:0 6px;font-size:11px">نسخه قدیمی بنچمارک</span>'; }
+        if (self::is_old($m[1], (int) $m[2])) { $label .= ' <span class="mzc-old">نسخه قدیمی بنچمارک</span>'; }
         if (isset($m[3]) && $m[3] !== '') {
             $words = array();
             foreach (explode('|', $m[3]) as $pair) {
@@ -514,7 +514,7 @@ final class Mazesta_Connect
             }
             $label .= ' · ' . esc_html(implode('، ', $words));
         }
-        return $label . '<br><small dir="ltr" style="color:#787c82">' . esc_html($table) . '</small>';
+        return $label . '<br><small dir="ltr" class="mzc-dim">' . esc_html($table) . '</small>';
     }
 
     /** The garden benchmarks' quality setting in words: the rasteriser's load level, or the ray tracer's rays a pixel. */
@@ -1218,14 +1218,14 @@ final class Mazesta_Connect
         list($rows, $total) = self::reports($s, $per, ($paged - 1) * $per);
         $links = !empty($c['publicLinks']);
         $verdicts = array('Passed' => 'سالم', 'Failed' => 'ایراد دارد', 'Incomplete' => 'ناقص', '' => 'بنچمارک');
-        echo '<form method="get" style="margin:12px 0"><input type="hidden" name="page" value="mazesta-connect"><input type="hidden" name="tab" value="reports">'
+        echo '<form method="get" class="mzc-my"><input type="hidden" name="page" value="mazesta-connect"><input type="hidden" name="tab" value="reports">'
             . '<input type="search" name="s" value="' . esc_attr($s) . '" placeholder="شماره سرویس، مدل دستگاه، سیستم، توضیحات…"> <button class="button">جستجو</button> <span class="description">' . esc_html(number_format_i18n($total)) . ' گزارش</span></form>';
         echo '<table class="widefat striped"><thead><tr><th>تاریخ</th><th>شماره سرویس</th><th>مدل دستگاه</th><th>سیستم</th><th>نتیجه</th><th>خلاصه</th><th></th></tr></thead><tbody>';
         if (!$rows) { echo '<tr><td colspan="7">هنوز گزارشی از برنامه نرسیده است. در برنامه: گزارش‌ها › ارسال به سایت.</td></tr>'; }
         foreach ($rows as $id => $r) {
             $view = admin_url('admin-post.php?action=mzc_report&id=' . rawurlencode((string) $id));
-            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" style="text-align:right">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['machine']) . '</td>'
-                . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td style="white-space:nowrap">'
+            echo '<tr><td>' . self::local($r['created']) . '</td><td><strong>' . esc_html($r['service']) . '</strong></td><td dir="ltr" class="mzc-ltr-r">' . esc_html(isset($r['device']) ? $r['device'] : '') . (!empty($r['laptop']) ? ' <span class="description">(لپ‌تاپ)</span>' : '') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($r['machine']) . '</td>'
+                . '<td>' . esc_html(isset($verdicts[$r['verdict']]) ? $verdicts[$r['verdict']] : $r['verdict']) . '</td><td>' . esc_html(mb_substr((string) $r['summary'], 0, 140)) . '</td><td class="mzc-nowrap">'
                 . '<a class="button button-small button-primary" target="_blank" href="' . esc_url($view . '&print=1') . '">چاپ</a> <a class="button button-small" target="_blank" href="' . esc_url($view) . '">خلاصه</a> '
                 . ($r['has_full'] ? '<a class="button button-small" target="_blank" href="' . esc_url($view . '&view=full') . '">گزارش کامل</a> ' : '')
                 . ($links && !empty($r['token']) ? '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_report=' . $r['token'])) . '">پیوند</a> ' : '')
@@ -1257,7 +1257,7 @@ final class Mazesta_Connect
             echo '<p>' . self::post_link('run_approve', array('all' => 1), 'تأیید همه', 'button button-primary', 'همه اجراهای در انتظار وارد فهرست‌ها شوند؟') . '</p>';
             echo '<table class="widefat striped"><thead><tr><th>بنچمارک</th><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
             foreach ($pending as $id => $r) {
-                echo '<tr><td>' . self::list_label($r['table']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
+                echo '<tr><td>' . self::list_label($r['table']) . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($r['part']) . '</td><td dir="ltr" class="mzc-ltr-r">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
                     . self::post_link('run_approve', array('id' => (string) $id), 'تأیید', 'button button-small button-primary') . ' ' . self::post_link('run_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این اجرا پاک شود؟') . '</td></tr>';
             }
             echo '</tbody></table>';
@@ -1275,7 +1275,7 @@ final class Mazesta_Connect
             echo '<h3>' . self::list_label($key) . '</h3><p class="description">«نتیجه مرجع» (★) اجرایی است که مازستا تأیید می‌کند نتیجه درست این مدل در این بنچمارک است. مدلی که نتیجه مرجع داشته باشد در برنامه با <strong>میانه نتایج مرجعش</strong> نشان داده می‌شود (با برچسب «مرجع»)؛ مدلی که ندارد با میانه همه سیستم‌هایش. نتیجه مرجع را فقط از همین‌جا یا از نسخه مازستایی برنامه می‌توان انتخاب کرد؛ کاربران نمی‌توانند.</p><table class="widefat striped"><thead><tr><th>قطعه</th><th>نتیجه</th><th>زمان اجرا</th><th></th></tr></thead><tbody>';
             foreach (array_slice($runs, 0, 500, true) as $id => $r) {
                 $star = !empty($r['featured']);
-                echo '<tr><td dir="ltr" style="text-align:right">' . ($star ? '★ ' : '') . esc_html($r['part']) . '</td><td dir="ltr" style="text-align:right">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
+                echo '<tr><td dir="ltr" class="mzc-ltr-r">' . ($star ? '★ ' : '') . esc_html($r['part']) . '</td><td dir="ltr" class="mzc-ltr-r">' . self::value_text($r) . '</td><td>' . self::local($r['runAt']) . '</td><td>'
                     . self::post_link('run_feature', $star ? array('id' => (string) $id, 'off' => 1) : array('id' => (string) $id), $star ? 'برداشتن از مرجع' : 'انتخاب به‌عنوان نتیجه مرجع') . ' '
                     . self::post_link('run_delete', array('id' => (string) $id), 'حذف', 'button button-small', 'این اجرا پاک شود؟') . '</td></tr>';
             }
@@ -1293,7 +1293,7 @@ final class Mazesta_Connect
         echo '<table class="widefat striped"><thead><tr><th></th><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
         if (!$index) { echo '<tr><td colspan="7">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
         foreach (array_slice($index, 0, 300, true) as $s) {
-            echo '<tr><td><input type="checkbox" class="mzc-pick" name="tokens[]" value="' . esc_attr($s['token']) . '"></td><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['cpu']) . '</td><td dir="ltr" style="text-align:right">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
+            echo '<tr><td><input type="checkbox" class="mzc-pick" name="tokens[]" value="' . esc_attr($s['token']) . '"></td><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($s['cpu']) . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
                 . '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_share=' . $s['token'])) . '">دیدن</a> '
                 . self::post_link('share_delete', array('token' => (string) $s['token']), 'حذف', 'button button-small', 'این صفحه پاک شود؟') . '</td></tr>';
         }
@@ -1308,21 +1308,21 @@ final class Mazesta_Connect
         if (is_array($manifest) && isset($manifest['app']['version'])) {
             $zip = $dir . '/' . basename((string) $manifest['app']['file']);
             echo '<p>نسخه <strong dir="ltr">' . esc_html($manifest['app']['version']) . '</strong>، ' . esc_html(size_format((int) $manifest['app']['size'])) . '، فایل <code dir="ltr">' . esc_html($manifest['app']['file']) . '</code> '
-                . (is_file($zip) ? '✔' : '<strong style="color:#b32d2e">روی سایت نیست</strong>') . ' ' . (is_file($dir . '/update.json.sig') ? '' : '<strong style="color:#b32d2e">امضا (update.json.sig) نیست</strong>') . '</p>';
+                . (is_file($zip) ? '✔' : '<strong class="mzc-bad-text">روی سایت نیست</strong>') . ' ' . (is_file($dir . '/update.json.sig') ? '' : '<strong class="mzc-bad-text">امضا (update.json.sig) نیست</strong>') . '</p>';
         } else {
             echo '<p>هنوز نسخه‌ای منتشر نشده است. روی سیستم مازستا: <code dir="ltr">pwsh tools/release.ps1 -App -NotesFa notes-fa.txt -Upload</code></p>';
         }
         echo '<p class="description">برنامه‌ها این نشانی را می‌خوانند: <code dir="ltr">' . esc_html(home_url('/mazesta/update.json')) . '</code> — این پوشه را از کش مستثنا کنید.</p>';
         echo '<p class="description">داده‌های این افزونه در پایگاه داده وردپرس نیست؛ همه در پایگاه دادهٔ CRM است (هر بخش جدول خودش، پیشوند <code dir="ltr">' . esc_html(MZC_Crm_Db::prefix()) . '</code>). فقط کلیدها و اتصال همان پایگاه داده در این پوشه است: <code dir="ltr">' . esc_html(self::dir()) . '</code> (برای پشتیبان‌گیری، از آن پایگاه داده و این پوشه نسخه بگیرید).</p>'
-            . (self::db() ? '' : '<p><strong style="color:#b32d2e">' . esc_html(MZC_Crm_Db::error() ?: 'پایگاه دادهٔ CRM آماده نیست.') . ' تا وقتی تنظیم نشود، گزارش‌ها، بنچمارک‌ها، آمار و پیام‌ها ذخیره نمی‌شوند.</strong></p>');
+            . (self::db() ? '' : '<p><strong class="mzc-bad-text">' . esc_html(MZC_Crm_Db::error() ?: 'پایگاه دادهٔ CRM آماده نیست.') . ' تا وقتی تنظیم نشود، گزارش‌ها، بنچمارک‌ها، آمار و پیام‌ها ذخیره نمی‌شوند.</strong></p>');
         if (!$admin) { return; }
         echo '<h3>کلیدها و تنظیمات</h3><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_settings">';
         wp_nonce_field('mzc_settings');
-        echo '<table class="form-table"><tr><th>کلید سایت</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['key']) . '</code><p class="description">در نسخه مازستایی برنامه: به‌روزرسانی برنامه › اتصال به سایت مازستا. روی هر سیستمی که باید گزارش بفرستد یک بار وارد می‌شود و با پوشه Data برنامه جابه‌جا می‌شود.</p>'
+        echo '<table class="form-table"><tr><th>کلید سایت</th><td><code dir="ltr" class="mzc-copy">' . esc_html((string) $c['key']) . '</code><p class="description">در نسخه مازستایی برنامه: به‌روزرسانی برنامه › اتصال به سایت مازستا. روی هر سیستمی که باید گزارش بفرستد یک بار وارد می‌شود و با پوشه Data برنامه جابه‌جا می‌شود.</p>'
             . '<label><input type="checkbox" name="new_key" value="1"> کلید تازه بساز (کلید قبلی از کار می‌افتد)</label></td></tr>'
-            . '<tr><th>کلید انتشار</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['releaseKey']) . '</code><p class="description">فقط روی سیستمی که نسخه تازه برنامه را منتشر می‌کند (فایل <code dir="ltr">G:\\Mazesta-Keys\\site-release-key.txt</code>). به کسی ندهید.</p>'
+            . '<tr><th>کلید انتشار</th><td><code dir="ltr" class="mzc-copy">' . esc_html((string) $c['releaseKey']) . '</code><p class="description">فقط روی سیستمی که نسخه تازه برنامه را منتشر می‌کند (فایل <code dir="ltr">G:\\Mazesta-Keys\\site-release-key.txt</code>). به کسی ندهید.</p>'
             . '<label><input type="checkbox" name="new_release_key" value="1"> کلید تازه بساز</label></td></tr>'
-            . '<tr><th>کلید خواندن گزارش‌ها</th><td><code dir="ltr" style="user-select:all">' . esc_html((string) $c['readKey']) . '</code><p class="description">برای برنامه چاپ گزارش‌ها روی سیستم منشی: فقط می‌تواند فهرست گزارش‌ها را بخواند و خلاصه‌شان را ببیند، چیزی نمی‌فرستد.</p>'
+            . '<tr><th>کلید خواندن گزارش‌ها</th><td><code dir="ltr" class="mzc-copy">' . esc_html((string) $c['readKey']) . '</code><p class="description">برای برنامه چاپ گزارش‌ها روی سیستم منشی: فقط می‌تواند فهرست گزارش‌ها را بخواند و خلاصه‌شان را ببیند، چیزی نمی‌فرستد.</p>'
             . '<label><input type="checkbox" name="new_read_key" value="1"> کلید تازه بساز</label></td></tr>'
             . '<tr><th>اشتراک‌گذاری کاربران</th><td><label><input type="checkbox" name="sharing" value="1"' . checked(!empty($c['sharing']), true, false) . '> کاربران بتوانند آخرین نتیجه بنچمارکشان را بدون کلید بفرستند و پیوند صفحه آن را بگیرند</label></td></tr>'
             . '<tr><th>بارگذاری بدون کلید</th><td><label><input type="checkbox" name="open_uploads" value="1"' . checked(!empty($c['openUploads']), true, false) . '> نتیجه کاربران بدون کلید به صف بررسی فهرست‌های مقایسه هم برود (بعد از تأیید شما وارد فهرست می‌شود)</label></td></tr>'

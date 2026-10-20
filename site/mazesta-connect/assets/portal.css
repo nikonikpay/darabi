@@ -1,26 +1,100 @@
-/* The customer's page. Scoped to #mzc-portal so the theme's own styles are left alone. */
-.mzc-portal { --ink: #14181f; --muted: #667085; --line: #e4e7ec; --brand: #f5b800; direction: rtl; text-align: right; color: var(--ink); max-width: 860px; margin: 0 auto; line-height: 1.8; font-size: 15px; }
-.mzc-portal * { box-sizing: border-box; }
-.mzc-portal .mzcp-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 0 0 16px; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
-.mzc-portal h2 { margin: 0 0 6px; font-size: 20px; } .mzc-portal .mzcp-h { margin: 22px 0 10px; font-size: 17px; }
-.mzc-portal .mzcp-sub { color: var(--muted); margin: 0 0 12px; }
-.mzc-portal input { display: block; width: 100%; max-width: 320px; padding: 11px 14px; border: 1px solid #d0d5dd; border-radius: 10px; font-size: 18px; letter-spacing: 1px; text-align: center; margin: 8px 0 12px; background: #fff; color: var(--ink); }
-.mzc-portal input:focus { outline: 2px solid #fcd34d; border-color: var(--brand); }
-.mzc-portal .mzcp-btn { background: var(--brand); color: #3d2f00; border: 0; border-radius: 10px; padding: 11px 24px; font: inherit; font-weight: 700; cursor: pointer; }
-.mzc-portal .mzcp-btn:disabled { opacity: .6; cursor: wait; }
-.mzc-portal .mzcp-link { background: none; border: 0; color: #175cd3; cursor: pointer; font: inherit; padding: 4px 8px; text-decoration: underline; }
-.mzc-portal .mzcp-msg { color: #b42318; min-height: 1.6em; margin: 8px 0 0; }
-.mzc-portal .mzcp-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; } .mzc-portal .mzcp-top h2 { margin: 0; }
-.mzc-portal .mzcp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; } .mzc-portal .mzcp-row strong { font-size: 16px; }
-.mzc-portal .mzcp-pill { display: inline-block; padding: 1px 10px; border-radius: 99px; background: #f2f4f7; color: #475467; font-size: 13px; }
-.mzc-portal .st-delivered { background: #e7f6ec; color: #067647; } .mzc-portal .st-ready { background: #e8f0fe; color: #175cd3; } .mzc-portal .st-cancelled { background: #fdecea; color: #b42318; }
-.mzc-portal .st-received, .mzc-portal .st-diagnosing, .mzc-portal .st-waiting_part { background: #fff4e5; color: #93370d; }
-.mzc-portal .mzcp-scroll { overflow-x: auto; margin: 8px 0; }
-.mzc-portal .mzcp-table { width: 100%; border-collapse: collapse; font-size: 14px; } .mzc-portal .mzcp-table th { text-align: right; color: var(--muted); font-weight: 600; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.mzc-portal .mzcp-table td { padding: 7px 10px; border-bottom: 1px solid #f2f4f7; } .mzc-portal .mzcp-lat { direction: ltr; text-align: left; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
-.mzc-portal .mzcp-kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 14px; margin: 0 0 8px; } .mzc-portal .mzcp-kv dt { color: var(--muted); } .mzc-portal .mzcp-kv dd { margin: 0; white-space: pre-wrap; }
-.mzc-portal .mzcp-total { font-weight: 700; margin: 6px 0; }
-.mzc-portal .mzcp-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; } .mzc-portal .mzcp-photos img { width: 150px; height: 110px; max-width: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); margin: 0; padding: 0; background: #f2f4f7; }
-@media (max-width: 560px) { .mzc-portal .mzcp-kv { grid-template-columns: 1fr; } .mzc-portal .mzcp-card { padding: 14px; } }
-.mzc-portal textarea { width: 100%; box-sizing: border-box; margin: 8px 0; font: inherit; padding: 8px; border-radius: 8px; border: 1px solid #ccd; }
-.mzc-portal .mzcp-row .mzcp-link { margin-inline-end: 8px; }
+/* The customer's page ([mazesta_portal]): sign-in, then a dashboard of their systems, services and software. Scoped to .mzc-portal; the theme's font is kept. */
+.mzc-portal {
+  --mzp-ink: #14181f; --mzp-muted: #5d6676; --mzp-line: #e6e8ec; --mzp-soft: #f6f7f9; --mzp-card: #fff;
+  --mzp-brand: #f5b800; --mzp-brand-ink: #3d2f00; --mzp-ok: #067647; --mzp-ok-bg: #e7f6ec; --mzp-info: #175cd3; --mzp-info-bg: #e8f0fe;
+  --mzp-warn: #93370d; --mzp-warn-bg: #fff4e5; --mzp-bad: #b42318; --mzp-bad-bg: #fdecea; --mzp-r: 14px;
+  direction: rtl; text-align: right; color: var(--mzp-ink); max-width: 1080px; margin: 0 auto; line-height: 1.75; font-size: 15px;
+}
+.mzc-portal *, .mzc-portal *::before, .mzc-portal *::after { box-sizing: border-box; }
+.mzc-portal h2, .mzc-portal h3 { margin: 0; color: var(--mzp-ink); line-height: 1.4; }
+.mzc-portal button, .mzc-portal input, .mzc-portal textarea { font: inherit; }
+.mzc-portal :focus-visible { outline: 3px solid #fcd34d; outline-offset: 2px; }
+.mzc-portal .mzcp-lat { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
+
+/* cards, buttons, fields */
+.mzc-portal .mzcp-card { background: var(--mzp-card); border: 1px solid var(--mzp-line); border-radius: var(--mzp-r); padding: 18px 20px; margin: 0 0 14px; }
+.mzc-portal .mzcp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 9px 22px; border-radius: 10px; border: 1px solid var(--mzp-brand);
+  background: var(--mzp-brand); color: var(--mzp-brand-ink); font-weight: 700; cursor: pointer; text-decoration: none; touch-action: manipulation; }
+.mzc-portal .mzcp-btn:hover { background: #e0a800; } .mzc-portal .mzcp-btn:disabled { opacity: .55; cursor: progress; }
+.mzc-portal .mzcp-btn.ghost { background: transparent; border-color: var(--mzp-line); color: var(--mzp-ink); font-weight: 600; } .mzc-portal .mzcp-btn.ghost:hover { background: var(--mzp-soft); }
+.mzc-portal .mzcp-link { background: none; border: 0; color: var(--mzp-info); cursor: pointer; padding: 6px 8px; min-height: 32px; text-decoration: underline; }
+.mzc-portal input, .mzc-portal textarea { width: 100%; padding: 10px 14px; border: 1px solid #cfd4dc; border-radius: 10px; background: #fff; color: var(--mzp-ink); min-height: 44px; margin: 6px 0 10px; }
+.mzc-portal input:focus, .mzc-portal textarea:focus { border-color: var(--mzp-brand); }
+.mzc-portal .mzcp-sub { color: var(--mzp-muted); margin: 4px 0 12px; }
+.mzc-portal .mzcp-msg { color: var(--mzp-bad); min-height: 1.6em; margin: 6px 0 0; }
+.mzc-portal .mzcp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+
+/* sign-in */
+.mzc-portal .mzcp-auth { max-width: 440px; margin: 24px auto; padding: 28px; text-align: center; }
+.mzc-portal .mzcp-auth input { font-size: 20px; letter-spacing: 2px; text-align: center; direction: ltr; }
+.mzc-portal .mzcp-auth .mzcp-btn { width: 100%; }
+.mzc-portal .mzcp-mark { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 12px; background: var(--mzp-ink); color: var(--mzp-brand); font-weight: 800; font-size: 22px; margin-bottom: 10px; }
+
+/* the profile band and the four figures */
+.mzc-portal .mzcp-profile { display: flex; align-items: center; gap: 14px; background: var(--mzp-ink); color: #fff; border-radius: var(--mzp-r); padding: 18px 20px; margin-bottom: 14px; }
+.mzc-portal .mzcp-profile h2 { color: #fff; font-size: 19px; }
+.mzc-portal .mzcp-who { flex: 1; min-width: 0; display: flex; flex-direction: column; } .mzc-portal .mzcp-who .mzcp-lat { color: #c3c9d4; font-size: 14px; align-self: flex-start; }
+.mzc-portal .mzcp-avatar { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--mzp-brand); color: var(--mzp-brand-ink); font-size: 22px; font-weight: 800; }
+.mzc-portal .mzcp-profile .mzcp-btn.ghost { color: #fff; border-color: #3a4252; } .mzc-portal .mzcp-profile .mzcp-btn.ghost:hover { background: #262d3a; }
+.mzc-portal .mzcp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.mzc-portal .mzcp-stat { background: var(--mzp-card); border: 1px solid var(--mzp-line); border-radius: var(--mzp-r); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mzc-portal .mzcp-stat .k { color: var(--mzp-muted); font-size: 13px; }
+.mzc-portal .mzcp-stat b { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.mzc-portal .mzcp-stat small { color: var(--mzp-muted); font-size: 12.5px; }
+.mzc-portal .mzcp-stat.due { border-color: #fec84b; background: var(--mzp-warn-bg); } .mzc-portal .mzcp-stat.due b { color: var(--mzp-warn); } .mzc-portal .mzcp-stat.ok b { color: var(--mzp-ok); }
+
+/* tabs */
+.mzc-portal .mzcp-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--mzp-line); margin-bottom: 16px; overflow-x: auto; }
+.mzc-portal .mzcp-tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 16px; min-height: 44px; color: var(--mzp-muted); font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; gap: 8px; align-items: center; }
+.mzc-portal .mzcp-tabs button[aria-selected="true"] { color: var(--mzp-ink); border-bottom-color: var(--mzp-brand); }
+.mzc-portal .mzcp-tabs .n { background: var(--mzp-soft); border-radius: 99px; padding: 0 9px; font-size: 12.5px; color: var(--mzp-muted); }
+
+/* a system or a service */
+.mzc-portal .mzcp-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.mzc-portal .mzcp-card-head h3 { font-size: 17px; }
+.mzc-portal .mzcp-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--mzp-muted); font-size: 13.5px; }
+.mzc-portal .mzcp-pill { display: inline-block; padding: 2px 12px; border-radius: 99px; background: var(--mzp-soft); color: #475467; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.mzc-portal .st-delivered { background: var(--mzp-ok-bg); color: var(--mzp-ok); } .mzc-portal .st-ready { background: var(--mzp-info-bg); color: var(--mzp-info); } .mzc-portal .st-cancelled { background: var(--mzp-bad-bg); color: var(--mzp-bad); }
+.mzc-portal .st-received, .mzc-portal .st-diagnosing, .mzc-portal .st-waiting_part { background: var(--mzp-warn-bg); color: var(--mzp-warn); }
+
+/* the service's stages: a line of dots, the reached ones filled */
+.mzc-portal .mzcp-steps { list-style: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 4px 0 16px; padding: 0; counter-reset: s; }
+.mzc-portal .mzcp-steps li { position: relative; text-align: center; font-size: 12.5px; color: var(--mzp-muted); padding-top: 22px; margin: 0; }
+.mzc-portal .mzcp-steps li::before { content: ""; position: absolute; top: 4px; inset-inline-start: 50%; width: 14px; height: 14px; margin-inline-start: -7px; border-radius: 50%; background: #fff; border: 2px solid #cfd4dc; z-index: 1; }
+.mzc-portal .mzcp-steps li + li::after { content: ""; position: absolute; top: 10px; inset-inline-end: 50%; width: 100%; height: 2px; background: #e1e4e9; }
+.mzc-portal .mzcp-steps li.done::before, .mzc-portal .mzcp-steps li.now::before { background: var(--mzp-brand); border-color: var(--mzp-brand); }
+.mzc-portal .mzcp-steps li.done + li::after, .mzc-portal .mzcp-steps li.now::after, .mzc-portal .mzcp-steps li.done::after { background: var(--mzp-brand); }
+.mzc-portal .mzcp-steps li.now { color: var(--mzp-ink); font-weight: 700; } .mzc-portal .mzcp-steps li.now::before { box-shadow: 0 0 0 4px #fdeaa8; }
+
+.mzc-portal .mzcp-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 18px; align-items: start; }
+.mzc-portal .mzcp-split > :only-child { grid-column: 1 / -1; }
+.mzc-portal .mzcp-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+.mzc-portal .mzcp-kv dt { color: var(--mzp-muted); } .mzc-portal .mzcp-kv dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.mzc-portal .mzcp-bill { background: var(--mzp-soft); border-radius: 12px; padding: 4px 12px 12px; }
+.mzc-portal .mzcp-sums { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed #cfd4dc; }
+.mzc-portal .mzcp-sums dt { color: var(--mzp-muted); } .mzc-portal .mzcp-sums dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mzc-portal .mzcp-sums .due { color: var(--mzp-warn); }
+
+.mzc-portal .mzcp-scroll { overflow-x: auto; margin: 6px 0; }
+.mzc-portal .mzcp-table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0; }
+.mzc-portal .mzcp-table th { text-align: right; color: var(--mzp-muted); font-weight: 600; font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--mzp-line); white-space: nowrap; background: transparent; }
+.mzc-portal .mzcp-table td { padding: 8px 10px; border-bottom: 1px solid #eef0f3; vertical-align: top; } .mzc-portal .mzcp-table tr:last-child td { border-bottom: 0; }
+.mzc-portal td.mzcp-lat { font-size: 13px; } .mzc-portal td.mzcp-on { color: var(--mzp-ok); font-weight: 600; } .mzc-portal td.mzcp-off { color: var(--mzp-muted); }
+.mzc-portal .mzcp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.mzc-portal .mzcp-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.mzc-portal .mzcp-photos img { width: 150px; height: 110px; max-width: 100%; object-fit: cover; border-radius: 10px; border: 1px solid var(--mzp-line); margin: 0; padding: 0; background: var(--mzp-soft); }
+.mzc-portal .mzcp-empty { border: 1px dashed #cfd4dc; border-radius: var(--mzp-r); padding: 28px; text-align: center; color: var(--mzp-muted); } .mzc-portal .mzcp-empty p { margin: 0; }
+.mzc-portal .mzcp-card h3 + .mzcp-sub { margin-top: 2px; }
+
+@media (max-width: 720px) {
+  .mzc-portal .mzcp-split { grid-template-columns: 1fr; }
+  .mzc-portal .mzcp-card { padding: 14px; }
+  .mzc-portal .mzcp-kv { grid-template-columns: 1fr; gap: 0 0; } .mzc-portal .mzcp-kv dd { margin-bottom: 8px; }
+  .mzc-portal .mzcp-steps li { font-size: 11px; }
+  /* tables become label / value lines */
+  .mzc-portal .mzcp-table thead { display: none; } .mzc-portal .mzcp-table tr { display: block; padding: 8px 0; border-bottom: 1px solid #eef0f3; }
+  .mzc-portal .mzcp-table td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 2px 0; }
+  .mzc-portal .mzcp-table td::before { content: attr(data-label); color: var(--mzp-muted); font-weight: 400; }
+  .mzc-portal .mzcp-table td:empty { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .mzc-portal * { transition: none !important; } }

@@ -35,7 +35,7 @@ final class MZC_Portal
         wp_enqueue_style('mzc-portal', MZC_URL . 'assets/portal.css', array(), MZC_VERSION);
         wp_enqueue_script('mzc-portal', MZC_URL . 'assets/portal.js', array(), MZC_VERSION, true);
         wp_localize_script('mzc-portal', 'MZC_PORTAL', array('api' => esc_url_raw(rest_url(Mazesta_Connect::NS . '/portal/')), 'photo' => esc_url_raw(home_url('/?mzc_portal_photo=')), 'codeMinutes' => self::CODE_MINUTES));
-        return '<div id="mzc-portal" class="mzc-portal" dir="rtl"><noscript>برای دیدن سوابق، جاوااسکریپت مرورگر باید روشن باشد.</noscript></div>';
+        return '<div id="mzc-portal" class="mzc-portal alignwide" dir="rtl"><noscript>برای دیدن سوابق، جاوااسکریپت مرورگر باید روشن باشد.</noscript></div>';
     }
 
     private static function hash($s) { return hash_hmac('sha256', (string) $s, wp_salt('auth')); }
@@ -154,7 +154,7 @@ final class MZC_Portal
                 'status' => $j['status'], 'statusText' => isset(MZC_Crm::$statuses[$j['status']]) ? MZC_Crm::$statuses[$j['status']] : $j['status'], 'complaint' => $j['complaint'], 'work' => $j['work_done'],
                 'labor' => (int) $j['labor_price'], 'discount' => (int) $j['discount'], 'total' => (int) $j['total'], 'paid' => $paid, 'recv' => $recv, 'invoice' => $j['invoice_no'], 'due' => $j['due_at'] ? MZC_Crm::jdate($j['due_at']) : '', 'parts' => $parts, 'report' => $link($j['report_id']), 'photos' => array_map(function ($x) { return (int) $x['id']; }, $j['photos']));
         }
-        return self::ok(array('name' => $c['name'], 'builds' => $outB, 'jobs' => $outJ, 'catalog' => MZC_Crm::software_catalog()));
+        return self::ok(array('name' => $c['name'], 'mobile' => (string) $c['mobile'], 'statuses' => MZC_Crm::$statuses, 'builds' => $outB, 'jobs' => $outJ, 'catalog' => MZC_Crm::software_catalog()));
     }
 
     /** ?mzc_portal_photo=ID with the token in a header (the page fetches it and shows the bytes), only for a photo of the token's own customer. */

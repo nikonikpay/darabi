@@ -60,7 +60,7 @@ $defs = array(
     'shelf' => array('جا', 0, function ($r) { return esc_html($r['shelf'] ?: '—'); }),
 );
 echo '<div class="mzc-title"><h2>ارسال به گارانتی و تعمیرگاه</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-ships', array('add' => 1))) . '">+ ارسال تازه</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-ships"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="قطعه، سریال، مشکل، پیگیری یا مشتری" style="min-width:280px"><select name="st"><option value="">همه</option>'
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-ships"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="قطعه، سریال، مشکل، پیگیری یا مشتری" class="mzc-search"><select name="st"><option value="">همه</option>'
     . '<option value="sent"' . selected($st, 'sent', false) . '>هنوز بیرون است</option><option value="back"' . selected($st, 'back', false) . '>برگشته</option></select><select name="vendor"><option value="">همهٔ گارانتی‌ها و تعمیرگاه‌ها</option>';
 $vendors = MZC_Ships::vendors();
 foreach ($vendors as $vd) { echo '<option value="' . (int) $vd['id'] . '"' . selected($vendor, (int) $vd['id'], false) . '>' . esc_html($vd['name']) . '</option>'; }

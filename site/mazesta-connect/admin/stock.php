@@ -75,7 +75,7 @@ $defs = array(
     'warranty' => array('گارانتی (ماه)', 0, function ($p) { return MZC_Admin::num($p['warranty_months']); }, 'n'),
 );
 echo '<div class="mzc-title"><h2>انبار و کالاها</h2><div class="mzc-actions"><a class="mzc-btn" href="' . esc_url(MZC_Admin::url('mzc-purchases', array('add' => 1))) . '">+ فاکتور خرید</a><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-stock', array('add' => 1))) . '">+ کالای تازه</a></div></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-stock"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام کالا، برند، پارت‌نامبر" style="min-width:300px"><select name="cat"><option value="">همهٔ دسته‌ها</option>';
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-stock"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام کالا، برند، پارت‌نامبر" class="mzc-search"><select name="cat"><option value="">همهٔ دسته‌ها</option>';
 foreach (MZC_Crm::$categories as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($cat, $k, false) . '>' . esc_html($l) . '</option>'; }
 echo '</select><label class="chk"><input type="checkbox" name="instock" value="1"' . checked($instock, true, false) . '> فقط موجودها</label><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' کالا</span>'
     . '<span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-stock', $defs) . '</span></form>';

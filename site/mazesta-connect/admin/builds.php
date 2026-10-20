@@ -93,7 +93,7 @@ $defs = array(
     'parts' => array('قطعه', 0, function ($b) { return MZC_Admin::num($b['parts']); }, 'n'),
 );
 echo '<div class="mzc-title"><h2>سیستم‌های نو</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-builds', array('add' => 1))) . '">+ ثبت سیستم نو</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-builds"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، فاکتور، سریال قطعه، نام یا موبایل مشتری" style="min-width:340px"><select name="st"><option value="">همهٔ وضعیت‌ها</option>';
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-builds"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ سرویس، فاکتور، سریال قطعه، نام یا موبایل مشتری" class="mzc-search"><select name="st"><option value="">همهٔ وضعیت‌ها</option>';
 foreach (MZC_Crm::$build_statuses as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($st, $k, false) . '>' . esc_html($l) . '</option>'; }
 echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' سیستم</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-builds', $defs) . '</span></form>';
 echo MZC_Admin::table('mzc-builds', $defs, $rows, $linkOf, 'سیستمی پیدا نشد.') . MZC_Admin::pager($total, $per, $paged);

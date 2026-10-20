@@ -10,7 +10,7 @@ echo '<div class="mzc-title"><h2>تنظیمات</h2></div>';
 if (!$admin) { echo '<div class="mzc-notice warn">فقط مدیر سایت می‌تواند این تنظیمات را ببیند و عوض کند.</div>'; return; }
 
 echo '<div class="mzc-panel"><header><h3>پایگاه دادهٔ CRM</h3>' . ($ready ? MZC_Admin::pill('وصل و آماده', 'ok') : MZC_Admin::pill('وصل نیست', 'bad')) . '</header><div class="body">'
-    . '<p class="muted" style="max-width:90ch">اطلاعات مشتریان، سیستم‌ها و سرویس‌ها در یک پایگاه دادهٔ جدا از پایگاه دادهٔ وردپرس نگه داشته می‌شود. یک پایگاه دادهٔ MySQL خالی (و کاربری که به آن دسترسی کامل دارد) در هاست بسازید و مشخصاتش را اینجا وارد کنید؛ جدول‌ها خودکار ساخته می‌شوند. هیچ داده‌ای از CRM در پایگاه دادهٔ سایت نمی‌نشیند.</p>';
+    . '<p class="muted mzc-prose">اطلاعات مشتریان، سیستم‌ها و سرویس‌ها در یک پایگاه دادهٔ جدا از پایگاه دادهٔ وردپرس نگه داشته می‌شود. یک پایگاه دادهٔ MySQL خالی (و کاربری که به آن دسترسی کامل دارد) در هاست بسازید و مشخصاتش را اینجا وارد کنید؛ جدول‌ها خودکار ساخته می‌شوند. هیچ داده‌ای از CRM در پایگاه دادهٔ سایت نمی‌نشیند.</p>';
 if (!$ready && MZC_Crm_Db::configured() && MZC_Crm_Db::error() !== '') { echo '<div class="mzc-notice err">' . esc_html(MZC_Crm_Db::error()) . '</div>'; }
 echo MZC_Admin::form_open('db_save', 'class="mzc-form"') . '<div class="mzc-fields">'
     . '<label>میزبان (Host)<input type="text" name="host" dir="ltr" value="' . esc_attr($db['host']) . '"><small>معمولاً localhost</small></label>'
@@ -23,7 +23,7 @@ echo MZC_Admin::form_open('db_save', 'class="mzc-form"') . '<div class="mzc-fiel
 if ($ready) {
     $imp = MZC_Import::state();
     echo '<div class="mzc-panel"><header><h3>وارد کردن اطلاعات CRM قدیمی</h3>' . ($imp && !empty($imp['done']) ? MZC_Admin::pill('انجام شد', 'ok') : ($imp ? MZC_Admin::pill('نیمه‌کاره', 'warn') : '')) . '</header><div class="body">'
-        . '<p class="muted" style="max-width:90ch">فایل <code>old-crm.jsonl.gz</code> را که با <code>site/tools/export_old_crm.py</code> از پشتیبان CRM قدیمی ساخته شده بارگذاری کنید و «شروع واردسازی» را بزنید. مشتریان با موبایل یکسان یکی می‌شوند و اجرای دوباره چیزی را دوبار نمی‌سازد.</p>'
+        . '<p class="muted mzc-prose">فایل <code>old-crm.jsonl.gz</code> را که با <code>site/tools/export_old_crm.py</code> از پشتیبان CRM قدیمی ساخته شده بارگذاری کنید و «شروع واردسازی» را بزنید. مشتریان با موبایل یکسان یکی می‌شوند و اجرای دوباره چیزی را دوبار نمی‌سازد.</p>'
         . MZC_Admin::form_open('import_upload', 'class="mzc-filter" enctype="multipart/form-data"') . '<input type="file" name="old" accept=".gz" required><button class="mzc-btn">بارگذاری فایل</button></form>';
     if ($imp) {
         echo '<div id="mzc-imp" data-url="' . esc_url(admin_url('admin-ajax.php')) . '" data-nonce="' . esc_attr(wp_create_nonce('mzc_import_step')) . '" data-done="' . (!empty($imp['done']) ? 1 : 0) . '">'
@@ -31,12 +31,12 @@ if ($ready) {
             . (empty($imp['done']) ? '<p><button type="button" class="mzc-btn primary" id="mzc-imp-go">شروع واردسازی</button></p>' : '') . '</div>';
     }
     echo '</div></div>';
-    echo '<div class="mzc-panel"><header><h3>پاک کردن اطلاعات CRM</h3></header><div class="body"><p class="muted" style="max-width:90ch">در دورهٔ آزمایش: همهٔ مشتریان، سیستم‌ها، سرویس‌ها، فرم‌ها، عکس‌ها و ارسال‌های گارانتی پاک می‌شود تا واردسازی از نو انجام شود. تنظیمات و اتصال پایگاه داده می‌ماند. این کار برگشت‌پذیر نیست.</p>'
+    echo '<div class="mzc-panel"><header><h3>پاک کردن اطلاعات CRM</h3></header><div class="body"><p class="muted mzc-prose">در دورهٔ آزمایش: همهٔ مشتریان، سیستم‌ها، سرویس‌ها، فرم‌ها، عکس‌ها و ارسال‌های گارانتی پاک می‌شود تا واردسازی از نو انجام شود. تنظیمات و اتصال پایگاه داده می‌ماند. این کار برگشت‌پذیر نیست.</p>'
         . MZC_Admin::form_open('db_wipe', 'class="mzc-filter" onsubmit="return confirm(\'همهٔ اطلاعات CRM پاک شود؟\')"') . '<input type="text" name="confirm" placeholder="کلمهٔ «پاک‌کن» را بنویسید" autocomplete="off"><button class="mzc-btn danger">پاک کردن همه</button></form></div></div>';
 }
 
 echo '<div class="mzc-panel"><header><h3>پیامک (ورود مشتری به پورتال)</h3>' . (MZC_Sms::configured() ? MZC_Admin::pill('فعال', 'ok') : MZC_Admin::pill('غیرفعال', 'warn')) . '</header><div class="body">'
-    . '<p class="muted" style="max-width:90ch">مشتری در صفحه‌ای که کد کوتاه <code>[mazesta_portal]</code> را دارد شمارهٔ موبایلش را می‌نویسد و کد شش‌رقمی را با پیامک می‌گیرد. تا درگاه پیامک تنظیم نشده پورتال کار نمی‌کند.</p>'
+    . '<p class="muted mzc-prose">مشتری در صفحه‌ای که کد کوتاه <code>[mazesta_portal]</code> را دارد شمارهٔ موبایلش را می‌نویسد و کد شش‌رقمی را با پیامک می‌گیرد. تا درگاه پیامک تنظیم نشده پورتال کار نمی‌کند.</p>'
     . MZC_Admin::form_open('sms_save', 'class="mzc-form"') . '<div class="mzc-fields"><label>درگاه<select name="driver"><option value="">— غیرفعال —</option><option value="melipayamak"' . selected($sms['driver'], 'melipayamak', false) . '>ملی‌پیامک (melipayamak.com)</option><option value="kavenegar"' . selected($sms['driver'], 'kavenegar', false) . '>کاوه‌نگار</option>'
     . '<option value="url"' . selected($sms['driver'], 'url', false) . '>نشانی وب دلخواه (هر درگاهی که با یک درخواست HTTP کار کند)</option></select></label>'
     . '<label>نام کاربری (ملی‌پیامک)<input type="text" name="user" dir="ltr" value="' . esc_attr(isset($sms['user']) ? $sms['user'] : '') . '" autocomplete="off"></label>'
@@ -57,12 +57,12 @@ echo '<div class="mzc-panel"><header><h3>پورتال مشتری</h3></header><d
     . '<p class="muted">برگه را از کش مستثنا نکنید لازم نیست (خودش ثابت است و داده‌ها با درخواست جداگانه می‌آیند)، ولی مسیر <code>/wp-json/mazesta/v1/portal/</code> نباید کش شود.</p></div></div>';
 
 if (MZC_Crm_Db::ready()) {
-    echo '<div class="mzc-panel"><header><h3>فهرست نرم‌افزارها</h3></header><div class="body"><p class="muted" style="max-width:90ch">فرم‌های سیستم نو و سرویس، و صفحهٔ مشتری، هنگام نوشتن نام نرم‌افزار از این فهرست پیشنهاد می‌دهند. نامی که در فهرست نیست هم پذیرفته می‌شود. هر نرم‌افزار در یک خط.</p>'
-        . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="software" rows="10" dir="ltr" style="width:100%;max-width:520px">' . esc_textarea(implode("\n", MZC_Crm::software_catalog())) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ فهرست</button></p></form></div></div>';
+    echo '<div class="mzc-panel"><header><h3>فهرست نرم‌افزارها</h3></header><div class="body"><p class="muted mzc-prose">فرم‌های سیستم نو و سرویس، و صفحهٔ مشتری، هنگام نوشتن نام نرم‌افزار از این فهرست پیشنهاد می‌دهند. نامی که در فهرست نیست هم پذیرفته می‌شود. هر نرم‌افزار در یک خط.</p>'
+        . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="software" rows="10" dir="ltr" class="mzc-w520">' . esc_textarea(implode("\n", MZC_Crm::software_catalog())) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ فهرست</button></p></form></div></div>';
 }
 if (MZC_Crm_Db::ready()) {
-    echo '<div class="mzc-panel"><header><h3>حساب‌های واریز</h3></header><div class="body"><p class="muted" style="max-width:90ch">در «پرداخت‌های مشتری» خانهٔ «واریز به حساب» این‌ها را پیشنهاد می‌دهد (پوز، کارت، شماره حساب ...)؛ هر نوشتهٔ دیگری هم پذیرفته می‌شود. هر حساب در یک خط.</p>'
-        . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="accounts" rows="6" dir="auto" style="width:100%;max-width:520px">' . esc_textarea(implode("\n", MZC_Crm::software_catalog('accounts'))) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ حساب‌ها</button></p></form></div></div>';
+    echo '<div class="mzc-panel"><header><h3>حساب‌های واریز</h3></header><div class="body"><p class="muted mzc-prose">در «پرداخت‌های مشتری» خانهٔ «واریز به حساب» این‌ها را پیشنهاد می‌دهد (پوز، کارت، شماره حساب ...)؛ هر نوشتهٔ دیگری هم پذیرفته می‌شود. هر حساب در یک خط.</p>'
+        . MZC_Admin::form_open('soft_save', 'class="mzc-form"') . '<textarea name="accounts" rows="6" dir="auto" class="mzc-w520">' . esc_textarea(implode("\n", MZC_Crm::software_catalog('accounts'))) . '</textarea><p><button class="mzc-btn primary">ذخیرهٔ حساب‌ها</button></p></form></div></div>';
 }
 if (MZC_Crm_Db::ready()) {
     $as = MZC_Acc::settings(); $ws = MZC_Woo::settings(); $woo = class_exists('WooCommerce');
@@ -81,7 +81,7 @@ if (MZC_Crm_Db::ready()) {
     if ($woo) {
         echo '<div class="mzc-actions"><a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_link')) . '">وصل کردن با پارت‌نامبر (SKU)</a><a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_import')) . '" onclick="return confirm(\'برای هر محصول سادهٔ سایت که وصل نیست کالای انبار ساخته شود؟\')">آوردن محصولات سایت به انبار</a>'
             . '<a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_push')) . '">فرستادن قیمت و موجودی همه به سایت</a><a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('woo_orders')) . '">آوردن ۲۰۰ سفارش پرداخت‌شدهٔ اخیر</a></div>'
-            . '<p class="muted" style="max-width:90ch">موجودی را انبار حساب می‌کند (خرید منهای فروش)؛ عددی که در سایت دستی عوض شود در همگام‌سازی بعدی (هر ۱۵ دقیقه یا با هر تغییر) برمی‌گردد. قیمت فروش از هر طرف عوض شود طرف دیگر هم عوض می‌شود. هر کالا را در صفحهٔ کالا هم می‌شود دستی به محصول سایت وصل کرد.</p>';
+            . '<p class="muted mzc-prose">موجودی را انبار حساب می‌کند (خرید منهای فروش)؛ عددی که در سایت دستی عوض شود در همگام‌سازی بعدی (هر ۱۵ دقیقه یا با هر تغییر) برمی‌گردد. قیمت فروش از هر طرف عوض شود طرف دیگر هم عوض می‌شود. هر کالا را در صفحهٔ کالا هم می‌شود دستی به محصول سایت وصل کرد.</p>';
     }
     echo '</div></div>';
 }

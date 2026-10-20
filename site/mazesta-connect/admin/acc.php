@@ -40,7 +40,7 @@ if ($view) {
     }
     if ($v['status'] !== 'void' && $v['kind'] !== 'template' && ($v['status'] === 'final' || $v['kind'] === 'proforma')) {
         echo '<div class="mzc-panel"><header><h3>ابطال</h3></header><div class="body">' . MZC_Admin::form_open('invoice_void', 'class="mzc-filter" onsubmit="return confirm(\'این فاکتور باطل شود؟ شماره‌اش دیگر به کار نمی‌رود.\')"')
-            . '<input type="hidden" name="id" value="' . (int) $v['id'] . '"><input type="text" name="reason" placeholder="دلیل ابطال" required maxlength="255" style="min-width:320px"><button class="mzc-btn danger">باطل شود</button></form></div></div>';
+            . '<input type="hidden" name="id" value="' . (int) $v['id'] . '"><input type="text" name="reason" placeholder="دلیل ابطال" required maxlength="255" class="mzc-search"><button class="mzc-btn danger">باطل شود</button></form></div></div>';
     }
     return;
 }
@@ -102,7 +102,7 @@ if ($tab === 'invoices') {
 } else {
     $pr = MZC_Report::periods(); $k = isset($_GET['period'], $pr[$_GET['period']]) ? sanitize_key($_GET['period']) : 'month';
     $s = MZC_Acc::summary($pr[$k][1], $pr[$k][2]);
-    echo '<div class="mzc-filter">'; foreach ($pr as $pk => $p) { echo '<a class="mzc-btn sm' . ($pk === $k ? ' primary' : '') . '" href="' . esc_url(MZC_Admin::url('mzc-acc', array('tab' => 'summary', 'period' => $pk))) . '">' . esc_html($p[0]) . '</a>'; } echo '</div>';
+    echo '<div class="mzc-filter">'; foreach ($pr as $pk => $p) { echo '<a class="mzc-btn sm' . ($pk === $k ? ' primary' : '') . '" href="' . esc_url(MZC_Admin::url('mzc-acc', array('tab' => 'summary', 'period' => $pk))) . '">' . esc_html($p[0]) . '</a>'; } echo MZC_Admin::pill('مبالغ به تومان') . '</div>';
     echo '<div class="mzc-cards"><div class="mzc-card"><span>فروش (' . (int) $s['sales']['count'] . ' فاکتور)</span><b class="num">' . esc_html(number_format($s['sales']['total'])) . '</b></div><div class="mzc-card"><span>برگشت از فروش</span><b class="num">' . esc_html(number_format($s['returns']['total'])) . '</b></div>'
         . '<div class="mzc-card"><span>فروش خالص</span><b class="num">' . esc_html(number_format($s['net'])) . '</b></div><div class="mzc-card"><span>سود فاکتورها' . ($s['missing_cost'] ? ' (ناقص: ' . (int) $s['missing_cost'] . ' ردیف بی‌قیمت خرید)' : '') . '</span><b class="num">' . esc_html(number_format($s['profit'])) . '</b></div></div>';
     $list = function ($title, $rows, $l, $v) { echo '<div class="mzc-panel"><header><h3>' . esc_html($title) . '</h3></header><div class="body">' . ($rows ? MZC_Admin::bars(array_combine(array_map($l, $rows), array_map($v, $rows))) : '<p class="muted">چیزی نیست.</p>') . '</div></div>'; };

@@ -69,7 +69,7 @@ $defs = array(
     'notes' => array('یادداشت', 0, function ($u) { return '<span dir="auto">' . esc_html(mb_substr((string) $u['notes'], 0, 80)) . '</span>'; }),
 );
 echo '<div class="mzc-title"><h2>فاکتورهای خرید</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-purchases', array('add' => 1))) . '">+ فاکتور خرید</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-purchases"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ فاکتور، فروشنده، کالا یا سریال" style="min-width:300px"><select name="vendor"><option value="">همهٔ فروشنده‌ها</option>';
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-purchases"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="شمارهٔ فاکتور، فروشنده، کالا یا سریال" class="mzc-search"><select name="vendor"><option value="">همهٔ فروشنده‌ها</option>';
 foreach (MZC_Stock::suppliers() as $vd) { if ((int) $vd['purchases'] || $vd['kind'] === 'supplier') { echo '<option value="' . (int) $vd['id'] . '"' . selected($vendor, (int) $vd['id'], false) . '>' . esc_html($vd['name'] . ' (' . (int) $vd['purchases'] . ')') . '</option>'; } }
 echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' فاکتور</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-purchases', $defs) . '</span></form>';
 echo MZC_Admin::table('mzc-purchases', $defs, $rows, $linkOf, 'فاکتور خریدی ثبت نشده است.') . MZC_Admin::pager($total, $per, $paged);

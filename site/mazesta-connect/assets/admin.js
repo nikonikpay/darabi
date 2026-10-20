@@ -40,8 +40,8 @@
   document.addEventListener('change', function (e) {
     var t = e.target.closest('[data-mzc-target]');
     if (!t) return;
-    var some = document.getElementById('mzc-some'); if (some) some.style.display = t.value === 'some' ? '' : 'none';
-    var grp = document.getElementById('mzc-group'); if (grp) grp.style.display = t.value === 'group' ? '' : 'none';
+    var some = document.getElementById('mzc-some'); if (some) some.hidden = t.value !== 'some';
+    var grp = document.getElementById('mzc-group'); if (grp) grp.hidden = t.value !== 'group';
   });
   /* the form's customer: typing a name or a number lists the closest customers (any of their numbers); picking one fills customer_id, typing on clears it again */
   var cbox = document.querySelector('[data-mzc-cfind]');
@@ -59,7 +59,7 @@
     cbox.addEventListener('input', function (e) {
       if (!e.target.hasAttribute('data-mzc-cq')) return;
       clearTimeout(timer); var q = e.target.value.trim();
-      if (q.length < 2) { res.hidden = true; return; }
+      if (q.length < 3) { res.hidden = true; return; }
       timer = setTimeout(function () {
         var my = ++seq;
         fetch(cbox.getAttribute('data-mzc-cfind') + '&q=' + encodeURIComponent(q), { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
@@ -125,4 +125,28 @@
     };
     if (go) go.addEventListener('click', function () { go.disabled = true; step(); });
   }
+
+  // a list's search box searches as one types (3+ characters, or emptied): the page is fetched again and everything around the box swapped, so the box keeps the focus
+  var lt, lseq = 0;
+  document.addEventListener('input', function (e) {
+    var box = e.target, form = box.closest && box.closest('form.mzc-filter[method="get"]');
+    if (!form || box.type !== 'search' || box.name !== 's') return;
+    var v = box.value.trim(); clearTimeout(lt);
+    if (v.length && v.length < 3) return;
+    lt = setTimeout(function () {
+      var p = new URLSearchParams();   // the list's own fields only: the column picker sits inside the same form and its nonce must not go into the address
+      Array.prototype.forEach.call(form.elements, function (el) { if (el.name && !el.closest('.mzc-cols') && (el.type !== 'checkbox' || el.checked) && el.type !== 'submit') p.set(el.name, el.value); });
+      p.set('s', v); p.delete('paged');
+      var url = location.pathname + '?' + p.toString(), my = ++lseq, wrap = form.closest('.mzc');
+      fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+        if (my !== lseq || !wrap) return;
+        var nw = new DOMParser().parseFromString(html, 'text/html').querySelector('.mzc'); if (!nw) { location.href = url; return; }
+        var host = form; while (host.parentNode !== wrap) host = host.parentNode;
+        var i = Array.prototype.indexOf.call(wrap.children, host), kids = Array.prototype.slice.call(nw.children);
+        Array.prototype.slice.call(wrap.children).forEach(function (c) { if (c !== host) c.remove(); });
+        kids.slice(0, i).forEach(function (c) { wrap.insertBefore(c, host); }); kids.slice(i + 1).forEach(function (c) { wrap.appendChild(c); });
+        history.replaceState(null, '', url);
+      }).catch(function () { });
+    }, 350);
+  });
 })();

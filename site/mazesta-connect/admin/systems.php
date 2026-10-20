@@ -30,7 +30,7 @@ if ($sys !== '' && ($i = MZC_Stats::install($sys))) {
     $kv('زبان', isset($i['lang']) ? $i['lang'] : null);
     echo '<dt>اولین دیده شدن</dt><dd>' . MZC_Admin::when($first) . '</dd><dt>آخرین فعالیت</dt><dd>' . MZC_Admin::when($last) . ' <span class="muted">(' . esc_html(MZC_Admin::ago($last)) . ')</span></dd>';
     $kv('تعداد رویدادها', isset($i['n']) ? number_format_i18n($i['n']) : null);
-    echo '</dl>' . MZC_Admin::form_open('system_note', 'style="margin-top:14px"') . '<input type="hidden" name="id" value="' . esc_attr($sys) . '"><div class="mzc-field"><span>یادداشت شما دربارهٔ این سیستم</span>'
+    echo '</dl>' . MZC_Admin::form_open('system_note', 'class="mzc-mt14"') . '<input type="hidden" name="id" value="' . esc_attr($sys) . '"><div class="mzc-field"><span>یادداشت شما دربارهٔ این سیستم</span>'
         . '<input type="text" name="note" maxlength="300" value="' . esc_attr(isset($i['note']) ? $i['note'] : '') . '" placeholder="مثلاً: سیستم آقای احمدی، کیس شمارهٔ ۱۲"></div><p><button class="mzc-btn">ذخیرهٔ یادداشت</button></p></form></div></div></div>';
 
     list($evs, $evn) = MZC_Stats::events(array('sys' => $sys, 'not' => 'app.start', 'limit' => 40), true);
@@ -46,7 +46,7 @@ if ($sys !== '' && ($i = MZC_Stats::install($sys))) {
         echo '<details class="mzc-details"><summary>' . MZC_Admin::when(strtotime($l['at'] . ' UTC')) . ' · <span class="num">' . esc_html($l['file'] . ' · ' . $l['app']) . '</span>'
             . ($cr ? ' ' . MZC_Admin::pill(count($cr) . ' کرش', 'bad') : '') . '</summary>';
         foreach ($cr as $c) { echo '<pre dir="ltr">' . esc_html(wp_json_encode($c, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)) . '</pre>'; }
-        echo '<pre dir="ltr" style="max-height:420px;overflow:auto">' . esc_html((string) $l['body']) . '</pre></details>';
+        echo '<pre dir="ltr" class="mzc-pre-scroll">' . esc_html((string) $l['body']) . '</pre></details>';
     }
     echo '</div></div>';
     return;

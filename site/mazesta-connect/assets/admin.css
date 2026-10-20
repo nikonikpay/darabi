@@ -1,6 +1,6 @@
 /* Mazesta Connect: admin pages. Everything lives under .mzc so WordPress' own screens are untouched. */
 .mzc { --ink: #14181f; --muted: #667085; --line: #e4e7ec; --soft: #f6f7f9; --card: #fff; --brand: #f5b800; --brand-ink: #3d2f00; --ok: #067647; --ok-bg: #e7f6ec; --bad: #b42318; --bad-bg: #fdecea; --warn: #93370d; --warn-bg: #fff4e5; --info: #175cd3; --info-bg: #e8f0fe;
-  direction: rtl; text-align: right; color: var(--ink); font-size: 13.5px; line-height: 1.7; max-width: 1480px; margin: 14px 20px 40px 20px; }
+  direction: rtl; text-align: right; color: var(--ink); font-size: 13.5px; line-height: 1.7; margin: 14px 20px 40px 20px; }
 .mzc *, .mzc *::before, .mzc *::after { box-sizing: border-box; }
 .mzc a { color: var(--info); text-decoration: none; } .mzc a:hover { text-decoration: underline; }
 .mzc h1, .mzc h2, .mzc h3 { margin: 0; color: var(--ink); }
@@ -24,7 +24,10 @@
 
 .mzc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
 .mzc-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
-.mzc-kpi .k { color: var(--muted); font-size: 12px; } .mzc-kpi .v { font-size: 26px; font-weight: 800; line-height: 1.3; } .mzc-kpi .s { color: var(--muted); font-size: 12px; }
+.mzc-cards { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } .mzc-card { min-width: 0; padding: 11px 14px; display: flex; flex-direction: column; gap: 2px; }
+.mzc-kpi .k, .mzc-card > span { color: var(--muted); font-size: 12px; } .mzc-kpi .s { color: var(--muted); font-size: 12px; }
+/* sums of hundreds of millions fit a narrow card: a plain sans with even digits, not the wide monospace */
+.mzc .mzc-kpi .v, .mzc .mzc-card > b { font: 700 19px/1.4 -apple-system, "Segoe UI", Tahoma, sans-serif; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; display: block; }
 .mzc-panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 18px; overflow: hidden; }
 .mzc-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--soft); }
 .mzc-panel > header h3 { font-size: 14px; } .mzc-panel .body { padding: 14px 16px; } .mzc-panel .body.flush { padding: 0; }
@@ -92,3 +95,10 @@
 .mzc-copt:hover, .mzc-copt:focus-visible { border-color: var(--info); }
 .mzc-cpicked { margin-top: 6px; display: flex; gap: 8px; align-items: center; }
 .mzc-sum { display: flex; flex-direction: column; gap: 2px; } .mzc-sum span { color: var(--muted); font-size: 12px; } .mzc-sum b { font-size: 16px; } .mzc-sum.big b { font-size: 20px; }
+/* small helpers the pages use instead of inline styles */
+.mzc-prose { max-width: 90ch; } .mzc-list { list-style: disc; padding-inline-start: 1.4em; } .mzc-search { min-width: min(300px, 100%); }
+.mzc-ltr-r { text-align: right; } .mzc-copy { user-select: all; } .mzc-bad-text { color: #b32d2e; } .mzc-dim { color: #787c82; } .mzc-nowrap { white-space: nowrap; }
+.mzc-pair { padding: 14px 18px; } .mzc-mt0 { margin-top: 0; } .mzc-my { margin: 12px 0; } .mzc-mt14 { margin-top: 14px; } .mzc-mb6 { margin-bottom: 6px; }
+.mzc-code-big { font-size: 18px; letter-spacing: 2px; } .mzc-old { background: #b32d2e; color: #fff; border-radius: 3px; padding: 0 6px; font-size: 11px; }
+.mzc .mzc-radio { display: inline-flex; gap: 6px; font-weight: 400; } .mzc-inline-chk { display: inline-block; margin-inline-end: .8em; }
+.mzc-w420 { width: 100%; max-width: 420px; } .mzc-w520 { width: 100%; max-width: 520px; } .mzc-pre-scroll { max-height: 420px; overflow: auto; }

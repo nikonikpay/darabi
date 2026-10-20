@@ -116,7 +116,7 @@ $defs = array(
     'national_id' => array('کد ملی', 0, function ($c) { return '<span class="num">' . esc_html($c['national_id']) . '</span>'; }),
 );
 echo '<div class="mzc-title"><h2>مشتریان</h2><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-customers', array('add' => 1))) . '">+ مشتری تازه</a></div>';
-echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-customers"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام، موبایل یا کد ملی" style="min-width:260px"><select name="grp" onchange="this.form.submit()"><option value="">همهٔ گروه‌ها</option>'
+echo '<form method="get" class="mzc-filter"><input type="hidden" name="page" value="mzc-customers"><input type="search" name="s" value="' . esc_attr($q) . '" placeholder="نام، موبایل یا کد ملی" class="mzc-search"><select name="grp" onchange="this.form.submit()"><option value="">همهٔ گروه‌ها</option>'
     . implode('', array_map(function ($k, $l) use ($grp) { return '<option value="' . esc_attr($k) . '"' . selected($grp, $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$groups), MZC_Crm::$groups))
     . '</select><button class="mzc-btn primary">جستجو</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' مشتری</span><span class="mzc-bar-actions">' . MZC_Admin::cols_ui('mzc-customers', $defs) . '</span></form>';
 echo MZC_Admin::table('mzc-customers', $defs, $rows, $linkOf, 'مشتری‌ای پیدا نشد.') . MZC_Admin::pager($total, $per, $paged);
