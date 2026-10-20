@@ -42,6 +42,7 @@ internal sealed class MainForm : Form
         }
         var core = _web.CoreWebView2;
         core.Settings.AreDevToolsEnabled = _selftest is not null; core.Settings.AreDefaultContextMenusEnabled = false; core.Settings.IsStatusBarEnabled = false; core.Settings.IsZoomControlEnabled = true;
+        core.Settings.AreBrowserAcceleratorKeysEnabled = false;   // F1–F12 are the accounting's keys: no reload on F5, no caret browsing on F7 (copy and paste still work)
         core.SetVirtualHostNameToFolderMapping(Host, Path.Combine(AppContext.BaseDirectory, "wwwroot"), CoreWebView2HostResourceAccessKind.Allow);
         core.PermissionRequested += (_, a) => a.State = CoreWebView2PermissionState.Deny;
         core.DownloadStarting += (_, a) => a.Cancel = true;
@@ -90,7 +91,7 @@ internal sealed class MainForm : Form
             string[] cfg = (Environment.GetEnvironmentVariable("MAZESTA_DESK_SELFTEST") ?? "").Split('|');
             if (cfg.Length != 3) throw new InvalidOperationException("MAZESTA_DESK_SELFTEST must be server|user|password");
             await _web.CoreWebView2.ExecuteScriptAsync($"window.deskSelfTestRun({JsonSerializer.Serialize(cfg[0])},{JsonSerializer.Serialize(cfg[1])},{JsonSerializer.Serialize(cfg[2])})");
-            result = await _selftestDone.Task.WaitAsync(TimeSpan.FromSeconds(100));
+            result = await _selftestDone.Task.WaitAsync(TimeSpan.FromSeconds(180));
         }
         catch (Exception e) { result = "ERROR " + e.Message; }
         File.WriteAllText(log, result);

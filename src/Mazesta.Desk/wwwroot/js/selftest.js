@@ -20,7 +20,7 @@ window.deskSelfTest = async (server, user, pass) => {
     set(form.querySelector('input[name=username]'), user); set(form.querySelector('input[name=password]'), pass); submit(form);
     ok('sign-in through the screen opens the shell', !!(await wait(() => document.querySelector('aside nav') && S.me)), S.me ? S.me.name : '');
     ok('token never reaches the page', !JSON.stringify(S.me).includes('token'));
-    const cards = await wait(() => document.querySelectorAll('.card b').length && [...document.querySelectorAll('.card b')].every(b => b.textContent !== '…') && document.querySelectorAll('.card b'));
+    const cards = await wait(() => document.querySelectorAll('.card b').length && [...document.querySelectorAll('.card b')].every(b => b.textContent !== '…') && document.querySelectorAll('.card b'), 20000);
     ok('home counts loaded from the site', !!cards && [...cards].some(b => /^\d+$/.test(b.textContent)), cards ? [...cards].map(b => b.textContent).join(',') : '');
     // a customer
     const mobile = '0912' + String(Math.floor(1000000 + Math.random() * 8999999));
@@ -61,9 +61,9 @@ window.deskSelfTest = async (server, user, pass) => {
     ok('print copy is in the page for the print stylesheet', !!document.querySelector('#printArea .label'));
     document.querySelectorAll('.backdrop').forEach(b => b.remove());
     // find by service number (what a scanner types) opens the record
-    location.hash = '#/'; await wait(() => document.querySelector('.cards'));   // away from the record first: the scan must be what opens it
+    location.hash = '#/'; await wait(() => document.querySelector('.cards') && ![...document.querySelectorAll('.card b')].some(b => b.textContent === '…'), 20000);   // away from the record first: the scan must be what opens it
     set(document.getElementById('gsearch'), no); document.getElementById('gsearch').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    ok('typing/scanning the number opens the service', !!(await wait(() => location.hash === '#/job/' + jid)));
+    ok('typing/scanning the number opens the service', !!(await wait(() => location.hash === '#/job/' + jid, 20000)));
     // with stock rights: a purchase invoice entered on its screen brings a new product into the stock
     const stamp = String(Date.now()), pname = 'کالای خودآزمون ' + stamp; let pid = 0;
     if (can('stock', 2)) {
@@ -91,6 +91,37 @@ window.deskSelfTest = async (server, user, pass) => {
     ok('saved by its invoice number (no service number), named after its graphics card', got.invoice_no === '9' + stamp.slice(-6) && got.service_no === '' && got.number === got.invoice_no && got.title === 'سیستم ' + got.parts[0].model, JSON.stringify({ n: got.number, s: got.service_no, t: got.title }));
     ok('the part came back with its warranty', got.parts.length === 1 && got.parts[0].warranty_months === 12 && (!pid || got.parts[0].product_id === pid), JSON.stringify(got.parts));
     if (pid) { const pr = await GET('staff/products/' + pid); ok('the stock went down and the product knows where it went', pr.totals.stock === 1 && pr.used.length === 1 && pr.used[0].id === +bid, JSON.stringify(pr.totals)); }
+    // accounting, by the keys: F2 a new sale, the customer, F3-style product search + Enter, F8 save, F9 final, F6 the payment, F10 print, F1 the key list
+    if (can('accounting', 2) && pid) {
+      const key = k => document.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+      location.hash = '#/'; await wait(() => document.querySelector('.cards') && ![...document.querySelectorAll('.card b')].some(b => b.textContent === '…'), 20000);   // the home page's counts first: a one-thread test server answers in turn
+      key('F2'); const vf = await wait(() => location.hash === '#/invoice/new' && document.querySelector('#main input[type=search]')); ok('F2 opens a new sales invoice', !!vf, location.hash);
+      set(document.querySelector('#main input[name=c_mobile]'), mobile.slice(-7));
+      const co = await wait(() => [...document.querySelectorAll('#main .cpick .opt')].find(o => o.textContent.includes(mobile)), 15000); if (co) co.click(); ok('invoice customer picked', !!co);
+      set(vf, pname.slice(0, -3)); await wait(() => document.querySelector('#main .results .opt'), 15000);
+      vf.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      const line = await wait(() => document.querySelector(`#main .rows tr[data-pid="${pid}"]`)); ok('Enter in the product search adds the line', !!line, line && line.dataset.pid);
+      set(line.querySelector('[name=unit_price]'), '2000000'); key('F8');
+      const ivid = await wait(() => (location.hash.match(/#\/invoice\/(\d+)/) || [])[1]); ok('F8 saves the draft', !!ivid, location.hash);
+      await wait(() => document.querySelector('#main .rows tr[data-pid]')); key('F9');
+      const fin = await wait(() => [...document.querySelectorAll('.modal button')].find(b => b.textContent === 'قطعی شود')); if (fin) fin.click();
+      let gi = null;
+      for (let i = 0; i < 40 && !(gi && gi.status === 'final'); i++) { await new Promise(r => setTimeout(r, 150)); gi = await GET('staff/invoices/' + ivid); }
+      ok('F9 makes it final with a number', gi && gi.status === 'final' && gi.no > 0, gi && gi.status + ' ' + gi.no);
+      const st = await GET('staff/products/' + pid); ok('the sale took the part out of the stock', st.totals.stock === 0, st.totals.stock);
+      await wait(() => document.querySelector('#main h2') && document.querySelector('#main h2').textContent.includes(String(gi.no)));
+      key('F6'); const pm = await wait(() => document.querySelector('.modal input[name=amount]')); ok('F6 opens the payment of this invoice with what is left', !!pm && digits(pm.value) === '2000000', pm && pm.value);
+      if (pm) { [...document.querySelectorAll('.modal button')].find(b => b.textContent === 'ثبت').click(); }
+      let gp = null; for (let i = 0; i < 40 && !(gp && gp.remaining === 0); i++) { await new Promise(r => setTimeout(r, 150)); gp = await GET('staff/invoices/' + ivid); }
+      ok('payment recorded: nothing left', gp && gp.paid === 2000000 && gp.remaining === 0, gp && gp.remaining);
+      document.querySelectorAll('.backdrop').forEach(b => b.remove());
+      await wait(() => document.querySelector('#main h2')); key('F10'); const pv = await wait(() => document.querySelector('.modal .invoice')); ok('F10 prints the invoice (number, line, total)', !!pv && pv.textContent.includes(String(gi.no)) && pv.textContent.includes(money(2000000)));
+      document.querySelectorAll('.backdrop').forEach(b => b.remove());
+      key('F1'); const hp = await wait(() => [...document.querySelectorAll('.modal h3')].find(x => x.textContent === 'کلیدهای میانبر')); ok('F1 lists the keys', !!hp && document.querySelectorAll('.modal tbody tr').length === 13);
+      document.querySelectorAll('.backdrop').forEach(b => b.remove());
+      location.hash = '#/customer/' + cid; const acc = await wait(() => [...document.querySelectorAll('#main h3')].find(x => x.textContent === 'حساب مشتری'));
+      ok('the customer page shows the account with the invoice and the payment', !!acc && document.querySelector('#main').textContent.includes('فاکتور فروش ' + gi.no), acc ? acc.closest('section').textContent.slice(0, 120) : '');
+    }
     // the period report
     location.hash = '#/stats'; const rep = await wait(() => [...document.querySelectorAll('#main h3')].find(x => x.textContent.startsWith('سرویس‌ها')) && document.querySelector('#main .cards'));
     ok('report page shows the cards of the period', !!rep && /\d/.test(rep.textContent), rep ? rep.textContent.slice(0, 80) : '');

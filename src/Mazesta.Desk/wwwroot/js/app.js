@@ -112,7 +112,8 @@ async function viewHome() {
   };
   if (can('builds')) out.append(cards('سیستم‌های نو در جریان', 'build', S.cfg.buildStatuses));
   if (can('jobs')) out.append(cards('سرویس‌ها', 'job', S.cfg.jobStatuses));
-  if (!can('builds') && !can('jobs')) out.append(h('p', { class: 'muted' }, 'برای کار از منوی کنار استفاده کنید.'));
+  if (can('accounting')) out.append(duePanel());   // acc.js: cheques near their due date
+  if (!can('builds') && !can('jobs') && !can('accounting')) out.append(h('p', { class: 'muted' }, 'برای کار از منوی کنار استفاده کنید.'));
   return out;
 }
 
@@ -170,6 +171,7 @@ async function viewCustomer(id, q) {
     !isNew && can('jobs', 2) ? h('a', { class: 'btn', href: '#/job/new?cid=' + c.id }, '+ سرویس') : null, !isNew && can('builds', 2) ? h('a', { class: 'btn', href: '#/build/new?cid=' + c.id }, '+ سیستم نو') : null), form);
   if (builds.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سیستم‌های نو'), buildsTable(builds)));
   if (jobs.length) out.append(h('section', { class: 'panel' }, h('h3', {}, 'سرویس‌ها'), jobsTable(jobs)));
+  if (!isNew && (can('accounting') || can('payments'))) out.append(await accountSection(c));   // acc.js: invoices, deposits, the running balance
   return out;
 }
 
@@ -224,7 +226,7 @@ function rowsEditor(cols, rows, o) {
   (rows || []).forEach(add);
   const el = h('div', { class: 'tablewrap rows' }, h('table', {}, h('thead', {}, h('tr', {}, cols.map(c => h('th', {}, c.label)), ro ? null : h('th', {}))), body), ro ? null : h('button', { type: 'button', class: 'btn sm', onclick: () => add(null) }, '+ ردیف'));
   const get = () => [...body.children].map(tr => { const r = {}; cols.forEach((c, i) => { const i2 = tr.children[i].firstChild; r[c.k] = c.type === 'check' ? i2.checked : i2.value; }); if (picks) r.product_id = +tr.dataset.pid || null; return r; });
-  return { el, get };
+  return { el, get, add };
 }
 
 /** The name box of a part row that picks from the stock: it suggests the site's products as one types; the chosen one's id rides on the row, and the row's empty fields
@@ -280,7 +282,8 @@ async function viewBuild(id, q) {
     }
   };
   const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => printLabel('build', b.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('build', b.id) }, 'پیامک رسید'),
-    can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('build', b) }, b.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null);
+    can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('build', b) }, b.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null,
+    can('accounting', 2) ? h('button', { type: 'button', class: 'btn', onclick: async () => { try { const v = await POST('staff/invoices/from-build', { build_id: b.id }); location.hash = '#/invoice/' + v.id; } catch (e) { fail(e); } } }, 'فاکتور فروش') : null);
   return h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.number}`, actions),
     h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('شمارهٔ فاکتور حسابداری', f.invoice, 'سیستم نو با شمارهٔ فاکتور و نام خریدار شناخته می‌شود'), field('تاریخ فروش', f.sold), field('وضعیت', f.status),
       b.service_no ? field('شمارهٔ سرویس (قدیمی)', h('input', { value: b.service_no, readOnly: true, dir: 'ltr' })) : null, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el),
@@ -514,9 +517,9 @@ function settingsDialog() {
   });
 }
 
-/* ---------- start ---------- */
-(async function start() {
+/* ---------- start (once every script is in: acc.js adds its menu items and routes) ---------- */
+document.addEventListener('DOMContentLoaded', async function start() {
   const s = await bridge.session();
   if (s.data && s.data.signedIn) { try { S.me = await GET('staff/me'); return enter(); } catch (e) { /* fall through to the login page */ } }
   showLogin();
-})();
+});
