@@ -77,7 +77,7 @@ async function viewInvoice(id, q) {
     recalc(); finder.value = ''; clear(found); finder.focus();
   };
   finder.addEventListener('input', debounce(async () => {
-    const qv = finder.value.trim(); clear(found); hits = []; if (qv.length < 2) return;
+    const qv = finder.value.trim(); clear(found); hits = []; if (qv.length < 3) return;
     try { hits = (await GET('staff/products' + qs({ q: qv, per: 8 }))).items; } catch (e) { return fail(e); }
     hits.forEach(p => found.append(h('button', { type: 'button', class: 'opt', onclick: () => addProduct(p) }, h('b', {}, p.name), ' ', stockPill(p.stock), ' ', h('span', { class: 'muted' }, money(p.sell_price)))));
   }, 200));
@@ -288,7 +288,7 @@ async function viewAccSummary(q) {
   const card = (label, v, note) => h('div', { class: 'card' }, h('b', { class: 'lat' }, v), h('span', {}, label), note ? h('small', { class: 'err' }, note) : null);
   const m = v => Number(v).toLocaleString('en-US');
   const ins = r.flow.filter(x => x.direction === 'in'), outs = r.flow.filter(x => x.direction === 'out');
-  return h('div', {}, title('خلاصهٔ مالی', h('span', { class: 'muted' }, r.from_j + ' تا ' + r.to_j)),
+  return h('div', {}, title('خلاصهٔ مالی', h('span', { class: 'muted' }, r.from_j + ' تا ' + r.to_j), h('span', { class: 'pill' }, 'مبالغ به تومان')),
     h('div', { class: 'chips filters' }, Object.entries(r.periods).map(([k, p]) => h('button', { class: 'chip' + (q.get('period') === k || (!q.get('period') && k === 'month') ? ' on' : ''), onclick: () => { location.hash = '#/acc' + qs({ period: k }); } }, p.label))),
     h('div', { class: 'cards' }, card('فروش (' + r.sales.count + ' فاکتور)', m(r.sales.total)), card('برگشت از فروش', m(r.returns.total)), card('فروش خالص', m(r.net)), r.profit != null ? card('سود فاکتورها', m(r.profit), r.missing_cost ? r.missing_cost + ' ردیف قیمت خرید ندارد' : '') : null,
       card('دریافتی', m(ins.reduce((s, x) => s + x.amount, 0))), card('پرداختی', m(outs.reduce((s, x) => s + x.amount, 0))), card('هزینه‌ها', m(r.expenses.reduce((s, x) => s + x.amount, 0)))),

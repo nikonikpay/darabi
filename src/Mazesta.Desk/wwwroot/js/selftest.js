@@ -125,6 +125,16 @@ window.deskSelfTest = async (server, user, pass) => {
     // the period report
     location.hash = '#/stats'; const rep = await wait(() => [...document.querySelectorAll('#main h3')].find(x => x.textContent.startsWith('سرویس‌ها')) && document.querySelector('#main .cards'));
     ok('report page shows the cards of the period', !!rep && /\d/.test(rep.textContent), rep ? rep.textContent.slice(0, 80) : '');
+    ok('report page says the amounts are in toman', [...document.querySelectorAll('#main .title .pill')].some(x => x.textContent.includes('تومان')));
+    // live search: the top box lists the nearest records from 3 characters, not before
+    const gs = $('#gsearch'), gres = document.querySelector('.gfind .results');
+    set(gs, mobile.slice(-2)); await new Promise(r => setTimeout(r, 700)); ok('top search waits for 3 characters', gres.hidden);
+    set(gs, mobile.slice(-7)); const hit = await wait(() => !gres.hidden && [...gres.querySelectorAll('.opt')].find(o => o.textContent.includes(mobile)));
+    ok('top search lists the customer while typing', !!hit, gres.textContent.slice(0, 80));
+    if (hit) { hit.click(); ok('picking a result opens it', !!(await wait(() => location.hash.startsWith('#/customer/')))); }
+    location.hash = '#/customers'; const fb = await wait(() => document.querySelector('#main .filters input[type=search]'));
+    fb.focus(); set(fb, mobile.slice(-7)); const one = await wait(() => location.hash.includes('q=') && document.querySelectorAll('#main tbody tr.click').length === 1 && document.activeElement && document.activeElement.matches('#main .filters input[type=search]'));
+    ok('list filter follows the box as one types and keeps the focus', !!one, location.hash);
     // permissions seen by this person
     ok('screens follow the permissions (nav items = areas with at least view)', document.querySelectorAll('aside nav a').length === NAV.filter(n => n[2]()).length);
     await bridge.logout(); const s = await bridge.session(); ok('sign-out clears the token', s.data && s.data.signedIn === false);

@@ -49,7 +49,27 @@ function drawShell() {
   const quick = h('div', { class: 'quick' }, can('jobs', 2) ? h('a', { class: 'btn primary', href: '#/job/new' }, '+ پذیرش سرویس') : null, can('builds', 2) ? h('a', { class: 'btn primary', href: '#/build/new' }, '+ سیستم نو') : null, can('customers', 2) ? h('a', { class: 'btn', href: '#/customer/new' }, '+ مشتری') : null);
   const who = h('div', { class: 'who' }, h('strong', {}, S.me.name), h('small', {}, S.me.admin ? 'مدیر سایت' : S.me.roles.map(r => r.label).join(' + ')),
     h('div', {}, h('button', { class: 'link', onclick: () => settingsDialog() }, 'تنظیمات'), ' · ', h('button', { class: 'link', onclick: async () => { await bridge.logout(); S.me = null; showLogin(); } }, 'خروج')));
-  app.append(h('aside', {}, h('div', { class: 'brand' }, h('span', { class: 'mark' }, 'M'), 'میز کار'), nav, who), h('div', { class: 'col' }, h('header', { class: 'top' }, search, quick), h('main', { id: 'main' })));
+  app.append(h('aside', {}, h('div', { class: 'brand' }, h('span', { class: 'mark' }, 'M'), 'میز کار'), nav, who), h('div', { class: 'col' }, h('header', { class: 'top' }, liveFind(search), quick), h('main', { id: 'main' })));
+}
+
+// the top search: from 3 characters the nearest customers, systems and services show under it as one types; Enter still opens an exact number at once
+function liveFind(input) {
+  const res = h('div', { class: 'results', hidden: true }); let seq = 0;
+  const go = href => { input.value = ''; res.hidden = true; location.hash = href; };
+  input.addEventListener('input', debounce(async () => {
+    const qv = input.value.trim(), my = ++seq; if (qv.length < 3) { res.hidden = true; return; }
+    try {
+      const r = await GET('staff/find' + qs({ q: qv })); if (my !== seq) return; clear(res);
+      r.customers.forEach(c => res.append(h('button', { type: 'button', class: 'opt', onclick: () => go('#/customer/' + c.id) }, h('b', {}, c.name), ' ', h('span', { class: 'lat muted' }, c.mobile || ''))));
+      r.jobs.forEach(j => res.append(h('button', { type: 'button', class: 'opt', onclick: () => go('#/job/' + j.id) }, 'سرویس ', h('b', { class: 'lat' }, j.service_no || j.number), ' ', j.customer_name || '', ' ', h('span', { class: 'muted' }, j.device || ''))));
+      r.builds.forEach(b => res.append(h('button', { type: 'button', class: 'opt', onclick: () => go('#/build/' + b.id) }, 'سیستم ', h('b', { class: 'lat' }, b.number || ''), ' ', b.customer_name || '', ' ', h('span', { class: 'muted' }, b.title || ''))));
+      if (!res.children.length) res.append(h('div', { class: 'opt muted' }, 'چیزی پیدا نشد.'));
+      res.hidden = false;
+    } catch (e) { }
+  }, 250));
+  input.addEventListener('blur', () => setTimeout(() => { res.hidden = true; }, 200));
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') res.hidden = true; if (e.key === 'Enter') res.hidden = true; });
+  return h('div', { class: 'gfind' }, input, res);
 }
 
 async function globalFind(q) {
@@ -70,14 +90,18 @@ const routes = [
   [/^\/stock$/, (m, q) => viewStock(q)], [/^\/product\/(new|\d+)$/, (m, q) => viewProduct(m[1], q)], [/^\/purchases$/, (m, q) => viewPurchases(q)], [/^\/purchase\/(new|\d+)$/, (m, q) => viewPurchase(m[1], q)],
   [/^\/builds$/, (m, q) => viewList('build', q)], [/^\/jobs$/, (m, q) => viewList('job', q)], [/^\/build\/(new|\d+)$/, (m, q) => viewBuild(m[1], q)], [/^\/job\/(new|\d+)$/, (m, q) => viewJob(m[1], q)], [/^\/reports$/, (m, q) => viewReports(q)], [/^\/stats$/, (m, q) => viewStats(q)],
 ];
-async function route() {
+// only the newest navigation draws: a hashchange already overtaken by another, or a page whose data came back after a later click, is dropped (else the page is drawn twice and loses the focus)
+let routeSeq = 0;
+async function route(ev) {
   if (!S.me) return;
+  if (ev instanceof HashChangeEvent && ev.newURL !== location.href) return;
+  const my = ++routeSeq;
   const { path, q } = parseHash(); const main = $('#main'); if (!main) return;
   document.querySelectorAll('.backdrop').forEach(b => b.remove());   // a dialog of the page just left
   document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('on', a.dataset.r === '#' + path || (a.dataset.r !== '#/' && path.startsWith(a.dataset.r.slice(1).replace(/s$/, '')))));
   const r = routes.find(x => x[0].test(path));
   clear(main).append(h('div', { class: 'loading' }, 'در حال بارگذاری…'));
-  try { const m = path.match(r ? r[0] : /^$/); const el = r ? await r[1](m, q) : h('p', {}, 'صفحه پیدا نشد.'); clear(main).append(el); main.scrollTop = 0; if (S.after) { const f = S.after; S.after = null; f(); } }
+  try { const m = path.match(r ? r[0] : /^$/); const el = r ? await r[1](m, q) : h('p', {}, 'صفحه پیدا نشد.'); if (my !== routeSeq) return; clear(main).append(el); main.scrollTop = 0; if (S.after) { const f = S.after; S.after = null; f(); } }
   catch (e) { clear(main).append(h('div', { class: 'panel' }, h('p', { class: 'err' }, e.message), h('button', { class: 'btn', onclick: route }, 'دوباره'))); }
 }
 window.addEventListener('hashchange', route);
@@ -93,7 +117,10 @@ function pager(total, per, page, hrefOf) {
 const table = (heads, rows, empty) => h('div', { class: 'tablewrap' }, h('table', {}, h('thead', {}, h('tr', {}, heads.map(x => h('th', {}, x)))), h('tbody', {}, rows.length ? rows : h('tr', {}, h('td', { class: 'empty', colspan: heads.length }, empty || 'موردی نیست.')))));
 const clickRow = (href, cells) => h('tr', { class: 'click', tabindex: 0, onclick: () => { location.hash = href; }, onkeydown: e => { if (e.key === 'Enter') location.hash = href; } }, cells.map(c => h('td', {}, c)));
 const filterBar = (q, base, statuses, placeholder) => {
-  const box = h('input', { type: 'search', value: q.get('q') || '', placeholder, onkeydown: e => { if (e.key === 'Enter') go({ q: e.target.value, page: 1 }); } });
+  const box = h('input', { type: 'search', value: q.get('q') || '', placeholder, onkeydown: e => { if (e.key === 'Enter') { S.refocus = true; go({ q: e.target.value, page: 1 }); } },
+    // a box already left (a row opened while the timer ran) must not pull the page back to the list
+    oninput: debounce(e => { const v = e.target.value.trim(); if (box.isConnected && (v.length >= 3 || !v) && v !== (q.get('q') || '')) { S.refocus = true; go({ q: v, page: 1 }); } }, 350) });
+  if (S.refocus) S.after = () => { S.refocus = false; const b = $('#main .filters input[type=search]'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } };
   const go = o => { const p = new URLSearchParams(q); for (const [k, v] of Object.entries(o)) { if (v === '' || v == null) p.delete(k); else p.set(k, v); } location.hash = base + (p.toString() ? '?' + p : ''); };
   return h('div', { class: 'filters' }, box, statuses ? h('div', { class: 'chips' }, h('button', { class: 'chip' + (q.get('status') ? '' : ' on'), onclick: () => go({ status: '', page: 1 }) }, 'همه'),
     Object.entries(statuses).map(([k, t]) => h('button', { class: 'chip' + (q.get('status') === k ? ' on' : ''), onclick: () => go({ status: k, page: 1 }) }, t))) : null);
@@ -183,7 +210,7 @@ function customerPicker(cur, locked) {
   const box = h('div', { class: 'cpick' }), res = h('div', { class: 'results' }), look = can('customers');
   const name = text('c_name', '', { placeholder: 'نام یا موبایل را بنویسید…' }), mobile = text('c_mobile', '', { dir: 'ltr', placeholder: '09121234567' }), mobile2 = text('c_mobile2', '', { dir: 'ltr' });
   const find = debounce(async v => {
-    const my = ++seq; clear(res); if (!look || v.length < 2) return;
+    const my = ++seq; clear(res); if (!look || v.length < 3) return;
     try {
       const r = await GET('staff/customers' + qs({ q: v, per: 8 })); if (my !== seq) return;
       r.items.forEach(c => res.append(h('button', { type: 'button', class: 'opt', onclick: () => { sel = c; draw(); } }, h('b', {}, c.name), ' ', h('span', { class: 'lat muted' }, (c.mobiles || [c.mobile, c.mobile2]).concat(c.phone ? [c.phone] : []).filter(Boolean).join(' · ')))));
@@ -242,7 +269,7 @@ function productInput(c, v, tr, ro) {
   };
   inp.addEventListener('input', debounce(async () => {
     const q = inp.value.trim(); if (found.has(q)) return pick();
-    tr.dataset.pid = ''; if (q.length < 2) return;
+    tr.dataset.pid = ''; if (q.length < 3) return;
     try {
       const r = await GET('staff/products' + qs({ q, per: 15 })); clear(dl); found.clear();
       r.items.forEach(p => { found.set(p.name, p); dl.append(h('option', { value: p.name }, 'موجودی ' + p.stock + (p.sell_price != null ? ' — ' + money(p.sell_price) : ''))); });
@@ -385,7 +412,7 @@ async function viewStats(q) {
   const card = (label, v, note) => h('div', { class: 'card' }, h('b', { class: 'lat' }, v), h('span', {}, label), note ? h('small', { class: 'err' }, note) : null);
   const m = v => v == null ? null : Number(v).toLocaleString('en-US'), miss = n => n ? `ناقص: ${n} قطعه قیمت خرید ندارد` : '';
   const counts = (by, names) => h('div', { class: 'chips' }, Object.entries(by).map(([k, n]) => h('span', { class: 'pill' }, (names[k] || k) + ': ' + n)));
-  const out = h('div', {}, title('گزارش مالی و آمار', h('span', { class: 'muted' }, r.from_j + ' تا ' + r.to_j)),
+  const out = h('div', {}, title('گزارش مالی و آمار', h('span', { class: 'muted' }, r.from_j + ' تا ' + r.to_j), h('span', { class: 'pill' }, 'مبالغ به تومان')),
     h('div', { class: 'filters' }, h('div', { class: 'chips' }, Object.entries(r.periods).map(([k, p]) => h('button', { class: 'chip' + (q.get('period') === k || (!q.get('period') && !q.get('from') && k === 'month') ? ' on' : ''), onclick: () => go({ period: k }) }, p.label))),
       h('label', { class: 'check' }, 'از ', from), h('label', { class: 'check' }, 'تا ', to), h('button', { class: 'btn', onclick: () => go({ from: digits(from.value), to: digits(to.value) }) }, 'نمایش')));
   const J = r.jobs, B = r.builds;
