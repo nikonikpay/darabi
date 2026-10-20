@@ -25,20 +25,20 @@ public sealed class FailureWatch : IDisposable
     private void OnTest(TestId id, TestRunResult r)
     {
         string name = _executors.FirstOrDefault(e => e.Definition.Id == id)?.Definition.NameKey is { } key ? Loc.Get(key) : id.Value;
-        Record(id.Value, name, r.Outcome.ToString(), r.Outcome is TestOutcome.Failed or TestOutcome.Error, r.Outcome is TestOutcome.Unsupported or TestOutcome.Inconclusive, r.Detail, r.ErrorCount);
+        Record(id.Value, name, r.Outcome.ToString(), r.Outcome is TestOutcome.Failed or TestOutcome.Error, r.Outcome is TestOutcome.Unsupported or TestOutcome.Inconclusive, r.Detail, r.ErrorCount, r.Fault);
     }
 
     private void OnBench(RecordedBenchmark run)
     {
         var r = run.Result;
-        Record(run.Definition.Id.Value, Loc.Get(run.Definition.NameKey), r.Status.ToString(), r.Status is BenchmarkStatus.Failed or BenchmarkStatus.Error, r.Status == BenchmarkStatus.Unsupported, r.Detail, 0);
+        Record(run.Definition.Id.Value, Loc.Get(run.Definition.NameKey), r.Status.ToString(), r.Status is BenchmarkStatus.Failed or BenchmarkStatus.Error, r.Status == BenchmarkStatus.Unsupported, r.Detail, 0, null);
     }
 
-    private void Record(string id, string name, string outcome, bool broke, bool skipped, string? detail, long errors)
+    private void Record(string id, string name, string outcome, bool broke, bool skipped, string? detail, long errors, Exception? fault)
     {
         if (skipped) { _log.LogWarning("{Id} {Outcome}: {Detail}", id, outcome, detail); return; }
         if (!broke) return;
-        _log.LogError("{Id} {Outcome} ({Errors} error(s)): {Detail}", id, outcome, errors, detail);
+        _log.LogError(fault, "{Id} {Outcome} ({Errors} error(s)): {Detail}", id, outcome, errors, detail);
         var kind = FailureAdvice.Classify(id, detail);
         lock (_lock) _pending.Add(new { id, name, outcome, kind = kind.ToString(), detail = Clip(detail), errors });
     }

@@ -28,7 +28,10 @@ public sealed record TestRunResult(TestId Id, TestOutcome Outcome, DateTimeOffse
     public static TestRunResult Unsupported(TestId id, DateTimeOffset now, string detail) => new(id, TestOutcome.Unsupported, now, now, 0, detail);
     public static TestRunResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, TestOutcome.Cancelled, started, now, 0, null);
     /// <summary>The test broke, not the part: the exception's type and message are kept for the log, and no error is counted against the hardware.</summary>
-    public static TestRunResult Error(TestId id, DateTimeOffset started, DateTimeOffset now, Exception e) => new(id, TestOutcome.Error, started, now, 0, $"The test itself failed ({e.GetType().Name}: {e.Message}); nothing is known about the part from this run.");
+    public static TestRunResult Error(TestId id, DateTimeOffset started, DateTimeOffset now, Exception e) => new(id, TestOutcome.Error, started, now, 0, $"The test itself failed ({e.GetType().Name}: {e.Message}); nothing is known about the part from this run.") { Fault = e };
+
+    /// <summary>For <see cref="Error"/>: the exception itself, so the log gets its whole stack (Detail keeps one line); never saved in the report.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public Exception? Fault { get; init; }
 
     /// <summary>Folds the next repeat iteration into this one: errors add up, the span widens, and the
     /// worse outcome wins together with its own Detail. Failed outranks everything so a fault caught
