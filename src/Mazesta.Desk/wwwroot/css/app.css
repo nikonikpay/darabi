@@ -72,3 +72,6 @@ tr.muted td { color: var(--muted); text-decoration: line-through; }
 @media print { body > *:not(#printArea) { display: none !important; } #printArea { display: block; } .label { border: 0; } html, body { background: #fff; height: auto; } }
 /* the tick lists (what came in with a device, the checks before it leaves): as many columns as fit */
 .ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; margin: 4px 0 8px; } .tick { display: flex; align-items: center; gap: 6px; }
+/* live search under a field (app.js suggest): fixed to the window so a table's or dialog's scroll does not cut it */
+.ddw { display: block; } .results.dd { position: fixed; z-index: 60; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px #0002; max-height: 320px; overflow: auto; max-width: 92vw; } .results[hidden] { display: none; }
+.invhead { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; } .invhead > div { flex: 1 1 520px; min-width: 0; } .invhead > .field { flex: 0 0 150px; } .invhead .three { grid-template-columns: 1.2fr 1fr 1fr; }

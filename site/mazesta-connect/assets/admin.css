@@ -90,7 +90,6 @@
 .mzc-cols .row input[type=number] { width: 56px; }
 .mzc-bar-actions { display: flex; gap: 8px; align-items: center; margin-inline-start: auto; }
 /* the form's customer search, and the service form's sums */
-.mzc-cres { display: flex; flex-direction: column; gap: 4px; max-width: 520px; margin-top: 6px; }
 .mzc-copt { text-align: start; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; font: inherit; }
 .mzc-copt:hover, .mzc-copt:focus-visible { border-color: var(--info); }
 .mzc-cpicked { margin-top: 6px; display: flex; gap: 8px; align-items: center; }
@@ -112,3 +111,11 @@
 /* the tick lists of a service or a new computer: two or more columns of checkboxes */
 .mzc-checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 16px;font-weight:400;margin:0}.mzc-checks[hidden]{display:none}.mzc-panel h4{margin:12px 0 6px}.mzc-panel h4:first-child{margin-top:0}
 p.mzc-checks{display:flex;flex-wrap:wrap;gap:6px}
+/* a live search under its field (admin.js suggest): fixed to the window so a panel's overflow does not cut it */
+.mzc-dd { position: fixed; z-index: 100000; display: flex; flex-direction: column; gap: 2px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 28px rgba(16, 24, 40, .18); max-height: 340px; overflow: auto; max-width: 92vw; padding: 4px; }
+.mzc-dd[hidden] { display: none; } .mzc-dd .mzc-copt { border: 0; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; padding: 7px 10px; } .mzc-dd .mzc-copt.on, .mzc-dd .mzc-copt:hover { background: var(--info-bg); } .mzc-dd small { padding: 8px 10px; }
+/* the invoice form */
+.mzc-invhead { display: flex; gap: 12px 16px; align-items: flex-start; flex-wrap: wrap; } .mzc-invhead .mzc-cfind { flex: 1 1 560px; } .mzc-invhead .mzc-cfind .mzc-fields { grid-template-columns: 1.2fr 1fr 1fr; } .mzc-invhead > label { flex: 0 0 150px; }
+.mzc-row.mzc-line { grid-template-columns: minmax(220px, 3fr) 70px 130px 90px minmax(140px, 2fr) 120px 34px; } .mzc-line-head { background: none; padding-block: 0; color: var(--muted); font-size: 12px; }
+.mzc-line [data-o="line"] { text-align: end; } .mzc-invsum { display: flex; gap: 12px 20px; flex-wrap: wrap; align-items: flex-end; } .mzc-invsum label { width: 170px; } .mzc-sum { display: grid; gap: 2px; } .mzc-sum span { color: var(--muted); font-size: 12px; } .mzc-sum b { font-size: 15px; } .mzc-sum.big b { font-size: 19px; }
+@media (max-width: 900px) { .mzc-row.mzc-line { grid-template-columns: 1fr 1fr; } .mzc-line-head { display: none; } }

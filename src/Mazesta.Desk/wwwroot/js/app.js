@@ -99,9 +99,16 @@ async function route(ev) {
   const { path, q } = parseHash(); const main = $('#main'); if (!main) return;
   document.querySelectorAll('.backdrop').forEach(b => b.remove());   // a dialog of the page just left
   document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('on', a.dataset.r === '#' + path || (a.dataset.r !== '#/' && path.startsWith(a.dataset.r.slice(1).replace(/s$/, '')))));
-  const r = routes.find(x => x[0].test(path));
-  clear(main).append(h('div', { class: 'loading' }, 'در حال بارگذاری…'));
-  try { const m = path.match(r ? r[0] : /^$/); const el = r ? await r[1](m, q) : h('p', {}, 'صفحه پیدا نشد.'); if (my !== routeSeq) return; clear(main).append(el); main.scrollTop = 0; if (S.after) { const f = S.after; S.after = null; f(); } }
+  const r = routes.find(x => x[0].test(path)), soft = S.soft && path === S.path; S.soft = false; S.path = path;
+  if (!soft) clear(main).append(h('div', { class: 'loading' }, 'در حال بارگذاری…'));
+  try {
+    const m = path.match(r ? r[0] : /^$/); const el = r ? await r[1](m, q) : h('p', {}, 'صفحه پیدا نشد.'); if (my !== routeSeq) return;
+    // a list's own search: only the rows change; the box being typed in stays (with what was typed meanwhile, the caret and the focus)
+    const old = soft && $('.filters input[type=search]', main), nw = old && $('.filters input[type=search]', el);
+    if (nw) { const f = document.activeElement === old, a = old.selectionStart, b = old.selectionEnd; nw.replaceWith(old); clear(main).append(el); if (f) { old.focus(); old.setSelectionRange(a, b); } }
+    else { clear(main).append(el); if (!soft) main.scrollTop = 0; }
+    if (S.after) { const f = S.after; S.after = null; f(); }
+  }
   catch (e) { clear(main).append(h('div', { class: 'panel' }, h('p', { class: 'err' }, e.message), h('button', { class: 'btn', onclick: route }, 'دوباره'))); }
 }
 window.addEventListener('hashchange', route);
@@ -117,10 +124,9 @@ function pager(total, per, page, hrefOf) {
 const table = (heads, rows, empty) => h('div', { class: 'tablewrap' }, h('table', {}, h('thead', {}, h('tr', {}, heads.map(x => h('th', {}, x)))), h('tbody', {}, rows.length ? rows : h('tr', {}, h('td', { class: 'empty', colspan: heads.length }, empty || 'موردی نیست.')))));
 const clickRow = (href, cells) => h('tr', { class: 'click', tabindex: 0, onclick: () => { location.hash = href; }, onkeydown: e => { if (e.key === 'Enter') location.hash = href; } }, cells.map(c => h('td', {}, c)));
 const filterBar = (q, base, statuses, placeholder) => {
-  const box = h('input', { type: 'search', value: q.get('q') || '', placeholder, onkeydown: e => { if (e.key === 'Enter') { S.refocus = true; go({ q: e.target.value, page: 1 }); } },
+  const box = h('input', { type: 'search', value: q.get('q') || '', placeholder, onkeydown: e => { if (e.key === 'Enter') { S.soft = true; go({ q: e.target.value, page: 1 }); } },
     // a box already left (a row opened while the timer ran) must not pull the page back to the list
-    oninput: debounce(e => { const v = e.target.value.trim(); if (box.isConnected && (v.length >= 3 || !v) && v !== (q.get('q') || '')) { S.refocus = true; go({ q: v, page: 1 }); } }, 350) });
-  if (S.refocus) S.after = () => { S.refocus = false; const b = $('#main .filters input[type=search]'); if (b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); } };
+    oninput: debounce(e => { const v = e.target.value.trim(); if (box.isConnected && (v.length >= 3 || !v) && v !== (parseHash().q.get('q') || '')) { S.soft = true; go({ q: v, page: 1 }); } }, 350) });
   const go = o => { const p = new URLSearchParams(q); for (const [k, v] of Object.entries(o)) { if (v === '' || v == null) p.delete(k); else p.set(k, v); } location.hash = base + (p.toString() ? '?' + p : ''); };
   return h('div', { class: 'filters' }, box, statuses ? h('div', { class: 'chips' }, h('button', { class: 'chip' + (q.get('status') ? '' : ' on'), onclick: () => go({ status: '', page: 1 }) }, 'همه'),
     Object.entries(statuses).map(([k, t]) => h('button', { class: 'chip' + (q.get('status') === k ? ' on' : ''), onclick: () => go({ status: k, page: 1 }) }, t))) : null);
@@ -203,26 +209,47 @@ async function viewCustomer(id, q) {
   return out;
 }
 
+/* ---------- live search under a field ---------- */
+/** From 3 characters the closest matches drop down right under the input as one types (arrows and Enter pick, Esc closes); nothing else on the page is redrawn.
+ *  load(q) resolves to [label, onPick] pairs. The box is fixed to the window so a table's or a dialog's scrolling never cuts it off. */
+function suggest(inp, load, empty) {
+  const box = h('div', { class: 'results dd', hidden: true }); let seq = 0, opts = [], at = -1;
+  const place = () => { const r = inp.getBoundingClientRect(); Object.assign(box.style, { top: r.bottom + 2 + 'px', right: document.documentElement.clientWidth - r.right + 'px', minWidth: Math.max(r.width, 300) + 'px' }); };
+  const hide = () => { box.hidden = true; window.removeEventListener('scroll', place, true); };
+  const mark = i => { at = i; opts.forEach((o, k) => o.classList.toggle('on', k === i)); if (opts[i]) opts[i].scrollIntoView({ block: 'nearest' }); };
+  inp.addEventListener('input', debounce(async () => {
+    const q = digits(inp.value).trim(), my = ++seq; if (q.length < 3) return hide();
+    let items; try { items = await load(q); } catch (e) { return; }
+    if (my !== seq || document.activeElement !== inp) return;
+    clear(box); at = -1; opts = items.map(([label, pick]) => h('button', { type: 'button', class: 'opt', tabindex: -1, onmousedown: e => e.preventDefault(), onclick: () => { hide(); pick(); } }, label));
+    box.append(...opts); if (!opts.length && empty) box.append(h('div', { class: 'opt muted' }, empty));
+    if (!box.children.length) return hide();
+    place(); box.hidden = false; window.addEventListener('scroll', place, true);
+  }, 250));
+  inp.addEventListener('keydown', e => {
+    if (box.hidden) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); mark(Math.max(0, Math.min(opts.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)))); }
+    else if (e.key === 'Enter' && opts.length) { e.preventDefault(); e.stopPropagation(); opts[Math.max(0, at)].click(); }
+    else if (e.key === 'Escape') { e.stopPropagation(); hide(); }
+  });
+  inp.addEventListener('blur', () => setTimeout(hide, 150));
+  return h('span', { class: 'ddw' }, inp, box);
+}
+const productLabel = p => [h('b', {}, p.name), ' ', stockPill(p.stock), ' ', h('span', { class: 'lat muted' }, p.sell_price != null ? money(p.sell_price) : 'بی‌قیمت')];
+
 /* ---------- the customer chooser of a build / job form ---------- */
 /** Name, mobile and a second mobile in one place: typing in the name or a number lists the closest registered customers (any of their numbers matches), and picking one
  *  chooses them; with none picked the form makes a new customer from what was typed. Without the right to see customers the site matches the mobile itself. */
 function customerPicker(cur, locked) {
-  let sel = cur || null, seq = 0;
-  const box = h('div', { class: 'cpick' }), res = h('div', { class: 'results' }), look = can('customers');
+  let sel = cur || null;
+  const box = h('div', { class: 'cpick' }), look = can('customers');
   const name = text('c_name', '', { placeholder: 'نام یا موبایل را بنویسید…' }), mobile = text('c_mobile', '', { dir: 'ltr', placeholder: '09121234567' }), mobile2 = text('c_mobile2', '', { dir: 'ltr' });
-  const find = debounce(async v => {
-    const my = ++seq; clear(res); if (!look || v.length < 3) return;
-    try {
-      const r = await GET('staff/customers' + qs({ q: v, per: 8 })); if (my !== seq) return;
-      r.items.forEach(c => res.append(h('button', { type: 'button', class: 'opt', onclick: () => { sel = c; draw(); } }, h('b', {}, c.name), ' ', h('span', { class: 'lat muted' }, (c.mobiles || [c.mobile, c.mobile2]).concat(c.phone ? [c.phone] : []).filter(Boolean).join(' · ')))));
-      if (!r.items.length) res.append(h('small', { class: 'muted' }, 'مشتری با این مشخصات ثبت نشده؛ با ذخیره، مشتری تازه ساخته می‌شود.'));
-    } catch (e) { fail(e); }
-  }, 250);
-  [name, mobile].forEach(i => i.addEventListener('input', () => find(digits(i.value).trim())));
+  const load = async v => look ? (await GET('staff/customers' + qs({ q: v, per: 8 }))).items.map(c => [[h('b', {}, c.name), ' ', h('span', { class: 'lat muted' }, (c.mobiles || [c.mobile, c.mobile2]).concat(c.phone ? [c.phone] : []).filter(Boolean).join(' · '))], () => { sel = c; draw(); }]) : [];
+  const none = look ? 'مشتری با این مشخصات ثبت نشده؛ با ذخیره، مشتری تازه ساخته می‌شود.' : null, nameBox = suggest(name, load, none), mobileBox = suggest(mobile, load, none);
   const draw = () => {
-    clear(box); clear(res);
+    clear(box);
     if (sel) { box.append(h('div', { class: 'chosen' }, h('b', {}, sel.name), ' ', h('span', { class: 'lat muted' }, (sel.mobiles || [sel.mobile, sel.mobile2]).filter(Boolean).join(' · ')), ' ', h('a', { href: '#/customer/' + sel.id }, 'پرونده'), locked ? null : h('button', { type: 'button', class: 'link', onclick: () => { sel = null; draw(); setTimeout(() => name.focus(), 0); } }, 'تغییر'))); return; }
-    box.append(h('div', { class: 'three' }, field('نام مشتری', name), field('موبایل', mobile), field('موبایل دوم', mobile2, 'اختیاری')), res);
+    box.append(h('div', { class: 'three' }, field('نام مشتری', nameBox), field('موبایل', mobileBox), field('موبایل دوم (اختیاری)', mobile2)));
   };
   draw();
   return { el: box, body: () => sel ? { customer_id: sel.id } : { c_mobile: digits(mobile.value), c_mobile2: digits(mobile2.value), c_name: name.value }, error: () => !sel && !digits(mobile.value).trim() ? 'مشتری را از فهرست انتخاب کنید یا موبایلش را بنویسید.' : '' };
@@ -237,13 +264,13 @@ function softEditor(rec, ro) {
   return { el, body: () => ({ software: rows.get().filter(r => r.name.trim()).map(r => ({ name: r.name.trim(), done: r.done })), software_note: note.value }) };
 }
 
-/** The tick lists of a record: what came in with it and the checks before it leaves; the boxes are the chosen device type's and change with it. */
+/** The tick lists of a record: what came in with it (a service; no recvTitle for a new computer) and the checks before it leaves; the boxes are the chosen device type's and change with it. */
 function checksEditor(rec, dtype, ro, recvTitle) {
   const c = rec.checks || { recv: [], check: [], note: '' }, on = { recv: new Set(c.recv), check: new Set(c.check) }, lists = S.cfg.checklists || { recv: {}, check: {} };
   const boxes = { recv: h('div', { class: 'ticks' }), check: h('div', { class: 'ticks' }) }, note = area('checks_note', c.note, { readOnly: ro, rows: 2, placeholder: 'توضیحات لوازم دریافتی' });
   const wrap = { recv: h('div', { class: 'wide' }, h('label', { class: 'lbl' }, recvTitle), boxes.recv, note), check: h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'چک کلی'), boxes.check) };
   const draw = () => ['recv', 'check'].forEach(l => {
-    const items = Object.entries(lists[l][dtype.value] || {}); clear(boxes[l]); wrap[l].hidden = l === 'check' && !items.length;
+    const items = Object.entries(lists[l][dtype.value] || {}); clear(boxes[l]); wrap[l].hidden = (l === 'check' && !items.length) || (l === 'recv' && !recvTitle);
     items.forEach(([k, label]) => boxes[l].append(h('label', { class: 'tick' }, h('input', { type: 'checkbox', checked: on[l].has(k), disabled: ro, onchange: e => e.target.checked ? on[l].add(k) : on[l].delete(k) }), label)));
   });
   dtype.addEventListener('change', draw); draw();
@@ -266,31 +293,20 @@ function rowsEditor(cols, rows, o) {
   };
   (rows || []).forEach(add);
   const el = h('div', { class: 'tablewrap rows' }, h('table', {}, h('thead', {}, h('tr', {}, cols.map(c => h('th', {}, c.label)), ro ? null : h('th', {}))), body), ro ? null : h('button', { type: 'button', class: 'btn sm', onclick: () => add(null) }, '+ ردیف'));
-  const get = () => [...body.children].map(tr => { const r = {}; cols.forEach((c, i) => { const i2 = tr.children[i].firstChild; r[c.k] = c.type === 'check' ? i2.checked : i2.value; }); if (picks) r.product_id = +tr.dataset.pid || null; return r; });
+  const get = () => [...body.children].map(tr => { const r = {}; cols.forEach((c, i) => { const i2 = tr.children[i].querySelector('input,select,textarea'); r[c.k] = c.type === 'check' ? i2.checked : i2.value; }); if (picks) r.product_id = +tr.dataset.pid || null; return r; });
   return { el, get, add };
 }
 
-/** The name box of a part row that picks from the stock: it suggests the site's products as one types; the chosen one's id rides on the row, and the row's empty fields
- *  named in c.fill (row field: product field) are filled from it (c.always: even when not empty). Typing a name that is not a product leaves the row free (no stock link). */
+/** The name box of a part row that picks from the stock: the site's products drop down under it as one types, with their stock and price; the chosen one's id rides on the row,
+ *  and the row's empty fields named in c.fill (row field: product field) are filled from it (c.always: even when not empty). Typing on leaves the row free (no stock link). */
 function productInput(c, v, tr, ro) {
-  const dl = h('datalist', { id: 'pl' + Math.random().toString(36).slice(2) }), found = new Map();
-  const inp = h('input', { type: 'text', name: c.k, value: v == null ? '' : v, list: dl.id, readOnly: ro, 'aria-label': c.label, placeholder: 'از انبار…', autocomplete: 'off' });
-  const pick = () => {
-    const p = found.get(inp.value.trim()); tr.dataset.pid = p ? p.id : '';
-    if (!p) return;
+  const inp = h('input', { type: 'text', name: c.k, value: v == null ? '' : v, readOnly: ro, 'aria-label': c.label, placeholder: 'از انبار…', autocomplete: 'off', oninput: () => { tr.dataset.pid = ''; } });
+  const pick = p => {
+    inp.value = p.name; tr.dataset.pid = p.id;
     const put = (map, always) => Object.entries(map || {}).forEach(([k, pk]) => { const el = tr.querySelector(`[name="${k}"]`); if (el && p[pk] != null && (always || !el.value)) el.value = p[pk]; });
     put(c.always, true); put(c.fill, false); tr.dispatchEvent(new Event('input', { bubbles: true }));
   };
-  inp.addEventListener('input', debounce(async () => {
-    const q = inp.value.trim(); if (found.has(q)) return pick();
-    tr.dataset.pid = ''; if (q.length < 3) return;
-    try {
-      const r = await GET('staff/products' + qs({ q, per: 15 })); clear(dl); found.clear();
-      r.items.forEach(p => { found.set(p.name, p); dl.append(h('option', { value: p.name }, 'موجودی ' + p.stock + (p.sell_price != null ? ' — ' + money(p.sell_price) : ''))); });
-      if (found.has(inp.value.trim())) pick();
-    } catch (e) { }
-  }, 250));
-  return [inp, dl];
+  return ro ? inp : suggest(inp, async q => (await GET('staff/products' + qs({ q, per: 15 }))).items.map(p => [productLabel(p), () => pick(p)]));
 }
 
 const mediaBox = (links, ro) => area('media', (links || []).join('\n'), { readOnly: ro, dir: 'ltr', rows: 2, placeholder: 'https://t.me/…  (هر لینک در یک خط)' });
@@ -306,7 +322,7 @@ async function viewBuild(id, q) {
   const ro = !can('builds', 2), picker = customerPicker(cust, !isNew), soft = softEditor(b, ro);
   const f = { invoice: text('invoice_no', b.invoice_no, { readOnly: ro, dir: 'ltr', required: isNew }), sold: h('input', { type: 'date', name: 'sold_at', value: b.sold_at, readOnly: ro }),
     status: select('status', S.cfg.buildStatuses, b.status, { disabled: ro && !(can('tests', 2) && can('builds')) }), notes: area('notes', b.notes, { readOnly: ro }), dtype: select('device_type', S.cfg.deviceTypes || {}, b.device_type || 'system', { disabled: ro }) };
-  const checks = checksEditor(b, f.dtype, ro, 'لوازم همراه سیستم');
+  const checks = checksEditor(b, f.dtype, ro);
   const cat = Object.assign({}, S.cfg.categories);
   const parts = rowsEditor([{ k: 'category', label: 'نوع', type: 'select', opts: cat, def: 'other' }, { k: 'model', label: 'مدل (از انبار)', type: 'product', always: { category: 'category' }, fill: { warranty_months: 'warranty_months' } },
     { k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }, { k: 'vendor', label: 'تأمین‌کننده / گارانتی' }, { k: 'has_box', label: 'جعبه', type: 'check' }, { k: 'qc', label: 'تست شد', type: 'check' }], b.parts, { readOnly: ro });   // no prices: the accounting's invoice holds them

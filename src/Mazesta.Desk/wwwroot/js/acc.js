@@ -14,6 +14,7 @@ const KEYS = [['F1', 'راهنمای کلیدها'], ['F2', 'فاکتور فرو
 document.addEventListener('keydown', e => {
   if (!/^F([1-9]|1[0-2])$/.test(e.key) || !S.me) return;
   e.preventDefault();   // F5 must not reload the program, F7 must not turn on caret browsing
+  if ($('.backdrop')) return;   // a dialog is open: a second F1 (or F4, F6) must not stack another one on it
   const here = S.keys && S.keys.hash === location.hash ? S.keys : {};
   if (here[e.key]) return here[e.key]();
   if (e.key === 'F1') return keysHelp();
@@ -70,18 +71,13 @@ async function viewInvoice(id, q) {
     out.sub.textContent = money(s); out.tax.textContent = money(t); out.total.textContent = money(s - d + t); out.profit.textContent = money(s - d - c);
   };
   // F3: type part of a name, Enter adds the first match (or one more of a line already there)
-  const finder = h('input', { type: 'search', placeholder: 'جستجوی کالا در انبار… (Enter: افزودن)', autocomplete: 'off' }), found = h('div', { class: 'results' }); let hits = [];
+  const finder = h('input', { type: 'search', placeholder: 'نام، برند یا کد کالا… (↓ و Enter: افزودن)', autocomplete: 'off' });
   const addProduct = p => {
     const tr = rows.el.querySelector(`tr[data-pid="${p.id}"]`);
     if (tr) { const qn = tr.querySelector('[name=qty]'); qn.value = (num(qn.value) || 1) + 1; } else rows.add({ product_id: p.id, name: p.name, qty: 1, unit_price: p.sell_price, buy_price: p.buy_price, warranty_months: p.warranty_months });
-    recalc(); finder.value = ''; clear(found); finder.focus();
+    recalc(); finder.value = ''; finder.focus();
   };
-  finder.addEventListener('input', debounce(async () => {
-    const qv = finder.value.trim(); clear(found); hits = []; if (qv.length < 3) return;
-    try { hits = (await GET('staff/products' + qs({ q: qv, per: 8 }))).items; } catch (e) { return fail(e); }
-    hits.forEach(p => found.append(h('button', { type: 'button', class: 'opt', onclick: () => addProduct(p) }, h('b', {}, p.name), ' ', stockPill(p.stock), ' ', h('span', { class: 'muted' }, money(p.sell_price)))));
-  }, 200));
-  finder.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (hits[0]) addProduct(hits[0]); } });
+  const found = suggest(finder, async qv => (await GET('staff/products' + qs({ q: qv, per: 12 }))).items.map(p => [productLabel(p), () => addProduct(p)]), 'کالایی با این نام در انبار نیست؛ با «+ ردیف» نام آزاد بنویسید.');
 
   const body = () => {
     const b = { id: isNew ? 0 : v.id, updated: v.updated, at: f.at.value, discount: digits(f.discount.value), tax_pct: digits(f.tax.value), notes: f.notes.value, title: f.title.value,
@@ -140,9 +136,10 @@ async function viewInvoice(id, q) {
     v.status === 'void' ? h('p', { class: 'panel err' }, 'باطل شد: ' + v.void_reason) : null,
     v.build_id ? h('p', { class: 'panel' }, 'این فاکتور سیستم نو است: ', h('a', { href: '#/build/' + v.build_id }, 'باز کردن سیستم'), ' (موجودی با قطعات همان سیستم حساب می‌شود)') : null,
     v.wc_order_id ? h('p', { class: 'panel' }, 'از سفارش شمارهٔ ' + v.wc_order_id + ' سایت') : null,
-    h('div', { class: 'panel grid' }, tpl ? field('نام فاکتور آماده', f.title, '', 'wide') : h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری ', h('small', { class: 'lat muted' }, 'F5')), picker.el),
-      tpl ? null : field('تاریخ', f.at), v.kind === 'proforma' ? field('اعتبار تا', f.valid) : null,
-      ro ? null : h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'افزودن کالا ', h('small', { class: 'lat muted' }, 'F3')), finder, found),
+    // the customer's three boxes and the date(s) on one line
+    h('div', { class: 'panel grid' }, tpl ? field('نام فاکتور آماده', f.title, '', 'wide') : h('div', { class: 'wide invhead' }, h('div', {}, h('label', { class: 'lbl' }, 'مشتری ', h('small', { class: 'lat muted' }, 'F5')), picker.el),
+      field('تاریخ', f.at), v.kind === 'proforma' ? field('اعتبار تا', f.valid) : null),
+      ro ? null : h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'افزودن کالا ', h('small', { class: 'lat muted' }, 'F3')), found),
       h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'ردیف‌ها'), rows.el),
       h('div', { class: 'wide money' }, field('تخفیف (تومان) — F7', f.discount), field('مالیات بر ارزش افزوده (٪)', f.tax), h('div', { class: 'sum' }, h('span', {}, 'جمع ردیف‌ها'), out.sub), h('div', { class: 'sum' }, h('span', {}, 'مالیات'), out.tax),
         h('div', { class: 'sum big' }, h('span', {}, 'مبلغ نهایی'), out.total), S.cfg.costSeen ? h('div', { class: 'sum' }, h('span', {}, 'سود (بدون مالیات)'), out.profit) : null,

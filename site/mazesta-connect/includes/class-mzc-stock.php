@@ -91,12 +91,6 @@ final class MZC_Stock
         return is_int($id) ? self::product($id) : null;
     }
 
-    /** The products for a form's picker (the page fills price and category from it): id, name, category, prices, stock. */
-    public static function options()
-    {
-        $db = MZC_Crm_Db::db(); if (!$db) { return array(); }
-        return $db->get_results('SELECT p.id, p.name, p.category, p.buy_price, p.sell_price, p.warranty_months, ' . self::stock_sql() . ' AS stock FROM `' . self::t('products') . '` p ORDER BY p.name LIMIT 3000', ARRAY_A) ?: array();
-    }
 
     /**
      * Everything about one product: the purchase lines it came in on (when, from whom, how many, at what cost) and where it went (the new computer or service, the customer,

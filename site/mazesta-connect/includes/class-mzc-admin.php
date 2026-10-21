@@ -237,19 +237,20 @@ final class MZC_Admin
         return $out . '</tbody></table></div>';
     }
 
-    /** The customer fields of a build or job form: the chosen customer, or a mobile (and name) that finds or makes one. */
-    public static function customer_picker($customer = null, $prefill = '')
+    /** The customer fields of a build or job form: the chosen customer, or a mobile (and name) that finds or makes one. $change: the chosen customer can be swapped (an invoice draft). */
+    public static function customer_picker($customer = null, $prefill = '', $required = true, $change = false)
     {
-        if ($customer) {
+        if ($customer && !$change) {
             return '<input type="hidden" name="customer_id" value="' . (int) $customer['id'] . '"><div class="mzc-field wide"><span>مشتری</span><div><strong>' . esc_html($customer['name']) . '</strong> <span class="num muted">' . esc_html($customer['mobile']) . '</span> '
                 . '<a href="' . esc_url(self::url('mzc-customers', array('view' => (int) $customer['id']))) . '">پروندهٔ مشتری</a></div></div>';
         }
-        // admin.js searches as one types the name or a number (any of the customer's numbers) and offers the closest customers; picking one fills customer_id
-        return '<div class="mzc-field wide mzc-cfind" data-mzc-cfind="' . esc_url(admin_url('admin-ajax.php?action=mzc_customer_find&n=' . wp_create_nonce('mzc_customer_find'))) . '"><input type="hidden" name="customer_id" value="">'
-            . '<div class="mzc-fields"><label>نام مشتری<input type="text" name="c_name" maxlength="190" autocomplete="off" data-mzc-cq><small>با نوشتن نام یا موبایل، مشتری‌های ثبت‌شده پیشنهاد می‌شوند.</small></label>'
-            . '<label>موبایل مشتری<input type="text" name="c_mobile" dir="ltr" placeholder="09121234567" value="' . esc_attr($prefill) . '" autocomplete="off" data-mzc-cq required></label>'
+        // admin.js searches as one types the name or a number (any of the customer's numbers) and shows the closest customers under the box; picking one fills customer_id
+        $picked = $customer ? ' data-mzc-picked="' . esc_attr(wp_json_encode(array('id' => (int) $customer['id'], 'name' => $customer['name'], 'mobiles' => MZC_Crm::mobiles_of($customer)))) . '"' : '';
+        return '<div class="mzc-field wide mzc-cfind" data-mzc-cfind="' . esc_url(admin_url('admin-ajax.php?action=mzc_customer_find&n=' . wp_create_nonce('mzc_customer_find'))) . '"' . ($required ? ' data-mzc-req' : '') . $picked . '><input type="hidden" name="customer_id" value="">'
+            . '<div class="mzc-fields"><label>نام مشتری<input type="text" name="c_name" maxlength="190" autocomplete="off" data-mzc-cq><small>با نوشتن نام یا موبایل، مشتری‌های ثبت‌شده زیر همین کادر می‌آیند.</small></label>'
+            . '<label>موبایل مشتری<input type="text" name="c_mobile" dir="ltr" placeholder="09121234567" value="' . esc_attr($prefill) . '" autocomplete="off" data-mzc-cq' . ($required ? ' required' : '') . '></label>'
             . '<label>موبایل دوم (اختیاری)<input type="text" name="c_mobile2" dir="ltr" autocomplete="off"></label></div>'
-            . '<div class="mzc-cres" hidden></div><div class="mzc-cpicked" hidden></div></div>';
+            . '<div class="mzc-cpicked" hidden></div></div>';
     }
 
     /** The programs the customer wants installed (rows picked from the shop's list or typed freely) and their own request in words. */
@@ -285,15 +286,10 @@ final class MZC_Admin
         return $out . '</select><small>گزارش‌هایی که با «ارسال به سایت» از برنامه رسیده‌اند. ★ یعنی شمارهٔ سرویسش با شمارهٔ این فرم یکی است.</small></label>';
     }
 
-    /** The stock products a part row can be picked from (an <input list="mzc-products">); admin.js fills the row's product id, category and prices from the chosen one. */
+    /** Where a part row's name box ([data-mzc-pq]) searches the stock as one types; admin.js shows the products (stock, price) under the box and fills the row's id, category and prices from the chosen one. */
     public static function product_list()
     {
-        $o = '<datalist id="mzc-products">';
-        foreach (MZC_Stock::options() as $p) {
-            $o .= '<option value="' . esc_attr($p['name']) . '" data-id="' . (int) $p['id'] . '" data-cat="' . esc_attr($p['category']) . '" data-sell="' . esc_attr($p['sell_price']) . '" data-buy="' . esc_attr($p['buy_price']) . '" data-w="' . esc_attr($p['warranty_months']) . '">'
-                . esc_html('موجودی ' . (int) $p['stock'] . ($p['sell_price'] !== null ? ' — ' . number_format((int) $p['sell_price']) . ' تومان' : '')) . '</option>';
-        }
-        return $o . '</datalist>';
+        return '<span id="mzc-products" hidden data-url="' . esc_url(admin_url('admin-ajax.php?action=mzc_product_find&n=' . wp_create_nonce('mzc_product_find'))) . '"></span>';
     }
 
     /** The device-type choice and the Telegram links of a build or job form. */
@@ -304,11 +300,11 @@ final class MZC_Admin
         return $o . '</select></label>';
     }
 
-    /** The tick lists of the form, one set per device type (admin.js shows the chosen type's); the save keeps only that type's ticks. */
-    public static function checks_field($json, $recvTitle)
+    /** The tick lists of the form, one set per device type (admin.js shows the chosen type's); the save keeps only that type's ticks. No $recvTitle: only the checks (a new computer receives nothing). */
+    public static function checks_field($json, $recvTitle = null)
     {
         $c = MZC_Crm::checks_out($json); $o = '';
-        foreach (array('recv' => $recvTitle, 'check' => 'چک کلی') as $l => $title) {
+        foreach (array_filter(array('recv' => $recvTitle, 'check' => 'چک کلی')) as $l => $title) {
             $o .= '<div class="mzc-field wide"><span>' . esc_html($title) . '</span>';
             foreach (MZC_Crm::$checklists[$l] as $type => $items) {
                 $o .= '<div class="mzc-checks" data-mzc-dtype="' . esc_attr($type) . '">';
@@ -317,14 +313,14 @@ final class MZC_Admin
             }
             $o .= '</div>';
         }
-        return $o . '<label class="wide">توضیحات لوازم دریافتی<textarea name="checks[note]" rows="2">' . esc_textarea($c['note']) . '</textarea></label>';
+        return $o . ($recvTitle ? '<label class="wide">توضیحات لوازم دریافتی<textarea name="checks[note]" rows="2">' . esc_textarea($c['note']) . '</textarea></label>' : '');
     }
 
     /** The ticks of a record for its page: each list of its device type with ✓ or ✗. */
-    public static function checks_view($json, $type, $recvTitle)
+    public static function checks_view($json, $type, $recvTitle = null)
     {
         $c = MZC_Crm::checks_out($json); $o = '';
-        foreach (array('recv' => $recvTitle, 'check' => 'چک کلی') as $l => $title) {
+        foreach (array_filter(array('recv' => $recvTitle, 'check' => 'چک کلی')) as $l => $title) {
             if (!isset(MZC_Crm::$checklists[$l][$type])) { continue; }
             $o .= '<h4>' . esc_html($title) . '</h4><p class="mzc-checks">';
             foreach (MZC_Crm::$checklists[$l][$type] as $k => $label) { $on = in_array($k, $c[$l], true); $o .= self::pill(($on ? '✓ ' : '✗ ') . $label, $on ? 'ok' : '') . ' '; }

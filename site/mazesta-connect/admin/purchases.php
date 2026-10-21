@@ -25,7 +25,7 @@ if ($add || $edit) {
     echo '<div class="mzc-field"><span>کالاها (یکی را از فهرست انتخاب کنید یا نام کالای تازه را بنویسید؛ سریال‌ها هر کدام در یک خط)</span><div class="mzc-rows" id="mzc-items" data-next="' . count($items) . '">';
     $row = function ($n, $x) {
         $o = '<div class="mzc-row" data-mzc-part><input type="hidden" name="items[' . $n . '][product_id]" value="' . esc_attr($x['product_id']) . '" data-f="pid">'
-            . '<input type="text" name="items[' . $n . '][name]" value="' . esc_attr($x['product_name']) . '" placeholder="کالا" maxlength="190" list="mzc-products" data-f="name"><select name="items[' . $n . '][category]" data-f="cat">';
+            . '<input type="text" name="items[' . $n . '][name]" value="' . esc_attr($x['product_name']) . '" placeholder="کالا" maxlength="190" data-mzc-pq autocomplete="off" data-f="name"><select name="items[' . $n . '][category]" data-f="cat">';
         foreach (MZC_Crm::$categories as $k => $l) { $o .= '<option value="' . esc_attr($k) . '"' . selected($x['category'] ?: 'other', $k, false) . '>' . esc_html($l) . '</option>'; }
         return $o . '</select><input type="number" name="items[' . $n . '][qty]" value="' . esc_attr($x['qty']) . '" placeholder="تعداد" min="1"><input type="text" name="items[' . $n . '][unit_cost]" value="' . esc_attr($x['unit_cost']) . '" placeholder="قیمت خرید واحد" dir="ltr" inputmode="numeric" data-f="buy">'
             . '<input type="text" name="items[' . $n . '][sell_price]" value="" placeholder="قیمت فروش تازه (اختیاری)" dir="ltr" inputmode="numeric"><textarea name="items[' . $n . '][serials]" rows="1" dir="ltr" placeholder="سریال‌ها">' . esc_textarea((string) $x['serials']) . '</textarea>'

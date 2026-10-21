@@ -1,20 +1,78 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
-/** The accounting on the site: invoices (a printable view, voiding), payments and cheques, and the period's money. Invoices are written in the staff program (MazestaDesk), which has the keyboard-driven form. */
+/** The accounting on the site: invoices (writing a sale, proforma or ready-made invoice, a printable view, voiding), payments and cheques, and the period's money. MazestaDesk has the same steps with F-keys. */
 if (!MZC_Admin::need_crm()) { return; }
 
 $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'invoices';
 $view = isset($_GET['view']) ? (int) $_GET['view'] : 0;
+$edit = isset($_GET['edit']) ? sanitize_key($_GET['edit']) : '';
 $money = function ($n) { return MZC_Admin::num($n); };
 $jd = function ($d) { return $d ? esc_html(MZC_Crm::jdate($d)) : '—'; };
 $stPill = function ($v) { return MZC_Admin::pill(MZC_Acc::$statuses[$v['status']], $v['status'] === 'final' ? 'ok' : ($v['status'] === 'void' ? 'bad' : 'warn')); };
+$copy = function ($id, $kind, $label) { return '<a class="mzc-btn" href="' . esc_url(MZC_Admin::post_url('invoice_copy', array('id' => $id, 'kind' => $kind))) . '">' . esc_html($label) . '</a>'; };
+// "a new sale / proforma from this ready-made invoice": one small form, on the list and on a new invoice
+$fromTpl = function ($kind) {
+    list($tpls) = MZC_Acc::invoices(array('kind' => 'template'), 1, 100);
+    if (!$tpls) { return ''; }
+    $o = MZC_Admin::form_open('invoice_copy', 'class="mzc-filter"') . '<input type="hidden" name="kind" value="' . esc_attr($kind) . '"><select name="id" required><option value="">از فاکتور آماده…</option>';
+    foreach ($tpls as $t) { $o .= '<option value="' . (int) $t['id'] . '">' . esc_html($t['title'] . ' — ' . number_format((int) $t['total'])) . '</option>'; }
+    return $o . '</select><button class="mzc-btn">بساز</button></form>';
+};
+
+if ($edit !== '') {
+    $v = $edit === 'new' ? null : MZC_Acc::invoice((int) $edit);
+    if ($edit !== 'new' && (!$v || $v['status'] !== 'draft')) { echo '<div class="mzc-notice err">فقط پیش‌نویس (و پیش‌فاکتور باز و فاکتور آماده) ویرایش می‌شود.</div>'; return; }
+    $kind = $v ? $v['kind'] : (isset($_GET['kind'], MZC_Acc::$kinds[$_GET['kind']]) && $_GET['kind'] !== 'return' ? sanitize_key($_GET['kind']) : 'sale');
+    $tpl = $kind === 'template'; $sale = $kind === 'sale' || $kind === 'return';
+    $cid = $v ? (int) $v['customer_id'] : (isset($_GET['customer']) ? (int) $_GET['customer'] : 0);
+    $val = function ($k, $def = '') use ($v) { return esc_attr($v && isset($v[$k]) && $v[$k] !== null ? (string) $v[$k] : $def); };
+    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-acc', array('kind' => $kind))) . '">‹ حسابداری</a><h2>' . esc_html($v ? 'ویرایش ' . MZC_Acc::$kinds[$kind] . ' ' . ($v['no'] ?: ($tpl ? $v['title'] : '(پیش‌نویس)')) : MZC_Acc::$kinds[$kind] . ' تازه') . '</h2></div>'
+        . (!$v && !$tpl ? $fromTpl($kind) : '') . '</div>';
+    echo '<div class="mzc-panel"><div class="body">' . MZC_Admin::form_open('invoice_save', 'class="mzc-form" data-mzc-inv') . '<input type="hidden" name="id" value="' . ($v ? (int) $v['id'] : 0) . '"><input type="hidden" name="kind" value="' . esc_attr($kind) . '">';
+    // the customer's three boxes and the date(s) on one line; dates are typed in the Persian calendar
+    echo '<div class="mzc-invhead">' . ($tpl ? '<label class="mzc-field">نام فاکتور آماده<input type="text" name="title" value="' . $val('title') . '" maxlength="190" required placeholder="مثلاً: سیستم گیمینگ اقتصادی"></label>'
+            : MZC_Admin::customer_picker($cid ? MZC_Crm::customer($cid) : null, '', $sale, true) . '<label class="mzc-field">تاریخ<input type="text" name="at" value="' . esc_attr(MZC_Crm::jdate($v ? $v['at'] : MZC_Crm::ymd())) . '" dir="ltr" placeholder="1405/07/30"></label>'
+            . ($kind === 'proforma' ? '<label class="mzc-field">اعتبار تا<input type="text" name="valid_until" value="' . esc_attr($v && $v['valid_until'] ? MZC_Crm::jdate($v['valid_until']) : MZC_Crm::jdate(MZC_Crm::ymd(time() + 3 * DAY_IN_SECONDS))) . '" dir="ltr"></label>' : ''))
+        . '</div>';
+    echo '<label class="mzc-field">افزودن کالا از انبار<input type="search" data-mzc-padd placeholder="نام، برند یا کد کالا را بنویسید… (↓ و Enter: افزودن به فاکتور)"></label>';
+    $row = function ($n, $l) {
+        $f = function ($k) use ($l) { return esc_attr(isset($l[$k]) && $l[$k] !== null ? (string) $l[$k] : ''); };
+        return '<div class="mzc-row mzc-line" data-mzc-part><input type="hidden" name="items[' . $n . '][product_id]" value="' . $f('product_id') . '" data-f="pid"><input type="hidden" name="items[' . $n . '][buy_price]" value="' . $f('buy_price') . '" data-f="buy">'
+            . '<input type="text" name="items[' . $n . '][name]" value="' . $f('name') . '" placeholder="کالا یا خدمت (از انبار یا نام آزاد)" maxlength="190" data-mzc-pq autocomplete="off" data-f="name" aria-label="کالا یا خدمت">'
+            . '<input type="text" name="items[' . $n . '][qty]" value="' . $f('qty') . '" dir="ltr" inputmode="numeric" data-f="qty" aria-label="تعداد">'
+            . '<input type="text" name="items[' . $n . '][unit_price]" value="' . $f('unit_price') . '" dir="ltr" inputmode="numeric" data-f="sell" aria-label="قیمت واحد">'
+            . '<input type="text" name="items[' . $n . '][warranty_months]" value="' . $f('warranty_months') . '" dir="ltr" inputmode="numeric" data-f="w" aria-label="گارانتی (ماه)">'
+            . '<input type="text" name="items[' . $n . '][serials]" value="' . esc_attr(str_replace("\n", ', ', (string) (isset($l['serials']) ? $l['serials'] : ''))) . '" dir="ltr" aria-label="سریال‌ها">'
+            . '<b class="num" data-o="line"></b><button type="button" class="mzc-btn sm danger x" data-mzc-remove aria-label="حذف ردیف">×</button></div>';
+    };
+    echo '<div class="mzc-field"><div class="mzc-row mzc-line mzc-line-head"><span>کالا یا خدمت</span><span>تعداد</span><span>قیمت واحد (تومان)</span><span>گارانتی (ماه)</span><span>سریال‌ها (با , جدا)</span><span>جمع</span><span></span></div>'
+        . '<div class="mzc-rows" id="mzc-lines" data-next="' . ($v ? count($v['items']) : 0) . '">';
+    if ($v) { foreach ($v['items'] as $n => $l) { echo $row($n, $l); } }
+    echo '</div><template id="mzc-lines-tpl">' . str_replace('[0]', '[__N__]', $row(0, array('qty' => 1))) . '</template><p><button type="button" class="mzc-btn sm" data-mzc-add="mzc-lines">+ ردیف آزاد (خدمت یا کالای بیرون از انبار)</button></p></div>' . MZC_Admin::product_list();
+    echo '<div class="mzc-invsum"><label class="mzc-field">تخفیف (تومان)<input type="text" name="discount" value="' . $val('discount', '') . '" dir="ltr" inputmode="numeric"></label>'
+        . '<label class="mzc-field">مالیات بر ارزش افزوده (٪)<input type="text" name="tax_pct" value="' . $val('tax_pct', (string) MZC_Acc::settings()['tax']) . '" dir="ltr" inputmode="decimal"></label>'
+        . '<div class="mzc-sum"><span>جمع ردیف‌ها</span><b class="num" data-o="sub">0</b></div><div class="mzc-sum"><span>مالیات</span><b class="num" data-o="tax">0</b></div><div class="mzc-sum big"><span>مبلغ نهایی (تومان)</span><b class="num" data-o="total">0</b></div></div>';
+    echo '<label class="mzc-field">یادداشت<textarea name="notes" rows="2">' . esc_textarea($v ? (string) $v['notes'] : '') . '</textarea></label>';
+    echo '<p class="mzc-actions">' . ($kind === 'sale' && !($v && $v['build_id']) ? '<label class="chk"><input type="checkbox" name="make_build" value="1"> سیستم نو است: با قطعی شدن به صف اسمبل برود</label>' : '')
+        . '<button class="mzc-btn' . ($sale ? '' : ' primary') . '" name="go" value="save">' . ($sale ? 'ذخیرهٔ پیش‌نویس' : 'ذخیره') . '</button>'
+        . ($sale ? '<button class="mzc-btn primary" name="go" value="final" onclick="return confirm(\'فاکتور قطعی شود؟ بعد از قطعی شدن فقط ابطال یا برگشت دارد.\')">ذخیره و قطعی کردن</button>' : '') . '</p></form></div></div>';
+    return;
+}
 
 if ($view) {
     $v = MZC_Acc::invoice($view);
     if (!$v) { echo '<div class="mzc-notice err">فاکتور پیدا نشد.</div>'; return; }
     $s = MZC_Acc::settings();
     echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-acc', array('kind' => $v['kind']))) . '">‹ حسابداری</a><h2>' . esc_html(MZC_Acc::$kinds[$v['kind']] . ' ' . ($v['no'] ?: '')) . ' ' . $stPill($v) . '</h2></div>'
-        . '<div class="mzc-actions"><button class="mzc-btn" onclick="window.print()">چاپ</button></div></div>';
+        . '<div class="mzc-actions">' . implode('', array_filter(array(
+            $v['status'] === 'draft' ? '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-acc', array('edit' => (int) $v['id']))) . '">ویرایش</a>' : '',
+            $v['status'] === 'draft' && in_array($v['kind'], array('sale', 'return'), true) ? '<a class="mzc-btn primary" href="' . esc_url(MZC_Admin::post_url('invoice_final', array('id' => (int) $v['id']))) . '" onclick="return confirm(\'فاکتور قطعی شود؟\')">قطعی کردن</a>' : '',
+            $v['kind'] === 'proforma' && $v['status'] === 'draft' ? $copy((int) $v['id'], 'sale', 'تبدیل به فاکتور فروش') : '',
+            $v['kind'] === 'template' ? $copy((int) $v['id'], 'sale', 'فاکتور فروش از این') . $copy((int) $v['id'], 'proforma', 'پیش‌فاکتور از این') : '',
+            $v['kind'] === 'sale' && $v['status'] === 'final' ? $copy((int) $v['id'], 'return', 'برگشت از فروش') : '',
+            $v['kind'] !== 'template' ? $copy((int) $v['id'], 'template', 'ذخیره به‌عنوان فاکتور آماده') : '',
+            $v['kind'] === 'template' || ($v['status'] === 'draft' && !$v['no']) ? '<a class="mzc-btn danger" href="' . esc_url(MZC_Admin::post_url('invoice_delete', array('id' => (int) $v['id']))) . '" onclick="return confirm(\'پاک شود؟\')">حذف</a>' : '',
+            $v['kind'] !== 'template' ? '<button class="mzc-btn" onclick="window.print()">چاپ</button>' : ''))) . '</div></div>';
     if ($v['status'] === 'void') { echo '<div class="mzc-notice err">باطل شد: ' . esc_html($v['void_reason']) . '</div>'; }
     echo '<div class="mzc-panel mzc-print"><div class="body"><div class="mzc-cards">'
         . '<div class="mzc-card"><span>' . esc_html($s['shop'] ?: get_bloginfo('name')) . '</span><b dir="auto">' . esc_html($s['phone']) . '</b></div>'
@@ -46,7 +104,8 @@ if ($view) {
 }
 
 $tabs = array('invoices' => 'فاکتورها', 'payments' => 'دریافت و پرداخت', 'cheques' => 'چک‌ها', 'summary' => 'خلاصهٔ مالی');
-echo '<div class="mzc-title"><h2>حسابداری</h2><span class="muted">فاکتور، پیش‌فاکتور و دریافت را در برنامهٔ «میز کار مازستا» ثبت کنید (با کلیدهای F1 تا F12).</span></div><div class="mzc-filter">';
+$new = function ($kind, $label, $cls = '') { return '<a class="mzc-btn ' . $cls . '" href="' . esc_url(MZC_Admin::url('mzc-acc', array('edit' => 'new', 'kind' => $kind))) . '">' . esc_html($label) . '</a>'; };
+echo '<div class="mzc-title"><h2>حسابداری</h2><div class="mzc-actions">' . $new('sale', '+ فاکتور فروش', 'primary') . $new('proforma', '+ پیش‌فاکتور') . $new('template', '+ فاکتور آماده') . $fromTpl('sale') . '</div></div><div class="mzc-filter">';
 foreach ($tabs as $k => $l) { echo '<a class="mzc-btn sm' . ($k === $tab ? ' primary' : '') . '" href="' . esc_url(MZC_Admin::url('mzc-acc', array('tab' => $k))) . '">' . esc_html($l) . '</a>'; }
 echo '</div>';
 $paged = max(1, isset($_GET['paged']) ? (int) $_GET['paged'] : 1); $per = 50;
@@ -60,11 +119,12 @@ if ($tab === 'invoices') {
     echo '</select><select name="status"><option value="">همهٔ وضعیت‌ها</option>';
     foreach (MZC_Acc::$statuses as $k => $l) { echo '<option value="' . esc_attr($k) . '"' . selected($st, $k, false) . '>' . esc_html($l) . '</option>'; }
     echo '</select><button class="mzc-btn primary">اعمال</button><span class="muted">' . esc_html(number_format_i18n($total)) . ' مورد</span></form>';
-    echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>نوع</th><th>شماره</th><th>تاریخ</th><th>مشتری / نام</th><th>وضعیت</th><th class="n">مبلغ</th><th class="n">مانده</th></tr></thead><tbody>';
-    if (!$rows) { echo '<tr><td class="empty" colspan="7">فاکتوری نیست.</td></tr>'; }
+    echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>نوع</th><th>شماره</th><th>تاریخ</th><th>مشتری / نام</th><th>وضعیت</th><th class="n">مبلغ</th><th class="n">مانده</th><th></th></tr></thead><tbody>';
+    if (!$rows) { echo '<tr><td class="empty" colspan="8">فاکتوری نیست.</td></tr>'; }
     foreach ($rows as $v) {
         echo '<tr class="click" data-href="' . esc_url(MZC_Admin::url('mzc-acc', array('view' => (int) $v['id']))) . '"><td>' . esc_html(MZC_Acc::$kinds[$v['kind']]) . ($v['wc_order_id'] ? ' ' . MZC_Admin::pill('سایت', 'info') : '') . '</td><td class="num">' . esc_html((string) $v['no']) . '</td><td>' . $jd($v['at']) . '</td>'
-            . '<td dir="auto">' . esc_html($v['customer_name'] ?: (string) $v['title']) . '</td><td>' . $stPill($v) . '</td><td class="n">' . $money($v['total']) . '</td><td class="n">' . ($v['kind'] === 'sale' && $v['status'] === 'final' ? $money((int) $v['total'] - (int) $v['paid']) : '') . '</td></tr>';
+            . '<td dir="auto">' . esc_html($v['customer_name'] ?: (string) $v['title']) . '</td><td>' . $stPill($v) . '</td><td class="n">' . $money($v['total']) . '</td><td class="n">' . ($v['kind'] === 'sale' && $v['status'] === 'final' ? $money((int) $v['total'] - (int) $v['paid']) : '') . '</td>'
+            . '<td>' . ($v['status'] === 'draft' ? '<a class="mzc-btn sm" href="' . esc_url(MZC_Admin::url('mzc-acc', array('edit' => (int) $v['id']))) . '">ویرایش</a>' : '') . '</td></tr>';
     }
     echo '</tbody></table></div></div>' . MZC_Admin::pager($total, $per, $paged);
 } elseif ($tab === 'payments') {

@@ -30,6 +30,18 @@ final class MZC_Crm
         }
         add_action('admin_post_mzc_photo', array(__CLASS__, 'act_photo'));
         add_action('wp_ajax_mzc_customer_find', array(__CLASS__, 'ajax_customer_find'));
+        add_action('wp_ajax_mzc_product_find', array(__CLASS__, 'ajax_product_find'));
+    }
+
+    /** The stock products a form's live search offers as one types (a part row, an invoice line): with their stock and prices. */
+    public static function ajax_product_find()
+    {
+        if (!Mazesta_Connect::can() || !check_ajax_referer('mzc_product_find', 'n', false)) { wp_send_json(array('items' => array()), 403); }
+        $q = isset($_GET['q']) ? trim(sanitize_text_field(wp_unslash($_GET['q']))) : '';
+        list($rows) = mb_strlen($q) >= 2 ? MZC_Stock::products($q, 1, 12) : array(array());
+        $n = function ($v) { return $v === null ? null : (int) $v; };
+        wp_send_json(array('items' => array_map(function ($p) use ($n) { return array('id' => (int) $p['id'], 'name' => $p['name'], 'category' => $p['category'], 'stock' => (int) $p['stock'],
+            'sell_price' => $n($p['sell_price']), 'buy_price' => $n($p['buy_price']), 'warranty_months' => $n($p['warranty_months'])); }, $rows)));
     }
 
     /** The forms' customer boxes ask this as one types a name or a mobile number: the closest customers (any of their numbers matches). */
@@ -302,7 +314,7 @@ final class MZC_Crm
     }
 
     /** The customer a form names: an existing one by mobile, or a new one made from the form's name. */
-    private static function customer_of_form()
+    public static function customer_of_form()
     {
         $id = isset($_POST['customer_id']) ? (int) $_POST['customer_id'] : 0;
         if ($id && self::customer($id)) { return $id; }

@@ -24,12 +24,12 @@ if ($add || $edit) {
         . MZC_Admin::report_select($b ? $b['report_id'] : '', $b ? (string) $b['service_no'] : '')
         . '<label>وضعیت<select name="status">' . implode('', array_map(function ($k, $l) use ($b) { return '<option value="' . esc_attr($k) . '"' . selected($b ? $b['status'] : 'queue', $k, false) . '>' . esc_html($l) . '</option>'; }, array_keys(MZC_Crm::$build_statuses), MZC_Crm::$build_statuses)) . '</select></label><label class="wide">یادداشت داخلی<textarea name="notes" rows="2">' . esc_textarea($b ? (string) $b['notes'] : '') . '</textarea></label>'
         . '</div>';
-    echo '<div class="mzc-fields">' . MZC_Admin::checks_field($b ? $b['checks'] : null, 'لوازم همراه سیستم') . '</div>';
+    echo '<div class="mzc-fields">' . MZC_Admin::checks_field($b ? $b['checks'] : null) . '</div>';
     echo '<div class="mzc-field"><span>قطعات (از انبار انتخاب کنید تا موجودی درست بماند؛ سریال و گارانتی هر قطعه. قیمت‌ها در حسابداری ثبت می‌شوند)</span><div class="mzc-rows" id="mzc-parts" data-next="' . ($b ? count($b['parts']) : 0) . '">';
     $row = function ($n, $p) {
         $o = '<div class="mzc-row" data-mzc-part><input type="hidden" name="parts[' . $n . '][product_id]" value="' . esc_attr($p['product_id']) . '" data-f="pid"><select name="parts[' . $n . '][category]" data-f="cat">';
         foreach (MZC_Crm::$categories as $k => $l) { $o .= '<option value="' . esc_attr($k) . '"' . selected($p['category'], $k, false) . '>' . esc_html($l) . '</option>'; }
-        return $o . '</select><input type="text" name="parts[' . $n . '][model]" value="' . esc_attr($p['model']) . '" placeholder="مدل قطعه (از انبار)" maxlength="190" list="mzc-products" data-f="name"><input type="text" name="parts[' . $n . '][serial]" value="' . esc_attr($p['serial']) . '" placeholder="سریال" dir="ltr" maxlength="120">'
+        return $o . '</select><input type="text" name="parts[' . $n . '][model]" value="' . esc_attr($p['model']) . '" placeholder="مدل قطعه (از انبار)" maxlength="190" data-mzc-pq autocomplete="off" data-f="name"><input type="text" name="parts[' . $n . '][serial]" value="' . esc_attr($p['serial']) . '" placeholder="سریال" dir="ltr" maxlength="120">'
             . '<input type="hidden" name="parts[' . $n . '][sell_price]" value="' . esc_attr($p['sell_price']) . '" data-f="sell"><input type="hidden" name="parts[' . $n . '][buy_price]" value="' . esc_attr($p['buy_price']) . '" data-f="buy">'
             . '<input type="number" name="parts[' . $n . '][warranty_months]" value="' . esc_attr($p['warranty_months']) . '" placeholder="گارانتی (ماه)" min="0" max="120" data-f="w"><input type="text" name="parts[' . $n . '][vendor]" value="' . esc_attr($p['vendor']) . '" placeholder="شرکت گارانتی" maxlength="120">'
             . '<label class="chk"><input type="checkbox" name="parts[' . $n . '][has_warranty]" value="1"' . checked((int) $p['has_warranty'], 1, false) . '> گارانتی</label><label class="chk"><input type="checkbox" name="parts[' . $n . '][has_box]" value="1"' . checked((int) $p['has_box'], 1, false) . '> جعبه</label>'
@@ -70,7 +70,7 @@ if ($view) {
         $model = $p['product_id'] ? '<a href="' . esc_url(MZC_Admin::url('mzc-stock', array('view' => (int) $p['product_id']))) . '">' . esc_html($p['model']) . '</a>' : esc_html($p['model']);
         echo '<tr><td>' . esc_html(MZC_Crm::$categories[$p['category']]) . '</td><td dir="auto">' . $model . '</td><td class="num">' . esc_html($p['serial'] ?: '—') . '</td><td class="n">' . MZC_Admin::num($p['sell_price']) . '</td><td class="n">' . MZC_Admin::num($p['buy_price']) . '</td><td dir="auto">' . esc_html($p['vendor'] ?: '—') . ($p['has_box'] ? ' ' . MZC_Admin::pill('جعبه') : '') . ($p['qc'] ? ' ' . MZC_Admin::pill('QC', 'ok') : '') . '</td><td>' . ($until === null && $p['has_warranty'] ? MZC_Admin::pill('گارانتی دارد', 'ok') : $w) . '</td></tr>';
     }
-    echo '</tbody></table></div></div>' . MZC_Admin::checks_view($b['checks'], (string) $b['device_type'], 'لوازم همراه سیستم') . ($b['photos'] ? MZC_Admin::soft_view($b['soft']) : '') . MZC_Admin::more($b['more']);
+    echo '</tbody></table></div></div>' . MZC_Admin::checks_view($b['checks'], (string) $b['device_type']) . ($b['photos'] ? MZC_Admin::soft_view($b['soft']) : '') . MZC_Admin::more($b['more']);
     return;
 }
 

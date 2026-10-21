@@ -529,7 +529,7 @@ final class MZC_Acc
         add_action('mzc_cheque_remind', array(__CLASS__, 'remind'));
         if (!wp_next_scheduled('mzc_cheque_remind')) { wp_schedule_event(time() + 600, 'daily', 'mzc_cheque_remind'); }
         add_action('admin_notices', array(__CLASS__, 'notice'));
-        foreach (array('acc_save', 'invoice_void', 'payment_delete', 'cheque_status') as $a) { add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a)); }
+        foreach (array('acc_save', 'invoice_void', 'invoice_save', 'invoice_final', 'invoice_copy', 'invoice_delete', 'payment_delete', 'cheque_status') as $a) { add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a)); }
     }
 
     /** Once a day: the site's administrator gets an e-mail of the cheques due within the reminder days (nothing is sent when there are none). */
@@ -550,7 +550,7 @@ final class MZC_Acc
         echo '<div class="notice notice-warning"><p>' . esc_html($n . ' چک در جریان تا ' . (int) self::settings()['remind'] . ' روز آینده (یا گذشته) سررسید دارد.') . ' <a href="' . esc_url(MZC_Admin::url('mzc-acc', array('tab' => 'cheques', 'due' => 'soon'))) . '">چک‌ها</a></p></div>';
     }
 
-    /* ---------- admin actions (the full editing is the staff program's; the site keeps settings, voiding and corrections) ---------- */
+    /* ---------- admin actions: settings, invoices (the same steps as the staff program), voiding and corrections ---------- */
 
     public static function act_acc_save()
     {
@@ -566,6 +566,51 @@ final class MZC_Acc
         MZC_Admin::guard('invoice_void');
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0; $r = self::void_invoice($id, MZC_Crm::post('reason', 255));
         MZC_Admin::back('mzc-acc', is_int($r) ? 'ok:فاکتور باطل شد.' : 'err:' . $r, array('view' => $id));
+    }
+
+    /** The site's invoice form: saves the draft (a sale, proforma or template); "final" makes a sale final right after. */
+    public static function act_invoice_save()
+    {
+        MZC_Admin::guard('invoice_save');
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0; $kind = isset($_POST['kind'], self::$kinds[$_POST['kind']]) ? sanitize_key($_POST['kind']) : 'sale';
+        $back = $id ? array('edit' => $id) : array('edit' => 'new', 'kind' => $kind);
+        $d = array('kind' => $kind, 'title' => MZC_Crm::post('title', 190), 'at' => MZC_Crm::post('at', 20), 'valid_until' => MZC_Crm::post('valid_until', 20), 'discount' => MZC_Crm::post('discount', 30),
+            'tax_pct' => MZC_Crm::post('tax_pct', 10), 'notes' => MZC_Crm::post_long('notes', 2000), 'items' => isset($_POST['items']) && is_array($_POST['items']) ? array_values(wp_unslash($_POST['items'])) : array());
+        if ($kind !== 'template' && (!empty($_POST['customer_id']) || MZC_Crm::post('c_mobile', 30) !== '')) {
+            $cid = MZC_Crm::customer_of_form(); if (!is_int($cid)) { MZC_Admin::back('mzc-acc', 'err:' . $cid, $back); }
+            $d['customer_id'] = $cid;
+        }
+        $r = self::save_invoice($id, $d, get_current_user_id());
+        if (!is_int($r)) { MZC_Admin::back('mzc-acc', 'err:' . $r, $back); }
+        if (isset($_POST['go']) && $_POST['go'] === 'final') {
+            $f = self::finalize($r, !empty($_POST['make_build']));
+            if (!is_array($f)) { MZC_Admin::back('mzc-acc', 'err:ذخیره شد ولی قطعی نشد: ' . $f, array('edit' => $r)); }
+            MZC_Admin::back('mzc-acc', 'ok:قطعی شد.' . ($f[1] ? ' ' . implode(' ', $f[1]) : ''), array('view' => $r));
+        }
+        MZC_Admin::back('mzc-acc', 'ok:ذخیره شد.', array('view' => $r));
+    }
+
+    public static function act_invoice_final()
+    {
+        MZC_Admin::guard('invoice_final');
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0; $f = self::finalize($id);
+        MZC_Admin::back('mzc-acc', is_array($f) ? 'ok:قطعی شد.' . ($f[1] ? ' ' . implode(' ', $f[1]) : '') : 'err:' . $f, array('view' => $id));
+    }
+
+    /** A new draft from another invoice: a sale from a proforma or a template, a return of a final sale, a template from any invoice. Opens the draft to change. */
+    public static function act_invoice_copy()
+    {
+        MZC_Admin::guard('invoice_copy');
+        $id = isset($_REQUEST['id']) ? (int) $_REQUEST['id'] : 0; $kind = isset($_REQUEST['kind']) ? sanitize_key($_REQUEST['kind']) : '';
+        $r = self::copy($id, $kind, get_current_user_id());
+        MZC_Admin::back('mzc-acc', is_int($r) ? 'ok:' . self::$kinds[$kind] . ' ساخته شد؛ مشتری و ردیف‌ها را بررسی کنید.' : 'err:' . $r, is_int($r) ? array('edit' => $r) : array('view' => $id));
+    }
+
+    public static function act_invoice_delete()
+    {
+        MZC_Admin::guard('invoice_delete');
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0; $r = self::delete_draft($id);
+        MZC_Admin::back('mzc-acc', is_int($r) ? 'ok:پاک شد.' : 'err:' . $r, is_int($r) ? array() : array('view' => $id));
     }
 
     public static function act_payment_delete()

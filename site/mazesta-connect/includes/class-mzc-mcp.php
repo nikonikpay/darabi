@@ -181,7 +181,7 @@ final class MZC_Mcp
         $cats = array('type' => 'string', 'enum' => array_keys(MZC_Crm::$categories));
         // the tick lists: the keys of each device type, so the AI app can tick what the person confirms (all of it, after reading a photo, or item by item)
         $keys = function ($l) { $o = array(); foreach (MZC_Crm::$checklists[$l] as $t => $items) { $o[] = $t . ': ' . implode(', ', array_map(function ($k, $v) { return $k . ' (' . $v . ')'; }, array_keys($items), $items)); } return implode('; ', $o); };
-        $checks = array('checks' => self::obj(array('recv' => array('type' => 'array', 'items' => $str, 'description' => 'Ticked keys of what came in with the device (or goes out with a new computer). ' . $keys('recv')),
+        $checks = array('checks' => self::obj(array('recv' => array('type' => 'array', 'items' => $str, 'description' => 'Ticked keys of what came in with the device (services only; a new computer has none). ' . $keys('recv')),
             'check' => array('type' => 'array', 'items' => $str, 'description' => 'Ticked keys of the checks before it leaves. ' . $keys('check')), 'note' => array('type' => 'string', 'description' => 'Notes on what came in.'))));
         $checks['checks']['description'] = 'The checklist; replaces the ticks, and keys outside the record\'s device type are dropped. Tick only what the person confirmed; get the record first to keep its current ticks.';
         $bpart = self::obj(array('product_id' => array('type' => 'integer', 'description' => 'From find_products; sets the price and takes it out of stock.'), 'category' => $cats, 'model' => $str, 'serial' => $str, 'warranty_months' => $int,
