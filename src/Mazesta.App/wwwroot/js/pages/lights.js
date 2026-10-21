@@ -36,8 +36,11 @@ const lit = (d) => (d.colors || []).find((c) => /^#[0-9a-f]{6}$/i.test(c) && c.t
 const grad = (cs) => cs.length > 1 ? `linear-gradient(${document.dir === "rtl" ? 270 : 90}deg, ${cs.join(", ")})` : cs[0];
 const look = (color) => ({ kind: "solid", a: color, b: fromHsl(toHsl(color).h + 180, 1, 0.5), edit: "a", preset: null, fx: "Static", own: "" });
 
+// What is chosen on each card and on the whole set, kept for the app's run: going to another page and back shows the last choice, not a fresh one.
+const ui = new Map();
+const allSt = { ...look("#ff0000"), speed: 60, bright: 100 };
+
 export function mount(el) {
-  const ui = new Map();   // what is chosen on each card, kept while the cards are drawn again
   let state = null;
   const msg = h("p", { class: "msg" }), makers = h("p", { class: "note", hidden: true });
   const keep = h("input", { type: "checkbox", class: "switch", "aria-label": t("Rgb_Keep") });
@@ -112,8 +115,8 @@ export function mount(el) {
   }
 
   // ——— The whole set ———
-  const allSt = look("#ff0000");
-  const allSpeed = range("Rgb_Speed", 60), allBright = range("Rgb_Brightness", 100);
+  const allSpeed = range("Rgb_Speed", allSt.speed), allBright = range("Rgb_Brightness", allSt.bright);
+  allSpeed.el.querySelector("input").addEventListener("change", () => { allSt.speed = allSpeed.value(); }); allBright.el.querySelector("input").addEventListener("change", () => { allSt.bright = allBright.value(); });
   const allBody = h("div", { class: "rgb-all-body", hidden: true });
   let allStudio = null;
   function drawAll(s) {
@@ -157,7 +160,8 @@ export function mount(el) {
   }
 
   function card(d) {
-    const mine = ui.get(d.index) || { ...look(lit(d) || "#ff0000"), speed: null, bright: null, touched: false }; ui.set(d.index, mine);
+    const key = `${d.index}:${d.name}`;   // the name too: after a new search the numbers can belong to other devices
+    const mine = ui.get(key) || { ...look(lit(d) || "#ff0000"), speed: null, bright: null, touched: false }; ui.set(key, mine);
     if (!mine.touched) mine.a = lit(d) || mine.a;   // follows the lights until the user picks a colour of their own
     const speed = range("Rgb_Speed", mine.speed ?? 60), bright = range("Rgb_Brightness", mine.bright ?? 100);
     speed.el.querySelector("input").addEventListener("change", () => { mine.speed = speed.value(); }); bright.el.querySelector("input").addEventListener("change", () => { mine.bright = bright.value(); });
