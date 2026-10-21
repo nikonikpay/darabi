@@ -58,6 +58,6 @@ export function dnsBox(i) {
   call("dns.state").then(showDns);
   return box({ kind: "Network", title: t("Dns_Title"), sub: t("Dns_Sub"), i, wide: true, a: "dns",
     body: [h("h3", { class: "dns-h" }, t("Dns_Current")), inUse,
-      h("h3", { class: "dns-h" }, t("Dns_Jumper")), h("p", { class: "note", style: { marginTop: 0 } }, t("Dns_Test_Note")), h("div", { class: "btn-row" }, auto, test), testMsg, results,
-      h("h3", { class: "dns-h" }, t("Dns_Choose")), opts, dnsMsg] });
+      h("h3", { class: "dns-h" }, t("Dns_Jumper")), h("div", { class: "btn-row" }, auto, test), testMsg, results],
+    more: [h("p", { class: "note", style: { marginTop: 0 } }, t("Dns_Test_Note")), h("h3", { class: "dns-h" }, t("Dns_Choose")), opts, dnsMsg] });
 }

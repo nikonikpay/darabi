@@ -49,6 +49,6 @@ export function netfixBox(i) {
   }
 
   return box({ kind: "Network", title: t("NetFix_Title"), sub: t("NetFix_Sub"), i, wide: true, a: "netfix",
-    body: [h("p", { class: "note", style: { marginTop: 0 } }, t("NetFix_Note")), h("div", { class: "btn-row" }, check), list, verdict,
-      h("h3", { class: "dns-h" }, t("NetFix_Repairs")), fixes, h("div", { class: "btn-row" }, fix), runMsg, results] });
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, check), list, verdict],
+    more: [h("p", { class: "note", style: { marginTop: 0 } }, t("NetFix_Note")), h("h3", { class: "dns-h" }, t("NetFix_Repairs")), fixes, h("div", { class: "btn-row" }, fix), runMsg, results] });
 }

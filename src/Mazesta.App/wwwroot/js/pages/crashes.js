@@ -40,5 +40,5 @@ export function crashesBox(i) {
   }
 
   return box({ cls: "p-tool", ico: "win", title: t("Bsod_Title"), sub: t("Bsod_Sub"), i, wide: true, a: "crashes",
-    body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Bsod_Note")), h("div", { class: "btn-row" }, read), msg, list, power, foot] });
+    body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, read), msg, list], more: [h("p", { class: "note", style: { marginTop: 0 } }, t("Bsod_Note")), power, foot] });
 }

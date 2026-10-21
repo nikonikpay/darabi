@@ -18,13 +18,22 @@ public sealed record HibernateStatus(bool? Hibernate, bool? FastStartup)
         return new(hibernate is null ? null : hibernate != 0, fast is null ? null : fast != 0 && hibernate != 0);
     }
 
-    /// <summary>On: <c>powercfg /hibernate on</c> and Fast Startup set on (Windows' default). Off: <c>powercfg /hibernate off</c>, which turns
-    /// both off. Needs administrator rights (the app runs elevated). Returns powercfg's output when it failed, null when it worked.</summary>
+    /// <summary><c>powercfg /hibernate on|off</c>; Fast Startup's own setting is left as it is (off here makes it unusable until hibernation is
+    /// back). Needs administrator rights (the app runs elevated). Returns powercfg's output when it failed, null when it worked.</summary>
     public static async Task<string?> SetAsync(ICommandRunner runner, bool on, CancellationToken ct)
     {
         var result = await runner.RunAsync("powercfg.exe", on ? "/hibernate on" : "/hibernate off", WindowsTool.Oem, null, ct).ConfigureAwait(false);
         if (result.ExitCode != 0) return string.Join(Environment.NewLine, result.Output).Trim() is { Length: > 0 } o ? o : $"powercfg exit code {result.ExitCode}";
-        if (on) { using var key = Registry.LocalMachine.OpenSubKey(SessionPower, writable: true); key?.SetValue("HiberbootEnabled", 1, RegistryValueKind.DWord); }
+        return null;
+    }
+
+    /// <summary>Fast Startup alone (HiberbootEnabled), hibernation untouched. Turning it on needs hibernation on, or Windows ignores it: then the
+    /// returned text says so and nothing is written. Null when it worked.</summary>
+    public static string? SetFastStartup(bool on, string needsHibernate)
+    {
+        if (on && Read().Hibernate == false) return needsHibernate;
+        using var key = Registry.LocalMachine.OpenSubKey(SessionPower, writable: true) ?? Registry.LocalMachine.CreateSubKey(SessionPower);
+        key.SetValue("HiberbootEnabled", on ? 1 : 0, RegistryValueKind.DWord);
         return null;
     }
 }

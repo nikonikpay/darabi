@@ -1,4 +1,4 @@
-// Gaming, as boxes on the Windows tools page: Windows' power plans (switchable, reversible) in the power hue, and the two switches Windows keeps
+// Gaming, as boxes on the games page (play.js): Windows' power plans (switchable, reversible) in the power hue, and the two switches Windows keeps
 // in its own settings (Game Mode, hardware-accelerated GPU scheduling) in the GPU's, shown as Windows has them and changed in Windows' own window.
 import { call, on } from "../bridge.js";
 import { t } from "../i18n.js";
@@ -31,8 +31,8 @@ export function gameBoostBox(i) {
   }
   call("gameboost.state").then(showGame).catch(() => {});
   return box({ kind: "Gaming", ico: "gamepad", title: t("GameBoost_Title"), sub: t("GameBoost_Sub"), i, wide: true, a: "gameboost",
-    body: [h("p", { class: "note", style: { marginTop: 0 } }, t("GameBoost_Note")), h("label", { class: "ov-show" }, gameSwitch, h("span", {}, h("b", {}, t("GameBoost_Switch")), h("small", {}, t("GameBoost_Switch_Sub")))),
-      gameMsg, gameResults, gameList] });
+    body: [h("label", { class: "ov-show" }, gameSwitch, h("span", {}, h("b", {}, t("GameBoost_Switch")), h("small", {}, t("GameBoost_Switch_Sub")))), gameMsg, gameResults],
+    more: [h("p", { class: "note", style: { marginTop: 0 } }, t("GameBoost_Note")), gameList] });
 }
 
 export function gamingBoxes(i) {

@@ -1,4 +1,4 @@
-// Windows and game tools, in three sections: the connection and games (the DNS resolver with its speed test, the power plan, the game switches),
+// Windows tools, in three sections (the game switches are on the games page, play.js): the connection (the DNS resolver with its speed test, the troubleshooter),
 // repair and clean-up (Windows' own repair tools, their real output streaming below them; Windows' own windows; hibernation and Fast Startup),
 // and memory and hosts (the virtual memory, the hosts file). Every change is one
 // button, is read back from Windows afterwards, and says what Windows answered; nothing runs on its own.
@@ -6,13 +6,11 @@ import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon, toast } from "../ui.js";
 import { box } from "../groups.js";
-import { gamingBoxes, gameBoostBox } from "./gaming.js";
 import { dnsBox } from "./dns.js";
 import { netfixBox } from "./netfix.js";
 import { crashesBox } from "./crashes.js";
 
 export function mount(el) {
-  const gaming = gamingBoxes(1);
   // ——— Repair: sfc and DISM ———
   const btn = (cmd, key, cls = "btn") => h("button", { class: cls, "data-cmd": cmd, onclick: () => call("tools.exec", { cmd }) }, t(key));
   const repair = [btn("sfc", "Tools_Sfc", "btn primary"), btn("dismScan", "Tools_DismScan"), btn("dismRestore", "Tools_DismRestore")];
@@ -21,9 +19,12 @@ export function mount(el) {
   const consoleEl = h("pre", { class: "console", "aria-live": "off", "data-empty": t("Web_Tools_ConsoleEmpty") });
 
   // ——— Hibernation and Fast Startup ———
-  const powerTiles = h("div", { class: "states" }), powerMsg = h("p", { class: "msg" });
-  const hibOff = h("button", { class: "btn primary", onclick: () => setHibernate(false) }, t("Tools_Hib_Off"));
-  const hibOn = h("button", { class: "btn", onclick: () => setHibernate(true) }, t("Tools_Hib_On"));
+  const powerMsg = h("p", { class: "msg" });
+  const hibOff = h("button", { class: "btn", onclick: () => setPower("sys.hibernate", false) }, t("Tools_Hib_Off"));
+  const hibOn = h("button", { class: "btn", onclick: () => setPower("sys.hibernate", true) }, t("Tools_Hib_On"));
+  const fastOff = h("button", { class: "btn", onclick: () => setPower("sys.faststartup", false) }, t("Tools_Fast_Off"));
+  const fastOn = h("button", { class: "btn", onclick: () => setPower("sys.faststartup", true) }, t("Tools_Fast_On"));
+  const hibTile = h("div"), fastTile = h("div");
 
   // ——— Virtual memory ———
   const vmInUse = h("dl", { class: "kv" }), vmMsg = h("p", { class: "msg" }), vmPending = h("div", { class: "pending", hidden: true });
@@ -53,22 +54,23 @@ export function mount(el) {
   // the settings that change how Windows starts and uses memory.
   const section = (key, ...boxes) => h("section", { class: "tools-sec" }, h("h2", { class: "tools-sec-title" }, t(key)), h("div", { class: "panels flow" }, boxes));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_WindowsTools")), h("p", { class: "page-lede" }, t("Web_Tools_Note")))),
-    section("Tools_Sec_Network", dnsBox(0), netfixBox(0), ...gaming.boxes, gameBoostBox(3)),
+    section("Tools_Sec_Network", dnsBox(0), netfixBox(0)),
     section("Tools_Sec_Repair",
       crashesBox(3),
       box({ cls: "p-tool", ico: "win", title: t("Tools_Repair"), sub: t("Tools_Repair_Sub"), wide: true, i: 3, a: "repair",
-        body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Web_Tools_RepairNote")), h("div", { class: "btn-row" }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar), consoleEl] }),
+        body: [h("div", { class: "btn-row", style: { marginTop: 0 } }, repair, h("span", { class: "grow" }), cancel), status, h("div", { style: { margin: "10px 0 14px" } }, bar)],
+        more: [h("p", { class: "note", style: { marginTop: 0 } }, t("Web_Tools_RepairNote")), consoleEl] }),
       box({ kind: "Storage", ico: "drive", title: t("Tools_Windows"), sub: t("Tools_Windows_Sub"), i: 4, a: "cleanup",
         body: h("div", { class: "btn-row", style: { marginTop: 0 } }, btn("cleanup", "Tools_DiskCleanup"), btn("update", "Tools_WindowsUpdate")) }),
       box({ kind: "Power", title: t("Tools_Hib_Title"), sub: t("Tools_Hib_Sub"), i: 5, a: "hibernate",
-        body: [powerTiles, h("p", { class: "note" }, t("Tools_Hib_Note")), h("div", { class: "btn-row" }, hibOff, hibOn), powerMsg] })),
+        body: [h("div", { class: "pw-row" }, hibTile, hibOff, hibOn), h("div", { class: "pw-row" }, fastTile, fastOff, fastOn), powerMsg, h("p", { class: "note" }, t("Tools_Hib_Note"))] })),
     section("Tools_Sec_System",
       box({ kind: "Memory", title: t("Tools_Vm_Title"), sub: t("Tools_Vm_Sub"), i: 6, a: "vm",
         actions: h("button", { class: "btn quiet", onclick: () => call("tools.exec", { cmd: "pagefile" }) }, icon("popout"), t("Tools_Vm_Windows")),
-        body: [vmInUse, h("div", { style: { marginTop: "14px" } }, choice), custom, vmLimit, h("div", { class: "btn-row" }, vmApply), vmMsg, vmPending] }),
+        body: [vmInUse, vmPending], more: [h("div", { style: { marginTop: "6px" } }, choice), custom, vmLimit, h("div", { class: "btn-row" }, vmApply), vmMsg] }),
       box({ cls: "p-host", ico: "net", title: t("Tools_Hosts_Title"), sub: t("Tools_Hosts_Sub"), i: 7, a: "hosts",
         actions: [h("button", { class: "btn quiet", onclick: loadHosts }, icon("refresh"), t("Tools_Hosts_Reload")), h("button", { class: "btn quiet", onclick: () => call("hosts.notepad") }, icon("doc"), t("Tools_Hosts_Notepad"))],
-        body: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn, h("span", { class: "grow" }), hostsInfo), hostsMsg, h("p", { class: "note" }, t("Tools_Hosts_Note"))] })));
+        body: [hostsInfo, hostsMsg], more: [editor, problems, h("div", { class: "btn-row" }, saveBtn, forceBtn, restoreBtn), h("p", { class: "note" }, t("Tools_Hosts_Note"))] })));
 
   // ——— Repair state (a session singleton on the host: a long sfc keeps running while the page is closed) ———
   let lines = 0;
@@ -83,15 +85,20 @@ export function mount(el) {
   const tile = (key, v) => h("div", { class: `state-tile ${v === true ? "on" : v === null || v === undefined ? "unknown" : ""}` },
     h("span", { class: "k" }, t(key)), h("span", { class: "v" }, v === true ? t("Tools_State_On") : v === false ? t("Tools_State_Off") : t("Tools_State_Default")));
   function showPower(p) {
-    powerTiles.replaceChildren(tile("Tools_Hib_Hibernate", p.hibernate), tile("Tools_Hib_FastStartup", p.fastStartup));
-    hibOff.disabled = p.hibernate === false; hibOn.disabled = p.hibernate === true && p.fastStartup === true;
+    hibTile.replaceChildren(tile("Tools_Hib_Hibernate", p.hibernate)); fastTile.replaceChildren(tile("Tools_Hib_FastStartup", p.fastStartup));
+    hibOff.disabled = p.hibernate === false; hibOn.disabled = p.hibernate === true;
+    fastOff.disabled = p.fastStartup === false; fastOn.disabled = p.fastStartup === true || p.hibernate === false;
   }
-  async function setHibernate(onState) {
-    hibOff.disabled = hibOn.disabled = true; powerMsg.className = "msg"; powerMsg.textContent = t("Tools_Working");
+  // Each one on its own: hibernation through powercfg, Fast Startup through its registry switch (it needs hibernation on to work).
+  async function setPower(method, onState) {
+    for (const b of [hibOff, hibOn, fastOff, fastOn]) b.disabled = true;
+    powerMsg.className = "msg"; powerMsg.textContent = t("Tools_Working");
+    const fast = method === "sys.faststartup";
     try {
-      const r = await call("sys.hibernate", { on: onState });
+      const r = await call(method, { on: onState });
       showPower(r.power);
-      powerMsg.className = `msg ${r.error ? "fail" : "ok"}`; powerMsg.textContent = r.error ? t("Tools_Hib_Failed", r.error) : t(onState ? "Tools_Hib_DoneOn" : "Tools_Hib_DoneOff");
+      powerMsg.className = `msg ${r.error ? "fail" : "ok"}`;
+      powerMsg.textContent = r.error ? t("Tools_Hib_Failed", r.error) : t(fast ? (onState ? "Tools_Fast_DoneOn" : "Tools_Fast_DoneOff") : (onState ? "Tools_Hib_DoneOn" : "Tools_Hib_DoneOff"));
     } catch (e) { powerMsg.className = "msg fail"; powerMsg.textContent = String(e.message || e); }
   }
 
@@ -163,5 +170,5 @@ export function mount(el) {
   call("sys.state").then((s) => { showPower(s.power); showVm(s.vm); });
   loadHosts();
   const off = on("tools", update);
-  return () => { off(); gaming.off(); };
+  return off;
 }

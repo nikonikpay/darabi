@@ -37,4 +37,18 @@ public class ResourceParityTests
             .SelectMany(f => Regex.Matches(File.ReadAllText(f), @"\{loc:Loc\s+(?:Key=)?([A-Za-z0-9_.]+)\}").Select(m => (File: Path.GetFileName(f), Key: m.Groups[1].Value)));
         Assert.Empty(used.Where(u => !keys.Contains(u.Key)).Select(u => $"{u.File}: {u.Key}"));
     }
+
+    /// <summary>The help page (help.js) explains every page of the app (app.js), each with its text in the string table: a new page comes with its help.</summary>
+    [Fact] public void Every_page_has_its_help()
+    {
+        string js = Path.Combine(RepoRoot(), "src", "Mazesta.App", "wwwroot", "js");
+        string help = File.ReadAllText(Path.Combine(js, "pages", "help.js"));
+        var keys = Read("Strings.resx").Keys.ToHashSet();
+        var pages = Regex.Matches(File.ReadAllText(Path.Combine(js, "app.js")), @"\{ id: ""([a-z]+)"", key: ""\w+"", load:").Select(m => m.Groups[1].Value).ToList();
+        Assert.NotEmpty(pages);
+        Assert.Empty(pages.Where(p => !help.Contains($"[\"{p}\",")).Select(p => "no help for page: " + p));
+        var topics = Regex.Matches(help, @"\[(?:""[a-z]+""|null), (?:""[a-z]+""|null), ""([A-Za-z_]+)""\]").Select(m => m.Groups[1].Value).ToList();
+        Assert.NotEmpty(topics);
+        Assert.Empty(topics.SelectMany(k => new[] { k, "Help_" + k }).Where(k => !keys.Contains(k)).Select(k => "missing string: " + k));
+    }
 }

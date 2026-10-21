@@ -88,9 +88,7 @@
   <data name="Nav_Gaming" xml:space="preserve">
     <value>Gaming</value>
   </data>
-  <data name="Nav_WindowsTools" xml:space="preserve">
-    <value>Windows &amp; game tools</value>
-  </data>
+  <data name="Nav_WindowsTools" xml:space="preserve"><value>Windows tools</value></data>
   <data name="Nav_Reports" xml:space="preserve">
     <value>Reports</value>
   </data>
@@ -1060,11 +1058,11 @@
   <data name="Tools_Hib_Sub" xml:space="preserve"><value>Windows' hibernation and fast start-up</value></data>
   <data name="Tools_Hib_Hibernate" xml:space="preserve"><value>Hibernation</value></data>
   <data name="Tools_Hib_FastStartup" xml:space="preserve"><value>Fast Startup</value></data>
-  <data name="Tools_Hib_Off" xml:space="preserve"><value>Turn both off</value></data>
-  <data name="Tools_Hib_On" xml:space="preserve"><value>Turn both on</value></data>
-  <data name="Tools_Hib_Note" xml:space="preserve"><value>Fast Startup is a hibernation of Windows' own session, so it works only while hibernation is on. Turning hibernation off (powercfg -h off) turns both off and deletes hiberfil.sys, which frees disk space about the size of the installed memory. Useful when a shutdown does not really restart the hardware (drivers, dual boot, a device that is not found after power-on).</value></data>
-  <data name="Tools_Hib_DoneOff" xml:space="preserve"><value>Hibernation and Fast Startup are off.</value></data>
-  <data name="Tools_Hib_DoneOn" xml:space="preserve"><value>Hibernation and Fast Startup are on.</value></data>
+  <data name="Tools_Hib_Off" xml:space="preserve"><value>Turn hibernation off</value></data>
+  <data name="Tools_Hib_On" xml:space="preserve"><value>Turn hibernation on</value></data>
+  <data name="Tools_Hib_Note" xml:space="preserve"><value>Each one is switched on its own. Turning hibernation off (powercfg -h off) deletes hiberfil.sys, which frees about as much disk space as the RAM, and Fast Startup cannot work while it is off. Turning Fast Startup off alone keeps hibernation and makes every shutdown a full one: useful when drivers, a second operating system or a device that is not found after power-on need the hardware really restarted.</value></data>
+  <data name="Tools_Hib_DoneOff" xml:space="preserve"><value>Hibernation is off.</value></data>
+  <data name="Tools_Hib_DoneOn" xml:space="preserve"><value>Hibernation is on.</value></data>
   <data name="Tools_Hib_Failed" xml:space="preserve"><value>Windows did not change it: {0}</value></data>
   <data name="Tools_Vm_Title" xml:space="preserve"><value>Virtual memory</value></data>
   <data name="Tools_Vm_Sub" xml:space="preserve"><value>The page file, as Windows' Performance Options set it</value></data>
@@ -1214,11 +1212,11 @@
   <data name="Web_Boot_Window" xml:space="preserve"><value>Opening the window…</value></data>
   <data name="Nav_Group_Tests" xml:space="preserve"><value>Tests &amp; benchmarks</value></data>
   <data name="Nav_Group_Hardware" xml:space="preserve"><value>Monitoring &amp; system</value></data>
-  <data name="Nav_Group_Gaming" xml:space="preserve"><value>Gaming &amp; overlay</value></data>
+  <data name="Nav_Group_Gaming" xml:space="preserve"><value>Gaming and overlay</value></data>
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>Optimization</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>Narrow or widen the menu</value></data>
   <data name="Web_Dash_Live" xml:space="preserve"><value>Live system status</value></data>
-  <data name="Nav_Group_Windows" xml:space="preserve"><value>Windows &amp; games</value></data>
+  <data name="Nav_Group_Windows" xml:space="preserve"><value>Windows</value></data>
   <data name="Nav_Tweaks" xml:space="preserve"><value>Tweaks</value></data>
   <data name="Nav_Shield" xml:space="preserve"><value>Firewall and antivirus</value></data>
   <data name="Shield_Title" xml:space="preserve"><value>Mazesta - Firewall and antivirus</value></data>
@@ -1418,7 +1416,7 @@
   <data name="Dns_AlreadyBest" xml:space="preserve"><value>{0} is in use and is already the fastest here ({1} ms).</value></data>
   <data name="Dns_Applied" xml:space="preserve"><value>Switched to {0}, the fastest here ({1} ms).</value></data>
   <data name="Dns_None" xml:space="preserve"><value>No resolver answered every lookup; nothing was changed. Check the connection.</value></data>
-  <data name="Tools_Sec_Network" xml:space="preserve"><value>Internet and games</value></data>
+  <data name="Tools_Sec_Network" xml:space="preserve"><value>Internet</value></data>
   <data name="Tools_Sec_Repair" xml:space="preserve"><value>Repair and clean-up</value></data>
   <data name="Tools_Sec_System" xml:space="preserve"><value>Memory and hosts</value></data>
   <data name="Updates_Lede" xml:space="preserve"><value>How Windows gets its updates. Each profile replaces the update policies set here before; Default takes them all away.</value></data>
@@ -1982,7 +1980,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>The overlay could not be switched.</value></data>
   <data name="Assist_Tool_test_dns" xml:space="preserve"><value>Tested the DNS servers</value></data>
   <data name="Nav_Apps" xml:space="preserve"><value>Programs</value></data>
-  <data name="Nav_Group_Apps" xml:space="preserve"><value>Apps, games and AI</value></data>
+  <data name="Nav_Group_Apps" xml:space="preserve"><value>Apps and AI</value></data>
   <data name="Assist_Opened" xml:space="preserve"><value>Opened «{0}».</value></data>
   <data name="Assist_OpenedApp" xml:space="preserve"><value>Opened «{0}» at {1}.</value></data>
   <data name="Assist_Pointed" xml:space="preserve"><value>Opened «{0}» and marked «{1}» on it.</value></data>
@@ -3810,4 +3808,63 @@ Cancel: stop.</value></data>
   <data name="Shield_Fw_TurnOn" xml:space="preserve"><value>Turn the firewall on</value></data>
   <data name="Shield_Other_Rule" xml:space="preserve"><value>Made by Windows or another program</value></data>
   <data name="Shield_Confirm_Other" xml:space="preserve"><value>This block was not made by this app (Windows, the program itself or you made it). Remove it, so the program is no longer blocked?</value></data>
+  <data name="Tools_Fast_Off" xml:space="preserve"><value>Turn Fast Startup off</value></data>
+  <data name="Tools_Fast_On" xml:space="preserve"><value>Turn Fast Startup on</value></data>
+  <data name="Tools_Fast_DoneOff" xml:space="preserve"><value>Fast Startup is off.</value></data>
+  <data name="Tools_Fast_DoneOn" xml:space="preserve"><value>Fast Startup is on.</value></data>
+  <data name="Tools_Fast_NeedsHib" xml:space="preserve"><value>Fast Startup works only while hibernation is on: turn hibernation on first.</value></data>
+  <data name="Nav_Help" xml:space="preserve"><value>Help</value></data>
+  <data name="Play_Lede" xml:space="preserve"><value>Windows' power plan and game switches, and a game mode that stops background services while you play. Each change is undone the same way.</value></data>
+  <data name="Help_Lede" xml:space="preserve"><value>What every part of the app does, in the order of the side menu. Type to search; the button opens that page or box.</value></data>
+  <data name="Help_Search" xml:space="preserve"><value>Search the help…</value></data>
+  <data name="Help_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Help_Tray_Title" xml:space="preserve"><value>Background monitor (tray)</value></data>
+  <data name="Help_Keys_Title" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="Help_Nav_Dashboard" xml:space="preserve"><value>A summary of the computer: its parts, their live temperature, load and clock, and anything that needs attention. Click a part to open its page.</value></data>
+  <data name="Help_Nav_Monitoring" xml:space="preserve"><value>Every sensor the computer reports, in a box per part, with minimum, average and maximum since the monitor started. Double-click a sensor to add its chart; a chart can open in its own window.</value></data>
+  <data name="Help_Nav_SystemInfo" xml:space="preserve"><value>What the computer reports about itself: processor, board, BIOS, memory modules, drives, graphics card, Windows. A field it does not report says so.</value></data>
+  <data name="Help_Nav_Cpu" xml:space="preserve"><value>The processor alone: its specifications and its live sensors (temperature, clock of each core, power, load).</value></data>
+  <data name="Help_Nav_Gpu" xml:space="preserve"><value>The graphics card alone: its specifications and its live sensors (temperature, hot spot, clock, memory, power, fan).</value></data>
+  <data name="Help_Dashboard_Ram" xml:space="preserve"><value>The memory: each module as the board reads it (size, speed, maker) and how much is in use.</value></data>
+  <data name="Help_Nav_Storage" xml:space="preserve"><value>The drives: model, size, temperature and their health (SMART) as the drive reports it.</value></data>
+  <data name="Help_Nav_Network" xml:space="preserve"><value>The network adapters and their live traffic.</value></data>
+  <data name="Help_Nav_Tests" xml:space="preserve"><value>Hardware tests under real load: processor, memory, drives, network and graphics card. Tick the tests, set their length and start; they run one after another. A test that did not run is never counted as passed, and the result is kept as a report.</value></data>
+  <data name="Help_Nav_Benchmarks" xml:space="preserve"><value>Speed measurements of the processor, memory, drives and graphics card (including ray tracing and AI). They give numbers, not pass or fail, and compare them with other systems of the same parts. Close other programs first.</value></data>
+  <data name="Help_Nav_Checkup" xml:space="preserve"><value>Is the computer working as it should? A short test of each part and a look at the system's setup, then a list of what is fine and what needs attention.</value></data>
+  <data name="Help_Nav_Checks" xml:space="preserve"><value>Checks only a person can judge: dead pixels, keyboard keys, speakers, microphone and mouse. Each shows exactly what the computer received; you decide.</value></data>
+  <data name="Help_Nav_Apps" xml:space="preserve"><value>Professional programs (rendering, design, editing, 3D) and whether this computer meets each one's minimum and recommended system, from the publisher's own requirements.</value></data>
+  <data name="Help_Nav_Ai" xml:space="preserve"><value>Which local AI models (language and image models) this computer can run and how fast. The fit is estimated first; you can download a model and measure its real speed here.</value></data>
+  <data name="Help_Gaming_PowerPlan" xml:space="preserve"><value>Windows' power plans: switch to High or Ultimate Performance for games, and back at any time.</value></data>
+  <data name="Help_Gaming_GameMode" xml:space="preserve"><value>Shows whether Windows' Game Mode and hardware-accelerated GPU scheduling (HAGS) are on; the buttons open Windows' own settings to change them.</value></data>
+  <data name="Help_GameBoost_Title" xml:space="preserve"><value>While it is on, the ticked background services (updates, downloads, telemetry, search indexing) are stopped so they take nothing from the game. Switching it off puts every service back as it was.</value></data>
+  <data name="Help_Nav_Games" xml:space="preserve"><value>Games and whether this computer meets each one's minimum, recommended and high system, from the publisher's own tiers. No frame rate is guessed.</value></data>
+  <data name="Help_Nav_Overlay" xml:space="preserve"><value>Live numbers over games and programs: frame rate with its 1% and 0.1% lows, temperatures, loads, clocks and the internet link. Start from a preset, turn items and charts on or off, and pick the size and corner. Shortcuts show, hide and move it from inside a game.</value></data>
+  <data name="Help_Nav_Tuning" xml:space="preserve"><value>Overclock, undervolt, power limit and fan of the graphics card. Every setting is temporary: a restart or a driver reset puts the card back to factory settings.</value></data>
+  <data name="Help_Tuning_Curve_Title" xml:space="preserve"><value>The card's factory voltage-frequency curve and the curve your settings make, side by side.</value></data>
+  <data name="Help_Tuning_Profiles" xml:space="preserve"><value>Save a set of settings as a profile and apply it with one click. A profile is offered only on the card it was made on.</value></data>
+  <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>A profile applied by itself when a full-screen game or a program you list (Lumion, D5 Render, 3ds Max…) starts, and taken off when it ends. The background monitor does this.</value></data>
+  <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>The same 3D scene every frame, to compare settings: apply a profile, run it, change the settings, run it again. Automatic undervolt and overclock find the card's own limits step by step under load.</value></data>
+  <data name="Help_Tuning_Memory" xml:space="preserve"><value>Memory timings and XMP, DOCP or EXPO profiles are set in the BIOS; the button restarts the computer straight into BIOS setup.</value></data>
+  <data name="Help_Nav_Lights" xml:space="preserve"><value>Colours and effects of the RGB lights of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI and more), for all devices at once or one by one.</value></data>
+  <data name="Help_Nav_Fans" xml:space="preserve"><value>The board's fan outputs: left to the board, a fixed speed, or a curve of temperature against speed that you draw. Ready profiles put one setting on every fan.</value></data>
+  <data name="Help_Dns_Title" xml:space="preserve"><value>The DNS each adapter uses now. The test times every known DNS on this connection and can set the fastest; or pick one from the list.</value></data>
+  <data name="Help_NetFix_Title" xml:space="preserve"><value>Finds where the internet stops (adapter, router, internet, DNS, a web page, proxy) without changing anything, then offers the usual repairs: clear the proxy, set the DNS, empty the DNS cache, reset the network.</value></data>
+  <data name="Help_Bsod_Title" xml:space="preserve"><value>The blue screens Windows recorded, with the stop code, its name and the likely causes to check. It only reads; it changes nothing.</value></data>
+  <data name="Help_Tools_Repair" xml:space="preserve"><value>Windows' own repair tools: SFC checks and fixes the system files, DISM checks and fixes the store SFC repairs from. Their real output is shown under the buttons.</value></data>
+  <data name="Help_Tools_Windows" xml:space="preserve"><value>Opens Windows' Disk Cleanup and Windows Update.</value></data>
+  <data name="Help_Tools_Hib_Title" xml:space="preserve"><value>Hibernation and Fast Startup, each turned on or off on its own. Hibernation off frees about as much disk as the RAM; Fast Startup off makes every shutdown a full one.</value></data>
+  <data name="Help_Tools_Vm_Title" xml:space="preserve"><value>The virtual memory (page file): managed by Windows, a size you set on a drive, or none. It applies after a restart.</value></data>
+  <data name="Help_Tools_Hosts_Title" xml:space="preserve"><value>Edit Windows' hosts file (names resolved before DNS). Every line is checked, the previous file is kept as a backup and the DNS cache is flushed after saving.</value></data>
+  <data name="Help_Nav_Tweaks" xml:space="preserve"><value>Windows settings and clean-ups: safe ones, advanced ones (read each note first) and preference switches. Tick and run; each row shows what Windows has now and can be undone. Make a restore point first.</value></data>
+  <data name="Help_Nav_Shield" xml:space="preserve"><value>Block a program from the internet in the Windows firewall, or keep a file or folder out of Defender's scans; also turn the firewall or Defender off and on, and add these to Explorer's right-click menu.</value></data>
+  <data name="Help_Nav_Updates" xml:space="preserve"><value>How Windows gets its updates: ready profiles, from Windows' default to updates turned off. Default takes every change made here away; restart after switching.</value></data>
+  <data name="Help_Nav_Drivers" xml:space="preserve"><value>The graphics card's driver against its maker's newest, the board's drivers from its maker, the drivers Windows Update offers, and devices without a working driver. Nothing is installed until you press it.</value></data>
+  <data name="Help_Nav_Reports" xml:space="preserve"><value>Every test run kept as a report: open it, compare two, add notes and the service number, delete, or send its summary to Mazesta's site.</value></data>
+  <data name="Help_Nav_Messages" xml:space="preserve"><value>Messages Mazesta sent to this computer or to every system, kept here to read again.</value></data>
+  <data name="Help_Nav_Settings" xml:space="preserve"><value>Language, render mode, the background monitor and its warnings, keyboard shortcuts, the data folder, and what is sent to Mazesta's site.</value></data>
+  <data name="Help_Nav_AppUpdate" xml:space="preserve"><value>The app's version and its updates from Mazesta's site, and the comparison lists of the benchmarks. Everything is checked against Mazesta's signature first.</value></data>
+  <data name="Help_Nav_Help" xml:space="preserve"><value>This page. Every new part of the app is added here.</value></data>
+  <data name="Help_Nav_Assistant" xml:space="preserve"><value>The assistant in the column beside the pages: ask in plain words about this computer (its parts, temperatures, reports, games, programs) or where something is in the app, and it answers or opens the page. Open it from the side menu.</value></data>
+  <data name="Help_Help_Tray_Title" xml:space="preserve"><value>A small program by the clock that starts with Windows and uses almost nothing. It warns when the processor or graphics card stays too hot at full load or the memory stays full, shows the overlay with its shortcuts, and applies the tuning rules and the lights. Turned on and off in Settings.</value></data>
+  <data name="Help_Help_Keys_Title" xml:space="preserve"><value>Ctrl+1 to Ctrl+9 open the sections of the side menu. The overlay's shortcuts (show or hide, move, Alt+U for the layout, Alt+P for the preset) work inside games too and are changed in Settings. The search box at the top of the side menu finds any page or box.</value></data>
 </root>

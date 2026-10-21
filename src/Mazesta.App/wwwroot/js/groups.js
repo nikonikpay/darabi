@@ -44,12 +44,12 @@ export function byPart(rows, kindOf) {
 // A boxed panel for any page: the same box as the dashboard's, in a part's hue (kind) or a named one (cls + ico), with actions at the end of its
 // head and an optional line under the title. Pages that are not about one part give each panel the hue of what it is about (virtual memory
 // is RAM's, the hosts file the network's), so the page still reads by colour.
-// a: the name the assistant points at it by (see AppGuide on the host).
-export function box({ kind, cls, ico, title, sub, actions, body, wide = false, i = 0, extra = "", a = null }) {
+// a: the name the assistant points at it by (see AppGuide on the host). more: what a long box keeps folded under "more details" until clicked.
+export function box({ kind, cls, ico, title, sub, actions, body, more, wide = false, i = 0, extra = "", a = null }) {
   const p = kind ? part(kind) : { cls: cls || "", icon: ico || "doc" };
   return h("section", { class: `panel ${p.cls} ${wide ? "wide" : ""} ${extra}`, style: { "--i": i }, "data-a": a },
     h("header", { class: "panel-head" }, h("span", { class: "ico" }, icon(ico || p.icon)),
       h("div", { class: "ttl" }, h("h2", { class: "panel-title" }, title), sub ? h("div", { class: "panel-sub fa" }, sub) : null),
       actions ? h("div", { class: "panel-acts" }, actions) : null),
-    h("div", { class: "panel-body" }, body));
+    h("div", { class: "panel-body" }, body, more ? h("details", { class: "spec-more box-more" }, h("summary", {}, t("Web_Details")), more) : null));
 }

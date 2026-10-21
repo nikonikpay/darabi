@@ -109,7 +109,7 @@ public class AppGuideTests
         Assert.Equal("all", R("مشخصات سیستمم رو بگو").Part);
         Assert.Equal(AiIntent.Dns, R("بهترین dns رو برام پیدا کن").Intent);
         Assert.Equal(AiIntent.Games, R("سیستم من برای گیم مناسبه؟").Intent);
-        Goes("برو بخش بازی", "tools", "gamemode");
+        Goes("برو بخش بازی", "play", "gamemode");
     }
     [Fact] public void A_command_said_not_to_be_done_starts_nothing()
     {

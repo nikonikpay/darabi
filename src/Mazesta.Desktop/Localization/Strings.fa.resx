@@ -88,9 +88,7 @@
   <data name="Nav_Gaming" xml:space="preserve">
     <value>بازی</value>
   </data>
-  <data name="Nav_WindowsTools" xml:space="preserve">
-    <value>ابزارهای ویندوز و بازی</value>
-  </data>
+  <data name="Nav_WindowsTools" xml:space="preserve"><value>ابزارهای ویندوز</value></data>
   <data name="Nav_Reports" xml:space="preserve">
     <value>گزارش‌ها</value>
   </data>
@@ -1060,11 +1058,11 @@
   <data name="Tools_Hib_Sub" xml:space="preserve"><value>هایبرنیت و راه‌اندازی سریع ویندوز</value></data>
   <data name="Tools_Hib_Hibernate" xml:space="preserve"><value>هایبرنیت</value></data>
   <data name="Tools_Hib_FastStartup" xml:space="preserve"><value>Fast Startup</value></data>
-  <data name="Tools_Hib_Off" xml:space="preserve"><value>خاموش کردن هر دو</value></data>
-  <data name="Tools_Hib_On" xml:space="preserve"><value>روشن کردن هر دو</value></data>
-  <data name="Tools_Hib_Note" xml:space="preserve"><value>Fast Startup در واقع هایبرنیت بخشی از خود ویندوز است، پس فقط وقتی هایبرنیت روشن است کار می‌کند. خاموش کردن هایبرنیت (powercfg -h off) هر دو را خاموش می‌کند و فایل hiberfil.sys را پاک می‌کند که تقریباً به اندازه‌ی رم، فضای دیسک آزاد می‌شود. وقتی خاموش کردن سیستم سخت‌افزار را واقعاً ری‌استارت نمی‌کند (درایورها، دو سیستم‌عامل، دستگاهی که بعد از روشن شدن پیدا نمی‌شود) مفید است.</value></data>
-  <data name="Tools_Hib_DoneOff" xml:space="preserve"><value>هایبرنیت و Fast Startup خاموش شدند.</value></data>
-  <data name="Tools_Hib_DoneOn" xml:space="preserve"><value>هایبرنیت و Fast Startup روشن شدند.</value></data>
+  <data name="Tools_Hib_Off" xml:space="preserve"><value>خاموش کردن هایبرنیت</value></data>
+  <data name="Tools_Hib_On" xml:space="preserve"><value>روشن کردن هایبرنیت</value></data>
+  <data name="Tools_Hib_Note" xml:space="preserve"><value>هر کدام جدا خاموش و روشن می‌شود. خاموش کردن هایبرنیت (powercfg -h off) فایل hiberfil.sys را پاک می‌کند و تقریباً به اندازه‌ی رم فضای دیسک آزاد می‌شود؛ تا هایبرنیت خاموش است Fast Startup هم کار نمی‌کند. خاموش کردن Fast Startup به‌تنهایی هایبرنیت را نگه می‌دارد و هر خاموش کردن را کامل می‌کند: وقتی درایورها، سیستم‌عامل دوم یا دستگاهی که بعد از روشن شدن پیدا نمی‌شود به ری‌استارت واقعی سخت‌افزار نیاز دارند مفید است.</value></data>
+  <data name="Tools_Hib_DoneOff" xml:space="preserve"><value>هایبرنیت خاموش شد.</value></data>
+  <data name="Tools_Hib_DoneOn" xml:space="preserve"><value>هایبرنیت روشن شد.</value></data>
   <data name="Tools_Hib_Failed" xml:space="preserve"><value>ویندوز تغییر را انجام نداد: {0}</value></data>
   <data name="Tools_Vm_Title" xml:space="preserve"><value>حافظه‌ی مجازی</value></data>
   <data name="Tools_Vm_Sub" xml:space="preserve"><value>فایل Page file، همان تنظیم Performance Options ویندوز</value></data>
@@ -1214,11 +1212,11 @@
   <data name="Web_Boot_Window" xml:space="preserve"><value>در حال باز کردن پنجره…</value></data>
   <data name="Nav_Group_Tests" xml:space="preserve"><value>تست و بنچمارک</value></data>
   <data name="Nav_Group_Hardware" xml:space="preserve"><value>مانیتورینگ و سیستم</value></data>
-  <data name="Nav_Group_Gaming" xml:space="preserve"><value>گیمینگ و اورلی</value></data>
+  <data name="Nav_Group_Gaming" xml:space="preserve"><value>بازی و اورلی</value></data>
   <data name="Nav_Group_Optimize" xml:space="preserve"><value>بهینه‌سازی</value></data>
   <data name="Nav_Collapse" xml:space="preserve"><value>جمع یا باز کردن منو</value></data>
   <data name="Web_Dash_Live" xml:space="preserve"><value>وضعیت زنده‌ی سیستم</value></data>
-  <data name="Nav_Group_Windows" xml:space="preserve"><value>ویندوز و بازی</value></data>
+  <data name="Nav_Group_Windows" xml:space="preserve"><value>ویندوز</value></data>
   <data name="Nav_Tweaks" xml:space="preserve"><value>ترفندهای ویندوز</value></data>
   <data name="Nav_Shield" xml:space="preserve"><value>فایروال و آنتی‌ویروس</value></data>
   <data name="Shield_Title" xml:space="preserve"><value>مازستا - فایروال و آنتی‌ویروس</value></data>
@@ -1418,7 +1416,7 @@
   <data name="Dns_AlreadyBest" xml:space="preserve"><value>{0} در حال استفاده است و همین حالا سریع‌ترین است ({1} میلی‌ثانیه).</value></data>
   <data name="Dns_Applied" xml:space="preserve"><value>DNS روی {0} گذاشته شد، سریع‌ترین روی این اینترنت ({1} میلی‌ثانیه).</value></data>
   <data name="Dns_None" xml:space="preserve"><value>هیچ DNSی به همهٔ پرسش‌ها پاسخ نداد و چیزی تغییر نکرد. اتصال اینترنت را بررسی کنید.</value></data>
-  <data name="Tools_Sec_Network" xml:space="preserve"><value>اینترنت و بازی</value></data>
+  <data name="Tools_Sec_Network" xml:space="preserve"><value>اینترنت</value></data>
   <data name="Tools_Sec_Repair" xml:space="preserve"><value>تعمیر و پاک‌سازی</value></data>
   <data name="Tools_Sec_System" xml:space="preserve"><value>حافظه و فایل hosts</value></data>
   <data name="Updates_Lede" xml:space="preserve"><value>ویندوز به‌روزرسانی‌ها را چطور بگیرد. هر پروفایل جای تنظیمات قبلی همین‌جا را می‌گیرد؛ «پیش‌فرض ویندوز» همه را برمی‌دارد.</value></data>
@@ -1982,7 +1980,7 @@
   <data name="Assist_Overlay_Failed" xml:space="preserve"><value>اورلی تغییر نکرد.</value></data>
   <data name="Assist_Tool_test_dns" xml:space="preserve"><value>تست DNSها</value></data>
   <data name="Nav_Apps" xml:space="preserve"><value>برنامه‌های تخصصی</value></data>
-  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها، بازی و AI</value></data>
+  <data name="Nav_Group_Apps" xml:space="preserve"><value>برنامه‌ها و AI</value></data>
   <data name="Assist_Opened" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم.</value></data>
   <data name="Assist_OpenedApp" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و {1} را نشان دادم.</value></data>
   <data name="Assist_Pointed" xml:space="preserve"><value>صفحهٔ «{0}» را باز کردم و «{1}» را روی آن علامت زدم.</value></data>
@@ -3810,4 +3808,63 @@
   <data name="Shield_Fw_TurnOn" xml:space="preserve"><value>روشن کردن فایروال</value></data>
   <data name="Shield_Other_Rule" xml:space="preserve"><value>ساخته‌ی ویندوز یا برنامه‌ای دیگر</value></data>
   <data name="Shield_Confirm_Other" xml:space="preserve"><value>این مسدودسازی را این برنامه نساخته (ویندوز، خود برنامه یا خودتان ساخته‌اید). برداشته شود تا برنامه دیگر مسدود نباشد؟</value></data>
+  <data name="Tools_Fast_Off" xml:space="preserve"><value>خاموش کردن Fast Startup</value></data>
+  <data name="Tools_Fast_On" xml:space="preserve"><value>روشن کردن Fast Startup</value></data>
+  <data name="Tools_Fast_DoneOff" xml:space="preserve"><value>Fast Startup خاموش شد.</value></data>
+  <data name="Tools_Fast_DoneOn" xml:space="preserve"><value>Fast Startup روشن شد.</value></data>
+  <data name="Tools_Fast_NeedsHib" xml:space="preserve"><value>Fast Startup فقط وقتی هایبرنیت روشن است کار می‌کند: اول هایبرنیت را روشن کنید.</value></data>
+  <data name="Nav_Help" xml:space="preserve"><value>راهنما</value></data>
+  <data name="Play_Lede" xml:space="preserve"><value>پلن انرژی و سوئیچ‌های بازی ویندوز، و حالت بازی که سرویس‌های پس‌زمینه را هنگام بازی متوقف می‌کند. هر تغییر از همین‌جا برمی‌گردد.</value></data>
+  <data name="Help_Lede" xml:space="preserve"><value>هر بخش برنامه چه کاری می‌کند، به ترتیب منوی کنار صفحه. برای جستجو تایپ کنید؛ دکمه‌ی هر مورد همان صفحه یا بخش را باز می‌کند.</value></data>
+  <data name="Help_Search" xml:space="preserve"><value>جستجو در راهنما…</value></data>
+  <data name="Help_Open" xml:space="preserve"><value>باز کردن</value></data>
+  <data name="Help_Tray_Title" xml:space="preserve"><value>پایشگر پس‌زمینه (کنار ساعت)</value></data>
+  <data name="Help_Keys_Title" xml:space="preserve"><value>میان‌برهای صفحه‌کلید</value></data>
+  <data name="Help_Nav_Dashboard" xml:space="preserve"><value>خلاصه‌ی سیستم: قطعه‌ها، دما، بار و فرکانس زنده‌ی آن‌ها و هر چیزی که نیاز به توجه دارد. با کلیک روی هر قطعه صفحه‌ی آن باز می‌شود.</value></data>
+  <data name="Help_Nav_Monitoring" xml:space="preserve"><value>همه‌ی سنسورهایی که سیستم گزارش می‌دهد، در یک کادر برای هر قطعه، با کمترین، میانگین و بیشترین مقدار از زمان شروع. با دوبار کلیک روی هر سنسور نمودارش اضافه می‌شود و هر نمودار در پنجره‌ی جدا هم باز می‌شود.</value></data>
+  <data name="Help_Nav_SystemInfo" xml:space="preserve"><value>مشخصاتی که سیستم درباره‌ی خودش می‌دهد: پردازنده، مادربرد، بایوس، ماژول‌های رم، درایوها، کارت گرافیک و ویندوز. هر چیزی که گزارش نشود، همین را می‌گوید.</value></data>
+  <data name="Help_Nav_Cpu" xml:space="preserve"><value>فقط پردازنده: مشخصات و سنسورهای زنده (دما، فرکانس هر هسته، توان و بار).</value></data>
+  <data name="Help_Nav_Gpu" xml:space="preserve"><value>فقط کارت گرافیک: مشخصات و سنسورهای زنده (دما، هات‌اسپات، فرکانس، حافظه، توان و فن).</value></data>
+  <data name="Help_Dashboard_Ram" xml:space="preserve"><value>حافظه‌ی رم: هر ماژول همان‌طور که مادربرد می‌خواند (ظرفیت، سرعت، سازنده) و مقدار استفاده‌شده.</value></data>
+  <data name="Help_Nav_Storage" xml:space="preserve"><value>درایوها: مدل، ظرفیت، دما و سلامت (SMART) همان‌طور که خود درایو گزارش می‌دهد.</value></data>
+  <data name="Help_Nav_Network" xml:space="preserve"><value>کارت‌های شبکه و ترافیک زنده‌ی آن‌ها.</value></data>
+  <data name="Help_Nav_Tests" xml:space="preserve"><value>تست سخت‌افزار زیر بار واقعی: پردازنده، رم، درایوها، شبکه و کارت گرافیک. تست‌ها را تیک بزنید، مدتشان را تعیین کنید و شروع کنید؛ پشت‌سرهم اجرا می‌شوند. تستی که اجرا نشده هیچ‌وقت قبول حساب نمی‌شود و نتیجه به‌صورت گزارش ذخیره می‌شود.</value></data>
+  <data name="Help_Nav_Benchmarks" xml:space="preserve"><value>اندازه‌گیری سرعت پردازنده، رم، درایوها و کارت گرافیک (همراه با ری‌تریسینگ و هوش مصنوعی). عدد می‌دهند، نه قبول یا رد، و با سیستم‌های دیگر با همان قطعه‌ها مقایسه می‌کنند. قبل از اجرا برنامه‌های دیگر را ببندید.</value></data>
+  <data name="Help_Nav_Checkup" xml:space="preserve"><value>آیا سیستم درست کار می‌کند؟ یک تست کوتاه از هر قطعه و بررسی تنظیمات سیستم، و در آخر فهرست مواردی که سالم‌اند و مواردی که نیاز به توجه دارند.</value></data>
+  <data name="Help_Nav_Checks" xml:space="preserve"><value>بررسی‌هایی که فقط آدم می‌تواند قضاوت کند: پیکسل سوخته، کلیدهای کیبورد، اسپیکر، میکروفون و ماوس. هر کدام دقیقاً نشان می‌دهد سیستم چه دریافت کرده و تصمیم با شماست.</value></data>
+  <data name="Help_Nav_Apps" xml:space="preserve"><value>برنامه‌های تخصصی (رندر، طراحی، تدوین، سه‌بعدی) و اینکه این سیستم حداقل و پیشنهادی هر کدام را دارد یا نه، بر اساس اعلام خود سازنده.</value></data>
+  <data name="Help_Nav_Ai" xml:space="preserve"><value>کدام مدل‌های هوش مصنوعی محلی (مدل زبانی و تصویری) روی این سیستم اجرا می‌شوند و با چه سرعتی. اول تخمین زده می‌شود؛ می‌توانید مدل را دانلود کنید و سرعت واقعی‌اش را همین‌جا بسنجید.</value></data>
+  <data name="Help_Gaming_PowerPlan" xml:space="preserve"><value>پلن‌های انرژی ویندوز: برای بازی روی High یا Ultimate Performance بگذارید و هر وقت خواستید برگردانید.</value></data>
+  <data name="Help_Gaming_GameMode" xml:space="preserve"><value>نشان می‌دهد Game Mode ویندوز و زمان‌بندی سخت‌افزاری GPU (HAGS) روشن‌اند یا نه؛ دکمه‌ها تنظیمات خود ویندوز را برای تغییرشان باز می‌کنند.</value></data>
+  <data name="Help_GameBoost_Title" xml:space="preserve"><value>وقتی روشن است، سرویس‌های پس‌زمینه‌ی تیک‌خورده (آپدیت، دانلود، تله‌متری، ایندکس جستجو) متوقف می‌شوند تا چیزی از بازی نگیرند. با خاموش کردن، همه‌ی سرویس‌ها مثل قبل برمی‌گردند.</value></data>
+  <data name="Help_Nav_Games" xml:space="preserve"><value>بازی‌ها و اینکه این سیستم حداقل، پیشنهادی و سطح بالای هر کدام را دارد یا نه، بر اساس اعلام ناشر. هیچ FPSی حدس زده نمی‌شود.</value></data>
+  <data name="Help_Nav_Overlay" xml:space="preserve"><value>عددهای زنده روی بازی و برنامه‌ها: FPS با 1% و 0.1% Low، دما، بار، فرکانس و وضعیت اینترنت. از یک پیش‌فرض شروع کنید، موارد و نمودارها را روشن یا خاموش کنید و اندازه و گوشه‌ی صفحه را انتخاب کنید. با میان‌برها وسط بازی هم نمایش، پنهان و جابه‌جا می‌شود.</value></data>
+  <data name="Help_Nav_Tuning" xml:space="preserve"><value>اورکلاک، آندرولت، محدودیت توان و فن کارت گرافیک. همه‌ی تنظیمات موقت‌اند: با ری‌استارت یا ریست درایور کارت به تنظیمات کارخانه برمی‌گردد.</value></data>
+  <data name="Help_Tuning_Curve_Title" xml:space="preserve"><value>منحنی ولتاژ-فرکانس کارخانه‌ی کارت و منحنی‌ای که تنظیمات شما می‌سازد، کنار هم.</value></data>
+  <data name="Help_Tuning_Profiles" xml:space="preserve"><value>مجموعه‌ای از تنظیمات را به‌صورت پروفایل ذخیره کنید و با یک کلیک اعمال کنید. هر پروفایل فقط روی همان کارتی که با آن ساخته شده پیشنهاد می‌شود.</value></data>
+  <data name="Help_Tuning_Rules_Title" xml:space="preserve"><value>پروفایلی که وقتی یک بازی تمام‌صفحه یا برنامه‌ای که مشخص کرده‌اید (Lumion، D5 Render، 3ds Max و…) باز شود خودکار اعمال می‌شود و با بسته شدنش برمی‌گردد. این کار را پایشگر پس‌زمینه انجام می‌دهد.</value></data>
+  <data name="Help_Tuning_SceneTest_Title" xml:space="preserve"><value>یک صحنه‌ی سه‌بعدی ثابت برای مقایسه‌ی تنظیمات: پروفایل را اعمال کنید، اجرا کنید، تنظیمات را عوض کنید و دوباره اجرا کنید. آندرولت و اورکلاک خودکار مرحله‌به‌مرحله زیر بار حد خود کارت را پیدا می‌کنند.</value></data>
+  <data name="Help_Tuning_Memory" xml:space="preserve"><value>تایمینگ رم و پروفایل‌های XMP، DOCP یا EXPO در بایوس تنظیم می‌شوند؛ دکمه سیستم را مستقیم به تنظیمات بایوس ری‌استارت می‌کند.</value></data>
+  <data name="Help_Nav_Lights" xml:space="preserve"><value>رنگ و افکت نورهای RGB رم، کارت گرافیک، مادربرد، فن‌ها و نوارها (Corsair، ASUS، Gigabyte، MSI و…)، برای همه با هم یا هر کدام جدا.</value></data>
+  <data name="Help_Nav_Fans" xml:space="preserve"><value>خروجی‌های فن مادربرد: کنترل خود مادربرد، سرعت ثابت، یا منحنی دما به سرعت که خودتان می‌کشید. پروفایل‌های آماده یک تنظیم را روی همه‌ی فن‌ها می‌گذارند.</value></data>
+  <data name="Help_Dns_Title" xml:space="preserve"><value>DNSی که هر کارت شبکه الان استفاده می‌کند. تست، همه‌ی DNSهای شناخته‌شده را روی همین اینترنت زمان‌سنجی می‌کند و می‌تواند سریع‌ترین را بگذارد؛ یا از فهرست یکی را انتخاب کنید.</value></data>
+  <data name="Help_NetFix_Title" xml:space="preserve"><value>پیدا می‌کند اینترنت کجا قطع است (کارت شبکه، مودم، اینترنت، DNS، صفحه‌ی وب، پراکسی) بدون اینکه چیزی را تغییر دهد، بعد تعمیرهای رایج را پیشنهاد می‌کند: پاک کردن پراکسی، تنظیم DNS، خالی کردن کش DNS و ریست شبکه.</value></data>
+  <data name="Help_Bsod_Title" xml:space="preserve"><value>صفحه‌های آبی که ویندوز ثبت کرده، با کد خطا، نامش و علت‌های احتمالی برای بررسی. فقط می‌خواند و چیزی را تغییر نمی‌دهد.</value></data>
+  <data name="Help_Tools_Repair" xml:space="preserve"><value>ابزارهای تعمیر خود ویندوز: SFC فایل‌های سیستمی را بررسی و تعمیر می‌کند و DISM مخزنی را که SFC از آن تعمیر می‌کند. خروجی واقعی‌شان زیر دکمه‌ها نمایش داده می‌شود.</value></data>
+  <data name="Help_Tools_Windows" xml:space="preserve"><value>پاک‌سازی دیسک و Windows Update را در پنجره‌ی خود ویندوز باز می‌کند.</value></data>
+  <data name="Help_Tools_Hib_Title" xml:space="preserve"><value>هایبرنیت و Fast Startup، هر کدام جدا خاموش و روشن می‌شود. خاموش کردن هایبرنیت تقریباً به اندازه‌ی رم فضای دیسک آزاد می‌کند؛ خاموش کردن Fast Startup هر خاموش کردن را کامل می‌کند.</value></data>
+  <data name="Help_Tools_Vm_Title" xml:space="preserve"><value>حافظه‌ی مجازی (Page File): مدیریت با ویندوز، اندازه‌ی دلخواه روی یک درایو، یا بدون آن. بعد از ری‌استارت اعمال می‌شود.</value></data>
+  <data name="Help_Tools_Hosts_Title" xml:space="preserve"><value>ویرایش فایل hosts ویندوز (نام‌هایی که قبل از DNS پیدا می‌شوند). همه‌ی خطوط بررسی می‌شوند، نسخه‌ی قبلی پشتیبان گرفته می‌شود و بعد از ذخیره کش DNS خالی می‌شود.</value></data>
+  <data name="Help_Nav_Tweaks" xml:space="preserve"><value>تنظیمات و پاک‌سازی‌های ویندوز: موارد امن، موارد پیشرفته (اول توضیح هر کدام را بخوانید) و سوئیچ‌های سلیقه‌ای. تیک بزنید و اجرا کنید؛ هر ردیف وضعیت فعلی ویندوز را نشان می‌دهد و قابل برگشت است. اول یک Restore Point بسازید.</value></data>
+  <data name="Help_Nav_Shield" xml:space="preserve"><value>یک برنامه را در فایروال ویندوز از اینترنت مسدود کنید، یا فایل و پوشه‌ای را از اسکن Defender مستثنا کنید؛ همچنین خاموش و روشن کردن فایروال یا Defender، و افزودن این کارها به منوی راست‌کلیک ویندوز.</value></data>
+  <data name="Help_Nav_Updates" xml:space="preserve"><value>اینکه ویندوز آپدیت‌ها را چطور بگیرد: پروفایل‌های آماده، از حالت پیش‌فرض ویندوز تا خاموش کردن آپدیت. «پیش‌فرض» همه‌ی تغییرات اینجا را برمی‌دارد؛ بعد از تغییر ری‌استارت کنید.</value></data>
+  <data name="Help_Nav_Drivers" xml:space="preserve"><value>درایور کارت گرافیک در مقایسه با جدیدترین نسخه‌ی سازنده، درایورهای مادربرد از سایت سازنده، درایورهای Windows Update و دستگاه‌هایی که درایور سالم ندارند. تا دکمه را نزنید چیزی نصب نمی‌شود.</value></data>
+  <data name="Help_Nav_Reports" xml:space="preserve"><value>هر اجرای تست به‌صورت گزارش ذخیره می‌شود: باز کنید، دو گزارش را مقایسه کنید، یادداشت و شماره‌ی سرویس اضافه کنید، حذف کنید یا خلاصه‌اش را به سایت مازستا بفرستید.</value></data>
+  <data name="Help_Nav_Messages" xml:space="preserve"><value>پیام‌هایی که مازستا برای این سیستم یا همه‌ی سیستم‌ها فرستاده، که اینجا برای خواندن دوباره می‌مانند.</value></data>
+  <data name="Help_Nav_Settings" xml:space="preserve"><value>زبان، حالت نمایش، پایشگر پس‌زمینه و هشدارهایش، میان‌برهای صفحه‌کلید، پوشه‌ی داده‌ها و آنچه به سایت مازستا فرستاده می‌شود.</value></data>
+  <data name="Help_Nav_AppUpdate" xml:space="preserve"><value>نسخه‌ی برنامه و آپدیت‌هایش از سایت مازستا، و فهرست‌های مقایسه‌ی بنچمارک. همه‌چیز قبل از استفاده با امضای مازستا بررسی می‌شود.</value></data>
+  <data name="Help_Nav_Help" xml:space="preserve"><value>همین صفحه. هر بخش تازه‌ی برنامه اینجا اضافه می‌شود.</value></data>
+  <data name="Help_Nav_Assistant" xml:space="preserve"><value>دستیار در ستون کنار صفحه‌ها: درباره‌ی همین سیستم (قطعه‌ها، دما، گزارش‌ها، بازی‌ها، برنامه‌ها) یا اینکه هر چیز کجای برنامه است ساده بپرسید؛ جواب می‌دهد یا صفحه را باز می‌کند. از منوی کنار صفحه باز می‌شود.</value></data>
+  <data name="Help_Help_Tray_Title" xml:space="preserve"><value>برنامه‌ی کوچکی کنار ساعت که با ویندوز شروع می‌شود و تقریباً چیزی مصرف نمی‌کند. وقتی پردازنده یا کارت گرافیک زیر بار کامل بیش از حد داغ بماند یا رم پر بماند هشدار می‌دهد، اورلی را با میان‌برهایش نشان می‌دهد و قانون‌های تنظیم کارت و نورها را اجرا می‌کند. در تنظیمات روشن و خاموش می‌شود.</value></data>
+  <data name="Help_Help_Keys_Title" xml:space="preserve"><value>Ctrl+1 تا Ctrl+9 بخش‌های منوی کنار صفحه را باز می‌کنند. میان‌برهای اورلی (نمایش یا پنهان، جابه‌جایی، Alt+U برای چیدمان و Alt+P برای پیش‌فرض) وسط بازی هم کار می‌کنند و در تنظیمات قابل تغییرند. کادر جستجوی بالای منو هر صفحه یا بخشی را پیدا می‌کند.</value></data>
 </root>

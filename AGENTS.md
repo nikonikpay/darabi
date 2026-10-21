@@ -44,6 +44,7 @@ Put logic in the lowest layer that can hold it, so it is unit-testable without a
 
 ## Localization and RTL
 - The app is Persian by default; English is being added. Every user-visible string is a key in **both** `Localization/Strings.resx` (English) and `Strings.fa.resx` (Persian). The page reads them through `t(key)` (the bridge sends the whole table); code uses `Loc.Get/Format`.
+- **Every new page, box or feature goes into the in-app help** (`wwwroot/js/pages/help.js`): a `[page, box mark, title key]` row and its `Help_<title key>` text in both resx and `demo-strings.json`. `ResourceParityTests.Every_page_has_its_help` fails for a page without one; boxes are on you. Also add a new box to the side search (`search.js` BOXES) and to `AppGuide.Places`.
 - Anything numeric that must stay Latin (sensor values, ports, versions, chart axes) is a `.num` / `.lat` run on the page (Archivo, left to right, isolated); see `DESIGN.md`.
 - Layout must work in RTL and LTR. Never hard-code left/right where logical properties (`inset-inline-start`, `margin-inline-end`) or `FlowDirection` should decide.
 

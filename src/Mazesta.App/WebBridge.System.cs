@@ -43,6 +43,14 @@ public sealed partial class WebBridge
             return new { power = PowerState(), error };
         });
 
+        Method("sys.faststartup", p =>
+        {
+            bool on = Bool(p, "on");
+            string? error = HibernateStatus.SetFastStartup(on, Loc.Get("Tools_Fast_NeedsHib"));
+            _log.LogInformation("Fast Startup set {State}: {Result}", on ? "on" : "off", error ?? "ok");
+            return new { power = PowerState(), error };
+        });
+
         MethodAsync("sys.pagefile", async p =>
         {
             var mode = Str(p, "mode") switch { "custom" => PageFileMode.Custom, "none" => PageFileMode.None, _ => PageFileMode.SystemManaged };

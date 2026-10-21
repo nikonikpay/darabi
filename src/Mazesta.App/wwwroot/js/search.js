@@ -5,16 +5,16 @@ import { h, icon } from "./ui.js";
 
 // [page, box mark, name key] - a box on a page; the pages themselves are added from the page list.
 const BOXES = [
-  ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["tools", "gameboost", "GameBoost_Title"], ["tools", "power", "Gaming_PowerPlan"], ["tools", "gamemode", "Gaming_GameMode"],
+  ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["play", "gameboost", "GameBoost_Title"], ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"],
   ["tools", "crashes", "Bsod_Title"], ["tools", "repair", "Tools_Repair"], ["tools", "cleanup", "Tools_Windows"], ["tools", "hibernate", "Tools_Hib_Title"], ["tools", "vm", "Tools_Vm_Title"], ["tools", "hosts", "Tools_Hosts_Title"],
   ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"], ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
   ["fans", "fans", "Fans_Profiles_Title"], ["lights", "rgb", "Rgb_Title"], ["settings", null, "Settings_DataFolder"], ["settings", null, "Settings_Tray_Section"], ["appupdate", null, "AppUpd_Version"],
   ["drivers", null, "Drivers_Board_Title"], ["drivers", null, "Drivers_Gpu_Title"], ["drivers", null, "Drivers_Wu_Title"], ["tweaks", null, "Tweaks_Essential"], ["tweaks", null, "Tweaks_Advanced"],
 ];
 const DIGITS = { "۰": 0, "۱": 1, "۲": 2, "۳": 3, "۴": 4, "۵": 5, "۶": 6, "۷": 7, "۸": 8, "۹": 9 };
-const norm = (s) => String(s).toLowerCase().replace(/[۰-۹]/g, (c) => DIGITS[c]).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/[‌\s]+/g, " ").trim();
+export const norm = (s) => String(s).toLowerCase().replace(/[۰-۹]/g, (c) => DIGITS[c]).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/[‌\s]+/g, " ").trim();
 
-function mark(target, tries = 0) {
+export function mark(target, tries = 0) {
   const el = document.querySelector(`#stage [data-a="${CSS.escape(target)}"]`);
   if (!el) { if (tries < 30) setTimeout(() => mark(target, tries + 1), 100); return; }
   el.closest("details")?.setAttribute("open", "");
