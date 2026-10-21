@@ -85,7 +85,7 @@ internal sealed class Program : ApplicationContext
         return "fa";
     }
     /// <summary>A copy with <c>flash.json</c> beside it runs from a flash drive on a customer's PC: it takes the installed copy's Data (found through ClientData) and the shop's key from that file, which is never written into the customer's files.</summary>
-    private static AppPaths DetectPaths(out string key)
+    internal static AppPaths DetectPaths(out string key)
     {
         key = "";
         string exeDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar), file = Path.Combine(exeDir, AppPaths.FlashFile);
@@ -151,7 +151,8 @@ internal sealed class Program : ApplicationContext
         var usage = _services.GetRequiredService<UsageRecorder>();
         usage.Record("app.start", new System.Text.Json.Nodes.JsonObject { ["version"] = version, ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = config.Language, ["overlayOnly"] = overlayOnly });
         // The overlay alone talks to no site: the uploader and the inbox (and their timers) start with the window, if it ever opens.
-        _startOnline = () => { _startOnline = null; _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log, new LogShipper(paths.LogsDir, paths.ConfigDir));
+        _startOnline = () => { _startOnline = null; _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log, new LogShipper(paths.LogsDir, paths.ConfigDir),
+                _services.GetRequiredService<CheckupService>(), _services.GetRequiredService<HardwareDetailsCache>());
             Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log); };
         if (!overlayOnly) _startOnline();
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);

@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using Mazesta.Desktop.Composition; using Mazesta.Persistence; using Mazesta.Persistence.Updates; using Microsoft.Extensions.Logging;
+using Mazesta.Core.Crashes; using Mazesta.Core.Health.Checkup; using Mazesta.Desktop.Composition; using Mazesta.Desktop.Services; using Mazesta.Diagnostics.Crashes; using Mazesta.Persistence; using Mazesta.Persistence.Updates; using Microsoft.Extensions.Logging;
 namespace Mazesta.App;
 
 /// <summary>
@@ -12,11 +12,11 @@ internal sealed class UsageUploader : IDisposable
 {
     private const int PerRequest = 150;
     private readonly UsageLog _log; private readonly AppConfig _config; private readonly SiteClient _site; private readonly InventoryCache _inventory; private readonly string _version, _edition; private readonly ILogger _logger;
-    private readonly System.Threading.Timer _timer; private int _sending; private readonly LogShipper _logs;
+    private readonly System.Threading.Timer _timer; private int _sending; private readonly LogShipper _logs; private readonly CheckupService _checkup; private readonly HardwareDetailsCache _details; private JsonObject? _health;
 
-    public UsageUploader(UsageLog log, AppConfig config, SiteClient site, InventoryCache inventory, string version, bool staff, ILogger logger, LogShipper logs)
+    public UsageUploader(UsageLog log, AppConfig config, SiteClient site, InventoryCache inventory, string version, bool staff, ILogger logger, LogShipper logs, CheckupService checkup, HardwareDetailsCache details)
     {
-        _logs = logs; _log = log; _config = config; _site = site; _inventory = inventory; _version = version; _edition = staff ? "company" : "users"; _logger = logger;
+        _logs = logs; _checkup = checkup; _details = details; _log = log; _config = config; _site = site; _inventory = inventory; _version = version; _edition = staff ? "company" : "users"; _logger = logger;
         _timer = new(_ => _ = SendAsync(), null, TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(10));
     }
 
@@ -38,7 +38,42 @@ internal sealed class UsageUploader : IDisposable
         if (disks.Length > 0) m["storage"] = new JsonArray([.. disks.Select(x => (JsonNode)x)]);
         if (inv.TotalPhysicalMemoryBytes is { } b) m["ramGb"] = Math.Round(b / 1073741824.0);
         if (inv.Os is { } os) { m["os"] = $"{os.Caption} {os.Version}".Trim(); }
+        // each drive's own health verdict and wear counter, left out where the drive gives none
+        var drives = inv.Storage.Where(d => Name(d.FriendlyName) is not null).Select(d => { var o = new JsonObject { ["n"] = Name(d.FriendlyName) }; if (Name(d.HealthStatus) is { } h) o["health"] = h; if (d.WearPercent is { } w) o["wear"] = w; return (JsonNode)o; }).ToArray();
+        if (drives.Length > 0) m["drives"] = new JsonArray(drives);
+        if (await HealthAsync().ConfigureAwait(false) is { } health) m["health"] = health.DeepClone();
         return m;
+    }
+
+    /// <summary>
+    /// Once a run: Windows' blue screens and sudden power losses (codes and times only) and the setup checks of the checkup page (the RAM's profile and
+    /// channels, the power plan, the drives' health and links), so the shop sees a system's problems beside its parts. The setup is read only once the
+    /// hardware details are in (the SPD chips need the sensor driver): until then nothing is kept, and the next send tries again.
+    /// </summary>
+    private async Task<JsonObject?> HealthAsync()
+    {
+        if (_health is not null) return _health;
+        if (!_details.GetAsync().IsCompletedSuccessfully) return null;
+        var h = new JsonObject();
+        try
+        {
+            var c = await Task.Run(CrashReader.Read).ConfigureAwait(false);
+            if (c.LogReadable || c.DumpsReadable)
+            {
+                h["bsod"] = c.Crashes.Count; h["powerLosses"] = c.PowerLosses.Count;
+                h["bsodRecent"] = new JsonArray([.. c.Crashes.Take(5).Select(x => (JsonNode)new JsonObject { ["at"] = x.At.ToString("O"), ["code"] = $"0x{x.Code:X8}", ["name"] = BugCheckCatalog.Find(x.Code)?.Name })]);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException) { _logger.LogDebug("Usage statistics: crash history not read: {Message}", e.Message); }
+        var setup = await _checkup.SetupAsync().ConfigureAwait(false);
+        h["setup"] = new JsonArray([.. setup.Select(f =>
+        {
+            var o = new JsonObject { ["c"] = f.Code.ToString(), ["l"] = f.Level.ToString(), ["p"] = f.Part.ToString() };
+            if (f.Subject is { Length: > 0 } sub) o["s"] = sub;
+            if (f.Measures.Count > 0) { var mm = new JsonObject(); foreach (var x in f.Measures) mm[x.Key] = Math.Round(x.Value, 1); o["m"] = mm; }
+            return (JsonNode)o;
+        })]);
+        return _health = h;
     }
 
     /// <summary>Sends what is not sent yet. <paramref name="force"/> is the user's own request (the report button): it sends even with the automatic switch off.

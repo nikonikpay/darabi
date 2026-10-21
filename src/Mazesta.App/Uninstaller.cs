@@ -24,6 +24,7 @@ internal static class Uninstaller
         var data = MessageBox.Show(Loc.Get("Uninstall_Data"), Loc.Get("Uninstall_Title"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (data == DialogResult.Cancel) return 0;
         bool deleteData = data == DialogResult.Yes, installedMode = File.Exists(Path.Combine(dir, AppPaths.InstalledMarker));
+        TellSite(deleteData);
 
         foreach (var name in new[] { "MazestaTray", "OpenRGB" })
             foreach (var p in Process.GetProcessesByName(name))
@@ -55,6 +56,32 @@ internal static class Uninstaller
         Process.Start(new ProcessStartInfo("powershell.exe") { ArgumentList = { "-NoProfile", "-WindowStyle", "Hidden", "-Command", script }, CreateNoWindow = true, UseShellExecute = false });
         Say(Loc.Get(deleteData ? "Uninstall_Done" : "Uninstall_DoneKept"), MessageBoxIcon.Information);
         return 0;
+    }
+
+    /// <summary>
+    /// With the usage statistics on, the site hears that this installation was removed (its random id, the version, and whether the data went too), so the
+    /// shop can count uninstalls. Nothing else is sent; no internet or no plugin only means the site does not hear of it. Waits a few seconds at most.
+    /// </summary>
+    private static void TellSite(bool deleteData)
+    {
+        try
+        {
+            var paths = Program.DetectPaths(out _);
+            string cfg = Path.Combine(paths.ConfigDir, "appconfig.json"), lang = "fa";
+            if (File.Exists(cfg))
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(cfg));
+                if (doc.RootElement.TryGetProperty("usageReport", out var on) && on.ValueKind == System.Text.Json.JsonValueKind.False) return;
+                if (doc.RootElement.TryGetProperty("language", out var l) && l.GetString() is { Length: > 0 } code) lang = code;
+            }
+            var log = new UsageLog(paths);
+            var body = new System.Text.Json.Nodes.JsonObject { ["install"] = log.InstallId, ["app"] = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "",
+                ["edition"] = WebBridge.Staff ? "company" : "users", ["language"] = lang,
+                ["events"] = new System.Text.Json.Nodes.JsonArray(new System.Text.Json.Nodes.JsonObject { ["at"] = DateTimeOffset.UtcNow.ToString("O"), ["k"] = "app.uninstall", ["d"] = new System.Text.Json.Nodes.JsonObject { ["deleteData"] = deleteData } }) };
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+            new Mazesta.Persistence.Updates.SiteClient(AppUpdater.Api, http).SendUsageAsync(body.ToJsonString(), CancellationToken.None).GetAwaiter().GetResult();
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException or Mazesta.Persistence.Updates.SiteException) { }
     }
 
     private static bool Recorded(RegistryHive h, string dir)

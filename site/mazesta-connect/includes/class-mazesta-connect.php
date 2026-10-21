@@ -668,6 +668,28 @@ final class Mazesta_Connect
         foreach (array('ramModules', 'storage') as $n) {
             if (isset($m[$n]) && is_array($m[$n])) { $machine[$n] = array(); foreach (array_slice($m[$n], 0, 12) as $x) { $machine[$n][] = self::text($x, 120); } }
         }
+        // each drive's health; the blue screens, power losses and setup checks the app read once a run (codes and figures only)
+        if (isset($m['drives']) && is_array($m['drives'])) {
+            $machine['drives'] = array();
+            foreach (array_slice($m['drives'], 0, 12) as $x) { if (!is_array($x) || !isset($x['n'])) { continue; } $y = array('n' => self::text($x['n'], 120)); if (isset($x['health'])) { $y['health'] = self::text($x['health'], 30); } if (isset($x['wear']) && is_numeric($x['wear'])) { $y['wear'] = (int) $x['wear']; } $machine['drives'][] = $y; }
+        }
+        if (isset($m['health']) && is_array($m['health'])) {
+            $h = $m['health']; $y = array();
+            foreach (array('bsod', 'powerLosses') as $n) { if (isset($h[$n]) && is_numeric($h[$n])) { $y[$n] = (int) $h[$n]; } }
+            if (isset($h['bsodRecent']) && is_array($h['bsodRecent'])) { $y['bsodRecent'] = array(); foreach (array_slice($h['bsodRecent'], 0, 5) as $x) { if (is_array($x)) { $y['bsodRecent'][] = array('at' => self::text(isset($x['at']) ? $x['at'] : '', 40), 'code' => self::text(isset($x['code']) ? $x['code'] : '', 12), 'name' => self::text(isset($x['name']) ? $x['name'] : '', 80)); } } }
+            if (isset($h['setup']) && is_array($h['setup'])) {
+                $y['setup'] = array();
+                foreach (array_slice($h['setup'], 0, 30) as $x) {
+                    if (!is_array($x) || !isset($x['c']) || !preg_match('/^[A-Za-z]{2,40}$/', (string) $x['c'])) { continue; }
+                    $f = array('c' => (string) $x['c'], 'l' => self::text(isset($x['l']) ? $x['l'] : '', 12), 'p' => self::text(isset($x['p']) ? $x['p'] : '', 20));
+                    if (isset($x['s'])) { $f['s'] = self::text($x['s'], 120); }
+                    if (isset($x['m']) && is_array($x['m'])) { foreach (array_slice($x['m'], 0, 6, true) as $k => $v) { if (preg_match('/^[A-Za-z_]{2,40}$/', (string) $k) && is_numeric($v)) { $f['m'][$k] = (float) $v; } } }
+                    $y['setup'][] = $f;
+                }
+            }
+            $machine['health'] = $y;
+        }
+        if (!$m) { $machine = null; }   // an event with no parts (the uninstaller's) keeps what the system sent before
         $lines = array();
         foreach ($events as $e) {
             if (!is_array($e) || !isset($e['k']) || !preg_match('/^[a-z]{2,12}(\.[a-z]{2,12}){0,2}$/', (string) $e['k'])) { continue; }

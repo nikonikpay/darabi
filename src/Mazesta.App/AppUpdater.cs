@@ -21,7 +21,9 @@ public sealed class AppUpdater
     public const string ApplyArgument = "--apply-update", UpdatedArgument = "--updated";
 
     /// <summary>The shop's site plugin (Mazesta Connect): what the app sends to the site, and the comparison lists built there.</summary>
-    public static readonly Uri Api = new("https://www.dfmrendering.com/wp-json/mazesta/v1/");
+    /// <remarks>MAZESTA_SITE_API points it at a test copy of the site on this computer (loopback only, so the key never goes anywhere else).</remarks>
+    public static readonly Uri Api = Uri.TryCreate(Environment.GetEnvironmentVariable("MAZESTA_SITE_API"), UriKind.Absolute, out var test) && test.IsLoopback && test.Scheme == Uri.UriSchemeHttp
+        ? test : new("https://www.dfmrendering.com/wp-json/mazesta/v1/");
     // An hour: the release is one self-contained package of some hundred megabytes, and a slow line is not a failure.
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(60), DefaultRequestHeaders = { { "User-Agent", "MazestaTest/1.0 (+https://www.dfmrendering.com)" } } };
     private static AppUpdater? s_instance;

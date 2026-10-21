@@ -64,7 +64,7 @@ final class MZC_Stats
     {
         $wpdb = self::db(); if (!self::ready()) { return false; }
         $now = gmdate('Y-m-d H:i:s');
-        $row = self::system_row($machine) + array('last_at' => $now, 'app' => $app, 'edition' => $edition, 'lang' => $lang);
+        $row = ($machine === null ? array() : self::system_row($machine)) + array('last_at' => $now, 'app' => $app, 'edition' => $edition, 'lang' => $lang);
         $row = array('id' => $id, 'first_at' => $now, 'n' => count($events)) + $row;
         $vals = array(); $upd = array('n = n + VALUES(n)');
         foreach ($row as $k => $v) { $vals[] = $v === null ? 'NULL' : $wpdb->prepare('%s', $v); if (!in_array($k, array('id', 'first_at', 'n'), true)) { $upd[] = "`$k` = VALUES(`$k`)"; } }
@@ -169,19 +169,20 @@ final class MZC_Stats
 
     /**
      * Installs day by day between two unix times, in the site's time zone: 'new' systems first seen that day, 'active' systems that sent anything,
-     * 'runs' app starts. Returns date (Y-m-d) => array(new, active, runs), every day of the range present (a day with nothing is zeros, not missing).
+     * 'runs' app starts, 'gone' systems whose uninstaller reported the removal. Returns date (Y-m-d) => array(new, active, runs, gone), every day of
+     * the range present (a day with nothing is zeros, not missing).
      */
     public static function daily($from, $to)
     {
         $wpdb = self::db(); $out = array();
         $tz = wp_timezone(); $off = $tz->getOffset(new DateTime('@' . $to)); $o = sprintf('%s%02d:%02d', $off < 0 ? '-' : '+', abs($off) / 3600, abs($off) % 3600 / 60);
-        for ($d = new DateTime('@' . $from); $d->getTimestamp() <= $to; $d->modify('+1 day')) { $out[wp_date('Y-m-d', $d->getTimestamp())] = array('new' => 0, 'active' => 0, 'runs' => 0); }
+        for ($d = new DateTime('@' . $from); $d->getTimestamp() <= $to; $d->modify('+1 day')) { $out[wp_date('Y-m-d', $d->getTimestamp())] = array('new' => 0, 'active' => 0, 'runs' => 0, 'gone' => 0); }
         if (!self::ready()) { return $out; }
         $a = gmdate('Y-m-d H:i:s', $from); $b = gmdate('Y-m-d H:i:s', $to);
-        $put = function ($rows, $col) use (&$out) { foreach ($rows as $r) { if (isset($out[$r['d']])) { $out[$r['d']][$col] = (int) $r['n']; } } };
-        $put($wpdb->get_results($wpdb->prepare("SELECT DATE(CONVERT_TZ(first_at, '+00:00', %s)) AS d, COUNT(*) AS n FROM `" . self::t('systems') . '` WHERE first_at BETWEEN %s AND %s GROUP BY d', $o, $a, $b), ARRAY_A) ?: array(), 'new');
-        foreach ($wpdb->get_results($wpdb->prepare("SELECT DATE(CONVERT_TZ(at, '+00:00', %s)) AS d, COUNT(DISTINCT sys) AS n, SUM(kind = 'app.start') AS r FROM `" . self::t('events') . '` WHERE at BETWEEN %s AND %s GROUP BY d', $o, $a, $b), ARRAY_A) ?: array() as $r) {
-            if (isset($out[$r['d']])) { $out[$r['d']]['active'] = (int) $r['n']; $out[$r['d']]['runs'] = (int) $r['r']; }
+        $put = function ($rows, $col) use (&$out) { foreach ($rows as $r) { if (isset($out[$r['dd']])) { $out[$r['dd']][$col] = (int) $r['n']; } } };
+        $put($wpdb->get_results($wpdb->prepare("SELECT DATE(CONVERT_TZ(first_at, '+00:00', %s)) AS dd, COUNT(*) AS n FROM `" . self::t('systems') . '` WHERE first_at BETWEEN %s AND %s GROUP BY dd', $o, $a, $b), ARRAY_A) ?: array(), 'new');
+        foreach ($wpdb->get_results($wpdb->prepare("SELECT DATE(CONVERT_TZ(at, '+00:00', %s)) AS dd, COUNT(DISTINCT CASE WHEN kind <> 'app.uninstall' THEN sys END) AS n, SUM(kind = 'app.start') AS r, COUNT(DISTINCT CASE WHEN kind = 'app.uninstall' THEN sys END) AS g FROM `" . self::t('events') . '` WHERE at BETWEEN %s AND %s GROUP BY dd', $o, $a, $b), ARRAY_A) ?: array() as $r) {
+            if (isset($out[$r['dd']])) { $out[$r['dd']]['active'] = (int) $r['n']; $out[$r['dd']]['runs'] = (int) $r['r']; $out[$r['dd']]['gone'] = (int) $r['g']; }
         }
         return $out;
     }
@@ -191,6 +192,40 @@ final class MZC_Stats
     {
         $wpdb = self::db(); if (!self::ready()) { return 0; }
         return (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(DISTINCT sys) FROM `' . self::t('events') . '` WHERE at BETWEEN %s AND %s', gmdate('Y-m-d H:i:s', $from), gmdate('Y-m-d H:i:s', $to)));
+    }
+
+    /**
+     * Which of these systems are uninstalled now: their uninstaller reported the removal and the app has not started there since (a copy put back on
+     * the computer with its data kept has the same id and starts again). id => unix time of the removal.
+     */
+    public static function removed($ids)
+    {
+        $wpdb = self::db(); $ids = array_values(array_filter((array) $ids, function ($x) { return preg_match('/^[a-f0-9]{32}$/', (string) $x); }));
+        if (!$ids || !self::ready()) { return array(); }
+        $rows = $wpdb->get_results("SELECT sys, MAX(CASE WHEN kind = 'app.uninstall' THEN at END) AS u, MAX(CASE WHEN kind = 'app.start' THEN at END) AS s FROM `" . self::t('events') . "` WHERE kind IN ('app.uninstall', 'app.start') AND sys IN ('" . implode("','", $ids) . "') GROUP BY sys", ARRAY_A) ?: array();
+        $out = array();
+        foreach ($rows as $r) { if ($r['u'] !== null && ($r['s'] === null || $r['s'] < $r['u'])) { $out[$r['sys']] = (int) strtotime($r['u'] . ' UTC'); } }
+        return $out;
+    }
+
+    /** Uninstalls reported between two unix times, counted by the app version the system had (from the systems table). */
+    public static function removed_by_app($from, $to)
+    {
+        $wpdb = self::db(); if (!self::ready()) { return array(); }
+        $c = array();
+        foreach ($wpdb->get_results($wpdb->prepare("SELECT s.app AS v, COUNT(DISTINCT e.sys) AS n FROM `" . self::t('events') . "` e JOIN `" . self::t('systems') . "` s ON s.id = e.sys WHERE e.kind = 'app.uninstall' AND e.at BETWEEN %s AND %s GROUP BY s.app ORDER BY n DESC LIMIT 10", gmdate('Y-m-d H:i:s', $from), gmdate('Y-m-d H:i:s', $to)), ARRAY_A) ?: array() as $r) { $c[$r['v'] !== null && $r['v'] !== '' ? $r['v'] : 'نامشخص'] = (int) $r['n']; }
+        return $c;
+    }
+
+    /** How long installs that were removed (in the range) had stayed: first seen to the removal, in days, bucketed. */
+    public static function removed_after($from, $to)
+    {
+        $wpdb = self::db(); if (!self::ready()) { return array(); }
+        $b = array('همان روز' => 0, 'کمتر از یک هفته' => 0, 'یک هفته تا یک ماه' => 0, 'بیش از یک ماه' => 0);
+        foreach ($wpdb->get_results($wpdb->prepare("SELECT TIMESTAMPDIFF(HOUR, s.first_at, MAX(e.at)) AS h FROM `" . self::t('events') . "` e JOIN `" . self::t('systems') . "` s ON s.id = e.sys WHERE e.kind = 'app.uninstall' AND e.at BETWEEN %s AND %s GROUP BY e.sys, s.first_at", gmdate('Y-m-d H:i:s', $from), gmdate('Y-m-d H:i:s', $to)), ARRAY_A) ?: array() as $r) {
+            $h = (int) $r['h']; $b[$h < 24 ? 'همان روز' : ($h < 168 ? 'کمتر از یک هفته' : ($h < 720 ? 'یک هفته تا یک ماه' : 'بیش از یک ماه'))]++;
+        }
+        return array_filter($b);
     }
 
     /** New systems in a range counted by a column (app, edition, lang), biggest first. */
@@ -239,6 +274,64 @@ final class MZC_Stats
     {
         $wpdb = self::db(); if (!self::ready()) { return array(); }
         return $wpdb->get_results("SELECT gpu, COUNT(*) AS n, COUNT(DISTINCT sys) AS systems FROM `" . self::t('events') . "` WHERE kind = 'tuning.auto' AND gpu <> '' GROUP BY gpu ORDER BY n DESC", ARRAY_A) ?: array();
+    }
+
+    /* ---------- a system's problems ---------- */
+
+    // Temperatures (°C, the hottest reading of a run) at which a run is marked: 'warn' from the first, 'bad' from the second.
+    const CPU_HOT = array(90, 95), GPU_HOT = array(83, 87), HOTSPOT_HOT = array(100, 105);
+
+    /**
+     * What the shop should look at on one system, worst first: array of array(level 'bad'|'warn', title, detail). From what the system sent and
+     * nothing else: Windows' blue screens and power losses, the app's own crashes, runs that got hot or failed, drives Windows calls unhealthy or worn,
+     * and the checkup's setup findings that need attention (the RAM below its XMP/EXPO profile among them). Nothing sent: nothing said.
+     */
+    public static function warnings($i, $rows, $logs)
+    {
+        $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array(); $h = isset($m['health']) && is_array($m['health']) ? $m['health'] : array();
+        $w = array(); $day = function ($ts) { return $ts ? MZC_Crm::jdate(wp_date('Y-m-d', $ts)) : ''; };
+        if (!empty($h['bsod'])) {
+            $d = array(); foreach (isset($h['bsodRecent']) ? $h['bsodRecent'] : array() as $b) { $t = strtotime($b['at']); $d[] = trim($b['code'] . ' ' . $b['name']) . ($t ? ' (' . $day($t) . ')' : ''); }
+            $w[] = array('bad', 'صفحهٔ آبی ویندوز (BSOD): ' . number_format_i18n($h['bsod']) . ' بار', implode('، ', $d));
+        }
+        if (!empty($h['powerLosses'])) { $w[] = array('warn', 'خاموشی یا ری‌استارت ناگهانی: ' . number_format_i18n($h['powerLosses']) . ' بار', 'ویندوز بدون خاموش شدن عادی دوباره روشن شده است (برق، پاور، دکمهٔ ریست یا هنگ کامل).'); }
+        $crashes = 0; $last = 0;
+        foreach ($logs as $l) { $c = json_decode((string) $l['crashes'], true); if (is_array($c) && $c) { $crashes += count($c); $last = max($last, (int) strtotime($l['at'] . ' UTC')); } }
+        if ($crashes) { $w[] = array('bad', 'کرش برنامه: ' . number_format_i18n($crashes) . ' بار', 'آخرین گزارش: ' . $day($last) . ' — جزئیات در «لاگ برنامه و کرش‌ها» پایین همین صفحه.'); }
+
+        $hot = array(); $failed = array();
+        foreach ($rows as $r) {
+            foreach (array(array('cpuTemp', 'پردازنده', self::CPU_HOT), array('gpuTemp', 'کارت گرافیک', $r['kind'] === 'tuning.auto' || $r['kind'] === 'tuning.scene' ? self::HOTSPOT_HOT : self::GPU_HOT)) as $x) {
+                $v = $r[$x[0]]; if ($v === null || $v < $x[2][0]) { continue; }
+                $k = $x[1]; if (!isset($hot[$k]) || $v > $hot[$k][0]) { $hot[$k] = array($v, $v >= $x[2][1] ? 'bad' : 'warn', $r['item'], $r['ts'], $x[2][0]); }
+            }
+            if ($r['ok'] === false && ($r['kind'] === 'test.run' || $r['kind'] === 'bench.run')) { $failed[$r['item']] = (isset($failed[$r['item']]) ? $failed[$r['item']] : 0) + 1; }
+        }
+        foreach ($hot as $k => $x) { $w[] = array($x[1], 'دمای بالای ' . $k . ': ' . round($x[0]) . '°C', 'در «' . $x[2] . '»، ' . $day($x[3]) . '. مرز هشدار ' . $x[4] . '°C است.'); }
+        if ($failed) { $d = array(); foreach ($failed as $k => $n) { $d[] = $k . ($n > 1 ? ' (' . $n . ' بار)' : ''); } $w[] = array('bad', 'تست یا بنچمارک با ایراد: ' . number_format_i18n(array_sum($failed)) . ' اجرا', implode('، ', $d)); }
+
+        foreach (isset($m['drives']) && is_array($m['drives']) ? $m['drives'] : array() as $d) {
+            if (isset($d['health']) && !in_array(strtolower($d['health']), array('healthy', 'ok'), true)) { $w[] = array('bad', 'سلامت ذخیره‌ساز: ' . $d['health'], $d['n']); }
+            if (isset($d['wear']) && $d['wear'] >= 70) { $w[] = array($d['wear'] >= 90 ? 'bad' : 'warn', 'فرسودگی ذخیره‌ساز: ' . $d['wear'] . '٪ از عمر مصرف شده', $d['n']); }
+        }
+        foreach (isset($h['setup']) && is_array($h['setup']) ? $h['setup'] : array() as $f) {
+            $lvl = $f['l'] === 'Problem' ? 'bad' : ($f['l'] === 'Attention' || $f['c'] === 'RamBelowJedec' ? 'warn' : null);
+            if ($lvl === null) { continue; }
+            $d = array(); foreach (isset($f['m']) ? $f['m'] : array() as $k => $v) { $d[] = self::labels('measures', preg_replace('/^Check_M_/', '', $k)) . ': ' . (floor($v) == $v ? (int) $v : $v); }
+            $w[] = array($lvl, self::labels('findings', $f['c']), trim((isset($f['s']) ? $f['s'] . ' — ' : '') . implode('، ', $d), ' —'));
+        }
+        usort($w, function ($a, $b) { return ($a[0] === 'bad' ? 0 : 1) <=> ($b[0] === 'bad' ? 0 : 1); });
+        return $w;
+    }
+
+    /** How many problems the parts sent with a system show (blue screens, drives, setup findings): for the list, without reading its events. */
+    public static function warn_count($i)
+    {
+        $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array(); $h = isset($m['health']) && is_array($m['health']) ? $m['health'] : array(); $n = 0;
+        if (!empty($h['bsod'])) { $n++; }
+        foreach (isset($m['drives']) && is_array($m['drives']) ? $m['drives'] : array() as $d) { if ((isset($d['health']) && !in_array(strtolower($d['health']), array('healthy', 'ok'), true)) || (isset($d['wear']) && $d['wear'] >= 70)) { $n++; } }
+        foreach (isset($h['setup']) && is_array($h['setup']) ? $h['setup'] : array() as $f) { if ($f['l'] === 'Problem' || $f['l'] === 'Attention' || $f['c'] === 'RamBelowJedec') { $n++; } }
+        return $n;
     }
 
     /** A short name for a system: its card and its processor. */
@@ -321,14 +414,15 @@ final class MZC_Stats
             $r['power'] = self::num($res, array('powerW')); $r['fps'] = self::num($res, array('score')); $r['gpu'] = self::short(isset($d['gpu']) ? $d['gpu'] : '');
         } elseif ($k === 'tuning.apply') { $r['item'] = 'اعمال تنظیم کارت'; $r['gpu'] = self::short(isset($d['gpu']) ? $d['gpu'] : '');
         } elseif ($k === 'app.start') { $r['item'] = 'اجرای برنامه'; $r['note'] = isset($d['version']) ? (string) $d['version'] : '';
-        } elseif ($k === 'ai.ask') { $r['item'] = 'پرسش از دستیار'; }
+        } elseif ($k === 'ai.ask') { $r['item'] = 'پرسش از دستیار';
+        } elseif ($k === 'app.uninstall') { $r['item'] = 'حذف برنامه'; $r['result'] = 'حذف شد'; $r['note'] = !empty($d['deleteData']) ? 'با پاک کردن داده‌ها' : 'داده‌ها نگه داشته شد'; $r['ok'] = false; }
         else { $r['item'] = $k; }
         return $r;
     }
 
     public static function kind_label($k)
     {
-        $m = array('bench.run' => 'بنچمارک', 'test.run' => 'تست', 'tuning.auto' => 'آندرولت / اورکلاک', 'tuning.scene' => 'تست صحنه', 'tuning.apply' => 'اعمال تنظیم', 'app.start' => 'اجرای برنامه', 'ai.ask' => 'دستیار');
+        $m = array('bench.run' => 'بنچمارک', 'test.run' => 'تست', 'tuning.auto' => 'آندرولت / اورکلاک', 'tuning.scene' => 'تست صحنه', 'tuning.apply' => 'اعمال تنظیم', 'app.start' => 'اجرای برنامه', 'ai.ask' => 'دستیار', 'app.uninstall' => 'حذف برنامه');
         return isset($m[$k]) ? $m[$k] : $k;
     }
 

@@ -105,3 +105,7 @@
 .mzc-colchart { display: flex; align-items: flex-end; gap: 2px; height: 180px; direction: ltr; }
 .mzc-colchart span { flex: 1; height: 100%; display: flex; align-items: flex-end; min-width: 2px; } .mzc-colchart span:hover { background: var(--soft); }
 .mzc-colchart i { display: block; width: 100%; background: var(--brand); border-radius: 3px 3px 0 0; min-height: 1px; }
+.mzc-warns { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.mzc-warns li { display: grid; gap: 2px; padding: 8px 12px; border-radius: 8px; border-inline-start: 4px solid var(--warn); background: var(--warn-bg); }
+.mzc-warns li.bad { border-inline-start-color: var(--bad); background: var(--bad-bg); }
+.mzc-warns li span { color: var(--muted); font-size: 12px; }
