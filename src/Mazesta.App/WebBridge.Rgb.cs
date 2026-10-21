@@ -44,7 +44,7 @@ public sealed partial class WebBridge
                 }),
             }),
         };
-        static int Percent(uint min, uint max, uint v) => max <= min ? 100 : (int)Math.Round(100.0 * (Math.Clamp(v, min, max) - min) / (max - min));
+        static int Percent(uint min, uint max, uint v) => max == min ? 100 : (int)Math.Round(100.0 * ((double)Math.Clamp(v, Math.Min(min, max), Math.Max(min, max)) - min) / ((double)max - min));
 
         async Task<object?> Connect(bool start, bool stopMakers)
         {

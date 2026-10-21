@@ -1,8 +1,8 @@
 // The lighting page: the colours and effects of the memory, graphics card, board, fans and strips, through OpenRGB (a separate program the app runs as its server).
-// A panel for the whole set (one colour, or one effect by name with its speed and brightness, for every device that has it), then a card for each device with
-// its own mode, colour and speed, and, for a board, the number of LEDs of each output (an addressable header is listed with none until it is told). The makers'
-// own lighting programs are stopped while the page holds the lights and started again when it lets go; the page says which. Nothing is shown as done that the
-// program refused.
+// A panel for the whole set (one colour, a gradient of two, or a ready spectrum, with one effect by name and its speed and brightness, for every device that has it),
+// then a card for each device with the same choice and its own modes, and, for a board, the number of LEDs of each output (an addressable header is listed with
+// none until it is told). The makers' own lighting programs are stopped while the page holds the lights and started again when it lets go; the page says which.
+// Nothing is shown as done that the program refused.
 import { call } from "../bridge.js";
 import { t } from "../i18n.js";
 import { h, icon } from "../ui.js";
@@ -10,7 +10,10 @@ import { box } from "../groups.js";
 
 const ICON = { Motherboard: "board", Memory: "ram", Graphics: "gpu", Cooler: "fan", Strip: "strip", Keyboard: "keyboard", Mouse: "mouse", Storage: "drive", Case: "case", Other: "bolt" };
 const HUE = { Motherboard: "p-board", Memory: "p-ram", Graphics: "p-gpu", Cooler: "p-cpu", Storage: "p-storage", Strip: "p-net" };
-const PALETTE = ["#ff0000", "#ff7a00", "#ffd400", "#00e676", "#00e5ff", "#2979ff", "#8e44ff", "#ff2bd6", "#ffffff"];
+const PALETTE = ["#ff0000", "#ff5a00", "#ffa000", "#ffd400", "#a8ff00", "#00e676", "#00e5ff", "#2979ff", "#3d2bff", "#8e44ff", "#ff2bd6", "#ffffff"];
+const LOOKS = { solid: "drop", gradient: "duo", preset: "layers" };
+const FX_ICON = { Static: "bulb", Breathing: "pulse", Rainbow: "rainbow", Cycle: "refresh", Flash: "bolt" };
+const SPECTRUM = ["#ff0000", "#ffd400", "#00e676", "#00e5ff", "#2979ff", "#ff2bd6", "#ff0000"];
 
 // Colours that go together, worked out from the one the user picked (hue turned on the wheel): next to it, across from it, a triad, and shades of it.
 function toHsl(hex) {
@@ -29,6 +32,9 @@ function harmonies(hex) {
 }
 // The first LED that is lit: what the card's colour starts as (a card that began dark must not offer black, which would switch the part off).
 const lit = (d) => (d.colors || []).find((c) => /^#[0-9a-f]{6}$/i.test(c) && c.toLowerCase() !== "#000000");
+// Laid as the LED strips on the cards are: the first LED at the start of the line (the right in Persian).
+const grad = (cs) => cs.length > 1 ? `linear-gradient(${document.dir === "rtl" ? 270 : 90}deg, ${cs.join(", ")})` : cs[0];
+const look = (color) => ({ kind: "solid", a: color, b: fromHsl(toHsl(color).h + 180, 1, 0.5), edit: "a", preset: null, fx: "Static", own: "" });
 
 export function mount(el) {
   const ui = new Map();   // what is chosen on each card, kept while the cards are drawn again
@@ -43,43 +49,86 @@ export function mount(el) {
   const list = h("div", { class: "panels two rgb-cards" });
   let alive = true, poll = 0;
 
+  // The colour of a look (st): one colour, a gradient of two the user picks (either stop is edited by the same swatches and hue), or a spectrum (ready, or made from
+  // the colour), above a strip that shows it as it will run. Colour changes update in place: a redraw would drop the hue slider out of the user's hand.
+  function studio(st) {
+    const cur = () => st.kind === "gradient" ? st[st.edit] : st.a;
+    const presetColors = () => st.preset?.startsWith("custom:") ? st.preset.slice(7).split(",") : (state?.palettes || []).find((p) => p.id === st.preset)?.colors;
+    const colors = () => st.kind === "gradient" ? [st.a, st.b] : st.kind === "preset" && st.preset ? presetColors() || [st.a] : [st.a];
+    const preview = h("div", { class: "rgb-preview", role: "img" }, h("i"));
+    const setColor = (c) => { if (st.kind === "gradient") st[st.edit] = c; else st.a = c; st.touched = true; update(); };
+    const well = h("input", { type: "color", class: "rgb-well", "aria-label": t("Rgb_Color"), oninput: (e) => setColor(e.target.value) });
+    const hex = h("b", { class: "rgb-hex lat" });
+    const hue = h("input", { type: "range", class: "rgb-hue", dir: "ltr", min: 0, max: 360, value: 0, title: t("Rgb_Hue"), "aria-label": t("Rgb_Hue"), oninput: (e) => setColor(fromHsl(Number(e.target.value), 1, 0.5)) });
+    const sws = PALETTE.map((c) => h("button", { class: "rgb-sw", type: "button", style: { background: c, color: c }, title: c, "aria-label": c, onclick: () => setColor(c) }));
+    const picker = h("div", { class: "rgb-picker" }, h("label", { class: "rgb-wellbox" }, well, hex), h("div", { class: "rgb-pickcol" }, h("div", { class: "rgb-swatches", role: "group", "aria-label": t("Rgb_Color") }, sws), hue));
+    const stop = (k) => h("button", { type: "button", class: "rgb-stop", onclick: () => { st.edit = k; update(); } }, h("i"), h("span", {}, h("small", {}, t(k === "a" ? "Rgb_First" : "Rgb_Second")), h("b", { class: "lat" })));
+    const stopA = stop("a"), stopB = stop("b");
+    const stops = h("div", { class: "rgb-stops" }, stopA, h("button", { type: "button", class: "rgb-swapbtn", title: t("Rgb_Swap"), "aria-label": t("Rgb_Swap"), onclick: () => { [st.a, st.b] = [st.b, st.a]; update(); } }, icon("swap")), stopB);
+    const chip = (cs, label, pressed, onclick, wide) => h("button", { class: `rgb-pal${wide ? " wide" : ""}`, type: "button", "aria-pressed": String(pressed), title: label, "aria-label": label, onclick }, h("i", { style: { background: grad(cs) } }), h("span", {}, label));
+    const pairs = h("div", { class: "rgb-palettes" }), presets = h("div", { class: "rgb-palettes" }), mine = h("div", { class: "rgb-palettes" });
+    const body = h("div", { class: "rgb-look-body" });
+    const tabs = Object.keys(LOOKS).map((k) => h("button", { type: "button", role: "radio", class: "rgb-tab", onclick: () => { st.kind = k; draw(); } }, icon(LOOKS[k]), h("span", {}, t("Rgb_Look_" + k))));
+    function update() {
+      const c = cur(), cs = colors();
+      well.value = c; hex.textContent = c.toUpperCase();
+      if (document.activeElement !== hue) hue.value = Math.round(toHsl(c).h);
+      for (const b of sws) b.setAttribute("aria-pressed", String(b.title === c.toLowerCase()));
+      for (const [b, k] of [[stopA, "a"], [stopB, "b"]]) { b.setAttribute("aria-pressed", String(st.edit === k)); b.firstChild.style.background = st[k]; b.querySelector("b").textContent = st[k].toUpperCase(); }
+      const moving = st.fx === "Rainbow" || st.fx === "Cycle";
+      preview.firstChild.style.background = grad(moving && cs.length < 2 ? SPECTRUM : moving ? [...cs, cs[0]] : cs);
+      preview.dataset.fx = st.own ? "" : st.fx; preview.setAttribute("aria-label", t("Rgb_Preview"));
+      pairs.replaceChildren(...harmonies(st.edit === "b" ? st.a : c).map(([id, cs2]) => [id, [cs2[0], cs2[cs2.length - 1]]]).map(([id, [x, y]]) =>
+        chip([x, y], t("Rgb_Harm_" + id), st.a === x && st.b === y, () => { st.a = x; st.b = y; update(); })));
+      for (const b of presets.children) b.setAttribute("aria-pressed", String(b.dataset.id === st.preset));
+      mine.replaceChildren(...harmonies(st.a).map(([id, cs2]) => { const v = "custom:" + cs2.join(","); return chip(cs2, t("Rgb_Harm_" + id), st.preset === v, () => { st.preset = v; update(); }); }));
+    }
+    function draw() {
+      tabs.forEach((b, i) => b.setAttribute("aria-checked", String(Object.keys(LOOKS)[i] === st.kind)));
+      presets.replaceChildren(...(state?.palettes || []).map((p) => { const b = chip(p.colors, t("Rgb_Palette_" + p.id), st.preset === p.id, () => { st.preset = st.preset === p.id ? null : p.id; update(); }, true); b.dataset.id = p.id; return b; }));
+      body.replaceChildren(...(st.kind === "solid" ? [picker]
+        : st.kind === "gradient" ? [stops, picker, h("p", { class: "rgb-sub" }, t("Rgb_Suggest")), pairs, h("p", { class: "note" }, t("Rgb_Gradient_Note"))]
+        : [h("p", { class: "rgb-sub" }, t("Rgb_Palettes")), presets, h("p", { class: "rgb-sub" }, t("Rgb_Harmony")), mine]));
+      update();
+    }
+    draw();
+    return {
+      el: h("div", { class: "rgb-studio" }, h("div", { class: "rgb-tabs", role: "radiogroup", "aria-label": t("Rgb_ColorKind") }, tabs), preview, body),
+      update, draw,
+      // What the bridge is sent: the colour, and the spectrum it runs through when there is one.
+      payload: () => st.kind === "gradient" ? { color: st.a, palette: `custom:${st.a},${st.b}` } : st.kind === "preset" && st.preset ? { color: colors()[0], palette: st.preset } : { color: st.a },
+      set disabled(v) { this.el.classList.toggle("off", v); this.el.inert = v; },
+    };
+  }
+
+  // The effects every device is offered, as tiles, and a list of the devices' own (for a card, its own modes by number; for the set, by name).
+  function effects(st, own, onPick) {
+    const tiles = (state?.effects || []).map((e) => h("button", { type: "button", role: "radio", class: "rgb-fx", "data-fx": e, onclick: () => { st.fx = e; st.own = ""; sel.value = ""; mark(); onPick(); } }, icon(FX_ICON[e] || "sparkle"), h("span", {}, t("Rgb_Fx_" + e))));
+    const sel = h("select", { class: "field", "aria-label": t("Rgb_OwnMode"), onchange: () => { st.own = sel.value; mark(); onPick(); } }, h("option", { value: "" }, t("Rgb_OwnMode_None")), own);
+    sel.value = st.own;
+    const mark = () => tiles.forEach((b) => b.setAttribute("aria-checked", String(!st.own && b.dataset.fx === st.fx)));
+    mark();
+    return h("div", { class: "rgb-fxbox" }, h("div", { class: "rgb-fxs", role: "radiogroup", "aria-label": t("Rgb_Effect") }, tiles), own.length ? h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_OwnMode")), sel) : null);
+  }
+
   // ——— The whole set ———
-  const allColor = h("input", { type: "color", class: "rgb-color", value: "#ff0000", "aria-label": t("Rgb_Color") });
-  const allMode = h("select", { class: "field", "aria-label": t("Rgb_Effect") }, h("option", { value: "" }, t("Rgb_Mode_Keep")));
+  const allSt = look("#ff0000");
   const allSpeed = range("Rgb_Speed", 60), allBright = range("Rgb_Brightness", 100);
-  // The colour spectra: a click picks one for the next apply (a second click on the same one lets it go). Laid along a strip it is a gradient; an effect that moves goes through its colours.
-  let palette = null; const paletteBtns = [];
-  const paletteChips = (setPalette) => h("div", { class: "rgb-palettes", role: "group", "aria-label": t("Rgb_Palettes") }, (state?.palettes || []).map((p) => {
-    const b = h("button", { class: "rgb-pal", type: "button", style: { background: `linear-gradient(90deg, ${p.colors.join(", ")})` }, title: t("Rgb_Palette_" + p.id), "aria-label": t("Rgb_Palette_" + p.id), "aria-pressed": String(palette === p.id),
-      onclick: () => { palette = palette === p.id ? null : p.id; setPalette(palette); for (const x of paletteBtns) x.setAttribute("aria-pressed", String(x.dataset.id === palette)); allHarmony?.draw(); } });
-    b.dataset.id = p.id; paletteBtns.push(b); return b;
-  }));
-  const effectOptions = (s) => [h("option", { value: "" }, t("Rgb_Mode_Keep")), ...(s.effects || []).map((e) => h("option", { value: e }, t("Rgb_Fx_" + e))),
-    s.modeNames.length ? h("optgroup", { label: t("Rgb_Fx_Own") }, s.modeNames.map((n) => h("option", { value: n }, n))) : null];
-  const swatches = (setColor) => h("div", { class: "rgb-swatches", role: "group", "aria-label": t("Rgb_Color") }, PALETTE.map((c) =>
-    h("button", { class: "rgb-sw", type: "button", style: { background: c }, title: c, "aria-label": c, onclick: () => setColor(c) })),
-    h("input", { type: "range", class: "rgb-hue", min: 0, max: 360, value: 0, title: t("Rgb_Hue"), "aria-label": t("Rgb_Hue"), oninput: (e) => setColor(fromHsl(Number(e.target.value), 1, 0.5)) }));
-  // Matching colours for the colour chosen now: a click makes them the spectrum for the next apply (a second click lets it go). Drawn again when the colour changes.
-  const harmony = (getColor, getPalette, setPalette) => {
-    const row = h("div", { class: "rgb-palettes rgb-harmony", role: "group", "aria-label": t("Rgb_Harmony") });
-    const draw = () => row.replaceChildren(h("span", { class: "rgb-pal-label" }, t("Rgb_Harmony")), ...harmonies(getColor()).map(([id, colors]) => {
-      const value = "custom:" + colors.join(","), b = h("button", { class: "rgb-pal", type: "button", style: { background: colors.length > 1 ? `linear-gradient(90deg, ${colors.join(", ")})` : colors[0] }, title: t("Rgb_Harm_" + id), "aria-label": t("Rgb_Harm_" + id), "aria-pressed": String(getPalette() === value),
-        onclick: () => { setPalette(getPalette() === value ? null : value); draw(); } }); return b; }));
-    draw(); return { el: row, draw };
-  };
-  const animate = () => { const box = h("input", { type: "checkbox", class: "switch", "aria-label": t("Rgb_Animate") }); return { box, el: h("label", { class: "rgb-keep", title: t("Rgb_Animate_Note") }, box, t("Rgb_Animate")) }; };
-  const allPalettes = h("div", { class: "rgb-pal-wrap" }), allAnim = animate();
-  const allHarmony = harmony(() => allColor.value, () => palette, (v) => { palette = v; for (const x of paletteBtns) x.setAttribute("aria-pressed", String(x.dataset.id === palette)); });
-  allColor.addEventListener("input", () => allHarmony.draw());
-  const allBody = h("div", { class: "rgb-all-body", hidden: true },
-    h("div", { class: "rgb-row" }, h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), allColor), swatches((c) => { allColor.value = c; allHarmony.draw(); }),
-      h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Effect")), allMode)),
-    h("div", { class: "rgb-row" }, allSpeed.el, allBright.el),
-    allPalettes, allHarmony.el, allAnim.el,
-    h("div", { class: "btn-row" },
-      h("button", { class: "btn primary", type: "button", onclick: () => { const fx = allMode.value || (allAnim.box.checked ? (palette ? "Rainbow" : "Breathing") : ""); run("rgb.set", { device: -1, color: allColor.value, ...(palette ? { palette } : {}), ...(fx ? { modeName: fx, speed: allSpeed.value(), brightness: allBright.value() } : {}) }); } }, t("Rgb_ApplyAll")),
-      h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: -1, color: "" }) }, t("Rgb_OffAll"))),
-    h("p", { class: "note" }, t("Rgb_Effect_Note")));
+  const allBody = h("div", { class: "rgb-all-body", hidden: true });
+  let allStudio = null;
+  function drawAll(s) {
+    allStudio = studio(allSt); paced(allStudio, allSpeed);
+    const sync = () => { allSpeed.el.hidden = allBright.el.hidden = !allSt.own && allSt.fx === "Static"; allStudio.update(); };
+    allBody.replaceChildren(h("p", { class: "rgb-sub" }, t("Rgb_Effect")), effects(allSt, s.modeNames.map((n) => h("option", { value: n }, n)), sync), allStudio.el,
+      h("div", { class: "rgb-row" }, allSpeed.el, allBright.el),
+      h("div", { class: "btn-row" },
+        h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, ...allStudio.payload(), modeName: allSt.own || allSt.fx, ...(allSt.own || allSt.fx !== "Static" ? { speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, icon("check"), t("Rgb_ApplyAll")),
+        h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: -1, color: "" }) }, t("Rgb_OffAll"))),
+      h("p", { class: "note" }, t("Rgb_Effect_Note")));
+    sync();
+  }
+  // The preview runs at the speed chosen (the devices' own speeds differ, so it is only a likeness).
+  function paced(s, sp) { const set = () => s.el.style.setProperty("--rgb-dur", `${(6 - sp.value() / 22).toFixed(2)}s`); sp.el.querySelector("input").addEventListener("input", set); set(); }
 
   function range(key, value) {
     const input = h("input", { type: "range", class: "range", min: 0, max: 100, value, "aria-label": t(key) }), out = h("b", { class: "num" }, `${value}%`);
@@ -88,49 +137,38 @@ export function mount(el) {
   }
 
   function show(s) {
-    state = s; powerEnd.value = s.powerEnd || "leave";
+    const first = !state; state = s; powerEnd.value = s.powerEnd || "leave";
     start.hidden = s.connected || s.connecting; release.hidden = !s.connected && !(s.makers || []).length; dark.hidden = !s.connected; dark.lastChild.textContent = t(s.dark ? "Rgb_Dark_On" : "Rgb_Dark_Off");
     clearTimeout(poll); if (s.connecting && alive) poll = setTimeout(() => alive && run("rgb.state", undefined, true), 2000);   // the first search runs on its own: ask again until it is done
     msg.className = `msg ${s.error ? "fail" : ""}`; msg.textContent = s.error || (s.connecting ? t("Rgb_Connecting") : !s.found && !s.connected ? t("Rgb_NotFound") : s.connected && !s.devices.length ? t("Rgb_Empty") : "");
     const shown = s.makers?.length ? t("Rgb_Makers_Stopped", s.makers.join("، ")) : s.running?.length ? t("Rgb_Makers_Running", s.running.join("، ")) : "";
     makers.hidden = !shown; makers.textContent = shown;
-    allBody.hidden = !s.devices.length;
-    const was = allMode.value; allMode.replaceChildren(...effectOptions(s).filter(Boolean)); allMode.value = [...allMode.querySelectorAll("option")].some((o) => o.value === was) ? was : "";
-    paletteBtns.length = 0; allPalettes.replaceChildren(h("span", { class: "rgb-pal-label" }, t("Rgb_Palettes")), paletteChips(() => {}));
+    const had = !allBody.hidden; allBody.hidden = !s.devices.length;
+    if (first || !had) drawAll(s);   // drawn once the devices are there, then kept (so a slider in use is not taken away)
     list.replaceChildren(...s.devices.map(card));
     if (!s.error && s.report) msg.textContent = reportText(s.report);
   }
 
   function reportText(r) {
     const name = (s) => (state?.effects || []).includes(s) ? t("Rgb_Fx_" + s) : s;
-    const parts = [t("Rgb_Report", name(r.effect), r.native, r.simulated)];
+    const parts = [r.native + r.simulated ? t("Rgb_Report", name(r.effect), r.native, r.simulated) : t("Rgb_Report_Still", name(r.effect), r.still)];
     if (r.skipped?.length) parts.push(t("Rgb_Report_Skipped", r.skipped.join("، ")));
     return r.effect ? parts.join(" ") : "";
   }
 
   function card(d) {
-    const mine = ui.get(d.index) || { color: lit(d) || "#ff0000", mode: "", speed: null, bright: null, touched: false }; ui.set(d.index, mine);
-    if (!mine.touched) mine.color = lit(d) || mine.color;   // follows the lights until the user picks a colour of their own
-    const pick = h("input", { type: "color", class: "rgb-color", value: mine.color, "aria-label": t("Rgb_Color"), oninput: (e) => { mine.color = e.target.value; mine.touched = true; harm.draw(); } });
-    const mode = h("select", { class: "field", "aria-label": t("Rgb_Mode"), onchange: () => { mine.mode = mode.value; sync(); } },
-      h("option", { value: "" }, t("Rgb_Mode_Keep")), d.modes.map((m) => h("option", { value: m.index }, m.name)),
-      h("optgroup", { label: t("Rgb_Fx_Group") }, (state?.effects || []).map((e) => h("option", { value: "fx:" + e }, t("Rgb_Fx_" + e)))));
-    mode.value = mine.mode;
+    const mine = ui.get(d.index) || { ...look(lit(d) || "#ff0000"), speed: null, bright: null, touched: false }; ui.set(d.index, mine);
+    if (!mine.touched) mine.a = lit(d) || mine.a;   // follows the lights until the user picks a colour of their own
     const speed = range("Rgb_Speed", mine.speed ?? 60), bright = range("Rgb_Brightness", mine.bright ?? 100);
     speed.el.querySelector("input").addEventListener("change", () => { mine.speed = speed.value(); }); bright.el.querySelector("input").addEventListener("change", () => { mine.bright = bright.value(); });
-    const fx = () => mode.value.startsWith("fx:") ? mode.value.slice(3) : "";
-    const current = () => fx() ? { color: true, speed: true, brightness: true } : d.modes.find((m) => String(m.index) === mode.value);
-    function sync() { const m = current(); pick.disabled = !!m && !m.color; speed.el.hidden = !m?.speed; bright.el.hidden = !m?.brightness; }
+    const studioC = studio(mine); paced(studioC, speed);
+    const ownMode = () => mine.own === "" ? null : d.modes.find((m) => String(m.index) === mine.own);
+    // What the chosen look can be given: an effect of ours takes all three; a device's own mode what it says it takes.
+    const takes = () => ownMode() ?? { color: true, speed: mine.fx !== "Static", brightness: mine.fx !== "Static" };
+    function sync() { const m = takes(); studioC.disabled = !m.color; speed.el.hidden = !m.speed; bright.el.hidden = !m.brightness; studioC.update(); }
+    const fxs = effects(mine, d.modes.map((m) => h("option", { value: String(m.index) }, m.name)), sync);
     sync();
-    let own = null;   // this card's spectrum
-    const harm = harmony(() => pick.value, () => own, (v) => { own = v; for (const x of chips.children) x.setAttribute("aria-pressed", String(x.dataset.id === own)); }), anim = animate();
-    const go = () => run("rgb.set", mode.value === "" ? { device: d.index, color: pick.value, ...(own ? { palette: own } : {}), ...(anim.box.checked ? { modeName: own ? "Rainbow" : "Breathing" } : {}) }
-      : { device: d.index, color: pick.value, ...(own ? { palette: own } : {}), ...(fx() ? { modeName: fx() } : { mode: Number(mode.value) }), ...(current()?.speed ? { speed: speed.value() } : {}), ...(current()?.brightness ? { brightness: bright.value() } : {}) });
-    const chips = h("div", { class: "rgb-palettes", role: "group", "aria-label": t("Rgb_Palettes") }, (state?.palettes || []).map((p) => {
-      const b = h("button", { class: "rgb-pal", type: "button", style: { background: `linear-gradient(90deg, ${p.colors.join(", ")})` }, title: t("Rgb_Palette_" + p.id), "aria-label": t("Rgb_Palette_" + p.id), "aria-pressed": "false",
-        onclick: () => { own = own === p.id ? null : p.id; for (const x of chips.children) x.setAttribute("aria-pressed", String(x.dataset.id === own)); harm.draw(); } });
-      b.dataset.id = p.id; return b;
-    }));
+    const go = () => { const m = takes(); run("rgb.set", { device: d.index, ...(m.color ? studioC.payload() : {}), ...(mine.own !== "" ? { mode: Number(mine.own) } : { modeName: mine.fx }), ...(m.speed ? { speed: speed.value() } : {}), ...(m.brightness ? { brightness: bright.value() } : {}) }); };
     // The LEDs as they are lit. Where the device takes a colour for each LED, an LED is a button: it opens the colour picker for that one alone.
     const one = h("input", { type: "color", class: "rgb-one", tabindex: "-1", "aria-hidden": "true" }); let oneLed = -1;
     one.addEventListener("change", () => { if (oneLed >= 0) run("rgb.led", { device: d.index, led: oneLed, color: one.value }); });
@@ -142,10 +180,9 @@ export function mount(el) {
     const zoneRows = zones.length ? h("div", { class: "rgb-zones" }, h("h3", { class: "h3" }, t("Rgb_Zones")), zones.map((z) => zoneRow(d, z)),
       zones.some((z) => z.resizable && z.leds === 0) ? h("p", { class: "note" }, t("Rgb_Zone_Hint")) : null) : null;
     return box({ cls: HUE[d.kind] || "p-tool", ico: ICON[d.kind] || "bolt", title: d.name, sub: [t(`Rgb_Kind_${d.kind}`), d.vendor, d.leds ? t("Rgb_Leds", d.leds) : ""].filter(Boolean).join(" · "), extra: "rgb-card", a: "rgb",
-      body: [strip, d.perLed ? h("p", { class: "note rgb-led-hint" }, t("Rgb_Led_Hint")) : null, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, h("span", {}, t("Rgb_Mode")), mode), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Color")), pick)),
-        swatches((c) => { pick.value = c; mine.color = c; mine.touched = true; harm.draw(); }), chips, harm.el, anim.el, h("div", { class: "rgb-row" }, speed.el, bright.el),
+      body: [strip, d.perLed ? h("p", { class: "note rgb-led-hint" }, t("Rgb_Led_Hint")) : null, h("p", { class: "rgb-sub" }, t("Rgb_Effect")), fxs, studioC.el, h("div", { class: "rgb-row" }, speed.el, bright.el),
         d.kind === "Graphics" && d.leds <= 1 ? h("p", { class: "note" }, t("Rgb_Gpu_OneZone")) : null,
-        h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: go }, t("Rgb_Apply")), h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: d.index, color: "" }) }, t("Rgb_Off"))), zoneRows] });
+        h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: go }, icon("check"), t("Rgb_Apply")), h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: d.index, color: "" }) }, t("Rgb_Off"))), zoneRows] });
   }
 
   function zoneRow(d, z) {

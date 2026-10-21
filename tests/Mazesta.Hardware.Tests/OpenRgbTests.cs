@@ -58,6 +58,12 @@ public class OpenRgbTests
         Assert.Equal([9, 8, 7, 0], b[^4..]);
     }
 
+    [Fact] public void A_brightness_the_device_reports_past_its_own_range_is_sent_within_it()
+    {
+        var m = OpenRgbProtocol.Device(0, Description(), 3).Modes[0] with { Flags = RgbModeFlags.Brightness | RgbModeFlags.PerLedColor, BrightnessMin = 0, BrightnessMax = 100 };
+        Assert.Equal(OpenRgbProtocol.Mode(0, m with { Brightness = 100 }, 3), OpenRgbProtocol.Mode(0, m with { Brightness = 255 }, 3));
+    }
+
     [Fact] public void Hex_colours_parse_and_bad_ones_do_not()
     {
         Assert.Equal(new RgbColor(255, 128, 0), RgbColor.Parse("#ff8000")); Assert.Equal("#ff8000", new RgbColor(255, 128, 0).Hex);

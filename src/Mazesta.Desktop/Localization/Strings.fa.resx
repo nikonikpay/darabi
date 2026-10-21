@@ -3237,8 +3237,6 @@
   <data name="Rgb_Off" xml:space="preserve"><value>خاموش</value></data>
   <data name="Rgb_ApplyAll" xml:space="preserve"><value>اعمال روی همه</value></data>
   <data name="Rgb_OffAll" xml:space="preserve"><value>خاموش کردن همه</value></data>
-  <data name="Rgb_Mode" xml:space="preserve"><value>حالت</value></data>
-  <data name="Rgb_Mode_Keep" xml:space="preserve"><value>یک رنگ</value></data>
   <data name="Rgb_Leds" xml:space="preserve"><value>{0} LED</value></data>
   <data name="Rgb_NotFound" xml:space="preserve"><value>بخش کنترل نور در این نسخهٔ برنامه پیدا نشد. برنامه را دوباره نصب کنید یا با پشتیبانی تماس بگیرید.</value></data>
   <data name="Rgb_NoServer" xml:space="preserve"><value>سرویس نور بالا نیامد. اگر برنامهٔ نورپردازی دیگری باز است ببندید، کمی صبر کنید و دوباره امتحان کنید.</value></data>
@@ -3284,8 +3282,6 @@
   <data name="Rgb_Fx_Rainbow" xml:space="preserve"><value>رنگین‌کمان</value></data>
   <data name="Rgb_Fx_Cycle" xml:space="preserve"><value>چرخش رنگ</value></data>
   <data name="Rgb_Fx_Flash" xml:space="preserve"><value>چشمک‌زن</value></data>
-  <data name="Rgb_Fx_Group" xml:space="preserve"><value>افکت‌های همگانی (برای همه دستگاه‌ها)</value></data>
-  <data name="Rgb_Fx_Own" xml:space="preserve"><value>افکت‌های خود دستگاه‌ها</value></data>
   <data name="Rgb_Report" xml:space="preserve"><value>{0}: روی {1} دستگاه خودِ دستگاه اجرا می‌کند و روی {2} دستگاه را برنامه شبیه‌سازی می‌کند.</value></data>
   <data name="Rgb_Report_Skipped" xml:space="preserve"><value>روی این‌ها ممکن نبود: {0}.</value></data>
   <data name="Rgb_All_Sub" xml:space="preserve"><value>یک رنگ یا یک افکت برای همه‌ی دستگاه‌ها</value></data>
@@ -3411,8 +3407,6 @@
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>روی هر LED کلیک کنید تا فقط رنگ همان یکی عوض شود.</value></data>
   <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>درایور این کارت فقط یک ناحیهٔ رنگ برای کل کارت می‌دهد؛ پس همهٔ LEDهای کارت با هم یک رنگ می‌گیرند و کنترل جداگانهٔ هر LED در دسترس نیست.</value></data>
-  <data name="Rgb_Animate_Note" xml:space="preserve"><value>طیف را روی LEDها می‌چرخاند یا رنگ تکی را نفس‌کشان می‌کند. سبک است: چند بستهٔ کوچک در ثانیه.</value></data>
-  <data name="Rgb_Animate" xml:space="preserve"><value>متحرک (رنگ‌ها حرکت کنند)</value></data>
   <data name="Rgb_Harm_mono" xml:space="preserve"><value>سایه‌های همین رنگ</value></data>
   <data name="Rgb_Harm_triad" xml:space="preserve"><value>سه‌رنگ متعادل</value></data>
   <data name="Rgb_Harm_complement" xml:space="preserve"><value>رنگ مقابل</value></data>
@@ -3906,7 +3900,7 @@
   <data name="HelpHow_Tuning_Rules_Title" xml:space="preserve"><value>اول یک پروفایل ذخیره کنید.|یک قانون اضافه کنید: یک بازی تمام‌صفحه یا برنامه، و پروفایلی که اعمال شود.|پایشگر کنار ساعت را روشن نگه دارید؛ پروفایل را خودش اعمال و برمی‌گرداند.</value></data>
   <data name="HelpHow_Tuning_SceneTest_Title" xml:space="preserve"><value>یک پروفایل اعمال کنید و تست صحنه را اجرا کنید؛ نتیجه را یادداشت کنید.|تنظیمات را عوض کنید و دوباره اجرا کنید.|یا آندرولت یا اورکلاک خودکار را شروع کنید تا مرحله‌به‌مرحله حد کارت را پیدا کند.</value></data>
   <data name="HelpHow_Tuning_Memory" xml:space="preserve"><value>کارهایتان را ذخیره کنید.|دکمه را بزنید؛ سیستم مستقیم وارد بایوس می‌شود.|XMP، DOCP یا EXPO را روشن کنید، ذخیره کنید و خارج شوید.</value></data>
-  <data name="HelpHow_Nav_Lights" xml:space="preserve"><value>نورها را باز کنید و صبر کنید دستگاه‌ها پیدا شوند.|همه یا یکی را انتخاب کنید.|رنگ و افکت را انتخاب و اعمال کنید.</value></data>
+  <data name="HelpHow_Nav_Lights" xml:space="preserve"><value>دکمهٔ «اتصال» را بزنید و صبر کنید دستگاه‌ها پیدا شوند.|در «همهٔ قطعات» (یا کارت یک دستگاه) افکت را انتخاب کنید: رنگ ثابت، تنفسی، رنگین‌کمان، چرخش رنگ یا چشمک‌زن.|رنگ را انتخاب کنید: «تک‌رنگ»، «دو رنگ» (روی رنگ اول یا دوم بزنید و هر کدام را جدا انتخاب کنید) یا یک «طیف آماده».|نوار پیش‌نمایش نشان می‌دهد نتیجه چه شکلی است؛ «اعمال» را بزنید.</value></data>
   <data name="HelpHow_Nav_Fans" xml:space="preserve"><value>فن‌ها را باز کنید و هر خروجی فن را پیدا کنید.|کنترل مادربرد، سرعت ثابت یا منحنی خودتان را انتخاب کنید.|یا یک پروفایل آماده را برای همه‌ی فن‌ها با هم بگذارید.</value></data>
   <data name="HelpHow_Dns_Title" xml:space="preserve"><value>ببینید چه DNSی در حال استفاده است.|تست را بزنید تا همه‌ی DNSهای شناخته‌شده روی همین اتصال زمان‌سنجی شوند.|خودکار را بزنید تا سریع‌ترین گذاشته شود، یا از فهرست در «جزئیات بیشتر» یکی را انتخاب کنید.</value></data>
   <data name="HelpHow_NetFix_Title" xml:space="preserve"><value>بررسی را بزنید؛ چیزی تغییر نمی‌کند.|ببینید اتصال کجا قطع است.|«جزئیات بیشتر» را باز کنید، تعمیرهای پیشنهادی را تیک بزنید و اجرا کنید.</value></data>
@@ -3928,4 +3922,17 @@
   <data name="HelpHow_Nav_Assistant" xml:space="preserve"><value>دستیار را از منوی کنار صفحه باز کنید.|ساده بپرسید، درباره‌ی همین سیستم یا اینکه چیزی کجاست.|جواب را بخوانید یا بگذارید صفحه را باز کند.</value></data>
   <data name="HelpHow_Help_Tray_Title" xml:space="preserve"><value>پایشگر کنار ساعت را در تنظیمات روشن کنید.|با ویندوز کنار ساعت شروع می‌شود.|روی آیکونش راست‌کلیک کنید تا اورلی و گزینه‌ها را ببینید.</value></data>
   <data name="HelpHow_Help_Keys_Title" xml:space="preserve"><value>با Ctrl+1 تا Ctrl+9 بین بخش‌ها جابه‌جا شوید.|در بازی از میان‌برهای اورلی استفاده کنید.|در تنظیمات تغییرشان دهید.</value></data>
+  <data name="Rgb_ColorKind" xml:space="preserve"><value>نوع رنگ</value></data>
+  <data name="Rgb_Look_solid" xml:space="preserve"><value>تک‌رنگ</value></data>
+  <data name="Rgb_Look_gradient" xml:space="preserve"><value>دو رنگ</value></data>
+  <data name="Rgb_Look_preset" xml:space="preserve"><value>طیف آماده</value></data>
+  <data name="Rgb_First" xml:space="preserve"><value>رنگ اول</value></data>
+  <data name="Rgb_Second" xml:space="preserve"><value>رنگ دوم</value></data>
+  <data name="Rgb_Swap" xml:space="preserve"><value>جابه‌جا کردن دو رنگ</value></data>
+  <data name="Rgb_Suggest" xml:space="preserve"><value>جفت‌رنگ‌های پیشنهادی</value></data>
+  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>روی «رنگ اول» یا «رنگ دوم» بزنید و رنگش را از پایین انتخاب کنید. روی نوار، برد و رم، دو رنگ در طول LEDها در هم می‌روند و افکت متحرک (رنگین‌کمان، چرخش رنگ) بین این دو می‌چرخد. قطعه‌ای که یک LED دارد رنگ اول را نشان می‌دهد.</value></data>
+  <data name="Rgb_Preview" xml:space="preserve"><value>پیش‌نمایش رنگ و افکت</value></data>
+  <data name="Rgb_OwnMode" xml:space="preserve"><value>حالت خود دستگاه</value></data>
+  <data name="Rgb_OwnMode_None" xml:space="preserve"><value>هیچ (افکت بالا)</value></data>
+  <data name="Rgb_Report_Still" xml:space="preserve"><value>{0}: روی {1} دستگاه اعمال شد.</value></data>
 </root>

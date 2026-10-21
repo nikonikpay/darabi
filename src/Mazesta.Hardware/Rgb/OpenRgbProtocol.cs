@@ -38,6 +38,10 @@ internal static class OpenRgbProtocol
     /// <summary>The "update mode" payload: its own size, the mode's index, then the mode as a device lists it (sending a mode makes the device switch to it).</summary>
     public static byte[] Mode(int index, RgbMode m, uint version)
     {
+        // A device can report a value outside its own range (a PNY card's "Direct": brightness 255 of 0..100), and the server then drops the whole mode change: sent within it.
+        static uint In(uint v, uint a, uint b) => Math.Clamp(v, Math.Min(a, b), Math.Max(a, b));
+        if (m.Flags.HasFlag(RgbModeFlags.Speed)) m = m with { Speed = In(m.Speed, m.SpeedMin, m.SpeedMax) };
+        if (m.Flags.HasFlag(RgbModeFlags.Brightness)) m = m with { Brightness = In(m.Brightness, m.BrightnessMin, m.BrightnessMax) };
         using var s = new MemoryStream(); using var w = new BinaryWriter(s);
         w.Write(0u); w.Write((uint)index); Str(w, m.Name); w.Write(m.Value); w.Write((uint)m.Flags); w.Write(m.SpeedMin); w.Write(m.SpeedMax);
         if (version >= 3) { w.Write(m.BrightnessMin); w.Write(m.BrightnessMax); }

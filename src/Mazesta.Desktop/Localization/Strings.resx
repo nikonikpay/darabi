@@ -3237,8 +3237,6 @@ Cancel: stop.</value></data>
   <data name="Rgb_Off" xml:space="preserve"><value>Off</value></data>
   <data name="Rgb_ApplyAll" xml:space="preserve"><value>Apply to all</value></data>
   <data name="Rgb_OffAll" xml:space="preserve"><value>Turn all off</value></data>
-  <data name="Rgb_Mode" xml:space="preserve"><value>Mode</value></data>
-  <data name="Rgb_Mode_Keep" xml:space="preserve"><value>One colour</value></data>
   <data name="Rgb_Leds" xml:space="preserve"><value>{0} LEDs</value></data>
   <data name="Rgb_NotFound" xml:space="preserve"><value>The lighting control is missing from this copy of the app. Install the app again, or call support.</value></data>
   <data name="Rgb_NoServer" xml:space="preserve"><value>The lights service did not start. Close any other lighting program that may be open, wait a moment and try again.</value></data>
@@ -3284,8 +3282,6 @@ Cancel: stop.</value></data>
   <data name="Rgb_Fx_Rainbow" xml:space="preserve"><value>Rainbow</value></data>
   <data name="Rgb_Fx_Cycle" xml:space="preserve"><value>Colour cycle</value></data>
   <data name="Rgb_Fx_Flash" xml:space="preserve"><value>Flashing</value></data>
-  <data name="Rgb_Fx_Group" xml:space="preserve"><value>Effects for every device</value></data>
-  <data name="Rgb_Fx_Own" xml:space="preserve"><value>Effects of the devices themselves</value></data>
   <data name="Rgb_Report" xml:space="preserve"><value>{0}: {1} device(s) run it themselves, {2} are driven by the app.</value></data>
   <data name="Rgb_Report_Skipped" xml:space="preserve"><value>Not possible on: {0}.</value></data>
   <data name="Rgb_All_Sub" xml:space="preserve"><value>one colour or one effect for every device</value></data>
@@ -3410,8 +3406,6 @@ Cancel: stop.</value></data>
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>These tests failed: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>The card's driver gives one lit zone for the whole card, so all its LEDs take one colour together; the card itself has no per-LED control to offer.</value></data>
-  <data name="Rgb_Animate_Note" xml:space="preserve"><value>Moves the spectrum along the LEDs, or breathes a single colour. Light on the processor: a few small packets a second.</value></data>
-  <data name="Rgb_Animate" xml:space="preserve"><value>Animate (the colours move)</value></data>
   <data name="Rgb_Harm_mono" xml:space="preserve"><value>Shades of this colour</value></data>
   <data name="Rgb_Harm_triad" xml:space="preserve"><value>Three evenly spaced</value></data>
   <data name="Rgb_Harm_complement" xml:space="preserve"><value>Opposite colour</value></data>
@@ -3906,7 +3900,7 @@ Cancel: stop.</value></data>
   <data name="HelpHow_Tuning_Rules_Title" xml:space="preserve"><value>Save a profile first.|Add a rule: a full-screen game or a program, and the profile to use.|Keep the tray monitor running; it applies and restores the profile for you.</value></data>
   <data name="HelpHow_Tuning_SceneTest_Title" xml:space="preserve"><value>Apply a profile and run the scene test; note the result.|Change the settings and run it again.|Or start the automatic undervolt or overclock and let it find the card's limit step by step.</value></data>
   <data name="HelpHow_Tuning_Memory" xml:space="preserve"><value>Save your work.|Press the button; the system restarts into the BIOS.|Turn on XMP, DOCP or EXPO, save and exit.</value></data>
-  <data name="HelpHow_Nav_Lights" xml:space="preserve"><value>Open Lights and wait for the devices to be found.|Pick all devices or one.|Choose a colour and an effect and apply.</value></data>
+  <data name="HelpHow_Nav_Lights" xml:space="preserve"><value>Press Connect and wait for the devices to be found.|In All parts (or on one device's card) pick an effect: still colour, breathing, rainbow, colour cycle or flashing.|Pick the colour: Single colour, Two colours (click the first or second and choose each), or a ready Spectrum.|The strip under the tabs shows how it will look; press Apply.</value></data>
   <data name="HelpHow_Nav_Fans" xml:space="preserve"><value>Open Fans and find each fan output.|Choose motherboard control, a fixed speed or your own curve.|Or pick a ready profile for every fan at once.</value></data>
   <data name="HelpHow_Dns_Title" xml:space="preserve"><value>Read which DNS is in use.|Press Test to time every known DNS on this connection.|Press Auto to use the fastest, or pick one from the list in More details.</value></data>
   <data name="HelpHow_NetFix_Title" xml:space="preserve"><value>Press Check; nothing is changed.|Read where the connection stops.|Open More details, tick the suggested repairs and run them.</value></data>
@@ -3928,4 +3922,17 @@ Cancel: stop.</value></data>
   <data name="HelpHow_Nav_Assistant" xml:space="preserve"><value>Open the assistant from the side menu.|Ask in plain words, about this system or where something is.|Read the answer, or let it open the page.</value></data>
   <data name="HelpHow_Help_Tray_Title" xml:space="preserve"><value>Turn the tray monitor on in Settings.|It starts with Windows next to the clock.|Right-click its icon for the overlay and options.</value></data>
   <data name="HelpHow_Help_Keys_Title" xml:space="preserve"><value>Press Ctrl+1 to Ctrl+9 to jump between sections.|Use the overlay shortcuts in a game.|Change them in Settings.</value></data>
+  <data name="Rgb_ColorKind" xml:space="preserve"><value>How the colour is made</value></data>
+  <data name="Rgb_Look_solid" xml:space="preserve"><value>Single colour</value></data>
+  <data name="Rgb_Look_gradient" xml:space="preserve"><value>Two colours</value></data>
+  <data name="Rgb_Look_preset" xml:space="preserve"><value>Spectrum</value></data>
+  <data name="Rgb_First" xml:space="preserve"><value>First colour</value></data>
+  <data name="Rgb_Second" xml:space="preserve"><value>Second colour</value></data>
+  <data name="Rgb_Swap" xml:space="preserve"><value>Swap the two colours</value></data>
+  <data name="Rgb_Suggest" xml:space="preserve"><value>Pairs that go together</value></data>
+  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>Click the first or the second colour, then pick it below. On a strip, board or memory the two run into each other along the LEDs; a moving effect (rainbow, colour cycle) goes from one to the other. A part with one LED shows the first colour.</value></data>
+  <data name="Rgb_Preview" xml:space="preserve"><value>Preview of the colours and the effect</value></data>
+  <data name="Rgb_OwnMode" xml:space="preserve"><value>The device's own mode</value></data>
+  <data name="Rgb_OwnMode_None" xml:space="preserve"><value>None (use the effect above)</value></data>
+  <data name="Rgb_Report_Still" xml:space="preserve"><value>{0}: set on {1} device(s).</value></data>
 </root>

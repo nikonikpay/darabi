@@ -84,6 +84,10 @@ const ICONS = {
   layers: "M12 3 3 8l9 5 9-5zM3 13l9 5 9-5",
   apps: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   shield: "M12 3 4 6v6c0 4.5 3.2 8 8 9 4.8-1 8-4.5 8-9V6zM9 12l2 2 4-4",
+  drop: "M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z",
+  duo: "M9 7a5 5 0 1 0 0 10 5 5 0 1 0 0-10M15 7a5 5 0 1 0 0 10 5 5 0 1 0 0-10",
+  rainbow: "M3 18a9 9 0 0 1 18 0M6.5 18a5.5 5.5 0 0 1 11 0M10 18a2 2 0 0 1 4 0",
+  swap: "M7 7h13l-4-4M17 17H4l4 4",
 };
 export function icon(name) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");

@@ -144,7 +144,8 @@ public sealed class OpenRgbClient : IDisposable
     private RgbDevice Find(int device) => _devices.FirstOrDefault(d => d.Index == device) ?? throw new InvalidOperationException("That device is not in the list; refresh it.");
     private static RgbMode? Named(RgbDevice d, string name) => d.Modes.FirstOrDefault(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private static uint Scale(uint min, uint max, int percent) => max <= min ? min : min + (uint)Math.Round((max - min) * Math.Clamp(percent, 0, 100) / 100.0);
+    // Some modes run from slow to fast with a "min" above the "max" (PNY's speeds): the percentage goes from the one to the other either way.
+    private static uint Scale(uint min, uint max, int percent) => (uint)Math.Round(min + ((double)max - min) * Math.Clamp(percent, 0, 100) / 100.0);
 
     /// <summary>The wait between a device's mode change and the colours after it, and before they are sent again.</summary>
     private const int SettleMs = 100;
