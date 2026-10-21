@@ -1058,7 +1058,7 @@ final class Mazesta_Connect
             . '.n{direction:ltr;unicode-bidi:isolate;font-weight:bold;color:#fff;white-space:nowrap}.n small{color:#fdd400;font-weight:normal}.p{direction:ltr;unicode-bidi:isolate;color:#c3c7cc;font-size:13px}'
             . '.warn{background:#2a1a12;border-color:#7a3a1a;color:#f0c8a0}.warn p{margin:6px 0 0}.old{background:#7a3a1a;color:#fff;border-radius:3px;padding:0 6px;font-size:11px;white-space:nowrap}'
             . 'footer{color:#8a9097;font-size:13px;margin-top:18px}a{color:#fdd400}'
-            . '</style></head><body><main><h1>نتایج بنچمارک <b>Mazesta Test</b></h1><p class="sub">' . $e($owner) . ' · ثبت‌شده در ' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($s['created'])), 'Y/m/d H:i')) . '</p>';
+            . '</style></head><body><main><h1>نتایج بنچمارک <b>Mazesta Test</b></h1><p class="sub">' . $e($owner) . ' · ثبت‌شده در ' . $e(MZC_Crm::jtime((int) strtotime($s['created']))) . '</p>';
         if ($spec) {
             echo '<div class="box"><dl>';
             foreach ($spec as $row) { echo '<dt>' . $e($row[0]) . '</dt><dd>' . $e($row[1]) . '</dd>'; }
@@ -1076,7 +1076,7 @@ final class Mazesta_Connect
         echo '<div class="box"><table><thead><tr><th>بنچمارک</th><th>نتیجه</th><th>قطعه</th><th>تاریخ اجرا</th></tr></thead><tbody>';
         foreach ($s['rows'] as $r) {
             echo '<tr><td>' . $e($r['name']) . (isset($r['version']) && self::is_old($r['benchmark'], $r['version']) ? ' <span class="old">نسخه قدیمی</span>' : '') . ($r['settings'] !== '' ? ' <span class="p">' . $e($r['settings']) . '</span>' : '') . '</td><td class="n">' . $e(self::number($r['value'])) . ' <small>' . $e($r['unit']) . '</small></td>'
-                . '<td class="p">' . $e($r['part']) . '</td><td>' . $e(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime($r['at'])), 'Y/m/d')) . '</td></tr>';
+                . '<td class="p">' . $e($r['part']) . '</td><td>' . $e(MZC_Crm::jdate(MZC_Crm::ymd((int) strtotime($r['at'])))) . '</td></tr>';
         }
         echo '</tbody></table></div><footer>این اعداد را برنامه Mazesta Test روی همین سیستم اندازه گرفته و کاربر آن فرستاده است. <a href="' . esc_url(home_url('/')) . '">' . $e(get_bloginfo('name')) . '</a></footer></main></body></html>';
         exit;
@@ -1213,7 +1213,7 @@ final class Mazesta_Connect
         self::back('settings', 'saved');
     }
 
-    public static function local($iso) { return esc_html(get_date_from_gmt(gmdate('Y-m-d H:i:s', (int) strtotime((string) $iso)), 'Y/m/d H:i')); }
+    public static function local($iso) { return esc_html(MZC_Crm::jtime((int) strtotime((string) $iso))); }
 
     public static function page()
     {

@@ -237,6 +237,19 @@ function softEditor(rec, ro) {
   return { el, body: () => ({ software: rows.get().filter(r => r.name.trim()).map(r => ({ name: r.name.trim(), done: r.done })), software_note: note.value }) };
 }
 
+/** The tick lists of a record: what came in with it and the checks before it leaves; the boxes are the chosen device type's and change with it. */
+function checksEditor(rec, dtype, ro, recvTitle) {
+  const c = rec.checks || { recv: [], check: [], note: '' }, on = { recv: new Set(c.recv), check: new Set(c.check) }, lists = S.cfg.checklists || { recv: {}, check: {} };
+  const boxes = { recv: h('div', { class: 'ticks' }), check: h('div', { class: 'ticks' }) }, note = area('checks_note', c.note, { readOnly: ro, rows: 2, placeholder: 'توضیحات لوازم دریافتی' });
+  const wrap = { recv: h('div', { class: 'wide' }, h('label', { class: 'lbl' }, recvTitle), boxes.recv, note), check: h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'چک کلی'), boxes.check) };
+  const draw = () => ['recv', 'check'].forEach(l => {
+    const items = Object.entries(lists[l][dtype.value] || {}); clear(boxes[l]); wrap[l].hidden = l === 'check' && !items.length;
+    items.forEach(([k, label]) => boxes[l].append(h('label', { class: 'tick' }, h('input', { type: 'checkbox', checked: on[l].has(k), disabled: ro, onchange: e => e.target.checked ? on[l].add(k) : on[l].delete(k) }), label)));
+  });
+  dtype.addEventListener('change', draw); draw();
+  return { el: [wrap.recv, wrap.check], body: () => ({ checks: { recv: [...on.recv], check: [...on.check], note: note.value } }) };
+}
+
 /* ---------- editable row lists (parts, payments) ---------- */
 function rowsEditor(cols, rows, o) {
   o = o || {}; const body = h('tbody'), ro = !!o.readOnly, picks = cols.some(c => c.type === 'product');
@@ -287,20 +300,20 @@ const priceNum = r => { for (const k of ['sell_price', 'buy_price', 'unit_price'
 
 /* ---------- build (a new computer) ---------- */
 async function viewBuild(id, q) {
-  const isNew = id === 'new'; let b = { invoice_no: '', sold_at: today(), status: 'queue', notes: '', parts: [], report_id: '', software: [], software_note: '' }, cust = null;
+  const isNew = id === 'new'; let b = { invoice_no: '', sold_at: today(), status: 'queue', device_type: 'system', notes: '', parts: [], report_id: '', software: [], software_note: '' }, cust = null;
   if (!isNew) { b = await GET('staff/builds/' + id); cust = { id: b.customer_id, name: b.customer_name, mobile: b.customer_mobile }; }
   else if (q.get('cid')) { const r = await GET('staff/customers/' + q.get('cid')); cust = r.customer; }
   const ro = !can('builds', 2), picker = customerPicker(cust, !isNew), soft = softEditor(b, ro);
   const f = { invoice: text('invoice_no', b.invoice_no, { readOnly: ro, dir: 'ltr', required: isNew }), sold: h('input', { type: 'date', name: 'sold_at', value: b.sold_at, readOnly: ro }),
-    status: select('status', S.cfg.buildStatuses, b.status, { disabled: ro && !(can('tests', 2) && can('builds')) }), notes: area('notes', b.notes, { readOnly: ro }) };
+    status: select('status', S.cfg.buildStatuses, b.status, { disabled: ro && !(can('tests', 2) && can('builds')) }), notes: area('notes', b.notes, { readOnly: ro }), dtype: select('device_type', S.cfg.deviceTypes || {}, b.device_type || 'system', { disabled: ro }) };
+  const checks = checksEditor(b, f.dtype, ro, 'لوازم همراه سیستم');
   const cat = Object.assign({}, S.cfg.categories);
-  const parts = rowsEditor([{ k: 'category', label: 'نوع', type: 'select', opts: cat, def: 'other' }, { k: 'model', label: 'مدل (از انبار)', type: 'product', always: { category: 'category' }, fill: { sell_price: 'sell_price', buy_price: 'buy_price', warranty_months: 'warranty_months' } },
-    { k: 'serial', label: 'سریال', ltr: true }].concat(can('payments') ? [{ k: 'sell_price', label: 'قیمت فروش', type: 'num', readOnly: !can('payments', 2) }] : []).concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', readOnly: !S.cfg.costEdit }] : [])
-    .concat([{ k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }, { k: 'vendor', label: 'تأمین‌کننده / گارانتی' }, { k: 'has_box', label: 'جعبه', type: 'check' }, { k: 'qc', label: 'تست شد', type: 'check' }]), b.parts, { readOnly: ro });
+  const parts = rowsEditor([{ k: 'category', label: 'نوع', type: 'select', opts: cat, def: 'other' }, { k: 'model', label: 'مدل (از انبار)', type: 'product', always: { category: 'category' }, fill: { warranty_months: 'warranty_months' } },
+    { k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }, { k: 'vendor', label: 'تأمین‌کننده / گارانتی' }, { k: 'has_box', label: 'جعبه', type: 'check' }, { k: 'qc', label: 'تست شد', type: 'check' }], b.parts, { readOnly: ro });   // no prices: the accounting's invoice holds them
   let force = false;
   const save = async e => {
     e.preventDefault(); const bad = picker.error(); if (bad) return toast(bad, 'err');
-    const body = Object.assign({ id: isNew ? 0 : b.id, updated: b.updated, invoice_no: digits(f.invoice.value), sold_at: f.sold.value, status: f.status.value, notes: f.notes.value, force }, picker.body(), ro ? {} : soft.body());
+    const body = Object.assign({ id: isNew ? 0 : b.id, updated: b.updated, invoice_no: digits(f.invoice.value), sold_at: f.sold.value, status: f.status.value, notes: f.notes.value, force }, picker.body(), ro ? {} : Object.assign({ device_type: f.dtype.value }, soft.body(), checks.body()));
     if (isNew || can('builds', 2)) body.parts = parts.get().map(priceNum);
     try {
       const r = await POST('staff/builds', body); toast(isNew ? 'ثبت شد: فاکتور ' + r.number : 'ذخیره شد.'); (r.warnings || []).forEach(w => toast(w, 'err'));
@@ -313,8 +326,8 @@ async function viewBuild(id, q) {
     can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('build', b) }, b.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null,
     can('accounting', 2) ? h('button', { type: 'button', class: 'btn', onclick: async () => { try { const v = await POST('staff/invoices/from-build', { build_id: b.id }); location.hash = '#/invoice/' + v.id; } catch (e) { fail(e); } } }, 'فاکتور فروش') : null);
   return h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.number}`, actions),
-    h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('شمارهٔ فاکتور حسابداری', f.invoice, 'سیستم نو با شمارهٔ فاکتور و نام خریدار شناخته می‌شود'), field('تاریخ فروش', f.sold), field('وضعیت', f.status),
-      b.service_no ? field('شمارهٔ سرویس (قدیمی)', h('input', { value: b.service_no, readOnly: true, dir: 'ltr' })) : null, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el),
+    h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('شمارهٔ فاکتور حسابداری', f.invoice, 'سیستم نو با شمارهٔ فاکتور و نام خریدار شناخته می‌شود'), field('تاریخ فروش', f.sold), field('وضعیت', f.status), field('نوع دستگاه', f.dtype),
+      h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el), checks.el,
       soft.el, mediaLinks(b.media), field('یادداشت', f.notes, '', 'wide'), ro && !(can('tests', 2) && can('builds')) ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
 }
 
@@ -345,12 +358,13 @@ async function viewJob(id, q) {
   const partCols = [{ k: 'name', label: 'قطعهٔ اضافه‌شده (از انبار)', type: 'product', fill: { unit_price: 'sell_price', buy_price: 'buy_price', warranty_months: 'warranty_months' } }, { k: 'qty', label: 'تعداد', type: 'num', def: 1 }]
     .concat(money1 ? [{ k: 'unit_price', label: 'قیمت واحد', type: 'num', readOnly: !money2 }] : []).concat(S.cfg.costSeen ? [{ k: 'buy_price', label: 'قیمت خرید', type: 'num', readOnly: !S.cfg.costEdit }] : []).concat([{ k: 'serial', label: 'سریال', ltr: true }, { k: 'warranty_months', label: 'گارانتی (ماه)', type: 'num' }]);
   const parts = rowsEditor(partCols, j.parts, { readOnly: ro, onchange: recalc });
+  const checks = checksEditor(j, f.dtype, ro, 'موارد دریافتی');
   const recv = rowsEditor([{ k: 'name', label: 'قطعه / لوازمی که مشتری آورده' }, { k: 'serial', label: 'سریال', ltr: true }, { k: 'has_box', label: 'جعبه', type: 'check' }], j.recv, { readOnly: ro });
   const pays = money1 ? rowsEditor([{ k: 'amount', label: 'مبلغ واریزی', type: 'num' }, { k: 'account', label: 'واریز به حساب', list: 'acclist' }, { k: 'tx', label: 'شمارهٔ تراکنش', ltr: true }, { k: 'holder', label: 'صاحب حساب' }], j.pays, { readOnly: !money2 }) : null;
   const save = async e => {
     e.preventDefault(); const bad = picker.error(); if (bad) return toast(bad, 'err');
     const body = Object.assign({ id: isNew ? 0 : j.id, updated: j.updated, device: f.device.value, device_serial: f.serial.value, device_type: f.dtype.value, media: mediaOf(f.media), complaint: f.complaint.value, work_done: f.work.value, status: f.status.value, received_at: f.recv.value, due_at: f.due.value,
-      invoice_no: digits(f.invoice.value), notes: f.notes.value, is_mazesta: $('input', f.maz).checked, has_warranty: $('input', f.war).checked, parts: parts.get().map(priceNum), recv: recv.get() }, picker.body(), ro ? {} : soft.body());
+      invoice_no: digits(f.invoice.value), notes: f.notes.value, is_mazesta: $('input', f.maz).checked, has_warranty: $('input', f.war).checked, parts: parts.get().map(priceNum), recv: recv.get() }, picker.body(), ro ? {} : Object.assign(soft.body(), checks.body()));
     if (money2) { Object.assign(body, { labor_price: digits(f.labor.value), discount: digits(f.discount.value), paid: digits(f.paid.value), paid_note: f.paidNote.value, pays: pays.get().map(p => Object.assign(p, { amount: digits(p.amount) })) }); }
     try { const r = await POST('staff/jobs', body); toast(isNew ? 'ثبت شد: ' + r.service_no : 'ذخیره شد.'); if (isNew) { S.after = () => offerPrint(r); location.hash = '#/job/' + r.id; } else route(); }
     catch (err) { if (err.status === 409) { toast(err.message, 'err'); if (await ask('رکورد را دوباره بارگذاری کنم؟ (تغییرات این صفحه از بین می‌رود)', 'بارگذاری')) route(); } else fail(err); }
@@ -364,7 +378,7 @@ async function viewJob(id, q) {
   const el = h('div', {}, title(isNew ? 'پذیرش سرویس' : `سرویس ${j.service_no}`, actions),
     h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('نوع دستگاه', f.dtype), field('وضعیت', f.status), field('تاریخ پذیرش', f.recv), field('تاریخ قول تحویل', f.due), devBox,
       h('div', { class: 'checks' }, f.maz, f.war), field('مشکل اعلام‌شده', f.complaint, '', 'wide'), field('کار انجام‌شده', f.work, '', 'wide'),
-      h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'لوازمی که مشتری تحویل داده'), recv.el), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات اضافه‌شده'), parts.el),
+      checks.el, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات دیگری که مشتری تحویل داده'), recv.el), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات اضافه‌شده'), parts.el),
       soft.el, costs, field('لینک عکس و فیلم در تلگرام', f.media, '', 'wide'), mediaLinks(j.media), field('یادداشت داخلی', f.notes, '', 'wide'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
   recalc(); return el;
 }
@@ -401,7 +415,8 @@ function printReceipt(j) {
   const node = h('div', { class: 'receipt' }, h('header', {}, h('div', {}, h('h1', {}, p.shop), p.phone ? h('div', { class: 'lat' }, p.phone) : null), h('div', { class: 'lqr big', html: qrSvg(qr, 5) })),
     h('h2', {}, 'رسید پذیرش'), h('div', { class: 'rnum lat' }, j.service_no),
     h('dl', {}, [['مشتری', j.customer_name], ['موبایل', j.customer_mobile], ['دستگاه', j.device], ['تاریخ پذیرش', j.received_at_j], ['قول تحویل', j.due_at_j], ['مشکل اعلام‌شده', j.complaint],
-      ['لوازم تحویل‌گرفته‌شده', (j.recv || []).map(x => x.name + (x.serial ? ' (' + x.serial + ')' : '')).join('، ')]].filter(x => x[1]).map(x => [h('dt', {}, x[0]), h('dd', {}, x[1])])), h('p', { class: 'foot' }, p.foot));
+      ['لوازم تحویل‌گرفته‌شده', ((j.checks || {}).recv || []).map(k => ((S.cfg.checklists || { recv: {} }).recv[j.device_type] || {})[k]).filter(Boolean).concat((j.recv || []).map(x => x.name + (x.serial ? ' (' + x.serial + ')' : ''))).join('، ')],
+      ['توضیحات لوازم', (j.checks || {}).note]].filter(x => x[1]).map(x => [h('dt', {}, x[0]), h('dd', {}, x[1])])), h('p', { class: 'foot' }, p.foot));
   printOverlay('رسید ' + j.service_no, node, `@page{size:${p.paper};margin:12mm}`);
 }
 

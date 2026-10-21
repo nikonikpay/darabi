@@ -70,3 +70,5 @@ a.card:hover { border-color: var(--brand); text-decoration: none; background: va
 tr.muted td { color: var(--muted); text-decoration: line-through; }
 #printArea { display: none; }
 @media print { body > *:not(#printArea) { display: none !important; } #printArea { display: block; } .label { border: 0; } html, body { background: #fff; height: auto; } }
+/* the tick lists (what came in with a device, the checks before it leaves): as many columns as fit */
+.ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 16px; margin: 4px 0 8px; } .tick { display: flex; align-items: center; gap: 6px; }

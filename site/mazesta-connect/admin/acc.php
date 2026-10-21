@@ -90,7 +90,7 @@ if ($tab === 'invoices') {
     echo '</select><button class="mzc-btn primary">اعمال</button></form>';
     echo '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>سررسید</th><th>نوع</th><th>شماره</th><th>بانک</th><th>طرف حساب</th><th class="n">مبلغ</th><th>وضعیت</th><th></th></tr></thead><tbody>';
     if (!$rows) { echo '<tr><td class="empty" colspan="8">چکی نیست.</td></tr>'; }
-    $today = wp_date('Y-m-d');
+    $today = MZC_Crm::ymd();
     foreach ($rows as $c) {
         $late = $c['status'] === 'pending' && $c['due_at'] < $today;
         echo '<tr><td>' . $jd($c['due_at']) . ($late ? ' ' . MZC_Admin::pill('گذشته', 'bad') : '') . '</td><td>' . ($c['direction'] === 'out' ? 'پرداختنی' : 'دریافتنی') . '</td><td class="num">' . esc_html($c['no']) . '</td><td dir="auto">' . esc_html((string) $c['bank']) . '</td>'

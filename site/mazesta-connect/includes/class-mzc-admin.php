@@ -101,7 +101,7 @@ final class MZC_Admin
     public static function when($ts)
     {
         if (!$ts) { return '—'; }
-        return '<span class="num">' . esc_html(MZC_Crm::jdate(wp_date('Y-m-d', $ts)) . ' ' . wp_date('H:i', $ts)) . '</span>';
+        return '<span class="num">' . esc_html(MZC_Crm::jtime($ts)) . '</span>';
     }
 
     public static function ago($ts)
@@ -186,18 +186,18 @@ final class MZC_Admin
         self::back($page, 'err:دست‌کم یک ستون را نگه دارید.');
     }
 
-    /** The table of a list page. A cell callback returns escaped HTML; $link($row) is where a click on the row goes. */
-    public static function table($page, $defs, $rows, $link, $empty)
+    /** The table of a list page. A cell callback returns escaped HTML; $link($row) is where a click on the row goes; $act($row), when given, a last cell of buttons that no column choice hides. */
+    public static function table($page, $defs, $rows, $link, $empty, $act = null)
     {
         $keys = self::cols($page, $defs);
         $o = '<div class="mzc-panel"><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr>';
         foreach ($keys as $k) { $o .= '<th' . (!empty($defs[$k][3]) ? ' class="' . esc_attr($defs[$k][3]) . '"' : '') . '>' . esc_html($defs[$k][0]) . '</th>'; }
-        $o .= '</tr></thead><tbody>';
-        if (!$rows) { $o .= '<tr><td class="empty" colspan="' . count($keys) . '">' . esc_html($empty) . '</td></tr>'; }
+        $o .= ($act ? '<th></th>' : '') . '</tr></thead><tbody>';
+        if (!$rows) { $o .= '<tr><td class="empty" colspan="' . (count($keys) + ($act ? 1 : 0)) . '">' . esc_html($empty) . '</td></tr>'; }
         foreach ($rows as $r) {
             $o .= '<tr class="click" data-href="' . esc_url($link($r)) . '">';
             foreach ($keys as $k) { $o .= '<td' . (!empty($defs[$k][3]) ? ' class="' . esc_attr($defs[$k][3]) . '"' : '') . '>' . call_user_func($defs[$k][2], $r) . '</td>'; }
-            $o .= '</tr>';
+            $o .= ($act ? '<td class="act">' . $act($r) . '</td>' : '') . '</tr>';
         }
         return $o . '</tbody></table></div></div>';
     }
@@ -302,6 +302,36 @@ final class MZC_Admin
         $o = '<label>نوع دستگاه<select name="device_type">' . ($none ? '<option value="">—</option>' : '');
         foreach (MZC_Crm::$device_types as $k => $l) { $o .= '<option value="' . esc_attr($k) . '"' . selected((string) $cur, $k, false) . '>' . esc_html($l) . '</option>'; }
         return $o . '</select></label>';
+    }
+
+    /** The tick lists of the form, one set per device type (admin.js shows the chosen type's); the save keeps only that type's ticks. */
+    public static function checks_field($json, $recvTitle)
+    {
+        $c = MZC_Crm::checks_out($json); $o = '';
+        foreach (array('recv' => $recvTitle, 'check' => 'چک کلی') as $l => $title) {
+            $o .= '<div class="mzc-field wide"><span>' . esc_html($title) . '</span>';
+            foreach (MZC_Crm::$checklists[$l] as $type => $items) {
+                $o .= '<div class="mzc-checks" data-mzc-dtype="' . esc_attr($type) . '">';
+                foreach ($items as $k => $label) { $o .= '<label class="chk"><input type="checkbox" name="checks[' . $l . '][]" value="' . esc_attr($k) . '"' . checked(in_array($k, $c[$l], true), true, false) . '> <span dir="auto">' . esc_html($label) . '</span></label>'; }
+                $o .= '</div>';
+            }
+            $o .= '</div>';
+        }
+        return $o . '<label class="wide">توضیحات لوازم دریافتی<textarea name="checks[note]" rows="2">' . esc_textarea($c['note']) . '</textarea></label>';
+    }
+
+    /** The ticks of a record for its page: each list of its device type with ✓ or ✗. */
+    public static function checks_view($json, $type, $recvTitle)
+    {
+        $c = MZC_Crm::checks_out($json); $o = '';
+        foreach (array('recv' => $recvTitle, 'check' => 'چک کلی') as $l => $title) {
+            if (!isset(MZC_Crm::$checklists[$l][$type])) { continue; }
+            $o .= '<h4>' . esc_html($title) . '</h4><p class="mzc-checks">';
+            foreach (MZC_Crm::$checklists[$l][$type] as $k => $label) { $on = in_array($k, $c[$l], true); $o .= self::pill(($on ? '✓ ' : '✗ ') . $label, $on ? 'ok' : '') . ' '; }
+            $o .= '</p>';
+        }
+        if ($c['note'] !== '') { $o .= '<p dir="auto">' . nl2br(esc_html($c['note'])) . '</p>'; }
+        return $o === '' ? '' : '<div class="mzc-panel"><header><h3>چک‌لیست</h3></header><div class="body">' . $o . '</div></div>';
     }
 
     public static function media_field($media)

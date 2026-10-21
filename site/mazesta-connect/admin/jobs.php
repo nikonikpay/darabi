@@ -47,6 +47,7 @@ if ($add || $edit) {
             . '<label class="chk"><input type="checkbox" name="recv[' . $n . '][has_warranty]" value="1"' . checked((int) $p['has_warranty'], 1, false) . '> گارانتی</label><button type="button" class="mzc-btn sm danger x" data-mzc-remove>حذف</button></div>';
     };
     $blank = array('name' => '', 'serial' => '', 'note' => '', 'has_box' => 0, 'has_warranty' => 0);
+    echo '<div class="mzc-fields">' . MZC_Admin::checks_field($j ? $j['checks'] : null, 'موارد دریافتی') . '</div>';
     echo '<div class="mzc-field"><span>قطعات دریافتی از مشتری / بازشده از کیس</span><div class="mzc-rows" id="mzc-recv" data-next="' . ($j ? count($j['recv']) : 0) . '">';
     if ($j) { foreach ($j['recv'] as $n => $p) { echo $rrow($n, $p); } }
     echo '</div><template id="mzc-recv-tpl">' . str_replace('[0]', '[__N__]', $rrow(0, $blank)) . '</template><p><button type="button" class="mzc-btn" data-mzc-add="mzc-recv">+ قطعهٔ دریافتی</button></p></div>';
@@ -97,6 +98,7 @@ if ($view) {
         . '<tr><td colspan="4"><strong>هزینهٔ نهایی</strong></td><td class="n"><strong>' . esc_html(MZC_Crm::money($j['total'])) . '</strong></td></tr>'
         . ((int) $j['paid'] ? '<tr class="muted"><td colspan="4">هزینه‌های پرداخت‌شده (خرج خودمان، مشتری نمی‌بیند)' . ($j['paid_note'] ? ' — <span dir="auto">' . esc_html($j['paid_note']) . '</span>' : '') . '</td><td class="n">' . esc_html(number_format((int) $j['paid'])) . '</td></tr>' : '')
         . '</tbody></table></div></div>';
+    echo MZC_Admin::checks_view($j['checks'], (string) $j['device_type'], 'موارد دریافتی');
     $paidSum = 0; foreach ($j['pays'] as $p) { $paidSum += (int) $p['amount']; }
     if ($j['pays']) {
         echo '<div class="mzc-panel"><header><h3>پرداخت‌ها</h3>' . MZC_Admin::pill('جمع: ' . MZC_Crm::money($paidSum), $paidSum >= (int) $j['total'] ? 'ok' : 'warn') . '</header><div class="body flush mzc-scroll"><table class="mzc-table"><thead><tr><th>حساب</th><th>تراکنش</th><th>صاحب حساب</th><th class="n">مبلغ</th></tr></thead><tbody>';

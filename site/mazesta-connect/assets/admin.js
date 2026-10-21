@@ -81,6 +81,9 @@
   var dtype = document.querySelector('select[name="device_type"]');
   var devShow = function () { var sys = dtype.value === 'system'; document.querySelectorAll('[data-mzc-dev]').forEach(function (l) { l.style.display = sys ? 'none' : ''; }); };
   if (dtype && document.querySelector('[data-mzc-dev]')) { dtype.addEventListener('change', devShow); devShow(); }
+  /* the tick lists change with the device type: a computer case, a laptop or a part */
+  var listShow = function () { document.querySelectorAll('[data-mzc-dtype]').forEach(function (l) { l.hidden = l.getAttribute('data-mzc-dtype') !== dtype.value; }); };
+  if (dtype && document.querySelector('[data-mzc-dtype]')) { dtype.addEventListener('change', listShow); listShow(); }
 
   /* the service's money, worked out as one types: parts, the customer's final sum (parts + services - discount), the services' profit (minus what we paid out) and the parts' profit */
   var money = document.querySelector('[data-mzc-money]');

@@ -10,7 +10,7 @@ if ($fromS !== '' && $toS !== '') {
     if ($to < $from) { list($from, $to) = array($to - 86399, $from + 86399); }
     $to = min($to, $from + 730 * 86400); $days = 0;
 } else {
-    $to = time(); $from = (new DateTime(wp_date('Y-m-d', $to - ($days - 1) * 86400) . ' 00:00:00', $tz))->getTimestamp();
+    $to = time(); $from = (new DateTime(MZC_Crm::ymd($to - ($days - 1) * 86400) . ' 00:00:00', $tz))->getTimestamp();
 }
 $group = isset($_GET['group']) && $_GET['group'] === 'month' ? 'month' : 'day';
 
@@ -42,7 +42,7 @@ echo '</div>';
 
 // columns: the height is new installs; the title gives every figure
 $max = max(1, max(array_column($rows, 'new') ?: array(0)));
-echo '<div class="mzc-panel"><header><h3>نصب جدید ' . ($group === 'month' ? 'در هر ماه' : 'در هر روز') . '</h3><span class="muted">از ' . esc_html(MZC_Crm::jdate(wp_date('Y-m-d', $from))) . ' تا ' . esc_html(MZC_Crm::jdate(wp_date('Y-m-d', $to))) . '</span></header><div class="body"><div class="mzc-colchart" role="img" aria-label="نمودار نصب‌های جدید">';
+echo '<div class="mzc-panel"><header><h3>نصب جدید ' . ($group === 'month' ? 'در هر ماه' : 'در هر روز') . '</h3><span class="muted">از ' . esc_html(MZC_Crm::jdate(MZC_Crm::ymd($from))) . ' تا ' . esc_html(MZC_Crm::jdate(MZC_Crm::ymd($to))) . '</span></header><div class="body"><div class="mzc-colchart" role="img" aria-label="نمودار نصب‌های جدید">';
 foreach ($rows as $k => $x) { echo '<span title="' . esc_attr($k . ': ' . $x['new'] . ' نصب جدید، ' . $x['active'] . ' فعال، ' . $x['runs'] . ' اجرا، ' . $x['gone'] . ' حذف') . '"><i style="height:' . round($x['new'] / $max * 100, 1) . '%"></i></span>'; }
 echo '</div></div></div>';
 

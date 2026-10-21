@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 13;
+    const SCHEMA = 14;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -191,6 +191,8 @@ final class MZC_Crm_Db
         // schema 13: the customer's account on the site (WooCommerce) and the site product a stock product is kept in step with
         $cols['customers'] += array('wp_user_id' => 'BIGINT UNSIGNED NULL');
         $cols['products'] = array('wc_id' => 'BIGINT UNSIGNED NULL');
+        // schema 14: the tick lists of what came in with a device and of the checks before it leaves (MZC_Crm::$checklists)
+        $cols['builds'] += array('checks' => 'TEXT NULL'); $cols['jobs'] += array('checks' => 'TEXT NULL');
         foreach ($cols as $tb => $list) {
             $have = (array) $db->get_col('SHOW COLUMNS FROM `' . $t($tb) . '`', 0);
             foreach ($list as $c => $def) {

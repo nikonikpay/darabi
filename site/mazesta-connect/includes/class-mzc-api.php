@@ -72,6 +72,9 @@ final class MZC_Api
     /** A record's requested programs, for the apps: software = array of (name, done), software_note, software_by_customer (when the customer last saved it on their page). */
     private static function soft_fields($json) { $s = MZC_Crm::soft_out($json); return array('software' => $s['items'], 'software_note' => $s['note'], 'software_by_customer' => $s['by_customer']); }
     /** The software of a save: sent rows/note replace what is stored; a list not sent stays. */
+    /** The tick lists to store: what was sent, else the record's own, kept to the lists of its (maybe changed) device type. */
+    private static function checks_save($p, $old, $type) { return MZC_Crm::checks_in(array_key_exists('checks', $p) ? $p['checks'] : MZC_Crm::checks_out($old ? $old['checks'] : null), $type); }
+
     private static function soft_save($p, $old)
     {
         if (!array_key_exists('software', $p) && !array_key_exists('software_note', $p)) { return $old ? $old['soft'] : null; }
@@ -94,7 +97,7 @@ final class MZC_Api
             'customer_id' => (int) $b['customer_id'], 'sold_at' => (string) $b['sold_at'], 'sold_at_j' => self::jd($b['sold_at']), 'report_id' => (string) $b['report_id'], 'updated' => $b['updated']);
         if (isset($b['customer_name'])) { $o['customer_name'] = $b['customer_name']; $o['customer_mobile'] = (string) $b['customer_mobile']; $o['parts_count'] = (int) $b['parts']; }
         if ($full) {
-            $o['notes'] = (string) $b['notes']; $o['media'] = self::media_out($b['media']); $o += self::soft_fields($b['soft']); $o['parts'] = array();
+            $o['notes'] = (string) $b['notes']; $o['media'] = self::media_out($b['media']); $o += self::soft_fields($b['soft']); $o['checks'] = MZC_Crm::checks_out($b['checks']); $o['parts'] = array();
             $money = $a && self::money_seen($a); $cost = $a && self::cost_seen($a);
             foreach ($b['parts'] as $p) {
                 $r = array('product_id' => $p['product_id'] === null ? null : (int) $p['product_id'], 'category' => $p['category'], 'model' => $p['model'], 'serial' => (string) $p['serial'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'vendor' => (string) $p['vendor'], 'note' => (string) $p['note'],
@@ -116,7 +119,7 @@ final class MZC_Api
         if (isset($j['customer_name'])) { $o['customer_name'] = $j['customer_name']; $o['customer_mobile'] = (string) $j['customer_mobile']; }
         if ($money && isset($j['total'])) { $o['total'] = (int) $j['total']; }
         if ($full) {
-            $o += array('complaint' => (string) $j['complaint'], 'work_done' => (string) $j['work_done'], 'notes' => (string) $j['notes'], 'is_mazesta' => (bool) $j['is_mazesta'], 'has_warranty' => (bool) $j['has_warranty'], 'photos' => count($j['photos']), 'media' => self::media_out($j['media'])) + self::soft_fields($j['soft']);
+            $o += array('complaint' => (string) $j['complaint'], 'work_done' => (string) $j['work_done'], 'notes' => (string) $j['notes'], 'is_mazesta' => (bool) $j['is_mazesta'], 'has_warranty' => (bool) $j['has_warranty'], 'photos' => count($j['photos']), 'media' => self::media_out($j['media']), 'checks' => MZC_Crm::checks_out($j['checks'])) + self::soft_fields($j['soft']);
             $map = function ($rows) use ($money, $cost) {
                 $out = array();
                 foreach ($rows as $p) { $r = array('product_id' => $p['product_id'] === null ? null : (int) $p['product_id'], 'name' => $p['name'], 'qty' => (int) $p['qty'], 'serial' => (string) $p['serial'], 'warranty_months' => $p['warranty_months'] === null ? null : (int) $p['warranty_months'], 'note' => (string) $p['note'], 'has_box' => (bool) $p['has_box'], 'has_warranty' => (bool) $p['has_warranty']); if ($money) { $r['unit_price'] = (int) $p['unit_price']; } if ($cost && $p['kind'] !== 'in') { $r['buy_price'] = $p['buy_price'] === null ? null : (int) $p['buy_price']; } $out[] = $r; }
@@ -138,7 +141,7 @@ final class MZC_Api
         $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
         $c = self::cfg(); $labels = array();
         foreach (self::$label_fields as $kind => $f) { $labels[$kind] = array('fields' => $f, 'chosen' => self::label_keys($kind, $c)); }
-        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)) + MZC_Acc_Api::config($a));
+        return self::ok(array('buildStatuses' => MZC_Crm::$build_statuses, 'jobStatuses' => MZC_Crm::$statuses, 'categories' => MZC_Crm::$categories, 'groups' => MZC_Crm::$groups, 'deviceTypes' => MZC_Crm::$device_types, 'checklists' => MZC_Crm::$checklists, 'software' => MZC_Crm::software_catalog(), 'accounts' => MZC_Crm::software_catalog('accounts'), 'costSeen' => self::cost_seen($a), 'costEdit' => self::cost_edit($a), 'labels' => $labels, 'receiptReady' => MZC_Sms::configured() && MZC_Staff::can($a['id'], 'sms', 2)) + MZC_Acc_Api::config($a));
     }
 
     private static function label_keys($kind, $c)
@@ -291,8 +294,9 @@ final class MZC_Api
             'notes' => array_key_exists('notes', $p) ? self::s($p, 'notes', 4000) : ($old ? $old['notes'] : ''), 'status' => $st, 'delivered' => $st === 'delivered' ? 1 : 0, 'updated' => self::now(),
             'device_type' => isset($p['device_type'], MZC_Crm::$device_types[$p['device_type']]) ? (string) $p['device_type'] : ($old ? $old['device_type'] : 'system'),
             'media' => array_key_exists('media', $p) ? (implode("\n", MZC_Crm::media_list($p['media'])) ?: null) : ($old ? $old['media'] : null));
+        $row['checks'] = self::checks_save($p, $old, $row['device_type']);
         if ($rid !== '' && preg_match('/^[A-Za-z0-9-]{8,64}$/', $rid) && MZC_Staff::can($a['id'], 'tests', 2)) { $row['report_id'] = $rid; }
-        // prices: a person without the right keeps what the row had (matched by model), else the product's price
+        // prices: a person without the right, or a row sent without them (the forms leave prices to the accounting), keeps what the row had (matched by model), else the product's price
         $pay = MZC_Staff::can($a['id'], 'payments', 2); $ce = self::cost_edit($a); $was = array();
         if ($old) { foreach ($old['parts'] as $x) { if (!isset($was[$x['model']])) { $was[$x['model']] = $x; } } }
         $parts = null;
@@ -304,7 +308,7 @@ final class MZC_Api
                 $model = self::s($x, 'model', 190); $w = isset($was[$model]) ? $was[$model] : null;
                 $parts[] = array('product_id' => self::n($x, 'product_id') ?: null, 'category' => $cat, 'model' => $model, 'serial' => self::s($x, 'serial', 120) ?: null, 'warranty_months' => $m, 'vendor' => self::s($x, 'vendor', 120) ?: null, 'note' => self::s($x, 'note', 255) ?: null,
                     'has_warranty' => array_key_exists('has_warranty', $x) ? self::flag($x, 'has_warranty') : ($m ? 1 : 0), 'has_box' => self::flag($x, 'has_box'), 'qc' => self::flag($x, 'qc'),
-                    'sell_price' => $pay ? self::opt_n($x, 'sell_price') : ($w ? $w['sell_price'] : null), 'buy_price' => $ce ? self::opt_n($x, 'buy_price') : ($w ? $w['buy_price'] : null));
+                    'sell_price' => $pay && array_key_exists('sell_price', $x) ? self::opt_n($x, 'sell_price') : ($w ? $w['sell_price'] : null), 'buy_price' => $ce && array_key_exists('buy_price', $x) ? self::opt_n($x, 'buy_price') : ($w ? $w['buy_price'] : null));
             }
             $parts = MZC_Stock::link_parts($parts, 'model', array('sell_price' => 'sell_price', 'buy_price' => 'buy_price'));
         }
@@ -367,6 +371,7 @@ final class MZC_Api
             'is_mazesta' => array_key_exists('is_mazesta', $p) ? self::flag($p, 'is_mazesta') : ($old ? (int) $old['is_mazesta'] : 0), 'has_warranty' => array_key_exists('has_warranty', $p) ? self::flag($p, 'has_warranty') : ($old ? (int) $old['has_warranty'] : 0),
             'service_done' => in_array($st, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $st, 'complaint' => array_key_exists('complaint', $p) ? self::s($p, 'complaint', 4000) : ($old ? $old['complaint'] : ''),
             'work_done' => array_key_exists('work_done', $p) ? self::s($p, 'work_done', 4000) : ($old ? $old['work_done'] : ''), 'notes' => array_key_exists('notes', $p) ? self::s($p, 'notes', 4000) : ($old ? $old['notes'] : ''), 'updated' => self::now());
+        $row['checks'] = self::checks_save($p, $old, (string) $row['device_type']);
         if ($pay) {
             foreach (array('labor_price', 'discount', 'paid') as $k) { $row[$k] = array_key_exists($k, $p) ? self::n($p, $k) : ($old ? (int) $old[$k] : 0); }
             $row['paid_note'] = array_key_exists('paid_note', $p) ? (self::s($p, 'paid_note', 255) ?: null) : ($old ? $old['paid_note'] : null);

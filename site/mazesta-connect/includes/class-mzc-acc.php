@@ -384,7 +384,7 @@ final class MZC_Acc
     public static function cheques($f, $page, $per = 30)
     {
         $db = MZC_Crm_Db::db(); if (!$db) { return array(array(), 0); }
-        $where = array('1=1'); $args = array(); $today = wp_date('Y-m-d');
+        $where = array('1=1'); $args = array(); $today = MZC_Crm::ymd();
         if (!empty($f['direction'])) { $where[] = 'q.direction = %s'; $args[] = $f['direction'] === 'out' ? 'out' : 'in'; }
         if (!empty($f['status']) && isset(self::$cheque_statuses[$f['status']])) { $where[] = 'q.status = %s'; $args[] = $f['status']; }
         if (isset($f['due']) && $f['due'] === 'soon') { $where[] = "q.status = 'pending' AND q.due_at <= %s"; $args[] = gmdate('Y-m-d', strtotime($today) + (int) self::settings()['remind'] * 86400); }

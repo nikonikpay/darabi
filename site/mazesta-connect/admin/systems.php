@@ -10,7 +10,7 @@ if ($sys !== '' && ($i = MZC_Stats::install($sys))) {
     $kv = function ($k, $v) { if ($v === null || $v === '' || $v === array()) { return; } echo '<dt>' . esc_html($k) . '</dt><dd dir="auto">' . (is_array($v) ? implode('<br>', array_map('esc_html', $v)) : esc_html((string) $v)) . '</dd>'; };
 
     echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-systems')) . '">‹ همهٔ سیستم‌ها</a><h2 dir="auto">' . esc_html(MZC_Stats::label($i)) . '</h2><span class="muted">شناسه: <span class="num">' . esc_html(substr($sys, 0, 8)) . '…</span></span>'
-        . (($gone = MZC_Stats::removed(array($sys))) ? ' ' . MZC_Admin::pill('برنامه حذف شده: ' . MZC_Crm::jdate(wp_date('Y-m-d', $gone[$sys])), 'bad') : '') . '</div>'
+        . (($gone = MZC_Stats::removed(array($sys))) ? ' ' . MZC_Admin::pill('برنامه حذف شده: ' . MZC_Crm::jdate(MZC_Crm::ymd($gone[$sys])), 'bad') : '') . '</div>'
         . '<div class="mzc-actions"><a class="mzc-btn primary" href="' . esc_url(MZC_Admin::url('mzc-messages', array('to' => $sys))) . '">ارسال پیام به این سیستم</a>'
         . '<a class="mzc-btn" href="' . esc_url(MZC_Admin::url('mzc-events', array('sys' => $sys))) . '">همهٔ رویدادها</a></div></div>';
 

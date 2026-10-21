@@ -85,6 +85,48 @@ final class MZC_Crm
         return $items || $note !== '' ? wp_json_encode(array('items' => $items, 'note' => $note, 'by_customer' => $by), JSON_UNESCAPED_UNICODE) : null;
     }
 
+    /**
+     * The tick lists of a service or a new computer, per device type: 'recv' = what came in with the device (or goes out with a new one), 'check' = the shop's checks
+     * before it leaves. Stored as JSON (checks_in); a person or the AI app ticks them.
+     */
+    public static $checklists = array(
+        'recv' => array(
+            'system' => array('case_box' => 'جعبهٔ کیس', 'power_cable' => 'کابل پاور', 'monitor_cable' => 'کابل مانیتور', 'wifi_dongle' => 'دانگل وای‌فای', 'door_left' => 'درِ سمت چپ', 'door_right' => 'درِ سمت راست',
+                'mesh_door' => 'توری روی در', 'mesh_top' => 'توری بالای کیس', 'mesh_bottom' => 'توری پایین کیس'),
+            'laptop' => array('charger' => 'شارژر', 'bag' => 'کیف', 'box' => 'جعبه', 'battery' => 'باتری', 'mouse' => 'ماوس'),
+            'part' => array('box' => 'جعبه', 'cables' => 'کابل و لوازم جانبی', 'card' => 'کارت گارانتی / فاکتور'),
+        ),
+        'check' => array(
+            'system' => array('parts_invoice' => 'چک قطعات با فاکتور', 'gpu_plate' => 'پلیت گرافیک', 'gpu_screw' => 'پیچ شدن گرافیک', 'case_fans' => 'کار کردن فن‌های کیس', 'usb' => 'چک USBها (جلو و پشت)',
+                'audio' => 'چک پورت صدا (جلو و پشت)', 'backup' => 'کپی آرشیو اطلاعات', 'board_screws' => 'بسته بودن پیچ‌های برد', 'logo' => 'لوگوی مازستا', 'restore_point' => 'Restore point', 'power_option' => 'Power Option',
+                'virtual_memory' => 'Virtual Memory', 'hdmi' => 'HDMI', 'displayport' => 'DisplayPort', 'cpu_fan' => 'CPU Fan Config', 'rgb' => 'RGB sync', 'antivirus' => 'Antivirus', 'drivers' => 'Drivers'),
+            'laptop' => array('parts_invoice' => 'چک مشخصات با فاکتور', 'screen' => 'صفحه‌نمایش (پیکسل، نور)', 'keyboard' => 'کیبورد و تاچ‌پد', 'usb' => 'پورت‌های USB', 'audio' => 'بلندگو و پورت صدا',
+                'webcam' => 'وب‌کم و میکروفون', 'wifi' => 'وای‌فای و بلوتوث', 'battery' => 'باتری و شارژ شدن', 'body' => 'لولا، بدنه و پیچ‌ها', 'backup' => 'کپی آرشیو اطلاعات', 'restore_point' => 'Restore point',
+                'power_option' => 'Power Option', 'antivirus' => 'Antivirus', 'drivers' => 'Drivers'),
+            'part' => array('model_invoice' => 'مدل و سریال با فاکتور', 'look' => 'سالم بودن ظاهری', 'test' => 'تست کارکرد', 'box' => 'جعبه و لوازم'),
+        ),
+    );
+
+    /** A record's ticks as stored: the ticked keys of each list and the note on what came in. */
+    public static function checks_out($json)
+    {
+        $d = is_string($json) && $json !== '' ? json_decode($json, true) : null; $d = is_array($d) ? $d : array();
+        $keys = function ($k) use ($d) { return isset($d[$k]) && is_array($d[$k]) ? array_values(array_filter($d[$k], 'is_string')) : array(); };
+        return array('recv' => $keys('recv'), 'check' => $keys('check'), 'note' => isset($d['note']) && is_string($d['note']) ? $d['note'] : '');
+    }
+
+    /** The JSON to store from array(recv => keys, check => keys, note): only the keys of this device type's lists; null when nothing is ticked or written. */
+    public static function checks_in($in, $type)
+    {
+        $in = is_array($in) ? $in : array(); $out = array();
+        foreach (array('recv', 'check') as $l) {
+            $known = isset(self::$checklists[$l][$type]) ? self::$checklists[$l][$type] : array();
+            $out[$l] = array_values(array_intersect(array_keys($known), isset($in[$l]) && is_array($in[$l]) ? array_map('strval', $in[$l]) : array()));
+        }
+        $out['note'] = mb_substr(trim(sanitize_textarea_field(isset($in['note']) && is_scalar($in['note']) ? (string) $in['note'] : '')), 0, 2000);
+        return $out['recv'] || $out['check'] || $out['note'] !== '' ? wp_json_encode($out, JSON_UNESCAPED_UNICODE) : null;
+    }
+
     /** A new computer's name in the lists: its graphics card, else its processor (the form no longer asks for a title). */
     public static function build_title($parts)
     {
@@ -127,6 +169,12 @@ final class MZC_Crm
         $jd = 1 + ($days < 186 ? $days % 31 : ($days - 186) % 30);
         return sprintf('%04d/%02d/%02d', $jy, $jm, $jd);
     }
+
+    /** A unix time (now by default) in the site's time zone. Not wp_date(): Persian-calendar plugins filter it into a Shamsi date, which jdate() then converted again (year 0784, a 227,000-day Installs table). */
+    public static function ymd($ts = null, $fmt = 'Y-m-d') { $d = new DateTime('@' . ($ts === null ? time() : (int) $ts)); $d->setTimezone(wp_timezone()); return $d->format($fmt); }
+
+    /** A unix time as "1405/07/30 14:32" (Persian calendar, site time). */
+    public static function jtime($ts) { return self::jdate(self::ymd($ts)) . ' ' . self::ymd($ts, 'H:i'); }
 
     /** A typed date - Y-m-d or Y/m/d, Gregorian or Persian (a year below 1700 is read as Persian), Persian digits allowed - as Gregorian Y-m-d, or null. */
     public static function gdate($s)
@@ -336,6 +384,8 @@ final class MZC_Crm
         $was = $id ? $db->get_var($db->prepare('SELECT soft FROM `' . self::t('builds') . '` WHERE id = %d', $id)) : null;
         $row = array('customer_id' => $cid, 'invoice_no' => $inv ?: null, 'title' => self::build_title($parts), 'sold_at' => self::date('sold_at'), 'soft' => self::soft_in(self::posted_soft(), self::post_long('soft_note', 2000), $was),
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'status' => $bst, 'delivered' => $bst === 'delivered' ? 1 : 0, 'updated' => self::now());
+        $row['device_type'] = isset($_POST['device_type'], self::$device_types[$_POST['device_type']]) ? (string) $_POST['device_type'] : 'system';
+        $row['checks'] = self::checks_in(isset($_POST['checks']) ? wp_unslash($_POST['checks']) : array(), $row['device_type']);
         $t = self::t('builds'); $was = $id;
         // all or nothing: a part that fails to save must not leave the computer with half its parts
         $db->query('START TRANSACTION');
@@ -435,6 +485,7 @@ final class MZC_Crm
             'closed_at' => $closed, 'due_at' => self::date('due_at'), 'invoice_no' => self::post('invoice_no', 60) ?: null, 'is_mazesta' => empty($_POST['is_mazesta']) ? 0 : 1, 'has_warranty' => empty($_POST['has_warranty']) ? 0 : 1,
             'discount' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('discount', 15))), 'paid' => (int) preg_replace('/[^\d]/', '', self::digits(self::post('paid', 15))), 'service_done' => in_array($status, array('ready', 'delivered'), true) ? 1 : 0, 'status' => $status, 'complaint' => self::post_long('complaint'), 'work_done' => self::post_long('work_done'), 'labor_price' => $labor,
             'report_id' => preg_match('/^[A-Za-z0-9-]{8,64}$/', self::post('report_id', 64)) ? self::post('report_id', 64) : null, 'notes' => self::post_long('notes'), 'updated' => self::now());
+        $row['checks'] = self::checks_in(isset($_POST['checks']) ? wp_unslash($_POST['checks']) : array(), (string) $row['device_type']);
         $t = self::t('jobs'); $was = $id;
         // all or nothing, as on the build form; the lock keeps two desks from taking the same service number
         $lock = $id ? null : $db->get_var("SELECT GET_LOCK('" . self::t('svc') . "', 5)");

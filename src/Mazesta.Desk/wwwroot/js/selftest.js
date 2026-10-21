@@ -39,6 +39,9 @@ window.deskSelfTest = async (server, user, pass) => {
     if (opt) opt.click(); ok('customer chosen from the suggestions', !!(await wait(() => jf.querySelector('.cpick .chosen'))));
     const dt = jf.querySelector('select[name=device_type]'), devBox = jf.querySelector('input[name=device_serial]').closest('.two');
     ok('model and serial hidden for a computer case', devBox.style.display === 'none'); dt.value = 'laptop'; dt.dispatchEvent(new Event('change')); ok('model and serial shown for a laptop', devBox.style.display === '');
+    const tick = (form, label) => { const l = [...form.querySelectorAll('.tick')].find(x => x.textContent === label); if (l) l.querySelector('input').click(); return !!l; };
+    ok('the received-items list follows the device type (a laptop: charger, no case doors)', tick(jf, 'شارژر') && tick(jf, 'کیف') && ![...jf.querySelectorAll('.tick')].some(x => x.textContent === 'درِ سمت چپ'));
+    set(jf.querySelector('textarea[name=checks_note]'), 'خودآزمون: خط روی درب');
     set(jf.querySelector('input[name=device]'), 'لپ‌تاپ آزمون'); set(jf.querySelector('input[name=device_serial]'), 'SN-' + mobile); set(jf.querySelector('textarea[name=complaint]'), 'خودآزمون: صفحه‌نمایش نمی‌آید');
     if (can('payments', 2)) {
       set(jf.querySelector('input[name=labor]'), '1000000'); set(jf.querySelector('input[name=paid]'), '300000'); set(jf.querySelector('input[name=discount]'), '100000'); set(jf.querySelector('input[name=paid_note]'), 'پیک');
@@ -56,6 +59,7 @@ window.deskSelfTest = async (server, user, pass) => {
     await wait(() => document.querySelector('h2') && /R-\d+/.test(document.querySelector('h2').textContent)); const no = (document.querySelector('h2').textContent.match(/R-\d+/) || [])[0];
     ok('service number shown', !!no, no);
     const gj = await GET('staff/jobs/' + jid);
+    ok('service saved with its ticks', JSON.stringify(gj.checks.recv) === '["charger","bag"]' && gj.checks.note === 'خودآزمون: خط روی درب', JSON.stringify(gj.checks));
     ok('service saved with laptop serial, software and money', gj.device_serial === 'SN-' + mobile && gj.software.length === 1 && gj.software[0].name === 'Blender' && (!can('payments') || (gj.paid === 300000 && gj.paid_note === 'پیک' && gj.total === 900000)), JSON.stringify({ s: gj.device_serial, sw: gj.software, t: gj.total }));
     // label
     await printLabel('job', +jid); const lab = await wait(() => document.querySelector('.modal .label'));
@@ -81,7 +85,8 @@ window.deskSelfTest = async (server, user, pass) => {
     // a new computer (known by its invoice number) with a part - picked from the stock when there is one
     location.hash = '#/build/new?cid=' + cid; const bf = await wait(() => document.querySelector('form.panel datalist#softlist') && !document.querySelector('form.panel input[name=device]') && document.querySelector('form.panel'));   // the system form: software box, no device box
     if (!bf) throw new Error('build page did not appear: ' + document.querySelector('#main').innerText.slice(0, 300) + ' @' + location.hash);
-    ok('the system form has no title, device type or Telegram field', !bf.querySelector('input[name=title], select[name=device_type], textarea[name=media]'));
+    ok('the system form has a device type and no title, Telegram, price or old service number field', !!bf.querySelector('select[name=device_type]') && !bf.querySelector('input[name=title], textarea[name=media], input[name=sell_price], input[name=buy_price]') && !bf.textContent.includes('شمارهٔ سرویس'));
+    ok('a computer\'s lists: case doors and the shop checks', tick(bf, 'درِ سمت چپ') && tick(bf, 'Drivers') && tick(bf, 'لوگوی مازستا'));
     set(bf.querySelector('input[name=invoice_no]'), '۹' + stamp.slice(-6).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]));
     [...bf.querySelectorAll('button')].find(b => b.textContent.includes('ردیف')).click();
     const row = bf.querySelector('.rows tbody tr'); row.querySelector('select[name=category]').value = 'gpu';
@@ -91,6 +96,7 @@ window.deskSelfTest = async (server, user, pass) => {
     const bid = await wait(() => (location.hash.match(/#\/build\/(\d+)/) || [])[1]); ok('new computer saved with a part', !!bid, 'id=' + bid);
     const got = await GET('staff/builds/' + bid);
     ok('saved by its invoice number (no service number), named after its graphics card', got.invoice_no === '9' + stamp.slice(-6) && got.service_no === '' && got.number === got.invoice_no && got.title === 'سیستم ' + got.parts[0].model, JSON.stringify({ n: got.number, s: got.service_no, t: got.title }));
+    ok('new computer saved with its ticks', JSON.stringify(got.checks.recv) === '["door_left"]' && JSON.stringify(got.checks.check) === '["logo","drivers"]', JSON.stringify(got.checks));
     ok('the part came back with its warranty', got.parts.length === 1 && got.parts[0].warranty_months === 12 && (!pid || got.parts[0].product_id === pid), JSON.stringify(got.parts));
     if (pid) { const pr = await GET('staff/products/' + pid); ok('the stock went down and the product knows where it went', pr.totals.stock === 1 && pr.used.length === 1 && pr.used[0].id === +bid, JSON.stringify(pr.totals)); }
     // accounting, by the keys: F2 a new sale, the customer, F3-style product search + Enter, F8 save, F9 final, F6 the payment, F10 print, F1 the key list

@@ -75,7 +75,7 @@ final class MZC_Acc_Api
 
     public static function cheque_out($q)
     {
-        $today = wp_date('Y-m-d');
+        $today = MZC_Crm::ymd();
         return array('id' => (int) $q['id'], 'direction' => $q['direction'], 'directionText' => $q['direction'] === 'out' ? 'پرداختنی (چک خودمان)' : 'دریافتنی', 'no' => $q['no'], 'bank' => (string) $q['bank'], 'account' => (string) $q['account'], 'amount' => (int) $q['amount'],
             'issued_at' => (string) $q['issued_at'], 'issued_at_j' => self::jd($q['issued_at']), 'due_at' => $q['due_at'], 'due_at_j' => self::jd($q['due_at']), 'days' => (int) floor((strtotime($q['due_at']) - strtotime($today)) / 86400),
             'customer_id' => (int) $q['customer_id'], 'customer_name' => (string) $q['customer_name'], 'vendor_id' => (int) $q['vendor_id'], 'vendor_name' => (string) $q['vendor_name'], 'party' => (string) $q['party'],

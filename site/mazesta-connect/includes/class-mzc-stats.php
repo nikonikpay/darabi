@@ -176,7 +176,7 @@ final class MZC_Stats
     {
         $wpdb = self::db(); $out = array();
         $tz = wp_timezone(); $off = $tz->getOffset(new DateTime('@' . $to)); $o = sprintf('%s%02d:%02d', $off < 0 ? '-' : '+', abs($off) / 3600, abs($off) % 3600 / 60);
-        for ($d = new DateTime('@' . $from); $d->getTimestamp() <= $to; $d->modify('+1 day')) { $out[wp_date('Y-m-d', $d->getTimestamp())] = array('new' => 0, 'active' => 0, 'runs' => 0, 'gone' => 0); }
+        for ($d = new DateTime('@' . $from); $d->getTimestamp() <= $to; $d->modify('+1 day')) { $out[MZC_Crm::ymd($d->getTimestamp())] = array('new' => 0, 'active' => 0, 'runs' => 0, 'gone' => 0); }
         if (!self::ready()) { return $out; }
         $a = gmdate('Y-m-d H:i:s', $from); $b = gmdate('Y-m-d H:i:s', $to);
         $put = function ($rows, $col) use (&$out) { foreach ($rows as $r) { if (isset($out[$r['dd']])) { $out[$r['dd']][$col] = (int) $r['n']; } } };
@@ -289,7 +289,7 @@ final class MZC_Stats
     public static function warnings($i, $rows, $logs)
     {
         $m = isset($i['machine']) && is_array($i['machine']) ? $i['machine'] : array(); $h = isset($m['health']) && is_array($m['health']) ? $m['health'] : array();
-        $w = array(); $day = function ($ts) { return $ts ? MZC_Crm::jdate(wp_date('Y-m-d', $ts)) : ''; };
+        $w = array(); $day = function ($ts) { return $ts ? MZC_Crm::jdate(MZC_Crm::ymd($ts)) : ''; };
         if (!empty($h['bsod'])) {
             $d = array(); foreach (isset($h['bsodRecent']) ? $h['bsodRecent'] : array() as $b) { $t = strtotime($b['at']); $d[] = trim($b['code'] . ' ' . $b['name']) . ($t ? ' (' . $day($t) . ')' : ''); }
             $w[] = array('bad', 'صفحهٔ آبی ویندوز (BSOD): ' . number_format_i18n($h['bsod']) . ' بار', implode('، ', $d));
