@@ -382,6 +382,15 @@ final class MZC_Crm
         return $sum;
     }
 
+    /** Records per status ('job' or 'build') in one query, counted like the lists (with their customer): the staff app's home cards. */
+    public static function status_counts($kind)
+    {
+        $db = self::db(); $out = array(); if (!$db) { return $out; }
+        $t = self::t($kind === 'job' ? 'jobs' : 'builds'); $c = self::t('customers');
+        foreach ((array) $db->get_results("SELECT x.status, COUNT(*) AS n FROM `$t` x JOIN `$c` c ON c.id = x.customer_id GROUP BY x.status", ARRAY_A) as $r) { $out[$r['status']] = (int) $r['n']; }
+        return $out;
+    }
+
     public static function jobs($q, $status, $page, $per = 30, $customer = 0)
     {
         $db = self::db(); if (!$db) { return array(array(), 0); }

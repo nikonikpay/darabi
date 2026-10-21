@@ -129,11 +129,12 @@ const filterBar = (q, base, statuses, placeholder) => {
 /* ---------- home ---------- */
 async function viewHome() {
   const out = h('div', {}, title('سلام ' + S.me.name));
-  const cards = (label, kind, statuses, area) => {
+  const counts = GET('staff/counts');   // every card's number in one request, not one per status
+  const cards = (label, kind, statuses) => {
     const row = h('div', { class: 'cards' });
     Object.entries(statuses).forEach(([k, t]) => {
       const n = h('b', {}, '…'); row.append(h('a', { class: 'card', href: `#/${kind}s?status=${k}` }, n, h('span', {}, t)));
-      GET(`staff/${kind}s` + qs({ status: k, per: 1 })).then(r => { n.textContent = r.total; }, () => { n.textContent = '—'; });
+      counts.then(r => { const v = (r[kind + 's'] || {})[k]; n.textContent = v == null ? '—' : v; }, () => { n.textContent = '—'; });
     });
     return h('section', { class: 'panel' }, h('h3', {}, label), row);
   };

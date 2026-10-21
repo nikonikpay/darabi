@@ -22,6 +22,8 @@ window.deskSelfTest = async (server, user, pass) => {
     ok('token never reaches the page', !JSON.stringify(S.me).includes('token'));
     const cards = await wait(() => document.querySelectorAll('.card b').length && [...document.querySelectorAll('.card b')].every(b => b.textContent !== '…') && document.querySelectorAll('.card b'), 20000);
     ok('home counts loaded from the site', !!cards && [...cards].some(b => /^\d+$/.test(b.textContent)), cards ? [...cards].map(b => b.textContent).join(',') : '');
+    const jc = document.querySelector('.card[href^="#/jobs?status="]');   // one request for all cards: its number must match the list's own total
+    if (jc) { const k = jc.getAttribute('href').split('=')[1], l = await bridge.api('GET', 'staff/jobs?status=' + k + '&per=1'); ok('a home count matches its list', l.status === 200 && String(l.data.total) === jc.querySelector('b').textContent, jc.querySelector('b').textContent + ' / ' + (l.data && l.data.total)); }
     // a customer
     const mobile = '0912' + String(Math.floor(1000000 + Math.random() * 8999999));
     location.hash = '#/customer/new'; const cf = await wait(() => document.querySelector('form.panel input[name=name]') && document.querySelector('form.panel'));

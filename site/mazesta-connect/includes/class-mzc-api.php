@@ -34,7 +34,7 @@ final class MZC_Api
             array('/staff/products', 'GET', 'products'), array('/staff/products/(?P<id>\d+)', 'GET', 'product'), array('/staff/products', 'POST', 'product_save'),
             array('/staff/suppliers', 'GET', 'suppliers'), array('/staff/suppliers', 'POST', 'supplier_save'),
             array('/staff/purchases', 'GET', 'purchases'), array('/staff/purchases/(?P<id>\d+)', 'GET', 'purchase'), array('/staff/purchases', 'POST', 'purchase_save'), array('/staff/serial', 'GET', 'serial'),
-            array('/staff/stats', 'GET', 'stats'),
+            array('/staff/stats', 'GET', 'stats'), array('/staff/counts', 'GET', 'counts'),
         );
         foreach ($r as $x) { register_rest_route(Mazesta_Connect::NS, $x[0], array('methods' => $x[1], 'callback' => array(__CLASS__, 'rest_' . $x[2]), 'permission_callback' => '__return_true')); }
     }
@@ -156,6 +156,19 @@ final class MZC_Api
         if (MZC_Staff::can($a['id'], 'customers', 1)) { list($r) = MZC_Crm::customers($q, 1, 8); foreach ($r as $c) { $out['customers'][] = self::customer_out($c); } }
         if (MZC_Staff::can($a['id'], 'builds', 1)) { list($r) = MZC_Crm::builds($q, 1, 8); foreach ($r as $b) { $out['builds'][] = self::build_out($b, false); } }
         if (MZC_Staff::can($a['id'], 'jobs', 1)) { list($r) = MZC_Crm::jobs($q, '', 1, 8); foreach ($r as $j) { $out['jobs'][] = self::job_out($j, false, $money); } }
+        return self::ok($out);
+    }
+
+    /** The home page's cards in one request: per status, for the areas this person sees; every status is there, 0 when empty. */
+    public static function rest_counts($req)
+    {
+        $a = MZC_Staff::auth($req); if ($a instanceof WP_REST_Response) { return $a; }
+        $out = array();
+        foreach (array('builds' => array('build', MZC_Crm::$build_statuses), 'jobs' => array('job', MZC_Crm::$statuses)) as $area => $x) {
+            if (!MZC_Staff::can($a['id'], $area, 1)) { continue; }
+            $n = MZC_Crm::status_counts($x[0]); $out[$area] = array();
+            foreach ($x[1] as $k => $t) { $out[$area][$k] = isset($n[$k]) ? $n[$k] : 0; }
+        }
         return self::ok($out);
     }
 
