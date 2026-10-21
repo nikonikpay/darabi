@@ -38,7 +38,7 @@ public class ResourceParityTests
         Assert.Empty(used.Where(u => !keys.Contains(u.Key)).Select(u => $"{u.File}: {u.Key}"));
     }
 
-    /// <summary>The help page (help.js) explains every page of the app (app.js), each with its text in the string table: a new page comes with its help.</summary>
+    /// <summary>The help page (help.js) explains every page of the app (app.js), each with its text and its steps, and every side-bar section with its intro: a new page comes with its help.</summary>
     [Fact] public void Every_page_has_its_help()
     {
         string js = Path.Combine(RepoRoot(), "src", "Mazesta.App", "wwwroot", "js");
@@ -49,6 +49,9 @@ public class ResourceParityTests
         Assert.Empty(pages.Where(p => !help.Contains($"[\"{p}\",")).Select(p => "no help for page: " + p));
         var topics = Regex.Matches(help, @"\[(?:""[a-z]+""|null), (?:""[a-z]+""|null), ""([A-Za-z_]+)""\]").Select(m => m.Groups[1].Value).ToList();
         Assert.NotEmpty(topics);
-        Assert.Empty(topics.SelectMany(k => new[] { k, "Help_" + k }).Where(k => !keys.Contains(k)).Select(k => "missing string: " + k));
+        Assert.Empty(topics.SelectMany(k => new[] { k, "Help_" + k, "HelpHow_" + k }).Where(k => !keys.Contains(k)).Select(k => "missing string: " + k));
+        var families = Regex.Matches(File.ReadAllText(Path.Combine(js, "app.js")), @"\{ key: ""(\w+)"", icon:").Select(m => "HelpFam_" + m.Groups[1].Value).ToList();
+        Assert.NotEmpty(families);
+        Assert.Empty(families.Where(k => !keys.Contains(k)).Select(k => "missing section intro: " + k));
     }
 }
