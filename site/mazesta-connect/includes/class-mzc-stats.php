@@ -167,6 +167,41 @@ final class MZC_Stats
         return (int) ($since ? $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM `' . self::t('systems') . '` WHERE last_at >= %s', gmdate('Y-m-d H:i:s', $since))) : $wpdb->get_var('SELECT COUNT(*) FROM `' . self::t('systems') . '`'));
     }
 
+    /**
+     * Installs day by day between two unix times, in the site's time zone: 'new' systems first seen that day, 'active' systems that sent anything,
+     * 'runs' app starts. Returns date (Y-m-d) => array(new, active, runs), every day of the range present (a day with nothing is zeros, not missing).
+     */
+    public static function daily($from, $to)
+    {
+        $wpdb = self::db(); $out = array();
+        $tz = wp_timezone(); $off = $tz->getOffset(new DateTime('@' . $to)); $o = sprintf('%s%02d:%02d', $off < 0 ? '-' : '+', abs($off) / 3600, abs($off) % 3600 / 60);
+        for ($d = new DateTime('@' . $from); $d->getTimestamp() <= $to; $d->modify('+1 day')) { $out[wp_date('Y-m-d', $d->getTimestamp())] = array('new' => 0, 'active' => 0, 'runs' => 0); }
+        if (!self::ready()) { return $out; }
+        $a = gmdate('Y-m-d H:i:s', $from); $b = gmdate('Y-m-d H:i:s', $to);
+        $put = function ($rows, $col) use (&$out) { foreach ($rows as $r) { if (isset($out[$r['d']])) { $out[$r['d']][$col] = (int) $r['n']; } } };
+        $put($wpdb->get_results($wpdb->prepare("SELECT DATE(CONVERT_TZ(first_at, '+00:00', %s)) AS d, COUNT(*) AS n FROM `" . self::t('systems') . '` WHERE first_at BETWEEN %s AND %s GROUP BY d', $o, $a, $b), ARRAY_A) ?: array(), 'new');
+        foreach ($wpdb->get_results($wpdb->prepare("SELECT DATE(CONVERT_TZ(at, '+00:00', %s)) AS d, COUNT(DISTINCT sys) AS n, SUM(kind = 'app.start') AS r FROM `" . self::t('events') . '` WHERE at BETWEEN %s AND %s GROUP BY d', $o, $a, $b), ARRAY_A) ?: array() as $r) {
+            if (isset($out[$r['d']])) { $out[$r['d']]['active'] = (int) $r['n']; $out[$r['d']]['runs'] = (int) $r['r']; }
+        }
+        return $out;
+    }
+
+    /** How many systems sent anything between two unix times. */
+    public static function active($from, $to)
+    {
+        $wpdb = self::db(); if (!self::ready()) { return 0; }
+        return (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(DISTINCT sys) FROM `' . self::t('events') . '` WHERE at BETWEEN %s AND %s', gmdate('Y-m-d H:i:s', $from), gmdate('Y-m-d H:i:s', $to)));
+    }
+
+    /** New systems in a range counted by a column (app, edition, lang), biggest first. */
+    public static function new_by($col, $from, $to)
+    {
+        $wpdb = self::db(); if (!self::ready() || !in_array($col, array('app', 'edition', 'lang'), true)) { return array(); }
+        $c = array();
+        foreach ($wpdb->get_results($wpdb->prepare("SELECT `$col` AS v, COUNT(*) AS n FROM `" . self::t('systems') . "` WHERE first_at BETWEEN %s AND %s GROUP BY `$col` ORDER BY n DESC LIMIT 10", gmdate('Y-m-d H:i:s', $from), gmdate('Y-m-d H:i:s', $to)), ARRAY_A) ?: array() as $r) { $c[$r['v'] !== null && $r['v'] !== '' ? $r['v'] : 'نامشخص'] = (int) $r['n']; }
+        return $c;
+    }
+
     /** Messages delivered: how many systems (all, or a group's) hold message $id. */
     public static function delivered($id, $q = null)
     {

@@ -102,3 +102,6 @@
 .mzc-code-big { font-size: 18px; letter-spacing: 2px; } .mzc-old { background: #b32d2e; color: #fff; border-radius: 3px; padding: 0 6px; font-size: 11px; }
 .mzc .mzc-radio { display: inline-flex; gap: 6px; font-weight: 400; } .mzc-inline-chk { display: inline-block; margin-inline-end: .8em; }
 .mzc-w420 { width: 100%; max-width: 420px; } .mzc-w520 { width: 100%; max-width: 520px; } .mzc-pre-scroll { max-height: 420px; overflow: auto; }
+.mzc-colchart { display: flex; align-items: flex-end; gap: 2px; height: 180px; direction: ltr; }
+.mzc-colchart span { flex: 1; height: 100%; display: flex; align-items: flex-end; min-width: 2px; } .mzc-colchart span:hover { background: var(--soft); }
+.mzc-colchart i { display: block; width: 100%; background: var(--brand); border-radius: 3px 3px 0 0; min-height: 1px; }
