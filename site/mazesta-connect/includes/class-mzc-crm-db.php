@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 14;
+    const SCHEMA = 15;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -166,6 +166,11 @@ final class MZC_Crm_Db
                 account VARCHAR(120) NULL, at DATE NOT NULL, customer_id BIGINT UNSIGNED NULL, vendor_id BIGINT UNSIGNED NULL, invoice_id BIGINT UNSIGNED NULL, purchase_id BIGINT UNSIGNED NULL, cheque_id BIGINT UNSIGNED NULL,
                 category VARCHAR(60) NULL, tx VARCHAR(80) NULL, notes VARCHAR(255) NULL, created_by BIGINT UNSIGNED NOT NULL DEFAULT 0, created DATETIME NOT NULL, updated DATETIME NOT NULL,
                 KEY customer_id (customer_id), KEY vendor_id (vendor_id), KEY invoice_id (invoice_id), KEY cheque_id (cheque_id), KEY at (at)) $engine";
+        // schema 15: every saved version of a service, a new computer or an invoice (who, when, what changed, the whole record) and who has one open for editing (MZC_Rev)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('revisions')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, entity VARCHAR(10) NOT NULL, entity_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                who VARCHAR(120) NOT NULL DEFAULT '', action VARCHAR(12) NOT NULL DEFAULT '', at DATETIME NOT NULL, changes MEDIUMTEXT NULL, snap MEDIUMTEXT NOT NULL, KEY entity (entity, entity_id, id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('edit_locks')}` (entity VARCHAR(10) NOT NULL, entity_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, who VARCHAR(120) NOT NULL, since INT UNSIGNED NOT NULL,
+                until INT UNSIGNED NOT NULL, PRIMARY KEY (entity, entity_id)) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }

@@ -14,7 +14,7 @@ if ($add || $edit) {
     $cid = $j ? (int) $j['customer_id'] : (isset($_GET['customer']) ? (int) $_GET['customer'] : 0);
     $customer = $cid ? MZC_Crm::customer($cid) : null;
     $v = function ($k) use ($j) { return $j && isset($j[$k]) ? esc_attr((string) $j[$k]) : ''; };
-    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-jobs')) . '">‹ سرویس‌ها</a><h2>' . ($j ? 'ویرایش سرویس <span class="num">' . esc_html((string) $j['service_no']) . '</span>' : 'پذیرش سرویس تازه') . '</h2>' . ($j ? '' : '<small class="muted">شمارهٔ سرویس بعد از ثبت خودکار داده می‌شود.</small>') . '</div></div>';
+    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-jobs')) . '">‹ سرویس‌ها</a><h2>' . ($j ? 'ویرایش سرویس <span class="num">' . esc_html((string) $j['service_no']) . '</span>' : 'پذیرش سرویس تازه') . '</h2>' . ($j ? '' : '<small class="muted">شمارهٔ سرویس بعد از ثبت خودکار داده می‌شود.</small>') . '</div></div>' . MZC_Rev::admin_open('job', $j ? (int) $j['id'] : 0);
     echo '<div class="mzc-panel"><div class="body">' . MZC_Admin::form_open('job_save', 'class="mzc-form" enctype="multipart/form-data"') . ($j ? '<input type="hidden" name="id" value="' . (int) $j['id'] . '">' : '') . '<div class="mzc-fields">'
         . MZC_Admin::customer_picker($customer)
         . MZC_Admin::device_select($j ? $j['device_type'] : 'system', (bool) $j)
@@ -115,7 +115,7 @@ if ($view) {
         foreach ($j['shipping'] as $k => $v) { echo '<dt>' . esc_html($k) . '</dt><dd dir="auto">' . esc_html((string) $v) . '</dd>'; }
         echo '</dl></div></div>';
     }
-    echo MZC_Admin::soft_view($j['soft']) . MZC_Admin::more($j['more']);
+    echo MZC_Admin::soft_view($j['soft']) . MZC_Admin::more($j['more']) . MZC_Rev::panel('job', (int) $j['id']);
     return;
 }
 

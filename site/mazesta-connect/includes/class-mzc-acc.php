@@ -564,7 +564,9 @@ final class MZC_Acc
     public static function act_invoice_void()
     {
         MZC_Admin::guard('invoice_void');
-        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0; $r = self::void_invoice($id, MZC_Crm::post('reason', 255));
+        $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        if ($h = MZC_Rev::blocker('invoice', $id, get_current_user_id())) { MZC_Admin::back('mzc-acc', 'err:' . MZC_Rev::busy_text($h), array('view' => $id)); }
+        $r = self::void_invoice($id, MZC_Crm::post('reason', 255)); if (is_int($r)) { MZC_Rev::record('invoice', $id, get_current_user_id(), 'void'); }
         MZC_Admin::back('mzc-acc', is_int($r) ? 'ok:فاکتور باطل شد.' : 'err:' . $r, array('view' => $id));
     }
 
@@ -574,6 +576,7 @@ final class MZC_Acc
         MZC_Admin::guard('invoice_save');
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0; $kind = isset($_POST['kind'], self::$kinds[$_POST['kind']]) ? sanitize_key($_POST['kind']) : 'sale';
         $back = $id ? array('edit' => $id) : array('edit' => 'new', 'kind' => $kind);
+        if ($id && ($h = MZC_Rev::blocker('invoice', $id, get_current_user_id()))) { MZC_Admin::back('mzc-acc', 'err:' . MZC_Rev::busy_text($h), array('view' => $id)); }
         $d = array('kind' => $kind, 'title' => MZC_Crm::post('title', 190), 'at' => MZC_Crm::post('at', 20), 'valid_until' => MZC_Crm::post('valid_until', 20), 'discount' => MZC_Crm::post('discount', 30),
             'tax_pct' => MZC_Crm::post('tax_pct', 10), 'notes' => MZC_Crm::post_long('notes', 2000), 'items' => isset($_POST['items']) && is_array($_POST['items']) ? array_values(wp_unslash($_POST['items'])) : array());
         if ($kind !== 'template' && (!empty($_POST['customer_id']) || MZC_Crm::post('c_mobile', 30) !== '')) {
@@ -582,9 +585,11 @@ final class MZC_Acc
         }
         $r = self::save_invoice($id, $d, get_current_user_id());
         if (!is_int($r)) { MZC_Admin::back('mzc-acc', 'err:' . $r, $back); }
+        MZC_Rev::record('invoice', $r, get_current_user_id(), $id ? 'update' : 'create'); MZC_Rev::unlock('invoice', $r, get_current_user_id());
         if (isset($_POST['go']) && $_POST['go'] === 'final') {
             $f = self::finalize($r, !empty($_POST['make_build']));
             if (!is_array($f)) { MZC_Admin::back('mzc-acc', 'err:ذخیره شد ولی قطعی نشد: ' . $f, array('edit' => $r)); }
+            MZC_Rev::record('invoice', $r, get_current_user_id(), 'final');
             MZC_Admin::back('mzc-acc', 'ok:قطعی شد.' . ($f[1] ? ' ' . implode(' ', $f[1]) : ''), array('view' => $r));
         }
         MZC_Admin::back('mzc-acc', 'ok:ذخیره شد.', array('view' => $r));
@@ -593,7 +598,9 @@ final class MZC_Acc
     public static function act_invoice_final()
     {
         MZC_Admin::guard('invoice_final');
-        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0; $f = self::finalize($id);
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($h = MZC_Rev::blocker('invoice', $id, get_current_user_id())) { MZC_Admin::back('mzc-acc', 'err:' . MZC_Rev::busy_text($h), array('view' => $id)); }
+        $f = self::finalize($id); if (is_array($f)) { MZC_Rev::record('invoice', $id, get_current_user_id(), 'final'); }
         MZC_Admin::back('mzc-acc', is_array($f) ? 'ok:قطعی شد.' . ($f[1] ? ' ' . implode(' ', $f[1]) : '') : 'err:' . $f, array('view' => $id));
     }
 

@@ -85,3 +85,4 @@ if (MZC_Crm_Db::ready()) {
     }
     echo '</div></div>';
 }
+echo MZC_Log::panel();

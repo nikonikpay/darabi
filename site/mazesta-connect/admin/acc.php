@@ -27,7 +27,7 @@ if ($edit !== '') {
     $cid = $v ? (int) $v['customer_id'] : (isset($_GET['customer']) ? (int) $_GET['customer'] : 0);
     $val = function ($k, $def = '') use ($v) { return esc_attr($v && isset($v[$k]) && $v[$k] !== null ? (string) $v[$k] : $def); };
     echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-acc', array('kind' => $kind))) . '">‹ حسابداری</a><h2>' . esc_html($v ? 'ویرایش ' . MZC_Acc::$kinds[$kind] . ' ' . ($v['no'] ?: ($tpl ? $v['title'] : '(پیش‌نویس)')) : MZC_Acc::$kinds[$kind] . ' تازه') . '</h2></div>'
-        . (!$v && !$tpl ? $fromTpl($kind) : '') . '</div>';
+        . (!$v && !$tpl ? $fromTpl($kind) : '') . '</div>' . MZC_Rev::admin_open('invoice', $v ? (int) $v['id'] : 0);
     echo '<div class="mzc-panel"><div class="body">' . MZC_Admin::form_open('invoice_save', 'class="mzc-form" data-mzc-inv') . '<input type="hidden" name="id" value="' . ($v ? (int) $v['id'] : 0) . '"><input type="hidden" name="kind" value="' . esc_attr($kind) . '">';
     // the customer's three boxes and the date(s) on one line; dates are typed in the Persian calendar
     echo '<div class="mzc-invhead">' . ($tpl ? '<label class="mzc-field">نام فاکتور آماده<input type="text" name="title" value="' . $val('title') . '" maxlength="190" required placeholder="مثلاً: سیستم گیمینگ اقتصادی"></label>'
@@ -100,6 +100,7 @@ if ($view) {
         echo '<div class="mzc-panel"><header><h3>ابطال</h3></header><div class="body">' . MZC_Admin::form_open('invoice_void', 'class="mzc-filter" onsubmit="return confirm(\'این فاکتور باطل شود؟ شماره‌اش دیگر به کار نمی‌رود.\')"')
             . '<input type="hidden" name="id" value="' . (int) $v['id'] . '"><input type="text" name="reason" placeholder="دلیل ابطال" required maxlength="255" class="mzc-search"><button class="mzc-btn danger">باطل شود</button></form></div></div>';
     }
+    echo MZC_Rev::panel('invoice', (int) $v['id']);
     return;
 }
 

@@ -119,3 +119,4 @@ p.mzc-checks{display:flex;flex-wrap:wrap;gap:6px}
 .mzc-row.mzc-line { grid-template-columns: minmax(220px, 3fr) 70px 130px 90px minmax(140px, 2fr) 120px 34px; } .mzc-line-head { background: none; padding-block: 0; color: var(--muted); font-size: 12px; }
 .mzc-line [data-o="line"] { text-align: end; } .mzc-invsum { display: flex; gap: 12px 20px; flex-wrap: wrap; align-items: flex-end; } .mzc-invsum label { width: 170px; } .mzc-sum { display: grid; gap: 2px; } .mzc-sum span { color: var(--muted); font-size: 12px; } .mzc-sum b { font-size: 15px; } .mzc-sum.big b { font-size: 19px; }
 @media (max-width: 900px) { .mzc-row.mzc-line { grid-template-columns: 1fr 1fr; } .mzc-line-head { display: none; } }
+.mzc-log { max-height: 480px; overflow: auto; background: var(--mzc-bg2, #f6f7f7); padding: 10px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }

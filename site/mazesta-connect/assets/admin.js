@@ -238,4 +238,18 @@
       }).catch(function () { });
     }, 350);
   });
+
+  /* an edit page holds its record (MZC_Rev): renewed every 45 s while open, let go when left; a page someone else holds cannot save */
+  var lock = document.querySelector('.mzc-lock');
+  if (document.querySelector('.mzc-locked')) document.querySelectorAll('.mzc-form button, .mzc-form input[type=submit]').forEach(function (b) { b.disabled = true; });
+  if (lock) {
+    var send = function (release) {
+      var f = new FormData(); f.append('action', 'mzc_lock'); f.append('_ajax_nonce', lock.dataset.nonce); f.append('entity', lock.dataset.entity); f.append('id', lock.dataset.id); if (release) f.append('release', '1');
+      if (release && navigator.sendBeacon) { navigator.sendBeacon(lock.dataset.ajax, f); return; }
+      fetch(lock.dataset.ajax, { method: 'POST', body: f, credentials: 'same-origin' }).catch(function () { });
+    };
+    setInterval(function () { if (!document.hidden) send(false); }, 45000);
+    var saving = false; document.querySelectorAll('.mzc-form').forEach(function (fm) { fm.addEventListener('submit', function () { saving = true; }); });
+    window.addEventListener('pagehide', function () { if (!saving) send(true); });   // a save lets it go on the server's side once it is written
+  }
 })();

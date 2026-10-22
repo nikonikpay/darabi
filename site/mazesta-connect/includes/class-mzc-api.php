@@ -61,7 +61,12 @@ final class MZC_Api
         $db = MZC_Crm_Db::db(); if (!$db) { return; }
         $u = $a['user'];
         $db->insert(self::t('audit'), array('user_id' => (int) $a['id'], 'who' => mb_substr($u->display_name !== '' ? $u->display_name : $u->user_login, 0, 120), 'action' => $action, 'entity' => $entity, 'entity_id' => (int) $id, 'note' => mb_substr($note, 0, 255), 'at' => self::now()));
+        // a service, a computer or an invoice keeps every saved version (MZC_Rev); a version put back is already kept by the restore
+        if (isset(MZC_Rev::$kinds[$entity]) && $action !== 'restore' && $action !== 'delete') { MZC_Rev::record($entity, $id, (int) $a['id'], $action); }
     }
+
+    /** 423 when someone else has the record open for editing (MZC_Rev), else null. */
+    public static function locked_by_other($a, $entity, $id) { $h = $id ? MZC_Rev::blocker($entity, $id, (int) $a['id']) : null; return $h ? self::fail(MZC_Rev::busy_text($h), 423, array('holder' => $h)) : null; }
 
     public static function money_seen($a) { return MZC_Staff::can($a['id'], 'payments', 1); }
     /** Buy prices (what the shop paid): the people who see the money, and the warehouse who enters the purchase invoices. */
@@ -277,6 +282,7 @@ final class MZC_Api
         $db = MZC_Crm::db(); $p = self::body($req); $id = self::n($p, 'id'); $old = null;
         if ($id) {
             $old = MZC_Crm::build($id); if (!$old) { return self::fail('سیستم پیدا نشد.', 404); }
+            if ($busy = self::locked_by_other($a, 'build', $id)) { return $busy; }
             if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سیستم در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::build_out($old, true, $a))); }
         }
         $cid = $id && empty($p['customer_id']) && empty($p['c_mobile']) ? (int) $old['customer_id'] : self::customer_for($p, $a);
@@ -343,6 +349,7 @@ final class MZC_Api
         // the test desk may move a computer through testing without being allowed to edit the sale
         if (!MZC_Staff::can($a['id'], 'builds', 2) && !(MZC_Staff::can($a['id'], 'tests', 2) && MZC_Staff::can($a['id'], 'builds', 1) && in_array($st, array('testing', 'tested'), true))) { return self::fail('دسترسی این کار را ندارید.', 403); }
         $db = MZC_Crm::db(); $b = $id ? MZC_Crm::build($id) : null; if (!$b) { return self::fail('سیستم پیدا نشد.', 404); }
+        if ($busy = self::locked_by_other($a, 'build', $id)) { return $busy; }
         if (isset($p['updated']) && (string) $p['updated'] !== (string) $b['updated']) { return self::fail('این سیستم در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409, array('current' => self::build_out($b, false))); }
         $db->update(self::t('builds'), array('status' => $st, 'delivered' => $st === 'delivered' ? 1 : 0, 'updated' => self::now()), array('id' => $id));
         self::log($a, 'status', 'build', $id, $b['status'] . ' → ' . $st);
@@ -355,6 +362,7 @@ final class MZC_Api
         $db = MZC_Crm::db(); $p = self::body($req); $id = self::n($p, 'id'); $old = null; $pay = MZC_Staff::can($a['id'], 'payments', 2);
         if ($id) {
             $old = MZC_Crm::job($id); if (!$old) { return self::fail('سرویس پیدا نشد.', 404); }
+            if ($busy = self::locked_by_other($a, 'job', $id)) { return $busy; }
             if (isset($p['updated']) && (string) $p['updated'] !== (string) $old['updated']) { return self::fail('این سرویس در همین فاصله را کس دیگری ذخیره کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($old, true, self::money_seen($a), self::cost_seen($a)))); }
         }
         $cid = $id && empty($p['customer_id']) && empty($p['c_mobile']) ? (int) $old['customer_id'] : self::customer_for($p, $a);
@@ -418,6 +426,7 @@ final class MZC_Api
         $p = self::body($req); $id = self::n($p, 'id'); $st = isset($p['status']) ? (string) $p['status'] : '';
         if (!isset(MZC_Crm::$statuses[$st])) { return self::fail('وضعیت درست نیست.'); }
         $db = MZC_Crm::db(); $j = $id ? MZC_Crm::job($id) : null; if (!$j) { return self::fail('سرویس پیدا نشد.', 404); }
+        if ($busy = self::locked_by_other($a, 'job', $id)) { return $busy; }
         if (isset($p['updated']) && (string) $p['updated'] !== (string) $j['updated']) { return self::fail('این سرویس در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409, array('current' => self::job_out($j, false, self::money_seen($a)))); }
         $row = array('status' => $st, 'service_done' => in_array($st, array('ready', 'delivered'), true) ? 1 : 0, 'updated' => self::now());
         if ($st === 'delivered' && !$j['closed_at']) { $row['closed_at'] = gmdate('Y-m-d'); }

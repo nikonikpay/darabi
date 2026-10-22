@@ -383,6 +383,7 @@ final class MZC_Crm
         MZC_Admin::guard('build_save');
         $db = self::db(); if (!$db) { MZC_Admin::back('mzc-builds', 'err:' . MZC_Crm_Db::error()); }
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        if ($id && ($h = MZC_Rev::blocker('build', $id, get_current_user_id()))) { MZC_Admin::back('mzc-builds', 'err:' . MZC_Rev::busy_text($h), array('view' => $id)); }
         $cid = self::customer_of_form();
         if (!is_int($cid)) { MZC_Admin::back('mzc-builds', 'err:' . $cid, $id ? array('edit' => $id) : array('add' => 1)); }
         $bst = isset($_POST['status']) && isset(self::$build_statuses[$_POST['status']]) ? (string) $_POST['status'] : 'queue';
@@ -406,7 +407,8 @@ final class MZC_Crm
         if ($ok) { $ok = $db->delete(self::t('build_parts'), array('build_id' => $id)) !== false; }
         foreach ($parts as $p) { if (!$ok) { break; } if ($p['model'] === null) { continue; } $p['build_id'] = $id; $ok = (bool) $db->insert(self::t('build_parts'), $p); }
         $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
-        if (!$ok) { MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
+        if (!$ok) { MZC_Log::error('crm', 'build not saved', array('id' => $was, 'error' => $err)); MZC_Admin::back('mzc-builds', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
+        MZC_Rev::record('build', $id, get_current_user_id(), $was ? 'update' : 'create'); MZC_Rev::unlock('build', $id, get_current_user_id());
         MZC_Admin::back('mzc-builds', 'ok:ثبت شد.', array('view' => $id));
     }
 
@@ -485,6 +487,7 @@ final class MZC_Crm
         MZC_Admin::guard('job_save');
         $db = self::db(); if (!$db) { MZC_Admin::back('mzc-jobs', 'err:' . MZC_Crm_Db::error()); }
         $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+        if ($id && ($h = MZC_Rev::blocker('job', $id, get_current_user_id()))) { MZC_Admin::back('mzc-jobs', 'err:' . MZC_Rev::busy_text($h), array('view' => $id)); }
         $cid = self::customer_of_form();
         if (!is_int($cid)) { MZC_Admin::back('mzc-jobs', 'err:' . $cid, $id ? array('edit' => $id) : array('add' => 1)); }
         $status = isset($_POST['status'], self::$statuses[$_POST['status']]) ? (string) $_POST['status'] : 'received';
@@ -518,7 +521,8 @@ final class MZC_Crm
         foreach (self::posted_parts('pays', array('amount' => 'int', 'account' => 120, 'tx' => 80, 'holder' => 120)) as $p) { if (!$ok) { break; } if (!$p['amount']) { continue; } $p['job_id'] = $id; $ok = (bool) $db->insert(self::t('job_pays'), $p); }
         $err = $db->last_error; $db->query($ok ? 'COMMIT' : 'ROLLBACK');
         if ($lock) { $db->query("DO RELEASE_LOCK('" . self::t('svc') . "')"); }
-        if (!$ok) { MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
+        if (!$ok) { MZC_Log::error('crm', 'job not saved', array('id' => $was, 'error' => $err)); MZC_Admin::back('mzc-jobs', 'err:ذخیره نشد: ' . $err, $was ? array('edit' => $was) : array('add' => 1)); }
+        MZC_Rev::record('job', $id, get_current_user_id(), $was ? 'update' : 'create'); MZC_Rev::unlock('job', $id, get_current_user_id());
         $bad = self::add_photos('job', $id);
         MZC_Admin::back('mzc-jobs', 'ok:ثبت شد.' . ($bad ? ' (' . $bad . ')' : ''), array('view' => $id));
     }

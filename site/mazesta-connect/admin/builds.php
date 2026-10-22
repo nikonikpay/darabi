@@ -14,7 +14,7 @@ if ($add || $edit) {
     $cid = $b ? (int) $b['customer_id'] : (isset($_GET['customer']) ? (int) $_GET['customer'] : 0);
     $customer = $cid ? MZC_Crm::customer($cid) : null;
     $v = function ($k) use ($b) { return $b && isset($b[$k]) ? esc_attr((string) $b[$k]) : ''; };
-    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-builds')) . '">‹ سیستم‌های نو</a><h2>' . ($b ? 'ویرایش سیستم' : 'ثبت سیستم نو') . '</h2></div></div>';
+    echo '<div class="mzc-title"><div><a href="' . esc_url(MZC_Admin::url('mzc-builds')) . '">‹ سیستم‌های نو</a><h2>' . ($b ? 'ویرایش سیستم' : 'ثبت سیستم نو') . '</h2></div></div>' . MZC_Rev::admin_open('build', $b ? (int) $b['id'] : 0);
     echo '<div class="mzc-panel"><div class="body">' . MZC_Admin::form_open('build_save', 'class="mzc-form" enctype="multipart/form-data"') . ($b ? '<input type="hidden" name="id" value="' . (int) $b['id'] . '">' : '') . '<div class="mzc-fields">'
         . MZC_Admin::customer_picker($customer)
         . '<label>شمارهٔ فاکتور (سیستم حسابداری)<input type="text" name="invoice_no" value="' . $v('invoice_no') . '" dir="ltr" maxlength="60"' . ($b ? '' : ' required') . '><small>سیستم نو با همین شماره و نام خریدار شناخته می‌شود.</small></label>'
@@ -70,7 +70,7 @@ if ($view) {
         $model = $p['product_id'] ? '<a href="' . esc_url(MZC_Admin::url('mzc-stock', array('view' => (int) $p['product_id']))) . '">' . esc_html($p['model']) . '</a>' : esc_html($p['model']);
         echo '<tr><td>' . esc_html(MZC_Crm::$categories[$p['category']]) . '</td><td dir="auto">' . $model . '</td><td class="num">' . esc_html($p['serial'] ?: '—') . '</td><td class="n">' . MZC_Admin::num($p['sell_price']) . '</td><td class="n">' . MZC_Admin::num($p['buy_price']) . '</td><td dir="auto">' . esc_html($p['vendor'] ?: '—') . ($p['has_box'] ? ' ' . MZC_Admin::pill('جعبه') : '') . ($p['qc'] ? ' ' . MZC_Admin::pill('QC', 'ok') : '') . '</td><td>' . ($until === null && $p['has_warranty'] ? MZC_Admin::pill('گارانتی دارد', 'ok') : $w) . '</td></tr>';
     }
-    echo '</tbody></table></div></div>' . MZC_Admin::checks_view($b['checks'], (string) $b['device_type']) . ($b['photos'] ? MZC_Admin::soft_view($b['soft']) : '') . MZC_Admin::more($b['more']);
+    echo '</tbody></table></div></div>' . MZC_Admin::checks_view($b['checks'], (string) $b['device_type']) . ($b['photos'] ? MZC_Admin::soft_view($b['soft']) : '') . MZC_Admin::more($b['more']) . MZC_Rev::panel('build', (int) $b['id']);
     return;
 }
 

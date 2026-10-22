@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Mazesta Connect
  * Description: پل ارتباط برنامه Mazesta Test با سایت و سامانه مشتریان: گزارش‌های آزمون، بنچمارک‌ها، آمار و مشخصات سیستم‌ها، پیام به سیستم‌ها، سیستم‌های نو و سرویس‌ها (CRM روی پایگاه داده جداگانه) و پورتال مشتری با ورود پیامکی.
- * Version: 2.9.7
+ * Version: 2.10.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Mazesta
@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) { exit; }
 
-define('MZC_VERSION', '2.9.7');
+define('MZC_VERSION', '2.10.0');
 define('MZC_FILE', __FILE__);
 define('MZC_DIR', plugin_dir_path(__FILE__));
 define('MZC_URL', plugin_dir_url(__FILE__));
@@ -19,10 +19,12 @@ define('MZC_URL', plugin_dir_url(__FILE__));
 /*
  * Layout:
  *   includes/class-mazesta-connect.php  the bridge to the desktop app (REST routes, reports, benchmark lists, shares, releases; data in the CRM's database, the test reports as files)
+ *   includes/class-mzc-log.php          the plugin's own log (failed and slow REST answers, its PHP fatals, what the code reports), a file a day in the data folder
  *   includes/class-mzc-stats.php        systems, usage events and the apps' logs: tables of their own in the CRM's database, what the dashboard, systems, events, tuning and messages pages read
  *   includes/class-mzc-messages.php     messages to the systems (REST for the app; tables in the CRM's database)
  *   includes/class-mzc-crm-db.php       the CRM's own database (not WordPress'): connection, the schema of every table of the plugin, the removal of the data of before 2.8
  *   includes/class-mzc-crm.php          customers, new builds, service jobs, parts, photos
+ *   includes/class-mzc-rev.php          the saved versions of services, new computers and invoices (who changed what, going back) and who has one open for editing
  *   includes/class-mzc-stock.php        the stock: products, suppliers' purchase invoices, where each part went, serial numbers
  *   includes/class-mzc-acc.php          the accounting: sales and return invoices, proformas, ready-made invoices, payments, cheques, the accounts of customers and suppliers
  *   includes/class-mzc-acc-api.php      the accounting's staff API routes
@@ -39,15 +41,17 @@ define('MZC_URL', plugin_dir_url(__FILE__));
  *   includes/class-mzc-portal.php       the customer's page ([mazesta_portal]) and its REST routes
  *   includes/class-mzc-admin.php        menus and the shared admin shell; admin/*.php are the pages; assets/ the styles and scripts
  */
-foreach (array('mazesta-connect', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-stock', 'mzc-acc', 'mzc-woo', 'mzc-report', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-acc-api', 'mzc-oauth', 'mzc-mcp', 'mzc-admin') as $mzc_file) {
+foreach (array('mazesta-connect', 'mzc-log', 'mzc-stats', 'mzc-messages', 'mzc-crm-db', 'mzc-crm', 'mzc-rev', 'mzc-stock', 'mzc-acc', 'mzc-woo', 'mzc-report', 'mzc-ships', 'mzc-site', 'mzc-import', 'mzc-sms', 'mzc-portal', 'mzc-staff', 'mzc-api', 'mzc-acc-api', 'mzc-oauth', 'mzc-mcp', 'mzc-admin') as $mzc_file) {
     require_once MZC_DIR . 'includes/class-' . $mzc_file . '.php';
 }
 
+MZC_Log::boot();
 Mazesta_Connect::boot();
 MZC_Messages::boot();
 MZC_Portal::boot();
 MZC_Staff::boot();
 MZC_Api::boot();
+MZC_Rev::boot();
 MZC_Stock::boot();
 MZC_Acc::boot();
 MZC_Acc_Api::boot();

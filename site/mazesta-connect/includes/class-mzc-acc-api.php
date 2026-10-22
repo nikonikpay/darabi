@@ -104,6 +104,7 @@ final class MZC_Acc_Api
     {
         $id = MZC_Api::n($p, 'id'); $v = $id ? MZC_Acc::invoice($id) : null;
         if (!$v) { return array(null, self::fail('فاکتور پیدا نشد.', 404)); }
+        if ($busy = MZC_Api::locked_by_other($a, 'invoice', $id)) { return array(null, $busy); }
         if (isset($p['updated']) && (string) $p['updated'] !== (string) $v['updated']) { return array(null, self::fail('این فاکتور در همین فاصله را کس دیگری عوض کرده است؛ دوباره بازش کنید.', 409, array('current' => self::invoice_out($v, $a, true)))); }
         return array($v, null);
     }

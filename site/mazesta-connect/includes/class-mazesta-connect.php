@@ -613,9 +613,10 @@ final class Mazesta_Connect
     public static function rest_runs($req)
     {
         $key = self::key_state($req); $c = self::config();
-        $trusted = $key === 'ok';
+        // the shop's own copies (site key) and the release tool sending the archive (release key) go straight into the lists
+        $trusted = $key === 'ok' || self::key_state($req, 'releaseKey') === 'ok';
         if (!$trusted) {
-            if ($key === 'wrong' || empty($c['openUploads'])) { return new WP_Error('mazesta_key', 'The site key is missing or wrong.', array('status' => 401)); }
+            if (empty($c['openUploads'])) { return new WP_Error('mazesta_key', 'The site key is missing or wrong.', array('status' => 401)); }
             if (!self::allowed('runs', 20)) { return new WP_Error('mazesta_busy', 'Too many uploads from this address; try again in an hour.', array('status' => 429)); }
         }
         $body = self::runs_of($req);

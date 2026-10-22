@@ -100,6 +100,7 @@ async function route(ev) {
   document.querySelectorAll('.backdrop').forEach(b => b.remove());   // a dialog of the page just left
   document.querySelectorAll('aside nav a').forEach(a => a.classList.toggle('on', a.dataset.r === '#' + path || (a.dataset.r !== '#/' && path.startsWith(a.dataset.r.slice(1).replace(/s$/, '')))));
   const r = routes.find(x => x[0].test(path)), soft = S.soft && path === S.path; S.soft = false; S.path = path;
+  if (S.lock && S.lock.path !== path) dropLock();
   if (!soft) clear(main).append(h('div', { class: 'loading' }, 'در حال بارگذاری…'));
   try {
     const m = path.match(r ? r[0] : /^$/); const el = r ? await r[1](m, q) : h('p', {}, 'صفحه پیدا نشد.'); if (my !== routeSeq) return;
@@ -112,6 +113,43 @@ async function route(ev) {
   catch (e) { clear(main).append(h('div', { class: 'panel' }, h('p', { class: 'err' }, e.message), h('button', { class: 'btn', onclick: route }, 'دوباره'))); }
 }
 window.addEventListener('hashchange', route);
+
+/* ---------- who has a record open, and its saved versions (the site's MZC_Rev) ---------- */
+// The open record is held on the site while its page is shown (renewed every 45 s) and let go when another page opens; someone else's record is shown read-only.
+function dropLock() { const l = S.lock; S.lock = null; if (!l) return; clearInterval(l.t); POST('staff/lock', { entity: l.entity, id: l.id, release: true }).catch(() => { }); }
+function editLock(entity, id, el) {
+  if (S.lock && (S.lock.entity !== entity || S.lock.id !== id)) dropLock();
+  if (S.lock) clearInterval(S.lock.t);
+  const note = h('p', { class: 'panel err', hidden: true }), l = S.lock = { entity, id, path: S.path };
+  const take = async () => {
+    try { await POST('staff/lock', { entity, id }); }
+    catch (e) {
+      if (e.status !== 423) return;
+      clearInterval(l.t); if (S.lock === l) S.lock = null;
+      note.hidden = false; note.textContent = e.message + ' این صفحه فقط خواندنی است.';
+      el.querySelectorAll('input, select, textarea, button.primary, form button').forEach(x => { x.disabled = true; });
+    }
+  };
+  l.t = setInterval(take, 45000); take();
+  return note;
+}
+window.addEventListener('beforeunload', dropLock);
+
+const ACTS = { create: 'ثبت', update: 'ویرایش', status: 'وضعیت', restore: 'بازگشت', base: 'نسخهٔ اولیه', final: 'قطعی', void: 'ابطال' };
+function historyDialog(entity, id, area) {
+  modal('تاریخچهٔ تغییرات', async (body, close) => {
+    body.append(h('p', { class: 'muted' }, '…'));
+    let r; try { r = await GET('staff/revisions' + qs({ entity, id })); } catch (e) { close(); return fail(e); }
+    clear(body);
+    if (!r.items.length) return body.append(h('p', { class: 'muted' }, 'هنوز نسخه‌ای ثبت نشده است.'));
+    body.append(table(['زمان', 'کاربر', 'کار', 'تغییرات', ''], r.items.map((v, i) => h('tr', {}, h('td', { class: 'lat' }, v.at), h('td', {}, v.who), h('td', {}, ACTS[v.action] || v.action),
+      h('td', {}, v.changes.length ? v.changes.map(c => h('div', {}, h('b', {}, c[0]), ': ', c[1], ' ← ', c[2])) : '—'),
+      h('td', {}, i === 0 ? h('small', { class: 'muted' }, 'نسخهٔ فعلی') : can(area, 2) ? h('button', { class: 'btn', onclick: async () => {
+        if (!await ask('پرونده به این نسخه برگردد؟ حالت فعلی هم به‌عنوان یک نسخه می‌ماند.', 'برگردان')) return;
+        try { await POST('staff/revisions/restore', { rev: v.id }); toast('به نسخهٔ انتخاب‌شده برگشت.'); close(); route(); } catch (e) { fail(e); }
+      } }, 'بازگشت به این نسخه') : null)))));
+  }, true);
+}
 
 /* ---------- small shared pieces ---------- */
 const pill = (t, kind) => h('span', { class: 'pill ' + (kind || '') }, t);
@@ -338,13 +376,15 @@ async function viewBuild(id, q) {
       if (err.status === 409 && err.data && err.data.duplicate) { if (await ask(err.message + ' با همین شماره ثبت شود؟', 'ثبت کن')) { force = true; save(e); } } else if (err.status === 409) { toast(err.message, 'err'); if (await ask('رکورد را دوباره بارگذاری کنم؟ (تغییرات این صفحه از بین می‌رود)', 'بارگذاری')) route(); } else fail(err);
     }
   };
-  const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => printLabel('build', b.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('build', b.id) }, 'پیامک رسید'),
+  const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => historyDialog('build', b.id, 'builds') }, 'تاریخچه'), h('button', { type: 'button', class: 'btn', onclick: () => printLabel('build', b.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('build', b.id) }, 'پیامک رسید'),
     can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('build', b) }, b.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null,
     can('accounting', 2) ? h('button', { type: 'button', class: 'btn', onclick: async () => { try { const v = await POST('staff/invoices/from-build', { build_id: b.id }); location.hash = '#/invoice/' + v.id; } catch (e) { fail(e); } } }, 'فاکتور فروش') : null);
-  return h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.number}`, actions),
+  const page = h('div', {}, title(isNew ? 'سیستم نو' : `سیستم ${b.number}`, actions),
     h('form', { class: 'panel grid', onsubmit: save }, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'مشتری'), picker.el), field('شمارهٔ فاکتور حسابداری', f.invoice, 'سیستم نو با شمارهٔ فاکتور و نام خریدار شناخته می‌شود'), field('تاریخ فروش', f.sold), field('وضعیت', f.status), field('نوع دستگاه', f.dtype),
       h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات'), parts.el), checks.el,
       soft.el, mediaLinks(b.media), field('یادداشت', f.notes, '', 'wide'), ro && !(can('tests', 2) && can('builds')) ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
+  if (!isNew && can('builds', 2)) page.insertBefore(editLock('build', b.id, page), $('form', page));
+  return page;
 }
 
 /* ---------- job (a service) ---------- */
@@ -385,7 +425,7 @@ async function viewJob(id, q) {
     try { const r = await POST('staff/jobs', body); toast(isNew ? 'ثبت شد: ' + r.service_no : 'ذخیره شد.'); if (isNew) { S.after = () => offerPrint(r); location.hash = '#/job/' + r.id; } else route(); }
     catch (err) { if (err.status === 409) { toast(err.message, 'err'); if (await ask('رکورد را دوباره بارگذاری کنم؟ (تغییرات این صفحه از بین می‌رود)', 'بارگذاری')) route(); } else fail(err); }
   };
-  const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => printLabel('job', j.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => printReceipt(j) }, 'چاپ رسید'),
+  const actions = isNew ? null : h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => historyDialog('job', j.id, 'jobs') }, 'تاریخچه'), h('button', { type: 'button', class: 'btn', onclick: () => printLabel('job', j.id) }, 'چاپ برچسب'), h('button', { type: 'button', class: 'btn', onclick: () => printReceipt(j) }, 'چاپ رسید'),
     h('button', { type: 'button', class: 'btn', onclick: () => sendReceipt('job', j.id) }, 'پیامک رسید'), can('tests') ? h('button', { type: 'button', class: 'btn', onclick: () => reportDialog('job', j) }, j.report_id ? 'گزارش تست ✓' : 'گزارش تست') : null);
   const costs = money1 ? h('div', { class: 'wide money' }, h('h3', { class: 'wide' }, 'هزینه‌ها'), field('هزینهٔ خدمات', f.labor), field('تخفیف', f.discount), field('هزینه‌های پرداخت‌شده', f.paid, 'خرجی که خودمان برای این سرویس دادیم؛ مشتری نمی‌بیند و از سود خدمات کم می‌شود'), field('توضیحات هزینهٔ پرداخت‌شده', f.paidNote),
     h('div', { class: 'sum' }, h('span', {}, 'هزینهٔ قطعات'), out.parts), h('div', { class: 'sum big' }, h('span', {}, 'هزینهٔ نهایی (از مشتری)'), out.total), h('div', { class: 'sum' }, h('span', {}, 'سود خدمات'), out.svc),
@@ -396,6 +436,7 @@ async function viewJob(id, q) {
       h('div', { class: 'checks' }, f.maz, f.war), field('مشکل اعلام‌شده', f.complaint, '', 'wide'), field('کار انجام‌شده', f.work, '', 'wide'),
       checks.el, h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات دیگری که مشتری تحویل داده'), recv.el), h('div', { class: 'wide' }, h('label', { class: 'lbl' }, 'قطعات اضافه‌شده'), parts.el),
       soft.el, costs, field('لینک عکس و فیلم در تلگرام', f.media, '', 'wide'), mediaLinks(j.media), field('یادداشت داخلی', f.notes, '', 'wide'), ro ? null : h('div', { class: 'row wide' }, h('button', { class: 'btn primary' }, 'ذخیره'))));
+  if (!isNew && !ro) el.insertBefore(editLock('job', j.id, el), $('form', el));
   recalc(); return el;
 }
 function offerPrint(job) {

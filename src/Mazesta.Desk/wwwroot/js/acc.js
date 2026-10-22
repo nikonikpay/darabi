@@ -130,7 +130,8 @@ async function viewInvoice(id, q) {
     can2 && tpl && !isNew ? h('button', { class: 'btn primary', onclick: () => act('staff/invoices/copy', { id: v.id, kind: 'sale' }, 'فاکتور فروش ساخته شد.') }, 'فاکتور فروش از این') : null,
     can2 && !tpl && !isNew ? h('button', { class: 'btn', onclick: () => act('staff/invoices/copy', { id: v.id, kind: 'template' }, 'به فاکتورهای آماده اضافه شد.') }, 'ذخیره به‌عنوان فاکتور آماده') : null,
     can2 && !isNew && (v.status === 'final' || (v.kind === 'proforma' && v.status === 'draft')) ? h('button', { class: 'btn', onclick: voidIt }, 'ابطال') : null,
-    can2 && !isNew && (tpl || (draft && !v.no)) ? h('button', { class: 'btn', onclick: del }, 'حذف') : null);
+    can2 && !isNew && (tpl || (draft && !v.no)) ? h('button', { class: 'btn', onclick: del }, 'حذف') : null,
+    !isNew ? h('button', { class: 'btn', onclick: () => historyDialog('invoice', v.id, 'accounting') }, 'تاریخچه') : null);
   const head = isNew ? A().kinds[kind0] + ' تازه' : v.kindText + ' ' + (v.no || (tpl ? v.title : '(پیش‌نویس)'));
   const el = h('div', {}, title(head, !isNew ? stPill(v) : null, actions),
     v.status === 'void' ? h('p', { class: 'panel err' }, 'باطل شد: ' + v.void_reason) : null,
@@ -146,6 +147,7 @@ async function viewInvoice(id, q) {
         !isNew && sale && v.status === 'final' ? h('div', { class: 'sum' }, h('span', {}, 'پرداخت‌شده / مانده'), h('b', { class: 'lat' }, money(v.paid) + ' / ' + money(v.total - v.paid))) : null),
       tpl ? null : field('یادداشت', f.notes, '', 'wide')));
   if (v.payments && v.payments.length) el.append(h('section', { class: 'panel' }, h('h3', {}, 'پرداخت‌های این فاکتور'), paymentsTable(v.payments)));
+  if (!isNew && !ro) el.insertBefore(editLock('invoice', v.id, el), el.children[1]);
   recalc(); return el;
 }
 
