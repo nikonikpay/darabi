@@ -106,7 +106,7 @@ public sealed class PollingEngine : IDisposable
             var result = Provider.Poll(new PollRequest(now, due));
             var after = _clock.UtcNow;
             if (after - now > FastInterval && after - _lastOverrunLog > TimeSpan.FromMinutes(1))
-            { _lastOverrunLog = after; _events.Log(EventLevel.Warning, KeyPollOverrun, $"Poll took {(after - now).TotalMilliseconds:F0} ms, interval {FastInterval.TotalSeconds} s"); }
+            { _lastOverrunLog = after; _events.Log(EventLevel.Warning, KeyPollOverrun, FormattableString.Invariant($"Poll took {(after - now).TotalMilliseconds:F0} ms, interval {FastInterval.TotalSeconds} s")); }
             var kinds = Hardware.ToDictionary(n => n.Id, n => n.Kind);
             var readings = new List<SensorReading>(result.Readings.Count);
             foreach (var r in result.Readings)
