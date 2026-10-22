@@ -2375,6 +2375,11 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
 What I do not do: run any other command in Windows, change files, or install programs.</value></data>
   <data name="Assist_Tray_On" xml:space="preserve"><value>The background monitor is on: by the Windows clock it checks the temperatures every {0} minutes and the drives' health every {1} minutes, and tells a problem with a Windows notification; it also starts with Windows. It warns above {2} °C for the processor and {3} °C for the graphics card.</value></data>
   <data name="Assist_Tray_Off" xml:space="preserve"><value>The background monitor is off and no longer starts with Windows.</value></data>
+  <data name="Assist_Complaint" xml:space="preserve"><value>I can check these, but I will not guess the cause:
+- Say "diagnose my system" and the smart diagnosis (about eight minutes, after you confirm) tests the processor, memory, graphics card and drive and lists the problems.
+- Ask "what is the CPU temperature now" (or the GPU) and I read the temperatures right now.
+- If the computer restarts by itself or shows a blue screen, say "blue screen" and I read the errors Windows recorded.
+- For internet trouble, say "internet troubleshooter".</value></data>
   <data name="Assist_Tray_Failed" xml:space="preserve"><value>The background monitor could not be changed: {0}</value></data>
   <data name="Assist_Alert_Ask" xml:space="preserve"><value>At what temperature? The tray warns now above {0} °C for the processor and {1} °C for the graphics card; say for example "warn me when the CPU passes 85" (60 to 105).</value></data>
   <data name="Assist_Alert_Range" xml:space="preserve"><value>The warning temperature can be from 60 to 105 °C: below 60 a computer at work would warn all the time, and above 105 the part protects itself first.</value></data>

@@ -268,6 +268,7 @@ public sealed partial class WebBridge
                 return true;
             }
             if (route.Intent == AiIntent.Help) { reply.Text = Loc.Get("Assist_Help"); return true; }
+            if (route.Intent == AiIntent.Complaint) { reply.Text = Loc.Get("Assist_Complaint"); return true; }
             // The tray monitor, on or off, or on with the temperature it warns at ("tell me when the CPU passes 80").
             if (route.Intent is AiIntent.Tray or AiIntent.Alert)
             {

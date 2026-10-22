@@ -11,7 +11,7 @@ public sealed record AppPlace(string Page, string? Target, string TitleKey, stri
 
 /// <summary>What a message asks for, when that is plain enough to act on without the model: the model reads words badly (it opened the overlay
 /// for "graphics overclock"), so the app decides these itself and the model only words the answer from what the app read.</summary>
-public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes, Checkup }
+public enum AiIntent { None, Navigate, HowTo, Specs, Sensors, Software, SoftwareList, Report, ReportFile, Tests, Overlay, Dns, Games, TestsInfo, Help, Complaint, Tray, Alert, WinOpen, WinCommand, WinCommandUnknown, Drivers, Benchmarks, PcieErrors, Crashes, Checkup }
 
 /// <param name="Part">For <see cref="AiIntent.Specs"/>: cpu, ram, gpu, vram, storage, board, os, or all; for <see cref="AiIntent.Sensors"/>: the part
 /// whose readings are asked for (cpu, gpu, memory, storage, network), or null for every part.</param>
@@ -98,6 +98,8 @@ public static class AppGuide
         P("apps", "Nav_Apps", "which professional programs (rendering, architecture, civil, animation, editing) run on this computer, and at what level"),
         P("games", "Nav_Games", "which games run on this computer, at their publishers' minimum, recommended and high tiers and the publishers' own targets (resolution, preset, frame rate)"),
         P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models"),
+        P("help", "Nav_Help", "the in-app help: what every page and box does, with a search"),
+        P("messages", "Nav_Messages", "messages from the shop to this computer's owner"),
         P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder"),
         T("play", "gameboost", "GameBoost_Title", "game mode: stops background services a game does not need (Windows Update, downloads, telemetry, search indexing) while it is on, with a tick per service; switching it off puts them back", null),
         T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null),
@@ -195,6 +197,10 @@ public static class AppGuide
     private static readonly string[] WhenWords = Lex.List("WhenWords");
     private static readonly string[] CommandWords = Lex.List("CommandWords");
     private static readonly string[] NowWords = Lex.List("NowWords");
+    // A complaint ("slow", "freezes") is for the model with its tools; a question about hot parts reads the sensors; "buy / price / phone" is the shop's.
+    private static readonly string[] ProblemWords = Lex.List("ProblemWords"), HeatWords = Lex.List("HeatWords"), BuyWords = Lex.List("BuyWords");
+    // «چطوره» asks how something is (its state), unlike «چطور» how to do it; a past tense with «highest» asks for what was recorded.
+    private static readonly string[] StateWords = Lex.List("StateWords"), PastWords = Lex.List("PastWords"), MaxWords = Lex.List("MaxWords");
 
     /// <summary>What a message asks for, when it is plain; <see cref="AiIntent.None"/> leaves it to the model. The order matters: a question of
     /// "how" is answered, not acted on; the reports and the programs have their own words; a part's figure is a question about this computer;
@@ -203,10 +209,15 @@ public static class AppGuide
     {
         string s = Normalize(text);
         var place = FindPlace(s); var app = FindApp(s);
-        bool go = Any(s, GoWords), page = Any(s, PageWords), doIt = Any(s, DoWords), how = Any(s, HowWords), ask = Any(s, AskWords);
+        bool go = Any(s, GoWords), page = Any(s, PageWords), doIt = Any(s, DoWords), how = Any(s, HowWords) && !Any(s, StateWords), ask = Any(s, AskWords);
         bool not = Any(s, NotWords);
 
         if (Any(s, HelpWords) && place is null && app is null) return new(AiIntent.Help);
+
+        // The shop, a price or a computer to buy: the model answers from company_info / ready_systems, never from a page ("کیس گیمینگ" is not the gaming page).
+        if (Any(s, BuyWords) && app is null && !go) return new(AiIntent.None);
+        // "It gets hot": the temperatures now, of the part named; the model then tells what they mean.
+        if (Any(s, HeatWords) && !go && !not) return new(AiIntent.Sensors, Kind: "Temperature", Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area);
 
         // "Tell me when the CPU passes 80": a warning the tray and the app give, at the temperature asked for.
         if (Any(s, AlertWords) && Any(s, WhenWords) && SensorKinds[0].Words.Any(w => Has(s, w)))
@@ -236,6 +247,10 @@ public static class AppGuide
             return new(AiIntent.WinOpen, Ids: [win.Id]);
 
         if (how && !go) return new(AiIntent.HowTo, place, App: app);
+
+        // A complaint ("my Windows is slow, what do I do"): not a question about the specification ("چیکار" starts with "چی"); the app answers with what it
+        // can check, since a small model talked of removing Windows. A control that names the trouble itself (the internet troubleshooter) is still pointed at.
+        if (Any(s, ProblemWords) && place?.Target is null && !go && !(SensorKinds.Any(k => Any(s, k.Words)) && (Any(s, NowWords) || ask))) return new(AiIntent.Complaint, place, App: app);
 
         // "Diagnose the system": the app runs its smart diagnosis itself (the Diagnosis page's benchmarks and its judgment) and tells what it found,
         // instead of only opening the page. A bare "عیب یابی" or "صفحه عیب یابی" still goes to the page.
@@ -281,6 +296,8 @@ public static class AppGuide
 
         bool test = Any(s, TestWords);
         // A reading now (a temperature, a fan, a load) is the sensors', not the specification's.
+        if (!go && !test && SensorKinds[0].Words.Any(w => Has(s, w)) && Any(s, MaxWords) && Any(s, PastWords))
+            return new(AiIntent.Report, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area, Kind: "Temperature", Index: Any(s, EarlierWords) ? 1 : 0);
         if (!go && !test && SensorKinds.FirstOrDefault(k => Any(s, k.Words)) is { Kind: not null } sensor && (Any(s, NowWords) || ask))
             return new(AiIntent.Sensors, Kind: sensor.Kind, Part: TestAreas.FirstOrDefault(a => Any(s, a.Words)).Area);
         // A benchmark's number is its history, not the part's specification ("آخرین بنچمارک پردازنده چند بود").
@@ -289,7 +306,7 @@ public static class AppGuide
 
         // "بنچمارک سیستم رو انجام بده": the benchmarks of the parts named, or all of them, asked about together on one card.
         bool bench = Has(s, "بنچمارک") || Has(s, "بنچ مارک") || Has(s, "benchmark");
-        if (bench && (doIt || Has(s, "بگیر")) && !go && !page && !not && !ask)
+        if (bench && (doIt || Words(s) <= 3 && TestAreas.Any(a => Any(s, a.Words))) && !go && !page && !not && !ask)
         {
             var areas = TestAreas.Where(a => Any(s, a.Words)).SelectMany(a => a.Area switch
             {
@@ -317,7 +334,9 @@ public static class AppGuide
 
         // A short message that is little more than a place's name ("اورلی", "گرافیکو اندرولت کن") means going there.
         bool short_ = Words(s) <= 4 && !ask;
-        if (place is not null && (go || page || short_ || doIt && place.Target is not null)) return new(AiIntent.Navigate, place);
+        // A verb of doing or switching ("فن رو روی سایلنت بذار", "حالت بازی رو روشن کن") shows where it is done; the assistant does not press it.
+        bool act = !not && (doIt || Any(s, OnWords) || Any(s, OffWords) || s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(CommandTokens.Contains));
+        if (place is not null && (go || page || short_ || act || place.Target is not null && !ask)) return new(AiIntent.Navigate, place);
         return new(AiIntent.None, place, App: app);
     }
 
@@ -343,7 +362,7 @@ public static class AppGuide
     private static readonly string[] CheckupWords = Lex.List("CheckupWords");
     private static readonly string[] SystemWords = Lex.List("SystemWords");
     /// <summary>The words that make a sentence a command (whole words: "کن" must not match "کنار").</summary>
-    private static readonly HashSet<string> CommandTokens = new(["کن", "کنی", "کنید", "بکن", "بگیر", "بگیری", "بزن", "بزنی", "انجام", "اجرا", "شروع", "do", "run", "start", "perform", "check", "test", "scan", "diagnose"], StringComparer.Ordinal);
+    private static readonly HashSet<string> CommandTokens = new(["کن", "کنی", "کنید", "بکن", "بگیر", "بگیری", "بزن", "بزنی", "انجام", "اجرا", "شروع", "کردن", "پایداری", "do", "run", "start", "perform", "check", "test", "scan", "diagnose"], StringComparer.Ordinal);
 
     /// <summary>Whether a message asks the whole computer to be diagnosed: the diagnosis named with a word of doing ("سیستم رو عیب یابی کن", "چکاپ بگیر"),
     /// or the computer as a whole checked with no part named ("سیستمم رو چک کن").</summary>
