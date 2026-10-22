@@ -3,7 +3,7 @@ namespace Mazesta.Diagnostics.Windows;
 
 /// <summary>
 /// The two entries the app can put in Explorer's right-click menu, in the current user's own part of the registry (no administrator needed to add them, and nothing of the
-/// system's is changed): "block in firewall" on programs (.exe) and "exclude from antivirus" on folders. Each runs this app with an argument and the file's path; the app asks
+/// system's is changed): "block in firewall" on programs (.exe) and "exclude from antivirus" on folders and files. Each runs this app with an argument and the file's path; the app asks
 /// Windows for the administrator right it needs (the manifest does) and says what it did.
 /// </summary>
 public static class ShieldShellMenu
@@ -14,7 +14,7 @@ public static class ShieldShellMenu
     /// <summary>Where else the same entry sits: a shortcut to a program (the app reads the shortcut's target), the empty space of an open folder (%V is that folder) and a drive.</summary>
     private static (string Key, string Arg)[] Extras(bool firewall) => firewall
         ? [(@"Software\Classes\lnkfile\shell\MazestaFirewallBlock", "%1")]
-        : [(@"Software\Classes\Directory\Background\shell\MazestaAvExclude", "%V"), (@"Software\Classes\Drive\shell\MazestaAvExclude", "%1")];
+        : [(@"Software\Classes\Directory\Background\shell\MazestaAvExclude", "%V"), (@"Software\Classes\*\shell\MazestaAvExclude", "%1"), (@"Software\Classes\Drive\shell\MazestaAvExclude", "%1")];
 
     public static string Command(bool firewall, string exe, string arg = "%1") => $"\"{exe}\" {(firewall ? FirewallArgument : AntivirusArgument)} \"{arg}\"";
 

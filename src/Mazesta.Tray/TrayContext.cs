@@ -17,7 +17,7 @@ internal sealed class TrayContext : ApplicationContext
     private static readonly TimeSpan Busy = TimeSpan.FromSeconds(20);
     private readonly TrayIntervals _intervals; private readonly string _logFile;
     private readonly NotifyIcon _icon; private readonly System.Windows.Forms.Timer _temps = new(), _health = new(), _ram = new(); private readonly HealthAlerts _rules; private readonly MemoryPressure _memory; private readonly string _ramFile;
-    private readonly HashSet<string> _drivesAnnounced = [];
+    private readonly HashSet<string> _drivesAnnounced = []; private string? _link; private DateTimeOffset _screenWarned;
     private readonly ToolStripMenuItem _status = new() { Enabled = false }, _checkNow, _overlay;
     private readonly GpuProfilesMenu _gpu; private readonly GpuAutoSwitch _auto; private OverlayKeys? _keys; private readonly PowerTimerMenu _power; private readonly System.Windows.Forms.Timer _gpuAtStart = new() { Interval = 15_000 }; private readonly RgbMenu _rgb; private readonly FanMenu _fans;
     private SummaryForm? _summary; private bool _checking;
@@ -48,7 +48,8 @@ internal sealed class TrayContext : ApplicationContext
         menu.Opening += (_, _) => _overlay.Checked = OverlayShown();
         _icon = new NotifyIcon { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield, Text = TrayText.Title, ContextMenuStrip = menu, Visible = true };
         _icon.DoubleClick += (_, _) => ShowSummary();
-        _icon.BalloonTipClicked += (_, _) => ShowSummary();
+        _icon.BalloonTipClicked += (_, _) => { if (_link is { } l) OpenLink(l); else ShowSummary(); };
+        _icon.BalloonTipClosed += (_, _) => _link = null;
         Refresh();
         _temps.Tick += async (_, _) => { if (Benchmarking() || TrayIntervals.SkipInGames(_configFile) && GpuAutoSwitch.GameInFront()) Schedule(_temps, TimeSpan.FromMinutes(1)); else await CheckTempsAsync(); };
         _health.Tick += async (_, _) => { if (Benchmarking()) Schedule(_health, TimeSpan.FromMinutes(1)); else await CheckHealthAsync(); };
@@ -122,6 +123,7 @@ internal sealed class TrayContext : ApplicationContext
                 var alerts = _rules.Evaluate(sample, now).Select(TrayText.Alert).ToList();
                 check = new(now, "temps", sample.CpuTempC, sample.GpuTempC, [], alerts, null, sample.GpuHotSpotC);
                 foreach (var a in alerts) Notify(a);
+                CheckScreen(now);
             }
         }
         catch (Exception e) { check = new(DateTimeOffset.UtcNow, "temps", null, null, [], [], e.Message); }
@@ -176,7 +178,22 @@ internal sealed class TrayContext : ApplicationContext
         _icon.Text = TrayText.Tooltip(temps);
     }
 
-    private void Notify(string text) => _icon.ShowBalloonTip(15000, TrayText.Title, text, ToolTipIcon.Warning);
+    /// <summary>A desktop with a graphics card whose monitor is plugged into the motherboard runs on the processor's weak graphics. Said once an hour until it is fixed; a laptop
+    /// (it has a battery) runs on the processor's graphics by design and is never told.</summary>
+    private void CheckScreen(DateTimeOffset now)
+    {
+        if (now - _screenWarned < TimeSpan.FromHours(1) || SystemInformation.PowerStatus.BatteryChargeStatus != BatteryChargeStatus.NoSystemBattery) return;
+        try
+        {
+            if (Mazesta.Core.Health.Checkup.PlatformCheck.Screen(Mazesta.Hardware.Details.DisplayAdapters.Read(), laptop: false).FirstOrDefault() is not { } f) return;
+            _screenWarned = now; Notify(TrayText.ScreenOnIgpu(f.Subject ?? "")); _link = TrayText.ScreenOnIgpuLink;
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
+    }
+
+    private static void OpenLink(string url) { try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose(); } catch (System.ComponentModel.Win32Exception) { } }
+
+    private void Notify(string text) { _link = null; _icon.ShowBalloonTip(15000, TrayText.Title, text, ToolTipIcon.Warning); }
 
     private void ShowSummary()
     {
@@ -192,9 +209,20 @@ internal sealed class TrayContext : ApplicationContext
     private ToolStripMenuItem ProtectionMenu()
     {
         var menu = new ToolStripMenuItem(TrayText.Protection);
-        menu.DropDownItems.AddRange([new ToolStripMenuItem(TrayText.AvOff, null, (_, _) => StartApp("--av-stop")), new ToolStripMenuItem(TrayText.FirewallOff, null, (_, _) => StartApp("--fw-off")),
-            new ToolStripMenuItem(TrayText.FirewallOn, null, (_, _) => StartApp("--fw-on"))]);
+        ToolStripMenuItem off = new(TrayText.FirewallOff, null, (_, _) => StartApp("--fw-off")), on = new(TrayText.FirewallOn, null, (_, _) => StartApp("--fw-on"));
+        // Defender blocks any program that switches it off, so the item opens Windows Security's own switch.
+        menu.DropDownItems.AddRange([new ToolStripMenuItem(TrayText.AvOff, null, (_, _) => OpenLink("windowsdefender://threatsettings")), off, on]);
+        // Only the button that changes something: the firewall's state is read from its profiles each time the menu opens (unknown: both shown).
+        menu.DropDownOpening += (_, _) => { bool? fw = FirewallOn(); off.Visible = fw != false; on.Visible = fw != true; };
         return menu;
+    }
+
+    private static bool? FirewallOn()
+    {
+        bool? any = null;
+        foreach (var p in new[] { "Domain", "Standard", "Public" })
+            if (Microsoft.Win32.Registry.GetValue($@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\{p}Profile", "EnableFirewall", null) is int v) any = (any ?? false) || v != 0;
+        return any;
     }
 
     /// <summary>Starts the app next to the tray. A running app brings its window forward instead of starting twice.</summary>

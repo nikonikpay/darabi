@@ -51,7 +51,9 @@ internal static class TrayText
     public const string LightsNoProgram = "OpenRGB کنار مازستا پیدا نشد.";
     public const string LightsNoServer = "سرور نورپردازی بالا نیامد.";
     public const string Protection = "محافظت ویندوز";
-    public const string AvOff = "خاموش کردن آنتی‌ویروس (تا ری‌استارت)";
+    public const string AvOff = "خاموش کردن آنتی‌ویروس (تنظیمات امنیت ویندوز)";
+    public const string ScreenOnIgpuLink = "https://www.instagram.com/reel/DJor4kyt6Hi/";
+    public static string ScreenOnIgpu(string card) => $"مانیتور به گرافیک داخلی پردازنده وصل است و {card} بیکار مانده. کابل مانیتور را از پشت کیس، از مادربرد درآورید و به خروجی‌های کارت گرافیک (پایین‌تر) بزنید. برای دیدن ویدئوی راهنما روی همین پیام بزنید.";
     public const string FirewallOff = "خاموش کردن فایروال";
     public const string FirewallOn = "روشن کردن فایروال";
     public const string PowerTimer = "خواب یا خاموشی زمان‌دار";
