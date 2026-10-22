@@ -22,7 +22,7 @@ public sealed partial class StorageEventSource : IStorageEventSource
     public IReadOnlyList<StorageEvent> Since(DateTimeOffset start)
     {
         string providers = string.Join(" or ", Providers.Select(p => $"@Name='{p}'"));
-        string query = $"*[System[Provider[{providers}] and (Level=1 or Level=2 or Level=3) and TimeCreated[@SystemTime >= '{start.UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ}']]]";
+        string query = $"*[System[Provider[{providers}] and (Level=1 or Level=2 or Level=3) and TimeCreated[@SystemTime >= '{start.UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ}' and @SystemTime <= '{DateTime.UtcNow.AddMinutes(2):yyyy-MM-ddTHH:mm:ss.fffZ}']]]";   // not future-dated ones (see WheaErrorSource)
         using var reader = new EventLogReader(new EventLogQuery("System", PathType.LogName, query));
         var events = new List<StorageEvent>();
         for (var record = reader.ReadEvent(); record is not null && events.Count < MaxEvents; record = reader.ReadEvent())

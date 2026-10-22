@@ -19,7 +19,9 @@ public sealed class WheaErrorSource : IHardwareErrorSource
 
     public IReadOnlyList<HardwareErrorEvent> Since(DateTimeOffset start)
     {
-        string query = $"*[System[Provider[@Name='Microsoft-Windows-WHEA-Logger'] and TimeCreated[@SystemTime >= '{start.UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ}']]]";
+        // Bounded by now as well: records written while the clock was ahead (a wrong BIOS time at a crash) are dated in the future and were
+        // otherwise blamed on every later test - seen on users' machines, the same 14 records failing each test of a session.
+        string query = $"*[System[Provider[@Name='Microsoft-Windows-WHEA-Logger'] and TimeCreated[@SystemTime >= '{start.UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ}' and @SystemTime <= '{DateTime.UtcNow.AddMinutes(2):yyyy-MM-ddTHH:mm:ss.fffZ}']]]";
         using var reader = new EventLogReader(new EventLogQuery("System", PathType.LogName, query));
         var events = new List<HardwareErrorEvent>();
         for (var record = reader.ReadEvent(); record is not null && events.Count < MaxEvents; record = reader.ReadEvent())

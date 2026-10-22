@@ -26,6 +26,8 @@ internal static class GpuFault
             GpuLostException => Kind.Lost,
             GpuWrongResultException => Kind.Wrong,
             SharpGen.Runtime.SharpGenException s when LostCodes.Contains(s.HResult) => Kind.Lost,
+            // DXGI_ERROR_UNSUPPORTED: the card or its driver lacks what the run asks for (seen on users' older cards in the AI benchmark) - not the program's fault
+            SharpGen.Runtime.SharpGenException s when s.HResult == unchecked((int)0x887A0004) => Kind.Unsupported,
             _ => Kind.Internal,
         };
         // A run that ended in a lost device - or in an error nobody can tell from one: the driver's own codes for it vary - leaves the card to be opened afresh for the next run.
