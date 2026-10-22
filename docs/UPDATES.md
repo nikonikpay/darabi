@@ -5,7 +5,7 @@
 
 ## افزونه Mazesta Connect 2.0: سیستم‌ها، آمار، پیام، مشتریان و سرویس‌ها
 
-از 2.0.0 افزونه یک فایل نیست؛ ساختار استاندارد وردپرس دارد (zip را از `artifacts/site/mazesta-connect.zip` بگیرید؛ پوشهٔ بالایی `mazesta-connect` است):
+از 2.0.0 افزونه یک فایل نیست؛ ساختار استاندارد وردپرس دارد (zip را از `artifacts/site/mazesta-connect.zip` (ساخته با `pwsh tools/build-all.ps1`) بگیرید؛ پوشهٔ بالایی `mazesta-connect` است):
 
 ```
 mazesta-connect/
@@ -93,7 +93,7 @@ mazesta-connect/
 
 ## افزونه Mazesta Connect (از 0.8.0؛ بخش‌های قدیمی که هنوز در «گزارش‌ها و بنچمارک» هستند): همه ارتباط برنامه با سایت
 
-کد افزونه در `site/mazesta-connect/` است. نصب: پوشه را zip کنید (یا `artifacts/site/mazesta-connect.zip`) و در پیشخوان وردپرس
+کد افزونه در `site/mazesta-connect/` است. نصب: پوشه را zip کنید (یا `artifacts/site/mazesta-connect.zip` (ساخته با `pwsh tools/build-all.ps1`)) و در پیشخوان وردپرس
 «افزونه‌ها › افزودن › بارگذاری افزونه» نصب و فعال کنید. منوی **Mazesta Connect** اضافه می‌شود:
 
 | بخش | چه می‌کند |
