@@ -31,7 +31,7 @@ public sealed class FailureWatch : IDisposable
     private void OnBench(RecordedBenchmark run)
     {
         var r = run.Result;
-        Record(run.Definition.Id.Value, Loc.Get(run.Definition.NameKey), r.Status.ToString(), r.Status is BenchmarkStatus.Failed or BenchmarkStatus.Error, r.Status == BenchmarkStatus.Unsupported, r.Detail, 0, null);
+        Record(run.Definition.Id.Value, Loc.Get(run.Definition.NameKey), r.Status.ToString(), r.Status is BenchmarkStatus.Failed or BenchmarkStatus.Error, r.Status == BenchmarkStatus.Unsupported, r.Detail, 0, r.Fault);
     }
 
     private void Record(string id, string name, string outcome, bool broke, bool skipped, string? detail, long errors, Exception? fault)

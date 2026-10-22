@@ -44,20 +44,29 @@ public sealed partial class WebBridge : IDisposable
 
     private async void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        long id = 0;
+        long id = 0; string name = "?"; long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         try
         {
             using var doc = JsonDocument.Parse(e.WebMessageAsJson);
             var root = doc.RootElement;
             id = root.GetProperty("id").GetInt64();
-            string name = root.GetProperty("m").GetString() ?? "";
+            name = root.GetProperty("m").GetString() ?? "";
             var p = root.TryGetProperty("p", out var pv) ? pv.Clone() : default;
             if (!_methods.TryGetValue(name, out var handler)) { Reply(id, false, null, $"unknown method {name}"); return; }
             Reply(id, true, await handler(p), null);
+            // a call that keeps the page waiting is worth a line: which one and how long (the long-running ones - tests, benchmarks, AI - are started, not awaited)
+            var took = System.Diagnostics.Stopwatch.GetElapsedTime(t0);
+            if (took.TotalSeconds >= 5) _log.LogInformation("Bridge call {Name} took {Ms} ms", name, (long)took.TotalMilliseconds);
+        }
+        // a handler's own refusal (busy, not ready, not allowed: the text the page shows) is one line; anything else is a fault and keeps its stack
+        catch (InvalidOperationException ex) when (ex.InnerException is null && ex.GetType() == typeof(InvalidOperationException))
+        {
+            _log.LogInformation("Bridge call {Name} refused: {Message}", name, ex.Message);
+            Reply(id, false, null, ex.Message);
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "Bridge call failed");
+            _log.LogWarning(ex, "Bridge call {Name} failed after {Ms} ms", name, (long)System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             Reply(id, false, null, ex.Message);
         }
     }

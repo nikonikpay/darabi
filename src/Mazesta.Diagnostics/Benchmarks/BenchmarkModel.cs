@@ -18,7 +18,10 @@ public sealed record BenchmarkResult(TestId Id, BenchmarkStatus Status, DateTime
     public static BenchmarkResult Cancelled(TestId id, DateTimeOffset started, DateTimeOffset now) => new(id, BenchmarkStatus.Cancelled, started, now, [], null);
     public static BenchmarkResult Failed(TestId id, DateTimeOffset started, DateTimeOffset now, string detail) => new(id, BenchmarkStatus.Failed, started, now, [], detail);
     public static BenchmarkResult Error(TestId id, DateTimeOffset started, DateTimeOffset now, Exception e)
-        => new(id, BenchmarkStatus.Error, started, now, [], $"The benchmark itself failed ({e.GetType().Name}: {e.Message}); nothing is known about the part from this run.");
+        => new(id, BenchmarkStatus.Error, started, now, [], $"The benchmark itself failed ({e.GetType().Name}: {e.Message}); nothing is known about the part from this run.") { Fault = e };
+
+    /// <summary>What broke the run, for the log (its stack says which call a driver refused); never stored with the result.</summary>
+    [System.Text.Json.Serialization.JsonIgnore] public Exception? Fault { get; init; }
 }
 
 public static class BenchmarkRequestExtensions

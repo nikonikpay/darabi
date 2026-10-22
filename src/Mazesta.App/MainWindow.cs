@@ -94,7 +94,10 @@ public sealed class MainWindow : Form
         catch (Exception e) when (e is WebView2RuntimeNotFoundException or COMException or IOException)
         {
             _log.LogError(e, "WebView2 could not start");
-            MessageBox.Show(this, Desktop.Localization.Loc.Get("Web_NoRuntime") + "\n\n" + e.Message, "Mazesta", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            // a machine without the runtime (seen on users' systems) is offered Microsoft's own installer page instead of the same message at every start
+            if (MessageBox.Show(this, Desktop.Localization.Loc.Get("Web_NoRuntime") + "\n\n" + e.Message, "Mazesta", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://go.microsoft.com/fwlink/p/?LinkId=2124703") { UseShellExecute = true }); }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException) { _log.LogWarning(ex, "The WebView2 download page could not be opened"); }
             Close();
         }
     }

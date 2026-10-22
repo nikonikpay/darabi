@@ -116,7 +116,7 @@ internal sealed class Program : ApplicationContext
         var context = new WindowsFormsSynchronizationContext(); SynchronizationContext.SetSynchronizationContext(context);
         _ui = new UiDispatcher(context, Environment.CurrentManagedThreadId); UiDispatcher.Current = _ui;
         var paths = DetectPaths(out string flashKey); s_flashKey = flashKey; paths.EnsureDirectories(); _paths = paths;
-        var logProvider = new RollingFileLoggerProvider(paths.LogsDir, "mazesta-web"); LogProvider = logProvider;
+        var logProvider = new RollingFileLoggerProvider(paths.LogsDir, "mazesta-web", keepFiles: 14); LogProvider = logProvider;
         var lf = LoggerFactory.Create(b => { b.SetMinimumLevel(LogLevel.Information); b.AddProvider(logProvider); });
         var log = lf.CreateLogger("Web"); _log = log;
         Application.ThreadException += (_, a) => log.LogError(a.Exception, "UI thread exception");

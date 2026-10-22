@@ -867,7 +867,7 @@
   <data name="Dashboard_Inv_Bios" xml:space="preserve"><value>BIOS</value></data>
   <data name="Dashboard_Inv_Disk" xml:space="preserve"><value>Disk</value></data>
   <data name="Dashboard_Inv_Os" xml:space="preserve"><value>OS</value></data>
-  <data name="Web_NoRuntime" xml:space="preserve"><value>Microsoft Edge WebView2 is needed to show the app. Install WebView2 from Microsoft's site and open the app again.</value></data>
+  <data name="Web_NoRuntime" xml:space="preserve"><value>Microsoft Edge WebView2 is needed to show the app. Open Microsoft's download page now? Install WebView2 from there and open the app again.</value></data>
   <data name="Web_DemoData" xml:space="preserve"><value>Browser preview: demo data, not this machine</value></data>
   <data name="Web_Dash_Verdict_None" xml:space="preserve"><value>This machine has not had a full test yet</value></data>
   <data name="Web_Dash_Verdict_Passed" xml:space="preserve"><value>Last full test: every test passed</value></data>
