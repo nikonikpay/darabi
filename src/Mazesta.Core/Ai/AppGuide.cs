@@ -336,7 +336,7 @@ public static class AppGuide
         bool short_ = Words(s) <= 4 && !ask;
         // A verb of doing or switching ("فن رو روی سایلنت بذار", "حالت بازی رو روشن کن") shows where it is done; the assistant does not press it.
         bool act = !not && (doIt || Any(s, OnWords) || Any(s, OffWords) || s.Split(' ', StringSplitOptions.RemoveEmptyEntries).Any(CommandTokens.Contains));
-        if (place is not null && (go || page || short_ || act || place.Target is not null && !ask)) return new(AiIntent.Navigate, place);
+        if (place is not null && (go || page || short_ || act || place.Target is not null && (!ask || place.Page == "checks") || place is { Page: "network", Target: null } && Has(s, "آی پی"))) return new(AiIntent.Navigate, place);
         return new(AiIntent.None, place, App: app);
     }
 

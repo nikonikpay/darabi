@@ -111,9 +111,11 @@ public static class AiAssistantPolicy
     public static bool AsksToAct(string text)
     {
         var s = text.ToLowerInvariant().Replace('\u200c', ' ').Replace('ي', 'ی').Replace('ك', 'ک');
-        return ActWords.Any(s.Contains) && !NotWords.Any(s.Contains);
+        return (ActWords.Any(s.Contains) || ShopWords.Any(s.Contains)) && !NotWords.Any(s.Contains);
     }
     private static readonly string[] NotWords = ["نکن", "نزن", "نشه", "نمیخوام", "نمی خوام", "نباید", "فقط توضیح", "don't", "do not", "only explain", "just explain"];
+    // The shop: the first turn calls company_info / ready_systems, since a small model otherwise answers about "Mazesta" from nothing.
+    private static readonly string[] ShopWords = ["مازستا", "mazesta", "شماره تماس", "شماره تلفن", "آدرس", "بخرم", "بخریم", "قیمت", "خرید", "پیشنهاد بده", "پیشنهاد کن", "contact", "price", "buy "];
     private static readonly string[] ActWords =
     [
         "تست", "چک", "آزمایش", "ازمایش", "بنچ", "اجرا", "بسنج", "اندازه بگیر", "بررسی کن", "امتحان",

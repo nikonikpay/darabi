@@ -33,6 +33,13 @@ public class AppGuideLexiconTests
         Assert.True(R("بنچمارک گرافیک").Intent == AiIntent.Benchmarks, "بنچمارک گرافیک: " + R("بنچمارک گرافیک").Intent);
         Assert.True(R("تست پایداری سیستم").Intent == AiIntent.Checkup, "تست پایداری سیستم: " + R("تست پایداری سیستم").Intent);
     }
+    [Fact] public void A_battery_question_shows_the_battery_check_and_a_shop_question_makes_the_model_call_its_tools()
+    {
+        var r = R("باتری چند درصده"); Assert.True(r.Intent == AiIntent.Navigate && r.Place?.Target == "battery", r.Intent.ToString());
+        Assert.All(new[] { "مازستا چیه", "شماره تماس مازستا", "یه کامپیوتر بخرم برای رندرینگ", "قیمت چنده" }, t => Assert.True(AiAssistantPolicy.AsksToAct(t), t));
+        Assert.False(AiAssistantPolicy.AsksToAct("سلام"));
+        Assert.True(R("آی پی من چنده").Place?.Page == "network" && R("آی پی من چنده").Intent == AiIntent.Navigate);
+    }
     [Fact] public void Every_place_has_words_in_the_lexicon_and_no_word_is_blank()
     {
         Assert.All(AppGuide.Places, p => Assert.All(p.Words, w => Assert.False(string.IsNullOrWhiteSpace(w))));
