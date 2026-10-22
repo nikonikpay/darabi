@@ -1803,7 +1803,7 @@
   <data name="Nav_Search_None" xml:space="preserve"><value>چیزی پیدا نشد</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>پروفایل‌ها:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>بررسی سریع</value></data>
-  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۲۳ دقیقه: هر کدام سه دقیقه بار روی CPU، گرافیک، حافظهٔ تصویر و آزمون توان، پنج دقیقه RAM (هر الگو یک بار)، سپس درایو و بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه پوشش داده نمی‌شوند.</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>حدود ۱۴ دقیقه: هر کدام دو دقیقه CPU، RAM، بار گرافیک، حافظهٔ تصویر و آزمون توان، یک دور صحنهٔ سه‌بعدی (۲:۴۲)، یک دقیقه خواندن و نوشتن درایو و سپس بررسی SMART. فقط نگاه اول است؛ خطاهای گاه‌به‌گاه پوشش داده نمی‌شوند و روی رم زیاد دو دقیقه ممکن است به همهٔ الگوها نرسد.</value></data>
   <data name="Profile_Standard" xml:space="preserve"><value>پیش‌فرض مازستا</value></data>
   <data name="Profile_Standard_Note" xml:space="preserve"><value>حدود یک ساعت: هر قطعه یک بار زیر بار واقعی، با زمان کافی برای همهٔ الگوهای RAM در بیشتر سیستم‌ها، همهٔ هسته‌ها به نوبت و آزمون توان ترکیبی.</value></data>
   <data name="Profile_Transient" xml:space="preserve"><value>ناپایداری گذرا</value></data>
@@ -1963,7 +1963,7 @@
   <data name="NetFix_Dns_Google_Done" xml:space="preserve"><value>DNS روی 8.8.8.8 و 8.8.4.4 تنظیم شد</value></data>
   <data name="NetFix_Flush_Done" xml:space="preserve"><value>کش DNS خالی شد</value></data>
   <data name="NetFix_Reset_Done" xml:space="preserve"><value>Winsock و تنظیمات IP ریست شد؛ سیستم را ری‌استارت کنید</value></data>
-  <data name="NetFix_Failed" xml:space="preserve"><value>ناموفق ({0})</value></data>
+  <data name="NetFix_Failed" xml:space="preserve"><value>ناموفق</value></data>
   <data name="NetFix_Done" xml:space="preserve"><value>انجام شد. اتصال دوباره در بالا بررسی شد.</value></data>
   <data name="NetFix_Done_Restart" xml:space="preserve"><value>انجام شد. برای اثر کردن ریست، سیستم را ری‌استارت کنید و بعد دوباره بررسی کنید.</value></data>
   <data name="Assist_Tests_Head" xml:space="preserve"><value>تست‌ها تمام شد. نتیجه:</value></data>
@@ -2297,9 +2297,9 @@
   <data name="Drivers_Nv_GameReady_What" xml:space="preserve"><value>هم‌زمان با هر بازی بزرگ منتشر می‌شود و اول برای آن بهینه شده است. مناسب بازی.</value></data>
   <data name="Drivers_Nv_Studio_What" xml:space="preserve"><value>کمتر منتشر می‌شود و پیش از انتشار با برنامه‌های تخصصی (رندر، سه‌بعدی، تدوین) آزموده شده است. مناسب کار: غافلگیری کمتر. قابلیت‌هایش با Game Ready یکی است.</value></data>
   <data name="Drivers_Nv_Pro_What" xml:space="preserve"><value>درایوری که NVIDIA برای این کارت حرفه‌ای منتشر می‌کند (انتخاب Game Ready یا Studio مخصوص GeForce است).</value></data>
-  <data name="Drivers_Advice_Studio" xml:space="preserve"><value>برنامه‌های تخصصی نصب است ({0}) و لانچر بازی نیست: Studio برای این سیستم مناسب‌تر است.</value></data>
-  <data name="Drivers_Advice_Games" xml:space="preserve"><value>لانچر بازی نصب است ({0}) و برنامهٔ تخصصی نیست: Game Ready برای این سیستم مناسب‌تر است.</value></data>
-  <data name="Drivers_Advice_Both" xml:space="preserve"><value>هر دو نصب است: برنامه‌های تخصصی ({0}) و بازی ({1}). انتخاب با شماست: اگر کار مهم‌تر است Studio، اگر بازی مهم‌تر است Game Ready.</value></data>
+  <data name="Drivers_Advice_Studio" xml:space="preserve"><value>برنامه‌های تخصصی نصب است و لانچر بازی نیست: Studio برای این سیستم مناسب‌تر است.</value></data>
+  <data name="Drivers_Advice_Games" xml:space="preserve"><value>لانچر بازی نصب است و برنامهٔ تخصصی نیست: Game Ready برای این سیستم مناسب‌تر است.</value></data>
+  <data name="Drivers_Advice_Both" xml:space="preserve"><value>هر دو نصب است: برنامه‌های تخصصی و بازی ({1}). انتخاب با شماست: اگر کار مهم‌تر است Studio، اگر بازی مهم‌تر است Game Ready.</value></data>
   <data name="Drivers_Advice_None" xml:space="preserve"><value>برنامهٔ تخصصی یا لانچر بازی نصب‌شده‌ای پیدا نشد؛ پیش‌فرض خود NVIDIA برای کارت GeForce، Game Ready است.</value></data>
   <data name="Drivers_Nv_Install" xml:space="preserve"><value>دانلود و نصب {0}</value></data>
   <data name="Drivers_Nv_Clean" xml:space="preserve"><value>نصب تمیز (تنظیمات درایور به پیش‌فرض برمی‌گردد)</value></data>
@@ -2325,8 +2325,8 @@
   <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>جستجوی دوباره</value></data>
   <data name="Drivers_Wu_Searching" xml:space="preserve"><value>در حال پرسیدن از Windows Update… ممکن است چند دقیقه طول بکشد.</value></data>
   <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} درایور هنوز نصب نشده ({1}). موردهایی را که می‌خواهید نصب شوند تیک بزنید.</value></data>
-  <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update درایور جدیدی برای این سیستم ندارد ({0}).</value></data>
-  <data name="Drivers_Wu_Install" xml:space="preserve"><value>نصب موارد تیک‌خورده ({0})</value></data>
+  <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update درایور جدیدی برای این سیستم ندارد.</value></data>
+  <data name="Drivers_Wu_Install" xml:space="preserve"><value>نصب موارد تیک‌خورده</value></data>
   <data name="Drivers_Wu_Confirm" xml:space="preserve"><value>{0} درایور از Windows Update دانلود و نصب شود؟ ممکن است هنگام عوض شدن درایور، دستگاه لحظه‌ای از کار بیفتد.</value></data>
   <data name="Drivers_Wu_Installing" xml:space="preserve"><value>در حال نصب {0} از {1}: {2}</value></data>
   <data name="Drivers_Wu_Ok" xml:space="preserve"><value>نصب شد</value></data>
@@ -2334,7 +2334,7 @@
   <data name="Drivers_Wu_Licence" xml:space="preserve"><value>اول باید مجوزش را در Windows Update بپذیرید.</value></data>
   <data name="Drivers_Wu_Open" xml:space="preserve"><value>به‌روزرسانی‌های اختیاری ویندوز</value></data>
   <data name="Drivers_Wu_Note" xml:space="preserve"><value>درایورهای Windows Update را مایکروسافت برای همین سخت‌افزار آزموده است؛ اغلب از جدیدترین نسخهٔ سازنده قدیمی‌ترند ولی کمتر مشکل می‌سازند. درایور کارت گرافیک را بهتر است از بخش بالا بگیرید.</value></data>
-  <data name="Drivers_Wu_Failed" xml:space="preserve"><value>Windows Update جواب نداد ({0}): {1}</value></data>
+  <data name="Drivers_Wu_Failed" xml:space="preserve"><value>Windows Update جواب نداد: {1}</value></data>
   <data name="Drivers_Reboot" xml:space="preserve"><value>برای کامل شدن نصب، ویندوز باید ری‌استارت شود.</value></data>
   <data name="Drivers_Problems_Title" xml:space="preserve"><value>دستگاه‌های بدون درایور سالم</value></data>
   <data name="Drivers_Problems_Sub" xml:space="preserve"><value>همان‌طور که Device Manager نشان می‌دهد</value></data>
@@ -2523,7 +2523,7 @@
 تولید متن یعنی سرعت نوشتن پاسخ. هر توکن تکه‌ای از یک کلمه است؛ با حدود ۱۰ توکن در ثانیه پاسخ هم‌زمان با خواندن شما ظاهر می‌شود.
 پردازش ورودی یعنی سرعت خواندن سؤال و متن‌هایی که به مدل می‌دهید؛ زمان انتظار تا اولین کلمه را تعیین می‌کند.
 تا دکمهٔ دانلود را نزنید چیزی دانلود نمی‌شود. هر مدل پس از دانلود و پیش از استفاده بررسی می‌شود.</value></data>
-  <data name="Ai_Download" xml:space="preserve"><value>دانلود ({0})</value></data>
+  <data name="Ai_Download" xml:space="preserve"><value>دانلود</value></data>
   <data name="Ai_Resume" xml:space="preserve"><value>ادامهٔ دانلود ({0} از {1})</value></data>
   <data name="Ai_CancelDownload" xml:space="preserve"><value>توقف دانلود</value></data>
   <data name="Ai_Delete" xml:space="preserve"><value>حذف</value></data>
@@ -2632,7 +2632,7 @@
   <data name="Checks_Mic_Sub" xml:space="preserve"><value>سطح صدایی که دریافت می‌کند</value></data>
   <data name="Checks_Mic_Text" xml:space="preserve"><value>نزدیک میکروفون صحبت کنید یا ضربه بزنید: نوار، سطح صدایی را که دستگاه ضبط پیش‌فرض می‌دهد نشان می‌دهد، بدون حذف نویز ویندوز. سکوت باید پایین و ثابت بماند و صحبت باید آن را به‌وضوح حرکت دهد.</value></data>
   <data name="Checks_Mic_Start" xml:space="preserve"><value>شروع گوش دادن</value></data>
-  <data name="Checks_Mic_Denied" xml:space="preserve"><value>میکروفون باز نشد ({0}): یا وصل نیست یا تنظیمات حریم خصوصی ویندوز جلوی آن را گرفته است.</value></data>
+  <data name="Checks_Mic_Denied" xml:space="preserve"><value>میکروفون باز نشد: یا وصل نیست یا تنظیمات حریم خصوصی ویندوز جلوی آن را گرفته است.</value></data>
   <data name="Checks_Mic_Device" xml:space="preserve"><value>در حال گوش دادن به: {0}</value></data>
   <data name="Checks_Mic_Input" xml:space="preserve"><value>میکروفن</value></data>
   <data name="Checks_Speakers_Output" xml:space="preserve"><value>خروجی صدا</value></data>
@@ -2741,6 +2741,8 @@
   <data name="Check_PowerPlanCap_Text" xml:space="preserve"><value>در Power Plan فعال، «حداکثر وضعیت پردازنده» کمتر از ۱۰۰٪ است. با مقدار کمتر از ۱۰۰٪، ویندوز پردازنده را روی فرکانس پایه یا پایین‌تر نگه می‌دارد و بوست هیچ‌وقت فعال نمی‌شود. آن را به ۱۰۰٪ برگردانید (Control Panel، Power Options، تنظیمات پیشرفتهٔ Plan، بخش Processor power management).</value></data>
   <data name="Check_PowerPlanNoBoost" xml:space="preserve"><value>بوست در Power Plan خاموش است</value></data>
   <data name="Check_PowerPlanNoBoost_Text" xml:space="preserve"><value>در Power Plan، حالت بوست پردازنده روی Disabled است و پردازنده روی فرکانس پایه می‌ماند. این تنظیمی مخفی است که بعضی ابزارهای بهینه‌سازی تغییرش می‌دهند: آن را به Enabled یا Aggressive برگردانید (با powercfg) یا تنظیمات پیش‌فرض Plan را بازگردانید.</value></data>
+  <data name="Check_ScreenOnIntegrated" xml:space="preserve"><value>مانیتور به گرافیک داخلی پردازنده وصل است، نه کارت گرافیک</value></data>
+  <data name="Check_ScreenOnIntegrated_Text" xml:space="preserve"><value>کابل مانیتور به پورت مادربرد وصل شده؛ برای همین تصویر، بازی‌ها و تست‌های گرافیک روی گرافیک ضعیف داخل پردازنده اجرا می‌شوند و کارت گرافیک بیکار می‌ماند. این معمولاً بعد از اسمبل یا جابه‌جایی سیستم پیش می‌آید. راه حل: کابل مانیتور (HDMI یا DisplayPort) را به پورت‌های کارت گرافیک در پشت کیس (پایین‌تر) بزنید، نه پورت‌های مادربرد که کنار USBها هستند.</value></data>
   <data name="Check_PowerOnBattery" xml:space="preserve"><value>کار روی باتری</value></data>
   <data name="Check_PowerOnBattery_Text" xml:space="preserve"><value>سیستم روی باتری کار می‌کند. لپ‌تاپ‌ها روی باتری توان پردازنده و کارت گرافیک را کم می‌کنند؛ بنچمارک لپ‌تاپ را با شارژر وصل بگیرید.</value></data>
   <data name="Check_PowerPlanOk" xml:space="preserve"><value>Power Plan پردازنده را محدود نکرده</value></data>
@@ -3033,7 +3035,7 @@
   <data name="Detail_C_Threads" xml:space="preserve"><value>تعداد رشته‌ها: {0}</value></data>
   <data name="Detail_FrameRate" xml:space="preserve"><value>سرعت: {0} فریم در ثانیه</value></data>
   <data name="Detail_Gops" xml:space="preserve"><value>سرعت: {0} میلیارد عملیات عدد صحیح در ثانیه</value></data>
-  <data name="Detail_GpuStress" xml:space="preserve"><value>بار محاسباتی کارت گرافیک ({0}) روی {1}</value></data>
+  <data name="Detail_GpuStress" xml:space="preserve"><value>بار محاسباتی کارت گرافیک روی {1}</value></data>
   <data name="Detail_GpuVerified" xml:space="preserve"><value>نتیجه‌های بررسی‌شده: {0} از {1} (نمونه‌برداری، نه همه)</value></data>
   <data name="Detail_L_CpuLoad" xml:space="preserve"><value>بار پردازنده</value></data>
   <data name="Detail_L_CpuPower" xml:space="preserve"><value>توان مصرفی پردازنده</value></data>
@@ -3106,12 +3108,12 @@
   <data name="Detail_Load_steady" xml:space="preserve"><value>ثابت</value></data>
   <data name="Detail_Load_variable" xml:space="preserve"><value>متغیر</value></data>
   <data name="Detail_Log_NvmeDuring" xml:space="preserve"><value>گزارش سلامت NVMe درایو حین آزمون تغییر کرد:</value></data>
-  <data name="Detail_Log_NvmeUnread" xml:space="preserve"><value>گزارش سلامت NVMe پس از آزمون خوانده نشد ({0})</value></data>
+  <data name="Detail_Log_NvmeUnread" xml:space="preserve"><value>گزارش سلامت NVMe پس از آزمون خوانده نشد</value></data>
   <data name="Detail_Log_Storage" xml:space="preserve"><value>ویندوز حین این آزمون {0} رویداد ذخیره‌سازی ثبت کرد:</value></data>
   <data name="Detail_Log_StorageNote" xml:space="preserve"><value>این به‌تنهایی دلیل خرابی درایو نیست: کابل، کنترلر، درایور و برق را هم بررسی کنید</value></data>
-  <data name="Detail_Log_StorageUnread" xml:space="preserve"><value>گزارش رویدادهای ذخیره‌سازی ویندوز خوانده نشد ({0})</value></data>
+  <data name="Detail_Log_StorageUnread" xml:space="preserve"><value>گزارش رویدادهای ذخیره‌سازی ویندوز خوانده نشد</value></data>
   <data name="Detail_Log_Whea" xml:space="preserve"><value>ویندوز حین این آزمون {0} خطای سخت‌افزاری (WHEA) ثبت کرد (شناسهٔ رویداد {1}):</value></data>
-  <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>گزارش خطاهای سخت‌افزاری ویندوز (WHEA) خوانده نشد ({0})</value></data>
+  <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>گزارش خطاهای سخت‌افزاری ویندوز (WHEA) خوانده نشد</value></data>
   <data name="Detail_Mem_Algorithms" xml:space="preserve"><value>وارونه‌سازی متحرک {0} بار، جابه‌جایی بلوکی {1} بار، دسترسی گام‌دار {2} بار</value></data>
   <data name="Detail_Mem_BitFade" xml:space="preserve"><value>آزمون Bit Fade - ماندگاری داده (آیا حافظه دادهٔ دست‌نخورده را نگه می‌دارد)</value></data>
   <data name="Detail_Mem_Covers" xml:space="preserve"><value>فقط حافظه‌ای را می‌پوشاند که ویندوز به آزمون داد؛ جای خطا با موقعیت در بافر خود آزمون گفته می‌شود، نه نشانی فیزیکی یا شکاف رم</value></data>
@@ -3163,7 +3165,7 @@
   <data name="Detail_W_BadFrame" xml:space="preserve"><value>اولین فریم رسم‌شده تصویر درستی نیست (عدد نامعتبر یا بدون کنتراست).</value></data>
   <data name="Detail_W_CpuLacks" xml:space="preserve"><value>این پردازنده از {0} پشتیبانی نمی‌کند.</value></data>
   <data name="Detail_W_Duration" xml:space="preserve"><value>مدت آزمون باید بیشتر از صفر باشد.</value></data>
-  <data name="Detail_W_Error" xml:space="preserve"><value>خود آزمون با خطا متوقف شد ({0})؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست.</value></data>
+  <data name="Detail_W_Error" xml:space="preserve"><value>خود آزمون با خطا متوقف شد؛ از این اجرا چیزی دربارهٔ قطعه معلوم نیست.</value></data>
   <data name="Detail_W_FftRam" xml:space="preserve"><value>حافظهٔ آزاد حتی برای یک کارگر FFT کافی نیست (هر کدام {0} MiB، بالاتر از نیاز ویندوز).</value></data>
   <data name="Detail_W_LanLost" xml:space="preserve"><value>اتصال به {0} وسط آزمون قطع شد ({1})؛ از اجرایی که تمام نشده چیزی دربارهٔ شبکه نتیجه گرفته نمی‌شود.</value></data>
   <data name="Detail_W_LanShort" xml:space="preserve"><value>آزمون LAN دست‌کم ۳ ثانیه زمان می‌خواهد.</value></data>
@@ -3943,4 +3945,7 @@
   <data name="Rgb_OwnMode" xml:space="preserve"><value>حالت خود دستگاه</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>هیچ (افکت بالا)</value></data>
   <data name="Rgb_Report_Still" xml:space="preserve"><value>{0}: روی {1} دستگاه اعمال شد.</value></data>
+  <data name="Welcome_Title" xml:space="preserve"><value>به مازستا خوش آمدید</value></data>
+  <data name="Welcome_Text" xml:space="preserve"><value>از اینکه مازستا را انتخاب کردید سپاسگزاریم. از اینجا می‌توانید دما و حسگرهای سیستم را ببینید، قطعه‌ها را زیر بار واقعی تست کنید، با عیب‌یابی هوشمند مشکل را پیدا کنید و از همه چیز گزارش بگیرید. برای شروع، صفحهٔ عیب‌یابی هوشمند را امتحان کنید.</value></data>
+  <data name="Welcome_Start" xml:space="preserve"><value>شروع کنیم</value></data>
 </root>

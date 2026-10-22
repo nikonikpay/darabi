@@ -189,12 +189,25 @@ async function start() {
   const unread = (s) => { boot.unread = s.unread; index.querySelector(`a[data-family="${FAMILIES.findIndex((f) => f.pages.includes("messages"))}"]`)?.classList.toggle("has-update", s.unread > 0); };
   on("messages", unread); call("messages.state").then(unread).catch(() => {});
   if (info.updated) toast(t("AppUpd_Done", info.version));
+  if (info.welcome) welcome();
   import("./failures.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   import("./testdone.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   import("./updatenotice.js").then((m) => m.start(boot)).catch((e) => report(String(e && e.stack || e)));
   // The pages read the hardware list once; they wait until the sensor scan has settled, as the WPF edition does.
   if (await call("app.navReady")) whenReady();
   else bootCard(info.provider.text);
+}
+
+// Once, at the first start after installing: thanks and a word on where to begin.
+function welcome() {
+  const d = h("dialog", { class: "upd-dialog", "aria-labelledby": "welcome-title" },
+    h("div", { class: "upd-box welcome-box" },
+      h("img", { class: "welcome-logo", src: "img/logo.png", alt: "Mazesta" }),
+      h("h2", { class: "upd-title", id: "welcome-title" }, t("Welcome_Title")),
+      h("p", {}, t("Welcome_Text")),
+      h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: () => { d.close(); d.remove(); } }, t("Welcome_Start")))));
+  d.addEventListener("close", () => { d.remove(); call("app.welcomed").catch(() => {}); });
+  document.body.append(d); d.showModal();
 }
 
 // The first sensor scan takes a minute on an older machine: the card says what is happening and counts the seconds, so it never looks hung.

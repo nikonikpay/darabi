@@ -39,9 +39,10 @@ public sealed partial class WebBridge
                 // A test session cut off by a restart: the Tests page says where it stopped and why; this says so at the first look.
                 _sp.GetRequiredService<Diagnostics.TestEngine>().FindIncompleteSession() is not null ? Loc.Get("Test_Break_Banner") : null }.OfType<string>()) is { Length: > 0 } b ? b : null,
             units = Enum.GetValues<Unit>().ToDictionary(u => u.ToString(), Units.Symbol),
-            contact = Contact, updated = Program.TakeJustUpdated(),
+            contact = Contact, updated = Program.TakeJustUpdated(), welcome = Program.FirstRun,
         });
         // The notice at the top about a session that was cut off is closed for good once the person closes it (it would otherwise come back at every start).
+        Method("app.welcomed", _ => { Program.FirstRun = false; _store.Save(_config); return null; });   // saved now, so the next start finds a settings file
         Method("app.dismissBreak", _ => { _sp.GetRequiredService<Diagnostics.TestEngine>().DismissIncompleteSession(); _testVm?.DismissIncompleteSessionCommand.Execute(null); return null; });
         var shop = new ShopFeed(_paths.CacheDir, _log, null, "product", onSaleFirst: true); var systems = new ShopFeed(_paths.CacheDir, _log, ShopFeed.SystemsCategory, "system");
         MethodAsync("shop.product", async p => await (Str(p, "kind") == "system" ? systems : shop).GetAsync(Bool(p, "another")).ConfigureAwait(true));

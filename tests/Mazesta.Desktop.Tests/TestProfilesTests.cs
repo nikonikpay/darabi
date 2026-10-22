@@ -14,10 +14,10 @@ public class TestProfilesTests
         Assert.All(TestProfiles.All.SelectMany(p => p.Tests), t => { Assert.Contains(t.TestId, ids); Assert.True(t.Seconds > 0); });
     }
 
-    [Fact] public void Quick_runs_each_test_three_minutes_and_has_power_and_video_memory_but_no_network_test()
+    [Fact] public void Quick_runs_each_test_two_minutes_the_drive_one_and_the_3d_scene_one_walk_but_no_network_test()
     {
         var quick = TestProfiles.All.Single(p => p.Id == "quick").Tests;
-        Assert.All(quick.Where(t => t.TestId != "storage.smart"), t => Assert.True(t.Seconds >= 180));
+        Assert.All(quick, t => Assert.Equal(t.TestId switch { "storage.smart" => 5, "storage.sequential" => 60, "gpu.scene.d3d" => 162, _ => 120 }, t.Seconds));
         Assert.Contains(quick, t => t.TestId == "power.combined"); Assert.Contains(quick, t => t.TestId == "gpu.vram"); Assert.DoesNotContain(quick, t => t.TestId.StartsWith("network."));
         Assert.DoesNotContain(TestProfiles.All, p => p.Id == "deep");
     }
@@ -47,7 +47,7 @@ public class TestProfilesTests
             vm.Rows[2].IsSelected = true;   // chosen before: a profile replaces the selection
             vm.ApplyProfile("quick");
             Assert.Equal([true, true, false], vm.Rows.Select(r => r.IsSelected));
-            Assert.Equal(["180", "300"], vm.Rows.Take(2).Select(r => r.DurationText));   // the RAM test gets the time all its patterns take
+            Assert.Equal(["120", "120"], vm.Rows.Take(2).Select(r => r.DurationText));
             Assert.NotNull(vm.ProfileNote);
         }
         finally { Directory.Delete(dir, true); }

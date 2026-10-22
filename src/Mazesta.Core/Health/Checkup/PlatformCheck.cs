@@ -8,6 +8,9 @@ public sealed record PowerFacts(bool? OnMains, bool? HasBattery, int? MaxProcess
 /// <summary>A drive's PCI Express link as its slot's port negotiated it, and what the drive and the slot can do.</summary>
 public sealed record DriveLink(string? Name, int? Gen, int? Width, int? DriveGen, int? DriveWidth, int? SlotGen, int? SlotWidth);
 
+/// <summary>A display adapter as Windows lists it, and whether a screen on it is part of the desktop now.</summary>
+public sealed record DisplayAdapter(string Name, bool DrivesScreen);
+
 /// <summary>The machine's settings that hold every part back without being a part's fault: the power plan, the battery, an NVMe drive in a slot
 /// narrower or older than the drive.</summary>
 public static class PlatformCheck
@@ -40,6 +43,22 @@ public static class PlatformCheck
         }
         return found;
     }
+
+    /// <summary>A desktop with a graphics card whose screens all hang on the processor's graphics: the cable is in the board's port, so games
+    /// and the tests run on the weak chip. Not on a laptop: there the processor's graphics drives the panel by design and hands heavy work over.</summary>
+    public static IReadOnlyList<Finding> Screen(IEnumerable<DisplayAdapter> adapters, bool laptop)
+    {
+        if (laptop) return [];
+        var all = adapters.GroupBy(a => a.Name).Select(g => new DisplayAdapter(g.Key, g.Any(a => a.DrivesScreen))).ToList();
+        var cards = all.Where(a => Card(a.Name)).ToList();
+        if (cards.Count == 0 || cards.Any(c => c.DrivesScreen)) return [];
+        return [.. all.Where(a => a.DrivesScreen && GpuKind.Integrated(a.Name, false)).Take(1)
+            .Select(a => new Finding(FindingCode.ScreenOnIntegrated, FindingLevel.Attention, HardwareKind.Gpu, [], cards[0].Name))];
+    }
+
+    // A real graphics card by its maker's name, so a virtual or remote-desktop adapter never counts as one.
+    private static bool Card(string name) => !GpuKind.Integrated(name, false)
+        && (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) || name.Contains("Radeon", StringComparison.OrdinalIgnoreCase) || name.Contains("Intel", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The link as <see cref="PciSlotLink"/> holds it, for a drive.</summary>
     public static DriveLink Of(string? name, PciSlotLink s) => new(name, s.Port.CurrentGen, s.Port.CurrentWidth, s.CardMaxGen, s.CardMaxWidth, s.Port.MaxGen, s.Port.MaxWidth);

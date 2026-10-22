@@ -130,6 +130,10 @@ public class PlatformAndPeerCheckTests
     [Fact] public void A_power_plan_capped_under_100_percent_needs_attention() => Assert.Equal(FindingLevel.Attention, Assert.Single(PlatformCheck.Power(new(true, false, 99, 2))).Level);
     [Fact] public void Boost_turned_off_in_the_plan_needs_attention() => Assert.Contains(PlatformCheck.Power(new(true, false, 100, 0)), f => f.Code == FindingCode.PowerPlanNoBoost);
     [Fact] public void A_plain_plan_is_good() => Assert.Equal(FindingCode.PowerPlanOk, Assert.Single(PlatformCheck.Power(new(true, true, 100, 2))).Code);
+    [Fact] public void A_screen_on_the_processor_graphics_beside_a_card_needs_attention() => Assert.Equal(FindingCode.ScreenOnIntegrated, Assert.Single(PlatformCheck.Screen([new("Intel(R) UHD Graphics 770", true), new("NVIDIA GeForce RTX 4070", false)], false)).Code);
+    [Fact] public void A_screen_on_the_card_is_fine() => Assert.Empty(PlatformCheck.Screen([new("Intel(R) UHD Graphics 770", false), new("NVIDIA GeForce RTX 4070", true), new("NVIDIA GeForce RTX 4070", false)], false));
+    [Fact] public void A_laptop_on_its_processor_graphics_is_fine() => Assert.Empty(PlatformCheck.Screen([new("AMD Radeon(TM) Graphics", true), new("NVIDIA GeForce RTX 4060 Laptop GPU", false)], true));
+    [Fact] public void Processor_graphics_alone_is_fine() => Assert.Empty(PlatformCheck.Screen([new("Intel(R) UHD Graphics 770", true), new("Microsoft Basic Display Adapter", false)], false));
     [Fact] public void Running_on_battery_is_noted() => Assert.Contains(PlatformCheck.Power(new(false, true, 100, 2)), f => f.Code == FindingCode.PowerOnBattery);
     [Fact] public void A_drive_at_x2_of_its_x4_needs_attention() => Assert.Equal(FindingCode.DriveLinkNarrow, Assert.Single(PlatformCheck.Drives([new("SSD", 4, 2, 4, 4, 4, 4)])).Code);
     [Fact] public void A_narrow_drive_link_with_the_slot_unknown_is_a_note() => Assert.Equal(FindingCode.DriveLinkBelowDrive, Assert.Single(PlatformCheck.Drives([new("SSD", 3, 2, 3, 4, null, null)])).Code);

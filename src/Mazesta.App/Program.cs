@@ -24,6 +24,9 @@ internal sealed class Program : ApplicationContext
     /// <summary>Started by the update that has just put this release in place (the page says so once).</summary>
     private static bool JustUpdated { get; set; }
     internal static bool TakeJustUpdated() { bool b = JustUpdated; JustUpdated = false; return b; }
+    // No settings file yet: the first start after installing (an update keeps Data, so it never counts). Cleared when the welcome is closed,
+    // not when it is read: the page may load more than once before it is shown. A flash copy on a customer's PC never greets.
+    internal static bool FirstRun { get; set; }
     /// <summary>Ends the app the way closing it from its window does (the update hands over to the new release this way).</summary>
     internal static void Shutdown() => Application.Exit();
 
@@ -122,7 +125,7 @@ internal sealed class Program : ApplicationContext
         AppDomain.CurrentDomain.UnhandledException += (_, a) => { log.LogCritical(a.ExceptionObject as Exception, "Unhandled exception"); LogProvider?.Flush(); };
         var store = new JsonStore<AppConfig>(paths.ConfigFile, new SchemaMigrator(AppConfig.Migrations), AppConfig.CurrentSchemaVersion, log); _store = store;
         if (paths.Flash) store.ForDisk = c => { var copy = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(System.Text.Json.JsonSerializer.Serialize(c, JsonStore<AppConfig>.Options), JsonStore<AppConfig>.Options)!; copy.SiteKey = ""; KeepFlashKey(paths, c.SiteKey); return copy; };
-        var load = store.Load(); var config = load.Value; if (paths.Flash && flashKey.Length > 0) config.SiteKey = flashKey; _config = config; _configCorrupt = load.Outcome == LoadOutcome.Corrupt;
+        var load = store.Load(); var config = load.Value; if (paths.Flash && flashKey.Length > 0) config.SiteKey = flashKey; _config = config; _configCorrupt = load.Outcome == LoadOutcome.Corrupt; FirstRun = load.Outcome == LoadOutcome.Defaulted && !paths.Flash;
         Loc.SetLanguage(config.Language);
         _services = Bootstrapper.Build(paths, config, store, lf);
         string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "";

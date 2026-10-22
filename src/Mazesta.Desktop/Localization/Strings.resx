@@ -1803,7 +1803,7 @@ The update services stopped and disabled</value></data>
   <data name="Nav_Search_None" xml:space="preserve"><value>Nothing found</value></data>
   <data name="Profile_Title" xml:space="preserve"><value>Profiles:</value></data>
   <data name="Profile_Quick" xml:space="preserve"><value>Quick check</value></data>
-  <data name="Profile_Quick_Note" xml:space="preserve"><value>About 23 minutes: three minutes each of CPU, graphics load, video memory and the power test, five of RAM (every pattern once), then the drive and the SMART check. A first look only - intermittent faults are not covered.</value></data>
+  <data name="Profile_Quick_Note" xml:space="preserve"><value>About 14 minutes: two minutes each of CPU, RAM, graphics load, video memory and the power test, one walk of the 3D scene (2:42), one minute of drive read and write, then the SMART check. A first look only - intermittent faults are not covered, and on a lot of RAM two minutes may not reach every pattern.</value></data>
   <data name="Profile_Standard" xml:space="preserve"><value>Mazesta default</value></data>
   <data name="Profile_Standard_Note" xml:space="preserve"><value>About an hour: every part under a real load once, with enough RAM time for every pattern on most machines, every core in turn, and the combined power test.</value></data>
   <data name="Profile_Transient" xml:space="preserve"><value>Transient instability</value></data>
@@ -1963,7 +1963,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="NetFix_Dns_Google_Done" xml:space="preserve"><value>the DNS is set to 8.8.8.8 and 8.8.4.4</value></data>
   <data name="NetFix_Flush_Done" xml:space="preserve"><value>the DNS cache was emptied</value></data>
   <data name="NetFix_Reset_Done" xml:space="preserve"><value>Winsock and the IP settings were reset; restart the computer</value></data>
-  <data name="NetFix_Failed" xml:space="preserve"><value>failed ({0})</value></data>
+  <data name="NetFix_Failed" xml:space="preserve"><value>failed</value></data>
   <data name="NetFix_Done" xml:space="preserve"><value>Done. The connection was checked again above.</value></data>
   <data name="NetFix_Done_Restart" xml:space="preserve"><value>Done. Restart the computer for the reset to take effect, then check again.</value></data>
   <data name="Assist_Tests_Head" xml:space="preserve"><value>The tests ended. Results:</value></data>
@@ -2297,9 +2297,9 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Nv_GameReady_What" xml:space="preserve"><value>Comes out with each big game, tuned for it first. For gaming.</value></data>
   <data name="Drivers_Nv_Studio_What" xml:space="preserve"><value>Comes out less often, after testing with creative programs (rendering, 3D, editing). For work: fewer surprises. Same features as Game Ready.</value></data>
   <data name="Drivers_Nv_Pro_What" xml:space="preserve"><value>The driver NVIDIA publishes for this professional card (the Game Ready / Studio choice is GeForce's).</value></data>
-  <data name="Drivers_Advice_Studio" xml:space="preserve"><value>Creative programs are installed ({0}) and no game launcher: Studio suits this computer.</value></data>
-  <data name="Drivers_Advice_Games" xml:space="preserve"><value>Game launchers are installed ({0}) and no creative program: Game Ready suits this computer.</value></data>
-  <data name="Drivers_Advice_Both" xml:space="preserve"><value>Both are installed: creative programs ({0}) and games ({1}). You choose: Studio if the work matters more, Game Ready if the games do.</value></data>
+  <data name="Drivers_Advice_Studio" xml:space="preserve"><value>Creative programs are installed and no game launcher: Studio suits this computer.</value></data>
+  <data name="Drivers_Advice_Games" xml:space="preserve"><value>Game launchers are installed and no creative program: Game Ready suits this computer.</value></data>
+  <data name="Drivers_Advice_Both" xml:space="preserve"><value>Both are installed: creative programs and games ({1}). You choose: Studio if the work matters more, Game Ready if the games do.</value></data>
   <data name="Drivers_Advice_None" xml:space="preserve"><value>No creative program or game launcher was found installed; Game Ready is NVIDIA's default for a GeForce card.</value></data>
   <data name="Drivers_Nv_Install" xml:space="preserve"><value>Download and install {0}</value></data>
   <data name="Drivers_Nv_Clean" xml:space="preserve"><value>Clean install (the driver's settings go back to their defaults)</value></data>
@@ -2325,8 +2325,8 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Wu_SearchAgain" xml:space="preserve"><value>Search again</value></data>
   <data name="Drivers_Wu_Searching" xml:space="preserve"><value>Asking Windows Update… this can take several minutes.</value></data>
   <data name="Drivers_Wu_Found" xml:space="preserve"><value>{0} driver(s) not installed yet ({1}). Tick the ones to install.</value></data>
-  <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update has no new driver for this computer ({0}).</value></data>
-  <data name="Drivers_Wu_Install" xml:space="preserve"><value>Install the ticked ({0})</value></data>
+  <data name="Drivers_Wu_None" xml:space="preserve"><value>Windows Update has no new driver for this computer.</value></data>
+  <data name="Drivers_Wu_Install" xml:space="preserve"><value>Install the ticked</value></data>
   <data name="Drivers_Wu_Confirm" xml:space="preserve"><value>Download and install {0} driver(s) from Windows Update? A device may stop for a moment while its driver changes.</value></data>
   <data name="Drivers_Wu_Installing" xml:space="preserve"><value>Installing {0} of {1}: {2}</value></data>
   <data name="Drivers_Wu_Ok" xml:space="preserve"><value>Installed</value></data>
@@ -2334,7 +2334,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Wu_Licence" xml:space="preserve"><value>Its licence must be accepted in Windows Update first.</value></data>
   <data name="Drivers_Wu_Open" xml:space="preserve"><value>Optional updates in Windows</value></data>
   <data name="Drivers_Wu_Note" xml:space="preserve"><value>Windows Update's drivers are the ones Microsoft has tested for this hardware; they are often older than the maker's newest, but rarely cause trouble. The graphics card's is better taken from the box above.</value></data>
-  <data name="Drivers_Wu_Failed" xml:space="preserve"><value>Windows Update did not answer ({0}): {1}</value></data>
+  <data name="Drivers_Wu_Failed" xml:space="preserve"><value>Windows Update did not answer: {1}</value></data>
   <data name="Drivers_Reboot" xml:space="preserve"><value>Windows needs a restart to finish installing.</value></data>
   <data name="Drivers_Problems_Title" xml:space="preserve"><value>Devices without a working driver</value></data>
   <data name="Drivers_Problems_Sub" xml:space="preserve"><value>As Device Manager shows them</value></data>
@@ -2523,7 +2523,7 @@ Speed is measured, never estimated: the benchmark reads a 512-token prompt, then
 Generation is how fast the answer is written. A token is a piece of a word; at about 10 tokens a second the answer appears as fast as you read it.
 Prompt processing is how fast the question and any documents given to the model are read: it sets the wait before the first word.
 Nothing is downloaded until you press Download. Every model is checked after it is downloaded, before it is used.</value></data>
-  <data name="Ai_Download" xml:space="preserve"><value>Download ({0})</value></data>
+  <data name="Ai_Download" xml:space="preserve"><value>Download</value></data>
   <data name="Ai_Resume" xml:space="preserve"><value>Continue download ({0} of {1})</value></data>
   <data name="Ai_CancelDownload" xml:space="preserve"><value>Stop download</value></data>
   <data name="Ai_Delete" xml:space="preserve"><value>Delete</value></data>
@@ -2632,7 +2632,7 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Mic_Sub" xml:space="preserve"><value>the input level it receives</value></data>
   <data name="Checks_Mic_Text" xml:space="preserve"><value>Speak or tap near the microphone: the bar shows the level the default recording device delivers, without Windows' noise suppression. Silence should sit low and steady; speech should move it clearly.</value></data>
   <data name="Checks_Mic_Start" xml:space="preserve"><value>Start listening</value></data>
-  <data name="Checks_Mic_Denied" xml:space="preserve"><value>The microphone could not be opened ({0}): none connected, or Windows' privacy settings block it.</value></data>
+  <data name="Checks_Mic_Denied" xml:space="preserve"><value>The microphone could not be opened: none connected, or Windows' privacy settings block it.</value></data>
   <data name="Checks_Mic_Device" xml:space="preserve"><value>Listening to: {0}</value></data>
   <data name="Checks_Mic_Input" xml:space="preserve"><value>Microphone</value></data>
   <data name="Checks_Speakers_Output" xml:space="preserve"><value>Output</value></data>
@@ -2741,6 +2741,8 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Check_PowerPlanCap_Text" xml:space="preserve"><value>The active power plan's maximum processor state is under 100 %. Under 100 % Windows keeps the processor at or below its base clock, so it never boosts. Set it back to 100 % (Control Panel, Power Options, the plan's advanced settings, Processor power management).</value></data>
   <data name="Check_PowerPlanNoBoost" xml:space="preserve"><value>Boost is turned off in the power plan</value></data>
   <data name="Check_PowerPlanNoBoost_Text" xml:space="preserve"><value>The power plan's processor boost mode is set to Disabled, so the processor stays at its base clock. It is a hidden setting some optimisation tools change: set it back to Enabled or Aggressive (with powercfg), or restore the plan's defaults.</value></data>
+  <data name="Check_ScreenOnIntegrated" xml:space="preserve"><value>A screen is on the processor's graphics, not on the graphics card</value></data>
+  <data name="Check_ScreenOnIntegrated_Text" xml:space="preserve"><value>The monitor's cable is in the motherboard's port, so the picture, games and the graphics tests run on the processor's weak built-in graphics while the graphics card sits idle. This is common after a new build or moving the computer. Fix: plug the monitor's cable (HDMI or DisplayPort) into the graphics card's ports at the back of the case, lower down, not the motherboard's ports near the USB sockets.</value></data>
   <data name="Check_PowerOnBattery" xml:space="preserve"><value>Running on battery</value></data>
   <data name="Check_PowerOnBattery_Text" xml:space="preserve"><value>The machine runs on battery. Laptops cut the processor's and the graphics card's power on battery; benchmark a laptop with its charger in.</value></data>
   <data name="Check_PowerPlanOk" xml:space="preserve"><value>The power plan does not hold the processor</value></data>
@@ -3033,7 +3035,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_C_Threads" xml:space="preserve"><value>Threads: {0}</value></data>
   <data name="Detail_FrameRate" xml:space="preserve"><value>Speed: {0} frames a second</value></data>
   <data name="Detail_Gops" xml:space="preserve"><value>Speed: {0} billion integer operations a second</value></data>
-  <data name="Detail_GpuStress" xml:space="preserve"><value>Graphics card compute load ({0}) on {1}</value></data>
+  <data name="Detail_GpuStress" xml:space="preserve"><value>Graphics card compute load on {1}</value></data>
   <data name="Detail_GpuVerified" xml:space="preserve"><value>Results checked: {0} of {1} (a sample, not every one)</value></data>
   <data name="Detail_L_CpuLoad" xml:space="preserve"><value>Processor load</value></data>
   <data name="Detail_L_CpuPower" xml:space="preserve"><value>Processor power</value></data>
@@ -3106,12 +3108,12 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_Load_steady" xml:space="preserve"><value>steady</value></data>
   <data name="Detail_Load_variable" xml:space="preserve"><value>variable</value></data>
   <data name="Detail_Log_NvmeDuring" xml:space="preserve"><value>The drive's NVMe health log changed during the test:</value></data>
-  <data name="Detail_Log_NvmeUnread" xml:space="preserve"><value>The NVMe health log could not be read after the test ({0})</value></data>
+  <data name="Detail_Log_NvmeUnread" xml:space="preserve"><value>The NVMe health log could not be read after the test</value></data>
   <data name="Detail_Log_Storage" xml:space="preserve"><value>Windows recorded {0} storage event(s) during this test:</value></data>
   <data name="Detail_Log_StorageNote" xml:space="preserve"><value>Not proof of a failing drive on its own: check the cable, controller, driver and power too</value></data>
-  <data name="Detail_Log_StorageUnread" xml:space="preserve"><value>Windows' storage event log could not be read ({0})</value></data>
+  <data name="Detail_Log_StorageUnread" xml:space="preserve"><value>Windows' storage event log could not be read</value></data>
   <data name="Detail_Log_Whea" xml:space="preserve"><value>Windows recorded {0} hardware error(s) (WHEA) during this test (event ids {1}):</value></data>
-  <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>Windows' hardware error log could not be read ({0})</value></data>
+  <data name="Detail_Log_WheaUnread" xml:space="preserve"><value>Windows' hardware error log could not be read</value></data>
   <data name="Detail_Mem_Algorithms" xml:space="preserve"><value>Moving inversions ×{0}, block move ×{1}, stride ×{2}</value></data>
   <data name="Detail_Mem_BitFade" xml:space="preserve"><value>Bit Fade test (does the memory keep its data while left alone)</value></data>
   <data name="Detail_Mem_Covers" xml:space="preserve"><value>Covers only the RAM Windows let the test have; errors are placed by position in the test's own buffer, not by physical address or slot</value></data>
@@ -3163,7 +3165,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_W_BadFrame" xml:space="preserve"><value>The first rendered frame is not a valid image (broken numbers or no contrast).</value></data>
   <data name="Detail_W_CpuLacks" xml:space="preserve"><value>This processor does not support {0}.</value></data>
   <data name="Detail_W_Duration" xml:space="preserve"><value>The duration must be more than zero.</value></data>
-  <data name="Detail_W_Error" xml:space="preserve"><value>The test itself stopped with an error ({0}); this run says nothing about the part.</value></data>
+  <data name="Detail_W_Error" xml:space="preserve"><value>The test itself stopped with an error; this run says nothing about the part.</value></data>
   <data name="Detail_W_FftRam" xml:space="preserve"><value>Too little free RAM for even one FFT worker ({0} MiB each, above what Windows needs).</value></data>
   <data name="Detail_W_LanLost" xml:space="preserve"><value>The connection to {0} was lost during the test ({1}); a run that did not finish says nothing about the network.</value></data>
   <data name="Detail_W_LanShort" xml:space="preserve"><value>The LAN test needs at least 3 seconds.</value></data>
@@ -3943,4 +3945,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_OwnMode" xml:space="preserve"><value>The device's own mode</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>None (use the effect above)</value></data>
   <data name="Rgb_Report_Still" xml:space="preserve"><value>{0}: set on {1} device(s).</value></data>
+  <data name="Welcome_Title" xml:space="preserve"><value>Welcome to Mazesta</value></data>
+  <data name="Welcome_Text" xml:space="preserve"><value>Thank you for choosing Mazesta. From here you can watch your system's temperatures and sensors, test its parts under real load, find what is wrong with Smart troubleshooting and keep a report of it all. A good first step is the Smart troubleshooting page.</value></data>
+  <data name="Welcome_Start" xml:space="preserve"><value>Get started</value></data>
 </root>

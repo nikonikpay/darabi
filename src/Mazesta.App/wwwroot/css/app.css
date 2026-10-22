@@ -1159,6 +1159,9 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .upd-restart svg { flex: none; width: 15px; height: 15px; margin-top: 4px; stroke: var(--paper-3); }
 .upd-box .btn-row { margin-top: 2px; }
 .upd-box .btn-row .btn.primary { flex: 1; justify-content: center; }
+.welcome-box { align-items: center; text-align: center; }
+.welcome-logo { width: 96px; height: 96px; object-fit: contain; }
+.welcome-box p { margin: 0; line-height: 1.8; color: var(--paper-2, inherit); }
 .au-notes .rn { margin-top: 8px; }
 .ov-saveset { margin-top: 10px; gap: 8px; align-items: center; }
 .ov-saveset .field { min-width: 200px; }

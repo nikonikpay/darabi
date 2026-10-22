@@ -21,6 +21,7 @@ public enum FindingCode
     CpuBelowBoost, CpuPowerLimit,
     GpuPcieErrorsOk, GpuPcieErrorsMany, GpuPcieErrorsFatal, GpuPcieErrorsUnderLoad, GpuPcieCleanUnderLoad,
     DriveHealthy, DriveUnhealthy, DriveWorn, BenchAsBefore, BenchSlowerThanBefore,
+    ScreenOnIntegrated,
 }
 
 /// <summary>A second sentence a finding may carry: what the measurements beside it point to.</summary>

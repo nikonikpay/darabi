@@ -269,7 +269,10 @@ public sealed class CheckupService
         var inv = await _inventory.GetAsync().ConfigureAwait(false);
         var details = await _details.GetAsync().ConfigureAwait(false);
         var found = new List<Finding>();
-        found.AddRange(PlatformCheck.Power(PowerSettings.Read()));
+        var power = PowerSettings.Read();
+        found.AddRange(PlatformCheck.Power(power));
+        try { found.AddRange(PlatformCheck.Screen(DisplayAdapters.Read(), inv.Computer?.IsPortable ?? power.HasBattery ?? true)); }
+        catch (Exception e) { _log.LogWarning(e, "Checkup: reading the display adapters failed"); }
         found.AddRange(MemoryCheck.Evaluate(inv.MemoryModules, details.Spd));
         found.AddRange(PlatformCheck.Drives(details.Drives.Where(d => d.Slot is not null).Select(d => PlatformCheck.Of(d.Name, d.Slot!))));
         foreach (var (name, errors) in CheckupTraces.PcieErrors(_engine)) found.AddRange(GpuCheck.PcieErrors(errors, name));
