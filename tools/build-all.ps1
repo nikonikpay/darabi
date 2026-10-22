@@ -6,10 +6,11 @@
 # Running Mazesta programs and OpenRGB are closed first (they lock the folders), through an elevated shell when they run elevated.
 #
 #   pwsh tools/build-all.ps1
-#   pwsh tools/build-all.ps1 -Release -NotesFa artifacts/notes-fa.txt [-Upload]
+#   pwsh tools/build-all.ps1 -Release -NotesFa artifacts/notes-fa.txt [-Upload]   # app version +1 (or -Version 0.16.0)
 param(
     [switch]$Release,
     [switch]$Upload,
+    [string]$Version,   # the app version to release; by default -Release raises the last number by one
     [string]$NotesFa,
     [string]$NotesEn
 )
@@ -17,7 +18,21 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
 Set-Location $repo
 
-$names = "Mazesta-Admin", "Mazesta", "MazestaTray", "MazestaDesk", "OpenRGB"
+# A release needs a higher app version, or the installed copies see nothing new: -Release raises the last number (0.15.3 -> 0.15.4)
+# unless -Version names one, and commits that one file.
+if ($Release -or $Version) {
+    $props = Join-Path $repo "Directory.Build.props"
+    $text = Get-Content $props -Raw
+    $old = [regex]::Match($text, '<Version>([^<]+)</Version>').Groups[1].Value
+    if (-not $Version) { $p = $old.Split('.'); $p[-1] = [string]([int]$p[-1] + 1); $Version = $p -join '.' }
+    if ($Version -ne $old) {
+        Set-Content $props ($text -replace "<Version>$([regex]::Escape($old))</Version>", "<Version>$Version</Version>") -NoNewline
+        git commit -q -m "chore: app $Version" -- Directory.Build.props; git push -q
+        Write-Host "App version $old -> $Version"
+    }
+}
+
+$names ="Mazesta-Admin", "Mazesta", "MazestaTray", "MazestaDesk", "OpenRGB"
 if (Get-Process -Name $names -ErrorAction SilentlyContinue) {
     Get-Process -Name $names -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Milliseconds 800
