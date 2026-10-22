@@ -7,7 +7,7 @@ public class AppGuideLexiconTests
 {
     private static AiRoute R(string t) => AppGuide.Route(t);
     [Theory]
-    [InlineData("راهنما", "help"), InlineData("آموزش برنامه", "help"), InlineData("پیام ها", "messages"), InlineData("پیام جدید دارم؟", "messages"),
+    [InlineData("راهنما", "help"), InlineData("آموزش برنامه", "help"), InlineData("پیام ها", "messages"), InlineData("سرعت دانلود", "benchmarks"), InlineData("پیام جدید دارم؟", "messages"),
      InlineData("زبان برنامه رو انگلیسی کن", "settings"), InlineData("ولتاژ گرافیک رو کم کن", "tuning"), InlineData("پلن پرفورمنس رو فعال کن", "play"),
      InlineData("پاکسازی ویندوز", "tools"), InlineData("اینترنت وصل نیست", "tools"), InlineData("یه برنامه رو بلاک کن", "shield"), InlineData("تله متری ویندوز رو خاموش کن", "tweaks"),
      InlineData("ویندوز آپدیت رو خاموش کن", "updates"), InlineData("برنامه رو آپدیت کن", "appupdate"), InlineData("رنگ رم ها رو قرمز کن", "lights"), InlineData("نور سیستم رو خاموش کن", "lights"),
