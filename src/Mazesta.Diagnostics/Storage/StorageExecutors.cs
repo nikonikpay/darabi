@@ -18,6 +18,21 @@ public abstract class StorageExecutor : ITestExecutor
     /// <summary>The folder a run with this drive option used (the first fixed drive when none was chosen), or null when there is none.</summary>
     public static string? TargetOf(string chosen) { try { return StorageFile.ResolveTarget(chosen); } catch (StorageUnavailableException) { return null; } }
 
+    /// <summary>For a run the user did not set up by hand (the assistant's): the drive and file size that fit, or null when the chosen ones already do. The chosen drive
+    /// stays when the file and the safety margin fit; else the fixed drive with the most room that fits it; else the file shrinks to the roomiest drive (never below 256 MB).</summary>
+    public static (string Drive, int FileMb)? Fit(string chosen, int fileMb)
+    {
+        const long margin = 1L << 30; const int floor = 256;
+        long need = StorageFile.LengthOf(fileMb) + margin;
+        var drives = StorageFile.DriveChoices().Select(c => (c.Value, Free: new DriveInfo(c.Value).AvailableFreeSpace)).ToList();
+        string target = chosen.Length > 0 ? chosen : drives.FirstOrDefault().Value ?? "";
+        if (drives.Where(d => d.Value == target).Select(d => d.Free).DefaultIfEmpty(-1).First() >= need) return null;
+        if (drives.Where(d => d.Free >= need).OrderByDescending(d => d.Free).FirstOrDefault() is { Value: not null } fits) return (fits.Value, fileMb);
+        var roomiest = drives.OrderByDescending(d => d.Free).FirstOrDefault();
+        long room = (roomiest.Free - margin) >> 20;
+        return roomiest.Value is null || room < floor ? null : (roomiest.Value, (int)Math.Min(room - room % 64, fileMb));
+    }
+
     public abstract TestDefinition Definition { get; }
 
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)

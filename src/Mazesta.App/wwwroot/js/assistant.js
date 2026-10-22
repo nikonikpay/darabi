@@ -142,6 +142,10 @@ export function mountAssistant(app, root) {
     if (stick) log.scrollTop = log.scrollHeight;
     send.disabled = a.busy || a.server !== "ready"; stop.hidden = !a.busy; newBtn.disabled = a.busy;
     log.querySelector(".ai-err")?.remove(); if (a.error) log.append(h("p", { class: "ai-err" }, a.error));
+    // While the model loads the chat cannot answer yet: a spinner says so (added once, so its turn is not restarted by each refresh).
+    const loading = log.querySelector(".as-loading");
+    if (a.server !== "starting") loading?.remove();
+    else if (!loading) log.append(h("div", { class: "as-loading", role: "status" }, h("span", { class: "as-ring", "aria-hidden": "true" }), h("span", { class: "caption" }, t("Assist_Starting"))));
     log.querySelector(".as-paused")?.remove();   // said once, not added again on every refresh while the run lasts
     if (a.server === "paused") log.append(h("p", { class: "caption as-paused" }, t("Assist_Paused")));
   }

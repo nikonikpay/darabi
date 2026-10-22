@@ -1870,6 +1870,9 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Assist_Kind_Fan" xml:space="preserve"><value>Fans</value></data>
   <data name="Assist_Kind_Load" xml:space="preserve"><value>Loads</value></data>
   <data name="Assist_Kind_Clock" xml:space="preserve"><value>Clocks</value></data>
+  <data name="Assist_Power_Sum" xml:space="preserve"><value>The computer's power right now: {0} W (processor + graphics card, as the dashboard shows):</value></data>
+  <data name="Assist_Power_Psu" xml:space="preserve"><value>The whole computer's power right now: {0} W (the power supply's own reading).</value></data>
+  <data name="Assist_Power_Unmeasured" xml:space="preserve"><value>The motherboard, fans, and parts without a power sensor are not in this sum, so the real draw at the wall is higher.</value></data>
   <data name="Assist_Kind_Power" xml:space="preserve"><value>Power</value></data>
   <data name="Assist_Kind_All" xml:space="preserve"><value>Sensors</value></data>
   <data name="Assist_Soft_One" xml:space="preserve"><value>{0} runs on this computer at the «{1}» level of its publisher's tiers.</value></data>

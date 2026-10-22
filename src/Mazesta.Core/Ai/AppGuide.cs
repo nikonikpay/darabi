@@ -27,6 +27,8 @@ public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Pa
 {
     /// <summary>For <see cref="AiIntent.Tests"/>: every test of the areas was asked for ("همشو"), not the usual set.</summary>
     public bool All { get; init; }
+    /// <summary>For <see cref="AiIntent.Tests"/>: single tests of an area asked for by name ("نوشتن طولانی هارد"), not the area's usual set.</summary>
+    public IReadOnlyList<string>? TestIds { get; init; }
     /// <summary>For <see cref="AiIntent.Tests"/>: the parts are to be loaded at the same time ("همزمان").</summary>
     public bool Together { get; init; }
     /// <summary>For <see cref="AiIntent.Tests"/>: the length asked for, in seconds ("۵ دقیقه", "۳۰ ثانیه", "۱ ساعت و ۳۰ دقیقه"), or null for the page's.</summary>
@@ -178,6 +180,7 @@ public static class AppGuide
 
     private static readonly (string Part, string[] Words)[] SpecParts = Lex.Group("SpecParts");
     private static readonly (string Area, string[] Words)[] TestAreas = Lex.Group("TestAreas");
+    private static readonly (string Id, string[] Words)[] StorageTests = Lex.Group("StorageTests");
     private static readonly (SoftCategory Category, string[] Words)[] Categories = [.. Lex.Group("Categories").Select(g => (Enum.Parse<SoftCategory>(g.Key), g.Words))];
 
     private static readonly string[] AllWords = Lex.List("AllWords");
@@ -328,7 +331,10 @@ public static class AppGuide
             {
                 bool together = Any(s, TogetherWords);
                 var (seconds, inTotal) = Length(s);
-                return new(AiIntent.Tests, Areas: areas) { All = Any(s, AllWords) && !together, Together = together, Seconds = seconds, Total = inTotal && !together && areas.Count > 1 };
+                // A drive test asked for by its name runs alone, not with the area's usual set.
+                var named = areas.Contains("storage") ? StorageTests.Where(t => Any(s, t.Words)).Select(t => t.Id).ToList() : [];
+                if (named.Count > 0) areas.Remove("storage");
+                return new(AiIntent.Tests, Areas: areas) { TestIds = named.Count > 0 ? named : null, All = Any(s, AllWords) && !together, Together = together, Seconds = seconds, Total = inTotal && !together && areas.Count > 1 };
             }
         }
 

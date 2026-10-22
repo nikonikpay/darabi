@@ -1870,6 +1870,9 @@
   <data name="Assist_Kind_Fan" xml:space="preserve"><value>فن‌ها</value></data>
   <data name="Assist_Kind_Load" xml:space="preserve"><value>میزان استفاده</value></data>
   <data name="Assist_Kind_Clock" xml:space="preserve"><value>فرکانس‌ها</value></data>
+  <data name="Assist_Power_Sum" xml:space="preserve"><value>مصرف توان سیستم در همین لحظه: {0} وات (پردازنده + کارت گرافیک، مثل داشبورد):</value></data>
+  <data name="Assist_Power_Psu" xml:space="preserve"><value>مصرف توان کل سیستم در همین لحظه: {0} وات (خوانده‌شده از خود منبع تغذیه).</value></data>
+  <data name="Assist_Power_Unmeasured" xml:space="preserve"><value>مادربرد، فن‌ها و قطعاتی که سنسور توان ندارند در این جمع نیستند؛ مصرف واقعی از پریز بیشتر است.</value></data>
   <data name="Assist_Kind_Power" xml:space="preserve"><value>توان مصرفی</value></data>
   <data name="Assist_Kind_All" xml:space="preserve"><value>سنسورها</value></data>
   <data name="Assist_Soft_One" xml:space="preserve"><value>{0} روی این سیستم اجرا می‌شود؛ سطح آن طبق سطح‌بندی سازنده: «{1}».</value></data>

@@ -76,6 +76,13 @@ internal static class AssistantReplies
     {
         using var d = JsonDocument.Parse(json); var r = d.RootElement;
         if (S(r, "error") is { } e) return Loc.Format("Assist_Sensors_None", e);
+        // Power is one figure, as on the dashboard: the parts' sum counted once (the CPU by its package, never by its cores).
+        if (kind == "Power" && part is null && r.TryGetProperty("systemPower", out var sp) && D(sp, "measuredWatts") is { } total && !(r.TryGetProperty("stale", out var old) && old.ValueKind == JsonValueKind.True))
+        {
+            bool psu = sp.TryGetProperty("wholeSystemFromPowerSupply", out var f) && f.ValueKind == JsonValueKind.True;
+            var parts = A(sp, "parts").Select(p => $"- {S(p, "device")}: {N(D(p, "watts") ?? 0)} W");
+            return Loc.Format(psu ? "Assist_Power_Psu" : "Assist_Power_Sum", N(total)) + (psu ? "" : "\n" + string.Join("\n", parts) + "\n" + Loc.Get("Assist_Power_Unmeasured"));
+        }
         var lines = new List<string>();
         string? want = part switch { "cpu" => "Cpu", "gpu" => "Gpu", "memory" => "Memory", "storage" => "Storage", "network" => "Network", _ => null };
         foreach (var dev in A(r, "devices").Where(x => want is null || S(x, "part") == want))

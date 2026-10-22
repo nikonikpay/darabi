@@ -40,6 +40,12 @@ public class AppGuideLexiconTests
         Assert.False(AiAssistantPolicy.AsksToAct("سلام"));
         Assert.True(R("آی پی من چنده").Place?.Page == "network" && R("آی پی من چنده").Intent == AiIntent.Navigate);
     }
+    [Fact] public void A_drive_test_asked_for_by_name_runs_alone()
+    {
+        var r = R("تست نوشتن طولانی هارد رو انجام بده");
+        Assert.Equal(AiIntent.Tests, r.Intent); Assert.Equal(["storage.sustained"], r.TestIds); Assert.DoesNotContain("storage", r.Areas ?? []);
+        Assert.Null(R("تست هارد رو انجام بده").TestIds);
+    }
     [Fact] public void Every_place_has_words_in_the_lexicon_and_no_word_is_blank()
     {
         Assert.All(AppGuide.Places, p => Assert.All(p.Words, w => Assert.False(string.IsNullOrWhiteSpace(w))));

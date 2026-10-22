@@ -52,6 +52,11 @@
       "storage": ["هارد", "ssd", "دیسک", "درایو", "storage", "drive"],
       "network": ["شبکه", "اینترنت", "network"]
     },
+    "StorageTests": {
+      "storage.sustained": ["نوشتن طولانی", "نوشتن مداوم", "sustained", "long write"],
+      "storage.random4k": ["رندوم", "تصادفی", "random", "4k"],
+      "storage.daily": ["روزمره", "daily", "کپی فایل"]
+    },
     "Categories": {
       "Visualization": ["رندرینگ", "رندر", "ریل تایم", "render", "rendering"],
       "Architecture": ["معماری", "architecture", "bim"],

@@ -503,13 +503,21 @@ public sealed partial class WebBridge
                     var set = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     if (a.ValueKind == JsonValueKind.Object && a.TryGetProperty("options", out var given) && given.ValueKind == JsonValueKind.Object)
                         foreach (var p in given.EnumerateObject()) set[p.Name] = p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString()! : p.Value.GetRawText();
-                    string ValueOf(TestOptionViewModel o) => set.TryGetValue(o.Option.Key, out var v) && (!o.IsChoice || o.Choices.Any(c => c.Value == v)) && (o.Option.Kind != TestOptionKind.Integer || int.TryParse(v, out _)) ? v : o.Value;
-                    string LabelOf(TestOptionViewModel o) { string v = ValueOf(o); return o.IsChoice ? o.Choices.FirstOrDefault(c => c.Value == v)?.Label ?? v : v; }
+                    // `fit` is a storage test's drive and file size moved to what has room (the page's drive may be nearly full; the test would end Unsupported).
+                    string ValueOf(TestOptionViewModel o, Dictionary<string, string>? fit = null) => fit is not null && fit.TryGetValue(o.Option.Key, out var f) ? f
+                        : set.TryGetValue(o.Option.Key, out var v) && (!o.IsChoice || o.Choices.Any(c => c.Value == v)) && (o.Option.Kind != TestOptionKind.Integer || int.TryParse(v, out _)) ? v : o.Value;
+                    string LabelOf(TestOptionViewModel o, Dictionary<string, string>? fit) { string v = ValueOf(o, fit); return o.IsChoice ? o.Choices.FirstOrDefault(c => c.Value == v)?.Label ?? v : v; }
+                    Dictionary<string, string>? Fit(TestQueueRowViewModel r)
+                    {
+                        var drive = r.Options.FirstOrDefault(o => o.Option.Key == Diagnostics.Storage.StorageExecutor.DriveOption); var size = r.Options.FirstOrDefault(o => o.Option.Key == Diagnostics.Storage.StorageExecutor.FileMbOption);
+                        if (drive is null || size is null || !int.TryParse(ValueOf(size), out int mb) || Diagnostics.Storage.StorageExecutor.Fit(ValueOf(drive), mb) is not var (d, m)) return null;
+                        return new() { [Diagnostics.Storage.StorageExecutor.DriveOption] = d, [Diagnostics.Storage.StorageExecutor.FileMbOption] = m.ToString(CultureInfo.InvariantCulture) };
+                    }
                     List<ChatTest>? plan = null;
                     await OnUi(() => { plan = tests.IsRunning || runner.IsBusy ? null : tests.Rows.Where(r => ids.Contains(r.Definition.Id.Value) && r.IsAvailable)
-                        .Select(r => new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, ValueOf(o))).ToList(),
+                        .Select(r => { var fit = Fit(r); return new ChatTest(r.Definition.Id.Value, r.Name, r.Definition.DefaultDurationSeconds, r.Options.Select(o => (o.Option.Key, ValueOf(o, fit))).ToList(),
                             // (shown to the user before they confirm: only the settings that matter with the choices made)
-                            string.Join("، ", r.Options.Where(o => ValueOf(o).Length > 0 && o.Option.Applies(k => r.Options.FirstOrDefault(x => x.Option.Key == k) is { } other ? ValueOf(other) : null)).Select(o => o.Label + ": " + LabelOf(o)))))
+                            string.Join("، ", r.Options.Where(o => ValueOf(o, fit).Length > 0 && o.Option.Applies(k => r.Options.FirstOrDefault(x => x.Option.Key == k) is { } other ? ValueOf(other, fit) : null)).Select(o => o.Label + ": " + LabelOf(o, fit)))); })
                         .ToList(); return ""; }).ConfigureAwait(false);
                     // The load tests' length: each one's, or the whole run's shared by them (by part when side by side, since the parts then run at once).
                     if (plan is { Count: > 0 } && (each ?? whole) is { } asked)
