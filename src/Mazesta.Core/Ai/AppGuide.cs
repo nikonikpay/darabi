@@ -42,76 +42,68 @@ public sealed record AiRoute(AiIntent Intent, AppPlace? Place = null, string? Pa
 /// </summary>
 public static class AppGuide
 {
-    private static AppPlace P(string page, string key, string what, params string[] words) => new(page, null, key, words, what);
-    private static AppPlace T(string page, string target, string key, string what, string? hint, params string[] words) => new(page, target, key, words, what, hint);
+    private static readonly AiLexicon Lex = AiLexicon.Load();
+    private static AppPlace P(string page, string key, string what) => new(page, null, key, Lex.Places(page), what);
+    private static AppPlace T(string page, string target, string key, string what, string? hint) => new(page, target, key, Lex.Places(page, target), what, hint);
 
     public static IReadOnlyList<AppPlace> Places { get; } =
     [
-        P("dashboard", "Nav_Dashboard", "summary of the computer and its live state", "داشبورد", "صفحه اصلی", "خانه", "dashboard", "home"),
-        P("monitoring", "Nav_Monitoring", "every sensor with live charts: temperatures, loads, clocks, fans, power", "مانیتورینگ", "سنسور", "سنسورها", "دماها", "دما ها", "نمودار", "monitoring", "sensors"),
-        P("system", "Nav_SystemInfo", "the whole specification of the computer, with export to PDF", "اطلاعات سیستم", "مشخصات سیستم", "مشخصات", "سخت افزار", "system info", "specs", "specification"),
-        T("system", "export", "System_Export", "export the specification as PDF, HTML or JSON", null, "خروجی مشخصات", "pdf مشخصات", "export specs"),
-        P("cpu", "Nav_Cpu", "the processor's specification and sensors", "صفحه cpu", "صفحه سی پی یو", "صفحه پردازنده", "بخش cpu", "بخش پردازنده", "پردازنده"),
-        P("gpu", "Nav_Gpu", "the graphics card's specification and sensors", "صفحه gpu", "صفحه کارت گرافیک", "بخش کارت گرافیک", "بخش گرافیک", "صفحه گرافیک"),
-        P("ram", "Dashboard_Ram", "the memory modules and their sensors", "صفحه رم", "بخش رم", "صفحه حافظه"),
-        P("storage", "Nav_Storage", "the drives, their health and sensors", "ذخیره سازی", "هارد", "هاردها", "درایوها", "storage", "ssd"),
-        P("network", "Nav_Network", "the network adapters", "شبکه", "کارت شبکه", "network"),
-        P("tests", "Nav_Tests", "hardware tests with a report: the memory tests check the RAM's health over nearly all of it (other programs' memory is paged out first), the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs; the graphics card's VRAM test fills nearly all of its memory and shows the bandwidth, VRAM temperature and memory clock; separate video decode and encode tests (H.264, HEVC, VP9, AV1 at 1080p, 4K and 8K, 8 and 10 bit, 4:2:0 and 4:2:2) check every frame; ready-made sets (quick check, everyday, Mazesta default); a switch runs processor, memory and graphics card tests together; when the tests end a window sums up each part (processor, memory, graphics card, drives): healthy or not, highest temperature, load, what needs a look, with a button to the report's summary",
-            "تست دیکود", "تست انکود", "دیکود ویدیو", "انکود ویدیو", "تست vram", "تست حافظه گرافیک", "تستها", "تست ها", "صفحه تست", "بخش تست", "tests", "سلامت رم", "سلامت حافظه", "سلامت هارد", "سلامت گرافیک", "سلامت cpu", "تست رم", "تست حافظه", "تست هارد", "تست گرافیک", "تست cpu", "تست پردازنده"),
-        T("tests", "start", "Test_Start", "start the ticked tests", null, "شروع تست", "شروع تستها"),
-        P("benchmarks", "Nav_Benchmarks", "speed benchmarks and comparison with other computers; the memory benchmark also measures access latency (at 32 KB, 256 KB, 2 MB, 16 MB, 64 MB and the RAM itself); the Iranian-garden 3D scene benchmarks (normal and ray-traced, at 2560x1440) walk the garden once at walking pace and need no setting; the video benchmark measures the card's hardware decoding (H.264, HEVC, VP9, AV1; 1080p, 4K, 8K; 8 and 10 bit; 4:2:0 and 4:2:2) and encoding (H.264, HEVC, AV1) in frames a second; 7-Zip, AI compute (FP32, FP16, INT8), ray tracing and internet speed benchmarks too", "بنچمارک ویدیو", "بنچمارک", "بنچ مارک", "بنچمارکها", "benchmark", "benchmarks"),
-        P("checkup", "Nav_Checkup", "one-click smart diagnosis: runs the benchmarks and judges the computer from them (the assistant can run it itself and tell the findings)", "عیب یابی", "عیبیابی", "عیب یابی هوشمند", "چکاپ", "checkup", "diagnosis"),
-        T("checkup", "run", "Checkup_Run", "start the diagnosis", null, "اجرای عیب یابی", "شروع عیب یابی"),
-        P("checks", "Nav_Checks", "hands-on checks a person judges: screen, keyboard, mouse, speakers, microphone, and the laptop battery's health", "بررسی دستی", "بررسیهای دستی", "تست دستی", "hands-on", "checks"),
-        T("checks", "display", "Checks_Display", "full-screen colours for dead or stuck pixels", null, "پیکسل سوخته", "پیکسل", "نمایشگر", "صفحه نمایش", "مانیتور", "ال سی دی", "lcd", "dead pixel", "display"),
-        T("checks", "keys", "Checks_Keys", "every key of the keyboard lights up when pressed", null, "کیبورد", "کیبرد", "صفحه کلید", "keyboard"),
-        T("checks", "mouse", "Checks_Mouse", "mouse and touchpad buttons, wheel, double clicks", null, "ماوس", "موس", "تاچ پد", "تاچپد", "mouse", "touchpad"),
-        T("checks", "speakers", "Checks_Speakers", "left, right and both speakers, and a frequency sweep", null, "بلندگو", "اسپیکر", "هدفون", "هدست", "صدا", "speaker", "speakers", "headphone"),
-        T("checks", "mic", "Checks_Mic", "records the microphone and shows its level", null, "میکروفون", "میکروفن", "میکرفون", "مایک", "microphone", "mic"),
-        T("checks", "battery", "Checks_Battery", "the laptop battery: its health percent (full capacity against capacity when new), charge cycles, and a drain test", null,
-            "باتری", "باطری", "سلامت باتری", "سلامت باطری", "تست باتری", "تست باطری", "battery", "battery health"),
-        P("overlay", "Nav_Overlay", "settings of the on-screen overlay: temperatures, loads, frame rate (with the 1% and 0.1% lows), and the link (ping, packet loss, jitter, download and upload) shown over games; four sizes (small, medium, large, extra large) and a panel that is as narrow as its rows; the game preset shows frame rate with its lows, GPU temperature, hot spot, load, clock, memory and power, and CPU temperature, load, clock, power and busiest thread, with the average clock of the P-cores and of the E-cores on an Intel CPU that has both, and VRAM temperature; the troubleshooting preset shows everything (every temperature including each AMD CCD's, clocks, voltages, power, fans, VRAM temperature and clock, RAM and drives); any of the processor's or graphics card's sensors from the monitoring page can be added one by one; shortcuts: show/hide, move, Alt+U cycles layouts, Alt+P cycles presets", "اورلی", "اورلای", "اوورلی", "overlay", "نمایش روی صفحه", "fps"),
-        P("tuning", "Nav_Tuning", "graphics card tuning (the page is called «تنظیم کارت گرافیک»): automatic and manual overclock and undervolt, clocks, voltage curve, power limit, the card's fan, saved profiles that switch by program; RAM XMP", "تنظیم کارت گرافیک", "تنظیمات کارت گرافیک", "اورکلاک", "اور کلاک", "اندرولت", "اندروالت", "آندر ولت", "اندر ولت", "تیونینگ", "undervolt", "overclock", "tuning"),
-        P("lights", "Nav_Lights", "RGB lighting colours and effects of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI), through OpenRGB; the LED count of a board header", "آر جی بی", "نور", "رنگ رم", "رنگ فن", "لایت", "rgb", "lighting", "lights"),
-        P("fans", "Nav_Fans", "motherboard fan control: automatic, fixed speed, or a temperature curve you drag (silent, standard, performance, full speed)", "کنترل فن", "فن مادربرد", "منحنی فن", "فن", "fan control", "fan curve", "fans"),
-        T("tuning", "autoundervolt", "Tuning_AutoUndervolt", "finds the lowest stable voltage by itself (10 to 25 minutes)", "Assist_Hint_Tuning", "اندرولت خودکار", "اندروالت خودکار", "اندر ولت خودکار", "auto undervolt"),
-        T("tuning", "autooverclock", "Tuning_AutoOverclock", "raises the clocks step by step while the card stays correct (10 to 25 minutes)", "Assist_Hint_Tuning", "اورکلاک خودکار", "اور کلاک خودکار", "auto overclock"),
-        T("tuning", "curve", "Tuning_Curve_Title", "measures and shows the card's voltage-frequency curve", null, "منحنی ولتاژ", "منحنی فرکانس", "کرو", "منحنی", "voltage curve", "curve"),
-        T("tuning", "profiles", "Tuning_Profiles", "saved clock profiles of this card", null, "پروفایل اورکلاک", "پروفایلها", "پروفایل ها", "profiles"),
-        T("tuning", "memory", "Tuning_Memory", "RAM XMP / DOCP / EXPO (set in the BIOS; a button restarts into it)", null, "xmp", "docp", "expo", "پروفایل رم", "فرکانس رم"),
-        T("tuning", "fan", "Tuning_Fan", "the graphics card's fan speed", null, "فن کارت", "فن گرافیک", "سرعت فن", "fan"),
-        P("tools", "Nav_WindowsTools", "Windows tools: DNS, the internet troubleshooter, blue screens, SFC/DISM repair, Disk Cleanup, hibernation, virtual memory, hosts file", "ابزارهای ویندوز", "ابزار ویندوز", "ابزارها", "tools"),
-        T("tools", "dns", "Dns_Title", "switch the DNS server, or test them all and pick the fastest", null, "dns", "دی ان اس", "دیاناس", "دی ان اس جامپر", "dns jumper"),
-        P("play", "Nav_Gaming", "gaming: power plan, Game Mode and HAGS, and the game mode that stops background services", "بخش بازی", "صفحه بازی", "گیمینگ", "gaming"),
-        T("play", "power", "Gaming_PowerPlan", "Windows power plans (High, Ultimate Performance)", null, "پلن انرژی", "پاور پلن", "برق", "power plan", "ultimate performance"),
-        T("play", "gamemode", "Gaming_GameMode", "Game Mode and hardware GPU scheduling (HAGS)", null, "گیم مود", "game mode", "hags", "بازی"),
-        T("tools", "repair", "Tools_Repair", "Windows' own repair: SFC and DISM", "Assist_Hint_Repair", "sfc", "dism", "تعمیر ویندوز", "تعمیر", "repair", "اسکن ویندوز", "ویندوز رو اسکن", "ویندوز را اسکن", "اسکن فایل های ویندوز", "اسکن سیستم", "scan windows", "scannow"),
-        T("tools", "hibernate", "Tools_Hib_Title", "hibernation and Fast Startup on or off", null, "هایبرنیت", "هایبرنت", "fast startup", "فست استارتاپ", "hibernate"),
-        T("tools", "vm", "Tools_Vm_Title", "virtual memory (the page file)", null, "حافظه مجازی", "پیج فایل", "page file", "pagefile", "virtual memory"),
-        T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null, "hosts", "هاست", "فایل هاست"),
-        T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null, "پاکسازی دیسک", "پاک سازی دیسک", "disk cleanup"),
-        P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable", "ترفند", "ترفندها", "ترفند ویندوز", "تنظیمات ویندوز", "بهینه سازی ویندوز", "tweaks"),
-        P("shield", "Nav_Shield", "firewall and antivirus: block a program in the Windows firewall (incoming and outgoing), leave a file or folder out of Windows Defender's scans, and put both in Explorer's right-click menu", "فایروال", "دیوار آتش", "آنتی ویروس", "آنتی‌ویروس", "دیفندر", "بلاک برنامه", "بلاک کردن برنامه", "استثنا آنتی ویروس", "اکسکلود", "firewall", "defender", "antivirus", "exclusion", "block program"),
-        P("drivers", "Nav_Drivers", "drivers: the graphics card's driver against NVIDIA's newest (Game Ready or Studio, suggested from the installed programs), the drivers Windows Update offers, and the devices without a working driver; download and install each with a button",
-            "درایور", "درایورها", "درایور ها", "اپدیت درایور", "آپدیت درایور", "به روزرسانی درایور", "driver", "drivers", "game ready", "studio driver"),
-        P("updates", "Nav_Updates", "Windows Update: default, recommended (deferred) or off", "اپدیت ویندوز", "آپدیت ویندوز", "به روزرسانی ویندوز", "بروزرسانی ویندوز", "windows update"),
-        P("reports", "Nav_Reports", "saved test and benchmark reports: summary (one A5 sheet: the highest temperatures in one row, one line a test with its main figures, the system, drive health, and a note that Mazesta Test is installed on the customer's system), PDF, HTML, before/after comparison; the company's copy needs a service number to send a report to the site, where both the summary and the whole report are kept", "گزارش", "گزارشها", "گزارش ها", "ریپورت", "reports", "report"),
-        T("reports", "compare", "Reports_Compare", "compare two ticked reports, before and after", null, "مقایسه گزارش", "مقایسه قبل و بعد", "compare"),
-        P("apps", "Nav_Apps", "which professional programs (rendering, architecture, civil, animation, editing) run on this computer, and at what level", "برنامه ها", "برنامههای تخصصی", "نرم افزار", "نرمافزار", "نرم افزارها", "برنامه های رندرینگ", "software", "apps"),
-        P("games", "Nav_Games", "which games run on this computer, at their publishers' minimum, recommended and high tiers and the publishers' own targets (resolution, preset, frame rate)",
-            "بازی ها", "بازیها", "لیست بازی", "سیستم مورد نیاز بازی", "سیستم بازی", "مشخصات بازی", "games", "game requirements"),
-        P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models", "مدل هوش مصنوعی", "مدلهای هوش مصنوعی", "مدل های هوش مصنوعی", "هوش مصنوعی", "llm", "مدل زبانی", "ai models"),
-        P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder", "تنظیمات", "تنظیمات برنامه", "ستینگ", "settings", "tray", "ترای", "پایشگر"),
-        T("play", "gameboost", "GameBoost_Title", "game mode: stops background services a game does not need (Windows Update, downloads, telemetry, search indexing) while it is on, with a tick per service; switching it off puts them back", null,
-            "حالت گیم", "حالت بازی", "مود بازی", "سرویس های غیر ضروری", "سرویسهای غیرضروری", "game boost", "gaming mode"),
-        T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null,
-            "اینترنت وصل نمیشه", "اینترنت وصل نمی شود", "اینترنت قطع", "عیب یابی اینترنت", "مشکل اینترنت", "پراکسی", "پروکسی", "ریست شبکه", "proxy", "internet troubleshooter", "no internet"),
-        T("tools", "crashes", "Bsod_Title", "blue screens (stop errors): lists the ones Windows recorded, with the stop code, its name, its parameters and the likely causes to check", null,
-            "بلو اسکرین", "بلواسکرین", "بلو اسکرین ها", "صفحه ابی", "صفحه ابی مرگ", "bsod", "blue screen", "bluescreen", "stop code", "کد خطای ویندوز", "minidump", "مینی دامپ"),
-        P("appupdate", "Nav_AppUpdate", "update this app", "اپدیت برنامه", "آپدیت برنامه", "به روزرسانی برنامه", "نسخه برنامه", "app update"),
-        T("appupdate", "site", "Site_Title", "the link to the shop's site: the site key is entered here; a report's summary is sent to the site from the reports page (to be printed there for the serviced case) and benchmark results from the benchmark page, where anyone can also share their latest results as a page with a link (no key needed)", null,
-            "اشتراک گذاری نتیجه", "اشتراک نتیجه", "شیر کردن نتیجه", "share results",
-            "کلید سایت", "اتصال به سایت", "ارسال به سایت", "ارسال گزارش به سایت", "گزارش آنلاین", "اپلود بنچمارک", "آپلود بنچمارک", "ارسال نتایج", "site key", "send to site", "upload results"),
+        P("dashboard", "Nav_Dashboard", "summary of the computer and its live state"),
+        P("monitoring", "Nav_Monitoring", "every sensor with live charts: temperatures, loads, clocks, fans, power"),
+        P("system", "Nav_SystemInfo", "the whole specification of the computer, with export to PDF"),
+        T("system", "export", "System_Export", "export the specification as PDF, HTML or JSON", null),
+        P("cpu", "Nav_Cpu", "the processor's specification and sensors"),
+        P("gpu", "Nav_Gpu", "the graphics card's specification and sensors"),
+        P("ram", "Dashboard_Ram", "the memory modules and their sensors"),
+        P("storage", "Nav_Storage", "the drives, their health and sensors"),
+        P("network", "Nav_Network", "the network adapters"),
+        P("tests", "Nav_Tests", "hardware tests with a report: the memory tests check the RAM's health over nearly all of it (other programs' memory is paged out first), the drive tests the disks' (SMART and speed), the processor, network and graphics card tests theirs; the graphics card's VRAM test fills nearly all of its memory and shows the bandwidth, VRAM temperature and memory clock; separate video decode and encode tests (H.264, HEVC, VP9, AV1 at 1080p, 4K and 8K, 8 and 10 bit, 4:2:0 and 4:2:2) check every frame; ready-made sets (quick check, everyday, Mazesta default); a switch runs processor, memory and graphics card tests together; when the tests end a window sums up each part (processor, memory, graphics card, drives): healthy or not, highest temperature, load, what needs a look, with a button to the report's summary"),
+        T("tests", "start", "Test_Start", "start the ticked tests", null),
+        P("benchmarks", "Nav_Benchmarks", "speed benchmarks and comparison with other computers; the memory benchmark also measures access latency (at 32 KB, 256 KB, 2 MB, 16 MB, 64 MB and the RAM itself); the Iranian-garden 3D scene benchmarks (normal and ray-traced, at 2560x1440) walk the garden once at walking pace and need no setting; the video benchmark measures the card's hardware decoding (H.264, HEVC, VP9, AV1; 1080p, 4K, 8K; 8 and 10 bit; 4:2:0 and 4:2:2) and encoding (H.264, HEVC, AV1) in frames a second; 7-Zip, AI compute (FP32, FP16, INT8), ray tracing and internet speed benchmarks too"),
+        P("checkup", "Nav_Checkup", "one-click smart diagnosis: runs the benchmarks and judges the computer from them (the assistant can run it itself and tell the findings)"),
+        T("checkup", "run", "Checkup_Run", "start the diagnosis", null),
+        P("checks", "Nav_Checks", "hands-on checks a person judges: screen, keyboard, mouse, speakers, microphone, and the laptop battery's health"),
+        T("checks", "display", "Checks_Display", "full-screen colours for dead or stuck pixels", null),
+        T("checks", "keys", "Checks_Keys", "every key of the keyboard lights up when pressed", null),
+        T("checks", "mouse", "Checks_Mouse", "mouse and touchpad buttons, wheel, double clicks", null),
+        T("checks", "speakers", "Checks_Speakers", "left, right and both speakers, and a frequency sweep", null),
+        T("checks", "mic", "Checks_Mic", "records the microphone and shows its level", null),
+        T("checks", "battery", "Checks_Battery", "the laptop battery: its health percent (full capacity against capacity when new), charge cycles, and a drain test", null),
+        P("overlay", "Nav_Overlay", "settings of the on-screen overlay: temperatures, loads, frame rate (with the 1% and 0.1% lows), and the link (ping, packet loss, jitter, download and upload) shown over games; four sizes (small, medium, large, extra large) and a panel that is as narrow as its rows; the game preset shows frame rate with its lows, GPU temperature, hot spot, load, clock, memory and power, and CPU temperature, load, clock, power and busiest thread, with the average clock of the P-cores and of the E-cores on an Intel CPU that has both, and VRAM temperature; the troubleshooting preset shows everything (every temperature including each AMD CCD's, clocks, voltages, power, fans, VRAM temperature and clock, RAM and drives); any of the processor's or graphics card's sensors from the monitoring page can be added one by one; shortcuts: show/hide, move, Alt+U cycles layouts, Alt+P cycles presets"),
+        P("tuning", "Nav_Tuning", "graphics card tuning (the page is called «تنظیم کارت گرافیک»): automatic and manual overclock and undervolt, clocks, voltage curve, power limit, the card's fan, saved profiles that switch by program; RAM XMP"),
+        P("lights", "Nav_Lights", "RGB lighting colours and effects of memory, graphics card, board, fans and strips (Corsair, ASUS, Gigabyte, MSI), through OpenRGB; the LED count of a board header"),
+        P("fans", "Nav_Fans", "motherboard fan control: automatic, fixed speed, or a temperature curve you drag (silent, standard, performance, full speed)"),
+        T("tuning", "autoundervolt", "Tuning_AutoUndervolt", "finds the lowest stable voltage by itself (10 to 25 minutes)", "Assist_Hint_Tuning"),
+        T("tuning", "autooverclock", "Tuning_AutoOverclock", "raises the clocks step by step while the card stays correct (10 to 25 minutes)", "Assist_Hint_Tuning"),
+        T("tuning", "curve", "Tuning_Curve_Title", "measures and shows the card's voltage-frequency curve", null),
+        T("tuning", "profiles", "Tuning_Profiles", "saved clock profiles of this card", null),
+        T("tuning", "memory", "Tuning_Memory", "RAM XMP / DOCP / EXPO (set in the BIOS; a button restarts into it)", null),
+        T("tuning", "fan", "Tuning_Fan", "the graphics card's fan speed", null),
+        P("tools", "Nav_WindowsTools", "Windows tools: DNS, the internet troubleshooter, blue screens, SFC/DISM repair, Disk Cleanup, hibernation, virtual memory, hosts file"),
+        T("tools", "dns", "Dns_Title", "switch the DNS server, or test them all and pick the fastest", null),
+        P("play", "Nav_Gaming", "gaming: power plan, Game Mode and HAGS, and the game mode that stops background services"),
+        T("play", "power", "Gaming_PowerPlan", "Windows power plans (High, Ultimate Performance)", null),
+        T("play", "gamemode", "Gaming_GameMode", "Game Mode and hardware GPU scheduling (HAGS)", null),
+        T("tools", "repair", "Tools_Repair", "Windows' own repair: SFC and DISM", "Assist_Hint_Repair"),
+        T("tools", "hibernate", "Tools_Hib_Title", "hibernation and Fast Startup on or off", null),
+        T("tools", "vm", "Tools_Vm_Title", "virtual memory (the page file)", null),
+        T("tools", "hosts", "Tools_Hosts_Title", "edit the hosts file", null),
+        T("tools", "cleanup", "Tools_Windows", "Disk Cleanup and Windows Update's window", null),
+        P("tweaks", "Nav_Tweaks", "Windows tweaks (telemetry, widgets, background apps) and preferences, each undoable"),
+        P("shield", "Nav_Shield", "firewall and antivirus: block a program in the Windows firewall (incoming and outgoing), leave a file or folder out of Windows Defender's scans, and put both in Explorer's right-click menu"),
+        P("drivers", "Nav_Drivers", "drivers: the graphics card's driver against NVIDIA's newest (Game Ready or Studio, suggested from the installed programs), the drivers Windows Update offers, and the devices without a working driver; download and install each with a button"),
+        P("updates", "Nav_Updates", "Windows Update: default, recommended (deferred) or off"),
+        P("reports", "Nav_Reports", "saved test and benchmark reports: summary (one A5 sheet: the highest temperatures in one row, one line a test with its main figures, the system, drive health, and a note that Mazesta Test is installed on the customer's system), PDF, HTML, before/after comparison; the company's copy needs a service number to send a report to the site, where both the summary and the whole report are kept"),
+        T("reports", "compare", "Reports_Compare", "compare two ticked reports, before and after", null),
+        P("apps", "Nav_Apps", "which professional programs (rendering, architecture, civil, animation, editing) run on this computer, and at what level"),
+        P("games", "Nav_Games", "which games run on this computer, at their publishers' minimum, recommended and high tiers and the publishers' own targets (resolution, preset, frame rate)"),
+        P("ai", "Nav_Ai", "local AI models: which run here, downloads, speed benchmark; image, video, audio and 3D models"),
+        P("settings", "Nav_Settings", "the app's settings: language, units, render mode, the tray monitor and its temperature warnings, data folder"),
+        T("play", "gameboost", "GameBoost_Title", "game mode: stops background services a game does not need (Windows Update, downloads, telemetry, search indexing) while it is on, with a tick per service; switching it off puts them back", null),
+        T("tools", "netfix", "NetFix_Title", "internet connection troubleshooter: checks adapter, router, internet, DNS, a web page and the proxy, then clears the proxy, sets the DNS, empties the DNS cache or resets the network", null),
+        T("tools", "crashes", "Bsod_Title", "blue screens (stop errors): lists the ones Windows recorded, with the stop code, its name, its parameters and the likely causes to check", null),
+        P("appupdate", "Nav_AppUpdate", "update this app"),
+        T("appupdate", "site", "Site_Title", "the link to the shop's site: the site key is entered here; a report's summary is sent to the site from the reports page (to be printed there for the serviced case) and benchmark results from the benchmark page, where anyone can also share their latest results as a page with a link (no key needed)", null),
     ];
 
     public static AppPlace? Page(string id) => Places.FirstOrDefault(p => p.Page == id && p.Target is null);
@@ -172,62 +164,37 @@ public static class AppGuide
         return best;
     }
 
-    private static readonly string[] GoWords = ["برو", "باز کن", "بازکن", "باز بشه", "باز شه", "بیار", "ببر", "نشون بده", "نشان بده", "نشونم بده", "نمایش بده", "open", "go to", "show", "take me"];
-    private static readonly string[] PageWords = ["صفحه", "بخش", "منو", "قسمت", "تب", "page", "section", "menu", "tab"];
-    private static readonly string[] DoWords = ["انجام بده", "انجام بدی", "بزن", "اجرا کن", "اجرا بشه", "شروع کن", "راه بنداز", "فعال کن", "run", "start", "do it", "press", "click"];
-    private static readonly string[] HowWords = ["چطور", "چطوری", "چگونه", "چجوری", "چه جوری", "چه طور", "کجاست", "کجا", "راهنمایی", "how", "where"];
-    private static readonly string[] AskWords = ["چقدر", "چقد", "چنده", "چند", "چیه", "چی", "چه", "کدوم", "کدام", "کدومه", "مدل", "بگو", "what", "which", "how much", "tell"];
-    private static readonly string[] TestWords = ["تست", "ازمایش", "امتحان", "چک کن", "بررسی کن", "سلامت", "test", "check"];
-    private static readonly string[] SummaryWords = ["خلاصه", "نتیجه", "نتایج", "بگو", "چی شد", "چقدر", "بالاترین", "بیشترین", "حداکثر", "دما", "summary", "summarize", "result", "results", "highest", "max"];
-    private static readonly string[] RunWords = ["اجرا", "اجرا میشه", "اجرا می شود", "اجرا کنم", "کار میکنه", "کار می کند", "میکشه", "می کشه", "جواب میده", "مناسب", "بازش کنم", "run", "runs", "work", "handle", "enough"];
-    private static readonly string[] AppsWords = ["برنامه", "برنامه ها", "نرم افزار", "نرم افزارها", "software", "programs", "apps"];
+    private static readonly string[] GoWords = Lex.List("GoWords");
+    private static readonly string[] PageWords = Lex.List("PageWords");
+    private static readonly string[] DoWords = Lex.List("DoWords");
+    private static readonly string[] HowWords = Lex.List("HowWords");
+    private static readonly string[] AskWords = Lex.List("AskWords");
+    private static readonly string[] TestWords = Lex.List("TestWords");
+    private static readonly string[] SummaryWords = Lex.List("SummaryWords");
+    private static readonly string[] RunWords = Lex.List("RunWords");
+    private static readonly string[] AppsWords = Lex.List("AppsWords");
 
-    private static readonly (string Part, string[] Words)[] SpecParts =
-    [
-        ("vram", ["رم گرافیک", "رم کارت گرافیک", "حافظه گرافیک", "حافظه کارت گرافیک", "حافظه کارت", "حافظه ویدیو", "حافظه ویدئو", "vram", "video memory"]),
-        ("cpu", ["cpu", "سی پی یو", "سیپییو", "پردازنده", "processor"]),
-        ("gpu", ["کارت گرافیک", "گرافیک", "gpu", "graphics card"]),
-        ("ram", ["رم", "ram", "حافظه"]),
-        ("storage", ["هارد", "ssd", "دیسک", "حافظه ذخیره", "درایو", "storage", "disk"]),
-        ("board", ["مادربرد", "مادر برد", "بایوس", "motherboard", "bios"]),
-        ("os", ["ویندوز", "سیستم عامل", "windows", "os"]),
-        ("all", ["مشخصات", "کانفیگ", "specs", "specification"]),
-    ];
-    private static readonly (string Area, string[] Words)[] TestAreas =
-    [
-        ("gpu", ["کارت گرافیک", "گرافیک", "gpu", "graphics"]), ("cpu", ["cpu", "سی پی یو", "پردازنده", "processor"]),
-        ("memory", ["رم", "ram", "حافظه", "memory"]), ("storage", ["هارد", "ssd", "دیسک", "درایو", "storage", "drive"]), ("network", ["شبکه", "اینترنت", "network"]),
-    ];
-    private static readonly (SoftCategory Category, string[] Words)[] Categories =
-    [
-        (SoftCategory.Visualization, ["رندرینگ", "رندر", "ریل تایم", "render", "rendering"]), (SoftCategory.Architecture, ["معماری", "architecture", "bim"]),
-        (SoftCategory.Civil, ["عمران", "سازه", "civil", "structural"]), (SoftCategory.Mechanical, ["مکانیک", "طراحی مکانیکی", "طراحی صنعتی", "mechanical", "cad cam"]),
-        (SoftCategory.Game, ["بازی ها", "بازیها", "گیم ها", "games"]), (SoftCategory.Animation, ["انیمیشن", "جلوه ویژه", "جلوه های ویژه", "سه بعدی", "animation", "vfx"]),
-        (SoftCategory.Video, ["تدوین", "ادیت", "ویدیو", "ویدئو", "editing", "video"]), (SoftCategory.Graphics, ["گرافیکی", "طراحی گرافیک", "graphic design"]),
-    ];
+    private static readonly (string Part, string[] Words)[] SpecParts = Lex.Group("SpecParts");
+    private static readonly (string Area, string[] Words)[] TestAreas = Lex.Group("TestAreas");
+    private static readonly (SoftCategory Category, string[] Words)[] Categories = [.. Lex.Group("Categories").Select(g => (Enum.Parse<SoftCategory>(g.Key), g.Words))];
 
-    private static readonly string[] AllWords = ["همه", "همش", "همشو", "همشون", "تمام", "کامل", "تک تک", "all", "every", "full"];
-    private static readonly string[] TogetherWords = ["همزمان", "هم زمان", "با هم", "باهم", "together", "simultaneous", "at once", "at the same time"];
-    private static readonly string[] CrashWords = ["بلو اسکرین", "بلواسکرین", "بلو اسکیرین", "صفحه ابی", "bsod", "blue screen", "bluescreen", "stop code", "استاپ کد", "minidump", "مینی دامپ"];
-    private static readonly string[] OverlayWords = ["اورلی", "اورلای", "overlay", "بالای صفحه", "بالای مانیتور", "روی صفحه", "روی بازی", "گوشه صفحه", "fps"];
+    private static readonly string[] AllWords = Lex.List("AllWords");
+    private static readonly string[] TogetherWords = Lex.List("TogetherWords");
+    private static readonly string[] CrashWords = Lex.List("CrashWords");
+    private static readonly string[] OverlayWords = Lex.List("OverlayWords");
     // A command said not to be done ("اجرا نکن", "فقط توضیح بده") is never acted on: the model explains, and nothing starts.
-    private static readonly string[] NotWords = ["نکن", "نکنی", "نزن", "نزنی", "نده", "نشه", "نشود", "نمیخوام", "نمی خوام", "نمیخواهم", "نباید", "فقط توضیح", "فقط بگو", "توضیح بده", "don't", "dont", "do not", "not run", "only explain", "just explain", "explain"];
-    private static readonly string[] EarlierWords = ["قبلی", "قبل", "قبلیه", "ماقبل", "پیشین", "previous", "earlier", "before last"];
-    private static readonly string[] OnWords = ["روشن", "فعال", "بیاد", "بیار", "نشون بده", "نشان بده", "نمایش بده", "show", "turn on", "enable"];
-    private static readonly string[] OffWords = ["خاموش", "غیرفعال", "غیر فعال", "ببند", "بردار", "قطع", "مخفی", "hide", "turn off", "disable"];
-    private static readonly (string Kind, string[] Words)[] SensorKinds =
-    [
-        ("Temperature", ["دما", "دمای", "حرارت", "داغ", "temperature", "temp"]), ("Fan", ["فن", "دور فن", "fan"]), ("Load", ["لود", "بار پردازنده", "درصد استفاده", "load", "usage"]),
-        ("Clock", ["کلاک", "فرکانس", "clock"]), ("Power", ["توان", "وات", "مصرف برق", "power", "watt"]),
-    ];
+    private static readonly string[] NotWords = Lex.List("NotWords");
+    private static readonly string[] EarlierWords = Lex.List("EarlierWords");
+    private static readonly string[] OnWords = Lex.List("OnWords");
+    private static readonly string[] OffWords = Lex.List("OffWords");
+    private static readonly (string Kind, string[] Words)[] SensorKinds = Lex.Group("SensorKinds");
     // "What can you do": the app answers with what it really has, not the model with what it imagines.
-    private static readonly string[] HelpWords = ["چه کارهای", "چه کار های", "چه کارایی", "چه کاری", "چکار میتونی", "چیکار میتونی", "چی کار میتونی", "چه سوالاتی", "چه سوالی", "چه سوال هایی",
-        "چه چیزهایی بپرسم", "کمکم کنی", "what can you do", "what can i ask", "help me", "your abilities"];
-    private static readonly string[] TrayWords = ["tray", "ترای", "پایشگر", "سیستم تری", "کنار ساعت", "system tray"];
-    private static readonly string[] AlertWords = ["خبر بده", "خبرم کن", "خبر کن", "هشدار بده", "هشدار", "اطلاع بده", "اطلاع بدی", "بهم بگو", "گزارش بده", "گزارش بدی", "اعلان", "notify", "alert", "warn"];
-    private static readonly string[] WhenWords = ["وقتی", "اگر", "اگه", "هر وقت", "هروقت", "بالای", "بیشتر از", "رسید", "when", "if", "above", "over"];
-    private static readonly string[] CommandWords = ["دستور", "دستوری", "کامند", "فرمان", "command", "cmd", "سی ام دی", "پاورشل", "powershell", "ترمینال", "terminal"];
-    private static readonly string[] NowWords = ["الان", "اکنون", "همین الان", "در حال حاضر", "فعلا", "now", "current", "چنده", "چقدره", "چقدر"];
+    private static readonly string[] HelpWords = Lex.List("HelpWords");
+    private static readonly string[] TrayWords = Lex.List("TrayWords");
+    private static readonly string[] AlertWords = Lex.List("AlertWords");
+    private static readonly string[] WhenWords = Lex.List("WhenWords");
+    private static readonly string[] CommandWords = Lex.List("CommandWords");
+    private static readonly string[] NowWords = Lex.List("NowWords");
 
     /// <summary>What a message asks for, when it is plain; <see cref="AiIntent.None"/> leaves it to the model. The order matters: a question of
     /// "how" is answered, not acted on; the reports and the programs have their own words; a part's figure is a question about this computer;
@@ -355,7 +322,7 @@ public static class AppGuide
     }
 
     private static readonly Regex LengthPart = new(@"(?<in>(?:در|تو|طی|ظرف|in|within)\s+)?(?<n>\d{1,5})\s*(?<u>ساعت|hours?|hrs?|h|دقیقه|minutes?|mins?|m|ثانیه|seconds?|secs?|s)(?![a-z])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    private static readonly string[] TotalWords = ["مجموع", "جمعا", "کلا", "total", "overall"];
+    private static readonly string[] TotalWords = Lex.List("TotalWords");
 
     /// <summary>The length a message names ("۱۰ دقیقه", "۹۰ ثانیه", "۲ ساعت و ۱۵ دقیقه", "نیم ساعت"), 5 seconds to 3 hours, or null; and whether it is the
     /// whole run's ("در ۵ دقیقه", "مجموع ۵ دقیقه") rather than each test's.</summary>
@@ -373,8 +340,8 @@ public static class AppGuide
         return any && sum is >= 5 and <= 10800 ? (sum, total) : (null, false);
     }
 
-    private static readonly string[] CheckupWords = ["عیب یاب", "عیبیاب", "چکاپ", "چک اپ", "check up", "checkup", "diagnos", "troubleshoot"];
-    private static readonly string[] SystemWords = ["سیستم", "کامپیوتر", "کامپیوترم", "لپتاپ", "لپ تاپ", "پی سی", "pc", "computer", "laptop", "system"];
+    private static readonly string[] CheckupWords = Lex.List("CheckupWords");
+    private static readonly string[] SystemWords = Lex.List("SystemWords");
     /// <summary>The words that make a sentence a command (whole words: "کن" must not match "کنار").</summary>
     private static readonly HashSet<string> CommandTokens = new(["کن", "کنی", "کنید", "بکن", "بگیر", "بگیری", "بزن", "بزنی", "انجام", "اجرا", "شروع", "do", "run", "start", "perform", "check", "test", "scan", "diagnose"], StringComparer.Ordinal);
 

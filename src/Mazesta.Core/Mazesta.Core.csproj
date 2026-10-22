@@ -2,4 +2,6 @@
   <ItemGroup><InternalsVisibleTo Include="Mazesta.Core.Tests" /></ItemGroup>
   <!-- Published processor figures (Intel ARK, amd.com) the checkup compares runs with; rebuilt by tools/cpu-specs (see docs/CHECKUP.md). -->
   <ItemGroup><EmbeddedResource Include="Health/Checkup/cpu-specs.json" LogicalName="Mazesta.Core.Health.Checkup.cpu-specs.json" /></ItemGroup>
+  <!-- What people type to the assistant; see AiLexicon. -->
+  <ItemGroup><EmbeddedResource Include="Ai/ai-lexicon.json" LogicalName="Mazesta.Core.Ai.ai-lexicon.json" /></ItemGroup>
 </Project>
