@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "site/landing/index.html"
+        ],
+        "createdAt": "2026-10-22T21:59:03.345Z",
+        "reason": "assistant: full-width bands (.top,.mq,.alt,.fin) are inset by the inner .c container (width min(1160px,100% - 32px)); checked in browser at 375 and desktop"
+      }
+    ]
+  }
+}

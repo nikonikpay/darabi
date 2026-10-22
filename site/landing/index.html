@@ -39,7 +39,7 @@ section{padding:52px 0}
 .alt{background:var(--soft)}
 h1{font-size:clamp(23px,3.2vw,33px);line-height:1.5;font-weight:800}
 h2{font-size:clamp(19px,2.2vw,23px);line-height:1.5;font-weight:800}
-h3{font-size:15.5px;line-height:1.6;font-weight:700}
+h3{font-size:17px;line-height:1.6;font-weight:700}
 .hd{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:22px}
 .hd p{color:var(--mut);font-size:13.5px;margin-top:2px}
 .more{font-size:13.5px;font-weight:700;color:var(--yd);white-space:nowrap}
@@ -72,12 +72,12 @@ header .btn{padding:6px 14px;font-size:13px}
 .fr img{width:100%;height:100%;object-fit:cover;animation:kb 18s ease-in-out infinite alternate}
 @keyframes kb{to{transform:scale(1.08)}}
 .chip{position:absolute;inset-inline-start:10px;bottom:10px;background:rgba(17,17,20,.88);border:1px solid #33333c;border-radius:8px;padding:6px 10px;font-size:12px;display:flex;gap:8px;align-items:center;color:#eee}
-.chip i{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pl 1.6s infinite}
-@keyframes pl{50%{opacity:.3}}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--teal)}
+
 .chip b{font-family:ui-monospace,Consolas,monospace;direction:ltr;color:var(--teal)}
-.mq{background:var(--ink2);color:#9a9aa6;overflow:hidden;white-space:nowrap;font-size:12.5px;padding:9px 0;border-top:1px solid #2a2a31}
-.mq div{display:inline-flex;gap:30px;animation:mq 40s linear infinite;padding-inline-start:30px}
-@keyframes mq{to{transform:translateX(50%)}}
+.mq{background:var(--ink2);color:#9a9aa6;font-size:12.5px;padding:10px 16px;border-top:1px solid #2a2a31}
+.mq div{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 26px}
+.mq span:nth-child(n+16){display:none}
 .use{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
 .use a{display:block;padding:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);transition:border-color .15s,transform .15s}
 .use a:hover{border-color:var(--y);transform:translateY(-2px)}
@@ -143,7 +143,7 @@ table.cmp{width:100%;border-collapse:collapse;font-size:13.5px;border:1px solid 
 .post:hover{border-color:var(--y)}
 .post img{aspect-ratio:16/9;object-fit:cover;width:100%;background:var(--soft)}
 .post div{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
-.post h3{font-size:14.5px}
+.post h3{font-size:17px}
 .post p{font-size:12.5px;color:var(--mut);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .post time{font-size:12px;color:var(--mut);margin-top:auto}
 details{border:1px solid var(--line);border-radius:8px;background:var(--bg);margin-bottom:8px}
@@ -156,7 +156,7 @@ details p{padding:0 14px 12px;color:var(--mut);font-size:14px}
 .fin .b1{background:#111;color:#fff}.fin .b2{border-color:#111;color:#111}.fin .b2:hover{background:#00000014}
 footer{background:var(--ink);color:#b8b8c2;font-size:13px;padding:36px 0 18px}
 footer .g{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:26px}
-footer h4{color:#fff;font-size:14px;margin-bottom:8px}
+footer h4{color:#fff;font-size:17px;margin-bottom:8px}
 footer a{display:block;padding:2px 0}footer a:hover{color:var(--y)}
 footer .cp{border-top:1px solid #2a2a31;margin-top:24px;padding-top:12px;font-size:12px}
 .rv{opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s}
