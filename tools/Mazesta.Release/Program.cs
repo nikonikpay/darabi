@@ -5,11 +5,11 @@ using Mazesta.Diagnostics.Benchmarks; using Mazesta.Persistence.Updates;
 //   keygen --out <folder>            a new signing key pair: the private key to a file there (never into the repository), the public key printed
 //   site   --key <private.pem> --out <site folder> [--app <published app folder>] [--notes-fa <file>] [--notes-en <file>]
 //          [--runs <Data or runs folder>]... [--archive <folder>]
-//          gathers the run logs into the archive (each run once, by its id), builds the comparison lists from the whole archive, zips the app if
+//          gathers the run logs into the archive (each run once, by its id; upload sends them to the site, which builds the lists), zips the app if
 //          given (otherwise keeps the release the folder already offers) and writes update.json with its signature. The site folder is then
 //          uploaded as it is, to /mazesta/ on the site.
-//   upload --dir <site folder> --key-file <file> [--site <api>]
-//          sends that folder to the site through its Mazesta Connect plugin (the release key from the plugin's settings page, kept in a file
+//   upload --dir <site folder> --key-file <file> [--site <api>] [--archive <folder>]
+//          sends that folder to the site through its Mazesta Connect plugin, and the archive's runs into the plugin's database (its lists are the only ones) (the release key from the plugin's settings page, kept in a file
 //          outside the repository).
 return args.FirstOrDefault() switch
 {
@@ -60,18 +60,10 @@ static int Site(string[] args)
     if (marks.Count > 0) { Directory.CreateDirectory(archive); File.WriteAllText(marksFile, JsonSerializer.Serialize(marks, Json)); }
     Console.WriteLine($"Archive {archive}: {added} new runs, {all.Count} in all; {marks.Values.Count(m => m.Featured)} featured");
 
-    // 2. The comparison lists, one file per benchmark, version and settings; lists no run supports any more are removed.
+    // 2. No comparison lists here any more: the site's plugin builds them from the runs it holds (upload sends it the archive), and the apps read those.
+    //    A folder from before is emptied, so the manifest names no lists and the copies drop the old signed ones.
     string db = Path.Combine(outDir, "benchdb");
-    Directory.CreateDirectory(db);
-    var tables = BenchmarkPeers.Aggregate(all, DateTimeOffset.UtcNow, marks);
-    var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    foreach (var t in tables)
-    {
-        string name = BenchmarkPeers.FileName(t.Key); names.Add(name);
-        File.WriteAllText(Path.Combine(db, name), BenchmarkPeers.Write(t));
-        Console.WriteLine($"  {t.Key}: {t.Entries.Count} models");
-    }
-    foreach (var stale in Directory.EnumerateFiles(db, "*.json").Where(f => !names.Contains(Path.GetFileName(f)))) File.Delete(stale);
+    if (Directory.Exists(db)) Directory.Delete(db, true);
 
     // 3. The release: a new zip when an app folder is given, otherwise the one update.json already offers.
     AppRelease? release = null;
@@ -102,14 +94,14 @@ static int Site(string[] args)
     }
 
     // 4. The manifest and its signature, checked once more the way the app will check it.
-    var data = names.Order(StringComparer.Ordinal).Select(n => Path.Combine(db, n)).Select(f => new UpdateFile(DataSync.Prefix + Path.GetFileName(f), new FileInfo(f).Length, UpdateSigning.Sha256(f))).ToList();
+    var data = new List<UpdateFile>();
     var manifest = new UpdateManifest(UpdateManifest.CurrentFormat, DateTimeOffset.UtcNow, release, data);
     var bytes = manifest.ToBytes();
     string sig = UpdateSigning.Sign(bytes, key);
     File.WriteAllBytes(manifestFile, bytes);
     File.WriteAllText(Path.Combine(outDir, UpdateManifest.SignatureName), sig);
     UpdateManifest.Parse(bytes);
-    Console.WriteLine($"Signed {manifestFile}: {(release is null ? "no release" : "release " + release.Version)}, {data.Count} lists. Upload the folder's contents to /mazesta/ on the site.");
+    Console.WriteLine($"Signed {manifestFile}: {(release is null ? "no release" : "release " + release.Version)}. Upload the folder's contents to /mazesta/ on the site.");
     return 0;
 }
 
@@ -153,6 +145,24 @@ static async Task<int> Upload(string[] args)
         Console.WriteLine();
         sent.Add(new { name, size, sha256 = UpdateSigning.Sha256(path) });
     }
+    // The archive's runs (and the shop's marks) into the plugin's database, from which it builds the only comparison lists; it takes each run once, by its id.
+    if (Opt(args, "--archive") is { } archive && Directory.Exists(archive))
+    {
+        var runs = BenchmarkRunLog.ReadFolder(archive).ToList();
+        var marks = BenchmarkMarks.Read(Path.Combine(archive, BenchmarkMarks.FileName));
+        var higher = runs.Select(r => r.Benchmark).Distinct().ToDictionary(b => b, b => BenchmarkRecords.Headline(b)?.HigherIsBetter ?? true);
+        int added = 0, known = 0, refused = 0;
+        foreach (var batch in runs.Count == 0 ? [[]] : runs.Chunk(SiteClient.RunsPerRequest).ToArray())
+        {
+            string json = "{\"runs\":[" + string.Join(",", batch.Select(BenchmarkPeers.WriteRun)) + "],\"higher\":" + JsonSerializer.Serialize(higher) + (marks.Count > 0 ? ",\"marks\":" + BenchmarkPeers.WriteMarks(marks) : "") + "}";
+            using var res = await http.PostAsync(new Uri(api, "bench/runs"), new StringContent(json, System.Text.Encoding.UTF8, "application/json"));
+            string text = await res.Content.ReadAsStringAsync();
+            if (!res.IsSuccessStatusCode) { Console.Error.WriteLine($"Benchmark runs refused ({(int)res.StatusCode}): {text[..Math.Min(300, text.Length)]}"); return 1; }
+            using var d = JsonDocument.Parse(text); var r = d.RootElement;
+            added += r.GetProperty("added").GetInt32(); known += r.GetProperty("known").GetInt32(); refused += r.GetProperty("rejected").GetInt32();
+        }
+        Console.WriteLine($"Benchmark runs to the site: {added} new, {known} it had, {refused} refused ({runs.Count} in the archive).");
+    }
     using var commit = await http.PostAsync(new Uri(api, "release/commit"), new StringContent(JsonSerializer.Serialize(new { files = sent }), System.Text.Encoding.UTF8, "application/json"));
     string answer = await commit.Content.ReadAsStringAsync();
     if (!commit.IsSuccessStatusCode) { Console.Error.WriteLine($"The site did not put the files in place ({(int)commit.StatusCode}): {answer[..Math.Min(300, answer.Length)]}"); return 1; }
@@ -162,7 +172,7 @@ static async Task<int> Upload(string[] args)
 
 static string? Opt(string[] args, string name) => Opts(args, name).LastOrDefault();
 static IEnumerable<string> Opts(string[] args, string name) { for (int i = 0; i < args.Length - 1; i++) if (args[i] == name) yield return args[i + 1]; }
-static ArgumentException Usage() => new("usage: mazesta-release keygen --out <folder> | site --key <pem> --out <folder> [--app <folder>] [--notes-fa <file>] [--notes-en <file>] [--runs <folder>]... [--archive <folder>] | upload --dir <site folder> --key-file <release key file> [--site <api address>]");
+static ArgumentException Usage() => new("usage: mazesta-release keygen --out <folder> | site --key <pem> --out <folder> [--app <folder>] [--notes-fa <file>] [--notes-en <file>] [--runs <folder>]... [--archive <folder>] | upload --dir <site folder> --key-file <release key file> [--site <api address>] [--archive <folder>]");
 
 internal static partial class Program
 {

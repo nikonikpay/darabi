@@ -1,7 +1,7 @@
 # Builds the update folder for the shop's site (see docs/UPDATES.md), ready to upload as it is to /mazesta/ on www.dfmrendering.com:
 #   update.json + update.json.sig   the signed list of what is offered
 #   MazestaUpdate-<version>.zip     the app (only with -App), for the installed copies to update from; new users download MazestaTestSetup.exe instead
-#   benchdb/*.json                  the benchmark comparison lists, rebuilt from every run gathered so far
+#   (no comparison lists: -Upload sends every run gathered so far to the site's plugin, which builds the only lists the apps read)
 #
 #   pwsh tools/release.ps1                                  # data only: gather the runs, rebuild the lists, re-sign (daily)
 #   pwsh tools/release.ps1 -App -NotesFa notes-fa.txt       # also publish the app and offer it as the new release
@@ -41,7 +41,7 @@ dotnet run --project tools/Mazesta.Release -c Release -- @toolArgs
 if ($LASTEXITCODE -ne 0) { throw "mazesta-release failed ($LASTEXITCODE)." }
 if ($Upload) {
     if (-not (Test-Path $SiteKey)) { throw "The release key file $SiteKey is missing. Copy the release key from the site (Mazesta Connect > settings) into it." }
-    dotnet run --project tools/Mazesta.Release -c Release --no-build -- upload --dir $Out --key-file $SiteKey
+    dotnet run --project tools/Mazesta.Release -c Release --no-build -- upload --dir $Out --key-file $SiteKey --archive $Archive
     if ($LASTEXITCODE -ne 0) { throw "The upload failed ($LASTEXITCODE). The folder is ready in $Out; run again with -Upload, or upload it by hand." }
 } else {
     Write-Host "Ready in $(Resolve-Path $Out). Send it with -Upload, or upload its contents by hand to /mazesta/ on the site (update.json and update.json.sig last)."
