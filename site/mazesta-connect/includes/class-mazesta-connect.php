@@ -35,7 +35,7 @@ final class Mazesta_Connect
     {
         add_action('rest_api_init', array(__CLASS__, 'routes'));
         add_action('init', array(__CLASS__, 'public_pages'));
-        foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'share_delete', 'share_add', 'settings', 'rebuild') as $a) {
+        foreach (array('pair_approve', 'report', 'report_delete', 'run_approve', 'run_delete', 'run_feature', 'list_delete', 'share_delete', 'share_add', 'settings', 'rebuild') as $a) {
             add_action('admin_post_mzc_' . $a, array(__CLASS__, 'act_' . $a));
         }
     }
@@ -1151,6 +1151,24 @@ final class Mazesta_Connect
         self::back('bench', 'deleted');
     }
 
+    /** Whole lists at once: the ticked ones, or (old=1) every list of a workload older than its benchmark's newest. The runs go, then the lists are built again. */
+    public static function act_list_delete()
+    {
+        self::guard('list_delete');
+        $db = self::db(); $tb = self::t('bench_runs');
+        $keys = isset($_POST['lists']) && is_array($_POST['lists']) ? array_map('sanitize_text_field', wp_unslash($_POST['lists'])) : array();
+        if (!empty($_POST['old']) && $db) {
+            $l = self::latest_versions();
+            foreach ((array) $db->get_col("SELECT DISTINCT list FROM `$tb`") as $k) {
+                if (preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', (string) $k, $m) && isset($l[$m[1]]) && (int) $m[2] < (int) $l[$m[1]]) { $keys[] = $k; }
+            }
+        }
+        $n = 0;
+        foreach ($db ? array_unique($keys) : array() as $k) { $n += (int) $db->query($db->prepare("DELETE FROM `$tb` WHERE list = %s", $k)); }
+        if ($n > 0) { self::rebuild(); }
+        self::back('bench', $n > 0 ? 'deleted' : 'nothing');
+    }
+
     public static function act_run_feature()
     {
         self::guard('run_feature');
@@ -1284,13 +1302,18 @@ final class Mazesta_Connect
             }
             echo '</tbody></table>';
         } else { echo '<p class="description">چیزی در انتظار نیست. اجراهایی که با کلید سایت (از نسخه مازستایی برنامه) می‌رسند مستقیم وارد فهرست می‌شوند.</p>'; }
-        echo '<h3>فهرست‌ها</h3><p class="description">هر بنچمارک یک فهرست مقایسه دارد (و اگر تنظیمی مثل اندازه فایل داشته باشد، برای هر تنظیم یک فهرست). روی نام فهرست بزنید تا اجراهایش را ببینید و نتیجه مرجع انتخاب کنید. نوشته کوچک زیر هر نام، شناسه فنی همان فهرست در برنامه است.</p>'
-            . '<table class="widefat striped"><thead><tr><th>بنچمارک (فهرست)</th><th>تعداد مدل قطعه</th><th>تعداد اجرا</th><th>آخرین دریافت</th></tr></thead><tbody>';
-        if (!$lists) { echo '<tr><td colspan="4">هنوز اجرایی بارگذاری نشده است. در برنامه: بنچمارک › ارسال نتایج به سایت.</td></tr>'; }
+        $old = self::latest_versions();
+        echo '<h3>فهرست‌ها</h3><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_list_delete">' . wp_nonce_field('mzc_list_delete', '_wpnonce', true, false)
+            . '<p><button class="button" onclick="return confirm(\'همه اجراهای فهرست‌های انتخاب‌شده پاک شوند؟ برنمی‌گردد.\')">حذف فهرست‌های انتخاب‌شده</button> '
+            . '<button class="button" name="old" value="1" onclick="return confirm(\'همه فهرست‌های نسخه قدیمی (هر بنچمارکی که نسخه تازه‌تری دارد) پاک شوند؟ برنمی‌گردد.\')">حذف همه نسخه‌های قدیمی</button></p>'
+            . '<p class="description">هر بنچمارک یک فهرست مقایسه دارد (و اگر تنظیمی مثل اندازه فایل داشته باشد، برای هر تنظیم یک فهرست). روی نام فهرست بزنید تا اجراهایش را ببینید و نتیجه مرجع انتخاب کنید. نوشته کوچک زیر هر نام، شناسه فنی همان فهرست در برنامه است.</p>'
+            . '<table class="widefat striped"><thead><tr><th><input type="checkbox" onclick="var t=this;document.querySelectorAll(\'.mzc-list\').forEach(function(c){c.checked=t.checked})"></th><th>بنچمارک (فهرست)</th><th>تعداد مدل قطعه</th><th>تعداد اجرا</th><th>آخرین دریافت</th></tr></thead><tbody>';
+        if (!$lists) { echo '<tr><td colspan="5">هنوز اجرایی بارگذاری نشده است. در برنامه: بنچمارک › ارسال نتایج به سایت.</td></tr>'; }
         foreach ($lists as $t => $l) {
-            echo '<tr><td><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . self::list_label($t) . '</a></td><td>' . $l['parts'] . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
+            $stale = preg_match('/^([A-Za-z0-9._-]+)@(\d+)/', $t, $m) && isset($old[$m[1]]) && (int) $m[2] < (int) $old[$m[1]];
+            echo '<tr><td><input type="checkbox" class="mzc-list" name="lists[]" value="' . esc_attr($t) . '"></td><td><a href="' . esc_url(admin_url('admin.php?page=mazesta-connect&tab=bench&list=' . rawurlencode($t))) . '">' . self::list_label($t) . '</a>' . ($stale ? ' <span class="mzc-bad-text">(نسخه قدیمی)</span>' : '') . '</td><td>' . $l['parts'] . '</td><td>' . (int) $l['runs'] . '</td><td>' . self::local($l['last']) . '</td></tr>';
         }
-        echo '</tbody></table>';
+        echo '</tbody></table></form>';
         $key = self::arg('list');
         if ($key !== '') {
             $runs = array(); foreach ((array) $db->get_results($db->prepare("SELECT $cols FROM `$tb` WHERE approved = 1 AND list = %s ORDER BY value DESC LIMIT 500", $key), ARRAY_A) as $r) { $runs[$r['id']] = $r; }
