@@ -41,7 +41,7 @@ public static class PartSpecs
 
     /// <summary>Every part, board first, for the System Information page.</summary>
     public static IReadOnlyList<SpecCard> All(HardwareInventory inv, HardwareDetails d)
-        => [.. For(HardwareKind.Motherboard, inv, d), .. For(HardwareKind.Cpu, inv, d), .. For(HardwareKind.Memory, inv, d), .. For(HardwareKind.Gpu, inv, d),
+        => [.. For(HardwareKind.Cpu, inv, d), .. For(HardwareKind.Memory, inv, d), .. For(HardwareKind.Gpu, inv, d), .. For(HardwareKind.Motherboard, inv, d),
             .. For(HardwareKind.Storage, inv, d), .. For(HardwareKind.Network, inv, d)];
 
     private static SpecCard Missing(string titleKey) => new(Loc.Get(titleKey), [new(Loc.Get("SystemInfo_Name"), Na)]);
