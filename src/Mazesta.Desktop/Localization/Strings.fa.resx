@@ -3799,11 +3799,11 @@
   <data name="Shield_Open_Security" xml:space="preserve"><value>Windows Security همین حالا باز شود؟</value></data>
   <data name="Shield_Open_SecurityBtn" xml:space="preserve"><value>باز کردن Windows Security</value></data>
   <data name="Shield_Av_Ctl_Title" xml:space="preserve"><value>خاموش کردن آنتی‌ویروس</value></data>
-  <data name="Shield_Av_Ctl_Sub" xml:space="preserve"><value>همه‌ی محافظ‌های Defender، نه فقط محافظت زنده</value></data>
+  <data name="Shield_Av_Ctl_Sub" xml:space="preserve"><value>از طریق تنظیمات خود ویندوز</value></data>
   <data name="Shield_Av_Off_Temp" xml:space="preserve"><value>خاموش تا ری‌استارت</value></data>
   <data name="Shield_Av_Off_Perm" xml:space="preserve"><value>خاموش برای همیشه</value></data>
   <data name="Shield_Av_On_Btn" xml:space="preserve"><value>روشن کردن آنتی‌ویروس</value></data>
-  <data name="Shield_Av_Ctl_Note" xml:space="preserve"><value>تا ری‌استارت: با روشن شدن بعدی کامپیوتر یک وظیفه‌ی خود ویندوز همه‌چیز را دوباره روشن می‌کند. برای همیشه: تا وقتی دکمه‌ی روشن کردن را نزنید خاموش می‌ماند. در ویندوز ۱۱ فقط وقتی کار می‌کند که Tamper Protection خاموش باشد؛ اگر ویندوز نپذیرد برنامه همین را می‌گوید.</value></data>
+  <data name="Shield_Av_Ctl_Note" xml:space="preserve"><value>ویندوز اجازه نمی‌دهد هیچ برنامه‌ای Defender را خاموش کند و این کار را حمله می‌شمارد (خطای Access denied). برای خاموش کردن، این دکمه Windows Security را باز می‌کند؛ آنجا اول Tamper Protection و بعد Real-time protection را خودتان خاموش کنید.</value></data>
   <data name="Shield_Av_Ctl_Pending" xml:space="preserve"><value>الان خاموش است و با روشن شدن بعدی کامپیوتر خودش دوباره روشن می‌شود.</value></data>
   <data name="Shield_Av_Ctl_Perm" xml:space="preserve"><value>برای همیشه خاموش است: بعد از ری‌استارت هم خاموش می‌ماند.</value></data>
   <data name="Shield_Fw_Ctl_Title" xml:space="preserve"><value>خاموش یا روشن کردن فایروال</value></data>

@@ -24,8 +24,7 @@ export function mount(el) {
   const pickFolder = h("button", { class: "btn primary", type: "button", onclick: () => pick("folder", (p) => exclude(p)) }, icon("folder"), t("Shield_Av_Folder"));
 
   const fwSwitch = h("button", { class: "btn", type: "button", onclick: () => fwSwitchNow() }), fwSwitchNote = h("p", { class: "note" });
-  const avOffTemp = h("button", { class: "btn", type: "button", onclick: () => avStop(false) }, t("Shield_Av_Off_Temp")), avOffPerm = h("button", { class: "btn", type: "button", onclick: () => avStop(true) }, t("Shield_Av_Off_Perm"));
-  const avOn = h("button", { class: "btn primary", type: "button", onclick: () => avStart() }, t("Shield_Av_On_Btn")), avCtlNote = h("p", { class: "note" });
+  const avSecurity = h("button", { class: "btn primary", type: "button", onclick: () => call("shield.openSecurity") }, t("Shield_Open_SecurityBtn")), avCtlNote = h("p", { class: "note" });
 
   const fwView = h("div", { class: "sh-view" }, fwStatus,
     box({ cls: "p-caution", ico: "stop", title: t("Shield_Fw_Ctl_Title"), sub: t("Shield_Fw_Ctl_Sub"), i: 0, a: "shield-fw-switch", body: [h("div", { class: "btn-row" }, fwSwitch), fwSwitchNote] }),
@@ -34,7 +33,7 @@ export function mount(el) {
         body: [h("div", { class: "btn-row" }, pickExe, reload), h("p", { class: "note" }, t("Shield_Fw_Or")), search, runningList] }),
       box({ cls: "p-caution", ico: "stop", title: t("Shield_Blocked"), sub: t("Shield_Blocked_Sub"), i: 1, a: "shield-blocked", body: blockedList })));
   const avView = h("div", { class: "sh-view", hidden: true }, avStatus, avNote,
-    box({ cls: "p-caution", ico: "stop", title: t("Shield_Av_Ctl_Title"), sub: t("Shield_Av_Ctl_Sub"), i: 0, a: "shield-av-off", body: [h("div", { class: "btn-row" }, avOffTemp, avOffPerm, avOn), avCtlNote, h("p", { class: "note" }, t("Shield_Av_Ctl_Note"))] }),
+    box({ cls: "p-caution", ico: "stop", title: t("Shield_Av_Ctl_Title"), sub: t("Shield_Av_Ctl_Sub"), i: 0, a: "shield-av-off", body: [h("div", { class: "btn-row" }, avSecurity), avCtlNote, h("p", { class: "note" }, t("Shield_Av_Ctl_Note"))] }),
     h("div", { class: "panels two" },
       box({ cls: "p-tool", ico: "shield", title: t("Shield_Av_Title"), sub: t("Shield_Av_Sub"), i: 0, a: "shield-exclude",
         body: [h("div", { class: "btn-row" }, pickFile, pickFolder), h("p", { class: "note" }, t("Shield_Av_Warn"))] }),
@@ -89,7 +88,6 @@ ${b.path}`)) unblock(b.path); } }, t("Shield_Unblock")))));
     const fwOff = !!fw && fw.profiles.some((p) => !p.on);
     fwSwitch.hidden = !fw; fwSwitch.className = `btn ${fwOff ? "primary" : ""}`; fwSwitch.textContent = t(fwOff ? "Shield_Fw_TurnOn" : "Shield_Fw_TurnOff");
     const on = !!av?.ok && av.defender && av.stopped;
-    avOffTemp.hidden = avOffPerm.hidden = !av?.ok || !av.defender || on; avOn.hidden = !on;
     avCtlNote.hidden = !on; avCtlNote.textContent = on ? t(av.policy || !av.restore ? "Shield_Av_Ctl_Perm" : "Shield_Av_Ctl_Pending") : "";
     const notes = [];
     if (av?.ok && av.other) notes.push(t("Shield_Av_Other", av.other));
@@ -129,17 +127,6 @@ ${b.path}`)) unblock(b.path); } }, t("Shield_Unblock")))));
     const r = await call("shield.fwSwitch", { on }); if (r.ok) toast(t(on ? "Shield_Done_FwOn" : "Shield_Done_FwOff"), "ok"); else toast(r.error, "fail");
     await loadFirewall();
   });
-  const avStop = (permanent) => guard(async () => {
-    if (!confirm(t(permanent ? "Shield_Ask_AvOffPerm" : "Shield_Ask_AvOff"))) return;
-    const r = await call("shield.avStop", { permanent });
-    if (r.ok) toast(t(permanent ? "Shield_Done_AvOffPerm" : "Shield_Done_AvOff"), "ok");
-    else if (r.security && confirm(`${r.error}
-
-${t("Shield_Open_Security")}`)) await call("shield.openSecurity");
-    else if (!r.security) toast(r.error, "fail");
-    await loadAv();
-  });
-  const avStart = () => guard(async () => { const r = await call("shield.avStart"); if (r.ok) toast(t("Shield_Done_AvOn"), "ok"); else toast(r.error, "fail"); await loadAv(); });
   async function pick(kind, then) { if (busy) return; const r = await call("shield.pick", { kind }); if (r?.path) then(r.path); }
 
   async function menu(kind, input) {

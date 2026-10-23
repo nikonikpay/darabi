@@ -3799,11 +3799,11 @@ Cancel: stop.</value></data>
   <data name="Shield_Open_Security" xml:space="preserve"><value>Open Windows Security now?</value></data>
   <data name="Shield_Open_SecurityBtn" xml:space="preserve"><value>Open Windows Security</value></data>
   <data name="Shield_Av_Ctl_Title" xml:space="preserve"><value>Turn the antivirus off</value></data>
-  <data name="Shield_Av_Ctl_Sub" xml:space="preserve"><value>All of Defender's guards, not only real-time protection</value></data>
+  <data name="Shield_Av_Ctl_Sub" xml:space="preserve"><value>Through Windows' own settings</value></data>
   <data name="Shield_Av_Off_Temp" xml:space="preserve"><value>Off until restart</value></data>
   <data name="Shield_Av_Off_Perm" xml:space="preserve"><value>Off for good</value></data>
   <data name="Shield_Av_On_Btn" xml:space="preserve"><value>Turn the antivirus on</value></data>
-  <data name="Shield_Av_Ctl_Note" xml:space="preserve"><value>Until restart: a task of Windows turns everything on again at the next start of the computer. For good: it stays off until you press the button to turn it on. On Windows 11 this works only when Tamper Protection is off, and the app says so if Windows refuses.</value></data>
+  <data name="Shield_Av_Ctl_Note" xml:space="preserve"><value>Windows lets no program turn Defender off and treats the attempt as an attack (Access denied). To turn it off, this button opens Windows Security; there switch off Tamper Protection first, then Real-time protection, yourself.</value></data>
   <data name="Shield_Av_Ctl_Pending" xml:space="preserve"><value>It is off now and turns itself on again at the next start of the computer.</value></data>
   <data name="Shield_Av_Ctl_Perm" xml:space="preserve"><value>It is off for good: it stays off after a restart.</value></data>
   <data name="Shield_Fw_Ctl_Title" xml:space="preserve"><value>Turn the firewall off or on</value></data>
