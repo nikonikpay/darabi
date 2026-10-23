@@ -129,6 +129,9 @@
   <data name="Banner_ProviderFailed" xml:space="preserve">
     <value>Sensor reading failed: {0}</value>
   </data>
+  <data name="Banner_SensorsSlow" xml:space="preserve">
+    <value>The sensors are not loading. If a flash drive or an external hard disk is plugged in, unplug it. The rest keeps loading while you use the app.</value>
+  </data>
   <data name="Banner_InstallPawnIo" xml:space="preserve">
     <value>Open pawnio.eu</value>
   </data>

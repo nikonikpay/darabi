@@ -129,6 +129,9 @@
   <data name="Banner_ProviderFailed" xml:space="preserve">
     <value>خواندن سنسورها با خطا مواجه شد: {0}</value>
   </data>
+  <data name="Banner_SensorsSlow" xml:space="preserve">
+    <value>سنسورها بارگذاری نمی‌شوند. اگر فلش یا هارد اکسترنال به سیستم وصل است، آن را بکشید. بقیهٔ بارگذاری هم‌زمان با کار با برنامه ادامه دارد.</value>
+  </data>
   <data name="Banner_InstallPawnIo" xml:space="preserve">
     <value>باز کردن pawnio.eu</value>
   </data>

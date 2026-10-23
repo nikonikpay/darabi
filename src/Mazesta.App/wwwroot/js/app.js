@@ -158,6 +158,7 @@ function banner(text, link, closed) {
     h("button", { class: "btn quiet", onclick: () => { el.remove(); closed?.(); }, "aria-label": "close" }, icon("x")));
   stage.before(el); el.style.gridColumn = "2";
   app.style.gridTemplateRows = "auto 1fr auto"; index.style.gridRow = asst.style.gridRow = "1 / 4"; stage.style.gridRow = "2"; band.style.gridRow = "3";
+  return el;
 }
 
 async function start() {
@@ -172,7 +173,8 @@ async function start() {
   on("provider", (p) => {
     const el = document.getElementById("prov"); if (el) el.textContent = p.text;
     if (p.state === "Degraded" || p.state === "Failed") banner(t(p.state === "Degraded" ? "Banner_ProviderDegraded" : "Banner_ProviderFailed", p.reason || ""), p.pawnIo ? "pawnio" : null);
-    if (!ready && ["Ready", "Degraded", "Failed"].includes(p.state)) whenReady();
+    if (!["Ready", "Degraded", "Failed"].includes(p.state)) return;
+    if (!ready) whenReady(); else if (slow) lateScan();
   });
   on("engine", (e) => setPause(e.paused));
   on("interval", (s) => { const el = document.getElementById("intv"); if (el) el.textContent = t("Status_Interval", s); });
@@ -220,11 +222,27 @@ function bootCard(status) {
   const tick = () => { secs.textContent = t("Web_Boot_Elapsed", fa(String(Math.floor((Date.now() - start) / 1000)))); };
   tick(); bootTimer = setInterval(tick, 1000);
   on("provider", (p) => { const el = document.getElementById("boot-prov"); if (el) el.textContent = p.text; });
+  // Some machines never finish the scan (a flash or external drive that hangs it): after 20 s the app opens anyway and the scan carries on behind it.
+  setTimeout(giveUp, 20000);
+}
+
+let slow = null;   // the warning shown while the sensor scan is still running after the app has opened
+async function giveUp() {
+  if (ready) return;
+  slow = banner(t("Banner_SensorsSlow"));
+  await whenReady();
+}
+
+// The scan ended after the app had opened: take the hardware list again and redraw the open page with it.
+async function lateScan() {
+  slow?.remove(); slow = null;
+  await loadHardware().catch(() => {});
+  if (current) { const id = current.id; current = null; show(id); }
 }
 
 async function whenReady() {
   if (ready) return;
-  await loadHardware();
+  await loadHardware().catch(() => {});
   clearInterval(bootTimer);
   ready = true; app.dataset.state = "ready";
   show((location.hash.match(/^#\/(\w+)/) || [])[1] || "dashboard");
