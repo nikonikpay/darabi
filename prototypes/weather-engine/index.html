@@ -1,43 +1,38 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Weather Engine Prototype</title>
-<!-- Stand-alone test bed for the garden scene's weather (src/Mazesta.Diagnostics.Gpu/Scene/GardenWeather.cs). Nothing here is wired into the app:
-     once a behaviour looks right, port it to GardenWeather / GardenWind and the scene shaders. Open this file in any browser (WebGL2). -->
+<!-- Stand-alone test bed for the garden scene's weather (src/Mazesta.Diagnostics.Gpu/Scene/GardenWeather.cs), drawn in the app's own Persian garden.
+     Nothing here is wired into the app: once a behaviour looks right, port it to GardenWeather / GardenWind and the scene shaders.
+     garden.js is made by export/export-garden.cs (dotnet run export-garden.cs) from the embedded garden.mzscene. Open this file in Chrome or Edge. -->
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;font:12px/1.4 system-ui,sans-serif;color:#eee}
 canvas{display:block;width:100%;height:100%}
 #ui{position:fixed;top:10px;left:10px;background:#000a;padding:10px 12px;border-radius:8px;width:250px}
 #ui label{display:flex;justify-content:space-between;gap:8px;margin:4px 0}#ui input[type=range]{width:130px}
 #hud{position:fixed;bottom:10px;left:10px;background:#000a;padding:8px 12px;border-radius:8px;font-family:Consolas,monospace;white-space:pre}
+#load{position:fixed;inset:0;display:grid;place-items:center;font-size:16px}
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="ui"><b>Weather engine</b>
+<div id="ui"><b>Weather engine · Persian garden</b>
 <label>Auto weather <input id="auto" type="checkbox" checked></label>
 <label>Storm <input id="storm" type="range" min="0" max="1" step="0.01" value="0.2"></label>
 <label>Wind m/s <input id="wind" type="range" min="0" max="25" step="0.5" value="6"></label>
 <label>Wind dir <input id="dir" type="range" min="0" max="6.283" step="0.01" value="0.6"></label>
-<label>Wood E (GPa) <input id="wood" type="range" min="1" max="10" step="0.5" value="3"></label>
-<div style="opacity:.7;margin-top:6px">Drag: orbit · wheel: zoom</div></div>
-<div id="hud"></div>
+<div style="opacity:.7;margin-top:6px">Drag: orbit · wheel: zoom · right-drag: move</div></div>
+<div id="hud"></div><div id="load">Loading the garden…</div>
+<script src="garden.js"></script>
 <script>
 'use strict';
 const cv=document.getElementById('c'), gl=cv.getContext('webgl2',{antialias:true});
-if(!gl) document.body.innerHTML='<p style="padding:20px">WebGL2 is not available.</p>';
 const $=id=>document.getElementById(id);
+const S3TC=gl.getExtension('WEBGL_compressed_texture_s3tc'), CBF=gl.getExtension('EXT_color_buffer_float');
+if(!window.GARDEN) $('load').textContent='garden.js is missing: run export/export-garden.cs (dotnet run export-garden.cs).';
 
 // ---------- math ----------
-const Q={
- mul:(a,b)=>[a[3]*b[0]+a[0]*b[3]+a[1]*b[2]-a[2]*b[1],a[3]*b[1]-a[0]*b[2]+a[1]*b[3]+a[2]*b[0],a[3]*b[2]+a[0]*b[1]-a[1]*b[0]+a[2]*b[3],a[3]*b[3]-a[0]*b[0]-a[1]*b[1]-a[2]*b[2]],
- axis:(x,y,z,a)=>{const s=Math.sin(a/2);return[x*s,y*s,z*s,Math.cos(a/2)]},
- vec:v=>{const a=Math.hypot(v[0],v[1],v[2]);if(a<1e-9)return[0,0,0,1];const s=Math.sin(a/2)/a;return[v[0]*s,v[1]*s,v[2]*s,Math.cos(a/2)]},
- rot:(q,v)=>{const[x,y,z,w]=q,tx=2*(y*v[2]-z*v[1]),ty=2*(z*v[0]-x*v[2]),tz=2*(x*v[1]-y*v[0]);return[v[0]+w*tx+y*tz-z*ty,v[1]+w*ty+z*tx-x*tz,v[2]+w*tz+x*ty-y*tx]},
- conj:q=>[-q[0],-q[1],-q[2],q[3]]};
 const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], scl=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
 const norm=a=>scl(a,1/Math.hypot(a[0],a[1],a[2])), clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
-function trs(o,i,q,p,sx,sy,sz){const[x,y,z,w]=q,xx=x*x,yy=y*y,zz=z*z,xy=x*y,xz=x*z,yz=y*z,wx=w*x,wy=w*y,wz=w*z;
- o[i]=(1-2*(yy+zz))*sx;o[i+1]=2*(xy+wz)*sx;o[i+2]=2*(xz-wy)*sx;o[i+3]=0;o[i+4]=2*(xy-wz)*sy;o[i+5]=(1-2*(xx+zz))*sy;o[i+6]=2*(yz+wx)*sy;o[i+7]=0;
- o[i+8]=2*(xz+wy)*sz;o[i+9]=2*(yz-wx)*sz;o[i+10]=(1-2*(xx+yy))*sz;o[i+11]=0;o[i+12]=p[0];o[i+13]=p[1];o[i+14]=p[2];o[i+15]=1;}
+const mix3=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
 function mmul(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+r]*b[c*4+k];o[c*4+r]=s;}return o;}
 function persp(fy,as,n,f){const t=1/Math.tan(fy/2);return new Float32Array([t/as,0,0,0,0,t,0,0,0,0,(f+n)/(n-f),-1,0,0,2*f*n/(n-f),0]);}
 function lookAt(e,at){const f=norm(sub(at,e)),s=norm(cross(f,[0,1,0])),u=cross(s,f);return{m:new Float32Array([s[0],u[0],-f[0],0,s[1],u[1],-f[1],0,s[2],u[2],-f[2],0,-dot(s,e),-dot(u,e),dot(f,e),1]),f,s,u};}
@@ -47,137 +42,37 @@ function noise3(x,y,z){const i=Math.floor(x),j=Math.floor(y),k=Math.floor(z);let
  const L=(a,b,t)=>a+(b-a)*t;return L(L(L(hash3(i,j,k),hash3(i+1,j,k),u),L(hash3(i,j+1,k),hash3(i+1,j+1,k),u),v),L(L(hash3(i,j,k+1),hash3(i+1,j,k+1),u),L(hash3(i,j+1,k+1),hash3(i+1,j+1,k+1),u),v),w);}
 
 // ---------- weather state: clouds lead, rain lags behind the cover ----------
-const W={storm:0.2,target:0.2,cover:0.2,rain:0,wet:0,flash:0,speed:6,dir:0.6,gusty:0.3,E:3e9,nextAuto:30};
-const AUTO=[0.1,0.45,0.85,1,0.7,0.3,0.05];let autoI=0;
-let T=0;
+const W={storm:0.2,target:0.2,cover:0.2,rain:0,wet:0,flash:0,speed:6,dir:0.6,gusty:0.3,nextAuto:30};
+const AUTO=[0.1,0.45,0.85,1,0.7,0.3,0.05];let autoI=0,T=0;
 function stepWeather(dt){
  if($('auto').checked){ if((W.nextAuto-=dt)<=0){W.target=AUTO[autoI++%AUTO.length];W.nextAuto=35+rng()*20;$('storm').value=W.target;} } else W.target=+$('storm').value;
  W.storm+=(W.target-W.storm)*Math.min(1,dt/15);
- W.cover+=(clamp(0.12+W.storm*1.0,0,1)-W.cover)*Math.min(1,dt/10);
+ W.cover+=(clamp(0.12+W.storm,0,1)-W.cover)*Math.min(1,dt/10);
  const rt=W.cover>0.62?clamp((W.cover-0.62)/0.38,0,1)*clamp(W.storm*1.2,0,1):0; // no rain until the sky has closed
  W.rain+=(rt-W.rain)*Math.min(1,dt/6);
  W.wet=clamp(W.wet+(W.rain*0.15-(1-W.cover)*0.03-0.004)*dt,0,1);
- W.speed=+$('wind').value*(1+0.6*W.storm); W.dir=+$('dir').value; W.gusty=0.25+0.55*W.storm; W.E=+$('wood').value*1e9;
+ W.speed=+$('wind').value*(1+0.6*W.storm); W.dir=+$('dir').value; W.gusty=0.25+0.55*W.storm;
  if(W.rain>0.7&&rng()<dt*0.12*W.rain)W.flash=1; W.flash*=Math.exp(-dt*7);
 }
 // Mean wind with a log height profile, gust fronts carried along by it, and small-scale turbulence (turb=false for cheap callers).
 function wind(x,y,z,turb){
- const S=W.speed,dx=Math.cos(W.dir),dz=Math.sin(W.dir);
- const prof=Math.log(Math.max(y,0.15)/0.05)/Math.log(10/0.05);
- const g=noise3((x-dx*S*T)*0.035,(z-dz*S*T)*0.035,T*0.04);
- const m=S*prof*Math.max(0.05,1+W.gusty*(g*2-1)*1.8);
+ const S=W.speed,dx=Math.cos(W.dir),dz=Math.sin(W.dir),prof=Math.log(Math.max(y,0.15)/0.05)/Math.log(10/0.05);
+ const g=noise3((x-dx*S*T)*0.035,(z-dz*S*T)*0.035,T*0.04), m=S*prof*Math.max(0.05,1+W.gusty*(g*2-1)*1.8);
  if(!turb)return[m*dx,0,m*dz];
  const tu=W.gusty*S*0.5;
- return[m*dx+tu*(noise3(x*0.4+T*0.9,y*0.4,z*0.4)-0.5),tu*0.5*(noise3(x*0.4,y*0.4+T*0.9,z*0.4+17)-0.5),m*dz+tu*(noise3(x*0.4+31,y*0.4,z*0.4+T*0.9)-0.5)];
+ return[m*dx+tu*(noise3(x*0.4+T*0.9,y*0.4,z*0.4)-0.5),0,m*dz+tu*(noise3(x*0.4+31,y*0.4,z*0.4+T*0.9)-0.5)];
 }
 
-// ---------- scene layout ----------
-const POND={x:3,z:2,r:5};
-const stones=[]; // {x,z,hx,hz,h}
-for(let i=0;i<14;i++)stones.push({x:-15+i*0.95,z:2.5+Math.sin(i*0.7)*0.4,hx:0.4,hz:0.4,h:0.06});
-for(let i=0;i<9;i++){const a=i/9*6.283+0.3;stones.push({x:POND.x+Math.cos(a)*(POND.r+0.4),z:POND.z+Math.sin(a)*(POND.r+0.4),hx:0.35+rng()*0.4,hz:0.3+rng()*0.3,h:0.25+rng()*0.35});}
-function stoneAt(x,z){for(const s of stones)if(Math.abs(x-s.x)<s.hx&&Math.abs(z-s.z)<s.hz)return s;return null;}
-const inPond=(x,z)=>(x-POND.x)**2+(z-POND.z)**2<POND.r*POND.r;
-
-// ---------- trees: rigid branch segments on damped angular springs (Euler-Bernoulli stiffness), loaded by aerodynamic drag ----------
-const RHO=1.2, CD=0.8, AREA_SCALE=3, LEAF_AREA=0.017, LEAF_MASS=0.004; // AREA_SCALE: foliage that is not drawn still catches wind
-const trees=[];
-function buildTree(px,pz,sc){
- const t={nodes:[],leaves:[],base:[px,0,pz]};
- const addN=(parent,at,restQ,L,r,depth)=>{const n={parent,at,restQ,L,r,depth,th:[0,0,0],om:[0,0,0],imp:[0,0,0],nLeaves:0};t.nodes.push(n);return n;};
- const t1=addN(null,0,Q.axis(1,0,0,(rng()-.5)*0.08),2.2*sc,0.18*sc,0), t2=addN(t1,1,Q.axis(0,0,1,(rng()-.5)*0.15),1.8*sc,0.13*sc,0);
- const grow=(p,d)=>{if(d>3)return;const k=d===1?4:3;for(let i=0;i<k;i++){const q=Q.mul(Q.axis(0,1,0,i/k*6.283+rng()*0.8),Q.axis(1,0,0,(d===1?0.75:0.6)+rng()*0.3));
-  grow(addN(p,d===1?0.55+0.45*i/k:0.5+0.5*rng(),q,p.L*(0.62+rng()*0.15),p.r*0.55,d),d+1);}};
- grow(t2,1);
- for(const n of t.nodes)if(n.depth>=2){const c=n.depth===3?16:4;n.nLeaves=c;for(let i=0;i<c;i++)t.leaves.push({node:n,at:0.3+0.7*rng(),
-  restQ:Q.mul(Q.axis(0,1,0,rng()*6.283),Q.axis(1,0,0,0.5+rng()*0.9)),size:0.22*(0.8+0.4*rng()),ph:[0,0],om:[0,0],seed:rng()*100,
-  col:[0.18+rng()*0.1,0.38+rng()*0.15,0.1+rng()*0.06]});}
- transform(t,0);
- for(const n of t.nodes){n.mass=700*Math.PI*n.r*n.r*n.L+n.nLeaves*LEAF_MASS;n.area=2*n.r*n.L+n.nLeaves*LEAF_AREA*AREA_SCALE;n.c0=add(n.joint,scl(sub(n.tip,n.joint),0.5));n.prevTip=n.tip.slice();}
- for(const n of t.nodes){let I=n.mass*n.L*n.L/3;for(const m of t.nodes){if(m===n)continue;let p=m.parent;while(p&&p!==n)p=p.parent;if(p===n){const d=sub(m.c0,n.joint);I+=m.mass*dot(d,d);}}n.I=I;}
- let cc=[0,0,0];for(const l of t.leaves)cc=add(cc,leafPos(l));cc=scl(cc,1/t.leaves.length);let rr=0;for(const l of t.leaves)rr=Math.max(rr,Math.hypot(...sub(leafPos(l),cc)));
- t.crown=cc;t.crownR=rr*0.9;trees.push(t);
-}
-function transform(t,dt){for(const n of t.nodes){const p=n.parent;n.joint=p?add(p.joint,Q.rot(p.q,[0,p.L*n.at,0])):t.base;n.frame=p?Q.mul(p.q,n.restQ):n.restQ;n.q=Q.mul(n.frame,Q.vec(n.th));n.tip=add(n.joint,Q.rot(n.q,[0,n.L,0]));}}
-const leafPos=l=>add(l.node.joint,Q.rot(l.node.q,[0,l.node.L*l.at,0]));
-function stepTree(t,dt){
- transform(t,dt);
- for(const n of t.nodes){n.vel=scl(sub(n.tip,n.prevTip),1/dt);n.prevTip=n.tip;const pp=add(n.joint,scl(sub(n.tip,n.joint),0.6));
-  n.w=wind(pp[0],pp[1],pp[2],true);const vr=sub(n.w,n.vel),s=Math.hypot(vr[0],vr[1],vr[2]);
-  n.F=add(scl(vr,0.5*RHO*CD*n.area*s),scl(n.imp,1/dt));n.imp=[0,0,0];n.M=cross(pp,n.F);}
- for(let i=t.nodes.length-1;i>0;i--){const n=t.nodes[i],p=n.parent;p.F=add(p.F,n.F);p.M=add(p.M,n.M);} // subtree load reaches each joint
- for(const n of t.nodes){const tl=Q.rot(Q.conj(n.frame),sub(n.M,cross(n.joint,n.F)));
-  const k=3*W.E*(Math.PI*n.r**4/4)/n.L, c=2*0.08*Math.sqrt(k*n.I);
-  for(const a of[0,2]){n.om[a]+=dt*(tl[a]-k*n.th[a]-c*n.om[a])/n.I;n.th[a]+=dt*n.om[a];}}
- // Leaves: pitch from pressure on the blade, twist from vortex shedding at the Strouhal frequency (f = 0.2 v / chord)
- const w0=2*Math.PI*4,w2=w0*w0,z=2*0.15*w0;
- for(const l of t.leaves){const n=l.node,q=Q.mul(Q.mul(n.q,l.restQ),Q.vec([l.ph[0],l.ph[1],0])),nr=Q.rot(q,[0,0,1]);
-  const vr=sub(n.w,n.vel),s=Math.hypot(vr[0],vr[1],vr[2]),pr=dot(nr,vr)*s;
-  const shed=0.3*s*s*Math.sin(2*Math.PI*(0.2*s/0.12)*T+l.seed);
-  l.om[0]+=dt*(3.8*pr-w2*l.ph[0]-z*l.om[0]);l.om[1]+=dt*(shed-w2*l.ph[1]-z*l.om[1]);
-  for(const a of[0,1]){l.ph[a]=clamp(l.ph[a]+dt*l.om[a],-1.3,1.3);}}
-}
-for(const[x,z,s]of[[-6,-4,1.1],[9,-8,1],[-9,7,0.9],[13,5,1.15],[-2,-11,0.95]])buildTree(x,z,s);
-
-// ---------- grass: one damped bend per cell, blades are drawn as constant-length arcs ----------
-const G=48, GAREA=48, gb=new Float32Array(G*G*2), gv=new Float32Array(G*G*2), gtex=new Float32Array(G*G*4);
-function stepGrass(dt){const wg=2*Math.PI*1.5,w2=wg*wg,z=2*0.2*wg;
- for(let j=0;j<G;j++)for(let i=0;i<G;i++){const k=(j*G+i)*2,x=(i+0.5)/G*GAREA-GAREA/2,zz=(j+0.5)/G*GAREA-GAREA/2,w=wind(x,0.3,zz,true),s=Math.hypot(w[0],w[2]);
-  for(const a of[0,1]){gv[k+a]+=dt*(0.3*s*(a?w[2]:w[0])-w2*gb[k+a]-z*gv[k+a]);gb[k+a]+=dt*gv[k+a];}
-  gtex[k*2]=gb[k];gtex[k*2+1]=gb[k+1];}}
-const gCell=(x,z)=>{const i=Math.floor((x/GAREA+0.5)*G),j=Math.floor((z/GAREA+0.5)*G);return i<0||j<0||i>=G||j>=G?-1:(j*G+i)*2;};
-
-// ---------- rain: Marshall-Palmer sizes, Atlas terminal speed, drag relaxation toward the wind ----------
-const MAXD=14000, dp=new Float32Array(MAXD*3), dv=new Float32Array(MAXD*3), dd=new Float32Array(MAXD); let nDrops=0;
-const MAXS=8000, sp=new Float32Array(MAXS*3), sv=new Float32Array(MAXS*3), sk=new Uint8Array(MAXS); let nSpl=0;
-const ripples=new Float32Array(64*4); let ripI=0; for(let i=0;i<64;i++)ripples[i*4+2]=-99;
-const vTerm=D=>Math.max(0.5,9.65-10.3*Math.exp(-0.6*D)); // D in mm
-const stats={splashes:0,leafHits:0,ripples:0};
-let camT=[0,1.5,0];
-function spawnDrop(i,top){const R=Math.max(0.5,60*W.rain**1.5),lam=4.1*R**-0.21,D=clamp(-Math.log(1-rng())/lam,0.3,5.5),vt=vTerm(D);
- const y=top?16+rng()*4:rng()*20,w=wind(camT[0],y,camT[2],false),ft=y/vt;
- dp[i*3]=camT[0]+(rng()-.5)*34-w[0]*ft;dp[i*3+1]=y;dp[i*3+2]=camT[2]+(rng()-.5)*34-w[2]*ft; // upwind by the drift, so it lands round the camera
- dv[i*3]=w[0];dv[i*3+1]=-vt;dv[i*3+2]=w[2];dd[i]=D;}
-function spray(x,y,z,vx,vy,vz,kind){if(nSpl>=MAXS)return;const i=nSpl++;sp[i*3]=x;sp[i*3+1]=y;sp[i*3+2]=z;sv[i*3]=vx;sv[i*3+1]=vy;sv[i*3+2]=vz;sk[i]=kind;}
-function ripple(x,z,amp){ripples.set([x,z,T,amp],ripI*4);ripI=(ripI+1)%64;stats.ripples++;}
-// Splash on impact: Mundo's K = We^0.5 Re^0.25 decides deposit (K < 57.7) or splash; the crown's droplets scale with how far K is past it.
-function impact(x,y,z,D,v,surf){
- const Dm=D*1e-3,We=1000*v*v*Dm/0.072,Re=1000*v*Dm/1e-3,K=Math.sqrt(We)*Re**0.25;
- if(surf==='water'){ripple(x,z,clamp(D/3,0.2,1.5));if(D>2.2&&rng()<0.5)spray(x,y+0.01,z,0,0.35*v*(0.6+0.4*rng()),0,0);} // Worthington jet
- if(K<57.7)return; const f={stone:1,water:0.6,grass:0.2,leaf:0.3}[surf], n=Math.round(Math.min(10,1.2*(K/57.7-1))*f*(0.5+rng()));
- stats.splashes++;
- for(let k=0;k<n;k++){const a=rng()*6.283,sp_=v*(0.15+0.3*rng()),el=0.35+rng()*0.6;spray(x,y+0.01,z,Math.cos(a)*sp_*Math.cos(el),sp_*Math.sin(el),Math.sin(a)*sp_*Math.cos(el),0);}
-}
-function stepRain(dt){
- const target=Math.round(W.rain*MAXD);while(nDrops<target)spawnDrop(nDrops++,true); if(nDrops>target)nDrops=Math.max(target,nDrops-Math.ceil(dt*3000));
- for(let i=0;i<nDrops;i++){const o=i*3,D=dd[i],vt=vTerm(D),tau=vt/9.81,w=wind(dp[o],dp[o+1],dp[o+2],false),a=Math.min(1,dt/tau);
-  dv[o]+=(w[0]-dv[o])*a;dv[o+1]+=(-vt-dv[o+1])*a;dv[o+2]+=(w[2]-dv[o+2])*a;
-  const x=dp[o]+=dv[o]*dt,y=dp[o+1]+=dv[o+1]*dt,z=dp[o+2]+=dv[o+2]*dt,v=Math.hypot(dv[o],dv[o+1],dv[o+2]);
-  let hit=false;
-  for(const t of trees){const d=sub([x,y,z],t.crown);if(dot(d,d)<t.crownR*t.crownR&&rng()<1-Math.exp(-1.6*v*dt)){ // optical depth of the crown
-   const l=t.leaves[(rng()*t.leaves.length)|0],m=1000*Math.PI*(D*1e-3)**3/6,p=m*v;
-   l.om[0]+=p*0.1/(LEAF_MASS*l.size*l.size/3)*(rng()<0.5?1:-1);l.node.imp=add(l.node.imp,scl([dv[o],dv[o+1],dv[o+2]],m));stats.leafHits++;
-   const lp=leafPos(l);if(rng()<0.35)spray(lp[0],lp[1],lp[2],0,0,0,1);impact(lp[0],lp[1],lp[2],D,v,'leaf');hit=true;break;}}
-  if(!hit){const s=stoneAt(x,z),h=s?s.h:0;if(y<=h){hit=true;const surf=s?'stone':inPond(x,z)?'water':'grass';impact(x,h,z,D,v,surf);
-   if(surf==='grass'){const c=gCell(x,z);if(c>=0){gv[c]+=(rng()-.5)*0.4;gv[c+1]+=(rng()-.5)*0.4;}}}}
-  if(hit||Math.abs(x-camT[0])>120||Math.abs(z-camT[2])>120)spawnDrop(i,true);}
- for(let i=0;i<nSpl;i++){const o=i*3;sv[o+1]-=9.81*dt;const dr=Math.exp(-dt*(sk[i]?0.2:1.5));sv[o]*=dr;sv[o+2]*=dr;
-  const x=sp[o]+=sv[o]*dt,y=sp[o+1]+=sv[o+1]*dt,z=sp[o+2]+=sv[o+2]*dt,s=stoneAt(x,z),h=s?s.h:0;
-  if(y<=h){if(sk[i]===1)impact(x,h,z,4,Math.hypot(sv[o],sv[o+1],sv[o+2]),s?'stone':inPond(x,z)?'water':'grass');
-   const j=--nSpl;sp.copyWithin(o,j*3,j*3+3);sv.copyWithin(o,j*3,j*3+3);sk[i]=sk[j];i--;}}
-}
-
-// ---------- GL ----------
+// ---------- GL programs ----------
 const CLOUD=`uniform float uTime,uCover;uniform vec2 uCloudOff;uniform vec3 uSun;
 float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float n2(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h2(i),h2(i+vec2(1,0)),f.x),mix(h2(i+vec2(0,1)),h2(i+1.),f.x),f.y);}
 float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<5;i++){s+=a*n2(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return s;}
 float cloud(vec2 p){float c=fbm(p*0.0012+uCloudOff);return smoothstep(1.-uCover-0.05,1.-uCover+0.35,c);}
-float shade(vec3 w){vec2 cp=w.xz+uSun.xz/uSun.y*(1500.-w.y);return 1.-0.85*cloud(cp);}`;
-const LIGHT=`uniform vec3 uSunC,uAmb,uCam,uFog;uniform float uFogD;
-vec3 fogit(vec3 c,vec3 w){return mix(c,uFog,1.-exp(-length(uCam-w)*uFogD));}`;
+float shade(vec3 w){vec2 cp=w.xz+uSun.xz/max(uSun.y,.05)*(1500.-w.y);return 1.-0.85*cloud(cp);}
+vec3 tone(vec3 c){return 1.-exp(-c*1.1);}`;
 function prog(vs,fs){const p=gl.createProgram();for(const[t,s]of[[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]]){const sh=gl.createShader(t);gl.shaderSource(sh,'#version 300 es\nprecision highp float;\n'+s);gl.compileShader(sh);
- if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh)+'\n'+s);gl.attachShader(p,sh);}gl.linkProgram(p);
+ if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));gl.attachShader(p,sh);}gl.linkProgram(p);
  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));const u={};const n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);
  for(let i=0;i<n;i++){const a=gl.getActiveUniform(p,i);u[a.name.replace('[0]','')]=gl.getUniformLocation(p,a.name);}return{p,u};}
 const pSky=prog(`out vec2 v;void main(){vec2 p=vec2(gl_VertexID==1?3.:-1.,gl_VertexID==2?3.:-1.);v=p;gl_Position=vec4(p,1,1);}`,
@@ -187,117 +82,210 @@ void main(){vec3 d=normalize(uF+uR*v.x*uTan*uAsp+uU*v.y*uTan);vec3 sky=mix(uHor,
   float sunL=pow(max(dot(d,uSun),0.),800.)*(1.-den)*(1.-uCover);vec3 cc=mix(vec3(1.),vec3(0.38,0.39,0.42),uCover)*(0.55+0.45*(1.-fbm(cp*0.004)));
   sky=mix(sky,cc*(uZen+uHor)*0.8,den)+vec3(1.,.9,.7)*sunL*4.;}
  o=vec4(sky+uFlash*vec3(0.8,0.85,1.),1);}`);
-const pLit=prog(`layout(location=0)in vec3 aP;layout(location=1)in vec3 aN;layout(location=2)in vec4 m0;layout(location=3)in vec4 m1;layout(location=4)in vec4 m2;layout(location=5)in vec4 m3;layout(location=6)in vec4 aC;
-uniform mat4 uVP;out vec3 vN,vW;out vec4 vC;void main(){mat4 M=mat4(m0,m1,m2,m3);vec4 w=M*vec4(aP,1);vW=w.xyz;vN=mat3(M)*aN;vC=aC;gl_Position=uVP*w;}`,
- CLOUD+LIGHT+`in vec3 vN,vW;in vec4 vC;out vec4 o;uniform float uWet,uLeaf;
-void main(){vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;vec3 v=normalize(uCam-vW);float wet=uWet*vC.a;vec3 al=vC.rgb*mix(1.,.55,wet);float sh=shade(vW);
- float nl=max(dot(n,uSun),0.);vec3 h=normalize(uSun+v);float sp=pow(max(dot(n,h),0.),mix(16.,140.,wet))*mix(.03,.7,wet);
- vec3 c=al*(uSunC*sh*nl+uAmb*(.55+.45*n.y))+uSunC*sh*sp+uLeaf*al*uSunC*sh*max(dot(-n,uSun),0.)*.5;o=vec4(fogit(c,vW),1);}`);
-const pWater=prog(`layout(location=0)in vec3 aP;uniform mat4 uVP;uniform vec4 uPond;out vec3 vW;void main(){vW=vec3(uPond.x+aP.x*uPond.z,0.02,uPond.y+aP.z*uPond.z);gl_Position=uVP*vec4(vW,1);}`,
- CLOUD+LIGHT+`in vec3 vW;out vec4 o;uniform vec4 uRip[64];uniform float uRain;uniform vec3 uZen,uHor;
-float hash(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*15731.7);}
+// The garden: the app's packed vertices, instance rows, and per plant its bend (two tip angles), height and leaf flutter.
+const GVS=`layout(location=0)in vec4 aP;layout(location=1)in vec4 aN;layout(location=2)in vec2 aUV;
+layout(location=3)in vec4 r0;layout(location=4)in vec4 r1;layout(location=5)in vec4 r2;layout(location=6)in vec4 aPl;
+uniform mat4 uVP;uniform vec3 uCentre,uExtent;uniform float uTime,uFlutF;uniform int uLeafKind;
+out vec3 vN,vW;out vec2 vUV;out float vPlant;
+vec3 rod(vec3 d,vec3 rv){float a=length(rv);if(a<1e-6)return d;vec3 k=rv/a;return d*cos(a)+cross(k,d)*sin(a)+k*dot(k,d)*(1.-cos(a));}
+void main(){vec3 p=uCentre+uExtent*aP.xyz;mat4x3 M=mat4x3(vec3(r0.x,r1.x,r2.x),vec3(r0.y,r1.y,r2.y),vec3(r0.z,r1.z,r2.z),vec3(r0.w,r1.w,r2.w));
+ vec3 w=M*vec4(p,1);vec3 n=normalize(mat3(M)*aN.xyz);vPlant=aPl.z;
+ if(aPl.z>0.){vec3 root=vec3(r0.w,r1.w,r2.w),d=w-root;float s=clamp(d.y/aPl.z,0.,1.),a=s*(2.-s); // slope of a cantilever: rotate, never stretch
+  vec3 rv=vec3(aPl.y,0.,-aPl.x)*a;w=root+rod(d,rv);n=rod(n,rv);
+  if(uLeafKind==1)w+=n*aPl.w*s*sin(uTime*uFlutF+dot(w,vec3(7.1,3.3,5.7)));}
+ vN=n;vW=w;vUV=aUV;gl_Position=uVP*vec4(w,1);}`;
+const pGarden=prog(GVS,CLOUD+`in vec3 vN,vW;in vec2 vUV;in float vPlant;out vec4 o;
+uniform vec3 uSunC,uAmb,uCam,uFog,uZen,uHor,uBase,uColor2,uMortar,uEmit;uniform vec4 uPattern;uniform float uFogD,uWet,uAlpha;uniform int uKind,uTex,uMode;uniform sampler2D uT;
+uniform vec4 uRip[128];uniform float uWater;
+float hsh(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*15731.7);}
 float ring(float r,float age,float a){float x=r-0.3*age;return a*exp(-age*1.8)*exp(-x*x*300.)*sin(x*70.);} // capillary ring, ~0.3 m/s
-float height(vec2 p){float h=0.;for(int i=0;i<64;i++){float age=uTime-uRip[i].z;if(age>0.&&age<2.5)h+=ring(length(p-uRip[i].xy),age,uRip[i].w);}
- vec2 c=floor(p/0.5);for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 id=c+vec2(x,y);float r=hash(id);if(r>uRain)continue; // drops too many to simulate one by one
-  vec2 q=(id+vec2(hash(id+3.1),hash(id+7.7)))*0.5;float P=0.6+r;float age=mod(uTime+hash(id+1.3)*P,P);h+=ring(length(p-q),age,0.6);}return h*0.004;}
-void main(){vec2 p=vW.xz;float e=0.01;float h0=height(p);vec3 n=normalize(vec3(-(height(p+vec2(e,0))-h0)/e,1.,-(height(p+vec2(0,e))-h0)/e));
- vec3 v=normalize(uCam-vW);vec3 r=reflect(-v,n);float sh=shade(vW);vec3 sky=mix(uHor,uZen,pow(clamp(r.y,0.,1.),.5));
- float f=0.02+0.98*pow(1.-max(dot(n,v),0.),5.);vec3 base=vec3(0.02,0.07,0.07)*(uAmb+uSunC*sh*0.2);
- vec3 c=mix(base,sky,f)+uSunC*sh*pow(max(dot(r,uSun),0.),300.)*2.;o=vec4(fogit(c,vW),1);}`);
-const pGrass=prog(`layout(location=0)in vec2 aV;layout(location=1)in vec4 aI;uniform mat4 uVP;uniform sampler2D uBend;uniform float uArea;uniform int uG;out vec3 vN,vW;out float vS;
-void main(){ivec2 c=ivec2(clamp((aI.xy/uArea+.5)*float(uG),0.,float(uG-1)));vec2 b=texelFetch(uBend,c,0).xy;float ang=aI.w*6.2831;
- vec2 bv=b+vec2(cos(ang),sin(ang))*(0.2+0.25*fract(aI.w*7.3));float th=min(length(bv),1.5);vec2 dir=bv/max(length(bv),1e-4);float h=aI.z,s=aV.y;
- float al=th<1e-3?0.:h/th*(1.-cos(th*s)),up=th<1e-3?h*s:h/th*sin(th*s); // arc keeps the blade's length
- vec3 sd=vec3(-sin(ang*1.7),0,cos(ang*1.7));vec3 p=vec3(aI.x,0,aI.y)+vec3(dir.x*al,up,dir.y*al)+sd*aV.x*0.02*(1.-s*.9);
- vec3 t=vec3(dir.x*sin(th*s),cos(th*s),dir.y*sin(th*s));vN=normalize(cross(t,sd));vW=p;vS=s;gl_Position=uVP*vec4(p,1);}`,
- CLOUD+LIGHT+`in vec3 vN,vW;in float vS;out vec4 o;uniform float uWet;
-void main(){vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;vec3 al=mix(vec3(.08,.2,.04),vec3(.3,.5,.15),vS)*mix(1.,.6,uWet);float sh=shade(vW);vec3 v=normalize(uCam-vW),h=normalize(uSun+v);
- vec3 c=al*(uSunC*sh*(abs(dot(n,uSun))*.7+.3)+uAmb)+uSunC*sh*pow(max(dot(n,h),0.),60.)*uWet*.4;o=vec4(fogit(c,vW),1);}`);
-const pPart=prog(`layout(location=0)in vec4 aP;uniform mat4 uVP;uniform vec3 uCam;out float vA;void main(){vA=aP.w;gl_Position=uVP*vec4(aP.xyz,1);gl_PointSize=clamp(30./length(uCam-aP.xyz),1.,4.);}`,
+float rip(vec2 p){float h=0.;for(int i=0;i<128;i++){float age=uTime-uRip[i].z;if(age>0.&&age<2.5)h+=ring(length(p-uRip[i].xy),age,uRip[i].w);}return h*0.004;}
+vec2 plane(vec3 w,vec3 n){vec3 a=abs(n);return a.y>a.x&&a.y>a.z?w.xz:a.x>a.z?w.zy:w.xy;}
+void main(){vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;vec3 al=uBase;float cut=1.;
+ if(uKind==2){vec2 q=plane(vW,n)*uPattern.x;float row=floor(q.y/uPattern.w);q.x+=row*0.5*uPattern.z;vec2 c=vec2(floor(q.x/uPattern.z),row);
+  vec2 f=vec2(fract(q.x/uPattern.z)*uPattern.z,fract(q.y/uPattern.w)*uPattern.w);float m=uPattern.y;
+  al=(f.x<m||f.y<m)?uMortar:mix(uBase,uColor2,hsh(c));}
+ else if(uTex>=0){vec2 uv=uPattern.z!=0.?plane(vW,n)*uPattern.z:(uPattern.x!=0.?vUV*uPattern.xy:vUV);vec4 t=texture(uT,uv);al*=t.rgb;cut=t.a;}
+ if(uKind==1&&cut<0.5)discard;
+ if(uMode>0){if(uMode==2&&vPlant>0.)discard;o=vec4(vW.y,float(uKind),vPlant>0.?1.:0.,1);return;} // top-down height map for the rain
+ vec3 v=normalize(uCam-vW);float sh=shade(vW);
+ if(uKind==3){float e=0.01;vec2 p=vW.xz;float h0=rip(p);n=normalize(vec3(-(rip(p+vec2(e,0))-h0)/e,1.,-(rip(p+vec2(0,e))-h0)/e));
+  vec3 r=reflect(-v,n);vec3 sky=mix(uHor,uZen,pow(clamp(r.y,0.,1.),.5));float f=0.02+0.98*pow(1.-max(dot(n,v),0.),5.);
+  vec3 c=mix(al*0.15*(uAmb+uSunC*sh*0.2),sky,f)+uSunC*sh*pow(max(dot(r,uSun),0.),300.)*2.;o=vec4(mix(tone(c),uFog,1.-exp(-length(uCam-vW)*uFogD)),1);return;}
+ float wet=uKind==1?uWet*0.4:uWet;al*=mix(1.,.6,wet);float nl=max(dot(n,uSun),0.);vec3 h=normalize(uSun+v);
+ float sp=pow(max(dot(n,h),0.),mix(16.,140.,wet))*mix(.03,.6,wet)*(uKind==1?0.3:1.);
+ vec3 c=al*(uSunC*sh*nl+uAmb*(.55+.45*n.y))+uSunC*sh*sp+uEmit;if(uKind==1)c+=al*uSunC*sh*max(dot(-n,uSun),0.)*.4;
+ o=vec4(mix(tone(c),uFog,1.-exp(-length(uCam-vW)*uFogD)),uKind==4?uAlpha:1.);}`);
+const pPart=prog(`layout(location=0)in vec4 aP;uniform mat4 uVP;uniform vec3 uCam;out float vA;void main(){vA=aP.w;gl_Position=uVP*vec4(aP.xyz,1);gl_PointSize=clamp(30./length(uCam-aP.xyz),1.,3.);}`,
  `in float vA;out vec4 o;uniform vec3 uCol;void main(){o=vec4(uCol,vA);}`);
 
-function mesh(verts,idx){return{v:new Float32Array(verts),i:new Uint16Array(idx)};}
-function cylinder(seg,top){const v=[],i=[];for(let k=0;k<=seg;k++){const a=k/seg*6.283,c=Math.cos(a),s=Math.sin(a);v.push(c,0,s,c,.1,s,c*top,1,s*top,c,.1,s);if(k<seg){const b=k*2;i.push(b,b+1,b+2,b+2,b+1,b+3);}}return mesh(v,i);}
-function box(){const v=[],i=[];for(const[n,u,w]of[[[1,0,0],[0,1,0],[0,0,1]],[[-1,0,0],[0,0,1],[0,1,0]],[[0,1,0],[0,0,1],[1,0,0]],[[0,-1,0],[1,0,0],[0,0,1]],[[0,0,1],[1,0,0],[0,1,0]],[[0,0,-1],[0,1,0],[1,0,0]]]){
- const b=v.length/6;for(const[a,c]of[[-1,-1],[1,-1],[1,1],[-1,1]])v.push(...add(scl(n,.5),add(scl(u,a*.5),scl(w,c*.5))),...n);i.push(b,b+1,b+2,b,b+2,b+3);}return mesh(v,i);}
-const leafM=mesh([0,0,0,0,0,1,-.5,.35,.03,0,0,1,0,1,0,0,0,1,.5,.35,.03,0,0,1],[0,1,2,0,2,3]);
-function litVAO(m,max){const vao=gl.createVertexArray();gl.bindVertexArray(vao);const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,m.v,gl.STATIC_DRAW);
- gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,24,0);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,24,12);
- const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,m.i,gl.STATIC_DRAW);
- const inst=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,inst);gl.bufferData(gl.ARRAY_BUFFER,max*80,gl.DYNAMIC_DRAW);
- for(let k=0;k<5;k++){gl.enableVertexAttribArray(2+k);gl.vertexAttribPointer(2+k,4,gl.FLOAT,false,80,k*16);gl.vertexAttribDivisor(2+k,1);}
- gl.bindVertexArray(null);return{vao,inst,data:new Float32Array(max*20),count:m.i.length,n:0};}
-function put(o,q,p,sx,sy,sz,c,wet){trs(o.data,o.n*20,q,p,sx,sy,sz);o.data.set([c[0],c[1],c[2],wet],o.n*20+16);o.n++;}
-function drawLit(o,leaf){gl.uniform1f(pLit.u.uLeaf,leaf);gl.bindVertexArray(o.vao);gl.bindBuffer(gl.ARRAY_BUFFER,o.inst);gl.bufferSubData(gl.ARRAY_BUFFER,0,o.data.subarray(0,o.n*20));gl.drawElementsInstanced(gl.TRIANGLES,o.count,gl.UNSIGNED_SHORT,0,o.n);}
-const boxes=litVAO(box(),64), bark=litVAO(cylinder(7,0.6),400), leaves=litVAO(leafM,4000);
-const ID=[0,0,0,1];
-// static boxes: ground + stones
-put(boxes,ID,[0,-0.05,0],120,0.1,120,[0.25,0.22,0.15],0.8);for(const s of stones)put(boxes,ID,[s.x,s.h/2,s.z],s.hx*2,s.h,s.hz*2,[0.45,0.44,0.42],1);
-// water disc
-const waterVAO=gl.createVertexArray();gl.bindVertexArray(waterVAO);{const v=[0,0,0];for(let k=0;k<=48;k++){const a=k/48*6.283;v.push(Math.cos(a),0,Math.sin(a));}
- const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);}
-// grass
-const grassVAO=gl.createVertexArray();let nBlades=0;gl.bindVertexArray(grassVAO);{const v=[];for(let k=0;k<=4;k++)v.push(-1,k/4,1,k/4);
- const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
- const inst=[];while(nBlades<40000){const x=(rng()-.5)*GAREA*0.98,z=(rng()-.5)*GAREA*0.98;if(inPond(x,z)||stoneAt(x,z))continue;inst.push(x,z,0.2+rng()*0.35,rng());nBlades++;}
- const ib=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,ib);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(inst),gl.STATIC_DRAW);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,4,gl.FLOAT,false,0,0);gl.vertexAttribDivisor(1,1);}
-const gTexture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,gTexture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,G,G,0,gl.RGBA,gl.FLOAT,gtex);
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+// ---------- the garden ----------
+let meshes=[],mats=[],texs=[],plants=[],bounds,hmap=null,HM=1024;
+async function loadGarden(){
+ let bytes;if(Uint8Array.fromBase64)bytes=Uint8Array.fromBase64(GARDEN.data);else{const s=atob(GARDEN.data);bytes=new Uint8Array(s.length);for(let i=0;i<s.length;i++)bytes[i]=s.charCodeAt(i);}
+ const raw=new Blob([bytes]);
+ const buf=await new Response(raw.stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+ const dv=new DataView(buf);let o=0;const I=()=>{const v=dv.getInt32(o,true);o+=4;return v;},F=()=>{const v=dv.getFloat32(o,true);o+=4;return v;};
+ const nT=I();for(let t=0;t<nT;t++){const size=I(),lv=I(),tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
+  for(let k=0,s=size;k<lv;k++,s>>=1){const n=I();gl.compressedTexImage2D(gl.TEXTURE_2D,k,S3TC.COMPRESSED_RGBA_S3TC_DXT5_EXT,s,s,0,new Uint8Array(buf,o,n));o+=n;}
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAX_LEVEL,lv-1);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);texs.push(tex);}
+ const g=v=>Math.pow(Math.max(v,0),1/2.2); // material colours are linear; the page lights in display space
+ const nM=I();for(let m=0;m<nM;m++){const kind=I(),tex=I();F();I();const f=[];for(let k=0;k<20;k++)f.push(F());
+  mats.push({kind,tex,base:f.slice(0,3).map(g),alpha:f[3],color2:f.slice(4,7).map(g),mortar:f.slice(8,11).map(g),emit:f.slice(12,15).map(g),pattern:f.slice(16,20)});}
+ const nMesh=I();
+ for(let m=0;m<nMesh;m++){const vc=I(),ic=I(),sc=I(),centre=[F(),F(),F()],extent=[F(),F(),F()],subs=[];for(let k=0;k<sc;k++)subs.push([I(),I(),I()]);
+  const vao=gl.createVertexArray();gl.bindVertexArray(vao);const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Uint8Array(buf,o,vc*16),gl.STATIC_DRAW);o+=vc*16;
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.SHORT,true,16,0);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,4,gl.BYTE,true,16,8);gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,2,gl.HALF_FLOAT,false,16,12);
+  const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint8Array(buf,o,ic*4),gl.STATIC_DRAW);o+=ic*4;
+  const pos=new Int16Array(buf.slice(o-ic*4-vc*16,o-ic*4)); // for the plant's height and width
+  meshes.push({vao,centre,extent,subs,ic,inst:[],pos,vc});}
+ const nI=I();let mn=[1e9,1e9],mx=[-1e9,-1e9];
+ for(let i=0;i<nI;i++){const mi=I(),flags=I()>>>0,rows=[];for(let k=0;k<12;k++)rows.push(F());const m=meshes[mi];
+  const slot=m.inst.length;m.inst.push(rows);const root=[rows[3],rows[7],rows[11]];
+  mn=[Math.min(mn[0],root[0]),Math.min(mn[1],root[2])];mx=[Math.max(mx[0],root[0]),Math.max(mx[1],root[2])];
+  const sway=(flags>>>8&255)/1000;if(sway>0)plants.push({m:mi,slot,root,sway,th:[0,0],om:[0,0]});}
+ bounds={cx:(mn[0]+mx[0])/2,cz:(mn[1]+mx[1])/2,h:Math.max(mx[0]-mn[0],mx[1]-mn[1])/2+5};
+ for(const m of meshes){m.data=new Float32Array(m.inst.length*16);m.inst.forEach((r,k)=>m.data.set(r,k*16));
+  m.ibuf=gl.createBuffer();gl.bindVertexArray(m.vao);gl.bindBuffer(gl.ARRAY_BUFFER,m.ibuf);gl.bufferData(gl.ARRAY_BUFFER,m.data,gl.DYNAMIC_DRAW);
+  for(let k=0;k<4;k++){gl.enableVertexAttribArray(3+k);gl.vertexAttribPointer(3+k,4,gl.FLOAT,false,64,k*16);gl.vertexAttribDivisor(3+k,1);}}
+ gl.bindVertexArray(null);
+ // plants: rigid crowns on a damped angular spring at the root. Natural frequency falls with height (trees ~0.3-0.6 Hz, shrubs 1-3 Hz).
+ for(const p of plants){const m=meshes[p.m],r=m.inst[p.slot];let top=-1e9,wx=0;
+  for(let v=0;v<m.vc;v+=Math.max(1,(m.vc/200)|0)){const q=[0,1,2].map(a=>m.centre[a]+m.extent[a]*m.pos[v*4+a]/32767);
+   const w=[r[0]*q[0]+r[1]*q[1]+r[2]*q[2]+r[3],r[4]*q[0]+r[5]*q[1]+r[6]*q[2]+r[7],r[8]*q[0]+r[9]*q[1]+r[10]*q[2]+r[11]];top=Math.max(top,w[1]);wx=Math.max(wx,Math.hypot(w[0]-r[3],w[2]-r[11]));}
+  const H=Math.max(0.1,top-p.root[1]),Wd=Math.max(0.1,2*wx);p.H=H;p.A=0.8*Wd*H;const mass=4*Wd*Wd*H+2;p.I=mass*(0.6*H)**2;
+  const om=2*Math.PI*clamp(1.2/Math.sqrt(H),0.3,3);p.k=p.I*om*om/clamp(p.sway/0.03,0.5,4);p.c=2*0.08*Math.sqrt(p.k*p.I);p.imp=[0,0];}
+ delete GARDEN.data;
+}
+function stepPlants(dt){
+ for(const p of plants){const h=0.6*p.H,w=wind(p.root[0],p.root[1]+h,p.root[2],true);
+  // foliage streamlines as the wind rises (Vogel exponent -0.8 above 4 m/s), so drag grows like v^1.2, not v^2
+  const vr=[w[0]-p.om[0]*h,w[2]-p.om[1]*h],s=Math.hypot(vr[0],vr[1]),F=0.5*1.2*1.0*p.A*s*(s>4?(s/4)**-0.8:1);
+  for(const a of[0,1]){p.om[a]+=dt*(F*vr[a]*h-p.k*p.th[a]-p.c*p.om[a])/p.I+p.imp[a]/p.I;p.th[a]=clamp(p.th[a]+dt*p.om[a],-0.6,0.6);p.imp[a]=0;}
+  const d=meshes[p.m].data,o=p.slot*16+12;d[o]=p.th[0];d[o+1]=p.th[1];d[o+2]=p.H;d[o+3]=Math.min(0.03,0.0004*s*s);}
+}
+
+// Top-down height maps of the garden, drawn once on the card: what a falling drop meets (crowns included) and the ground under the crowns.
+function bakeHeight(){
+ const fb=gl.createFramebuffer(),tex=gl.createTexture(),db=gl.createRenderbuffer();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texStorage2D(gl.TEXTURE_2D,1,gl.RGBA32F,HM,HM);
+ gl.bindRenderbuffer(gl.RENDERBUFFER,db);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT24,HM,HM);
+ gl.bindFramebuffer(gl.FRAMEBUFFER,fb);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,db);
+ const top=60,R=80,{cx,cz,h}=bounds,VP=new Float32Array([1/h,0,0,0, 0,0,-2/R,0, 0,1/h,0,0, -cx/h,-cz/h,2*top/R-1,1]);
+ const out=[];gl.viewport(0,0,HM,HM);gl.enable(gl.DEPTH_TEST);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);
+ for(const mode of[1,2]){gl.clearColor(-50,-1,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);drawGarden(VP,mode);const px=new Float32Array(HM*HM*4);gl.readPixels(0,0,HM,HM,gl.RGBA,gl.FLOAT,px);out.push(px);}
+ gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.clearColor(0,0,0,1);return{top:out[0],ground:out[1]};
+}
+function hm(map,x,z){const {cx,cz,h}=bounds,i=Math.floor(((x-cx)/h*0.5+0.5)*HM),j=Math.floor(((z-cz)/h*0.5+0.5)*HM);if(i<0||j<0||i>=HM||j>=HM)return null;return(j*HM+i)*4;}
+
+function drawGarden(VP,mode){
+ const P=pGarden,u=P.u;gl.useProgram(P.p);gl.uniformMatrix4fv(u.uVP,false,VP);gl.uniform1i(u.uMode,mode);gl.uniform1i(u.uT,0);gl.activeTexture(gl.TEXTURE0);
+ for(const glass of[false,true]){if(glass){if(mode)break;gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);}
+  for(const m of meshes){if(!m.inst.length)continue;gl.bindVertexArray(m.vao);gl.uniform3fv(u.uCentre,m.centre);gl.uniform3fv(u.uExtent,m.extent);
+   for(const[s,c,mi]of m.subs){const t=mats[mi];if(t.kind===6||(t.kind===4)!==glass)continue;if(mode&&t.kind===4)continue;
+    gl.uniform1i(u.uKind,t.kind);gl.uniform1i(u.uLeafKind,t.kind);gl.uniform3fv(u.uBase,t.base);gl.uniform3fv(u.uColor2,t.color2);gl.uniform3fv(u.uMortar,t.mortar);gl.uniform3fv(u.uEmit,t.emit);
+    gl.uniform4fv(u.uPattern,t.pattern);gl.uniform1f(u.uAlpha,t.kind===4?0.25:1);gl.uniform1i(u.uTex,t.tex>=0&&t.tex<texs.length?t.tex:-1);if(t.tex>=0&&t.tex<texs.length)gl.bindTexture(gl.TEXTURE_2D,texs[t.tex]);
+    gl.drawElementsInstanced(gl.TRIANGLES,c,gl.UNSIGNED_INT,s*4,m.inst.length);}}}
+ gl.disable(gl.BLEND);gl.depthMask(true);
+}
+
+// ---------- rain: Marshall-Palmer sizes, Atlas terminal speed, drag relaxation toward the wind ----------
+const MAXD=14000,BOX=30,TOP=28, dp=new Float32Array(MAXD*3), dv=new Float32Array(MAXD*3), dd=new Float32Array(MAXD), passed=new Uint8Array(MAXD); let nDrops=0;
+const MAXS=6000, sp=new Float32Array(MAXS*3), sv=new Float32Array(MAXS*3), sk=new Uint8Array(MAXS); let nSpl=0;
+const ripples=new Float32Array(128*4); let ripI=0; for(let i=0;i<128;i++)ripples[i*4+2]=-99;
+const vTerm=D=>Math.max(0.5,9.65-10.3*Math.exp(-0.6*D)); // D in mm
+const stats={splashes:0,leafHits:0,ripples:0};
+let camT=[0,1.5,0];
+// A new drop anywhere over the box round the camera, from the cloud base down (spread=true) or at the top; the box wraps, so the wind never empties one side.
+// Each particle is a parcel of the rain's water, so its size follows the mass-weighted Marshall-Palmer spectrum D^3 e^(-lam D), a Gamma(4) draw:
+// the drizzle that dominates by count is invisible in life (the mist carries it) and would only drift sideways like spray.
+function spawnDrop(i,spread){const R=Math.max(0.5,60*W.rain**1.5),lam=4.1*R**-0.21,D=clamp(-Math.log((1-rng())*(1-rng())*(1-rng())*(1-rng()))/lam,0.5,5.5),vt=vTerm(D),y=spread?rng()*TOP:TOP,w=wind(camT[0],y,camT[2],false);
+ dp[i*3]=camT[0]+(rng()*2-1)*BOX;dp[i*3+1]=y;dp[i*3+2]=camT[2]+(rng()*2-1)*BOX;dv[i*3]=w[0];dv[i*3+1]=-vt;dv[i*3+2]=w[2];dd[i]=D;passed[i]=0;}
+function spray(x,y,z,vx,vy,vz,kind){if(nSpl>=MAXS)return;const i=nSpl++;sp[i*3]=x;sp[i*3+1]=y;sp[i*3+2]=z;sv[i*3]=vx;sv[i*3+1]=vy;sv[i*3+2]=vz;sk[i]=kind;}
+function ripple(x,z,amp){ripples.set([x,z,T,amp],ripI*4);ripI=(ripI+1)%128;stats.ripples++;}
+// Splash on impact: Mundo's K = We^0.5 Re^0.25 decides deposit (K < 57.7) or splash; the crown's droplets scale with how far K is past it.
+function impact(x,y,z,D,v,surf){
+ const Dm=D*1e-3,We=1000*v*v*Dm/0.072,Re=1000*v*Dm/1e-3,K=Math.sqrt(We)*Re**0.25;
+ if(surf==='water'){ripple(x,z,clamp(D/3,0.2,1.5));if(D>2.2&&rng()<0.5)spray(x,y+0.01,z,0,0.35*v*(0.6+0.4*rng()),0,0);} // Worthington jet
+ if(K<57.7)return; const n=Math.round(Math.min(8,1.2*(K/57.7-1))*({stone:1,water:0.6,leaf:0.2}[surf])*(0.5+rng()));
+ if(n>0)stats.splashes++;
+ for(let k=0;k<n;k++){const a=rng()*6.283,s=v*(0.1+0.2*rng()),el=0.4+rng()*0.6;spray(x,y+0.01,z,Math.cos(a)*s*Math.cos(el),s*Math.sin(el),Math.sin(a)*s*Math.cos(el),0);}
+}
+function surfaceOf(kind){return kind===3?'water':'stone';}
+function nearestPlant(x,z){let best=null,bd=1e9;for(const p of plants){const d=(p.root[0]-x)**2+(p.root[2]-z)**2;if(d<bd&&d<(p.H*0.8)**2){bd=d;best=p;}}return best;}
+function stepRain(dt){
+ const target=Math.round(W.rain*MAXD);while(nDrops<target)spawnDrop(nDrops++,false);if(nDrops>target)nDrops=Math.max(target,nDrops-Math.ceil(dt*3000));
+ for(let i=0;i<nDrops;i++){const o=i*3,D=dd[i],vt=vTerm(D),tau=vt/9.81,w=wind(dp[o],dp[o+1],dp[o+2],false),a=Math.min(1,dt/tau);
+  dv[o]+=(w[0]-dv[o])*a;dv[o+1]+=(-vt-dv[o+1])*a;dv[o+2]+=(w[2]-dv[o+2])*a;
+  let x=dp[o]+=dv[o]*dt;const y=dp[o+1]+=dv[o+1]*dt;let z=dp[o+2]+=dv[o+2]*dt;
+  if(x-camT[0]>BOX)x=dp[o]-=2*BOX;else if(camT[0]-x>BOX)x=dp[o]+=2*BOX; if(z-camT[2]>BOX)z=dp[o+2]-=2*BOX;else if(camT[2]-z>BOX)z=dp[o+2]+=2*BOX;
+  const v=Math.hypot(dv[o],dv[o+1],dv[o+2]),c=hm(hmap.top,x,z);
+  if(c===null){if(y<-2)spawnDrop(i,false);continue;}
+  const top=hmap.top[c],ground=hmap.ground[c];
+  if(!passed[i]&&hmap.top[c+2]>0&&y<=top&&top>ground+0.05){ // into a crown: caught by a leaf, or through a gap
+   passed[i]=1;if(rng()<0.65){const p=nearestPlant(x,z),m=1000*Math.PI*Dm3(D)/6;stats.leafHits++;
+    if(p){const h=Math.max(0.2,y-p.root[1]);p.imp[0]+=m*dv[o]*h;p.imp[1]+=m*dv[o+2]*h;}
+    if(rng()<0.15)spray(x,y,z,0,0,0,1); impact(x,y,z,D,v,'leaf');spawnDrop(i,false);continue;}}
+  if(y<=ground){impact(x,ground,z,D,v,surfaceOf(hmap.ground[c+1]));spawnDrop(i,false);}}
+ for(let i=0;i<nSpl;i++){const o=i*3;sv[o+1]-=9.81*dt;const dr=Math.exp(-dt*(sk[i]?0.2:1.5));sv[o]*=dr;sv[o+2]*=dr;
+  const x=sp[o]+=sv[o]*dt,y=sp[o+1]+=sv[o+1]*dt,z=sp[o+2]+=sv[o+2]*dt,c=hm(hmap.ground,x,z),g=c===null?-2:hmap.ground[c];
+  if(y<=g){if(sk[i]===1)impact(x,g,z,3,Math.hypot(sv[o],sv[o+1],sv[o+2]),surfaceOf(hmap.ground[c+1]));
+   const j=--nSpl;sp.copyWithin(o,j*3,j*3+3);sv.copyWithin(o,j*3,j*3+3);sk[i]=sk[j];i--;}}
+}
+const Dm3=D=>(D*1e-3)**3;
+
 // particles
 function partVAO(max){const vao=gl.createVertexArray();gl.bindVertexArray(vao);const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,max*16,gl.DYNAMIC_DRAW);
- gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);return{vao,b,data:new Float32Array(max*4)};}
+ gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);gl.bindVertexArray(null);return{vao,b,data:new Float32Array(max*4)};}
 const lines=partVAO(MAXD*2), points=partVAO(MAXS);
-gl.bindVertexArray(null);
 
 // ---------- camera ----------
-let yaw=0.9,pitch=0.22,dist=18,drag=null;
-cv.onpointerdown=e=>{drag=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId);};cv.onpointerup=()=>drag=null;
-cv.onpointermove=e=>{if(!drag)return;yaw-=(e.clientX-drag[0])*0.005;pitch=clamp(pitch+(e.clientY-drag[1])*0.005,0.02,1.4);drag=[e.clientX,e.clientY];};
-cv.onwheel=e=>{dist=clamp(dist*Math.exp(e.deltaY*0.001),3,60);e.preventDefault();};
+let yaw=0,pitch=0.15,dist=12,drag=null;
+cv.oncontextmenu=e=>e.preventDefault();
+cv.onpointerdown=e=>{drag=[e.clientX,e.clientY,e.button];cv.setPointerCapture(e.pointerId);};cv.onpointerup=()=>drag=null;
+cv.onpointermove=e=>{if(!drag)return;const dx=e.clientX-drag[0],dy=e.clientY-drag[1];
+ if(drag[2]===2){const f=[Math.cos(yaw),Math.sin(yaw)],k=dist*0.002;camT[0]+=(-f[1]*dx-f[0]*dy)*k;camT[2]+=(f[0]*dx-f[1]*dy)*k;}
+ else{yaw-=dx*0.005;pitch=clamp(pitch+dy*0.005,-0.2,1.4);}drag=[e.clientX,e.clientY,drag[2]];};
+cv.onwheel=e=>{dist=clamp(dist*Math.exp(e.deltaY*0.001),2,80);e.preventDefault();};
 
 // ---------- loop ----------
-const mix3=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
-const SUN=norm([0.5,0.65,0.3]);let last=performance.now(),acc=0,fps=60,cloudOff=[0,0],simMs=0;const SUB=1/300;
+let SUN=[0.5,0.65,0.3],last=performance.now(),fps=60,cloudOff=[0,0],simMs=0;
 function frame(now){
  const dt=clamp((now-last)/1000,0,0.05);last=Math.max(last,now);T+=dt;fps+=(1/Math.max(dt,1e-4)-fps)*0.05;
- const t0=performance.now();
- stepWeather(dt);acc+=dt;let steps=0;while(acc>=SUB&&steps<20){for(const t of trees)stepTree(t,SUB);acc-=SUB;steps++;} if(steps===20)acc=0;
- stepGrass(dt);stepRain(dt);simMs+=(performance.now()-t0-simMs)*0.1;
+ const t0=performance.now();stepWeather(dt);stepPlants(Math.min(dt,1/30));stepRain(dt);simMs+=(performance.now()-t0-simMs)*0.1;
  cloudOff[0]+=Math.cos(W.dir)*W.speed*2*dt*0.0012;cloudOff[1]+=Math.sin(W.dir)*W.speed*2*dt*0.0012; // clouds ride faster wind aloft
- // sky and light from the cover
  const dark=1-0.35*W.rain, zen=scl(mix3([0.22,0.42,0.8],[0.4,0.42,0.45],W.cover),dark), hor=scl(mix3([0.7,0.8,0.92],[0.55,0.56,0.58],W.cover),dark);
- const sunC=scl([1,0.95,0.85],2.6*(1-0.8*W.cover)+W.flash*2), amb=add(scl(zen,0.9),[W.flash,W.flash,W.flash*1.1]), fogD=0.004+0.03*W.rain;
- // camera
- const w_=cv.clientWidth*Math.min(devicePixelRatio,1.5)|0,h_=cv.clientHeight*Math.min(devicePixelRatio,1.5)|0;if(cv.width!==w_||cv.height!==h_){cv.width=w_;cv.height=h_;}
+ const sunC=scl([1,0.95,0.85],2.2*(1-0.8*W.cover)+W.flash*2), amb=add(scl(zen,0.9),[W.flash,W.flash,W.flash*1.1]), fogD=0.003+0.025*W.rain;
+ const pr=Math.min(devicePixelRatio,1.5),w_=cv.clientWidth*pr|0,h_=cv.clientHeight*pr|0;if(cv.width!==w_||cv.height!==h_){cv.width=w_;cv.height=h_;}
  gl.viewport(0,0,cv.width,cv.height);
- const eye=[camT[0]+Math.cos(yaw)*Math.cos(pitch)*dist,camT[1]+Math.sin(pitch)*dist,camT[2]+Math.sin(yaw)*Math.cos(pitch)*dist],L=lookAt(eye,camT),asp=cv.width/cv.height,fov=0.9;
- const VP=mmul(persp(fov,asp,0.05,400),L.m);
- const common=p=>{gl.useProgram(p.p);const u=p.u;u.uVP&&gl.uniformMatrix4fv(u.uVP,false,VP);u.uTime&&gl.uniform1f(u.uTime,T);u.uCover&&gl.uniform1f(u.uCover,W.cover);u.uCloudOff&&gl.uniform2fv(u.uCloudOff,cloudOff);
-  u.uSun&&gl.uniform3fv(u.uSun,SUN);u.uSunC&&gl.uniform3fv(u.uSunC,sunC);u.uAmb&&gl.uniform3fv(u.uAmb,amb);u.uCam&&gl.uniform3fv(u.uCam,eye);u.uFog&&gl.uniform3fv(u.uFog,hor);u.uFogD&&gl.uniform1f(u.uFogD,fogD);
-  u.uWet&&gl.uniform1f(u.uWet,W.wet);u.uZen&&gl.uniform3fv(u.uZen,zen);u.uHor&&gl.uniform3fv(u.uHor,hor);};
+ const eye=[camT[0]-Math.sin(yaw)*Math.cos(pitch)*dist,camT[1]+Math.sin(pitch)*dist,camT[2]-Math.cos(yaw)*Math.cos(pitch)*dist],L=lookAt(eye,camT),asp=cv.width/cv.height,fov=0.9;
+ const VP=mmul(persp(fov,asp,0.05,500),L.m);
+ const common=p=>{gl.useProgram(p.p);const u=p.u,s=(k,f)=>u[k]&&f(u[k]);s('uVP',l=>gl.uniformMatrix4fv(l,false,VP));s('uTime',l=>gl.uniform1f(l,T));s('uCover',l=>gl.uniform1f(l,W.cover));
+  s('uCloudOff',l=>gl.uniform2fv(l,cloudOff));s('uSun',l=>gl.uniform3fv(l,SUN));s('uSunC',l=>gl.uniform3fv(l,sunC));s('uAmb',l=>gl.uniform3fv(l,amb));s('uCam',l=>gl.uniform3fv(l,eye));
+  s('uFog',l=>gl.uniform3fv(l,hor));s('uFogD',l=>gl.uniform1f(l,fogD));s('uWet',l=>gl.uniform1f(l,W.wet));s('uZen',l=>gl.uniform3fv(l,zen));s('uHor',l=>gl.uniform3fv(l,hor));
+  s('uFlutF',l=>gl.uniform1f(l,2*Math.PI*Math.min(12,0.2*W.speed/0.08)));s('uRip',l=>gl.uniform4fv(l,ripples));};
  gl.disable(gl.BLEND);gl.depthMask(false);gl.disable(gl.DEPTH_TEST);common(pSky);
  gl.uniform3fv(pSky.u.uR,L.s);gl.uniform3fv(pSky.u.uU,L.u);gl.uniform3fv(pSky.u.uF,L.f);gl.uniform1f(pSky.u.uTan,Math.tan(fov/2));gl.uniform1f(pSky.u.uAsp,asp);gl.uniform1f(pSky.u.uFlash,W.flash);
  gl.bindVertexArray(null);gl.drawArrays(gl.TRIANGLES,0,3);
  gl.enable(gl.DEPTH_TEST);gl.depthMask(true);gl.clear(gl.DEPTH_BUFFER_BIT);
- common(pLit);drawLit(boxes,0);
- bark.n=0;leaves.n=0;
- for(const t of trees){for(const n of t.nodes)put(bark,n.q,n.joint,n.r,n.L,n.r,[0.3,0.22,0.15],0.9);
-  for(const l of t.leaves){const n=l.node;put(leaves,Q.mul(Q.mul(n.q,l.restQ),Q.vec([l.ph[0],l.ph[1],0])),leafPos(l),l.size*0.6,l.size,1,l.col,0.7);}}
- drawLit(bark,0);gl.disable(gl.CULL_FACE);drawLit(leaves,1);
- common(pWater);gl.uniform4f(pWater.u.uPond,POND.x,POND.z,POND.r,0);gl.uniform4fv(pWater.u.uRip,ripples);gl.uniform1f(pWater.u.uRain,W.rain*0.9);gl.bindVertexArray(waterVAO);gl.drawArrays(gl.TRIANGLE_FAN,0,50);
- common(pGrass);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,gTexture);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,G,G,gl.RGBA,gl.FLOAT,gtex);
- gl.uniform1i(pGrass.u.uBend,0);gl.uniform1f(pGrass.u.uArea,GAREA);gl.uniform1i(pGrass.u.uG,G);gl.bindVertexArray(grassVAO);gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,10,nBlades);
- // rain streaks: a camera exposure of ~1/40 s turns each drop into a line
+ for(const p of plants){const m=meshes[p.m];m.dirty=true;}
+ for(const m of meshes)if(m.dirty){gl.bindBuffer(gl.ARRAY_BUFFER,m.ibuf);gl.bufferSubData(gl.ARRAY_BUFFER,0,m.data);m.dirty=false;}
+ common(pGarden);drawGarden(VP,0);
+ // rain streaks: a camera exposure of ~1/25 s turns each drop into a line
  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);common(pPart);
- const ld=lines.data;for(let i=0;i<nDrops;i++){const o=i*3,a=0.35+0.4*dd[i]/4,k=i*8;ld[k]=dp[o];ld[k+1]=dp[o+1];ld[k+2]=dp[o+2];ld[k+3]=a;ld[k+4]=dp[o]-dv[o]/25;ld[k+5]=dp[o+1]-dv[o+1]/25;ld[k+6]=dp[o+2]-dv[o+2]/25;ld[k+7]=0;}
- // drops refract the whole sky, so they read lighter than it
- const rc=add(add(scl(amb,2.2),scl(sunC,0.2)),[0.18,0.19,0.2]);gl.uniform3fv(pPart.u.uCol,rc);gl.bindVertexArray(lines.vao);gl.bindBuffer(gl.ARRAY_BUFFER,lines.b);gl.bufferSubData(gl.ARRAY_BUFFER,0,ld.subarray(0,nDrops*8));gl.drawArrays(gl.LINES,0,nDrops*2);
- const pd=points.data;for(let i=0;i<nSpl;i++){pd[i*4]=sp[i*3];pd[i*4+1]=sp[i*3+1];pd[i*4+2]=sp[i*3+2];pd[i*4+3]=sk[i]?0.8:0.55;}
+ const ld=lines.data;for(let i=0;i<nDrops;i++){const o=i*3,k=i*8;ld[k]=dp[o];ld[k+1]=dp[o+1];ld[k+2]=dp[o+2];ld[k+3]=0.3+0.4*dd[i]/4;ld[k+4]=dp[o]-dv[o]/25;ld[k+5]=dp[o+1]-dv[o+1]/25;ld[k+6]=dp[o+2]-dv[o+2]/25;ld[k+7]=0;}
+ gl.uniform3fv(pPart.u.uCol,add(add(scl(amb,2.2),scl(sunC,0.2)),[0.18,0.19,0.2])); // drops refract the whole sky, so they read lighter than it
+ gl.bindVertexArray(lines.vao);gl.bindBuffer(gl.ARRAY_BUFFER,lines.b);gl.bufferSubData(gl.ARRAY_BUFFER,0,ld.subarray(0,nDrops*8));gl.drawArrays(gl.LINES,0,nDrops*2);
+ const pd=points.data;for(let i=0;i<nSpl;i++){pd[i*4]=sp[i*3];pd[i*4+1]=sp[i*3+1];pd[i*4+2]=sp[i*3+2];pd[i*4+3]=sk[i]?0.7:0.5;}
  gl.bindVertexArray(points.vao);gl.bindBuffer(gl.ARRAY_BUFFER,points.b);gl.bufferSubData(gl.ARRAY_BUFFER,0,pd.subarray(0,nSpl*4));gl.drawArrays(gl.POINTS,0,nSpl);
  gl.depthMask(true);gl.disable(gl.BLEND);
- $('hud').textContent=`fps ${fps.toFixed(0)}  sim ${simMs.toFixed(1)} ms\nstorm ${W.storm.toFixed(2)}  cloud ${(W.cover*100).toFixed(0)}%  rain ${(60*W.rain**1.5).toFixed(1)} mm/h\nwind ${W.speed.toFixed(1)} m/s  wet ${(W.wet*100).toFixed(0)}%\ndrops ${nDrops}  spray ${nSpl}\nsplashes ${stats.splashes}  leaf hits ${stats.leafHits}  ripples ${stats.ripples}`;
- window.__wx={fps,nDrops,nSpl,stats,W,tipSway:trees[0].nodes.at(-1).th.slice()};
+ $('hud').textContent=`fps ${fps.toFixed(0)}  sim ${simMs.toFixed(1)} ms\nstorm ${W.storm.toFixed(2)}  cloud ${(W.cover*100).toFixed(0)}%  rain ${(60*W.rain**1.5).toFixed(1)} mm/h\nwind ${W.speed.toFixed(1)} m/s  wet ${(W.wet*100).toFixed(0)}%  plants ${plants.length}\ndrops ${nDrops}  spray ${nSpl}\nsplashes ${stats.splashes}  leaf hits ${stats.leafHits}  ripples ${stats.ripples}`;
  requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
+(async()=>{
+ if(!window.GARDEN)return; if(!S3TC||!CBF){$('load').textContent='This browser lacks WebGL2 S3TC or float render targets.';return;}
+ await loadGarden();stepPlants(0);for(const m of meshes){gl.bindBuffer(gl.ARRAY_BUFFER,m.ibuf);gl.bufferSubData(gl.ARRAY_BUFFER,0,m.data);}hmap=bakeHeight(); // crowns need their heights in the map
+ camT=[...GARDEN.target];const d=sub(GARDEN.target,GARDEN.eye);yaw=Math.atan2(d[0],d[2]);dist=Math.hypot(...d);pitch=Math.asin(-d[1]/dist); // the app's own hero shotSUN=norm(scl(GARDEN.sun,-1));
+ $('load').remove();requestAnimationFrame(frame);
+})().catch(e=>{$('load').textContent='Failed: '+e.message;console.error(e);});
 </script></body></html>
