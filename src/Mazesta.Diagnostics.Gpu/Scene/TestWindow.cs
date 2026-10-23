@@ -47,6 +47,13 @@ internal sealed class TestWindow : IDisposable
         SetForegroundWindow(Handle);
     }
 
+    /// <summary>The primary screen's size in real pixels, whatever the calling thread's DPI awareness (a scaled screen reports a smaller one to an unaware thread).</summary>
+    internal static (int Width, int Height) ScreenSize()
+    {
+        var old = SetThreadDpiAwarenessContext(-4);
+        try { return (GetSystemMetrics(0), GetSystemMetrics(1)); } finally { if (old != IntPtr.Zero) SetThreadDpiAwarenessContext(old); }
+    }
+
     /// <summary>Handles every waiting message; false once the technician closed the window.</summary>
     public bool Pump()
     {
