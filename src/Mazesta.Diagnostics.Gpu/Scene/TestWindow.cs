@@ -30,7 +30,12 @@ internal sealed class TestWindow : IDisposable
         _ = ClassAtom.Value;
         int screenW = GetSystemMetrics(0), screenH = GetSystemMetrics(1);
         uint style, exStyle = 0; int x = 0, y = 0, w = screenW, h = screenH;
-        if (fullScreen) { style = 0x80000000 | 0x10000000; exStyle = 0x00000008; }   // WS_POPUP | WS_VISIBLE, WS_EX_TOPMOST
+        if (fullScreen)
+        {
+            style = 0x80000000 | 0x10000000; exStyle = 0x00000008;   // WS_POPUP | WS_VISIBLE, WS_EX_TOPMOST
+            // The frame keeps its shape: on a screen of another shape (21:9) the borderless window is the largest one of the frame's shape, centred, not stretched over the screen.
+            if (width > 0 && height > 0) { double fit = Math.Min(screenW / (double)width, screenH / (double)height); w = (int)(width * fit); h = (int)(height * fit); x = (screenW - w) / 2; y = (screenH - h) / 2; }
+        }
         else
         {
             style = 0x00C00000 | 0x00080000 | 0x00020000 | 0x10000000;   // WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE

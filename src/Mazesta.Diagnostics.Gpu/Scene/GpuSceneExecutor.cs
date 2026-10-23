@@ -26,8 +26,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     internal static readonly TestOption RayTracing = new(RayTracingOption, "Test_Option_RayTracing", TestOptionKind.Choice, "off",
         () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1)")]);
     /// <summary>The window covers the screen with no border (the frame is still drawn at the resolution chosen and shown scaled to the screen): on unless switched off.</summary>
-    internal static readonly TestOption FullScreen = new(FullScreenOption, "Test_Option_FullScreen", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)],
-        Preferred: () => TestWindow.ScreenSize() is var (sw, sh) && Math.Abs(sw / (double)sh - 16.0 / 9) < 0.03 ? "on" : "off");   // a screen that is not 16:9 (a 21:9 monitor) would stretch the 16:9 frame
+    internal static readonly TestOption FullScreen = new(FullScreenOption, "Test_Option_FullScreen", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>The garden's weather (<see cref="GardenWeather"/>): rain, gusts that lift leaves and twigs out of the crowns and carry them, simulated on every core of the processor each frame, in air that is a fluid going round the hall; the plants sway in it.
     /// Off unless switched on (the card is then the only thing the test loads); it loads the processor and the memory (the grids of solids and of air), not the card.</summary>
     internal static readonly TestOption Weather = new(WeatherOption, "Test_Option_Weather", TestOptionKind.Choice, "off",
@@ -48,10 +47,18 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     internal static string SizeLabel(string text) => "⁦" + text + "⁩";
     internal static IReadOnlyList<OptionChoice> Sizes()
     {
-        List<OptionChoice> list = [new("1280x720", SizeLabel("1280 × 720 (HD)")), new("1920x1080", SizeLabel("1920 × 1080 (Full HD)")), new("2560x1440", SizeLabel("2560 × 1440 (2K)")), new("3840x2160", SizeLabel("3840 × 2160 (4K)")),
-            new("2560x1080", SizeLabel("2560 × 1080 (21:9)")), new("3440x1440", SizeLabel("3440 × 1440 (21:9)"))];
-        // The screen's own size, when it is none of these: an ultra-wide is then measured at its real shape.
-        try { var (sw, sh) = TestWindow.ScreenSize(); if (sw > 0 && sh > 0 && !list.Any(c => c.Value == $"{sw}x{sh}")) list.Add(new($"{sw}x{sh}", SizeLabel($"{sw} × {sh}"))); } catch (Exception) { }
+        List<OptionChoice> list = [new("1280x720", SizeLabel("1280 × 720 (HD)")), new("1920x1080", SizeLabel("1920 × 1080 (Full HD)")), new("2560x1440", SizeLabel("2560 × 1440 (2K)")), new("3840x2160", SizeLabel("3840 × 2160 (4K)"))];
+        // Only on an ultra-wide screen: the 21:9 sizes and the screen's own, so it is measured at its real shape (the presets above stay the comparable ones).
+        try
+        {
+            var (sw, sh) = TestWindow.ScreenSize();
+            if (sh > 0 && sw / (double)sh >= 2.0)
+            {
+                list.Add(new("2560x1080", SizeLabel("2560 × 1080 (21:9)"))); list.Add(new("3440x1440", SizeLabel("3440 × 1440 (21:9)")));
+                if (!list.Any(c => c.Value == $"{sw}x{sh}")) list.Add(new($"{sw}x{sh}", SizeLabel($"{sw} × {sh}")));
+            }
+        }
+        catch (Exception) { }
         return list;
     }
     /// <summary>Ray tracing starts on where the card has DXR 1.1, off otherwise.</summary>
