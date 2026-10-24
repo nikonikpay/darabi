@@ -13,6 +13,7 @@ namespace Mazesta.Diagnostics.Gpu.Tuning;
 internal static class SceneGpuLoad
 {
     private const int Width = 1920, Height = 1080; private const float CheckTime = 1.234f;
+    private static readonly float[] TuningViews = [0f, 42f, 60f, 90f, 114f, 132f];
 
     public static LoadRunResult Run(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct, bool bursts = false)
     {
@@ -27,8 +28,9 @@ internal static class SceneGpuLoad
 
     private static LoadRunResult RunOnThread(GraphicsDevice device, TimeSpan duration, TimeSpan settle, bool rayTraced, CancellationToken ct, bool bursts)
     {
-        GardenCamera.Pinned = 0;   // the camera and the light stay put; the water, the fountain, the wind and the wings move with the clock
-        try { return bursts ? Bursts(device, duration, rayTraced, ct) : Draw(device, duration, settle, rayTraced, ct); } finally { GardenCamera.Pinned = null; }
+        GardenCamera.Pinned = 0;   // the light stays put; the water, the fountain, the wind and the wings move with the clock
+        GardenCamera.Cycle = TuningViews;   // the camera jumps between the heavy view at the gate and the lighter ones (walk seconds: gate, stairs, hall's left, sitting corner, terrace, right walk)
+        try { return bursts ? Bursts(device, duration, rayTraced, ct) : Draw(device, duration, settle, rayTraced, ct); } finally { GardenCamera.Pinned = null; GardenCamera.Cycle = null; }
     }
 
     /// <summary>Bursts of 30-400 ms, one in four 1-4 s long, after rests of 20-600 ms, one in five 3-8 s long (long enough for the card to drop to its idle clock and

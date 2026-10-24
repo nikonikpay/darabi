@@ -54,9 +54,16 @@ public static class GardenCamera
     /// in one light while the water, the fountain, the wind and the rest go on moving. A plain static, not per thread: the ray-traced scene is placed on every core.</summary>
     internal static float? Pinned { get; set; }
 
+    /// <summary>Walk moments the camera jumps between, <see cref="Hold"/> seconds on each, round and round (null: off). The tuning scene uses it so the card meets the garden's
+    /// heaviest view and the light ones of the hall in turn: its clock and power rise and fall as in the visual test, where one fixed view hid the instability that shows at the peaks.
+    /// A pure function of time, so the check frame is the same picture before and after a run. The day stays at <see cref="Pinned"/>.</summary>
+    internal static float[]? Cycle { get; set; }
+    internal const float Hold = 4f;
+
     public static (Vector3 Eye, Vector3 Target) At(float time)
     {
         if (Fixed is { } view) return view;
+        if (Cycle is { Length: > 0 } views) return Walk(views[(int)(Math.Max(time, 0f) / Hold) % views.Length]);
         return Walk(Pinned ?? time);
     }
 
