@@ -768,6 +768,8 @@
   <data name="Tuning_Fan" xml:space="preserve"><value>فن</value></data>
   <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA با درایور آن پیدا نشد. تنظیم کارت گرافیک فقط روی کارت‌های NVIDIA کار می‌کند.</value></data>
   <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>کتابخانهٔ مدیریتی NVIDIA باز نشد</value></data>
+  <data name="Tuning_Unavailable_Amd" xml:space="preserve"><value>کارت گرافیک AMD با درایور AMD Adrenalin پیدا شد. تنظیم کارت‌های AMD هنوز در این نسخه ساخته نشده، پس تنظیمی نشان داده نمی‌شود و چیزی روی کارت تغییر نمی‌کند. فعلاً از تب Performance خود Adrenalin استفاده کنید.</value></data>
+  <data name="Tuning_Unavailable_AmdNoDriver" xml:space="preserve"><value>کارت گرافیک AMD پیدا شد، اما درایور AMD Adrenalin نصب نیست (ویندوز از درایور نمایشگر خودش استفاده می‌کند). درایور Adrenalin را از amd.com نصب کنید؛ تنظیم کارت‌های AMD هنوز در این نسخه ساخته نشده.</value></data>
   <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>کارت در همان حالت کارخانه خطا داد. تنظیم انجام نشد – ابتدا تست‌های کارت گرافیک را اجرا کنید.</value></data>
   <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>درایور فرکانس یا توان این کارت را گزارش نمی‌کند، پس نتیجه قابل اندازه‌گیری نبود.</value></data>
   <data name="Tuning_Out_NoCoreOffset" xml:space="preserve"><value>این کارت یا درایور کنترل آفست هسته ندارد.</value></data>

@@ -768,6 +768,8 @@
   <data name="Tuning_Fan" xml:space="preserve"><value>Fan</value></data>
   <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>No NVIDIA graphics card with its driver was found. Graphics card tuning works on NVIDIA cards only.</value></data>
   <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>NVIDIA's management library could not be opened</value></data>
+  <data name="Tuning_Unavailable_Amd" xml:space="preserve"><value>AMD graphics card found, with the AMD Adrenalin driver. Tuning of AMD cards is not built into this version yet, so no settings are offered; nothing is changed on the card. Use Adrenalin's own Performance tab for now.</value></data>
+  <data name="Tuning_Unavailable_AmdNoDriver" xml:space="preserve"><value>AMD graphics card found, but the AMD Adrenalin driver is not installed (Windows is using its own display driver). Install the Adrenalin driver from amd.com; tuning of AMD cards is not built into this version yet.</value></data>
   <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>The card already made errors at stock settings. It was not tuned – run the GPU tests first.</value></data>
   <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>The driver does not report this card's clock or power, so a result could not be measured.</value></data>
   <data name="Tuning_Out_NoCoreOffset" xml:space="preserve"><value>This card or driver has no core offset control.</value></data>
