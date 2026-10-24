@@ -10,9 +10,12 @@ import { findingCard, bySeverity } from "./checkup.js";
 import { boot } from "../app.js";
 
 // A run's length is one of a few fixed ones (the benchmark's own, 3 and 10 minutes), so results of the same length stay comparable; each has its colour.
-const durLabel = (s) => s % 60 === 0 ? `${fa(s / 60)} ${t("Test_Minutes")}` : `${fa(s)} ${t("Test_Seconds")}`;
-function durationChoice(values, onPick) {
-  const btns = values.map((v, i) => h("button", { type: "button", role: "radio", class: `dur-pick dp-${i}`, "aria-checked": "false", onclick: () => onPick(v) }, durLabel(v)));
+// The garden is counted in walks (its own length is one), the rest in minutes or seconds.
+const durLabel = (r, s) => r.id === "bench.gpu.scene.d3d" ? t("Bench_Rounds", fa(Math.round(s / r.durations[0]))) : s % 60 === 0 ? `${fa(s / 60)} ${t("Test_Minutes")}` : `${fa(s)} ${t("Test_Seconds")}`;
+const durTag = (r) => { const i = r.durations.indexOf(Number.parseInt(r.duration, 10)); return h("span", { class: `dur-tag dp-${Math.max(0, i)}`, title: t("Bench_Duration") }, durLabel(r, r.durations[Math.max(0, i)])); };
+function durationChoice(r, onPick) {
+  const values = r.durations;
+  const btns = values.map((v, i) => h("button", { type: "button", role: "radio", class: `dur-pick dp-${i}`, "aria-checked": "false", title: `${fa(v)} ${t("Test_Seconds")}`, onclick: () => onPick(v) }, durLabel(r, v)));
   const el = h("div", { class: "dur-choice", role: "radiogroup", "aria-label": t("Bench_Duration") }, btns);
   return { el, set(v) { const cur = Number.parseInt(v, 10); values.forEach((x, i) => btns[i].setAttribute("aria-checked", String(x === cur))); } };
 }
@@ -81,7 +84,7 @@ export function benchList(component = null) {
   function addRow(r, i, into) {
     const set = (field, value, extra = {}) => call("bench.set", { id: r.id, field, value, ...extra });
     const check = h("input", { type: "checkbox", class: "check", "aria-label": r.name, onchange: (e) => set("selected", e.target.checked) });
-    const dur = durationChoice(r.durations, (v) => set("duration", String(v)));
+    const dur = durationChoice(r, (v) => set("duration", String(v)));
     const run = h("button", { class: "btn", onclick: () => call("bench.exec", { cmd: "run", id: r.id }) }, t("Bench_Run"));
     const opts = r.options.map((o) => {
       // a choice between off and on is a switch
@@ -132,7 +135,7 @@ export function benchList(component = null) {
           n.detail ? h("p", { class: "detail" }, n.detail) : null);
       }
       const recKey = JSON.stringify([r.best, r.compared]);
-      if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean), r.best || r.compared ? h("button", { class: "btn tint t-chart", type: "button", onclick: () => lastRun(r) }, icon("chart"), t("Bench_Chart")) : null); }
+      if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean), ...(r.best || r.compared ? [ h("button", { class: "btn tint t-chart", type: "button", onclick: () => lastRun(r) }, icon("chart"), t("Bench_Chart"))] : [])); }
       // A run in progress keeps the last standing on screen (the host sends none while the row runs).
       const peerKey = JSON.stringify(r.peers);
       // What this run showed about the machine (the checkup), the ones that need action first; kept on screen while a new run is under way.
@@ -218,7 +221,7 @@ const ocTag = () => h("span", { class: "tag oc" }, t("Web_Peers_Oc"));
 // filtered, opens apart, since it can hold thousands of models. Any entry opens its details beside this system's.
 function standing(r) {
   const p = r.peers;
-  const head = h("div", { class: "peers-head" }, icon("chart"), h("b", {}, t("Web_Peers_Title")),
+  const head = h("div", { class: "peers-head" }, icon("chart"), h("b", {}, t("Web_Peers_Title")), durTag(r),
     p.total ? h("span", { class: "caption" }, t("Web_Peers_Count", fa(p.total))) : null, h("span", { class: "grow" }),
     p.total ? h("button", { class: "btn quiet", onclick: () => allPeers(r) }, t("Web_Peers_All")) : null,
     h("button", { class: "btn quiet", onclick: () => history(r) }, t("Web_Peers_History")));

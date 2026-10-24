@@ -49,9 +49,9 @@ public sealed partial class WebBridge
             return known;
         }
         _benchRunLog = runs; _benchSystemHash = () => System()?.Hash;   // the assistant's benchmark-history tool reads the same log
-        string Key(BenchmarkRowViewModel r) => BenchmarkRecords.RecordKey(r.Benchmark.Definition.Id.Value, r.OptionValues());
+        string Key(BenchmarkRowViewModel r) => BenchmarkRecords.RecordKey(r.Benchmark.Definition.Id.Value, r.KeyOptions());
         HeadlineMetric? Headline(BenchmarkRowViewModel r) => BenchmarkRecords.Headline(r.Benchmark.Definition.Id.Value) is { Part: not PeerPart.None } h ? h : null;
-        string Table(BenchmarkRowViewModel r, HeadlineMetric h) => BenchmarkPeers.TableKey(r.Benchmark.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(r.Benchmark.Definition.Id.Value, r.OptionValues()));
+        string Table(BenchmarkRowViewModel r, HeadlineMetric h) => BenchmarkPeers.TableKey(r.Benchmark.Definition.Id.Value, h.Version, BenchmarkPeers.Settings(r.Benchmark.Definition.Id.Value, r.KeyOptions()));
 
         async Task<string?> PartOf(PeerPart part, IReadOnlyDictionary<string, string> options, SystemId s) => part switch
         {

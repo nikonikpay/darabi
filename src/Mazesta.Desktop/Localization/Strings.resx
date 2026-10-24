@@ -675,6 +675,7 @@
   <data name="Bench_Run" xml:space="preserve"><value>Run</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Bench_Rounds" xml:space="preserve"><value>{0} walks</value></data>
   <data name="Bench_Note" xml:space="preserve"><value>Benchmarks measure speed. They give numbers only - no score, no pass or fail - and are not a health test. Close other programs first. Tick several and run them one after another, or run one on its own. A single run is saved as a report of its own and a queue as one report (Reports page); the latest result of each is also added to the next test report.</value></data>
   <data name="Bench_Invalid_Duration" xml:space="preserve"><value>Enter a whole number of seconds between {0} and {1}.</value></data>
   <data name="Bench_Status_CompletedAt" xml:space="preserve"><value>Finished at {0}</value></data>

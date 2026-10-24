@@ -1789,3 +1789,11 @@ body.popout .chart { height: 100%; min-height: 120px; }
 /* Tweaks: a row's note shows its first line; the rest opens while the row is pointed at or has the focus. */
 .tw-note, .tw-pref-t small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
 .tw-row:hover .tw-note, .tw-row:focus-within .tw-note, .tw-pref:hover .tw-pref-t small, .tw-pref:focus-within .tw-pref-t small { -webkit-line-clamp: unset; }
+/* The length a list or result was run for: a small tag in the length's own hue (the same three as the choice buttons). */
+.dur-tag { --d: var(--c-ram); display: inline-block; font-size: 11px; font-weight: 700; line-height: 1.5; padding: 0 7px; border-radius: 9px; white-space: nowrap;
+  color: var(--d); border: 1px solid color-mix(in oklab, var(--d) 55%, transparent); background: color-mix(in oklab, var(--d) 12%, transparent); }
+.dur-tag.dp-1 { --d: var(--warn); } .dur-tag.dp-2 { --d: var(--c-gpu); }
+/* The Tests page's bar, in the Benchmarks bar's colours: the switches are amber chips, the all-tests length a teal box. */
+.dock .run-follow { padding: 5px 11px; border: 1px solid color-mix(in oklab, var(--warn) 50%, transparent); border-radius: var(--r-ctl); background: color-mix(in oklab, var(--warn) 10%, var(--ink-3)); color: #ffc766; font-weight: 600; }
+.dock .run-follow:has(input:checked) { background: color-mix(in oklab, var(--warn) 24%, var(--ink-3)); border-color: var(--warn); }
+.dock select.dock-len { border-color: color-mix(in oklab, var(--c-ram) 55%, transparent); background: color-mix(in oklab, var(--c-ram) 10%, var(--ink-3)); color: var(--c-ram); font-weight: 600; }

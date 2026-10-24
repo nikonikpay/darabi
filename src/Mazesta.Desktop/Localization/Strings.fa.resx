@@ -675,6 +675,7 @@
   <data name="Bench_Run" xml:space="preserve"><value>اجرا</value></data>
   <data name="Bench_Cancel" xml:space="preserve"><value>لغو</value></data>
   <data name="Bench_Duration" xml:space="preserve"><value>مدت</value></data>
+  <data name="Bench_Rounds" xml:space="preserve"><value>{0} دور</value></data>
   <data name="Bench_Note" xml:space="preserve"><value>بنچمارک‌ها سرعت را اندازه می‌گیرند. فقط عدد می‌دهند، نه نمره و نه موفق/ناموفق، و آزمون سلامت نیستند. پیش از اجرا برنامه‌های دیگر را ببندید. می‌توانید چند بنچمارک را تیک بزنید تا یکی پس از دیگری اجرا شوند، یا هر کدام را جدا اجرا کنید. هر اجرای تکی یک گزارش و هر صف یک گزارش مشترک ذخیره می‌کند (صفحه‌ی گزارش‌ها) و آخرین نتیجه‌ی هر کدام به گزارش آزمون بعدی هم اضافه می‌شود.</value></data>
   <data name="Bench_Invalid_Duration" xml:space="preserve"><value>یک عدد صحیح بین {0} و {1} ثانیه وارد کنید.</value></data>
   <data name="Bench_Status_CompletedAt" xml:space="preserve"><value>انجام شد، ساعت {0}</value></data>

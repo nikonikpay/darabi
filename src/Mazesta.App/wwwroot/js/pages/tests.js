@@ -51,12 +51,12 @@ export function mount(el) {
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tests")), h("p", { class: "page-lede" }, t("Web_Tests_Lede"))),
       h("label", { class: "run-follow adv-toggle", title: t("Web_Tests_Advanced_Hint"), "data-a": "tests-advanced" }, advBox, t("Web_Tests_Advanced"))),
     notice, blocked, h("div", { class: "profile-bar" }, h("span", { class: "caption" }, t("Profile_Title")), profiles), profileNote, list,
-    h("div", { class: "dock" }, start, cancel, watch, together, thermal, h("span", { class: "grow" }),
+    h("div", { class: "dock" }, h("span", { class: "dock-set" }, start, cancel, watch), h("span", { class: "dock-set" }, together, thermal), h("span", { class: "grow" }),
       // One length for every test at once (each can still be changed after); the box goes back to its title so it can be picked again.
-      h("select", { class: "field", "aria-label": t("Test_DurationAll"), title: t("Test_DurationAll"), onchange: (e) => { if (e.target.value) call("tests.exec", { cmd: "durationAll", value: e.target.value }); e.target.value = ""; } },
+      h("select", { class: "field dock-len", "aria-label": t("Test_DurationAll"), title: t("Test_DurationAll"), onchange: (e) => { if (e.target.value) call("tests.exec", { cmd: "durationAll", value: e.target.value }); e.target.value = ""; } },
         h("option", { value: "" }, t("Test_DurationAll")), [1, 3, 5, 10, 15, 30, 60].map((m) => h("option", { value: String(m * 60) }, t("Web_Minutes", m)))),
-      h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
-      h("button", { class: "btn quiet", onclick: () => call("tests.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
+      h("button", { class: "btn quiet pick", onclick: () => call("tests.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
+      h("button", { class: "btn quiet pick", onclick: () => call("tests.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
 
   const rows = new Map(), groups = [];
   function build(s) {

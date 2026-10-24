@@ -512,6 +512,7 @@ final class Mazesta_Connect
                 if (preg_match('/^fileMb=(\d+)$/', $pair, $f)) { $words[] = 'فایل ' . number_format_i18n((int) $f[1]) . ' مگابایتی'; }
                 elseif (preg_match('/^resolution=(\d+)x(\d+)$/', $pair, $f)) { $words[] = 'رزولوشن ' . (int) $f[1] . '×' . (int) $f[2]; }
                 elseif (preg_match('/^quality=(\d)$/', $pair, $f)) { $words[] = self::quality_words($m[1], (int) $f[1]); }
+                elseif (preg_match('/^duration=(\d+)$/', $pair, $f)) { $words[] = self::duration_words($m[1], (int) $f[1]); }
                 else { $words[] = $pair; }
             }
             $label .= ' · ' . esc_html(implode('، ', $words));
@@ -535,7 +536,18 @@ final class Mazesta_Connect
         else { $words[] = self::quality_words('bench.gpu.scene.d3d', (int) $o['quality']); $words[] = 'ری‌تریسینگ خاموش'; }
         if ($o['weather'] !== 'off') { $words[] = 'آب‌وهوا: ' . $o['weather']; }
         $words[] = $o['frames'] === '1' ? 'تک‌فریم' : ($o['frames'] === '2' ? 'دو فریم هم‌زمان' : $o['frames'] . ' فریم');
+        if (isset($o['duration']) && ctype_digit((string) $o['duration'])) { $words[] = self::duration_words('bench.gpu.scene.d3d', (int) $o['duration']); }
         return $words;
+    }
+
+    /**
+     * A list's run length in words. The app leaves a benchmark's own length out of the key, so only longer runs have one: the garden is counted
+     * in walks of 162 seconds (3 and 5 of them), the rest in minutes or seconds.
+     */
+    private static function duration_words($benchmark, $secs)
+    {
+        if ($benchmark === 'bench.gpu.scene.d3d' && $secs % 162 === 0) { return 'مدت: ' . number_format_i18n($secs / 162) . ' دور'; }
+        return 'مدت: ' . ($secs % 60 === 0 ? number_format_i18n($secs / 60) . ' دقیقه' : number_format_i18n($secs) . ' ثانیه');
     }
 
     /** The garden benchmarks' quality setting in words: the rasteriser's load level, or the ray tracer's rays a pixel. */

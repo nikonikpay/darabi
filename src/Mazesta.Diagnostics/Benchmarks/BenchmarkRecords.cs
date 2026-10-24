@@ -75,6 +75,19 @@ public sealed class BenchmarkRecords
     /// <summary>Options that do not change what is measured (the readout over the garden): they are in no key, so a run with it hidden is the same record and the same list.
     /// The frames in flight are in the key (one frame is its own list, two - the default - the old one), so a result says which it was run with.</summary>
     private static readonly HashSet<string> NotTheWork = new(StringComparer.Ordinal) { "overlay", "fullscreen", "sound" };
+    /// <summary>The key's name for a run's length: present only when the run was not the benchmark's own length, so every list so far stays valid
+    /// and a longer run starts a list of its own.</summary>
+    public const string DurationOption = "duration";
+
+    /// <summary>The lengths a benchmark can be run for, in whole cycles of its work: its own, then about three and ten minutes. The garden is
+    /// counted in walks (1, 3, 5) and the encoder in 2 and 5 times its length, so no run ends in the middle of a cycle.</summary>
+    public static IReadOnlyList<int> DurationChoices(string benchmarkId, int own) => benchmarkId switch
+    {
+        "bench.gpu.scene.d3d" => [own, own * 3, own * 5],
+        "bench.gpu.video" => [own, own * 2, own * 5],
+        _ => [.. new[] { own, 180, 600 }.Distinct()],
+    };
+
     public static IReadOnlyDictionary<string, string>? Effective(string benchmarkId, IReadOnlyDictionary<string, string>? options)
     {
         if (options is null) return null;

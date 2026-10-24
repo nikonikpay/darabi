@@ -98,4 +98,12 @@ public class BenchmarkRecordsTests : IDisposable
     public void The_readout_over_the_garden_is_not_part_of_the_work()   // hidden or shown, it is the same record
         => Assert.Equal(BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["raytracing"] = "on", ["overlay"] = "off" }),
             BenchmarkRecords.RecordKey("bench.gpu.scene.d3d", new Dictionary<string, string> { ["raytracing"] = "on", ["overlay"] = "on" }));
+
+    [Fact] public void A_longer_run_is_a_list_of_its_own_and_the_own_length_keeps_the_old_one()
+    {
+        var own = BenchmarkRecords.RecordKey("bench.cpu.multi", new Dictionary<string, string>());
+        Assert.Equal("bench.cpu.multi|duration=180", BenchmarkRecords.RecordKey("bench.cpu.multi", new Dictionary<string, string> { ["duration"] = "180" }));
+        Assert.NotEqual(own, BenchmarkRecords.RecordKey("bench.cpu.multi", new Dictionary<string, string> { ["duration"] = "600" }));
+    }
+    [Fact] public void Lengths_end_on_whole_cycles() { Assert.Equal([162, 486, 810], BenchmarkRecords.DurationChoices("bench.gpu.scene.d3d", 162)); Assert.Equal([120, 240, 600], BenchmarkRecords.DurationChoices("bench.gpu.video", 120)); Assert.Equal([60, 180, 600], BenchmarkRecords.DurationChoices("bench.memory", 60)); Assert.Equal([20, 180, 600], BenchmarkRecords.DurationChoices("bench.storage", 20)); }
 }

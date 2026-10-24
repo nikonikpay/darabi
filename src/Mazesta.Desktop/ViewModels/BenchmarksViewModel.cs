@@ -40,7 +40,7 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
 
     /// <summary>The lengths a run can be given: the benchmark's own, then three and ten minutes. Fixed, so results of one length stay comparable.</summary>
-    public IReadOnlyList<int> Durations => [.. new[] { Benchmark.Definition.DefaultDurationSeconds, 180, 600 }.Distinct()];
+    public IReadOnlyList<int> Durations => BenchmarkRecords.DurationChoices(Benchmark.Definition.Id.Value, Benchmark.Definition.DefaultDurationSeconds);
 
     /// <summary>The chosen length in seconds, or null (with the row showing why) when it is not a whole number in range.</summary>
     internal int? Seconds()
@@ -48,6 +48,13 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
         if (PersianDigits.TryParseInt(DurationText, out int seconds) && seconds is >= BenchmarksViewModel.MinSeconds and <= BenchmarksViewModel.MaxSeconds && Durations.Contains(seconds)) return seconds;
         StatusText = Loc.Format("Bench_Invalid_Duration", BenchmarksViewModel.MinSeconds, BenchmarksViewModel.MaxSeconds);
         return null;
+    }
+    /// <summary>The options as the run's record and list key them: with the chosen length when it is not the benchmark's own.</summary>
+    internal IReadOnlyDictionary<string, string> KeyOptions()
+    {
+        var o = OptionValues().ToDictionary(x => x.Key, x => x.Value);
+        if (PersianDigits.TryParseInt(DurationText, out int s) && Durations.Contains(s) && s != Benchmark.Definition.DefaultDurationSeconds) o[BenchmarkRecords.DurationOption] = s.ToString(CultureInfo.InvariantCulture);
+        return o;
     }
     internal IReadOnlyDictionary<string, string> OptionValues() => Options.ToDictionary(o => o.Option.Key, o => o.Value);
 }

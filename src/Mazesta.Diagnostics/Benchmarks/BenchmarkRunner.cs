@@ -101,6 +101,8 @@ public sealed class BenchmarkRunner(IEnumerable<IBenchmark> benchmarks, IClock c
     {
         var id = benchmark.Definition.Id; BenchmarkResult result;
         var snapshot = new Dictionary<string, string>(options);   // the run's own copy: the caller's dictionary may be the page's live one
+        // A run of another length than the benchmark's own is a different list: its length goes into the options its record and list are keyed by.
+        if (seconds != benchmark.Definition.DefaultDurationSeconds) snapshot[BenchmarkRecords.DurationOption] = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
         options = snapshot;
         try
         {
