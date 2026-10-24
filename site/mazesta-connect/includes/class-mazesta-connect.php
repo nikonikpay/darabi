@@ -1211,7 +1211,10 @@ final class Mazesta_Connect
             if (!is_array($sh) || empty($sh['rows'])) { continue; }
             foreach ($sh['rows'] as $i => $row) {
                 $o = new stdClass();
-                $o->id = 'sh' . substr(md5($t . $sh['created'] . $i), 0, 20); $o->system = 'share' . $t; $o->at = $row['at']; $o->benchmark = $row['benchmark']; $o->version = (int) $row['version'];
+                $o->id = self::share_run_id($t, $row);
+                // one result per user in a list and part: a newer one takes the older one's place (an equal or older one is the same, and stays)
+                if ($db) { $db->query($db->prepare('DELETE FROM `' . self::t('bench_runs') . '` WHERE id = %s AND run_at < %s', $o->id, MZC_Stats::dt($row['at']))); }
+                $o->system = 'share' . $t; $o->at = $row['at']; $o->benchmark = $row['benchmark']; $o->version = (int) $row['version'];
                 $o->settings = $row['settings']; $o->part = $row['part']; $o->spec = $row['part']; $o->value = (float) $row['value']; $o->unit = $row['unit'];
                 if (!empty($sh['app'])) { $o->app = $sh['app']; }
                 $runs[] = $o;
@@ -1220,6 +1223,12 @@ final class Mazesta_Connect
         list($added) = self::add_runs($runs, $higher, true);
         if ($added > 0) { self::rebuild(); }
         self::back('shares', $added > 0 ? 'saved' : 'nothing');
+    }
+
+    /** A share's row as a run's id: the same user, benchmark, version, settings and part always give the same id, so adding twice never doubles it. */
+    private static function share_run_id($token, $row)
+    {
+        return 'sh' . substr(md5($token . '|' . $row['benchmark'] . '|' . (int) $row['version'] . '|' . $row['settings'] . '|' . $row['part']), 0, 20);
     }
 
     public static function act_share_delete()
@@ -1357,10 +1366,20 @@ final class Mazesta_Connect
         echo '<p class="description">نتیجه‌هایی که کاربران از برنامه با «اشتراک‌گذاری آخرین نتیجه» فرستاده‌اند. هر سیستم یک صفحه دارد و با فرستادن دوباره همان صفحه تازه می‌شود.</p>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="mzc_share_add">'; wp_nonce_field('mzc_share_add');
         echo '<p><button class="button button-primary" onclick="return confirm(\'نتیجه‌های انتخاب‌شده در لیست بنچمارک‌ها بروند؟\')">افزودن انتخاب‌شده‌ها به لیست بنچمارک‌ها</button> <label><input type="checkbox" onclick="var t=this;document.querySelectorAll(\'.mzc-pick\').forEach(function(c){c.checked=t.checked})"> همه</label></p>';
-        echo '<table class="widefat striped"><thead><tr><th></th><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th></th></tr></thead><tbody>';
-        if (!$index) { echo '<tr><td colspan="7">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
+        // A page is "in the list" when every one of its results is there at least as new as the page's own.
+        $in = array(); $held = array();
+        if ($db && $index) {
+            foreach ((array) $db->get_results('SELECT id, run_at FROM `' . self::t('bench_runs') . "` WHERE id LIKE 'sh%'", ARRAY_A) as $h) { $held[$h['id']] = $h['run_at']; }
+            foreach ((array) $db->get_results('SELECT token, benchmark, version, settings, part, at FROM `' . self::t('share_rows') . '`', ARRAY_A) as $r) {
+                $id = self::share_run_id($r['token'], $r); $ok = isset($held[$id]) && $held[$id] >= MZC_Stats::dt($r['at']);
+                $in[$r['token']] = (isset($in[$r['token']]) ? $in[$r['token']] : true) && $ok;
+            }
+        }
+        echo '<table class="widefat"><thead><tr><th></th><th>تاریخ</th><th>نام</th><th>پردازنده</th><th>کارت گرافیک</th><th>بنچمارک</th><th>در لیست</th><th></th></tr></thead><tbody>';
+        if (!$index) { echo '<tr><td colspan="8">هنوز کسی نتیجه‌ای به اشتراک نگذاشته است.</td></tr>'; }
         foreach (array_slice($index, 0, 300, true) as $s) {
-            echo '<tr><td><input type="checkbox" class="mzc-pick" name="tokens[]" value="' . esc_attr($s['token']) . '"></td><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($s['cpu']) . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>'
+            $added = !empty($in[$s['token']]);
+            echo '<tr' . ($added ? ' style="background:#e6f4ea"' : '') . '><td><input type="checkbox" class="mzc-pick" name="tokens[]" value="' . esc_attr($s['token']) . '"></td><td>' . self::local($s['created']) . '</td><td>' . esc_html(isset($s['owner']) && $s['owner'] !== '' ? $s['owner'] : 'کاربر مازستا') . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($s['cpu']) . '</td><td dir="ltr" class="mzc-ltr-r">' . esc_html($s['gpu']) . '</td><td>' . (int) $s['rows'] . '</td><td>' . ($added ? '<strong style="color:#137333">✔ رفته</strong>' : '—') . '</td><td>'
                 . '<a class="button button-small" target="_blank" href="' . esc_url(home_url('/?mazesta_share=' . $s['token'])) . '">دیدن</a> '
                 . self::post_link('share_delete', array('token' => (string) $s['token']), 'حذف', 'button button-small', 'این صفحه پاک شود؟') . '</td></tr>';
         }
