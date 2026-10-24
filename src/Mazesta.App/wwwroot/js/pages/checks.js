@@ -24,7 +24,7 @@ const WIDE = { Backspace: 2, Tab: 1.5, Backslash: 1.5, CapsLock: 1.8, Enter: 2.2
 // Full-screen colours for dead or stuck pixels, then a gradient for banding and a fine checkerboard for pixel response.
 const SCREENS = ["#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#808080", "linear-gradient(90deg, #000, #fff)", "repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 2px 2px"];
 
-const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Battery: "battery" };
+const CHECK_TARGET = { Display: "display", Keys: "keys", Mouse: "mouse", Speakers: "speakers", Mic: "mic", Webcam: "webcam", Battery: "battery" };
 // The technician's calls are kept (they were lost on leaving the page), so what was checked stays marked.
 const VERDICTS = "mazesta.checks";
 const verdicts = () => { try { return JSON.parse(localStorage.getItem(VERDICTS)) || {}; } catch { return {}; } };
@@ -106,23 +106,59 @@ function speakers(cleanup) {
   let ctx = null, playing = null, sink = "";
   const audio = () => { if (!ctx) { ctx = new AudioContext(); if (sink) ctx.setSinkId(sink).catch(() => {}); } return ctx; };
   const output = devicePicker("audiooutput", cleanup, (id) => { sink = id; stop(); ctx?.setSinkId(id).catch(() => {}); });
-  const stop = () => { try { playing?.stop(); } catch { /* already stopped */ } playing = null; };
+  const stop = () => { for (const o of [playing].flat()) { if (!o) continue; o.onended = null; try { o.stop(); } catch { /* already stopped */ } } playing = null; };
   cleanup.push(() => { stop(); ctx?.close(); });
-  // A tone panned hard left, right or centre; the sweep runs 20 Hz to 20 kHz to find a rattle or a dead range.
-  function tone(pan, sweep = false) {
-    stop();
-    const a = audio(), osc = a.createOscillator(), gain = a.createGain(), panner = a.createStereoPanner(), now = a.currentTime, len = sweep ? 10 : 1.5;
-    osc.type = "sine"; panner.pan.value = pan;
+  // Which side should be sounding, in words and in two lamps: a technician who hears nothing, or both sides, sees what was expected.
+  const lamps = { l: h("span", { class: "kb-key lat" }, "L"), r: h("span", { class: "kb-key lat" }, "R") }, note = h("p", { class: "caption" });
+  const show = (left, right) => { lamps.l.classList.toggle("hit", left); lamps.r.classList.toggle("hit", right); };
+  // A 440 Hz tone sent to one output channel of the stereo pair, or both, through a channel merger (the left tone is wired to channel 0 and the right to channel 1, whatever
+  // a panner would do on a mono device); the sweep runs 20 Hz to 20 kHz to find a rattle or a dead range. `steps` plays the pair in turn: left, a gap, right.
+  function tone(left, right, sweep = false, start = 0, len = sweep ? 10 : 1.5) {
+    const a = audio(), osc = a.createOscillator(), gain = a.createGain(), merger = a.createChannelMerger(2), now = a.currentTime + start;
+    osc.type = "sine";
     if (sweep) { osc.frequency.setValueAtTime(20, now); osc.frequency.exponentialRampToValueAtTime(20000, now + len); } else osc.frequency.value = 440;
     gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.25, now + 0.05); gain.gain.setValueAtTime(0.25, now + len - 0.1); gain.gain.linearRampToValueAtTime(0, now + len);
-    osc.connect(gain).connect(panner).connect(a.destination); osc.start(now); osc.stop(now + len); playing = osc;
+    osc.connect(gain); if (left) gain.connect(merger, 0, 0); if (right) gain.connect(merger, 0, 1);
+    merger.connect(a.destination); osc.start(now); osc.stop(now + len);
+    const mono = a.destination.maxChannelCount < 2;
+    note.textContent = mono ? t("Checks_Speakers_Mono") : t("Checks_Speakers_Channels", a.destination.maxChannelCount);
+    return osc;
   }
+  const play = (left, right, sweep = false) => { stop(); show(left, right); playing = tone(left, right, sweep); playing.onended = () => show(false, false); };
+  const inTurn = () => {
+    stop(); show(true, false); const first = tone(true, false), second = tone(false, true, false, 2.2); playing = [first, second];
+    first.onended = () => show(false, true); second.onended = () => show(false, false);
+  };
   return card("Speakers", "bolt", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Speakers_Text")),
     h("div", { class: "btn-row" }, h("span", { class: "caption" }, t("Checks_Speakers_Output")), output),
     h("div", { class: "btn-row" },
-      h("button", { class: "btn", onclick: () => tone(-1) }, t("Checks_Left")), h("button", { class: "btn", onclick: () => tone(0) }, t("Checks_Both")),
-      h("button", { class: "btn", onclick: () => tone(1) }, t("Checks_Right")), h("button", { class: "btn", onclick: () => tone(0, true) }, t("Checks_Sweep")),
-      h("button", { class: "btn quiet", onclick: stop }, icon("stop"), t("Checks_Stop")))));
+      h("button", { class: "btn", onclick: () => play(true, false) }, t("Checks_Left")), h("button", { class: "btn", onclick: () => play(true, true) }, t("Checks_Both")),
+      h("button", { class: "btn", onclick: () => play(false, true) }, t("Checks_Right")), h("button", { class: "btn go", onclick: inTurn }, icon("play"), t("Checks_InTurn")),
+      h("button", { class: "btn", onclick: () => play(true, true, true) }, t("Checks_Sweep")),
+      h("button", { class: "btn quiet", onclick: () => { stop(); show(false, false); } }, icon("stop"), t("Checks_Stop")), h("span", { class: "grow" }), lamps.l, lamps.r), note));
+}
+
+// The camera: a live picture from the chosen device, with what it delivers (size and frames per second). The picture stays on this page and is never saved or sent.
+function webcam(cleanup) {
+  const video = h("video", { class: "chk-cam", autoplay: "", muted: "", playsinline: "" }), status = h("p", { class: "caption" });
+  let stream = null, input = "";
+  const picker = devicePicker("videoinput", cleanup, (id) => { input = id; if (stream) start(); });
+  const stop = () => { stream?.getTracks().forEach((x) => x.stop()); stream = null; video.srcObject = null; };
+  cleanup.push(stop);
+  async function start() {
+    stop();
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: input ? { exact: input } : undefined, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); }
+    catch (e) { status.textContent = t("Checks_Webcam_Denied", e.name || String(e)); return; }
+    picker.refill().catch(() => {});   // the names come with the permission
+    video.srcObject = stream; video.muted = true; video.play().catch(() => {});
+    const track = stream.getVideoTracks()[0], s = track?.getSettings?.() || {};
+    status.textContent = t("Checks_Webcam_Device", track?.label || "-", s.width || "?", s.height || "?", s.frameRate ? Math.round(s.frameRate) : "?");
+    track?.addEventListener("ended", () => { status.textContent = t("Checks_Webcam_Lost"); stop(); });
+  }
+  return card("Webcam", "eye", h("div", {}, h("p", { class: "chk-text" }, t("Checks_Webcam_Text")),
+    h("div", { class: "btn-row" }, h("span", { class: "caption" }, t("Checks_Webcam_Input")), picker),
+    h("div", { class: "btn-row" }, h("button", { class: "btn go", onclick: start }, icon("play"), t("Checks_Webcam_Start")), h("button", { class: "btn quiet", onclick: stop }, icon("stop"), t("Checks_Stop"))),
+    video, status));
 }
 
 function microphone(cleanup) {
@@ -226,6 +262,6 @@ function battery(cleanup) {
 export function mount(el) {
   const cleanup = [];
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Checks")), h("p", { class: "page-lede" }, t("Checks_Lede")))),
-    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup));
+    h("div", { class: "chk-grid" }, display(), speakers(cleanup), microphone(cleanup), webcam(cleanup), mouse(cleanup), battery(cleanup)), keyboard(cleanup));
   return () => cleanup.forEach((f) => f());
 }

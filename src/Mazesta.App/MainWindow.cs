@@ -69,8 +69,8 @@ public sealed class MainWindow : Form
             core.NavigationStarting += (_, a) => { if (!a.Uri.StartsWith($"https://{Host}/", StringComparison.OrdinalIgnoreCase)) a.Cancel = true; };
             core.NewWindowRequested += (_, a) => a.Handled = true;
             core.DownloadStarting += (_, a) => a.Cancel = true;
-            // Only the hands-on checks page asks for anything, and only for the microphone (its level meter); every other request is refused.
-            core.PermissionRequested += (_, a) => a.State = a.PermissionKind == CoreWebView2PermissionKind.Microphone && a.Uri.StartsWith($"https://{Host}/", StringComparison.OrdinalIgnoreCase)
+            // Only the hands-on checks page asks for anything, and only for the microphone (its level meter) and the camera (its live picture); every other request is refused.
+            core.PermissionRequested += (_, a) => a.State = a.PermissionKind is CoreWebView2PermissionKind.Microphone or CoreWebView2PermissionKind.Camera && a.Uri.StartsWith($"https://{Host}/", StringComparison.OrdinalIgnoreCase)
                 ? CoreWebView2PermissionState.Allow : CoreWebView2PermissionState.Deny;
             // The dead-pixel check puts one element in full screen: the window follows, so the colour covers the whole display.
             FormWindowState? before = null; FormBorderStyle style = FormBorderStyle;
