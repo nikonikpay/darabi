@@ -34,6 +34,15 @@ public sealed class BoardDriverService(HttpClient http, string downloadDir)
         return BoardDrivers.ParseAmdChipset(await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
     }
 
+    public async Task<BoardPackage?> AmdGpuAsync(string page, CancellationToken ct)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, page);
+        req.Headers.UserAgent.ParseAdd(BrowserAgent); req.Headers.AcceptLanguage.ParseAdd("en-US");
+        using var res = await http.SendAsync(req, ct).ConfigureAwait(false);
+        res.EnsureSuccessStatusCode();
+        return BoardDrivers.ParseAmdGpu(await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
+    }
+
     /// <summary>Intel's packages from the zip the Driver &amp; Support Assistant reads (software-configurations.json inside it).</summary>
     public async Task<IReadOnlyList<BoardPackage>> IntelAsync(CancellationToken ct)
     {

@@ -31,6 +31,7 @@ public sealed partial class WebBridge
         string bdState = "idle"; double bdProgress = 0; string? bdError = null, bdTitle = null, bdFolder = null; int? bdExit = null; bool bdSilent = false;
         List<DriverGpu> gpus = []; NvidiaProduct? product = null; IReadOnlyList<NvidiaRelease> gameReady = [], studio = [];
         string? nvError = null, checkedAt = null; bool checking = false; DriverAdviceResult? advice = null;
+        BoardPackage? amdGpu = null;   // the Adrenalin installer on the card's AMD page; null when the card is not an RX 5000-9000 or the page did not answer
         IReadOnlyList<object> problems = [];
         // The NVIDIA install: idle, downloading, verifying, installing, done, failed.
         string nvState = "idle"; double nvProgress = 0; string? nvJobError = null, nvJobVersion = null; int? nvExit = null;
@@ -59,6 +60,7 @@ public sealed partial class WebBridge
                 newerGameReady = gpus.FirstOrDefault(g => g.Vendor == "nvidia")?.NvidiaVersion is { } v1 && gameReady.FirstOrDefault() is { } g1 ? NvidiaDrivers.Compare(g1.Version, v1) > 0 : (bool?)null,
                 newerStudio = gpus.FirstOrDefault(g => g.Vendor == "nvidia")?.NvidiaVersion is { } v2 && studio.FirstOrDefault() is { } s1 ? NvidiaDrivers.Compare(s1.Version, v2) > 0 : (bool?)null,
             },
+            amd = amdGpu is null ? null : new { version = amdGpu.Version, job = new { state = bdState, progress = bdProgress, error = bdError, exitCode = bdExit }, mine = bdTitle == amdGpu.Title },
             advice = advice is null ? null : new { suggested = advice.Suggested?.ToString(), creative = advice.Creative, games = advice.Games },
             job = new { state = nvState, progress = nvProgress, error = nvJobError, version = nvJobVersion, exitCode = nvExit },
             wu = new
@@ -146,6 +148,17 @@ public sealed partial class WebBridge
                     {
                         if (ct.IsCancellationRequested) throw;
                         nvError = Loc.Format("Drivers_Nv_Offline", e.Message); _log.LogWarning(e, "NVIDIA driver lookup failed");
+                    }
+                }
+                amdGpu = null;
+                if (gpus.FirstOrDefault(g => g.Vendor == "amd") is { } amdCard && BoardDrivers.AmdGpuPage(amdCard.Name) is { } amdCardPage)
+                {
+                    using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct); limit.CancelAfter(TimeSpan.FromSeconds(40));
+                    try { amdGpu = await boardService.AmdGpuAsync(amdCardPage, limit.Token).ConfigureAwait(true); }
+                    catch (Exception e) when (e is HttpRequestException or OperationCanceledException)
+                    {
+                        if (ct.IsCancellationRequested) throw;
+                        _log.LogWarning(e, "AMD graphics driver lookup failed");
                     }
                 }
                 await CheckBoard(devices, programs, ct).ConfigureAwait(true);
@@ -312,6 +325,13 @@ public sealed partial class WebBridge
             if (jobCts is not null) throw new InvalidOperationException(Loc.Get("Drivers_Busy"));
             if (gate.Holder is { } h) throw new InvalidOperationException(Loc.Get($"Workload_Busy_{h}"));
             _ = InstallNvidia(line, Bool(p, "clean")); return State();
+        });
+        Method("drivers.amdInstall", args =>
+        {
+            if (amdGpu is null) throw new ArgumentException("no AMD package");
+            if (jobCts is not null) throw new InvalidOperationException(Loc.Get("Drivers_Busy"));
+            if (gate.Holder is { } h) throw new InvalidOperationException(Loc.Get($"Workload_Busy_{h}"));
+            _ = InstallBoard(new BoardItem(amdGpu, null, null, null, null, false)); return State();
         });
         Method("drivers.boardInstall", p =>
         {

@@ -2243,6 +2243,8 @@
   <data name="Drivers_CheckedAt" xml:space="preserve"><value>بررسی: {0}</value></data>
   <data name="Drivers_Checking" xml:space="preserve"><value>در حال بررسی…</value></data>
   <data name="Drivers_NotChecked" xml:space="preserve"><value>هنوز بررسی نشده.</value></data>
+  <data name="Drivers_Amd_Install" xml:space="preserve"><value>دانلود و نصب AMD Software {0}</value></data>
+  <data name="Drivers_Amd_Confirm" xml:space="preserve"><value>AMD Software {0} (حدود ۱ گیگابایت) از خود AMD دانلود شود و نصب‌کننده‌اش باز شود؟ هنگام نصب ممکن است صفحه چند بار چشمک بزند.</value></data>
   <data name="Drivers_NoDriverName" xml:space="preserve"><value>کارت گرافیک {0} (هنوز درایور ندارد؛ ویندوز از درایور ساده‌اش استفاده می‌کند)</value></data>
   <data name="Drivers_Busy" xml:space="preserve"><value>یک دانلود یا نصب درایور در حال انجام است.</value></data>
   <data name="Drivers_Gpu_Title" xml:space="preserve"><value>درایور کارت گرافیک</value></data>

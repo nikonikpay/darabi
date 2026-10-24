@@ -46,6 +46,20 @@ export function mount(el) {
       if (g.vendor === "amd" || g.vendor === "intel")
         kids.push(h("p", { class: "note" }, t(`Drivers_${g.vendor}_Note`)), h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("drivers.open", { what: g.vendor }) }, icon("popout"), t(`Drivers_${g.vendor}_Open`))));
     }
+    if (s.amd && s.gpus.some((g) => g.vendor === "amd")) {
+      const a = s.amd, job = a.mine ? a.job : { state: "idle" }, running = ["downloading", "verifying", "installing"].includes(a.job.state);
+      kids.push(h("div", { class: "btn-row" },
+        h("button", { class: "btn primary", disabled: running || !!s.busy, onclick: () => {
+          if (confirm(t("Drivers_Amd_Confirm", a.version))) run("drivers.amdInstall");
+        } }, icon("update"), t("Drivers_Amd_Install", a.version)),
+        job.state === "downloading" ? h("button", { class: "btn stop", onclick: () => run("drivers.cancel") }, icon("stop"), t("Test_Cancel")) : null));
+      if (job.state !== "idle") {
+        const text = { downloading: t("Drivers_Job_Downloading", a.version, fa(Math.round(job.progress * 100))), verifying: t("Drivers_Job_Verifying"),
+          installing: t("Drivers_Job_Installing", a.version), done: t("Drivers_Job_Done", a.version), failed: job.error || "" }[job.state];
+        kids.push(h("p", { class: `msg ${job.state === "failed" ? "fail" : job.state === "done" ? "ok" : ""}` }, text));
+        if (job.state === "downloading") { const bar = h("div", { class: "progress" }, h("i")); bar.firstChild.style.setProperty("--p", job.progress); kids.push(bar); }
+      }
+    }
     const nv = s.nvidia;
     if (nv?.error) kids.push(h("p", { class: "msg fail" }, nv.error), h("div", { class: "btn-row" }, h("button", { class: "btn", onclick: () => call("drivers.open", { what: "nvidia" }) }, icon("popout"), t("Drivers_nvidia_Open"))));
     if (nv && !nv.error) {

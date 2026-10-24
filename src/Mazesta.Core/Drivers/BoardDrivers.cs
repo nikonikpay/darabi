@@ -236,5 +236,18 @@ public static partial class BoardDrivers
     [GeneratedRegex(@"https://drivers\.amd\.com/drivers/AMD_Chipset_Software_([0-9.]+[0-9])\.exe", RegexOptions.IgnoreCase)] private static partial Regex AmdLink();
     [GeneratedRegex(@"AMD Chipset Drivers Revision Number ([0-9.]+) File Size ([0-9.]+ [KMG]B) Release Date (\d{4}-\d{2}-\d{2})")] private static partial Regex AmdMeta();
     // A desktop chipset: A320…A620, B350…B850, X370…X870 (with an E after some). "TRX40" and "X399" are not matched: no word break, or not "x0".
+    /// <summary>AMD's page for a Radeon RX 5000-9000 card (its driver is listed there), from the card's name; null for any other name (APUs, older cards).</summary>
+    public static string? AmdGpuPage(string? cardName) => AmdRx().Match(cardName ?? "") is not { Success: true } m ? null
+        : $"https://www.amd.com/en/support/downloads/drivers.html/graphics/radeon-rx/radeon-rx-{m.Groups[1].Value}000-series/amd-radeon-rx-{m.Groups[1].Value}{m.Groups[2].Value}{(m.Groups[3].Success ? "-" + m.Groups[3].Value.ToLowerInvariant() : "")}.html";
+
+    /// <summary>The full Adrenalin installer on a card's page (not the small web installer, which downloads the rest itself); the link names the version.</summary>
+    public static BoardPackage? ParseAmdGpu(string html)
+    {
+        var link = AmdGpuLink().Match(html);
+        return link.Success ? new(BoardPart.Chipset, "amd", "AMD Software: Adrenalin Edition", link.Groups[1].Value, null, null, link.Value, Vendor: "AMD") : null;
+    }
+
+    [GeneratedRegex(@"\bRX\s*([5-9])(\d{2}0)\s*(XTX|XT|GRE)?\b", RegexOptions.IgnoreCase)] private static partial Regex AmdRx();
+    [GeneratedRegex(@"https://drivers\.amd\.com/drivers/whql-amd-software-adrenalin-edition-([0-9.]+[0-9])-[A-Za-z0-9._-]*\.exe", RegexOptions.IgnoreCase)] private static partial Regex AmdGpuLink();
     [GeneratedRegex(@"\b[ABX]([3-8])\d0(?!\d)")] private static partial Regex AmdChipset();
 }

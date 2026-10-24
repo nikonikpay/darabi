@@ -55,6 +55,13 @@ public class DriversTests
         Assert.Equal(["Intel", "MediaTek"], p.Where(x => x.Part == BoardPart.Wireless).Select(x => x.Vendor).Order());
         Assert.Null(BoardDrivers.ParseAsus("""{"Result":null,"Status":"FAIL","Message":"no"}"""));
     }
+    [Fact] public void Amd_graphics_page_comes_from_the_card_name_and_the_full_installer_is_picked_over_the_web_one()
+    {
+        Assert.EndsWith("/radeon-rx-9000-series/amd-radeon-rx-9060-xt.html", BoardDrivers.AmdGpuPage("AMD Radeon RX 9060 XT"));
+        Assert.EndsWith("/radeon-rx-6000-series/amd-radeon-rx-6600.html", BoardDrivers.AmdGpuPage("AMD Radeon RX 6600")); Assert.Null(BoardDrivers.AmdGpuPage("AMD Radeon(TM) Graphics"));
+        var p = BoardDrivers.ParseAmdGpu("""<a href="https://drivers.amd.com/drivers/installer/26.20/whql/amd-software-adrenalin-edition-26.10.1-minimalsetup-261018_web.exe">a</a><a href="https://drivers.amd.com/drivers/whql-amd-software-adrenalin-edition-26.10.1-win11-b.exe">b</a>""")!;
+        Assert.Equal(("26.10.1", "https://drivers.amd.com/drivers/whql-amd-software-adrenalin-edition-26.10.1-win11-b.exe"), (p.Version, p.Url));
+    }
     [Fact] public void Amd_chipset_version_size_and_date_are_read_from_its_page()
     {
         const string html = """<div><h3>AMD Chipset Drivers</h3><dl><dt><strong>Revision Number</strong></dt><dd>8.08.12.551</dd><dt><strong>File Size</strong></dt><dd>79 MB</dd><dt><strong>Release Date</strong></dt><dd>2026-08-14</dd></dl><a href="https://drivers.amd.com/drivers/AMD_Chipset_Software_8.08.12.551.exe">Download</a></div>""";
