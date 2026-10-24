@@ -3954,4 +3954,67 @@ Cancel: stop.</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>Welcome to Mazesta</value></data>
   <data name="Welcome_Text" xml:space="preserve"><value>Thank you for choosing Mazesta. From here you can watch your system's temperatures and sensors, test its parts under real load, find what is wrong with Smart troubleshooting and keep a report of it all. A good first step is the Smart troubleshooting page.</value></data>
   <data name="Welcome_Start" xml:space="preserve"><value>Get started</value></data>
+  <data name="Nav_Wake" xml:space="preserve"><value>Wake sources</value></data>
+  <data name="Wake_Lede" xml:space="preserve"><value>What can wake this computer from sleep: devices, timers, scheduled tasks and the network. Turn off what wakes it by mistake; every switch is read back from Windows.</value></data>
+  <data name="Wake_AllOff" xml:space="preserve"><value>Turn everything off</value></data>
+  <data name="Wake_AllOff_Confirm" xml:space="preserve"><value>Turn off every device, timer, scheduled task and Wake-on-LAN that can wake this computer? Afterwards only its power button (and the lid on a laptop) wakes it. You can put it all back with one button.</value></data>
+  <data name="Wake_Undo" xml:space="preserve"><value>Put back what I turned off</value></data>
+  <data name="Wake_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Wake_Done" xml:space="preserve"><value>Done. What is shown was read back from Windows.</value></data>
+  <data name="Wake_AllDone" xml:space="preserve"><value>Everything that could wake the computer is off.</value></data>
+  <data name="Wake_Failed" xml:space="preserve"><value>Windows said: {0}</value></data>
+  <data name="Wake_Partial" xml:space="preserve"><value>{0} could not be changed: {1}</value></data>
+  <data name="Wake_Tile_Devices" xml:space="preserve"><value>Devices that can wake it</value></data>
+  <data name="Wake_Tile_Timers" xml:space="preserve"><value>Wake timers</value></data>
+  <data name="Wake_Tile_Maint" xml:space="preserve"><value>Maintenance wake</value></data>
+  <data name="Wake_Tile_Tasks" xml:space="preserve"><value>Tasks that wake it</value></data>
+  <data name="Wake_Tile_Wol" xml:space="preserve"><value>Adapters with Wake-on-LAN</value></data>
+  <data name="Wake_Dev_Title" xml:space="preserve"><value>Devices</value></data>
+  <data name="Wake_Dev_Sub" xml:space="preserve"><value>Keyboards, mice, USB and network devices that Windows lets wake the computer</value></data>
+  <data name="Wake_Dev_Note" xml:space="preserve"><value>Switch on = this device can wake the computer. After turning a keyboard or mouse off, use the power button to wake it. Devices with the same name are switched together.</value></data>
+  <data name="Wake_ShowAll" xml:space="preserve"><value>Show devices that cannot wake it too</value></data>
+  <data name="Wake_Dev_None" xml:space="preserve"><value>No device is allowed to wake this computer.</value></data>
+  <data name="Wake_Dev_Unread" xml:space="preserve"><value>Windows did not give the device list: {0}</value></data>
+  <data name="Wake_Armed" xml:space="preserve"><value>Can wake</value></data>
+  <data name="Wake_Unarmed" xml:space="preserve"><value>Cannot wake</value></data>
+  <data name="Wake_Kind_Input" xml:space="preserve"><value>Keyboard and mouse</value></data>
+  <data name="Wake_Kind_Network" xml:space="preserve"><value>Network cards</value></data>
+  <data name="Wake_Kind_Usb" xml:space="preserve"><value>USB devices</value></data>
+  <data name="Wake_Kind_Other" xml:space="preserve"><value>Other devices</value></data>
+  <data name="Wake_Timers_Title" xml:space="preserve"><value>Timers and tasks</value></data>
+  <data name="Wake_Timers_Sub" xml:space="preserve"><value>Alarms that wake the computer by themselves: updates, maintenance, programs</value></data>
+  <data name="Wake_Timers_Setting" xml:space="preserve"><value>Wake timers (active power plan)</value></data>
+  <data name="Wake_Timers_On" xml:space="preserve"><value>Allowed</value></data>
+  <data name="Wake_Timers_Important" xml:space="preserve"><value>Important only</value></data>
+  <data name="Wake_Timers_Off" xml:space="preserve"><value>Off</value></data>
+  <data name="Wake_Timers_Mixed" xml:space="preserve"><value>Plugged in and on battery are set differently. Choose one to set both.</value></data>
+  <data name="Wake_Timers_Mixed_Short" xml:space="preserve"><value>Different</value></data>
+  <data name="Wake_Timers_Note" xml:space="preserve"><value>Off stops every timer from waking the computer, Windows Update's included. "Important only" keeps the ones Windows marks as important.</value></data>
+  <data name="Wake_Maint" xml:space="preserve"><value>Automatic maintenance may wake the computer</value></data>
+  <data name="Wake_Maint_Note" xml:space="preserve"><value>Windows does its upkeep at night and can wake the computer for it.</value></data>
+  <data name="Wake_Tasks" xml:space="preserve"><value>Scheduled tasks set to wake the computer</value></data>
+  <data name="Wake_Tasks_None" xml:space="preserve"><value>No scheduled task is set to wake the computer.</value></data>
+  <data name="Wake_Tasks_Off" xml:space="preserve"><value>Stop waking</value></data>
+  <data name="Wake_Active" xml:space="preserve"><value>Timers set right now (Windows' own text)</value></data>
+  <data name="Wake_Net_Title" xml:space="preserve"><value>Network (Wake-on-LAN)</value></data>
+  <data name="Wake_Net_Sub" xml:space="preserve"><value>Adapters that can start the computer when a packet arrives</value></data>
+  <data name="Wake_Net_None" xml:space="preserve"><value>No physical network adapter was found.</value></data>
+  <data name="Wake_Net_Unknown" xml:space="preserve"><value>The driver does not report it</value></data>
+  <data name="Wake_Net_Magic" xml:space="preserve"><value>Magic packet</value></data>
+  <data name="Wake_Net_Pattern" xml:space="preserve"><value>Pattern</value></data>
+  <data name="Wake_Net_Note" xml:space="preserve"><value>The switch turns both off or on. A router or another computer can wake this one only while it is on.</value></data>
+  <data name="Wake_Last_Title" xml:space="preserve"><value>What woke it last</value></data>
+  <data name="Wake_Last_Sub" xml:space="preserve"><value>Windows' own record of the last wake</value></data>
+  <data name="Wake_Last_None" xml:space="preserve"><value>Windows has nothing to show.</value></data>
+  <data name="Wake_Shutdown_Note" xml:space="preserve"><value>After a full shut down (or Fast Startup) only BIOS options can start the computer: Wake on LAN, RTC alarm, USB power when off. Windows cannot change those; look for them in the BIOS.</value></data>
+  <data name="Help_Nav_Wake" xml:space="preserve"><value>Everything that can wake the computer from sleep, each with a switch: devices (keyboard, mouse, USB, network cards), wake timers, Windows maintenance, scheduled tasks and Wake-on-LAN. One button turns all off and one puts back exactly what it turned off.</value></data>
+  <data name="HelpHow_Nav_Wake" xml:space="preserve"><value>Look at «What woke it last» to find the culprit.|Turn off that device, timer or task.|Or press «Turn everything off»; «Put back what I turned off» restores it.</value></data>
+  <data name="Help_Wake_Dev_Title" xml:space="preserve"><value>The devices Windows lets wake the computer (the same as Device Manager's «Allow this device to wake the computer»). Turn off a faulty or touchy mouse, keyboard or USB device so it cannot wake the computer; the power button still does.</value></data>
+  <data name="HelpHow_Wake_Dev_Title" xml:space="preserve"><value>The list shows the devices that can wake it.|Turn a switch off to stop one.|Tick «Show devices that cannot wake it too» to see all.</value></data>
+  <data name="Help_Wake_Timers_Title" xml:space="preserve"><value>Alarms that wake the computer on their own: the wake timers of the power plan (Windows Update uses them), Windows' maintenance and scheduled tasks set to wake the computer. «Off» stops all timers; a task can be stopped one by one.</value></data>
+  <data name="HelpHow_Wake_Timers_Title" xml:space="preserve"><value>Choose «Off» for the wake timers.|Turn off the maintenance wake.|Stop any task listed under the scheduled tasks.</value></data>
+  <data name="Help_Wake_Net_Title" xml:space="preserve"><value>Wake-on-LAN of each network adapter: whether a packet from the network (a router, a phone app, another computer) can wake or start this one. Turn it off if the computer wakes at night with nobody near it.</value></data>
+  <data name="HelpHow_Wake_Net_Title" xml:space="preserve"><value>Find the adapter you use.|Turn its switch off to stop wake by the network.</value></data>
+  <data name="Help_Wake_Last_Title" xml:space="preserve"><value>Windows' own record of what woke the computer last (a device, a timer, the power button), as powercfg prints it, untouched. Check it first, then turn off the thing it names.</value></data>
+  <data name="HelpHow_Wake_Last_Title" xml:space="preserve"><value>Let the computer sleep and wake it.|Open this page and read the source.|Turn that source off above.</value></data>
 </root>

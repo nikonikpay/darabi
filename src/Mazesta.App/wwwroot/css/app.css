@@ -1797,3 +1797,19 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .dock .run-follow { padding: 5px 11px; border: 1px solid color-mix(in oklab, var(--warn) 50%, transparent); border-radius: var(--r-ctl); background: color-mix(in oklab, var(--warn) 10%, var(--ink-3)); color: #ffc766; font-weight: 600; }
 .dock .run-follow:has(input:checked) { background: color-mix(in oklab, var(--warn) 24%, var(--ink-3)); border-color: var(--warn); }
 .dock select.dock-len { border-color: color-mix(in oklab, var(--c-ram) 55%, transparent); background: color-mix(in oklab, var(--c-ram) 10%, var(--ink-3)); color: var(--c-ram); font-weight: 600; }
+
+/* ——— Wake sources: the bar, the state tiles (amber while something can still wake the computer), and the switch rows ——— */
+.wake-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 8px; }
+.wake-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0 18px; }
+.wake-tiles .state-tile { --hue: var(--warn); }
+.wake-kind { font-size: 13px; font-weight: 700; color: var(--paper-2); margin: 16px 0 4px; display: flex; align-items: baseline; gap: 10px; }
+.wake-kind:first-child { margin-top: 0; }
+.wake-row { display: flex; align-items: center; gap: 12px; padding: 9px 2px; border-top: 1px solid var(--rule); cursor: pointer; }
+.wake-name { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.wake-name b { font-weight: 600; overflow-wrap: anywhere; }
+.wake-name small { color: var(--paper-3); font-size: 11.5px; overflow-wrap: anywhere; }
+.wake-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.wake-all { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--paper-2); cursor: pointer; }
+.wake-active { margin-top: 12px; }
+.wake-active summary { cursor: pointer; color: var(--paper-2); font-size: 12.5px; margin-bottom: 6px; }
+.wake .choice { margin: 6px 0; }

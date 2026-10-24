@@ -3954,4 +3954,67 @@
   <data name="Welcome_Title" xml:space="preserve"><value>به مازستا خوش آمدید</value></data>
   <data name="Welcome_Text" xml:space="preserve"><value>از اینکه مازستا را انتخاب کردید سپاسگزاریم. از اینجا می‌توانید دما و حسگرهای سیستم را ببینید، قطعه‌ها را زیر بار واقعی تست کنید، با عیب‌یابی هوشمند مشکل را پیدا کنید و از همه چیز گزارش بگیرید. برای شروع، صفحهٔ عیب‌یابی هوشمند را امتحان کنید.</value></data>
   <data name="Welcome_Start" xml:space="preserve"><value>شروع کنیم</value></data>
+  <data name="Nav_Wake" xml:space="preserve"><value>بیدارکننده‌ها</value></data>
+  <data name="Wake_Lede" xml:space="preserve"><value>چه چیزهایی کامپیوتر را از خواب (Sleep) بیدار می‌کنند: دستگاه‌ها، تایمرها، کارهای زمان‌بندی‌شده و شبکه. هر چه بی‌دلیل بیدارش می‌کند را خاموش کنید؛ وضعیت هر کلید از خود ویندوز خوانده می‌شود.</value></data>
+  <data name="Wake_AllOff" xml:space="preserve"><value>همه را خاموش کن</value></data>
+  <data name="Wake_AllOff_Confirm" xml:space="preserve"><value>همهٔ دستگاه‌ها، تایمرها، کارهای زمان‌بندی‌شده و Wake-on-LAN که می‌توانند کامپیوتر را بیدار کنند خاموش شوند؟ بعد از آن فقط دکمهٔ پاور (و در لپ‌تاپ باز کردن درب) بیدارش می‌کند. با یک دکمه می‌توانید همه را برگردانید.</value></data>
+  <data name="Wake_Undo" xml:space="preserve"><value>آنچه خاموش کردم را برگردان</value></data>
+  <data name="Wake_Refresh" xml:space="preserve"><value>تازه‌سازی</value></data>
+  <data name="Wake_Done" xml:space="preserve"><value>انجام شد؛ وضعیت نمایش‌داده‌شده از خود ویندوز خوانده شد.</value></data>
+  <data name="Wake_AllDone" xml:space="preserve"><value>هر چه می‌توانست کامپیوتر را بیدار کند خاموش شد.</value></data>
+  <data name="Wake_Failed" xml:space="preserve"><value>ویندوز گفت: {0}</value></data>
+  <data name="Wake_Partial" xml:space="preserve"><value>{0} مورد تغییر نکرد: {1}</value></data>
+  <data name="Wake_Tile_Devices" xml:space="preserve"><value>دستگاه‌های بیدارکننده</value></data>
+  <data name="Wake_Tile_Timers" xml:space="preserve"><value>تایمرهای بیدارکننده</value></data>
+  <data name="Wake_Tile_Maint" xml:space="preserve"><value>بیدار شدن برای نگه‌داری</value></data>
+  <data name="Wake_Tile_Tasks" xml:space="preserve"><value>کارهای بیدارکننده</value></data>
+  <data name="Wake_Tile_Wol" xml:space="preserve"><value>کارت شبکهٔ دارای Wake-on-LAN</value></data>
+  <data name="Wake_Dev_Title" xml:space="preserve"><value>دستگاه‌ها</value></data>
+  <data name="Wake_Dev_Sub" xml:space="preserve"><value>کیبورد، موس، USB و کارت شبکه؛ ویندوز به هر کدام اجازهٔ بیدار کردن داده یا نداده</value></data>
+  <data name="Wake_Dev_Note" xml:space="preserve"><value>روشن = این دستگاه می‌تواند کامپیوتر را بیدار کند. اگر کیبورد یا موس را خاموش کنید، کامپیوتر را با دکمهٔ پاور بیدار کنید. دستگاه‌های هم‌نام با هم تغییر می‌کنند.</value></data>
+  <data name="Wake_ShowAll" xml:space="preserve"><value>دستگاه‌های بدون اجازه هم نشان داده شوند</value></data>
+  <data name="Wake_Dev_None" xml:space="preserve"><value>هیچ دستگاهی اجازهٔ بیدار کردن کامپیوتر را ندارد.</value></data>
+  <data name="Wake_Dev_Unread" xml:space="preserve"><value>ویندوز فهرست دستگاه‌ها را نداد: {0}</value></data>
+  <data name="Wake_Armed" xml:space="preserve"><value>بیدار می‌کند</value></data>
+  <data name="Wake_Unarmed" xml:space="preserve"><value>بیدار نمی‌کند</value></data>
+  <data name="Wake_Kind_Input" xml:space="preserve"><value>کیبورد و موس</value></data>
+  <data name="Wake_Kind_Network" xml:space="preserve"><value>کارت شبکه</value></data>
+  <data name="Wake_Kind_Usb" xml:space="preserve"><value>دستگاه‌های USB</value></data>
+  <data name="Wake_Kind_Other" xml:space="preserve"><value>دستگاه‌های دیگر</value></data>
+  <data name="Wake_Timers_Title" xml:space="preserve"><value>تایمرها و کارهای زمان‌بندی‌شده</value></data>
+  <data name="Wake_Timers_Sub" xml:space="preserve"><value>ساعت‌هایی که خودشان کامپیوتر را بیدار می‌کنند: به‌روزرسانی، نگه‌داری، برنامه‌ها</value></data>
+  <data name="Wake_Timers_Setting" xml:space="preserve"><value>تایمرهای بیدارکننده (طرح پاور فعلی)</value></data>
+  <data name="Wake_Timers_On" xml:space="preserve"><value>مجاز</value></data>
+  <data name="Wake_Timers_Important" xml:space="preserve"><value>فقط مهم‌ها</value></data>
+  <data name="Wake_Timers_Off" xml:space="preserve"><value>خاموش</value></data>
+  <data name="Wake_Timers_Mixed" xml:space="preserve"><value>حالت برق و باتری با هم فرق دارند. یکی را انتخاب کنید تا هر دو یکی شوند.</value></data>
+  <data name="Wake_Timers_Mixed_Short" xml:space="preserve"><value>متفاوت</value></data>
+  <data name="Wake_Timers_Note" xml:space="preserve"><value>خاموش یعنی هیچ تایمری، از جمله Windows Update، کامپیوتر را بیدار نکند. «فقط مهم‌ها» تایمرهایی را نگه می‌دارد که ویندوز مهم می‌داند.</value></data>
+  <data name="Wake_Maint" xml:space="preserve"><value>نگه‌داری خودکار اجازهٔ بیدار کردن دارد</value></data>
+  <data name="Wake_Maint_Note" xml:space="preserve"><value>ویندوز شب‌ها کارهای نگه‌داری می‌کند و می‌تواند برایش کامپیوتر را بیدار کند.</value></data>
+  <data name="Wake_Tasks" xml:space="preserve"><value>کارهای زمان‌بندی‌شده‌ای که بیدار می‌کنند</value></data>
+  <data name="Wake_Tasks_None" xml:space="preserve"><value>هیچ کار زمان‌بندی‌شده‌ای تنظیم نشده که کامپیوتر را بیدار کند.</value></data>
+  <data name="Wake_Tasks_Off" xml:space="preserve"><value>بیدار نکن</value></data>
+  <data name="Wake_Active" xml:space="preserve"><value>تایمرهای فعال همین الان (متن خود ویندوز)</value></data>
+  <data name="Wake_Net_Title" xml:space="preserve"><value>شبکه (Wake-on-LAN)</value></data>
+  <data name="Wake_Net_Sub" xml:space="preserve"><value>کارت‌هایی که با رسیدن یک بسته از شبکه می‌توانند کامپیوتر را روشن کنند</value></data>
+  <data name="Wake_Net_None" xml:space="preserve"><value>کارت شبکهٔ فیزیکی پیدا نشد.</value></data>
+  <data name="Wake_Net_Unknown" xml:space="preserve"><value>درایور وضعیتش را نمی‌دهد</value></data>
+  <data name="Wake_Net_Magic" xml:space="preserve"><value>بستهٔ جادویی</value></data>
+  <data name="Wake_Net_Pattern" xml:space="preserve"><value>الگو</value></data>
+  <data name="Wake_Net_Note" xml:space="preserve"><value>کلید هر دو را با هم خاموش یا روشن می‌کند. تا وقتی روشن است، روتر یا کامپیوتر دیگری در شبکه می‌تواند این کامپیوتر را بیدار کند.</value></data>
+  <data name="Wake_Last_Title" xml:space="preserve"><value>آخرین چیزی که بیدارش کرد</value></data>
+  <data name="Wake_Last_Sub" xml:space="preserve"><value>ثبت خود ویندوز از آخرین بیدار شدن</value></data>
+  <data name="Wake_Last_None" xml:space="preserve"><value>ویندوز چیزی برای نمایش ندارد.</value></data>
+  <data name="Wake_Shutdown_Note" xml:space="preserve"><value>بعد از خاموش کردن کامل (یا Fast Startup) فقط گزینه‌های BIOS می‌توانند کامپیوتر را روشن کنند: Wake on LAN، آلارم RTC و برق USB در حالت خاموش. ویندوز این‌ها را تغییر نمی‌دهد؛ در BIOS دنبالشان بگردید.</value></data>
+  <data name="Help_Nav_Wake" xml:space="preserve"><value>همهٔ چیزهایی که می‌توانند کامپیوتر را از Sleep بیدار کنند، هر کدام با یک کلید: دستگاه‌ها (کیبورد، موس، USB، کارت شبکه)، تایمرها، نگه‌داری ویندوز، کارهای زمان‌بندی‌شده و Wake-on-LAN. یک دکمه همه را خاموش می‌کند و یک دکمه دقیقاً همان‌ها را برمی‌گرداند.</value></data>
+  <data name="HelpHow_Nav_Wake" xml:space="preserve"><value>در «آخرین چیزی که بیدارش کرد» مقصر را پیدا کنید.|همان دستگاه، تایمر یا کار را خاموش کنید.|یا «همه را خاموش کن» را بزنید؛ «آنچه خاموش کردم را برگردان» همه را برمی‌گرداند.</value></data>
+  <data name="Help_Wake_Dev_Title" xml:space="preserve"><value>دستگاه‌هایی که ویندوز اجازه داده کامپیوتر را بیدار کنند (همان «Allow this device to wake the computer» در Device Manager). موس، کیبورد یا USB خراب یا حساس را خاموش کنید تا کامپیوتر را بیدار نکند؛ دکمهٔ پاور همچنان بیدارش می‌کند.</value></data>
+  <data name="HelpHow_Wake_Dev_Title" xml:space="preserve"><value>فهرست دستگاه‌هایی را نشان می‌دهد که بیدار می‌کنند.|کلید یک دستگاه را خاموش کنید تا دیگر بیدار نکند.|برای دیدن همهٔ دستگاه‌ها گزینهٔ نمایش دستگاه‌های بدون اجازه را بزنید.</value></data>
+  <data name="Help_Wake_Timers_Title" xml:space="preserve"><value>ساعت‌هایی که خودشان کامپیوتر را بیدار می‌کنند: تایمرهای طرح پاور (Windows Update از آن‌ها استفاده می‌کند)، نگه‌داری ویندوز و کارهای زمان‌بندی‌شده‌ای که اجازهٔ بیدار کردن دارند. «خاموش» همهٔ تایمرها را می‌بندد؛ هر کار را هم می‌شود جدا بست.</value></data>
+  <data name="HelpHow_Wake_Timers_Title" xml:space="preserve"><value>برای تایمرهای بیدارکننده «خاموش» را انتخاب کنید.|بیدار شدن برای نگه‌داری را خاموش کنید.|هر کاری را که زیر کارهای زمان‌بندی‌شده هست متوقف کنید.</value></data>
+  <data name="Help_Wake_Net_Title" xml:space="preserve"><value>Wake-on-LAN هر کارت شبکه: اینکه یک بسته از شبکه (روتر، اپ موبایل، کامپیوتر دیگر) بتواند این کامپیوتر را بیدار کند. اگر کامپیوتر شب‌ها بی‌دلیل بیدار می‌شود خاموشش کنید.</value></data>
+  <data name="HelpHow_Wake_Net_Title" xml:space="preserve"><value>کارت شبکهٔ خودتان را پیدا کنید.|کلیدش را خاموش کنید تا شبکه بیدارش نکند.</value></data>
+  <data name="Help_Wake_Last_Title" xml:space="preserve"><value>ثبت خود ویندوز از اینکه آخرین بار چه چیزی کامپیوتر را بیدار کرد (دستگاه، تایمر، دکمهٔ پاور)، همان‌طور که powercfg می‌نویسد. اول این را ببینید، بعد چیزی را که نام برده خاموش کنید.</value></data>
+  <data name="HelpHow_Wake_Last_Title" xml:space="preserve"><value>بگذارید کامپیوتر Sleep شود و بیدارش کنید.|این صفحه را باز کنید و منبع را بخوانید.|همان منبع را در بخش‌های بالا خاموش کنید.</value></data>
 </root>

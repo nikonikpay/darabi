@@ -10,6 +10,7 @@ const BOXES = [
   ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"], ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
   ["fans", "fans", "Fans_Profiles_Title"], ["lights", "rgb", "Rgb_Title"], ["settings", null, "Settings_DataFolder"], ["settings", null, "Settings_Tray_Section"], ["appupdate", null, "AppUpd_Version"],
   ["drivers", null, "Drivers_Board_Title"], ["drivers", null, "Drivers_Gpu_Title"], ["drivers", null, "Drivers_Wu_Title"], ["tweaks", null, "Tweaks_Essential"], ["tweaks", null, "Tweaks_Advanced"],
+  ["wake", "devices", "Wake_Dev_Title"], ["wake", "timers", "Wake_Timers_Title"], ["wake", "wol", "Wake_Net_Title"], ["wake", "lastwake", "Wake_Last_Title"],
 ];
 const DIGITS = { "۰": 0, "۱": 1, "۲": 2, "۳": 3, "۴": 4, "۵": 5, "۶": 6, "۷": 7, "۸": 8, "۹": 9 };
 export const norm = (s) => String(s).toLowerCase().replace(/[۰-۹]/g, (c) => DIGITS[c]).replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/[‌\s]+/g, " ").trim();

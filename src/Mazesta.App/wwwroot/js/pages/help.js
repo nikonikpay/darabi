@@ -20,7 +20,8 @@ const TOPICS = [
   ["lights", null, "Nav_Lights"], ["fans", null, "Nav_Fans"],
   ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["tools", "crashes", "Bsod_Title"], ["tools", "repair", "Tools_Repair"], ["tools", "cleanup", "Tools_Windows"],
   ["tools", "hibernate", "Tools_Hib_Title"], ["tools", "vm", "Tools_Vm_Title"], ["tools", "hosts", "Tools_Hosts_Title"],
-  ["tweaks", null, "Nav_Tweaks"], ["shield", null, "Nav_Shield"], ["updates", null, "Nav_Updates"], ["drivers", null, "Nav_Drivers"],
+  ["tweaks", null, "Nav_Tweaks"], ["wake", null, "Nav_Wake"], ["wake", "devices", "Wake_Dev_Title"], ["wake", "timers", "Wake_Timers_Title"], ["wake", "wol", "Wake_Net_Title"], ["wake", "lastwake", "Wake_Last_Title"],
+  ["shield", null, "Nav_Shield"], ["updates", null, "Nav_Updates"], ["drivers", null, "Nav_Drivers"],
   ["reports", null, "Nav_Reports"], ["messages", null, "Nav_Messages"], ["settings", null, "Nav_Settings"], ["appupdate", null, "Nav_AppUpdate"],
   ["help", null, "Nav_Help"], [null, null, "Nav_Assistant"], [null, null, "Help_Tray_Title"], [null, null, "Help_Keys_Title"],
 ];
