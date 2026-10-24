@@ -196,7 +196,7 @@ public sealed partial class WebBridge
             running = bench.IsRunning, queue = bench.QueueText, canRunSelected = bench.RunSelectedCommand.CanExecute(null), overclocked = s_overclocked,
             rows = bench.Rows.Select(r => new
             {
-                id = r.Benchmark.Definition.Id.Value, name = r.Name, component = r.Benchmark.Component.ToString(), selected = r.IsSelected, duration = r.DurationText,
+                id = r.Benchmark.Definition.Id.Value, name = r.Name, component = r.Benchmark.Component.ToString(), selected = r.IsSelected, duration = r.DurationText, durations = r.Durations,
                 percent = r.PercentComplete, status = r.StatusText, active = r.IsActive, unavailable = r.UnavailableText,
                 options = r.Options.Select(Option), numbers = Numbers(r), tags = Tags(r),
                 best = Best(r), compared = Compared(r), peers = r.IsActive ? null : Peers(r),

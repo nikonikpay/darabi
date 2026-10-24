@@ -39,10 +39,13 @@ public sealed partial class BenchmarkRowViewModel : ObservableObject
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasDetail))] private string? _detail;
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
 
+    /// <summary>The lengths a run can be given: the benchmark's own, then three and ten minutes. Fixed, so results of one length stay comparable.</summary>
+    public IReadOnlyList<int> Durations => [.. new[] { Benchmark.Definition.DefaultDurationSeconds, 180, 600 }.Distinct()];
+
     /// <summary>The chosen length in seconds, or null (with the row showing why) when it is not a whole number in range.</summary>
     internal int? Seconds()
     {
-        if (PersianDigits.TryParseInt(DurationText, out int seconds) && seconds is >= BenchmarksViewModel.MinSeconds and <= BenchmarksViewModel.MaxSeconds) return seconds;
+        if (PersianDigits.TryParseInt(DurationText, out int seconds) && seconds is >= BenchmarksViewModel.MinSeconds and <= BenchmarksViewModel.MaxSeconds && Durations.Contains(seconds)) return seconds;
         StatusText = Loc.Format("Bench_Invalid_Duration", BenchmarksViewModel.MinSeconds, BenchmarksViewModel.MaxSeconds);
         return null;
     }

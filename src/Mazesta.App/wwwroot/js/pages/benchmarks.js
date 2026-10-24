@@ -8,7 +8,14 @@ import { setField, applies } from "./tests.js";
 import { groupPanel, byPart } from "../groups.js";
 import { findingCard, bySeverity } from "./checkup.js";
 import { boot } from "../app.js";
-import { durationField } from "../duration.js";
+
+// A run's length is one of a few fixed ones (the benchmark's own, 3 and 10 minutes), so results of the same length stay comparable; each has its colour.
+const durLabel = (s) => s % 60 === 0 ? `${fa(s / 60)} ${t("Test_Minutes")}` : `${fa(s)} ${t("Test_Seconds")}`;
+function durationChoice(values, onPick) {
+  const btns = values.map((v, i) => h("button", { type: "button", role: "radio", class: `dur-pick dp-${i}`, "aria-checked": "false", onclick: () => onPick(v) }, durLabel(v)));
+  const el = h("div", { class: "dur-choice", role: "radiogroup", "aria-label": t("Bench_Duration") }, btns);
+  return { el, set(v) { const cur = Number.parseInt(v, 10); values.forEach((x, i) => btns[i].setAttribute("aria-checked", String(x === cur))); } };
+}
 
 // The list, optionally only one part's benchmarks (the component pages reuse it).
 export function benchList(component = null) {
@@ -50,10 +57,13 @@ export function benchList(component = null) {
   const keyed = (s) => { if (s) hasKey = !!s.hasKey; };
   if (boot.staff) call("site.state").then(keyed).catch(() => {});
   const offSite = on("site", keyed);
-  wrap.append(list, h("div", { class: "dock" }, runSel, cancel, queue, h("span", { class: "grow" }), share, upload,
-    h("label", { class: "oc-toggle", title: t("Bench_OverclockedHint") }, oc, t("Bench_Overclocked")),
-    h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
-    h("button", { class: "btn quiet", onclick: () => call("bench.exec", { cmd: "clear" }) }, t("Test_ClearSelection"))));
+  // Three kinds of control, each with its own colour and a rule between: what runs (white go, red stop), what goes to the site (blue share, green send), and what is ticked (amber overclock mark, neutral select).
+  const bar = (...c) => h("span", { class: "dock-set" }, ...c.filter(Boolean));
+  wrap.append(list, h("div", { class: "dock" }, bar(runSel, cancel, queue), h("span", { class: "grow" }),
+    bar(share && (share.classList.remove("quiet"), share.classList.add("tint", "t-share"), share), upload && (upload.classList.remove("quiet"), upload.classList.add("tint", "t-send"), upload)),
+    bar(h("label", { class: "oc-toggle", title: t("Bench_OverclockedHint") }, oc, t("Bench_Overclocked"))),
+    bar(h("button", { class: "btn quiet pick", onclick: () => call("bench.exec", { cmd: "selectAll" }) }, t("Test_SelectAll")),
+      h("button", { class: "btn quiet pick", onclick: () => call("bench.exec", { cmd: "clear" }) }, t("Test_ClearSelection")))));
 
   const rows = new Map(), groups = [];
   function build(s) {
@@ -71,7 +81,7 @@ export function benchList(component = null) {
   function addRow(r, i, into) {
     const set = (field, value, extra = {}) => call("bench.set", { id: r.id, field, value, ...extra });
     const check = h("input", { type: "checkbox", class: "check", "aria-label": r.name, onchange: (e) => set("selected", e.target.checked) });
-    const dur = durationField((v) => set("duration", v));
+    const dur = durationChoice(r.durations, (v) => set("duration", String(v)));
     const run = h("button", { class: "btn", onclick: () => call("bench.exec", { cmd: "run", id: r.id }) }, t("Bench_Run"));
     const opts = r.options.map((o) => {
       // a choice between off and on is a switch
@@ -122,7 +132,7 @@ export function benchList(component = null) {
           n.detail ? h("p", { class: "detail" }, n.detail) : null);
       }
       const recKey = JSON.stringify([r.best, r.compared]);
-      if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean), r.best || r.compared ? h("button", { class: "btn quiet", type: "button", onclick: () => lastRun(r) }, icon("chart"), t("Bench_Chart")) : null); }
+      if (recKey !== x.lastRec) { x.lastRec = recKey; x.rec.replaceChildren(...record(r).filter(Boolean), r.best || r.compared ? h("button", { class: "btn tint t-chart", type: "button", onclick: () => lastRun(r) }, icon("chart"), t("Bench_Chart")) : null); }
       // A run in progress keeps the last standing on screen (the host sends none while the row runs).
       const peerKey = JSON.stringify(r.peers);
       // What this run showed about the machine (the checkup), the ones that need action first; kept on screen while a new run is under way.
