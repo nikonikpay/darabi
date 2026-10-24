@@ -504,7 +504,9 @@ final class Mazesta_Connect
         if (!preg_match('/^([A-Za-z0-9._-]+)@(\d+)(?:\|(.*))?$/', $table, $m)) { return '<span dir="ltr">' . esc_html($table) . '</span>'; }
         $label = esc_html(self::bench_name($m[1]));
         if (self::is_old($m[1], (int) $m[2])) { $label .= ' <span class="mzc-old">نسخه قدیمی بنچمارک</span>'; }
-        if (isset($m[3]) && $m[3] !== '') {
+        if ($m[1] === 'bench.gpu.scene.d3d') {
+            $label .= ' · ' . esc_html(implode('، ', self::scene_words(isset($m[3]) ? $m[3] : '')));
+        } elseif (isset($m[3]) && $m[3] !== '') {
             $words = array();
             foreach (explode('|', $m[3]) as $pair) {
                 if (preg_match('/^fileMb=(\d+)$/', $pair, $f)) { $words[] = 'فایل ' . number_format_i18n((int) $f[1]) . ' مگابایتی'; }
@@ -515,6 +517,25 @@ final class Mazesta_Connect
             $label .= ' · ' . esc_html(implode('، ', $words));
         }
         return $label . '<br><small dir="ltr" class="mzc-dim">' . esc_html($table) . '</small>';
+    }
+
+    /**
+     * The garden (Direct3D) benchmark's settings in words. The app leaves the default settings out of a list's key (2560×1440, quality 3, no ray
+     * tracing, no weather, two frames in flight) so old lists stay valid; a manager reads the whole setting, so they are put back here.
+     */
+    private static function scene_words($rest)
+    {
+        $o = array('resolution' => '2560x1440', 'quality' => '3', 'raytracing' => 'off', 'weather' => 'off', 'frames' => '2');
+        foreach (explode('|', (string) $rest) as $pair) {
+            if (strpos($pair, '=') !== false) { list($k, $v) = explode('=', $pair, 2); $o[$k] = $v; }
+        }
+        $words = array();
+        $words[] = preg_match('/^(\d+)x(\d+)$/', $o['resolution'], $f) ? 'رزولوشن ' . (int) $f[1] . '×' . (int) $f[2] : 'رزولوشن ' . $o['resolution'];
+        if ($o['raytracing'] === 'on') { $words[] = 'ری‌تریسینگ روشن'; }
+        else { $words[] = self::quality_words('bench.gpu.scene.d3d', (int) $o['quality']); $words[] = 'ری‌تریسینگ خاموش'; }
+        if ($o['weather'] !== 'off') { $words[] = 'آب‌وهوا: ' . $o['weather']; }
+        $words[] = $o['frames'] === '1' ? 'تک‌فریم' : ($o['frames'] === '2' ? 'دو فریم هم‌زمان' : $o['frames'] . ' فریم');
+        return $words;
     }
 
     /** The garden benchmarks' quality setting in words: the rasteriser's load level, or the ray tracer's rays a pixel. */
