@@ -33,8 +33,11 @@ public sealed class GpuVideoBenchmark : IBenchmark, ITestAvailability
         IReadOnlyList<(VideoFormat Format, string Resource)> clips = work == VideoWork.Encode ? [] : VideoFormat.Clips;
         if (work == VideoWork.Encode && encodes.All(e => e.Encoder is null)) throw new GpuUnsupportedException($"{s.AdapterName} has no hardware video encoder that Windows offers (H.264, HEVC or AV1).");
 
-        nint device = 0; var metrics = new List<BenchmarkMetric>(); var notes = new List<string>(); var files = new List<string>(); int wrong = 0;
+        nint device = 0; var metrics = new List<BenchmarkMetric>(); var notes = new List<string>(); var files = new List<string>(); int wrong = 0, stalled = 0; bool abandoned = false;
         Mf.Check(Mf.MFStartup(Mf.Version, 0), "MFStartup");
+        // One form at a time on a thread of its own, waited for with a limit: a driver that never answers a call (seen on a GTX 1070 Ti) must hold neither the run nor
+        // the Cancel button. A thread left behind is a background one; whatever it may still use (the device, Media Foundation) is then not released.
+        bool Guard<T>(Func<T> work, double limit, out T? value) => StallGuard.Run(work, limit, ct, ref abandoned, out value);
         try
         {
             using var factory = DXGI.CreateDXGIFactory1<IDXGIFactory4>();
@@ -45,44 +48,66 @@ public sealed class GpuVideoBenchmark : IBenchmark, ITestAvailability
             double phase = Math.Max(1.5, request.DurationSeconds / (double)Math.Max(1, steps));
             Action<double> Progress() { int at = step++; return p => request.Report((at + p) / steps); }
 
+            double grace = 45;   // beyond its own measuring time, what one form may take (a first frame of 8K, a driver waking up) before it counts as not answering
+            int at = 0, total = encodes.Count(e => e.Encoder is not null) + clips.Count; bool giveUp = false;
+            // A driver that stopped answering is named once per form, and after two the rest are not tried: they would only wait the same limit each.
+            bool Stalled(string label, string what)
+            {
+                stalled++; notes.Add($"{label} {what}: skipped, the card's driver did not answer within {grace + phase:F0} s (neither passed nor failed)");
+                request.NoteWarning("Log_Video_Stall", null, label, what == "encode" ? "@Video_Encode" : "@Video_Decode", Math.Round(grace + phase));
+                if (stalled < 2) return false;
+                notes.Add("the remaining forms were not tried: the driver stopped answering"); request.NoteWarning("Log_Video_GiveUp"); return true;
+            }
+
             foreach (var (f, encoder) in encodes)
             {
-                if (encoder is null) { notes.Add($"{f.Label} encode: no hardware encoder"); continue; }
+                if (giveUp) break;
+                if (encoder is null) { notes.Add($"{f.Label} encode: no hardware encoder"); request.Note("Log_Video_NoEncoder", null, f.Label); continue; }
                 string file = Path.Combine(Path.GetTempPath(), $"mazesta-video-{Guid.NewGuid():N}.mp4"); files.Add(file);
+                request.Note("Log_Video_Encode_Stage", "MFCreateSinkWriterFromURL → H/W encoder → MFCreateSourceReaderFromURL (play back, count frames)", f.Label, ++at, total, encoder, Math.Round(phase));
                 try
                 {
-                    var (fps, count) = Encode(f, file, manager, phase, Progress(), ct);
-                    metrics.Add(new(f.MetricKey(encode: true), fps, "FPS"));
-                    // The file made is played back: every frame the encoder was given must be in it.
-                    var back = Decode(file, manager, 0, f, _ => { }, ct);
-                    if (back.PassFrames != count) { wrong++; notes.Add($"{f.Label} encode: {count} frames encoded but {back.PassFrames} came back"); }
-                    else notes.Add($"{f.Label} encode: {fps:F0} fps, {count} frames verified by playing them back ({encoder})");
+                    var progress = Progress();
+                    if (!Guard(() =>
+                    {
+                        var (fps, count) = Encode(f, file, manager, phase, progress, ct);
+                        // The file made is played back: every frame the encoder was given must be in it.
+                        return (fps, count, back: Decode(file, manager, 0, f, _ => { }, ct).PassFrames);
+                    }, phase + grace, out var r)) { giveUp = Stalled(f.Label, "encode"); continue; }
+                    metrics.Add(new(f.MetricKey(encode: true), r.fps, "FPS"));
+                    if (r.back != r.count) { wrong++; notes.Add($"{f.Label} encode: {r.count} frames encoded but {r.back} came back"); request.NoteError("Log_Video_Lost", null, f.Label, r.count, r.back); }
+                    else { notes.Add($"{f.Label} encode: {r.fps:F0} fps, {r.count} frames verified by playing them back ({encoder})"); request.Note("Log_Video_EncodeDone", null, f.Label, r.fps, r.count); }
                 }
                 catch (Exception e) when (e is COMException or InvalidOperationException or InvalidCastException or IOException)
-                { notes.Add($"{f.Label} encode: not measured ({e.Message})"); }
+                { notes.Add($"{f.Label} encode: not measured ({e.Message})"); request.NoteWarning("Log_Video_Unsupported", null, f.Label, "@Video_Encode"); }
             }
 
             foreach (var (f, resource) in clips)
             {
+                if (giveUp) break;
                 string file = Path.Combine(Path.GetTempPath(), $"mazesta-clip-{Guid.NewGuid():N}.mp4"); files.Add(file);
                 var progress = Progress();
+                request.Note("Log_Video_Decode_Stage", "MFCreateSourceReaderFromURL + Direct3D 11 device manager → H/W decoder → ReadSample until the end of the clip, again from the start", f.Label, ++at, total, Math.Round(phase));
                 try
                 {
                     using (var from = typeof(GpuVideoBenchmark).Assembly.GetManifestResourceStream(resource)!) using (var to = File.Create(file)) from.CopyTo(to);
-                    var r = Decode(file, manager, phase, f, progress, ct);
-                    if (!r.Hardware) { notes.Add($"{f.Label} decode: decoded by the processor, not the card (the card has no decoder for it)"); continue; }
+                    if (!Guard(() => Decode(file, manager, phase, f, progress, ct), phase + grace, out var r)) { giveUp = Stalled(f.Label, "decode"); continue; }
+                    if (!r!.Hardware) { notes.Add($"{f.Label} decode: decoded by the processor, not the card (the card has no decoder for it)"); request.NoteWarning("Log_Video_Software", null, f.Label); continue; }
                     metrics.Add(new(f.MetricKey(encode: false), r.Fps, "FPS"));
-                    if (r.Short > 0) { wrong++; notes.Add($"{f.Label} decode: {r.Short} pass(es) gave fewer than {VideoFormat.ClipFrames} frames"); }
-                    else notes.Add($"{f.Label} decode: {r.Fps:F0} fps, every pass all {VideoFormat.ClipFrames} frames");
+                    if (r.Short > 0) { wrong++; notes.Add($"{f.Label} decode: {r.Short} pass(es) gave fewer than {VideoFormat.ClipFrames} frames"); request.NoteError("Log_Video_Lost", null, f.Label, VideoFormat.ClipFrames, r.PassFrames); }
+                    else { notes.Add($"{f.Label} decode: {r.Fps:F0} fps, every pass all {VideoFormat.ClipFrames} frames"); request.Note("Log_Video_DecodeDone", null, f.Label, r.Fps, VideoFormat.ClipFrames); }
                 }
                 catch (Exception e) when (e is COMException or InvalidOperationException or InvalidCastException or IOException)
-                { notes.Add($"{f.Label} decode: not supported here ({e.Message})"); }
+                { notes.Add($"{f.Label} decode: not supported here ({e.Message})"); request.NoteWarning("Log_Video_Unsupported", null, f.Label, "@Video_Decode"); }
             }
         }
         finally
         {
-            if (device != 0) Marshal.Release(device);
-            Mf.MFShutdown();
+            if (!abandoned)   // a thread left behind may still be inside the driver: the device and Media Foundation are then left as they are, to the process's end
+            {
+                if (device != 0) Marshal.Release(device);
+                Mf.MFShutdown();
+            }
             foreach (var f in files) try { File.Delete(f); } catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
         if (metrics.Count == 0) throw new GpuUnsupportedException("No video form could be measured on this GPU: " + string.Join("; ", notes));

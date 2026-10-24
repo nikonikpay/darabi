@@ -4017,4 +4017,23 @@ Cancel: stop.</value></data>
   <data name="HelpHow_Wake_Net_Title" xml:space="preserve"><value>Find the adapter you use.|Turn its switch off to stop wake by the network.</value></data>
   <data name="Help_Wake_Last_Title" xml:space="preserve"><value>Windows' own record of what woke the computer last (a device, a timer, the power button), as powercfg prints it, untouched. Check it first, then turn off the thing it names.</value></data>
   <data name="HelpHow_Wake_Last_Title" xml:space="preserve"><value>Let the computer sleep and wake it.|Open this page and read the source.|Turn that source off above.</value></data>
+  <data name="Video_Encode" xml:space="preserve"><value>encode</value></data>
+  <data name="Video_Decode" xml:space="preserve"><value>decode</value></data>
+  <data name="Log_Video_Encode_Stage" xml:space="preserve"><value>Encode {0} ({1} of {2}): the card's encoder ({3}) codes moving frames for {4} s, then the file is played back to count every frame.</value></data>
+  <data name="Log_Video_Decode_Stage" xml:space="preserve"><value>Decode {0} ({1} of {2}): the card's decoder plays the clip again and again for {3} s, every pass checked to give all its frames.</value></data>
+  <data name="Log_Video_EncodeDone" xml:space="preserve"><value>{0} encode: {1} frames a second, {2} frames verified by playing them back.</value></data>
+  <data name="Log_Video_DecodeDone" xml:space="preserve"><value>{0} decode: {1} frames a second, every pass gave all {2} frames.</value></data>
+  <data name="Log_Video_Unsupported" xml:space="preserve"><value>{0} ({1}): this card cannot do it, so it is skipped; it counts as neither passed nor failed.</value></data>
+  <data name="Log_Video_NoEncoder" xml:space="preserve"><value>{0} encode: this card has no hardware encoder for it, so it is skipped.</value></data>
+  <data name="Log_Video_Software" xml:space="preserve"><value>{0} decode: Windows decoded it on the processor, so the card has no decoder for it; skipped.</value></data>
+  <data name="Log_Video_Stall" xml:space="preserve"><value>{0} ({1}): the card's driver did not answer within {2} s, so it is skipped as not supported; it counts as neither passed nor failed.</value></data>
+  <data name="Log_Video_GiveUp" xml:space="preserve"><value>The driver stopped answering twice; the remaining forms were not tried.</value></data>
+  <data name="Log_Video_Lost" xml:space="preserve"><value>{0}: frames were lost: {1} expected, {2} came back.</value></data>
+  <data name="Log_Ai_Level_Stage" xml:space="preserve"><value>AI {0} ({1} of {2}): DirectML multiplies matrices for {3} s, then entries of the product are checked on the CPU.</value></data>
+  <data name="Log_Ai_Done" xml:space="preserve"><value>AI {0}: {1} {2}.</value></data>
+  <data name="Log_Ai_Skip" xml:space="preserve"><value>AI {0} ({1} of {2}): this GPU does not support it, so it is skipped; it counts as neither passed nor failed.</value></data>
+  <data name="Log_Scene_Run_Stage" xml:space="preserve"><value>The garden is ready at {0}×{1}; the timed run starts now and lasts {2} s.</value></data>
+  <data name="Log_Scene_Progress" xml:space="preserve"><value>Drawing: {0} FPS right now, {1} s left.</value></data>
+  <data name="Log_Scene_Ram" xml:space="preserve"><value>Measuring the RAM speed (the third part of the score).</value></data>
+  <data name="Log_Scene_Check" xml:space="preserve"><value>Checking that the frame drawn after the run equals the one drawn before it.</value></data>
 </root>

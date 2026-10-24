@@ -45,10 +45,12 @@ public sealed class GpuAiBenchmark : IBenchmark, ITestAvailability
             var level = Levels[i];
             string? missing = !dml.CheckTensorDataTypeSupport(level.Input) ? $"{level.Name}: not supported by this GPU"
                 : level.Integer && dml.CheckFeatureLevelsSupport([FeatureLevel.Level2_1]) < FeatureLevel.Level2_1 ? $"{level.Name}: needs DirectML feature level 2.1" : null;
-            if (missing is not null) { skipped.Add(missing); continue; }
+            if (missing is not null) { skipped.Add(missing); request.NoteWarning("Log_Ai_Skip", null, level.Name, i + 1, Levels.Length); continue; }
             int index = i;
+            request.Note("Log_Ai_Level_Stage", "DirectML matrix multiply (GEMM / integer matmul), then entries of the product recomputed on the CPU", level.Name, i + 1, Levels.Length, Math.Round(seconds));
             using (s.Scope())   // each level's matrices are freed before the next level allocates its own
                 metrics.Add(new(level.Key, Measure(s, dml, level, seconds, entries, p => request.Report((index + p) / Levels.Length), ct) * OpsPerMultiply / 1e12, level.Unit));
+            request.Note("Log_Ai_Done", null, level.Name, metrics[^1].Value, level.Unit);
             checkedLevels.Add(level.Name);
         }
         if (metrics.Count == 0) throw new GpuUnsupportedException("DirectML cannot run a matrix multiply at any precision on this GPU: " + string.Join("; ", skipped));

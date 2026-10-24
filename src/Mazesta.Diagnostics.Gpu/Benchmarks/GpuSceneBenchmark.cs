@@ -76,6 +76,8 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
         var tick = Stopwatch.StartNew(); double tickTime = 0; int tickFrames = 0; double lowestHalfSecond = double.MaxValue; var pace = new FramePace();
         var total = Stopwatch.StartNew(); long lastShown = Stopwatch.GetTimestamp();
         ShowReadout(0, 0);
+        request.Note("Log_Scene_Run_Stage", $"{mode}, {width}×{height}, quality {quality}", width, height, Math.Round(runSeconds));
+        var logPace = new LogPacer(TimeSpan.FromSeconds(10));
         while (total.Elapsed.TotalSeconds < runSeconds)
         {
             ct.ThrowIfCancellationRequested();
@@ -92,11 +94,14 @@ public sealed class GpuSceneBenchmark(MemoryFactsSource? facts = null, IMemoryPr
                 pace.Sample(fps); ShowReadout(fps, n / total.Elapsed.TotalSeconds);
                 tickTime = 0; tickFrames = 0; tick.Restart();
                 request.Report(Math.Min(1, total.Elapsed.TotalSeconds / runSeconds));
+                if (logPace.Due()) request.Note("Log_Scene_Progress", null, fps, Math.Max(0, Math.Round(runSeconds - total.Elapsed.TotalSeconds)));
             }
         }
         view.Drain();   // the frames still being drawn finish, and their timestamps are in
         double wall = total.Elapsed.TotalSeconds;
         var hostTo = request.Clock.UtcNow;
+        if (whole && memory is not null) request.Note("Log_Scene_Ram");
+        request.Note("Log_Scene_Check");
         // The RAM's own speed in a few seconds, after the timed run (the window is kept alive meanwhile): the score's third part.
         (double Triad, double Latency)? probe = whole && memory is not null ? MeasureRam(window, memory, ct) : null;
         if (!SceneView.Same(view.CheckFrame(CheckTime), before))

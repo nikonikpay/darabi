@@ -19,8 +19,9 @@ public sealed class RollingFileLoggerProvider(string directory, string prefix = 
                 if (file != _currentFile) { _writer?.Dispose(); Directory.CreateDirectory(directory); _writer = new StreamWriter(file, append: true, Encoding.UTF8); _currentFile = file; Prune(); }
                 else if (_writer is null) { _writer = new StreamWriter(file, append: true, Encoding.UTF8); }
                 _writer!.Write($"{t:HH:mm:ss.fff} {Abbrev(level)} {category} {message}"); if (ex is not null) _writer.Write($" | {ex}"); _writer.WriteLine();
-                // A warning or an error is on disk at once: those are the lines wanted after a crash or a killed process.
-                if (level >= LogLevel.Warning) _writer.Flush();
+                // Every line is on disk at once: the lines wanted after a crash or a killed process include the last step a test logged (an INF one), which a program
+                // stuck in a driver call and then closed by its user would otherwise take with it. The log is a few lines a minute, so the writes cost nothing.
+                _writer.Flush();
             }
         }
         catch (Exception logEx) when (logEx is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException or ObjectDisposedException)

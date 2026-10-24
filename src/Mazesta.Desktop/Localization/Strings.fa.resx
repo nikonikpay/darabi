@@ -4017,4 +4017,23 @@
   <data name="HelpHow_Wake_Net_Title" xml:space="preserve"><value>کارت شبکهٔ خودتان را پیدا کنید.|کلیدش را خاموش کنید تا شبکه بیدارش نکند.</value></data>
   <data name="Help_Wake_Last_Title" xml:space="preserve"><value>ثبت خود ویندوز از اینکه آخرین بار چه چیزی کامپیوتر را بیدار کرد (دستگاه، تایمر، دکمهٔ پاور)، همان‌طور که powercfg می‌نویسد. اول این را ببینید، بعد چیزی را که نام برده خاموش کنید.</value></data>
   <data name="HelpHow_Wake_Last_Title" xml:space="preserve"><value>بگذارید کامپیوتر Sleep شود و بیدارش کنید.|این صفحه را باز کنید و منبع را بخوانید.|همان منبع را در بخش‌های بالا خاموش کنید.</value></data>
+  <data name="Video_Encode" xml:space="preserve"><value>انکود</value></data>
+  <data name="Video_Decode" xml:space="preserve"><value>دیکود</value></data>
+  <data name="Log_Video_Encode_Stage" xml:space="preserve"><value>انکود {0} ({1} از {2}): انکودر کارت ({3}) {4} ثانیه فریم‌های متحرک را فشرده می‌کند، بعد فایل پخش می‌شود تا همهٔ فریم‌ها شمرده شود.</value></data>
+  <data name="Log_Video_Decode_Stage" xml:space="preserve"><value>دیکود {0} ({1} از {2}): دیکودر کارت کلیپ را {3} ثانیه بارها پخش می‌کند و هر دور بررسی می‌شود که همهٔ فریم‌هایش برگردد.</value></data>
+  <data name="Log_Video_EncodeDone" xml:space="preserve"><value>انکود {0}: {1} فریم در ثانیه، {2} فریم با پخش دوباره تأیید شد.</value></data>
+  <data name="Log_Video_DecodeDone" xml:space="preserve"><value>دیکود {0}: {1} فریم در ثانیه، هر دور همهٔ {2} فریم را داد.</value></data>
+  <data name="Log_Video_Unsupported" xml:space="preserve"><value>{0} ({1}): این کارت از آن پشتیبانی نمی‌کند و رد شد؛ نه قبول حساب می‌شود نه مردود.</value></data>
+  <data name="Log_Video_NoEncoder" xml:space="preserve"><value>انکود {0}: این کارت انکودر سخت‌افزاری برای آن ندارد و رد شد.</value></data>
+  <data name="Log_Video_Software" xml:space="preserve"><value>دیکود {0}: ویندوز آن را با پردازنده دیکود کرد، یعنی کارت دیکودر آن را ندارد؛ رد شد.</value></data>
+  <data name="Log_Video_Stall" xml:space="preserve"><value>{0} ({1}): درایور کارت تا {2} ثانیه جواب نداد و به‌عنوان پشتیبانی‌نشده رد شد؛ نه قبول حساب می‌شود نه مردود.</value></data>
+  <data name="Log_Video_GiveUp" xml:space="preserve"><value>درایور دو بار جواب نداد؛ بقیهٔ حالت‌ها امتحان نشدند.</value></data>
+  <data name="Log_Video_Lost" xml:space="preserve"><value>{0}: فریم گم شد: {1} فریم انتظار می‌رفت، {2} برگشت.</value></data>
+  <data name="Log_Ai_Level_Stage" xml:space="preserve"><value>هوش مصنوعی {0} ({1} از {2}): DirectML به مدت {3} ثانیه ماتریس ضرب می‌کند، بعد چند درایهٔ حاصل روی CPU بررسی می‌شود.</value></data>
+  <data name="Log_Ai_Done" xml:space="preserve"><value>هوش مصنوعی {0}: {1} {2}.</value></data>
+  <data name="Log_Ai_Skip" xml:space="preserve"><value>هوش مصنوعی {0} ({1} از {2}): این GPU از آن پشتیبانی نمی‌کند و رد شد؛ نه قبول حساب می‌شود نه مردود.</value></data>
+  <data name="Log_Scene_Run_Stage" xml:space="preserve"><value>باغ با {0}x{1} آماده است؛ اندازه‌گیری از همین لحظه شروع می‌شود و {2} ثانیه طول می‌کشد.</value></data>
+  <data name="Log_Scene_Progress" xml:space="preserve"><value>در حال رسم: الان {0} فریم در ثانیه، {1} ثانیه مانده.</value></data>
+  <data name="Log_Scene_Ram" xml:space="preserve"><value>اندازه‌گیری سرعت رم (بخش سوم امتیاز).</value></data>
+  <data name="Log_Scene_Check" xml:space="preserve"><value>بررسی اینکه فریم بعد از اجرا با فریم پیش از آن یکی است.</value></data>
 </root>
