@@ -91,6 +91,9 @@ public sealed partial class WebBridge
         static string VendorOf(string name) => name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) ? "nvidia" : name.Contains("AMD", StringComparison.OrdinalIgnoreCase) || name.Contains("Radeon", StringComparison.OrdinalIgnoreCase) ? "amd"
             : name.Contains("Intel", StringComparison.OrdinalIgnoreCase) ? "intel" : "other";
 
+        static string? PciVendorOf(string? pnpId) => pnpId is null ? null : pnpId.Contains("VEN_1002", StringComparison.OrdinalIgnoreCase) ? "amd" : pnpId.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase) ? "nvidia"
+            : pnpId.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase) ? "intel" : null;
+
         async Task Check(CancellationToken ct)
         {
             checking = true; Push();
@@ -99,11 +102,14 @@ public sealed partial class WebBridge
                 var (cards, bad, boardNow, devices) = await Task.Run(() =>
                 {
                     var q = new WmiQuery();
-                    var cards = q.Query(@"root\cimv2", "SELECT Name,DriverVersion,DriverDate FROM Win32_VideoController")
-                        .Select(r => (Name: (r["Name"] as string)?.Trim() ?? "", Version: r["DriverVersion"] as string, Date: r["DriverDate"] as string))
-                        .Where(c => c.Name.Length > 0 && !c.Name.Contains("Basic Display", StringComparison.OrdinalIgnoreCase) && !c.Name.Contains("Remote", StringComparison.OrdinalIgnoreCase))
-                        .Select(c => new DriverGpu(c.Name, VendorOf(c.Name), c.Version, VendorOf(c.Name) == "nvidia" ? NvidiaDrivers.FromWindowsVersion(c.Version) : null,
-                            c.Date is { Length: >= 8 } d && DateTime.TryParseExact(d[..8], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) ? dt : null)).ToList();
+                    // A card with no driver of its own shows as "Microsoft Basic Display Adapter": its PCI vendor says whose it is, so it is kept and offered a driver.
+                    var cards = q.Query(@"root\cimv2", "SELECT Name,DriverVersion,DriverDate,PNPDeviceID FROM Win32_VideoController")
+                        .Select(r => (Name: (r["Name"] as string)?.Trim() ?? "", Version: r["DriverVersion"] as string, Date: r["DriverDate"] as string, Pci: PciVendorOf(r["PNPDeviceID"] as string)))
+                        .Where(c => c.Name.Length > 0 && !c.Name.Contains("Remote", StringComparison.OrdinalIgnoreCase) && (c.Pci is not null || !c.Name.Contains("Basic Display", StringComparison.OrdinalIgnoreCase)))
+                        .Select(c => (c, basic: c.Name.Contains("Basic Display", StringComparison.OrdinalIgnoreCase)))
+                        .Select(x => new DriverGpu(x.basic ? Loc.Format("Drivers_NoDriverName", x.c.Pci!.ToUpperInvariant()) : x.c.Name, x.basic ? x.c.Pci! : VendorOf(x.c.Name), x.basic ? null : x.c.Version,
+                            !x.basic && VendorOf(x.c.Name) == "nvidia" ? NvidiaDrivers.FromWindowsVersion(x.c.Version) : null,
+                            !x.basic && x.c.Date is { Length: >= 8 } d && DateTime.TryParseExact(d[..8], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt) ? dt : null)).ToList();
                     // Code 45 is a device that is not plugged in now: not a driver problem.
                     var bad = q.Query(@"root\cimv2", "SELECT Name,PNPClass,ConfigManagerErrorCode FROM Win32_PnPEntity WHERE ConfigManagerErrorCode <> 0 AND ConfigManagerErrorCode <> 45")
                         .Select(r => (object)new { name = (r["Name"] as string)?.Trim() ?? Loc.Get("Drivers_UnknownDevice"), cls = r["PNPClass"] as string, code = Convert.ToInt32(r["ConfigManagerErrorCode"], CultureInfo.InvariantCulture) }).ToList();

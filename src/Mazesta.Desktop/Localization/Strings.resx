@@ -2243,6 +2243,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_CheckedAt" xml:space="preserve"><value>Checked {0}</value></data>
   <data name="Drivers_Checking" xml:space="preserve"><value>Checking…</value></data>
   <data name="Drivers_NotChecked" xml:space="preserve"><value>Not checked yet.</value></data>
+  <data name="Drivers_NoDriverName" xml:space="preserve"><value>{0} graphics card (no driver installed yet, Windows uses its basic display driver)</value></data>
   <data name="Drivers_Busy" xml:space="preserve"><value>A driver download or install is already running.</value></data>
   <data name="Drivers_Gpu_Title" xml:space="preserve"><value>Graphics card driver</value></data>
   <data name="Drivers_Gpu_Sub" xml:space="preserve"><value>From the card's maker</value></data>
