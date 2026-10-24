@@ -59,6 +59,15 @@ internal sealed class StorageFile : IDisposable
             .Select(d => new OptionChoice(d.RootDirectory.FullName, $"{d.Name} {(string.IsNullOrWhiteSpace(d.VolumeLabel) ? "" : d.VolumeLabel + " ")}({d.AvailableFreeSpace >> 30} GB free)")).ToList();
     }
 
+    /// <summary>The drive option's value for "every fixed drive, one after the other".</summary>
+    public const string AllDrives = "*";
+
+    /// <summary>The drive choices of a test that can go through every drive: the list, with "All drives" first when there are two or more.</summary>
+    public static IReadOnlyList<OptionChoice> DriveChoicesWithAll() => DriveChoices() is { Count: > 1 } c ? [new(AllDrives, "Test_Option_AllDrives", true, "all fixed drives"), .. c] : DriveChoices();
+
+    /// <summary>The folders a run goes through: every fixed drive for "All drives", else the one chosen (the first when none).</summary>
+    public static IReadOnlyList<string> Targets(string chosen) => chosen == AllDrives ? [.. DriveChoices().Select(c => c.Value)] : [ResolveTarget(chosen)];
+
     /// <summary>The chosen drive/folder, or the first choice when none was chosen.</summary>
     public static string ResolveTarget(string chosen) => chosen.Length > 0 ? chosen : DriveChoices() is { Count: > 0 } c ? c[0].Value : throw new StorageUnavailableException("No fixed drive is available.");
 }

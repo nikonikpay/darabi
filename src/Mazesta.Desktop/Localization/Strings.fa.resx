@@ -1661,6 +1661,8 @@
   <data name="Log_Command" xml:space="preserve"><value>اجرای دستور ویندوز:</value></data>
   <data name="Log_Output" xml:space="preserve"><value>خروجی ابزار:</value></data>
   <data name="Log_Smart" xml:space="preserve"><value>خواندن سلامت SMART همهٔ درایوها از ویندوز.</value></data>
+  <data name="Log_Surface_Open" xml:space="preserve"><value>پویش {0} ({1} مگابایت) فقط با خواندن و مستقیم از دستگاه: چیزی نوشته نمی‌شود.</value></data>
+  <data name="Log_Surface_Bad" xml:space="preserve"><value>{0}: بلوک در {1} مگابایتی خوانده نشد؛ {2} سکتور خراب در آن پیدا شد.</value></data>
   <data name="Log_Power_Start" xml:space="preserve"><value>بار CPU و GPU هم‌زمان اجرا می‌شود: بیشترین کشش از منبع تغذیه.</value></data>
   <data name="Web_Run_Title" xml:space="preserve"><value>آزمون در حال اجرا</value></data>
   <data name="Web_Run_Idle" xml:space="preserve"><value>آزمونی در حال اجرا نیست. از صفحهٔ آزمون‌ها شروع کنید تا اینجا نمایش داده شود.</value></data>
@@ -2472,7 +2474,17 @@
   <data name="WinCmd_tempclean_What" xml:space="preserve"><value>فایل‌های پوشهٔ Temp کاربر فعلی را پاک می‌کند؛ فایل‌هایی که در حال استفاده‌اند رد می‌شوند.</value></data>
   <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>پاک‌شده‌ها به سطل بازیافت نمی‌روند و برنمی‌گردند. «پاکسازی دیسک» در صفحهٔ ابزارهای ویندوز راه امن‌تری است.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>گفتگوی جدید</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید: «رم سیستم چقدره؟»، «Vantage روی سیستمم اجرا می‌شه؟»، «گزارش آخر رو خلاصه کن»، «گزارش رو PDF بده» یا «برو صفحهٔ تنظیم کارت گرافیک».</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>مثلاً بپرسید (روی هر کدام بزنید تا در کادر نوشته شود):</value></data>
+  <data name="Assist_Examples" xml:space="preserve"><value>رم سیستم چقدره؟
+کارت گرافیکم چیه و الان دماش چنده؟
+هاردها و SSD هام سالمن؟ دمای SSD چنده؟
+Vantage روی سیستمم اجرا می‌شه؟
+تست رم رو اجرا کن
+یه بنچمارک پردازنده بزن
+گزارش آخر رو خلاصه کن
+گزارش رو PDF بده
+سلامت باتری لپ‌تاپم رو بررسی کن
+برو صفحهٔ تنظیم کارت گرافیک</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>مدل زبانی ممکن است اشتباه کند. زیر هر پاسخ نوشته می‌شود برای آن کدام ابزار یا داده را خوانده است؛ عددها را با صفحهٔ پایش مقایسه کنید.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>یک تست یا بنچمارک در حال اجراست؛ بعد از آن دستیار را شروع کنید.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>خواند: مشخصات سیستم</value></data>
@@ -2642,6 +2654,17 @@
   <data name="Checks_Mic_Device" xml:space="preserve"><value>در حال گوش دادن به: {0}</value></data>
   <data name="Checks_Mic_Input" xml:space="preserve"><value>میکروفن</value></data>
   <data name="Checks_Speakers_Output" xml:space="preserve"><value>خروجی صدا</value></data>
+  <data name="Checks_InTurn" xml:space="preserve"><value>اول چپ، بعد راست</value></data>
+  <data name="Checks_Speakers_Channels" xml:space="preserve"><value>این خروجی {0} کانال گزارش می‌کند. چراغ‌ها نشان می‌دهند کدام سمت باید صدا بدهد؛ اگر هر دو سمت صدا می‌دهند یا یکی ساکت است، «مشکل دارد» را بزنید (و بررسی کنید گزینهٔ «Mono audio» ویندوز خاموش باشد).</value></data>
+  <data name="Checks_Speakers_Mono" xml:space="preserve"><value>این خروجی فقط یک کانال (مونو) گزارش می‌کند و چپ و راست در آن از هم جدا نمی‌شوند. خروجی دیگری را انتخاب کنید یا گزینهٔ «Mono audio» ویندوز را خاموش کنید.</value></data>
+  <data name="Checks_Webcam" xml:space="preserve"><value>وب‌کم</value></data>
+  <data name="Checks_Webcam_Sub" xml:space="preserve"><value>تصویر زنده‌ای که می‌دهد</value></data>
+  <data name="Checks_Webcam_Text" xml:space="preserve"><value>دوربین را روشن کنید و تصویر را ببینید: باید واضح، با نور درست، روان و بدون یخ‌زدن باشد و خط یا لکه نداشته باشد. اندازه و تعداد فریم در ثانیه‌ای که می‌دهد زیر آن نوشته می‌شود. تصویر فقط در همین صفحه است و نه ذخیره می‌شود و نه جایی فرستاده می‌شود.</value></data>
+  <data name="Checks_Webcam_Start" xml:space="preserve"><value>روشن کردن دوربین</value></data>
+  <data name="Checks_Webcam_Input" xml:space="preserve"><value>دوربین</value></data>
+  <data name="Checks_Webcam_Denied" xml:space="preserve"><value>دوربین باز نشد ({0}): یا وصل نیست، یا برنامهٔ دیگری از آن استفاده می‌کند، یا تنظیمات حریم خصوصی ویندوز جلوی آن را گرفته است.</value></data>
+  <data name="Checks_Webcam_Device" xml:space="preserve"><value>{0}: {1} در {2} پیکسل، {3} فریم در ثانیه</value></data>
+  <data name="Checks_Webcam_Lost" xml:space="preserve"><value>دوربین دیگر تصویر نمی‌دهد (جدا شده یا برنامهٔ دیگری آن را گرفته است).</value></data>
   <data name="Checks_DefaultDevice" xml:space="preserve"><value>پیش‌فرض ویندوز</value></data>
   <data name="Checks_Device" xml:space="preserve"><value>دستگاه</value></data>
   <data name="Checks_Battery" xml:space="preserve"><value>باتری</value></data>
@@ -3648,6 +3671,8 @@
   <data name="Log_Daily_Cycle" xml:space="preserve"><value>{0} دور کامل انجام شد؛ تا این لحظه {1} نتیجهٔ نادرست.</value></data>
   <data name="Log_Daily_Error" xml:space="preserve"><value>نتیجهٔ نادرست در «{0}»: {1}.</value></data>
   <data name="Test_Storage_Daily" xml:space="preserve"><value>دیسک · کار روزمره (درخواست‌های ترکیبی با مکث، کپی، فایل‌های کوچک، بیدار شدن از بیکاری؛ همه بررسی‌شده)</value></data>
+  <data name="Test_Storage_Surface" xml:space="preserve"><value>دیسک · پویش سطح و پیدا کردن سکتور خراب (کل دیسک را می‌خواند و چیزی نمی‌نویسد؛ زمانِ تعیین‌شده معلوم می‌کند تا کجا پیش برود)</value></data>
+  <data name="Test_Option_AllDrives" xml:space="preserve"><value>همهٔ درایوها (یکی پس از دیگری)</value></data>
   <data name="Test_StorageDaily_Mixed" xml:space="preserve"><value>درخواست‌های ترکیبی با مکث</value></data>
   <data name="Test_StorageDaily_Copy" xml:space="preserve"><value>کپی یک فایل ۱۲۸ مگابایتی</value></data>
   <data name="Test_StorageDaily_Small" xml:space="preserve"><value>۲۰۰ فایل کوچک</value></data>

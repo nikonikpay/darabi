@@ -17,7 +17,7 @@ namespace Mazesta.Diagnostics.Benchmarks;
 /// </summary>
 public sealed class StorageBenchmark : IBenchmark
 {
-    public static readonly TestDefinition Spec = new(new TestId("bench.storage"), "Bench_Storage", 20, StorageExecutor.CommonOptions("1024"));
+    public static readonly TestDefinition Spec = new(new TestId("bench.storage"), "Bench_Storage", 20, StorageExecutor.CommonOptions("1024", allDrives: false));
     public TestDefinition Definition => Spec;
     public HardwareKind Component => HardwareKind.Storage;
     private const int SeqDepth = 8, RandomDepth = 32, MixedDepth = 4, MixedMax = 64 << 10;

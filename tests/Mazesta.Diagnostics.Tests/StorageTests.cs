@@ -71,6 +71,20 @@ public class StorageTests : IDisposable
         Assert.Equal(choices[0].Value, StorageFile.ResolveTarget(""));
     }
 
+    [Fact] public void All_drives_is_offered_first_when_there_are_two_and_expands_to_every_drive_while_one_choice_stays_one()
+    {
+        var plain = StorageFile.DriveChoices(); var withAll = StorageFile.DriveChoicesWithAll();
+        if (plain.Count > 1) { Assert.Equal(StorageFile.AllDrives, withAll[0].Value); Assert.True(withAll[0].Localized); Assert.Equal(plain.Select(c => c.Value), StorageFile.Targets(StorageFile.AllDrives)); }
+        else Assert.Equal(plain.Select(c => c.Value), withAll.Select(c => c.Value));
+        Assert.Equal([_dir], StorageFile.Targets(_dir));
+    }
+    [Fact] [Trait("Category", "Hardware")] public async Task The_surface_scan_reads_the_system_drive_for_a_few_seconds_without_errors()
+    {
+        var def = StorageSurfaceExecutor.Spec; string system = Path.GetPathRoot(Environment.SystemDirectory)!;
+        var result = await new StorageSurfaceExecutor().RunAsync(new(5, new FakeClock(T0), null, null, new TestOptions(def, new Dictionary<string, string> { [StorageExecutor.DriveOption] = system })), CancellationToken.None);
+        Assert.Equal(0, result.ErrorCount); Assert.Contains("straight from the device", result.Detail); Assert.Equal(TestOutcome.Cancelled, result.Outcome);   // five seconds never cover a drive
+    }
+
     [Fact] public void Latency_percentiles_cover_every_request_and_never_understate()
     {
         var h = new LatencyHistogram();

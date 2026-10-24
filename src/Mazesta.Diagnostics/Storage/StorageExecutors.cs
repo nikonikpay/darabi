@@ -9,9 +9,10 @@ namespace Mazesta.Diagnostics.Storage;
 public abstract class StorageExecutor : ITestExecutor
 {
     public const string DriveOption = "drive", FileMbOption = "fileMb";
-    internal static TestOption[] CommonOptions(string fileMbDefault) =>
+    /// <param name="allDrives">Whether "All drives" is offered: a test goes through every drive one after the other; a benchmark is one drive's score and does not.</param>
+    internal static TestOption[] CommonOptions(string fileMbDefault, bool allDrives = true) =>
     [
-        new TestOption(DriveOption, "Test_Option_Drive", TestOptionKind.Choice, "", StorageFile.DriveChoices),
+        new TestOption(DriveOption, "Test_Option_Drive", TestOptionKind.Choice, "", allDrives ? StorageFile.DriveChoicesWithAll : StorageFile.DriveChoices),
         new TestOption(FileMbOption, "Test_Option_FileMb", TestOptionKind.Integer, fileMbDefault)
     ];
 
@@ -44,20 +45,39 @@ public abstract class StorageExecutor : ITestExecutor
         if (StorageFile.CheckSizeMb(fileMb) is { } invalid) return Task.FromResult(TestRunResult.Unsupported(Definition.Id, started, invalid));
         return Task.Run(() =>
         {
-            long errors = 0; string detail = "";
-            try
+            long errors = 0; var details = new List<string>(); string[] targets; int tested = 0;
+            try { targets = [.. StorageFile.Targets(options.Get(DriveOption))]; }
+            catch (StorageUnavailableException ex) { return TestRunResult.Unsupported(Definition.Id, started, ex.Message); }
+            bool many = targets.Length > 1;
+            for (int i = 0; i < targets.Length; i++)
             {
-                string target = StorageFile.ResolveTarget(options.Get(DriveOption));
-                using var file = StorageFile.Create(target, StorageFile.LengthOf(fileMb));
-                request.Note("Log_Storage_File", "CreateNew, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | DELETE_ON_CLOSE", target, file.Length >> 20);
-                detail = Exercise(file, request, ct, ref errors);
+                // "All drives": each gets an equal share of the time, and the bar runs across all of them.
+                int at = i;
+                var step = !many ? request : request with { DurationSeconds = Math.Max(1, request.DurationSeconds / targets.Length), Progress = request.Progress is null ? null : p => request.Progress(p with { PercentComplete = (at + p.PercentComplete) / targets.Length }) };
+                string detail = "";
+                try
+                {
+                    using var file = StorageFile.Create(targets[i], StorageFile.LengthOf(fileMb));
+                    step.Note("Log_Storage_File", "CreateNew, FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH | DELETE_ON_CLOSE", targets[i], file.Length >> 20);
+                    detail = Exercise(file, step, ct, ref errors); tested++;
+                }
+                catch (OperationCanceledException) { return new TestRunResult(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, string.Join("; ", details)); }
+                catch (StorageUnavailableException ex)
+                {
+                    if (!many) return TestRunResult.Unsupported(Definition.Id, started, ex.Message);
+                    details.Add($"{targets[i]} not tested: {ex.Message}"); continue;   // named in the result, so a skipped drive is never read as a passed one
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    errors++; details.Add((many ? $"{targets[i]} " : "") + $"I/O error while exercising the drive: {ex.Message}");
+                    if (!many) return new TestRunResult(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors, details[0]);
+                    continue;
+                }
+                details.Add(many ? $"{targets[i]} {detail}" : detail);
             }
-            catch (OperationCanceledException) { return new TestRunResult(Definition.Id, TestOutcome.Cancelled, started, request.Clock.UtcNow, errors, detail); }
-            catch (StorageUnavailableException ex)
-            { return TestRunResult.Unsupported(Definition.Id, started, ex.Message); }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            { return new TestRunResult(Definition.Id, TestOutcome.Failed, started, request.Clock.UtcNow, errors + 1, $"I/O error while exercising the drive: {ex.Message}"); }
-            return new TestRunResult(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, detail);
+            var joined = string.Join("; ", details);
+            return tested == 0 && errors == 0 ? TestRunResult.Unsupported(Definition.Id, started, joined)
+                : new TestRunResult(Definition.Id, errors > 0 ? TestOutcome.Failed : TestOutcome.Passed, started, request.Clock.UtcNow, errors, joined);
         }, CancellationToken.None);
     }
 

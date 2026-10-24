@@ -1661,6 +1661,8 @@ The update services stopped and disabled</value></data>
   <data name="Log_Command" xml:space="preserve"><value>Running a Windows command:</value></data>
   <data name="Log_Output" xml:space="preserve"><value>Tool output:</value></data>
   <data name="Log_Smart" xml:space="preserve"><value>Reading every drive's SMART health from Windows.</value></data>
+  <data name="Log_Surface_Open" xml:space="preserve"><value>Scanning {0} ({1} MiB) read-only, straight from the device: nothing is written.</value></data>
+  <data name="Log_Surface_Bad" xml:space="preserve"><value>{0}: the block at {1} MiB could not be read; {2} bad sector(s) found in it.</value></data>
   <data name="Log_Power_Start" xml:space="preserve"><value>The CPU and GPU loads run together: the highest draw on the power supply.</value></data>
   <data name="Web_Run_Title" xml:space="preserve"><value>Test in progress</value></data>
   <data name="Web_Run_Idle" xml:space="preserve"><value>No test is running. Start one on the Tests page and it will show here.</value></data>
@@ -2472,7 +2474,17 @@ What I do not do: run any other command in Windows, change files, or install pro
   <data name="WinCmd_tempclean_What" xml:space="preserve"><value>Deletes the files in the current user's Temp folder; files in use are skipped.</value></data>
   <data name="WinCmd_tempclean_Warn" xml:space="preserve"><value>What is deleted does not go to the Recycle Bin and can not be brought back. Disk Cleanup, on the Windows tools page, is the safer way.</value></data>
   <data name="Assist_Clear" xml:space="preserve"><value>New chat</value></data>
-  <data name="Assist_Empty" xml:space="preserve"><value>Try: "How much RAM does this computer have?", "Does Vantage run on my computer?", "Summarise the last report", "Give me the report as PDF" or "Open the graphics card tuning page".</value></data>
+  <data name="Assist_Empty" xml:space="preserve"><value>Try asking (click one to put it in the box):</value></data>
+  <data name="Assist_Examples" xml:space="preserve"><value>How much RAM does this computer have?
+What graphics card do I have, and how hot is it now?
+Are my drives healthy? How hot is the SSD?
+Does Vantage run on my computer?
+Run the RAM test
+Run a CPU benchmark
+Summarise the last report
+Give me the report as PDF
+Check my laptop battery's health
+Open the graphics card tuning page</value></data>
   <data name="Assist_Disclaimer" xml:space="preserve"><value>A language model can be wrong. Under each answer the labels name the tool or data it read; check numbers against the Monitoring page.</value></data>
   <data name="Assist_Blocked" xml:space="preserve"><value>A test or benchmark is running; start the assistant after it.</value></data>
   <data name="Assist_Tool_get_machine_summary" xml:space="preserve"><value>Read: machine summary</value></data>
@@ -2642,6 +2654,17 @@ Nothing is downloaded until you press Download. Every model is checked after it 
   <data name="Checks_Mic_Device" xml:space="preserve"><value>Listening to: {0}</value></data>
   <data name="Checks_Mic_Input" xml:space="preserve"><value>Microphone</value></data>
   <data name="Checks_Speakers_Output" xml:space="preserve"><value>Output</value></data>
+  <data name="Checks_InTurn" xml:space="preserve"><value>Left, then right</value></data>
+  <data name="Checks_Speakers_Channels" xml:space="preserve"><value>This output reports {0} channels. The lamps show which side should be sounding; if both sides sound, or one stays silent, mark a problem (also check that Windows' "Mono audio" setting is off).</value></data>
+  <data name="Checks_Speakers_Mono" xml:space="preserve"><value>This output reports only one channel (mono): left and right cannot be told apart on it. Pick another output, or turn Windows' "Mono audio" off.</value></data>
+  <data name="Checks_Webcam" xml:space="preserve"><value>Webcam</value></data>
+  <data name="Checks_Webcam_Sub" xml:space="preserve"><value>the live picture it delivers</value></data>
+  <data name="Checks_Webcam_Text" xml:space="preserve"><value>Start the camera and look at the picture: it should be sharp, correctly lit, smooth and not frozen, with no lines or spots. The size and frame rate it delivers are shown below. The picture stays on this page and is never saved or sent.</value></data>
+  <data name="Checks_Webcam_Start" xml:space="preserve"><value>Start camera</value></data>
+  <data name="Checks_Webcam_Input" xml:space="preserve"><value>Camera</value></data>
+  <data name="Checks_Webcam_Denied" xml:space="preserve"><value>The camera could not be opened ({0}): none connected, in use by another program, or Windows' privacy settings block it.</value></data>
+  <data name="Checks_Webcam_Device" xml:space="preserve"><value>{0}: {1} x {2} pixels, {3} frames per second</value></data>
+  <data name="Checks_Webcam_Lost" xml:space="preserve"><value>The camera stopped delivering a picture (unplugged, or taken by another program).</value></data>
   <data name="Checks_DefaultDevice" xml:space="preserve"><value>Windows default</value></data>
   <data name="Checks_Device" xml:space="preserve"><value>Device</value></data>
   <data name="Checks_Battery" xml:space="preserve"><value>Battery</value></data>
@@ -3648,6 +3671,8 @@ Cancel: stop.</value></data>
   <data name="Log_Daily_Cycle" xml:space="preserve"><value>{0} whole cycle(s) done; {1} wrong result(s) so far.</value></data>
   <data name="Log_Daily_Error" xml:space="preserve"><value>Wrong result in '{0}': {1}.</value></data>
   <data name="Test_Storage_Daily" xml:space="preserve"><value>Storage · Everyday use (mixed requests with pauses, copy, small files, wake from idle; all checked)</value></data>
+  <data name="Test_Storage_Surface" xml:space="preserve"><value>Storage · Surface scan for bad sectors (reads the whole drive, writes nothing; the time set decides how far it gets)</value></data>
+  <data name="Test_Option_AllDrives" xml:space="preserve"><value>All drives (one after the other)</value></data>
   <data name="Test_StorageDaily_Mixed" xml:space="preserve"><value>mixed requests with pauses</value></data>
   <data name="Test_StorageDaily_Copy" xml:space="preserve"><value>copying a 128 MiB file</value></data>
   <data name="Test_StorageDaily_Small" xml:space="preserve"><value>200 small files</value></data>
