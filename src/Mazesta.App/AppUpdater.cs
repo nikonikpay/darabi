@@ -206,6 +206,23 @@ public sealed class AppUpdater
     /// The new release, started from where it was unpacked: waits for the old app to end, stops the tray (its exe is one of the files) and starts it
     /// again afterwards, puts the files in place and starts the app. Written to Data/logs/update.log, since there is no window to say anything in.
     /// </summary>
+    private static void EndProgramsIn(string appDir, Action<string> log)
+    {
+        foreach (var p in Process.GetProcesses())
+            using (p)
+            {
+                if (p.Id == Environment.ProcessId) continue;
+                try
+                {
+                    string? file = p.MainModule?.FileName;
+                    if (file is null || !file.StartsWith(appDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) continue;
+                    log($"Ending {Path.GetFileName(file)} (it runs from the app's folder)");
+                    p.Kill(true); p.WaitForExit(5000);
+                }
+                catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException or NotSupportedException) { }   // not ours to read or already gone
+            }
+    }
+
     public static void Apply(string appDir, int pid, Action releaseInstance)
     {
         string staging = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
@@ -223,6 +240,7 @@ public sealed class AppUpdater
                 if (path is not null && !path.StartsWith(appDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) continue;
                 try { p.Kill(); p.WaitForExit(5000); tray = true; } catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { Log($"Tray not stopped: {e.Message}"); }
             }
+        EndProgramsIn(appDir, Log);   // the lights' OpenRGB (the tray keeps it running after the window closes) holds its folder: without this the files cannot be moved aside
         bool ok;
         try { ok = UpdateInstaller.Apply(staging, appDir, Path.Combine(paths.UpdateDir, "previous"), Log); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Log($"Update failed: {e.Message}"); ok = false; }
