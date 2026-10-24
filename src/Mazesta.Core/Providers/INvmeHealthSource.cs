@@ -16,7 +16,8 @@ public sealed record NvmeHealthLog(byte CriticalWarning, double? TemperatureC, i
         if (page.Length < Size) throw new ArgumentException($"An NVMe health log is {Size} bytes; got {page.Length}.", nameof(page));
         static ulong U64(ReadOnlySpan<byte> p, int offset) => BinaryPrimitives.ReadUInt64LittleEndian(p[offset..]);
         int kelvin = BinaryPrimitives.ReadUInt16LittleEndian(page[1..]);
-        return new(page[0], kelvin == 0 ? null : kelvin - 273.15, page[3], page[4], page[5],
+        double celsius = kelvin - 273.15;   // 0 K is "not reported"; a reading outside 0..150 °C is a drive's filler value, never a temperature
+        return new(page[0], kelvin != 0 && celsius is > 0 and < Hardware.ReadingValidator.MaxDriveCelsius ? celsius : null, page[3], page[4], page[5],
             U64(page, 32), U64(page, 48), U64(page, 112), U64(page, 128), U64(page, 144), U64(page, 160), U64(page, 176));
     }
 

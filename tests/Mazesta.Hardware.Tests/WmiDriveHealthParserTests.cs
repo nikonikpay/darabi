@@ -18,6 +18,11 @@ public class WmiDriveHealthParserTests
         Assert.Equal(("Warning", (int?)null, (double?)null), (parsed[1].Status, parsed[1].WearPercent, parsed[1].TemperatureC));   // HDD wear and 0 °C are "not reported"
         Assert.Equal("Unknown", parsed[2].Status); Assert.Null(parsed[2].PowerOnHours);
     }
+    [Fact] public void A_drive_answering_255_for_its_temperature_has_none()   // the Samsung 990 Pro
+    {
+        var d = WmiDriveHealthParser.Parse([(Row(("FriendlyName", "Samsung SSD 990 PRO 2TB"), ("MediaType", (ushort)4)), Row(("Temperature", (byte)255), ("TemperatureMax", (byte)255)))])[0];
+        Assert.Null(d.TemperatureC); Assert.Null(d.TemperatureMaxC);
+    }
 }
 
 /// <summary>Reads the real drives (Category=Hardware): Windows must give every physical drive a health status. The reliability counters need

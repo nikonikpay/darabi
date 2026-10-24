@@ -50,7 +50,7 @@ public static class WmiDriveHealthParser
             N(d, "HealthStatus") switch { 0 => "Healthy", 1 => "Warning", 2 => "Unhealthy", null => null, _ => "Unknown" },
             // Only a drive known to be flash has a wear counter: an HDD - or one Windows lists as "unspecified" behind RAID or VMD - reports 0, which would read as 100 % life.
             solid ? (int?)N(c, "Wear") : null,
-            Positive(c, "Temperature"), Positive(c, "TemperatureMax"),  // 0 °C means "not reported", never a running drive's temperature
+            Celsius(c, "Temperature"), Celsius(c, "TemperatureMax"),  // 0 °C means "not reported", never a running drive's temperature; 255 (0xFF, a Samsung 990 Pro's answer) is the same "unknown", not 255 °C
             N(c, "ReadErrorsUncorrected"), N(c, "WriteErrorsUncorrected"), N(c, "PowerOnHours"),
             N(d, "BusType") switch { 17 => "NVMe", 11 => "SATA", 7 => "USB", 3 => "ATA", null => null, var b => $"Bus {b}" });
     })];
@@ -66,5 +66,5 @@ public static class WmiDriveHealthParser
 
     private static string? S(IReadOnlyDictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) && v is string s && !string.IsNullOrWhiteSpace(s) ? s.Trim() : null;
     private static long? N(IReadOnlyDictionary<string, object?>? r, string k) => r is not null && r.TryGetValue(k, out var v) && v is not null ? Convert.ToInt64(v, System.Globalization.CultureInfo.InvariantCulture) : null;
-    private static double? Positive(IReadOnlyDictionary<string, object?>? r, string k) => N(r, k) is long t && t > 0 ? t : null;
+    private static double? Celsius(IReadOnlyDictionary<string, object?>? r, string k) => N(r, k) is long t && t > 0 && t < Mazesta.Core.Hardware.ReadingValidator.MaxDriveCelsius ? t : null;
 }

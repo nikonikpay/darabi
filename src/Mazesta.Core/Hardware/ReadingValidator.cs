@@ -2,6 +2,9 @@ namespace Mazesta.Core.Hardware;
 
 public static class ReadingValidator
 {
+    /// <summary>A drive reporting this or more is not reporting a temperature (a Samsung 990 Pro answers 255 for "unknown").</summary>
+    public const double MaxDriveCelsius = 150;
+
     public static DataQuality Validate(SensorKind kind, double? value)
     {
         if (value is null) return DataQuality.Missing;
