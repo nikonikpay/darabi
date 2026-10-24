@@ -6,8 +6,8 @@ namespace Mazesta.App;
 
 public sealed partial class WebBridge
 {
-    /// <summary>Downloads of many gigabytes: no overall timeout (a slow line is not an error), only a stalled connect; cancel is the user's.</summary>
-    private static readonly HttpClient AiHttp = new(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(20) }) { Timeout = Timeout.InfiniteTimeSpan, DefaultRequestHeaders = { { "User-Agent", "MazestaTest/1.0 (+https://www.dfmrendering.com)" } } };
+    /// <summary>Downloads of many gigabytes: no overall timeout (a slow line is not an error), only a stalled connect; cancel is the user's. Names are looked up through Google's DNS (the system's is the fallback): a slow line is often the provider's DNS naming a far address.</summary>
+    private static readonly HttpClient AiHttp = new(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(20), ConnectCallback = GoogleDns.ConnectAsync }) { Timeout = Timeout.InfiniteTimeSpan, DefaultRequestHeaders = { { "User-Agent", "MazestaTest/1.0 (+https://www.dfmrendering.com)" } } };
 
     /// <summary>A download in progress or the last one's failure, per catalog id ("runtime" for llama.cpp).</summary>
     private sealed class AiTransfer { public DownloadProgress Progress; public string? Error; public CancellationTokenSource? Cts; }
@@ -107,9 +107,11 @@ public sealed partial class WebBridge
             };
         }
 
-        async Task Download(string id)
+        // True if the file arrived whole; false when it was stopped or failed (so the assistant's two steps do not go on after a stop).
+        async Task<bool> Download(string id)
         {
             if (active is not null) throw new InvalidOperationException("Another download is in progress.");
+            bool done = false;
             var model = id == "runtime" ? null : AiCatalog.Find(id) ?? throw new ArgumentException("unknown model");
             var cts = new CancellationTokenSource(); var t = transfers[id] = new AiTransfer { Cts = cts }; active = id;
             var progress = new Progress<DownloadProgress>(p => { t.Progress = p; PushSoon("ai", State); });
@@ -118,7 +120,7 @@ public sealed partial class WebBridge
             {
                 if (model is null) await files.GetRuntimeAsync(progress, cts.Token).ConfigureAwait(true);
                 else await files.GetModelAsync(model, progress, cts.Token).ConfigureAwait(true);
-                transfers.Remove(id);
+                transfers.Remove(id); done = true;
                 _log.LogInformation("AI download finished: {Id}", id);
             }
             catch (OperationCanceledException) { transfers.Remove(id); }
@@ -127,6 +129,7 @@ public sealed partial class WebBridge
                 t.Error = e.Message; _log.LogWarning(e, "AI download failed: {Id}", id);
             }
             finally { cts.Dispose(); t.Cts = null; active = null; PushSoon("ai", State); }
+            return done;
         }
 
         void OnProgress(TestId id, double p) { if (id == LlamaBenchmark.Spec.Id && running is { } r) { running = r with { Percent = p * 100 }; PushSoon("ai", State); } }
@@ -153,7 +156,7 @@ public sealed partial class WebBridge
         // The assistant's download: llama.cpp first (it carries llama-server), then the model the machine is offered; one after the other, as the page allows one download at a time.
         async Task EnableAssistant(AiModel model)
         {
-            if (!files.HasRuntime) { await Download("runtime"); if (transfers.ContainsKey("runtime")) return; }
+            if (!files.HasRuntime && !await Download("runtime")) return;
             if (!files.HasModel(model)) await Download(model.Id);
         }
 

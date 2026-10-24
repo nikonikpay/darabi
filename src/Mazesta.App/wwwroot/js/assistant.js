@@ -87,7 +87,8 @@ export function mountAssistant(app, root) {
     const kids = [];
     if (!installed) {
       kids.push(h("h3", { class: "asst-gate-title" }, t("Assist_Enable_Title")), h("p", { class: "ai-purpose" }, t("Assist_Enable_Text", m.name, m.size)));
-      kids.push(h("div", { class: "btn-row" }, h("button", { class: "btn primary", disabled: downloading, onclick: () => exec("ai.exec", "assistantEnable") }, downloading ? t("Assist_Downloading") : t("Assist_Enable"))));
+      kids.push(h("div", { class: "btn-row" }, h("button", { class: "btn primary", disabled: downloading, onclick: () => exec("ai.exec", "assistantEnable") }, downloading ? t("Assist_Downloading") : t("Assist_Enable")),
+        downloading ? h("button", { class: "btn stop", onclick: () => exec("ai.exec", "cancelDownload", { id: ai?.downloading }) }, icon("stop"), t("Ai_CancelDownload")) : null));
       gateProg = tr?.active ? progress(tr) : null; if (gateProg) kids.push(gateProg);
       if (failed) kids.push(h("p", { class: "ai-err" }, failed));
     } else {
@@ -137,7 +138,8 @@ export function mountAssistant(app, root) {
       log.replaceChildren(...(a.messages.length ? a.messages.map((m, i) => h("div", { class: `as-msg ${m.role}` }, h("div", { class: "as-who" }, t(m.role === "user" ? "Assist_You" : "Assist_Name")), msgEls[i],
         m.tools?.length ? h("div", { class: "as-tools" }, m.tools.map((x) => h("span", { class: `pill ${x.ok ? "none" : "fail"}` }, t(`Assist_Tool_${x.name}`) + (x.ok ? "" : " · " + t("Assist_Tool_failed"))))) : null,
         ...(m.tools || []).filter((x) => x.result).map(evidence)))
-        : [h("p", { class: "caption as-empty" }, t("Assist_Empty"))]));
+        : [h("div", { class: "as-empty" }, h("p", { class: "caption" }, t("Assist_Empty")),
+          h("ul", { class: "as-eg" }, t("Assist_Examples").split("\n").map((q) => h("li", {}, h("button", { class: "as-eg-q", type: "button", dir: "auto", onclick: () => { input.value = q; input.focus(); } }, q)))))]));
     }
     if (stick) log.scrollTop = log.scrollHeight;
     send.disabled = a.busy || a.server !== "ready"; stop.hidden = !a.busy; newBtn.disabled = a.busy;
