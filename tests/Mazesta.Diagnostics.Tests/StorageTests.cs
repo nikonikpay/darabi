@@ -80,9 +80,9 @@ public class StorageTests : IDisposable
     }
     [Fact] [Trait("Category", "Hardware")] public async Task The_surface_scan_reads_the_system_drive_for_a_few_seconds_without_errors()
     {
-        var def = StorageSurfaceExecutor.Spec; string system = Path.GetPathRoot(Environment.SystemDirectory)!;
-        var result = await new StorageSurfaceExecutor().RunAsync(new(5, new FakeClock(T0), null, null, new TestOptions(def, new Dictionary<string, string> { [StorageExecutor.DriveOption] = system })), CancellationToken.None);
-        Assert.Equal(0, result.ErrorCount); Assert.Contains("straight from the device", result.Detail); Assert.Equal(TestOutcome.Cancelled, result.Outcome);   // five seconds never cover a drive
+        var def = StorageSurfaceExecutor.Spec; string system = Path.GetPathRoot(Environment.SystemDirectory)!; using var cts = new CancellationTokenSource(3000);
+        var result = await new StorageSurfaceExecutor().RunAsync(new(5, new FakeClock(T0), null, null, new TestOptions(def, new Dictionary<string, string> { [StorageExecutor.DriveOption] = system })), cts.Token);
+        Assert.Equal(0, result.ErrorCount); Assert.Equal(TestOutcome.Cancelled, result.Outcome);   // cancelled after 3 s: never a pass
     }
 
     [Fact] public void Latency_percentiles_cover_every_request_and_never_understate()

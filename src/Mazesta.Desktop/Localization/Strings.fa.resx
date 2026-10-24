@@ -3671,7 +3671,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Log_Daily_Cycle" xml:space="preserve"><value>{0} دور کامل انجام شد؛ تا این لحظه {1} نتیجهٔ نادرست.</value></data>
   <data name="Log_Daily_Error" xml:space="preserve"><value>نتیجهٔ نادرست در «{0}»: {1}.</value></data>
   <data name="Test_Storage_Daily" xml:space="preserve"><value>دیسک · کار روزمره (درخواست‌های ترکیبی با مکث، کپی، فایل‌های کوچک، بیدار شدن از بیکاری؛ همه بررسی‌شده)</value></data>
-  <data name="Test_Storage_Surface" xml:space="preserve"><value>دیسک · پویش سطح و پیدا کردن سکتور خراب (کل دیسک را می‌خواند و چیزی نمی‌نویسد؛ زمانِ تعیین‌شده معلوم می‌کند تا کجا پیش برود)</value></data>
+  <data name="Test_Storage_Surface" xml:space="preserve"><value>دیسک · پویش سطح و پیدا کردن سکتور خراب (کل دیسک را می‌خواند و چیزی نمی‌نویسد؛ تا آخر می‌رود، هر قدر طول بکشد)</value></data>
   <data name="Test_Option_AllDrives" xml:space="preserve"><value>همهٔ درایوها (یکی پس از دیگری)</value></data>
   <data name="Test_StorageDaily_Mixed" xml:space="preserve"><value>درخواست‌های ترکیبی با مکث</value></data>
   <data name="Test_StorageDaily_Copy" xml:space="preserve"><value>کپی یک فایل ۱۲۸ مگابایتی</value></data>

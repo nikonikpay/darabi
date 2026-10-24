@@ -5,8 +5,8 @@ namespace Mazesta.Diagnostics.Storage;
 /// The surface scan: every byte of a drive's volume read once, front to back, in 1 MiB blocks straight from the device (no cache), looking for sectors the drive cannot read.
 /// The other storage tests write a scratch file and read it back, which proves the part of the drive that file landed on; this one covers all of it, free space and files alike,
 /// and it only reads - nothing is written, so it is safe on a customer's data. A block that fails is read again sector by sector (4 KiB) to count the bad sectors and
-/// say where they are; a block that took over a second to answer is counted as slow (a sector the drive is struggling to recover). It cannot repair a bad sector. The
-/// time given may be shorter than the drive takes: then the scan stops there and the result says how far it got, and it is not a pass for the part not read.
+/// say where they are; a block that took over a second to answer is counted as slow (a sector the drive is struggling to recover). It cannot repair a bad sector.
+/// time set does not limit it: it reads the whole drive (hours on a big hard disk) and only Cancel stops it early, which is never a pass.
 /// </summary>
 public sealed class StorageSurfaceExecutor : ITestExecutor
 {
@@ -60,7 +60,7 @@ public sealed class StorageSurfaceExecutor : ITestExecutor
         request.Note("Log_Surface_Open", @"\\.\X: opened read-only, FILE_FLAG_NO_BUFFERING; sequential 1 MiB reads, a failed block read again in 4 KiB sectors", root, length >> 20);
         using var buffer = new NativeBlock(StorageFile.Block);
         var clock = Stopwatch.StartNew(); long offset = 0, bad = 0, slow = 0; double slowest = 0; bool stoppedEarly = false; var spots = new List<long>();
-        while (offset < length && clock.Elapsed.TotalSeconds < seconds && !stoppedEarly)
+        while (offset < length && !stoppedEarly)   // the whole drive, however long: the time set is not a limit here, only Cancel ends it early
         {
             ct.ThrowIfCancellationRequested();
             int want = (int)Math.Min(StorageFile.Block, length - offset); want -= want % StorageFile.Sector;
