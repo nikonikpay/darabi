@@ -7,7 +7,7 @@ import { h, icon } from "./ui.js";
 const BOXES = [
   ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["play", "gameboost", "GameBoost_Title"], ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"],
   ["tools", "crashes", "Bsod_Title"], ["tools", "repair", "Tools_Repair"], ["tools", "cleanup", "Tools_Windows"], ["tools", "hibernate", "Tools_Hib_Title"], ["tools", "vm", "Tools_Vm_Title"], ["tools", "hosts", "Tools_Hosts_Title"],
-  ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"], ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
+  ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "fancurve", "Tuning_FanCurve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"], ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
   ["fans", "fans", "Fans_Profiles_Title"], ["lights", "rgb", "Rgb_Title"], ["settings", null, "Settings_DataFolder"], ["settings", null, "Settings_Tray_Section"], ["appupdate", null, "AppUpd_Version"],
   ["drivers", null, "Drivers_Board_Title"], ["drivers", null, "Drivers_Gpu_Title"], ["drivers", null, "Drivers_Wu_Title"], ["tweaks", null, "Tweaks_Essential"], ["tweaks", null, "Tweaks_Advanced"],
   ["wake", "devices", "Wake_Dev_Title"], ["wake", "timers", "Wake_Timers_Title"], ["wake", "wol", "Wake_Net_Title"], ["wake", "lastwake", "Wake_Last_Title"],

@@ -6,6 +6,7 @@ import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
 import { setField } from "./tests.js";
 import { box } from "../groups.js";
+import { curveEditor as fanCurveEditor } from "./fans.js";
 
 const SVG = "http://www.w3.org/2000/svg";
 const s = (tag, attrs = {}, ...kids) => { const e = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) if (v !== null && v !== undefined) e.setAttribute(k, v); e.append(...kids); return e; };
@@ -199,6 +200,37 @@ export function mount(el) {
   const addTyped = h("button", { class: "btn", onclick: () => addRule(exeBox.value.trim(), "") }, t("Tuning_Rules_Add"));
   const cancel = h("button", { class: "btn stop", onclick: () => exec("cancel") }, icon("stop"), t("Tuning_Cancel"));
 
+  // The card's fans on a curve of temperature against duty (GpuFanController): the editor of the Fans page, with its profiles. Any drag turns the curve on; "automatic" gives the fans back.
+  const fan = (() => {
+    let last = null, saveTimer = 0, shown = "", timer = 0;
+    const msg = h("p", { class: "msg" }), liveLine = h("p", { class: "caption" }), banner = h("div", { class: "banner", hidden: true }), body = h("div", {});
+    const act = async (method, params) => { try { render(await call(method, params)); msg.textContent = ""; msg.className = "msg"; } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); } };
+    const send = () => act("gpufan.set", { mode: "curve", source: source.value, points: editor.get() });
+    const editor = fanCurveEditor({ onChange: (points, final) => { clearTimeout(saveTimer); if (final) send(); else saveTimer = setTimeout(send, 400); } });
+    const source = h("select", { class: "field", "aria-label": t("Fans_Source"), onchange: () => send() }, ["core", "hot"].map((v) => h("option", { value: v }, t(`Tuning_FanCurve_Src_${v}`))));
+    const profileBar = h("div", { class: "seg fan-profiles", role: "group", "aria-label": t("Fans_Profiles_Title") });
+    const saveName = h("input", { class: "field", type: "text", maxlength: 40, placeholder: t("Fans_Profile_Name"), "aria-label": t("Fans_Profile_Name") });
+    const saveBtn = h("button", { class: "btn", type: "button", onclick: () => { if (saveName.value.trim()) { act("gpufan.profile.save", { name: saveName.value }); saveName.value = ""; } } }, t("Fans_Profile_Save"));
+    const delBtn = h("button", { class: "btn", type: "button", hidden: true, onclick: () => act("gpufan.profile.delete", { name: last.profile }) }, t("Fans_Profile_Delete"));
+    const label = (n) => n === "auto" ? t("Tuning_FanCurve_Auto") : ["silent", "standard", "performance", "full"].includes(n) ? t(`Fans_Preset_${n}`) : n === "custom" ? t("Fans_Profile_custom") : n;
+    body.append(profileBar, h("div", { class: "rgb-row" }, h("label", { class: "rgb-field grow" }, saveName), saveBtn, delBtn),
+      h("div", { class: "rgb-row" }, h("label", { class: "rgb-field" }, h("span", {}, t("Fans_Source")), source)), editor.svg, h("p", { class: "note" }, t("Fans_Curve_Hint")), liveLine, msg);
+    const num = (v) => (v == null ? "—" : Math.round(v));
+    function render(s) {
+      last = s; banner.hidden = s.supported; banner.textContent = s.supported ? "" : t("Tuning_FanCurve_Unsupported"); body.hidden = !s.supported; if (!s.supported) return;
+      const names = [...s.profiles.builtin, ...s.profiles.custom, ...(s.profile === "custom" ? ["custom"] : [])];
+      const sig = JSON.stringify([names, s.profile]);
+      if (sig !== shown) { shown = sig; profileBar.replaceChildren(...names.map((n) => h("button", { type: "button", "aria-pressed": String(s.profile === n), disabled: n === "custom", onclick: () => act("gpufan.profile", { name: n }) }, label(n)))); }
+      delBtn.hidden = !s.profiles.custom.includes(s.profile);
+      if (!el.querySelector(".fan-curve .pt.hot")) { source.value = s.source; editor.set(s.points, s.min, s.max); }
+      editor.live(s.mode === "curve" ? (s.source === "hot" ? s.hot : s.core) : null);
+      const iso = (v) => `⁦${v}⁩`;   // each figure is its own left-to-right run, so the Persian line around it keeps its order
+      liveLine.textContent = t("Tuning_FanCurve_Live", iso(`${num(s.core)} °C`), iso(`${num(s.hot)} °C`), iso(s.percent == null ? "—" : `${num(s.percent)} %`));
+    }
+    const poll = () => { if (!document.hidden) call("gpufan.state").then((s) => { if (!el.querySelector(".fan-curve .pt.hot")) render(s); }).catch(() => {}); };
+    return { banner, body, start() { poll(); timer = setInterval(poll, 2000); }, stop() { clearInterval(timer); clearTimeout(saveTimer); } };
+  })();
+
   el.append(
     h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Tuning")), h("p", { class: "page-lede" }, t("Tuning_Note")))),
     unavailable,
@@ -214,6 +246,8 @@ export function mount(el) {
               h("span", {}, h("i", { style: { background: "var(--paper)", width: "9px", height: "9px" } }), t("Tuning_Curve_LegendLive"))),
             h("p", { class: "caption", style: { marginTop: "8px", maxWidth: "80ch" } }, t("Tuning_Curve_Hint")), estimate, curveStatus),
           manual) }),
+      box({ kind: "Gpu", ico: "fan", title: t("Tuning_FanCurve_Title"), sub: t("Tuning_FanCurve_Sub"), i: 1, a: "fancurve",
+        body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Tuning_FanCurve_Lede")), fan.banner, fan.body] }),
       box({ kind: "Power", ico: "bolt", title: t("Tuning_Auto"), sub: t("Tuning_Auto_Sub"), i: 2, actions: cancel,
         body: [h("p", { class: "caption", style: { maxWidth: "90ch", marginTop: 0 } }, t("Tuning_Auto_Note")),
           h("div", { class: "auto-pair" },
@@ -309,5 +343,6 @@ export function mount(el) {
   call("tuning.visible", { value: true });
   call("tuning.state").then(update);
   const off = on("tuning", update);
-  return () => { off(); call("tuning.visible", { value: false }); };
+  fan.start();
+  return () => { off(); fan.stop(); call("tuning.visible", { value: false }); };
 }

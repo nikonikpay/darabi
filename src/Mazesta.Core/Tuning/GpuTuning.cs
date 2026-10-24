@@ -69,6 +69,15 @@ public interface IGpuTuningDevice
     void Refresh() { }
 }
 
+/// <summary>A card whose fans can be held at a duty by the program (a curve of temperature against duty is followed by <c>GpuFanController</c>). The duty is the same for all its fans.</summary>
+public interface IGpuFanControl
+{
+    /// <summary>Holds every fan of the card at this duty (a percentage within <see cref="GpuTuningLimits.FanMinPercent"/>..<see cref="GpuTuningLimits.FanMaxPercent"/>). False if the driver refused.</summary>
+    bool SetFan(int percent);
+    /// <summary>Gives the fans back to the card's own control.</summary>
+    bool SetFanAuto();
+}
+
 /// <summary>A card whose driver gives its stock voltage/frequency curve outright, with nothing put under load.</summary>
 public interface IGpuStockCurve
 {

@@ -25,6 +25,7 @@ internal static class SelfTest
             File.WriteAllText(file, "");
             if (kind.StartsWith("tests", StringComparison.Ordinal)) { await RunTests(kind, services, ui, Say); Say("DONE"); return; }
             if (kind == "shield") { await SelfTestShield.RunAsync(Say); Say("DONE"); return; }
+            if (kind == "gpufan") { await GpuFan(Say); Say("DONE"); return; }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
             if (kind == "report")
             {
@@ -57,6 +58,23 @@ internal static class SelfTest
         }
         catch (Exception e) { log.LogError(e, "Self-test {Kind} failed", kind); Say("FAILED: " + e); }
     });
+
+    /// <summary>--selftest=gpufan: holds the card's fans on a flat curve at two duties, then on the ready-made curves, reads what the driver and nvidia-smi (another process) say after each, and gives the fans back.</summary>
+    private static async Task GpuFan(Action<string> say)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(20));   // the sensor scan has found the card by then
+        var f = GpuFanController.Current; string Show() => System.Text.Json.JsonSerializer.Serialize(f.State());
+        string Smi() { using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("nvidia-smi", "--query-gpu=fan.speed,temperature.gpu --format=csv,noheader") { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true })!; var o = p.StandardOutput.ReadToEnd().Trim(); p.WaitForExit(); return o; }
+        async Task Step(string title, Action act, int seconds = 7) { try { act(); } catch (Exception e) { say($"{title}: FAILED {e.Message}"); return; } await Task.Delay(TimeSpan.FromSeconds(seconds)); say($"{title}: nvidia-smi [{Smi()}] | {Show()}"); }
+        say($"before: nvidia-smi [{Smi()}] | {Show()}");
+        await Step("flat curve at 40 %", () => f.Set("curve", "core", [new(20, 40), new(100, 40)]));
+        await Step("flat curve at 65 %", () => f.Set("curve", "core", [new(20, 65), new(100, 65)]));
+        await Step("flat curve at 40 % on the hot spot", () => f.Set("curve", "hot", [new(20, 40), new(100, 40)]));
+        await Step("performance profile", () => f.Apply("performance"));
+        await Step("silent profile (slows 3 % every 2 s)", () => f.Apply("silent"), 25);
+        await Step("saved profile test-night", () => { f.Save("test-night"); f.Apply("full"); f.Apply("test-night"); });
+        await Step("profile test-night deleted, back to automatic", () => { f.Delete("test-night"); f.Reset(); });
+    }
 
     private static Task RayTracedScene(TuningViewModel t) { t.SceneRayTracing = true; return t.SceneTestCommand.ExecuteAsync(null); }
 

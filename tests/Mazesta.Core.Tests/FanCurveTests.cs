@@ -21,6 +21,27 @@ public class FanCurveTests
         Assert.Null(FanCurve.Clean([new(40, 30)]));
         Assert.Null(FanCurve.Clean(Enumerable.Range(0, 9).Select(i => new FanPoint(30 + i * 5, 30 + i))));
     }
+    [Fact] public void The_card_fans_follow_the_curve_inside_what_the_card_takes()
+    {
+        Assert.Equal(40, GpuFanPlan.Duty(Line, "core", 50, null, 30, 100, null));
+        Assert.Equal(30, GpuFanPlan.Duty([new(30, 10), new(60, 20)], "core", 40, null, 30, 100, null));   // below the card's minimum: held at the minimum
+    }
+    [Fact] public void The_card_fans_slow_down_a_few_percent_at_a_time_and_speed_up_at_once()
+    {
+        Assert.Equal(87, GpuFanPlan.Duty(Line, "core", 40, null, 30, 100, 90));   // wants 30, was at 90
+        Assert.Equal(100, GpuFanPlan.Duty(Line, "core", 80, null, 30, 100, 40));
+    }
+    [Fact] public void The_card_fans_go_to_full_at_a_guard_temperature_whatever_the_curve_says()
+    {
+        Assert.Equal(100, GpuFanPlan.Duty([new(30, 30), new(110, 30)], "core", 86, null, 30, 100, null));
+        Assert.Equal(100, GpuFanPlan.Duty([new(30, 30), new(110, 30)], "hot", 50, 101, 30, 100, null));
+        Assert.Equal(100, GpuFanPlan.Duty([new(30, 30), new(110, 30)], "hot", 90, null, 30, 100, null));   // no hot-spot reading, but the core is at its guard
+    }
+    [Fact] public void With_no_temperature_to_go_by_the_card_fans_get_no_duty_and_nothing_is_guessed()
+    {
+        Assert.Null(GpuFanPlan.Duty(Line, "hot", 60, null, 30, 100, 50));
+        Assert.Null(GpuFanPlan.Duty(Line, "core", null, 70, 30, 100, 50));
+    }
     [Fact] public void Every_preset_is_a_valid_curve_and_unknown_names_have_none()
     {
         foreach (var n in new[] { "silent", "standard", "performance", "full" }) Assert.NotNull(FanCurve.Clean(FanCurve.Preset(n)!));

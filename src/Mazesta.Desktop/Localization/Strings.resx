@@ -4036,4 +4036,14 @@ Cancel: stop.</value></data>
   <data name="Log_Scene_Progress" xml:space="preserve"><value>Drawing: {0} FPS right now, {1} s left.</value></data>
   <data name="Log_Scene_Ram" xml:space="preserve"><value>Measuring the RAM speed (the third part of the score).</value></data>
   <data name="Log_Scene_Check" xml:space="preserve"><value>Checking that the frame drawn after the run equals the one drawn before it.</value></data>
+  <data name="Tuning_FanCurve_Title" xml:space="preserve"><value>Graphics card fan curve</value></data>
+  <data name="Tuning_FanCurve_Sub" xml:space="preserve"><value>The fans follow the card's temperature</value></data>
+  <data name="Tuning_FanCurve_Lede" xml:space="preserve"><value>Drag the points to say how fast the fans turn at each temperature; between two points the speed changes in a straight line. The program holds the fans while it runs and gives them back to the card when it closes. At 85 °C on the core or 100 °C at the hot spot the fans go to full speed whatever the curve says. While the curve is on it takes the place of the fixed fan speed set above.</value></data>
+  <data name="Tuning_FanCurve_Auto" xml:space="preserve"><value>Automatic (the card)</value></data>
+  <data name="Tuning_FanCurve_Src_core" xml:space="preserve"><value>Core temperature</value></data>
+  <data name="Tuning_FanCurve_Src_hot" xml:space="preserve"><value>Hot spot temperature</value></data>
+  <data name="Tuning_FanCurve_Live" xml:space="preserve"><value>Core {0} · hot spot {1} · fans {2}</value></data>
+  <data name="Tuning_FanCurve_Unsupported" xml:space="preserve"><value>This card's fans cannot be set by the program: the driver offers no fan control.</value></data>
+  <data name="Help_Tuning_FanCurve_Title" xml:space="preserve"><value>The graphics card's fan on a chart: drag points to say how fast the fans turn at each temperature of the core or the hot spot. Ready-made profiles (silent, standard, performance, full speed) are one click, and your own curve can be saved under a name. The fans return to the card's control when the program closes or when you press Automatic.</value></data>
+  <data name="HelpHow_Tuning_FanCurve_Title" xml:space="preserve"><value>Open Tuning and find the fan chart.|Pick a ready-made profile, or drag the points to set the speed at each temperature.|Save your own curve under a name; press Automatic to give the fans back to the card.</value></data>
 </root>

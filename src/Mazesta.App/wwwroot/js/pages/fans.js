@@ -12,7 +12,7 @@ const s = (tag, attrs = {}, ...kids) => { const e = document.createElementNS(NS,
 const T0 = 20, T1 = 100, MAXPTS = 8;
 
 // The editable curve: points of (temperature, duty) on a grid; drag a point, double-click the line to add one, double-click a point to take it out.
-function curveEditor({ onChange }) {
+export function curveEditor({ onChange }) {
   const svg = s("svg", { class: "curve fan-curve", role: "img" });
   let pts = [], floor = 20, ceil = 100, now = null, drag = -1, readOnly = false;
   const W = () => svg.clientWidth || 640, H = () => 260, L = 40, R = 14, TT = 24, B = 28;

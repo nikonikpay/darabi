@@ -33,7 +33,7 @@ internal sealed class Program : ApplicationContext
     private UsageUploader? _usageUploader; private EventWaitHandle? _activate, _toggle, _move, _layout, _preset, _shown; private RegisteredWaitHandle? _activateWait, _toggleWait, _moveWait, _layoutWait, _presetWait;
     private ServiceProvider? _services;
     private AppPaths? _paths; private AppConfig? _config; private JsonStore<AppConfig>? _store; private bool _configCorrupt; private ILogger? _log;
-    private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans;
+    private MainWindow? _main; private OverlayService? _overlay; private UiDispatcher? _ui; private FanController? _fans; private GpuFanController? _gpuFan;
     /// <summary>The tray starts the app with no window to hold a fan profile (see <see cref="FanController"/>): it ends when no profile is held and no overlay is up.</summary>
     internal const string BackgroundArgument = "--background";
 
@@ -159,6 +159,7 @@ internal sealed class Program : ApplicationContext
             Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log); };
         if (!overlayOnly) _startOnline();
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
+        _gpuFan = GpuFanController.Start(engine, _services.GetRequiredService<Mazesta.Core.Tuning.IGpuTuningProvider>(), paths, log); _gpuFan.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         if (overlayOnly) ShowOverlayWhenReady(); else if (background) { var wait = new System.Windows.Forms.Timer { Interval = 120_000 }; wait.Tick += (_, _) => { wait.Dispose(); ExitWhenNeedless(); }; wait.Start(); }   // the sensors take a while to come up; a request waits for them
         else ShowMain();
         _activate = new EventWaitHandle(false, EventResetMode.AutoReset, ActivateEventName);
@@ -229,7 +230,7 @@ internal sealed class Program : ApplicationContext
     }
 
     /// <summary>With no window the app lives on only while the tray runs and something needs it: the overlay on screen, or fans held by a profile.</summary>
-    private bool KeepAlive() => (_overlay?.IsVisible == true || _fans?.Active == true) && TrayRunning();
+    private bool KeepAlive() => (_overlay?.IsVisible == true || _fans?.Active == true || _gpuFan?.Active == true) && TrayRunning();
     private void ExitWhenNeedless() { if (_main is null && !KeepAlive()) { _log?.LogInformation("Nothing needs the app without its window; ending"); ExitThread(); } }
 
     private void ToggleFromTray()
@@ -266,7 +267,7 @@ internal sealed class Program : ApplicationContext
         _toggleWait?.Unregister(null); _toggle?.Dispose(); _moveWait?.Unregister(null); _move?.Dispose(); _layoutWait?.Unregister(null); _layout?.Dispose(); _presetWait?.Unregister(null); _preset?.Dispose(); _shown?.Dispose();
         if (_config is not null) _store?.Save(_config);   // the overlay's last state, when the app ended from the tray with no window to save it
         _usageUploader?.SendAsync().Wait(TimeSpan.FromSeconds(4)); _usageUploader?.Dispose(); Inbox?.Dispose();   // what is left is sent on the way out, if the site answers quickly
-        _fans?.Dispose(); Recorder?.Dispose();
+        _fans?.Dispose(); _gpuFan?.Dispose(); Recorder?.Dispose();
         if (_services is not null) { _services.GetRequiredService<PollingEngine>().Dispose(); _services.Dispose(); }
         LogProvider?.Dispose();
         if (s_first && !s_released) s_single?.ReleaseMutex();

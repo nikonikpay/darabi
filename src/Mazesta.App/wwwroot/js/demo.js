@@ -290,6 +290,12 @@ const fansState = () => ({ supported: true, error: null, floor: 20, pumpFloor: 6
   channels: FAN_NAMES.map(([name, rpm], i) => { const s = fanSet[`f${i}`] || { mode: "auto", manual: 50, source: "cpu", points: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]] };
     return { id: `f${i}`, name, boardName: name, kind: i === 0 ? "cpu" : "case", wired: true, part: "Nuvoton NCT6798D", percent: s.mode === "manual" ? s.manual : 42 + i * 3, rpm, held: s.mode !== "auto", mode: s.mode, manual: s.manual, source: s.source, points: s.points, min: 20, max: 100 }; }) });
 
+// The graphics card's fan chart, as an RTX 3090 (fans from 30 to 100 %) would answer.
+const gpuFanPresets = { silent: [[30, 20], [50, 25], [65, 40], [75, 65], [85, 100]], standard: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]], performance: [[30, 45], [45, 60], [60, 80], [70, 100]], full: [[20, 100], [100, 100]] };
+let gpuFan = { mode: "auto", source: "core", points: gpuFanPresets.standard }, gpuFanProfile = "auto"; const gpuFanCustom = [];
+const gpuFanState = () => ({ supported: true, error: null, name: "NVIDIA GeForce RTX 3090", min: 30, max: 100, coreGuard: 85, hotGuard: 100, core: 58, hot: 71, percent: gpuFan.mode === "curve" ? 55 : 30, held: gpuFan.mode === "curve" ? 55 : null,
+  mode: gpuFan.mode, source: gpuFan.source, profile: gpuFanProfile, points: gpuFan.points, profiles: { builtin: ["auto", "silent", "standard", "performance", "full"], custom: gpuFanCustom }, presets: gpuFanPresets });
+
 const msgs = [{ id: 2, title: "تخفیف ویژهٔ کارت‌های گرافیک", body: "این هفته روی کارت‌های سری RTX 40 تخفیف ویژه داریم. برای دیدن فهرست روی دکمه بزنید.", link: "https://www.dfmrendering.com/shop/", at: "2026-10-10T08:30:00Z", read: false },
   { id: 1, title: "به‌روزرسانی درایور", body: "درایور تازهٔ کارت گرافیک منتشر شد؛ از بخش درایورها بررسی کنید.", link: null, at: "2026-10-05T10:00:00Z", read: true }];
 export async function call(m, p, emit) {
@@ -412,6 +418,12 @@ export async function call(m, p, emit) {
     case "fans.profile.delete": fanCustom.splice(fanCustom.indexOf(p.name), 1); fanProfile = "custom"; return fansState();
     case "fans.label": return fansState();
     case "fans.identify": await new Promise((r) => setTimeout(r, 1200)); return { id: p.id, answer: "fan", start: 700, peak: 1500, duty: 40, suggest: null };
+    case "gpufan.state": return gpuFanState();
+    case "gpufan.set": gpuFan = { ...gpuFan, mode: p.mode, ...(p.source ? { source: p.source } : {}), ...(p.points ? { points: p.points } : {}) }; gpuFanProfile = "custom"; return gpuFanState();
+    case "gpufan.reset": gpuFan = { ...gpuFan, mode: "auto" }; gpuFanProfile = "auto"; return gpuFanState();
+    case "gpufan.profile": gpuFanProfile = p.name; gpuFan = { ...gpuFan, mode: p.name === "auto" ? "auto" : "curve", ...(gpuFanPresets[p.name] ? { points: gpuFanPresets[p.name] } : {}) }; return gpuFanState();
+    case "gpufan.profile.save": gpuFanCustom.push(p.name); gpuFanProfile = p.name; return gpuFanState();
+    case "gpufan.profile.delete": gpuFanCustom.splice(gpuFanCustom.indexOf(p.name), 1); gpuFanProfile = "custom"; return gpuFanState();
     case "tuning.state": return tuning();
     case "tuning.set": if (p.field === "curve") { form.core = p.core; form.coreValue = +p.core; form.capValue = +p.cap; form.maxClock = p.cap; } return null;
     case "reports.state": return reports();

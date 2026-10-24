@@ -78,6 +78,7 @@ public static class AppGuide
         T("tuning", "autoundervolt", "Tuning_AutoUndervolt", "finds the lowest stable voltage by itself (10 to 25 minutes)", "Assist_Hint_Tuning"),
         T("tuning", "autooverclock", "Tuning_AutoOverclock", "raises the clocks step by step while the card stays correct (10 to 25 minutes)", "Assist_Hint_Tuning"),
         T("tuning", "curve", "Tuning_Curve_Title", "measures and shows the card's voltage-frequency curve", null),
+        T("tuning", "fancurve", "Tuning_FanCurve_Title", "the graphics card's fan speed against temperature on a chart you drag, with ready-made and saved profiles", null),
         T("tuning", "profiles", "Tuning_Profiles", "saved clock profiles of this card", null),
         T("tuning", "memory", "Tuning_Memory", "RAM XMP / DOCP / EXPO (set in the BIOS; a button restarts into it)", null),
         T("tuning", "fan", "Tuning_Fan", "the graphics card's fan speed", null),

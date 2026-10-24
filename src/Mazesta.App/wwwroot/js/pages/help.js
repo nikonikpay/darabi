@@ -15,7 +15,7 @@ const TOPICS = [
   ["tests", null, "Nav_Tests"], ["benchmarks", null, "Nav_Benchmarks"], ["checkup", null, "Nav_Checkup"], ["checks", null, "Nav_Checks"],
   ["apps", null, "Nav_Apps"], ["ai", null, "Nav_Ai"],
   ["play", "power", "Gaming_PowerPlan"], ["play", "gamemode", "Gaming_GameMode"], ["play", "gameboost", "GameBoost_Title"], ["games", null, "Nav_Games"], ["overlay", null, "Nav_Overlay"],
-  ["tuning", null, "Nav_Tuning"], ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"],
+  ["tuning", null, "Nav_Tuning"], ["tuning", "curve", "Tuning_Curve_Title"], ["tuning", "fancurve", "Tuning_FanCurve_Title"], ["tuning", "profiles", "Tuning_Profiles"], ["tuning", "rules", "Tuning_Rules_Title"],
   ["tuning", "scene", "Tuning_SceneTest_Title"], ["tuning", "memory", "Tuning_Memory"],
   ["lights", null, "Nav_Lights"], ["fans", null, "Nav_Fans"],
   ["tools", "dns", "Dns_Title"], ["tools", "netfix", "NetFix_Title"], ["tools", "crashes", "Bsod_Title"], ["tools", "repair", "Tools_Repair"], ["tools", "cleanup", "Tools_Windows"],

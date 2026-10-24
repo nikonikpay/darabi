@@ -30,7 +30,7 @@ public sealed class NvmlTuningProvider(ILogger log) : IGpuTuningProvider
 /// restrictive offset across states, so an offset set on P0 alone could be silently overruled by another state's. All settings need
 /// administrator rights (the app runs elevated) and are dropped by the driver on a reboot or driver reset.
 /// </summary>
-internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
+internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve, IGpuFanControl
 {
     public IReadOnlyList<VfPoint>? ReadStockCurve() => NvApiCurve.ReadStock(Name);
     private IntPtr _h; private readonly uint _index; private readonly int[] _pstates;
@@ -124,6 +124,9 @@ internal sealed class NvmlTuningDevice : IGpuTuningDevice, IGpuStockCurve
             }
         return new(steps);
     }
+
+    public bool SetFan(int percent) => Limits.HasFanControl && Enumerable.Range(0, Limits.FanCount).All(f => Nvml.Call(() => Nvml.nvmlDeviceSetFanSpeed_v2(_h, (uint)f, (uint)Math.Clamp(percent, Limits.FanMinPercent!.Value, Limits.FanMaxPercent!.Value))) == Nvml.Success);
+    public bool SetFanAuto() => Limits.FanCount > 0 && Enumerable.Range(0, Limits.FanCount).All(f => Nvml.Call(() => Nvml.nvmlDeviceSetDefaultFanSpeed_v2(_h, (uint)f)) == Nvml.Success);
 
     private int SetOffset(int type, int mhz)
     {

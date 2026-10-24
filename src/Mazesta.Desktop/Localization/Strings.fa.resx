@@ -4036,4 +4036,14 @@
   <data name="Log_Scene_Progress" xml:space="preserve"><value>در حال رسم: الان {0} فریم در ثانیه، {1} ثانیه مانده.</value></data>
   <data name="Log_Scene_Ram" xml:space="preserve"><value>اندازه‌گیری سرعت رم (بخش سوم امتیاز).</value></data>
   <data name="Log_Scene_Check" xml:space="preserve"><value>بررسی اینکه فریم بعد از اجرا با فریم پیش از آن یکی است.</value></data>
+  <data name="Tuning_FanCurve_Title" xml:space="preserve"><value>نمودار فن گرافیک</value></data>
+  <data name="Tuning_FanCurve_Sub" xml:space="preserve"><value>دور فن با دمای کارت تغییر می‌کند</value></data>
+  <data name="Tuning_FanCurve_Lede" xml:space="preserve"><value>نقطه‌ها را بکشید تا مشخص شود در هر دما فن با چه سرعتی بچرخد؛ بین دو نقطه سرعت به‌صورت خط مستقیم تغییر می‌کند. تا وقتی برنامه باز است فن‌ها را نگه می‌دارد و هنگام بسته شدن به کارت برمی‌گرداند. در ۸۵ درجه روی هسته یا ۱۰۰ درجه روی نقطهٔ داغ، فن‌ها هر چه نمودار بگوید روی دور کامل می‌روند. تا وقتی نمودار روشن است، جای سرعت ثابت فن در بالا را می‌گیرد.</value></data>
+  <data name="Tuning_FanCurve_Auto" xml:space="preserve"><value>خودکار (خود کارت)</value></data>
+  <data name="Tuning_FanCurve_Src_core" xml:space="preserve"><value>دمای هسته</value></data>
+  <data name="Tuning_FanCurve_Src_hot" xml:space="preserve"><value>دمای نقطهٔ داغ</value></data>
+  <data name="Tuning_FanCurve_Live" xml:space="preserve"><value>هسته {0} · نقطهٔ داغ {1} · فن {2}</value></data>
+  <data name="Tuning_FanCurve_Unsupported" xml:space="preserve"><value>فن‌های این کارت را برنامه نمی‌تواند تنظیم کند: درایور کنترل فن نمی‌دهد.</value></data>
+  <data name="Help_Tuning_FanCurve_Title" xml:space="preserve"><value>فن کارت گرافیک روی نمودار: نقطه‌ها را بکشید تا در هر دمای هسته یا نقطهٔ داغ فن با چه سرعتی بچرخد. پروفایل‌های آماده (بی‌صدا، استاندارد، کارایی، دور کامل) یک کلیک‌اند و نمودار خودتان را می‌توانید با یک نام ذخیره کنید. با بسته شدن برنامه یا زدن «خودکار» فن‌ها به کنترل خود کارت برمی‌گردند.</value></data>
+  <data name="HelpHow_Tuning_FanCurve_Title" xml:space="preserve"><value>تنظیم کارت را باز کنید و نمودار فن را پیدا کنید.|یک پروفایل آماده انتخاب کنید یا نقطه‌ها را بکشید تا سرعت در هر دما مشخص شود.|نمودار خودتان را با یک نام ذخیره کنید؛ با «خودکار» فن‌ها به کارت برمی‌گردند.</value></data>
 </root>

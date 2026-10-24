@@ -63,6 +63,7 @@ public static class Bootstrapper
         string? recovered = ViewModels.TuningViewModel.Recover(tuningStore, tuning);
         if (recovered is not null) lf.CreateLogger("Tuning").LogWarning("Interrupted automatic GPU tuning found at start-up: {Message}", recovered);
         s.AddSingleton(new ViewModels.TuningRecovery(recovered));
+        s.AddSingleton<Mazesta.Core.Tuning.IGpuTuningProvider>(tuning);   // the graphics card's fan curve (GpuFanController) drives the same devices
         s.AddSingleton(sp => new ViewModels.TuningViewModel(tuning, tuningStore, sp.GetRequiredService<InventoryCache>(),
             text => Ask(text, Localization.Loc.Get("Nav_Tuning"), System.Windows.Forms.MessageBoxIcon.Warning),
             () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("shutdown.exe", "/r /fw /t 0") { UseShellExecute = false, CreateNoWindow = true }),
