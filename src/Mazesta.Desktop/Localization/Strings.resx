@@ -690,6 +690,11 @@
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>NVIDIA's public interface does not set a voltage directly. An undervolt is a positive core offset together with a clock cap: the offset lifts the voltage/frequency curve, the cap keeps the clock where it was, so the card reaches that clock at a lower voltage. An overclock is a higher cap (or no cap) with an offset.</value></data>
   <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>Core clock offset</value></data>
   <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>Memory clock offset</value></data>
+  <data name="Tuning_Label_Voltage" xml:space="preserve"><value>Voltage offset (undervolt)</value></data>
+  <data name="Tuning_Range_Voltage" xml:space="preserve"><value>voltage offset {0}</value></data>
+  <data name="Tuning_Sum_Voltage" xml:space="preserve"><value>voltage {0}</value></data>
+  <data name="Tuning_Bad_Voltage" xml:space="preserve"><value>Voltage offset must be within {0}.</value></data>
+  <data name="Tuning_Voltage" xml:space="preserve"><value>Voltage offset</value></data>
   <data name="Tuning_Label_MaxClock" xml:space="preserve"><value>Core clock cap</value></data>
   <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>Power limit</value></data>
   <data name="Tuning_Label_Fan" xml:space="preserve"><value>Fixed fan speed</value></data>
@@ -769,7 +774,7 @@
   <data name="Tuning_Fan" xml:space="preserve"><value>Fan</value></data>
   <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>No NVIDIA graphics card with its driver was found. Graphics card tuning works on NVIDIA cards only.</value></data>
   <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>NVIDIA's management library could not be opened</value></data>
-  <data name="Tuning_Unavailable_Amd" xml:space="preserve"><value>AMD graphics card found, with the AMD Adrenalin driver. Tuning of AMD cards is not built into this version yet, so no settings are offered; nothing is changed on the card. Use Adrenalin's own Performance tab for now.</value></data>
+  <data name="Tuning_Unavailable_Amd" xml:space="preserve"><value>AMD graphics card found, with the AMD Adrenalin driver, but its driver offers no manual tuning through ADLX here, so no settings are offered; nothing is changed on the card. Use Adrenalin's own Performance tab.</value></data>
   <data name="Tuning_Unavailable_AmdNoDriver" xml:space="preserve"><value>AMD graphics card found, but the AMD Adrenalin driver is not installed (Windows is using its own display driver). Install the Adrenalin driver from amd.com; tuning of AMD cards is not built into this version yet.</value></data>
   <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>The card already made errors at stock settings. It was not tuned – run the GPU tests first.</value></data>
   <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>The driver does not report this card's clock or power, so a result could not be measured.</value></data>

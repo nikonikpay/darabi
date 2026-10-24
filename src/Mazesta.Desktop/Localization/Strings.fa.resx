@@ -690,6 +690,11 @@
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>رابط عمومی NVIDIA ولتاژ را مستقیم تنظیم نمی‌کند. آندرولت یعنی آفست مثبت هسته به‌همراه سقف فرکانس: آفست منحنی ولتاژ/فرکانس را بالا می‌برد و سقف، فرکانس را همان‌جا نگه می‌دارد؛ پس کارت همان فرکانس را با ولتاژ کمتر می‌گیرد. اورکلاک یعنی سقف بالاتر (یا بدون سقف) همراه با آفست.</value></data>
   <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>آفست فرکانس هسته</value></data>
   <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>آفست فرکانس حافظه</value></data>
+  <data name="Tuning_Label_Voltage" xml:space="preserve"><value>آفست ولتاژ (آندروولت)</value></data>
+  <data name="Tuning_Range_Voltage" xml:space="preserve"><value>آفست ولتاژ {0}</value></data>
+  <data name="Tuning_Sum_Voltage" xml:space="preserve"><value>ولتاژ {0}</value></data>
+  <data name="Tuning_Bad_Voltage" xml:space="preserve"><value>آفست ولتاژ باید در بازهٔ {0} باشد.</value></data>
+  <data name="Tuning_Voltage" xml:space="preserve"><value>آفست ولتاژ</value></data>
   <data name="Tuning_Label_MaxClock" xml:space="preserve"><value>سقف فرکانس هسته</value></data>
   <data name="Tuning_Label_PowerLimit" xml:space="preserve"><value>محدودیت توان</value></data>
   <data name="Tuning_Label_Fan" xml:space="preserve"><value>سرعت ثابت فن</value></data>
@@ -769,7 +774,7 @@
   <data name="Tuning_Fan" xml:space="preserve"><value>فن</value></data>
   <data name="Tuning_Unavailable_NoNvidia" xml:space="preserve"><value>کارت گرافیک NVIDIA با درایور آن پیدا نشد. تنظیم کارت گرافیک فقط روی کارت‌های NVIDIA کار می‌کند.</value></data>
   <data name="Tuning_Unavailable_Nvml" xml:space="preserve"><value>کتابخانهٔ مدیریتی NVIDIA باز نشد</value></data>
-  <data name="Tuning_Unavailable_Amd" xml:space="preserve"><value>کارت گرافیک AMD با درایور AMD Adrenalin پیدا شد. تنظیم کارت‌های AMD هنوز در این نسخه ساخته نشده، پس تنظیمی نشان داده نمی‌شود و چیزی روی کارت تغییر نمی‌کند. فعلاً از تب Performance خود Adrenalin استفاده کنید.</value></data>
+  <data name="Tuning_Unavailable_Amd" xml:space="preserve"><value>کارت گرافیک AMD با درایور AMD Adrenalin پیدا شد. اما درایور آن از راه ADLX تنظیم دستی را اینجا نمی‌دهد، پس تنظیمی نشان داده نمی‌شود و چیزی روی کارت تغییر نمی‌کند. از تب Performance خود Adrenalin استفاده کنید.</value></data>
   <data name="Tuning_Unavailable_AmdNoDriver" xml:space="preserve"><value>کارت گرافیک AMD پیدا شد، اما درایور AMD Adrenalin نصب نیست (ویندوز از درایور نمایشگر خودش استفاده می‌کند). درایور Adrenalin را از amd.com نصب کنید؛ تنظیم کارت‌های AMD هنوز در این نسخه ساخته نشده.</value></data>
   <data name="Tuning_Out_StockUnstable" xml:space="preserve"><value>کارت در همان حالت کارخانه خطا داد. تنظیم انجام نشد – ابتدا تست‌های کارت گرافیک را اجرا کنید.</value></data>
   <data name="Tuning_Out_NoTelemetry" xml:space="preserve"><value>درایور فرکانس یا توان این کارت را گزارش نمی‌کند، پس نتیجه قابل اندازه‌گیری نبود.</value></data>

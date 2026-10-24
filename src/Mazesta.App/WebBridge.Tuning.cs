@@ -18,12 +18,12 @@ public sealed partial class WebBridge
             liveClock = double.IsNaN(t.LiveClockMHz) ? (double?)null : t.LiveClockMHz, liveVolt = double.IsNaN(t.LiveVoltageV) ? (double?)null : t.LiveVoltageV,
             form = new
             {
-                core = t.CoreOffset, memory = t.MemoryOffset, lockClock = t.LockClock, maxClock = t.MaxClock, setPower = t.SetPower, power = t.PowerLimit,
+                core = t.CoreOffset, memory = t.MemoryOffset, voltage = t.VoltageOffset, lockClock = t.LockClock, maxClock = t.MaxClock, setPower = t.SetPower, power = t.PowerLimit,
                 manualFan = t.ManualFan, fan = t.FanPercent, profileName = t.ProfileName, coreValue = t.CoreOffsetValue, capValue = t.CapValue,
             },
             limits = new
             {
-                hasCore = t.HasCore, hasMemory = t.HasMemory, hasPower = t.HasPower, hasFan = t.HasFan, coreMin = t.CoreMin, coreMax = t.CoreMax, memoryMin = t.MemoryMin,
+                hasVoltage = t.HasVoltage, voltMin = t.VoltageMin, hasCore = t.HasCore, hasMemory = t.HasMemory, hasPower = t.HasPower, hasFan = t.HasFan, coreMin = t.CoreMin, coreMax = t.CoreMax, memoryMin = t.MemoryMin,
                 memoryMax = t.MemoryMax, powerMin = t.PowerMin, powerMax = t.PowerMax, fanMin = t.FanMin, fanMax = t.FanMax, clockMax = t.ClockMax, clockMin = GpuTuningLimits.MinLockMHz,
             },
             curve = t.Curve?.Select(p => new { clock = p.ClockMHz, volt = p.VoltageV }), curveInfo = t.CurveInfo, curveEstimate = t.CurveEstimate, curveStatus = t.CurveStatus,
@@ -62,6 +62,7 @@ public sealed partial class WebBridge
                 case "device": if (Int() is int i && i >= 0 && i < t.Devices.Count) t.Device = t.Devices[i]; break;
                 case "core": t.CoreOffset = v; break;
                 case "memory": t.MemoryOffset = v; break;
+                case "voltage": t.VoltageOffset = v; break;
                 case "lockClock": t.LockClock = Bool(p, "value"); break;
                 case "maxClock": t.MaxClock = v; break;
                 case "setPower": t.SetPower = Bool(p, "value"); break;

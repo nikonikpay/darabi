@@ -6,7 +6,7 @@ namespace Mazesta.Core.Tuning;
 /// <see cref="CoreOffsetMHz"/> it is how an undervolt is expressed through NVIDIA's public interface - the offset shifts the whole
 /// voltage/frequency curve up, the cap keeps the clock where it was, so the card reaches that clock at a lower voltage.
 /// </summary>
-public sealed record GpuTuningSettings(int CoreOffsetMHz, int MemoryOffsetMHz, int? MaxClockMHz, int? PowerLimitW, int? FanPercent)
+public sealed record GpuTuningSettings(int CoreOffsetMHz, int MemoryOffsetMHz, int? MaxClockMHz, int? PowerLimitW, int? FanPercent, int VoltageOffsetMv = 0)
 {
     public static readonly GpuTuningSettings Stock = new(0, 0, null, null, null);
     public bool IsStock => this == Stock;
@@ -14,8 +14,10 @@ public sealed record GpuTuningSettings(int CoreOffsetMHz, int MemoryOffsetMHz, i
 
 /// <summary>The ranges the driver reports for this card. Null means the driver did not report it, and that control is not offered.</summary>
 public sealed record GpuTuningLimits(int CoreOffsetMin, int CoreOffsetMax, int MemoryOffsetMin, int MemoryOffsetMax, int? MaxClockMHz,
-    int? PowerLimitMinW, int? PowerLimitMaxW, int? PowerLimitDefaultW, int FanCount, int? FanMinPercent, int? FanMaxPercent)
+    int? PowerLimitMinW, int? PowerLimitMaxW, int? PowerLimitDefaultW, int FanCount, int? FanMinPercent, int? FanMaxPercent, int VoltageOffsetMin = 0)
 {
+    /// <summary>A card whose driver takes a voltage offset (AMD, in millivolts, never above 0): an undervolt is made with it directly, not through the clock offset and a cap.</summary>
+    public bool HasVoltage => VoltageOffsetMin < 0;
     public bool HasCoreOffset => CoreOffsetMax > CoreOffsetMin;
     public bool HasMemoryOffset => MemoryOffsetMax > MemoryOffsetMin;
     public bool HasPowerLimit => PowerLimitMinW is not null && PowerLimitMaxW is not null && PowerLimitMaxW > PowerLimitMinW;
@@ -28,6 +30,7 @@ public sealed record GpuTuningLimits(int CoreOffsetMin, int CoreOffsetMax, int M
         var problems = new List<(string, string)>();
         if (s.CoreOffsetMHz != 0 && (!HasCoreOffset || s.CoreOffsetMHz < CoreOffsetMin || s.CoreOffsetMHz > CoreOffsetMax)) problems.Add(("Tuning_Bad_CoreOffset", $"{CoreOffsetMin}..{CoreOffsetMax}"));
         if (s.MemoryOffsetMHz != 0 && (!HasMemoryOffset || s.MemoryOffsetMHz < MemoryOffsetMin || s.MemoryOffsetMHz > MemoryOffsetMax)) problems.Add(("Tuning_Bad_MemoryOffset", $"{MemoryOffsetMin}..{MemoryOffsetMax}"));
+        if (s.VoltageOffsetMv != 0 && (!HasVoltage || s.VoltageOffsetMv < VoltageOffsetMin || s.VoltageOffsetMv > 0)) problems.Add(("Tuning_Bad_Voltage", $"{VoltageOffsetMin}..0"));
         if (s.MaxClockMHz is { } clock && (clock < MinLockMHz || clock > MaxLockMHz)) problems.Add(("Tuning_Bad_MaxClock", $"{MinLockMHz}..{MaxLockMHz}"));
         if (s.PowerLimitW is { } w && (!HasPowerLimit || w < PowerLimitMinW || w > PowerLimitMaxW)) problems.Add(("Tuning_Bad_PowerLimit", $"{PowerLimitMinW}..{PowerLimitMaxW}"));
         if (s.FanPercent is { } f && (!HasFanControl || f < FanMinPercent || f > FanMaxPercent)) problems.Add(("Tuning_Bad_Fan", $"{FanMinPercent}..{FanMaxPercent}"));

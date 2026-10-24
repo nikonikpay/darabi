@@ -59,7 +59,7 @@ public static class Bootstrapper
         AddViewModelFactory(s, sp => new ViewModels.GamingViewModel(sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), open, Mazesta.Diagnostics.Windows.GamingStatus.Read()));
         // Opened before the container so a search that never came back (see TuningViewModel.Recover) is undone at start-up, not when the page is first visited.
         var tuningStore = new JsonStore<GpuProfileDocument>(Path.Combine(paths.ConfigDir, "gpu-profiles.json"), new SchemaMigrator([]), GpuProfileDocument.CurrentSchemaVersion, lf.CreateLogger("Tuning"));
-        var tuning = new Mazesta.Hardware.Amd.CombinedTuningProvider(new Mazesta.Hardware.Nvidia.NvmlTuningProvider(lf.CreateLogger("Tuning")), new Mazesta.Hardware.Amd.AmdTuningProvider(new Mazesta.Hardware.Wmi.WmiQuery()));
+        var tuning = new Mazesta.Hardware.Amd.CombinedTuningProvider(new Mazesta.Hardware.Nvidia.NvmlTuningProvider(lf.CreateLogger("Tuning")), new Mazesta.Hardware.Amd.AmdTuningProvider(new Mazesta.Hardware.Wmi.WmiQuery(), log: lf.CreateLogger("Tuning")));
         string? recovered = ViewModels.TuningViewModel.Recover(tuningStore, tuning);
         if (recovered is not null) lf.CreateLogger("Tuning").LogWarning("Interrupted automatic GPU tuning found at start-up: {Message}", recovered);
         s.AddSingleton(new ViewModels.TuningRecovery(recovered));

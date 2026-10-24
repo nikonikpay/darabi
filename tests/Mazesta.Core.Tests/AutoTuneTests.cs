@@ -40,6 +40,18 @@ public class AutoTuneTests
         Assert.True(outcome.Tuned!.AveragePowerW < outcome.Baseline!.AveragePowerW);
     }
 
+    [Fact] public void A_card_with_a_voltage_offset_is_undervolted_by_it_at_its_own_clock_and_backed_off_a_step()
+    {
+        var radeon = new GpuTuningLimits(-500, 1000, 0, 482, null, null, null, null, 0, null, null, -200);
+        Assert.True(radeon.HasVoltage); Assert.Empty(radeon.Check(new(0, 0, null, null, null, -90))); Assert.Single(radeon.Check(new(0, 0, null, null, null, -300)));
+        Assert.Single(Limits.Check(new(0, 0, null, null, null, -10)));   // a card without one refuses it
+        var (outcome, steps) = Drive(new UndervoltSearch(radeon, Options), step => step.Kind == TuneStepKind.Baseline ? M(2900, 150)
+            : M(2900, 150 + 0.4 * step.Settings.VoltageOffsetMv, 70, errors: step.Settings.VoltageOffsetMv < -80 ? 2 : 0));
+        Assert.Equal(AutoTuneVerdict.Improved, outcome.Verdict);
+        Assert.Equal(new GpuTuningSettings(0, 0, null, null, null, -70), outcome.Settings);   // last stable -80 mV, minus the 10 mV margin
+        Assert.All(steps, s => Assert.True(s.Settings.CoreOffsetMHz == 0 && s.Settings.MaxClockMHz is null && s.Settings.VoltageOffsetMv >= -Options.MaxVoltageOffsetMv));
+    }
+
     [Fact] public void Undervolt_never_tries_past_the_search_ceiling()
     {
         var (outcome, steps) = Drive(new UndervoltSearch(Limits, Options), Undervoltable(stableTo: 5000));

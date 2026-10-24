@@ -156,7 +156,7 @@ export function mount(el) {
   const manual = h("div", { class: "manual" },
     h("h3", { class: "h3", style: { fontSize: "17px", fontWeight: 900 } }, t("Tuning_Manual")),
     h("p", { class: "caption" }, t("Tuning_Manual_Note")),
-    slider("core", "Tuning_Label_CoreOffset", "MHz", null, 15), slider("memory", "Tuning_Label_MemoryOffset", "MHz", null, 50),
+    slider("core", "Tuning_Label_CoreOffset", "MHz", null, 15), slider("memory", "Tuning_Label_MemoryOffset", "MHz", null, 50), slider("voltage", "Tuning_Label_Voltage", "mV", null, 5),
     slider("maxClock", "Tuning_Label_MaxClock", "MHz", "lockClock", 15), slider("power", "Tuning_Label_PowerLimit", "W", "setPower"), slider("fan", "Tuning_Label_Fan", "%", "manualFan"),
     h("div", { class: "toolbar", style: { marginTop: "18px" } },
       h("button", { class: "btn primary", id: "tApply", onclick: () => exec("apply") }, t("Tuning_Apply")), h("button", { class: "btn stop", id: "tReset", onclick: () => exec("reset") }, t("Tuning_Reset"))),
@@ -279,7 +279,7 @@ export function mount(el) {
     live.replaceChildren(...x.live.map((tile) => h("div", {}, h("div", { class: "caption" }, tile.label),
       h("div", { class: `v ${tile.value === t("Value_NotAvailable") ? "missing" : ""}` }, tile.value))));
     const L = x.limits, form = x.form;
-    const conf = { core: [L.coreMin, L.coreMax, form.core, L.hasCore], memory: [L.memoryMin, L.memoryMax, form.memory, L.hasMemory],
+    const conf = { core: [L.coreMin, L.coreMax, form.core, L.hasCore], memory: [L.memoryMin, L.memoryMax, form.memory, L.hasMemory], voltage: [L.voltMin, 0, form.voltage, L.hasVoltage],
       maxClock: [L.clockMin, L.clockMax, form.maxClock, true], power: [L.powerMin, L.powerMax, form.power, L.hasPower], fan: [L.fanMin, L.fanMax, form.fan, L.hasFan] };
     for (const [k, [min, max, v, has]] of Object.entries(conf)) {
       const c = f[k]; c.range.min = min; c.range.max = max;
@@ -287,13 +287,14 @@ export function mount(el) {
       const on = c.sw ? form[c.sw] : true;
       if (c.toggle) { c.toggle.checked = on; c.toggle.disabled = !has; }
       c.range.disabled = c.box.disabled = !has || !on || x.busy;
+      if (k === "voltage") c.range.closest(".slider-row").hidden = !has;   // only a card with a voltage offset has the control
     }
     setField(f.profileName, form.profileName);
     el.querySelector("#tStatus").textContent = x.status || "";
     el.querySelector("#tApply").disabled = el.querySelector("#tReset").disabled = x.busy;
     editor.set({ stock: x.curve, offset: form.coreValue, cap: form.capValue, liveClock: x.liveClock, liveVolt: x.liveVolt, limits: L, locked: x.busy });
     // The chart draws the core's curve only; what a profile sets besides it (memory, power) is said beside it, so a profile that moves only those is not mistaken for stock.
-    const extra = [form.memory ? `${t("Tuning_Label_MemoryOffset")} ${form.memory > 0 ? "+" : ""}${form.memory} MHz` : null, form.setPower ? `${t("Tuning_Label_PowerLimit")} ${form.power} W` : null].filter(Boolean).join(" · ");
+    const extra = [Number(form.voltage) ? `${t("Tuning_Label_Voltage")} ${form.voltage} mV` : null, form.memory ? `${t("Tuning_Label_MemoryOffset")} ${form.memory > 0 ? "+" : ""}${form.memory} MHz` : null, form.setPower ? `${t("Tuning_Label_PowerLimit")} ${form.power} W` : null].filter(Boolean).join(" · ");
     curveInfo.textContent = [x.curveInfo, extra].filter(Boolean).join("\n"); estimate.hidden = !x.curveEstimate; estimate.textContent = x.curveEstimate || ""; curveStatus.textContent = x.curveStatus || "";
     scan.disabled = autoU.disabled = autoO.disabled = autoP.disabled = x.busy;   // (Overclock Plus too: a second search started mid-run would fight the first over the card) cancel.disabled = !x.busy;
     running.hidden = !x.busy;

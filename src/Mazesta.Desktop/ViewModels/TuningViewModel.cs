@@ -73,6 +73,8 @@ public sealed partial class TuningViewModel : ObservableObject
     // the numeric properties below, so every way of setting a value ends in the same field and the same range check.
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CoreOffsetValue), nameof(CurveEstimate))] private string _coreOffset = "0";
     [ObservableProperty, NotifyPropertyChangedFor(nameof(MemoryOffsetValue))] private string _memoryOffset = "0";
+    /// <summary>Millivolts below stock; only a card whose driver has a voltage offset (AMD) offers it.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(VoltageValue))] private string _voltageOffset = "0";
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CapValue), nameof(CurveEstimate))] private bool _lockClock;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(CapValue), nameof(MaxClockValue), nameof(CurveEstimate))] private string _maxClock = "";
     [ObservableProperty] private bool _setPower;
@@ -83,6 +85,7 @@ public sealed partial class TuningViewModel : ObservableObject
 
     public int CoreOffsetValue { get => Int(CoreOffset) ?? 0; set => CoreOffset = Num(value); }
     public int MemoryOffsetValue { get => Int(MemoryOffset) ?? 0; set => MemoryOffset = Num(value); }
+    public int VoltageValue { get => Int(VoltageOffset) ?? 0; set => VoltageOffset = Num(value); }
     public int MaxClockValue { get => Int(MaxClock) ?? ClockMax; set => MaxClock = Num(value); }
     public int PowerLimitValue { get => Int(PowerLimit) ?? PowerMax; set => PowerLimit = Num(value); }
     public int FanValue { get => Int(FanPercent) ?? 60; set => FanPercent = Num(value); }
@@ -95,6 +98,7 @@ public sealed partial class TuningViewModel : ObservableObject
 
     private GpuTuningLimits? L => Device?.Limits;
     public bool HasCore => L?.HasCoreOffset == true; public bool HasMemory => L?.HasMemoryOffset == true; public bool HasPower => L?.HasPowerLimit == true; public bool HasFan => L?.HasFanControl == true;
+    public bool HasVoltage => L?.HasVoltage == true; public int VoltageMin => L?.VoltageOffsetMin ?? 0;
     public int CoreMin => L?.CoreOffsetMin ?? 0; public int CoreMax => L?.CoreOffsetMax ?? 0;
     public int MemoryMin => L?.MemoryOffsetMin ?? 0; public int MemoryMax => L?.MemoryOffsetMax ?? 0;
     public int PowerMin => L?.PowerLimitMinW ?? 0; public int PowerMax => L?.PowerLimitMaxW ?? 0;
@@ -211,7 +215,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (value is null) return;
         _voltage = _voltageFor(value.Name); _hotSpot = _hotSpotFor(value.Name);
         var now = value.ReadCurrent(); var l = value.Limits;
-        CoreOffset = Num(now.CoreOffsetMHz); MemoryOffset = Num(now.MemoryOffsetMHz);
+        CoreOffset = Num(now.CoreOffsetMHz); MemoryOffset = Num(now.MemoryOffsetMHz); VoltageOffset = Num(now.VoltageOffsetMv);
         LockClock = now.MaxClockMHz is not null; MaxClock = (now.MaxClockMHz ?? l.MaxClockMHz) is { } m ? Num(m) : "";
         SetPower = now.PowerLimitW is not null; PowerLimit = Num(now.PowerLimitW ?? l.PowerLimitDefaultW ?? 0);
         ManualFan = now.FanPercent is not null; FanPercent = Num(now.FanPercent ?? 60);
@@ -240,6 +244,7 @@ public sealed partial class TuningViewModel : ObservableObject
     {
         l.HasCoreOffset ? Loc.Format("Tuning_Range_Core", Ltr($"{l.CoreOffsetMin}..{l.CoreOffsetMax} MHz")) : Loc.Get("Tuning_Range_NoCore"),
         l.HasMemoryOffset ? Loc.Format("Tuning_Range_Memory", Ltr($"{l.MemoryOffsetMin}..{l.MemoryOffsetMax} MHz")) : Loc.Get("Tuning_Range_NoMemory"),
+        l.HasVoltage ? Loc.Format("Tuning_Range_Voltage", Ltr($"{l.VoltageOffsetMin}..0 mV")) : "",
         l.HasPowerLimit ? Loc.Format("Tuning_Range_Power", Ltr($"{l.PowerLimitMinW}..{l.PowerLimitMaxW} W"), Ltr(l.PowerLimitDefaultW is { } dw ? $"{dw} W" : "?")) : Loc.Get("Tuning_Range_NoPower"),
         l.HasFanControl ? Loc.Format("Tuning_Range_Fan", l.FanCount, Ltr($"{l.FanMinPercent}..{l.FanMaxPercent} %")) : Loc.Get("Tuning_Range_NoFan"),
     });
@@ -260,20 +265,21 @@ public sealed partial class TuningViewModel : ObservableObject
     private static int? Int(string? s) => int.TryParse(PersianDigits.Normalize(s ?? "").Trim(), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int v) ? v : null;
 
     /// <summary>The form as settings, or the resource key of the first field that is not a whole number.</summary>
-    internal static (GpuTuningSettings? Settings, string? ErrorKey) Parse(string core, string memory, bool lockClock, string maxClock, bool setPower, string power, bool manualFan, string fan)
+    internal static (GpuTuningSettings? Settings, string? ErrorKey) Parse(string core, string memory, bool lockClock, string maxClock, bool setPower, string power, bool manualFan, string fan, string voltage = "0")
     {
         if (Int(core) is not { } c) return (null, "Tuning_Label_CoreOffset");
         if (Int(memory) is not { } m) return (null, "Tuning_Label_MemoryOffset");
+        if (Int(voltage) is not { } v) return (null, "Tuning_Label_Voltage");
         int? cap = null, watts = null, pct = null;
         if (lockClock && (cap = Int(maxClock)) is null) return (null, "Tuning_Label_MaxClock");
         if (setPower && (watts = Int(power)) is null) return (null, "Tuning_Label_PowerLimit");
         if (manualFan && (pct = Int(fan)) is null) return (null, "Tuning_Label_Fan");
-        return (new(c, m, cap, watts, pct), null);
+        return (new(c, m, cap, watts, pct, v), null);
     }
 
     private GpuTuningSettings? FormSettings()
     {
-        var (settings, error) = Parse(CoreOffset, MemoryOffset, LockClock, MaxClock, SetPower, PowerLimit, ManualFan, FanPercent);
+        var (settings, error) = Parse(CoreOffset, MemoryOffset, LockClock, MaxClock, SetPower, PowerLimit, ManualFan, FanPercent, VoltageOffset);
         if (settings is null) { Status = Loc.Format("Tuning_NotANumber", Loc.Get(error!)); return null; }
         var problems = Device!.Limits.Check(settings);
         if (problems.Count > 0) { Status = string.Join("  ", problems.Select(p => Loc.Format(p.Key, Ltr(p.Range + UnitOf(p.Key))))); return null; }
@@ -313,7 +319,7 @@ public sealed partial class TuningViewModel : ObservableObject
 
     private void Fill(GpuTuningSettings s)
     {
-        CoreOffset = Num(s.CoreOffsetMHz); MemoryOffset = Num(s.MemoryOffsetMHz);
+        CoreOffset = Num(s.CoreOffsetMHz); MemoryOffset = Num(s.MemoryOffsetMHz); VoltageOffset = Num(s.VoltageOffsetMv);
         LockClock = s.MaxClockMHz is not null; if (s.MaxClockMHz is { } c) MaxClock = Num(c);
         SetPower = s.PowerLimitW is not null; if (s.PowerLimitW is { } w) PowerLimit = Num(w);
         ManualFan = s.FanPercent is not null; if (s.FanPercent is { } f) FanPercent = Num(f);
@@ -494,7 +500,7 @@ public sealed partial class TuningViewModel : ObservableObject
     /// comes out as "MHz 135+". Left-to-right marks on both sides make the whole chunk one left-to-right run (WPF's text layout did not keep
     /// the LRE/PDF embedding in the page's text blocks, so plain marks are used).</summary>
     internal static string Ltr(string s) => "‎" + s + "‎";
-    private static string UnitOf(string key) => key switch { "Tuning_Bad_PowerLimit" => " W", "Tuning_Bad_Fan" => " %", _ => " MHz" };
+    private static string UnitOf(string key) => key switch { "Tuning_Bad_PowerLimit" => " W", "Tuning_Bad_Fan" => " %", "Tuning_Bad_Voltage" => " mV", _ => " MHz" };
 
     public static string Summarize(GpuTuningSettings s)
     {
@@ -503,6 +509,7 @@ public sealed partial class TuningViewModel : ObservableObject
         if (s.CoreOffsetMHz != 0) parts.Add(Loc.Format("Tuning_Sum_Core", Ltr(s.CoreOffsetMHz.ToString("+0;-0", CultureInfo.InvariantCulture) + " MHz")));
         if (s.MaxClockMHz is { } c) parts.Add(Loc.Format("Tuning_Sum_Cap", Ltr($"{c} MHz")));
         if (s.MemoryOffsetMHz != 0) parts.Add(Loc.Format("Tuning_Sum_Memory", Ltr(s.MemoryOffsetMHz.ToString("+0;-0", CultureInfo.InvariantCulture) + " MHz")));
+        if (s.VoltageOffsetMv != 0) parts.Add(Loc.Format("Tuning_Sum_Voltage", Ltr($"{s.VoltageOffsetMv} mV")));
         if (s.PowerLimitW is { } w) parts.Add(Loc.Format("Tuning_Sum_Power", Ltr($"{w} W")));
         if (s.FanPercent is { } f) parts.Add(Loc.Format("Tuning_Sum_Fan", Ltr($"{f} %")));
         return string.Join(" · ", parts);
