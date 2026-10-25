@@ -74,6 +74,9 @@ public sealed record AutoTuneOptions
     public int MaxClockRaise { get; init; } = 240;
     public int MemoryOffsetStep { get; init; } = 200;
     public int MaxMemoryOffset { get; init; } = 1200;
+    /// <summary>A card with a voltage offset (a Radeon) gets finer, shorter memory steps: its memory clock is a few percent of headroom, and +400 MHz (16 %) on an RX 9060 XT reset the whole PC, not just the driver.</summary>
+    public int VoltageCardMemoryStepMHz { get; init; } = 40;
+    public int VoltageCardMaxMemoryOffset { get; init; } = 160;
     /// <summary>An undervolt is only kept when it saves at least this much power, or at least <see cref="MinTemperatureDropC"/> of temperature.</summary>
     public double MinPowerSavingPercent { get; init; } = 2;
     public double MinTemperatureDropC { get; init; } = 1;
@@ -261,7 +264,8 @@ public sealed class OverclockSearch : IAutoTuneSearch
 
     private int ClockCeiling => _fromCap ? Math.Min(_limits.MaxLockMHz, _startClock + _options.MaxClockRaise)
         : _limits.HasCoreOffset ? _startClock + Math.Min(_options.MaxClockRaise, _limits.CoreOffsetMax - _offset) : _startClock;
-    private int MemoryCeiling => Math.Min(_limits.MemoryOffsetMax, _options.MaxMemoryOffset);
+    private int MemStep => _limits.HasVoltage ? _options.VoltageCardMemoryStepMHz : _options.MemoryOffsetStep;
+    private int MemoryCeiling => Math.Min(_limits.MemoryOffsetMax, _limits.HasVoltage ? _options.VoltageCardMaxMemoryOffset : _options.MaxMemoryOffset);
     /// <summary>The settings that make the card's top clock <paramref name="clock"/>: the undervolt's offset under a raised cap, or - from stock - the
     /// curve moved up by the difference, with no cap (one at the factory top would only take away boost the card has when the load is lighter).</summary>
     private GpuTuningSettings At(int clock, int memory) => _fromCap ? new(_offset, memory, clock, _power, null, _volt) : new(_offset + clock - _startClock, memory, null, _power, null, _volt);
@@ -279,7 +283,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
             Phase.Boost => new(TuneStepKind.Baseline, new(_offset, 0, _fromCap ? _startClock : null, _power, null, _volt), GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle, _options.RayTraceScene),
             Phase.Core => new(TuneStepKind.Probe, At(_clock + _options.ClockStep, 0), _boost is null ? GpuLoadKind.Compute : GpuLoadKind.Scene, _options.ProbeDuration, _options.ProbeSettle, _boost is not null && _options.RayTraceScene),
             Phase.MemoryBaseline => new(TuneStepKind.Baseline, At(_bestClock, 0), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
-            Phase.Memory => new(TuneStepKind.Probe, At(_bestClock, _memory + _options.MemoryOffsetStep), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
+            Phase.Memory => new(TuneStepKind.Probe, At(_bestClock, _memory + MemStep), GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
             Phase.Confirm => new(TuneStepKind.Confirm, best, GpuLoadKind.Compute, _options.ConfirmDuration, _options.LongSettle),
             Phase.ConfirmScene => new(TuneStepKind.Confirm, best, GpuLoadKind.Scene, _options.SceneConfirmDuration, _options.ProbeSettle, _options.RayTraceScene),
             Phase.ConfirmMemory => new(TuneStepKind.Confirm, best, GpuLoadKind.Memory, _options.ProbeDuration, _options.ProbeSettle),
@@ -325,7 +329,7 @@ public sealed class OverclockSearch : IAutoTuneSearch
                 // Backed off whatever ended the climb: a clock that passed a 40-second probe at the edge is not one to leave a customer's card at.
                 _bestClock = Math.Max(_startClock, _clock - _options.OverclockMarginMHz);
                 _phase = Phase.MemoryBaseline;
-                if (!_limits.HasMemoryOffset || MemoryCeiling < _options.MemoryOffsetStep) _phase = Phase.Confirm;
+                if (!_limits.HasMemoryOffset || MemoryCeiling < MemStep) _phase = Phase.Confirm;
                 return;
             case Phase.MemoryBaseline:
                 _memoryBaseline = m;
@@ -335,10 +339,10 @@ public sealed class OverclockSearch : IAutoTuneSearch
             case Phase.Memory:
                 if (m.Clean && m.Throughput >= _bestBandwidth * 1.005)
                 {
-                    _memory += _options.MemoryOffsetStep; _bestBandwidth = m.Throughput;
-                    if (_memory + _options.MemoryOffsetStep <= MemoryCeiling) return;
+                    _memory += MemStep; _bestBandwidth = m.Throughput;
+                    if (_memory + MemStep <= MemoryCeiling) return;
                 }
-                _bestMemory = Math.Max(0, _memory - _options.MemoryOffsetStep);   // the last gain may already have been near the edge
+                _bestMemory = Math.Max(0, _memory - MemStep);   // the last gain may already have been near the edge
                 _phase = Phase.Confirm;
                 return;
             case Phase.Confirm:
