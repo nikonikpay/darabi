@@ -29,11 +29,17 @@ internal sealed class RgbMenu : IDisposable
         SystemEvents.PowerModeChanged += OnPower; SystemEvents.SessionEnding += OnEnding;
     }
 
-    private static bool AppRuns()
+    // The app owns the lights while its window is open (it keeps rgb-owner.pid): the process alone says nothing, it can live on hidden after the window closed. A choice made in this
+    // menu puts rgb-tray-owns.flag down, and the app stands aside until its page is used again.
+    private string OwnerFile => Path.Combine(_paths.ConfigDir, "rgb-owner.pid");
+    private string TrayFlag => Path.Combine(_paths.ConfigDir, "rgb-tray-owns.flag");
+    private bool AppAlive()
     {
-        var app = System.Diagnostics.Process.GetProcessesByName("Mazesta").Concat(System.Diagnostics.Process.GetProcessesByName("Mazesta-Admin")).ToArray(); bool runs = app.Length > 0; foreach (var p in app) p.Dispose();
-        return runs;
+        try { if (!File.Exists(OwnerFile) || !int.TryParse(File.ReadAllText(OwnerFile), out int pid)) return false; using var p = System.Diagnostics.Process.GetProcessById(pid); return !p.HasExited; }
+        catch (Exception e) when (e is ArgumentException or IOException or UnauthorizedAccessException or InvalidOperationException) { return false; }
     }
+    private bool AppRuns() => AppAlive() && !File.Exists(TrayFlag);
+    private void TakeFromApp() { if (AppAlive()) try { File.WriteAllText(TrayFlag, "1"); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } }
 
     private void Log(string line)
     {
@@ -139,7 +145,8 @@ internal sealed class RgbMenu : IDisposable
         if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) return;
         try
         {
-            if (!scene.Enabled) { scene.Enabled = true; RgbSceneStore.Write(_paths, scene); }
+            TakeFromApp();
+            if (!scene.Enabled || scene.Dark) { scene.Enabled = true; scene.Dark = false; RgbSceneStore.Write(_paths, scene); }   // "apply the saved settings" also lights them after "all off"
             var result = await _session.ConnectAsync(true, scene.StopMakers, scene, CancellationToken.None);
             if (result == RgbConnect.Connected)
             {
@@ -167,7 +174,7 @@ internal sealed class RgbMenu : IDisposable
 
     private async Task ToggleDarkAsync()
     {
-        var scene = RgbSceneStore.Read(_paths); scene.Dark = !scene.Dark; scene.Enabled = true; RgbSceneStore.Write(_paths, scene);
+        TakeFromApp(); var scene = RgbSceneStore.Read(_paths); scene.Dark = !scene.Dark; scene.Enabled = true; RgbSceneStore.Write(_paths, scene);
         await BackAsync(recover: false, final: true, force: true);
     }
 

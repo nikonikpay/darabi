@@ -235,10 +235,10 @@ export function mount(el) {
   const bar = h("section", { class: "rgb-bar" },
     h("div", { class: "rgb-bar-head" }, icon("bolt"), h("div", {}, h("h2", {}, t("Rgb_Title")), h("p", { class: "caption" }, t("Rgb_Sub")))),
     h("div", { class: "rgb-bar-ctl" }, h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field inline" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("div", { class: "btn-row" }, start, dark, release)),
-    makers, msg,
+    makers, msg, h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))),
     h("details", { class: "rgb-more" }, h("summary", {}, t("Rgb_More")), h("p", { class: "note" }, t("Rgb_Note")), h("p", { class: "note" }, t("Rgb_PowerEnd_Note"))));
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Lights")), h("p", { class: "page-lede" }, t("Rgb_Page_Lede")))), bar,
-    h("div", { class: "rgb-grid" }, allBox, h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))), list));
+    h("div", { class: "rgb-grid" }, allBox, list));
   run("rgb.state");
   return () => { alive = false; clearTimeout(poll); /* the connection is the host's: it is let go by the button or when the app closes */ };
 }

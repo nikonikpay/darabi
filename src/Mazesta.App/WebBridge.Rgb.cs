@@ -4,8 +4,6 @@ namespace Mazesta.App;
 
 public sealed partial class WebBridge
 {
-    private static bool s_rgbAutoStarted;
-
     /// <summary>
     /// Light colours of the memory, graphics card, board and what plugs into it, through OpenRGB (a separate program, run hidden as its server; see
     /// <see cref="RgbSession"/>). The page can only ask for a colour (as "#rrggbb", or none for off), a mode by its name or number, a speed and brightness
@@ -23,6 +21,13 @@ public sealed partial class WebBridge
         void Save() { try { RgbSceneStore.Write(_paths, scene); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _log.LogWarning(e, "Could not keep the lights' scene"); } }
         static bool TrayRuns() { var p = Process.GetProcessesByName(OverlaySignals.TrayProcess); foreach (var x in p) x.Dispose(); return p.Length > 0; }
         _cleanup.Add(() => session.Release(leaveRunning: scene.Enabled && TrayRuns()));
+        // Who runs the effects the devices lack: while this window is open the app (it writes its pid to rgb-owner.pid); once it is closed the tray takes over, even though the process may live on
+        // in the background. A choice made in the tray's menu puts rgb-tray-owns.flag down, so the app stands aside until the page is used again.
+        string ownerFile = Path.Combine(_paths.ConfigDir, "rgb-owner.pid"), trayFlag = Path.Combine(_paths.ConfigDir, "rgb-tray-owns.flag");
+        void Mine() { try { File.Delete(trayFlag); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } }
+        try { Directory.CreateDirectory(_paths.ConfigDir); File.WriteAllText(ownerFile, Environment.ProcessId.ToString()); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        Mine(); session.Runner.Yield = () => File.Exists(trayFlag);
+        _cleanup.Add(() => { try { File.Delete(ownerFile); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } });
 
         object State(string? error = null) => new
         {
@@ -79,9 +84,8 @@ public sealed partial class WebBridge
 
         // Once per run of the app: a scene the user left switched on is put back without the page being opened. The tray does the same at sign-in; the two
         // find each other's server by its port.
-        if (scene.Enabled && !s_rgbAutoStarted)
+        if (scene.Enabled)   // every time the window opens: the effects the tray ran are the app's again
         {
-            s_rgbAutoStarted = true;
             _ = Task.Run(async () =>
             {
                 if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) return;
@@ -119,7 +123,7 @@ public sealed partial class WebBridge
         MethodAsync("rgb.state", _ => Guard(() => Connect(false, false), shareBusy: true));
         MethodAsync("rgb.start", p => Guard(() =>
         {
-            bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True;
+            Mine(); bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True;
             scene.Enabled = true; scene.StopMakers = !keep; Save();
             return Connect(true, !keep);
         }));
@@ -127,6 +131,7 @@ public sealed partial class WebBridge
         MethodAsync("rgb.set", p => Guard(async () =>
         {
             if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
+            Mine();
             int device = p.TryGetProperty("device", out var dv) && dv.TryGetInt32(out var di) ? di : -1;
             int? mode = p.TryGetProperty("mode", out var mv) && mv.TryGetInt32(out var mi) ? mi : null;
             string modeName = Str(p, "modeName");
@@ -185,7 +190,7 @@ public sealed partial class WebBridge
         MethodAsync("rgb.dark", p => Guard(async () =>
         {
             if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
-            scene.Dark = p.TryGetProperty("on", out var o) && o.ValueKind == JsonValueKind.True; Save();
+            Mine(); scene.Dark = p.TryGetProperty("on", out var o) && o.ValueKind == JsonValueKind.True; Save();
             await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true);
             return State();
         }));
