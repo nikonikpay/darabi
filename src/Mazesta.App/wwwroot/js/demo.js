@@ -283,7 +283,7 @@ const RGB_DEVICES = () => [
 ];
 let rgbReport = false; const shieldMenu = { firewall: true, antivirus: true }; const shieldState = { fwOn: false, avStopped: false };
 const PALETTES = [["sunset", ["#ff512f", "#f09819", "#dd2476"]], ["fire", ["#ff0000", "#ff7a00", "#ffd400"]], ["ocean", ["#00e5ff", "#0072ff", "#0a2fff"]], ["ice", ["#e0f7ff", "#00b4ff", "#2979ff"]], ["forest", ["#00e676", "#00a651", "#b8e000"]], ["aurora", ["#00e676", "#00e5ff", "#8e44ff"]], ["neon", ["#ff00cc", "#3333ff", "#00f0ff"]], ["candy", ["#ff2bd6", "#ffd1f0", "#8ee8ff"]], ["royal", ["#8e44ff", "#2979ff", "#ffd400"]], ["lava", ["#ff0000", "#7a00ff", "#ff7a00"]]].map(([id, colors]) => ({ id, colors }));
-const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Comet", "Meteor"] : [], effects: ["Static", "Breathing", "Rainbow", "Cycle", "Flash"], report: rgbOn && rgbReport ? { effect: "Rainbow", native: 2, simulated: 2, skipped: [] } : null, palettes: PALETTES, devices: rgbOn ? RGB_DEVICES().map((d) => ({ ...d, perLed: d.leds > 0 })) : [] });
+const rgbState = (error = null) => ({ found: true, connected: rgbOn, error, makers: rgbMakers, running: rgbOn ? [] : ["ASUS Armoury Crate / Aura", "Corsair iCUE"], modeNames: rgbOn ? ["Direct", "Comet", "Meteor"] : [], effects: ["Static", "Flow", "Breathing", "Rainbow", "Cycle", "Flash"], report: rgbOn && rgbReport ? { effect: "Rainbow", native: 2, simulated: 2, skipped: [] } : null, palettes: PALETTES, devices: rgbOn ? RGB_DEVICES().map((d) => ({ ...d, perLed: d.leds > 0 })) : [] });
 const FAN_NAMES = [["CPU Fan", 1180], ["Chassis Fan #1", 760], ["Chassis Fan #2", 690]];
 const fansState = () => ({ supported: true, error: null, floor: 20, pumpFloor: 60, guard: 85, cpu: 54, gpu: 61, profile: fanProfile, profiles: { builtin: ["auto", "silent", "standard", "performance", "full"], custom: fanCustom },
   presets: { silent: [[30, 20], [50, 25], [65, 40], [75, 65], [85, 100]], standard: [[30, 30], [50, 40], [65, 60], [75, 80], [85, 100]], performance: [[30, 45], [45, 60], [60, 80], [70, 100]], full: [[20, 100], [100, 100]] },
@@ -385,6 +385,7 @@ export async function call(m, p, emit) {
     case "checkup.setup": await new Promise((r) => setTimeout(r, 400)); return DEMO_FINDINGS.setup();
     case "checkup.run": return false;
     case "app.quiet": return false;
+    case "access.state": return { enforce: false, login: false, plan: "free", locks: [], message: "", signedIn: false, account: null };
     case "messages.state": case "messages.read": return { unread: msgs.filter((m) => !m.read).length, items: msgs };
     case "messages.open": return null;
     case "upd.state": case "upd.check": return { current: "0.10.0", state: "Available", progress: 0, error: null, checkedAt: "2026/09/29 14:10", site: "https://www.dfmrendering.com/mazesta/", canInstall: new URLSearchParams(location.search).has("client"),

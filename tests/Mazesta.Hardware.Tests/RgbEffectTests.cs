@@ -31,11 +31,21 @@ public class RgbEffectTests
     [Fact] public void Brightness_dims_every_frame()
         => Assert.Equal(new RgbColor(100, 50, 25), RgbFrames.Frame(RgbEffects.Static, 0, 1, new RgbColor(200, 100, 50), null, 50, 50)[0]);
 
+    [Fact] public void Rainbow_and_cycle_ignore_the_palette_and_only_flow_moves_it()
+    {
+        var pal = new[] { new RgbColor(255, 0, 0), new RgbColor(0, 0, 255) };
+        var rb = RgbFrames.Frame(RgbEffects.Rainbow, 0, 6, pal[0], pal, 50, 100);
+        Assert.Contains(rb, c => c.G > 200);   // the whole wheel, green included, though the palette has none
+        Assert.Equal(RgbFrames.Frame(RgbEffects.Cycle, 3, 4, pal[0], null, 50, 100), RgbFrames.Frame(RgbEffects.Cycle, 3, 4, pal[0], pal, 50, 100));
+        var fl = RgbFrames.Frame(RgbEffects.Flow, 0, 6, pal[0], pal, 50, 100); Assert.All(fl, c => Assert.Equal(0, c.G));
+        Assert.NotEqual(fl, RgbFrames.Frame(RgbEffects.Flow, 1, 6, pal[0], pal, 50, 100));
+    }
+
     [Fact] public void A_gradient_runs_from_the_first_colour_to_the_last_and_a_palette_replaces_the_colour_wheel()
     {
         var palette = RgbPalettes.Find("sunset")!.Colors.Select(RgbColor.Parse).OfType<RgbColor>().ToList();
         var g = RgbFrames.Gradient(palette, 9); Assert.Equal(palette[0], g[0]); Assert.Equal(palette[^1], g[^1]); Assert.Equal(palette[1], g[4]);
-        var r = RgbFrames.Frame(RgbEffects.Rainbow, 0, 3, palette[0], palette, 50, 100); Assert.Equal(palette[0], r[0]);
+        var r = RgbFrames.Frame(RgbEffects.Flow, 0, 3, palette[0], palette, 50, 100); Assert.Equal(palette[0], r[0]);
         Assert.Single(RgbFrames.Gradient([new RgbColor(1, 2, 3)], 1)); Assert.Equal(3, RgbFrames.Gradient(palette, 3).Length);
     }
 

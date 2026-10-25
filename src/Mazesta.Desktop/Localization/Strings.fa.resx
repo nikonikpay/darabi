@@ -943,6 +943,18 @@
   <data name="Fail_Close" xml:space="preserve"><value>بستن</value></data>
   <data name="Fail_Understood" xml:space="preserve"><value>متوجه شدم</value></data>
   <data name="Support_Button" xml:space="preserve"><value>ارتباط با پشتیبانی و فروش</value></data>
+  <data name="Support_Critical" xml:space="preserve"><value>اگر موضوع جدی است یا تکرار می‌شود، می‌توانید با پشتیبانی مازستا در تماس باشید؛ دکمه را بزنید و آنچه دیدید را به ما بگویید.</value></data>
+  <data name="Access_Locked" xml:space="preserve"><value>این بخش به اکانت پرو نیاز دارد</value></data>
+  <data name="Access_Locked_Text" xml:space="preserve"><value>با شمارهٔ موبایل وارد شوید یا برای تهیهٔ اکانت پرو با مازستا در تماس باشید تا این بخش باز شود.</value></data>
+  <data name="Access_Login" xml:space="preserve"><value>شمارهٔ موبایل خود را بنویسید؛ یک کد برایتان پیامک می‌شود.</value></data>
+  <data name="Access_Mobile" xml:space="preserve"><value>شمارهٔ موبایل</value></data>
+  <data name="Access_Code" xml:space="preserve"><value>کد پیامک‌شده</value></data>
+  <data name="Access_SendCode" xml:space="preserve"><value>ارسال کد</value></data>
+  <data name="Access_Verify" xml:space="preserve"><value>ورود</value></data>
+  <data name="Access_Sent" xml:space="preserve"><value>کد فرستاده شد؛ آن را اینجا بنویسید.</value></data>
+  <data name="Access_Done" xml:space="preserve"><value>وارد شدید.</value></data>
+  <data name="Access_Signed" xml:space="preserve"><value>با شمارهٔ {0} وارد شده‌اید؛ این حساب هنوز اشتراک پرو ندارد.</value></data>
+  <data name="Access_Logout" xml:space="preserve"><value>خروج از حساب</value></data>
   <data name="Support_Title" xml:space="preserve"><value>ارتباط با مازستا</value></data>
   <data name="Support_Sub" xml:space="preserve"><value>واحد پشتیبانی و واحد فروش مازستا آمادهٔ کمک به شما هستند.</value></data>
   <data name="Support_Close" xml:space="preserve"><value>بستن</value></data>
@@ -1623,8 +1635,8 @@
   <data name="Thermal_GpuHotSpot" xml:space="preserve"><value>نقطهٔ داغ کارت گرافیک</value></data>
   <data name="Thermal_GpuVram" xml:space="preserve"><value>حافظهٔ کارت گرافیک (VRAM)</value></data>
   <data name="Thermal_Drive" xml:space="preserve"><value>داغ‌ترین دیسک</value></data>
-  <data name="Done_Thermal_Over" xml:space="preserve"><value>آزمون متوقف شد: {0} به {1} درجه رسید و از سقف خود ({2} درجه) گذشت. در آن لحظه در حال اجرا: {4}.</value></data>
-  <data name="Done_Thermal_Held" xml:space="preserve"><value>آزمون متوقف شد: {0} به مدت {3} دقیقه در {2} درجه یا بالاتر ماند و به {1} درجه رسید. در آن لحظه در حال اجرا: {4}.</value></data>
+  <data name="Done_Thermal_Over" xml:space="preserve"><value>آزمون متوقف شد: {0} به {1} درجه رسید و از سقف خود ({2} درجه) گذشت. در آن لحظه در حال اجرا: {4}. اگر موضوع جدی است یا تکرار می‌شود، می‌توانید با پشتیبانی مازستا در تماس باشید؛ دکمه را بزنید و آنچه دیدید را به ما بگویید.</value></data>
+  <data name="Done_Thermal_Held" xml:space="preserve"><value>آزمون متوقف شد: {0} به مدت {3} دقیقه در {2} درجه یا بالاتر ماند و به {1} درجه رسید. در آن لحظه در حال اجرا: {4}. اگر موضوع جدی است یا تکرار می‌شود، می‌توانید با پشتیبانی مازستا در تماس باشید؛ دکمه را بزنید و آنچه دیدید را به ما بگویید.</value></data>
   <data name="Done_Temp_CpuPackage" xml:space="preserve"><value>دمای پردازنده</value></data>
   <data name="Done_Temp_CpuCore" xml:space="preserve"><value>داغ‌ترین هسته</value></data>
   <data name="Done_Temp_GpuCore" xml:space="preserve"><value>هستهٔ گرافیک</value></data>
@@ -3980,10 +3992,14 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_Look_gradient" xml:space="preserve"><value>دو رنگ</value></data>
   <data name="Rgb_Look_preset" xml:space="preserve"><value>طیف آماده</value></data>
   <data name="Rgb_First" xml:space="preserve"><value>رنگ اول</value></data>
+  <data name="Rgb_Fx_Flow" xml:space="preserve"><value>متحرک</value></data>
+  <data name="Rgb_Stop" xml:space="preserve"><value>رنگ {0}</value></data>
+  <data name="Rgb_AddStop" xml:space="preserve"><value>افزودن رنگ (تا ۴ رنگ)</value></data>
+  <data name="Rgb_DropStop" xml:space="preserve"><value>حذف رنگ انتخاب‌شده</value></data>
   <data name="Rgb_Second" xml:space="preserve"><value>رنگ دوم</value></data>
   <data name="Rgb_Swap" xml:space="preserve"><value>جابه‌جا کردن دو رنگ</value></data>
   <data name="Rgb_Suggest" xml:space="preserve"><value>جفت‌رنگ‌های پیشنهادی</value></data>
-  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>روی «رنگ اول» یا «رنگ دوم» بزنید و رنگش را از پایین انتخاب کنید. روی نوار، برد و رم، دو رنگ در طول LEDها در هم می‌روند و افکت متحرک (رنگین‌کمان، چرخش رنگ) بین این دو می‌چرخد. قطعه‌ای که یک LED دارد رنگ اول را نشان می‌دهد.</value></data>
+  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>یک طیف دو تا چهار رنگی بسازید: روی هر رنگ بزنید و از پایین انتخابش کنید؛ با + رنگ می‌افزایید و با − رنگ انتخاب‌شده را برمی‌دارید. روی نوار، برد و رم رنگ‌ها در طول LEDها در هم می‌روند. برای حرکت دادنشان «متحرک» را بزنید؛ «رنگین‌کمان» و «چرخش رنگ» همیشه همهٔ طیف را نشان می‌دهند. قطعه‌ای که یک LED دارد رنگ اول را نشان می‌دهد.</value></data>
   <data name="Rgb_Preview" xml:space="preserve"><value>پیش‌نمایش رنگ و افکت</value></data>
   <data name="Rgb_OwnMode" xml:space="preserve"><value>حالت خود دستگاه</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>هیچ (افکت بالا)</value></data>

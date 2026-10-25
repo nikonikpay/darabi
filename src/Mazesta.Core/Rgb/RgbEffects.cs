@@ -7,8 +7,9 @@ namespace Mazesta.Core.Rgb;
 /// </summary>
 public static class RgbEffects
 {
-    public const string Static = "Static", Breathing = "Breathing", Rainbow = "Rainbow", Cycle = "Cycle", Flash = "Flash";
-    public static readonly IReadOnlyList<string> All = [Static, Breathing, Rainbow, Cycle, Flash];
+    // Flow: the colours the user chose (a gradient of two to four) moved along the strip; Rainbow: the whole spectrum moved along it; Cycle: the whole strip through the spectrum, one colour after another.
+    public const string Static = "Static", Flow = "Flow", Breathing = "Breathing", Rainbow = "Rainbow", Cycle = "Cycle", Flash = "Flash";
+    public static readonly IReadOnlyList<string> All = [Static, Flow, Breathing, Rainbow, Cycle, Flash];
 
     private static readonly Dictionary<string, string[]> Names = new()
     {

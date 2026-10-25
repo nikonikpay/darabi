@@ -34,7 +34,8 @@ function harmonies(hex) {
 const lit = (d) => (d.colors || []).find((c) => /^#[0-9a-f]{6}$/i.test(c) && c.toLowerCase() !== "#000000");
 // Laid as the LED strips on the cards are: the first LED at the start of the line (the right in Persian).
 const grad = (cs) => cs.length > 1 ? `linear-gradient(${document.dir === "rtl" ? 270 : 90}deg, ${cs.join(", ")})` : cs[0];
-const look = (color) => ({ kind: "solid", a: color, b: fromHsl(toHsl(color).h + 180, 1, 0.5), edit: "a", preset: null, fx: "Static", own: "" });
+const MAX_STOPS = 4;   // a gradient takes two to four colours
+const look = (color) => ({ kind: "solid", a: color, g: [color, fromHsl(toHsl(color).h + 180, 1, 0.5)], edit: 0, preset: null, fx: "Static", own: "" });
 
 // What is chosen on each card and on the whole set, kept for the app's run: going to another page and back shows the last choice, not a fresh one.
 const ui = new Map();
@@ -55,19 +56,24 @@ export function mount(el) {
   // The colour of a look (st): one colour, a gradient of two the user picks (either stop is edited by the same swatches and hue), or a spectrum (ready, or made from
   // the colour), above a strip that shows it as it will run. Colour changes update in place: a redraw would drop the hue slider out of the user's hand.
   function studio(st) {
-    const cur = () => st.kind === "gradient" ? st[st.edit] : st.a;
+    const cur = () => st.kind === "gradient" ? st.g[st.edit] : st.a;
     const presetColors = () => st.preset?.startsWith("custom:") ? st.preset.slice(7).split(",") : (state?.palettes || []).find((p) => p.id === st.preset)?.colors;
-    const colors = () => st.kind === "gradient" ? [st.a, st.b] : st.kind === "preset" && st.preset ? presetColors() || [st.a] : [st.a];
+    const colors = () => st.kind === "gradient" ? st.g : st.kind === "preset" && st.preset ? presetColors() || [st.a] : [st.a];
     const preview = h("div", { class: "rgb-preview", role: "img" }, h("i"));
-    const setColor = (c) => { if (st.kind === "gradient") st[st.edit] = c; else st.a = c; st.touched = true; update(); };
+    const setColor = (c) => { if (st.kind === "gradient") st.g[st.edit] = c; else st.a = c; st.touched = true; update(); };
     const well = h("input", { type: "color", class: "rgb-well", "aria-label": t("Rgb_Color"), oninput: (e) => setColor(e.target.value) });
     const hex = h("b", { class: "rgb-hex lat" });
     const hue = h("input", { type: "range", class: "rgb-hue", dir: "ltr", min: 0, max: 360, value: 0, title: t("Rgb_Hue"), "aria-label": t("Rgb_Hue"), oninput: (e) => setColor(fromHsl(Number(e.target.value), 1, 0.5)) });
     const sws = PALETTE.map((c) => h("button", { class: "rgb-sw", type: "button", style: { background: c, color: c }, title: c, "aria-label": c, onclick: () => setColor(c) }));
     const picker = h("div", { class: "rgb-picker" }, h("label", { class: "rgb-wellbox" }, well, hex), h("div", { class: "rgb-pickcol" }, h("div", { class: "rgb-swatches", role: "group", "aria-label": t("Rgb_Color") }, sws), hue));
-    const stop = (k) => h("button", { type: "button", class: "rgb-stop", onclick: () => { st.edit = k; update(); } }, h("i"), h("span", {}, h("small", {}, t(k === "a" ? "Rgb_First" : "Rgb_Second")), h("b", { class: "lat" })));
-    const stopA = stop("a"), stopB = stop("b");
-    const stops = h("div", { class: "rgb-stops" }, stopA, h("button", { type: "button", class: "rgb-swapbtn", title: t("Rgb_Swap"), "aria-label": t("Rgb_Swap"), onclick: () => { [st.a, st.b] = [st.b, st.a]; update(); } }, icon("swap")), stopB);
+    // The colours of a gradient: two to four, each a button that selects it for the picker below; add one (copied from the last, hue turned) or remove the selected one.
+    const stops = h("div", { class: "rgb-stops" });
+    const drawStops = () => stops.replaceChildren(...[
+      ...st.g.map((c, i) => h("button", { type: "button", class: "rgb-stop", "aria-pressed": String(st.edit === i), onclick: () => { st.edit = i; update(); } },
+        h("i", { style: { background: c } }), h("span", {}, h("small", {}, t("Rgb_Stop", i + 1)), h("b", { class: "lat" }, c.toUpperCase())))),
+      h("button", { type: "button", class: "rgb-swapbtn", title: t("Rgb_Swap"), "aria-label": t("Rgb_Swap"), onclick: () => { st.g.reverse(); st.edit = st.g.length - 1 - st.edit; update(); } }, icon("swap")),
+      st.g.length < MAX_STOPS ? h("button", { type: "button", class: "rgb-swapbtn", title: t("Rgb_AddStop"), "aria-label": t("Rgb_AddStop"), onclick: () => { st.g.push(fromHsl(toHsl(st.g[st.g.length - 1]).h + 70, 1, 0.5)); st.edit = st.g.length - 1; update(); } }, "+") : null,
+      st.g.length > 2 ? h("button", { type: "button", class: "rgb-swapbtn", title: t("Rgb_DropStop"), "aria-label": t("Rgb_DropStop"), onclick: () => { st.g.splice(st.edit, 1); st.edit = Math.min(st.edit, st.g.length - 1); update(); } }, "−") : null].filter(Boolean));
     const chip = (cs, label, pressed, onclick, wide) => h("button", { class: `rgb-pal${wide ? " wide" : ""}`, type: "button", "aria-pressed": String(pressed), title: label, "aria-label": label, onclick }, h("i", { style: { background: grad(cs) } }), h("span", {}, label));
     const pairs = h("div", { class: "rgb-palettes" }), presets = h("div", { class: "rgb-palettes" }), mine = h("div", { class: "rgb-palettes" });
     const body = h("div", { class: "rgb-look-body" });
@@ -77,12 +83,12 @@ export function mount(el) {
       well.value = c; hex.textContent = c.toUpperCase();
       if (document.activeElement !== hue) hue.value = Math.round(toHsl(c).h);
       for (const b of sws) b.setAttribute("aria-pressed", String(b.title === c.toLowerCase()));
-      for (const [b, k] of [[stopA, "a"], [stopB, "b"]]) { b.setAttribute("aria-pressed", String(st.edit === k)); b.firstChild.style.background = st[k]; b.querySelector("b").textContent = st[k].toUpperCase(); }
-      const moving = st.fx === "Rainbow" || st.fx === "Cycle";
-      preview.firstChild.style.background = grad(moving && cs.length < 2 ? SPECTRUM : moving ? [...cs, cs[0]] : cs);
+      if (st.kind === "gradient") drawStops();
+      // Rainbow and colour cycle always show the whole spectrum; only "Flow" moves the colours chosen here.
+      const spectrum = st.fx === "Rainbow" || st.fx === "Cycle", flow = st.fx === "Flow" && cs.length > 1;
+      preview.firstChild.style.background = grad(spectrum ? SPECTRUM : flow ? [...cs, cs[0]] : cs);
       preview.dataset.fx = st.own ? "" : st.fx; preview.setAttribute("aria-label", t("Rgb_Preview"));
-      pairs.replaceChildren(...harmonies(st.edit === "b" ? st.a : c).map(([id, cs2]) => [id, [cs2[0], cs2[cs2.length - 1]]]).map(([id, [x, y]]) =>
-        chip([x, y], t("Rgb_Harm_" + id), st.a === x && st.b === y, () => { st.a = x; st.b = y; update(); })));
+      pairs.replaceChildren(...harmonies(st.g[0]).map(([id, cs2]) => chip(cs2, t("Rgb_Harm_" + id), st.g.join() === cs2.join(), () => { st.g = [...cs2]; st.edit = Math.min(st.edit, st.g.length - 1); update(); })));
       for (const b of presets.children) b.setAttribute("aria-pressed", String(b.dataset.id === st.preset));
       mine.replaceChildren(...harmonies(st.a).map(([id, cs2]) => { const v = "custom:" + cs2.join(","); return chip(cs2, t("Rgb_Harm_" + id), st.preset === v, () => { st.preset = v; update(); }); }));
     }
@@ -99,7 +105,7 @@ export function mount(el) {
       el: h("div", { class: "rgb-studio" }, h("div", { class: "rgb-tabs", role: "radiogroup", "aria-label": t("Rgb_ColorKind") }, tabs), preview, body),
       update, draw,
       // What the bridge is sent: the colour, and the spectrum it runs through when there is one.
-      payload: () => st.kind === "gradient" ? { color: st.a, palette: `custom:${st.a},${st.b}` } : st.kind === "preset" && st.preset ? { color: colors()[0], palette: st.preset } : { color: st.a },
+      payload: () => st.kind === "gradient" ? { color: st.g[0], palette: `custom:${st.g.join(",")}` } : st.kind === "preset" && st.preset ? { color: colors()[0], palette: st.preset } : { color: st.a },
       set disabled(v) { this.el.classList.toggle("off", v); this.el.inert = v; },
     };
   }

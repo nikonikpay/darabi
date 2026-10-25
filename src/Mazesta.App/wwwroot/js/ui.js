@@ -52,6 +52,7 @@ const ICONS = {
   chart: "M4 4v16h16M7 15l4-5 3 3 5-6",
   popout: "M14 4h6v6M20 4l-8 8M18 14v6H4V6h6",
   shop: "M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2",
+  lock: "M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3",
   phone: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2",
   chat: "M4 5h16v11H9l-5 4z",
   send: "M21 3 3 10.5l7 3 3 7.5zM10 13.5 21 3",

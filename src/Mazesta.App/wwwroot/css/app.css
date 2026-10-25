@@ -1598,7 +1598,7 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rgb-preview::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 9px, rgb(0 0 0 / .35) 9px 11px); pointer-events: none; }
 .rgb-preview[data-fx="Breathing"] > i { animation: rgb-breathe var(--rgb-dur, 3s) ease-in-out infinite; }
 .rgb-preview[data-fx="Flash"] > i { animation: rgb-flash calc(var(--rgb-dur, 3s) / 3) steps(1) infinite; }
-.rgb-preview[data-fx="Rainbow"] > i, .rgb-preview[data-fx="Cycle"] > i { right: auto; inline-size: 200%; background-size: 50% 100% !important; animation: rgb-run var(--rgb-dur, 3s) linear infinite; }
+.rgb-preview[data-fx="Rainbow"] > i, .rgb-preview[data-fx="Flow"] > i, .rgb-preview[data-fx="Cycle"] > i { right: auto; inline-size: 200%; background-size: 50% 100% !important; animation: rgb-run var(--rgb-dur, 3s) linear infinite; }
 @keyframes rgb-breathe { 50% { opacity: .12; } }
 @keyframes rgb-flash { 50% { opacity: 0; } }
 @keyframes rgb-run { to { transform: translateX(-50%); } }
@@ -1615,8 +1615,8 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rgb-sw[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px currentColor, 0 0 10px currentColor; transform: scale(1.1); }
 .rgb-hue { -webkit-appearance: none; appearance: none; inline-size: 100%; block-size: 14px; border-radius: 7px; cursor: pointer; background: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); border: 2px solid rgb(255 255 255 / 0.14); }
 .rgb-hue::-webkit-slider-thumb { -webkit-appearance: none; inline-size: 12px; block-size: 20px; border-radius: 5px; background: #fff; border: 2px solid rgb(0 0 0 / 0.6); box-shadow: 0 1px 4px rgb(0 0 0 / .5); }
-.rgb-stops { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-.rgb-stop { flex: 1; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--ink); color: var(--paper); cursor: pointer; text-align: start; }
+.rgb-stops { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.rgb-stop { flex: 1 1 120px; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--ink); color: var(--paper); cursor: pointer; text-align: start; }
 .rgb-stop > i { inline-size: 28px; block-size: 28px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px rgb(0 0 0 / .35); }
 .rgb-stop > span { display: grid; line-height: 1.3; } .rgb-stop small { font: 600 11.5px var(--fa); color: var(--paper-3); } .rgb-stop b { font-size: 12px; direction: ltr; text-align: start; }
 .rgb-stop[aria-pressed="true"] { border-color: var(--hue, var(--yellow)); box-shadow: 0 0 0 1px var(--hue, var(--yellow)); }
@@ -1817,3 +1817,10 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .wake-active { margin-top: 12px; }
 .wake-active summary { cursor: pointer; color: var(--paper-2); font-size: 12.5px; margin-bottom: 6px; }
 .wake .choice { margin: 6px 0; }
+
+/* The lock on a menu or tab the shop has locked for accounts without Pro, and the panel shown in place of its page (nothing is locked today). */
+.lock-mark { display: inline-grid; place-items: center; margin-inline-start: 6px; color: var(--yellow); } .lock-mark svg { inline-size: 13px; block-size: 13px; stroke: currentColor; }
+.lock-panel { max-inline-size: 520px; margin: 8vh auto; padding: 28px 26px; border: 1px solid var(--rule); border-radius: var(--r-ctl); background: var(--ink-3); display: grid; gap: 10px; justify-items: start; }
+.lock-panel h2 { margin: 0; font-size: 20px; } .lock-panel p { margin: 0; color: var(--paper-2); line-height: 1.9; }
+.lock-ico { display: grid; place-items: center; inline-size: 48px; block-size: 48px; border-radius: 50%; background: color-mix(in srgb, var(--yellow) 14%, var(--ink)); color: var(--yellow); } .lock-ico svg { inline-size: 24px; block-size: 24px; stroke: currentColor; }
+.lock-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .lock-form .field { inline-size: 150px; }

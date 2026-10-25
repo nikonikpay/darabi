@@ -16,14 +16,15 @@ public sealed class RgbSession : IDisposable
     private readonly string _appFolder, _configDir; private readonly ILogger _log;
     private Process? _server;
 
-    public RgbSession(string appFolder, string configDir, ILogger log) { _appFolder = appFolder; _configDir = configDir; _log = log; Client = new(); Runner = new(Client, log); }
+    public RgbSession(string appFolder, string configDir, ILogger log) { _appFolder = appFolder; _configDir = configDir; _log = log; Client = new(); Runner = new(Client, log);
+        Conflicts = new(Path.Combine(configDir, "rgb-makers-stopped.txt")); Conflicts.RestoreStale(); }   // a service a crashed run left disabled is put back first
 
     /// <summary>The port the server is on (after a connect).</summary>
     public int Port { get; private set; } = OpenRgbClient.DefaultPort;
     public OpenRgbClient Client { get; }
     /// <summary>Runs the effects the devices have not themselves (see <see cref="RgbEffects"/>).</summary>
     public RgbEffectRunner Runner { get; }
-    public RgbConflicts Conflicts { get; } = new();
+    public RgbConflicts Conflicts { get; }
     public string? Exe => OpenRgbHost.Find(_appFolder);
     /// <summary>True after a connect that gave a header its default length: the scene has changed and is to be saved.</summary>
     public bool ZonesDefaulted { get; private set; }
@@ -157,9 +158,9 @@ public sealed class RgbSession : IDisposable
                 await Client.SetModeAsync(device, own, color, ct, look.Speed, look.Brightness).ConfigureAwait(false); return RgbHow.Native;
             }
             string? native = fx == RgbEffects.Static ? null : RgbEffects.NativeName(d.Modes.Select(x => x.Name), fx);
-            bool palettePlays = palette is { Count: > 1 } && fx is RgbEffects.Rainbow or RgbEffects.Cycle;   // the device's own rainbow knows only its own colours
+            if (fx == RgbEffects.Flow && palette is not { Count: > 1 }) fx = RgbEffects.Static;   // one colour has nothing to flow through
             var tint = color ?? palette?.FirstOrDefault() ?? new RgbColor(255, 255, 255);
-            if (native is not null && !(palettePlays && Client.HasPerLed(device)))
+            if (native is not null)
             {
                 await Client.SetModeAsync(device, Client.ModeIndex(device, native), color ?? palette?.FirstOrDefault(), ct, look.Speed, look.Brightness).ConfigureAwait(false); return RgbHow.Native;
             }
