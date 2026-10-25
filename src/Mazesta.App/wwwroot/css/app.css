@@ -1824,3 +1824,12 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .lock-panel h2 { margin: 0; font-size: 20px; } .lock-panel p { margin: 0; color: var(--paper-2); line-height: 1.9; }
 .lock-ico { display: grid; place-items: center; inline-size: 48px; block-size: 48px; border-radius: 50%; background: color-mix(in srgb, var(--yellow) 14%, var(--ink)); color: var(--yellow); } .lock-ico svg { inline-size: 24px; block-size: 24px; stroke: currentColor; }
 .lock-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .lock-form .field { inline-size: 150px; }
+
+/* The lights page: the controls as a bar, then panels in columns. */
+.rgb-bar { display: grid; gap: 10px; padding: 14px 18px; margin-bottom: 14px; border: 1px solid var(--rule); border-radius: var(--r-ctl); background: var(--ink-3); }
+.rgb-bar-head { display: flex; align-items: center; gap: 12px; } .rgb-bar-head > svg { inline-size: 28px; block-size: 28px; stroke: var(--yellow); flex: none; } .rgb-bar-head h2 { margin: 0; font-size: 17px; } .rgb-bar-head p { margin: 0; }
+.rgb-bar-ctl { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; } .rgb-field.inline { display: flex; align-items: center; gap: 8px; margin: 0; }
+.rgb-more summary { cursor: pointer; color: var(--paper-3); font-size: 12.5px; } .rgb-more .note { margin: 6px 0 0; }
+.rgb-grid { column-width: 400px; column-gap: 14px; } .rgb-grid > *, .rgb-cards > * { break-inside: avoid; margin: 0 0 14px; } .rgb-cards { display: contents; }
+.rgb-tip { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--yellow) 45%, var(--rule)); border-radius: var(--r-ctl); background: color-mix(in srgb, var(--yellow) 8%, var(--ink-3)); font-size: 12.5px; line-height: 1.8; }
+.rgb-tip svg { inline-size: 18px; block-size: 18px; flex: none; margin-top: 3px; stroke: var(--yellow); }

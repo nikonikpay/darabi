@@ -12,7 +12,7 @@ internal sealed class RgbMenu : IDisposable
 {
     private readonly AppPaths _paths; private readonly Action<string, ToolTipIcon> _notify; private readonly RgbSession _session;
     private readonly ToolStripMenuItem _dark; private int _busy; private CancellationTokenSource _stale = new();
-    private readonly System.Windows.Forms.Timer _watch = new() { Interval = 5000 }; private bool _appWas;
+    private readonly System.Windows.Forms.Timer _watch = new() { Interval = 10000 }; private bool _appWas;
     public ToolStripMenuItem Menu { get; }
 
     public RgbMenu(AppPaths paths, Action<string, ToolTipIcon> notify)
@@ -25,6 +25,7 @@ internal sealed class RgbMenu : IDisposable
         Menu.DropDownItems.AddRange([_dark, new ToolStripMenuItem(TrayText.LightsApply, null, async (_, _) => await ApplyAsync(userAsked: true))]);
         Menu.DropDownOpening += (_, _) => { var s = RgbSceneStore.Read(_paths); _dark.Checked = s.Dark; Menu.Enabled = _session.Exe is not null; };
         _watch.Tick += async (_, _) => await WatchAsync();
+        _appWas = AppRuns(); _watch.Start();   // always: the page can switch the scene on after the tray started
         SystemEvents.PowerModeChanged += OnPower; SystemEvents.SessionEnding += OnEnding;
     }
 
@@ -154,11 +155,11 @@ internal sealed class RgbMenu : IDisposable
     }
 
     /// <summary>While the app runs effects that devices lack themselves, the tray watches whether the app is open (it then sends nothing) and takes the scene over when it closes.</summary>
-    private void UpdateWatch() { if (_session.Runner.Count > 0) { _appWas = AppRuns(); _watch.Start(); } else _watch.Stop(); }
+    private void UpdateWatch() { _appWas = AppRuns(); }
 
     private async Task WatchAsync()
     {
-        if (_session.Runner.Count == 0) { _watch.Stop(); return; }
+        // The effects the app set run in the app's process: when it closes, the tray must take them over (its own runner knows nothing of them until it applies the scene).
         bool app = AppRuns();
         if (_appWas && !app) { Log("the app closed: its effects are taken over"); await BackAsync(recover: false, final: true); }
         _appWas = app;

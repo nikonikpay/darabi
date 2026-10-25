@@ -3292,7 +3292,7 @@ Cancel: stop.</value></data>
   <data name="Assist_Tool_run_checkup" xml:space="preserve"><value>Asked to run: smart diagnosis</value></data>
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>Read the part's recorded tests</value></data>
   <data name="Rgb_Title" xml:space="preserve"><value>RGB lighting colours</value></data>
-  <data name="Rgb_Sub" xml:space="preserve"><value>memory, graphics card, board and fans, for Corsair, ASUS, Gigabyte, MSI and more</value></data>
+  <data name="Rgb_Sub" xml:space="preserve"><value>Memory, graphics card, board, fans</value></data>
   <data name="Rgb_Connect" xml:space="preserve"><value>Turn on the lights</value></data>
   <data name="Rgb_All" xml:space="preserve"><value>All devices</value></data>
   <data name="Rgb_Color" xml:space="preserve"><value>Colour</value></data>
@@ -3319,16 +3319,16 @@ Cancel: stop.</value></data>
   <data name="Nav_Group_Lights" xml:space="preserve"><value>Lights &amp; fans</value></data>
   <data name="Nav_Lights" xml:space="preserve"><value>Lighting (RGB)</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>Fan control</value></data>
-  <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colours and effects of the memory, graphics card, board, fans and strips - for Corsair, ASUS, Gigabyte, MSI and more.</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>Press the button to find the lights of the parts. The makers' own programs (Armoury Crate, MSI Center, RGB Fusion, iCUE) are stopped so they do not fight over the lights. What you set is kept and put back every time the app starts.</value></data>
+  <data name="Rgb_Page_Lede" xml:space="preserve"><value>Colour and effect of the memory, graphics card, board, fans and LED strips.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>Press the button to find the lights. The makers' own lighting programs (Armoury Crate, MSI Center, iCUE and others) are disabled while the lights are Mazesta's and put back after. Your settings are kept and applied at every start.</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>Let go (give the lights back)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>Do not stop the makers&apos; programs</value></data>
-  <data name="Rgb_Makers_Running" xml:space="preserve"><value>These makers&apos; programs are running and will be stopped while you use this page, then started again: {0}</value></data>
-  <data name="Rgb_Makers_Stopped" xml:space="preserve"><value>Stopped for now, started again when you let go or close the app: {0}</value></data>
+  <data name="Rgb_Makers_Running" xml:space="preserve"><value>These are open and are closed while you use this page: {0}</value></data>
+  <data name="Rgb_Makers_Stopped" xml:space="preserve"><value>Disabled; they come back when you let go: {0}</value></data>
   <data name="Rgb_Speed" xml:space="preserve"><value>Speed</value></data>
   <data name="Rgb_Brightness" xml:space="preserve"><value>Brightness</value></data>
   <data name="Rgb_Effect" xml:space="preserve"><value>Effect</value></data>
-  <data name="Rgb_Effect_Note" xml:space="preserve"><value>The effects at the top work on every device: one that has the effect runs it itself, one that has not is driven by the app (the app or the tray must be running). The effects of the devices themselves reach only the devices that have them.</value></data>
+  <data name="Rgb_Effect_Note" xml:space="preserve"><value>A device that has the effect runs it itself; the app drives the others frame by frame.</value></data>
   <data name="Rgb_Palettes" xml:space="preserve"><value>Colour spectra</value></data>
   <data name="Rgb_Palette_sunset" xml:space="preserve"><value>Sunset</value></data>
   <data name="Rgb_Palette_fire" xml:space="preserve"><value>Fire</value></data>
@@ -3353,7 +3353,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>number of LEDs</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>up to {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>Set</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>A header with no length given is set to 30 LEDs by itself, so colours reach it at once. If the strip on it has another number of LEDs, give that number here; it is kept.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>Each output starts at 30 LEDs; if your strip has another number, enter it.</value></data>
   <data name="Rgb_Connecting" xml:space="preserve"><value>Starting the lights... the first search takes a little while.</value></data>
   <data name="Rgb_Dark_Off" xml:space="preserve"><value>Switch all off (the scene is kept)</value></data>
   <data name="Rgb_Dark_On" xml:space="preserve"><value>Switch the scene back on</value></data>
@@ -3468,7 +3468,7 @@ Cancel: stop.</value></data>
   <data name="Checkup_NoTests" xml:space="preserve"><value>No test has run yet in this session. Run the troubleshooting, or any test from the Tests page, and its result is judged here.</value></data>
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>These tests failed: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
-  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>The card's driver gives one lit zone for the whole card, so all its LEDs take one colour together; the card itself has no per-LED control to offer.</value></data>
+  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>This card takes one colour for the whole card.</value></data>
   <data name="Rgb_Harm_mono" xml:space="preserve"><value>Shades of this colour</value></data>
   <data name="Rgb_Harm_triad" xml:space="preserve"><value>Three evenly spaced</value></data>
   <data name="Rgb_Harm_complement" xml:space="preserve"><value>Opposite colour</value></data>
@@ -3757,7 +3757,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_PowerEnd_leave" xml:space="preserve"><value>Leave the lights as they are</value></data>
   <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>Turn the lights off</value></data>
   <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>Keep the lights on</value></data>
-  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>Carried out by the background monitor, which must be running; it keeps the lights' server ready for it. Before the lights are put out, how they were is written down and put back when the PC wakes or starts, even when no scene is switched on. Windows gives only a few seconds, so on a slow server it can miss.</value></data>
+  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>Done by the background monitor, which must be on.</value></data>
   <data name="Detail_L_VramTemp" xml:space="preserve"><value>VRAM temperature</value></data>
   <data name="Detail_L_MemCtrlLoad" xml:space="preserve"><value>Memory controller load</value></data>
   <data name="Detail_Fig_Bandwidth" xml:space="preserve"><value>Measured bandwidth</value></data>
@@ -3989,17 +3989,24 @@ Cancel: stop.</value></data>
   <data name="HelpHow_Help_Keys_Title" xml:space="preserve"><value>Press Ctrl+1 to Ctrl+9 to jump between sections.|Use the overlay shortcuts in a game.|Change them in Settings.</value></data>
   <data name="Rgb_ColorKind" xml:space="preserve"><value>How the colour is made</value></data>
   <data name="Rgb_Look_solid" xml:space="preserve"><value>Single colour</value></data>
-  <data name="Rgb_Look_gradient" xml:space="preserve"><value>Two colours</value></data>
+  <data name="Rgb_Look_gradient" xml:space="preserve"><value>Chosen colours</value></data>
   <data name="Rgb_Look_preset" xml:space="preserve"><value>Spectrum</value></data>
   <data name="Rgb_First" xml:space="preserve"><value>First colour</value></data>
   <data name="Rgb_Fx_Flow" xml:space="preserve"><value>Animate</value></data>
   <data name="Rgb_Stop" xml:space="preserve"><value>Colour {0}</value></data>
   <data name="Rgb_AddStop" xml:space="preserve"><value>Add a colour (up to 4)</value></data>
   <data name="Rgb_DropStop" xml:space="preserve"><value>Remove the selected colour</value></data>
+  <data name="Rgb_LedTip" xml:space="preserve"><value>If not all the LEDs in your system light up, raise the LED count of the outputs in the motherboard card up to 120 so every light is found.</value></data>
+  <data name="Rgb_More" xml:space="preserve"><value>Details</value></data>
+  <data name="Rgb_Dir" xml:space="preserve"><value>Direction</value></data>
+  <data name="Rgb_Dir_ltr" xml:space="preserve"><value>Left to right</value></data>
+  <data name="Rgb_Dir_rtl" xml:space="preserve"><value>Right to left</value></data>
+  <data name="Rgb_Dir_ttb" xml:space="preserve"><value>Top to bottom</value></data>
+  <data name="Rgb_Dir_btt" xml:space="preserve"><value>Bottom to top</value></data>
   <data name="Rgb_Second" xml:space="preserve"><value>Second colour</value></data>
   <data name="Rgb_Swap" xml:space="preserve"><value>Swap the two colours</value></data>
   <data name="Rgb_Suggest" xml:space="preserve"><value>Pairs that go together</value></data>
-  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>Make a gradient of two to four colours: click a colour, then pick it below; + adds a colour and − removes the selected one. On a strip, board or memory the colours run into each other along the LEDs. To make them move, choose Animate; Rainbow and Colour cycle always show the whole spectrum. A part with one LED shows the first colour.</value></data>
+  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>Click a colour and pick it below; + and − change how many (2 to 4). To make them move, choose Animate.</value></data>
   <data name="Rgb_Preview" xml:space="preserve"><value>Preview of the colours and the effect</value></data>
   <data name="Rgb_OwnMode" xml:space="preserve"><value>The device's own mode</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>None (use the effect above)</value></data>

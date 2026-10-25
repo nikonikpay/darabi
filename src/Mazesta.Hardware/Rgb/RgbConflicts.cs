@@ -4,11 +4,11 @@ namespace Mazesta.Hardware.Rgb;
 /// <summary>
 /// The makers' own lighting programs (Armoury Crate / Aura, MSI Center / Mystic Light, Gigabyte RGB Fusion, ASRock Polychrome, Lian Li L-Connect, Corsair iCUE and the like, with
 /// their services). They hold the same lights and start each other again, so stopping them once is not enough: while this app sets colours their services are also set to
-/// "disabled" (so neither a recovery rule nor a companion service can start them), their programs are ended again whenever they come back, and everything is put back as it was when
+/// "disabled" (so neither a recovery rule nor a companion service can start them), their programs are ended once when the lights are taken over, and everything is put back as it was when
 /// the app lets go. What was changed is written to a small file, so a crash cannot leave a service disabled: the next start puts it back. The names are what those programs are
 /// called on a normal install; one named differently is simply not found, and the page then says that colours may not stick.
 /// </summary>
-public sealed class RgbConflicts : IDisposable
+public sealed class RgbConflicts
 {
     private sealed record Maker(string Name, string[] Processes, string[] Services);
     private static readonly Maker[] Makers =
@@ -28,7 +28,7 @@ public sealed class RgbConflicts : IDisposable
 
     private sealed record Stopped(string Maker, string? Exe, string? Service, string? StartType, bool WasRunning = true);
     private readonly List<Stopped> _stopped = []; private readonly object _gate = new();
-    private readonly string? _journal; private Timer? _guard;
+    private readonly string? _journal;
 
     /// <param name="journal">Where the changed services are written down (null: not kept, as in tests).</param>
     public RgbConflicts(string? journal = null) { _journal = journal; }
@@ -39,14 +39,9 @@ public sealed class RgbConflicts : IDisposable
     /// <summary>Names of the makers' programs this object has stopped and not yet put back.</summary>
     public IReadOnlyList<string> StoppedNow { get { lock (_gate) return [.. _stopped.Select(s => s.Maker).Distinct()]; } }
 
-    /// <summary>Stops every running one and disables its service, remembering how to put it back; from then on anything that comes back is ended again every few seconds.
-    /// Returns the makers' names that were stopped.</summary>
-    public IReadOnlyList<string> StopAll()
-    {
-        Sweep(first: true);
-        lock (_gate) _guard ??= new Timer(_ => { try { Sweep(first: false); } catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception or IOException) { } }, null, 4000, 4000);
-        return StoppedNow;
-    }
+    /// <summary>Stops every running one and disables its service, remembering how to put it back. Done once (a disabled service cannot be started again, so nothing needs watching: no timer,
+    /// no load). Returns the makers' names that were stopped.</summary>
+    public IReadOnlyList<string> StopAll() { Sweep(first: true); return StoppedNow; }
 
     private void Sweep(bool first)
     {
@@ -80,8 +75,6 @@ public sealed class RgbConflicts : IDisposable
     /// <summary>Puts back what <see cref="StopAll"/> changed: the services' start types, then the services that were running, then the programs, each once.</summary>
     public void RestoreAll()
     {
-        Timer? g; lock (_gate) { g = _guard; _guard = null; }
-        g?.Dispose();
         List<Stopped> work; lock (_gate) { work = [.. _stopped]; _stopped.Clear(); }
         foreach (var w in Read()) if (!work.Any(x => x.Service == w.Service)) work.Add(w);   // what an earlier run left behind
         PutBack(work);
@@ -156,5 +149,4 @@ public sealed class RgbConflicts : IDisposable
         string output = p.StandardOutput.ReadToEnd(); p.WaitForExit(15000); return output;
     }
 
-    public void Dispose() { Timer? g; lock (_gate) { g = _guard; _guard = null; } g?.Dispose(); }
 }

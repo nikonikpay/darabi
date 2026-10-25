@@ -7,15 +7,16 @@ public static class RgbFrames
 {
     /// <summary>One frame. <paramref name="seconds"/> is the time since the effect began; speed and brightness are percents. Rainbow and Cycle always run the whole colour
     /// wheel; only Flow moves the palette (two or more colours) the user chose.</summary>
-    public static RgbColor[] Frame(string effect, double seconds, int leds, RgbColor color, IReadOnlyList<RgbColor>? palette, int speedPercent, int brightnessPercent)
+    public static RgbColor[] Frame(string effect, double seconds, int leds, RgbColor color, IReadOnlyList<RgbColor>? palette, int speedPercent, int brightnessPercent, string? direction = null)
     {
         leds = Math.Max(leds, 1); var frame = new RgbColor[leds];
         double rate = 0.2 + 1.8 * Math.Clamp(speedPercent, 0, 100) / 100.0, level = Math.Clamp(brightnessPercent, 0, 100) / 100.0;
+        double dir = RgbEffects.Reverse(direction) ? 1 : -1;   // the pattern runs towards the last LED (ltr, ttb) or back (rtl, btt)
         switch (effect)
         {
-            case RgbEffects.Rainbow: for (int i = 0; i < leds; i++) frame[i] = Hue(Frac((double)i / leds + seconds * rate * 0.5)); break;
+            case RgbEffects.Rainbow: for (int i = 0; i < leds; i++) frame[i] = Hue(Frac((double)i / leds + dir * seconds * rate * 0.5)); break;
             case RgbEffects.Cycle: Array.Fill(frame, Hue(Frac(seconds * rate * 0.25))); break;
-            case RgbEffects.Flow when palette is { Count: > 1 }: for (int i = 0; i < leds; i++) frame[i] = Sample(palette, Frac((double)i / leds + seconds * rate * 0.5), loop: true); break;
+            case RgbEffects.Flow when palette is { Count: > 1 }: for (int i = 0; i < leds; i++) frame[i] = Sample(palette, Frac((double)i / leds + dir * seconds * rate * 0.5), loop: true); break;
             case RgbEffects.Breathing: Array.Fill(frame, Scale(color, 0.5 - 0.5 * Math.Cos(2 * Math.PI * seconds * rate * 0.5))); break;
             case RgbEffects.Flash: Array.Fill(frame, Frac(seconds * rate) < 0.5 ? color : new RgbColor(0, 0, 0)); break;
             default: Array.Fill(frame, color); break;

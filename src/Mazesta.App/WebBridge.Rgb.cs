@@ -31,10 +31,10 @@ public sealed partial class WebBridge
             makers = conflicts.StoppedNow,   // the makers' programs stopped for now, to be put back by "let go"
             running = client.Connected ? Array.Empty<string>() : conflicts.Running(),
             modeNames = client.Devices.SelectMany(d => d.Modes.Select(m => m.Name)).Where(n => !RgbEffects.Covered(n)).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-            effects = RgbEffects.All, palettes = RgbPalettes.All.Select(p => new { id = p.Id, colors = p.Colors }), report = Interlocked.Exchange(ref report, null), simulated = session.Runner.Count,
+            scene = new { all = scene.All, devices = scene.Devices }, effects = RgbEffects.All, palettes = RgbPalettes.All.Select(p => new { id = p.Id, colors = p.Colors }), report = Interlocked.Exchange(ref report, null), simulated = session.Runner.Count,
             devices = client.Devices.Select(d => new
             {
-                index = d.Index, kind = d.Kind.ToString(), name = d.Name, vendor = d.Vendor, location = d.Location, leds = d.LedCount, active = d.ActiveMode,
+                index = d.Index, key = RgbScene.DeviceKey(d.Vendor, d.Name, d.Location), kind = d.Kind.ToString(), name = d.Name, vendor = d.Vendor, location = d.Location, leds = d.LedCount, active = d.ActiveMode,
                 color = d.Colors.Count > 0 ? d.Colors[0].Hex : null, colors = d.Colors.Take(MostLedsShown).Select(c => c.Hex), perLed = d.LedCount > 0 && d.LedCount <= MostLedsShown && d.Modes.Any(m => m.PerLed),
                 zones = d.Zones.Select(z => new { index = z.Index, name = z.Name, leds = z.LedsCount, min = z.LedsMin, max = z.LedsMax, resizable = z.Resizable }),
                 modes = d.Modes.Select((m, i) => new
@@ -133,6 +133,7 @@ public sealed partial class WebBridge
             int? speed = p.TryGetProperty("speed", out var sv) && sv.TryGetInt32(out var si) ? si : null, bright = p.TryGetProperty("brightness", out var bv) && bv.TryGetInt32(out var bi) ? bi : null;
             string hex = Str(p, "color"); var color = RgbColor.Parse(hex);
             if (hex.Length > 0 && color is null) throw new ArgumentException("color");
+            string direction = Str(p, "direction"); if (direction.Length > 0 && !RgbEffects.Directions.Contains(direction)) throw new ArgumentException("direction");
             string palette = Str(p, "palette"); if (palette.Length > 0 && RgbPalettes.Find(palette) is null) throw new ArgumentException("palette");
             var targets = device < 0 ? client.Devices.ToList() : client.Devices.Where(d => d.Index == device).ToList(); var failed = new List<string>(); var skipped = new List<string>(); int native = 0, simulated = 0, still = 0;
             string asked = modeName;
@@ -143,7 +144,7 @@ public sealed partial class WebBridge
                     // For everything at once the effect is named (its number differs by device); one that has not got it is driven by the app, or left as it is when it cannot be.
                     string name = modeName.Length > 0 ? modeName : mode is { } index && index >= 0 && index < d.Modes.Count ? d.Modes[index].Name : "";
                     if (asked.Length == 0) asked = name;
-                    var look = new RgbLook(hex.Length > 0 ? hex : null, name.Length > 0 ? name : null, speed, bright, Off: hex.Length == 0 && name.Length == 0 && palette.Length == 0, Palette: palette.Length > 0 ? palette : null);
+                    var look = new RgbLook(hex.Length > 0 ? hex : null, name.Length > 0 ? name : null, speed, bright, Off: hex.Length == 0 && name.Length == 0 && palette.Length == 0, Palette: palette.Length > 0 ? palette : null, Direction: direction.Length > 0 ? direction : null);
                     switch (await session.ApplyLookAsync(d.Index, look, CancellationToken.None).ConfigureAwait(true))
                     {
                         case RgbHow.Skipped: skipped.Add(d.Name); continue;
@@ -155,7 +156,7 @@ public sealed partial class WebBridge
                 }
                 catch (NotSupportedException e) { failed.Add(e.Message); }
             }
-            if (device < 0 && skipped.Count < targets.Count) { scene.All = new RgbLook(hex.Length > 0 ? hex : null, modeName.Length > 0 ? modeName : null, speed, bright, Off: hex.Length == 0 && modeName.Length == 0 && palette.Length == 0, Palette: palette.Length > 0 ? palette : null); scene.Devices.Clear(); }
+            if (device < 0 && skipped.Count < targets.Count) { scene.All = new RgbLook(hex.Length > 0 ? hex : null, modeName.Length > 0 ? modeName : null, speed, bright, Off: hex.Length == 0 && modeName.Length == 0 && palette.Length == 0, Palette: palette.Length > 0 ? palette : null, Direction: direction.Length > 0 ? direction : null); scene.Devices.Clear(); }
             scene.Dark = false; Save();
             session.Runner.Start();
             report = new { effect = asked, native, simulated, still, skipped };

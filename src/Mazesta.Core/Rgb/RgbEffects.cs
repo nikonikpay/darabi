@@ -9,6 +9,9 @@ public static class RgbEffects
 {
     // Flow: the colours the user chose (a gradient of two to four) moved along the strip; Rainbow: the whole spectrum moved along it; Cycle: the whole strip through the spectrum, one colour after another.
     public const string Static = "Static", Flow = "Flow", Breathing = "Breathing", Rainbow = "Rainbow", Cycle = "Cycle", Flash = "Flash";
+    /// <summary>Left to right, right to left, top to bottom, bottom to top. A strip has one line: left to right and top to bottom run from its first LED to its last, the other two back.</summary>
+    public static readonly IReadOnlyList<string> Directions = ["ltr", "rtl", "ttb", "btt"];
+    public static bool Reverse(string? direction) => direction is "rtl" or "btt";
     public static readonly IReadOnlyList<string> All = [Static, Flow, Breathing, Rainbow, Cycle, Flash];
 
     private static readonly Dictionary<string, string[]> Names = new()

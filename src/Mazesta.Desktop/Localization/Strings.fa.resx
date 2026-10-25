@@ -3292,7 +3292,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Assist_Tool_run_checkup" xml:space="preserve"><value>درخواست اجرا: عیب‌یابی هوشمند</value></data>
   <data name="Assist_Tool_get_part_tests" xml:space="preserve"><value>خواندن تست‌های ثبت‌شدهٔ قطعه</value></data>
   <data name="Rgb_Title" xml:space="preserve"><value>رنگ نورپردازی RGB</value></data>
-  <data name="Rgb_Sub" xml:space="preserve"><value>رم، کارت گرافیک، مادربرد و فن‌ها، برای Corsair، ASUS، Gigabyte، MSI و بقیه</value></data>
+  <data name="Rgb_Sub" xml:space="preserve"><value>رم، کارت گرافیک، مادربرد، فن‌ها</value></data>
   <data name="Rgb_Connect" xml:space="preserve"><value>روشن کردن نورها</value></data>
   <data name="Rgb_All" xml:space="preserve"><value>همهٔ قطعات</value></data>
   <data name="Rgb_Color" xml:space="preserve"><value>رنگ</value></data>
@@ -3319,16 +3319,16 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Nav_Group_Lights" xml:space="preserve"><value>نور و فن</value></data>
   <data name="Nav_Lights" xml:space="preserve"><value>نور RGB</value></data>
   <data name="Nav_Fans" xml:space="preserve"><value>کنترل فن</value></data>
-  <data name="Rgb_Page_Lede" xml:space="preserve"><value>رنگ و حالت نور رم، کارت گرافیک، مادربرد، فن‌ها و نوارهای LED، برای Corsair، ASUS، Gigabyte، MSI و بقیه.</value></data>
-  <data name="Rgb_Note" xml:space="preserve"><value>دکمه را بزنید تا نور قطعات پیدا شود. برنامه‌های خود سازنده‌ها (Armoury Crate، MSI Center، RGB Fusion، iCUE) بسته می‌شوند تا سر نورها تداخل نکنند. آنچه تنظیم می‌کنید ذخیره می‌شود و با هر بار شروع برنامه دوباره اعمال می‌شود.</value></data>
+  <data name="Rgb_Page_Lede" xml:space="preserve"><value>رنگ و افکت نور رم، کارت گرافیک، مادربرد، فن و نوار LED.</value></data>
+  <data name="Rgb_Note" xml:space="preserve"><value>برای شروع دکمه را بزنید. برنامه‌های سازندهٔ نور (Armoury Crate، MSI Center، iCUE و …) تا وقتی نورها دست مازستاست غیرفعال می‌شوند و بعد برمی‌گردند. تنظیمات ذخیره می‌شود و با هر شروع برنامه اعمال می‌شود.</value></data>
   <data name="Rgb_Release" xml:space="preserve"><value>رها کردن (برگرداندن نور)</value></data>
   <data name="Rgb_Keep" xml:space="preserve"><value>برنامه‌های سازنده را نبند</value></data>
-  <data name="Rgb_Makers_Running" xml:space="preserve"><value>این برنامه‌های سازنده‌ها باز هستند و تا وقتی از این صفحه استفاده می‌کنید بسته و بعد دوباره باز می‌شوند: {0}</value></data>
-  <data name="Rgb_Makers_Stopped" xml:space="preserve"><value>فعلاً بسته شده‌اند و وقتی رها کنید یا برنامه را ببندید دوباره باز می‌شوند: {0}</value></data>
+  <data name="Rgb_Makers_Running" xml:space="preserve"><value>این برنامه‌ها باز هستند و هنگام استفاده بسته می‌شوند: {0}</value></data>
+  <data name="Rgb_Makers_Stopped" xml:space="preserve"><value>بسته شده‌اند و با رها کردن برمی‌گردند: {0}</value></data>
   <data name="Rgb_Speed" xml:space="preserve"><value>سرعت</value></data>
   <data name="Rgb_Brightness" xml:space="preserve"><value>روشنایی</value></data>
   <data name="Rgb_Effect" xml:space="preserve"><value>افکت</value></data>
-  <data name="Rgb_Effect_Note" xml:space="preserve"><value>افکت‌های بالای فهرست روی همهٔ دستگاه‌ها جواب می‌دهند: دستگاهی که افکت را دارد خودش اجرا می‌کند و دستگاهی که ندارد را برنامه فریم‌به‌فریم می‌راند (برنامه یا پایشگر باید روشن باشد). افکت‌های خود دستگاه‌ها فقط به دستگاه‌هایی می‌رسد که آن را دارند.</value></data>
+  <data name="Rgb_Effect_Note" xml:space="preserve"><value>دستگاهی که افکت را دارد خودش اجرا می‌کند؛ بقیه را برنامه فریم‌به‌فریم می‌راند.</value></data>
   <data name="Rgb_Palettes" xml:space="preserve"><value>طیف‌های رنگی</value></data>
   <data name="Rgb_Palette_sunset" xml:space="preserve"><value>غروب</value></data>
   <data name="Rgb_Palette_fire" xml:space="preserve"><value>آتش</value></data>
@@ -3353,7 +3353,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_Zone_Count" xml:space="preserve"><value>تعداد LED</value></data>
   <data name="Rgb_Zone_Max" xml:space="preserve"><value>تا {0}</value></data>
   <data name="Rgb_Zone_Set" xml:space="preserve"><value>اعمال</value></data>
-  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>هدری که طولش گفته نشده خودش روی ۳۰ LED می‌ماند تا رنگ‌ها فوراً به آن برسد. اگر نوار وصل‌شده تعداد LED دیگری دارد، همان عدد را اینجا بدهید؛ ذخیره می‌شود.</value></data>
+  <data name="Rgb_Zone_Hint" xml:space="preserve"><value>طول پیش‌فرض هر خروجی ۳۰ LED است؛ اگر نوار شما تعداد دیگری دارد همان را بنویسید.</value></data>
   <data name="Rgb_Connecting" xml:space="preserve"><value>در حال راه‌اندازی نورها… اولین جست‌وجو کمی طول می‌کشد.</value></data>
   <data name="Rgb_Dark_Off" xml:space="preserve"><value>خاموش کردن همه (تنظیمات می‌ماند)</value></data>
   <data name="Rgb_Dark_On" xml:space="preserve"><value>برگرداندن نورها</value></data>
@@ -3469,7 +3469,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>این تست‌ها ناموفق بودند: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>روی هر LED کلیک کنید تا فقط رنگ همان یکی عوض شود.</value></data>
-  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>درایور این کارت فقط یک ناحیهٔ رنگ برای کل کارت می‌دهد؛ پس همهٔ LEDهای کارت با هم یک رنگ می‌گیرند و کنترل جداگانهٔ هر LED در دسترس نیست.</value></data>
+  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>این کارت فقط یک رنگ برای کل خود می‌گیرد.</value></data>
   <data name="Rgb_Harm_mono" xml:space="preserve"><value>سایه‌های همین رنگ</value></data>
   <data name="Rgb_Harm_triad" xml:space="preserve"><value>سه‌رنگ متعادل</value></data>
   <data name="Rgb_Harm_complement" xml:space="preserve"><value>رنگ مقابل</value></data>
@@ -3757,7 +3757,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_PowerEnd_leave" xml:space="preserve"><value>نورها را دست نزن (بُرد تصمیم می‌گیرد)</value></data>
   <data name="Rgb_PowerEnd_off" xml:space="preserve"><value>نورها خاموش شوند</value></data>
   <data name="Rgb_PowerEnd_on" xml:space="preserve"><value>نورها روشن بمانند</value></data>
-  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>این کار را پایشگر پس‌زمینه انجام می‌دهد و باید روشن باشد؛ سرور نورپردازی را برای همین آماده نگه می‌دارد. پیش از خاموش‌کردن نورها، حالتشان نوشته می‌شود و هنگام بیدارشدن یا روشن‌شدن کامپیوتر دوباره برمی‌گردد، حتی اگر صحنه‌ای روشن نباشد. ویندوز فقط چند ثانیه فرصت می‌دهد، پس اگر سرور کند باشد ممکن است به‌موقع نرسد.</value></data>
+  <data name="Rgb_PowerEnd_Note" xml:space="preserve"><value>این کار با پایشگر پس‌زمینه انجام می‌شود و باید روشن باشد.</value></data>
   <data name="Detail_L_VramTemp" xml:space="preserve"><value>دمای حافظهٔ کارت گرافیک (VRAM)</value></data>
   <data name="Detail_L_MemCtrlLoad" xml:space="preserve"><value>بار کنترلر حافظهٔ کارت گرافیک</value></data>
   <data name="Detail_Fig_Bandwidth" xml:space="preserve"><value>پهنای باند اندازه‌گیری‌شده</value></data>
@@ -3989,17 +3989,24 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="HelpHow_Help_Keys_Title" xml:space="preserve"><value>با Ctrl+1 تا Ctrl+9 بین بخش‌ها جابه‌جا شوید.|در بازی از میان‌برهای اورلی استفاده کنید.|در تنظیمات تغییرشان دهید.</value></data>
   <data name="Rgb_ColorKind" xml:space="preserve"><value>نوع رنگ</value></data>
   <data name="Rgb_Look_solid" xml:space="preserve"><value>تک‌رنگ</value></data>
-  <data name="Rgb_Look_gradient" xml:space="preserve"><value>دو رنگ</value></data>
+  <data name="Rgb_Look_gradient" xml:space="preserve"><value>رنگ انتخابی</value></data>
   <data name="Rgb_Look_preset" xml:space="preserve"><value>طیف آماده</value></data>
   <data name="Rgb_First" xml:space="preserve"><value>رنگ اول</value></data>
   <data name="Rgb_Fx_Flow" xml:space="preserve"><value>متحرک</value></data>
   <data name="Rgb_Stop" xml:space="preserve"><value>رنگ {0}</value></data>
   <data name="Rgb_AddStop" xml:space="preserve"><value>افزودن رنگ (تا ۴ رنگ)</value></data>
   <data name="Rgb_DropStop" xml:space="preserve"><value>حذف رنگ انتخاب‌شده</value></data>
+  <data name="Rgb_LedTip" xml:space="preserve"><value>اگر همهٔ LEDهای سیستم روشن نشد، تعداد LED خروجی‌ها را از بخش مادربرد تا ۱۲۰ بیشتر کنید تا همهٔ نورها شناسایی شوند.</value></data>
+  <data name="Rgb_More" xml:space="preserve"><value>توضیحات</value></data>
+  <data name="Rgb_Dir" xml:space="preserve"><value>جهت حرکت</value></data>
+  <data name="Rgb_Dir_ltr" xml:space="preserve"><value>چپ به راست</value></data>
+  <data name="Rgb_Dir_rtl" xml:space="preserve"><value>راست به چپ</value></data>
+  <data name="Rgb_Dir_ttb" xml:space="preserve"><value>بالا به پایین</value></data>
+  <data name="Rgb_Dir_btt" xml:space="preserve"><value>پایین به بالا</value></data>
   <data name="Rgb_Second" xml:space="preserve"><value>رنگ دوم</value></data>
   <data name="Rgb_Swap" xml:space="preserve"><value>جابه‌جا کردن دو رنگ</value></data>
   <data name="Rgb_Suggest" xml:space="preserve"><value>جفت‌رنگ‌های پیشنهادی</value></data>
-  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>یک طیف دو تا چهار رنگی بسازید: روی هر رنگ بزنید و از پایین انتخابش کنید؛ با + رنگ می‌افزایید و با − رنگ انتخاب‌شده را برمی‌دارید. روی نوار، برد و رم رنگ‌ها در طول LEDها در هم می‌روند. برای حرکت دادنشان «متحرک» را بزنید؛ «رنگین‌کمان» و «چرخش رنگ» همیشه همهٔ طیف را نشان می‌دهند. قطعه‌ای که یک LED دارد رنگ اول را نشان می‌دهد.</value></data>
+  <data name="Rgb_Gradient_Note" xml:space="preserve"><value>روی هر رنگ بزنید و از پایین انتخابش کنید؛ + و − تعداد رنگ‌ها (۲ تا ۴) را عوض می‌کنند. برای حرکت، افکت «متحرک» را بزنید.</value></data>
   <data name="Rgb_Preview" xml:space="preserve"><value>پیش‌نمایش رنگ و افکت</value></data>
   <data name="Rgb_OwnMode" xml:space="preserve"><value>حالت خود دستگاه</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>هیچ (افکت بالا)</value></data>

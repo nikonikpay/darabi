@@ -2,7 +2,7 @@ using System.Diagnostics; using Microsoft.Extensions.Logging;
 namespace Mazesta.Hardware.Rgb;
 
 /// <summary>One device driven by the app: the effect, its colours and how many LEDs it has.</summary>
-public sealed record RgbJob(int Device, string Effect, RgbColor Color, IReadOnlyList<RgbColor>? Palette, int Speed, int Brightness, int Leds);
+public sealed record RgbJob(int Device, string Effect, RgbColor Color, IReadOnlyList<RgbColor>? Palette, int Speed, int Brightness, int Leds, string? Direction = null);
 
 /// <summary>
 /// Runs the effects a device has not itself: every few hundredths of a second each such device gets the next frame of its effect, as a colour for each LED. Runs only while
@@ -57,7 +57,7 @@ public sealed class RgbEffectRunner(OpenRgbClient client, ILogger log) : IDispos
                     bool first; lock (_gate) first = _begun.Add(j.Device);
                     if (first) last.Remove(j.Device);
                     if (first && !await client.EnterDirectAsync(j.Device, ct).ConfigureAwait(false)) { Remove(j.Device); continue; }
-                    var frame = RgbFrames.Frame(j.Effect, clock.Elapsed.TotalSeconds, j.Leds, j.Color, j.Palette, j.Speed, j.Brightness);
+                    var frame = RgbFrames.Frame(j.Effect, clock.Elapsed.TotalSeconds, j.Leds, j.Color, j.Palette, j.Speed, j.Brightness, j.Direction);
                     if (last.TryGetValue(j.Device, out var was) && was.AsSpan().SequenceEqual(frame)) continue;   // the same colours again: nothing to write
                     last[j.Device] = frame; sent = true;
                     await client.PushLedsAsync(j.Device, frame, ct).ConfigureAwait(false);

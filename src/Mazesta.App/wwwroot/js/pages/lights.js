@@ -35,7 +35,21 @@ const lit = (d) => (d.colors || []).find((c) => /^#[0-9a-f]{6}$/i.test(c) && c.t
 // Laid as the LED strips on the cards are: the first LED at the start of the line (the right in Persian).
 const grad = (cs) => cs.length > 1 ? `linear-gradient(${document.dir === "rtl" ? 270 : 90}deg, ${cs.join(", ")})` : cs[0];
 const MAX_STOPS = 4;   // a gradient takes two to four colours
-const look = (color) => ({ kind: "solid", a: color, g: [color, fromHsl(toHsl(color).h + 180, 1, 0.5)], edit: 0, preset: null, fx: "Static", own: "" });
+const look = (color) => ({ dir: "ltr", kind: "solid", a: color, g: [color, fromHsl(toHsl(color).h + 180, 1, 0.5)], edit: 0, preset: null, fx: "Static", own: "" });
+
+// What the host kept as a device's (or the whole set's) look, turned back into the choice the page shows, so a page opened later shows what is set, not a fresh start.
+const pick = (o, k) => o?.[k] ?? o?.[k[0].toUpperCase() + k.slice(1)];
+function seed(st, lk, modes = []) {
+  if (!lk) return false;
+  const mode = pick(lk, "mode"), palette = pick(lk, "palette"), color = pick(lk, "color"), leds = pick(lk, "leds");
+  if (pick(lk, "off") || leds?.length) return false;   // a dark or a per-LED look is shown by the strip itself
+  if (mode) { const univ = ["Static", "Flow", "Breathing", "Rainbow", "Cycle", "Flash"].includes(mode); st.fx = univ ? mode : "Static"; st.own = univ ? "" : String(modes.find((m) => m.name === mode)?.index ?? ""); }
+  if (palette?.startsWith("custom:")) { const cs = palette.slice(7).split(",").slice(0, MAX_STOPS); if (cs.length > 1) { st.kind = "gradient"; st.g = cs; st.edit = 0; st.a = cs[0]; st.touched = true; } }
+  else if (palette) { st.kind = "preset"; st.preset = palette; st.touched = true; }
+  else if (color) { st.a = color; st.touched = true; }
+  st.speed = pick(lk, "speed") ?? st.speed; st.bright = pick(lk, "brightness") ?? st.bright; st.dir = pick(lk, "direction") || st.dir;
+  return true;
+}
 
 // What is chosen on each card and on the whole set, kept for the app's run: going to another page and back shows the last choice, not a fresh one.
 const ui = new Map();
@@ -50,7 +64,7 @@ export function mount(el) {
   const start = h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.start", { keepMakers: keep.checked }) }, icon("bolt"), t("Rgb_Connect"));
   const release = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.release") }, icon("stop"), t("Rgb_Release"));
   const dark = h("button", { class: "btn", type: "button", hidden: true, onclick: () => run("rgb.dark", { on: !state?.dark }) }, icon("stop"), t("Rgb_Dark_Off"));
-  const list = h("div", { class: "panels two rgb-cards" });
+  const list = h("div", { class: "rgb-cards" });
   let alive = true, poll = 0;
 
   // The colour of a look (st): one colour, a gradient of two the user picks (either stop is edited by the same swatches and hue), or a spectrum (ready, or made from
@@ -115,9 +129,13 @@ export function mount(el) {
     const tiles = (state?.effects || []).map((e) => h("button", { type: "button", role: "radio", class: "rgb-fx", "data-fx": e, onclick: () => { st.fx = e; st.own = ""; sel.value = ""; mark(); onPick(); } }, icon(FX_ICON[e] || "sparkle"), h("span", {}, t("Rgb_Fx_" + e))));
     const sel = h("select", { class: "field", "aria-label": t("Rgb_OwnMode"), onchange: () => { st.own = sel.value; mark(); onPick(); } }, h("option", { value: "" }, t("Rgb_OwnMode_None")), own);
     sel.value = st.own;
-    const mark = () => tiles.forEach((b) => b.setAttribute("aria-checked", String(!st.own && b.dataset.fx === st.fx)));
+    // Which way a moving effect runs; shown only for the two that run along the lights.
+    const dirSel = h("select", { class: "field", "aria-label": t("Rgb_Dir"), onchange: () => { st.dir = dirSel.value; } }, ...["ltr", "rtl", "ttb", "btt"].map((v) => h("option", { value: v }, t("Rgb_Dir_" + v))));
+    dirSel.value = st.dir || "ltr";
+    const dirRow = h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Dir")), dirSel);
+    const mark = () => { tiles.forEach((b) => b.setAttribute("aria-checked", String(!st.own && b.dataset.fx === st.fx))); dirRow.hidden = !!st.own || !["Flow", "Rainbow"].includes(st.fx); };
     mark();
-    return h("div", { class: "rgb-fxbox" }, h("div", { class: "rgb-fxs", role: "radiogroup", "aria-label": t("Rgb_Effect") }, tiles), own.length ? h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_OwnMode")), sel) : null);
+    return h("div", { class: "rgb-fxbox" }, h("div", { class: "rgb-fxs", role: "radiogroup", "aria-label": t("Rgb_Effect") }, tiles), dirRow, own.length ? h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_OwnMode")), sel) : null);
   }
 
   // ——— The whole set ———
@@ -125,13 +143,15 @@ export function mount(el) {
   allSpeed.el.querySelector("input").addEventListener("change", () => { allSt.speed = allSpeed.value(); }); allBright.el.querySelector("input").addEventListener("change", () => { allSt.bright = allBright.value(); });
   const allBody = h("div", { class: "rgb-all-body", hidden: true });
   let allStudio = null;
+  let allSeeded = false;
   function drawAll(s) {
+    if (!allSeeded) { allSeeded = true; seed(allSt, pick(s.scene, "all"), []); allSpeed.set(allSt.speed); allBright.set(allSt.bright); }
     allStudio = studio(allSt); paced(allStudio, allSpeed);
     const sync = () => { allSpeed.el.hidden = allBright.el.hidden = !allSt.own && allSt.fx === "Static"; allStudio.update(); };
     allBody.replaceChildren(h("p", { class: "rgb-sub" }, t("Rgb_Effect")), effects(allSt, s.modeNames.map((n) => h("option", { value: n }, n)), sync), allStudio.el,
       h("div", { class: "rgb-row" }, allSpeed.el, allBright.el),
       h("div", { class: "btn-row" },
-        h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, ...allStudio.payload(), modeName: allSt.own || allSt.fx, ...(allSt.own || allSt.fx !== "Static" ? { speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, icon("check"), t("Rgb_ApplyAll")),
+        h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, ...allStudio.payload(), modeName: allSt.own || allSt.fx, ...(["Flow", "Rainbow"].includes(allSt.fx) && !allSt.own ? { direction: allSt.dir } : {}), ...(allSt.own || allSt.fx !== "Static" ? { speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, icon("check"), t("Rgb_ApplyAll")),
         h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: -1, color: "" }) }, t("Rgb_OffAll"))),
       h("p", { class: "note" }, t("Rgb_Effect_Note")));
     sync();
@@ -167,7 +187,8 @@ export function mount(el) {
 
   function card(d) {
     const key = `${d.index}:${d.name}`;   // the name too: after a new search the numbers can belong to other devices
-    const mine = ui.get(key) || { ...look(lit(d) || "#ff0000"), speed: null, bright: null, touched: false }; ui.set(key, mine);
+    let mine = ui.get(key);
+    if (!mine) { mine = { ...look(lit(d) || "#ff0000"), speed: null, bright: null, touched: false }; ui.set(key, mine); seed(mine, pick(pick(state.scene, "devices"), d.key) || pick(state.scene, "all"), d.modes); }
     if (!mine.touched) mine.a = lit(d) || mine.a;   // follows the lights until the user picks a colour of their own
     const speed = range("Rgb_Speed", mine.speed ?? 60), bright = range("Rgb_Brightness", mine.bright ?? 100);
     speed.el.querySelector("input").addEventListener("change", () => { mine.speed = speed.value(); }); bright.el.querySelector("input").addEventListener("change", () => { mine.bright = bright.value(); });
@@ -178,7 +199,7 @@ export function mount(el) {
     function sync() { const m = takes(); studioC.disabled = !m.color; speed.el.hidden = !m.speed; bright.el.hidden = !m.brightness; studioC.update(); }
     const fxs = effects(mine, d.modes.map((m) => h("option", { value: String(m.index) }, m.name)), sync);
     sync();
-    const go = () => { const m = takes(); run("rgb.set", { device: d.index, ...(m.color ? studioC.payload() : {}), ...(mine.own !== "" ? { mode: Number(mine.own) } : { modeName: mine.fx }), ...(m.speed ? { speed: speed.value() } : {}), ...(m.brightness ? { brightness: bright.value() } : {}) }); };
+    const go = () => { const m = takes(); run("rgb.set", { device: d.index, ...(m.color ? studioC.payload() : {}), ...(mine.own !== "" ? { mode: Number(mine.own) } : { modeName: mine.fx, ...(["Flow", "Rainbow"].includes(mine.fx) ? { direction: mine.dir } : {}) }), ...(m.speed ? { speed: speed.value() } : {}), ...(m.brightness ? { brightness: bright.value() } : {}) }); };
     // The LEDs as they are lit. Where the device takes a colour for each LED, an LED is a button: it opens the colour picker for that one alone.
     const one = h("input", { type: "color", class: "rgb-one", tabindex: "-1", "aria-hidden": "true" }); let oneLed = -1;
     one.addEventListener("change", () => { if (oneLed >= 0) run("rgb.led", { device: d.index, led: oneLed, color: one.value }); });
@@ -209,13 +230,15 @@ export function mount(el) {
     try { show(await call(method, params)); } catch (e) { msg.className = "msg fail"; msg.textContent = String(e.message || e); } finally { start.disabled = false; }
   }
 
-  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Lights")), h("p", { class: "page-lede" }, t("Rgb_Page_Lede")))),
-    h("div", { class: "panels two" },
-      box({ cls: "p-tool", ico: "bolt", title: t("Rgb_Title"), sub: t("Rgb_Sub"), a: "rgb", i: 0,
-        body: [h("p", { class: "note", style: { marginTop: 0 } }, t("Rgb_Note")), makers,
-          h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("p", { class: "caption", style: { marginTop: 0 } }, t("Rgb_PowerEnd_Note")), h("div", { class: "btn-row" }, start, dark, release), msg] }),
-      box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] })),
-    h("h2", { class: "tools-sec-title" }, t("Rgb_Devices")), list);
+  const allBox = box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] });
+  // The controls as one bar across the top; the set's panel, the hint and the devices' cards follow in columns, so no panel leaves a hole beside it.
+  const bar = h("section", { class: "rgb-bar" },
+    h("div", { class: "rgb-bar-head" }, icon("bolt"), h("div", {}, h("h2", {}, t("Rgb_Title")), h("p", { class: "caption" }, t("Rgb_Sub")))),
+    h("div", { class: "rgb-bar-ctl" }, h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field inline" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("div", { class: "btn-row" }, start, dark, release)),
+    makers, msg,
+    h("details", { class: "rgb-more" }, h("summary", {}, t("Rgb_More")), h("p", { class: "note" }, t("Rgb_Note")), h("p", { class: "note" }, t("Rgb_PowerEnd_Note"))));
+  el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Lights")), h("p", { class: "page-lede" }, t("Rgb_Page_Lede")))), bar,
+    h("div", { class: "rgb-grid" }, allBox, h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))), list));
   run("rgb.state");
   return () => { alive = false; clearTimeout(poll); /* the connection is the host's: it is let go by the button or when the app closes */ };
 }

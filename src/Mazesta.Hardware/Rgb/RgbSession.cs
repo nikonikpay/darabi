@@ -171,7 +171,7 @@ public sealed class RgbSession : IDisposable
                 await Client.SetColorAsync(device, tint, ct).ConfigureAwait(false); return RgbHow.Static;
             }
             if (!Client.HasPerLed(device)) return RgbHow.Skipped;
-            Runner.Set(new RgbJob(device, fx, tint, palette, look.Speed ?? 50, look.Brightness ?? 100, d.LedCount)); Runner.Start(); return RgbHow.Simulated;
+            Runner.Set(new RgbJob(device, fx, tint, palette, look.Speed ?? 50, look.Brightness ?? 100, d.LedCount, look.Direction)); Runner.Start(); return RgbHow.Simulated;
         }
         if (look.Leds is { Count: > 0 } leds) { await Client.SetLedsAsync(device, [.. leds.Select(h => RgbColor.Parse(h) ?? new RgbColor(0, 0, 0))], ct).ConfigureAwait(false); return RgbHow.Static; }
         if (color is null) return RgbHow.Skipped;

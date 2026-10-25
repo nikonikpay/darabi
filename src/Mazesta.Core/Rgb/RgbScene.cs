@@ -2,8 +2,9 @@ namespace Mazesta.Core.Rgb;
 
 /// <summary>One look: a colour ("#rrggbb"), an effect by its name (its number differs from device to device), a speed and a brightness in percent; <see cref="Off"/> is dark.</summary>
 /// <param name="Leds">A colour for each LED of the device, in its order (set by clicking single LEDs); it stands in for <paramref name="Color"/>.</param>
+/// <param name="Direction">Which way a moving effect (Flow, Rainbow) runs: see <see cref="RgbEffects.Directions"/>; null is left to right.</param>
 /// <param name="Palette">The id of a colour run (<see cref="RgbPalettes"/>) the look takes its colours from: laid as a gradient, or moved through by a moving effect.</param>
-public sealed record RgbLook(string? Color = null, string? Mode = null, int? Speed = null, int? Brightness = null, bool Off = false, IReadOnlyList<string>? Leds = null, string? Palette = null);
+public sealed record RgbLook(string? Color = null, string? Mode = null, int? Speed = null, int? Brightness = null, bool Off = false, IReadOnlyList<string>? Leds = null, string? Palette = null, string? Direction = null);
 
 /// <summary>
 /// What the user has set for the lights, kept in <c>Data/config/rgb-scene.json</c> so it comes back at every start: the app and the tray both put it back
