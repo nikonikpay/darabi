@@ -39,7 +39,7 @@ public sealed class RgbSession : IDisposable
             else
             {
                 if (!start) return RgbConnect.NotConnected;
-                if (Exe is not { } exe) return RgbConnect.NotFound;
+                if (Exe is not { } exe) { _log.LogWarning("Lights: OpenRGB.exe was not found beside the app ({Folder}); nothing can be detected", _appFolder); return RgbConnect.NotFound; }
                 if (stopMakers)
                 {
                     var stopped = await Task.Run(Conflicts.StopAll, ct).ConfigureAwait(false);
@@ -51,14 +51,31 @@ public sealed class RgbSession : IDisposable
                     if (_server is null) { _log.LogWarning("The lights' server did not come up on port {Port}", port); continue; }
                     Port = port; fresh = true; break;
                 }
-                if (_server is null) { Conflicts.RestoreAll(); return RgbConnect.NoServer; }
+                if (_server is null) { _log.LogWarning("Lights: the server could not be started on any free port ({Ports}); OpenRGB's own log: {Tail}", string.Join(", ", OpenRgbHost.Ports), ServerLogTail()); Conflicts.RestoreAll(); return RgbConnect.NoServer; }
             }
             await Client.ConnectAsync(Port, ct).ConfigureAwait(false);
         }
         await WaitForDevicesAsync(fresh, ct).ConfigureAwait(false);
         if (start) await SizeZonesAsync(scene, ct).ConfigureAwait(false);
         _log.LogInformation("OpenRGB devices: {Devices}", string.Join(" | ", Client.Devices.Select(d => $"{d.Kind} {d.Vendor} {d.Name} [{string.Join(", ", d.Zones.Select(z => $"{z.Name}:{z.LedsCount}/{z.LedsMax}"))}]")));
+        // Where it stuck: the server's own scan log says which buses and devices it tried and what each answered.
+        if (Client.Devices.Count == 0) _log.LogWarning("Lights: the server answered but found no device (elevated: {Elevated}); OpenRGB's own log: {Tail}", IsElevated(), ServerLogTail());
         return RgbConnect.Connected;
+    }
+
+    private static bool IsElevated() { try { using var id = System.Security.Principal.WindowsIdentity.GetCurrent(); return new System.Security.Principal.WindowsPrincipal(id).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator); } catch (Exception e) when (e is System.Security.SecurityException or InvalidOperationException) { return false; } }
+
+    /// <summary>The last lines of the newest log OpenRGB wrote in its config folder (what it found on SMBus, I2C and USB, and what failed), for the app's own log.</summary>
+    private string ServerLogTail()
+    {
+        try
+        {
+            var file = new DirectoryInfo(Path.Combine(_configDir, "logs")) is { Exists: true } dir ? dir.GetFiles("*.log").OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault() : null;
+            if (file is null) return "(no log file in " + _configDir + ")";
+            using var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); using var rd = new StreamReader(fs);
+            return string.Join(" / ", rd.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).TakeLast(40));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return "(log not readable: " + e.Message + ")"; }
     }
 
     /// <summary>The server listens before its first scan has finished: the devices are read again until their number has stayed the same for two reads.</summary>

@@ -43,6 +43,14 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
         }
         catch (Exception ex) { _log.LogError(ex, "LHM enumeration failed"); Status = ProviderStatus.Failed(ReasonOpenFailed, ex.Message); return; }
         int count = _nodes.Sum(n => n.Mapped.Sensors.Count);
+        // A board whose Super I/O gave no fan is tried once more after the driver is started (it can come up late); either way the log says what was found and what may be in the way.
+        bool fans = ReportDetection();
+        if (!fans && !_retried && _restart is not null && Probe(_elevated, "elevation"))
+        {
+            _retried = true; Probe(_restart, "PawnIO restart");
+            try { _computer.Close(); } catch (Exception ex) { _log.LogWarning(ex, "LHM close failed"); }
+            _nodes.Clear(); _log.LogWarning("Detection: no fan found; opening the sensors once more"); Start(); return;
+        }
         // Start() must never throw (spec §5.1): both probes touch the OS (WindowsIdentity, the
         // PawnIO driver query) and can fail. A probe that cannot answer is answered pessimistically
         // so the customer is told sensors may be missing rather than being promised a clean run.
@@ -82,6 +90,40 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
             catch (Exception ex) { _log.LogWarning(ex, "Initial update of {Hardware} failed", hw.Identifier); }
             PrimeSensors(hw.SubHardware);
         }
+    }
+
+    /// <summary>Writes every hardware node found with its fan, fan-output and temperature counts, and returns whether any fan speed or fan output exists. When none does, the log also names
+    /// what usually hides them: the driver, a missing elevation, Windows' memory integrity and driver blocklist, and the board.</summary>
+    private bool ReportDetection()
+    {
+        bool any = false;
+        try
+        {
+            void Walk(IHardware hw, int depth)
+            {
+                int fan = hw.Sensors.Count(s => s.SensorType == SensorType.Fan), ctl = hw.Sensors.Count(s => s.SensorType == SensorType.Control), temp = hw.Sensors.Count(s => s.SensorType == SensorType.Temperature);
+                if (hw.HardwareType is HardwareType.Motherboard or HardwareType.SuperIO or HardwareType.EmbeddedController or HardwareType.Cooler) any |= fan + ctl > 0;
+                if (hw.HardwareType is HardwareType.Network or HardwareType.Storage) return;
+                _log.LogInformation("Detection: {Indent}{Type} {Name}: {Fan} fan speed(s), {Ctl} fan output(s), {Temp} temperature(s)", new string(' ', depth * 2), hw.HardwareType, hw.Name, fan, ctl, temp);
+                foreach (var sub in hw.SubHardware) Walk(sub, depth + 1);
+            }
+            foreach (var hw in _computer.Hardware) Walk(hw, 0);
+            if (!any)
+            {
+                string driver = ""; try { driver = _describe?.Invoke() ?? ""; } catch (Exception e) when (e is InvalidOperationException or IOException) { }
+                _log.LogWarning("Detection: the board lists no fan. Elevated: {Elevated}; PawnIO installed: {Pawn}; {Driver}; {Windows}", Probe(_elevated, "elevation"), Probe(_pawnIo, "PawnIO driver"), driver, WindowsBlockers());
+            }
+        }
+        catch (Exception ex) { _log.LogWarning(ex, "Detection report failed"); }
+        return any;
+    }
+
+    /// <summary>Windows features that stop a kernel driver reading the chips: memory integrity (HVCI), the vulnerable-driver blocklist, Smart App Control, Secure Boot.</summary>
+    private static string WindowsBlockers()
+    {
+        static string Dw(string path, string name) { try { using var k = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(path); return k?.GetValue(name) is int v ? v.ToString(System.Globalization.CultureInfo.InvariantCulture) : "n/a"; } catch (Exception e) when (e is System.Security.SecurityException or UnauthorizedAccessException) { return "unreadable"; } }
+        return $"memory integrity: {Dw(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled")}; driver blocklist: {Dw(@"SYSTEM\CurrentControlSet\Control\CI\Config", "VulnerableDriverBlocklistEnable")}; "
+            + $"Smart App Control: {Dw(@"SYSTEM\CurrentControlSet\Control\CI\Policy", "VerifiedAndReputablePolicyState")}; Secure Boot: {Dw(@"SYSTEM\CurrentControlSet\Control\SecureBoot\State", "UEFISecureBootEnabled")}";
     }
 
     private bool Probe(Func<bool> probe, string what)
