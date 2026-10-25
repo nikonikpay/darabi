@@ -155,7 +155,7 @@ export function mount(el) {
   const fill = (r) => r.style.setProperty("--fill", `${((r.value - r.min) / Math.max(1, r.max - r.min)) * 100}%`);
   const manual = h("div", { class: "manual" },
     h("h3", { class: "h3", style: { fontSize: "17px", fontWeight: 900 } }, t("Tuning_Manual")),
-    h("p", { class: "caption" }, t("Tuning_Manual_Note")),
+    h("p", { class: "caption", id: "tManualNote" }, t("Tuning_Manual_Note")),
     slider("core", "Tuning_Label_CoreOffset", "MHz", null, 15), slider("memory", "Tuning_Label_MemoryOffset", "MHz", null, 50), slider("voltage", "Tuning_Label_Voltage", "mV", null, 5),
     slider("maxClock", "Tuning_Label_MaxClock", "MHz", "lockClock", 15), slider("power", "Tuning_Label_PowerLimit", "W", "setPower"), slider("fan", "Tuning_Label_Fan", "%", "manualFan"),
     h("div", { class: "toolbar", style: { marginTop: "18px" } },
@@ -236,10 +236,10 @@ export function mount(el) {
     unavailable,
     h("div", { class: "banner risk-banner", role: "note", "data-a": "tuning-risk" }, h("span", { class: "risk-ico" }, icon("alert")), h("div", { class: "grow" }, h("b", {}, t("Tuning_Risk_Banner_Title")), h("p", {}, t("Tuning_Risk_Banner")))),
     h("div", { class: "has-device panels", style: { gridTemplateColumns: "1fr", marginTop: 0 } },
-      box({ kind: "Gpu", title: name, sub: "NVIDIA", i: 0, a: "fan", actions: device, body: [live, ranges, others] }),
+      box({ kind: "Gpu", title: name, sub: "GPU", i: 0, a: "fan", actions: device, body: [live, ranges, others] }),
       box({ kind: "Gpu", ico: "chart", title: t("Tuning_Curve_Title"), sub: t("Tuning_Curve_Sub"), i: 1, a: "curve", actions: scan,
         body: h("div", { class: "tune", style: { marginTop: 0 } },
-          h("div", { class: "curve-wrap" },
+          h("div", { class: "curve-wrap", "data-nv": "" },
             curveInfo, editor.el,
             h("div", { class: "legend" }, h("span", {}, h("i", { style: { background: "var(--paper-3)" } }), t("Tuning_Curve_LegendStock")),
               h("span", {}, h("i", { style: { background: "var(--hue)", height: "3px" } }), t("Tuning_Curve_LegendTuned")),
@@ -253,7 +253,7 @@ export function mount(el) {
           h("div", { class: "auto-pair" },
             h("div", {}, h("div", { class: "h3" }, t("Tuning_AutoUndervolt_Title")), h("p", { class: "caption" }, t("Tuning_AutoUndervolt_Desc")), autoU),
             h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclock_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclock_Desc")), autoO),
-            h("div", {}, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclockPlus_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclockPlus_Desc")), autoP)),
+            h("div", { "data-nv": "" }, h("div", { class: "h3", style: { color: "var(--hue)" } }, t("Tuning_AutoOverclockPlus_Title")), h("p", { class: "caption" }, t("Tuning_AutoOverclockPlus_Desc")), autoP)),
           running, result, log] }),
       box({ kind: "Gpu", ico: "chart", title: t("Tuning_SceneTest_Title"), sub: t("Tuning_SceneTest_Sub"), i: 3, a: "scene", actions: h("div", { class: "toolbar" }, sceneOpts, sceneBtn, sceneClear), body: [sceneList] }),
       box({ kind: "Power", ico: "bolt", title: t("Tuning_Rules_Title"), sub: t("Tuning_Rules_Sub"), i: 3, a: "rules",
@@ -278,7 +278,10 @@ export function mount(el) {
     device.value = x.device;
     live.replaceChildren(...x.live.map((tile) => h("div", {}, h("div", { class: "caption" }, tile.label),
       h("div", { class: `v ${tile.value === t("Value_NotAvailable") ? "missing" : ""}` }, tile.value))));
-    const L = x.limits, form = x.form;
+    const L = x.limits, form = x.form, amd = x.vendor === "AMD";
+    // NVIDIA's measured voltage/frequency curve, its scan, the clock cap and Overclock Plus have no counterpart on a Radeon: its offsets, voltage and fan are the controls.
+    for (const n of el.querySelectorAll("[data-nv]")) n.hidden = amd;
+    scan.hidden = amd; el.querySelector("#tManualNote").textContent = t(amd ? "Tuning_Manual_Note_Amd" : "Tuning_Manual_Note");
     const conf = { core: [L.coreMin, L.coreMax, form.core, L.hasCore], memory: [L.memoryMin, L.memoryMax, form.memory, L.hasMemory], voltage: [L.voltMin, 0, form.voltage, L.hasVoltage],
       maxClock: [L.clockMin, L.clockMax, form.maxClock, true], power: [L.powerMin, L.powerMax, form.power, L.hasPower], fan: [L.fanMin, L.fanMax, form.fan, L.hasFan] };
     for (const [k, [min, max, v, has]] of Object.entries(conf)) {
@@ -287,7 +290,7 @@ export function mount(el) {
       const on = c.sw ? form[c.sw] : true;
       if (c.toggle) { c.toggle.checked = on; c.toggle.disabled = !has; }
       c.range.disabled = c.box.disabled = !has || !on || x.busy;
-      if (k === "voltage") c.range.closest(".slider-row").hidden = !has;   // only a card with a voltage offset has the control
+      if (k === "voltage" || amd && (k === "maxClock" || k === "power")) c.range.closest(".slider-row").hidden = !has;   // only a card with a voltage offset has the control
     }
     setField(f.profileName, form.profileName);
     el.querySelector("#tStatus").textContent = x.status || "";

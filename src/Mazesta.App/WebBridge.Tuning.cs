@@ -13,7 +13,7 @@ public sealed partial class WebBridge
         object State() => new
         {
             hasDevice = t.HasDevice, unavailable = t.Unavailable, devices = t.Devices.Select(d => d.Name), device = t.Device is { } dev ? t.Devices.ToList().IndexOf(dev) : -1,
-            name = t.Device?.Name, ranges = t.Ranges, otherGpus = t.OtherGpus, status = t.Status,
+            name = t.Device?.Name, vendor = t.Device?.Id.StartsWith("amd:", StringComparison.Ordinal) == true ? "AMD" : "NVIDIA", ranges = t.Ranges, otherGpus = t.OtherGpus, status = t.Status,
             live = new[] { t.LiveCore, t.LiveMemory, t.LiveVoltage, t.LiveTemperature, t.LivePower, t.LiveFan }.Select(Tile),
             liveClock = double.IsNaN(t.LiveClockMHz) ? (double?)null : t.LiveClockMHz, liveVolt = double.IsNaN(t.LiveVoltageV) ? (double?)null : t.LiveVoltageV,
             form = new

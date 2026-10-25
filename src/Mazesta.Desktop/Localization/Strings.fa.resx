@@ -688,6 +688,7 @@
   <data name="Tuning_Note" xml:space="preserve"><value>اورکلاک، آندرولت، محدودیت توان و فن کارت گرافیک. همهٔ تنظیمات موقت‌اند: با ری‌استارت یا ری‌ست درایور، کارت به حالت کارخانه برمی‌گردد. مقادیر خارج از محدودهٔ مجاز درایور کارت پذیرفته نمی‌شوند.</value></data>
   <data name="Tuning_Manual" xml:space="preserve"><value>تنظیمات دستی</value></data>
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>رابط عمومی NVIDIA ولتاژ را مستقیم تنظیم نمی‌کند. آندرولت یعنی آفست مثبت هسته به‌همراه سقف فرکانس: آفست منحنی ولتاژ/فرکانس را بالا می‌برد و سقف، فرکانس را همان‌جا نگه می‌دارد؛ پس کارت همان فرکانس را با ولتاژ کمتر می‌گیرد. اورکلاک یعنی سقف بالاتر (یا بدون سقف) همراه با آفست.</value></data>
+  <data name="Tuning_Manual_Note_Amd" xml:space="preserve"><value>برای کارت AMD: «آفست فرکانس هسته» سقف فرکانس را جابه‌جا می‌کند، «آفست فرکانس حافظه» سقف حافظه را بالا می‌برد و «آفست ولتاژ» ولتاژ را مستقیم کم می‌کند (آندرولت). سقف فرکانس، محدودیت توان و منحنی ولتاژ/فرکانس برای AMD ارائه نمی‌شود. «سرعت ثابت فن» فن را روی یک درصد نگه می‌دارد.</value></data>
   <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>آفست فرکانس هسته</value></data>
   <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>آفست فرکانس حافظه</value></data>
   <data name="Tuning_Label_Voltage" xml:space="preserve"><value>آفست ولتاژ (آندروولت)</value></data>

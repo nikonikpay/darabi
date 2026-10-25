@@ -688,6 +688,7 @@
   <data name="Tuning_Note" xml:space="preserve"><value>Overclock, undervolt, power limit and fan of the graphics card. Every setting is temporary: a restart or a driver reset puts the card back to factory settings. Values outside the range the card's driver allows are refused.</value></data>
   <data name="Tuning_Manual" xml:space="preserve"><value>Manual settings</value></data>
   <data name="Tuning_Manual_Note" xml:space="preserve"><value>NVIDIA's public interface does not set a voltage directly. An undervolt is a positive core offset together with a clock cap: the offset lifts the voltage/frequency curve, the cap keeps the clock where it was, so the card reaches that clock at a lower voltage. An overclock is a higher cap (or no cap) with an offset.</value></data>
+  <data name="Tuning_Manual_Note_Amd" xml:space="preserve"><value>For an AMD card: the core offset moves the clock ceiling, the memory offset raises the memory ceiling and the voltage offset lowers the voltage directly (the undervolt). A clock cap, a power limit and the voltage/frequency curve are not offered for AMD. The fixed fan speed holds the fans at one duty.</value></data>
   <data name="Tuning_Label_CoreOffset" xml:space="preserve"><value>Core clock offset</value></data>
   <data name="Tuning_Label_MemoryOffset" xml:space="preserve"><value>Memory clock offset</value></data>
   <data name="Tuning_Label_Voltage" xml:space="preserve"><value>Voltage offset (undervolt)</value></data>
