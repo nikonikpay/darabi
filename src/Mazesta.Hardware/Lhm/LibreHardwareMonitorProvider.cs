@@ -227,7 +227,7 @@ public sealed class LibreHardwareMonitorProvider : ISensorProvider, IFanControlS
             status[n.Mapped.Node.Id] = failed ? NodeStatus.Failed(n.Failure!, n.FailingSince!.Value, n.LastOk) : n.LastOk is null ? NodeStatus.NeverUpdated : NodeStatus.Healthy(n.LastOk.Value);
             foreach (var s in n.Mapped.Sensors)
             {
-                double? value = s.Source.Value;
+                double? value = s.Source.Value * s.Scale;
                 var quality = failed || n.LastOk is null ? DataQuality.Stale : ReadingValidator.Validate(s.Definition.Kind, value);
                 readings.Add(new SensorReading(s.Definition.Id, value, n.LastOk ?? request.Now, quality, Name));
             }

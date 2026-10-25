@@ -1,6 +1,7 @@
 using LibreHardwareMonitor.Hardware; using Mazesta.Core.Hardware;
 namespace Mazesta.Hardware.Lhm;
-internal sealed record MappedSensor(SensorDefinition Definition, ISensor Source);
+/// <summary>LHM reports Data sensors in raw bytes since pre-766; <paramref name="Scale"/> turns them into the GB (system) or MB (GPU) the app has always shown.</summary>
+internal sealed record MappedSensor(SensorDefinition Definition, ISensor Source, double Scale = 1);
 internal sealed record MappedNode(HardwareNode Node, IHardware Source, IReadOnlyList<MappedSensor> Sensors);
 internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialResolver)
 {
@@ -27,14 +28,16 @@ internal sealed class LhmHardwareMapper(Func<IHardware, string?> storageSerialRe
         int ordinal = 0; var seen = new HashSet<SensorId>();
         foreach (var s in hw.Sensors.Where(s => !s.IsDefaultHidden).OrderBy(s => s.SensorType).ThenBy(s => s.Index))
         {
-            var sensorKind = SensorKindOf(s.SensorType);
+            bool gpuData = s.SensorType == SensorType.Data && hw.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel;
+            var sensorKind = gpuData ? SensorKind.SmallData : SensorKindOf(s.SensorType);
+            double scale = gpuData ? 1.0 / (1 << 20) : s.SensorType == SensorType.Data ? 1.0 / (1 << 30) : 1;
             string sensorPath = s.Identifier.ToString()[path.Length..];   // "/temperature/1"
             string name = SensorNameCatalog.Resolve(hw, s);
             var sensorId = SensorId.Create(id, sensorPath);
             if (!seen.Add(sensorId)) continue;   // a driver can report the same identifier twice; ids key every dictionary downstream, so the first one wins
             var def = new SensorDefinition(sensorId, id, name, sensorKind, Units.ForKind(sensorKind),
                 SensorRoleMap.Resolve(hw.HardwareType, s.SensorType, name, path), ordinal++);
-            sensors.Add(new MappedSensor(def, s));
+            sensors.Add(new MappedSensor(def, s, scale));
         }
         var node = new HardwareNode(id, kind, VendorOf(hw.HardwareType, path), hw.Name, parentId, serial is not null || kind != HardwareKind.Storage, sensors.Select(m => m.Definition).ToList());
         into.Add(new MappedNode(node, hw, sensors));

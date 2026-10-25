@@ -58,11 +58,18 @@ public sealed class RgbSession : IDisposable
         await WaitForDevicesAsync(fresh, ct).ConfigureAwait(false);
         if (start) await SizeZonesAsync(scene, ct).ConfigureAwait(false);
         _log.LogInformation("OpenRGB devices: {Devices}", string.Join(" | ", Client.Devices.Select(d => $"{d.Kind} {d.Vendor} {d.Name} [{string.Join(", ", d.Zones.Select(z => $"{z.Name}:{z.LedsCount}/{z.LedsMax}"))}]")));
+        // OpenRGB lists a graphics card by vendor + subsystem id (an ASUS Astral/Strix is found only when its exact id is in OpenRGB's table), so the ids go in the log.
+        if (!Client.Devices.Any(d => d.Kind.ToString().Contains("Graphics", StringComparison.OrdinalIgnoreCase))) _log.LogWarning("Lights: no graphics card among the devices; the cards here are {Cards}", VideoCards());
         // Where it stuck: the server's own scan log says which buses and devices it tried and what each answered.
         if (Client.Devices.Count == 0) _log.LogWarning("Lights: the server answered but found no device (elevated: {Elevated}); OpenRGB's own log: {Tail}", IsElevated(), ServerLogTail());
         return RgbConnect.Connected;
     }
 
+    private static string VideoCards()
+    {
+        try { using var q = new System.Management.ManagementObjectSearcher("SELECT Name, PNPDeviceID FROM Win32_VideoController"); return string.Join(" | ", q.Get().Cast<System.Management.ManagementBaseObject>().Select(o => $"{o["Name"]} {o["PNPDeviceID"]}")); }
+        catch (Exception e) { return "unknown: " + e.Message; }
+    }
     private static bool IsElevated() { try { using var id = System.Security.Principal.WindowsIdentity.GetCurrent(); return new System.Security.Principal.WindowsPrincipal(id).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator); } catch (Exception e) when (e is System.Security.SecurityException or InvalidOperationException) { return false; } }
 
     /// <summary>The last lines of the newest log OpenRGB wrote in its config folder (what it found on SMBus, I2C and USB, and what failed), for the app's own log.</summary>
