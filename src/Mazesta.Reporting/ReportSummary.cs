@@ -102,6 +102,7 @@ public sealed class SummaryText
 
     public static SummaryText For(string language) => language == "en" ? English : Persian;
 
+    public string NotTested => IsRtl ? "تست نشده" : "Not tested";
     public string HealthName(string? health) => health switch { "Healthy" => HealthHealthy, "Warning" => HealthWarning, "Unhealthy" => HealthUnhealthy, null => NotReported, _ => HealthUnknown };
     public string PartName(HeatPart p) => p switch { HeatPart.Cpu => Cpu, HeatPart.Gpu => Gpu, HeatPart.GpuHotSpot => GpuHotSpot, HeatPart.GpuMemory => GpuMemory, HeatPart.Drive => DriveTemp, _ => Board };
 
@@ -134,7 +135,7 @@ public sealed class SummaryText
     };
 }
 
-/// <summary>The report summary as one self-contained offline HTML page (no scripts, no external requests), laid out for one A5 sheet: a long report
+/// <summary>The report summary as one self-contained offline HTML page (no scripts, no external requests), laid out for one A4 sheet, a card for each part: a long report
 /// (many tests, cards and drives) is set tighter (<see cref="Fit"/>) rather than run onto a second page.</summary>
 public static class SummaryHtml
 {
@@ -151,12 +152,22 @@ public static class SummaryHtml
     /// <summary>A name without its bracketed detail ("(FP64)", "(256×1440)"): the summary has one line for it, the full report the rest.</summary>
     internal static string Short(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"\s*[\(（][^\)）]*[\)）]", "").Trim() is { Length: > 0 } t ? t : name;
 
+    /// <summary>Which card of the sheet a test or benchmark belongs to, by the prefix of its id (the same split <see cref="PartHistory"/> uses).</summary>
+    private static readonly (string Key, string[] Prefixes)[] Cards =
+        [("cpu", ["cpu.", "bench.cpu."]), ("gpu", ["gpu.", "bench.gpu."]), ("ram", ["memory.", "bench.memory"]), ("storage", ["storage.", "bench.storage"])];
+    /// <summary>The temperature at which a part's figure turns amber, then red: a reading aid on the sheet, not a verdict (the tests decide that).</summary>
+    private static (double Warn, double Bad) Limits(HeatPart p) => p switch
+    {
+        HeatPart.Cpu => (80, 90), HeatPart.Gpu => (75, 85), HeatPart.GpuHotSpot => (90, 105), HeatPart.GpuMemory => (90, 100), HeatPart.Drive => (60, 70), _ => (65, 80),
+    };
+    private static string Level(HeatPart p, double c) => c >= Limits(p).Bad ? "bad" : c >= Limits(p).Warn ? "warn" : "ok";
+    private static string Cls(ReportOutcome o) => o switch { ReportOutcome.Passed => "ok", ReportOutcome.Failed => "bad", _ => "warn" };
+
     public static string Write(ReportSummary s, ReportFont? font = null, SummaryText? wording = null, ReportText? reportWording = null)
     {
-        var w = wording ?? SummaryText.Persian; var rw = reportWording ?? ReportText.For(w.Language); var r = s.Report;
+        var w = wording ?? SummaryText.Persian; var rw = reportWording ?? ReportText.For(w.Language); var r = s.Report; var m = r.Machine;
         string na = $"<span class=\"na\">{E(w.NotReported)}</span>";
-        string Temp(double? c) => c is { } v ? Lt($"{v.ToString("F0", Inv)} °C") : na;
-        var b = new StringBuilder(24 * 1024);
+        var b = new StringBuilder(32 * 1024);
         b.Append("<!DOCTYPE html><html lang=\"").Append(w.Language).Append("\" dir=\"").Append(w.IsRtl ? "rtl" : "ltr").Append("\"><head><meta charset=\"utf-8\">")
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
          .Append("<title>").Append(E(w.Title)).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main class=\"").Append(Fit(s)).Append("\">");
@@ -168,89 +179,95 @@ public static class SummaryHtml
 
         // The verdict, with the counts behind it; a benchmark report has no verdict.
         if (r.Verdict is { } verdict)
-            b.Append("<div class=\"verdict ").Append(verdict).Append("\">").Append(E(rw.VerdictName(verdict))).Append("<small>")
-             .Append(Lt($"{r.Counts.Passed}/{r.Counts.Total}")).Append("</small></div>");
+            b.Append("<div class=\"verdict ").Append(verdict).Append("\">").Append(E(rw.VerdictName(verdict))).Append("<small>").Append(Lt($"{r.Counts.Passed}/{r.Counts.Total}")).Append("</small></div>");
         else b.Append("<div class=\"verdict Benchmark\">").Append(E(w.Benchmark)).Append("</div>");
         if (!string.IsNullOrWhiteSpace(r.ServiceNotes))
-            b.Append("<section><h2>").Append(E(rw.WorkDone)).Append("</h2><div style=\"white-space:pre-wrap;line-height:1.9\">").Append(E(r.ServiceNotes.Trim())).Append("</div></section>");
-        b.Append("<div class=\"installed\">").Append(E(w.Installed)).Append("</div>");
+            b.Append("<section class=\"notes\"><h2>").Append(E(rw.WorkDone)).Append("</h2><div style=\"white-space:pre-wrap;line-height:1.9\">").Append(E(r.ServiceNotes.Trim())).Append("</div></section>");
 
-        // The highest temperatures: one row of tiles (the parts the summary shows), each with the test it was reached in.
-        var shown = s.Peaks.Where(p => s.Columns.Contains(p.Part)).ToList();
-        b.Append("<section><h2>").Append(E(w.Peaks)).Append("</h2>");
-        if (shown.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoTemps)).Append("</p>");
-        else
-        {
-            b.Append("<div class=\"temps\" style=\"grid-template-columns:repeat(").Append(shown.Count).Append(",1fr)\">");
-            foreach (var p in shown)
-            {
-                b.Append("<div class=\"temp\"><div class=\"part\">").Append(E(w.PartName(p.Part))).Append("</div><div class=\"now\">").Append(Temp(p.MaxC)).Append("</div>");
-                if (p.During is { } during) b.Append("<div class=\"max\">").Append(E(Short(during))).Append("</div>");
-                b.Append("</div>");
-            }
-            b.Append("</div>");
-            if (s.FromTrace) b.Append("<p class=\"note\">").Append(E(w.TraceNote)).Append("</p>");
-        }
-        b.Append("</section>");
-
-        // The results as a table, one line a test or benchmark: its name and its few main figures (a network test's speeds and ping, a memory test's
-        // bandwidth and latency), never the temperatures of parts it did not stress. A test shows its verdict; a benchmark's figures are its result.
-        b.Append("<section><h2>").Append(E(w.Tests)).Append("</h2>");
-        if (s.Rows.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoRuns)).Append("</p>");
-        else
-        {
-            b.Append("<table class=\"res\"><tbody>");
-            foreach (var row in s.Rows)
-            {
-                b.Append("<tr><td class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"figs\">");
-                foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
-                b.Append("</td><td class=\"end\">");
-                if (row.Outcome is { } o)
-                {
-                    string cls = o switch { ReportOutcome.Passed => "ok", ReportOutcome.Failed => "bad", _ => "warn" };
-                    b.Append("<span class=\"badge ").Append(cls).Append("\">").Append(E(rw.OutcomeName(o))).Append("</span>");
-                }
-                b.Append("</td></tr>");
-            }
-            b.Append("</tbody></table>");
-        }
-        b.Append("</section>");
-
-        // The machine: label/value pairs in two columns.
-        b.Append("<section><h2>").Append(E(w.Machine)).Append("</h2><dl class=\"spec\">");
-        void Row(string label, string? value, bool wide = false) { if (!string.IsNullOrWhiteSpace(value)) b.Append(wide ? "<div class=\"wide\">" : "<div>").Append("<dt>").Append(E(label)).Append("</dt><dd>").Append(Lt(value)).Append("</dd></div>"); }
-        var m = r.Machine;
-        if (ReportFormat.DeviceName(m) is { } device) Row(rw.Device, device + (m.Computer?.IsPortable == true ? $" · {rw.Laptop}" : ""), wide: true);
-        Row(rw.Cpu, m.Cpu?.Name?.Trim(), wide: true);
-        foreach (var g in m.Gpus) Row(rw.Gpu, g.Name + (g.DriverVersion is { } d ? $" · driver {d}" : ""), wide: true);
-        // The BIOS sits on the motherboard's line (it belongs to the board), and the memory has a line of its own.
+        // The machine: device, board with its BIOS on one line, the system.
+        int machineAt = b.Length; b.Append("<section class=\"machine\"><dl class=\"spec\">"); int machineRows = b.Length;
+        void Row(string label, string? value) { if (!string.IsNullOrWhiteSpace(value)) b.Append("<div class=\"wide\"><dt>").Append(E(label)).Append("</dt><dd>").Append(Lt(value)).Append("</dd></div>"); }
+        if (ReportFormat.DeviceName(m) is { } device) Row(rw.Device, device + (m.Computer?.IsPortable == true ? $" · {rw.Laptop}" : ""));
         string? board = m.Motherboard is { } mb ? $"{mb.Manufacturer} {mb.Product}".Trim() : null;
         string? bios = m.Bios is { } bi ? $"{bi.Version}".Trim() + (bi.ReleaseDate is { } rd ? $" · {rd:yyyy-MM-dd}" : "") : null;
         if (!string.IsNullOrWhiteSpace(board) && !string.IsNullOrWhiteSpace(bios))
             b.Append("<div class=\"wide\"><dt>").Append(E(rw.Board)).Append("</dt><dd>").Append(Lt(board)).Append("</dd><dt class=\"sep\">").Append(E(rw.Bios)).Append("</dt><dd class=\"fixed\">").Append(Lt(bios)).Append("</dd></div>");
-        else { Row(rw.Board, board, wide: true); Row(rw.Bios, bios, wide: true); }
-        if (m.TotalPhysicalMemoryBytes is { } ram) Row(w.Ram, $"{ram / 1073741824.0:F0} GB · {m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")), wide: true);
-        if (m.Os is { } os) Row(rw.Os, $"{os.Caption} {os.Version}".Replace("Microsoft ", "").Trim(), wide: true);
-        b.Append("</dl></section>");
+        else { Row(rw.Board, board); Row(rw.Bios, bios); }
+        if (m.Os is { } os) Row(rw.Os, $"{os.Caption} {os.Version}".Replace("Microsoft ", "").Trim());
+        if (b.Length == machineRows) b.Length = machineAt; else b.Append("</dl></section>");   // nothing known about the machine: no empty box
 
-        // Drives as the report recorded them: Windows' verdict, with the life left where the drive counts wear.
-        b.Append("<section><h2>").Append(E(w.Drives)).Append("</h2>");
-        if (m.Storage.Count == 0) b.Append("<p class=\"na\">").Append(E(w.NoDrives)).Append("</p>");
-        else
+        // One card a part: what it is, the hottest it got, and each test of it with its result and figures.
+        var ids = r.Tests.ToDictionary(t => t.Name, t => t.Id, StringComparer.Ordinal);
+        foreach (var x in r.Benchmarks ?? []) ids[x.Name] = x.Id;
+        IReadOnlyList<SummaryRow> RowsOf(string key) => [.. s.Rows.Where(x => ids.TryGetValue(x.Name, out var id) && Cards.First(c => c.Key == key).Prefixes.Any(p => id.StartsWith(p, StringComparison.Ordinal)))];
+        var claimed = Cards.SelectMany(c => RowsOf(c.Key)).ToHashSet();
+        var other = s.Rows.Where(x => !claimed.Contains(x)).ToList();
+        PartPeak? Peak(HeatPart p) => s.Peaks.FirstOrDefault(x => x.Part == p);
+
+        string Tile(string label, PartPeak? p)
+            => p is null ? $"<div class=\"tile\"><div class=\"tl\">{E(label)}</div><div class=\"tv\">{na}</div></div>"
+             : $"<div class=\"tile {Level(p.Part, p.MaxC)}\"><div class=\"tl\">{E(label)}</div><div class=\"tv\">{Lt($"{p.MaxC.ToString("F0", Inv)} °C")}</div>" + (p.During is { } d ? $"<div class=\"td\">{E(w.During)} {E(Short(d))}</div>" : "") + "</div>";
+        string Status(IReadOnlyList<SummaryRow> rows)
         {
-            b.Append("<table class=\"drives\"><tbody>");
-            foreach (var d in m.Storage)
+            var tested = rows.Where(x => x.Outcome is not null).ToList();
+            if (tested.Count == 0) return rows.Count > 0 ? $"<span class=\"badge unk\">{E(w.Benchmark)}</span>" : $"<span class=\"badge unk\">{E(w.NotTested)}</span>";
+            var o = tested.Any(x => x.Outcome == ReportOutcome.Failed) ? ReportOutcome.Failed : tested.All(x => x.Outcome == ReportOutcome.Passed) ? ReportOutcome.Passed : ReportOutcome.Inconclusive;
+            return $"<span class=\"badge {Cls(o)}\">{E(rw.OutcomeName(o))}</span>";
+        }
+        void Tests(IReadOnlyList<SummaryRow> rows)
+        {
+            if (rows.Count == 0) return;
+            b.Append("<table class=\"res\"><tbody>");
+            foreach (var row in rows)
             {
-                string cls = d.HealthStatus switch { "Healthy" => "ok", "Warning" => "warn", "Unhealthy" => "bad", _ => "unk" };
-                string health = w.HealthName(d.HealthStatus) + (DriveAttention.HealthPercent(d.WearPercent) is { } pct ? $" ({pct}%)" : "");
-                b.Append("<tr><td><b>").Append(Lt(d.FriendlyName ?? "?")).Append("</b><small>")
-                 .Append(Lt(string.Join(" · ", new[] { d.MediaType, d.BusType, d.SizeBytes is { } sz ? $"{sz / 1_000_000_000} GB" : null }.Where(x => !string.IsNullOrWhiteSpace(x)))))
-                 .Append("</small></td><td class=\"end\"><span class=\"badge ").Append(cls).Append("\">").Append(E(health)).Append("</span></td></tr>");
+                b.Append("<tr><td class=\"rn\"><b>").Append(E(Short(row.Name))).Append("</b></td><td class=\"figs\">");
+                foreach (var f in row.Figures) b.Append("<span class=\"fig\"><small>").Append(E(Short(f.Name))).Append("</small> ").Append(Lt(Figure(f))).Append("</span>");
+                b.Append("</td><td class=\"end\">");
+                if (row.Outcome is { } o) b.Append("<span class=\"badge ").Append(Cls(o)).Append("\">").Append(E(rw.OutcomeName(o))).Append("</span>");
+                b.Append("</td></tr>");
             }
             b.Append("</tbody></table>");
         }
-        b.Append("</section>");
+        void Card(string title, string status, string? name, string? facts, string tiles, IReadOnlyList<SummaryRow> rows, string? extra = null, bool wide = false)
+        {
+            b.Append(wide ? "<article class=\"card wide\">" : "<article class=\"card\">").Append("<div class=\"ch\"><h3>").Append(E(title)).Append("</h3>").Append(status).Append("</div>");
+            if (!string.IsNullOrWhiteSpace(name)) b.Append("<div class=\"cn\">").Append(Lt(name)).Append("</div>");
+            if (!string.IsNullOrWhiteSpace(facts)) b.Append("<div class=\"cf\">").Append(Lt(facts)).Append("</div>");
+            if (tiles.Length > 0) b.Append("<div class=\"tiles\">").Append(tiles).Append("</div>");
+            if (extra is not null) b.Append(extra);
+            Tests(rows); b.Append("</article>");
+        }
+        b.Append("<div class=\"cards\">");
+        var cpu = m.Cpu; var cpuRows = RowsOf("cpu");
+        Card(rw.Cpu, Status(cpuRows), cpu?.Name?.Trim(), cpu is null ? null : string.Join(" · ", new[] { cpu.PhysicalCores is { } c ? $"{c} cores" : null, cpu.LogicalProcessors is { } t ? $"{t} threads" : null, cpu.Socket }.Where(x => !string.IsNullOrWhiteSpace(x))),
+            Peak(HeatPart.Cpu) is null ? "" : Tile(w.PartName(HeatPart.Cpu), Peak(HeatPart.Cpu)), cpuRows);
+        var gpuRows = RowsOf("gpu");
+        string gpus = string.Concat(m.Gpus.Select(g => $"<div class=\"cn\">{Lt(g.Name)}</div><div class=\"cf\">{Lt(string.Join(" · ", new[] { g.AdapterRamBytes is > 0 and var v ? $"{v / 1073741824.0:F0} GB" : null, g.DriverVersion is { } d ? $"driver {d}" : null }.Where(x => x is not null)))}</div>"));
+        string gpuTiles = string.Concat(new[] { HeatPart.Gpu, HeatPart.GpuHotSpot, HeatPart.GpuMemory }.Where(p => Peak(p) is not null).Select(p => Tile(w.PartName(p), Peak(p))));
+        Card(w.Gpu, Status(gpuRows), null, null, gpuTiles, gpuRows, gpus);
+        var ramRows = RowsOf("ram");
+        if (m.TotalPhysicalMemoryBytes is { } ramBytes || ramRows.Count > 0)
+            Card(w.Ram, Status(ramRows), m.TotalPhysicalMemoryBytes is { } total ? $"{total / 1073741824.0:F0} GB" : null,
+                m.MemoryModules.Count > 0 ? $"{m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")) : null, "", ramRows);
+        var stoRows = RowsOf("storage");
+        var drives = new StringBuilder();
+        foreach (var d in m.Storage)
+        {
+            string cls = d.HealthStatus switch { "Healthy" => "ok", "Warning" => "warn", "Unhealthy" => "bad", _ => "unk" };
+            string health = w.HealthName(d.HealthStatus) + (DriveAttention.HealthPercent(d.WearPercent) is { } pct ? $" ({pct}%)" : "");
+            drives.Append("<div class=\"drive\"><div><b>").Append(Lt(d.FriendlyName ?? "?")).Append("</b><small>")
+             .Append(Lt(string.Join(" · ", new[] { d.MediaType, d.BusType, d.SizeBytes is { } sz ? $"{sz / 1_000_000_000} GB" : null }.Where(x => !string.IsNullOrWhiteSpace(x)))))
+             .Append("</small></div><span class=\"badge ").Append(cls).Append("\">").Append(E(health)).Append("</span></div>");
+        }
+        if (m.Storage.Count == 0) drives.Append("<p class=\"na\">").Append(E(w.NoDrives)).Append("</p>");
+        Card(w.Drives, Status(stoRows), null, null, Peak(HeatPart.Drive) is null ? "" : Tile(w.PartName(HeatPart.Drive), Peak(HeatPart.Drive)), stoRows, drives.ToString());
+        if (other.Count > 0) Card(w.Tests, Status(other), null, null, "", other, null, wide: true);
+        if (Peak(HeatPart.Board) is { } bp) Card(w.PartName(HeatPart.Board), "", null, null, Tile(w.PartName(HeatPart.Board), bp), [], null, wide: true);
+        b.Append("</div>");
+        if (s.Peaks.Count == 0) b.Append("<p class=\"note\">").Append(E(w.NoTemps)).Append("</p>");
+        if (s.FromTrace) b.Append("<p class=\"note\">").Append(E(w.TraceNote)).Append("</p>");
 
+        b.Append("<div class=\"installed\">").Append(E(w.Installed)).Append("</div>");
         b.Append("<div class=\"sign\"><div>").Append(E(w.Technician)).Append("</div><div>").Append(E(w.Customer)).Append("</div></div>")
          .Append("<footer>").Append(E(w.Footer)).Append(" ").Append(Lt($"Mazesta Test {r.AppVersion}")).Append("</footer></main></body></html>");
         return b.ToString();
@@ -271,48 +288,43 @@ public static class SummaryHtml
             $"@font-face{{font-family:'{f.Family}';font-weight:700;src:url(data:font/ttf;base64,{Convert.ToBase64String(f.Bold)}) format('truetype')}}";
         string family = f is null ? "Tahoma,'Segoe UI',sans-serif" : $"'{f.Family}',Tahoma,'Segoe UI',sans-serif";
         return face + $@"
-@page{{size:A5;margin:8mm}}
+@page{{size:A4;margin:10mm}}
 *{{box-sizing:border-box}}
-body{{margin:0;background:#eceae3;color:#16161a;font:10px/1.5 {family}}}
-main{{max-width:540px;margin:0 auto;background:#fff;padding:14px 16px}}
+body{{margin:0;background:#eceae3;color:#16161a;font:12px/1.55 {family}}}
+main{{max-width:760px;margin:0 auto;background:#fff;padding:18px 22px}}
 .lt{{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate}}
-header{{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:3px solid #FDD400;padding-bottom:6px;margin-bottom:9px}}
-.brand{{display:flex;align-items:center;gap:9px}} .logo{{height:20px;width:auto}}
-h1{{margin:0;font-size:14px;line-height:1.3}} .shop{{color:#55555f;font-size:9.5px}} .meta{{font-size:9.5px;color:#44444c;text-align:end;line-height:1.55}}
-section{{border:1.3px solid #16161a;border-radius:7px;padding:8px 8px 5px;margin-bottom:9px;page-break-inside:avoid}}
-h2{{margin:-16px 0 3px;font-size:10.5px;display:inline-block;background:#fff;padding:0 5px;border-inline-start:3px solid #FDD400;line-height:1.4}}
-.spec{{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;margin:0}} .spec div{{display:flex;gap:6px;padding:1.5px 0;border-bottom:1px dotted #d0cfc8;min-width:0}}
-.spec div.wide{{grid-column:1/3}} dt{{color:#55555f;flex:0 0 auto}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-table{{width:100%;border-collapse:collapse}} th,td{{padding:2px 3px;border-bottom:1px dotted #d0cfc8;text-align:start;vertical-align:middle}}
-thead th{{font-weight:400;color:#55555f;font-size:9px;border-bottom:1px solid #16161a}} tbody tr:last-child td{{border-bottom:0}}
-.runs td b{{font-size:9.5px}} .runs td:nth-child(n+3),.runs th:nth-child(n+3){{text-align:center;white-space:nowrap}}
-.drives td small{{color:#66666e;font-size:8.5px;margin-inline-start:6px}} .drives td b{{font-size:9.8px}} td.end{{text-align:end}}
-.badge{{display:inline-block;border-radius:99px;padding:0 7px;font-weight:700;font-size:9px;border:1px solid;white-space:nowrap}}
+header{{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:3px solid #FDD400;padding-bottom:9px;margin-bottom:12px}}
+.brand{{display:flex;align-items:center;gap:11px}} .logo{{height:28px;width:auto}}
+h1{{margin:0;font-size:19px;line-height:1.3}} .shop{{color:#55555f;font-size:12px}} .meta{{font-size:11.5px;color:#44444c;text-align:end;line-height:1.6}}
+.verdict{{border-radius:8px;padding:8px 14px;font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px}}
+.verdict small{{font-weight:400;color:#44444c;font-size:13px}}
+.verdict.Passed{{background:#e6f6ee;color:#0f6b3c}} .verdict.Failed{{background:#fde8e7;color:#a0180f}} .verdict.Incomplete{{background:#fff4d6;color:#8a5a00}} .verdict.Benchmark{{background:#eef1f7;color:#2b3a55}}
+section{{border:1px solid #d8d7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;page-break-inside:avoid}}
+h2{{margin:0 0 4px;font-size:13px;border-inline-start:3px solid #FDD400;padding-inline-start:6px}}
+.spec{{display:grid;grid-template-columns:1fr;gap:0;margin:0}} .spec div{{display:flex;gap:7px;padding:2px 0;border-bottom:1px dotted #d0cfc8;min-width:0}} .spec div:last-child{{border-bottom:0}}
+dt{{color:#55555f;flex:0 0 auto}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.spec dt.sep{{margin-inline-start:12px}} .spec dd.fixed{{flex:0 0 auto}}
+.cards{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}}
+.card{{border:1px solid #cfcec6;border-top:3px solid #16161a;border-radius:8px;padding:9px 11px;page-break-inside:avoid;min-width:0}} .card.wide{{grid-column:1/3}}
+.ch{{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px}} h3{{margin:0;font-size:14px}}
+.cn{{font-weight:700;font-size:12.5px;line-height:1.35;margin-top:2px}} .cf{{color:#55555f;font-size:11px;margin-bottom:2px}}
+.tiles{{display:flex;gap:6px;margin:7px 0 5px;flex-wrap:wrap}}
+.tile{{flex:1 1 0;min-width:84px;border-radius:7px;padding:4px 8px;border:1px solid #d8d7d0;background:#f7f7f4;text-align:center}}
+.tile .tl{{font-size:10.5px;color:#44444c;font-weight:700}} .tile .tv{{font-size:20px;font-weight:700;line-height:1.25}} .tile .td{{font-size:9.5px;color:#55555f;line-height:1.3}}
+.tile.ok{{background:#e9f7ef;border-color:#9bd5b4}} .tile.ok .tv{{color:#0f6b3c}} .tile.warn{{background:#fff5da;border-color:#ecd08c}} .tile.warn .tv{{color:#8a5a00}} .tile.bad{{background:#fde8e7;border-color:#f0a39e}} .tile.bad .tv{{color:#a0180f}}
+table{{width:100%;border-collapse:collapse;margin-top:4px}} td{{padding:3px 2px;border-bottom:1px dotted #d0cfc8;vertical-align:middle}} tbody tr:last-child td{{border-bottom:0}}
+.res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:11.5px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
+.fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#55555f;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
+.drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dotted #d0cfc8}} .drive small{{display:block;color:#66666e;font-size:10.5px}} .drive b{{font-size:11.5px}}
+.badge{{display:inline-block;border-radius:99px;padding:0 9px;font-weight:700;font-size:10.5px;border:1px solid;white-space:nowrap;line-height:1.6}}
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
-.temps{{display:grid;gap:4px}}
-.temp{{border:1px solid #d8d7d0;border-radius:5px;padding:2px 4px;text-align:center;min-width:0}}
-.temp .part{{font-weight:700;font-size:8.5px}} .temp .now{{font-size:13.5px;font-weight:700;line-height:1.2}}
-.temp .max{{font-size:7.5px;color:#33333a;border-top:1px dotted #d0cfc8;margin-top:1px;padding-top:1px;line-height:1.3;overflow-wrap:anywhere}}
-.temp small{{color:#77777f;font-size:7px}}
-.note{{margin:2px 0 0;color:#77777f;font-size:8px}}
-.installed{{border:1.3px solid #FDD400;background:#fffbe6;border-radius:5px;padding:4px 9px;font-weight:700;font-size:10.5px;margin-bottom:10px;text-align:center}}
-.res td{{padding:2px 3px;white-space:nowrap}} .res td.rn{{width:1%}} .res td.rn b{{font-size:9.5px}} .res td.figs{{white-space:normal}} .dur{{color:#66666e;font-size:8.5px;white-space:nowrap}}
-.fig{{display:inline-block;margin-inline-end:6px;white-space:nowrap}} .fig small{{color:#55555f;font-size:7.6px}} .fig .lt{{font-weight:700;font-size:9.5px}}
-.spec dt.sep{{margin-inline-start:8px}} .spec dd.fixed{{flex:0 0 auto}}
-.verdict{{border-radius:5px;padding:4px 9px;font-weight:700;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:11px}}
-.verdict small{{font-weight:400;color:#44444c;font-size:10px}}
-.verdict.Passed{{background:#e6f6ee;color:#0f6b3c}} .verdict.Failed{{background:#fde8e7;color:#a0180f}} .verdict.Incomplete{{background:#fff4d6;color:#8a5a00}} .verdict.Benchmark{{background:#eef1f7;color:#2b3a55}}
-.na{{color:#77777f;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
-.sign{{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:4px 0 4px}} .sign div{{border-top:1px solid #16161a;padding-top:2px;font-size:9px;color:#44444c;text-align:center;margin-top:20px}}
-footer{{color:#77777f;font-size:8px;line-height:1.45;border-top:1px solid #d8d7d0;padding-top:3px}}
-main.tight{{font-size:9.2px;line-height:1.4}} .tight section{{padding:7px 7px 4px;margin-bottom:8px}} .tight th,.tight td{{padding:1.2px 3px}}
-.tight .runs td b,.tight .drives td b{{font-size:9px}} .tight .badge{{font-size:8.5px;line-height:1.35}} .tight .temp .now{{font-size:12.5px}}
-.tight .spec div{{padding:1px 0}} .tight .sign div{{margin-top:16px}} .tight header{{margin-bottom:7px}} .tight .verdict{{margin-bottom:10px}}
-main.tightest{{font-size:8.6px;line-height:1.32}} .tightest section{{padding:6px 6px 3px;margin-bottom:7px}} .tightest th,.tightest td{{padding:0.6px 3px}}
-.tightest .runs td b,.tightest .drives td b{{font-size:8.5px}} .tightest thead th{{font-size:8px}} .tightest .badge{{font-size:8px;line-height:1.3;padding:0 5px}}
-.tightest .temp .now{{font-size:12px}} .tightest .temp .max{{display:none}} .tightest .note{{display:none}} .tightest .installed{{padding:2px 8px;font-size:9.5px;margin-bottom:7px}} .tightest .fig small{{font-size:7.8px}} .tightest .fig .lt{{font-size:9px}} .tightest .spec div{{padding:0.5px 0}}
-.tightest .sign div{{margin-top:12px}} .tightest header{{margin-bottom:6px;padding-bottom:4px}} .tightest .verdict{{margin-bottom:9px;padding:3px 9px}} .tightest footer{{font-size:7.5px}}
+.note{{margin:2px 0 8px;color:#77777f;font-size:10px}} .na{{color:#77777f;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
+.installed{{border:1.3px solid #FDD400;background:#fffbe6;border-radius:7px;padding:6px 12px;font-weight:700;font-size:12px;margin:4px 0 6px;text-align:center}}
+.sign{{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:6px 0 6px}} .sign div{{border-top:1px solid #16161a;padding-top:3px;font-size:11px;color:#44444c;text-align:center;margin-top:34px}}
+footer{{color:#77777f;font-size:9.5px;line-height:1.45;border-top:1px solid #d8d7d0;padding-top:4px}}
+main.tight{{font-size:11px;line-height:1.4}} .tight .card{{padding:7px 9px}} .tight .tile .tv{{font-size:17px}} .tight td{{padding:2px}} .tight .sign div{{margin-top:22px}}
+main.tightest{{font-size:10px;line-height:1.3}} .tightest .card{{padding:5px 8px}} .tightest .tile .tv{{font-size:15px}} .tightest .tile .td,.tightest .note{{display:none}} .tightest td{{padding:1px 2px}} .tightest .sign div{{margin-top:14px}} .tightest .cards{{gap:6px;margin-bottom:6px}}
 @media print{{body{{background:#fff}} main{{padding:0;max-width:none}}}}";
     }
 }

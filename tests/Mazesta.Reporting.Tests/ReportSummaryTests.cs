@@ -128,10 +128,10 @@ public class ReportSummaryTests
         Assert.False(s.Rows[1].Peaks.ContainsKey(HeatPart.Cpu));   // no recorded peak in that window: absent, never 0 or a guess
     }
 
-    [Fact] public void The_sheet_is_a5_right_to_left_with_the_verdict_peaks_and_drive_health_percent()
+    [Fact] public void The_sheet_is_a4_right_to_left_with_the_verdict_peaks_and_drive_health_percent()
     {
         string html = SummaryHtml.Write(ReportSummary.Of(Report()));
-        Assert.Contains("dir=\"rtl\"", html); Assert.Contains("size:A5", html);
+        Assert.Contains("dir=\"rtl\"", html); Assert.Contains("size:A4", html);
         Assert.Contains(ReportText.Persian.VerdictFailed, html); Assert.Contains("86 °C", html); Assert.Contains("71 °C", html);
         Assert.Contains("سالم (97%)", html); Assert.Contains(">سالم<", html);   // an HDD has no wear counter: no percentage invented
         Assert.Contains("S-1405-0042", html); Assert.Contains(SummaryText.Persian.TraceNote, html);
