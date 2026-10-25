@@ -147,7 +147,9 @@ function renderBand(info) {
   const overlay = h("button", { class: "btn quiet", id: "ovl", title: t("Overlay_ToggleHint"), onclick: () => call("app.toggleOverlay") }, t("Overlay_Toggle"));
   const pause = h("button", { class: "btn quiet", id: "pause", onclick: async () => setPause(await call("app.togglePause")) }, t(info.paused ? "Status_Resume" : "Status_Pause"));
   const bench = h("span", { class: "pill run", id: "bench-mode", hidden: true, title: t("Web_Quiet_Text") }, t("Web_Quiet_Title"));
-  band.append(...[status, interval, bench, h("span", { class: "grow" }), live ? null : h("span", { class: "pill warn" }, t("Web_DemoData")), overlay, pause].filter(Boolean));
+  const fa = info.language === "fa";
+  const lang = live ? h("button", { class: "btn quiet", id: "lang", title: t("Settings_Language"), lang: fa ? "en" : "fa", onclick: async () => { await call("app.setLanguage", { value: fa ? "en" : "fa" }); location.reload(); } }, fa ? "English" : "فارسی") : null;
+  band.append(...[status, interval, bench, h("span", { class: "grow" }), live ? null : h("span", { class: "pill warn" }, t("Web_DemoData")), overlay, pause, lang].filter(Boolean));
 }
 function setPause(p) { const b = document.getElementById("pause"); if (b) b.textContent = t(p ? "Status_Resume" : "Status_Pause"); }
 

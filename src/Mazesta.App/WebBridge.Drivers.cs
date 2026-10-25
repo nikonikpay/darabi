@@ -30,7 +30,7 @@ public sealed partial class WebBridge
         // The board install: idle, downloading, verifying, installing (the maker's window is open), done, failed.
         string bdState = "idle"; double bdProgress = 0; string? bdError = null, bdTitle = null, bdFolder = null; int? bdExit = null; bool bdSilent = false;
         List<DriverGpu> gpus = []; NvidiaProduct? product = null; IReadOnlyList<NvidiaRelease> gameReady = [], studio = [];
-        string? nvError = null, checkedAt = null; bool checking = false; DriverAdviceResult? advice = null;
+        string? nvError = null, checkedAt = null; bool checking = false, blocked = false, dnsSwitched = false; DriverAdviceResult? advice = null;
         BoardPackage? amdGpu = null;   // the Adrenalin installer on the card's AMD page; null when the card is not an RX 5000-9000 or the page did not answer
         IReadOnlyList<object> problems = [];
         // The NVIDIA install: idle, downloading, verifying, installing, done, failed.
@@ -46,7 +46,7 @@ public sealed partial class WebBridge
 
         object State() => new
         {
-            checking, checkedAt,
+            checking, checkedAt, dnsSwitched,
             gpus = gpus.Select(g => new
             {
                 name = g.Name, vendor = g.Vendor, version = g.NvidiaVersion ?? g.WindowsVersion, date = g.Date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
@@ -87,6 +87,9 @@ public sealed partial class WebBridge
             busy = gate.Holder?.ToString(),
         };
         void Push() => PushSoon("drivers", State);
+
+        // A maker's site that said 403 (or 451), or did not answer at all.
+        static bool Blocked(Exception e) => e is OperationCanceledException || e is HttpRequestException { StatusCode: null or System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.UnavailableForLegalReasons };
 
         static string BoardId(BoardPackage p) => $"{p.Source}|{p.Part}|{p.Vendor}|{p.Version}";
 
@@ -130,7 +133,9 @@ public sealed partial class WebBridge
                 gpus = cards; problems = bad; board = boardNow;
                 var programs = await Task.Run(InstalledPrograms.Entries, ct).ConfigureAwait(true);
                 advice = DriverAdvice.Advise([.. programs.Select(x => x.Name)]);
-                nvError = null; product = null; gameReady = []; studio = [];
+                async Task Lookup()
+                {
+                blocked = false; nvError = null; product = null; gameReady = []; studio = [];
                 if (gpus.FirstOrDefault(g => g.Vendor == "nvidia") is { } nv)
                 {
                     using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct); limit.CancelAfter(TimeSpan.FromSeconds(40));
@@ -147,7 +152,7 @@ public sealed partial class WebBridge
                     catch (Exception e) when (e is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException or System.Xml.XmlException)
                     {
                         if (ct.IsCancellationRequested) throw;
-                        nvError = Loc.Format("Drivers_Nv_Offline", e.Message); _log.LogWarning(e, "NVIDIA driver lookup failed");
+                        nvError = Loc.Format("Drivers_Nv_Offline", e.Message); blocked |= Blocked(e); _log.LogWarning(e, "NVIDIA driver lookup failed");
                     }
                 }
                 amdGpu = null;
@@ -158,10 +163,19 @@ public sealed partial class WebBridge
                     catch (Exception e) when (e is HttpRequestException or OperationCanceledException)
                     {
                         if (ct.IsCancellationRequested) throw;
-                        _log.LogWarning(e, "AMD graphics driver lookup failed");
+                        blocked |= Blocked(e); _log.LogWarning(e, "AMD graphics driver lookup failed");
                     }
                 }
                 await CheckBoard(devices, programs, ct).ConfigureAwait(true);
+                }
+                await Lookup().ConfigureAwait(true);
+                // Most sites of the makers refuse Iran's addresses (403) or do not answer: the DNS goes to Shecan once, and the makers are asked again.
+                if (blocked && !dnsSwitched && Mazesta.Diagnostics.Windows.DnsChoice.Identify(Mazesta.Diagnostics.Windows.DnsChoice.Current().SelectMany(a => a.Servers)) != "shecan")
+                {
+                    string? bad2 = await Mazesta.Diagnostics.Windows.DnsChoice.ApplyAsync("shecan", _sp.GetRequiredService<Mazesta.Diagnostics.Windows.ICommandRunner>(), CancellationToken.None).ConfigureAwait(true);
+                    _log.LogInformation("Drivers: the makers' sites were refused or silent; DNS set to Shecan: {Result}", bad2 ?? "ok");
+                    if (bad2 is null) { dnsSwitched = true; Push(); await Task.Delay(1500, ct).ConfigureAwait(true); await Lookup().ConfigureAwait(true); }
+                }
                 checkedAt = DateTime.Now.ToString("yyyy/MM/dd HH:mm", Loc.Culture);
             }
             finally { checking = false; Push(); }
@@ -178,6 +192,7 @@ public sealed partial class WebBridge
                 catch (Exception e) when (e is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException or InvalidDataException or IOException)
                 {
                     if (ct.IsCancellationRequested) throw;
+                    blocked |= Blocked(e);
                     lock (errors) errors.Add(new { source, message = e is OperationCanceledException ? Loc.Get("Drivers_Board_Timeout") : e.Message });
                     _log.LogWarning(e, "Board driver lookup at {Source} failed", source);
                 }
@@ -185,7 +200,7 @@ public sealed partial class WebBridge
             var asks = new List<Task>();
             if (board?.Model is { } model && board.Maker?.Contains("ASUS", StringComparison.OrdinalIgnoreCase) == true)
                 asks.Add(Ask("asus", async t => await boardService.AsusAsync(model, t).ConfigureAwait(true) is { } l ? l
-                    : throw new HttpRequestException(Loc.Format("Drivers_Board_AsusUnknown", model))));
+                    : throw new InvalidDataException(Loc.Format("Drivers_Board_AsusUnknown", model))));
             if (board?.Cpu == "amd" && BoardDrivers.AmdChipsetPage(board.Model) is { } amdPage) asks.Add(Ask("amd", async t => await boardService.AmdChipsetAsync(amdPage, t).ConfigureAwait(true) is { } p ? [p]
                 : throw new InvalidDataException(Loc.Get("Drivers_Board_AmdNoVersion"))));
             if (devices.Any(d => d.Id.Contains("VEN_8086", StringComparison.OrdinalIgnoreCase) || d.Id.Contains("VID_8087", StringComparison.OrdinalIgnoreCase)))

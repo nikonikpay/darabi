@@ -2284,6 +2284,7 @@ Next: run DISM /RestoreHealth on the Windows Tools page, then sfc again; test th
   <data name="Drivers_Board_Support" xml:space="preserve"><value>Board maker's support page</value></data>
   <data name="Drivers_Board_AmdPage" xml:space="preserve"><value>AMD chipset page</value></data>
   <data name="Drivers_Board_IntelPage" xml:space="preserve"><value>Intel chipset page</value></data>
+  <data name="Drivers_DnsSwitched" xml:space="preserve"><value>The makers' sites refused or did not answer, so the DNS was set to Shecan and they were asked again (change it back on the Connection repair page)</value></data>
   <data name="Drivers_Board_Nothing" xml:space="preserve"><value>No driver packages were found for this board from its makers.</value></data>
   <data name="Drivers_Board_Note" xml:space="preserve"><value>The versions come from ASUS's support site for this model, AMD's chipset page and Intel's driver data. A version is called newer only when it can be compared with the installed one part by part; a package's own number beside a driver's number is shown as not comparable.</value></data>
   <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>For MSI, Gigabyte and ASRock boards the app cannot check the maker's own driver list. The AMD chipset driver and Intel's Wi-Fi, Bluetooth and network drivers are checked here; for the rest, open the board maker's page with the button.</value></data>

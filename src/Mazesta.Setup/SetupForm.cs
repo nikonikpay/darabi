@@ -9,7 +9,7 @@ internal sealed class SetupForm : Form
         Well = Color.FromArgb(0x0E, 0x10, 0x12), Paper = Color.FromArgb(0xEC, 0xEB, 0xE6), Paper2 = Color.FromArgb(0xA9, 0xAC, 0xB0), Rule = Color.FromArgb(0x2A, 0x2E, 0x34),
         Yellow = Color.FromArgb(0xFD, 0xD4, 0x00), OnYellow = Color.FromArgb(0x0C, 0x0C, 0x0C), Fail = Color.FromArgb(0xEE, 0x4B, 0x3D);
 
-    private int _page;   // 0 agreement, 1 folder, 2 progress / finish
+    private int _page = -1;   // -1 language, 0 agreement, 1 folder, 2 progress / finish
     private bool _busy, _done, _accepted, _desktop = true, _launch = true;
     private string _folder = Installer.DefaultFolder, _status = "", _statusKind = "";
     private int _percent;
@@ -56,7 +56,21 @@ internal sealed class SetupForm : Form
         Controls.Add(body); Controls.Add(footer); Controls.Add(header);
 
         // Buttons sit in reading order: the primary one at the end (left in Persian, right in English). FlowDirection LeftToRight with RightToLeft=Yes mirrors by itself.
-        if (_page == 0)
+        if (_page < 0)
+        {
+            // The first thing the installer asks. It sets the installer's own language only.
+            footer.Controls.Add(Btn(SetupText.Cancel, false, (_, _) => Close()));
+            var pick = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 70, FlowDirection = FlowDirection.LeftToRight, RightToLeft = RightToLeft.No, BackColor = Ink };
+            foreach (var (label, english) in new[] { ("فارسی", false), ("English", true) })
+            {
+                var b = Btn(label, SetupText.English == english, (_, _) => { SetupText.English = english; _page = 0; Rebuild(); });
+                b.MinimumSize = new Size(170, 52); b.Font = new Font("Segoe UI Semibold", 13f); b.Margin = new Padding(0, 0, 14, 0); pick.Controls.Add(b);
+            }
+            body.Controls.Add(pick);
+            body.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 });
+            body.Controls.Add(Text_("زبان نصب را انتخاب کنید  ·  Choose the installer's language", new Font("Segoe UI Semibold", 14f), below: 8));
+        }
+        else if (_page == 0)
         {
             footer.Controls.Add(Btn(SetupText.Cancel, false, (_, _) => Close()));
             footer.Controls.Add(Btn(SetupText.Next, true, (_, _) => { _page = 1; Rebuild(); }, _accepted));

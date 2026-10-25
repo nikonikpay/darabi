@@ -2284,6 +2284,7 @@
   <data name="Drivers_Board_Support" xml:space="preserve"><value>صفحهٔ پشتیبانی سازندهٔ مادربرد</value></data>
   <data name="Drivers_Board_AmdPage" xml:space="preserve"><value>صفحهٔ چیپست AMD</value></data>
   <data name="Drivers_Board_IntelPage" xml:space="preserve"><value>صفحهٔ چیپست Intel</value></data>
+  <data name="Drivers_DnsSwitched" xml:space="preserve"><value>سایت سازنده‌ها خطای ۴۰۳ داد یا جواب نداد؛ DNS روی شکن گذاشته شد و دوباره پرسیده شد (برگرداندنش در صفحهٔ «تعمیر اتصال» است)</value></data>
   <data name="Drivers_Board_Nothing" xml:space="preserve"><value>از سازنده‌ها بستهٔ درایوری برای این مادربرد پیدا نشد.</value></data>
   <data name="Drivers_Board_Note" xml:space="preserve"><value>نسخه‌ها از سایت پشتیبانی ASUS برای همین مدل، صفحهٔ چیپست AMD و دادهٔ درایور Intel گرفته می‌شوند. فقط وقتی نسخه‌ای «جدیدتر» نامیده می‌شود که بخش‌به‌بخش با نسخهٔ نصب‌شده قابل مقایسه باشد. اگر شمارهٔ بسته با شمارهٔ درایور فرق کند، «قابل مقایسه نیست» نشان داده می‌شود.</value></data>
   <data name="Drivers_Board_NoteOther" xml:space="preserve"><value>برای مادربردهای MSI، Gigabyte و ASRock برنامه نمی‌تواند فهرست درایورهای خود سازنده را بررسی کند. درایور چیپست AMD و درایورهای Wi-Fi، بلوتوث و شبکهٔ Intel همین‌جا بررسی می‌شوند؛ برای بقیه، صفحهٔ سازندهٔ مادربرد را با دکمه باز کنید.</value></data>

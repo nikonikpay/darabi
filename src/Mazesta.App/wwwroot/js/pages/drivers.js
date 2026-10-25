@@ -180,7 +180,7 @@ export function mount(el) {
   function render(state) {
     if (!state) return;
     s = state;
-    checkBtn.disabled = s.checking; checked.textContent = s.checkedAt ? t("Drivers_CheckedAt", s.checkedAt) : "";
+    checkBtn.disabled = s.checking; checked.textContent = s.checkedAt ? t("Drivers_CheckedAt", s.checkedAt) + (s.dnsSwitched ? " · " + t("Drivers_DnsSwitched") : "") : "";
     renderGpu(); renderBoard(); renderWu(); renderProblems();
   }
   call("drivers.state").then((x) => { render(x); if (!x.checkedAt && !x.checking) run("drivers.check"); });

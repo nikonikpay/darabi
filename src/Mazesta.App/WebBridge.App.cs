@@ -52,6 +52,8 @@ public sealed partial class WebBridge
         Method("app.network", _ => Diagnostics.Network.InternetAdapter.Find() is var a ? new { internet = a.Internet, up = a.Up } : null);
         // The service job being worked on, printed on every report; Persian digits become Latin so the number reads the same everywhere.
         Method("app.setServiceNumber", p => { StaffOnly(); return _config.ServiceNumber = Core.Text.PersianDigits.Normalize(Str(p, "value") ?? "").Trim(); });
+        // The band's language button: saved like the settings page does, and spoken from now on; the page reloads to read the table again.
+        Method("app.setLanguage", p => { string v = Str(p, "value"); if (v is not ("fa" or "en")) throw new ArgumentException("language"); _config.Language = v; _store.Save(_config); Desktop.Localization.Loc.SetLanguage(v); return null; });
         Method("app.togglePause", _ => { if (engine.State == EngineState.Paused) engine.Resume(); else engine.Pause(); return engine.State == EngineState.Paused; });
         Method("app.openLink", p => { if (Links.TryGetValue(Str(p, "key"), out var url)) Open(url); return null; });
         Method("app.toggleOverlay", _ => { var o = _sp.GetRequiredService<Desktop.Services.OverlayService>(); o.Toggle(); return o.IsVisible; });
