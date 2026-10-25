@@ -28,6 +28,8 @@ public static class TestAdvice
         {
             "cpu.singlecore" => "Advice_Inconclusive_Cores",
             "network.lan" => "Advice_Inconclusive",
+            "memory.bitfade" => "Advice_Inconclusive_BitFade",
+            _ when testId.StartsWith("memory.", StringComparison.Ordinal) => "Advice_Inconclusive_Memory",
             _ when testId.StartsWith("network.", StringComparison.Ordinal) => "Advice_Inconclusive_Network",
             _ => "Advice_Inconclusive",
         },
