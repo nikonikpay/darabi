@@ -4008,7 +4008,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_Suggest" xml:space="preserve"><value>جفت‌رنگ‌های پیشنهادی</value></data>
   <data name="Rgb_Gradient_Note" xml:space="preserve"><value>روی هر رنگ بزنید و از پایین انتخابش کنید؛ + و − تعداد رنگ‌ها (۲ تا ۴) را عوض می‌کنند. برای حرکت، افکت «متحرک» را بزنید.</value></data>
   <data name="Rgb_Preview" xml:space="preserve"><value>پیش‌نمایش رنگ و افکت</value></data>
-  <data name="Rgb_OwnMode" xml:space="preserve"><value>حالت خود دستگاه</value></data>
+  <data name="Rgb_OwnMode" xml:space="preserve"><value>افکت‌ها</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>هیچ (افکت بالا)</value></data>
   <data name="Rgb_Report_Still" xml:space="preserve"><value>{0}: روی {1} دستگاه اعمال شد.</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>به مازستا خوش آمدید</value></data>

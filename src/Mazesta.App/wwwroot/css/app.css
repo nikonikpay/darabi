@@ -1836,4 +1836,4 @@ body.popout .chart { height: 100%; min-height: 120px; }
 
 /* The diagnosis lists use the page's height (they scroll with the page, not inside a small box). */
 div.findings { max-height: none; overflow: visible; }
-.rgb-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; } .rgb-opts > label { min-inline-size: 0; } .rgb-opts select { inline-size: 100%; }
+.rgb-opts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; align-items: end; } .rgb-opts > label { min-inline-size: 0; } .rgb-opts select { inline-size: 100%; }

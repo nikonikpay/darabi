@@ -4008,7 +4008,7 @@ Cancel: stop.</value></data>
   <data name="Rgb_Suggest" xml:space="preserve"><value>Pairs that go together</value></data>
   <data name="Rgb_Gradient_Note" xml:space="preserve"><value>Click a colour and pick it below; + and − change how many (2 to 4). To make them move, choose Animate.</value></data>
   <data name="Rgb_Preview" xml:space="preserve"><value>Preview of the colours and the effect</value></data>
-  <data name="Rgb_OwnMode" xml:space="preserve"><value>The device's own mode</value></data>
+  <data name="Rgb_OwnMode" xml:space="preserve"><value>Effects</value></data>
   <data name="Rgb_OwnMode_None" xml:space="preserve"><value>None (use the effect above)</value></data>
   <data name="Rgb_Report_Still" xml:space="preserve"><value>{0}: set on {1} device(s).</value></data>
   <data name="Welcome_Title" xml:space="preserve"><value>Welcome to Mazesta</value></data>
