@@ -102,7 +102,7 @@ public sealed class RgbSession : IDisposable
         Runner.Clear();
         foreach (var d in Client.Devices.ToList())
         {
-            var look = scene.Dark ? new RgbLook(Off: true) : scene.Devices.TryGetValue(RgbScene.DeviceKey(d.Vendor, d.Name, d.Location), out var own) ? own : scene.All;
+            var look = scene.Dark ? new RgbLook(Off: true) : scene.Devices.TryGetValue(RgbScene.DeviceKey(d.Vendor, d.Name, d.Location), out var own) ? own : scene.All ?? Unlit(d);
             if (look is null) continue;
             try { await ApplyLookAsync(d.Index, look, ct).ConfigureAwait(false); }
             catch (NotSupportedException e) { _log.LogInformation("{Device}: {Message}", d.Name, e.Message); }
@@ -110,6 +110,9 @@ public sealed class RgbSession : IDisposable
         await Client.RefreshAsync(ct).ConfigureAwait(false);
         Runner.Start();
     }
+
+    /// <summary>A device nobody has set yet that shows black (the server starts per-LED controllers dark) gets white, so a new part is not mistaken for a broken one.</summary>
+    private static RgbLook? Unlit(RgbDevice d) => d.Colors.Count > 0 && d.Colors.All(c => c == default) ? new RgbLook("#ffffff") : null;
 
     /// <summary>One look on one device, and how it was done. An effect by one of the universal names (<see cref="RgbEffects"/>) is the device's own when it has it, else
     /// run by the app when the device takes a colour for each LED; an effect by a device's own name is sent as is. <see cref="RgbHow.Skipped"/>: nothing was sent.</summary>

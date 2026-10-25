@@ -33,25 +33,38 @@ public sealed class RgbEffectRunner(OpenRgbClient client, ILogger log) : IDispos
 
     public void Stop() { try { _stop?.Cancel(); } catch (ObjectDisposedException) { } try { _loop?.Wait(1000); } catch (AggregateException) { } _stop?.Dispose(); _stop = null; _loop = null; }
 
+    /// <summary>The shortest time between two frames of a device: memory (SMBus) and a graphics card (I2C) take tens of milliseconds for every write and share their bus with the
+    /// sensors, so they get a few frames a second; a board or a strip on USB, more.</summary>
+    private static int Interval(RgbKind kind) => kind is RgbKind.Memory or RgbKind.Graphics ? 200 : 66;
+
     private async Task Loop(CancellationToken ct)
     {
-        var clock = Stopwatch.StartNew(); int tick = 0; bool away = false;
+        var clock = Stopwatch.StartNew(); long checkedAt = -1000; bool away = false; var due = new Dictionary<int, long>(); var last = new Dictionary<int, RgbColor[]>();
         try
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(FrameMs));
-            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            while (true)
             {
-                if (tick++ % (1000 / FrameMs) == 0) { bool y = Yield?.Invoke() == true; if (y != away) { away = y; if (y) lock (_gate) _begun.Clear(); } }
+                if (clock.ElapsedMilliseconds - checkedAt >= 1000) { checkedAt = clock.ElapsedMilliseconds; bool y = Yield?.Invoke() == true; if (y != away) { away = y; if (y) lock (_gate) _begun.Clear(); } }
                 if (away) { await Task.Delay(900, ct).ConfigureAwait(false); continue; }   // another process runs the lights: look again in a second
-                if (!client.Connected) continue;
+                if (!client.Connected) { await Task.Delay(FrameMs, ct).ConfigureAwait(false); continue; }
                 List<RgbJob> jobs; lock (_gate) jobs = [.. _jobs.Values];
                 if (jobs.Count == 0) return;
+                long now = clock.ElapsedMilliseconds; bool sent = false;
                 foreach (var j in jobs)
                 {
+                    if (due.TryGetValue(j.Device, out long at) && now < at) continue;
+                    due[j.Device] = now + Interval(client.Device(j.Device)?.Kind ?? RgbKind.Other);
                     bool first; lock (_gate) first = _begun.Add(j.Device);
+                    if (first) last.Remove(j.Device);
                     if (first && !await client.EnterDirectAsync(j.Device, ct).ConfigureAwait(false)) { Remove(j.Device); continue; }
-                    await client.PushLedsAsync(j.Device, RgbFrames.Frame(j.Effect, clock.Elapsed.TotalSeconds, j.Leds, j.Color, j.Palette, j.Speed, j.Brightness), ct).ConfigureAwait(false);
+                    var frame = RgbFrames.Frame(j.Effect, clock.Elapsed.TotalSeconds, j.Leds, j.Color, j.Palette, j.Speed, j.Brightness);
+                    if (last.TryGetValue(j.Device, out var was) && was.AsSpan().SequenceEqual(frame)) continue;   // the same colours again: nothing to write
+                    last[j.Device] = frame; sent = true;
+                    await client.PushLedsAsync(j.Device, frame, ct).ConfigureAwait(false);
                 }
+                if (sent) await client.SyncAsync(ct).ConfigureAwait(false);   // the next frames wait until the server has written these
+                long next = jobs.Min(j => due.GetValueOrDefault(j.Device)) - clock.ElapsedMilliseconds;
+                await Task.Delay((int)Math.Clamp(next, 15, 250), ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) { }

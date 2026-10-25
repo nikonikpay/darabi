@@ -60,6 +60,10 @@ internal static class SelfTestLights
         foreach (var d in session.Client.Devices.ToList()) await session.ApplyLookAsync(d.Index, new RgbLook("#ff0000", RgbEffects.Rainbow, 60, 100, Palette: custom), CancellationToken.None);
         session.Runner.Start(); var me = System.Diagnostics.Process.GetCurrentProcess(); var cpu0 = me.TotalProcessorTime; await Task.Delay(10000); me.Refresh();
         say($"moving spectrum on {session.Runner.Count} device(s): {(me.TotalProcessorTime - cpu0).TotalMilliseconds / 100:F1} % of one core over 10 s (this process)");
+        var cpu1 = me.TotalProcessorTime; await Task.Delay(10000); me.Refresh(); say($"the same, the next 10 s (warm): {(me.TotalProcessorTime - cpu1).TotalMilliseconds / 100:F1} % of one core");
+        // A server that is behind with the frames answers late: how long a plain question takes while the effects run, and whether OpenRGB itself is busy.
+        var ask = System.Diagnostics.Stopwatch.StartNew(); await session.Client.RefreshAsync(CancellationToken.None); say($"a question to the server while the effects run: {ask.ElapsedMilliseconds} ms");
+        foreach (var p in System.Diagnostics.Process.GetProcessesByName("OpenRGB")) { var t0 = p.TotalProcessorTime; await Task.Delay(5000); p.Refresh(); say($"OpenRGB itself over 5 s: {(p.TotalProcessorTime - t0).TotalMilliseconds / 50:F1} % of one core"); p.Dispose(); }
 
         // 5. As it was.
         session.Runner.Stop(); session.Runner.Clear(); int restored = await session.RestoreAsync(snap, CancellationToken.None);

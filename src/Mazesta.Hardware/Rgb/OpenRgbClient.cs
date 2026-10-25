@@ -128,6 +128,15 @@ public sealed class OpenRgbClient : IDisposable
         finally { _gate.Release(); }
     }
 
+    /// <summary>Waits until the server has dealt with everything sent so far (it answers in order): the frames of an effect are never sent faster than a slow device (memory on the
+    /// SMBus, a graphics card on I2C) takes them, so no queue grows in the server and nothing else is starved.</summary>
+    public async Task SyncAsync(CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try { await RequestAsync(0, OpenRgbProtocol.RequestControllerCount, [], ct).ConfigureAwait(false); }
+        finally { _gate.Release(); }
+    }
+
     /// <summary>Sends a mode exactly as given (its own speed, brightness, direction and colours), and the LEDs' colours after it when the mode takes one for each.</summary>
     public async Task RestoreModeAsync(int device, RgbMode mode, IReadOnlyList<RgbColor>? leds, CancellationToken ct)
     {

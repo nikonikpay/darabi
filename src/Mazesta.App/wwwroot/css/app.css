@@ -1599,7 +1599,6 @@ body.popout .chart { height: 100%; min-height: 120px; }
 .rgb-preview[data-fx="Breathing"] > i { animation: rgb-breathe var(--rgb-dur, 3s) ease-in-out infinite; }
 .rgb-preview[data-fx="Flash"] > i { animation: rgb-flash calc(var(--rgb-dur, 3s) / 3) steps(1) infinite; }
 .rgb-preview[data-fx="Rainbow"] > i, .rgb-preview[data-fx="Cycle"] > i { right: auto; inline-size: 200%; background-size: 50% 100% !important; animation: rgb-run var(--rgb-dur, 3s) linear infinite; }
-.rgb-preview[data-fx="Cycle"] > i { filter: blur(30px); }
 @keyframes rgb-breathe { 50% { opacity: .12; } }
 @keyframes rgb-flash { 50% { opacity: 0; } }
 @keyframes rgb-run { to { transform: translateX(-50%); } }

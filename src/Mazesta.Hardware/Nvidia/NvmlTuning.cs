@@ -15,6 +15,7 @@ public sealed class NvmlTuningProvider(ILogger log) : IGpuTuningProvider
         int init;
         try { init = Nvml.nvmlInit_v2(); }
         catch (DllNotFoundException) { return ([], "Tuning_Unavailable_NoNvidia", null); }
+        if (init == Nvml.DriverNotLoaded) return ([], "Tuning_Unavailable_NoNvidia", null);   // NVIDIA's library is on the PC but no NVIDIA card runs (an AMD or Intel one does)
         if (init != Nvml.Success) { log.LogWarning("NVML init failed: {Error}", Nvml.Describe(init)); return ([], "Tuning_Unavailable_Nvml", Nvml.Describe(init)); }
         if (Nvml.nvmlDeviceGetCount_v2(out uint count) != Nvml.Success || count == 0) return ([], "Tuning_Unavailable_NoNvidia", null);
         var devices = new List<IGpuTuningDevice>();

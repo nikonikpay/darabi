@@ -9,7 +9,7 @@ namespace Mazesta.Hardware.Nvidia;
 internal static class Nvml
 {
     private const string Dll = "nvml.dll";
-    public const int Success = 0, NotSupported = 3, NoPermission = 4, GpuLost = 15, FunctionMissing = -1;
+    public const int Success = 0, NotSupported = 3, NoPermission = 4, DriverNotLoaded = 9, GpuLost = 15, FunctionMissing = -1;
     public const int ClockGraphics = 0, ClockMemory = 2, TemperatureGpu = 0, FanPolicyManual = 1, PstateUnknown = 32;
 
     [StructLayout(LayoutKind.Sequential)]
