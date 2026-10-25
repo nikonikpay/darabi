@@ -135,7 +135,7 @@ export function mount(el) {
     const dirRow = h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Dir")), dirSel);
     const mark = () => { tiles.forEach((b) => b.setAttribute("aria-checked", String(!st.own && b.dataset.fx === st.fx))); dirRow.hidden = !!st.own || !["Flow", "Rainbow"].includes(st.fx); };
     mark();
-    return h("div", { class: "rgb-fxbox" }, h("div", { class: "rgb-fxs", role: "radiogroup", "aria-label": t("Rgb_Effect") }, tiles), dirRow, own.length ? h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_OwnMode")), sel) : null);
+    return h("div", { class: "rgb-fxbox" }, h("div", { class: "rgb-fxs", role: "radiogroup", "aria-label": t("Rgb_Effect") }, tiles), h("div", { class: "rgb-opts" }, dirRow, own.length ? h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_OwnMode")), sel) : null));
   }
 
   // ——— The whole set ———

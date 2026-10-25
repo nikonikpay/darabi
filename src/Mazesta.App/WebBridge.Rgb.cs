@@ -24,9 +24,10 @@ public sealed partial class WebBridge
         // Who runs the effects the devices lack: while this window is open the app (it writes its pid to rgb-owner.pid); once it is closed the tray takes over, even though the process may live on
         // in the background. A choice made in the tray's menu puts rgb-tray-owns.flag down, so the app stands aside until the page is used again.
         string ownerFile = Path.Combine(_paths.ConfigDir, "rgb-owner.pid"), trayFlag = Path.Combine(_paths.ConfigDir, "rgb-tray-owns.flag");
-        void Mine() { try { File.Delete(trayFlag); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } }
+        // With the tray running it always runs the effects the devices lack (they then go on when this window closes, and nothing changes hands at that moment); without it the app runs them itself.
+        void Own() { try { if (TrayRuns()) File.WriteAllText(trayFlag, "1"); else File.Delete(trayFlag); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } }
         try { Directory.CreateDirectory(_paths.ConfigDir); File.WriteAllText(ownerFile, Environment.ProcessId.ToString()); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
-        Mine(); session.Runner.Yield = () => File.Exists(trayFlag);
+        Own(); session.Runner.Yield = () => File.Exists(trayFlag);
         _cleanup.Add(() => { try { File.Delete(ownerFile); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } });
 
         object State(string? error = null) => new
@@ -123,7 +124,7 @@ public sealed partial class WebBridge
         MethodAsync("rgb.state", _ => Guard(() => Connect(false, false), shareBusy: true));
         MethodAsync("rgb.start", p => Guard(() =>
         {
-            Mine(); bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True;
+            Own(); bool keep = p.TryGetProperty("keepMakers", out var k) && k.ValueKind == JsonValueKind.True;
             scene.Enabled = true; scene.StopMakers = !keep; Save();
             return Connect(true, !keep);
         }));
@@ -131,7 +132,7 @@ public sealed partial class WebBridge
         MethodAsync("rgb.set", p => Guard(async () =>
         {
             if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
-            Mine();
+            Own();
             int device = p.TryGetProperty("device", out var dv) && dv.TryGetInt32(out var di) ? di : -1;
             int? mode = p.TryGetProperty("mode", out var mv) && mv.TryGetInt32(out var mi) ? mi : null;
             string modeName = Str(p, "modeName");
@@ -190,7 +191,7 @@ public sealed partial class WebBridge
         MethodAsync("rgb.dark", p => Guard(async () =>
         {
             if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
-            Mine(); scene.Dark = p.TryGetProperty("on", out var o) && o.ValueKind == JsonValueKind.True; Save();
+            Own(); scene.Dark = p.TryGetProperty("on", out var o) && o.ValueKind == JsonValueKind.True; Save();
             await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true);
             return State();
         }));

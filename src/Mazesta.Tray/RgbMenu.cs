@@ -11,6 +11,7 @@ namespace Mazesta.Tray;
 internal sealed class RgbMenu : IDisposable
 {
     private readonly AppPaths _paths; private readonly Action<string, ToolTipIcon> _notify; private readonly RgbSession _session;
+    private FileSystemWatcher? _sceneWatch; private int _scenePending;
     private readonly ToolStripMenuItem _dark; private int _busy; private CancellationTokenSource _stale = new();
     private readonly System.Windows.Forms.Timer _watch = new() { Interval = 10000 }; private bool _appWas;
     public ToolStripMenuItem Menu { get; }
@@ -25,6 +26,14 @@ internal sealed class RgbMenu : IDisposable
         Menu.DropDownItems.AddRange([_dark, new ToolStripMenuItem(TrayText.LightsApply, null, async (_, _) => await ApplyAsync(userAsked: true))]);
         Menu.DropDownOpening += (_, _) => { var s = RgbSceneStore.Read(_paths); _dark.Checked = s.Dark; Menu.Enabled = _session.Exe is not null; };
         _watch.Tick += async (_, _) => await WatchAsync();
+        // The page saves the scene and puts the flag down: the tray then puts the saved scene on at once (it is the one that keeps the effects running after the window closes).
+        try
+        {
+            Directory.CreateDirectory(_paths.ConfigDir);
+            _sceneWatch = new FileSystemWatcher(_paths.ConfigDir, "rgb-scene.json") { NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName, EnableRaisingEvents = true };
+            _sceneWatch.Changed += (_, _) => OnSceneChanged(); _sceneWatch.Created += (_, _) => OnSceneChanged(); _sceneWatch.Renamed += (_, _) => OnSceneChanged();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
         _appWas = AppRuns(); _watch.Start();   // always: the page can switch the scene on after the tray started
         SystemEvents.PowerModeChanged += OnPower; SystemEvents.SessionEnding += OnEnding;
     }
@@ -114,6 +123,16 @@ internal sealed class RgbMenu : IDisposable
     }
 
     /// <summary>The lights back after a sleep or at the start: the scene when it is switched on, else the note of how they were. With <paramref name="recover"/> the server is started afresh.</summary>
+    private void OnSceneChanged()
+    {
+        if (Interlocked.Exchange(ref _scenePending, 1) == 1) return;
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(800); Volatile.Write(ref _scenePending, 0);   // the page writes the file once or twice; one apply follows
+            if (File.Exists(TrayFlag)) { Log("the scene changed: applied"); await BackAsync(recover: false, final: true, force: true); }
+        });
+    }
+
     private async Task<bool> BackAsync(bool recover, bool final, bool force = false)
     {
         var scene = RgbSceneStore.Read(_paths); var snap = RgbSceneStore.ReadSnapshot(_paths); bool app = AppRuns();
@@ -126,7 +145,7 @@ internal sealed class RgbMenu : IDisposable
         {
             // Not enabled: no maker's program is stopped for it, and the connection is only held so the lights can be put out at the next sleep.
             bool stopMakers = scene.Enabled && scene.StopMakers;
-            var r = recover && !app ? await _session.RecoverAsync(scene, ct) : await _session.ConnectAsync(true, stopMakers, scene, ct);
+            var r = recover && !app ? await _session.RecoverAsync(scene, ct) : _session.Client.Connected && !recover ? RgbConnect.Connected : await _session.ConnectAsync(true, stopMakers, scene, ct);   // already connected: no wait for the devices
             if (r != RgbConnect.Connected) { Log($"back: not connected ({r})"); return false; }
             if (scene.Enabled) { if (_session.ZonesDefaulted) RgbSceneStore.Write(_paths, scene); await _session.ApplyAsync(scene, ct); Log($"back: scene applied, {_session.Runner.Count} effect(s) run by the app"); }
             else if (snap is not null) { int n = await _session.RestoreAsync(snap, ct); Log($"back: {n} device(s) put back from the note"); if (n == 0) return false; }   // none reached: the note stays for the next try
@@ -181,7 +200,7 @@ internal sealed class RgbMenu : IDisposable
     /// <summary>The tray ends: the server it started is ended too, unless the app is running and may be using it.</summary>
     public void Dispose()
     {
-        SystemEvents.PowerModeChanged -= OnPower; SystemEvents.SessionEnding -= OnEnding; _watch.Dispose(); _stale.Cancel();
+        SystemEvents.PowerModeChanged -= OnPower; SystemEvents.SessionEnding -= OnEnding; _watch.Dispose(); _sceneWatch?.Dispose(); _stale.Cancel();
         _session.Release(leaveRunning: AppRuns()); _session.Client.Dispose();
     }
 }

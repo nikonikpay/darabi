@@ -3469,7 +3469,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Assist_Checkup_Failed" xml:space="preserve"><value>این تست‌ها ناموفق بودند: {0}</value></data>
   <data name="Rgb_Led" xml:space="preserve"><value>LED {0}</value></data>
   <data name="Rgb_Led_Hint" xml:space="preserve"><value>روی هر LED کلیک کنید تا فقط رنگ همان یکی عوض شود.</value></data>
-  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>این کارت فقط یک رنگ برای کل خود می‌گیرد.</value></data>
+  <data name="Rgb_Gpu_OneZone" xml:space="preserve"><value>این کارت فقط یک رنگ برای کل خود می‌گیرد؛ پس طیف انتخابی پشت‌سرهم نشان داده می‌شود نه روی نوار، و جهت حرکت روی آن اثری ندارد.</value></data>
   <data name="Rgb_Harm_mono" xml:space="preserve"><value>سایه‌های همین رنگ</value></data>
   <data name="Rgb_Harm_triad" xml:space="preserve"><value>سه‌رنگ متعادل</value></data>
   <data name="Rgb_Harm_complement" xml:space="preserve"><value>رنگ مقابل</value></data>

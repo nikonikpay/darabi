@@ -6,7 +6,7 @@ namespace Mazesta.App;
 /// Sends the anonymous usage statistics (see <see cref="UsageLog"/>) to the shop's site while the app runs, when the setting is on (it is, until the user switches it off):
 /// the lines of the log not sent yet, a few at a time, with the installation's random id, the app's version and the names of the parts, then the app's own log and crash records (<see cref="LogShipper"/>, scrubbed). No key, no account, no name of the
 /// computer or its user, no file, path or text anyone typed. A line is marked sent only when the site took it; a failure (no internet, no plugin) is simply tried again
-/// later, never shown, and never holds up anything. One timer, every ten minutes; nothing at all runs while the setting is off.
+/// later, never shown, and never holds up anything. One timer, once a day; nothing at all runs while the setting is off.
 /// </summary>
 internal sealed class UsageUploader : IDisposable
 {
@@ -17,7 +17,7 @@ internal sealed class UsageUploader : IDisposable
     public UsageUploader(UsageLog log, AppConfig config, SiteClient site, InventoryCache inventory, string version, bool staff, ILogger logger, LogShipper logs, CheckupService checkup, HardwareDetailsCache details)
     {
         _logs = logs; _checkup = checkup; _details = details; _log = log; _config = config; _site = site; _inventory = inventory; _version = version; _edition = staff ? "company" : "users"; _logger = logger;
-        _timer = new(_ => _ = SendAsync(), null, TimeSpan.FromMinutes(2), TimeSpan.FromMinutes(10));
+        _timer = new(_ => _ = SendAsync(), null, TimeSpan.FromMinutes(2), TimeSpan.FromHours(24));
     }
 
     /// <summary>The part names - never the computer's own name - the way the shared benchmark results give them.</summary>

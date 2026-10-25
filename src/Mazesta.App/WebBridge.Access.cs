@@ -11,7 +11,7 @@ public sealed partial class WebBridge
         object State()
         {
             var e = access?.Current ?? Entitlements.Free;
-            return new { enforce = e.Enforce, login = e.Login, plan = e.Plan, until = e.Until, account = e.Account, signedIn = access?.SignedIn == true, locks = e.Effective(DateTimeOffset.UtcNow), message = e.Message };
+            return new { enforce = e.Enforce, login = e.Login, plan = e.Plan, until = e.Until, account = e.Account, signedIn = access?.SignedIn == true, locks = e.Effective(access?.Now() ?? DateTimeOffset.UtcNow), message = e.Message };
         }
         Method("access.state", _ => State());
         if (access is null) return;
