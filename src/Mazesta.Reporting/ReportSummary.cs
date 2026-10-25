@@ -121,13 +121,19 @@ public sealed class SummaryText
     public string PsuTotal => IsRtl ? "بیشترین توان مصرفی" : "Peak power draw";
     public string PsuNote => IsRtl ? "جمع بیشترین توان پردازنده و کارت گرافیک در آزمون هم‌زمان؛ مادربرد، دیسک‌ها و فن‌ها حساب نشده‌اند." : "CPU and graphics card peaks added together during the combined test; board, drives and fans are not counted.";
     public string DriveMax => IsRtl ? "بیشترین دما" : "Peak";
+    public string Subtitle => IsRtl ? "خلاصه آزمون عملکرد و سلامت سخت‌افزار" : "Summary of the hardware performance and health tests";
+    public string Capacity => IsRtl ? "ظرفیت کل" : "Total capacity";
+    public string PassedLabel => IsRtl ? "آزمون موفق" : "tests passed";
+    public string AllPassed => IsRtl ? "همه‌ی آزمون‌های اجراشده موفق بودند." : "Every test that ran passed.";
+    public string NeedsAttention => IsRtl ? "نیازمند بررسی یا تکمیل" : "Needs attention";
+    public string InstalledTitle => IsRtl ? "گزارش کامل در نرم‌افزار" : "Full report in the app";
     public string NotTested => IsRtl ? "تست نشده" : "Not tested";
     public string HealthName(string? health) => health switch { "Healthy" => HealthHealthy, "Warning" => HealthWarning, "Unhealthy" => HealthUnhealthy, null => NotReported, _ => HealthUnknown };
     public string PartName(HeatPart p) => p switch { HeatPart.Cpu => Cpu, HeatPart.Gpu => Gpu, HeatPart.GpuHotSpot => GpuHotSpot, HeatPart.GpuMemory => GpuMemory, HeatPart.Drive => DriveTemp, _ => Board };
 
     public static readonly SummaryText Persian = new()
     {
-        Language = "fa", Title = "خلاصه‌ی گزارش آزمون", Date = "تاریخ گزارش", Machine = "مشخصات سیستم", Drives = "سلامت هارد و SSD", Peaks = "بیشترین دما در طول آزمون",
+        Language = "fa", Title = "گزارش سلامت سیستم", Date = "تاریخ گزارش", Machine = "مشخصات سیستم", Drives = "سلامت هارد و SSD", Peaks = "بیشترین دما در طول آزمون",
         PeaksNote = "بالاترین دمایی که هر قطعه در مدت این گزارش به آن رسید، و آزمونی که در آن ثبت شد.", TraceNote = "این گزارش پیش از ثبت دقیق اوج هر آزمون ساخته شده؛ اوج هر ردیف از نمونه‌های ذخیره‌شده‌ی گزارش است.",
         During = "در", Tests = "نتیجه‌ی آزمون‌ها", Test = "آزمون", Result = "نتیجه", Duration = "مدت", Minutes = "دقیقه", Seconds = "ثانیه",
         NoRuns = "در این گزارش آزمونی اجرا نشده است.", Benchmark = "بنچمارک",
@@ -141,7 +147,7 @@ public sealed class SummaryText
 
     public static readonly SummaryText English = new()
     {
-        Language = "en", Title = "Test report summary", Date = "Report date", Machine = "System", Drives = "Drive health (HDD / SSD)", Peaks = "Highest temperatures during the test",
+        Language = "en", Title = "System health report", Date = "Report date", Machine = "System", Drives = "Drive health (HDD / SSD)", Peaks = "Highest temperatures during the test",
         PeaksNote = "The highest temperature each part reached during this report, and the test it was reached in.", TraceNote = "This report predates exact per-test peaks; each row's peak comes from the report's stored samples.",
         During = "in", Tests = "Results", Test = "Test", Result = "Result", Duration = "Duration", Minutes = "min", Seconds = "s",
         NoRuns = "No test ran in this report.", Benchmark = "Benchmark",
@@ -199,29 +205,32 @@ public static class SummaryHtml
          .Append("<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:\">")
          .Append("<title>").Append(E(w.Title)).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main class=\"").Append(Fit(s)).Append("\">");
 
-        b.Append("<header><div class=\"brand\">").Append(MazestaLogo.Svg("#0B0B0D", "logo")).Append("<div><h1>").Append(E(w.Title)).Append("</h1><div class=\"shop\">").Append(E(r.ShopName)).Append("</div></div></div><div class=\"meta\">")
-         .Append(E(w.Date)).Append(": ").Append(Lt(Stamp(r.CreatedAt, w.IsRtl)));
-        if (r.ServiceNumber is { } service) b.Append("<br>").Append(E(rw.ServiceNumber)).Append(": <b>").Append(Lt(service)).Append("</b>");
+        // The sheet: a dark header with the date, the verdict band, the machine strip, then the body with a card a part.
+        b.Append("<header><div class=\"brand\"><span class=\"mark\">").Append(MazestaLogo.Svg("#0B0B0D", "logo")).Append("</span><div><div class=\"kick\">MAZESTA / TECHNICAL REPORT</div><h1>").Append(E(w.Title)).Append("</h1><div class=\"sub\">").Append(E(w.Subtitle)).Append("</div></div></div><div class=\"meta\"><small>")
+         .Append(E(w.Date)).Append("</small><b>").Append(Lt(Stamp(r.CreatedAt, w.IsRtl))).Append("</b>");
+        if (r.ServiceNumber is { } service) b.Append("<small>").Append(E(rw.ServiceNumber)).Append("</small><b>").Append(Lt(service)).Append("</b>");
+        if (!string.IsNullOrWhiteSpace(r.ShopName)) b.Append("<small>").Append(E(r.ShopName)).Append("</small>");
         b.Append("</div></header>");
 
-        // The verdict, with the counts behind it; a benchmark report has no verdict.
+        // The verdict, with the counts behind it and what is left open; a benchmark report has no verdict.
+        var open = s.Rows.Where(x => x.Outcome is { } o && o != ReportOutcome.Passed).Select(x => Short(x.Name)).ToList();
         if (r.Verdict is { } verdict)
-            b.Append("<div class=\"verdict ").Append(verdict).Append("\">").Append(E(rw.VerdictName(verdict))).Append("<small>").Append(Lt($"{r.Counts.Passed}/{r.Counts.Total}")).Append("</small></div>");
-        else b.Append("<div class=\"verdict Benchmark\">").Append(E(w.Benchmark)).Append("</div>");
+            b.Append("<div class=\"verdict ").Append(verdict).Append("\"><div class=\"vt\"><b>").Append(E(rw.VerdictName(verdict))).Append("</b><span>")
+             .Append(E(open.Count > 0 ? $"{w.NeedsAttention}: {string.Join(w.IsRtl ? "، " : ", ", open)}" : "")).Append("</span></div><div class=\"vn\"><b>")
+             .Append(Lt($"{r.Counts.Passed} / {r.Counts.Total}")).Append("</b><small>").Append(E(w.PassedLabel)).Append("</small></div></div>");
+        else b.Append("<div class=\"verdict Benchmark\"><div class=\"vt\"><b>").Append(E(w.Benchmark)).Append("</b></div></div>");
+
+        // The machine: device, board, BIOS and system in two columns.
+        int machineAt = b.Length; b.Append("<section class=\"machine\">"); int machineRows = b.Length;
+        void Row(string label, string? value) { if (!string.IsNullOrWhiteSpace(value)) b.Append("<div><dt>").Append(E(label)).Append("</dt><dd>").Append(Lt(value)).Append("</dd></div>"); }
+        if (ReportFormat.DeviceName(m) is { } device) Row(rw.Device, device + (m.Computer?.IsPortable == true ? $" · {rw.Laptop}" : ""));
+        if (m.Motherboard is { } mb) Row(rw.Board, $"{mb.Manufacturer} {mb.Product}".Trim());
+        if (m.Os is { } os) Row(rw.Os, $"{os.Caption} {os.Version}".Replace("Microsoft ", "").Trim());
+        if (m.Bios is { } bi) Row(rw.Bios, $"{bi.Version}".Trim() + (bi.ReleaseDate is { } rd ? $" · {rd:yyyy-MM-dd}" : ""));
+        if (b.Length == machineRows) b.Length = machineAt; else b.Append("</section>");   // nothing known about the machine: no empty strip
+        b.Append("<div class=\"body\">");
         if (!string.IsNullOrWhiteSpace(r.ServiceNotes))
             b.Append("<section class=\"notes\"><h2>").Append(E(rw.WorkDone)).Append("</h2><div style=\"white-space:pre-wrap;line-height:1.9\">").Append(E(r.ServiceNotes.Trim())).Append("</div></section>");
-
-        // The machine: device, board with its BIOS on one line, the system.
-        int machineAt = b.Length; b.Append("<section class=\"machine\"><dl class=\"spec\">"); int machineRows = b.Length;
-        void Row(string label, string? value) { if (!string.IsNullOrWhiteSpace(value)) b.Append("<div class=\"wide\"><dt>").Append(E(label)).Append("</dt><dd>").Append(Lt(value)).Append("</dd></div>"); }
-        if (ReportFormat.DeviceName(m) is { } device) Row(rw.Device, device + (m.Computer?.IsPortable == true ? $" · {rw.Laptop}" : ""));
-        string? board = m.Motherboard is { } mb ? $"{mb.Manufacturer} {mb.Product}".Trim() : null;
-        string? bios = m.Bios is { } bi ? $"{bi.Version}".Trim() + (bi.ReleaseDate is { } rd ? $" · {rd:yyyy-MM-dd}" : "") : null;
-        if (!string.IsNullOrWhiteSpace(board) && !string.IsNullOrWhiteSpace(bios))
-            b.Append("<div class=\"wide\"><dt>").Append(E(rw.Board)).Append("</dt><dd>").Append(Lt(board)).Append("</dd><dt class=\"sep\">").Append(E(rw.Bios)).Append("</dt><dd class=\"fixed\">").Append(Lt(bios)).Append("</dd></div>");
-        else { Row(rw.Board, board); Row(rw.Bios, bios); }
-        if (m.Os is { } os) Row(rw.Os, $"{os.Caption} {os.Version}".Replace("Microsoft ", "").Trim());
-        if (b.Length == machineRows) b.Length = machineAt; else b.Append("</dl></section>");   // nothing known about the machine: no empty box
 
         // One card a part: what it is, the hottest it got, and each test of it with its result and figures.
         var ids = r.Tests.ToDictionary(t => t.Name, t => t.Id, StringComparer.Ordinal);
@@ -255,9 +264,10 @@ public static class SummaryHtml
             }
             b.Append("</tbody></table>");
         }
-        void Card(string title, string status, string? name, string? facts, string tiles, IReadOnlyList<SummaryRow> rows, string? extra = null, bool wide = false)
+        int cardNo = 0;
+        void Card(string title, string status, string? name, string? facts, string tiles, IReadOnlyList<SummaryRow> rows, string? extra = null, int span = 6)
         {
-            b.Append(wide ? "<article class=\"card wide\">" : "<article class=\"card\">").Append("<div class=\"ch\"><h3>").Append(E(title)).Append("</h3>").Append(status).Append("</div>");
+            b.Append("<article class=\"card\" style=\"grid-column:span ").Append(span).Append("\"><div class=\"ch\"><h3>").Append(E(title)).Append("</h3><i class=\"no\">").Append(Lt((++cardNo).ToString("00", Inv))).Append("</i>").Append(status).Append("</div>");
             if (!string.IsNullOrWhiteSpace(name)) b.Append("<div class=\"cn\">").Append(Lt(name)).Append("</div>");
             if (!string.IsNullOrWhiteSpace(facts)) b.Append("<div class=\"cf\">").Append(Lt(facts)).Append("</div>");
             if (tiles.Length > 0) b.Append("<div class=\"tiles\">").Append(tiles).Append("</div>");
@@ -272,10 +282,11 @@ public static class SummaryHtml
         string gpus = string.Concat(m.Gpus.Select(g => $"<div class=\"cn\">{Lt(g.Name)}</div><div class=\"cf\">{Lt(string.Join(" · ", new[] { g.AdapterRamBytes is > 0 and var v ? $"{v / 1073741824.0:F0} GB" : null, g.DriverVersion is { } d ? $"driver {d}" : null }.Where(x => x is not null)))}</div>"));
         string gpuTiles = string.Concat(new[] { HeatPart.Gpu, HeatPart.GpuHotSpot, HeatPart.GpuMemory }.Where(p => Peak(p) is not null).Select(p => Tile(w.PartName(p), Peak(p))));
         Card(w.Gpu, Status(gpuRows), null, null, gpuTiles, gpuRows, gpus);
-        var ramRows = RowsOf("ram");
+        var ramRows = RowsOf("ram"); bool haveRam = m.TotalPhysicalMemoryBytes is not null || ramRows.Count > 0;
         if (m.TotalPhysicalMemoryBytes is { } ramBytes || ramRows.Count > 0)
-            Card(w.Ram, Status(ramRows), m.TotalPhysicalMemoryBytes is { } total ? $"{total / 1073741824.0:F0} GB" : null,
-                m.MemoryModules.Count > 0 ? $"{m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")) : null, "", ramRows, ModuleList());
+            Card(w.Ram, Status(ramRows), null, null, m.TotalPhysicalMemoryBytes is { } total
+                ? $"<div class=\"tile\"><div class=\"tl\">{E(w.Capacity)}</div><div class=\"tv\">{Lt($"{total / 1073741824.0:F0} GB")}</div>" + (m.MemoryModules.Count > 0
+                    ? $"<div class=\"td\">{Lt($"{m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")))}</div>" : "") + "</div>" : "", ramRows, ModuleList());
         string ModuleList() => string.Concat(m.MemoryModules.Select(x => "<div class=\"drive\"><div><b>" + Lt(string.Join(" ", new[] { x.Manufacturer, x.PartNumber }.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v!.Trim()))) + "</b><small>"
             + Lt(string.Join(" · ", new[] { x.Slot, x.CapacityBytes is { } cb ? $"{cb / 1073741824.0:F0} GB" : null, x.TypeName, (x.ConfiguredSpeedMts ?? x.SpeedMts) is { } sp ? $"{sp} MT/s" : null }.Where(v => !string.IsNullOrWhiteSpace(v)))) + "</small></div></div>"));
         var stoRows = RowsOf("storage");
@@ -291,21 +302,21 @@ public static class SummaryHtml
              .Append("</small></div><div class=\"dr\">").Append(heat).Append("<span class=\"badge ").Append(cls).Append("\">").Append(E(health)).Append("</span></div></div>");
         }
         if (m.Storage.Count == 0) drives.Append("<p class=\"na\">").Append(E(w.NoDrives)).Append("</p>");
-        Card(w.Drives, Status(stoRows), null, null, Peak(HeatPart.Drive) is null ? "" : Tile(w.PartName(HeatPart.Drive), Peak(HeatPart.Drive)), stoRows, drives.ToString());
-        var psuRows = RowsOf("psu");
+        Card(w.Drives, Status(stoRows), null, null, Peak(HeatPart.Drive) is null ? "" : Tile(w.PartName(HeatPart.Drive), Peak(HeatPart.Drive)), stoRows, drives.ToString(), haveRam ? 6 : 12);
+        var psuRows = RowsOf("psu"); var boardPeak = Peak(HeatPart.Board); bool havePsu = s.Power is not null || psuRows.Count > 0;
         if (s.Power is { } pw)
             Card(w.PsuTitle, Status(psuRows), null, null,
-                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", wide: true);
-        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, wide: true);
-        if (other.Count > 0) Card(w.Tests, Status(other), null, null, "", other, null, wide: true);
-        if (Peak(HeatPart.Board) is { } bp) Card(w.PartName(HeatPart.Board), "", null, null, Tile(w.PartName(HeatPart.Board), bp), [], null, wide: true);
+                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", boardPeak is null ? 12 : 7);
+        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, boardPeak is null ? 12 : 7);
+        if (boardPeak is { } bp) Card(w.PartName(HeatPart.Board), "", null, null, Tile(w.PartName(HeatPart.Board), bp), [], null, havePsu ? 5 : 12);
+        if (other.Count > 0) Card(w.Tests, Status(other), null, null, "", other, null, 12);
         b.Append("</div>");
         if (s.Peaks.Count == 0) b.Append("<p class=\"note\">").Append(E(w.NoTemps)).Append("</p>");
         if (s.FromTrace) b.Append("<p class=\"note\">").Append(E(w.TraceNote)).Append("</p>");
 
-        b.Append("<div class=\"installed\">").Append(E(w.Installed)).Append("</div>");
+        b.Append("<div class=\"installed\"><b>").Append(E(w.InstalledTitle)).Append("</b><span>").Append(E(w.Installed)).Append("</span></div>");
         b.Append("<div class=\"sign\"><div>").Append(E(w.Technician)).Append("</div><div>").Append(E(w.Customer)).Append("</div></div>")
-         .Append("<footer>").Append(E(w.Footer)).Append(" ").Append(Lt($"Mazesta Test {r.AppVersion}")).Append("</footer></main></body></html>");
+         .Append("<footer><span>").Append(Lt($"Mazesta Test {r.AppVersion}")).Append("</span><span>").Append(E(w.Footer)).Append("</span></footer></div></main></body></html>");
         return b.ToString();
     }
 
@@ -313,8 +324,8 @@ public static class SummaryHtml
     internal static string Fit(ReportSummary s)
     {
         var m = s.Report.Machine;
-        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + (s.Peaks.Count > 0 ? 1 : 0);
-        return lines > 20 ? "tightest" : lines > 12 ? "tight" : "";
+        int lines = s.Rows.Count + m.Storage.Count + m.Gpus.Count + m.MemoryModules.Count + (s.Power is null ? 0 : 2) + (s.Peaks.Count > 0 ? 1 : 0);
+        return lines > 15 ? "tightest" : lines > 10 ? "tight" : "";
     }
 
     private static string Css(ReportFont? f)
@@ -324,43 +335,50 @@ public static class SummaryHtml
             $"@font-face{{font-family:'{f.Family}';font-weight:700;src:url(data:font/ttf;base64,{Convert.ToBase64String(f.Bold)}) format('truetype')}}";
         string family = f is null ? "Tahoma,'Segoe UI',sans-serif" : $"'{f.Family}',Tahoma,'Segoe UI',sans-serif";
         return face + $@"
-@page{{size:A4;margin:10mm}}
+@page{{size:A4;margin:0}}
 *{{box-sizing:border-box}}
-body{{margin:0;background:#eceae3;color:#16161a;font:12px/1.55 {family}}}
-main{{max-width:760px;margin:0 auto;background:#fff;padding:18px 22px}}
+html{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+body{{margin:0;background:#d9dad5;color:#1b1f21;font:12px/1.5 {family}}}
+main{{width:210mm;min-height:296mm;margin:0 auto;background:#fcfcfa;display:flex;flex-direction:column;box-shadow:0 2px 14px rgba(0,0,0,.18)}}
 .lt{{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;unicode-bidi:isolate}}
-header{{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:3px solid #FDD400;padding-bottom:9px;margin-bottom:12px}}
-.brand{{display:flex;align-items:center;gap:11px}} .logo{{height:28px;width:auto}}
-h1{{margin:0;font-size:19px;line-height:1.3}} .shop{{color:#55555f;font-size:12px}} .meta{{font-size:11.5px;color:#44444c;text-align:end;line-height:1.6}}
-.verdict{{border-radius:8px;padding:8px 14px;font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px}}
-.verdict small{{font-weight:400;color:#44444c;font-size:13px}}
-.verdict.Passed{{background:#e6f6ee;color:#0f6b3c}} .verdict.Failed{{background:#fde8e7;color:#a0180f}} .verdict.Incomplete{{background:#fff4d6;color:#8a5a00}} .verdict.Benchmark{{background:#eef1f7;color:#2b3a55}}
-section{{border:1px solid #d8d7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;page-break-inside:avoid}}
-h2{{margin:0 0 4px;font-size:13px;border-inline-start:3px solid #FDD400;padding-inline-start:6px}}
-.spec{{display:grid;grid-template-columns:1fr;gap:0;margin:0}} .spec div{{display:flex;gap:7px;padding:2px 0;border-bottom:1px dotted #d0cfc8;min-width:0}} .spec div:last-child{{border-bottom:0}}
-dt{{color:#55555f;flex:0 0 auto}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
-.spec dt.sep{{margin-inline-start:12px}} .spec dd.fixed{{flex:0 0 auto}}
-.cards{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}}
-.card{{border:1px solid #cfcec6;border-top:3px solid #16161a;border-radius:8px;padding:9px 11px;page-break-inside:avoid;min-width:0}} .card.wide{{grid-column:1/3}}
-.ch{{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px}} h3{{margin:0;font-size:14px}}
-.cn{{font-weight:700;font-size:12.5px;line-height:1.35;margin-top:2px}} .cf{{color:#55555f;font-size:11px;margin-bottom:2px}}
-.tiles{{display:flex;gap:6px;margin:7px 0 5px;flex-wrap:wrap}}
-.tile{{flex:1 1 0;min-width:84px;border-radius:7px;padding:4px 8px;border:1px solid #d8d7d0;background:#f7f7f4;text-align:center}}
-.tile .tl{{font-size:10.5px;color:#44444c;font-weight:700}} .tile .tv{{font-size:20px;font-weight:700;line-height:1.25}} .tile .td{{font-size:9.5px;color:#55555f;line-height:1.3}}
+header{{background:#23282b;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 32px}}
+.brand{{display:flex;align-items:center;gap:16px}} .mark{{flex:none;width:64px;height:64px;border-radius:50%;background:#FDD400;display:flex;align-items:center;justify-content:center}} .logo{{height:28px;width:auto}}
+.kick{{color:#FDD400;font-size:10px;letter-spacing:.18em;direction:ltr;text-align:start;font-weight:700}}
+h1{{margin:2px 0 0;font-size:28px;line-height:1.3}} .sub{{color:#c4cac8;font-size:12.5px}}
+.meta{{text-align:start;line-height:1.5;flex:none}} .meta small{{display:block;color:#a9b0ad;font-size:10.5px;margin-top:4px}} .meta b{{display:block;font-size:12.5px}}
+.verdict{{display:flex;align-items:center;gap:26px;padding:14px 32px;border-top:4px solid #FDD400}}
+.vt{{flex:1}} .vt b{{display:block;font-size:22px;line-height:1.4}} .vt span{{font-size:12.5px}}
+.vn{{flex:none;text-align:center;padding-inline-start:26px;border-inline-start:1px solid rgba(0,0,0,.28)}} .vn b{{display:block;font-size:36px;line-height:1.1}} .vn small{{font-size:12px}}
+.verdict.Incomplete{{background:#FFE04A;color:#2a2400}} .verdict.Passed{{background:#bfe8d0;color:#0b4d2b}} .verdict.Failed{{background:#f6c0bb;color:#7a110a}} .verdict.Benchmark{{background:#dfe5ee;color:#243350}}
+.machine{{background:#ecefeb;border-bottom:1px solid #d3d6d1;padding:12px 32px;display:grid;grid-template-columns:1fr 1fr;gap:5px 30px}}
+.machine div{{display:flex;gap:8px;min-width:0}} dt{{color:#5c6360;flex:none}} dd{{margin:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.body{{flex:1;display:flex;flex-direction:column;padding:14px 32px 16px}}
+section.notes{{border:1px solid #cfd2cc;border-radius:6px;padding:8px 12px;margin-bottom:12px;background:#fff}} h2{{margin:0 0 4px;font-size:13px}}
+.cards{{flex:1;display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-content:stretch}}
+.card{{background:#fff;border:1px solid #cfd2cc;border-top:3px solid #23282b;padding:12px 16px;display:flex;flex-direction:column;min-width:0;page-break-inside:avoid}}
+.ch{{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #dfe1dc}} .ch .badge{{margin-inline-start:auto}}
+h3{{margin:0;font-size:17px;line-height:1.3}} .no{{font-style:normal;color:#a3a8a4;font-size:11px;padding-inline-start:10px;border-inline-start:1px solid #d3d6d1}}
+.cn{{font-weight:700;font-size:14px;line-height:1.4}} .cf{{color:#5c6360;font-size:11px;margin-bottom:2px}}
+.tiles{{display:flex;gap:8px;margin:10px 0 8px;flex-wrap:wrap}}
+.tile{{flex:1 1 0;min-width:90px;padding:8px;border:1px solid #dfe1dc;background:#f1f2ee;text-align:center}}
+.tile .tl{{font-size:11px;color:#4a514e;font-weight:700}} .tile .tv{{font-size:28px;font-weight:700;line-height:1.25}} .tile .td{{font-size:10px;color:#5c6360;line-height:1.35}}
 .tile.ok{{background:#e9f7ef;border-color:#9bd5b4}} .tile.ok .tv{{color:#0f6b3c}} .tile.warn{{background:#fff5da;border-color:#ecd08c}} .tile.warn .tv{{color:#8a5a00}} .tile.bad{{background:#fde8e7;border-color:#f0a39e}} .tile.bad .tv{{color:#a0180f}}
-table{{width:100%;border-collapse:collapse;margin-top:4px}} td{{padding:3px 2px;border-bottom:1px dotted #d0cfc8;vertical-align:middle}} tbody tr:last-child td{{border-bottom:0}}
-.res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:11.5px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
-.fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#55555f;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
-.drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dotted #d0cfc8}} .drive small{{display:block;color:#66666e;font-size:10.5px}} .dr{{display:flex;align-items:center;gap:8px}} .dt{{font-weight:700;font-size:12px;border-radius:6px;padding:0 6px;border:1px solid}} .dt small{{display:inline;font-size:9.5px;font-weight:400}} .dt.ok{{color:#0f6b3c;background:#e9f7ef;border-color:#9bd5b4}} .dt.warn{{color:#8a5a00;background:#fff5da;border-color:#ecd08c}} .dt.bad{{color:#a0180f;background:#fde8e7;border-color:#f0a39e}} .tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:26px}} .drive b{{font-size:11.5px}}
-.badge{{display:inline-block;border-radius:99px;padding:0 9px;font-weight:700;font-size:10.5px;border:1px solid;white-space:nowrap;line-height:1.6}}
+.tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:32px}}
+table{{width:100%;border-collapse:collapse;margin-top:auto}} td{{padding:6px 2px;border-top:1px solid #e3e5e0;vertical-align:middle}}
+.res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:12px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
+.fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#5c6360;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
+.drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #e3e5e0}} .drive small{{display:block;color:#6a706d;font-size:10.5px}} .drive b{{font-size:12px}}
+.dr{{display:flex;align-items:center;gap:8px}} .dt{{font-weight:700;font-size:12.5px;border-radius:5px;padding:0 7px;border:1px solid;white-space:nowrap}} .dt small{{display:inline;font-size:9.5px;font-weight:400}}
+.dt.ok{{color:#0f6b3c;background:#e9f7ef;border-color:#9bd5b4}} .dt.warn{{color:#8a5a00;background:#fff5da;border-color:#ecd08c}} .dt.bad{{color:#a0180f;background:#fde8e7;border-color:#f0a39e}}
+.badge{{display:inline-block;border-radius:5px;padding:0 9px;font-weight:700;font-size:10.5px;border:1px solid;white-space:nowrap;line-height:1.7}}
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}
-.note{{margin:2px 0 8px;color:#77777f;font-size:10px}} .na{{color:#77777f;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
-.installed{{border:1.3px solid #FDD400;background:#fffbe6;border-radius:7px;padding:6px 12px;font-weight:700;font-size:12px;margin:4px 0 6px;text-align:center}}
-.sign{{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin:6px 0 6px}} .sign div{{border-top:1px solid #16161a;padding-top:3px;font-size:11px;color:#44444c;text-align:center;margin-top:34px}}
-footer{{color:#77777f;font-size:9.5px;line-height:1.45;border-top:1px solid #d8d7d0;padding-top:4px}}
-main.tight{{font-size:11px;line-height:1.4}} .tight .card{{padding:7px 9px}} .tight .tile .tv{{font-size:17px}} .tight td{{padding:2px}} .tight .sign div{{margin-top:22px}}
-main.tightest{{font-size:10px;line-height:1.3}} .tightest .card{{padding:5px 8px}} .tightest .tile .tv{{font-size:15px}} .tightest .tile .td,.tightest .note{{display:none}} .tightest td{{padding:1px 2px}} .tightest .sign div{{margin-top:14px}} .tightest .cards{{gap:6px;margin-bottom:6px}}
-@media print{{body{{background:#fff}} main{{padding:0;max-width:none}}}}";
+.note{{margin:8px 0 0;color:#7b807d;font-size:10px}} .na{{color:#7b807d;font-weight:400;font-style:italic}} p.na{{margin:2px 0}}
+.installed{{margin-top:12px;background:#23282b;color:#e8ebe9;border-inline-start:5px solid #FDD400;padding:12px 18px;display:flex;align-items:center;gap:14px;font-size:12px}} .installed b{{color:#FDD400;flex:none}}
+.sign{{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:6px}} .sign div{{border-top:1px solid #8d928f;padding-top:6px;font-size:11px;color:#4a514e;text-align:center;margin-top:24px}}
+footer{{display:flex;justify-content:space-between;gap:18px;margin-top:14px;border-top:1px solid #d3d6d1;padding-top:6px;color:#7b807d;font-size:9.5px;line-height:1.45}} footer span:first-child{{flex:none}}
+main.tight{{font-size:11px}} .tight header{{padding:18px 32px}} .tight .mark{{width:60px;height:60px}} .tight h1{{font-size:25px}} .tight .verdict{{padding:12px 32px}} .tight .vn b{{font-size:32px}} .tight .card{{padding:10px 12px}} .tight .tile .tv{{font-size:24px}} .tight td{{padding:4px 2px}} .tight .drive{{padding:4px 0}} .tight .sign div{{margin-top:20px}} .tight .cards{{gap:10px}}
+main.tightest{{font-size:10px}} .tightest header{{padding:10px 28px}} .tightest .mark{{width:48px;height:48px}} .tightest h1{{font-size:21px}} .tightest .sub{{display:none}} .tightest .verdict{{padding:6px 28px}} .tightest .vn b{{font-size:26px}} .tightest .machine{{padding:6px 28px}} .tightest .body{{padding:10px 28px 8px}} .tightest .card{{padding:7px 10px}} .tightest .ch{{margin-bottom:6px;padding-bottom:4px}} .tightest .tile{{padding:4px 8px}} .tightest .tile .tv{{font-size:19px}} .tightest footer{{margin-top:8px}} .tightest .tile .td,.tightest .note{{display:none}} .tightest td{{padding:2px}} .tightest .drive{{padding:2px 0}} .tightest .sign div{{margin-top:10px}} .tightest .installed{{margin-top:8px;padding:7px 14px}} .tightest .cards{{gap:7px}}
+@media print{{body{{background:#fff}} main{{box-shadow:none;width:auto}}}}";
     }
 }

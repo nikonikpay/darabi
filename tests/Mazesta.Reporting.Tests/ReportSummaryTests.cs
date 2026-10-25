@@ -82,7 +82,7 @@ public class ReportSummaryTests
         Assert.Equal("tight", SummaryHtml.Fit(s));
         if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) File.WriteAllText(Path.Combine(dir, "summary-bench.html"), SummaryHtml.Write(s));
     }
-    [Fact] public void The_board_line_carries_the_bios_and_the_memory_has_its_own_line()
+    [Fact] public void The_machine_strip_carries_the_board_and_the_bios_and_the_memory_has_its_own_card()
     {
         var machine = HardwareInventory.Empty with
         {
@@ -91,7 +91,7 @@ public class ReportSummaryTests
         string html = SummaryHtml.Write(ReportSummary.Of(Report() with { Machine = machine }), wording: SummaryText.English);
         int board = html.IndexOf("PRIME B550M-A"), bios = html.IndexOf("3404"), ram = html.IndexOf("64 GB");
         Assert.True(board > 0 && bios > board && ram > bios);
-        Assert.Equal(board > 0 ? html.LastIndexOf("<div", board) : -1, html.LastIndexOf("<div", bios));   // the same line
+        int strip = html.IndexOf("<section class=\"machine\">"); Assert.True(strip > 0 && strip < board && html.IndexOf("</section>", strip) > bios);   // board and BIOS sit in the machine strip, the memory in its card
     }
     [Fact] public void A_long_report_is_set_tighter_so_the_sheet_stays_one_page()
     {
@@ -152,12 +152,15 @@ public class ReportSummaryTests
         var machine = HardwareInventory.Empty with
         {
             Cpu = new CpuInfo("12th Gen Intel(R) Core(TM) i7-12700", Mazesta.Core.Hardware.HardwareVendor.Intel, 12, 20, 4900, "LGA1700"), Gpus = [new GpuInfo("NVIDIA GeForce RTX 4070 Ti", "32.0.15.6094", 12L << 30, null)],
-            TotalPhysicalMemoryBytes = 32L << 30, MemoryModules = [module, module with { Slot = "DIMM_B1" }], Storage = [Nvme, Hdd],
+            TotalPhysicalMemoryBytes = 32L << 30, MemoryModules = [module, module with { Slot = "DIMM_B1" }],
+            Storage = [Nvme, Hdd, Nvme with { FriendlyName = "WD Blue SN570 1TB" }, Hdd with { FriendlyName = "WDC WD10EZRX-00A3KB0" }],
+            Motherboard = new MotherboardInfo("ASUSTeK COMPUTER INC.", "PRIME B550M-A", null, null), Bios = new BiosInfo("ASUS", "3404", new DateTime(2023, 10, 7), null),
         };
         var r = SessionReport.Create("مازستا", "1.0.0", T0.AddMinutes(20),
             [T("cpu.stress", "CPU stress", ReportOutcome.Passed, 0, 3), T("memory.pattern", "Memory pattern", ReportOutcome.Passed, 3, 6), T("gpu.steady", "GPU steady", ReportOutcome.Passed, 6, 9),
-             T("storage.smart", "Drive SMART", ReportOutcome.Passed, 9, 10), T("power.combined", "Power", ReportOutcome.Passed, 10, 14)],
+             T("storage.smart", "Drive SMART", ReportOutcome.Passed, 9, 10), T("power.combined", "Power", ReportOutcome.Passed, 10, 14), T("cpu.avx", "CPU vector load", ReportOutcome.Passed, 14, 16), T("gpu.vram", "GPU VRAM check", ReportOutcome.Passed, 16, 18), T("gpu.window", "GPU in a window", ReportOutcome.Passed, 18, 19), T("memory.data", "Memory data check", ReportOutcome.Inconclusive, 19, 20)],
             [S("pkgp", "Core i7", "CPU Package", "Power", "W", "CpuPackagePower", 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 120, 130, 125, 120, 20), S("gpup", "RTX", "GPU Power", "Power", "W", "GpuPower", 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 270, 285, 280, 275, 30),
+             S("pkg", "Core i7", "CPU Package", "Temperature", "°C", "CpuPackageTemp", 40, 60, 77), S("gpu", "RTX", "GPU Core", "Temperature", "°C", "GpuCoreTemp", 40, 45, 50), S("brd", "Board", "System", "Temperature", "°C", "BoardTemp", 40, 55, 60),
              S("ssd1", "MSI M390 1TB", "Composite", "Temperature", "°C", "StorageTemp", 30, 44, 52), S("ssd2", "WDC WD20PURZ", "Temperature", "Temperature", "°C", "StorageTemp", 29, 33, 38)],
             machine, serviceNumber: "S-1405-0042");
         var s = ReportSummary.Of(r);
