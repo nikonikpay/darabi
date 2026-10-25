@@ -51,6 +51,7 @@ public sealed class AmdTuningProvider(IWmiQuery wmi, Func<bool>? adrenalinPresen
 public sealed class CombinedTuningProvider(IGpuTuningProvider nvidia, AmdTuningProvider amd) : IGpuTuningProvider
 {
     public IReadOnlyList<IGpuTuningDevice> Devices => [.. nvidia.Devices, .. amd.Devices];
-    public string? UnavailableReasonKey => Devices.Count > 0 || !amd.HasAmd ? nvidia.UnavailableReasonKey : amd.UnavailableReasonKey;
-    public string? UnavailableDetail => Devices.Count > 0 || !amd.HasAmd ? nvidia.UnavailableDetail : amd.UnavailableDetail;
+    // A card that can be tuned means nothing is unavailable: NVIDIA's message (its library failing to open) must not show next to a working Radeon.
+    public string? UnavailableReasonKey => Devices.Count > 0 ? null : !amd.HasAmd ? nvidia.UnavailableReasonKey : amd.UnavailableReasonKey;
+    public string? UnavailableDetail => Devices.Count > 0 ? null : !amd.HasAmd ? nvidia.UnavailableDetail : amd.UnavailableDetail;
 }
