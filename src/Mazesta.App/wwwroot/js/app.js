@@ -7,6 +7,7 @@ import { loadHardware } from "./store.js";
 import { h, clear, icon, toast } from "./ui.js";
 import { LOGO_VIEWBOX, LOGO_PATHS } from "./logo.js";
 import { searchBox } from "./search.js";
+import { isLocked, lockedPage, startAccess } from "./access.js";
 
 export const PAGES = [
   { id: "dashboard", key: "Nav_Dashboard", load: () => import("./pages/dashboard.js") },
@@ -82,17 +83,18 @@ async function show(id) {
     if (+a.dataset.family === FAMILIES.indexOf(family)) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     a.href = `#/${lastInFamily.get(FAMILIES[+a.dataset.family]) || FAMILIES[+a.dataset.family].pages[0]}`;
   }
-  const mod = await page.load();
+  const locked = isLocked(page.id, family.key);   // a menu or tab the shop has locked for accounts without Pro (never, today)
+  const mod = locked ? null : await page.load();
   const swap = () => {
     unmount?.(); unmount = null;
     clear(stage); stage.scrollTop = 0;
     if (family.pages.length > 1) stage.append(h("nav", { class: "tabs", "aria-label": t(family.key) }, family.pages.map((id) => {
       const p = PAGES.find((x) => x.id === id);
-      return h("a", { href: `#/${id}`, "aria-current": id === page.id ? "page" : null }, icon(TAB_ICON[id] || "doc"), t(p.key));
+      return h("a", { href: `#/${id}`, "aria-current": id === page.id ? "page" : null }, icon(TAB_ICON[id] || "doc"), t(p.key), isLocked(id, family.key) ? h("span", { class: "lock-mark", title: t("Access_Locked") }, icon("lock")) : null);
     })));
     const el = h("div", { class: "page" }); stage.append(el);
     stage.style.setProperty("--tabs-h", `${stage.querySelector(".tabs")?.offsetHeight || 0}px`);
-    unmount = mod.mount(el, page.arg) || null;
+    if (locked) el.append(lockedPage(boot)); else unmount = mod.mount(el, page.arg) || null;
     document.title = `${t(page.key)} — Mazesta`;
   };
   if (document.startViewTransition && !still && !document.hidden && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -164,12 +166,23 @@ function banner(text, link, closed) {
   return el;
 }
 
+// A family whose pages are all locked shows a lock in the side bar. (Nothing is locked today: this changes nothing on screen.)
+function markLocks() {
+  FAMILIES.forEach((f, i) => {
+    const a = index.querySelector(`a[data-family="${i}"]`); if (!a) return;
+    a.querySelector(".lock-mark")?.remove();
+    if (f.pages.every((id) => isLocked(id, f.key))) a.append(h("span", { class: "lock-mark", title: t("Access_Locked") }, icon("lock")));
+  });
+}
+function onAccess() { markLocks(); if (ready && current) { const id = current.id; current = null; show(id); } }
+
 async function start() {
   const info = await call("app.boot");
   Object.assign(boot, info);
   setStrings(info.strings, info.rtl, info.language);
   setUnits(info.units);
-  renderIndex(info); renderBand(info);
+  await startAccess(onAccess);
+  renderIndex(info); renderBand(info); markLocks();
   if (info.banner) banner(info.banner, null, () => call("app.dismissBreak").catch(() => {}));
   // The assistant's column: loaded after the strings, apart from the pages (it imports the shell back for go()).
   import("./assistant.js").then((m) => m.mountAssistant(app, asst)).catch((e) => report(String(e && e.stack || e)));

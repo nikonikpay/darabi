@@ -75,6 +75,16 @@ public sealed class SiteClient(Uri api, HttpClient http)
     public async Task<string> MessagesAsync(string install, long after, CancellationToken ct)
         => await SendAsync(HttpMethod.Get, $"messages?install={Uri.EscapeDataString(install)}&after={after}&t=" + Nonce(), null, null, ct).ConfigureAwait(false);
 
+    /// <summary>What this installation may use (see <c>Mazesta.Core.Access.Entitlements</c>): the installation's random id and, once signed in, the account's token. Raw JSON.</summary>
+    public async Task<string> AccessAsync(string install, string? token, CancellationToken ct)
+        => await SendAsync(HttpMethod.Post, "access?t=" + Nonce(), null, JsonSerializer.Serialize(new { install, token }, Json), ct).ConfigureAwait(false);
+    /// <summary>Asks the site to text a sign-in code to the mobile number (it refuses while sign-in is not offered).</summary>
+    public async Task AccessCodeAsync(string mobile, CancellationToken ct) => await SendAsync(HttpMethod.Post, "access/code?t=" + Nonce(), null, JsonSerializer.Serialize(new { mobile }, Json), ct).ConfigureAwait(false);
+    /// <summary>Trades the code for the account's token and links this installation to the account. Raw JSON: {token, ...entitlements}.</summary>
+    public async Task<string> AccessVerifyAsync(string mobile, string code, string install, CancellationToken ct)
+        => await SendAsync(HttpMethod.Post, "access/verify?t=" + Nonce(), null, JsonSerializer.Serialize(new { mobile, code, install }, Json), ct).ConfigureAwait(false);
+    public async Task AccessLogoutAsync(string token, CancellationToken ct) => await SendAsync(HttpMethod.Post, "access/logout?t=" + Nonce(), null, JsonSerializer.Serialize(new { token }, Json), ct).ConfigureAwait(false);
+
     /// <summary>A user's latest results (one run per benchmark, at most <see cref="RunsPerShare"/>), sent without a key to become a page of
     /// their own on the site. <paramref name="names"/> are the benchmarks' names as the app shows them.</summary>
     public async Task<SiteShareReceipt> ShareAsync(IReadOnlyList<JsonNode> runs, IReadOnlyDictionary<string, string> names, IReadOnlyDictionary<string, bool> higher, SiteMachine machine, string appVersion, CancellationToken ct)
@@ -145,7 +155,7 @@ public sealed class SiteClient(Uri api, HttpClient http)
         if (res.IsSuccessStatusCode) return text;
         // WordPress words an error as {"code":…,"message":…}; a page of HTML instead means something else answered (no plugin, a firewall).
         string? said = null;
-        try { said = JsonNode.Parse(text)?["message"]?.GetValue<string>(); } catch (Exception e) when (e is JsonException or InvalidOperationException) { }
+        try { var node = JsonNode.Parse(text); said = node?["message"]?.GetValue<string>() ?? node?["error"]?.GetValue<string>(); } catch (Exception e) when (e is JsonException or InvalidOperationException) { }
         throw new SiteException(said ?? $"The site answered {(int)res.StatusCode}.", res.StatusCode);
     }
 

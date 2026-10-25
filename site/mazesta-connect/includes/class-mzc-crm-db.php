@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
  */
 final class MZC_Crm_Db
 {
-    const SCHEMA = 15;
+    const SCHEMA = 16;
     private static $db = false;     // false: not tried yet; null: no connection
     private static $error = '';
     private static $cfg = null;
@@ -171,6 +171,12 @@ final class MZC_Crm_Db
                 who VARCHAR(120) NOT NULL DEFAULT '', action VARCHAR(12) NOT NULL DEFAULT '', at DATETIME NOT NULL, changes MEDIUMTEXT NULL, snap MEDIUMTEXT NOT NULL, KEY entity (entity, entity_id, id)) $engine";
         $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('edit_locks')}` (entity VARCHAR(10) NOT NULL, entity_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, who VARCHAR(120) NOT NULL, since INT UNSIGNED NOT NULL,
                 until INT UNSIGNED NOT NULL, PRIMARY KEY (entity, entity_id)) $engine";
+        // schema 16: the app's accounts (mobile number + SMS code), their sign-in codes and sessions, and the installations linked to each account (MZC_Access)
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('accounts')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, mobile VARCHAR(11) NOT NULL, plan VARCHAR(8) NOT NULL DEFAULT 'free', pro_until DATETIME NULL, disabled TINYINT NOT NULL DEFAULT 0,
+                note VARCHAR(255) NULL, created DATETIME NOT NULL, last_seen DATETIME NULL, UNIQUE KEY mobile (mobile)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('app_codes')}` (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, mobile VARCHAR(11) NOT NULL, code_hash CHAR(64) NOT NULL, expires DATETIME NOT NULL, attempts TINYINT NOT NULL DEFAULT 0, created DATETIME NOT NULL, KEY mobile (mobile)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('app_sessions')}` (token_hash CHAR(64) NOT NULL PRIMARY KEY, account_id BIGINT UNSIGNED NOT NULL, install CHAR(32) NOT NULL DEFAULT '', expires DATETIME NOT NULL, created DATETIME NOT NULL, KEY account_id (account_id)) $engine";
+        $sql[] = "CREATE TABLE IF NOT EXISTS `{$t('account_installs')}` (install CHAR(32) NOT NULL PRIMARY KEY, account_id BIGINT UNSIGNED NOT NULL, linked DATETIME NOT NULL, KEY account_id (account_id)) $engine";
         $before = (int) $db->get_var('SELECT v FROM `' . $t('meta') . "` WHERE k = 'schema'");
         foreach ($sql as $q) { if ($db->query($q) === false) { return 'ساخت جدول ناموفق بود: ' . $db->last_error; } }
         if ($before < 12) { self::forget_old(); }

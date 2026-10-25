@@ -21,6 +21,7 @@ internal sealed class Program : ApplicationContext
     internal static RollingFileLoggerProvider? LogProvider { get; private set; }
     internal static UsageUploader? Uploader { get; private set; }
     internal static MessageInbox? Inbox { get; private set; }
+    internal static AccessService? Access { get; private set; }
     /// <summary>Started by the update that has just put this release in place (the page says so once).</summary>
     private static bool JustUpdated { get; set; }
     internal static bool TakeJustUpdated() { bool b = JustUpdated; JustUpdated = false; return b; }
@@ -156,7 +157,8 @@ internal sealed class Program : ApplicationContext
         // The overlay alone talks to no site: the uploader and the inbox (and their timers) start with the window, if it ever opens.
         _startOnline = () => { _startOnline = null; _usageUploader = Uploader = new UsageUploader(usage.Log, config, AppUpdater.Get(paths, log).Site, _services.GetRequiredService<InventoryCache>(), version, WebBridge.Staff, log, new LogShipper(paths.LogsDir, paths.ConfigDir),
                 _services.GetRequiredService<CheckupService>(), _services.GetRequiredService<HardwareDetailsCache>());
-            Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log); };
+            Inbox = new MessageInbox(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log);
+            Access = new AccessService(paths.ConfigDir, usage.Log, config, AppUpdater.Get(paths, log).Site, log); };
         if (!overlayOnly) _startOnline();
         _fans = FanController.Start(engine, paths, log); _fans.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
         _gpuFan = GpuFanController.Start(engine, _services.GetRequiredService<Mazesta.Core.Tuning.IGpuTuningProvider>(), paths, log); _gpuFan.Changed += () => _ui?.BeginInvoke(ExitWhenNeedless);
