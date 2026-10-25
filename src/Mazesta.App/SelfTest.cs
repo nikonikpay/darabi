@@ -24,6 +24,7 @@ internal static class SelfTest
         {
             File.WriteAllText(file, "");
             if (kind.StartsWith("tests", StringComparison.Ordinal)) { await RunTests(kind, services, ui, Say); Say("DONE"); return; }
+            if (kind.StartsWith("bench", StringComparison.Ordinal)) { await RunBenchmarks(kind, services, ui, Say); Say("DONE"); return; }
             if (kind == "shield") { await SelfTestShield.RunAsync(Say); Say("DONE"); return; }
             if (kind == "gpufan") { await GpuFan(Say); Say("DONE"); return; }
             if (kind == "lights") { await SelfTestLights.RunAsync(paths, Say); Say("DONE"); return; }
@@ -40,6 +41,7 @@ internal static class SelfTest
             if (!t.HasDevice) { Say("No tunable card: " + t.Unavailable); return; }
             Say("Card: " + t.Device!.Name);
             await Ui(ui, () => { t.AutoLog.CollectionChanged += (_, e) => { if (e.NewItems is not null) foreach (AutoLogRow r in e.NewItems) Say($"step {r.Step} {r.Kind} | {r.Settings} | {r.Result}{(r.Problem is null ? "" : " | PROBLEM " + r.Problem)}"); }; return 0; });
+            if (kind == "manual") { await Manual(t, Say); Say("DONE"); return; }
             Task run = await Ui(ui, () => kind switch
             {
                 "undervolt" => t.AutoUndervoltCommand.ExecuteAsync(null),
@@ -74,6 +76,28 @@ internal static class SelfTest
         await Step("silent profile (slows 3 % every 2 s)", () => f.Apply("silent"), 25);
         await Step("saved profile test-night", () => { f.Save("test-night"); f.Apply("full"); f.Apply("test-night"); });
         await Step("profile test-night deleted, back to automatic", () => { f.Delete("test-night"); f.Reset(); });
+    }
+
+    /// <summary>--selftest=manual: applies a manual core offset, voltage offset, memory offset and fan duty to the card, reads each back from the driver and from the telemetry, and puts the card back as it was.</summary>
+    private static async Task Manual(TuningViewModel t, Action<string> say)
+    {
+        var d = t.Device!; var l = d.Limits; say($"limits: {l}");
+        string Show(Mazesta.Core.Tuning.GpuTuningSettings s) => $"core {s.CoreOffsetMHz} MHz, memory {s.MemoryOffsetMHz} MHz, voltage {s.VoltageOffsetMv} mV, fan {s.FanPercent?.ToString() ?? "auto"}";
+        say("before: " + Show(d.ReadCurrent()));
+        async Task Try(string title, Mazesta.Core.Tuning.GpuTuningSettings s, int wait = 8)
+        {
+            var r = d.Apply(s); say($"{title}: " + string.Join("; ", r.Steps.Select(x => $"{x.SettingKey}={(x.Ok ? "ok" : "FAILED " + x.Error)}")));
+            await Task.Delay(TimeSpan.FromSeconds(wait)); var back = d.ReadCurrent(); var tel = d.ReadTelemetry();
+            say($"  read back: {Show(back)} | telemetry: clock {tel.CoreClockMHz} MHz, fan {tel.FanPercent} %, temp {tel.TemperatureC} C, power {tel.PowerW} W");
+        }
+        var stock = Mazesta.Core.Tuning.GpuTuningSettings.Stock;
+        await Try("core +60", stock with { CoreOffsetMHz = 60 });
+        await Try("voltage -60 mV", stock with { VoltageOffsetMv = -60 });
+        await Try("memory +40", stock with { MemoryOffsetMHz = 40 });
+        if (l.FanMaxPercent is { } max) { await Try("fan 70 %", stock with { FanPercent = 70 }, 12); await Try("fan 35 %", stock with { FanPercent = 35 }, 12); }
+        await Try("all together", stock with { CoreOffsetMHz = 60, VoltageOffsetMv = -60, MemoryOffsetMHz = 40, FanPercent = l.FanMaxPercent is null ? null : 50 }, 12);
+        var back0 = d.Reset(); say("reset: " + string.Join("; ", back0.Steps.Select(x => $"{x.SettingKey}={(x.Ok ? "ok" : "FAILED " + x.Error)}"))); await Task.Delay(8000);
+        say("after reset: " + Show(d.ReadCurrent()) + $" | telemetry fan {d.ReadTelemetry().FanPercent} %");
     }
 
     private static Task RayTracedScene(TuningViewModel t) { t.SceneRayTracing = true; return t.SceneTestCommand.ExecuteAsync(null); }
@@ -126,6 +150,31 @@ internal static class SelfTest
             foreach (var f in view.Figures) say($"    FIG  {f.Name} = {f.Value}{(f.Note is null ? "" : "  (" + f.Note + ")")}");
             foreach (var l in view.Lines) say($"    {(l.Latin ? "[LATIN] " : "")}{l.Text}");
             if (advice is not null) say("    ADVICE: " + advice);
+        }
+    }
+
+    /// <summary>--selftest=bench[:id,id]: runs the benchmarks (the graphics card's by default) at their own lengths and writes each one's status, figures and detail.</summary>
+    private static async Task RunBenchmarks(string kind, IServiceProvider services, UiDispatcher ui, Action<string> say)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(25));   // the sensor scan has listed the parts by then
+        string[] only = kind.Contains(':') ? kind[(kind.IndexOf(':') + 1)..].Split(',') : [];
+        var vm = await Ui(ui, () => services.GetRequiredService<Func<BenchmarksViewModel>>()());
+        var chosen = await Ui(ui, () =>
+        {
+            foreach (var r in vm.Rows) { r.RefreshAvailability(); string id = r.Benchmark.Definition.Id.Value; r.IsSelected = r.IsAvailable && (only.Length > 0 ? only.Contains(id) : id.StartsWith("bench.gpu", StringComparison.Ordinal)); }
+            foreach (var r in vm.Rows.Where(r => !r.IsAvailable)) say($"not available: {r.Benchmark.Definition.Id.Value}: {r.UnavailableText}");
+            _ = vm.RunSelectedCommand.ExecuteAsync(null);
+            return vm.Rows.Where(r => r.IsSelected).Select(r => r.Benchmark.Definition.Id.Value).ToList();
+        });
+        say($"{chosen.Count} benchmarks: {string.Join(", ", chosen)}");
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        while (await Ui(ui, () => vm.IsRunning)) await Task.Delay(TimeSpan.FromSeconds(2));
+        foreach (var row in await Ui(ui, () => vm.Rows.Where(r => chosen.Contains(r.Benchmark.Definition.Id.Value)).ToList()))
+        {
+            var (id, status, metrics, detail) = await Ui(ui, () => (row.Benchmark.Definition.Id.Value, row.StatusText, row.Metrics.Select(m => $"{m.Name} = {m.Value}").ToList(), row.Detail));
+            say($"=== {id} | {status}");
+            foreach (var m in metrics) say("    " + m);
+            if (detail is not null) say("    DETAIL " + detail.Replace("\n", " // "));
         }
     }
 

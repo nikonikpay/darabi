@@ -43,6 +43,15 @@ internal static unsafe class Adlx
     public const int SvcGfx = 14, SvcVram = 15, SvcSupportedGfx = 8, SvcSupportedVram = 9;
     public const int GfxMaxRange = 6, GfxMaxGet = 7, GfxMaxSet = 8, GfxVoltRange = 9, GfxVoltGet = 10, GfxVoltSet = 11;
     public const int VramRange = 7, VramGet = 8, VramSet = 9;
+    // IADLXGPUTuningServices: 10 IsSupportedManualFanTuning, 16 GetManualFanTuning. IADLXManualFanTuning: 3 GetFanTuningRanges(speed, temperature), 4 GetFanTuningStates, 6 IsValidFanTuningStates,
+    // 7 SetFanTuningStates; IADLXManualFanTuning1 adds 23 GetDefaultFanTuningStates. The state list: 3 Size, 11 At; a state: 3 GetFanSpeed, 4 SetFanSpeed.
+    public const int SvcSupportedFan = 10, SvcFan = 16, FanRanges = 3, FanStates = 4, FanValid = 6, FanSetStates = 7, FanDefaultStates = 23, ListSize = 3, FanListAt = 11, StateGet = 3, StateSet = 4;
+    public static uint Size(IntPtr list) => ((delegate* unmanaged[Cdecl]<IntPtr, uint>)Fn(list, ListSize))(list);
+    public static int Ranges2(IntPtr o, int slot, out int min1, out int max1) { int* r = stackalloc int[6]; int rc = ((delegate* unmanaged[Cdecl]<IntPtr, int*, int*, int>)Fn(o, slot))(o, r, r + 3); min1 = r[0]; max1 = r[1]; return rc; }
+    public static int Valid(IntPtr o, int slot, IntPtr list) { int bad = 0; return ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int*, int>)Fn(o, slot))(o, list, &bad); }
+    public const int FanZeroSupported = 8, FanZeroSet = 10;
+    public static int SetFlag(IntPtr o, int slot, bool v) => ((delegate* unmanaged[Cdecl]<IntPtr, byte, int>)Fn(o, slot))(o, (byte)(v ? 1 : 0));
+    public static int Call(IntPtr o, int slot, IntPtr arg) => ((delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int>)Fn(o, slot))(o, arg);
 }
 
 /// <summary>ADL's performance log (a call that fills every sensor at once): the card's clocks, temperature, power and fan while it is tuned. Telemetry only; nothing is written through ADL.</summary>
@@ -112,18 +121,18 @@ internal static class AdlxTuningDevices
 /// <summary>
 /// One Radeon through ADLX's manual tuning: the maximum graphics clock as an offset in MHz (<see cref="GpuTuningSettings.CoreOffsetMHz"/>), the
 /// maximum memory clock as MHz above the stock one, and the graphics voltage as an offset in millivolts (never above 0). That voltage offset is how an
-/// undervolt is made here, at the clock the card already reaches. A clock cap, a power limit and fan control are not offered. The driver drops all
+/// undervolt is made here, at the clock the card already reaches. The fans are held at one duty by a flat fan curve. A clock cap and a power limit (ADLX gives it in percent, not watts) are not offered. The driver drops all
 /// of it on a reboot or a driver reset, like NVIDIA's.
 /// </summary>
 internal sealed class AmdTuningDevice : IGpuTuningDevice
 {
-    private readonly IntPtr _gfx, _vram; private readonly int _vramStock; private readonly AdlLog? _log;
+    private readonly IntPtr _gfx, _vram, _fan, _fanDefault; private readonly int _vramStock; private readonly AdlLog? _log; private int? _fanSet;   // _fanSet: the duty this process holds the fans at, null while the driver's own curve runs
     public string Id { get; }
     public string Name { get; }
     public GpuTuningLimits Limits { get; }
 
-    private AmdTuningDevice(IntPtr gfx, IntPtr vram, string id, string name, GpuTuningLimits limits, int vramStock, AdlLog? log)
-    { _gfx = gfx; _vram = vram; Id = id; Name = name; Limits = limits; _vramStock = vramStock; _log = log; }
+    private AmdTuningDevice(IntPtr gfx, IntPtr vram, IntPtr fan, IntPtr fanDefault, string id, string name, GpuTuningLimits limits, int vramStock, AdlLog? log)
+    { _gfx = gfx; _vram = vram; _fan = fan; _fanDefault = fanDefault; Id = id; Name = name; Limits = limits; _vramStock = vramStock; _log = log; }
 
     public static AmdTuningDevice? TryCreate(IntPtr services, IntPtr gpu, ILogger? log)
     {
@@ -136,8 +145,19 @@ internal sealed class AmdTuningDevice : IGpuTuningDevice
         if (Adlx.Flag(services, Adlx.SvcSupportedVram, gpu, out bool vramOk) == Adlx.Ok && vramOk && Adlx.Obj(services, Adlx.SvcVram, gpu, out var vram0) == Adlx.Ok
             && Adlx.Query(vram0, "IADLXManualVRAMTuning2", out var vram2) == Adlx.Ok && Adlx.Range(vram2, Adlx.VramRange, out stock, out memMax) == Adlx.Ok) vram = vram2;
         string name = Adlx.Text(gpu, Adlx.GpuName) ?? "AMD Radeon", pnp = Adlx.Text(gpu, Adlx.GpuPnp) ?? name;
-        var limits = new GpuTuningLimits(coreMin, coreMax, 0, vram == 0 ? 0 : memMax - stock, null, null, null, null, 0, null, null, voltMin);
-        var device = new AmdTuningDevice(gfx, vram, "amd:" + pnp, name, limits, stock, AdlLog.Open());
+        // The fans: a curve of (temperature, duty) points the driver follows; held at one duty by giving every point the same duty. The driver's default points are kept to give them back.
+        IntPtr fan = 0, fanDefault = 0; int fanMin = 0, fanMax = 0;
+        if (Adlx.Flag(services, Adlx.SvcSupportedFan, gpu, out bool fanOk) == Adlx.Ok && fanOk && Adlx.Obj(services, Adlx.SvcFan, gpu, out var fan0) == Adlx.Ok)
+        {
+            bool one = Adlx.Query(fan0, "IADLXManualFanTuning1", out var fan1) == Adlx.Ok;
+            if ((one || Adlx.Query(fan0, "IADLXManualFanTuning", out fan1) == Adlx.Ok) && Adlx.Ranges2(fan1, Adlx.FanRanges, out fanMin, out fanMax) == Adlx.Ok && fanMax > 0)
+            {
+                fan = fan1;
+                if (!(one && Adlx.Obj(fan, Adlx.FanDefaultStates, out fanDefault) == Adlx.Ok && fanDefault != 0)) Adlx.Obj(fan, Adlx.FanStates, out fanDefault);
+            }
+        }
+        var limits = new GpuTuningLimits(coreMin, coreMax, 0, vram == 0 ? 0 : memMax - stock, null, null, null, null, fan == 0 ? 0 : 1, fan == 0 ? null : Math.Max(fanMin, 1), fan == 0 ? null : fanMax, voltMin);
+        var device = new AmdTuningDevice(gfx, vram, fan, fanDefault, "amd:" + pnp, name, limits, stock, AdlLog.Open());
         log?.LogInformation("GPU tuning: {Name} {Id} limits {Limits}", name, device.Id, limits);
         return device;
     }
@@ -149,7 +169,25 @@ internal sealed class AmdTuningDevice : IGpuTuningDevice
         int core = Adlx.Get(_gfx, Adlx.GfxMaxGet, out int c) == Adlx.Ok ? c : 0;
         int volt = Limits.HasVoltage && Adlx.Get(_gfx, Adlx.GfxVoltGet, out int v) == Adlx.Ok ? v : 0;
         int memory = _vram != 0 && Adlx.Get(_vram, Adlx.VramGet, out int m) == Adlx.Ok ? m - _vramStock : 0;
-        return new(core, memory, null, null, null, volt);
+        return new(core, memory, null, null, _fanSet, volt);
+    }
+
+    /// <summary>The fan curve with every point at one duty (null: the driver's own points), written and checked by the driver.</summary>
+    private TuningStepResult FanStep(int? percent)
+    {
+        IntPtr list = 0; int rc;
+        if (percent is null) { list = _fanDefault; rc = list == 0 ? Adlx.NotSupported : Adlx.Ok; }
+        else if ((rc = Adlx.Obj(_fan, Adlx.FanStates, out list)) == Adlx.Ok)
+        {
+            for (uint i = 0, n = Adlx.Size(list); i < n && rc == Adlx.Ok; i++)
+                if ((rc = Adlx.Obj(list, Adlx.FanListAt, i, out var st)) == Adlx.Ok) rc = Adlx.Set(st, Adlx.StateSet, percent.Value);
+        }
+        if (rc == Adlx.Ok) rc = Adlx.Valid(_fan, Adlx.FanValid, list);
+        if (rc == Adlx.Ok) rc = Adlx.Call(_fan, Adlx.FanSetStates, list);
+        // The fans stand still below a temperature (zero RPM): a held duty means they turn, so that is switched off while it is held and back on after.
+        if (Adlx.Succeeded(rc) && (percent is not null || _fanSet is not null) && Adlx.Get(_fan, Adlx.FanZeroSupported, out int zero) == Adlx.Ok && zero != 0) Adlx.SetFlag(_fan, Adlx.FanZeroSet, percent is null);
+        if (Adlx.Succeeded(rc)) _fanSet = percent;
+        return new("Tuning_Fan", Adlx.Succeeded(rc), Adlx.Succeeded(rc) ? null : $"ADLX {rc} ({Describe(rc)})", rc == Adlx.NotSupported);
     }
 
     public TuningApplyResult Apply(GpuTuningSettings s)
@@ -158,7 +196,8 @@ internal sealed class AmdTuningDevice : IGpuTuningDevice
         // What this card has no control for is said so, not skipped: the profile asked for something it will not get.
         if (s.MaxClockMHz is not null) steps.Add(new("Tuning_MaxClock", false, "not offered for AMD cards", Unsupported: true));
         if (s.PowerLimitW is not null) steps.Add(new("Tuning_PowerLimit", false, "not offered for AMD cards", Unsupported: true));
-        if (s.FanPercent is not null) steps.Add(new("Tuning_Fan", false, "not offered for AMD cards", Unsupported: true));
+        if (_fan != 0) { if (s.FanPercent is not null || _fanSet is not null) steps.Add(FanStep(s.FanPercent is { } f ? Math.Clamp(f, Limits.FanMinPercent ?? 1, Limits.FanMaxPercent ?? 100) : null)); }
+        else if (s.FanPercent is not null) steps.Add(new("Tuning_Fan", false, "this card's driver offers no fan control", Unsupported: true));
         // Order: the clock comes down before the voltage does, and the voltage comes up before the clock goes up, so the card never runs a clock on too little voltage.
         bool lowering = s.CoreOffsetMHz < ReadCurrent().CoreOffsetMHz;
         if (lowering) steps.Add(Step("Tuning_CoreOffset", _gfx, Adlx.GfxMaxSet, s.CoreOffsetMHz));
