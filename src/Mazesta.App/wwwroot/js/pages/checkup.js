@@ -5,6 +5,7 @@
 import { call, on } from "../bridge.js";
 import { t, fa } from "../i18n.js";
 import { h, icon } from "../ui.js";
+import { supportNote } from "../support.js";
 
 const PILL = { Good: "pass", Note: "none", Attention: "warn", Problem: "fail" };
 const RANK = { Problem: 0, Attention: 1, Note: 2, Good: 3 };
@@ -16,6 +17,7 @@ export function findingCard(f) {
     h("div", { class: "finding-head" }, h("span", { class: `pill ${PILL[f.level] || "none"}` }, f.levelName), h("b", {}, f.title), f.subject ? h("span", { class: "caption lat" }, f.subject) : null),
     h("p", { class: "finding-text" }, f.text),
     f.hint ? h("p", { class: "finding-hint" }, f.hint) : null,
+    f.level === "Problem" ? supportNote() : null,
     f.measures.length ? h("dl", { class: "finding-m" }, f.measures.flatMap((m) => [h("dt", {}, m.name), h("dd", { class: "num" }, m.value)])) : null,
     f.source ? h("p", { class: "caption finding-src", title: f.source }, t("Check_Source", new URL(f.source).host)) : null);
 }

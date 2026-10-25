@@ -5,6 +5,12 @@ import { contactLines } from "./contact.js";
 
 let dialog = null;
 
+// The line under a red warning (a part too hot, a drive nearly worn out, a test that failed): the customer is told they can write to Mazesta support, with the way to do it.
+export function supportNote() {
+  return h("p", { class: "fail-support" }, icon("phone"), h("span", {}, t("Support_Critical")),
+    h("button", { class: "btn quiet", type: "button", onclick: () => import("./app.js").then((m) => openSupport(m.boot)) }, t("Fail_Contact")));
+}
+
 export function openSupport(boot) {
   if (dialog) return;
   const close = () => { dialog?.close(); dialog?.remove(); dialog = null; };
