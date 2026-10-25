@@ -16,6 +16,13 @@ public sealed record SummaryRow(string Name, ReportOutcome? Outcome, double Dura
     public IReadOnlyList<SummaryFigure> Figures { get; init; } = [];
 }
 
+/// <summary>What the power test drew: the CPU package and the GPU, each its highest reading while the test ran (null when the machine did not report it). The total is their sum, so
+/// it is the draw of those two parts only - the board, drives and fans are not counted.</summary>
+public sealed record PowerDraw(double? CpuW, double? GpuW)
+{
+    public double? Total => CpuW is null && GpuW is null ? null : (CpuW ?? 0) + (GpuW ?? 0);
+}
+
 /// <summary>One of a benchmark's main figures, as the summary prints it.</summary>
 public sealed record SummaryFigure(string Name, double Value, string Unit);
 
@@ -27,6 +34,7 @@ public sealed record SummaryFigure(string Name, double Value, string Unit);
 /// </summary>
 public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak> Peaks, IReadOnlyList<SummaryRow> Rows, IReadOnlyList<HeatPart> Columns, bool FromTrace)
 {
+    public PowerDraw? Power { get; init; }
     private static readonly Dictionary<string, HeatPart> Roles = new()
     {
         ["CpuPackageTemp"] = HeatPart.Cpu, ["CpuTctlTdie"] = HeatPart.Cpu, ["GpuCoreTemp"] = HeatPart.Gpu, ["GpuHotSpotTemp"] = HeatPart.GpuHotSpot,
@@ -87,7 +95,14 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
             return new PartPeak(kv.Key, hottest.Hardware, hottest.Max, during);
         }).ToList();
         HeatPart[] shown = [HeatPart.Cpu, HeatPart.Gpu, HeatPart.GpuHotSpot, HeatPart.Drive];
-        return new(r, peaks, rows, [.. shown.Where(byPart.ContainsKey)], fromTrace);
+        PowerDraw? power = null;
+        if (r.Tests.FirstOrDefault(t => t.Id == "power.combined" && t.Outcome != ReportOutcome.NotRun) is { } pt)
+        {
+            double? Side(string role) => r.Sensors.Where(x => x.Role == role).Select(x => PeakIn(x, pt.StartedAt, pt.FinishedAt)).Max();
+            power = new PowerDraw(Side("CpuPackagePower"), Side("GpuPower"));
+            if (power.Total is null) power = null;
+        }
+        return new(r, peaks, rows, [.. shown.Where(byPart.ContainsKey)], fromTrace) { Power = power };
     }
 }
 
@@ -102,6 +117,10 @@ public sealed class SummaryText
 
     public static SummaryText For(string language) => language == "en" ? English : Persian;
 
+    public string PsuTitle => IsRtl ? "توان مصرفی (پاور)" : "Power draw (PSU)";
+    public string PsuTotal => IsRtl ? "بیشترین توان مصرفی" : "Peak power draw";
+    public string PsuNote => IsRtl ? "جمع بیشترین توان پردازنده و کارت گرافیک در آزمون هم‌زمان؛ مادربرد، دیسک‌ها و فن‌ها حساب نشده‌اند." : "CPU and graphics card peaks added together during the combined test; board, drives and fans are not counted.";
+    public string DriveMax => IsRtl ? "بیشترین دما" : "Peak";
     public string NotTested => IsRtl ? "تست نشده" : "Not tested";
     public string HealthName(string? health) => health switch { "Healthy" => HealthHealthy, "Warning" => HealthWarning, "Unhealthy" => HealthUnhealthy, null => NotReported, _ => HealthUnknown };
     public string PartName(HeatPart p) => p switch { HeatPart.Cpu => Cpu, HeatPart.Gpu => Gpu, HeatPart.GpuHotSpot => GpuHotSpot, HeatPart.GpuMemory => GpuMemory, HeatPart.Drive => DriveTemp, _ => Board };
@@ -148,13 +167,21 @@ public static class SummaryHtml
         string number = f.Value.ToString(v >= 100 ? "F0" : v >= 10 ? "F1" : "F2", Inv);
         return f.Unit.Length == 0 ? number : $"{number} {f.Unit}";
     }
+    /// <summary>The report date: Solar Hijri with the local time in Persian, ISO otherwise; the digits stay Latin (spec 7.1).</summary>
+    internal static string Stamp(DateTimeOffset t, bool persian)
+    {
+        var local = t.ToLocalTime().DateTime;
+        if (!persian) return local.ToString("yyyy-MM-dd HH:mm", Inv);
+        var pc = new PersianCalendar();
+        return string.Create(Inv, $"{pc.GetYear(local)}/{pc.GetMonth(local):00}/{pc.GetDayOfMonth(local):00}  {local:HH:mm}");
+    }
     private static string Lt(string? s) => $"<bdi class=\"lt\">{E(s)}</bdi>";
     /// <summary>A name without its bracketed detail ("(FP64)", "(256×1440)"): the summary has one line for it, the full report the rest.</summary>
     internal static string Short(string name) => System.Text.RegularExpressions.Regex.Replace(name, @"\s*[\(（][^\)）]*[\)）]", "").Trim() is { Length: > 0 } t ? t : name;
 
     /// <summary>Which card of the sheet a test or benchmark belongs to, by the prefix of its id (the same split <see cref="PartHistory"/> uses).</summary>
     private static readonly (string Key, string[] Prefixes)[] Cards =
-        [("cpu", ["cpu.", "bench.cpu."]), ("gpu", ["gpu.", "bench.gpu."]), ("ram", ["memory.", "bench.memory"]), ("storage", ["storage.", "bench.storage"])];
+        [("cpu", ["cpu.", "bench.cpu."]), ("gpu", ["gpu.", "bench.gpu."]), ("ram", ["memory.", "bench.memory"]), ("storage", ["storage.", "bench.storage"]), ("psu", ["power."])];
     /// <summary>The temperature at which a part's figure turns amber, then red: a reading aid on the sheet, not a verdict (the tests decide that).</summary>
     private static (double Warn, double Bad) Limits(HeatPart p) => p switch
     {
@@ -173,7 +200,7 @@ public static class SummaryHtml
          .Append("<title>").Append(E(w.Title)).Append(" — ").Append(E(r.ShopName)).Append("</title><style>").Append(Css(font)).Append("</style></head><body><main class=\"").Append(Fit(s)).Append("\">");
 
         b.Append("<header><div class=\"brand\">").Append(MazestaLogo.Svg("#0B0B0D", "logo")).Append("<div><h1>").Append(E(w.Title)).Append("</h1><div class=\"shop\">").Append(E(r.ShopName)).Append("</div></div></div><div class=\"meta\">")
-         .Append(E(w.Date)).Append(": ").Append(Lt(ReportFormat.Stamp(r.CreatedAt)));
+         .Append(E(w.Date)).Append(": ").Append(Lt(Stamp(r.CreatedAt, w.IsRtl)));
         if (r.ServiceNumber is { } service) b.Append("<br>").Append(E(rw.ServiceNumber)).Append(": <b>").Append(Lt(service)).Append("</b>");
         b.Append("</div></header>");
 
@@ -248,19 +275,28 @@ public static class SummaryHtml
         var ramRows = RowsOf("ram");
         if (m.TotalPhysicalMemoryBytes is { } ramBytes || ramRows.Count > 0)
             Card(w.Ram, Status(ramRows), m.TotalPhysicalMemoryBytes is { } total ? $"{total / 1073741824.0:F0} GB" : null,
-                m.MemoryModules.Count > 0 ? $"{m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")) : null, "", ramRows);
+                m.MemoryModules.Count > 0 ? $"{m.MemoryModules.Count} × " + string.Join(", ", m.MemoryModules.Select(x => x.ConfiguredSpeedMts ?? x.SpeedMts).OfType<int>().Distinct().Select(x => $"{x} MT/s")) : null, "", ramRows, ModuleList());
+        string ModuleList() => string.Concat(m.MemoryModules.Select(x => "<div class=\"drive\"><div><b>" + Lt(string.Join(" ", new[] { x.Manufacturer, x.PartNumber }.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v!.Trim()))) + "</b><small>"
+            + Lt(string.Join(" · ", new[] { x.Slot, x.CapacityBytes is { } cb ? $"{cb / 1073741824.0:F0} GB" : null, x.TypeName, (x.ConfiguredSpeedMts ?? x.SpeedMts) is { } sp ? $"{sp} MT/s" : null }.Where(v => !string.IsNullOrWhiteSpace(v)))) + "</small></div></div>"));
         var stoRows = RowsOf("storage");
         var drives = new StringBuilder();
         foreach (var d in m.Storage)
         {
             string cls = d.HealthStatus switch { "Healthy" => "ok", "Warning" => "warn", "Unhealthy" => "bad", _ => "unk" };
             string health = w.HealthName(d.HealthStatus) + (DriveAttention.HealthPercent(d.WearPercent) is { } pct ? $" ({pct}%)" : "");
+            double? driveMax = r.Sensors.Where(x => x.Role == "StorageTemp" && d.FriendlyName is { Length: > 0 } fn && (x.Hardware.Contains(fn, StringComparison.OrdinalIgnoreCase) || fn.Contains(x.Hardware, StringComparison.OrdinalIgnoreCase))).Select(x => (double?)x.Max).Max();
+            string heat = driveMax is { } dm ? $"<span class=\"dt {Level(HeatPart.Drive, dm)}\"><small>{E(w.DriveMax)}</small> {Lt($"{dm.ToString("F0", Inv)} °C")}</span>" : "";
             drives.Append("<div class=\"drive\"><div><b>").Append(Lt(d.FriendlyName ?? "?")).Append("</b><small>")
              .Append(Lt(string.Join(" · ", new[] { d.MediaType, d.BusType, d.SizeBytes is { } sz ? $"{sz / 1_000_000_000} GB" : null }.Where(x => !string.IsNullOrWhiteSpace(x)))))
-             .Append("</small></div><span class=\"badge ").Append(cls).Append("\">").Append(E(health)).Append("</span></div>");
+             .Append("</small></div><div class=\"dr\">").Append(heat).Append("<span class=\"badge ").Append(cls).Append("\">").Append(E(health)).Append("</span></div></div>");
         }
         if (m.Storage.Count == 0) drives.Append("<p class=\"na\">").Append(E(w.NoDrives)).Append("</p>");
         Card(w.Drives, Status(stoRows), null, null, Peak(HeatPart.Drive) is null ? "" : Tile(w.PartName(HeatPart.Drive), Peak(HeatPart.Drive)), stoRows, drives.ToString());
+        var psuRows = RowsOf("psu");
+        if (s.Power is { } pw)
+            Card(w.PsuTitle, Status(psuRows), null, null,
+                $"<div class=\"tile big\"><div class=\"tl\">{E(w.PsuTotal)}</div><div class=\"tv\">{Lt($"{pw.Total!.Value.ToString("F0", Inv)} W")}</div><div class=\"td\">" + string.Join(" + ", new[] { pw.CpuW is { } cw ? $"{E(rw.Cpu)} {Lt($"{cw:F0} W")}" : null, pw.GpuW is { } gw ? $"{E(w.Gpu)} {Lt($"{gw:F0} W")}" : null }.OfType<string>()) + "</div></div>", psuRows, $"<div class=\"cf\">{E(w.PsuNote)}</div>", wide: true);
+        else if (psuRows.Count > 0) Card(w.PsuTitle, Status(psuRows), null, null, "", psuRows, null, wide: true);
         if (other.Count > 0) Card(w.Tests, Status(other), null, null, "", other, null, wide: true);
         if (Peak(HeatPart.Board) is { } bp) Card(w.PartName(HeatPart.Board), "", null, null, Tile(w.PartName(HeatPart.Board), bp), [], null, wide: true);
         b.Append("</div>");
@@ -315,7 +351,7 @@ dt{{color:#55555f;flex:0 0 auto}} dd{{margin:0;font-weight:700;overflow:hidden;t
 table{{width:100%;border-collapse:collapse;margin-top:4px}} td{{padding:3px 2px;border-bottom:1px dotted #d0cfc8;vertical-align:middle}} tbody tr:last-child td{{border-bottom:0}}
 .res td.rn{{width:1%;white-space:nowrap}} .res td.rn b{{font-size:11.5px}} .res td.figs{{padding-inline:8px}} td.end{{text-align:end;white-space:nowrap}}
 .fig{{display:inline-block;margin-inline-end:9px;white-space:nowrap}} .fig small{{color:#55555f;font-size:10px}} .fig .lt{{font-weight:700;font-size:11.5px}}
-.drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dotted #d0cfc8}} .drive small{{display:block;color:#66666e;font-size:10.5px}} .drive b{{font-size:11.5px}}
+.drive{{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dotted #d0cfc8}} .drive small{{display:block;color:#66666e;font-size:10.5px}} .dr{{display:flex;align-items:center;gap:8px}} .dt{{font-weight:700;font-size:12px;border-radius:6px;padding:0 6px;border:1px solid}} .dt small{{display:inline;font-size:9.5px;font-weight:400}} .dt.ok{{color:#0f6b3c;background:#e9f7ef;border-color:#9bd5b4}} .dt.warn{{color:#8a5a00;background:#fff5da;border-color:#ecd08c}} .dt.bad{{color:#a0180f;background:#fde8e7;border-color:#f0a39e}} .tile.big{{flex-basis:100%}} .tile.big .tv{{font-size:26px}} .drive b{{font-size:11.5px}}
 .badge{{display:inline-block;border-radius:99px;padding:0 9px;font-weight:700;font-size:10.5px;border:1px solid;white-space:nowrap;line-height:1.6}}
 .badge.ok{{background:#e6f6ee;color:#0f6b3c;border-color:#98d4b2}} .badge.warn{{background:#fff4d6;color:#8a5a00;border-color:#efd08a}}
 .badge.bad{{background:#fde8e7;color:#a0180f;border-color:#f0a39e}} .badge.unk{{background:#f0f0ee;color:#55555f;border-color:#d0d0cc}}

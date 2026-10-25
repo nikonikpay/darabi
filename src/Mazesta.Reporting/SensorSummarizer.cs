@@ -28,7 +28,7 @@ public static class SensorSummarizer
     /// A window in which a sensor recorded nothing has no peak for it.</summary>
     public static IReadOnlyList<WindowPeak> Peaks(PollingEngine engine, IEnumerable<SensorSummary> sensors, IEnumerable<(DateTimeOffset From, DateTimeOffset To)> windows)
     {
-        var temps = sensors.Where(s => s.Kind == nameof(SensorKind.Temperature)).Select(s => (s.Id, Raw: engine.History.GetRaw(new SensorId(s.Id)))).ToList();
+        var temps = sensors.Where(s => s.Kind == nameof(SensorKind.Temperature) || s.Role is "CpuPackagePower" or "GpuPower") /* temperatures, and the two power draws the power test sums */.Select(s => (s.Id, Raw: engine.History.GetRaw(new SensorId(s.Id)))).ToList();
         var list = new List<WindowPeak>();
         foreach (var (from, to) in windows.Distinct())
         {

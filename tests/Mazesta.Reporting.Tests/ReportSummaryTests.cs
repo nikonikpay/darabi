@@ -142,4 +142,29 @@ public class ReportSummaryTests
         Assert.Contains(SummaryText.Persian.NoTemps, SummaryHtml.Write(ReportSummary.Of(SessionReport.Create("x", "1", T0, [], [], HardwareInventory.Empty))));
 
     [Fact] public void English_wording_is_left_to_right() => Assert.Contains("dir=\"ltr\"", SummaryHtml.Write(ReportSummary.Of(Report()), wording: SummaryText.English));
+
+    [Fact] public void A_full_sheet_has_the_shamsi_date_the_power_draw_each_drive_peak_and_the_memory_card()
+    {
+        TestEntry T(string id, string name, ReportOutcome o, int a, int b) => new(id, name, o, T0.AddMinutes(a), T0.AddMinutes(b), (b - a) * 60, 0, null, new Dictionary<string, string>());
+        SensorSummary S(string id, string hw, string name, string kind, string unit, string role, params double[] v)
+            => new(id, hw, name, kind, unit, v.Min(), v.Average(), v.Max(), v.Length, [.. v.Select((x, i) => new TracePoint(i * 60, x))], role);
+        var module = new MemoryModuleInfo("DIMM_A1", 16L << 30, "Kingston", "KF436C18BB/16", 3600, 3600, SmbiosType: 26);
+        var machine = HardwareInventory.Empty with
+        {
+            Cpu = new CpuInfo("12th Gen Intel(R) Core(TM) i7-12700", Mazesta.Core.Hardware.HardwareVendor.Intel, 12, 20, 4900, "LGA1700"), Gpus = [new GpuInfo("NVIDIA GeForce RTX 4070 Ti", "32.0.15.6094", 12L << 30, null)],
+            TotalPhysicalMemoryBytes = 32L << 30, MemoryModules = [module, module with { Slot = "DIMM_B1" }], Storage = [Nvme, Hdd],
+        };
+        var r = SessionReport.Create("مازستا", "1.0.0", T0.AddMinutes(20),
+            [T("cpu.stress", "CPU stress", ReportOutcome.Passed, 0, 3), T("memory.pattern", "Memory pattern", ReportOutcome.Passed, 3, 6), T("gpu.steady", "GPU steady", ReportOutcome.Passed, 6, 9),
+             T("storage.smart", "Drive SMART", ReportOutcome.Passed, 9, 10), T("power.combined", "Power", ReportOutcome.Passed, 10, 14)],
+            [S("pkgp", "Core i7", "CPU Package", "Power", "W", "CpuPackagePower", 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 120, 130, 125, 120, 20), S("gpup", "RTX", "GPU Power", "Power", "W", "GpuPower", 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 270, 285, 280, 275, 30),
+             S("ssd1", "MSI M390 1TB", "Composite", "Temperature", "°C", "StorageTemp", 30, 44, 52), S("ssd2", "WDC WD20PURZ", "Temperature", "Temperature", "°C", "StorageTemp", 29, 33, 38)],
+            machine, serviceNumber: "S-1405-0042");
+        var s = ReportSummary.Of(r);
+        Assert.Equal(415, s.Power!.Total);
+        string html = SummaryHtml.Write(s);
+        Assert.Contains("415 W", html); Assert.Contains("52 °C", html); Assert.Contains("38 °C", html); Assert.Contains("KF436C18BB/16", html);
+        Assert.Matches(@"14\d\d/\d\d/\d\d", html);   // Solar Hijri year, not 2026
+        if (Environment.GetEnvironmentVariable("MAZESTA_RENDER_DIR") is { Length: > 0 } dir) File.WriteAllText(Path.Combine(dir, "summary-sample.html"), html);
+    }
 }
