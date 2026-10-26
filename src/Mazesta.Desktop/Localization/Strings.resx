@@ -3993,10 +3993,48 @@ Cancel: stop.</value></data>
   <data name="Rgb_Look_preset" xml:space="preserve"><value>Spectrum</value></data>
   <data name="Rgb_First" xml:space="preserve"><value>First colour</value></data>
   <data name="Rgb_Fx_Flow" xml:space="preserve"><value>Animate</value></data>
+  <data name="Rgb_Fx_Random" xml:space="preserve"><value>Random colours</value></data>
+  <data name="Rgb_Fx_Chase" xml:space="preserve"><value>Chasing band</value></data>
+  <data name="Nav_Autorun" xml:space="preserve"><value>Autorun</value></data>
+  <data name="Autorun_Lede" xml:space="preserve"><value>Everything that starts with Windows: services installed by programs and startup programs. Switch off what you do not need so Windows starts faster and uses less memory and CPU.</value></data>
+  <data name="Autorun_Search" xml:space="preserve"><value>Search services and programs</value></data>
+  <data name="Autorun_Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Autorun_Svc_Title" xml:space="preserve"><value>Program services</value></data>
+  <data name="Autorun_Svc_Sub" xml:space="preserve"><value>Only services added by installed programs; Windows' own services are not listed</value></data>
+  <data name="Autorun_Svc_Off" xml:space="preserve"><value>Disable selected</value></data>
+  <data name="Autorun_Svc_Undo" xml:space="preserve"><value>Put back what was disabled</value></data>
+  <data name="Autorun_Svc_None" xml:space="preserve"><value>No service found.</value></data>
+  <data name="Autorun_Svc_Note" xml:space="preserve"><value>A disabled service is stopped now and does not start with Windows. If a program stops working, "Put back" restores all of them.</value></data>
+  <data name="Autorun_SelectAll" xml:space="preserve"><value>Select all results</value></data>
+  <data name="Autorun_Selected" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="Autorun_Confirm" xml:space="preserve"><value>Disable and stop {0} service(s)? A program that needs them (antivirus, audio or network driver, printer software…) will not work until you put them back.</value></data>
+  <data name="Autorun_None_Picked" xml:space="preserve"><value>First tick the services you want switched off.</value></data>
+  <data name="Autorun_Running" xml:space="preserve"><value>Running</value></data>
+  <data name="Autorun_Stopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="Autorun_Start_Title" xml:space="preserve"><value>Startup programs</value></data>
+  <data name="Autorun_Start_Sub" xml:space="preserve"><value>Programs that run when you sign in to Windows; switched off means they no longer start by themselves</value></data>
+  <data name="Autorun_Start_None" xml:space="preserve"><value>No program found.</value></data>
+  <data name="Autorun_Start_Note" xml:space="preserve"><value>This is the same switch as Task Manager's Startup tab; nothing is deleted and you can switch it on again any time.</value></data>
+  <data name="Autorun_Done" xml:space="preserve"><value>Done.</value></data>
+  <data name="Autorun_UndoDone" xml:space="preserve"><value>Put back.</value></data>
+  <data name="Autorun_Failed" xml:space="preserve"><value>These were not done: {0}</value></data>
+  <data name="Help_Nav_Autorun" xml:space="preserve"><value>A searchable list of what starts with Windows: services of programs (tick and disable together; one button puts them all back) and startup programs (one switch each, like Task Manager). Windows' own services are not shown so Windows is not harmed.</value></data>
+  <data name="Help_Autorun_Svc_Title" xml:space="preserve"><value>Services installed by programs that start with Windows. Search by name or description, tick the useless ones and press "Disable selected". If something stops working, "Put back" restores them all.</value></data>
+  <data name="Help_Autorun_Start_Title" xml:space="preserve"><value>Programs that run when you sign in to Windows. Switch one off so it no longer opens by itself; the program is not removed and you can switch it on again.</value></data>
+  <data name="HelpHow_Nav_Autorun" xml:space="preserve"><value>Search a service or program in the box at the top; in "Program services" tick the useless ones and press "Disable selected"; in "Startup programs" switch a program off.</value></data>
+  <data name="HelpHow_Autorun_Svc_Title" xml:space="preserve"><value>Search by name, tick, press "Disable selected" and confirm. To go back press "Put back what was disabled".</value></data>
+  <data name="HelpHow_Autorun_Start_Title" xml:space="preserve"><value>Switch a program off so it does not run when you sign in; switch it on again to go back.</value></data>
+  <data name="Rgb_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Rgb_No" xml:space="preserve"><value>No, it is not lit</value></data>
+  <data name="Rgb_Yes" xml:space="preserve"><value>Yes</value></data>
+  <data name="Rgb_Detect_Ask" xml:space="preserve"><value>Is the last (red) LED lit at the end of the strip?</value></data>
+  <data name="Rgb_Detect" xml:space="preserve"><value>Detect</value></data>
+  <data name="Rgb_Hdrs_Sub" xml:space="preserve"><value>Type how many LEDs each strip has, or press "Detect" to find it.</value></data>
+  <data name="Rgb_Hdrs" xml:space="preserve"><value>Motherboard ARGB headers</value></data>
   <data name="Rgb_Stop" xml:space="preserve"><value>Colour {0}</value></data>
   <data name="Rgb_AddStop" xml:space="preserve"><value>Add a colour (up to 4)</value></data>
   <data name="Rgb_DropStop" xml:space="preserve"><value>Remove the selected colour</value></data>
-  <data name="Rgb_LedTip" xml:space="preserve"><value>If not all the LEDs in your system light up, raise the LED count of the outputs in the motherboard card up to 120 so every light is found.</value></data>
+  <data name="Rgb_LedTip" xml:space="preserve"><value>If part of a strip or fans stays dark, the LED count of that header is lower than the real one. Press "Detect" in the motherboard headers box above, or type the number yourself.</value></data>
   <data name="Rgb_More" xml:space="preserve"><value>Details</value></data>
   <data name="Rgb_Dir" xml:space="preserve"><value>Direction</value></data>
   <data name="Rgb_Dir_ltr" xml:space="preserve"><value>Left to right</value></data>

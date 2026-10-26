@@ -27,7 +27,7 @@ public sealed class RgbSession : IDisposable
     public RgbConflicts Conflicts { get; }
     public string? Exe => OpenRgbHost.Find(_appFolder);
     /// <summary>True after a connect that gave a header its default length: the scene has changed and is to be saved.</summary>
-    public bool ZonesDefaulted { get; private set; }
+    public bool ZonesDefaulted { get; set; }   // the saver clears it: a connect that was skipped (already connected) must not make it save again and again
 
     /// <summary>Connects to the server, starting it first when <paramref name="start"/> (and stopping the makers' programs when <paramref name="stopMakers"/>), waits until
     /// its device scan has settled and gives the headers their lengths (the scene's, else the default).</summary>

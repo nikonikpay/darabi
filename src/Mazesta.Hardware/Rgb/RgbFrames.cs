@@ -17,6 +17,14 @@ public static class RgbFrames
             case RgbEffects.Rainbow: for (int i = 0; i < leds; i++) frame[i] = Hue(Frac((double)i / leds + dir * seconds * rate * 0.5)); break;
             case RgbEffects.Cycle: Array.Fill(frame, Hue(Frac(seconds * rate * 0.25))); break;
             case RgbEffects.Flow when palette is { Count: > 1 }: for (int i = 0; i < leds; i++) frame[i] = Sample(palette, Frac((double)i / leds + dir * seconds * rate * 0.5), loop: true); break;
+            case RgbEffects.Random: for (int i = 0; i < leds; i++) frame[i] = Sparkle(i, seconds * rate, color, palette); break;
+            case RgbEffects.Chase:
+                for (int i = 0; i < leds; i++)
+                {
+                    double q = Frac((double)i / leds + dir * seconds * rate * 0.4) / 0.35;   // 0..1 inside the band, more than 1 outside it
+                    frame[i] = q >= 1 ? new RgbColor(0, 0, 0) : Scale(palette is { Count: > 1 } ? Sample(palette, q, loop: false) : color, Math.Sin(Math.PI * q));
+                }
+                break;
             case RgbEffects.Breathing: Array.Fill(frame, Scale(color, 0.5 - 0.5 * Math.Cos(2 * Math.PI * seconds * rate * 0.5))); break;
             case RgbEffects.Flash: Array.Fill(frame, Frac(seconds * rate) < 0.5 ? color : new RgbColor(0, 0, 0)); break;
             default: Array.Fill(frame, color); break;
@@ -35,6 +43,22 @@ public static class RgbFrames
         double at = loop ? Frac(pos) * n : Math.Clamp(pos, 0, 1) * (n - 1); int i = Math.Min((int)at, loop ? n - 1 : n - 2); double t = at - i;
         var a = palette[i]; var b = palette[loop ? (i + 1) % n : i + 1];
         return new RgbColor(Mix(a.R, b.R, t), Mix(a.G, b.G, t), Mix(a.B, b.B, t));
+    }
+
+    /// <summary>One LED of "Random": it fades from one random colour to the next, each LED on its own clock (so no two change together). The same inputs give the same colour.</summary>
+    private static RgbColor Sparkle(int led, double t, RgbColor color, IReadOnlyList<RgbColor>? palette)
+    {
+        double period = 1.2 * (0.6 + 0.8 * Noise(led, -1)), u = t / period + Noise(led, -2); long k = (long)Math.Floor(u); double f = u - k; f = f * f * (3 - 2 * f);
+        RgbColor Pick(long n) => palette is { Count: > 1 } ? palette[(int)(Noise(led, n) * palette.Count)] : Hue(Noise(led, n));
+        RgbColor a = Pick(k), b = Pick(k + 1);
+        return new RgbColor(Mix(a.R, b.R, f), Mix(a.G, b.G, f), Mix(a.B, b.B, f));
+    }
+
+    /// <summary>A repeatable number in 0 to 1 for an LED and a step.</summary>
+    private static double Noise(int led, long step)
+    {
+        uint x = unchecked((uint)(led * 73856093) ^ (uint)(step * 19349663)); x ^= x >> 13; x = unchecked(x * 0x5bd1e995); x ^= x >> 15;
+        return x / 4294967296.0;
     }
 
     private static byte Mix(byte a, byte b, double t) => (byte)Math.Round(a + (b - a) * t);

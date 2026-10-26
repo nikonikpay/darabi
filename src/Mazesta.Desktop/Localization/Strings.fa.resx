@@ -3993,10 +3993,48 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Rgb_Look_preset" xml:space="preserve"><value>طیف آماده</value></data>
   <data name="Rgb_First" xml:space="preserve"><value>رنگ اول</value></data>
   <data name="Rgb_Fx_Flow" xml:space="preserve"><value>متحرک</value></data>
+  <data name="Rgb_Fx_Random" xml:space="preserve"><value>رنگ تصادفی</value></data>
+  <data name="Rgb_Fx_Chase" xml:space="preserve"><value>نوار متحرک</value></data>
+  <data name="Nav_Autorun" xml:space="preserve"><value>راه‌اندازی خودکار</value></data>
+  <data name="Autorun_Lede" xml:space="preserve"><value>هر چه همراه ویندوز بالا می‌آید: سرویس‌هایی که برنامه‌ها نصب کرده‌اند و برنامه‌های استارتاپ. هر کدام را که لازم ندارید خاموش کنید تا ویندوز زودتر بالا بیاید و رم و پردازنده کمتر مصرف شود.</value></data>
+  <data name="Autorun_Search" xml:space="preserve"><value>جستجو در سرویس‌ها و برنامه‌ها</value></data>
+  <data name="Autorun_Refresh" xml:space="preserve"><value>بازخوانی</value></data>
+  <data name="Autorun_Svc_Title" xml:space="preserve"><value>سرویس‌های برنامه‌ها</value></data>
+  <data name="Autorun_Svc_Sub" xml:space="preserve"><value>فقط سرویس‌هایی که برنامه‌های نصب‌شده اضافه کرده‌اند؛ سرویس‌های خود ویندوز اینجا نیست</value></data>
+  <data name="Autorun_Svc_Off" xml:space="preserve"><value>غیرفعال کردن انتخاب‌شده‌ها</value></data>
+  <data name="Autorun_Svc_Undo" xml:space="preserve"><value>برگرداندن آنچه غیرفعال شد</value></data>
+  <data name="Autorun_Svc_None" xml:space="preserve"><value>سرویسی پیدا نشد.</value></data>
+  <data name="Autorun_Svc_Note" xml:space="preserve"><value>سرویس غیرفعال‌شده همین حالا متوقف می‌شود و با ویندوز بالا نمی‌آید. اگر برنامه‌ای کار نکرد، «برگرداندن» همه را به حالت قبل می‌برد.</value></data>
+  <data name="Autorun_SelectAll" xml:space="preserve"><value>انتخاب همهٔ نتایج</value></data>
+  <data name="Autorun_Selected" xml:space="preserve"><value>{0} انتخاب شده</value></data>
+  <data name="Autorun_Confirm" xml:space="preserve"><value>{0} سرویس غیرفعال و متوقف شود؟ برنامه‌ای که به آن‌ها نیاز دارد (آنتی‌ویروس، درایور کارت صدا یا شبکه، نرم‌افزار چاپگر…) دیگر کار نمی‌کند تا برش گردانید.</value></data>
+  <data name="Autorun_None_Picked" xml:space="preserve"><value>اول سرویس‌هایی را که می‌خواهید خاموش شوند تیک بزنید.</value></data>
+  <data name="Autorun_Running" xml:space="preserve"><value>در حال اجرا</value></data>
+  <data name="Autorun_Stopped" xml:space="preserve"><value>متوقف</value></data>
+  <data name="Autorun_Start_Title" xml:space="preserve"><value>برنامه‌های استارتاپ</value></data>
+  <data name="Autorun_Start_Sub" xml:space="preserve"><value>برنامه‌هایی که با ورود به ویندوز اجرا می‌شوند؛ کلید خاموش یعنی دیگر خودکار اجرا نمی‌شود</value></data>
+  <data name="Autorun_Start_None" xml:space="preserve"><value>برنامه‌ای پیدا نشد.</value></data>
+  <data name="Autorun_Start_Note" xml:space="preserve"><value>همان کلیدی است که در Task Manager (برگهٔ Startup) هست؛ چیزی پاک نمی‌شود و هر وقت خواستید روشنش کنید.</value></data>
+  <data name="Autorun_Done" xml:space="preserve"><value>انجام شد.</value></data>
+  <data name="Autorun_UndoDone" xml:space="preserve"><value>به حالت قبل برگشت.</value></data>
+  <data name="Autorun_Failed" xml:space="preserve"><value>این‌ها انجام نشد: {0}</value></data>
+  <data name="Help_Nav_Autorun" xml:space="preserve"><value>فهرست جستجوپذیر از چیزهایی که همراه ویندوز بالا می‌آیند: سرویس‌های برنامه‌ها (تیک بزنید و یکجا غیرفعال کنید؛ یک دکمه همه را برمی‌گرداند) و برنامه‌های استارتاپ (هر کدام یک کلید، مثل Task Manager). سرویس‌های خود ویندوز نمایش داده نمی‌شوند تا ویندوز خراب نشود.</value></data>
+  <data name="Help_Autorun_Svc_Title" xml:space="preserve"><value>سرویس‌هایی که برنامه‌ها نصب کرده‌اند و با ویندوز بالا می‌آیند. نام یا توضیح را جستجو کنید، موردهای بی‌مصرف را تیک بزنید و «غیرفعال کردن» را بزنید. اگر چیزی از کار افتاد، «برگرداندن» همه را به حالت قبل می‌برد.</value></data>
+  <data name="Help_Autorun_Start_Title" xml:space="preserve"><value>برنامه‌هایی که با ورود شما به ویندوز اجرا می‌شوند. کلید هر کدام را خاموش کنید تا دیگر خودکار باز نشود؛ برنامه پاک نمی‌شود و هر وقت خواستید دوباره روشنش می‌کنید.</value></data>
+  <data name="HelpHow_Nav_Autorun" xml:space="preserve"><value>در کادر بالا نام سرویس یا برنامه را جستجو کنید؛ در «سرویس‌های برنامه‌ها» موردهای بی‌مصرف را تیک بزنید و «غیرفعال کردن انتخاب‌شده‌ها» را بزنید، و در «برنامه‌های استارتاپ» کلید هر برنامه را خاموش کنید.</value></data>
+  <data name="HelpHow_Autorun_Svc_Title" xml:space="preserve"><value>نام را جستجو کنید، تیک بزنید، «غیرفعال کردن انتخاب‌شده‌ها» را بزنید و تأیید کنید. برای برگشت «برگرداندن آنچه غیرفعال شد» را بزنید.</value></data>
+  <data name="HelpHow_Autorun_Start_Title" xml:space="preserve"><value>کلید برنامه را خاموش کنید تا با ورود به ویندوز اجرا نشود؛ برای برگشت دوباره روشنش کنید.</value></data>
+  <data name="Rgb_Cancel" xml:space="preserve"><value>انصراف</value></data>
+  <data name="Rgb_No" xml:space="preserve"><value>نه، روشن نیست</value></data>
+  <data name="Rgb_Yes" xml:space="preserve"><value>بله</value></data>
+  <data name="Rgb_Detect_Ask" xml:space="preserve"><value>آخرین LED (قرمز) در انتهای نوار روشن است؟</value></data>
+  <data name="Rgb_Detect" xml:space="preserve"><value>تشخیص خودکار</value></data>
+  <data name="Rgb_Hdrs_Sub" xml:space="preserve"><value>تعداد LED هر نوار را بنویسید؛ نمی‌دانید چند تاست؟ «تشخیص خودکار» را بزنید.</value></data>
+  <data name="Rgb_Hdrs" xml:space="preserve"><value>خروجی‌های ARGB مادربرد</value></data>
   <data name="Rgb_Stop" xml:space="preserve"><value>رنگ {0}</value></data>
   <data name="Rgb_AddStop" xml:space="preserve"><value>افزودن رنگ (تا ۴ رنگ)</value></data>
   <data name="Rgb_DropStop" xml:space="preserve"><value>حذف رنگ انتخاب‌شده</value></data>
-  <data name="Rgb_LedTip" xml:space="preserve"><value>اگر همهٔ LEDهای سیستم روشن نشد، تعداد LED خروجی‌ها را از بخش مادربرد تا ۱۲۰ بیشتر کنید تا همهٔ نورها شناسایی شوند.</value></data>
+  <data name="Rgb_LedTip" xml:space="preserve"><value>اگر بخشی از نوار یا فن‌ها روشن نمی‌شود، تعداد LED آن خروجی کمتر از تعداد واقعی است. در «خروجی‌های ARGB مادربرد» همین بالا «تشخیص خودکار» را بزنید یا عدد را خودتان بنویسید.</value></data>
   <data name="Rgb_More" xml:space="preserve"><value>توضیحات</value></data>
   <data name="Rgb_Dir" xml:space="preserve"><value>جهت حرکت</value></data>
   <data name="Rgb_Dir_ltr" xml:space="preserve"><value>چپ به راست</value></data>

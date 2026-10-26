@@ -206,6 +206,25 @@ public sealed partial class WebBridge
             catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException) { return State(e.Message); }
             scene.Zones[RgbScene.ZoneKey(d.Vendor, d.Name, d.Location, z.Name)] = leds; Save(); _log.LogInformation("RGB zone {Device}/{Zone} set to {Leds} LEDs", d.Name, z.Name, leds);
             await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
+            if (scene.Enabled) { Own(); await session.ApplyAsync(scene, CancellationToken.None).ConfigureAwait(true); }   // the effects running here were made for the old length
+            return State();
+        }));
+        // Finding a header's length: the header is given n LEDs, the first n-1 green and the last one red, and the user says whether the red one is lit at the end of the strip (a strip cannot say how long it is).
+        MethodAsync("rgb.probe", p => Guard(async () =>
+        {
+            if (!client.Connected) return State(Loc.Get("Rgb_NotConnected"));
+            int device = p.TryGetProperty("device", out var dv) && dv.TryGetInt32(out var di) ? di : -1, zone = p.TryGetProperty("zone", out var zv) && zv.TryGetInt32(out var zi) ? zi : -1;
+            int leds = p.TryGetProperty("leds", out var lv) && lv.TryGetInt32(out var li) ? li : -1;
+            var d = client.Devices.FirstOrDefault(x => x.Index == device); var z = d?.Zones.FirstOrDefault(x => x.Index == zone);
+            if (d is null || z is null || !z.Resizable || leds < Math.Max(z.LedsMin, 1) || leds > z.LedsMax) throw new ArgumentException("zone");
+            Own(); session.Runner.Remove(device);
+            try { await client.ResizeZoneAsync(device, zone, leds, CancellationToken.None).ConfigureAwait(true); }
+            catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException) { return State(e.Message); }
+            await client.RefreshAsync(CancellationToken.None).ConfigureAwait(true);
+            d = client.Devices.First(x => x.Index == device); int at = 0; foreach (var other in d.Zones.OrderBy(x => x.Index)) { if (other.Index == zone) break; at += (int)other.LedsCount; }
+            var look = new RgbLook(Leds: [.. Enumerable.Range(0, d.LedCount).Select(i => i < at || i >= at + leds ? "#000000" : i == at + leds - 1 ? "#ff0000" : "#00ff00")]);
+            try { await session.ApplyLookAsync(device, look, CancellationToken.None).ConfigureAwait(true); }
+            catch (NotSupportedException e) { return State(e.Message); }
             return State();
         }));
     }

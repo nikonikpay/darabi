@@ -28,6 +28,23 @@ public class RgbEffectTests
         Assert.Equal(new RgbColor(0, 0, 0), RgbFrames.Frame(RgbEffects.Flash, 0.6 / (0.2 + 0.9), 2, c, null, 50, 100)[1]);
     }
 
+    [Fact] public void Random_gives_each_led_its_own_colour_and_is_repeatable()
+    {
+        var a = RgbFrames.Frame(RgbEffects.Random, 2.5, 30, new RgbColor(255, 0, 0), null, 50, 100);
+        Assert.True(a.Distinct().Count() > 20); Assert.Equal(a, RgbFrames.Frame(RgbEffects.Random, 2.5, 30, new RgbColor(255, 0, 0), null, 50, 100));
+        Assert.NotEqual(a, RgbFrames.Frame(RgbEffects.Random, 4, 30, new RgbColor(255, 0, 0), null, 50, 100));
+        var pal = new[] { new RgbColor(255, 0, 0), new RgbColor(0, 0, 255) };
+        Assert.All(RgbFrames.Frame(RgbEffects.Random, 7, 30, pal[0], pal, 50, 100), c => Assert.Equal(0, c.G));   // only the chosen colours and what lies between them
+    }
+
+    [Fact] public void Chase_is_a_lit_band_with_dark_ends_that_moves_along_the_strip()
+    {
+        var red = new RgbColor(255, 0, 0); var f0 = RgbFrames.Frame(RgbEffects.Chase, 0, 40, red, null, 50, 100);
+        Assert.Contains(f0, c => c == default); Assert.Contains(f0, c => c.R > 200);
+        Assert.NotEqual(f0, RgbFrames.Frame(RgbEffects.Chase, 1, 40, red, null, 50, 100));
+        Assert.NotEqual(RgbFrames.Frame(RgbEffects.Chase, 1, 40, red, null, 50, 100, "ltr"), RgbFrames.Frame(RgbEffects.Chase, 1, 40, red, null, 50, 100, "rtl"));
+    }
+
     [Fact] public void Brightness_dims_every_frame()
         => Assert.Equal(new RgbColor(100, 50, 25), RgbFrames.Frame(RgbEffects.Static, 0, 1, new RgbColor(200, 100, 50), null, 50, 50)[0]);
 

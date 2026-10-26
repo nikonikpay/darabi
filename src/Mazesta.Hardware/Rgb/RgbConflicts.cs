@@ -21,7 +21,10 @@ public sealed class RgbConflicts
         new("Corsair iCUE", ["iCUE", "Corsair.Service", "CueLLAccessService", "iCUEDevicePluginHost"], ["CorsairService", "CorsairLLAService", "Corsair Service"]),
         new("NZXT CAM", ["NZXT CAM", "NZXT.CAM"], ["NZXT Service", "NZXTCAMService"]),
         new("SignalRGB", ["SignalRgb", "SignalRgbLauncher"], ["SignalRgbService"]),
-        new("Razer Synapse", ["Razer Synapse 3", "RazerCentral", "Razer Central", "RzSDKService"], ["RzActionSvc", "RazerCentralService", "Razer Synapse Service"]),
+        new("Razer Synapse / Chroma", ["Razer Synapse 3", "Razer Synapse", "RazerCentral", "Razer Central", "RzSDKService", "RazerAppEngine", "Razer Chroma SDK Server", "Razer Chroma SDK Service", "RzSDKServer"], ["RzActionSvc", "RazerCentralService", "Razer Synapse Service", "Razer Chroma SDK Service", "Razer Chroma SDK Server", "Razer Game Manager Service", "Razer Game Manager Service 3"]),
+        new("Logitech G HUB / Gaming Software", ["lghub", "lghub_agent", "lghub_updater", "lghub_system_tray", "LCore", "LGS", "logi_lamparray_service"], ["LGHUBUpdaterService", "logi_lamparray_service"]),
+        new("Redragon", ["Redragon Gaming Mouse", "Redragon Gaming Keyboard", "Redragon Software", "Redragon"], ["RedragonService"]),
+        new("SteelSeries GG / HyperX NGENUITY", ["SteelSeriesGG", "SteelSeriesGGClient", "SteelSeriesEngine", "SteelSeriesEngine3", "NGENUITY"], ["SteelSeriesGGUpdateServiceProxy", "HyperX NGENUITY Service"]),
         new("Cooler Master MasterPlus", ["MasterPlus", "CMRGBService"], ["CMRGBService"]),
         new("Thermaltake TT RGB Plus", ["TT RGB Plus", "TTRGBPlus"], ["TTRGBPlusService"]),
     ];

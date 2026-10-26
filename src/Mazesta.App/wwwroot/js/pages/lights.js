@@ -43,7 +43,7 @@ function seed(st, lk, modes = []) {
   if (!lk) return false;
   const mode = pick(lk, "mode"), palette = pick(lk, "palette"), color = pick(lk, "color"), leds = pick(lk, "leds");
   if (pick(lk, "off") || leds?.length) return false;   // a dark or a per-LED look is shown by the strip itself
-  if (mode) { const univ = ["Static", "Flow", "Breathing", "Rainbow", "Cycle", "Flash"].includes(mode); st.fx = univ ? mode : "Static"; st.own = univ ? "" : String(modes.find((m) => m.name === mode)?.index ?? ""); }
+  if (mode) { const univ = ["Static", "Flow", "Breathing", "Rainbow", "Cycle", "Flash", "Random", "Chase"].includes(mode); st.fx = univ ? mode : "Static"; st.own = univ ? "" : String(modes.find((m) => m.name === mode)?.index ?? ""); }
   if (palette?.startsWith("custom:")) { const cs = palette.slice(7).split(",").slice(0, MAX_STOPS); if (cs.length > 1) { st.kind = "gradient"; st.g = cs; st.edit = 0; st.a = cs[0]; st.touched = true; } }
   else if (palette) { st.kind = "preset"; st.preset = palette; st.touched = true; }
   else if (color) { st.a = color; st.touched = true; }
@@ -99,7 +99,7 @@ export function mount(el) {
       for (const b of sws) b.setAttribute("aria-pressed", String(b.title === c.toLowerCase()));
       if (st.kind === "gradient") drawStops();
       // Rainbow and colour cycle always show the whole spectrum; only "Flow" moves the colours chosen here.
-      const spectrum = st.fx === "Rainbow" || st.fx === "Cycle", flow = st.fx === "Flow" && cs.length > 1;
+      const spectrum = st.fx === "Rainbow" || st.fx === "Cycle" || (st.fx === "Random" && cs.length < 2), flow = st.fx === "Flow" && cs.length > 1;
       preview.firstChild.style.background = grad(spectrum ? SPECTRUM : flow ? [...cs, cs[0]] : cs);
       preview.dataset.fx = st.own ? "" : st.fx; preview.setAttribute("aria-label", t("Rgb_Preview"));
       pairs.replaceChildren(...harmonies(st.g[0]).map(([id, cs2]) => chip(cs2, t("Rgb_Harm_" + id), st.g.join() === cs2.join(), () => { st.g = [...cs2]; st.edit = Math.min(st.edit, st.g.length - 1); update(); })));
@@ -133,7 +133,7 @@ export function mount(el) {
     const dirSel = h("select", { class: "field", "aria-label": t("Rgb_Dir"), onchange: () => { st.dir = dirSel.value; } }, ...["ltr", "rtl", "ttb", "btt"].map((v) => h("option", { value: v }, t("Rgb_Dir_" + v))));
     dirSel.value = st.dir || "ltr";
     const dirRow = h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_Dir")), dirSel);
-    const mark = () => { tiles.forEach((b) => b.setAttribute("aria-checked", String(!st.own && b.dataset.fx === st.fx))); dirRow.hidden = !!st.own || !["Flow", "Rainbow"].includes(st.fx); };
+    const mark = () => { tiles.forEach((b) => b.setAttribute("aria-checked", String(!st.own && b.dataset.fx === st.fx))); dirRow.hidden = !!st.own || !["Flow", "Rainbow", "Chase"].includes(st.fx); };
     mark();
     return h("div", { class: "rgb-fxbox" }, h("div", { class: "rgb-fxs", role: "radiogroup", "aria-label": t("Rgb_Effect") }, tiles), h("div", { class: "rgb-opts" }, dirRow, own.length ? h("label", { class: "rgb-field" }, h("span", {}, t("Rgb_OwnMode")), sel) : null));
   }
@@ -151,7 +151,7 @@ export function mount(el) {
     allBody.replaceChildren(h("p", { class: "rgb-sub" }, t("Rgb_Effect")), effects(allSt, s.modeNames.map((n) => h("option", { value: n }, n)), sync), allStudio.el,
       h("div", { class: "rgb-row" }, allSpeed.el, allBright.el),
       h("div", { class: "btn-row" },
-        h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, ...allStudio.payload(), modeName: allSt.own || allSt.fx, ...(["Flow", "Rainbow"].includes(allSt.fx) && !allSt.own ? { direction: allSt.dir } : {}), ...(allSt.own || allSt.fx !== "Static" ? { speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, icon("check"), t("Rgb_ApplyAll")),
+        h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.set", { device: -1, ...allStudio.payload(), modeName: allSt.own || allSt.fx, ...(["Flow", "Rainbow", "Chase"].includes(allSt.fx) && !allSt.own ? { direction: allSt.dir } : {}), ...(allSt.own || allSt.fx !== "Static" ? { speed: allSpeed.value(), brightness: allBright.value() } : {}) }) }, icon("check"), t("Rgb_ApplyAll")),
         h("button", { class: "btn", type: "button", onclick: () => run("rgb.set", { device: -1, color: "" }) }, t("Rgb_OffAll"))),
       h("p", { class: "note" }, t("Rgb_Effect_Note")));
     sync();
@@ -174,7 +174,7 @@ export function mount(el) {
     makers.hidden = !shown; makers.textContent = shown;
     const had = !allBody.hidden; allBody.hidden = !s.devices.length;
     if (first || !had) drawAll(s);   // drawn once the devices are there, then kept (so a slider in use is not taken away)
-    list.replaceChildren(...s.devices.map(card));
+    list.replaceChildren(...s.devices.map(card)); drawHdrs(s);
     if (!s.error && s.report) msg.textContent = reportText(s.report);
   }
 
@@ -199,7 +199,7 @@ export function mount(el) {
     function sync() { const m = takes(); studioC.disabled = !m.color; speed.el.hidden = !m.speed; bright.el.hidden = !m.brightness; studioC.update(); }
     const fxs = effects(mine, d.modes.map((m) => h("option", { value: String(m.index) }, m.name)), sync);
     sync();
-    const go = () => { const m = takes(); run("rgb.set", { device: d.index, ...(m.color ? studioC.payload() : {}), ...(mine.own !== "" ? { mode: Number(mine.own) } : { modeName: mine.fx, ...(["Flow", "Rainbow"].includes(mine.fx) ? { direction: mine.dir } : {}) }), ...(m.speed ? { speed: speed.value() } : {}), ...(m.brightness ? { brightness: bright.value() } : {}) }); };
+    const go = () => { const m = takes(); run("rgb.set", { device: d.index, ...(m.color ? studioC.payload() : {}), ...(mine.own !== "" ? { mode: Number(mine.own) } : { modeName: mine.fx, ...(["Flow", "Rainbow", "Chase"].includes(mine.fx) ? { direction: mine.dir } : {}) }), ...(m.speed ? { speed: speed.value() } : {}), ...(m.brightness ? { brightness: bright.value() } : {}) }); };
     // The LEDs as they are lit. Where the device takes a colour for each LED, an LED is a button: it opens the colour picker for that one alone.
     const one = h("input", { type: "color", class: "rgb-one", tabindex: "-1", "aria-hidden": "true" }); let oneLed = -1;
     one.addEventListener("change", () => { if (oneLed >= 0) run("rgb.led", { device: d.index, led: oneLed, color: one.value }); });
@@ -207,9 +207,9 @@ export function mount(el) {
       ? h("div", { class: "rgb-strip pick", role: "group", "aria-label": t("Rgb_Led_Hint") }, d.colors.map((c, i) => h("button", { type: "button", class: "rgb-led", style: { background: c, color: c }, title: t("Rgb_Led", i + 1), "aria-label": t("Rgb_Led", i + 1),
           onclick: () => { oneLed = i; one.value = /^#[0-9a-f]{6}$/i.test(c) ? c : "#ffffff"; if (one.showPicker) one.showPicker(); else one.click(); } })), one)
       : h("div", { class: "rgb-strip", "aria-hidden": "true" }, d.colors.slice(0, 40).map((c) => h("i", { style: { background: c } })));
-    const zones = d.zones.filter((z) => z.resizable || z.leds > 0);
+    const zones = d.zones.filter((z) => !z.resizable && z.leds > 0);   // the headers that take a length are in the top box
     const zoneRows = zones.length ? h("div", { class: "rgb-zones" }, h("h3", { class: "h3" }, t("Rgb_Zones")), zones.map((z) => zoneRow(d, z)),
-      zones.some((z) => z.resizable && z.leds === 0) ? h("p", { class: "note" }, t("Rgb_Zone_Hint")) : null) : null;
+) : null;
     return box({ cls: HUE[d.kind] || "p-tool", ico: ICON[d.kind] || "bolt", title: d.name, sub: [t(`Rgb_Kind_${d.kind}`), d.vendor, d.leds ? t("Rgb_Leds", d.leds) : ""].filter(Boolean).join(" · "), extra: "rgb-card", a: "rgb",
       body: [strip, d.perLed ? h("p", { class: "note rgb-led-hint" }, t("Rgb_Led_Hint")) : null, h("p", { class: "rgb-sub" }, t("Rgb_Effect")), fxs, studioC.el, h("div", { class: "rgb-row" }, speed.el, bright.el),
         d.kind === "Graphics" && d.leds <= 1 ? h("p", { class: "note" }, t("Rgb_Gpu_OneZone")) : null,
@@ -217,12 +217,30 @@ export function mount(el) {
   }
 
   function zoneRow(d, z) {
-    if (!z.resizable) return h("div", { class: "rgb-zone" }, h("span", { class: "lat" }, z.name), h("span", { class: "rgb-zone-n" }, t("Rgb_Leds", z.leds)));
+    return h("div", { class: "rgb-zone" }, h("span", { class: "lat" }, z.name), h("span", { class: "rgb-zone-n" }, t("Rgb_Leds", z.leds)));
+  }
+
+  // The headers of the board that take a length. A strip cannot say how long it is, so "Detect" asks: the header is given n LEDs with the last one red, and the answer halves the range.
+  const probes = new Map();
+  function headerRow(d, z) {
+    const pk = `${d.key}|${z.name}`, pr = probes.get(pk), name = h("span", { class: "rgb-hdr-name" }, h("b", { class: "lat" }, z.name), h("small", {}, d.name));
+    if (pr) {
+      const next = () => { pr.n = Math.ceil((pr.lo + pr.hi) / 2); run("rgb.probe", { device: d.index, zone: z.index, leds: pr.n }); };
+      const answer = (yes) => { if (yes) pr.lo = pr.n; else pr.hi = pr.n - 1; if (pr.lo >= pr.hi) { probes.delete(pk); run("rgb.zone", { device: d.index, zone: z.index, leds: pr.lo }); } else next(); };
+      return h("div", { class: "rgb-hdr probing" }, name, h("p", { class: "rgb-ask" }, t("Rgb_Detect_Ask"), " ", h("b", { class: "num" }, pr.n)),
+        h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: () => answer(true) }, t("Rgb_Yes")), h("button", { class: "btn", type: "button", onclick: () => answer(false) }, t("Rgb_No")),
+          h("button", { class: "btn", type: "button", onclick: () => { probes.delete(pk); run("rgb.zone", { device: d.index, zone: z.index, leds: pr.orig }); } }, t("Rgb_Cancel"))));
+    }
     const n = h("input", { type: "number", class: "field num", min: z.min, max: z.max, value: z.leds, inputmode: "numeric", "aria-label": `${z.name}: ${t("Rgb_Zone_Count")}` });
-    const slide = h("input", { type: "range", class: "range", min: z.min, max: z.max, value: z.leds, "aria-label": z.name, oninput: () => { n.value = slide.value; } });
-    n.addEventListener("input", () => { slide.value = n.value; });
-    return h("div", { class: "rgb-zone resizable" }, h("span", { class: "lat" }, z.name), slide, n, h("small", {}, t("Rgb_Zone_Max", z.max)),
-      h("button", { class: "btn", type: "button", onclick: () => run("rgb.zone", { device: d.index, zone: z.index, leds: Number(n.value) }) }, t("Rgb_Zone_Set")));
+    const detect = () => { const p = { lo: Math.max(z.min, 1), hi: z.max, n: 0, orig: z.leds || Math.min(30, z.max) }; probes.set(pk, p); p.n = Math.ceil((p.lo + p.hi) / 2); run("rgb.probe", { device: d.index, zone: z.index, leds: p.n }); };
+    return h("div", { class: "rgb-hdr" }, name, n, h("small", {}, t("Rgb_Zone_Max", z.max)),
+      h("div", { class: "btn-row" }, h("button", { class: "btn primary", type: "button", onclick: () => run("rgb.zone", { device: d.index, zone: z.index, leds: Number(n.value) }) }, t("Rgb_Zone_Set")), h("button", { class: "btn", type: "button", onclick: detect }, t("Rgb_Detect"))));
+  }
+  const hdrs = h("section", { class: "rgb-hdrs", hidden: true });
+  function drawHdrs(s) {
+    const rows = s.devices.flatMap((d) => d.zones.filter((z) => z.resizable).map((z) => headerRow(d, z)));
+    hdrs.hidden = !rows.length; bar.classList.toggle("solo", !rows.length);
+    hdrs.replaceChildren(...(rows.length ? [h("h3", { class: "h3" }, t("Rgb_Hdrs")), h("p", { class: "caption" }, t("Rgb_Hdrs_Sub")), ...rows] : []));
   }
 
   async function run(method, params) {
@@ -233,10 +251,13 @@ export function mount(el) {
   const allBox = box({ cls: "p-tool", ico: "sliders", title: t("Rgb_All"), sub: t("Rgb_All_Sub"), i: 1, body: [allBody] });
   // The controls as one bar across the top; the set's panel, the hint and the devices' cards follow in columns, so no panel leaves a hole beside it.
   const bar = h("section", { class: "rgb-bar" },
-    h("div", { class: "rgb-bar-head" }, icon("bolt"), h("div", {}, h("h2", {}, t("Rgb_Title")), h("p", { class: "caption" }, t("Rgb_Sub")))),
-    h("div", { class: "rgb-bar-ctl" }, h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field inline" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("div", { class: "btn-row" }, start, dark, release)),
-    makers, msg, h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))),
-    h("details", { class: "rgb-more" }, h("summary", {}, t("Rgb_More")), h("p", { class: "note" }, t("Rgb_Note")), h("p", { class: "note" }, t("Rgb_PowerEnd_Note"))));
+    h("div", { class: "rgb-tip" }, icon("bulb"), h("span", {}, t("Rgb_LedTip"))),
+    h("div", { class: "rgb-bar-main" },
+      h("div", { class: "rgb-bar-head" }, icon("bolt"), h("div", {}, h("h2", {}, t("Rgb_Title")), h("p", { class: "caption" }, t("Rgb_Sub")))),
+      h("div", { class: "rgb-bar-ctl" }, h("label", { class: "rgb-keep" }, keep, t("Rgb_Keep")), h("label", { class: "rgb-field inline" }, h("span", {}, t("Rgb_PowerEnd")), powerEnd), h("div", { class: "btn-row" }, start, dark, release)),
+      makers, msg,
+      h("details", { class: "rgb-more" }, h("summary", {}, t("Rgb_More")), h("p", { class: "note" }, t("Rgb_Note")), h("p", { class: "note" }, t("Rgb_PowerEnd_Note")))),
+    hdrs);
   el.append(h("header", { class: "page-head" }, h("div", {}, h("h1", { class: "page-title" }, t("Nav_Lights")), h("p", { class: "page-lede" }, t("Rgb_Page_Lede")))), bar,
     h("div", { class: "rgb-grid" }, allBox, list));
   run("rgb.state");

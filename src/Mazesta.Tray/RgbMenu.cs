@@ -147,7 +147,7 @@ internal sealed class RgbMenu : IDisposable
             bool stopMakers = scene.Enabled && scene.StopMakers;
             var r = recover && !app ? await _session.RecoverAsync(scene, ct) : _session.Client.Connected && !recover ? RgbConnect.Connected : await _session.ConnectAsync(true, stopMakers, scene, ct);   // already connected: no wait for the devices
             if (r != RgbConnect.Connected) { Log($"back: not connected ({r})"); return false; }
-            if (scene.Enabled) { if (_session.ZonesDefaulted) RgbSceneStore.Write(_paths, scene); await _session.ApplyAsync(scene, ct); Log($"back: scene applied, {_session.Runner.Count} effect(s) run by the app"); }
+            if (scene.Enabled) { if (_session.ZonesDefaulted) { _session.ZonesDefaulted = false; RgbSceneStore.Write(_paths, scene); } await _session.ApplyAsync(scene, ct); Log($"back: scene applied, {_session.Runner.Count} effect(s) run by the app"); }
             else if (snap is not null) { int n = await _session.RestoreAsync(snap, ct); Log($"back: {n} device(s) put back from the note"); if (n == 0) return false; }   // none reached: the note stays for the next try
             if (snap is not null && final) RgbSceneStore.ClearSnapshot(_paths);
             UpdateWatch(); return true;
@@ -169,7 +169,7 @@ internal sealed class RgbMenu : IDisposable
             var result = await _session.ConnectAsync(true, scene.StopMakers, scene, CancellationToken.None);
             if (result == RgbConnect.Connected)
             {
-                if (_session.ZonesDefaulted) RgbSceneStore.Write(_paths, scene);
+                if (_session.ZonesDefaulted) { _session.ZonesDefaulted = false; RgbSceneStore.Write(_paths, scene); }
                 await _session.ApplyAsync(scene, CancellationToken.None); UpdateWatch();
                 _notify(TrayText.LightsOn, ToolTipIcon.Info);
             }
