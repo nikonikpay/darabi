@@ -74,6 +74,20 @@ public static class GpuFacts
     internal static string Key(string? name)
         => Regex.Replace(Regex.Replace(name ?? "", @"\(R\)|\(TM\)|\b(NVIDIA|GEFORCE|AMD|RADEON|INTEL|GRAPHICS)\b", "", RegexOptions.IgnoreCase), "[^A-Za-z0-9]", "").ToUpperInvariant();
 
+    /// <summary>Whose chip a card is, from its name (the driver names the maker's brand: GeForce, Radeon, Arc).</summary>
+    public static Mazesta.Core.Hardware.HardwareVendor Maker(string? name)
+        => name is null ? default : Regex.IsMatch(name, @"\b(AMD|Radeon)\b", RegexOptions.IgnoreCase) ? Mazesta.Core.Hardware.HardwareVendor.Amd
+         : Regex.IsMatch(name, @"\b(Intel|Arc)\b", RegexOptions.IgnoreCase) ? Mazesta.Core.Hardware.HardwareVendor.Intel
+         : Regex.IsMatch(name, @"NVIDIA|GeForce|\b(RTX|GTX)\b", RegexOptions.IgnoreCase) ? Mazesta.Core.Hardware.HardwareVendor.Nvidia : default;
+
+    /// <summary>The architecture of an AMD or Intel model the table lists (NVIDIA's comes from the driver): RX 5000 RDNA, 6000 RDNA 2, 7000 RDNA 3, 9000 RDNA 4; Arc A Alchemist, B Battlemage.</summary>
+    public static string? ArchitectureOf(string? name)
+    {
+        string key = Key(name); if (!Table.ContainsKey(key)) return null;
+        return key.Length > 2 && key.StartsWith("RX", StringComparison.Ordinal) ? key[2] switch { '5' => "RDNA", '6' => "RDNA 2", '7' => "RDNA 3", '9' => "RDNA 4", _ => null }
+             : key.StartsWith("ARCA", StringComparison.Ordinal) ? "Alchemist (Xe-HPG)" : key.StartsWith("ARCB", StringComparison.Ordinal) ? "Battlemage (Xe2)" : null;
+    }
+
     public static GpuChip? ChipOf(string? name) => Chips.GetValueOrDefault(Key(name));
 
     /// <summary>NVIDIA's video engines: the generations come from the architecture (RTX 20: 7th/4th, 30: 7th/5th, 40: 8th/5th, 50: 9th/6th), the counts only for models NVIDIA lists. GTX 16 cards mix generations by version and are left out.</summary>

@@ -16,6 +16,17 @@ public class PartSpecsTests
         Assert.Null(PartSpecs.Link(null, null));
     }
 
+    [Theory]
+    [InlineData("AMD Radeon RX 9060 XT", "_Amd", "RDNA 4")]
+    [InlineData("Intel(R) Arc(TM) B580 Graphics", "_Intel", "Battlemage (Xe2)")]
+    public void An_amd_or_intel_card_shows_its_own_makers_unit_names_never_nvidias(string name, string suffix, string architecture)
+    {
+        var inv = HardwareInventory.Empty with { Gpus = [new(name, "32.0", 16L << 30, "PCI\\VEN_1002")] };
+        var cards = PartSpecs.For(HardwareKind.Gpu, inv, HardwareDetails.Empty); var labels = cards.SelectMany(c => c.Rows).Select(r => r.Label).ToList();
+        Assert.Contains(Loc.Get("Spec_ComputeUnits" + suffix), labels); Assert.Contains(Loc.Get("Spec_GpuCores" + suffix), labels); Assert.Contains(Loc.Get("Spec_RtCores" + suffix), labels); Assert.Contains(Loc.Get("Spec_AiCores" + suffix), labels);
+        Assert.DoesNotContain(labels, l => l.Contains("CUDA") || l.Contains("Tensor")); Assert.Equal(architecture, Row(cards[0], "Spec_Architecture"));
+    }
+
     [Fact] public void The_cpu_identifier_shows_decimal_and_hex()
         => Assert.Equal("Family 23 (17h) · Model 113 (71h) · Stepping 0", PartSpecs.Identifier("AMD64 Family 23 Model 113 Stepping 0"));
 

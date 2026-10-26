@@ -97,13 +97,14 @@ public static class PartSpecs
     private static IReadOnlyList<SpecCard> Gpu(GpuInfo g, GpuDetails? d, int? number)
     {
         string title = number is { } n ? Loc.Format("SystemInfo_GpuN", n) : Loc.Get("Dashboard_Gpu");
+        string vk = GpuFacts.Maker(g.Name) switch { HardwareVendor.Amd => "_Amd", HardwareVendor.Intel => "_Intel", _ => "" };   // the units are named by the card's own maker
         var u = GpuFacts.For(g.Name, d?.ComputeCapability, d?.Cores); var chip = GpuFacts.ChipOf(g.Name); var video = GpuFacts.VideoOf(g.Name, d?.ComputeCapability);
         // 1: the chip and what it is built from.
         var main = new List<SpecRow>();
         Add(main, "SystemInfo_Name", g.Name);
         Add(main, "Spec_BoardVendor", d?.BoardVendor);
         Add(main, "Spec_GpuChip", chip?.Name);
-        Add(main, "Spec_Architecture", d?.Architecture);
+        Add(main, "Spec_Architecture", d?.Architecture ?? GpuFacts.ArchitectureOf(g.Name));
         Add(main, "Spec_Process", u?.Process);
         Add(main, "Spec_Transistors", chip?.TransistorsBillion, suffix: "B");
         Add(main, "Spec_DieSize", chip?.DieMm2, suffix: "mm²");
@@ -112,9 +113,9 @@ public static class PartSpecs
         Add(main, "Spec_Subsystem", d?.SubsystemId, more: true);
         // 2: the units, the memory, what that comes to at the card's highest clock, and the video engines.
         var units = new List<SpecRow>();
-        Add(units, "Spec_ComputeUnits", u?.ComputeUnits);
-        Add(units, "Spec_GpuCores", d?.Cores ?? u?.Shaders);
-        Add(units, "Spec_Tmus", u?.Tmus); Add(units, "Spec_Rops", u?.Rops); Add(units, "Spec_RtCores", u?.RtCores); Add(units, "Spec_AiCores", u?.AiCores);
+        Add(units, "Spec_ComputeUnits" + vk, u?.ComputeUnits);
+        Add(units, "Spec_GpuCores" + vk, d?.Cores ?? u?.Shaders);
+        Add(units, "Spec_Tmus", u?.Tmus); Add(units, "Spec_Rops", u?.Rops); Add(units, "Spec_RtCores" + vk, u?.RtCores); Add(units, "Spec_AiCores" + vk, u?.AiCores);
         Add(units, "SystemInfo_Vram", g.AdapterRamBytes is { } ram ? Gb(ram) : null);
         Add(units, "Spec_GpuMemoryType", chip?.Memory);
         Add(units, "Spec_BusWidth", d?.BusWidthBits, suffix: "bit");

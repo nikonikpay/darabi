@@ -3,6 +3,15 @@ namespace Mazesta.Core.Tests;
 
 public class PartFactsTests
 {
+    [Fact] public void A_card_is_named_by_its_own_makers_terms()
+    {
+        Assert.Equal(Mazesta.Core.Hardware.HardwareVendor.Amd, GpuFacts.Maker("AMD Radeon RX 9060 XT"));
+        Assert.Equal(Mazesta.Core.Hardware.HardwareVendor.Intel, GpuFacts.Maker("Intel(R) Arc(TM) B580 Graphics"));
+        Assert.Equal(Mazesta.Core.Hardware.HardwareVendor.Nvidia, GpuFacts.Maker("NVIDIA GeForce RTX 4070 Ti SUPER"));
+        Assert.Equal("RDNA 4", GpuFacts.ArchitectureOf("AMD Radeon RX 9060 XT")); Assert.Equal("Battlemage (Xe2)", GpuFacts.ArchitectureOf("Intel(R) Arc(TM) B580 Graphics"));
+        Assert.Null(GpuFacts.ArchitectureOf("NVIDIA GeForce RTX 3090"));   // NVIDIA's comes from the driver
+    }
+
     [Fact] public void Nvidia_units_follow_from_the_core_count_and_compute_capability()
     {
         var u = GpuFacts.For("NVIDIA GeForce RTX 3090", "8.6", 10496)!;   // 82 SMs
