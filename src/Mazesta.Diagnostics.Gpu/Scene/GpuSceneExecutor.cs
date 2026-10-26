@@ -69,7 +69,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         Sizes);
     public static readonly TestDefinition Scene = new(new TestId("gpu.scene.d3d"), "Test_Gpu_Scene3D", 300,
         [GpuDevices.Option, Resolution, new TestOption(LoadOption, "Test_Option_GpuLoad", TestOptionKind.Choice, "3",
-            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)], When: RayTracingOption + "=off"), RayTracingPreferred, Smoothing, Weather, Frames, FullScreen, Sound, Overlay]);
+            () => [new("1", "Test_GpuLoad_Light", true), new("2", "Test_GpuLoad_Medium", true), new("3", "Test_GpuLoad_Heavy", true), new("4", "Test_GpuLoad_Extreme", true)], When: RayTracingOption + "=off"), RayTracingPreferred, Weather, Frames, FullScreen, Sound, Overlay]);
     public TestDefinition Definition => Scene;
 
     public Unavailability? CheckAvailability(TestOptions options) => options.Get(RayTracingOption) == "on" ? GpuFeatures.RayTracingAvailability(options) : GpuFeatures.GpuAvailability(options);
@@ -114,7 +114,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
         using var session = new D3D12Session(device, FramesOf(options.Get(FramesOption)));
         using var window = new TestWindow($"Mazesta — {mode} — Persian garden", w, h, full);
         if (screenSize) (w, h) = (window.Width, window.Height);
-        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, WeatherLevel.Parse(options.Get(WeatherOption)), options.Get(SoundOption) != "off", SmoothingOf(options.Get(SmoothingOption), load, rayTraced));
+        using var renderer = new SceneView(session, window, w, h, rayTraced, load, custom, modelProblem, WeatherLevel.Parse(options.Get(WeatherOption)), options.Get(SoundOption) != "off", SmoothingOf("off", load, rayTraced));
         string work = renderer.Work;
         var model = renderer.Garden;
         string card = $"{session.AdapterName} · {device.DedicatedMemorySize / (1024.0 * 1024 * 1024):F1} GB";
