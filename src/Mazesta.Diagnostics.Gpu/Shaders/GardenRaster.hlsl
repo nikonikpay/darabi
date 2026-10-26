@@ -164,12 +164,14 @@ float KeySeen(float3 o, float2 pixel)
 // pictures of the surroundings - asks for itself.
 float Shadow(float3 p, float3 n)
 {
+    if (!(Flags & 8)) return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;   // a picture of the surroundings: seen blurred, one ray is enough (up to seven per pixel made it ten times slower than the shadow maps)
     if (Flags & 16)
     {
         float z = dot(p - Eye, CamForward), seen = Ambience.z / max(SceneDepth.Load(int3(Pixel, 0)), 1e-6);
         if (abs(z - seen) < 0.015 * z + 0.01) return Reflection.Load(int3(Pixel, 0)).r;
     }
-    return KeySeen(p + n * 0.012, Pixel);
+    // (a pixel the picture did not see - a leaf's edge, glass, water - asks once: up to seven rays a pixel over the foliage was most of the frame)
+    return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;
 }
 
 // The colour the key light has where it falls inside the hall: that of the stained pane on its way there.
@@ -211,6 +213,15 @@ float3 KeyTint(float3 p)
 
 #endif
 
+// The sun's glint on a surface (a mirror image of it, p's normal n): found only where it is bright enough to see - the shadow ray is not sent for a term that comes to nothing
+// (a pool covers most of the picture, and almost none of it mirrors the sun).
+float3 Glint(float3 r, float power, float3 p, float3 n)
+{
+    float g = SunOn > 0 ? pow(saturate(dot(r, SunDir)), power) : 0;
+    [branch] if (g > 0.002) return g * SunColor * SunOn * Shadow(p, n);
+    return 0;
+}
+
 // How much of a lamp's light reaches a point: what the lamp sees in that direction (its cube of depths, six views of ninety degrees)
 // is no nearer than the point itself. Four taps round the direction, turned differently in each pixel, each the mean of four texels:
 // a chair's legs, a lantern's cage and the hall's columns lay soft-edged shadows away from their lamps.
@@ -235,6 +246,7 @@ float LampShadowMap(Light L, float3 p, float3 n, float2 pixel)
 float LampShadow(Light L, float3 p, float3 n, float2 pixel, float strength)
 {
 #ifdef RT
+    if (!(Flags & 8)) return 1;   // a picture of the surroundings, seen blurred: the lamps' shadows are left out of it
     if (strength > 0.1) return LampRay(L, p, n);
 #endif
     return LampShadowMap(L, p, n, pixel);
@@ -482,7 +494,7 @@ float4 TransparentPS(VOut i) : SV_Target
         {
             // falling water: what it mirrors, the daylight caught in it, and the sun's glint; more of it shows than of a still pool
             reflected = (Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, 1, 1) : Sky(reflect(-v, n));
-            reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 200) * SunColor * SunOn * Shadow(i.World, n);
+            reflected += Glint(reflect(-v, n), 200, i.World, n);
             float3 caught = float3(0.82, 0.92, 0.96) * ((Bounced(i.World, n, 1) + Bounced(i.World, -n, 1)) * 1.5 + SunColor * SunOn * Shadow(i.World, n) * 0.25);
             float a = fresnel + (1 - fresnel) * 0.6;
             return float4(Pack((reflected * fresnel + caught * (1 - fresnel) * 0.6) / a), a);
@@ -501,7 +513,7 @@ float4 TransparentPS(VOut i) : SV_Target
             reflected = Unpack(Reflection.SampleLevel(Clamp, uv, 0).rgb);
         }
         else reflected = Sky(reflect(-v, n));
-        reflected += pow(saturate(dot(reflect(-v, n), SunDir)), 400) * SunColor * SunOn * Shadow(i.World, n);   // the sun's glint
+        reflected += Glint(reflect(-v, n), 400, i.World, n);   // the sun's glint
         // the pool's tiles show through (blended at 1 - a); the water adds its mirror image and its own teal body, more of it the
         // more water the eye looks through (what the frame's depth says lies behind, along the ray): straight down the tiles are
         // clear, toward the far end of the pool they sink into the water's colour - and their fine grid no longer shimmers there
@@ -521,7 +533,7 @@ float4 TransparentPS(VOut i) : SV_Target
         Hit ahead; float3 toward = normalize(i.World - Eye);
         if (Trace(Eye, toward, length(i.World - Eye) - 0.01, MaskVisible, ahead) && Materials[ahead.Material].Kind == KGlass) discard;
         float fr = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
-        float3 mirror = Reflected(i.World, n, reflect(-v, n)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
+        float3 mirror = Reflected(i.World, n, reflect(-v, n)) + Glint(reflect(-v, n), 300, i.World, n);
         return float4(Pack(mirror * fr + SeenThrough(i.World, n, v) * (1 - fr)), 1);
     }
 #endif
@@ -529,14 +541,20 @@ float4 TransparentPS(VOut i) : SV_Target
     // is behind it, in its colour; clear glass nearly all
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
-    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, open, 1) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + pow(saturate(dot(reflect(-v, n), SunDir)), 300) * SunColor * SunOn * Shadow(i.World, n);
+    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, open, 1) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + Glint(reflect(-v, n), 300, i.World, n);
     float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Glowing(i.World);
 #ifdef RT
     const float shine = 1.5;   // with rays a pane stands out a little more in the key light: enough for the lens to lay a faint glow round it
 #else
     const float shine = 1;
 #endif
-    if (SunOn > 0) own += m.Base * SunColor * shine * (0.25 * saturate(dot(n, SunDir)) * Shadow(i.World, n) + 0.5 * saturate(-dot(n, SunDir)) * Shadow(i.World, -n)) / Pi;   // lit from the front, glowing with the sun behind it
+    if (SunOn > 0)
+    {   // lit from the front, glowing with the sun behind it (the side that faces away from the sun is not asked)
+        float front = saturate(dot(n, SunDir)), back = saturate(-dot(n, SunDir)), lit = 0;
+        [branch] if (front > 0) lit += 0.25 * front * Shadow(i.World, n);
+        [branch] if (back > 0) lit += 0.5 * back * Shadow(i.World, -n);
+        own += m.Base * SunColor * shine * lit / Pi;
+    }
     uint2 lamps = LampsAt(i.World);
     [loop] for (uint j = 0; j < lamps.y; j++) { uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy, 0); }
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
