@@ -15,7 +15,7 @@
 |---|---|---|
 | CPU | `cpu.stress` (ماتریس + عدد صحیح + هش/Deflate به نوبت، ثابت یا نوسانی)، `cpu.vector` (FMA روی AVX-512/AVX2/SSE2)، `cpu.linpack` (LU با residual از نوع HPL و تطبیق بیت‌به‌بیت مثل IntelBurnTest)، `cpu.fft` (۴۰۹۶ و یک میلیون نقطه، مثل Prime95)، `cpu.singlecore` (چرخش هسته به هسته مثل CoreCycler، با مکث تصادفی)، `cpu.integer`، `cpu.hash`، `cpu.matrix` | هر بلاک با جوابی که از قبل حساب شده مقایسه می‌شود، نه با جواب خود دستگاه. **این از OCCT هم سخت‌گیرانه‌تر است.** |
 | RAM | `memory.pattern` (الگوهای MemTest86: walking 1/0، 0xA5/0x5A، آدرس و معکوس آدرس، تصادفی + moving inversions / block move / stride در هر پاس چهارم)، `memory.bitfade` (قفل در RAM با VirtualLock) | هر پاس کل حافظه بررسی می‌شود |
-| GPU | `gpu.steady/variable/pulse`، `gpu.vram` (۸ الگو، بررسی روی خود GPU)، `gpu.render`، `gpu.scene.d3d`، `gpu.ai` (DirectML) | نمونه‌ای از نخ‌ها روی CPU دوباره حساب می‌شود، فریم‌ها مقایسه می‌شوند |
+| GPU | `gpu.steady/variable/pulse`، `gpu.thermal` (محاسبه به‌همراه خواندن پیوستهٔ حافظه، برای سنجش دما)، `gpu.vram` (۸ الگو، بررسی روی خود GPU)، `gpu.render`، `gpu.scene.d3d`، `gpu.ai` (DirectML) | نمونه‌ای از نخ‌ها روی CPU دوباره حساب می‌شود، فریم‌ها مقایسه می‌شوند |
 | برق | `power.combined` (CPU + GPU با هم) | هر طرف بررسی خودش را دارد |
 | دیسک | `storage.sequential`، `storage.random4k` (با verify)، `storage.smart` (SMART + لاگ سلامت NVMe)؛ بنچمارک SEQ1M Q8، RND4K Q32/Q1، ترکیب ۷۰/۳۰ | |
 | همه‌ی تست‌ها | WHEA در طول تست = Failed؛ خطاهای PCIe کارت زیر بار؛ checkpoint برای ریست و کرش؛ دمای DIMM از SPD | |

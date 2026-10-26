@@ -422,6 +422,9 @@
   <data name="Test_Gpu_Pulse" xml:space="preserve">
     <value>GPU · Load Pulses (Coil Whine)</value>
   </data>
+  <data name="Test_Gpu_Thermal" xml:space="preserve">
+    <value>GPU · Temperature Test (game-like heat)</value>
+  </data>
   <data name="Test_Gpu_Vram" xml:space="preserve">
     <value>GPU · VRAM Pattern &amp; Full Verify</value>
   </data>
@@ -1721,11 +1724,19 @@ The update services stopped and disabled</value></data>
   <data name="Spec_BoardVendor" xml:space="preserve"><value>Board maker</value></data>
   <data name="Spec_Architecture" xml:space="preserve"><value>Architecture</value></data>
   <data name="Spec_GpuCores" xml:space="preserve"><value>Shader (CUDA) cores</value></data>
-  <data name="Spec_ComputeUnits" xml:space="preserve"><value>Compute units (SM / CU / Xe core)</value></data>
+  <data name="Spec_ComputeUnits" xml:space="preserve"><value>Streaming multiprocessors (SM)</value></data>
   <data name="Spec_Tmus" xml:space="preserve"><value>Texture units (TMUs)</value></data>
   <data name="Spec_Rops" xml:space="preserve"><value>Render outputs (ROPs)</value></data>
   <data name="Spec_RtCores" xml:space="preserve"><value>Ray-tracing cores</value></data>
   <data name="Spec_AiCores" xml:space="preserve"><value>Tensor / AI cores</value></data>
+  <data name="Spec_AiCores_Intel" xml:space="preserve"><value>XMX matrix engines (AI)</value></data>
+  <data name="Spec_AiCores_Amd" xml:space="preserve"><value>AI accelerators</value></data>
+  <data name="Spec_RtCores_Intel" xml:space="preserve"><value>Ray tracing units (RTU)</value></data>
+  <data name="Spec_RtCores_Amd" xml:space="preserve"><value>Ray accelerators</value></data>
+  <data name="Spec_GpuCores_Intel" xml:space="preserve"><value>Shading units (Vector Engine lanes)</value></data>
+  <data name="Spec_GpuCores_Amd" xml:space="preserve"><value>Stream processors</value></data>
+  <data name="Spec_ComputeUnits_Intel" xml:space="preserve"><value>Xe-cores</value></data>
+  <data name="Spec_ComputeUnits_Amd" xml:space="preserve"><value>Compute units (CU)</value></data>
   <data name="Spec_Process" xml:space="preserve"><value>Process node</value></data>
   <data name="Spec_GpuUnits" xml:space="preserve"><value>Processing units</value></data>
   <data name="Spec_CpuPlatform" xml:space="preserve"><value>Platform</value></data>
@@ -3099,6 +3110,7 @@ Next: repeat with another cable and port; connect the two computers directly; up
   <data name="Detail_L_GpuPower" xml:space="preserve"><value>Graphics card power</value></data>
   <data name="Detail_Profile_Pulse" xml:space="preserve"><value>pulsed</value></data>
   <data name="Detail_Profile_Steady" xml:space="preserve"><value>steady</value></data>
+  <data name="Detail_Profile_Thermal" xml:space="preserve"><value>temperature (compute with memory traffic)</value></data>
   <data name="Detail_Profile_Variable" xml:space="preserve"><value>variable</value></data>
   <data name="Detail_Stat" xml:space="preserve"><value>{0}: average {1} {2} ({3} samples)</value></data>
   <data name="Detail_Stat_Max" xml:space="preserve"><value>{0}: average {1}, highest {2} {3} ({4} samples)</value></data>

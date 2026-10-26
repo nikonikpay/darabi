@@ -24,7 +24,7 @@ public sealed class GpuSceneExecutor(MemoryFactsSource? facts = null) : ITestExe
     internal static readonly TestOption Overlay = new(OverlayOption, "Test_Option_SceneOverlay", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>Ray tracing on or off: the same garden, its shadows and mirror images found with rays (DXR 1.1) instead of maps.</summary>
     internal static readonly TestOption RayTracing = new(RayTracingOption, "Test_Option_RayTracing", TestOptionKind.Choice, "off",
-        () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1)")]);
+        () => [new("off", "Test_RayTracing_Off", true, "shadow maps, pictures of the surroundings"), new("on", "Test_RayTracing_On", true, "ray-traced shadows and reflections (DXR 1.1); the card spends the frame waiting for the scene's data, so it draws less power and heat than with maps: for heat use the temperature test")]);
     /// <summary>The window covers the screen with no border (the frame is still drawn at the resolution chosen and shown scaled to the screen): on unless switched off.</summary>
     internal static readonly TestOption FullScreen = new(FullScreenOption, "Test_Option_FullScreen", TestOptionKind.Choice, "on", () => [new("off", "Test_RayTracing_Off", true), new("on", "Test_Switch_On", true)]);
     /// <summary>The garden's weather (<see cref="GardenWeather"/>): rain, gusts that lift leaves and twigs out of the crowns and carry them, simulated on every core of the processor each frame, in air that is a fluid going round the hall; the plants sway in it.

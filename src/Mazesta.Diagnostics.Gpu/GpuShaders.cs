@@ -28,8 +28,64 @@ internal readonly partial struct HashStressShader(ReadWriteBuffer<uint> output, 
     }
 }
 
+/// <summary>
+/// The temperature test's load: the same integer rounds, but every eighth round also reads a cell of a 256 MB table (an address of its own, not waiting for the arithmetic: the reads stream while the shader units work), so the memory controllers,
+/// the cache and the memory chips work beside the shader units, the way a game loads a card. The ALU-only <see cref="HashStressShader"/> concentrates all the power
+/// in the shader units with the memory idle; this one spreads the heat over the die. The table's cells are a formula of their index (<see cref="GpuHash.TableCell"/>),
+/// so the CPU recomputes any thread's result exactly. <see cref="GpuHash.ThermalReference"/> must stay in lock-step.
+/// </summary>
+[ThreadGroupSize(DefaultThreadGroupSizes.X)]
+[GeneratedComputeShaderDescriptor]
+internal readonly partial struct ThermalShader(ReadWriteBuffer<uint> output, ReadOnlyBuffer<uint> table, int rounds, uint seed, int chain, uint mask) : IComputeShader
+{
+    public void Execute()
+    {
+        uint h = (chain != 0 ? output[ThreadIds.X] : (uint)ThreadIds.X) ^ seed;
+        for (int r = 0; r < rounds; r++)
+        {
+            h = h * 1664525u + 1013904223u;
+            h ^= h >> 13;
+            h *= 0x5BD1E995u;
+            h ^= h >> 15;
+            if ((r & 7) == 7) h ^= table[(int)((uint)ThreadIds.X + (uint)r * 4099u) & (int)mask];
+        }
+        output[ThreadIds.X] = h;
+    }
+}
+
 internal static class GpuHash
 {
+    public const uint TableCells = 1u << 26;   // 256 MB of 32-bit cells
+
+    public static uint TableCell(uint i) => unchecked(i * 0x9E3779B1u + 0x7F4A7C15u);
+
+    public static uint[] BuildTable()
+    {
+        var t = new uint[TableCells]; Parallel.For(0, 1 << 10, c => { uint from = (uint)c << 16, to = from + (1u << 16); for (uint i = from; i < to; i++) t[i] = TableCell(i); });
+        return t;
+    }
+
+    public static uint ThermalReference(uint index, uint start, int rounds, uint seed)
+    {
+        uint h = start ^ seed;
+        for (int r = 0; r < rounds; r++)
+        {
+            unchecked { h = h * 1664525u + 1013904223u; }
+            h ^= h >> 13;
+            unchecked { h *= 0x5BD1E995u; }
+            h ^= h >> 15;
+            if ((r & 7) == 7) h ^= TableCell((index + (uint)r * 4099u) & (TableCells - 1));
+        }
+        return h;
+    }
+
+    public static uint ThermalChained(uint index, int rounds, uint seed, int dispatches)
+    {
+        uint h = index;
+        for (int d = 0; d < dispatches; d++) h = ThermalReference(index, h, rounds, seed);
+        return h;
+    }
+
     /// <summary>One dispatch's result for a thread that starts from <paramref name="start"/> (its index, or the previous dispatch's result).</summary>
     public static uint Reference(uint start, int rounds, uint seed)
     {

@@ -1,7 +1,7 @@
 using System.Diagnostics; using ComputeSharp; using Mazesta.Core.Hardware; using Mazesta.Diagnostics.Evidence;
 namespace Mazesta.Diagnostics.Gpu;
 
-public enum GpuStressProfile { Steady, Variable, Pulse }
+public enum GpuStressProfile { Steady, Variable, Pulse, Thermal }
 
 /// <summary>
 /// GPU compute stress with three load shapes (spec §10): <b>Steady</b> keeps the GPU saturated,
@@ -17,10 +17,11 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
     public const string PulseMsOption = "pulseMs", GapMsOption = "gapMs";
     public static readonly TestDefinition Steady = new(new TestId("gpu.steady"), "Test_Gpu_Steady", 300, [GpuDevices.Option]);
     public static readonly TestDefinition Variable = new(new TestId("gpu.variable"), "Test_Gpu_Variable", 300, [GpuDevices.Option]);
+    public static readonly TestDefinition Thermal = new(new TestId("gpu.thermal"), "Test_Gpu_Thermal", 600, [GpuDevices.Option]);
     public static readonly TestDefinition Pulse = new(new TestId("gpu.pulse"), "Test_Gpu_Pulse", 300,
         [GpuDevices.Option, new TestOption(PulseMsOption, "Test_Option_PulseMs", TestOptionKind.Integer, "250"), new TestOption(GapMsOption, "Test_Option_GapMs", TestOptionKind.Integer, "250")]);
 
-    public TestDefinition Definition => profile switch { GpuStressProfile.Steady => Steady, GpuStressProfile.Variable => Variable, _ => Pulse };
+    public TestDefinition Definition => profile switch { GpuStressProfile.Steady => Steady, GpuStressProfile.Variable => Variable, GpuStressProfile.Thermal => Thermal, _ => Pulse };
     public Unavailability? CheckAvailability(TestOptions options) => GpuFeatures.GpuAvailability(options);
 
     private const int Threads = 1 << 21, Rounds = 512, FrameMs = 100, VariableStepSeconds = 5, SamplesPerBatch = 128;
@@ -34,7 +35,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         var frame = TimeSpan.FromMilliseconds(FrameMs);
         return profile switch
         {
-            GpuStressProfile.Steady => (frame, frame),
+            GpuStressProfile.Steady or GpuStressProfile.Thermal => (frame, frame),
             GpuStressProfile.Variable => (frame * VariableLevels[(int)(elapsedSeconds / VariableStepSeconds) % VariableLevels.Length], frame),
             _ => (TimeSpan.FromMilliseconds(pulseMs), TimeSpan.FromMilliseconds(pulseMs + gapMs))
         };
@@ -43,7 +44,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
     /// <summary>Steady keeps one long submission after another (the readback between them is then a few percent); the shaped profiles keep a
     /// submission within half of their busy window, so a 100 ms frame at 30 % or a 250 ms pulse keeps its shape.</summary>
     internal static TimeSpan BatchTarget(GpuStressProfile profile, TimeSpan busy)
-        => profile == GpuStressProfile.Steady ? TimeSpan.FromMilliseconds(250) : TimeSpan.FromMilliseconds(Math.Max(5, busy.TotalMilliseconds / 2));
+        => profile is GpuStressProfile.Steady or GpuStressProfile.Thermal ? TimeSpan.FromMilliseconds(250) : TimeSpan.FromMilliseconds(Math.Max(5, busy.TotalMilliseconds / 2));
 
     public Task<TestRunResult> RunAsync(TestExecutionRequest request, CancellationToken ct)
     {
@@ -70,6 +71,7 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
         try
         {
             using var buffer = device.AllocateReadWriteBuffer<uint>(Threads);
+            bool thermal = profile == GpuStressProfile.Thermal; using var table = thermal ? device.AllocateReadOnlyBuffer(GpuHash.BuildTable()) : null;
             // Two read-back copies: one batch is checked on the processor while the next is already on the card. The card never waits for a check: a batch
             // that ends while the last check still runs is not checked (the processor is slow, or busy with another program), and goes on to the next one.
             var hosts = new[] { new uint[Threads], new uint[Threads] }; int checking = 1; Task<long>? pending = null;
@@ -83,11 +85,11 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
                 {
                     uint seed = unchecked((uint)(++batches * 2654435761u)); int count = sizer.Count; var batchStart = clock.Elapsed;
                     using (var context = device.CreateComputeContext())
-                        for (int d = 0; d < count; d++) { context.For(Threads, new HashStressShader(buffer, Rounds, seed, d > 0 ? 1 : 0)); if (d + 1 < count) context.Barrier(buffer); }
+                        for (int d = 0; d < count; d++) { if (table is null) context.For(Threads, new HashStressShader(buffer, Rounds, seed, d > 0 ? 1 : 0)); else context.For(Threads, new ThermalShader(buffer, table, Rounds, seed, d > 0 ? 1 : 0, GpuHash.TableCells - 1)); if (d + 1 < count) context.Barrier(buffer); }
                     if (pending is { IsCompleted: true }) errors += Drain();
                     var host = hosts[pending is null ? checking ^= 1 : checking ^ 1]; buffer.CopyTo(host);   // waits for the GPU: the queue never runs away and the results are in hand
                     dispatches += count;
-                    if (pending is null) { int batchCount = count; uint batchSeed = seed; pending = Task.Run(() => CheckSample(host, random, batchSeed, batchCount)); checkedResults += (long)SamplesPerBatch * count; }
+                    if (pending is null) { int batchCount = count; uint batchSeed = seed; pending = Task.Run(() => CheckSample(host, random, batchSeed, batchCount, thermal)); checkedResults += (long)SamplesPerBatch * count; }
                     sizer.Record(clock.Elapsed - batchStart, BatchTarget(profile, busy));
                 }
                 Report(request, clock);
@@ -110,12 +112,13 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
     private string Describe(GraphicsDevice device, long dispatches, long checkedResults, Stopwatch clock, TestExecutionRequest request, DateTimeOffset started)
     {
         var finished = request.Clock.UtcNow; var card = GpuDevices.SensorNode(request.Engine, device.Name);
+        var core = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, card, null); var hot = SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, card, null);
+        string? gap = profile == GpuStressProfile.Thermal && core is { } c && hot is { } h ? $"hot spot above core at the peak {h.Max - c.Max:F1}°C, on average {h.Average - c.Average:F1}°C" : null;
         double gops = dispatches * (double)Threads * Rounds * 6 / Math.Max(0.001, clock.Elapsed.TotalSeconds) / 1e9;
         return SensorEvidence.Join($"GPU {profile} compute stress on {device.Name}", $"dispatches={dispatches}", $"{gops:F0} Gop/s integer",
             $"verified {checkedResults:N0} of {dispatches * (double)Threads:N0} thread results through chained dispatches (a sample, not every thread)",
             SensorEvidence.ReadFirstOf(request.Engine, HardwareKind.Gpu, started, finished, card, SensorRole.GpuLoad3D, SensorRole.GpuLoadD3D3D)?.Format("measured GPU load", "%"),
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreTemp, started, finished, card, null)?.Format("GPU core", "°C", includeMax: true),
-            SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuHotSpotTemp, started, finished, card, null)?.Format("GPU hot spot", "°C", includeMax: true),
+            core?.Format("GPU core", "°C", includeMax: true), hot?.Format("GPU hot spot", "°C", includeMax: true), gap,
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuVramTemp, started, finished, card, null)?.Format("VRAM temperature", "°C", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuPower, started, finished, card, null)?.Format("GPU power", " W", includeMax: true),
             SensorEvidence.Read(request.Engine, HardwareKind.Gpu, SensorRole.GpuCoreClock, started, finished, card, null)?.Format("GPU clock", " MHz", includeMax: true),
@@ -124,12 +127,12 @@ public sealed class GpuStressExecutor(GpuStressProfile profile) : ITestExecutor,
 
     /// <summary>Recomputes <see cref="SamplesPerBatch"/> random threads through all <paramref name="dispatches"/> of a batch on the CPU cores and
     /// counts those whose end value differs. Parallel, so a long chain on a fast card does not leave the GPU idle for long.</summary>
-    internal static long CheckSample(uint[] host, Random random, uint seed, int dispatches)
+    internal static long CheckSample(uint[] host, Random random, uint seed, int dispatches, bool thermal = false)
     {
         var picks = new int[SamplesPerBatch];
         for (int s = 0; s < picks.Length; s++) picks[s] = random.Next(host.Length);
         long wrong = 0;
-        Parallel.For(0, picks.Length, s => { int i = picks[s]; if (host[i] != GpuHash.Chained((uint)i, Rounds, seed, dispatches)) Interlocked.Increment(ref wrong); });
+        Parallel.For(0, picks.Length, s => { int i = picks[s]; if (host[i] != (thermal ? GpuHash.ThermalChained((uint)i, Rounds, seed, dispatches) : GpuHash.Chained((uint)i, Rounds, seed, dispatches))) Interlocked.Increment(ref wrong); });
         return wrong;
     }
 

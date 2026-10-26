@@ -313,7 +313,7 @@ public static partial class TestDetailText
 
     [GeneratedRegex(@"^(?:measured )?([A-Za-z ]+?) avg ([\d.]+)(%|°C| W| MB| MHz) (?:max ([\d.]+)(?:%|°C| W| MB| MHz) )?\(n=(\d+)\)$")] private static partial Regex Stat();
     [GeneratedRegex(@"^([a-z]+(?: [a-z]+)?)=([\d,]+)$")] private static partial Regex Count();
-    [GeneratedRegex(@"^GPU (Steady|Variable|Pulse) compute stress on (.+)$")] private static partial Regex GpuStress();
+    [GeneratedRegex(@"^GPU (Steady|Variable|Pulse|Thermal) compute stress on (.+)$")] private static partial Regex GpuStress();
     [GeneratedRegex(@"^verified ([\d,]+) of ([\d,]+) thread results through chained dispatches \(a sample, not every thread\)$")] private static partial Regex Verified();
     [GeneratedRegex(@"^([\d,.]+) frame/s$")] private static partial Regex FrameRate();
     [GeneratedRegex(@"^([\d,.]+) FPS average$")] private static partial Regex FpsAverage();

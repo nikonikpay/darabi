@@ -422,6 +422,9 @@
   <data name="Test_Gpu_Pulse" xml:space="preserve">
     <value>GPU · پالس و جهش بار (Coil Whine)</value>
   </data>
+  <data name="Test_Gpu_Thermal" xml:space="preserve">
+    <value>GPU · تست دما (گرمای شبیه بازی)</value>
+  </data>
   <data name="Test_Gpu_Vram" xml:space="preserve">
     <value>GPU · حافظه VRAM با بررسی کامل</value>
   </data>
@@ -1721,11 +1724,19 @@
   <data name="Spec_BoardVendor" xml:space="preserve"><value>سازندهٔ کارت</value></data>
   <data name="Spec_Architecture" xml:space="preserve"><value>معماری</value></data>
   <data name="Spec_GpuCores" xml:space="preserve"><value>هسته‌های پردازشی (CUDA)</value></data>
-  <data name="Spec_ComputeUnits" xml:space="preserve"><value>واحدهای محاسباتی (SM / CU / Xe)</value></data>
+  <data name="Spec_ComputeUnits" xml:space="preserve"><value>واحدهای محاسباتی (SM)</value></data>
   <data name="Spec_Tmus" xml:space="preserve"><value>واحدهای بافت (TMU)</value></data>
   <data name="Spec_Rops" xml:space="preserve"><value>واحدهای خروجی تصویر (ROP)</value></data>
   <data name="Spec_RtCores" xml:space="preserve"><value>هسته‌های ردیابی پرتو</value></data>
   <data name="Spec_AiCores" xml:space="preserve"><value>هسته‌های Tensor / هوش مصنوعی</value></data>
+  <data name="Spec_AiCores_Intel" xml:space="preserve"><value>موتورهای ماتریسی هوش مصنوعی (XMX)</value></data>
+  <data name="Spec_AiCores_Amd" xml:space="preserve"><value>شتاب‌دهنده‌های هوش مصنوعی (AI Accelerators)</value></data>
+  <data name="Spec_RtCores_Intel" xml:space="preserve"><value>واحدهای ردیابی پرتو (RTU)</value></data>
+  <data name="Spec_RtCores_Amd" xml:space="preserve"><value>شتاب‌دهنده‌های پرتو (Ray Accelerators)</value></data>
+  <data name="Spec_GpuCores_Intel" xml:space="preserve"><value>واحدهای سایه‌زنی (مسیرهای Vector Engine)</value></data>
+  <data name="Spec_GpuCores_Amd" xml:space="preserve"><value>پردازنده‌های جریانی (Stream Processors)</value></data>
+  <data name="Spec_ComputeUnits_Intel" xml:space="preserve"><value>هسته‌های Xe (Xe-core)</value></data>
+  <data name="Spec_ComputeUnits_Amd" xml:space="preserve"><value>واحدهای محاسباتی (CU)</value></data>
   <data name="Spec_Process" xml:space="preserve"><value>فناوری ساخت</value></data>
   <data name="Spec_GpuUnits" xml:space="preserve"><value>واحدهای پردازشی</value></data>
   <data name="Spec_CpuPlatform" xml:space="preserve"><value>پلتفرم</value></data>
@@ -3099,6 +3110,7 @@ Vantage روی سیستمم اجرا می‌شه؟
   <data name="Detail_L_GpuPower" xml:space="preserve"><value>توان مصرفی کارت گرافیک</value></data>
   <data name="Detail_Profile_Pulse" xml:space="preserve"><value>پالسی</value></data>
   <data name="Detail_Profile_Steady" xml:space="preserve"><value>ثابت</value></data>
+  <data name="Detail_Profile_Thermal" xml:space="preserve"><value>دمایی (محاسبه با ترافیک حافظه)</value></data>
   <data name="Detail_Profile_Variable" xml:space="preserve"><value>متغیر</value></data>
   <data name="Detail_Stat" xml:space="preserve"><value>{0}: میانگین {1} {2} ({3} نمونه)</value></data>
   <data name="Detail_Stat_Max" xml:space="preserve"><value>{0}: میانگین {1}، بیشترین {2} {3} ({4} نمونه)</value></data>
