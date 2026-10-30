@@ -50,7 +50,7 @@ struct Light { float3 Position; uint Kind; float3 Direction; float Range; float3
 
 // For rays (GardenTrace.hlsli): where each mesh's vertices and each of its materials' triangles start.
 struct MeshInfo { float3 Centre; uint FirstSubmesh; float3 Extent; uint BaseVertex; };
-struct SubInfo { uint IndexStart; uint Material; uint Opaque; uint Pad; };
+struct SubInfo { uint IndexStart; uint Material; uint Opaque; uint BaseVertex; int Texture; float2 Pattern; float Pad; };   // (Texture and Pattern: the material's, copied in, for the alpha test of a ray's traversal)
 
 static const uint KFlat = 0, KCutout = 1, KBrick = 2, KWater = 3, KGlass = 4, KEmissive = 5, KSmoke = 6;
 static const uint LSun = 0, LPoint = 1, LSpot = 2;

@@ -17,22 +17,16 @@ float3 InBall(inout uint seed)
 
 uint3 Triangle(SubInfo s, uint prim) { return Indices.Load3((s.IndexStart + prim * 3) * 4); }
 
-float2 UvAt(uint instance, uint geometry, uint prim, float2 bary)
+// A leaf card is a hit only where its texture is opaque. Four loads one after another (the geometry's row - found from the instance's
+// hit-group offset, which the structure holds as its mesh's first row - its triangle, the corners' uvs, the texture) where
+// finding the row through the instance, the mesh and the material took three more: this is what a ray through foliage waits on.
+bool AlphaPass(uint firstRow, uint geometry, uint prim, float2 bary)
 {
-    MeshInfo m = Meshes[Instances[instance].Mesh]; SubInfo s = Subs[m.FirstSubmesh + geometry];
-    uint3 t = Triangle(s, prim);
-    float2 a = DecodeUv(Vertices.Load((m.BaseVertex + t.x) * 16 + 12)), b = DecodeUv(Vertices.Load((m.BaseVertex + t.y) * 16 + 12)), c = DecodeUv(Vertices.Load((m.BaseVertex + t.z) * 16 + 12));
-    Material mat = Materials[s.Material];
-    return (a + (b - a) * bary.x + (c - a) * bary.y) * (mat.Pattern.x > 0 ? mat.Pattern.xy : 1);
-}
-
-// A leaf card is a hit only where its texture is opaque.
-bool AlphaPass(uint instance, uint geometry, uint prim, float2 bary)
-{
-    MeshInfo m = Meshes[Instances[instance].Mesh]; SubInfo s = Subs[m.FirstSubmesh + geometry];
-    Material mat = Materials[s.Material];
-    if (mat.Texture < 0) return true;
-    return Textures.SampleLevel(TraceSampler, float3(UvAt(instance, geometry, prim, bary), mat.Texture), 1).a >= 0.5;
+    SubInfo s = Subs[firstRow + geometry];
+    if (s.Texture < 0) return true;
+    uint3 o = (s.BaseVertex + Triangle(s, prim)) * 16;
+    float2 a = DecodeUv(Vertices.Load(o.x + 12)), b = DecodeUv(Vertices.Load(o.y + 12)), c = DecodeUv(Vertices.Load(o.z + 12));
+    return Textures.SampleLevel(TraceSampler, float3((a + (b - a) * bary.x + (c - a) * bary.y) * s.Pattern, s.Texture), 1).a >= 0.5;
 }
 
 Hit Fetch(uint instance, uint geometry, uint prim, float2 bary, float3 p, float dist)
@@ -75,7 +69,7 @@ bool Trace(float3 origin, float3 dir, float tmax, uint mask, out Hit hit)
     RayQuery<RAY_FLAG_NONE> q;
     q.TraceRayInline(Scene, RAY_FLAG_NONE, mask, ray);
     while (q.Proceed())
-        if (q.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE && AlphaPass(q.CandidateInstanceID(), q.CandidateGeometryIndex(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()))
+        if (q.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE && AlphaPass(q.CandidateInstanceContributionToHitGroupIndex(), q.CandidateGeometryIndex(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()))
             q.CommitNonOpaqueTriangleHit();
     hit = (Hit)0;
     if (q.CommittedStatus() != COMMITTED_TRIANGLE_HIT) return false;
@@ -89,7 +83,7 @@ bool Occluded(float3 origin, float3 dir, float tmax)
     RayQuery<RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> q;
     q.TraceRayInline(Scene, RAY_FLAG_NONE, MaskShadow, ray);
     while (q.Proceed())
-        if (AlphaPass(q.CandidateInstanceID(), q.CandidateGeometryIndex(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()))
+        if (AlphaPass(q.CandidateInstanceContributionToHitGroupIndex(), q.CandidateGeometryIndex(), q.CandidatePrimitiveIndex(), q.CandidateTriangleBarycentrics()))
             q.CommitNonOpaqueTriangleHit();
     return q.CommittedStatus() == COMMITTED_TRIANGLE_HIT;
 }

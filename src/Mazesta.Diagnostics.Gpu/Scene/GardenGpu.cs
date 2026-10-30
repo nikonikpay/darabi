@@ -18,7 +18,7 @@ internal sealed unsafe class GardenGpu
     [StructLayout(LayoutKind.Sequential)] public struct Instance { public Vector4 Row0, Row1, Row2; public uint Mesh, Mask, Flags, Index; }
     [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Shadow, Lit; }
     [StructLayout(LayoutKind.Sequential)] public struct MeshInfo { public Vector3 Centre; public uint FirstSubmesh; public Vector3 Extent; public uint BaseVertex; }
-    [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, Pad; }
+    [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, BaseVertex; public int Texture; public float PatternU, PatternV, Pad; }
     public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind, GardenChunks.Chunk[]? Chunks = null);
     /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>. Moving: some of them
     /// are placed anew every frame (the logo, the sphere, the droplets).</summary>
@@ -100,6 +100,8 @@ internal sealed unsafe class GardenGpu
     /// <summary>How far the hall's lamps are lit at a moment of <paramref name="day"/>.</summary>
     public static float HallLit(GardenDay day) => MathF.Max(day.Lamps * HallByNight, HallByDay * (1 - day.Night));
     public ID3D12Resource MeshInfoBuffer { get; } public ID3D12Resource SubmeshInfoBuffer { get; }
+    /// <summary>Where each mesh's rows start in the submesh buffer: the top-level structure carries it, so a ray finds a geometry's row without asking the instance.</summary>
+    public uint[] FirstSubmesh { get; }
     public ID3D12Resource Textures { get; }
     public int TextureCount { get; }
     /// <summary>The mountains round the horizon (a 4 x 4 stand-in when the scene has none) and, for the shaders, the range of heights
@@ -293,8 +295,15 @@ internal sealed unsafe class GardenGpu
         for (int m = 0; m < meshes.Count; m++)
         {
             infos.Add(new MeshInfo { Centre = meshes[m].Centre, Extent = meshes[m].Extent, FirstSubmesh = (uint)subs.Count, BaseVertex = (uint)baseVertex[m] });
-            foreach (var sub in meshes[m].Submeshes) subs.Add(new SubmeshInfo { IndexStart = baseIndex[m] + sub.IndexStart, Material = sub.Material, Opaque = materials[(int)sub.Material].Kind == GardenMaterialKind.Cutout ? 0u : 1u });
+            // (a leaf card's alpha test, during a ray's traversal, reads all it needs from this one row: material, vertex base and texture are copied into it)
+            foreach (var sub in meshes[m].Submeshes)
+            {
+                var mat = materials[(int)sub.Material]; bool tiled = mat.Pattern.X > 0;
+                subs.Add(new SubmeshInfo { IndexStart = baseIndex[m] + sub.IndexStart, Material = sub.Material, Opaque = mat.Kind == GardenMaterialKind.Cutout ? 0u : 1u, BaseVertex = (uint)baseVertex[m],
+                    Texture = mat.Texture, PatternU = tiled ? mat.Pattern.X : 1, PatternV = tiled ? mat.Pattern.Y : 1 });
+            }
         }
+        FirstSubmesh = [.. infos.Select(i => i.FirstSubmesh)];
         MeshInfoBuffer = s.Upload(infos.ToArray(), ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
         SubmeshInfoBuffer = s.Upload(subs.ToArray(), ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 

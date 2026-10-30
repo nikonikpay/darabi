@@ -158,6 +158,8 @@ float KeySeen(float3 o, float2 pixel)
     return open / 7;
 }
 
+static const int2 Around[8] = { int2(-1, -1), int2(0, -1), int2(1, -1), int2(-1, 0), int2(1, 0), int2(-1, 1), int2(0, 1), int2(1, 1) };
+
 // The frame's own surfaces take the key light's share from the picture worked out before the frame (SunShadePS, smoothed: in the
 // place the pool's mirror image has without rays), which is free of the grain a few rays a pixel leave at a shadow's edge. What is
 // not the surface that picture saw at this pixel - glass, water, steam, an edge where the pixel's samples are of two surfaces, the
@@ -169,8 +171,17 @@ float Shadow(float3 p, float3 n)
     {
         float z = dot(p - Eye, CamForward), seen = Ambience.z / max(SceneDepth.Load(int3(Pixel, 0)), 1e-6);
         if (abs(z - seen) < 0.015 * z + 0.01) return Reflection.Load(int3(Pixel, 0)).r;
+        // an edge, where this sample is of another surface than the pixel's centre: the mean of the neighbours that are of this one, so no hard grain runs along it
+        float sum = 0, count = 0;
+        [unroll] for (int k = 0; k < 8; k++)
+        {
+            int2 q = clamp(int2(Pixel) + Around[k], 0, int2(ViewSize) - 1);
+            float near = Ambience.z / max(SceneDepth.Load(int3(q, 0)), 1e-6);
+            if (abs(z - near) < 0.015 * z + 0.01) { sum += Reflection.Load(int3(q, 0)).r; count++; }
+        }
+        if (count > 0) return sum / count;
     }
-    // (a pixel the picture did not see - a leaf's edge, glass, water - asks once: up to seven rays a pixel over the foliage was most of the frame)
+    // (a pixel the picture did not see - glass, water, a leaf with nothing like it near - asks once: up to seven rays a pixel over the foliage was most of the frame)
     return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;
 }
 

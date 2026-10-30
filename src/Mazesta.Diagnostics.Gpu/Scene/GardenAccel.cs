@@ -103,7 +103,7 @@ internal sealed unsafe class GardenAccel
                 {
                     int i = ids[n]; var inst = _g.Instances[i];
                     var m = _dequant[inst.Mesh] * _g.World(i, time);
-                    ref var desc = ref to[i]; desc = new InstanceDesc { IdAndMask = (uint)i & 0xFFFFFF | (uint)_masks[inst.Mesh] << 24, Blas = _blas[inst.Mesh] };
+                    ref var desc = ref to[i]; desc = new InstanceDesc { IdAndMask = (uint)i & 0xFFFFFF | (uint)_masks[inst.Mesh] << 24, OffsetAndFlags = _g.FirstSubmesh[inst.Mesh] & 0xFFFFFF, Blas = _blas[inst.Mesh] };
                     desc.Transform[0] = m.M11; desc.Transform[1] = m.M21; desc.Transform[2] = m.M31; desc.Transform[3] = m.M41; desc.Transform[4] = m.M12; desc.Transform[5] = m.M22;
                     desc.Transform[6] = m.M32; desc.Transform[7] = m.M42; desc.Transform[8] = m.M13; desc.Transform[9] = m.M23; desc.Transform[10] = m.M33; desc.Transform[11] = m.M43;
                 }
