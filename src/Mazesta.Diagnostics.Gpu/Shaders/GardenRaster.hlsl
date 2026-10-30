@@ -9,16 +9,20 @@
 // the glow of what is bright (halved five times and summed back up), the blur of what is out of focus, the tone curve.
 // Depth is reversed (1 at the near plane, 0 infinitely far), which keeps surfaces a centimetre apart from flickering across the whole
 // garden.
-// With ray tracing switched on (the pixel shaders compiled with RT defined, on a GPU with DXR 1.1) the same frame asks the GPU's
-// ray-tracing hardware what its maps only approximate: a shadow ray from every lit pixel to the sun or the moon (through the
-// stained panes, whose colour it takes) and to every lit lamp in reach, and a ray along what the water, glass, metal and polished
-// stone mirror, lit where it lands. The courtyard's shadow map, the lamps' shadow cubes and the pool's second drawing are then not made.
+// With ray tracing switched on (the shaders compiled with RT defined, on a GPU with DXR 1.1) the same frame asks the GPU's ray-tracing
+// hardware what its maps only approximate: shadow rays to the sun or the moon and to every strong lamp in reach, and a ray along what the
+// water, metal and polished stone mirror, lit where it lands. These go in compute shaders at half the frame's size, before the colour pass
+// (RaysCS, MirrorCS), not from its pixel shaders: measured on an RX 9060 XT, rays from the pixel shaders held the whole pass up (117 W at
+// 27 FPS, against 157 W at 72 without rays); a card's power follows the shading it gets through, not the rays it waits on.
+// Only glass, which is not in the frame's depth, still sends rays from there. The pool's second drawing is then not made; the maps
+// stay for what no ray was sent for (an edge's sample, water, glass, the pictures of the surroundings) and for the air's light.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 // The tables of views are DATA_VOLATILE: the frame draws into pictures that the same tables list (the pool's mirror image, the faces of the surroundings, the occlusion and the depth, the hall's tint). With the
 // default (DATA_STATIC_WHILE_SET_AT_EXECUTE) the data behind a bound view may not change before the draw, the card is free to have read it early, and the frames come out different when two are in flight.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), SRV(t18), SRV(t19), SRV(t20), SRV(t21), SRV(t22), SRV(t23), " \
            "DescriptorTable(SRV(t3, numDescriptors=7, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t10, numDescriptors=2, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t12, numDescriptors=5, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
+           "DescriptorTable(SRV(t24, numDescriptors=4, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(UAV(u0, numDescriptors=4, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=16), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
@@ -56,9 +60,18 @@ StructuredBuffer<MeshInfo> Meshes : register(t20);
 StructuredBuffer<SubInfo> Subs : register(t21);
 ByteAddressBuffer Vertices : register(t22);
 ByteAddressBuffer Indices : register(t23);
+Texture2D<uint> LampSeen : register(t24);   // which lamps of its square's list each point of the frame's depth sees, at half the frame's size (RaysCS)
+Texture2D<float> KeyHalf : register(t25);   // and how much of the key light, as rays found it
+RWTexture2D<float> KeyHalfOut : register(u0);
+RWTexture2D<uint> LampOut : register(u1);
+RWTexture2D<float> KeyOut : register(u2);
+Texture2D<float4> Solids : register(t26);      // the frame's solid surfaces: which way each faces (xyz) and how rough (a; 1: it asks for no mirror image) (GBufferPS)
+Texture2D<float4> MirrorHalf : register(t27);  // what they and the pool mirror, at half the frame's size; a: 1 the pool's, 0.5 a solid's, 0 none (MirrorCS)
+RWTexture2D<float4> MirrorOut : register(u3);
 #define TraceSampler Aniso
 #include "GardenTrace.hlsli"
 static float2 Pixel;   // the pixel being lit: its rays are aimed by a hash of where it is, so the same frame is the same picture
+static uint SeenBits[4]; static float SeenWeight[4], SeenSum;   // the four half-size points round this pixel that lie on its own surface (LampShadow)
 static bool Sign = false;   // the logo is being lit: a sign of gilt letters, which keeps the soft picture of its surroundings (a ray off each facet of a letter shows the facets)
 #endif
 
@@ -135,6 +148,32 @@ float3 Unpack(float3 p) { float3 c = p * p; return c / max(1 - max(c.r, max(c.g,
 // two panes in a row both count).
 float4 TintPS(ShadowOut i) : SV_Target { return float4(StainTint(Materials[MaterialIndex]), 1); }
 
+// The hall has a shadow map of its own (InHall says where), three times as fine as the courtyard's: its light comes through lattices a finger wide.
+
+float ShadowMapped(float3 p, float3 n)
+{
+    bool hall = InHall(p);
+    float4 s = mul(hall ? HallViewProj : ShadowViewProj, float4(p + n * (hall ? 0.015 : 0.014), 1));
+    float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
+    if (any(uv < 0) || any(uv > 1)) return 1;
+    // three taps by three (five by five at the heaviest level), each the mean of four texels, spread over as wide a square as the level asks
+    // (the hall's always five by five, two texels apart: the low sun lays its windows' light along the floor and up the far wall, a
+    // texel of the map drawn out to a hand's breadth there - its edge is spread over several, or it shows as steps and shimmers as the sun moves)
+    float depth = s.z - (hall ? 0.0006 : 0.00025), sum = 0; int r = hall || ShadowTaps >= 3 ? 2 : 1; float2 apart = (hall ? 2.0 : (2.0 * ShadowTaps + 1) / (2 * r + 1)) * ShadowTexel;
+    if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
+    else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
+    return sum / ((2 * r + 1) * (2 * r + 1));
+}
+
+// The colour the key light has where it falls inside the hall: that of the stained panes it came through (the orsi stand at z -3.1).
+float3 KeyTint(float3 p)
+{
+    if (!InHall(p) || p.z < -3.09) return 1;
+    float4 s = mul(HallViewProj, float4(p, 1)); float2 uv = s.xy * float2(0.5, -0.5) + 0.5; float t = 2.5 / 2048;   // the mean of five taps: a pane's edge is as soft as its shadow's
+    return (HallTint.SampleLevel(Clamp, uv, 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(t, t), 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(-t, t), 0).rgb
+          + HallTint.SampleLevel(Clamp, uv + float2(t, -t), 0).rgb + HallTint.SampleLevel(Clamp, uv - float2(t, t), 0).rgb) * 0.2;
+}
+
 #ifdef RT
 // How much of the key light reaches p: of ShadowTaps rays aimed at points of its disc, the share that meet nothing - shadows as
 // sharp as what casts them is near, soft-edged far from it, of every leaf and lattice whatever its size.
@@ -166,7 +205,7 @@ static const int2 Around[8] = { int2(-1, -1), int2(0, -1), int2(1, -1), int2(-1,
 // pictures of the surroundings - asks for itself.
 float Shadow(float3 p, float3 n)
 {
-    if (!(Flags & 8)) return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;   // a picture of the surroundings: seen blurred, one ray is enough (up to seven per pixel made it ten times slower than the shadow maps)
+    if (!(Flags & 8)) return ShadowMapped(p, n);   // a picture of the surroundings, seen blurred
     if (Flags & 16)
     {
         float z = dot(p - Eye, CamForward), seen = Ambience.z / max(SceneDepth.Load(int3(Pixel, 0)), 1e-6);
@@ -181,47 +220,11 @@ float Shadow(float3 p, float3 n)
         }
         if (count > 0) return sum / count;
     }
-    // (a pixel the picture did not see - glass, water, a leaf with nothing like it near - asks once: up to seven rays a pixel over the foliage was most of the frame)
-    return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;
-}
-
-// The colour the key light has where it falls inside the hall: that of the stained pane on its way there.
-float3 KeyTint(float3 p) { return !InHall(p) || p.z < -3.09 ? 1 : Through(p, SunDir, 60); }
-
-// Whether a lamp's light reaches p: a ray to its bulb (a firefly's glow reaches a hand's breadth: it is not asked).
-float LampRay(Light L, float3 p, float3 n)
-{
-    if (L.Range < 2) return 1;
-    float3 o = p + n * 0.012, q = L.Position - o; float d = length(q);   // (to its middle: a point of the bulb chosen by chance would leave a grain along every shadow's edge)
-    return Occluded(o, q / d, max(0.01, d - 0.05)) ? 0 : 1;
+    // (a pixel the picture did not see - glass, water, a leaf with nothing like it near - reads the map: a ray in the colour pass holds the whole pass up)
+    return ShadowMapped(p, n);
 }
 #else
-// The hall has a shadow map of its own (InHall says where), three times as fine as the courtyard's: its light comes through lattices a finger wide.
-
-float Shadow(float3 p, float3 n)
-{
-    bool hall = InHall(p);
-    float4 s = mul(hall ? HallViewProj : ShadowViewProj, float4(p + n * (hall ? 0.015 : 0.014), 1));
-    float2 uv = s.xy * float2(0.5, -0.5) + 0.5;
-    if (any(uv < 0) || any(uv > 1)) return 1;
-    // three taps by three (five by five at the heaviest level), each the mean of four texels, spread over as wide a square as the level asks
-    // (the hall's always five by five, two texels apart: the low sun lays its windows' light along the floor and up the far wall, a
-    // texel of the map drawn out to a hand's breadth there - its edge is spread over several, or it shows as steps and shimmers as the sun moves)
-    float depth = s.z - (hall ? 0.0006 : 0.00025), sum = 0; int r = hall || ShadowTaps >= 3 ? 2 : 1; float2 apart = (hall ? 2.0 : (2.0 * ShadowTaps + 1) / (2 * r + 1)) * ShadowTexel;
-    if (hall) { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += HallShadow.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
-    else { [loop] for (int y = -r; y <= r; y++) [loop] for (int x = -r; x <= r; x++) sum += ShadowMap.SampleCmpLevelZero(ShadowSampler, uv + float2(x, y) * apart, depth); }
-    return sum / ((2 * r + 1) * (2 * r + 1));
-}
-
-// The colour the key light has where it falls inside the hall: that of the stained panes it came through (the orsi stand at z -3.1).
-float3 KeyTint(float3 p)
-{
-    if (!InHall(p) || p.z < -3.09) return 1;
-    float4 s = mul(HallViewProj, float4(p, 1)); float2 uv = s.xy * float2(0.5, -0.5) + 0.5; float t = 2.5 / 2048;   // the mean of five taps: a pane's edge is as soft as its shadow's
-    return (HallTint.SampleLevel(Clamp, uv, 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(t, t), 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(-t, t), 0).rgb
-          + HallTint.SampleLevel(Clamp, uv + float2(t, -t), 0).rgb + HallTint.SampleLevel(Clamp, uv - float2(t, t), 0).rgb) * 0.2;
-}
-
+float Shadow(float3 p, float3 n) { return ShadowMapped(p, n); }
 #endif
 
 // The sun's glint on a surface (a mirror image of it, p's normal n): found only where it is bright enough to see - the shadow ray is not sent for a term that comes to nothing
@@ -254,11 +257,25 @@ float LampShadowMap(Light L, float3 p, float3 n, float2 pixel)
 
 // A lamp's shadow: from its cube - or, with rays, a ray to it where its light is strong enough for the shadow's edge to be seen
 // (strength: what it gives the point unshadowed). At night a pixel is in reach of a dozen lamps, most of them far and faint.
-float LampShadow(Light L, float3 p, float3 n, float2 pixel, float strength)
+float LampShadow(Light L, float3 p, float3 n, float2 pixel, float strength, uint j)
 {
 #ifdef RT
     if (!(Flags & 8)) return 1;   // a picture of the surroundings, seen blurred: the lamps' shadows are left out of it
-    if (strength > 0.1) return LampRay(L, p, n);
+    if (L.Range < 2) return 1;   // (a firefly's glow reaches a hand's breadth)
+    // (the ray was sent before the frame, in RaysCS; a sample of another surface than the pixel's centre, an edge, reads the cube)
+    if (strength > 0.1 && j < 32 && (Flags & 16))
+    {
+        if (SeenSum < 0)
+        {
+            float z = dot(p - Eye, CamForward); float2 at = Pixel * 0.5 - 0.5; int2 low = int2(floor(at)); float2 f = at - low; SeenSum = 0;
+            [unroll] for (int k = 0; k < 4; k++)
+            {
+                int2 q = clamp(low + int2(k & 1, k >> 1), 0, int2(ViewSize) / 2 - 1); float near = Ambience.z / max(SceneDepth.Load(int3(q * 2, 0)), 1e-6);
+                SeenWeight[k] = (k & 1 ? f.x : 1 - f.x) * (k >> 1 ? f.y : 1 - f.y) * (abs(z - near) < 0.015 * z + 0.01 ? 1 : 0); SeenBits[k] = LampSeen.Load(int3(q, 0)); SeenSum += SeenWeight[k];
+            }
+        }
+        if (SeenSum > 0) return (((SeenBits[0] >> j) & 1) * SeenWeight[0] + ((SeenBits[1] >> j) & 1) * SeenWeight[1] + ((SeenBits[2] >> j) & 1) * SeenWeight[2] + ((SeenBits[3] >> j) & 1) * SeenWeight[3]) / SeenSum;
+    }
 #endif
     return LampShadowMap(L, p, n, pixel);
 }
@@ -385,13 +402,34 @@ float3 SeenThrough(float3 p, float3 n, float3 v)
 }
 #endif
 
+#ifdef RT
+// What MirrorCS found for this pixel: the mean of the four half-size points round it that are of the kind asked for (and of a solid, at its distance). False: none is.
+bool MirrorAt(float3 p, float kind, out float3 c)
+{
+    float z = dot(p - Eye, CamForward), sum = 0; float2 at = Pixel * 0.5 - 0.5, f = at - floor(at); int2 low = int2(floor(at)); c = 0;
+    [unroll] for (int k = 0; k < 4; k++)
+    {
+        int2 q = clamp(low + int2(k & 1, k >> 1), 0, int2(ViewSize) / 2 - 1); float4 m = MirrorHalf.Load(int3(q, 0));
+        if (abs(m.a - kind) > 0.2) continue;
+        if (kind < 0.75) { float near = Ambience.z / max(SceneDepth.Load(int3(q * 2, 0)), 1e-6); if (abs(z - near) >= 0.015 * z + 0.01) continue; }
+        float w = (k & 1 ? f.x : 1 - f.x) * (k >> 1 ? f.y : 1 - f.y) + 1e-4; c += m.rgb * w; sum += w;
+    }
+    if (sum <= 0) return false;
+    c /= sum; return true;
+}
+#endif
+
 // What a surface mirrors along r: the picture of its surroundings - or, with ray tracing, for a surface smooth enough to show a
 // mirror image (and mirroring enough of it to matter: weight), what the ray along r really meets.
 float3 Mirrored(float3 p, float3 n, float3 r, float roughness, float open, float weight)
 {
     float3 pictured = Pictured(p, r, roughness, open);
 #ifdef RT
-    if ((Flags & 8) && !Sign && roughness < 0.3 && weight > 0.02) return lerp(Reflected(p, n, r), pictured, smoothstep(0.1, 0.3, roughness));
+    if ((Flags & 8) && !Sign && roughness < 0.3 && weight > 0.02)
+    {   // (glass and falling water are not in the frame's depth: where they mirror enough to show, weight 2, they send their ray from here; a sample at a solid's edge keeps the picture)
+        float3 seen; if (!((Flags & 16) && MirrorAt(p, 0.5, seen))) seen = weight >= 2 ? Reflected(p, n, r) : pictured;
+        return lerp(seen, pictured, smoothstep(0.1, 0.3, roughness));
+    }
 #endif
     return pictured;
 }
@@ -407,11 +445,14 @@ float3 Lit(Surface s, float3 p, float3 v, float2 pixel)
         if (lit > 0) c += Brdf(s, v, SunDir, SunColor * KeyTint(p)) * lit * lerp(1, near, 0.45);
     }
     uint2 lamps = LampsAt(p);
+#ifdef RT
+    SeenSum = -1;
+#endif
     [loop] for (uint j = 0; j < lamps.y; j++)
     {
         uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, p, l, d);
         if (max(e.r, max(e.g, e.b)) <= 0.004 || dot(s.Normal, l) <= 0) continue;   // (the last of a lamp's reach is under a hundredth of what the eye can tell at night)
-        c += Brdf(s, v, l, e * LampLit(L, k)) * LampShadow(L, p, s.Normal, pixel, max(e.r, max(e.g, e.b))) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
+        c += Brdf(s, v, l, e * LampLit(L, k)) * LampShadow(L, p, s.Normal, pixel, max(e.r, max(e.g, e.b)), j) * lerp(1, near, 0.6);   // a lamp's light does not reach into a corner either
     }
     // every surface mirrors its surroundings a little, a metal or a polished floor a lot
     float3 mirrors = EnvBrdf(s, v);
@@ -427,14 +468,9 @@ void TangentFrame(float3 p, float2 d1, float2 d2, float3 n, out float3 t, out fl
     t = (p2 * d1.x + p1 * d2.x) * side; b = (p2 * d1.y + p1 * d2.y) * side;
 }
 
-float4 Opaque(VOut i, bool cutout)
+// The material at this pixel of a surface facing n.
+Surface SurfaceHere(VOut i, Material m, float3 n)
 {
-#ifdef RT
-    Pixel = i.Position.xy;
-#endif
-    if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;   // the mirror image holds only what is above the water
-    Material m = Materials[MaterialIndex];
-    float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;   // two-sided: leaves and cards are seen from both faces
     // the texture's coordinates and how they change across the screen: a surface laid by world position changes face, not coordinates, at an edge
     bool world; float2 uv = TexCoords(m, i.Uv, i.World, n, world), d1, d2;
     if (world) { d1 = FaceCoords(ddx(i.World), n) * m.Pattern.z; d2 = FaceCoords(ddy(i.World), n) * m.Pattern.z; }
@@ -455,6 +491,18 @@ float4 Opaque(VOut i, bool cutout)
         float3 nx = ddx(s.Normal), ny = ddy(s.Normal); float a = s.Roughness * s.Roughness;
         s.Roughness = sqrt(sqrt(a * a + min(dot(nx, nx) + dot(ny, ny), 0.18)));
     }
+    return s;
+}
+
+float4 Opaque(VOut i, bool cutout)
+{
+#ifdef RT
+    Pixel = i.Position.xy;
+#endif
+    if ((Flags & 2) && i.World.y < WaterLevel - 0.02) discard;   // the mirror image holds only what is above the water
+    Material m = Materials[MaterialIndex];
+    float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;   // two-sided: leaves and cards are seen from both faces
+    Surface s = SurfaceHere(i, m, n);
 #ifdef RT
     Sign = (Instances[i.Id].Flags & FLogo) != 0;
 #endif
@@ -479,6 +527,17 @@ float4 Opaque(VOut i, bool cutout)
 }
 
 float4 OpaquePS(VOut i) : SV_Target { return Opaque(i, false); }
+#ifdef RT
+// The frame's solid surfaces, as its depth is laid: what MirrorCS needs to send their rays before the frame.
+float4 GBufferPS(VOut i) : SV_Target
+{
+    Material m = Materials[MaterialIndex]; float3 v = normalize(Eye - i.World), n = normalize(i.Normal); if (dot(n, v) < 0) n = -n;
+    Surface s = SurfaceHere(i, m, n);
+    float3 mirrors = EnvBrdf(s, v);
+    bool asks = !(Instances[i.Id].Flags & FLogo) && max(mirrors.r, max(mirrors.g, mirrors.b)) > 0.02;
+    return float4(s.Normal * 0.5 + 0.5, asks ? s.Roughness : 1);
+}
+#endif
 float4 CutoutPS(VOut i) : SV_Target { return Opaque(i, true); }
 
 // Water and glass: blended over what is behind them.
@@ -504,7 +563,7 @@ float4 TransparentPS(VOut i) : SV_Target
         if (!level)
         {
             // falling water: what it mirrors, the daylight caught in it, and the sun's glint; more of it shows than of a still pool
-            reflected = (Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, 1, 1) : Sky(reflect(-v, n));
+            reflected = (Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, 1, fresnel > 0.25 ? 2 : 0.5) : Sky(reflect(-v, n));
             reflected += Glint(reflect(-v, n), 200, i.World, n);
             float3 caught = float3(0.82, 0.92, 0.96) * ((Bounced(i.World, n, 1) + Bounced(i.World, -n, 1)) * 1.5 + SunColor * SunOn * Shadow(i.World, n) * 0.25);
             float a = fresnel + (1 - fresnel) * 0.6;
@@ -514,7 +573,7 @@ float4 TransparentPS(VOut i) : SV_Target
         if (Flags & 8)
         {   // what the water really mirrors, ripples and all (a ray a ripple would send under the surface is laid along it)
             float3 r = reflect(-v, n); if (r.y < 0.03) r = normalize(float3(r.x, 0.03, r.z));
-            reflected = Reflected(i.World, float3(0, 1, 0), r);
+            if (!((Flags & 16) && MirrorAt(i.World, 1, reflected))) reflected = Reflected(i.World, float3(0, 1, 0), r);
         }
         else
 #endif
@@ -552,7 +611,7 @@ float4 TransparentPS(VOut i) : SV_Target
     // is behind it, in its colour; clear glass nearly all
     float fresnel = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
     float open = SkyOpen(i.World, n, i.Position.xy);
-    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, open, 1) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + Glint(reflect(-v, n), 300, i.World, n);
+    float3 mirrored = ((Flags & 8) ? Mirrored(i.World, n, reflect(-v, n), 0.03, open, fresnel > 0.25 ? 2 : 0.5) : Sky(reflect(-v, n)) * lerp(0.25, 1, open)) + Glint(reflect(-v, n), 300, i.World, n);
     float3 own = m.Base * (Bounced(i.World, n, open) + Bounced(i.World, -n, open)) * 0.5 + m.Emission * Glowing(i.World);
 #ifdef RT
     const float shine = 1.5;   // with rays a pane stands out a little more in the key light: enough for the lens to lay a faint glow round it
@@ -567,7 +626,7 @@ float4 TransparentPS(VOut i) : SV_Target
         own += m.Base * SunColor * shine * lit / Pi;
     }
     uint2 lamps = LampsAt(i.World);
-    [loop] for (uint j = 0; j < lamps.y; j++) { uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy, 0); }
+    [loop] for (uint j = 0; j < lamps.y; j++) { uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, i.World, l, d) * LampLit(L, k); if (any(e > 0)) own += m.Base * e * 0.3 / Pi * LampShadow(L, i.World, n, i.Position.xy, 0, j); }
     float saturation = 1 - min(m.Base.r, min(m.Base.g, m.Base.b)) / max(max(m.Base.r, max(m.Base.g, m.Base.b)), 1e-3);
     float density = m.Alpha < 1 ? m.Alpha : lerp(0.08, 0.6, saturation);
     float a = fresnel + (1 - fresnel) * density;
@@ -768,17 +827,61 @@ float4 AoPS(SkyOut i) : SV_Target
 }
 
 #ifdef RT
-// ——— the key light's share, with rays ———
-// For every pixel of the frame's depth: how much of the key light's disc its surface sees (KeySeen).
-float4 SunShadePS(SkyOut i) : SV_Target
+// ——— the rays of the frame's own surfaces ———
+// For every other pixel of the frame's depth, across and down, before the frame: how much of the key light's disc its surface sees
+// (KeySeen), and which lamps of its square's list it sees. A card draws little power while its rays wait on the scene's data; a game
+// sends them at a lower resolution and spends the frame's time on what it does with them, and so does this.
+[numthreads(8, 8, 1)]
+void RaysCS(uint3 id : SV_DispatchThreadID)
 {
-    int2 px = int2(i.Position.xy);
-    if (SunOn <= 0 || SceneDepth.Load(int3(px, 0)) <= 0) return 1;
+    int2 half_ = int2(id.xy), px = half_ * 2;
+    if (SceneDepth.Load(int3(px, 0)) <= 0) { KeyHalfOut[half_] = 1; LampOut[half_] = 0xffffffff; return; }
     // (the ray starts a finger off the surface toward the eye and the light: a normal worked out from the depth is not to be trusted
     // on a floor seen along its length, and a start under it leaves the floor in shade)
-    float3 p = ViewPosition(px), world = Eye + CamRight * p.x + CamUp * p.y + CamForward * p.z;
-    float seen = KeySeen(world + normalize(Eye - world) * (0.01 + 0.002 * p.z) + SunDir * 0.01, i.Position.xy);
-    return float4(seen, seen, seen, 1);
+    float3 c = ViewPosition(px), world = Eye + CamRight * c.x + CamUp * c.y + CamForward * c.z, off = normalize(Eye - world) * (0.01 + 0.002 * c.z);
+    KeyHalfOut[half_] = SunOn > 0 ? KeySeen(world + off + SunDir * 0.01, px + 0.5) : 1;
+    uint2 lamps = LampsAt(world); uint open = 0;
+    [loop] for (uint j = 0; j < min(lamps.y, 32); j++)
+    {
+        uint k = LightGrid[lamps.x + j]; Light L = Lights[k]; float3 l; float d; float3 e = LightAt(L, world, l, d);
+        if (max(e.r, max(e.g, e.b)) > 0.1 && L.Range >= 2 && Occluded(world + off + l * 0.01, l, max(0.01, d - 0.05))) continue;
+        open |= 1u << j;
+    }
+    LampOut[half_] = open;
+}
+
+// What the pool and the polished solids mirror, at half the frame's size: rays from the depth and the surfaces laid before the frame.
+[numthreads(8, 8, 1)]
+void MirrorCS(uint3 id : SV_DispatchThreadID)
+{
+    int2 half_ = int2(id.xy), px = half_ * 2; float depth = SceneDepth.Load(int3(px, 0));
+    float3 c = ViewPosition(px), world = Eye + CamRight * c.x + CamUp * c.y + CamForward * c.z;
+    float2 ndc = (px + 0.5) / ViewSize * float2(2, -2) + float2(-1, 1); float3 dir = normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect + CamUp * ndc.y * TanHalfFovY);
+    float t = dir.y < 0 && Eye.y > WaterLevel ? (WaterLevel - Eye.y) / dir.y : -1; float3 w = Eye + dir * t;
+    if (t > 0 && (depth <= 0 || t < c.z / dot(dir, CamForward)) && w.x > Round0Low.w && w.z > Round0High.w && w.x < Round1Low.w && w.z < Round1High.w)
+    {   // over the pool (the water is not in the frame's depth): as TransparentPS would send it
+        float3 r = reflect(dir, WaterNormal(w, Time)); if (r.y < 0.03) r = normalize(float3(r.x, 0.03, r.z));
+        MirrorOut[half_] = float4(Reflected(w, float3(0, 1, 0), r), 1); return;
+    }
+    float4 g = Solids.Load(int3(px, 0));
+    if (depth <= 0 || g.a >= 0.3) { MirrorOut[half_] = 0; return; }
+    float3 n = normalize(g.xyz * 2 - 1);
+    MirrorOut[half_] = float4(Reflected(world, n, reflect(dir, n)), 0.5);
+}
+
+// That picture brought up to the frame's size: each pixel the mean of the half-size points in a square round it, each counted by how near it
+// lies and how nearly at the pixel's own distance, so a shadow neither blocks up nor runs over the edge of what it lies on.
+[numthreads(8, 8, 1)]
+void ResolveCS(uint3 id : SV_DispatchThreadID)
+{
+    int2 px = int2(id.xy), hi = int2(ViewSize) / 2 - 1; float z = ViewDistance(px), sum = 0, count = 0; float2 at = px * 0.5;
+    [unroll] for (int y = -2; y <= 3; y++) [unroll] for (int x = -2; x <= 3; x++)
+    {
+        int2 q = clamp(px / 2 + int2(x, y), 0, hi); float2 gap = q - at;
+        float w = exp(-dot(gap, gap) * 0.45) * saturate(1 - abs(ViewDistance(q * 2) - z) / (0.015 * z + 0.01)) + 1e-4;
+        sum += KeyHalf.Load(int3(q, 0)) * w; count += w;
+    }
+    KeyOut[px] = sum / count;
 }
 #endif
 
