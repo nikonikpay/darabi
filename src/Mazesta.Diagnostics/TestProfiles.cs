@@ -17,7 +17,7 @@ public static class TestProfiles
         // The owner's choice: two minutes a test, one for the drive, and the 3D garden for one whole walk (162 s). On 64 GB of RAM two minutes may
         // not reach every pattern, and the RAM test then says Inconclusive rather than passing.
         new("quick", "Profile_Quick", "Profile_Quick_Note",
-            [new("cpu.stress", 120), new("memory.pattern", 120), new("gpu.steady", 120), new("gpu.vram", 120), new("gpu.scene.d3d", 162), new("power.combined", 120),
+            [new("cpu.stress", 120), new("memory.pattern", 120), new("gpu.steady", 120), new("gpu.vram", 120), new("gpu.thermal", 120), new("gpu.scene.d3d", 162), new("power.combined", 120),
              new("storage.sequential", 60), new("storage.smart", 5)]),
         new("standard", "Profile_Standard", "Profile_Standard_Note",
             [new("cpu.stress", 300), new("cpu.vector", 300), new("cpu.linpack", 300), new("cpu.singlecore", 600), new("memory.pattern", 900), new("memory.sequence", 600),

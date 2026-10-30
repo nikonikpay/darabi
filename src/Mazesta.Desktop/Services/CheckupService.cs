@@ -195,6 +195,8 @@ public sealed class CheckupService
         IReadOnlyList<TempFigure> Figures(string prefix, HardwareKind kind, Func<HardwareNode, bool>? node, params (string Key, SensorRole[] Roles)[] sensors)
         {
             var runs = results.Where(r => r.Id.Value.StartsWith(prefix, StringComparison.Ordinal) && r.Outcome is not (TestOutcome.Unsupported or TestOutcome.NotRun) && r.FinishedAt is not null).ToList();
+            // The graphics card's heat is the temperature test's (the other loads, a ray-traced scene above all, run hotter than a card ever does at the desk).
+            if (runs.Where(r => r.Id.Value == "gpu.thermal").ToList() is { Count: > 0 } only) runs = only;
             var figures = new List<TempFigure>();
             foreach (var (key, roles) in sensors)
             {

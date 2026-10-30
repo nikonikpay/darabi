@@ -35,6 +35,16 @@ public class ReportSummaryTests
             machine, serviceNumber: "S-1405-0042");
     }
 
+    [Fact] public void The_cards_core_and_hot_spot_peaks_are_the_temperature_tests_when_it_ran()
+    {
+        var thermal = Test("GPU temperature", ReportOutcome.Passed, 7, 11) with { Id = "gpu.thermal" };
+        var r = SessionReport.Create("x", "1", T0.AddMinutes(20), [Test("Scene", ReportOutcome.Passed, 0, 5), thermal],
+            [Sensor("core", "RX", "GPU Core", "GpuCoreTemp", 90, 90, 90, 90, 90, 90, 60, 60, 62, 61, 60, 60), Sensor("hot", "RX", "GPU Hot Spot", "GpuHotSpotTemp", 100, 100, 100, 100, 100, 100, 80, 80, 84, 83, 81, 80)],
+            HardwareInventory.Empty, "S-1");
+        var peaks = ReportSummary.Of(r).Peaks;
+        Assert.Equal(84, peaks.Single(p => p.Part == HeatPart.GpuHotSpot).MaxC); Assert.Equal(62, peaks.Single(p => p.Part == HeatPart.Gpu).MaxC);
+        Assert.Equal("GPU temperature", peaks.Single(p => p.Part == HeatPart.GpuHotSpot).During);
+    }
     [Fact] public void A_benchmark_shows_its_own_figures_and_none_of_the_conditions_it_ran_in()
     {
         var net = new BenchmarkEntry("bench.network.internet", "Internet", T0.AddMinutes(1), [new("Download", 480, "Mbps", "Bench_Net_Download"), new("Upload", 95.5, "Mbps", "Bench_Net_Upload"),

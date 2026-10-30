@@ -88,8 +88,13 @@ public sealed record ReportSummary(SessionReport Report, IReadOnlyList<PartPeak>
         var rows = runs.Select(x => new SummaryRow(x.Name, x.Item2, x.Item5, byPart.Select(kv => (kv.Key, Max: kv.Value.Select(s => PeakIn(s, x.From, x.To)).Where(v => v is not null).Max()))
             .Where(p => p.Max is not null).ToDictionary(p => p.Key, p => p.Max!.Value)) { Figures = x.Figures }).ToList();
 
+        var thermal = r.Tests.FirstOrDefault(t => t.Id == "gpu.thermal" && t.Outcome != ReportOutcome.NotRun);
         var peaks = byPart.OrderBy(kv => kv.Key).Select(kv =>
         {
+            // The card's core and hot spot peaks are the temperature test's when it ran: the other loads run hotter than a card does at the desk.
+            if (thermal is not null && kv.Key is HeatPart.Gpu or HeatPart.GpuHotSpot
+                && kv.Value.Select(s => (Sensor: s, Max: PeakIn(s, thermal.StartedAt, thermal.FinishedAt))).Where(x => x.Max is not null).OrderByDescending(x => x.Max).FirstOrDefault() is { Sensor: not null } t)
+                return new PartPeak(kv.Key, t.Sensor.Hardware, t.Max!.Value, thermal.Name);
             var hottest = kv.Value.MaxBy(s => s.Max)!;
             string? during = rows.Where(x => x.Peaks.ContainsKey(kv.Key)).MaxBy(x => x.Peaks[kv.Key])?.Name;
             return new PartPeak(kv.Key, hottest.Hardware, hottest.Max, during);

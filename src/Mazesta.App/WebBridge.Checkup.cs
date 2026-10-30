@@ -11,7 +11,7 @@ public sealed partial class WebBridge
     internal static readonly (string Id, int Seconds, (string Key, string Value)[] Options)[] CheckupTests =
     [
         ("cpu.stress", 90, [("stageSeconds", "30"), ("pattern", "steady")]), ("cpu.singlecore", 60, [("cores", "1"), ("secondsPerCore", "5")]), ("memory.pattern", 90, [("sizeMb", "8192")]),
-        ("gpu.steady", 90, []), ("gpu.vram", 60, []), ("storage.sequential", 60, []), ("storage.smart", 5, []),
+        ("gpu.steady", 90, []), ("gpu.vram", 60, []), ("gpu.thermal", 90, []), ("storage.sequential", 60, []), ("storage.smart", 5, []),
     ];
     /// <summary>Whether the diagnosis' own queue is the one running (the Tests page's queue, borrowed: its settings are put back afterwards).</summary>
     private bool _checkupRunning;
