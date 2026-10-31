@@ -22,7 +22,7 @@
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), SRV(t18), SRV(t19), SRV(t20), SRV(t21), SRV(t22), SRV(t23), " \
            "DescriptorTable(SRV(t3, numDescriptors=7, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t10, numDescriptors=2, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t12, numDescriptors=5, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
-           "DescriptorTable(SRV(t24, numDescriptors=8, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(UAV(u0, numDescriptors=8, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
+           "DescriptorTable(SRV(t24, numDescriptors=11, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(UAV(u0, numDescriptors=10, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=16), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
@@ -74,6 +74,8 @@ Texture2DArray<float4> LayerSeen : register(t30);   // what LayersCS found for i
 Texture2DArray<uint> LayerLamps : register(t31);
 globallycoherent RWTexture2D<uint> LayerCountOut : register(u4); RWTexture2DArray<float4> LayerDataOut : register(u5); RWTexture2DArray<float4> LayerSeenOut : register(u6); RWTexture2DArray<uint> LayerLampsOut : register(u7);
 static const uint MaxLayers = 4;
+Texture2D<float> FaceDepth : register(t32); Texture2D<float> FaceKey : register(t33); Texture2D<float4> FaceTint : register(t34); RWTexture2D<float> FaceKeyOut : register(u8); RWTexture2D<float4> FaceTintOut : register(u9);   // a picture of the surroundings: its depth, and what FaceCS found from it (Flags 32)
+static bool SeenRead = false; static uint SeenBits = 0;   // the lamps this pixel's surface sees, read once (a read per lamp per pixel holds the pass up)
 static int Transparent = 0; static bool FromPasses = false;   // a surface of the colour pass: what the compute passes found is there to read
 static int Layer = -1; static float LayerKey = 1; static uint LayerOpen = 0; static float3 LayerColour = 0; static bool LayerHidden = false;   // the surface of glass or water being lit, when one was listed
 #define TraceSampler Aniso
@@ -217,6 +219,7 @@ int2 SeenPixel(float3 p)
 float Shadow(float3 p, float3 n)
 {
     if (Layer >= 0) return LayerKey;
+    if (Flags & 32) return FaceKey.Load(int3(Pixel, 0));
     if (FromPasses)
     {
         float z = dot(p - Eye, CamForward), seen = Ambience.z / max(SceneDepth.Load(int3(Pixel, 0)), 1e-6);
@@ -231,22 +234,32 @@ float Shadow(float3 p, float3 n)
         }
         return count > 0 ? sum / count : Reflection.Load(int3(Pixel, 0)).r;
     }
-    return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;   // steam, or a picture of the surroundings: seen blurred, one ray is enough
+#ifdef RAYS
+    return Occluded(p + n * 0.012, SunDir, 300) ? 0 : 1;
+#else
+    return 1;
+#endif
 }
 
 // The colour the key light has where it falls inside the hall: that of the stained pane on its way there.
 float3 KeyTint(float3 p)
 {
     if (!InHall(p) || p.z < -3.09) return 1;
-    return FromPasses ? KeyColour.Load(int3(SeenPixel(p), 0)).rgb : Through(p, SunDir, 60);
+    if (Flags & 32) return FaceTint.Load(int3(Pixel, 0)).rgb;
+#ifdef RAYS
+    if (!FromPasses) return Through(p, SunDir, 60);
+#endif
+    return KeyColour.Load(int3(SeenPixel(p), 0)).rgb;
 }
 
+#ifdef RAYS
 // Whether a lamp's light reaches p: a ray to its bulb.
 float LampRay(Light L, float3 p, float3 n)
 {
     float3 o = p + n * 0.012, q = L.Position - o; float d = length(q);   // (to its middle: a point of the bulb chosen by chance would leave a grain along every shadow's edge)
     return Occluded(o, q / d, max(0.01, d - 0.05)) ? 0 : 1;
 }
+#endif
 #else
 float Shadow(float3 p, float3 n) { return ShadowMapped(p, n); }
 
@@ -294,8 +307,16 @@ float LampShadow(Light L, float3 p, float3 n, float2 pixel, uint j)
 #ifdef RT
     if (!(Flags & 8) || L.Range < 2) return 1;   // a picture of the surroundings, seen blurred; a firefly's glow reaches a hand's breadth
     if (j < 32 && Layer >= 0) return (LayerOpen >> j) & 1;
-    if (j < 32 && FromPasses) return (LampSeen.Load(int3(SeenPixel(p), 0)) >> j) & 1;
+    if (j < 32 && FromPasses)
+    {
+        if (!SeenRead) { SeenBits = LampSeen.Load(int3(SeenPixel(p), 0)); SeenRead = true; }
+        return (SeenBits >> j) & 1;
+    }
+#ifdef RAYS
     return LampRay(L, p, n);
+#else
+    return 1;
+#endif
 #else
     return LampShadowMap(L, p, n, pixel);
 #endif
@@ -367,6 +388,7 @@ float3 Pictured(float3 p, float3 r, float roughness, float open)
 }
 
 #ifdef RT
+#ifdef RAYS
 // What a ray from a surface at p (facing n) along r meets, lit as the frame's own surfaces are: by the light bounced round it, the
 // key light and the lamps in reach (a shadow ray each), and - in place of a mirror image of its own - the picture of its surroundings.
 float3 Reflected(float3 p, float3 n, float3 r)
@@ -422,10 +444,11 @@ float3 SeenThrough(float3 p, float3 n, float3 v)
     return tint * Sky(d);
 }
 #endif
+#endif
 
 #ifdef RT
 // What LayerPS listed for the surface at p, and what LayersCS found for it, at this pixel or, at an edge whose centre the surface misses, the next one.
-void FindLayer(float3 p)
+void FindLayer(float3 p, bool solid)
 {
     if (!(Flags & 16)) return;
     FromPasses = true;   // nothing below sends a ray from the colour pass: it would hold the pass up for a few pixels' sake
@@ -434,7 +457,11 @@ void FindLayer(float3 p)
     [loop] for (int n = 0; n < 5 && found < 0; n++)
     {
         int2 q = clamp(int2(Pixel) + (n == 0 ? int2(0, 0) : Around[n * 2 - 1]), 0, int2(ViewSize) - 1); uint count = LayerCount.Load(int3(q, 0));
-        if (count > MaxLayers) continue;
+        if (count > MaxLayers)
+        {   // (past what the list holds: LayersCS found the front surface of solid glass by a ray from the eye, and left how far it is in place of the first's lamps)
+            if (solid) { float gap = abs(asfloat(LayerLamps.Load(int4(q, 0, 0))) - z); if (gap < best) { best = gap; found = 0; at = q; } }
+            continue;
+        }
         [loop] for (uint k = 0; k < count; k++) { float gap = abs(LayerData.Load(int4(q, k, 0)).x - z); if (gap < best) { best = gap; found = k; at = q; } }
     }
     if (found < 0) return;
@@ -453,7 +480,12 @@ float3 Mirrored(float3 p, float3 n, float3 r, float roughness, float open, float
         float3 seen;
         if (Layer >= 0) seen = LayerColour;
         else if (FromPasses) { float4 m = MirrorHalf.Load(int3(SeenPixel(p), 0)); seen = m.a > 0 && Transparent == 0 ? m.rgb : pictured; }   // (an edge's sample, where no neighbour asked; glass past what its list holds)
-        else seen = Reflected(p, n, r);
+        else
+#ifdef RAYS
+            seen = Reflected(p, n, r);
+#else
+            seen = pictured;
+#endif
         return lerp(seen, pictured, smoothstep(0.1, 0.3, roughness));
     }
 #endif
@@ -590,7 +622,7 @@ float4 TransparentPS(VOut i) : SV_Target
         return float4(Pack(c), Puff(m, n, v));
     }
 #ifdef RT
-    Transparent = 1; FindLayer(i.World);
+    Transparent = 1; FindLayer(i.World, m.Kind == KGlass && m.Pattern.w > 0);
 #endif
     if (m.Kind == KWater)
     {
@@ -611,7 +643,7 @@ float4 TransparentPS(VOut i) : SV_Target
         if (Flags & 8)
         {   // what the water really mirrors, ripples and all (a ray a ripple would send under the surface is laid along it)
             float3 r = reflect(-v, n); if (r.y < 0.03) r = normalize(float3(r.x, 0.03, r.z));
-            reflected = Layer >= 0 ? LayerColour : (Flags & 16) ? Pictured(i.World, r, 0.03, 1) : Reflected(i.World, float3(0, 1, 0), r);
+            reflected = Layer >= 0 ? LayerColour : Pictured(i.World, r, 0.03, 1);
         }
         else
 #endif
@@ -639,12 +671,7 @@ float4 TransparentPS(VOut i) : SV_Target
     if (m.Kind == KGlass && m.Pattern.w > 0 && (Flags & 8))
     {   // solid glass with rays: where it stands in front of another surface of the same glass the front one is the picture (the others are seen through it)
         if (Layer >= 0) { if (LayerHidden) discard; return float4(Pack(LayerColour), 1); }
-        if (Flags & 16) discard;   // (an edge no neighbour listed, or past what the list holds: the samples round it stand in)
-        Hit ahead; float3 toward = normalize(i.World - Eye);
-        if (Trace(Eye, toward, length(i.World - Eye) - 0.01, MaskVisible, ahead) && Materials[ahead.Material].Kind == KGlass) discard;
-        float fr = 0.04 + 0.96 * pow(1 - saturate(dot(n, v)), 5);
-        float3 mirror = Reflected(i.World, n, reflect(-v, n)) + Glint(reflect(-v, n), 300, i.World, n);
-        return float4(Pack(mirror * fr + SeenThrough(i.World, n, v) * (1 - fr)), 1);
+        discard;   // (an edge no neighbour listed, or past what the list holds: the samples round it stand in)
     }
 #endif
     // glass: the sky's mirror image on it and the sun's glint, over its own colour - a stained pane lets through about half of what
@@ -866,7 +893,7 @@ float4 AoPS(SkyOut i) : SV_Target
     return float4(open, open, open, 1);
 }
 
-#ifdef RT
+#ifdef RAYS
 // ——— the rays of the frame's own surfaces ———
 // For every pixel of the frame's depth, before the frame: how much of the key light's disc its surface sees (KeySeen), and which lamps of its square's list it sees.
 [numthreads(8, 8, 1)]
@@ -902,6 +929,18 @@ void MirrorCS(uint3 id : SV_DispatchThreadID)
     MirrorOut[px] = float4(Reflected(world, n, reflect(dir, n)), 0.5);
 }
 
+// For a picture of the surroundings, from its depth laid first: the key light's share and colour at each of its pixels.
+[numthreads(8, 8, 1)]
+void FaceCS(uint3 id : SV_DispatchThreadID)
+{
+    int2 px = int2(id.xy); float d = FaceDepth.Load(int3(px, 0));
+    if (d <= 0 || SunOn <= 0) { FaceKeyOut[px] = 1; FaceTintOut[px] = 1; return; }
+    float z = Ambience.z / d; float2 ndc = (px + 0.5) / ViewSize * float2(2, -2) + float2(-1, 1);
+    float3 p = Eye + (CamRight * ndc.x + CamUp * ndc.y + CamForward) * z, off = normalize(Eye - p) * (0.01 + 0.002 * z) + SunDir * 0.01;
+    FaceKeyOut[px] = Occluded(p + off, SunDir, 300) ? 0 : 1;
+    FaceTintOut[px] = float4(!InHall(p) || p.z < -3.09 ? float3(1, 1, 1) : Through(p, SunDir, 60), 1);
+}
+
 [numthreads(8, 8, 1)]
 void LayerClearCS(uint3 id : SV_DispatchThreadID) { LayerCountOut[id.xy] = 0; }
 
@@ -909,8 +948,21 @@ void LayerClearCS(uint3 id : SV_DispatchThreadID) { LayerCountOut[id.xy] = 0; }
 [numthreads(8, 8, 1)]
 void LayersCS(uint3 id : SV_DispatchThreadID)
 {
-    int2 px = int2(id.xy); uint count = LayerCount.Load(int3(px, 0)); if (count > MaxLayers) return;
+    int2 px = int2(id.xy); uint count = LayerCount.Load(int3(px, 0));
     float2 ndc = (px + 0.5) / ViewSize * float2(2, -2) + float2(-1, 1); float3 dir = normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect + CamUp * ndc.y * TanHalfFovY);
+    if (count > MaxLayers)
+    {   // more surfaces than the list holds (a tea glass seen through: its walls, the tea): only solid glass's front one is seen, and a ray finds it
+        Hit h; float far = 0;
+        if (Trace(Eye, dir, 300, MaskVisible, h) && Materials[h.Material].Kind == KGlass && Materials[h.Material].Pattern.w > 0)
+        {
+            float3 n = dot(h.N, dir) > 0 ? -h.N : h.N; far = dot(h.P - Eye, CamForward);
+            LayerKey = SunOn > 0 && !Occluded(h.P + (dot(n, SunDir) >= 0 ? n : -n) * 0.012, SunDir, 300) ? 1 : 0; Layer = 0;
+            float fr = 0.04 + 0.96 * pow(1 - saturate(dot(n, -dir)), 5);
+            LayerSeenOut[int3(px, 0)] = float4((Reflected(h.P, n, reflect(dir, n)) + Glint(reflect(dir, n), 300, h.P, n)) * fr + SeenThrough(h.P, n, -dir) * (1 - fr), LayerKey + 1);
+        }
+        LayerLampsOut[int3(px, 0)] = asuint(far);
+        return;
+    }
     [loop] for (uint k = 0; k < count; k++)
     {
         float4 d = LayerData.Load(int4(px, k, 0)); uint index = (uint)d.w; Material m = Materials[index];

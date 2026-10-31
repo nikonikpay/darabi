@@ -18,7 +18,7 @@ internal sealed unsafe class GardenGpu
     [StructLayout(LayoutKind.Sequential)] public struct Instance { public Vector4 Row0, Row1, Row2; public uint Mesh, Mask, Flags, Index; }
     [StructLayout(LayoutKind.Sequential)] public struct Light { public Vector3 Position; public uint Kind; public Vector3 Direction; public float Range; public Vector3 Color; public float CosOuter; public float CosInner, Radius, Shadow, Lit; }
     [StructLayout(LayoutKind.Sequential)] public struct MeshInfo { public Vector3 Centre; public uint FirstSubmesh; public Vector3 Extent; public uint BaseVertex; }
-    [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, BaseVertex; public int Texture; public float PatternU, PatternV, Pad; }
+    [StructLayout(LayoutKind.Sequential)] public struct SubmeshInfo { public uint IndexStart, Material, Opaque, BaseVertex; public int Texture; public float PatternU, PatternV; public uint LeafUvs; }
     public readonly record struct Part(uint IndexStart, uint IndexCount, uint Material, GardenMaterialKind Kind, GardenChunks.Chunk[]? Chunks = null);
     /// <summary>One mesh's draws: its instances are [FirstInstance, +InstanceCount) of <see cref="Instances"/>. Moving: some of them
     /// are placed anew every frame (the logo, the sphere, the droplets).</summary>
@@ -200,8 +200,22 @@ internal sealed unsafe class GardenGpu
         for (int m = 0; m < meshes.Count; m++) { baseVertex[m] = (int)(vbytes / 16); baseIndex[m] = (uint)icount; vbytes += meshes[m].Vertices.Length; icount += meshes[m].Indices.Length; }
         VertexBuffer = s.Buffer((ulong)vbytes, HeapType.Default, ResourceStates.CopyDest);
         s.Fill(VertexBuffer, d => { int at = 0; foreach (var m in meshes) { m.Vertices.CopyTo(d[at..]); at += m.Vertices.Length; } }, ResourceStates.VertexAndConstantBuffer | ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
-        IndexBuffer = s.Buffer((ulong)icount * 4, HeapType.Default, ResourceStates.CopyDest);
-        s.Fill(IndexBuffer, d => { int at = 0; foreach (var m in meshes) { MemoryMarshal.AsBytes(m.Indices.AsSpan()).CopyTo(d[at..]); at += m.Indices.Length * 4; } }, ResourceStates.IndexBuffer | ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
+        // behind the indices, for a ray's alpha test: the corners' uvs of every leaf card's triangle (GardenTrace.hlsli's AlphaPass)
+        var leafUvs = new Dictionary<(int Mesh, int Sub), uint>(); long leafWords = 0;
+        for (int m = 0; m < meshes.Count; m++)
+            for (int k = 0; k < meshes[m].Submeshes.Length; k++)
+                if (materials[(int)meshes[m].Submeshes[k].Material].Kind == GardenMaterialKind.Cutout) { leafUvs[(m, k)] = (uint)((icount + leafWords) * 4); leafWords += meshes[m].Submeshes[k].IndexCount; }
+        IndexBuffer = s.Buffer((ulong)(icount + leafWords) * 4, HeapType.Default, ResourceStates.CopyDest);
+        s.Fill(IndexBuffer, d =>
+        {
+            int at = 0; foreach (var m in meshes) { MemoryMarshal.AsBytes(m.Indices.AsSpan()).CopyTo(d[at..]); at += m.Indices.Length * 4; }
+            var words = MemoryMarshal.Cast<byte, uint>(d);
+            foreach (var ((m, k), start) in leafUvs)
+            {
+                var sub = meshes[m].Submeshes[k]; int to = (int)(start / 4);
+                for (uint i = 0; i < sub.IndexCount; i++) words[to + (int)i] = BitConverter.ToUInt32(meshes[m].Vertices, (int)meshes[m].Indices[sub.IndexStart + i] * 16 + 12);
+            }
+        }, ResourceStates.IndexBuffer | ResourceStates.NonPixelShaderResource | ResourceStates.PixelShaderResource);
 
         // instances grouped by mesh, in the file's order within a mesh
         // (what stands still is kept in runs of neighbours: a camera's view takes in a part of the garden, and draws it in few calls)
@@ -296,11 +310,11 @@ internal sealed unsafe class GardenGpu
         {
             infos.Add(new MeshInfo { Centre = meshes[m].Centre, Extent = meshes[m].Extent, FirstSubmesh = (uint)subs.Count, BaseVertex = (uint)baseVertex[m] });
             // (a leaf card's alpha test, during a ray's traversal, reads all it needs from this one row: material, vertex base and texture are copied into it)
-            foreach (var sub in meshes[m].Submeshes)
+            for (int k = 0; k < meshes[m].Submeshes.Length; k++)
             {
-                var mat = materials[(int)sub.Material]; bool tiled = mat.Pattern.X > 0;
+                var sub = meshes[m].Submeshes[k]; var mat = materials[(int)sub.Material]; bool tiled = mat.Pattern.X > 0;
                 subs.Add(new SubmeshInfo { IndexStart = baseIndex[m] + sub.IndexStart, Material = sub.Material, Opaque = mat.Kind == GardenMaterialKind.Cutout ? 0u : 1u, BaseVertex = (uint)baseVertex[m],
-                    Texture = mat.Texture, PatternU = tiled ? mat.Pattern.X : 1, PatternV = tiled ? mat.Pattern.Y : 1 });
+                    Texture = mat.Texture, PatternU = tiled ? mat.Pattern.X : 1, PatternV = tiled ? mat.Pattern.Y : 1, LeafUvs = leafUvs.GetValueOrDefault((m, k)) });
             }
         }
         FirstSubmesh = [.. infos.Select(i => i.FirstSubmesh)];

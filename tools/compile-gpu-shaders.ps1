@@ -41,17 +41,18 @@ $jobs = @(
     @('GardenRaster.hlsl', 'OpaquePS', 'ps_6_5', 'GardenOpaqueRtPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'CutoutPS', 'ps_6_5', 'GardenCutoutRtPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'TransparentPS', 'ps_6_5', 'GardenTransparentRtPS.cso', 'RT'),
-    @('GardenRaster.hlsl', 'RaysCS', 'cs_6_5', 'GardenRaysCS.cso', 'RT'),
-    @('GardenRaster.hlsl', 'MirrorCS', 'cs_6_5', 'GardenMirrorCS.cso', 'RT'),
-    @('GardenRaster.hlsl', 'LayerClearCS', 'cs_6_5', 'GardenLayerClearCS.cso', 'RT'),
-    @('GardenRaster.hlsl', 'LayersCS', 'cs_6_5', 'GardenLayersCS.cso', 'RT'),
+    @('GardenRaster.hlsl', 'RaysCS', 'cs_6_5', 'GardenRaysCS.cso', 'RAYS'),
+    @('GardenRaster.hlsl', 'MirrorCS', 'cs_6_5', 'GardenMirrorCS.cso', 'RAYS'),
+    @('GardenRaster.hlsl', 'FaceCS', 'cs_6_5', 'GardenFaceCS.cso', 'RAYS'),
+    @('GardenRaster.hlsl', 'LayerClearCS', 'cs_6_5', 'GardenLayerClearCS.cso', 'RAYS'),
+    @('GardenRaster.hlsl', 'LayersCS', 'cs_6_5', 'GardenLayersCS.cso', 'RAYS'),
     @('GardenRaster.hlsl', 'LayerPS', 'ps_6_5', 'GardenLayerPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'GBufferPS', 'ps_6_5', 'GardenGBufferPS.cso', 'RT'),
     @('GardenRaster.hlsl', 'ShadeBlurPS', 'ps_6_0', 'GardenShadeBlurPS.cso'),
     @('GardenBake.hlsl', 'Bake', 'cs_6_5', 'GardenBake.cso')
 )
 foreach ($j in $jobs) {
-    $define = if ($j.Count -gt 4) { @('-D', $j[4]) } else { @() }
+    $define = if ($j.Count -gt 4) { if ($j[4] -eq 'RAYS') { @('-D', 'RT', '-D', 'RAYS') } else { @('-D', $j[4]) } } else { @() }
     & $dxc.FullName -nologo -O3 -Qstrip_debug -Qstrip_reflect @define -E $j[1] -T $j[2] -Fo (Join-Path $dir $j[3]) (Join-Path $dir $j[0])
     if ($LASTEXITCODE -ne 0) { throw "dxc failed on $($j[0]) $($j[1])" }
 }
