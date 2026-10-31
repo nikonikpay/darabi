@@ -1,6 +1,29 @@
 # Scene RT power investigation — 2026-10-30
 
-## v47, 2026-10-31 (read this first; it replaces the v46 fix below, whose picture was worse)
+## v49, 2026-10-31 (read this first)
+
+Measured only on the owner's RX 9060 XT. **Ray-traced watts now match raster.** Published app, 162 s walk, 1 s samples while the scene draws:
+
+| Mode | Avg W | Peak W | App's avg W | FPS | Worst half second | Avg core MHz |
+|---|--:|--:|--:|--:|--:|--:|
+| raster, 2 runs | 180.0 / 179.5 | 193 / 188 | 174.7 / 173.7 | 97.1 / 97.0 | 61.8 / 61.3 | 3288 / 3283 |
+| ray-traced, last 3 of 4 runs | 181.1 / 180.5 / 180.6 | 194 / 200 / 195 | 175.8 / 175.5 / 175.3 | 48.4 | 27.3 / 27.3 / 27.1 | 3132 / 3129 / 3129 |
+
+The first ray-traced walk after publishing read 180.9 W while drawing but 167.1 W / 48.1 FPS by the app's average, worst half second 9.6 FPS, peak 226 W, 343 samples. The others do not show this; the cause was not looked into, the first start after publishing was only a likely reason.
+
+**The fault at the foundation:** the colour pass's shaders were compiled with all the ray code in them. Repeating each pass until it dominated the frame, at night: rays in compute 179.7 W, the colour pass 133.1 W (raster's 180.7 W). The same colour shaders with the ray code left out, sending no ray in either case: 171.5 W. Why (register budget and how many pixels run at once is the likely reason) was not captured: no RGP run.
+
+Steps, steady test, day / night (raster 173.7 / 163.4 W): v47 151.1 / 138.3 W; surroundings' rays in compute and lamp bits read once 162.8 / 145.1 W; no ray code in the colour shaders 171.3 / 157.4 W; the air's light found with rays, and no hall maps 180.9 / 178.5 W.
+
+The test scene (`D:\DFM APp\Cloudytlab`) also showed far dependent reads in an alpha test lower power (4 reads over 64 MB 158 W, 1 read 180 W). The garden's leaf uvs went into a table for that, which changed neither its watts nor its frame time.
+
+Picture: as before v46 but for the light in the air, which is now traced (hall beams slightly softer, the courtyard's air back, as raster has it, and filtered by stained panes) and weak lamps' shadows. Mean difference over ten moments 0.6 to 5.5 of 255. Tea glasses and wall mirror compared by eye at matching moments. Frame rate is about half raster's, 48.4 FPS, against 49.0 at v47 with the same picture and 58.6 at v48 without the air.
+
+Driver crash: three timeouts tonight (02:33, 03:10, 03:11, dumps name `rtlab.exe`, page fault) came from a bug in the test scene's shader, `GetDimensions` on a root buffer view, fixed 03:12. None since, through this build's six walks. A crash the owner saw without a dump or event is not explained by this if it came later.
+
+Not verified: other cards; dispatched rays (compute already reaches the limit); RGP; Microsoft's samples (their build was refused by the permission check); motion quality; steam, whose light now comes from the surface behind it; pixels of over four layers of glass or water use the surroundings picture.
+
+## v47, 2026-10-31 (replaced by v49 above)
 
 Measured only on the owner's RX 9060 XT. **Ray-traced watts are still below raster: the goal is not met.** The picture is back to that of the build before v46, apart from real ray shadows of weak lamps at night and pixels listed below.
 

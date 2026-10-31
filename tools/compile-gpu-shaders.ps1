@@ -44,6 +44,7 @@ $jobs = @(
     @('GardenRaster.hlsl', 'RaysCS', 'cs_6_5', 'GardenRaysCS.cso', 'RAYS'),
     @('GardenRaster.hlsl', 'MirrorCS', 'cs_6_5', 'GardenMirrorCS.cso', 'RAYS'),
     @('GardenRaster.hlsl', 'FaceCS', 'cs_6_5', 'GardenFaceCS.cso', 'RAYS'),
+    @('GardenRaster.hlsl', 'AirCS', 'cs_6_5', 'GardenAirCS.cso', 'RAYS'),
     @('GardenRaster.hlsl', 'LayerClearCS', 'cs_6_5', 'GardenLayerClearCS.cso', 'RAYS'),
     @('GardenRaster.hlsl', 'LayersCS', 'cs_6_5', 'GardenLayersCS.cso', 'RAYS'),
     @('GardenRaster.hlsl', 'LayerPS', 'ps_6_5', 'GardenLayerPS.cso', 'RT'),

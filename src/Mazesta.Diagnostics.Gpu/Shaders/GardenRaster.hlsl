@@ -11,18 +11,18 @@
 // garden.
 // With ray tracing switched on (the shaders compiled with RT defined, on a GPU with DXR 1.1) the same frame asks the GPU's ray-tracing
 // hardware what its maps only approximate: shadow rays to the sun or the moon and to every strong lamp in reach, and a ray along what the
-// water, glass, metal and polished stone mirror, lit where it lands. They all go in compute shaders at the frame's size, before the colour
-// pass (RaysCS, MirrorCS, LayersCS), not from its pixel shaders: measured on an RX 9060 XT, the same rays draw the card's whole power limit from a
-// compute shader (181 W, in a scene made to test it) and 147 W from a pixel shader, at a lower frame rate. Glass and water are not in the frame's
-// depth: LayerPS lists the surfaces of them at each pixel, up to four, for LayersCS. Only steam, a fifth layer or a glass edge missing the pixel's
-// centre send a ray from the colour pass. The pool's second drawing is then not made.
+// water, glass, metal and polished stone mirror, lit where it lands, and the light standing in the air. They all go in compute shaders before the
+// colour pass (RaysCS, MirrorCS, LayersCS, FaceCS, AirCS); the colour pass's shaders, compiled with RT but not RAYS, hold no ray code and read what those found.
+// Measured on an RX 9060 XT: the same rays draw the card's whole power limit from a compute shader (181 W, in a scene made to test it) and 147 W from a
+// pixel shader, at a lower frame rate; ray code in the colour pass's shaders held the pass at 133 W even where no ray was sent (171 W without it).
+// Glass and water are not in the frame's depth: LayerPS lists the surfaces of them at each pixel, up to four, for LayersCS. The pool's second drawing and the shadow maps are then not made.
 // Compiled offline by tools/compile-gpu-shaders.ps1.
 // The tables of views are DATA_VOLATILE: the frame draws into pictures that the same tables list (the pool's mirror image, the faces of the surroundings, the occlusion and the depth, the hall's tint). With the
 // default (DATA_STATIC_WHILE_SET_AT_EXECUTE) the data behind a bound view may not change before the draw, the card is free to have read it early, and the frames come out different when two are in flight.
 
 #define RS "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), RootConstants(num32BitConstants=12, b0), CBV(b1), SRV(t0), SRV(t1), SRV(t2), SRV(t17), SRV(t18), SRV(t19), SRV(t20), SRV(t21), SRV(t22), SRV(t23), " \
            "DescriptorTable(SRV(t3, numDescriptors=7, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t10, numDescriptors=2, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(SRV(t12, numDescriptors=5, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
-           "DescriptorTable(SRV(t24, numDescriptors=11, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(UAV(u0, numDescriptors=10, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
+           "DescriptorTable(SRV(t24, numDescriptors=11, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), DescriptorTable(UAV(u0, numDescriptors=11, flags=DESCRIPTORS_VOLATILE | DATA_VOLATILE)), " \
            "StaticSampler(s0, filter=FILTER_ANISOTROPIC, maxAnisotropy=16), " \
            "StaticSampler(s1, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, addressU=TEXTURE_ADDRESS_BORDER, addressV=TEXTURE_ADDRESS_BORDER, borderColor=STATIC_BORDER_COLOR_OPAQUE_WHITE, comparisonFunc=COMPARISON_LESS_EQUAL), " \
            "StaticSampler(s2, filter=FILTER_MIN_MAG_MIP_LINEAR, addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP, addressW=TEXTURE_ADDRESS_CLAMP)"
@@ -74,6 +74,7 @@ Texture2DArray<float4> LayerSeen : register(t30);   // what LayersCS found for i
 Texture2DArray<uint> LayerLamps : register(t31);
 globallycoherent RWTexture2D<uint> LayerCountOut : register(u4); RWTexture2DArray<float4> LayerDataOut : register(u5); RWTexture2DArray<float4> LayerSeenOut : register(u6); RWTexture2DArray<uint> LayerLampsOut : register(u7);
 static const uint MaxLayers = 4;
+RWTexture2D<float4> AirOut : register(u10);   // the light standing in the air, found with rays (AirCS); the lens reads it where the hall's tint is bound (Flags 64)
 Texture2D<float> FaceDepth : register(t32); Texture2D<float> FaceKey : register(t33); Texture2D<float4> FaceTint : register(t34); RWTexture2D<float> FaceKeyOut : register(u8); RWTexture2D<float4> FaceTintOut : register(u9);   // a picture of the surroundings: its depth, and what FaceCS found from it (Flags 32)
 static bool SeenRead = false; static uint SeenBits = 0;   // the lamps this pixel's surface sees, read once (a read per lamp per pixel holds the pass up)
 static int Transparent = 0; static bool FromPasses = false;   // a surface of the colour pass: what the compute passes found is there to read
@@ -855,7 +856,12 @@ float4 LensPS(SkyOut i) : SV_Target
         float3 own = Unpack(LensA.Load(int3(px, 0)).rgb), round = (Unpack(LensA.Load(int3(px + int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(1, 0), 0)).rgb) + Unpack(LensA.Load(int3(px + int2(0, 1), 0)).rgb) + Unpack(LensA.Load(int3(px - int2(0, 1), 0)).rgb)) * 0.25;
         c = max(c + clamp(own - round, -0.5 * own, 0.5 * own) * 0.45 * (1 - saturate(Blur(ViewDistance(px)))) * (1 - edge), 0);
     }
-    c += Shafts(i, px) + Air(i, px);
+    if (Flags & 64)
+    {   // with rays the air's light was found before the frame, at half its size: the mean of four taps round the pixel, for its grain
+        float2 uv = LensUv(i), t = 1 / ViewSize;
+        c += (HallTint.SampleLevel(Clamp, uv + t, 0).rgb + HallTint.SampleLevel(Clamp, uv - t, 0).rgb + HallTint.SampleLevel(Clamp, uv + float2(t.x, -t.y), 0).rgb + HallTint.SampleLevel(Clamp, uv - float2(t.x, -t.y), 0).rgb) * 0.25;
+    }
+    else c += Shafts(i, px) + Air(i, px);
     c += LensB.SampleLevel(Clamp, LensUv(i), 0).rgb * Post.x;
     return float4(Finished(c, uint2(px)), 1);
 }
@@ -939,6 +945,42 @@ void FaceCS(uint3 id : SV_DispatchThreadID)
     float3 p = Eye + (CamRight * ndc.x + CamUp * ndc.y + CamForward) * z, off = normalize(Eye - p) * (0.01 + 0.002 * z) + SunDir * 0.01;
     FaceKeyOut[px] = Occluded(p + off, SunDir, 300) ? 0 : 1;
     FaceTintOut[px] = float4(!InHall(p) || p.z < -3.09 ? float3(1, 1, 1) : Through(p, SunDir, 60), 1);
+}
+
+// The light standing in the air, as Shafts and Air find it with maps: at each step along the eye's ray a ray to the key light, and through a stained pane its colour.
+[numthreads(8, 8, 1)]
+void AirCS(uint3 id : SV_DispatchThreadID)
+{
+    int2 half_ = int2(id.xy), px = half_ * 2; float3 c = 0;
+    if (SunOn > 0)
+    {
+        float2 ndc = (px + 1) / ViewSize * float2(2, -2) + float2(-1, 1); float3 dir = normalize(CamForward + CamRight * ndc.x * TanHalfFovY * Aspect + CamUp * ndc.y * TanHalfFovY);
+        float reach = ViewDistance(px) / dot(dir, CamForward), jitter = frac(Turn(px + 0.5) * 0.159155);
+        float3 low = Round1Low.xyz + float3(0, 0, -0.45), high = Round1High.xyz, inv = 1 / float3(abs(dir.x) > 1e-5 ? dir.x : 1e-5, abs(dir.y) > 1e-5 ? dir.y : 1e-5, abs(dir.z) > 1e-5 ? dir.z : 1e-5);
+        float3 a = (low - Eye) * inv, b = (high - Eye) * inv, t0 = min(a, b), t1 = max(a, b);
+        float from = max(max(t0.x, t0.y), max(t0.z, 0)), to = min(min(t1.x, t1.y), min(t1.z, reach));
+        if (to > from)
+        {
+            const int steps = 24; float step = (to - from) / steps; float3 sum = 0;
+            [loop] for (int k = 0; k < steps; k++)
+            {
+                float3 p = Eye + dir * (from + step * (jitter + k));
+                if (!Occluded(p, SunDir, 60)) sum += p.z > -3.09 ? Through(p, SunDir, 60) : 1;
+            }
+            float phase = 0.6 + 1.6 * pow(saturate(dot(dir, SunDir) * 0.5 + 0.5), 4);
+            c += sum * step * SunColor * 0.0075 * phase * saturate(SunDir.y * 3.2);
+        }
+        const int outdoor = 24; float far = min(reach, 70), step2 = far / outdoor, lit = 0;
+        [loop] for (int k = 0; k < outdoor; k++)
+        {
+            float3 p = Eye + dir * (step2 * (jitter + k));
+            if (!InHall(p) && !Occluded(p, SunDir, 300)) lit += exp(-max(p.y, 0) * 0.3);
+        }
+        const float g = 0.55; float phase2 = (1 - g * g) / pow(1 + g * g - 2 * g * dot(dir, SunDir), 1.5);
+        float3 pane = Through(Eye, dir, far);   // (what stands in the air beyond a stained pane reaches the eye through it, in its colour and at half its strength, not laid over it)
+        c += lit * step2 * SunColor * 0.0006 * phase2 * saturate(SunDir.y * 5) * (all(pane >= 1) ? float3(1, 1, 1) : pane * 0.5);
+    }
+    AirOut[half_] = float4(c, 1);
 }
 
 [numthreads(8, 8, 1)]

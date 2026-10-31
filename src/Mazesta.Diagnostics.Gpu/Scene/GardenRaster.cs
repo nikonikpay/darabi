@@ -46,7 +46,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
     private readonly ID3D12RootSignature _root;
     private readonly ID3D12PipelineState _shadow, _sky, _opaque, _cutout, _transparent, _skyR, _opaqueR, _cutoutR, _transparentR, _depthOnly, _occlude, _glowFirst, _glowDown, _glowUp, _lens, _lampShadow, _roundDown, _tint, _before, _beforeLeaves;
     /// <summary>With rays: how much of the key light each pixel of the frame sees and which lamps it sees (GardenRaster.hlsl's RaysCS), and the key light's picture smoothed.</summary>
-    private readonly ID3D12PipelineState? _rays, _mirror, _beforeSolids, _shadeBlur, _layerClear, _layers, _layerList, _face, _beforeFace, _beforeFaceLeaves; private readonly ID3D12Resource? _shadeA, _shadeB, _lampSeen, _mirrorHalf, _solids, _solidsMsaa, _keyColour, _layerCount, _layerData, _layerSeen, _layerLamps, _faceKey, _faceTint; private readonly ID3D12DescriptorHeap? _solidsRtv;
+    private readonly ID3D12PipelineState? _rays, _mirror, _beforeSolids, _shadeBlur, _layerClear, _layers, _layerList, _face, _beforeFace, _beforeFaceLeaves, _airRays; private readonly ID3D12Resource? _shadeA, _shadeB, _lampSeen, _mirrorHalf, _solids, _solidsMsaa, _keyColour, _layerCount, _layerData, _layerSeen, _layerLamps, _faceKey, _faceTint, _air; private readonly ID3D12DescriptorHeap? _solidsRtv;
     private readonly ID3D12Resource _shadowMap, _hallShadow, _hallTint, _skyMap, _depth, _reflection, _reflectionDepth, _msaa, _constants, _sceneDepth, _occlusion, _light, _lamps, _volume, _round, _roundDepth;
     private readonly ID3D12Resource? _volumeStaging; private readonly float[] _mixed = []; private readonly uint _volumePitch; private readonly ulong _volumeBytes;
     /// <summary>The stained panes' draws, and for each face of the pictures of the surroundings the still instances it can see, in runs of neighbours.</summary>
@@ -124,6 +124,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             ID3D12PipelineState Cs(string name) => s.Own(s.Device.CreateComputePipelineState(new ComputePipelineStateDescription { RootSignature = _root, ComputeShader = D3D12Session.Shader(name) }));
             _layerClear = Cs("GardenLayerClearCS"); _layers = Cs("GardenLayersCS"); _layerList = Make(vs, D3D12Session.Shader("GardenLayerPS"), BlendDescription.Opaque, readOnly, 1, []);
             ID3D12Resource Uav(Format format, uint layers) => s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(format, (uint)width, (uint)height, (ushort)layers, 1, flags: ResourceFlags.AllowUnorderedAccess), ResourceStates.PixelShaderResource));
+            _airRays = Cs("GardenAirCS"); _air = s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(Format.R16G16B16A16_Float, (uint)(width + 1) / 2, (uint)(height + 1) / 2, 1, 1, flags: ResourceFlags.AllowUnorderedAccess), ResourceStates.PixelShaderResource));
             _face = Cs("GardenFaceCS"); _beforeFace = Make(vs, null, BlendDescription.Opaque, nearer, 1, []); _beforeFaceLeaves = Make(vs, D3D12Session.Shader("GardenLeafDepthPS"), BlendDescription.Opaque, nearer, 1, []);
             ID3D12Resource FaceUav(Format format) => s.Own(s.Device.CreateCommittedResource(HeapType.Default, ResourceDescription.Texture2D(format, RoundSize, RoundSize, 1, 1, flags: ResourceFlags.AllowUnorderedAccess), ResourceStates.PixelShaderResource));
             _faceKey = FaceUav(Format.R8_UNorm); _faceTint = FaceUav(Format.R8G8B8A8_UNorm);
@@ -209,7 +210,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
 
         // the shader's views: the scene's seven (t3..t9), then the lens's - the frame's light, the glow's levels, and the last level again
         // (a lens pass sees two views in a row: what it reads, and what follows it)
-        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, RayViews + 21, DescriptorHeapFlags.ShaderVisible, 0)));
+        _srv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView, RayViews + 22, DescriptorHeapFlags.ShaderVisible, 0)));
         uint srvSize = _srvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
         CpuDescriptorHandle Srv(int i) => _srv.GetCPUDescriptorHandleForHeapStart().Offset(i, srvSize);   // Offset moves the handle it is called on: start afresh each time
         s.Device.CreateShaderResourceView(g.Textures, g.TextureView, Srv(0));
@@ -224,6 +225,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             s.Device.CreateUnorderedAccessView(_keyColour, null, null, Srv(RayViews + 11));
             s.Device.CreateShaderResourceView(_roundDepth, new ShaderResourceViewDescription { Format = Format.R32_Float, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D, Shader4ComponentMapping = ShaderComponentMapping.Default, Texture2D = new Texture2DShaderResourceView { MipLevels = 1 } }, Srv(RayViews + 8));
             s.Device.CreateShaderResourceView(_faceKey, null, Srv(RayViews + 9)); s.Device.CreateShaderResourceView(_faceTint, null, Srv(RayViews + 10));
+            s.Device.CreateUnorderedAccessView(_air, null, null, Srv(RayViews + 21));
             s.Device.CreateUnorderedAccessView(_faceKey, null, null, Srv(RayViews + 19)); s.Device.CreateUnorderedAccessView(_faceTint, null, null, Srv(RayViews + 20));
             s.Device.CreateUnorderedAccessView(_lampSeen, null, null, Srv(RayViews + 12)); s.Device.CreateUnorderedAccessView(_shadeA, null, null, Srv(RayViews + 13)); s.Device.CreateUnorderedAccessView(_mirrorHalf, null, null, Srv(RayViews + 14));
             s.Device.CreateUnorderedAccessView(_layerCount, null, null, Srv(RayViews + 15)); s.Device.CreateUnorderedAccessView(_layerData, null, null, Srv(RayViews + 16)); s.Device.CreateUnorderedAccessView(_layerSeen, null, null, Srv(RayViews + 17)); s.Device.CreateUnorderedAccessView(_layerLamps, null, null, Srv(RayViews + 18));
@@ -244,7 +246,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             s.Device.CreateShaderResourceView(_round, new ShaderResourceViewDescription { Format = Light, ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2DArray, Shader4ComponentMapping = ShaderComponentMapping.Default,
                 Texture2DArray = new Texture2DArrayShaderResourceView { MostDetailedMip = (uint)Math.Min(m, RoundMips - 2), MipLevels = 1, ArraySize = (uint)(Rounds.Length * 6) } }, Srv(RoundView + m));
         s.Device.CreateShaderResourceView(_hallShadow, depthView, Srv(LampView + 3));
-        s.Device.CreateShaderResourceView(_hallTint, null, Srv(LampView + 4));
+        s.Device.CreateShaderResourceView(_air ?? _hallTint, null, Srv(LampView + 4));   // (with rays the panes' colour is a ray's, and the lens reads the air's light here)
 
         _rtv = s.Own(s.Device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, (uint)(Targets.Length + 8 + GlowLevels + Rounds.Length * 6 * RoundMips), DescriptorHeapFlags.None, 0)));
         _rtvSize = s.Device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
@@ -608,7 +610,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
         var first = frame; first.Post.Z = 0;   // the passes of the still scene see no mirror images (the sky stands in) and no wind: the plants stand as they were placed
         if (_set.ReflectionDivisor > 0) frame.Flags |= 1;
         if (_samples > 1) frame.Flags |= 4;
-        frame.Flags |= 8; frame.Samples = (uint)_samples;
+        frame.Flags |= RayTraced ? 8u | 64u : 8u; frame.Samples = (uint)_samples;
         var mirrored = frame.Mirrored(); mirrored.Flags &= ~4u; frame.Flags |= 16; mirrored.ViewSize = new(_reflW, _reflH);
         // the depth-only passes draw through ShadowViewProj: the camera's own view for the frame's depth, the view from above for the sky map, the hall's own for its shadow map
         var depthOnly = frame; depthOnly.ShadowViewProj = frame.ViewProj; var above = first; above.ShadowViewProj = _skyViewProj; var hall = frame; hall.ShadowViewProj = frame.HallViewProj;
@@ -658,7 +660,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.ResourceBarrierTransition(_shadowMap, ResourceStates.DepthWrite, ResourceStates.PixelShaderResource);
         }
         Mark(l, "sun shadow map");
-        if (drawHall) HallMaps(l, frame);
+        if (drawHall && _accel is null) HallMaps(l, frame);
         Mark(l, "hall maps");
         // the garden all round, for what surfaces mirror: every face for a frame on its own (and for the first shown after one),
         // else the next face in turn - twelve frames on, the pictures are of the light as it is by then
@@ -788,7 +790,7 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             BindRays(l, Cb()); l.SetPipelineState(_rays!);
             l.Dispatch((uint)(Width + 7) / 8, (uint)(Height + 7) / 8, 1);
             Mark(l, "rays (compute)");
-            ID3D12Resource[] mirrorReads = [_round, _volume, _hallTint, _solids!];
+            ID3D12Resource[] mirrorReads = [_round, _volume, _solids!];
             foreach (var r in mirrorReads) l.ResourceBarrierTransition(r, ResourceStates.PixelShaderResource, Read);
             l.ResourceBarrierTransition(_mirrorHalf!, ResourceStates.PixelShaderResource, ResourceStates.UnorderedAccess);
             l.SetPipelineState(_mirror!); l.Dispatch((uint)(Width + 7) / 8, (uint)(Height + 7) / 8, 1);
@@ -811,6 +813,10 @@ internal sealed unsafe class GardenRaster : GardenRenderer
             l.ResourceBarrierTransition(_layerSeen!, ResourceStates.UnorderedAccess, ResourceStates.PixelShaderResource); l.ResourceBarrierTransition(_layerLamps!, ResourceStates.UnorderedAccess, ResourceStates.PixelShaderResource);
             l.ResourceBarrierTransition(_layerCount!, Read, ResourceStates.PixelShaderResource); l.ResourceBarrierTransition(_layerData!, Read, ResourceStates.PixelShaderResource);
             Mark(l, "glass and water rays (compute)");
+            l.ResourceBarrierTransition(_air!, ResourceStates.PixelShaderResource, ResourceStates.UnorderedAccess);
+            l.SetPipelineState(_airRays!); l.Dispatch((uint)((Width + 1) / 2 + 7) / 8, (uint)((Height + 1) / 2 + 7) / 8, 1);
+            l.ResourceBarrierTransition(_air!, ResourceStates.UnorderedAccess, ResourceStates.PixelShaderResource);
+            Mark(l, "air's light rays (compute)");
             l.ResourceBarrierTransition(_lampSeen!, ResourceStates.UnorderedAccess, ResourceStates.PixelShaderResource); l.ResourceBarrierTransition(_shadeA, ResourceStates.UnorderedAccess, ResourceStates.PixelShaderResource);
             l.ResourceBarrierTransition(_sceneDepth, ResourceStates.PixelShaderResource | ResourceStates.NonPixelShaderResource, ResourceStates.PixelShaderResource);
             void Into(ID3D12Resource to, int rtv, ID3D12PipelineState pipeline, int reads, uint axis)
