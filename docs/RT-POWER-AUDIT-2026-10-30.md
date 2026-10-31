@@ -1,5 +1,36 @@
 # Scene RT power investigation — 2026-10-30
 
+## v47, 2026-10-31 (read this first; it replaces the v46 fix below, whose picture was worse)
+
+Measured only on the owner's RX 9060 XT. **Ray-traced watts are still below raster: the goal is not met.** The picture is back to that of the build before v46, apart from real ray shadows of weak lamps at night and pixels listed below.
+
+Published app, 162 s walk, 1 s samples while the scene draws (two runs each; the app's own averages, which count some loading, read 146.4 W and 174.7 W):
+
+| Mode | Avg W | Peak W | App's FPS | Avg core MHz |
+|---|--:|--:|--:|--:|
+| raster | 180.1 / 179.9 | 184 / 190 | 97.0 / 97.0 | 3287 / 3286 |
+| ray-traced | 150.3 / 151.3 | 178 / 179 | 48.9 / 49.0 | 3160 / 3159 |
+
+A separate test scene (`D:\DFM APp\Cloudy\rtlab`, not in this repo; my own D3D12 program, 1080p, off screen, read through the same sensor) varied one thing at a time, 30 s runs (22 s counted; 25 s for the large-structure ones):
+
+| Case | FPS | Watts | MHz |
+|---|--:|--:|--:|
+| no rays, shading only | 349 | 181 | 3269 |
+| 16 rays a pixel, pixel shader, no shading | 40 | 148 | 3410 |
+| 16 rays a pixel, compute, no shading | 90 | 181 | 2932 |
+| 4 rays, compute, half size, with shading | 317 | 181 | 3052 |
+| 4 rays, async compute queue, with shading | 192 | 182 | 2956 |
+| 4 rays, compute, 24,000 instances + alpha test in the ray | 48 | 181 | 3069 |
+| the same, pixel shader | 28 | 149 | 3432 |
+
+So the card can draw its 181 W limit on rays alone: the low watts are this project's, not the card's. Rays from a pixel shader draw less and run slower than the same rays in compute. Random memory reads in a pixel shader do the same (64 reads a pixel: 111 W). Async compute changed no watts there, as the limit was already reached. Inline against dispatched rays was not tried.
+
+The garden's steps, ray-traced, 162 s: all compute at full size with pixel-shader rays left for glass 118.8 W; glass and water in compute 133.9 W; no rays left in the colour pass but the pictures of the surroundings 146.4 W; with those off too 150.8 W (a shadow lost, so not kept). The v46 build's 164 W came partly from level 4's lens, which blurred the picture, and from shadow-map passes.
+
+Picture differences from the build before v46, same camera and moment, mean of 255 over ten moments: 0.2 to 1.0, and 2.8 at night. Where glass has more than four layers at a pixel it mirrors the surroundings picture; solid glass there, or at an edge no neighbour listed, leaves the pixel to the samples round it; steam takes its light from the surface behind it. The hall's beams of light in the air still read its shadow map, as they did before v46; the courtyard's map-based air is off under rays again, as it was before v46.
+
+Not verified: other cards or vendors; any D3D12 demo by someone else (Microsoft's samples were downloaded to read, but building them was refused by the permission check, so no third-party watts exist here); why a pixel shader's rays draw less (no RGP capture); pictures in motion. Untried: moving the surroundings pictures' rays to compute (at most about 4 W by the run above); a per-pass power measurement of the garden, which is the next thing to find the remaining 29 W.
+
 ## Fix applied 2026-10-31 (read this first; the audit below is the state before it)
 
 Measured only on the owner's AMD Radeon RX 9060 XT, in the published app, 1920×1080. **Ray-traced watts rose a lot but are still below raster: the goal "at or above raster" is not met.**
